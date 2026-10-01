@@ -31,7 +31,7 @@ et affectation des véhicules, navette au retour.
 Prérequis : Node.js 22, PostgreSQL 16 avec l'extension PostGIS.
 
 ```bash
-# Serveur (API sur http://localhost:3005, documentation sur /api-docs)
+# Serveur (API sur http://localhost:3005/api, documentation sur /api/docs)
 cd backend
 cp .env.example .env          # adapter les URL de base de données et SECRET_KEY
 npm install
@@ -40,9 +40,15 @@ npm run seed:operator -- --operator "Mon parking" --capacity 250 \
   --name "Prénom Nom" --email gerant@exemple.fr --password "mot-de-passe-solide"
 npm run dev
 
-# Espace pro (http://localhost:8080)
+# Espace pro (http://localhost:8080/pro/ ; /api est relayé vers le serveur local)
 cd ../admin
-cp .env.example .env          # VITE_API_URL=http://localhost:3005
+cp .env.example .env
+npm install
+npm run dev
+
+# Site voyageurs (http://localhost:3000)
+cd ../site
+cp .env.example .env.local    # BACKEND_URL=http://localhost:3005
 npm install
 npm run dev
 ```
@@ -50,27 +56,40 @@ npm run dev
 Le compte gérant ainsi créé ajoute ensuite son équipe depuis la page « Équipe ».
 
 Tests : `npm test` dans `backend/` (base `DATABASE_URL_TEST`, dont le nom doit finir par `_test` ;
-elle est entièrement vidée à chaque lancement) et dans `admin/`.
+elle est entièrement vidée à chaque lancement), dans `admin/` et dans `site/`.
 
 ## Mise en ligne (Supabase + Vercel)
+
+Un seul projet Vercel, avec trois « services » déclarés dans [`vercel.json`](vercel.json), sur un même domaine :
+
+| Adresse | Service | Dossier |
+|---|---|---|
+| `/api/…` | API (Express, une fonction) | `backend/` |
+| `/pro/…` | Espace pro (Vite, fichiers statiques) | `admin/` |
+| tout le reste | Site voyageurs (Next.js) | `site/` |
+
+Le site appelle l'API côté serveur par une liaison interne (`BACKEND_URL`, injectée par Vercel) ;
+le navigateur de l'espace pro appelle `/api` sur le même domaine (pas de CORS).
 
 1. **Base (Supabase)** : projet en région Paris (`eu-west-3`), extension PostGIS activée.
    - `DATABASE_URL` : « Transaction pooler » (port 6543) avec `?pgbouncer=true&connection_limit=1` ;
    - `DIRECT_URL` : « Direct connection » (port 5432), pour les migrations.
-2. **API (projet Vercel n°1)** : importer le dépôt, dossier racine `backend`, préréglage « Other »,
-   région des fonctions Paris (`cdg1`). Laisser activée l'option « Include files outside the root
-   directory » (le nom du produit est lu dans `product.json` à la racine).
-   Variables : `NODE_ENV=production`, `DATABASE_URL`, `DIRECT_URL`, `SECRET_KEY`, `CRON_SECRET`,
-   `CLIENT_URL` (adresse de l'espace pro). Chaque déploiement applique les migrations
-   (`npm run vercel-build`) puis publie l'API ; la purge nocturne des jetons est un Vercel Cron.
-3. **Espace pro (projet Vercel n°2)** : même dépôt, dossier racine `admin`, préréglage « Vite »,
-   variable `VITE_API_URL` = adresse de l'API.
-4. Créer le premier opérateur depuis un poste : `npm run seed:operator` dans `backend/`, avec
+2. **Projet Vercel** : importer le dépôt, dossier racine = racine du dépôt (là où se trouve
+   `vercel.json`) ; les fonctions tournent à Paris (`cdg1`). Variables (communes aux trois services) :
+   `NODE_ENV=production`, `DATABASE_URL`, `DIRECT_URL`, `SECRET_KEY`, `CRON_SECRET`, `SITE_API_KEY`
+   (secret partagé entre le site et l'API), `PUBLIC_SITE_URL` (adresse publique du site, pour les liens
+   des mails), et pour les mails et SMS `BREVO_API_KEY`, `EMAIL_FROM`, `SMS_SENDER`.
+   Chaque déploiement applique les migrations (`npm run vercel-build` dans `backend/`) ; la purge
+   nocturne des jetons est un Vercel Cron (`/api/internal/cron/purge-expired-tokens`).
+3. Créer le premier opérateur depuis un poste : `npm run seed:operator` dans `backend/`, avec
    `DATABASE_URL` pointé sur la base Supabase.
+
+Vérifier la configuration sans déployer : `npx vercel build` (avec un `.vercel/project.json` local),
+ou `vercel dev` pour lancer les trois services ensemble.
 
 ## API
 
-Documentation interactive : `/api-docs` (Swagger). Routes du jalon 1, toutes sous `/internal` :
+Documentation interactive : `/api/docs` (Swagger). Toutes les routes sont sous `/api` (le tableau omet ce préfixe) :
 
 | Méthode | Chemin | Rôle |
 |---|---|---|

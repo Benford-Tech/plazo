@@ -84,10 +84,12 @@ Plazo reprend la stack et les conventions des dépôts `lovenest-backend`, `love
 
 - **Serveur (`backend/`)** : Express 5 + TypeScript, Prisma 6 (schéma `src/prisma/schema.prisma`,
   client généré dans `src/generated/prisma-client`), services typedi, DTO class-validator,
-  passport-jwt, bcrypt, envalid, winston, Swagger (`/api-docs`).
+  passport-jwt, bcrypt, envalid, winston, Swagger (`/api/docs`). Toutes les routes sont sous `/api`.
 - **Hébergement : Vercel** (décision du 01/10/2026 : « pas DigitalOcean, plutôt Vercel »), région
-  Paris `cdg1`, pour l'API et l'espace pro (deux projets Vercel : dossiers racine `backend` et `admin`).
-  L'API tourne dans une seule fonction serverless (`backend/api/index.js`, qui charge `dist/`).
+  Paris `cdg1`. **Un seul projet Vercel avec trois services** (`vercel.json` à la racine) sur un même
+  domaine : `backend` sur `/api/*`, `admin` sur `/pro/*`, `site` (Next.js) sur le reste ; le site appelle
+  l'API côté serveur par une liaison (`BACKEND_URL`). L'API tourne dans une seule fonction
+  (`backend/index.js`, qui charge le code compilé dans `lib/`).
   Conséquences : pas de pg-boss (pas de processus permanent), les tâches planifiées sont des routes
   `/internal/cron/...` appelées par Vercel Cron (`backend/vercel.json`, protégées par `CRON_SECRET`) ;
   pas de fichiers de logs (winston écrit dans la console, que Vercel collecte).
@@ -107,11 +109,15 @@ Le nom du produit doit rester dans UN seul fichier de configuration (il peut enc
 
 ## Structure du dépôt
 
+- `vercel.json` : le projet Vercel et ses trois services (`backend` sur `/api`, `admin` sur `/pro`,
+  `site` sur le reste), la liaison site → API et le Cron.
 - `product.json` : nom du produit et libellés de marque (seul endroit où le nom apparaît ;
-  lu par le serveur et l'espace pro).
-- `backend/` : API REST (`api/index.js` = point d'entrée Vercel). Les routes du personnel du loueur sont sous `/internal/...`
-  (`StaffAuthMiddleware`, jetons stockés en base et révocables), comme les routes staff de LoveNest.
-- `admin/` : espace pro (et plus tard la page de réservation publique).
+  lu par le serveur, l'espace pro et le site).
+- `backend/` : API REST sous `/api` (`index.js` = point d'entrée Vercel). Les routes du personnel du loueur
+  sont sous `/api/internal/...` (`StaffAuthMiddleware`, jetons stockés en base et révocables), comme les
+  routes staff de LoveNest ; celles du site voyageurs sous `/api/public/...`.
+- `admin/` : espace pro, servi sous `/pro`.
+- `site/` : site Plazo voyageurs (Next.js), servi à la racine du domaine.
 - `mobile/` : app Flutter (à venir).
 
 ## Conventions (reprises de LoveNest)
@@ -132,13 +138,17 @@ Le nom du produit doit rester dans UN seul fichier de configuration (il peut enc
 ## Commandes
 
 Dans `backend/` :
-- `npm run dev` : serveur de développement (port 3005, docs sur `/api-docs`)
+- `npm run dev` : serveur de développement (port 3005, API sous `/api`, docs sur `/api/docs`)
 - `npm test`, `npm run lint`, `npm run typecheck`, `npm run build`
 - `npm run prisma:migrate -- --name xxx` : nouvelle migration ; `npm run prisma:deploy` : appliquer
 - `npm run seed:operator -- --operator … --capacity … --name … --email … --password …`
 
 Dans `admin/` :
-- `npm run dev` (port 8080), `npm test`, `npm run lint`, `npm run build`
+- `npm run dev` (http://localhost:8080/pro/, relaie `/api` vers le port 3005), `npm test`, `npm run lint`, `npm run build`
+
+Dans `site/` :
+- `npm run dev` (port 3000, `BACKEND_URL` par défaut http://localhost:3005), `npm test`, `npm run lint`,
+  `npm run typecheck`, `npm run build`
 
 ## Direction visuelle — DÉCIDÉE (1er octobre 2026)
 
