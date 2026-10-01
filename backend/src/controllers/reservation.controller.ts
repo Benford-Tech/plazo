@@ -62,4 +62,9 @@ export class ReservationController {
     const data: ChangeStatusDto = req.body;
     res.json({ message: 'Status changed', data: await this.reservationService.changeStatus(req.staff, req.params.id as string, data) });
   });
+
+  /** POST /internal/reservations/:id/manage-link/revoke */
+  public revokeManageLink = catchAsync(async (req: RequestWithStaffSession, res: Response) => {
+    res.json({ message: 'Manage link revoked', data: await this.reservationService.revokeManageLink(req.staff, req.params.id as string) });
+  });
 }

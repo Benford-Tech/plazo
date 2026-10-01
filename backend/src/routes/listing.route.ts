@@ -36,6 +36,7 @@ import { ValidationMiddleware } from '@/middlewares/validation.middleware';
  *               shuttleMinutes: { type: integer }
  *               distanceKm: { type: number }
  *               openingHours: { type: string, example: "24h/24" }
+ *               contactPhone: { type: string, nullable: true, example: "04 72 00 00 00", description: Shown to travellers; unchanged when absent }
  *               cancellationPolicy: { type: string, enum: [free_until_arrival, free_24h, free_48h, non_refundable] }
  *               photos: { type: array, items: { type: string, format: uri } }
  *               published: { type: boolean }

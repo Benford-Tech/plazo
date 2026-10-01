@@ -1,7 +1,8 @@
 import { Service } from 'typedi';
 import prisma, { Prisma } from '@/database';
 
-type AuditActor = { id: string; operatorId: string };
+// id null: an action without staff, e.g. a traveller booking or cancelling on the site.
+type AuditActor = { id: string | null; operatorId: string };
 type Client = Prisma.TransactionClient | typeof prisma;
 
 @Service()

@@ -1,3 +1,4 @@
+import { randomInt } from 'crypto';
 import { ReservationStatus } from '@/database';
 
 /** Statuses that no longer hold a spot. */
@@ -42,8 +43,10 @@ export function formatFlight(flight: string): string | null {
 const REFERENCE_ALPHABET = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
 
 /** Short customer-facing code, e.g. R7KQ2M (no 0/O/1/I to avoid misreading). */
-export function newReference(random: () => number = Math.random): string {
+export function newReference(random?: () => number): string {
+  // A reference (with the email) unlocks a booking: draw it from the cryptographic generator.
+  const pick = random ? () => Math.floor(random() * REFERENCE_ALPHABET.length) : () => randomInt(REFERENCE_ALPHABET.length);
   let code = 'R';
-  for (let i = 0; i < 5; i++) code += REFERENCE_ALPHABET[Math.floor(random() * REFERENCE_ALPHABET.length)];
+  for (let i = 0; i < 5; i++) code += REFERENCE_ALPHABET[pick()];
   return code;
 }

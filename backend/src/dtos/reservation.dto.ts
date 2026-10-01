@@ -2,13 +2,17 @@ import { Type } from 'class-transformer';
 import { IsBoolean, IsEmail, IsIn, IsInt, IsNotEmpty, IsOptional, IsString, Matches, Max, MaxLength, Min } from 'class-validator';
 import { ReservationChannel, ReservationStatus } from '@/database';
 
-const DATETIME = /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}(:\d{2}(\.\d+)?)?(Z|[+-]\d{2}:?\d{2})?$/;
+export const DATETIME = /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}(:\d{2}(\.\d+)?)?(Z|[+-]\d{2}:?\d{2})?$/;
+export const PHONE_RE = /^\+?[0-9 .()-]{6,20}$/;
+export const PLATE_RE = /^[A-Za-z0-9 -]{2,15}$/;
+// "plazo" bookings are made by travellers on the site only.
+const STAFF_CHANNELS = Object.values(ReservationChannel).filter(c => c !== 'plazo');
 const CHANNELS = Object.values(ReservationChannel);
 const STATUSES = Object.values(ReservationStatus);
 
 // Dates: "2026-10-04T06:30" (local to the parking) or an ISO instant with offset.
 export class CreateReservationDto {
-  @IsIn(CHANNELS, { message: 'invalid_channel' })
+  @IsIn(STAFF_CHANNELS, { message: 'invalid_channel' })
   public channel: ReservationChannel;
 
   @IsOptional()
@@ -34,7 +38,7 @@ export class CreateReservationDto {
   public customerName: string;
 
   @IsString()
-  @Matches(/^\+?[0-9 .()-]{6,20}$/, { message: 'invalid_phone' })
+  @Matches(PHONE_RE, { message: 'invalid_phone' })
   public customerPhone: string;
 
   @IsOptional()
@@ -42,7 +46,7 @@ export class CreateReservationDto {
   public customerEmail?: string;
 
   @IsString()
-  @Matches(/^[A-Za-z0-9 -]{2,15}$/, { message: 'invalid_plate' })
+  @Matches(PLATE_RE, { message: 'invalid_plate' })
   public plate: string;
 
   @IsOptional()
@@ -114,7 +118,7 @@ export class UpdateReservationDto {
 
   @IsOptional()
   @IsString()
-  @Matches(/^\+?[0-9 .()-]{6,20}$/, { message: 'invalid_phone' })
+  @Matches(PHONE_RE, { message: 'invalid_phone' })
   public customerPhone?: string;
 
   @IsOptional()
@@ -123,7 +127,7 @@ export class UpdateReservationDto {
 
   @IsOptional()
   @IsString()
-  @Matches(/^[A-Za-z0-9 -]{2,15}$/, { message: 'invalid_plate' })
+  @Matches(PLATE_RE, { message: 'invalid_plate' })
   public plate?: string;
 
   @IsOptional()

@@ -4,7 +4,7 @@ import prisma, { Parking, Prisma, Reservation, ReservationStatus } from '@/datab
 import { can } from '@/domain/roles';
 import { canTransition, formatFlight, formatPlate, newReference, plateKey, RELEASED_STATUSES } from '@/domain/reservation';
 import { parseConfirmationEmail } from '@/domain/importers';
-import { addDays, DATE_RE, dayBounds, localDate, parseInstant } from '@/domain/time';
+import { addDays, DATE_RE, dayBounds, exceedsCalendarDays, localDate, parseInstant } from '@/domain/time';
 import { ChangeStatusDto, CreateReservationDto, UpdateReservationDto } from '@/dtos/reservation.dto';
 import { AuthenticatedStaff } from '@/interfaces/auth.interface';
 import { ValidationException } from '@/middlewares/validation.middleware';
@@ -44,11 +44,12 @@ export class ReservationService {
     if (!arrivalAt) throw fieldError('arrivalAt', 'invalid_datetime');
     if (!returnAt) throw fieldError('returnAt', 'invalid_datetime');
     if (returnAt <= arrivalAt) throw fieldError('returnAt', 'return_before_arrival');
-    if (returnAt.getTime() - arrivalAt.getTime() > MAX_STAY_DAYS * 86400000) throw fieldError('returnAt', 'stay_too_long');
+    if (exceedsCalendarDays(arrivalAt, returnAt, parking.timezone, MAX_STAY_DAYS)) throw fieldError('returnAt', 'stay_too_long');
     return { arrivalAt, returnAt };
   }
 
-  private normalizeFlight(flight: string | null | undefined): string | null {
+  /** "to3627" -> "TO 3627"; empty -> null; 400 "invalid_flight" when it is not a flight number. */
+  public normalizeFlight(flight: string | null | undefined): string | null {
     if (!flight || !flight.trim()) return null;
     const formatted = formatFlight(flight);
     if (!formatted) throw fieldError('returnFlight', 'invalid_flight');
@@ -74,9 +75,11 @@ export class ReservationService {
     return full;
   }
 
-  /** Serializes capacity checks per parking: two concurrent bookings cannot both take the last spot. */
-  private async lockParking(tx: Prisma.TransactionClient, parkingId: string) {
-    await tx.$executeRaw`SELECT pg_advisory_xact_lock(hashtext(${parkingId}))`;
+  /** A customer reference not used yet. */
+  public async newUniqueReference(client: Client): Promise<string> {
+    let reference = newReference();
+    while (await client.reservation.findUnique({ where: { reference }, select: { id: true } })) reference = newReference();
+    return reference;
   }
 
   public async create(actor: AuthenticatedStaff, data: CreateReservationDto) {
@@ -88,12 +91,10 @@ export class ReservationService {
     const externalReference = data.externalReference?.trim().toUpperCase() || null;
 
     return prisma.$transaction(async tx => {
-      await this.lockParking(tx, parking.id);
+      await this.capacity.lock(tx, parking.id);
       if (externalReference) await this.refuseDuplicate(tx, actor, externalReference);
       const full = await this.checkCapacity(tx, actor, parking, stay, data.force);
-
-      let reference = newReference();
-      while (await tx.reservation.findUnique({ where: { reference } })) reference = newReference();
+      const reference = await this.newUniqueReference(tx);
 
       const reservation = await tx.reservation.create({
         data: {
@@ -177,10 +178,14 @@ export class ReservationService {
     const parking = await this.parkings.getPrimary(actor);
 
     return prisma.$transaction(async tx => {
-      await this.lockParking(tx, parking.id);
+      await this.capacity.lock(tx, parking.id);
       const before = await this.findOwn(actor, id, tx);
       if (['returned', 'cancelled', 'no_show'].includes(before.status)) {
         throw new HttpException(httpStatus.BAD_REQUEST, 'This reservation is closed', 'reservation_closed');
+      }
+      // A booking made on the site stays one (commission), and staff cannot pass theirs off as one.
+      if (data.channel !== undefined && data.channel !== before.channel && (data.channel === 'plazo' || before.channel === 'plazo')) {
+        throw fieldError('channel', 'invalid_channel');
       }
 
       const datesChanged = data.arrivalAt !== undefined || data.returnAt !== undefined;
@@ -234,7 +239,7 @@ export class ReservationService {
     if (RELEASED_STATUSES.includes(before.status)) {
       const parking = await this.parkings.getPrimary(actor);
       return prisma.$transaction(async tx => {
-        await this.lockParking(tx, parking.id);
+        await this.capacity.lock(tx, parking.id);
         await this.checkCapacity(tx, actor, parking, before, false, id);
         return this.applyStatus(actor, before, data.status, tx);
       });
@@ -259,6 +264,23 @@ export class ReservationService {
       client,
     );
     return after;
+  }
+
+  /**
+   * Revokes the traveller's manage link of a booking made on the site (e.g. a forwarded or leaked
+   * email): the old link stops working. The traveller gets a new one with "Ma réservation"
+   * (reference + email).
+   */
+  public async revokeManageLink(actor: AuthenticatedStaff, id: string) {
+    this.require(actor, 'reservations:manage');
+    const before = await this.findOwn(actor, id);
+    if (before.channel !== 'plazo')
+      throw new HttpException(httpStatus.BAD_REQUEST, 'Only bookings made on the site have a manage link', 'not_site_booking');
+    return prisma.$transaction(async tx => {
+      const after = await tx.reservation.update({ where: { id }, data: { manageTokenVersion: { increment: 1 } } });
+      await this.audit.record(actor, { action: 'reservation.manage_link_revoked', entityType: 'reservation', entityId: id, details: {} }, tx);
+      return after;
+    });
   }
 
   public async get(actor: AuthenticatedStaff, id: string) {

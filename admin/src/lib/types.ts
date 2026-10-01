@@ -52,7 +52,7 @@ export interface NewStaff {
 }
 
 export type ReservationStatus = "upcoming" | "arrived" | "shuttled_out" | "return_requested" | "returned" | "cancelled" | "no_show";
-export type ReservationChannel = "website" | "phone" | "counter" | "aggregator" | "import";
+export type ReservationChannel = "website" | "phone" | "counter" | "aggregator" | "import" | "plazo";
 
 export interface Reservation {
   id: string;
@@ -73,6 +73,8 @@ export interface Reservation {
   externalReference: string | null;
   priceCents: number | null;
   overbooked: boolean;
+  /** Terms accepted by the traveller (bookings made on the public site only). */
+  cancellationPolicy: CancellationPolicy | null;
   arrivedAt: string | null;
   returnedAt: string | null;
   cancelledAt: string | null;

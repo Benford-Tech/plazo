@@ -1,11 +1,6 @@
 import { Router } from 'express';
-import rateLimit from 'express-rate-limit';
-import { NODE_ENV } from '@/config';
 import { PublicController } from '@/controllers/public.controller';
 import { Routes } from '@/interfaces/routes.interface';
-
-// Anonymous endpoints: every request counts, not only failures.
-const publicLimiter = rateLimit({ windowMs: 60 * 1000, max: 120, skip: () => NODE_ENV === 'test' });
 
 /**
  * @swagger
@@ -46,8 +41,8 @@ export class PublicRoute implements Routes {
   public router = Router();
   public public = new PublicController();
 
+  // Rate limited per traveller in app.ts (publicLimiter on /public).
   constructor() {
-    this.router.use('/public', publicLimiter);
     this.router.get('/public/airports/:slug', this.public.airport);
     this.router.get('/public/search', this.public.search);
     this.router.get('/public/airports/:airport/parkings/:slug', this.public.parking);

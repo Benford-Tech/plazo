@@ -1,0 +1,320 @@
+import httpStatus from 'http-status';
+import { Container, Service } from 'typedi';
+import { SECRET_KEY, SMS_DAILY_LIMIT } from '@/config';
+import prisma, { Airport, Listing, Parking, Prisma, Reservation, ReservationStatus } from '@/database';
+import { cancellableUntil, canCancel, canEditFlight, isValidManageToken, manageLinkExpired, manageToken } from '@/domain/booking';
+import { billableDays } from '@/domain/pricing';
+import { formatPlate, plateKey, RELEASED_STATUSES } from '@/domain/reservation';
+import { localDateTime } from '@/domain/time';
+import { CreatePublicBookingDto, LookupBookingDto } from '@/dtos/public-booking.dto';
+import { PublicBooking } from '@/interfaces/booking.interface';
+import { HttpException } from '@/utils/httpException';
+import { logger } from '@/utils/logger';
+import { AuditService } from './audit.service';
+import { CapacityService } from './capacity.service';
+import { NotificationService } from './notification.service';
+import { PublicService } from './public.service';
+import { ReservationService } from './reservation.service';
+
+// Same answer whether the reference, the email or the token is wrong.
+const notFound = () => new HttpException(httpStatus.NOT_FOUND, 'Booking not found', 'not_found');
+
+const WITH_LISTING = { parking: { include: { listing: { include: { airport: true } } } } } satisfies Prisma.ReservationInclude;
+type BookingRecord = Reservation & { parking: Parking & { listing: (Listing & { airport: Airport }) | null } };
+type Client = Prisma.TransactionClient | typeof prisma;
+
+const FLIGHT_LOCKED: ReservationStatus[] = ['cancelled', 'returned', 'no_show'];
+
+// Bookings on the site are free to make (paid on site): limits per traveller, so that a script
+// cannot fill a parking or send messages to strangers with fake bookings.
+export const MAX_ACTIVE_SITE_BOOKINGS_PER_CONTACT = 3;
+const IDEMPOTENCY_WINDOW_MS = 24 * 3600000;
+const ACTIVE_STATUSES: ReservationStatus[] = ['upcoming', 'arrived', 'shuttled_out', 'return_requested'];
+
+/** Last 9 digits of a phone number: the same for "06 12 34 56 78", "+33612345678" and "0033 6…". */
+export function phoneKey(phone: string): string {
+  return phone.replace(/\D/g, '').slice(-9);
+}
+
+const isUniqueViolation = (error: unknown) => error instanceof Prisma.PrismaClientKnownRequestError && error.code === 'P2002';
+
+/**
+ * Bookings made by travellers on the site (channel "plazo"), paid on site, and managed without an
+ * account through a per-booking token. Capacity, locking and pricing are those of staff bookings.
+ */
+@Service()
+export class PublicBookingService {
+  public audit = Container.get(AuditService);
+  public capacity = Container.get(CapacityService);
+  public notifications = Container.get(NotificationService);
+  public publicService = Container.get(PublicService);
+  public reservations = Container.get(ReservationService);
+
+  private get secret(): string {
+    if (!SECRET_KEY) throw new Error('SECRET_KEY is not set');
+    return SECRET_KEY;
+  }
+
+  /** Books a stay: price and availability recomputed under the parking lock, never overbooked. */
+  public async create(data: CreatePublicBookingDto) {
+    const key = data.idempotencyKey || null;
+    if (key) {
+      const replayed = await this.replay(key);
+      if (replayed) return replayed;
+    }
+
+    const airport = await this.publicService.airportBySlug(data.airport);
+    const { parking } = await this.publicService.findPublished(airport, data.parking);
+    const stay = this.publicService.parseStay(parking, data.arrivalAt, data.returnAt)!;
+    const returnFlight = this.reservations.normalizeFlight(data.returnFlight);
+    const email = data.customerEmail.trim().toLowerCase();
+    const plate = plateKey(data.plate);
+
+    let reservation: BookingRecord | null;
+    try {
+      reservation = await prisma.$transaction(async tx => {
+        await this.capacity.lock(tx, parking.id);
+        // The same form sent twice at once: the second waits for the lock, then finds the first.
+        if (key && (await tx.reservation.findUnique({ where: { idempotencyKey: key }, select: { id: true } }))) return null;
+        await this.checkTravellerLimits(tx, { email, phone: data.customerPhone, plate, ...stay });
+        // Read again under the lock: the listing may just have been unpublished or repriced.
+        const listing = await this.publicService.findPublished(airport, data.parking, tx);
+        const quote = await this.publicService.quote(listing, stay, tx);
+        if (quote.priceCents === null) throw new HttpException(httpStatus.CONFLICT, 'This stay has no price', 'no_price');
+        if (quote.fullNights.length) {
+          throw new HttpException(httpStatus.CONFLICT, 'At least one night is full', 'overbooked', { fullNights: quote.fullNights });
+        }
+
+        const created = await tx.reservation.create({
+          data: {
+            reference: await this.reservations.newUniqueReference(tx),
+            operatorId: listing.parking.operatorId,
+            parkingId: listing.parkingId,
+            channel: 'plazo',
+            ...stay,
+            passengers: data.passengers,
+            customerName: data.customerName.trim().replace(/\s+/g, ' '),
+            customerPhone: data.customerPhone.trim(),
+            customerEmail: email,
+            plate: formatPlate(data.plate),
+            plateKey: plate,
+            returnFlight,
+            priceCents: quote.priceCents,
+            cancellationPolicy: listing.cancellationPolicy,
+            idempotencyKey: key,
+            createdById: null,
+          },
+          include: WITH_LISTING,
+        });
+        await this.audit.record(
+          { id: null, operatorId: created.operatorId },
+          { action: 'reservation.created', entityType: 'reservation', entityId: created.id, details: { channel: 'plazo' } },
+          tx,
+        );
+        return created;
+      });
+    } catch (error) {
+      // Same key used for two parkings at once: the unique index keeps one booking.
+      if (key && isUniqueViolation(error)) {
+        const replayed = await this.replay(key);
+        if (replayed) return replayed;
+      }
+      throw error;
+    }
+    if (!reservation) return (await this.replay(key!))!;
+
+    const token = manageToken(reservation.id, this.secret, reservation.manageTokenVersion);
+    const booking = this.toPublic(reservation);
+    await this.notifications.bookingConfirmed(booking, token, { sms: await this.smsBudgetLeft(reservation.reference) });
+    return { reference: reservation.reference, manageToken: token, booking, replayed: false };
+  }
+
+  /** The booking already made with this form, if any (no new notification). */
+  private async replay(key: string) {
+    const existing = await prisma.reservation.findUnique({ where: { idempotencyKey: key }, include: WITH_LISTING });
+    if (!existing || existing.channel !== 'plazo' || !existing.parking.listing) return null;
+    // A key only replays the submission it came with, shortly after: never a way back in later.
+    if (Date.now() - existing.createdAt.getTime() > IDEMPOTENCY_WINDOW_MS) {
+      throw new HttpException(httpStatus.CONFLICT, 'This booking form was already sent', 'duplicate_booking');
+    }
+    return {
+      reference: existing.reference,
+      manageToken: manageToken(existing.id, this.secret, existing.manageTokenVersion),
+      booking: this.toPublic(existing),
+      replayed: true,
+    };
+  }
+
+  /**
+   * A vehicle cannot hold two places for the same nights, and one traveller (email or phone) has at
+   * most a few bookings in progress on the site: 409 "duplicate_booking" / "too_many_bookings".
+   */
+  private async checkTravellerLimits(
+    tx: Prisma.TransactionClient,
+    traveller: { email: string; phone: string; plate: string; arrivalAt: Date; returnAt: Date },
+  ) {
+    const now = new Date();
+    const active = { channel: 'plazo' as const, status: { in: ACTIVE_STATUSES }, returnAt: { gt: now } };
+    const sameVehicle = await tx.reservation.count({
+      where: {
+        channel: 'plazo',
+        status: { notIn: RELEASED_STATUSES },
+        plateKey: traveller.plate,
+        arrivalAt: { lt: traveller.returnAt },
+        returnAt: { gt: traveller.arrivalAt },
+      },
+    });
+    if (sameVehicle) throw new HttpException(httpStatus.CONFLICT, 'This vehicle already has a booking for these dates', 'duplicate_booking');
+
+    const byEmail = await tx.reservation.count({ where: { ...active, customerEmail: traveller.email } });
+    const phone = phoneKey(traveller.phone);
+    const [{ count: byPhone }] = await tx.$queryRaw<{ count: number }[]>`
+      SELECT COUNT(*)::int AS count FROM reservations
+      WHERE channel = 'plazo' AND status::text = ANY(${ACTIVE_STATUSES}::text[]) AND "returnAt" > ${now}
+        AND right(regexp_replace("customerPhone", '[^0-9]', '', 'g'), 9) = ${phone}`;
+    if (byEmail >= MAX_ACTIVE_SITE_BOOKINGS_PER_CONTACT || byPhone >= MAX_ACTIVE_SITE_BOOKINGS_PER_CONTACT) {
+      throw new HttpException(httpStatus.CONFLICT, 'Too many bookings in progress for this traveller', 'too_many_bookings');
+    }
+  }
+
+  /** Whether the platform may still send SMS today: above the daily budget, only the email goes out. */
+  private async smsBudgetLeft(reference: string): Promise<boolean> {
+    const today = await prisma.reservation.count({ where: { channel: 'plazo', createdAt: { gt: new Date(Date.now() - 86400000) } } });
+    if (today <= SMS_DAILY_LIMIT) return true;
+    logger.warn(`[Notifications] Daily SMS budget (${SMS_DAILY_LIMIT}) reached: booking_confirmed SMS not sent for booking ${reference}`);
+    return false;
+  }
+
+  /** The manage token of a booking, for its reference and the email given when booking. */
+  public async lookup(data: LookupBookingDto) {
+    const reservation = await prisma.reservation.findFirst({
+      where: { reference: data.reference.trim().toUpperCase(), channel: 'plazo' },
+      select: { id: true, reference: true, customerEmail: true, returnAt: true, manageTokenVersion: true },
+    });
+    if (!reservation?.customerEmail || reservation.customerEmail !== data.email.trim().toLowerCase()) throw notFound();
+    if (manageLinkExpired(reservation.returnAt)) throw notFound();
+    return { reference: reservation.reference, manageToken: manageToken(reservation.id, this.secret, reservation.manageTokenVersion) };
+  }
+
+  public async get(reference: string, token: string | undefined): Promise<PublicBooking> {
+    return this.toPublic(await this.load(reference, token));
+  }
+
+  /** Sets or clears the return flight, until the vehicle is handed back. */
+  public async updateFlight(reference: string, token: string | undefined, flight: string | null): Promise<PublicBooking> {
+    const before = await this.load(reference, token);
+    const returnFlight = this.reservations.normalizeFlight(flight);
+    const locked = () => new HttpException(httpStatus.CONFLICT, 'The return flight can no longer be changed', 'flight_locked');
+    if (!canEditFlight(before.status, before.returnAt)) throw locked();
+    if (returnFlight === before.returnFlight) return this.toPublic(before);
+
+    const after = await prisma.$transaction(async tx => {
+      // Conditional update: staff may have closed the booking in the meantime.
+      const { count } = await tx.reservation.updateMany({
+        where: { id: before.id, status: { notIn: FLIGHT_LOCKED }, returnAt: { gt: new Date() } },
+        data: { returnFlight },
+      });
+      if (!count) throw locked();
+      await this.audit.record(
+        { id: null, operatorId: before.operatorId },
+        {
+          action: 'reservation.updated',
+          entityType: 'reservation',
+          entityId: before.id,
+          details: { returnFlight: { from: before.returnFlight, to: returnFlight }, by: 'traveller' },
+        },
+        tx,
+      );
+      return this.find(before.id, tx);
+    });
+    return this.toPublic(after);
+  }
+
+  /** Cancels online, while the booking's cancellation terms allow it. */
+  public async cancel(reference: string, token: string | undefined): Promise<PublicBooking> {
+    const before = await this.load(reference, token);
+    const closed = () => new HttpException(httpStatus.CONFLICT, 'This booking can no longer be cancelled online', 'cancellation_closed');
+    if (!canCancel(before.status, cancellableUntil(before.arrivalAt, this.policy(before)))) throw closed();
+
+    const after = await prisma.$transaction(async tx => {
+      const { count } = await tx.reservation.updateMany({
+        where: { id: before.id, status: 'upcoming' },
+        data: { status: 'cancelled', cancelledAt: new Date() },
+      });
+      if (!count) throw closed();
+      await this.audit.record(
+        { id: null, operatorId: before.operatorId },
+        {
+          action: 'reservation.status_changed',
+          entityType: 'reservation',
+          entityId: before.id,
+          details: { from: 'upcoming', to: 'cancelled', by: 'traveller' },
+        },
+        tx,
+      );
+      return this.find(before.id, tx);
+    });
+
+    const booking = this.toPublic(after);
+    await this.notifications.bookingCancelled(booking);
+    return booking;
+  }
+
+  private async find(id: string, client: Client): Promise<BookingRecord> {
+    return client.reservation.findUniqueOrThrow({ where: { id }, include: WITH_LISTING });
+  }
+
+  /** A booking made on the site, if the token is its own. */
+  private async load(reference: string, token: string | undefined): Promise<BookingRecord> {
+    if (!reference || reference.length > 20 || !token) throw notFound();
+    const reservation = await prisma.reservation.findFirst({
+      where: { reference: reference.toUpperCase(), channel: 'plazo' },
+      include: WITH_LISTING,
+    });
+    if (!reservation?.parking.listing || !isValidManageToken(reservation.id, token, this.secret, reservation.manageTokenVersion)) throw notFound();
+    // The link gives the traveller's personal data: it does not outlive the stay by long.
+    if (manageLinkExpired(reservation.returnAt)) throw notFound();
+    return reservation;
+  }
+
+  /** The terms accepted when booking (the listing's current ones for older rows). */
+  private policy(reservation: BookingRecord) {
+    return reservation.cancellationPolicy ?? reservation.parking.listing?.cancellationPolicy ?? 'non_refundable';
+  }
+
+  private toPublic(reservation: BookingRecord, now = new Date()): PublicBooking {
+    const { parking } = reservation;
+    const listing = parking.listing!;
+    const tz = parking.timezone;
+    const policy = this.policy(reservation);
+    const until = cancellableUntil(reservation.arrivalAt, policy);
+    return {
+      reference: reservation.reference,
+      status: reservation.status,
+      paymentMode: 'on_site',
+      parking: {
+        title: listing.title,
+        slug: listing.slug,
+        airport: { slug: listing.airport.slug, name: listing.airport.name },
+        address: parking.address,
+        shuttleMinutes: listing.shuttleMinutes ?? parking.shuttleTravelMinutes,
+        openingHours: listing.openingHours,
+        phone: listing.contactPhone,
+      },
+      arrivalAt: localDateTime(reservation.arrivalAt, tz),
+      returnAt: localDateTime(reservation.returnAt, tz),
+      days: billableDays(reservation.arrivalAt, reservation.returnAt, tz),
+      priceCents: reservation.priceCents,
+      customerName: reservation.customerName,
+      customerEmail: reservation.customerEmail,
+      customerPhone: reservation.customerPhone,
+      plate: reservation.plate,
+      returnFlight: reservation.returnFlight,
+      passengers: reservation.passengers,
+      cancellationPolicy: policy,
+      cancellableUntil: until ? localDateTime(until, tz) : null,
+      canCancel: canCancel(reservation.status, until, now),
+      canEditFlight: canEditFlight(reservation.status, reservation.returnAt, now),
+    };
+  }
+}

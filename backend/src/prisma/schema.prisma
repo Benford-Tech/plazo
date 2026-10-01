@@ -152,39 +152,48 @@ enum ReservationChannel {
   counter
   aggregator // Parkos, Onepark… (name in channelDetail)
   import
+  plazo // booked by a traveller on the Plazo site
 }
 
 // A booking. Times are stored in UTC; "nights" are counted in the parking's timezone.
 model Reservation {
-  id                String             @id @default(cuid())
-  reference         String             @unique // short code given to the customer
-  operatorId        String
-  parkingId         String
-  channel           ReservationChannel
-  channelDetail     String?
-  status            ReservationStatus  @default(upcoming)
-  arrivalAt         DateTime
-  returnAt          DateTime
-  passengers        Int
-  customerName      String
-  customerPhone     String
-  customerEmail     String?
-  plate             String // display form, e.g. AB-123-CD
-  plateKey          String // letters and digits only, for search
-  returnFlight      String? // e.g. TO 3627
-  notes             String?
+  id                 String              @id @default(cuid())
+  reference          String              @unique // short code given to the customer
+  operatorId         String
+  parkingId          String
+  channel            ReservationChannel
+  channelDetail      String?
+  status             ReservationStatus   @default(upcoming)
+  arrivalAt          DateTime
+  returnAt           DateTime
+  passengers         Int
+  customerName       String
+  customerPhone      String
+  customerEmail      String?
+  plate              String // display form, e.g. AB-123-CD
+  plateKey           String // letters and digits only, for search
+  returnFlight       String? // e.g. TO 3627
+  notes              String?
   // Booking number on the channel it came from (e.g. AL-884880719 on Allopark), to avoid importing it twice.
-  externalReference String?
+  externalReference  String?
   // Price paid, in euro cents, when known (imports; the pricing grid arrives in milestone 3).
-  priceCents        Int?
+  priceCents         Int?
   // Saved although at least one night was already full (forced by staff, audited).
-  overbooked        Boolean            @default(false)
-  createdById       String?
-  arrivedAt         DateTime?
-  returnedAt        DateTime?
-  cancelledAt       DateTime?
-  createdAt         DateTime           @default(now())
-  updatedAt         DateTime           @default(now()) @updatedAt
+  overbooked         Boolean             @default(false)
+  // Cancellation terms accepted by the traveller when booking on the site (channel plazo): later
+  // changes to the listing's policy do not apply to it. Null for the other channels.
+  cancellationPolicy CancellationPolicy?
+  // Key sent by the site with a booking form: a retried submission returns the booking already
+  // made instead of holding a second place (channel plazo only).
+  idempotencyKey     String?             @unique
+  // Part of the traveller's manage link (channel plazo): staff increase it to revoke a leaked link.
+  manageTokenVersion Int                 @default(0)
+  createdById        String?
+  arrivedAt          DateTime?
+  returnedAt         DateTime?
+  cancelledAt        DateTime?
+  createdAt          DateTime            @default(now())
+  updatedAt          DateTime            @default(now()) @updatedAt
 
   operator  Operator @relation(fields: [operatorId], references: [id], onDelete: Cascade)
   parking   Parking  @relation(fields: [parkingId], references: [id], onDelete: Cascade)
@@ -247,6 +256,8 @@ model Listing {
   shuttleMinutes     Int?
   distanceKm         Float?
   openingHours       String? // free text, e.g. "24h/24" or "5h – 0h"
+  // Phone travellers can call (shown on the page and in their booking), e.g. "04 72 00 00 00".
+  contactPhone       String?
   cancellationPolicy CancellationPolicy @default(free_24h)
   photos             String[] // URLs
   createdAt          DateTime           @default(now())

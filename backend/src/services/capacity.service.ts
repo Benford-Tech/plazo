@@ -28,6 +28,14 @@ export function occupiedNights(arrivalAt: Date, returnAt: Date, timeZone: string
 
 @Service()
 export class CapacityService {
+  /**
+   * Serializes capacity checks per parking until the end of the transaction: two concurrent
+   * bookings (staff or travellers) cannot both take the last spot.
+   */
+  public async lock(tx: Prisma.TransactionClient, parkingId: string) {
+    await tx.$executeRaw`SELECT pg_advisory_xact_lock(hashtext(${parkingId}))`;
+  }
+
   /** Load of each night between two local dates (inclusive). */
   public async nights(
     parking: Pick<Parking, 'id' | 'timezone' | 'totalCapacity' | 'safetyMarginPct'>,
@@ -37,6 +45,8 @@ export class CapacityService {
   ): Promise<NightLoad[]> {
     const client = options.client ?? prisma;
     const tz = parking.timezone;
+    // The columns are "timestamp without time zone" holding UTC: read them as UTC first, then
+    // convert to the parking's local time to get the local date.
     const rows = await client.$queryRaw<{ night: Date; count: number }[]>`
       SELECT d::date AS night, COUNT(r.id)::int AS count
       FROM generate_series(${from}::date, ${to}::date, interval '1 day') AS d
@@ -44,8 +54,11 @@ export class CapacityService {
         ON r."parkingId" = ${parking.id}
         AND r.status::text <> ALL(${RELEASED_STATUSES}::text[])
         AND (${options.excludeReservationId ?? null}::text IS NULL OR r.id <> ${options.excludeReservationId ?? null})
-        AND (r."arrivalAt" AT TIME ZONE ${tz})::date <= d::date
-        AND d::date < GREATEST((r."returnAt" AT TIME ZONE ${tz})::date, (r."arrivalAt" AT TIME ZONE ${tz})::date + 1)
+        AND ((r."arrivalAt" AT TIME ZONE 'UTC') AT TIME ZONE ${tz})::date <= d::date
+        AND d::date < GREATEST(
+          ((r."returnAt" AT TIME ZONE 'UTC') AT TIME ZONE ${tz})::date,
+          ((r."arrivalAt" AT TIME ZONE 'UTC') AT TIME ZONE ${tz})::date + 1
+        )
       GROUP BY d
       ORDER BY d`;
     const bookable = bookableCapacity(parking.totalCapacity, parking.safetyMarginPct);

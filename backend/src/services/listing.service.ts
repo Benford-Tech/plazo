@@ -50,6 +50,8 @@ export class ListingService {
       shuttleMinutes: data.shuttleMinutes ?? null,
       distanceKm: data.distanceKm ?? null,
       openingHours: data.openingHours?.trim() || null,
+      // The pro form does not edit it yet: keep it when the field is not sent.
+      ...(data.contactPhone !== undefined && { contactPhone: data.contactPhone?.trim() || null }),
       cancellationPolicy: data.cancellationPolicy,
       photos: data.photos,
       published: data.published,

@@ -1,5 +1,6 @@
 import type { CancellationPolicy, ListingService, ReservationChannel, ReservationStatus, StaffRole } from "./types";
 import { ApiError } from "./api";
+import { PRODUCT } from "./product";
 
 // All user-facing strings live here so the interface can be translated later.
 export const fr = {
@@ -28,6 +29,7 @@ export const fr = {
     password_too_short: "Au moins 10 caractères.",
     invalid_credentials: "Email ou mot de passe incorrect.",
     too_many_attempts: "Trop de tentatives. Réessayez dans 15 minutes.",
+    too_many_requests: "Trop de demandes. Réessayez dans un instant.",
     email_taken: "Cette adresse email est déjà utilisée.",
     cannot_demote_self: "Vous ne pouvez pas retirer vos propres droits de gérant ni désactiver votre compte.",
     last_manager: "Il doit rester au moins un gérant actif.",
@@ -153,6 +155,8 @@ export const fr = {
     counter: "Comptoir",
     aggregator: "Comparateur",
     import: "Import",
+    // Booked by a traveller on the public site.
+    plazo: PRODUCT.name,
   } satisfies Record<ReservationChannel, string>,
   planning: {
     today: "Aujourd'hui",

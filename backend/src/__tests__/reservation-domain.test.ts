@@ -1,5 +1,5 @@
 import { canTransition, formatFlight, formatPlate, newReference, plateKey } from '@/domain/reservation';
-import { addDays, dayBounds, localDate, parseInstant } from '@/domain/time';
+import { addDays, dayBounds, exceedsCalendarDays, localDate, parseInstant } from '@/domain/time';
 import { occupiedNights } from '@/services/capacity.service';
 
 const TZ = 'Europe/Paris';
@@ -20,6 +20,28 @@ describe('dates locales', () => {
   it('accepte un instant ISO et refuse le reste', () => {
     expect(parseInstant('2026-10-04T04:30:00Z', TZ)!.toISOString()).toBe('2026-10-04T04:30:00.000Z');
     expect(parseInstant('04/10/2026', TZ)).toBeNull();
+  });
+
+  it('refuse les dates et heures qui n’existent pas au lieu de les faire déborder', () => {
+    expect(parseInstant('2026-02-30T10:00', TZ)).toBeNull();
+    expect(parseInstant('2026-10-32T08:00', TZ)).toBeNull();
+    expect(parseInstant('2026-13-01T08:00', TZ)).toBeNull();
+    expect(parseInstant('2026-10-04T25:00', TZ)).toBeNull();
+    expect(parseInstant('2026-10-04T24:00', TZ)).toBeNull();
+    expect(parseInstant('2026-10-04T10:60', TZ)).toBeNull();
+    expect(parseInstant('2026-02-30T10:00:00Z', TZ)).toBeNull();
+    expect(parseInstant('2028-02-29T10:00', TZ)).not.toBeNull();
+    expect(parseInstant('2026-12-31T23:59', TZ)).not.toBeNull();
+  });
+
+  it('mesure la durée maximale d’un séjour en jours de calendrier, changement d’heure compris', () => {
+    const at = (local: string) => parseInstant(local, TZ)!;
+    // 90 calendar days across the October change: 90 days and 1 hour of elapsed time, still allowed.
+    expect(exceedsCalendarDays(at('2026-10-01T08:00'), at('2026-12-30T08:00'), TZ, 90)).toBe(false);
+    expect(exceedsCalendarDays(at('2026-10-01T08:00'), at('2026-12-30T08:01'), TZ, 90)).toBe(true);
+    // Across the March change: 89 days and 23 hours elapsed, the same rule.
+    expect(exceedsCalendarDays(at('2027-01-10T08:00'), at('2027-04-10T08:00'), TZ, 90)).toBe(false);
+    expect(exceedsCalendarDays(at('2027-01-10T08:00'), at('2027-04-10T08:01'), TZ, 90)).toBe(true);
   });
 
   it('calcule la date locale et les jours', () => {

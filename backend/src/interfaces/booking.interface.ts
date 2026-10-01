@@ -1,0 +1,38 @@
+import { CancellationPolicy, ReservationStatus } from '@/database';
+
+/**
+ * A booking as its traveller sees it on the site (only with its manage token). Dates are local to
+ * the parking ("2026-10-04T06:30").
+ */
+export interface PublicBooking {
+  reference: string;
+  status: ReservationStatus;
+  /** No online payment yet: the traveller pays the total at the parking. */
+  paymentMode: 'on_site';
+  parking: {
+    title: string;
+    slug: string;
+    airport: { slug: string; name: string };
+    address: string | null;
+    shuttleMinutes: number | null;
+    openingHours: string | null;
+    /** Phone travellers can call, when the parking gave one. */
+    phone: string | null;
+  };
+  arrivalAt: string;
+  returnAt: string;
+  days: number;
+  priceCents: number | null;
+  customerName: string;
+  customerEmail: string | null;
+  customerPhone: string;
+  /** Display form, e.g. AB-123-CD. */
+  plate: string;
+  returnFlight: string | null;
+  passengers: number;
+  cancellationPolicy: CancellationPolicy;
+  /** Last moment to cancel online; null when the policy allows no online cancellation. */
+  cancellableUntil: string | null;
+  canCancel: boolean;
+  canEditFlight: boolean;
+}

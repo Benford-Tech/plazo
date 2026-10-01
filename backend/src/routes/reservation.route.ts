@@ -106,6 +106,15 @@ import { ValidationMiddleware } from '@/middlewares/validation.middleware';
  *             required: [status]
  *             properties:
  *               status: { type: string, enum: [upcoming, arrived, shuttled_out, return_requested, returned, cancelled, no_show] }
+ * /internal/reservations/{id}/manage-link/revoke:
+ *   post:
+ *     summary: Revoke the traveller's manage link (bookings made on the site)
+ *     description: >
+ *       The link sent by email and SMS stops working; the traveller gets a new one from « Ma réservation »
+ *       (reference + email). 400 "not_site_booking" for the other channels.
+ *     tags: [Reservations]
+ *     parameters:
+ *       - { in: path, name: id, required: true, schema: { type: string } }
  */
 export class ReservationRoute implements Routes {
   public router = Router();
@@ -144,5 +153,6 @@ export class ReservationRoute implements Routes {
       ValidationMiddleware(ChangeStatusDto),
       this.reservations.changeStatus,
     );
+    this.router.post('/internal/reservations/:id/manage-link/revoke', StaffAuthMiddleware('reservations:manage'), this.reservations.revokeManageLink);
   }
 }

@@ -56,6 +56,34 @@ describe('fiche Plazo du loueur', () => {
     expect(await prisma.auditLog.count({ where: { action: 'listing.updated' } })).toBe(1);
   });
 
+  it('garde le téléphone du parking quand le formulaire ne l’envoie pas', async () => {
+    const { token } = await setupOperator();
+    await api()
+      .put('/api/internal/listing')
+      .set(auth(token))
+      .send(listing({ contactPhone: '04 72 00 00 00' }));
+    await api()
+      .put('/api/internal/listing')
+      .set(auth(token))
+      .send(listing({ title: 'Nouveau titre' }));
+    expect((await prisma.listing.findFirstOrThrow()).contactPhone).toBe('04 72 00 00 00');
+    expect(
+      (
+        await api()
+          .put('/api/internal/listing')
+          .set(auth(token))
+          .send(listing({ contactPhone: 'abc' }))
+      ).body.fields,
+    ).toEqual({
+      contactPhone: 'invalid_phone',
+    });
+    await api()
+      .put('/api/internal/listing')
+      .set(auth(token))
+      .send(listing({ contactPhone: '' }));
+    expect((await prisma.listing.findFirstOrThrow()).contactPhone).toBeNull();
+  });
+
   it('ne se publie pas sans grille tarifaire', async () => {
     const { token } = await setupOperator();
     const res = await api()
@@ -140,7 +168,7 @@ describe('API publique', () => {
     const res = await api().get('/api/public/airports/lyon-saint-exupery');
     expect(res.status).toBe(200);
     expect(res.body.airport).toMatchObject({ code: 'LYS', name: 'Lyon Saint-Exupéry' });
-    expect(res.body.listings).toEqual([expect.objectContaining({ slug: 'parking-a', fromPriceCents: 1500, shuttleMinutes: 8 })]);
+    expect(res.body.listings).toEqual([expect.objectContaining({ slug: 'parking-a', fromPriceCents: 1500, fromDays: 1, shuttleMinutes: 8 })]);
     const raw = JSON.stringify(res.body);
     expect(raw).not.toMatch(/operatorId|parkingId|totalCapacity|email/);
   });

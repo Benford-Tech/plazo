@@ -12,7 +12,7 @@ import { API_PREFIX, CLIENT_URLS, NODE_ENV, PORT, PRODUCT_NAME } from './config'
 import { staffPassport } from './config/passport';
 import { Routes } from './interfaces/routes.interface';
 import { ErrorMiddleware } from './middlewares/error.middleware';
-import { appLimiter, authLimiter } from './middlewares/rateLimiter';
+import { appLimiter, authLimiter, publicLimiter } from './middlewares/rateLimiter';
 import { logger, stream } from './utils/logger';
 
 export class App {
@@ -62,6 +62,7 @@ export class App {
 
     this.app.use(API_PREFIX, appLimiter);
     this.app.use(`${API_PREFIX}/internal/auth`, authLimiter);
+    this.app.use(`${API_PREFIX}/public`, publicLimiter);
   }
 
   private initializeRoutes(routes: Routes[]) {

@@ -14,10 +14,12 @@ import {
   Max,
   MaxLength,
   Min,
+  ValidateIf,
   ValidateNested,
 } from 'class-validator';
 import { CancellationPolicy } from '@/database';
 import { SERVICES, SLUG_RE } from '@/domain/listing';
+import { PHONE_RE } from './reservation.dto';
 
 export class UpdateListingDto {
   @IsString()
@@ -62,6 +64,13 @@ export class UpdateListingDto {
   @IsString()
   @MaxLength(80, { message: 'too_long' })
   public openingHours?: string | null;
+
+  /** Phone travellers can call; left unchanged when absent, cleared with null or "". */
+  @IsOptional()
+  @ValidateIf((_, value) => value !== '')
+  @Matches(PHONE_RE, { message: 'invalid_phone' })
+  @IsString({ message: 'invalid_phone' })
+  public contactPhone?: string | null;
 
   @IsIn(Object.values(CancellationPolicy), { message: 'invalid_policy' })
   public cancellationPolicy: CancellationPolicy;

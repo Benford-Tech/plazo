@@ -1,0 +1,50 @@
+import type { Metadata, Viewport } from "next";
+import { Inter, Playfair_Display } from "next/font/google";
+import { SiteFooter } from "@/components/SiteFooter";
+import { SiteHeader } from "@/components/SiteHeader";
+import { fr } from "@/lib/fr";
+import { PRODUCT_NAME } from "@/lib/product";
+import { siteUrl } from "@/lib/site";
+import "./globals.css";
+
+const inter = Inter({ subsets: ["latin"], variable: "--font-inter", display: "swap" });
+const playfair = Playfair_Display({
+  subsets: ["latin"],
+  style: ["italic"],
+  weight: ["500"],
+  variable: "--font-playfair",
+  display: "swap",
+});
+
+export const metadata: Metadata = {
+  metadataBase: new URL(siteUrl()),
+  title: { default: fr.meta.defaultTitle, template: `%s · ${PRODUCT_NAME}` },
+  description: fr.meta.defaultDescription,
+  applicationName: PRODUCT_NAME,
+  openGraph: { siteName: PRODUCT_NAME, locale: "fr_FR", type: "website" },
+  formatDetection: { telephone: false, email: false, address: false },
+};
+
+export const viewport: Viewport = {
+  themeColor: "#4b164c",
+};
+
+export default function RootLayout({ children }: LayoutProps<"/">) {
+  return (
+    <html lang="fr" className={`${inter.variable} ${playfair.variable}`}>
+      <body className="flex min-h-dvh flex-col font-sans antialiased">
+        <a
+          href="#contenu"
+          className="sr-only z-50 rounded-full bg-white px-4 py-3 font-semibold text-ink focus:not-sr-only focus:fixed focus:top-2 focus:left-2"
+        >
+          {fr.a11y.skipToContent}
+        </a>
+        <SiteHeader />
+        <div id="contenu" className="flex flex-1 flex-col">
+          {children}
+        </div>
+        <SiteFooter />
+      </body>
+    </html>
+  );
+}
