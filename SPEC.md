@@ -2,7 +2,7 @@
 
 Logiciel de gestion pour opérateurs de parkings privés d'aéroport (parking + navette, avec ou sans voiturier).
 Version : 0.3 — 1er octobre 2026 — À valider avec le client n°1 avant développement.
-Changements v0.3 : ajout d'une application mobile native (App Store et Google Play) dès le MVP, pour le personnel, le gérant et les voyageurs (section 3 ter).
+Changements v0.3 : ajout d'une application mobile native (App Store et Google Play) dès le MVP, pour le personnel, le gérant et les voyageurs (section 3 ter) ; deux apps à terme, construites d'abord dans un seul projet.
 Changements v0.2 : ajout de la phase 2 « place de marché grand public » (section 3 bis), des rôles et données associés, du paiement et de la commission.
 
 ---
@@ -154,7 +154,15 @@ Une application mobile native, publiée sur l'App Store et Google Play, fait par
 - Voir les instructions d'arrivée, l'adresse et l'itinéraire, le point de rendez-vous au retour.
 - Bouton « Je suis prêt » et suivi de la prise en charge (statut, délai estimé), notifications push en plus des SMS.
 - Réserver depuis l'app sur la page du loueur. En phase 2, l'app sert aussi d'entrée vers la place de marché et de compte voyageur.
-- Question ouverte : une seule app pour tout le monde, ou une app « pro » et une app « voyageur » séparées (recommandé : deux apps, même code partagé, car les publics et la présentation sur les stores sont très différents).
+### Une app ou deux
+
+Décision : à terme, deux apps sur les stores (une app « pro » pour le personnel et le gérant, une app « voyageur »). Pour aller plus vite, on construit d'abord un seul projet mobile qui contient les deux parcours, puis on sépare les points d'entrée.
+
+Pour que la séparation reste simple :
+- deux espaces d'écrans bien distincts dans le code (`pro` et `voyageur`), sans écran partagé entre les deux ;
+- le code commun (appels au back-end, types, composants d'interface, textes) dans un paquet partagé ;
+- au démarrage, l'app choisit le parcours : connexion du personnel d'un côté, accès voyageur par n° de réservation ou lien de l'autre ;
+- la séparation se fait ensuite par configuration (deux identifiants d'app, deux noms, deux icônes, chacun avec un seul point d'entrée), sans réécrire les écrans.
 
 ### Règles
 
