@@ -3,11 +3,14 @@ import { Search } from "lucide-react";
 import { useState } from "react";
 import { Link, useSearchParams } from "react-router-dom";
 import { Plate } from "@/components/Plate";
+import { useAuth } from "@/contexts/AuthContext";
 import { adminApi } from "@/lib/api";
 import { dateTimeShort } from "@/lib/datetime";
 import { describeError, fr } from "@/lib/fr";
+import { can } from "@/lib/roles";
 
 export default function ReservationsPage() {
+  const { user } = useAuth();
   const [params, setParams] = useSearchParams();
   const q = params.get("q") ?? "";
   const page = Number(params.get("page") ?? 1);
@@ -21,7 +24,19 @@ export default function ReservationsPage() {
 
   return (
     <>
-      <h1 className="text-3xl font-bold uppercase tracking-wide">{t.listTitle}</h1>
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <h1 className="text-3xl font-bold uppercase tracking-wide">{t.listTitle}</h1>
+        {can(user?.role, "reservations:manage") && (
+          <div className="flex gap-2">
+            <Link to="/reservations/import" className="flex h-11 items-center border border-border px-4 font-semibold uppercase tracking-wide hover:bg-accent">
+              {fr.importEmail.action}
+            </Link>
+            <Link to="/reservations/nouvelle" className="flex h-11 items-center bg-primary px-5 font-bold uppercase tracking-wide text-primary-foreground hover:brightness-110">
+              {fr.planning.newReservation}
+            </Link>
+          </div>
+        )}
+      </div>
       <form
         role="search"
         className="flex gap-2"

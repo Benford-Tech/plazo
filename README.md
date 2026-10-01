@@ -12,8 +12,9 @@ et affectation des véhicules, navette au retour.
   chauffeur, voiturier), opérateur et parking, capacité et marge de sécurité, base PostgreSQL + PostGIS,
   API documentée, espace pro.
 - [ ] **Jalon 2 — Réservations** (en cours) : fait — saisie manuelle, planning du jour (arrivées et retours,
-  7 nuits), contrôle de capacité par nuit avec surréservation forcée et tracée, statuts, fiche et recherche.
-  Reste : import CSV.
+  7 nuits), contrôle de capacité par nuit avec surréservation forcée et tracée, statuts, fiche et recherche,
+  import des mails de confirmation Allopark par copier-coller (doublons refusés).
+  Reste : lecteurs Parkos, Onepark… (un exemple de mail par comparateur), import CSV si besoin.
 - [ ] Jalon 3 — Page publique et notifications
 - [ ] Jalon 4 — Cartographie et affectation
 - [ ] Jalon 5 — Navette au retour
@@ -82,4 +83,5 @@ Documentation interactive : `/api-docs` (Swagger). Routes du jalon 1, toutes sou
 | GET | `/internal/capacity?arrivalAt=&returnAt=` | Charge de chaque nuit d'un séjour, nuits complètes |
 | GET / POST | `/internal/reservations` | Recherche (plaque, nom, téléphone, référence) / création |
 | GET / PATCH | `/internal/reservations/:id` | Fiche / modification (les dates revérifient la capacité) |
+| POST | `/internal/imports/email` | Lit un mail de comparateur collé (Allopark) : champs trouvés, manquants, doublon, capacité |
 | POST | `/internal/reservations/:id/status` | Étape suivante : arrivée, navette, retour, rendu, annulation… |

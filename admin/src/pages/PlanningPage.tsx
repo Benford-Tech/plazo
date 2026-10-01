@@ -120,12 +120,17 @@ export default function PlanningPage() {
           )}
         </div>
         {can(user?.role, "reservations:manage") && (
-          <Link
-            to={`/reservations/nouvelle${date !== todayLocal() ? `?date=${date}` : ""}`}
-            className="flex h-11 items-center bg-primary px-5 text-base font-bold uppercase tracking-wide text-primary-foreground hover:brightness-110"
-          >
-            {t.newReservation}
-          </Link>
+          <div className="flex gap-2">
+            <Link to="/reservations/import" className="flex h-11 items-center border border-border px-4 text-base font-semibold uppercase tracking-wide hover:bg-accent">
+              {fr.importEmail.action}
+            </Link>
+            <Link
+              to={`/reservations/nouvelle${date !== todayLocal() ? `?date=${date}` : ""}`}
+              className="flex h-11 items-center bg-primary px-5 text-base font-bold uppercase tracking-wide text-primary-foreground hover:brightness-110"
+            >
+              {t.newReservation}
+            </Link>
+          </div>
         )}
       </div>
 

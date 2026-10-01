@@ -3,7 +3,7 @@ import { useEffect, useMemo, useState } from "react";
 import { adminApi, ApiError } from "@/lib/api";
 import { localParts, nightsBetween, shortDay } from "@/lib/datetime";
 import { describeError, errorMessage, fr } from "@/lib/fr";
-import type { Reservation, ReservationChannel, ReservationInput } from "@/lib/types";
+import type { ParsedBooking, Reservation, ReservationChannel, ReservationInput } from "@/lib/types";
 import { cn } from "@/lib/utils";
 
 const STAFF_CHANNELS: ReservationChannel[] = ["phone", "counter", "aggregator"];
@@ -24,7 +24,28 @@ type Form = {
   notes: string;
 };
 
-function initialForm(reservation?: Reservation, defaultDate?: string): Form {
+const split = (local?: string) => (local ? { date: local.slice(0, 10), time: local.slice(11, 16) } : { date: "", time: "" });
+
+function initialForm(reservation?: Reservation, defaultDate?: string, prefill?: ParsedBooking): Form {
+  if (prefill) {
+    const a = split(prefill.arrivalAt);
+    const r = split(prefill.returnAt);
+    return {
+      arrivalDate: a.date,
+      arrivalTime: a.time,
+      returnDate: r.date,
+      returnTime: r.time,
+      customerName: prefill.customerName ?? "",
+      customerPhone: prefill.customerPhone ?? "",
+      customerEmail: prefill.customerEmail ?? "",
+      plate: prefill.plate ?? "",
+      returnFlight: prefill.returnFlight ?? "",
+      passengers: String(prefill.passengers ?? 1),
+      channel: "aggregator",
+      channelDetail: prefill.provider,
+      notes: "",
+    };
+  }
   if (reservation) {
     const a = localParts(reservation.arrivalAt);
     const r = localParts(reservation.returnAt);
@@ -81,13 +102,16 @@ function Field({ id, label, error, help, children }: { id: string; label: string
 export function ReservationForm({
   reservation,
   defaultDate,
+  prefill,
   onSaved,
 }: {
   reservation?: Reservation;
   defaultDate?: string;
+  /** Values read from a comparator email (import page). */
+  prefill?: ParsedBooking;
   onSaved: (reservation: Reservation) => void;
 }) {
-  const [form, setForm] = useState<Form>(() => initialForm(reservation, defaultDate));
+  const [form, setForm] = useState<Form>(() => initialForm(reservation, defaultDate, prefill));
   const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
   const [formError, setFormError] = useState<string | null>(null);
   const [force, setForce] = useState(false);
@@ -126,6 +150,8 @@ export function ReservationForm({
         plate: form.plate,
         returnFlight: form.returnFlight.trim() || null,
         notes: form.notes.trim() || null,
+        ...(!reservation && prefill?.externalReference ? { externalReference: prefill.externalReference } : {}),
+        ...(!reservation && prefill?.priceCents !== undefined ? { priceCents: prefill.priceCents } : {}),
         force: force || undefined,
       };
       return reservation ? adminApi.updateReservation(reservation.id, input) : adminApi.createReservation(input);

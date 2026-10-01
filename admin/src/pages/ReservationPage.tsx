@@ -156,7 +156,15 @@ export default function ReservationPage() {
               <Info label={t.channel}>
                 {fr.channels[r.channel]}
                 {r.channelDetail ? ` · ${r.channelDetail}` : ""}
+                {r.externalReference && <span className="tabular ml-2 font-mono text-muted-foreground">{r.externalReference}</span>}
               </Info>
+              {r.priceCents !== null && (
+                <Info label={fr.importEmail.price}>
+                  <span className="tabular font-mono">
+                    {new Intl.NumberFormat("fr-FR", { style: "currency", currency: "EUR" }).format(r.priceCents / 100)}
+                  </span>
+                </Info>
+              )}
               <Info label={t.created}>{dateTimeShort(r.createdAt)}</Info>
             </dl>
           </div>

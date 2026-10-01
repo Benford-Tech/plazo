@@ -70,6 +70,8 @@ export interface Reservation {
   plate: string;
   returnFlight: string | null;
   notes: string | null;
+  externalReference: string | null;
+  priceCents: number | null;
   overbooked: boolean;
   arrivedAt: string | null;
   returnedAt: string | null;
@@ -114,6 +116,8 @@ export interface ReservationInput {
   plate: string;
   returnFlight?: string | null;
   notes?: string | null;
+  externalReference?: string;
+  priceCents?: number;
   force?: boolean;
 }
 
@@ -125,4 +129,26 @@ export interface Paginated<T> {
   totalPages: number;
   hasPrevPage: boolean;
   hasNextPage: boolean;
+}
+
+/** What the server read from a pasted confirmation email. Dates are local, "YYYY-MM-DDTHH:mm". */
+export interface ParsedBooking {
+  provider: string;
+  externalReference?: string;
+  arrivalAt?: string;
+  returnAt?: string;
+  customerName?: string;
+  customerPhone?: string;
+  customerEmail?: string;
+  plate?: string;
+  returnFlight?: string;
+  passengers?: number;
+  priceCents?: number;
+}
+
+export interface EmailImportResult {
+  parsed: ParsedBooking;
+  missing: ("arrivalAt" | "returnAt" | "customerName" | "customerPhone" | "plate")[];
+  duplicate: { id: string; reference: string } | null;
+  capacity: CapacityPreview | null;
 }

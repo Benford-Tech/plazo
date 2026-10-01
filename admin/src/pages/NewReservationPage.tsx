@@ -1,14 +1,16 @@
 import { useQueryClient } from "@tanstack/react-query";
 import { ChevronLeft } from "lucide-react";
-import { Link, useNavigate, useSearchParams } from "react-router-dom";
+import { Link, useLocation, useNavigate, useSearchParams } from "react-router-dom";
 import { toast } from "sonner";
 import { ReservationForm } from "@/components/reservations/ReservationForm";
 import { fr } from "@/lib/fr";
+import type { ParsedBooking } from "@/lib/types";
 
 export default function NewReservationPage() {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   const [params] = useSearchParams();
+  const prefill = (useLocation().state as { prefill?: ParsedBooking } | null)?.prefill;
   const t = fr.reservation;
   return (
     <div className="mx-auto max-w-2xl space-y-5">
@@ -20,6 +22,7 @@ export default function NewReservationPage() {
       </div>
       <ReservationForm
         defaultDate={params.get("date") ?? undefined}
+        prefill={prefill}
         onSaved={reservation => {
           toast.success(t.saved);
           queryClient.invalidateQueries({ queryKey: ["planning"] });

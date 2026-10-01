@@ -1,5 +1,6 @@
 import type {
   CapacityPreview,
+  EmailImportResult,
   NewStaff,
   Paginated,
   Parking,
@@ -135,6 +136,7 @@ export const adminApi = {
   createReservation: (input: ReservationInput) => apiRequest<{ data: Reservation }>("/internal/reservations", { method: "POST", body: json(input) }),
   updateReservation: (id: string, input: Partial<ReservationInput>) =>
     apiRequest<{ data: Reservation }>(`/internal/reservations/${id}`, { method: "PATCH", body: json(input) }),
+  parseEmail: (text: string) => apiRequest<EmailImportResult>("/internal/imports/email", { method: "POST", body: json({ text }) }),
   changeReservationStatus: (id: string, status: ReservationStatus) =>
     apiRequest<{ data: Reservation }>(`/internal/reservations/${id}/status`, { method: "POST", body: json({ status }) }),
 };
