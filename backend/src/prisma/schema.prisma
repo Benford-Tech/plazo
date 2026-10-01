@@ -1,0 +1,125 @@
+generator client {
+  provider        = "prisma-client-js"
+  previewFeatures = ["postgresqlExtensions"]
+  output          = "../generated/prisma-client"
+}
+
+datasource db {
+  provider   = "postgresql"
+  url        = env("DATABASE_URL")
+  directUrl  = env("DIRECT_URL")
+  extensions = [postgis]
+}
+
+// An operator is a parking company (a "loueur"). Everything is scoped by operator.
+model Operator {
+  id        String   @id @default(cuid())
+  name      String
+  slug      String   @unique
+  createdAt DateTime @default(now())
+  updatedAt DateTime @default(now()) @updatedAt
+
+  staff     Staff[]
+  parkings  Parking[]
+  auditLogs AuditLog[]
+
+  @@map("operators")
+}
+
+enum StaffRole {
+  manager
+  agent
+  driver
+  valet
+}
+
+// Operator personnel: manager, front-desk agent, shuttle driver, valet.
+model Staff {
+  id          String    @id @default(cuid())
+  operatorId  String
+  email       String    @unique // always lower-cased
+  name        String
+  phone       String?
+  role        StaffRole
+  password    String
+  isActive    Boolean   @default(true)
+  lastLoginAt DateTime?
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @default(now()) @updatedAt
+
+  operator  Operator     @relation(fields: [operatorId], references: [id], onDelete: Cascade)
+  tokens    StaffToken[]
+  auditLogs AuditLog[]
+
+  @@index([operatorId])
+  @@map("staff")
+}
+
+enum StaffTokenType {
+  access
+  refresh
+}
+
+// Every issued JWT is stored so it can be revoked (logout, deactivation, password change).
+model StaffToken {
+  id        String         @id @default(cuid())
+  uid       String         @unique @default(uuid())
+  staffId   String
+  type      StaffTokenType
+  expiresAt DateTime
+  metadata  Json?          @default("{}")
+  createdAt DateTime       @default(now())
+
+  staff Staff @relation(fields: [staffId], references: [id], onDelete: Cascade)
+
+  @@index([staffId])
+  @@map("staff_tokens")
+}
+
+model LoginAttempt {
+  id        String   @id @default(cuid())
+  email     String
+  success   Boolean
+  createdAt DateTime @default(now())
+
+  @@index([email, createdAt])
+  @@map("login_attempts")
+}
+
+model Parking {
+  id                   String                                 @id @default(cuid())
+  operatorId           String
+  name                 String
+  address              String?
+  // Entrance point (WGS84). The detailed map arrives in milestone 4. Read/write through raw SQL.
+  location             Unsupported("geometry(Point, 4326)")?
+  timezone             String                                 @default("Europe/Paris")
+  totalCapacity        Int
+  // Share of spots never offered for booking, in percent (0-50).
+  safetyMarginPct      Int                                    @default(0)
+  shuttleTravelMinutes Int                                    @default(8)
+  createdAt            DateTime                               @default(now())
+  updatedAt            DateTime                               @default(now()) @updatedAt
+
+  operator Operator @relation(fields: [operatorId], references: [id], onDelete: Cascade)
+
+  @@index([operatorId])
+  @@map("parkings")
+}
+
+model AuditLog {
+  id         String   @id @default(cuid())
+  operatorId String
+  staffId    String?
+  action     String
+  entityType String
+  entityId   String?
+  details    Json     @default("{}")
+  createdAt  DateTime @default(now())
+
+  operator Operator @relation(fields: [operatorId], references: [id], onDelete: Cascade)
+  staff    Staff?   @relation(fields: [staffId], references: [id], onDelete: SetNull)
+
+  @@index([operatorId, createdAt])
+  @@map("audit_logs")
+}

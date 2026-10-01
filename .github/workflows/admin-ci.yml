@@ -1,0 +1,28 @@
+name: Admin CI
+
+on:
+  pull_request:
+    paths: ['admin/**', 'product.json', '.github/workflows/admin-ci.yml']
+  push:
+    branches: [main]
+    paths: ['admin/**', 'product.json', '.github/workflows/admin-ci.yml']
+  workflow_dispatch:
+
+defaults:
+  run:
+    working-directory: admin
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: admin/package-lock.json
+      - run: npm ci
+      - run: npm run lint
+      - run: npm test
+      - run: npm run build

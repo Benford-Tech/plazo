@@ -1,0 +1,77 @@
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import { BrowserRouter, Navigate, Route, Routes } from "react-router-dom";
+import { AdminLayout } from "@/components/AdminLayout";
+import { Toaster as Sonner } from "@/components/ui/sonner";
+import { TooltipProvider } from "@/components/ui/tooltip";
+import { AuthProvider, useAuth } from "@/contexts/AuthContext";
+import { can, type Permission } from "@/lib/roles";
+import AccountPage from "@/pages/AccountPage";
+import DashboardPage from "@/pages/DashboardPage";
+import LoginPage from "@/pages/LoginPage";
+import NotFound from "@/pages/NotFound";
+import ParkingPage from "@/pages/ParkingPage";
+import TeamPage from "@/pages/TeamPage";
+
+const queryClient = new QueryClient({ defaultOptions: { queries: { retry: 1, refetchOnWindowFocus: false } } });
+
+function ProtectedRoute({ children }: { children: React.ReactNode }) {
+  const { isAuthenticated, isLoading } = useAuth();
+  if (isLoading) {
+    return (
+      <div className="flex min-h-screen items-center justify-center bg-background">
+        <div className="h-8 w-8 animate-spin rounded-full border-2 border-primary border-t-transparent" />
+      </div>
+    );
+  }
+  if (!isAuthenticated) return <Navigate to="/login" replace />;
+  return <>{children}</>;
+}
+
+function RequirePermission({ permission, children }: { permission: Permission; children: React.ReactNode }) {
+  const { user } = useAuth();
+  return can(user?.role, permission) ? <>{children}</> : <Navigate to="/" replace />;
+}
+
+const App = () => (
+  <QueryClientProvider client={queryClient}>
+    <AuthProvider>
+      <TooltipProvider>
+        <Sonner position="top-center" />
+        <BrowserRouter future={{ v7_startTransition: true, v7_relativeSplatPath: true }}>
+          <Routes>
+            <Route path="/login" element={<LoginPage />} />
+            <Route
+              element={
+                <ProtectedRoute>
+                  <AdminLayout />
+                </ProtectedRoute>
+              }
+            >
+              <Route path="/" element={<DashboardPage />} />
+              <Route
+                path="/parking"
+                element={
+                  <RequirePermission permission="parking:manage">
+                    <ParkingPage />
+                  </RequirePermission>
+                }
+              />
+              <Route
+                path="/equipe"
+                element={
+                  <RequirePermission permission="team:manage">
+                    <TeamPage />
+                  </RequirePermission>
+                }
+              />
+              <Route path="/mon-compte" element={<AccountPage />} />
+            </Route>
+            <Route path="*" element={<NotFound />} />
+          </Routes>
+        </BrowserRouter>
+      </TooltipProvider>
+    </AuthProvider>
+  </QueryClientProvider>
+);
+
+export default App;

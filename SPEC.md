@@ -253,7 +253,7 @@ Ajouts phase 2 (marketplace) :
 | SMS | Un fournisseur de SMS (Twilio, OVH, Brevo…) | Expéditeur personnalisé, coût par SMS à répercuter |
 | Email | Un service transactionnel (Resend, Brevo…) | Domaine d'envoi authentifié |
 | Suivi de vols | Une API de statut de vols (AeroDataBox, AviationStack, FlightAware…) | À choisir sur couverture France, prix et limites d'appels |
-| Notifications push | Service de push de la plateforme mobile choisie (Firebase Cloud Messaging, qui couvre aussi iOS via APNs) | Complète les SMS, ne les remplace pas |
+| Notifications push | OneSignal (comme LoveNest) | Complète les SMS, ne les remplace pas |
 | Cartographie du parking | Google Maps Platform : Maps JavaScript API (éditeur web), `google_maps_flutter` (app), vue satellite | Coût à l'usage au-delà du crédit mensuel gratuit, à estimer ; vérifier les conditions d'usage (dessin sur la carte autorisé, pas de copie de l'imagerie) |
 | Itinéraire voyageur | Lien vers l'app de navigation du téléphone | Pour l'adresse et l'itinéraire |
 | Paiement en ligne et reversement aux loueurs | Stripe Connect (ou équivalent) | Jalon 3 pour la page propre du loueur, phase 2 pour la commission et les reversements ; valider statut, TVA et CGU avec un professionnel |
@@ -264,16 +264,14 @@ Ajouts phase 2 (marketplace) :
 
 ## 8. Stack retenue
 
-- Application web en TypeScript (Next.js) sur Vercel (région Paris), base PostgreSQL + PostGIS hébergée sur Supabase (région Paris). ORM Drizzle.
-- Authentification par email avec lien magique ou mot de passe + rôles.
-- Tâches planifiées (mise à jour des vols, envoi des SMS) via les cron jobs de la plateforme ou une file de jobs.
-- Application mobile native en Flutter (Dart), iOS et Android depuis un seul code.
-- Le web (TypeScript) et le mobile (Dart) ne partagent pas de code : le contrat entre les deux est l'API du back-end, décrite en OpenAPI, avec génération automatique du client Dart pour éviter les écarts.
-- Toutes les règles métier (capacité, statuts, prix) vivent côté serveur ; l'app mobile ne les recalcule pas.
-- Dépôt unique : web et back-end, app Flutter, spécification de l'API.
-
+Plazo reprend la stack de LoveNest (décision du 1er octobre 2026) :
+- Serveur : Express 5 + TypeScript + Prisma 6, services typedi, validation class-validator, authentification JWT (passport-jwt, jetons stockés en base donc révocables), tâches de fond pg-boss, documentation Swagger, Docker sur DigitalOcean.
+- Base : PostgreSQL + PostGIS hébergée sur Supabase (région Paris).
+- Espace pro et page de réservation : Vite + React + shadcn/ui, React Query.
+- App mobile : Flutter, architecture de LoveNest (bloc, auto_route, get_it, retrofit, freezed, easy_localization), notifications OneSignal, builds Codemagic. Deux apps à terme via les flavors.
 - SMS et email : Brevo.
 - Suivi de vols : AirLabs (offre gratuite, 1 000 appels/mois) au départ, en interrogeant les arrivées de l'aéroport en un seul appel pour tous les clients et seulement quand un vol suivi approche ; AeroDataBox en repli. Le code passe par une interface interchangeable. Flightradar24 n'a pas d'offre gratuite et OpenSky est réservé à l'usage non commercial.
+- Le web (TypeScript) et le mobile (Dart) ne partagent pas de code : le contrat est l'API, décrite par Swagger ; toutes les règles métier (capacité, statuts, prix) vivent côté serveur.
 
 ## 9. Découpage en jalons
 
