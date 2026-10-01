@@ -276,9 +276,15 @@ Plazo reprend la stack de LoveNest (décision du 1er octobre 2026) :
 
 ## 9. Découpage en jalons
 
-1. **Socle** (semaine 1) : comptes, rôles, opérateur et parking, capacité, base de données (avec PostGIS).
-2. **Réservations** (semaines 1-2) : saisie manuelle, planning du jour, contrôle de capacité, statuts, import CSV.
-3. **Page publique + notifications** (semaine 3) : formulaire de réservation, calcul de prix, email + SMS de confirmation.
+> Révision du 1er octobre 2026 : « Plazo est une plateforme de réservation ». La place de marché
+> (ancienne phase 2) et le paiement en ligne entrent dans le MVP ; les jalons 3a à 3c remplacent
+> l'ancien jalon 3 « page publique du loueur ».
+
+1. **Socle** (semaine 1) : comptes, rôles, opérateur et parking, capacité, base de données (avec PostGIS). *Fait.*
+2. **Réservations** (semaines 1-2) : saisie manuelle, planning du jour, contrôle de capacité, statuts, import des mails de comparateurs. *Fait (Allopark).*
+3a. **Fiche et tarifs du loueur** : fiche publique (photos, description, services, distance et durée de navette, politique d'annulation), grille tarifaire, aéroports.
+3b. **Site Plazo voyageurs** : page aéroport (SEO), recherche par dates, résultats et filtres, fiche parking, tunnel de réservation sans compte obligatoire, confirmation, email + SMS (Brevo), lien de gestion de la réservation.
+3c. **Paiement et reversements** : Stripe Connect (onboarding des loueurs), paiement par carte / Apple Pay / Google Pay, verrou de place pendant le paiement, commission, remboursements selon la politique d'annulation, relevés de reversement. Validation juridique avant mise en ligne.
 4. **Cartographie et affectation** (semaines 4-7) :
    - semaine 4 : éditeur sur Google Maps (zones, éléments fixes, mesures, calage) ;
    - semaine 5 : génération automatique des places et comparaison des dispositions ;
@@ -290,12 +296,10 @@ Plazo reprend la stack de LoveNest (décision du 1er octobre 2026) :
 
 Les durées sont indicatives et à ajuster avec la date attendue par le client. L'app native ajoute environ deux semaines au MVP, plus les délais de validation des stores ; la cartographie et l'optimisation en ajoutent environ trois.
 
-**Phase 2 — place de marché** (à lancer seulement quand les conditions de la section 3 bis sont réunies) :
+**Après le MVP** :
 
-8. **Paiement et reversements** : intégration du prestataire de paiement, onboarding des loueurs, commission, remboursements, relevés de reversement.
-9. **Site public** : pages aéroport et loueur (SEO), recherche et résultats, fiche parking, tunnel de réservation et paiement, confirmation et billet.
-10. **Espace voyageur et confiance** : comptes, avis après séjour, litiges, outils d'administration plateforme.
-11. **Ouverture progressive** : un aéroport (Lyon), 3 à 5 loueurs, mesure de la conversion, puis extension aux autres aéroports.
+8. **Espace voyageur et confiance** : comptes voyageurs, avis après séjour, litiges, outils d'administration plateforme.
+9. **Ouverture progressive** : d'autres loueurs à Lyon, mesure de la conversion, puis d'autres aéroports.
 
 ## 10. Critères d'acceptation du MVP
 
@@ -308,7 +312,7 @@ Les durées sont indicatives et à ajuster avec la date attendue par le client. 
 - Le client n°1 utilise l'outil sur une semaine réelle sans repasser par ses anciens tableurs ou cahiers.
 - Les apps sont publiées sur l'App Store et Google Play ; le chauffeur reçoit une notification push quand un client appuie sur « Je suis prêt ».
 
-Critères d'acceptation de la phase 2 :
+Critères d'acceptation de la place de marché (dans le MVP depuis le 01/10/2026) :
 - Un voyageur réserve et paie un parking en moins de 3 minutes sur téléphone, sans créer de compte obligatoire.
 - La commission et le reversement net sont calculés correctement sur 100 % des réservations de test, remboursements partiels inclus.
 - Aucune réservation payée ne dépasse la capacité d'un loueur, même avec deux paiements simultanés sur la dernière place.

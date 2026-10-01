@@ -6,12 +6,17 @@ Logiciel SaaS pour les opérateurs de parkings privés situés autour des aérop
 (parkings avec navette gratuite vers les terminaux, parfois voiturier). Premier marché :
 aéroport Lyon Saint-Exupéry. Un premier client (client n°1) est déjà engagé.
 
-Positionnement en deux phases (voir SPEC.md, section 3 bis) :
-- **Phase 1 (MVP, à construire maintenant)** : un outil POUR L'OPÉRATEUR, avec sa propre page de
-  réservation. Ses clients réservent sur sa page, il gère tout depuis un seul espace.
-- **Phase 2 (plus tard)** : place de marché grand public (recherche, comparaison, paiement en ligne,
-  commission, plusieurs loueurs). À ne lancer que quand 3 à 5 loueurs sont actifs sur un même aéroport.
-  Ne pas la construire pendant le MVP, mais concevoir le modèle de données multi-opérateurs dès le départ.
+**Plazo est une plateforme de réservation** (décision du 01/10/2026, qui remplace le découpage en
+deux phases) : la place de marché grand public fait partie du MVP. Deux faces, un seul produit :
+- **Site Plazo pour les voyageurs** (à la marque Plazo) : recherche par aéroport et dates, comparaison
+  des parkings partenaires (prix total, filtres, avis), fiche parking, réservation et **paiement en ligne**
+  (Stripe Connect : Plazo encaisse, prélève sa commission, reverse le loueur). Voir SPEC.md, section 3 bis.
+- **Espace pro pour les loueurs** : planning, plan du parking, navette, import des autres canaux
+  (blocs 1 à 3 ci-dessous), plus leur fiche Plazo, leurs tarifs et leurs reversements.
+- À valider avec un juriste / expert-comptable **avant la mise en ligne du paiement** : statut de la
+  plateforme, TVA sur la commission, mandat de facturation, CGU/CGV.
+- Le site doit être utile même avec un seul loueur au lancement (client n°1) : les pages aéroport
+  et loueur servent aussi au référencement.
 
 Le métier de ces opérateurs :
 - recevoir des réservations par plusieurs canaux (site propre, comparateurs, téléphone) ;
@@ -63,8 +68,7 @@ Ne construire QUE ce qui règle la douleur n°1 du client.
 
 État des lieux photo, lecture de plaque, tarification dynamique,
 connecteurs agrégateurs (Parkos, ParkMundo, Onepark, Free2move…), multi-parkings,
-statistiques et facturation. Le paiement en ligne arrive au jalon 3 de la page du loueur,
-puis la commission et les reversements en phase 2 (place de marché ouverte aux voyageurs).
+statistiques et facturation (hors commission et reversements, qui font partie du MVP).
 
 ## Concurrence à connaître avant de coder
 
