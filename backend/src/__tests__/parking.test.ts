@@ -10,14 +10,14 @@ const settings = { name: 'P1', address: null, totalCapacity: 300, safetyMarginPc
 describe('parking', () => {
   it('renvoie le parking avec sa capacité réservable', async () => {
     const { token } = await setupOperator();
-    const res = await api().get('/internal/parking').set(auth(token));
+    const res = await api().get('/api/internal/parking').set(auth(token));
     expect(res.status).toBe(200);
     expect(res.body).toMatchObject({ totalCapacity: 200, safetyMarginPct: 0, bookableCapacity: 200 });
   });
 
   it('met à jour les réglages et trace la modification', async () => {
     const { token, parking, manager } = await setupOperator();
-    const res = await api().patch(`/internal/parkings/${parking.id}`).set(auth(token)).send(settings);
+    const res = await api().patch(`/api/internal/parkings/${parking.id}`).set(auth(token)).send(settings);
     expect(res.status).toBe(200);
     expect(res.body.data.bookableCapacity).toBe(285);
     const logs = await prisma.auditLog.findMany();
@@ -29,21 +29,21 @@ describe('parking', () => {
   it('est réservé au gérant', async () => {
     const { token, parking } = await setupOperator();
     const agent = await addStaff(token, 'agent');
-    expect((await api().get('/internal/parking').set(auth(agent.token))).status).toBe(200);
-    expect((await api().patch(`/internal/parkings/${parking.id}`).set(auth(agent.token)).send(settings)).status).toBe(403);
+    expect((await api().get('/api/internal/parking').set(auth(agent.token))).status).toBe(200);
+    expect((await api().patch(`/api/internal/parkings/${parking.id}`).set(auth(agent.token)).send(settings)).status).toBe(403);
   });
 
   it('ne touche jamais le parking d’un autre opérateur', async () => {
     const a = await setupOperator('A');
     const b = await setupOperator('B');
-    expect((await api().patch(`/internal/parkings/${b.parking.id}`).set(auth(a.token)).send(settings)).status).toBe(404);
-    expect((await api().get('/internal/parking').set(auth(b.token))).body.totalCapacity).toBe(200);
+    expect((await api().patch(`/api/internal/parkings/${b.parking.id}`).set(auth(a.token)).send(settings)).status).toBe(404);
+    expect((await api().get('/api/internal/parking').set(auth(b.token))).body.totalCapacity).toBe(200);
   });
 
   it('valide les valeurs et la base les protège aussi', async () => {
     const { token, parking } = await setupOperator();
     const res = await api()
-      .patch(`/internal/parkings/${parking.id}`)
+      .patch(`/api/internal/parkings/${parking.id}`)
       .set(auth(token))
       .send({ ...settings, safetyMarginPct: 80 });
     expect(res.status).toBe(400);

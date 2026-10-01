@@ -53,7 +53,7 @@ describe('POST /internal/imports/email', () => {
 
   it('prépare la réservation et liste ce qui manque', async () => {
     const { token } = await setupOperator();
-    const res = await api().post('/internal/imports/email').set(auth(token)).send({ text: email });
+    const res = await api().post('/api/internal/imports/email').set(auth(token)).send({ text: email });
     expect(res.status).toBe(200);
     expect(res.body.parsed.externalReference).toBe('AL-884880719');
     expect(res.body.missing).toEqual(['customerPhone', 'plate']);
@@ -64,7 +64,7 @@ describe('POST /internal/imports/email', () => {
 
   it('refuse un texte inconnu', async () => {
     const { token } = await setupOperator();
-    const res = await api().post('/internal/imports/email').set(auth(token)).send({ text: 'rien à voir' });
+    const res = await api().post('/api/internal/imports/email').set(auth(token)).send({ text: 'rien à voir' });
     expect(res.status).toBe(422);
     expect(res.body.code).toBe('unrecognised_email');
   });
@@ -83,16 +83,16 @@ describe('POST /internal/imports/email', () => {
       customerPhone: '06 12 34 56 78',
       plate: 'GK318PX',
     };
-    const first = await api().post('/internal/reservations').set(auth(token)).send(booking);
+    const first = await api().post('/api/internal/reservations').set(auth(token)).send(booking);
     expect(first.status).toBe(201);
     expect(first.body.data).toMatchObject({ externalReference: 'AL-884880719', priceCents: 3499 });
 
-    const again = await api().post('/internal/reservations').set(auth(token)).send(booking);
+    const again = await api().post('/api/internal/reservations').set(auth(token)).send(booking);
     expect(again.status).toBe(409);
     expect(again.body.code).toBe('already_imported');
     expect(again.body.details.reservation.id).toBe(first.body.data.id);
 
-    const parsed = await api().post('/internal/imports/email').set(auth(token)).send({ text: email });
+    const parsed = await api().post('/api/internal/imports/email').set(auth(token)).send({ text: email });
     expect(parsed.body.duplicate.id).toBe(first.body.data.id);
   });
 
@@ -100,6 +100,6 @@ describe('POST /internal/imports/email', () => {
     const { token } = await setupOperator();
     const { addStaff } = await import('./utils/helpers');
     const driver = await addStaff(token, 'driver');
-    expect((await api().post('/internal/imports/email').set(auth(driver.token)).send({ text: email })).status).toBe(403);
+    expect((await api().post('/api/internal/imports/email').set(auth(driver.token)).send({ text: email })).status).toBe(403);
   });
 });

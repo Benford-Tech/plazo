@@ -8,7 +8,7 @@ import hpp from 'hpp';
 import morgan from 'morgan';
 import swaggerJSDoc from 'swagger-jsdoc';
 import swaggerUi from 'swagger-ui-express';
-import { CLIENT_URLS, NODE_ENV, PORT, PRODUCT_NAME } from './config';
+import { API_PREFIX, CLIENT_URLS, NODE_ENV, PORT, PRODUCT_NAME } from './config';
 import { staffPassport } from './config/passport';
 import { Routes } from './interfaces/routes.interface';
 import { ErrorMiddleware } from './middlewares/error.middleware';
@@ -39,7 +39,7 @@ export class App {
       logger.info(`=================================`);
       logger.info(`======= ENV: ${this.env} =======`);
       logger.info(`🚀 App listening on the port ${this.port}`);
-      logger.info(`🚀 API docs are at http://localhost:${this.port}/api-docs`);
+      logger.info(`🚀 API docs are at http://localhost:${this.port}${API_PREFIX}/docs`);
       logger.info(`=================================`);
     });
   }
@@ -60,13 +60,13 @@ export class App {
     this.app.use(cookieParser());
     this.app.use(staffPassport.initialize());
 
-    this.app.use('/', appLimiter);
-    this.app.use('/internal/auth', authLimiter);
+    this.app.use(API_PREFIX, appLimiter);
+    this.app.use(`${API_PREFIX}/internal/auth`, authLimiter);
   }
 
   private initializeRoutes(routes: Routes[]) {
     routes.forEach(route => {
-      this.app.use('/', route.router);
+      this.app.use(API_PREFIX, route.router);
     });
   }
 
@@ -75,12 +75,13 @@ export class App {
       definition: {
         openapi: '3.0.0',
         info: { title: `${PRODUCT_NAME} API`, version: '1.0.0', description: `${PRODUCT_NAME} API documentation` },
+        servers: [{ url: API_PREFIX }],
         components: { securitySchemes: { bearerAuth: { type: 'http', scheme: 'bearer', bearerFormat: 'JWT' } } },
         security: [{ bearerAuth: [] }],
       },
       apis: [`${__dirname}/routes/*.{ts,js}`],
     });
-    this.app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(specs));
+    this.app.use(`${API_PREFIX}/docs`, swaggerUi.serve, swaggerUi.setup(specs));
   }
 
   private initializeErrorHandling() {

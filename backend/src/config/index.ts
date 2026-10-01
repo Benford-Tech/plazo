@@ -7,6 +7,10 @@ config({ quiet: true });
 
 export const { NODE_ENV, PORT, SECRET_KEY, DATABASE_URL, CRON_SECRET } = process.env;
 
+// Every route is served under this prefix: on Vercel the project's /api/* requests go to this
+// service with their path unchanged (see the repository's vercel.json).
+export const API_PREFIX = '/api';
+
 // Set by Vercel on every deployment.
 export const IS_VERCEL = !!process.env.VERCEL;
 
@@ -31,7 +35,7 @@ const rawCommission = Number(process.env.PLATFORM_COMMISSION_BPS);
 export const PLATFORM_COMMISSION_BPS = Number.isInteger(rawCommission) && rawCommission >= 0 && rawCommission <= 5000 ? rawCommission : null;
 
 // The product name is still a working name: it lives only in the repository's product.json.
-// The build copies it to dist/product.json (deployed with the function); in development it is
+// The build copies it to lib/product.json (deployed with the function); in development it is
 // read from the repository root.
 const productPath = [resolve(__dirname, '../product.json'), resolve(__dirname, '../../../product.json')].find(existsSync);
 if (!productPath) throw new Error('product.json not found');

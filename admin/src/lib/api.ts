@@ -19,7 +19,8 @@ import type {
   TokenData,
 } from "./types";
 
-const API_BASE = (import.meta.env.VITE_API_URL ?? "http://localhost:3005").replace(/\/$/, "");
+// Same origin by default (/api, proxied to the backend in development); VITE_API_URL overrides it.
+const API_BASE = (import.meta.env.VITE_API_URL || "/api").replace(/\/$/, "");
 const TOKENS_KEY = "plazo_admin_tokens";
 
 /** API error with the backend's machine-readable code and per-field validation codes. */

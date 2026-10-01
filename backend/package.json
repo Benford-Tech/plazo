@@ -11,14 +11,14 @@
     "lint": "eslint --ext .ts src/",
     "lint:fix": "npm run lint -- --fix",
     "typecheck": "tsc --noEmit",
-    "build": "npm run prisma:generate && rm -rf dist && tsc -p tsconfig.build.json && npm run copy:assets && tsc-alias -p tsconfig.build.json",
-    "copy:assets": "cp -r src/generated dist/generated && cp ../product.json dist/product.json",
+    "build": "npm run prisma:generate && rm -rf lib && tsc -p tsconfig.build.json && npm run copy:assets && tsc-alias -p tsconfig.build.json",
+    "copy:assets": "cp -r src/generated lib/generated && cp ../product.json lib/product.json",
     "vercel-build": "prisma migrate deploy && npm run build",
     "prisma:generate": "prisma generate",
     "prisma:migrate": "prisma migrate dev",
     "prisma:deploy": "prisma migrate deploy",
     "seed:operator": "ts-node -r tsconfig-paths/register --transpile-only src/scripts/create-operator.ts",
-    "start": "node dist/server.js"
+    "start": "node lib/server.js"
   },
   "prisma": {
     "schema": "src/prisma/schema.prisma"

@@ -13,7 +13,7 @@
     "module": "commonjs",
     "pretty": true,
     "sourceMap": true,
-    "outDir": "dist",
+    "outDir": "lib",
     "noEmit": false,
     "esModuleInterop": true,
     "resolveJsonModule": true,

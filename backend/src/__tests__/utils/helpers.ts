@@ -17,7 +17,7 @@ export async function resetDatabase() {
 let counter = 0;
 
 export async function login(email: string, password = PASSWORD) {
-  const res = await api().post('/internal/auth/login').send({ email, password });
+  const res = await api().post('/api/internal/auth/login').send({ email, password });
   if (res.status !== 200) throw new Error(`login failed: ${res.status} ${JSON.stringify(res.body)}`);
   return res.body as { tokenData: { access: { token: string }; refresh: { token: string } }; user: any };
 }
@@ -42,7 +42,7 @@ export async function addStaff(managerToken: string, role: string) {
   counter += 1;
   const email = `${role}${counter}@example.com`;
   const res = await api()
-    .post('/internal/staff')
+    .post('/api/internal/staff')
     .set('Authorization', `Bearer ${managerToken}`)
     .send({ name: `${role} ${counter}`, email, role, password: PASSWORD });
   if (res.status !== 201) throw new Error(`addStaff failed: ${res.status} ${JSON.stringify(res.body)}`);

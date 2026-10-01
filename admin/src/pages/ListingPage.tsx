@@ -13,6 +13,7 @@ import { cn } from "@/lib/utils";
 
 const SERVICES: ListingService[] = ["shuttle", "open_24h", "fenced", "cctv", "valet", "covered", "ev_charging"];
 const POLICIES: CancellationPolicy[] = ["free_24h", "free_48h", "free_until_arrival", "non_refundable"];
+// The traveller site shares the domain (served at /); VITE_SITE_URL points elsewhere in development.
 const SITE_URL = (import.meta.env.VITE_SITE_URL ?? "").replace(/\/$/, "");
 
 const labelClass = "mb-1 block text-[13px] font-semibold uppercase tracking-wide text-muted-foreground";
@@ -109,7 +110,7 @@ export default function ListingPage() {
   };
   const prices = pricing.data?.tiers.map(x => x.priceCents) ?? [];
   const airportName = listing.data?.listing?.airport.name ?? "Lyon Saint-Exupéry";
-  const pageUrl = SITE_URL && published ? `${SITE_URL}/${listing.data?.listing?.airport.slug}/${listing.data?.listing?.slug}` : null;
+  const pageUrl = published ? `${SITE_URL}/${listing.data?.listing?.airport.slug}/${listing.data?.listing?.slug}` : null;
   const err = (k: string) => (fieldErrors[k] ? <p className="mt-1 text-sm text-destructive">{errorMessage(fieldErrors[k])}</p> : null);
 
   return (

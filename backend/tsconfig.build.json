@@ -1,4 +1,12 @@
 {
   "extends": "./tsconfig.json",
-  "exclude": ["node_modules", "src/logs", "src/__tests__", "src/generated"]
+  "exclude": [
+    "node_modules",
+    "src/logs",
+    "src/__tests__",
+    "src/generated"
+  ],
+  "compilerOptions": {
+    "outDir": "lib"
+  }
 }
