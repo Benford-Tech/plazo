@@ -9,9 +9,11 @@ import AccountPage from "@/pages/AccountPage";
 import LoginPage from "@/pages/LoginPage";
 import NotFound from "@/pages/NotFound";
 import ImportEmailPage from "@/pages/ImportEmailPage";
+import ListingPage from "@/pages/ListingPage";
 import NewReservationPage from "@/pages/NewReservationPage";
 import ParkingPage from "@/pages/ParkingPage";
 import PlanningPage from "@/pages/PlanningPage";
+import PricingPage from "@/pages/PricingPage";
 import ReservationPage from "@/pages/ReservationPage";
 import ReservationsPage from "@/pages/ReservationsPage";
 import TeamPage from "@/pages/TeamPage";
@@ -83,6 +85,23 @@ const App = () => (
                 element={
                   <RequirePermission permission="team:manage">
                     <TeamPage />
+                  </RequirePermission>
+                }
+              />
+              <Route path="/plazo" element={<Navigate to="/plazo/fiche" replace />} />
+              <Route
+                path="/plazo/fiche"
+                element={
+                  <RequirePermission permission="parking:manage">
+                    <ListingPage />
+                  </RequirePermission>
+                }
+              />
+              <Route
+                path="/plazo/tarifs"
+                element={
+                  <RequirePermission permission="parking:manage">
+                    <PricingPage />
                   </RequirePermission>
                 }
               />

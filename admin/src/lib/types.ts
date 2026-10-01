@@ -152,3 +152,51 @@ export interface EmailImportResult {
   duplicate: { id: string; reference: string } | null;
   capacity: CapacityPreview | null;
 }
+
+export type CancellationPolicy = "free_until_arrival" | "free_24h" | "free_48h" | "non_refundable";
+export type ListingService = "shuttle" | "valet" | "covered" | "ev_charging" | "open_24h" | "fenced" | "cctv";
+
+export interface Listing {
+  id: string;
+  slug: string;
+  published: boolean;
+  title: string;
+  description: string | null;
+  services: ListingService[];
+  shuttleMinutes: number | null;
+  distanceKm: number | null;
+  openingHours: string | null;
+  cancellationPolicy: CancellationPolicy;
+  photos: string[];
+  airport: { code: string; name: string; slug: string };
+}
+
+export interface ListingInput {
+  airportCode: string;
+  slug: string;
+  title: string;
+  description: string | null;
+  services: ListingService[];
+  shuttleMinutes: number | null;
+  distanceKm: number | null;
+  openingHours: string | null;
+  cancellationPolicy: CancellationPolicy;
+  photos: string[];
+  published: boolean;
+}
+
+export interface ListingResponse {
+  listing: Listing | null;
+  parking: { id: string; name: string; address: string | null; shuttleTravelMinutes: number };
+}
+
+export interface PricingTier {
+  days: number;
+  priceCents: number;
+}
+
+export interface Pricing {
+  tiers: PricingTier[];
+  extraDayPriceCents: number | null;
+  commissionBps: number | null;
+}

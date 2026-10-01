@@ -10,6 +10,7 @@ const NAV: { label: string; to: string; permission?: Permission }[] = [
   { label: fr.nav.planning, to: "/", permission: "reservations:view" },
   { label: fr.nav.reservations, to: "/reservations", permission: "reservations:view" },
   { label: fr.nav.parking, to: "/parking", permission: "parking:manage" },
+  { label: fr.nav.plazo, to: "/plazo", permission: "parking:manage" },
   { label: fr.nav.team, to: "/equipe", permission: "team:manage" },
   { label: fr.nav.account, to: "/mon-compte" },
 ];

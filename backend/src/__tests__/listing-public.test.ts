@@ -103,7 +103,7 @@ describe('grille tarifaire', () => {
       .put('/internal/pricing')
       .set(auth(token))
       .send({ tiers: [{ days: 2, priceCents: 2500 }], extraDayPriceCents: null });
-    expect(res.body.data).toEqual({ tiers: [{ days: 2, priceCents: 2500 }], extraDayPriceCents: null });
+    expect(res.body.data).toEqual({ tiers: [{ days: 2, priceCents: 2500 }], extraDayPriceCents: null, commissionBps: null });
   });
 
   it('refuse les doublons et les valeurs absurdes', async () => {

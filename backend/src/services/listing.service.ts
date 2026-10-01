@@ -1,5 +1,6 @@
 import httpStatus from 'http-status';
 import { Container, Service } from 'typedi';
+import { PLATFORM_COMMISSION_BPS } from '@/config';
 import prisma from '@/database';
 import { can } from '@/domain/roles';
 import { UpdateListingDto, UpdatePricingDto } from '@/dtos/listing.dto';
@@ -70,12 +71,13 @@ export class ListingService {
 
   public async getPricing(actor: AuthenticatedStaff) {
     const parking = await this.parkings.getPrimary(actor);
-    const tiers = await prisma.pricingTier.findMany({
-      where: { parkingId: parking.id },
-      orderBy: { days: 'asc' },
-      select: { days: true, priceCents: true },
-    });
-    return { tiers, extraDayPriceCents: parking.extraDayPriceCents };
+    const [tiers, operator] = await Promise.all([
+      prisma.pricingTier.findMany({ where: { parkingId: parking.id }, orderBy: { days: 'asc' }, select: { days: true, priceCents: true } }),
+      prisma.operator.findUnique({ where: { id: actor.operatorId }, select: { commissionBps: true } }),
+    ]);
+    // Shown to the operator next to the grid; null while no commission is configured.
+    const commissionBps = operator?.commissionBps ?? PLATFORM_COMMISSION_BPS;
+    return { tiers, extraDayPriceCents: parking.extraDayPriceCents, commissionBps };
   }
 
   /** Replaces the whole grid (it is edited as one table). */

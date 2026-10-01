@@ -15,7 +15,12 @@ et affectation des véhicules, navette au retour.
   7 nuits), contrôle de capacité par nuit avec surréservation forcée et tracée, statuts, fiche et recherche,
   import des mails de confirmation Allopark par copier-coller (doublons refusés).
   Reste : lecteurs Parkos, Onepark… (un exemple de mail par comparateur), import CSV si besoin.
-- [ ] Jalon 3 — Page publique et notifications
+- [ ] **Jalon 3a — Fiche et tarifs** (fait) : dans l'espace pro, onglet « Sur Plazo » : « Ma fiche » (présentation,
+  services, annulation, photos par adresse, aperçu en direct, mise en ligne refusée tant qu'il n'y a pas de tarifs)
+  et « Mes tarifs » (forfaits par nombre de jours, prix du jour supplémentaire, simulation du prix payé).
+  Reste : envoi de photos depuis l'ordinateur.
+- [ ] Jalon 3b — Site Plazo voyageurs (Next.js, direction M3)
+- [ ] Jalon 3c — Paiement en ligne (Stripe Connect), commission et reversements
 - [ ] Jalon 4 — Cartographie et affectation
 - [ ] Jalon 5 — Navette au retour
 - [ ] Jalon 6 — App mobile (Flutter)

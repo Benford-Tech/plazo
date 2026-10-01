@@ -1,6 +1,11 @@
 import type {
   CapacityPreview,
   EmailImportResult,
+  ListingInput,
+  ListingResponse,
+  Listing,
+  Pricing,
+  PricingTier,
   NewStaff,
   Paginated,
   Parking,
@@ -137,6 +142,11 @@ export const adminApi = {
   updateReservation: (id: string, input: Partial<ReservationInput>) =>
     apiRequest<{ data: Reservation }>(`/internal/reservations/${id}`, { method: "PATCH", body: json(input) }),
   parseEmail: (text: string) => apiRequest<EmailImportResult>("/internal/imports/email", { method: "POST", body: json({ text }) }),
+  getListing: () => apiRequest<ListingResponse>("/internal/listing"),
+  updateListing: (input: ListingInput) => apiRequest<{ data: Listing }>("/internal/listing", { method: "PUT", body: json(input) }),
+  getPricing: () => apiRequest<Pricing>("/internal/pricing"),
+  updatePricing: (tiers: PricingTier[], extraDayPriceCents: number | null) =>
+    apiRequest<{ data: Pricing }>("/internal/pricing", { method: "PUT", body: json({ tiers, extraDayPriceCents }) }),
   changeReservationStatus: (id: string, status: ReservationStatus) =>
     apiRequest<{ data: Reservation }>(`/internal/reservations/${id}/status`, { method: "POST", body: json({ status }) }),
 };
