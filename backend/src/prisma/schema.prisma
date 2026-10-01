@@ -21,9 +21,10 @@ model Operator {
   createdAt DateTime @default(now())
   updatedAt DateTime @default(now()) @updatedAt
 
-  staff     Staff[]
-  parkings  Parking[]
-  auditLogs AuditLog[]
+  staff        Staff[]
+  parkings     Parking[]
+  auditLogs    AuditLog[]
+  reservations Reservation[]
 
   @@map("operators")
 }
@@ -49,9 +50,10 @@ model Staff {
   createdAt   DateTime  @default(now())
   updatedAt   DateTime  @default(now()) @updatedAt
 
-  operator  Operator     @relation(fields: [operatorId], references: [id], onDelete: Cascade)
-  tokens    StaffToken[]
-  auditLogs AuditLog[]
+  operator            Operator      @relation(fields: [operatorId], references: [id], onDelete: Cascade)
+  tokens              StaffToken[]
+  auditLogs           AuditLog[]
+  createdReservations Reservation[]
 
   @@index([operatorId])
   @@map("staff")
@@ -103,7 +105,8 @@ model Parking {
   createdAt            DateTime                               @default(now())
   updatedAt            DateTime                               @default(now()) @updatedAt
 
-  operator Operator @relation(fields: [operatorId], references: [id], onDelete: Cascade)
+  operator     Operator      @relation(fields: [operatorId], references: [id], onDelete: Cascade)
+  reservations Reservation[]
 
   @@index([operatorId])
   @@map("parkings")
@@ -124,4 +127,60 @@ model AuditLog {
 
   @@index([operatorId, createdAt])
   @@map("audit_logs")
+}
+
+enum ReservationStatus {
+  upcoming // booked, vehicle not dropped yet
+  arrived // vehicle dropped at the parking
+  shuttled_out // customer driven to the terminal
+  return_requested // customer back, waiting for pick-up
+  returned // vehicle handed back
+  cancelled
+  no_show
+}
+
+enum ReservationChannel {
+  website // the operator's own booking page (milestone 3)
+  phone
+  counter
+  aggregator // Parkos, Onepark… (name in channelDetail)
+  import
+}
+
+// A booking. Times are stored in UTC; "nights" are counted in the parking's timezone.
+model Reservation {
+  id            String             @id @default(cuid())
+  reference     String             @unique // short code given to the customer
+  operatorId    String
+  parkingId     String
+  channel       ReservationChannel
+  channelDetail String?
+  status        ReservationStatus  @default(upcoming)
+  arrivalAt     DateTime
+  returnAt      DateTime
+  passengers    Int
+  customerName  String
+  customerPhone String
+  customerEmail String?
+  plate         String // display form, e.g. AB-123-CD
+  plateKey      String // letters and digits only, for search
+  returnFlight  String? // e.g. TO 3627
+  notes         String?
+  // Saved although at least one night was already full (forced by staff, audited).
+  overbooked    Boolean            @default(false)
+  createdById   String?
+  arrivedAt     DateTime?
+  returnedAt    DateTime?
+  cancelledAt   DateTime?
+  createdAt     DateTime           @default(now())
+  updatedAt     DateTime           @default(now()) @updatedAt
+
+  operator  Operator @relation(fields: [operatorId], references: [id], onDelete: Cascade)
+  parking   Parking  @relation(fields: [parkingId], references: [id], onDelete: Cascade)
+  createdBy Staff?   @relation(fields: [createdById], references: [id], onDelete: SetNull)
+
+  @@index([parkingId, arrivalAt])
+  @@index([parkingId, returnAt])
+  @@index([operatorId, plateKey])
+  @@map("reservations")
 }

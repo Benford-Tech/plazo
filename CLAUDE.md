@@ -136,6 +136,19 @@ Dans `backend/` :
 Dans `admin/` :
 - `npm run dev` (port 8080), `npm test`, `npm run lint`, `npm run build`
 
+## Direction visuelle — DÉCIDÉE (1er octobre 2026)
+
+Canevas de référence : https://claude.ai/artifact/6ezoCDyLXFNwhAH5ZWUf4u (rangée « Retenu »).
+
+- **Espace pro (web, `admin/`)** : direction **B « Tableau des vols »** — fond noir `#0B0B0C`,
+  jaune `#F5C400` pour l'action et les heures, texte `#F3F3F0`, gris `#A8A8A2`, filets `#3A3A38` ;
+  Archivo Narrow (capitales pour les titres) + JetBrains Mono (heures, chiffres, vols) ; angles vifs.
+  Avec deux emprunts à C : **arrivées et retours en deux colonnes séparées**, et les **plaques**
+  dessinées comme une plaque française (bande bleue `#1F3FA6` « F », fond blanc).
+- **App mobile (Flutter)** : direction **D « style Thempo »** — menu prune `#4b164c`, accent
+  violet `#a427c3`, pêche `#f0a36b` pour le temps fort, dégradé violet → rose → pêche sur les
+  actions principales, Playfair Display (titres) + Inter, cartes arrondies ; plaques façon C aussi.
+
 ## Règles de travail
 
 - **Toujours un design avant le code** pour tout changement d'interface : proposer une ou plusieurs
