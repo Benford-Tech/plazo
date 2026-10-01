@@ -30,7 +30,8 @@ Le métier de ces opérateurs :
 - Nom / parking :
 - Capacité (places) :
 - Navettes / chauffeurs :
-- Voituriers qui déplacent les véhicules (clés confiées) OU clients qui se garent eux-mêmes ? :
+- Voituriers qui déplacent les véhicules (clés confiées) OU clients qui se garent eux-mêmes ? : voituriers (01/10/2026)
+- Sol du parking : gravier, sans marquage (à confirmer sur place)
 - Réservations par jour (moyenne / pic) :
 - Canaux de réservation actuels :
 - Outil actuel (logiciel, Excel, papier) :
