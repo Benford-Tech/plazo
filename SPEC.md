@@ -1,0 +1,263 @@
+# SPEC — Plazo (nom de travail)
+
+Logiciel de gestion pour opérateurs de parkings privés d'aéroport (parking + navette, avec ou sans voiturier).
+Version : 0.2 — 1er octobre 2026 — À valider avec le client n°1 avant développement.
+Changements v0.2 : ajout de la phase 2 « place de marché grand public » (section 3 bis), des rôles et données associés, du paiement et de la commission.
+
+---
+
+## 1. Objectif
+
+Donner à un opérateur de parking d'aéroport un seul outil pour :
+1. recevoir et centraliser ses réservations (son site + autres canaux) sans surréservation ;
+2. savoir où est chaque véhicule dans son parking et le retrouver instantanément ;
+3. organiser les navettes, surtout au retour, en fonction de l'heure réelle d'atterrissage.
+
+Positionnement en deux phases :
+- **Phase 1 (MVP)** : outil POUR L'OPÉRATEUR, avec sa propre page de réservation et le paiement en ligne pour ses clients. Le loueur amène ses propres voyageurs.
+- **Phase 2** : place de marché grand public où plusieurs loueurs proposent leurs places et où les voyageurs cherchent, comparent, réservent et paient (section 3 bis). Elle se construit sur le même modèle de données ; on l'ouvre quand 3 à 5 opérateurs sont actifs sur un même aéroport.
+
+Raison de l'ordre : sans budget d'acquisition, une place de marché vide n'attire personne, alors que les comparateurs existants (Parkos, ParkMundo, Onepark, Free2move…) ont déjà le trafic. Il faut d'abord des loueurs actifs et utiles.
+
+## 2. Utilisateurs et rôles
+
+| Rôle | Qui | Besoins principaux |
+|---|---|---|
+| Gérant | Propriétaire / responsable du parking | Planning, taux de remplissage, réglages (capacité, tarifs, plan), accès à tout |
+| Agent d'accueil | Personnel au parking | Enregistrer arrivées/départs, affecter les places, remettre les véhicules |
+| Chauffeur navette | Conduit la navette | File des clients à récupérer, prise en charge, sur téléphone |
+| Voiturier (optionnel) | Déplace les véhicules | Liste des véhicules à garer/sortir, clés confiées |
+| Client voyageur | Réserve et utilise le parking | Réserver, recevoir confirmation et SMS, être récupéré vite |
+| Voyageur avec compte (phase 2) | Cherche et réserve sur la place de marché | Comparer, payer, retrouver ses réservations, modifier/annuler, laisser un avis |
+| Administrateur plateforme (phase 2) | Toi / ton équipe | Valider les loueurs, fixer la commission, gérer litiges, remboursements, modération des avis |
+
+Un compte opérateur = un loueur (multi-parkings possible plus tard). Les rôles limitent les écrans visibles. En phase 2, un même voyageur peut réserver chez plusieurs loueurs avec un seul compte.
+
+## 3. Périmètre du MVP
+
+### Bloc 1 — Réservations
+
+Fonctionnel :
+- Page publique de réservation propre à l'opérateur (URL dédiée) : dates/heures d'arrivée et de retour, nb de passagers, plaque, téléphone, n° de vol retour (facultatif mais encouragé), options (lavage…).
+- Calcul du prix selon une grille tarifaire simple (par jour, forfaits).
+- Confirmation par email et SMS.
+- Saisie manuelle par le personnel (téléphone, comptoir).
+- Import des réservations d'autres canaux : CSV et saisie assistée à partir d'un mail de confirmation (connecteurs directs aux comparateurs : hors MVP).
+- Vue planning : arrivées et retours du jour, par heure.
+- Contrôle de capacité : blocage ou alerte quand les réservations dépassent la capacité réelle sur une date.
+- Statuts : à venir → arrivé (véhicule déposé) → parti en navette → retour demandé → véhicule rendu / annulé / no-show.
+- Annulation et modification (règles configurables).
+
+Règles métier :
+- Capacité calculée par nuit, pas seulement à l'arrivée (un véhicule occupe sa place du jour d'arrivée au jour de retour).
+- Une marge de sécurité configurable (ex. 5 % de places non réservables).
+- Les fuseaux horaires sont gérés en Europe/Paris côté interface, UTC en base.
+
+Paiement : le MVP peut démarrer avec paiement sur place (le plus simple pour le client n°1), mais la page de réservation doit être conçue pour accueillir le paiement en ligne dès le jalon 3 (voir section 3 bis, qui le détaille). Hors MVP : codes promo, avoirs, facturation automatique.
+
+### Bloc 2 — Plan du parking et affectation des véhicules
+
+Fonctionnel :
+- Éditeur de plan simple : zones → rangées → emplacements (liste/grille, pas de dessin libre).
+- Types d'emplacements : standard, grand gabarit, couvert, PMR, réservé.
+- À l'arrivée, affectation d'un emplacement au véhicule (manuelle ou suggérée).
+- Suggestion d'emplacement qui tient compte de la date de retour : regrouper les retours proches, éviter qu'un véhicule soit bloqué derrière un autre qui part plus tard.
+- Recherche de véhicule par plaque, nom, n° de réservation → emplacement affiché en gros, emplacement de la clé si confiée.
+- Suivi des clés confiées (voiturier) : boîte/crochet numéroté, qui l'a, à quelle heure.
+- Vue d'occupation en temps réel (places libres / occupées par zone).
+
+Règles métier :
+- Un emplacement ne peut contenir qu'un véhicule à la fois (ou un nombre défini pour les files).
+- Si le client se gare lui-même, l'agent confirme l'emplacement a posteriori.
+- Changer un véhicule d'emplacement est tracé (qui, quand, pourquoi).
+
+Hors MVP : plan dessiné graphiquement, caméras, lecture de plaque.
+
+### Bloc 3 — Navette au retour
+
+Fonctionnel :
+- Récupération automatique de l'heure d'atterrissage prévue/réelle à partir du n° de vol et de la date (API de suivi de vols, à choisir).
+- File des retours triée par heure d'arrivée estimée, avec statut de chaque client (vol en retard, atterri, bagages récupérés, appelé, pris en charge).
+- Vue chauffeur sur téléphone : prochains clients à récupérer, point de rendez-vous, bouton « pris en charge » et « déposé au parking ».
+- SMS automatique au client à l'atterrissage : point de rendez-vous, délai estimé, numéro à appeler en cas de souci.
+- Lien/bouton « Je suis prêt » côté client pour signaler qu'il a ses bagages (remplace l'appel téléphonique).
+- Aide à l'affectation des navettes quand plusieurs partent en même temps (regroupement par vague).
+
+Règles métier :
+- Si le n° de vol est absent, repli sur l'heure de retour saisie par le client.
+- Si le vol est annulé/dérouté, alerte au gérant et au client, pas d'envoi de navette tant qu'il n'y a pas de nouvelle info.
+- Temps de trajet navette configurable (par exemple 8 minutes).
+
+Hors MVP : optimisation d'itinéraire, suivi GPS de la navette.
+
+## 3 bis. Phase 2 — Place de marché grand public
+
+Objectif : un site grand public où le voyageur choisit un aéroport et des dates, compare les parkings de plusieurs loueurs, réserve et paie en ligne. Chaque loueur utilise son espace pro (le MVP) pour tout le reste : planning, plan, navette.
+
+Condition de lancement : 3 à 5 loueurs actifs sur au moins un même aéroport (Lyon Saint-Exupéry en premier), avec leurs disponibilités à jour dans l'outil. Sans cela, ne pas ouvrir le site public.
+
+### Écrans grand public
+
+1. **Accueil et recherche** : aéroport, dates et heures d'arrivée et de retour, nombre de passagers.
+2. **Résultats** : liste et carte, filtres (navette, voiturier, couvert, recharge électrique, annulation gratuite, note), tri (prix, distance, avis). Le prix affiché est le prix total du séjour, tout compris.
+3. **Fiche parking** : photos, description, services, distance et durée de navette, horaires, conditions d'annulation, avis, politique de retour (appel, SMS, bouton « Je suis prêt »).
+4. **Récapitulatif et paiement** : coordonnées, plaque, n° de vol retour, options, paiement par carte (et Apple Pay / Google Pay), conditions générales.
+5. **Confirmation et billet** : email et SMS, QR code ou code d'entrée, instructions d'arrivée, lien de gestion.
+6. **Espace voyageur** : réservations à venir et passées, modification, annulation, facture, avis après séjour.
+
+Version mobile d'abord (la majorité des réservations se fait sur téléphone), puis bureau.
+
+### Paiement et commission
+
+- Le paiement en ligne passe par une place de marché de paiement de type **Stripe Connect** : la plateforme encaisse, prélève sa commission et reverse le reste au loueur, sans que la plateforme ait à détenir elle-même un statut d'établissement de paiement. À valider avec un juriste ou un expert-comptable avant de s'engager (statut, TVA, mandat de facturation, conditions générales).
+- Chaque loueur est « onboardé » chez le prestataire de paiement (vérification d'identité et coordonnées bancaires gérées par le prestataire, pas stockées par la plateforme).
+- Commission : pourcentage par réservation, configurable par loueur ; l'affichage au voyageur reste le prix total. Valeur à fixer après échange avec le client n°1 et les futurs loueurs (comparer avec les commissions qu'ils paient aux comparateurs aujourd'hui).
+- Remboursements : totaux ou partiels, selon la politique d'annulation du loueur, déclenchés depuis l'espace pro ou par l'administrateur.
+- Reversements : calendrier configurable (par exemple après le retour du véhicule), relevé téléchargeable pour le loueur.
+- Facturation : le loueur reste l'émetteur de la prestation de parking ; la facture de commission de la plateforme est séparée. Mentions légales à faire valider.
+- Aucune donnée de carte bancaire ne transite ni n'est stockée par la plateforme (paiement hébergé par le prestataire).
+
+### Règles métier spécifiques
+
+- **Disponibilité en temps réel** : l'offre affichée vient de la capacité réelle de chaque loueur (bloc 1 du MVP). Une réservation payée verrouille la place le temps du paiement (expiration au bout de quelques minutes si non finalisée).
+- **Pas de surréservation** : la même vérification de capacité que la page propre du loueur s'applique, sur la même source de vérité.
+- **Un loueur peut rester hors place de marché** : il garde sa page de réservation propre sans être listé.
+- **Avis** : uniquement après un séjour réel et terminé, modérés, avec réponse possible du loueur.
+- **Conditions d'annulation** : chaque loueur choisit parmi quelques modèles (gratuite jusqu'à X heures, non remboursable, etc.), affichés clairement avant le paiement.
+- **Litiges** : un voyageur peut ouvrir un litige (dommage, attente excessive, service non rendu) avec pièces jointes ; l'administrateur arbitre ou renvoie vers le loueur.
+- **Référencement (SEO)** : une page par aéroport et par loueur, avec contenu utile (itinéraire, durée de navette, tarifs types) ; c'est le principal canal d'acquisition sans budget publicitaire.
+
+### Hors périmètre de la phase 2 initiale
+
+Programme de fidélité, abonnements, application mobile native (le site web mobile suffit), multi-devises, cartes cadeaux, accords avec les compagnies aériennes, intégration directe aux comparateurs existants.
+
+## 4. Modèle de données (esquisse)
+
+- **Operator** : id, nom, adresse, coordonnées, fuseau, paramètres.
+- **User** : id, operator_id, nom, email, téléphone, rôle, actif.
+- **Parking** : id, operator_id, nom, capacité totale, marge, temps de trajet navette.
+- **Zone / Row / Spot** : hiérarchie du plan ; Spot : id, rangée, libellé, type, actif.
+- **Reservation** : id, parking_id, canal (site, téléphone, comparateur…), statut, arrivée prévue, retour prévu, nb passagers, nom client, téléphone, email, plaque, n° vol retour, prix, notes.
+- **VehicleStay** : id, reservation_id, spot_id, arrivée réelle, retour réel, clés (oui/non, emplacement clé), état des lieux (texte, photos plus tard).
+- **FlightStatus** : id, reservation_id, vol, heure prévue, heure estimée/réelle, statut, dernière mise à jour.
+- **ShuttleTrip** : id, parking_id, chauffeur_id, heure, direction (aller/retour), passagers liés.
+- **Notification** : id, reservation_id, canal (SMS/email), type, contenu, statut d'envoi, horodatage.
+- **PricingRule** : id, parking_id, règles (par jour, forfait, haute saison).
+- **AuditLog** : qui a fait quoi, quand (affectations, annulations, changements d'emplacement).
+
+Ajouts phase 2 (marketplace) :
+- **Traveler** : id, email, nom, téléphone, préférences, date de création (compte voyageur, optionnel au début).
+- **Listing** : id, parking_id, publié (oui/non), slug, titre, description, photos, services, politique d'annulation, distance et durée de navette, ordre d'affichage.
+- **Airport** : id, code (LYS…), nom, ville, coordonnées, slug de la page SEO.
+- **Payment** : id, reservation_id, prestataire, identifiant externe, montant, devise, statut (en attente, payé, remboursé, partiel, échoué), horodatage.
+- **Payout** : id, operator_id, période, montant brut, commission, montant net, statut, identifiant externe.
+- **CommissionRule** : id, operator_id (ou global), pourcentage, valide du/au.
+- **Review** : id, reservation_id, note, commentaire, réponse du loueur, statut de modération.
+- **Dispute** : id, reservation_id, motif, pièces jointes, statut, décision.
+- **SlotHold** : id, parking_id, dates, expire_à (verrou temporaire pendant le paiement).
+- Dans **Reservation** : ajouter `traveler_id` (nullable), `source` (page loueur / marketplace / import), `payment_status`, `commission_amount`.
+
+## 5. Parcours clés
+
+1. **Réservation en ligne** : client → page publique → choisit dates → voit prix → saisit infos → reçoit confirmation (email + SMS).
+2. **Arrivée au parking** : agent ouvre la fiche (plaque ou nom) → confirme l'arrivée → affecte l'emplacement → (si voiturier) enregistre la clé → le client monte dans la navette.
+3. **Retour** : vol suivi → atterrissage → SMS au client → il appuie sur « Je suis prêt » → le chauffeur voit le client en tête de file → prise en charge → arrivée au parking → l'agent affiche l'emplacement du véhicule → remise → statut « rendu ».
+4. **Surréservation évitée** : une réservation qui dépasserait la capacité sur au moins une nuit est refusée sur la page publique et signalée au personnel en saisie manuelle.
+5. **Retard de vol** : l'API remonte un retard → l'heure estimée se met à jour → la file se réordonne → le client reçoit un SMS d'info si le décalage dépasse un seuil.
+
+## 6. Exigences non fonctionnelles
+
+- **Responsive** : écrans agent et chauffeur utilisables d'une main sur téléphone, gros boutons, lisibles en plein soleil.
+- **Disponibilité** : un parking d'aéroport fonctionne 24h/24 ; viser une disponibilité élevée et un mode dégradé (consultation hors ligne de la liste du jour, à étudier).
+- **Performance** : recherche de véhicule par plaque en moins d'une seconde.
+- **RGPD** : données minimales (nom, téléphone, plaque, vol), finalité claire, durée de conservation limitée (par exemple suppression ou anonymisation quelques mois après le retour), registre de traitement, mentions sur la page de réservation, hébergement dans l'UE.
+- **Sécurité** : authentification forte pour le personnel, rôles, journal d'audit, sauvegardes, aucune donnée de carte bancaire stockée par l'outil au MVP.
+- **Langue** : interface en français ; chaînes externalisées pour traduire plus tard (anglais notamment).
+- **Observabilité** : logs d'erreurs, suivi des échecs d'envoi de SMS et d'appels à l'API de vols.
+
+## 7. Intégrations
+
+| Besoin | Piste | Remarque |
+|---|---|---|
+| SMS | Un fournisseur de SMS (Twilio, OVH, Brevo…) | Expéditeur personnalisé, coût par SMS à répercuter |
+| Email | Un service transactionnel (Resend, Brevo…) | Domaine d'envoi authentifié |
+| Suivi de vols | Une API de statut de vols (AeroDataBox, AviationStack, FlightAware…) | À choisir sur couverture France, prix et limites d'appels |
+| Cartes | OpenStreetMap / lien vers une app de navigation | Pour l'adresse et l'itinéraire |
+| Paiement en ligne et reversement aux loueurs | Stripe Connect (ou équivalent) | Jalon 3 pour la page propre du loueur, phase 2 pour la commission et les reversements ; valider statut, TVA et CGU avec un professionnel |
+| Recherche géographique (phase 2) | Carte (OpenStreetMap / MapLibre) et index de recherche | Distance au terminal, filtres rapides |
+| Avis et modération (phase 2) | Interne au départ | Avis uniquement après séjour terminé |
+
+À vérifier avant de choisir : tarifs réels, limites d'appels, qualité des données sur les vols low cost, conditions d'usage commercial.
+
+## 8. Stack proposée (à valider)
+
+- Application web en TypeScript (Next.js), base PostgreSQL, hébergement en Europe (Vercel + base managée type Supabase ou Neon, ou équivalent).
+- Authentification par email avec lien magique ou mot de passe + rôles.
+- Tâches planifiées (mise à jour des vols, envoi des SMS) via les cron jobs de la plateforme ou une file de jobs.
+- PWA pour la vue chauffeur (installable sur le téléphone, notifications).
+
+C'est une proposition, à remplacer par la stack que tu maîtrises le mieux : la rapidité de livraison compte plus que le choix de techno.
+
+## 9. Découpage en jalons
+
+1. **Socle** (semaine 1) : comptes, rôles, opérateur et parking, capacité, plan minimal (zones/places), base de données.
+2. **Réservations** (semaines 1-2) : saisie manuelle, planning du jour, contrôle de capacité, statuts, import CSV.
+3. **Page publique + notifications** (semaine 3) : formulaire de réservation, calcul de prix, email + SMS de confirmation.
+4. **Plan et affectation** (semaine 4) : affectation à l'arrivée, recherche par plaque, suivi des clés, suggestion d'emplacement.
+5. **Navette au retour** (semaines 5-6) : API de vols, file des retours, vue chauffeur, SMS à l'atterrissage, « Je suis prêt ».
+6. **Pilote chez le client n°1** (semaine 7) : données réelles, retours terrain, corrections.
+
+Les durées sont indicatives et à ajuster avec la date attendue par le client.
+
+**Phase 2 — place de marché** (à lancer seulement quand les conditions de la section 3 bis sont réunies) :
+
+7. **Paiement et reversements** : intégration du prestataire de paiement, onboarding des loueurs, commission, remboursements, relevés de reversement.
+8. **Site public** : pages aéroport et loueur (SEO), recherche et résultats, fiche parking, tunnel de réservation et paiement, confirmation et billet.
+9. **Espace voyageur et confiance** : comptes, avis après séjour, litiges, outils d'administration plateforme.
+10. **Ouverture progressive** : un aéroport (Lyon), 3 à 5 loueurs, mesure de la conversion, puis extension aux autres aéroports.
+
+## 10. Critères d'acceptation du MVP
+
+- Impossible de dépasser la capacité sur une nuit via la page publique.
+- Un agent retrouve l'emplacement d'un véhicule par sa plaque en moins de 10 secondes.
+- Un client qui a saisi son n° de vol reçoit un SMS à l'atterrissage sans intervention humaine.
+- Le chauffeur voit la file des retours triée par heure estimée et peut la mettre à jour en un geste.
+- Le client n°1 utilise l'outil sur une semaine réelle sans repasser par ses anciens tableurs ou cahiers.
+
+Critères d'acceptation de la phase 2 :
+- Un voyageur réserve et paie un parking en moins de 3 minutes sur téléphone, sans créer de compte obligatoire.
+- La commission et le reversement net sont calculés correctement sur 100 % des réservations de test, remboursements partiels inclus.
+- Aucune réservation payée ne dépasse la capacité d'un loueur, même avec deux paiements simultanés sur la dernière place.
+- Un loueur ouvre son compte de paiement et publie sa fiche en moins de 30 minutes.
+- Les pages aéroport et loueur sont indexables et se chargent rapidement sur mobile.
+
+## 11. Questions ouvertes (à poser au client n°1)
+
+1. Voituriers qui déplacent les véhicules (clés confiées) ou clients qui se garent eux-mêmes ?
+2. Capacité, nombre de navettes et de chauffeurs, pic de réservations par jour ?
+3. Canaux de réservation actuels (comparateurs, site, téléphone) et part de chacun ?
+4. Outil actuel et ce qui l'énerve le plus ?
+5. Combien paie-t-il aujourd'hui en commissions aux comparateurs ?
+6. Gère-t-il déjà un état des lieux des véhicules (photos, rayures) ?
+7. Paiement : sur place, à la réservation, ou via les comparateurs ?
+8. Prix convenu, date de mise en service attendue, nombre de parkings concernés ?
+
+Questions pour la phase 2 (à poser au client n°1 et à d'autres loueurs) :
+
+9. Accepterait-il d'être listé sur une place de marché avec une commission ? À partir de quel pourcentage ça devient trop cher pour lui ?
+10. Quelles commissions paie-t-il aujourd'hui aux comparateurs, et sur quelle part de ses réservations ?
+11. Connaît-il d'autres loueurs autour du même aéroport prêts à tester ?
+12. Quelle politique d'annulation pratique-t-il, et comment gère-t-il les remboursements aujourd'hui ?
+13. Préfère-t-il être payé à la réservation ou après le séjour ?
+
+## 12. Risques
+
+- **Concurrence** (ParkFlow notamment) : comparer fonctionnalités et prix avant de coder ; l'avantage visé est le suivi de vols, la file de navettes et le plan des places, en français.
+- **Fiabilité des données de vols** : prévoir un repli (heure saisie) et mesurer la qualité avec le client.
+- **Dépendance à un seul client** : prévoir dès le début un modèle multi-opérateurs, même si un seul est actif.
+- **Nom du produit** : rester dans un fichier de configuration unique tant que le nom n'est pas validé (INPI, domaine).
+- **Problème de l'œuf et de la poule (phase 2)** : une place de marché a besoin de loueurs et de voyageurs ; sans budget de publicité, le trafic doit venir du SEO et des loueurs eux-mêmes. D'où l'ordre : outil utile d'abord, site public ensuite.
+- **Concurrence sur le trafic** : Parkos, ParkMundo, Onepark, Free2move et Parclick dominent déjà la recherche ; viser un aéroport à la fois, avec des pages locales plus utiles que les leurs.
+- **Juridique et fiscal du paiement** : statut de la plateforme, TVA sur la commission, mandat de facturation, conditions générales, responsabilité en cas de litige ; à faire valider par un professionnel avant la mise en ligne du paiement.
+- **Dépendance aux loueurs** : un loueur qui sort de la plateforme emporte ses clients ; prévoir une valeur forte côté outil (planning, plan, navette) pour qu'il reste.
+- **Fuite de commission** : un voyageur peut réserver hors plateforme la fois suivante ; accepter ce risque ou le réduire par le service (billet, suivi de vol, avis).
