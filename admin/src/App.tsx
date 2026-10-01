@@ -6,10 +6,13 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import { AuthProvider, useAuth } from "@/contexts/AuthContext";
 import { can, type Permission } from "@/lib/roles";
 import AccountPage from "@/pages/AccountPage";
-import DashboardPage from "@/pages/DashboardPage";
 import LoginPage from "@/pages/LoginPage";
 import NotFound from "@/pages/NotFound";
+import NewReservationPage from "@/pages/NewReservationPage";
 import ParkingPage from "@/pages/ParkingPage";
+import PlanningPage from "@/pages/PlanningPage";
+import ReservationPage from "@/pages/ReservationPage";
+import ReservationsPage from "@/pages/ReservationsPage";
 import TeamPage from "@/pages/TeamPage";
 
 const queryClient = new QueryClient({ defaultOptions: { queries: { retry: 1, refetchOnWindowFocus: false } } });
@@ -36,7 +39,7 @@ const App = () => (
   <QueryClientProvider client={queryClient}>
     <AuthProvider>
       <TooltipProvider>
-        <Sonner position="top-center" />
+        <Sonner position="top-center" theme="dark" />
         <BrowserRouter future={{ v7_startTransition: true, v7_relativeSplatPath: true }}>
           <Routes>
             <Route path="/login" element={<LoginPage />} />
@@ -47,7 +50,17 @@ const App = () => (
                 </ProtectedRoute>
               }
             >
-              <Route path="/" element={<DashboardPage />} />
+              <Route path="/" element={<PlanningPage />} />
+              <Route path="/reservations" element={<ReservationsPage />} />
+              <Route
+                path="/reservations/nouvelle"
+                element={
+                  <RequirePermission permission="reservations:manage">
+                    <NewReservationPage />
+                  </RequirePermission>
+                }
+              />
+              <Route path="/reservations/:id" element={<ReservationPage />} />
               <Route
                 path="/parking"
                 element={

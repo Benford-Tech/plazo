@@ -1,4 +1,17 @@
-import type { NewStaff, Parking, ParkingSettings, Staff, StaffRole, TokenData } from "./types";
+import type {
+  CapacityPreview,
+  NewStaff,
+  Paginated,
+  Parking,
+  ParkingSettings,
+  Planning,
+  Reservation,
+  ReservationInput,
+  ReservationStatus,
+  Staff,
+  StaffRole,
+  TokenData,
+} from "./types";
 
 const API_BASE = (import.meta.env.VITE_API_URL ?? "http://localhost:3005").replace(/\/$/, "");
 const TOKENS_KEY = "plazo_admin_tokens";
@@ -10,6 +23,7 @@ export class ApiError extends Error {
     message: string,
     public code?: string,
     public fields?: Record<string, string>,
+    public details?: unknown,
   ) {
     super(message);
     this.name = "ApiError";
@@ -81,7 +95,7 @@ export async function apiRequest<T = unknown>(endpoint: string, options: Request
 
   if (!res.ok) {
     const body = await res.json().catch(() => ({}));
-    throw new ApiError(res.status, body.message ?? `HTTP ${res.status}`, body.code, body.fields);
+    throw new ApiError(res.status, body.message ?? `HTTP ${res.status}`, body.code, body.fields, body.details);
   }
   if (res.status === 204) return {} as T;
   return res.json() as Promise<T>;
@@ -107,4 +121,20 @@ export const adminApi = {
     apiRequest<{ data: Staff }>(`/internal/staff/${id}`, { method: "PATCH", body: json(patch) }),
   resetStaffPassword: (id: string, password: string) =>
     apiRequest<{ message: string }>(`/internal/staff/${id}/reset-password`, { method: "POST", body: json({ password }) }),
+
+  getPlanning: (date?: string) => apiRequest<Planning>(`/internal/planning${date ? `?date=${date}` : ""}`),
+  previewCapacity: (arrivalAt: string, returnAt: string, excludeId?: string) =>
+    apiRequest<CapacityPreview>(
+      `/internal/capacity?${new URLSearchParams({ arrivalAt, returnAt, ...(excludeId ? { excludeId } : {}) }).toString()}`,
+    ),
+  searchReservations: (params: { q?: string; page?: number }) =>
+    apiRequest<Paginated<Reservation>>(
+      `/internal/reservations?${new URLSearchParams({ ...(params.q ? { q: params.q } : {}), page: String(params.page ?? 1) }).toString()}`,
+    ),
+  getReservation: (id: string) => apiRequest<Reservation>(`/internal/reservations/${id}`),
+  createReservation: (input: ReservationInput) => apiRequest<{ data: Reservation }>("/internal/reservations", { method: "POST", body: json(input) }),
+  updateReservation: (id: string, input: Partial<ReservationInput>) =>
+    apiRequest<{ data: Reservation }>(`/internal/reservations/${id}`, { method: "PATCH", body: json(input) }),
+  changeReservationStatus: (id: string, status: ReservationStatus) =>
+    apiRequest<{ data: Reservation }>(`/internal/reservations/${id}/status`, { method: "POST", body: json({ status }) }),
 };

@@ -50,3 +50,79 @@ export interface NewStaff {
   role: StaffRole;
   password: string;
 }
+
+export type ReservationStatus = "upcoming" | "arrived" | "shuttled_out" | "return_requested" | "returned" | "cancelled" | "no_show";
+export type ReservationChannel = "website" | "phone" | "counter" | "aggregator" | "import";
+
+export interface Reservation {
+  id: string;
+  reference: string;
+  parkingId: string;
+  channel: ReservationChannel;
+  channelDetail: string | null;
+  status: ReservationStatus;
+  arrivalAt: string;
+  returnAt: string;
+  passengers: number;
+  customerName: string;
+  customerPhone: string;
+  customerEmail: string | null;
+  plate: string;
+  returnFlight: string | null;
+  notes: string | null;
+  overbooked: boolean;
+  arrivedAt: string | null;
+  returnedAt: string | null;
+  cancelledAt: string | null;
+  createdAt: string;
+}
+
+export interface NightLoad {
+  date: string;
+  count: number;
+  bookable: number;
+  free: number;
+  overbooked: boolean;
+}
+
+export interface Planning {
+  date: string;
+  timezone: string;
+  parking: { id: string; name: string; bookableCapacity: number };
+  arrivals: Reservation[];
+  returns: Reservation[];
+  nights: NightLoad[];
+  stats: { arrivals: number; arrived: number; returns: number; returnsWithFlight: number };
+}
+
+export interface CapacityPreview {
+  nights: NightLoad[];
+  fullNights: string[];
+  canForce: boolean;
+}
+
+/** Dates are local to the parking, "YYYY-MM-DDTHH:mm". */
+export interface ReservationInput {
+  channel: ReservationChannel;
+  channelDetail?: string | null;
+  arrivalAt: string;
+  returnAt: string;
+  passengers: number;
+  customerName: string;
+  customerPhone: string;
+  customerEmail?: string | null;
+  plate: string;
+  returnFlight?: string | null;
+  notes?: string | null;
+  force?: boolean;
+}
+
+export interface Paginated<T> {
+  docs: T[];
+  totalDocs: number;
+  page: number;
+  limit: number;
+  totalPages: number;
+  hasPrevPage: boolean;
+  hasNextPage: boolean;
+}

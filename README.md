@@ -11,7 +11,9 @@ et affectation des véhicules, navette au retour.
 - [x] **Jalon 1 — Socle** (stack LoveNest) : comptes du personnel, rôles (gérant, agent d'accueil,
   chauffeur, voiturier), opérateur et parking, capacité et marge de sécurité, base PostgreSQL + PostGIS,
   API documentée, espace pro.
-- [ ] Jalon 2 — Réservations
+- [ ] **Jalon 2 — Réservations** (en cours) : fait — saisie manuelle, planning du jour (arrivées et retours,
+  7 nuits), contrôle de capacité par nuit avec surréservation forcée et tracée, statuts, fiche et recherche.
+  Reste : import CSV.
 - [ ] Jalon 3 — Page publique et notifications
 - [ ] Jalon 4 — Cartographie et affectation
 - [ ] Jalon 5 — Navette au retour
@@ -76,3 +78,8 @@ Documentation interactive : `/api-docs` (Swagger). Routes du jalon 1, toutes sou
 | POST | `/internal/staff/:id/reset-password` | Mot de passe provisoire (gérant) |
 | GET | `/internal/parking` | Parking et capacité réservable |
 | PATCH | `/internal/parkings/:id` | Réglages du parking (gérant, tracé) |
+| GET | `/internal/planning?date=` | Arrivées, retours et charge des 7 nuits d'une journée |
+| GET | `/internal/capacity?arrivalAt=&returnAt=` | Charge de chaque nuit d'un séjour, nuits complètes |
+| GET / POST | `/internal/reservations` | Recherche (plaque, nom, téléphone, référence) / création |
+| GET / PATCH | `/internal/reservations/:id` | Fiche / modification (les dates revérifient la capacité) |
+| POST | `/internal/reservations/:id/status` | Étape suivante : arrivée, navette, retour, rendu, annulation… |

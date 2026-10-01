@@ -2,41 +2,37 @@
 @tailwind components;
 @tailwind utilities;
 
-/* Provisional palette (blue, neutral): the visual direction is still to be chosen. */
+/*
+ * Direction B « Tableau des vols » (décision du 01/10/2026) : fond noir, jaune pour l'action,
+ * les heures et ce qui demande l'attention ; angles vifs. Couleurs de référence :
+ * noir #0B0B0C, surface #161617, ligne #3A3A38, texte #F3F3F0, gris #A8A8A2, jaune #F5C400.
+ */
 @layer base {
   :root {
-    --background: 210 20% 98%;
-    --foreground: 222 47% 11%;
-    --card: 0 0% 100%;
-    --card-foreground: 222 47% 11%;
-    --popover: 0 0% 100%;
-    --popover-foreground: 222 47% 11%;
-    --primary: 201 90% 32%;
-    --primary-foreground: 0 0% 100%;
-    --secondary: 210 40% 96%;
-    --secondary-foreground: 222 47% 11%;
-    --muted: 210 40% 96%;
-    --muted-foreground: 215 16% 40%;
-    --accent: 201 80% 95%;
-    --accent-foreground: 201 90% 25%;
-    --destructive: 0 72% 45%;
-    --destructive-foreground: 0 0% 100%;
-    --success: 152 60% 32%;
-    --success-foreground: 0 0% 100%;
-    --warning: 38 92% 45%;
-    --warning-foreground: 0 0% 100%;
-    --border: 214 32% 88%;
-    --input: 214 32% 80%;
-    --ring: 201 90% 32%;
-    --radius: 0.6rem;
-    --sidebar-background: 215 45% 14%;
-    --sidebar-foreground: 210 30% 88%;
-    --sidebar-primary: 199 89% 70%;
-    --sidebar-primary-foreground: 215 45% 14%;
-    --sidebar-accent: 215 35% 22%;
-    --sidebar-accent-foreground: 0 0% 100%;
-    --sidebar-border: 215 30% 22%;
-    --sidebar-ring: 199 89% 60%;
+    --background: 240 4% 4%;
+    --foreground: 60 9% 95%;
+    --card: 240 2% 9%;
+    --card-foreground: 60 9% 95%;
+    --popover: 240 2% 9%;
+    --popover-foreground: 60 9% 95%;
+    --primary: 49 100% 48%;
+    --primary-foreground: 240 4% 4%;
+    --secondary: 240 2% 11%;
+    --secondary-foreground: 60 9% 95%;
+    --muted: 240 2% 11%;
+    --muted-foreground: 60 3% 65%;
+    --accent: 240 2% 14%;
+    --accent-foreground: 60 9% 95%;
+    --destructive: 350 89% 62%;
+    --destructive-foreground: 240 4% 4%;
+    --success: 145 63% 49%;
+    --success-foreground: 240 4% 4%;
+    --warning: 49 100% 48%;
+    --warning-foreground: 240 4% 4%;
+    --border: 60 2% 22%;
+    --input: 60 2% 22%;
+    --ring: 49 100% 48%;
+    --radius: 0rem;
   }
 }
 
@@ -45,6 +41,10 @@
     @apply border-border;
   }
   body {
-    @apply bg-background text-foreground antialiased;
+    @apply bg-background font-sans text-foreground antialiased;
+  }
+  /* Times, counts and flight numbers line up in columns. */
+  .tabular {
+    font-variant-numeric: tabular-nums;
   }
 }

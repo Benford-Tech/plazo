@@ -1,13 +1,20 @@
 import type { StaffRole } from "./types";
 
 // Mirrors backend/src/domain/roles.ts: the backend stays the authority, this only hides screens.
-export type Permission = "dashboard:view" | "parking:manage" | "team:manage";
+export type Permission =
+  | "dashboard:view"
+  | "parking:manage"
+  | "team:manage"
+  | "reservations:view"
+  | "reservations:manage"
+  | "reservations:force"
+  | "reservations:status";
 
 const PERMISSIONS: Record<StaffRole, readonly Permission[]> = {
-  manager: ["dashboard:view", "parking:manage", "team:manage"],
-  agent: ["dashboard:view"],
-  driver: ["dashboard:view"],
-  valet: ["dashboard:view"],
+  manager: ["dashboard:view", "parking:manage", "team:manage", "reservations:view", "reservations:manage", "reservations:force", "reservations:status"],
+  agent: ["dashboard:view", "reservations:view", "reservations:manage", "reservations:force", "reservations:status"],
+  driver: ["dashboard:view", "reservations:view", "reservations:status"],
+  valet: ["dashboard:view", "reservations:view", "reservations:status"],
 };
 
 export const STAFF_ROLES: StaffRole[] = ["manager", "agent", "driver", "valet"];
