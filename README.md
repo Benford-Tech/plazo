@@ -44,20 +44,21 @@ Le compte gérant ainsi créé ajoute ensuite son équipe depuis la page « Équ
 Tests : `npm test` dans `backend/` (base `DATABASE_URL_TEST`, dont le nom doit finir par `_test` ;
 elle est entièrement vidée à chaque lancement) et dans `admin/`.
 
-## Mise en ligne
+## Mise en ligne (Supabase + Vercel)
 
 1. **Base (Supabase)** : projet en région Paris (`eu-west-3`), extension PostGIS activée.
-   - `DATABASE_URL` : « Transaction pooler » (port 6543) avec `?pgbouncer=true` ;
-   - `DIRECT_URL` : « Direct connection » (port 5432), pour les migrations ;
-   - `BOSS_DATABASE_URL` : connexion directe ou « Session pooler » (pg-boss a besoin d'une session).
-2. **Serveur (DigitalOcean, comme LoveNest)** : image Docker construite depuis la racine du dépôt
-   (`docker build -f backend/Dockerfile -t plazo-backend .`). Au démarrage, le conteneur applique
-   les migrations puis lance l'API sur le port 3005. Variables : celles de `backend/.env.example`,
-   avec `NODE_ENV=production` et `CLIENT_URL` = l'adresse de l'espace pro.
-3. **Espace pro** : `npm run build` dans `admin/` avec `VITE_API_URL` = l'adresse de l'API,
-   puis publier `admin/dist` sur un hébergement statique (LoveNest utilise Firebase Hosting).
-   Toutes les routes doivent renvoyer `index.html`.
-4. Créer le premier opérateur avec `npm run seed:operator` pointé sur la base Supabase.
+   - `DATABASE_URL` : « Transaction pooler » (port 6543) avec `?pgbouncer=true&connection_limit=1` ;
+   - `DIRECT_URL` : « Direct connection » (port 5432), pour les migrations.
+2. **API (projet Vercel n°1)** : importer le dépôt, dossier racine `backend`, préréglage « Other »,
+   région des fonctions Paris (`cdg1`). Laisser activée l'option « Include files outside the root
+   directory » (le nom du produit est lu dans `product.json` à la racine).
+   Variables : `NODE_ENV=production`, `DATABASE_URL`, `DIRECT_URL`, `SECRET_KEY`, `CRON_SECRET`,
+   `CLIENT_URL` (adresse de l'espace pro). Chaque déploiement applique les migrations
+   (`npm run vercel-build`) puis publie l'API ; la purge nocturne des jetons est un Vercel Cron.
+3. **Espace pro (projet Vercel n°2)** : même dépôt, dossier racine `admin`, préréglage « Vite »,
+   variable `VITE_API_URL` = adresse de l'API.
+4. Créer le premier opérateur depuis un poste : `npm run seed:operator` dans `backend/`, avec
+   `DATABASE_URL` pointé sur la base Supabase.
 
 ## API
 

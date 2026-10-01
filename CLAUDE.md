@@ -80,8 +80,13 @@ Plazo reprend la stack et les conventions des dépôts `lovenest-backend`, `love
 
 - **Serveur (`backend/`)** : Express 5 + TypeScript, Prisma 6 (schéma `src/prisma/schema.prisma`,
   client généré dans `src/generated/prisma-client`), services typedi, DTO class-validator,
-  passport-jwt, bcrypt, envalid, winston, Swagger (`/api-docs`), tâches de fond pg-boss.
-  Docker, déployé sur DigitalOcean comme LoveNest.
+  passport-jwt, bcrypt, envalid, winston, Swagger (`/api-docs`).
+- **Hébergement : Vercel** (décision du 01/10/2026 : « pas DigitalOcean, plutôt Vercel »), région
+  Paris `cdg1`, pour l'API et l'espace pro (deux projets Vercel : dossiers racine `backend` et `admin`).
+  L'API tourne dans une seule fonction serverless (`backend/api/index.js`, qui charge `dist/`).
+  Conséquences : pas de pg-boss (pas de processus permanent), les tâches planifiées sont des routes
+  `/internal/cron/...` appelées par Vercel Cron (`backend/vercel.json`, protégées par `CRON_SECRET`) ;
+  pas de fichiers de logs (winston écrit dans la console, que Vercel collecte).
 - **Base de données** : PostgreSQL + PostGIS, hébergée sur Supabase (région Paris `eu-west-3`).
 - **Espace pro (`admin/`)** : Vite + React 18 + shadcn/ui (Tailwind 3), React Router, React Query,
   sonner. Héberge l'espace pro du loueur, puis sa page de réservation (jalon 3).
@@ -100,7 +105,7 @@ Le nom du produit doit rester dans UN seul fichier de configuration (il peut enc
 
 - `product.json` : nom du produit et libellés de marque (seul endroit où le nom apparaît ;
   lu par le serveur et l'espace pro).
-- `backend/` : API REST. Les routes du personnel du loueur sont sous `/internal/...`
+- `backend/` : API REST (`api/index.js` = point d'entrée Vercel). Les routes du personnel du loueur sont sous `/internal/...`
   (`StaffAuthMiddleware`, jetons stockés en base et révocables), comme les routes staff de LoveNest.
 - `admin/` : espace pro (et plus tard la page de réservation publique).
 - `mobile/` : app Flutter (à venir).

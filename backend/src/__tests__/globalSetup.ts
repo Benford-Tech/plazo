@@ -13,7 +13,6 @@ export default async function globalSetup() {
 
   const prisma = new PrismaClient({ datasourceUrl: url });
   await prisma.$executeRawUnsafe('DROP SCHEMA IF EXISTS public CASCADE');
-  await prisma.$executeRawUnsafe('DROP SCHEMA IF EXISTS pgboss CASCADE');
   await prisma.$executeRawUnsafe('CREATE SCHEMA public');
   await prisma.$disconnect();
 

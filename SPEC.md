@@ -265,7 +265,8 @@ Ajouts phase 2 (marketplace) :
 ## 8. Stack retenue
 
 Plazo reprend la stack de LoveNest (décision du 1er octobre 2026) :
-- Serveur : Express 5 + TypeScript + Prisma 6, services typedi, validation class-validator, authentification JWT (passport-jwt, jetons stockés en base donc révocables), tâches de fond pg-boss, documentation Swagger, Docker sur DigitalOcean.
+- Serveur : Express 5 + TypeScript + Prisma 6, services typedi, validation class-validator, authentification JWT (passport-jwt, jetons stockés en base donc révocables), documentation Swagger.
+- Hébergement : Vercel (région Paris) pour l'API (une fonction serverless) et l'espace pro. Les tâches planifiées (mise à jour des vols, envois de SMS, purges RGPD) passent par Vercel Cron.
 - Base : PostgreSQL + PostGIS hébergée sur Supabase (région Paris).
 - Espace pro et page de réservation : Vite + React + shadcn/ui, React Query.
 - App mobile : Flutter, architecture de LoveNest (bloc, auto_route, get_it, retrofit, freezed, easy_localization), notifications OneSignal, builds Codemagic. Deux apps à terme via les flavors.

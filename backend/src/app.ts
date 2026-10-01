@@ -14,7 +14,6 @@ import { Routes } from './interfaces/routes.interface';
 import { ErrorMiddleware } from './middlewares/error.middleware';
 import { appLimiter, authLimiter } from './middlewares/rateLimiter';
 import { logger, stream } from './utils/logger';
-import { startWorkers } from './workers';
 
 export class App {
   public app: express.Application;
@@ -36,13 +35,12 @@ export class App {
   }
 
   public listen() {
-    this.app.listen(this.port, async () => {
+    this.app.listen(this.port, () => {
       logger.info(`=================================`);
       logger.info(`======= ENV: ${this.env} =======`);
       logger.info(`🚀 App listening on the port ${this.port}`);
       logger.info(`🚀 API docs are at http://localhost:${this.port}/api-docs`);
       logger.info(`=================================`);
-      await startWorkers();
     });
   }
 

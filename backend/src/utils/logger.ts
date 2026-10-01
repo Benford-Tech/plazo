@@ -5,8 +5,10 @@ import winstonDaily from 'winston-daily-rotate-file';
 
 const logDir: string = join(__dirname, '../../logs');
 const isTest = process.env.NODE_ENV === 'test';
+// Vercel's filesystem is read-only: log to the console only, Vercel collects it.
+const writeFiles = !isTest && !process.env.VERCEL;
 
-if (!isTest && !existsSync(logDir)) {
+if (writeFiles && !existsSync(logDir)) {
   mkdirSync(logDir);
 }
 
@@ -15,7 +17,7 @@ const logFormat = winston.format.printf(({ timestamp, level, message }) => `${ti
 const logger = winston.createLogger({
   format: winston.format.combine(winston.format.timestamp({ format: 'YYYY-MM-DD HH:mm:ss' }), logFormat),
   silent: isTest,
-  transports: isTest
+  transports: !writeFiles
     ? []
     : [
         new winstonDaily({

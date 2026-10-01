@@ -1,11 +1,14 @@
 import { config } from 'dotenv';
-import { readFileSync } from 'fs';
+import { existsSync, readFileSync } from 'fs';
 import { resolve } from 'path';
 
 config({ path: `.env.${process.env.NODE_ENV || 'development'}.local`, quiet: true });
 config({ quiet: true });
 
-export const { NODE_ENV, PORT, SECRET_KEY, DATABASE_URL, BOSS_DATABASE_URL } = process.env;
+export const { NODE_ENV, PORT, SECRET_KEY, DATABASE_URL, CRON_SECRET } = process.env;
+
+// Set by Vercel on every deployment.
+export const IS_VERCEL = !!process.env.VERCEL;
 
 export const CLIENT_URLS = (process.env.CLIENT_URL || '')
   .split(',')
@@ -23,7 +26,10 @@ export const LOGIN_WINDOW_MINUTES = 15;
 export const BCRYPT_ROUNDS = 10;
 
 // The product name is still a working name: it lives only in the repository's product.json.
-// src/config and dist/config are both two levels below backend/.
-const product = JSON.parse(readFileSync(resolve(__dirname, '../../../product.json'), 'utf8')) as { name: string; tagline: string };
+// The build copies it to dist/product.json (deployed with the function); in development it is
+// read from the repository root.
+const productPath = [resolve(__dirname, '../product.json'), resolve(__dirname, '../../../product.json')].find(existsSync);
+if (!productPath) throw new Error('product.json not found');
+const product = JSON.parse(readFileSync(productPath, 'utf8')) as { name: string; tagline: string };
 export const PRODUCT_NAME = product.name;
 export const PRODUCT_TAGLINE = product.tagline;

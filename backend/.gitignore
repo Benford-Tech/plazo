@@ -4,4 +4,5 @@ coverage
 logs
 src/generated
 .env
+.vercel
 !.env.example
