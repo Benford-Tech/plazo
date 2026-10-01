@@ -149,6 +149,10 @@ Canevas de référence : https://claude.ai/artifact/6ezoCDyLXFNwhAH5ZWUf4u (rang
   Archivo Narrow (capitales pour les titres) + JetBrains Mono (heures, chiffres, vols) ; angles vifs.
   Avec deux emprunts à C : **arrivées et retours en deux colonnes séparées**, et les **plaques**
   dessinées comme une plaque française (bande bleue `#1F3FA6` « F », fond blanc).
+- **Site Plazo voyageurs (web)** : direction **M3 « Plazo voyageur »** (choix du 01/10/2026), le même
+  univers que l'app voyageur : en-tête prune `#4b164c`, bandeau en dégradé prune, titres en Playfair
+  Display italique, Inter pour le texte, accent violet `#a427c3`, bouton principal en dégradé violet →
+  rose → pêche, cartes arrondies (16 px), plaques façon C. Maquettes : artboards `Plazo-M3-*` du canevas.
 - **App mobile (Flutter)** : direction **D « style Thempo »** — menu prune `#4b164c`, accent
   violet `#a427c3`, pêche `#f0a36b` pour le temps fort, dégradé violet → rose → pêche sur les
   actions principales, Playfair Display (titres) + Inter, cartes arrondies ; plaques façon C aussi.
