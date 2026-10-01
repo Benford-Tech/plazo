@@ -73,15 +73,17 @@ puis la commission et les reversements en phase 2 (place de marché ouverte aux 
   ce qu'il ne fait pas (suivi de vol, file de navettes au retour, plan des places).
 - Autres : ParkAlto (hors-aéroport), O-Valet (voiturier, suivi de vols), netPark, SMS Valet.
 
-## Stack — À DÉCIDER
+## Stack — DÉCIDÉE (1er octobre 2026)
 
-- Front web / back :
+- Front web / back : Next.js (App Router, TypeScript), API REST dans le même projet, hébergé sur Vercel (région Paris `cdg1`)
 - App mobile native : Flutter (deux apps à terme via les flavors : « pro » et « voyageur »)
-- Base de données : (proposé : PostgreSQL + PostGIS, nécessaire pour la géométrie du plan)
+- Base de données : PostgreSQL + PostGIS, hébergée sur Supabase (région Paris `eu-west-3`) ;
+  Supabase sert d'hébergeur Postgres, la logique (authentification, règles métier) reste dans Next.js
+- ORM / migrations : Drizzle
 - Cartographie : Google Maps Platform
-- Hébergement :
-- SMS :
-- API de suivi de vols :
+- SMS et email : Brevo
+- API de suivi de vols : solution gratuite au départ (AirLabs, offre gratuite), derrière une interface
+  interchangeable ; repli sur AeroDataBox (offre payante d'entrée) si les quotas ne suffisent pas
 
 Deux clients, un seul back-end :
 - **Application web** : espace pro (gérant, agents) et page de réservation propre au loueur.
@@ -93,6 +95,20 @@ Deux clients, un seul back-end :
 Contraintes : application web responsive, application mobile native iOS et Android,
 interface en français, données personnelles clients → RGPD (minimiser, durée de conservation).
 Le nom du produit doit rester dans UN seul fichier de configuration (il peut encore changer).
+
+## Structure du dépôt
+
+- `product.json` : nom du produit et libellés de marque (seul endroit où le nom apparaît).
+- `web/` : application Next.js (espace pro, page de réservation, API `/api/v1` pour l'app mobile).
+- `mobile/` : app Flutter (à venir).
+
+## Commandes (dans `web/`)
+
+- `pnpm dev` : serveur de développement
+- `pnpm test` : tests (base `DATABASE_URL_TEST` requise)
+- `pnpm lint`, `pnpm typecheck`
+- `pnpm db:generate` puis `pnpm db:migrate` : migrations Drizzle
+- `pnpm seed:operator` : créer un opérateur, son parking et son compte gérant
 
 ## Règles de travail
 

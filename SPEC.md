@@ -262,9 +262,9 @@ Ajouts phase 2 (marketplace) :
 
 À vérifier avant de choisir : tarifs réels, limites d'appels, qualité des données sur les vols low cost, conditions d'usage commercial.
 
-## 8. Stack proposée (à valider)
+## 8. Stack retenue
 
-- Application web en TypeScript (Next.js), base PostgreSQL, hébergement en Europe (Vercel + base managée type Supabase ou Neon, ou équivalent).
+- Application web en TypeScript (Next.js) sur Vercel (région Paris), base PostgreSQL + PostGIS hébergée sur Supabase (région Paris). ORM Drizzle.
 - Authentification par email avec lien magique ou mot de passe + rôles.
 - Tâches planifiées (mise à jour des vols, envoi des SMS) via les cron jobs de la plateforme ou une file de jobs.
 - Application mobile native en Flutter (Dart), iOS et Android depuis un seul code.
@@ -272,7 +272,8 @@ Ajouts phase 2 (marketplace) :
 - Toutes les règles métier (capacité, statuts, prix) vivent côté serveur ; l'app mobile ne les recalcule pas.
 - Dépôt unique : web et back-end, app Flutter, spécification de l'API.
 
-C'est une proposition, à remplacer par la stack que tu maîtrises le mieux : la rapidité de livraison compte plus que le choix de techno.
+- SMS et email : Brevo.
+- Suivi de vols : AirLabs (offre gratuite, 1 000 appels/mois) au départ, en interrogeant les arrivées de l'aéroport en un seul appel pour tous les clients et seulement quand un vol suivi approche ; AeroDataBox en repli. Le code passe par une interface interchangeable. Flightradar24 n'a pas d'offre gratuite et OpenSky est réservé à l'usage non commercial.
 
 ## 9. Découpage en jalons
 
