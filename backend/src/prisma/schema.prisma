@@ -15,11 +15,13 @@ datasource db {
 
 // An operator is a parking company (a "loueur"). Everything is scoped by operator.
 model Operator {
-  id        String   @id @default(cuid())
-  name      String
-  slug      String   @unique
-  createdAt DateTime @default(now())
-  updatedAt DateTime @default(now()) @updatedAt
+  id            String   @id @default(cuid())
+  name          String
+  slug          String   @unique
+  // Plazo's commission on online bookings, in basis points (1500 = 15 %). Null: the platform default.
+  commissionBps Int?
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @default(now()) @updatedAt
 
   staff        Staff[]
   parkings     Parking[]
@@ -105,8 +107,13 @@ model Parking {
   createdAt            DateTime                              @default(now())
   updatedAt            DateTime                              @default(now()) @updatedAt
 
+  // Price per day beyond the longest package of the grid, in cents.
+  extraDayPriceCents Int?
+
   operator     Operator      @relation(fields: [operatorId], references: [id], onDelete: Cascade)
   reservations Reservation[]
+  pricingTiers PricingTier[]
+  listing      Listing?
 
   @@index([operatorId])
   @@map("parkings")
@@ -188,4 +195,66 @@ model Reservation {
   @@index([parkingId, returnAt])
   @@index([operatorId, plateKey])
   @@map("reservations")
+}
+
+// Airports served by the platform (Lyon Saint-Exupéry first).
+model Airport {
+  id        String   @id @default(cuid())
+  code      String   @unique // IATA, e.g. LYS
+  name      String
+  city      String
+  slug      String   @unique // URL of the airport page, e.g. lyon-saint-exupery
+  timezone  String   @default("Europe/Paris")
+  latitude  Float
+  longitude Float
+  createdAt DateTime @default(now())
+
+  listings Listing[]
+
+  @@map("airports")
+}
+
+// "Package up to N days": a stay of D days costs the smallest package with days >= D.
+model PricingTier {
+  id         String @id @default(cuid())
+  parkingId  String
+  days       Int
+  priceCents Int
+
+  parking Parking @relation(fields: [parkingId], references: [id], onDelete: Cascade)
+
+  @@unique([parkingId, days])
+  @@map("pricing_tiers")
+}
+
+enum CancellationPolicy {
+  free_until_arrival
+  free_24h
+  free_48h
+  non_refundable
+}
+
+// The parking's public page on Plazo.
+model Listing {
+  id                 String             @id @default(cuid())
+  parkingId          String             @unique
+  airportId          String
+  slug               String // unique per airport, e.g. parking-demo
+  published          Boolean            @default(false)
+  title              String
+  description        String?
+  services           String[] // shuttle, valet, covered, ev_charging, open_24h, fenced, cctv
+  shuttleMinutes     Int?
+  distanceKm         Float?
+  openingHours       String? // free text, e.g. "24h/24" or "5h – 0h"
+  cancellationPolicy CancellationPolicy @default(free_24h)
+  photos             String[] // URLs
+  createdAt          DateTime           @default(now())
+  updatedAt          DateTime           @default(now()) @updatedAt
+
+  parking Parking @relation(fields: [parkingId], references: [id], onDelete: Cascade)
+  airport Airport @relation(fields: [airportId], references: [id])
+
+  @@unique([airportId, slug])
+  @@map("listings")
 }

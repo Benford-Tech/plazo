@@ -25,6 +25,11 @@ export const LOGIN_WINDOW_MINUTES = 15;
 
 export const BCRYPT_ROUNDS = 10;
 
+// Default commission on online bookings, in basis points (1500 = 15 %), when an operator has none.
+// Unset: online payment stays closed until a commission is configured.
+const rawCommission = Number(process.env.PLATFORM_COMMISSION_BPS);
+export const PLATFORM_COMMISSION_BPS = Number.isInteger(rawCommission) && rawCommission >= 0 && rawCommission <= 5000 ? rawCommission : null;
+
 // The product name is still a working name: it lives only in the repository's product.json.
 // The build copies it to dist/product.json (deployed with the function); in development it is
 // read from the repository root.

@@ -84,4 +84,9 @@ Documentation interactive : `/api-docs` (Swagger). Routes du jalon 1, toutes sou
 | GET / POST | `/internal/reservations` | Recherche (plaque, nom, téléphone, référence) / création |
 | GET / PATCH | `/internal/reservations/:id` | Fiche / modification (les dates revérifient la capacité) |
 | POST | `/internal/imports/email` | Lit un mail de comparateur collé (Allopark) : champs trouvés, manquants, doublon, capacité |
+| GET / PUT | `/internal/listing` | Fiche Plazo du loueur (gérant ; publication seulement avec une grille tarifaire) |
+| GET / PUT | `/internal/pricing` | Grille tarifaire : forfaits « jusqu'à N jours » + prix du jour supplémentaire |
+| GET | `/public/airports/:slug` | Site voyageurs : parkings publiés d'un aéroport (sans authentification) |
+| GET | `/public/search?airport=&arrivalAt=&returnAt=` | Site voyageurs : disponibilité et prix total pour un séjour |
+| GET | `/public/airports/:airport/parkings/:slug` | Site voyageurs : fiche parking, avec l'offre si des dates sont données |
 | POST | `/internal/reservations/:id/status` | Étape suivante : arrivée, navette, retour, rendu, annulation… |
