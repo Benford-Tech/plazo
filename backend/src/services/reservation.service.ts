@@ -3,6 +3,7 @@ import { Container, Service } from 'typedi';
 import prisma, { Parking, Prisma, Reservation, ReservationStatus } from '@/database';
 import { can } from '@/domain/roles';
 import { canTransition, formatFlight, formatPlate, newReference, plateKey, RELEASED_STATUSES } from '@/domain/reservation';
+import { parseConfirmationEmail } from '@/domain/importers';
 import { addDays, DATE_RE, dayBounds, localDate, parseInstant } from '@/domain/time';
 import { ChangeStatusDto, CreateReservationDto, UpdateReservationDto } from '@/dtos/reservation.dto';
 import { AuthenticatedStaff } from '@/interfaces/auth.interface';
@@ -84,8 +85,11 @@ export class ReservationService {
     const stay = this.parseStay(parking, data.arrivalAt, data.returnAt);
     const returnFlight = this.normalizeFlight(data.returnFlight);
 
+    const externalReference = data.externalReference?.trim().toUpperCase() || null;
+
     return prisma.$transaction(async tx => {
       await this.lockParking(tx, parking.id);
+      if (externalReference) await this.refuseDuplicate(tx, actor, externalReference);
       const full = await this.checkCapacity(tx, actor, parking, stay, data.force);
 
       let reference = newReference();
@@ -107,6 +111,8 @@ export class ReservationService {
           plateKey: plateKey(data.plate),
           returnFlight,
           notes: data.notes?.trim() || null,
+          externalReference,
+          priceCents: data.priceCents ?? null,
           overbooked: full.length > 0,
           createdById: actor.id,
         },
@@ -123,6 +129,47 @@ export class ReservationService {
       );
       return reservation;
     });
+  }
+
+  /** A booking already imported from its channel is never created twice. */
+  private async refuseDuplicate(client: Client, actor: AuthenticatedStaff, externalReference: string) {
+    const existing = await client.reservation.findUnique({
+      where: { operatorId_externalReference: { operatorId: actor.operatorId, externalReference } },
+      select: { id: true, reference: true },
+    });
+    if (existing) {
+      throw new HttpException(httpStatus.CONFLICT, 'This booking was already imported', 'already_imported', { reservation: existing });
+    }
+  }
+
+  /**
+   * Reads a pasted confirmation email (Allopark for now) and returns what it found, what staff
+   * must complete, whether it was already imported and the load of the nights concerned.
+   */
+  public async parseEmail(actor: AuthenticatedStaff, text: string) {
+    this.require(actor, 'reservations:manage');
+    const parsed = parseConfirmationEmail(text);
+    if (!parsed) throw new HttpException(httpStatus.UNPROCESSABLE_ENTITY, 'Unrecognised email', 'unrecognised_email');
+
+    const required = ['arrivalAt', 'returnAt', 'customerName', 'customerPhone', 'plate'] as const;
+    const missing = required.filter(key => !parsed[key]);
+
+    const duplicate = parsed.externalReference
+      ? await prisma.reservation.findUnique({
+          where: { operatorId_externalReference: { operatorId: actor.operatorId, externalReference: parsed.externalReference.toUpperCase() } },
+          select: { id: true, reference: true },
+        })
+      : null;
+
+    let capacity = null;
+    if (parsed.arrivalAt && parsed.returnAt) {
+      try {
+        capacity = await this.previewCapacity(actor, parsed.arrivalAt, parsed.returnAt);
+      } catch {
+        capacity = null; // inconsistent dates: staff will see them in the form
+      }
+    }
+    return { parsed, missing, duplicate, capacity };
   }
 
   public async update(actor: AuthenticatedStaff, id: string, data: UpdateReservationDto) {

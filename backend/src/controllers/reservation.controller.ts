@@ -1,7 +1,7 @@
 import { Response } from 'express';
 import httpStatus from 'http-status';
 import { Container } from 'typedi';
-import { ChangeStatusDto, CreateReservationDto, UpdateReservationDto } from '@/dtos/reservation.dto';
+import { ChangeStatusDto, CreateReservationDto, ParseEmailDto, UpdateReservationDto } from '@/dtos/reservation.dto';
 import { RequestWithStaffSession } from '@/middlewares/staff-auth.middleware';
 import { ReservationService } from '@/services/reservation.service';
 import catchAsync from '@/utils/catchAsync';
@@ -49,6 +49,12 @@ export class ReservationController {
   public update = catchAsync(async (req: RequestWithStaffSession, res: Response) => {
     const data: UpdateReservationDto = req.body;
     res.json({ message: 'Reservation updated', data: await this.reservationService.update(req.staff, req.params.id as string, data) });
+  });
+
+  /** POST /internal/imports/email */
+  public parseEmail = catchAsync(async (req: RequestWithStaffSession, res: Response) => {
+    const data: ParseEmailDto = req.body;
+    res.json(await this.reservationService.parseEmail(req.staff, data.text));
   });
 
   /** POST /internal/reservations/:id/status */

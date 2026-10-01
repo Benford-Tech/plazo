@@ -1,6 +1,6 @@
 import { Router } from 'express';
 import { ReservationController } from '@/controllers/reservation.controller';
-import { ChangeStatusDto, CreateReservationDto, UpdateReservationDto } from '@/dtos/reservation.dto';
+import { ChangeStatusDto, CreateReservationDto, ParseEmailDto, UpdateReservationDto } from '@/dtos/reservation.dto';
 import { Routes } from '@/interfaces/routes.interface';
 import { StaffAuthMiddleware } from '@/middlewares/staff-auth.middleware';
 import { ValidationMiddleware } from '@/middlewares/validation.middleware';
@@ -60,6 +60,8 @@ import { ValidationMiddleware } from '@/middlewares/validation.middleware';
  *               plate: { type: string, example: GK-318-PX }
  *               returnFlight: { type: string, example: TO 3627 }
  *               notes: { type: string }
+ *               externalReference: { type: string, example: AL-884880719 }
+ *               priceCents: { type: integer, example: 3499 }
  *               force: { type: boolean }
  * /internal/reservations/{id}:
  *   get:
@@ -72,6 +74,23 @@ import { ValidationMiddleware } from '@/middlewares/validation.middleware';
  *     tags: [Reservations]
  *     parameters:
  *       - { in: path, name: id, required: true, schema: { type: string } }
+ * /internal/imports/email:
+ *   post:
+ *     summary: Read a pasted confirmation email (Allopark) and prepare a reservation
+ *     description: >
+ *       Returns the fields found (parsed), the required ones still missing, an existing reservation
+ *       with the same booking number (duplicate) and the load of the nights (capacity).
+ *       422 "unrecognised_email" when no importer knows the email. Nothing is saved.
+ *     tags: [Reservations]
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required: [text]
+ *             properties:
+ *               text: { type: string }
  * /internal/reservations/{id}/status:
  *   post:
  *     summary: Change the status (upcoming → arrived → shuttled_out → return_requested → returned; cancelled, no_show)
@@ -105,6 +124,12 @@ export class ReservationRoute implements Routes {
       StaffAuthMiddleware('reservations:manage'),
       ValidationMiddleware(CreateReservationDto),
       this.reservations.create,
+    );
+    this.router.post(
+      '/internal/imports/email',
+      StaffAuthMiddleware('reservations:manage'),
+      ValidationMiddleware(ParseEmailDto),
+      this.reservations.parseEmail,
     );
     this.router.get('/internal/reservations/:id', StaffAuthMiddleware('reservations:view'), this.reservations.get);
     this.router.patch(

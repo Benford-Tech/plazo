@@ -91,19 +91,19 @@ model LoginAttempt {
 }
 
 model Parking {
-  id                   String                                 @id @default(cuid())
+  id                   String                                @id @default(cuid())
   operatorId           String
   name                 String
   address              String?
   // Entrance point (WGS84). The detailed map arrives in milestone 4. Read/write through raw SQL.
   location             Unsupported("geometry(Point, 4326)")?
-  timezone             String                                 @default("Europe/Paris")
+  timezone             String                                @default("Europe/Paris")
   totalCapacity        Int
   // Share of spots never offered for booking, in percent (0-50).
-  safetyMarginPct      Int                                    @default(0)
-  shuttleTravelMinutes Int                                    @default(8)
-  createdAt            DateTime                               @default(now())
-  updatedAt            DateTime                               @default(now()) @updatedAt
+  safetyMarginPct      Int                                   @default(0)
+  shuttleTravelMinutes Int                                   @default(8)
+  createdAt            DateTime                              @default(now())
+  updatedAt            DateTime                              @default(now()) @updatedAt
 
   operator     Operator      @relation(fields: [operatorId], references: [id], onDelete: Cascade)
   reservations Reservation[]
@@ -149,36 +149,41 @@ enum ReservationChannel {
 
 // A booking. Times are stored in UTC; "nights" are counted in the parking's timezone.
 model Reservation {
-  id            String             @id @default(cuid())
-  reference     String             @unique // short code given to the customer
-  operatorId    String
-  parkingId     String
-  channel       ReservationChannel
-  channelDetail String?
-  status        ReservationStatus  @default(upcoming)
-  arrivalAt     DateTime
-  returnAt      DateTime
-  passengers    Int
-  customerName  String
-  customerPhone String
-  customerEmail String?
-  plate         String // display form, e.g. AB-123-CD
-  plateKey      String // letters and digits only, for search
-  returnFlight  String? // e.g. TO 3627
-  notes         String?
+  id                String             @id @default(cuid())
+  reference         String             @unique // short code given to the customer
+  operatorId        String
+  parkingId         String
+  channel           ReservationChannel
+  channelDetail     String?
+  status            ReservationStatus  @default(upcoming)
+  arrivalAt         DateTime
+  returnAt          DateTime
+  passengers        Int
+  customerName      String
+  customerPhone     String
+  customerEmail     String?
+  plate             String // display form, e.g. AB-123-CD
+  plateKey          String // letters and digits only, for search
+  returnFlight      String? // e.g. TO 3627
+  notes             String?
+  // Booking number on the channel it came from (e.g. AL-884880719 on Allopark), to avoid importing it twice.
+  externalReference String?
+  // Price paid, in euro cents, when known (imports; the pricing grid arrives in milestone 3).
+  priceCents        Int?
   // Saved although at least one night was already full (forced by staff, audited).
-  overbooked    Boolean            @default(false)
-  createdById   String?
-  arrivedAt     DateTime?
-  returnedAt    DateTime?
-  cancelledAt   DateTime?
-  createdAt     DateTime           @default(now())
-  updatedAt     DateTime           @default(now()) @updatedAt
+  overbooked        Boolean            @default(false)
+  createdById       String?
+  arrivedAt         DateTime?
+  returnedAt        DateTime?
+  cancelledAt       DateTime?
+  createdAt         DateTime           @default(now())
+  updatedAt         DateTime           @default(now()) @updatedAt
 
   operator  Operator @relation(fields: [operatorId], references: [id], onDelete: Cascade)
   parking   Parking  @relation(fields: [parkingId], references: [id], onDelete: Cascade)
   createdBy Staff?   @relation(fields: [createdById], references: [id], onDelete: SetNull)
 
+  @@unique([operatorId, externalReference])
   @@index([parkingId, arrivalAt])
   @@index([parkingId, returnAt])
   @@index([operatorId, plateKey])

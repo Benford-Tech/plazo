@@ -55,10 +55,30 @@ export class CreateReservationDto {
   @MaxLength(1000, { message: 'too_long' })
   public notes?: string;
 
+  /** Booking number on the source channel (imports), unique per operator. */
+  @IsOptional()
+  @IsString()
+  @MaxLength(60, { message: 'too_long' })
+  public externalReference?: string;
+
+  @IsOptional()
+  @Type(() => Number)
+  @IsInt({ message: 'integer' })
+  @Min(0, { message: 'min_0' })
+  @Max(10000000, { message: 'too_large' })
+  public priceCents?: number;
+
   /** Save even if a night is full (staff only, audited). */
   @IsOptional()
   @IsBoolean()
   public force?: boolean;
+}
+
+export class ParseEmailDto {
+  @IsString()
+  @IsNotEmpty({ message: 'required' })
+  @MaxLength(100000, { message: 'too_long' })
+  public text: string;
 }
 
 export class UpdateReservationDto {
