@@ -2,7 +2,7 @@
 
 Logiciel de gestion pour opérateurs de parkings privés d'aéroport (parking + navette, avec ou sans voiturier).
 Version : 0.3 — 1er octobre 2026 — À valider avec le client n°1 avant développement.
-Changements v0.3 : ajout d'une application mobile native (App Store et Google Play) dès le MVP, pour le personnel, le gérant et les voyageurs (section 3 ter) ; deux apps à terme, construites d'abord dans un seul projet.
+Changements v0.3 : ajout d'une application mobile native (App Store et Google Play) dès le MVP, pour le personnel, le gérant et les voyageurs (section 3 ter) ; deux apps à terme, construites d'abord dans un seul projet Flutter.
 Changements v0.2 : ajout de la phase 2 « place de marché grand public » (section 3 bis), des rôles et données associés, du paiement et de la commission.
 
 ---
@@ -160,15 +160,15 @@ Décision : à terme, deux apps sur les stores (une app « pro » pour le person
 
 Pour que la séparation reste simple :
 - deux espaces d'écrans bien distincts dans le code (`pro` et `voyageur`), sans écran partagé entre les deux ;
-- le code commun (appels au back-end, types, composants d'interface, textes) dans un paquet partagé ;
+- le code commun (client d'API, modèles de données, composants d'interface, textes) dans un paquet Dart partagé ;
 - au démarrage, l'app choisit le parcours : connexion du personnel d'un côté, accès voyageur par n° de réservation ou lien de l'autre ;
-- la séparation se fait ensuite par configuration (deux identifiants d'app, deux noms, deux icônes, chacun avec un seul point d'entrée), sans réécrire les écrans.
+- la séparation se fait ensuite avec les « flavors » Flutter : deux points d'entrée (`main_pro.dart`, `main_voyageur.dart`), deux identifiants d'app, deux noms, deux icônes, sans réécrire les écrans.
 
 ### Règles
 
 - Les SMS restent le canal de référence vers le voyageur : beaucoup de clients n'installeront pas l'app pour un seul séjour. L'app améliore l'expérience, elle ne la conditionne pas.
 - Comptes de développeur Apple et Google au nom de l'entreprise, à ouvrir tôt (vérifications et délais de validation).
-- Mises à jour : prévoir un mécanisme de mise à jour à distance pour corriger vite sans attendre la validation des stores.
+- Mises à jour : prévoir un mécanisme de mise à jour à distance pour corriger vite sans attendre la validation des stores (pour Flutter : Shorebird, à évaluer).
 - Mode dégradé côté personnel : la liste du jour reste consultable sans réseau.
 
 ## 4. Modèle de données (esquisse)
@@ -223,7 +223,7 @@ Ajouts phase 2 (marketplace) :
 | SMS | Un fournisseur de SMS (Twilio, OVH, Brevo…) | Expéditeur personnalisé, coût par SMS à répercuter |
 | Email | Un service transactionnel (Resend, Brevo…) | Domaine d'envoi authentifié |
 | Suivi de vols | Une API de statut de vols (AeroDataBox, AviationStack, FlightAware…) | À choisir sur couverture France, prix et limites d'appels |
-| Notifications push | Service de push de la plateforme mobile choisie (APNs / FCM, éventuellement via Expo) | Complète les SMS, ne les remplace pas |
+| Notifications push | Service de push de la plateforme mobile choisie (Firebase Cloud Messaging, qui couvre aussi iOS via APNs) | Complète les SMS, ne les remplace pas |
 | Cartes | OpenStreetMap / lien vers une app de navigation | Pour l'adresse et l'itinéraire |
 | Paiement en ligne et reversement aux loueurs | Stripe Connect (ou équivalent) | Jalon 3 pour la page propre du loueur, phase 2 pour la commission et les reversements ; valider statut, TVA et CGU avec un professionnel |
 | Recherche géographique (phase 2) | Carte (OpenStreetMap / MapLibre) et index de recherche | Distance au terminal, filtres rapides |
@@ -236,8 +236,10 @@ Ajouts phase 2 (marketplace) :
 - Application web en TypeScript (Next.js), base PostgreSQL, hébergement en Europe (Vercel + base managée type Supabase ou Neon, ou équivalent).
 - Authentification par email avec lien magique ou mot de passe + rôles.
 - Tâches planifiées (mise à jour des vols, envoi des SMS) via les cron jobs de la plateforme ou une file de jobs.
-- Application mobile native en React Native avec Expo (TypeScript), pour partager le langage, les types et la logique métier avec le web ; publication sur les stores via EAS, mises à jour à distance.
-- Dépôt unique (monorepo) : web, mobile, et un paquet partagé (types, validation, règles de capacité, textes en français).
+- Application mobile native en Flutter (Dart), iOS et Android depuis un seul code.
+- Le web (TypeScript) et le mobile (Dart) ne partagent pas de code : le contrat entre les deux est l'API du back-end, décrite en OpenAPI, avec génération automatique du client Dart pour éviter les écarts.
+- Toutes les règles métier (capacité, statuts, prix) vivent côté serveur ; l'app mobile ne les recalcule pas.
+- Dépôt unique : web et back-end, app Flutter, spécification de l'API.
 
 C'est une proposition, à remplacer par la stack que tu maîtrises le mieux : la rapidité de livraison compte plus que le choix de techno.
 

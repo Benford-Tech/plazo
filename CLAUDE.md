@@ -74,7 +74,7 @@ puis la commission et les reversements en phase 2 (place de marché ouverte aux 
 ## Stack — À DÉCIDER
 
 - Front web / back :
-- App mobile native :
+- App mobile native : Flutter (deux apps à terme via les flavors : « pro » et « voyageur »)
 - Base de données :
 - Hébergement :
 - SMS :
@@ -84,7 +84,7 @@ Deux clients, un seul back-end :
 - **Application web** : espace pro (gérant, agents) et page de réservation propre au loueur.
 - **Application mobile native** (App Store et Google Play), dès le MVP, pour trois publics :
   personnel du parking (chauffeur, agent, voiturier), gérant, voyageurs. Voir SPEC.md, section 3 ter.
-  À terme deux apps (« pro » et « voyageur ») ; on construit d'abord un seul projet mobile
+  À terme deux apps (« pro » et « voyageur ») ; on construit d'abord un seul projet Flutter
   avec deux parcours bien séparés dans le code, puis on sépare les points d'entrée.
 
 Contraintes : application web responsive, application mobile native iOS et Android,
