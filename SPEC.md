@@ -1,7 +1,8 @@
 # SPEC — Plazo (nom de travail)
 
 Logiciel de gestion pour opérateurs de parkings privés d'aéroport (parking + navette, avec ou sans voiturier).
-Version : 0.2 — 1er octobre 2026 — À valider avec le client n°1 avant développement.
+Version : 0.3 — 1er octobre 2026 — À valider avec le client n°1 avant développement.
+Changements v0.3 : ajout d'une application mobile native (App Store et Google Play) dès le MVP, pour le personnel, le gérant et les voyageurs (section 3 ter).
 Changements v0.2 : ajout de la phase 2 « place de marché grand public » (section 3 bis), des rôles et données associés, du paiement et de la commission.
 
 ---
@@ -129,7 +130,38 @@ Version mobile d'abord (la majorité des réservations se fait sur téléphone),
 
 ### Hors périmètre de la phase 2 initiale
 
-Programme de fidélité, abonnements, application mobile native (le site web mobile suffit), multi-devises, cartes cadeaux, accords avec les compagnies aériennes, intégration directe aux comparateurs existants.
+Programme de fidélité, abonnements, multi-devises, cartes cadeaux, accords avec les compagnies aériennes, intégration directe aux comparateurs existants.
+
+## 3 ter. Application mobile native (MVP)
+
+Une application mobile native, publiée sur l'App Store et Google Play, fait partie du MVP. Elle s'appuie sur le même back-end et les mêmes données que l'application web. Le contenu affiché dépend du rôle de la personne connectée.
+
+### Personnel du parking (chauffeur, agent d'accueil, voiturier)
+
+- Chauffeur : file des retours triée par heure estimée, point de rendez-vous, boutons « pris en charge » et « déposé au parking », notification push quand un client appuie sur « Je suis prêt » ou quand un vol atterrit.
+- Agent d'accueil : recherche par plaque, nom ou n° de réservation, confirmation d'arrivée, affectation d'emplacement, remise du véhicule.
+- Voiturier : véhicules à garer ou à sortir, suivi des clés.
+- Utilisable d'une main, gros boutons, lisible en plein soleil.
+
+### Gérant
+
+- Planning du jour, taux de remplissage, alertes (surréservation, vol annulé ou dérouté, échec d'envoi de SMS) en notification push.
+- Les réglages (plan, tarifs, capacité, comptes) restent dans l'application web.
+
+### Voyageurs
+
+- Retrouver sa réservation sans créer de compte au MVP (n° de réservation + téléphone ou lien reçu par SMS/email).
+- Voir les instructions d'arrivée, l'adresse et l'itinéraire, le point de rendez-vous au retour.
+- Bouton « Je suis prêt » et suivi de la prise en charge (statut, délai estimé), notifications push en plus des SMS.
+- Réserver depuis l'app sur la page du loueur. En phase 2, l'app sert aussi d'entrée vers la place de marché et de compte voyageur.
+- Question ouverte : une seule app pour tout le monde, ou une app « pro » et une app « voyageur » séparées (recommandé : deux apps, même code partagé, car les publics et la présentation sur les stores sont très différents).
+
+### Règles
+
+- Les SMS restent le canal de référence vers le voyageur : beaucoup de clients n'installeront pas l'app pour un seul séjour. L'app améliore l'expérience, elle ne la conditionne pas.
+- Comptes de développeur Apple et Google au nom de l'entreprise, à ouvrir tôt (vérifications et délais de validation).
+- Mises à jour : prévoir un mécanisme de mise à jour à distance pour corriger vite sans attendre la validation des stores.
+- Mode dégradé côté personnel : la liste du jour reste consultable sans réseau.
 
 ## 4. Modèle de données (esquisse)
 
@@ -141,9 +173,10 @@ Programme de fidélité, abonnements, application mobile native (le site web mob
 - **VehicleStay** : id, reservation_id, spot_id, arrivée réelle, retour réel, clés (oui/non, emplacement clé), état des lieux (texte, photos plus tard).
 - **FlightStatus** : id, reservation_id, vol, heure prévue, heure estimée/réelle, statut, dernière mise à jour.
 - **ShuttleTrip** : id, parking_id, chauffeur_id, heure, direction (aller/retour), passagers liés.
-- **Notification** : id, reservation_id, canal (SMS/email), type, contenu, statut d'envoi, horodatage.
+- **Notification** : id, reservation_id, canal (SMS/email/push), type, contenu, statut d'envoi, horodatage.
 - **PricingRule** : id, parking_id, règles (par jour, forfait, haute saison).
 - **AuditLog** : qui a fait quoi, quand (affectations, annulations, changements d'emplacement).
+- **DeviceToken** : id, user_id ou reservation_id, plateforme (iOS/Android), jeton push, dernière activité.
 
 Ajouts phase 2 (marketplace) :
 - **Traveler** : id, email, nom, téléphone, préférences, date de création (compte voyageur, optionnel au début).
@@ -167,7 +200,7 @@ Ajouts phase 2 (marketplace) :
 
 ## 6. Exigences non fonctionnelles
 
-- **Responsive** : écrans agent et chauffeur utilisables d'une main sur téléphone, gros boutons, lisibles en plein soleil.
+- **Responsive et mobile** : application web responsive ; application mobile native iOS et Android pour le personnel, le gérant et les voyageurs (section 3 ter).
 - **Disponibilité** : un parking d'aéroport fonctionne 24h/24 ; viser une disponibilité élevée et un mode dégradé (consultation hors ligne de la liste du jour, à étudier).
 - **Performance** : recherche de véhicule par plaque en moins d'une seconde.
 - **RGPD** : données minimales (nom, téléphone, plaque, vol), finalité claire, durée de conservation limitée (par exemple suppression ou anonymisation quelques mois après le retour), registre de traitement, mentions sur la page de réservation, hébergement dans l'UE.
@@ -182,6 +215,7 @@ Ajouts phase 2 (marketplace) :
 | SMS | Un fournisseur de SMS (Twilio, OVH, Brevo…) | Expéditeur personnalisé, coût par SMS à répercuter |
 | Email | Un service transactionnel (Resend, Brevo…) | Domaine d'envoi authentifié |
 | Suivi de vols | Une API de statut de vols (AeroDataBox, AviationStack, FlightAware…) | À choisir sur couverture France, prix et limites d'appels |
+| Notifications push | Service de push de la plateforme mobile choisie (APNs / FCM, éventuellement via Expo) | Complète les SMS, ne les remplace pas |
 | Cartes | OpenStreetMap / lien vers une app de navigation | Pour l'adresse et l'itinéraire |
 | Paiement en ligne et reversement aux loueurs | Stripe Connect (ou équivalent) | Jalon 3 pour la page propre du loueur, phase 2 pour la commission et les reversements ; valider statut, TVA et CGU avec un professionnel |
 | Recherche géographique (phase 2) | Carte (OpenStreetMap / MapLibre) et index de recherche | Distance au terminal, filtres rapides |
@@ -194,7 +228,8 @@ Ajouts phase 2 (marketplace) :
 - Application web en TypeScript (Next.js), base PostgreSQL, hébergement en Europe (Vercel + base managée type Supabase ou Neon, ou équivalent).
 - Authentification par email avec lien magique ou mot de passe + rôles.
 - Tâches planifiées (mise à jour des vols, envoi des SMS) via les cron jobs de la plateforme ou une file de jobs.
-- PWA pour la vue chauffeur (installable sur le téléphone, notifications).
+- Application mobile native en React Native avec Expo (TypeScript), pour partager le langage, les types et la logique métier avec le web ; publication sur les stores via EAS, mises à jour à distance.
+- Dépôt unique (monorepo) : web, mobile, et un paquet partagé (types, validation, règles de capacité, textes en français).
 
 C'est une proposition, à remplacer par la stack que tu maîtrises le mieux : la rapidité de livraison compte plus que le choix de techno.
 
@@ -205,16 +240,17 @@ C'est une proposition, à remplacer par la stack que tu maîtrises le mieux : la
 3. **Page publique + notifications** (semaine 3) : formulaire de réservation, calcul de prix, email + SMS de confirmation.
 4. **Plan et affectation** (semaine 4) : affectation à l'arrivée, recherche par plaque, suivi des clés, suggestion d'emplacement.
 5. **Navette au retour** (semaines 5-6) : API de vols, file des retours, vue chauffeur, SMS à l'atterrissage, « Je suis prêt ».
-6. **Pilote chez le client n°1** (semaine 7) : données réelles, retours terrain, corrections.
+6. **App mobile** (en parallèle des jalons 4 et 5, puis semaines 7-8) : app personnel et gérant (file des retours, recherche par plaque, affectation, alertes push), app voyageur (ma réservation, « Je suis prêt », suivi), publication sur les stores.
+7. **Pilote chez le client n°1** (semaine 9) : données réelles, retours terrain, corrections.
 
-Les durées sont indicatives et à ajuster avec la date attendue par le client.
+Les durées sont indicatives et à ajuster avec la date attendue par le client. L'app native ajoute environ deux semaines au MVP, plus les délais de validation des stores.
 
 **Phase 2 — place de marché** (à lancer seulement quand les conditions de la section 3 bis sont réunies) :
 
-7. **Paiement et reversements** : intégration du prestataire de paiement, onboarding des loueurs, commission, remboursements, relevés de reversement.
-8. **Site public** : pages aéroport et loueur (SEO), recherche et résultats, fiche parking, tunnel de réservation et paiement, confirmation et billet.
-9. **Espace voyageur et confiance** : comptes, avis après séjour, litiges, outils d'administration plateforme.
-10. **Ouverture progressive** : un aéroport (Lyon), 3 à 5 loueurs, mesure de la conversion, puis extension aux autres aéroports.
+8. **Paiement et reversements** : intégration du prestataire de paiement, onboarding des loueurs, commission, remboursements, relevés de reversement.
+9. **Site public** : pages aéroport et loueur (SEO), recherche et résultats, fiche parking, tunnel de réservation et paiement, confirmation et billet.
+10. **Espace voyageur et confiance** : comptes, avis après séjour, litiges, outils d'administration plateforme.
+11. **Ouverture progressive** : un aéroport (Lyon), 3 à 5 loueurs, mesure de la conversion, puis extension aux autres aéroports.
 
 ## 10. Critères d'acceptation du MVP
 
@@ -223,6 +259,7 @@ Les durées sont indicatives et à ajuster avec la date attendue par le client.
 - Un client qui a saisi son n° de vol reçoit un SMS à l'atterrissage sans intervention humaine.
 - Le chauffeur voit la file des retours triée par heure estimée et peut la mettre à jour en un geste.
 - Le client n°1 utilise l'outil sur une semaine réelle sans repasser par ses anciens tableurs ou cahiers.
+- Les apps sont publiées sur l'App Store et Google Play ; le chauffeur reçoit une notification push quand un client appuie sur « Je suis prêt ».
 
 Critères d'acceptation de la phase 2 :
 - Un voyageur réserve et paie un parking en moins de 3 minutes sur téléphone, sans créer de compte obligatoire.
@@ -241,14 +278,15 @@ Critères d'acceptation de la phase 2 :
 6. Gère-t-il déjà un état des lieux des véhicules (photos, rayures) ?
 7. Paiement : sur place, à la réservation, ou via les comparateurs ?
 8. Prix convenu, date de mise en service attendue, nombre de parkings concernés ?
+9. Téléphones du personnel : fournis par le parking ou personnels ? iPhone, Android, les deux ?
 
 Questions pour la phase 2 (à poser au client n°1 et à d'autres loueurs) :
 
-9. Accepterait-il d'être listé sur une place de marché avec une commission ? À partir de quel pourcentage ça devient trop cher pour lui ?
-10. Quelles commissions paie-t-il aujourd'hui aux comparateurs, et sur quelle part de ses réservations ?
-11. Connaît-il d'autres loueurs autour du même aéroport prêts à tester ?
-12. Quelle politique d'annulation pratique-t-il, et comment gère-t-il les remboursements aujourd'hui ?
-13. Préfère-t-il être payé à la réservation ou après le séjour ?
+10. Accepterait-il d'être listé sur une place de marché avec une commission ? À partir de quel pourcentage ça devient trop cher pour lui ?
+11. Quelles commissions paie-t-il aujourd'hui aux comparateurs, et sur quelle part de ses réservations ?
+12. Connaît-il d'autres loueurs autour du même aéroport prêts à tester ?
+13. Quelle politique d'annulation pratique-t-il, et comment gère-t-il les remboursements aujourd'hui ?
+14. Préfère-t-il être payé à la réservation ou après le séjour ?
 
 ## 12. Risques
 

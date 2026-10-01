@@ -73,13 +73,19 @@ puis la commission et les reversements en phase 2 (place de marché ouverte aux 
 
 ## Stack — À DÉCIDER
 
-- Front / back :
+- Front web / back :
+- App mobile native :
 - Base de données :
 - Hébergement :
 - SMS :
 - API de suivi de vols :
 
-Contraintes : application web responsive (le chauffeur l'utilise sur téléphone),
+Deux clients, un seul back-end :
+- **Application web** : espace pro (gérant, agents) et page de réservation propre au loueur.
+- **Application mobile native** (App Store et Google Play), dès le MVP, pour trois publics :
+  personnel du parking (chauffeur, agent, voiturier), gérant, voyageurs. Voir SPEC.md, section 3 ter.
+
+Contraintes : application web responsive, application mobile native iOS et Android,
 interface en français, données personnelles clients → RGPD (minimiser, durée de conservation).
 Le nom du produit doit rester dans UN seul fichier de configuration (il peut encore changer).
 
