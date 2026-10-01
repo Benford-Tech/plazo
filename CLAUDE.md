@@ -6,10 +6,12 @@ Logiciel SaaS pour les opérateurs de parkings privés situés autour des aérop
 (parkings avec navette gratuite vers les terminaux, parfois voiturier). Premier marché :
 aéroport Lyon Saint-Exupéry. Un premier client (client n°1) est déjà engagé.
 
-Positionnement retenu (option A) : un outil POUR L'OPÉRATEUR, avec sa propre page de
-réservation. Ses clients réservent sur sa page, il gère tout depuis un seul espace.
-Hors périmètre pour l'instant : place de marché où les voyageurs comparent plusieurs parkings
-(concurrence frontale avec les comparateurs, besoin de clients des deux côtés).
+Positionnement en deux phases (voir SPEC.md, section 3 bis) :
+- **Phase 1 (MVP, à construire maintenant)** : un outil POUR L'OPÉRATEUR, avec sa propre page de
+  réservation. Ses clients réservent sur sa page, il gère tout depuis un seul espace.
+- **Phase 2 (plus tard)** : place de marché grand public (recherche, comparaison, paiement en ligne,
+  commission, plusieurs loueurs). À ne lancer que quand 3 à 5 loueurs sont actifs sur un même aéroport.
+  Ne pas la construire pendant le MVP, mais concevoir le modèle de données multi-opérateurs dès le départ.
 
 Le métier de ces opérateurs :
 - recevoir des réservations par plusieurs canaux (site propre, comparateurs, téléphone) ;
@@ -57,9 +59,10 @@ Ne construire QUE ce qui règle la douleur n°1 du client.
 
 ## Liste « plus tard » (le « bien plus »), hors MVP
 
-État des lieux photo, lecture de plaque, tarification dynamique, paiement en ligne,
+État des lieux photo, lecture de plaque, tarification dynamique,
 connecteurs agrégateurs (Parkos, ParkMundo, Onepark, Free2move…), multi-parkings,
-statistiques et facturation, place de marché ouverte aux voyageurs.
+statistiques et facturation. Le paiement en ligne arrive au jalon 3 de la page du loueur,
+puis la commission et les reversements en phase 2 (place de marché ouverte aux voyageurs).
 
 ## Concurrence à connaître avant de coder
 
