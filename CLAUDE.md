@@ -45,9 +45,11 @@ Ne construire QUE ce qui règle la douleur n°1 du client.
    - Fiche réservation : client, téléphone, plaque, dates/heures, n° de vol retour, nb de passagers, statut.
 
 2. **Plan du parking et affectation des véhicules**
-   - Plan configurable : zones, rangées, places.
+   - Cartographie du parking sur Google Maps (vue satellite) aux dimensions réelles : zones,
+     rangées, places, entrée/sortie, point de remise ; génération automatique des places.
    - Affectation de chaque véhicule à un emplacement à l'arrivée.
-   - Aide au rangement par date de retour (éviter qu'un véhicule soit bloqué derrière un autre).
+   - Optimisation : maximiser le nombre de places, ranger par date de retour (aucun véhicule
+     bloqué derrière un autre), réduire les trajets du voiturier. Voir SPEC.md, bloc 2.
    - Retrouver un véhicule en quelques secondes (plaque, emplacement, emplacement des clés).
    - Si voiturier : suivi des clés confiées.
 
@@ -75,7 +77,8 @@ puis la commission et les reversements en phase 2 (place de marché ouverte aux 
 
 - Front web / back :
 - App mobile native : Flutter (deux apps à terme via les flavors : « pro » et « voyageur »)
-- Base de données :
+- Base de données : (proposé : PostgreSQL + PostGIS, nécessaire pour la géométrie du plan)
+- Cartographie : Google Maps Platform
 - Hébergement :
 - SMS :
 - API de suivi de vols :

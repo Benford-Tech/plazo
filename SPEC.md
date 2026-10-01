@@ -1,7 +1,8 @@
 # SPEC — Plazo (nom de travail)
 
 Logiciel de gestion pour opérateurs de parkings privés d'aéroport (parking + navette, avec ou sans voiturier).
-Version : 0.3 — 1er octobre 2026 — À valider avec le client n°1 avant développement.
+Version : 0.4 — 1er octobre 2026 — À valider avec le client n°1 avant développement.
+Changements v0.4 : cartographie du parking sur Google Maps aux dimensions réelles et optimisation du stationnement dans le MVP (bloc 2) ; jalons recalés, pilote en semaine 12.
 Changements v0.3 : ajout d'une application mobile native (App Store et Google Play) dès le MVP, pour le personnel, le gérant et les voyageurs (section 3 ter) ; deux apps à terme, construites d'abord dans un seul projet Flutter.
 Changements v0.2 : ajout de la phase 2 « place de marché grand public » (section 3 bis), des rôles et données associés, du paiement et de la commission.
 
@@ -59,10 +60,11 @@ Paiement : le MVP peut démarrer avec paiement sur place (le plus simple pour le
 ### Bloc 2 — Plan du parking et affectation des véhicules
 
 Fonctionnel :
-- Éditeur de plan simple : zones → rangées → emplacements (liste/grille, pas de dessin libre).
+- Cartographie du parking sur Google Maps, aux dimensions réelles (détail ci-dessous). Le plan garde la hiérarchie zones → rangées → emplacements.
+- Une vue liste/grille du plan reste disponible pour le travail rapide au comptoir et sur téléphone.
 - Types d'emplacements : standard, grand gabarit, couvert, PMR, réservé.
 - À l'arrivée, affectation d'un emplacement au véhicule (manuelle ou suggérée).
-- Suggestion d'emplacement qui tient compte de la date de retour : regrouper les retours proches, éviter qu'un véhicule soit bloqué derrière un autre qui part plus tard.
+- Suggestion d'emplacement optimisée (détail ci-dessous) : date de retour, véhicules bloqués, trajets du voiturier.
 - Recherche de véhicule par plaque, nom, n° de réservation → emplacement affiché en gros, emplacement de la clé si confiée.
 - Suivi des clés confiées (voiturier) : boîte/crochet numéroté, qui l'a, à quelle heure.
 - Vue d'occupation en temps réel (places libres / occupées par zone).
@@ -72,7 +74,30 @@ Règles métier :
 - Si le client se gare lui-même, l'agent confirme l'emplacement a posteriori.
 - Changer un véhicule d'emplacement est tracé (qui, quand, pourquoi).
 
-Hors MVP : plan dessiné graphiquement, caméras, lecture de plaque.
+#### Cartographie sur Google Maps
+
+Le gérant dessine son parking sur la vue satellite de Google Maps, dans l'application web (sur ordinateur, plus précis qu'au doigt) :
+- contour de chaque zone (polygone), avec surface et longueurs des côtés affichées en mètres ;
+- éléments fixes : entrée, sortie, point de remise des véhicules, arrêt navette, bureau/boîte à clés, allées de circulation, obstacles (poteaux, bordures, bâtiments) ;
+- calage sur le terrain : le gérant saisit une ou deux cotes mesurées sur place (par exemple la longueur d'une rangée) et le plan s'ajuste ; l'imagerie satellite peut être décalée de quelques mètres et dater de plusieurs mois ;
+- génération automatique des places dans une zone : dimensions des places (par défaut 2,50 m × 5,00 m, grand gabarit et PMR configurables), largeur d'allée (par défaut 6 m en épi à 90°, moins en épi incliné), orientation, sens de circulation. L'outil propose la disposition puis le gérant ajuste à la main (déplacer, supprimer, ajouter, renuméroter) ;
+- mode voiturier : rangées « en file » (plusieurs véhicules l'un derrière l'autre sans allée) pour gagner de la place, avec la profondeur de file configurable ;
+- la capacité du parking est recalculée à partir des places actives du plan.
+
+Dans l'app mobile, le plan s'affiche sur la carte : emplacement du véhicule recherché mis en évidence, itinéraire à pied depuis le point de remise, occupation par zone en couleurs.
+
+#### Optimisation du stationnement
+
+Trois objectifs, pondérables par le gérant :
+1. **Maximiser le nombre de places** : à la création du plan, comparer plusieurs dispositions (orientation des rangées, épi à 90° ou incliné, places en file pour le voiturier) et afficher le nombre de places de chacune ; le gérant choisit.
+2. **Ranger selon la date de retour** : dans une file, un véhicule qui repart plus tôt ne doit jamais être derrière un véhicule qui repart plus tard. La suggestion respecte cette règle et signale tout blocage existant (par exemple après une prolongation de séjour).
+3. **Réduire les trajets** : les véhicules qui repartent bientôt sont placés près du point de remise ; les séjours longs au fond. Distances calculées sur les allées du plan, pas à vol d'oiseau.
+
+À l'arrivée d'un véhicule, l'outil propose les 3 meilleurs emplacements avec la raison (« retour dans 2 jours, près de la sortie, ne bloque personne »). L'agent peut toujours choisir un autre emplacement.
+
+Une vue « réorganisation » propose, en heure creuse, une liste de déplacements pour remettre le parking en ordre (après retards, prolongations, no-show), triée par gain.
+
+Hors MVP : caméras, lecture de plaque, capteurs de présence sur les places.
 
 ### Bloc 3 — Navette au retour
 
@@ -176,7 +201,12 @@ Pour que la séparation reste simple :
 - **Operator** : id, nom, adresse, coordonnées, fuseau, paramètres.
 - **User** : id, operator_id, nom, email, téléphone, rôle, actif.
 - **Parking** : id, operator_id, nom, capacité totale, marge, temps de trajet navette.
-- **Zone / Row / Spot** : hiérarchie du plan ; Spot : id, rangée, libellé, type, actif.
+- **Zone / Row / Spot** : hiérarchie du plan, avec géométrie réelle (PostGIS, coordonnées WGS84).
+  - Zone : id, parking_id, nom, contour (polygone), type (épi, file voiturier, mixte).
+  - Row : id, zone_id, ligne de référence, orientation, angle d'épi, profondeur de file.
+  - Spot : id, rangée, libellé, type, actif, position (polygone de la place), dimensions (m), rang dans la file.
+- **MapFeature** : id, parking_id, type (entrée, sortie, point de remise, arrêt navette, boîte à clés, allée, obstacle), géométrie.
+- **LayoutVersion** : id, parking_id, date, auteur, nombre de places, actif (on garde l'historique des plans).
 - **Reservation** : id, parking_id, canal (site, téléphone, comparateur…), statut, arrivée prévue, retour prévu, nb passagers, nom client, téléphone, email, plaque, n° vol retour, prix, notes.
 - **VehicleStay** : id, reservation_id, spot_id, arrivée réelle, retour réel, clés (oui/non, emplacement clé), état des lieux (texte, photos plus tard).
 - **FlightStatus** : id, reservation_id, vol, heure prévue, heure estimée/réelle, statut, dernière mise à jour.
@@ -210,7 +240,7 @@ Ajouts phase 2 (marketplace) :
 
 - **Responsive et mobile** : application web responsive ; application mobile native iOS et Android pour le personnel, le gérant et les voyageurs (section 3 ter).
 - **Disponibilité** : un parking d'aéroport fonctionne 24h/24 ; viser une disponibilité élevée et un mode dégradé (consultation hors ligne de la liste du jour, à étudier).
-- **Performance** : recherche de véhicule par plaque en moins d'une seconde.
+- **Performance** : recherche de véhicule par plaque en moins d'une seconde ; suggestion d'emplacement en moins de 2 secondes ; le plan reste affichable sans réseau dans l'app du personnel (dernière version gardée sur le téléphone).
 - **RGPD** : données minimales (nom, téléphone, plaque, vol), finalité claire, durée de conservation limitée (par exemple suppression ou anonymisation quelques mois après le retour), registre de traitement, mentions sur la page de réservation, hébergement dans l'UE.
 - **Sécurité** : authentification forte pour le personnel, rôles, journal d'audit, sauvegardes, aucune donnée de carte bancaire stockée par l'outil au MVP.
 - **Langue** : interface en français ; chaînes externalisées pour traduire plus tard (anglais notamment).
@@ -224,7 +254,8 @@ Ajouts phase 2 (marketplace) :
 | Email | Un service transactionnel (Resend, Brevo…) | Domaine d'envoi authentifié |
 | Suivi de vols | Une API de statut de vols (AeroDataBox, AviationStack, FlightAware…) | À choisir sur couverture France, prix et limites d'appels |
 | Notifications push | Service de push de la plateforme mobile choisie (Firebase Cloud Messaging, qui couvre aussi iOS via APNs) | Complète les SMS, ne les remplace pas |
-| Cartes | OpenStreetMap / lien vers une app de navigation | Pour l'adresse et l'itinéraire |
+| Cartographie du parking | Google Maps Platform : Maps JavaScript API (éditeur web), `google_maps_flutter` (app), vue satellite | Coût à l'usage au-delà du crédit mensuel gratuit, à estimer ; vérifier les conditions d'usage (dessin sur la carte autorisé, pas de copie de l'imagerie) |
+| Itinéraire voyageur | Lien vers l'app de navigation du téléphone | Pour l'adresse et l'itinéraire |
 | Paiement en ligne et reversement aux loueurs | Stripe Connect (ou équivalent) | Jalon 3 pour la page propre du loueur, phase 2 pour la commission et les reversements ; valider statut, TVA et CGU avec un professionnel |
 | Recherche géographique (phase 2) | Carte (OpenStreetMap / MapLibre) et index de recherche | Distance au terminal, filtres rapides |
 | Avis et modération (phase 2) | Interne au départ | Avis uniquement après séjour terminé |
@@ -245,15 +276,19 @@ C'est une proposition, à remplacer par la stack que tu maîtrises le mieux : la
 
 ## 9. Découpage en jalons
 
-1. **Socle** (semaine 1) : comptes, rôles, opérateur et parking, capacité, plan minimal (zones/places), base de données.
+1. **Socle** (semaine 1) : comptes, rôles, opérateur et parking, capacité, base de données (avec PostGIS).
 2. **Réservations** (semaines 1-2) : saisie manuelle, planning du jour, contrôle de capacité, statuts, import CSV.
 3. **Page publique + notifications** (semaine 3) : formulaire de réservation, calcul de prix, email + SMS de confirmation.
-4. **Plan et affectation** (semaine 4) : affectation à l'arrivée, recherche par plaque, suivi des clés, suggestion d'emplacement.
-5. **Navette au retour** (semaines 5-6) : API de vols, file des retours, vue chauffeur, SMS à l'atterrissage, « Je suis prêt ».
-6. **App mobile** (en parallèle des jalons 4 et 5, puis semaines 7-8) : app personnel et gérant (file des retours, recherche par plaque, affectation, alertes push), app voyageur (ma réservation, « Je suis prêt », suivi), publication sur les stores.
-7. **Pilote chez le client n°1** (semaine 9) : données réelles, retours terrain, corrections.
+4. **Cartographie et affectation** (semaines 4-7) :
+   - semaine 4 : éditeur sur Google Maps (zones, éléments fixes, mesures, calage) ;
+   - semaine 5 : génération automatique des places et comparaison des dispositions ;
+   - semaine 6 : affectation à l'arrivée, recherche par plaque, suivi des clés ;
+   - semaine 7 : suggestion optimisée (date de retour, blocages, trajets) et vue réorganisation.
+5. **Navette au retour** (semaines 8-9) : API de vols, file des retours, vue chauffeur, SMS à l'atterrissage, « Je suis prêt ».
+6. **App mobile** (en parallèle des jalons 4 et 5, puis semaines 10-11) : app personnel et gérant (file des retours, recherche par plaque, plan sur la carte, affectation, alertes push), app voyageur (ma réservation, « Je suis prêt », suivi), publication sur les stores.
+7. **Pilote chez le client n°1** (semaine 12) : données réelles, retours terrain, corrections.
 
-Les durées sont indicatives et à ajuster avec la date attendue par le client. L'app native ajoute environ deux semaines au MVP, plus les délais de validation des stores.
+Les durées sont indicatives et à ajuster avec la date attendue par le client. L'app native ajoute environ deux semaines au MVP, plus les délais de validation des stores ; la cartographie et l'optimisation en ajoutent environ trois.
 
 **Phase 2 — place de marché** (à lancer seulement quand les conditions de la section 3 bis sont réunies) :
 
@@ -268,6 +303,8 @@ Les durées sont indicatives et à ajuster avec la date attendue par le client. 
 - Un agent retrouve l'emplacement d'un véhicule par sa plaque en moins de 10 secondes.
 - Un client qui a saisi son n° de vol reçoit un SMS à l'atterrissage sans intervention humaine.
 - Le chauffeur voit la file des retours triée par heure estimée et peut la mettre à jour en un geste.
+- Le gérant cartographie son parking sur Google Maps et l'écart entre le nombre de places du plan et le comptage sur le terrain est inférieur à 3 %.
+- Sur une semaine de pilote, aucun véhicule suggéré par l'outil ne se retrouve bloqué derrière un véhicule qui repart plus tard.
 - Le client n°1 utilise l'outil sur une semaine réelle sans repasser par ses anciens tableurs ou cahiers.
 - Les apps sont publiées sur l'App Store et Google Play ; le chauffeur reçoit une notification push quand un client appuie sur « Je suis prêt ».
 
@@ -289,18 +326,22 @@ Critères d'acceptation de la phase 2 :
 7. Paiement : sur place, à la réservation, ou via les comparateurs ?
 8. Prix convenu, date de mise en service attendue, nombre de parkings concernés ?
 9. Téléphones du personnel : fournis par le parking ou personnels ? iPhone, Android, les deux ?
+10. Plan actuel du parking : existe-t-il un plan coté (géomètre, architecte) ? Dimensions des places, places en file pour le voiturier, marquage au sol ?
 
 Questions pour la phase 2 (à poser au client n°1 et à d'autres loueurs) :
 
-10. Accepterait-il d'être listé sur une place de marché avec une commission ? À partir de quel pourcentage ça devient trop cher pour lui ?
-11. Quelles commissions paie-t-il aujourd'hui aux comparateurs, et sur quelle part de ses réservations ?
-12. Connaît-il d'autres loueurs autour du même aéroport prêts à tester ?
-13. Quelle politique d'annulation pratique-t-il, et comment gère-t-il les remboursements aujourd'hui ?
-14. Préfère-t-il être payé à la réservation ou après le séjour ?
+11. Accepterait-il d'être listé sur une place de marché avec une commission ? À partir de quel pourcentage ça devient trop cher pour lui ?
+12. Quelles commissions paie-t-il aujourd'hui aux comparateurs, et sur quelle part de ses réservations ?
+13. Connaît-il d'autres loueurs autour du même aéroport prêts à tester ?
+14. Quelle politique d'annulation pratique-t-il, et comment gère-t-il les remboursements aujourd'hui ?
+15. Préfère-t-il être payé à la réservation ou après le séjour ?
 
 ## 12. Risques
 
 - **Concurrence** (ParkFlow notamment) : comparer fonctionnalités et prix avant de coder ; l'avantage visé est le suivi de vols, la file de navettes et le plan des places, en français.
+- **Précision de la cartographie** : l'imagerie satellite peut être décalée ou ancienne ; prévoir le calage par cotes mesurées sur place et une vérification sur le terrain avec le client.
+- **Complexité de l'optimisation** : commencer par des règles simples et explicables (pas de blocage, proximité de la sortie), mesurer, puis affiner ; le personnel doit comprendre pourquoi une place est proposée.
+- **Coût de Google Maps** : surveiller la consommation, mettre en cache le plan côté app.
 - **Fiabilité des données de vols** : prévoir un repli (heure saisie) et mesurer la qualité avec le client.
 - **Dépendance à un seul client** : prévoir dès le début un modèle multi-opérateurs, même si un seul est actif.
 - **Nom du produit** : rester dans un fichier de configuration unique tant que le nom n'est pas validé (INPI, domaine).
