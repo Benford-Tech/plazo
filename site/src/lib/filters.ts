@@ -59,14 +59,20 @@ export function hasActiveFilters(f: Filters): boolean {
   return f.services.length > 0 || f.freeCancellation || f.maxShuttle !== null || f.maxPriceCents !== null;
 }
 
-/** Query string of a results page: stay first, then filters and sort (defaults omitted). */
-export function resultsQuery(stay: { arrivee: string; retour: string }, f: Filters): string {
+/** The results page shows the map beside the list (?carte=1): shareable, and a plain link without JavaScript. */
+export function mapShown(params: Params): boolean {
+  return param(params, "carte") === "1";
+}
+
+/** Query string of a results page: stay first, then filters and sort (defaults omitted), then the map. */
+export function resultsQuery(stay: { arrivee: string; retour: string }, f: Filters, map = false): string {
   const parts = [`arrivee=${encodeQueryValue(stay.arrivee)}`, `retour=${encodeQueryValue(stay.retour)}`];
   for (const s of f.services) parts.push(`service=${encodeURIComponent(SERVICE_SLUGS[s])}`);
   if (f.freeCancellation) parts.push("annulation=gratuite");
   if (f.maxShuttle !== null) parts.push(`navette=${f.maxShuttle}`);
   if (f.maxPriceCents !== null) parts.push(`prix_max=${Math.round(f.maxPriceCents / 100)}`);
   if (f.sort !== "prix") parts.push(`tri=${f.sort}`);
+  if (map) parts.push("carte=1");
   return `?${parts.join("&")}`;
 }
 

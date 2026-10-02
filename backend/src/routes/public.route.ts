@@ -13,6 +13,9 @@ import { Routes } from '@/interfaces/routes.interface';
  * /public/airports/{slug}:
  *   get:
  *     summary: Airport page — published parkings with their lowest package price
+ *     description: >-
+ *       The airport has a `location` ({ lat, lng }); each parking has a `location` ({ lat, lng }) or null
+ *       when unknown (geocoded from its address the first time it is needed).
  *     tags: [Public]
  *     security: []
  *     parameters:
@@ -20,6 +23,7 @@ import { Routes } from '@/interfaces/routes.interface';
  * /public/search:
  *   get:
  *     summary: Parkings for a stay — availability and total price, available first then cheapest
+ *     description: Same `location` fields as the airport page (airport and each parking), for the site's map.
  *     tags: [Public]
  *     security: []
  *     parameters:
@@ -29,6 +33,7 @@ import { Routes } from '@/interfaces/routes.interface';
  * /public/airports/{airport}/parkings/{slug}:
  *   get:
  *     summary: A parking's page, with the offer for a stay when dates are given
+ *     description: The parking's `location` ({ lat, lng } or null) and the airport's `location`.
  *     tags: [Public]
  *     security: []
  *     parameters:

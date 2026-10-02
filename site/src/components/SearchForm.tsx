@@ -1,10 +1,11 @@
 import { StayFields } from "./StayFields";
+import { Caret, IconChip, PlaneIcon, pillBox, pillFocusWithin, pillNative, pillNativeLabel } from "./stay/pill";
 import { fr } from "@/lib/fr";
 import { AIRPORTS } from "@/lib/site";
 
 /**
- * Search bar (airport, drop-off, return). A plain GET form to /recherche, which joins the date and
- * time fields and redirects to the results page: it works without JavaScript.
+ * Search bar (airport, drop-off, return) as a white card of pills. A plain GET form to /recherche,
+ * which joins the date and time fields and redirects to the results page: it works without JavaScript.
  */
 export function SearchForm({
   airport,
@@ -14,6 +15,7 @@ export function SearchForm({
   errors,
   idPrefix = "recherche",
   floating = false,
+  keepMap = false,
 }: {
   airport: { slug: string; name: string; code?: string };
   arrivee: string | null;
@@ -21,40 +23,39 @@ export function SearchForm({
   minDate: string;
   errors?: { arrivalAt?: string; returnAt?: string };
   idPrefix?: string;
-  /** White card on the hero gradient (home) rather than a bordered panel. */
+  /** White card on the hero photo (home) rather than a bordered panel. */
   floating?: boolean;
+  /** Results page with the map shown: the new results show it too. */
+  keepMap?: boolean;
 }) {
   const airports = AIRPORTS.some(a => a.slug === airport.slug) ? AIRPORTS : [{ slug: airport.slug, name: airport.name }, ...AIRPORTS];
   return (
     <form
       action="/recherche"
       method="get"
-      className={`flex flex-col gap-3 rounded-[16px] bg-white p-3.5 text-ink xl:flex-row xl:items-start xl:rounded-[20px] ${
-        floating ? "shadow-[0_18px_40px_-18px_rgba(0,0,0,.5)]" : "border border-line"
+      className={`flex flex-col gap-2.5 rounded-[20px] bg-white p-3 text-ink xl:flex-row xl:items-start ${
+        floating ? "shadow-[0_24px_50px_-20px_rgba(30,10,40,.55)]" : "border border-line"
       }`}
     >
-      <div className="min-w-0 xl:flex-1">
-        <label htmlFor={`${idPrefix}-aeroport`} className="label">
+      {keepMap && <input type="hidden" name="carte" value="1" />}
+      <div className={`${pillBox} ${pillFocusWithin} w-full xl:w-[250px] xl:flex-none`}>
+        <IconChip>
+          <PlaneIcon />
+        </IconChip>
+        <label htmlFor={`${idPrefix}-aeroport`} className={pillNativeLabel}>
           {fr.search.airport}
         </label>
-        <select id={`${idPrefix}-aeroport`} name="aeroport" defaultValue={airport.slug} className="field font-medium">
+        <select id={`${idPrefix}-aeroport`} name="aeroport" defaultValue={airport.slug} className={`${pillNative} cursor-pointer truncate pr-8`}>
           {airports.map(a => (
             <option key={a.slug} value={a.slug}>
               {a.name}
-              {a.slug === airport.slug && airport.code ? ` (${airport.code})` : ""}
             </option>
           ))}
         </select>
+        <Caret />
       </div>
-      <StayFields
-        idPrefix={idPrefix}
-        arrivee={arrivee}
-        retour={retour}
-        minDate={minDate}
-        errors={errors}
-        className="sm:flex-row xl:flex-[2.2]"
-      />
-      <button type="submit" className="btn-primary h-[52px] px-7 text-[17px] xl:mt-[22px] xl:h-12">
+      <StayFields idPrefix={idPrefix} arrivee={arrivee} retour={retour} minDate={minDate} errors={errors} className="sm:flex-row xl:min-w-0 xl:flex-1" />
+      <button type="submit" className="btn-primary h-14 flex-none px-7 text-[17px]">
         {fr.search.submit}
       </button>
     </form>

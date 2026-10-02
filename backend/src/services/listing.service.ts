@@ -8,6 +8,7 @@ import { AuthenticatedStaff } from '@/interfaces/auth.interface';
 import { ValidationException } from '@/middlewares/validation.middleware';
 import { HttpException } from '@/utils/httpException';
 import { AuditService } from './audit.service';
+import { ParkingLocationService, SAVE_GEOCODE_TIMEOUT_MS } from './parking-location.service';
 import { ParkingService } from './parking.service';
 
 /** The operator's public page on Plazo and its pricing grid. */
@@ -15,6 +16,7 @@ import { ParkingService } from './parking.service';
 export class ListingService {
   public audit = Container.get(AuditService);
   public parkings = Container.get(ParkingService);
+  public locations = Container.get(ParkingLocationService);
 
   private requireManager(actor: AuthenticatedStaff) {
     if (!can(actor.role, 'parking:manage')) throw new HttpException(httpStatus.FORBIDDEN, 'You do not have access to this action', 'forbidden');
@@ -68,6 +70,8 @@ export class ListingService {
       entityId: listing.id,
       details: { published: listing.published, slug: listing.slug },
     });
+    // Position on the site's map, from the parking's address when it has none yet (never fails the save).
+    await this.locations.locate(parking, SAVE_GEOCODE_TIMEOUT_MS);
     return listing;
   }
 

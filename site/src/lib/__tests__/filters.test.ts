@@ -81,3 +81,16 @@ describe("applying filters", () => {
     expect(cheapestSlug([A, C])).toBeNull(); // nothing to compare with
   });
 });
+
+describe("map toggle in the URL", () => {
+  const stay = { arrivee: "2026-10-04T06:30", retour: "2026-10-11T15:05" };
+  it("reads ?carte=1 and writes it last, so the link can be shared", async () => {
+    const { mapShown } = await import("../filters");
+    expect(mapShown({ carte: "1" })).toBe(true);
+    expect(mapShown({ carte: "0" })).toBe(false);
+    expect(mapShown({})).toBe(false);
+    expect(resultsQuery(stay, parseFilters({ tri: "navette" }), true)).toBe("?arrivee=2026-10-04T06:30&retour=2026-10-11T15:05&tri=navette&carte=1");
+    expect(resultsQuery(stay, parseFilters({}), false)).not.toContain("carte");
+  });
+});
+

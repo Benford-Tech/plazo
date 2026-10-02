@@ -6,6 +6,7 @@ import { exceedsCalendarDays, parseInstant } from '@/domain/time';
 import { ValidationException } from '@/middlewares/validation.middleware';
 import { HttpException } from '@/utils/httpException';
 import { CapacityService } from './capacity.service';
+import { LatLng, ParkingLocationService } from './parking-location.service';
 
 const MAX_STAY_DAYS = 90;
 
@@ -17,6 +18,7 @@ type Stay = { arrivalAt: Date; returnAt: Date };
 @Service()
 export class PublicService {
   public capacity = Container.get(CapacityService);
+  public locations = Container.get(ParkingLocationService);
 
   public async airportBySlug(slug: string): Promise<Airport> {
     const airport = await prisma.airport.findUnique({ where: { slug } });
@@ -37,7 +39,7 @@ export class PublicService {
     return { arrivalAt, returnAt };
   }
 
-  private summary(listing: ListingWithParking) {
+  private summary(listing: ListingWithParking, locations: Map<string, LatLng>) {
     return {
       slug: listing.slug,
       title: listing.title,
@@ -47,7 +49,13 @@ export class PublicService {
       openingHours: listing.openingHours,
       cancellationPolicy: listing.cancellationPolicy,
       photo: listing.photos[0] ?? null,
+      // Entrance of the parking for the site's map; null when unknown (listed, not drawn).
+      location: locations.get(listing.parkingId) ?? null,
     };
+  }
+
+  private positions(listings: ListingWithParking[]) {
+    return this.locations.forPublic(listings.map(l => ({ id: l.parkingId, address: l.parking.address })));
   }
 
   /**
@@ -77,12 +85,20 @@ export class PublicService {
   public async airport(slug: string) {
     const airport = await this.airportBySlug(slug);
     const listings = await this.publishedAt(airport.id);
+    const locations = await this.positions(listings);
     return {
-      airport: { code: airport.code, name: airport.name, city: airport.city, slug: airport.slug, timezone: airport.timezone },
+      airport: {
+        code: airport.code,
+        name: airport.name,
+        city: airport.city,
+        slug: airport.slug,
+        timezone: airport.timezone,
+        location: { lat: airport.latitude, lng: airport.longitude },
+      },
       listings: listings.map(l => {
         // Lowest package price, with the number of days it covers ("dès 15,00 € la journée").
         const cheapest = [...l.parking.pricingTiers].sort((a, b) => a.priceCents - b.priceCents || a.days - b.days)[0];
-        return { ...this.summary(l), fromPriceCents: cheapest?.priceCents ?? null, fromDays: cheapest?.days ?? null };
+        return { ...this.summary(l, locations), fromPriceCents: cheapest?.priceCents ?? null, fromDays: cheapest?.days ?? null };
       }),
     };
   }
@@ -93,9 +109,13 @@ export class PublicService {
     const stay = this.parseStay(airport, arrival, ret);
     if (!stay) throw new ValidationException({ arrivalAt: 'required', returnAt: 'required' });
     const listings = await this.publishedAt(airport.id);
-    const results = await Promise.all(listings.map(async l => ({ ...this.summary(l), ...(await this.offer(l, stay)) })));
+    const [locations, offers] = await Promise.all([this.positions(listings), Promise.all(listings.map(l => this.offer(l, stay)))]);
+    const results = listings.map((l, i) => ({ ...this.summary(l, locations), ...offers[i] }));
     results.sort((a, b) => Number(b.available) - Number(a.available) || (a.priceCents ?? Infinity) - (b.priceCents ?? Infinity));
-    return { airport: { code: airport.code, name: airport.name, slug: airport.slug }, results };
+    return {
+      airport: { code: airport.code, name: airport.name, slug: airport.slug, location: { lat: airport.latitude, lng: airport.longitude } },
+      results,
+    };
   }
 
   /** A published listing with its parking and pricing grid; 404 "not_found" otherwise. */
@@ -113,10 +133,11 @@ export class PublicService {
     const airport = await this.airportBySlug(airportSlug);
     const listing = await this.findPublished(airport, slug);
     const stay = this.parseStay(airport, arrival, ret);
+    const locations = await this.positions([listing]);
     return {
-      airport: { code: airport.code, name: airport.name, slug: airport.slug },
+      airport: { code: airport.code, name: airport.name, slug: airport.slug, location: { lat: airport.latitude, lng: airport.longitude } },
       parking: {
-        ...this.summary(listing),
+        ...this.summary(listing, locations),
         description: listing.description,
         photos: listing.photos,
         address: listing.parking.address,

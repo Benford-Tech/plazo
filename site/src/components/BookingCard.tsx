@@ -62,7 +62,7 @@ export function BookingCard({
         <input type="hidden" name="aeroport" value={airportSlug} />
         <input type="hidden" name="parking" value={parkingSlug} />
         {!offer && <p className="text-[15px] text-soft">{fr.parking.askDates}</p>}
-        <StayFields idPrefix="fiche" arrivee={stay.arrivee} retour={stay.retour} minDate={minDate} errors={errors} compactLabels />
+        <StayFields idPrefix="fiche" arrivee={stay.arrivee} retour={stay.retour} minDate={minDate} errors={errors} compactLabels layout="card" />
         <button type="submit" className={offer ? "btn-secondary h-11 px-4 text-[15px]" : "btn-primary h-12 px-6 text-base"}>
           {offer ? fr.search.update : fr.parking.checkDates}
         </button>

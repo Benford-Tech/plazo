@@ -12,6 +12,9 @@ export const GEOPF_GEOCODE_URL = 'https://data.geopf.fr/geocodage/search';
 /** A BD TOPO query covers at most this span (degrees) so a call stays small. */
 export const MAX_BBOX_SPAN = 0.05;
 
+/** Below this score (0-1) a geocoding match is a guess, not the address. */
+export const GEOCODE_MIN_SCORE = 0.3;
+
 type Position = [number, number];
 type Geometry = { type: string; coordinates: unknown };
 
@@ -51,10 +54,10 @@ function to2d(coordinates: unknown): unknown {
 export class GeoService {
   public timeoutMs = 10000;
 
-  private async getJson(service: string, url: string): Promise<any> {
+  private async getJson(service: string, url: string, timeoutMs = this.timeoutMs): Promise<any> {
     let res: Response;
     try {
-      res = await fetch(url, { headers: { accept: 'application/json' }, signal: AbortSignal.timeout(this.timeoutMs) });
+      res = await fetch(url, { headers: { accept: 'application/json' }, signal: AbortSignal.timeout(timeoutMs) });
     } catch (error) {
       logger.error(`[Geo] ${service} call failed: ${error instanceof Error ? error.name : 'unknown error'}`);
       if (error instanceof Error && error.name === 'TimeoutError') {
@@ -132,5 +135,23 @@ export class GeoService {
         lon: f.geometry.coordinates[0] as number,
         lat: f.geometry.coordinates[1] as number,
       }));
+  }
+
+  /**
+   * Best match of an address (Géoplateforme geocoding), or null when there is none, it is too
+   * uncertain or the service fails: callers treat a position as optional.
+   */
+  public async geocodeBest(q: string, timeoutMs: number, minScore = GEOCODE_MIN_SCORE): Promise<{ lat: number; lng: number } | null> {
+    try {
+      const params = new URLSearchParams({ q, limit: '1' });
+      const data = await this.getJson('Géoplateforme geocoding', `${GEOPF_GEOCODE_URL}?${params.toString()}`, timeoutMs);
+      const f = Array.isArray(data?.features) ? data.features[0] : null;
+      const [lng, lat] = f?.geometry?.type === 'Point' && Array.isArray(f.geometry.coordinates) ? f.geometry.coordinates : [];
+      if (!Number.isFinite(lat) || !Number.isFinite(lng) || Math.abs(lat) > 90 || Math.abs(lng) > 180) return null;
+      const score = typeof f.properties?.score === 'number' ? f.properties.score : 0;
+      return score >= minScore ? { lat, lng } : null;
+    } catch {
+      return null;
+    }
   }
 }

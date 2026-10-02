@@ -17,3 +17,8 @@ export function formatEuros(cents: number): string {
 export function formatWholeEuros(cents: number): string {
   return `${Math.round(cents / 100).toString().replace(/\B(?=(\d{3})+(?!\d))/g, NARROW_NBSP)}${NBSP}€`;
 }
+
+/** Short price of a map pill: whole euros when exact ("45 €"), else with cents ("34,99 €"). */
+export function formatShortEuros(cents: number): string {
+  return cents % 100 === 0 ? formatWholeEuros(cents) : formatEuros(cents);
+}

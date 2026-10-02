@@ -16,6 +16,8 @@ export function GET(request: NextRequest) {
   const arrivee = joinLocal(q.get("date_depot"), q.get("heure_depot")) ?? "";
   const retour = joinLocal(q.get("date_retour"), q.get("heure_retour")) ?? "";
   const path = parking ? `/${airport}/${parking}` : `/${airport}/recherche`;
-  const location = `${path}?arrivee=${encodeQueryValue(arrivee)}&retour=${encodeQueryValue(retour)}`;
+  // The results page's map stays shown when the search is changed from it.
+  const map = !parking && q.get("carte") === "1" ? "&carte=1" : "";
+  const location = `${path}?arrivee=${encodeQueryValue(arrivee)}&retour=${encodeQueryValue(retour)}${map}`;
   return new Response(null, { status: 303, headers: { Location: location, "Cache-Control": "no-store" } });
 }

@@ -7,6 +7,7 @@ import { UpdateParkingDto } from '@/dtos/parking.dto';
 import { AuthenticatedStaff } from '@/interfaces/auth.interface';
 import { HttpException } from '@/utils/httpException';
 import { AuditService } from './audit.service';
+import { ParkingLocationService, SAVE_GEOCODE_TIMEOUT_MS } from './parking-location.service';
 
 export type ParkingSummary = Parking & { bookableCapacity: number };
 
@@ -19,6 +20,7 @@ function summarize(parking: Parking): ParkingSummary {
 @Service()
 export class ParkingService {
   public audit = Container.get(AuditService);
+  public locations = Container.get(ParkingLocationService);
 
   /** MVP: one parking per operator in the UI; the data model already allows several. */
   public async getPrimary(actor: AuthenticatedStaff): Promise<ParkingSummary> {
@@ -31,7 +33,7 @@ export class ParkingService {
     if (!can(actor.role, 'parking:manage')) {
       throw new HttpException(httpStatus.FORBIDDEN, 'You do not have access to this action', 'forbidden');
     }
-    return prisma.$transaction(async tx => {
+    const saved = await prisma.$transaction(async tx => {
       const before = await tx.parking.findFirst({ where: { id: parkingId, operatorId: actor.operatorId } });
       if (!before) throw new HttpException(httpStatus.NOT_FOUND, 'Parking not found', 'not_found');
 
@@ -51,7 +53,12 @@ export class ParkingService {
         if (before[key] !== after[key]) changes[key] = { from: before[key], to: after[key] };
       }
       await this.audit.record(actor, { action: 'parking.settings_updated', entityType: 'parking', entityId: parkingId, details: changes as any }, tx);
-      return summarize(after);
+      // A position geocoded from the old address no longer holds.
+      if (changes.address) await this.locations.store(parkingId, null, tx);
+      return { summary: summarize(after), addressChanged: !!changes.address };
     });
+    // The new address's position for the site's map (never fails the save).
+    if (saved.addressChanged) await this.locations.locate(saved.summary, SAVE_GEOCODE_TIMEOUT_MS);
+    return saved.summary;
   }
 }

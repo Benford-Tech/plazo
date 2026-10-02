@@ -1,8 +1,7 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { Breadcrumb } from "./Breadcrumb";
+import { HomeHero } from "./HomeHero";
 import { Photo } from "./Photo";
-import { SearchForm } from "./SearchForm";
 import { api, ApiError } from "@/lib/api";
 import { defaultStay, todayLocal } from "@/lib/dates";
 import { fr, fromPriceUnit } from "@/lib/fr";
@@ -20,7 +19,7 @@ export async function loadAirport(slug: string): Promise<AirportResponse> {
   }
 }
 
-/** Airport page: hero with the search bar, how it works, partner parkings, FAQ. Also the home page. */
+/** Airport page: hero (photo, search bar, reassurance), how it works, partner parkings, FAQ. Also the home page. */
 export async function AirportView({ slug, showBreadcrumb }: { slug: string; showBreadcrumb: boolean }) {
   const { airport, listings } = await loadAirport(slug);
   const stay = defaultStay();
@@ -28,37 +27,7 @@ export async function AirportView({ slug, showBreadcrumb }: { slug: string; show
 
   return (
     <>
-      <section className="on-dark bg-hero text-white">
-        <div className="mx-auto flex max-w-[1280px] flex-col gap-4 px-4 pt-6 pb-7 md:gap-[22px] md:px-12 md:pt-12 md:pb-12">
-          {showBreadcrumb && <Breadcrumb onDark items={[{ label: fr.nav.home, href: "/" }, { label: airport.name }]} />}
-          <h1 className="font-title max-w-[820px] text-[32px] leading-[1.1] md:text-[54px] md:leading-[1.05]">
-            {fr.home.heroTitle(airport.name)}
-          </h1>
-          <p className="max-w-[720px] text-[15px] text-lilac md:text-lg">{fr.home.heroLead}</p>
-          <SearchForm
-            floating
-            airport={airport}
-            arrivee={stay.arrivee}
-            retour={stay.retour}
-            minDate={todayLocal()}
-            idPrefix="accueil"
-          />
-          <ul className="mt-2 grid grid-cols-1 gap-3 sm:grid-cols-2 md:gap-5 lg:grid-cols-4">
-            {fr.home.trust.map(([title, text]) => (
-              <li key={title} className="flex items-start gap-2.5">
-                <span aria-hidden="true" className="flex size-7 flex-none items-center justify-center rounded-full bg-white/15 font-bold">
-                  ✓
-                </span>
-                <span className="text-[15px] leading-snug">
-                  <b className="text-white">{title}</b>
-                  <br />
-                  <span className="text-lilac">{text}</span>
-                </span>
-              </li>
-            ))}
-          </ul>
-        </div>
-      </section>
+      <HomeHero airport={airport} arrivee={stay.arrivee} retour={stay.retour} minDate={todayLocal()} breadcrumb={showBreadcrumb} />
 
       <main className="mx-auto flex w-full max-w-[1280px] flex-col gap-10 px-4 py-8 md:gap-12 md:px-12 md:py-12">
         <section aria-labelledby="comment" className="flex flex-col gap-4">

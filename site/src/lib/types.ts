@@ -14,10 +14,17 @@ export interface ListingSummary {
   openingHours: string | null;
   cancellationPolicy: CancellationPolicy;
   photo: string | null;
+  /** Entrance of the parking for the map; null (or missing from an older API) when unknown. */
+  location?: LatLng | null;
+}
+
+export interface LatLng {
+  lat: number;
+  lng: number;
 }
 
 export interface AirportResponse {
-  airport: { code: string; name: string; city: string; slug: string; timezone: string };
+  airport: { code: string; name: string; city: string; slug: string; timezone: string; location?: LatLng | null };
   /** Lowest package price and the number of days it covers ("dès 15,00 € la journée"). */
   listings: (ListingSummary & { fromPriceCents: number | null; fromDays?: number | null })[];
 }
@@ -31,7 +38,7 @@ export interface Offer {
 export type SearchResult = ListingSummary & Offer;
 
 export interface SearchResponse {
-  airport: { code: string; name: string; slug: string };
+  airport: { code: string; name: string; slug: string; location?: LatLng | null };
   results: SearchResult[];
 }
 
@@ -41,7 +48,7 @@ export interface PricingTier {
 }
 
 export interface ParkingResponse {
-  airport: { code: string; name: string; slug: string };
+  airport: { code: string; name: string; slug: string; location?: LatLng | null };
   parking: ListingSummary & {
     description: string | null;
     photos: string[];

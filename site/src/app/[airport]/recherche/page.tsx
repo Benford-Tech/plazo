@@ -5,6 +5,9 @@ import { loadAirport } from "@/components/AirportView";
 import { FiltersForm } from "@/components/FiltersForm";
 import { PriceRange } from "@/components/PriceRange";
 import { ResultCard } from "@/components/ResultCard";
+import type { MapParking } from "@/components/ResultsMap";
+import { ResultsMapPanel } from "@/components/ResultsMapPanel";
+import { MapIcon } from "@/components/stay/pill";
 import { SearchForm } from "@/components/SearchForm";
 import { api, ApiError } from "@/lib/api";
 import { daysLabel, formatDateTime, stayDays, stayFromParams, stayQuery, todayLocal, validateStay } from "@/lib/dates";
@@ -14,6 +17,7 @@ import {
   type Filters,
   FILTER_SERVICES,
   hasActiveFilters,
+  mapShown,
   parseFilters,
   priceCeilingCents,
   resultsQuery,
@@ -23,6 +27,7 @@ import {
   serviceCounts,
 } from "@/lib/filters";
 import { fr, serviceLabel } from "@/lib/fr";
+import { formatShortEuros } from "@/lib/money";
 import { SLUG_RE } from "@/lib/site";
 import type { SearchResponse } from "@/lib/types";
 
@@ -82,8 +87,24 @@ export default async function ResultsPage({ params, searchParams }: PageProps<"/
   const cheapest = cheapestSlug(shown);
   const days = results[0]?.days ?? stayDays(arrivee, retour);
   const path = `/${airport.slug}/recherche`;
-  const withFilters = (f: Partial<Filters>) => `${path}${resultsQuery({ arrivee, retour }, { ...filters, ...f })}`;
-  const clearHref = `${path}${resultsQuery({ arrivee, retour }, { services: [], freeCancellation: false, maxShuttle: null, maxPriceCents: null, sort: filters.sort })}`;
+  const map = mapShown(query);
+  const withFilters = (f: Partial<Filters>) => `${path}${resultsQuery({ arrivee, retour }, { ...filters, ...f }, map)}`;
+  const clearHref = `${path}${resultsQuery({ arrivee, retour }, { services: [], freeCancellation: false, maxShuttle: null, maxPriceCents: null, sort: filters.sort }, map)}`;
+  const mapToggleHref = `${path}${resultsQuery({ arrivee, retour }, filters, !map)}`;
+  const mapParkings: MapParking[] = shown.flatMap(r =>
+    r.location
+      ? [
+          {
+            slug: r.slug,
+            title: r.title,
+            label: r.available && r.priceCents !== null ? formatShortEuros(r.priceCents) : r.priceCents === null ? fr.map.noPrice : fr.map.full,
+            bookable: r.available && r.priceCents !== null,
+            location: r.location,
+          },
+        ]
+      : [],
+  );
+  const notDrawn = shown.length - mapParkings.length;
   const visibleServices = FILTER_SERVICES.filter(s => counts[s] > 0 || filters.services.includes(s));
 
   return (
@@ -101,25 +122,32 @@ export default async function ResultsPage({ params, searchParams }: PageProps<"/
             </span>
           </summary>
           <div className="pb-4">
-            <SearchForm airport={airport} arrivee={arrivee} retour={retour} minDate={today} idPrefix="modifier" />
+            <SearchForm airport={airport} arrivee={arrivee} retour={retour} minDate={today} idPrefix="modifier" keepMap={map} />
           </div>
         </details>
       </div>
 
-      <main className="mx-auto grid w-full max-w-[1280px] flex-1 gap-6 px-4 py-6 md:grid-cols-[250px_1fr] md:gap-9 md:px-12 md:py-7">
-        <div>
+      <main
+        className={`mx-auto grid w-full max-w-[1280px] flex-1 gap-6 px-4 py-6 md:px-12 md:py-7 ${
+          map
+            ? "grid-cols-1 [grid-template-areas:'filters'_'head'_'map'_'list'] lg:grid-cols-[minmax(0,1fr)_minmax(0,1.15fr)] lg:grid-rows-[auto_auto_1fr] lg:gap-x-8 lg:[grid-template-areas:'filters_map'_'head_map'_'list_map']"
+            : "md:grid-cols-[250px_1fr] md:grid-rows-[auto_1fr] md:gap-9"
+        }`}
+      >
+        <div className={map ? "[grid-area:filters]" : "md:row-span-2"}>
           <input type="checkbox" id="voir-filtres" className="peer sr-only" />
           <label
             htmlFor="voir-filtres"
-            className="btn-secondary h-11 w-full px-4 text-[15px] peer-focus-visible:outline-3 peer-focus-visible:outline-accent md:hidden"
+            className={`btn-secondary h-11 px-4 text-[15px] peer-focus-visible:outline-3 peer-focus-visible:outline-accent ${map ? "w-full sm:w-auto" : "w-full md:hidden"}`}
           >
-            {fr.results.showFilters}
+            {map ? fr.map.filters : fr.results.showFilters}
           </label>
-          <aside aria-label={fr.results.filters} className="mt-4 hidden peer-checked:block md:mt-0 md:block">
-            <FiltersForm key={resultsQuery({ arrivee, retour }, filters)} action={path}>
+          <aside aria-label={fr.results.filters} className={`mt-4 hidden peer-checked:block ${map ? "max-w-[420px]" : "md:mt-0 md:block"}`}>
+            <FiltersForm key={resultsQuery({ arrivee, retour }, filters, map)} action={path}>
               <input type="hidden" name="arrivee" value={arrivee} />
               <input type="hidden" name="retour" value={retour} />
               {filters.sort !== "prix" && <input type="hidden" name="tri" value={filters.sort} />}
+              {map && <input type="hidden" name="carte" value="1" />}
               {visibleServices.length > 0 && (
                 <fieldset>
                   <legend className={sectionTitle}>{fr.results.services}</legend>
@@ -195,11 +223,11 @@ export default async function ResultsPage({ params, searchParams }: PageProps<"/
           </aside>
         </div>
 
-        <section aria-labelledby="resultats" className="flex min-w-0 flex-col gap-4">
-          <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
-            <h1 id="resultats" className="font-title text-[26px] md:text-[30px]" aria-live="polite">
-              {fr.results.available(availableCount)}
-            </h1>
+        <div className={map ? "flex flex-col gap-3 [grid-area:head] lg:flex-row lg:flex-wrap lg:items-center lg:justify-between" : "flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between"}>
+          <h1 id="resultats" className="font-title text-[26px] md:text-[30px]" aria-live="polite">
+            {fr.results.available(availableCount)}
+          </h1>
+          <div className="flex flex-wrap items-center gap-1.5">
             <nav aria-label={fr.results.sort} className="flex flex-wrap items-center gap-1.5">
               <span className="mr-1 text-sm text-soft">{fr.results.sort}</span>
               {SORT_KEYS.map(key => (
@@ -217,8 +245,32 @@ export default async function ResultsPage({ params, searchParams }: PageProps<"/
                 </Link>
               ))}
             </nav>
+            <Link
+              href={mapToggleHref}
+              scroll={false}
+              replace
+              className="inline-flex h-11 items-center gap-2 rounded-full border border-line bg-white px-3.5 text-sm font-semibold whitespace-nowrap text-accent no-underline hover:border-accent md:h-[38px] lg:ml-2"
+            >
+              <MapIcon />
+              {map ? fr.map.hide : fr.map.show}
+            </Link>
           </div>
+        </div>
 
+        {map && (
+          <div className="-mx-4 h-[300px] overflow-hidden [grid-area:map] sm:mx-0 sm:h-[380px] sm:rounded-[20px] lg:sticky lg:top-4 lg:h-[calc(100dvh-2rem)] lg:max-h-[860px] lg:self-start">
+            <div className="relative h-full">
+              <ResultsMapPanel airport={{ name: airport.name, location: airport.location ?? null }} parkings={mapParkings} />
+              {notDrawn > 0 && (
+                <p className="pointer-events-none absolute bottom-9 left-2.5 rounded-full bg-white/95 px-3 py-1.5 text-[13px] text-soft shadow-sm">
+                  {fr.map.notDrawn(notDrawn)}
+                </p>
+              )}
+            </div>
+          </div>
+        )}
+
+        <section aria-labelledby="resultats" className={`flex min-w-0 flex-col gap-4 ${map ? "[grid-area:list]" : "md:col-start-2"}`}>
           {shown.length === 0 ? (
             <div className="flex flex-col items-start gap-3 rounded-[16px] bg-tint p-6">
               <h2 className="text-lg font-bold">{results.length === 0 ? fr.results.noneTitle : fr.results.noMatchTitle}</h2>
@@ -239,6 +291,8 @@ export default async function ResultsPage({ params, searchParams }: PageProps<"/
                     highlighted={i === 0 && result.available}
                     badge={cheapest === result.slug ? fr.results.cheapest : null}
                     headingLevel={2}
+                    compact={map}
+                    noPosition={map && !result.location}
                   />
                 </li>
               ))}
