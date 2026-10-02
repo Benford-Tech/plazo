@@ -108,6 +108,14 @@ export function isPlatformAdmin(email: string | null | undefined): boolean {
   return !!email && platformAdminEmails().includes(email.trim().toLowerCase());
 }
 
+// OneSignal (push notifications to the staff's phones). Read on every call so that tests can
+// switch pushes on and off. Without both values, no push is sent (the rest works the same).
+export function oneSignalSettings(): { appId: string; restApiKey: string } | null {
+  const appId = process.env.ONESIGNAL_APP_ID?.trim() || '';
+  const restApiKey = process.env.ONESIGNAL_REST_API_KEY?.trim() || '';
+  return appId && restApiKey ? { appId, restApiKey } : null;
+}
+
 // The product name is still a working name: it lives only in the repository's product.json.
 // The build copies it to lib/product.json (deployed with the function); in development it is
 // read from the repository root.

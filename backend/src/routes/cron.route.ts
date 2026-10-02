@@ -13,12 +13,12 @@ import { CronAuthMiddleware } from '@/middlewares/cron-auth.middleware';
  * @swagger
  * /internal/cron/purge-expired-tokens:
  *   get:
- *     summary: Delete expired staff tokens (every night)
+ *     summary: Delete expired staff tokens, end lapsed arrival signals (every night)
  *     tags: [Cron]
  *     description: "Requires Authorization: Bearer <CRON_SECRET>."
  *     responses:
  *       200:
- *         description: "{ deleted }"
+ *         description: "{ deleted, arrivalSignalsEnded }"
  * /internal/cron/payouts:
  *   get:
  *     summary: Transfer the operators' shares that are due (every day)
@@ -31,6 +31,16 @@ import { CronAuthMiddleware } from '@/middlewares/cron-auth.middleware';
  *     responses:
  *       200:
  *         description: "{ transferred, notDue, waitingForAccount, failed, skipped }"
+ * /internal/cron/expire-arrival-signals:
+ *   get:
+ *     summary: End the arrival signals past their 2 hours (or whose booking moved on), erasing their position
+ *     tags: [Cron]
+ *     description: >
+ *       "Requires Authorization: Bearer <CRON_SECRET>." Tidy-up only: signals are already ended when
+ *       read (traveller, planning, live list); the nightly purge-expired-tokens run does it too.
+ *     responses:
+ *       200:
+ *         description: "{ ended }"
  * /internal/cron/expire-payment-holds:
  *   get:
  *     summary: End the lapsed holds of bookings waiting for their online payment
@@ -49,6 +59,7 @@ export class CronRoute implements Routes {
   constructor() {
     this.router.get('/internal/cron/purge-expired-tokens', CronAuthMiddleware(), this.cron.purgeExpiredTokens);
     this.router.get('/internal/cron/payouts', CronAuthMiddleware(), this.cron.payouts);
+    this.router.get('/internal/cron/expire-arrival-signals', CronAuthMiddleware(), this.cron.expireArrivalSignals);
     this.router.get('/internal/cron/expire-payment-holds', CronAuthMiddleware(), this.cron.expirePaymentHolds);
   }
 }

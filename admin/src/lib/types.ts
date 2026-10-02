@@ -95,12 +95,55 @@ export interface NightLoad {
   overbooked: boolean;
 }
 
+/** A traveller telling the parking they are coming (live position, announce, or at the meeting point). */
+export type ArrivalKind = "outbound" | "return";
+export type ArrivalState = "sharing" | "announced" | "at_meeting_point";
+
+export interface MeetingPoint {
+  lat: number;
+  lng: number;
+  source: "parking" | "return_point" | "airport";
+  label: string | null;
+}
+
+export interface ArrivalSignal {
+  id: string;
+  reservationId: string;
+  reference: string;
+  kind: ArrivalKind;
+  state: ArrivalState;
+  customerName: string;
+  plate: string;
+  passengers: number;
+  returnFlight: string | null;
+  scheduledAt: string;
+  startedAt: string;
+  expiresAt: string;
+  distanceM: number | null;
+  etaMinutes: number | null;
+  etaAt: string | null;
+  announcedMinutes: number | null;
+  atMeetingPointAt: string | null;
+  position: { lat: number; lng: number; accuracyM: number | null } | null;
+  positionUpdatedAt: string | null;
+  positionAgeSeconds: number | null;
+  meetingPoint: MeetingPoint | null;
+}
+
+export interface LiveArrivals {
+  serverTime: string;
+  signals: ArrivalSignal[];
+}
+
+/** A planning row: the booking and its traveller's live signal, if any. */
+export type PlanningRow = Reservation & { arrivalSignal?: ArrivalSignal | null };
+
 export interface Planning {
   date: string;
   timezone: string;
   parking: { id: string; name: string; bookableCapacity: number };
-  arrivals: Reservation[];
-  returns: Reservation[];
+  arrivals: PlanningRow[];
+  returns: PlanningRow[];
   nights: NightLoad[];
   stats: { arrivals: number; arrived: number; returns: number; returnsWithFlight: number };
 }

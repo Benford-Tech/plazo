@@ -3,6 +3,7 @@ import httpStatus from 'http-status';
 import { Container } from 'typedi';
 import { ChangeStatusDto, CreateReservationDto, ParseEmailDto, UpdateReservationDto } from '@/dtos/reservation.dto';
 import { RequestWithStaffSession } from '@/middlewares/staff-auth.middleware';
+import { ArrivalService } from '@/services/arrival.service';
 import { ReservationService } from '@/services/reservation.service';
 import catchAsync from '@/utils/catchAsync';
 
@@ -13,7 +14,9 @@ export class ReservationController {
 
   /** GET /internal/planning?date=YYYY-MM-DD */
   public planning = catchAsync(async (req: RequestWithStaffSession, res: Response) => {
-    res.json(await this.reservationService.planning(req.staff, str(req.query.date)));
+    // Each row carries its traveller's live arrival signal (null when none).
+    const planning = await this.reservationService.planning(req.staff, str(req.query.date));
+    res.json(await Container.get(ArrivalService).attachToPlanning(req.staff, planning));
   });
 
   /** GET /internal/capacity?arrivalAt=&returnAt=&excludeId= */

@@ -314,7 +314,7 @@ export class PublicBookingService {
   }
 
   /** A booking made on the site, if the token is its own. */
-  private async load(reference: string, token: string | undefined): Promise<BookingRecord> {
+  public async load(reference: string, token: string | undefined): Promise<BookingRecord> {
     if (!reference || reference.length > 20 || !token) throw notFound();
     const reservation = await prisma.reservation.findFirst({
       where: { reference: reference.toUpperCase(), channel: 'plazo' },

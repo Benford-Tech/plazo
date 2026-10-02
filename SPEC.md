@@ -134,6 +134,36 @@ Règles métier :
 
 Hors MVP : optimisation d'itinéraire, suivi GPS de la navette.
 
+#### Prévenir de son arrivée (mis en œuvre, maquette validée « eta »)
+
+Le voyageur prévient le parking qu'il arrive, sans appeler. Deux moments, avec chacun son point de rendez-vous :
+- **à l'aller** (réservation « à venir », de 2 h avant l'heure de dépôt à 2 h après) : l'accueil du parking
+  (`Parking.location`) ;
+- **au retour** (véhicule sur place, de 2 h avant l'heure de retour à 6 h après) : le point de rendez-vous de la navette
+  à l'aéroport (`Parking.returnMeetingPoint` + libellé, réglable par le gérant par l'API ; à défaut l'aéroport de la fiche,
+  puis le parking).
+
+Trois façons de prévenir, depuis l'app (lien de la confirmation ou référence + email, aucun compte) :
+- **« Je suis en route — partager ma position »** : la position est envoyée au plus toutes les 10 s ; l'arrivée estimée
+  est la distance à vol d'oiseau à 40 km/h (au moins 1 min), sans service de calcul d'itinéraire payant. Le partage
+  s'arrête tout seul à moins de 150 m du point de rendez-vous, au bout de 2 h, quand le voyageur l'arrête, ou quand le
+  personnel enregistre le dépôt ;
+- **« Prévenir sans partager ma position »** : « J'arrive dans 10 / 20 / 30 min » ;
+- **« Je suis au point de rendez-vous »** (au retour surtout ; position ponctuelle facultative) : la réservation passe
+  en « retour demandé », le chauffeur le voit dans sa file.
+
+Côté personnel : la carte de l'arrivée en approche passe en tête du planning avec un liseré, l'ETA, une mini-carte et
+l'âge de la position (« il y a 20 s ») ; « Prévenu · dans 20 min » ; « Au point de rendez-vous » dans les retours ; un
+bandeau à chaque nouvel évènement. Le planning interroge l'API toutes les 12 s (pas de connexion permanente sur
+Vercel). Notifications push sur les téléphones du personnel (OneSignal) : au départ (« C. Martin arrive dans 12 min »),
+une seule fois au passage sous 10 min, et à l'arrivée ; chaque personne choisit arrivées, retours, ou les deux.
+
+**RGPD** : consentement explicite (le bouton, sous l'explication ; l'API refuse sans `consent: true`) ; **seule la dernière
+position** est gardée, jamais d'historique ; elle est **effacée** à l'arrêt, à l'arrivée (150 m), quand le dépôt est
+enregistré et **au bout de 2 h** au plus tard (à la lecture, et par la purge nocturne) ; le journal d'audit trace les
+évènements sans coordonnées ; aucune position dans les journaux ; les notifications ne donnent que l'initiale du prénom,
+le nom et la plaque.
+
 ## 3 bis. Phase 2 — Place de marché grand public
 
 Objectif : un site grand public où le voyageur choisit un aéroport et des dates, compare les parkings de plusieurs loueurs, réserve et paie en ligne. Chaque loueur utilise son espace pro (le MVP) pour tout le reste : planning, plan, navette.
@@ -259,6 +289,11 @@ Pour que la séparation reste simple :
 - **PricingRule** : id, parking_id, règles (par jour, forfait, haute saison).
 - **AuditLog** : qui a fait quoi, quand (affectations, annulations, changements d'emplacement).
 - **DeviceToken** : id, user_id ou reservation_id, plateforme (iOS/Android), jeton push, dernière activité.
+- **ArrivalSignal** (mis en œuvre) : une ligne par réservation et par moment (aller / retour), réutilisée : état
+  (partage, annoncé, au point de rendez-vous, terminé, avec la raison), **dernière position seulement** (lat, lng,
+  précision, horodatages, effacés hors partage — contrainte CHECK), distance, ETA, minutes annoncées, début et fin
+  (2 h), notifications déjà envoyées. Mis en œuvre comme **StaffDevice** (abonnement OneSignal par personne) +
+  préférences `notifyArrivals` / `notifyReturns` sur le personnel ; **Parking.returnMeetingPoint** (+ libellé).
 
 Ajouts phase 2 (marketplace) :
 - **Traveler** : id, email, nom, téléphone, préférences, date de création (compte voyageur, optionnel au début).
@@ -285,6 +320,8 @@ Ajouts phase 2 (marketplace) :
 - **Responsive et mobile** : application web responsive ; application mobile native iOS et Android pour le personnel, le gérant et les voyageurs (section 3 ter).
 - **Disponibilité** : un parking d'aéroport fonctionne 24h/24 ; viser une disponibilité élevée et un mode dégradé (consultation hors ligne de la liste du jour, à étudier).
 - **Performance** : recherche de véhicule par plaque en moins d'une seconde ; suggestion d'emplacement en moins de 2 secondes ; le plan reste affichable sans réseau dans l'app du personnel (dernière version gardée sur le téléphone).
+- **RGPD — position des voyageurs** (« Prévenir de son arrivée ») : sur consentement, dernière position seulement,
+  effacée à l'arrivée, à l'arrêt ou au bout de 2 h au plus tard ; jamais dans l'historique, le journal d'audit ni les logs.
 - **RGPD** : données minimales (nom, téléphone, plaque, vol), finalité claire, durée de conservation limitée (par exemple suppression ou anonymisation quelques mois après le retour), registre de traitement, mentions sur la page de réservation, hébergement dans l'UE.
 - **Sécurité** : authentification forte pour le personnel, rôles, journal d'audit, sauvegardes, aucune donnée de carte bancaire stockée par l'outil au MVP.
 - **Langue** : interface en français ; chaînes externalisées pour traduire plus tard (anglais notamment).

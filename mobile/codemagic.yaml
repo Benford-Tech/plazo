@@ -1,0 +1,109 @@
+# Codemagic CI/CD — mobile app (traveller + staff flows, one project; flavors later)
+#
+# Modelled on lovenest-frontend/codemagic.yaml. NO SECRET IN THIS FILE: everything sensitive is in
+# the Codemagic group below (app → Settings → Environment variables, every value "Secure").
+#
+# One workflow: mobile-release
+#   → checks: product name in sync with ../product.json, flutter analyze, flutter test
+#   → Android: signed APK + AAB (Play Store), versioned
+#   → iOS: signed IPA, published to TestFlight
+#   → build number = Codemagic build counter + 100, shared by Android and iOS
+#
+# The repository is a monorepo: this file lives in mobile/. In Codemagic, add the app with the
+# repository, choose "codemagic.yaml" and set the project path to mobile/ (or move this file to
+# the root and keep working_directory: mobile).
+#
+# ── To set up once in Codemagic: group « mobile_secrets » ─────────────────────────────────────
+#     KEYSTORE_FILE           = base64 of the upload keystore (.jks)            ← Joanny (Play)
+#     KEY_PROPERTIES_FILE     = base64 of android/key.properties                 ← Joanny (Play)
+#                               storePassword=…  keyPassword=…  keyAlias=upload  storeFile=upload.jks
+#     CERTIFICATE_PRIVATE_KEY = RSA 2048 private key (PEM, BEGIN/END lines included) used to create
+#                               and find the Apple distribution certificate; the SAME key each build.
+#     ONESIGNAL_APP_ID        = OneSignal app id (public, but kept with the rest) ← Joanny (OneSignal)
+#     API_BASE_URL            = https://<production domain>/api (optional: the app's default is
+#                               https://plazo-benford-tech.vercel.app/api)
+# ────────────────────────────────────────────────────────────────────────────────────────────────
+
+workflows:
+  mobile-release:
+    name: Mobile — Android + iOS + TestFlight (release)
+    instance_type: mac_mini_m2
+    max_build_duration: 90
+    working_directory: mobile
+    integrations:
+      # EXACT name of the App Store Connect API key saved in Codemagic (Integrations → App Store
+      # Connect). PLACEHOLDER: rename to the key Joanny creates.
+      app_store_connect: plazo-asc
+    environment:
+      # Same Flutter as the local checks (stable, October 2026).
+      flutter: 3.47.6
+      xcode: latest
+      java: 17
+      vars:
+        # PLACEHOLDER bundle ids (also in android/app/build.gradle.kts and the Xcode project).
+        IOS_BUNDLE_ID: com.benfordtech.parkingApp
+        ANDROID_APPLICATION_ID: com.benfordtech.parking_app
+        # R8 runs out of heap on Codemagic machines (see LoveNest).
+        JAVA_TOOL_OPTIONS: "-Xmx5g"
+      groups:
+        - mobile_secrets
+    scripts:
+      - name: Restaurer keystore et key.properties
+        script: |
+          set -e
+          printf '%s' "$KEYSTORE_FILE" | tr -d ' \t\r\n' | base64 --decode > "$CM_BUILD_DIR/mobile/android/app/upload.jks" \
+            || { echo "ERREUR: KEYSTORE_FILE n'est pas un base64 valide"; exit 1; }
+          printf '%s' "$KEY_PROPERTIES_FILE" | tr -d ' \t\r\n' | base64 --decode > "$CM_BUILD_DIR/mobile/android/key.properties" \
+            || { echo "ERREUR: KEY_PROPERTIES_FILE n'est pas un base64 valide"; exit 1; }
+          echo "Secrets Android restaurés"
+      - name: Calculer la version (partagée Android/iOS)
+        script: |
+          set -e
+          NEXT=$((PROJECT_BUILD_NUMBER + 100))
+          VERSION_NAME=$(grep '^version:' pubspec.yaml | sed 's/version: *//; s/+.*//')
+          echo "Version: $VERSION_NAME ($NEXT)"
+          echo "NEXT=$NEXT" >> "$CM_ENV"
+          echo "VERSION_NAME=$VERSION_NAME" >> "$CM_ENV"
+          # Build-time settings (never secrets: they ship in the app).
+          DEFINES="--dart-define=ONESIGNAL_APP_ID=$ONESIGNAL_APP_ID"
+          [ -n "$API_BASE_URL" ] && DEFINES="$DEFINES --dart-define=API_BASE_URL=$API_BASE_URL"
+          echo "DEFINES=$DEFINES" >> "$CM_ENV"
+      - name: Flutter packages
+        script: flutter pub get
+      - name: Vérifications (nom du produit, analyse, tests)
+        script: |
+          set -e
+          dart run tool/sync_product.dart --check
+          flutter analyze
+          flutter test
+      - name: Android — APK + App Bundle (release, signés, versionnés)
+        script: |
+          set -e
+          flutter build apk --release --build-number="$NEXT" $DEFINES
+          flutter build appbundle --release --build-number="$NEXT" $DEFINES
+          mv build/app/outputs/flutter-apk/app-release.apk "build/app/outputs/flutter-apk/app-v$VERSION_NAME-$NEXT.apk"
+          mv build/app/outputs/bundle/release/app-release.aab "build/app/outputs/bundle/release/app-v$VERSION_NAME-$NEXT.aab"
+      - name: Signature iOS (récupère ou crée certificat + profil App Store)
+        # The App ID needs the capabilities of ios/Runner/Runner.entitlements: Push Notifications
+        # and Associated Domains.
+        script: |
+          set -e
+          app-store-connect fetch-signing-files "$IOS_BUNDLE_ID" --type IOS_APP_STORE --create
+          keychain initialize
+          keychain add-certificates
+          xcode-project use-profiles
+      - name: iOS — IPA signé (release, versionné)
+        script: |
+          set -e
+          flutter build ipa --release --build-number="$NEXT" $DEFINES \
+            --export-options-plist=/Users/builder/export_options.plist
+    artifacts:
+      - mobile/build/app/outputs/flutter-apk/*.apk
+      - mobile/build/app/outputs/bundle/release/*.aab
+      - mobile/build/ios/ipa/*.ipa
+    publishing:
+      # Only when every step passed. The AAB goes to the Play Console by hand at first (the first
+      # upload of an app must be manual); a google_play block can follow once the listing exists.
+      app_store_connect:
+        auth: integration
+        submit_to_testflight: true

@@ -258,6 +258,24 @@ export const fr = {
     noReturn: "Aucun retour ce jour.",
     pax: (n: number) => `${n} pers.`,
     from: (city: string) => `de ${city}`,
+    // Travellers telling the parking they are coming (live position or announce).
+    approaching: (eta: number | null) => (eta === null ? "En route" : `En approche · ${eta} min`),
+    announced: (minutes: number) => `Prévenu · « dans ${minutes} min »`,
+    atReception: "À l'accueil",
+    atMeetingPoint: "Au point de rendez-vous",
+    positionUpdated: (seconds: number) =>
+      seconds < 60 ? `Position mise à jour il y a ${seconds} s` : `Position mise à jour il y a ${Math.floor(seconds / 60)} min`,
+    etaAround: (time: string) => `arrivée estimée ${time}`,
+    distance: (meters: number) => (meters < 1000 ? `${meters} m` : `${(meters / 1000).toFixed(1).replace(".", ",")} km`),
+    miniMap: (name: string) => `Position de ${name} par rapport au point de rendez-vous`,
+    meetingPointMark: "P",
+    toastApproaching: (who: string, eta: number | null, plate: string) =>
+      eta === null ? `${who} est en route — ${plate}` : `${who} arrive dans ${eta} min — ${plate}`,
+    toastAnnounced: (who: string, minutes: number, plate: string) => `${who} : « J'arrive dans ${minutes} min » — ${plate}`,
+    toastAtReception: (who: string, plate: string) => `${who} est à l'accueil — ${plate}`,
+    toastAtMeetingPoint: (who: string, plate: string) => `Retour : ${who} est au point de rendez-vous — ${plate}`,
+    toastSee: "Voir ›",
+    toastClose: "Fermer l'alerte",
   },
   reservation: {
     newTitle: "Nouvelle réservation",

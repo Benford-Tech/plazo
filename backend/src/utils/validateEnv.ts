@@ -26,6 +26,9 @@ export const ValidateEnv = () => {
     STRIPE_WEBHOOK_SECRET: str({ default: '', desc: 'Signing secrets of the Stripe webhook endpoints (whsec_…), comma-separated' }),
     STRIPE_ALLOW_LIVE: bool({ default: false, desc: 'Allow a live Stripe key in production' }),
     STRIPE_API_BASE: str({ default: '', desc: 'Development only: address of a fake Stripe API' }),
+    // Push notifications to the staff app. Without both, no push is sent.
+    ONESIGNAL_APP_ID: str({ default: '', desc: 'OneSignal app id (push notifications to the staff)' }),
+    ONESIGNAL_REST_API_KEY: str({ default: '', desc: 'OneSignal REST API key of that app' }),
   });
   const stripeKey = process.env.STRIPE_SECRET_KEY?.trim() || '';
   if (process.env.NODE_ENV === 'production' && isLiveStripeKey(stripeKey) && process.env.STRIPE_ALLOW_LIVE !== 'true') {

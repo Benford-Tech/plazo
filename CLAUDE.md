@@ -123,7 +123,11 @@ Le nom du produit doit rester dans UN seul fichier de configuration (il peut enc
   `/pro/plateforme` (pages `src/pages/platform/*`, routes serveur `/api/internal/platform/...` protégées par
   `PlatformAdminMiddleware`) ; l'inscription libre des loueurs sous `/pro/inscription`.
 - `site/` : site Plazo voyageurs (Next.js), servi à la racine du domaine.
-- `mobile/` : app Flutter (à venir).
+- `mobile/` : app Flutter (jalon 6 commencé) : un seul projet, deux parcours séparés, voyageur (`/ma-reservation…`,
+  mêmes liens que le site) et pro (`/pro…`, comptes du personnel) ; architecture de `lovenest-frontend`
+  (`lib/src/features/<x>/{data,domain,presentation}`, `di/`, `core/`), textes dans `assets/l10n/fr-FR.json`,
+  nom du produit recopié depuis `product.json` par `tool/sync_product.dart`, builds par `mobile/codemagic.yaml`.
+  Voir `mobile/README.md`.
 
 ## Conventions (reprises de LoveNest)
 
@@ -150,6 +154,12 @@ Dans `backend/` :
 
 Dans `admin/` :
 - `npm run dev` (http://localhost:8080/pro/, relaie `/api` vers le port 3005), `npm test`, `npm run lint`, `npm run build`
+
+Dans `mobile/` (SDK Flutter stable hors du dépôt) :
+- `flutter pub get`, `dart run build_runner build` (après un changement de modèle, d'état, de client ou de route)
+- `flutter analyze`, `flutter test`
+- `flutter run --dart-define=API_BASE_URL=http://localhost:3005/api` (API locale) ; `flutter build web` pour un essai navigateur
+- `dart run tool/sync_product.dart` (après un changement de `product.json` ; `--check` en CI)
 
 Dans `site/` :
 - `npm run dev` (port 3000, `BACKEND_URL` par défaut http://localhost:3005), `npm test`, `npm run lint`,

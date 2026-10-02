@@ -37,7 +37,14 @@ et affectation des véhicules, navette au retour.
   pro (connexion Stripe, calendrier de reversement), validation juridique avant le paiement réel.
 - [ ] Jalon 4 — Cartographie et affectation
 - [ ] Jalon 5 — Navette au retour
-- [ ] Jalon 6 — App mobile (Flutter)
+- [ ] **Jalon 6 — App mobile (Flutter)** (commencé, `mobile/`) : fait — **« Prévenir de son arrivée »** (maquette
+  validée) : le voyageur ouvre sa réservation par le lien reçu ou par référence + email, partage sa position jusqu'à
+  son arrivée (2 h au plus, effacée ensuite, arrêt automatique à 150 m de l'accueil) ou annonce « J'arrive dans
+  10 / 20 / 30 min » ; au retour, « Je suis au point de rendez-vous ». Côté pro : planning du jour dans l'app (l'arrivée
+  en approche en tête avec sa mini-carte) et dans l'espace pro web (liseré jaune, bandeau, interrogation toutes les
+  12 s), notifications push OneSignal par personne (arrivées, retours). Reste : comptes stores, OneSignal et
+  Firebase, liens universels, file navette complète (jalon 5), bloc « Je suis en route » sur la page « Ma
+  réservation » du site.
 - [ ] Jalon 7 — Pilote chez le client n°1
 
 ## Lancer en local
@@ -68,6 +75,15 @@ npm run dev
 ```
 
 Le compte gérant ainsi créé ajoute ensuite son équipe depuis la page « Équipe ».
+
+Application mobile (Flutter stable, hors du dépôt) : voir [mobile/README.md](mobile/README.md).
+
+```bash
+cd mobile
+flutter pub get
+flutter test
+flutter run --dart-define=API_BASE_URL=http://localhost:3005/api
+```
 
 Tests : `npm test` dans `backend/` (base `DATABASE_URL_TEST`, dont le nom doit finir par `_test` ;
 elle est entièrement vidée à chaque lancement), dans `admin/` et dans `site/`.
@@ -124,6 +140,14 @@ le navigateur de l'espace pro appelle `/api` sur le même domaine (pas de CORS).
      ne compte déjà plus).
    - Plazo encaisse, puis reverse la part du loueur : par défaut le lendemain de la fin du séjour. Le loueur choisit quand
      il reçoit son argent : le lendemain du dépôt, le lendemain de la fin du séjour (par défaut), chaque semaine ou chaque mois.
+
+5. **Notifications push du personnel (OneSignal)** — facultatif : sans `ONESIGNAL_APP_ID` et `ONESIGNAL_REST_API_KEY`,
+   aucune notification n'est envoyée (les arrivées s'affichent quand même dans l'espace pro et l'app). La clé REST
+   reste sur Vercel ; l'*App ID* est aussi donné à l'app (`--dart-define=ONESIGNAL_APP_ID=…`, voir
+   [mobile/README.md](mobile/README.md)).
+   « Prévenir de son arrivée » n'a besoin d'aucune nouvelle tâche planifiée : les signaux de plus de 2 h sont terminés
+   (position effacée) à chaque lecture et par la purge nocturne existante ; `/api/internal/cron/expire-arrival-signals`
+   existe pour une passe plus fréquente si besoin.
 
 Vérifier la configuration sans déployer : `npx vercel build` (avec un `.vercel/project.json` local),
 ou `vercel dev` pour lancer les trois services ensemble.

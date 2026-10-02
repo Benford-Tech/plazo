@@ -1,0 +1,70 @@
+import 'package:dio/dio.dart';
+import 'package:get_it/get_it.dart';
+import 'package:logger/logger.dart';
+
+import '../core/constants/app_constants.dart';
+import '../core/networking/networking.dart';
+import '../core/router/app_router.dart';
+import '../core/router/pro_auth_guard.dart';
+import '../features/arrival/data/client/arrival_client.dart';
+import '../features/arrival/data/datasources/arrival_data_source.dart';
+import '../features/arrival/domain/repositories/arrival_repository.dart';
+import '../features/arrival/domain/usecases/announce_arrival_use_case.dart';
+import '../features/arrival/domain/usecases/at_meeting_point_use_case.dart';
+import '../features/arrival/domain/usecases/get_arrival_use_case.dart';
+import '../features/arrival/domain/usecases/send_position_use_case.dart';
+import '../features/arrival/domain/usecases/start_sharing_use_case.dart';
+import '../features/arrival/domain/usecases/stop_sharing_use_case.dart';
+import '../features/arrival/presentation/bloc/arrival_bloc.dart';
+import '../features/booking/data/client/booking_client.dart';
+import '../features/booking/data/datasources/booking_data_source.dart';
+import '../features/booking/domain/repositories/booking_repository.dart';
+import '../features/booking/domain/usecases/forget_booking_use_case.dart';
+import '../features/booking/domain/usecases/get_booking_use_case.dart';
+import '../features/booking/domain/usecases/lookup_booking_use_case.dart';
+import '../features/booking/domain/usecases/save_booking_access_use_case.dart';
+import '../features/booking/domain/usecases/saved_bookings_use_case.dart';
+import '../features/booking/presentation/bloc/booking_bloc.dart';
+import '../features/pro_auth/data/client/auth_client.dart';
+import '../features/pro_auth/data/datasources/auth_data_source.dart';
+import '../features/pro_auth/domain/repositories/auth_repository.dart';
+import '../features/pro_auth/domain/usecases/login_use_case.dart';
+import '../features/pro_auth/domain/usecases/logout_use_case.dart';
+import '../features/pro_auth/domain/usecases/restore_session_use_case.dart';
+import '../features/pro_auth/presentation/bloc/pro_auth_bloc.dart';
+import '../features/pro_notifications/data/client/notifications_client.dart';
+import '../features/pro_notifications/data/datasources/notifications_data_source.dart';
+import '../features/pro_notifications/domain/repositories/notifications_repository.dart';
+import '../features/pro_notifications/domain/usecases/enable_push_use_case.dart';
+import '../features/pro_notifications/domain/usecases/get_notification_preferences_use_case.dart';
+import '../features/pro_notifications/domain/usecases/update_notification_preferences_use_case.dart';
+import '../features/pro_notifications/presentation/bloc/pro_notifications_bloc.dart';
+import '../features/pro_today/data/client/planning_client.dart';
+import '../features/pro_today/data/datasources/planning_data_source.dart';
+import '../features/pro_today/domain/repositories/planning_repository.dart';
+import '../features/pro_today/domain/usecases/get_live_arrivals_use_case.dart';
+import '../features/pro_today/domain/usecases/get_planning_use_case.dart';
+import '../features/pro_today/presentation/bloc/pro_today_bloc.dart';
+import '../services/location_service.dart';
+import '../services/push_service.dart';
+import '../services/secure_storage_service.dart';
+
+part 'bloc_locator.dart';
+part 'client_locator.dart';
+part 'data_source_locator.dart';
+part 'external_locator.dart';
+part 'repository_locator.dart';
+part 'service_locator.dart';
+part 'use_case_locator.dart';
+
+final locator = GetIt.instance;
+
+Future<void> initLocator() async {
+  _initServices();
+  _initExternal();
+  _initClients();
+  _initDataSource();
+  _initRepositoryLocator();
+  _initUseCaseLocator();
+  _initBlocs();
+}

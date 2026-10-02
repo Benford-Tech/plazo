@@ -18,6 +18,7 @@ import type {
   Paginated,
   Parking,
   ParkingSettings,
+  LiveArrivals,
   Planning,
   Reservation,
   ReservationInput,
@@ -209,6 +210,7 @@ export const adminApi = {
     apiRequest<{ message: string }>(`/internal/staff/${id}/reset-password`, { method: "POST", body: json({ password }) }),
 
   getPlanning: (date?: string) => apiRequest<Planning>(`/internal/planning${date ? `?date=${date}` : ""}`),
+  getLiveArrivals: () => apiRequest<LiveArrivals>("/internal/arrivals/live"),
   previewCapacity: (arrivalAt: string, returnAt: string, excludeId?: string) =>
     apiRequest<CapacityPreview>(
       `/internal/capacity?${new URLSearchParams({ arrivalAt, returnAt, ...(excludeId ? { excludeId } : {}) }).toString()}`,

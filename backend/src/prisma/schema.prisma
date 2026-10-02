@@ -58,20 +58,23 @@ enum StaffRole {
 
 // Operator personnel: manager, front-desk agent, shuttle driver, valet.
 model Staff {
-  id          String    @id @default(cuid())
-  operatorId  String
-  email       String    @unique // always lower-cased
-  name        String
-  phone       String?
-  role        StaffRole
-  password    String
-  isActive    Boolean   @default(true)
-  lastLoginAt DateTime?
+  id              String    @id @default(cuid())
+  operatorId      String
+  email           String    @unique // always lower-cased
+  name            String
+  phone           String?
+  role            StaffRole
+  password        String
+  isActive        Boolean   @default(true)
+  lastLoginAt     DateTime?
   // Set once the person proved they own the email (verification link, or an accepted invitation).
   // Self sign-ups start unverified: they can log in, but cannot submit their listing for review.
   emailVerifiedAt DateTime?
-  createdAt   DateTime  @default(now())
-  updatedAt   DateTime  @default(now()) @updatedAt
+  // Push notifications of travellers' arrivals (see ArrivalSignal): drop-offs, returns, or both.
+  notifyArrivals  Boolean   @default(true)
+  notifyReturns   Boolean   @default(true)
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @default(now()) @updatedAt
 
   operator            Operator        @relation(fields: [operatorId], references: [id], onDelete: Cascade)
   tokens              StaffToken[]
@@ -79,6 +82,7 @@ model Staff {
   auditLogs           AuditLog[]
   createdReservations Reservation[]
   capacityStudies     CapacityStudy[]
+  devices             StaffDevice[]
 
   @@index([operatorId])
   @@map("staff")
@@ -149,16 +153,22 @@ model Parking {
   // Share of spots never offered for booking, in percent (0-50).
   safetyMarginPct      Int                                   @default(0)
   shuttleTravelMinutes Int                                   @default(8)
+  // Where the shuttle picks travellers up at the airport on their return (WGS84, raw SQL like
+  // location). Null: the airport of the parking's listing, else the parking itself.
+  returnMeetingPoint   Unsupported("geometry(Point, 4326)")?
+  // Shown to the traveller and the staff, e.g. "Terminal 1 · arrêt navettes P5".
+  returnMeetingLabel   String?
   createdAt            DateTime                              @default(now())
   updatedAt            DateTime                              @default(now()) @updatedAt
 
   // Price per day beyond the longest package of the grid, in cents.
   extraDayPriceCents Int?
 
-  operator     Operator      @relation(fields: [operatorId], references: [id], onDelete: Cascade)
-  reservations Reservation[]
-  pricingTiers PricingTier[]
-  listing      Listing?
+  operator       Operator        @relation(fields: [operatorId], references: [id], onDelete: Cascade)
+  reservations   Reservation[]
+  pricingTiers   PricingTier[]
+  arrivalSignals ArrivalSignal[]
+  listing        Listing?
 
   @@index([operatorId])
   @@map("parkings")
@@ -291,9 +301,10 @@ model Reservation {
   createdAt               DateTime            @default(now())
   updatedAt               DateTime            @default(now()) @updatedAt
 
-  operator  Operator @relation(fields: [operatorId], references: [id], onDelete: Cascade)
-  parking   Parking  @relation(fields: [parkingId], references: [id], onDelete: Cascade)
-  createdBy Staff?   @relation(fields: [createdById], references: [id], onDelete: SetNull)
+  operator       Operator        @relation(fields: [operatorId], references: [id], onDelete: Cascade)
+  parking        Parking         @relation(fields: [parkingId], references: [id], onDelete: Cascade)
+  createdBy      Staff?          @relation(fields: [createdById], references: [id], onDelete: SetNull)
+  arrivalSignals ArrivalSignal[]
 
   @@unique([operatorId, externalReference])
   @@index([parkingId, arrivalAt])
@@ -412,4 +423,82 @@ model CapacityStudy {
 
   @@index([updatedAt])
   @@map("capacity_studies")
+}
+
+// Which moment of the stay a traveller signals: the drop-off at the parking, or the pick-up at the
+// airport's meeting point on the way back.
+enum ArrivalKind {
+  outbound
+  return
+}
+
+enum ArrivalState {
+  sharing // live position shared with the parking
+  announced // "J'arrive dans 10 / 20 / 30 min", no position
+  at_meeting_point // the traveller is there (within 150 m, or said so)
+  ended // stopped, expired after 2 h, or closed: no position, not shown to staff
+}
+
+enum ArrivalEndReason {
+  stopped // by the traveller
+  expired // 2 h after the start
+  closed // the booking moved on (vehicle dropped off, handed back, cancelled)
+}
+
+// A traveller telling the parking they are coming (see SPEC.md, "Prévenir de son arrivée").
+// One row per booking and moment, reused when the traveller starts again: never a history. Only
+// the LATEST position is kept, while sharing; it is erased on stop, on arrival and after 2 h
+// (lazily when read, and by the cron). The audit log records the events, never coordinates.
+model ArrivalSignal {
+  id                 String            @id @default(cuid())
+  reservationId      String
+  operatorId         String
+  parkingId          String
+  kind               ArrivalKind
+  state              ArrivalState
+  endReason          ArrivalEndReason?
+  // Latest position only (WGS84), null outside a live sharing.
+  lat                Float?
+  lng                Float?
+  accuracyM          Float?
+  positionRecordedAt DateTime? // on the phone
+  positionReceivedAt DateTime? // by the API (rate limit)
+  // Estimate from the latest position, or from the traveller's announce.
+  distanceM          Int?
+  etaMinutes         Int?
+  etaAt              DateTime?
+  announcedMinutes   Int?
+  startedAt          DateTime
+  expiresAt          DateTime
+  atMeetingPointAt   DateTime?
+  endedAt            DateTime?
+  // Push notifications already sent for this session (each one at most once).
+  notifiedStartAt    DateTime?
+  notifiedSoonAt     DateTime?
+  notifiedArrivedAt  DateTime?
+  createdAt          DateTime          @default(now())
+  updatedAt          DateTime          @default(now()) @updatedAt
+
+  reservation Reservation @relation(fields: [reservationId], references: [id], onDelete: Cascade)
+  parking     Parking     @relation(fields: [parkingId], references: [id], onDelete: Cascade)
+
+  @@unique([reservationId, kind])
+  @@index([operatorId, state])
+  @@index([state, expiresAt])
+  @@map("arrival_signals")
+}
+
+// A staff member's phone registered for push notifications (OneSignal subscription id).
+model StaffDevice {
+  id             String   @id @default(cuid())
+  staffId        String
+  subscriptionId String   @unique
+  platform       String? // ios, android, web
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @default(now()) @updatedAt
+
+  staff Staff @relation(fields: [staffId], references: [id], onDelete: Cascade)
+
+  @@index([staffId])
+  @@map("staff_devices")
 }
