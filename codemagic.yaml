@@ -62,7 +62,7 @@ workflows:
       - name: Android — APK de test (debug, non signé pour le store)
         script: flutter build apk --debug
     artifacts:
-      - mobile/build/app/outputs/flutter-apk/app-debug.apk
+      - build/app/outputs/flutter-apk/app-debug.apk
 
   mobile-release:
     name: Mobile — Android + iOS + TestFlight (release)
@@ -137,9 +137,9 @@ workflows:
           flutter build ipa --release --build-number="$NEXT" $DEFINES \
             --export-options-plist=/Users/builder/export_options.plist
     artifacts:
-      - mobile/build/app/outputs/flutter-apk/*.apk
-      - mobile/build/app/outputs/bundle/release/*.aab
-      - mobile/build/ios/ipa/*.ipa
+      - build/app/outputs/flutter-apk/*.apk
+      - build/app/outputs/bundle/release/*.aab
+      - build/ios/ipa/*.ipa
     publishing:
       # Only when every step passed. The AAB goes to the Play Console by hand at first (the first
       # upload of an app must be manual); a google_play block can follow once the listing exists.
