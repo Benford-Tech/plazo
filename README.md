@@ -42,8 +42,12 @@ et affectation des véhicules, navette au retour.
   son arrivée (2 h au plus, effacée ensuite, arrêt automatique à 150 m de l'accueil) ou annonce « J'arrive dans
   10 / 20 / 30 min » ; au retour, « Je suis au point de rendez-vous ». Côté pro : planning du jour dans l'app (l'arrivée
   en approche en tête avec sa mini-carte) et dans l'espace pro web (liseré jaune, bandeau, interrogation toutes les
-  12 s), notifications push OneSignal par personne (arrivées, retours). Reste : comptes stores, OneSignal et
-  Firebase, liens universels, file navette complète (jalon 5), bloc « Je suis en route » sur la page « Ma
+  12 s), notifications push OneSignal par personne (arrivées, retours). **Parcours voyageur complet** (une seule
+  app, onglets Rechercher / Mes réservations / Plus) : recherche et dates comme le site, résultats en liste ou sur la
+  carte IGN avec les mêmes tris et filtres, fiche parking, réservation en deux étapes et **paiement natif Stripe**
+  (feuille de paiement, Apple Pay / Google Pay ; Checkout sur la version web), réservations gardées sur le téléphone
+  sans compte (modifier le vol, itinéraire, annuler). Reste : comptes stores, OneSignal et Firebase, identifiant
+  marchand Apple Pay, liens universels, file navette complète (jalon 5), bloc « Je suis en route » sur la page « Ma
   réservation » du site.
 - [ ] Jalon 7 — Pilote chez le client n°1
 
@@ -127,12 +131,15 @@ le navigateur de l'espace pro appelle `/api` sur le même domaine (pas de CORS).
      tant que `STRIPE_ALLOW_LIVE` n'est pas `true`), `STRIPE_WEBHOOK_SECRET` (secret(s) de signature `whsec_…` des
      destinations du webhook, séparés par des virgules), `PLATFORM_COMMISSION_BPS` (commission par défaut, ex. `1200` =
      12 %, sinon par loueur), `PUBLIC_SITE_URL` (adresses de retour de Stripe). `STRIPE_API_BASE` sert seulement aux tests
-     locaux (faux Stripe) et est ignorée en production.
+     locaux (faux Stripe) et est ignorée en production. `STRIPE_PUBLISHABLE_KEY` (facultative, `pk_test_…` du même
+     compte) : donnée à l'app mobile pour sa feuille de paiement native (`GET /api/public/payments/config`) ; sans elle,
+     l'app passe par la page Stripe Checkout.
    - Tableau de bord Stripe (mode test) : activer **Connect** (comptes **Express**, pays France) ; dans *Paramètres →
      Image de marque*, logo et couleurs Plazo (la page de paiement en reprend l'apparence) ; dans *Développeurs →
      Webhooks*, créer une destination vers **`https://plazo-benford-tech.vercel.app/api/public/stripe/webhook`** pour les
      évènements **de votre compte** : `checkout.session.completed`, `checkout.session.expired`,
-     `checkout.session.async_payment_succeeded`, `checkout.session.async_payment_failed` ; et une seconde destination,
+     `checkout.session.async_payment_succeeded`, `checkout.session.async_payment_failed`, et pour l'app
+     `payment_intent.succeeded`, `payment_intent.payment_failed` ; et une seconde destination,
      même adresse, pour les évènements **des comptes connectés** : `account.updated`. Mettre les deux secrets de signature
      dans `STRIPE_WEBHOOK_SECRET` (séparés par une virgule).
    - Tâches planifiées (Vercel Cron, `Authorization: Bearer <CRON_SECRET>`) : `/api/internal/cron/payouts` **chaque jour**
@@ -217,6 +224,8 @@ Documentation interactive : `/api/docs` (Swagger). Toutes les routes sont sous `
 | GET | `/public/config` | Site voyageurs : `{ payments: "online" \| "on_site" }` |
 | POST | `/public/bookings` | Réservation du site (en attente de paiement si le paiement en ligne est actif) |
 | POST | `/public/bookings/:ref/checkout` | Page de paiement Stripe Checkout `{ url }` (ou `{ paid: true }`) |
+| POST | `/public/bookings/:ref/payment-intent` | App : PaymentIntent de la feuille de paiement native `{ clientSecret, paymentIntentId, amountCents, currency, holdExpiresAt }` (ou `{ paid: true }`) |
+| GET | `/public/payments/config` | App : `{ payments, publishableKey, merchantDisplayName, merchantCountryCode, currency }` |
 | POST | `/public/bookings/:ref/release` | « Modifier » : rend la place tenue |
 | POST | `/public/bookings/:ref/cancel` | Annulation en ligne (remboursement intégral si payée en ligne) |
 | POST | `/public/stripe/webhook` | Évènements Stripe signés (corps brut) |

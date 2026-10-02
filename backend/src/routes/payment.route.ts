@@ -67,7 +67,19 @@ import { ValidationMiddleware } from '@/middlewares/validation.middleware';
  *       Raw body checked against STRIPE_WEBHOOK_SECRET (comma-separated secrets: the platform's endpoint
  *       and the connected accounts' one). Handles checkout.session.completed,
  *       checkout.session.async_payment_succeeded, checkout.session.async_payment_failed,
- *       checkout.session.expired and account.updated. 400 "invalid_signature".
+ *       checkout.session.expired, payment_intent.succeeded (the app's payment sheet: same idempotent
+ *       confirmation as Checkout, one confirmation message, late payments kept or refunded),
+ *       payment_intent.payment_failed (a declined attempt: logged, the hold stays so the traveller can
+ *       retry) and account.updated. 400 "invalid_signature".
+ *     tags: [Payments]
+ *     security: []
+ * /public/payments/config:
+ *   get:
+ *     summary: "Payment sheet settings for the mobile app"
+ *     description: >-
+ *       { payments: online | on_site, publishableKey (null when payments are off or
+ *       STRIPE_PUBLISHABLE_KEY is not set: the app then uses the Checkout page), merchantDisplayName,
+ *       merchantCountryCode: FR, currency: eur }.
  *     tags: [Payments]
  *     security: []
  */
@@ -89,6 +101,7 @@ export class PaymentRoute implements Routes {
       ValidationMiddleware(UpdatePayoutSettingsDto),
       this.payments.updateSettings,
     );
+    this.router.get('/public/payments/config', this.payments.sheetConfig);
     // The raw body is kept for this path only (see app.ts).
     this.router.post('/public/stripe/webhook', this.payments.webhook);
   }

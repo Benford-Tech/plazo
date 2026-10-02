@@ -44,7 +44,7 @@ class _ProLoginPageState extends State<ProLoginPage> {
       appBar: const BrandAppBar(pro: true),
       body: BlocConsumer<ProAuthBloc, ProAuthState>(
         listenWhen: (a, b) => a.status != b.status && b.status == ProAuthStatus.signedIn,
-        listener: (context, state) => context.router.replaceAll([const HomeRoute(), const ProTodayRoute()]),
+        listener: (context, state) => context.router.replaceAll([const AppShellRoute(), const ProTodayRoute()]),
         builder: (context, state) => SafeArea(
           child: Form(
             key: _form,

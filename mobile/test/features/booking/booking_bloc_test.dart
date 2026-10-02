@@ -51,6 +51,20 @@ class FakeBookingDataSource implements BookingDataSource {
 
   @override
   Future<void> forget({required String reference}) => storage.forgetBooking(reference);
+
+  // Not used by this bloc (see test/helpers/fakes.dart for the full fake).
+  @override
+  Future<CreatedBookingModel> create(BookingInput input) => throw UnimplementedError();
+  @override
+  Future<PublicBookingModel> updateFlight({required String reference, required String? flight}) => throw UnimplementedError();
+  @override
+  Future<PaymentIntentModel> paymentIntent({required String reference}) => throw UnimplementedError();
+  @override
+  Future<CheckoutModel> checkout({required String reference}) => throw UnimplementedError();
+  @override
+  Future<PublicBookingModel> release({required String reference}) => throw UnimplementedError();
+  @override
+  Future<PublicBookingModel> cancel({required String reference}) => throw UnimplementedError();
 }
 
 void main() {

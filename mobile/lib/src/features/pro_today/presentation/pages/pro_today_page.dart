@@ -77,7 +77,7 @@ class _ProTodayViewState extends State<_ProTodayView> with SingleTickerProviderS
             icon: const Icon(Icons.logout_rounded),
             onPressed: () {
               context.read<ProAuthBloc>().add(const ProAuthLogoutRequested());
-              context.router.replaceAll([const HomeRoute()]);
+              context.router.replaceAll([const AppShellRoute()]);
             },
           ),
         ],

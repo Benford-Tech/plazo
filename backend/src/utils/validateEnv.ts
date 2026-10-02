@@ -23,6 +23,7 @@ export const ValidateEnv = () => {
     PLATFORM_ADMIN_EMAILS: str({ default: '', desc: 'Emails of the platform owners (internal tools), comma-separated' }),
     // Online payment (Stripe Connect). Without a secret key, travellers pay at the parking.
     STRIPE_SECRET_KEY: str({ default: '', desc: 'Stripe secret key (sk_test_… until the legal validation)' }),
+    STRIPE_PUBLISHABLE_KEY: str({ default: '', desc: "Stripe publishable key (pk_…) for the app's payment sheet" }),
     STRIPE_WEBHOOK_SECRET: str({ default: '', desc: 'Signing secrets of the Stripe webhook endpoints (whsec_…), comma-separated' }),
     STRIPE_ALLOW_LIVE: bool({ default: false, desc: 'Allow a live Stripe key in production' }),
     STRIPE_API_BASE: str({ default: '', desc: 'Development only: address of a fake Stripe API' }),

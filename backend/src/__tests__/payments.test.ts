@@ -39,11 +39,25 @@ type FakeSession = {
   payment_intent: string | null;
 };
 
+type FakeIntent = {
+  id: string;
+  object: 'payment_intent';
+  status: 'requires_payment_method' | 'succeeded' | 'canceled';
+  client_secret: string;
+  amount: number;
+  amount_received: number;
+  currency: string;
+  metadata: Record<string, string>;
+  latest_charge: string | null;
+  last_payment_error?: { code: string } | null;
+};
+
 let sessions: Map<string, FakeSession>;
+let intents: Map<string, FakeIntent>;
 let fake: {
   checkout: { sessions: { create: jest.Mock; retrieve: jest.Mock; expire: jest.Mock } };
   refunds: { create: jest.Mock };
-  paymentIntents: { retrieve: jest.Mock };
+  paymentIntents: { retrieve: jest.Mock; create: jest.Mock; cancel: jest.Mock };
   transfers: { create: jest.Mock; createReversal: jest.Mock };
   accounts: { create: jest.Mock; retrieve: jest.Mock; createLoginLink: jest.Mock };
   accountLinks: { create: jest.Mock };
@@ -51,7 +65,9 @@ let fake: {
 
 function makeFake() {
   sessions = new Map();
+  intents = new Map();
   let n = 0;
+  let m = 0;
   fake = {
     checkout: {
       sessions: {
@@ -85,7 +101,33 @@ function makeFake() {
       },
     },
     refunds: { create: jest.fn(async () => ({ id: 're_test_1', object: 'refund', status: 'succeeded' })) },
-    paymentIntents: { retrieve: jest.fn(async (id: string) => ({ id, object: 'payment_intent', latest_charge: 'ch_test_1' })) },
+    paymentIntents: {
+      retrieve: jest.fn(async (id: string) => {
+        const intent = intents.get(id);
+        return intent ? { ...intent } : { id, object: 'payment_intent', status: 'succeeded', latest_charge: 'ch_test_1' };
+      }),
+      create: jest.fn(async (params: any) => {
+        m += 1;
+        const intent: FakeIntent = {
+          id: `pi_sheet_${m}`,
+          object: 'payment_intent',
+          status: 'requires_payment_method',
+          client_secret: `pi_sheet_${m}_secret_abc`,
+          amount: params.amount,
+          amount_received: 0,
+          currency: params.currency,
+          metadata: params.metadata,
+          latest_charge: null,
+        };
+        intents.set(intent.id, intent);
+        return { ...intent };
+      }),
+      cancel: jest.fn(async (id: string) => {
+        const intent = intents.get(id)!;
+        intent.status = 'canceled';
+        return { ...intent };
+      }),
+    },
     transfers: {
       create: jest.fn(async () => ({ id: 'tr_test_1', object: 'transfer' })),
       createReversal: jest.fn(async () => ({ id: 'trr_test_1', object: 'transfer_reversal' })),
@@ -111,6 +153,13 @@ function pay(sessionId: string) {
   const session = sessions.get(sessionId)!;
   Object.assign(session, { status: 'complete', payment_status: 'paid', url: null, payment_intent: 'pi_test_1' });
   return { ...session };
+}
+
+/** The traveller pays in the app's (fake) payment sheet. */
+function payIntent(id: string) {
+  const intent = intents.get(id)!;
+  Object.assign(intent, { status: 'succeeded', amount_received: intent.amount, latest_charge: 'ch_sheet_1' });
+  return { ...intent };
 }
 
 function signedEvent(type: string, object: unknown, secret = WEBHOOK_SECRET) {
@@ -550,6 +599,220 @@ describe('webhook Stripe', () => {
     );
     expect(brevoCalls('booking_confirmed')).toHaveLength(0);
     expect(brevoCalls('booking_cancelled')).toHaveLength(1);
+  });
+});
+
+describe('feuille de paiement de l’app (PaymentIntent)', () => {
+  const intent = (reference: string, manageToken: string) =>
+    api().post(`/api/public/bookings/${reference}/payment-intent`).set(bookingToken(manageToken));
+  const sheetPaid = async (overrides: Record<string, unknown> = {}) => {
+    const { body } = await book(overrides);
+    const res = await intent(body.reference, body.manageToken);
+    const event = signedEvent('payment_intent.succeeded', payIntent(res.body.paymentIntentId));
+    expect((await sendWebhook(event.payload, event.signature)).status).toBe(200);
+    return { ...body, paymentIntentId: res.body.paymentIntentId as string, event };
+  };
+
+  it('réglages publics : clé publiable seulement si le paiement est actif', async () => {
+    process.env.STRIPE_PUBLISHABLE_KEY = 'pk_test_fake';
+    expect((await api().get('/api/public/payments/config')).body).toEqual({
+      payments: 'online',
+      publishableKey: 'pk_test_fake',
+      merchantDisplayName: 'Plazo',
+      merchantCountryCode: 'FR',
+      currency: 'eur',
+    });
+    delete process.env.STRIPE_PUBLISHABLE_KEY;
+    expect((await api().get('/api/public/payments/config')).body).toMatchObject({ payments: 'online', publishableKey: null });
+    delete process.env.STRIPE_SECRET_KEY;
+    process.env.STRIPE_PUBLISHABLE_KEY = 'pk_test_fake';
+    expect((await api().get('/api/public/payments/config')).body).toMatchObject({ payments: 'on_site', publishableKey: null });
+    // The site's config route keeps its exact answer.
+    expect((await api().get('/api/public/config')).body).toEqual({ payments: 'on_site' });
+  });
+
+  it('crée le PaymentIntent : même montant et même commission que Checkout, metadata, clé d’idempotence', async () => {
+    await publishedParking();
+    const held = (await book()).body;
+    const res = await intent(held.reference, held.manageToken);
+    expect(res.status).toBe(200);
+    const reservation = await prisma.reservation.findUniqueOrThrow({ where: { reference: held.reference } });
+    expect(res.body).toEqual({
+      clientSecret: 'pi_sheet_1_secret_abc',
+      paymentIntentId: 'pi_sheet_1',
+      amountCents: 3499,
+      currency: 'eur',
+      holdExpiresAt: reservation.holdExpiresAt!.toISOString(),
+    });
+    const [params, options] = fake.paymentIntents.create.mock.calls[0];
+    expect(params).toMatchObject({
+      amount: 3499,
+      currency: 'eur',
+      automatic_payment_methods: { enabled: true },
+      receipt_email: 'camille.martin@example.com',
+      metadata: { reservationId: reservation.id },
+      transfer_group: reservation.id,
+    });
+    expect(params).not.toHaveProperty('application_fee_amount');
+    expect(options.idempotencyKey).toBe(`plazo-intent-${reservation.id}-nosession-first`);
+    expect(JSON.stringify(params)).not.toMatch(/Camille|GK-318|06 12/);
+    expect(reservation).toMatchObject({ stripePaymentIntentId: 'pi_sheet_1', chargedCents: 3499, commissionCents: 420, operatorShareCents: 3079 });
+    // The hold is not extended by the payment sheet.
+    expect(reservation.holdExpiresAt!.getTime()).toBeLessThanOrEqual(Date.now() + 30 * 60000);
+
+    // Asked again (sheet reopened): the same intent.
+    const again = await intent(held.reference, held.manageToken);
+    expect(again.body.clientSecret).toBe('pi_sheet_1_secret_abc');
+    expect(fake.paymentIntents.create).toHaveBeenCalledTimes(1);
+  });
+
+  it('refuse sans la clé de la réservation, pour un paiement sur place, ou paiement désactivé', async () => {
+    await publishedParking();
+    const held = (await book()).body;
+    expect((await intent(held.reference, 'x'.repeat(32))).status).toBe(404);
+    delete process.env.STRIPE_SECRET_KEY;
+    const disabled = await intent(held.reference, held.manageToken);
+    expect(disabled.status).toBe(409);
+    expect(disabled.body.code).toBe('online_booking_unavailable');
+    const onSite = (await book({ plate: 'BB-222-BB', customerEmail: 'b@example.com', customerPhone: '06 99 99 99 99' })).body;
+    expect(onSite.booking.paymentMode).toBe('on_site');
+    expect((await intent(onSite.reference, onSite.manageToken)).status).toBe(404);
+    expect(fake.paymentIntents.create).not.toHaveBeenCalled();
+  });
+
+  it('payment_intent.succeeded confirme une seule fois ; messages envoyés une fois', async () => {
+    withBrevo();
+    await publishedParking();
+    const held = await sheetPaid();
+    // Stripe retries, the app reads the booking, and asks again for the intent.
+    expect((await sendWebhook(held.event.payload, held.event.signature)).status).toBe(200);
+    const read = await getBooking(held.reference, held.manageToken);
+    expect(read.body).toMatchObject({ status: 'upcoming', payment: { status: 'paid', holdExpiresAt: null } });
+    expect((await intent(held.reference, held.manageToken)).body).toEqual({ paid: true });
+    const saved = await prisma.reservation.findUniqueOrThrow({ where: { reference: held.reference } });
+    expect(saved).toMatchObject({ status: 'upcoming', paymentStatus: 'paid', payoutStatus: 'pending', stripePaymentIntentId: 'pi_sheet_1' });
+    expect(await prisma.auditLog.count({ where: { action: 'reservation.paid', entityId: saved.id } })).toBe(1);
+    expect(brevoCalls('booking_confirmed')).toHaveLength(2); // one email, one SMS
+  });
+
+  it('retour de l’app avant le webhook : la lecture interroge Stripe et confirme', async () => {
+    withBrevo();
+    await publishedParking();
+    const held = (await book()).body;
+    const res = await intent(held.reference, held.manageToken);
+    const paid = payIntent(res.body.paymentIntentId);
+    expect((await getBooking(held.reference, held.manageToken)).body.status).toBe('upcoming');
+    const event = signedEvent('payment_intent.succeeded', paid);
+    await sendWebhook(event.payload, event.signature);
+    expect(brevoCalls('booking_confirmed')).toHaveLength(2);
+  });
+
+  it('n’accepte pas un montant différent', async () => {
+    await publishedParking();
+    const held = (await book()).body;
+    const res = await intent(held.reference, held.manageToken);
+    const event = signedEvent('payment_intent.succeeded', { ...payIntent(res.body.paymentIntentId), amount: 100, amount_received: 100 });
+    await sendWebhook(event.payload, event.signature);
+    expect((await prisma.reservation.findUniqueOrThrow({ where: { reference: held.reference } })).status).toBe('pending_payment');
+  });
+
+  it('payment_intent.payment_failed : la place reste tenue, le voyageur peut réessayer', async () => {
+    withBrevo();
+    await publishedParking();
+    const held = (await book()).body;
+    const res = await intent(held.reference, held.manageToken);
+    const failed = { ...intents.get(res.body.paymentIntentId)!, last_payment_error: { code: 'card_declined' } };
+    const event = signedEvent('payment_intent.payment_failed', failed);
+    expect((await sendWebhook(event.payload, event.signature)).status).toBe(200);
+    expect(await prisma.reservation.findUniqueOrThrow({ where: { reference: held.reference } })).toMatchObject({
+      status: 'pending_payment',
+      paymentStatus: 'pending',
+    });
+    expect((await intent(held.reference, held.manageToken)).body.clientSecret).toBe(res.body.clientSecret);
+    expect(fetchMock).not.toHaveBeenCalled();
+  });
+
+  it('délai dépassé : 409 hold_expired ; un paiement tardif est gardé si la place est libre…', async () => {
+    withBrevo();
+    await publishedParking({ capacity: 1 });
+    const held = (await book()).body;
+    const res = await intent(held.reference, held.manageToken);
+    await prisma.reservation.update({ where: { reference: held.reference }, data: { holdExpiresAt: new Date(Date.now() - 1000) } });
+    const late = await intent(held.reference, held.manageToken);
+    expect(late.status).toBe(409);
+    expect(late.body.code).toBe('hold_expired');
+    const event = signedEvent('payment_intent.succeeded', payIntent(res.body.paymentIntentId));
+    await sendWebhook(event.payload, event.signature);
+    expect(await prisma.reservation.findUniqueOrThrow({ where: { reference: held.reference } })).toMatchObject({
+      status: 'upcoming',
+      paymentStatus: 'paid',
+    });
+    expect(brevoCalls('booking_confirmed')).toHaveLength(2);
+  });
+
+  it('… et remboursé si la place a été prise entre-temps', async () => {
+    withBrevo();
+    await publishedParking({ capacity: 1 });
+    const held = (await book()).body;
+    const res = await intent(held.reference, held.manageToken);
+    await prisma.reservation.update({ where: { reference: held.reference }, data: { holdExpiresAt: new Date(Date.now() - 1000) } });
+    expect((await book({ plate: 'BB-222-BB', customerEmail: 'b@example.com', customerPhone: '06 99 99 99 99' })).status).toBe(201);
+    const event = signedEvent('payment_intent.succeeded', payIntent(res.body.paymentIntentId));
+    await sendWebhook(event.payload, event.signature);
+    expect(await prisma.reservation.findUniqueOrThrow({ where: { reference: held.reference } })).toMatchObject({
+      status: 'cancelled',
+      paymentStatus: 'refunded',
+    });
+    expect(fake.refunds.create).toHaveBeenCalledWith(expect.objectContaining({ payment_intent: 'pi_sheet_1' }), expect.anything());
+    expect(brevoCalls('booking_confirmed')).toHaveLength(0);
+    expect(brevoCalls('booking_cancelled')).toHaveLength(1);
+  });
+
+  it('une seule façon de payer : la page Checkout ouverte est fermée, et inversement', async () => {
+    await publishedParking({ capacity: 1 });
+    const held = (await book()).body;
+    await checkout(held.reference, held.manageToken);
+    const res = await intent(held.reference, held.manageToken);
+    expect(fake.checkout.sessions.expire).toHaveBeenCalledWith('cs_test_1', {}, expect.anything());
+    // The "expired" webhook of that page does not release the place held for the sheet.
+    const expired = signedEvent('checkout.session.expired', { ...sessions.get('cs_test_1') });
+    await sendWebhook(expired.payload, expired.signature);
+    expect((await prisma.reservation.findUniqueOrThrow({ where: { reference: held.reference } })).status).toBe('pending_payment');
+    // Back to Checkout (web fallback): the intent is cancelled, a new page opens.
+    const page = await checkout(held.reference, held.manageToken);
+    expect(page.body.url).toBe('https://checkout.stripe.test/c/pay/cs_test_2');
+    expect(intents.get(res.body.paymentIntentId)!.status).toBe('canceled');
+    expect((await prisma.reservation.findUniqueOrThrow({ where: { reference: held.reference } })).stripePaymentIntentId).toBeNull();
+    // And the sheet again: a new intent (another idempotency key).
+    const second = await intent(held.reference, held.manageToken);
+    expect(second.body.paymentIntentId).toBe('pi_sheet_2');
+  });
+
+  it('« Modifier » annule le PaymentIntent et libère la place ; refusé s’il est payé (et confirmé)', async () => {
+    await publishedParking({ capacity: 1 });
+    const held = (await book()).body;
+    const res = await intent(held.reference, held.manageToken);
+    const release = await api().post(`/api/public/bookings/${held.reference}/release`).set(bookingToken(held.manageToken));
+    expect(release.status).toBe(200);
+    expect(release.body).toMatchObject({ status: 'cancelled', payment: { status: 'expired' } });
+    expect(intents.get(res.body.paymentIntentId)!.status).toBe('canceled');
+
+    const other = (await book()).body;
+    const otherIntent = await intent(other.reference, other.manageToken);
+    payIntent(otherIntent.body.paymentIntentId);
+    const refused = await api().post(`/api/public/bookings/${other.reference}/release`).set(bookingToken(other.manageToken));
+    expect(refused.status).toBe(409);
+    expect(refused.body.code).toBe('already_paid');
+    expect((await prisma.reservation.findUniqueOrThrow({ where: { reference: other.reference } })).status).toBe('upcoming');
+  });
+
+  it('annulation d’une réservation payée dans l’app : remboursement intégral sur son PaymentIntent', async () => {
+    await publishedParking();
+    const held = await sheetPaid();
+    const res = await api().post(`/api/public/bookings/${held.reference}/cancel`).set(bookingToken(held.manageToken));
+    expect(res.status).toBe(200);
+    expect(res.body).toMatchObject({ status: 'cancelled', payment: { status: 'refunded' } });
+    expect(fake.refunds.create).toHaveBeenCalledWith(expect.objectContaining({ payment_intent: 'pi_sheet_1' }), expect.anything());
   });
 });
 

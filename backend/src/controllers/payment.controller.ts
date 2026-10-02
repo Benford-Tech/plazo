@@ -46,6 +46,12 @@ export class PaymentController {
     res.json(await this.payments.updatePayoutSettings(req.staff, data.payoutSchedule));
   });
 
+  /** GET /public/payments/config */
+  public sheetConfig = catchAsync(async (req: Request, res: Response) => {
+    res.set('Cache-Control', 'public, max-age=60');
+    res.json(this.payments.sheetConfig());
+  });
+
   /** POST /public/stripe/webhook */
   public webhook = catchAsync(async (req: Request, res: Response) => {
     res.json(await this.payments.handleWebhook(rawBody(req), req.get('stripe-signature') || undefined));

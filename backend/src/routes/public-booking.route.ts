@@ -156,6 +156,22 @@ import { ValidationMiddleware } from '@/middlewares/validation.middleware';
  *     parameters:
  *       - { in: path, name: reference, required: true, schema: { type: string } }
  *       - { in: header, name: x-booking-token, required: true, schema: { type: string } }
+ * /public/bookings/{reference}/payment-intent:
+ *   post:
+ *     summary: PaymentIntent of a booking holding its place (the app's native payment sheet)
+ *     description: >
+ *       Returns { clientSecret, paymentIntentId, amountCents, currency, holdExpiresAt } (the intent
+ *       already started again, or a new one: same amount and commission split as Checkout, metadata
+ *       reservationId, idempotency keys; an open Checkout page of the booking is closed first) or
+ *       { paid: true } when the payment already went through. The hold is not extended. 409
+ *       "hold_expired" once the hold ended, 409 "online_booking_unavailable" when payments are off or
+ *       the operator can no longer take them. Confirmed by the payment_intent.succeeded webhook, or
+ *       when the app reads the booking again (GET asks Stripe).
+ *     tags: [Public bookings]
+ *     security: []
+ *     parameters:
+ *       - { in: path, name: reference, required: true, schema: { type: string } }
+ *       - { in: header, name: x-booking-token, required: true, schema: { type: string } }
  * /public/bookings/{reference}/release:
  *   post:
  *     summary: Release the hold (the traveller goes back to edit the form)
@@ -191,6 +207,7 @@ export class PublicBookingRoute implements Routes {
     this.router.get('/public/bookings/:reference', this.bookings.get);
     this.router.patch('/public/bookings/:reference/flight', ValidationMiddleware(UpdateBookingFlightDto), this.bookings.updateFlight);
     this.router.post('/public/bookings/:reference/checkout', this.bookings.checkout);
+    this.router.post('/public/bookings/:reference/payment-intent', this.bookings.paymentIntent);
     this.router.post('/public/bookings/:reference/release', this.bookings.release);
     this.router.post('/public/bookings/:reference/cancel', this.bookings.cancel);
   }

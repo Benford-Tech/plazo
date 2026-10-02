@@ -69,6 +69,11 @@ export function stripeSecretKey(): string {
   return process.env.STRIPE_SECRET_KEY?.trim() || '';
 }
 
+/** Publishable key (pk_…) handed to the app's native payment sheet; optional (web Checkout needs none). */
+export function stripePublishableKey(): string {
+  return process.env.STRIPE_PUBLISHABLE_KEY?.trim() || '';
+}
+
 export function paymentsEnabled(): boolean {
   return !!stripeSecretKey();
 }

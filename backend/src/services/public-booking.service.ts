@@ -235,6 +235,13 @@ export class PublicBookingService {
     return this.payments.checkout(booking.id);
   }
 
+  /** The app's payment sheet for a booking holding its place: { clientSecret, … } or { paid: true }. */
+  public async paymentIntent(reference: string, token: string | undefined) {
+    const booking = await this.load(reference, token);
+    if (booking.paymentStatus === null) throw notFound();
+    return this.payments.paymentIntent(booking.id);
+  }
+
   /** The traveller goes back to the form ("Modifier"): the place is released. */
   public async release(reference: string, token: string | undefined): Promise<PublicBooking> {
     const booking = await this.load(reference, token);

@@ -6,9 +6,11 @@ import {
   isLiveStripeKey,
   PLATFORM_COMMISSION_BPS,
   paymentsEnabled,
+  PRODUCT_NAME,
   PUBLIC_SITE_URL,
   SECRET_KEY,
   SMS_DAILY_LIMIT,
+  stripePublishableKey,
   stripeSecretKey,
   stripeWebhookSecrets,
 } from '@/config';
@@ -29,6 +31,10 @@ import { StripeService } from './stripe.service';
 type Client = Prisma.TransactionClient | typeof prisma;
 type RefundFields = { paymentStatus: 'refunded'; refundedAt: Date; stripeRefundId: string; payoutStatus: 'cancelled' | 'reversed' };
 type PaymentOperator = Pick<Operator, 'commissionBps' | 'stripeAccountId' | 'stripePayoutsEnabled'>;
+
+/** The app's payment sheet: the PaymentIntent to confirm, or the news that the booking is paid. */
+export type PaymentIntentResult =
+  { clientSecret: string; paymentIntentId: string; amountCents: number; currency: string; holdExpiresAt: string } | { paid: true };
 
 /** How a parking is booked on the site: paid online, at the parking, or not bookable online yet. */
 export type BookingPaymentMode = 'online' | 'on_site' | 'unavailable';
@@ -63,6 +69,20 @@ export const OPERATOR_PAYMENT_FIELDS = { commissionBps: true, stripeAccountId: t
 
 const unavailable = () => new HttpException(httpStatus.CONFLICT, 'This parking cannot be booked online yet', 'online_booking_unavailable');
 const holdExpired = () => new HttpException(httpStatus.CONFLICT, 'The hold on this place has ended', 'hold_expired');
+
+/** A payment that went through, from a Checkout Session or a PaymentIntent. */
+type ConfirmedPayment = {
+  reservationId: string | null;
+  amountCents: number | null;
+  currency: string | null;
+  paymentIntentId: string | null;
+  checkoutSessionId: string | null;
+  /** For the logs: "session cs_…" or "payment intent pi_…" (never personal data). */
+  label: string;
+};
+
+/** PaymentIntent states in which it can still be cancelled (nothing was charged). */
+const CANCELABLE_INTENT: Stripe.PaymentIntent.Status[] = ['requires_payment_method', 'requires_confirmation', 'requires_action', 'requires_capture'];
 
 function paymentIntentId(session: Stripe.Checkout.Session): string | null {
   const pi = session.payment_intent;
@@ -149,12 +169,19 @@ export class PaymentService {
   public async checkout(reservationId: string): Promise<{ url: string } | { paid: true }> {
     if (!this.enabled()) throw unavailable();
     await this.expireLapsedHolds();
-    type Outcome = { url: string } | { paid: true } | { complete: Stripe.Checkout.Session };
+    type Outcome = { url: string } | { paid: true } | { complete: Stripe.Checkout.Session } | { succeeded: Stripe.PaymentIntent };
     const result = await prisma.$transaction(async (tx): Promise<Outcome> => {
       await this.lockRow(tx, reservationId);
       const r = await tx.reservation.findUniqueOrThrow({ where: { id: reservationId }, include: { ...WITH_LISTING, operator: true } });
       if (r.paymentStatus === 'paid') return { paid: true as const };
       if (r.status !== 'pending_payment' || r.paymentStatus !== 'pending' || !r.holdExpiresAt) throw holdExpired();
+
+      // Started in the app's payment sheet: closed first, so that the booking cannot be paid twice.
+      if (r.stripePaymentIntentId) {
+        const intent = await this.closeIntent(r.stripePaymentIntentId);
+        if (intent.status === 'succeeded') return { succeeded: intent };
+        await tx.reservation.update({ where: { id: r.id }, data: { stripePaymentIntentId: null } });
+      }
 
       if (r.stripeCheckoutSessionId) {
         const existing = await this.stripe.api().checkout.sessions.retrieve(r.stripeCheckoutSessionId);
@@ -228,13 +255,127 @@ export class PaymentService {
       await this.confirmPaid(result.complete, 'return');
       return { paid: true };
     }
+    if ('succeeded' in result) {
+      await this.confirmIntent(result.succeeded, 'return');
+      return { paid: true };
+    }
     return result;
   }
 
+  // ---- Payment sheet (app) ----------------------------------------------------------------------
+
+  /**
+   * The PaymentIntent of a held booking, for the app's native payment sheet (card, Apple Pay,
+   * Google Pay): the one already started again, or a new one. Same amount and commission split as
+   * Checkout (computed when the place was held), metadata.reservationId for the webhook, and
+   * idempotency keys. An open Checkout page of the same booking is closed first (one payment only).
+   * Returns { paid: true } when the booking turns out to be paid already. The hold is not extended.
+   */
+  public async paymentIntent(reservationId: string): Promise<PaymentIntentResult> {
+    if (!this.enabled()) throw unavailable();
+    await this.expireLapsedHolds();
+    type Outcome = PaymentIntentResult | { complete: Stripe.Checkout.Session } | { succeeded: Stripe.PaymentIntent };
+    const result = await prisma.$transaction(async (tx): Promise<Outcome> => {
+      await this.lockRow(tx, reservationId);
+      const r = await tx.reservation.findUniqueOrThrow({ where: { id: reservationId }, include: { operator: true } });
+      if (r.paymentStatus === 'paid') return { paid: true as const };
+      if (r.status !== 'pending_payment' || r.paymentStatus !== 'pending' || !r.holdExpiresAt) throw holdExpired();
+      const api = this.stripe.api();
+
+      // A Checkout page opened on the site: closed (or confirmed, if it was paid meanwhile). Its
+      // id stays on the booking: the "expired" webhook then ignores it (a payment intent is set).
+      if (r.stripeCheckoutSessionId) {
+        const session = await api.checkout.sessions.retrieve(r.stripeCheckoutSessionId);
+        if (session.status === 'complete') return { complete: session };
+        if (session.status === 'open') await api.checkout.sessions.expire(session.id, {}, { idempotencyKey: `plazo-expire-${session.id}` });
+      }
+
+      const intentResult = (intent: Stripe.PaymentIntent): PaymentIntentResult => ({
+        clientSecret: intent.client_secret!,
+        paymentIntentId: intent.id,
+        amountCents: intent.amount,
+        currency: intent.currency,
+        holdExpiresAt: r.holdExpiresAt!.toISOString(),
+      });
+
+      if (r.stripePaymentIntentId) {
+        const existing = await api.paymentIntents.retrieve(r.stripePaymentIntentId);
+        if (existing.status === 'succeeded') return { succeeded: existing };
+        if (existing.status !== 'canceled' && existing.client_secret) return intentResult(existing);
+        // Cancelled: a new one below.
+      }
+
+      const operator = r.operator;
+      if (this.modeFor(operator) !== 'online' || r.priceCents === null) throw unavailable();
+      // Computed when the place was held (never from the client).
+      const amounts = r.chargedCents !== null ? null : this.split(operator, r.priceCents);
+      const charged = r.chargedCents ?? amounts!.chargedCents;
+      const intent = await api.paymentIntents.create(
+        {
+          amount: charged,
+          currency: 'eur',
+          // Card, Apple Pay and Google Pay (and what the Stripe dashboard enables).
+          automatic_payment_methods: { enabled: true },
+          receipt_email: r.customerEmail ?? undefined,
+          description: `Réservation ${r.reference}`,
+          metadata: { reservationId: r.id },
+          // Charged on Plazo's account; the operator's share is transferred after the stay.
+          transfer_group: r.id,
+        },
+        { idempotencyKey: `plazo-intent-${r.id}-${r.stripeCheckoutSessionId ?? 'nosession'}-${r.stripePaymentIntentId ?? 'first'}` },
+      );
+      await tx.reservation.update({ where: { id: r.id }, data: { stripePaymentIntentId: intent.id, ...(amounts ?? {}) } });
+      if (!intent.client_secret) throw new HttpException(httpStatus.BAD_GATEWAY, 'No payment intent', 'payment_failed');
+      return intentResult(intent);
+    }, STRIPE_TX);
+
+    if ('complete' in result) {
+      await this.confirmPaid(result.complete, 'return');
+      return { paid: true };
+    }
+    if ('succeeded' in result) {
+      await this.confirmIntent(result.succeeded, 'return');
+      return { paid: true };
+    }
+    return result;
+  }
+
+  /** Cancels a payment intent that can still be (nothing charged); returns it as it is now. */
+  private async closeIntent(id: string): Promise<Stripe.PaymentIntent> {
+    const api = this.stripe.api();
+    const intent = await api.paymentIntents.retrieve(id);
+    if (!CANCELABLE_INTENT.includes(intent.status)) return intent;
+    return api.paymentIntents.cancel(id, {}, { idempotencyKey: `plazo-intent-cancel-${id}` });
+  }
+
+  /** The app's payment sheet: publishable key and how the sheet presents the merchant. */
+  public sheetConfig() {
+    const enabled = this.enabled();
+    return {
+      payments: enabled ? ('online' as const) : ('on_site' as const),
+      publishableKey: enabled ? stripePublishableKey() || null : null,
+      merchantDisplayName: PRODUCT_NAME,
+      merchantCountryCode: 'FR',
+      currency: 'eur',
+    };
+  }
+
   /** On the traveller's return (or a page refresh): confirms the booking if Stripe says it is paid. */
-  public async syncFromStripe(reservation: Pick<Reservation, 'id' | 'status' | 'paymentStatus' | 'stripeCheckoutSessionId'>): Promise<boolean> {
-    if (reservation.paymentStatus !== 'pending' || !reservation.stripeCheckoutSessionId || !this.enabled()) return false;
+  public async syncFromStripe(
+    reservation: Pick<Reservation, 'id' | 'status' | 'paymentStatus' | 'stripeCheckoutSessionId' | 'stripePaymentIntentId'>,
+  ): Promise<boolean> {
+    if (reservation.paymentStatus !== 'pending' || !this.enabled()) return false;
+    if (!reservation.stripeCheckoutSessionId && !reservation.stripePaymentIntentId) return false;
     try {
+      // A payment intent on a pending booking comes from the app's payment sheet.
+      if (reservation.stripePaymentIntentId) {
+        const intent = await this.stripe.api().paymentIntents.retrieve(reservation.stripePaymentIntentId);
+        if (intent.status === 'succeeded') {
+          await this.confirmIntent(intent, 'return');
+          return true;
+        }
+      }
+      if (!reservation.stripeCheckoutSessionId) return false;
       const session = await this.stripe.api().checkout.sessions.retrieve(reservation.stripeCheckoutSessionId);
       if (session.status === 'complete' && session.payment_status === 'paid') {
         await this.confirmPaid(session, 'return');
@@ -248,20 +389,54 @@ export class PaymentService {
 
   /**
    * A paid Checkout Session: the booking becomes upcoming and paid, and its confirmation is sent
-   * once. Idempotent (the webhook and the traveller's return may both call it, in any order). A
-   * payment that arrives after the hold ended keeps the booking if its place is still free, and is
-   * refunded otherwise.
+   * once (see confirmPayment).
    */
   public async confirmPaid(session: Stripe.Checkout.Session, source: 'return' | 'webhook'): Promise<void> {
     if (session.payment_status !== 'paid') return;
-    const id = session.metadata?.reservationId || session.client_reference_id;
+    await this.confirmPayment(
+      {
+        reservationId: session.metadata?.reservationId || session.client_reference_id || null,
+        amountCents: session.amount_total,
+        currency: session.currency,
+        paymentIntentId: paymentIntentId(session),
+        checkoutSessionId: session.id,
+        label: `session ${session.id}`,
+      },
+      source,
+    );
+  }
+
+  /** A succeeded PaymentIntent (the app's native payment sheet): same confirmation as Checkout. */
+  public async confirmIntent(intent: Stripe.PaymentIntent, source: 'return' | 'webhook'): Promise<void> {
+    if (intent.status !== 'succeeded') return;
+    await this.confirmPayment(
+      {
+        reservationId: intent.metadata?.reservationId || null,
+        amountCents: intent.amount_received || intent.amount,
+        currency: intent.currency,
+        paymentIntentId: intent.id,
+        checkoutSessionId: null,
+        label: `payment intent ${intent.id}`,
+      },
+      source,
+    );
+  }
+
+  /**
+   * A payment that went through (Checkout Session or PaymentIntent): the booking becomes upcoming
+   * and paid, and its confirmation is sent once. Idempotent (the webhooks and the traveller's
+   * return may all call it, in any order). A payment that arrives after the hold ended keeps the
+   * booking if its place is still free, and is refunded otherwise.
+   */
+  private async confirmPayment(payment: ConfirmedPayment, source: 'return' | 'webhook'): Promise<void> {
+    const id = payment.reservationId;
     if (!id) {
-      logger.warn(`[Payments] Paid session ${session.id} without reservation`);
+      logger.warn(`[Payments] Paid ${payment.label} without reservation`);
       return;
     }
     const head = await prisma.reservation.findUnique({ where: { id }, select: { parkingId: true } });
     if (!head) {
-      logger.error(`[Payments] Paid session ${session.id}: reservation ${id} not found`);
+      logger.error(`[Payments] Paid ${payment.label}: reservation ${id} not found`);
       return;
     }
 
@@ -270,11 +445,11 @@ export class PaymentService {
       const r = await tx.reservation.findUniqueOrThrow({ where: { id }, include: { parking: true } });
       if (r.paymentStatus === 'paid' || r.paymentStatus === 'refunded') return 'already';
       if (r.paymentStatus === null) {
-        logger.error(`[Payments] Paid session ${session.id} for reservation ${id}, which is paid on site`);
+        logger.error(`[Payments] Paid ${payment.label} for reservation ${id}, which is paid on site`);
         return 'ignored';
       }
-      if (session.amount_total !== (r.chargedCents ?? r.priceCents) || session.currency !== 'eur') {
-        logger.error(`[Payments] Session ${session.id} amount does not match reservation ${id}: not confirmed`);
+      if (payment.amountCents !== (r.chargedCents ?? r.priceCents) || payment.currency !== 'eur') {
+        logger.error(`[Payments] ${payment.label} amount does not match reservation ${id}: not confirmed`);
         return 'ignored';
       }
       const now = new Date();
@@ -282,8 +457,8 @@ export class PaymentService {
         paymentStatus: 'paid' as const,
         payoutStatus: 'pending' as const,
         paidAt: now,
-        stripePaymentIntentId: paymentIntentId(session),
-        stripeCheckoutSessionId: session.id,
+        stripePaymentIntentId: payment.paymentIntentId,
+        ...(payment.checkoutSessionId ? { stripeCheckoutSessionId: payment.checkoutSessionId } : {}),
         holdExpiresAt: null,
       };
       let late = false;
@@ -296,7 +471,7 @@ export class PaymentService {
         }
         late = true;
       } else if (r.status !== 'pending_payment') {
-        logger.error(`[Payments] Paid session ${session.id} for reservation ${id} in status ${r.status}: not confirmed`);
+        logger.error(`[Payments] Paid ${payment.label} for reservation ${id} in status ${r.status}: not confirmed`);
         return 'ignored';
       }
       await tx.reservation.update({ where: { id }, data: { ...paid, status: 'upcoming', cancelledAt: null } });
@@ -307,10 +482,11 @@ export class PaymentService {
           entityType: 'reservation',
           entityId: id,
           details: {
-            chargedCents: session.amount_total,
+            chargedCents: payment.amountCents,
             commissionCents: r.commissionCents,
             operatorShareCents: r.operatorShareCents,
             source,
+            method: payment.checkoutSessionId ? 'checkout' : 'payment_sheet',
             ...(late ? { afterHold: true } : {}),
           },
         },
@@ -376,6 +552,13 @@ export class PaymentService {
     }
     if (before.status !== 'pending_payment') throw holdExpired();
 
+    if (before.stripePaymentIntentId && this.enabled()) {
+      const intent = await this.closeIntent(before.stripePaymentIntentId);
+      if (intent.status === 'succeeded') {
+        await this.confirmIntent(intent, 'return');
+        throw new HttpException(httpStatus.CONFLICT, 'This booking is already paid', 'already_paid');
+      }
+    }
     if (before.stripeCheckoutSessionId && this.enabled()) {
       const api = this.stripe.api();
       const session = await api.checkout.sessions.retrieve(before.stripeCheckoutSessionId);
@@ -600,6 +783,12 @@ export class PaymentService {
       case 'checkout.session.async_payment_failed':
         await this.sessionEnded(event.data.object);
         break;
+      case 'payment_intent.succeeded':
+        await this.confirmIntent(event.data.object, 'webhook');
+        break;
+      case 'payment_intent.payment_failed':
+        this.intentFailed(event.data.object);
+        break;
       case 'account.updated':
         await this.accountUpdated(event.data.object);
         break;
@@ -609,11 +798,23 @@ export class PaymentService {
     return { received: true, type: event.type };
   }
 
+  /**
+   * A declined attempt in the app's payment sheet (card refused, authentication failed): the
+   * traveller may try again with another card while the place is held, so the hold stays; it ends
+   * at its time like any other. Logged without personal data.
+   */
+  private intentFailed(intent: Stripe.PaymentIntent) {
+    const reservationId = intent.metadata?.reservationId;
+    if (!reservationId) return;
+    logger.info(`[Payments] Payment attempt failed for reservation ${reservationId} (${intent.last_payment_error?.code ?? 'unknown'}): hold kept`);
+  }
+
   /** The payment page expired (or its delayed payment failed): the hold ends, the place is free. */
   private async sessionEnded(session: Stripe.Checkout.Session) {
     const now = new Date();
     const { count } = await prisma.reservation.updateMany({
-      where: { stripeCheckoutSessionId: session.id, status: 'pending_payment' },
+      // A payment intent on a pending booking: the traveller moved to the app's payment sheet.
+      where: { stripeCheckoutSessionId: session.id, status: 'pending_payment', stripePaymentIntentId: null },
       data: { status: 'cancelled', paymentStatus: 'expired', cancelledAt: now, holdExpiresAt: null },
     });
     if (count) logger.info(`[Payments] Hold released (session ${session.id} ended)`);

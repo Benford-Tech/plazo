@@ -4,6 +4,23 @@ void _initBlocs() {
   locator
     // One per screen.
     ..registerFactory(() => BookingBloc(locator(), locator(), locator(), locator()))
+    ..registerFactory(() => SearchBloc(locator()))
+    // Shared by the search tab, "Mes réservations" and the pages that change a booking.
+    ..registerLazySingleton(() => TripsBloc(locator()))
+    ..registerFactory(() => ManageBookingBloc(locator(), locator()))
+    // Screens opened with parameters (airport, parking, dates, reference).
+    ..registerFactoryParam<ResultsBloc, StayParams, void>(
+      (p, _) => ResultsBloc(locator(), airport: p.airport, arrivalAt: p.arrivalAt!, returnAt: p.returnAt!),
+    )
+    ..registerFactoryParam<ParkingBloc, StayParams, void>(
+      (p, _) => ParkingBloc(locator(), airport: p.airport, slug: p.parking!, arrivalAt: p.arrivalAt, returnAt: p.returnAt),
+    )
+    ..registerFactoryParam<BookingFormBloc, StayParams, void>(
+      (p, _) => BookingFormBloc(locator(), locator(), locator(), airport: p.airport, parking: p.parking!, arrivalAt: p.arrivalAt!, returnAt: p.returnAt!),
+    )
+    ..registerFactoryParam<PaymentBloc, String, void>(
+      (reference, _) => PaymentBloc(locator(), locator(), locator(), locator(), locator(), locator(), locator(), locator(), reference: reference),
+    )
     ..registerFactory(() => ArrivalBloc(locator(), locator(), locator(), locator(), locator(), locator(), locator()))
     ..registerFactory(() => ProTodayBloc(locator(), locator(), pollInterval: AppConstants.livePollInterval))
     ..registerFactory(() => ProNotificationsBloc(locator(), locator(), locator()))

@@ -1,8 +1,21 @@
 # Application mobile (Flutter)
 
-Une seule application, deux parcours bien séparés (les « flavors » viendront ensuite, voir SPEC.md, 3 ter) :
+Une seule application (décision), trois onglets : **Rechercher / Mes réservations / Plus** ; l'espace pro s'ouvre
+depuis « Plus » (ou un lien `/pro…`) et reste tel quel. Les « flavors » viendront ensuite (voir SPEC.md, 3 ter).
 
-- **Voyageur** (`/ma-reservation…`) : ouvrir sa réservation par le lien reçu par email ou SMS
+- **Voyageur — réserver** (maquettes A1 à A5, mêmes chemins que le site) : recherche (aéroport, « Vos dates » en
+  feuille : créneaux de 30 min, pas avant aujourd'hui à l'heure du parking, retour après le dépôt, jours comptés comme
+  l'API), résultats `/:aeroport/recherche` en liste ou sur la carte IGN (pastilles de prix, mêmes tris et filtres que
+  le site), fiche `/:aeroport/:parking` (À l'aller, Au retour, Tarifs, Accès, Itinéraire ; barre « Réserver » avec le
+  prix total de l'API, « Réservation en ligne bientôt disponible » si le loueur n'encaisse pas encore), réservation
+  `/:aeroport/:parking/reserver` (mêmes champs et contrôles que le site, erreurs de l'API traduites), paiement
+  `/ma-reservation/REF/paiement` (compte à rebours de la place tenue, **feuille de paiement native Stripe** avec
+  Apple Pay / Google Pay ; la version web passe par Stripe Checkout ; sans paiement en ligne côté serveur, paiement
+  sur place comme le site), confirmation « C'est réservé ! ». Aucun prix n'est calculé dans l'app.
+- **Voyageur — Mes réservations** (`/ma-reservation`) : les réservations gardées sur le téléphone (référence + clé de
+  gestion dans le trousseau, pas de compte), À venir / Passées, « Ajouter une réservation » (référence + email),
+  Modifier le vol, Itinéraire, Annuler (règles et remboursement du site), « Je suis en route » le jour J.
+- **Voyageur — le jour J** (`/ma-reservation/REF`) : ouvrir sa réservation par le lien reçu par email ou SMS
   (`https://<domaine>/ma-reservation/REF?cle=…`, le même que celui du site) ou par référence + email ;
   le jour J, **prévenir le parking de son arrivée** : partage de la position en direct jusqu'à l'arrivée
   (2 h au plus, puis effacée), ou « J'arrive dans 10 / 20 / 30 min » sans position ; au retour,
@@ -45,8 +58,33 @@ Réglages de construction (`--dart-define`, jamais de secret : ils sont lisibles
 | --- | --- | --- |
 | `API_BASE_URL` | `https://plazo-benford-tech.vercel.app/api` | l'API |
 | `ONESIGNAL_APP_ID` | vide (push coupées) | app OneSignal du personnel |
+| `SITE_URL` | l'adresse de l'API sans `/api` | le site (conditions, confidentialité, mentions légales, FAQ) |
+| `STRIPE_MERCHANT_ID` | vide (pas d'Apple Pay) | identifiant marchand Apple Pay (`merchant.…`) |
+| `GOOGLE_PAY_TEST` | `true` | Google Pay en environnement de test Stripe (`false` avec les clés live) |
+| `PAYMENT_SHEET_DEMO` | vide | essais dans un navigateur seulement : `success` ou `fail` remplace la feuille Stripe par une imitation (avec un faux Stripe côté API) |
 
 En local, l'API doit accepter l'origine de la version web : `CLIENT_URL=http://localhost:<port>` dans `backend/.env`.
+
+## Paiement (flutter_stripe)
+
+L'app ne connaît que la **clé publiable** Stripe, donnée par l'API (`GET /api/public/payments/config`, variable
+`STRIPE_PUBLISHABLE_KEY` côté serveur). Le serveur crée le *PaymentIntent* (`POST /api/public/bookings/REF/payment-intent`,
+mêmes montants et commission que Checkout) et confirme la réservation (webhook `payment_intent.succeeded`, ou lecture
+de la réservation) ; l'app attend seulement que la réservation passe à « Confirmée ». Sans clé publiable, ou dans la
+version web, « Payer » ouvre la page Stripe Checkout.
+
+- **Android** : `MainActivity` hérite de `FlutterFragmentActivity` et le thème est `Theme.MaterialComponents`
+  (exigés par la feuille de paiement). **Google Pay** : activé dans le tableau de bord Stripe (*Moyens de paiement*) ;
+  `GOOGLE_PAY_TEST=true` jusqu'aux clés live, puis demande d'accès à la production Google Pay (console Google Pay &
+  Wallet) avec des captures du parcours.
+- **iOS — Apple Pay** : créer un *Merchant ID* (`merchant.com.<entreprise>.plazo`) dans le compte Apple Developer,
+  le certificat de traitement Apple Pay à générer **depuis Stripe** (*Paramètres → Apple Pay*), ajouter la capacité
+  **Apple Pay** à l'App ID et la clé `com.apple.developer.in-app-payments` (tableau avec le Merchant ID) dans
+  `ios/Runner/Runner.entitlements` (non ajoutée tant que l'identifiant n'existe pas : le profil de signature la
+  refuserait), puis construire avec `--dart-define=STRIPE_MERCHANT_ID=merchant.…`. Sans lui, la feuille propose la
+  carte seule.
+- Webhook Stripe : ajouter `payment_intent.succeeded` et `payment_intent.payment_failed` aux évènements du compte
+  (voir README à la racine).
 
 ## Position et vie privée
 
@@ -63,6 +101,8 @@ En local, l'API doit accepter l'origine de la version web : `CLIENT_URL=http://l
 
 ## À fournir par Joanny pour publier
 
+0. **Paiement** : la clé publiable de test (`STRIPE_PUBLISHABLE_KEY` dans Vercel), le Merchant ID Apple Pay et son
+   certificat (voir « Paiement »), l'accès production Google Pay au moment des clés live.
 1. **Identifiants de l'app** (définitifs avant le premier envoi sur les stores) : aujourd'hui des valeurs provisoires,
    `com.benfordtech.parking_app` (Android, `android/app/build.gradle.kts`) et `com.benfordtech.parkingApp`
    (iOS, projet Xcode), à remplacer partout (dont `codemagic.yaml` et `deep_links/`).

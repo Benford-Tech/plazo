@@ -51,6 +51,9 @@ dependencies:
   flutter_map: ^8.3.2
   latlong2: ^0.10.1
   onesignal_flutter: ^5.7.0
+  flutter_stripe: ^14.1.0
+  url_launcher: ^6.3.3
+  package_info_plus: ^10.2.2
 dev_dependencies:
   flutter_test:
     sdk: flutter
@@ -79,6 +82,8 @@ flutter:
 
   assets:
     - assets/l10n/
+    # Hero of the search tab: the site's Pexels photo (credited "Photo : Pexels").
+    - assets/images/
 
   # Direction D: Playfair Display (titles, italic) + Inter. Bundled (no runtime download);
   # variable fonts, the weight goes through FontVariation (see shared/theme/theme.dart).

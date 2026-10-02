@@ -123,8 +123,10 @@ Le nom du produit doit rester dans UN seul fichier de configuration (il peut enc
   `/pro/plateforme` (pages `src/pages/platform/*`, routes serveur `/api/internal/platform/...` protégées par
   `PlatformAdminMiddleware`) ; l'inscription libre des loueurs sous `/pro/inscription`.
 - `site/` : site Plazo voyageurs (Next.js), servi à la racine du domaine.
-- `mobile/` : app Flutter (jalon 6 commencé) : un seul projet, deux parcours séparés, voyageur (`/ma-reservation…`,
-  mêmes liens que le site) et pro (`/pro…`, comptes du personnel) ; architecture de `lovenest-frontend`
+- `mobile/` : app Flutter (jalon 6 commencé) : une seule app, onglets Rechercher / Mes réservations / Plus pour le
+  voyageur (mêmes chemins que le site : `/:aeroport/recherche`, `/:aeroport/:parking`, `/ma-reservation…`), et le
+  parcours pro (`/pro…`, comptes du personnel) ouvert depuis « Plus » ; paiement par la feuille native Stripe
+  (`flutter_stripe`) ; architecture de `lovenest-frontend`
   (`lib/src/features/<x>/{data,domain,presentation}`, `di/`, `core/`), textes dans `assets/l10n/fr-FR.json`,
   nom du produit recopié depuis `product.json` par `tool/sync_product.dart`, builds par `codemagic.yaml` (racine du dépôt, `working_directory: mobile`).
   Voir `mobile/README.md`.

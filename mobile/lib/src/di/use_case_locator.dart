@@ -8,6 +8,18 @@ void _initUseCaseLocator() {
     ..registerLazySingleton(() => SaveBookingAccessUseCase(locator()))
     ..registerLazySingleton(() => SavedBookingsUseCase(locator()))
     ..registerLazySingleton(() => ForgetBookingUseCase(locator()))
+    ..registerLazySingleton(() => CreateBookingUseCase(locator()))
+    ..registerLazySingleton(() => UpdateFlightUseCase(locator()))
+    ..registerLazySingleton(() => CancelBookingUseCase(locator()))
+    ..registerLazySingleton(() => CreatePaymentIntentUseCase(locator()))
+    ..registerLazySingleton(() => CheckoutUseCase(locator()))
+    ..registerLazySingleton(() => ReleaseHoldUseCase(locator()))
+    ..registerLazySingleton(() => LoadSavedBookingsUseCase(locator()))
+    // Traveller: search
+    ..registerLazySingleton(() => GetAirportsUseCase(locator()))
+    ..registerLazySingleton(() => SearchParkingsUseCase(locator()))
+    ..registerLazySingleton(() => GetParkingUseCase(locator()))
+    ..registerLazySingleton(() => GetPaymentsConfigUseCase(locator()))
     // Traveller: arrival
     ..registerLazySingleton(() => GetArrivalUseCase(locator()))
     ..registerLazySingleton(() => StartSharingUseCase(locator()))

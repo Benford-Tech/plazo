@@ -46,6 +46,12 @@ export class PublicBookingController {
     res.json(await this.bookingService.checkout(req.params.reference as string, bookingToken(req)));
   });
 
+  /** POST /public/bookings/:reference/payment-intent */
+  public paymentIntent = catchAsync(async (req: Request, res: Response) => {
+    res.set('Cache-Control', 'no-store');
+    res.json(await this.bookingService.paymentIntent(req.params.reference as string, bookingToken(req)));
+  });
+
   /** POST /public/bookings/:reference/release */
   public release = catchAsync(async (req: Request, res: Response) => {
     res.set('Cache-Control', 'no-store');

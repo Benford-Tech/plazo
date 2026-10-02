@@ -1,0 +1,219 @@
+// GENERATED CODE - DO NOT MODIFY BY HAND
+
+part of 'public_models.dart';
+
+// **************************************************************************
+// JsonSerializableGenerator
+// **************************************************************************
+
+_LatLngModel _$LatLngModelFromJson(Map<String, dynamic> json) => _LatLngModel(
+  lat: (json['lat'] as num).toDouble(),
+  lng: (json['lng'] as num).toDouble(),
+);
+
+Map<String, dynamic> _$LatLngModelToJson(_LatLngModel instance) =>
+    <String, dynamic>{'lat': instance.lat, 'lng': instance.lng};
+
+_AirportModel _$AirportModelFromJson(Map<String, dynamic> json) =>
+    _AirportModel(
+      code: json['code'] as String,
+      name: json['name'] as String,
+      city: json['city'] as String?,
+      slug: json['slug'] as String,
+      location: json['location'] == null
+          ? null
+          : LatLngModel.fromJson(json['location'] as Map<String, dynamic>),
+    );
+
+Map<String, dynamic> _$AirportModelToJson(_AirportModel instance) =>
+    <String, dynamic>{
+      'code': instance.code,
+      'name': instance.name,
+      'city': instance.city,
+      'slug': instance.slug,
+      'location': instance.location,
+    };
+
+_SearchResultModel _$SearchResultModelFromJson(
+  Map<String, dynamic> json,
+) => _SearchResultModel(
+  slug: json['slug'] as String,
+  title: json['title'] as String,
+  services:
+      (json['services'] as List<dynamic>?)?.map((e) => e as String).toList() ??
+      const <String>[],
+  shuttleMinutes: (json['shuttleMinutes'] as num?)?.toInt(),
+  distanceKm: (json['distanceKm'] as num?)?.toDouble(),
+  openingHours: json['openingHours'] as String?,
+  cancellationPolicy: json['cancellationPolicy'] as String? ?? 'non_refundable',
+  photo: json['photo'] as String?,
+  payment: json['payment'] as String? ?? 'on_site',
+  location: json['location'] == null
+      ? null
+      : LatLngModel.fromJson(json['location'] as Map<String, dynamic>),
+  available: json['available'] as bool? ?? false,
+  days: (json['days'] as num?)?.toInt() ?? 0,
+  priceCents: (json['priceCents'] as num?)?.toInt(),
+);
+
+Map<String, dynamic> _$SearchResultModelToJson(_SearchResultModel instance) =>
+    <String, dynamic>{
+      'slug': instance.slug,
+      'title': instance.title,
+      'services': instance.services,
+      'shuttleMinutes': instance.shuttleMinutes,
+      'distanceKm': instance.distanceKm,
+      'openingHours': instance.openingHours,
+      'cancellationPolicy': instance.cancellationPolicy,
+      'photo': instance.photo,
+      'payment': instance.payment,
+      'location': instance.location,
+      'available': instance.available,
+      'days': instance.days,
+      'priceCents': instance.priceCents,
+    };
+
+_SearchResponseModel _$SearchResponseModelFromJson(Map<String, dynamic> json) =>
+    _SearchResponseModel(
+      payments: json['payments'] as String? ?? 'on_site',
+      airport: AirportModel.fromJson(json['airport'] as Map<String, dynamic>),
+      results:
+          (json['results'] as List<dynamic>?)
+              ?.map(
+                (e) => SearchResultModel.fromJson(e as Map<String, dynamic>),
+              )
+              .toList() ??
+          const <SearchResultModel>[],
+    );
+
+Map<String, dynamic> _$SearchResponseModelToJson(
+  _SearchResponseModel instance,
+) => <String, dynamic>{
+  'payments': instance.payments,
+  'airport': instance.airport,
+  'results': instance.results,
+};
+
+_OfferModel _$OfferModelFromJson(Map<String, dynamic> json) => _OfferModel(
+  available: json['available'] as bool,
+  days: (json['days'] as num).toInt(),
+  priceCents: (json['priceCents'] as num?)?.toInt(),
+);
+
+Map<String, dynamic> _$OfferModelToJson(_OfferModel instance) =>
+    <String, dynamic>{
+      'available': instance.available,
+      'days': instance.days,
+      'priceCents': instance.priceCents,
+    };
+
+_PricingTierModel _$PricingTierModelFromJson(Map<String, dynamic> json) =>
+    _PricingTierModel(
+      days: (json['days'] as num).toInt(),
+      priceCents: (json['priceCents'] as num).toInt(),
+    );
+
+Map<String, dynamic> _$PricingTierModelToJson(_PricingTierModel instance) =>
+    <String, dynamic>{'days': instance.days, 'priceCents': instance.priceCents};
+
+_PricingModel _$PricingModelFromJson(Map<String, dynamic> json) =>
+    _PricingModel(
+      tiers:
+          (json['tiers'] as List<dynamic>?)
+              ?.map((e) => PricingTierModel.fromJson(e as Map<String, dynamic>))
+              .toList() ??
+          const <PricingTierModel>[],
+      extraDayPriceCents: (json['extraDayPriceCents'] as num?)?.toInt(),
+    );
+
+Map<String, dynamic> _$PricingModelToJson(_PricingModel instance) =>
+    <String, dynamic>{
+      'tiers': instance.tiers,
+      'extraDayPriceCents': instance.extraDayPriceCents,
+    };
+
+_ParkingDetailModel _$ParkingDetailModelFromJson(
+  Map<String, dynamic> json,
+) => _ParkingDetailModel(
+  slug: json['slug'] as String,
+  title: json['title'] as String,
+  services:
+      (json['services'] as List<dynamic>?)?.map((e) => e as String).toList() ??
+      const <String>[],
+  shuttleMinutes: (json['shuttleMinutes'] as num?)?.toInt(),
+  distanceKm: (json['distanceKm'] as num?)?.toDouble(),
+  openingHours: json['openingHours'] as String?,
+  cancellationPolicy: json['cancellationPolicy'] as String? ?? 'non_refundable',
+  photo: json['photo'] as String?,
+  payment: json['payment'] as String? ?? 'on_site',
+  location: json['location'] == null
+      ? null
+      : LatLngModel.fromJson(json['location'] as Map<String, dynamic>),
+  description: json['description'] as String?,
+  photos:
+      (json['photos'] as List<dynamic>?)?.map((e) => e as String).toList() ??
+      const <String>[],
+  address: json['address'] as String?,
+  phone: json['phone'] as String?,
+  pricing: json['pricing'] == null
+      ? const PricingModel()
+      : PricingModel.fromJson(json['pricing'] as Map<String, dynamic>),
+);
+
+Map<String, dynamic> _$ParkingDetailModelToJson(_ParkingDetailModel instance) =>
+    <String, dynamic>{
+      'slug': instance.slug,
+      'title': instance.title,
+      'services': instance.services,
+      'shuttleMinutes': instance.shuttleMinutes,
+      'distanceKm': instance.distanceKm,
+      'openingHours': instance.openingHours,
+      'cancellationPolicy': instance.cancellationPolicy,
+      'photo': instance.photo,
+      'payment': instance.payment,
+      'location': instance.location,
+      'description': instance.description,
+      'photos': instance.photos,
+      'address': instance.address,
+      'phone': instance.phone,
+      'pricing': instance.pricing,
+    };
+
+_ParkingResponseModel _$ParkingResponseModelFromJson(
+  Map<String, dynamic> json,
+) => _ParkingResponseModel(
+  payments: json['payments'] as String? ?? 'on_site',
+  airport: AirportModel.fromJson(json['airport'] as Map<String, dynamic>),
+  parking: ParkingDetailModel.fromJson(json['parking'] as Map<String, dynamic>),
+  offer: json['offer'] == null
+      ? null
+      : OfferModel.fromJson(json['offer'] as Map<String, dynamic>),
+);
+
+Map<String, dynamic> _$ParkingResponseModelToJson(
+  _ParkingResponseModel instance,
+) => <String, dynamic>{
+  'payments': instance.payments,
+  'airport': instance.airport,
+  'parking': instance.parking,
+  'offer': instance.offer,
+};
+
+_PaymentsConfigModel _$PaymentsConfigModelFromJson(Map<String, dynamic> json) =>
+    _PaymentsConfigModel(
+      payments: json['payments'] as String? ?? 'on_site',
+      publishableKey: json['publishableKey'] as String?,
+      merchantDisplayName: json['merchantDisplayName'] as String? ?? 'Plazo',
+      merchantCountryCode: json['merchantCountryCode'] as String? ?? 'FR',
+      currency: json['currency'] as String? ?? 'eur',
+    );
+
+Map<String, dynamic> _$PaymentsConfigModelToJson(
+  _PaymentsConfigModel instance,
+) => <String, dynamic>{
+  'payments': instance.payments,
+  'publishableKey': instance.publishableKey,
+  'merchantDisplayName': instance.merchantDisplayName,
+  'merchantCountryCode': instance.merchantCountryCode,
+  'currency': instance.currency,
+};
