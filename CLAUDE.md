@@ -126,7 +126,7 @@ Le nom du produit doit rester dans UN seul fichier de configuration (il peut enc
 - `mobile/` : app Flutter (jalon 6 commencé) : un seul projet, deux parcours séparés, voyageur (`/ma-reservation…`,
   mêmes liens que le site) et pro (`/pro…`, comptes du personnel) ; architecture de `lovenest-frontend`
   (`lib/src/features/<x>/{data,domain,presentation}`, `di/`, `core/`), textes dans `assets/l10n/fr-FR.json`,
-  nom du produit recopié depuis `product.json` par `tool/sync_product.dart`, builds par `mobile/codemagic.yaml`.
+  nom du produit recopié depuis `product.json` par `tool/sync_product.dart`, builds par `codemagic.yaml` (racine du dépôt, `working_directory: mobile`).
   Voir `mobile/README.md`.
 
 ## Conventions (reprises de LoveNest)

@@ -83,5 +83,5 @@ En local, l'API doit accepter l'origine de la version web : `CLIENT_URL=http://l
 6. **Fiches des stores** : nom, sous-titre, description courte et longue, captures (téléphone et tablette), icône,
    politique de confidentialité (URL), coordonnées d'assistance, catégorie, classification, justification de la
    position en arrière-plan (Apple) et formulaire « Sécurité des données » (Google).
-7. **Codemagic** : l'app ajoutée sur le dépôt avec `mobile/codemagic.yaml`, le groupe de variables `mobile_secrets`
+7. **Codemagic** : l'app ajoutée sur le dépôt avec `codemagic.yaml` (à la racine du dépôt), le groupe de variables `mobile_secrets`
    (voir l'en-tête du fichier).

@@ -9,9 +9,13 @@
 #   → iOS: signed IPA, published to TestFlight
 #   → build number = Codemagic build counter + 100, shared by Android and iOS
 #
-# The repository is a monorepo: this file lives in mobile/. In Codemagic, add the app with the
-# repository, choose "codemagic.yaml" and set the project path to mobile/ (or move this file to
-# the root and keep working_directory: mobile).
+# The repository is a monorepo: Codemagic reads this file at the repository root and every
+# workflow runs in mobile/ (working_directory).
+#
+# Two workflows:
+#   mobile-check   → runs on every push touching mobile/: checks + a DEBUG Android APK (no signing,
+#                    no secret needed) to install on an Android phone for testing.
+#   mobile-release → run by hand once the store accounts exist (signing secrets below).
 #
 # ── To set up once in Codemagic: group « mobile_secrets » ─────────────────────────────────────
 #     KEYSTORE_FILE           = base64 of the upload keystore (.jks)            ← Joanny (Play)
@@ -25,6 +29,41 @@
 # ────────────────────────────────────────────────────────────────────────────────────────────────
 
 workflows:
+  mobile-check:
+    name: Mobile — vérifications + APK de test (debug)
+    instance_type: linux_x2
+    max_build_duration: 45
+    working_directory: mobile
+    environment:
+      flutter: 3.47.6
+      java: 17
+    triggering:
+      events:
+        - push
+      branch_patterns:
+        - pattern: '*'
+          include: true
+      cancel_previous_builds: true
+    when:
+      changeset:
+        includes:
+          - 'mobile/**'
+          - 'product.json'
+          - 'codemagic.yaml'
+    scripts:
+      - name: Flutter packages
+        script: flutter pub get
+      - name: Vérifications (nom du produit, analyse, tests)
+        script: |
+          set -e
+          dart run tool/sync_product.dart --check
+          flutter analyze
+          flutter test
+      - name: Android — APK de test (debug, non signé pour le store)
+        script: flutter build apk --debug
+    artifacts:
+      - mobile/build/app/outputs/flutter-apk/app-debug.apk
+
   mobile-release:
     name: Mobile — Android + iOS + TestFlight (release)
     instance_type: mac_mini_m2
