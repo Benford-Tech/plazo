@@ -79,12 +79,13 @@ Un seul projet Vercel, avec trois « services » déclarés dans [`vercel.json`]
 Le site appelle l'API côté serveur par une liaison interne (`BACKEND_URL`, injectée par Vercel) ;
 le navigateur de l'espace pro appelle `/api` sur le même domaine (pas de CORS).
 
-1. **Base (Supabase)** : projet en région Paris (`eu-west-3`), extension PostGIS activée.
-   - `DATABASE_URL` : « Transaction pooler » (port 6543) avec `?pgbouncer=true&connection_limit=1` ;
-   - `DIRECT_URL` : « Direct connection » (port 5432), pour les migrations.
+1. **Base (Neon, via Vercel)** : base `Plazo-db` créée depuis l'onglet *Storage* du projet Vercel ; elle
+   ajoute elle-même `DATABASE_URL`, `DATABASE_URL_UNPOOLED` et `POSTGRES_PRISMA_URL`. L'API se connecte par
+   `POSTGRES_PRISMA_URL` et applique les migrations par la connexion directe (`DIRECT_URL`, ou à défaut
+   `DATABASE_URL_UNPOOLED`). PostGIS est activé par la première migration.
 2. **Projet Vercel** : importer le dépôt, dossier racine = racine du dépôt (là où se trouve
    `vercel.json`) ; les fonctions tournent à Paris (`cdg1`). Variables (communes aux trois services) :
-   `NODE_ENV=production`, `DATABASE_URL`, `DIRECT_URL`, `SECRET_KEY`, `CRON_SECRET`, `SITE_API_KEY`
+   `NODE_ENV=production`, `SECRET_KEY`, `CRON_SECRET`, `SITE_API_KEY`
    (secret partagé entre le site et l'API), `PUBLIC_SITE_URL` (adresse publique du site, pour les liens
    des mails), pour les mails et SMS `BREVO_API_KEY`, `EMAIL_FROM`, `SMS_SENDER`, et
    `PLATFORM_ADMIN_EMAILS` (emails des administrateurs de la plateforme, séparés par des virgules : eux seuls

@@ -94,7 +94,9 @@ Plazo reprend la stack et les conventions des dépôts `lovenest-backend`, `love
   Conséquences : pas de pg-boss (pas de processus permanent), les tâches planifiées sont des routes
   `/internal/cron/...` appelées par Vercel Cron (`backend/vercel.json`, protégées par `CRON_SECRET`) ;
   pas de fichiers de logs (winston écrit dans la console, que Vercel collecte).
-- **Base de données** : PostgreSQL + PostGIS, hébergée sur Supabase (région Paris `eu-west-3`).
+- **Base de données** : PostgreSQL + PostGIS, hébergée sur **Neon** via l'intégration Vercel (base `Plazo-db`,
+  02/10/2026, à la place de Supabase). Variables injectées par Vercel : `POSTGRES_PRISMA_URL` (connexion
+  mutualisée, utilisée par l'API), `DATABASE_URL_UNPOOLED` (directe, pour les migrations).
 - **Espace pro (`admin/`)** : Vite + React 18 + shadcn/ui (Tailwind 3), React Router, React Query,
   sonner. Héberge l'espace pro du loueur, puis sa page de réservation (jalon 3).
 - **App mobile (`mobile/`, jalon 6)** : Flutter, architecture de `lovenest-frontend` (bloc, auto_route,
