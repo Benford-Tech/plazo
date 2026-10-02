@@ -6,7 +6,7 @@ import { FieldError } from "./FieldError";
 import { PlateInput } from "./PlateInput";
 import { formatDay } from "@/lib/dates";
 import { EMPTY_FORM, type FormState } from "@/lib/forms";
-import { errorMessage, fr } from "@/lib/fr";
+import { errorMessage, fr, texts } from "@/lib/fr";
 
 type Action = (state: FormState, formData: FormData) => Promise<FormState>;
 
@@ -16,6 +16,7 @@ const HIDDEN_FIELDS = ["airport", "parking", "arrivalAt", "returnAt"] as const;
 /**
  * "Vos informations" + "Paiement sur place" + terms. Submitted to a server action; the price is never
  * sent: the API computes it. Field errors come back from the action and show under each field.
+ * Paid online, it is step 1 of 2 ("Continuer vers le paiement"): the payment page comes next.
  */
 export function BookingForm({
   action,
@@ -23,6 +24,7 @@ export function BookingForm({
   total,
   links,
   idempotencyKey,
+  online = false,
   initialState = EMPTY_FORM,
 }: {
   action: Action;
@@ -32,6 +34,8 @@ export function BookingForm({
   links: { results: string; parking: string };
   /** Random key of this page's form: a second submission returns the booking already made. */
   idempotencyKey?: string;
+  /** Paid by card on the next step (otherwise at the parking). */
+  online?: boolean;
   initialState?: FormState;
 }) {
   const [state, formAction, pending] = useActionState(action, initialState);
@@ -53,6 +57,7 @@ export function BookingForm({
   const unavailable = state.error !== null && UNAVAILABLE.includes(state.error);
   const sectionClass = "flex flex-col gap-3.5 rounded-[20px] border border-line p-4 md:p-[22px]";
   const sectionTitle = "font-title text-[22px] md:text-2xl";
+  const t = texts(online);
 
   return (
     <form action={formAction} className="flex flex-col gap-[18px]" noValidate>
@@ -95,7 +100,7 @@ export function BookingForm({
 
       <section className={sectionClass} aria-labelledby="b-infos">
         <h2 id="b-infos" className={sectionTitle}>
-          <span className="text-accent">1.</span> {fr.booking.yourDetails}
+          {!online && <span className="text-accent">1.</span>} {fr.booking.yourDetails}
         </h2>
         <div className="grid gap-3.5 md:grid-cols-2 md:gap-3">
           <div>
@@ -177,12 +182,14 @@ export function BookingForm({
         </div>
       </section>
 
-      <section className={sectionClass} aria-labelledby="b-paiement">
-        <h2 id="b-paiement" className={sectionTitle}>
-          <span className="text-accent">2.</span> {fr.booking.payment}
-        </h2>
-        <p className="text-[15px] leading-relaxed">{fr.booking.paymentText(total)}</p>
-      </section>
+      {!online && (
+        <section className={sectionClass} aria-labelledby="b-paiement">
+          <h2 id="b-paiement" className={sectionTitle}>
+            <span className="text-accent">2.</span> {fr.booking.payment}
+          </h2>
+          <p className="text-[15px] leading-relaxed">{fr.booking.paymentText(total)}</p>
+        </section>
+      )}
 
       <div>
         <label htmlFor="b-acceptTerms" className="flex min-h-11 items-start gap-2.5 text-sm leading-normal">
@@ -209,8 +216,9 @@ export function BookingForm({
       </div>
 
       <button type="submit" disabled={pending} aria-disabled={pending} className="btn-primary h-[58px] text-[19px]">
-        {pending ? fr.booking.submitting : fr.booking.submit}
+        {pending ? t.booking.submitting : t.booking.submit}
       </button>
+      {online && <p className="-mt-2 text-center text-[13px] text-soft">{fr.booking.paymentNext(total)}</p>}
       <p className="text-center text-[13px] text-soft">{fr.booking.noAccount}</p>
     </form>
   );

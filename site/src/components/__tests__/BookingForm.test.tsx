@@ -79,4 +79,21 @@ describe("BookingForm", () => {
     expect(screen.getByText(/Vous ne payez rien en ligne : vous réglez 55,00 € directement à l’accueil du parking/)).toBeInTheDocument();
     expect(screen.queryByText(/carte bancaire n’est demandée/)).toBeInTheDocument();
   });
+
+  it("paid online: step 1 of 2, « Continuer vers le paiement », no « paid at the parking » section", () => {
+    const action = vi.fn(async (): Promise<FormState> => ({ values: {}, fields: {}, error: null }));
+    render(<BookingForm action={action} stay={stay} total="55,00 €" links={links} idempotencyKey={KEY} online />);
+    expect(screen.getByRole("button", { name: "Continuer vers le paiement" })).toBeInTheDocument();
+    expect(screen.queryByText("Paiement sur place")).not.toBeInTheDocument();
+    expect(screen.getByText("Paiement sécurisé par carte à l’étape suivante : 55,00 €.")).toBeInTheDocument();
+  });
+
+  it("refilled with what the traveller typed when coming back from the payment step", () => {
+    const action = vi.fn(async (): Promise<FormState> => ({ values: {}, fields: {}, error: null }));
+    const initialState = { values: { customerName: "Camille Martin", plate: "AB-123-CD", passengers: "3", acceptTerms: "on" }, fields: {}, error: null };
+    render(<BookingForm action={action} stay={stay} total="55,00 €" links={links} online initialState={initialState} />);
+    expect(screen.getByLabelText("Prénom et nom")).toHaveValue("Camille Martin");
+    expect(screen.getByLabelText("Passagers")).toHaveValue("3");
+    expect(screen.getByRole("checkbox")).toBeChecked();
+  });
 });

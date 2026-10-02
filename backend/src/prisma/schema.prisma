@@ -15,13 +15,22 @@ datasource db {
 
 // An operator is a parking company (a "loueur"). Everything is scoped by operator.
 model Operator {
-  id            String   @id @default(cuid())
-  name          String
-  slug          String   @unique
+  id                   String         @id @default(cuid())
+  name                 String
+  slug                 String         @unique
   // Plazo's commission on online bookings, in basis points (1500 = 15 %). Null: the platform default.
-  commissionBps Int?
-  createdAt     DateTime @default(now())
-  updatedAt     DateTime @default(now()) @updatedAt
+  commissionBps        Int?
+  // Stripe Connect (Express) account receiving the online payments, created by the onboarding.
+  stripeAccountId      String?        @unique
+  // Mirrors of the account's capabilities (account.updated webhook, refreshed by the status route).
+  // A parking is bookable online only while its operator's account has payouts enabled; the
+  // operator's share is transferred only while it has charges enabled.
+  stripeChargesEnabled Boolean        @default(false)
+  stripePayoutsEnabled Boolean        @default(false)
+  // When the operator receives its share of the online payments (see src/domain/payout.ts).
+  payoutSchedule       PayoutSchedule @default(AFTER_STAY)
+  createdAt            DateTime       @default(now())
+  updatedAt            DateTime       @default(now()) @updatedAt
 
   staff        Staff[]
   parkings     Parking[]
@@ -52,7 +61,7 @@ model Staff {
   createdAt   DateTime  @default(now())
   updatedAt   DateTime  @default(now()) @updatedAt
 
-  operator            Operator      @relation(fields: [operatorId], references: [id], onDelete: Cascade)
+  operator            Operator        @relation(fields: [operatorId], references: [id], onDelete: Cascade)
   tokens              StaffToken[]
   auditLogs           AuditLog[]
   createdReservations Reservation[]
@@ -138,6 +147,9 @@ model AuditLog {
 }
 
 enum ReservationStatus {
+  // Booked on the site with online payment, not paid yet: holds its place until holdExpiresAt.
+  // Never shown to staff; becomes "upcoming" once paid, "cancelled" (paymentStatus expired) if not.
+  pending_payment
   upcoming // booked, vehicle not dropped yet
   arrived // vehicle dropped at the parking
   shuttled_out // customer driven to the terminal
@@ -156,45 +168,93 @@ enum ReservationChannel {
   plazo // booked by a traveller on the Plazo site
 }
 
+// Online payment of a booking made on the site (null: paid at the parking, or another channel).
+enum PaymentStatus {
+  pending // place held, waiting for the payment
+  paid
+  expired // the hold ended without a payment (timeout, or the traveller went back to edit)
+  refunded
+}
+
+// When an operator receives its share: the day after the drop-off, the day after the stay
+// (default), every Monday for the previous week's stays, or on the 1st for the previous month's.
+enum PayoutSchedule {
+  AFTER_STAY
+  AT_DROP_OFF
+  WEEKLY
+  MONTHLY
+}
+
+// The operator's share of an online payment: Plazo takes the payment on its own account, then
+// transfers the share to the operator's connected account the day after the stay ends.
+enum PayoutStatus {
+  pending // to transfer once the stay is over
+  transferred
+  cancelled // the booking was cancelled (and refunded) before the transfer
+  reversed // refunded after the transfer: the transfer was reversed
+  failed // Stripe refused the transfer (see the logs); not retried automatically
+}
+
 // A booking. Times are stored in UTC; "nights" are counted in the parking's timezone.
 model Reservation {
-  id                 String              @id @default(cuid())
-  reference          String              @unique // short code given to the customer
-  operatorId         String
-  parkingId          String
-  channel            ReservationChannel
-  channelDetail      String?
-  status             ReservationStatus   @default(upcoming)
-  arrivalAt          DateTime
-  returnAt           DateTime
-  passengers         Int
-  customerName       String
-  customerPhone      String
-  customerEmail      String?
-  plate              String // display form, e.g. AB-123-CD
-  plateKey           String // letters and digits only, for search
-  returnFlight       String? // e.g. TO 3627
-  notes              String?
+  id                      String              @id @default(cuid())
+  reference               String              @unique // short code given to the customer
+  operatorId              String
+  parkingId               String
+  channel                 ReservationChannel
+  channelDetail           String?
+  status                  ReservationStatus   @default(upcoming)
+  arrivalAt               DateTime
+  returnAt                DateTime
+  passengers              Int
+  customerName            String
+  customerPhone           String
+  customerEmail           String?
+  plate                   String // display form, e.g. AB-123-CD
+  plateKey                String // letters and digits only, for search
+  returnFlight            String? // e.g. TO 3627
+  notes                   String?
   // Booking number on the channel it came from (e.g. AL-884880719 on Allopark), to avoid importing it twice.
-  externalReference  String?
+  externalReference       String?
   // Price paid, in euro cents, when known (imports; the pricing grid arrives in milestone 3).
-  priceCents         Int?
+  priceCents              Int?
   // Saved although at least one night was already full (forced by staff, audited).
-  overbooked         Boolean             @default(false)
+  overbooked              Boolean             @default(false)
   // Cancellation terms accepted by the traveller when booking on the site (channel plazo): later
   // changes to the listing's policy do not apply to it. Null for the other channels.
-  cancellationPolicy CancellationPolicy?
+  cancellationPolicy      CancellationPolicy?
   // Key sent by the site with a booking form: a retried submission returns the booking already
   // made instead of holding a second place (channel plazo only).
-  idempotencyKey     String?             @unique
+  idempotencyKey          String?             @unique
   // Part of the traveller's manage link (channel plazo): staff increase it to revoke a leaked link.
-  manageTokenVersion Int                 @default(0)
-  createdById        String?
-  arrivedAt          DateTime?
-  returnedAt         DateTime?
-  cancelledAt        DateTime?
-  createdAt          DateTime            @default(now())
-  updatedAt          DateTime            @default(now()) @updatedAt
+  manageTokenVersion      Int                 @default(0)
+  // Online payment (Stripe Checkout on Plazo's account; "separate charges and transfers").
+  paymentStatus           PaymentStatus?
+  // End of the place's hold while the payment is pending (lazy expiry: past it, the place is free).
+  holdExpiresAt           DateTime?
+  stripeCheckoutSessionId String?             @unique
+  stripePaymentIntentId   String?
+  stripeChargeId          String?
+  stripeRefundId          String?
+  // Amounts in cents, computed by the backend when the place is held: what the traveller pays,
+  // Plazo's commission, and the operator's share (charged = commission + share).
+  chargedCents            Int?
+  commissionCents         Int?
+  operatorShareCents      Int?
+  // Transfer of the operator's share (null until the booking is paid).
+  payoutStatus            PayoutStatus?
+  stripeTransferId        String?
+  transferredAt           DateTime?
+  paidAt                  DateTime?
+  refundedAt              DateTime?
+  // Set when the confirmation email/SMS went out: they are sent exactly once.
+  confirmationSentAt      DateTime?
+  createdById             String?
+  arrivedAt               DateTime?
+  returnedAt              DateTime?
+  cancelledAt             DateTime?
+  createdAt               DateTime            @default(now())
+  updatedAt               DateTime            @default(now()) @updatedAt
 
   operator  Operator @relation(fields: [operatorId], references: [id], onDelete: Cascade)
   parking   Parking  @relation(fields: [parkingId], references: [id], onDelete: Cascade)
@@ -204,6 +264,8 @@ model Reservation {
   @@index([parkingId, arrivalAt])
   @@index([parkingId, returnAt])
   @@index([operatorId, plateKey])
+  @@index([status, holdExpiresAt])
+  @@index([payoutStatus, arrivalAt])
   @@map("reservations")
 }
 

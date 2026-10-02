@@ -8,10 +8,11 @@ import { StatusBadge } from "@/components/StatusBadge";
 import { api, ApiError } from "@/lib/api";
 import { cancelAction, changeFlightAction, lookupAction } from "@/lib/actions";
 import { formatDateTime, formatDateTimeAt, param } from "@/lib/dates";
-import { fr } from "@/lib/fr";
+import { paymentHref } from "@/lib/forms";
+import { fr, texts } from "@/lib/fr";
 import { directionsUrl } from "@/lib/listing";
 import { formatEuros } from "@/lib/money";
-import { REFERENCE_RE } from "@/lib/manage-access";
+import { managePath as manageHrefFor, REFERENCE_RE } from "@/lib/manage-access";
 import { manageTokenFor } from "@/lib/manage-session";
 import { firstName, formatPhone, isFrenchMobile } from "@/lib/phone";
 import type { PublicBooking } from "@/lib/types";
@@ -61,14 +62,44 @@ export default async function ManageBookingPage({ params, searchParams }: PagePr
   }
 
   const b = booking;
-  const confirmed = param(query, "confirmee") === "1" && b.status === "upcoming";
+  const online = b.paymentMode === "online";
+  const t = texts(online);
+  // Back from Stripe's payment page (success_url).
+  const returning = param(query, "paiement") === "retour";
+  // Not paid yet, or the hold ended: the payment step says where things stand.
+  if ((b.status === "pending_payment" && !returning) || (online && b.payment?.status === "expired")) redirect(paymentHref(b.reference));
+  if (b.status === "pending_payment") {
+    // Paid on Stripe, not confirmed yet (the API asks Stripe on every read): check again shortly.
+    return (
+      <main className="mx-auto flex w-full max-w-[560px] flex-col gap-4 px-4 py-8 md:py-12">
+        <meta httpEquiv="refresh" content="3" />
+        <section role="status" className="flex flex-col items-start gap-3 rounded-[20px] bg-tint p-5 md:p-6">
+          <span aria-hidden="true" className="size-8 animate-spin rounded-full border-[3px] border-lilac border-t-accent" />
+          <h1 className="font-title text-[26px] md:text-[30px]">{fr.pay.verifyingTitle}</h1>
+          <p className="text-soft">{fr.pay.verifyingText}</p>
+          <a href={`${manageHrefFor(b.reference)}?paiement=retour`} className="btn-secondary h-11 px-5 text-[15px]">
+            {fr.pay.refresh}
+          </a>
+        </section>
+      </main>
+    );
+  }
+  const confirmed = (param(query, "confirmee") === "1" || returning) && b.status === "upcoming";
   const total = b.priceCents === null ? null : formatEuros(b.priceCents);
   const until = b.cancellableUntil ? formatDateTimeAt(b.cancellableUntil) : null;
   const destination = b.parking.address ?? `${b.parking.title}, ${b.parking.airport.name}`;
   const calendarHref = `/ma-reservation/${encodeURIComponent(b.reference)}/agenda`;
   const active = b.status !== "cancelled" && b.status !== "no_show" && b.status !== "returned";
   const justCancelled = param(query, "annulee") === "1";
-  const totalLabel = b.status === "cancelled" ? fr.manage.nothingToPay : active ? fr.manage.toPayOnSite : fr.manage.stayPrice;
+  const refunded = b.payment?.status === "refunded";
+  const totalLabel =
+    b.status === "cancelled"
+      ? refunded
+        ? fr.manage.refunded
+        : fr.manage.nothingToPay
+      : active || b.payment?.status === "paid"
+        ? t.manage.toPayOnSite
+        : fr.manage.stayPrice;
   const phone = b.parking.phone ? formatPhone(b.parking.phone) : null;
   const phoneLink = phone && (
     <a href={`tel:${b.parking.phone!.replace(/[^\d+]/g, "")}`} className="font-semibold whitespace-nowrap underline">
@@ -85,7 +116,7 @@ export default async function ManageBookingPage({ params, searchParams }: PagePr
   );
   const steps: [string, string][] = [
     [fr.manage.step1Title, fr.manage.step1Text(b.parking.address, b.parking.shuttleMinutes)],
-    [fr.manage.step2Title, fr.manage.step2Text(total)],
+    [fr.manage.step2Title, t.manage.step2Text(total)],
     [fr.manage.step3Title, fr.manage.step3Text(b.returnFlight)],
   ];
 
@@ -114,7 +145,7 @@ export default async function ManageBookingPage({ params, searchParams }: PagePr
       <main className="mx-auto flex w-full max-w-[720px] flex-col gap-[18px] px-4 py-[18px] md:pb-12">
         {b.status === "cancelled" && (
           <p role="status" className="rounded-[16px] bg-danger-bg p-4 font-semibold text-danger">
-            {justCancelled ? fr.manage.cancelledNow : fr.manage.cancelled}
+            {justCancelled ? (refunded ? t.manage.cancelledNow : fr.manage.cancelledNow) : refunded ? fr.manage.cancelledRefunded : fr.manage.cancelled}
           </p>
         )}
 
@@ -136,7 +167,7 @@ export default async function ManageBookingPage({ params, searchParams }: PagePr
             <Row label={fr.manage.passengers}>{b.passengers}</Row>
             {total && (
               <Row label={totalLabel}>
-                {b.status === "cancelled" ? <s className="font-normal text-soft">{total}</s> : total}
+                {b.status === "cancelled" && !refunded ? <s className="font-normal text-soft">{total}</s> : total}
               </Row>
             )}
           </dl>
@@ -208,8 +239,8 @@ export default async function ManageBookingPage({ params, searchParams }: PagePr
               </h2>
               {b.canCancel && until ? (
                 <>
-                  <p className="text-sm leading-normal">{fr.manage.cancelText(until)}</p>
-                  <CancelForm action={cancelAction.bind(null, b.reference)} />
+                  <p className="text-sm leading-normal">{t.manage.cancelText(until)}</p>
+                  <CancelForm action={cancelAction.bind(null, b.reference)} confirmText={t.manage.cancelConfirmText} />
                 </>
               ) : (
                 <p className="text-sm leading-normal">

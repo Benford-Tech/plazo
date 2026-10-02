@@ -2,7 +2,13 @@
 
 export type Service = "shuttle" | "valet" | "covered" | "ev_charging" | "open_24h" | "fenced" | "cctv";
 export type CancellationPolicy = "free_until_arrival" | "free_24h" | "free_48h" | "non_refundable";
-export type BookingStatus = "upcoming" | "arrived" | "shuttled_out" | "return_requested" | "returned" | "cancelled" | "no_show";
+export type BookingStatus = "pending_payment" | "upcoming" | "arrived" | "shuttled_out" | "return_requested" | "returned" | "cancelled" | "no_show";
+
+/** How travellers pay on the site: by card online (Stripe), or at the parking. */
+export type PaymentsMode = "online" | "on_site";
+/** A parking's booking on the site: paid online, paid at the parking, or not bookable online yet. */
+export type ParkingPayment = "online" | "on_site" | "unavailable";
+export type PaymentStatus = "pending" | "paid" | "expired" | "refunded";
 
 export interface ListingSummary {
   slug: string;
@@ -16,6 +22,8 @@ export interface ListingSummary {
   photo: string | null;
   /** Entrance of the parking for the map; null (or missing from an older API) when unknown. */
   location?: LatLng | null;
+  /** Missing from an older API: paid at the parking. */
+  payment?: ParkingPayment;
 }
 
 export interface LatLng {
@@ -24,6 +32,8 @@ export interface LatLng {
 }
 
 export interface AirportResponse {
+  /** Missing from an older API: paid at the parking. */
+  payments?: PaymentsMode;
   airport: { code: string; name: string; city: string; slug: string; timezone: string; location?: LatLng | null };
   /** Lowest package price and the number of days it covers ("dès 15,00 € la journée"). */
   listings: (ListingSummary & { fromPriceCents: number | null; fromDays?: number | null })[];
@@ -38,6 +48,8 @@ export interface Offer {
 export type SearchResult = ListingSummary & Offer;
 
 export interface SearchResponse {
+  /** Missing from an older API: paid at the parking. */
+  payments?: PaymentsMode;
   airport: { code: string; name: string; slug: string; location?: LatLng | null };
   results: SearchResult[];
 }
@@ -48,6 +60,8 @@ export interface PricingTier {
 }
 
 export interface ParkingResponse {
+  /** Missing from an older API: paid at the parking. */
+  payments?: PaymentsMode;
   airport: { code: string; name: string; slug: string; location?: LatLng | null };
   parking: ListingSummary & {
     description: string | null;
@@ -80,7 +94,16 @@ export interface BookingInput {
 export interface PublicBooking {
   reference: string;
   status: BookingStatus;
-  paymentMode: "on_site";
+  /** "online": paid by card on the site; "on_site": paid at the parking. */
+  paymentMode: "on_site" | "online";
+  /** Online payment; null when paid at the parking (missing from an older API). */
+  payment?: {
+    status: PaymentStatus;
+    /** End of the place's hold (UTC, ISO 8601) while the payment is pending. */
+    holdExpiresAt: string | null;
+    /** Seconds left on the hold when the API answered. */
+    holdSecondsLeft: number | null;
+  } | null;
   parking: {
     title: string;
     slug: string;
@@ -117,4 +140,11 @@ export interface CreatedBooking {
 export interface BookingAccess {
   reference: string;
   manageToken: string;
+}
+
+/** The payment page to go to, or the news that the booking is already paid. */
+export type CheckoutResult = { url: string } | { paid: true };
+
+export interface SiteConfig {
+  payments: PaymentsMode;
 }

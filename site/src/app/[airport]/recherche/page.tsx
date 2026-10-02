@@ -26,7 +26,7 @@ import {
   SORT_KEYS,
   serviceCounts,
 } from "@/lib/filters";
-import { fr, serviceLabel } from "@/lib/fr";
+import { fr, serviceLabel, texts } from "@/lib/fr";
 import { formatShortEuros } from "@/lib/money";
 import { SLUG_RE } from "@/lib/site";
 import type { SearchResponse } from "@/lib/types";
@@ -299,7 +299,7 @@ export default async function ResultsPage({ params, searchParams }: PageProps<"/
             </ul>
           )}
           {availableCount === 0 && results.length > 0 && shown.length > 0 && <p className="text-soft">{fr.results.noneText}</p>}
-          <p className="mt-1 text-[13px] text-soft">{fr.results.footnote}</p>
+          <p className="mt-1 text-[13px] text-soft">{texts(data.payments === "online").results.footnote}</p>
         </section>
       </main>
     </>

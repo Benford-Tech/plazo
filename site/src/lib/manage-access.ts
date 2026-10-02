@@ -44,3 +44,28 @@ export function manageCookie(reference: string, token: string, secure: boolean):
 export function secureCookies(env: Record<string, string | undefined> = process.env): boolean {
   return env.NODE_ENV === "production";
 }
+
+/**
+ * Going back from the payment step to the booking form ("Modifier", or "Recommencer" once the hold
+ * expired): the booking's reference and key, kept for an hour in a cookie sent to that parking's
+ * form only, so that the form can be filled in again with what the traveller typed.
+ */
+export const RESUME_COOKIE = "reprise";
+const RESUME_MAX_AGE_SECONDS = 3600;
+
+export function resumeCookie(airport: string, parking: string, reference: string, token: string, secure: boolean): ManageCookie {
+  return {
+    name: RESUME_COOKIE,
+    value: `${reference.toUpperCase()}.${token}`,
+    options: { httpOnly: true, secure, sameSite: "lax", path: `/${airport}/${parking}/reserver`, maxAge: RESUME_MAX_AGE_SECONDS },
+  };
+}
+
+/** The reference and key in a resume cookie, if it is well-formed. */
+export function parseResumeCookie(value: string | null | undefined): { reference: string; token: string } | null {
+  if (!value) return null;
+  const dot = value.indexOf(".");
+  const reference = value.slice(0, dot);
+  const token = value.slice(dot + 1);
+  return dot > 0 && REFERENCE_RE.test(reference) && isManageToken(token) ? { reference, token } : null;
+}

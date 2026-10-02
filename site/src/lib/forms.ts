@@ -19,3 +19,8 @@ export function manageHref(reference: string, confirmed = false): string {
   const base = `/ma-reservation/${encodeURIComponent(reference.toUpperCase())}`;
   return confirmed ? `${base}?confirmee=1` : base;
 }
+
+/** The payment step of a booking holding its place. */
+export function paymentHref(reference: string): string {
+  return `/ma-reservation/${encodeURIComponent(reference.toUpperCase())}/paiement`;
+}

@@ -1,5 +1,5 @@
 import { toInstant } from "./dates";
-import { fr } from "./fr";
+import { texts } from "./fr";
 import { formatEuros } from "./money";
 import { PRODUCT_NAME } from "./product";
 import type { PublicBooking } from "./types";
@@ -38,7 +38,8 @@ export function bookingIcs(booking: PublicBooking, options: { siteUrl: string; n
   const now = options.now ?? new Date();
   const host = new URL(options.siteUrl).host || "localhost";
   const manageUrl = `${options.siteUrl}/ma-reservation`;
-  const description = fr.calendar.description(booking.reference, booking.priceCents === null ? null : formatEuros(booking.priceCents), manageUrl);
+  const t = texts(booking.paymentMode === "online");
+  const description = t.calendar.description(booking.reference, booking.priceCents === null ? null : formatEuros(booking.priceCents), manageUrl);
   const event = (id: string, local: string, summary: string) => {
     const start = toInstant(local);
     if (!start) return [];
@@ -60,8 +61,8 @@ export function bookingIcs(booking: PublicBooking, options: { siteUrl: string; n
     `PRODID:-//${escapeText(PRODUCT_NAME)}//Reservation//FR`,
     "CALSCALE:GREGORIAN",
     "METHOD:PUBLISH",
-    ...event("depot", booking.arrivalAt, fr.calendar.dropOff(booking.parking.title)),
-    ...event("retour", booking.returnAt, fr.calendar.pickUp(booking.parking.title)),
+    ...event("depot", booking.arrivalAt, t.calendar.dropOff(booking.parking.title)),
+    ...event("retour", booking.returnAt, t.calendar.pickUp(booking.parking.title)),
     "END:VCALENDAR",
   ];
   return `${lines.map(foldLine).join("\r\n")}\r\n`;

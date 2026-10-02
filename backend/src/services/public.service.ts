@@ -1,16 +1,22 @@
 import httpStatus from 'http-status';
 import { Container, Service } from 'typedi';
-import prisma, { Airport, Listing, Parking, Prisma } from '@/database';
+import prisma, { Airport, Listing, Operator, Parking, Prisma } from '@/database';
 import { billableDays, quoteCents } from '@/domain/pricing';
 import { exceedsCalendarDays, parseInstant } from '@/domain/time';
 import { ValidationException } from '@/middlewares/validation.middleware';
 import { HttpException } from '@/utils/httpException';
 import { CapacityService } from './capacity.service';
+import { OPERATOR_PAYMENT_FIELDS, PaymentService } from './payment.service';
 import { LatLng, ParkingLocationService } from './parking-location.service';
 
 const MAX_STAY_DAYS = 90;
 
-type ListingWithParking = Listing & { parking: Parking & { pricingTiers: { days: number; priceCents: number }[] } };
+type ListingWithParking = Listing & {
+  parking: Parking & {
+    pricingTiers: { days: number; priceCents: number }[];
+    operator: Pick<Operator, 'commissionBps' | 'stripeAccountId' | 'stripePayoutsEnabled'>;
+  };
+};
 type Client = Prisma.TransactionClient | typeof prisma;
 type Stay = { arrivalAt: Date; returnAt: Date };
 
@@ -19,6 +25,12 @@ type Stay = { arrivalAt: Date; returnAt: Date };
 export class PublicService {
   public capacity = Container.get(CapacityService);
   public locations = Container.get(ParkingLocationService);
+  public payments = Container.get(PaymentService);
+
+  /** How travellers pay on the site: "online" (card, Stripe) or "on_site" (at the parking). */
+  public config() {
+    return { payments: this.payments.enabled() ? ('online' as const) : ('on_site' as const) };
+  }
 
   public async airportBySlug(slug: string): Promise<Airport> {
     const airport = await prisma.airport.findUnique({ where: { slug } });
@@ -49,6 +61,9 @@ export class PublicService {
       openingHours: listing.openingHours,
       cancellationPolicy: listing.cancellationPolicy,
       photo: listing.photos[0] ?? null,
+      // "online": book and pay on the site; "on_site": book, pay at the parking; "unavailable":
+      // payments are on but this operator cannot take them yet (no booking on the site).
+      payment: this.payments.modeFor(listing.parking.operator),
       // Entrance of the parking for the site's map; null when unknown (listed, not drawn).
       location: locations.get(listing.parkingId) ?? null,
     };
@@ -78,7 +93,9 @@ export class PublicService {
   private publishedAt(airportId: string) {
     return prisma.listing.findMany({
       where: { airportId, published: true },
-      include: { parking: { include: { pricingTiers: { select: { days: true, priceCents: true } } } } },
+      include: {
+        parking: { include: { pricingTiers: { select: { days: true, priceCents: true } }, operator: { select: OPERATOR_PAYMENT_FIELDS } } },
+      },
     });
   }
 
@@ -87,6 +104,7 @@ export class PublicService {
     const listings = await this.publishedAt(airport.id);
     const locations = await this.positions(listings);
     return {
+      ...this.config(),
       airport: {
         code: airport.code,
         name: airport.name,
@@ -113,6 +131,7 @@ export class PublicService {
     const results = listings.map((l, i) => ({ ...this.summary(l, locations), ...offers[i] }));
     results.sort((a, b) => Number(b.available) - Number(a.available) || (a.priceCents ?? Infinity) - (b.priceCents ?? Infinity));
     return {
+      ...this.config(),
       airport: { code: airport.code, name: airport.name, slug: airport.slug, location: { lat: airport.latitude, lng: airport.longitude } },
       results,
     };
@@ -122,7 +141,14 @@ export class PublicService {
   public async findPublished(airport: Pick<Airport, 'id'>, slug: string, client: Client = prisma): Promise<ListingWithParking> {
     const listing = await client.listing.findFirst({
       where: { airportId: airport.id, slug, published: true },
-      include: { parking: { include: { pricingTiers: { select: { days: true, priceCents: true }, orderBy: { days: 'asc' } } } } },
+      include: {
+        parking: {
+          include: {
+            pricingTiers: { select: { days: true, priceCents: true }, orderBy: { days: 'asc' } },
+            operator: { select: OPERATOR_PAYMENT_FIELDS },
+          },
+        },
+      },
     });
     if (!listing) throw new HttpException(httpStatus.NOT_FOUND, 'Parking not found', 'not_found');
     return listing;
@@ -135,6 +161,7 @@ export class PublicService {
     const stay = this.parseStay(airport, arrival, ret);
     const locations = await this.positions([listing]);
     return {
+      ...this.config(),
       airport: { code: airport.code, name: airport.name, slug: airport.slug, location: { lat: airport.latitude, lng: airport.longitude } },
       parking: {
         ...this.summary(listing, locations),

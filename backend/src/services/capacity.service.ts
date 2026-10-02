@@ -45,6 +45,7 @@ export class CapacityService {
   ): Promise<NightLoad[]> {
     const client = options.client ?? prisma;
     const tz = parking.timezone;
+    const now = new Date();
     // The columns are "timestamp without time zone" holding UTC: read them as UTC first, then
     // convert to the parking's local time to get the local date.
     const rows = await client.$queryRaw<{ night: Date; count: number }[]>`
@@ -53,6 +54,8 @@ export class CapacityService {
       LEFT JOIN reservations r
         ON r."parkingId" = ${parking.id}
         AND r.status::text <> ALL(${RELEASED_STATUSES}::text[])
+        -- A place held for an online payment counts until its hold ends (even before the sweep).
+        AND NOT (r.status::text = 'pending_payment' AND r."holdExpiresAt" <= ${now})
         AND (${options.excludeReservationId ?? null}::text IS NULL OR r.id <> ${options.excludeReservationId ?? null})
         AND ((r."arrivalAt" AT TIME ZONE 'UTC') AT TIME ZONE ${tz})::date <= d::date
         AND d::date < GREATEST(

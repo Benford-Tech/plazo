@@ -5,7 +5,10 @@ import { ReservationStatus } from '@/database';
 export const RELEASED_STATUSES: ReservationStatus[] = ['cancelled', 'no_show'];
 
 /** Allowed status changes, following the customer's journey. */
+// A booking waiting for its online payment is not the staff's to move: only the payment (or its
+// expiry) changes it.
 export const STATUS_TRANSITIONS: Record<ReservationStatus, ReservationStatus[]> = {
+  pending_payment: [],
   upcoming: ['arrived', 'cancelled', 'no_show'],
   arrived: ['shuttled_out', 'return_requested', 'returned', 'upcoming'],
   shuttled_out: ['return_requested', 'returned', 'arrived'],

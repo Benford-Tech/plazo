@@ -42,5 +42,8 @@
     { "source": "/pro/:path*", "destination": { "service": "admin" } },
     { "source": "/(.*)", "destination": { "service": "site" } }
   ],
-  "crons": [{ "path": "/api/internal/cron/purge-expired-tokens", "schedule": "0 1 * * *" }]
+  "crons": [
+    { "path": "/api/internal/cron/purge-expired-tokens", "schedule": "0 1 * * *" },
+    { "path": "/api/internal/cron/payouts", "schedule": "0 6 * * *" }
+  ]
 }

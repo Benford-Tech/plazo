@@ -227,6 +227,9 @@ export const fr = {
     total: "Total",
     payOnSite: "À payer sur place",
     book: "Réserver",
+    // Online payment on, but this parking's operator cannot take it yet.
+    onlineSoon: "Réservation en ligne bientôt disponible",
+    onlineSoonHint: "Ce parking n’accepte pas encore les réservations sur le site.",
     checkDates: "Voir le prix",
     askDates: "Indiquez vos dates pour voir le prix total et la disponibilité.",
     otherParkings: "Voir les autres parkings",
@@ -251,6 +254,12 @@ export const fr = {
     termsAfter: " et celles du parking. Mes données servent uniquement à ce séjour.",
     submit: "Confirmer la réservation",
     submitting: "Réservation en cours…",
+    // Two steps when the booking is paid online.
+    steps: "Étapes de la réservation",
+    stepDetails: "1 · Vos informations",
+    stepPayment: "2 · Paiement",
+    currentStep: "(étape en cours)",
+    paymentNext: (total: string) => `Paiement sécurisé par carte à l’étape suivante : ${total}.`,
     noAccount: "Pas de compte à créer : vous recevez la confirmation par email et par SMS.",
     summaryDropOff: "Dépôt",
     summaryPickUp: "Retour",
@@ -262,6 +271,24 @@ export const fr = {
     fullNights: (nights: string) => `Nuits complètes : ${nights}${nights.endsWith(".") ? "" : "."}`,
     seeOtherParkings: "Voir les autres parkings",
     changeDates: "Changer de dates",
+  },
+  pay: {
+    title: "Paiement",
+    recap: "Récapitulatif",
+    modify: "Modifier",
+    total: "Total",
+    days: (n: number) => daysLabel(n),
+    /** Server-rendered, then updated every second: "Votre place est réservée pendant 29:41". */
+    holdLeft: (time: string) => `Votre place est réservée pendant ${time}`,
+    button: (total: string) => `Payer ${total} ›`,
+    redirecting: "Redirection…",
+    redirectNote: "Vous allez être redirigé vers la page de paiement sécurisée Stripe.",
+    expiredTitle: "Le délai est dépassé",
+    expiredText: "Votre place n’est plus réservée et rien n’a été débité. Vous pouvez recommencer : vos informations sont gardées.",
+    restart: "Recommencer la réservation",
+    verifyingTitle: "Paiement en cours de vérification…",
+    verifyingText: "Cela prend quelques secondes. Cette page se met à jour toute seule.",
+    refresh: "Actualiser",
   },
   manage: {
     title: "Ma réservation",
@@ -288,6 +315,8 @@ export const fr = {
     passengers: "Passagers",
     toPayOnSite: "À payer sur place",
     nothingToPay: "Rien à payer",
+    paid: "Payé",
+    refunded: "Remboursé",
     stayPrice: "Prix du séjour",
     freeUntil: (when: string) => `Annulation gratuite jusqu’au ${when}`,
     nonRefundable: "Non annulable en ligne",
@@ -322,6 +351,7 @@ export const fr = {
     cancelKeep: "Garder ma réservation",
     cancelling: "Annulation…",
     cancelled: "Cette réservation est annulée.",
+    cancelledRefunded: "Cette réservation est annulée. Remboursement intégral sur votre carte sous 5 à 10 jours.",
     cancelledNow: "Votre réservation est annulée. Un email de confirmation vous est envoyé.",
     cancelClosed: (until: string) => `Le délai d’annulation en ligne est passé (${until}).`,
     cancelNonRefundable: "Cette réservation ne peut pas être annulée en ligne.",
@@ -334,6 +364,7 @@ export const fr = {
     or: "puis",
   },
   status: {
+    pending_payment: "En attente de paiement",
     upcoming: "Confirmée",
     arrived: "En cours",
     shuttled_out: "En cours",
@@ -424,6 +455,11 @@ export const fr = {
     lookup_not_found: "Aucune réservation ne correspond à cette référence et cet email.",
     flight_locked: "Le vol retour ne peut plus être modifié en ligne.",
     cancellation_closed: "Cette réservation ne peut plus être annulée en ligne.",
+    online_booking_unavailable: "Ce parking n’accepte pas encore les réservations en ligne.",
+    hold_expired: "Le délai de paiement est dépassé : votre place n’est plus réservée.",
+    already_paid: "Le paiement est déjà passé : votre réservation est confirmée.",
+    refund_failed: "Le remboursement n’a pas pu être lancé. Réessayez dans un instant ; votre réservation n’a pas été annulée.",
+    payments_unavailable: "Le paiement en ligne est momentanément indisponible. Réessayez dans un instant.",
     too_many_requests: "Trop de tentatives. Réessayez dans quelques minutes.",
     too_many_attempts: "Trop de tentatives. Réessayez dans 15 minutes.",
     network: "Le service ne répond pas. Vérifiez votre connexion et réessayez.",
@@ -431,6 +467,88 @@ export const fr = {
     unknown: "Une erreur est survenue. Réessayez.",
   } as Record<string, string>,
 };
+
+type DeepPartial<T> = { [K in keyof T]?: T[K] extends (...args: never[]) => unknown ? T[K] : T[K] extends unknown[] ? T[K] : DeepPartial<T[K]> };
+
+/**
+ * Texts that change when bookings are paid by card on the site (Stripe): everything that says
+ * "paid at the parking" says "paid online" instead. The rest of `fr` stays as it is.
+ */
+export const frOnline: DeepPartial<typeof fr> = {
+  meta: {
+    defaultDescription:
+      "Comparez les parkings privés avec navette autour de l’aéroport, voyez le prix total pour vos dates et réservez en ligne. Paiement sécurisé par carte.",
+    airportDescription: (airport: string) =>
+      `Parkings privés à l’aéroport de ${airport} avec navette gratuite vers les terminaux : prix total pour vos dates, réservation et paiement sécurisé en ligne.`,
+  },
+  home: {
+    how: [
+      ["Réservez et payez en ligne", "Comparez les parkings et choisissez le vôtre. Paiement sécurisé par carte : votre place est garantie pour toutes vos dates."],
+      ["Déposez votre voiture", "Présentez-vous à l’accueil du parking : tout est déjà réglé. La navette vous conduit au terminal en quelques minutes."],
+      ["La navette vous attend au retour", "Indiquez votre vol retour : le parking suit l’heure d’atterrissage et vous prévient par SMS."],
+    ],
+    faq: [
+      [
+        "Combien de temps avant mon vol dois-je arriver au parking ?",
+        "Comptez le temps de navette indiqué sur chaque parking (souvent moins de 15 minutes) en plus du délai conseillé par votre compagnie.",
+      ],
+      [
+        "Comment fonctionne le retour ?",
+        "Le parking suit votre vol retour. À l’atterrissage, vous recevez un SMS avec le point de rendez-vous de la navette.",
+      ],
+      [
+        "Comment je paie ?",
+        `Par carte bancaire, en ligne, au moment de réserver : paiement sécurisé par carte sur ${P}, sur la page de notre prestataire Stripe. Nous ne voyons jamais votre carte, et il n’y a rien à régler au parking.`,
+      ],
+      [
+        "Puis-je annuler ?",
+        "Oui, selon les conditions du parking choisi, affichées sur sa fiche et rappelées avant de réserver. Une annulation gratuite est remboursée intégralement sur votre carte sous 5 à 10 jours.",
+      ],
+    ],
+  },
+  results: {
+    footnote:
+      "Prix totaux pour vos dates, frais compris, payés en ligne par carte. Le jour d’arrivée et le jour de retour comptent chacun pour une journée.",
+  },
+  parking: {
+    payOnSite: "Total à payer en ligne",
+  },
+  booking: {
+    submit: "Continuer vers le paiement",
+    submitting: "Un instant…",
+    totalOnSite: "Total",
+  },
+  manage: {
+    toPayOnSite: "Payé",
+    step2Text: () => "L’accueil vous attend : tout est déjà réglé, vous laissez la voiture et la navette vous dépose au terminal.",
+    cancelText: (until: string) => `Gratuit jusqu’au ${until} : remboursement intégral sur votre carte sous 5 à 10 jours.`,
+    cancelConfirmText: "Votre place sera libérée et le paiement remboursé intégralement. Cette action est définitive.",
+    cancelledNow: "Votre réservation est annulée. Remboursement intégral sur votre carte sous 5 à 10 jours. Un email de confirmation vous est envoyé.",
+  },
+  calendar: {
+    description: (reference: string, total: string | null, manageUrl: string) =>
+      `Réservation ${reference}. ${total ? `${total} payés en ligne. ` : "Payée en ligne. "}Gérer la réservation : ${manageUrl}`,
+  },
+};
+
+function isPlainObject(value: unknown): value is Record<string, unknown> {
+  return typeof value === "object" && value !== null && !Array.isArray(value);
+}
+
+function merge<T>(base: T, overrides: DeepPartial<T>): T {
+  const out: Record<string, unknown> = { ...(base as Record<string, unknown>) };
+  for (const [key, value] of Object.entries(overrides as Record<string, unknown>)) {
+    out[key] = isPlainObject(value) && isPlainObject(out[key]) ? merge(out[key], value as never) : value;
+  }
+  return out as T;
+}
+
+const FR_ONLINE = merge(fr, frOnline);
+
+/** The site's texts: `fr` when travellers pay at the parking, with the online-payment wording otherwise. */
+export function texts(online: boolean): typeof fr {
+  return online ? FR_ONLINE : fr;
+}
 
 /** Unit after a "dès" price: the days the cheapest package covers ("la journée", "pour 3 jours"). */
 export function fromPriceUnit(days: number | null | undefined): string {

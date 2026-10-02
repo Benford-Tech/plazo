@@ -9,9 +9,12 @@ import { ChangeStatusDto, CreateReservationDto, UpdateReservationDto } from '@/d
 import { AuthenticatedStaff } from '@/interfaces/auth.interface';
 import { ValidationException } from '@/middlewares/validation.middleware';
 import { HttpException } from '@/utils/httpException';
+import { toPublicBooking, WITH_LISTING } from '@/domain/booking-view';
 import { AuditService } from './audit.service';
 import { CapacityService, NightLoad } from './capacity.service';
+import { NotificationService } from './notification.service';
 import { ParkingService } from './parking.service';
+import { PaymentService } from './payment.service';
 
 const MAX_STAY_DAYS = 90;
 const PLANNING_NIGHTS = 7;
@@ -22,18 +25,29 @@ const fieldError = (field: string, code: string) => new ValidationException({ [f
 
 type Client = Prisma.TransactionClient | typeof prisma;
 
+/**
+ * Bookings staff work with: not the ones still waiting for their online payment, nor the holds
+ * that ended unpaid (they were never bookings).
+ */
+export const STAFF_VISIBLE: Prisma.ReservationWhereInput = {
+  status: { not: 'pending_payment' },
+  OR: [{ paymentStatus: null }, { paymentStatus: { not: 'expired' } }],
+};
+
 @Service()
 export class ReservationService {
   public audit = Container.get(AuditService);
   public capacity = Container.get(CapacityService);
   public parkings = Container.get(ParkingService);
+  public payments = Container.get(PaymentService);
+  public notifications = Container.get(NotificationService);
 
   private require(actor: AuthenticatedStaff, permission: Parameters<typeof can>[1]) {
     if (!can(actor.role, permission)) throw forbidden();
   }
 
   private async findOwn(actor: AuthenticatedStaff, id: string, client: Client = prisma): Promise<Reservation> {
-    const reservation = await client.reservation.findFirst({ where: { id, operatorId: actor.operatorId } });
+    const reservation = await client.reservation.findFirst({ where: { id, operatorId: actor.operatorId, AND: [STAFF_VISIBLE] } });
     if (!reservation) throw notFound();
     return reservation;
   }
@@ -235,6 +249,26 @@ export class ReservationService {
     if (['cancelled', 'no_show'].includes(data.status) || ['cancelled', 'no_show'].includes(before.status)) {
       this.require(actor, 'reservations:manage');
     }
+    // A booking paid online and refunded cannot be reopened: it would be a booking nobody paid.
+    if (before.paymentStatus === 'refunded') {
+      throw new HttpException(httpStatus.CONFLICT, 'This booking was refunded', 'booking_refunded');
+    }
+    // Cancelling a booking paid online refunds it in full (the row is locked during the refund;
+    // if Stripe refuses, nothing changes: 502 "refund_failed").
+    if (data.status === 'cancelled' && before.paymentStatus === 'paid') {
+      const after = await this.payments.cancelWithRefund(
+        before.id,
+        current => {
+          if (!canTransition(current.status, 'cancelled')) {
+            throw new HttpException(httpStatus.BAD_REQUEST, `Cannot go from ${current.status} to cancelled`, 'invalid_transition');
+          }
+        },
+        (tx, refund) => this.applyStatus(actor, before, 'cancelled', tx, refund ?? undefined),
+      );
+      const record = await prisma.reservation.findUnique({ where: { id: before.id }, include: WITH_LISTING });
+      if (record?.parking.listing) await this.notifications.bookingCancelled(toPublicBooking(record));
+      return after;
+    }
     // Reopening a cancelled booking takes a spot again: re-check capacity.
     if (RELEASED_STATUSES.includes(before.status)) {
       const parking = await this.parkings.getPrimary(actor);
@@ -247,7 +281,13 @@ export class ReservationService {
     return this.applyStatus(actor, before, data.status, prisma);
   }
 
-  private async applyStatus(actor: AuthenticatedStaff, before: Reservation, status: ReservationStatus, client: Client) {
+  private async applyStatus(
+    actor: AuthenticatedStaff,
+    before: Reservation,
+    status: ReservationStatus,
+    client: Client,
+    refund?: { paymentStatus: 'refunded'; refundedAt: Date; stripeRefundId: string; payoutStatus: 'cancelled' | 'reversed' },
+  ) {
     const now = new Date();
     const after = await client.reservation.update({
       where: { id: before.id },
@@ -256,11 +296,17 @@ export class ReservationService {
         arrivedAt: status === 'arrived' && !before.arrivedAt ? now : status === 'upcoming' ? null : undefined,
         returnedAt: status === 'returned' ? now : before.status === 'returned' ? null : undefined,
         cancelledAt: status === 'cancelled' ? now : before.status === 'cancelled' ? null : undefined,
+        ...refund,
       },
     });
     await this.audit.record(
       actor,
-      { action: 'reservation.status_changed', entityType: 'reservation', entityId: before.id, details: { from: before.status, to: status } },
+      {
+        action: 'reservation.status_changed',
+        entityType: 'reservation',
+        entityId: before.id,
+        details: { from: before.status, to: status, ...(refund ? { refunded: true } : {}) },
+      },
       client,
     );
     return after;
@@ -294,7 +340,7 @@ export class ReservationService {
     const page = Math.max(1, query.page || 1);
     const limit = Math.min(100, Math.max(1, query.limit || 20));
     const q = query.q?.trim();
-    const where: Prisma.ReservationWhereInput = { operatorId: actor.operatorId };
+    const where: Prisma.ReservationWhereInput = { operatorId: actor.operatorId, AND: [STAFF_VISIBLE] };
     if (q) {
       const key = plateKey(q);
       where.OR = [
@@ -331,11 +377,11 @@ export class ReservationService {
 
     const [arrivals, returns, nights] = await Promise.all([
       prisma.reservation.findMany({
-        where: { parkingId: parking.id, status: active, arrivalAt: { gte: start, lt: end } },
+        where: { parkingId: parking.id, status: active, arrivalAt: { gte: start, lt: end }, AND: [STAFF_VISIBLE] },
         orderBy: { arrivalAt: 'asc' },
       }),
       prisma.reservation.findMany({
-        where: { parkingId: parking.id, status: active, returnAt: { gte: start, lt: end } },
+        where: { parkingId: parking.id, status: active, returnAt: { gte: start, lt: end }, AND: [STAFF_VISIBLE] },
         orderBy: { returnAt: 'asc' },
       }),
       this.capacity.nights(parking, day, addDays(day, PLANNING_NIGHTS - 1)),

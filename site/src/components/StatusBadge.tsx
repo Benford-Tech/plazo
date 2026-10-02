@@ -2,6 +2,7 @@ import { fr } from "@/lib/fr";
 import type { BookingStatus } from "@/lib/types";
 
 const TONES: Record<BookingStatus, string> = {
+  pending_payment: "bg-tint text-accent-dark",
   upcoming: "bg-ok-bg text-ok",
   arrived: "bg-tint text-accent-dark",
   shuttled_out: "bg-tint text-accent-dark",

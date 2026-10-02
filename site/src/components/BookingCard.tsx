@@ -1,9 +1,9 @@
 import Link from "next/link";
 import { StayFields } from "./StayFields";
 import { cancellableUntil, formatDateTimeAt, stayQuery } from "@/lib/dates";
-import { fr, fromPriceUnit } from "@/lib/fr";
+import { fr, fromPriceUnit, texts } from "@/lib/fr";
 import { formatEuros } from "@/lib/money";
-import type { CancellationPolicy, Offer } from "@/lib/types";
+import type { CancellationPolicy, Offer, ParkingPayment } from "@/lib/types";
 
 /**
  * Booking card of a parking page: dates, availability, price lines and the "Book" button. Without
@@ -19,6 +19,7 @@ export function BookingCard({
   policy,
   minDate,
   errors,
+  payment = "on_site",
 }: {
   airportSlug: string;
   parkingSlug: string;
@@ -30,7 +31,10 @@ export function BookingCard({
   policy: CancellationPolicy;
   minDate: string;
   errors: { arrivalAt?: string; returnAt?: string };
+  /** "unavailable": payments are online but this parking cannot take them yet (no "Réserver"). */
+  payment?: ParkingPayment;
 }) {
+  const t = texts(payment !== "on_site");
   const bookable = !!offer && offer.available && offer.priceCents !== null;
   const until = bookable && stay.arrivee ? cancellableUntil(policy, stay.arrivee) : null;
   const query = stayQuery(stay);
@@ -89,12 +93,16 @@ export function BookingCard({
           </div>
           <div className="border-t border-line" />
           <div className="flex justify-between gap-3 text-lg font-bold">
-            <span>{fr.parking.payOnSite}</span>
+            <span>{payment === "unavailable" ? fr.parking.total : t.parking.payOnSite}</span>
             <span>{formatEuros(offer.priceCents!)}</span>
           </div>
-          <Link href={`/${airportSlug}/${parkingSlug}/reserver${query}`} className="btn-primary h-[54px] text-lg">
-            {fr.parking.book}
-          </Link>
+          {payment === "unavailable" ? (
+            <p className="rounded-[14px] bg-tint px-3 py-3 text-center font-bold text-accent-dark">{fr.parking.onlineSoon}</p>
+          ) : (
+            <Link href={`/${airportSlug}/${parkingSlug}/reserver${query}`} className="btn-primary h-[54px] text-lg">
+              {fr.parking.book}
+            </Link>
+          )}
           <p className="text-center text-[13px] text-soft">
             {until ? fr.manage.freeUntil(formatDateTimeAt(until)) : fr.cancellation[policy]}
           </p>

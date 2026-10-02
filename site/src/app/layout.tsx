@@ -2,7 +2,8 @@ import type { Metadata, Viewport } from "next";
 import { Inter, Playfair_Display } from "next/font/google";
 import { SiteFooter } from "@/components/SiteFooter";
 import { SiteHeader } from "@/components/SiteHeader";
-import { fr } from "@/lib/fr";
+import { fr, texts } from "@/lib/fr";
+import { paymentsOnline } from "@/lib/payments";
 import { PRODUCT_NAME } from "@/lib/product";
 import { siteUrl } from "@/lib/site";
 import "./globals.css";
@@ -16,14 +17,18 @@ const playfair = Playfair_Display({
   display: "swap",
 });
 
-export const metadata: Metadata = {
-  metadataBase: new URL(siteUrl()),
-  title: { default: fr.meta.defaultTitle, template: `%s · ${PRODUCT_NAME}` },
-  description: fr.meta.defaultDescription,
-  applicationName: PRODUCT_NAME,
-  openGraph: { siteName: PRODUCT_NAME, locale: "fr_FR", type: "website" },
-  formatDetection: { telephone: false, email: false, address: false },
-};
+export async function generateMetadata(): Promise<Metadata> {
+  // The default description says how travellers pay (asked to the API; at the parking if it cannot say).
+  const online = await paymentsOnline();
+  return {
+    metadataBase: new URL(siteUrl()),
+    title: { default: fr.meta.defaultTitle, template: `%s · ${PRODUCT_NAME}` },
+    description: texts(online).meta.defaultDescription,
+    applicationName: PRODUCT_NAME,
+    openGraph: { siteName: PRODUCT_NAME, locale: "fr_FR", type: "website" },
+    formatDetection: { telephone: false, email: false, address: false },
+  };
+}
 
 export const viewport: Viewport = {
   themeColor: "#4b164c",

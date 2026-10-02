@@ -94,6 +94,7 @@ describe('réservation sur le site', () => {
       reference: res.body.reference,
       status: 'upcoming',
       paymentMode: 'on_site',
+      payment: null,
       parking: {
         title: 'Parking Démo LYS',
         slug: 'parking-demo',

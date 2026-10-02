@@ -8,6 +8,12 @@ const str = (value: unknown) => (typeof value === 'string' && value ? value : un
 export class PublicController {
   public publicService = Container.get(PublicService);
 
+  /** GET /public/config */
+  public config = catchAsync(async (req: Request, res: Response) => {
+    res.set('Cache-Control', 'public, max-age=60');
+    res.json(this.publicService.config());
+  });
+
   /** GET /public/airports/:slug */
   public airport = catchAsync(async (req: Request, res: Response) => {
     res.set('Cache-Control', 'public, max-age=60, s-maxage=300');

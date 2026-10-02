@@ -1,4 +1,4 @@
-import { CancellationPolicy, ReservationStatus } from '@/database';
+import { CancellationPolicy, PaymentStatus, ReservationStatus } from '@/database';
 
 /**
  * A booking as its traveller sees it on the site (only with its manage token). Dates are local to
@@ -7,8 +7,16 @@ import { CancellationPolicy, ReservationStatus } from '@/database';
 export interface PublicBooking {
   reference: string;
   status: ReservationStatus;
-  /** No online payment yet: the traveller pays the total at the parking. */
-  paymentMode: 'on_site';
+  /** "online": paid by card on the site (Stripe); "on_site": the traveller pays at the parking. */
+  paymentMode: 'on_site' | 'online';
+  /** Online payment state; null when paid at the parking. */
+  payment: {
+    status: PaymentStatus;
+    /** End of the place's hold (UTC, ISO 8601) while the payment is pending, else null. */
+    holdExpiresAt: string | null;
+    /** Seconds left on the hold when the API answered (immune to the traveller's clock), else null. */
+    holdSecondsLeft: number | null;
+  } | null;
   parking: {
     title: string;
     slug: string;

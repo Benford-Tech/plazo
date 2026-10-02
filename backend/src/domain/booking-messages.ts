@@ -41,10 +41,30 @@ export function formatLocalShort(local: string): string {
   return `${String(day).padStart(2, '0')}/${String(month).padStart(2, '0')} à ${time}`;
 }
 
+const paidOnline = (booking: PublicBooking) => booking.paymentMode === 'online';
+
 function cancellationSentence(booking: PublicBooking): string {
   if (!booking.cancellableUntil) return 'Cette réservation ne peut pas être annulée en ligne.';
-  if (booking.cancellationPolicy === 'free_until_arrival') return "Vous pouvez l'annuler en ligne, sans frais, jusqu'à l'heure d'arrivée prévue.";
-  return `Vous pouvez l'annuler en ligne, sans frais, jusqu'au ${formatLocalLong(booking.cancellableUntil)}.`;
+  const refund = paidOnline(booking) ? ' Vous serez alors remboursé intégralement sur votre carte, sous 5 à 10 jours.' : '';
+  if (booking.cancellationPolicy === 'free_until_arrival')
+    return `Vous pouvez l'annuler en ligne, sans frais, jusqu'à l'heure d'arrivée prévue.${refund}`;
+  return `Vous pouvez l'annuler en ligne, sans frais, jusqu'au ${formatLocalLong(booking.cancellableUntil)}.${refund}`;
+}
+
+/** The total line of the confirmation, paid by card on the site or to pay at the parking: [bold part, rest, note]. */
+function totalParts(booking: PublicBooking, total: string): [string, string, string] {
+  return paidOnline(booking)
+    ? [`Total : ${total}`, ', payé en ligne par carte.', 'Rien à régler au parking : présentez simplement votre référence ou votre plaque.']
+    : [`Total : ${total}`, ', à régler sur place, au parking.', "Aucun paiement n'a été demandé en ligne."];
+}
+
+/** What happens to the money after a cancellation. */
+function cancellationMoneySentence(booking: PublicBooking): string {
+  if (booking.payment?.status === 'refunded' && booking.priceCents !== null) {
+    return `Remboursement intégral de ${formatEuros(booking.priceCents)} sur votre carte, sous 5 à 10 jours.`;
+  }
+  if (paidOnline(booking)) return 'Rien ne vous a été débité pour cette réservation.';
+  return 'Rien ne vous sera demandé : le paiement se faisait sur place.';
 }
 
 function detailRows(booking: PublicBooking): [string, string][] {
@@ -96,6 +116,11 @@ function detailsTable(booking: PublicBooking): string {
   return `<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="border-top:1px solid ${COLORS.line};border-bottom:1px solid ${COLORS.line};margin:16px 0">${rows}</table>`;
 }
 
+function totalHtml(booking: PublicBooking, total: string): string {
+  const [label, rest, note] = totalParts(booking, total);
+  return `<p style="margin:0;font-size:16px"><strong>${escapeHtml(label)}</strong>${escapeHtml(rest)}</p><p style="margin:4px 0 0;font-size:13px;color:${COLORS.soft}">${escapeHtml(note)}</p>`;
+}
+
 export function confirmationEmail(productName: string, booking: PublicBooking, manageUrl: string | null): EmailMessage {
   const subject = `Réservation ${booking.reference} confirmée · ${booking.parking.title}`;
   const total = booking.priceCents !== null ? formatEuros(booking.priceCents) : null;
@@ -110,7 +135,7 @@ export function confirmationEmail(productName: string, booking: PublicBooking, m
     `<h1 style="margin:0 0 8px;font-family:'Playfair Display',Georgia,serif;font-style:italic;font-weight:500;font-size:26px">Votre place est réservée</h1>
 <p style="margin:0;font-size:15px">Bonjour ${escapeHtml(booking.customerName)}, merci pour votre réservation.</p>
 ${detailsTable(booking)}
-${total ? `<p style="margin:0;font-size:16px"><strong>Total : ${total}</strong>, à régler sur place, au parking.</p><p style="margin:4px 0 0;font-size:13px;color:${COLORS.soft}">Aucun paiement n'a été demandé en ligne.</p>` : ''}
+${total ? totalHtml(booking, total) : ''}
 <p style="margin:16px 0 0;font-size:14px">${escapeHtml(cancellationSentence(booking))}</p>
 ${manage}`,
   );
@@ -122,7 +147,7 @@ ${manage}`,
     '',
     ...detailRows(booking).map(([label, value]) => `${label} : ${value}`),
     '',
-    ...(total ? [`Total : ${total}, à régler sur place, au parking. Aucun paiement n'a été demandé en ligne.`, ''] : []),
+    ...(total ? [(([label, rest, note]) => `${label}${rest} ${note}`)(totalParts(booking, total)), ''] : []),
     cancellationSentence(booking),
     '',
     manageUrl
@@ -144,21 +169,19 @@ export function cancellationEmail(productName: string, booking: PublicBooking): 
     `<h1 style="margin:0 0 8px;font-family:'Playfair Display',Georgia,serif;font-style:italic;font-weight:500;font-size:26px">Réservation annulée</h1>
 <p style="margin:0;font-size:15px">Bonjour ${escapeHtml(booking.customerName)},</p>
 <p style="margin:12px 0 0;font-size:15px">${escapeHtml(summary)}</p>
-<p style="margin:12px 0 0;font-size:14px;color:${COLORS.soft}">Rien ne vous sera demandé : le paiement se faisait sur place.</p>`,
+<p style="margin:12px 0 0;font-size:14px;color:${COLORS.soft}">${escapeHtml(cancellationMoneySentence(booking))}</p>`,
   );
-  const text = [
-    `Bonjour ${booking.customerName},`,
-    '',
-    summary,
-    'Rien ne vous sera demandé : le paiement se faisait sur place.',
-    '',
-    `— ${productName}`,
-  ].join('\n');
+  const text = [`Bonjour ${booking.customerName},`, '', summary, cancellationMoneySentence(booking), '', `— ${productName}`].join('\n');
   return { subject, html, text };
 }
 
 export function confirmationSms(productName: string, booking: PublicBooking, manageUrl: string | null): string {
-  const total = booking.priceCents !== null ? ` ${formatEuros(booking.priceCents)} à régler sur place.` : '';
+  const total =
+    booking.priceCents === null
+      ? ''
+      : paidOnline(booking)
+        ? ` ${formatEuros(booking.priceCents)} payés.`
+        : ` ${formatEuros(booking.priceCents)} à régler sur place.`;
   return (
     `${productName} : réservation ${booking.reference} confirmée. ${booking.parking.title}, ` +
     `arrivée le ${formatLocalShort(booking.arrivalAt)}, retour le ${formatLocalShort(booking.returnAt)}.${total}` +

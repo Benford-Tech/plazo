@@ -1,9 +1,12 @@
 "use server";
 
 import { refresh } from "next/cache";
+import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
 import { api, ApiError } from "./api";
-import { type FormState, manageHref } from "./forms";
+import { encodeQueryValue } from "./dates";
+import { type FormState, manageHref, paymentHref } from "./forms";
+import { resumeCookie, secureCookies } from "./manage-access";
 import { manageTokenFor, rememberManageToken } from "./manage-session";
 import { formatPlate } from "./plate";
 import type { CreatedBooking, BookingAccess } from "./types";
@@ -73,7 +76,49 @@ export async function bookAction(_previous: FormState, formData: FormData): Prom
     return failure(values, error);
   }
   await rememberManageToken(created.reference, created.manageToken);
+  // Paid online: the place is held, the payment step comes next.
+  if (created.booking.status === "pending_payment") redirect(paymentHref(created.reference));
   redirect(manageHref(created.reference, true));
+}
+
+/** "Payer" on the payment step: off to Stripe's payment page (or to the booking, if already paid). */
+export async function payAction(reference: string, _previous: FormState): Promise<FormState> {
+  const token = await tokenFor(reference);
+  let target: string;
+  try {
+    const result = await api.checkout(reference, token);
+    target = "url" in result ? result.url : `${manageHref(reference)}?paiement=retour`;
+  } catch (error) {
+    // The hold ended meanwhile: the payment step says so.
+    if (error instanceof ApiError && error.code === "hold_expired") redirect(paymentHref(reference));
+    return failure({}, error);
+  }
+  redirect(target);
+}
+
+/**
+ * "Modifier" (or "Recommencer" once the hold expired): the place is released and the booking form
+ * opens again with what the traveller typed.
+ */
+export async function editBookingAction(reference: string, _previous: FormState): Promise<FormState> {
+  const token = await tokenFor(reference);
+  try {
+    await api.releaseBooking(reference, token);
+  } catch (error) {
+    // Paid in the meantime: nothing to edit, the booking is confirmed.
+    if (error instanceof ApiError && error.code === "already_paid") redirect(`${manageHref(reference)}?paiement=retour`);
+    return failure({}, error);
+  }
+  let booking;
+  try {
+    booking = await api.booking(reference, token);
+  } catch (error) {
+    return failure({}, error);
+  }
+  const { slug: parking, airport } = booking.parking;
+  const cookie = resumeCookie(airport.slug, parking, reference, token, secureCookies());
+  (await cookies()).set(cookie.name, cookie.value, cookie.options);
+  redirect(`/${airport.slug}/${parking}/reserver?arrivee=${encodeQueryValue(booking.arrivalAt)}&retour=${encodeQueryValue(booking.returnAt)}&reprise=1`);
 }
 
 export async function lookupAction(_previous: FormState, formData: FormData): Promise<FormState> {

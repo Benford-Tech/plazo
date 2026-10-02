@@ -10,6 +10,16 @@ import { Routes } from '@/interfaces/routes.interface';
  */
 /**
  * @swagger
+ * /public/config:
+ *   get:
+ *     summary: "How travellers pay: { payments: online | on_site }"
+ *     description: >-
+ *       "online" when Stripe is configured (STRIPE_SECRET_KEY): bookings are paid by card on the site.
+ *       The airport, search and parking answers carry the same `payments` field, and each parking a
+ *       `payment` field: "online", "on_site", or "unavailable" (payments on, but its operator cannot take
+ *       them yet: not bookable on the site).
+ *     tags: [Public]
+ *     security: []
  * /public/airports/{slug}:
  *   get:
  *     summary: Airport page — published parkings with their lowest package price
@@ -48,6 +58,7 @@ export class PublicRoute implements Routes {
 
   // Rate limited per traveller in app.ts (publicLimiter on /public).
   constructor() {
+    this.router.get('/public/config', this.public.config);
     this.router.get('/public/airports/:slug', this.public.airport);
     this.router.get('/public/search', this.public.search);
     this.router.get('/public/airports/:airport/parkings/:slug', this.public.parking);

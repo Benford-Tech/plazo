@@ -10,17 +10,28 @@ import { ValidationMiddleware } from '@/middlewares/validation.middleware';
  * tags:
  *   name: Public bookings
  *   description: >
- *     Bookings made by travellers on the site (channel "plazo"), paid on site. No account: each
- *     booking is managed with its manageToken, sent in the x-booking-token header (never in the URL).
- *     Dates are local to the parking ("2026-10-04T06:30").
+ *     Bookings made by travellers on the site (channel "plazo"). Paid at the parking while online
+ *     payments are off (no STRIPE_SECRET_KEY); with them, a booking is created in status
+ *     "pending_payment", holding its place for 30 minutes (payment.holdExpiresAt), and becomes
+ *     "upcoming" once paid on Stripe Checkout (POST /checkout). No account: each booking is managed
+ *     with its manageToken, sent in the x-booking-token header (never in the URL). Dates are local to
+ *     the parking ("2026-10-04T06:30").
  * components:
  *   schemas:
  *     PublicBooking:
  *       type: object
  *       properties:
  *         reference: { type: string, example: R7KQ2M }
- *         status: { type: string, enum: [upcoming, arrived, shuttled_out, return_requested, returned, cancelled, no_show] }
- *         paymentMode: { type: string, enum: [on_site] }
+ *         status: { type: string, enum: [pending_payment, upcoming, arrived, shuttled_out, return_requested, returned, cancelled, no_show] }
+ *         paymentMode: { type: string, enum: [on_site, online] }
+ *         payment:
+ *           type: object
+ *           nullable: true
+ *           description: Null when paid at the parking.
+ *           properties:
+ *             status: { type: string, enum: [pending, paid, expired, refunded] }
+ *             holdExpiresAt: { type: string, nullable: true, example: "2026-10-02T12:30:00.000Z" }
+ *             holdSecondsLeft: { type: integer, nullable: true, example: 1745 }
  *         parking:
  *           type: object
  *           properties:
@@ -50,8 +61,11 @@ import { ValidationMiddleware } from '@/middlewares/validation.middleware';
  * @swagger
  * /public/bookings:
  *   post:
- *     summary: Book a stay (paid on site)
+ *     summary: Book a stay (paid at the parking, or held while paid online)
  *     description: >
+ *       With online payments, the booking holds its place (status pending_payment) and no message is
+ *       sent until it is paid; 409 "online_booking_unavailable" when the parking's operator cannot take
+ *       online payments yet.
  *       Availability and price are recomputed under the parking lock, as for staff bookings: 409
  *       "overbooked" (details.fullNights) when a night is full, 409 "no_price" when the grid cannot
  *       price the stay, 404 "not_found" for an unknown or unpublished parking, 409 "duplicate_booking"
@@ -130,13 +144,35 @@ import { ValidationMiddleware } from '@/middlewares/validation.middleware';
  *             required: [returnFlight]
  *             properties:
  *               returnFlight: { type: string, nullable: true, example: TO 3627, description: Empty or null clears it }
+ * /public/bookings/{reference}/checkout:
+ *   post:
+ *     summary: Stripe Checkout page of a booking holding its place
+ *     description: >
+ *       Returns { url } (the open payment page again, or a new one; the hold then lasts as long as the
+ *       page) or { paid: true } when the payment already went through. 409 "hold_expired" once the hold
+ *       ended, 409 "online_booking_unavailable" if the operator can no longer take payments.
+ *     tags: [Public bookings]
+ *     security: []
+ *     parameters:
+ *       - { in: path, name: reference, required: true, schema: { type: string } }
+ *       - { in: header, name: x-booking-token, required: true, schema: { type: string } }
+ * /public/bookings/{reference}/release:
+ *   post:
+ *     summary: Release the hold (the traveller goes back to edit the form)
+ *     description: The payment page is closed first. 409 "already_paid" when the payment went through meanwhile.
+ *     tags: [Public bookings]
+ *     security: []
+ *     parameters:
+ *       - { in: path, name: reference, required: true, schema: { type: string } }
+ *       - { in: header, name: x-booking-token, required: true, schema: { type: string } }
  * /public/bookings/{reference}/cancel:
  *   post:
  *     summary: Cancel online
  *     description: >
  *       Only while the booking is upcoming and before cancellableUntil (free_until_arrival: arrival;
  *       free_24h / free_48h: 24 / 48 h before; non_refundable: never). Else 409 "cancellation_closed".
- *       Sends a cancellation email.
+ *       A booking paid online is refunded in full first (502 "refund_failed" if Stripe refuses: nothing
+ *       changes). Sends a cancellation email.
  *     tags: [Public bookings]
  *     security: []
  *     parameters:
@@ -154,6 +190,8 @@ export class PublicBookingRoute implements Routes {
     this.router.post('/public/bookings/lookup', lookupLimiter, lookupReferenceLimiter, ValidationMiddleware(LookupBookingDto), this.bookings.lookup);
     this.router.get('/public/bookings/:reference', this.bookings.get);
     this.router.patch('/public/bookings/:reference/flight', ValidationMiddleware(UpdateBookingFlightDto), this.bookings.updateFlight);
+    this.router.post('/public/bookings/:reference/checkout', this.bookings.checkout);
+    this.router.post('/public/bookings/:reference/release', this.bookings.release);
     this.router.post('/public/bookings/:reference/cancel', this.bookings.cancel);
   }
 }

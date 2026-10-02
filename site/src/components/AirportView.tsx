@@ -4,7 +4,7 @@ import { HomeHero } from "./HomeHero";
 import { Photo } from "./Photo";
 import { api, ApiError } from "@/lib/api";
 import { defaultStay, todayLocal } from "@/lib/dates";
-import { fr, fromPriceUnit } from "@/lib/fr";
+import { fr, fromPriceUnit, texts } from "@/lib/fr";
 import { listingFacts } from "@/lib/listing";
 import { formatEuros } from "@/lib/money";
 import { PRO_LOGIN_PATH } from "@/lib/site";
@@ -21,9 +21,10 @@ export async function loadAirport(slug: string): Promise<AirportResponse> {
 
 /** Airport page: hero (photo, search bar, reassurance), how it works, partner parkings, FAQ. Also the home page. */
 export async function AirportView({ slug, showBreadcrumb }: { slug: string; showBreadcrumb: boolean }) {
-  const { airport, listings } = await loadAirport(slug);
+  const { airport, listings, payments } = await loadAirport(slug);
+  const t = texts(payments === "online");
   const stay = defaultStay();
-  const faq = [...fr.home.faq, ...(fr.home.airportFaq[airport.slug] ?? [])];
+  const faq = [...t.home.faq, ...(t.home.airportFaq[airport.slug] ?? [])];
 
   return (
     <>
@@ -35,7 +36,7 @@ export async function AirportView({ slug, showBreadcrumb }: { slug: string; show
             {fr.home.howTitle}
           </h2>
           <ol className="grid gap-3 md:grid-cols-3 md:gap-[18px]">
-            {fr.home.how.map(([title, text], i) => (
+            {t.home.how.map(([title, text], i) => (
               <li key={title} className="flex flex-col gap-2.5 rounded-[16px] border border-line p-[22px]">
                 <span aria-hidden="true" className="font-title text-[40px] leading-none text-accent">
                   {i + 1}

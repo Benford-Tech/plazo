@@ -127,6 +127,7 @@ export default async function ParkingPage({ params, searchParams }: Props) {
             policy={parking.cancellationPolicy}
             minDate={todayLocal()}
             errors={errors}
+            payment={parking.payment ?? "on_site"}
           />
         </div>
 

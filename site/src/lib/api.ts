@@ -5,6 +5,7 @@ import type {
   AirportResponse,
   BookingAccess,
   BookingInput,
+  CheckoutResult,
   CreatedBooking,
   ParkingResponse,
   PublicBooking,
@@ -18,7 +19,7 @@ import type {
 
 const DEFAULT_BACKEND_URL = "http://localhost:3005";
 const TIMEOUT_MS = 10000;
-// A booking waits for the parking lock, then for the confirmation email and SMS (5 s each at most,
+// A booking (or a payment page, or a refund) waits for the parking lock, then for the confirmation email and SMS (5 s each at most,
 // in parallel) before the API answers: give it more time than a page read, so that a booking made
 // is not reported as failed (a retry would then return it anyway, see idempotencyKey).
 const BOOKING_TIMEOUT_MS = 25000;
@@ -126,6 +127,7 @@ function query(params: Record<string, string | null | undefined>): string {
 }
 
 export const api = {
+
   /** Airport page: published parkings with their lowest package price. Deduplicated per request. */
   airport: cache((slug: string) => apiRequest<AirportResponse>(`/api/public/airports/${seg(slug)}`)),
 
@@ -155,6 +157,20 @@ export const api = {
       bookingToken: token,
     }),
 
+  /** Stripe Checkout page of a booking holding its place (or { paid: true }). */
+  checkout: (reference: string, token: string) =>
+    apiRequest<CheckoutResult>(`/api/public/bookings/${seg(reference)}/checkout`, { method: "POST", body: {}, bookingToken: token, timeoutMs: BOOKING_TIMEOUT_MS }),
+
+  /** Ends the hold of a booking not paid yet (the traveller goes back to edit the form). */
+  releaseBooking: (reference: string, token: string) =>
+    apiRequest<PublicBooking>(`/api/public/bookings/${seg(reference)}/release`, { method: "POST", body: {}, bookingToken: token }),
+
   cancelBooking: (reference: string, token: string) =>
-    apiRequest<PublicBooking>(`/api/public/bookings/${seg(reference)}/cancel`, { method: "POST", body: {}, bookingToken: token }),
+    apiRequest<PublicBooking>(`/api/public/bookings/${seg(reference)}/cancel`, {
+      method: "POST",
+      body: {},
+      bookingToken: token,
+      // A booking paid online is refunded before the API answers.
+      timeoutMs: BOOKING_TIMEOUT_MS,
+    }),
 };

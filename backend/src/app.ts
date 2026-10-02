@@ -12,8 +12,11 @@ import { API_PREFIX, CLIENT_URLS, NODE_ENV, PORT, PRODUCT_NAME } from './config'
 import { staffPassport } from './config/passport';
 import { Routes } from './interfaces/routes.interface';
 import { ErrorMiddleware } from './middlewares/error.middleware';
+import { RawBodyMiddleware } from './middlewares/raw-body.middleware';
 import { appLimiter, authLimiter, publicLimiter } from './middlewares/rateLimiter';
 import { logger, stream } from './utils/logger';
+
+export const STRIPE_WEBHOOK_PATH = `${API_PREFIX}/public/stripe/webhook`;
 
 export class App {
   public app: express.Application;
@@ -55,6 +58,9 @@ export class App {
     this.app.use(hpp());
     this.app.use(helmet());
     this.app.use(compression());
+    // Stripe signs the exact bytes it sends: its webhook gets the raw body (a Buffer), before the
+    // JSON parser (which then leaves the request alone). See RawBodyMiddleware for Vercel.
+    this.app.post(STRIPE_WEBHOOK_PATH, RawBodyMiddleware());
     this.app.use(express.json({ limit: '1mb' }));
     this.app.use(express.urlencoded({ extended: true }));
     this.app.use(cookieParser());
@@ -62,7 +68,10 @@ export class App {
 
     this.app.use(API_PREFIX, appLimiter);
     this.app.use(`${API_PREFIX}/internal/auth`, authLimiter);
-    this.app.use(`${API_PREFIX}/public`, publicLimiter);
+    // Stripe's webhook deliveries come in bursts from a few addresses: not limited as a traveller.
+    this.app.use(`${API_PREFIX}/public`, (req, res, next) =>
+      req.originalUrl.split('?')[0] === STRIPE_WEBHOOK_PATH ? next() : publicLimiter(req, res, next),
+    );
   }
 
   private initializeRoutes(routes: Routes[]) {

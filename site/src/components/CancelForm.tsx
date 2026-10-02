@@ -7,7 +7,7 @@ import { errorMessage, fr } from "@/lib/fr";
 type Action = (state: FormState, formData: FormData) => Promise<FormState>;
 
 /** Two-step cancellation (the confirmation is a <details>, so it works without JavaScript). */
-export function CancelForm({ action }: { action: Action }) {
+export function CancelForm({ action, confirmText = fr.manage.cancelConfirmText }: { action: Action; confirmText?: string }) {
   const [state, formAction, pending] = useActionState(action, EMPTY_FORM);
   return (
     <div className="flex flex-col gap-2">
@@ -21,7 +21,7 @@ export function CancelForm({ action }: { action: Action }) {
           {fr.manage.cancelButton}
         </summary>
         <form action={formAction} className="mt-2.5 flex flex-col gap-2.5 rounded-[14px] bg-danger-bg p-3">
-          <p className="text-sm">{fr.manage.cancelConfirmText}</p>
+          <p className="text-sm">{confirmText}</p>
           <button type="submit" disabled={pending} className="h-12 rounded-full bg-danger text-[15px] font-bold text-white disabled:opacity-60">
             {pending ? fr.manage.cancelling : fr.manage.cancelConfirm}
           </button>

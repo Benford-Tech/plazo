@@ -54,6 +54,38 @@ export const PUBLIC_SITE_URL = (
 const rawCommission = Number(process.env.PLATFORM_COMMISSION_BPS);
 export const PLATFORM_COMMISSION_BPS = Number.isInteger(rawCommission) && rawCommission >= 0 && rawCommission <= 5000 ? rawCommission : null;
 
+// Stripe Connect (online payment of the site's bookings). Read on every call, like the platform
+// admins below, so that tests can switch payments on and off. Without a secret key, payments are
+// off and travellers pay at the parking, exactly as before.
+export function stripeSecretKey(): string {
+  return process.env.STRIPE_SECRET_KEY?.trim() || '';
+}
+
+export function paymentsEnabled(): boolean {
+  return !!stripeSecretKey();
+}
+
+/** Signing secrets of the webhook endpoints (comma-separated: the platform's and the connected accounts' events). */
+export function stripeWebhookSecrets(): string[] {
+  return (process.env.STRIPE_WEBHOOK_SECRET || '')
+    .split(',')
+    .map(secret => secret.trim())
+    .filter(Boolean);
+}
+
+/** Live keys (sk_live_, rk_live_) move real money: refused in production unless STRIPE_ALLOW_LIVE=true. */
+export function isLiveStripeKey(key: string): boolean {
+  return /^(sk|rk)_live_/.test(key.trim());
+}
+
+/**
+ * Development and end-to-end tests only: another Stripe API address (e.g. a local fake,
+ * "http://localhost:12111"). Ignored in production.
+ */
+export function stripeApiBase(): string {
+  return process.env.NODE_ENV === 'production' ? '' : process.env.STRIPE_API_BASE?.trim() || '';
+}
+
 // Platform owners (comma-separated emails): a staff member whose email is listed may use the
 // internal tools under /api/internal/platform (e.g. the capacity estimator). Read on every call so
 // that a change of the environment needs no code change (and tests can set it).

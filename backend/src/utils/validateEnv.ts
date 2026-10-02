@@ -1,4 +1,5 @@
-import { cleanEnv, port, str } from 'envalid';
+import { bool, cleanEnv, port, str } from 'envalid';
+import { isLiveStripeKey } from '@/config';
 
 export const ValidateEnv = () => {
   cleanEnv(process.env, {
@@ -20,7 +21,17 @@ export const ValidateEnv = () => {
     PUBLIC_SITE_URL: str({ default: '' }),
     SMS_DAILY_LIMIT: str({ default: '' }),
     PLATFORM_ADMIN_EMAILS: str({ default: '', desc: 'Emails of the platform owners (internal tools), comma-separated' }),
+    // Online payment (Stripe Connect). Without a secret key, travellers pay at the parking.
+    STRIPE_SECRET_KEY: str({ default: '', desc: 'Stripe secret key (sk_test_… until the legal validation)' }),
+    STRIPE_WEBHOOK_SECRET: str({ default: '', desc: 'Signing secrets of the Stripe webhook endpoints (whsec_…), comma-separated' }),
+    STRIPE_ALLOW_LIVE: bool({ default: false, desc: 'Allow a live Stripe key in production' }),
+    STRIPE_API_BASE: str({ default: '', desc: 'Development only: address of a fake Stripe API' }),
   });
+  const stripeKey = process.env.STRIPE_SECRET_KEY?.trim() || '';
+  if (process.env.NODE_ENV === 'production' && isLiveStripeKey(stripeKey) && process.env.STRIPE_ALLOW_LIVE !== 'true') {
+    // Test mode only until the legal validation (platform status, VAT, terms).
+    throw new Error('A live Stripe key is set: refused in production unless STRIPE_ALLOW_LIVE=true');
+  }
   if (process.env.NODE_ENV === 'production' && !process.env.SITE_API_KEY?.trim()) {
     throw new Error('SITE_API_KEY must be set in production (shared with the traveller site)');
   }
