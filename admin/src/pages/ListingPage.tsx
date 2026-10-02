@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { useSearchParams } from "react-router-dom";
 import { toast } from "sonner";
 import { ListingPreview } from "@/components/plazo/ListingPreview";
+import { OnlinePayments } from "@/components/plazo/OnlinePayments";
 import { PlazoTabs } from "@/components/plazo/PlazoTabs";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useAuth } from "@/contexts/AuthContext";
@@ -150,6 +151,7 @@ export default function ListingPage() {
 
   return (
     <>
+      <OnlinePayments />
       <PlazoTabs
         right={
           <>

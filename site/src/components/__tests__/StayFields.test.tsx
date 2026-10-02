@@ -111,6 +111,42 @@ describe("StayFields", () => {
     }
   });
 
+  it("phoneSummary: one « Vos dates » pill (short form) that opens the bottom sheet, same field names", async () => {
+    const user = userEvent.setup();
+    const { container } = render(<StayFields {...props} retour="2026-10-17T13:00" phoneSummary />);
+    const pill = screen.getByRole("button", { name: "Vos dates : du samedi 10 octobre 2026 à 08:00 au samedi 17 octobre 2026 à 13:00" });
+    expect(pill).toHaveTextContent("Vos datessam. 10 oct. 08:00→ sam. 17 13:00");
+    expect(pill.parentElement).toHaveClass("sm:hidden");
+    // The four pills stay for tablets and desktops.
+    expect(screen.getByRole("button", { name: /Date de dépôt/ }).closest("fieldset")).toHaveClass("max-sm:hidden");
+
+    await user.click(pill);
+    const sheet = screen.getByRole("dialog", { name: "Vos dates" });
+    expect(sheet).toHaveAttribute("aria-modal", "true");
+    expect(pill).toHaveAttribute("aria-expanded", "true");
+    await user.click(within(sheet).getByRole("gridcell", { name: /lundi 12 octobre 2026/ }));
+    await user.click(within(sheet).getByRole("gridcell", { name: /mardi 20 octobre 2026/ }));
+    await user.click(within(sheet).getByRole("button", { name: "Valider les dates" }));
+    expect(screen.queryByRole("dialog")).toBeNull();
+    expect(values(container)).toEqual({ date_depot: "2026-10-12", heure_depot: "08:00", date_retour: "2026-10-20", heure_retour: "13:00" });
+    expect(pill).toHaveTextContent("lun. 12 oct. 08:00→ mar. 20 13:00");
+    expect(document.activeElement).toBe(pill);
+  });
+
+  it("phoneSummary without JavaScript: the native date and time inputs, no summary pill", () => {
+    const html = renderToString(<StayFields {...props} phoneSummary />);
+    for (const name of ["date_depot", "heure_depot", "date_retour", "heure_retour"]) expect(html).toContain(`name="${name}"`);
+    expect(html).toContain('type="date"');
+    expect(html).not.toContain("Vos dates");
+    expect(html).not.toContain("max-sm:hidden");
+  });
+
+  it("phoneSummary: the validation message moves under the pill", () => {
+    render(<StayFields {...props} phoneSummary errors={{ returnAt: "return_before_arrival" }} />);
+    expect(screen.getByRole("button", { name: /^Vos dates/ })).toHaveAttribute("aria-describedby", "t-dates-error");
+    expect(document.getElementById("t-dates-error")?.textContent).toBeTruthy();
+  });
+
   it("shows the existing validation messages", () => {
     render(<StayFields {...props} errors={{ returnAt: "return_before_arrival" }} />);
     expect(screen.getByRole("button", { name: /Date de retour/ })).toHaveAttribute("aria-describedby", "t-retour-error");

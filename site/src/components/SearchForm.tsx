@@ -16,6 +16,7 @@ export function SearchForm({
   idPrefix = "recherche",
   floating = false,
   keepMap = false,
+  compactPhone = false,
 }: {
   airport: { slug: string; name: string; code?: string };
   arrivee: string | null;
@@ -27,6 +28,11 @@ export function SearchForm({
   floating?: boolean;
   /** Results page with the map shown: the new results show it too. */
   keepMap?: boolean;
+  /**
+   * Home hero on phones (below 640 px): one "Vos dates" pill instead of the four date and time
+   * pills, and no airport pill while there is a single airport (its value is still sent).
+   */
+  compactPhone?: boolean;
 }) {
   const airports = AIRPORTS.some(a => a.slug === airport.slug) ? AIRPORTS : [{ slug: airport.slug, name: airport.name }, ...AIRPORTS];
   return (
@@ -38,7 +44,7 @@ export function SearchForm({
       }`}
     >
       {keepMap && <input type="hidden" name="carte" value="1" />}
-      <div className={`${pillBox} ${pillFocusWithin} w-full xl:w-[250px] xl:flex-none`}>
+      <div className={`${pillBox} ${pillFocusWithin} w-full xl:w-[250px] xl:flex-none ${compactPhone && airports.length === 1 ? "max-sm:hidden" : ""}`}>
         <IconChip>
           <PlaneIcon />
         </IconChip>
@@ -54,7 +60,15 @@ export function SearchForm({
         </select>
         <Caret />
       </div>
-      <StayFields idPrefix={idPrefix} arrivee={arrivee} retour={retour} minDate={minDate} errors={errors} className="sm:flex-row xl:min-w-0 xl:flex-1" />
+      <StayFields
+        idPrefix={idPrefix}
+        arrivee={arrivee}
+        retour={retour}
+        minDate={minDate}
+        errors={errors}
+        phoneSummary={compactPhone}
+        className="sm:flex-row xl:min-w-0 xl:flex-1"
+      />
       <button type="submit" className="btn-primary h-14 flex-none px-7 text-[17px]">
         {fr.search.submit}
       </button>

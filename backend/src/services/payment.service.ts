@@ -2,7 +2,16 @@ import { randomUUID } from 'crypto';
 import httpStatus from 'http-status';
 import Stripe from 'stripe';
 import { Container, Service } from 'typedi';
-import { PLATFORM_COMMISSION_BPS, paymentsEnabled, PUBLIC_SITE_URL, SECRET_KEY, SMS_DAILY_LIMIT, stripeWebhookSecrets } from '@/config';
+import {
+  isLiveStripeKey,
+  PLATFORM_COMMISSION_BPS,
+  paymentsEnabled,
+  PUBLIC_SITE_URL,
+  SECRET_KEY,
+  SMS_DAILY_LIMIT,
+  stripeSecretKey,
+  stripeWebhookSecrets,
+} from '@/config';
 import prisma, { Operator, PayoutSchedule, Prisma, Reservation } from '@/database';
 import { manageToken } from '@/domain/booking';
 import { toPublicBooking, WITH_LISTING } from '@/domain/booking-view';
@@ -30,6 +39,25 @@ export const HOLD_MINUTES = 30;
 const CHECKOUT_MIN_SECONDS = 31 * 60;
 // Interactive transactions that call Stripe while holding a row lock.
 const STRIPE_TX = { timeout: 30000, maxWait: 10000 };
+
+/** Where Stripe sends the manager back after its onboarding (the pro space's "Sur Plazo" page). */
+export const ONBOARDING_RETURN_PATH = '/pro/plazo/fiche';
+
+/** The operator's online payment state, as the pro space shows it. */
+export type PaymentStatus = {
+  /** False while the platform has no Stripe key: the travellers pay at the parking. */
+  enabled: boolean;
+  /** A Stripe test key: no real money moves. */
+  testMode: boolean;
+  connected: boolean;
+  /** The onboarding was sent to Stripe (verification pending until payouts are enabled). */
+  detailsSubmitted: boolean;
+  chargesEnabled: boolean;
+  payoutsEnabled: boolean;
+  /** Plazo's commission in basis points (null: not set yet). */
+  commissionBps: number | null;
+  payoutSchedule: PayoutSchedule;
+};
 
 export const OPERATOR_PAYMENT_FIELDS = { commissionBps: true, stripeAccountId: true, stripePayoutsEnabled: true } as const;
 
@@ -594,7 +622,11 @@ export class PaymentService {
   private async accountUpdated(account: Stripe.Account) {
     await prisma.operator.updateMany({
       where: { stripeAccountId: account.id },
-      data: { stripeChargesEnabled: !!account.charges_enabled, stripePayoutsEnabled: !!account.payouts_enabled },
+      data: {
+        stripeChargesEnabled: !!account.charges_enabled,
+        stripePayoutsEnabled: !!account.payouts_enabled,
+        stripeDetailsSubmitted: !!account.details_submitted,
+      },
     });
   }
 
@@ -625,35 +657,73 @@ export class PaymentService {
       await this.audit.record(actor, { action: 'payments.account_created', entityType: 'operator', entityId: operator.id, details: {} });
     }
     const link = await api.accountLinks.create(
-      { account: accountId, type: 'account_onboarding', refresh_url: `${site}/pro/?stripe=relance`, return_url: `${site}/pro/?stripe=retour` },
+      {
+        account: accountId,
+        type: 'account_onboarding',
+        // Back to the "Sur Plazo" page, which reads ?stripe= to tell the manager what happened.
+        refresh_url: `${site}${ONBOARDING_RETURN_PATH}?stripe=relance`,
+        return_url: `${site}${ONBOARDING_RETURN_PATH}?stripe=retour`,
+      },
       { idempotencyKey: `plazo-account-link-${randomUUID()}` },
     );
     return { url: link.url, expiresAt: new Date(link.expires_at * 1000).toISOString() };
   }
 
   /** Whether the operator can take online payments (refreshed from Stripe when possible). */
-  public async status(
-    actor: AuthenticatedStaff,
-  ): Promise<{ connected: boolean; chargesEnabled: boolean; payoutsEnabled: boolean; payoutSchedule: PayoutSchedule }> {
+  public async status(actor: AuthenticatedStaff): Promise<PaymentStatus> {
     const operator = await prisma.operator.findUniqueOrThrow({ where: { id: actor.operatorId } });
-    const { payoutSchedule } = operator;
-    if (!operator.stripeAccountId) return { connected: false, chargesEnabled: false, payoutsEnabled: false, payoutSchedule };
-    let { stripeChargesEnabled: chargesEnabled, stripePayoutsEnabled: payoutsEnabled } = operator;
-    if (this.enabled()) {
+    const enabled = this.enabled();
+    const base = {
+      enabled,
+      // A test key moves no real money: the pro space says so next to the onboarding button.
+      testMode: enabled && !isLiveStripeKey(stripeSecretKey()),
+      commissionBps: this.commissionBps(operator),
+      payoutSchedule: operator.payoutSchedule,
+    };
+    if (!operator.stripeAccountId) {
+      return { ...base, connected: false, detailsSubmitted: false, chargesEnabled: false, payoutsEnabled: false };
+    }
+    let { stripeChargesEnabled: chargesEnabled, stripePayoutsEnabled: payoutsEnabled, stripeDetailsSubmitted: detailsSubmitted } = operator;
+    if (enabled) {
       try {
         const account = await this.stripe.api().accounts.retrieve(operator.stripeAccountId);
         chargesEnabled = !!account.charges_enabled;
         payoutsEnabled = !!account.payouts_enabled;
-        if (chargesEnabled !== operator.stripeChargesEnabled || payoutsEnabled !== operator.stripePayoutsEnabled) {
+        detailsSubmitted = !!account.details_submitted;
+        if (
+          chargesEnabled !== operator.stripeChargesEnabled ||
+          payoutsEnabled !== operator.stripePayoutsEnabled ||
+          detailsSubmitted !== operator.stripeDetailsSubmitted
+        ) {
           await prisma.operator.update({
             where: { id: operator.id },
-            data: { stripeChargesEnabled: chargesEnabled, stripePayoutsEnabled: payoutsEnabled },
+            data: { stripeChargesEnabled: chargesEnabled, stripePayoutsEnabled: payoutsEnabled, stripeDetailsSubmitted: detailsSubmitted },
           });
         }
       } catch (error) {
         logger.warn(`[Payments] Could not refresh the Stripe account of operator ${operator.id}: ${stripeErrorName(error)}`);
       }
     }
-    return { connected: true, chargesEnabled, payoutsEnabled, payoutSchedule };
+    return { ...base, connected: true, detailsSubmitted, chargesEnabled, payoutsEnabled };
+  }
+
+  /** A single-use login link to the operator's Stripe Express dashboard (payouts, bank details). */
+  public async dashboardLink(actor: AuthenticatedStaff): Promise<{ url: string }> {
+    if (!this.enabled()) throw new HttpException(httpStatus.SERVICE_UNAVAILABLE, 'Online payments are not enabled', 'payments_disabled');
+    const operator = await prisma.operator.findUniqueOrThrow({
+      where: { id: actor.operatorId },
+      select: { stripeAccountId: true, stripeDetailsSubmitted: true, stripePayoutsEnabled: true },
+    });
+    // Stripe only opens the dashboard of an account whose onboarding was sent.
+    if (!operator.stripeAccountId || !(operator.stripeDetailsSubmitted || operator.stripePayoutsEnabled)) {
+      throw new HttpException(httpStatus.CONFLICT, 'The Stripe account is not set up yet', 'payments_not_connected');
+    }
+    try {
+      const link = await this.stripe.api().accounts.createLoginLink(operator.stripeAccountId);
+      return { url: link.url };
+    } catch (error) {
+      logger.warn(`[Payments] Could not open the Stripe dashboard of operator ${actor.operatorId}: ${stripeErrorName(error)}`);
+      throw new HttpException(httpStatus.BAD_GATEWAY, 'Stripe did not answer', 'payments_unavailable');
+    }
   }
 }

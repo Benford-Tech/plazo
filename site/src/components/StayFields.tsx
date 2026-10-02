@@ -20,7 +20,7 @@ import {
 import { hasRoomForTwoMonths, isPhone } from "./stay/popup";
 import { DatesPopover, StaySheet, TimePopover, type StayValue } from "./stay/StayPickers";
 import { formatDayLong, validDateOrNull, type Side } from "@/lib/calendar";
-import { formatDay, parseLocal } from "@/lib/dates";
+import { formatDay, formatStayDates, parseLocal } from "@/lib/dates";
 import { fr } from "@/lib/fr";
 
 const subscribe = () => () => {};
@@ -34,6 +34,9 @@ type Open = { kind: "dates" | "time" | "sheet"; side: Side } | null;
  * Without JavaScript (and in the server HTML) the pills hold native date and time inputs. Once the
  * page is hydrated they become buttons opening the stay pickers (a popover on larger screens, a
  * bottom sheet on phones) and the values travel in hidden inputs with the same names.
+ *
+ * With `phoneSummary`, a hydrated page shows phones a single "Vos dates" pill (drop-off → return)
+ * opening the bottom sheet, instead of the four pills; without JavaScript phones keep the natives.
  */
 export function StayFields({
   idPrefix,
@@ -43,6 +46,7 @@ export function StayFields({
   errors = {},
   compactLabels = false,
   layout = "bar",
+  phoneSummary = false,
   className = "",
 }: {
   idPrefix: string;
@@ -54,6 +58,8 @@ export function StayFields({
   compactLabels?: boolean;
   /** "bar": search bar (wide time pills); "card": narrow booking card. */
   layout?: "bar" | "card";
+  /** Phones (below 640 px), once hydrated: one "Vos dates" pill opening the bottom sheet. */
+  phoneSummary?: boolean;
   className?: string;
 }) {
   const hydrated = useSyncExternalStore(
@@ -86,6 +92,13 @@ export function StayFields({
     trigger.current = el;
     setMonths(hasRoomForTwoMonths() ? 2 : 1);
     setOpen({ kind: isPhone() ? "sheet" : kind, side });
+  };
+
+  const summary = phoneSummary && hydrated;
+
+  const openSheet = (el: HTMLElement) => {
+    trigger.current = el;
+    setOpen({ kind: "sheet", side: "start" });
   };
 
   const timeWidth = layout === "bar" ? "w-[136px] xl:w-[150px]" : "w-[136px]";
@@ -164,7 +177,7 @@ export function StayFields({
     };
 
     return (
-      <fieldset className="min-w-0 flex-1">
+      <fieldset className={`min-w-0 flex-1 ${summary ? "max-sm:hidden" : ""}`}>
         <legend className="sr-only">{legend}</legend>
         <div className="flex gap-2.5">
           {pill("dates")}
@@ -177,8 +190,58 @@ export function StayFields({
 
   const timeLabel = open?.side === "end" ? fr.picker.pickUpTime : fr.picker.dropOffTime;
 
+  const summaryPill = () => {
+    const complete = value.arrivalDate && value.returnDate;
+    const dates = complete ? formatStayDates(value.arrivalDate, value.returnDate) : null;
+    const at = (date: string, time: string) => `${formatDayLong(date)}${time ? ` à ${time}` : ""}`;
+    const error = errors.arrivalAt ?? errors.returnAt;
+    const errorId = `${idPrefix}-dates-error`;
+    return (
+      <div className="sm:hidden">
+        <button
+          id={`${idPrefix}-dates`}
+          type="button"
+          aria-haspopup="dialog"
+          aria-expanded={open?.kind === "sheet"}
+          aria-label={fr.picker.summary(
+            complete ? at(value.arrivalDate, value.arrivalTime) : null,
+            complete ? at(value.returnDate, value.returnTime) : null,
+          )}
+          aria-describedby={error ? errorId : undefined}
+          onClick={e => openSheet(e.currentTarget)}
+          className={`${pillBox} ${pillFocus} ${open?.kind === "sheet" ? pillActive : error ? pillInvalid : ""} h-auto min-h-[60px] w-full cursor-pointer py-2`}
+        >
+          <IconChip>
+            <CalendarIcon />
+          </IconChip>
+          <span className="flex min-w-0 flex-col">
+            <span className={pillLabel}>{fr.picker.yourDates}</span>
+            {dates ? (
+              // Wraps at the arrow only when a long stay does not fit (e.g. two months named).
+              <span className="flex flex-wrap gap-x-1 text-[15px] leading-tight font-bold tabular-nums">
+                <span className="whitespace-nowrap">
+                  {dates.start} <span className="font-normal text-soft">{value.arrivalTime}</span>
+                </span>
+                <span className="whitespace-nowrap">
+                  <span aria-hidden="true" className="font-normal text-soft">
+                    →{" "}
+                  </span>
+                  {dates.end} <span className="font-normal text-soft">{value.returnTime}</span>
+                </span>
+              </span>
+            ) : (
+              <span className={`${pillValue} font-semibold text-soft`}>{fr.picker.chooseDates}</span>
+            )}
+          </span>
+        </button>
+        <FieldError id={errorId} code={error} />
+      </div>
+    );
+  };
+
   return (
     <div className={`flex flex-col gap-2.5 ${className}`}>
+      {summary && summaryPill()}
       {group("depot", "start", compactLabels ? fr.parking.dropOff : fr.search.dropOff, errors.arrivalAt)}
       {group("retour", "end", compactLabels ? fr.parking.pickUp : fr.search.pickUp, errors.returnAt)}
       {hydrated && (

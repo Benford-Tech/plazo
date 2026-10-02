@@ -227,6 +227,21 @@ describe('ouvrir l’espace d’un loueur (view-as)', () => {
     expect((await login(loueur.manager.email)).user.isActive).toBe(true);
   });
 
+  it('laisse le compte Stripe et le calendrier de reversement du loueur en lecture seule', async () => {
+    process.env.STRIPE_SECRET_KEY = 'sk_test_fake';
+    const token = await viewAs();
+    expect((await api().get('/api/internal/payments/status').set(auth(token))).status).toBe(200);
+    expect((await api().get('/api/internal/payments/settings').set(auth(token))).status).toBe(200);
+    const attempts = [
+      api().post('/api/internal/payments/onboarding').set(auth(token)),
+      api().post('/api/internal/payments/dashboard-link').set(auth(token)),
+      api().put('/api/internal/payments/settings').set(auth(token)).send({ payoutSchedule: 'WEEKLY' }),
+    ];
+    for (const res of await Promise.all(attempts)) expect([res.status, res.body.code]).toEqual([403, 'view_as_read_only']);
+    const operator = await prisma.operator.findUniqueOrThrow({ where: { id: loueur.operator.id } });
+    expect([operator.stripeAccountId, operator.payoutSchedule]).toEqual([null, 'AFTER_STAY']);
+  });
+
   it('ne vaut que tant que la personne est super admin', async () => {
     const token = await viewAs();
     // Still an admin: the platform routes accept the session too.

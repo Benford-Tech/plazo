@@ -22,24 +22,27 @@ enum OperatorStatus {
 
 // An operator is a parking company (a "loueur"). Everything is scoped by operator.
 model Operator {
-  id                   String         @id @default(cuid())
-  name                 String
-  slug                 String         @unique
-  status               OperatorStatus @default(active)
-  suspendedAt          DateTime?
+  id                     String         @id @default(cuid())
+  name                   String
+  slug                   String         @unique
+  status                 OperatorStatus @default(active)
+  suspendedAt            DateTime?
   // Plazo's commission on online bookings, in basis points (1500 = 15 %). Null: the platform default.
-  commissionBps        Int?
+  commissionBps          Int?
   // Stripe Connect (Express) account receiving the online payments, created by the onboarding.
-  stripeAccountId      String?        @unique
+  stripeAccountId        String?        @unique
   // Mirrors of the account's capabilities (account.updated webhook, refreshed by the status route).
   // A parking is bookable online only while its operator's account has payouts enabled; the
   // operator's share is transferred only while it has charges enabled.
-  stripeChargesEnabled Boolean        @default(false)
-  stripePayoutsEnabled Boolean        @default(false)
+  stripeChargesEnabled   Boolean        @default(false)
+  stripePayoutsEnabled   Boolean        @default(false)
+  // The operator has sent its onboarding to Stripe (identity, bank details): verification pending
+  // until payouts are enabled.
+  stripeDetailsSubmitted Boolean        @default(false)
   // When the operator receives its share of the online payments (see src/domain/payout.ts).
-  payoutSchedule       PayoutSchedule @default(AFTER_STAY)
-  createdAt            DateTime       @default(now())
-  updatedAt            DateTime       @default(now()) @updatedAt
+  payoutSchedule         PayoutSchedule @default(AFTER_STAY)
+  createdAt              DateTime       @default(now())
+  updatedAt              DateTime       @default(now()) @updatedAt
 
   staff        Staff[]
   parkings     Parking[]

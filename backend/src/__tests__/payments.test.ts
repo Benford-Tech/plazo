@@ -45,7 +45,7 @@ let fake: {
   refunds: { create: jest.Mock };
   paymentIntents: { retrieve: jest.Mock };
   transfers: { create: jest.Mock; createReversal: jest.Mock };
-  accounts: { create: jest.Mock; retrieve: jest.Mock };
+  accounts: { create: jest.Mock; retrieve: jest.Mock; createLoginLink: jest.Mock };
   accountLinks: { create: jest.Mock };
 };
 
@@ -92,7 +92,8 @@ function makeFake() {
     },
     accounts: {
       create: jest.fn(async () => ({ id: 'acct_test_new', object: 'account', charges_enabled: false, payouts_enabled: false })),
-      retrieve: jest.fn(async (id: string) => ({ id, object: 'account', charges_enabled: true, payouts_enabled: true })),
+      retrieve: jest.fn(async (id: string) => ({ id, object: 'account', details_submitted: true, charges_enabled: true, payouts_enabled: true })),
+      createLoginLink: jest.fn(async (id: string) => ({ object: 'login_link', url: `https://connect.stripe.test/express/${id}` })),
     },
     accountLinks: {
       create: jest.fn(async () => ({
@@ -654,7 +655,12 @@ describe('compte Stripe du loueur', () => {
       { idempotencyKey: `plazo-account-${op.operator.id}` },
     );
     expect(fake.accountLinks.create).toHaveBeenCalledWith(
-      expect.objectContaining({ account: 'acct_test_new', type: 'account_onboarding', return_url: 'https://site.example/pro/?stripe=retour' }),
+      expect.objectContaining({
+        account: 'acct_test_new',
+        type: 'account_onboarding',
+        return_url: 'https://site.example/pro/plazo/fiche?stripe=retour',
+        refresh_url: 'https://site.example/pro/plazo/fiche?stripe=relance',
+      }),
       expect.objectContaining({ idempotencyKey: expect.any(String) }),
     );
     expect((await prisma.operator.findUniqueOrThrow({ where: { id: op.operator.id } })).stripeAccountId).toBe('acct_test_new');
@@ -666,15 +672,29 @@ describe('compte Stripe du loueur', () => {
   it('statut par loueur, rafraîchi depuis Stripe ; réservé au gérant', async () => {
     const a = await setupOperator('A');
     const b = await setupOperator('B');
+    const commissionBps = payments.commissionBps({ commissionBps: null });
     expect((await api().get('/api/internal/payments/status').set(auth(a.token))).body).toEqual({
+      enabled: true,
+      testMode: true,
       connected: false,
+      detailsSubmitted: false,
       chargesEnabled: false,
       payoutsEnabled: false,
+      commissionBps,
       payoutSchedule: 'AFTER_STAY',
     });
     await api().post('/api/internal/payments/onboarding').set(auth(a.token));
     const status = await api().get('/api/internal/payments/status').set(auth(a.token));
-    expect(status.body).toEqual({ connected: true, chargesEnabled: true, payoutsEnabled: true, payoutSchedule: 'AFTER_STAY' });
+    expect(status.body).toEqual({
+      enabled: true,
+      testMode: true,
+      connected: true,
+      detailsSubmitted: true,
+      chargesEnabled: true,
+      payoutsEnabled: true,
+      commissionBps,
+      payoutSchedule: 'AFTER_STAY',
+    });
     expect(fake.accounts.retrieve).toHaveBeenCalledWith('acct_test_new');
     expect((await prisma.operator.findUniqueOrThrow({ where: { id: a.operator.id } })).stripeChargesEnabled).toBe(true);
     // Operator B sees its own (absent) account, never A's.
@@ -695,6 +715,70 @@ describe('compte Stripe du loueur', () => {
     expect((await prisma.operator.findUniqueOrThrow({ where: { id: b.operator.id } })).stripePayoutsEnabled).toBe(true);
     const page = await api().get('/api/public/airports/lyon-saint-exupery/parkings/parking-demo');
     expect(page.body.parking.payment).toBe('unavailable');
+  });
+
+  it('vérification en cours : dossier envoyé, virements pas encore ouverts ; commission du loueur', async () => {
+    const op = await setupOperator();
+    await prisma.operator.update({ where: { id: op.operator.id }, data: { commissionBps: 900 } });
+    await api().post('/api/internal/payments/onboarding').set(auth(op.token));
+    fake.accounts.retrieve.mockResolvedValueOnce({
+      id: 'acct_test_new',
+      object: 'account',
+      details_submitted: true,
+      charges_enabled: false,
+      payouts_enabled: false,
+    });
+    const status = await api().get('/api/internal/payments/status').set(auth(op.token));
+    expect(status.body).toMatchObject({ connected: true, detailsSubmitted: true, payoutsEnabled: false, commissionBps: 900 });
+    expect((await prisma.operator.findUniqueOrThrow({ where: { id: op.operator.id } })).stripeDetailsSubmitted).toBe(true);
+  });
+
+  it('account.updated enregistre l’envoi du dossier', async () => {
+    const op = await setupOperator();
+    await prisma.operator.update({ where: { id: op.operator.id }, data: { stripeAccountId: 'acct_sent' } });
+    const event = signedEvent('account.updated', {
+      id: 'acct_sent',
+      object: 'account',
+      details_submitted: true,
+      charges_enabled: false,
+      payouts_enabled: false,
+    });
+    expect((await sendWebhook(event.payload, event.signature)).status).toBe(200);
+    expect((await prisma.operator.findUniqueOrThrow({ where: { id: op.operator.id } })).stripeDetailsSubmitted).toBe(true);
+  });
+
+  it('lien vers le tableau de bord Stripe : gérant, compte inscrit, chacun le sien', async () => {
+    const a = await setupOperator('A');
+    const b = await setupOperator('B');
+    const before = await api().post('/api/internal/payments/dashboard-link').set(auth(a.token));
+    expect([before.status, before.body.code]).toEqual([409, 'payments_not_connected']);
+    expect(fake.accounts.createLoginLink).not.toHaveBeenCalled();
+
+    await prisma.operator.update({ where: { id: a.operator.id }, data: { stripeAccountId: 'acct_a', stripeDetailsSubmitted: true } });
+    const res = await api().post('/api/internal/payments/dashboard-link').set(auth(a.token));
+    expect(res.status).toBe(200);
+    expect(res.body).toEqual({ url: 'https://connect.stripe.test/express/acct_a' });
+    expect(res.headers['cache-control']).toBe('no-store');
+    expect(fake.accounts.createLoginLink).toHaveBeenCalledWith('acct_a');
+    // B has no account: never A's dashboard.
+    expect((await api().post('/api/internal/payments/dashboard-link').set(auth(b.token))).status).toBe(409);
+
+    const agent = await addStaff(a.token, 'agent');
+    expect((await api().post('/api/internal/payments/dashboard-link').set(auth(agent.token))).status).toBe(403);
+    expect((await api().post('/api/internal/payments/dashboard-link')).status).toBe(401);
+
+    fake.accounts.createLoginLink.mockRejectedValueOnce(Object.assign(new Error('down'), { type: 'StripeConnectionError' }));
+    const down = await api().post('/api/internal/payments/dashboard-link').set(auth(a.token));
+    expect([down.status, down.body.code]).toEqual([502, 'payments_unavailable']);
+  });
+
+  it('sans clé Stripe : statut « désactivé », lien du tableau de bord refusé', async () => {
+    delete process.env.STRIPE_SECRET_KEY;
+    const op = await setupOperator();
+    const status = await api().get('/api/internal/payments/status').set(auth(op.token));
+    expect(status.body).toMatchObject({ enabled: false, testMode: false, connected: false });
+    const res = await api().post('/api/internal/payments/dashboard-link').set(auth(op.token));
+    expect([res.status, res.body.code]).toEqual([503, 'payments_disabled']);
   });
 
   it('sans clé Stripe : 503', async () => {

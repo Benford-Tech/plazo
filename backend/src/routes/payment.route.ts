@@ -2,7 +2,7 @@ import { Router } from 'express';
 import { PaymentController } from '@/controllers/payment.controller';
 import { Routes } from '@/interfaces/routes.interface';
 import { UpdatePayoutSettingsDto } from '@/dtos/payment.dto';
-import { StaffAuthMiddleware } from '@/middlewares/staff-auth.middleware';
+import { RefuseInViewAs, StaffAuthMiddleware } from '@/middlewares/staff-auth.middleware';
 import { ValidationMiddleware } from '@/middlewares/validation.middleware';
 
 /**
@@ -19,12 +19,25 @@ import { ValidationMiddleware } from '@/middlewares/validation.middleware';
  *     description: >
  *       Creates the operator's Stripe Express account when it has none, and returns a single-use link
  *       to Stripe's onboarding { url, expiresAt } (identity and bank details are entered on Stripe).
- *       503 "payments_disabled" while STRIPE_SECRET_KEY is not set.
+ *       Stripe sends the manager back to /pro/plazo/fiche?stripe=retour (or ?stripe=relance when the
+ *       link expired). 503 "payments_disabled" while STRIPE_SECRET_KEY is not set; 403
+ *       "view_as_read_only" in a platform admin's view-as session.
+ *     tags: [Payments]
+ * /internal/payments/dashboard-link:
+ *   post:
+ *     summary: Open the operator's Stripe Express dashboard (manager)
+ *     description: >
+ *       A single-use login link { url } to the operator's Stripe dashboard (payouts, bank details).
+ *       409 "payments_not_connected" until the onboarding was sent to Stripe; 503 "payments_disabled";
+ *       502 "payments_unavailable" when Stripe does not answer; 403 "view_as_read_only".
  *     tags: [Payments]
  * /internal/payments/status:
  *   get:
  *     summary: Whether the operator can take online payments (manager)
- *     description: "{ connected, chargesEnabled, payoutsEnabled, payoutSchedule }, refreshed from Stripe when possible."
+ *     description: >
+ *       { enabled, testMode, connected, detailsSubmitted, chargesEnabled, payoutsEnabled, commissionBps,
+ *       payoutSchedule }, refreshed from Stripe when possible. enabled is false while STRIPE_SECRET_KEY
+ *       is not set (travellers pay at the parking); testMode is true with a Stripe test key.
  *     tags: [Payments]
  * /internal/payments/settings:
  *   get:
@@ -36,7 +49,7 @@ import { ValidationMiddleware } from '@/middlewares/validation.middleware';
  *       AFTER_STAY (default): the day after the return; AT_DROP_OFF: the day after the arrival; WEEKLY:
  *       every Monday, for the stays ended the week before; MONTHLY: on the 1st, for the stays ended the
  *       month before (dates local to the parking). Applies to every share not transferred yet.
- *       400 "invalid_payout_schedule".
+ *       400 "invalid_payout_schedule"; 403 "view_as_read_only".
  *     tags: [Payments]
  *     requestBody:
  *       required: true
@@ -63,12 +76,16 @@ export class PaymentRoute implements Routes {
   public payments = new PaymentController();
 
   constructor() {
-    this.router.post('/internal/payments/onboarding', StaffAuthMiddleware('parking:manage'), this.payments.onboarding);
+    // The operator's Stripe account and payouts stay theirs: read-only while a platform admin views
+    // their space (RefuseInViewAs: 403 view_as_read_only).
+    this.router.post('/internal/payments/onboarding', StaffAuthMiddleware('parking:manage'), RefuseInViewAs(), this.payments.onboarding);
+    this.router.post('/internal/payments/dashboard-link', StaffAuthMiddleware('parking:manage'), RefuseInViewAs(), this.payments.dashboardLink);
     this.router.get('/internal/payments/status', StaffAuthMiddleware('parking:manage'), this.payments.status);
     this.router.get('/internal/payments/settings', StaffAuthMiddleware('parking:manage'), this.payments.settings);
     this.router.put(
       '/internal/payments/settings',
       StaffAuthMiddleware('parking:manage'),
+      RefuseInViewAs(),
       ValidationMiddleware(UpdatePayoutSettingsDto),
       this.payments.updateSettings,
     );

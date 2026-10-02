@@ -14,8 +14,9 @@ const api = vi.hoisted(() => ({
   withdrawListing: vi.fn(),
   getPricing: vi.fn(),
   updatePricing: vi.fn(),
+  getPaymentStatus: vi.fn(),
 }));
-const auth = vi.hoisted(() => ({ user: { emailVerified: true, viewAs: null } as Record<string, unknown> }));
+const auth = vi.hoisted(() => ({ user: { role: "manager", emailVerified: true, viewAs: null } as Record<string, unknown> }));
 vi.mock("@/contexts/AuthContext", () => ({ useAuth: () => ({ user: auth.user }) }));
 vi.mock("sonner", () => ({ toast: { success: vi.fn(), error: vi.fn() } }));
 vi.mock("@/lib/api", async importOriginal => {
@@ -24,6 +25,16 @@ vi.mock("@/lib/api", async importOriginal => {
 });
 
 const pricing = { tiers: [{ days: 3, priceCents: 3499 }, { days: 8, priceCents: 5500 }], extraDayPriceCents: 600, commissionBps: 1200 };
+const PAYMENTS_OFF = {
+  enabled: false,
+  testMode: false,
+  connected: false,
+  detailsSubmitted: false,
+  chargesEnabled: false,
+  payoutsEnabled: false,
+  commissionBps: null,
+  payoutSchedule: "AFTER_STAY",
+};
 const parking = { id: "p1", name: "Parking Démo LYS", address: null, shuttleTravelMinutes: 8 };
 
 function renderPage(page: React.ReactNode, path = "/") {
@@ -54,7 +65,11 @@ const savedListing = {
 };
 
 describe("Mes tarifs", () => {
-  beforeEach(() => Object.values(api).forEach(f => f.mockReset()));
+  beforeEach(() => {
+    Object.values(api).forEach(f => f.mockReset());
+    // Online payments off: the "Sur Plazo" pages show a neutral line above the tabs.
+    api.getPaymentStatus.mockResolvedValue({ ...PAYMENTS_OFF });
+  });
 
   it("simule le prix payé et enregistre la grille triée", async () => {
     api.getPricing.mockResolvedValue(pricing);
@@ -89,7 +104,11 @@ describe("Mes tarifs", () => {
 });
 
 describe("Ma fiche", () => {
-  beforeEach(() => Object.values(api).forEach(f => f.mockReset()));
+  beforeEach(() => {
+    Object.values(api).forEach(f => f.mockReset());
+    // Online payments off: the "Sur Plazo" pages show a neutral line above the tabs.
+    api.getPaymentStatus.mockResolvedValue({ ...PAYMENTS_OFF });
+  });
 
   it("préremplit une première fiche et met à jour l'aperçu", async () => {
     api.getListing.mockResolvedValue({ listing: null, parking });

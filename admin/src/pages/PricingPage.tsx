@@ -2,6 +2,7 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { X } from "lucide-react";
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
+import { OnlinePayments } from "@/components/plazo/OnlinePayments";
 import { PlazoTabs } from "@/components/plazo/PlazoTabs";
 import { Skeleton } from "@/components/ui/skeleton";
 import { adminApi } from "@/lib/api";
@@ -60,6 +61,7 @@ export default function PricingPage() {
 
   return (
     <>
+      <OnlinePayments />
       <PlazoTabs right={dirty ? <span className="font-semibold uppercase text-primary">{t.unsaved}</span> : null} />
       <div className="grid gap-8 lg:grid-cols-[1fr_400px]">
         <form

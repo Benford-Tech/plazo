@@ -5,6 +5,8 @@ import type {
   InviteInput,
   PlatformListings,
   PlatformOperators,
+  PaymentStatus,
+  PayoutSchedule,
   PlatformPayments,
   PlatformReservations,
   SignupInput,
@@ -261,6 +263,14 @@ export const adminApi = {
     for (const [k, v] of Object.entries(params)) if (v) query.set(k, String(v));
     return apiRequest<PlatformReservations>(`/internal/platform/reservations?${query.toString()}`);
   },
+  // Online payments (the operator's Stripe account; manager).
+  getPaymentStatus: () => apiRequest<PaymentStatus>("/internal/payments/status"),
+  startPaymentOnboarding: () => apiRequest<{ url: string; expiresAt: string }>("/internal/payments/onboarding", { method: "POST" }),
+  getStripeDashboardLink: () => apiRequest<{ url: string }>("/internal/payments/dashboard-link", { method: "POST" }),
+  getPayoutSettings: () => apiRequest<{ payoutSchedule: PayoutSchedule }>("/internal/payments/settings"),
+  updatePayoutSettings: (payoutSchedule: PayoutSchedule) =>
+    apiRequest<{ payoutSchedule: PayoutSchedule }>("/internal/payments/settings", { method: "PUT", body: json({ payoutSchedule }) }),
+
   getPlatformPayments: () => apiRequest<PlatformPayments>("/internal/platform/payments"),
   retryPayout: (reservationId: string) =>
     apiRequest<{ result: "transferred" | "failed" | "skipped"; payoutStatus: string }>(`/internal/platform/payouts/${reservationId}/retry`, {

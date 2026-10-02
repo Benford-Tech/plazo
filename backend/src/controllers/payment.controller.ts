@@ -29,6 +29,12 @@ export class PaymentController {
     res.json(await this.payments.status(req.staff));
   });
 
+  /** POST /internal/payments/dashboard-link */
+  public dashboardLink = catchAsync(async (req: RequestWithStaffSession, res: Response) => {
+    res.set('Cache-Control', 'no-store');
+    res.json(await this.payments.dashboardLink(req.staff));
+  });
+
   /** GET /internal/payments/settings */
   public settings = catchAsync(async (req: RequestWithStaffSession, res: Response) => {
     res.json(await this.payments.payoutSettings(req.staff));

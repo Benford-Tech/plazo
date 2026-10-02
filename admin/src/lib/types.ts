@@ -378,6 +378,21 @@ export type PlatformReservations = Paginated<PlatformReservation> & { operators:
 
 export type PayoutSchedule = "AFTER_STAY" | "AT_DROP_OFF" | "WEEKLY" | "MONTHLY";
 
+/** The operator's online payment state (GET /internal/payments/status). */
+export interface PaymentStatus {
+  /** False while the platform has no Stripe key: travellers pay at the parking. */
+  enabled: boolean;
+  /** A Stripe test key: no real money moves. */
+  testMode: boolean;
+  connected: boolean;
+  /** The onboarding was sent to Stripe (verification pending until payouts are enabled). */
+  detailsSubmitted: boolean;
+  chargesEnabled: boolean;
+  payoutsEnabled: boolean;
+  commissionBps: number | null;
+  payoutSchedule: PayoutSchedule;
+}
+
 export interface PlatformPayments {
   paymentsEnabled: boolean;
   operators: {

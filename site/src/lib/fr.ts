@@ -81,10 +81,17 @@ export const fr = {
     today: "aujourd’hui",
     /** Accessible name of a pill: "Date de dépôt : samedi 10 octobre 2026". */
     pill: (label: string, value: string | null) => `${label} : ${value ?? "à choisir"}`,
+    /** Accessible name of the phone's single dates pill. */
+    summary: (start: string | null, end: string | null) => (start && end ? `Vos dates : du ${start} au ${end}` : "Vos dates : à choisir"),
+    chooseDates: "Choisir vos dates",
   },
   home: {
     heroTitle: (airport: string) => `Parking à l’aéroport de ${airport}, navette comprise`,
+    /** Phones: a shorter title, the airport being named just above it. */
+    heroTitleShort: "Parking aéroport, navette comprise",
     photoCredit: "Photo : Pexels",
+    /** Phones: the reassurance strip becomes three chips on the photo. */
+    chips: ["Prix total", "Navette gratuite", "Annulation claire"],
     heroLead: "Comparez les parkings privés autour de l’aéroport, voyez le prix total pour vos dates et réservez en ligne.",
     trust: [
       ["Prix total affiché", "aucun frais ajouté"],
