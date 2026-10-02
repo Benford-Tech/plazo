@@ -1,7 +1,7 @@
 import { compare, hash } from 'bcrypt';
 import httpStatus from 'http-status';
 import { Container, Service } from 'typedi';
-import { BCRYPT_ROUNDS } from '@/config';
+import { BCRYPT_ROUNDS, isPlatformAdmin } from '@/config';
 import prisma, { Staff } from '@/database';
 import { can } from '@/domain/roles';
 import { ChangePasswordDto, CreateStaffDto, UpdateStaffDto } from '@/dtos/staff.dto';
@@ -16,6 +16,21 @@ export function toPublicStaff<T extends Staff>(staff: T): Omit<T, 'password'> {
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const { password, ...rest } = staff;
   return rest;
+}
+
+/**
+ * The signed-in person as the pro space sees them: no password, whether they are a platform admin,
+ * whether their email is confirmed, and the operator they are viewing as a platform admin.
+ */
+export function toSessionUser(staff: AuthenticatedStaff) {
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  const { actingAs, ...rest } = toPublicStaff(staff);
+  return {
+    ...rest,
+    isPlatformAdmin: isPlatformAdmin(staff.email),
+    emailVerified: !!staff.emailVerifiedAt,
+    viewAs: actingAs ? { operatorId: staff.operatorId, operatorName: staff.operatorName } : null,
+  };
 }
 
 const forbidden = () => new HttpException(httpStatus.FORBIDDEN, 'You do not have access to this action', 'forbidden');

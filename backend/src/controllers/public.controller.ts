@@ -14,6 +14,12 @@ export class PublicController {
     res.json(this.publicService.config());
   });
 
+  /** GET /public/airports */
+  public airports = catchAsync(async (req: Request, res: Response) => {
+    res.set('Cache-Control', 'public, max-age=300');
+    res.json(await this.publicService.airports());
+  });
+
   /** GET /public/airports/:slug */
   public airport = catchAsync(async (req: Request, res: Response) => {
     res.set('Cache-Control', 'public, max-age=60, s-maxage=300');

@@ -20,7 +20,7 @@ export function smsSenderName(value: string, productName: string): string {
 }
 
 /**
- * Emails and SMS to travellers, through Brevo. A notification never fails the action that caused
+ * Emails and SMS to travellers (and emails to operators), through Brevo. A notification never fails the action that caused
  * it: every error is caught and logged with the booking reference only (no personal data).
  */
 @Service()
@@ -70,7 +70,7 @@ export class NotificationService {
       return;
     }
     if (!booking.customerEmail) return;
-    await this.post('email', tag, booking.reference, '/smtp/email', {
+    await this.post('email', tag, `booking ${booking.reference}`, '/smtp/email', {
       sender,
       to: [{ email: booking.customerEmail, name: booking.customerName }],
       subject: message.subject,
@@ -86,7 +86,7 @@ export class NotificationService {
       logger.info(`[Notifications] No mobile number: ${tag} SMS not sent for booking ${booking.reference}`);
       return;
     }
-    await this.post('SMS', tag, booking.reference, '/transactionalSMS/send', {
+    await this.post('SMS', tag, `booking ${booking.reference}`, '/transactionalSMS/send', {
       sender: smsSenderName(this.settings.smsSender, PRODUCT_NAME),
       // Brevo expects the country code without "+", e.g. 33612345678.
       recipient: recipient.slice(1),
@@ -97,7 +97,45 @@ export class NotificationService {
     });
   }
 
-  private async post(kind: string, tag: string, reference: string, path: string, body: unknown): Promise<void> {
+  // ---- Operators (pro space) -------------------------------------------------------------------
+
+  /** Whether emails to operators can go out: Brevo key, a valid sender and the site's address (links). */
+  public emailConfigured(): boolean {
+    return !!this.settings.apiKey && !!parseSender(this.settings.emailFrom, PRODUCT_NAME) && !!this.siteBase();
+  }
+
+  private siteBase(): string {
+    return this.settings.publicSiteUrl.replace(/\/+$/, '');
+  }
+
+  /**
+   * Link to a page of the pro space, e.g. proUrl('/invitation#token'). Absolute when the site's
+   * address is known, otherwise relative to the current domain (shown in the pro space only).
+   */
+  public proUrl(path: string): string {
+    return `${this.siteBase()}/pro${path}`;
+  }
+
+  /**
+   * Email to a staff member of an operator. Returns whether Brevo accepted it. Logs only the tag and
+   * `about` (an id), never the address.
+   */
+  public async emailStaff(to: { email: string; name: string }, tag: string, about: string, message: EmailMessage): Promise<boolean> {
+    if (!this.emailConfigured()) {
+      logger.info(`[Notifications] Email not configured: ${tag} not sent for ${about}`);
+      return false;
+    }
+    return this.post('email', tag, about, '/smtp/email', {
+      sender: parseSender(this.settings.emailFrom, PRODUCT_NAME),
+      to: [{ email: to.email, name: to.name }],
+      subject: message.subject,
+      htmlContent: message.html,
+      textContent: message.text,
+      tags: [tag],
+    });
+  }
+
+  private async post(kind: string, tag: string, about: string, path: string, body: unknown): Promise<boolean> {
     try {
       const res = await fetch(`${BREVO_URL}${path}`, {
         method: 'POST',
@@ -106,18 +144,20 @@ export class NotificationService {
         signal: AbortSignal.timeout(this.settings.timeoutMs),
       });
       if (res.ok) {
-        logger.info(`[Notifications] ${tag} ${kind} sent for booking ${reference}`);
-        return;
+        logger.info(`[Notifications] ${tag} ${kind} sent for ${about}`);
+        return true;
       }
       // Brevo's error message may quote the recipient: keep only its machine code.
       const code = await res
         .json()
         .then((data: any) => (typeof data?.code === 'string' && /^[a-z_]{1,40}$/.test(data.code) ? data.code : ''))
         .catch(() => '');
-      logger.error(`[Notifications] ${tag} ${kind} failed for booking ${reference}: HTTP ${res.status}${code ? ` ${code}` : ''}`);
+      logger.error(`[Notifications] ${tag} ${kind} failed for ${about}: HTTP ${res.status}${code ? ` ${code}` : ''}`);
+      return false;
     } catch (error) {
       const reason = error instanceof Error ? error.name : 'unknown error';
-      logger.error(`[Notifications] ${tag} ${kind} failed for booking ${reference}: ${reason}`);
+      logger.error(`[Notifications] ${tag} ${kind} failed for ${about}: ${reason}`);
+      return false;
     }
   }
 }

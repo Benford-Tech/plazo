@@ -31,7 +31,7 @@ Raison de l'ordre : sans budget d'acquisition, une place de marché vide n'attir
 | Voiturier (optionnel) | Déplace les véhicules | Liste des véhicules à garer/sortir, clés confiées |
 | Client voyageur | Réserve et utilise le parking | Réserver, recevoir confirmation et SMS, être récupéré vite |
 | Voyageur avec compte (phase 2) | Cherche et réserve sur la place de marché | Comparer, payer, retrouver ses réservations, modifier/annuler, laisser un avis |
-| Administrateur plateforme (phase 2) | Toi / ton équipe | Valider les loueurs, fixer la commission, gérer litiges, remboursements, modération des avis |
+| Administrateur plateforme (super admin, `PLATFORM_ADMIN_EMAILS`) | Toi / ton équipe | Espace « Plateforme » : valider les annonces, fixer la commission, inviter, suspendre, ouvrir l'espace d'un loueur, suivre réservations et reversements ; plus tard litiges et modération des avis |
 
 Un compte opérateur = un loueur (multi-parkings possible plus tard). Les rôles limitent les écrans visibles. En phase 2, un même voyageur peut réserver chez plusieurs loueurs avec un seul compte.
 
@@ -162,6 +162,22 @@ Version mobile d'abord (la majorité des réservations se fait sur téléphone),
 - Facturation : le loueur reste l'émetteur de la prestation de parking ; la facture de commission de la plateforme est séparée. Mentions légales à faire valider. Relevé téléchargeable pour le loueur : plus tard.
 - Aucune donnée de carte bancaire ne transite ni n'est stockée par la plateforme (page de paiement hébergée par Stripe).
 
+#### Arrivée des loueurs et validation des annonces (mis en œuvre, maquette S-1)
+
+- **Inscription libre** (`/pro/inscription`, lien « Vous êtes un parking ? » du site) : entreprise, nom du parking,
+  capacité, aéroport, prénom et nom, email, téléphone, mot de passe (confirmé), conditions acceptées. Crée le loueur,
+  son parking et sa fiche en brouillon ; le gérant est connecté et doit confirmer son email (lien de 48 h) avant
+  d'envoyer sa fiche. Protection : limite par adresse IP, champ piège, réponse identique si l'email a déjà un compte
+  (son titulaire est prévenu par email), données minimales.
+- **Invitation** par le super admin : nom, email du gérant, capacité, commission ; lien de 7 jours pour choisir son
+  mot de passe. Liens à usage unique, stockés hachés.
+- **Statut d'une fiche** : brouillon → à valider → publiée ou refusée (message obligatoire, montré au loueur). Une fiche
+  publiée modifiée reste en ligne (modifications tracées) ; la plateforme peut la dépublier, le loueur la retirer.
+  Le site ne montre que les fiches publiées de loueurs non suspendus ; un email prévient le loueur de chaque décision.
+- **Suspension** d'un loueur : équipe déconnectée, connexion refusée, fiches retirées du site.
+- **Ouvrir son espace** : le super admin agit dans l'espace d'un loueur (session de 60 minutes, bandeau jaune) ;
+  chaque écriture est tracée à son nom ; équipe, mots de passe et compte du loueur en lecture seule.
+
 #### Parcours de paiement (mis en œuvre)
 
 1. **Étape 1 « Vos informations »** (formulaire de réservation, avec « 1 · Vos informations / 2 · Paiement ») : « Continuer vers le paiement » crée la réservation en **attente de paiement**. Elle **tient la place** (elle compte dans la capacité et la surréservation) pendant **30 minutes** (durée minimale d'une page de paiement Stripe), et n'apparaît pas encore dans l'espace pro.
@@ -246,7 +262,7 @@ Pour que la séparation reste simple :
 
 Ajouts phase 2 (marketplace) :
 - **Traveler** : id, email, nom, téléphone, préférences, date de création (compte voyageur, optionnel au début).
-- **Listing** : id, parking_id, publié (oui/non), slug, titre, description, photos, services, politique d'annulation, distance et durée de navette, ordre d'affichage.
+- **Listing** : id, parking_id, statut (brouillon, à valider, publiée, refusée) avec le message de la plateforme et les dates d'envoi et de décision, slug, titre, description, photos, services, politique d'annulation, distance et durée de navette, ordre d'affichage.
 - **Airport** : id, code (LYS…), nom, ville, coordonnées, slug de la page SEO.
 - **Payment** : id, reservation_id, prestataire, identifiant externe, montant, devise, statut (en attente, payé, remboursé, partiel, échoué), horodatage.
 - **Payout** : id, operator_id, période, montant brut, commission, montant net, statut, identifiant externe.

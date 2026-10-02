@@ -2,7 +2,7 @@ import { randomUUID } from 'crypto';
 import dayjs from 'dayjs';
 import jwt from 'jsonwebtoken';
 import { Service } from 'typedi';
-import { ACCESS_TOKEN_TTL_HOURS, REFRESH_TOKEN_TTL_DAYS, SECRET_KEY } from '@/config';
+import { ACCESS_TOKEN_TTL_HOURS, REFRESH_TOKEN_TTL_DAYS, SECRET_KEY, VIEW_AS_TTL_MINUTES } from '@/config';
 import prisma, { StaffTokenType } from '@/database';
 import { DataStoredInToken, TokenData } from '@/interfaces/auth.interface';
 
@@ -32,6 +32,31 @@ export class TokenService {
       access: { token: this.sign(staffId, StaffTokenType.access, accessUid, accessExpires), expires: accessExpires.toDate() },
       refresh: { token: this.sign(staffId, StaffTokenType.refresh, refreshUid, refreshExpires), expires: refreshExpires.toDate() },
     };
+  }
+
+  /**
+   * A platform admin's access token scoped to one operator ("open their space"): short-lived, no
+   * refresh token, its own session (revoked alone by a logout made with it). The staff id stays the
+   * admin's own: the strategy resolves the operator from the stored metadata, for admins only.
+   */
+  public async generateViewAsToken(staffId: string, operatorId: string, metadata: Record<string, string | null> = {}) {
+    const uid = randomUUID();
+    const expires = dayjs().add(VIEW_AS_TTL_MINUTES, 'minutes');
+    await prisma.staffToken.create({
+      data: {
+        uid,
+        staffId,
+        type: StaffTokenType.access,
+        expiresAt: expires.toDate(),
+        metadata: { ...metadata, session: randomUUID(), actingAs: operatorId },
+      },
+    });
+    return { token: this.sign(staffId, StaffTokenType.access, uid, expires), expires: expires.toDate() };
+  }
+
+  /** Signs out every staff member of an operator (suspension). */
+  public async revokeOperator(operatorId: string): Promise<void> {
+    await prisma.staffToken.deleteMany({ where: { staff: { operatorId } } });
   }
 
   /** Verifies signature, type and that the token is still stored (not revoked) and not expired. */

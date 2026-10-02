@@ -5,6 +5,9 @@ import { fr } from "@/lib/fr";
 import { PRODUCT } from "@/lib/product";
 import { can, type Permission } from "@/lib/roles";
 import { cn } from "@/lib/utils";
+import { EmailVerificationBanner } from "./EmailVerificationBanner";
+import { ViewAsBanner } from "./platform/ViewAsBanner";
+import { ViewSwitch } from "./platform/ViewSwitch";
 
 const NAV: { label: string; to: string; permission?: Permission }[] = [
   { label: fr.nav.planning, to: "/", permission: "reservations:view" },
@@ -20,8 +23,10 @@ export function AdminLayout() {
   const { user, logout } = useAuth();
   const navigate = useNavigate();
   const items = NAV.filter(i => !i.permission || can(user?.role, i.permission));
-  // The platform owner's internal tools (capacity estimator), hidden from the operators.
-  if (user?.isPlatformAdmin) items.push({ label: fr.nav.internalTool, to: "/outil/capacite" });
+  // The super admin's own operator space links to the "Plateforme" space (hidden from operators,
+  // and while viewing another operator's space: the banner leads back).
+  const platformAdmin = !!user?.isPlatformAdmin && !user.viewAs;
+  if (platformAdmin) items.push({ label: fr.nav.platform, to: "/plateforme" });
 
   const handleLogout = async () => {
     await logout();
@@ -30,13 +35,18 @@ export function AdminLayout() {
 
   return (
     <div className="flex min-h-screen flex-col">
+      <ViewAsBanner />
       <header className="sticky top-0 z-20 border-b border-border bg-background">
         <div className="mx-auto flex max-w-7xl items-center gap-4 px-4 pt-3 sm:px-6">
           <span className="text-xl font-bold uppercase tracking-wider text-primary">{PRODUCT.name}</span>
           <span className="hidden truncate text-sm uppercase tracking-wide text-muted-foreground sm:block">{user?.operatorName}</span>
-          <span className="ml-auto hidden truncate text-sm text-muted-foreground md:block">
-            {user?.name} · {user ? fr.roles[user.role] : ""}
-          </span>
+          {platformAdmin ? (
+            <ViewSwitch current="own" className="ml-auto hidden md:block" />
+          ) : (
+            <span className="ml-auto hidden truncate text-sm text-muted-foreground md:block">
+              {user?.name} · {user ? fr.roles[user.role] : ""}
+            </span>
+          )}
           <button
             onClick={handleLogout}
             aria-label={fr.nav.logout}
@@ -63,6 +73,7 @@ export function AdminLayout() {
           ))}
         </nav>
       </header>
+      <EmailVerificationBanner />
       <main className="mx-auto w-full max-w-7xl flex-1 space-y-6 px-4 py-6 sm:px-6">
         <Outlet />
       </main>

@@ -20,6 +20,11 @@ import { Routes } from '@/interfaces/routes.interface';
  *       them yet: not bookable on the site).
  *     tags: [Public]
  *     security: []
+ * /public/airports:
+ *   get:
+ *     summary: "Airports served by the platform: [{ code, name, city, slug }] (sign-up form of the pro space)"
+ *     tags: [Public]
+ *     security: []
  * /public/airports/{slug}:
  *   get:
  *     summary: Airport page — published parkings with their lowest package price
@@ -59,6 +64,7 @@ export class PublicRoute implements Routes {
   // Rate limited per traveller in app.ts (publicLimiter on /public).
   constructor() {
     this.router.get('/public/config', this.public.config);
+    this.router.get('/public/airports', this.public.airports);
     this.router.get('/public/airports/:slug', this.public.airport);
     this.router.get('/public/search', this.public.search);
     this.router.get('/public/airports/:airport/parkings/:slug', this.public.parking);

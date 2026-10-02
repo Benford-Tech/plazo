@@ -1,10 +1,13 @@
 import { Passport } from 'passport';
 import { ExtractJwt, Strategy as JwtStrategy, VerifiedCallback } from 'passport-jwt';
-import { SECRET_KEY } from '@/config';
+import { isPlatformAdmin, SECRET_KEY } from '@/config';
 import prisma, { StaffTokenType } from '@/database';
-import { DataStoredInToken } from '@/interfaces/auth.interface';
+import { AuthenticatedStaff, DataStoredInToken } from '@/interfaces/auth.interface';
 
 export const staffPassport = new Passport();
+
+/** Metadata of a view-as session (see TokenService.generateViewAsToken). */
+export type ViewAsMetadata = { actingAs?: string };
 
 // Tokens are stateful: a JWT is only accepted while its row exists in staff_tokens.
 export const staffJwtStrategy = new JwtStrategy(
@@ -20,6 +23,25 @@ export const staffJwtStrategy = new JwtStrategy(
         return done(null, false);
       }
       const { operator, ...staff } = token.staff;
+      const actingAs = (token.metadata as ViewAsMetadata | null)?.actingAs;
+
+      if (actingAs) {
+        // View-as: only while the real person is still a platform admin; works on a suspended
+        // operator too (the platform must be able to look at it).
+        if (!isPlatformAdmin(staff.email)) return done(null, false);
+        const target = await prisma.operator.findUnique({ where: { id: actingAs } });
+        if (!target) return done(null, false);
+        const scoped: AuthenticatedStaff = {
+          ...staff,
+          operatorId: target.id,
+          operatorName: target.name,
+          role: 'manager',
+          actingAs: { realOperatorId: operator.id, realOperatorName: operator.name },
+        };
+        return done(null, scoped, { tokenUid: token.uid });
+      }
+
+      if (operator.status !== 'active') return done(null, false, { code: 'account_suspended' });
       done(null, { ...staff, operatorName: operator.name }, { tokenUid: token.uid });
     } catch (error) {
       done(error, false);

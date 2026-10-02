@@ -1,5 +1,5 @@
 import prisma from '@/database';
-import { addStaff, api, resetDatabase, setupOperator } from './utils/helpers';
+import { addStaff, api, publishListing, resetDatabase, setupOperator } from './utils/helpers';
 
 beforeEach(resetDatabase);
 afterAll(() => prisma.$disconnect());
@@ -16,7 +16,6 @@ const listing = (overrides: Record<string, unknown> = {}) => ({
   openingHours: '24h/24',
   cancellationPolicy: 'free_24h',
   photos: ['https://example.com/photo-1.jpg'],
-  published: false,
   ...overrides,
 });
 const grid = {
@@ -40,8 +39,9 @@ async function publishedOperator(name: string, slug: string, gridOverride = grid
   const res = await api()
     .put('/api/internal/listing')
     .set(auth(op.token))
-    .send(listing({ slug, title: name, published: true }));
+    .send(listing({ slug, title: name }));
   if (res.status !== 200) throw new Error(JSON.stringify(res.body));
+  await publishListing(op.parking.id);
   return op;
 }
 
@@ -51,9 +51,9 @@ describe('fiche Plazo du loueur', () => {
     expect((await api().get('/api/internal/listing').set(auth(token))).body.listing).toBeNull();
     const res = await api().put('/api/internal/listing').set(auth(token)).send(listing());
     expect(res.status).toBe(200);
-    expect(res.body.data).toMatchObject({ slug: 'parking-demo', published: false, airport: { code: 'LYS' } });
+    expect(res.body.data).toMatchObject({ slug: 'parking-demo', status: 'draft', airport: { code: 'LYS' } });
     expect((await api().get('/api/internal/listing').set(auth(token))).body.listing.title).toBe('Parking Démo LYS');
-    expect(await prisma.auditLog.count({ where: { action: 'listing.updated' } })).toBe(1);
+    expect(await prisma.auditLog.count({ where: { action: 'listing.created' } })).toBe(1);
   });
 
   it('garde le téléphone du parking quand le formulaire ne l’envoie pas', async () => {
@@ -84,12 +84,10 @@ describe('fiche Plazo du loueur', () => {
     expect((await prisma.listing.findFirstOrThrow()).contactPhone).toBeNull();
   });
 
-  it('ne se publie pas sans grille tarifaire', async () => {
+  it('ne part pas en validation sans grille tarifaire', async () => {
     const { token } = await setupOperator();
-    const res = await api()
-      .put('/api/internal/listing')
-      .set(auth(token))
-      .send(listing({ published: true }));
+    await api().put('/api/internal/listing').set(auth(token)).send(listing());
+    const res = await api().post('/api/internal/listing/submit').set(auth(token));
     expect(res.body.code).toBe('pricing_required');
   });
 

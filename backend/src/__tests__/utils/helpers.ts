@@ -49,3 +49,8 @@ export async function addStaff(managerToken: string, role: string) {
   const session = await login(email);
   return { id: res.body.data.id as string, email, token: session.tokenData.access.token, session };
 }
+
+/** Puts a parking's listing online directly (the review flow itself is covered by platform-space.test.ts). */
+export async function publishListing(parkingId: string) {
+  await prisma.listing.update({ where: { parkingId }, data: { status: 'published', reviewedAt: new Date() } });
+}

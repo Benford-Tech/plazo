@@ -84,7 +84,7 @@ export default function CapacityStudyPage() {
   // Save what is pending when leaving the study.
   useEffect(() => () => void flush(), [flush]);
 
-  const go = useCallback((s: StepKey) => navigate(`/outil/capacite/${id}/${s}`), [id, navigate]);
+  const go = useCallback((s: StepKey) => navigate(`/plateforme/capacite/${id}/${s}`), [id, navigate]);
 
   const estimateInput = useMemo(
     () => ({
@@ -108,12 +108,12 @@ export default function CapacityStudyPage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [summaryKey, estimate.computing]);
 
-  if (!["terrain", "zones", "capacite", "photo"].includes(step)) return <Navigate to={`/outil/capacite/${id}/terrain`} replace />;
+  if (!["terrain", "zones", "capacite", "photo"].includes(step)) return <Navigate to={`/plateforme/capacite/${id}/terrain`} replace />;
   if (loadError) {
     return (
       <div className="p-6">
         <p className="text-destructive">{loadError}</p>
-        <Link to="/outil/capacite" className="text-primary underline">
+        <Link to="/plateforme/capacite" className="text-primary underline">
           {fr.capacity.listTitle}
         </Link>
       </div>

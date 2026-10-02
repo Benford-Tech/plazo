@@ -19,6 +19,16 @@ export class ListingController {
     res.json({ message: 'Listing saved', data: await this.listingService.updateListing(req.staff, data) });
   });
 
+  /** POST /internal/listing/submit */
+  public submit = catchAsync(async (req: RequestWithStaffSession, res: Response) => {
+    res.json({ message: 'Listing sent for validation', data: await this.listingService.submit(req.staff) });
+  });
+
+  /** POST /internal/listing/withdraw */
+  public withdraw = catchAsync(async (req: RequestWithStaffSession, res: Response) => {
+    res.json({ message: 'Listing withdrawn', data: await this.listingService.withdraw(req.staff) });
+  });
+
   /** GET /internal/pricing */
   public getPricing = catchAsync(async (req: RequestWithStaffSession, res: Response) => {
     res.json(await this.listingService.getPricing(req.staff));

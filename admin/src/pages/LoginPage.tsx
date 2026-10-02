@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Navigate, useLocation, useNavigate } from "react-router-dom";
+import { Link, Navigate, useLocation, useNavigate } from "react-router-dom";
 import { FormField } from "@/components/FormField";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
@@ -68,6 +68,12 @@ export default function LoginPage() {
           </form>
         </CardContent>
       </Card>
+      <p className="mt-6 text-center text-muted-foreground">
+        {fr.login.noAccount}{" "}
+        <Link to="/inscription" className="font-semibold text-primary underline-offset-4 hover:underline">
+          {fr.login.signup}
+        </Link>
+      </p>
     </main>
   );
 }

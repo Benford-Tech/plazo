@@ -2,7 +2,6 @@ import { Type } from 'class-transformer';
 import {
   ArrayMaxSize,
   IsArray,
-  IsBoolean,
   IsIn,
   IsInt,
   IsNotEmpty,
@@ -79,9 +78,6 @@ export class UpdateListingDto {
   @ArrayMaxSize(12)
   @IsUrl({ protocols: ['https'], require_protocol: true }, { each: true, message: 'invalid_url' })
   public photos: string[];
-
-  @IsBoolean()
-  public published: boolean;
 }
 
 export class PricingTierDto {

@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { fr } from "@/lib/fr";
 import { PRODUCT_NAME } from "@/lib/product";
-import { PRO_LOGIN_PATH } from "@/lib/site";
+import { PRO_SIGNUP_PATH } from "@/lib/site";
 
 export function SiteHeader() {
   return (
@@ -25,7 +25,7 @@ export function SiteHeader() {
             <li className="hidden md:block">
               {/* The pro space is another service on the same domain: a full page load, not a client-side navigation. */}
               <a
-                href={PRO_LOGIN_PATH}
+                href={PRO_SIGNUP_PATH}
                 className="flex min-h-11 items-center rounded-full border border-white/45 px-3.5 text-[15px] font-semibold text-white no-underline hover:border-white hover:text-white"
               >
                 {fr.nav.forOperators}

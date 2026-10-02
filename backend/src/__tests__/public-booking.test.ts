@@ -4,7 +4,7 @@ import { manageToken } from '@/domain/booking';
 import { localDateTime, parseInstant } from '@/domain/time';
 import { NotificationService } from '@/services/notification.service';
 import { logger } from '@/utils/logger';
-import { api, resetDatabase, setupOperator } from './utils/helpers';
+import { api, resetDatabase, setupOperator, publishListing } from './utils/helpers';
 
 const TZ = 'Europe/Paris';
 const auth = (token: string) => ({ Authorization: `Bearer ${token}` });
@@ -44,9 +44,9 @@ async function publishedParking(options: { slug?: string; policy?: string; capac
       contactPhone: '04 72 00 00 00',
       cancellationPolicy: options.policy ?? 'free_24h',
       photos: [],
-      published: options.published ?? true,
     });
   if (res.status !== 200) throw new Error(JSON.stringify(res.body));
+  if (options.published ?? true) await publishListing(op.parking.id);
   if (options.capacity) await prisma.parking.update({ where: { id: op.parking.id }, data: { totalCapacity: options.capacity, safetyMarginPct: 0 } });
   return op;
 }
@@ -487,7 +487,6 @@ describe('annulation en ligne', () => {
       services: [],
       cancellationPolicy: 'free_48h',
       photos: [],
-      published: true,
     });
     const soon = await book({ arrivalAt: inHours(30), returnAt: inDays(4, '10:00'), plate: 'CC333CC' });
     expect(soon.body.booking.cancellableUntil).toBe(shift(soon.body.booking.arrivalAt, -48));
@@ -503,7 +502,6 @@ describe('annulation en ligne', () => {
       services: [],
       cancellationPolicy: 'non_refundable',
       photos: [],
-      published: true,
     });
     expect((await cancel(early.body.reference, early.body.manageToken)).status).toBe(200);
 

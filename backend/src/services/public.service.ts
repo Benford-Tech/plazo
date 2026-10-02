@@ -20,6 +20,9 @@ type ListingWithParking = Listing & {
 type Client = Prisma.TransactionClient | typeof prisma;
 type Stay = { arrivalAt: Date; returnAt: Date };
 
+/** Listings travellers may see: validated by the platform, of an operator that is not suspended. */
+export const ONLINE = { status: 'published', parking: { operator: { status: 'active' } } } satisfies Prisma.ListingWhereInput;
+
 /** What travellers see on the Plazo site: published listings only, never operator or customer data. */
 @Service()
 export class PublicService {
@@ -30,6 +33,10 @@ export class PublicService {
   /** How travellers pay on the site: "online" (card, Stripe) or "on_site" (at the parking). */
   public config() {
     return { payments: this.payments.enabled() ? ('online' as const) : ('on_site' as const) };
+  }
+
+  public async airports() {
+    return prisma.airport.findMany({ select: { code: true, name: true, city: true, slug: true }, orderBy: { name: 'asc' } });
   }
 
   public async airportBySlug(slug: string): Promise<Airport> {
@@ -92,7 +99,7 @@ export class PublicService {
 
   private publishedAt(airportId: string) {
     return prisma.listing.findMany({
-      where: { airportId, published: true },
+      where: { airportId, ...ONLINE },
       include: {
         parking: { include: { pricingTiers: { select: { days: true, priceCents: true } }, operator: { select: OPERATOR_PAYMENT_FIELDS } } },
       },
@@ -140,7 +147,7 @@ export class PublicService {
   /** A published listing with its parking and pricing grid; 404 "not_found" otherwise. */
   public async findPublished(airport: Pick<Airport, 'id'>, slug: string, client: Client = prisma): Promise<ListingWithParking> {
     const listing = await client.listing.findFirst({
-      where: { airportId: airport.id, slug, published: true },
+      where: { airportId: airport.id, slug, ...ONLINE },
       include: {
         parking: {
           include: {

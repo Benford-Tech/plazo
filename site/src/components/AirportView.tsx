@@ -7,7 +7,7 @@ import { defaultStay, todayLocal } from "@/lib/dates";
 import { fr, fromPriceUnit, texts } from "@/lib/fr";
 import { listingFacts } from "@/lib/listing";
 import { formatEuros } from "@/lib/money";
-import { PRO_LOGIN_PATH } from "@/lib/site";
+import { PRO_SIGNUP_PATH } from "@/lib/site";
 import type { AirportResponse } from "@/lib/types";
 
 export async function loadAirport(slug: string): Promise<AirportResponse> {
@@ -91,7 +91,7 @@ export async function AirportView({ slug, showBreadcrumb }: { slug: string; show
           )}
           <p className="rounded-[16px] bg-tint px-[18px] py-3.5 text-[15px] text-soft">
             {fr.home.ownerCallout}{" "}
-            <a href={PRO_LOGIN_PATH} className="font-semibold">
+            <a href={PRO_SIGNUP_PATH} className="font-semibold">
               {fr.home.ownerJoin}
             </a>{" "}
             : {fr.home.ownerPitch}

@@ -9,7 +9,7 @@ import { NotificationService } from '@/services/notification.service';
 import { PaymentService } from '@/services/payment.service';
 import { StripeApi, StripeService } from '@/services/stripe.service';
 import { ValidateEnv } from '@/utils/validateEnv';
-import { addStaff, api, app, resetDatabase, setupOperator } from './utils/helpers';
+import { addStaff, api, app, resetDatabase, setupOperator, publishListing } from './utils/helpers';
 
 // Online payment with Stripe Connect. The Stripe SDK is replaced by mocks: no network.
 
@@ -146,9 +146,9 @@ async function publishedParking(
       services: ['shuttle'],
       cancellationPolicy: 'free_24h',
       photos: [],
-      published: true,
     });
   if (res.status !== 200) throw new Error(JSON.stringify(res.body));
+  await publishListing(op.parking.id);
   if (options.capacity) await prisma.parking.update({ where: { id: op.parking.id }, data: { totalCapacity: options.capacity, safetyMarginPct: 0 } });
   await prisma.operator.update({
     where: { id: op.operator.id },

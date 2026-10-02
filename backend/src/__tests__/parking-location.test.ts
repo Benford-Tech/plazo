@@ -1,7 +1,7 @@
 import { Container } from 'typedi';
 import prisma from '@/database';
 import { ParkingLocationService } from '@/services/parking-location.service';
-import { api, resetDatabase, setupOperator } from './utils/helpers';
+import { api, resetDatabase, setupOperator, publishListing } from './utils/helpers';
 
 const auth = (token: string) => ({ Authorization: `Bearer ${token}` });
 const jsonResponse = (body: unknown, status = 200) => new Response(JSON.stringify(body), { status, headers: { 'content-type': 'application/json' } });
@@ -21,7 +21,6 @@ const listing = {
   distanceKm: 3,
   cancellationPolicy: 'free_24h',
   photos: [],
-  published: true,
 };
 const grid = { tiers: [{ days: 1, priceCents: 1500 }], extraDayPriceCents: 600 };
 const future = (days: number, time: string) => `${new Date(Date.now() + days * 86400000).toISOString().slice(0, 10)}T${time}`;
@@ -44,6 +43,7 @@ async function published(address: string | null = null) {
   await api().put('/api/internal/pricing').set(auth(op.token)).send(grid);
   const res = await api().put('/api/internal/listing').set(auth(op.token)).send(listing);
   if (res.status !== 200) throw new Error(JSON.stringify(res.body));
+  await publishListing(op.parking.id);
   await prisma.$executeRaw`UPDATE parkings SET location = NULL WHERE id = ${op.parking.id}`;
   Container.get(ParkingLocationService).resetFailures();
   fetchSpy.mockReset();
@@ -86,6 +86,7 @@ describe('position des parkings pour la carte du site', () => {
     expect((await api().put('/api/internal/listing').set(auth(op.token)).send(listing)).status).toBe(200);
     expect(fetchSpy).toHaveBeenCalledTimes(1);
 
+    await publishListing(op.parking.id);
     const page = await api().get('/api/public/airports/lyon-saint-exupery/parkings/parking-carte');
     expect(page.body.parking.location).toEqual({ lat: 45.7311, lng: 5.0702 });
     expect(page.body.airport.location).toEqual({ lat: expect.any(Number), lng: expect.any(Number) });

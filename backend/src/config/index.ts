@@ -29,6 +29,14 @@ export const LOGIN_WINDOW_MINUTES = 15;
 
 export const BCRYPT_ROUNDS = 10;
 
+// Links sent by email to the operators: an invitation to set one's password, and the
+// confirmation of the email given at sign-up. Single use.
+export const INVITATION_TTL_DAYS = 7;
+export const EMAIL_VERIFICATION_TTL_HOURS = 48;
+
+// "Open their space": a platform admin's session scoped to one operator. Short-lived, no refresh.
+export const VIEW_AS_TTL_MINUTES = 60;
+
 // Shared secret sent by the traveller site (x-plazo-site-key) on its server-side calls. When it
 // matches, rate limits count the traveller's IP (x-plazo-client-ip) instead of the site's own IP.
 export const SITE_API_KEY = process.env.SITE_API_KEY || '';

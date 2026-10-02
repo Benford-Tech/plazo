@@ -31,6 +31,16 @@ export default function AccountPage() {
     },
   });
 
+  // A platform admin viewing an operator's space: no password change from here.
+  if (user?.viewAs) {
+    return (
+      <>
+        <h1 className="text-2xl font-semibold">{t.title}</h1>
+        <p className="border border-primary p-3 text-base">{fr.viewAs.readOnly}</p>
+      </>
+    );
+  }
+
   return (
     <>
       <h1 className="text-2xl font-semibold">{t.title}</h1>

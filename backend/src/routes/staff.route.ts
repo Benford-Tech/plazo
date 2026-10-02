@@ -2,7 +2,7 @@ import { Router } from 'express';
 import { StaffController } from '@/controllers/staff.controller';
 import { ChangePasswordDto, CreateStaffDto, ResetPasswordDto, UpdateStaffDto } from '@/dtos/staff.dto';
 import { Routes } from '@/interfaces/routes.interface';
-import { StaffAuthMiddleware } from '@/middlewares/staff-auth.middleware';
+import { RefuseInViewAs, StaffAuthMiddleware } from '@/middlewares/staff-auth.middleware';
 import { ValidationMiddleware } from '@/middlewares/validation.middleware';
 
 /**
@@ -15,7 +15,7 @@ import { ValidationMiddleware } from '@/middlewares/validation.middleware';
  * @swagger
  * /internal/staff/me:
  *   get:
- *     summary: Current staff member, with the operator name
+ *     summary: Current staff member, with the operator name, isPlatformAdmin, emailVerified and viewAs ({ operatorId, operatorName } in a platform admin's view-as session, else null)
  *     tags: [Staff]
  * /internal/staff/me/password:
  *   patch:
@@ -82,13 +82,33 @@ export class StaffRoute implements Routes {
 
   private initializeRoutes() {
     this.router.get('/internal/staff/me', StaffAuthMiddleware(), this.staff.me);
-    this.router.patch('/internal/staff/me/password', StaffAuthMiddleware(), ValidationMiddleware(ChangePasswordDto), this.staff.changePassword);
+    // Read-only while a platform admin views the operator's space (RefuseInViewAs: 403 view_as_read_only).
+    this.router.patch(
+      '/internal/staff/me/password',
+      StaffAuthMiddleware(),
+      RefuseInViewAs(),
+      ValidationMiddleware(ChangePasswordDto),
+      this.staff.changePassword,
+    );
     this.router.get('/internal/staff', StaffAuthMiddleware('team:manage'), this.staff.list);
-    this.router.post('/internal/staff', StaffAuthMiddleware('team:manage'), ValidationMiddleware(CreateStaffDto), this.staff.create);
-    this.router.patch('/internal/staff/:id', StaffAuthMiddleware('team:manage'), ValidationMiddleware(UpdateStaffDto), this.staff.update);
+    this.router.post(
+      '/internal/staff',
+      StaffAuthMiddleware('team:manage'),
+      RefuseInViewAs(),
+      ValidationMiddleware(CreateStaffDto),
+      this.staff.create,
+    );
+    this.router.patch(
+      '/internal/staff/:id',
+      StaffAuthMiddleware('team:manage'),
+      RefuseInViewAs(),
+      ValidationMiddleware(UpdateStaffDto),
+      this.staff.update,
+    );
     this.router.post(
       '/internal/staff/:id/reset-password',
       StaffAuthMiddleware('team:manage'),
+      RefuseInViewAs(),
       ValidationMiddleware(ResetPasswordDto),
       this.staff.resetPassword,
     );

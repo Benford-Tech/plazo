@@ -1,14 +1,17 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Check, X } from "lucide-react";
 import { useEffect, useState } from "react";
+import { useSearchParams } from "react-router-dom";
 import { toast } from "sonner";
 import { ListingPreview } from "@/components/plazo/ListingPreview";
 import { PlazoTabs } from "@/components/plazo/PlazoTabs";
 import { Skeleton } from "@/components/ui/skeleton";
+import { useAuth } from "@/contexts/AuthContext";
 import { adminApi, ApiError } from "@/lib/api";
 import { describeError, errorMessage, fr } from "@/lib/fr";
 import { slugify } from "@/lib/pricing";
-import type { CancellationPolicy, ListingInput, ListingResponse, ListingService } from "@/lib/types";
+import { LISTING_TONE } from "@/lib/platform";
+import type { CancellationPolicy, Listing, ListingInput, ListingResponse, ListingService } from "@/lib/types";
 import { cn } from "@/lib/utils";
 
 const SERVICES: ListingService[] = ["shuttle", "open_24h", "fenced", "cctv", "valet", "covered", "ev_charging"];
@@ -46,7 +49,7 @@ function initialForm(data: ListingResponse): Form {
   };
 }
 
-function toInput(form: Form, published: boolean, airportCode: string): ListingInput {
+function toInput(form: Form, airportCode: string): ListingInput {
   const minutes = form.shuttleMinutes.trim() ? Number(form.shuttleMinutes) : null;
   const km = form.distanceKm.trim() ? Number(form.distanceKm.replace(",", ".")) : null;
   return {
@@ -60,12 +63,13 @@ function toInput(form: Form, published: boolean, airportCode: string): ListingIn
     openingHours: form.openingHours.trim() || null,
     cancellationPolicy: form.cancellationPolicy,
     photos: form.photos,
-    published,
   };
 }
 
 export default function ListingPage() {
   const queryClient = useQueryClient();
+  const { user } = useAuth();
+  const [params] = useSearchParams();
   const listing = useQuery({ queryKey: ["listing"], queryFn: adminApi.getListing });
   const pricing = useQuery({ queryKey: ["pricing"], queryFn: adminApi.getPricing });
   const [form, setForm] = useState<Form | null>(null);
@@ -77,20 +81,50 @@ export default function ListingPage() {
     if (listing.data && !form) setForm(initialForm(listing.data));
   }, [listing.data, form]);
 
-  const published = listing.data?.listing?.published ?? false;
-  const airportCode = listing.data?.listing?.airport.code ?? "LYS";
+  const current = listing.data?.listing ?? null;
+  const status = current?.status ?? "draft";
+  const published = status === "published";
+  const airportCode = current?.airport.code ?? "LYS";
+  // A self sign-up confirms its email before its page can be sent (a platform admin viewing the space has).
+  const emailPending = user?.emailVerified === false && !user.viewAs;
+
+  const keep = (data: Listing) => queryClient.setQueryData(["listing"], { ...listing.data, listing: data });
+  const onError = (err: Error) => {
+    setFieldErrors(err instanceof ApiError ? (err.fields ?? {}) : {});
+    toast.error(describeError(err));
+  };
 
   const save = useMutation({
-    mutationFn: (nextPublished: boolean) => adminApi.updateListing(toInput(form!, nextPublished, airportCode)),
-    onSuccess: ({ data }, nextPublished) => {
+    mutationFn: () => adminApi.updateListing(toInput(form!, airportCode)),
+    onSuccess: ({ data }) => {
       setFieldErrors({});
-      queryClient.setQueryData(["listing"], { ...listing.data, listing: data });
-      toast.success(nextPublished === published ? t.saved : nextPublished ? t.published : t.unpublished);
+      keep(data);
+      toast.success(t.saved);
     },
-    onError: (err: Error) => {
-      setFieldErrors(err instanceof ApiError ? (err.fields ?? {}) : {});
-      toast.error(describeError(err));
+    onError,
+  });
+
+  // "Envoyer pour validation" saves what is on screen first, then sends it.
+  const submit = useMutation({
+    mutationFn: async () => {
+      keep((await adminApi.updateListing(toInput(form!, airportCode))).data);
+      return adminApi.submitListing();
     },
+    onSuccess: ({ data }) => {
+      setFieldErrors({});
+      keep(data);
+      toast.success(t.submitted);
+    },
+    onError,
+  });
+
+  const withdraw = useMutation({
+    mutationFn: adminApi.withdrawListing,
+    onSuccess: ({ data }) => {
+      keep(data);
+      toast.success(status === "published" ? t.withdrawn : t.requestCancelled);
+    },
+    onError,
   });
 
   if (listing.isLoading || !form) return <Skeleton className="h-[600px] w-full" />;
@@ -110,7 +144,8 @@ export default function ListingPage() {
   };
   const prices = pricing.data?.tiers.map(x => x.priceCents) ?? [];
   const airportName = listing.data?.listing?.airport.name ?? "Lyon Saint-Exupéry";
-  const pageUrl = published ? `${SITE_URL}/${listing.data?.listing?.airport.slug}/${listing.data?.listing?.slug}` : null;
+  const pageUrl = published ? `${SITE_URL}/${current?.airport.slug}/${current?.slug}` : null;
+  const busy = save.isPending || submit.isPending || withdraw.isPending;
   const err = (k: string) => (fieldErrors[k] ? <p className="mt-1 text-sm text-destructive">{errorMessage(fieldErrors[k])}</p> : null);
 
   return (
@@ -118,28 +153,54 @@ export default function ListingPage() {
       <PlazoTabs
         right={
           <>
-            <span className="text-muted-foreground">{published ? t.visible : t.hidden}</span>
-            <button
-              type="button"
-              role="switch"
-              aria-checked={published}
-              aria-label={published ? t.unpublish : t.publish}
-              disabled={save.isPending}
-              onClick={() => save.mutate(!published)}
-              className={cn("relative h-[30px] w-14 border", published ? "border-primary bg-primary" : "border-border bg-card")}
-            >
-              <span className={cn("absolute top-[3px] h-6 w-6", published ? "right-[3px] bg-background" : "left-[3px] bg-muted-foreground")} />
-            </button>
-            <span className={cn("font-bold uppercase", published ? "text-primary" : "text-muted-foreground")}>{published ? t.online : t.draft}</span>
+            <span className={cn("font-bold uppercase", LISTING_TONE[status])}>
+              <span aria-hidden="true">● </span>
+              {fr.listingStatus[status]}
+            </span>
+            {(status === "draft" || status === "rejected") && (
+              <button
+                type="button"
+                onClick={() => submit.mutate()}
+                disabled={busy || emailPending}
+                title={emailPending ? t.verifyFirst : undefined}
+                className="min-h-11 bg-primary px-4 font-bold uppercase tracking-wide text-primary-foreground hover:brightness-110 disabled:opacity-50"
+              >
+                {t.submit}
+              </button>
+            )}
+            {(status === "pending_review" || status === "published") && (
+              <button type="button" onClick={() => withdraw.mutate()} disabled={busy} className="min-h-11 border border-border px-4 font-semibold uppercase hover:bg-accent disabled:opacity-50">
+                {status === "published" ? t.withdraw : t.cancelRequest}
+              </button>
+            )}
           </>
         }
       />
+      {params.get("bienvenue") && (
+        <div role="status" className="border border-primary p-4">
+          <p className="text-lg font-bold uppercase tracking-wide text-primary">{fr.onboarding.title}</p>
+          <ol className="mt-1 list-decimal pl-5 text-base">
+            {fr.onboarding.steps.map(step => (
+              <li key={step}>{step}</li>
+            ))}
+          </ol>
+        </div>
+      )}
+      <div className="flex flex-col gap-1">
+        <p className="text-muted-foreground">{emailPending && status !== "published" ? t.verifyFirst : t.statusHelp[status]}</p>
+        {current?.reviewMessage && (status === "rejected" || status === "draft") && (
+          <p className="border-l-2 border-primary pl-3">
+            <span className="block text-[13px] font-semibold uppercase tracking-wide text-muted-foreground">{t.reviewMessage}</span>
+            {current.reviewMessage}
+          </p>
+        )}
+      </div>
       <div className="grid gap-7 lg:grid-cols-[1fr_380px]">
         <form
           className="flex flex-col gap-4"
           onSubmit={e => {
             e.preventDefault();
-            save.mutate(published);
+            save.mutate();
           }}
         >
           <p className="text-muted-foreground">
@@ -286,8 +347,8 @@ export default function ListingPage() {
             )}
             <button
               type="button"
-              onClick={() => save.mutate(published)}
-              disabled={save.isPending}
+              onClick={() => save.mutate()}
+              disabled={busy}
               className="h-[50px] flex-1 bg-primary text-lg font-bold uppercase tracking-wider text-primary-foreground hover:brightness-110 disabled:opacity-50"
             >
               {t.save}

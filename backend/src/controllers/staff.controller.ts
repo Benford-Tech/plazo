@@ -1,10 +1,9 @@
 import { Response } from 'express';
 import httpStatus from 'http-status';
 import { Container } from 'typedi';
-import { isPlatformAdmin } from '@/config';
 import { ChangePasswordDto, CreateStaffDto, ResetPasswordDto, UpdateStaffDto } from '@/dtos/staff.dto';
 import { RequestWithStaffSession } from '@/middlewares/staff-auth.middleware';
-import { StaffService, toPublicStaff } from '@/services/staff.service';
+import { StaffService, toSessionUser } from '@/services/staff.service';
 import catchAsync from '@/utils/catchAsync';
 
 export class StaffController {
@@ -12,7 +11,7 @@ export class StaffController {
 
   /** GET /internal/staff/me */
   public me = catchAsync(async (req: RequestWithStaffSession, res: Response) => {
-    res.json({ ...toPublicStaff(req.staff), isPlatformAdmin: isPlatformAdmin(req.staff.email) });
+    res.json(toSessionUser(req.staff));
   });
 
   /** PATCH /internal/staff/me/password */

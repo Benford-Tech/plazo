@@ -119,7 +119,9 @@ Le nom du produit doit rester dans UN seul fichier de configuration (il peut enc
 - `backend/` : API REST sous `/api` (`index.js` = point d'entrée Vercel). Les routes du personnel du loueur
   sont sous `/api/internal/...` (`StaffAuthMiddleware`, jetons stockés en base et révocables), comme les
   routes staff de LoveNest ; celles du site voyageurs sous `/api/public/...`.
-- `admin/` : espace pro, servi sous `/pro`.
+- `admin/` : espace pro, servi sous `/pro`. L'espace « Plateforme » du super admin (`PLATFORM_ADMIN_EMAILS`) est sous
+  `/pro/plateforme` (pages `src/pages/platform/*`, routes serveur `/api/internal/platform/...` protégées par
+  `PlatformAdminMiddleware`) ; l'inscription libre des loueurs sous `/pro/inscription`.
 - `site/` : site Plazo voyageurs (Next.js), servi à la racine du domaine.
 - `mobile/` : app Flutter (à venir).
 

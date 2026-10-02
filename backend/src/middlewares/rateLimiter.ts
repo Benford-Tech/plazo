@@ -110,3 +110,13 @@ export const lookupReferenceLimiter = rateLimit({
   keyGenerator: lookupReferenceKey,
   message: tooMany('too_many_attempts'),
 });
+
+// Self sign-up of operators: each one creates an account and sends an email. Every request counts
+// (also refused ones), per IP. Tests switch it on with TEST_RATE_LIMITS to check it.
+export const signupLimiter = rateLimit({
+  windowMs: 60 * 60 * 1000,
+  max: 5,
+  skip: () => skip() && !process.env.TEST_RATE_LIMITS,
+  keyGenerator,
+  message: tooMany('too_many_requests'),
+});

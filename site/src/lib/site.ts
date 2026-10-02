@@ -7,8 +7,11 @@ export const AIRPORTS: { slug: string; name: string }[] = [{ slug: DEFAULT_AIRPO
 /** Parkings' local time: every date exchanged with the API is a wall-clock time in this zone. */
 export const TIMEZONE = "Europe/Paris";
 
-/** The operators' pro space, served under /pro on the same domain. */
-export const PRO_LOGIN_PATH = "/pro/login";
+/**
+ * "Vous êtes un parking ?": the operators' sign-up page in the pro space (served under /pro on the
+ * same domain; it links to the login page for existing accounts).
+ */
+export const PRO_SIGNUP_PATH = "/pro/inscription";
 
 export const SLUG_RE = /^[a-z0-9]+(?:-[a-z0-9]+)*$/;
 

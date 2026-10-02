@@ -496,7 +496,8 @@ export class PaymentService {
     return { payoutSchedule };
   }
 
-  private async transferShare(id: string, destination: string): Promise<'transferred' | 'failed' | 'skipped'> {
+  /** Transfers one booking's share now (cron, or a platform admin retrying a failed payout). */
+  public async transferShare(id: string, destination: string): Promise<'transferred' | 'failed' | 'skipped'> {
     try {
       return await prisma.$transaction(async tx => {
         await this.lockRow(tx, id);

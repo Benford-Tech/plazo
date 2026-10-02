@@ -16,7 +16,7 @@ export default function CapacityStudiesPage() {
     mutationFn: () => adminApi.createCapacityStudy(fr.capacity.newStudyName),
     onSuccess: ({ data }) => {
       queryClient.invalidateQueries({ queryKey: ["capacity-studies"] });
-      navigate(`/outil/capacite/${data.id}/terrain`);
+      navigate(`/plateforme/capacite/${data.id}/terrain`);
     },
     onError: e => toast.error(describeError(e)),
   });
@@ -31,8 +31,8 @@ export default function CapacityStudiesPage() {
   });
 
   return (
-    <div className="flex-1 overflow-y-auto">
-      <div className="mx-auto max-w-5xl space-y-6 px-6 py-8">
+    <div>
+      <div className="space-y-6">
         <div className="flex items-end justify-between gap-4">
           <div>
             <h1 className="text-3xl font-bold uppercase">{fr.capacity.listTitle}</h1>
@@ -57,7 +57,7 @@ export default function CapacityStudiesPage() {
             </div>
             {studies.data.map(s => (
               <div key={s.id} className="grid min-h-14 grid-cols-[1fr_200px_170px_140px_44px] items-center gap-3 border-b border-border">
-                <button type="button" className="truncate text-left text-base font-bold hover:text-primary" onClick={() => navigate(`/outil/capacite/${s.id}/terrain`)}>
+                <button type="button" className="truncate text-left text-base font-bold hover:text-primary" onClick={() => navigate(`/plateforme/capacite/${s.id}/terrain`)}>
                   {s.name}
                   {s.createdBy && <span className="block text-[13px] font-normal text-muted-foreground">{s.createdBy.name}</span>}
                 </button>

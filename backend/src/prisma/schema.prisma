@@ -13,11 +13,20 @@ datasource db {
   extensions = [postgis]
 }
 
+// Whether an operator may use the platform. A suspended operator's staff cannot log in (their
+// sessions are revoked) and its listings are hidden from the traveller site.
+enum OperatorStatus {
+  active
+  suspended
+}
+
 // An operator is a parking company (a "loueur"). Everything is scoped by operator.
 model Operator {
   id                   String         @id @default(cuid())
   name                 String
   slug                 String         @unique
+  status               OperatorStatus @default(active)
+  suspendedAt          DateTime?
   // Plazo's commission on online bookings, in basis points (1500 = 15 %). Null: the platform default.
   commissionBps        Int?
   // Stripe Connect (Express) account receiving the online payments, created by the onboarding.
@@ -58,11 +67,15 @@ model Staff {
   password    String
   isActive    Boolean   @default(true)
   lastLoginAt DateTime?
+  // Set once the person proved they own the email (verification link, or an accepted invitation).
+  // Self sign-ups start unverified: they can log in, but cannot submit their listing for review.
+  emailVerifiedAt DateTime?
   createdAt   DateTime  @default(now())
   updatedAt   DateTime  @default(now()) @updatedAt
 
   operator            Operator        @relation(fields: [operatorId], references: [id], onDelete: Cascade)
   tokens              StaffToken[]
+  accountTokens       AccountToken[]
   auditLogs           AuditLog[]
   createdReservations Reservation[]
   capacityStudies     CapacityStudy[]
@@ -90,6 +103,28 @@ model StaffToken {
 
   @@index([staffId])
   @@map("staff_tokens")
+}
+
+enum AccountTokenType {
+  invitation // set the password of an invited manager (7 days)
+  email_verification // confirm the email of a self sign-up (48 hours)
+}
+
+// Single-use links sent by email. Only the SHA-256 of the token is stored: the token itself is
+// only ever in the link.
+model AccountToken {
+  id        String           @id @default(cuid())
+  staffId   String
+  type      AccountTokenType
+  tokenHash String           @unique
+  expiresAt DateTime
+  usedAt    DateTime?
+  createdAt DateTime         @default(now())
+
+  staff Staff @relation(fields: [staffId], references: [id], onDelete: Cascade)
+
+  @@index([staffId, type])
+  @@map("account_tokens")
 }
 
 model LoginAttempt {
@@ -306,13 +341,26 @@ enum CancellationPolicy {
   non_refundable
 }
 
+// Review of a listing by the platform: draft -> pending_review (sent by the operator) -> published
+// (validated) or rejected (with a message). Only published listings appear on the site.
+enum ListingStatus {
+  draft
+  pending_review
+  published
+  rejected
+}
+
 // The parking's public page on Plazo.
 model Listing {
   id                 String             @id @default(cuid())
   parkingId          String             @unique
   airportId          String
   slug               String // unique per airport, e.g. parking-demo
-  published          Boolean            @default(false)
+  status             ListingStatus      @default(draft)
+  // Message of the platform with its last decision (required on a refusal), shown to the operator.
+  reviewMessage      String?
+  submittedAt        DateTime?
+  reviewedAt         DateTime?
   title              String
   description        String?
   services           String[] // shuttle, valet, covered, ev_charging, open_24h, fenced, cctv
@@ -330,6 +378,7 @@ model Listing {
   airport Airport @relation(fields: [airportId], references: [id])
 
   @@unique([airportId, slug])
+  @@index([status])
   @@map("listings")
 }
 

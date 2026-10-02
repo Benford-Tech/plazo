@@ -151,12 +151,15 @@ function CreateStaffForm() {
 
 export default function TeamPage() {
   const { user } = useAuth();
+  // A platform admin viewing the operator's space: the team stays the operator's (read-only).
+  const readOnly = !!user?.viewAs;
   const { data: team, isLoading } = useQuery({ queryKey: ["team"], queryFn: adminApi.getTeam });
   const t = fr.team;
 
   return (
     <>
       <h1 className="text-2xl font-semibold">{t.title}</h1>
+      {readOnly && <p className="border border-primary p-3 text-base">{fr.viewAs.readOnly}</p>}
       <Card>
         <CardContent className="pt-2">
           {isLoading && <Skeleton className="my-4 h-24 w-full" />}
@@ -180,20 +183,22 @@ export default function TeamPage() {
                     </span>
                   </div>
                 </div>
-                {m.id !== user?.id && <MemberActions key={`${m.id}-${m.role}`} member={m} />}
+                {m.id !== user?.id && !readOnly && <MemberActions key={`${m.id}-${m.role}`} member={m} />}
               </li>
             ))}
           </ul>
         </CardContent>
       </Card>
-      <Card>
-        <CardHeader>
-          <CardTitle>{t.add}</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <CreateStaffForm />
-        </CardContent>
-      </Card>
+      {!readOnly && (
+        <Card>
+          <CardHeader>
+            <CardTitle>{t.add}</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <CreateStaffForm />
+          </CardContent>
+        </Card>
+      )}
     </>
   );
 }

@@ -43,18 +43,19 @@ function renderAt(path: string, element: React.ReactNode) {
   );
 }
 
-describe("outil interne", () => {
+describe("espace Plateforme dans le menu", () => {
   it("n'apparaît pas dans le menu d'un loueur", () => {
     auth.user = { ...manager, isPlatformAdmin: false };
     renderAt("/", <div />);
     expect(screen.getByRole("link", { name: "Planning" })).toBeInTheDocument();
-    expect(screen.queryByRole("link", { name: "Outil interne" })).not.toBeInTheDocument();
+    expect(screen.queryByRole("link", { name: "Plateforme" })).not.toBeInTheDocument();
   });
 
   it("apparaît pour un administrateur de la plateforme", () => {
     auth.user = { ...manager, isPlatformAdmin: true };
     renderAt("/", <div />);
-    expect(screen.getByRole("link", { name: "Outil interne" })).toHaveAttribute("href", "/outil/capacite");
+    expect(screen.getByRole("link", { name: "Plateforme" })).toHaveAttribute("href", "/plateforme");
+    expect(screen.getByRole("button", { name: "Changer de vue" })).toBeInTheDocument();
   });
 
   it("liste les études avec leur fourchette", async () => {
@@ -70,7 +71,7 @@ describe("outil interne", () => {
         createdBy: { id: "s1", name: "Camille Gérant" },
       },
     ]);
-    renderAt("/outil/capacite", <CapacityStudiesPage />);
+    renderAt("/plateforme/capacite", <CapacityStudiesPage />);
     expect(await screen.findByText("Terrain client n°1")).toBeInTheDocument();
     expect(screen.getByText("ZS 156")).toBeInTheDocument();
     expect(screen.getByText("211 à 298 voitures")).toBeInTheDocument();

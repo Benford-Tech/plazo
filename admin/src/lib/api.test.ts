@@ -1,4 +1,4 @@
-import { adminApi, ApiError, getTokens, setTokens } from "@/lib/api";
+import { adminApi, ApiError, getTokens, getViewAs, setTokens, setViewAs, VIEW_AS_ENDED_EVENT } from "@/lib/api";
 
 const tokens = (access: string, refresh: string) => ({
   access: { token: access, expires: "2099-01-01" },
@@ -47,5 +47,38 @@ describe("apiRequest", () => {
     vi.spyOn(globalThis, "fetch").mockResolvedValue(response(400, { message: "m", code: "validation_failed", fields: { totalCapacity: "min_1" } }));
     const error = await adminApi.getParking().catch(e => e);
     expect(error).toMatchObject({ status: 400, code: "validation_failed", fields: { totalCapacity: "min_1" } });
+  });
+
+  describe("consultation de l'espace d'un loueur", () => {
+    const viewAs = { token: "v1", expires: "2099-01-01T00:00:00Z", operator: { id: "o1", name: "Parking Démo" } };
+    const authOf = (call: unknown[]) => ((call[1] as RequestInit).headers as Record<string, string>).Authorization;
+
+    it("utilise la session de consultation dans l'espace du loueur, et la sienne pour la plateforme", async () => {
+      setTokens(tokens("a1", "r1"));
+      setViewAs(viewAs);
+      const fetchMock = vi.spyOn(globalThis, "fetch").mockImplementation(async () => response(200, {}));
+      await adminApi.getParking();
+      await adminApi.getPlatformOperators();
+      await adminApi.logout();
+      expect(fetchMock.mock.calls.map(authOf)).toEqual(["Bearer v1", "Bearer a1", "Bearer a1"]);
+    });
+
+    it("revient à la plateforme quand la consultation a expiré, sans perdre sa session", async () => {
+      setTokens(tokens("a1", "r1"));
+      setViewAs(viewAs);
+      const ended = vi.fn();
+      window.addEventListener(VIEW_AS_ENDED_EVENT, ended);
+      vi.spyOn(globalThis, "fetch").mockResolvedValue(response(401, { code: "unauthorized" }));
+      await expect(adminApi.getParking()).rejects.toMatchObject({ code: "view_as_ended" });
+      expect(ended).toHaveBeenCalled();
+      expect(getViewAs()).toBeNull();
+      expect(getTokens()?.access.token).toBe("a1");
+      window.removeEventListener(VIEW_AS_ENDED_EVENT, ended);
+    });
+
+    it("ignore une consultation périmée", () => {
+      setViewAs({ ...viewAs, expires: "2000-01-01T00:00:00Z" });
+      expect(getViewAs()).toBeNull();
+    });
   });
 });

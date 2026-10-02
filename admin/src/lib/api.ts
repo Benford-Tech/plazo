@@ -1,5 +1,13 @@
 import type {
+  Airport,
   CapacityPreview,
+  InvitationResult,
+  InviteInput,
+  PlatformListings,
+  PlatformOperators,
+  PlatformPayments,
+  PlatformReservations,
+  SignupInput,
   EmailImportResult,
   ListingInput,
   ListingResponse,
@@ -40,6 +48,11 @@ export type { GeoPolygon };
 // Same origin by default (/api, proxied to the backend in development); VITE_API_URL overrides it.
 const API_BASE = (import.meta.env.VITE_API_URL || "/api").replace(/\/$/, "");
 const TOKENS_KEY = "plazo_admin_tokens";
+const VIEW_AS_KEY = "plazo_admin_view_as";
+/** Development only: the email confirmation link the API returns when it could not email it. */
+export const DEV_VERIFICATION_KEY = "plazo_dev_verification_url";
+/** Fired when the view-as session stops working (expired or revoked). */
+export const VIEW_AS_ENDED_EVENT = "plazo:view-as-ended";
 
 /** API error with the backend's machine-readable code and per-field validation codes. */
 export class ApiError extends Error {
@@ -71,6 +84,37 @@ export function setTokens(tokens: TokenData) {
 export function clearTokens() {
   localStorage.removeItem(TOKENS_KEY);
 }
+
+/**
+ * "Ouvrir son espace": a platform admin's short-lived session scoped to one operator. While it is
+ * set, every call of the operator's space uses it; the auth and platform routes keep the person's
+ * own session.
+ */
+export interface ViewAsSession {
+  token: string;
+  expires: string;
+  operator: { id: string; name: string };
+}
+
+export function getViewAs(): ViewAsSession | null {
+  try {
+    const raw = localStorage.getItem(VIEW_AS_KEY);
+    const session = raw ? (JSON.parse(raw) as ViewAsSession) : null;
+    return session && new Date(session.expires).getTime() > Date.now() ? session : null;
+  } catch {
+    return null;
+  }
+}
+
+export function setViewAs(session: ViewAsSession) {
+  localStorage.setItem(VIEW_AS_KEY, JSON.stringify(session));
+}
+
+export function clearViewAs() {
+  localStorage.removeItem(VIEW_AS_KEY);
+}
+
+const usesOwnSession = (endpoint: string) => endpoint.startsWith("/internal/platform") || endpoint.startsWith("/internal/auth/");
 
 // One refresh at a time: parallel 401s wait for the same rotation.
 let refreshing: Promise<string | null> | null = null;
@@ -112,7 +156,14 @@ export async function apiRequest<T = unknown>(endpoint: string, options: Request
       },
     });
 
-  let res = await send(getTokens()?.access?.token);
+  const viewAs = usesOwnSession(endpoint) ? null : getViewAs();
+  let res = await send(viewAs?.token ?? getTokens()?.access?.token);
+  if (res.status === 401 && viewAs) {
+    // No refresh for a view-as session: back to the platform.
+    clearViewAs();
+    window.dispatchEvent(new Event(VIEW_AS_ENDED_EVENT));
+    throw new ApiError(401, "View-as session ended", "view_as_ended");
+  }
   if (res.status === 401 && getTokens()?.refresh?.token && !endpoint.startsWith("/internal/auth/")) {
     const fresh = await refreshAccessToken();
     if (fresh) res = await send(fresh);
@@ -133,6 +184,16 @@ export const adminApi = {
     apiRequest<{ tokenData: TokenData; user: Staff }>("/internal/auth/login", { method: "POST", body: json({ email, password }) }),
   logout: () => apiRequest<void>("/internal/auth/logout", { method: "POST" }),
   getMe: () => apiRequest<Staff>("/internal/staff/me"),
+  signup: (input: SignupInput) =>
+    apiRequest<{ message: string; devVerificationUrl?: string }>("/internal/auth/signup", { method: "POST", body: json(input) }),
+  getAirports: () => apiRequest<Airport[]>("/public/airports"),
+  verifyEmail: (token: string) => apiRequest<{ verified: true }>("/internal/auth/verify-email", { method: "POST", body: json({ token }) }),
+  resendVerification: () =>
+    apiRequest<{ alreadyVerified: boolean; devVerificationUrl?: string }>("/internal/auth/verify-email/resend", { method: "POST" }),
+  getInvitation: (token: string) =>
+    apiRequest<{ email: string; operatorName: string }>("/internal/auth/invitation", { method: "POST", body: json({ token }) }),
+  acceptInvitation: (token: string, password: string) =>
+    apiRequest<{ tokenData: TokenData; user: Staff }>("/internal/auth/invitation/accept", { method: "POST", body: json({ token, password }) }),
   changePassword: (currentPassword: string, newPassword: string) =>
     apiRequest<{ message: string }>("/internal/staff/me/password", { method: "PATCH", body: json({ currentPassword, newPassword }) }),
 
@@ -163,11 +224,48 @@ export const adminApi = {
   parseEmail: (text: string) => apiRequest<EmailImportResult>("/internal/imports/email", { method: "POST", body: json({ text }) }),
   getListing: () => apiRequest<ListingResponse>("/internal/listing"),
   updateListing: (input: ListingInput) => apiRequest<{ data: Listing }>("/internal/listing", { method: "PUT", body: json(input) }),
+  submitListing: () => apiRequest<{ data: Listing }>("/internal/listing/submit", { method: "POST" }),
+  withdrawListing: () => apiRequest<{ data: Listing }>("/internal/listing/withdraw", { method: "POST" }),
   getPricing: () => apiRequest<Pricing>("/internal/pricing"),
   updatePricing: (tiers: PricingTier[], extraDayPriceCents: number | null) =>
     apiRequest<{ data: Pricing }>("/internal/pricing", { method: "PUT", body: json({ tiers, extraDayPriceCents }) }),
 
-  // Internal tools of the platform owner (capacity estimator).
+  // The platform owner's space (super admin).
+  getPlatformOperators: () => apiRequest<PlatformOperators>("/internal/platform/operators"),
+  setCommission: (id: string, commissionBps: number | null) =>
+    apiRequest<{ data: { id: string; commissionBps: number | null } }>(`/internal/platform/operators/${id}/commission`, {
+      method: "PATCH",
+      body: json({ commissionBps }),
+    }),
+  suspendOperator: (id: string) => apiRequest<{ data: unknown }>(`/internal/platform/operators/${id}/suspend`, { method: "POST" }),
+  reactivateOperator: (id: string) => apiRequest<{ data: unknown }>(`/internal/platform/operators/${id}/reactivate`, { method: "POST" }),
+  startViewAs: (id: string) =>
+    apiRequest<{ access: { token: string; expires: string }; operator: { id: string; name: string } }>(`/internal/platform/operators/${id}/view-as`, {
+      method: "POST",
+    }),
+  /** Revokes a view-as session (a logout made with its own token). */
+  endViewAs: (token: string) => apiRequest<void>("/internal/auth/logout", { method: "POST", headers: { Authorization: `Bearer ${token}` } }),
+  inviteOperator: (input: InviteInput) => apiRequest<InvitationResult>("/internal/platform/invitations", { method: "POST", body: json(input) }),
+  resendInvitation: (id: string) => apiRequest<InvitationResult>(`/internal/platform/operators/${id}/invitation`, { method: "POST" }),
+  getPlatformListings: (status?: string) =>
+    apiRequest<PlatformListings>(`/internal/platform/listings${status ? `?${new URLSearchParams({ status }).toString()}` : ""}`),
+  approveListing: (id: string) => apiRequest<{ data: Listing }>(`/internal/platform/listings/${id}/approve`, { method: "POST" }),
+  rejectListing: (id: string, message: string) =>
+    apiRequest<{ data: Listing }>(`/internal/platform/listings/${id}/reject`, { method: "POST", body: json({ message }) }),
+  unpublishListing: (id: string, message?: string) =>
+    apiRequest<{ data: Listing }>(`/internal/platform/listings/${id}/unpublish`, { method: "POST", body: json(message ? { message } : {}) }),
+  getPlatformReservations: (params: { operatorId?: string; from?: string; to?: string; page?: number }) => {
+    const query = new URLSearchParams();
+    for (const [k, v] of Object.entries(params)) if (v) query.set(k, String(v));
+    return apiRequest<PlatformReservations>(`/internal/platform/reservations?${query.toString()}`);
+  },
+  getPlatformPayments: () => apiRequest<PlatformPayments>("/internal/platform/payments"),
+  retryPayout: (reservationId: string) =>
+    apiRequest<{ result: "transferred" | "failed" | "skipped"; payoutStatus: string }>(`/internal/platform/payouts/${reservationId}/retry`, {
+      method: "POST",
+    }),
+
+  // Capacity estimator (platform space).
   listCapacityStudies: () => apiRequest<CapacityStudySummary[]>("/internal/platform/capacity-studies"),
   getCapacityStudy: (id: string) => apiRequest<CapacityStudy>(`/internal/platform/capacity-studies/${id}`),
   createCapacityStudy: (name: string) =>

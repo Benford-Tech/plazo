@@ -17,12 +17,21 @@ import PricingPage from "@/pages/PricingPage";
 import ReservationPage from "@/pages/ReservationPage";
 import ReservationsPage from "@/pages/ReservationsPage";
 import TeamPage from "@/pages/TeamPage";
-import { InternalToolLayout } from "@/components/capacity/InternalToolLayout";
+import { PlatformLayout } from "@/components/platform/PlatformLayout";
+import AcceptInvitationPage from "@/pages/AcceptInvitationPage";
+import SignupPage from "@/pages/SignupPage";
+import VerifyEmailPage from "@/pages/VerifyEmailPage";
 import { lazy, Suspense } from "react";
 
-// The internal tool (maps, geometry) is only loaded by the platform owner.
+// The platform space is only loaded by the platform owner; the capacity estimator (maps, geometry) on demand.
+const OperatorsPage = lazy(() => import("@/pages/platform/OperatorsPage"));
+const PlatformListingsPage = lazy(() => import("@/pages/platform/ListingsPage"));
+const PlatformReservationsPage = lazy(() => import("@/pages/platform/PlatformReservationsPage"));
+const PlatformPaymentsPage = lazy(() => import("@/pages/platform/PaymentsPage"));
 const CapacityStudiesPage = lazy(() => import("@/pages/capacity/CapacityStudiesPage"));
 const CapacityStudyPage = lazy(() => import("@/pages/capacity/CapacityStudyPage"));
+
+const lazyPage = (page: React.ReactNode) => <Suspense fallback={null}>{page}</Suspense>;
 
 const queryClient = new QueryClient({ defaultOptions: { queries: { retry: 1, refetchOnWindowFocus: false } } });
 
@@ -39,7 +48,7 @@ function ProtectedRoute({ children }: { children: React.ReactNode }) {
   return <>{children}</>;
 }
 
-/** Internal tools: only for the platform owner (PLATFORM_ADMIN_EMAILS on the API). */
+/** The "Plateforme" space: only for the platform owner (PLATFORM_ADMIN_EMAILS on the API). */
 function RequirePlatformAdmin({ children }: { children: React.ReactNode }) {
   const { user } = useAuth();
   return user?.isPlatformAdmin ? <>{children}</> : <Navigate to="/" replace />;
@@ -58,6 +67,9 @@ const App = () => (
         <BrowserRouter basename={import.meta.env.BASE_URL.replace(/\/$/, "")} future={{ v7_startTransition: true, v7_relativeSplatPath: true }}>
           <Routes>
             <Route path="/login" element={<LoginPage />} />
+            <Route path="/inscription" element={<SignupPage />} />
+            <Route path="/invitation" element={<AcceptInvitationPage />} />
+            <Route path="/verifier-email" element={<VerifyEmailPage />} />
             <Route
               element={
                 <ProtectedRoute>
@@ -123,30 +135,22 @@ const App = () => (
               element={
                 <ProtectedRoute>
                   <RequirePlatformAdmin>
-                    <InternalToolLayout />
+                    <PlatformLayout />
                   </RequirePlatformAdmin>
                 </ProtectedRoute>
               }
             >
-              <Route path="/outil" element={<Navigate to="/outil/capacite" replace />} />
-              <Route
-                path="/outil/capacite"
-                element={
-                  <Suspense fallback={null}>
-                    <CapacityStudiesPage />
-                  </Suspense>
-                }
-              />
-              <Route path="/outil/capacite/:id" element={<Navigate to="terrain" replace />} />
-              <Route
-                path="/outil/capacite/:id/:step"
-                element={
-                  <Suspense fallback={null}>
-                    <CapacityStudyPage />
-                  </Suspense>
-                }
-              />
+              <Route path="/plateforme" element={<Navigate to="/plateforme/loueurs" replace />} />
+              <Route path="/plateforme/loueurs" element={lazyPage(<OperatorsPage />)} />
+              <Route path="/plateforme/annonces" element={lazyPage(<PlatformListingsPage />)} />
+              <Route path="/plateforme/reservations" element={lazyPage(<PlatformReservationsPage />)} />
+              <Route path="/plateforme/paiements" element={lazyPage(<PlatformPaymentsPage />)} />
+              <Route path="/plateforme/capacite" element={lazyPage(<CapacityStudiesPage />)} />
+              <Route path="/plateforme/capacite/:id" element={<Navigate to="terrain" replace />} />
+              <Route path="/plateforme/capacite/:id/:step" element={lazyPage(<CapacityStudyPage />)} />
             </Route>
+            {/* The capacity estimator's former address. */}
+            <Route path="/outil/*" element={<Navigate to="/plateforme/capacite" replace />} />
             <Route path="*" element={<NotFound />} />
           </Routes>
         </BrowserRouter>

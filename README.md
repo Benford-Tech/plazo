@@ -16,11 +16,13 @@ et affectation des véhicules, navette au retour.
   import des mails de confirmation Allopark par copier-coller (doublons refusés).
   Reste : lecteurs Parkos, Onepark… (un exemple de mail par comparateur), import CSV si besoin.
 - [ ] **Jalon 3a — Fiche et tarifs** (fait) : dans l'espace pro, onglet « Sur Plazo » : « Ma fiche » (présentation,
-  services, annulation, photos par adresse, aperçu en direct, mise en ligne refusée tant qu'il n'y a pas de tarifs)
+  services, annulation, photos par adresse, aperçu en direct, envoi en validation refusé tant qu'il n'y a pas de tarifs)
   et « Mes tarifs » (forfaits par nombre de jours, prix du jour supplémentaire, simulation du prix payé).
   Reste : envoi de photos depuis l'ordinateur.
-- [x] **Outil interne — Estimateur de capacité** (réservé à la plateforme, `PLATFORM_ADMIN_EMAILS`) : dans l'espace
-  pro, entrée « Outil interne » (`/pro/outil/capacite`). Trois étapes sur la photo aérienne de l'IGN (BD ORTHO) :
+- [x] **Espace « Plateforme », inscription libre et validation des annonces** (maquette S-1) : voir « Rôles,
+  inscription et validation » ci-dessous.
+- [x] **Estimateur de capacité** (réservé à la plateforme, `PLATFORM_ADMIN_EMAILS`) : onglet « Outil capacité » de
+  l'espace Plateforme (`/pro/plateforme/capacite` ; l'ancienne adresse `/pro/outil/capacite` y renvoie). Trois étapes sur la photo aérienne de l'IGN (BD ORTHO) :
   repérer le terrain (adresse ou « latitude, longitude », parcelles cadastrales cliquées, recoupe avec les parkings
   BD TOPO, sommets à la souris, cote mesurée pour caler l'échelle), découper en zones (zones de stationnement,
   parties exclues : bâtiment, accueil, voie navette, arbre, poteau), estimer la capacité (clients garés seuls,
@@ -93,7 +95,7 @@ le navigateur de l'espace pro appelle `/api` sur le même domaine (pas de CORS).
    (secret partagé entre le site et l'API), `PUBLIC_SITE_URL` (adresse publique du site, pour les liens
    des mails), pour les mails et SMS `BREVO_API_KEY`, `EMAIL_FROM`, `SMS_SENDER`, et
    `PLATFORM_ADMIN_EMAILS` (emails des administrateurs de la plateforme, séparés par des virgules : eux seuls
-   voient l'outil interne).
+   voient l'espace Plateforme).
    Chaque déploiement applique les migrations (`npm run vercel-build` dans `backend/`) ; la purge
    nocturne des jetons est un Vercel Cron (`/api/internal/cron/purge-expired-tokens`).
 3. Compte de l'administrateur de la plateforme : mettre un mot de passe (10 caractères minimum) dans
@@ -126,6 +128,35 @@ le navigateur de l'espace pro appelle `/api` sur le même domaine (pas de CORS).
 Vérifier la configuration sans déployer : `npx vercel build` (avec un `.vercel/project.json` local),
 ou `vercel dev` pour lancer les trois services ensemble.
 
+## Rôles, inscription et validation
+
+- **Super admin de la plateforme** : les emails de `PLATFORM_ADMIN_EMAILS` (joannysimpore@gmail.com). Son compte
+  appartient au loueur de test « Plazo (tests) » (créé au déploiement, voir plus bas) ; il passe de cet espace à
+  l'espace **Plateforme** (`/pro/plateforme`) par le sélecteur « Vue : … ▾ » ou l'entrée « Plateforme » du menu.
+  Onglets : **Loueurs** (annonce, paiements Stripe, commission modifiable, réservations du mois ; « Ouvrir son
+  espace », suspendre / réactiver ; inviter un loueur), **Annonces** (file « À valider », aperçu, Valider / Refuser
+  avec message obligatoire / Dépublier), **Réservations** (tous les loueurs, lecture seule, sans coordonnées des
+  voyageurs), **Paiements** (compte Stripe, calendrier, reversements en attente ou en échec, « Relancer »),
+  **Outil capacité**.
+- **Loueurs** : le gérant administre son espace et sa fiche, comme avant (rôles gérant, agent, chauffeur, voiturier).
+- **Inscription libre** (`/pro/inscription`, lien « Vous êtes un parking ? » du site) : entreprise, parking, capacité,
+  aéroport, gérant, mot de passe, acceptation des conditions. Crée le loueur, son parking et sa fiche en brouillon ; le
+  gérant est connecté tout de suite et doit **confirmer son email** (lien de 48 h) avant d'envoyer sa fiche. Limitée
+  par adresse IP (5 par heure), champ piège anti-robots, même réponse si l'email a déjà un compte (son titulaire
+  reçoit un email). Sans Brevo, en développement seulement, le lien de confirmation est renvoyé par l'API et proposé
+  dans le bandeau.
+- **Invitation** (onglet Loueurs) : crée le loueur et envoie au gérant un lien (7 jours, usage unique) pour choisir son
+  mot de passe (`/pro/invitation`). Sans Brevo, le lien est montré une seule fois au super admin, à copier.
+  Les liens ne sont stockés que hachés (SHA-256) et voyagent dans le fragment de l'URL (`#…`), jamais dans les logs.
+- **Statut d'une fiche** : brouillon → à valider (« Envoyer pour validation ») → publiée (« Valider ») ou refusée
+  (« Refuser », message montré au loueur, qui corrige et renvoie). Une fiche publiée reste en ligne quand le loueur la
+  modifie (chaque modification est tracée) ; le super admin peut la dépublier, le loueur la retirer. Le site ne montre
+  que les fiches publiées des loueurs non suspendus.
+- **Ouvrir son espace** : session de 60 minutes limitée à ce loueur, bandeau jaune « Vous consultez l'espace de … ».
+  Chaque écriture est tracée dans le journal (`audit_logs`, action `view_as.write`) au nom réel du super admin ;
+  l'équipe, les mots de passe et le compte du loueur restent en lecture seule.
+- **Suspension** : l'équipe du loueur est déconnectée et ne peut plus se connecter, ses fiches quittent le site.
+
 ## API
 
 Documentation interactive : `/api/docs` (Swagger). Toutes les routes sont sous `/api` (le tableau omet ce préfixe) :
@@ -147,8 +178,14 @@ Documentation interactive : `/api/docs` (Swagger). Toutes les routes sont sous `
 | GET / POST | `/internal/reservations` | Recherche (plaque, nom, téléphone, référence) / création |
 | GET / PATCH | `/internal/reservations/:id` | Fiche / modification (les dates revérifient la capacité) |
 | POST | `/internal/imports/email` | Lit un mail de comparateur collé (Allopark) : champs trouvés, manquants, doublon, capacité |
-| GET / PUT | `/internal/listing` | Fiche Plazo du loueur (gérant ; publication seulement avec une grille tarifaire) |
+| POST | `/internal/auth/signup` | Inscription libre d'un loueur (publique, limitée par IP, réponse identique si l'email existe) |
+| POST | `/internal/auth/verify-email` | `{ token }` : confirme l'email (lien de 48 h, usage unique) |
+| POST | `/internal/auth/verify-email/resend` | Nouveau lien de confirmation pour la personne connectée |
+| POST | `/internal/auth/invitation` / `…/accept` | Invitation : `{ token }` → `{ email, operatorName }` ; `{ token, password }` → session |
+| GET / PUT | `/internal/listing` | Fiche Plazo du loueur (gérant ; l'enregistrement ne change pas son statut) |
+| POST | `/internal/listing/submit` / `…/withdraw` | Envoyer pour validation (tarifs et email confirmé requis) / retirer de Plazo |
 | GET / PUT | `/internal/pricing` | Grille tarifaire : forfaits « jusqu'à N jours » + prix du jour supplémentaire |
+| GET | `/public/airports` | Aéroports desservis (formulaire d'inscription) |
 | GET | `/public/airports/:slug` | Site voyageurs : parkings publiés d'un aéroport (sans authentification) |
 | GET | `/public/search?airport=&arrivalAt=&returnAt=` | Site voyageurs : disponibilité et prix total pour un séjour |
 | GET | `/public/airports/:airport/parkings/:slug` | Site voyageurs : fiche parking, avec l'offre si des dates sont données |
@@ -164,7 +201,18 @@ Documentation interactive : `/api/docs` (Swagger). Toutes les routes sont sous `
 | GET / PUT | `/internal/payments/settings` | Gérant : `{ payoutSchedule }` (`AFTER_STAY`, `AT_DROP_OFF`, `WEEKLY`, `MONTHLY`) |
 | GET | `/internal/cron/payouts` | Vercel Cron, chaque jour : transferts des parts dues aux loueurs |
 | GET | `/internal/cron/expire-payment-holds` | Vercel Cron (facultatif) : expire les places tenues non payées |
-| GET / POST | `/internal/platform/capacity-studies` | Outil interne (`PLATFORM_ADMIN_EMAILS`, 403 sinon) : études de capacité |
+| GET | `/internal/platform/operators` | Plateforme (`PLATFORM_ADMIN_EMAILS`, 403 sinon) : tous les loueurs et leurs chiffres |
+| PATCH | `/internal/platform/operators/:id/commission` | `{ commissionBps }` (null : taux par défaut) |
+| POST | `/internal/platform/operators/:id/suspend` / `…/reactivate` | Suspendre / réactiver un loueur |
+| POST | `/internal/platform/operators/:id/view-as` | « Ouvrir son espace » : jeton de 60 min limité au loueur |
+| POST | `/internal/platform/invitations` | Inviter un loueur (lien renvoyé si l'email ne peut pas partir) |
+| POST | `/internal/platform/operators/:id/invitation` | Renvoyer l'invitation (nouveau lien) |
+| GET | `/internal/platform/listings?status=` | Fiches de tous les loueurs, nombre par statut |
+| POST | `/internal/platform/listings/:id/approve` / `…/reject` / `…/unpublish` | Valider / refuser (`{ message }` obligatoire) / dépublier |
+| GET | `/internal/platform/reservations?operatorId=&from=&to=&page=` | Réservations de tous les loueurs (sans coordonnées) |
+| GET | `/internal/platform/payments` | Comptes Stripe, reversements en attente et en échec |
+| POST | `/internal/platform/payouts/:reservationId/retry` | Relancer un reversement refusé par Stripe |
+| GET / POST | `/internal/platform/capacity-studies` | Outil capacité : études de capacité |
 | GET / PATCH / DELETE | `/internal/platform/capacity-studies/:id` | Une étude (enregistrement automatique par PATCH) |
 | GET | `/internal/platform/geo/parcels?lon=&lat=` | Parcelles cadastrales au point cliqué (relais vers API Carto de l'IGN) |
 | GET | `/internal/platform/geo/parkings?bbox=` | Parkings BD TOPO de la vue (relais vers le WFS de la Géoplateforme) |

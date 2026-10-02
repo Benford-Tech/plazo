@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { fr } from "@/lib/fr";
 import { hasSupportEmail, PRODUCT_NAME, SUPPORT_EMAIL } from "@/lib/product";
-import { AIRPORTS, PRO_LOGIN_PATH } from "@/lib/site";
+import { AIRPORTS, PRO_SIGNUP_PATH } from "@/lib/site";
 
 const linkClass = "inline-flex min-h-11 items-center text-sm text-lilac no-underline hover:text-white hover:underline md:min-h-8";
 
@@ -54,7 +54,7 @@ export function SiteFooter() {
         </Column>
         <Column title={fr.footer.product}>
           <li>
-            <a href={PRO_LOGIN_PATH} className={linkClass}>
+            <a href={PRO_SIGNUP_PATH} className={linkClass}>
               {fr.nav.forOperators}
             </a>
           </li>
