@@ -96,8 +96,12 @@ le navigateur de l'espace pro appelle `/api` sur le même domaine (pas de CORS).
    voient l'outil interne).
    Chaque déploiement applique les migrations (`npm run vercel-build` dans `backend/`) ; la purge
    nocturne des jetons est un Vercel Cron (`/api/internal/cron/purge-expired-tokens`).
-3. Créer le premier opérateur depuis un poste : `npm run seed:operator` dans `backend/`, avec
-   `DATABASE_URL` pointé sur la base Supabase.
+3. Compte de l'administrateur de la plateforme : mettre un mot de passe (10 caractères minimum) dans
+   `PLATFORM_BOOTSTRAP_PASSWORD` sur Vercel et redéployer. Le déploiement crée alors l'opérateur
+   « Plazo (tests) » dont le gérant est le premier email de `PLATFORM_ADMIN_EMAILS` (rien si le compte
+   existe déjà : le mot de passe n'est jamais écrasé). Supprimer la variable ensuite.
+   Les autres opérateurs se créent depuis un poste : `npm run seed:operator` dans `backend/`, avec
+   `DATABASE_URL` pointé sur la base Neon (connexion directe).
 
 4. **Paiement en ligne (Stripe Connect, mode test)** — facultatif : sans `STRIPE_SECRET_KEY`, le site garde le
    paiement sur place. Pour l'activer :
