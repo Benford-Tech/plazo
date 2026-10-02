@@ -19,6 +19,14 @@ et affectation des véhicules, navette au retour.
   services, annulation, photos par adresse, aperçu en direct, mise en ligne refusée tant qu'il n'y a pas de tarifs)
   et « Mes tarifs » (forfaits par nombre de jours, prix du jour supplémentaire, simulation du prix payé).
   Reste : envoi de photos depuis l'ordinateur.
+- [x] **Outil interne — Estimateur de capacité** (réservé à la plateforme, `PLATFORM_ADMIN_EMAILS`) : dans l'espace
+  pro, entrée « Outil interne » (`/pro/outil/capacite`). Trois étapes sur la photo aérienne de l'IGN (BD ORTHO) :
+  repérer le terrain (adresse ou « latitude, longitude », parcelles cadastrales cliquées, recoupe avec les parkings
+  BD TOPO, sommets à la souris, cote mesurée pour caler l'échelle), découper en zones (zones de stationnement,
+  parties exclues : bâtiment, accueil, voie navette, arbre, poteau), estimer la capacité (clients garés seuls,
+  voiturier en files de 2 à 4, voiturier en files de 5 ; fourchette à annoncer, plafond théorique, export GeoJSON),
+  plus un contrôle sur la photo (voitures comptées à la main). Études enregistrées automatiquement (« Mes études »).
+  Surfaces et longueurs en Lambert-93.
 - [ ] Jalon 3b — Site Plazo voyageurs (Next.js, direction M3)
 - [ ] Jalon 3c — Paiement en ligne (Stripe Connect), commission et reversements
 - [ ] Jalon 4 — Cartographie et affectation
@@ -78,7 +86,9 @@ le navigateur de l'espace pro appelle `/api` sur le même domaine (pas de CORS).
    `vercel.json`) ; les fonctions tournent à Paris (`cdg1`). Variables (communes aux trois services) :
    `NODE_ENV=production`, `DATABASE_URL`, `DIRECT_URL`, `SECRET_KEY`, `CRON_SECRET`, `SITE_API_KEY`
    (secret partagé entre le site et l'API), `PUBLIC_SITE_URL` (adresse publique du site, pour les liens
-   des mails), et pour les mails et SMS `BREVO_API_KEY`, `EMAIL_FROM`, `SMS_SENDER`.
+   des mails), pour les mails et SMS `BREVO_API_KEY`, `EMAIL_FROM`, `SMS_SENDER`, et
+   `PLATFORM_ADMIN_EMAILS` (emails des administrateurs de la plateforme, séparés par des virgules : eux seuls
+   voient l'outil interne).
    Chaque déploiement applique les migrations (`npm run vercel-build` dans `backend/`) ; la purge
    nocturne des jetons est un Vercel Cron (`/api/internal/cron/purge-expired-tokens`).
 3. Créer le premier opérateur depuis un poste : `npm run seed:operator` dans `backend/`, avec
@@ -114,3 +124,8 @@ Documentation interactive : `/api/docs` (Swagger). Toutes les routes sont sous `
 | GET | `/public/search?airport=&arrivalAt=&returnAt=` | Site voyageurs : disponibilité et prix total pour un séjour |
 | GET | `/public/airports/:airport/parkings/:slug` | Site voyageurs : fiche parking, avec l'offre si des dates sont données |
 | POST | `/internal/reservations/:id/status` | Étape suivante : arrivée, navette, retour, rendu, annulation… |
+| GET / POST | `/internal/platform/capacity-studies` | Outil interne (`PLATFORM_ADMIN_EMAILS`, 403 sinon) : études de capacité |
+| GET / PATCH / DELETE | `/internal/platform/capacity-studies/:id` | Une étude (enregistrement automatique par PATCH) |
+| GET | `/internal/platform/geo/parcels?lon=&lat=` | Parcelles cadastrales au point cliqué (relais vers API Carto de l'IGN) |
+| GET | `/internal/platform/geo/parkings?bbox=` | Parkings BD TOPO de la vue (relais vers le WFS de la Géoplateforme) |
+| GET | `/internal/platform/geo/geocode?q=` | Recherche d'adresse (relais vers le géocodage de la Géoplateforme) |

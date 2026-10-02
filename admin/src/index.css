@@ -48,3 +48,30 @@
     font-variant-numeric: tabular-nums;
   }
 }
+
+/* Capacity estimator: labels drawn over the aerial photo. */
+.cap-label {
+  pointer-events: none;
+  white-space: nowrap;
+  font-family: "Archivo Narrow", sans-serif;
+  font-weight: 700;
+}
+.cap-label-zone {
+  font-size: 26px;
+  text-transform: uppercase;
+  color: #0b0b0c;
+  -webkit-text-stroke: 4px #f5c400;
+  paint-order: stroke fill;
+}
+.cap-label-length {
+  font-size: 17px;
+  color: #f5c400;
+  text-shadow: 0 0 3px #0b0b0c, 0 0 6px #0b0b0c;
+}
+.cap-label-vertex {
+  font-family: "JetBrains Mono", monospace;
+  font-size: 13px;
+  color: #0b0b0c;
+  background: #f5c400;
+  padding: 0 4px;
+}

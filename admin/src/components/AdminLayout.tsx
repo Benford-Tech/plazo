@@ -20,6 +20,8 @@ export function AdminLayout() {
   const { user, logout } = useAuth();
   const navigate = useNavigate();
   const items = NAV.filter(i => !i.permission || can(user?.role, i.permission));
+  // The platform owner's internal tools (capacity estimator), hidden from the operators.
+  if (user?.isPlatformAdmin) items.push({ label: fr.nav.internalTool, to: "/outil/capacite" });
 
   const handleLogout = async () => {
     await logout();

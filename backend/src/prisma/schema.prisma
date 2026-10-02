@@ -56,6 +56,7 @@ model Staff {
   tokens              StaffToken[]
   auditLogs           AuditLog[]
   createdReservations Reservation[]
+  capacityStudies     CapacityStudy[]
 
   @@index([operatorId])
   @@map("staff")
@@ -268,4 +269,36 @@ model Listing {
 
   @@unique([airportId, slug])
   @@map("listings")
+}
+
+// Internal tool of the platform owner (capacity estimator): a study of a piece of land.
+// Platform-level data: NOT scoped to an operator (only platform admins can read or write it).
+// Geometries are GeoJSON in WGS84 (EPSG:4326); lengths and areas are computed in Lambert-93.
+model CapacityStudy {
+  id          String   @id @default(cuid())
+  name        String
+  createdById String?
+  // GeoJSON Polygon of the land, or null until it is drawn.
+  outline     Json?
+  // Cadastral parcels used for the outline: [{ id, section, numero, commune, contenance, geometry }].
+  parcels     Json     @default("[]")
+  // Correction of every length (areas: its square), from a dimension measured on site.
+  scaleFactor Float    @default(1)
+  // [{ id, name, geometry: Polygon }]
+  zones       Json     @default("[]")
+  // [{ id, name, kind, geometry: Polygon | LineString | Point, clearance }]
+  exclusions  Json     @default("[]")
+  // Layout settings (slot sizes, aisle width, max depth, setback…) and the scale calibration.
+  settings    Json     @default("{}")
+  // Summary of the last estimate (counts per layout), recomputed by the pro space.
+  results     Json     @default("{}")
+  // Cars counted by hand on the aerial photo: [[lon, lat], …].
+  carMarkers  Json     @default("[]")
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @default(now()) @updatedAt
+
+  createdBy Staff? @relation(fields: [createdById], references: [id], onDelete: SetNull)
+
+  @@index([updatedAt])
+  @@map("capacity_studies")
 }

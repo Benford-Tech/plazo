@@ -17,6 +17,12 @@ import PricingPage from "@/pages/PricingPage";
 import ReservationPage from "@/pages/ReservationPage";
 import ReservationsPage from "@/pages/ReservationsPage";
 import TeamPage from "@/pages/TeamPage";
+import { InternalToolLayout } from "@/components/capacity/InternalToolLayout";
+import { lazy, Suspense } from "react";
+
+// The internal tool (maps, geometry) is only loaded by the platform owner.
+const CapacityStudiesPage = lazy(() => import("@/pages/capacity/CapacityStudiesPage"));
+const CapacityStudyPage = lazy(() => import("@/pages/capacity/CapacityStudyPage"));
 
 const queryClient = new QueryClient({ defaultOptions: { queries: { retry: 1, refetchOnWindowFocus: false } } });
 
@@ -31,6 +37,12 @@ function ProtectedRoute({ children }: { children: React.ReactNode }) {
   }
   if (!isAuthenticated) return <Navigate to="/login" replace />;
   return <>{children}</>;
+}
+
+/** Internal tools: only for the platform owner (PLATFORM_ADMIN_EMAILS on the API). */
+function RequirePlatformAdmin({ children }: { children: React.ReactNode }) {
+  const { user } = useAuth();
+  return user?.isPlatformAdmin ? <>{children}</> : <Navigate to="/" replace />;
 }
 
 function RequirePermission({ permission, children }: { permission: Permission; children: React.ReactNode }) {
@@ -106,6 +118,34 @@ const App = () => (
                 }
               />
               <Route path="/mon-compte" element={<AccountPage />} />
+            </Route>
+            <Route
+              element={
+                <ProtectedRoute>
+                  <RequirePlatformAdmin>
+                    <InternalToolLayout />
+                  </RequirePlatformAdmin>
+                </ProtectedRoute>
+              }
+            >
+              <Route path="/outil" element={<Navigate to="/outil/capacite" replace />} />
+              <Route
+                path="/outil/capacite"
+                element={
+                  <Suspense fallback={null}>
+                    <CapacityStudiesPage />
+                  </Suspense>
+                }
+              />
+              <Route path="/outil/capacite/:id" element={<Navigate to="terrain" replace />} />
+              <Route
+                path="/outil/capacite/:id/:step"
+                element={
+                  <Suspense fallback={null}>
+                    <CapacityStudyPage />
+                  </Suspense>
+                }
+              />
             </Route>
             <Route path="*" element={<NotFound />} />
           </Routes>

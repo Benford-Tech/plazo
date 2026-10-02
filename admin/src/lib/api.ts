@@ -19,6 +19,24 @@ import type {
   TokenData,
 } from "./types";
 
+import type { CapacityStudy, CapacityStudySummary, GeoPolygon, ParcelRef, StudyPatch } from "./capacity/types";
+
+export interface ParcelFeature extends ParcelRef {
+  geometry: { type: "Polygon" | "MultiPolygon"; coordinates: unknown };
+}
+export interface ParkingFeature {
+  id: string;
+  name: string | null;
+  geometry: { type: "Polygon" | "MultiPolygon"; coordinates: unknown };
+}
+export interface GeocodeResult {
+  label: string;
+  type: string;
+  lon: number;
+  lat: number;
+}
+export type { GeoPolygon };
+
 // Same origin by default (/api, proxied to the backend in development); VITE_API_URL overrides it.
 const API_BASE = (import.meta.env.VITE_API_URL || "/api").replace(/\/$/, "");
 const TOKENS_KEY = "plazo_admin_tokens";
@@ -148,6 +166,21 @@ export const adminApi = {
   getPricing: () => apiRequest<Pricing>("/internal/pricing"),
   updatePricing: (tiers: PricingTier[], extraDayPriceCents: number | null) =>
     apiRequest<{ data: Pricing }>("/internal/pricing", { method: "PUT", body: json({ tiers, extraDayPriceCents }) }),
+
+  // Internal tools of the platform owner (capacity estimator).
+  listCapacityStudies: () => apiRequest<CapacityStudySummary[]>("/internal/platform/capacity-studies"),
+  getCapacityStudy: (id: string) => apiRequest<CapacityStudy>(`/internal/platform/capacity-studies/${id}`),
+  createCapacityStudy: (name: string) =>
+    apiRequest<{ data: CapacityStudy }>("/internal/platform/capacity-studies", { method: "POST", body: json({ name }) }),
+  updateCapacityStudy: (id: string, patch: StudyPatch) =>
+    apiRequest<{ data: CapacityStudy }>(`/internal/platform/capacity-studies/${id}`, { method: "PATCH", body: json(patch) }),
+  deleteCapacityStudy: (id: string) => apiRequest<void>(`/internal/platform/capacity-studies/${id}`, { method: "DELETE" }),
+  parcelsAt: (lon: number, lat: number) =>
+    apiRequest<{ parcels: ParcelFeature[] }>(`/internal/platform/geo/parcels?${new URLSearchParams({ lon: String(lon), lat: String(lat) }).toString()}`),
+  parkingsIn: (bbox: [number, number, number, number]) =>
+    apiRequest<{ parkings: ParkingFeature[] }>(`/internal/platform/geo/parkings?bbox=${bbox.map(n => n.toFixed(6)).join(",")}`),
+  geocode: (q: string) => apiRequest<{ results: GeocodeResult[] }>(`/internal/platform/geo/geocode?${new URLSearchParams({ q }).toString()}`),
+
   changeReservationStatus: (id: string, status: ReservationStatus) =>
     apiRequest<{ data: Reservation }>(`/internal/reservations/${id}/status`, { method: "POST", body: json({ status }) }),
 };

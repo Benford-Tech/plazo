@@ -101,7 +101,7 @@ Plazo reprend la stack et les conventions des dépôts `lovenest-backend`, `love
   get_it, retrofit + dio, freezed, easy_localization, OneSignal pour les notifications, Codemagic
   pour les builds). Deux apps à terme (« pro » et « voyageur ») : un seul projet d'abord, deux
   parcours bien séparés, puis deux points d'entrée (flavors).
-- Cartographie : Google Maps Platform. SMS et email : Brevo.
+- Cartographie : Google Maps Platform ; le tracé et l'analyse se font sur la photo aérienne IGN BD ORTHO (MapLibre + Terra Draw), les conditions de Google l'interdisant sur son imagerie. SMS et email : Brevo.
 - Suivi de vols : AirLabs (offre gratuite) derrière une interface interchangeable, repli AeroDataBox.
 
 Contraintes : application web responsive, application mobile native iOS et Android,

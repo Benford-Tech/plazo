@@ -54,6 +54,20 @@ export const PUBLIC_SITE_URL = (
 const rawCommission = Number(process.env.PLATFORM_COMMISSION_BPS);
 export const PLATFORM_COMMISSION_BPS = Number.isInteger(rawCommission) && rawCommission >= 0 && rawCommission <= 5000 ? rawCommission : null;
 
+// Platform owners (comma-separated emails): a staff member whose email is listed may use the
+// internal tools under /api/internal/platform (e.g. the capacity estimator). Read on every call so
+// that a change of the environment needs no code change (and tests can set it).
+export function platformAdminEmails(): string[] {
+  return (process.env.PLATFORM_ADMIN_EMAILS || '')
+    .split(',')
+    .map(email => email.trim().toLowerCase())
+    .filter(Boolean);
+}
+
+export function isPlatformAdmin(email: string | null | undefined): boolean {
+  return !!email && platformAdminEmails().includes(email.trim().toLowerCase());
+}
+
 // The product name is still a working name: it lives only in the repository's product.json.
 // The build copies it to lib/product.json (deployed with the function); in development it is
 // read from the repository root.

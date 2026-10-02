@@ -20,6 +20,8 @@ export default defineConfig({
   },
   preview: { proxy: apiProxy },
   plugins: [react()],
+  // Module workers (layout search, MapLibre).
+  worker: { format: "es" },
   resolve: {
     alias: { "@": path.resolve(__dirname, "./src") },
   },

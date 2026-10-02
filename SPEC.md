@@ -60,7 +60,7 @@ Paiement : le MVP peut démarrer avec paiement sur place (le plus simple pour le
 ### Bloc 2 — Plan du parking et affectation des véhicules
 
 Fonctionnel :
-- Cartographie du parking sur Google Maps, aux dimensions réelles (détail ci-dessous). Le plan garde la hiérarchie zones → rangées → emplacements.
+- Cartographie du parking aux dimensions réelles, tracée sur la photo aérienne de l'IGN (détail ci-dessous). Le plan garde la hiérarchie zones → rangées → emplacements.
 - Une vue liste/grille du plan reste disponible pour le travail rapide au comptoir et sur téléphone.
 - Types d'emplacements : standard, grand gabarit, couvert, PMR, réservé.
 - À l'arrivée, affectation d'un emplacement au véhicule (manuelle ou suggérée).
@@ -74,15 +74,33 @@ Règles métier :
 - Si le client se gare lui-même, l'agent confirme l'emplacement a posteriori.
 - Changer un véhicule d'emplacement est tracé (qui, quand, pourquoi).
 
-#### Cartographie sur Google Maps
+#### Cartographie sur la photo aérienne de l'IGN
 
-Le gérant dessine son parking sur la vue satellite de Google Maps, dans l'application web (sur ordinateur, plus précis qu'au doigt) :
+Le gérant dessine son parking sur la photo aérienne de l'IGN (BD ORTHO, 20 cm, licence ouverte, servie sans clé
+par la Géoplateforme), dans l'application web (sur ordinateur, plus précis qu'au doigt). Pas sur la vue satellite
+de Google Maps : ses conditions interdisent de tracer ou d'analyser son imagerie, et sa Drawing Library est retirée ;
+le dessin passe par MapLibre GL JS et Terra Draw. Longueurs et surfaces sont calculées en Lambert-93.
 - contour de chaque zone (polygone), avec surface et longueurs des côtés affichées en mètres ;
 - éléments fixes : entrée, sortie, point de remise des véhicules, arrêt navette, bureau/boîte à clés, allées de circulation, obstacles (poteaux, bordures, bâtiments) ;
-- calage sur le terrain : le gérant saisit une ou deux cotes mesurées sur place (par exemple la longueur d'une rangée) et le plan s'ajuste ; l'imagerie satellite peut être décalée de quelques mètres et dater de plusieurs mois ;
+- calage sur le terrain : le gérant saisit une ou deux cotes mesurées sur place (par exemple la longueur d'une rangée) et le plan s'ajuste ; la photo aérienne peut être décalée de quelques décimètres et dater de plusieurs mois (Rhône : prise de vue du 08/07/2023) ;
 - génération automatique des places dans une zone : dimensions des places (par défaut 2,50 m × 5,00 m, grand gabarit et PMR configurables), largeur d'allée (par défaut 6 m en épi à 90°, moins en épi incliné), orientation, sens de circulation. L'outil propose la disposition puis le gérant ajuste à la main (déplacer, supprimer, ajouter, renuméroter) ;
 - mode voiturier : rangées « en file » (plusieurs véhicules l'un derrière l'autre sans allée) pour gagner de la place, avec la profondeur de file configurable ;
 - la capacité du parking est recalculée à partir des places actives du plan.
+
+#### Estimateur de capacité (outil interne)
+
+Avant de vendre, la plateforme estime la capacité du terrain d'un loueur (outil réservé aux administrateurs de la
+plateforme, `PLATFORM_ADMIN_EMAILS`, pas aux loueurs). Trois étapes sur la photo IGN : repérer le terrain (union des
+parcelles cadastrales cliquées via API Carto, recoupée au besoin avec la surface de parking BD TOPO, sommets corrigés
+à la souris, une cote mesurée sur place cale l'échelle), découper en zones (zones de stationnement et parties exclues
+avec leur dégagement : bâtiment, accueil, voie navette, arbre, poteau), puis comparer trois dispositions générées
+automatiquement : clients garés seuls (épi 90°, places 2,50 × 5,00 m, allées 6 m), voiturier en files de 2 à 4
+(places 2,40 × 5,00 m, aucune voiture à plus de 3 rangs d'une allée) et voiturier en files de 5. Chaque allée est
+fermée à ses deux bouts par une allée transversale ; un retrait de 1 m est gardé en bordure. L'outil affiche la
+fourchette à annoncer (clients garés seuls → voiturier 2 à 4), le plafond théorique sans allée et un contrôle sur la
+photo (voitures comptées à la main). Référence : un rectangle de 100 m × 60 m donne 245 places (261 avec les places en
+bout d'allée), 324 en voiturier 2 à 4 et 360 en files de 5. Export GeoJSON ; la création du plan à partir de
+l'estimation viendra avec le jalon 4.
 
 Dans l'app mobile, le plan s'affiche sur la carte : emplacement du véhicule recherché mis en évidence, itinéraire à pied depuis le point de remise, occupation par zone en couleurs.
 
@@ -254,7 +272,7 @@ Ajouts phase 2 (marketplace) :
 | Email | Un service transactionnel (Resend, Brevo…) | Domaine d'envoi authentifié |
 | Suivi de vols | Une API de statut de vols (AeroDataBox, AviationStack, FlightAware…) | À choisir sur couverture France, prix et limites d'appels |
 | Notifications push | OneSignal (comme LoveNest) | Complète les SMS, ne les remplace pas |
-| Cartographie du parking | Google Maps Platform : Maps JavaScript API (éditeur web), `google_maps_flutter` (app), vue satellite | Coût à l'usage au-delà du crédit mensuel gratuit, à estimer ; vérifier les conditions d'usage (dessin sur la carte autorisé, pas de copie de l'imagerie) |
+| Cartographie du parking | Tracé et analyse : photo aérienne IGN BD ORTHO (WMTS de la Géoplateforme, sans clé), MapLibre GL JS + Terra Draw ; cadastre (API Carto) et parkings BD TOPO (WFS) en suggestion. Affichage : Google Maps Platform (`google_maps_flutter` dans l'app) | Les conditions de Google interdisent de tracer ou d'analyser son imagerie : jamais de tracé sur la vue satellite Google |
 | Itinéraire voyageur | Lien vers l'app de navigation du téléphone | Pour l'adresse et l'itinéraire |
 | Paiement en ligne et reversement aux loueurs | Stripe Connect (ou équivalent) | Jalon 3 pour la page propre du loueur, phase 2 pour la commission et les reversements ; valider statut, TVA et CGU avec un professionnel |
 | Recherche géographique (phase 2) | Carte (OpenStreetMap / MapLibre) et index de recherche | Distance au terminal, filtres rapides |
@@ -286,7 +304,7 @@ Plazo reprend la stack de LoveNest (décision du 1er octobre 2026) :
 3b. **Site Plazo voyageurs** : page aéroport (SEO), recherche par dates, résultats et filtres, fiche parking, tunnel de réservation sans compte obligatoire, confirmation, email + SMS (Brevo), lien de gestion de la réservation.
 3c. **Paiement et reversements** : Stripe Connect (onboarding des loueurs), paiement par carte / Apple Pay / Google Pay, verrou de place pendant le paiement, commission, remboursements selon la politique d'annulation, relevés de reversement. Validation juridique avant mise en ligne.
 4. **Cartographie et affectation** (semaines 4-7) :
-   - semaine 4 : éditeur sur Google Maps (zones, éléments fixes, mesures, calage) ;
+   - semaine 4 : éditeur sur la photo aérienne de l'IGN (zones, éléments fixes, mesures, calage) ;
    - semaine 5 : génération automatique des places et comparaison des dispositions ;
    - semaine 6 : affectation à l'arrivée, recherche par plaque, suivi des clés ;
    - semaine 7 : suggestion optimisée (date de retour, blocages, trajets) et vue réorganisation.
@@ -307,7 +325,7 @@ Les durées sont indicatives et à ajuster avec la date attendue par le client. 
 - Un agent retrouve l'emplacement d'un véhicule par sa plaque en moins de 10 secondes.
 - Un client qui a saisi son n° de vol reçoit un SMS à l'atterrissage sans intervention humaine.
 - Le chauffeur voit la file des retours triée par heure estimée et peut la mettre à jour en un geste.
-- Le gérant cartographie son parking sur Google Maps et l'écart entre le nombre de places du plan et le comptage sur le terrain est inférieur à 3 %.
+- Le gérant cartographie son parking sur la photo aérienne de l'IGN et l'écart entre le nombre de places du plan et le comptage sur le terrain est inférieur à 3 %.
 - Sur une semaine de pilote, aucun véhicule suggéré par l'outil ne se retrouve bloqué derrière un véhicule qui repart plus tard.
 - Le client n°1 utilise l'outil sur une semaine réelle sans repasser par ses anciens tableurs ou cahiers.
 - Les apps sont publiées sur l'App Store et Google Play ; le chauffeur reçoit une notification push quand un client appuie sur « Je suis prêt ».

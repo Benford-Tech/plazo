@@ -19,6 +19,7 @@ export const ValidateEnv = () => {
     SMS_SENDER: str({ default: '' }),
     PUBLIC_SITE_URL: str({ default: '' }),
     SMS_DAILY_LIMIT: str({ default: '' }),
+    PLATFORM_ADMIN_EMAILS: str({ default: '', desc: 'Emails of the platform owners (internal tools), comma-separated' }),
   });
   if (process.env.NODE_ENV === 'production' && !process.env.SITE_API_KEY?.trim()) {
     throw new Error('SITE_API_KEY must be set in production (shared with the traveller site)');

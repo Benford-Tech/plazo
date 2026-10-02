@@ -2,7 +2,7 @@ import { compare } from 'bcrypt';
 import dayjs from 'dayjs';
 import httpStatus from 'http-status';
 import { Container, Service } from 'typedi';
-import { LOGIN_MAX_FAILURES, LOGIN_WINDOW_MINUTES } from '@/config';
+import { isPlatformAdmin, LOGIN_MAX_FAILURES, LOGIN_WINDOW_MINUTES } from '@/config';
 import prisma, { StaffTokenType } from '@/database';
 import { LoginDto } from '@/dtos/auth.dto';
 import { TokenData } from '@/interfaces/auth.interface';
@@ -35,7 +35,10 @@ export class AuthService {
 
     await prisma.staff.update({ where: { id: staff.id }, data: { lastLoginAt: new Date() } });
     const tokenData = await this.tokenService.generateAuthTokens(staff.id, metadata);
-    return { tokenData, user: toPublicStaff({ ...staff, operatorName: staff.operator.name }) };
+    return {
+      tokenData,
+      user: { ...toPublicStaff({ ...staff, operatorName: staff.operator.name }), isPlatformAdmin: isPlatformAdmin(staff.email) },
+    };
   }
 
   /** Rotates the pair: the used refresh token is revoked with its access token. */

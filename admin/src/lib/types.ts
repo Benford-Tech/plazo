@@ -22,6 +22,8 @@ export interface Staff {
   lastLoginAt: string | null;
   createdAt: string;
   operatorName?: string;
+  /** Platform owner (PLATFORM_ADMIN_EMAILS): sees the internal tools. */
+  isPlatformAdmin?: boolean;
 }
 
 export interface Parking {
