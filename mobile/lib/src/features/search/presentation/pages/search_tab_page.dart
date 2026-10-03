@@ -229,7 +229,8 @@ class _NextDeparture extends StatelessWidget {
   }
 }
 
-/// The three steps, "Comparez · Réservez · Décollez", each on its own gradient tile.
+/// The three steps, "Comparez · Réservez · Décollez" (I-A, 03/10/2026): a photo on each tile
+/// (Pexels, free licence) with the step's icon as a badge over it.
 class _Steps extends StatelessWidget {
   const _Steps();
 
@@ -248,18 +249,43 @@ class _Steps extends StatelessWidget {
           children: [
             for (final (icon, gradient, key) in steps) ...[
               Expanded(
-                child: Container(
-                  padding: const EdgeInsets.fromLTRB(12, 12, 10, 12),
-                  decoration: BoxDecoration(color: AppColors.tintSoft, borderRadius: BorderRadius.circular(14)),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      IconTile(icon, gradient: gradient),
-                      const SizedBox(height: 8),
-                      Text('search.steps.$key'.tr(), style: AppText.strong(size: 13)),
-                      const SizedBox(height: 2),
-                      Text('search.steps.${key}_sub'.tr(), style: AppText.muted(size: 11.5).copyWith(height: 1.3)),
-                    ],
+                child: ClipRRect(
+                  borderRadius: BorderRadius.circular(14),
+                  child: ColoredBox(
+                    color: AppColors.tintSoft,
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Stack(
+                          clipBehavior: Clip.none,
+                          children: [
+                            Image.asset('assets/images/step-$key.jpg', height: 84, width: double.infinity, fit: BoxFit.cover, excludeFromSemantics: true),
+                            Positioned(
+                              left: 10,
+                              bottom: -17,
+                              child: DecoratedBox(
+                                decoration: BoxDecoration(
+                                  borderRadius: BorderRadius.circular(12),
+                                  border: Border.all(color: Colors.white, width: 2),
+                                ),
+                                child: IconTile(icon, size: 34, gradient: gradient),
+                              ),
+                            ),
+                          ],
+                        ),
+                        Padding(
+                          padding: const EdgeInsets.fromLTRB(10, 24, 10, 12),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text('search.steps.$key'.tr(), style: AppText.strong(size: 13)),
+                              const SizedBox(height: 2),
+                              Text('search.steps.${key}_sub'.tr(), style: AppText.muted(size: 11.5).copyWith(height: 1.3)),
+                            ],
+                          ),
+                        ),
+                      ],
+                    ),
                   ),
                 ),
               ),

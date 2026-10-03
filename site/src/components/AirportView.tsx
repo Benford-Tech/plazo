@@ -12,6 +12,9 @@ import { formatEuros } from "@/lib/money";
 import { PRO_SIGNUP_PATH } from "@/lib/site";
 import type { AirportResponse } from "@/lib/types";
 
+/** The step photos of the home (site/public/images/step-*.{jpg,webp}), in the order of fr.home.how. */
+const STEP_PHOTOS = ["compare", "book", "fly"] as const;
+
 export async function loadAirport(slug: string): Promise<AirportResponse> {
   try {
     return await api.airport(slug);
@@ -39,12 +42,25 @@ export async function AirportView({ slug, showBreadcrumb }: { slug: string; show
           </h2>
           <ol className="grid gap-3 md:grid-cols-3 md:gap-[18px]">
             {t.home.how.map(([title, text], i) => (
-              <li key={title} className="flex flex-col gap-2.5 rounded-[16px] border border-line p-[22px]">
-                <span aria-hidden="true" className="font-title text-[40px] leading-none text-accent">
-                  {i + 1}
-                </span>
-                <h3 className="text-lg font-bold">{title}</h3>
-                <p className="text-[15px] leading-normal text-soft">{text}</p>
+              <li key={title} className="flex flex-col overflow-hidden rounded-[16px] border border-line">
+                {/* I-A (03/10/2026): a photo per step (Pexels, free licence), the number as a badge over it. */}
+                <div className="relative">
+                  <picture>
+                    <source srcSet={`/images/step-${STEP_PHOTOS[i]}.webp`} type="image/webp" />
+                    {/* eslint-disable-next-line @next/next/no-img-element */}
+                    <img src={`/images/step-${STEP_PHOTOS[i]}.jpg`} alt="" width={600} height={400} loading="lazy" decoding="async" className="aspect-[3/2] w-full object-cover md:aspect-[2/1]" />
+                  </picture>
+                  <span
+                    aria-hidden="true"
+                    className="absolute bottom-0 left-[22px] flex h-11 w-11 translate-y-1/2 items-center justify-center rounded-[12px] border-2 border-white bg-[linear-gradient(135deg,#ff8a3d,#f0a36b)] font-title text-[24px] leading-none text-white"
+                  >
+                    {i + 1}
+                  </span>
+                </div>
+                <div className="flex flex-col gap-2 p-[22px] pt-8">
+                  <h3 className="text-lg font-bold">{title}</h3>
+                  <p className="text-[15px] leading-normal text-soft">{text}</p>
+                </div>
               </li>
             ))}
           </ol>
