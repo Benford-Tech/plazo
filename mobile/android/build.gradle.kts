@@ -32,3 +32,13 @@ subprojects {
 tasks.register<Delete>("clean") {
     delete(rootProject.layout.buildDirectory)
 }
+
+// stripe_android's release lint pulls play-services-tapandpay, a Google artifact that is not
+// published on public Maven repositories; the lint step is not needed for our builds.
+subprojects {
+    if (name == "stripe_android") {
+        tasks.whenTaskAdded {
+            if (this.name.startsWith("lintVital")) enabled = false
+        }
+    }
+}
