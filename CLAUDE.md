@@ -183,6 +183,10 @@ Canevas de référence : https://claude.ai/artifact/6ezoCDyLXFNwhAH5ZWUf4u (rang
 - **App mobile (Flutter)** : direction **D « style Thempo »** — menu prune `#4b164c`, accent
   violet `#a427c3`, pêche `#f0a36b` pour le temps fort, dégradé violet → rose → pêche sur les
   actions principales, Playfair Display (titres) + Inter, cartes arrondies ; plaques façon C aussi.
+  Icônes (choix H-B du 03/10/2026) : icônes pleines arrondies (Material « rounded ») posées sur des
+  tuiles au dégradé violet → rose → pêche (`IconTile`) ; onglets loupe / billet / « ··· ».
+- **Logo (choix E-A du 03/10/2026)** : le panneau de parking, « Plazo » en Inter 800 dans un rectangle
+  prune aux angles arrondis ; symbole = le panneau réduit au « P ». Fichiers et règles dans `brand/README.md`.
 
 ## Règles de travail
 

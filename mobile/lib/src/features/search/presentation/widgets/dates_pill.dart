@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 
 import '../../../../core/helpers/stay.dart';
 import '../../../../shared/theme/theme.dart';
+import '../../../../shared/widgets/icon_tile.dart';
 
 /// The single "VOS DATES" pill (drop-off → return), opening the date sheet.
 class DatesPill extends StatelessWidget {
@@ -40,12 +41,7 @@ class DatesPill extends StatelessWidget {
               ),
               child: Row(
                 children: [
-                  Container(
-                    width: 34,
-                    height: 34,
-                    decoration: const BoxDecoration(color: Color(0xFFFAF6FB), shape: BoxShape.circle),
-                    child: const Icon(Icons.calendar_month_rounded, size: 18, color: AppColors.violet),
-                  ),
+                  const IconTile(Icons.calendar_month_rounded, size: 36),
                   const SizedBox(width: 10),
                   Expanded(
                     child: Column(

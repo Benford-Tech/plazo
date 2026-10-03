@@ -49,13 +49,8 @@ class AppShellPage extends StatelessWidget {
                   },
                   destinations: [
                     NavigationDestination(key: const Key('tab-search'), icon: const Icon(Icons.search_rounded), label: 'tabs.search'.tr()),
-                    NavigationDestination(
-                      key: const Key('tab-trips'),
-                      icon: const Icon(Icons.confirmation_number_outlined),
-                      selectedIcon: const Icon(Icons.confirmation_number_rounded),
-                      label: 'tabs.trips'.tr(),
-                    ),
-                    NavigationDestination(key: const Key('tab-more'), icon: const Icon(Icons.menu_rounded), label: 'tabs.more'.tr()),
+                    NavigationDestination(key: const Key('tab-trips'), icon: const Icon(Icons.confirmation_number_rounded), label: 'tabs.trips'.tr()),
+                    NavigationDestination(key: const Key('tab-more'), icon: const Icon(Icons.more_horiz_rounded), label: 'tabs.more'.tr()),
                   ],
                 ),
               ),

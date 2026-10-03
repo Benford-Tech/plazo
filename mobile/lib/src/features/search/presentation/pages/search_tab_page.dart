@@ -11,6 +11,7 @@ import '../../../../shared/theme/theme.dart';
 import '../../../../shared/widgets/app_card.dart';
 import '../../../../shared/widgets/brand_header.dart';
 import '../../../../shared/widgets/gradient_button.dart';
+import '../../../../shared/widgets/icon_tile.dart';
 import '../../../../shared/widgets/status_badge.dart';
 import '../../../trips/presentation/bloc/trips_bloc.dart';
 import '../bloc/search/search_bloc.dart';
@@ -18,7 +19,8 @@ import '../widgets/dates_pill.dart';
 import '../widgets/stay_sheet.dart';
 
 /// A1, "Rechercher": the hero photo of the site (Pexels) under the prune veil, the airport, the
-/// single "Vos dates" pill and "Rechercher"; below, the next departure kept on this phone.
+/// single "Vos dates" pill and "Rechercher"; below, the next departure kept on this phone, the three
+/// steps and the trust chips (icons of direction H-B: filled, on gradient tiles).
 @RoutePage()
 class SearchTabPage extends StatelessWidget implements AutoRouteWrapper {
   const SearchTabPage({super.key});
@@ -36,10 +38,7 @@ class SearchTabPage extends StatelessWidget implements AutoRouteWrapper {
         child: RefreshIndicator(
           color: AppColors.violet,
           onRefresh: () async => context.read<TripsBloc>().add(const TripsLoaded(quiet: true)),
-          child: ListView(
-            padding: EdgeInsets.zero,
-            children: const [_Hero(), _NextDeparture()],
-          ),
+          child: ListView(padding: EdgeInsets.zero, children: const [_Hero(), _NextDeparture(), _Steps(), _Trust()]),
         ),
       ),
     );
@@ -92,7 +91,7 @@ class _Hero extends StatelessWidget {
                           child: Row(
                             mainAxisSize: MainAxisSize.min,
                             children: [
-                              Transform.rotate(angle: 1.5708, child: const Icon(Icons.flight_rounded, size: 14, color: Color(0xFFF3D6F3))),
+                              const Icon(Icons.flight_takeoff_rounded, size: 15, color: Color(0xFFF3D6F3)),
                               const SizedBox(width: 6),
                               Text(airportName.toUpperCase(), style: AppText.label(size: 12, color: const Color(0xFFF3D6F3))),
                               if (canPick) const Icon(Icons.expand_more_rounded, color: Color(0xFFF3D6F3), size: 18),
@@ -189,46 +188,121 @@ class _NextDeparture extends StatelessWidget {
     return BlocBuilder<TripsBloc, TripsState>(
       builder: (context, trips) {
         final next = trips.nextDeparture;
+        if (next == null) return const SizedBox(height: 16);
         return Padding(
-          padding: const EdgeInsets.fromLTRB(16, 18, 16, 24),
+          padding: const EdgeInsets.fromLTRB(16, 18, 16, 0),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              if (next != null) ...[
-                Semantics(header: true, child: Text('search.next_trip'.tr(), style: AppText.title(size: 21))),
-                const SizedBox(height: 10),
-                AppCard(
-                  key: const Key('next-departure'),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.stretch,
-                    children: [
-                      Row(
-                        children: [
-                          Expanded(child: Text(next.parking.title, style: AppText.strong(size: 14.5))),
-                          StatusBadge.status(next.status),
-                        ],
-                      ),
-                      const SizedBox(height: 4),
-                      Text(
-                        '${formatDay(next.arrivalAt.substring(0, 10))} ${next.arrivalAt.substring(11)} → '
-                        '${formatDay(next.returnAt.substring(0, 10))} ${next.returnAt.substring(11)}',
-                        style: AppText.muted(),
-                      ),
-                      const SizedBox(height: 10),
-                      OutlineAction(
-                        label: 'search.see_booking'.tr(),
-                        onPressed: () => context.router.push(MyBookingRoute(reference: next.reference)),
-                      ),
-                    ],
-                  ),
+              Semantics(header: true, child: Text('search.next_trip'.tr(), style: AppText.title(size: 21))),
+              const SizedBox(height: 10),
+              AppCard(
+                key: const Key('next-departure'),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    Row(
+                      children: [
+                        Expanded(child: Text(next.parking.title, style: AppText.strong(size: 14.5))),
+                        StatusBadge.status(next.status),
+                      ],
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      '${formatDay(next.arrivalAt.substring(0, 10))} ${next.arrivalAt.substring(11)} → '
+                      '${formatDay(next.returnAt.substring(0, 10))} ${next.returnAt.substring(11)}',
+                      style: AppText.muted(),
+                    ),
+                    const SizedBox(height: 10),
+                    OutlineAction(
+                      label: 'search.see_booking'.tr(),
+                      onPressed: () => context.router.push(MyBookingRoute(reference: next.reference)),
+                    ),
+                  ],
                 ),
-                const SizedBox(height: 14),
-              ],
-              ExcludeSemantics(excluding: false, child: Text('search.trust'.tr(), style: AppText.muted(size: 13))),
+              ),
             ],
           ),
         );
       },
+    );
+  }
+}
+
+/// The three steps, "Comparez · Réservez · Décollez", each on its own gradient tile.
+class _Steps extends StatelessWidget {
+  const _Steps();
+
+  @override
+  Widget build(BuildContext context) {
+    const steps = [
+      (Icons.search_rounded, StepGradients.first, 'compare'),
+      (Icons.confirmation_number_rounded, StepGradients.second, 'book'),
+      (Icons.directions_bus_rounded, StepGradients.third, 'fly'),
+    ];
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(16, 0, 16, 12),
+      child: IntrinsicHeight(
+        child: Row(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            for (final (icon, gradient, key) in steps) ...[
+              Expanded(
+                child: Container(
+                  padding: const EdgeInsets.fromLTRB(12, 12, 10, 12),
+                  decoration: BoxDecoration(color: const Color(0xFFFAF6FB), borderRadius: BorderRadius.circular(14)),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      IconTile(icon, gradient: gradient),
+                      const SizedBox(height: 8),
+                      Text('search.steps.$key'.tr(), style: AppText.strong(size: 13)),
+                      const SizedBox(height: 2),
+                      Text('search.steps.${key}_sub'.tr(), style: AppText.muted(size: 11.5).copyWith(height: 1.3)),
+                    ],
+                  ),
+                ),
+              ),
+              if (key != 'fly') const SizedBox(width: 8),
+            ],
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+/// The trust chips, each with its filled violet icon.
+class _Trust extends StatelessWidget {
+  const _Trust();
+
+  @override
+  Widget build(BuildContext context) {
+    const chips = [(Icons.euro_rounded, 'trust_price'), (Icons.directions_bus_rounded, 'trust_shuttle'), (Icons.verified_user_rounded, 'trust_cancel')];
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(16, 0, 16, 24),
+      child: Wrap(
+        spacing: 8,
+        runSpacing: 8,
+        children: [
+          for (final (icon, key) in chips)
+            Container(
+              padding: const EdgeInsets.fromLTRB(10, 7, 12, 7),
+              decoration: BoxDecoration(
+                border: Border.all(color: AppColors.line),
+                borderRadius: BorderRadius.circular(999),
+              ),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  ExcludeSemantics(child: Icon(icon, size: 15, color: AppColors.violet)),
+                  const SizedBox(width: 6),
+                  Text('search.$key'.tr(), style: AppText.strong(size: 12.5, color: AppColors.prune)),
+                ],
+              ),
+            ),
+        ],
+      ),
     );
   }
 }

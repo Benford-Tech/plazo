@@ -197,7 +197,17 @@
     "submit": "Rechercher",
     "next_trip": "Votre prochain départ",
     "see_booking": "Voir ma réservation",
-    "trust": "✓ Prix total · ✓ Navette gratuite · ✓ Annulation claire"
+    "trust_price": "Prix total",
+    "trust_shuttle": "Navette gratuite",
+    "trust_cancel": "Annulation claire",
+    "steps": {
+      "compare": "Comparez",
+      "compare_sub": "Prix total, avis, navette",
+      "book": "Réservez",
+      "book_sub": "Confirmation immédiate",
+      "fly": "Décollez",
+      "fly_sub": "Navette jusqu'au terminal"
+    }
   },
   "picker": {
     "title": "Vos dates",

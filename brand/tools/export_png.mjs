@@ -13,15 +13,19 @@ const brand = path.resolve(path.dirname(new URL(import.meta.url).pathname), '..'
 const png = path.join(brand, 'png');
 fs.mkdirSync(png, { recursive: true });
 
+// The horizontal logo's width follows its viewBox (the sign is as wide as the name).
+const viewBoxWidth = svg => Number(fs.readFileSync(path.join(brand, svg), 'utf8').match(/viewBox="0 0 (\d+)/)[1]);
+const W = viewBoxWidth('logo-horizontal-light.svg');
+
 // [svg, output, width, height, transparent?]
 const jobs = [
-  ['logo-horizontal-light.svg', 'png/logo-horizontal-light@1x.png', 317, 100, true],
-  ['logo-horizontal-light.svg', 'png/logo-horizontal-light@2x.png', 634, 200, true],
-  ['logo-horizontal-light.svg', 'png/logo-horizontal-light@4x.png', 1268, 400, true],
-  ['logo-horizontal-dark.svg', 'png/logo-horizontal-dark@1x.png', 317, 100, true],
-  ['logo-horizontal-dark.svg', 'png/logo-horizontal-dark@2x.png', 634, 200, true],
-  ['logo-horizontal-dark.svg', 'png/logo-horizontal-dark@4x.png', 1268, 400, true],
-  ['logo-mono.svg', 'png/logo-mono@2x.png', 634, 200, true],
+  ['logo-horizontal-light.svg', 'png/logo-horizontal-light@1x.png', W, 100, true],
+  ['logo-horizontal-light.svg', 'png/logo-horizontal-light@2x.png', W * 2, 200, true],
+  ['logo-horizontal-light.svg', 'png/logo-horizontal-light@4x.png', W * 4, 400, true],
+  ['logo-horizontal-dark.svg', 'png/logo-horizontal-dark@1x.png', W, 100, true],
+  ['logo-horizontal-dark.svg', 'png/logo-horizontal-dark@2x.png', W * 2, 200, true],
+  ['logo-horizontal-dark.svg', 'png/logo-horizontal-dark@4x.png', W * 4, 400, true],
+  ['logo-mono.svg', 'png/logo-mono@2x.png', W * 2, 200, true],
   ['symbol.svg', 'png/symbol-512.png', 512, 512, true],
   ['symbol.svg', 'png/symbol-1024.png', 1024, 1024, true],
   ['symbol-dark.svg', 'png/symbol-dark-512.png', 512, 512, true],

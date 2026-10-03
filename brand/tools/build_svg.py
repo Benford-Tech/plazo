@@ -1,8 +1,8 @@
 #!/usr/bin/env python3
-"""Builds the Plazo logo SVGs (option L-B) with the glyphs converted to paths.
+"""Builds the Plazo logo SVGs (option E-A, the parking sign) with the glyphs converted to paths.
 
-The product name (the wordmark) is read from ../../product.json; the fonts are the app's
-Playfair Display (OFL) in mobile/assets/fonts. Run `python3 brand/tools/build_svg.py` from
+The product name (the wordmark) is read from ../../product.json; the font is the app's Inter
+(OFL, variable) in mobile/assets/fonts, at weight 800 like the "P" of a parking sign. Run `python3 brand/tools/build_svg.py` from
 the repository root after a change of name or geometry, then `node brand/tools/export_png.mjs`.
 Requires: pip install fonttools uharfbuzz
 """
@@ -25,18 +25,25 @@ PRUNE = "#4b164c"
 PEACH = "#f0a36b"
 WHITE = "#ffffff"
 
-# Geometry (viewBox units). The symbol is a 100 x 100 square, radius 22 % of the side.
+# Geometry (viewBox units). The sign is 100 high, its corners 17 % of the height; the symbol
+# (icons, favicon) is the same sign reduced to its "P", a 100 x 100 square.
 S = 100
-RADIUS = 22
-P_CAP = 52          # cap height of the "P" inside the square
-WM_CAP = 58         # cap height of the wordmark
-GAP = 20            # space between the square and the wordmark
-BASELINE = 76       # shared baseline of the "P" and the wordmark (P centred: 24..76)
+RADIUS = 17
+P_CAP = 58          # cap height of the "P" inside the square (centred: 21..79)
+WM_CAP = 56         # cap height of the wordmark inside the sign (centred: 22..78)
+PAD = 24            # space between the sign's edge and the wordmark
+TRACKING = -0.03    # letter spacing of the wordmark, in em (tight, like a road sign)
+WEIGHT = 800
+OPSZ = 32           # Inter's optical size axis: display cut
+FONT = "Inter.ttf"
 
 
 def load(name, weight):
     vf = TTFont(os.path.join(FONTS, name))
-    return instantiateVariableFont(vf, {"wght": weight}, inplace=True)
+    axes = {"wght": weight}
+    if "fvar" in vf and any(a.axisTag == "opsz" for a in vf["fvar"].axes):
+        axes["opsz"] = OPSZ
+    return instantiateVariableFont(vf, axes, inplace=True)
 
 
 def shape(font_path, text, weight):
@@ -44,7 +51,7 @@ def shape(font_path, text, weight):
     blob = hb.Blob.from_file_path(font_path)
     face = hb.Face(blob)
     font = hb.Font(face)
-    font.set_variations({"wght": weight})
+    font.set_variations({"wght": weight, "opsz": OPSZ})
     buf = hb.Buffer()
     buf.add_str(text)
     buf.guess_segment_properties()
@@ -73,13 +80,15 @@ def glyph_bounds(tt, gid):
     return pen.bounds
 
 
-def text_path(font_file, text, weight, cap_height, x, baseline):
-    """Path data for `text` with its cap height scaled to `cap_height` and its left edge at `x`."""
+def text_path(font_file, text, weight, cap_height, x, baseline, tracking=0.0):
+    """Path data for `text` with its cap height scaled to `cap_height`, its left edge at `x` and
+    `tracking` em added between the letters."""
     tt = load(font_file, weight)
     upm = tt["head"].unitsPerEm
     cap = tt["OS/2"].sCapHeight
     scale = cap_height / cap
     glyphs, advance = shape(os.path.join(FONTS, font_file), text, weight)
+    glyphs = [(gid, gx + i * tracking * upm, gy) for i, (gid, gx, gy) in enumerate(glyphs)]
     # Align the first glyph's ink (not its side bearing) on x.
     left = glyph_bounds(tt, glyphs[0][0])[0] + glyphs[0][1]
     parts = []
@@ -94,20 +103,6 @@ def text_path(font_file, text, weight, cap_height, x, baseline):
     return " ".join(parts), (xmin, ymin, xmax, ymax)
 
 
-def plane_path(cx, cy, size, angle_deg):
-    """A paper plane pointing to the right in local units (nose at +x), rotated and moved."""
-    import math
-    pts_outer = [(26, 0), (-14, -13), (-6, 0), (-14, 13)]      # nose, upper tail, notch, lower tail
-    fold = [(-6, 0), (26, 0), (-8, 7)]                        # the lower wing fold, cut out
-    a = math.radians(angle_deg)
-    def tr(p):
-        x, y = p[0] * size / 26, p[1] * size / 26
-        return (cx + x * math.cos(a) - y * math.sin(a), cy + x * math.sin(a) + y * math.cos(a))
-    def poly(pts):
-        return "M" + " L".join(f"{x:.2f} {y:.2f}" for x, y in map(tr, pts)) + " Z"
-    return poly(pts_outer), poly(fold)
-
-
 def rounded_rect_path(x, y, w, h, r):
     return (f"M{x + r} {y} H{x + w - r} A{r} {r} 0 0 1 {x + w} {y + r} V{y + h - r} "
             f"A{r} {r} 0 0 1 {x + w - r} {y + h} H{x + r} A{r} {r} 0 0 1 {x} {y + h - r} "
@@ -120,56 +115,60 @@ def svg(view_w, view_h, body, title):
 
 
 def main():
-    # The "P": Playfair Display regular, weight 500, centred in the square.
-    p_path, pb = text_path("PlayfairDisplay.ttf", "P", 500, P_CAP, 0, BASELINE)
-    p_w = pb[2] - pb[0]
-    # Optical centre: a touch to the left, the plane adds weight on the right.
-    p_x = (S - p_w) / 2 - 1.5
-    p_path, pb = text_path("PlayfairDisplay.ttf", "P", 500, P_CAP, p_x, BASELINE)
-    # The plane takes off from the top-right corner of the bowl of the P.
-    plane_outer, plane_fold = plane_path(pb[2] + 3.5, pb[1] - 1, 15, -40)
+    # The symbol: the sign reduced to its "P" (Inter 800), centred in the square.
+    p_path, pb = text_path(FONT, "P", WEIGHT, P_CAP, 0, (S + P_CAP) / 2)
+    p_x = (S - (pb[2] - pb[0])) / 2
+    p_path, pb = text_path(FONT, "P", WEIGHT, P_CAP, p_x, (S + P_CAP) / 2)
 
-    def symbol(bg, fg, plane, x=0, y=0, rounded=True, scale=1.0):
+    def symbol(bg, fg, x=0, y=0, rounded=True, scale=1.0):
         g = f'<g transform="translate({x:g} {y:g}) scale({scale:g})">' if (x or y or scale != 1) else "<g>"
-        rect = (f'<rect width="{S}" height="{S}" rx="{RADIUS}" fill="{bg}"/>' if rounded
+        rect = ("" if bg == "none" else
+                f'<rect width="{S}" height="{S}" rx="{RADIUS}" fill="{bg}"/>' if rounded
                 else f'<rect width="{S}" height="{S}" fill="{bg}"/>')
-        return (f'{g}\n  {rect}\n  <path d="{p_path}" fill="{fg}"/>\n'
-                f'  <path d="{plane_outer} {plane_fold}" fill="{plane}" fill-rule="evenodd"/>\n</g>')
+        return f'{g}\n  {rect}\n  <path d="{p_path}" fill="{fg}"/>\n</g>'
 
     def symbol_mono(colour, x=0, y=0):
-        # One colour for print: the square is filled, the P and the plane are cut out of it.
-        d = f"{rounded_rect_path(0, 0, S, S, RADIUS)} {p_path} {plane_outer}"
+        # One colour for print: the square is filled, the P is cut out of it.
+        d = f"{rounded_rect_path(0, 0, S, S, RADIUS)} {p_path}"
         return f'<path transform="translate({x:g} {y:g})" d="{d}" fill="{colour}" fill-rule="evenodd"/>'
 
-    wm_x = S + GAP
-    wm_path, wb = text_path("PlayfairDisplay-Italic.ttf", NAME, 500, WM_CAP, wm_x, BASELINE)
-    total_w = round(wb[2] + 2)   # the italic "o" overhangs a little
+    # The sign: the whole name inside one rounded rectangle.
+    wm_path, wb = text_path(FONT, NAME, WEIGHT, WM_CAP, PAD, (S + WM_CAP) / 2, TRACKING)
+    total_w = round(wb[2] + PAD)
+
+    def sign(bg, fg):
+        return (f'<rect width="{total_w}" height="{S}" rx="{RADIUS}" fill="{bg}"/>\n'
+                f'<path d="{wm_path}" fill="{fg}"/>')
+
+    def sign_mono(colour):
+        d = f"{rounded_rect_path(0, 0, total_w, S, RADIUS)} {wm_path}"
+        return f'<path d="{d}" fill="{colour}" fill-rule="evenodd"/>'
 
     def wordmark(colour, x=0):
         return f'<path transform="translate({x:g} 0)" d="{wm_path}" fill="{colour}"/>'
 
     files = {
-        "logo-horizontal-light.svg": svg(total_w, S, symbol(PRUNE, WHITE, PEACH) + "\n" + wordmark(PRUNE), NAME),
-        "logo-horizontal-dark.svg": svg(total_w, S, symbol(WHITE, PRUNE, PEACH) + "\n" + wordmark(WHITE), NAME),
-        "logo-mono.svg": svg(total_w, S, symbol_mono(PRUNE) + "\n" + wordmark(PRUNE), NAME),
-        "symbol.svg": svg(S, S, symbol(PRUNE, WHITE, PEACH), NAME),
-        "symbol-dark.svg": svg(S, S, symbol(WHITE, PRUNE, PEACH), NAME),
+        "logo-horizontal-light.svg": svg(total_w, S, sign(PRUNE, WHITE), NAME),
+        "logo-horizontal-dark.svg": svg(total_w, S, sign(WHITE, PRUNE), NAME),
+        "logo-mono.svg": svg(total_w, S, sign_mono(PRUNE), NAME),
+        "symbol.svg": svg(S, S, symbol(PRUNE, WHITE), NAME),
+        "symbol-dark.svg": svg(S, S, symbol(WHITE, PRUNE), NAME),
         "symbol-mono.svg": svg(S, S, symbol_mono(PRUNE), NAME),
-        "wordmark.svg": svg(round(wb[2] - wm_x + 2), S, wordmark(PRUNE, -wm_x), NAME),
-        "favicon.svg": svg(S, S, symbol(PRUNE, WHITE, PEACH), NAME),
-        # Maskable icon: full bleed, the glyphs inside the inner 80 % safe circle.
+        "wordmark.svg": svg(round(wb[2] - PAD + 2), S, wordmark(PRUNE, -PAD), NAME),
+        "favicon.svg": svg(S, S, symbol(PRUNE, WHITE), NAME),
+        # Maskable icon: full bleed, the P inside the inner 80 % safe circle.
         "icon-maskable.svg": svg(S, S,
             f'<rect width="{S}" height="{S}" fill="{PRUNE}"/>\n'
-            + symbol("none", WHITE, PEACH, x=S * 0.1, y=S * 0.1, rounded=False, scale=0.8), NAME),
+            + symbol("none", WHITE, x=S * 0.1, y=S * 0.1, rounded=False, scale=0.8), NAME),
         # Android adaptive foreground: transparent; flutter_launcher_icons insets it by 16 %, so the
-        # glyphs are drawn at 92 % here to land in the inner ~66 % of the 108 dp layer.
+        # P is drawn at 92 % here to land in the inner ~66 % of the 108 dp layer.
         "android-foreground.svg": svg(S, S,
-            symbol("none", WHITE, PEACH, x=S * 0.04, y=S * 0.04, rounded=False, scale=0.92), NAME),
-        # Social card 1200 x 630: the dark logo on prune.
+            symbol("none", WHITE, x=S * 0.04, y=S * 0.04, rounded=False, scale=0.92), NAME),
+        # Social card 1200 x 630: the dark sign on prune.
         "social-card.svg": svg(1200, 630,
             f'<rect width="1200" height="630" fill="{PRUNE}"/>\n'
             f'<g transform="translate({(1200 - total_w * 2.6) / 2:.1f} {(630 - S * 2.6) / 2:.1f}) scale(2.6)">\n'
-            + symbol(WHITE, PRUNE, PEACH) + "\n" + wordmark(WHITE) + "\n</g>", NAME),
+            + sign(WHITE, PRUNE) + "\n</g>", NAME),
     }
     for name, content in files.items():
         with open(os.path.join(OUT, name), "w", encoding="utf-8") as f:
