@@ -59,7 +59,7 @@ class _ParkingView extends StatefulWidget {
 }
 
 class _ParkingViewState extends State<_ParkingView> {
-  final _sections = {for (final k in ['outbound', 'inbound', 'prices', 'access']) k: GlobalKey()};
+  final _sections = {for (final k in ['outbound', 'inbound', 'access']) k: GlobalKey()};
 
   void _goTo(String key) {
     final ctx = _sections[key]?.currentContext;
@@ -110,7 +110,7 @@ class _ParkingViewState extends State<_ParkingView> {
     final shuttle = p.services.contains('shuttle') ? p.shuttleMinutes : null;
     final destination = p.address ?? '${p.title}, ${response.airport.name}';
     final tiles = trustTiles(services: p.services, shuttleMinutes: shuttle, openingHours: p.openingHours, cancellationPolicy: p.cancellationPolicy);
-    final tiers = p.pricing.tiers;
+    // The price grid is not shown (03/10/2026): the price is computed for the dates in the booking bar.
     final links = locator<LinkService>();
     return ListView(
       key: const Key('parking-scroll'),
@@ -145,7 +145,6 @@ class _ParkingViewState extends State<_ParkingView> {
                   children: [
                     PillChip(key: const Key('anchor-outbound'), label: 'parking.outbound'.tr(), onTap: () => _goTo('outbound')),
                     PillChip(key: const Key('anchor-inbound'), label: 'parking.inbound'.tr(), onTap: () => _goTo('inbound')),
-                    if (tiers.isNotEmpty) PillChip(key: const Key('anchor-prices'), label: 'parking.prices'.tr(), onTap: () => _goTo('prices')),
                     PillChip(key: const Key('anchor-access'), label: 'parking.access'.tr(), onTap: () => _goTo('access')),
                   ],
                 ),
@@ -161,13 +160,6 @@ class _ParkingViewState extends State<_ParkingView> {
               ),
               _sectionTitle('parking.inbound'.tr(), key: _sections['inbound']),
               Text('parking.inbound_text'.tr(), style: AppText.body(height: 1.5)),
-              if (tiers.isNotEmpty) ...[
-                _sectionTitle('parking.prices'.tr(), key: _sections['prices']),
-                Text('parking.prices_note'.tr(), style: AppText.muted()),
-                const SizedBox(height: 6),
-                for (final t in tiers) _priceRow('parking.tier_up_to'.tr(args: [daysLabel(t.days)]), formatEuros(t.priceCents)),
-                if (p.pricing.extraDayPriceCents != null) _priceRow('parking.extra_day'.tr(), formatEuros(p.pricing.extraDayPriceCents!)),
-              ],
               _sectionTitle('parking.access'.tr(), key: _sections['access']),
               Text(p.address ?? 'parking.address_unknown'.tr(), style: AppText.body()),
               const SizedBox(height: 10),
@@ -190,16 +182,6 @@ class _ParkingViewState extends State<_ParkingView> {
     child: Semantics(header: true, child: Text(text, style: AppText.title(size: 21))),
   );
 
-  Widget _priceRow(String label, String value) => Container(
-    padding: const EdgeInsets.symmetric(vertical: 9),
-    decoration: const BoxDecoration(border: Border(bottom: BorderSide(color: AppColors.line))),
-    child: Row(
-      children: [
-        Expanded(child: Text(label, style: AppText.body())),
-        Text(value, style: AppText.strong()),
-      ],
-    ),
-  );
 }
 
 class _Photos extends StatefulWidget {

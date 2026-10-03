@@ -47,11 +47,11 @@ void main() {
     expect(find.text('À 3,5 km des terminaux · Extérieur'), findsOneWidget);
     expect(find.text('Nouveau sur Plazo'), findsOneWidget);
     expect(find.byKey(const Key('parking-per-day')), findsOneWidget); // 45,00 € ÷ 8 jours
-    for (final chip in ['À l\'aller', 'Au retour', 'Tarifs', 'Accès']) {
+    for (final chip in ['À l\'aller', 'Au retour', 'Accès']) {
       expect(find.widgetWithText(InkWell, chip), findsWidgets);
     }
     expect(find.textContaining('la navette vous dépose au terminal en 8 minutes'), findsOneWidget);
-    expect(find.text('45,00 €'), findsNWidgets(2)); // the bar and the 8-day package
+    expect(find.text('45,00 €'), findsOneWidget); // the bar only: the price grid is not shown
     expect(find.text('3 → 10 oct. · 8 jours'), findsOneWidget);
     expect(find.byKey(const Key('parking-book')), findsOneWidget);
     expect(find.text('Réservation en ligne bientôt disponible'), findsNothing);

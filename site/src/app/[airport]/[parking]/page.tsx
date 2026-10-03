@@ -11,7 +11,6 @@ import { fr, serviceLabel } from "@/lib/fr";
 import { openGraph } from "@/lib/seo";
 import { factsLine, trustTiles } from "@/lib/highlights";
 import { directionsUrl, mapsUrl } from "@/lib/listing";
-import { formatEuros } from "@/lib/money";
 import { SLUG_RE } from "@/lib/site";
 import type { ParkingResponse } from "@/lib/types";
 
@@ -59,9 +58,9 @@ export default async function ParkingPage({ params, searchParams }: Props) {
     data = await loadParking(airportSlug, parkingSlug);
   }
   const { airport, parking, offer } = data;
-  const tiers = parking.pricing.tiers;
-  // Cheapest package, with the days it covers ("dès 15,00 € la journée").
-  const cheapest = [...tiers].sort((a, b) => a.priceCents - b.priceCents || a.days - b.days)[0];
+  // The price grid is not shown (03/10/2026): the price is computed for the dates. Only the cheapest
+  // package gives the "dès …" line while no dates are chosen.
+  const cheapest = [...parking.pricing.tiers].sort((a, b) => a.priceCents - b.priceCents || a.days - b.days)[0];
   const fromPriceCents = cheapest?.priceCents ?? null;
   const shuttle = parking.services.includes("shuttle") && parking.shuttleMinutes;
   const destination = parking.address ?? `${parking.title}, ${airport.name}`;
@@ -160,36 +159,6 @@ export default async function ParkingPage({ params, searchParams }: Props) {
             </div>
           </dl>
         </section>
-
-        {tiers.length > 0 && (
-          <section className={`${section} md:col-start-1`} aria-labelledby="tarifs">
-            <h2 id="tarifs" className={sectionTitle}>
-              {fr.parking.prices}
-            </h2>
-            <p className="text-sm text-soft">{fr.parking.pricesNote}</p>
-            <table className="w-full border-collapse text-left">
-              <caption className="sr-only">{fr.parking.prices}</caption>
-              <tbody>
-                {tiers.map(t => (
-                  <tr key={t.days} className="border-b border-line">
-                    <th scope="row" className="py-2 font-normal">
-                      {fr.parking.tierUpTo(t.days)}
-                    </th>
-                    <td className="py-2 text-right font-bold whitespace-nowrap">{formatEuros(t.priceCents)}</td>
-                  </tr>
-                ))}
-                {parking.pricing.extraDayPriceCents !== null && (
-                  <tr className="border-b border-line">
-                    <th scope="row" className="py-2 font-normal">
-                      {fr.parking.extraDay}
-                    </th>
-                    <td className="py-2 text-right font-bold whitespace-nowrap">{formatEuros(parking.pricing.extraDayPriceCents)}</td>
-                  </tr>
-                )}
-              </tbody>
-            </table>
-          </section>
-        )}
 
         <section className={`${section} md:col-start-1`} aria-labelledby="acces">
           <h2 id="acces" className={sectionTitle}>
