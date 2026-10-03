@@ -1,5 +1,5 @@
 import { fr } from "./fr";
-import type { ArrivalKind, ArrivalSignal, PlanningRow } from "./types";
+import type { ArrivalKind, ArrivalSignal, PlanningRow, ShuttleTripSummary } from "./types";
 
 /** "Camille Martin" -> "C. Martin" (the banner stays short). */
 export function shortName(fullName: string): string {
@@ -67,4 +67,16 @@ export function miniMapPoints(
     me: { x: cx + dx / span / 2, y: cy + dy / span / 2 },
     meeting: { x: cx - dx / span / 2, y: cy - dy / span / 2 },
   };
+}
+
+/**
+ * The running shuttle trip of each return row: the polled list wins over the one attached to the
+ * planning (refreshed less often); without a polled list, the planning's own stays.
+ */
+export function withShuttleTrips(rows: PlanningRow[], trips: ShuttleTripSummary[] | undefined): PlanningRow[] {
+  if (!trips) return rows;
+  return rows.map(r => {
+    const trip = trips.find(t => t.reservationIds.includes(r.id));
+    return { ...r, shuttleTrip: trip ? { id: trip.id, driverName: trip.driverName, startedAt: trip.startedAt } : null };
+  });
 }

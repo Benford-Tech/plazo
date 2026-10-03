@@ -37,6 +37,15 @@ export interface MeetingPoint extends LatLng {
   source: MeetingPointSource;
   /** Set by the operator for the return point, or the airport's name; null: the client names it. */
   label: string | null;
+  /** The operator's written directions and photo (return point only). */
+  instructions?: string | null;
+  photoUrl?: string | null;
+}
+
+export interface ReturnMeetingPointDetails extends LatLng {
+  label: string | null;
+  instructions: string | null;
+  photoUrl: string | null;
 }
 
 /** What the traveller sees: never their own position back, only the estimate. */
@@ -354,23 +363,35 @@ export class ArrivalService {
   }
 
   /** Where the shuttle meets travellers on their return (null clears it: the airport is used). */
-  public async setReturnMeetingPoint(parkingId: string, point: { lat: number; lng: number; label?: string | null } | null) {
+  public async setReturnMeetingPoint(
+    parkingId: string,
+    point: { lat: number; lng: number; label?: string | null; instructions?: string | null; photoUrl?: string | null } | null,
+  ) {
     if (point) {
       await prisma.$executeRaw`
         UPDATE parkings SET "returnMeetingPoint" = ST_SetSRID(ST_MakePoint(${point.lng}, ${point.lat}), 4326),
-          "returnMeetingLabel" = ${point.label?.trim() || null}
+          "returnMeetingLabel" = ${point.label?.trim() || null},
+          "returnMeetingInstructions" = ${point.instructions?.trim() || null},
+          "returnMeetingPhotoUrl" = ${point.photoUrl?.trim() || null}
         WHERE id = ${parkingId}`;
     } else {
-      await prisma.$executeRaw`UPDATE parkings SET "returnMeetingPoint" = NULL, "returnMeetingLabel" = NULL WHERE id = ${parkingId}`;
+      await prisma.$executeRaw`
+        UPDATE parkings SET "returnMeetingPoint" = NULL, "returnMeetingLabel" = NULL, "returnMeetingInstructions" = NULL, "returnMeetingPhotoUrl" = NULL
+        WHERE id = ${parkingId}`;
     }
     return this.returnMeetingPoint(parkingId);
   }
 
-  public async returnMeetingPoint(parkingId: string): Promise<{ lat: number; lng: number; label: string | null } | null> {
-    const [row] = await prisma.$queryRaw<{ lat: number | null; lng: number | null; label: string | null }[]>`
-      SELECT ST_Y("returnMeetingPoint") AS lat, ST_X("returnMeetingPoint") AS lng, "returnMeetingLabel" AS label
+  public async returnMeetingPoint(parkingId: string): Promise<ReturnMeetingPointDetails | null> {
+    const [row] = await prisma.$queryRaw<
+      { lat: number | null; lng: number | null; label: string | null; instructions: string | null; photoUrl: string | null }[]
+    >`
+      SELECT ST_Y("returnMeetingPoint") AS lat, ST_X("returnMeetingPoint") AS lng, "returnMeetingLabel" AS label,
+        "returnMeetingInstructions" AS instructions, "returnMeetingPhotoUrl" AS "photoUrl"
       FROM parkings WHERE id = ${parkingId}`;
-    return row && row.lat !== null && row.lng !== null ? { lat: Number(row.lat), lng: Number(row.lng), label: row.label } : null;
+    return row && row.lat !== null && row.lng !== null
+      ? { lat: Number(row.lat), lng: Number(row.lng), label: row.label, instructions: row.instructions, photoUrl: row.photoUrl }
+      : null;
   }
 
   // ---------------------------------------------------------------- retention
@@ -522,7 +543,7 @@ export class ArrivalService {
   }
 
   /** Drop-off: the parking's reception. Return: the operator's point, else the airport, else the parking. */
-  private async meetingPoint(
+  public async meetingPoint(
     booking: {
       parkingId: string;
       parking: { id: string; address: string | null; listing?: { airport: { name: string; latitude: number; longitude: number } } | null };
@@ -533,7 +554,8 @@ export class ArrivalService {
       const point = await this.returnMeetingPoint(booking.parkingId);
       if (point) return { ...point, source: 'return_point' };
       const airport = booking.parking.listing?.airport;
-      if (airport) return { lat: airport.latitude, lng: airport.longitude, source: 'airport', label: airport.name };
+      if (airport)
+        return { lat: airport.latitude, lng: airport.longitude, source: 'airport', label: airport.name, instructions: null, photoUrl: null };
     }
     const parking = await this.locations.locate({ id: booking.parking.id, address: booking.parking.address }, READ_GEOCODE_TIMEOUT_MS);
     return parking ? { ...parking, source: 'parking', label: null } : null;

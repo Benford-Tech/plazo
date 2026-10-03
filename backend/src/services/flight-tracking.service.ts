@@ -1,0 +1,253 @@
+import { Container, Service } from 'typedi';
+import { flightTrackingSettings, FlightProviderName, PRODUCT_NAME } from '@/config';
+import prisma, { FlightLandedSource, Prisma, Reservation } from '@/database';
+import { manageToken } from '@/domain/booking';
+import { WITH_LISTING, BookingRecord, toPublicBooking } from '@/domain/booking-view';
+import { FlightInfo, flightNumberKey, flightUpdate, mapAeroDataBox, mapAirLabs, shouldLookupFlight } from '@/domain/flight';
+import { landedPush, landedSms } from '@/domain/return-messages';
+import { localDate, localDateTime } from '@/domain/time';
+import { SECRET_KEY } from '@/config';
+import { logger } from '@/utils/logger';
+import { AuditService } from './audit.service';
+import { NotificationService } from './notification.service';
+import { PushService } from './push.service';
+
+/** A flight data provider. `date` is the local date of the landing (YYYY-MM-DD). */
+export interface FlightTrackingProvider {
+  readonly name: FlightProviderName | 'none';
+  lookup(flightKey: string, date: string, arrivalIata: string | null): Promise<FlightInfo | null>;
+}
+
+const LOOKUP_TIMEOUT_MS = 6000;
+/** At most this many bookings asked to the provider per refresh (the free plans are small). */
+const MAX_LOOKUPS_PER_RUN = 50;
+
+const PICKUP_STATUSES = ['arrived', 'shuttled_out', 'return_requested'] as const;
+
+/** AeroDataBox "Flight status by flight number and date" (RapidAPI, or API.Market with another base URL). */
+export class AeroDataBoxProvider implements FlightTrackingProvider {
+  public readonly name = 'aerodatabox' as const;
+  constructor(
+    private readonly apiKey: string,
+    private readonly baseUrl: string,
+    private readonly timeoutMs = LOOKUP_TIMEOUT_MS,
+  ) {}
+
+  public async lookup(flightKey: string, date: string, arrivalIata: string | null): Promise<FlightInfo | null> {
+    const url = `${this.baseUrl}/flights/number/${encodeURIComponent(flightKey)}/${date}?withAircraftImage=false&withLocation=false&dateLocalRole=Arrival`;
+    const rapid = /rapidapi\.com/.test(this.baseUrl);
+    const headers: Record<string, string> = rapid
+      ? { 'x-rapidapi-key': this.apiKey, 'x-rapidapi-host': new URL(this.baseUrl).host }
+      : { 'x-magicapi-key': this.apiKey, 'x-api-key': this.apiKey };
+    const res = await fetch(url, { headers: { ...headers, accept: 'application/json' }, signal: AbortSignal.timeout(this.timeoutMs) });
+    // 204 / 404: the provider does not know this flight on that day.
+    if (res.status === 204 || res.status === 404) return null;
+    if (!res.ok) throw new Error(`AeroDataBox answered ${res.status}`);
+    return mapAeroDataBox(await res.json(), arrivalIata);
+  }
+}
+
+/** AirLabs "flight" endpoint (the current or next occurrence of a flight number). */
+export class AirLabsProvider implements FlightTrackingProvider {
+  public readonly name = 'airlabs' as const;
+  constructor(
+    private readonly apiKey: string,
+    private readonly baseUrl: string,
+    private readonly timeoutMs = LOOKUP_TIMEOUT_MS,
+  ) {}
+
+  public async lookup(flightKey: string, date: string, arrivalIata: string | null): Promise<FlightInfo | null> {
+    const url = `${this.baseUrl}/flight?flight_iata=${encodeURIComponent(flightKey)}&api_key=${encodeURIComponent(this.apiKey)}`;
+    const res = await fetch(url, { headers: { accept: 'application/json' }, signal: AbortSignal.timeout(this.timeoutMs) });
+    if (!res.ok) throw new Error(`AirLabs answered ${res.status}`);
+    const info = mapAirLabs(await res.json());
+    if (!info) return null;
+    // The endpoint has no date: an occurrence landing on another day is not this booking's flight.
+    const landing = info.actualArrivalAt ?? info.estimatedArrivalAt ?? info.scheduledArrivalAt;
+    if (landing && Math.abs(landing.getTime() - new Date(`${date}T12:00:00Z`).getTime()) > 36 * 3600000) return null;
+    if (arrivalIata && info.arrivalAirport && info.arrivalAirport !== arrivalIata.toUpperCase()) return null;
+    return info;
+  }
+}
+
+export class NoopFlightProvider implements FlightTrackingProvider {
+  public readonly name = 'none' as const;
+  public async lookup(): Promise<FlightInfo | null> {
+    return null;
+  }
+}
+
+type TrackedBooking = Reservation & { parking: { timezone: string; name: string; listing: { airport: { code: string } } | null } };
+
+const WITH_AIRPORT = { parking: { select: { timezone: true, name: true, listing: { select: { airport: { select: { code: true } } } } } } } as const;
+
+/**
+ * Return flight tracking: asks the active provider (AeroDataBox or AirLabs, see config) for the
+ * return flights of the bookings whose vehicle is on site, within 24 h of the landing, at most
+ * once per 5 minutes per booking (the cron and the lazy reads share the cache), and stops once
+ * the flight is final. On landing: the staff get a push (once) and the traveller an SMS (once).
+ * Nothing personal is logged (references only).
+ */
+@Service()
+export class FlightTrackingService {
+  public audit = Container.get(AuditService);
+  public notifications = Container.get(NotificationService);
+  public push = Container.get(PushService);
+  /** Tests may set one; otherwise built from the environment on every call. */
+  public providerOverride: FlightTrackingProvider | null = null;
+
+  public provider(): FlightTrackingProvider {
+    if (this.providerOverride) return this.providerOverride;
+    const settings = flightTrackingSettings();
+    if (!settings) return new NoopFlightProvider();
+    return settings.provider === 'airlabs'
+      ? new AirLabsProvider(settings.apiKey, settings.baseUrl)
+      : new AeroDataBoxProvider(settings.apiKey, settings.baseUrl);
+  }
+
+  public enabled(): boolean {
+    return this.provider().name !== 'none';
+  }
+
+  /** Refreshes the given bookings' flights when due (the lazy path of the reads). */
+  public async refreshBookings(reservationIds: string[]): Promise<number> {
+    if (!reservationIds.length || !this.enabled()) return 0;
+    const rows = await prisma.reservation.findMany({ where: { id: { in: reservationIds }, returnFlight: { not: null } }, include: WITH_AIRPORT });
+    return this.refreshRows(rows);
+  }
+
+  /** The cron: every active booking whose return flight is due for a lookup. */
+  public async refreshDue(): Promise<{ checked: number; landed: number; skipped: boolean }> {
+    if (!this.enabled()) return { checked: 0, landed: 0, skipped: true };
+    const now = new Date();
+    const rows = await prisma.reservation.findMany({
+      where: {
+        status: { in: [...PICKUP_STATUSES] },
+        returnFlight: { not: null },
+        returnAt: { gte: new Date(now.getTime() - 12 * 3600000), lte: new Date(now.getTime() + 30 * 3600000) },
+        OR: [{ flightStatus: null }, { flightStatus: { notIn: ['landed', 'cancelled', 'diverted'] } }],
+      },
+      include: WITH_AIRPORT,
+      orderBy: { returnAt: 'asc' },
+      take: MAX_LOOKUPS_PER_RUN,
+    });
+    const landedBefore = rows.filter(r => r.flightStatus === 'landed').length;
+    const checked = await this.refreshRows(rows);
+    const landedAfter = await prisma.reservation.count({ where: { id: { in: rows.map(r => r.id) }, flightStatus: 'landed' } });
+    return { checked, landed: landedAfter - landedBefore, skipped: false };
+  }
+
+  /** The traveller says "J'ai atterri": the flight is landed from now on, whatever the provider says. */
+  public async markLandedByTraveller(booking: BookingRecord): Promise<void> {
+    const now = new Date();
+    const { count } = await prisma.reservation.updateMany({
+      where: { id: booking.id, status: { in: [...PICKUP_STATUSES] }, OR: [{ flightStatus: null }, { flightStatus: { not: 'landed' } }] },
+      data: { flightStatus: 'landed', flightLandedAt: now, flightLandedSource: 'traveller', flightCheckedAt: now },
+    });
+    if (!count) return;
+    await this.audit.record(
+      { id: null, operatorId: booking.operatorId },
+      { action: 'return.landed', entityType: 'reservation', entityId: booking.id, details: { source: 'traveller', flight: booking.returnFlight } },
+    );
+    await this.notifyLanded(booking.id, 'traveller');
+  }
+
+  // ---------------------------------------------------------------- internals
+
+  private async refreshRows(rows: TrackedBooking[]): Promise<number> {
+    const now = new Date();
+    const due = rows.filter(r => shouldLookupFlight(r, now));
+    if (!due.length) return 0;
+    // Claim the lookups first (conditional on the cache): two concurrent reads ask the provider once.
+    const claimed: TrackedBooking[] = [];
+    for (const row of due) {
+      const { count } = await prisma.reservation.updateMany({
+        where: { id: row.id, OR: [{ flightCheckedAt: null }, { flightCheckedAt: row.flightCheckedAt }] },
+        data: { flightCheckedAt: now },
+      });
+      if (count) claimed.push(row);
+    }
+    const provider = this.provider();
+    await Promise.all(claimed.map(row => this.refreshOne(provider, row, now)));
+    return claimed.length;
+  }
+
+  private async refreshOne(provider: FlightTrackingProvider, row: TrackedBooking, now: Date) {
+    const date = localDate(row.flightEstimatedAt ?? row.flightScheduledAt ?? row.returnAt, row.parking.timezone);
+    let info: FlightInfo | null;
+    try {
+      info = await provider.lookup(flightNumberKey(row.returnFlight!), date, row.parking.listing?.airport.code ?? null);
+    } catch (error) {
+      // The cache time already moved: the provider is not hammered when it is down.
+      logger.warn(
+        `[Flights] ${provider.name} lookup failed for booking ${row.reference}: ${error instanceof Error ? error.message : 'unknown error'}`,
+      );
+      return;
+    }
+    const data: Prisma.ReservationUpdateManyMutationInput = flightUpdate(info, now);
+    const landedNow = data.flightStatus === 'landed';
+    if (landedNow) data.flightLandedSource = 'tracking';
+    const { count } = await prisma.reservation.updateMany({
+      where: {
+        id: row.id,
+        OR: landedNow
+          ? [{ flightStatus: null }, { flightStatus: { not: 'landed' } }]
+          : [{ flightLandedSource: null }, { flightLandedSource: { not: 'traveller' } }],
+      },
+      data,
+    });
+    if (!count) {
+      // The traveller already said they landed: keep their word, but take the terminal and gate.
+      if (!landedNow)
+        await prisma.reservation.updateMany({ where: { id: row.id }, data: { flightTerminal: data.flightTerminal, flightGate: data.flightGate } });
+      return;
+    }
+    if (landedNow) {
+      await this.audit.record(
+        { id: null, operatorId: row.operatorId },
+        { action: 'return.landed', entityType: 'reservation', entityId: row.id, details: { source: 'tracking', flight: row.returnFlight } },
+      );
+      await this.notifyLanded(row.id, 'tracking');
+    }
+  }
+
+  /** The push to the staff (once per booking) and, when the API saw the landing, the SMS to the traveller (once). */
+  private async notifyLanded(reservationId: string, source: FlightLandedSource) {
+    const now = new Date();
+    const booking = await prisma.reservation.findUnique({ where: { id: reservationId }, include: WITH_LISTING });
+    if (!booking) return;
+    const landedAt = localDateTime(booking.flightLandedAt ?? now, booking.parking.timezone).slice(11, 16);
+    const pushClaim = await prisma.reservation.updateMany({
+      where: { id: reservationId, landingNotifiedAt: null },
+      data: { landingNotifiedAt: now },
+    });
+    if (pushClaim.count) {
+      await this.push.notifyStaff(
+        booking.operatorId,
+        'returns',
+        landedPush({ flight: booking.returnFlight, customerName: booking.customerName, plate: booking.plate, source, landedAt }),
+        { data: { type: 'flight', event: 'landed', reservationId }, collapseId: `flight-${reservationId}` },
+      );
+    }
+    // The traveller who tapped "J'ai atterri" is in the app already: no SMS for them.
+    if (source !== 'tracking' || booking.channel !== 'plazo' || !booking.parking.listing) return;
+    const smsClaim = await prisma.reservation.updateMany({ where: { id: reservationId, landingSmsAt: null }, data: { landingSmsAt: now } });
+    if (!smsClaim.count) return;
+    const [point] = await prisma.$queryRaw<{ label: string | null; instructions: string | null }[]>`
+      SELECT "returnMeetingLabel" AS label, "returnMeetingInstructions" AS instructions FROM parkings WHERE id = ${booking.parkingId}`;
+    const publicBooking = toPublicBooking(booking, now);
+    const url = SECRET_KEY ? this.notifications.manageUrl(booking.reference, manageToken(booking.id, SECRET_KEY, booking.manageTokenVersion)) : null;
+    await this.notifications.smsTraveller(
+      publicBooking,
+      'flight_landed',
+      landedSms({
+        productName: PRODUCT_NAME,
+        parkingName: booking.parking.listing.title,
+        meetingLabel: point?.label ?? null,
+        instructions: point?.instructions ?? null,
+        phone: booking.parking.listing.contactPhone,
+        manageUrl: url,
+      }),
+    );
+  }
+}

@@ -121,6 +121,28 @@ export function oneSignalSettings(): { appId: string; restApiKey: string } | nul
   return appId && restApiKey ? { appId, restApiKey } : null;
 }
 
+// Return flight tracking. Both providers are optional; the active one is FLIGHT_TRACKING_PROVIDER
+// (airlabs | aerodatabox), else whichever key is set (AeroDataBox when both). Read on every call so
+// that tests can switch providers. Without a key, flights are not tracked (the traveller's
+// "J'ai atterri" and the return time typed at booking still work).
+export type FlightProviderName = 'airlabs' | 'aerodatabox';
+export function flightTrackingSettings(): { provider: FlightProviderName; apiKey: string; baseUrl: string } | null {
+  const airlabs = process.env.AIRLABS_API_KEY?.trim() || '';
+  const aerodatabox = process.env.AERODATABOX_API_KEY?.trim() || '';
+  const chosen = (process.env.FLIGHT_TRACKING_PROVIDER?.trim().toLowerCase() || '') as FlightProviderName | '';
+  const provider: FlightProviderName | null =
+    chosen === 'airlabs' || chosen === 'aerodatabox' ? chosen : aerodatabox ? 'aerodatabox' : airlabs ? 'airlabs' : null;
+  if (!provider) return null;
+  const apiKey = provider === 'airlabs' ? airlabs : aerodatabox;
+  if (!apiKey) return null;
+  const baseUrl =
+    provider === 'airlabs'
+      ? process.env.AIRLABS_BASE_URL?.trim() || 'https://airlabs.co/api/v9'
+      : // RapidAPI by default; the direct API.Market host also works (see README).
+        process.env.AERODATABOX_BASE_URL?.trim() || 'https://aerodatabox.p.rapidapi.com';
+  return { provider, apiKey, baseUrl: baseUrl.replace(/\/+$/, '') };
+}
+
 // The product name is still a working name: it lives only in the repository's product.json.
 // The build copies it to lib/product.json (deployed with the function); in development it is
 // read from the repository root.

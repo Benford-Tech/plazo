@@ -4,6 +4,8 @@ import { Container } from 'typedi';
 import { ChangeStatusDto, CreateReservationDto, ParseEmailDto, UpdateReservationDto } from '@/dtos/reservation.dto';
 import { RequestWithStaffSession } from '@/middlewares/staff-auth.middleware';
 import { ArrivalService } from '@/services/arrival.service';
+import { FlightTrackingService } from '@/services/flight-tracking.service';
+import { ShuttleService } from '@/services/shuttle.service';
 import { ReservationService } from '@/services/reservation.service';
 import catchAsync from '@/utils/catchAsync';
 
@@ -15,8 +17,16 @@ export class ReservationController {
   /** GET /internal/planning?date=YYYY-MM-DD */
   public planning = catchAsync(async (req: RequestWithStaffSession, res: Response) => {
     // Each row carries its traveller's live arrival signal (null when none).
-    const planning = await this.reservationService.planning(req.staff, str(req.query.date));
-    res.json(await Container.get(ArrivalService).attachToPlanning(req.staff, planning));
+    let planning = await this.reservationService.planning(req.staff, str(req.query.date));
+    // Today's return flights, refreshed when due (5-minute cache): the planning shows the landings.
+    const refreshed = await Container.get(FlightTrackingService).refreshBookings(planning.returns.filter(r => r.returnFlight).map(r => r.id));
+    if (refreshed) planning = await this.reservationService.planning(req.staff, str(req.query.date));
+    const withSignals = await Container.get(ArrivalService).attachToPlanning(req.staff, planning);
+    const trips = await Container.get(ShuttleService).running(req.staff);
+    res.json({
+      ...withSignals,
+      returns: withSignals.returns.map(r => ({ ...r, shuttleTrip: trips.find(t => t.reservationIds.includes(r.id)) ?? null })),
+    });
   });
 
   /** GET /internal/capacity?arrivalAt=&returnAt=&excludeId= */

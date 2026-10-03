@@ -13,12 +13,12 @@ import { CronAuthMiddleware } from '@/middlewares/cron-auth.middleware';
  * @swagger
  * /internal/cron/purge-expired-tokens:
  *   get:
- *     summary: Delete expired staff tokens, end lapsed arrival signals (every night)
+ *     summary: Delete expired staff tokens, end lapsed arrival signals and shuttle trips (every night)
  *     tags: [Cron]
  *     description: "Requires Authorization: Bearer <CRON_SECRET>."
  *     responses:
  *       200:
- *         description: "{ deleted, arrivalSignalsEnded }"
+ *         description: "{ deleted, arrivalSignalsEnded, shuttleTripsEnded }"
  * /internal/cron/payouts:
  *   get:
  *     summary: Transfer the operators' shares that are due (every day)
@@ -41,6 +41,19 @@ import { CronAuthMiddleware } from '@/middlewares/cron-auth.middleware';
  *     responses:
  *       200:
  *         description: "{ ended }"
+ * /internal/cron/track-return-flights:
+ *   get:
+ *     summary: Refresh today's return flights at the provider (every 10 minutes, 05:00-00:00)
+ *     tags: [Cron]
+ *     description: >
+ *       "Requires Authorization: Bearer <CRON_SECRET>." Asks AeroDataBox (or AirLabs) about the return
+ *       flights of the bookings whose vehicle is on site, within 24 h of the landing, skipping those
+ *       looked up less than 5 minutes ago and the final ones (landed, cancelled, diverted). On a
+ *       landing: push to the staff and SMS to the traveller, once each. Reads refresh lazily with the
+ *       same cache, so the block works without this cron (Vercel Hobby: daily crons only).
+ *     responses:
+ *       200:
+ *         description: "{ checked, landed, skipped }"
  * /internal/cron/expire-payment-holds:
  *   get:
  *     summary: End the lapsed holds of bookings waiting for their online payment
@@ -61,5 +74,6 @@ export class CronRoute implements Routes {
     this.router.get('/internal/cron/payouts', CronAuthMiddleware(), this.cron.payouts);
     this.router.get('/internal/cron/expire-arrival-signals', CronAuthMiddleware(), this.cron.expireArrivalSignals);
     this.router.get('/internal/cron/expire-payment-holds', CronAuthMiddleware(), this.cron.expirePaymentHolds);
+    this.router.get('/internal/cron/track-return-flights', CronAuthMiddleware(), this.cron.trackReturnFlights);
   }
 }

@@ -132,7 +132,43 @@ Règles métier :
 - Si le vol est annulé/dérouté, alerte au gérant et au client, pas d'envoi de navette tant qu'il n'y a pas de nouvelle info.
 - Temps de trajet navette configurable (par exemple 8 minutes).
 
-Hors MVP : optimisation d'itinéraire, suivi GPS de la navette.
+Hors MVP : optimisation d'itinéraire.
+
+#### Le jour du retour (mis en œuvre, maquette validée « Votre retour »)
+
+Le flux réel, côté voyageur (app, réservation Plazo ouverte par le lien ou par référence + email) :
+1. **Vol suivi tout seul** : le n° de vol et la date de retour sont interrogés chez AeroDataBox (AirLabs en secours),
+   au plus une fois toutes les 5 minutes par réservation, dans les 24 h avant l'atterrissage prévu, par le cron
+   `track-return-flights` et à chaque lecture (app, planning, file du chauffeur) ; statut (prévu, retardé, en vol,
+   atterri, annulé, dérouté), heure prévue / révisée / réelle, terminal et porte. Sans n° de vol ou sans clé, le
+   voyageur appuie sur « J'ai atterri ».
+2. **À l'atterrissage** : push au personnel (« Vol TO 3627 atterri · C. Martin · AB-123-CD · 10:02 », une fois) et
+   SMS au voyageur (point de rendez-vous, consignes, lien de la réservation ; une fois, seulement si le fournisseur a vu
+   l'atterrissage et si Brevo est configuré).
+3. **« Votre retour aujourd'hui »** : ligne de temps vol → « Rejoignez le point de rendez-vous » (libellé du loueur,
+   porte, minutes à pied) → « La navette vient vous chercher » → « Récupérez votre voiture » (clés à l'accueil, plaque) ;
+   « Itinéraire vers le point de rendez-vous » et « Je suis au point de rendez-vous » (le signal existant).
+4. **Chemin à pied** : itinéraire piéton calculé par l'API auprès de la Géoplateforme IGN (profil piéton, sans clé),
+   depuis la position du téléphone (demandée à ce moment, jamais stockée) ou depuis le terminal si elle est refusée ;
+   cache de 3 minutes par réservation, ligne droite signalée si le service ne répond pas ; consignes écrites (≤ 500
+   caractères) et photo du loueur ; « Ouvrir dans Plans » pour la navigation vocale.
+5. **Navette en direct** : quand un trajet du chauffeur inclut la réservation, la carte montre la navette, l'ETA (à vol
+   d'oiseau à 40 km/h, au moins 1 min), l'heure d'arrivée, le véhicule (modèle, couleur, plaque) et le prénom du
+   chauffeur ; interrogation toutes les 10 s tant que l'écran est ouvert, qui s'arrête à la fin du trajet.
+
+Côté personnel (mode chauffeur dans l'app pro, « Navette ») : les retours du jour à récupérer, groupés par terminal,
+avec leur état (vol prévu / retardé / atterri, au point de rendez-vous) ; « Démarrer le trajet (N clients) » après le
+choix du véhicule (navettes du loueur, ou saisie libre) ; la position part en arrière-plan (service au premier plan
+Android « Trajet navette en cours — position partagée avec vos clients », mode location iOS) au plus toutes les 10 s ;
+« Clients récupérés · retour parking » termine le trajet. Espace pro web : point de rendez-vous (carte IGN, recherche
+d'adresse, libellé, consignes, photo par adresse) et navettes dans « Parking » ; « Navette en route (Karim) » sur les
+retours du planning.
+
+**RGPD** : la position du chauffeur n'existe que pendant un trajet (contrainte en base) ; **seule la dernière** est
+gardée, visible **uniquement des passagers du trajet** ; elle est **effacée** à la fin du trajet et **au bout de 90
+minutes** au plus tard (à la lecture et par la purge nocturne) ; le journal d'audit trace démarrage et fin (nombre de
+passagers, véhicule) sans coordonnées ; la position du voyageur pour l'itinéraire ne sert qu'à la requête ; aucune
+position dans les journaux ; le voyageur ne voit jamais les autres passagers.
 
 #### Prévenir de son arrivée (mis en œuvre, maquette validée « eta »)
 

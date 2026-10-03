@@ -32,6 +32,9 @@ abstract class MeetingPointModel with _$MeetingPointModel {
     /// parking (its reception), return_point (set by the operator) or airport.
     required String source,
     String? label,
+    /// The operator's written directions and photo (return point only).
+    String? instructions,
+    String? photoUrl,
   }) = _MeetingPointModel;
 
   factory MeetingPointModel.fromJson(Map<String, dynamic> json) => _$MeetingPointModelFromJson(json);

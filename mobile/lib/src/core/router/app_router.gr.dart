@@ -123,6 +123,61 @@ class BookingFormRouteArgs {
 }
 
 /// generated route for
+/// [MeetingPointRoutePage]
+class MeetingPointRouteRoute extends PageRouteInfo<MeetingPointRouteRouteArgs> {
+  MeetingPointRouteRoute({
+    Key? key,
+    required String reference,
+    List<PageRouteInfo>? children,
+  }) : super(
+         MeetingPointRouteRoute.name,
+         args: MeetingPointRouteRouteArgs(key: key, reference: reference),
+         rawPathParams: {'reference': reference},
+         initialChildren: children,
+       );
+
+  static const String name = 'MeetingPointRouteRoute';
+
+  static PageInfo page = PageInfo(
+    name,
+    builder: (data) {
+      final pathParams = data.inheritedPathParams;
+      final args = data.argsAs<MeetingPointRouteRouteArgs>(
+        orElse: () => MeetingPointRouteRouteArgs(
+          reference: pathParams.getString('reference'),
+        ),
+      );
+      return WrappedRoute(
+        child: MeetingPointRoutePage(key: args.key, reference: args.reference),
+      );
+    },
+  );
+}
+
+class MeetingPointRouteRouteArgs {
+  const MeetingPointRouteRouteArgs({this.key, required this.reference});
+
+  final Key? key;
+
+  final String reference;
+
+  @override
+  String toString() {
+    return 'MeetingPointRouteRouteArgs{key: $key, reference: $reference}';
+  }
+
+  @override
+  bool operator ==(Object other) {
+    if (identical(this, other)) return true;
+    if (other is! MeetingPointRouteRouteArgs) return false;
+    return key == other.key && reference == other.reference;
+  }
+
+  @override
+  int get hashCode => key.hashCode ^ reference.hashCode;
+}
+
+/// generated route for
 /// [MoreTabPage]
 class MoreTabRoute extends PageRouteInfo<void> {
   const MoreTabRoute({List<PageRouteInfo>? children})
@@ -400,6 +455,22 @@ class ProNotificationsRoute extends PageRouteInfo<void> {
     name,
     builder: (data) {
       return WrappedRoute(child: const ProNotificationsPage());
+    },
+  );
+}
+
+/// generated route for
+/// [ProShuttlePage]
+class ProShuttleRoute extends PageRouteInfo<void> {
+  const ProShuttleRoute({List<PageRouteInfo>? children})
+    : super(ProShuttleRoute.name, initialChildren: children);
+
+  static const String name = 'ProShuttleRoute';
+
+  static PageInfo page = PageInfo(
+    name,
+    builder: (data) {
+      return WrappedRoute(child: const ProShuttlePage());
     },
   );
 }

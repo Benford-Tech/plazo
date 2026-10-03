@@ -91,8 +91,8 @@ class TripCard extends StatelessWidget {
                 const SizedBox(height: 10),
                 GradientButton(
                   key: Key('trip-on-my-way-${b.reference}'),
-                  icon: Icons.near_me_rounded,
-                  label: day == TripDay.dropOff ? 'trips.on_my_way'.tr() : 'trips.at_meeting_point'.tr(),
+                  icon: day == TripDay.dropOff ? Icons.near_me_rounded : Icons.flight_land_rounded,
+                  label: day == TripDay.dropOff ? 'trips.on_my_way'.tr() : 'trips.your_return'.tr(),
                   onPressed: () => context.router.push(MyBookingRoute(reference: b.reference)),
                 ),
               ],

@@ -9,6 +9,7 @@ import {
   IsNumber,
   IsOptional,
   IsString,
+  IsUrl,
   Max,
   MaxLength,
   Min,
@@ -96,6 +97,20 @@ export class ReturnMeetingPointDto {
   @MaxLength(80, { message: 'too_long' })
   @IsString()
   public label?: string | null;
+
+  /** Written directions shown to the traveller (500 characters at most). */
+  @IsOptional()
+  @MaxLength(500, { message: 'too_long' })
+  @IsString()
+  public instructions?: string | null;
+
+  /** Photo of the meeting point (a URL: no upload yet). */
+  @IsOptional()
+  @ValidateIf(o => !!o.photoUrl)
+  @IsUrl({ protocols: ['https', 'http'], require_protocol: true, require_tld: false }, { message: 'invalid_url' })
+  @MaxLength(500, { message: 'too_long' })
+  @IsString()
+  public photoUrl?: string | null;
 }
 
 export class RegisterDeviceDto {

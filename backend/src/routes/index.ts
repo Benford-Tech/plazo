@@ -9,6 +9,7 @@ import { PlatformRoute } from './platform.route';
 import { PublicBookingRoute } from './public-booking.route';
 import { PublicRoute } from './public.route';
 import { ReservationRoute } from './reservation.route';
+import { ReturnRoute } from './return.route';
 import { StaffRoute } from './staff.route';
 
 const AppRoutes = [
@@ -22,6 +23,7 @@ const AppRoutes = [
   new PublicRoute(),
   new PublicBookingRoute(),
   new ArrivalRoute(),
+  new ReturnRoute(),
   new PaymentRoute(),
   new CronRoute(),
 ];

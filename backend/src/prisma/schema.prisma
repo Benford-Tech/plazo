@@ -48,6 +48,8 @@ model Operator {
   parkings     Parking[]
   auditLogs    AuditLog[]
   reservations Reservation[]
+  vehicles     ShuttleVehicle[]
+  shuttleTrips ShuttleTrip[]
 
   @@map("operators")
 }
@@ -86,6 +88,7 @@ model Staff {
   createdReservations Reservation[]
   capacityStudies     CapacityStudy[]
   devices             StaffDevice[]
+  shuttleTrips        ShuttleTrip[]
 
   @@index([operatorId])
   @@map("staff")
@@ -161,6 +164,10 @@ model Parking {
   returnMeetingPoint   Unsupported("geometry(Point, 4326)")?
   // Shown to the traveller and the staff, e.g. "Terminal 1 · arrêt navettes P5".
   returnMeetingLabel   String?
+  // Written directions to the meeting point for the traveller (500 characters at most).
+  returnMeetingInstructions String?
+  // Photo of the meeting point (URL; no upload yet, like the listing's photos).
+  returnMeetingPhotoUrl     String?
   createdAt            DateTime                              @default(now())
   updatedAt            DateTime                              @default(now()) @updatedAt
 
@@ -172,6 +179,7 @@ model Parking {
   pricingTiers   PricingTier[]
   arrivalSignals ArrivalSignal[]
   listing        Listing?
+  shuttleTrips   ShuttleTrip[]
 
   @@index([operatorId])
   @@map("parkings")
@@ -301,6 +309,19 @@ model Reservation {
   arrivedAt               DateTime?
   returnedAt              DateTime?
   cancelledAt             DateTime?
+  // Return flight tracking (see src/domain/flight.ts): refreshed by the cron and lazily when read
+  // (5-minute cache on flightCheckedAt), or set by the traveller ("J'ai atterri").
+  flightStatus            FlightStatus?
+  flightScheduledAt       DateTime? // scheduled landing
+  flightEstimatedAt       DateTime? // revised / predicted landing
+  flightLandedAt          DateTime? // actual landing (tracking) or when the traveller said so
+  flightLandedSource      FlightLandedSource?
+  flightTerminal          String?
+  flightGate              String?
+  flightCheckedAt         DateTime? // last lookup at the provider (cache)
+  // Sent once per booking when the flight lands: the push to the staff, the SMS to the traveller.
+  landingNotifiedAt       DateTime?
+  landingSmsAt            DateTime?
   createdAt               DateTime            @default(now())
   updatedAt               DateTime            @default(now()) @updatedAt
 
@@ -308,6 +329,7 @@ model Reservation {
   parking        Parking         @relation(fields: [parkingId], references: [id], onDelete: Cascade)
   createdBy      Staff?          @relation(fields: [createdById], references: [id], onDelete: SetNull)
   arrivalSignals ArrivalSignal[]
+  shuttleTrips   ShuttleTripPassenger[]
 
   @@unique([operatorId, externalReference])
   @@index([parkingId, arrivalAt])
@@ -504,4 +526,99 @@ model StaffDevice {
 
   @@index([staffId])
   @@map("staff_devices")
+}
+
+// State of a tracked return flight, as the provider reports it (AeroDataBox or AirLabs).
+enum FlightStatus {
+  scheduled // expected, not departed yet
+  delayed
+  departed // en route, approaching
+  landed
+  cancelled
+  diverted
+  unknown // the provider does not know this flight (or on that day)
+}
+
+enum FlightLandedSource {
+  tracking // the flight tracking API
+  traveller // "J'ai atterri" in the app
+}
+
+// A shuttle of the operator (the driver picks one when starting a trip).
+model ShuttleVehicle {
+  id         String   @id @default(cuid())
+  operatorId String
+  model      String // e.g. "Mercedes Vito"
+  colour     String? // e.g. "blanche"
+  plate      String? // display form, e.g. GH-456-JK
+  createdAt  DateTime @default(now())
+
+  operator Operator      @relation(fields: [operatorId], references: [id], onDelete: Cascade)
+  trips    ShuttleTrip[]
+
+  @@index([operatorId])
+  @@map("shuttle_vehicles")
+}
+
+enum ShuttleTripStatus {
+  running
+  ended
+}
+
+enum ShuttleTripEndReason {
+  completed // "Clients récupérés · retour parking"
+  expired // 90 minutes after the start
+}
+
+// A driver's trip to the airport to pick up returning travellers (see SPEC.md, block 3). The
+// driver's LATEST position only is kept while the trip runs, visible to its passengers only; it is
+// erased when the trip ends (by the driver, or 90 minutes after the start). The audit log holds
+// the events, never coordinates.
+model ShuttleTrip {
+  id                 String                @id @default(cuid())
+  operatorId         String
+  parkingId          String
+  driverId           String
+  vehicleId          String?
+  // Snapshot shown to the travellers (the vehicle may be edited or deleted later).
+  vehicleModel       String?
+  vehicleColour      String?
+  vehiclePlate       String?
+  status             ShuttleTripStatus
+  endReason          ShuttleTripEndReason?
+  startedAt          DateTime
+  expiresAt          DateTime
+  endedAt            DateTime?
+  // Latest position only (WGS84), null outside a running trip.
+  lat                Float?
+  lng                Float?
+  accuracyM          Float?
+  positionRecordedAt DateTime? // on the phone
+  positionReceivedAt DateTime? // by the API (rate limit)
+  createdAt          DateTime              @default(now())
+  updatedAt          DateTime              @default(now()) @updatedAt
+
+  operator   Operator               @relation(fields: [operatorId], references: [id], onDelete: Cascade)
+  parking    Parking                @relation(fields: [parkingId], references: [id], onDelete: Cascade)
+  driver     Staff                  @relation(fields: [driverId], references: [id], onDelete: Cascade)
+  vehicle    ShuttleVehicle?        @relation(fields: [vehicleId], references: [id], onDelete: SetNull)
+  passengers ShuttleTripPassenger[]
+
+  @@index([operatorId, status])
+  @@index([driverId, status])
+  @@index([status, expiresAt])
+  @@map("shuttle_trips")
+}
+
+model ShuttleTripPassenger {
+  tripId        String
+  reservationId String
+  createdAt     DateTime @default(now())
+
+  trip        ShuttleTrip @relation(fields: [tripId], references: [id], onDelete: Cascade)
+  reservation Reservation @relation(fields: [reservationId], references: [id], onDelete: Cascade)
+
+  @@id([tripId, reservationId])
+  @@index([reservationId])
+  @@map("shuttle_trip_passengers")
 }

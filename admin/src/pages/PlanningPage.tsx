@@ -1,12 +1,12 @@
 import { useQuery } from "@tanstack/react-query";
-import { Bell, ChevronLeft, ChevronRight, X } from "lucide-react";
+import { Bell, BusFront, ChevronLeft, ChevronRight, X } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import { Link, useSearchParams } from "react-router-dom";
 import { Plate } from "@/components/Plate";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useAuth } from "@/contexts/AuthContext";
 import { adminApi } from "@/lib/api";
-import { bannerText, eventKey, liveFirst, miniMapPoints, positionAge, withLiveSignals } from "@/lib/arrivals";
+import { bannerText, eventKey, liveFirst, miniMapPoints, positionAge, withLiveSignals, withShuttleTrips } from "@/lib/arrivals";
 import { addDays, longDate, shortDay, timeOf, todayLocal } from "@/lib/datetime";
 import { describeError, fr } from "@/lib/fr";
 import { can } from "@/lib/roles";
@@ -61,6 +61,9 @@ function MiniMap({ s }: { s: ArrivalSignal }) {
   );
 }
 
+/** "Karim Benali" -> "Karim": the badge stays short. */
+const shortDriver = (name: string) => name.trim().split(/\s+/)[0] ?? name;
+
 /** What the traveller told the parking, on the right of the row. */
 function SignalLabel({ s }: { s: ArrivalSignal }) {
   const t = fr.planning;
@@ -98,7 +101,12 @@ function Row({ r, kind, index, clock }: { r: PlanningRow; kind: "arrival" | "ret
             </span>
           </span>
         </span>
-        {s ? (
+        {!isArrival && r.shuttleTrip ? (
+          <span className="flex items-center gap-1.5 whitespace-nowrap bg-primary px-2 py-1 text-xs font-bold uppercase text-primary-foreground sm:text-sm">
+            <BusFront className="h-4 w-4" aria-hidden="true" />
+            {t.shuttleOnTheWay(shortDriver(r.shuttleTrip.driverName))}
+          </span>
+        ) : s ? (
           <SignalLabel s={s} />
         ) : isArrival ? (
           <span
@@ -216,7 +224,7 @@ export default function PlanningPage() {
   }, [signals, banner]);
 
   const arrivals = data ? liveFirst(withLiveSignals(data.arrivals, "outbound", signals)) : [];
-  const returns = data ? liveFirst(withLiveSignals(data.returns, "return", signals)) : [];
+  const returns = data ? liveFirst(withShuttleTrips(withLiveSignals(data.returns, "return", signals), isToday ? live.data?.shuttleTrips : undefined)) : [];
 
   return (
     <>

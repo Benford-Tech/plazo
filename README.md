@@ -36,7 +36,16 @@ et affectation des véhicules, navette au retour.
   séjour** (ou selon le calendrier choisi), compte Stripe Express du loueur (routes seulement). Reste : écrans de l'espace
   pro (connexion Stripe, calendrier de reversement), validation juridique avant le paiement réel.
 - [ ] Jalon 4 — Cartographie et affectation
-- [ ] Jalon 5 — Navette au retour
+- [ ] **Jalon 5 — Navette au retour** (en cours, maquette validée « Votre retour ») : fait — **suivi automatique du vol
+  retour** (AeroDataBox par RapidAPI, AirLabs en secours ; rafraîchi par un cron et à la lecture avec un cache de
+  5 min ; à l'atterrissage : push au personnel « Vol TO 3627 atterri · C. Martin » et SMS au voyageur, une seule fois),
+  **« Votre retour aujourd'hui »** dans l'app (ligne de temps : vol → point de rendez-vous → navette → voiture, ou
+  « J'ai atterri » sans suivi), **chemin à pied vers le point de rendez-vous** (itinéraire piéton Géoplateforme IGN
+  calculé par l'API, consignes et photo du loueur, « Ouvrir dans Plans »), **suivi de la navette en direct** (position
+  du chauffeur, ETA, véhicule, prénom), **mode chauffeur** dans l'app pro (retours à récupérer par terminal, « Démarrer le
+  trajet », position partagée avec les passagers seulement, « Clients récupérés »), point de rendez-vous (carte, libellé,
+  consignes, photo) et navettes dans l'espace pro, « Navette en route (Karim) » sur le planning. Reste : « bagages
+  récupérés / pris en charge » détaillés, regroupement par vague, SMS au voyageur sans réservation Plazo.
 - [ ] **Jalon 6 — App mobile (Flutter)** (commencé, `mobile/`) : fait — **« Prévenir de son arrivée »** (maquette
   validée) : le voyageur ouvre sa réservation par le lien reçu ou par référence + email, partage sa position jusqu'à
   son arrivée (2 h au plus, effacée ensuite, arrêt automatique à 150 m de l'accueil) ou annonce « J'arrive dans
@@ -156,6 +165,26 @@ le navigateur de l'espace pro appelle `/api` sur le même domaine (pas de CORS).
    (position effacée) à chaque lecture et par la purge nocturne existante ; `/api/internal/cron/expire-arrival-signals`
    existe pour une passe plus fréquente si besoin.
 
+6. **Suivi des vols au retour** — facultatif : sans clé, les vols ne sont pas suivis (le voyageur dit « J'ai atterri »
+   dans l'app, et l'heure de retour saisie fait foi). Deux fournisseurs derrière la même interface, choisis par
+   `FLIGHT_TRACKING_PROVIDER` (`aerodatabox` | `airlabs` ; vide : celui dont la clé est renseignée, AeroDataBox si les
+   deux) :
+   - **AeroDataBox** (celui qui fonctionne aujourd'hui) : sur [rapidapi.com](https://rapidapi.com), chercher
+     « AeroDataBox », s'abonner au plan **Basic (gratuit)**, copier la clé *X-RapidAPI-Key* dans `AERODATABOX_API_KEY`.
+     Acheté sur API.Market plutôt que RapidAPI ? Mettre aussi `AERODATABOX_BASE_URL=https://prod.api.market/api/v1/aedbx/aerodatabox`
+     (la clé part alors dans l'en-tête `x-magicapi-key`). Appels frugaux : une recherche par réservation et par passage
+     (cron ou lecture), au plus une toutes les 5 minutes, jamais plus de 24 h avant l'atterrissage prévu, plus rien
+     après atterri / annulé / dérouté.
+   - **AirLabs** (`AIRLABS_API_KEY`) : inscriptions fermées pour l'instant (liste d'attente) ; gardé en secours.
+   - Tâche planifiée `/api/internal/cron/track-return-flights` (`Authorization: Bearer <CRON_SECRET>`), à ajouter dans
+     `vercel.json` : **toutes les 10 minutes de 5 h à minuit** (`*/10 5-23 * * *`, heure UTC sur Vercel). Vercel Hobby
+     n'accepte que des crons quotidiens : les lectures (app, planning, file du chauffeur) rafraîchissent aussi le vol
+     avec le même cache de 5 minutes, donc le bloc fonctionne sans cron (seul le SMS à l'atterrissage dépend alors d'une
+     lecture).
+   - Le SMS d'atterrissage (point de rendez-vous, consignes, lien de la réservation) part par Brevo (`BREVO_API_KEY`)
+     une seule fois par réservation, seulement quand le fournisseur a vu l'atterrissage (pas quand le voyageur l'a
+     déclaré lui-même : il est déjà dans l'app).
+
 Vérifier la configuration sans déployer : `npx vercel build` (avec un `.vercel/project.json` local),
 ou `vercel dev` pour lancer les trois services ensemble.
 
@@ -234,6 +263,18 @@ Documentation interactive : `/api/docs` (Swagger). Toutes les routes sont sous `
 | GET / PUT | `/internal/payments/settings` | Gérant : `{ payoutSchedule }` (`AFTER_STAY`, `AT_DROP_OFF`, `WEEKLY`, `MONTHLY`) |
 | GET | `/internal/cron/payouts` | Vercel Cron, chaque jour : transferts des parts dues aux loueurs |
 | GET | `/internal/cron/expire-payment-holds` | Vercel Cron (facultatif) : expire les places tenues non payées |
+| GET | `/internal/cron/track-return-flights` | Vercel Cron, toutes les 10 min (5 h – 0 h) : vols retour du jour (push et SMS à l'atterrissage) |
+| GET / PUT | `/internal/parking/return-meeting-point` | Point de rendez-vous au retour : `{ lat, lng, label, instructions (≤ 500), photoUrl }` (gérant) |
+| GET | `/public/bookings/:ref/return` | App, jour du retour : vol (rafraîchi si dû), point de rendez-vous, signal, navette en route |
+| POST | `/public/bookings/:ref/return/landed` | « J'ai atterri » (push au personnel) |
+| GET | `/public/bookings/:ref/return/route?lat=&lng=` | Chemin à pied vers le point de rendez-vous (IGN, cache 3 min, ligne droite en repli) |
+| GET | `/public/bookings/:ref/shuttle` | La navette qui vient (position, ETA, véhicule) : seulement pendant un trajet qui inclut la réservation |
+| GET | `/internal/shuttle/pickups` | Chauffeur : retours à récupérer (vol, terminal, au point de rendez-vous, trajet) |
+| GET / POST | `/internal/shuttle/vehicles`, DELETE `…/:id` | Navettes du loueur (gérant) |
+| GET | `/internal/shuttle/trips/current` | Le trajet en cours du chauffeur connecté |
+| POST | `/internal/shuttle/trips` | « Démarrer le trajet » `{ reservationIds, vehicleId \| vehicle }` (un par chauffeur, 90 min max) |
+| POST | `/internal/shuttle/trips/:id/position` | Position du chauffeur (une par 10 s, dernière seule, chauffeur uniquement) |
+| POST | `/internal/shuttle/trips/:id/end` | « Clients récupérés » : fin du trajet, position effacée |
 | GET | `/internal/platform/operators` | Plateforme (`PLATFORM_ADMIN_EMAILS`, 403 sinon) : tous les loueurs et leurs chiffres |
 | PATCH | `/internal/platform/operators/:id/commission` | `{ commissionBps }` (null : taux par défaut) |
 | POST | `/internal/platform/operators/:id/suspend` / `…/reactivate` | Suspendre / réactiver un loueur |

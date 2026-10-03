@@ -20,6 +20,8 @@ import type {
   Paginated,
   Parking,
   ParkingSettings,
+  ReturnMeetingPoint,
+  ShuttleVehicle,
   LiveArrivals,
   Planning,
   Reservation,
@@ -201,6 +203,15 @@ export const adminApi = {
     apiRequest<{ message: string }>("/internal/staff/me/password", { method: "PATCH", body: json({ currentPassword, newPassword }) }),
 
   getParking: () => apiRequest<Parking>("/internal/parking"),
+  getReturnMeetingPoint: () => apiRequest<{ data: ReturnMeetingPoint | null }>("/internal/parking/return-meeting-point"),
+  setReturnMeetingPoint: (point: ReturnMeetingPoint | null) =>
+    apiRequest<{ data: ReturnMeetingPoint | null }>("/internal/parking/return-meeting-point", {
+      method: "PUT",
+      body: json(point ?? { lat: null, lng: null }),
+    }),
+  getVehicles: () => apiRequest<{ data: ShuttleVehicle[] }>("/internal/shuttle/vehicles"),
+  addVehicle: (vehicle: Omit<ShuttleVehicle, "id">) => apiRequest<{ data: ShuttleVehicle }>("/internal/shuttle/vehicles", { method: "POST", body: json(vehicle) }),
+  removeVehicle: (id: string) => apiRequest<void>(`/internal/shuttle/vehicles/${id}`, { method: "DELETE" }),
   updateParking: (id: string, settings: ParkingSettings) =>
     apiRequest<{ data: Parking }>(`/internal/parkings/${id}`, { method: "PATCH", body: json(settings) }),
 

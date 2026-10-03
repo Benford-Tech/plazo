@@ -2,6 +2,8 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
 import { FormField } from "@/components/FormField";
+import { ReturnMeetingPointForm } from "@/components/parking/ReturnMeetingPointForm";
+import { ShuttleVehicles } from "@/components/parking/ShuttleVehicles";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
@@ -122,6 +124,8 @@ export default function ParkingPage() {
           </form>
         </CardContent>
       </Card>
+      <ReturnMeetingPointForm />
+      <ShuttleVehicles />
     </>
   );
 }

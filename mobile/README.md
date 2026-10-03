@@ -18,8 +18,15 @@ depuis « Plus » (ou un lien `/pro…`) et reste tel quel. Les « flavors » vi
 - **Voyageur — le jour J** (`/ma-reservation/REF`) : ouvrir sa réservation par le lien reçu par email ou SMS
   (`https://<domaine>/ma-reservation/REF?cle=…`, le même que celui du site) ou par référence + email ;
   le jour J, **prévenir le parking de son arrivée** : partage de la position en direct jusqu'à l'arrivée
-  (2 h au plus, puis effacée), ou « J'arrive dans 10 / 20 / 30 min » sans position ; au retour,
-  « Je suis au point de rendez-vous ».
+  (2 h au plus, puis effacée), ou « J'arrive dans 10 / 20 / 30 min » sans position.
+- **Voyageur — le jour du retour** (maquette « Votre retour », `/ma-reservation/REF`) : ligne de temps (vol suivi par
+  l'API ou « J'ai atterri », point de rendez-vous, navette, voiture), « Itinéraire vers le point de rendez-vous »
+  (`/ma-reservation/REF/point-de-rendez-vous` : chemin piéton IGN calculé par l'API depuis la position du téléphone ou
+  le terminal, consignes et photo du loueur, « Ouvrir dans Plans »), « Je suis au point de rendez-vous », puis la
+  **navette en direct** (position du chauffeur, ETA, véhicule, prénom ; interrogée toutes les 10 s).
+- **Pro — mode chauffeur** (`/pro/navette`, bouton « Navette » du planning) : retours à récupérer par terminal avec
+  leur état (vol prévu / atterri / au point de rendez-vous), « Démarrer le trajet (N clients) » après le choix du
+  véhicule, position partagée avec les passagers jusqu'à « Clients récupérés · retour parking » (90 min au plus).
 - **Pro** (`/pro…`) : connexion du personnel (mêmes comptes que l'espace pro), planning du jour
   Arrivées / Retours (onglets sur téléphone, deux colonnes sur tablette) avec les signaux en direct
   (interrogés toutes les 12 s), l'arrivée en approche en tête avec sa mini-carte, et les notifications
@@ -96,6 +103,12 @@ version web, « Payer » ouvre la page Stripe Checkout.
 - Android : service au premier plan avec la notification « Partage de position avec le parking en cours »
   (pas de permission « position en arrière-plan »). iOS : mode d'arrière-plan `location`, indicateur bleu,
   textes d'usage en français dans `Info.plist`. Web : seulement tant que la page reste ouverte.
+- **Chauffeur** : même mécanique pendant un trajet navette (« Démarrer le trajet » demande l'autorisation ; position
+  envoyée au plus toutes les 10 s, visible des passagers du trajet seulement ; notification Android « Trajet navette
+  en cours — position partagée avec vos clients », mode `location` iOS). Le partage s'arrête à « Clients récupérés »,
+  au bout de 90 min, ou si le serveur a terminé le trajet ; le serveur efface alors la position.
+- **Itinéraire piéton** : la position n'est demandée qu'à l'ouverture de l'écran « Point de rendez-vous », envoyée une
+  fois à l'API pour le calcul (jamais stockée) ; refusée, le chemin part du terminal.
 - Le jeton de gestion de la réservation et la session du personnel sont dans le trousseau / keystore
   (`flutter_secure_storage`), jamais dans les journaux ; les journaux réseau n'écrivent que méthode, chemin et statut.
 

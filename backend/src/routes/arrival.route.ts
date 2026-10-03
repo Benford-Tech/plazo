@@ -228,6 +228,10 @@ import { ValidationMiddleware } from '@/middlewares/validation.middleware';
  *               properties:
  *                 serverTime: { type: string, format: date-time }
  *                 signals: { type: array, items: { $ref: '#/components/schemas/StaffArrivalSignal' } }
+ *                 shuttleTrips:
+ *                   type: array
+ *                   description: The operator's running shuttle trips (driver, passengers), for "Navette en route (Karim)"
+ *                   items: { type: object, properties: { id: { type: string }, driverId: { type: string }, driverName: { type: string }, startedAt: { type: string, format: date-time }, reservationIds: { type: array, items: { type: string } } } }
  * /internal/parking/return-meeting-point:
  *   get:
  *     summary: "Where the shuttle meets travellers at the airport (null: the airport is used)"
@@ -246,6 +250,8 @@ import { ValidationMiddleware } from '@/middlewares/validation.middleware';
  *               lat: { type: number, nullable: true }
  *               lng: { type: number, nullable: true }
  *               label: { type: string, nullable: true, example: "Terminal 1 · arrêt navettes" }
+ *               instructions: { type: string, nullable: true, maxLength: 500, description: Written directions shown to the traveller }
+ *               photoUrl: { type: string, format: uri, nullable: true, description: Photo of the meeting point (URL) }
  * /internal/notifications/devices:
  *   put:
  *     summary: Register this phone for pushes (OneSignal subscription id)

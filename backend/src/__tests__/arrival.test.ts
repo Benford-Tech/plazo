@@ -289,7 +289,7 @@ describe('voyageur : partage de position', () => {
       data: { startedAt: minutesFromNow(-121), expiresAt: minutesFromNow(-1) },
     });
     const res = await api().get('/api/internal/cron/expire-arrival-signals').set(auth('test-cron-secret'));
-    expect(res.body).toEqual({ ended: 1 });
+    expect(res.body).toEqual({ ended: 1, tripsEnded: 0 });
     expect((await signalRows(b))[0].lat).toBeNull();
   });
 
@@ -357,10 +357,17 @@ describe('voyageur : sans partage, et retour', () => {
       .put('/api/internal/parking/return-meeting-point')
       .set(auth(b.op.token))
       .send({ lat: 45.7214, lng: 5.0782, label: 'Terminal 1 · P5' });
-    expect(set.body.data).toEqual({ lat: 45.7214, lng: 5.0782, label: 'Terminal 1 · P5' });
+    expect(set.body.data).toEqual({ lat: 45.7214, lng: 5.0782, label: 'Terminal 1 · P5', instructions: null, photoUrl: null });
     await prisma.reservation.update({ where: { id: b.reservation.id }, data: { status: 'arrived', returnAt: minutesFromNow(60) } });
     const state = await api().get(arrival(b)).set(bookingToken(b.manageToken));
-    expect(state.body.meetingPoint).toEqual({ lat: 45.7214, lng: 5.0782, source: 'return_point', label: 'Terminal 1 · P5' });
+    expect(state.body.meetingPoint).toEqual({
+      lat: 45.7214,
+      lng: 5.0782,
+      source: 'return_point',
+      label: 'Terminal 1 · P5',
+      instructions: null,
+      photoUrl: null,
+    });
   });
 });
 

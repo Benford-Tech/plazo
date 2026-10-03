@@ -17,6 +17,9 @@ class IgnMap extends StatefulWidget {
     this.interactive = false,
     this.dashedLine = false,
     this.accent = AppColors.violet,
+    this.meLabel,
+    this.route,
+    this.fitRoute = false,
   });
 
   /// Widget tests run without network: they switch the tiles off.
@@ -30,6 +33,13 @@ class IgnMap extends StatefulWidget {
   final bool dashedLine;
   final Color accent;
 
+  /// A pill next to the moving dot (e.g. the shuttle's "4 min").
+  final String? meLabel;
+
+  /// A drawn path (walking route) from [me] to [meeting]; the view fits it when [fitRoute].
+  final List<LatLng>? route;
+  final bool fitRoute;
+
   @override
   State<IgnMap> createState() => _IgnMapState();
 }
@@ -41,9 +51,13 @@ class _IgnMapState extends State<IgnMap> {
   /// Both points in view (or the meeting point alone).
   CameraFit? _fit() {
     final me = widget.me;
-    if (me == null || (me.latitude == widget.meeting.latitude && me.longitude == widget.meeting.longitude)) return null;
+    final route = widget.route;
     // Room for the meeting point's label, in proportion to the map's height (small on a card).
     final v = widget.height * 0.16;
+    if (widget.fitRoute && route != null && route.length >= 2) {
+      return CameraFit.bounds(bounds: LatLngBounds.fromPoints([...route, widget.meeting]), padding: EdgeInsets.fromLTRB(40, v + 8, 40, v), maxZoom: 18);
+    }
+    if (me == null || (me.latitude == widget.meeting.latitude && me.longitude == widget.meeting.longitude)) return null;
     return CameraFit.bounds(bounds: LatLngBounds(me, widget.meeting), padding: EdgeInsets.fromLTRB(70, v + 8, 70, v), maxZoom: 17);
   }
 
@@ -51,7 +65,7 @@ class _IgnMapState extends State<IgnMap> {
   void didUpdateWidget(IgnMap old) {
     super.didUpdateWidget(old);
     // A new position (the first one, or the traveller moved): keep both points in view.
-    if (_ready && (old.me != widget.me || old.meeting != widget.meeting)) {
+    if (_ready && (old.me != widget.me || old.meeting != widget.meeting || old.route != widget.route)) {
       final fit = _fit();
       if (fit != null) {
         _controller.fitCamera(fit);
@@ -95,7 +109,13 @@ class _IgnMapState extends State<IgnMap> {
               children: [
                 if (IgnMap.tilesEnabled)
                   TileLayer(urlTemplate: AppConstants.ignPlanTilesUrl, userAgentPackageName: 'com.benfordtech.parking_app', maxNativeZoom: 19),
-                if (dashedLine && me != null)
+                if (widget.route != null && widget.route!.length >= 2)
+                  PolylineLayer(
+                    polylines: [
+                      Polyline(points: widget.route!, color: accent, strokeWidth: 4, pattern: StrokePattern.dashed(segments: const [10, 7])),
+                    ],
+                  )
+                else if (dashedLine && me != null)
                   PolylineLayer(
                     polylines: [
                       Polyline(points: [me, meeting], color: accent, strokeWidth: 3, pattern: StrokePattern.dashed(segments: const [8, 6])),
@@ -103,8 +123,17 @@ class _IgnMapState extends State<IgnMap> {
                   ),
                 MarkerLayer(
                   markers: [
-                    Marker(point: meeting, width: 140, height: 34, child: Center(child: _MeetingPin(label: meetingLabel))),
+                    Marker(point: meeting, width: 230, height: 34, child: Center(child: _MeetingPin(label: meetingLabel))),
                     if (me != null) Marker(point: me, width: 40, height: 40, child: _MeDot(color: accent)),
+                    if (me != null && widget.meLabel != null)
+                      // To the right of the dot (the point sits at the box's left edge), as on the approved frame.
+                      Marker(
+                        point: me,
+                        width: 150,
+                        height: 40,
+                        alignment: Alignment.centerRight,
+                        child: Row(children: [const SizedBox(width: 24), _MePill(label: widget.meLabel!, color: accent)]),
+                      ),
                   ],
                 ),
               ],
@@ -153,6 +182,27 @@ class _MeDot extends StatelessWidget {
         height: 18,
         decoration: BoxDecoration(shape: BoxShape.circle, color: color, border: Border.all(color: Colors.white, width: 3)),
       ),
+    ),
+  );
+}
+
+/// "🚌 4 min" above the moving dot (the shuttle, in direction D's peach).
+class _MePill extends StatelessWidget {
+  const _MePill({required this.label, required this.color});
+  final String label;
+  final Color color;
+
+  @override
+  Widget build(BuildContext context) => Container(
+    padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 5),
+    decoration: BoxDecoration(color: color, borderRadius: BorderRadius.circular(14)),
+    child: Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        const Icon(Icons.directions_bus_rounded, size: 14, color: Colors.white),
+        const SizedBox(width: 4),
+        Text(label, style: AppText.strong(size: 12, color: Colors.white)),
+      ],
     ),
   );
 }

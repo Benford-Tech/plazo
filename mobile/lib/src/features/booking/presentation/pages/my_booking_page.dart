@@ -18,6 +18,8 @@ import '../../../../shared/widgets/status_badge.dart';
 import '../../../arrival/data/models/arrival_model.dart';
 import '../../../arrival/presentation/bloc/arrival_bloc.dart';
 import '../../../arrival/presentation/widgets/arrival_block.dart';
+import '../../../return_day/presentation/bloc/return_bloc.dart';
+import '../../../return_day/presentation/widgets/return_block.dart';
 import '../../../trips/presentation/bloc/trips_bloc.dart';
 import '../../../trips/presentation/widgets/booking_actions.dart';
 import '../../data/models/public_booking_model.dart';
@@ -50,6 +52,7 @@ class MyBookingPage extends StatelessWidget implements AutoRouteWrapper {
       providers: [
         BlocProvider(create: (_) => locator<BookingBloc>()..add(BookingLinkOpened(reference, token: token))),
         BlocProvider(create: (_) => locator<ArrivalBloc>()),
+        BlocProvider(create: (_) => locator<ReturnBloc>()),
       ],
       child: this,
     );
@@ -67,6 +70,10 @@ class MyBookingPage extends StatelessWidget implements AutoRouteWrapper {
         // Opened from a link: the booking joins "Mes réservations".
         if (token != null) locator<TripsBloc>().add(const TripsLoaded(quiet: true));
         if (state.booking?.active ?? false) context.read<ArrivalBloc>().add(ArrivalOpened(state.reference!));
+        // The return day (vehicle on site): the flight, the meeting point and the shuttle.
+        if (const ['arrived', 'shuttled_out', 'return_requested'].contains(state.booking?.status)) {
+          context.read<ReturnBloc>().add(ReturnOpened(state.reference!));
+        }
       },
       child: Scaffold(
         appBar: AppBar(
@@ -90,6 +97,7 @@ class MyBookingPage extends StatelessWidget implements AutoRouteWrapper {
                 onRefresh: () async {
                   context.read<BookingBloc>().add(const BookingRefreshed());
                   context.read<ArrivalBloc>().add(const ArrivalRefreshRequested());
+                  context.read<ReturnBloc>().add(const ReturnRefreshRequested());
                 },
                 child: BlocBuilder<ArrivalBloc, ArrivalState>(
                   buildWhen: (a, b) => a.openKind != b.openKind,
@@ -132,7 +140,8 @@ class MyBookingPage extends StatelessWidget implements AutoRouteWrapper {
                                 ),
                               ],
                               const SizedBox(height: 12),
-                              const ArrivalBlock(),
+                              // The return day has its own block (R1/R3); the drop-off keeps the arrival block.
+                              if (kind == ArrivalKind.returnTrip) const ReturnBlock() else const ArrivalBlock(),
                               const SizedBox(height: 4),
                               BookingActions(booking: b, onChanged: (_) => context.read<BookingBloc>().add(const BookingRefreshed())),
                               if (b.parking.phone != null && b.active) ...[

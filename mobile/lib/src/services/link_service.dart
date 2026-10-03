@@ -19,6 +19,15 @@ abstract class LinkService {
   /// Maps or the browser; Apple Maps on iOS when Google Maps is absent is up to the system).
   Uri directions(String destination) =>
       Uri.parse('https://www.google.com/maps/dir/?api=1&destination=${Uri.encodeQueryComponent(destination)}');
+
+  /// Walking directions to a point, in the phone's maps app (voice guidance). Apple Maps' scheme on
+  /// iOS (it also opens Google Maps when set as default), Google Maps' universal link elsewhere.
+  Uri walkingDirections(double lat, double lng, String label) {
+    if (!kIsWeb && defaultTargetPlatform == TargetPlatform.iOS) {
+      return Uri.parse('https://maps.apple.com/?daddr=$lat,$lng&dirflg=w&q=${Uri.encodeQueryComponent(label)}');
+    }
+    return Uri.parse('https://www.google.com/maps/dir/?api=1&destination=$lat,$lng&travelmode=walking');
+  }
 }
 
 class UrlLauncherLinkService extends LinkService {

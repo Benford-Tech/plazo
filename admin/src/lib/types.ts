@@ -130,13 +130,42 @@ export interface ArrivalSignal {
   meetingPoint: MeetingPoint | null;
 }
 
+/** A driver's running trip (position shared with its passengers), as the planning shows it. */
+export interface ShuttleTripSummary {
+  id: string;
+  driverId: string;
+  driverName: string;
+  startedAt: string;
+  reservationIds: string[];
+}
+
 export interface LiveArrivals {
   serverTime: string;
   signals: ArrivalSignal[];
+  shuttleTrips?: ShuttleTripSummary[];
 }
 
-/** A planning row: the booking and its traveller's live signal, if any. */
-export type PlanningRow = Reservation & { arrivalSignal?: ArrivalSignal | null };
+/** A planning row: the booking, its traveller's live signal and the shuttle trip picking them up, if any. */
+export type PlanningRow = Reservation & {
+  arrivalSignal?: ArrivalSignal | null;
+  shuttleTrip?: Pick<ShuttleTripSummary, "id" | "driverName" | "startedAt"> | null;
+};
+
+/** Where the shuttle meets travellers at the airport on their return (Parking page). */
+export interface ReturnMeetingPoint {
+  lat: number;
+  lng: number;
+  label: string | null;
+  instructions: string | null;
+  photoUrl: string | null;
+}
+
+export interface ShuttleVehicle {
+  id: string;
+  model: string;
+  colour: string | null;
+  plate: string | null;
+}
 
 export interface Planning {
   date: string;

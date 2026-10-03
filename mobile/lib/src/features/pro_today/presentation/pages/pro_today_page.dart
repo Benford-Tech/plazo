@@ -68,6 +68,12 @@ class _ProTodayViewState extends State<_ProTodayView> with SingleTickerProviderS
         pro: true,
         actions: [
           IconButton(
+            key: const Key('pro-shuttle'),
+            tooltip: 'shuttle.title'.tr(),
+            icon: const Icon(Icons.directions_bus_rounded),
+            onPressed: () => context.router.push(const ProShuttleRoute()),
+          ),
+          IconButton(
             tooltip: 'pro.notifications'.tr(),
             icon: const Icon(Icons.notifications_none_rounded),
             onPressed: () => context.router.push(const ProNotificationsRoute()),

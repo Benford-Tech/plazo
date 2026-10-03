@@ -17,7 +17,8 @@ T _$identity<T>(T value) => value;
 mixin _$MeetingPointModel {
 
  double get lat; double get lng;/// parking (its reception), return_point (set by the operator) or airport.
- String get source; String? get label;
+ String get source; String? get label;/// The operator's written directions and photo (return point only).
+ String? get instructions; String? get photoUrl;
 /// Create a copy of MeetingPointModel
 /// with the given fields replaced by the non-null parameter values.
 @JsonKey(includeFromJson: false, includeToJson: false)
@@ -31,20 +32,20 @@ $MeetingPointModelCopyWith<MeetingPointModel> get copyWith => _$MeetingPointMode
 @override
 bool operator ==(Object other) {
   final _this = this as MeetingPointModel;
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is MeetingPointModel&&(identical(other.lat, _this.lat) || other.lat == _this.lat)&&(identical(other.lng, _this.lng) || other.lng == _this.lng)&&(identical(other.source, _this.source) || other.source == _this.source)&&(identical(other.label, _this.label) || other.label == _this.label));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is MeetingPointModel&&(identical(other.lat, _this.lat) || other.lat == _this.lat)&&(identical(other.lng, _this.lng) || other.lng == _this.lng)&&(identical(other.source, _this.source) || other.source == _this.source)&&(identical(other.label, _this.label) || other.label == _this.label)&&(identical(other.instructions, _this.instructions) || other.instructions == _this.instructions)&&(identical(other.photoUrl, _this.photoUrl) || other.photoUrl == _this.photoUrl));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
 int get hashCode {
   final _this = this as MeetingPointModel;
-  return Object.hash(runtimeType,_this.lat,_this.lng,_this.source,_this.label);
+  return Object.hash(runtimeType,_this.lat,_this.lng,_this.source,_this.label,_this.instructions,_this.photoUrl);
 }
 
 @override
 String toString() {
   final _this = this as MeetingPointModel;
-  return 'MeetingPointModel(lat: ${_this.lat}, lng: ${_this.lng}, source: ${_this.source}, label: ${_this.label})';
+  return 'MeetingPointModel(lat: ${_this.lat}, lng: ${_this.lng}, source: ${_this.source}, label: ${_this.label}, instructions: ${_this.instructions}, photoUrl: ${_this.photoUrl})';
 }
 
 
@@ -55,7 +56,7 @@ abstract mixin class $MeetingPointModelCopyWith<$Res>  {
   factory $MeetingPointModelCopyWith(MeetingPointModel value, $Res Function(MeetingPointModel) _then) = _$MeetingPointModelCopyWithImpl;
 @useResult
 $Res call({
- double lat, double lng, String source, String? label
+ double lat, double lng, String source, String? label, String? instructions, String? photoUrl
 });
 
 
@@ -72,12 +73,14 @@ class _$MeetingPointModelCopyWithImpl<$Res>
 
 /// Create a copy of MeetingPointModel
 /// with the given fields replaced by the non-null parameter values.
-@pragma('vm:prefer-inline') @override $Res call({Object? lat = null,Object? lng = null,Object? source = null,Object? label = freezed,}) {
+@pragma('vm:prefer-inline') @override $Res call({Object? lat = null,Object? lng = null,Object? source = null,Object? label = freezed,Object? instructions = freezed,Object? photoUrl = freezed,}) {
   return _then(MeetingPointModel(
 lat: null == lat ? _self.lat : lat // ignore: cast_nullable_to_non_nullable
 as double,lng: null == lng ? _self.lng : lng // ignore: cast_nullable_to_non_nullable
 as double,source: null == source ? _self.source : source // ignore: cast_nullable_to_non_nullable
 as String,label: freezed == label ? _self.label : label // ignore: cast_nullable_to_non_nullable
+as String?,instructions: freezed == instructions ? _self.instructions : instructions // ignore: cast_nullable_to_non_nullable
+as String?,photoUrl: freezed == photoUrl ? _self.photoUrl : photoUrl // ignore: cast_nullable_to_non_nullable
 as String?,
   ));
 }
@@ -163,10 +166,10 @@ return $default(_that);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( double lat,  double lng,  String source,  String? label)?  $default,{required TResult orElse(),}) {final _that = this;
+@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( double lat,  double lng,  String source,  String? label,  String? instructions,  String? photoUrl)?  $default,{required TResult orElse(),}) {final _that = this;
 switch (_that) {
 case _MeetingPointModel() when $default != null:
-return $default(_that.lat,_that.lng,_that.source,_that.label);case _:
+return $default(_that.lat,_that.lng,_that.source,_that.label,_that.instructions,_that.photoUrl);case _:
   return orElse();
 
 }
@@ -184,10 +187,10 @@ return $default(_that.lat,_that.lng,_that.source,_that.label);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( double lat,  double lng,  String source,  String? label)  $default,) {final _that = this;
+@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( double lat,  double lng,  String source,  String? label,  String? instructions,  String? photoUrl)  $default,) {final _that = this;
 switch (_that) {
 case _MeetingPointModel():
-return $default(_that.lat,_that.lng,_that.source,_that.label);case _:
+return $default(_that.lat,_that.lng,_that.source,_that.label,_that.instructions,_that.photoUrl);case _:
   throw StateError('Unexpected subclass');
 
 }
@@ -204,10 +207,10 @@ return $default(_that.lat,_that.lng,_that.source,_that.label);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( double lat,  double lng,  String source,  String? label)?  $default,) {final _that = this;
+@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( double lat,  double lng,  String source,  String? label,  String? instructions,  String? photoUrl)?  $default,) {final _that = this;
 switch (_that) {
 case _MeetingPointModel() when $default != null:
-return $default(_that.lat,_that.lng,_that.source,_that.label);case _:
+return $default(_that.lat,_that.lng,_that.source,_that.label,_that.instructions,_that.photoUrl);case _:
   return null;
 
 }
@@ -219,7 +222,7 @@ return $default(_that.lat,_that.lng,_that.source,_that.label);case _:
 @JsonSerializable()
 
 class _MeetingPointModel implements MeetingPointModel {
-  const _MeetingPointModel({required this.lat, required this.lng, required this.source, this.label});
+  const _MeetingPointModel({required this.lat, required this.lng, required this.source, this.label, this.instructions, this.photoUrl});
   factory _MeetingPointModel.fromJson(Map<String, dynamic> json) => _$MeetingPointModelFromJson(json);
 
 @override final  double lat;
@@ -227,6 +230,9 @@ class _MeetingPointModel implements MeetingPointModel {
 /// parking (its reception), return_point (set by the operator) or airport.
 @override final  String source;
 @override final  String? label;
+/// The operator's written directions and photo (return point only).
+@override final  String? instructions;
+@override final  String? photoUrl;
 
 /// Create a copy of MeetingPointModel
 /// with the given fields replaced by the non-null parameter values.
@@ -241,18 +247,18 @@ Map<String, dynamic> toJson() {
 
 @override
 bool operator ==(Object other) {
-    return identical(this, other) || (other.runtimeType == runtimeType&&other is _MeetingPointModel&&(identical(other.lat, lat) || other.lat == lat)&&(identical(other.lng, lng) || other.lng == lng)&&(identical(other.source, source) || other.source == source)&&(identical(other.label, label) || other.label == label));
+    return identical(this, other) || (other.runtimeType == runtimeType&&other is _MeetingPointModel&&(identical(other.lat, lat) || other.lat == lat)&&(identical(other.lng, lng) || other.lng == lng)&&(identical(other.source, source) || other.source == source)&&(identical(other.label, label) || other.label == label)&&(identical(other.instructions, instructions) || other.instructions == instructions)&&(identical(other.photoUrl, photoUrl) || other.photoUrl == photoUrl));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
 int get hashCode {
-    return Object.hash(runtimeType,lat,lng,source,label);
+    return Object.hash(runtimeType,lat,lng,source,label,instructions,photoUrl);
 }
 
 @override
 String toString() {
-    return 'MeetingPointModel(lat: $lat, lng: $lng, source: $source, label: $label)';
+    return 'MeetingPointModel(lat: $lat, lng: $lng, source: $source, label: $label, instructions: $instructions, photoUrl: $photoUrl)';
 }
 
 
@@ -263,7 +269,7 @@ abstract mixin class _$MeetingPointModelCopyWith<$Res> implements $MeetingPointM
   factory _$MeetingPointModelCopyWith(_MeetingPointModel value, $Res Function(_MeetingPointModel) _then) = __$MeetingPointModelCopyWithImpl;
 @override @useResult
 $Res call({
- double lat, double lng, String source, String? label
+ double lat, double lng, String source, String? label, String? instructions, String? photoUrl
 });
 
 
@@ -280,12 +286,14 @@ class __$MeetingPointModelCopyWithImpl<$Res>
 
 /// Create a copy of MeetingPointModel
 /// with the given fields replaced by the non-null parameter values.
-@override @pragma('vm:prefer-inline') $Res call({Object? lat = null,Object? lng = null,Object? source = null,Object? label = freezed,}) {
+@override @pragma('vm:prefer-inline') $Res call({Object? lat = null,Object? lng = null,Object? source = null,Object? label = freezed,Object? instructions = freezed,Object? photoUrl = freezed,}) {
   return _then(_MeetingPointModel(
 lat: null == lat ? _self.lat : lat // ignore: cast_nullable_to_non_nullable
 as double,lng: null == lng ? _self.lng : lng // ignore: cast_nullable_to_non_nullable
 as double,source: null == source ? _self.source : source // ignore: cast_nullable_to_non_nullable
 as String,label: freezed == label ? _self.label : label // ignore: cast_nullable_to_non_nullable
+as String?,instructions: freezed == instructions ? _self.instructions : instructions // ignore: cast_nullable_to_non_nullable
+as String?,photoUrl: freezed == photoUrl ? _self.photoUrl : photoUrl // ignore: cast_nullable_to_non_nullable
 as String?,
   ));
 }

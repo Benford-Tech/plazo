@@ -14,6 +14,7 @@ import {
 import { RequestWithStaffSession } from '@/middlewares/staff-auth.middleware';
 import { ArrivalService } from '@/services/arrival.service';
 import { ParkingService } from '@/services/parking.service';
+import { ShuttleService } from '@/services/shuttle.service';
 import { StaffDeviceService } from '@/services/staff-device.service';
 import catchAsync from '@/utils/catchAsync';
 
@@ -26,6 +27,7 @@ export class ArrivalController {
   public arrivals = Container.get(ArrivalService);
   public devices = Container.get(StaffDeviceService);
   public parkings = Container.get(ParkingService);
+  public shuttle = Container.get(ShuttleService);
 
   /** GET /public/bookings/:reference/arrival */
   public state = catchAsync(async (req: Request, res: Response) => {
@@ -72,7 +74,8 @@ export class ArrivalController {
   /** GET /internal/arrivals/live */
   public live = catchAsync(async (req: RequestWithStaffSession, res: Response) => {
     res.set('Cache-Control', 'no-store');
-    res.json(await this.arrivals.live(req.staff));
+    const [live, shuttleTrips] = await Promise.all([this.arrivals.live(req.staff), this.shuttle.running(req.staff)]);
+    res.json({ ...live, shuttleTrips });
   });
 
   /** GET /internal/parking/return-meeting-point */
@@ -85,7 +88,10 @@ export class ArrivalController {
   public setReturnMeetingPoint = catchAsync(async (req: RequestWithStaffSession, res: Response) => {
     const data: ReturnMeetingPointDto = req.body;
     const parking = await this.parkings.getPrimary(req.staff);
-    const point = data.lat !== null && data.lng !== null ? { lat: data.lat, lng: data.lng, label: data.label } : null;
+    const point =
+      data.lat !== null && data.lng !== null
+        ? { lat: data.lat, lng: data.lng, label: data.label, instructions: data.instructions, photoUrl: data.photoUrl }
+        : null;
     res.json({ data: await this.arrivals.setReturnMeetingPoint(parking.id, point) });
   });
 

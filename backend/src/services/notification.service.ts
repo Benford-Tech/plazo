@@ -57,6 +57,12 @@ export class NotificationService {
     await this.sendEmail(booking, 'booking_cancelled', cancellationEmail(PRODUCT_NAME, booking));
   }
 
+  /** An SMS to the traveller of a booking (e.g. the landing of their return flight). Nothing without Brevo. */
+  public async smsTraveller(booking: PublicBooking, tag: string, content: string): Promise<void> {
+    if (!this.configured(booking.reference, tag)) return;
+    await this.sendSms(booking, tag, content);
+  }
+
   private configured(reference: string, tag: string): boolean {
     if (this.settings.apiKey) return true;
     logger.info(`[Notifications] BREVO_API_KEY not set: ${tag} not sent for booking ${reference}`);

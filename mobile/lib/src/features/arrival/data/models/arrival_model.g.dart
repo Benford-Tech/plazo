@@ -12,6 +12,8 @@ _MeetingPointModel _$MeetingPointModelFromJson(Map<String, dynamic> json) =>
       lng: (json['lng'] as num).toDouble(),
       source: json['source'] as String,
       label: json['label'] as String?,
+      instructions: json['instructions'] as String?,
+      photoUrl: json['photoUrl'] as String?,
     );
 
 Map<String, dynamic> _$MeetingPointModelToJson(_MeetingPointModel instance) =>
@@ -20,6 +22,8 @@ Map<String, dynamic> _$MeetingPointModelToJson(_MeetingPointModel instance) =>
       'lng': instance.lng,
       'source': instance.source,
       'label': instance.label,
+      'instructions': instance.instructions,
+      'photoUrl': instance.photoUrl,
     };
 
 _ArrivalMomentModel _$ArrivalMomentModelFromJson(Map<String, dynamic> json) =>

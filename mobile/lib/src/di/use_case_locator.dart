@@ -27,6 +27,18 @@ void _initUseCaseLocator() {
     ..registerLazySingleton(() => AnnounceArrivalUseCase(locator()))
     ..registerLazySingleton(() => AtMeetingPointUseCase(locator()))
     ..registerLazySingleton(() => StopSharingUseCase(locator()))
+    // Traveller: the return day
+    ..registerLazySingleton(() => GetReturnUseCase(locator()))
+    ..registerLazySingleton(() => DeclareLandedUseCase(locator()))
+    ..registerLazySingleton(() => GetWalkingRouteUseCase(locator()))
+    ..registerLazySingleton(() => GetShuttleStatusUseCase(locator()))
+    // Staff: driver mode
+    ..registerLazySingleton(() => GetPickupsUseCase(locator()))
+    ..registerLazySingleton(() => GetVehiclesUseCase(locator()))
+    ..registerLazySingleton(() => GetCurrentTripUseCase(locator()))
+    ..registerLazySingleton(() => StartTripUseCase(locator()))
+    ..registerLazySingleton(() => SendTripPositionUseCase(locator()))
+    ..registerLazySingleton(() => EndTripUseCase(locator()))
     // Staff
     ..registerLazySingleton(() => LoginUseCase(locator()))
     ..registerLazySingleton(() => RestoreSessionUseCase(locator()))

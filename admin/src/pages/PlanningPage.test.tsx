@@ -92,4 +92,21 @@ describe("Planning : arrivées en direct", () => {
     expect(Element.prototype.scrollIntoView).toHaveBeenCalled();
     expect(screen.queryByRole("status")).not.toBeInTheDocument();
   });
+
+  it("affiche « Navette en route (Karim) » sur le retour qu'un chauffeur part chercher", async () => {
+    api.getLiveArrivals.mockResolvedValue({
+      serverTime: "2026-10-03T05:40:00.000Z",
+      signals: [],
+      shuttleTrips: [{ id: "t1", driverId: "d1", driverName: "Karim Benali", startedAt: "2026-10-03T05:35:00.000Z", reservationIds: ["r3"] }],
+    });
+    render(
+      <QueryClientProvider client={new QueryClient({ defaultOptions: { queries: { retry: false } } })}>
+        <MemoryRouter>
+          <PlanningPage />
+        </MemoryRouter>
+      </QueryClientProvider>,
+    );
+    const badge = await screen.findByText("Navette en route (Karim)");
+    expect(within(badge.closest("li")!).getByText("Quentin Roux")).toBeInTheDocument();
+  });
 });

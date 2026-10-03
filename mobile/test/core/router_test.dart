@@ -26,6 +26,8 @@ void main() {
     expect(names('/pro')?.last, ProTodayRoute.name);
     expect(names('/pro/connexion')?.last, ProLoginRoute.name);
     expect(names('/pro/notifications')?.last, ProNotificationsRoute.name);
+    expect(names('/pro/navette')?.last, ProShuttleRoute.name);
+    expect(names('/ma-reservation/R7KQ2M/point-de-rendez-vous')?.last, MeetingPointRouteRoute.name);
     final results = router.matcher.match('/lyon-saint-exupery/recherche?arrivee=2026-10-03T08:00&retour=2026-10-10T18:00');
     expect(results?.last.name, ResultsRoute.name);
     expect(results?.last.queryParams.optString('arrivee'), '2026-10-03T08:00');

@@ -30,6 +30,12 @@ export const ValidateEnv = () => {
     // Push notifications to the staff app. Without both, no push is sent.
     ONESIGNAL_APP_ID: str({ default: '', desc: 'OneSignal app id (push notifications to the staff)' }),
     ONESIGNAL_REST_API_KEY: str({ default: '', desc: 'OneSignal REST API key of that app' }),
+    // Return flight tracking (optional). AeroDataBox through RapidAPI is the one that works today;
+    // AirLabs is kept for when its registration reopens.
+    AERODATABOX_API_KEY: str({ default: '', desc: 'AeroDataBox key (RapidAPI "Basic" plan, or API.Market with AERODATABOX_BASE_URL)' }),
+    AERODATABOX_BASE_URL: str({ default: '', desc: 'Default https://aerodatabox.p.rapidapi.com' }),
+    AIRLABS_API_KEY: str({ default: '', desc: 'AirLabs API key (optional)' }),
+    FLIGHT_TRACKING_PROVIDER: str({ default: '', desc: 'airlabs | aerodatabox (default: the provider whose key is set, aerodatabox when both)' }),
   });
   const stripeKey = process.env.STRIPE_SECRET_KEY?.trim() || '';
   if (process.env.NODE_ENV === 'production' && isLiveStripeKey(stripeKey) && process.env.STRIPE_ALLOW_LIVE !== 'true') {
