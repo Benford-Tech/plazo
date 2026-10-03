@@ -1,11 +1,11 @@
 import { useEffect, useRef, useState } from "react";
 import { Link, useLocation } from "react-router-dom";
+import { Logo } from "@/components/Logo";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Card, CardContent } from "@/components/ui/card";
 import { useAuth } from "@/contexts/AuthContext";
 import { adminApi, DEV_VERIFICATION_KEY, getTokens } from "@/lib/api";
 import { describeError, fr } from "@/lib/fr";
-import { PRODUCT } from "@/lib/product";
 
 /** The link of the confirmation email (/pro/verifier-email#token): works with or without a session. */
 export default function VerifyEmailPage() {
@@ -36,7 +36,7 @@ export default function VerifyEmailPage() {
 
   return (
     <main className="mx-auto flex min-h-screen max-w-sm flex-col justify-center px-4 py-10">
-      <p className="text-2xl font-bold text-primary">{PRODUCT.name}</p>
+      <Logo height={40} suffix="Pro" className="mb-2" />
       <h1 className="mb-6 mt-1 text-muted-foreground">{fr.login.subtitle}</h1>
       <Card>
         <CardContent className="space-y-4 pt-6">

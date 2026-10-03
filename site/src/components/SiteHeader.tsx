@@ -1,14 +1,14 @@
 import Link from "next/link";
 import { fr } from "@/lib/fr";
-import { PRODUCT_NAME } from "@/lib/product";
+import { Logo } from "@/components/Logo";
 import { PRO_SIGNUP_PATH } from "@/lib/site";
 
 export function SiteHeader() {
   return (
     <header className="on-dark bg-prune text-white">
       <div className="mx-auto flex max-w-[1280px] items-center justify-between gap-4 px-4 py-1.5 md:px-12 md:py-2.5">
-        <Link href="/" className="font-title flex min-h-11 items-center text-[26px] text-white no-underline hover:text-white md:text-[30px]">
-          {PRODUCT_NAME}
+        <Link href="/" className="flex min-h-11 items-center no-underline">
+          <Logo height={32} />
         </Link>
         <nav aria-label={fr.a11y.mainNav}>
           <ul className="flex items-center gap-1 md:gap-5">

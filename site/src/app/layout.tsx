@@ -5,6 +5,7 @@ import { SiteHeader } from "@/components/SiteHeader";
 import { fr, texts } from "@/lib/fr";
 import { paymentsOnline } from "@/lib/payments";
 import { PRODUCT_NAME } from "@/lib/product";
+import { openGraph } from "@/lib/seo";
 import { siteUrl } from "@/lib/site";
 import "./globals.css";
 
@@ -25,7 +26,7 @@ export async function generateMetadata(): Promise<Metadata> {
     title: { default: fr.meta.defaultTitle, template: `%s · ${PRODUCT_NAME}` },
     description: texts(online).meta.defaultDescription,
     applicationName: PRODUCT_NAME,
-    openGraph: { siteName: PRODUCT_NAME, locale: "fr_FR", type: "website" },
+    openGraph: openGraph({}),
     formatDetection: { telephone: false, email: false, address: false },
   };
 }

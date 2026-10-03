@@ -13,12 +13,12 @@ import { CronAuthMiddleware } from '@/middlewares/cron-auth.middleware';
  * @swagger
  * /internal/cron/purge-expired-tokens:
  *   get:
- *     summary: Delete expired staff tokens, end lapsed arrival signals and shuttle trips (every night)
+ *     summary: Delete expired staff tokens, end lapsed arrival signals and shuttle trips, retry or abandon waiting SMS, purge the SMS outbox after 30 days (every night)
  *     tags: [Cron]
  *     description: "Requires Authorization: Bearer <CRON_SECRET>."
  *     responses:
  *       200:
- *         description: "{ deleted, arrivalSignalsEnded, shuttleTripsEnded }"
+ *         description: "{ deleted, arrivalSignalsEnded, shuttleTripsEnded, smsAbandoned, smsPurged }"
  * /internal/cron/payouts:
  *   get:
  *     summary: Transfer the operators' shares that are due (every day)
@@ -50,10 +50,11 @@ import { CronAuthMiddleware } from '@/middlewares/cron-auth.middleware';
  *       flights of the bookings whose vehicle is on site, within 24 h of the landing, skipping those
  *       looked up less than 5 minutes ago and the final ones (landed, cancelled, diverted). On a
  *       landing: push to the staff and SMS to the traveller, once each. Reads refresh lazily with the
- *       same cache, so the block works without this cron (Vercel Hobby: daily crons only).
+ *       same cache, so the block works without this cron (Vercel Hobby: daily crons only). Also
+ *       retries the SMS waiting for an operator's phone (sms_outbox).
  *     responses:
  *       200:
- *         description: "{ checked, landed, skipped }"
+ *         description: "{ checked, landed, skipped, sms: { operators, checked, sent, abandoned } }"
  * /internal/cron/expire-payment-holds:
  *   get:
  *     summary: End the lapsed holds of bookings waiting for their online payment

@@ -175,6 +175,8 @@ export interface Planning {
   returns: PlanningRow[];
   nights: NightLoad[];
   stats: { arrivals: number; arrived: number; returns: number; returnsWithFlight: number };
+  /** A gateway SMS waiting for the operator's phone for more than 10 minutes, else null. */
+  smsWarning?: { pending: number } | null;
 }
 
 export interface CapacityPreview {
@@ -436,4 +438,38 @@ export interface PlatformPayments {
     pending: { count: number; amountCents: number };
     failed: { reservationId: string; reference: string; amountCents: number | null; arrivalAt: string; returnAt: string }[];
   }[];
+}
+
+// ---- SMS to travellers (the operator's channel) ----------------------------------------------
+
+export type SmsMode = "gateway" | "brevo" | "none";
+
+/** GET /internal/sms/settings. The gateway password is never returned. */
+export interface SmsSettings {
+  mode: SmsMode;
+  /** "Plazo envoie pour moi" exists only while the platform has Brevo. */
+  brevoAvailable: boolean;
+  gateway: { baseUrl: string | null; login: string; senderPhone: string | null; linkedAt: string | null } | null;
+}
+
+export interface SmsSettingsInput {
+  mode: SmsMode;
+  login?: string;
+  password?: string;
+  senderPhone?: string;
+  baseUrl?: string | null;
+}
+
+/** GET /internal/sms/status */
+export interface SmsStatus {
+  mode: SmsMode;
+  brevoAvailable: boolean;
+  linkedAt: string | null;
+  lastSentAt: string | null;
+  senderPhone: string | null;
+  month: { sent: number; failed: number };
+  pending: number;
+  pendingStale: boolean;
+  lastError: string | null;
+  lastErrorAt: string | null;
 }

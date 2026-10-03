@@ -8,6 +8,9 @@ import type {
   PaymentStatus,
   PayoutSchedule,
   PlatformPayments,
+  SmsSettings,
+  SmsSettingsInput,
+  SmsStatus,
   PlatformReservations,
   SignupInput,
   EmailImportResult,
@@ -281,6 +284,13 @@ export const adminApi = {
   getPayoutSettings: () => apiRequest<{ payoutSchedule: PayoutSchedule }>("/internal/payments/settings"),
   updatePayoutSettings: (payoutSchedule: PayoutSchedule) =>
     apiRequest<{ payoutSchedule: PayoutSchedule }>("/internal/payments/settings", { method: "PUT", body: json({ payoutSchedule }) }),
+
+  // SMS to travellers: the operator's channel (their own Android phone, Brevo, or none; manager).
+  getSmsSettings: () => apiRequest<SmsSettings>("/internal/sms/settings"),
+  updateSmsSettings: (input: SmsSettingsInput) => apiRequest<SmsSettings>("/internal/sms/settings", { method: "PUT", body: json(input) }),
+  testSms: (to: string) => apiRequest<{ outcome: "sent" | "queued" }>("/internal/sms/test", { method: "POST", body: json({ to }) }),
+  disableSms: () => apiRequest<SmsSettings>("/internal/sms/disable", { method: "POST" }),
+  getSmsStatus: () => apiRequest<SmsStatus>("/internal/sms/status"),
 
   getPlatformPayments: () => apiRequest<PlatformPayments>("/internal/platform/payments"),
   retryPayout: (reservationId: string) =>

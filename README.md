@@ -122,11 +122,14 @@ le navigateur de l'espace pro appelle `/api` sur le même domaine (pas de CORS).
    `vercel.json`) ; les fonctions tournent à Paris (`cdg1`). Variables (communes aux trois services) :
    `NODE_ENV=production`, `SECRET_KEY`, `CRON_SECRET`, `SITE_API_KEY`
    (secret partagé entre le site et l'API), `PUBLIC_SITE_URL` (adresse publique du site, pour les liens
-   des mails), pour les mails et SMS `BREVO_API_KEY`, `EMAIL_FROM`, `SMS_SENDER`, et
+   des mails), pour les mails et SMS `BREVO_API_KEY`, `EMAIL_FROM`, `SMS_SENDER`,
+   `SMS_GATEWAY_ENCRYPTION_KEY` (clé qui chiffre les mots de passe des téléphones reliés par les loueurs, voir
+   « SMS depuis le téléphone du parking » ; `openssl rand -base64 32`), et
    `PLATFORM_ADMIN_EMAILS` (emails des administrateurs de la plateforme, séparés par des virgules : eux seuls
    voient l'espace Plateforme).
    Chaque déploiement applique les migrations (`npm run vercel-build` dans `backend/`) ; la purge
-   nocturne des jetons est un Vercel Cron (`/api/internal/cron/purge-expired-tokens`).
+   nocturne (jetons, SMS en attente abandonnés après 2 h, boîte d'envoi des SMS après 30 jours) est un Vercel Cron
+   (`/api/internal/cron/purge-expired-tokens`).
 3. Compte de l'administrateur de la plateforme : mettre un mot de passe (10 caractères minimum) dans
    `PLATFORM_BOOTSTRAP_PASSWORD` sur Vercel et redéployer. Le déploiement crée alors l'opérateur
    « Plazo (tests) » dont le gérant est le premier email de `PLATFORM_ADMIN_EMAILS` (rien si le compte
@@ -192,9 +195,37 @@ le navigateur de l'espace pro appelle `/api` sur le même domaine (pas de CORS).
      n'accepte que des crons quotidiens : les lectures (app, planning, file du chauffeur) rafraîchissent aussi le vol
      avec le même cache de 5 minutes, donc le bloc fonctionne sans cron (seul le SMS à l'atterrissage dépend alors d'une
      lecture).
-   - Le SMS d'atterrissage (point de rendez-vous, consignes, lien de la réservation) part par Brevo (`BREVO_API_KEY`)
-     une seule fois par réservation, seulement quand le fournisseur a vu l'atterrissage (pas quand le voyageur l'a
-     déclaré lui-même : il est déjà dans l'app).
+   - Le SMS d'atterrissage (point de rendez-vous, consignes, lien de la réservation) part par le canal SMS du loueur
+     (voir « SMS depuis le téléphone du parking ») une seule fois par réservation, seulement quand le fournisseur a vu
+     l'atterrissage (pas quand le voyageur l'a déclaré lui-même : il est déjà dans l'app).
+
+### SMS depuis le téléphone du parking
+
+Chaque loueur choisit, dans **Mon compte › SMS aux voyageurs** (gérant), comment partent ses SMS (confirmation,
+atterrissage…) : **le téléphone du parking** (gratuit, avec son forfait), **« Plazo envoie pour moi »** (Brevo, 0,05 €
+par SMS, proposé seulement si `BREVO_API_KEY` est configurée ; la facturation elle-même n'est pas encore faite) ou
+**pas de SMS** (emails seulement, le choix par défaut tant que rien n'est configuré). Le téléphone du parking passe par
+l'appli libre et gratuite [SMS Gateway for Android](https://github.com/capcom6/android-sms-gateway) (capcom6) en mode
+*Cloud server* : l'API dépose les SMS sur `https://api.sms-gate.app/3rdparty/v1` (Basic auth avec l'identifiant et le
+mot de passe de l'appli, `POST /messages`, état par `GET /messages/{id}`) et le téléphone les envoie. Un serveur privé
+(« Serveur (avancé) ») remplace l'adresse du cloud si le loueur héberge le sien.
+
+Pour relier le téléphone (un Android allumé, chargé, avec des SMS illimités) :
+1. Sur le téléphone, installer **SMS Gateway for Android** (Play Store, ou l'APK des *Releases* GitHub) et accepter
+   l'autorisation d'envoyer des SMS.
+2. Dans l'appli, basculer l'interrupteur **Cloud server** sur *on*, puis appuyer sur le bouton **Online** en bas de
+   l'écran : la section *Cloud server* affiche un **identifiant** (login) et un **mot de passe**.
+3. Dans l'espace pro, *Mon compte › SMS aux voyageurs*, choisir **Téléphone du parking**, recopier l'identifiant et le
+   mot de passe, saisir le **numéro du téléphone** (expéditeur, affiché aux voyageurs) et un numéro qui recevra un **SMS
+   de test**, puis **Relier et tester**. Le mot de passe est chiffré en base (AES-256-GCM, `SMS_GATEWAY_ENCRYPTION_KEY`,
+   obligatoire dès qu'un loueur relie un téléphone ; en changer délie tous les téléphones) et n'est jamais réaffiché.
+4. Laisser l'appli active (exclure des économies de batterie). Un SMS que le téléphone n'a pas envoyé reste en attente
+   2 h (réessayé à chaque lecture du planning, par le cron des vols et par le cron de nuit) puis est abandonné ; après
+   10 minutes d'attente le planning affiche « SMS en attente · téléphone injoignable ». L'état, l'expéditeur, les
+   compteurs du mois (envoyés / échecs) et la dernière erreur sont dans *Mon compte*.
+
+La boîte d'envoi (`sms_outbox`) garde le destinataire et l'empreinte SHA-256 du texte, jamais le texte (reconstruit
+depuis la réservation pour un nouvel essai) ; ses lignes sont purgées après 30 jours par le cron de nuit.
 
 Vérifier la configuration sans déployer : `npx vercel build` (avec un `.vercel/project.json` local),
 ou `vercel dev` pour lancer les trois services ensemble.
@@ -272,9 +303,13 @@ Documentation interactive : `/api/docs` (Swagger). Toutes les routes sont sous `
 | POST | `/internal/payments/onboarding` | Gérant : crée le compte Stripe Express si besoin, renvoie le lien d'inscription Stripe |
 | GET | `/internal/payments/status` | Gérant : `{ connected, chargesEnabled, payoutsEnabled, payoutSchedule }` |
 | GET / PUT | `/internal/payments/settings` | Gérant : `{ payoutSchedule }` (`AFTER_STAY`, `AT_DROP_OFF`, `WEEKLY`, `MONTHLY`) |
+| GET / PUT | `/internal/sms/settings` | Gérant : canal SMS `{ mode: gateway \| brevo \| none, brevoAvailable, gateway: { baseUrl, login, senderPhone, linkedAt } }` (mot de passe jamais renvoyé) |
+| POST | `/internal/sms/test` | Gérant : SMS de test `{ to }` → `{ outcome: sent \| queued }`, 502 avec le code de l'appli en cas de refus |
+| POST | `/internal/sms/disable` | Gérant : plus de SMS, identifiants oubliés |
+| GET | `/internal/sms/status` | Gérant : `{ lastSentAt, month: { sent, failed }, pending, pendingStale, lastError }` (relance la file au passage) |
 | GET | `/internal/cron/payouts` | Vercel Cron, chaque jour : transferts des parts dues aux loueurs |
 | GET | `/internal/cron/expire-payment-holds` | Vercel Cron (facultatif) : expire les places tenues non payées |
-| GET | `/internal/cron/track-return-flights` | Vercel Cron, toutes les 10 min (5 h – 0 h) : vols retour du jour (push et SMS à l'atterrissage) |
+| GET | `/internal/cron/track-return-flights` | Vercel Cron, toutes les 10 min (5 h – 0 h) : vols retour du jour (push et SMS à l'atterrissage), SMS en attente réessayés |
 | GET / PUT | `/internal/parking/return-meeting-point` | Point de rendez-vous au retour : `{ lat, lng, label, instructions (≤ 500), photoUrl }` (gérant) |
 | GET | `/public/bookings/:ref/return` | App, jour du retour : vol (rafraîchi si dû), point de rendez-vous, signal, navette en route |
 | POST | `/public/bookings/:ref/return/landed` | « J'ai atterri » (push au personnel) |

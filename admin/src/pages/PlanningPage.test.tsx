@@ -6,7 +6,8 @@ import { signal } from "@/test/arrival-fixtures";
 import PlanningPage from "./PlanningPage";
 
 const api = vi.hoisted(() => ({ getPlanning: vi.fn(), getLiveArrivals: vi.fn() }));
-vi.mock("@/contexts/AuthContext", () => ({ useAuth: () => ({ user: { role: "driver" } }) }));
+const auth = vi.hoisted(() => ({ user: { role: "driver" } as Record<string, unknown> }));
+vi.mock("@/contexts/AuthContext", () => ({ useAuth: () => ({ user: auth.user }) }));
 vi.mock("@/lib/api", async importOriginal => {
   const actual = await importOriginal<typeof import("@/lib/api")>();
   return { ...actual, adminApi: { ...actual.adminApi, getPlanning: (...a: unknown[]) => api.getPlanning(...a), getLiveArrivals: () => api.getLiveArrivals() } };
@@ -108,5 +109,33 @@ describe("Planning : arrivées en direct", () => {
     );
     const badge = await screen.findByText("Navette en route (Karim)");
     expect(within(badge.closest("li")!).getByText("Quentin Roux")).toBeInTheDocument();
+  });
+
+  it("signale les SMS en attente quand le téléphone du parking ne répond plus (lien vers Mon compte pour le gérant)", async () => {
+    auth.user = { role: "manager" };
+    api.getPlanning.mockResolvedValue({ ...(await api.getPlanning()), smsWarning: { pending: 3 } });
+    render(
+      <QueryClientProvider client={new QueryClient({ defaultOptions: { queries: { retry: false } } })}>
+        <MemoryRouter>
+          <PlanningPage />
+        </MemoryRouter>
+      </QueryClientProvider>,
+    );
+    const warning = await screen.findByTestId("sms-warning");
+    expect(warning).toHaveTextContent("3 SMS en attente · téléphone injoignable");
+    expect(within(warning).getByRole("link", { name: "SMS aux voyageurs ›" })).toHaveAttribute("href", "/mon-compte");
+    auth.user = { role: "driver" };
+  });
+
+  it("n'affiche rien quand aucun SMS n'attend", async () => {
+    render(
+      <QueryClientProvider client={new QueryClient({ defaultOptions: { queries: { retry: false } } })}>
+        <MemoryRouter>
+          <PlanningPage />
+        </MemoryRouter>
+      </QueryClientProvider>,
+    );
+    await screen.findByText("Camille Martin");
+    expect(screen.queryByTestId("sms-warning")).not.toBeInTheDocument();
   });
 });

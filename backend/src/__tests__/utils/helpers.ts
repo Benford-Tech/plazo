@@ -54,3 +54,8 @@ export async function addStaff(managerToken: string, role: string) {
 export async function publishListing(parkingId: string) {
   await prisma.listing.update({ where: { parkingId }, data: { status: 'published', reviewedAt: new Date() } });
 }
+
+/** Routes the operator's SMS through Brevo ("Plazo envoie pour moi"), the channel the older tests assume. */
+export async function useBrevoSms(operatorId: string) {
+  await prisma.operatorSmsSettings.upsert({ where: { operatorId }, create: { operatorId, mode: 'brevo' }, update: { mode: 'brevo' } });
+}

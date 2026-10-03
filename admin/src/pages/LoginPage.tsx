@@ -1,12 +1,12 @@
 import { useState } from "react";
 import { Link, Navigate, useLocation, useNavigate } from "react-router-dom";
 import { FormField } from "@/components/FormField";
+import { Logo } from "@/components/Logo";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { useAuth } from "@/contexts/AuthContext";
 import { describeError, fr } from "@/lib/fr";
-import { PRODUCT } from "@/lib/product";
 
 export default function LoginPage() {
   const { login, isAuthenticated } = useAuth();
@@ -37,7 +37,7 @@ export default function LoginPage() {
 
   return (
     <main className="mx-auto flex min-h-screen max-w-sm flex-col justify-center px-4 py-10">
-      <p className="text-2xl font-bold text-primary">{PRODUCT.name}</p>
+      <Logo height={40} suffix="Pro" className="mb-2" />
       <h1 className="mb-6 mt-1 text-muted-foreground">{fr.login.subtitle}</h1>
       {passwordChanged && (
         <Alert className="mb-4 border-success/40 bg-success/10">

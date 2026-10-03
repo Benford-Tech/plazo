@@ -20,6 +20,11 @@ export const ValidateEnv = () => {
     SMS_SENDER: str({ default: '' }),
     PUBLIC_SITE_URL: str({ default: '' }),
     SMS_DAILY_LIMIT: str({ default: '' }),
+    // Per-operator SMS through their own Android phone: needed as soon as one operator links a phone.
+    SMS_GATEWAY_ENCRYPTION_KEY: str({
+      default: '',
+      desc: 'AES-256 key (32 bytes, base64) encrypting the gateway passwords: openssl rand -base64 32',
+    }),
     PLATFORM_ADMIN_EMAILS: str({ default: '', desc: 'Emails of the platform owners (internal tools), comma-separated' }),
     // Online payment (Stripe Connect). Without a secret key, travellers pay at the parking.
     STRIPE_SECRET_KEY: str({ default: '', desc: 'Stripe secret key (sk_test_… until the legal validation)' }),

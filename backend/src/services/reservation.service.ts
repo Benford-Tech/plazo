@@ -9,12 +9,14 @@ import { ChangeStatusDto, CreateReservationDto, UpdateReservationDto } from '@/d
 import { AuthenticatedStaff } from '@/interfaces/auth.interface';
 import { ValidationException } from '@/middlewares/validation.middleware';
 import { HttpException } from '@/utils/httpException';
+import { logger } from '@/utils/logger';
 import { toPublicBooking, WITH_LISTING } from '@/domain/booking-view';
 import { AuditService } from './audit.service';
 import { CapacityService, NightLoad } from './capacity.service';
 import { NotificationService } from './notification.service';
 import { ParkingService } from './parking.service';
 import { PaymentService } from './payment.service';
+import { SmsService } from './sms.service';
 
 const MAX_STAY_DAYS = 90;
 const PLANNING_NIGHTS = 7;
@@ -37,6 +39,7 @@ export const STAFF_VISIBLE: Prisma.ReservationWhereInput = {
 @Service()
 export class ReservationService {
   public audit = Container.get(AuditService);
+  public sms = Container.get(SmsService);
   public capacity = Container.get(CapacityService);
   public parkings = Container.get(ParkingService);
   public payments = Container.get(PaymentService);
@@ -375,7 +378,12 @@ export class ReservationService {
     const { start, end } = dayBounds(day, parking.timezone);
     const active = { notIn: ['cancelled', 'no_show'] as ReservationStatus[] };
 
-    const [arrivals, returns, nights] = await Promise.all([
+    // Lazy retry of the operator's waiting SMS (their phone may be back online), throttled to once a minute.
+    await this.sms
+      .refreshQueue(parking.operatorId)
+      .catch(error => logger.warn(`[SMS] Queue refresh failed for operator ${parking.operatorId}: ${error?.name ?? 'error'}`));
+
+    const [arrivals, returns, nights, smsWarning] = await Promise.all([
       prisma.reservation.findMany({
         where: { parkingId: parking.id, status: active, arrivalAt: { gte: start, lt: end }, AND: [STAFF_VISIBLE] },
         orderBy: { arrivalAt: 'asc' },
@@ -385,10 +393,13 @@ export class ReservationService {
         orderBy: { returnAt: 'asc' },
       }),
       this.capacity.nights(parking, day, addDays(day, PLANNING_NIGHTS - 1)),
+      this.sms.pendingWarning(parking.operatorId),
     ]);
 
     return {
       date: day,
+      // { pending } when a gateway SMS has waited more than 10 minutes (phone off or offline), else null.
+      smsWarning,
       timezone: parking.timezone,
       parking: { id: parking.id, name: parking.name, bookableCapacity: parking.bookableCapacity },
       arrivals,

@@ -144,7 +144,34 @@ Le flux réel, côté voyageur (app, réservation Plazo ouverte par le lien ou p
    voyageur appuie sur « J'ai atterri ».
 2. **À l'atterrissage** : push au personnel (« Vol TO 3627 atterri · C. Martin · AB-123-CD · 10:02 », une fois) et
    SMS au voyageur (point de rendez-vous, consignes, lien de la réservation ; une fois, seulement si le fournisseur a vu
-   l'atterrissage et si Brevo est configuré).
+   l'atterrissage et si le loueur a un canal SMS, voir « Canal SMS par loueur »).
+
+#### Canal SMS par loueur (mis en œuvre, maquette validée « SMS aux voyageurs »)
+
+Tous les SMS aux voyageurs (confirmation, atterrissage, et les suivants : navette en approche, annulation…) passent par
+un seul point du serveur qui applique le choix du loueur, fait dans *Mon compte › SMS aux voyageurs* (gérant ; en
+lecture seule pour le super admin en consultation) :
+- **Téléphone du parking** (gratuit) : l'appli libre *SMS Gateway for Android* (capcom6) en mode *Cloud server* sur un
+  Android du parking ; le serveur dépose les SMS chez l'appli (Basic auth avec l'identifiant et le mot de passe
+  affichés par l'appli, serveur privé possible) et le téléphone les envoie depuis son numéro, que les voyageurs peuvent
+  rappeler. Le mot de passe est chiffré au repos (AES-256-GCM, clé serveur `SMS_GATEWAY_ENCRYPTION_KEY`) et jamais
+  renvoyé. Liaison en trois étapes (installer l'appli, activer *Cloud server*, recopier identifiant et mot de passe),
+  SMS de test, puis état « Relié · dernier SMS envoyé il y a X », expéditeur, compteurs du mois (envoyés / échecs),
+  « Envoyer un SMS de test », « Modifier », « Désactiver ».
+- **Plazo envoie pour moi** : Brevo depuis le numéro de la plateforme, 0,05 € par SMS décompté sur les reversements
+  (le décompte lui-même reste à faire) ; proposé seulement quand la plateforme a Brevo.
+- **Pas de SMS** : emails seulement. C'est le réglage tant que rien n'est configuré.
+
+Règles : seuls les mobiles français reçoivent un SMS (anti-pompage, quel que soit le canal). Un SMS déposé chez l'appli
+que le téléphone n'envoie pas (éteint, hors ligne) attend 2 h — réessayé à chaque lecture du planning (au plus une fois
+par minute), par le cron des vols et par le cron de nuit, le texte étant reconstruit depuis la réservation — puis est
+abandonné et compté en échec ; après 10 minutes d'attente, le planning affiche « SMS en attente · téléphone
+injoignable ». Un échec de SMS ne fait jamais échouer l'action qui l'a déclenché.
+
+Rétention : la boîte d'envoi (`sms_outbox`) garde par SMS le loueur, la réservation, le type, le **numéro du
+destinataire** (nécessaire aux nouveaux essais), l'**empreinte SHA-256 du texte** (jamais le texte), le fournisseur,
+l'identifiant chez le fournisseur, l'état et le nombre d'essais ; ses lignes sont supprimées **après 30 jours** par le
+cron de nuit. Les journaux ne contiennent ni numéro, ni texte, ni identifiant de l'appli ; les erreurs sont des codes.
 3. **« Votre retour aujourd'hui »** : ligne de temps vol → « Rejoignez le point de rendez-vous » (libellé du loueur,
    porte, minutes à pied) → « La navette vient vous chercher » → « Récupérez votre voiture » (clés à l'accueil, plaque) ;
    « Itinéraire vers le point de rendez-vous » et « Je suis au point de rendez-vous » (le signal existant).
@@ -368,7 +395,7 @@ Ajouts phase 2 (marketplace) :
 
 | Besoin | Piste | Remarque |
 |---|---|---|
-| SMS | Un fournisseur de SMS (Twilio, OVH, Brevo…) | Expéditeur personnalisé, coût par SMS à répercuter |
+| SMS | Par loueur : son téléphone Android (appli *SMS Gateway for Android*, gratuit) ou Brevo via Plazo (0,05 €/SMS) | Voir « Canal SMS par loueur » (bloc 3) ; mot de passe de l'appli chiffré au repos |
 | Email | Un service transactionnel (Resend, Brevo…) | Domaine d'envoi authentifié |
 | Suivi de vols | Une API de statut de vols (AeroDataBox, AviationStack, FlightAware…) | À choisir sur couverture France, prix et limites d'appels |
 | Notifications push | OneSignal (comme LoveNest) | Complète les SMS, ne les remplace pas |
@@ -388,7 +415,7 @@ Plazo reprend la stack de LoveNest (décision du 1er octobre 2026) :
 - Base : PostgreSQL + PostGIS hébergée sur Supabase (région Paris).
 - Espace pro et page de réservation : Vite + React + shadcn/ui, React Query.
 - App mobile : Flutter, architecture de LoveNest (bloc, auto_route, get_it, retrofit, freezed, easy_localization), notifications OneSignal, builds Codemagic. Deux apps à terme via les flavors.
-- SMS et email : Brevo.
+- Email : Brevo. SMS : le téléphone du loueur (*SMS Gateway for Android*, mode Cloud server) ou Brevo, au choix du loueur.
 - Suivi de vols : AirLabs (offre gratuite, 1 000 appels/mois) au départ, en interrogeant les arrivées de l'aéroport en un seul appel pour tous les clients et seulement quand un vol suivi approche ; AeroDataBox en repli. Le code passe par une interface interchangeable. Flightradar24 n'a pas d'offre gratuite et OpenSky est réservé à l'usage non commercial.
 - Le web (TypeScript) et le mobile (Dart) ne partagent pas de code : le contrat est l'API, décrite par Swagger ; toutes les règles métier (capacité, statuts, prix) vivent côté serveur.
 

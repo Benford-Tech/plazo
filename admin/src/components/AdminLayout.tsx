@@ -2,10 +2,10 @@ import { LogOut } from "lucide-react";
 import { NavLink, Outlet, useNavigate } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 import { fr } from "@/lib/fr";
-import { PRODUCT } from "@/lib/product";
 import { can, type Permission } from "@/lib/roles";
 import { cn } from "@/lib/utils";
 import { EmailVerificationBanner } from "./EmailVerificationBanner";
+import { Logo } from "./Logo";
 import { ViewAsBanner } from "./platform/ViewAsBanner";
 import { ViewSwitch } from "./platform/ViewSwitch";
 
@@ -38,7 +38,7 @@ export function AdminLayout() {
       <ViewAsBanner />
       <header className="sticky top-0 z-20 border-b border-border bg-background">
         <div className="mx-auto flex max-w-7xl items-center gap-4 px-4 pt-3 sm:px-6">
-          <span className="text-xl font-bold uppercase tracking-wider text-primary">{PRODUCT.name}</span>
+          <Logo height={28} suffix="Pro" className="shrink-0" />
           <span className="hidden truncate text-sm uppercase tracking-wide text-muted-foreground sm:block">{user?.operatorName}</span>
           {platformAdmin ? (
             <ViewSwitch current="own" className="ml-auto hidden md:block" />

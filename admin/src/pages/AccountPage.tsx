@@ -3,6 +3,7 @@ import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
 import { FormField } from "@/components/FormField";
+import { TravellerSms } from "@/components/account/TravellerSms";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { useAuth } from "@/contexts/AuthContext";
@@ -31,12 +32,13 @@ export default function AccountPage() {
     },
   });
 
-  // A platform admin viewing an operator's space: no password change from here.
+  // A platform admin viewing an operator's space: no password change from here; the SMS channel is read-only.
   if (user?.viewAs) {
     return (
       <>
         <h1 className="text-2xl font-semibold">{t.title}</h1>
         <p className="border border-primary p-3 text-base">{fr.viewAs.readOnly}</p>
+        <TravellerSms />
       </>
     );
   }
@@ -84,6 +86,7 @@ export default function AccountPage() {
           </form>
         </CardContent>
       </Card>
+      <TravellerSms />
     </>
   );
 }

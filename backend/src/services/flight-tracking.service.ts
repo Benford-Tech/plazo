@@ -2,7 +2,7 @@ import { Container, Service } from 'typedi';
 import { flightTrackingSettings, FlightProviderName, PRODUCT_NAME } from '@/config';
 import prisma, { FlightLandedSource, Prisma, Reservation } from '@/database';
 import { manageToken } from '@/domain/booking';
-import { WITH_LISTING, BookingRecord, toPublicBooking } from '@/domain/booking-view';
+import { WITH_LISTING, BookingRecord } from '@/domain/booking-view';
 import { FlightInfo, flightNumberKey, flightUpdate, mapAeroDataBox, mapAirLabs, shouldLookupFlight } from '@/domain/flight';
 import { landedPush, landedSms } from '@/domain/return-messages';
 import { localDate, localDateTime } from '@/domain/time';
@@ -11,6 +11,7 @@ import { logger } from '@/utils/logger';
 import { AuditService } from './audit.service';
 import { NotificationService } from './notification.service';
 import { PushService } from './push.service';
+import { SmsService } from './sms.service';
 
 /** A flight data provider. `date` is the local date of the landing (YYYY-MM-DD). */
 export interface FlightTrackingProvider {
@@ -93,6 +94,7 @@ export class FlightTrackingService {
   public audit = Container.get(AuditService);
   public notifications = Container.get(NotificationService);
   public push = Container.get(PushService);
+  public sms = Container.get(SmsService);
   /** Tests may set one; otherwise built from the environment on every call. */
   public providerOverride: FlightTrackingProvider | null = null;
 
@@ -235,12 +237,13 @@ export class FlightTrackingService {
     if (!smsClaim.count) return;
     const [point] = await prisma.$queryRaw<{ label: string | null; instructions: string | null }[]>`
       SELECT "returnMeetingLabel" AS label, "returnMeetingInstructions" AS instructions FROM parkings WHERE id = ${booking.parkingId}`;
-    const publicBooking = toPublicBooking(booking, now);
     const url = SECRET_KEY ? this.notifications.manageUrl(booking.reference, manageToken(booking.id, SECRET_KEY, booking.manageTokenVersion)) : null;
-    await this.notifications.smsTraveller(
-      publicBooking,
-      'flight_landed',
-      landedSms({
+    // Through the operator's own SMS channel (their phone, Brevo, or none).
+    await this.sms.sendTravellerSms(booking.operatorId, {
+      reservationId: booking.id,
+      kind: 'flight_landed',
+      to: booking.customerPhone,
+      text: landedSms({
         productName: PRODUCT_NAME,
         parkingName: booking.parking.listing.title,
         meetingLabel: point?.label ?? null,
@@ -248,6 +251,6 @@ export class FlightTrackingService {
         phone: booking.parking.listing.contactPhone,
         manageUrl: url,
       }),
-    );
+    });
   }
 }

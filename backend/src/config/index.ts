@@ -57,6 +57,18 @@ export const PUBLIC_SITE_URL = (
   process.env.PUBLIC_SITE_URL || (process.env.VERCEL_PROJECT_PRODUCTION_URL ? `https://${process.env.VERCEL_PROJECT_PRODUCTION_URL}` : '')
 ).replace(/\/+$/, '');
 
+// Per-operator SMS through the operator's own Android phone ("SMS Gateway for Android"). The
+// app's password is encrypted at rest with this key (32 bytes, base64: `openssl rand -base64 32`).
+// Read on every call so that tests can set it. Without it, the gateway mode cannot be enabled.
+export function smsGatewayEncryptionKey(): string {
+  return process.env.SMS_GATEWAY_ENCRYPTION_KEY?.trim() || '';
+}
+
+/** Whether the "Plazo envoie pour moi" SMS channel (Brevo) can be offered to the operators. */
+export function brevoSmsAvailable(): boolean {
+  return !!(process.env.BREVO_API_KEY?.trim() || '');
+}
+
 // Default commission on online bookings, in basis points (1500 = 15 %), when an operator has none.
 // Unset: online payment stays closed until a commission is configured.
 const rawCommission = Number(process.env.PLATFORM_COMMISSION_BPS);

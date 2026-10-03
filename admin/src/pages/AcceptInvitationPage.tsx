@@ -2,13 +2,13 @@ import { useQuery } from "@tanstack/react-query";
 import { useState } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import { FormField } from "@/components/FormField";
+import { Logo } from "@/components/Logo";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { useAuth } from "@/contexts/AuthContext";
 import { adminApi, ApiError } from "@/lib/api";
 import { describeError, fr } from "@/lib/fr";
-import { PRODUCT } from "@/lib/product";
 
 const MIN_PASSWORD_LENGTH = 10;
 
@@ -51,7 +51,7 @@ export default function AcceptInvitationPage() {
   const invalid = !token || invitation.isError;
   return (
     <main className="mx-auto flex min-h-screen max-w-sm flex-col justify-center px-4 py-10">
-      <p className="text-2xl font-bold text-primary">{PRODUCT.name}</p>
+      <Logo height={40} suffix="Pro" className="mb-2" />
       <h1 className="mb-6 mt-1 text-muted-foreground">{fr.login.subtitle}</h1>
       <Card>
         <CardContent className="space-y-4 pt-6">

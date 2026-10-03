@@ -1,5 +1,5 @@
 import { useQuery } from "@tanstack/react-query";
-import { Bell, BusFront, ChevronLeft, ChevronRight, X } from "lucide-react";
+import { Bell, BusFront, ChevronLeft, ChevronRight, MessageSquareWarning, X } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import { Link, useSearchParams } from "react-router-dom";
 import { Plate } from "@/components/Plate";
@@ -193,6 +193,23 @@ function ArrivalBanner({ signal, onClose }: { signal: ArrivalSignal; onClose: ()
   );
 }
 
+/** The operator's phone is not sending the SMS handed to it (gateway channel): a small warning, managers can fix it. */
+function SmsWarning({ pending, manager }: { pending: number; manager: boolean }) {
+  const t = fr.planning;
+  return (
+    <p role="status" data-testid="sms-warning" className="flex flex-wrap items-center gap-x-2 gap-y-1 border border-primary px-3 py-2 text-sm">
+      <MessageSquareWarning className="h-4 w-4 shrink-0 text-primary" aria-hidden="true" />
+      <span className="font-bold uppercase text-primary">{t.smsWarning(pending)}</span>
+      <span className="text-muted-foreground">{t.smsWarningHint}</span>
+      {manager && (
+        <Link to="/mon-compte" className="font-semibold underline-offset-4 hover:underline">
+          {fr.sms.title} ›
+        </Link>
+      )}
+    </p>
+  );
+}
+
 export default function PlanningPage() {
   const { user } = useAuth();
   const [params, setParams] = useSearchParams();
@@ -229,6 +246,7 @@ export default function PlanningPage() {
   return (
     <>
       {banner && <ArrivalBanner signal={banner} onClose={() => setBanner(null)} />}
+      {data?.smsWarning && <SmsWarning pending={data.smsWarning.pending} manager={can(user?.role, "parking:manage")} />}
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div className="flex items-center gap-2">
           <button aria-label={t.previousDay} onClick={() => go(addDays(date, -1))} className="flex h-11 w-11 items-center justify-center border border-border hover:bg-accent">

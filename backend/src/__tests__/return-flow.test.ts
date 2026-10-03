@@ -10,7 +10,7 @@ import { NotificationService } from '@/services/notification.service';
 import { ParkingLocationService } from '@/services/parking-location.service';
 import { ONESIGNAL_NOTIFICATIONS_URL } from '@/services/push.service';
 import { IGN_ROUTING_URL, RoutingService } from '@/services/routing.service';
-import { addStaff, api, publishListing, resetDatabase, setupOperator } from './utils/helpers';
+import { addStaff, api, publishListing, resetDatabase, setupOperator, useBrevoSms } from './utils/helpers';
 
 const TZ = 'Europe/Paris';
 const auth = (token: string) => ({ Authorization: `Bearer ${token}` });
@@ -42,6 +42,7 @@ async function parkingWithReturningBooking(options: { flight?: string | null; me
     });
   if (listing.status !== 200) throw new Error(JSON.stringify(listing.body));
   await publishListing(op.parking.id);
+  await useBrevoSms(op.operator.id);
   await Container.get(ParkingLocationService).store(op.parking.id, RECEPTION);
   if (options.meetingPoint !== false) {
     await Container.get(ArrivalService).setReturnMeetingPoint(op.parking.id, {
@@ -308,9 +309,9 @@ describe('GET /public/bookings/:reference/return', () => {
     fetchMock.mockImplementation(async url => (/aerodatabox/.test(String(url)) ? json(adbLanded('Expected')) : json({})));
     expect((await api().get('/api/internal/cron/track-return-flights')).status).toBe(401);
     const run1 = await api().get('/api/internal/cron/track-return-flights').set(auth('test-cron-secret'));
-    expect(run1.body).toEqual({ checked: 1, landed: 0, skipped: false });
+    expect(run1.body).toEqual({ checked: 1, landed: 0, skipped: false, sms: { operators: 0, checked: 0, sent: 0, abandoned: 0 } });
     const run2 = await api().get('/api/internal/cron/track-return-flights').set(auth('test-cron-secret'));
-    expect(run2.body).toEqual({ checked: 0, landed: 0, skipped: false });
+    expect(run2.body).toEqual({ checked: 0, landed: 0, skipped: false, sms: { operators: 0, checked: 0, sent: 0, abandoned: 0 } });
     expect(calls(/aerodatabox/).length).toBe(1);
     const row = await prisma.reservation.findUniqueOrThrow({ where: { id: b.reservation.id } });
     expect(row.flightStatus).toBe('scheduled');

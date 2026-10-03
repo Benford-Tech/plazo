@@ -9,7 +9,6 @@ import {
   PRODUCT_NAME,
   PUBLIC_SITE_URL,
   SECRET_KEY,
-  SMS_DAILY_LIMIT,
   stripePublishableKey,
   stripeSecretKey,
   stripeWebhookSecrets,
@@ -17,7 +16,7 @@ import {
 import prisma, { Operator, PayoutSchedule, Prisma, Reservation } from '@/database';
 import { manageToken } from '@/domain/booking';
 import { toPublicBooking, WITH_LISTING } from '@/domain/booking-view';
-import { formatLocalShort } from '@/domain/booking-messages';
+import { confirmationSms, formatLocalShort } from '@/domain/booking-messages';
 import { splitPayment } from '@/domain/pricing';
 import { payoutDueAt } from '@/domain/payout';
 import { AuthenticatedStaff } from '@/interfaces/auth.interface';
@@ -26,6 +25,7 @@ import { logger } from '@/utils/logger';
 import { AuditService } from './audit.service';
 import { CapacityService } from './capacity.service';
 import { NotificationService } from './notification.service';
+import { SmsService } from './sms.service';
 import { StripeService } from './stripe.service';
 
 type Client = Prisma.TransactionClient | typeof prisma;
@@ -108,6 +108,7 @@ export class PaymentService {
   public audit = Container.get(AuditService);
   public capacity = Container.get(CapacityService);
   public notifications = Container.get(NotificationService);
+  public sms = Container.get(SmsService);
   public stripe = Container.get(StripeService);
   /** Read from the environment once; tests override it. */
   public settings = { siteUrl: PUBLIC_SITE_URL };
@@ -513,15 +514,15 @@ export class PaymentService {
     if (!record.parking.listing) return;
     if (!SECRET_KEY) throw new Error('SECRET_KEY is not set');
     const token = manageToken(record.id, SECRET_KEY, record.manageTokenVersion);
-    await this.notifications.bookingConfirmed(toPublicBooking(record), token, { sms: await this.smsBudgetLeft(record.reference) });
-  }
-
-  /** Whether the platform may still send SMS today: above the daily budget, only the email goes out. */
-  private async smsBudgetLeft(reference: string): Promise<boolean> {
-    const today = await prisma.reservation.count({ where: { channel: 'plazo', confirmationSentAt: { gt: new Date(Date.now() - 86400000) } } });
-    if (today <= SMS_DAILY_LIMIT) return true;
-    logger.warn(`[Notifications] Daily SMS budget (${SMS_DAILY_LIMIT}) reached: booking_confirmed SMS not sent for booking ${reference}`);
-    return false;
+    const booking = toPublicBooking(record);
+    await this.notifications.bookingConfirmed(booking, token);
+    // The SMS goes through the operator's own channel (their phone, Brevo, or none).
+    await this.sms.sendTravellerSms(record.operatorId, {
+      reservationId: record.id,
+      kind: 'booking_confirmed',
+      to: record.customerPhone,
+      text: confirmationSms(PRODUCT_NAME, booking, this.notifications.manageUrl(record.reference, token)),
+    });
   }
 
   private async refundAfterLatePayment(id: string) {

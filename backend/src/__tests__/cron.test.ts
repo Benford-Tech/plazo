@@ -15,7 +15,7 @@ describe('GET /internal/cron/purge-expired-tokens', () => {
     await prisma.staffToken.create({ data: { staffId: manager.id, type: 'access', expiresAt: new Date(Date.now() - 1000) } });
     const res = await api().get('/api/internal/cron/purge-expired-tokens').set('Authorization', `Bearer ${process.env.CRON_SECRET}`);
     expect(res.status).toBe(200);
-    expect(res.body).toEqual({ deleted: 1, arrivalSignalsEnded: 0, shuttleTripsEnded: 0 });
+    expect(res.body).toEqual({ deleted: 1, arrivalSignalsEnded: 0, shuttleTripsEnded: 0, smsAbandoned: 0, smsPurged: 0 });
     expect(await prisma.staffToken.count()).toBe(2); // the login's access + refresh pair
   });
 });

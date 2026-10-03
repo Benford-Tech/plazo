@@ -2,8 +2,8 @@ import { LogOut } from "lucide-react";
 import { NavLink, Outlet, useLocation, useNavigate } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 import { fr } from "@/lib/fr";
-import { PRODUCT } from "@/lib/product";
 import { cn } from "@/lib/utils";
+import { Logo } from "../Logo";
 import { ViewAsBanner } from "./ViewAsBanner";
 import { ViewSwitch } from "./ViewSwitch";
 
@@ -30,9 +30,7 @@ export function PlatformLayout() {
       <ViewAsBanner />
       <header className="shrink-0 border-b border-border bg-background">
         <div className="mx-auto flex max-w-7xl items-center gap-4 px-4 py-3 sm:px-6">
-          <span className="truncate text-xl font-bold uppercase tracking-wider">
-            {PRODUCT.name} pro · {fr.platform.brand}
-          </span>
+          <Logo height={28} suffix={`Pro · ${fr.platform.brand}`} className="min-w-0 shrink" />
           <ViewSwitch current="platform" className="ml-auto" />
           <button
             onClick={async () => {

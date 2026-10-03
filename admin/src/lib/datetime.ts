@@ -54,3 +54,14 @@ export function dateTimeShort(iso: string, timeZone = PARKING_TZ): string {
 export function nightsBetween(arrivalDate: string, returnDate: string): number {
   return Math.max(1, Math.round((Date.parse(`${returnDate}T00:00:00Z`) - Date.parse(`${arrivalDate}T00:00:00Z`)) / 86400000));
 }
+
+/** "il y a 12 min", "il y a 3 h", "il y a 2 j": the age of an instant, for status lines. */
+export function timeAgo(iso: string, now = Date.now()): string {
+  const seconds = Math.max(0, Math.round((now - new Date(iso).getTime()) / 1000));
+  if (seconds < 60) return "à l'instant";
+  const minutes = Math.floor(seconds / 60);
+  if (minutes < 60) return `il y a ${minutes} min`;
+  const hours = Math.floor(minutes / 60);
+  if (hours < 24) return `il y a ${hours} h`;
+  return `il y a ${Math.floor(hours / 24)} j`;
+}

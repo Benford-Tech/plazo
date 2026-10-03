@@ -1,7 +1,6 @@
 import { Service } from 'typedi';
 import { BREVO_API_KEY, EMAIL_FROM, PRODUCT_NAME, PUBLIC_SITE_URL, SMS_SENDER } from '@/config';
-import { cancellationEmail, confirmationEmail, confirmationSms, EmailMessage, isGsm7 } from '@/domain/booking-messages';
-import { smsRecipient } from '@/domain/phone';
+import { cancellationEmail, confirmationEmail, EmailMessage, isGsm7 } from '@/domain/booking-messages';
 import { PublicBooking } from '@/interfaces/booking.interface';
 import { logger } from '@/utils/logger';
 
@@ -20,8 +19,10 @@ export function smsSenderName(value: string, productName: string): string {
 }
 
 /**
- * Emails and SMS to travellers (and emails to operators), through Brevo. A notification never fails the action that caused
- * it: every error is caught and logged with the booking reference only (no personal data).
+ * Emails to travellers and operators, and the Brevo SMS channel, through Brevo. The SMS to
+ * travellers are routed per operator by SmsService (which calls smsViaBrevo here when the operator
+ * chose that channel). A notification never fails the action that caused it: every error is caught
+ * and logged with the booking reference only (no personal data).
  */
 @Service()
 export class NotificationService {
@@ -41,14 +42,10 @@ export class NotificationService {
     return `${base}/ma-reservation/${encodeURIComponent(reference)}?cle=${encodeURIComponent(manageToken)}`;
   }
 
-  /** Confirmation email and SMS after a booking on the site. */
-  public async bookingConfirmed(booking: PublicBooking, manageToken: string, options: { sms?: boolean } = {}): Promise<void> {
+  /** Confirmation email after a booking on the site (the SMS goes through SmsService). */
+  public async bookingConfirmed(booking: PublicBooking, manageToken: string): Promise<void> {
     if (!this.configured(booking.reference, 'booking_confirmed')) return;
-    const url = this.manageUrl(booking.reference, manageToken);
-    await Promise.all([
-      this.sendEmail(booking, 'booking_confirmed', confirmationEmail(PRODUCT_NAME, booking, url)),
-      options.sms === false ? null : this.sendSms(booking, 'booking_confirmed', confirmationSms(PRODUCT_NAME, booking, url)),
-    ]);
+    await this.sendEmail(booking, 'booking_confirmed', confirmationEmail(PRODUCT_NAME, booking, this.manageUrl(booking.reference, manageToken)));
   }
 
   /** Email after the traveller cancelled on the site. */
@@ -57,10 +54,24 @@ export class NotificationService {
     await this.sendEmail(booking, 'booking_cancelled', cancellationEmail(PRODUCT_NAME, booking));
   }
 
-  /** An SMS to the traveller of a booking (e.g. the landing of their return flight). Nothing without Brevo. */
-  public async smsTraveller(booking: PublicBooking, tag: string, content: string): Promise<void> {
-    if (!this.configured(booking.reference, tag)) return;
-    await this.sendSms(booking, tag, content);
+  /**
+   * An SMS through Brevo ("Plazo envoie pour moi"), to a number already checked by smsRecipient().
+   * Returns whether Brevo accepted it; nothing (false) without an API key. `about` is an id.
+   */
+  public async smsViaBrevo(recipient: string, tag: string, about: string, content: string): Promise<boolean> {
+    if (!this.settings.apiKey) {
+      logger.info(`[Notifications] BREVO_API_KEY not set: ${tag} SMS not sent for ${about}`);
+      return false;
+    }
+    return this.post('SMS', tag, about, '/transactionalSMS/send', {
+      sender: smsSenderName(this.settings.smsSender, PRODUCT_NAME),
+      // Brevo expects the country code without "+", e.g. 33612345678.
+      recipient: recipient.slice(1),
+      content,
+      type: 'transactional',
+      tag,
+      unicodeEnabled: !isGsm7(content),
+    });
   }
 
   private configured(reference: string, tag: string): boolean {
@@ -83,23 +94,6 @@ export class NotificationService {
       htmlContent: message.html,
       textContent: message.text,
       tags: [tag],
-    });
-  }
-
-  private async sendSms(booking: PublicBooking, tag: string, content: string): Promise<void> {
-    const recipient = smsRecipient(booking.customerPhone);
-    if (!recipient) {
-      logger.info(`[Notifications] No mobile number: ${tag} SMS not sent for booking ${booking.reference}`);
-      return;
-    }
-    await this.post('SMS', tag, `booking ${booking.reference}`, '/transactionalSMS/send', {
-      sender: smsSenderName(this.settings.smsSender, PRODUCT_NAME),
-      // Brevo expects the country code without "+", e.g. 33612345678.
-      recipient: recipient.slice(1),
-      content,
-      type: 'transactional',
-      tag,
-      unicodeEnabled: !isGsm7(content),
     });
   }
 

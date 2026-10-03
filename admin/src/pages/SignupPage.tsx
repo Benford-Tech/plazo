@@ -2,6 +2,7 @@ import { useQuery } from "@tanstack/react-query";
 import { useState } from "react";
 import { Link, Navigate, useNavigate } from "react-router-dom";
 import { FormField } from "@/components/FormField";
+import { Logo } from "@/components/Logo";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
@@ -63,7 +64,7 @@ export default function SignupPage() {
 
   return (
     <main className="mx-auto flex min-h-screen max-w-xl flex-col justify-center px-4 py-10">
-      <p className="text-2xl font-bold text-primary">{PRODUCT.name}</p>
+      <Logo height={40} suffix="Pro" className="mb-2" />
       <h1 className="mt-1 text-muted-foreground">{fr.login.subtitle}</h1>
       <p className="mb-6 mt-3 text-lg">{t.subtitle(PRODUCT.name)}</p>
       {notice && (

@@ -55,6 +55,7 @@ flutter pub get
 dart run build_runner build          # après un changement de modèle, d'état, de client ou de route
 flutter analyze
 flutter test
+dart run flutter_launcher_icons   # icône d'app (Android adaptative, iOS, web) depuis assets/brand/ (copies de /brand)
 flutter run --dart-define=API_BASE_URL=http://localhost:3005/api      # API locale (émulateur Android : 10.0.2.2)
 flutter build web --dart-define=API_BASE_URL=http://localhost:3005/api # essai dans un navigateur
 ```

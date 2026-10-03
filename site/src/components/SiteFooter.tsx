@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { fr } from "@/lib/fr";
-import { hasSupportEmail, PRODUCT_NAME, SUPPORT_EMAIL } from "@/lib/product";
+import { Logo } from "@/components/Logo";
+import { hasSupportEmail, SUPPORT_EMAIL } from "@/lib/product";
 import { AIRPORTS, PRO_SIGNUP_PATH } from "@/lib/site";
 
 const linkClass = "inline-flex min-h-11 items-center text-sm text-lilac no-underline hover:text-white hover:underline md:min-h-8";
@@ -19,7 +20,7 @@ export function SiteFooter() {
     <footer className="on-dark mt-auto bg-prune-deep text-lilac">
       <div className="mx-auto grid max-w-[1280px] grid-cols-2 gap-x-6 gap-y-8 px-4 py-8 md:grid-cols-[2fr_1fr_1fr_1fr] md:gap-8 md:px-12">
         <div className="col-span-2 flex flex-col gap-2 md:col-span-1">
-          <span className="font-title text-[26px] text-white">{PRODUCT_NAME}</span>
+          <Logo height={32} className="self-start" />
           <p className="max-w-md text-sm leading-normal">{fr.footer.pitch}</p>
         </div>
         <Column id="aeroports" title={fr.footer.airports}>

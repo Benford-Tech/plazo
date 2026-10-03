@@ -53,6 +53,8 @@ model Operator {
   reservations Reservation[]
   vehicles     ShuttleVehicle[]
   shuttleTrips ShuttleTrip[]
+  smsSettings  OperatorSmsSettings?
+  smsOutbox    SmsOutbox[]
 
   @@map("operators")
 }
@@ -151,28 +153,28 @@ model LoginAttempt {
 }
 
 model Parking {
-  id                   String                                @id @default(cuid())
-  operatorId           String
-  name                 String
-  address              String?
+  id                        String                                @id @default(cuid())
+  operatorId                String
+  name                      String
+  address                   String?
   // Entrance point (WGS84). The detailed map arrives in milestone 4. Read/write through raw SQL.
-  location             Unsupported("geometry(Point, 4326)")?
-  timezone             String                                @default("Europe/Paris")
-  totalCapacity        Int
+  location                  Unsupported("geometry(Point, 4326)")?
+  timezone                  String                                @default("Europe/Paris")
+  totalCapacity             Int
   // Share of spots never offered for booking, in percent (0-50).
-  safetyMarginPct      Int                                   @default(0)
-  shuttleTravelMinutes Int                                   @default(8)
+  safetyMarginPct           Int                                   @default(0)
+  shuttleTravelMinutes      Int                                   @default(8)
   // Where the shuttle picks travellers up at the airport on their return (WGS84, raw SQL like
   // location). Null: the airport of the parking's listing, else the parking itself.
-  returnMeetingPoint   Unsupported("geometry(Point, 4326)")?
+  returnMeetingPoint        Unsupported("geometry(Point, 4326)")?
   // Shown to the traveller and the staff, e.g. "Terminal 1 · arrêt navettes P5".
-  returnMeetingLabel   String?
+  returnMeetingLabel        String?
   // Written directions to the meeting point for the traveller (500 characters at most).
   returnMeetingInstructions String?
   // Photo of the meeting point (URL; no upload yet, like the listing's photos).
   returnMeetingPhotoUrl     String?
-  createdAt            DateTime                              @default(now())
-  updatedAt            DateTime                              @default(now()) @updatedAt
+  createdAt                 DateTime                              @default(now())
+  updatedAt                 DateTime                              @default(now()) @updatedAt
 
   // Price per day beyond the longest package of the grid, in cents.
   extraDayPriceCents Int?
@@ -328,11 +330,12 @@ model Reservation {
   createdAt               DateTime            @default(now())
   updatedAt               DateTime            @default(now()) @updatedAt
 
-  operator       Operator        @relation(fields: [operatorId], references: [id], onDelete: Cascade)
-  parking        Parking         @relation(fields: [parkingId], references: [id], onDelete: Cascade)
-  createdBy      Staff?          @relation(fields: [createdById], references: [id], onDelete: SetNull)
+  operator       Operator               @relation(fields: [operatorId], references: [id], onDelete: Cascade)
+  parking        Parking                @relation(fields: [parkingId], references: [id], onDelete: Cascade)
+  createdBy      Staff?                 @relation(fields: [createdById], references: [id], onDelete: SetNull)
   arrivalSignals ArrivalSignal[]
   shuttleTrips   ShuttleTripPassenger[]
+  smsOutbox      SmsOutbox[]
 
   @@unique([operatorId, externalReference])
   @@index([parkingId, arrivalAt])
@@ -624,4 +627,77 @@ model ShuttleTripPassenger {
   @@id([tripId, reservationId])
   @@index([reservationId])
   @@map("shuttle_trip_passengers")
+}
+
+// How an operator's SMS to travellers go out (see src/services/sms.service.ts).
+enum SmsMode {
+  gateway // the operator's own Android phone, through "SMS Gateway for Android" (free)
+  brevo // the platform sends through Brevo (charged per SMS)
+  none // emails only
+}
+
+// One row per operator: the channel chosen and, for the gateway, the app's credentials. The
+// gateway password is encrypted at rest (AES-256-GCM, SMS_GATEWAY_ENCRYPTION_KEY) and never
+// returned by the API. lastError holds a machine code only (no number, no message text).
+model OperatorSmsSettings {
+  id                       String    @id @default(cuid())
+  operatorId               String    @unique
+  mode                     SmsMode   @default(none)
+  // Base URL of the gateway API; null = the public cloud server (https://api.sms-gate.app/3rdparty/v1).
+  gatewayBaseUrl           String?
+  gatewayLogin             String?
+  gatewayPasswordEncrypted String?
+  // Number of the phone sending the SMS (E.164), shown to the operator as the sender.
+  senderPhone              String?
+  linkedAt                 DateTime?
+  lastSentAt               DateTime?
+  lastError                String?
+  lastErrorAt              DateTime?
+  // Counters of the month in monthKey ("2026-10"), reset when the month changes.
+  monthKey                 String?
+  monthSent                Int       @default(0)
+  monthFailed              Int       @default(0)
+  // Last time the queued SMS were checked at the gateway (lazy refresh, throttled).
+  queueCheckedAt           DateTime?
+  createdAt                DateTime  @default(now())
+  updatedAt                DateTime  @default(now()) @updatedAt
+
+  operator Operator @relation(fields: [operatorId], references: [id], onDelete: Cascade)
+
+  @@map("operator_sms_settings")
+}
+
+enum SmsOutboxStatus {
+  queued // waiting at the gateway or for a retry
+  sent // the phone sent it
+  delivered // the network confirmed the delivery
+  failed // the last attempt failed; retried while the row is less than 2 h old
+  abandoned // still not sent after 2 h
+}
+
+// SMS handed to a provider, without their text (only its SHA-256). The recipient's number is kept
+// for the retries and purged with the row after 30 days (nightly cron).
+model SmsOutbox {
+  id                String          @id @default(cuid())
+  operatorId        String
+  reservationId     String?
+  // What the SMS was: booking_confirmed, flight_landed, test...
+  kind              String
+  to                String
+  bodyHash          String
+  provider          String
+  providerMessageId String?
+  status            SmsOutboxStatus @default(queued)
+  attempts          Int             @default(0)
+  // Machine code of the last failure (no personal data).
+  lastError         String?
+  createdAt         DateTime        @default(now())
+  updatedAt         DateTime        @default(now()) @updatedAt
+
+  operator    Operator     @relation(fields: [operatorId], references: [id], onDelete: Cascade)
+  reservation Reservation? @relation(fields: [reservationId], references: [id], onDelete: SetNull)
+
+  @@index([operatorId, status])
+  @@index([createdAt])
+  @@map("sms_outbox")
 }

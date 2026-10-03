@@ -10,6 +10,7 @@ import { PublicBookingRoute } from './public-booking.route';
 import { PublicRoute } from './public.route';
 import { ReservationRoute } from './reservation.route';
 import { ReturnRoute } from './return.route';
+import { SmsRoute } from './sms.route';
 import { StaffRoute } from './staff.route';
 
 const AppRoutes = [
@@ -25,6 +26,7 @@ const AppRoutes = [
   new ArrivalRoute(),
   new ReturnRoute(),
   new PaymentRoute(),
+  new SmsRoute(),
   new CronRoute(),
 ];
 

@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
 
-import '../../core/constants/product.g.dart';
 import '../theme/theme.dart';
+import 'brand_logo.dart';
 
-/// The prune header of direction D, with the product name (from product.json) in Playfair italic.
+/// The prune header of direction D: the logo (or a page title in Playfair italic).
 class BrandAppBar extends StatelessWidget implements PreferredSizeWidget {
   const BrandAppBar({super.key, this.title, this.actions, this.pro = false, this.leading});
 
@@ -21,7 +21,7 @@ class BrandAppBar extends StatelessWidget implements PreferredSizeWidget {
       toolbarHeight: 60,
       backgroundColor: AppColors.prune,
       leading: leading,
-      title: Text(title ?? (pro ? Product.proName : Product.name), style: AppText.title(size: 24, color: Colors.white)),
+      title: title == null ? BrandLogo(height: 30, pro: pro) : Text(title!, style: AppText.title(size: 24, color: Colors.white)),
       actions: actions,
     );
   }

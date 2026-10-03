@@ -4,7 +4,7 @@ import { manageToken } from '@/domain/booking';
 import { localDateTime, parseInstant } from '@/domain/time';
 import { NotificationService } from '@/services/notification.service';
 import { logger } from '@/utils/logger';
-import { api, resetDatabase, setupOperator, publishListing } from './utils/helpers';
+import { api, resetDatabase, setupOperator, publishListing, useBrevoSms } from './utils/helpers';
 
 const TZ = 'Europe/Paris';
 const auth = (token: string) => ({ Authorization: `Bearer ${token}` });
@@ -306,7 +306,8 @@ describe('abus et doublons', () => {
   });
 
   it('un même formulaire envoyé deux fois ne réserve qu’une place', async () => {
-    await publishedParking();
+    const op = await publishedParking();
+    await useBrevoSms(op.operator.id);
     Object.assign(notifications.settings, { apiKey: 'test-brevo-key', emailFrom: 'reservations@example.com' });
     const idempotencyKey = '6f1c2a9e-3b7d-4e8f-9a0b-1c2d3e4f5a6b';
     const first = await book({ idempotencyKey });
@@ -560,7 +561,8 @@ describe('notifications', () => {
   });
 
   it('avec Brevo : email et SMS de confirmation au bon format', async () => {
-    await publishedParking();
+    const op = await publishedParking();
+    await useBrevoSms(op.operator.id);
     Object.assign(notifications.settings, {
       apiKey: 'test-brevo-key',
       emailFrom: 'Plazo Lyon <reservations@example.com>',
@@ -615,7 +617,8 @@ describe('notifications', () => {
   });
 
   it('une panne de Brevo ne fait pas échouer la réservation et ne journalise aucune donnée personnelle', async () => {
-    await publishedParking();
+    const op = await publishedParking();
+    await useBrevoSms(op.operator.id);
     Object.assign(notifications.settings, { apiKey: 'test-brevo-key', emailFrom: 'reservations@example.com' });
     fetchMock
       .mockResolvedValueOnce(
