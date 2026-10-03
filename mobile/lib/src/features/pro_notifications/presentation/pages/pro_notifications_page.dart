@@ -34,7 +34,7 @@ class ProNotificationsPage extends StatelessWidget implements AutoRouteWrapper {
             children: [
               Text('pro.notifications_intro'.tr(), style: AppText.muted()),
               const SizedBox(height: 14),
-              if (prefs == null && state.viewState.isProcessing) const Center(child: CircularProgressIndicator(color: AppColors.violet)),
+              if (prefs == null && state.viewState.isProcessing) const Center(child: CircularProgressIndicator(color: AppColors.accent)),
               if (prefs != null)
                 AppCard(
                   padding: EdgeInsets.zero,

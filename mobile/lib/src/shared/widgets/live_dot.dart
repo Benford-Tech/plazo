@@ -4,7 +4,7 @@ import '../theme/theme.dart';
 
 /// A pulsing dot: something is live (the position being shared).
 class LiveDot extends StatefulWidget {
-  const LiveDot({super.key, this.color = AppColors.violet, this.size = 10, this.animate = true});
+  const LiveDot({super.key, this.color = AppColors.accent, this.size = 10, this.animate = true});
 
   final Color color;
   final double size;

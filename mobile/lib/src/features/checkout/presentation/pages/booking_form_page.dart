@@ -138,7 +138,7 @@ class _BookingFormViewState extends State<BookingFormView> {
         return Scaffold(
           appBar: AppBar(titleSpacing: NavigationToolbar.kMiddleSpacing, title: Text('book.title'.tr(), style: AppText.strong(size: 16, color: Colors.white))),
           body: state.loadState.isProcessing || state.loadState.isIdle
-              ? const Center(child: CircularProgressIndicator(color: AppColors.violet))
+              ? const Center(child: CircularProgressIndicator(color: AppColors.accent))
               : SafeArea(
                   top: false,
                   child: ListView(
@@ -424,7 +424,7 @@ class _TermsState extends State<_Terms> {
                 child: Checkbox(
                   key: const Key('field-terms'),
                   value: widget.value,
-                  activeColor: AppColors.violet,
+                  activeColor: AppColors.accent,
                   isError: widget.error != null,
                   onChanged: (v) => widget.onChanged(v ?? false),
                 ),
@@ -439,7 +439,7 @@ class _TermsState extends State<_Terms> {
                         TextSpan(text: 'book.terms_before'.tr()),
                         TextSpan(
                           text: 'book.terms_link'.tr(args: [Product.name]),
-                          style: AppText.body(size: 14, weight: 600, color: AppColors.violet).copyWith(decoration: TextDecoration.underline),
+                          style: AppText.body(size: 14, weight: 600, color: AppColors.accent).copyWith(decoration: TextDecoration.underline),
                           recognizer: _link,
                         ),
                         TextSpan(text: 'book.terms_after'.tr()),

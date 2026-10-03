@@ -18,7 +18,7 @@ import {
 } from "@/lib/calendar";
 import { fr } from "@/lib/fr";
 
-const GRADIENT = "bg-[linear-gradient(96deg,#a427c3,#cf4f96_55%,#f0a36b)] font-bold text-white";
+const GRADIENT = "bg-[linear-gradient(96deg,#ff8a3d,#f0a36b)] font-bold text-white";
 
 /**
  * Calendar of a stay: one or two months, Monday first, past days disabled, the range between the
@@ -174,7 +174,7 @@ export function CalendarMonths({
                             <span
                               className={`mx-auto flex h-11 w-full max-w-11 items-center justify-center rounded-full tabular-nums group-focus-visible:outline-3 group-focus-visible:outline-offset-[-1px] group-focus-visible:outline-accent ${
                                 ends ? GRADIENT : !disabled ? "group-hover:bg-tint" : ""
-                              } ${today && !ends ? "shadow-[inset_0_0_0_1.5px_#a427c3]" : ""}`}
+                              } ${today && !ends ? "shadow-[inset_0_0_0_1.5px_#ff8a3d]" : ""}`}
                             >
                               {Number(date.slice(8, 10))}
                             </span>

@@ -28,7 +28,7 @@ class StatusBadge extends StatelessWidget {
       BadgeTone.ok => (const Color(0xFFE9F7EE), const Color(0xFF1F7A3F)),
       BadgeTone.peach => (const Color(0xFFFDF0E6), const Color(0xFFB4581D)),
       BadgeTone.danger => (const Color(0xFFFCE8E6), AppColors.danger),
-      BadgeTone.tint => (const Color(0xFFF6EAF9), const Color(0xFF7B1D93)),
+      BadgeTone.tint => (AppColors.tint, AppColors.accentDeep),
       BadgeTone.muted => (AppColors.canvas, AppColors.muted),
     };
     return Container(

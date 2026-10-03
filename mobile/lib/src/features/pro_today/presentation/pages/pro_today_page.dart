@@ -110,7 +110,7 @@ class _ProTodayViewState extends State<_ProTodayView> with SingleTickerProviderS
                         style: AppText.label(size: 14, color: AppColors.prune).copyWith(fontWeight: FontWeight.w800),
                       ),
                     ),
-                    Text(hhmm(_now), style: AppText.tabular(size: 16, color: AppColors.violet)),
+                    Text(hhmm(_now), style: AppText.tabular(size: 16, color: AppColors.accent)),
                   ],
                 ),
               ),
@@ -119,7 +119,7 @@ class _ProTodayViewState extends State<_ProTodayView> with SingleTickerProviderS
                   child: Center(
                     child: state.viewState.isError
                         ? Text(state.errorMessage ?? 'errors.generic'.tr(), textAlign: TextAlign.center)
-                        : const CircularProgressIndicator(color: AppColors.violet),
+                        : const CircularProgressIndicator(color: AppColors.accent),
                   ),
                 )
               else if (wide)
@@ -170,7 +170,7 @@ class _Column extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return RefreshIndicator(
-      color: AppColors.violet,
+      color: AppColors.accent,
       onRefresh: () async => context.read<ProTodayBloc>().add(const ProTodayPolled(full: true)),
       child: ListView(
         padding: const EdgeInsets.all(14),

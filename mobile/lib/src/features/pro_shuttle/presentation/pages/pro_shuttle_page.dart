@@ -43,12 +43,12 @@ class ProShuttlePage extends StatelessWidget implements AutoRouteWrapper {
             return Center(
               child: state.viewState.isError
                   ? Padding(padding: const EdgeInsets.all(24), child: Text(translateErrorCode(state.errorCode), textAlign: TextAlign.center))
-                  : const CircularProgressIndicator(color: AppColors.violet),
+                  : const CircularProgressIndicator(color: AppColors.accent),
             );
           }
           final meeting = state.meetingPoint;
           return RefreshIndicator(
-            color: AppColors.violet,
+            color: AppColors.accent,
             onRefresh: () async => bloc.add(const ShuttlePolled()),
             child: ListView(
               padding: const EdgeInsets.fromLTRB(16, 14, 16, 28),
@@ -182,7 +182,7 @@ class _MeetingPoint extends StatelessWidget {
     return Row(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const Padding(padding: EdgeInsets.only(top: 2), child: Icon(Icons.place_rounded, size: 16, color: AppColors.violet)),
+        const Padding(padding: EdgeInsets.only(top: 2), child: Icon(Icons.place_rounded, size: 16, color: AppColors.accent)),
         const SizedBox(width: 6),
         Expanded(
           child: Column(
@@ -218,7 +218,7 @@ class _PickupTile extends StatelessWidget {
       color: Colors.white,
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(16),
-        side: BorderSide(color: highlighted ? AppColors.violet : AppColors.line, width: highlighted ? 2 : 1),
+        side: BorderSide(color: highlighted ? AppColors.accent : AppColors.line, width: highlighted ? 2 : 1),
       ),
       clipBehavior: Clip.antiAlias,
       child: InkWell(
@@ -232,7 +232,7 @@ class _PickupTile extends StatelessWidget {
               Row(
                 children: [
                   if (selectable) ...[
-                    Icon(selected ? Icons.check_circle_rounded : Icons.radio_button_unchecked_rounded, size: 20, color: selected ? AppColors.violet : AppColors.line),
+                    Icon(selected ? Icons.check_circle_rounded : Icons.radio_button_unchecked_rounded, size: 20, color: selected ? AppColors.accent : AppColors.line),
                     const SizedBox(width: 8),
                   ],
                   Expanded(child: Text('${row.customerName} · ${'shuttle.pax'.tr(args: ['${row.passengers}'])}', style: AppText.strong(size: 14.5))),

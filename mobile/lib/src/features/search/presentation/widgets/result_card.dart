@@ -49,7 +49,7 @@ class ResultCard extends StatelessWidget {
           color: Colors.white,
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(16),
-            side: BorderSide(color: highlighted ? AppColors.violet : AppColors.line, width: highlighted ? 2 : 1),
+            side: BorderSide(color: highlighted ? AppColors.accent : AppColors.line, width: highlighted ? 2 : 1),
           ),
           clipBehavior: Clip.antiAlias,
           child: InkWell(

@@ -90,7 +90,7 @@ class PaymentView extends StatelessWidget {
       case PaymentStatus.loading:
       case PaymentStatus.paid:
       case PaymentStatus.released:
-        return const [Padding(padding: EdgeInsets.all(40), child: Center(child: CircularProgressIndicator(color: AppColors.violet)))];
+        return const [Padding(padding: EdgeInsets.all(40), child: Center(child: CircularProgressIndicator(color: AppColors.accent)))];
       case PaymentStatus.error:
         return [
           Text(state.message ?? 'errors.generic'.tr(), style: AppText.body()),
@@ -141,7 +141,7 @@ class PaymentView extends StatelessWidget {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  const SizedBox(width: 30, height: 30, child: CircularProgressIndicator(strokeWidth: 3, color: AppColors.violet)),
+                  const SizedBox(width: 30, height: 30, child: CircularProgressIndicator(strokeWidth: 3, color: AppColors.accent)),
                   const SizedBox(height: 12),
                   Text('pay.verifying_title'.tr(), style: AppText.title(size: 22)),
                   const SizedBox(height: 4),
@@ -178,7 +178,7 @@ class PaymentView extends StatelessWidget {
                       key: const Key('payment-modify'),
                       style: TextButton.styleFrom(minimumSize: const Size(48, 48)),
                       onPressed: state.busy ? null : () => bloc.add(const PaymentEditPressed()),
-                      child: Text('common.modify'.tr(), style: AppText.strong(size: 14, color: AppColors.violet)),
+                      child: Text('common.modify'.tr(), style: AppText.strong(size: 14, color: AppColors.accent)),
                     ),
                   ],
                 ),

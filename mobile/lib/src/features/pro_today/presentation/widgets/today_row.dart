@@ -39,7 +39,7 @@ class TodayRowTile extends StatelessWidget {
         children: [
           Row(
             children: [
-              Text(time, style: AppText.tabular(size: 17, color: AppColors.violet)),
+              Text(time, style: AppText.tabular(size: 17, color: AppColors.accent)),
               const SizedBox(width: 12),
               // One line, as on the planning of the pro space: scaled down rather than wrapped.
               Expanded(
@@ -125,7 +125,7 @@ class _StatusLabel extends StatelessWidget {
     return Text(
       '● ${text.toUpperCase()}',
       textAlign: TextAlign.right,
-      style: AppText.label(size: 12.5, color: AppColors.violet).copyWith(fontWeight: FontWeight.w800),
+      style: AppText.label(size: 12.5, color: AppColors.accent).copyWith(fontWeight: FontWeight.w800),
     );
   }
 }

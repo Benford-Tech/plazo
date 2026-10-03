@@ -66,7 +66,7 @@ class MeetingPointRoutePage extends StatelessWidget implements AutoRouteWrapper 
                 : route == null || meeting == null
                 ? Column(
                     children: [
-                      const LinearProgressIndicator(color: AppColors.violet, backgroundColor: AppColors.canvas),
+                      const LinearProgressIndicator(color: AppColors.accent, backgroundColor: AppColors.canvas),
                       Padding(padding: const EdgeInsets.all(24), child: Text('return_day.route_loading'.tr(), style: AppText.muted())),
                     ],
                   )
@@ -112,8 +112,8 @@ class MeetingPointRoutePage extends StatelessWidget implements AutoRouteWrapper 
                             if (meeting.photoUrl != null && meeting.photoUrl!.isNotEmpty) ...[
                               const SizedBox(height: 14),
                               AppCard(
-                                color: const Color(0xFFFAF6FB),
-                                borderColor: const Color(0xFFFAF6FB),
+                                color: AppColors.tintSoft,
+                                borderColor: AppColors.tintSoft,
                                 padding: const EdgeInsets.all(12),
                                 child: Column(
                                   crossAxisAlignment: CrossAxisAlignment.start,
@@ -224,7 +224,7 @@ class _Instructions extends StatelessWidget {
             child: Row(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                SizedBox(width: 26, child: Text('${i + 1}.', style: AppText.strong(size: 14, color: AppColors.violet))),
+                SizedBox(width: 26, child: Text('${i + 1}.', style: AppText.strong(size: 14, color: AppColors.accent))),
                 Expanded(child: Text(lines[i].replaceFirst(RegExp(r'^\d+[.)]\s*'), ''), style: AppText.body(size: 14, height: 1.45))),
               ],
             ),

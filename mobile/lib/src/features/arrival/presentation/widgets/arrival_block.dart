@@ -134,7 +134,7 @@ class ArrivalBlock extends StatelessWidget {
               ActionChip(
                 key: Key('announce-$minutes'),
                 label: Text(key.tr(args: ['$minutes']), style: AppText.body(size: 14, weight: 600, color: AppColors.prune)),
-                shape: const StadiumBorder(side: BorderSide(color: AppColors.violet)),
+                shape: const StadiumBorder(side: BorderSide(color: AppColors.accent)),
                 backgroundColor: Colors.white,
                 onPressed: () => bloc.add(ArrivalAnnounced(minutes)),
               ),
@@ -172,7 +172,7 @@ class _Sharing extends StatelessWidget {
           children: [
             const LiveDot(),
             const SizedBox(width: 6),
-            Flexible(child: Text('arrival.live'.tr(), style: AppText.strong(size: 16, color: AppColors.violet))),
+            Flexible(child: Text('arrival.live'.tr(), style: AppText.strong(size: 16, color: AppColors.accent))),
           ],
         ),
         if (meeting != null)
@@ -301,7 +301,7 @@ class _NotYet extends StatelessWidget {
       color: AppColors.canvas,
       child: Row(
         children: [
-          const Icon(Icons.schedule_rounded, color: AppColors.violet),
+          const Icon(Icons.schedule_rounded, color: AppColors.accent),
           const SizedBox(width: 10),
           Expanded(child: Text(key.tr(args: [when]), style: AppText.muted())),
         ],
@@ -352,7 +352,7 @@ class _AtPointButtonState extends State<_AtPointButton> {
           onChanged: (v) => setState(() => _withPosition = v ?? false),
           contentPadding: EdgeInsets.zero,
           controlAffinity: ListTileControlAffinity.leading,
-          activeColor: AppColors.violet,
+          activeColor: AppColors.accent,
           title: Text('arrival.with_position'.tr(), style: AppText.muted()),
         ),
       ],

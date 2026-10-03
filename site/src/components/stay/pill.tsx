@@ -6,11 +6,11 @@
 export const pillBox =
   "relative flex h-14 min-w-0 items-center gap-2.5 rounded-[14px] border border-line bg-white px-3 text-left text-ink transition-shadow";
 /** Outline of the pill whose picker is open, or that has the keyboard focus. */
-export const pillActive = "border-accent shadow-[inset_0_0_0_1px_#a427c3,0_0_0_4px_rgba(164,39,195,.12)]";
+export const pillActive = "border-accent shadow-[inset_0_0_0_1px_#ff8a3d,0_0_0_4px_rgba(255,138,61,.18)]";
 export const pillFocus =
-  "focus-visible:border-accent focus-visible:shadow-[inset_0_0_0_1px_#a427c3,0_0_0_4px_rgba(164,39,195,.12)] focus-visible:outline-none";
+  "focus-visible:border-accent focus-visible:shadow-[inset_0_0_0_1px_#ff8a3d,0_0_0_4px_rgba(255,138,61,.18)] focus-visible:outline-none";
 export const pillFocusWithin =
-  "has-focus-visible:border-accent has-focus-visible:shadow-[inset_0_0_0_1px_#a427c3,0_0_0_4px_rgba(164,39,195,.12)]";
+  "has-focus-visible:border-accent has-focus-visible:shadow-[inset_0_0_0_1px_#ff8a3d,0_0_0_4px_rgba(255,138,61,.18)]";
 export const pillInvalid = "border-danger";
 export const pillLabel = "block text-[11px] leading-tight font-semibold tracking-[.04em] text-soft uppercase";
 export const pillValue = "block truncate text-base leading-tight font-bold tabular-nums";

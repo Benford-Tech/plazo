@@ -26,9 +26,9 @@ class IconTile extends StatelessWidget {
   }
 }
 
-/// Three gradient tiles, one per step: violet → pink, pink → peach, peach → yellow.
+/// Three gradient tiles, one per step: orange → peach, peach → yellow, yellow → straw.
 abstract final class StepGradients {
-  static const first = LinearGradient(begin: Alignment.topLeft, end: Alignment.bottomRight, colors: [AppColors.violet, AppColors.pink]);
-  static const second = LinearGradient(begin: Alignment.topLeft, end: Alignment.bottomRight, colors: [AppColors.pink, AppColors.peach]);
-  static const third = LinearGradient(begin: Alignment.topLeft, end: Alignment.bottomRight, colors: [AppColors.peach, Color(0xFFF5C400)]);
+  static const first = LinearGradient(begin: Alignment.topLeft, end: Alignment.bottomRight, colors: [AppColors.accent, AppColors.peach]);
+  static const second = LinearGradient(begin: Alignment.topLeft, end: Alignment.bottomRight, colors: [AppColors.peach, Color(0xFFF5C400)]);
+  static const third = LinearGradient(begin: Alignment.topLeft, end: Alignment.bottomRight, colors: [Color(0xFFF5C400), Color(0xFFFFD86B)]);
 }

@@ -36,7 +36,7 @@ class SearchTabPage extends StatelessWidget implements AutoRouteWrapper {
         listenWhen: (a, b) => a.submitted != b.submitted,
         listener: (context, s) => context.router.push(ResultsRoute(airport: s.airportSlug, arrivee: s.arrivalAt, retour: s.returnAt)),
         child: RefreshIndicator(
-          color: AppColors.violet,
+          color: AppColors.accent,
           onRefresh: () async => context.read<TripsBloc>().add(const TripsLoaded(quiet: true)),
           child: ListView(padding: EdgeInsets.zero, children: const [_Hero(), _NextDeparture(), _Steps(), _Trust()]),
         ),
@@ -91,10 +91,10 @@ class _Hero extends StatelessWidget {
                           child: Row(
                             mainAxisSize: MainAxisSize.min,
                             children: [
-                              const Icon(Icons.flight_takeoff_rounded, size: 15, color: Color(0xFFF3D6F3)),
+                              const Icon(Icons.flight_takeoff_rounded, size: 15, color: AppColors.onPruneSoft),
                               const SizedBox(width: 6),
-                              Text(airportName.toUpperCase(), style: AppText.label(size: 12, color: const Color(0xFFF3D6F3))),
-                              if (canPick) const Icon(Icons.expand_more_rounded, color: Color(0xFFF3D6F3), size: 18),
+                              Text(airportName.toUpperCase(), style: AppText.label(size: 12, color: AppColors.onPruneSoft)),
+                              if (canPick) const Icon(Icons.expand_more_rounded, color: AppColors.onPruneSoft, size: 18),
                             ],
                           ),
                         ),
@@ -166,7 +166,7 @@ class _Hero extends StatelessWidget {
             for (final a in state.airports)
               ListTile(
                 minTileHeight: 52,
-                leading: const Icon(Icons.flight_takeoff_rounded, color: AppColors.violet),
+                leading: const Icon(Icons.flight_takeoff_rounded, color: AppColors.accent),
                 title: Text(a.name, style: AppText.strong()),
                 subtitle: a.city == null ? null : Text(a.city!, style: AppText.muted()),
                 selected: a.slug == state.airportSlug,
@@ -250,7 +250,7 @@ class _Steps extends StatelessWidget {
               Expanded(
                 child: Container(
                   padding: const EdgeInsets.fromLTRB(12, 12, 10, 12),
-                  decoration: BoxDecoration(color: const Color(0xFFFAF6FB), borderRadius: BorderRadius.circular(14)),
+                  decoration: BoxDecoration(color: AppColors.tintSoft, borderRadius: BorderRadius.circular(14)),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
@@ -295,7 +295,7 @@ class _Trust extends StatelessWidget {
               child: Row(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  ExcludeSemantics(child: Icon(icon, size: 15, color: AppColors.violet)),
+                  ExcludeSemantics(child: Icon(icon, size: 15, color: AppColors.accent)),
                   const SizedBox(width: 6),
                   Text('search.$key'.tr(), style: AppText.strong(size: 12.5, color: AppColors.prune)),
                 ],

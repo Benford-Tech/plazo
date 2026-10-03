@@ -3,7 +3,7 @@
 import { useEffect, useRef } from "react";
 import { timeOptions } from "@/lib/calendar";
 
-const GRADIENT = "border-transparent bg-[linear-gradient(96deg,#a427c3,#cf4f96_55%,#f0a36b)] text-white";
+const GRADIENT = "border-transparent bg-[linear-gradient(96deg,#ff8a3d,#f0a36b)] text-white";
 
 /**
  * Half-hour slots as pills (a listbox): a 2-column scrolling grid in the desktop popover, one

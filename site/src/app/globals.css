@@ -1,16 +1,16 @@
 @import "tailwindcss";
 
-/* Direction M3 "Plazo voyageur": prune header, violet accent, peach highlight, rounded cards. */
+/* Direction M3 "Plazo voyageur": prune header, light-orange accent (V-A, 03/10/2026), peach highlight, rounded cards. */
 @theme {
   --color-prune: #4b164c;
   --color-prune-deep: #2c0f31;
-  --color-accent: #a427c3;
+  --color-accent: #ff8a3d;
   --color-accent-dark: #8a1fa6;
   --color-peach: #f0a36b;
   --color-ink: #1e1e1e;
   --color-soft: #6f6675;
   --color-line: #e6e0ea;
-  --color-tint: #faf6fb;
+  --color-tint: #fff7f1;
   --color-lilac: #e2c7e4;
   --color-ok-bg: #e3f5eb;
   --color-ok: #0c7440;
@@ -37,7 +37,7 @@
   background: linear-gradient(160deg, #4b164c, #722a7e 60%, #9b3e6b);
 }
 
-/* Primary action: violet -> pink -> peach gradient, pill shape, soft shadow. */
+/* Primary action: light orange -> peach gradient, pill shape, soft shadow. */
 @utility btn-primary {
   display: inline-flex;
   align-items: center;
@@ -46,7 +46,7 @@
   min-height: 44px;
   border: none;
   border-radius: 9999px;
-  background: linear-gradient(96deg, #a427c3, #cf4f96 55%, #f0a36b);
+  background: linear-gradient(96deg, #ff8a3d, #f0a36b);
   color: #ffffff;
   font-weight: 700;
   text-decoration: none;

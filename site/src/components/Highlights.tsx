@@ -88,7 +88,7 @@ export function FactChips({ chips, className = "" }: { chips: FactChip[]; classN
 const BADGE_LABEL: Record<Badge, string> = { cheapest: fr.results.cheapest, fastestShuttle: fr.results.fastestShuttle };
 const BADGE_STYLE: Record<Badge, string> = { cheapest: "bg-accent text-white", fastestShuttle: "bg-peach text-white" };
 
-/** Badges of a result, stacked ("Le moins cher" in violet, "Navette la plus rapide" in peach). */
+/** Badges of a result, stacked ("Le moins cher" in orange, "Navette la plus rapide" in peach). */
 export function ResultBadges({ badges, className = "" }: { badges: Badge[]; className?: string }) {
   if (badges.length === 0) return null;
   return (

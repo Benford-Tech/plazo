@@ -96,7 +96,7 @@ class _ParkingViewState extends State<_ParkingView> {
                             ],
                           ),
                         )
-                      : const CircularProgressIndicator(color: AppColors.violet),
+                      : const CircularProgressIndicator(color: AppColors.accent),
                 )
               : _content(context, response),
           bottomNavigationBar: response == null ? null : _BookingBar(state: state, onChangeDates: () => _changeDates(context, state)),
@@ -299,8 +299,8 @@ class _BookingBar extends StatelessWidget {
           ? Container(
               key: const Key('parking-online-soon'),
               padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
-              decoration: BoxDecoration(color: const Color(0xFFF6EAF9), borderRadius: BorderRadius.circular(14)),
-              child: Text('parking.online_soon'.tr(), textAlign: TextAlign.center, style: AppText.strong(size: 13, color: const Color(0xFF7B1D93))),
+              decoration: BoxDecoration(color: AppColors.tint, borderRadius: BorderRadius.circular(14)),
+              child: Text('parking.online_soon'.tr(), textAlign: TextAlign.center, style: AppText.strong(size: 13, color: AppColors.accentDeep)),
             )
           : GradientButton(
               key: const Key('parking-book'),

@@ -89,11 +89,11 @@ class MyBookingPage extends StatelessWidget implements AutoRouteWrapper {
             builder: (context, booking) {
               if (booking.booking == null) {
                 if (booking.viewState.isError) return _Error(message: booking.errorMessage);
-                return const Center(child: CircularProgressIndicator(color: AppColors.violet));
+                return const Center(child: CircularProgressIndicator(color: AppColors.accent));
               }
               final b = booking.booking!;
               return RefreshIndicator(
-                color: AppColors.violet,
+                color: AppColors.accent,
                 onRefresh: () async {
                   context.read<BookingBloc>().add(const BookingRefreshed());
                   context.read<ArrivalBloc>().add(const ArrivalRefreshRequested());

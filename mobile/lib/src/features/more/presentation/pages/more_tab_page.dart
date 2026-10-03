@@ -111,7 +111,7 @@ class _Tile extends StatelessWidget {
     child: ListTile(
       minTileHeight: 52,
       contentPadding: const EdgeInsets.symmetric(horizontal: 4),
-      leading: Icon(icon, color: AppColors.violet),
+      leading: Icon(icon, color: AppColors.accent),
       title: Text(label, style: AppText.body(size: 15.5, weight: 500)),
       subtitle: subtitle == null ? null : Text(subtitle!, style: AppText.muted(size: 13)),
       trailing: Icon(external ? Icons.open_in_new_rounded : Icons.chevron_right_rounded, size: 18, color: AppColors.muted),

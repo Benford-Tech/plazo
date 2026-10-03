@@ -16,7 +16,7 @@ class Segmented<T> extends StatelessWidget {
   Widget build(BuildContext context) {
     return Container(
       padding: const EdgeInsets.all(3),
-      decoration: BoxDecoration(color: const Color(0xFFFAF6FB), borderRadius: BorderRadius.circular(22)),
+      decoration: BoxDecoration(color: AppColors.tintSoft, borderRadius: BorderRadius.circular(22)),
       child: Row(
         children: [
           for (var i = 0; i < values.length; i++)
@@ -40,7 +40,7 @@ class Segmented<T> extends StatelessWidget {
                     child: Text(
                       labels[i],
                       textAlign: TextAlign.center,
-                      style: AppText.body(size: 13.5, weight: 600, color: values[i] == selected ? AppColors.violet : AppColors.muted),
+                      style: AppText.body(size: 13.5, weight: 600, color: values[i] == selected ? AppColors.accent : AppColors.muted),
                     ),
                   ),
                 ),
@@ -70,8 +70,8 @@ class PillChip extends StatelessWidget {
       label: semanticsLabel ?? label,
       excludeSemantics: true,
       child: Material(
-        color: selected ? AppColors.violet : Colors.white,
-        shape: StadiumBorder(side: BorderSide(color: selected ? AppColors.violet : AppColors.line)),
+        color: selected ? AppColors.accent : Colors.white,
+        shape: StadiumBorder(side: BorderSide(color: selected ? AppColors.accent : AppColors.line)),
         child: InkWell(
           customBorder: const StadiumBorder(),
           onTap: onTap,

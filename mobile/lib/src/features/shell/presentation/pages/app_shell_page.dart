@@ -29,13 +29,13 @@ class AppShellPage extends StatelessWidget {
             bottomNavigationBar: NavigationBarTheme(
               data: NavigationBarThemeData(
                 backgroundColor: Colors.white,
-                indicatorColor: const Color(0xFFF6EAF9),
+                indicatorColor: AppColors.tint,
                 height: 64,
                 labelTextStyle: WidgetStateProperty.resolveWith(
-                  (s) => AppText.body(size: 11.5, weight: s.contains(WidgetState.selected) ? 700 : 500, color: s.contains(WidgetState.selected) ? AppColors.violet : AppColors.muted),
+                  (s) => AppText.body(size: 11.5, weight: s.contains(WidgetState.selected) ? 700 : 500, color: s.contains(WidgetState.selected) ? AppColors.accent : AppColors.muted),
                 ),
                 iconTheme: WidgetStateProperty.resolveWith(
-                  (s) => IconThemeData(color: s.contains(WidgetState.selected) ? AppColors.violet : AppColors.muted),
+                  (s) => IconThemeData(color: s.contains(WidgetState.selected) ? AppColors.accent : AppColors.muted),
                 ),
               ),
               child: DecoratedBox(

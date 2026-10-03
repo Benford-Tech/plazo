@@ -43,11 +43,11 @@ class FactChips extends StatelessWidget {
             excludeSemantics: true,
             child: Container(
               padding: const EdgeInsets.fromLTRB(7, 3, 9, 3),
-              decoration: BoxDecoration(color: const Color(0xFFFAF6FB), borderRadius: BorderRadius.circular(10)),
+              decoration: BoxDecoration(color: AppColors.tintSoft, borderRadius: BorderRadius.circular(10)),
               child: Row(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  Icon(chipIconData(chip.icon), size: 14, color: chip.icon == ChipIcon.warning ? AppColors.danger : AppColors.violet),
+                  Icon(chipIconData(chip.icon), size: 14, color: chip.icon == ChipIcon.warning ? AppColors.danger : AppColors.accent),
                   const SizedBox(width: 4),
                   Text(chip.label, style: AppText.body(size: 12, color: chip.icon == ChipIcon.warning ? AppColors.danger : AppColors.ink)),
                 ],
@@ -81,7 +81,7 @@ class ResultBadges extends StatelessWidget {
             child: Container(
               key: Key('badge-${badge.name}'),
               padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-              decoration: BoxDecoration(color: badge == ResultBadge.cheapest ? AppColors.violet : AppColors.peach, borderRadius: BorderRadius.circular(12)),
+              decoration: BoxDecoration(color: badge == ResultBadge.cheapest ? AppColors.accent : AppColors.peach, borderRadius: BorderRadius.circular(12)),
               child: Text(badgeLabel(badge), style: AppText.strong(size: 11.5, color: Colors.white)),
             ),
           ),
@@ -121,8 +121,8 @@ class TrustBand extends StatelessWidget {
                         Container(
                           width: 28,
                           height: 28,
-                          decoration: const BoxDecoration(color: Color(0xFFFAF6FB), shape: BoxShape.circle),
-                          child: Icon(chipIconData(_tileIcon[tile.kind]!), size: 15, color: AppColors.violet),
+                          decoration: const BoxDecoration(color: AppColors.tintSoft, shape: BoxShape.circle),
+                          child: Icon(chipIconData(_tileIcon[tile.kind]!), size: 15, color: AppColors.accent),
                         ),
                         const SizedBox(width: 8),
                         Expanded(
@@ -156,7 +156,7 @@ class NewOnPlatformTag extends StatelessWidget {
   Widget build(BuildContext context) {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-      decoration: BoxDecoration(color: const Color(0xFFFAF6FB), borderRadius: BorderRadius.circular(12)),
+      decoration: BoxDecoration(color: AppColors.tintSoft, borderRadius: BorderRadius.circular(12)),
       child: Text('highlights.new_on_platform'.tr(args: [productName]), style: AppText.body(size: 11, weight: 600, color: AppColors.muted)),
     );
   }

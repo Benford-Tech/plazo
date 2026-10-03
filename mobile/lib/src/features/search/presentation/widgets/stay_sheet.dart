@@ -105,7 +105,7 @@ class _StaySheetState extends State<StaySheet> {
                 Semantics(header: true, child: Text('picker.title'.tr(), style: AppText.title(size: 22))),
                 const Spacer(),
                 if (days != null)
-                  Semantics(liveRegion: true, child: Text(daysLabel(days), key: const Key('stay-days'), style: AppText.strong(size: 13.5, color: AppColors.violet))),
+                  Semantics(liveRegion: true, child: Text(daysLabel(days), key: const Key('stay-days'), style: AppText.strong(size: 13.5, color: AppColors.accent))),
                 IconButton(
                   tooltip: 'common.close'.tr(),
                   onPressed: () => Navigator.of(context).pop(),
@@ -175,7 +175,7 @@ class _StaySheetState extends State<StaySheet> {
           padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
           decoration: BoxDecoration(
             borderRadius: BorderRadius.circular(14),
-            border: Border.all(color: active ? AppColors.violet : AppColors.line, width: active ? 2 : 1),
+            border: Border.all(color: active ? AppColors.accent : AppColors.line, width: active ? 2 : 1),
           ),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
@@ -257,7 +257,7 @@ class _StaySheetState extends State<StaySheet> {
         child: Container(
           height: 46,
           margin: const EdgeInsets.symmetric(vertical: 1),
-          decoration: BoxDecoration(color: between ? const Color(0xFFF6EAF9) : Colors.transparent),
+          decoration: BoxDecoration(color: between ? AppColors.tint : Colors.transparent),
           alignment: Alignment.center,
           child: Container(
             width: 40,
@@ -266,7 +266,7 @@ class _StaySheetState extends State<StaySheet> {
             decoration: BoxDecoration(
               gradient: selected ? AppColors.primaryGradient : null,
               shape: BoxShape.circle,
-              border: today && !selected ? Border.all(color: AppColors.violet) : null,
+              border: today && !selected ? Border.all(color: AppColors.accent) : null,
             ),
             child: Text(
               '${int.parse(day.substring(8))}',

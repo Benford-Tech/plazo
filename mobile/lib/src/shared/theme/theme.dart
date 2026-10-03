@@ -1,12 +1,17 @@
 import 'package:flutter/material.dart';
 
-/// Direction D ("style Thempo"): prune menu, violet accent, peach for the highlight, a
-/// violet → pink → peach gradient on primary actions, Playfair Display titles + Inter, rounded cards.
+/// Direction D ("style Thempo"): prune menu, light-orange accent (V-A, 03/10/2026, in place of the
+/// violet), peach for the highlight, a light-orange → peach gradient on primary actions, Playfair
+/// Display titles + Inter, rounded cards.
 abstract final class AppColors {
   static const prune = Color(0xFF4B164C);
-  static const violet = Color(0xFFA427C3);
-  static const pink = Color(0xFFCF4F96);
+  static const accent = Color(0xFFFF8A3D);
   static const peach = Color(0xFFF0A36B);
+  /// Pale orange tints: selected backgrounds and the light text on prune.
+  static const tint = Color(0xFFFFF1E8);
+  static const tintSoft = Color(0xFFFFF7F1);
+  static const onPruneSoft = Color(0xFFFFD9BF);
+  static const accentDeep = Color(0xFFC24E00);
   static const ink = Color(0xFF1E1E1E);
   static const muted = Color(0xFF6F6675);
   static const line = Color(0xFFE6E0EA);
@@ -21,8 +26,7 @@ abstract final class AppColors {
   static const primaryGradient = LinearGradient(
     begin: Alignment(-1, -0.2),
     end: Alignment(1, 0.2),
-    colors: [violet, pink, peach],
-    stops: [0, 0.55, 1],
+    colors: [accent, peach],
   );
 }
 
@@ -52,8 +56,8 @@ abstract final class AppText {
 
 ThemeData appTheme() {
   final scheme = ColorScheme.fromSeed(
-    seedColor: AppColors.violet,
-    primary: AppColors.violet,
+    seedColor: AppColors.accent,
+    primary: AppColors.accent,
     secondary: AppColors.peach,
     surface: AppColors.background,
     error: AppColors.danger,
@@ -72,18 +76,18 @@ ThemeData appTheme() {
     inputDecorationTheme: InputDecorationTheme(
       border: OutlineInputBorder(borderRadius: BorderRadius.circular(14), borderSide: const BorderSide(color: AppColors.line)),
       enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(14), borderSide: const BorderSide(color: AppColors.line)),
-      focusedBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(14), borderSide: const BorderSide(color: AppColors.violet, width: 1.6)),
+      focusedBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(14), borderSide: const BorderSide(color: AppColors.accent, width: 1.6)),
       contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
     ),
     tabBarTheme: TabBarThemeData(
       labelColor: AppColors.prune,
       unselectedLabelColor: AppColors.muted,
-      indicatorColor: AppColors.violet,
+      indicatorColor: AppColors.accent,
       labelStyle: AppText.label(size: 13.5, color: AppColors.prune),
     ),
     switchTheme: SwitchThemeData(
       thumbColor: WidgetStateProperty.resolveWith((s) => s.contains(WidgetState.selected) ? Colors.white : null),
-      trackColor: WidgetStateProperty.resolveWith((s) => s.contains(WidgetState.selected) ? AppColors.violet : null),
+      trackColor: WidgetStateProperty.resolveWith((s) => s.contains(WidgetState.selected) ? AppColors.accent : null),
     ),
     snackBarTheme: const SnackBarThemeData(behavior: SnackBarBehavior.floating, backgroundColor: AppColors.prune),
   );

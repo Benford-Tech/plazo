@@ -63,11 +63,11 @@ class StripePaymentSheetService implements PaymentSheetService {
           ),
           // Direction D in the sheet: violet actions, rounded like the app's cards.
           appearance: const PaymentSheetAppearance(
-            colors: PaymentSheetAppearanceColors(primary: AppColors.violet),
+            colors: PaymentSheetAppearanceColors(primary: AppColors.accent),
             shapes: PaymentSheetShape(borderRadius: 14),
             primaryButton: PaymentSheetPrimaryButtonAppearance(
               shapes: PaymentSheetPrimaryButtonShape(blurRadius: 0),
-              colors: PaymentSheetPrimaryButtonTheme(light: PaymentSheetPrimaryButtonThemeColors(background: AppColors.violet)),
+              colors: PaymentSheetPrimaryButtonTheme(light: PaymentSheetPrimaryButtonThemeColors(background: AppColors.accent)),
             ),
           ),
         ),
@@ -144,7 +144,7 @@ class DemoPaymentSheetService implements PaymentSheetService {
               FilledButton(
                 key: const Key('demo-sheet-pay'),
                 onPressed: () => Navigator.of(context).pop(true),
-                style: FilledButton.styleFrom(backgroundColor: AppColors.violet, minimumSize: const Size.fromHeight(50)),
+                style: FilledButton.styleFrom(backgroundColor: AppColors.accent, minimumSize: const Size.fromHeight(50)),
                 child: Text('Payer ${amountLabel ?? ''}'),
               ),
               const SizedBox(height: 8),

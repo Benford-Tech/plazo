@@ -24,7 +24,7 @@ export function ListingPreview(props: {
         Plazo
       </div>
       <div className="p-3">
-        <article className="overflow-hidden rounded-2xl border-2 border-[#a427c3]">
+        <article className="overflow-hidden rounded-2xl border-2 border-[#ff8a3d]">
           {props.photo ? (
             <img src={props.photo} alt="" className="h-[100px] w-full object-cover" />
           ) : (
@@ -40,7 +40,7 @@ export function ListingPreview(props: {
             <div className="text-[13px] text-[#6f6675]">{facts.join(" · ")}</div>
             <div className="mt-1 flex items-center justify-between">
               <span className="text-lg font-bold">{props.fromPriceCents !== null ? fr.plazo.from(euros(props.fromPriceCents)) : fr.plazo.noPrice}</span>
-              <span className="flex h-9 items-center rounded-full bg-[linear-gradient(96deg,#a427c3,#cf4f96_55%,#f0a36b)] px-3.5 text-sm font-bold text-white">
+              <span className="flex h-9 items-center rounded-full bg-[linear-gradient(96deg,#ff8a3d,#f0a36b)] px-3.5 text-sm font-bold text-white">
                 {fr.plazo.see}
               </span>
             </div>

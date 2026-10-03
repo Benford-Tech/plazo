@@ -188,7 +188,7 @@ class _Step extends StatelessWidget {
           padding: const EdgeInsets.only(top: 4),
           child: switch (dot) {
             _Dot.now => const LiveDot(color: AppColors.peach, size: 10),
-            _Dot.done => Container(width: 20, height: 20, alignment: Alignment.center, child: Container(width: 10, height: 10, decoration: const BoxDecoration(shape: BoxShape.circle, color: AppColors.violet))),
+            _Dot.done => Container(width: 20, height: 20, alignment: Alignment.center, child: Container(width: 10, height: 10, decoration: const BoxDecoration(shape: BoxShape.circle, color: AppColors.accent))),
             _Dot.todo => Container(width: 20, height: 20, alignment: Alignment.center, child: Container(width: 10, height: 10, decoration: const BoxDecoration(shape: BoxShape.circle, color: AppColors.line))),
           },
         ),

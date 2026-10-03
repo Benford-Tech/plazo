@@ -114,7 +114,7 @@ class _PricePill extends StatelessWidget {
               duration: const Duration(milliseconds: 150),
               child: _Pill(
                 label: label,
-                color: selected ? AppColors.prune : (bookable ? AppColors.violet : Colors.white),
+                color: selected ? AppColors.prune : (bookable ? AppColors.accent : Colors.white),
                 textColor: bookable || selected ? Colors.white : AppColors.muted,
                 border: bookable || selected ? null : AppColors.line,
               ),

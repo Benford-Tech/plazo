@@ -10,7 +10,7 @@ import { formatDay } from "@/lib/dates";
 import { fr } from "@/lib/fr";
 
 const GRADIENT_BTN =
-  "bg-[linear-gradient(96deg,#a427c3,#cf4f96_55%,#f0a36b)] font-bold text-white shadow-[0_8px_22px_-8px_rgba(207,79,110,.55)] disabled:opacity-50 disabled:shadow-none";
+  "bg-[linear-gradient(96deg,#ff8a3d,#f0a36b)] font-bold text-white shadow-[0_8px_22px_-8px_rgba(255,138,61,.45)] disabled:opacity-50 disabled:shadow-none";
 const panel = "rounded-[22px] bg-white text-ink shadow-[0_30px_70px_-20px_rgba(40,10,50,.45)]";
 
 export interface StayValue {
@@ -189,7 +189,7 @@ export function StaySheet({
         aria-pressed={active}
         onClick={() => setDraft(d => ({ ...d, picking: s }))}
         className={`min-w-0 rounded-[14px] border bg-white px-2.5 py-2 text-left ${
-          active ? "border-accent shadow-[inset_0_0_0_1px_#a427c3]" : "border-line"
+          active ? "border-accent shadow-[inset_0_0_0_1px_#ff8a3d]" : "border-line"
         }`}
       >
         <span className="block text-[11px] font-semibold text-soft uppercase">{s === "start" ? fr.picker.dropOff : fr.picker.pickUp}</span>

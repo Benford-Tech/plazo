@@ -166,7 +166,7 @@ class _ResultsView extends StatelessWidget {
 
   Widget _body(BuildContext context, ResultsState state) {
     if (state.loadState.isProcessing && state.response == null || state.loadState.isIdle) {
-      return const Center(child: CircularProgressIndicator(color: AppColors.violet));
+      return const Center(child: CircularProgressIndicator(color: AppColors.accent));
     }
     if (state.loadState.isError) {
       final code = state.errorCode;
@@ -221,7 +221,7 @@ class _ResultsView extends StatelessWidget {
     }
     final count = state.availableCount;
     return RefreshIndicator(
-      color: AppColors.violet,
+      color: AppColors.accent,
       onRefresh: () async => context.read<ResultsBloc>().add(const ResultsRequested()),
       child: ListView.separated(
         key: const Key('results-list'),

@@ -16,7 +16,7 @@ class IgnMap extends StatefulWidget {
     this.height = 250,
     this.interactive = false,
     this.dashedLine = false,
-    this.accent = AppColors.violet,
+    this.accent = AppColors.accent,
     this.meLabel,
     this.route,
     this.fitRoute = false,

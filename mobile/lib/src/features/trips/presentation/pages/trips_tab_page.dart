@@ -46,7 +46,7 @@ class _TripsTabPageState extends State<TripsTabPage> {
         builder: (context, state) {
           final list = _segment == _Segment.upcoming ? state.upcoming : state.past;
           return RefreshIndicator(
-            color: AppColors.violet,
+            color: AppColors.accent,
             onRefresh: () async => context.read<TripsBloc>().add(const TripsLoaded(quiet: true)),
             child: ListView(
               padding: const EdgeInsets.fromLTRB(16, 14, 16, 24),
@@ -60,7 +60,7 @@ class _TripsTabPageState extends State<TripsTabPage> {
                 ),
                 const SizedBox(height: 12),
                 if (state.loadState.isProcessing && state.bookings.isEmpty)
-                  const Padding(padding: EdgeInsets.all(32), child: Center(child: CircularProgressIndicator(color: AppColors.violet)))
+                  const Padding(padding: EdgeInsets.all(32), child: Center(child: CircularProgressIndicator(color: AppColors.accent)))
                 else if (state.loadState.isError && state.bookings.isEmpty)
                   Text('trips.offline'.tr(), style: AppText.body(size: 14, color: AppColors.danger))
                 else if (list.isEmpty)
