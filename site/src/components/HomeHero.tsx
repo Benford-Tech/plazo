@@ -80,7 +80,11 @@ export function HomeHero({
           className="absolute inset-0 -z-10 bg-[linear-gradient(100deg,rgba(75,22,76,.92)_0%,rgba(114,42,126,.75)_45%,rgba(155,62,107,.15)_100%)]"
         />
         <div className={`mx-auto flex max-w-[1280px] flex-col gap-5 px-12 pt-14 pb-16 md:pt-16 ${MOBILE.inner}`}>
-          {breadcrumb && <Breadcrumb onDark items={[{ label: fr.nav.home, href: "/" }, { label: airport.name }]} />}
+          {breadcrumb && (
+            <div className="max-sm:hidden">
+              <Breadcrumb onDark items={[{ label: fr.nav.home, href: "/" }, { label: airport.name }]} />
+            </div>
+          )}
           <p className={MOBILE.kicker}>
             <span aria-hidden="true">✈</span>
             {airport.name}

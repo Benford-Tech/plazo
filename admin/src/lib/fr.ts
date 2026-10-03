@@ -518,7 +518,7 @@ export const fr = {
     rejected: "Refusée",
   } satisfies Record<ListingStatus, string>,
   plazo: {
-    tabs: { listing: "Ma fiche", pricing: "Mes tarifs", payouts: "Mes reversements" },
+    tabs: { listing: "Ma fiche", pricing: "Mes tarifs" },
     submit: "Envoyer pour validation",
     submitted: "Fiche envoyée : notre équipe la vérifie avant sa mise en ligne.",
     withdraw: `Retirer de ${PRODUCT.name}`,
@@ -533,7 +533,6 @@ export const fr = {
     } satisfies Record<ListingStatus, string>,
     reviewMessage: `Message de l'équipe ${PRODUCT.name}`,
     verifyFirst: "Confirmez votre email pour pouvoir envoyer votre fiche.",
-    soon: "Bientôt",
     saved: "Fiche enregistrée",
     airport: "Aéroport",
     title: "Nom affiché",
