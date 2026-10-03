@@ -99,7 +99,8 @@ export default function SpotsStep({ parkingId, view, estimate, update, onView, g
     const landmark: Landmark = { id: newId(), kind: placing, geometry: geometry as GeoPoint };
     // One entrance, one handover…: a new point of a kind replaces the previous one.
     update({ landmarks: [...plan.landmarks.filter(l => l.kind !== placing), landmark] });
-    setPlacing(null);
+    // The same click also reaches onMapClick: leave the tool armed until that handler has run.
+    setTimeout(() => setPlacing(null), 0);
   };
 
   const layers = useMemo<MapLayer[]>(() => {
