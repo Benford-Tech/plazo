@@ -5,7 +5,7 @@ import { PRO_SIGNUP_PATH } from "@/lib/site";
 
 export function SiteHeader() {
   return (
-    <header className="on-dark bg-prune text-white">
+    <header className="on-dark bg-brand text-white">
       <div className="mx-auto flex max-w-[1280px] items-center justify-between gap-4 px-4 py-1.5 md:px-12 md:py-2.5">
         <Link href="/" className="flex min-h-11 items-center no-underline">
           <Logo height={32} />

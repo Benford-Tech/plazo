@@ -21,7 +21,7 @@ FONTS = os.path.join(ROOT, "mobile", "assets", "fonts")
 OUT = os.path.join(ROOT, "brand", "app")
 NAME = json.load(open(os.path.join(ROOT, "product.json"), encoding="utf-8"))["name"]
 
-PRUNE = "#4b164c"
+DARK = "#2c1a0e"     # the dark neutral of the app (no purple since T-A, 03/10/2026)
 PEACH = "#f0a36b"   # the app's highlight colour (unused in the logo since O-A)
 ORANGE = "#FF6600"  # the plane, inspired by easyJet's orange (choice O-A, 03/10/2026)
 WHITE = "#ffffff"
@@ -150,27 +150,27 @@ def main():
         return f'<path transform="translate({x:g} 0)" d="{wm_path}" fill="{colour}"/>'
 
     files = {
-        "logo-horizontal-light.svg": svg(total_w, S, symbol(PRUNE, WHITE, ORANGE) + "\n" + wordmark(PRUNE), NAME),
-        "logo-horizontal-dark.svg": svg(total_w, S, symbol(WHITE, PRUNE, ORANGE) + "\n" + wordmark(WHITE), NAME),
-        "logo-mono.svg": svg(total_w, S, symbol_mono(PRUNE) + "\n" + wordmark(PRUNE), NAME),
-        "symbol.svg": svg(S, S, symbol(PRUNE, WHITE, ORANGE), NAME),
-        "symbol-dark.svg": svg(S, S, symbol(WHITE, PRUNE, ORANGE), NAME),
-        "symbol-mono.svg": svg(S, S, symbol_mono(PRUNE), NAME),
-        "wordmark.svg": svg(round(wb[2] - wm_x + 2), S, wordmark(PRUNE, -wm_x), NAME),
-        "favicon.svg": svg(S, S, symbol(PRUNE, WHITE, ORANGE), NAME),
+        "logo-horizontal-light.svg": svg(total_w, S, symbol(ORANGE, WHITE, DARK) + "\n" + wordmark(DARK), NAME),
+        "logo-horizontal-dark.svg": svg(total_w, S, symbol(WHITE, ORANGE, ORANGE) + "\n" + wordmark(WHITE), NAME),
+        "logo-mono.svg": svg(total_w, S, symbol_mono(DARK) + "\n" + wordmark(DARK), NAME),
+        "symbol.svg": svg(S, S, symbol(ORANGE, WHITE, DARK), NAME),
+        "symbol-dark.svg": svg(S, S, symbol(WHITE, ORANGE, ORANGE), NAME),
+        "symbol-mono.svg": svg(S, S, symbol_mono(DARK), NAME),
+        "wordmark.svg": svg(round(wb[2] - wm_x + 2), S, wordmark(DARK, -wm_x), NAME),
+        "favicon.svg": svg(S, S, symbol(ORANGE, WHITE, DARK), NAME),
         # Maskable icon (choice O-B): orange full bleed, white P and prune plane inside the inner 80 % safe circle.
         "icon-maskable.svg": svg(S, S,
             f'<rect width="{S}" height="{S}" fill="{ORANGE}"/>\n'
-            + symbol("none", WHITE, PRUNE, x=S * 0.1, y=S * 0.1, rounded=False, scale=0.8), NAME),
+            + symbol("none", WHITE, DARK, x=S * 0.1, y=S * 0.1, rounded=False, scale=0.8), NAME),
         # Android adaptive foreground: transparent; flutter_launcher_icons insets it by 16 %, so the
         # glyphs are drawn at 92 % here to land in the inner ~66 % of the 108 dp layer.
         "android-foreground.svg": svg(S, S,
-            symbol("none", WHITE, PRUNE, x=S * 0.04, y=S * 0.04, rounded=False, scale=0.92), NAME),
+            symbol("none", WHITE, DARK, x=S * 0.04, y=S * 0.04, rounded=False, scale=0.92), NAME),
         # Social card 1200 x 630: the dark logo on prune.
         "social-card.svg": svg(1200, 630,
-            f'<rect width="1200" height="630" fill="{PRUNE}"/>\n'
+            f'<rect width="1200" height="630" fill="{ORANGE}"/>\n'
             f'<g transform="translate({(1200 - total_w * 2.6) / 2:.1f} {(630 - S * 2.6) / 2:.1f}) scale(2.6)">\n'
-            + symbol(WHITE, PRUNE, ORANGE) + "\n" + wordmark(WHITE) + "\n</g>", NAME),
+            + symbol(WHITE, ORANGE, ORANGE) + "\n" + wordmark(WHITE) + "\n</g>", NAME),
     }
     for name, content in files.items():
         with open(os.path.join(OUT, name), "w", encoding="utf-8") as f:

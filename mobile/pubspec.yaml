@@ -102,7 +102,7 @@ flutter:
         - asset: assets/fonts/Inter.ttf
 
 # App icon (brand/ at the repository root, option L-B, kept for the app): `dart run flutter_launcher_icons`.
-# Android: adaptive icon, prune background and the "P" as foreground (inside the inner 66 %).
+# Android: adaptive icon, orange background and the "P" as foreground (inside the inner 66 %).
 flutter_launcher_icons:
   android: true
   ios: true
@@ -113,5 +113,5 @@ flutter_launcher_icons:
   web:
     generate: true
     image_path: "assets/brand/app-icon.png"
-    background_color: "#4b164c"
-    theme_color: "#4b164c"
+    background_color: "#FF6600"
+    theme_color: "#FF6600"

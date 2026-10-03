@@ -17,7 +17,7 @@ function Column({ id, title, children }: { id?: string; title: string; children:
 
 export function SiteFooter() {
   return (
-    <footer className="on-dark mt-auto bg-prune-deep text-lilac">
+    <footer className="on-dark mt-auto bg-brand-deep text-lilac">
       <div className="mx-auto grid max-w-[1280px] grid-cols-2 gap-x-6 gap-y-8 px-4 py-8 md:grid-cols-[2fr_1fr_1fr_1fr] md:gap-8 md:px-12">
         <div className="col-span-2 flex flex-col gap-2 md:col-span-1">
           <Logo height={32} className="self-start" />

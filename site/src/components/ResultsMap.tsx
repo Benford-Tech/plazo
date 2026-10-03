@@ -20,8 +20,8 @@ export interface MapParking {
 }
 
 const PILL = "rounded-[14px] border px-2.5 py-[5px] text-sm font-bold whitespace-nowrap shadow-[0_6px_14px_-6px_rgba(0,0,0,.4)] transition-transform";
-const BOOKABLE = "border-accent bg-accent text-white data-[active=true]:border-prune data-[active=true]:bg-prune";
-const UNAVAILABLE = "border-line bg-white text-soft data-[active=true]:border-prune data-[active=true]:text-ink";
+const BOOKABLE = "border-accent bg-accent text-white data-[active=true]:border-dark data-[active=true]:bg-brand";
+const UNAVAILABLE = "border-line bg-white text-soft data-[active=true]:border-dark data-[active=true]:text-ink";
 
 function hasWebGL(): boolean {
   try {
@@ -98,7 +98,7 @@ export default function ResultsMap({ airport, parkings }: { airport: { name: str
 
     if (airport.location) {
       const terminals = document.createElement("div");
-      terminals.className = "rounded-2xl bg-prune px-3 py-[7px] text-sm font-bold whitespace-nowrap text-white shadow-[0_6px_14px_-6px_rgba(0,0,0,.4)]";
+      terminals.className = "rounded-2xl bg-dark px-3 py-[7px] text-sm font-bold whitespace-nowrap text-white shadow-[0_6px_14px_-6px_rgba(0,0,0,.4)]";
       terminals.textContent = `✈ ${fr.map.terminals}`;
       terminals.title = airport.name;
       added.push(new maplibregl.Marker({ element: terminals }).setLngLat([airport.location.lng, airport.location.lat]).addTo(map));

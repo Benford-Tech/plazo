@@ -1,22 +1,24 @@
 import 'package:flutter/material.dart';
 
-/// Direction D ("style Thempo"): prune menu, light-orange accent (V-A, 03/10/2026, in place of the
+/// Direction D ("style Thempo"): easyJet-orange header (T-A, 03/10/2026), light-orange accent (V-A, 03/10/2026, in place of the
 /// violet), peach for the highlight, a light-orange → peach gradient on primary actions, Playfair
 /// Display titles + Inter, rounded cards.
 abstract final class AppColors {
-  static const prune = Color(0xFF4B164C);
+  static const brand = Color(0xFFFF6600);
+  /// The dark neutral (text on light, dark surfaces) in place of the former purple.
+  static const dark = Color(0xFF2C1A0E);
   static const accent = Color(0xFFFF8A3D);
   static const peach = Color(0xFFF0A36B);
-  /// Pale orange tints: selected backgrounds and the light text on prune.
+  /// Pale orange tints: selected backgrounds and the light text on the orange header.
   static const tint = Color(0xFFFFF1E8);
   static const tintSoft = Color(0xFFFFF7F1);
-  static const onPruneSoft = Color(0xFFFFD9BF);
+  static const onBrandSoft = Color(0xFFFFE9D6);
   static const accentDeep = Color(0xFFC24E00);
   static const ink = Color(0xFF1E1E1E);
-  static const muted = Color(0xFF6F6675);
-  static const line = Color(0xFFE6E0EA);
+  static const muted = Color(0xFF6F6A66);
+  static const line = Color(0xFFECE4DE);
   static const background = Color(0xFFFFFFFF);
-  static const canvas = Color(0xFFF6F2F8);
+  static const canvas = Color(0xFFFAF5F0);
   static const danger = Color(0xFFB3261E);
   static const success = Color(0xFF2E7D4F);
 
@@ -68,7 +70,7 @@ ThemeData appTheme() {
     scaffoldBackgroundColor: AppColors.background,
     fontFamily: 'Inter',
     appBarTheme: AppBarTheme(
-      backgroundColor: AppColors.prune,
+      backgroundColor: AppColors.brand,
       foregroundColor: Colors.white,
       elevation: 0,
       titleTextStyle: AppText.title(size: 24, color: Colors.white),
@@ -80,15 +82,15 @@ ThemeData appTheme() {
       contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
     ),
     tabBarTheme: TabBarThemeData(
-      labelColor: AppColors.prune,
+      labelColor: AppColors.dark,
       unselectedLabelColor: AppColors.muted,
       indicatorColor: AppColors.accent,
-      labelStyle: AppText.label(size: 13.5, color: AppColors.prune),
+      labelStyle: AppText.label(size: 13.5, color: AppColors.dark),
     ),
     switchTheme: SwitchThemeData(
       thumbColor: WidgetStateProperty.resolveWith((s) => s.contains(WidgetState.selected) ? Colors.white : null),
       trackColor: WidgetStateProperty.resolveWith((s) => s.contains(WidgetState.selected) ? AppColors.accent : null),
     ),
-    snackBarTheme: const SnackBarThemeData(behavior: SnackBarBehavior.floating, backgroundColor: AppColors.prune),
+    snackBarTheme: const SnackBarThemeData(behavior: SnackBarBehavior.floating, backgroundColor: AppColors.dark),
   );
 }

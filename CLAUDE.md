@@ -177,10 +177,13 @@ Canevas de référence : https://claude.ai/artifact/6ezoCDyLXFNwhAH5ZWUf4u (rang
   Avec deux emprunts à C : **arrivées et retours en deux colonnes séparées**, et les **plaques**
   dessinées comme une plaque française (bande bleue `#1F3FA6` « F », fond blanc).
 - **Site Plazo voyageurs (web)** : direction **M3 « Plazo voyageur »** (choix du 01/10/2026), le même
-  univers que l'app voyageur : en-tête prune `#4b164c`, bandeau en dégradé prune, titres en Playfair
-  Display italique, Inter pour le texte, accent **orange léger `#FF8A3D`** (V-A, 03/10/2026, à la place du
-  violet), bouton principal en dégradé orange léger → pêche, cartes arrondies (16 px), plaques façon C. Maquettes : artboards `Plazo-M3-*` du canevas.
-- **App mobile (Flutter)** : direction **D « style Thempo »** — menu prune `#4b164c`, accent
+  univers que l'app voyageur : **en-tête orange easyJet `#FF6600`** (T-A, 03/10/2026, à la place du prune),
+  bandeau photo sous un voile orange, pied de page orange foncé `#E65C00`, titres en Playfair Display italique,
+  Inter pour le texte, accent **orange léger `#FF8A3D`** (V-A, 03/10/2026, à la place du violet), brun foncé
+  `#2C1A0E` pour les surfaces sombres, bouton principal en dégradé orange léger → pêche, cartes arrondies (16 px),
+  plaques façon C. **Plus aucun violet ni prune.** Maquettes : artboards `Plazo-M3-*` du canevas (couleurs d'origine).
+- **App mobile (Flutter)** : direction **D « style Thempo »** — **en-tête orange easyJet `#FF6600`** (T-A,
+  03/10/2026, à la place du prune), brun foncé `#2C1A0E` pour les textes forts et les surfaces sombres, accent
   **orange léger `#FF8A3D`** (V-A, 03/10/2026, à la place du violet), pêche `#f0a36b` pour le temps fort,
   dégradé orange léger → pêche sur les actions principales, Playfair Display (titres) + Inter, cartes arrondies ; plaques façon C aussi.
   Icônes (choix H-B du 03/10/2026) : icônes pleines arrondies (Material « rounded ») posées sur des
@@ -189,8 +192,9 @@ Canevas de référence : https://claude.ai/artifact/6ezoCDyLXFNwhAH5ZWUf4u (rang
   **orange easyJet `#FF6600`** aux angles arrondis (O-D, 03/10/2026) ; symbole = le panneau réduit au « P » ;
   pour le site et l'espace pro. **L'app mobile
   garde le logo L-B** (P Playfair + avion en papier, mot-symbole italique) pour son icône et son en-tête
-  (`brand/app/`) ; depuis le 03/10/2026 (choix O-A + O-B) l'avion est orange easyJet `#FF6600` et l'icône
-  d'app est orange plein (P blanc, avion prune). Fichiers et règles dans `brand/README.md`.
+  (`brand/app/`) ; depuis le 03/10/2026 (choix O-A + O-B, puis T-A) l'avion est orange easyJet `#FF6600`,
+  l'en-tête de l'app affiche le carré blanc avec P et avion orange, et l'icône d'app est orange plein (P blanc,
+  avion brun foncé). Fichiers et règles dans `brand/README.md`.
 
 ## Règles de travail
 

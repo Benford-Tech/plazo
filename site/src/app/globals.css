@@ -1,17 +1,18 @@
 @import "tailwindcss";
 
-/* Direction M3 "Plazo voyageur": prune header, light-orange accent (V-A, 03/10/2026), peach highlight, rounded cards. */
+/* Direction M3 "Plazo voyageur": easyJet-orange header (T-A, 03/10/2026), light-orange accent (V-A), peach highlight, rounded cards. No purple left. */
 @theme {
-  --color-prune: #4b164c;
-  --color-prune-deep: #2c0f31;
+  --color-brand: #ff6600;
+  --color-brand-deep: #e65c00;
+  --color-dark: #2c1a0e;
   --color-accent: #ff8a3d;
-  --color-accent-dark: #8a1fa6;
+  --color-accent-dark: #c24e00;
   --color-peach: #f0a36b;
   --color-ink: #1e1e1e;
-  --color-soft: #6f6675;
-  --color-line: #e6e0ea;
+  --color-soft: #6f6a66;
+  --color-line: #ece4de;
   --color-tint: #fff7f1;
-  --color-lilac: #e2c7e4;
+  --color-lilac: #ffe3cc;
   --color-ok-bg: #e3f5eb;
   --color-ok: #0c7440;
   --color-danger: #8f0f35;
@@ -34,7 +35,7 @@
 }
 
 @utility bg-hero {
-  background: linear-gradient(160deg, #4b164c, #722a7e 60%, #9b3e6b);
+  background: linear-gradient(160deg, #ff6600, #ff8a3d 60%, #f0a36b);
 }
 
 /* Primary action: light orange -> peach gradient, pill shape, soft shadow. */

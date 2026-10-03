@@ -161,7 +161,7 @@ class _MeetingPin extends StatelessWidget {
   @override
   Widget build(BuildContext context) => Container(
     padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 5),
-    decoration: BoxDecoration(color: AppColors.prune, borderRadius: BorderRadius.circular(14)),
+    decoration: BoxDecoration(color: AppColors.dark, borderRadius: BorderRadius.circular(14)),
     child: Text('P  $label', maxLines: 1, overflow: TextOverflow.ellipsis, style: AppText.strong(size: 12, color: Colors.white)),
   );
 }

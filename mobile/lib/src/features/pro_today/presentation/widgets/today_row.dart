@@ -158,14 +158,14 @@ class ArrivalBanner extends StatelessWidget {
           padding: const EdgeInsets.fromLTRB(14, 8, 4, 8),
           child: Row(
             children: [
-              const Icon(Icons.notifications_active_rounded, color: AppColors.prune, size: 20),
+              const Icon(Icons.notifications_active_rounded, color: AppColors.dark, size: 20),
               const SizedBox(width: 8),
-              Expanded(child: Text(text(signal), key: const Key('arrival-banner'), style: AppText.strong(size: 14.5, color: AppColors.prune))),
-              TextButton(onPressed: onSee, child: Text('${'pro.banner_see'.tr()} ›', style: AppText.strong(size: 14, color: AppColors.prune))),
+              Expanded(child: Text(text(signal), key: const Key('arrival-banner'), style: AppText.strong(size: 14.5, color: AppColors.dark))),
+              TextButton(onPressed: onSee, child: Text('${'pro.banner_see'.tr()} ›', style: AppText.strong(size: 14, color: AppColors.dark))),
               IconButton(
                 tooltip: 'pro.banner_close'.tr(),
                 onPressed: onClose,
-                icon: const Icon(Icons.close_rounded, color: AppColors.prune, size: 20),
+                icon: const Icon(Icons.close_rounded, color: AppColors.dark, size: 20),
               ),
             ],
           ),

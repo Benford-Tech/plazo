@@ -4,7 +4,7 @@ import 'package:flutter_svg/flutter_svg.dart';
 import '../../core/constants/product.g.dart';
 import '../theme/theme.dart';
 
-/// The horizontal logo (the sign), dark variant for the prune app bars; the product
+/// The horizontal logo (the sign), white variant for the orange app bars; the product
 /// name is its semantic label. `pro` adds the "Pro" suffix next to it, as text.
 class BrandLogo extends StatelessWidget {
   const BrandLogo({super.key, this.height = 30, this.pro = false});

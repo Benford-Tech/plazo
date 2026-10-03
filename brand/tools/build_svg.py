@@ -21,7 +21,7 @@ FONTS = os.path.join(ROOT, "mobile", "assets", "fonts")
 OUT = os.path.join(ROOT, "brand")
 NAME = json.load(open(os.path.join(ROOT, "product.json"), encoding="utf-8"))["name"]
 
-PRUNE = "#4b164c"
+DARK = "#2c1a0e"     # the dark neutral (no purple since 03/10/2026): mono variant, letters alone, social card
 PEACH = "#f0a36b"
 ORANGE = "#FF6600"  # easyJet-inspired orange: the sign's colour (choice O-D, 03/10/2026)
 WHITE = "#ffffff"
@@ -154,11 +154,11 @@ def main():
     files = {
         "logo-horizontal-light.svg": svg(total_w, S, sign(ORANGE, WHITE), NAME),
         "logo-horizontal-dark.svg": svg(total_w, S, sign(ORANGE, WHITE), NAME),
-        "logo-mono.svg": svg(total_w, S, sign_mono(PRUNE), NAME),
+        "logo-mono.svg": svg(total_w, S, sign_mono(DARK), NAME),
         "symbol.svg": svg(S, S, symbol(ORANGE, WHITE), NAME),
         "symbol-dark.svg": svg(S, S, symbol(ORANGE, WHITE), NAME),
-        "symbol-mono.svg": svg(S, S, symbol_mono(PRUNE), NAME),
-        "wordmark.svg": svg(wm_w, wm_h, wordmark(PRUNE, -wb[0] + 1, -wb[1] + 1), NAME),
+        "symbol-mono.svg": svg(S, S, symbol_mono(DARK), NAME),
+        "wordmark.svg": svg(wm_w, wm_h, wordmark(DARK, -wb[0] + 1, -wb[1] + 1), NAME),
         "wordmark-dark.svg": svg(wm_w, wm_h, wordmark(WHITE, -wb[0] + 1, -wb[1] + 1), NAME),
         "favicon.svg": svg(S, S, symbol(ORANGE, WHITE), NAME),
         # Maskable icon: full bleed, the P inside the inner 80 % safe circle.
@@ -169,9 +169,9 @@ def main():
         # P is drawn at 92 % here to land in the inner ~66 % of the 108 dp layer.
         "android-foreground.svg": svg(S, S,
             symbol("none", WHITE, x=S * 0.04, y=S * 0.04, rounded=False, scale=0.92), NAME),
-        # Social card 1200 x 630: the orange sign on prune.
+        # Social card 1200 x 630: the orange sign on dark brown.
         "social-card.svg": svg(1200, 630,
-            f'<rect width="1200" height="630" fill="{PRUNE}"/>\n'
+            f'<rect width="1200" height="630" fill="{DARK}"/>\n'
             f'<g transform="translate({(1200 - total_w * 2.6) / 2:.1f} {(630 - S * 2.6) / 2:.1f}) scale(2.6)">\n'
             + sign(ORANGE, WHITE) + "\n</g>", NAME),
     }

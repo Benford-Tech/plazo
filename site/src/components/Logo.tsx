@@ -1,7 +1,7 @@
 import { PRODUCT_NAME } from "@/lib/product";
 
 // The brand files live in /brand at the repository root; this copy is the dark variant
-// (orange sign, white letters) for the prune header and footer. 232 x 100 viewBox.
+// (orange sign, white letters) for the orange header and footer. 232 x 100 viewBox.
 const LOGO_SRC = "/brand/logo-horizontal-dark.svg";
 
 type Props = { height?: number; className?: string };

@@ -13,15 +13,15 @@ Le nom du produit reste dans `product.json` (seul endroit) : si le nom change, r
 | Fichier | Usage |
 |---|---|
 | `logo-horizontal-light.svg` | Le panneau sur fond clair : rectangle orange, lettres blanches. |
-| `logo-horizontal-dark.svg` | Le panneau sur fond sombre (prune, noir) : identique (rectangle orange, lettres blanches), gardé pour les chemins existants. |
-| `logo-mono.svg` | Une seule couleur (prune) pour l'impression, la gravure, le fax : les lettres sont évidées. Changer la couleur en remplaçant `#4b164c`. |
+| `logo-horizontal-dark.svg` | Le panneau sur fond sombre (orange, noir) : identique (rectangle orange, lettres blanches), gardé pour les chemins existants. |
+| `logo-mono.svg` | Une seule couleur (brun foncé) pour l'impression, la gravure, le fax : les lettres sont évidées. Changer la couleur en remplaçant `#2c1a0e`. |
 | `symbol.svg` / `symbol-dark.svg` / `symbol-mono.svg` | Le symbole seul (carré orange + P blanc) ; `-dark` identique ; `-mono` une couleur. |
-| `wordmark.svg` / `wordmark-dark.svg` | Les lettres seules, sans le panneau, prune / blanches (titres de documents). |
-| `app/` | **Le logo de l'app mobile**, qui garde l'option L-B (choix du 03/10/2026) : monogramme « P » Playfair avec l'avion en papier **orange easyJet `#FF6600`** (O-A), mot-symbole Playfair italique ; icône d'app **orange plein, P blanc, avion prune** (O-B). Générateurs `app/tools/build_svg.py` et `app/tools/export_png.mjs`. |
+| `wordmark.svg` / `wordmark-dark.svg` | Les lettres seules, sans le panneau, brun foncé / blanches (titres de documents). |
+| `app/` | **Le logo de l'app mobile**, qui garde l'option L-B (choix du 03/10/2026) : monogramme « P » Playfair avec l'avion en papier **orange easyJet `#FF6600`** (O-A), mot-symbole Playfair italique ; icône d'app **orange plein, P blanc, avion brun foncé** (O-B) ; en-tête de l'app (orange) : carré blanc, P et avion orange. Générateurs `app/tools/build_svg.py` et `app/tools/export_png.mjs`. |
 | `favicon.svg`, `favicon-32.png`, `favicon-180.png` | Favicon (SVG moderne, 32 px de secours, 180 px pour l'icône Apple « touch »). |
-| `icon-192.png`, `icon-512.png` (`icon-maskable.svg`) | Icônes de manifeste web **maskable** : fond prune plein-pan, glyphes dans le cercle de sûreté (80 %). |
+| `icon-192.png`, `icon-512.png` (`icon-maskable.svg`) | Icônes de manifeste web **maskable** : fond orange plein-pan, glyphes dans le cercle de sûreté (80 %). |
 | `android-foreground.svg` | Couche avant de l'icône adaptative Android (glyphes dans les 66 % centraux, fond transparent). |
-| `social-card.svg`, `png/social-card-1200x630.png` | Carte de partage (Open Graph / Twitter), logo sombre sur prune. |
+| `social-card.svg`, `png/social-card-1200x630.png` | Carte de partage (Open Graph / Twitter), le panneau sur brun foncé. |
 | `png/logo-horizontal-*@1x/2x/4x.png` | Exports du logo (232 × 100, 464 × 200, 928 × 400), fond transparent. |
 | `png/symbol-512.png`, `png/symbol-1024.png`, `png/symbol-dark-512.png` | Exports du symbole. |
 | `png/app-icon-1024.png`, `png/android-foreground-1024.png` | Sources de l'icône d'app (flutter_launcher_icons). |
@@ -38,13 +38,13 @@ Copies dans le code : `site/public/brand/`, `site/src/app/icon.svg`, `site/src/a
 |---|---|---|
 | Orange | `#FF6600` | Le panneau, sur tout fond (inspiré de l'orange easyJet). |
 | Blanc | `#ffffff` | Les lettres du panneau. |
-| Prune | `#4b164c` | Fonds de marque, variante *mono*, l'avion de l'icône d'app. |
+| Brun foncé | `#2c1a0e` | Variante *mono*, l'avion de l'icône d'app. Le prune `#4b164c` n'est plus utilisé (03/10/2026). |
 | Pêche | `#f0a36b` | Couleur d'accent de l'app et du site ; jamais sur le logo lui-même. |
-| Prune profond | `#2c0f31` | Fond du pied de page du site (variante sombre du logo dessus). |
+| Orange foncé | `#e65c00` | Fond du pied de page du site. |
 | Noir espace pro | `#0B0B0C` | Fond de l'espace pro (variante sombre du logo dessus). |
 
-Le panneau orange se pose tel quel sur prune, noir, blanc ou clair. Sur une photo ou un fond orangé : poser
-le logo dans un cartouche blanc ou prune.
+Le panneau orange se pose tel quel sur orange easyJet (en-tête), noir, blanc ou clair. Sur une photo ou un fond orangé : poser
+le logo dans un cartouche blanc ou brun foncé.
 
 ## Construction et espace de protection
 

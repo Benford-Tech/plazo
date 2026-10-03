@@ -44,7 +44,7 @@ export function BookingCard({
   return (
     <aside
       aria-labelledby="reserver-titre"
-      className="flex flex-col gap-3.5 rounded-[20px] border border-line bg-white p-4 shadow-[0_20px_50px_-30px_rgba(75,22,76,.6)] md:p-[22px]"
+      className="flex flex-col gap-3.5 rounded-[20px] border border-line bg-white p-4 shadow-[0_20px_50px_-30px_rgba(44,26,14,.5)] md:p-[22px]"
     >
       <h2 id="reserver-titre" className="sr-only">
         {fr.parking.book}

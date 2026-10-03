@@ -107,7 +107,7 @@ class _ProTodayViewState extends State<_ProTodayView> with SingleTickerProviderS
                     Expanded(
                       child: Text(
                         'pro.today_title'.tr(args: [planningDay(_now)]),
-                        style: AppText.label(size: 14, color: AppColors.prune).copyWith(fontWeight: FontWeight.w800),
+                        style: AppText.label(size: 14, color: AppColors.dark).copyWith(fontWeight: FontWeight.w800),
                       ),
                     ),
                     Text(hhmm(_now), style: AppText.tabular(size: 16, color: AppColors.accent)),

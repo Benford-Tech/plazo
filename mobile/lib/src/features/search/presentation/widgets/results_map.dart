@@ -47,7 +47,7 @@ class ResultsMap extends StatelessWidget {
                     point: terminals,
                     width: 120,
                     height: 36,
-                    child: Center(child: _Pill(label: 'results.map_terminals'.tr(), color: AppColors.prune, textColor: Colors.white)),
+                    child: Center(child: _Pill(label: 'results.map_terminals'.tr(), color: AppColors.dark, textColor: Colors.white)),
                   ),
                 for (final r in located)
                   Marker(
@@ -114,7 +114,7 @@ class _PricePill extends StatelessWidget {
               duration: const Duration(milliseconds: 150),
               child: _Pill(
                 label: label,
-                color: selected ? AppColors.prune : (bookable ? AppColors.accent : Colors.white),
+                color: selected ? AppColors.dark : (bookable ? AppColors.accent : Colors.white),
                 textColor: bookable || selected ? Colors.white : AppColors.muted,
                 border: bookable || selected ? null : AppColors.line,
               ),

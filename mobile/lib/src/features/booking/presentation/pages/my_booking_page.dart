@@ -190,7 +190,7 @@ class _ConfirmedHero extends StatelessWidget {
     return Container(
       key: const Key('booking-confirmed'),
       decoration: const BoxDecoration(
-        gradient: LinearGradient(begin: Alignment.topLeft, end: Alignment.bottomRight, colors: [AppColors.prune, Color(0xFF722A7E), Color(0xFF9B3E6B)]),
+        gradient: LinearGradient(begin: Alignment.topLeft, end: Alignment.bottomRight, colors: [AppColors.brand, AppColors.accent, AppColors.peach]),
       ),
       padding: const EdgeInsets.fromLTRB(16, 20, 16, 24),
       child: Column(

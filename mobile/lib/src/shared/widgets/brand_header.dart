@@ -3,7 +3,7 @@ import 'package:flutter/material.dart';
 import '../theme/theme.dart';
 import 'brand_logo.dart';
 
-/// The prune header of direction D: the logo (or a page title in Playfair italic).
+/// The orange header of direction D (T-A): the logo (or a page title in Playfair italic).
 class BrandAppBar extends StatelessWidget implements PreferredSizeWidget {
   const BrandAppBar({super.key, this.title, this.actions, this.pro = false, this.leading});
 
@@ -19,7 +19,7 @@ class BrandAppBar extends StatelessWidget implements PreferredSizeWidget {
   Widget build(BuildContext context) {
     return AppBar(
       toolbarHeight: 60,
-      backgroundColor: AppColors.prune,
+      backgroundColor: AppColors.brand,
       leading: leading,
       title: title == null ? BrandLogo(height: 30, pro: pro) : Text(title!, style: AppText.title(size: 24, color: Colors.white)),
       actions: actions,

@@ -11,7 +11,7 @@ export interface EmailMessage {
   text: string;
 }
 
-const COLORS = { prune: '#4b164c', violet: '#a427c3', ink: '#1e1e1e', soft: '#6f6675', line: '#e6e0ea', tint: '#faf6fb', plate: '#1F3FA6' };
+const COLORS = { brand: '#ff6600', accent: '#ff8a3d', ink: '#1e1e1e', soft: '#6f6a66', line: '#ece4de', tint: '#fff7f1', plate: '#1F3FA6' };
 
 const escapeHtml = (value: string) =>
   value.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#39;');
@@ -98,7 +98,7 @@ function layout(productName: string, title: string, body: string): string {
 <body style="margin:0;padding:0;background:${COLORS.tint};font-family:Inter,Helvetica,Arial,sans-serif;color:${COLORS.ink}">
 <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background:${COLORS.tint}"><tr><td align="center" style="padding:24px 12px">
 <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="max-width:560px;background:#fff;border:1px solid ${COLORS.line};border-radius:16px;overflow:hidden">
-<tr><td style="background:${COLORS.prune};padding:18px 24px;color:#fff;font-family:'Playfair Display',Georgia,serif;font-style:italic;font-size:22px">${escapeHtml(productName)}</td></tr>
+<tr><td style="background:${COLORS.brand};padding:18px 24px;color:#fff;font-family:'Playfair Display',Georgia,serif;font-style:italic;font-size:22px">${escapeHtml(productName)}</td></tr>
 <tr><td style="padding:24px">${body}</td></tr>
 </table>
 <p style="max-width:560px;margin:16px auto 0;font-size:12px;color:${COLORS.soft}">Cet email vous est envoyé par ${escapeHtml(productName)} à la suite de votre réservation.</p>
@@ -125,7 +125,7 @@ export function confirmationEmail(productName: string, booking: PublicBooking, m
   const subject = `Réservation ${booking.reference} confirmée · ${booking.parking.title}`;
   const total = booking.priceCents !== null ? formatEuros(booking.priceCents) : null;
   const manage = manageUrl
-    ? `<p style="margin:24px 0 8px"><a href="${escapeHtml(manageUrl)}" style="display:inline-block;background:${COLORS.violet};background-image:linear-gradient(96deg,#a427c3,#cf4f96 55%,#f0a36b);color:#fff;text-decoration:none;font-weight:600;padding:12px 22px;border-radius:999px">Gérer ma réservation</a></p>
+    ? `<p style="margin:24px 0 8px"><a href="${escapeHtml(manageUrl)}" style="display:inline-block;background:${COLORS.accent};background-image:linear-gradient(96deg,#ff8a3d,#f0a36b);color:#fff;text-decoration:none;font-weight:600;padding:12px 22px;border-radius:999px">Gérer ma réservation</a></p>
 <p style="margin:0;font-size:13px;color:${COLORS.soft}">Vous pourrez y indiquer ou changer votre vol retour${booking.cancellableUntil ? ', ou annuler' : ''}.</p>`
     : `<p style="margin:24px 0 0;font-size:13px;color:${COLORS.soft}">Retrouvez votre réservation sur le site, rubrique « Ma réservation », avec sa référence et votre email.</p>`;
 

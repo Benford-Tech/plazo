@@ -20,7 +20,7 @@ export function ListingPreview(props: {
   ].filter(Boolean);
   return (
     <div className="w-[330px] overflow-hidden rounded-[22px] bg-white text-[#1e1e1e] shadow-[0_20px_50px_-20px_rgba(0,0,0,.8)]" style={{ fontFamily: "Inter, sans-serif" }}>
-      <div className="bg-[#4b164c] px-3.5 py-2.5 text-xl text-white" style={{ fontFamily: "'Playfair Display', serif", fontStyle: "italic" }}>
+      <div className="bg-[#ff6600] px-3.5 py-2.5 text-xl text-white" style={{ fontFamily: "'Playfair Display', serif", fontStyle: "italic" }}>
         Plazo
       </div>
       <div className="p-3">

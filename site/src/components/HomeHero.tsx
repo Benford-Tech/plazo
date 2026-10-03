@@ -42,7 +42,7 @@ const HERO_IMAGE = "/images/hero-tarmac";
 
 /**
  * Hero of the home and airport pages: photo of a tarmac at sunset (Pexels licence, credited)
- * under a prune veil, the title, the search card, then the reassurance strip under the photo.
+ * under an orange veil, the title, the search card, then the reassurance strip under the photo.
  */
 export function HomeHero({
   airport,
@@ -77,7 +77,7 @@ export function HomeHero({
         </picture>
         <div
           aria-hidden="true"
-          className="absolute inset-0 -z-10 bg-[linear-gradient(100deg,rgba(75,22,76,.92)_0%,rgba(114,42,126,.75)_45%,rgba(155,62,107,.15)_100%)]"
+          className="absolute inset-0 -z-10 bg-[linear-gradient(100deg,rgba(255,102,0,.92)_0%,rgba(255,138,61,.75)_45%,rgba(240,163,107,.15)_100%)]"
         />
         <div className={`mx-auto flex max-w-[1280px] flex-col gap-5 px-12 pt-14 pb-16 md:pt-16 ${MOBILE.inner}`}>
           {breadcrumb && (

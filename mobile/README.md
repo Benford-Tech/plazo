@@ -38,7 +38,7 @@ easy_localization (français), OneSignal, Codemagic. Couches par fonctionnalité
 injection dans `lib/src/di/`, réseau et erreurs dans `lib/src/core/`. Les erreurs de l'API (`code`, `fields`)
 sont traduites par `assets/l10n/fr-FR.json` (clés `errors.<code>`).
 
-Direction visuelle **D** : en-tête prune `#4b164c`, accent orange léger `#FF8A3D` (V-A, 03/10/2026), pêche `#f0a36b` pour le temps
+Direction visuelle **D** : en-tête orange easyJet `#FF6600` (T-A, 03/10/2026), brun foncé `#2C1A0E` pour les surfaces sombres, accent orange léger `#FF8A3D` (V-A, 03/10/2026), pêche `#f0a36b` pour le temps
 fort, dégradé orange léger → pêche sur les actions principales, Playfair Display (titres) + Inter,
 cartes arrondies, plaques façon plaque française. Cartes : IGN Géoplateforme « Plan IGN v2 » (sans clé),
 attribution « © IGN – Plan IGN ».

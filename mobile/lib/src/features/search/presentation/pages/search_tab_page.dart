@@ -18,7 +18,7 @@ import '../bloc/search/search_bloc.dart';
 import '../widgets/dates_pill.dart';
 import '../widgets/stay_sheet.dart';
 
-/// A1, "Rechercher": the hero photo of the site (Pexels) under the prune veil, the airport, the
+/// A1, "Rechercher": the hero photo of the site (Pexels) under the orange veil, the airport, the
 /// single "Vos dates" pill and "Rechercher"; below, the next departure kept on this phone, the three
 /// steps and the trust chips (icons of direction H-B: filled, on gradient tiles).
 @RoutePage()
@@ -66,7 +66,7 @@ class _Hero extends StatelessWidget {
                   gradient: LinearGradient(
                     begin: Alignment(-0.35, -1),
                     end: Alignment(0.35, 1),
-                    colors: [Color(0xF04B164C), Color(0xCC722A7E), Color(0x739B3E6B)],
+                    colors: [Color(0xF0FF6600), Color(0xCCFF8A3D), Color(0x73F0A36B)],
                     stops: [0, 0.55, 1],
                   ),
                 ),
@@ -91,10 +91,10 @@ class _Hero extends StatelessWidget {
                           child: Row(
                             mainAxisSize: MainAxisSize.min,
                             children: [
-                              const Icon(Icons.flight_takeoff_rounded, size: 15, color: AppColors.onPruneSoft),
+                              const Icon(Icons.flight_takeoff_rounded, size: 15, color: AppColors.onBrandSoft),
                               const SizedBox(width: 6),
-                              Text(airportName.toUpperCase(), style: AppText.label(size: 12, color: AppColors.onPruneSoft)),
-                              if (canPick) const Icon(Icons.expand_more_rounded, color: AppColors.onPruneSoft, size: 18),
+                              Text(airportName.toUpperCase(), style: AppText.label(size: 12, color: AppColors.onBrandSoft)),
+                              if (canPick) const Icon(Icons.expand_more_rounded, color: AppColors.onBrandSoft, size: 18),
                             ],
                           ),
                         ),
@@ -297,7 +297,7 @@ class _Trust extends StatelessWidget {
                 children: [
                   ExcludeSemantics(child: Icon(icon, size: 15, color: AppColors.accent)),
                   const SizedBox(width: 6),
-                  Text('search.$key'.tr(), style: AppText.strong(size: 12.5, color: AppColors.prune)),
+                  Text('search.$key'.tr(), style: AppText.strong(size: 12.5, color: AppColors.dark)),
                 ],
               ),
             ),

@@ -133,7 +133,7 @@ class ArrivalBlock extends StatelessWidget {
             for (final minutes in state.arrival!.rules.announceMinutes)
               ActionChip(
                 key: Key('announce-$minutes'),
-                label: Text(key.tr(args: ['$minutes']), style: AppText.body(size: 14, weight: 600, color: AppColors.prune)),
+                label: Text(key.tr(args: ['$minutes']), style: AppText.body(size: 14, weight: 600, color: AppColors.dark)),
                 shape: const StadiumBorder(side: BorderSide(color: AppColors.accent)),
                 backgroundColor: Colors.white,
                 onPressed: () => bloc.add(ArrivalAnnounced(minutes)),
