@@ -325,6 +325,11 @@ export default function OperatorsPage() {
                 <tr key={o.id} className={cn("border-b border-border align-middle", o.status === "suspended" && "opacity-70")}>
                   <td className="px-2 py-3">
                     <span className="font-bold">{o.name}</span>
+                    {o.isDemo && (
+                      <span title={t.demoHint} className="ml-2 border border-border px-1.5 text-xs font-bold uppercase text-muted-foreground">
+                        {t.statusDemo}
+                      </span>
+                    )}
                     {o.status === "suspended" && (
                       <span className="ml-2 border border-destructive px-1.5 text-xs font-bold uppercase text-destructive">{t.statusSuspended}</span>
                     )}

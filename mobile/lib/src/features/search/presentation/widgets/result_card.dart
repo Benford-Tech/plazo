@@ -5,6 +5,7 @@ import '../../../../core/helpers/listing.dart';
 import '../../../../core/helpers/money.dart';
 import '../../../../core/helpers/stay.dart';
 import '../../../../shared/theme/theme.dart';
+import '../../../../shared/widgets/demo_tag.dart';
 import '../../../../shared/widgets/striped_placeholder.dart';
 import '../../data/models/public_models.dart';
 
@@ -35,6 +36,7 @@ class ResultCard extends StatelessWidget {
         if (price != null) '$price, ${'results.all_in'.tr(args: [daysLabel(result.days)])}',
         if (!bookable) result.priceCents == null ? 'results.no_price'.tr() : 'results.full'.tr(),
         ?badge,
+        if (result.isDemo) 'results.demo_hint'.tr(),
       ].join('. '),
       excludeSemantics: true,
       child: Opacity(
@@ -66,7 +68,13 @@ class ResultCard extends StatelessWidget {
                         ),
                         const SizedBox(height: 6),
                       ],
-                      Text(result.title, style: AppText.title(size: 18)),
+                      Row(
+                        crossAxisAlignment: CrossAxisAlignment.center,
+                        children: [
+                          Flexible(child: Text(result.title, style: AppText.title(size: 18))),
+                          if (result.isDemo) ...[const SizedBox(width: 8), const DemoTag()],
+                        ],
+                      ),
                       if (facts.isNotEmpty) ...[const SizedBox(height: 3), Text(facts, style: AppText.muted(size: 12.5))],
                       if (bookable) ...[
                         const SizedBox(height: 3),

@@ -328,6 +328,8 @@ export interface PlatformOperator {
   suspendedAt: string | null;
   createdAt: string;
   isPlatform: boolean;
+  /** Fictional operator of the demo seed (backend `npm run seed:demo`). */
+  isDemo?: boolean;
   parkings: number;
   places: number;
   manager: { name: string; email: string; emailVerified: boolean } | null;

@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { BookingCard } from "@/components/BookingCard";
 import { Breadcrumb } from "@/components/Breadcrumb";
+import { DemoBadge } from "@/components/DemoBadge";
 import { Photo } from "@/components/Photo";
 import { api, ApiError } from "@/lib/api";
 import { stayFromParams, stayQuery, todayLocal, validateStay } from "@/lib/dates";
@@ -85,7 +86,10 @@ export default async function ParkingPage({ params, searchParams }: Props) {
         ]}
       />
       <div>
-        <h1 className="font-title text-[30px] leading-tight md:text-[44px]">{parking.title}</h1>
+        <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
+          <h1 className="font-title text-[30px] leading-tight md:text-[44px]">{parking.title}</h1>
+          {parking.isDemo && <DemoBadge />}
+        </div>
         <p className="mt-1.5 text-[15px] text-soft md:text-base">
           {parking.address && <>{parking.address} · </>}
           {parking.distanceKm !== null && <>{fr.parking.kmFromTerminals(formatKm(parking.distanceKm))} · </>}

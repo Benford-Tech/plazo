@@ -731,6 +731,8 @@ export const fr = {
       save: "Enregistrer",
       empty: "Aucun loueur pour l'instant.",
       statusSuspended: "Suspendu",
+      statusDemo: "Démo",
+      demoHint: "Loueur fictif créé par les données de démonstration",
       inviteTitle: "Inviter un loueur",
       inviteName: "Nom de l'entreprise / du parking",
       inviteEmail: "Email du gérant",

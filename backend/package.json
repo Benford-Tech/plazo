@@ -13,11 +13,12 @@
     "typecheck": "tsc --noEmit",
     "build": "npm run prisma:generate && rm -rf lib && tsc -p tsconfig.build.json && npm run copy:assets && tsc-alias -p tsconfig.build.json",
     "copy:assets": "cp -r src/generated lib/generated && cp ../product.json lib/product.json",
-    "vercel-build": "export DIRECT_URL=${DIRECT_URL:-$DATABASE_URL_UNPOOLED}; prisma migrate deploy && npm run build && node lib/scripts/bootstrap-platform-admin.js",
+    "vercel-build": "export DIRECT_URL=${DIRECT_URL:-$DATABASE_URL_UNPOOLED}; prisma migrate deploy && npm run build && node lib/scripts/bootstrap-platform-admin.js && node lib/scripts/seed-demo.js",
     "prisma:generate": "prisma generate",
     "prisma:migrate": "prisma migrate dev",
     "prisma:deploy": "prisma migrate deploy",
     "seed:operator": "ts-node -r tsconfig-paths/register --transpile-only src/scripts/create-operator.ts",
+    "seed:demo": "ts-node -r tsconfig-paths/register --transpile-only src/scripts/seed-demo.ts",
     "start": "node lib/server.js"
   },
   "prisma": {

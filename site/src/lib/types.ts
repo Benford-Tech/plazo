@@ -24,6 +24,8 @@ export interface ListingSummary {
   location?: LatLng | null;
   /** Missing from an older API: paid at the parking. */
   payment?: ParkingPayment;
+  /** Fictional parking of the demo data (a small "Démo" badge); missing from an older API. */
+  isDemo?: boolean;
 }
 
 export interface LatLng {

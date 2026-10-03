@@ -133,6 +133,17 @@ le navigateur de l'espace pro appelle `/api` sur le même domaine (pas de CORS).
    existe déjà : le mot de passe n'est jamais écrasé). Supprimer la variable ensuite.
    Les autres opérateurs se créent depuis un poste : `npm run seed:operator` dans `backend/`, avec
    `DATABASE_URL` pointé sur la base Neon (connexion directe).
+   **Données de démonstration** (facultatif) : pour essayer le site et les apps avec des parkings fictifs,
+   mettre `DEMO_LISTINGS=true` et `DEMO_SEED_PASSWORD` (10 caractères minimum) sur Vercel et redéployer. Le
+   déploiement crée (ou rafraîchit, sans doublon) cinq loueurs fictifs autour de Lyon Saint-Exupéry (Parkair Lyon,
+   Aéroparc Saint-Exupéry, Les Hangars de Colombier, Parking Premium Terminal, EcoPark Pusignan), chacun avec
+   une fiche publiée, une grille de tarifs de 1 à 15 jours, un point de rendez-vous et une navette, plus trois
+   réservations à venir chez Parkair Lyon. Comptes gérants : `demo-<slug>@plazo.test` (par exemple
+   `demo-parkair-lyon@plazo.test`), mot de passe `DEMO_SEED_PASSWORD` (jamais modifié pour un compte existant).
+   Ces loueurs portent la marque « Démo » sur le site, dans l'app et dans l'espace Plateforme. Pour les retirer :
+   `DEMO_LISTINGS=remove` et redéployer (supprime uniquement les loueurs marqués démo, avec leurs fiches, comptes
+   et réservations), puis enlever la variable. Depuis un poste : `npm run seed:demo -- --apply` ou `--remove`
+   dans `backend/`. Le script n'échoue jamais le déploiement et ne journalise que des comptages.
 
 4. **Paiement en ligne (Stripe Connect, mode test)** — facultatif : sans `STRIPE_SECRET_KEY`, le site garde le
    paiement sur place. Pour l'activer :

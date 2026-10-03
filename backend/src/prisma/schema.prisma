@@ -41,6 +41,9 @@ model Operator {
   stripeDetailsSubmitted Boolean        @default(false)
   // When the operator receives its share of the online payments (see src/domain/payout.ts).
   payoutSchedule         PayoutSchedule @default(AFTER_STAY)
+  // Fictional operator created by the demo seed (scripts/seed-demo.ts): listed with a "Démo" badge
+  // on the site and in the platform space, removed as a whole by the seed's --remove.
+  isDemo                 Boolean        @default(false)
   createdAt              DateTime       @default(now())
   updatedAt              DateTime       @default(now()) @updatedAt
 

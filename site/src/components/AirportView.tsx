@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { HomeHero } from "./HomeHero";
+import { DemoBadge } from "./DemoBadge";
 import { Photo } from "./Photo";
 import { api, ApiError } from "@/lib/api";
 import { defaultStay, todayLocal } from "@/lib/dates";
@@ -66,7 +67,10 @@ export async function AirportView({ slug, showBreadcrumb }: { slug: string; show
                   >
                     <Photo src={listing.photo} alt={listing.title} className="h-[140px] w-full md:h-full md:min-h-[190px]" />
                     <div className="flex flex-col gap-2 px-4 py-4 md:px-[22px] md:py-[18px]">
-                      <h3 className="font-title text-[22px] md:text-2xl">{listing.title}</h3>
+                      <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
+                        <h3 className="font-title text-[22px] md:text-2xl">{listing.title}</h3>
+                        {listing.isDemo && <DemoBadge />}
+                      </div>
                       <p className="text-[15px] text-soft">{listingFacts(listing)}</p>
                       {listing.openingHours && <p className="text-[15px]">Horaires : {listing.openingHours}</p>}
                       <div className="mt-auto flex flex-wrap items-center justify-between gap-3 pt-2">

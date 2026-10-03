@@ -29,6 +29,11 @@ export const fr = {
     photoOf: (title: string, n: number) => `${title}, photo ${n}`,
     opensNewTab: "(nouvel onglet)",
   },
+  /** Fictional parkings of the demo data: shown like the others, with a discreet badge. */
+  demo: {
+    badge: "Démo",
+    hint: "Parking fictif, présenté à titre de démonstration",
+  },
   nav: {
     airports: "Aéroports",
     myBooking: "Ma réservation",

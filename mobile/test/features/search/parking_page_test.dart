@@ -56,6 +56,13 @@ void main() {
     expect(links.opened.single.toString(), contains('google.com/maps/dir/?api=1&destination=12+route'));
   });
 
+  testWidgets('parking de démonstration : étiquette « DÉMO » à côté du titre', (tester) async {
+    final response = parkingResponse();
+    await pump(tester, response.copyWith(parking: response.parking.copyWith(isDemo: true)));
+    expect(find.text('Parking Démo LYS'), findsWidgets);
+    expect(find.text('DÉMO'), findsOneWidget);
+  });
+
   testWidgets('pas encore réservable dans l’app : « Réservation en ligne bientôt disponible », pas de « Réserver »', (tester) async {
     await pump(tester, parkingResponse(payment: 'unavailable'));
     expect(find.byKey(const Key('parking-online-soon')), findsOneWidget);

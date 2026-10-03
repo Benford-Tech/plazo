@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { DemoBadge } from "./DemoBadge";
 import { Photo } from "./Photo";
 import { fr } from "@/lib/fr";
 import { isFreeCancellation, listingFacts } from "@/lib/listing";
@@ -46,9 +47,12 @@ export function ResultCard({
       <div className={compact ? "flex min-w-0 flex-col" : "contents"}>
         <div className={`flex flex-col gap-1.5 px-4 pt-3 ${compact ? "sm:px-4 sm:pt-3.5" : "md:px-[18px] md:py-4"}`}>
           {badge && <span className="self-start rounded-xl bg-accent px-2.5 py-1 text-xs font-bold text-white">{badge}</span>}
-          <Title id={`resultat-${result.slug}-titre`} className="font-title text-xl md:text-[22px]">
-            {result.title}
-          </Title>
+          <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
+            <Title id={`resultat-${result.slug}-titre`} className="font-title text-xl md:text-[22px]">
+              {result.title}
+            </Title>
+            {result.isDemo && <DemoBadge />}
+          </div>
           <p className="text-sm text-soft">{listingFacts(result, false)}</p>
           {bookable && (
             <p

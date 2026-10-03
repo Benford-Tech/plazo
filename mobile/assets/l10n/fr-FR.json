@@ -228,6 +228,8 @@
     "available_many": "{} parkings disponibles",
     "available_none": "Aucun parking disponible",
     "cheapest": "Le moins cher",
+    "demo": "Démo",
+    "demo_hint": "Parking fictif, présenté à titre de démonstration",
     "all_in": "{}, tout compris",
     "see": "Voir",
     "see_a11y": "Voir {}",

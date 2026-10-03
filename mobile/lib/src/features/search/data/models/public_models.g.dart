@@ -54,6 +54,7 @@ _SearchResultModel _$SearchResultModelFromJson(
   available: json['available'] as bool? ?? false,
   days: (json['days'] as num?)?.toInt() ?? 0,
   priceCents: (json['priceCents'] as num?)?.toInt(),
+  isDemo: json['isDemo'] as bool? ?? false,
 );
 
 Map<String, dynamic> _$SearchResultModelToJson(_SearchResultModel instance) =>
@@ -71,6 +72,7 @@ Map<String, dynamic> _$SearchResultModelToJson(_SearchResultModel instance) =>
       'available': instance.available,
       'days': instance.days,
       'priceCents': instance.priceCents,
+      'isDemo': instance.isDemo,
     };
 
 _SearchResponseModel _$SearchResponseModelFromJson(Map<String, dynamic> json) =>
@@ -158,6 +160,7 @@ _ParkingDetailModel _$ParkingDetailModelFromJson(
   pricing: json['pricing'] == null
       ? const PricingModel()
       : PricingModel.fromJson(json['pricing'] as Map<String, dynamic>),
+  isDemo: json['isDemo'] as bool? ?? false,
 );
 
 Map<String, dynamic> _$ParkingDetailModelToJson(_ParkingDetailModel instance) =>
@@ -177,6 +180,7 @@ Map<String, dynamic> _$ParkingDetailModelToJson(_ParkingDetailModel instance) =>
       'address': instance.address,
       'phone': instance.phone,
       'pricing': instance.pricing,
+      'isDemo': instance.isDemo,
     };
 
 _ParkingResponseModel _$ParkingResponseModelFromJson(

@@ -79,7 +79,7 @@ const operators = {
   defaultCommissionBps: 1200,
   operators: [
     operator({}),
-    operator({ id: "o2", name: "Allo Park Lyon", listing: { id: "l2", status: "pending_review" }, payments: { connected: true, chargesEnabled: false, payoutsEnabled: false }, bookingsThisMonth: 0 }),
+    operator({ id: "o2", name: "Allo Park Lyon", isDemo: true, listing: { id: "l2", status: "pending_review" }, payments: { connected: true, chargesEnabled: false, payoutsEnabled: false }, bookingsThisMonth: 0 }),
     operator({
       id: "o3",
       name: "Parking Invité",
@@ -121,8 +121,10 @@ describe("Loueurs", () => {
     expect(within(demo).getByText("Actifs")).toBeInTheDocument();
     expect(within(demo).getByText("12 %")).toBeInTheDocument();
     expect(within(demo).getByText("48")).toBeInTheDocument();
+    expect(within(demo).queryByText("Démo")).not.toBeInTheDocument();
     const allo = screen.getByText("Allo Park Lyon").closest("tr")!;
     expect(within(allo).getByText("À valider")).toBeInTheDocument();
+    expect(within(allo).getByText("Démo")).toBeInTheDocument();
     expect(within(allo).getByText("À activer")).toBeInTheDocument();
     const invited = screen.getByText("Parking Invité").closest("tr")!;
     expect(within(invited).getByText(/invitation envoyée le 2 oct/)).toBeInTheDocument();

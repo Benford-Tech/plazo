@@ -115,6 +115,14 @@ void main() {
       expect(find.descendant(of: find.byKey(const Key('selected-card')), matching: find.text('Parking moyen')), findsOneWidget);
     });
 
+    testWidgets('un parking de démonstration porte une étiquette « DÉMO » discrète', (tester) async {
+      final fake = FakePublicDataSource()
+        ..searchResponse = SearchResponseModel(payments: 'online', airport: lys, results: [result('demo').copyWith(isDemo: true), result('vrai')]);
+      await pump(tester, fake);
+      expect(find.text('DÉMO'), findsOneWidget);
+      expect(find.bySemanticsLabel(RegExp('Parking demo.*Parking fictif')), findsOneWidget);
+    });
+
     testWidgets('tri par puce, et le panneau « Filtres » (compte en direct, effacer)', (tester) async {
       final b = await pump(tester, api());
       await tester.tapAt(tester.getTopLeft(find.byKey(const Key('sort-shuttle'))) + const Offset(20, 20));

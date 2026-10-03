@@ -11,6 +11,7 @@ import '../../../../core/router/app_router.dart';
 import '../../../../di/locator.dart';
 import '../../../../services/link_service.dart';
 import '../../../../shared/theme/theme.dart';
+import '../../../../shared/widgets/demo_tag.dart';
 import '../../../../shared/widgets/gradient_button.dart';
 import '../../../../shared/widgets/segmented.dart';
 import '../../../../shared/widgets/striped_placeholder.dart';
@@ -123,7 +124,13 @@ class _ParkingViewState extends State<_ParkingView> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Semantics(header: true, child: Text(p.title, style: AppText.title(size: 25))),
+              Row(
+                crossAxisAlignment: CrossAxisAlignment.center,
+                children: [
+                  Flexible(child: Semantics(header: true, child: Text(p.title, style: AppText.title(size: 25)))),
+                  if (p.isDemo) ...[const SizedBox(width: 10), const DemoTag()],
+                ],
+              ),
               if (facts.isNotEmpty) ...[const SizedBox(height: 4), Text(facts, style: AppText.muted())],
               if (p.distanceKm != null || p.openingHours != null) ...[
                 const SizedBox(height: 2),

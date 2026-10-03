@@ -104,6 +104,8 @@ export class PlatformService {
           createdAt: o.createdAt,
           // The platform owner's own operator ("Plazo (tests)"): cannot be suspended.
           isPlatform: o.staff.some(s => isPlatformAdmin(s.email)),
+          // Fictional operator of the demo seed (scripts/seed-demo.ts).
+          isDemo: o.isDemo,
           parkings: o.parkings.length,
           places: o.parkings.reduce((sum, p) => sum + p.totalCapacity, 0),
           manager: manager ? { name: manager.name, email: manager.email, emailVerified: !!manager.emailVerifiedAt } : null,

@@ -14,11 +14,14 @@ const MAX_STAY_DAYS = 90;
 type ListingWithParking = Listing & {
   parking: Parking & {
     pricingTiers: { days: number; priceCents: number }[];
-    operator: Pick<Operator, 'commissionBps' | 'stripeAccountId' | 'stripePayoutsEnabled'>;
+    operator: Pick<Operator, 'commissionBps' | 'stripeAccountId' | 'stripePayoutsEnabled' | 'isDemo'>;
   };
 };
 type Client = Prisma.TransactionClient | typeof prisma;
 type Stay = { arrivalAt: Date; returnAt: Date };
+
+/** Operator fields the public pages need: how it takes payments, and whether it is a demo. */
+const PUBLIC_OPERATOR_FIELDS = { ...OPERATOR_PAYMENT_FIELDS, isDemo: true } as const;
 
 /** Listings travellers may see: validated by the platform, of an operator that is not suspended. */
 export const ONLINE = { status: 'published', parking: { operator: { status: 'active' } } } satisfies Prisma.ListingWhereInput;
@@ -73,6 +76,8 @@ export class PublicService {
       payment: this.payments.modeFor(listing.parking.operator),
       // Entrance of the parking for the site's map; null when unknown (listed, not drawn).
       location: locations.get(listing.parkingId) ?? null,
+      // Fictional parking of the demo seed: shown like the others, with a small "Démo" badge.
+      isDemo: listing.parking.operator.isDemo,
     };
   }
 
@@ -101,7 +106,7 @@ export class PublicService {
     return prisma.listing.findMany({
       where: { airportId, ...ONLINE },
       include: {
-        parking: { include: { pricingTiers: { select: { days: true, priceCents: true } }, operator: { select: OPERATOR_PAYMENT_FIELDS } } },
+        parking: { include: { pricingTiers: { select: { days: true, priceCents: true } }, operator: { select: PUBLIC_OPERATOR_FIELDS } } },
       },
     });
   }
@@ -152,7 +157,7 @@ export class PublicService {
         parking: {
           include: {
             pricingTiers: { select: { days: true, priceCents: true }, orderBy: { days: 'asc' } },
-            operator: { select: OPERATOR_PAYMENT_FIELDS },
+            operator: { select: PUBLIC_OPERATOR_FIELDS },
           },
         },
       },

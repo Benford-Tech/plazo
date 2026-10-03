@@ -45,6 +45,8 @@ abstract class SearchResultModel with _$SearchResultModel {
     @Default(false) bool available,
     @Default(0) int days,
     int? priceCents,
+    /// Fictional parking of the demo data: shown like the others, with a small "Démo" tag.
+    @Default(false) bool isDemo,
   }) = _SearchResultModel;
 
   const SearchResultModel._();
@@ -110,6 +112,7 @@ abstract class ParkingDetailModel with _$ParkingDetailModel {
     String? address,
     String? phone,
     @Default(PricingModel()) PricingModel pricing,
+    @Default(false) bool isDemo,
   }) = _ParkingDetailModel;
 
   factory ParkingDetailModel.fromJson(Map<String, dynamic> json) => _$ParkingDetailModelFromJson(json);
