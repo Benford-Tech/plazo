@@ -101,7 +101,7 @@ flutter:
       fonts:
         - asset: assets/fonts/Inter.ttf
 
-# App icon (brand/ at the repository root, option E-A): `dart run flutter_launcher_icons`.
+# App icon (brand/ at the repository root, option L-B, kept for the app): `dart run flutter_launcher_icons`.
 # Android: adaptive icon, prune background and the "P" as foreground (inside the inner 66 %).
 flutter_launcher_icons:
   android: true

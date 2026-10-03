@@ -186,7 +186,9 @@ Canevas de référence : https://claude.ai/artifact/6ezoCDyLXFNwhAH5ZWUf4u (rang
   Icônes (choix H-B du 03/10/2026) : icônes pleines arrondies (Material « rounded ») posées sur des
   tuiles au dégradé violet → rose → pêche (`IconTile`) ; onglets loupe / billet / « ··· ».
 - **Logo (choix E-A du 03/10/2026)** : le panneau de parking, « Plazo » en Inter 800 dans un rectangle
-  prune aux angles arrondis ; symbole = le panneau réduit au « P ». Fichiers et règles dans `brand/README.md`.
+  prune aux angles arrondis ; symbole = le panneau réduit au « P » ; pour le site et l'espace pro. **L'app mobile
+  garde le logo L-B** (P Playfair + avion en papier, mot-symbole italique) pour son icône et son en-tête
+  (`brand/app/`). Fichiers et règles dans `brand/README.md`.
 
 ## Règles de travail
 

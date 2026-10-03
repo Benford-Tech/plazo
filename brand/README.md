@@ -16,7 +16,8 @@ Le nom du produit reste dans `product.json` (seul endroit) : si le nom change, r
 | `logo-horizontal-dark.svg` | Le panneau sur fond sombre (prune, noir) : rectangle blanc, lettres prune. |
 | `logo-mono.svg` | Une seule couleur (prune) pour l'impression, la gravure, le fax : les lettres sont évidées. Changer la couleur en remplaçant `#4b164c`. |
 | `symbol.svg` / `symbol-dark.svg` / `symbol-mono.svg` | Le symbole seul (carré + P), fond clair / fond sombre / une couleur. |
-| `wordmark.svg` | Les lettres seules, sans le panneau, prune (titres de documents). |
+| `wordmark.svg` / `wordmark-dark.svg` | Les lettres seules, sans le panneau, prune / blanches (titres de documents). |
+| `app/` | **Le logo de l'app mobile**, qui garde l'option L-B (choix du 03/10/2026) : monogramme « P » Playfair avec l'avion en papier pêche, mot-symbole Playfair italique. Icône d'app, en-tête de l'app et PWA ; générateur `app/tools/build_svg.py`. |
 | `favicon.svg`, `favicon-32.png`, `favicon-180.png` | Favicon (SVG moderne, 32 px de secours, 180 px pour l'icône Apple « touch »). |
 | `icon-192.png`, `icon-512.png` (`icon-maskable.svg`) | Icônes de manifeste web **maskable** : fond prune plein-pan, glyphes dans le cercle de sûreté (80 %). |
 | `android-foreground.svg` | Couche avant de l'icône adaptative Android (glyphes dans les 66 % centraux, fond transparent). |
@@ -27,7 +28,7 @@ Le nom du produit reste dans `product.json` (seul endroit) : si le nom change, r
 | `tools/build_svg.py`, `tools/export_png.mjs` | Générateurs (voir « Régénérer »). |
 
 Copies dans le code : `site/public/brand/`, `site/src/app/icon.svg`, `site/src/app/apple-icon.png`,
-`admin/public/`, `admin/src/assets/`, `mobile/assets/brand/`, `mobile/web/favicon.png`. Les icônes natives
+`admin/public/`, `admin/src/assets/` ; pour l'app mobile, depuis `brand/app/` : `mobile/assets/brand/`, `mobile/web/favicon.png`. Les icônes natives
 (`mobile/android/.../mipmap-*`, `mobile/ios/Runner/Assets.xcassets/AppIcon.appiconset`) sont générées par
 `dart run flutter_launcher_icons` depuis `mobile/pubspec.yaml`.
 
