@@ -17,7 +17,7 @@ Le nom du produit reste dans `product.json` (seul endroit) : si le nom change, r
 | `logo-mono.svg` | Une seule couleur (prune) pour l'impression, la gravure, le fax : les lettres sont évidées. Changer la couleur en remplaçant `#4b164c`. |
 | `symbol.svg` / `symbol-dark.svg` / `symbol-mono.svg` | Le symbole seul (carré + P), fond clair / fond sombre / une couleur. |
 | `wordmark.svg` / `wordmark-dark.svg` | Les lettres seules, sans le panneau, prune / blanches (titres de documents). |
-| `app/` | **Le logo de l'app mobile**, qui garde l'option L-B (choix du 03/10/2026) : monogramme « P » Playfair avec l'avion en papier pêche, mot-symbole Playfair italique. Icône d'app, en-tête de l'app et PWA ; générateur `app/tools/build_svg.py`. |
+| `app/` | **Le logo de l'app mobile**, qui garde l'option L-B (choix du 03/10/2026) : monogramme « P » Playfair avec l'avion en papier **orange easyJet `#FF6600`** (O-A), mot-symbole Playfair italique ; icône d'app **orange plein, P blanc, avion prune** (O-B). Générateurs `app/tools/build_svg.py` et `app/tools/export_png.mjs`. |
 | `favicon.svg`, `favicon-32.png`, `favicon-180.png` | Favicon (SVG moderne, 32 px de secours, 180 px pour l'icône Apple « touch »). |
 | `icon-192.png`, `icon-512.png` (`icon-maskable.svg`) | Icônes de manifeste web **maskable** : fond prune plein-pan, glyphes dans le cercle de sûreté (80 %). |
 | `android-foreground.svg` | Couche avant de l'icône adaptative Android (glyphes dans les 66 % centraux, fond transparent). |
