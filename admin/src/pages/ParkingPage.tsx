@@ -2,6 +2,7 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
 import { FormField } from "@/components/FormField";
+import { ParkingTabs } from "@/components/parking/ParkingTabs";
 import { ReturnMeetingPointForm } from "@/components/parking/ReturnMeetingPointForm";
 import { ShuttleVehicles } from "@/components/parking/ShuttleVehicles";
 import { Alert, AlertDescription } from "@/components/ui/alert";
@@ -55,13 +56,21 @@ export default function ParkingPage() {
     },
   });
 
-  if (isLoading || !form) return <Skeleton className="h-96 w-full" />;
+  if (isLoading || !form) {
+    return (
+      <>
+        <ParkingTabs />
+        <Skeleton className="h-96 w-full" />
+      </>
+    );
+  }
 
   const set = (key: keyof Form) => (e: React.ChangeEvent<HTMLInputElement>) => setForm({ ...form, [key]: e.target.value });
   const preview = bookableCapacity(Number(form.totalCapacity), Number(form.safetyMarginPct));
 
   return (
     <>
+      <ParkingTabs />
       <h1 className="text-2xl font-semibold">{t.title}</h1>
       <Card>
         <CardContent className="pt-6">

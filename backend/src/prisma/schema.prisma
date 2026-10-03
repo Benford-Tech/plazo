@@ -185,9 +185,76 @@ model Parking {
   arrivalSignals ArrivalSignal[]
   listing        Listing?
   shuttleTrips   ShuttleTrip[]
+  plan           ParkingPlan?
+  spots          ParkingSpot[]
 
   @@index([operatorId])
   @@map("parkings")
+}
+
+// Kind of a parking spot (bloc 2). "reserved" keeps a spot out of the automatic assignment.
+enum SpotKind {
+  standard
+  large
+  covered
+  pmr
+  reserved
+}
+
+// The operator's own parking plan (bloc 2, step "Plan"): the land, the zones and the fixed elements
+// drawn on the IGN aerial photo, scoped to its parking. The spots generated from it are rows of
+// ParkingSpot so the occupation and the per-spot planning can reference them. GeoJSON in WGS84.
+model ParkingPlan {
+  id          String   @id @default(cuid())
+  parkingId   String   @unique
+  // GeoJSON Polygon of the land, or null until it is drawn.
+  outline     Json?
+  // Cadastral parcels used for the outline: [{ id, section, numero, commune, contenance, geometry }].
+  parcels     Json     @default("[]")
+  // Correction of every length (areas: its square), from a dimension measured on site.
+  scaleFactor Float    @default(1)
+  // [{ id, name, geometry: Polygon }]
+  zones       Json     @default("[]")
+  // [{ id, name, kind, geometry: Polygon | LineString | Point, clearance }]
+  exclusions  Json     @default("[]")
+  // Layout settings (slot sizes, aisle width, max depth, setback…) and the scale calibration.
+  settings    Json     @default("{}")
+  // Fixed elements: [{ id, kind: entrance | exit | handover | shuttle_stop | key_box, geometry: Point }].
+  landmarks   Json     @default("[]")
+  // Layout the spots were generated with: selfPark | valet24 | valet5.
+  layout      String?
+  generatedAt DateTime?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @default(now()) @updatedAt
+
+  parking Parking @relation(fields: [parkingId], references: [id], onDelete: Cascade)
+
+  @@map("parking_plans")
+}
+
+// One spot of the plan. `code` is what the staff reads and says ("A-02-08"): zone letter, row, index.
+model ParkingSpot {
+  id        String   @id @default(cuid())
+  parkingId String
+  zoneId    String
+  code      String
+  row       Int
+  index     Int
+  kind      SpotKind @default(standard)
+  // An inactive spot stays on the plan (greyed) but counts for nothing.
+  active    Boolean  @default(true)
+  // Closed ring of the spot's outline, [[lon, lat] × 5].
+  geometry  Json
+  // Centre of the spot, for the search and the distances.
+  lon       Float
+  lat       Float
+  createdAt DateTime @default(now())
+
+  parking Parking @relation(fields: [parkingId], references: [id], onDelete: Cascade)
+
+  @@unique([parkingId, code])
+  @@index([parkingId, zoneId, row, index])
+  @@map("parking_spots")
 }
 
 model AuditLog {

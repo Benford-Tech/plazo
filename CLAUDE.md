@@ -50,8 +50,9 @@ Ne construire QUE ce qui règle la douleur n°1 du client.
      calculée sur la capacité réelle.
    - Fiche réservation : client, téléphone, plaque, dates/heures, n° de vol retour, nb de passagers, statut.
 
-2. **Plan du parking et affectation des véhicules**
-   - Cartographie du parking sur Google Maps (vue satellite) aux dimensions réelles : zones,
+2. **Plan du parking et affectation des véhicules** (direction P-A du 03/10/2026 : trois vues
+   Plan · Occupation · Planning des places dans l'onglet « Parking » ; l'étape Plan est livrée)
+   - Cartographie du parking sur la photo aérienne IGN aux dimensions réelles : zones,
      rangées, places, entrée/sortie, point de remise ; génération automatique des places.
    - Affectation de chaque véhicule à un emplacement à l'arrivée.
    - Optimisation : maximiser le nombre de places, ranger par date de retour (aucun véhicule
@@ -119,7 +120,10 @@ Le nom du produit doit rester dans UN seul fichier de configuration (il peut enc
 - `backend/` : API REST sous `/api` (`index.js` = point d'entrée Vercel). Les routes du personnel du loueur
   sont sous `/api/internal/...` (`StaffAuthMiddleware`, jetons stockés en base et révocables), comme les
   routes staff de LoveNest ; celles du site voyageurs sous `/api/public/...`.
-- `admin/` : espace pro, servi sous `/pro`. L'espace « Plateforme » du super admin (`PLATFORM_ADMIN_EMAILS`) est sous
+- `admin/` : espace pro, servi sous `/pro`. L'onglet « Parking » a deux volets : `/parking/plan/:step` (bloc 2, étape
+  « Plan » : terrain, zones, places, repères, tracés sur la photo IGN avec le moteur de l'estimateur `src/lib/capacity/*`,
+  places numérotées par `src/lib/plan/numbering.ts`, routes `/api/internal/parkings/:id/plan…`, tables `parking_plans` et
+  `parking_spots`) et `/parking/reglages`. L'espace « Plateforme » du super admin (`PLATFORM_ADMIN_EMAILS`) est sous
   `/pro/plateforme` (pages `src/pages/platform/*`, routes serveur `/api/internal/platform/...` protégées par
   `PlatformAdminMiddleware`) ; l'inscription libre des loueurs sous `/pro/inscription`.
 - `site/` : site Plazo voyageurs (Next.js), servi à la racine du domaine.

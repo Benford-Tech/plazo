@@ -1,6 +1,8 @@
 import { Router } from 'express';
 import { ParkingController } from '@/controllers/parking.controller';
 import { UpdateParkingDto } from '@/dtos/parking.dto';
+import { ReplaceSpotsDto, UpdateParkingPlanDto, UpdateSpotDto } from '@/dtos/parking-plan.dto';
+import { PlatformController } from '@/controllers/platform.controller';
 import { Routes } from '@/interfaces/routes.interface';
 import { StaffAuthMiddleware } from '@/middlewares/staff-auth.middleware';
 import { ValidationMiddleware } from '@/middlewares/validation.middleware';
@@ -40,6 +42,8 @@ import { ValidationMiddleware } from '@/middlewares/validation.middleware';
 export class ParkingRoute implements Routes {
   public router = Router();
   public parking = new ParkingController();
+  // The IGN proxies (parcels, BD TOPO parkings, geocoding) of the estimator, opened to the operators' plan.
+  public geo = new PlatformController();
 
   constructor() {
     this.initializeRoutes();
@@ -48,5 +52,30 @@ export class ParkingRoute implements Routes {
   private initializeRoutes() {
     this.router.get('/internal/parking', StaffAuthMiddleware('dashboard:view'), this.parking.getPrimary);
     this.router.patch('/internal/parkings/:id', StaffAuthMiddleware('parking:manage'), ValidationMiddleware(UpdateParkingDto), this.parking.update);
+
+    // Bloc 2, step "Plan": the operator's parking plan and its spots.
+    this.router.get('/internal/parkings/:id/plan', StaffAuthMiddleware('dashboard:view'), this.parking.getPlan);
+    this.router.patch(
+      '/internal/parkings/:id/plan',
+      StaffAuthMiddleware('parking:manage'),
+      ValidationMiddleware(UpdateParkingPlanDto),
+      this.parking.updatePlan,
+    );
+    this.router.put(
+      '/internal/parkings/:id/plan/spots',
+      StaffAuthMiddleware('parking:manage'),
+      ValidationMiddleware(ReplaceSpotsDto),
+      this.parking.replaceSpots,
+    );
+    this.router.patch(
+      '/internal/parkings/:id/plan/spots/:spotId',
+      StaffAuthMiddleware('parking:manage'),
+      ValidationMiddleware(UpdateSpotDto),
+      this.parking.updateSpot,
+    );
+    this.router.post('/internal/parkings/:id/plan/apply-capacity', StaffAuthMiddleware('parking:manage'), this.parking.applyCapacity);
+    this.router.get('/internal/geo/parcels', StaffAuthMiddleware('parking:manage'), this.geo.parcels);
+    this.router.get('/internal/geo/parkings', StaffAuthMiddleware('parking:manage'), this.geo.parkings);
+    this.router.get('/internal/geo/geocode', StaffAuthMiddleware('parking:manage'), this.geo.geocode);
   }
 }

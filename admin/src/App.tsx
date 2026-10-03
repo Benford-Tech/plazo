@@ -30,6 +30,7 @@ const PlatformReservationsPage = lazy(() => import("@/pages/platform/PlatformRes
 const PlatformPaymentsPage = lazy(() => import("@/pages/platform/PaymentsPage"));
 const CapacityStudiesPage = lazy(() => import("@/pages/capacity/CapacityStudiesPage"));
 const CapacityStudyPage = lazy(() => import("@/pages/capacity/CapacityStudyPage"));
+const ParkingPlanPage = lazy(() => import("@/pages/parking/ParkingPlanPage"));
 
 const lazyPage = (page: React.ReactNode) => <Suspense fallback={null}>{page}</Suspense>;
 
@@ -96,8 +97,18 @@ const App = () => (
                 }
               />
               <Route path="/reservations/:id" element={<ReservationPage />} />
+              <Route path="/parking" element={<Navigate to="/parking/plan" replace />} />
+              <Route path="/parking/plan" element={<Navigate to="/parking/plan/terrain" replace />} />
               <Route
-                path="/parking"
+                path="/parking/plan/:step"
+                element={
+                  <RequirePermission permission="parking:manage">
+                    {lazyPage(<ParkingPlanPage />)}
+                  </RequirePermission>
+                }
+              />
+              <Route
+                path="/parking/reglages"
                 element={
                   <RequirePermission permission="parking:manage">
                     <ParkingPage />

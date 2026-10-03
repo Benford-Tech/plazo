@@ -35,7 +35,8 @@ import type {
   TokenData,
 } from "./types";
 
-import type { CapacityStudy, CapacityStudySummary, GeoPolygon, ParcelRef, StudyPatch } from "./capacity/types";
+import type { CapacityStudy, CapacityStudySummary, GeoPolygon, LayoutKey, ParcelRef, StudyPatch } from "./capacity/types";
+import type { ParkingPlanView, PlanPatch, Spot, SpotInput, SpotKind } from "./plan/types";
 
 export interface ParcelFeature extends ParcelRef {
   geometry: { type: "Polygon" | "MultiPolygon"; coordinates: unknown };
@@ -218,6 +219,17 @@ export const adminApi = {
   updateParking: (id: string, settings: ParkingSettings) =>
     apiRequest<{ data: Parking }>(`/internal/parkings/${id}`, { method: "PATCH", body: json(settings) }),
 
+  // Bloc 2, step "Plan": the operator's parking plan and its spots.
+  getParkingPlan: (parkingId: string) => apiRequest<ParkingPlanView>(`/internal/parkings/${parkingId}/plan`),
+  updateParkingPlan: (parkingId: string, patch: PlanPatch) =>
+    apiRequest<{ data: ParkingPlanView }>(`/internal/parkings/${parkingId}/plan`, { method: "PATCH", body: json(patch) }),
+  replaceSpots: (parkingId: string, layout: LayoutKey, spots: SpotInput[]) =>
+    apiRequest<{ data: ParkingPlanView }>(`/internal/parkings/${parkingId}/plan/spots`, { method: "PUT", body: json({ layout, spots }) }),
+  updateSpot: (parkingId: string, spotId: string, patch: { active?: boolean; kind?: SpotKind; code?: string }) =>
+    apiRequest<{ data: Spot }>(`/internal/parkings/${parkingId}/plan/spots/${spotId}`, { method: "PATCH", body: json(patch) }),
+  applyPlanCapacity: (parkingId: string) =>
+    apiRequest<{ data: ParkingPlanView }>(`/internal/parkings/${parkingId}/plan/apply-capacity`, { method: "POST" }),
+
   getTeam: () => apiRequest<Staff[]>("/internal/staff"),
   createStaff: (staff: NewStaff) => apiRequest<{ data: Staff }>("/internal/staff", { method: "POST", body: json(staff) }),
   updateStaff: (id: string, patch: { role?: StaffRole; isActive?: boolean }) =>
@@ -307,10 +319,10 @@ export const adminApi = {
     apiRequest<{ data: CapacityStudy }>(`/internal/platform/capacity-studies/${id}`, { method: "PATCH", body: json(patch) }),
   deleteCapacityStudy: (id: string) => apiRequest<void>(`/internal/platform/capacity-studies/${id}`, { method: "DELETE" }),
   parcelsAt: (lon: number, lat: number) =>
-    apiRequest<{ parcels: ParcelFeature[] }>(`/internal/platform/geo/parcels?${new URLSearchParams({ lon: String(lon), lat: String(lat) }).toString()}`),
+    apiRequest<{ parcels: ParcelFeature[] }>(`/internal/geo/parcels?${new URLSearchParams({ lon: String(lon), lat: String(lat) }).toString()}`),
   parkingsIn: (bbox: [number, number, number, number]) =>
-    apiRequest<{ parkings: ParkingFeature[] }>(`/internal/platform/geo/parkings?bbox=${bbox.map(n => n.toFixed(6)).join(",")}`),
-  geocode: (q: string) => apiRequest<{ results: GeocodeResult[] }>(`/internal/platform/geo/geocode?${new URLSearchParams({ q }).toString()}`),
+    apiRequest<{ parkings: ParkingFeature[] }>(`/internal/geo/parkings?bbox=${bbox.map(n => n.toFixed(6)).join(",")}`),
+  geocode: (q: string) => apiRequest<{ results: GeocodeResult[] }>(`/internal/geo/geocode?${new URLSearchParams({ q }).toString()}`),
 
   changeReservationStatus: (id: string, status: ReservationStatus) =>
     apiRequest<{ data: Reservation }>(`/internal/reservations/${id}/status`, { method: "POST", body: json({ status }) }),
