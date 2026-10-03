@@ -3,12 +3,14 @@ import { notFound } from "next/navigation";
 import { BookingCard } from "@/components/BookingCard";
 import { Breadcrumb } from "@/components/Breadcrumb";
 import { DemoBadge } from "@/components/DemoBadge";
+import { TrustBand } from "@/components/Highlights";
 import { Photo } from "@/components/Photo";
 import { api, ApiError } from "@/lib/api";
 import { stayFromParams, stayQuery, todayLocal, validateStay } from "@/lib/dates";
 import { fr, serviceLabel } from "@/lib/fr";
 import { openGraph } from "@/lib/seo";
-import { directionsUrl, formatKm, mapsUrl } from "@/lib/listing";
+import { factsLine, trustTiles } from "@/lib/highlights";
+import { directionsUrl, mapsUrl } from "@/lib/listing";
 import { formatEuros } from "@/lib/money";
 import { SLUG_RE } from "@/lib/site";
 import type { ParkingResponse } from "@/lib/types";
@@ -67,14 +69,7 @@ export default async function ParkingPage({ params, searchParams }: Props) {
   const section = "flex flex-col gap-3 border-t border-line pt-[26px]";
   const sectionTitle = "font-title text-[24px] md:text-[26px]";
 
-  const facts: [string, string][] = [];
-  if (shuttle) facts.push([fr.parking.shuttle, fr.parking.shuttleValue(parking.shuttleMinutes!)]);
-  if (parking.openingHours) facts.push([fr.parking.hours, parking.openingHours]);
-  facts.push([
-    fr.parking.parkingType,
-    `${parking.services.includes("covered") ? fr.parking.covered : fr.parking.outdoor}${parking.services.includes("fenced") ? `, ${fr.parking.fenced}` : ""}`,
-  ]);
-  facts.push([fr.parking.cancellation, fr.cancellationShort[parking.cancellationPolicy]]);
+  const tiles = trustTiles(parking);
 
   return (
     <main className="mx-auto flex w-full max-w-[1280px] flex-col gap-5 px-4 pt-4 pb-10 md:gap-[22px] md:px-12 md:pt-[26px] md:pb-12">
@@ -89,10 +84,10 @@ export default async function ParkingPage({ params, searchParams }: Props) {
         <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
           <h1 className="font-title text-[30px] leading-tight md:text-[44px]">{parking.title}</h1>
           {parking.isDemo && <DemoBadge />}
+          <span className="inline-flex h-6 items-center rounded-full bg-tint px-2.5 text-[12px] font-semibold text-soft">{fr.highlights.newOnPlatform}</span>
         </div>
         <p className="mt-1.5 text-[15px] text-soft md:text-base">
           {parking.address && <>{parking.address} · </>}
-          {parking.distanceKm !== null && <>{fr.parking.kmFromTerminals(formatKm(parking.distanceKm))} · </>}
           <a href={directionsUrl(destination)} target="_blank" rel="noopener noreferrer">
             {fr.parking.itinerary}
             <span className="sr-only"> {fr.a11y.opensNewTab}</span>
@@ -111,14 +106,10 @@ export default async function ParkingPage({ params, searchParams }: Props) {
       )}
 
       <div className="grid gap-6 md:grid-cols-[1fr_340px] md:gap-x-10 lg:grid-cols-[1fr_380px] lg:gap-x-12">
-        <ul className="grid grid-cols-2 gap-2 md:col-start-1 lg:grid-cols-4 lg:gap-2.5">
-          {facts.map(([label, value]) => (
-            <li key={label} className="rounded-[16px] border border-line p-2.5 md:p-3.5">
-              <div className="text-xs text-soft md:text-[13px]">{label}</div>
-              <div className="mt-0.5 text-[15px] font-bold md:text-[17px]">{value}</div>
-            </li>
-          ))}
-        </ul>
+        <div className="flex flex-col gap-3 md:col-start-1">
+          <TrustBand tiles={tiles} />
+          <p className="text-[15px] text-soft">{factsLine(parking)}</p>
+        </div>
 
         <div className="md:sticky md:top-6 md:col-start-2 md:row-span-6 md:row-start-1 md:self-start">
           <BookingCard

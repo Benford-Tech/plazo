@@ -2,6 +2,7 @@ import 'package:bloc/bloc.dart';
 import 'package:freezed_annotation/freezed_annotation.dart';
 
 import '../../../../../core/enums/view_state.dart';
+import '../../../../../core/helpers/highlights.dart';
 import '../../../data/models/public_models.dart';
 import '../../../domain/logic/filters.dart';
 import '../../../domain/usecases/public_use_cases.dart';

@@ -31,7 +31,8 @@ abstract class ResultsState with _$ResultsState {
 
   int get availableCount => shown.where((r) => r.bookable).length;
 
-  String? get cheapest => cheapestSlug(shown);
+  /// Badges of the displayed results ("Le moins cher", "Navette la plus rapide"), by slug.
+  Map<String, List<ResultBadge>> get badges => resultBadges(shown);
 
   bool get online => response?.payments == 'online';
 }

@@ -110,10 +110,3 @@ export function priceCeilingCents(results: SearchResult[]): number {
   if (!prices.length) return 0;
   return Math.ceil(Math.max(...prices) / 1000) * 1000;
 }
-
-/** The cheapest available result, when there is something to compare (2 or more available). */
-export function cheapestSlug(results: SearchResult[]): string | null {
-  const available = results.filter(r => r.available && r.priceCents !== null);
-  if (available.length < 2) return null;
-  return available.reduce((a, b) => (b.priceCents! < a.priceCents! ? b : a)).slug;
-}

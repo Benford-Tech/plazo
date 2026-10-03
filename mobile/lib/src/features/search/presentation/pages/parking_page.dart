@@ -4,7 +4,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
 import '../../../../core/enums/view_state.dart';
-import '../../../../core/helpers/listing.dart';
+import '../../../../core/constants/product.g.dart';
+import '../../../../core/helpers/highlights.dart';
 import '../../../../core/helpers/money.dart';
 import '../../../../core/helpers/stay.dart';
 import '../../../../core/router/app_router.dart';
@@ -13,6 +14,7 @@ import '../../../../services/link_service.dart';
 import '../../../../shared/theme/theme.dart';
 import '../../../../shared/widgets/demo_tag.dart';
 import '../../../../shared/widgets/gradient_button.dart';
+import '../../../../shared/widgets/highlights.dart';
 import '../../../../shared/widgets/segmented.dart';
 import '../../../../shared/widgets/striped_placeholder.dart';
 import '../../data/models/public_models.dart';
@@ -107,11 +109,7 @@ class _ParkingViewState extends State<_ParkingView> {
     final p = response.parking;
     final shuttle = p.services.contains('shuttle') ? p.shuttleMinutes : null;
     final destination = p.address ?? '${p.title}, ${response.airport.name}';
-    final facts = [
-      if (shuttle != null) 'parking.shuttle_min'.tr(args: ['$shuttle']),
-      for (final s in p.services)
-        if (s != 'shuttle') serviceLabel(s, short: true),
-    ].join(' · ');
+    final tiles = trustTiles(services: p.services, shuttleMinutes: shuttle, openingHours: p.openingHours, cancellationPolicy: p.cancellationPolicy);
     final tiers = p.pricing.tiers;
     final links = locator<LinkService>();
     return ListView(
@@ -124,33 +122,20 @@ class _ParkingViewState extends State<_ParkingView> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Row(
-                crossAxisAlignment: CrossAxisAlignment.center,
+              Wrap(
+                crossAxisAlignment: WrapCrossAlignment.center,
+                spacing: 10,
+                runSpacing: 4,
                 children: [
-                  Flexible(child: Semantics(header: true, child: Text(p.title, style: AppText.title(size: 25)))),
-                  if (p.isDemo) ...[const SizedBox(width: 10), const DemoTag()],
+                  Semantics(header: true, child: Text(p.title, style: AppText.title(size: 25))),
+                  const NewOnPlatformTag(productName: Product.name),
+                  if (p.isDemo) const DemoTag(),
                 ],
               ),
-              if (facts.isNotEmpty) ...[const SizedBox(height: 4), Text(facts, style: AppText.muted())],
-              if (p.distanceKm != null || p.openingHours != null) ...[
-                const SizedBox(height: 2),
-                Text(
-                  [
-                    if (p.distanceKm != null) 'parking.km_from_terminals'.tr(args: [formatKm(p.distanceKm!)]),
-                    if (p.openingHours != null) '${'parking.hours'.tr()} : ${p.openingHours}',
-                  ].join(' · '),
-                  style: AppText.muted(),
-                ),
-              ],
-              const SizedBox(height: 4),
-              Text(
-                cancellationLabel(p.cancellationPolicy),
-                style: AppText.body(
-                  size: 13.5,
-                  weight: 600,
-                  color: isFreeCancellation(p.cancellationPolicy) ? const Color(0xFF1F7A3F) : AppColors.muted,
-                ),
-              ),
+              const SizedBox(height: 10),
+              TrustBand(tiles: tiles),
+              const SizedBox(height: 8),
+              Text(factsLine(services: p.services, distanceKm: p.distanceKm), style: AppText.muted()),
               const SizedBox(height: 12),
               Semantics(
                 label: 'parking.anchors'.tr(),
@@ -288,6 +273,7 @@ class _BookingBar extends StatelessWidget {
     final tiers = state.response?.parking.pricing.tiers ?? const [];
     final cheapest = tiers.isEmpty ? null : (List.of(tiers)..sort((x, y) => x.priceCents.compareTo(y.priceCents))).first;
     final datesLine = hasDates ? '${shortRange(a.date, r.date)} · ${daysLabel(offer.days)}' : null;
+    final perDay = hasDates && offer.bookable ? perDayLabel(offer.priceCents!, offer.days) : null;
 
     Widget left;
     Widget right;
@@ -308,7 +294,7 @@ class _BookingBar extends StatelessWidget {
         child: Text('parking.other_parkings'.tr(), textAlign: TextAlign.center, style: AppText.strong(size: 13.5)),
       );
     } else {
-      left = _priceAndDates(formatEuros(offer.priceCents!), datesLine!, onChangeDates);
+      left = _priceAndDates(formatEuros(offer.priceCents!), datesLine!, onChangeDates, perDay: perDay);
       right = state.payment == 'unavailable'
           ? Container(
               key: const Key('parking-online-soon'),
@@ -337,9 +323,9 @@ class _BookingBar extends StatelessWidget {
     );
   }
 
-  Widget _priceAndDates(String main, String dates, VoidCallback onTap, {bool muted = false}) => Semantics(
+  Widget _priceAndDates(String main, String dates, VoidCallback onTap, {bool muted = false, String? perDay}) => Semantics(
     button: true,
-    label: '$main. $dates. ${'parking.change_dates'.tr()}',
+    label: '$main. $dates.${perDay != null ? ' $perDay.' : ''} ${'parking.change_dates'.tr()}',
     excludeSemantics: true,
     child: InkWell(
       key: const Key('parking-dates'),
@@ -353,6 +339,7 @@ class _BookingBar extends StatelessWidget {
           children: [
             Text(main, style: AppText.strong(size: muted ? 15 : 20, color: muted ? AppColors.muted : AppColors.ink)),
             Text(dates, style: AppText.muted(size: 12.5).copyWith(decoration: TextDecoration.underline, decorationColor: AppColors.line)),
+            if (perDay != null) Text(perDay, key: const Key('parking-per-day'), style: AppText.strong(size: 12.5)),
           ],
         ),
       ),

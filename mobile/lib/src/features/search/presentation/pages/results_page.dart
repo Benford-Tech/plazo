@@ -201,7 +201,7 @@ class _ResultsView extends StatelessWidget {
                 result: selected,
                 compact: true,
                 highlighted: true,
-                badge: state.cheapest == selected.slug ? 'results.cheapest'.tr() : null,
+                badges: state.badges[selected.slug] ?? const [],
                 onTap: () => _open(context, selected),
               ),
             ),
@@ -250,7 +250,7 @@ class _ResultsView extends StatelessWidget {
           return ResultCard(
             result: r,
             highlighted: i == 1 && r.available,
-            badge: state.cheapest == r.slug ? 'results.cheapest'.tr() : null,
+            badges: state.badges[r.slug] ?? const [],
             onTap: () => _open(context, r),
           );
         },

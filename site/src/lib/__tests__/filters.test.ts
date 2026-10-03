@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { applyFilters, cheapestSlug, hasActiveFilters, parseFilters, priceCeilingCents, resultsQuery, serviceCounts } from "../filters";
+import { applyFilters, hasActiveFilters, parseFilters, priceCeilingCents, resultsQuery, serviceCounts } from "../filters";
 import type { SearchResult } from "../types";
 
 const result = (over: Partial<SearchResult>): SearchResult => ({
@@ -73,12 +73,10 @@ describe("applying filters", () => {
     expect(applyFilters(all, parseFilters({ prix_max: "50" })).map(r => r.slug)).toEqual(["b", "c"]);
   });
 
-  it("counts services, bounds the price slider and finds the cheapest", () => {
+  it("counts services and bounds the price slider", () => {
     expect(serviceCounts(all)).toMatchObject({ shuttle: 4, valet: 1, covered: 1, fenced: 1, cctv: 0 });
     expect(priceCeilingCents(all)).toBe(6000);
     expect(priceCeilingCents([D])).toBe(0);
-    expect(cheapestSlug(all)).toBe("b");
-    expect(cheapestSlug([A, C])).toBeNull(); // nothing to compare with
   });
 });
 

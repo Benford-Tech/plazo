@@ -37,8 +37,16 @@ void main() {
 
   testWidgets('réservable : faits, sections du site, barre « 45,00 € · 3 → 10 oct. · 8 jours » et « Réserver »', (tester) async {
     await pump(tester, parkingResponse());
-    expect(find.textContaining('Navette 8 min · Clôturé'), findsOneWidget);
-    expect(find.text('Annulation gratuite 24 h avant'), findsOneWidget);
+    // The trust band: shuttle, security, cancellation, keys (self-park: no valet), then the facts line.
+    expect(find.text('Navette 8 min'), findsOneWidget);
+    expect(find.text('clôturé, vidéosurveillance'), findsOneWidget);
+    expect(find.text('Annulation gratuite'), findsOneWidget);
+    expect(find.text('jusqu\'à 24 h avant'), findsOneWidget);
+    expect(find.text('Vous vous garez'), findsOneWidget);
+    expect(find.byKey(const Key('tile-shuttle')), findsOneWidget);
+    expect(find.text('À 3,5 km des terminaux · Extérieur'), findsOneWidget);
+    expect(find.text('Nouveau sur Plazo'), findsOneWidget);
+    expect(find.byKey(const Key('parking-per-day')), findsOneWidget); // 45,00 € ÷ 8 jours
     for (final chip in ['À l\'aller', 'Au retour', 'Tarifs', 'Accès']) {
       expect(find.widgetWithText(InkWell, chip), findsWidgets);
     }

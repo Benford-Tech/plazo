@@ -102,10 +102,3 @@ int priceCeilingCents(List<SearchResultModel> results) {
   final max = prices.reduce((a, b) => a > b ? a : b);
   return (max / 1000).ceil() * 1000;
 }
-
-/// The cheapest available result, when there is something to compare (2 or more available).
-String? cheapestSlug(List<SearchResultModel> results) {
-  final available = results.where((r) => r.bookable).toList();
-  if (available.length < 2) return null;
-  return available.reduce((a, b) => b.priceCents! < a.priceCents! ? b : a).slug;
-}

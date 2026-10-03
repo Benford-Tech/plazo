@@ -228,6 +228,7 @@
     "available_many": "{} parkings disponibles",
     "available_none": "Aucun parking disponible",
     "cheapest": "Le moins cher",
+    "fastest_shuttle": "Navette la plus rapide",
     "demo": "Démo",
     "demo_hint": "Parking fictif, présenté à titre de démonstration",
     "all_in": "{}, tout compris",
@@ -248,6 +249,41 @@
     "map_no_position": "Sans position sur la carte : {}",
     "map_pill_a11y": "{}, {}",
     "no_position": "Position non renseignée"
+  },
+  "highlights": {
+    "per_day": "{}/jour",
+    "new_on_platform": "Nouveau sur {}",
+    "band": "L'essentiel",
+    "shuttle_chip": "{} min",
+    "ev_chip": "Recharge",
+    "outdoor": "Extérieur",
+    "km_from_terminals": "À {} km des terminaux",
+    "cancel_chip": {
+      "free_until_arrival": "Gratuit jusqu'à l'arrivée",
+      "free_24h": "Gratuit 24 h",
+      "free_48h": "Gratuit 48 h",
+      "non_refundable": "Non remboursable"
+    },
+    "tiles": {
+      "shuttle": "Navette {} min",
+      "shuttle_free": "gratuite vers les terminaux",
+      "shuttle_hours": "gratuite, {}",
+      "secured": "Sécurisé",
+      "fenced": "clôturé",
+      "cctv": "vidéosurveillance",
+      "free_cancellation": "Annulation gratuite",
+      "cancellation_text": {
+        "free_until_arrival": "jusqu'à l'arrivée",
+        "free_24h": "jusqu'à 24 h avant",
+        "free_48h": "jusqu'à 48 h avant"
+      },
+      "non_refundable": "Non remboursable",
+      "non_refundable_text": "aucun remboursement en cas d'annulation",
+      "valet": "Voiturier",
+      "valet_text": "vous laissez les clés à l'accueil",
+      "self_park": "Vous vous garez",
+      "self_park_text": "vous gardez vos clés"
+    }
   },
   "filters": {
     "title": "Filtres",

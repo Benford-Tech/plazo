@@ -2,11 +2,12 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { HomeHero } from "./HomeHero";
 import { DemoBadge } from "./DemoBadge";
+import { FactChips } from "./Highlights";
 import { Photo } from "./Photo";
 import { api, ApiError } from "@/lib/api";
 import { defaultStay, todayLocal } from "@/lib/dates";
 import { fr, fromPriceUnit, texts } from "@/lib/fr";
-import { listingFacts } from "@/lib/listing";
+import { factChips } from "@/lib/highlights";
 import { formatEuros } from "@/lib/money";
 import { PRO_SIGNUP_PATH } from "@/lib/site";
 import type { AirportResponse } from "@/lib/types";
@@ -71,7 +72,7 @@ export async function AirportView({ slug, showBreadcrumb }: { slug: string; show
                         <h3 className="font-title text-[22px] md:text-2xl">{listing.title}</h3>
                         {listing.isDemo && <DemoBadge />}
                       </div>
-                      <p className="text-[15px] text-soft">{listingFacts(listing)}</p>
+                      <FactChips chips={factChips(listing)} />
                       {listing.openingHours && <p className="text-[15px]">Horaires : {listing.openingHours}</p>}
                       <div className="mt-auto flex flex-wrap items-center justify-between gap-3 pt-2">
                         {listing.fromPriceCents !== null ? (

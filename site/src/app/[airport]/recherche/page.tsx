@@ -13,7 +13,6 @@ import { api, ApiError } from "@/lib/api";
 import { daysLabel, formatDateTime, stayDays, stayFromParams, stayQuery, todayLocal, validateStay } from "@/lib/dates";
 import {
   applyFilters,
-  cheapestSlug,
   type Filters,
   FILTER_SERVICES,
   hasActiveFilters,
@@ -27,6 +26,7 @@ import {
   serviceCounts,
 } from "@/lib/filters";
 import { fr, serviceLabel, texts } from "@/lib/fr";
+import { resultBadges } from "@/lib/highlights";
 import { formatShortEuros } from "@/lib/money";
 import { SLUG_RE } from "@/lib/site";
 import type { SearchResponse } from "@/lib/types";
@@ -84,7 +84,7 @@ export default async function ResultsPage({ params, searchParams }: PageProps<"/
   const shown = applyFilters(results, filters);
   const availableCount = shown.filter(r => r.available && r.priceCents !== null).length;
   const counts = serviceCounts(results);
-  const cheapest = cheapestSlug(shown);
+  const badges = resultBadges(shown);
   const days = results[0]?.days ?? stayDays(arrivee, retour);
   const path = `/${airport.slug}/recherche`;
   const map = mapShown(query);
@@ -289,7 +289,7 @@ export default async function ResultsPage({ params, searchParams }: PageProps<"/
                     result={result}
                     href={`/${airport.slug}/${result.slug}${stayQuery({ arrivee, retour })}`}
                     highlighted={i === 0 && result.available}
-                    badge={cheapest === result.slug ? fr.results.cheapest : null}
+                    badges={badges.get(result.slug) ?? []}
                     headingLevel={2}
                     compact={map}
                     noPosition={map && !result.location}

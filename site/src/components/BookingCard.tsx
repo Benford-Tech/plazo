@@ -2,6 +2,7 @@ import Link from "next/link";
 import { StayFields } from "./StayFields";
 import { cancellableUntil, formatDateTimeAt, stayQuery } from "@/lib/dates";
 import { fr, fromPriceUnit, texts } from "@/lib/fr";
+import { perDayLabel } from "@/lib/highlights";
 import { formatEuros } from "@/lib/money";
 import type { CancellationPolicy, Offer, ParkingPayment } from "@/lib/types";
 
@@ -52,6 +53,9 @@ export function BookingCard({
         <div>
           <b className="text-[28px] md:text-[30px]">{formatEuros(offer.priceCents)}</b>{" "}
           <span className="text-soft">{fr.parking.forStay(offer.days)}</span>
+          <div className="text-[13px] text-soft">
+            <b className="text-ink">{perDayLabel(offer.priceCents, offer.days)}</b>
+          </div>
         </div>
       ) : (
         fromPriceCents !== null && (

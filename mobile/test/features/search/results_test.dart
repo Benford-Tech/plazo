@@ -41,7 +41,6 @@ void main() {
       expect(order(const Filters(maxShuttle: 10)), ['cher', 'complet']);
       expect(order(const Filters(maxPriceCents: 4500)), ['pas-cher', 'moyen', 'complet']);
       expect(priceCeilingCents(results), 6000);
-      expect(cheapestSlug(results), 'pas-cher');
       expect(serviceCounts(results)['shuttle'], 4);
     });
 
@@ -97,6 +96,10 @@ void main() {
       expect(find.text('Lyon St-Exupéry · 3 → 10 oct. · 8 j'), findsOneWidget);
       expect(find.text('3 parkings disponibles'), findsOneWidget);
       expect(find.text('Le moins cher'), findsOneWidget);
+      expect(find.text('Navette la plus rapide'), findsOneWidget); // « cher », 5 min (« complet » is full)
+      expect(find.textContaining('4,37'), findsOneWidget); // 34,99 € for 8 days
+      expect(find.text('Clôturé'), findsNothing);
+      expect(find.text('Non remboursable'), findsOneWidget);
       expect(find.text('Parking pas-cher'), findsOneWidget);
       await tester.scrollUntilVisible(find.text('Complet'), 200, scrollable: find.byType(Scrollable).last);
       expect(find.text('Complet'), findsOneWidget);
