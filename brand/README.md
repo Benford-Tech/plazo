@@ -1,8 +1,8 @@
 # Identité visuelle — logo (option E-A, retenue le 03/10/2026)
 
-Le logo est un **panneau** : le nom « Plazo » en lettres grasses sans empattement (Inter, graisse 800,
-resserrées comme sur un panneau routier) dans un rectangle prune aux angles arrondis, clin d'œil au
-panneau « P » des parkings. Le symbole (icônes, favicon) est ce même panneau réduit à son « P ».
+Le logo est un **panneau** : le nom « Plazo » en lettres blanches grasses sans empattement (Inter, graisse 800,
+resserrées comme sur un panneau routier) dans un rectangle **orange easyJet `#FF6600`** aux angles arrondis
+(choix O-D du 03/10/2026), clin d'œil au panneau « P » des parkings. Le symbole (icônes, favicon) est ce même panneau réduit à son « P ».
 Les glyphes sont convertis en tracés : les fichiers SVG n'ont besoin d'aucune police.
 
 Le nom du produit reste dans `product.json` (seul endroit) : si le nom change, régénérer le dossier
@@ -12,10 +12,10 @@ Le nom du produit reste dans `product.json` (seul endroit) : si le nom change, r
 
 | Fichier | Usage |
 |---|---|
-| `logo-horizontal-light.svg` | Le panneau sur fond clair : rectangle prune, lettres blanches. |
-| `logo-horizontal-dark.svg` | Le panneau sur fond sombre (prune, noir) : rectangle blanc, lettres prune. |
+| `logo-horizontal-light.svg` | Le panneau sur fond clair : rectangle orange, lettres blanches. |
+| `logo-horizontal-dark.svg` | Le panneau sur fond sombre (prune, noir) : identique (rectangle orange, lettres blanches), gardé pour les chemins existants. |
 | `logo-mono.svg` | Une seule couleur (prune) pour l'impression, la gravure, le fax : les lettres sont évidées. Changer la couleur en remplaçant `#4b164c`. |
-| `symbol.svg` / `symbol-dark.svg` / `symbol-mono.svg` | Le symbole seul (carré + P), fond clair / fond sombre / une couleur. |
+| `symbol.svg` / `symbol-dark.svg` / `symbol-mono.svg` | Le symbole seul (carré orange + P blanc) ; `-dark` identique ; `-mono` une couleur. |
 | `wordmark.svg` / `wordmark-dark.svg` | Les lettres seules, sans le panneau, prune / blanches (titres de documents). |
 | `app/` | **Le logo de l'app mobile**, qui garde l'option L-B (choix du 03/10/2026) : monogramme « P » Playfair avec l'avion en papier **orange easyJet `#FF6600`** (O-A), mot-symbole Playfair italique ; icône d'app **orange plein, P blanc, avion prune** (O-B). Générateurs `app/tools/build_svg.py` et `app/tools/export_png.mjs`. |
 | `favicon.svg`, `favicon-32.png`, `favicon-180.png` | Favicon (SVG moderne, 32 px de secours, 180 px pour l'icône Apple « touch »). |
@@ -36,14 +36,15 @@ Copies dans le code : `site/public/brand/`, `site/src/app/icon.svg`, `site/src/a
 
 | Nom | Hex | Usage |
 |---|---|---|
-| Prune | `#4b164c` | Le panneau sur fond clair, les lettres sur fond sombre, fonds de marque. |
-| Blanc | `#ffffff` | Les lettres sur fond clair ; le panneau sur fond sombre. |
+| Orange | `#FF6600` | Le panneau, sur tout fond (inspiré de l'orange easyJet). |
+| Blanc | `#ffffff` | Les lettres du panneau. |
+| Prune | `#4b164c` | Fonds de marque, variante *mono*, l'avion de l'icône d'app. |
 | Pêche | `#f0a36b` | Couleur d'accent de l'app et du site ; jamais sur le logo lui-même. |
 | Prune profond | `#2c0f31` | Fond du pied de page du site (variante sombre du logo dessus). |
 | Noir espace pro | `#0B0B0C` | Fond de l'espace pro (variante sombre du logo dessus). |
 
-Sur fond prune ou noir : variante *dark* uniquement. Sur fond blanc ou très clair : variante *light*.
-Sur une photo ou un fond coloré sans garantie de contraste : poser le logo dans un cartouche blanc ou prune.
+Le panneau orange se pose tel quel sur prune, noir, blanc ou clair. Sur une photo ou un fond orangé : poser
+le logo dans un cartouche blanc ou prune.
 
 ## Construction et espace de protection
 
@@ -68,9 +69,8 @@ Sur une photo ou un fond coloré sans garantie de contraste : poser le logo dans
 - Utiliser les fichiers tels quels ; ne pas recomposer le logo avec la police dans un document.
 - Ne pas changer les proportions du panneau ni les marges autour des lettres.
 - Ne pas étirer, incliner, ajouter d'ombre, de contour ou de dégradé au symbole.
-- Ne pas recolorer : prune et blanc, ou une seule couleur (variante *mono*). Jamais le dégradé
+- Ne pas recolorer : orange et blanc, ou une seule couleur (variante *mono*). Jamais le dégradé
   violet → rose → pêche des boutons sur le logo lui-même.
-- Ne pas poser la variante *light* sur un fond sombre ni la *dark* sur un fond clair.
 - Le symbole seul suffit pour les icônes, avatars et favicons ; les lettres seules pour les titres de documents.
 - Dans l'espace pro, le suffixe « Pro » est un texte à côté du logo, jamais intégré au fichier.
 

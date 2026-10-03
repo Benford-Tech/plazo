@@ -185,8 +185,9 @@ Canevas de référence : https://claude.ai/artifact/6ezoCDyLXFNwhAH5ZWUf4u (rang
   actions principales, Playfair Display (titres) + Inter, cartes arrondies ; plaques façon C aussi.
   Icônes (choix H-B du 03/10/2026) : icônes pleines arrondies (Material « rounded ») posées sur des
   tuiles au dégradé violet → rose → pêche (`IconTile`) ; onglets loupe / billet / « ··· ».
-- **Logo (choix E-A du 03/10/2026)** : le panneau de parking, « Plazo » en Inter 800 dans un rectangle
-  prune aux angles arrondis ; symbole = le panneau réduit au « P » ; pour le site et l'espace pro. **L'app mobile
+- **Logo (choix E-A du 03/10/2026)** : le panneau de parking, « Plazo » en Inter 800 blanc dans un rectangle
+  **orange easyJet `#FF6600`** aux angles arrondis (O-D, 03/10/2026) ; symbole = le panneau réduit au « P » ;
+  pour le site et l'espace pro. **L'app mobile
   garde le logo L-B** (P Playfair + avion en papier, mot-symbole italique) pour son icône et son en-tête
   (`brand/app/`) ; depuis le 03/10/2026 (choix O-A + O-B) l'avion est orange easyJet `#FF6600` et l'icône
   d'app est orange plein (P blanc, avion prune). Fichiers et règles dans `brand/README.md`.

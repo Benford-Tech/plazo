@@ -23,6 +23,7 @@ NAME = json.load(open(os.path.join(ROOT, "product.json"), encoding="utf-8"))["na
 
 PRUNE = "#4b164c"
 PEACH = "#f0a36b"
+ORANGE = "#FF6600"  # easyJet-inspired orange: the sign's colour (choice O-D, 03/10/2026)
 WHITE = "#ffffff"
 
 # Geometry (viewBox units). The sign is 100 high, its corners 17 % of the height; the symbol
@@ -151,28 +152,28 @@ def main():
     wm_w, wm_h = round(wb[2] - wb[0] + 2), round(wb[3] - wb[1] + 2)
 
     files = {
-        "logo-horizontal-light.svg": svg(total_w, S, sign(PRUNE, WHITE), NAME),
-        "logo-horizontal-dark.svg": svg(total_w, S, sign(WHITE, PRUNE), NAME),
+        "logo-horizontal-light.svg": svg(total_w, S, sign(ORANGE, WHITE), NAME),
+        "logo-horizontal-dark.svg": svg(total_w, S, sign(ORANGE, WHITE), NAME),
         "logo-mono.svg": svg(total_w, S, sign_mono(PRUNE), NAME),
-        "symbol.svg": svg(S, S, symbol(PRUNE, WHITE), NAME),
-        "symbol-dark.svg": svg(S, S, symbol(WHITE, PRUNE), NAME),
+        "symbol.svg": svg(S, S, symbol(ORANGE, WHITE), NAME),
+        "symbol-dark.svg": svg(S, S, symbol(ORANGE, WHITE), NAME),
         "symbol-mono.svg": svg(S, S, symbol_mono(PRUNE), NAME),
         "wordmark.svg": svg(wm_w, wm_h, wordmark(PRUNE, -wb[0] + 1, -wb[1] + 1), NAME),
         "wordmark-dark.svg": svg(wm_w, wm_h, wordmark(WHITE, -wb[0] + 1, -wb[1] + 1), NAME),
-        "favicon.svg": svg(S, S, symbol(PRUNE, WHITE), NAME),
+        "favicon.svg": svg(S, S, symbol(ORANGE, WHITE), NAME),
         # Maskable icon: full bleed, the P inside the inner 80 % safe circle.
         "icon-maskable.svg": svg(S, S,
-            f'<rect width="{S}" height="{S}" fill="{PRUNE}"/>\n'
+            f'<rect width="{S}" height="{S}" fill="{ORANGE}"/>\n'
             + symbol("none", WHITE, x=S * 0.1, y=S * 0.1, rounded=False, scale=0.8), NAME),
         # Android adaptive foreground: transparent; flutter_launcher_icons insets it by 16 %, so the
         # P is drawn at 92 % here to land in the inner ~66 % of the 108 dp layer.
         "android-foreground.svg": svg(S, S,
             symbol("none", WHITE, x=S * 0.04, y=S * 0.04, rounded=False, scale=0.92), NAME),
-        # Social card 1200 x 630: the dark sign on prune.
+        # Social card 1200 x 630: the orange sign on prune.
         "social-card.svg": svg(1200, 630,
             f'<rect width="1200" height="630" fill="{PRUNE}"/>\n'
             f'<g transform="translate({(1200 - total_w * 2.6) / 2:.1f} {(630 - S * 2.6) / 2:.1f}) scale(2.6)">\n'
-            + sign(WHITE, PRUNE) + "\n</g>", NAME),
+            + sign(ORANGE, WHITE) + "\n</g>", NAME),
     }
     for name, content in files.items():
         with open(os.path.join(OUT, name), "w", encoding="utf-8") as f:
