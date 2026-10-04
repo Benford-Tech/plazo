@@ -1,7 +1,9 @@
 # Application mobile (Flutter)
 
-Une seule application (décision), trois onglets : **Rechercher / Mes réservations / Plus** ; l'espace pro s'ouvre
-depuis « Plus » (ou un lien `/pro…`) et reste tel quel. Les « flavors » viendront ensuite (voir SPEC.md, 3 ter).
+Un seul projet, deux apps (flavors `traveller` et `pro`, décision A-B du 04/10/2026) : **Plazo** pour le voyageur
+(trois onglets Rechercher / Mes réservations / Plus) et **Plazo Pro** pour le personnel (quatre onglets Aujourd'hui ·
+Réservations · Parking · Plus). Depuis le 04/10/2026, l'app voyageur n'embarque plus l'espace pro : les routes `/pro…`
+n'existent que dans Plazo Pro (`if (AppConstants.isPro)` dans `app_router.dart`).
 
 - **Voyageur — réserver** (maquettes A1 à A5, mêmes chemins que le site) : recherche (aéroport, « Vos dates » en
   feuille : créneaux de 30 min, pas avant aujourd'hui à l'heure du parking, retour après le dépôt, jours comptés comme

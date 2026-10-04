@@ -153,7 +153,8 @@ Le nom du produit doit rester dans UN seul fichier de configuration (il peut enc
 - `mobile/` : app Flutter (jalon 6 commencé) : un seul projet, deux apps (`AppConstants.flavor`) : « Plazo », onglets
   Rechercher / Mes réservations / Plus pour le voyageur (mêmes chemins que le site : `/:aeroport/recherche`, `/:aeroport/:parking`, `/ma-reservation…`), et le
   parcours pro (`/pro…`, comptes du personnel ; `/pro/plan` et `/pro/places` pour le bloc 2 ; `/pro/reservations…` : liste,
-  recherche, fiche avec statuts, saisie, import d'un mail, feature `pro_reservations`, 04/10/2026) ouvert depuis « Plus », dont le plan du parking pour les gérants
+  recherche, fiche avec statuts, saisie, import d'un mail, feature `pro_reservations`, 04/10/2026) **dans Plazo Pro seulement**
+  (décision du 04/10/2026 : l'app voyageur n'embarque plus l'espace pro), dont le plan du parking pour les gérants
   (`/pro/plan`, M-A + rectangle auto du 04/10/2026 : adresse ou GPS, coins sur la photo IGN, génération côté serveur
   par `/plan/estimate` et `/plan/generate`) ; paiement par la feuille native Stripe
   (`flutter_stripe`) ; architecture de `lovenest-frontend`

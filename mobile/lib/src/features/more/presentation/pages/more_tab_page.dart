@@ -4,15 +4,13 @@ import 'package:flutter/material.dart';
 import 'package:package_info_plus/package_info_plus.dart';
 
 import '../../../../core/constants/product.g.dart';
-import '../../../../core/router/app_router.dart';
 import '../../../../di/locator.dart';
 import '../../../../services/link_service.dart';
 import '../../../../shared/theme/theme.dart';
-import '../../../../shared/widgets/app_card.dart';
 import '../../../../shared/widgets/brand_header.dart';
 
-/// "Plus": the staff's space (the existing pro flow), the site's FAQ and legal pages, contact and
-/// the app's version.
+/// "Plus": the site's FAQ and legal pages, contact and the app's version. The staff's space lives in
+/// Plazo Pro only (decision of 04/10/2026).
 @RoutePage()
 class MoreTabPage extends StatelessWidget {
   const MoreTabPage({super.key});
@@ -26,36 +24,6 @@ class MoreTabPage extends StatelessWidget {
       body: ListView(
         padding: const EdgeInsets.fromLTRB(16, 14, 16, 24),
         children: [
-          InkWell(
-            key: const Key('more-pro'),
-            borderRadius: BorderRadius.circular(16),
-            onTap: () => context.router.push(const ProShellRoute()),
-            child: AppCard(
-              child: Row(
-                children: [
-                  Container(
-                    width: 44,
-                    height: 44,
-                    decoration: const BoxDecoration(gradient: AppColors.primaryGradient, shape: BoxShape.circle),
-                    child: const Icon(Icons.badge_outlined, color: Colors.white),
-                  ),
-                  const SizedBox(width: 14),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text('more.pro'.tr(), style: AppText.strong(size: 16)),
-                        const SizedBox(height: 2),
-                        Text('more.pro_text'.tr(), style: AppText.muted()),
-                      ],
-                    ),
-                  ),
-                  const Icon(Icons.chevron_right_rounded, color: AppColors.muted),
-                ],
-              ),
-            ),
-          ),
-          const SizedBox(height: 18),
           _title('more.travellers'.tr()),
           _Tile(key: const Key('more-faq'), icon: Icons.help_outline_rounded, label: 'more.faq'.tr(), external: true, onTap: () => site('/#faq')),
           _Tile(

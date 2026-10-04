@@ -17,10 +17,10 @@ void main() {
   });
   tearDown(locator.reset);
 
-  testWidgets('« Plus » : espace pro, pages du site, contact, version', (tester) async {
+  testWidgets('« Plus » : pages du site, contact, version, sans espace pro', (tester) async {
     await pumpLocalized(tester, const MoreTabPage());
     await tester.pumpAndSettle();
-    expect(find.text('Espace pro'), findsOneWidget);
+    expect(find.text('Espace pro'), findsNothing);
     expect(find.text('Plazo · Version 1.0.0 (1)'), findsOneWidget);
     final expected = {
       'Questions fréquentes': '/#faq',

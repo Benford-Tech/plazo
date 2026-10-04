@@ -17,20 +17,15 @@ void main() {
     expect(tab('/plus'), [AppShellRoute.name, MoreTabRoute.name]);
   });
 
-  test('les liens du site ouvrent l’app : mêmes chemins, parcours pro à quatre onglets', () {
+  test('les liens du site ouvrent l’app : mêmes chemins ; pas d’espace pro dans l’app voyageur', () {
     final link = router.matcher.match('/ma-reservation/R7KQ2M?cle=abc');
     expect(link?.last.name, MyBookingRoute.name);
     expect(link?.last.params.getString('reference'), 'R7KQ2M');
     expect(link?.last.queryParams.optString('cle'), 'abc');
     expect(names('/ma-reservation/R7KQ2M/paiement')?.last, PaymentRoute.name);
-    expect(tab('/pro'), [ProShellRoute.name, ProTodayRoute.name]);
-    expect(tab('/pro/reservations'), [ProShellRoute.name, ProReservationsRoute.name]);
-    expect(tab('/pro/parking'), [ProShellRoute.name, ProOccupationRoute.name]);
-    expect(tab('/pro/plus'), [ProShellRoute.name, ProMoreTabRoute.name]);
-    expect(names('/pro/reservations/abc')?.last, ProReservationRoute.name);
-    expect(names('/pro/connexion')?.last, ProLoginRoute.name);
-    expect(names('/pro/notifications')?.last, ProNotificationsRoute.name);
-    expect(names('/pro/navette')?.last, ProShuttleRoute.name);
+    // The pro routes exist in the Plazo Pro flavor only (compile-time): here they fall back to the home.
+    expect(names('/pro'), isNot(contains(ProShellRoute.name)));
+    expect(names('/pro/connexion'), isNot(contains(ProLoginRoute.name)));
     expect(names('/ma-reservation/R7KQ2M/point-de-rendez-vous')?.last, MeetingPointRouteRoute.name);
     final results = router.matcher.match('/lyon-saint-exupery/recherche?arrivee=2026-10-03T08:00&retour=2026-10-10T18:00');
     expect(results?.last.name, ResultsRoute.name);
