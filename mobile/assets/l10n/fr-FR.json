@@ -215,9 +215,12 @@
     }
   },
   "pro": {
-    "login_title": "Connexion du personnel",
-    "login_intro": "Les identifiants de l'espace pro.",
-    "email": "Email",
+    "login_eyebrow": "Espace du personnel",
+    "login_roles": "Gérants, agents, chauffeurs, voituriers",
+    "login_title": "Bienvenue",
+    "login_intro": "Connectez-vous avec le compte que votre gérant vous a créé.",
+    "login_help": "Mot de passe perdu ? Votre gérant peut vous en donner un nouveau.",
+    "email": "Adresse email",
     "password": "Mot de passe",
     "login": "Se connecter",
     "logout": "Se déconnecter",

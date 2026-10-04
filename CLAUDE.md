@@ -216,7 +216,9 @@ Canevas de référence : https://claude.ai/artifact/6ezoCDyLXFNwhAH5ZWUf4u (rang
 - **App Plazo Pro (Flutter, flavor `pro`, décision du 04/10/2026)** : les couleurs de l'espace pro web, direction B : noir
   `#0B0B0C`, jaune `#F5C400`, texte `#F3F3F0`, gris `#A8A8A2`, filets `#3A3A38`, angles vifs, Archivo Narrow pour les
   titres et JetBrains Mono pour les heures et les chiffres. Les couleurs, rayons et polices sont des constantes choisies
-  à la compilation selon le flavor (`AppColors`, `AppRadius`, `AppFonts` dans `shared/theme/theme.dart`).
+  à la compilation selon le flavor (`AppColors`, `AppRadius`, `AppFonts` dans `shared/theme/theme.dart`). Écran de connexion :
+  direction **C-C « Tableau des vols »** (04/10/2026) : grille d'affichage sous un voile noir, formulaire dans une carte bordée de
+  jaune ; rien ne nomme un parking avant la connexion (l'app sert plusieurs parkings).
 - **App Plazo voyageur (Flutter)** : direction **D « style Thempo »** — **en-tête orange easyJet `#FF6600`** (T-A,
   03/10/2026, à la place du prune), brun foncé `#2C1A0E` pour les textes forts et les surfaces sombres, accent
   **orange léger `#FF8A3D`** (V-A, 03/10/2026, à la place du violet), pêche `#f0a36b` pour le temps fort,
