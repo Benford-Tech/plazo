@@ -50,3 +50,11 @@ class GetShuttleStatusUseCase with UseCase<ShuttleStatusModel, String> {
   @override
   Future<Either<Failure, ShuttleStatusModel>> call(String reference) => _repository.shuttle(reference);
 }
+
+/// The parking's running shuttles during the stay ("Navette" block, S-A).
+class GetStayShuttlesUseCase with UseCase<StayShuttlesModel, String> {
+  GetStayShuttlesUseCase(this._repository);
+  final ReturnRepository _repository;
+  @override
+  Future<Either<Failure, StayShuttlesModel>> call(String reference) => _repository.stayShuttles(reference);
+}

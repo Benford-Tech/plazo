@@ -15,6 +15,39 @@ class GetPickupsUseCase with UseCase<PickupsModel, NoParams> {
   Future<Either<Failure, PickupsModel>> call(NoParams params) => _repository.pickups();
 }
 
+class GetDeparturesUseCase with UseCase<DeparturesModel, NoParams> {
+  GetDeparturesUseCase(this._repository);
+  final ShuttleRepository _repository;
+  @override
+  Future<Either<Failure, DeparturesModel>> call(NoParams params) => _repository.departures();
+}
+
+class VehicleSheetParams extends Equatable {
+  const VehicleSheetParams({this.id, required this.input});
+
+  /// null: a new vehicle.
+  final String? id;
+  final VehicleSheetInput input;
+  @override
+  List<Object?> get props => [id, input.toJson()];
+}
+
+/// Adds (no id) or edits a vehicle's sheet (managers).
+class SaveVehicleUseCase with UseCase<ShuttleVehicleModel, VehicleSheetParams> {
+  SaveVehicleUseCase(this._repository);
+  final ShuttleRepository _repository;
+  @override
+  Future<Either<Failure, ShuttleVehicleModel>> call(VehicleSheetParams params) =>
+      params.id == null ? _repository.addVehicle(params.input) : _repository.updateVehicle(params.id!, params.input);
+}
+
+class RemoveVehicleUseCase with UseCase<void, String> {
+  RemoveVehicleUseCase(this._repository);
+  final ShuttleRepository _repository;
+  @override
+  Future<Either<Failure, void>> call(String id) => _repository.removeVehicle(id);
+}
+
 class GetVehiclesUseCase with UseCase<List<ShuttleVehicleModel>, NoParams> {
   GetVehiclesUseCase(this._repository);
   final ShuttleRepository _repository;
@@ -30,11 +63,14 @@ class GetCurrentTripUseCase with UseCase<StaffTripModel?, NoParams> {
 }
 
 class StartTripParams extends Equatable {
-  const StartTripParams({required this.reservationIds, required this.vehicle});
+  const StartTripParams({required this.reservationIds, required this.vehicle, this.direction = 'pickup'});
   final List<String> reservationIds;
   final TripVehicleChoice vehicle;
+
+  /// `pickup` (to the airport) or `dropoff` (to the terminal).
+  final String direction;
   @override
-  List<Object?> get props => [reservationIds, vehicle.vehicleId, vehicle.model, vehicle.colour, vehicle.plate];
+  List<Object?> get props => [reservationIds, vehicle.vehicleId, vehicle.model, vehicle.colour, vehicle.plate, direction];
 }
 
 /// "Démarrer le trajet (N clients)".
@@ -42,7 +78,7 @@ class StartTripUseCase with UseCase<StaffTripModel, StartTripParams> {
   StartTripUseCase(this._repository);
   final ShuttleRepository _repository;
   @override
-  Future<Either<Failure, StaffTripModel>> call(StartTripParams params) => _repository.start(params.reservationIds, params.vehicle);
+  Future<Either<Failure, StaffTripModel>> call(StartTripParams params) => _repository.start(params.reservationIds, params.vehicle, params.direction);
 }
 
 class TripPositionParams extends Equatable {

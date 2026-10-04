@@ -141,7 +141,11 @@ describe('zones de séjour (Z-A)', () => {
     ].map((s, i) => ({ zoneId: 'z1', row: 1, geometry: square(5.08 + i * 0.00004, 45.72), ...s }));
     await api().put(`/api/internal/parkings/${parking.id}/plan/spots`).set(auth(token)).send({ layout: 'valetEdge', spots: file });
     const d = (n: number) => addDays(today, n);
-    const create = (plate: string, a: number, r: number) => api().post('/api/internal/reservations').set(auth(token)).send(booking(plate, d(a), d(r)));
+    const create = (plate: string, a: number, r: number) =>
+      api()
+        .post('/api/internal/reservations')
+        .set(auth(token))
+        .send(booking(plate, d(a), d(r)));
     const long = (await create('LL-111-LL', 0, 12)).body.data; // 12 nights: long
     const short = (await create('SS-222-SS', 0, 2)).body.data; // 2 nights: short
     const medium = (await create('MM-333-MM', 0, 5)).body.data; // 5 nights: medium

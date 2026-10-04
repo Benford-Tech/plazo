@@ -17,20 +17,26 @@ import '../../../../shared/widgets/gradient_button.dart';
 import '../../../../shared/widgets/live_dot.dart';
 import '../../../../shared/widgets/status_badge.dart';
 import '../../../arrival/data/models/arrival_model.dart';
+import '../../../pro_auth/presentation/bloc/pro_auth_bloc.dart';
 import '../../data/datasources/shuttle_data_source.dart';
 import '../../data/models/shuttle_models.dart';
 import '../bloc/shuttle_bloc.dart';
 import '../widgets/vehicle_sheet.dart';
 
-/// R4, the driver's "Navette" screen: the trip in progress (position shared), the returns to pick
-/// up grouped by terminal with their flight status, "Démarrer le trajet (N clients)" and
-/// "Clients récupérés · retour parking".
+/// R4, the driver's "Navette" screen: the trip in progress (position shared), two sides (T-A,
+/// 04/10/2026): the returns to pick up at the airport grouped by terminal with their flight status,
+/// or the arrived travellers to drop off at the terminal; "Démarrer le trajet (N clients)" and
+/// "Clients récupérés · retour parking" / "Clients déposés au terminal".
 @RoutePage()
 class ProShuttlePage extends StatelessWidget implements AutoRouteWrapper {
   const ProShuttlePage({super.key});
 
   @override
-  Widget wrappedRoute(BuildContext context) => BlocProvider(create: (_) => locator<ShuttleBloc>()..add(const ShuttleStarted()), child: this);
+  Widget wrappedRoute(BuildContext context) {
+    // The driver's usual vehicle (sheet) is preselected.
+    final staffId = context.read<ProAuthBloc?>()?.state.staff?.id;
+    return BlocProvider(create: (_) => locator<ShuttleBloc>()..add(ShuttleStarted(staffId: staffId)), child: this);
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -39,7 +45,7 @@ class ProShuttlePage extends StatelessWidget implements AutoRouteWrapper {
       body: BlocBuilder<ShuttleBloc, ShuttleState>(
         builder: (context, state) {
           final bloc = context.read<ShuttleBloc>();
-          if (state.pickups == null) {
+          if (!state.loaded) {
             return Center(
               child: state.viewState.isError
                   ? Padding(padding: const EdgeInsets.all(24), child: Text(translateErrorCode(state.errorCode), textAlign: TextAlign.center))
@@ -53,9 +59,11 @@ class ProShuttlePage extends StatelessWidget implements AutoRouteWrapper {
             child: ListView(
               padding: const EdgeInsets.fromLTRB(16, 14, 16, 28),
               children: [
-                if (state.running) _RunningCard(state: state) else Text('shuttle.intro'.tr(), style: AppText.muted()),
-                const SizedBox(height: 6),
-                _MeetingPoint(meeting: meeting),
+                if (state.running) _RunningCard(state: state) else Text(state.dropoff ? 'shuttle.intro_dropoff'.tr() : 'shuttle.intro'.tr(), style: AppText.muted()),
+                const SizedBox(height: 10),
+                _DirectionToggle(direction: state.direction, enabled: !state.running, onChanged: (d) => bloc.add(ShuttleDirectionChanged(d))),
+                const SizedBox(height: 10),
+                if (!state.dropoff) _MeetingPoint(meeting: meeting),
                 if (state.endedNotice) ...[
                   const SizedBox(height: 10),
                   AppCard(
@@ -77,15 +85,12 @@ class ProShuttlePage extends StatelessWidget implements AutoRouteWrapper {
                   AppCard(color: const Color(0xFFFDF1F0), borderColor: const Color(0xFFF2C9C5), child: Text(translateErrorCode(state.errorCode), style: AppText.body(size: 14, color: AppColors.danger))),
                 ],
                 const SizedBox(height: 14),
-                if (state.pickups!.rows.isEmpty) Padding(padding: const EdgeInsets.symmetric(vertical: 24), child: Text('shuttle.empty'.tr(), style: AppText.muted())),
-                for (final group in state.groups) ...[
-                  Semantics(
-                    header: true,
-                    child: Text('shuttle.to_pick_up'.tr(args: [group.terminal ?? 'shuttle.no_terminal'.tr()]), style: AppText.title(size: 20)),
-                  ),
+                if (state.dropoff) ...[
+                  Semantics(header: true, child: Text('shuttle.to_drop_off'.tr(), style: AppText.title(size: 20))),
                   const SizedBox(height: 8),
-                  for (final row in group.rows) ...[
-                    _PickupTile(
+                  if (state.departures!.rows.isEmpty) Padding(padding: const EdgeInsets.symmetric(vertical: 24), child: Text('shuttle.empty_dropoff'.tr(), style: AppText.muted())),
+                  for (final row in state.departures!.rows) ...[
+                    _DepartureTile(
                       row: row,
                       selected: state.selected.contains(row.reservationId),
                       onTrip: state.running && state.trip!.passengers.any((p) => p.reservationId == row.reservationId),
@@ -94,14 +99,33 @@ class ProShuttlePage extends StatelessWidget implements AutoRouteWrapper {
                     ),
                     const SizedBox(height: 8),
                   ],
-                  const SizedBox(height: 6),
+                ] else ...[
+                  if (state.pickups!.rows.isEmpty) Padding(padding: const EdgeInsets.symmetric(vertical: 24), child: Text('shuttle.empty'.tr(), style: AppText.muted())),
+                  for (final group in state.groups) ...[
+                    Semantics(
+                      header: true,
+                      child: Text('shuttle.to_pick_up'.tr(args: [group.terminal ?? 'shuttle.no_terminal'.tr()]), style: AppText.title(size: 20)),
+                    ),
+                    const SizedBox(height: 8),
+                    for (final row in group.rows) ...[
+                      _PickupTile(
+                        row: row,
+                        selected: state.selected.contains(row.reservationId),
+                        onTrip: state.running && state.trip!.passengers.any((p) => p.reservationId == row.reservationId),
+                        selectable: !state.running && row.tripId == null,
+                        onTap: () => bloc.add(ShuttlePassengerToggled(row.reservationId)),
+                      ),
+                      const SizedBox(height: 8),
+                    ],
+                    const SizedBox(height: 6),
+                  ],
                 ],
                 const SizedBox(height: 8),
                 if (state.running)
                   OutlineAction(
                     key: const Key('end-trip'),
                     icon: Icons.check_rounded,
-                    label: 'shuttle.end'.tr(),
+                    label: state.trip!.dropoff ? 'shuttle.end_dropoff'.tr() : 'shuttle.end'.tr(),
                     onPressed: state.actionState.isProcessing ? null : () => bloc.add(const ShuttleEndRequested()),
                   )
                 else
@@ -111,8 +135,8 @@ class ProShuttlePage extends StatelessWidget implements AutoRouteWrapper {
                     label: state.selected.isEmpty
                         ? 'shuttle.start_none'.tr()
                         : state.selected.length == 1
-                        ? 'shuttle.start_one'.tr()
-                        : 'shuttle.start'.tr(args: ['${state.selected.length}']),
+                        ? (state.dropoff ? 'shuttle.start_one_dropoff' : 'shuttle.start_one').tr()
+                        : (state.dropoff ? 'shuttle.start_dropoff' : 'shuttle.start').tr(args: ['${state.selected.length}']),
                     busy: state.actionState.isProcessing,
                     onPressed: state.selected.isEmpty ? null : () => _confirmVehicle(context, state),
                   ),
@@ -126,7 +150,7 @@ class ProShuttlePage extends StatelessWidget implements AutoRouteWrapper {
 
   Future<void> _confirmVehicle(BuildContext context, ShuttleState state) async {
     final bloc = context.read<ShuttleBloc>();
-    final choice = await showVehicleSheet(context, vehicles: state.vehicles, current: state.vehicle);
+    final choice = await showVehicleSheet(context, vehicles: state.availableVehicles, current: state.vehicle, passengers: state.selectedPassengers);
     if (choice == null) return;
     bloc
       ..add(ShuttleVehicleChosen(choice))
@@ -155,7 +179,7 @@ class _RunningCard extends StatelessWidget {
             children: [
               const LiveDot(color: AppColors.peach),
               const SizedBox(width: 6),
-              Expanded(child: Text('shuttle.running'.tr(), style: AppText.strong(size: 15, color: AppColors.peach))),
+              Expanded(child: Text(trip.dropoff ? 'shuttle.running_dropoff'.tr() : 'shuttle.running'.tr(), style: AppText.strong(size: 15, color: AppColors.peach))),
             ],
           ),
           const SizedBox(height: 6),
@@ -166,6 +190,35 @@ class _RunningCard extends StatelessWidget {
           ),
         ],
       ),
+    );
+  }
+}
+
+/// "Aller chercher à l'aéroport" / "Déposer au terminal" (T-A "Deux sens").
+class _DirectionToggle extends StatelessWidget {
+  const _DirectionToggle({required this.direction, required this.enabled, required this.onChanged});
+  final String direction;
+  final bool enabled;
+  final ValueChanged<String> onChanged;
+
+  @override
+  Widget build(BuildContext context) {
+    return SegmentedButton<String>(
+      key: const Key('direction-toggle'),
+      segments: [
+        ButtonSegment(value: 'pickup', icon: const Icon(Icons.flight_land_rounded, size: 18), label: Text('shuttle.direction_pickup'.tr())),
+        ButtonSegment(value: 'dropoff', icon: const Icon(Icons.flight_takeoff_rounded, size: 18), label: Text('shuttle.direction_dropoff'.tr())),
+      ],
+      selected: {direction},
+      showSelectedIcon: false,
+      style: ButtonStyle(
+        shape: const WidgetStatePropertyAll(RoundedRectangleBorder(borderRadius: AppRadius.chip)),
+        side: const WidgetStatePropertyAll(BorderSide(color: AppColors.line)),
+        backgroundColor: WidgetStateProperty.resolveWith((s) => s.contains(WidgetState.selected) ? AppColors.accent : AppColors.surface),
+        foregroundColor: WidgetStateProperty.resolveWith((s) => s.contains(WidgetState.selected) ? AppColors.onAccent : AppColors.ink),
+        textStyle: WidgetStatePropertyAll(AppText.body(size: 13, weight: 600)),
+      ),
+      onSelectionChanged: enabled ? (set) => onChanged(set.first) : null,
     );
   }
 }
@@ -257,6 +310,64 @@ class _PickupTile extends StatelessWidget {
   }
 }
 
+/// An arrived traveller waiting at the parking for the terminal (drop-off side).
+class _DepartureTile extends StatelessWidget {
+  const _DepartureTile({required this.row, required this.selected, required this.onTrip, required this.selectable, required this.onTap});
+  final DepartureRowModel row;
+  final bool selected;
+  final bool onTrip;
+  final bool selectable;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final highlighted = selected || onTrip;
+    final details = [
+      if (row.arrivedAt != null) 'shuttle.arrived_at'.tr(args: [hhmm(row.arrivedAt!)]) else 'shuttle.arrival_planned'.tr(args: [hhmm(row.arrivalAt)]),
+      if (row.spot != null) 'shuttle.spot'.tr(args: [row.spot!]),
+    ].join(' · ');
+    return Material(
+      color: AppColors.surface,
+      shape: RoundedRectangleBorder(
+        borderRadius: AppRadius.card,
+        side: BorderSide(color: highlighted ? AppColors.accent : AppColors.line, width: highlighted ? 2 : 1),
+      ),
+      clipBehavior: Clip.antiAlias,
+      child: InkWell(
+        key: Key('departure-${row.reservationId}'),
+        onTap: selectable ? onTap : null,
+        child: Padding(
+          padding: const EdgeInsets.fromLTRB(12, 10, 12, 10),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                children: [
+                  if (selectable) ...[
+                    Icon(selected ? Icons.check_circle_rounded : Icons.radio_button_unchecked_rounded, size: 20, color: selected ? AppColors.accent : AppColors.line),
+                    const SizedBox(width: 8),
+                  ],
+                  Expanded(child: Text('${row.customerName} · ${'shuttle.pax'.tr(args: ['${row.passengers}'])}', style: AppText.strong(size: 14.5))),
+                  const SizedBox(width: 8),
+                  if (onTrip || row.tripId != null) StatusBadge(text: 'shuttle.badge_on_trip'.tr(), tone: BadgeTone.tint),
+                ],
+              ),
+              const SizedBox(height: 4),
+              Row(
+                children: [
+                  Expanded(child: Text(details, style: AppText.muted(size: 12.5))),
+                  const SizedBox(width: 8),
+                  FrenchPlate(row.plate, size: 11),
+                ],
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
 /// Flight planned / landed / at the meeting point (the badges of the approved frame).
 class _Badge extends StatelessWidget {
   const _Badge({required this.row, required this.onTrip});
@@ -278,7 +389,7 @@ class _Badge extends StatelessWidget {
 }
 
 /// The sheet picking the vehicle before the trip starts.
-Future<TripVehicleChoice?> showVehicleSheet(BuildContext context, {required List<ShuttleVehicleModel> vehicles, TripVehicleChoice? current}) =>
+Future<TripVehicleChoice?> showVehicleSheet(BuildContext context, {required List<ShuttleVehicleModel> vehicles, TripVehicleChoice? current, int passengers = 0}) =>
     showModalBottomSheet<TripVehicleChoice>(
       context: context,
       isScrollControlled: true,
@@ -286,5 +397,5 @@ Future<TripVehicleChoice?> showVehicleSheet(BuildContext context, {required List
       showDragHandle: true,
       backgroundColor: AppColors.surface,
       shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(24))),
-      builder: (_) => VehicleSheet(vehicles: vehicles, current: current),
+      builder: (_) => VehicleSheet(vehicles: vehicles, current: current, passengers: passengers),
     );

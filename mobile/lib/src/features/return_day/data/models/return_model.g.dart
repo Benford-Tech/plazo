@@ -69,6 +69,8 @@ _TravellerShuttleModel _$TravellerShuttleModelFromJson(
   Map<String, dynamic> json,
 ) => _TravellerShuttleModel(
   tripId: json['tripId'] as String,
+  direction: json['direction'] as String? ?? 'pickup',
+  mine: json['mine'] as bool? ?? false,
   startedAt: DateTime.parse(json['startedAt'] as String),
   vehicle: json['vehicle'] == null
       ? const TripVehicleModel()
@@ -86,12 +88,19 @@ _TravellerShuttleModel _$TravellerShuttleModelFromJson(
       : MeetingPointModel.fromJson(
           json['meetingPoint'] as Map<String, dynamic>,
         ),
+  destination: json['destination'] == null
+      ? null
+      : ShuttleDestinationModel.fromJson(
+          json['destination'] as Map<String, dynamic>,
+        ),
 );
 
 Map<String, dynamic> _$TravellerShuttleModelToJson(
   _TravellerShuttleModel instance,
 ) => <String, dynamic>{
   'tripId': instance.tripId,
+  'direction': instance.direction,
+  'mine': instance.mine,
   'startedAt': instance.startedAt.toIso8601String(),
   'vehicle': instance.vehicle,
   'driverFirstName': instance.driverFirstName,
@@ -101,7 +110,47 @@ Map<String, dynamic> _$TravellerShuttleModelToJson(
   'etaMinutes': instance.etaMinutes,
   'etaAt': instance.etaAt?.toIso8601String(),
   'meetingPoint': instance.meetingPoint,
+  'destination': instance.destination,
 };
+
+_ShuttleDestinationModel _$ShuttleDestinationModelFromJson(
+  Map<String, dynamic> json,
+) => _ShuttleDestinationModel(
+  kind: json['kind'] as String,
+  lat: (json['lat'] as num).toDouble(),
+  lng: (json['lng'] as num).toDouble(),
+  label: json['label'] as String?,
+);
+
+Map<String, dynamic> _$ShuttleDestinationModelToJson(
+  _ShuttleDestinationModel instance,
+) => <String, dynamic>{
+  'kind': instance.kind,
+  'lat': instance.lat,
+  'lng': instance.lng,
+  'label': instance.label,
+};
+
+_StayShuttlesModel _$StayShuttlesModelFromJson(Map<String, dynamic> json) =>
+    _StayShuttlesModel(
+      phase: json['phase'] as String?,
+      serverTime: DateTime.parse(json['serverTime'] as String),
+      shuttles:
+          (json['shuttles'] as List<dynamic>?)
+              ?.map(
+                (e) =>
+                    TravellerShuttleModel.fromJson(e as Map<String, dynamic>),
+              )
+              .toList() ??
+          const [],
+    );
+
+Map<String, dynamic> _$StayShuttlesModelToJson(_StayShuttlesModel instance) =>
+    <String, dynamic>{
+      'phase': instance.phase,
+      'serverTime': instance.serverTime.toIso8601String(),
+      'shuttles': instance.shuttles,
+    };
 
 _ReturnParkingModel _$ReturnParkingModelFromJson(Map<String, dynamic> json) =>
     _ReturnParkingModel(

@@ -57,6 +57,8 @@ import '../features/pro_reservations/presentation/bloc/pro_import_bloc.dart';
 import '../features/pro_reservations/presentation/bloc/pro_reservation_bloc.dart';
 import '../features/pro_reservations/presentation/bloc/pro_reservations_bloc.dart';
 import '../features/pro_plan/data/datasources/plan_data_source.dart';
+import '../features/pro_shuttle/presentation/bloc/pro_vehicles_bloc.dart';
+import '../features/return_day/presentation/bloc/stay_shuttles_bloc.dart';
 import '../features/pro_plan/domain/repositories/plan_repository.dart';
 import '../features/pro_plan/domain/usecases/plan_use_cases.dart';
 import '../features/pro_plan/presentation/bloc/pro_plan_bloc.dart';

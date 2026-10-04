@@ -163,12 +163,21 @@ export interface ReturnMeetingPoint {
   photoUrl: string | null;
 }
 
+/** The vehicle sheet (V-A "Fiche complète", 04/10/2026). */
 export interface ShuttleVehicle {
   id: string;
   model: string;
   colour: string | null;
   plate: string | null;
+  /** Passenger seats, the driver's excluded; null when unknown. */
+  seats: number | null;
+  inService: boolean;
+  /** The usual driver, preselected in their app. */
+  driverId: string | null;
+  driverName: string | null;
 }
+
+export type ShuttleVehicleInput = Omit<ShuttleVehicle, "id" | "driverName">;
 
 export interface Planning {
   date: string;

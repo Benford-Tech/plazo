@@ -183,7 +183,10 @@ describe('disposition « files depuis le bord » (T-A) et zones de séjour (Z-A)
     expect(est.body.totals.valetEdge).toBeGreaterThan(est.body.totals.valet24);
     expect(est.body.zones[0].counts.valetEdge).toBe(est.body.totals.valetEdge);
 
-    const gen = await api().post(`/api/internal/parkings/${parking.id}/plan/generate`).set(auth(token)).send({ layout: 'valetEdge', applyCapacity: true });
+    const gen = await api()
+      .post(`/api/internal/parkings/${parking.id}/plan/generate`)
+      .set(auth(token))
+      .send({ layout: 'valetEdge', applyCapacity: true });
     expect(gen.status).toBe(200);
     const spots = gen.body.data.spots as { stayClass: string | null; depth: number; fileLength: number }[];
     expect(spots.length).toBe(est.body.totals.valetEdge);

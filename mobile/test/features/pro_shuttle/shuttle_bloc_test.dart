@@ -16,6 +16,8 @@ import '../../helpers/fixtures.dart';
 
 class MockPickups extends Mock implements GetPickupsUseCase {}
 
+class MockDepartures extends Mock implements GetDeparturesUseCase {}
+
 class MockVehicles extends Mock implements GetVehiclesUseCase {}
 
 class MockCurrent extends Mock implements GetCurrentTripUseCase {}
@@ -30,6 +32,7 @@ class MockLocation extends Mock implements LocationService {}
 
 void main() {
   late MockPickups pickups;
+  late MockDepartures departures;
   late MockVehicles vehicles;
   late MockCurrent current;
   late MockStart start;
@@ -48,6 +51,7 @@ void main() {
 
   setUp(() {
     pickups = MockPickups();
+    departures = MockDepartures();
     vehicles = MockVehicles();
     current = MockCurrent();
     start = MockStart();
@@ -69,7 +73,23 @@ void main() {
         ),
       ),
     );
-    when(() => vehicles(any())).thenAnswer((_) async => const Right([ShuttleVehicleModel(id: 'v1', model: 'Mercedes Vito', colour: 'blanche', plate: 'GH-456-JK')]));
+    when(() => departures(any())).thenAnswer(
+      (_) async => Right(
+        DeparturesModel(
+          serverTime: now,
+          rows: [
+            DepartureRowModel(reservationId: 'a1', reference: 'A1', customerName: 'Léa Durand', passengers: 3, plate: 'GH-456-JK', status: 'arrived', arrivalAt: t0, arrivedAt: t0, spot: 'A12'),
+            DepartureRowModel(reservationId: 'a2', reference: 'A2', customerName: 'Noa Petit', passengers: 1, plate: 'AB-123-CD', status: 'arrived', arrivalAt: t0, tripId: 'other'),
+          ],
+        ),
+      ),
+    );
+    when(() => vehicles(any())).thenAnswer(
+      (_) async => const Right([
+        ShuttleVehicleModel(id: 'v1', model: 'Mercedes Vito', colour: 'blanche', plate: 'GH-456-JK', seats: 2, driverId: 'me'),
+        ShuttleVehicleModel(id: 'v2', model: 'Renault Trafic', inService: false),
+      ]),
+    );
     when(() => current(any())).thenAnswer((_) async => const Right(null));
     when(() => location.requestAccess()).thenAnswer((_) async => LocationAccess.granted);
     when(() => location.positions(background: any(named: 'background'), notice: any(named: 'notice'))).thenAnswer((_) => positions.stream);
@@ -77,7 +97,7 @@ void main() {
 
   tearDown(() => positions.close());
 
-  ShuttleBloc build() => ShuttleBloc(pickups, vehicles, current, start, send, end, location, clock: () => now, autoPoll: false);
+  ShuttleBloc build() => ShuttleBloc(pickups, departures, vehicles, current, start, send, end, location, clock: () => now, autoPoll: false);
   Future<void> settle() => Future<void>.delayed(Duration.zero).then((_) => Future<void>.delayed(Duration.zero));
 
   Future<ShuttleBloc> opened() async {
@@ -90,7 +110,8 @@ void main() {
     final bloc = await opened();
     expect(bloc.state.groups.map((g) => g.terminal), ['Terminal 1', 'Terminal 2']);
     expect(bloc.state.groups.first.rows.length, 2);
-    expect(bloc.state.vehicles.length, 1);
+    expect(bloc.state.vehicles.length, 2);
+    expect(bloc.state.availableVehicles.length, 1);
     expect(bloc.state.meetingPoint?.label, 'Terminal 1 · Porte 12');
     verifyNever(() => location.requestAccess());
     await bloc.close();
@@ -200,6 +221,47 @@ void main() {
     await settle();
     expect(bloc.state.tracking, isFalse);
     expect(bloc.state.trip, isNull);
+    await bloc.close();
+  });
+  test('T-A · deux sens : « Déposer au terminal » charge les arrivés, le trajet part en dropoff, et la fin', () async {
+    final bloc = build()..add(const ShuttleStarted(staffId: 'me'));
+    await bloc.stream.firstWhere((s) => s.pickups != null);
+    // The driver's usual vehicle is preselected; the out-of-service one is not offered.
+    expect(bloc.state.vehicle?.vehicleId, 'v1');
+    expect(bloc.state.availableVehicles.map((v) => v.id), ['v1']);
+
+    bloc.add(const ShuttlePassengerToggled('r1'));
+    bloc.add(const ShuttleDirectionChanged('dropoff'));
+    await bloc.stream.firstWhere((s) => s.departures != null);
+    expect(bloc.state.dropoff, isTrue);
+    expect(bloc.state.selected, isEmpty, reason: 'switching sides clears the selection');
+    expect(bloc.state.selectableDepartures.map((r) => r.reservationId), ['a1']);
+
+    // Three passengers for two seats: refused locally, nothing sent.
+    bloc.add(const ShuttlePassengerToggled('a1'));
+    await settle();
+    expect(bloc.state.selectedPassengers, 3);
+    bloc.add(const ShuttleStartRequested());
+    await settle();
+    expect(bloc.state.errorCode, 'too_many_passengers');
+    verifyNever(() => start(any()));
+
+    // Typed vehicle: the trip starts to the terminal.
+    when(() => start(any())).thenAnswer((invocation) async {
+      final params = invocation.positionalArguments.single as StartTripParams;
+      expect(params.direction, 'dropoff');
+      expect(params.reservationIds, ['a1']);
+      return Right(staffTrip().copyWith(direction: 'dropoff'));
+    });
+    bloc.add(const ShuttleVehicleChosen(TripVehicleChoice(model: 'Vito')));
+    bloc.add(const ShuttleStartRequested());
+    await bloc.stream.firstWhere((s) => s.trip != null);
+    expect(bloc.state.trip?.dropoff, isTrue);
+    expect(bloc.state.tracking, isTrue);
+    // No switching sides while a trip runs.
+    bloc.add(const ShuttleDirectionChanged('pickup'));
+    await settle();
+    expect(bloc.state.direction, 'dropoff');
     await bloc.close();
   });
 }

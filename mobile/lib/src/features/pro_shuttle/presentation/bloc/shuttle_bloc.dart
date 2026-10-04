@@ -18,7 +18,8 @@ part 'shuttle_bloc.freezed.dart';
 part 'shuttle_event.dart';
 part 'shuttle_state.dart';
 
-/// Driver mode (R4): today's returns to pick up, the trip in progress.
+/// Driver mode (R4): today's returns to pick up (or, T-A, the arrived travellers to drop off at the
+/// terminal), the trip in progress.
 ///
 /// - "Démarrer le trajet": the location permission is asked then; the position is sent at most
 ///   every 10 s (the server's rule) to the API, which shows it to the trip's passengers only, with
@@ -29,6 +30,7 @@ part 'shuttle_state.dart';
 class ShuttleBloc extends Bloc<ShuttleEvent, ShuttleState> {
   ShuttleBloc(
     this._pickups,
+    this._departures,
     this._vehicles,
     this._current,
     this._start,
@@ -46,6 +48,7 @@ class ShuttleBloc extends Bloc<ShuttleEvent, ShuttleState> {
        super(ShuttleState(now: clock())) {
     on<ShuttleStarted>(_onStarted);
     on<ShuttlePolled>(_onPolled);
+    on<ShuttleDirectionChanged>(_onDirectionChanged);
     on<ShuttlePassengerToggled>(_onToggled);
     on<ShuttleVehicleChosen>((event, emit) => emit(state.copyWith(vehicle: event.vehicle)));
     on<ShuttleStartRequested>(_onStartRequested);
@@ -57,6 +60,7 @@ class ShuttleBloc extends Bloc<ShuttleEvent, ShuttleState> {
   }
 
   final GetPickupsUseCase _pickups;
+  final GetDeparturesUseCase _departures;
   final GetVehiclesUseCase _vehicles;
   final GetCurrentTripUseCase _current;
   final StartTripUseCase _start;
@@ -81,8 +85,18 @@ class ShuttleBloc extends Bloc<ShuttleEvent, ShuttleState> {
     emit(state.copyWith(viewState: ViewState.processing, now: _clock()));
     final current = await _current(NoParams());
     final trip = current.fold((_) => null, (t) => t);
-    final vehicles = await _vehicles(NoParams());
-    emit(state.copyWith(trip: trip, vehicles: vehicles.fold((_) => const [], (v) => v)));
+    final vehicles = (await _vehicles(NoParams())).fold((_) => const <ShuttleVehicleModel>[], (v) => v);
+    // The driver's usual vehicle (in service) is preselected.
+    final mine = event.staffId == null ? null : vehicles.where((v) => v.inService && v.driverId == event.staffId).firstOrNull;
+    emit(
+      state.copyWith(
+        trip: trip,
+        vehicles: vehicles,
+        vehicle: state.vehicle ?? (mine == null ? null : TripVehicleChoice(vehicleId: mine.id)),
+        // Back in the app while a drop-off runs: stay on that side.
+        direction: trip != null && trip.running ? trip.direction : state.direction,
+      ),
+    );
     await _loadPickups(emit, initial: true);
     // Back in the app while a trip runs: carry on sharing.
     if (trip != null && trip.running && !state.tracking) await _resumeTracking(emit);
@@ -94,7 +108,27 @@ class ShuttleBloc extends Bloc<ShuttleEvent, ShuttleState> {
 
   Future<void> _onPolled(ShuttlePolled event, Emitter<ShuttleState> emit) => _loadPickups(emit, initial: false);
 
+  /// Switching sides clears the selection and loads that side's list (no trip running).
+  Future<void> _onDirectionChanged(ShuttleDirectionChanged event, Emitter<ShuttleState> emit) async {
+    if (state.running || event.direction == state.direction) return;
+    emit(state.copyWith(direction: event.direction, selected: const {}, errorCode: null, actionState: ViewState.idle));
+    await _loadPickups(emit, initial: !state.loaded);
+  }
+
+  /// Loads the list of the current direction: the returns to pick up, or the arrivals to drop off.
   Future<void> _loadPickups(Emitter<ShuttleState> emit, {required bool initial}) async {
+    final direction = state.direction;
+    if (direction == 'dropoff') {
+      final result = await _departures(NoParams());
+      result.fold(
+        (failure) => emit(state.copyWith(viewState: initial ? ViewState.error : state.viewState, errorCode: initial ? _code(failure) : state.errorCode, now: _clock())),
+        (departures) {
+          final ids = departures.rows.map((r) => r.reservationId).toSet();
+          emit(state.copyWith(viewState: ViewState.success, departures: departures, selected: state.selected.where(ids.contains).toSet(), now: _clock()));
+        },
+      );
+      return;
+    }
     final result = await _pickups(NoParams());
     result.fold(
       (failure) => emit(state.copyWith(viewState: initial ? ViewState.error : state.viewState, errorCode: initial ? _code(failure) : state.errorCode, now: _clock())),
@@ -116,13 +150,23 @@ class ShuttleBloc extends Bloc<ShuttleEvent, ShuttleState> {
   Future<void> _onStartRequested(ShuttleStartRequested event, Emitter<ShuttleState> emit) async {
     if (state.selected.isEmpty || (state.trip?.running ?? false)) return;
     emit(state.copyWith(actionState: ViewState.processing, errorCode: null, locationProblem: null, endedNotice: false));
+    // The vehicle on file must seat everyone (the server checks too).
+    final chosen = state.vehicle?.vehicleId == null ? null : state.vehicles.where((v) => v.id == state.vehicle!.vehicleId).firstOrNull;
+    if (chosen != null && !chosen.inService) {
+      emit(state.copyWith(actionState: ViewState.error, errorCode: 'vehicle_out_of_service'));
+      return;
+    }
+    if (chosen?.seats != null && state.selectedPassengers > chosen!.seats!) {
+      emit(state.copyWith(actionState: ViewState.error, errorCode: 'too_many_passengers'));
+      return;
+    }
     // No position, no trip: the whole point is to share it with the travellers.
     final access = await _location.requestAccess();
     if (access != LocationAccess.granted) {
       emit(state.copyWith(actionState: ViewState.idle, locationProblem: access));
       return;
     }
-    final result = await _start(StartTripParams(reservationIds: state.selected.toList(), vehicle: state.vehicle ?? const TripVehicleChoice()));
+    final result = await _start(StartTripParams(reservationIds: state.selected.toList(), vehicle: state.vehicle ?? const TripVehicleChoice(), direction: state.direction));
     await result.fold((failure) async => emit(state.copyWith(actionState: ViewState.error, errorCode: _code(failure))), (trip) async {
       _lastSentAt = null;
       _startTracking();

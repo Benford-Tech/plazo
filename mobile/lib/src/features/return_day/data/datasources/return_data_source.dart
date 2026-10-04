@@ -7,6 +7,7 @@ import '../models/return_model.dart';
 abstract class ReturnDataSource {
   Future<TravellerReturnModel> getReturn(String reference);
   Future<TravellerReturnModel> landed(String reference);
+  Future<StayShuttlesModel> stayShuttles(String reference);
   Future<WalkingRouteModel> route(String reference, GeoPosition? from);
   Future<ShuttleStatusModel> shuttle(String reference);
 }
@@ -36,4 +37,7 @@ class ReturnDataSourceImpl implements ReturnDataSource {
 
   @override
   Future<ShuttleStatusModel> shuttle(String reference) async => client.shuttle(reference: reference, token: await _token(reference));
+
+  @override
+  Future<StayShuttlesModel> stayShuttles(String reference) async => client.stayShuttles(reference: reference, token: await _token(reference));
 }

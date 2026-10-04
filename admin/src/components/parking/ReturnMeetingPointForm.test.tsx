@@ -1,5 +1,5 @@
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { render, screen, waitFor } from "@testing-library/react";
+import { render, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { ApiError } from "@/lib/api";
 import { ReturnMeetingPointForm } from "./ReturnMeetingPointForm";
@@ -9,7 +9,9 @@ const api = vi.hoisted(() => ({
   getReturnMeetingPoint: vi.fn(),
   setReturnMeetingPoint: vi.fn(),
   getVehicles: vi.fn(),
+  getTeam: vi.fn(),
   addVehicle: vi.fn(),
+  updateVehicle: vi.fn(),
   removeVehicle: vi.fn(),
 }));
 const toast = vi.hoisted(() => ({ success: vi.fn(), error: vi.fn() }));
@@ -96,19 +98,52 @@ describe("Point de rendez-vous au retour", () => {
 });
 
 describe("Navettes", () => {
-  it("liste, ajoute et retire les véhicules", async () => {
+  const vito = { id: "v1", model: "Mercedes Vito", colour: "blanche", plate: "GH-456-JK", seats: 8, inService: true, driverId: "s1", driverName: "Karim Benali" };
+  beforeEach(() => {
+    api.getVehicles.mockResolvedValue({ data: [vito] });
+    api.getTeam.mockResolvedValue([
+      { id: "s1", name: "Karim Benali", role: "driver", isActive: true },
+      { id: "s2", name: "Ancien Chauffeur", role: "driver", isActive: false },
+    ]);
+  });
+
+  it("liste la fiche (places, chauffeur), ajoute et retire les véhicules", async () => {
     const user = userEvent.setup();
-    api.getVehicles.mockResolvedValue({ data: [{ id: "v1", model: "Mercedes Vito", colour: "blanche", plate: "GH-456-JK" }] });
-    api.addVehicle.mockResolvedValue({ data: { id: "v2", model: "Renault Trafic", colour: null, plate: null } });
+    api.addVehicle.mockResolvedValue({ data: { id: "v2", model: "Renault Trafic", colour: null, plate: null, seats: 6, inService: true, driverId: "s1", driverName: "Karim Benali" } });
     api.removeVehicle.mockResolvedValue(undefined);
     renderIn(<ShuttleVehicles />);
     expect(await screen.findByText("Mercedes Vito")).toBeInTheDocument();
+    expect(screen.getByText("8 pl. · Chauffeur habituel : Karim Benali")).toBeInTheDocument();
     await user.type(screen.getByLabelText("Modèle"), "Renault Trafic");
+    await user.type(screen.getByLabelText("Places passagers"), "6");
+    const driver = await screen.findByLabelText("Chauffeur habituel");
+    expect(within(driver).queryByText(/Ancien Chauffeur/)).not.toBeInTheDocument();
+    await user.selectOptions(driver, "s1");
     await user.click(screen.getByRole("button", { name: "Ajouter la navette" }));
-    await waitFor(() => expect(api.addVehicle).toHaveBeenCalledWith({ model: "Renault Trafic", colour: null, plate: null }));
+    await waitFor(() => expect(api.addVehicle).toHaveBeenCalledWith({ model: "Renault Trafic", colour: null, plate: null, seats: 6, driverId: "s1", inService: true }));
     expect(await screen.findByText("Renault Trafic")).toBeInTheDocument();
     await user.click(screen.getByRole("button", { name: "Retirer la navette Mercedes Vito" }));
     await waitFor(() => expect(api.removeVehicle).toHaveBeenCalledWith("v1"));
     await waitFor(() => expect(screen.queryByText("Mercedes Vito")).not.toBeInTheDocument());
+  });
+
+  it("modifie la fiche et met un véhicule hors service", async () => {
+    const user = userEvent.setup();
+    api.updateVehicle.mockImplementation(async (id: string, patch: Record<string, unknown>) => ({ data: { ...vito, ...patch, driverName: patch.driverId === null ? null : vito.driverName } }));
+    renderIn(<ShuttleVehicles />);
+    await user.click(await screen.findByRole("button", { name: "Modifier la navette Mercedes Vito" }));
+    expect(screen.getByText("Modification de Mercedes Vito")).toBeInTheDocument();
+    expect(screen.getByLabelText("Modèle")).toHaveValue("Mercedes Vito");
+    await user.clear(screen.getByLabelText("Places passagers"));
+    await user.type(screen.getByLabelText("Places passagers"), "4");
+    await user.selectOptions(screen.getByLabelText("Chauffeur habituel"), "");
+    await user.click(screen.getByRole("button", { name: "Enregistrer" }));
+    await waitFor(() => expect(api.updateVehicle).toHaveBeenCalledWith("v1", { model: "Mercedes Vito", colour: "blanche", plate: "GH-456-JK", seats: 4, driverId: null, inService: true }));
+    expect(await screen.findByText("4 pl.")).toBeInTheDocument();
+    expect(screen.queryByText("Modification de Mercedes Vito")).not.toBeInTheDocument();
+    // One click puts it out of service (the badge follows).
+    await user.click(screen.getByRole("button", { name: "Hors service · Mercedes Vito" }));
+    await waitFor(() => expect(api.updateVehicle).toHaveBeenLastCalledWith("v1", { inService: false }));
+    expect(await screen.findByText("Hors service", { selector: "div" })).toBeInTheDocument();
   });
 });

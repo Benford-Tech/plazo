@@ -6,12 +6,14 @@ import '../../../../shared/widgets/gradient_button.dart';
 import '../../data/datasources/shuttle_data_source.dart';
 import '../../data/models/shuttle_models.dart';
 
-/// "Votre navette": one of the operator's vehicles, or typed by hand (model, colour, plate).
+/// "Votre navette": one of the operator's vehicles in service (with its seats), or typed by hand
+/// (model, colour, plate). [passengers] is the people count of the selection, for the seats warning.
 class VehicleSheet extends StatefulWidget {
-  const VehicleSheet({super.key, required this.vehicles, this.current});
+  const VehicleSheet({super.key, required this.vehicles, this.current, this.passengers = 0});
 
   final List<ShuttleVehicleModel> vehicles;
   final TripVehicleChoice? current;
+  final int passengers;
 
   @override
   State<VehicleSheet> createState() => _VehicleSheetState();
@@ -21,10 +23,13 @@ class VehicleSheet extends StatefulWidget {
 const _free = '__free__';
 
 class _VehicleSheetState extends State<VehicleSheet> {
-  late String? _vehicleId = widget.current?.vehicleId ?? widget.vehicles.firstOrNull?.id;
+  late String? _vehicleId = widget.vehicles.any((v) => v.id == widget.current?.vehicleId) ? widget.current!.vehicleId : widget.vehicles.firstOrNull?.id;
   late final _model = TextEditingController(text: widget.current?.model ?? '');
   late final _colour = TextEditingController(text: widget.current?.colour ?? '');
   late final _plate = TextEditingController(text: widget.current?.plate ?? '');
+
+  ShuttleVehicleModel? get _chosen => widget.vehicles.where((v) => v.id == _vehicleId).firstOrNull;
+  bool get _tooMany => _chosen?.seats != null && widget.passengers > _chosen!.seats!;
 
   @override
   void dispose() {
@@ -36,7 +41,11 @@ class _VehicleSheetState extends State<VehicleSheet> {
 
   TripVehicleChoice get _choice => _vehicleId != null
       ? TripVehicleChoice(vehicleId: _vehicleId)
-      : TripVehicleChoice(model: _model.text.trim().isEmpty ? null : _model.text.trim(), colour: _colour.text.trim().isEmpty ? null : _colour.text.trim(), plate: _plate.text.trim().isEmpty ? null : _plate.text.trim());
+      : TripVehicleChoice(
+          model: _model.text.trim().isEmpty ? null : _model.text.trim(),
+          colour: _colour.text.trim().isEmpty ? null : _colour.text.trim(),
+          plate: _plate.text.trim().isEmpty ? null : _plate.text.trim(),
+        );
 
   @override
   Widget build(BuildContext context) {
@@ -64,8 +73,10 @@ class _VehicleSheetState extends State<VehicleSheet> {
                         value: v.id,
                         contentPadding: EdgeInsets.zero,
                         activeColor: AppColors.accent,
-                        title: Text([v.model, v.colour].whereType<String>().join(' · '), style: AppText.body(size: 14.5)),
-                        subtitle: v.plate == null ? null : Text(v.plate!, style: AppText.muted()),
+                        title: Text(v.title, style: AppText.body(size: 14.5)),
+                        subtitle: v.plate == null && v.seats == null
+                            ? null
+                            : Text([if (v.plate != null) v.plate!, if (v.seats != null) 'shuttle.vehicle_seats'.tr(args: ['${v.seats}'])].join(' · '), style: AppText.muted()),
                       ),
                     RadioListTile<String>(
                       key: const Key('vehicle-free'),
@@ -96,8 +107,16 @@ class _VehicleSheetState extends State<VehicleSheet> {
                 ],
               ),
             ],
+            if (_tooMany) ...[
+              const SizedBox(height: 8),
+              Text(
+                'shuttle.vehicle_too_many'.tr(args: ['${widget.passengers}', '${_chosen!.seats}']),
+                key: const Key('vehicle-too-many'),
+                style: AppText.body(size: 13.5, color: AppColors.danger),
+              ),
+            ],
             const SizedBox(height: 14),
-            GradientButton(key: const Key('vehicle-confirm'), label: 'shuttle.vehicle_confirm'.tr(), onPressed: () => Navigator.of(context).pop(_choice)),
+            GradientButton(key: const Key('vehicle-confirm'), label: 'shuttle.vehicle_confirm'.tr(), onPressed: _tooMany ? null : () => Navigator.of(context).pop(_choice)),
           ],
         ),
       ),

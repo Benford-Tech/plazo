@@ -76,6 +76,13 @@ class ProMoreTabPage extends StatelessWidget {
           ),
           if (can(role, 'parking:manage'))
             _Tile(key: const Key('pmore-plan'), icon: Icons.map_rounded, label: 'plan.menu'.tr(), onTap: () => context.router.push(const ProPlanRoute())),
+          if (can(role, 'parking:manage'))
+            _Tile(
+              key: const Key('pmore-vehicles'),
+              icon: Icons.airport_shuttle_rounded,
+              label: 'vehicles.title'.tr(),
+              onTap: () => context.router.push(const ProVehiclesRoute()),
+            ),
           const SizedBox(height: 14),
           _title('pro_more.account'.tr()),
           _Tile(

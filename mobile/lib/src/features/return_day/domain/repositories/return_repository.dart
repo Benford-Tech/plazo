@@ -10,6 +10,7 @@ abstract class ReturnRepository {
   Future<Either<Failure, TravellerReturnModel>> landed(String reference);
   Future<Either<Failure, WalkingRouteModel>> route(String reference, GeoPosition? from);
   Future<Either<Failure, ShuttleStatusModel>> shuttle(String reference);
+  Future<Either<Failure, StayShuttlesModel>> stayShuttles(String reference);
 }
 
 class ReturnRepositoryImpl implements ReturnRepository {
@@ -28,4 +29,7 @@ class ReturnRepositoryImpl implements ReturnRepository {
 
   @override
   Future<Either<Failure, ShuttleStatusModel>> shuttle(String reference) => _dataSource.shuttle(reference).makeRequest();
+
+  @override
+  Future<Either<Failure, StayShuttlesModel>> stayShuttles(String reference) => _dataSource.stayShuttles(reference).makeRequest();
 }

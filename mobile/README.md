@@ -24,9 +24,16 @@ depuis « Plus » (ou un lien `/pro…`) et reste tel quel. Les « flavors » vi
   (`/ma-reservation/REF/point-de-rendez-vous` : chemin piéton IGN calculé par l'API depuis la position du téléphone ou
   le terminal, consignes et photo du loueur, « Ouvrir dans Plans »), « Je suis au point de rendez-vous », puis la
   **navette en direct** (position du chauffeur, ETA, véhicule, prénom ; interrogée toutes les 10 s).
-- **Pro — mode chauffeur** (`/pro/navette`, bouton « Navette » du planning) : retours à récupérer par terminal avec
-  leur état (vol prévu / atterri / au point de rendez-vous), « Démarrer le trajet (N clients) » après le choix du
-  véhicule, position partagée avec les passagers jusqu'à « Clients récupérés · retour parking » (90 min au plus).
+- **Voyageur — pendant le séjour** (bloc « Navette » de `/ma-reservation/REF`, S-A du 04/10/2026) : du jour d'arrivée
+  au jour du retour, les navettes du parking en route (véhicule, prénom, sens, carte, distance au parking ou au point de
+  rendez-vous), la sienne mise en avant ; interrogé toutes les 12 s (`StayShuttlesBloc`).
+- **Pro — mode chauffeur** (`/pro/navette`, bouton « Navette » du planning) : deux sens (T-A du 04/10/2026) : « Aller
+  chercher à l'aéroport » (retours à récupérer par terminal avec leur état vol prévu / atterri / au point de rendez-vous)
+  ou « Déposer au terminal » (clients arrivés au parking), « Démarrer le trajet (N clients) » après le choix du véhicule
+  (le sien présélectionné, places vérifiées, hors service exclus), position partagée avec les passagers jusqu'à
+  « Clients récupérés · retour parking » / « Clients déposés au terminal » (90 min au plus).
+- **Pro — véhicules de navette** (`/pro/navettes`, gérants, V-A) : fiche de chaque navette (modèle, couleur, plaque,
+  places, en service, chauffeur habituel), ajout, modification, retrait.
 - **Pro** (`/pro…`) : connexion du personnel (mêmes comptes que l'espace pro), planning du jour
   Arrivées / Retours (onglets sur téléphone, deux colonnes sur tablette) avec les signaux en direct
   (interrogés toutes les 12 s), l'arrivée en approche en tête avec sa mini-carte, et les notifications

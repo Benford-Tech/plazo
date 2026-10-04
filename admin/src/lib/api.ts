@@ -25,6 +25,7 @@ import type {
   ParkingSettings,
   ReturnMeetingPoint,
   ShuttleVehicle,
+  ShuttleVehicleInput,
   LiveArrivals,
   Planning,
   Reservation,
@@ -275,9 +276,14 @@ export const adminApi = {
     ),
   getVehicles: () =>
     apiRequest<{ data: ShuttleVehicle[] }>("/internal/shuttle/vehicles"),
-  addVehicle: (vehicle: Omit<ShuttleVehicle, "id">) =>
+  addVehicle: (vehicle: ShuttleVehicleInput) =>
     apiRequest<{ data: ShuttleVehicle }>("/internal/shuttle/vehicles", {
       method: "POST",
+      body: json(vehicle),
+    }),
+  updateVehicle: (id: string, vehicle: Partial<ShuttleVehicleInput>) =>
+    apiRequest<{ data: ShuttleVehicle }>(`/internal/shuttle/vehicles/${id}`, {
+      method: "PATCH",
       body: json(vehicle),
     }),
   removeVehicle: (id: string) =>

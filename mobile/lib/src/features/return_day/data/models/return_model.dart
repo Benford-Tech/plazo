@@ -52,6 +52,12 @@ abstract class ShuttlePositionModel with _$ShuttlePositionModel {
 abstract class TravellerShuttleModel with _$TravellerShuttleModel {
   const factory TravellerShuttleModel({
     required String tripId,
+
+    /// `pickup`: coming to the airport for returning travellers; `dropoff`: leaving the parking for the terminal.
+    @Default('pickup') String direction,
+
+    /// This booking is on the trip.
+    @Default(false) bool mine,
     required DateTime startedAt,
     @Default(TripVehicleModel()) TripVehicleModel vehicle,
     @Default('') String driverFirstName,
@@ -61,9 +67,36 @@ abstract class TravellerShuttleModel with _$TravellerShuttleModel {
     int? etaMinutes,
     DateTime? etaAt,
     MeetingPointModel? meetingPoint,
+    ShuttleDestinationModel? destination,
   }) = _TravellerShuttleModel;
 
   factory TravellerShuttleModel.fromJson(Map<String, dynamic> json) => _$TravellerShuttleModelFromJson(json);
+}
+
+/// Where a shuttle's distance is measured to: the parking, or the return meeting point.
+@freezed
+abstract class ShuttleDestinationModel with _$ShuttleDestinationModel {
+  const factory ShuttleDestinationModel({required String kind, required double lat, required double lng, String? label}) = _ShuttleDestinationModel;
+
+  factory ShuttleDestinationModel.fromJson(Map<String, dynamic> json) => _$ShuttleDestinationModelFromJson(json);
+}
+
+/// The "Navette" block during the stay (GET /public/bookings/{reference}/shuttles, S-A 04/10/2026).
+@freezed
+abstract class StayShuttlesModel with _$StayShuttlesModel {
+  const StayShuttlesModel._();
+
+  const factory StayShuttlesModel({
+    /// `arrival`, `stay`, `return`; null outside the arrival day → return day window.
+    String? phase,
+    required DateTime serverTime,
+    @Default([]) List<TravellerShuttleModel> shuttles,
+  }) = _StayShuttlesModel;
+
+  factory StayShuttlesModel.fromJson(Map<String, dynamic> json) => _$StayShuttlesModelFromJson(json);
+
+  bool get visible => phase != null;
+  TravellerShuttleModel? get mine => shuttles.where((s) => s.mine).firstOrNull;
 }
 
 @freezed

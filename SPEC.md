@@ -134,6 +134,23 @@ Règles métier :
 
 Hors MVP : optimisation d'itinéraire.
 
+#### Véhicules, deux sens, navette en direct pendant le séjour (décisions du 04/10/2026, mis en œuvre)
+
+- **V-A « Fiche complète »** : chaque navette a une fiche (modèle, couleur, plaque, places passagers hors chauffeur,
+  en service / hors service, chauffeur habituel), tenue dans Réglages › Navettes (espace pro web) et dans Plus › Véhicules
+  de navette (Plazo Pro, gérants). Au départ d'un trajet, le chauffeur retrouve son véhicule habituel présélectionné, un
+  véhicule hors service n'est pas proposé, et le nombre de passagers de la sélection ne peut pas dépasser les places
+  (`too_many_passengers`, vérifié dans l'app et par l'API).
+- **T-A « Deux sens »** : le chauffeur démarre soit un trajet **vers l'aéroport** (aller chercher les retours, comme
+  avant), soit un trajet **vers le terminal** avec les clients arrivés au parking (statut « arrivé », arrivée des
+  dernières heures). Même partage de position, même fin ; la fin d'une dépose passe ses passagers à « Parti en navette ».
+- **S-A « Navette en direct le jour J »** : du jour d'arrivée au jour du retour, la réservation du voyageur montre un
+  bloc « Navette » : les navettes du parking en route (véhicule, prénom du chauffeur, sens, position sur la carte,
+  distance et délai jusqu'au parking le jour d'arrivée et pendant le séjour, jusqu'au point de rendez-vous le jour du
+  retour), la sienne mise en avant ; « Aucune navette en route » sinon ; rien hors de ces jours. Interrogé toutes les
+  12 s tant que la réservation est ouverte. Le jour du retour, quand sa propre navette vient le chercher, c'est la carte
+  « Navette en route vers vous » qui prend le relais.
+
 #### Le jour du retour (mis en œuvre, maquette validée « Votre retour »)
 
 Le flux réel, côté voyageur (app, réservation Plazo ouverte par le lien ou par référence + email) :

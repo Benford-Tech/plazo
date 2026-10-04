@@ -38,12 +38,58 @@ abstract class PickupsModel with _$PickupsModel {
   factory PickupsModel.fromJson(Map<String, dynamic> json) => _$PickupsModelFromJson(json);
 }
 
-/// One of the operator's shuttles (GET /internal/shuttle/vehicles).
+/// One of the operator's shuttles (GET /internal/shuttle/vehicles): the sheet (V-A, 04/10/2026).
 @freezed
 abstract class ShuttleVehicleModel with _$ShuttleVehicleModel {
-  const factory ShuttleVehicleModel({required String id, required String model, String? colour, String? plate}) = _ShuttleVehicleModel;
+  const ShuttleVehicleModel._();
+
+  const factory ShuttleVehicleModel({
+    required String id,
+    required String model,
+    String? colour,
+    String? plate,
+
+    /// Passenger seats, the driver's excluded (null: unknown).
+    int? seats,
+    @Default(true) bool inService,
+
+    /// The usual driver, preselected in their app.
+    String? driverId,
+    String? driverName,
+  }) = _ShuttleVehicleModel;
 
   factory ShuttleVehicleModel.fromJson(Map<String, dynamic> json) => _$ShuttleVehicleModelFromJson(json);
+
+  /// "Mercedes Vito · blanche".
+  String get title => [model, colour].whereType<String>().join(' · ');
+}
+
+/// An arrived traveller waiting at the parking for the shuttle to the terminal (GET /internal/shuttle/departures).
+@freezed
+abstract class DepartureRowModel with _$DepartureRowModel {
+  const factory DepartureRowModel({
+    required String reservationId,
+    required String reference,
+    required String customerName,
+    required int passengers,
+    required String plate,
+    required String status,
+    required DateTime arrivalAt,
+    DateTime? arrivedAt,
+
+    /// Spot code, when the vehicle was placed.
+    String? spot,
+    String? tripId,
+  }) = _DepartureRowModel;
+
+  factory DepartureRowModel.fromJson(Map<String, dynamic> json) => _$DepartureRowModelFromJson(json);
+}
+
+@freezed
+abstract class DeparturesModel with _$DeparturesModel {
+  const factory DeparturesModel({required DateTime serverTime, @Default([]) List<DepartureRowModel> rows}) = _DeparturesModel;
+
+  factory DeparturesModel.fromJson(Map<String, dynamic> json) => _$DeparturesModelFromJson(json);
 }
 
 @freezed
@@ -68,6 +114,9 @@ abstract class StaffTripModel with _$StaffTripModel {
   const factory StaffTripModel({
     required String id,
     required String status,
+
+    /// `pickup`: to the airport for returning travellers; `dropoff`: to the terminal with arrived ones.
+    @Default('pickup') String direction,
     required String driverId,
     required String driverName,
     @Default(TripVehicleModel()) TripVehicleModel vehicle,
@@ -84,6 +133,7 @@ abstract class StaffTripModel with _$StaffTripModel {
   factory StaffTripModel.fromJson(Map<String, dynamic> json) => _$StaffTripModelFromJson(json);
 
   bool get running => status == 'running';
+  bool get dropoff => direction == 'dropoff';
 }
 
 @freezed

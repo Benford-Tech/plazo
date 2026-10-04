@@ -26,6 +26,10 @@ abstract class ReturnClient {
     @Query('lng') double? lng,
   });
 
+  /// The parking's running shuttles during the stay; polled every 12 s while the booking is open.
+  @GET('public/bookings/{reference}/shuttles')
+  Future<StayShuttlesModel> stayShuttles({@Path('reference') required String reference, @Header('x-booking-token') required String token});
+
   /// Polled every 10 s while the shuttle is on its way.
   @GET('public/bookings/{reference}/shuttle')
   Future<ShuttleStatusModel> shuttle({@Path('reference') required String reference, @Header('x-booking-token') required String token});

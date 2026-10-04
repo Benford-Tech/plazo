@@ -86,7 +86,7 @@ model Staff {
   createdAt       DateTime  @default(now())
   updatedAt       DateTime  @default(now()) @updatedAt
 
-  operator            Operator        @relation(fields: [operatorId], references: [id], onDelete: Cascade)
+  operator            Operator         @relation(fields: [operatorId], references: [id], onDelete: Cascade)
   tokens              StaffToken[]
   accountTokens       AccountToken[]
   auditLogs           AuditLog[]
@@ -94,6 +94,7 @@ model Staff {
   capacityStudies     CapacityStudy[]
   devices             StaffDevice[]
   shuttleTrips        ShuttleTrip[]
+  shuttleVehicles     ShuttleVehicle[]
 
   @@index([operatorId])
   @@map("staff")
@@ -213,27 +214,27 @@ enum StayClass {
 // drawn on the IGN aerial photo, scoped to its parking. The spots generated from it are rows of
 // ParkingSpot so the occupation and the per-spot planning can reference them. GeoJSON in WGS84.
 model ParkingPlan {
-  id          String   @id @default(cuid())
-  parkingId   String   @unique
+  id          String    @id @default(cuid())
+  parkingId   String    @unique
   // GeoJSON Polygon of the land, or null until it is drawn.
   outline     Json?
   // Cadastral parcels used for the outline: [{ id, section, numero, commune, contenance, geometry }].
-  parcels     Json     @default("[]")
+  parcels     Json      @default("[]")
   // Correction of every length (areas: its square), from a dimension measured on site.
-  scaleFactor Float    @default(1)
+  scaleFactor Float     @default(1)
   // [{ id, name, geometry: Polygon }]
-  zones       Json     @default("[]")
+  zones       Json      @default("[]")
   // [{ id, name, kind, geometry: Polygon | LineString | Point, clearance }]
-  exclusions  Json     @default("[]")
+  exclusions  Json      @default("[]")
   // Layout settings (slot sizes, aisle width, max depth, setback…) and the scale calibration.
-  settings    Json     @default("{}")
+  settings    Json      @default("{}")
   // Fixed elements: [{ id, kind: entrance | exit | handover | shuttle_stop | key_box, geometry: Point }].
-  landmarks   Json     @default("[]")
+  landmarks   Json      @default("[]")
   // Layout the spots were generated with: selfPark | valet24 | valet5.
   layout      String?
   generatedAt DateTime?
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @default(now()) @updatedAt
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @default(now()) @updatedAt
 
   parking Parking @relation(fields: [parkingId], references: [id], onDelete: Cascade)
 
@@ -242,25 +243,25 @@ model ParkingPlan {
 
 // One spot of the plan. `code` is what the staff reads and says ("A-02-08"): zone letter, row, index.
 model ParkingSpot {
-  id        String   @id @default(cuid())
-  parkingId String
-  zoneId    String
-  code      String
-  row       Int
-  index     Int
-  kind      SpotKind @default(standard)
+  id         String     @id @default(cuid())
+  parkingId  String
+  zoneId     String
+  code       String
+  row        Int
+  index      Int
+  kind       SpotKind   @default(standard)
   // An inactive spot stays on the plan (greyed) but counts for nothing.
-  active    Boolean  @default(true)
+  active     Boolean    @default(true)
   // Closed ring of the spot's outline, [[lon, lat] × 5].
-  geometry  Json
+  geometry   Json
   // Centre of the spot, for the search and the distances.
-  lon       Float
-  lat       Float
+  lon        Float
+  lat        Float
   // Rank from the aisle (0: first), length of the file, and the stay class that follows (valet layouts).
   depth      Int?
   fileLength Int?
   stayClass  StayClass?
-  createdAt DateTime @default(now())
+  createdAt  DateTime   @default(now())
 
   parking      Parking       @relation(fields: [parkingId], references: [id], onDelete: Cascade)
   reservations Reservation[]
@@ -642,9 +643,14 @@ model ShuttleVehicle {
   model      String // e.g. "Mercedes Vito"
   colour     String? // e.g. "blanche"
   plate      String? // display form, e.g. GH-456-JK
+  seats      Int? // passenger seats (the driver's excluded); null: unknown
+  inService  Boolean  @default(true) // false: in the garage, not offered at the start of a trip
+  driverId   String? // the usual driver, preselected in their app
   createdAt  DateTime @default(now())
+  updatedAt  DateTime @default(now()) @updatedAt
 
   operator Operator      @relation(fields: [operatorId], references: [id], onDelete: Cascade)
+  driver   Staff?        @relation(fields: [driverId], references: [id], onDelete: SetNull)
   trips    ShuttleTrip[]
 
   @@index([operatorId])
@@ -654,6 +660,13 @@ model ShuttleVehicle {
 enum ShuttleTripStatus {
   running
   ended
+}
+
+/// Where the shuttle goes: to the airport to pick returning travellers up, or to the terminal
+/// to drop off the travellers who just left their vehicle at the parking.
+enum ShuttleTripDirection {
+  pickup
+  dropoff
 }
 
 enum ShuttleTripEndReason {
@@ -675,6 +688,7 @@ model ShuttleTrip {
   vehicleModel       String?
   vehicleColour      String?
   vehiclePlate       String?
+  direction          ShuttleTripDirection  @default(pickup)
   status             ShuttleTripStatus
   endReason          ShuttleTripEndReason?
   startedAt          DateTime

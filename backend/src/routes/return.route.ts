@@ -1,7 +1,7 @@
 import { Router } from 'express';
 import { ReturnController } from '@/controllers/return.controller';
 import { ShuttleController } from '@/controllers/shuttle.controller';
-import { ShuttleVehicleDto, StartTripDto, TripPositionDto } from '@/dtos/shuttle.dto';
+import { ShuttleVehicleDto, StartTripDto, TripPositionDto, UpdateShuttleVehicleDto } from '@/dtos/shuttle.dto';
 import { Routes } from '@/interfaces/routes.interface';
 import { RefuseInViewAs, StaffAuthMiddleware } from '@/middlewares/staff-auth.middleware';
 import { ValidationMiddleware } from '@/middlewares/validation.middleware';
@@ -41,6 +41,8 @@ import { ValidationMiddleware } from '@/middlewares/validation.middleware';
  *       nullable: true
  *       properties:
  *         tripId: { type: string }
+ *         direction: { type: string, enum: [pickup, dropoff] }
+ *         mine: { type: boolean, description: This booking is on the trip }
  *         startedAt: { type: string, format: date-time }
  *         vehicle: { type: object, properties: { model: { type: string, nullable: true }, colour: { type: string, nullable: true }, plate: { type: string, nullable: true } } }
  *         driverFirstName: { type: string }
@@ -50,6 +52,7 @@ import { ValidationMiddleware } from '@/middlewares/validation.middleware';
  *         etaMinutes: { type: integer, nullable: true, description: "Straight line at 40 km/h, at least 1" }
  *         etaAt: { type: string, format: date-time, nullable: true }
  *         meetingPoint: { $ref: '#/components/schemas/MeetingPoint' }
+ *         destination: { type: object, nullable: true, properties: { kind: { type: string, enum: [parking, meeting_point] }, lat: { type: number }, lng: { type: number }, label: { type: string, nullable: true } } }
  *     TravellerReturn:
  *       type: object
  *       properties:
@@ -81,11 +84,29 @@ import { ValidationMiddleware } from '@/middlewares/validation.middleware';
  *         model: { type: string, example: "Mercedes Vito" }
  *         colour: { type: string, nullable: true, example: "blanche" }
  *         plate: { type: string, nullable: true, example: "GH-456-JK" }
+ *         seats: { type: integer, nullable: true, description: Passenger seats, the driver's excluded }
+ *         inService: { type: boolean }
+ *         driverId: { type: string, nullable: true, description: The usual driver }
+ *         driverName: { type: string, nullable: true }
+ *     DepartureRow:
+ *       type: object
+ *       properties:
+ *         reservationId: { type: string }
+ *         reference: { type: string }
+ *         customerName: { type: string }
+ *         passengers: { type: integer }
+ *         plate: { type: string }
+ *         status: { type: string }
+ *         arrivalAt: { type: string, format: date-time }
+ *         arrivedAt: { type: string, format: date-time, nullable: true }
+ *         spot: { type: string, nullable: true }
+ *         tripId: { type: string, nullable: true }
  *     StaffTrip:
  *       type: object
  *       properties:
  *         id: { type: string }
  *         status: { type: string, enum: [running, ended] }
+ *         direction: { type: string, enum: [pickup, dropoff], description: "pickup: to the airport for returning travellers; dropoff: to the terminal with arrived ones" }
  *         driverId: { type: string }
  *         driverName: { type: string }
  *         vehicle: { type: object, properties: { model: { type: string, nullable: true }, colour: { type: string, nullable: true }, plate: { type: string, nullable: true } } }
@@ -159,6 +180,27 @@ import { ValidationMiddleware } from '@/middlewares/validation.middleware';
  *       200:
  *         description: "{ shuttle, serverTime }"
  *         content: { application/json: { schema: { type: object, properties: { shuttle: { $ref: '#/components/schemas/TravellerShuttle' }, serverTime: { type: string, format: date-time } } } } }
+ * /public/bookings/{reference}/shuttles:
+ *   get:
+ *     summary: The parking's running shuttles during the stay (arrival day to return day), the booking's own flagged
+ *     description: |
+ *       `phase` is `arrival`, `stay` or `return` (distance to the parking, or to the meeting point on the return
+ *       day), null outside those days. Polled every 12 s by the app while the booking is open.
+ *     tags: [Return day]
+ *     security: []
+ *     parameters: [{ $ref: '#/components/parameters/BookingReference' }, { $ref: '#/components/parameters/BookingToken' }]
+ *     responses:
+ *       200:
+ *         description: "{ phase, serverTime, shuttles }"
+ *         content: { application/json: { schema: { type: object, properties: { phase: { type: string, nullable: true, enum: [arrival, stay, return] }, serverTime: { type: string, format: date-time }, shuttles: { type: array, items: { $ref: '#/components/schemas/TravellerShuttle' } } } } } }
+ * /internal/shuttle/departures:
+ *   get:
+ *     summary: Today's arrived travellers waiting for the shuttle to the terminal (driver, drop-off)
+ *     tags: [Shuttle]
+ *     responses:
+ *       200:
+ *         description: "{ serverTime, rows }"
+ *         content: { application/json: { schema: { type: object, properties: { serverTime: { type: string }, rows: { type: array, items: { $ref: '#/components/schemas/DepartureRow' } } } } } }
  * /internal/shuttle/pickups:
  *   get:
  *     summary: Today's returns to pick up at the airport (driver), flights refreshed when due
@@ -188,9 +230,31 @@ import { ValidationMiddleware } from '@/middlewares/validation.middleware';
  *               model: { type: string }
  *               colour: { type: string, nullable: true }
  *               plate: { type: string, nullable: true }
+ *               seats: { type: integer, nullable: true, minimum: 1, maximum: 60 }
+ *               inService: { type: boolean }
+ *               driverId: { type: string, nullable: true }
  *     responses:
  *       201: { description: "{ data }" }
  * /internal/shuttle/vehicles/{id}:
+ *   patch:
+ *     summary: Edit a shuttle's sheet (manager); fields left out keep their value
+ *     tags: [Shuttle]
+ *     parameters: [{ in: path, name: id, required: true, schema: { type: string } }]
+ *     requestBody:
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               model: { type: string }
+ *               colour: { type: string, nullable: true }
+ *               plate: { type: string, nullable: true }
+ *               seats: { type: integer, nullable: true, minimum: 1, maximum: 60 }
+ *               inService: { type: boolean }
+ *               driverId: { type: string, nullable: true }
+ *     responses:
+ *       200: { description: "{ data }" }
+ *       422: { description: "invalid_driver" }
  *   delete:
  *     summary: Remove a shuttle (manager); running trips keep their snapshot of it
  *     tags: [Shuttle]
@@ -223,6 +287,7 @@ import { ValidationMiddleware } from '@/middlewares/validation.middleware';
  *               reservationIds: { type: array, items: { type: string }, minItems: 1, maxItems: 30 }
  *               vehicleId: { type: string, nullable: true }
  *               vehicle: { type: object, nullable: true, properties: { model: { type: string, nullable: true }, colour: { type: string, nullable: true }, plate: { type: string, nullable: true } } }
+ *               direction: { type: string, enum: [pickup, dropoff], default: pickup, description: "dropoff: arrived travellers to the terminal (422 invalid_passengers otherwise); a vehicle with fewer seats than passengers is refused (422 too_many_passengers), an out-of-service one too (422 vehicle_out_of_service)" }
  *     responses:
  *       201: { description: "{ trip }", content: { application/json: { schema: { type: object, properties: { trip: { $ref: '#/components/schemas/StaffTrip' } } } } } }
  * /internal/shuttle/trips/{id}/position:
@@ -268,14 +333,22 @@ export class ReturnRoute implements Routes {
     this.router.post(`${base}/return/landed`, this.returns.landed);
     this.router.get(`${base}/return/route`, this.returns.route);
     this.router.get(`${base}/shuttle`, this.returns.shuttle);
+    this.router.get(`${base}/shuttles`, this.returns.shuttles);
 
     this.router.get('/internal/shuttle/pickups', StaffAuthMiddleware('reservations:view'), this.shuttle.pickups);
+    this.router.get('/internal/shuttle/departures', StaffAuthMiddleware('reservations:view'), this.shuttle.departures);
     this.router.get('/internal/shuttle/vehicles', StaffAuthMiddleware('reservations:view'), this.shuttle.vehicles);
     this.router.post(
       '/internal/shuttle/vehicles',
       StaffAuthMiddleware('parking:manage'),
       ValidationMiddleware(ShuttleVehicleDto),
       this.shuttle.addVehicle,
+    );
+    this.router.patch(
+      '/internal/shuttle/vehicles/:id',
+      StaffAuthMiddleware('parking:manage'),
+      ValidationMiddleware(UpdateShuttleVehicleDto),
+      this.shuttle.updateVehicle,
     );
     this.router.delete('/internal/shuttle/vehicles/:id', StaffAuthMiddleware('parking:manage'), this.shuttle.removeVehicle);
     this.router.get('/internal/shuttle/trips/current', StaffAuthMiddleware('reservations:status'), this.shuttle.current);

@@ -22,6 +22,7 @@ import '../../features/pro_settings/presentation/pages/pro_team_page.dart';
 import '../../features/pro_shell/presentation/pages/pro_more_tab_page.dart';
 import '../../features/pro_shell/presentation/pages/pro_shell_page.dart';
 import '../../features/pro_shuttle/presentation/pages/pro_shuttle_page.dart';
+import '../../features/pro_shuttle/presentation/pages/pro_vehicles_page.dart';
 import '../../features/pro_spot_planning/presentation/pages/pro_spot_planning_page.dart';
 import '../../features/pro_today/presentation/pages/pro_today_page.dart';
 import '../../features/return_day/presentation/pages/meeting_point_route_page.dart';
@@ -74,6 +75,7 @@ class AppRouter extends RootStackRouter {
     ),
     AutoRoute(page: ProNotificationsRoute.page, path: '/pro/notifications', guards: [proGuard]),
     AutoRoute(page: ProShuttleRoute.page, path: '/pro/navette', guards: [proGuard]),
+    AutoRoute(page: ProVehiclesRoute.page, path: '/pro/navettes', guards: [proGuard]),
     AutoRoute(page: ProPlanRoute.page, path: '/pro/plan', guards: [proGuard]),
     AutoRoute(page: ProSpotPlanningRoute.page, path: '/pro/planning-places', guards: [proGuard]),
     AutoRoute(page: ProTeamRoute.page, path: '/pro/equipe', guards: [proGuard]),

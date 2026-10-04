@@ -33,6 +33,12 @@ export class ReturnController {
     res.json(await this.returns.route(reference(req), bookingToken(req), from));
   });
 
+  /** GET /public/bookings/:reference/shuttles */
+  public shuttles = catchAsync(async (req: Request, res: Response) => {
+    res.set('Cache-Control', 'no-store');
+    res.json(await this.returns.stayShuttles(reference(req), bookingToken(req)));
+  });
+
   /** GET /public/bookings/:reference/shuttle */
   public shuttle = catchAsync(async (req: Request, res: Response) => {
     res.set('Cache-Control', 'no-store');

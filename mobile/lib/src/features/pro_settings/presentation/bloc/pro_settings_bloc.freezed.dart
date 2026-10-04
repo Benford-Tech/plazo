@@ -15,7 +15,7 @@ T _$identity<T>(T value) => value;
 /// @nodoc
 mixin _$ProSettingsState {
 
- ViewState get viewState; ViewState get actionState; ParkingSettingsModel? get parking; SmsSettingsModel? get sms; SmsStatusModel? get smsStatus;/// "settings.saved", "sms.saved", "sms.test_sent:<to>", "sms.test_queued:<to>", "sms.disabled", "account.password_changed".
+ ViewState get viewState; ViewState get actionState; ParkingSettingsModel? get parking; SmsSettingsModel? get sms; SmsStatusModel? get smsStatus;/// "settings.saved", "sms.saved", "sms.test_sent:`to`", "sms.test_queued:`to`", "sms.disabled", "account.password_changed".
  String? get notice; String? get errorCode; Map<String, String> get fieldErrors;
 /// Create a copy of ProSettingsState
 /// with the given fields replaced by the non-null parameter values.
@@ -264,7 +264,7 @@ class _ProSettingsState implements ProSettingsState {
 @override final  ParkingSettingsModel? parking;
 @override final  SmsSettingsModel? sms;
 @override final  SmsStatusModel? smsStatus;
-/// "settings.saved", "sms.saved", "sms.test_sent:<to>", "sms.test_queued:<to>", "sms.disabled", "account.password_changed".
+/// "settings.saved", "sms.saved", "sms.test_sent:`to`", "sms.test_queued:`to`", "sms.disabled", "account.password_changed".
 @override final  String? notice;
 @override final  String? errorCode;
  final  Map<String, String> _fieldErrors;

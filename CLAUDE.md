@@ -71,6 +71,14 @@ Ne construire QUE ce qui règle la douleur n°1 du client.
    - Suivi de l'heure d'atterrissage réelle (API de suivi de vols, à choisir).
    - File des clients à récupérer, triée par heure d'arrivée, pour le chauffeur (vue mobile).
    - SMS au client au moment de l'atterrissage (point de rendez-vous, délai).
+   - Décisions du 04/10/2026 : **V-A** fiche véhicule complète (modèle, couleur, plaque, places passagers, en service /
+     hors service, chauffeur habituel ; `ShuttleVehicle.seats/inService/driverId`, Réglages web et Plus › Véhicules de
+     navette dans l'app pro ; au départ d'un trajet, les places limitent les passagers et un véhicule hors service n'est
+     pas proposé) ; **T-A** trajets dans les deux sens (`ShuttleTrip.direction` `pickup` vers l'aéroport pour les retours,
+     `dropoff` vers le terminal avec les clients arrivés, `GET /internal/shuttle/departures`, fin d'une dépose = statut
+     « Parti en navette ») ; **S-A** navette en direct pour le voyageur du jour d'arrivée au jour du retour
+     (`GET /public/bookings/:ref/shuttles` : navettes du parking en cours, véhicule, prénom, position, distance au parking
+     ou au point de rendez-vous, la sienne repérée ; bloc « Navette » de la réservation, interrogé toutes les 12 s).
 
 ## Liste « plus tard » (le « bien plus »), hors MVP
 

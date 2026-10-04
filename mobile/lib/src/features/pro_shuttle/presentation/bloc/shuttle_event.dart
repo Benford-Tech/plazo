@@ -5,7 +5,15 @@ sealed class ShuttleEvent {
 }
 
 class ShuttleStarted extends ShuttleEvent {
-  const ShuttleStarted();
+  /// The signed-in driver: their usual vehicle is preselected.
+  const ShuttleStarted({this.staffId});
+  final String? staffId;
+}
+
+/// "Aller chercher à l'aéroport" / "Déposer au terminal" (T-A "Deux sens").
+class ShuttleDirectionChanged extends ShuttleEvent {
+  const ShuttleDirectionChanged(this.direction);
+  final String direction;
 }
 
 class ShuttlePolled extends ShuttleEvent {

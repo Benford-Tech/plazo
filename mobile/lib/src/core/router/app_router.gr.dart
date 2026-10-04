@@ -764,6 +764,22 @@ class ProTodayRoute extends PageRouteInfo<void> {
 }
 
 /// generated route for
+/// [ProVehiclesPage]
+class ProVehiclesRoute extends PageRouteInfo<void> {
+  const ProVehiclesRoute({List<PageRouteInfo>? children})
+    : super(ProVehiclesRoute.name, initialChildren: children);
+
+  static const String name = 'ProVehiclesRoute';
+
+  static PageInfo page = PageInfo(
+    name,
+    builder: (data) {
+      return WrappedRoute(child: const ProVehiclesPage());
+    },
+  );
+}
+
+/// generated route for
 /// [ResultsPage]
 class ResultsRoute extends PageRouteInfo<ResultsRouteArgs> {
   ResultsRoute({

@@ -72,7 +72,7 @@ async function parkingWithReturningBooking(options: { flight?: string | null; me
   // The vehicle is on site, the return is in an hour: the return day.
   const reservation = await prisma.reservation.update({
     where: { reference },
-    data: { status: 'arrived', arrivedAt: new Date(), arrivalAt: minutesFromNow(-3 * 24 * 60), returnAt: minutesFromNow(60) },
+    data: { status: 'arrived', arrivedAt: minutesFromNow(-3 * 24 * 60), arrivalAt: minutesFromNow(-3 * 24 * 60), returnAt: minutesFromNow(60) },
   });
   return { op, reference, manageToken, reservation };
 }
@@ -582,6 +582,165 @@ describe('navette (mode chauffeur)', () => {
     const again = await start(driver.token, [b.reservation.id], { vehicleId: vehicle.body.data.id });
     expect(again.body.trip.vehicle).toMatchObject({ model: 'Renault Trafic', colour: 'grise' });
     expect((await api().post(`/api/internal/shuttle/trips/${again.body.trip.id}/end`).set(auth(b.op.token))).body.trip.status).toBe('ended');
+  });
+
+  it('fiche véhicule : places, en service, chauffeur habituel (V-A), modifiable', async () => {
+    const b = await parkingWithReturningBooking();
+    const driver = await addStaff(b.op.token, 'driver');
+    const other = await setupOperator('Autre');
+    const bad = await api().post('/api/internal/shuttle/vehicles').set(auth(b.op.token)).send({ model: 'Vito', seats: 0 });
+    expect(bad.status).toBe(400);
+    expect(bad.body.fields.seats).toBe('invalid_seats');
+    // The usual driver must be one of the team.
+    const foreign = await api().post('/api/internal/shuttle/vehicles').set(auth(b.op.token)).send({ model: 'Vito', driverId: other.manager.id });
+    expect(foreign.status).toBe(422);
+    expect(foreign.body.code).toBe('invalid_driver');
+    const created = await api()
+      .post('/api/internal/shuttle/vehicles')
+      .set(auth(b.op.token))
+      .send({ model: 'Mercedes Vito', colour: 'blanche', plate: 'gh-456-jk', seats: 8, driverId: driver.id });
+    expect(created.status).toBe(201);
+    expect(created.body.data).toMatchObject({ seats: 8, inService: true, driverId: driver.id, driverName: driver.session.user.name });
+    const id = created.body.data.id;
+    expect((await api().patch(`/api/internal/shuttle/vehicles/${id}`).set(auth(driver.token)).send({ seats: 4 })).status).toBe(403);
+    expect((await api().patch(`/api/internal/shuttle/vehicles/${id}`).set(auth(other.token)).send({ seats: 4 })).status).toBe(404);
+    const updated = await api()
+      .patch(`/api/internal/shuttle/vehicles/${id}`)
+      .set(auth(b.op.token))
+      .send({ seats: 4, inService: false, driverId: null });
+    expect(updated.status).toBe(200);
+    expect(updated.body.data).toMatchObject({ model: 'Mercedes Vito', seats: 4, inService: false, driverId: null, driverName: null });
+    const list = await api().get('/api/internal/shuttle/vehicles').set(auth(driver.token));
+    expect(list.body.data).toEqual([expect.objectContaining({ id, seats: 4, inService: false })]);
+    // Out of service: not for a trip. Too few seats: refused too.
+    expect((await start(driver.token, [b.reservation.id], { vehicleId: id })).body.code).toBe('vehicle_out_of_service');
+    await api().patch(`/api/internal/shuttle/vehicles/${id}`).set(auth(b.op.token)).send({ inService: true, seats: 1 });
+    const tooMany = await start(driver.token, [b.reservation.id], { vehicleId: id });
+    expect(tooMany.status).toBe(422);
+    expect(tooMany.body).toMatchObject({ code: 'too_many_passengers', details: { seats: 1, passengers: 2 } });
+    await api().patch(`/api/internal/shuttle/vehicles/${id}`).set(auth(b.op.token)).send({ seats: 2 });
+    expect((await start(driver.token, [b.reservation.id], { vehicleId: id })).status).toBe(201);
+  });
+
+  it('trajet vers le terminal (T-A) : les arrivés du jour, départ, fin = « Parti en navette »', async () => {
+    const b = await parkingWithReturningBooking();
+    const driver = await addStaff(b.op.token, 'driver');
+    // A traveller who just left their vehicle (arrival today, return in two days).
+    const arriving = await api()
+      .post('/api/public/bookings')
+      .send({
+        airport: 'lyon-saint-exupery',
+        parking: `parking-${b.op.parking.id}`,
+        arrivalAt: inDays(5, '06:30'),
+        returnAt: inDays(7, '15:05'),
+        customerName: 'Léa Durand',
+        customerPhone: '06 98 76 54 32',
+        customerEmail: `lea${b.op.parking.id}@example.com`,
+        plate: 'gh456jk',
+        passengers: 1,
+        acceptTerms: true,
+      });
+    const row = await prisma.reservation.update({
+      where: { reference: arriving.body.reference },
+      data: { status: 'arrived', arrivedAt: minutesFromNow(-10), arrivalAt: minutesFromNow(-20), returnAt: minutesFromNow(2 * 24 * 60) },
+    });
+    const departures = await api().get('/api/internal/shuttle/departures').set(auth(driver.token));
+    expect(departures.status).toBe(200);
+    // The returning traveller (arrived three days ago) is not waiting for the terminal.
+    expect(departures.body.rows).toEqual([
+      expect.objectContaining({ reservationId: row.id, customerName: 'Léa Durand', passengers: 1, tripId: null }),
+    ]);
+    // Only arrived travellers board a drop-off.
+    await prisma.reservation.update({ where: { id: b.reservation.id }, data: { status: 'shuttled_out' } });
+    expect((await start(driver.token, [b.reservation.id], { direction: 'dropoff' })).body.code).toBe('invalid_passengers');
+    expect((await start(driver.token, [row.id], { direction: 'sideways' })).status).toBe(400);
+    const started = await start(driver.token, [row.id], { direction: 'dropoff', vehicle: { model: 'Vito' } });
+    expect(started.status).toBe(201);
+    expect(started.body.trip).toMatchObject({ direction: 'dropoff', status: 'running' });
+    expect((await api().get('/api/internal/shuttle/departures').set(auth(driver.token))).body.rows[0].tripId).toBe(started.body.trip.id);
+    // The pick-up card of the traveller's return is not this trip.
+    expect(
+      (await api().get(`/api/public/bookings/${arriving.body.reference}/shuttle`).set(bookingToken(arriving.body.manageToken))).body.shuttle,
+    ).toBeNull();
+    const ended = await api().post(`/api/internal/shuttle/trips/${started.body.trip.id}/end`).set(auth(driver.token));
+    expect(ended.body.trip.status).toBe('ended');
+    expect((await prisma.reservation.findUniqueOrThrow({ where: { id: row.id } })).status).toBe('shuttled_out');
+    expect((await api().get('/api/internal/shuttle/departures').set(auth(driver.token))).body.rows).toHaveLength(0);
+  });
+
+  it('navette en direct le jour J (S-A) : les navettes du parking, du jour d’arrivée au jour du retour', async () => {
+    const b = await parkingWithReturningBooking();
+    const driver = await addStaff(b.op.token, 'driver');
+    const shuttles = (reference: string, token: string) => api().get(`/api/public/bookings/${reference}/shuttles`).set(bookingToken(token));
+    // Nothing running: the return day still shows the block, empty.
+    const quiet = await shuttles(b.reference, b.manageToken);
+    expect(quiet.status).toBe(200);
+    expect(quiet.body).toMatchObject({ phase: 'return', shuttles: [] });
+    // Arrived today: the arrival day; upcoming in five days: nothing.
+    const today = await api()
+      .post('/api/public/bookings')
+      .send({
+        airport: 'lyon-saint-exupery',
+        parking: `parking-${b.op.parking.id}`,
+        arrivalAt: inDays(5, '06:30'),
+        returnAt: inDays(7, '15:05'),
+        customerName: 'Léa Durand',
+        customerPhone: '06 98 76 54 32',
+        customerEmail: `lea${b.op.parking.id}@example.com`,
+        plate: 'gh456jk',
+        passengers: 1,
+        acceptTerms: true,
+      });
+    await prisma.reservation.update({
+      where: { reference: today.body.reference },
+      data: { status: 'arrived', arrivedAt: minutesFromNow(-10), arrivalAt: minutesFromNow(-20), returnAt: minutesFromNow(2 * 24 * 60) },
+    });
+    const later = await api()
+      .post('/api/public/bookings')
+      .send({
+        airport: 'lyon-saint-exupery',
+        parking: `parking-${b.op.parking.id}`,
+        arrivalAt: inDays(5, '06:30'),
+        returnAt: inDays(7, '15:05'),
+        customerName: 'Noa Petit',
+        customerPhone: '06 11 22 33 44',
+        customerEmail: `noa${b.op.parking.id}@example.com`,
+        plate: 'ab123cd',
+        passengers: 1,
+        acceptTerms: true,
+      });
+    expect((await shuttles(later.body.reference, later.body.manageToken)).body).toMatchObject({ phase: null, shuttles: [] });
+
+    const started = await start(driver.token, [b.reservation.id], { vehicle: { model: 'Vito', colour: 'blanche' } });
+    const trip = started.body.trip;
+    await position(driver.token, trip.id, 45.735, 5.055);
+    // The returning traveller: their own trip, measured to the meeting point.
+    const mine = await shuttles(b.reference, b.manageToken);
+    expect(mine.body.phase).toBe('return');
+    expect(mine.body.shuttles).toHaveLength(1);
+    expect(mine.body.shuttles[0]).toMatchObject({
+      tripId: trip.id,
+      direction: 'pickup',
+      mine: true,
+      driverFirstName: driver.session.user.name.split(' ')[0],
+      vehicle: { model: 'Vito', colour: 'blanche' },
+      position: { lat: 45.735, lng: 5.055 },
+      destination: { kind: 'meeting_point', label: 'Terminal 1 · Porte 12' },
+    });
+    expect(mine.body.shuttles[0].etaMinutes).toBeGreaterThanOrEqual(1);
+    // The traveller arrived today sees the same shuttle, not theirs, measured to the parking.
+    const theirs = await shuttles(today.body.reference, today.body.manageToken);
+    expect(theirs.body.phase).toBe('arrival');
+    expect(theirs.body.shuttles[0]).toMatchObject({
+      tripId: trip.id,
+      mine: false,
+      destination: { kind: 'parking', lat: RECEPTION.lat, lng: RECEPTION.lng },
+    });
+    expect(theirs.body.shuttles[0].distanceM).toBeGreaterThan(100);
+    // Another parking's traveller never sees it.
+    expect((await shuttles(b.reference, 'wrong-token')).status).toBe(404);
+    await api().post(`/api/internal/shuttle/trips/${trip.id}/end`).set(auth(driver.token));
+    expect((await shuttles(b.reference, b.manageToken)).body.shuttles).toHaveLength(0);
   });
 
   it('le point de rendez-vous du retour garde consignes et photo', async () => {

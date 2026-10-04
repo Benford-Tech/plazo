@@ -16,11 +16,37 @@ class TripVehicleChoice {
   };
 }
 
+/// The vehicle sheet typed by a manager (null clears a field; a field left out keeps its value).
+class VehicleSheetInput {
+  const VehicleSheetInput({this.model, this.colour, this.plate, this.seats, this.inService, this.driverId, this.clearSeats = false, this.clearDriver = false});
+  final String? model;
+  final String? colour;
+  final String? plate;
+  final int? seats;
+  final bool? inService;
+  final String? driverId;
+  final bool clearSeats;
+  final bool clearDriver;
+
+  Map<String, dynamic> toJson() => {
+    if (model != null) 'model': model,
+    if (colour != null) 'colour': colour!.trim().isEmpty ? null : colour!.trim(),
+    if (plate != null) 'plate': plate!.trim().isEmpty ? null : plate!.trim(),
+    if (seats != null || clearSeats) 'seats': seats,
+    if (inService != null) 'inService': inService,
+    if (driverId != null || clearDriver) 'driverId': driverId,
+  };
+}
+
 abstract class ShuttleDataSource {
   Future<PickupsModel> pickups();
+  Future<DeparturesModel> departures();
   Future<List<ShuttleVehicleModel>> vehicles();
+  Future<ShuttleVehicleModel> addVehicle(VehicleSheetInput input);
+  Future<ShuttleVehicleModel> updateVehicle(String id, VehicleSheetInput input);
+  Future<void> removeVehicle(String id);
   Future<StaffTripModel?> current();
-  Future<StaffTripModel> start(List<String> reservationIds, TripVehicleChoice vehicle);
+  Future<StaffTripModel> start(List<String> reservationIds, TripVehicleChoice vehicle, String direction);
   Future<StaffTripModel> sendPosition(String tripId, GeoPosition position);
   Future<StaffTripModel> end(String tripId);
 }
@@ -34,14 +60,26 @@ class ShuttleDataSourceImpl implements ShuttleDataSource {
   Future<PickupsModel> pickups() => client.pickups();
 
   @override
+  Future<DeparturesModel> departures() => client.departures();
+
+  @override
   Future<List<ShuttleVehicleModel>> vehicles() async => (await client.vehicles()).data;
+
+  @override
+  Future<ShuttleVehicleModel> addVehicle(VehicleSheetInput input) async => (await client.addVehicle(input.toJson())).data;
+
+  @override
+  Future<ShuttleVehicleModel> updateVehicle(String id, VehicleSheetInput input) async => (await client.updateVehicle(id, input.toJson())).data;
+
+  @override
+  Future<void> removeVehicle(String id) => client.removeVehicle(id);
 
   @override
   Future<StaffTripModel?> current() async => (await client.current()).trip;
 
   @override
-  Future<StaffTripModel> start(List<String> reservationIds, TripVehicleChoice vehicle) async =>
-      (await client.start({'reservationIds': reservationIds, ...vehicle.toJson()})).trip!;
+  Future<StaffTripModel> start(List<String> reservationIds, TripVehicleChoice vehicle, String direction) async =>
+      (await client.start({'reservationIds': reservationIds, 'direction': direction, ...vehicle.toJson()})).trip!;
 
   @override
   Future<StaffTripModel> sendPosition(String tripId, GeoPosition position) async => (await client.position(tripId, {

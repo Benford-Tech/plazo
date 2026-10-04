@@ -19,7 +19,9 @@ import '../../../arrival/data/models/arrival_model.dart';
 import '../../../arrival/presentation/bloc/arrival_bloc.dart';
 import '../../../arrival/presentation/widgets/arrival_block.dart';
 import '../../../return_day/presentation/bloc/return_bloc.dart';
+import '../../../return_day/presentation/bloc/stay_shuttles_bloc.dart';
 import '../../../return_day/presentation/widgets/return_block.dart';
+import '../../../return_day/presentation/widgets/stay_shuttles_block.dart';
 import '../../../trips/presentation/bloc/trips_bloc.dart';
 import '../../../trips/presentation/widgets/booking_actions.dart';
 import '../../data/models/public_booking_model.dart';
@@ -53,6 +55,7 @@ class MyBookingPage extends StatelessWidget implements AutoRouteWrapper {
         BlocProvider(create: (_) => locator<BookingBloc>()..add(BookingLinkOpened(reference, token: token))),
         BlocProvider(create: (_) => locator<ArrivalBloc>()),
         BlocProvider(create: (_) => locator<ReturnBloc>()),
+        BlocProvider(create: (_) => locator<StayShuttlesBloc>()),
       ],
       child: this,
     );
@@ -73,6 +76,10 @@ class MyBookingPage extends StatelessWidget implements AutoRouteWrapper {
         // The return day (vehicle on site): the flight, the meeting point and the shuttle.
         if (const ['arrived', 'shuttled_out', 'return_requested'].contains(state.booking?.status)) {
           context.read<ReturnBloc>().add(ReturnOpened(state.reference!));
+        }
+        // The stay (S-A): the parking's shuttles on the road, from the arrival day to the return day.
+        if (const ['upcoming', 'arrived', 'shuttled_out', 'return_requested'].contains(state.booking?.status)) {
+          context.read<StayShuttlesBloc>().add(StayShuttlesOpened(state.reference!));
         }
       },
       child: Scaffold(
@@ -98,6 +105,7 @@ class MyBookingPage extends StatelessWidget implements AutoRouteWrapper {
                   context.read<BookingBloc>().add(const BookingRefreshed());
                   context.read<ArrivalBloc>().add(const ArrivalRefreshRequested());
                   context.read<ReturnBloc>().add(const ReturnRefreshRequested());
+                  context.read<StayShuttlesBloc>().add(const StayShuttlesRefreshRequested());
                 },
                 child: BlocBuilder<ArrivalBloc, ArrivalState>(
                   buildWhen: (a, b) => a.openKind != b.openKind,
@@ -142,6 +150,13 @@ class MyBookingPage extends StatelessWidget implements AutoRouteWrapper {
                               const SizedBox(height: 12),
                               // The return day has its own block (R1/R3); the drop-off keeps the arrival block.
                               if (kind == ArrivalKind.returnTrip) const ReturnBlock() else const ArrivalBlock(),
+                              // The parking's shuttles during the stay, unless the return block already follows the traveller's own.
+                              BlocBuilder<ReturnBloc, ReturnState>(
+                                buildWhen: (a, b) => a.data?.shuttle != b.data?.shuttle,
+                                builder: (context, ret) => ret.data?.shuttle != null
+                                    ? const SizedBox.shrink()
+                                    : const Padding(padding: EdgeInsets.only(top: 12), child: StayShuttlesBlock()),
+                              ),
                               const SizedBox(height: 4),
                               BookingActions(booking: b, onChanged: (_) => context.read<BookingBloc>().add(const BookingRefreshed())),
                               if (b.parking.phone != null && b.active) ...[

@@ -87,7 +87,7 @@ void main() {
     expect(find.textContaining('arrêt automatique dans 1 h 25'), findsOneWidget);
     expect(find.text('Sur un trajet'), findsOneWidget);
     expect(find.byKey(const Key('start-trip')), findsNothing);
-    await tester.ensureVisible(find.byKey(const Key('end-trip')));
+    await tester.dragUntilVisible(find.byKey(const Key('end-trip')), find.byType(ListView), const Offset(0, -300));
     await tester.pump();
     await tester.tap(find.byKey(const Key('end-trip')));
     expect(verify(() => bloc.add(captureAny())).captured.single, isA<ShuttleEndRequested>());

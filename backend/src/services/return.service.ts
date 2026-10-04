@@ -7,7 +7,7 @@ import { ArrivalService, MeetingPoint } from './arrival.service';
 import { FlightTrackingService } from './flight-tracking.service';
 import { PublicBookingService } from './public-booking.service';
 import { RoutingService, WalkingRoute } from './routing.service';
-import { flightView, FlightView, ShuttleService, TravellerShuttle } from './shuttle.service';
+import { flightView, FlightView, ShuttleService, StayShuttles, TravellerShuttle } from './shuttle.service';
 
 export interface TravellerReturn {
   reference: string;
@@ -67,6 +67,12 @@ export class ReturnService {
     const start = from ?? (airport ? { lat: airport.latitude, lng: airport.longitude } : null) ?? meeting;
     const route = await this.routing.walkingRoute(`${booking.id}:${from ? 'me' : 'terminal'}`, start, meeting);
     return { ...route, meetingPoint: meeting };
+  }
+
+  /** The "Navette" block of a booking during its stay (S-A): polled every 12 s while open. */
+  public async stayShuttles(reference: string, token: string | undefined): Promise<StayShuttles> {
+    const booking = await this.bookings.load(reference, token);
+    return this.shuttle.forStay(booking);
   }
 
   /** Polled every 10 s while the trip card is open. */
