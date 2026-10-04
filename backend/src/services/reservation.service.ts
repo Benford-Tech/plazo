@@ -332,9 +332,15 @@ export class ReservationService {
     });
   }
 
+  /** The sheet, with the code of the spot the vehicle is on (bloc 2). */
   public async get(actor: AuthenticatedStaff, id: string) {
     this.require(actor, 'reservations:view');
-    return this.findOwn(actor, id);
+    const reservation = await prisma.reservation.findFirst({
+      where: { id, operatorId: actor.operatorId, AND: [STAFF_VISIBLE] },
+      include: { spot: { select: { code: true } } },
+    });
+    if (!reservation) throw notFound();
+    return reservation;
   }
 
   /** Search by plate, name, phone or reference; most recent arrivals first. */

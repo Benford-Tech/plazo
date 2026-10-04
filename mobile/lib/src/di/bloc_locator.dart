@@ -27,6 +27,9 @@ void _initBlocs() {
     ..registerFactory(() => ShuttleBloc(locator(), locator(), locator(), locator(), locator(), locator(), locator(), pollInterval: AppConstants.livePollInterval))
     ..registerFactory(() => ProPlanBloc(locator(), locator(), locator(), locator(), locator(), locator(), locator()))
     ..registerFactory(() => ProOccupationBloc(locator(), locator(), locator(), locator()))
+    ..registerFactory(() => ProReservationsBloc(locator()))
+    ..registerFactory(() => ProReservationBloc(locator(), locator()))
+    ..registerFactory(() => ProImportBloc(locator()))
     ..registerFactory(() => ProTodayBloc(locator(), locator(), pollInterval: AppConstants.livePollInterval))
     ..registerFactory(() => ProNotificationsBloc(locator(), locator(), locator()))
     // The staff session lives as long as the app (the router's guard reads it).

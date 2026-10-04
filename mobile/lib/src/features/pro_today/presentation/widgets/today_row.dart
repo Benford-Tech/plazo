@@ -13,11 +13,12 @@ import '../bloc/pro_today_bloc.dart';
 /// A row of the staff's day. A traveller sharing their position gets the highlighted card (peach
 /// border, ETA, mini map, age of the position) — the app's version of the approved frame 3.
 class TodayRowTile extends StatelessWidget {
-  const TodayRowTile({super.key, required this.row, required this.isReturn, required this.positionAge});
+  const TodayRowTile({super.key, required this.row, required this.isReturn, required this.positionAge, this.onTap});
 
   final TodayRow row;
   final bool isReturn;
   final int? positionAge;
+  final VoidCallback? onTap;
 
   @override
   Widget build(BuildContext context) {
@@ -25,77 +26,79 @@ class TodayRowTile extends StatelessWidget {
     final s = row.signal;
     final approaching = row.approaching;
     final time = hhmm(isReturn ? b.returnAt : b.arrivalAt);
-    return Container(
-      key: Key('row-${b.id}'),
-      margin: const EdgeInsets.only(bottom: 10),
-      padding: const EdgeInsets.all(12),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: approaching ? AppColors.peach : AppColors.line, width: approaching ? 2.2 : 1),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          Row(
-            children: [
-              Text(time, style: AppText.tabular(size: 17, color: AppColors.accent)),
-              const SizedBox(width: 12),
-              // One line, as on the planning of the pro space: scaled down rather than wrapped.
-              Expanded(
-                child: FittedBox(
-                  fit: BoxFit.scaleDown,
-                  alignment: Alignment.centerRight,
-                  child: _StatusLabel(signal: s, status: b.status, isReturn: isReturn),
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(16),
+      child: Container(
+        key: Key('row-${b.id}'),
+        margin: const EdgeInsets.only(bottom: 10),
+        padding: const EdgeInsets.all(12),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(color: approaching ? AppColors.peach : AppColors.line, width: approaching ? 2.2 : 1),
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            Row(
+              children: [
+                Text(time, style: AppText.tabular(size: 17, color: AppColors.accent)),
+                const SizedBox(width: 12),
+                // One line, as on the planning of the pro space: scaled down rather than wrapped.
+                Expanded(
+                  child: FittedBox(
+                    fit: BoxFit.scaleDown,
+                    alignment: Alignment.centerRight,
+                    child: _StatusLabel(signal: s, status: b.status, isReturn: isReturn),
+                  ),
                 ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 8),
-          Row(
-            children: [
-              FrenchPlate(b.plate),
-              const SizedBox(width: 10),
-              Expanded(
-                child: Text(
-                  [
-                    b.customerName,
-                    'pro.pax'.tr(args: ['${b.passengers}']),
-                    if (isReturn && b.returnFlight != null) 'pro.flight'.tr(args: [b.returnFlight!]),
-                  ].join(' · '),
-                  maxLines: 2,
-                  overflow: TextOverflow.ellipsis,
-                  style: AppText.body(size: 14.5),
-                ),
-              ),
-            ],
-          ),
-          if (approaching && s != null) ...[
-            if (s.position != null && s.meetingPoint != null) ...[
-              const SizedBox(height: 10),
-              IgnMap(
-                height: 130,
-                meeting: LatLng(s.meetingPoint!.lat, s.meetingPoint!.lng),
-                meetingLabel: s.meetingPoint!.label ?? (isReturn ? 'arrival.meeting_return'.tr() : 'arrival.meeting_reception'.tr()),
-                me: LatLng(s.position!.lat, s.position!.lng),
-                dashedLine: true,
-                accent: AppColors.peach,
-              ),
-            ],
-            const SizedBox(height: 8),
-            Text(
-              [
-                if (positionAge != null)
-                  positionAge! < 60
-                      ? 'pro.position_updated_s'.tr(args: ['$positionAge'])
-                      : 'pro.position_updated_min'.tr(args: ['${positionAge! ~/ 60}']),
-                if (s.distanceM != null) distanceLabel(s.distanceM!),
-                if (s.etaAt != null) 'pro.eta_around'.tr(args: [hhmm(s.etaAt!)]),
-              ].join(' · '),
-              style: AppText.muted(size: 12.5),
+              ],
             ),
+            const SizedBox(height: 8),
+            Row(
+              children: [
+                FrenchPlate(b.plate),
+                const SizedBox(width: 10),
+                Expanded(
+                  child: Text(
+                    [
+                      b.customerName,
+                      'pro.pax'.tr(args: ['${b.passengers}']),
+                      if (isReturn && b.returnFlight != null) 'pro.flight'.tr(args: [b.returnFlight!]),
+                    ].join(' · '),
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
+                    style: AppText.body(size: 14.5),
+                  ),
+                ),
+              ],
+            ),
+            if (approaching && s != null) ...[
+              if (s.position != null && s.meetingPoint != null) ...[
+                const SizedBox(height: 10),
+                IgnMap(
+                  height: 130,
+                  meeting: LatLng(s.meetingPoint!.lat, s.meetingPoint!.lng),
+                  meetingLabel: s.meetingPoint!.label ?? (isReturn ? 'arrival.meeting_return'.tr() : 'arrival.meeting_reception'.tr()),
+                  me: LatLng(s.position!.lat, s.position!.lng),
+                  dashedLine: true,
+                  accent: AppColors.peach,
+                ),
+              ],
+              const SizedBox(height: 8),
+              Text(
+                [
+                  if (positionAge != null)
+                    positionAge! < 60 ? 'pro.position_updated_s'.tr(args: ['$positionAge']) : 'pro.position_updated_min'.tr(args: ['${positionAge! ~/ 60}']),
+                  if (s.distanceM != null) distanceLabel(s.distanceM!),
+                  if (s.etaAt != null) 'pro.eta_around'.tr(args: [hhmm(s.etaAt!)]),
+                ].join(' · '),
+                style: AppText.muted(size: 12.5),
+              ),
+            ],
           ],
-        ],
+        ),
       ),
     );
   }
@@ -160,8 +163,17 @@ class ArrivalBanner extends StatelessWidget {
             children: [
               const Icon(Icons.notifications_active_rounded, color: AppColors.dark, size: 20),
               const SizedBox(width: 8),
-              Expanded(child: Text(text(signal), key: const Key('arrival-banner'), style: AppText.strong(size: 14.5, color: AppColors.dark))),
-              TextButton(onPressed: onSee, child: Text('${'pro.banner_see'.tr()} ›', style: AppText.strong(size: 14, color: AppColors.dark))),
+              Expanded(
+                child: Text(
+                  text(signal),
+                  key: const Key('arrival-banner'),
+                  style: AppText.strong(size: 14.5, color: AppColors.dark),
+                ),
+              ),
+              TextButton(
+                onPressed: onSee,
+                child: Text('${'pro.banner_see'.tr()} ›', style: AppText.strong(size: 14, color: AppColors.dark)),
+              ),
               IconButton(
                 tooltip: 'pro.banner_close'.tr(),
                 onPressed: onClose,

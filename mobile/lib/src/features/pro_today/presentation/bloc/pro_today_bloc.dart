@@ -57,21 +57,16 @@ class ProTodayBloc extends Bloc<ProTodayEvent, ProTodayState> {
   Future<void> _refresh(Emitter<ProTodayState> emit, {required bool planning}) async {
     if (planning) {
       final result = await _planning(NoParams());
-      result.fold(
-        (failure) => emit(state.copyWith(viewState: state.planning == null ? ViewState.error : state.viewState, errorMessage: failure.message)),
-        (p) {
-          _planningAt = _clock();
-          emit(state.copyWith(planning: p, viewState: ViewState.success, errorMessage: null));
-        },
-      );
+      result.fold((failure) => emit(state.copyWith(viewState: state.planning == null ? ViewState.error : state.viewState, errorMessage: failure.message)), (p) {
+        _planningAt = _clock();
+        emit(state.copyWith(planning: p, viewState: ViewState.success, errorMessage: null));
+      });
     }
     final live = await _live(NoParams());
     live.fold((failure) => emit(state.copyWith(errorMessage: failure.message)), (data) {
       final fresh = data.signals.where((s) => !_seen.contains(s.eventKey)).toList();
       _seen.addAll(fresh.map((s) => s.eventKey));
-      final banner = fresh.isNotEmpty
-          ? fresh.first
-          : (state.banner != null && data.signals.any((s) => s.id == state.banner!.id) ? state.banner : null);
+      final banner = fresh.isNotEmpty ? fresh.first : (state.banner != null && data.signals.any((s) => s.id == state.banner!.id) ? state.banner : null);
       emit(state.copyWith(signals: data.signals, fetchedAt: _clock(), now: _clock(), banner: banner, errorMessage: null));
     });
   }

@@ -428,6 +428,22 @@ class PaymentRouteArgs {
 }
 
 /// generated route for
+/// [ProImportEmailPage]
+class ProImportEmailRoute extends PageRouteInfo<void> {
+  const ProImportEmailRoute({List<PageRouteInfo>? children})
+    : super(ProImportEmailRoute.name, initialChildren: children);
+
+  static const String name = 'ProImportEmailRoute';
+
+  static PageInfo page = PageInfo(
+    name,
+    builder: (data) {
+      return WrappedRoute(child: const ProImportEmailPage());
+    },
+  );
+}
+
+/// generated route for
 /// [ProLoginPage]
 class ProLoginRoute extends PageRouteInfo<void> {
   const ProLoginRoute({List<PageRouteInfo>? children})
@@ -487,6 +503,134 @@ class ProPlanRoute extends PageRouteInfo<void> {
     name,
     builder: (data) {
       return WrappedRoute(child: const ProPlanPage());
+    },
+  );
+}
+
+/// generated route for
+/// [ProReservationFormPage]
+class ProReservationFormRoute
+    extends PageRouteInfo<ProReservationFormRouteArgs> {
+  ProReservationFormRoute({
+    Key? key,
+    String? id,
+    ReservationInput? initial,
+    List<PageRouteInfo>? children,
+  }) : super(
+         ProReservationFormRoute.name,
+         args: ProReservationFormRouteArgs(key: key, id: id, initial: initial),
+         initialChildren: children,
+       );
+
+  static const String name = 'ProReservationFormRoute';
+
+  static PageInfo page = PageInfo(
+    name,
+    builder: (data) {
+      final args = data.argsAs<ProReservationFormRouteArgs>(
+        orElse: () => const ProReservationFormRouteArgs(),
+      );
+      return WrappedRoute(
+        child: ProReservationFormPage(
+          key: args.key,
+          id: args.id,
+          initial: args.initial,
+        ),
+      );
+    },
+  );
+}
+
+class ProReservationFormRouteArgs {
+  const ProReservationFormRouteArgs({this.key, this.id, this.initial});
+
+  final Key? key;
+
+  final String? id;
+
+  final ReservationInput? initial;
+
+  @override
+  String toString() {
+    return 'ProReservationFormRouteArgs{key: $key, id: $id, initial: $initial}';
+  }
+
+  @override
+  bool operator ==(Object other) {
+    if (identical(this, other)) return true;
+    if (other is! ProReservationFormRouteArgs) return false;
+    return key == other.key && id == other.id && initial == other.initial;
+  }
+
+  @override
+  int get hashCode => key.hashCode ^ id.hashCode ^ initial.hashCode;
+}
+
+/// generated route for
+/// [ProReservationPage]
+class ProReservationRoute extends PageRouteInfo<ProReservationRouteArgs> {
+  ProReservationRoute({
+    Key? key,
+    required String id,
+    List<PageRouteInfo>? children,
+  }) : super(
+         ProReservationRoute.name,
+         args: ProReservationRouteArgs(key: key, id: id),
+         rawPathParams: {'id': id},
+         initialChildren: children,
+       );
+
+  static const String name = 'ProReservationRoute';
+
+  static PageInfo page = PageInfo(
+    name,
+    builder: (data) {
+      final pathParams = data.inheritedPathParams;
+      final args = data.argsAs<ProReservationRouteArgs>(
+        orElse: () => ProReservationRouteArgs(id: pathParams.getString('id')),
+      );
+      return WrappedRoute(
+        child: ProReservationPage(key: args.key, id: args.id),
+      );
+    },
+  );
+}
+
+class ProReservationRouteArgs {
+  const ProReservationRouteArgs({this.key, required this.id});
+
+  final Key? key;
+
+  final String id;
+
+  @override
+  String toString() {
+    return 'ProReservationRouteArgs{key: $key, id: $id}';
+  }
+
+  @override
+  bool operator ==(Object other) {
+    if (identical(this, other)) return true;
+    if (other is! ProReservationRouteArgs) return false;
+    return key == other.key && id == other.id;
+  }
+
+  @override
+  int get hashCode => key.hashCode ^ id.hashCode;
+}
+
+/// generated route for
+/// [ProReservationsPage]
+class ProReservationsRoute extends PageRouteInfo<void> {
+  const ProReservationsRoute({List<PageRouteInfo>? children})
+    : super(ProReservationsRoute.name, initialChildren: children);
+
+  static const String name = 'ProReservationsRoute';
+
+  static PageInfo page = PageInfo(
+    name,
+    builder: (data) {
+      return WrappedRoute(child: const ProReservationsPage());
     },
   );
 }

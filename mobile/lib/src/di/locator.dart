@@ -49,6 +49,13 @@ import '../features/pro_occupation/domain/repositories/occupation_repository.dar
 import '../features/pro_occupation/domain/usecases/occupation_use_cases.dart';
 import '../features/pro_occupation/presentation/bloc/pro_occupation_bloc.dart';
 import '../features/pro_plan/data/client/plan_client.dart';
+import '../features/pro_reservations/data/client/reservations_client.dart';
+import '../features/pro_reservations/data/datasources/reservations_data_source.dart';
+import '../features/pro_reservations/domain/repositories/reservations_repository.dart';
+import '../features/pro_reservations/domain/usecases/reservations_use_cases.dart';
+import '../features/pro_reservations/presentation/bloc/pro_import_bloc.dart';
+import '../features/pro_reservations/presentation/bloc/pro_reservation_bloc.dart';
+import '../features/pro_reservations/presentation/bloc/pro_reservations_bloc.dart';
 import '../features/pro_plan/data/datasources/plan_data_source.dart';
 import '../features/pro_plan/domain/repositories/plan_repository.dart';
 import '../features/pro_plan/domain/usecases/plan_use_cases.dart';

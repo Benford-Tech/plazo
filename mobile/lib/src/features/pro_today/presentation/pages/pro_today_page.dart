@@ -75,6 +75,12 @@ class _ProTodayViewState extends State<_ProTodayView> with SingleTickerProviderS
               onPressed: () => context.router.push(const ProPlanRoute()),
             ),
           IconButton(
+            key: const Key('pro-reservations'),
+            tooltip: 'res.title'.tr(),
+            icon: const Icon(Icons.list_alt_rounded),
+            onPressed: () => context.router.push(const ProReservationsRoute()),
+          ),
+          IconButton(
             key: const Key('pro-places'),
             tooltip: 'occupation.title'.tr(),
             icon: const Icon(Icons.local_parking_rounded),
@@ -140,9 +146,13 @@ class _ProTodayViewState extends State<_ProTodayView> with SingleTickerProviderS
                   child: Row(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Expanded(child: _Column(title: 'pro.arrivals'.tr(), rows: state.arrivals, isReturn: false, state: state, now: _now)),
+                      Expanded(
+                        child: _Column(title: 'pro.arrivals'.tr(), rows: state.arrivals, isReturn: false, state: state, now: _now),
+                      ),
                       const VerticalDivider(width: 1, color: AppColors.line),
-                      Expanded(child: _Column(title: 'pro.returns'.tr(), rows: state.returns, isReturn: true, state: state, now: _now)),
+                      Expanded(
+                        child: _Column(title: 'pro.returns'.tr(), rows: state.returns, isReturn: true, state: state, now: _now),
+                      ),
                     ],
                   ),
                 )
@@ -195,7 +205,12 @@ class _Column extends StatelessWidget {
               child: Text(isReturn ? 'pro.no_return'.tr() : 'pro.no_arrival'.tr(), style: AppText.muted()),
             ),
           for (final row in rows)
-            TodayRowTile(row: row, isReturn: isReturn, positionAge: row.signal == null ? null : state.positionAge(row.signal!, now)),
+            TodayRowTile(
+              row: row,
+              isReturn: isReturn,
+              positionAge: row.signal == null ? null : state.positionAge(row.signal!, now),
+              onTap: () => context.router.push(ProReservationRoute(id: row.booking.id)),
+            ),
         ],
       ),
     );

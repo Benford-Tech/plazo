@@ -141,3 +141,4 @@ version web, « Payer » ouvre la page Stripe Checkout.
    (voir l'en-tête du fichier).
 
 - `/pro/places` : Occupation (bloc 2, étape 2) — recherche par plaque, place proposée à l'arrivée, crochet des clés.
+- `/pro/reservations`, `/pro/reservations/:id`, `/pro/reservations/formulaire`, `/pro/reservations/import` : réservations du personnel (liste et recherche, fiche avec les étapes de statut, saisie, modification, import d'un mail de confirmation). Les rôles cachent les actions (`core/helpers/roles.dart`), le serveur reste l'autorité.

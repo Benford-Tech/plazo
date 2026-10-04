@@ -9,6 +9,11 @@ import '../../features/pro_auth/presentation/pages/pro_login_page.dart';
 import '../../features/pro_notifications/presentation/pages/pro_notifications_page.dart';
 import '../../features/pro_occupation/presentation/pages/pro_occupation_page.dart';
 import '../../features/pro_plan/presentation/pages/pro_plan_page.dart';
+import '../../features/pro_reservations/data/models/reservation_models.dart';
+import '../../features/pro_reservations/presentation/pages/pro_import_email_page.dart';
+import '../../features/pro_reservations/presentation/pages/pro_reservation_form_page.dart';
+import '../../features/pro_reservations/presentation/pages/pro_reservation_page.dart';
+import '../../features/pro_reservations/presentation/pages/pro_reservations_page.dart';
 import '../../features/pro_shuttle/presentation/pages/pro_shuttle_page.dart';
 import '../../features/pro_today/presentation/pages/pro_today_page.dart';
 import '../../features/return_day/presentation/pages/meeting_point_route_page.dart';
@@ -50,6 +55,10 @@ class AppRouter extends RootStackRouter {
     AutoRoute(page: ProShuttleRoute.page, path: '/pro/navette', guards: [proGuard]),
     AutoRoute(page: ProPlanRoute.page, path: '/pro/plan', guards: [proGuard]),
     AutoRoute(page: ProOccupationRoute.page, path: '/pro/places', guards: [proGuard]),
+    AutoRoute(page: ProReservationsRoute.page, path: '/pro/reservations', guards: [proGuard]),
+    AutoRoute(page: ProImportEmailRoute.page, path: '/pro/reservations/import', guards: [proGuard]),
+    AutoRoute(page: ProReservationFormRoute.page, path: '/pro/reservations/formulaire', guards: [proGuard]),
+    AutoRoute(page: ProReservationRoute.page, path: '/pro/reservations/:id', guards: [proGuard]),
     // Traveller: a booking (A5 detail, confirmation) and its payment step (A4)
     AutoRoute(page: MyBookingRoute.page, path: '/ma-reservation/:reference'),
     AutoRoute(page: PaymentRoute.page, path: '/ma-reservation/:reference/paiement'),
