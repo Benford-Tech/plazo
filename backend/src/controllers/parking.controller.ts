@@ -3,6 +3,8 @@ import { Container } from 'typedi';
 import { UpdateParkingDto } from '@/dtos/parking.dto';
 import { GenerateSpotsDto, ReplaceSpotsDto, UpdateParkingPlanDto, UpdateSpotDto } from '@/dtos/parking-plan.dto';
 import { RequestWithStaffSession } from '@/middlewares/staff-auth.middleware';
+import { AssignSpotDto } from '@/dtos/occupation.dto';
+import { OccupationService } from '@/services/occupation.service';
 import { ParkingPlanService } from '@/services/parking-plan.service';
 import { ParkingService } from '@/services/parking.service';
 import catchAsync from '@/utils/catchAsync';
@@ -10,6 +12,7 @@ import catchAsync from '@/utils/catchAsync';
 export class ParkingController {
   public parkingService = Container.get(ParkingService);
   public plans = Container.get(ParkingPlanService);
+  public occupation = Container.get(OccupationService);
 
   /** GET /internal/parking */
   public getPrimary = catchAsync(async (req: RequestWithStaffSession, res: Response) => {
@@ -60,5 +63,22 @@ export class ParkingController {
   public generateSpots = catchAsync(async (req: RequestWithStaffSession, res: Response) => {
     const data: GenerateSpotsDto = req.body;
     res.json({ message: 'Spots generated', data: await this.plans.generate(req.staff, req.params.id as string, data) });
+  });
+
+  /** GET /internal/parkings/:id/occupation */
+  public occupationBoard = catchAsync(async (req: RequestWithStaffSession, res: Response) => {
+    res.json(await this.occupation.board(req.staff, req.params.id as string));
+  });
+
+  /** GET /internal/parkings/:id/occupation/search?q= */
+  public occupationSearch = catchAsync(async (req: RequestWithStaffSession, res: Response) => {
+    const q = typeof req.query.q === 'string' ? req.query.q : '';
+    res.json({ results: await this.occupation.search(req.staff, req.params.id as string, q) });
+  });
+
+  /** POST /internal/reservations/:id/spot */
+  public assignSpot = catchAsync(async (req: RequestWithStaffSession, res: Response) => {
+    const data: AssignSpotDto = req.body;
+    res.json({ message: 'Spot assigned', data: await this.occupation.assign(req.staff, req.params.id as string, data) });
   });
 }

@@ -36,6 +36,7 @@ import type {
 } from "./types";
 
 import type { CapacityStudy, CapacityStudySummary, GeoPolygon, LayoutKey, ParcelRef, StudyPatch } from "./capacity/types";
+import type { OccupationBoard, VehicleHit } from "./plan/occupation";
 import type { ParkingPlanView, PlanPatch, Spot, SpotInput, SpotKind } from "./plan/types";
 
 export interface ParcelFeature extends ParcelRef {
@@ -229,6 +230,13 @@ export const adminApi = {
     apiRequest<{ data: Spot }>(`/internal/parkings/${parkingId}/plan/spots/${spotId}`, { method: "PATCH", body: json(patch) }),
   applyPlanCapacity: (parkingId: string) =>
     apiRequest<{ data: ParkingPlanView }>(`/internal/parkings/${parkingId}/plan/apply-capacity`, { method: "POST" }),
+
+  // Bloc 2, step "Occupation".
+  getOccupation: (parkingId: string) => apiRequest<OccupationBoard>(`/internal/parkings/${parkingId}/occupation`),
+  searchVehicles: (parkingId: string, q: string) =>
+    apiRequest<{ results: VehicleHit[] }>(`/internal/parkings/${parkingId}/occupation/search?${new URLSearchParams({ q }).toString()}`),
+  assignSpot: (reservationId: string, patch: { spotId: string | null; keyHook?: string | null }) =>
+    apiRequest<{ data: Reservation & { spot: { code: string } | null } }>(`/internal/reservations/${reservationId}/spot`, { method: "POST", body: json(patch) }),
 
   getTeam: () => apiRequest<Staff[]>("/internal/staff"),
   createStaff: (staff: NewStaff) => apiRequest<{ data: Staff }>("/internal/staff", { method: "POST", body: json(staff) }),

@@ -250,7 +250,8 @@ model ParkingSpot {
   lat       Float
   createdAt DateTime @default(now())
 
-  parking Parking @relation(fields: [parkingId], references: [id], onDelete: Cascade)
+  parking      Parking       @relation(fields: [parkingId], references: [id], onDelete: Cascade)
+  reservations Reservation[]
 
   @@unique([parkingId, code])
   @@index([parkingId, zoneId, row, index])
@@ -356,6 +357,9 @@ model Reservation {
   idempotencyKey          String?             @unique
   // Part of the traveller's manage link (channel plazo): staff increase it to revoke a leaked link.
   manageTokenVersion      Int                 @default(0)
+  // Bloc 2, Occupation: the spot the vehicle is (or will be) parked on, and where its keys hang.
+  spotId                  String?
+  keyHook                 String?
   // Online payment (Stripe Checkout on Plazo's account; "separate charges and transfers").
   paymentStatus           PaymentStatus?
   // End of the place's hold while the payment is pending (lazy expiry: past it, the place is free).
@@ -400,11 +404,13 @@ model Reservation {
   operator       Operator               @relation(fields: [operatorId], references: [id], onDelete: Cascade)
   parking        Parking                @relation(fields: [parkingId], references: [id], onDelete: Cascade)
   createdBy      Staff?                 @relation(fields: [createdById], references: [id], onDelete: SetNull)
+  spot           ParkingSpot?           @relation(fields: [spotId], references: [id], onDelete: SetNull)
   arrivalSignals ArrivalSignal[]
   shuttleTrips   ShuttleTripPassenger[]
   smsOutbox      SmsOutbox[]
 
   @@unique([operatorId, externalReference])
+  @@index([spotId])
   @@index([parkingId, arrivalAt])
   @@index([parkingId, returnAt])
   @@index([operatorId, plateKey])

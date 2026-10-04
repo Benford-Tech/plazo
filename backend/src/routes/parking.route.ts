@@ -1,6 +1,7 @@
 import { Router } from 'express';
 import { ParkingController } from '@/controllers/parking.controller';
 import { UpdateParkingDto } from '@/dtos/parking.dto';
+import { AssignSpotDto } from '@/dtos/occupation.dto';
 import { GenerateSpotsDto, ReplaceSpotsDto, UpdateParkingPlanDto, UpdateSpotDto } from '@/dtos/parking-plan.dto';
 import { PlatformController } from '@/controllers/platform.controller';
 import { Routes } from '@/interfaces/routes.interface';
@@ -81,6 +82,15 @@ export class ParkingRoute implements Routes {
       StaffAuthMiddleware('parking:manage'),
       ValidationMiddleware(GenerateSpotsDto),
       this.parking.generateSpots,
+    );
+    // Bloc 2, step "Occupation": who is where, and where the arrivals go.
+    this.router.get('/internal/parkings/:id/occupation', StaffAuthMiddleware('reservations:view'), this.parking.occupationBoard);
+    this.router.get('/internal/parkings/:id/occupation/search', StaffAuthMiddleware('reservations:view'), this.parking.occupationSearch);
+    this.router.post(
+      '/internal/reservations/:id/spot',
+      StaffAuthMiddleware('reservations:status'),
+      ValidationMiddleware(AssignSpotDto),
+      this.parking.assignSpot,
     );
     this.router.get('/internal/geo/parcels', StaffAuthMiddleware('parking:manage'), this.geo.parcels);
     this.router.get('/internal/geo/parkings', StaffAuthMiddleware('parking:manage'), this.geo.parkings);

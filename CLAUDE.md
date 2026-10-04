@@ -51,7 +51,7 @@ Ne construire QUE ce qui règle la douleur n°1 du client.
    - Fiche réservation : client, téléphone, plaque, dates/heures, n° de vol retour, nb de passagers, statut.
 
 2. **Plan du parking et affectation des véhicules** (direction P-A du 03/10/2026 : trois vues
-   Plan · Occupation · Planning des places dans l'onglet « Parking » ; l'étape Plan est livrée)
+   Plan · Occupation · Planning des places dans l'onglet « Parking » ; les étapes Plan et Occupation sont livrées)
    - Cartographie du parking sur la photo aérienne IGN aux dimensions réelles : zones,
      rangées, places, entrée/sortie, point de remise ; génération automatique des places.
    - Affectation de chaque véhicule à un emplacement à l'arrivée.
@@ -123,7 +123,10 @@ Le nom du produit doit rester dans UN seul fichier de configuration (il peut enc
 - `admin/` : espace pro, servi sous `/pro`. L'onglet « Parking » a deux volets : `/parking/plan/:step` (bloc 2, étape
   « Plan » : terrain, zones, places, repères, tracés sur la photo IGN avec le moteur de l'estimateur `src/lib/capacity/*`,
   places numérotées par `src/lib/plan/numbering.ts`, routes `/api/internal/parkings/:id/plan…`, tables `parking_plans` et
-  `parking_spots`) et `/parking/reglages`. L'espace « Plateforme » du super admin (`PLATFORM_ADMIN_EMAILS`) est sous
+  `parking_spots`), `/parking/occupation` (étape « Occupation », 04/10/2026 : plan en couleurs, arrivées à placer avec
+  place proposée, recherche par plaque / nom / référence, crochet des clés ; routes `/api/internal/parkings/:id/occupation…`
+  et `POST /api/internal/reservations/:id/spot` ; champs `Reservation.spotId` et `keyHook`) et `/parking/reglages`.
+  L'onglet « Parking » est ouvert à tout le personnel (`reservations:view`) ; Plan et Réglages restent aux gérants. L'espace « Plateforme » du super admin (`PLATFORM_ADMIN_EMAILS`) est sous
   `/pro/plateforme` (pages `src/pages/platform/*`, routes serveur `/api/internal/platform/...` protégées par
   `PlatformAdminMiddleware`) ; l'inscription libre des loueurs sous `/pro/inscription`.
 - `site/` : site Plazo voyageurs (Next.js), servi à la racine du domaine.

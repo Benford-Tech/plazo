@@ -85,6 +85,9 @@ export interface Reservation {
   returnedAt: string | null;
   cancelledAt: string | null;
   createdAt: string;
+  /** Bloc 2, Occupation: the spot and the key hook (null until placed). */
+  spotId?: string | null;
+  keyHook?: string | null;
 }
 
 export interface NightLoad {

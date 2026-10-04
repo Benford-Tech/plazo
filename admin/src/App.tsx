@@ -31,6 +31,7 @@ const PlatformPaymentsPage = lazy(() => import("@/pages/platform/PaymentsPage"))
 const CapacityStudiesPage = lazy(() => import("@/pages/capacity/CapacityStudiesPage"));
 const CapacityStudyPage = lazy(() => import("@/pages/capacity/CapacityStudyPage"));
 const ParkingPlanPage = lazy(() => import("@/pages/parking/ParkingPlanPage"));
+const OccupationPage = lazy(() => import("@/pages/parking/OccupationPage"));
 
 const lazyPage = (page: React.ReactNode) => <Suspense fallback={null}>{page}</Suspense>;
 
@@ -58,6 +59,12 @@ function RequirePlatformAdmin({ children }: { children: React.ReactNode }) {
 function RequirePermission({ permission, children }: { permission: Permission; children: React.ReactNode }) {
   const { user } = useAuth();
   return can(user?.role, permission) ? <>{children}</> : <Navigate to="/" replace />;
+}
+
+/** "Parking" opens on the plan for managers, on the occupation for the rest of the staff. */
+function ParkingIndex() {
+  const { user } = useAuth();
+  return <Navigate to={can(user?.role, "parking:manage") ? "/parking/plan" : "/parking/occupation"} replace />;
 }
 
 const App = () => (
@@ -97,7 +104,8 @@ const App = () => (
                 }
               />
               <Route path="/reservations/:id" element={<ReservationPage />} />
-              <Route path="/parking" element={<Navigate to="/parking/plan" replace />} />
+              <Route path="/parking" element={<ParkingIndex />} />
+              <Route path="/parking/occupation" element={lazyPage(<OccupationPage />)} />
               <Route path="/parking/plan" element={<Navigate to="/parking/plan/terrain" replace />} />
               <Route
                 path="/parking/plan/:step"

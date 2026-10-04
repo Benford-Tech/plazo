@@ -3,7 +3,13 @@ import { fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { MemoryRouter, Route, Routes } from "react-router-dom";
 import { makeFrame } from "@/lib/capacity/projection";
 import type { ParkingPlanView } from "@/lib/plan/types";
+import type { Staff } from "@/lib/types";
 import ParkingPlanPage from "./ParkingPlanPage";
+
+const manager: Staff = { id: "s1", operatorId: "o1", email: "gerant@demo.fr", name: "Camille Gérant", phone: null, role: "manager", isActive: true, lastLoginAt: null, createdAt: "2026-10-01T00:00:00Z", operatorName: "Parking Démo" };
+vi.mock("@/contexts/AuthContext", () => ({
+  useAuth: () => ({ user: manager, isAuthenticated: true, isLoading: false, login: vi.fn(), logout: vi.fn(), forget: vi.fn() }),
+}));
 
 vi.mock("@/components/capacity/MapView", () => ({
   MapView: (props: { onMapClick?: (p: [number, number]) => void }) => (
