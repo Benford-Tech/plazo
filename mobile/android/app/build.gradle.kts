@@ -66,6 +66,10 @@ android {
         }
     }
 
+    buildFeatures {
+        resValues = true
+    }
+
     buildTypes {
         release {
             signingConfig = if (keystorePropertiesFile.exists()) signingConfigs.getByName("release") else signingConfigs.getByName("debug")
