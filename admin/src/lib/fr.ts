@@ -1,4 +1,13 @@
-import type { CancellationPolicy, ListingService, ListingStatus, PayoutSchedule, ReservationChannel, ReservationStatus, SmsMode, StaffRole } from "./types";
+import type {
+  CancellationPolicy,
+  ListingService,
+  ListingStatus,
+  PayoutSchedule,
+  ReservationChannel,
+  ReservationStatus,
+  SmsMode,
+  StaffRole,
+} from "./types";
 import { ApiError } from "./api";
 import { PRODUCT } from "./product";
 
@@ -34,7 +43,8 @@ export const fr = {
     too_many_attempts: "Trop de tentatives. Réessayez dans 15 minutes.",
     too_many_requests: "Trop de demandes. Réessayez dans un instant.",
     email_taken: "Cette adresse email est déjà utilisée.",
-    cannot_demote_self: "Vous ne pouvez pas retirer vos propres droits de gérant ni désactiver votre compte.",
+    cannot_demote_self:
+      "Vous ne pouvez pas retirer vos propres droits de gérant ni désactiver votre compte.",
     last_manager: "Il doit rester au moins un gérant actif.",
     wrong_current_password: "Mot de passe actuel incorrect.",
     forbidden: "Vous n'avez pas accès à cette action.",
@@ -54,21 +64,26 @@ export const fr = {
     invalid_transition: "Ce changement de statut n'est pas possible.",
     overbooked: "Au moins une nuit est complète.",
     reservation_closed: "Cette réservation est close.",
-    unrecognised_email: "Ce texte ne ressemble à aucun mail de comparateur connu.",
+    unrecognised_email:
+      "Ce texte ne ressemble à aucun mail de comparateur connu.",
     already_imported: "Cette réservation a déjà été importée.",
     min_0: "Doit être positif.",
-    invalid_slug: "Lettres minuscules, chiffres et tirets seulement (ex. parking-demo).",
+    invalid_slug:
+      "Lettres minuscules, chiffres et tirets seulement (ex. parking-demo).",
     slug_taken: "Cette adresse est déjà prise par un autre parking.",
     unknown_airport: "Aéroport inconnu.",
     invalid_url: "Adresse https:// invalide.",
     invalid_service: "Service inconnu.",
     invalid_policy: "Politique d'annulation inconnue.",
     number: "Nombre attendu.",
-    pricing_required: "Enregistrez d'abord vos tarifs : une fiche sans prix ne peut pas être envoyée en validation.",
+    pricing_required:
+      "Enregistrez d'abord vos tarifs : une fiche sans prix ne peut pas être envoyée en validation.",
     duplicate_days: "Deux forfaits ont la même durée.",
     unknown: "Une erreur est survenue. Réessayez.",
-    geo_unavailable: "Le service de l'IGN ne répond pas. Réessayez dans un instant.",
-    geo_timeout: "Le service de l'IGN a mis trop de temps à répondre. Réessayez.",
+    geo_unavailable:
+      "Le service de l'IGN ne répond pas. Réessayez dans un instant.",
+    geo_timeout:
+      "Le service de l'IGN a mis trop de temps à répondre. Réessayez.",
     bbox_too_large: "Zoomez davantage pour afficher les parkings.",
     invalid_geometry: "Forme invalide.",
     too_many_vertices: "Forme trop détaillée (trop de sommets).",
@@ -79,15 +94,19 @@ export const fr = {
     terms_required: "Acceptez les conditions pour continuer.",
     invalid_link: "Ce lien n'est plus valable : il a expiré ou a déjà servi.",
     account_suspended: `Ce compte est suspendu. Contactez l'équipe ${PRODUCT.name}.`,
-    view_as_read_only: "En consultation, l'équipe, les mots de passe et les paiements du loueur ne se modifient pas.",
+    view_as_read_only:
+      "En consultation, l'équipe, les mots de passe et les paiements du loueur ne se modifient pas.",
     view_as_ended: "La consultation de l'espace du loueur est terminée.",
-    email_not_verified: "Confirmez d'abord votre adresse email (lien reçu par email).",
+    email_not_verified:
+      "Confirmez d'abord votre adresse email (lien reçu par email).",
     listing_required: "Enregistrez d'abord votre fiche.",
     commission_range: "Entre 0 et 50 %.",
-    cannot_suspend_platform: "Le compte de la plateforme ne peut pas être suspendu.",
+    cannot_suspend_platform:
+      "Le compte de la plateforme ne peut pas être suspendu.",
     no_pending_invitation: "Aucune invitation en attente pour ce loueur.",
     payout_not_failed: "Ce reversement n'est pas en échec.",
-    operator_account_not_ready: "Le compte Stripe du loueur ne peut pas encore recevoir de virement.",
+    operator_account_not_ready:
+      "Le compte Stripe du loueur ne peut pas encore recevoir de virement.",
     payments_disabled: "Le paiement en ligne n'est pas activé.",
     payments_not_connected: "Activez d'abord les paiements en ligne.",
     payments_unavailable: "Stripe ne répond pas. Réessayez dans un instant.",
@@ -97,14 +116,19 @@ export const fr = {
     sms_not_configured: "Choisissez d'abord comment envoyer vos SMS.",
     sms_encryption_key_missing: `Le serveur ${PRODUCT.name} n'a pas sa clé de chiffrement des mots de passe : contactez l'équipe ${PRODUCT.name}.`,
     sms_encryption_key_invalid: `La clé de chiffrement du serveur ${PRODUCT.name} est invalide : contactez l'équipe ${PRODUCT.name}.`,
-    sms_password_unreadable: "Le mot de passe enregistré ne peut plus être lu : saisissez-le à nouveau.",
+    sms_password_unreadable:
+      "Le mot de passe enregistré ne peut plus être lu : saisissez-le à nouveau.",
     brevo_unavailable: `${PRODUCT.name} ne peut pas envoyer de SMS pour le moment : choisissez le téléphone du parking.`,
-    sms_gateway_unauthorized: "Identifiant ou mot de passe refusé par l'appli : recopiez ceux affichés dans « Cloud server ».",
-    sms_gateway_unreachable: "Le serveur de l'appli ne répond pas. Réessayez dans un instant.",
-    sms_gateway_offline: "Le téléphone du parking est hors ligne : ouvrez l'appli et vérifiez qu'elle est « Online ».",
+    sms_gateway_unauthorized:
+      "Identifiant ou mot de passe refusé par l'appli : recopiez ceux affichés dans « Cloud server ».",
+    sms_gateway_unreachable:
+      "Le serveur de l'appli ne répond pas. Réessayez dans un instant.",
+    sms_gateway_offline:
+      "Le téléphone du parking est hors ligne : ouvrez l'appli et vérifiez qu'elle est « Online ».",
     sms_gateway_rejected: "L'appli a refusé le SMS (numéro ou texte invalide).",
     sms_gateway_error: "L'appli SMS a renvoyé une erreur. Réessayez.",
-    sms_gateway_failed: "Le téléphone n'a pas pu envoyer le SMS (réseau ou forfait).",
+    sms_gateway_failed:
+      "Le téléphone n'a pas pu envoyer le SMS (réseau ou forfait).",
   } as Record<string, string>,
   login: {
     title: "Connexion",
@@ -118,7 +142,8 @@ export const fr = {
   },
   signup: {
     title: "Inscrire mon parking",
-    subtitle: (product: string) => `Rejoignez ${product} : votre fiche est vérifiée par notre équipe avant d'être en ligne.`,
+    subtitle: (product: string) =>
+      `Rejoignez ${product} : votre fiche est vérifiée par notre équipe avant d'être en ligne.`,
     company: "Entreprise",
     parkingName: "Nom du parking",
     capacity: "Capacité (places)",
@@ -130,26 +155,33 @@ export const fr = {
     password: "Mot de passe",
     passwordHelp: "Au moins 10 caractères.",
     passwordConfirmation: "Confirmer le mot de passe",
-    terms: "J'accepte les conditions d'utilisation de l'espace professionnel et le traitement de ces données pour gérer mon compte.",
+    terms:
+      "J'accepte les conditions d'utilisation de l'espace professionnel et le traitement de ces données pour gérer mon compte.",
     termsLink: "Lire les conditions",
-    privacy: "Nous ne gardons que ce qui sert à votre compte : votre nom, votre email et votre téléphone.",
+    privacy:
+      "Nous ne gardons que ce qui sert à votre compte : votre nom, votre email et votre téléphone.",
     submit: "Créer mon compte",
     submitting: "Création du compte…",
     hasAccount: "Déjà un compte ?",
     login: "Se connecter",
     honeypot: "Ne pas remplir ce champ",
     // The account may already exist: the API answers the same, the login then fails.
-    checkInbox: "Si cette adresse n'avait pas encore de compte, il vient d'être créé. Sinon, un email vous a été envoyé : connectez-vous avec votre mot de passe habituel.",
+    checkInbox:
+      "Si cette adresse n'avait pas encore de compte, il vient d'être créé. Sinon, un email vous a été envoyé : connectez-vous avec votre mot de passe habituel.",
   },
   onboarding: {
     title: "Bienvenue ! Votre compte est créé.",
-    steps: ["Remplissez votre fiche et vos tarifs.", "Envoyez-la pour validation : notre équipe la vérifie avant sa mise en ligne."],
+    steps: [
+      "Remplissez votre fiche et vos tarifs.",
+      "Envoyez-la pour validation : notre équipe la vérifie avant sa mise en ligne.",
+    ],
   },
   emailBanner: {
     text: "Confirmez votre adresse email : nous vous avons envoyé un lien. Il faut l'avoir confirmée pour envoyer votre fiche en validation.",
     resend: "Renvoyer le lien",
     resent: "Nouveau lien envoyé.",
-    devLink: "Email non configuré (développement) : ouvrir le lien de confirmation",
+    devLink:
+      "Email non configuré (développement) : ouvrir le lien de confirmation",
   },
   verifyEmail: {
     title: "Confirmation de l'adresse email",
@@ -161,7 +193,8 @@ export const fr = {
   },
   invitation: {
     title: "Choisir mon mot de passe",
-    intro: (operator: string, email: string) => `Espace de ${operator} · ${email}`,
+    intro: (operator: string, email: string) =>
+      `Espace de ${operator} · ${email}`,
     checking: "Vérification de l'invitation…",
     password: "Mot de passe",
     passwordConfirmation: "Confirmer le mot de passe",
@@ -172,7 +205,8 @@ export const fr = {
     banner: (name: string) => `Vous consultez l'espace de ${name}`,
     note: "Vos modifications sont tracées dans le journal à votre nom.",
     back: "Revenir à la plateforme",
-    readOnly: "En consultation, l'équipe, les mots de passe et le compte du loueur sont en lecture seule.",
+    readOnly:
+      "En consultation, l'équipe, les mots de passe et le compte du loueur sont en lecture seule.",
   },
   nav: {
     planning: "Planning",
@@ -193,19 +227,27 @@ export const fr = {
     shuttle: "Trajet navette",
     minutes: (n: number) => `${n} min`,
     places: (n: number) => `${n} place${n > 1 ? "s" : ""}`,
-    bookableHelp: "Capacité totale moins la marge de sécurité : c'est le plafond utilisé contre la surréservation.",
+    bookableHelp:
+      "Capacité totale moins la marge de sécurité : c'est le plafond utilisé contre la surréservation.",
   },
   parking: {
-    tabs: { plan: "Plan", occupation: "Occupation", settings: "Réglages" },
+    tabs: {
+      plan: "Plan",
+      occupation: "Occupation",
+      planning: "Planning des places",
+      settings: "Réglages",
+    },
     title: "Réglages du parking",
     name: "Nom du parking",
     address: "Adresse",
     totalCapacity: "Nombre de places au total",
     safetyMarginPct: "Marge de sécurité (%)",
-    safetyMarginHelp: "Part des places jamais proposées à la réservation (imprévus, prolongations).",
+    safetyMarginHelp:
+      "Part des places jamais proposées à la réservation (imprévus, prolongations).",
     shuttleTravelMinutes: "Durée du trajet navette (minutes)",
     shuttleHelp: "Entre le parking et le terminal.",
-    bookablePreview: (n: number) => `Places réservables avec ces réglages : ${n}`,
+    bookablePreview: (n: number) =>
+      `Places réservables avec ces réglages : ${n}`,
   },
   meetingPoint: {
     title: "Point de rendez-vous au retour",
@@ -216,15 +258,19 @@ export const fr = {
     searchPlaceholder: "ex. Aéroport Lyon Saint-Exupéry, Terminal 1",
     searchAction: "Chercher",
     noResult: "Aucun résultat.",
-    mapHelp: "Cliquez sur la carte (ou déplacez le repère) pour placer le point exact.",
+    mapHelp:
+      "Cliquez sur la carte (ou déplacez le repère) pour placer le point exact.",
     label: "Libellé",
     labelPlaceholder: "ex. Terminal 1 · Porte 12 · Arrêt navettes parkings",
     instructions: "Consignes pour le voyageur",
-    instructionsHelp: (left: number) => `Chemin depuis la sortie bagages, repères, où attendre. ${left} caractères restants.`,
+    instructionsHelp: (left: number) =>
+      `Chemin depuis la sortie bagages, repères, où attendre. ${left} caractères restants.`,
     photoUrl: "Photo du point de rendez-vous (adresse web)",
-    photoUrlHelp: "Pas encore d'envoi de fichier : collez l'adresse d'une photo en ligne (https://…), comme pour les photos de votre fiche.",
+    photoUrlHelp:
+      "Pas encore d'envoi de fichier : collez l'adresse d'une photo en ligne (https://…), comme pour les photos de votre fiche.",
     photoPreview: "Aperçu de la photo du point de rendez-vous",
-    coordinates: (lat: number, lng: number) => `Position : ${lat.toFixed(5)}, ${lng.toFixed(5)}`,
+    coordinates: (lat: number, lng: number) =>
+      `Position : ${lat.toFixed(5)}, ${lng.toFixed(5)}`,
     clear: "Supprimer le point",
     saved: "Point de rendez-vous enregistré.",
     cleared: "Point de rendez-vous supprimé.",
@@ -232,8 +278,10 @@ export const fr = {
   },
   vehicles: {
     title: "Navettes",
-    intro: "Vos véhicules : le chauffeur choisit le sien au départ d'un trajet, et le voyageur sait quelle navette attendre.",
-    empty: "Aucune navette enregistrée : le chauffeur saisira son véhicule à la main.",
+    intro:
+      "Vos véhicules : le chauffeur choisit le sien au départ d'un trajet, et le voyageur sait quelle navette attendre.",
+    empty:
+      "Aucune navette enregistrée : le chauffeur saisira son véhicule à la main.",
     model: "Modèle",
     modelPlaceholder: "ex. Mercedes Vito",
     colour: "Couleur",
@@ -256,7 +304,8 @@ export const fr = {
     inactive: "Désactivé",
     lastLogin: "Dernière connexion",
     password: "Mot de passe provisoire",
-    passwordHelp: "À communiquer à la personne, qui le changera dans « Mon compte ».",
+    passwordHelp:
+      "À communiquer à la personne, qui le changera dans « Mon compte ».",
     create: "Créer le compte",
     created: "Compte créé",
     updated: "Membre mis à jour",
@@ -310,34 +359,48 @@ export const fr = {
     free: (n: number) => `${n} libre${n > 1 ? "s" : ""}`,
     arrivals: "Arrivées",
     returns: "Retours",
-    arrivalsCount: (total: number, here: number) => `${total} · ${here} sur place`,
+    arrivalsCount: (total: number, here: number) =>
+      `${total} · ${here} sur place`,
     noArrival: "Aucune arrivée ce jour.",
     noReturn: "Aucun retour ce jour.",
     pax: (n: number) => `${n} pers.`,
     from: (city: string) => `de ${city}`,
     // Travellers telling the parking they are coming (live position or announce).
-    approaching: (eta: number | null) => (eta === null ? "En route" : `En approche · ${eta} min`),
+    approaching: (eta: number | null) =>
+      eta === null ? "En route" : `En approche · ${eta} min`,
     announced: (minutes: number) => `Prévenu · « dans ${minutes} min »`,
     atReception: "À l'accueil",
     atMeetingPoint: "Au point de rendez-vous",
     positionUpdated: (seconds: number) =>
-      seconds < 60 ? `Position mise à jour il y a ${seconds} s` : `Position mise à jour il y a ${Math.floor(seconds / 60)} min`,
+      seconds < 60
+        ? `Position mise à jour il y a ${seconds} s`
+        : `Position mise à jour il y a ${Math.floor(seconds / 60)} min`,
     etaAround: (time: string) => `arrivée estimée ${time}`,
-    distance: (meters: number) => (meters < 1000 ? `${meters} m` : `${(meters / 1000).toFixed(1).replace(".", ",")} km`),
-    miniMap: (name: string) => `Position de ${name} par rapport au point de rendez-vous`,
+    distance: (meters: number) =>
+      meters < 1000
+        ? `${meters} m`
+        : `${(meters / 1000).toFixed(1).replace(".", ",")} km`,
+    miniMap: (name: string) =>
+      `Position de ${name} par rapport au point de rendez-vous`,
     meetingPointMark: "P",
     toastApproaching: (who: string, eta: number | null, plate: string) =>
-      eta === null ? `${who} est en route — ${plate}` : `${who} arrive dans ${eta} min — ${plate}`,
-    toastAnnounced: (who: string, minutes: number, plate: string) => `${who} : « J'arrive dans ${minutes} min » — ${plate}`,
-    toastAtReception: (who: string, plate: string) => `${who} est à l'accueil — ${plate}`,
-    toastAtMeetingPoint: (who: string, plate: string) => `Retour : ${who} est au point de rendez-vous — ${plate}`,
+      eta === null
+        ? `${who} est en route — ${plate}`
+        : `${who} arrive dans ${eta} min — ${plate}`,
+    toastAnnounced: (who: string, minutes: number, plate: string) =>
+      `${who} : « J'arrive dans ${minutes} min » — ${plate}`,
+    toastAtReception: (who: string, plate: string) =>
+      `${who} est à l'accueil — ${plate}`,
+    toastAtMeetingPoint: (who: string, plate: string) =>
+      `Retour : ${who} est au point de rendez-vous — ${plate}`,
     toastSee: "Voir ›",
     toastClose: "Fermer l'alerte",
     // The driver's trip picking this traveller up (position shared with them).
     shuttleOnTheWay: (driver: string) => `Navette en route (${driver})`,
     flightLanded: (time: string) => `Atterri ${time}`,
     smsWarning: (n: number) => `${n} SMS en attente · téléphone injoignable`,
-    smsWarningHint: "Allumez le téléphone du parking et ouvrez l'appli SMS Gateway. Les SMS en attente plus de 2 h sont abandonnés.",
+    smsWarningHint:
+      "Allumez le téléphone du parking et ouvrez l'appli SMS Gateway. Les SMS en attente plus de 2 h sont abandonnés.",
     flightDelayed: "Retardé",
     flightCancelled: "Annulé",
   },
@@ -363,10 +426,12 @@ export const fr = {
     save: "Enregistrer",
     saved: "Réservation enregistrée",
     full: (days: string) => `Complet : ${days}.`,
-    fullHelp: "Refusée sur la page publique. Au comptoir, vous pouvez l'enregistrer quand même en connaissance de cause.",
+    fullHelp:
+      "Refusée sur la page publique. Au comptoir, vous pouvez l'enregistrer quand même en connaissance de cause.",
     fullNoForce: "Seul un agent ou le gérant peut l'enregistrer quand même.",
     force: "Enregistrer quand même (surréservation)",
-    available: (n: number) => `Disponible : au moins ${n} place${n > 1 ? "s" : ""} libre${n > 1 ? "s" : ""} chaque nuit.`,
+    available: (n: number) =>
+      `Disponible : au moins ${n} place${n > 1 ? "s" : ""} libre${n > 1 ? "s" : ""} chaque nuit.`,
     reference: "Référence",
     overbookedBadge: "Surréservation",
     edit: "Modifier",
@@ -389,7 +454,8 @@ export const fr = {
     title: "Importer un mail de comparateur",
     known: "Reconnus : Allopark · bientôt Parkos, Onepark",
     pasteLabel: "Collez le mail de confirmation",
-    pastePlaceholder: "Copiez tout le mail (Ctrl+A puis Ctrl+C dans la messagerie) et collez-le ici.",
+    pastePlaceholder:
+      "Copiez tout le mail (Ctrl+A puis Ctrl+C dans la messagerie) et collez-le ici.",
     analyse: "Analyser",
     analyseAgain: "Analyser à nouveau",
     analysing: "Lecture du mail…",
@@ -406,12 +472,14 @@ export const fr = {
     flight: "Vol retour",
     passengers: "Passagers",
     price: "Prix payé",
-    datesMissing: "Dates introuvables dans le mail : ouvrez le formulaire complet pour les saisir.",
+    datesMissing:
+      "Dates introuvables dans le mail : ouvrez le formulaire complet pour les saisir.",
     duplicate: (ref: string) => `Déjà importée : réservation ${ref}.`,
     openDuplicate: "Voir la réservation",
     openForm: "Ouvrir dans le formulaire complet",
     create: "Créer la réservation",
-    created: (ref: string) => `Réservation ${ref} créée. Collez le mail suivant.`,
+    created: (ref: string) =>
+      `Réservation ${ref} créée. Collez le mail suivant.`,
     openCreated: "Voir",
     nightsAvailable: (nights: number, free: number) =>
       `${nights} nuit${nights > 1 ? "s" : ""} · disponible : au moins ${free} place${free > 1 ? "s" : ""} libre${free > 1 ? "s" : ""} chaque nuit.`,
@@ -422,12 +490,18 @@ export const fr = {
     title: `Recevez l'argent des réservations ${PRODUCT.name} sur votre compte bancaire`,
     intro: {
       before: `Les voyageurs paient par carte sur ${PRODUCT.name}. ${PRODUCT.name} garde sa commission (`,
-      after: ") et vous reverse le reste automatiquement. Tant que ce n'est pas activé, votre fiche affiche « Réservation en ligne bientôt disponible ».",
+      after:
+        ") et vous reverse le reste automatiquement. Tant que ce n'est pas activé, votre fiche affiche « Réservation en ligne bientôt disponible ».",
     },
     commissionUnset: "à définir",
-    steps: ["1. Vos informations et votre IBAN chez Stripe", "2. Vérification (quelques minutes à 2 jours)", "3. Réservations ouvertes"],
+    steps: [
+      "1. Vos informations et votre IBAN chez Stripe",
+      "2. Vérification (quelques minutes à 2 jours)",
+      "3. Réservations ouvertes",
+    ],
     activate: "Activer les paiements ›",
-    redirectNote: "Vous serez redirigé vers Stripe, notre prestataire de paiement.",
+    redirectNote:
+      "Vous serez redirigé vers Stripe, notre prestataire de paiement.",
     testModeNote: "Mode test : aucun argent réel.",
     pendingKicker: "Paiements en ligne · vérification",
     pendingTitle: "Vérification en cours chez Stripe",
@@ -437,16 +511,19 @@ export const fr = {
     active: "Paiements en ligne : actifs",
     manage: "Gérer sur Stripe ›",
     disabled: `Paiements en ligne : pas encore ouverts sur ${PRODUCT.name}. Les voyageurs réservent et paient au parking.`,
-    readOnly: "Consultation : seul le loueur peut activer ses paiements et choisir quand recevoir son argent.",
+    readOnly:
+      "Consultation : seul le loueur peut activer ses paiements et choisir quand recevoir son argent.",
     returned: "Dossier envoyé à Stripe",
     expired: "Lien expiré, recommencez",
     scheduleTitle: "Quand recevoir votre argent ?",
     scheduleSaved: "Calendrier de reversement enregistré",
-    scheduleFootnote:
-      `${PRODUCT.name} encaisse le paiement du voyageur, garde sa commission et vous vire le reste à la date choisie. Stripe verse ensuite sur votre IBAN sous 2 à 7 jours.`,
+    scheduleFootnote: `${PRODUCT.name} encaisse le paiement du voyageur, garde sa commission et vous vire le reste à la date choisie. Stripe verse ensuite sur votre IBAN sous 2 à 7 jours.`,
     recommended: "conseillé",
     schedule: {
-      AT_DROP_OFF: { title: "Au dépôt", text: "le lendemain de l'arrivée du véhicule" },
+      AT_DROP_OFF: {
+        title: "Au dépôt",
+        text: "le lendemain de l'arrivée du véhicule",
+      },
       AFTER_STAY: { title: "Fin du séjour", text: "le lendemain du retour" },
       WEEKLY: { title: "Chaque semaine", text: "le lundi, séjours terminés" },
       MONTHLY: { title: "Chaque mois", text: "le 1er, séjours terminés" },
@@ -458,18 +535,39 @@ export const fr = {
     kickerGateway: "Envoi des SMS · téléphone du parking",
     kickerBrevo: `Envoi des SMS · ${PRODUCT.name} envoie pour vous`,
     kickerNone: "Envoi des SMS · désactivé",
-    headline: "Envoyez les SMS depuis le téléphone de votre parking, gratuitement",
+    headline:
+      "Envoyez les SMS depuis le téléphone de votre parking, gratuitement",
     intro:
       "Confirmation, rappel du point de rendez-vous à l'atterrissage, navette en approche : les SMS partent de votre propre numéro, avec votre forfait. Les voyageurs peuvent y répondre ou vous rappeler.",
     modes: {
-      gateway: { title: "Téléphone du parking", text: "Gratuit · un Android allumé avec SMS illimités" },
-      brevo: { title: `${PRODUCT.name} envoie pour moi`, text: "0,05 € par SMS, décompté sur vos reversements" },
+      gateway: {
+        title: "Téléphone du parking",
+        text: "Gratuit · un Android allumé avec SMS illimités",
+      },
+      brevo: {
+        title: `${PRODUCT.name} envoie pour moi`,
+        text: "0,05 € par SMS, décompté sur vos reversements",
+      },
       none: { title: "Pas de SMS", text: "Email seulement" },
     } satisfies Record<SmsMode, { title: string; text: string }>,
     steps: [
-      { before: "Sur le téléphone Android du parking, installez l'appli gratuite ", strong: "SMS Gateway for Android", after: " (Play Store ou GitHub)." },
-      { before: "Ouvrez-la, choisissez ", strong: "« Cloud server »", after: " et activez-la : elle affiche un identifiant et un mot de passe." },
-      { before: "Recopiez-les ici, puis envoyez un SMS de test.", strong: "", after: "" },
+      {
+        before:
+          "Sur le téléphone Android du parking, installez l'appli gratuite ",
+        strong: "SMS Gateway for Android",
+        after: " (Play Store ou GitHub).",
+      },
+      {
+        before: "Ouvrez-la, choisissez ",
+        strong: "« Cloud server »",
+        after:
+          " et activez-la : elle affiche un identifiant et un mot de passe.",
+      },
+      {
+        before: "Recopiez-les ici, puis envoyez un SMS de test.",
+        strong: "",
+        after: "",
+      },
     ],
     login: "Identifiant affiché par l'appli",
     loginPlaceholder: "ex. AB12CD",
@@ -479,15 +577,18 @@ export const fr = {
     testRecipient: "Envoyer un SMS de test à",
     phonePlaceholder: "+33 6 …",
     advanced: "Serveur (avancé)",
-    advancedHelp: "Vide : le serveur public de l'appli. Sinon l'adresse https:// de votre serveur privé.",
+    advancedHelp:
+      "Vide : le serveur public de l'appli. Sinon l'adresse https:// de votre serveur privé.",
     link: "Relier et tester",
     linking: "Liaison…",
     noAndroid: "Je n'ai pas de téléphone Android",
     chooseOther: "Choisir",
     saved: "Réglage enregistré",
     linked: "Téléphone relié",
-    testSent: (to: string) => `SMS de test envoyé à ${to} : vérifiez sa réception.`,
-    testQueued: (to: string) => `SMS de test transmis au téléphone pour ${to} : il part dès que le téléphone est en ligne.`,
+    testSent: (to: string) =>
+      `SMS de test envoyé à ${to} : vérifiez sa réception.`,
+    testQueued: (to: string) =>
+      `SMS de test transmis au téléphone pour ${to} : il part dès que le téléphone est en ligne.`,
     testFailed: "Le SMS de test n'est pas parti.",
     linkedStatus: "Relié",
     lastSent: (ago: string) => `dernier SMS envoyé ${ago}`,
@@ -503,15 +604,18 @@ export const fr = {
     cancel: "Annuler",
     edit: "Modifier",
     disable: "Désactiver",
-    disableConfirm: "Désactiver les SMS ? Les voyageurs ne recevront plus que les emails.",
+    disableConfirm:
+      "Désactiver les SMS ? Les voyageurs ne recevront plus que les emails.",
     disabled: "SMS désactivés",
-    offlineWarning: "Si le téléphone est éteint ou hors ligne, les SMS sont mis en attente 2 h puis abandonnés ; le planning le signale.",
+    offlineWarning:
+      "Si le téléphone est éteint ou hors ligne, les SMS sont mis en attente 2 h puis abandonnés ; le planning le signale.",
     lastError: (ago: string) => `Dernière erreur ${ago} :`,
     brevoActive: `${PRODUCT.name} envoie vos SMS depuis son propre numéro, 0,05 € par SMS décomptés sur vos reversements.`,
     noneActive: `${PRODUCT.name} n'envoie pas de SMS pour votre parking : les voyageurs reçoivent les emails seulement.`,
     changeChannel: "Changer",
     footnote: `Tant que rien n'est configuré, ${PRODUCT.name} n'envoie pas de SMS pour votre parking (les emails partent quand même). Le mot de passe est chiffré côté serveur et jamais réaffiché.`,
-    readOnly: "Consultation : seul le loueur peut relier son téléphone ou changer l'envoi des SMS.",
+    readOnly:
+      "Consultation : seul le loueur peut relier son téléphone ou changer l'envoi des SMS.",
   },
   listingStatus: {
     draft: "Brouillon",
@@ -522,16 +626,21 @@ export const fr = {
   plazo: {
     tabs: { listing: "Ma fiche", pricing: "Mes tarifs" },
     submit: "Envoyer pour validation",
-    submitted: "Fiche envoyée : notre équipe la vérifie avant sa mise en ligne.",
+    submitted:
+      "Fiche envoyée : notre équipe la vérifie avant sa mise en ligne.",
     withdraw: `Retirer de ${PRODUCT.name}`,
     cancelRequest: "Annuler la demande",
     withdrawn: "Votre fiche n'est plus en ligne.",
     requestCancelled: "Demande de validation annulée.",
     statusHelp: {
-      draft: "Votre fiche n'est pas visible. Remplissez-la, enregistrez vos tarifs, puis envoyez-la pour validation.",
-      pending_review: "Notre équipe vérifie votre fiche. Vous pouvez encore la modifier.",
-      published: "Votre fiche est en ligne. Vos modifications s'appliquent tout de suite.",
-      rejected: "Votre fiche est à corriger. Corrigez-la, puis envoyez-la à nouveau.",
+      draft:
+        "Votre fiche n'est pas visible. Remplissez-la, enregistrez vos tarifs, puis envoyez-la pour validation.",
+      pending_review:
+        "Notre équipe vérifie votre fiche. Vous pouvez encore la modifier.",
+      published:
+        "Votre fiche est en ligne. Vos modifications s'appliquent tout de suite.",
+      rejected:
+        "Votre fiche est à corriger. Corrigez-la, puis envoyez-la à nouveau.",
     } satisfies Record<ListingStatus, string>,
     reviewMessage: `Message de l'équipe ${PRODUCT.name}`,
     verifyFirst: "Confirmez votre email pour pouvoir envoyer votre fiche.",
@@ -550,7 +659,8 @@ export const fr = {
     photoUrl: "Adresse de la photo (https://…)",
     addPhoto: "+ Photo",
     removePhoto: "Retirer la photo",
-    photosHelp: "Collez l'adresse d'une photo en ligne. L'envoi de fichiers depuis l'ordinateur arrive bientôt.",
+    photosHelp:
+      "Collez l'adresse d'une photo en ligne. L'envoi de fichiers depuis l'ordinateur arrive bientôt.",
     preview: "Aperçu dans les résultats Plazo",
     from: (price: string) => `dès ${price}`,
     noPrice: "prix à définir",
@@ -558,14 +668,16 @@ export const fr = {
     see: "Voir",
     viewPage: "Voir ma page",
     save: "Enregistrer",
-    pricingIntro: "Un séjour paie le forfait le moins cher qui le couvre. Les jours se comptent du jour d'arrivée au jour de retour inclus.",
+    pricingIntro:
+      "Un séjour paie le forfait le moins cher qui le couvre. Les jours se comptent du jour d'arrivée au jour de retour inclus.",
     duration: "Durée",
     priceAll: "Prix tout compris",
     upTo: "Jusqu'à",
     dayUnit: (n: number) => (n > 1 ? "jours" : "jour"),
     removeTier: "Supprimer ce forfait",
     addTier: "+ Ajouter un forfait",
-    extraDay: (days: number) => `Au-delà de ${days} jour${days > 1 ? "s" : ""}, chaque jour en plus :`,
+    extraDay: (days: number) =>
+      `Au-delà de ${days} jour${days > 1 ? "s" : ""}, chaque jour en plus :`,
     extraDayNoTier: "Chaque jour au-delà du plus long forfait :",
     extraDayLabel: "Prix du jour supplémentaire",
     savePricing: "Enregistrer les tarifs",
@@ -574,7 +686,8 @@ export const fr = {
     simulationTitle: "Ce que paie le voyageur",
     simDays: (n: number) => `${n} j`,
     simTier: (n: number) => `Forfait ${n} jour${n > 1 ? "s" : ""}`,
-    simExtra: (base: number, extra: number, price: string) => `${base} jours + ${extra} × ${price}`,
+    simExtra: (base: number, extra: number, price: string) =>
+      `${base} jours + ${extra} × ${price}`,
     simNone: "Pas de prix : ajoutez un forfait plus long ou un prix par jour",
     commission: (pct: string) =>
       `Sur une réservation payée en ligne, Plazo retient sa commission (${pct} %) et vous reverse le reste. Les réservations au comptoir, par téléphone ou via les comparateurs ne sont pas concernées.`,
@@ -613,7 +726,8 @@ export const fr = {
     saveError: "Non enregistré",
     // Study list
     listTitle: "Mes études",
-    listSubtitle: "Estimations de capacité des terrains des loueurs (outil réservé à la plateforme).",
+    listSubtitle:
+      "Estimations de capacité des terrains des loueurs (outil réservé à la plateforme).",
     newStudy: "Nouvelle étude",
     newStudyName: "Nouvelle étude",
     empty: "Aucune étude pour l'instant.",
@@ -627,26 +741,37 @@ export const fr = {
     deleted: "Étude supprimée",
     rangeShort: (a: number, b: number) => `${a} à ${b} voitures`,
     // Step 1
-    tools: { pan: "Déplacer", addVertex: "Sommet +", removeVertex: "Sommet −", cut: "Exclure une partie", draw: "Dessiner" },
+    tools: {
+      pan: "Déplacer",
+      addVertex: "Sommet +",
+      removeVertex: "Sommet −",
+      cut: "Exclure une partie",
+      draw: "Dessiner",
+    },
     toolHelp: {
       pan: "Cliquez sur le terrain pour ajouter ou retirer sa parcelle cadastrale.",
-      addVertex: "Faites glisser un sommet, ou un point milieu pour en ajouter un.",
+      addVertex:
+        "Faites glisser un sommet, ou un point milieu pour en ajouter un.",
       removeVertex: "Cliquez sur un sommet pour le retirer.",
       cut: "Dessinez la partie à retirer du contour ; double-cliquez pour terminer.",
       draw: "Cliquez chaque coin du terrain ; double-cliquez pour terminer.",
-      dimension: "Cliquez deux sommets du contour, puis saisissez la distance mesurée sur place.",
+      dimension:
+        "Cliquez deux sommets du contour, puis saisissez la distance mesurée sur place.",
     },
     address: "Adresse ou point sur la carte",
     addressPlaceholder: "Adresse, commune ou « latitude, longitude »",
-    pointLabel: (lat: number, lon: number) => `Point ${lat.toFixed(5)}, ${lon.toFixed(5)}`,
+    pointLabel: (lat: number, lon: number) =>
+      `Point ${lat.toFixed(5)}, ${lon.toFixed(5)}`,
     searching: "Recherche…",
     noResult: "Aucune adresse trouvée.",
     outline: "Contour proposé",
     noOutline: "Pas encore de contour",
-    noOutlineHelp: "Cliquez sur le terrain : sa parcelle cadastrale est proposée comme contour. Cliquez les parcelles voisines pour les ajouter.",
+    noOutlineHelp:
+      "Cliquez sur le terrain : sa parcelle cadastrale est proposée comme contour. Cliquez les parcelles voisines pour les ajouter.",
     drawByHand: "ou dessiner le contour à la main",
     parcelsLabel: (ids: string) => `Parcelles cadastrales ${ids}`,
-    clippedWithParking: "recoupées avec la surface de parking repérée par l'IGN (BD TOPO)",
+    clippedWithParking:
+      "recoupées avec la surface de parking repérée par l'IGN (BD TOPO)",
     editedByHand: "contour corrigé à la main",
     drawnByHand: "Contour dessiné à la main",
     clipToParking: "Recouper avec le parking BD TOPO",
@@ -664,14 +789,16 @@ export const fr = {
     addDimension: "Ajouter une cote",
     validateOutline: "Valider le contour",
     dimension: "Cote mesurée",
-    dimensionPick: (n: number) => (n === 0 ? "Cliquez le premier sommet." : "Cliquez le second sommet."),
+    dimensionPick: (n: number) =>
+      n === 0 ? "Cliquez le premier sommet." : "Cliquez le second sommet.",
     dimensionOnMap: (m: string) => `Sur la photo : ${m} m`,
     dimensionMeasured: "Distance mesurée sur place (m)",
     apply: "Appliquer",
     cancel: "Annuler",
     scale: "Échelle",
     scaleNone: "× 1 (aucune cote saisie)",
-    scaleValue: (factor: string, measured: string) => `× ${factor} · cote de ${measured} m mesurée sur place`,
+    scaleValue: (factor: string, measured: string) =>
+      `× ${factor} · cote de ${measured} m mesurée sur place`,
     removeScale: "Retirer la cote",
     // Step 2
     zonesTitle: (area: string) => `Zones du terrain · ${area} m²`,
@@ -699,7 +826,8 @@ export const fr = {
     },
     laneWidth: "Largeur (m)",
     clearance: "Dégagement (m)",
-    drawZoneHelp: "Dessinez la zone sur la carte ; double-cliquez pour terminer.",
+    drawZoneHelp:
+      "Dessinez la zone sur la carte ; double-cliquez pour terminer.",
     drawLineHelp: "Tracez l'axe de la voie ; double-cliquez pour terminer.",
     drawPointHelp: "Cliquez l'emplacement sur la carte.",
     editHelp: "Faites glisser les sommets de l'élément sélectionné.",
@@ -708,7 +836,8 @@ export const fr = {
     estimate: "Estimer la capacité",
     noZone: "Ajoutez au moins une zone de stationnement.",
     // Step 3
-    compared: (zone: string, area: string) => `${zone} · ${area} m² · 3 dispositions comparées`,
+    compared: (zone: string, area: string) =>
+      `${zone} · ${area} m² · 3 dispositions comparées`,
     zonesCount: (n: number) => `${n} zones`,
     computing: "Calcul des dispositions…",
     layouts: {
@@ -720,8 +849,10 @@ export const fr = {
     perCar: (m2: string) => `${m2} m² par voiture`,
     selfParkDetail: (slot: string, aisle: string, endStalls: boolean) =>
       `Épi 90°, places ${slot} m, allées ${aisle} m${endStalls ? ", places en bout d'allée" : ""}`,
-    valet24Detail: (pattern: string, depth: number) => `Blocs ${pattern}, aucune voiture à plus de ${depth} rangs d'une allée`,
-    valet5Detail: (pattern: string) => `Blocs ${pattern} : plus dense, mais fragile en cas de retour avancé`,
+    valet24Detail: (pattern: string, depth: number) =>
+      `Blocs ${pattern}, aucune voiture à plus de ${depth} rangs d'une allée`,
+    valet5Detail: (pattern: string) =>
+      `Blocs ${pattern} : plus dense, mais fragile en cas de retour avancé`,
     aisle: "allée",
     range: (a: number, b: number) => `${a} à ${b} voitures`,
     rangeLabel: "Fourchette à annoncer : ",
@@ -750,7 +881,8 @@ export const fr = {
     noResult3: "Aucune place ne tient : vérifiez les zones et les réglages.",
     // Photo check
     photoTitle: "Contrôle sur la photo",
-    photoHelp: (date: string) => `voitures comptées sur la photo IGN du ${date} (cliquez sur chaque voiture ; cliquez à nouveau pour la retirer)`,
+    photoHelp: (date: string) =>
+      `voitures comptées sur la photo IGN du ${date} (cliquez sur chaque voiture ; cliquez à nouveau pour la retirer)`,
     occupied: (area: string) => `Surface occupée : ${area} m²`,
     observed: "Constaté : ",
     perCarSuffix: " par voiture",
@@ -761,23 +893,80 @@ export const fr = {
     save: "Enregistrer",
     backToEstimate: "Retour à l'estimation",
   },
+  // Bloc 2, step "Planning des places" (P-A, 04/10/2026): one line per spot over the coming days.
+  spotPlanning: {
+    title: "Planning des places",
+    intro:
+      "Une ligne par place : qui l'occupe, qui est attendu, et les jours où il manquera des places.",
+    noPlan: "Générez d'abord les places dans le volet Plan.",
+    today: "Aujourd'hui",
+    prev: "Semaine précédente",
+    next: "Semaine suivante",
+    windowLabel: "Fenêtre",
+    window: (days: number) => `${days} jours`,
+    load: "Besoin / places",
+    legend: {
+      onSite: "Sur place",
+      upcoming: "Attendu",
+      leaving: "Départ aujourd'hui",
+    },
+    alerts: "Alertes",
+    noAlert: "Rien à signaler sur la fenêtre.",
+    overCapacity: (date: string, n: number) =>
+      `${date} : ${n} véhicule${n > 1 ? "s" : ""} de trop pour les places`,
+    unplacedAlert: (n: number) =>
+      `${n} réservation${n > 1 ? "s" : ""} sans place`,
+    inactiveUsed: (code: string, ref: string) =>
+      `${code} est désactivée mais tient ${ref}`,
+    unplaced: (n: number) => `Sans place · ${n}`,
+    allPlaced: "Toutes les réservations de la fenêtre ont une place.",
+    preassign: "Pré-affecter",
+    preassignHint:
+      "Donne une place à chaque réservation sans place : libre sur tout le séjour, près de la remise, retours groupés par rangée.",
+    preassigned: (n: number, skipped: number) =>
+      `${n} place${n > 1 ? "s" : ""} attribuée${n > 1 ? "s" : ""}${skipped ? ` · ${skipped} sans solution` : ""}`,
+    stay: "Séjour",
+    moveTo: "Déplacer vers",
+    placeIn: "Placer en",
+    choose: "Choisir…",
+    noFree: "Aucune place libre sur ce séjour.",
+    release: "Libérer la place",
+    clickBar: "Cliquez un séjour pour le déplacer.",
+    moved: (plate: string, code: string) => `${plate} placé en ${code}`,
+    released: (plate: string) => `${plate} n'a plus de place`,
+    spotTaken: "Cette place est déjà prise sur ces dates.",
+    openBooking: "Ouvrir la réservation",
+  },
   // Bloc 2, step "Occupation" (P-A, 04/10/2026): who is where, where the arrivals go.
   occupation: {
     title: "Occupation",
-    intro: "Le plan en couleurs, les véhicules à placer et la recherche d'un véhicule par plaque, nom ou référence.",
+    intro:
+      "Le plan en couleurs, les véhicules à placer et la recherche d'un véhicule par plaque, nom ou référence.",
     noPlan: "Générez d'abord les places dans le volet Plan.",
     search: "Rechercher un véhicule",
     searchPlaceholder: "Plaque, nom ou référence",
     noResult: "Aucun véhicule ne correspond.",
-    legend: { occupied: "Occupée", leaving: "Départ aujourd'hui", booked: "Réservée (à venir)", free: "Libre", inactive: "Désactivée" },
-    stats: (occupied: number, active: number, leaving: number) => `${occupied} / ${active} places occupées · ${leaving} départ${leaving > 1 ? "s" : ""} aujourd'hui`,
+    legend: {
+      occupied: "Occupée",
+      leaving: "Départ aujourd'hui",
+      booked: "Réservée (à venir)",
+      free: "Libre",
+      inactive: "Désactivée",
+    },
+    stats: (occupied: number, active: number, leaving: number) =>
+      `${occupied} / ${active} places occupées · ${leaving} départ${leaving > 1 ? "s" : ""} aujourd'hui`,
     arrivals: (n: number) => `Arrivées à placer · ${n}`,
     noArrival: "Toutes les arrivées du jour ont une place.",
     suggested: (code: string) => `→ ${code} proposé`,
-    reason: { near_handover: (m: number) => `à ${m} m de la remise`, near_entrance: (m: number) => `à ${m} m de l'entrée`, free: "libre pendant le séjour" },
+    reason: {
+      near_handover: (m: number) => `à ${m} m de la remise`,
+      near_entrance: (m: number) => `à ${m} m de l'entrée`,
+      free: "libre pendant le séjour",
+    },
     place: "Placer",
     chooseOnMap: "Choisir sur le plan",
-    choosing: (plate: string) => `Cliquez une place libre pour y mettre ${plate}.`,
+    choosing: (plate: string) =>
+      `Cliquez une place libre pour y mettre ${plate}.`,
     cancelChoice: "Annuler",
     spot: "Place",
     noSpot: "Pas de place",
@@ -802,20 +991,28 @@ export const fr = {
   parkingPlan: {
     steps: ["Repérer le terrain", "Découper en zones", "Générer les places"],
     title: "Plan du parking",
-    intro: "Tracez votre terrain sur la photo aérienne, découpez-le en zones, puis générez les places : la capacité déclarée se recalcule depuis les places actives.",
+    intro:
+      "Tracez votre terrain sur la photo aérienne, découpez-le en zones, puis générez les places : la capacité déclarée se recalcule depuis les places actives.",
     saving: "Enregistrement…",
     saved: "Enregistré",
     saveError: "Non enregistré",
     layout: "Disposition",
-    layouts: { selfPark: "Clients garés seuls", valet24: "Voiturier · files de 2 à 4", valet5: "Voiturier · files de 5" },
+    layouts: {
+      selfPark: "Clients garés seuls",
+      valet24: "Voiturier · files de 2 à 4",
+      valet5: "Voiturier · files de 5",
+    },
     computing: "Calcul des dispositions…",
     places: (n: number) => `${n} place${n > 1 ? "s" : ""}`,
     generate: "Générer les places",
     regenerate: "Régénérer les places",
-    regenerateConfirm: "Régénérer remplace toutes les places et leurs réglages (places désactivées, types). Continuer ?",
+    regenerateConfirm:
+      "Régénérer remplace toutes les places et leurs réglages (places désactivées, types). Continuer ?",
     generated: (n: number) => `${n} places générées`,
-    generatedOn: (date: string, layout: string) => `Généré le ${date} · ${layout}`,
-    noSpots: "Aucune place pour l'instant : choisissez une disposition et générez les places.",
+    generatedOn: (date: string, layout: string) =>
+      `Généré le ${date} · ${layout}`,
+    noSpots:
+      "Aucune place pour l'instant : choisissez une disposition et générez les places.",
     counts: "Places",
     countGenerated: "Générées",
     countActive: "Actives",
@@ -824,13 +1021,28 @@ export const fr = {
     capacityApplied: (n: number) => `Capacité déclarée : ${n} places`,
     capacityInSync: "Capacité déclarée à jour",
     adjust: "Ajuster à la main",
-    adjustHelp: "Cliquez une place pour la désactiver ou la réactiver ; choisissez un type puis cliquez des places pour le leur donner.",
+    adjustHelp:
+      "Cliquez une place pour la désactiver ou la réactiver ; choisissez un type puis cliquez des places pour le leur donner.",
     tools: { toggle: "Activer / désactiver", kind: "Type de place" },
-    spotKinds: { standard: "Standard", large: "Grand gabarit", covered: "Couverte", pmr: "PMR", reserved: "Réservée" },
+    spotKinds: {
+      standard: "Standard",
+      large: "Grand gabarit",
+      covered: "Couverte",
+      pmr: "PMR",
+      reserved: "Réservée",
+    },
     landmarks: "Repères",
-    landmarksHelp: "Placez l'entrée, la sortie, la remise des clés, l'arrêt navette et la boîte à clés : ils servent aux distances et aux consignes.",
-    landmarkKinds: { entrance: "Entrée", exit: "Sortie", handover: "Remise des clés", shuttle_stop: "Arrêt navette", key_box: "Boîte à clés" },
-    placeLandmark: (kind: string) => `Cliquez l'emplacement de « ${kind} » sur la carte.`,
+    landmarksHelp:
+      "Placez l'entrée, la sortie, la remise des clés, l'arrêt navette et la boîte à clés : ils servent aux distances et aux consignes.",
+    landmarkKinds: {
+      entrance: "Entrée",
+      exit: "Sortie",
+      handover: "Remise des clés",
+      shuttle_stop: "Arrêt navette",
+      key_box: "Boîte à clés",
+    },
+    placeLandmark: (kind: string) =>
+      `Cliquez l'emplacement de « ${kind} » sur la carte.`,
     remove: "Retirer",
     back: "Retour",
     next: "Suivant",
@@ -840,7 +1052,13 @@ export const fr = {
   },
   platform: {
     brand: "Plateforme",
-    tabs: { operators: "Loueurs", listings: "Annonces", reservations: "Réservations", payments: "Paiements", capacity: "Outil capacité" },
+    tabs: {
+      operators: "Loueurs",
+      listings: "Annonces",
+      reservations: "Réservations",
+      payments: "Paiements",
+      capacity: "Outil capacité",
+    },
     view: "Vue :",
     viewAll: "Toute la plateforme",
     viewOwn: (name: string) => `Mon espace (${name})`,
@@ -855,9 +1073,11 @@ export const fr = {
       colPayments: "Paiements",
       colCommission: "Commission",
       colBookings: "Résa. du mois",
-      parkingsPlaces: (parkings: number, places: number) => `${parkings} parking${parkings > 1 ? "s" : ""} · ${places} places`,
+      parkingsPlaces: (parkings: number, places: number) =>
+        `${parkings} parking${parkings > 1 ? "s" : ""} · ${places} places`,
       invitedOn: (date: string) => `invitation envoyée le ${date}`,
-      invitationExpired: (date: string) => `invitation expirée (envoyée le ${date})`,
+      invitationExpired: (date: string) =>
+        `invitation expirée (envoyée le ${date})`,
       suspendedOn: (date: string) => `suspendu le ${date}`,
       platformAccount: "compte de la plateforme",
       emailToConfirm: "email à confirmer",
@@ -890,9 +1110,11 @@ export const fr = {
       inviteName: "Nom de l'entreprise / du parking",
       inviteEmail: "Email du gérant",
       inviteCapacity: "Capacité (places)",
-      inviteCommission: (pct: string | null) => (pct ? `Commission (par défaut ${pct} %)` : "Commission (%)"),
+      inviteCommission: (pct: string | null) =>
+        pct ? `Commission (par défaut ${pct} %)` : "Commission (%)",
       inviteSubmit: "Envoyer l'invitation",
-      inviteHelp: "Le gérant reçoit un email avec un lien (valable 7 jours) pour choisir son mot de passe. Personne d'autre ne connaît son mot de passe.",
+      inviteHelp:
+        "Le gérant reçoit un email avec un lien (valable 7 jours) pour choisir son mot de passe. Personne d'autre ne connaît son mot de passe.",
       invited: "Invitation envoyée.",
       linkTitle: "L'email n'a pas pu partir",
       linkWarning:
@@ -910,7 +1132,13 @@ export const fr = {
     },
     listings: {
       title: "Annonces",
-      filters: { pending_review: "À valider", published: "Publiées", rejected: "Refusées", draft: "Brouillons", all: "Toutes" },
+      filters: {
+        pending_review: "À valider",
+        published: "Publiées",
+        rejected: "Refusées",
+        draft: "Brouillons",
+        all: "Toutes",
+      },
       empty: "Aucune annonce dans cette liste.",
       submittedOn: (date: string) => `envoyée le ${date}`,
       updatedOn: (date: string) => `modifiée le ${date}`,
@@ -928,7 +1156,8 @@ export const fr = {
       confirmReject: "Refuser l'annonce",
       confirmUnpublish: "Dépublier l'annonce",
       cancel: "Annuler",
-      previewNote: "Aperçu tel qu'il apparaîtra dans les résultats ; la page publique n'existe qu'une fois l'annonce validée.",
+      previewNote:
+        "Aperçu tel qu'il apparaîtra dans les résultats ; la page publique n'existe qu'une fois l'annonce validée.",
       viewPage: "Voir la page publique",
       operatorSuspended: "loueur suspendu",
       address: "Adresse",
@@ -957,12 +1186,14 @@ export const fr = {
       colChannel: "Canal",
       empty: "Aucune réservation pour ces filtres.",
       total: (n: number) => `${n} réservation${n > 1 ? "s" : ""}`,
-      privacy: "Lecture seule. Les coordonnées des voyageurs ne sont pas affichées ici.",
+      privacy:
+        "Lecture seule. Les coordonnées des voyageurs ne sont pas affichées ici.",
       pendingPayment: "Paiement en cours",
     },
     payments: {
       title: "Paiements",
-      disabled: "Le paiement en ligne n'est pas activé (pas de clé Stripe) : les voyageurs paient au parking.",
+      disabled:
+        "Le paiement en ligne n'est pas activé (pas de clé Stripe) : les voyageurs paient au parking.",
       colOperator: "Loueur",
       colStripe: "Stripe",
       colSchedule: "Reversement",
@@ -974,9 +1205,15 @@ export const fr = {
       pending: (n: number, amount: string) => (n ? `${n} · ${amount}` : "—"),
       none: "—",
       retry: "Relancer",
-      retried: { transferred: "Reversement effectué.", failed: "Stripe refuse encore ce virement.", skipped: "Virement reporté : il sera retenté par la tâche quotidienne." },
-      failedRow: (reference: string, amount: string) => `${reference} · ${amount}`,
-      readOnly: "Lecture seule. Un reversement refusé par Stripe peut être relancé.",
+      retried: {
+        transferred: "Reversement effectué.",
+        failed: "Stripe refuse encore ce virement.",
+        skipped: "Virement reporté : il sera retenté par la tâche quotidienne.",
+      },
+      failedRow: (reference: string, amount: string) =>
+        `${reference} · ${amount}`,
+      readOnly:
+        "Lecture seule. Un reversement refusé par Stripe peut être relancé.",
     },
     payoutSchedule: {
       AFTER_STAY: "Le lendemain du séjour",
@@ -1003,4 +1240,8 @@ export function describeError(error: unknown): string {
   return fr.errors.unknown;
 }
 
-export const dateTime = new Intl.DateTimeFormat("fr-FR", { dateStyle: "short", timeStyle: "short", timeZone: "Europe/Paris" });
+export const dateTime = new Intl.DateTimeFormat("fr-FR", {
+  dateStyle: "short",
+  timeStyle: "short",
+  timeZone: "Europe/Paris",
+});

@@ -35,9 +35,23 @@ import type {
   TokenData,
 } from "./types";
 
-import type { CapacityStudy, CapacityStudySummary, GeoPolygon, LayoutKey, ParcelRef, StudyPatch } from "./capacity/types";
+import type {
+  CapacityStudy,
+  CapacityStudySummary,
+  GeoPolygon,
+  LayoutKey,
+  ParcelRef,
+  StudyPatch,
+} from "./capacity/types";
 import type { OccupationBoard, VehicleHit } from "./plan/occupation";
-import type { ParkingPlanView, PlanPatch, Spot, SpotInput, SpotKind } from "./plan/types";
+import type { PreassignResult, SpotPlanning } from "./plan/spotPlanning";
+import type {
+  ParkingPlanView,
+  PlanPatch,
+  Spot,
+  SpotInput,
+  SpotKind,
+} from "./plan/types";
 
 export interface ParcelFeature extends ParcelRef {
   geometry: { type: "Polygon" | "MultiPolygon"; coordinates: unknown };
@@ -110,7 +124,9 @@ export function getViewAs(): ViewAsSession | null {
   try {
     const raw = localStorage.getItem(VIEW_AS_KEY);
     const session = raw ? (JSON.parse(raw) as ViewAsSession) : null;
-    return session && new Date(session.expires).getTime() > Date.now() ? session : null;
+    return session && new Date(session.expires).getTime() > Date.now()
+      ? session
+      : null;
   } catch {
     return null;
   }
@@ -124,7 +140,9 @@ export function clearViewAs() {
   localStorage.removeItem(VIEW_AS_KEY);
 }
 
-const usesOwnSession = (endpoint: string) => endpoint.startsWith("/internal/platform") || endpoint.startsWith("/internal/auth/");
+const usesOwnSession = (endpoint: string) =>
+  endpoint.startsWith("/internal/platform") ||
+  endpoint.startsWith("/internal/auth/");
 
 // One refresh at a time: parallel 401s wait for the same rotation.
 let refreshing: Promise<string | null> | null = null;
@@ -155,7 +173,10 @@ async function refreshAccessToken(): Promise<string | null> {
   return refreshing;
 }
 
-export async function apiRequest<T = unknown>(endpoint: string, options: RequestInit = {}): Promise<T> {
+export async function apiRequest<T = unknown>(
+  endpoint: string,
+  options: RequestInit = {},
+): Promise<T> {
   const send = (token?: string) =>
     fetch(`${API_BASE}${endpoint}`, {
       ...options,
@@ -174,14 +195,24 @@ export async function apiRequest<T = unknown>(endpoint: string, options: Request
     window.dispatchEvent(new Event(VIEW_AS_ENDED_EVENT));
     throw new ApiError(401, "View-as session ended", "view_as_ended");
   }
-  if (res.status === 401 && getTokens()?.refresh?.token && !endpoint.startsWith("/internal/auth/")) {
+  if (
+    res.status === 401 &&
+    getTokens()?.refresh?.token &&
+    !endpoint.startsWith("/internal/auth/")
+  ) {
     const fresh = await refreshAccessToken();
     if (fresh) res = await send(fresh);
   }
 
   if (!res.ok) {
     const body = await res.json().catch(() => ({}));
-    throw new ApiError(res.status, body.message ?? `HTTP ${res.status}`, body.code, body.fields, body.details);
+    throw new ApiError(
+      res.status,
+      body.message ?? `HTTP ${res.status}`,
+      body.code,
+      body.fields,
+      body.details,
+    );
   }
   if (res.status === 204) return {} as T;
   return res.json() as Promise<T>;
@@ -191,61 +222,148 @@ const json = (body: unknown) => JSON.stringify(body);
 
 export const adminApi = {
   login: (email: string, password: string) =>
-    apiRequest<{ tokenData: TokenData; user: Staff }>("/internal/auth/login", { method: "POST", body: json({ email, password }) }),
+    apiRequest<{ tokenData: TokenData; user: Staff }>("/internal/auth/login", {
+      method: "POST",
+      body: json({ email, password }),
+    }),
   logout: () => apiRequest<void>("/internal/auth/logout", { method: "POST" }),
   getMe: () => apiRequest<Staff>("/internal/staff/me"),
   signup: (input: SignupInput) =>
-    apiRequest<{ message: string; devVerificationUrl?: string }>("/internal/auth/signup", { method: "POST", body: json(input) }),
+    apiRequest<{ message: string; devVerificationUrl?: string }>(
+      "/internal/auth/signup",
+      { method: "POST", body: json(input) },
+    ),
   getAirports: () => apiRequest<Airport[]>("/public/airports"),
-  verifyEmail: (token: string) => apiRequest<{ verified: true }>("/internal/auth/verify-email", { method: "POST", body: json({ token }) }),
+  verifyEmail: (token: string) =>
+    apiRequest<{ verified: true }>("/internal/auth/verify-email", {
+      method: "POST",
+      body: json({ token }),
+    }),
   resendVerification: () =>
-    apiRequest<{ alreadyVerified: boolean; devVerificationUrl?: string }>("/internal/auth/verify-email/resend", { method: "POST" }),
+    apiRequest<{ alreadyVerified: boolean; devVerificationUrl?: string }>(
+      "/internal/auth/verify-email/resend",
+      { method: "POST" },
+    ),
   getInvitation: (token: string) =>
-    apiRequest<{ email: string; operatorName: string }>("/internal/auth/invitation", { method: "POST", body: json({ token }) }),
+    apiRequest<{ email: string; operatorName: string }>(
+      "/internal/auth/invitation",
+      { method: "POST", body: json({ token }) },
+    ),
   acceptInvitation: (token: string, password: string) =>
-    apiRequest<{ tokenData: TokenData; user: Staff }>("/internal/auth/invitation/accept", { method: "POST", body: json({ token, password }) }),
+    apiRequest<{ tokenData: TokenData; user: Staff }>(
+      "/internal/auth/invitation/accept",
+      { method: "POST", body: json({ token, password }) },
+    ),
   changePassword: (currentPassword: string, newPassword: string) =>
-    apiRequest<{ message: string }>("/internal/staff/me/password", { method: "PATCH", body: json({ currentPassword, newPassword }) }),
+    apiRequest<{ message: string }>("/internal/staff/me/password", {
+      method: "PATCH",
+      body: json({ currentPassword, newPassword }),
+    }),
 
   getParking: () => apiRequest<Parking>("/internal/parking"),
-  getReturnMeetingPoint: () => apiRequest<{ data: ReturnMeetingPoint | null }>("/internal/parking/return-meeting-point"),
+  getReturnMeetingPoint: () =>
+    apiRequest<{ data: ReturnMeetingPoint | null }>(
+      "/internal/parking/return-meeting-point",
+    ),
   setReturnMeetingPoint: (point: ReturnMeetingPoint | null) =>
-    apiRequest<{ data: ReturnMeetingPoint | null }>("/internal/parking/return-meeting-point", {
-      method: "PUT",
-      body: json(point ?? { lat: null, lng: null }),
+    apiRequest<{ data: ReturnMeetingPoint | null }>(
+      "/internal/parking/return-meeting-point",
+      {
+        method: "PUT",
+        body: json(point ?? { lat: null, lng: null }),
+      },
+    ),
+  getVehicles: () =>
+    apiRequest<{ data: ShuttleVehicle[] }>("/internal/shuttle/vehicles"),
+  addVehicle: (vehicle: Omit<ShuttleVehicle, "id">) =>
+    apiRequest<{ data: ShuttleVehicle }>("/internal/shuttle/vehicles", {
+      method: "POST",
+      body: json(vehicle),
     }),
-  getVehicles: () => apiRequest<{ data: ShuttleVehicle[] }>("/internal/shuttle/vehicles"),
-  addVehicle: (vehicle: Omit<ShuttleVehicle, "id">) => apiRequest<{ data: ShuttleVehicle }>("/internal/shuttle/vehicles", { method: "POST", body: json(vehicle) }),
-  removeVehicle: (id: string) => apiRequest<void>(`/internal/shuttle/vehicles/${id}`, { method: "DELETE" }),
+  removeVehicle: (id: string) =>
+    apiRequest<void>(`/internal/shuttle/vehicles/${id}`, { method: "DELETE" }),
   updateParking: (id: string, settings: ParkingSettings) =>
-    apiRequest<{ data: Parking }>(`/internal/parkings/${id}`, { method: "PATCH", body: json(settings) }),
+    apiRequest<{ data: Parking }>(`/internal/parkings/${id}`, {
+      method: "PATCH",
+      body: json(settings),
+    }),
 
   // Bloc 2, step "Plan": the operator's parking plan and its spots.
-  getParkingPlan: (parkingId: string) => apiRequest<ParkingPlanView>(`/internal/parkings/${parkingId}/plan`),
+  getParkingPlan: (parkingId: string) =>
+    apiRequest<ParkingPlanView>(`/internal/parkings/${parkingId}/plan`),
   updateParkingPlan: (parkingId: string, patch: PlanPatch) =>
-    apiRequest<{ data: ParkingPlanView }>(`/internal/parkings/${parkingId}/plan`, { method: "PATCH", body: json(patch) }),
+    apiRequest<{ data: ParkingPlanView }>(
+      `/internal/parkings/${parkingId}/plan`,
+      { method: "PATCH", body: json(patch) },
+    ),
   replaceSpots: (parkingId: string, layout: LayoutKey, spots: SpotInput[]) =>
-    apiRequest<{ data: ParkingPlanView }>(`/internal/parkings/${parkingId}/plan/spots`, { method: "PUT", body: json({ layout, spots }) }),
-  updateSpot: (parkingId: string, spotId: string, patch: { active?: boolean; kind?: SpotKind; code?: string }) =>
-    apiRequest<{ data: Spot }>(`/internal/parkings/${parkingId}/plan/spots/${spotId}`, { method: "PATCH", body: json(patch) }),
+    apiRequest<{ data: ParkingPlanView }>(
+      `/internal/parkings/${parkingId}/plan/spots`,
+      { method: "PUT", body: json({ layout, spots }) },
+    ),
+  updateSpot: (
+    parkingId: string,
+    spotId: string,
+    patch: { active?: boolean; kind?: SpotKind; code?: string },
+  ) =>
+    apiRequest<{ data: Spot }>(
+      `/internal/parkings/${parkingId}/plan/spots/${spotId}`,
+      { method: "PATCH", body: json(patch) },
+    ),
   applyPlanCapacity: (parkingId: string) =>
-    apiRequest<{ data: ParkingPlanView }>(`/internal/parkings/${parkingId}/plan/apply-capacity`, { method: "POST" }),
+    apiRequest<{ data: ParkingPlanView }>(
+      `/internal/parkings/${parkingId}/plan/apply-capacity`,
+      { method: "POST" },
+    ),
 
   // Bloc 2, step "Occupation".
-  getOccupation: (parkingId: string) => apiRequest<OccupationBoard>(`/internal/parkings/${parkingId}/occupation`),
+  getOccupation: (parkingId: string) =>
+    apiRequest<OccupationBoard>(`/internal/parkings/${parkingId}/occupation`),
   searchVehicles: (parkingId: string, q: string) =>
-    apiRequest<{ results: VehicleHit[] }>(`/internal/parkings/${parkingId}/occupation/search?${new URLSearchParams({ q }).toString()}`),
-  assignSpot: (reservationId: string, patch: { spotId: string | null; keyHook?: string | null }) =>
-    apiRequest<{ data: Reservation & { spot: { code: string } | null } }>(`/internal/reservations/${reservationId}/spot`, { method: "POST", body: json(patch) }),
+    apiRequest<{ results: VehicleHit[] }>(
+      `/internal/parkings/${parkingId}/occupation/search?${new URLSearchParams({ q }).toString()}`,
+    ),
+  assignSpot: (
+    reservationId: string,
+    patch: { spotId: string | null; keyHook?: string | null },
+  ) =>
+    apiRequest<{ data: Reservation & { spot: { code: string } | null } }>(
+      `/internal/reservations/${reservationId}/spot`,
+      { method: "POST", body: json(patch) },
+    ),
+
+  // Bloc 2, step "Planning des places".
+  getSpotPlanning: (parkingId: string, from: string, days: number) =>
+    apiRequest<SpotPlanning>(
+      `/internal/parkings/${parkingId}/spot-planning?${new URLSearchParams({ from, days: String(days) }).toString()}`,
+    ),
+  preassignSpots: (parkingId: string, from: string, days: number) =>
+    apiRequest<{ data: PreassignResult }>(
+      `/internal/parkings/${parkingId}/spot-planning/preassign?${new URLSearchParams({ from, days: String(days) }).toString()}`,
+      {
+        method: "POST",
+      },
+    ),
 
   getTeam: () => apiRequest<Staff[]>("/internal/staff"),
-  createStaff: (staff: NewStaff) => apiRequest<{ data: Staff }>("/internal/staff", { method: "POST", body: json(staff) }),
+  createStaff: (staff: NewStaff) =>
+    apiRequest<{ data: Staff }>("/internal/staff", {
+      method: "POST",
+      body: json(staff),
+    }),
   updateStaff: (id: string, patch: { role?: StaffRole; isActive?: boolean }) =>
-    apiRequest<{ data: Staff }>(`/internal/staff/${id}`, { method: "PATCH", body: json(patch) }),
+    apiRequest<{ data: Staff }>(`/internal/staff/${id}`, {
+      method: "PATCH",
+      body: json(patch),
+    }),
   resetStaffPassword: (id: string, password: string) =>
-    apiRequest<{ message: string }>(`/internal/staff/${id}/reset-password`, { method: "POST", body: json({ password }) }),
+    apiRequest<{ message: string }>(`/internal/staff/${id}/reset-password`, {
+      method: "POST",
+      body: json({ password }),
+    }),
 
-  getPlanning: (date?: string) => apiRequest<Planning>(`/internal/planning${date ? `?date=${date}` : ""}`),
+  getPlanning: (date?: string) =>
+    apiRequest<Planning>(`/internal/planning${date ? `?date=${date}` : ""}`),
   getLiveArrivals: () => apiRequest<LiveArrivals>("/internal/arrivals/live"),
   previewCapacity: (arrivalAt: string, returnAt: string, excludeId?: string) =>
     apiRequest<CapacityPreview>(
@@ -255,83 +373,201 @@ export const adminApi = {
     apiRequest<Paginated<Reservation>>(
       `/internal/reservations?${new URLSearchParams({ ...(params.q ? { q: params.q } : {}), page: String(params.page ?? 1) }).toString()}`,
     ),
-  getReservation: (id: string) => apiRequest<Reservation>(`/internal/reservations/${id}`),
-  createReservation: (input: ReservationInput) => apiRequest<{ data: Reservation }>("/internal/reservations", { method: "POST", body: json(input) }),
+  getReservation: (id: string) =>
+    apiRequest<Reservation>(`/internal/reservations/${id}`),
+  createReservation: (input: ReservationInput) =>
+    apiRequest<{ data: Reservation }>("/internal/reservations", {
+      method: "POST",
+      body: json(input),
+    }),
   updateReservation: (id: string, input: Partial<ReservationInput>) =>
-    apiRequest<{ data: Reservation }>(`/internal/reservations/${id}`, { method: "PATCH", body: json(input) }),
-  parseEmail: (text: string) => apiRequest<EmailImportResult>("/internal/imports/email", { method: "POST", body: json({ text }) }),
+    apiRequest<{ data: Reservation }>(`/internal/reservations/${id}`, {
+      method: "PATCH",
+      body: json(input),
+    }),
+  parseEmail: (text: string) =>
+    apiRequest<EmailImportResult>("/internal/imports/email", {
+      method: "POST",
+      body: json({ text }),
+    }),
   getListing: () => apiRequest<ListingResponse>("/internal/listing"),
-  updateListing: (input: ListingInput) => apiRequest<{ data: Listing }>("/internal/listing", { method: "PUT", body: json(input) }),
-  submitListing: () => apiRequest<{ data: Listing }>("/internal/listing/submit", { method: "POST" }),
-  withdrawListing: () => apiRequest<{ data: Listing }>("/internal/listing/withdraw", { method: "POST" }),
+  updateListing: (input: ListingInput) =>
+    apiRequest<{ data: Listing }>("/internal/listing", {
+      method: "PUT",
+      body: json(input),
+    }),
+  submitListing: () =>
+    apiRequest<{ data: Listing }>("/internal/listing/submit", {
+      method: "POST",
+    }),
+  withdrawListing: () =>
+    apiRequest<{ data: Listing }>("/internal/listing/withdraw", {
+      method: "POST",
+    }),
   getPricing: () => apiRequest<Pricing>("/internal/pricing"),
   updatePricing: (tiers: PricingTier[], extraDayPriceCents: number | null) =>
-    apiRequest<{ data: Pricing }>("/internal/pricing", { method: "PUT", body: json({ tiers, extraDayPriceCents }) }),
+    apiRequest<{ data: Pricing }>("/internal/pricing", {
+      method: "PUT",
+      body: json({ tiers, extraDayPriceCents }),
+    }),
 
   // The platform owner's space (super admin).
-  getPlatformOperators: () => apiRequest<PlatformOperators>("/internal/platform/operators"),
+  getPlatformOperators: () =>
+    apiRequest<PlatformOperators>("/internal/platform/operators"),
   setCommission: (id: string, commissionBps: number | null) =>
-    apiRequest<{ data: { id: string; commissionBps: number | null } }>(`/internal/platform/operators/${id}/commission`, {
-      method: "PATCH",
-      body: json({ commissionBps }),
-    }),
-  suspendOperator: (id: string) => apiRequest<{ data: unknown }>(`/internal/platform/operators/${id}/suspend`, { method: "POST" }),
-  reactivateOperator: (id: string) => apiRequest<{ data: unknown }>(`/internal/platform/operators/${id}/reactivate`, { method: "POST" }),
+    apiRequest<{ data: { id: string; commissionBps: number | null } }>(
+      `/internal/platform/operators/${id}/commission`,
+      {
+        method: "PATCH",
+        body: json({ commissionBps }),
+      },
+    ),
+  suspendOperator: (id: string) =>
+    apiRequest<{ data: unknown }>(
+      `/internal/platform/operators/${id}/suspend`,
+      { method: "POST" },
+    ),
+  reactivateOperator: (id: string) =>
+    apiRequest<{ data: unknown }>(
+      `/internal/platform/operators/${id}/reactivate`,
+      { method: "POST" },
+    ),
   startViewAs: (id: string) =>
-    apiRequest<{ access: { token: string; expires: string }; operator: { id: string; name: string } }>(`/internal/platform/operators/${id}/view-as`, {
+    apiRequest<{
+      access: { token: string; expires: string };
+      operator: { id: string; name: string };
+    }>(`/internal/platform/operators/${id}/view-as`, {
       method: "POST",
     }),
   /** Revokes a view-as session (a logout made with its own token). */
-  endViewAs: (token: string) => apiRequest<void>("/internal/auth/logout", { method: "POST", headers: { Authorization: `Bearer ${token}` } }),
-  inviteOperator: (input: InviteInput) => apiRequest<InvitationResult>("/internal/platform/invitations", { method: "POST", body: json(input) }),
-  resendInvitation: (id: string) => apiRequest<InvitationResult>(`/internal/platform/operators/${id}/invitation`, { method: "POST" }),
+  endViewAs: (token: string) =>
+    apiRequest<void>("/internal/auth/logout", {
+      method: "POST",
+      headers: { Authorization: `Bearer ${token}` },
+    }),
+  inviteOperator: (input: InviteInput) =>
+    apiRequest<InvitationResult>("/internal/platform/invitations", {
+      method: "POST",
+      body: json(input),
+    }),
+  resendInvitation: (id: string) =>
+    apiRequest<InvitationResult>(
+      `/internal/platform/operators/${id}/invitation`,
+      { method: "POST" },
+    ),
   getPlatformListings: (status?: string) =>
-    apiRequest<PlatformListings>(`/internal/platform/listings${status ? `?${new URLSearchParams({ status }).toString()}` : ""}`),
-  approveListing: (id: string) => apiRequest<{ data: Listing }>(`/internal/platform/listings/${id}/approve`, { method: "POST" }),
+    apiRequest<PlatformListings>(
+      `/internal/platform/listings${status ? `?${new URLSearchParams({ status }).toString()}` : ""}`,
+    ),
+  approveListing: (id: string) =>
+    apiRequest<{ data: Listing }>(`/internal/platform/listings/${id}/approve`, {
+      method: "POST",
+    }),
   rejectListing: (id: string, message: string) =>
-    apiRequest<{ data: Listing }>(`/internal/platform/listings/${id}/reject`, { method: "POST", body: json({ message }) }),
+    apiRequest<{ data: Listing }>(`/internal/platform/listings/${id}/reject`, {
+      method: "POST",
+      body: json({ message }),
+    }),
   unpublishListing: (id: string, message?: string) =>
-    apiRequest<{ data: Listing }>(`/internal/platform/listings/${id}/unpublish`, { method: "POST", body: json(message ? { message } : {}) }),
-  getPlatformReservations: (params: { operatorId?: string; from?: string; to?: string; page?: number }) => {
+    apiRequest<{ data: Listing }>(
+      `/internal/platform/listings/${id}/unpublish`,
+      { method: "POST", body: json(message ? { message } : {}) },
+    ),
+  getPlatformReservations: (params: {
+    operatorId?: string;
+    from?: string;
+    to?: string;
+    page?: number;
+  }) => {
     const query = new URLSearchParams();
     for (const [k, v] of Object.entries(params)) if (v) query.set(k, String(v));
-    return apiRequest<PlatformReservations>(`/internal/platform/reservations?${query.toString()}`);
+    return apiRequest<PlatformReservations>(
+      `/internal/platform/reservations?${query.toString()}`,
+    );
   },
   // Online payments (the operator's Stripe account; manager).
-  getPaymentStatus: () => apiRequest<PaymentStatus>("/internal/payments/status"),
-  startPaymentOnboarding: () => apiRequest<{ url: string; expiresAt: string }>("/internal/payments/onboarding", { method: "POST" }),
-  getStripeDashboardLink: () => apiRequest<{ url: string }>("/internal/payments/dashboard-link", { method: "POST" }),
-  getPayoutSettings: () => apiRequest<{ payoutSchedule: PayoutSchedule }>("/internal/payments/settings"),
+  getPaymentStatus: () =>
+    apiRequest<PaymentStatus>("/internal/payments/status"),
+  startPaymentOnboarding: () =>
+    apiRequest<{ url: string; expiresAt: string }>(
+      "/internal/payments/onboarding",
+      { method: "POST" },
+    ),
+  getStripeDashboardLink: () =>
+    apiRequest<{ url: string }>("/internal/payments/dashboard-link", {
+      method: "POST",
+    }),
+  getPayoutSettings: () =>
+    apiRequest<{ payoutSchedule: PayoutSchedule }>(
+      "/internal/payments/settings",
+    ),
   updatePayoutSettings: (payoutSchedule: PayoutSchedule) =>
-    apiRequest<{ payoutSchedule: PayoutSchedule }>("/internal/payments/settings", { method: "PUT", body: json({ payoutSchedule }) }),
+    apiRequest<{ payoutSchedule: PayoutSchedule }>(
+      "/internal/payments/settings",
+      { method: "PUT", body: json({ payoutSchedule }) },
+    ),
 
   // SMS to travellers: the operator's channel (their own Android phone, Brevo, or none; manager).
   getSmsSettings: () => apiRequest<SmsSettings>("/internal/sms/settings"),
-  updateSmsSettings: (input: SmsSettingsInput) => apiRequest<SmsSettings>("/internal/sms/settings", { method: "PUT", body: json(input) }),
-  testSms: (to: string) => apiRequest<{ outcome: "sent" | "queued" }>("/internal/sms/test", { method: "POST", body: json({ to }) }),
-  disableSms: () => apiRequest<SmsSettings>("/internal/sms/disable", { method: "POST" }),
+  updateSmsSettings: (input: SmsSettingsInput) =>
+    apiRequest<SmsSettings>("/internal/sms/settings", {
+      method: "PUT",
+      body: json(input),
+    }),
+  testSms: (to: string) =>
+    apiRequest<{ outcome: "sent" | "queued" }>("/internal/sms/test", {
+      method: "POST",
+      body: json({ to }),
+    }),
+  disableSms: () =>
+    apiRequest<SmsSettings>("/internal/sms/disable", { method: "POST" }),
   getSmsStatus: () => apiRequest<SmsStatus>("/internal/sms/status"),
 
-  getPlatformPayments: () => apiRequest<PlatformPayments>("/internal/platform/payments"),
+  getPlatformPayments: () =>
+    apiRequest<PlatformPayments>("/internal/platform/payments"),
   retryPayout: (reservationId: string) =>
-    apiRequest<{ result: "transferred" | "failed" | "skipped"; payoutStatus: string }>(`/internal/platform/payouts/${reservationId}/retry`, {
+    apiRequest<{
+      result: "transferred" | "failed" | "skipped";
+      payoutStatus: string;
+    }>(`/internal/platform/payouts/${reservationId}/retry`, {
       method: "POST",
     }),
 
   // Capacity estimator (platform space).
-  listCapacityStudies: () => apiRequest<CapacityStudySummary[]>("/internal/platform/capacity-studies"),
-  getCapacityStudy: (id: string) => apiRequest<CapacityStudy>(`/internal/platform/capacity-studies/${id}`),
+  listCapacityStudies: () =>
+    apiRequest<CapacityStudySummary[]>("/internal/platform/capacity-studies"),
+  getCapacityStudy: (id: string) =>
+    apiRequest<CapacityStudy>(`/internal/platform/capacity-studies/${id}`),
   createCapacityStudy: (name: string) =>
-    apiRequest<{ data: CapacityStudy }>("/internal/platform/capacity-studies", { method: "POST", body: json({ name }) }),
+    apiRequest<{ data: CapacityStudy }>("/internal/platform/capacity-studies", {
+      method: "POST",
+      body: json({ name }),
+    }),
   updateCapacityStudy: (id: string, patch: StudyPatch) =>
-    apiRequest<{ data: CapacityStudy }>(`/internal/platform/capacity-studies/${id}`, { method: "PATCH", body: json(patch) }),
-  deleteCapacityStudy: (id: string) => apiRequest<void>(`/internal/platform/capacity-studies/${id}`, { method: "DELETE" }),
+    apiRequest<{ data: CapacityStudy }>(
+      `/internal/platform/capacity-studies/${id}`,
+      { method: "PATCH", body: json(patch) },
+    ),
+  deleteCapacityStudy: (id: string) =>
+    apiRequest<void>(`/internal/platform/capacity-studies/${id}`, {
+      method: "DELETE",
+    }),
   parcelsAt: (lon: number, lat: number) =>
-    apiRequest<{ parcels: ParcelFeature[] }>(`/internal/geo/parcels?${new URLSearchParams({ lon: String(lon), lat: String(lat) }).toString()}`),
+    apiRequest<{ parcels: ParcelFeature[] }>(
+      `/internal/geo/parcels?${new URLSearchParams({ lon: String(lon), lat: String(lat) }).toString()}`,
+    ),
   parkingsIn: (bbox: [number, number, number, number]) =>
-    apiRequest<{ parkings: ParkingFeature[] }>(`/internal/geo/parkings?bbox=${bbox.map(n => n.toFixed(6)).join(",")}`),
-  geocode: (q: string) => apiRequest<{ results: GeocodeResult[] }>(`/internal/geo/geocode?${new URLSearchParams({ q }).toString()}`),
+    apiRequest<{ parkings: ParkingFeature[] }>(
+      `/internal/geo/parkings?bbox=${bbox.map((n) => n.toFixed(6)).join(",")}`,
+    ),
+  geocode: (q: string) =>
+    apiRequest<{ results: GeocodeResult[] }>(
+      `/internal/geo/geocode?${new URLSearchParams({ q }).toString()}`,
+    ),
 
   changeReservationStatus: (id: string, status: ReservationStatus) =>
-    apiRequest<{ data: Reservation }>(`/internal/reservations/${id}/status`, { method: "POST", body: json({ status }) }),
+    apiRequest<{ data: Reservation }>(`/internal/reservations/${id}/status`, {
+      method: "POST",
+      body: json({ status }),
+    }),
 };
