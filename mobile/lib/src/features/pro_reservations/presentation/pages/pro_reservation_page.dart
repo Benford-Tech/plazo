@@ -47,16 +47,26 @@ class ProReservationPage extends StatelessWidget implements AutoRouteWrapper {
       },
       builder: (context, state) {
         final r = state.reservation;
+        // Leaving hands the (possibly updated) reservation back to the list or the planning. The pop
+        // must be forced: a `maybePop` would ask this PopScope again, which would call it again, forever.
+        void leave() {
+          if (context.router.canPop()) {
+            context.router.pop(r);
+          } else {
+            context.router.replaceAll([const ProShellRoute(children: [ProReservationsRoute()])]);
+          }
+        }
+
         return PopScope<ReservationModel?>(
           canPop: false,
           onPopInvokedWithResult: (didPop, _) {
-            if (!didPop) context.router.maybePop(r);
+            if (!didPop) leave();
           },
           child: Scaffold(
             appBar: BrandAppBar(
               pro: true,
               title: r?.reference ?? 'res.one'.tr(),
-              leading: BackButton(onPressed: () => context.router.maybePop(r)),
+              leading: BackButton(key: const Key('res-back'), onPressed: leave),
               actions: [
                 if (r != null && !r.closed && can(role, 'reservations:manage'))
                   IconButton(
