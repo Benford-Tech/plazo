@@ -92,10 +92,19 @@ export default function OccupationPage() {
     if (!data) return [];
     const list: MapLayer[] = [];
     const features = spots.map(s =>
-      feature({ type: "Polygon", coordinates: [s.geometry] }, { color: s.id === selectedSpotId ? SELECTED : TONE_COLORS[spotTone(s)], active: s.active, selected: s.id === selectedSpotId }),
+      feature(
+        { type: "Polygon", coordinates: [s.geometry] },
+        { color: s.id === selectedSpotId ? SELECTED : TONE_COLORS[spotTone(s)], free: spotTone(s) === "free", active: s.active, selected: s.id === selectedSpotId },
+      ),
     );
-    list.push({ id: "spots-fill", type: "fill", data: fc(features), paint: { "fill-color": ["get", "color"], "fill-opacity": ["case", ["get", "selected"], 0.9, ["get", "active"], 0.55, 0.1] } });
-    list.push({ id: "spots-line", type: "line", data: fc(features), paint: { "line-color": ["get", "color"], "line-width": ["case", ["get", "selected"], 2.5, 1] } });
+    // Free spots stay see-through so the photo reads; taken ones are solid.
+    list.push({
+      id: "spots-fill",
+      type: "fill",
+      data: fc(features),
+      paint: { "fill-color": ["get", "color"], "fill-opacity": ["case", ["get", "selected"], 0.9, ["get", "free"], 0.12, ["get", "active"], 0.7, 0.08] },
+    });
+    list.push({ id: "spots-line", type: "line", data: fc(features), paint: { "line-color": ["get", "color"], "line-opacity": ["case", ["get", "free"], 0.6, 1], "line-width": ["case", ["get", "selected"], 2.5, 1] } });
     if (data.plan?.zones?.length) list.push({ id: "zones", type: "line", data: fc(data.plan.zones.map(z => feature(z.geometry))), paint: { "line-color": "#F5C400", "line-width": 1.5, "line-dasharray": [3, 2] } });
     if (data.plan?.outline) list.push({ id: "outline", type: "line", data: fc([feature(data.plan.outline)]), paint: { "line-color": "#F5C400", "line-width": 3 } });
     if (data.plan?.landmarks?.length) {
