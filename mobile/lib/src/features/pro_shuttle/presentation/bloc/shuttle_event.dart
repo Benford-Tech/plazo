@@ -10,7 +10,7 @@ class ShuttleStarted extends ShuttleEvent {
   final String? staffId;
 }
 
-/// "Aller chercher à l'aéroport" / "Déposer au terminal" (T-A "Deux sens").
+/// "Retours · aéroport" / "Départs · terminal" (T-A "Deux sens").
 class ShuttleDirectionChanged extends ShuttleEvent {
   const ShuttleDirectionChanged(this.direction);
   final String direction;

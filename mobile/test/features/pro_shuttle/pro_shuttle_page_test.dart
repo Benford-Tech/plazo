@@ -37,7 +37,7 @@ void main() {
     await pumpLocalized(tester, BlocProvider<ShuttleBloc>.value(value: bloc, child: const ProShuttlePage()));
   }
 
-  testWidgets('R4 · liste : badges au point de RDV / atterri / vol prévu, sélection, « Démarrer le trajet (2 clients) »', (tester) async {
+  testWidgets('R4 · liste : badges au point de RDV / atterri / vol prévu, sélection, « Partir à l’aéroport · 2 clients »', (tester) async {
     await show(tester, ShuttleState(now: t0, pickups: pickupsModel, selected: const {'r1', 'r2'}));
     expect(find.text('À récupérer · Terminal 1'), findsOneWidget);
     expect(find.text('Point de rendez-vous : Terminal 1 · Porte 12'), findsOneWidget);
@@ -45,14 +45,14 @@ void main() {
     expect(find.textContaining('Au point de RDV '), findsOneWidget);
     expect(find.textContaining('Atterri '), findsWidgets);
     expect(find.textContaining('Vol prévu '), findsOneWidget);
-    expect(find.text('Démarrer le trajet (2 clients)'), findsOneWidget);
+    expect(find.text('Partir à l\'aéroport · 2 clients'), findsOneWidget);
     await tester.tap(find.byKey(const Key('pickup-r3')));
     expect(verify(() => bloc.add(captureAny())).captured.single, isA<ShuttlePassengerToggled>().having((e) => e.reservationId, 'id', 'r3'));
   });
 
   testWidgets('R4 · le choix du véhicule puis le démarrage', (tester) async {
     await show(tester, ShuttleState(now: t0, pickups: pickupsModel, selected: const {'r1'}, vehicles: const [ShuttleVehicleModel(id: 'v1', model: 'Mercedes Vito', colour: 'blanche', plate: 'GH-456-JK')]));
-    expect(find.text('Démarrer le trajet (1 client)'), findsOneWidget);
+    expect(find.text('Partir à l\'aéroport · 1 client'), findsOneWidget);
     await tester.tap(find.byKey(const Key('start-trip')));
     await tester.pumpAndSettle();
     expect(find.text('Votre navette'), findsOneWidget);
@@ -82,7 +82,7 @@ void main() {
     final trip = staffTrip(passengers: const [TripPassengerModel(reservationId: 'r1', reference: 'Rr1', customerName: 'Camille Martin', passengers: 2, plate: 'AB-123-CD')]);
     await show(tester, ShuttleState(now: t0.add(const Duration(minutes: 5)), pickups: pickupsModel, trip: trip, tracking: true));
     expect(find.byKey(const Key('trip-running')), findsOneWidget);
-    expect(find.text('Trajet en cours · ma position est partagée'), findsOneWidget);
+    expect(find.text('En route vers l\'aéroport · position partagée'), findsOneWidget);
     expect(find.text('Véhicule : Mercedes Vito blanche GH-456-JK · se coupe à l\'arrêt du trajet'), findsOneWidget);
     expect(find.textContaining('arrêt automatique dans 1 h 25'), findsOneWidget);
     expect(find.text('Sur un trajet'), findsOneWidget);

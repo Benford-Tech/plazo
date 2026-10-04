@@ -194,7 +194,7 @@ class _RunningCard extends StatelessWidget {
   }
 }
 
-/// "Aller chercher à l'aéroport" / "Déposer au terminal" (T-A "Deux sens").
+/// "Retours · aéroport" / "Départs · terminal" (T-A "Deux sens").
 class _DirectionToggle extends StatelessWidget {
   const _DirectionToggle({required this.direction, required this.enabled, required this.onChanged});
   final String direction;

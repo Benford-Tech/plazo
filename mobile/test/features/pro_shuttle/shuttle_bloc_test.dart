@@ -223,7 +223,7 @@ void main() {
     expect(bloc.state.trip, isNull);
     await bloc.close();
   });
-  test('T-A · deux sens : « Déposer au terminal » charge les arrivés, le trajet part en dropoff, et la fin', () async {
+  test('T-A · deux sens : « Départs · terminal » charge les arrivés, le trajet part en dropoff, et la fin', () async {
     final bloc = build()..add(const ShuttleStarted(staffId: 'me'));
     await bloc.stream.firstWhere((s) => s.pickups != null);
     // The driver's usual vehicle is preselected; the out-of-service one is not offered.
