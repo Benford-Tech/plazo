@@ -67,6 +67,13 @@ class _ProTodayViewState extends State<_ProTodayView> with SingleTickerProviderS
       appBar: BrandAppBar(
         pro: true,
         actions: [
+          if (context.watch<ProAuthBloc>().state.staff?.role == 'manager')
+            IconButton(
+              key: const Key('pro-plan'),
+              tooltip: 'plan.menu'.tr(),
+              icon: const Icon(Icons.map_rounded),
+              onPressed: () => context.router.push(const ProPlanRoute()),
+            ),
           IconButton(
             key: const Key('pro-shuttle'),
             tooltip: 'shuttle.title'.tr(),

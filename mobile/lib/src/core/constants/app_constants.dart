@@ -36,4 +36,10 @@ abstract final class AppConstants {
       'https://data.geopf.fr/wmts?SERVICE=WMTS&REQUEST=GetTile&VERSION=1.0.0&LAYER=GEOGRAPHICALGRIDSYSTEMS.PLANIGNV2'
       '&STYLE=normal&TILEMATRIXSET=PM&FORMAT=image/png&TILEMATRIX={z}&TILEROW={y}&TILECOL={x}';
   static const ignAttribution = '© IGN – Plan IGN';
+
+  /// Aerial photo (BD ORTHO, 20 cm) for the parking plan: same WMTS, no key.
+  static const ignOrthoTilesUrl =
+      'https://data.geopf.fr/wmts?SERVICE=WMTS&REQUEST=GetTile&VERSION=1.0.0&LAYER=ORTHOIMAGERY.ORTHOPHOTOS'
+      '&STYLE=normal&TILEMATRIXSET=PM&FORMAT=image/jpeg&TILEMATRIX={z}&TILEROW={y}&TILECOL={x}';
+  static const ignOrthoAttribution = '© IGN – BD ORTHO';
 }

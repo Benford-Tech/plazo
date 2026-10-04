@@ -9,5 +9,6 @@ void _initDataSource() {
     ..registerLazySingleton<PlanningDataSource>(() => PlanningDataSourceImpl(locator()))
     ..registerLazySingleton<NotificationsDataSource>(() => NotificationsDataSourceImpl(locator(), locator()))
     ..registerLazySingleton<ReturnDataSource>(() => ReturnDataSourceImpl(locator(), locator()))
-    ..registerLazySingleton<ShuttleDataSource>(() => ShuttleDataSourceImpl(locator()));
+    ..registerLazySingleton<ShuttleDataSource>(() => ShuttleDataSourceImpl(locator()))
+    ..registerLazySingleton<PlanDataSource>(() => PlanDataSourceImpl(locator()));
 }

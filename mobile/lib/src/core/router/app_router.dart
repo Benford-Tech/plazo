@@ -7,6 +7,7 @@ import '../../features/checkout/presentation/pages/payment_page.dart';
 import '../../features/more/presentation/pages/more_tab_page.dart';
 import '../../features/pro_auth/presentation/pages/pro_login_page.dart';
 import '../../features/pro_notifications/presentation/pages/pro_notifications_page.dart';
+import '../../features/pro_plan/presentation/pages/pro_plan_page.dart';
 import '../../features/pro_shuttle/presentation/pages/pro_shuttle_page.dart';
 import '../../features/pro_today/presentation/pages/pro_today_page.dart';
 import '../../features/return_day/presentation/pages/meeting_point_route_page.dart';
@@ -46,6 +47,7 @@ class AppRouter extends RootStackRouter {
     AutoRoute(page: ProTodayRoute.page, path: '/pro', guards: [proGuard]),
     AutoRoute(page: ProNotificationsRoute.page, path: '/pro/notifications', guards: [proGuard]),
     AutoRoute(page: ProShuttleRoute.page, path: '/pro/navette', guards: [proGuard]),
+    AutoRoute(page: ProPlanRoute.page, path: '/pro/plan', guards: [proGuard]),
     // Traveller: a booking (A5 detail, confirmation) and its payment step (A4)
     AutoRoute(page: MyBookingRoute.page, path: '/ma-reservation/:reference'),
     AutoRoute(page: PaymentRoute.page, path: '/ma-reservation/:reference/paiement'),

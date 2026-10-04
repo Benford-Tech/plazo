@@ -25,6 +25,7 @@ void _initBlocs() {
     ..registerFactory(() => ReturnBloc(locator(), locator(), locator()))
     ..registerFactory(() => MeetingRouteBloc(locator(), locator(), locator(), locator()))
     ..registerFactory(() => ShuttleBloc(locator(), locator(), locator(), locator(), locator(), locator(), locator(), pollInterval: AppConstants.livePollInterval))
+    ..registerFactory(() => ProPlanBloc(locator(), locator(), locator(), locator(), locator(), locator(), locator()))
     ..registerFactory(() => ProTodayBloc(locator(), locator(), pollInterval: AppConstants.livePollInterval))
     ..registerFactory(() => ProNotificationsBloc(locator(), locator(), locator()))
     // The staff session lives as long as the app (the router's guard reads it).
