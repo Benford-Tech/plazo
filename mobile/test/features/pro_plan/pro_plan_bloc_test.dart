@@ -27,7 +27,7 @@ Future<void> settle() => Future<void>.delayed(const Duration(milliseconds: 2));
 
 const parking = ParkingSummaryModel(id: 'p1', name: 'Parkair', totalCapacity: 150);
 const emptyPlan = ParkingPlanViewModel(plan: ParkingPlanModel(id: 'pl', parkingId: 'p1'), activeSpots: 0, totalCapacity: 150);
-final spot = SpotModel(id: 's1', code: 'A-01-01', row: 1, index: 1, kind: 'standard', active: true, geometry: [
+final spot = const SpotModel(id: 's1', code: 'A-01-01', row: 1, index: 1, kind: 'standard', active: true, geometry: [
   [5.08, 45.72],
   [5.08003, 45.72],
   [5.08003, 45.72004],

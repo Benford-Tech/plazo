@@ -10,5 +10,6 @@ void _initClients() {
     ..registerLazySingleton<NotificationsClient>(() => NotificationsClient(locator()))
     ..registerLazySingleton<ReturnClient>(() => ReturnClient(locator()))
     ..registerLazySingleton<ShuttleClient>(() => ShuttleClient(locator()))
-    ..registerLazySingleton<PlanClient>(() => PlanClient(locator()));
+    ..registerLazySingleton<PlanClient>(() => PlanClient(locator()))
+    ..registerLazySingleton<OccupationClient>(() => OccupationClient(locator()));
 }

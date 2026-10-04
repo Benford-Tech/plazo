@@ -75,6 +75,12 @@ class _ProTodayViewState extends State<_ProTodayView> with SingleTickerProviderS
               onPressed: () => context.router.push(const ProPlanRoute()),
             ),
           IconButton(
+            key: const Key('pro-places'),
+            tooltip: 'occupation.title'.tr(),
+            icon: const Icon(Icons.local_parking_rounded),
+            onPressed: () => context.router.push(const ProOccupationRoute()),
+          ),
+          IconButton(
             key: const Key('pro-shuttle'),
             tooltip: 'shuttle.title'.tr(),
             icon: const Icon(Icons.directions_bus_rounded),

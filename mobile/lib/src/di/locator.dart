@@ -43,6 +43,11 @@ import '../features/pro_notifications/domain/usecases/enable_push_use_case.dart'
 import '../features/pro_notifications/domain/usecases/get_notification_preferences_use_case.dart';
 import '../features/pro_notifications/domain/usecases/update_notification_preferences_use_case.dart';
 import '../features/pro_notifications/presentation/bloc/pro_notifications_bloc.dart';
+import '../features/pro_occupation/data/client/occupation_client.dart';
+import '../features/pro_occupation/data/datasources/occupation_data_source.dart';
+import '../features/pro_occupation/domain/repositories/occupation_repository.dart';
+import '../features/pro_occupation/domain/usecases/occupation_use_cases.dart';
+import '../features/pro_occupation/presentation/bloc/pro_occupation_bloc.dart';
 import '../features/pro_plan/data/client/plan_client.dart';
 import '../features/pro_plan/data/datasources/plan_data_source.dart';
 import '../features/pro_plan/domain/repositories/plan_repository.dart';

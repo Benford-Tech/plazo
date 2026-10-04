@@ -139,3 +139,5 @@ version web, « Payer » ouvre la page Stripe Checkout.
    position en arrière-plan (Apple) et formulaire « Sécurité des données » (Google).
 7. **Codemagic** : l'app ajoutée sur le dépôt avec `codemagic.yaml` (à la racine du dépôt), le groupe de variables `mobile_secrets`
    (voir l'en-tête du fichier).
+
+- `/pro/places` : Occupation (bloc 2, étape 2) — recherche par plaque, place proposée à l'arrivée, crochet des clés.

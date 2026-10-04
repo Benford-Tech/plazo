@@ -20,6 +20,7 @@ class PlanMap extends StatefulWidget {
     this.onMoved,
     this.zoom = 18,
     this.showCrosshair = false,
+    this.polygons,
   });
 
   final LatLng center;
@@ -30,6 +31,9 @@ class PlanMap extends StatefulWidget {
   final void Function(LatLng center)? onMoved;
   final double zoom;
   final bool showCrosshair;
+
+  /// Ready-made polygons (the occupation's coloured spots), drawn instead of [spots].
+  final List<Polygon>? polygons;
 
   @override
   State<PlanMap> createState() => _PlanMapState();
@@ -70,7 +74,8 @@ class _PlanMapState extends State<PlanMap> {
           children: [
             if (IgnMap.tilesEnabled)
               TileLayer(urlTemplate: AppConstants.ignOrthoTilesUrl, userAgentPackageName: 'com.benfordtech.parking_app', maxNativeZoom: 19),
-            if (widget.spots.isNotEmpty)
+            if (widget.polygons != null) PolygonLayer(polygons: widget.polygons!),
+            if (widget.polygons == null && widget.spots.isNotEmpty)
               PolygonLayer(
                 polygons: [
                   for (final s in widget.spots)

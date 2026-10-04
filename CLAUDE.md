@@ -132,7 +132,7 @@ Le nom du produit doit rester dans UN seul fichier de configuration (il peut enc
 - `site/` : site Plazo voyageurs (Next.js), servi à la racine du domaine.
 - `mobile/` : app Flutter (jalon 6 commencé) : une seule app, onglets Rechercher / Mes réservations / Plus pour le
   voyageur (mêmes chemins que le site : `/:aeroport/recherche`, `/:aeroport/:parking`, `/ma-reservation…`), et le
-  parcours pro (`/pro…`, comptes du personnel) ouvert depuis « Plus », dont le plan du parking pour les gérants
+  parcours pro (`/pro…`, comptes du personnel ; `/pro/plan` et `/pro/places` pour le bloc 2) ouvert depuis « Plus », dont le plan du parking pour les gérants
   (`/pro/plan`, M-A + rectangle auto du 04/10/2026 : adresse ou GPS, coins sur la photo IGN, génération côté serveur
   par `/plan/estimate` et `/plan/generate`) ; paiement par la feuille native Stripe
   (`flutter_stripe`) ; architecture de `lovenest-frontend`

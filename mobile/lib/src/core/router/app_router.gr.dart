@@ -460,6 +460,22 @@ class ProNotificationsRoute extends PageRouteInfo<void> {
 }
 
 /// generated route for
+/// [ProOccupationPage]
+class ProOccupationRoute extends PageRouteInfo<void> {
+  const ProOccupationRoute({List<PageRouteInfo>? children})
+    : super(ProOccupationRoute.name, initialChildren: children);
+
+  static const String name = 'ProOccupationRoute';
+
+  static PageInfo page = PageInfo(
+    name,
+    builder: (data) {
+      return WrappedRoute(child: const ProOccupationPage());
+    },
+  );
+}
+
+/// generated route for
 /// [ProPlanPage]
 class ProPlanRoute extends PageRouteInfo<void> {
   const ProPlanRoute({List<PageRouteInfo>? children})
