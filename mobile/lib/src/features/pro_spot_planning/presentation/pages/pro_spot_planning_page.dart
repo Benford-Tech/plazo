@@ -52,7 +52,6 @@ class ProSpotPlanningPage extends StatelessWidget implements AutoRouteWrapper {
         }
       },
       builder: (context, state) {
-        final bloc = context.read<ProSpotPlanningBloc>();
         final p = state.planning;
         return Scaffold(
           appBar: BrandAppBar(pro: true, title: 'planning.title'.tr()),
@@ -65,27 +64,7 @@ class ProSpotPlanningPage extends StatelessWidget implements AutoRouteWrapper {
                         )
                       : const CircularProgressIndicator(color: AppColors.accent),
                 )
-              : Column(
-                  children: [
-                    _Toolbar(state: state),
-                    Expanded(
-                      child: RefreshIndicator(
-                        color: AppColors.accent,
-                        onRefresh: () async => bloc.add(const ProSpotPlanningRefreshed()),
-                        child: ListView(
-                          padding: const EdgeInsets.fromLTRB(16, 8, 16, 28),
-                          children: [
-                            if (p.spots.isEmpty) Text('occupation.no_plan'.tr(), style: AppText.muted()) else _Gantt(state: state),
-                            const SizedBox(height: 14),
-                            _Alerts(planning: p),
-                            const SizedBox(height: 14),
-                            _Unplaced(state: state),
-                          ],
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
+              : _Body(state: state),
         );
       },
     );
@@ -99,6 +78,62 @@ class ProSpotPlanningPage extends StatelessWidget implements AutoRouteWrapper {
       'planning.moved' => 'planning.moved'.tr(args: [parts[1], parts[2]]),
       _ => 'planning.released'.tr(args: [parts[1]]),
     };
+  }
+}
+
+class _Body extends StatefulWidget {
+  const _Body({required this.state});
+  final ProSpotPlanningState state;
+  @override
+  State<_Body> createState() => _BodyState();
+}
+
+class _BodyState extends State<_Body> {
+  /// A phone shows the spots with a stay first; the switch shows them all.
+  bool _all = false;
+
+  @override
+  Widget build(BuildContext context) {
+    final state = widget.state;
+    final bloc = context.read<ProSpotPlanningBloc>();
+    final p = state.planning!;
+    final busyRows = p.spots.where((s) => s.stays.isNotEmpty).length;
+    return Column(
+      children: [
+        _Toolbar(state: state),
+        Expanded(
+          child: RefreshIndicator(
+            color: AppColors.accent,
+            onRefresh: () async => bloc.add(const ProSpotPlanningRefreshed()),
+            child: ListView(
+              padding: const EdgeInsets.fromLTRB(16, 8, 16, 28),
+              children: [
+                _Alerts(planning: p),
+                const SizedBox(height: 14),
+                _Unplaced(state: state),
+                const SizedBox(height: 14),
+                Row(
+                  children: [
+                    Expanded(child: Text('planning.grid'.tr().toUpperCase(), style: AppText.label(size: 11))),
+                    Text(
+                      _all ? 'planning.all_spots'.tr(args: ['${p.spots.length}']) : 'planning.busy_spots'.tr(args: ['$busyRows']),
+                      style: AppText.muted(size: 12),
+                    ),
+                    Switch(key: const Key('planning-all'), value: _all, activeTrackColor: AppColors.accent, onChanged: (v) => setState(() => _all = v)),
+                  ],
+                ),
+                if (p.spots.isEmpty)
+                  Text('occupation.no_plan'.tr(), style: AppText.muted())
+                else if (!_all && busyRows == 0)
+                  Text('planning.no_busy'.tr(), style: AppText.muted())
+                else
+                  _Gantt(state: state, all: _all),
+              ],
+            ),
+          ),
+        ),
+      ],
+    );
   }
 }
 
@@ -154,8 +189,9 @@ class _Toolbar extends StatelessWidget {
 }
 
 class _Gantt extends StatelessWidget {
-  const _Gantt({required this.state});
+  const _Gantt({required this.state, required this.all});
   final ProSpotPlanningState state;
+  final bool all;
 
   @override
   Widget build(BuildContext context) {
@@ -193,7 +229,7 @@ class _Gantt extends StatelessWidget {
                   ],
                 ),
                 const Divider(height: 8, color: AppColors.line),
-                for (final s in p.spots)
+                for (final s in p.spots.where((s) => all || s.stays.isNotEmpty))
                   SizedBox(
                     key: Key('row-${s.code}'),
                     height: _rowPx,

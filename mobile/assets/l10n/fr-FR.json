@@ -809,6 +809,10 @@
     "place_in": "Placer en",
     "move_to": "Déplacer vers",
     "release": "Libérer",
-    "no_free": "Aucune place libre sur ce séjour."
+    "no_free": "Aucune place libre sur ce séjour.",
+    "grid": "Par place",
+    "all_spots": "Toutes · {}",
+    "busy_spots": "Avec séjour · {}",
+    "no_busy": "Aucune place occupée sur la période. Activez « Toutes » pour voir le plan complet."
   }
 }
