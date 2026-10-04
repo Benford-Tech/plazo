@@ -47,17 +47,18 @@ class AppRouter extends RootStackRouter {
 
   @override
   List<AutoRoute> get routes => [
-    // Traveller app: three tabs under "/". In Plazo Pro they stay reachable under /voyageur.
-    AutoRoute(
-      page: AppShellRoute.page,
-      path: AppConstants.isPro ? '/voyageur' : '/',
-      initial: !AppConstants.isPro,
-      children: [
-        AutoRoute(page: SearchTabRoute.page, path: '', initial: true),
-        AutoRoute(page: TripsTabRoute.page, path: 'ma-reservation'),
-        AutoRoute(page: MoreTabRoute.page, path: 'plus'),
-      ],
-    ),
+    // Traveller app (Plazo only, decision of 04/10/2026: Plazo Pro carries no traveller flow): three tabs under "/".
+    if (!AppConstants.isPro)
+      AutoRoute(
+        page: AppShellRoute.page,
+        path: '/',
+        initial: true,
+        children: [
+          AutoRoute(page: SearchTabRoute.page, path: '', initial: true),
+          AutoRoute(page: TripsTabRoute.page, path: 'ma-reservation'),
+          AutoRoute(page: MoreTabRoute.page, path: 'plus'),
+        ],
+      ),
     if (AppConstants.isPro) RedirectRoute(path: '/', redirectTo: '/pro'),
     // Staff: four tabs under /pro (N-A), the other screens pushed above them. Plazo Pro only: the
     // traveller app carries no pro space (decision of 04/10/2026).
@@ -87,15 +88,17 @@ class AppRouter extends RootStackRouter {
       AutoRoute(page: ProReservationFormRoute.page, path: '/pro/reservations/formulaire', guards: [proGuard]),
       AutoRoute(page: ProReservationRoute.page, path: '/pro/reservations/:id', guards: [proGuard]),
     ],
-    // Traveller: a booking (A5 detail, confirmation) and its payment step (A4)
-    AutoRoute(page: MyBookingRoute.page, path: '/ma-reservation/:reference'),
-    AutoRoute(page: PaymentRoute.page, path: '/ma-reservation/:reference/paiement'),
-    // Traveller: the return day (R2, walking route to the meeting point)
-    AutoRoute(page: MeetingPointRouteRoute.page, path: '/ma-reservation/:reference/point-de-rendez-vous'),
-    // Traveller: results (A2), booking form (A4), parking page (A3), as on the site
-    AutoRoute(page: ResultsRoute.page, path: '/:airport/recherche'),
-    AutoRoute(page: BookingFormRoute.page, path: '/:airport/:parking/reserver'),
-    AutoRoute(page: ParkingRoute.page, path: '/:airport/:parking'),
-    RedirectRoute(path: '*', redirectTo: '/'),
+    if (!AppConstants.isPro) ...[
+      // Traveller: a booking (A5 detail, confirmation) and its payment step (A4)
+      AutoRoute(page: MyBookingRoute.page, path: '/ma-reservation/:reference'),
+      AutoRoute(page: PaymentRoute.page, path: '/ma-reservation/:reference/paiement'),
+      // Traveller: the return day (R2, walking route to the meeting point)
+      AutoRoute(page: MeetingPointRouteRoute.page, path: '/ma-reservation/:reference/point-de-rendez-vous'),
+      // Traveller: results (A2), booking form (A4), parking page (A3), as on the site
+      AutoRoute(page: ResultsRoute.page, path: '/:airport/recherche'),
+      AutoRoute(page: BookingFormRoute.page, path: '/:airport/:parking/reserver'),
+      AutoRoute(page: ParkingRoute.page, path: '/:airport/:parking'),
+    ],
+    RedirectRoute(path: '*', redirectTo: AppConstants.isPro ? '/pro' : '/'),
   ];
 }

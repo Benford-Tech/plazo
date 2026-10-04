@@ -159,8 +159,9 @@ version web, « Payer » ouvre la page Stripe Checkout.
 - **Plazo** (voyageurs) : flavor Android `traveller`, `--dart-define=APP_FLAVOR=traveller` (défaut), id `com.benfordtech.parking_app`.
 - **Plazo Pro** (personnel, direction B de l'espace pro web : noir, jaune, angles vifs, Archivo Narrow + JetBrains Mono ; `AppColors` / `AppRadius` / `AppFonts` suivent le flavor) : flavor Android `pro`, `--dart-define=APP_FLAVOR=pro`, id `com.benfordtech.parking_app.pro`,
   icône brun foncé (`assets/brand/app-icon-pro*.png`, `dart run flutter_launcher_icons -f flutter_launcher_icons-pro.yaml`).
-  Elle s'ouvre sur ses quatre onglets (`ProShellPage` : Aujourd'hui · Réservations · Parking · Plus) ; les écrans voyageur
-  restent sous `/voyageur`.
+  Elle s'ouvre sur ses quatre onglets (`ProShellPage` : Aujourd'hui · Réservations · Parking · Plus) et n'embarque aucun
+  écran voyageur (décision du 04/10/2026 : les routes voyageur et les App Links `/ma-reservation` n'existent que dans le
+  flavor `traveller`, `android/app/src/traveller/AndroidManifest.xml`).
 - Exemple : `flutter build apk --release --flavor pro --dart-define=APP_FLAVOR=pro`. Toujours passer le même nom aux deux
   options (le flavor choisit l'id et l'icône, la define choisit le parcours).
 - iOS : un seul schéma pour l'instant (app voyageur). Pour Plazo Pro sur iOS, créer dans Xcode une configuration et un

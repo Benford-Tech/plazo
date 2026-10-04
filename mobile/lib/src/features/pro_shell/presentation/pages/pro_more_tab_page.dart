@@ -4,7 +4,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:package_info_plus/package_info_plus.dart';
 
-import '../../../../core/constants/app_constants.dart';
 import '../../../../core/constants/product.g.dart';
 import '../../../../core/helpers/roles.dart';
 import '../../../../core/router/app_router.dart';
@@ -106,7 +105,7 @@ class ProMoreTabPage extends StatelessWidget {
             label: 'pro.logout'.tr(),
             onTap: () {
               context.read<ProAuthBloc>().add(const ProAuthLogoutRequested());
-              context.router.replaceAll([if (AppConstants.isPro) const ProLoginRoute() else const AppShellRoute()]);
+              context.router.replaceAll([const ProLoginRoute()]);
             },
           ),
           const SizedBox(height: 18),

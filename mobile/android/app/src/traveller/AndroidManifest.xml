@@ -1,0 +1,15 @@
+<manifest xmlns:android="http://schemas.android.com/apk/res/android">
+    <application>
+        <activity android:name=".MainActivity">
+            <!-- App Links: the booking links of the confirmation emails and SMS open the app.
+                 PLACEHOLDER domain: the production one; verification needs
+                 https://<domain>/.well-known/assetlinks.json (see mobile/deep_links/). -->
+            <intent-filter android:autoVerify="true">
+                <action android:name="android.intent.action.VIEW"/>
+                <category android:name="android.intent.category.DEFAULT"/>
+                <category android:name="android.intent.category.BROWSABLE"/>
+                <data android:scheme="https" android:host="plazo-benford-tech.vercel.app" android:pathPrefix="/ma-reservation"/>
+            </intent-filter>
+        </activity>
+    </application>
+</manifest>

@@ -3,7 +3,6 @@ import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
-import '../../../../core/constants/app_constants.dart';
 import '../../../../core/enums/view_state.dart';
 import '../../../../core/router/app_router.dart';
 import '../../../../core/utils/error_message_handler.dart';
@@ -47,7 +46,7 @@ class _ProAccountPageState extends State<ProAccountPage> {
           ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('account.password_changed'.tr())));
           // Every session is closed by the server: back to the login.
           context.read<ProAuthBloc>().add(const ProAuthLogoutRequested());
-          context.router.replaceAll([if (AppConstants.isPro) const ProLoginRoute() else const AppShellRoute()]);
+          context.router.replaceAll([const ProLoginRoute()]);
           return;
         }
         if (state.errorCode != null) {
