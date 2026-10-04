@@ -29,7 +29,7 @@ class MoreTabPage extends StatelessWidget {
           InkWell(
             key: const Key('more-pro'),
             borderRadius: BorderRadius.circular(16),
-            onTap: () => context.router.push(const ProTodayRoute()),
+            onTap: () => context.router.push(const ProShellRoute()),
             child: AppCard(
               child: Row(
                 children: [

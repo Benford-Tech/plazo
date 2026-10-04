@@ -1,6 +1,8 @@
 import 'package:auto_route/auto_route.dart';
 import 'package:flutter/material.dart';
 
+import '../constants/app_constants.dart';
+
 import '../../features/booking/presentation/pages/my_booking_page.dart';
 import '../../features/checkout/presentation/pages/booking_form_page.dart';
 import '../../features/checkout/presentation/pages/payment_page.dart';
@@ -14,6 +16,8 @@ import '../../features/pro_reservations/presentation/pages/pro_import_email_page
 import '../../features/pro_reservations/presentation/pages/pro_reservation_form_page.dart';
 import '../../features/pro_reservations/presentation/pages/pro_reservation_page.dart';
 import '../../features/pro_reservations/presentation/pages/pro_reservations_page.dart';
+import '../../features/pro_shell/presentation/pages/pro_more_tab_page.dart';
+import '../../features/pro_shell/presentation/pages/pro_shell_page.dart';
 import '../../features/pro_shuttle/presentation/pages/pro_shuttle_page.dart';
 import '../../features/pro_today/presentation/pages/pro_today_page.dart';
 import '../../features/return_day/presentation/pages/meeting_point_route_page.dart';
@@ -26,8 +30,8 @@ import 'pro_auth_guard.dart';
 
 part 'app_router.gr.dart';
 
-/// One app: the traveller's tabs (Rechercher / Mes réservations / Plus) and, from "Plus", the
-/// staff's flow (/pro…), unchanged. The traveller's paths are the site's, so the links of the
+/// Two apps on one project (A-B, 04/10/2026): Plazo (traveller's tabs under "/") and Plazo Pro
+/// (staff's tabs under "/pro"), chosen by APP_FLAVOR; the other flow stays reachable by its paths. The traveller's paths are the site's, so the links of the
 /// confirmation emails and SMS open the app (Android App Links, iOS universal links; the web build
 /// reads them from the address bar). Order matters: fixed paths before the /:airport ones.
 @AutoRouterConfig(replaceInRouteName: 'Page,Route')
@@ -38,24 +42,35 @@ class AppRouter extends RootStackRouter {
 
   @override
   List<AutoRoute> get routes => [
+    // Traveller app: three tabs under "/". In Plazo Pro they stay reachable under /voyageur.
     AutoRoute(
       page: AppShellRoute.page,
-      path: '/',
-      initial: true,
+      path: AppConstants.isPro ? '/voyageur' : '/',
+      initial: !AppConstants.isPro,
       children: [
         AutoRoute(page: SearchTabRoute.page, path: '', initial: true),
         AutoRoute(page: TripsTabRoute.page, path: 'ma-reservation'),
         AutoRoute(page: MoreTabRoute.page, path: 'plus'),
       ],
     ),
-    // Staff
+    if (AppConstants.isPro) RedirectRoute(path: '/', redirectTo: '/pro'),
+    // Staff: four tabs under /pro (N-A), the other screens pushed above them.
     AutoRoute(page: ProLoginRoute.page, path: '/pro/connexion'),
-    AutoRoute(page: ProTodayRoute.page, path: '/pro', guards: [proGuard]),
+    AutoRoute(
+      page: ProShellRoute.page,
+      path: '/pro',
+      initial: AppConstants.isPro,
+      guards: [proGuard],
+      children: [
+        AutoRoute(page: ProTodayRoute.page, path: '', initial: true),
+        AutoRoute(page: ProReservationsRoute.page, path: 'reservations'),
+        AutoRoute(page: ProOccupationRoute.page, path: 'parking'),
+        AutoRoute(page: ProMoreTabRoute.page, path: 'plus'),
+      ],
+    ),
     AutoRoute(page: ProNotificationsRoute.page, path: '/pro/notifications', guards: [proGuard]),
     AutoRoute(page: ProShuttleRoute.page, path: '/pro/navette', guards: [proGuard]),
     AutoRoute(page: ProPlanRoute.page, path: '/pro/plan', guards: [proGuard]),
-    AutoRoute(page: ProOccupationRoute.page, path: '/pro/places', guards: [proGuard]),
-    AutoRoute(page: ProReservationsRoute.page, path: '/pro/reservations', guards: [proGuard]),
     AutoRoute(page: ProImportEmailRoute.page, path: '/pro/reservations/import', guards: [proGuard]),
     AutoRoute(page: ProReservationFormRoute.page, path: '/pro/reservations/formulaire', guards: [proGuard]),
     AutoRoute(page: ProReservationRoute.page, path: '/pro/reservations/:id', guards: [proGuard]),

@@ -1,4 +1,4 @@
-# Codemagic CI/CD — mobile app (traveller + staff flows, one project; flavors later)
+# Codemagic CI/CD — mobile apps: Plazo (flavor traveller) and Plazo Pro (flavor pro), one project
 #
 # Modelled on lovenest-frontend/codemagic.yaml. NO SECRET IN THIS FILE: everything sensitive is in
 # the Codemagic group below (app → Settings → Environment variables, every value "Secure").
@@ -59,10 +59,13 @@ workflows:
           dart run tool/sync_product.dart --check
           flutter analyze
           flutter test
-      - name: Android — APK de test (debug, non signé pour le store)
-        script: flutter build apk --debug
+      - name: Android — APK de test des deux apps (debug, non signés pour le store)
+        script: |
+          set -e
+          flutter build apk --debug --flavor traveller --dart-define=APP_FLAVOR=traveller
+          flutter build apk --debug --flavor pro --dart-define=APP_FLAVOR=pro
     artifacts:
-      - build/app/outputs/flutter-apk/app-debug.apk
+      - build/app/outputs/flutter-apk/*.apk
 
   mobile-release:
     name: Mobile — Android + iOS + TestFlight (release)
@@ -118,10 +121,12 @@ workflows:
       - name: Android — APK + App Bundle (release, signés, versionnés)
         script: |
           set -e
-          flutter build apk --release --build-number="$NEXT" $DEFINES
-          flutter build appbundle --release --build-number="$NEXT" $DEFINES
-          mv build/app/outputs/flutter-apk/app-release.apk "build/app/outputs/flutter-apk/app-v$VERSION_NAME-$NEXT.apk"
-          mv build/app/outputs/bundle/release/app-release.aab "build/app/outputs/bundle/release/app-v$VERSION_NAME-$NEXT.aab"
+          for FLAVOR in traveller pro; do
+            flutter build apk --release --flavor $FLAVOR --dart-define=APP_FLAVOR=$FLAVOR --build-number="$NEXT" $DEFINES
+            flutter build appbundle --release --flavor $FLAVOR --dart-define=APP_FLAVOR=$FLAVOR --build-number="$NEXT" $DEFINES
+            mv "build/app/outputs/flutter-apk/app-$FLAVOR-release.apk" "build/app/outputs/flutter-apk/app-$FLAVOR-v$VERSION_NAME-$NEXT.apk"
+            mv "build/app/outputs/bundle/${FLAVOR}Release/app-$FLAVOR-release.aab" "build/app/outputs/bundle/${FLAVOR}Release/app-$FLAVOR-v$VERSION_NAME-$NEXT.aab"
+          done
       - name: Signature iOS (récupère ou crée certificat + profil App Store)
         # The App ID needs the capabilities of ios/Runner/Runner.entitlements: Push Notifications
         # and Associated Domains.
@@ -131,14 +136,15 @@ workflows:
           keychain initialize
           keychain add-certificates
           xcode-project use-profiles
-      - name: iOS — IPA signé (release, versionné)
+      - name: iOS — IPA signé (release, versionné) — app voyageur ; Plazo Pro iOS demande un second
+        # schéma Xcode (bundle id .pro), à créer dans Xcode (voir mobile/README.md).
         script: |
           set -e
-          flutter build ipa --release --build-number="$NEXT" $DEFINES \
+          flutter build ipa --release --dart-define=APP_FLAVOR=traveller --build-number="$NEXT" $DEFINES \
             --export-options-plist=/Users/builder/export_options.plist
     artifacts:
       - build/app/outputs/flutter-apk/*.apk
-      - build/app/outputs/bundle/release/*.aab
+      - build/app/outputs/bundle/*/*.aab
       - build/ios/ipa/*.ipa
     publishing:
       # Only when every step passed. The AAB goes to the Play Console by hand at first (the first

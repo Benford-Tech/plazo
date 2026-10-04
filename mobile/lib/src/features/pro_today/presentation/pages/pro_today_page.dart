@@ -11,7 +11,6 @@ import '../../../../core/router/app_router.dart';
 import '../../../../di/locator.dart';
 import '../../../../shared/theme/theme.dart';
 import '../../../../shared/widgets/brand_header.dart';
-import '../../../pro_auth/presentation/bloc/pro_auth_bloc.dart';
 import '../bloc/pro_today_bloc.dart';
 import '../widgets/today_row.dart';
 
@@ -67,43 +66,10 @@ class _ProTodayViewState extends State<_ProTodayView> with SingleTickerProviderS
       appBar: BrandAppBar(
         pro: true,
         actions: [
-          if (context.watch<ProAuthBloc>().state.staff?.role == 'manager')
-            IconButton(
-              key: const Key('pro-plan'),
-              tooltip: 'plan.menu'.tr(),
-              icon: const Icon(Icons.map_rounded),
-              onPressed: () => context.router.push(const ProPlanRoute()),
-            ),
-          IconButton(
-            key: const Key('pro-reservations'),
-            tooltip: 'res.title'.tr(),
-            icon: const Icon(Icons.list_alt_rounded),
-            onPressed: () => context.router.push(const ProReservationsRoute()),
-          ),
-          IconButton(
-            key: const Key('pro-places'),
-            tooltip: 'occupation.title'.tr(),
-            icon: const Icon(Icons.local_parking_rounded),
-            onPressed: () => context.router.push(const ProOccupationRoute()),
-          ),
-          IconButton(
-            key: const Key('pro-shuttle'),
-            tooltip: 'shuttle.title'.tr(),
-            icon: const Icon(Icons.directions_bus_rounded),
-            onPressed: () => context.router.push(const ProShuttleRoute()),
-          ),
           IconButton(
             tooltip: 'pro.notifications'.tr(),
             icon: const Icon(Icons.notifications_none_rounded),
             onPressed: () => context.router.push(const ProNotificationsRoute()),
-          ),
-          IconButton(
-            tooltip: 'pro.logout'.tr(),
-            icon: const Icon(Icons.logout_rounded),
-            onPressed: () {
-              context.read<ProAuthBloc>().add(const ProAuthLogoutRequested());
-              context.router.replaceAll([const AppShellRoute()]);
-            },
           ),
         ],
       ),

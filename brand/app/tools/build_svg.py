@@ -166,6 +166,13 @@ def main():
         # glyphs are drawn at 92 % here to land in the inner ~66 % of the 108 dp layer.
         "android-foreground.svg": svg(S, S,
             symbol("none", WHITE, DARK, x=S * 0.04, y=S * 0.04, rounded=False, scale=0.92), NAME),
+        # "Plazo Pro" app icon (A-B, 04/10/2026): the same mark, inverted — dark brown full bleed,
+        # white P, orange plane — so the two apps tell apart on a home screen.
+        "icon-maskable-pro.svg": svg(S, S,
+            f'<rect width="{S}" height="{S}" fill="{DARK}"/>\n'
+            + symbol("none", WHITE, ORANGE, x=S * 0.1, y=S * 0.1, rounded=False, scale=0.8), NAME + " Pro"),
+        "android-foreground-pro.svg": svg(S, S,
+            symbol("none", WHITE, ORANGE, x=S * 0.04, y=S * 0.04, rounded=False, scale=0.92), NAME + " Pro"),
         # Social card 1200 x 630: the dark logo on prune.
         "social-card.svg": svg(1200, 630,
             f'<rect width="1200" height="630" fill="{ORANGE}"/>\n'

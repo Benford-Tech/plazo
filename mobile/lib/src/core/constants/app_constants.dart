@@ -2,6 +2,11 @@
 ///
 ///   flutter run --dart-define=API_BASE_URL=http://localhost:3005/api
 abstract final class AppConstants {
+  /// Which of the two apps this build is (A-B, 04/10/2026): "traveller" (Plazo) or "pro" (Plazo Pro).
+  /// Same code, two entry points: --dart-define=APP_FLAVOR=pro (and --flavor pro on Android).
+  static const flavor = String.fromEnvironment('APP_FLAVOR', defaultValue: 'traveller');
+  static const isPro = flavor == 'pro';
+
   /// The API, with its /api prefix. Production by default.
   static const baseUrl = String.fromEnvironment('API_BASE_URL', defaultValue: 'https://plazo-benford-tech.vercel.app/api');
 

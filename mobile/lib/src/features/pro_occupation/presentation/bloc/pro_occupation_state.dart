@@ -12,8 +12,10 @@ abstract class ProOccupationState with _$ProOccupationState {
     @Default('') String query,
     @Default([]) List<OccupantModel> results,
     @Default(false) bool searching,
+
     /// The vehicle whose card is open (from the search or the arrivals).
     OccupantModel? vehicle,
+
     /// A placement just happened: "GA-124-RB placé en A-05-10".
     String? notice,
     String? errorCode,

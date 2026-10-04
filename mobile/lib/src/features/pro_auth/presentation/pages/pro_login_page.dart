@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
 import '../../../../core/enums/view_state.dart';
+import '../../../../core/constants/app_constants.dart';
 import '../../../../core/router/app_router.dart';
 import '../../../../core/utils/error_message_handler.dart';
 import '../../../../shared/theme/theme.dart';
@@ -44,7 +45,7 @@ class _ProLoginPageState extends State<ProLoginPage> {
       appBar: const BrandAppBar(pro: true),
       body: BlocConsumer<ProAuthBloc, ProAuthState>(
         listenWhen: (a, b) => a.status != b.status && b.status == ProAuthStatus.signedIn,
-        listener: (context, state) => context.router.replaceAll([const AppShellRoute(), const ProTodayRoute()]),
+        listener: (context, state) => context.router.replaceAll([if (!AppConstants.isPro) const AppShellRoute(), const ProShellRoute()]),
         builder: (context, state) => SafeArea(
           child: Form(
             key: _form,

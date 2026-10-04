@@ -105,7 +105,8 @@ Plazo reprend la stack et les conventions des dépôts `lovenest-backend`, `love
   pour les builds). Deux apps à terme (« pro » et « voyageur ») : un seul projet d'abord, deux
   parcours bien séparés, puis deux points d'entrée (flavors). **Décision du 04/10/2026 : app pro complète, équivalente
   à l'espace pro web** (A-B : deux apps « Plazo » et « Plazo Pro » sur un seul projet ; N-A : quatre onglets
-  Aujourd'hui · Réservations · Parking · Plus), livrée par étapes : 1 réservations (fait), 2 flavors et onglets,
+  Aujourd'hui · Réservations · Parking · Plus), livrée par étapes : 1 réservations (fait), 2 flavors et onglets (fait : `--flavor pro --dart-define=APP_FLAVOR=pro`,
+  `ProShellPage` à quatre onglets sous `/pro`, icône Pro brun foncé ; iOS : second schéma Xcode à créer),
   3 planning des places, 4 équipe / compte / réglages, 5 Sur Plazo (fiche, tarifs, Stripe), 6 inscription.
 - Cartographie : Google Maps Platform ; le tracé et l'analyse se font sur la photo aérienne IGN BD ORTHO (MapLibre + Terra Draw), les conditions de Google l'interdisant sur son imagerie. SMS et email : Brevo.
 - Suivi de vols : AirLabs (offre gratuite) derrière une interface interchangeable, repli AeroDataBox.
@@ -133,8 +134,8 @@ Le nom du produit doit rester dans UN seul fichier de configuration (il peut enc
   `/pro/plateforme` (pages `src/pages/platform/*`, routes serveur `/api/internal/platform/...` protégées par
   `PlatformAdminMiddleware`) ; l'inscription libre des loueurs sous `/pro/inscription`.
 - `site/` : site Plazo voyageurs (Next.js), servi à la racine du domaine.
-- `mobile/` : app Flutter (jalon 6 commencé) : une seule app, onglets Rechercher / Mes réservations / Plus pour le
-  voyageur (mêmes chemins que le site : `/:aeroport/recherche`, `/:aeroport/:parking`, `/ma-reservation…`), et le
+- `mobile/` : app Flutter (jalon 6 commencé) : un seul projet, deux apps (`AppConstants.flavor`) : « Plazo », onglets
+  Rechercher / Mes réservations / Plus pour le voyageur (mêmes chemins que le site : `/:aeroport/recherche`, `/:aeroport/:parking`, `/ma-reservation…`), et le
   parcours pro (`/pro…`, comptes du personnel ; `/pro/plan` et `/pro/places` pour le bloc 2 ; `/pro/reservations…` : liste,
   recherche, fiche avec statuts, saisie, import d'un mail, feature `pro_reservations`, 04/10/2026) ouvert depuis « Plus », dont le plan du parking pour les gérants
   (`/pro/plan`, M-A + rectangle auto du 04/10/2026 : adresse ou GPS, coins sur la photo IGN, génération côté serveur

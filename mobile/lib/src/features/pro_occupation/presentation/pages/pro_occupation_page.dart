@@ -5,7 +5,8 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_map/flutter_map.dart';
 import 'package:latlong2/latlong.dart';
 
-import '../../../../core/constants/product.g.dart';
+import '../../../../core/helpers/roles.dart';
+import '../../../../core/router/app_router.dart';
 import '../../../../core/enums/view_state.dart';
 import '../../../../core/helpers/formatters.dart';
 import '../../../../core/utils/error_message_handler.dart';
@@ -14,6 +15,7 @@ import '../../../../shared/theme/theme.dart';
 import '../../../../shared/widgets/brand_header.dart';
 import '../../../../shared/widgets/french_plate.dart';
 import '../../../../shared/widgets/gradient_button.dart';
+import '../../../pro_auth/presentation/bloc/pro_auth_bloc.dart';
 import '../../../pro_plan/presentation/widgets/plan_map.dart';
 import '../../data/models/occupation_models.dart';
 import '../bloc/pro_occupation_bloc.dart';
@@ -37,8 +39,7 @@ class ProOccupationPage extends StatelessWidget implements AutoRouteWrapper {
   const ProOccupationPage({super.key});
 
   @override
-  Widget wrappedRoute(BuildContext context) =>
-      BlocProvider(create: (_) => locator<ProOccupationBloc>()..add(const ProOccupationStarted()), child: this);
+  Widget wrappedRoute(BuildContext context) => BlocProvider(create: (_) => locator<ProOccupationBloc>()..add(const ProOccupationStarted()), child: this);
 
   @override
   Widget build(BuildContext context) {
@@ -54,11 +55,26 @@ class ProOccupationPage extends StatelessWidget implements AutoRouteWrapper {
       builder: (context, state) {
         final bloc = context.read<ProOccupationBloc>();
         return Scaffold(
-          appBar: BrandAppBar(pro: true, title: '${Product.proName} · ${'occupation.title'.tr()}'),
+          appBar: BrandAppBar(
+            pro: true,
+            title: 'pro_tabs.parking'.tr(),
+            actions: [
+              if (can(context.watch<ProAuthBloc>().state.staff?.role, 'parking:manage'))
+                IconButton(
+                  key: const Key('occ-plan'),
+                  tooltip: 'plan.menu'.tr(),
+                  icon: const Icon(Icons.map_rounded),
+                  onPressed: () => context.router.push(const ProPlanRoute()),
+                ),
+            ],
+          ),
           body: state.board == null
               ? Center(
                   child: state.viewState.isError
-                      ? Padding(padding: const EdgeInsets.all(24), child: Text(translateErrorCode(state.errorCode), textAlign: TextAlign.center))
+                      ? Padding(
+                          padding: const EdgeInsets.all(24),
+                          child: Text(translateErrorCode(state.errorCode), textAlign: TextAlign.center),
+                        )
                       : const CircularProgressIndicator(color: AppColors.accent),
                 )
               : RefreshIndicator(
@@ -111,7 +127,10 @@ class _SearchField extends StatelessWidget {
         hintText: 'occupation.search_hint'.tr(),
         prefixIcon: const Icon(Icons.search_rounded, color: AppColors.accent),
         suffixIcon: state.searching
-            ? const Padding(padding: EdgeInsets.all(12), child: SizedBox(width: 18, height: 18, child: CircularProgressIndicator(strokeWidth: 2, color: AppColors.accent)))
+            ? const Padding(
+                padding: EdgeInsets.all(12),
+                child: SizedBox(width: 18, height: 18, child: CircularProgressIndicator(strokeWidth: 2, color: AppColors.accent)),
+              )
             : null,
       ),
     );
@@ -174,7 +193,10 @@ class _VehicleCardState extends State<_VehicleCard> {
     return Container(
       key: const Key('vehicle-card'),
       padding: const EdgeInsets.all(14),
-      decoration: BoxDecoration(border: Border.all(color: AppColors.accent, width: 1.5), borderRadius: BorderRadius.circular(16)),
+      decoration: BoxDecoration(
+        border: Border.all(color: AppColors.accent, width: 1.5),
+        borderRadius: BorderRadius.circular(16),
+      ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -183,10 +205,18 @@ class _VehicleCardState extends State<_VehicleCard> {
               FrenchPlate(v.plate, size: 13),
               const SizedBox(width: 8),
               Expanded(child: Text(v.customerName, style: AppText.strong(size: 14))),
-              IconButton(tooltip: 'common.close'.tr(), icon: const Icon(Icons.close_rounded), onPressed: () => bloc.add(const ProOccupationVehicleChosen(null))),
+              IconButton(
+                tooltip: 'common.close'.tr(),
+                icon: const Icon(Icons.close_rounded),
+                onPressed: () => bloc.add(const ProOccupationVehicleChosen(null)),
+              ),
             ],
           ),
-          Text(v.spot?.code ?? 'occupation.no_spot'.tr(), key: const Key('vehicle-spot'), style: AppText.big(size: 36, color: AppColors.accent)),
+          Text(
+            v.spot?.code ?? 'occupation.no_spot'.tr(),
+            key: const Key('vehicle-spot'),
+            style: AppText.big(size: 36, color: AppColors.accent),
+          ),
           const SizedBox(height: 4),
           Text(
             '${'status.${v.status}'.tr()} · ${'occupation.return_on'.tr(args: ['${localDay(v.returnAt)} ${localTime(v.returnAt)}'])}'
@@ -204,14 +234,20 @@ class _VehicleCardState extends State<_VehicleCard> {
                   key: const Key('key-hook'),
                   controller: _keys,
                   textCapitalization: TextCapitalization.characters,
-                  decoration: InputDecoration(hintText: 'occupation.key_hook_hint'.tr(), isDense: true, contentPadding: const EdgeInsets.symmetric(horizontal: 10, vertical: 10)),
+                  decoration: InputDecoration(
+                    hintText: 'occupation.key_hook_hint'.tr(),
+                    isDense: true,
+                    contentPadding: const EdgeInsets.symmetric(horizontal: 10, vertical: 10),
+                  ),
                 ),
               ),
               const SizedBox(width: 8),
               TextButton(
                 key: const Key('save-keys'),
                 style: TextButton.styleFrom(foregroundColor: AppColors.accentDeep, textStyle: AppText.body(size: 14.5, weight: 700)),
-                onPressed: busy ? null : () => bloc.add(ProOccupationKeysSaved(reservationId: v.id, keyHook: _keys.text.trim().isEmpty ? null : _keys.text.trim())),
+                onPressed: busy
+                    ? null
+                    : () => bloc.add(ProOccupationKeysSaved(reservationId: v.id, keyHook: _keys.text.trim().isEmpty ? null : _keys.text.trim())),
                 child: Text('occupation.save_keys'.tr()),
               ),
             ],
@@ -259,7 +295,10 @@ class _ArrivalRow extends StatelessWidget {
       key: Key('arrival-${arrival.reference}'),
       margin: const EdgeInsets.only(bottom: 8),
       padding: const EdgeInsets.all(12),
-      decoration: BoxDecoration(border: Border.all(color: AppColors.line), borderRadius: BorderRadius.circular(14)),
+      decoration: BoxDecoration(
+        border: Border.all(color: AppColors.line),
+        borderRadius: BorderRadius.circular(14),
+      ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -269,7 +308,9 @@ class _ArrivalRow extends StatelessWidget {
               const SizedBox(width: 8),
               FrenchPlate(arrival.plate, size: 12),
               const SizedBox(width: 8),
-              Expanded(child: Text(arrival.customerName, style: AppText.body(size: 14), overflow: TextOverflow.ellipsis)),
+              Expanded(
+                child: Text(arrival.customerName, style: AppText.body(size: 14), overflow: TextOverflow.ellipsis),
+              ),
             ],
           ),
           const SizedBox(height: 6),
@@ -290,7 +331,9 @@ class _ArrivalRow extends StatelessWidget {
                   ),
                 ),
               if (best != null) const SizedBox(width: 8),
-              Expanded(child: OutlineAction(label: 'occupation.other_spot'.tr(), onPressed: busy ? null : () => showSpotPicker(context, state, arrival))),
+              Expanded(
+                child: OutlineAction(label: 'occupation.other_spot'.tr(), onPressed: busy ? null : () => showSpotPicker(context, state, arrival)),
+              ),
             ],
           ),
         ],
@@ -366,7 +409,11 @@ class _MiniMap extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text('occupation.stats'.tr(args: ['${stats.occupied}', '${stats.active}', '${stats.leavingToday}']), key: const Key('occupation-stats'), style: AppText.strong(size: 13)),
+        Text(
+          'occupation.stats'.tr(args: ['${stats.occupied}', '${stats.active}', '${stats.leavingToday}']),
+          key: const Key('occupation-stats'),
+          style: AppText.strong(size: 13),
+        ),
         const SizedBox(height: 6),
         ClipRRect(
           borderRadius: BorderRadius.circular(16),
@@ -408,6 +455,10 @@ class _Legend extends StatelessWidget {
   @override
   Widget build(BuildContext context) => Row(
     mainAxisSize: MainAxisSize.min,
-    children: [Container(width: 10, height: 10, color: color), const SizedBox(width: 4), Text(label, style: AppText.muted(size: 11.5))],
+    children: [
+      Container(width: 10, height: 10, color: color),
+      const SizedBox(width: 4),
+      Text(label, style: AppText.muted(size: 11.5)),
+    ],
   );
 }

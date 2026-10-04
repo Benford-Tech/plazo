@@ -11,19 +11,23 @@ void main() {
   List<String>? names(String path) => router.matcher.match(path)?.map((m) => m.name).toList();
   List<String>? tab(String path) => router.matcher.match(path)?.expand((m) => [m.name, ...?m.children?.map((c) => c.name)]).toList();
 
-  test('une seule app : trois onglets (Rechercher, Mes réservations, Plus) sous « / »', () {
+  test('app voyageur : trois onglets (Rechercher, Mes réservations, Plus) sous « / »', () {
     expect(tab('/'), [AppShellRoute.name, SearchTabRoute.name]);
     expect(tab('/ma-reservation'), [AppShellRoute.name, TripsTabRoute.name]);
     expect(tab('/plus'), [AppShellRoute.name, MoreTabRoute.name]);
   });
 
-  test('les liens du site ouvrent l’app : mêmes chemins, parcours pro inchangé', () {
+  test('les liens du site ouvrent l’app : mêmes chemins, parcours pro à quatre onglets', () {
     final link = router.matcher.match('/ma-reservation/R7KQ2M?cle=abc');
     expect(link?.last.name, MyBookingRoute.name);
     expect(link?.last.params.getString('reference'), 'R7KQ2M');
     expect(link?.last.queryParams.optString('cle'), 'abc');
     expect(names('/ma-reservation/R7KQ2M/paiement')?.last, PaymentRoute.name);
-    expect(names('/pro')?.last, ProTodayRoute.name);
+    expect(tab('/pro'), [ProShellRoute.name, ProTodayRoute.name]);
+    expect(tab('/pro/reservations'), [ProShellRoute.name, ProReservationsRoute.name]);
+    expect(tab('/pro/parking'), [ProShellRoute.name, ProOccupationRoute.name]);
+    expect(tab('/pro/plus'), [ProShellRoute.name, ProMoreTabRoute.name]);
+    expect(names('/pro/reservations/abc')?.last, ProReservationRoute.name);
     expect(names('/pro/connexion')?.last, ProLoginRoute.name);
     expect(names('/pro/notifications')?.last, ProNotificationsRoute.name);
     expect(names('/pro/navette')?.last, ProShuttleRoute.name);

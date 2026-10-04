@@ -19,8 +19,10 @@ abstract class OccupantModel with _$OccupantModel {
     String? keyHook,
     @Default(false) bool onSite,
     @Default(false) bool leavesToday,
+
     /// Search results carry the spot's code.
     SpotRefModel? spot,
+
     /// Arrivals to place carry their suggestions.
     @Default([]) List<SuggestionModel> suggestions,
   }) = _OccupantModel;

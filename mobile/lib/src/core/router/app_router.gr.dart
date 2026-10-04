@@ -460,6 +460,22 @@ class ProLoginRoute extends PageRouteInfo<void> {
 }
 
 /// generated route for
+/// [ProMoreTabPage]
+class ProMoreTabRoute extends PageRouteInfo<void> {
+  const ProMoreTabRoute({List<PageRouteInfo>? children})
+    : super(ProMoreTabRoute.name, initialChildren: children);
+
+  static const String name = 'ProMoreTabRoute';
+
+  static PageInfo page = PageInfo(
+    name,
+    builder: (data) {
+      return const ProMoreTabPage();
+    },
+  );
+}
+
+/// generated route for
 /// [ProNotificationsPage]
 class ProNotificationsRoute extends PageRouteInfo<void> {
   const ProNotificationsRoute({List<PageRouteInfo>? children})
@@ -631,6 +647,22 @@ class ProReservationsRoute extends PageRouteInfo<void> {
     name,
     builder: (data) {
       return WrappedRoute(child: const ProReservationsPage());
+    },
+  );
+}
+
+/// generated route for
+/// [ProShellPage]
+class ProShellRoute extends PageRouteInfo<void> {
+  const ProShellRoute({List<PageRouteInfo>? children})
+    : super(ProShellRoute.name, initialChildren: children);
+
+  static const String name = 'ProShellRoute';
+
+  static PageInfo page = PageInfo(
+    name,
+    builder: (data) {
+      return const ProShellPage();
     },
   );
 }

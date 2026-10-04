@@ -16,6 +16,8 @@ const jobs = [
   ['icon-maskable.svg', 'png/app-icon-1024.png', 1024, false],
   ['android-foreground.svg', 'png/android-foreground-1024.png', 1024, true],
   ['icon-maskable.svg', 'icon-192.png', 192, false],
+  ['icon-maskable-pro.svg', 'png/app-icon-pro-1024.png', 1024, false],
+  ['android-foreground-pro.svg', 'png/android-foreground-pro-1024.png', 1024, true],
 ];
 
 const browser = await chromium.launch({ executablePath });

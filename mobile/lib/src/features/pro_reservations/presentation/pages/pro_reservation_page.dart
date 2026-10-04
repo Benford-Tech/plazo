@@ -171,7 +171,7 @@ class _Sheet extends StatelessWidget {
           ],
           trailing: TextButton(
             key: const Key('res-places'),
-            onPressed: () => context.router.push(const ProOccupationRoute()),
+            onPressed: () => context.router.navigate(const ProShellRoute(children: [ProOccupationRoute()])),
             child: Text('occupation.title'.tr(), style: AppText.strong(size: 14, color: AppColors.accentDeep)),
           ),
         ),

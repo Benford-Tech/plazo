@@ -26,7 +26,10 @@ abstract final class Product {
   static const supportEmail = '${esc(supportEmail)}';
 }
 ''',
-    'android/app/src/main/AndroidManifest.xml': (s) => s.replaceFirst(RegExp(r'android:label="[^"]*"'), 'android:label="${xml(name)}"'),
+    // Android: one label per flavor (the manifest reads @string/app_name).
+    'android/app/build.gradle.kts': (s) => s
+        .replaceFirstMapped(RegExp(r'create\("traveller"\) \{\s*dimension = "app"\s*applicationId = "[^"]*"\s*resValue\("string", "app_name", "[^"]*"\)'), (m) => m[0]!.replaceFirst(RegExp(r'"app_name", "[^"]*"'), '"app_name", "${esc(name)}"'))
+        .replaceFirstMapped(RegExp(r'create\("pro"\) \{\s*dimension = "app"\s*applicationId = "[^"]*"\s*resValue\("string", "app_name", "[^"]*"\)'), (m) => m[0]!.replaceFirst(RegExp(r'"app_name", "[^"]*"'), '"app_name", "${esc(name)} Pro"')),
     'ios/Runner/Info.plist': (s) => s
         .replaceFirstMapped(RegExp(r'(<key>CFBundleDisplayName</key>\s*<string>)[^<]*(</string>)'), (m) => '${m[1]}${xml(name)}${m[2]}')
         .replaceFirstMapped(RegExp(r'(<key>CFBundleName</key>\s*<string>)[^<]*(</string>)'), (m) => '${m[1]}${xml(name)}${m[2]}'),

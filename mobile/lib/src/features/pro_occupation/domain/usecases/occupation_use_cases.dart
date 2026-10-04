@@ -33,6 +33,7 @@ class AssignSpotParams extends Equatable {
   final String reservationId;
   final String? spotId;
   final String? keyHook;
+
   /// Only the key hook changes (the spot stays as it is).
   final bool keysOnly;
   @override

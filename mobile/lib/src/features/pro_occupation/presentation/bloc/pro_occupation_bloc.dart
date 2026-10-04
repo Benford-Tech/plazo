@@ -88,7 +88,9 @@ class ProOccupationBloc extends Bloc<ProOccupationEvent, ProOccupationState> {
     final result = await _assign(AssignSpotParams(reservationId: event.reservationId, spotId: current?.spotId, keyHook: event.keyHook, keysOnly: true));
     result.fold(
       (f) => emit(state.copyWith(actionState: ViewState.error, errorCode: _code(f))),
-      (updated) => emit(state.copyWith(actionState: ViewState.success, vehicle: state.vehicle?.id == updated.id ? updated : state.vehicle, notice: 'occupation.keys_saved')),
+      (updated) => emit(
+        state.copyWith(actionState: ViewState.success, vehicle: state.vehicle?.id == updated.id ? updated : state.vehicle, notice: 'occupation.keys_saved'),
+      ),
     );
   }
 }

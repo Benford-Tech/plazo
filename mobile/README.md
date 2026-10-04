@@ -142,3 +142,15 @@ version web, « Payer » ouvre la page Stripe Checkout.
 
 - `/pro/places` : Occupation (bloc 2, étape 2) — recherche par plaque, place proposée à l'arrivée, crochet des clés.
 - `/pro/reservations`, `/pro/reservations/:id`, `/pro/reservations/formulaire`, `/pro/reservations/import` : réservations du personnel (liste et recherche, fiche avec les étapes de statut, saisie, modification, import d'un mail de confirmation). Les rôles cachent les actions (`core/helpers/roles.dart`), le serveur reste l'autorité.
+
+## Deux apps, un projet (A-B, 04/10/2026)
+
+- **Plazo** (voyageurs) : flavor Android `traveller`, `--dart-define=APP_FLAVOR=traveller` (défaut), id `com.benfordtech.parking_app`.
+- **Plazo Pro** (personnel) : flavor Android `pro`, `--dart-define=APP_FLAVOR=pro`, id `com.benfordtech.parking_app.pro`,
+  icône brun foncé (`assets/brand/app-icon-pro*.png`, `dart run flutter_launcher_icons -f flutter_launcher_icons-pro.yaml`).
+  Elle s'ouvre sur ses quatre onglets (`ProShellPage` : Aujourd'hui · Réservations · Parking · Plus) ; les écrans voyageur
+  restent sous `/voyageur`.
+- Exemple : `flutter build apk --release --flavor pro --dart-define=APP_FLAVOR=pro`. Toujours passer le même nom aux deux
+  options (le flavor choisit l'id et l'icône, la define choisit le parcours).
+- iOS : un seul schéma pour l'instant (app voyageur). Pour Plazo Pro sur iOS, créer dans Xcode une configuration et un
+  schéma `pro` avec le bundle id `com.benfordtech.parkingApp.pro`, puis `flutter build ipa --flavor pro --dart-define=APP_FLAVOR=pro`.

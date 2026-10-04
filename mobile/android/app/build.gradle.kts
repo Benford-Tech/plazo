@@ -49,6 +49,23 @@ android {
         }
     }
 
+    // Two apps on one project (A-B, 04/10/2026): "traveller" (Plazo) and "pro" (Plazo Pro).
+    // Build with: flutter build apk --flavor pro --dart-define=APP_FLAVOR=pro
+    // The labels are rewritten by tool/sync_product.dart from ../product.json.
+    flavorDimensions += "app"
+    productFlavors {
+        create("traveller") {
+            dimension = "app"
+            applicationId = "com.benfordtech.parking_app"
+            resValue("string", "app_name", "Plazo")
+        }
+        create("pro") {
+            dimension = "app"
+            applicationId = "com.benfordtech.parking_app.pro"
+            resValue("string", "app_name", "Plazo Pro")
+        }
+    }
+
     buildTypes {
         release {
             signingConfig = if (keystorePropertiesFile.exists()) signingConfigs.getByName("release") else signingConfigs.getByName("debug")

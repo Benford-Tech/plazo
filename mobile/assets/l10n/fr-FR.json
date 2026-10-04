@@ -764,5 +764,21 @@
     "location_denied": "Sans accès à la position, le trajet ne peut pas être partagé. Activez-la dans les réglages du téléphone.",
     "notification_title": "Trajet navette en cours — position partagée avec vos clients",
     "notification_text": "S'arrête quand vous terminez le trajet, ou au bout de 90 min."
+  },
+  "pro_tabs": {
+    "today": "Aujourd'hui",
+    "reservations": "Réservations",
+    "parking": "Parking",
+    "more": "Plus"
+  },
+  "pro_more": {
+    "work": "Au quotidien",
+    "account": "Compte",
+    "role": {
+      "manager": "Gérant",
+      "agent": "Agent",
+      "driver": "Chauffeur",
+      "valet": "Voiturier"
+    }
   }
 }
