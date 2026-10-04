@@ -3,6 +3,7 @@ import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
+import '../../../../core/constants/product.g.dart';
 import '../../../../core/enums/view_state.dart';
 import '../../../../core/utils/error_message_handler.dart';
 import '../../../../di/locator.dart';
@@ -202,7 +203,7 @@ class _FormState extends State<_Form> {
                 key: const Key('f-channel'),
                 initialValue: _channels.contains(i.channel) ? i.channel : 'phone',
                 decoration: InputDecoration(labelText: 'res.channel_label'.tr()),
-                items: [for (final c in _channels) DropdownMenuItem(value: c, child: Text('res.channel.$c'.tr()))],
+                items: [for (final c in _channels) DropdownMenuItem(value: c, child: Text('res.channel.$c'.tr(args: [Product.name])))],
                 onChanged: i.channel == 'plazo' ? null : (v) => _set((x) => x.copyWith(channel: v ?? 'phone')),
               ),
               if (i.channel == 'aggregator') ...[

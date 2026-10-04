@@ -367,6 +367,6 @@ export class ReturnRoute implements Routes {
       ValidationMiddleware(TripPositionDto),
       this.shuttle.position,
     );
-    this.router.post('/internal/shuttle/trips/:id/end', StaffAuthMiddleware('reservations:status'), this.shuttle.end);
+    this.router.post('/internal/shuttle/trips/:id/end', StaffAuthMiddleware('reservations:status'), RefuseInViewAs(), this.shuttle.end);
   }
 }

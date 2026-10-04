@@ -3,6 +3,7 @@ import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
+import '../../../../core/constants/product.g.dart';
 import '../../../../core/enums/view_state.dart';
 import '../../../../core/router/app_router.dart';
 import '../../../../core/utils/error_message_handler.dart';
@@ -45,7 +46,7 @@ class _ProImportEmailPageState extends State<ProImportEmailPage> {
           body: ListView(
             padding: const EdgeInsets.fromLTRB(16, 14, 16, 28),
             children: [
-              Text('res.import_intro'.tr(), style: AppText.muted()),
+              Text('res.import_intro'.tr(args: [Product.name]), style: AppText.muted()),
               const SizedBox(height: 12),
               TextField(
                 key: const Key('import-text'),

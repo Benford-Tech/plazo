@@ -148,13 +148,14 @@ Hors MVP : optimisation d'itinéraire.
   bloc « Navette » : les navettes du parking en route (véhicule, prénom du chauffeur, sens, position sur la carte,
   distance et délai jusqu'au parking le jour d'arrivée et pendant le séjour, jusqu'au point de rendez-vous le jour du
   retour), la sienne mise en avant ; « Aucune navette en route » sinon ; rien hors de ces jours. Interrogé toutes les
-  12 s tant que la réservation est ouverte. Le jour du retour, quand sa propre navette vient le chercher, c'est la carte
+  12 s tant que la réservation est ouverte. Bloc de l'app seulement : le site n'a pas de suivi de navette, et le SMS
+  d'atterrissage renvoie vers la réservation sans promettre ce suivi. Le jour du retour, quand sa propre navette vient le chercher, c'est la carte
   « Navette en route vers vous » qui prend le relais.
 
 #### Le jour du retour (mis en œuvre, maquette validée « Votre retour »)
 
 Le flux réel, côté voyageur (app, réservation Plazo ouverte par le lien ou par référence + email) :
-1. **Vol suivi tout seul** : le n° de vol et la date de retour sont interrogés chez AeroDataBox (AirLabs en secours),
+1. **Vol suivi tout seul** : le n° de vol et la date de retour sont interrogés chez AeroDataBox (ou AirLabs selon la configuration),
    au plus une fois toutes les 5 minutes par réservation, dans les 24 h avant l'atterrissage prévu, par le cron
    `track-return-flights` et à chaque lecture (app, planning, file du chauffeur) ; statut (prévu, retardé, en vol,
    atterri, annulé, dérouté), heure prévue / révisée / réelle, terminal et porte. Sans n° de vol ou sans clé, le
@@ -330,19 +331,18 @@ Une application mobile native, publiée sur l'App Store et Google Play, fait par
 
 ### Voyageurs
 
-- Retrouver sa réservation sans créer de compte au MVP (n° de réservation + téléphone ou lien reçu par SMS/email).
+- Retrouver sa réservation sans créer de compte au MVP (référence + email, ou lien reçu par SMS/email).
 - Voir les instructions d'arrivée, l'adresse et l'itinéraire, le point de rendez-vous au retour.
 - Bouton « Je suis prêt » et suivi de la prise en charge (statut, délai estimé), notifications push en plus des SMS.
-- Réserver depuis l'app (mis en œuvre, maquettes A1 à A5) : **une seule app**, onglets **Rechercher / Mes réservations / Plus**. Recherche (aéroport, « Vos dates » en feuille avec créneaux de 30 min), résultats en liste ou sur la carte IGN (mêmes tris et filtres que le site), fiche parking (À l'aller, Au retour, Tarifs, Accès, barre « Réserver » avec le prix total calculé par l'API), réservation en deux étapes avec paiement natif (Apple Pay / Google Pay), confirmation. « Mes réservations » : les réservations gardées sur le téléphone (référence + clé de gestion dans le trousseau, sans compte), À venir / Passées, « Ajouter une réservation » (référence + email), Modifier le vol, Itinéraire, Annuler (mêmes règles que le site), « Je suis en route » le jour J. « Plus » : espace pro, questions fréquentes, conditions, confidentialité, mentions légales (pages du site), contact, version.
+- Réserver depuis l'app (mis en œuvre, maquettes A1 à A5) : l'app **Plazo** (voyageurs ; l'espace du personnel est dans **Plazo Pro**, décision A-B du 04/10/2026), onglets **Rechercher / Mes réservations / Plus**. Recherche (aéroport, « Vos dates » en feuille avec créneaux de 30 min), résultats en liste ou sur la carte IGN (mêmes tris et filtres que le site), fiche parking (À l'aller, Au retour, Tarifs, Accès, barre « Réserver » avec le prix total calculé par l'API), réservation en deux étapes avec paiement natif (Apple Pay / Google Pay), confirmation. « Mes réservations » : les réservations gardées sur le téléphone (référence + clé de gestion dans le trousseau, sans compte), À venir / Passées, « Ajouter une réservation » (référence + email), Modifier le vol, Itinéraire, Annuler (mêmes règles que le site), « Je suis en route » le jour J. « Plus » : questions fréquentes, conditions, confidentialité, mentions légales (pages du site), contact, version.
 ### Une app ou deux
 
-Décision : à terme, deux apps sur les stores (une app « pro » pour le personnel et le gérant, une app « voyageur »). Pour aller plus vite, on construit d'abord un seul projet mobile qui contient les deux parcours, puis on sépare les points d'entrée.
+Décision (faite le 04/10/2026, A-B) : deux apps sur les stores, **Plazo** (voyageurs) et **Plazo Pro** (personnel et gérant), construites dans un seul projet Flutter avec deux flavors ; chaque app n'embarque que son parcours.
 
 Pour que la séparation reste simple :
 - deux espaces d'écrans bien distincts dans le code (`pro` et `voyageur`), sans écran partagé entre les deux ;
-- le code commun (client d'API, modèles de données, composants d'interface, textes) dans un paquet Dart partagé ;
-- au démarrage, l'app choisit le parcours : connexion du personnel d'un côté, accès voyageur par n° de réservation ou lien de l'autre ;
-- la séparation se fait ensuite avec les « flavors » Flutter : deux points d'entrée (`main_pro.dart`, `main_voyageur.dart`), deux identifiants d'app, deux noms, deux icônes, sans réécrire les écrans.
+- le code commun (client d'API, modèles de données, composants d'interface, textes) dans le même projet, sous `lib/src/core`, `shared` et `services` ;
+- un seul point d'entrée (`lib/main.dart`) et le flavor choisi à la compilation (`--flavor pro|traveller` et `--dart-define=APP_FLAVOR=pro|traveller`, lu par `AppConstants.flavor`) : deux identifiants d'app, deux noms, deux icônes, deux routeurs (les routes `/pro…` n'existent que dans Plazo Pro, les routes voyageur et les App Links que dans Plazo).
 
 ### Règles
 
@@ -416,7 +416,7 @@ Ajouts phase 2 (marketplace) :
 | Email | Un service transactionnel (Resend, Brevo…) | Domaine d'envoi authentifié |
 | Suivi de vols | Une API de statut de vols (AeroDataBox, AviationStack, FlightAware…) | À choisir sur couverture France, prix et limites d'appels |
 | Notifications push | OneSignal (comme LoveNest) | Complète les SMS, ne les remplace pas |
-| Cartographie du parking | Tracé et analyse : photo aérienne IGN BD ORTHO (WMTS de la Géoplateforme, sans clé), MapLibre GL JS + Terra Draw ; cadastre (API Carto) et parkings BD TOPO (WFS) en suggestion. Affichage : Google Maps Platform (`google_maps_flutter` dans l'app) | Les conditions de Google interdisent de tracer ou d'analyser son imagerie : jamais de tracé sur la vue satellite Google |
+| Cartographie du parking | Tracé et analyse : photo aérienne IGN BD ORTHO (WMTS de la Géoplateforme, sans clé), MapLibre GL JS + Terra Draw ; cadastre (API Carto) et parkings BD TOPO (WFS) en suggestion. Affichage : Plan IGN v2 et photo IGN (`flutter_map` dans l'app) ; Google Maps seulement pour les liens d'itinéraire | Les conditions de Google interdisent de tracer ou d'analyser son imagerie : jamais de tracé sur la vue satellite Google |
 | Itinéraire voyageur | Lien vers l'app de navigation du téléphone | Pour l'adresse et l'itinéraire |
 | Paiement en ligne et reversement aux loueurs | Stripe Connect (ou équivalent) | Jalon 3 pour la page propre du loueur, phase 2 pour la commission et les reversements ; valider statut, TVA et CGU avec un professionnel |
 | Recherche géographique (phase 2) | Carte (OpenStreetMap / MapLibre) et index de recherche | Distance au terminal, filtres rapides |
@@ -429,11 +429,11 @@ Ajouts phase 2 (marketplace) :
 Plazo reprend la stack de LoveNest (décision du 1er octobre 2026) :
 - Serveur : Express 5 + TypeScript + Prisma 6, services typedi, validation class-validator, authentification JWT (passport-jwt, jetons stockés en base donc révocables), documentation Swagger.
 - Hébergement : Vercel (région Paris) pour l'API (une fonction serverless) et l'espace pro. Les tâches planifiées (mise à jour des vols, envois de SMS, purges RGPD) passent par Vercel Cron.
-- Base : PostgreSQL + PostGIS hébergée sur Supabase (région Paris).
+- Base : PostgreSQL + PostGIS hébergée sur Neon via l'intégration Vercel (décision du 02/10/2026, à la place de Supabase).
 - Espace pro et page de réservation : Vite + React + shadcn/ui, React Query.
 - App mobile : Flutter, architecture de LoveNest (bloc, auto_route, get_it, retrofit, freezed, easy_localization), notifications OneSignal, builds Codemagic. Deux apps à terme via les flavors.
 - Email : Brevo. SMS : le téléphone du loueur (*SMS Gateway for Android*, mode Cloud server) ou Brevo, au choix du loueur.
-- Suivi de vols : AirLabs (offre gratuite, 1 000 appels/mois) au départ, en interrogeant les arrivées de l'aéroport en un seul appel pour tous les clients et seulement quand un vol suivi approche ; AeroDataBox en repli. Le code passe par une interface interchangeable. Flightradar24 n'a pas d'offre gratuite et OpenSky est réservé à l'usage non commercial.
+- Suivi de vols : AeroDataBox par défaut (RapidAPI ou API.Market), AirLabs au choix (`FLIGHT_TRACKING_PROVIDER`, inscriptions fermées pour l'instant) ; un fournisseur à la fois, une requête par vol suivi (cache de 5 minutes, 24 h avant l'atterrissage), pas de repli automatique. Le code passe par une interface interchangeable. Flightradar24 n'a pas d'offre gratuite et OpenSky est réservé à l'usage non commercial.
 - Le web (TypeScript) et le mobile (Dart) ne partagent pas de code : le contrat est l'API, décrite par Swagger ; toutes les règles métier (capacité, statuts, prix) vivent côté serveur.
 
 ## 9. Découpage en jalons

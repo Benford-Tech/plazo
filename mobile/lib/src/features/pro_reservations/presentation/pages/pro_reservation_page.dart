@@ -3,6 +3,7 @@ import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
+import '../../../../core/constants/product.g.dart';
 import '../../../../core/enums/view_state.dart';
 import '../../../../core/helpers/plate.dart';
 import '../../../../core/helpers/roles.dart';
@@ -127,7 +128,7 @@ class _Sheet extends StatelessWidget {
       final decision = s == 'cancelled' || s == 'no_show' || r.status == 'cancelled' || r.status == 'no_show';
       return can(role, decision ? 'reservations:manage' : 'reservations:status');
     }).toList();
-    final channel = 'res.channel.${r.channel}'.tr();
+    final channel = 'res.channel.${r.channel}'.tr(args: [Product.name]);
     return ListView(
       padding: const EdgeInsets.fromLTRB(16, 14, 16, 28),
       children: [

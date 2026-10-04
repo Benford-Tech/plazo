@@ -42,6 +42,7 @@ export class ParkingPlanService {
 
   public async update(actor: AuthenticatedStaff, parkingId: string, data: UpdateParkingPlanDto): Promise<ParkingPlanView> {
     const parking = await this.parkingOf(actor, parkingId);
+    const existing = data.settings != null ? await prisma.parkingPlan.findUnique({ where: { parkingId: parking.id }, select: { settings: true } }) : null;
     const json = (value: unknown) => value as Prisma.InputJsonValue;
     const patch = {
       ...(data.outline !== undefined ? { outline: data.outline === null ? Prisma.DbNull : json(data.outline) } : {}),
@@ -49,7 +50,8 @@ export class ParkingPlanService {
       ...(data.scaleFactor != null ? { scaleFactor: data.scaleFactor } : {}),
       ...(data.zones != null ? { zones: json(data.zones) } : {}),
       ...(data.exclusions != null ? { exclusions: json(data.exclusions) } : {}),
-      ...(data.settings != null ? { settings: json(data.settings) } : {}),
+      // Settings are merged: the app's outline autosave only sends `outlineSource`, the pro space the rest.
+      ...(data.settings != null ? { settings: json({ ...((existing?.settings as Record<string, unknown> | null) ?? {}), ...data.settings }) } : {}),
       ...(data.landmarks != null ? { landmarks: json(data.landmarks) } : {}),
     };
     await prisma.parkingPlan.upsert({ where: { parkingId: parking.id }, create: { parkingId: parking.id, ...patch }, update: patch });

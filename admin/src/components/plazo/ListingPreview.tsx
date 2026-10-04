@@ -1,5 +1,6 @@
 import { euros } from "@/lib/pricing";
 import { fr } from "@/lib/fr";
+import { PRODUCT } from "@/lib/product";
 import type { CancellationPolicy, ListingService } from "@/lib/types";
 
 /** The card travellers see in the Plazo results (direction M3), updated as the form changes. */
@@ -21,7 +22,7 @@ export function ListingPreview(props: {
   return (
     <div className="w-[330px] overflow-hidden rounded-[22px] bg-white text-[#1e1e1e] shadow-[0_20px_50px_-20px_rgba(0,0,0,.8)]" style={{ fontFamily: "Inter, sans-serif" }}>
       <div className="bg-[#ff6600] px-3.5 py-2.5 text-xl text-white" style={{ fontFamily: "'Playfair Display', serif", fontStyle: "italic" }}>
-        Plazo
+        {PRODUCT.name}
       </div>
       <div className="p-3">
         <article className="overflow-hidden rounded-2xl border-2 border-[#ff8a3d]">

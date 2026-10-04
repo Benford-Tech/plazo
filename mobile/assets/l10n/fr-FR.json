@@ -115,7 +115,7 @@
     "edit": "Modifier",
     "edit_title": "Modifier la réservation",
     "import": "Importer un mail",
-    "import_intro": "Collez le mail de confirmation reçu d'un comparateur : Plazo lit les dates, le client, la plaque et le vol.",
+    "import_intro": "Collez le mail de confirmation reçu d'un comparateur : {} lit les dates, le client, la plaque et le vol.",
     "import_hint": "Collez ici le texte du mail…",
     "import_read": "Lire le mail",
     "import_unknown": "Mail non reconnu : aucun importeur ne connaît ce format. Saisissez la réservation à la main.",
@@ -173,7 +173,7 @@
       "counter": "Comptoir",
       "aggregator": "Comparateur",
       "import": "Import",
-      "plazo": "Plazo"
+      "plazo": "{}"
     }
   },
   "occupation": {
@@ -263,7 +263,8 @@
       "return_requested": "Attend la navette",
       "returned": "Rendu",
       "cancelled": "Annulée",
-      "no_show": "Absent"
+      "no_show": "Absent",
+      "pending_payment": "Paiement en attente"
     },
     "shuttle": "Navette"
   },
@@ -276,7 +277,8 @@
     "no_spots": "Aucune place ne tient sur ce terrain : agrandissez-le ou vérifiez le tracé.",
     "too_short": "Saisissez au moins 3 caractères.",
     "network": "Pas de connexion. Vérifiez votre réseau et réessayez.",
-    "not_found": "Réservation introuvable. Vérifiez la référence et l'email, ou ouvrez le lien reçu par email.",
+    "not_found": "Introuvable : l'élément a peut-être été supprimé ou n'existe plus.",
+    "booking_not_found": "Réservation introuvable. Vérifiez la référence et l'email, ou ouvrez le lien reçu par email.",
     "consent_required": "Votre accord est nécessaire pour partager votre position.",
     "arrival_window_closed": "Ce n'est pas encore le moment : prévenez le parking à partir de 2 h avant l'heure prévue.",
     "not_sharing": "Le partage est terminé.",
@@ -337,11 +339,35 @@
     "reservation_closed": "Cette réservation est terminée.",
     "invalid_channel": "Canal invalide.",
     "full": "Complet sur ces dates.",
-    "duplicate_external_reference": "Cette réservation est déjà importée.",
+    "already_imported": "Cette réservation est déjà importée.",
+    "booking_refunded": "Réservation remboursée : elle ne peut plus être rouverte.",
+    "cannot_demote_self": "Vous ne pouvez pas retirer vos propres droits de gérant.",
+    "last_manager": "Il faut au moins un gérant actif.",
+    "geo_unavailable": "Service de cartographie indisponible, réessayez.",
+    "geo_timeout": "Service de cartographie trop lent, réessayez.",
+    "spot_not_found": "Place introuvable.",
+    "duplicate_code": "Code de place déjà utilisé.",
+    "sms_encryption_key_missing": "Le chiffrement des SMS n'est pas configuré sur le serveur.",
+    "sms_encryption_key_invalid": "La clé de chiffrement des SMS est invalide sur le serveur.",
+    "sms_gateway_failed": "Le téléphone n'a pas pu envoyer le SMS.",
+    "sms_gateway_offline": "Téléphone injoignable.",
+    "sms_body_unavailable": "Le texte du SMS n'est plus disponible.",
+    "invalid_key_hook": "Crochet : 12 caractères max, lettres, chiffres, espace ou tiret.",
+    "invalid": "Valeur invalide.",
+    "invalid_lat": "Latitude invalide.",
+    "invalid_lng": "Longitude invalide.",
+    "invalid_accuracy": "Précision invalide.",
+    "too_many": "Trop d'éléments (30 clients par trajet au plus).",
+    "invalid_status": "Statut invalide.",
+    "min_0": "Doit être positif ou nul.",
+    "invalid_geometry": "Tracé invalide.",
+    "invalid_item": "Élément invalide.",
+    "too_many_items": "Trop d'éléments.",
+    "too_many_vertices": "Tracé trop détaillé (trop de sommets).",
     "password_too_short": "Mot de passe trop court (10 caractères au moins).",
     "invalid_role": "Rôle invalide.",
     "email_taken": "Cet email est déjà utilisé.",
-    "wrong_password": "Mot de passe actuel incorrect.",
+    "wrong_current_password": "Mot de passe actuel incorrect.",
     "margin_range": "Marge entre 0 et 50 %.",
     "shuttle_range": "Entre 1 et 120 minutes.",
     "min_1": "Au moins 1.",
@@ -352,7 +378,7 @@
     "sms_gateway_offline": "Le téléphone est hors ligne.",
     "sms_gateway_rejected": "Le téléphone a refusé le SMS.",
     "sms_gateway_error": "Erreur du téléphone.",
-    "brevo_unavailable": "Plazo ne peut pas encore envoyer pour vous.",
+    "brevo_unavailable": "{} ne peut pas encore envoyer pour vous.",
     "view_as_read_only": "Consultation seulement.",
     "wrong_current_password": "Mot de passe actuel incorrect."
   },
@@ -955,7 +981,7 @@
         "text": "Gratuit · un Android allumé avec SMS illimités"
       },
       "brevo": {
-        "title": "Plazo envoie pour moi",
+        "title": "{} envoie pour moi",
         "text": "0,05 € par SMS, décompté sur vos reversements"
       },
       "none": {
@@ -983,6 +1009,6 @@
     "pending": "{} en attente",
     "pending_stale": "téléphone injoignable",
     "last_error": "dernière erreur : {}",
-    "footnote": "Tant que rien n'est configuré, Plazo n'envoie pas de SMS pour votre parking (les emails partent quand même). Le mot de passe est chiffré côté serveur et jamais réaffiché."
+    "footnote": "Tant que rien n'est configuré, {} n'envoie pas de SMS pour votre parking (les emails partent quand même). Le mot de passe est chiffré côté serveur et jamais réaffiché."
   }
 }

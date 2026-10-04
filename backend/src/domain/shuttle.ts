@@ -9,6 +9,8 @@ import { ReservationStatus } from '@/database';
 export const TRIP_MAX_MINUTES = 90;
 /** At most one position per this many seconds per trip. */
 export const TRIP_POSITION_MIN_INTERVAL_SECONDS = 10;
+/** Tolerance on that interval: the phone paces by its send time, the server by the receive time (network jitter). */
+export const POSITION_INTERVAL_TOLERANCE_MS = 2000;
 /** A position recorded longer ago than this by the phone is refused. */
 export const TRIP_POSITION_MAX_AGE_SECONDS = 300;
 /** Bookings whose traveller can be picked up at the airport. */

@@ -76,7 +76,7 @@ describe("Point de rendez-vous au retour", () => {
     expect(await screen.findByText("marker 45.72,5.08")).toBeInTheDocument();
     expect(screen.getByLabelText("Libellé")).toHaveValue("T1");
     await user.click(screen.getByRole("button", { name: "Enregistrer" }));
-    expect(await screen.findByText("Adresse https:// invalide.")).toBeInTheDocument();
+    expect(await screen.findByText("Adresse web invalide (http:// ou https://).")).toBeInTheDocument();
     api.setReturnMeetingPoint.mockResolvedValueOnce({ data: null });
     await user.click(screen.getByRole("button", { name: "Supprimer le point" }));
     await waitFor(() => expect(api.setReturnMeetingPoint).toHaveBeenLastCalledWith(null));

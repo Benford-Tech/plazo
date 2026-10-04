@@ -48,7 +48,8 @@ function StatusActions({ reservation }: { reservation: Reservation }) {
     },
     onError: (err: Error) => toast.error(describeError(err)),
   });
-  const steps = NEXT_STEPS[reservation.status].filter(
+  // A booking refunded online stays closed: the API refuses every status change (booking_refunded).
+  const steps = (reservation.paymentStatus === "refunded" ? [] : NEXT_STEPS[reservation.status]).filter(
     s => can(user?.role, "reservations:status") && (!MANAGE_ONLY.includes(s) && !MANAGE_ONLY.includes(reservation.status) ? true : can(user?.role, "reservations:manage")),
   );
   if (!steps.length) return null;

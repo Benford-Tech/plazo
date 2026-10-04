@@ -39,6 +39,12 @@ export const ValidateEnv = () => {
     // AirLabs is kept for when its registration reopens.
     AERODATABOX_API_KEY: str({ default: '', desc: 'AeroDataBox key (RapidAPI "Basic" plan, or API.Market with AERODATABOX_BASE_URL)' }),
     AERODATABOX_BASE_URL: str({ default: '', desc: 'Default https://aerodatabox.p.rapidapi.com' }),
+    AIRLABS_BASE_URL: str({ default: '', desc: 'Default https://airlabs.co/api/v9' }),
+    PLATFORM_COMMISSION_BPS: str({ default: '', desc: 'Platform commission in basis points (0-5000)' }),
+    POSTGRES_PRISMA_URL: str({
+      default: '',
+      desc: 'Pooled connection injected by the Vercel Neon integration (used instead of DATABASE_URL when set)',
+    }),
     AIRLABS_API_KEY: str({ default: '', desc: 'AirLabs API key (optional)' }),
     FLIGHT_TRACKING_PROVIDER: str({ default: '', desc: 'airlabs | aerodatabox (default: the provider whose key is set, aerodatabox when both)' }),
   });

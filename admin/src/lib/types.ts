@@ -67,6 +67,8 @@ export interface Reservation {
   channel: ReservationChannel;
   channelDetail: string | null;
   status: ReservationStatus;
+  /** Online payments only (Plazo bookings); a refunded booking cannot be reopened. */
+  paymentStatus?: "pending" | "paid" | "expired" | "refunded" | null;
   arrivalAt: string;
   returnAt: string;
   passengers: number;
@@ -136,6 +138,8 @@ export interface ArrivalSignal {
 /** A driver's running trip (position shared with its passengers), as the planning shows it. */
 export interface ShuttleTripSummary {
   id: string;
+  /** pickup: to the airport for returning travellers; dropoff: to the terminal with arrived ones. */
+  direction: "pickup" | "dropoff";
   driverId: string;
   driverName: string;
   startedAt: string;

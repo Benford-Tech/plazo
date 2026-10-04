@@ -20,6 +20,7 @@ import { arrivalPush, ArrivalPushEvent } from '@/domain/arrival-messages';
 import { BookingRecord } from '@/domain/booking-view';
 import { canTransition } from '@/domain/reservation';
 import { AuthenticatedStaff } from '@/interfaces/auth.interface';
+import { POSITION_INTERVAL_TOLERANCE_MS } from '@/domain/shuttle';
 import { HttpException } from '@/utils/httpException';
 import { AuditService } from './audit.service';
 import { READ_GEOCODE_TIMEOUT_MS, ParkingLocationService } from './parking-location.service';
@@ -216,7 +217,10 @@ export class ArrivalService {
         id: signal.id,
         state: 'sharing',
         expiresAt: { gt: now },
-        OR: [{ positionReceivedAt: null }, { positionReceivedAt: { lte: new Date(now.getTime() - POSITION_MIN_INTERVAL_SECONDS * 1000) } }],
+        OR: [
+          { positionReceivedAt: null },
+          { positionReceivedAt: { lte: new Date(now.getTime() - POSITION_MIN_INTERVAL_SECONDS * 1000 + POSITION_INTERVAL_TOLERANCE_MS) } },
+        ],
       },
       data,
     });
@@ -469,7 +473,8 @@ export class ArrivalService {
     await prisma.$transaction(async tx => {
       const current = await tx.reservation.findUniqueOrThrow({ where: { id: booking.id }, select: { status: true } });
       const from: ReservationStatus = current.status;
-      if (from === 'return_requested' || !canTransition(from, 'return_requested')) return;
+      // Only a traveller whose vehicle is on site waits for the shuttle; a booking already handed back stays so.
+      if (!['arrived', 'shuttled_out'].includes(from) || !canTransition(from, 'return_requested')) return;
       const { count } = await tx.reservation.updateMany({ where: { id: booking.id, status: from }, data: { status: 'return_requested' } });
       if (!count) return;
       await this.audit.record(

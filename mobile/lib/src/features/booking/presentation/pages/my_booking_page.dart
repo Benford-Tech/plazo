@@ -38,6 +38,7 @@ class MyBookingPage extends StatelessWidget implements AutoRouteWrapper {
     @PathParam('reference') required this.reference,
     @QueryParam('cle') this.token,
     @QueryParam('confirmee') this.confirmee,
+    @QueryParam('paiement') this.paiement,
   });
 
   final String reference;
@@ -47,6 +48,9 @@ class MyBookingPage extends StatelessWidget implements AutoRouteWrapper {
 
   /// "1" right after booking or paying: the confirmation hero.
   final String? confirmee;
+
+  /// "retour" when Stripe sends the traveller back from the site's checkout (the same link as the site's).
+  final String? paiement;
 
   @override
   Widget wrappedRoute(BuildContext context) {
@@ -111,7 +115,7 @@ class MyBookingPage extends StatelessWidget implements AutoRouteWrapper {
                   buildWhen: (a, b) => a.openKind != b.openKind,
                   builder: (context, arrival) {
                     final kind = arrival.openKind;
-                    final confirmed = confirmee == '1' && b.status == 'upcoming';
+                    final confirmed = (confirmee == '1' || paiement == 'retour') && b.status == 'upcoming';
                     final title = switch (kind) {
                       ArrivalKind.outbound => 'booking.title_drop_today'.tr(),
                       ArrivalKind.returnTrip => 'booking.title_return_today'.tr(),

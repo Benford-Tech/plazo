@@ -21,6 +21,8 @@ export interface StepProps {
   /** Saves now (pending changes included); false when the save failed. */
   flush: () => Promise<boolean>;
   go: (step: StepKey) => void;
+  /** Which geo routes the terrain step calls: the platform's for a capacity study. */
+  geoScope?: "operator" | "platform";
 }
 
 type SaveState = "idle" | "saving" | "saved" | "error";
@@ -121,7 +123,7 @@ export default function CapacityStudyPage() {
   }
   if (!study) return <div className="p-6 text-muted-foreground">{fr.common.loading}</div>;
 
-  const props: StepProps = { study, update, flush, go };
+  const props: StepProps = { study, update, flush, go, geoScope: "platform" };
   return (
     <div className="flex min-h-0 flex-1 flex-col">
       <StepsBar study={study} step={step} go={go} saveState={saveState} onRename={name => update({ name })} />

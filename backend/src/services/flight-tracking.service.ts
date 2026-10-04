@@ -3,7 +3,7 @@ import { flightTrackingSettings, FlightProviderName, PRODUCT_NAME } from '@/conf
 import prisma, { FlightLandedSource, Prisma, Reservation } from '@/database';
 import { manageToken } from '@/domain/booking';
 import { WITH_LISTING, BookingRecord } from '@/domain/booking-view';
-import { FlightInfo, flightNumberKey, flightUpdate, mapAeroDataBox, mapAirLabs, shouldLookupFlight } from '@/domain/flight';
+import { FINAL_FLIGHT_STATUSES, FlightInfo, flightNumberKey, flightUpdate, mapAeroDataBox, mapAirLabs, shouldLookupFlight } from '@/domain/flight';
 import { landedPush, landedSms } from '@/domain/return-messages';
 import { localDate, localDateTime } from '@/domain/time';
 import { SECRET_KEY } from '@/config';
@@ -127,7 +127,7 @@ export class FlightTrackingService {
         status: { in: [...PICKUP_STATUSES] },
         returnFlight: { not: null },
         returnAt: { gte: new Date(now.getTime() - 12 * 3600000), lte: new Date(now.getTime() + 30 * 3600000) },
-        OR: [{ flightStatus: null }, { flightStatus: { notIn: ['landed', 'cancelled', 'diverted'] } }],
+        OR: [{ flightStatus: null }, { flightStatus: { notIn: [...FINAL_FLIGHT_STATUSES] } }],
       },
       include: WITH_AIRPORT,
       orderBy: { returnAt: 'asc' },

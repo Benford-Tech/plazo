@@ -3,6 +3,7 @@ import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
+import '../../../../core/constants/product.g.dart';
 import '../../../../core/enums/view_state.dart';
 import '../../../../core/utils/error_message_handler.dart';
 import '../../../../di/locator.dart';
@@ -233,7 +234,7 @@ class _SmsSectionState extends State<_SmsSection> {
                 'sms.month'.tr(args: ['${status.month.sent}', '${status.month.failed}']),
                 if (status.pending > 0) 'sms.pending'.tr(args: ['${status.pending}']),
                 if (status.pendingStale) 'sms.pending_stale'.tr(),
-                if (status.lastError != null) 'sms.last_error'.tr(args: [status.lastError!]),
+                if (status.lastError != null) 'sms.last_error'.tr(args: [translateErrorCode(status.lastError)]),
               ].join(' · '),
               style: AppText.body(size: 13),
             ),
@@ -247,9 +248,9 @@ class _SmsSectionState extends State<_SmsSection> {
             groupValue: _mode,
             contentPadding: EdgeInsets.zero,
             activeColor: AppColors.accent,
-            title: Text('sms.mode.$m.title'.tr(), style: AppText.body(size: 14.5, weight: 600)),
+            title: Text('sms.mode.$m.title'.tr(args: [Product.name]), style: AppText.body(size: 14.5, weight: 600)),
             subtitle: Text(
-              m == 'brevo' && sms?.brevoAvailable == false ? 'sms.brevo_unavailable'.tr() : 'sms.mode.$m.text'.tr(),
+              m == 'brevo' && sms?.brevoAvailable == false ? 'sms.brevo_unavailable'.tr(args: [Product.name]) : 'sms.mode.$m.text'.tr(),
               style: AppText.muted(size: 12),
             ),
             // ignore: deprecated_member_use
@@ -326,7 +327,7 @@ class _SmsSectionState extends State<_SmsSection> {
           ),
         ],
         const SizedBox(height: 6),
-        Text('sms.footnote'.tr(), style: AppText.muted(size: 11.5)),
+        Text('sms.footnote'.tr(args: [Product.name]), style: AppText.muted(size: 11.5)),
       ],
     );
   }

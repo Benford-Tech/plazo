@@ -201,7 +201,8 @@ class ShuttleBloc extends Bloc<ShuttleEvent, ShuttleState> {
         emit(state.copyWith(tracking: false, lastPosition: null, trip: null, endedNotice: true));
         return;
       }
-      _pending ??= pending;
+      // Too soon or offline: the newest position waits for the next try. A stale one is dropped (a newer fix will come).
+      if (failure.code != 'position_too_old' && failure.code != 'invalid_recorded_at') _pending ??= pending;
     }, (updated) => emit(state.copyWith(trip: updated)));
   }
 

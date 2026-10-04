@@ -78,7 +78,8 @@ Ne construire QUE ce qui règle la douleur n°1 du client.
      `dropoff` vers le terminal avec les clients arrivés, `GET /internal/shuttle/departures`, fin d'une dépose = statut
      « Parti en navette ») ; **S-A** navette en direct pour le voyageur du jour d'arrivée au jour du retour
      (`GET /public/bookings/:ref/shuttles` : navettes du parking en cours, véhicule, prénom, position, distance au parking
-     ou au point de rendez-vous, la sienne repérée ; bloc « Navette » de la réservation, interrogé toutes les 12 s).
+     ou au point de rendez-vous, la sienne repérée ; bloc « Navette » de la réservation dans l'app, interrogé toutes les 12 s ;
+     le site n'a pas ce bloc : le SMS d'atterrissage renvoie simplement vers la réservation).
 
 ## Liste « plus tard » (le « bien plus »), hors MVP
 
@@ -107,7 +108,8 @@ Plazo reprend la stack et les conventions des dépôts `lovenest-backend`, `love
   l'API côté serveur par une liaison (`BACKEND_URL`). L'API tourne dans une seule fonction
   (`backend/index.js`, qui charge le code compilé dans `lib/`).
   Conséquences : pas de pg-boss (pas de processus permanent), les tâches planifiées sont des routes
-  `/internal/cron/...` appelées par Vercel Cron (`backend/vercel.json`, protégées par `CRON_SECRET`) ;
+  `/internal/cron/...` appelées par Vercel Cron (`vercel.json` à la racine, protégées par `CRON_SECRET` ; Vercel Hobby
+  n'accepte que des crons quotidiens, les lectures rafraîchissent aussi les vols) ;
   pas de fichiers de logs (winston écrit dans la console, que Vercel collecte).
 - **Base de données** : PostgreSQL + PostGIS, hébergée sur **Neon** via l'intégration Vercel (base `Plazo-db`,
   02/10/2026, à la place de Supabase). Variables injectées par Vercel : `POSTGRES_PRISMA_URL` (connexion
@@ -124,8 +126,10 @@ Plazo reprend la stack et les conventions des dépôts `lovenest-backend`, `love
   3 planning des places (fait : `/pro/planning-places`, feature `pro_spot_planning`), 4 équipe / compte / réglages (fait :
   `/pro/equipe`, `/pro/compte`, `/pro/reglages` avec le canal SMS, feature `pro_settings` ; le point de rendez-vous reste sur le web),
   5 Sur Plazo (fiche, tarifs, Stripe), 6 inscription.
-- Cartographie : Google Maps Platform ; le tracé et l'analyse se font sur la photo aérienne IGN BD ORTHO (MapLibre + Terra Draw), les conditions de Google l'interdisant sur son imagerie. SMS et email : Brevo.
-- Suivi de vols : AirLabs (offre gratuite) derrière une interface interchangeable, repli AeroDataBox.
+- Cartographie : photo aérienne IGN BD ORTHO et Plan IGN (MapLibre + Terra Draw sur le web, `flutter_map` dans l'app) ; Google Maps
+  seulement pour les liens d'itinéraire, ses conditions interdisant de tracer ou d'analyser sur son imagerie. SMS et email : Brevo.
+- Suivi de vols : AeroDataBox par défaut, AirLabs au choix (`FLIGHT_TRACKING_PROVIDER`), derrière une interface
+  interchangeable ; un seul fournisseur à la fois, une requête par vol, pas de repli automatique.
 
 Contraintes : application web responsive, application mobile native iOS et Android,
 interface en français, données personnelles clients → RGPD (minimiser, durée de conservation).
@@ -140,19 +144,20 @@ Le nom du produit doit rester dans UN seul fichier de configuration (il peut enc
 - `backend/` : API REST sous `/api` (`index.js` = point d'entrée Vercel). Les routes du personnel du loueur
   sont sous `/api/internal/...` (`StaffAuthMiddleware`, jetons stockés en base et révocables), comme les
   routes staff de LoveNest ; celles du site voyageurs sous `/api/public/...`.
-- `admin/` : espace pro, servi sous `/pro`. L'onglet « Parking » a deux volets : `/parking/plan/:step` (bloc 2, étape
+- `admin/` : espace pro, servi sous `/pro`. L'onglet « Parking » a quatre volets : `/parking/plan/:step` (bloc 2, étape
   « Plan » : terrain, zones, places, repères, tracés sur la photo IGN avec le moteur de l'estimateur `src/lib/capacity/*`,
   places numérotées par `src/lib/plan/numbering.ts`, routes `/api/internal/parkings/:id/plan…`, tables `parking_plans` et
   `parking_spots`), `/parking/occupation` (étape « Occupation », 04/10/2026 : plan en couleurs, arrivées à placer avec
   place proposée, recherche par plaque / nom / référence, crochet des clés ; routes `/api/internal/parkings/:id/occupation…`
-  et `POST /api/internal/reservations/:id/spot` ; champs `Reservation.spotId` et `keyHook`) et `/parking/reglages`.
+  et `POST /api/internal/reservations/:id/spot` ; champs `Reservation.spotId` et `keyHook`), `/parking/planning` (étape
+  « Planning des places ») et `/parking/reglages`.
   L'onglet « Parking » est ouvert à tout le personnel (`reservations:view`) ; Plan et Réglages restent aux gérants. L'espace « Plateforme » du super admin (`PLATFORM_ADMIN_EMAILS`) est sous
   `/pro/plateforme` (pages `src/pages/platform/*`, routes serveur `/api/internal/platform/...` protégées par
   `PlatformAdminMiddleware`) ; l'inscription libre des loueurs sous `/pro/inscription`.
 - `site/` : site Plazo voyageurs (Next.js), servi à la racine du domaine.
 - `mobile/` : app Flutter (jalon 6 commencé) : un seul projet, deux apps (`AppConstants.flavor`) : « Plazo », onglets
-  Rechercher / Mes réservations / Plus pour le voyageur (mêmes chemins que le site : `/:aeroport/recherche`, `/:aeroport/:parking`, `/ma-reservation…`), et le
-  parcours pro (`/pro…`, comptes du personnel ; `/pro/plan` et `/pro/places` pour le bloc 2 ; `/pro/reservations…` : liste,
+  Rechercher / Mes réservations / Plus pour le voyageur (mêmes chemins que le site : `/:airport/recherche`, `/:airport/:parking`, `/ma-reservation…`), et le
+  parcours pro (`/pro…`, comptes du personnel ; `/pro/plan` et `/pro/parking` (Occupation) pour le bloc 2 ; `/pro/reservations…` : liste,
   recherche, fiche avec statuts, saisie, import d'un mail, feature `pro_reservations`, 04/10/2026) **dans Plazo Pro seulement**
   (décision du 04/10/2026 : l'app voyageur n'embarque plus l'espace pro, et Plazo Pro aucun écran voyageur), dont le plan du parking pour les gérants
   (`/pro/plan`, M-A + rectangle auto du 04/10/2026 : adresse ou GPS, coins sur la photo IGN, génération côté serveur

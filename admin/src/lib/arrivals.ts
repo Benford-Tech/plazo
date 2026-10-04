@@ -76,7 +76,8 @@ export function miniMapPoints(
 export function withShuttleTrips(rows: PlanningRow[], trips: ShuttleTripSummary[] | undefined): PlanningRow[] {
   if (!trips) return rows;
   return rows.map(r => {
-    const trip = trips.find(t => t.reservationIds.includes(r.id));
+    // Only a pick-up trip is "on its way" for a return row; a drop-off carries arrived travellers to the terminal.
+    const trip = trips.find(t => t.direction === "pickup" && t.reservationIds.includes(r.id));
     return { ...r, shuttleTrip: trip ? { id: trip.id, driverName: trip.driverName, startedAt: trip.startedAt } : null };
   });
 }

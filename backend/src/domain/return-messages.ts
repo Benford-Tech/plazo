@@ -34,7 +34,7 @@ export function landedSms(input: LandedSmsInput): string {
   const parts = [`${input.productName} : votre vol a atterri.`];
   parts.push(input.meetingLabel ? `Rendez-vous navette : ${input.meetingLabel}.` : `Rendez-vous au point navette de ${input.parkingName}.`);
   if (input.instructions) parts.push(input.instructions.trim().slice(0, 160));
-  if (input.manageUrl) parts.push(`Itineraire et suivi de la navette : ${input.manageUrl}`);
+  if (input.manageUrl) parts.push(`Votre reservation : ${input.manageUrl}`);
   else if (input.phone) parts.push(`Parking : ${input.phone}`);
   return parts.join(' ');
 }

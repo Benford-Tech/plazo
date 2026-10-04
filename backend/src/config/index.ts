@@ -5,7 +5,7 @@ import { resolve } from 'path';
 config({ path: `.env.${process.env.NODE_ENV || 'development'}.local`, quiet: true });
 config({ quiet: true });
 
-export const { NODE_ENV, PORT, SECRET_KEY, DATABASE_URL, CRON_SECRET } = process.env;
+export const { NODE_ENV, PORT, SECRET_KEY, CRON_SECRET } = process.env;
 
 // Every route is served under this prefix: on Vercel the project's /api/* requests go to this
 // service with their path unchanged (see the repository's vercel.json).

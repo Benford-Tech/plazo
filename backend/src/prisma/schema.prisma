@@ -670,11 +670,12 @@ enum ShuttleTripDirection {
 }
 
 enum ShuttleTripEndReason {
-  completed // "Clients récupérés · retour parking"
+  completed // "Clients récupérés · retour parking" / "Clients déposés au terminal"
   expired // 90 minutes after the start
 }
 
-// A driver's trip to the airport to pick up returning travellers (see SPEC.md, block 3). The
+// A driver's trip: to the airport to pick up returning travellers (`pickup`), or to the terminal with
+// travellers who just left their vehicle (`dropoff`, T-A 04/10/2026); see SPEC.md, block 3. The
 // driver's LATEST position only is kept while the trip runs, visible to its passengers only; it is
 // erased when the trip ends (by the driver, or 90 minutes after the start). The audit log holds
 // the events, never coordinates.

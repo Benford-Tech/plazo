@@ -16,9 +16,12 @@ import {
   stayPhase,
   TRIP_MAX_MINUTES,
   TRIP_POSITION_MAX_AGE_SECONDS,
+  POSITION_INTERVAL_TOLERANCE_MS,
   TRIP_POSITION_MIN_INTERVAL_SECONDS,
 } from '@/domain/shuttle';
+import { can } from '@/domain/roles';
 import { AuthenticatedStaff } from '@/interfaces/auth.interface';
+import { ValidationException } from '@/middlewares/validation.middleware';
 import { HttpException } from '@/utils/httpException';
 import { ArrivalService, MeetingPoint } from './arrival.service';
 import { AuditService } from './audit.service';
@@ -262,7 +265,7 @@ export class ShuttleService {
           where: { id: data.driverId, operatorId: actor.operatorId, isActive: true },
           select: { id: true },
         });
-        if (!driver) throw new HttpException(httpStatus.UNPROCESSABLE_ENTITY, 'Unknown driver', 'invalid_driver', { driverId: 'invalid_driver' });
+        if (!driver) throw new ValidationException({ driverId: 'invalid_driver' });
       }
       fields.driverId = data.driverId || null;
     }
@@ -471,7 +474,10 @@ export class ShuttleService {
         id: trip.id,
         status: 'running',
         expiresAt: { gt: now },
-        OR: [{ positionReceivedAt: null }, { positionReceivedAt: { lte: new Date(now.getTime() - TRIP_POSITION_MIN_INTERVAL_SECONDS * 1000) } }],
+        OR: [
+          { positionReceivedAt: null },
+          { positionReceivedAt: { lte: new Date(now.getTime() - TRIP_POSITION_MIN_INTERVAL_SECONDS * 1000 + POSITION_INTERVAL_TOLERANCE_MS) } },
+        ],
       },
       data: { lat: position.lat, lng: position.lng, accuracyM: position.accuracy ?? null, positionRecordedAt: recordedAt, positionReceivedAt: now },
     });
@@ -493,8 +499,8 @@ export class ShuttleService {
   public async end(actor: AuthenticatedStaff, tripId: string): Promise<StaffTrip> {
     const trip = await prisma.shuttleTrip.findFirst({ where: { id: tripId, operatorId: actor.operatorId }, include: { passengers: true } });
     if (!trip) throw new HttpException(httpStatus.NOT_FOUND, 'Trip not found', 'not_found');
-    // The driver, or a manager/agent closing a forgotten trip.
-    if (trip.driverId !== actor.id && actor.role !== 'manager' && actor.role !== 'agent') {
+    // The driver, or someone who manages bookings (manager, agent) closing a forgotten trip.
+    if (trip.driverId !== actor.id && !can(actor.role, 'reservations:manage')) {
       throw new HttpException(httpStatus.FORBIDDEN, 'Only the driver can end this trip', 'forbidden');
     }
     const now = new Date();
@@ -511,17 +517,17 @@ export class ShuttleService {
       });
       if (trip.direction === 'dropoff') {
         const ids = trip.passengers.map(p => p.reservationId);
-        const { count: moved } = await prisma.reservation.updateMany({
-          where: { id: { in: ids }, status: 'arrived' },
-          data: { status: 'shuttled_out' },
-        });
-        if (moved) {
-          await this.audit.record(actor, {
-            action: 'reservation.status_changed',
-            entityType: 'reservation',
-            entityId: trip.id,
-            details: { from: 'arrived', to: 'shuttled_out', reservationIds: ids, by: 'shuttle_dropoff' },
-          });
+        const moved = await prisma.reservation.findMany({ where: { id: { in: ids }, status: 'arrived' }, select: { id: true } });
+        if (moved.length) {
+          await prisma.reservation.updateMany({ where: { id: { in: moved.map(r => r.id) }, status: 'arrived' }, data: { status: 'shuttled_out' } });
+          for (const r of moved) {
+            await this.audit.record(actor, {
+              action: 'reservation.status_changed',
+              entityType: 'reservation',
+              entityId: r.id,
+              details: { from: 'arrived', to: 'shuttled_out', by: 'shuttle_dropoff', tripId: trip.id },
+            });
+          }
         }
       }
     }

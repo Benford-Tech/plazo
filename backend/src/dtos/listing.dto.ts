@@ -40,8 +40,8 @@ export class UpdateListingDto {
   @MaxLength(2000, { message: 'too_long' })
   public description?: string | null;
 
-  @IsArray()
-  @ArrayMaxSize(SERVICES.length)
+  @IsArray({ message: 'invalid' })
+  @ArrayMaxSize(SERVICES.length, { message: 'too_many_items' })
   @IsIn(SERVICES, { each: true, message: 'invalid_service' })
   public services: string[];
 
@@ -74,8 +74,8 @@ export class UpdateListingDto {
   @IsIn(Object.values(CancellationPolicy), { message: 'invalid_policy' })
   public cancellationPolicy: CancellationPolicy;
 
-  @IsArray()
-  @ArrayMaxSize(12)
+  @IsArray({ message: 'invalid' })
+  @ArrayMaxSize(12, { message: 'too_many_items' })
   @IsUrl({ protocols: ['https'], require_protocol: true }, { each: true, message: 'invalid_url' })
   public photos: string[];
 }
@@ -95,8 +95,8 @@ export class PricingTierDto {
 }
 
 export class UpdatePricingDto {
-  @IsArray()
-  @ArrayMaxSize(90)
+  @IsArray({ message: 'invalid' })
+  @ArrayMaxSize(90, { message: 'too_many_items' })
   @ValidateNested({ each: true })
   @Type(() => PricingTierDto)
   public tiers: PricingTierDto[];

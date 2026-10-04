@@ -25,7 +25,10 @@ export class ReservationController {
     const trips = await Container.get(ShuttleService).running(req.staff);
     res.json({
       ...withSignals,
-      returns: withSignals.returns.map(r => ({ ...r, shuttleTrip: trips.find(t => t.reservationIds.includes(r.id)) ?? null })),
+      returns: withSignals.returns.map(r => ({
+        ...r,
+        shuttleTrip: trips.find(t => t.direction === 'pickup' && t.reservationIds.includes(r.id)) ?? null,
+      })),
     });
   });
 

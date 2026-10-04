@@ -221,6 +221,9 @@ export async function apiRequest<T = unknown>(
 
 const json = (body: unknown) => JSON.stringify(body);
 
+export type GeoScope = "operator" | "platform";
+const geoBase = (scope: GeoScope) => (scope === "platform" ? "/internal/platform/geo" : "/internal/geo");
+
 export const adminApi = {
   login: (email: string, password: string) =>
     apiRequest<{ tokenData: TokenData; user: Staff }>("/internal/auth/login", {
@@ -386,7 +389,7 @@ export const adminApi = {
       method: "POST",
       body: json(input),
     }),
-  updateReservation: (id: string, input: Partial<ReservationInput>) =>
+  updateReservation: (id: string, input: Partial<Omit<ReservationInput, "externalReference" | "priceCents">>) =>
     apiRequest<{ data: Reservation }>(`/internal/reservations/${id}`, {
       method: "PATCH",
       body: json(input),
@@ -558,17 +561,19 @@ export const adminApi = {
     apiRequest<void>(`/internal/platform/capacity-studies/${id}`, {
       method: "DELETE",
     }),
-  parcelsAt: (lon: number, lat: number) =>
+  // The geo helpers exist twice: for an operator's plan (manager of that operator) and for the
+  // platform's capacity studies (platform admin, whatever their own staff role).
+  parcelsAt: (lon: number, lat: number, scope: GeoScope = "operator") =>
     apiRequest<{ parcels: ParcelFeature[] }>(
-      `/internal/geo/parcels?${new URLSearchParams({ lon: String(lon), lat: String(lat) }).toString()}`,
+      `${geoBase(scope)}/parcels?${new URLSearchParams({ lon: String(lon), lat: String(lat) }).toString()}`,
     ),
-  parkingsIn: (bbox: [number, number, number, number]) =>
+  parkingsIn: (bbox: [number, number, number, number], scope: GeoScope = "operator") =>
     apiRequest<{ parkings: ParkingFeature[] }>(
-      `/internal/geo/parkings?bbox=${bbox.map((n) => n.toFixed(6)).join(",")}`,
+      `${geoBase(scope)}/parkings?bbox=${bbox.map((n) => n.toFixed(6)).join(",")}`,
     ),
-  geocode: (q: string) =>
+  geocode: (q: string, scope: GeoScope = "operator") =>
     apiRequest<{ results: GeocodeResult[] }>(
-      `/internal/geo/geocode?${new URLSearchParams({ q }).toString()}`,
+      `${geoBase(scope)}/geocode?${new URLSearchParams({ q }).toString()}`,
     ),
 
   changeReservationStatus: (id: string, status: ReservationStatus) =>

@@ -1,5 +1,7 @@
 import 'package:freezed_annotation/freezed_annotation.dart';
 
+import '../../../../core/constants/product.g.dart';
+
 part 'public_models.freezed.dart';
 part 'public_models.g.dart';
 
@@ -137,7 +139,7 @@ abstract class PaymentsConfigModel with _$PaymentsConfigModel {
   const factory PaymentsConfigModel({
     @Default('on_site') String payments,
     String? publishableKey,
-    @Default('Plazo') String merchantDisplayName,
+    @Default(Product.name) String merchantDisplayName,
     @Default('FR') String merchantCountryCode,
     @Default('eur') String currency,
   }) = _PaymentsConfigModel;

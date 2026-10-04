@@ -41,7 +41,7 @@ function nearestVertex(map: MapViewHandle | null, ring: LonLat[], point: { x: nu
   return best;
 }
 
-export default function TerrainStep({ study, update, go }: StepProps) {
+export default function TerrainStep({ study, update, go, geoScope = "operator" }: StepProps) {
   const mapRef = useRef<MapViewHandle>(null);
   const settings = settingsOf(study);
   const [tool, setTool] = useState<Tool>("pan");
@@ -94,7 +94,7 @@ export default function TerrainStep({ study, update, go }: StepProps) {
     setBusy(true);
     setMessage(fr.capacity.parcelLoading);
     try {
-      const { parcels: found } = await adminApi.parcelsAt(lngLat[0], lngLat[1]);
+      const { parcels: found } = await adminApi.parcelsAt(lngLat[0], lngLat[1], geoScope);
       if (!found.length) {
         setMessage(fr.capacity.parcelNone);
         return;
@@ -123,7 +123,7 @@ export default function TerrainStep({ study, update, go }: StepProps) {
     setParkingsHint(null);
     const id = ++parkingsRequest.current;
     try {
-      const { parkings: found } = await adminApi.parkingsIn(v.bbox);
+      const { parkings: found } = await adminApi.parkingsIn(v.bbox, geoScope);
       if (id === parkingsRequest.current) setParkings(found);
     } catch (err) {
       if (id === parkingsRequest.current) setParkingsHint(describeError(err));
@@ -158,7 +158,7 @@ export default function TerrainStep({ study, update, go }: StepProps) {
     const t = setTimeout(async () => {
       setSearching(true);
       try {
-        setResults((await adminApi.geocode(q)).results);
+        setResults((await adminApi.geocode(q, geoScope)).results);
       } catch (e) {
         setResults([]);
         setMessage(describeError(e));

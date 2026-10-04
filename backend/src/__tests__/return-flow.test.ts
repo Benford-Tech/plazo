@@ -81,21 +81,31 @@ type Booking = Awaited<ReturnType<typeof parkingWithReturningBooking>>;
 const getReturn = (b: Booking) => api().get(`/api/public/bookings/${b.reference}/return`).set(bookingToken(b.manageToken));
 const getShuttle = (b: Booking) => api().get(`/api/public/bookings/${b.reference}/shuttle`).set(bookingToken(b.manageToken));
 
-const adbLanded = (status = 'Arrived') => [
-  {
-    number: 'TO 3627',
-    status,
-    departure: { airport: { iata: 'MRS' }, scheduledTime: { utc: '2026-10-03 07:00Z', local: '2026-10-03 09:00+02:00' } },
-    arrival: {
-      airport: { iata: 'LYS' },
-      scheduledTime: { utc: '2026-10-03 08:00Z', local: '2026-10-03 10:00+02:00' },
-      revisedTime: { utc: '2026-10-03 08:02Z', local: '2026-10-03 10:02+02:00' },
-      runwayTime: status === 'Arrived' ? { utc: '2026-10-03 08:02Z', local: '2026-10-03 10:02+02:00' } : undefined,
-      terminal: '1',
-      gate: '12',
+/** AeroDataBox writes instants as "2026-10-03 08:00Z". */
+const adbUtc = (d: Date) => `${d.toISOString().slice(0, 10)} ${d.toISOString().slice(11, 16)}Z`;
+const adbLocal = (d: Date) => `${localDateTime(d, TZ).replace('T', ' ')}+02:00`;
+/** The provider's answer; `at` is the scheduled landing (defaults to a fixed instant for the parsing tests). */
+const adbLanded = (status = 'Arrived', at = new Date('2026-10-03T08:00:00Z')) => {
+  const revised = new Date(at.getTime() + 2 * 60000);
+  return [
+    {
+      number: 'TO 3627',
+      status,
+      departure: {
+        airport: { iata: 'MRS' },
+        scheduledTime: { utc: adbUtc(new Date(at.getTime() - 3600000)), local: adbLocal(new Date(at.getTime() - 3600000)) },
+      },
+      arrival: {
+        airport: { iata: 'LYS' },
+        scheduledTime: { utc: adbUtc(at), local: adbLocal(at) },
+        revisedTime: { utc: adbUtc(revised), local: adbLocal(revised) },
+        runwayTime: status === 'Arrived' ? { utc: adbUtc(revised), local: adbLocal(revised) } : undefined,
+        terminal: '1',
+        gate: '12',
+      },
     },
-  },
-];
+  ];
+};
 
 let fetchMock: jest.SpyInstance;
 const calls = (url: string | RegExp) => fetchMock.mock.calls.filter(([u]) => (typeof url === 'string' ? String(u) === url : url.test(String(u))));
@@ -187,7 +197,7 @@ describe('vols (domaine)', () => {
       manageUrl: 'https://plazo.test/ma-reservation/R1?cle=x',
     });
     expect(sms).toBe(
-      'Plazo : votre vol a atterri. Rendez-vous navette : Terminal 1 · Porte 12. Sortez côté parkings. Itineraire et suivi de la navette : https://plazo.test/ma-reservation/R1?cle=x',
+      'Plazo : votre vol a atterri. Rendez-vous navette : Terminal 1 · Porte 12. Sortez côté parkings. Votre reservation : https://plazo.test/ma-reservation/R1?cle=x',
     );
     expect(firstName('Karim Benali')).toBe('Karim');
     expect(vehicleDescription({ model: 'Mercedes Vito', colour: 'blanche', plate: 'GH-456-JK' })).toBe('Navette blanche · Mercedes Vito · GH-456-JK');
@@ -306,7 +316,8 @@ describe('GET /public/bookings/:reference/return', () => {
   it('cron : protégé par le secret, idempotent, n’interroge pas un vol déjà vu il y a moins de 5 min', async () => {
     const b = await parkingWithReturningBooking();
     process.env.AERODATABOX_API_KEY = 'rapid-key';
-    fetchMock.mockImplementation(async url => (/aerodatabox/.test(String(url)) ? json(adbLanded('Expected')) : json({})));
+    // The flight is expected in an hour (relative to today: the lookup window is ±6 h around the landing).
+    fetchMock.mockImplementation(async url => (/aerodatabox/.test(String(url)) ? json(adbLanded('Expected', minutesFromNow(60))) : json({})));
     expect((await api().get('/api/internal/cron/track-return-flights')).status).toBe(401);
     const run1 = await api().get('/api/internal/cron/track-return-flights').set(auth('test-cron-secret'));
     expect(run1.body).toEqual({ checked: 1, landed: 0, skipped: false, sms: { operators: 0, checked: 0, sent: 0, abandoned: 0 } });
@@ -593,8 +604,8 @@ describe('navette (mode chauffeur)', () => {
     expect(bad.body.fields.seats).toBe('invalid_seats');
     // The usual driver must be one of the team.
     const foreign = await api().post('/api/internal/shuttle/vehicles').set(auth(b.op.token)).send({ model: 'Vito', driverId: other.manager.id });
-    expect(foreign.status).toBe(422);
-    expect(foreign.body.code).toBe('invalid_driver');
+    expect(foreign.status).toBe(400);
+    expect(foreign.body.fields).toEqual({ driverId: 'invalid_driver' });
     const created = await api()
       .post('/api/internal/shuttle/vehicles')
       .set(auth(b.op.token))

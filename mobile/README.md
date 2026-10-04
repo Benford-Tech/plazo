@@ -149,7 +149,7 @@ version web, « Payer » ouvre la page Stripe Checkout.
 7. **Codemagic** : l'app ajoutée sur le dépôt avec `codemagic.yaml` (à la racine du dépôt), le groupe de variables `mobile_secrets`
    (voir l'en-tête du fichier).
 
-- `/pro/places` : Occupation (bloc 2, étape 2) — recherche par plaque, place proposée à l'arrivée, crochet des clés.
+- `/pro/parking` (onglet Parking) : Occupation (bloc 2, étape 2) — recherche par plaque, place proposée à l'arrivée, crochet des clés.
 - `/pro/equipe` (gérants : membres, rôles, accès, mot de passe provisoire), `/pro/compte` (changement de mot de passe), `/pro/reglages` (gérants : nom, adresse, places, marge, navette, canal SMS avec le téléphone Android du parking).
 - `/pro/planning-places` : planning des places (une ligne par place sur 7 ou 14 jours, besoin par jour, alertes, sans place, pré-affectation, déplacement d'un séjour).
 - `/pro/reservations`, `/pro/reservations/:id`, `/pro/reservations/formulaire`, `/pro/reservations/import` : réservations du personnel (liste et recherche, fiche avec les étapes de statut, saisie, modification, import d'un mail de confirmation). Les rôles cachent les actions (`core/helpers/roles.dart`), le serveur reste l'autorité.

@@ -41,6 +41,8 @@ import { ValidationMiddleware } from '@/middlewares/validation.middleware';
  *         lng: { type: number }
  *         source: { type: string, enum: [parking, return_point, airport] }
  *         label: { type: string, nullable: true, example: "Terminal 1 · arrêt navettes" }
+ *         instructions: { type: string, nullable: true }
+ *         photoUrl: { type: string, nullable: true }
  *     TravellerArrival:
  *       type: object
  *       properties:

@@ -7,7 +7,7 @@ import { CronAuthMiddleware } from '@/middlewares/cron-auth.middleware';
  * @swagger
  * tags:
  *   name: Cron
- *   description: Scheduled jobs, called by Vercel Cron (see backend/vercel.json)
+ *   description: Scheduled jobs, called by Vercel Cron (see the repository's vercel.json)
  */
 /**
  * @swagger
@@ -40,10 +40,10 @@ import { CronAuthMiddleware } from '@/middlewares/cron-auth.middleware';
  *       read (traveller, planning, live list); the nightly purge-expired-tokens run does it too.
  *     responses:
  *       200:
- *         description: "{ ended }"
+ *         description: "{ ended, tripsEnded }"
  * /internal/cron/track-return-flights:
  *   get:
- *     summary: Refresh today's return flights at the provider (every 10 minutes, 05:00-00:00)
+ *     summary: Refresh today's return flights at the provider (daily at 03:00 UTC on Vercel Hobby, which only allows daily crons; every 10 minutes 05:00-00:00 on a higher plan; reads refresh lazily too)
  *     tags: [Cron]
  *     description: >
  *       "Requires Authorization: Bearer <CRON_SECRET>." Asks AeroDataBox (or AirLabs) about the return

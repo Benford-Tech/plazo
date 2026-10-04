@@ -207,7 +207,8 @@ _PaymentsConfigModel _$PaymentsConfigModelFromJson(Map<String, dynamic> json) =>
     _PaymentsConfigModel(
       payments: json['payments'] as String? ?? 'on_site',
       publishableKey: json['publishableKey'] as String?,
-      merchantDisplayName: json['merchantDisplayName'] as String? ?? 'Plazo',
+      merchantDisplayName:
+          json['merchantDisplayName'] as String? ?? Product.name,
       merchantCountryCode: json['merchantCountryCode'] as String? ?? 'FR',
       currency: json['currency'] as String? ?? 'eur',
     );

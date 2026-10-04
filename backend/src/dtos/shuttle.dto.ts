@@ -28,12 +28,12 @@ export class ShuttleVehicleDto {
 
   @IsOptional()
   @MaxLength(30, { message: 'too_long' })
-  @IsString()
+  @IsString({ message: 'invalid' })
   public colour?: string | null;
 
   @IsOptional()
   @MaxLength(15, { message: 'too_long' })
-  @IsString()
+  @IsString({ message: 'invalid' })
   public plate?: string | null;
 
   /** Passenger seats, the driver's excluded. */
@@ -64,12 +64,12 @@ export class UpdateShuttleVehicleDto {
 
   @IsOptional()
   @MaxLength(30, { message: 'too_long' })
-  @IsString()
+  @IsString({ message: 'invalid' })
   public colour?: string | null;
 
   @IsOptional()
   @MaxLength(15, { message: 'too_long' })
-  @IsString()
+  @IsString({ message: 'invalid' })
   public plate?: string | null;
 
   @IsOptional()
@@ -92,17 +92,17 @@ export class UpdateShuttleVehicleDto {
 export class FreeVehicleDto {
   @IsOptional()
   @MaxLength(60, { message: 'too_long' })
-  @IsString()
+  @IsString({ message: 'invalid' })
   public model?: string | null;
 
   @IsOptional()
   @MaxLength(30, { message: 'too_long' })
-  @IsString()
+  @IsString({ message: 'invalid' })
   public colour?: string | null;
 
   @IsOptional()
   @MaxLength(15, { message: 'too_long' })
-  @IsString()
+  @IsString({ message: 'invalid' })
   public plate?: string | null;
 }
 

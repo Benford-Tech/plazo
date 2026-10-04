@@ -201,6 +201,7 @@ class MyBookingRoute extends PageRouteInfo<MyBookingRouteArgs> {
     required String reference,
     String? token,
     String? confirmee,
+    String? paiement,
     List<PageRouteInfo>? children,
   }) : super(
          MyBookingRoute.name,
@@ -209,9 +210,14 @@ class MyBookingRoute extends PageRouteInfo<MyBookingRouteArgs> {
            reference: reference,
            token: token,
            confirmee: confirmee,
+           paiement: paiement,
          ),
          rawPathParams: {'reference': reference},
-         rawQueryParams: {'cle': token, 'confirmee': confirmee},
+         rawQueryParams: {
+           'cle': token,
+           'confirmee': confirmee,
+           'paiement': paiement,
+         },
          initialChildren: children,
        );
 
@@ -227,6 +233,7 @@ class MyBookingRoute extends PageRouteInfo<MyBookingRouteArgs> {
           reference: pathParams.getString('reference'),
           token: queryParams.optString('cle'),
           confirmee: queryParams.optString('confirmee'),
+          paiement: queryParams.optString('paiement'),
         ),
       );
       return WrappedRoute(
@@ -235,6 +242,7 @@ class MyBookingRoute extends PageRouteInfo<MyBookingRouteArgs> {
           reference: args.reference,
           token: args.token,
           confirmee: args.confirmee,
+          paiement: args.paiement,
         ),
       );
     },
@@ -247,6 +255,7 @@ class MyBookingRouteArgs {
     required this.reference,
     this.token,
     this.confirmee,
+    this.paiement,
   });
 
   final Key? key;
@@ -257,9 +266,11 @@ class MyBookingRouteArgs {
 
   final String? confirmee;
 
+  final String? paiement;
+
   @override
   String toString() {
-    return 'MyBookingRouteArgs{key: $key, reference: $reference, token: $token, confirmee: $confirmee}';
+    return 'MyBookingRouteArgs{key: $key, reference: $reference, token: $token, confirmee: $confirmee, paiement: $paiement}';
   }
 
   @override
@@ -269,12 +280,17 @@ class MyBookingRouteArgs {
     return key == other.key &&
         reference == other.reference &&
         token == other.token &&
-        confirmee == other.confirmee;
+        confirmee == other.confirmee &&
+        paiement == other.paiement;
   }
 
   @override
   int get hashCode =>
-      key.hashCode ^ reference.hashCode ^ token.hashCode ^ confirmee.hashCode;
+      key.hashCode ^
+      reference.hashCode ^
+      token.hashCode ^
+      confirmee.hashCode ^
+      paiement.hashCode;
 }
 
 /// generated route for

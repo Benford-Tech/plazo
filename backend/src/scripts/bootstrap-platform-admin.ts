@@ -1,5 +1,6 @@
 import 'reflect-metadata';
 import { Container } from 'typedi';
+import { PRODUCT_NAME } from '@/config';
 import prisma from '@/database';
 import { OperatorService } from '@/services/operator.service';
 
@@ -28,10 +29,10 @@ async function main() {
     return;
   }
   await Container.get(OperatorService).createWithManager({
-    operatorName: 'Plazo (tests)',
-    parkingName: 'Parking test Plazo',
+    operatorName: `${PRODUCT_NAME} (tests)`,
+    parkingName: `Parking test ${PRODUCT_NAME}`,
     totalCapacity: 50,
-    managerName: process.env.PLATFORM_BOOTSTRAP_NAME?.trim() || 'Administrateur Plazo',
+    managerName: process.env.PLATFORM_BOOTSTRAP_NAME?.trim() || `Administrateur ${PRODUCT_NAME}`,
     managerEmail: email,
     managerPassword: password,
   });

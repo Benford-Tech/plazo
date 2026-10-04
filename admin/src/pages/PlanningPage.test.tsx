@@ -98,7 +98,7 @@ describe("Planning : arrivées en direct", () => {
     api.getLiveArrivals.mockResolvedValue({
       serverTime: "2026-10-03T05:40:00.000Z",
       signals: [],
-      shuttleTrips: [{ id: "t1", driverId: "d1", driverName: "Karim Benali", startedAt: "2026-10-03T05:35:00.000Z", reservationIds: ["r3"] }],
+      shuttleTrips: [{ id: "t1", direction: "pickup", driverId: "d1", driverName: "Karim Benali", startedAt: "2026-10-03T05:35:00.000Z", reservationIds: ["r3"] }],
     });
     render(
       <QueryClientProvider client={new QueryClient({ defaultOptions: { queries: { retry: false } } })}>

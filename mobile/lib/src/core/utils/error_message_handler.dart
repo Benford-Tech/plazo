@@ -1,6 +1,8 @@
 import 'package:dio/dio.dart';
 import 'package:easy_localization/easy_localization.dart';
 
+import '../constants/app_constants.dart';
+
 /// The API's error body is `{ message, code?, fields?, details? }`: the app shows the French text
 /// of `code` (assets/l10n, "errors.<code>"), never the English `message`.
 extension ErrorHandler on DioException {
@@ -27,7 +29,8 @@ extension ErrorHandler on DioException {
 /// French text of an API code ("errors.<code>"), or the generic message.
 String translateErrorCode(String? code) {
   if (code == null) return 'errors.generic'.tr();
-  final key = 'errors.$code';
+  // The API says `not_found` for anything; for a traveller it is always their booking.
+  final key = code == 'not_found' && !AppConstants.isPro ? 'errors.booking_not_found' : 'errors.$code';
   final text = key.tr();
   return text == key ? 'errors.generic'.tr() : text;
 }

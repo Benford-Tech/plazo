@@ -2975,7 +2975,7 @@ return $default(_that.payments,_that.publishableKey,_that.merchantDisplayName,_t
 @JsonSerializable()
 
 class _PaymentsConfigModel implements PaymentsConfigModel {
-  const _PaymentsConfigModel({this.payments = 'on_site', this.publishableKey, this.merchantDisplayName = 'Plazo', this.merchantCountryCode = 'FR', this.currency = 'eur'});
+  const _PaymentsConfigModel({this.payments = 'on_site', this.publishableKey, this.merchantDisplayName = Product.name, this.merchantCountryCode = 'FR', this.currency = 'eur'});
   factory _PaymentsConfigModel.fromJson(Map<String, dynamic> json) => _$PaymentsConfigModelFromJson(json);
 
 @override@JsonKey() final  String payments;
