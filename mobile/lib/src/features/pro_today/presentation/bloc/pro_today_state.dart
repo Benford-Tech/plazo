@@ -16,6 +16,9 @@ abstract class ProTodayState with _$ProTodayState {
 
   const factory ProTodayState({
     @Default(ViewState.idle) ViewState viewState,
+
+    /// The day shown (YYYY-MM-DD), null for today.
+    String? date,
     PlanningModel? planning,
     @Default([]) List<StaffSignalModel> signals,
     StaffSignalModel? banner,

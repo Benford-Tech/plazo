@@ -3,7 +3,7 @@ import '../models/planning_model.dart';
 import '../models/staff_signal_model.dart';
 
 abstract class PlanningDataSource {
-  Future<PlanningModel> getPlanning();
+  Future<PlanningModel> getPlanning({String? date});
   Future<LiveArrivalsModel> getLiveArrivals();
 }
 
@@ -13,7 +13,7 @@ class PlanningDataSourceImpl implements PlanningDataSource {
   final PlanningClient client;
 
   @override
-  Future<PlanningModel> getPlanning() => client.getPlanning();
+  Future<PlanningModel> getPlanning({String? date}) => client.getPlanning(date: date);
 
   @override
   Future<LiveArrivalsModel> getLiveArrivals() => client.getLiveArrivals();

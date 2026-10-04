@@ -15,6 +15,9 @@ String localDay(String parkingLocal) {
 /// "SAM. 3 OCT." for the staff's planning header.
 String planningDay(DateTime day) => DateFormat('EEE d MMM', 'fr_FR').format(day).toUpperCase();
 
+/// "2026-10-04": a day as the API's planning takes it.
+String isoDay(DateTime day) => DateFormat('yyyy-MM-dd').format(day);
+
 /// "8,4 km" / "320 m".
 String distanceLabel(int meters) => meters < 1000
     ? 'arrival.distance_m'.tr(args: ['$meters'])

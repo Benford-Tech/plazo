@@ -30,6 +30,7 @@ class ProTodayBloc extends Bloc<ProTodayEvent, ProTodayState> {
        super(ProTodayState(now: clock())) {
     on<ProTodayStarted>(_onStarted);
     on<ProTodayPolled>(_onPolled);
+    on<ProTodayDateChanged>(_onDateChanged);
     on<ProTodayBannerDismissed>((event, emit) => emit(state.copyWith(banner: null)));
   }
 
@@ -54,9 +55,18 @@ class ProTodayBloc extends Bloc<ProTodayEvent, ProTodayState> {
     await _refresh(emit, planning: due || event.full);
   }
 
+  Future<void> _onDateChanged(ProTodayDateChanged event, Emitter<ProTodayState> emit) async {
+    if (event.date == state.date) return;
+    emit(state.copyWith(date: event.date, viewState: state.planning == null ? ViewState.processing : state.viewState));
+    await _refresh(emit, planning: true);
+  }
+
   Future<void> _refresh(Emitter<ProTodayState> emit, {required bool planning}) async {
     if (planning) {
-      final result = await _planning(NoParams());
+      final date = state.date;
+      final result = await _planning(date);
+      // The day changed while loading: this answer is stale.
+      if (state.date != date) return;
       result.fold((failure) => emit(state.copyWith(viewState: state.planning == null ? ViewState.error : state.viewState, errorMessage: failure.message)), (p) {
         _planningAt = _clock();
         emit(state.copyWith(planning: p, viewState: ViewState.success, errorMessage: null));

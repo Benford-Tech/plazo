@@ -105,4 +105,23 @@ void main() {
     expect(bloc.state.positionAge(signals.first, t0.add(const Duration(seconds: 5))), 25);
     await bloc.close();
   });
+
+  test('navigation entre les dates : la journée choisie est rechargée tout de suite, retour à aujourd’hui', () async {
+    final bloc = build()..add(const ProTodayStarted());
+    await settle();
+    verify(() => planning(null)).called(1);
+    bloc.add(const ProTodayDateChanged('2026-10-07'));
+    await settle();
+    verify(() => planning('2026-10-07')).called(1);
+    expect(bloc.state.date, '2026-10-07');
+    // The same day again: nothing to load.
+    bloc.add(const ProTodayDateChanged('2026-10-07'));
+    await settle();
+    verifyNever(() => planning('2026-10-07'));
+    bloc.add(const ProTodayDateChanged(null));
+    await settle();
+    expect(bloc.state.date, isNull);
+    verify(() => planning(null)).called(1);
+    await bloc.close();
+  });
 }

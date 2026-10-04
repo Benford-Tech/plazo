@@ -12,6 +12,7 @@ import '../../../../di/locator.dart';
 import '../../../../shared/theme/theme.dart';
 import '../../../../shared/widgets/brand_header.dart';
 import '../bloc/pro_today_bloc.dart';
+import '../widgets/date_strip.dart';
 import '../widgets/today_row.dart';
 
 /// The staff's day: Arrivées / Retours (tabs on a phone, two columns on a wide screen), live
@@ -82,6 +83,15 @@ class _ProTodayViewState extends State<ProTodayView> with SingleTickerProviderSt
     super.dispose();
   }
 
+  /// The day shown: the chosen one, else today (the phone's clock).
+  DateTime _shownDay(ProTodayState state) {
+    final d = state.date;
+    if (d == null) return _now;
+    return DateTime.tryParse(d) ?? _now;
+  }
+
+  static bool _isSameDay(DateTime a, DateTime b) => a.year == b.year && a.month == b.month && a.day == b.day;
+
   void _see(ProTodayState state) {
     final banner = state.banner;
     if (banner == null) return;
@@ -115,16 +125,33 @@ class _ProTodayViewState extends State<ProTodayView> with SingleTickerProviderSt
                 ),
               Container(
                 color: AppColors.canvas,
-                padding: const EdgeInsets.fromLTRB(16, 12, 16, 10),
-                child: Row(
+                padding: const EdgeInsets.fromLTRB(16, 12, 16, 6),
+                child: Column(
                   children: [
-                    Expanded(
-                      child: Text(
-                        'pro.today_title'.tr(args: [planningDay(_now)]),
-                        style: AppText.label(size: 14, color: AppColors.dark).copyWith(fontWeight: FontWeight.w800),
-                      ),
+                    Row(
+                      children: [
+                        Expanded(
+                          child: Text(
+                            'pro.today_title'.tr(args: [planningDay(_shownDay(state))]),
+                            style: AppText.label(size: 14, color: AppColors.dark).copyWith(fontWeight: FontWeight.w800),
+                          ),
+                        ),
+                        if (state.date != null)
+                          TextButton(
+                            key: const Key('today-back'),
+                            onPressed: () => context.read<ProTodayBloc>().add(const ProTodayDateChanged(null)),
+                            child: Text('pro.back_to_today'.tr(), style: AppText.strong(size: 13, color: AppColors.accent)),
+                          )
+                        else
+                          Text(hhmm(_now), style: AppText.tabular(size: 16, color: AppColors.accent)),
+                      ],
                     ),
-                    Text(hhmm(_now), style: AppText.tabular(size: 16, color: AppColors.accent)),
+                    const SizedBox(height: 4),
+                    DateStrip(
+                      selected: _shownDay(state),
+                      today: _now,
+                      onSelected: (day) => context.read<ProTodayBloc>().add(ProTodayDateChanged(_isSameDay(day, _now) ? null : isoDay(day))),
+                    ),
                   ],
                 ),
               ),
@@ -203,7 +230,10 @@ class _Column extends StatelessWidget {
           if (rows.isEmpty)
             Padding(
               padding: const EdgeInsets.symmetric(vertical: 24),
-              child: Text(isReturn ? 'pro.no_return'.tr() : 'pro.no_arrival'.tr(), style: AppText.muted()),
+              child: Text(
+                state.date == null ? (isReturn ? 'pro.no_return'.tr() : 'pro.no_arrival'.tr()) : (isReturn ? 'pro.no_return_day'.tr() : 'pro.no_arrival_day'.tr()),
+                style: AppText.muted(),
+              ),
             ),
           for (final row in rows)
             TodayRowTile(

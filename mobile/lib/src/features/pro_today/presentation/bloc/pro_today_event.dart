@@ -14,6 +14,12 @@ class ProTodayPolled extends ProTodayEvent {
   final bool full;
 }
 
+/// Another day of the planning (YYYY-MM-DD), null for today: reloaded at once.
+class ProTodayDateChanged extends ProTodayEvent {
+  const ProTodayDateChanged(this.date);
+  final String? date;
+}
+
 class ProTodayBannerDismissed extends ProTodayEvent {
   const ProTodayBannerDismissed();
 }

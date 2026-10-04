@@ -21,9 +21,10 @@ class _PlanningClient implements PlanningClient {
   final ParseErrorLogger? errorLogger;
 
   @override
-  Future<PlanningModel> getPlanning() async {
+  Future<PlanningModel> getPlanning({String? date}) async {
     final _extra = <String, dynamic>{};
-    final queryParameters = <String, dynamic>{};
+    final queryParameters = <String, dynamic>{r'date': date};
+    queryParameters.removeWhere((k, v) => v == null);
     final _headers = <String, dynamic>{};
     const Map<String, dynamic>? _data = null;
     final _options = _setStreamType<PlanningModel>(
