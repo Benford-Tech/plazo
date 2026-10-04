@@ -59,6 +59,12 @@ class ProOccupationPage extends StatelessWidget implements AutoRouteWrapper {
             pro: true,
             title: 'pro_tabs.parking'.tr(),
             actions: [
+              IconButton(
+                key: const Key('occ-planning'),
+                tooltip: 'planning.title'.tr(),
+                icon: const Icon(Icons.view_timeline_outlined),
+                onPressed: () => context.router.push(const ProSpotPlanningRoute()),
+              ),
               if (can(context.watch<ProAuthBloc>().state.staff?.role, 'parking:manage'))
                 IconButton(
                   key: const Key('occ-plan'),

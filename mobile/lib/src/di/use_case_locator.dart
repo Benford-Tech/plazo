@@ -49,6 +49,8 @@ void _initUseCaseLocator() {
     ..registerLazySingleton(() => ChangeReservationStatusUseCase(locator()))
     ..registerLazySingleton(() => ParseEmailUseCase(locator()))
     ..registerLazySingleton(() => PreviewCapacityUseCase(locator()))
+    ..registerLazySingleton(() => GetSpotPlanningUseCase(locator()))
+    ..registerLazySingleton(() => PreassignSpotsUseCase(locator()))
     ..registerLazySingleton(() => GetVehiclesUseCase(locator()))
     ..registerLazySingleton(() => GetCurrentTripUseCase(locator()))
     ..registerLazySingleton(() => StartTripUseCase(locator()))

@@ -63,6 +63,12 @@ class ProMoreTabPage extends StatelessWidget {
             onTap: () => context.router.push(const ProShuttleRoute()),
           ),
           _Tile(
+            key: const Key('pmore-planning'),
+            icon: Icons.view_timeline_outlined,
+            label: 'planning.title'.tr(),
+            onTap: () => context.router.push(const ProSpotPlanningRoute()),
+          ),
+          _Tile(
             key: const Key('pmore-notifications'),
             icon: Icons.notifications_none_rounded,
             label: 'pro.notifications'.tr(),

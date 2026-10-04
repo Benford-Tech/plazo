@@ -787,5 +787,28 @@
       "driver": "Chauffeur",
       "valet": "Voiturier"
     }
+  },
+  "planning": {
+    "title": "Planning des places",
+    "prev": "Semaine précédente",
+    "next": "Semaine suivante",
+    "days": "{} j",
+    "load": "Besoin / places",
+    "alerts": "Alertes",
+    "no_alert": "Rien à signaler sur la période.",
+    "over_capacity": "{} : {} véhicule(s) de trop pour les places",
+    "unplaced_alert": "{} réservation(s) sans place",
+    "inactive_used": "{} est désactivée mais tient {}",
+    "unplaced": "Sans place · {}",
+    "all_placed": "Toutes les réservations de la période ont une place.",
+    "preassign": "Pré-affecter",
+    "preassign_help": "Une place libre sur tout le séjour, dans la zone de sa durée, près de la remise.",
+    "preassigned": "{} place(s) attribuée(s) · {} sans solution",
+    "moved": "{} placé en {}",
+    "released": "{} n'a plus de place",
+    "place_in": "Placer en",
+    "move_to": "Déplacer vers",
+    "release": "Libérer",
+    "no_free": "Aucune place libre sur ce séjour."
   }
 }

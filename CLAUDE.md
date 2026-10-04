@@ -113,7 +113,8 @@ Plazo reprend la stack et les conventions des dépôts `lovenest-backend`, `love
   à l'espace pro web** (A-B : deux apps « Plazo » et « Plazo Pro » sur un seul projet ; N-A : quatre onglets
   Aujourd'hui · Réservations · Parking · Plus), livrée par étapes : 1 réservations (fait), 2 flavors et onglets (fait : `--flavor pro --dart-define=APP_FLAVOR=pro`,
   `ProShellPage` à quatre onglets sous `/pro`, icône Pro brun foncé ; iOS : second schéma Xcode à créer),
-  3 planning des places, 4 équipe / compte / réglages, 5 Sur Plazo (fiche, tarifs, Stripe), 6 inscription.
+  3 planning des places (fait : `/pro/planning-places`, feature `pro_spot_planning`), 4 équipe / compte / réglages,
+  5 Sur Plazo (fiche, tarifs, Stripe), 6 inscription.
 - Cartographie : Google Maps Platform ; le tracé et l'analyse se font sur la photo aérienne IGN BD ORTHO (MapLibre + Terra Draw), les conditions de Google l'interdisant sur son imagerie. SMS et email : Brevo.
 - Suivi de vols : AirLabs (offre gratuite) derrière une interface interchangeable, repli AeroDataBox.
 

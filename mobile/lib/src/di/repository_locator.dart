@@ -12,5 +12,6 @@ void _initRepositoryLocator() {
     ..registerLazySingleton<ShuttleRepository>(() => ShuttleRepositoryImpl(locator()))
     ..registerLazySingleton<PlanRepository>(() => PlanRepositoryImpl(locator()))
     ..registerLazySingleton<OccupationRepository>(() => OccupationRepositoryImpl(locator()))
-    ..registerLazySingleton<ReservationsRepository>(() => ReservationsRepositoryImpl(locator()));
+    ..registerLazySingleton<ReservationsRepository>(() => ReservationsRepositoryImpl(locator()))
+    ..registerLazySingleton<SpotPlanningRepository>(() => SpotPlanningRepositoryImpl(locator()));
 }
