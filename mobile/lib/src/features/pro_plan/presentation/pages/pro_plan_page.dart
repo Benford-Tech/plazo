@@ -142,7 +142,7 @@ class _LocateStepState extends State<_LocateStep> {
         ),
         const SizedBox(height: 14),
         ClipRRect(
-          borderRadius: BorderRadius.circular(16),
+          borderRadius: AppRadius.card,
           child: SizedBox(
             height: 300,
             child: PlanMap(
@@ -322,12 +322,12 @@ class _GenerateStep extends StatelessWidget {
                   padding: const EdgeInsets.only(bottom: 8),
                   child: InkWell(
                     key: Key('plan-layout-$key'),
-                    borderRadius: BorderRadius.circular(12),
+                    borderRadius: AppRadius.chip,
                     onTap: () => bloc.add(ProPlanLayoutChosen(key)),
                     child: Container(
                       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
                       decoration: BoxDecoration(
-                        borderRadius: BorderRadius.circular(12),
+                        borderRadius: AppRadius.chip,
                         border: Border.all(color: state.layout == key ? AppColors.accent : AppColors.line, width: state.layout == key ? 1.6 : 1),
                         color: state.layout == key ? AppColors.tintSoft : null,
                       ),
@@ -362,7 +362,7 @@ class _GenerateStep extends StatelessWidget {
               if (state.generated)
                 Container(
                   padding: const EdgeInsets.all(12),
-                  decoration: BoxDecoration(color: AppColors.tint, borderRadius: BorderRadius.circular(12)),
+                  decoration: const BoxDecoration(color: AppColors.tint, borderRadius: AppRadius.chip),
                   child: Row(
                     children: [
                       const Icon(Icons.check_circle_rounded, color: AppColors.accent),

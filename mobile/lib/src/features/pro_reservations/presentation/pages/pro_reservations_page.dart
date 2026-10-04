@@ -78,7 +78,7 @@ class _ViewState extends State<_View> {
           ? FloatingActionButton.extended(
               key: const Key('res-new'),
               backgroundColor: AppColors.accent,
-              foregroundColor: Colors.white,
+              foregroundColor: AppColors.onAccent,
               icon: const Icon(Icons.add_rounded),
               label: Text('res.new'.tr()),
               onPressed: () => _open(context, ProReservationFormRoute()),

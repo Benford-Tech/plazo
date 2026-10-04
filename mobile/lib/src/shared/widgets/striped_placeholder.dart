@@ -13,8 +13,18 @@ class StripedPlaceholder extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final box = SizedBox(height: height, width: double.infinity, child: const CustomPaint(painter: _StripesPainter()));
-    return label == null ? ExcludeSemantics(child: box) : Semantics(label: label, image: true, child: ExcludeSemantics(child: box));
+    final box = SizedBox(
+      height: height,
+      width: double.infinity,
+      child: const CustomPaint(painter: _StripesPainter()),
+    );
+    return label == null
+        ? ExcludeSemantics(child: box)
+        : Semantics(
+            label: label,
+            image: true,
+            child: ExcludeSemantics(child: box),
+          );
   }
 }
 

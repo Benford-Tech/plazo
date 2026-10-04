@@ -45,7 +45,7 @@ class ProTeamPage extends StatelessWidget implements AutoRouteWrapper {
           floatingActionButton: FloatingActionButton.extended(
             key: const Key('team-add'),
             backgroundColor: AppColors.accent,
-            foregroundColor: Colors.white,
+            foregroundColor: AppColors.onAccent,
             icon: const Icon(Icons.person_add_alt_1_rounded),
             label: Text('team.add'.tr()),
             onPressed: () => _showNewMember(context),
@@ -134,7 +134,7 @@ class _MemberTile extends StatelessWidget {
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
         border: Border.all(color: m.isActive ? AppColors.line : AppColors.canvas),
-        borderRadius: BorderRadius.circular(14),
+        borderRadius: AppRadius.chip,
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,

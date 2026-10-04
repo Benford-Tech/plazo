@@ -97,6 +97,13 @@ flutter:
         - asset: assets/fonts/PlayfairDisplay.ttf
         - asset: assets/fonts/PlayfairDisplay-Italic.ttf
           style: italic
+    # Plazo Pro (direction B): Archivo Narrow for the titles, JetBrains Mono for the figures (both OFL).
+    - family: ArchivoNarrow
+      fonts:
+        - asset: assets/fonts/ArchivoNarrow.ttf
+    - family: JetBrainsMono
+      fonts:
+        - asset: assets/fonts/JetBrainsMono.ttf
     - family: Inter
       fonts:
         - asset: assets/fonts/Inter.ttf

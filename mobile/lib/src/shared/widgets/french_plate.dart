@@ -30,11 +30,17 @@ class FrenchPlate extends StatelessWidget {
               color: AppColors.plateBlue,
               alignment: Alignment.bottomCenter,
               padding: EdgeInsets.only(bottom: size * 0.12),
-              child: Text('F', style: AppText.strong(size: size * 0.6, color: Colors.white)),
+              child: Text(
+                'F',
+                style: AppText.strong(size: size * 0.6, color: Colors.white),
+              ),
             ),
             Padding(
               padding: EdgeInsets.symmetric(horizontal: size * 0.45),
-              child: Text(value, style: AppText.tabular(size: size, color: const Color(0xFF111111))),
+              child: Text(
+                value,
+                style: AppText.tabular(size: size, color: const Color(0xFF111111)),
+              ),
             ),
           ],
         ),

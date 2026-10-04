@@ -16,7 +16,7 @@ class Segmented<T> extends StatelessWidget {
   Widget build(BuildContext context) {
     return Container(
       padding: const EdgeInsets.all(3),
-      decoration: BoxDecoration(color: AppColors.tintSoft, borderRadius: BorderRadius.circular(22)),
+      decoration: const BoxDecoration(color: AppColors.tintSoft, borderRadius: AppRadius.pill),
       child: Row(
         children: [
           for (var i = 0; i < values.length; i++)
@@ -26,7 +26,7 @@ class Segmented<T> extends StatelessWidget {
                 button: onChanged != null,
                 inMutuallyExclusiveGroup: true,
                 child: InkWell(
-                  borderRadius: BorderRadius.circular(19),
+                  borderRadius: AppRadius.pill,
                   onTap: onChanged == null ? null : () => onChanged!(values[i]),
                   child: AnimatedContainer(
                     duration: const Duration(milliseconds: 150),
@@ -34,7 +34,7 @@ class Segmented<T> extends StatelessWidget {
                     alignment: Alignment.center,
                     decoration: BoxDecoration(
                       color: values[i] == selected ? Colors.white : Colors.transparent,
-                      borderRadius: BorderRadius.circular(19),
+                      borderRadius: AppRadius.pill,
                       boxShadow: values[i] == selected ? const [BoxShadow(color: Color(0x1A000000), blurRadius: 4, offset: Offset(0, 1))] : null,
                     ),
                     child: Text(

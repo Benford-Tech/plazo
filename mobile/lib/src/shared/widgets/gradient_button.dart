@@ -22,11 +22,11 @@ class GradientButton extends StatelessWidget {
       child: Opacity(
         opacity: enabled ? 1 : 0.6,
         child: DecoratedBox(
-          decoration: BoxDecoration(gradient: AppColors.primaryGradient, borderRadius: BorderRadius.circular(28)),
+          decoration: const BoxDecoration(gradient: AppColors.primaryGradient, borderRadius: AppRadius.pill),
           child: Material(
             type: MaterialType.transparency,
             child: InkWell(
-              borderRadius: BorderRadius.circular(28),
+              borderRadius: AppRadius.pill,
               onTap: enabled ? onPressed : null,
               child: ConstrainedBox(
                 constraints: const BoxConstraints(minHeight: 54),
@@ -36,12 +36,16 @@ class GradientButton extends StatelessWidget {
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
                       if (busy)
-                        const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(strokeWidth: 2.4, color: Colors.white))
+                        const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(strokeWidth: 2.4, color: AppColors.onAccent))
                       else if (icon != null)
-                        Icon(icon, color: Colors.white, size: 20),
+                        Icon(icon, color: AppColors.onAccent, size: 20),
                       if (busy || icon != null) const SizedBox(width: 10),
                       Flexible(
-                        child: Text(label, textAlign: TextAlign.center, style: AppText.strong(size: 16, color: Colors.white)),
+                        child: Text(
+                          label,
+                          textAlign: TextAlign.center,
+                          style: AppText.strong(size: 16, color: AppColors.onAccent),
+                        ),
                       ),
                     ],
                   ),
@@ -70,7 +74,7 @@ class OutlineAction extends StatelessWidget {
       style: OutlinedButton.styleFrom(
         minimumSize: const Size.fromHeight(48),
         side: const BorderSide(color: AppColors.line),
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(26)),
+        shape: const RoundedRectangleBorder(borderRadius: AppRadius.pill),
         foregroundColor: AppColors.ink,
         textStyle: AppText.body(size: 15.5, weight: 600),
       ),

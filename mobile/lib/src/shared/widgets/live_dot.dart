@@ -45,9 +45,16 @@ class _LiveDotState extends State<LiveDot> with SingleTickerProviderStateMixin {
             Container(
               width: widget.size * (1 + _controller.value),
               height: widget.size * (1 + _controller.value),
-              decoration: BoxDecoration(shape: BoxShape.circle, color: widget.color.withValues(alpha: 0.35 * (1 - _controller.value))),
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                color: widget.color.withValues(alpha: 0.35 * (1 - _controller.value)),
+              ),
             ),
-            Container(width: widget.size, height: widget.size, decoration: BoxDecoration(shape: BoxShape.circle, color: widget.color)),
+            Container(
+              width: widget.size,
+              height: widget.size,
+              decoration: BoxDecoration(shape: BoxShape.circle, color: widget.color),
+            ),
           ],
         ),
       ),

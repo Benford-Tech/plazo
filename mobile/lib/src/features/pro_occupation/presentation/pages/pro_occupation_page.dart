@@ -201,7 +201,7 @@ class _VehicleCardState extends State<_VehicleCard> {
       padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
         border: Border.all(color: AppColors.accent, width: 1.5),
-        borderRadius: BorderRadius.circular(16),
+        borderRadius: AppRadius.card,
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -303,7 +303,7 @@ class _ArrivalRow extends StatelessWidget {
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
         border: Border.all(color: AppColors.line),
-        borderRadius: BorderRadius.circular(14),
+        borderRadius: AppRadius.chip,
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -424,7 +424,7 @@ class _MiniMap extends StatelessWidget {
         ),
         const SizedBox(height: 6),
         ClipRRect(
-          borderRadius: BorderRadius.circular(16),
+          borderRadius: AppRadius.card,
           child: SizedBox(
             height: 220,
             child: PlanMap(

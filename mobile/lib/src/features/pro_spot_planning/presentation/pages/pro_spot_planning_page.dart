@@ -324,7 +324,7 @@ class _Bar extends StatelessWidget {
         child: Container(
           alignment: Alignment.centerLeft,
           padding: const EdgeInsets.symmetric(horizontal: 4),
-          decoration: BoxDecoration(color: color, borderRadius: BorderRadius.circular(4)),
+          decoration: BoxDecoration(color: color, borderRadius: AppRadius.small),
           child: Text(
             stay.plate,
             maxLines: 1,

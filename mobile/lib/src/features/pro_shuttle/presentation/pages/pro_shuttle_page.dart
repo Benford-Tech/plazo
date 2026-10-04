@@ -215,9 +215,9 @@ class _PickupTile extends StatelessWidget {
     ].join(' · ');
     final highlighted = selected || onTrip;
     return Material(
-      color: Colors.white,
+      color: AppColors.surface,
       shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(16),
+        borderRadius: AppRadius.card,
         side: BorderSide(color: highlighted ? AppColors.accent : AppColors.line, width: highlighted ? 2 : 1),
       ),
       clipBehavior: Clip.antiAlias,
@@ -284,7 +284,7 @@ Future<TripVehicleChoice?> showVehicleSheet(BuildContext context, {required List
       isScrollControlled: true,
       useSafeArea: true,
       showDragHandle: true,
-      backgroundColor: Colors.white,
+      backgroundColor: AppColors.surface,
       shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(24))),
       builder: (_) => VehicleSheet(vehicles: vehicles, current: current),
     );

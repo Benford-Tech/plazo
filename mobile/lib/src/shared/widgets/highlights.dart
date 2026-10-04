@@ -114,7 +114,10 @@ class TrustBand extends StatelessWidget {
                   child: Container(
                     key: Key('tile-${tile.kind.name}'),
                     padding: const EdgeInsets.fromLTRB(10, 9, 10, 9),
-                    decoration: BoxDecoration(border: Border.all(color: AppColors.line), borderRadius: BorderRadius.circular(14)),
+                    decoration: BoxDecoration(
+                      border: Border.all(color: AppColors.line),
+                      borderRadius: BorderRadius.circular(14),
+                    ),
                     child: Row(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
@@ -157,7 +160,10 @@ class NewOnPlatformTag extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
       decoration: BoxDecoration(color: AppColors.tintSoft, borderRadius: BorderRadius.circular(12)),
-      child: Text('highlights.new_on_platform'.tr(args: [productName]), style: AppText.body(size: 11, weight: 600, color: AppColors.muted)),
+      child: Text(
+        'highlights.new_on_platform'.tr(args: [productName]),
+        style: AppText.body(size: 11, weight: 600, color: AppColors.muted),
+      ),
     );
   }
 }

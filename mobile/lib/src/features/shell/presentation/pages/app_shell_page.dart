@@ -28,7 +28,7 @@ class AppShellPage extends StatelessWidget {
             body: child,
             bottomNavigationBar: NavigationBarTheme(
               data: NavigationBarThemeData(
-                backgroundColor: Colors.white,
+                backgroundColor: AppColors.surface,
                 indicatorColor: AppColors.tint,
                 height: 64,
                 labelTextStyle: WidgetStateProperty.resolveWith(

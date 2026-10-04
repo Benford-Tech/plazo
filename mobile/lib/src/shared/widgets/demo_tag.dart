@@ -13,7 +13,10 @@ class DemoTag extends StatelessWidget {
       label: 'results.demo_hint'.tr(),
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-        decoration: BoxDecoration(border: Border.all(color: AppColors.line), borderRadius: BorderRadius.circular(6)),
+        decoration: BoxDecoration(
+          border: Border.all(color: AppColors.line),
+          borderRadius: BorderRadius.circular(6),
+        ),
         child: Text('results.demo'.tr().toUpperCase(), style: AppText.body(size: 10.5, weight: 600, color: AppColors.muted)),
       ),
     );

@@ -28,14 +28,14 @@ class TodayRowTile extends StatelessWidget {
     final time = hhmm(isReturn ? b.returnAt : b.arrivalAt);
     return InkWell(
       onTap: onTap,
-      borderRadius: BorderRadius.circular(16),
+      borderRadius: AppRadius.card,
       child: Container(
         key: Key('row-${b.id}'),
         margin: const EdgeInsets.only(bottom: 10),
         padding: const EdgeInsets.all(12),
         decoration: BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.circular(16),
+          color: AppColors.surface,
+          borderRadius: AppRadius.card,
           border: Border.all(color: approaching ? AppColors.peach : AppColors.line, width: approaching ? 2.2 : 1),
         ),
         child: Column(

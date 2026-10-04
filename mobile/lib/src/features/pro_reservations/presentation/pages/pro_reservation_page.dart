@@ -225,7 +225,7 @@ class _Section extends StatelessWidget {
       padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
         border: Border.all(color: AppColors.line),
-        borderRadius: BorderRadius.circular(14),
+        borderRadius: AppRadius.chip,
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,

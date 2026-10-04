@@ -112,19 +112,40 @@ class _IgnMapState extends State<IgnMap> {
                 if (widget.route != null && widget.route!.length >= 2)
                   PolylineLayer(
                     polylines: [
-                      Polyline(points: widget.route!, color: accent, strokeWidth: 4, pattern: StrokePattern.dashed(segments: const [10, 7])),
+                      Polyline(
+                        points: widget.route!,
+                        color: accent,
+                        strokeWidth: 4,
+                        pattern: StrokePattern.dashed(segments: const [10, 7]),
+                      ),
                     ],
                   )
                 else if (dashedLine && me != null)
                   PolylineLayer(
                     polylines: [
-                      Polyline(points: [me, meeting], color: accent, strokeWidth: 3, pattern: StrokePattern.dashed(segments: const [8, 6])),
+                      Polyline(
+                        points: [me, meeting],
+                        color: accent,
+                        strokeWidth: 3,
+                        pattern: StrokePattern.dashed(segments: const [8, 6]),
+                      ),
                     ],
                   ),
                 MarkerLayer(
                   markers: [
-                    Marker(point: meeting, width: 230, height: 34, child: Center(child: _MeetingPin(label: meetingLabel))),
-                    if (me != null) Marker(point: me, width: 40, height: 40, child: _MeDot(color: accent)),
+                    Marker(
+                      point: meeting,
+                      width: 230,
+                      height: 34,
+                      child: Center(child: _MeetingPin(label: meetingLabel)),
+                    ),
+                    if (me != null)
+                      Marker(
+                        point: me,
+                        width: 40,
+                        height: 40,
+                        child: _MeDot(color: accent),
+                      ),
                     if (me != null && widget.meLabel != null)
                       // To the right of the dot (the point sits at the box's left edge), as on the approved frame.
                       Marker(
@@ -132,7 +153,12 @@ class _IgnMapState extends State<IgnMap> {
                         width: 150,
                         height: 40,
                         alignment: Alignment.centerRight,
-                        child: Row(children: [const SizedBox(width: 24), _MePill(label: widget.meLabel!, color: accent)]),
+                        child: Row(
+                          children: [
+                            const SizedBox(width: 24),
+                            _MePill(label: widget.meLabel!, color: accent),
+                          ],
+                        ),
                       ),
                   ],
                 ),
@@ -162,7 +188,12 @@ class _MeetingPin extends StatelessWidget {
   Widget build(BuildContext context) => Container(
     padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 5),
     decoration: BoxDecoration(color: AppColors.dark, borderRadius: BorderRadius.circular(14)),
-    child: Text('P  $label', maxLines: 1, overflow: TextOverflow.ellipsis, style: AppText.strong(size: 12, color: Colors.white)),
+    child: Text(
+      'P  $label',
+      maxLines: 1,
+      overflow: TextOverflow.ellipsis,
+      style: AppText.strong(size: 12, color: Colors.white),
+    ),
   );
 }
 
@@ -180,7 +211,11 @@ class _MeDot extends StatelessWidget {
       child: Container(
         width: 18,
         height: 18,
-        decoration: BoxDecoration(shape: BoxShape.circle, color: color, border: Border.all(color: Colors.white, width: 3)),
+        decoration: BoxDecoration(
+          shape: BoxShape.circle,
+          color: color,
+          border: Border.all(color: Colors.white, width: 3),
+        ),
       ),
     ),
   );

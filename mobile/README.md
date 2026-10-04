@@ -148,7 +148,7 @@ version web, « Payer » ouvre la page Stripe Checkout.
 ## Deux apps, un projet (A-B, 04/10/2026)
 
 - **Plazo** (voyageurs) : flavor Android `traveller`, `--dart-define=APP_FLAVOR=traveller` (défaut), id `com.benfordtech.parking_app`.
-- **Plazo Pro** (personnel) : flavor Android `pro`, `--dart-define=APP_FLAVOR=pro`, id `com.benfordtech.parking_app.pro`,
+- **Plazo Pro** (personnel, direction B de l'espace pro web : noir, jaune, angles vifs, Archivo Narrow + JetBrains Mono ; `AppColors` / `AppRadius` / `AppFonts` suivent le flavor) : flavor Android `pro`, `--dart-define=APP_FLAVOR=pro`, id `com.benfordtech.parking_app.pro`,
   icône brun foncé (`assets/brand/app-icon-pro*.png`, `dart run flutter_launcher_icons -f flutter_launcher_icons-pro.yaml`).
   Elle s'ouvre sur ses quatre onglets (`ProShellPage` : Aujourd'hui · Réservations · Parking · Plus) ; les écrans voyageur
   restent sous `/voyageur`.

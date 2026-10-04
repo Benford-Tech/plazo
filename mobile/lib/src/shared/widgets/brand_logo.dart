@@ -14,11 +14,7 @@ class BrandLogo extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final logo = SvgPicture.asset(
-      'assets/brand/logo-horizontal-dark.svg',
-      height: height,
-      semanticsLabel: pro ? Product.proName : Product.name,
-    );
+    final logo = SvgPicture.asset('assets/brand/logo-horizontal-dark.svg', height: height, semanticsLabel: pro ? Product.proName : Product.name);
     if (!pro) return logo;
     return Row(
       mainAxisSize: MainAxisSize.min,
@@ -27,7 +23,10 @@ class BrandLogo extends StatelessWidget {
         logo,
         const SizedBox(width: 8),
         ExcludeSemantics(
-          child: Text('Pro', style: AppText.strong(size: height * 0.5, color: Colors.white).copyWith(letterSpacing: 1)),
+          child: Text(
+            'Pro',
+            style: AppText.strong(size: height * 0.5, color: Colors.white).copyWith(letterSpacing: 1),
+          ),
         ),
       ],
     );

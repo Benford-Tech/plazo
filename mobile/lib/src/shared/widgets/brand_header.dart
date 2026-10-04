@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import '../../core/constants/app_constants.dart';
 import '../theme/theme.dart';
 import 'brand_logo.dart';
 
@@ -21,7 +22,9 @@ class BrandAppBar extends StatelessWidget implements PreferredSizeWidget {
       toolbarHeight: 60,
       backgroundColor: AppColors.brand,
       leading: leading,
-      title: title == null ? BrandLogo(height: 30, pro: pro) : Text(title!, style: AppText.title(size: 24, color: Colors.white)),
+      title: title == null
+          ? BrandLogo(height: 30, pro: pro)
+          : Text(title!, style: AppText.title(size: 24, color: pro && AppConstants.isPro ? AppColors.accent : Colors.white)),
       actions: actions,
     );
   }

@@ -204,7 +204,11 @@ Canevas de référence : https://claude.ai/artifact/6ezoCDyLXFNwhAH5ZWUf4u (rang
   Inter pour le texte, accent **orange léger `#FF8A3D`** (V-A, 03/10/2026, à la place du violet), brun foncé
   `#2C1A0E` pour les surfaces sombres, bouton principal en dégradé orange léger → pêche, cartes arrondies (16 px),
   plaques façon C. **Plus aucun violet ni prune.** Maquettes : artboards `Plazo-M3-*` du canevas (couleurs d'origine).
-- **App mobile (Flutter)** : direction **D « style Thempo »** — **en-tête orange easyJet `#FF6600`** (T-A,
+- **App Plazo Pro (Flutter, flavor `pro`, décision du 04/10/2026)** : les couleurs de l'espace pro web, direction B : noir
+  `#0B0B0C`, jaune `#F5C400`, texte `#F3F3F0`, gris `#A8A8A2`, filets `#3A3A38`, angles vifs, Archivo Narrow pour les
+  titres et JetBrains Mono pour les heures et les chiffres. Les couleurs, rayons et polices sont des constantes choisies
+  à la compilation selon le flavor (`AppColors`, `AppRadius`, `AppFonts` dans `shared/theme/theme.dart`).
+- **App Plazo voyageur (Flutter)** : direction **D « style Thempo »** — **en-tête orange easyJet `#FF6600`** (T-A,
   03/10/2026, à la place du prune), brun foncé `#2C1A0E` pour les textes forts et les surfaces sombres, accent
   **orange léger `#FF8A3D`** (V-A, 03/10/2026, à la place du violet), pêche `#f0a36b` pour le temps fort,
   dégradé orange léger → pêche sur les actions principales, Playfair Display (titres) + Inter, cartes arrondies ; plaques façon C aussi.

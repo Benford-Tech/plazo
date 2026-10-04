@@ -109,7 +109,7 @@ class _PlanMapState extends State<PlanMap> {
                       height: 22,
                       child: Container(
                         decoration: BoxDecoration(
-                          color: Colors.white,
+                          color: AppColors.surface,
                           shape: BoxShape.circle,
                           border: Border.all(color: AppColors.accent, width: 3),
                         ),

@@ -226,7 +226,7 @@ class _SmsSectionState extends State<_SmsSection> {
           Container(
             key: const Key('sms-status'),
             padding: const EdgeInsets.all(10),
-            decoration: BoxDecoration(color: AppColors.tintSoft, borderRadius: BorderRadius.circular(12)),
+            decoration: const BoxDecoration(color: AppColors.tintSoft, borderRadius: AppRadius.chip),
             child: Text(
               [
                 if (sms?.mode == 'gateway') 'sms.linked_phone'.tr(args: [status.senderPhone ?? '']),

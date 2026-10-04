@@ -249,12 +249,12 @@ class _DateTile extends StatelessWidget {
     final d = DateTime.tryParse(value);
     return InkWell(
       onTap: onTap,
-      borderRadius: BorderRadius.circular(14),
+      borderRadius: AppRadius.chip,
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
         decoration: BoxDecoration(
           border: Border.all(color: error != null ? AppColors.danger : AppColors.line),
-          borderRadius: BorderRadius.circular(14),
+          borderRadius: AppRadius.chip,
         ),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
