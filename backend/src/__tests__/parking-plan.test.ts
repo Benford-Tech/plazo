@@ -113,4 +113,48 @@ describe('parking plan (bloc 2, step Plan)', () => {
     expect((await api().get('/api/internal/geo/geocode?q=ab').set(auth(a.token))).status).toBe(400);
     expect((await api().get('/api/internal/geo/geocode?q=lyon').set(auth(agent.token))).status).toBe(403);
   });
+
+  it('estime et génère les places côté serveur depuis le plan enregistré (l’app)', async () => {
+    const { token, parking } = await setupOperator();
+    // A 60 m × 40 m rectangle.
+    const lon0 = 5.08;
+    const lat0 = 45.72;
+    const dx = 60 / (111320 * Math.cos((lat0 * Math.PI) / 180));
+    const dy = 40 / 110540;
+    const rect = {
+      type: 'Polygon',
+      coordinates: [
+        [
+          [lon0, lat0],
+          [lon0 + dx, lat0],
+          [lon0 + dx, lat0 + dy],
+          [lon0, lat0 + dy],
+          [lon0, lat0],
+        ],
+      ],
+    };
+    expect((await api().post(`/api/internal/parkings/${parking.id}/plan/estimate`).set(auth(token))).body.code).toBe('no_zones');
+    await api()
+      .patch(`/api/internal/parkings/${parking.id}/plan`)
+      .set(auth(token))
+      .send({ outline: rect, zones: [{ id: 'z1', name: 'Zone A', geometry: rect }] });
+
+    const est = await api().post(`/api/internal/parkings/${parking.id}/plan/estimate`).set(auth(token));
+    expect(est.status).toBe(200);
+    expect(est.body.totals.selfPark).toBeGreaterThan(60);
+    expect(est.body.totals.valet24).toBeGreaterThan(est.body.totals.selfPark);
+    expect(est.body.zones[0]).toMatchObject({ zoneId: 'z1', name: 'Zone A' });
+
+    const gen = await api()
+      .post(`/api/internal/parkings/${parking.id}/plan/generate`)
+      .set(auth(token))
+      .send({ layout: 'valet24', applyCapacity: true });
+    expect(gen.status).toBe(200);
+    expect(gen.body.data.spots.length).toBe(est.body.totals.valet24);
+    expect(gen.body.data.spots[0].code).toBe('A-01-01');
+    expect(gen.body.data.plan.layout).toBe('valet24');
+    expect(gen.body.data.totalCapacity).toBe(est.body.totals.valet24);
+    expect((await prisma.parking.findUniqueOrThrow({ where: { id: parking.id } })).totalCapacity).toBe(est.body.totals.valet24);
+    expect((await api().post(`/api/internal/parkings/${parking.id}/plan/generate`).set(auth(token)).send({ layout: 'grid' })).status).toBe(400);
+  });
 });

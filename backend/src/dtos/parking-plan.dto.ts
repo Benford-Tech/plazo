@@ -164,3 +164,13 @@ export class UpdateSpotDto {
   @Matches(/^[A-Z0-9][A-Z0-9-]{0,11}$/, { message: 'invalid_code' })
   public code?: string;
 }
+
+/** Server-side generation (the app): the engine runs on the stored plan. */
+export class GenerateSpotsDto {
+  @IsIn(LAYOUT_KEYS, { message: 'invalid_layout' })
+  public layout: (typeof LAYOUT_KEYS)[number];
+
+  @IsOptional()
+  @IsBoolean({ message: 'boolean' })
+  public applyCapacity?: boolean;
+}

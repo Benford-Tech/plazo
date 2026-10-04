@@ -1,0 +1,158 @@
+import { areaOf, bufferLine, circle, difference, grow, intersection, shrink, simplify, union, type Multi, type Poly } from './geometry';
+import { generateLayout, type LayoutParams } from './layout';
+import { makeFrame, polygonAreaM2, type Frame, type LonLat, type XY } from './projection';
+import {
+  LAYOUT_KEYS,
+  settingsOf,
+  type CapacitySettings,
+  type CapacityStudy,
+  type Exclusion,
+  type GeoPolygon,
+  type LayoutKey,
+  type StudyResults,
+} from './types';
+
+/** Tolerance of the outline simplification before the layout search, in metres. */
+export const LAYOUT_SIMPLIFY_M = 0.1;
+
+export interface LayoutEstimate {
+  count: number;
+  angle: number;
+  pattern: number[];
+  /** Slot outlines as closed WGS84 rings. */
+  slots: LonLat[][];
+}
+
+export interface ZoneEstimate {
+  zoneId: string;
+  name: string;
+  /** Zone area inside the outline, m². */
+  area: number;
+  /** Zone area minus the excluded parts, m² (the setback is not deducted). */
+  usableArea: number;
+  layouts: Record<LayoutKey, LayoutEstimate>;
+}
+
+export interface Estimate {
+  zones: ZoneEstimate[];
+  usableArea: number;
+  totals: Record<LayoutKey, number>;
+}
+
+export type EstimateInput = Pick<CapacityStudy, 'outline' | 'zones' | 'exclusions' | 'scaleFactor' | 'settings'>;
+
+export function layoutParams(key: LayoutKey, s: CapacitySettings): LayoutParams {
+  const common = { aisleWidth: s.aisleWidth, crossAisles: s.crossAisles };
+  if (key === 'selfPark') {
+    return { ...common, slotWidth: s.selfParkSlot.width, slotLength: s.selfParkSlot.length, blockDepth: 2, oneSidedDepth: 1, endStalls: s.endStalls };
+  }
+  if (key === 'valet24') {
+    const depth = Math.max(2, Math.round(s.maxDepth));
+    return { ...common, slotWidth: s.valetSlot.width, slotLength: s.valetSlot.length, blockDepth: depth, oneSidedDepth: depth - 1, endStalls: false };
+  }
+  return { ...common, slotWidth: s.valetSlot.width, slotLength: s.valetSlot.length, blockDepth: 10, oneSidedDepth: 5, endStalls: false };
+}
+
+export function frameFor(input: Pick<CapacityStudy, 'outline' | 'zones' | 'scaleFactor'>): Frame | null {
+  const ring = input.outline?.coordinates[0] ?? input.zones[0]?.geometry.coordinates[0];
+  if (!ring?.length) return null;
+  return makeFrame(ring[0], input.scaleFactor || 1);
+}
+
+export const polygonToMulti = (frame: Frame, polygon: GeoPolygon): Multi => [polygon.coordinates.map(ring => ring.map(frame.forward))];
+
+export function multiToPolygons(frame: Frame, multi: Multi): GeoPolygon[] {
+  return multi.map(poly => ({ type: 'Polygon', coordinates: poly.map(ring => ring.map(frame.inverse)) }));
+}
+
+/** The area an exclusion removes, its margin included. */
+export function exclusionMulti(frame: Frame, exclusion: Exclusion): Multi {
+  const g = exclusion.geometry;
+  const d = Math.max(0, exclusion.clearance || 0);
+  if (g.type === 'Point') return d > 0 ? [circle(frame.forward(g.coordinates), d)] : [];
+  if (g.type === 'LineString') return bufferLine(g.coordinates.map(frame.forward), d);
+  return grow([g.coordinates.map(ring => ring.map(frame.forward))], d);
+}
+
+export function outlineMulti(frame: Frame, input: Pick<CapacityStudy, 'outline'>): Multi | null {
+  return input.outline ? polygonToMulti(frame, input.outline) : null;
+}
+
+/** Area in m² of a WGS84 polygon with the study's scale. */
+export const areaM2 = (polygon: GeoPolygon | null | undefined, scale = 1) => (polygon ? polygonAreaM2(polygon.coordinates, scale) : 0);
+
+export function estimate(input: EstimateInput): Estimate {
+  const empty: Estimate = { zones: [], usableArea: 0, totals: { selfPark: 0, valet24: 0, valet5: 0 } };
+  const frame = frameFor(input);
+  if (!frame) return empty;
+  const settings = settingsOf(input);
+  const outline = outlineMulti(frame, input);
+  const excluded = union(...input.exclusions.map(e => exclusionMulti(frame, e)));
+
+  const zones: ZoneEstimate[] = input.zones.map(zone => {
+    let land = polygonToMulti(frame, zone.geometry);
+    if (outline) land = intersection(land, outline);
+    const usable = difference(land, excluded);
+    // 10 cm: invisible at the scale of a parking slot, and the search gets 5 to 10 times faster.
+    const forLayout = simplify(difference(shrink(land, settings.setback), excluded), LAYOUT_SIMPLIFY_M);
+    const layouts = {} as Record<LayoutKey, LayoutEstimate>;
+    for (const key of LAYOUT_KEYS) {
+      const r = generateLayout(forLayout, layoutParams(key, settings), { angle: settings.orientation });
+      layouts[key] = {
+        count: r.count,
+        angle: r.angle,
+        pattern: r.pattern,
+        slots: r.slots.map(q => [...q, q[0]].map(p => frame.inverse(p as XY))),
+      };
+    }
+    return { zoneId: zone.id, name: zone.name, area: areaOf(land), usableArea: areaOf(usable), layouts };
+  });
+
+  const totals = { selfPark: 0, valet24: 0, valet5: 0 };
+  for (const z of zones) for (const key of LAYOUT_KEYS) totals[key] += z.layouts[key].count;
+  return { zones, usableArea: zones.reduce((s, z) => s + z.usableArea, 0), totals };
+}
+
+/** The small summary stored with the study. */
+export function summarize(result: Estimate): StudyResults {
+  return {
+    computedAt: new Date().toISOString(),
+    usableArea: Math.round(result.usableArea),
+    totals: result.totals,
+    zones: result.zones.map(z => ({
+      zoneId: z.zoneId,
+      name: z.name,
+      area: Math.round(z.area),
+      usableArea: Math.round(z.usableArea),
+      counts: { selfPark: z.layouts.selfPark.count, valet24: z.layouts.valet24.count, valet5: z.layouts.valet5.count },
+      angle: z.layouts.valet24.angle,
+    })),
+  };
+}
+
+/** Theoretical ceiling: the usable area divided by one valet slot, as if there were no aisle. */
+export function ceilingOf(usableArea: number, settings: CapacitySettings): number {
+  return Math.floor(Math.round(usableArea) / (settings.valetSlot.width * settings.valetSlot.length));
+}
+
+/** Outlines from the cadastre are simplified to this tolerance (metres) so they stay editable. */
+export const OUTLINE_SIMPLIFY_M = 0.2;
+
+/** Union of polygons (WGS84), e.g. adjacent cadastral parcels; holes are dropped. */
+export function unionPolygons(polygons: GeoPolygon[], frame: Frame, clip?: GeoPolygon[]): GeoPolygon[] {
+  let merged = union(...polygons.map(p => polygonToMulti(frame, p)));
+  if (clip?.length) merged = intersection(merged, union(...clip.map(p => polygonToMulti(frame, p))));
+  merged = simplify(merged, OUTLINE_SIMPLIFY_M);
+  return merged
+    .map((poly: Poly) => [poly[0]] as Poly)
+    .sort((a, b) => areaOf([b]) - areaOf([a]))
+    .map(poly => ({ type: 'Polygon', coordinates: poly.map(ring => ring.map(frame.inverse)) }) as GeoPolygon);
+}
+
+/** Outline minus a drawn part ("Exclure une partie"): the largest remaining piece. */
+export function subtractFromOutline(outline: GeoPolygon, cut: GeoPolygon, frame: Frame): GeoPolygon | null {
+  const rest = difference(polygonToMulti(frame, outline), polygonToMulti(frame, cut));
+  if (!rest.length) return null;
+  const largest = [...rest].sort((a, b) => areaOf([b]) - areaOf([a]))[0];
+  return { type: 'Polygon', coordinates: [largest[0].map(frame.inverse)] };
+}

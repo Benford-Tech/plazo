@@ -1,7 +1,7 @@
 import { Response } from 'express';
 import { Container } from 'typedi';
 import { UpdateParkingDto } from '@/dtos/parking.dto';
-import { ReplaceSpotsDto, UpdateParkingPlanDto, UpdateSpotDto } from '@/dtos/parking-plan.dto';
+import { GenerateSpotsDto, ReplaceSpotsDto, UpdateParkingPlanDto, UpdateSpotDto } from '@/dtos/parking-plan.dto';
 import { RequestWithStaffSession } from '@/middlewares/staff-auth.middleware';
 import { ParkingPlanService } from '@/services/parking-plan.service';
 import { ParkingService } from '@/services/parking.service';
@@ -49,5 +49,16 @@ export class ParkingController {
   /** POST /internal/parkings/:id/plan/apply-capacity */
   public applyCapacity = catchAsync(async (req: RequestWithStaffSession, res: Response) => {
     res.json({ message: 'Capacity updated', data: await this.plans.applyCapacity(req.staff, req.params.id as string) });
+  });
+
+  /** POST /internal/parkings/:id/plan/estimate */
+  public estimatePlan = catchAsync(async (req: RequestWithStaffSession, res: Response) => {
+    res.json(await this.plans.estimate(req.staff, req.params.id as string));
+  });
+
+  /** POST /internal/parkings/:id/plan/generate */
+  public generateSpots = catchAsync(async (req: RequestWithStaffSession, res: Response) => {
+    const data: GenerateSpotsDto = req.body;
+    res.json({ message: 'Spots generated', data: await this.plans.generate(req.staff, req.params.id as string, data) });
   });
 }

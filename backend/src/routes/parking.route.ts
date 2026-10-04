@@ -1,7 +1,7 @@
 import { Router } from 'express';
 import { ParkingController } from '@/controllers/parking.controller';
 import { UpdateParkingDto } from '@/dtos/parking.dto';
-import { ReplaceSpotsDto, UpdateParkingPlanDto, UpdateSpotDto } from '@/dtos/parking-plan.dto';
+import { GenerateSpotsDto, ReplaceSpotsDto, UpdateParkingPlanDto, UpdateSpotDto } from '@/dtos/parking-plan.dto';
 import { PlatformController } from '@/controllers/platform.controller';
 import { Routes } from '@/interfaces/routes.interface';
 import { StaffAuthMiddleware } from '@/middlewares/staff-auth.middleware';
@@ -74,6 +74,14 @@ export class ParkingRoute implements Routes {
       this.parking.updateSpot,
     );
     this.router.post('/internal/parkings/:id/plan/apply-capacity', StaffAuthMiddleware('parking:manage'), this.parking.applyCapacity);
+    // The app: the layout engine runs on the server.
+    this.router.post('/internal/parkings/:id/plan/estimate', StaffAuthMiddleware('parking:manage'), this.parking.estimatePlan);
+    this.router.post(
+      '/internal/parkings/:id/plan/generate',
+      StaffAuthMiddleware('parking:manage'),
+      ValidationMiddleware(GenerateSpotsDto),
+      this.parking.generateSpots,
+    );
     this.router.get('/internal/geo/parcels', StaffAuthMiddleware('parking:manage'), this.geo.parcels);
     this.router.get('/internal/geo/parkings', StaffAuthMiddleware('parking:manage'), this.geo.parkings);
     this.router.get('/internal/geo/geocode', StaffAuthMiddleware('parking:manage'), this.geo.geocode);

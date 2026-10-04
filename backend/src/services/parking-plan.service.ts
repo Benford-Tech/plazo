@@ -1,7 +1,10 @@
 import httpStatus from 'http-status';
 import { Container, Service } from 'typedi';
 import prisma, { ParkingPlan, ParkingSpot, Prisma } from '@/database';
-import { ReplaceSpotsDto, UpdateParkingPlanDto, UpdateSpotDto } from '@/dtos/parking-plan.dto';
+import { estimate, frameFor, type Estimate } from '@/domain/layout/estimate';
+import { spotsFromLayout } from '@/domain/layout/numbering';
+import { settingsOf, type CapacityStudy, type LayoutKey } from '@/domain/layout/types';
+import { GenerateSpotsDto, ReplaceSpotsDto, UpdateParkingPlanDto, UpdateSpotDto } from '@/dtos/parking-plan.dto';
 import { AuthenticatedStaff } from '@/interfaces/auth.interface';
 import { HttpException } from '@/utils/httpException';
 import { AuditService } from './audit.service';
@@ -139,11 +142,55 @@ export class ParkingPlanService {
     return this.get(actor, parkingId);
   }
 
+  /** The three layouts compared on the stored plan (what the pro space computes in the browser). */
+  public async estimate(actor: AuthenticatedStaff, parkingId: string) {
+    const { plan } = await this.get(actor, parkingId);
+    const input = planInput(plan);
+    if (!input.zones.length) throw new HttpException(httpStatus.BAD_REQUEST, 'The plan has no zone', 'no_zones');
+    const result = estimate(input);
+    return {
+      usableArea: Math.round(result.usableArea),
+      totals: result.totals,
+      zones: result.zones.map(z => ({
+        zoneId: z.zoneId,
+        name: z.name,
+        area: Math.round(z.area),
+        counts: { selfPark: z.layouts.selfPark.count, valet24: z.layouts.valet24.count, valet5: z.layouts.valet5.count },
+      })),
+    };
+  }
+
+  /** Generates and stores the spots of a layout on the server (the app's "Générer et appliquer"). */
+  public async generate(actor: AuthenticatedStaff, parkingId: string, data: GenerateSpotsDto): Promise<ParkingPlanView> {
+    const { plan } = await this.get(actor, parkingId);
+    const input = planInput(plan);
+    const frame = frameFor(input);
+    if (!input.zones.length || !frame) throw new HttpException(httpStatus.BAD_REQUEST, 'The plan has no zone', 'no_zones');
+    const result: Estimate = estimate(input);
+    const settings = settingsOf(input);
+    const slotLength = (data.layout === 'selfPark' ? settings.selfParkSlot : settings.valetSlot).length;
+    const spots = spotsFromLayout(result, input.zones, data.layout as LayoutKey, frame, slotLength);
+    if (!spots.length) throw new HttpException(httpStatus.BAD_REQUEST, 'No spot fits the plan', 'no_spots');
+    const view = await this.replaceSpots(actor, parkingId, { layout: data.layout, spots });
+    return data.applyCapacity ? this.applyCapacity(actor, parkingId) : view;
+  }
+
   private async parkingOf(actor: AuthenticatedStaff, parkingId: string) {
     const parking = await prisma.parking.findFirst({ where: { id: parkingId, operatorId: actor.operatorId } });
     if (!parking) throw notFound();
     return parking;
   }
+}
+
+/** The stored plan as the engine reads it. */
+function planInput(plan: ParkingPlan): Pick<CapacityStudy, 'outline' | 'zones' | 'exclusions' | 'scaleFactor' | 'settings'> {
+  return {
+    outline: plan.outline as unknown as CapacityStudy['outline'],
+    zones: (plan.zones as unknown as CapacityStudy['zones']) ?? [],
+    exclusions: (plan.exclusions as unknown as CapacityStudy['exclusions']) ?? [],
+    scaleFactor: plan.scaleFactor,
+    settings: (plan.settings as unknown as CapacityStudy['settings']) ?? {},
+  };
 }
 
 function centroid(ring: [number, number][]): [number, number] {
