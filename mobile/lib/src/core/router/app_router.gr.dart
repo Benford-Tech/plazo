@@ -428,6 +428,22 @@ class PaymentRouteArgs {
 }
 
 /// generated route for
+/// [ProAccountPage]
+class ProAccountRoute extends PageRouteInfo<void> {
+  const ProAccountRoute({List<PageRouteInfo>? children})
+    : super(ProAccountRoute.name, initialChildren: children);
+
+  static const String name = 'ProAccountRoute';
+
+  static PageInfo page = PageInfo(
+    name,
+    builder: (data) {
+      return WrappedRoute(child: const ProAccountPage());
+    },
+  );
+}
+
+/// generated route for
 /// [ProImportEmailPage]
 class ProImportEmailRoute extends PageRouteInfo<void> {
   const ProImportEmailRoute({List<PageRouteInfo>? children})
@@ -503,6 +519,22 @@ class ProOccupationRoute extends PageRouteInfo<void> {
     name,
     builder: (data) {
       return WrappedRoute(child: const ProOccupationPage());
+    },
+  );
+}
+
+/// generated route for
+/// [ProParkingSettingsPage]
+class ProParkingSettingsRoute extends PageRouteInfo<void> {
+  const ProParkingSettingsRoute({List<PageRouteInfo>? children})
+    : super(ProParkingSettingsRoute.name, initialChildren: children);
+
+  static const String name = 'ProParkingSettingsRoute';
+
+  static PageInfo page = PageInfo(
+    name,
+    builder: (data) {
+      return WrappedRoute(child: const ProParkingSettingsPage());
     },
   );
 }
@@ -695,6 +727,22 @@ class ProSpotPlanningRoute extends PageRouteInfo<void> {
     name,
     builder: (data) {
       return WrappedRoute(child: const ProSpotPlanningPage());
+    },
+  );
+}
+
+/// generated route for
+/// [ProTeamPage]
+class ProTeamRoute extends PageRouteInfo<void> {
+  const ProTeamRoute({List<PageRouteInfo>? children})
+    : super(ProTeamRoute.name, initialChildren: children);
+
+  static const String name = 'ProTeamRoute';
+
+  static PageInfo page = PageInfo(
+    name,
+    builder: (data) {
+      return WrappedRoute(child: const ProTeamPage());
     },
   );
 }

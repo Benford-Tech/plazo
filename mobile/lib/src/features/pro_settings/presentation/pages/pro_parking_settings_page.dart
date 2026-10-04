@@ -1,0 +1,333 @@
+import 'package:auto_route/auto_route.dart';
+import 'package:easy_localization/easy_localization.dart';
+import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
+
+import '../../../../core/enums/view_state.dart';
+import '../../../../core/utils/error_message_handler.dart';
+import '../../../../di/locator.dart';
+import '../../../../shared/theme/theme.dart';
+import '../../../../shared/widgets/brand_header.dart';
+import '../../../../shared/widgets/gradient_button.dart';
+import '../../data/datasources/settings_data_source.dart';
+import '../../data/models/settings_models.dart';
+import '../bloc/pro_settings_bloc.dart';
+
+/// Same rule as the server (bookableCapacity): the share kept back by the safety margin.
+int bookablePreview(int total, int margin) => total <= 0 ? 0 : (total * (100 - margin.clamp(0, 50)) / 100).floor();
+
+/// The parking's settings (managers): name, address, capacity, margin, shuttle time, and the SMS
+/// channel to travellers. The meeting point and the parking plan have their own screens.
+@RoutePage()
+class ProParkingSettingsPage extends StatelessWidget implements AutoRouteWrapper {
+  const ProParkingSettingsPage({super.key});
+
+  @override
+  Widget wrappedRoute(BuildContext context) => BlocProvider(create: (_) => locator<ProSettingsBloc>()..add(const ProSettingsStarted()), child: this);
+
+  @override
+  Widget build(BuildContext context) {
+    return BlocConsumer<ProSettingsBloc, ProSettingsState>(
+      listenWhen: (a, b) => a.errorCode != b.errorCode || a.notice != b.notice,
+      listener: (context, state) {
+        final text = state.errorCode != null ? translateErrorCode(state.errorCode) : _noticeText(state.notice);
+        if (text != null) {
+          ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(text)));
+          context.read<ProSettingsBloc>().add(const ProSettingsNoticeShown());
+        }
+      },
+      builder: (context, state) {
+        final p = state.parking;
+        return Scaffold(
+          appBar: BrandAppBar(pro: true, title: 'settings.title'.tr()),
+          body: p == null
+              ? Center(
+                  child: state.viewState.isError
+                      ? Padding(
+                          padding: const EdgeInsets.all(24),
+                          child: Text(translateErrorCode(state.errorCode), textAlign: TextAlign.center),
+                        )
+                      : const CircularProgressIndicator(color: AppColors.accent),
+                )
+              : ListView(
+                  padding: const EdgeInsets.fromLTRB(16, 14, 16, 28),
+                  children: [
+                    _ParkingForm(parking: p, state: state),
+                    const SizedBox(height: 24),
+                    _SmsSection(state: state),
+                  ],
+                ),
+        );
+      },
+    );
+  }
+
+  static String? _noticeText(String? notice) {
+    if (notice == null) return null;
+    final parts = notice.split(':');
+    return switch (parts.first) {
+      'sms.test_sent' => 'sms.test_sent'.tr(args: [parts[1]]),
+      'sms.test_queued' => 'sms.test_queued'.tr(args: [parts[1]]),
+      _ => notice.tr(),
+    };
+  }
+}
+
+class _ParkingForm extends StatefulWidget {
+  const _ParkingForm({required this.parking, required this.state});
+  final ParkingSettingsModel parking;
+  final ProSettingsState state;
+  @override
+  State<_ParkingForm> createState() => _ParkingFormState();
+}
+
+class _ParkingFormState extends State<_ParkingForm> {
+  late final _name = TextEditingController(text: widget.parking.name);
+  late final _address = TextEditingController(text: widget.parking.address ?? '');
+  late final _capacity = TextEditingController(text: '${widget.parking.totalCapacity}');
+  late final _margin = TextEditingController(text: '${widget.parking.safetyMarginPct}');
+  late final _shuttle = TextEditingController(text: '${widget.parking.shuttleTravelMinutes}');
+
+  @override
+  void dispose() {
+    for (final c in [_name, _address, _capacity, _margin, _shuttle]) {
+      c.dispose();
+    }
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final bloc = context.read<ProSettingsBloc>();
+    final state = widget.state;
+    String? err(String f) => state.fieldErrors[f] == null ? null : translateErrorCode(state.fieldErrors[f]);
+    final total = int.tryParse(_capacity.text) ?? 0;
+    final margin = int.tryParse(_margin.text) ?? 0;
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text('settings.parking_section'.tr().toUpperCase(), style: AppText.label(size: 11)),
+        const SizedBox(height: 8),
+        TextField(
+          key: const Key('set-name'),
+          controller: _name,
+          decoration: InputDecoration(labelText: 'settings.name'.tr(), errorText: err('name')),
+        ),
+        const SizedBox(height: 10),
+        TextField(
+          key: const Key('set-address'),
+          controller: _address,
+          decoration: InputDecoration(labelText: 'settings.address'.tr(), errorText: err('address')),
+        ),
+        const SizedBox(height: 10),
+        Row(
+          children: [
+            Expanded(
+              child: TextField(
+                key: const Key('set-capacity'),
+                controller: _capacity,
+                keyboardType: TextInputType.number,
+                onChanged: (_) => setState(() {}),
+                decoration: InputDecoration(labelText: 'settings.total_capacity'.tr(), errorText: err('totalCapacity')),
+              ),
+            ),
+            const SizedBox(width: 10),
+            Expanded(
+              child: TextField(
+                key: const Key('set-margin'),
+                controller: _margin,
+                keyboardType: TextInputType.number,
+                onChanged: (_) => setState(() {}),
+                decoration: InputDecoration(labelText: 'settings.margin'.tr(), errorText: err('safetyMarginPct')),
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: 4),
+        Text('settings.margin_help'.tr(), style: AppText.muted(size: 12)),
+        Text(
+          'settings.bookable'.tr(args: ['${bookablePreview(total, margin)}']),
+          key: const Key('set-bookable'),
+          style: AppText.strong(size: 13, color: AppColors.accentDeep),
+        ),
+        const SizedBox(height: 10),
+        TextField(
+          key: const Key('set-shuttle'),
+          controller: _shuttle,
+          keyboardType: TextInputType.number,
+          decoration: InputDecoration(
+            labelText: 'settings.shuttle_minutes'.tr(),
+            helperText: 'settings.shuttle_help'.tr(),
+            errorText: err('shuttleTravelMinutes'),
+          ),
+        ),
+        const SizedBox(height: 14),
+        GradientButton(
+          key: const Key('set-save'),
+          label: 'settings.save'.tr(),
+          busy: state.actionState.isProcessing,
+          onPressed: () => bloc.add(
+            ProSettingsParkingSaved(
+              ParkingSettingsInput(
+                name: _name.text.trim(),
+                address: _address.text,
+                totalCapacity: int.tryParse(_capacity.text) ?? 0,
+                safetyMarginPct: int.tryParse(_margin.text) ?? 0,
+                shuttleTravelMinutes: int.tryParse(_shuttle.text) ?? 0,
+              ),
+            ),
+          ),
+        ),
+        const SizedBox(height: 6),
+        Text('settings.web_only'.tr(), style: AppText.muted(size: 12)),
+      ],
+    );
+  }
+}
+
+class _SmsSection extends StatefulWidget {
+  const _SmsSection({required this.state});
+  final ProSettingsState state;
+  @override
+  State<_SmsSection> createState() => _SmsSectionState();
+}
+
+class _SmsSectionState extends State<_SmsSection> {
+  late String _mode = widget.state.sms?.mode ?? 'none';
+  late final _login = TextEditingController(text: widget.state.sms?.gateway?.login ?? '');
+  final _password = TextEditingController();
+  late final _sender = TextEditingController(text: widget.state.sms?.gateway?.senderPhone ?? '');
+  final _testTo = TextEditingController();
+
+  @override
+  void dispose() {
+    for (final c in [_login, _password, _sender, _testTo]) {
+      c.dispose();
+    }
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final bloc = context.read<ProSettingsBloc>();
+    final state = widget.state;
+    final sms = state.sms;
+    final status = state.smsStatus;
+    final busy = state.actionState.isProcessing;
+    String? err(String f) => state.fieldErrors[f] == null ? null : translateErrorCode(state.fieldErrors[f]);
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text('sms.title'.tr().toUpperCase(), style: AppText.label(size: 11)),
+        const SizedBox(height: 4),
+        Text('sms.intro'.tr(), style: AppText.muted(size: 12.5)),
+        const SizedBox(height: 8),
+        if (status != null && sms?.mode != 'none')
+          Container(
+            key: const Key('sms-status'),
+            padding: const EdgeInsets.all(10),
+            decoration: BoxDecoration(color: AppColors.tintSoft, borderRadius: BorderRadius.circular(12)),
+            child: Text(
+              [
+                if (sms?.mode == 'gateway') 'sms.linked_phone'.tr(args: [status.senderPhone ?? '']),
+                'sms.month'.tr(args: ['${status.month.sent}', '${status.month.failed}']),
+                if (status.pending > 0) 'sms.pending'.tr(args: ['${status.pending}']),
+                if (status.pendingStale) 'sms.pending_stale'.tr(),
+                if (status.lastError != null) 'sms.last_error'.tr(args: [status.lastError!]),
+              ].join(' · '),
+              style: AppText.body(size: 13),
+            ),
+          ),
+        const SizedBox(height: 8),
+        for (final m in ['gateway', 'brevo', 'none'])
+          RadioListTile<String>(
+            key: Key('sms-mode-$m'),
+            value: m,
+            // ignore: deprecated_member_use
+            groupValue: _mode,
+            contentPadding: EdgeInsets.zero,
+            activeColor: AppColors.accent,
+            title: Text('sms.mode.$m.title'.tr(), style: AppText.body(size: 14.5, weight: 600)),
+            subtitle: Text(
+              m == 'brevo' && sms?.brevoAvailable == false ? 'sms.brevo_unavailable'.tr() : 'sms.mode.$m.text'.tr(),
+              style: AppText.muted(size: 12),
+            ),
+            // ignore: deprecated_member_use
+            onChanged: busy || (m == 'brevo' && sms?.brevoAvailable == false) ? null : (v) => setState(() => _mode = v ?? 'none'),
+          ),
+        if (_mode == 'gateway') ...[
+          Text('sms.steps'.tr(), style: AppText.muted(size: 12.5)),
+          const SizedBox(height: 8),
+          TextField(
+            key: const Key('sms-login'),
+            controller: _login,
+            decoration: InputDecoration(labelText: 'sms.login'.tr(), hintText: 'AB12CD', errorText: err('login')),
+          ),
+          const SizedBox(height: 10),
+          TextField(
+            key: const Key('sms-password'),
+            controller: _password,
+            obscureText: true,
+            decoration: InputDecoration(
+              labelText: 'sms.password'.tr(),
+              helperText: sms?.gateway != null ? 'sms.password_kept'.tr() : null,
+              errorText: err('password'),
+            ),
+          ),
+          const SizedBox(height: 10),
+          TextField(
+            key: const Key('sms-sender'),
+            controller: _sender,
+            keyboardType: TextInputType.phone,
+            decoration: InputDecoration(labelText: 'sms.sender_phone'.tr(), hintText: '+33 6 …', errorText: err('senderPhone')),
+          ),
+          const SizedBox(height: 10),
+          TextField(
+            key: const Key('sms-test-to'),
+            controller: _testTo,
+            keyboardType: TextInputType.phone,
+            decoration: InputDecoration(labelText: 'sms.test_to'.tr(), hintText: '+33 6 …', errorText: err('to')),
+          ),
+          const SizedBox(height: 12),
+        ],
+        Row(
+          children: [
+            Expanded(
+              child: GradientButton(
+                key: const Key('sms-save'),
+                label: _mode == 'gateway' ? 'sms.link'.tr() : 'sms.save'.tr(),
+                busy: busy,
+                onPressed: () => bloc.add(
+                  ProSettingsSmsSaved(
+                    SmsSettingsInput(mode: _mode, login: _login.text.trim(), password: _password.text, senderPhone: _sender.text.trim()),
+                    testTo: _testTo.text.trim().isEmpty ? null : _testTo.text.trim(),
+                  ),
+                ),
+              ),
+            ),
+            if (sms?.mode == 'gateway') ...[
+              const SizedBox(width: 8),
+              Expanded(
+                child: OutlineAction(
+                  key: const Key('sms-test'),
+                  label: 'sms.send_test'.tr(),
+                  onPressed: busy || _testTo.text.trim().isEmpty ? null : () => bloc.add(ProSettingsSmsTested(_testTo.text.trim())),
+                ),
+              ),
+            ],
+          ],
+        ),
+        if (sms != null && sms.mode != 'none') ...[
+          const SizedBox(height: 8),
+          TextButton(
+            key: const Key('sms-disable'),
+            onPressed: busy ? null : () => bloc.add(const ProSettingsSmsDisabled()),
+            child: Text('sms.disable'.tr(), style: AppText.strong(size: 13.5, color: AppColors.danger)),
+          ),
+        ],
+        const SizedBox(height: 6),
+        Text('sms.footnote'.tr(), style: AppText.muted(size: 11.5)),
+      ],
+    );
+  }
+}

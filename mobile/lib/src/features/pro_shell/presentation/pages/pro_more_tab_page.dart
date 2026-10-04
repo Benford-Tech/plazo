@@ -79,6 +79,21 @@ class ProMoreTabPage extends StatelessWidget {
           const SizedBox(height: 14),
           _title('pro_more.account'.tr()),
           _Tile(
+            key: const Key('pmore-account'),
+            icon: Icons.person_outline_rounded,
+            label: 'account.title'.tr(),
+            onTap: () => context.router.push(const ProAccountRoute()),
+          ),
+          if (can(role, 'team:manage'))
+            _Tile(key: const Key('pmore-team'), icon: Icons.group_outlined, label: 'team.title'.tr(), onTap: () => context.router.push(const ProTeamRoute())),
+          if (can(role, 'parking:manage'))
+            _Tile(
+              key: const Key('pmore-settings'),
+              icon: Icons.tune_rounded,
+              label: 'settings.title'.tr(),
+              onTap: () => context.router.push(const ProParkingSettingsRoute()),
+            ),
+          _Tile(
             key: const Key('pmore-logout'),
             icon: Icons.logout_rounded,
             label: 'pro.logout'.tr(),

@@ -13,5 +13,6 @@ void _initClients() {
     ..registerLazySingleton<PlanClient>(() => PlanClient(locator()))
     ..registerLazySingleton<OccupationClient>(() => OccupationClient(locator()))
     ..registerLazySingleton<ReservationsClient>(() => ReservationsClient(locator()))
-    ..registerLazySingleton<SpotPlanningClient>(() => SpotPlanningClient(locator()));
+    ..registerLazySingleton<SpotPlanningClient>(() => SpotPlanningClient(locator()))
+    ..registerLazySingleton<SettingsClient>(() => SettingsClient(locator()));
 }
