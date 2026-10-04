@@ -1,22 +1,30 @@
 import 'package:auto_route/auto_route.dart';
 import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 
-import '../../../../core/router/app_router.dart';
+import '../../../../core/helpers/posts.dart';
 import '../../../../shared/theme/theme.dart';
+import '../../../pro_auth/presentation/bloc/pro_auth_bloc.dart';
 
-/// Plazo Pro (N-A, 04/10/2026): four tabs, Aujourd'hui · Réservations · Parking · Plus. Every
-/// role sees the same tabs; the pages hide the actions a role lacks.
+/// Plazo Pro (N-A, 04/10/2026): four tabs. Since R-C (04/10/2026) they follow the post held for the
+/// day (driver: Navette · Arrivées · Retours · Plus; valet: Parking · Aujourd'hui · Places · Plus;
+/// agent and manager: Aujourd'hui · Réservations · Parking · Plus). The pages still hide the actions
+/// a role lacks: the post changes the layout, the role keeps the permissions.
 @RoutePage()
 class ProShellPage extends StatelessWidget {
   const ProShellPage({super.key});
 
   @override
   Widget build(BuildContext context) {
+    final post = context.select((ProAuthBloc b) => b.state.staff?.activePost ?? 'agent');
+    final tabs = tabsFor(post);
     return AutoTabsRouter(
-      routes: const [ProTodayRoute(), ProReservationsRoute(), ProOccupationRoute(), ProMoreTabRoute()],
+      // A new post is a new set of tabs: the router restarts on its first one.
+      key: ValueKey('pro-tabs-$post'),
+      routes: [for (final t in tabs) t.route],
       builder: (context, child) {
-        final tabs = context.tabsRouter;
+        final router = context.tabsRouter;
         return Scaffold(
           body: child,
           bottomNavigationBar: NavigationBarTheme(
@@ -38,13 +46,10 @@ class ProShellPage extends StatelessWidget {
                 border: Border(top: BorderSide(color: AppColors.line)),
               ),
               child: NavigationBar(
-                selectedIndex: tabs.activeIndex,
-                onDestinationSelected: tabs.setActiveIndex,
+                selectedIndex: router.activeIndex,
+                onDestinationSelected: router.setActiveIndex,
                 destinations: [
-                  NavigationDestination(key: const Key('ptab-today'), icon: const Icon(Icons.today_rounded), label: 'pro_tabs.today'.tr()),
-                  NavigationDestination(key: const Key('ptab-reservations'), icon: const Icon(Icons.list_alt_rounded), label: 'pro_tabs.reservations'.tr()),
-                  NavigationDestination(key: const Key('ptab-parking'), icon: const Icon(Icons.local_parking_rounded), label: 'pro_tabs.parking'.tr()),
-                  NavigationDestination(key: const Key('ptab-more'), icon: const Icon(Icons.more_horiz_rounded), label: 'pro_tabs.more'.tr()),
+                  for (final t in tabs) NavigationDestination(key: Key(t.key), icon: Icon(t.icon), label: 'pro_tabs.${t.label}'.tr()),
                 ],
               ),
             ),

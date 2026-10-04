@@ -16,7 +16,8 @@ T _$identity<T>(T value) => value;
 /// @nodoc
 mixin _$TeamMemberModel {
 
- String get id; String get email; String get name; String? get phone; String get role; bool get isActive; DateTime? get lastLoginAt;
+ String get id; String get email; String get name; String? get phone; String get role; bool get isActive; DateTime? get lastLoginAt;/// The post held today (R-C), when it differs from the role.
+ String? get post; DateTime? get postSetAt;
 /// Create a copy of TeamMemberModel
 /// with the given fields replaced by the non-null parameter values.
 @JsonKey(includeFromJson: false, includeToJson: false)
@@ -30,20 +31,20 @@ $TeamMemberModelCopyWith<TeamMemberModel> get copyWith => _$TeamMemberModelCopyW
 @override
 bool operator ==(Object other) {
   final _this = this as TeamMemberModel;
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is TeamMemberModel&&(identical(other.id, _this.id) || other.id == _this.id)&&(identical(other.email, _this.email) || other.email == _this.email)&&(identical(other.name, _this.name) || other.name == _this.name)&&(identical(other.phone, _this.phone) || other.phone == _this.phone)&&(identical(other.role, _this.role) || other.role == _this.role)&&(identical(other.isActive, _this.isActive) || other.isActive == _this.isActive)&&(identical(other.lastLoginAt, _this.lastLoginAt) || other.lastLoginAt == _this.lastLoginAt));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is TeamMemberModel&&(identical(other.id, _this.id) || other.id == _this.id)&&(identical(other.email, _this.email) || other.email == _this.email)&&(identical(other.name, _this.name) || other.name == _this.name)&&(identical(other.phone, _this.phone) || other.phone == _this.phone)&&(identical(other.role, _this.role) || other.role == _this.role)&&(identical(other.isActive, _this.isActive) || other.isActive == _this.isActive)&&(identical(other.lastLoginAt, _this.lastLoginAt) || other.lastLoginAt == _this.lastLoginAt)&&(identical(other.post, _this.post) || other.post == _this.post)&&(identical(other.postSetAt, _this.postSetAt) || other.postSetAt == _this.postSetAt));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
 int get hashCode {
   final _this = this as TeamMemberModel;
-  return Object.hash(runtimeType,_this.id,_this.email,_this.name,_this.phone,_this.role,_this.isActive,_this.lastLoginAt);
+  return Object.hash(runtimeType,_this.id,_this.email,_this.name,_this.phone,_this.role,_this.isActive,_this.lastLoginAt,_this.post,_this.postSetAt);
 }
 
 @override
 String toString() {
   final _this = this as TeamMemberModel;
-  return 'TeamMemberModel(id: ${_this.id}, email: ${_this.email}, name: ${_this.name}, phone: ${_this.phone}, role: ${_this.role}, isActive: ${_this.isActive}, lastLoginAt: ${_this.lastLoginAt})';
+  return 'TeamMemberModel(id: ${_this.id}, email: ${_this.email}, name: ${_this.name}, phone: ${_this.phone}, role: ${_this.role}, isActive: ${_this.isActive}, lastLoginAt: ${_this.lastLoginAt}, post: ${_this.post}, postSetAt: ${_this.postSetAt})';
 }
 
 
@@ -54,7 +55,7 @@ abstract mixin class $TeamMemberModelCopyWith<$Res>  {
   factory $TeamMemberModelCopyWith(TeamMemberModel value, $Res Function(TeamMemberModel) _then) = _$TeamMemberModelCopyWithImpl;
 @useResult
 $Res call({
- String id, String email, String name, String? phone, String role, bool isActive, DateTime? lastLoginAt
+ String id, String email, String name, String? phone, String role, bool isActive, DateTime? lastLoginAt, String? post, DateTime? postSetAt
 });
 
 
@@ -71,7 +72,7 @@ class _$TeamMemberModelCopyWithImpl<$Res>
 
 /// Create a copy of TeamMemberModel
 /// with the given fields replaced by the non-null parameter values.
-@pragma('vm:prefer-inline') @override $Res call({Object? id = null,Object? email = null,Object? name = null,Object? phone = freezed,Object? role = null,Object? isActive = null,Object? lastLoginAt = freezed,}) {
+@pragma('vm:prefer-inline') @override $Res call({Object? id = null,Object? email = null,Object? name = null,Object? phone = freezed,Object? role = null,Object? isActive = null,Object? lastLoginAt = freezed,Object? post = freezed,Object? postSetAt = freezed,}) {
   return _then(TeamMemberModel(
 id: null == id ? _self.id : id // ignore: cast_nullable_to_non_nullable
 as String,email: null == email ? _self.email : email // ignore: cast_nullable_to_non_nullable
@@ -80,6 +81,8 @@ as String,phone: freezed == phone ? _self.phone : phone // ignore: cast_nullable
 as String?,role: null == role ? _self.role : role // ignore: cast_nullable_to_non_nullable
 as String,isActive: null == isActive ? _self.isActive : isActive // ignore: cast_nullable_to_non_nullable
 as bool,lastLoginAt: freezed == lastLoginAt ? _self.lastLoginAt : lastLoginAt // ignore: cast_nullable_to_non_nullable
+as DateTime?,post: freezed == post ? _self.post : post // ignore: cast_nullable_to_non_nullable
+as String?,postSetAt: freezed == postSetAt ? _self.postSetAt : postSetAt // ignore: cast_nullable_to_non_nullable
 as DateTime?,
   ));
 }
@@ -165,10 +168,10 @@ return $default(_that);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( String id,  String email,  String name,  String? phone,  String role,  bool isActive,  DateTime? lastLoginAt)?  $default,{required TResult orElse(),}) {final _that = this;
+@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( String id,  String email,  String name,  String? phone,  String role,  bool isActive,  DateTime? lastLoginAt,  String? post,  DateTime? postSetAt)?  $default,{required TResult orElse(),}) {final _that = this;
 switch (_that) {
 case _TeamMemberModel() when $default != null:
-return $default(_that.id,_that.email,_that.name,_that.phone,_that.role,_that.isActive,_that.lastLoginAt);case _:
+return $default(_that.id,_that.email,_that.name,_that.phone,_that.role,_that.isActive,_that.lastLoginAt,_that.post,_that.postSetAt);case _:
   return orElse();
 
 }
@@ -186,10 +189,10 @@ return $default(_that.id,_that.email,_that.name,_that.phone,_that.role,_that.isA
 /// }
 /// ```
 
-@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( String id,  String email,  String name,  String? phone,  String role,  bool isActive,  DateTime? lastLoginAt)  $default,) {final _that = this;
+@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( String id,  String email,  String name,  String? phone,  String role,  bool isActive,  DateTime? lastLoginAt,  String? post,  DateTime? postSetAt)  $default,) {final _that = this;
 switch (_that) {
 case _TeamMemberModel():
-return $default(_that.id,_that.email,_that.name,_that.phone,_that.role,_that.isActive,_that.lastLoginAt);case _:
+return $default(_that.id,_that.email,_that.name,_that.phone,_that.role,_that.isActive,_that.lastLoginAt,_that.post,_that.postSetAt);case _:
   throw StateError('Unexpected subclass');
 
 }
@@ -206,10 +209,10 @@ return $default(_that.id,_that.email,_that.name,_that.phone,_that.role,_that.isA
 /// }
 /// ```
 
-@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( String id,  String email,  String name,  String? phone,  String role,  bool isActive,  DateTime? lastLoginAt)?  $default,) {final _that = this;
+@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( String id,  String email,  String name,  String? phone,  String role,  bool isActive,  DateTime? lastLoginAt,  String? post,  DateTime? postSetAt)?  $default,) {final _that = this;
 switch (_that) {
 case _TeamMemberModel() when $default != null:
-return $default(_that.id,_that.email,_that.name,_that.phone,_that.role,_that.isActive,_that.lastLoginAt);case _:
+return $default(_that.id,_that.email,_that.name,_that.phone,_that.role,_that.isActive,_that.lastLoginAt,_that.post,_that.postSetAt);case _:
   return null;
 
 }
@@ -221,7 +224,7 @@ return $default(_that.id,_that.email,_that.name,_that.phone,_that.role,_that.isA
 @JsonSerializable()
 
 class _TeamMemberModel implements TeamMemberModel {
-  const _TeamMemberModel({required this.id, required this.email, required this.name, this.phone, required this.role, this.isActive = true, this.lastLoginAt});
+  const _TeamMemberModel({required this.id, required this.email, required this.name, this.phone, required this.role, this.isActive = true, this.lastLoginAt, this.post, this.postSetAt});
   factory _TeamMemberModel.fromJson(Map<String, dynamic> json) => _$TeamMemberModelFromJson(json);
 
 @override final  String id;
@@ -231,6 +234,9 @@ class _TeamMemberModel implements TeamMemberModel {
 @override final  String role;
 @override@JsonKey() final  bool isActive;
 @override final  DateTime? lastLoginAt;
+/// The post held today (R-C), when it differs from the role.
+@override final  String? post;
+@override final  DateTime? postSetAt;
 
 /// Create a copy of TeamMemberModel
 /// with the given fields replaced by the non-null parameter values.
@@ -245,18 +251,18 @@ Map<String, dynamic> toJson() {
 
 @override
 bool operator ==(Object other) {
-    return identical(this, other) || (other.runtimeType == runtimeType&&other is _TeamMemberModel&&(identical(other.id, id) || other.id == id)&&(identical(other.email, email) || other.email == email)&&(identical(other.name, name) || other.name == name)&&(identical(other.phone, phone) || other.phone == phone)&&(identical(other.role, role) || other.role == role)&&(identical(other.isActive, isActive) || other.isActive == isActive)&&(identical(other.lastLoginAt, lastLoginAt) || other.lastLoginAt == lastLoginAt));
+    return identical(this, other) || (other.runtimeType == runtimeType&&other is _TeamMemberModel&&(identical(other.id, id) || other.id == id)&&(identical(other.email, email) || other.email == email)&&(identical(other.name, name) || other.name == name)&&(identical(other.phone, phone) || other.phone == phone)&&(identical(other.role, role) || other.role == role)&&(identical(other.isActive, isActive) || other.isActive == isActive)&&(identical(other.lastLoginAt, lastLoginAt) || other.lastLoginAt == lastLoginAt)&&(identical(other.post, post) || other.post == post)&&(identical(other.postSetAt, postSetAt) || other.postSetAt == postSetAt));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
 int get hashCode {
-    return Object.hash(runtimeType,id,email,name,phone,role,isActive,lastLoginAt);
+    return Object.hash(runtimeType,id,email,name,phone,role,isActive,lastLoginAt,post,postSetAt);
 }
 
 @override
 String toString() {
-    return 'TeamMemberModel(id: $id, email: $email, name: $name, phone: $phone, role: $role, isActive: $isActive, lastLoginAt: $lastLoginAt)';
+    return 'TeamMemberModel(id: $id, email: $email, name: $name, phone: $phone, role: $role, isActive: $isActive, lastLoginAt: $lastLoginAt, post: $post, postSetAt: $postSetAt)';
 }
 
 
@@ -267,7 +273,7 @@ abstract mixin class _$TeamMemberModelCopyWith<$Res> implements $TeamMemberModel
   factory _$TeamMemberModelCopyWith(_TeamMemberModel value, $Res Function(_TeamMemberModel) _then) = __$TeamMemberModelCopyWithImpl;
 @override @useResult
 $Res call({
- String id, String email, String name, String? phone, String role, bool isActive, DateTime? lastLoginAt
+ String id, String email, String name, String? phone, String role, bool isActive, DateTime? lastLoginAt, String? post, DateTime? postSetAt
 });
 
 
@@ -284,7 +290,7 @@ class __$TeamMemberModelCopyWithImpl<$Res>
 
 /// Create a copy of TeamMemberModel
 /// with the given fields replaced by the non-null parameter values.
-@override @pragma('vm:prefer-inline') $Res call({Object? id = null,Object? email = null,Object? name = null,Object? phone = freezed,Object? role = null,Object? isActive = null,Object? lastLoginAt = freezed,}) {
+@override @pragma('vm:prefer-inline') $Res call({Object? id = null,Object? email = null,Object? name = null,Object? phone = freezed,Object? role = null,Object? isActive = null,Object? lastLoginAt = freezed,Object? post = freezed,Object? postSetAt = freezed,}) {
   return _then(_TeamMemberModel(
 id: null == id ? _self.id : id // ignore: cast_nullable_to_non_nullable
 as String,email: null == email ? _self.email : email // ignore: cast_nullable_to_non_nullable
@@ -293,6 +299,8 @@ as String,phone: freezed == phone ? _self.phone : phone // ignore: cast_nullable
 as String?,role: null == role ? _self.role : role // ignore: cast_nullable_to_non_nullable
 as String,isActive: null == isActive ? _self.isActive : isActive // ignore: cast_nullable_to_non_nullable
 as bool,lastLoginAt: freezed == lastLoginAt ? _self.lastLoginAt : lastLoginAt // ignore: cast_nullable_to_non_nullable
+as DateTime?,post: freezed == post ? _self.post : post // ignore: cast_nullable_to_non_nullable
+as String?,postSetAt: freezed == postSetAt ? _self.postSetAt : postSetAt // ignore: cast_nullable_to_non_nullable
 as DateTime?,
   ));
 }

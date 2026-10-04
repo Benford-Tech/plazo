@@ -68,23 +68,27 @@ enum StaffRole {
 
 // Operator personnel: manager, front-desk agent, shuttle driver, valet.
 model Staff {
-  id              String    @id @default(cuid())
+  id              String     @id @default(cuid())
   operatorId      String
-  email           String    @unique // always lower-cased
+  email           String     @unique // always lower-cased
   name            String
   phone           String?
   role            StaffRole
   password        String
-  isActive        Boolean   @default(true)
+  isActive        Boolean    @default(true)
   lastLoginAt     DateTime?
   // Set once the person proved they own the email (verification link, or an accepted invitation).
   // Self sign-ups start unverified: they can log in, but cannot submit their listing for review.
   emailVerifiedAt DateTime?
   // Push notifications of travellers' arrivals (see ArrivalSignal): drop-offs, returns, or both.
-  notifyArrivals  Boolean   @default(true)
-  notifyReturns   Boolean   @default(true)
-  createdAt       DateTime  @default(now())
-  updatedAt       DateTime  @default(now()) @updatedAt
+  notifyArrivals  Boolean    @default(true)
+  notifyReturns   Boolean    @default(true)
+  // The post held today (R-C, 04/10/2026): the app puts that post's pages first. Only a post the role
+  // covers (see domain/roles.ts allowedPosts); the role, not the post, decides the permissions.
+  post            StaffRole?
+  postSetAt       DateTime?
+  createdAt       DateTime   @default(now())
+  updatedAt       DateTime   @default(now()) @updatedAt
 
   operator            Operator         @relation(fields: [operatorId], references: [id], onDelete: Cascade)
   tokens              StaffToken[]

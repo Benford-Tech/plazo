@@ -46,7 +46,8 @@ class _ProLoginPageState extends State<ProLoginPage> {
       backgroundColor: AppColors.brand,
       body: BlocConsumer<ProAuthBloc, ProAuthState>(
         listenWhen: (a, b) => a.status != b.status && b.status == ProAuthStatus.signedIn,
-        listener: (context, state) => context.router.replaceAll([const ProShellRoute()]),
+        // First sign-in on this account: "Aujourd'hui, je suis…" (R-C); afterwards straight to the tabs.
+        listener: (context, state) => context.router.replaceAll([if (state.staff?.post == null) const ProPostRoute() else const ProShellRoute()]),
         builder: (context, state) => Stack(
           fit: StackFit.expand,
           children: [

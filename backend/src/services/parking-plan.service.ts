@@ -42,7 +42,8 @@ export class ParkingPlanService {
 
   public async update(actor: AuthenticatedStaff, parkingId: string, data: UpdateParkingPlanDto): Promise<ParkingPlanView> {
     const parking = await this.parkingOf(actor, parkingId);
-    const existing = data.settings != null ? await prisma.parkingPlan.findUnique({ where: { parkingId: parking.id }, select: { settings: true } }) : null;
+    const existing =
+      data.settings != null ? await prisma.parkingPlan.findUnique({ where: { parkingId: parking.id }, select: { settings: true } }) : null;
     const json = (value: unknown) => value as Prisma.InputJsonValue;
     const patch = {
       ...(data.outline !== undefined ? { outline: data.outline === null ? Prisma.DbNull : json(data.outline) } : {}),

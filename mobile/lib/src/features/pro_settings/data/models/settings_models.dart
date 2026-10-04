@@ -14,6 +14,10 @@ abstract class TeamMemberModel with _$TeamMemberModel {
     required String role,
     @Default(true) bool isActive,
     DateTime? lastLoginAt,
+
+    /// The post held today (R-C), when it differs from the role.
+    String? post,
+    DateTime? postSetAt,
   }) = _TeamMemberModel;
 
   factory TeamMemberModel.fromJson(Map<String, dynamic> json) => _$TeamMemberModelFromJson(json);

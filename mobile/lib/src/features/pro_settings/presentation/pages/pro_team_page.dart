@@ -148,6 +148,8 @@ class _MemberTile extends StatelessWidget {
                 ),
               ),
               if (!m.isActive) Text('team.inactive'.tr(), style: AppText.label(size: 11, color: AppColors.danger)),
+              if (m.isActive && m.post != null && m.post != m.role)
+                Text('team.post_today'.tr(args: ['post.name.${m.post}'.tr()]), key: Key('post-${m.id}'), style: AppText.label(size: 11, color: AppColors.accent)),
             ],
           ),
           Text([m.email, if (m.phone != null) formatPhone(m.phone!)].join(' · '), style: AppText.muted(size: 12.5)),

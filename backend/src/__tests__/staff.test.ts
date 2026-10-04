@@ -91,4 +91,25 @@ describe('équipe', () => {
     expect((await api().get('/api/internal/staff/me').set(auth(t))).status).toBe(401);
     await login(agent.email, 'definitif-456');
   });
+
+  it('poste du jour (R-C) : parmi ceux que le rôle couvre, visible par le gérant', async () => {
+    const { token } = await setupOperator();
+    const driver = await addStaff(token, 'driver');
+    const me = await api().get('/api/internal/staff/me').set(auth(driver.token));
+    expect(me.body).toMatchObject({ post: null, effectivePost: 'driver', allowedPosts: ['driver', 'valet'] });
+    // A driver may park cars, not manage the team.
+    const refused = await api().patch('/api/internal/staff/me/post').set(auth(driver.token)).send({ post: 'manager' });
+    expect(refused.status).toBe(422);
+    expect(refused.body.code).toBe('post_not_allowed');
+    expect((await api().patch('/api/internal/staff/me/post').set(auth(driver.token)).send({ post: 'nope' })).status).toBe(400);
+    const set = await api().patch('/api/internal/staff/me/post').set(auth(driver.token)).send({ post: 'valet' });
+    expect(set.status).toBe(200);
+    expect(set.body).toMatchObject({ post: 'valet', effectivePost: 'valet', role: 'driver' });
+    expect(set.body.postSetAt).toBeTruthy();
+    // The manager sees who holds which post today; a manager may take any post.
+    const team = await api().get('/api/internal/staff').set(auth(token));
+    expect(team.body.find((m: { id: string }) => m.id === driver.id)).toMatchObject({ post: 'valet', effectivePost: 'valet' });
+    expect((await api().get('/api/internal/staff/me').set(auth(token))).body.allowedPosts).toEqual(['manager', 'agent', 'driver', 'valet']);
+    expect((await api().patch('/api/internal/staff/me/post').set(auth(token)).send({ post: 'driver' })).body.effectivePost).toBe('driver');
+  });
 });

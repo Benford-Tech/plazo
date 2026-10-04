@@ -1,6 +1,6 @@
 import { Router } from 'express';
 import { StaffController } from '@/controllers/staff.controller';
-import { ChangePasswordDto, CreateStaffDto, ResetPasswordDto, UpdateStaffDto } from '@/dtos/staff.dto';
+import { ChangePasswordDto, CreateStaffDto, ResetPasswordDto, UpdateStaffDto, SetPostDto } from '@/dtos/staff.dto';
 import { Routes } from '@/interfaces/routes.interface';
 import { RefuseInViewAs, StaffAuthMiddleware } from '@/middlewares/staff-auth.middleware';
 import { ValidationMiddleware } from '@/middlewares/validation.middleware';
@@ -15,8 +15,17 @@ import { ValidationMiddleware } from '@/middlewares/validation.middleware';
  * @swagger
  * /internal/staff/me:
  *   get:
- *     summary: Current staff member, with the operator name, isPlatformAdmin, emailVerified and viewAs ({ operatorId, operatorName } in a platform admin's view-as session, else null)
+ *     summary: Current staff member, with the operator name, isPlatformAdmin, emailVerified, viewAs ({ operatorId, operatorName } in a platform admin's view-as session, else null), post / postSetAt, effectivePost and allowedPosts
  *     tags: [Staff]
+ * /internal/staff/me/post:
+ *   patch:
+ *     summary: "Aujourd'hui, je suis…" (R-C) — the post held for the day, among those the role covers (422 post_not_allowed)
+ *     tags: [Staff]
+ *     requestBody:
+ *       required: true
+ *       content: { application/json: { schema: { type: object, required: [post], properties: { post: { type: string, enum: [manager, agent, driver, valet] } } } } }
+ *     responses:
+ *       200: { description: The session user, with the new post }
  * /internal/staff/me/password:
  *   patch:
  *     summary: Change one's password (signs out every device)
@@ -82,6 +91,7 @@ export class StaffRoute implements Routes {
 
   private initializeRoutes() {
     this.router.get('/internal/staff/me', StaffAuthMiddleware(), this.staff.me);
+    this.router.patch('/internal/staff/me/post', StaffAuthMiddleware(), RefuseInViewAs(), ValidationMiddleware(SetPostDto), this.staff.setPost);
     // Read-only while a platform admin views the operator's space (RefuseInViewAs: 403 view_as_read_only).
     this.router.patch(
       '/internal/staff/me/password',

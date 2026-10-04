@@ -27,3 +27,17 @@ const PERMISSIONS: Record<StaffRole, readonly Permission[]> = {
 export function can(role: StaffRole, permission: Permission): boolean {
   return PERMISSIONS[role].includes(permission);
 }
+
+/**
+ * The posts a role may hold for the day (R-C, 04/10/2026): every post whose permissions the role
+ * already has. A manager may take any post; a driver may act as valet and vice versa; an agent may
+ * also drive or park. Permissions always come from the role, never from the post.
+ */
+export function allowedPosts(role: StaffRole): StaffRole[] {
+  return (Object.keys(PERMISSIONS) as StaffRole[]).filter(post => PERMISSIONS[post].every(p => PERMISSIONS[role].includes(p)));
+}
+
+/** The post shown in the app: the one chosen, else the role itself. */
+export function effectivePost(staff: { role: StaffRole; post: StaffRole | null }): StaffRole {
+  return staff.post && allowedPosts(staff.role).includes(staff.post) ? staff.post : staff.role;
+}

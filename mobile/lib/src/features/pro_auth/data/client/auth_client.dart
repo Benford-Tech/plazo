@@ -19,4 +19,8 @@ abstract class AuthClient {
 
   @GET('internal/staff/me')
   Future<StaffModel> me();
+
+  /// "Aujourd'hui, je suis…" (R-C): the post held for the day.
+  @PATCH('internal/staff/me/post')
+  Future<StaffModel> setPost(@Body() Map<String, dynamic> body);
 }

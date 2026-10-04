@@ -85,6 +85,12 @@ class ProMoreTabPage extends StatelessWidget {
           const SizedBox(height: 14),
           _title('pro_more.account'.tr()),
           _Tile(
+            key: const Key('pmore-post'),
+            icon: Icons.badge_outlined,
+            label: 'post.mine'.tr(args: ['post.name.${staff?.activePost ?? 'agent'}'.tr()]),
+            onTap: () => context.router.push(const ProPostRoute()),
+          ),
+          _Tile(
             key: const Key('pmore-account'),
             icon: Icons.person_outline_rounded,
             label: 'account.title'.tr(),

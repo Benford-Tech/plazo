@@ -34,6 +34,9 @@ n'existent que dans Plazo Pro (`if (AppConstants.isPro)` dans `app_router.dart`)
   ou « Déposer au terminal » (clients arrivés au parking), « Démarrer le trajet (N clients) » après le choix du véhicule
   (le sien présélectionné, places vérifiées, hors service exclus), position partagée avec les passagers jusqu'à
   « Clients récupérés · retour parking » / « Clients déposés au terminal » (90 min au plus).
+- **Pro — poste du jour** (`/pro/poste`, R-C du 04/10/2026) : « Aujourd'hui, je suis… » après la première connexion, puis
+  Plus › Mon poste ; enregistré sur le compte (`PATCH /internal/staff/me/post`), visible du gérant dans Équipe ; les quatre
+  onglets de `ProShellPage` suivent le poste (`core/helpers/posts.dart`), les droits restent ceux du rôle.
 - **Pro — véhicules de navette** (`/pro/navettes`, gérants, V-A) : fiche de chaque navette (modèle, couleur, plaque,
   places, en service, chauffeur habituel), ajout, modification, retrait.
 - **Pro** (`/pro…`) : connexion du personnel (mêmes comptes que l'espace pro), planning du jour

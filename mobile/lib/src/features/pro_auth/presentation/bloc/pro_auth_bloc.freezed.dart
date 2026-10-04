@@ -15,7 +15,8 @@ T _$identity<T>(T value) => value;
 /// @nodoc
 mixin _$ProAuthState {
 
- ProAuthStatus get status; ViewState get viewState; StaffModel? get staff; String? get errorCode; String? get errorMessage;
+ ProAuthStatus get status; ViewState get viewState; StaffModel? get staff;/// Saving the post of the day.
+ ViewState get postState; String? get errorCode; String? get errorMessage;
 /// Create a copy of ProAuthState
 /// with the given fields replaced by the non-null parameter values.
 @JsonKey(includeFromJson: false, includeToJson: false)
@@ -27,20 +28,20 @@ $ProAuthStateCopyWith<ProAuthState> get copyWith => _$ProAuthStateCopyWithImpl<P
 @override
 bool operator ==(Object other) {
   final _this = this as ProAuthState;
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is ProAuthState&&(identical(other.status, _this.status) || other.status == _this.status)&&(identical(other.viewState, _this.viewState) || other.viewState == _this.viewState)&&(identical(other.staff, _this.staff) || other.staff == _this.staff)&&(identical(other.errorCode, _this.errorCode) || other.errorCode == _this.errorCode)&&(identical(other.errorMessage, _this.errorMessage) || other.errorMessage == _this.errorMessage));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is ProAuthState&&(identical(other.status, _this.status) || other.status == _this.status)&&(identical(other.viewState, _this.viewState) || other.viewState == _this.viewState)&&(identical(other.staff, _this.staff) || other.staff == _this.staff)&&(identical(other.postState, _this.postState) || other.postState == _this.postState)&&(identical(other.errorCode, _this.errorCode) || other.errorCode == _this.errorCode)&&(identical(other.errorMessage, _this.errorMessage) || other.errorMessage == _this.errorMessage));
 }
 
 
 @override
 int get hashCode {
   final _this = this as ProAuthState;
-  return Object.hash(runtimeType,_this.status,_this.viewState,_this.staff,_this.errorCode,_this.errorMessage);
+  return Object.hash(runtimeType,_this.status,_this.viewState,_this.staff,_this.postState,_this.errorCode,_this.errorMessage);
 }
 
 @override
 String toString() {
   final _this = this as ProAuthState;
-  return 'ProAuthState(status: ${_this.status}, viewState: ${_this.viewState}, staff: ${_this.staff}, errorCode: ${_this.errorCode}, errorMessage: ${_this.errorMessage})';
+  return 'ProAuthState(status: ${_this.status}, viewState: ${_this.viewState}, staff: ${_this.staff}, postState: ${_this.postState}, errorCode: ${_this.errorCode}, errorMessage: ${_this.errorMessage})';
 }
 
 
@@ -51,7 +52,7 @@ abstract mixin class $ProAuthStateCopyWith<$Res>  {
   factory $ProAuthStateCopyWith(ProAuthState value, $Res Function(ProAuthState) _then) = _$ProAuthStateCopyWithImpl;
 @useResult
 $Res call({
- ProAuthStatus status, ViewState viewState, StaffModel? staff, String? errorCode, String? errorMessage
+ ProAuthStatus status, ViewState viewState, StaffModel? staff, ViewState postState, String? errorCode, String? errorMessage
 });
 
 
@@ -68,12 +69,13 @@ class _$ProAuthStateCopyWithImpl<$Res>
 
 /// Create a copy of ProAuthState
 /// with the given fields replaced by the non-null parameter values.
-@pragma('vm:prefer-inline') @override $Res call({Object? status = null,Object? viewState = null,Object? staff = freezed,Object? errorCode = freezed,Object? errorMessage = freezed,}) {
+@pragma('vm:prefer-inline') @override $Res call({Object? status = null,Object? viewState = null,Object? staff = freezed,Object? postState = null,Object? errorCode = freezed,Object? errorMessage = freezed,}) {
   return _then(ProAuthState(
 status: null == status ? _self.status : status // ignore: cast_nullable_to_non_nullable
 as ProAuthStatus,viewState: null == viewState ? _self.viewState : viewState // ignore: cast_nullable_to_non_nullable
 as ViewState,staff: freezed == staff ? _self.staff : staff // ignore: cast_nullable_to_non_nullable
-as StaffModel?,errorCode: freezed == errorCode ? _self.errorCode : errorCode // ignore: cast_nullable_to_non_nullable
+as StaffModel?,postState: null == postState ? _self.postState : postState // ignore: cast_nullable_to_non_nullable
+as ViewState,errorCode: freezed == errorCode ? _self.errorCode : errorCode // ignore: cast_nullable_to_non_nullable
 as String?,errorMessage: freezed == errorMessage ? _self.errorMessage : errorMessage // ignore: cast_nullable_to_non_nullable
 as String?,
   ));
@@ -172,10 +174,10 @@ return $default(_that);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( ProAuthStatus status,  ViewState viewState,  StaffModel? staff,  String? errorCode,  String? errorMessage)?  $default,{required TResult orElse(),}) {final _that = this;
+@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( ProAuthStatus status,  ViewState viewState,  StaffModel? staff,  ViewState postState,  String? errorCode,  String? errorMessage)?  $default,{required TResult orElse(),}) {final _that = this;
 switch (_that) {
 case _ProAuthState() when $default != null:
-return $default(_that.status,_that.viewState,_that.staff,_that.errorCode,_that.errorMessage);case _:
+return $default(_that.status,_that.viewState,_that.staff,_that.postState,_that.errorCode,_that.errorMessage);case _:
   return orElse();
 
 }
@@ -193,10 +195,10 @@ return $default(_that.status,_that.viewState,_that.staff,_that.errorCode,_that.e
 /// }
 /// ```
 
-@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( ProAuthStatus status,  ViewState viewState,  StaffModel? staff,  String? errorCode,  String? errorMessage)  $default,) {final _that = this;
+@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( ProAuthStatus status,  ViewState viewState,  StaffModel? staff,  ViewState postState,  String? errorCode,  String? errorMessage)  $default,) {final _that = this;
 switch (_that) {
 case _ProAuthState():
-return $default(_that.status,_that.viewState,_that.staff,_that.errorCode,_that.errorMessage);case _:
+return $default(_that.status,_that.viewState,_that.staff,_that.postState,_that.errorCode,_that.errorMessage);case _:
   throw StateError('Unexpected subclass');
 
 }
@@ -213,10 +215,10 @@ return $default(_that.status,_that.viewState,_that.staff,_that.errorCode,_that.e
 /// }
 /// ```
 
-@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( ProAuthStatus status,  ViewState viewState,  StaffModel? staff,  String? errorCode,  String? errorMessage)?  $default,) {final _that = this;
+@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( ProAuthStatus status,  ViewState viewState,  StaffModel? staff,  ViewState postState,  String? errorCode,  String? errorMessage)?  $default,) {final _that = this;
 switch (_that) {
 case _ProAuthState() when $default != null:
-return $default(_that.status,_that.viewState,_that.staff,_that.errorCode,_that.errorMessage);case _:
+return $default(_that.status,_that.viewState,_that.staff,_that.postState,_that.errorCode,_that.errorMessage);case _:
   return null;
 
 }
@@ -228,12 +230,14 @@ return $default(_that.status,_that.viewState,_that.staff,_that.errorCode,_that.e
 
 
 class _ProAuthState implements ProAuthState {
-  const _ProAuthState({this.status = ProAuthStatus.unknown, this.viewState = ViewState.idle, this.staff, this.errorCode, this.errorMessage});
+  const _ProAuthState({this.status = ProAuthStatus.unknown, this.viewState = ViewState.idle, this.staff, this.postState = ViewState.idle, this.errorCode, this.errorMessage});
   
 
 @override@JsonKey() final  ProAuthStatus status;
 @override@JsonKey() final  ViewState viewState;
 @override final  StaffModel? staff;
+/// Saving the post of the day.
+@override@JsonKey() final  ViewState postState;
 @override final  String? errorCode;
 @override final  String? errorMessage;
 
@@ -247,18 +251,18 @@ _$ProAuthStateCopyWith<_ProAuthState> get copyWith => __$ProAuthStateCopyWithImp
 
 @override
 bool operator ==(Object other) {
-    return identical(this, other) || (other.runtimeType == runtimeType&&other is _ProAuthState&&(identical(other.status, status) || other.status == status)&&(identical(other.viewState, viewState) || other.viewState == viewState)&&(identical(other.staff, staff) || other.staff == staff)&&(identical(other.errorCode, errorCode) || other.errorCode == errorCode)&&(identical(other.errorMessage, errorMessage) || other.errorMessage == errorMessage));
+    return identical(this, other) || (other.runtimeType == runtimeType&&other is _ProAuthState&&(identical(other.status, status) || other.status == status)&&(identical(other.viewState, viewState) || other.viewState == viewState)&&(identical(other.staff, staff) || other.staff == staff)&&(identical(other.postState, postState) || other.postState == postState)&&(identical(other.errorCode, errorCode) || other.errorCode == errorCode)&&(identical(other.errorMessage, errorMessage) || other.errorMessage == errorMessage));
 }
 
 
 @override
 int get hashCode {
-    return Object.hash(runtimeType,status,viewState,staff,errorCode,errorMessage);
+    return Object.hash(runtimeType,status,viewState,staff,postState,errorCode,errorMessage);
 }
 
 @override
 String toString() {
-    return 'ProAuthState(status: $status, viewState: $viewState, staff: $staff, errorCode: $errorCode, errorMessage: $errorMessage)';
+    return 'ProAuthState(status: $status, viewState: $viewState, staff: $staff, postState: $postState, errorCode: $errorCode, errorMessage: $errorMessage)';
 }
 
 
@@ -269,7 +273,7 @@ abstract mixin class _$ProAuthStateCopyWith<$Res> implements $ProAuthStateCopyWi
   factory _$ProAuthStateCopyWith(_ProAuthState value, $Res Function(_ProAuthState) _then) = __$ProAuthStateCopyWithImpl;
 @override @useResult
 $Res call({
- ProAuthStatus status, ViewState viewState, StaffModel? staff, String? errorCode, String? errorMessage
+ ProAuthStatus status, ViewState viewState, StaffModel? staff, ViewState postState, String? errorCode, String? errorMessage
 });
 
 
@@ -286,12 +290,13 @@ class __$ProAuthStateCopyWithImpl<$Res>
 
 /// Create a copy of ProAuthState
 /// with the given fields replaced by the non-null parameter values.
-@override @pragma('vm:prefer-inline') $Res call({Object? status = null,Object? viewState = null,Object? staff = freezed,Object? errorCode = freezed,Object? errorMessage = freezed,}) {
+@override @pragma('vm:prefer-inline') $Res call({Object? status = null,Object? viewState = null,Object? staff = freezed,Object? postState = null,Object? errorCode = freezed,Object? errorMessage = freezed,}) {
   return _then(_ProAuthState(
 status: null == status ? _self.status : status // ignore: cast_nullable_to_non_nullable
 as ProAuthStatus,viewState: null == viewState ? _self.viewState : viewState // ignore: cast_nullable_to_non_nullable
 as ViewState,staff: freezed == staff ? _self.staff : staff // ignore: cast_nullable_to_non_nullable
-as StaffModel?,errorCode: freezed == errorCode ? _self.errorCode : errorCode // ignore: cast_nullable_to_non_nullable
+as StaffModel?,postState: null == postState ? _self.postState : postState // ignore: cast_nullable_to_non_nullable
+as ViewState,errorCode: freezed == errorCode ? _self.errorCode : errorCode // ignore: cast_nullable_to_non_nullable
 as String?,errorMessage: freezed == errorMessage ? _self.errorMessage : errorMessage // ignore: cast_nullable_to_non_nullable
 as String?,
   ));

@@ -2,8 +2,8 @@ import { compare, hash } from 'bcrypt';
 import httpStatus from 'http-status';
 import { Container, Service } from 'typedi';
 import { BCRYPT_ROUNDS, isPlatformAdmin } from '@/config';
-import prisma, { Staff } from '@/database';
-import { can } from '@/domain/roles';
+import prisma, { Staff, StaffRole } from '@/database';
+import { allowedPosts, can, effectivePost } from '@/domain/roles';
 import { ChangePasswordDto, CreateStaffDto, UpdateStaffDto } from '@/dtos/staff.dto';
 import { AuthenticatedStaff } from '@/interfaces/auth.interface';
 import { HttpException } from '@/utils/httpException';
@@ -27,6 +27,8 @@ export function toSessionUser(staff: AuthenticatedStaff) {
   const { actingAs, ...rest } = toPublicStaff(staff);
   return {
     ...rest,
+    effectivePost: effectivePost(staff),
+    allowedPosts: allowedPosts(staff.role),
     isPlatformAdmin: isPlatformAdmin(staff.email),
     emailVerified: !!staff.emailVerifiedAt,
     viewAs: actingAs ? { operatorId: staff.operatorId, operatorName: staff.operatorName } : null,
@@ -54,7 +56,19 @@ export class StaffService {
   public async list(actor: AuthenticatedStaff) {
     this.requireTeamManager(actor);
     const team = await prisma.staff.findMany({ where: { operatorId: actor.operatorId }, orderBy: { name: 'asc' } });
-    return team.map(toPublicStaff);
+    return team.map(s => ({ ...toPublicStaff(s), effectivePost: effectivePost(s) }));
+  }
+
+  /** "Aujourd'hui, je suis…": the post held for the day, among those the role covers. */
+  public async setPost(actor: AuthenticatedStaff, post: StaffRole) {
+    if (!allowedPosts(actor.role).includes(post)) {
+      throw new HttpException(httpStatus.UNPROCESSABLE_ENTITY, 'This post is not covered by your role', 'post_not_allowed', {
+        allowed: allowedPosts(actor.role),
+      });
+    }
+    const staff = await prisma.staff.update({ where: { id: actor.id }, data: { post, postSetAt: new Date() } });
+    await this.audit.record(actor, { action: 'staff.post_set', entityType: 'staff', entityId: actor.id, details: { post } });
+    return toSessionUser({ ...actor, ...staff });
   }
 
   public async create(actor: AuthenticatedStaff, data: CreateStaffDto) {

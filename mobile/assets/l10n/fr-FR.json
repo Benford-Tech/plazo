@@ -298,6 +298,8 @@
     "unauthorized": "Votre session a expiré, reconnectez-vous.",
     "session_expired": "Votre session a expiré, reconnectez-vous.",
     "forbidden": "Vous n'avez pas accès à cette action.",
+    "post_not_allowed": "Ce poste n'est pas couvert par votre rôle.",
+    "invalid_post": "Poste invalide.",
     "push_unavailable": "Les notifications push ne sont pas disponibles ici.",
     "push_denied": "Notifications refusées. Autorisez-les dans les réglages du téléphone.",
     "required": "Champ obligatoire.",
@@ -889,7 +891,30 @@
     "today": "Aujourd'hui",
     "reservations": "Réservations",
     "parking": "Parking",
-    "more": "Plus"
+    "more": "Plus",
+    "shuttle": "Navette",
+    "arrivals": "Arrivées",
+    "returns": "Retours",
+    "places": "Places"
+  },
+  "post": {
+    "title": "Aujourd'hui, je suis…",
+    "intro": "L'app met en avant les pages de votre poste. Vous pourrez le changer à tout moment dans Plus › Mon poste.",
+    "mine": "Mon poste : {}",
+    "current": "Poste actuel",
+    "confirm": "C'est parti",
+    "name": {
+      "manager": "Gérant",
+      "agent": "Accueil",
+      "driver": "Chauffeur",
+      "valet": "Voiturier"
+    },
+    "text": {
+      "manager": "La journée, l'équipe, le parking et la fiche Plazo.",
+      "agent": "Au comptoir et au téléphone : réservations, arrivées, retours.",
+      "driver": "La navette, puis les arrivées et les retours du jour.",
+      "valet": "Les arrivées à placer, les départs à sortir, les clés."
+    }
   },
   "pro_more": {
     "work": "Au quotidien",
@@ -936,6 +961,7 @@
     "phone_optional": "Téléphone (facultatif)",
     "role": "Rôle",
     "inactive": "Désactivé",
+    "post_today": "Poste du jour : {}",
     "last_login": "Dernière connexion {}",
     "never_logged": "Jamais connecté",
     "password": "Mot de passe provisoire",

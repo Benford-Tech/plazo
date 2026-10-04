@@ -76,6 +76,7 @@ void _initUseCaseLocator() {
     ..registerLazySingleton(() => LoginUseCase(locator()))
     ..registerLazySingleton(() => RestoreSessionUseCase(locator()))
     ..registerLazySingleton(() => LogoutUseCase(locator()))
+    ..registerLazySingleton(() => SetPostUseCase(locator()))
     ..registerLazySingleton(() => GetPlanningUseCase(locator()))
     ..registerLazySingleton(() => GetLiveArrivalsUseCase(locator()))
     ..registerLazySingleton(() => GetNotificationPreferencesUseCase(locator()))

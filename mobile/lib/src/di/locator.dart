@@ -35,6 +35,7 @@ import '../features/pro_auth/domain/repositories/auth_repository.dart';
 import '../features/pro_auth/domain/usecases/login_use_case.dart';
 import '../features/pro_auth/domain/usecases/logout_use_case.dart';
 import '../features/pro_auth/domain/usecases/restore_session_use_case.dart';
+import '../features/pro_auth/domain/usecases/set_post_use_case.dart';
 import '../features/pro_auth/presentation/bloc/pro_auth_bloc.dart';
 import '../features/pro_notifications/data/client/notifications_client.dart';
 import '../features/pro_notifications/data/datasources/notifications_data_source.dart';

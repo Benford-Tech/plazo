@@ -24,17 +24,46 @@ class ProTodayPage extends StatelessWidget implements AutoRouteWrapper {
   Widget wrappedRoute(BuildContext context) => BlocProvider(create: (_) => locator<ProTodayBloc>()..add(const ProTodayStarted()), child: this);
 
   @override
-  Widget build(BuildContext context) => const _ProTodayView();
+  Widget build(BuildContext context) => const ProTodayView();
 }
 
-class _ProTodayView extends StatefulWidget {
-  const _ProTodayView();
+/// The driver's "Arrivées" tab (R-C): the day's arrivals alone.
+@RoutePage()
+class ProArrivalsPage extends StatelessWidget implements AutoRouteWrapper {
+  const ProArrivalsPage({super.key});
 
   @override
-  State<_ProTodayView> createState() => _ProTodayViewState();
+  Widget wrappedRoute(BuildContext context) => BlocProvider(create: (_) => locator<ProTodayBloc>()..add(const ProTodayStarted()), child: this);
+
+  @override
+  Widget build(BuildContext context) => const ProTodayView(only: TodaySide.arrivals);
 }
 
-class _ProTodayViewState extends State<_ProTodayView> with SingleTickerProviderStateMixin {
+/// The driver's "Retours" tab (R-C): the day's returns alone.
+@RoutePage()
+class ProReturnsPage extends StatelessWidget implements AutoRouteWrapper {
+  const ProReturnsPage({super.key});
+
+  @override
+  Widget wrappedRoute(BuildContext context) => BlocProvider(create: (_) => locator<ProTodayBloc>()..add(const ProTodayStarted()), child: this);
+
+  @override
+  Widget build(BuildContext context) => const ProTodayView(only: TodaySide.returns);
+}
+
+enum TodaySide { arrivals, returns }
+
+/// The day's planning: both sides (tabs on a phone, two columns on a tablet), or one side only.
+class ProTodayView extends StatefulWidget {
+  const ProTodayView({super.key, this.only});
+
+  final TodaySide? only;
+
+  @override
+  State<ProTodayView> createState() => _ProTodayViewState();
+}
+
+class _ProTodayViewState extends State<ProTodayView> with SingleTickerProviderStateMixin {
   late final TabController _tabs = TabController(length: 2, vsync: this);
   Timer? _clock;
   DateTime _now = DateTime.now();
@@ -106,6 +135,12 @@ class _ProTodayViewState extends State<_ProTodayView> with SingleTickerProviderS
                         ? Text(state.errorMessage ?? 'errors.generic'.tr(), textAlign: TextAlign.center)
                         : const CircularProgressIndicator(color: AppColors.accent),
                   ),
+                )
+              else if (widget.only != null)
+                Expanded(
+                  child: widget.only == TodaySide.arrivals
+                      ? _Column(title: 'pro.arrivals'.tr(), rows: state.arrivals, isReturn: false, state: state, now: _now)
+                      : _Column(title: 'pro.returns'.tr(), rows: state.returns, isReturn: true, state: state, now: _now),
                 )
               else if (wide)
                 Expanded(

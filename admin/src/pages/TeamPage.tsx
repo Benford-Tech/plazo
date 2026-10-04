@@ -178,6 +178,11 @@ export default function TeamPage() {
                   <div className="flex flex-wrap items-center gap-2 pt-1 text-sm text-muted-foreground">
                     <Badge variant="secondary">{fr.roles[m.role]}</Badge>
                     <Badge variant={m.isActive ? "outline" : "destructive"}>{m.isActive ? t.active : t.inactive}</Badge>
+                    {m.post && m.post !== m.role && m.postSetAt && (
+                      <Badge variant="default" title={t.postSince(dateTime.format(new Date(m.postSetAt)))}>
+                        {t.postToday} : {fr.roles[m.post]}
+                      </Badge>
+                    )}
                     <span>
                       {t.lastLogin} : {m.lastLoginAt ? dateTime.format(new Date(m.lastLoginAt)) : fr.common.never}
                     </span>

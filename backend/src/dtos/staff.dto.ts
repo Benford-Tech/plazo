@@ -38,6 +38,12 @@ export class UpdateStaffDto {
   public isActive?: boolean;
 }
 
+/** "Aujourd'hui, je suis…" (R-C): the post held for the day. */
+export class SetPostDto {
+  @IsIn(STAFF_ROLES, { message: 'invalid_post' })
+  public post: StaffRole;
+}
+
 export class ResetPasswordDto {
   @IsString()
   @MinLength(MIN_PASSWORD_LENGTH, { message: 'password_too_short' })

@@ -8,6 +8,7 @@ import '../../features/checkout/presentation/pages/booking_form_page.dart';
 import '../../features/checkout/presentation/pages/payment_page.dart';
 import '../../features/more/presentation/pages/more_tab_page.dart';
 import '../../features/pro_auth/presentation/pages/pro_login_page.dart';
+import '../../features/pro_auth/presentation/pages/pro_post_page.dart';
 import '../../features/pro_notifications/presentation/pages/pro_notifications_page.dart';
 import '../../features/pro_occupation/presentation/pages/pro_occupation_page.dart';
 import '../../features/pro_plan/presentation/pages/pro_plan_page.dart';
@@ -74,8 +75,14 @@ class AppRouter extends RootStackRouter {
           AutoRoute(page: ProReservationsRoute.page, path: 'reservations'),
           AutoRoute(page: ProOccupationRoute.page, path: 'parking'),
           AutoRoute(page: ProMoreTabRoute.page, path: 'plus'),
+          // Tabs of the driver's and the valet's posts (R-C).
+          AutoRoute(page: ProShuttleRoute.page, path: 'navette'),
+          AutoRoute(page: ProArrivalsRoute.page, path: 'arrivees'),
+          AutoRoute(page: ProReturnsRoute.page, path: 'retours'),
+          AutoRoute(page: ProSpotPlanningRoute.page, path: 'places'),
         ],
       ),
+      AutoRoute(page: ProPostRoute.page, path: '/pro/poste', guards: [proGuard]),
       AutoRoute(page: ProNotificationsRoute.page, path: '/pro/notifications', guards: [proGuard]),
       AutoRoute(page: ProShuttleRoute.page, path: '/pro/navette', guards: [proGuard]),
       AutoRoute(page: ProVehiclesRoute.page, path: '/pro/navettes', guards: [proGuard]),

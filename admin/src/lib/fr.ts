@@ -332,6 +332,8 @@ export const fr = {
   },
   team: {
     title: "Équipe",
+    postToday: "Poste du jour",
+    postSince: (when: string) => `depuis ${when}`,
     add: "Ajouter un membre",
     name: "Nom",
     email: "Email",

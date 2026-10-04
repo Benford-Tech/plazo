@@ -7,6 +7,7 @@ abstract class AuthDataSource {
   Future<StaffModel> login({required String email, required String password});
   Future<StaffModel?> restore();
   Future<void> logout();
+  Future<StaffModel> setPost(String post);
 }
 
 class AuthDataSourceImpl implements AuthDataSource {
@@ -32,6 +33,9 @@ class AuthDataSourceImpl implements AuthDataSource {
     if (await storage.staffTokens() == null) return null;
     return client.me();
   }
+
+  @override
+  Future<StaffModel> setPost(String post) => client.setPost({'post': post});
 
   @override
   Future<void> logout() async {

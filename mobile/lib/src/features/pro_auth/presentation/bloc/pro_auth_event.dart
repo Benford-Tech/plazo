@@ -14,6 +14,12 @@ class ProAuthLoginSubmitted extends ProAuthEvent {
   final String password;
 }
 
+/// "Aujourd'hui, je suis…": the post held for the day.
+class ProAuthPostChosen extends ProAuthEvent {
+  const ProAuthPostChosen(this.post);
+  final String post;
+}
+
 class ProAuthLogoutRequested extends ProAuthEvent {
   const ProAuthLogoutRequested();
 }

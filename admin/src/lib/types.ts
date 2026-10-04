@@ -20,6 +20,10 @@ export interface Staff {
   role: StaffRole;
   isActive: boolean;
   lastLoginAt: string | null;
+  /** The post held today (R-C, chosen in the app); null until chosen. */
+  post?: StaffRole | null;
+  postSetAt?: string | null;
+  effectivePost?: StaffRole;
   createdAt: string;
   operatorName?: string;
   /** Platform owner (PLATFORM_ADMIN_EMAILS): sees the "Plateforme" space. */

@@ -8,6 +8,7 @@ abstract class AuthRepository {
   Future<Either<Failure, StaffModel>> login({required String email, required String password});
   Future<Either<Failure, StaffModel?>> restore();
   Future<Either<Failure, void>> logout();
+  Future<Either<Failure, StaffModel>> setPost(String post);
 }
 
 class AuthRepositoryImpl implements AuthRepository {
@@ -24,4 +25,7 @@ class AuthRepositoryImpl implements AuthRepository {
 
   @override
   Future<Either<Failure, void>> logout() => _dataSource.logout().makeRequest();
+
+  @override
+  Future<Either<Failure, StaffModel>> setPost(String post) => _dataSource.setPost(post).makeRequest();
 }
