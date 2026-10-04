@@ -1,3 +1,4 @@
+import { STAY_CLASSES } from '@/domain/layout/types';
 import { Type } from 'class-transformer';
 import {
   ArrayMaxSize,
@@ -28,7 +29,7 @@ export const PLAN_LIMITS = {
 
 export const LANDMARK_KINDS = ['entrance', 'exit', 'handover', 'shuttle_stop', 'key_box'] as const;
 export const SPOT_KINDS = ['standard', 'large', 'covered', 'pmr', 'reserved'] as const;
-export const LAYOUT_KEYS = ['selfPark', 'valet24', 'valet5'] as const;
+export const LAYOUT_KEYS = ['selfPark', 'valet24', 'valet5', 'valetEdge'] as const;
 
 /** Same mechanism as the capacity study DTO: the check's code becomes the field's error. */
 function Checked(name: string, check: (value: unknown) => Check, options?: ValidationOptions) {
@@ -136,6 +137,20 @@ export class SpotInputDto {
 
   @Checked('geometry', ringCheck)
   public geometry: [number, number][];
+
+  @IsOptional()
+  @IsInt({ message: 'integer' })
+  @Min(0, { message: 'min_0' })
+  public depth?: number;
+
+  @IsOptional()
+  @IsInt({ message: 'integer' })
+  @Min(1, { message: 'min_1' })
+  public fileLength?: number;
+
+  @IsOptional()
+  @IsIn(STAY_CLASSES, { message: 'invalid_stay_class' })
+  public stayClass?: (typeof STAY_CLASSES)[number];
 }
 
 /** Replaces every spot of the plan (a new generation, or the plan after manual edits). */

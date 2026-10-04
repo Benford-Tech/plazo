@@ -14,8 +14,24 @@ const rect = (w: number, h: number, x = 0, y = 0): Multi => [
   ],
 ];
 
-const SELF: LayoutParams = { slotWidth: 2.5, slotLength: 5, aisleWidth: 6, blockDepth: 2, oneSidedDepth: 1, crossAisles: true, endStalls: false };
-const VALET_24: LayoutParams = { slotWidth: 2.4, slotLength: 5, aisleWidth: 6, blockDepth: 4, oneSidedDepth: 3, crossAisles: true, endStalls: false };
+const SELF: LayoutParams = {
+  slotWidth: 2.5,
+  slotLength: 5,
+  aisleWidth: 6,
+  blockDepth: 2,
+  oneSidedDepth: 1,
+  crossAisles: true,
+  endStalls: false,
+};
+const VALET_24: LayoutParams = {
+  slotWidth: 2.4,
+  slotLength: 5,
+  aisleWidth: 6,
+  blockDepth: 4,
+  oneSidedDepth: 3,
+  crossAisles: true,
+  endStalls: false,
+};
 const VALET_5: LayoutParams = { ...VALET_24, blockDepth: 10, oneSidedDepth: 5 };
 
 describe("générateur de disposition — exemple de référence 100 m × 60 m, sans retrait, allées 6 m", () => {
@@ -52,23 +68,38 @@ describe("générateur de disposition — exemple de référence 100 m × 60 m, 
   });
 
   it("sans allées transversales, chaque rangée court sur toute la longueur", () => {
-    expect(generateLayout(lot, { ...SELF, crossAisles: false }).count).toBeGreaterThanOrEqual(7 * 40);
-    expect(generateLayout(lot, { ...VALET_24, crossAisles: false }).count).toBeGreaterThanOrEqual(9 * 41);
+    expect(
+      generateLayout(lot, { ...SELF, crossAisles: false }).count,
+    ).toBeGreaterThanOrEqual(7 * 40);
+    expect(
+      generateLayout(lot, { ...VALET_24, crossAisles: false }).count,
+    ).toBeGreaterThanOrEqual(9 * 41);
   });
 
   it("les places générées sont dans le terrain et ne se chevauchent pas", () => {
     const r = generateLayout(lot, { ...SELF, endStalls: true });
     expect(r.slots).toHaveLength(r.count);
-    for (const q of r.slots) for (const [x, y] of q) expect(x >= -1e-6 && x <= 100 + 1e-6 && y >= -1e-6 && y <= 60 + 1e-6).toBe(true);
-    const boxes = r.slots.map(q => {
-      const xs = q.map(p => p[0]);
-      const ys = q.map(p => p[1]);
-      return [Math.min(...xs), Math.min(...ys), Math.max(...xs), Math.max(...ys)];
+    for (const q of r.slots)
+      for (const [x, y] of q)
+        expect(
+          x >= -1e-6 && x <= 100 + 1e-6 && y >= -1e-6 && y <= 60 + 1e-6,
+        ).toBe(true);
+    const boxes = r.slots.map((q) => {
+      const xs = q.map((p) => p[0]);
+      const ys = q.map((p) => p[1]);
+      return [
+        Math.min(...xs),
+        Math.min(...ys),
+        Math.max(...xs),
+        Math.max(...ys),
+      ];
     });
     for (let i = 0; i < boxes.length; i++)
       for (let j = i + 1; j < boxes.length; j++) {
         const [a, b] = [boxes[i], boxes[j]];
-        const overlap = Math.min(a[2], b[2]) - Math.max(a[0], b[0]) > 1e-6 && Math.min(a[3], b[3]) - Math.max(a[1], b[1]) > 1e-6;
+        const overlap =
+          Math.min(a[2], b[2]) - Math.max(a[0], b[0]) > 1e-6 &&
+          Math.min(a[3], b[3]) - Math.max(a[1], b[1]) > 1e-6;
         expect(overlap).toBe(false);
       }
   });
@@ -78,7 +109,13 @@ describe("générateur de disposition — cas généraux", () => {
   it("trouve l'orientation d'un terrain tourné", () => {
     const c = Math.cos(Math.PI / 6);
     const s = Math.sin(Math.PI / 6);
-    const turned: Multi = rect(100, 60).map(poly => poly.map(ring => ring.map(([x, y]) => [x * c - y * s, x * s + y * c] as [number, number])));
+    const turned: Multi = rect(100, 60).map((poly) =>
+      poly.map((ring) =>
+        ring.map(
+          ([x, y]) => [x * c - y * s, x * s + y * c] as [number, number],
+        ),
+      ),
+    );
     const r = generateLayout(turned, VALET_24);
     expect(r.count).toBe(324);
     expect(r.angle).toBeCloseTo(30, 0);
@@ -97,7 +134,9 @@ describe("générateur de disposition — cas généraux", () => {
   });
 
   it("tient compte d'un trou (partie exclue) dans le terrain", () => {
-    const withHole: Multi = [[rect(100, 60)[0][0], rect(20, 20, 40, 20)[0][0].slice().reverse()]];
+    const withHole: Multi = [
+      [rect(100, 60)[0][0], rect(20, 20, 40, 20)[0][0].slice().reverse()],
+    ];
     expect(areaOf(withHole)).toBeCloseTo(5600, 6);
     const r = generateLayout(withHole, VALET_24);
     expect(r.count).toBeLessThan(324);
@@ -128,5 +167,70 @@ describe("générateur de disposition — cas généraux", () => {
     expect(r.count).toBeGreaterThan(1000);
     expect(r.count * 12).toBeLessThan(areaOf(lot));
     expect(elapsed).toBeLessThan(20000);
+  });
+});
+
+describe("voiturier « files depuis le bord » (T-A, 04/10/2026)", () => {
+  const EDGE: LayoutParams = {
+    ...VALET_24,
+    blockDepth: 8,
+    oneSidedDepth: 8,
+    crossAisles: false,
+    mode: "edge",
+    maxFiles: 8,
+  };
+  const triangle: Multi = [
+    [
+      [
+        [0, 0],
+        [60, 0],
+        [0, 45],
+        [0, 0],
+      ],
+    ],
+  ];
+
+  it("remplit un triangle bien mieux que les bandes, avec une seule allée le long d'un bord", () => {
+    const bands = generateLayout(triangle, VALET_24);
+    const edge = generateLayout(triangle, EDGE);
+    expect(edge.count).toBeGreaterThan(bands.count * 1.3);
+    expect(edge.pattern).toEqual([8]);
+    expect(edge.depths).toHaveLength(edge.count);
+    expect(edge.files).toHaveLength(edge.count);
+    // Every file starts at the aisle and is as deep as announced.
+    for (let i = 0; i < edge.count; i++)
+      expect(edge.depths[i]).toBeLessThan(edge.files[i]);
+    expect(edge.depths.filter((d) => d === 0).length).toBeGreaterThan(0);
+  });
+
+  it("sur le rectangle de référence : 41 colonnes de 8 = 328, et les rangs sont connus aussi pour les bandes", () => {
+    expect(generateLayout(rect(100, 60), EDGE).count).toBe(328);
+    const bands = generateLayout(rect(100, 60), VALET_24);
+    expect(bands.depths).toHaveLength(bands.count);
+    expect(Math.max(...bands.depths)).toBe(2); // at most 3 from an aisle: ranks 0, 1, 2
+  });
+});
+
+describe("files depuis le bord : l'allée part de l'entrée", () => {
+  const EDGE: LayoutParams = {
+    ...VALET_24,
+    blockDepth: 8,
+    oneSidedDepth: 8,
+    crossAisles: false,
+    mode: "edge",
+    maxFiles: 8,
+  };
+  it("à nombre de places égal, l'allée longe le bord le plus proche du point d'entrée", () => {
+    const lot = rect(100, 60);
+    const south = generateLayout(lot, EDGE, { anchor: [50, -5] });
+    const north = generateLayout(lot, EDGE, { anchor: [50, 65] });
+    expect(south.count).toBe(north.count);
+    const minY = (r: ReturnType<typeof generateLayout>) =>
+      Math.min(...r.slots.flatMap((q) => q.map((p) => p[1])));
+    const maxY = (r: ReturnType<typeof generateLayout>) =>
+      Math.max(...r.slots.flatMap((q) => q.map((p) => p[1])));
+    // South entrance: the aisle is the 6 m strip at the bottom, the files start above it.
+    expect(minY(south)).toBeCloseTo(6, 0);
+    expect(maxY(north)).toBeCloseTo(54, 0);
   });
 });

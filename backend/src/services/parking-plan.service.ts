@@ -1,7 +1,7 @@
 import httpStatus from 'http-status';
 import { Container, Service } from 'typedi';
 import prisma, { ParkingPlan, ParkingSpot, Prisma } from '@/database';
-import { estimate, frameFor, type Estimate } from '@/domain/layout/estimate';
+import { estimate, frameFor, type Estimate, type EstimateInput } from '@/domain/layout/estimate';
 import { spotsFromLayout } from '@/domain/layout/numbering';
 import { settingsOf, type CapacityStudy, type LayoutKey } from '@/domain/layout/types';
 import { GenerateSpotsDto, ReplaceSpotsDto, UpdateParkingPlanDto, UpdateSpotDto } from '@/dtos/parking-plan.dto';
@@ -82,6 +82,9 @@ export class ParkingPlanService {
               geometry: s.geometry as Prisma.InputJsonValue,
               lon,
               lat,
+              depth: s.depth ?? null,
+              fileLength: s.fileLength ?? null,
+              stayClass: s.stayClass ?? null,
             };
           }),
         });
@@ -155,7 +158,12 @@ export class ParkingPlanService {
         zoneId: z.zoneId,
         name: z.name,
         area: Math.round(z.area),
-        counts: { selfPark: z.layouts.selfPark.count, valet24: z.layouts.valet24.count, valet5: z.layouts.valet5.count },
+        counts: {
+          selfPark: z.layouts.selfPark.count,
+          valet24: z.layouts.valet24.count,
+          valet5: z.layouts.valet5.count,
+          valetEdge: z.layouts.valetEdge.count,
+        },
       })),
     };
   }
@@ -171,7 +179,10 @@ export class ParkingPlanService {
     const slotLength = (data.layout === 'selfPark' ? settings.selfParkSlot : settings.valetSlot).length;
     const spots = spotsFromLayout(result, input.zones, data.layout as LayoutKey, frame, slotLength);
     if (!spots.length) throw new HttpException(httpStatus.BAD_REQUEST, 'No spot fits the plan', 'no_spots');
-    const view = await this.replaceSpots(actor, parkingId, { layout: data.layout, spots });
+    const view = await this.replaceSpots(actor, parkingId, {
+      layout: data.layout,
+      spots: spots.map(s => ({ ...s, depth: s.depth ?? undefined, fileLength: s.fileLength ?? undefined, stayClass: s.stayClass ?? undefined })),
+    });
     return data.applyCapacity ? this.applyCapacity(actor, parkingId) : view;
   }
 
@@ -183,8 +194,11 @@ export class ParkingPlanService {
 }
 
 /** The stored plan as the engine reads it. */
-function planInput(plan: ParkingPlan): Pick<CapacityStudy, 'outline' | 'zones' | 'exclusions' | 'scaleFactor' | 'settings'> {
+function planInput(plan: ParkingPlan): EstimateInput {
+  const landmarks = (plan.landmarks as { kind: string; geometry: { coordinates: [number, number] } }[] | null) ?? [];
+  const anchor = landmarks.find(l => l.kind === 'entrance') ?? landmarks.find(l => l.kind === 'handover');
   return {
+    anchor: anchor?.geometry?.coordinates ?? null,
     outline: plan.outline as unknown as CapacityStudy['outline'],
     zones: (plan.zones as unknown as CapacityStudy['zones']) ?? [],
     exclusions: (plan.exclusions as unknown as CapacityStudy['exclusions']) ?? [],

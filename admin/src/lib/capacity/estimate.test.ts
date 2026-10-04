@@ -73,6 +73,6 @@ describe("estimation d'une étude", () => {
     const kinds = geojson.features.map(f => (f as { properties: { kind: string } }).properties.kind);
     expect(kinds.filter(k => k === "outline")).toHaveLength(1);
     expect(kinds.filter(k => k === "zone")).toHaveLength(1);
-    expect(kinds.filter(k => k === "slot")).toHaveLength(r.totals.selfPark + r.totals.valet24 + r.totals.valet5);
+    expect(kinds.filter(k => k === "slot")).toHaveLength(r.totals.selfPark + r.totals.valet24 + r.totals.valet5 + r.totals.valetEdge);
   });
 });

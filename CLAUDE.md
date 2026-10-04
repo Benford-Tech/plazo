@@ -57,6 +57,12 @@ Ne construire QUE ce qui règle la douleur n°1 du client.
    - Affectation de chaque véhicule à un emplacement à l'arrivée.
    - Optimisation : maximiser le nombre de places, ranger par date de retour (aucun véhicule
      bloqué derrière un autre), réduire les trajets du voiturier. Voir SPEC.md, bloc 2.
+     Décisions du 04/10/2026 : **T-A** disposition « Voiturier · files depuis le bord » (`valetEdge` : une allée
+     de service le long d'un bord, files perpendiculaires aussi profondes que le terrain, sans allée intérieure ;
+     `mode: 'edge'` dans `layout.ts`, profondeur max `edgeMaxFiles`) et **Z-A** zones de séjour par rang dans la file
+     (`ParkingSpot.depth`, `fileLength`, `stayClass` court / moyen / long ; seuils `stayShortMaxNights` 3 et
+     `stayMediumMaxNights` 8 dans les réglages du plan) : suggestions et pré-affectation prennent d'abord la zone
+     de la durée du séjour, puis la zone voisine.
    - Retrouver un véhicule en quelques secondes (plaque, emplacement, emplacement des clés).
    - Si voiturier : suivi des clés confiées.
 

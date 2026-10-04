@@ -94,3 +94,10 @@ export function exceedsCalendarDays(arrivalAt: Date, returnAt: Date, timeZone: s
   const limit = `${addDays(arrival.slice(0, 10), days)}${arrival.slice(10)}`;
   return localDateTime(returnAt, timeZone) > limit;
 }
+
+/** Calendar nights of a stay in `timeZone` (same local date: 1, so a day trip counts as the shortest stay). */
+export function nightsBetween(arrivalAt: Date, returnAt: Date, timeZone: string): number {
+  const a = localDate(arrivalAt, timeZone);
+  const r = localDate(returnAt, timeZone);
+  return Math.max(1, Math.round((Date.parse(`${r}T00:00:00Z`) - Date.parse(`${a}T00:00:00Z`)) / 86_400_000));
+}

@@ -128,3 +128,40 @@ describe('planning des places (bloc 2, step 3)', () => {
     expect((await api().post(`/api/internal/parkings/${parking.id}/spot-planning/preassign`).set(auth(token))).body.data.assigned).toHaveLength(0);
   });
 });
+
+describe('zones de séjour (Z-A)', () => {
+  it('la pré-affectation et les suggestions préfèrent la zone de la durée du séjour, puis la zone voisine', async () => {
+    const { token, parking } = await setupOperator();
+    // One file of three spots from the aisle: short (A-01-01), medium (A-01-02), long (A-01-03), plus a short one.
+    const file = [
+      { code: 'A-01-01', index: 1, depth: 0, fileLength: 3, stayClass: 'short' },
+      { code: 'A-01-02', index: 2, depth: 1, fileLength: 3, stayClass: 'medium' },
+      { code: 'A-01-03', index: 3, depth: 2, fileLength: 3, stayClass: 'long' },
+      { code: 'A-01-04', index: 4, depth: 0, fileLength: 1, stayClass: 'short' },
+    ].map((s, i) => ({ zoneId: 'z1', row: 1, geometry: square(5.08 + i * 0.00004, 45.72), ...s }));
+    await api().put(`/api/internal/parkings/${parking.id}/plan/spots`).set(auth(token)).send({ layout: 'valetEdge', spots: file });
+    const d = (n: number) => addDays(today, n);
+    const create = (plate: string, a: number, r: number) => api().post('/api/internal/reservations').set(auth(token)).send(booking(plate, d(a), d(r)));
+    const long = (await create('LL-111-LL', 0, 12)).body.data; // 12 nights: long
+    const short = (await create('SS-222-SS', 0, 2)).body.data; // 2 nights: short
+    const medium = (await create('MM-333-MM', 0, 5)).body.data; // 5 nights: medium
+
+    const board = await api().get(`/api/internal/parkings/${parking.id}/occupation`).set(auth(token));
+    const suggestionFor = (id: string) => board.body.arrivals.find((r: { id: string }) => r.id === id).suggestions[0];
+    expect(suggestionFor(long.id)).toMatchObject({ code: 'A-01-03', stayClass: 'long' });
+    expect(suggestionFor(short.id)).toMatchObject({ code: 'A-01-01', stayClass: 'short' });
+    expect(suggestionFor(medium.id)).toMatchObject({ code: 'A-01-02', stayClass: 'medium' });
+
+    const run = await api().post(`/api/internal/parkings/${parking.id}/spot-planning/preassign`).set(auth(token));
+    const codes = Object.fromEntries(run.body.data.assigned.map((x: { reservationId: string; code: string }) => [x.reservationId, x.code]));
+    expect(codes[long.id]).toBe('A-01-03');
+    expect(codes[short.id]).toBe('A-01-01');
+    expect(codes[medium.id]).toBe('A-01-02');
+    // A second long stay: its zone is full, the neighbouring (medium) zone is not; it never takes a short spot first.
+    const long2 = (await create('LL-444-LL', 0, 10)).body.data;
+    const again = await api().post(`/api/internal/parkings/${parking.id}/spot-planning/preassign`).set(auth(token));
+    expect(again.body.data.assigned.find((x: { reservationId: string }) => x.reservationId === long2.id)?.code).toBe('A-01-04');
+    const rows = await api().get(`/api/internal/parkings/${parking.id}/spot-planning?from=${today}&days=3`).set(auth(token));
+    expect(rows.body.spots.map((s: { stayClass: string | null }) => s.stayClass)).toEqual(['short', 'medium', 'long', 'short']);
+  });
+});

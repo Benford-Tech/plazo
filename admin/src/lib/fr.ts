@@ -844,6 +844,7 @@ export const fr = {
       selfPark: "Clients garés seuls",
       valet24: "Voiturier · files de 2 à 4",
       valet5: "Voiturier · files de 5",
+      valetEdge: "Voiturier · files depuis le bord",
     },
     cars: "voitures",
     perCar: (m2: string) => `${m2} m² par voiture`,
@@ -853,6 +854,8 @@ export const fr = {
       `Blocs ${pattern}, aucune voiture à plus de ${depth} rangs d'une allée`,
     valet5Detail: (pattern: string) =>
       `Blocs ${pattern} : plus dense, mais fragile en cas de retour avancé`,
+    valetEdgeDetail: (deepest: number) =>
+      `Une allée le long du bord, files jusqu'à ${deepest} voitures ; les coins sont remplis, aucune allée intérieure`,
     aisle: "allée",
     range: (a: number, b: number) => `${a} à ${b} voitures`,
     rangeLabel: "Fourchette à annoncer : ",
@@ -934,6 +937,11 @@ export const fr = {
     clickBar: "Cliquez un séjour pour le déplacer.",
     moved: (plate: string, code: string) => `${plate} placé en ${code}`,
     released: (plate: string) => `${plate} n'a plus de place`,
+    stayZone: {
+      short: "zone court séjour",
+      medium: "zone moyen séjour",
+      long: "zone long séjour",
+    },
     spotTaken: "Cette place est déjà prise sur ces dates.",
     openBooking: "Ouvrir la réservation",
   },
@@ -956,6 +964,7 @@ export const fr = {
     stats: (occupied: number, active: number, leaving: number) =>
       `${occupied} / ${active} places occupées · ${leaving} départ${leaving > 1 ? "s" : ""} aujourd'hui`,
     arrivals: (n: number) => `Arrivées à placer · ${n}`,
+    stayZone: { short: "zone court séjour", medium: "zone moyen séjour", long: "zone long séjour" },
     noArrival: "Toutes les arrivées du jour ont une place.",
     suggested: (code: string) => `→ ${code} proposé`,
     reason: {
@@ -1001,9 +1010,20 @@ export const fr = {
       selfPark: "Clients garés seuls",
       valet24: "Voiturier · files de 2 à 4",
       valet5: "Voiturier · files de 5",
+      valetEdge: "Voiturier · files depuis le bord",
     },
     computing: "Calcul des dispositions…",
     places: (n: number) => `${n} place${n > 1 ? "s" : ""}`,
+    // Z-A (04/10/2026): stay classes by rank in the file.
+    stayZones: "Zones de séjour",
+    stayClasses: {
+      short: "Court séjour",
+      medium: "Moyen séjour",
+      long: "Long séjour",
+    },
+    stayClassesHelp: (short: number, medium: number) =>
+      `Premier rang depuis l'allée : court séjour (jusqu'à ${short} nuits) ; fond de file : long séjour (plus de ${medium} nuits) ; entre les deux : moyen. La pré-affectation suit ces zones.`,
+    stayClassCount: (n: number) => `${n}`,
     generate: "Générer les places",
     regenerate: "Régénérer les places",
     regenerateConfirm:

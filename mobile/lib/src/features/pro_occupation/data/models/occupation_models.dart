@@ -37,7 +37,7 @@ abstract class SpotRefModel with _$SpotRefModel {
 
 @freezed
 abstract class SuggestionModel with _$SuggestionModel {
-  const factory SuggestionModel({required String spotId, required String code, int? distanceM, required String reason}) = _SuggestionModel;
+  const factory SuggestionModel({required String spotId, required String code, int? distanceM, required String reason, String? stayClass}) = _SuggestionModel;
   factory SuggestionModel.fromJson(Map<String, dynamic> json) => _$SuggestionModelFromJson(json);
 }
 
@@ -52,6 +52,9 @@ abstract class SpotStateModel with _$SpotStateModel {
     required String kind,
     required bool active,
     required List<List<double>> geometry,
+
+    /// Z-A: short, medium or long stay zone (valet layouts).
+    String? stayClass,
     OccupantModel? occupant,
   }) = _SpotStateModel;
   factory SpotStateModel.fromJson(Map<String, dynamic> json) => _$SpotStateModelFromJson(json);

@@ -2,7 +2,11 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 import { toast } from "sonner";
-import { MapView, type MapLabel, type MapLayer } from "@/components/capacity/MapView";
+import {
+  MapView,
+  type MapLabel,
+  type MapLayer,
+} from "@/components/capacity/MapView";
 import { Aside, PanelLabel, ToolButton } from "@/components/capacity/ui";
 import { ParkingTabs } from "@/components/parking/ParkingTabs";
 import { Plate } from "@/components/Plate";
@@ -13,13 +17,31 @@ import type { LonLat } from "@/lib/capacity/projection";
 import { dateTimeShort, timeOf } from "@/lib/datetime";
 import { describeError, fr } from "@/lib/fr";
 import { pointInRing } from "@/lib/plan/numbering";
-import { spotTone, type ArrivalToPlace, type OccupationBoard, type SpotState, type VehicleHit } from "@/lib/plan/occupation";
+import {
+  spotTone,
+  type ArrivalToPlace,
+  type OccupationBoard,
+  type SpotState,
+  type VehicleHit,
+} from "@/lib/plan/occupation";
 import type { LandmarkKind } from "@/lib/plan/types";
 import { cn } from "@/lib/utils";
 
-const TONE_COLORS = { occupied: "#6ec071", leaving: "#F5C400", booked: "#5fd3ff", free: "#F3F3F0", inactive: "#6b6b66" } as const;
+const TONE_COLORS = {
+  occupied: "#6ec071",
+  leaving: "#F5C400",
+  booked: "#5fd3ff",
+  free: "#F3F3F0",
+  inactive: "#6b6b66",
+} as const;
 const SELECTED = "#ff6600";
-const LANDMARK_COLORS: Record<LandmarkKind, string> = { entrance: "#6ec071", exit: "#ff8a3d", handover: "#F5C400", shuttle_stop: "#5fd3ff", key_box: "#f3f3f0" };
+const LANDMARK_COLORS: Record<LandmarkKind, string> = {
+  entrance: "#6ec071",
+  exit: "#ff8a3d",
+  handover: "#F5C400",
+  shuttle_stop: "#5fd3ff",
+  key_box: "#f3f3f0",
+};
 
 /** A vehicle being placed: the next click on a free spot assigns it. */
 type Choosing = { reservationId: string; plate: string } | null;
@@ -31,7 +53,10 @@ type Choosing = { reservationId: string; plate: string } | null;
 export default function OccupationPage() {
   const t = fr.occupation;
   const queryClient = useQueryClient();
-  const { data: parking } = useQuery({ queryKey: ["parking"], queryFn: adminApi.getParking });
+  const { data: parking } = useQuery({
+    queryKey: ["parking"],
+    queryFn: adminApi.getParking,
+  });
   const parkingId = parking?.id;
   const board = useQuery({
     queryKey: ["occupation", parkingId],
@@ -40,7 +65,8 @@ export default function OccupationPage() {
     refetchInterval: 30_000,
   });
   const [selectedSpotId, setSelectedSpotId] = useState<string | null>(null);
-  const [selectedReservation, setSelectedReservation] = useState<VehicleHit | null>(null);
+  const [selectedReservation, setSelectedReservation] =
+    useState<VehicleHit | null>(null);
   const [choosing, setChoosing] = useState<Choosing>(null);
   const [query, setQuery] = useState("");
   const [debounced, setDebounced] = useState("");
@@ -54,34 +80,72 @@ export default function OccupationPage() {
     enabled: !!parkingId && debounced.length >= 2,
   });
 
-  const refresh = () => queryClient.invalidateQueries({ queryKey: ["occupation", parkingId] });
+  const refresh = () =>
+    queryClient.invalidateQueries({ queryKey: ["occupation", parkingId] });
   const assign = useMutation({
-    mutationFn: (input: { reservationId: string; plate: string; spotId: string | null; keyHook?: string | null; code?: string }) =>
-      adminApi.assignSpot(input.reservationId, { spotId: input.spotId, ...(input.keyHook !== undefined ? { keyHook: input.keyHook } : {}) }),
+    mutationFn: (input: {
+      reservationId: string;
+      plate: string;
+      spotId: string | null;
+      keyHook?: string | null;
+      code?: string;
+    }) =>
+      adminApi.assignSpot(input.reservationId, {
+        spotId: input.spotId,
+        ...(input.keyHook !== undefined ? { keyHook: input.keyHook } : {}),
+      }),
     onSuccess: ({ data }, input) => {
       refresh();
       setChoosing(null);
       if (input.spotId) {
-        toast.success(t.placed(input.plate, data.spot?.code ?? input.code ?? ""));
+        toast.success(
+          t.placed(input.plate, data.spot?.code ?? input.code ?? ""),
+        );
         setSelectedSpotId(input.spotId);
-      } else if (input.keyHook !== undefined && input.spotId === null && input.code === "keys") toast.success(t.keysSaved);
+      } else if (
+        input.keyHook !== undefined &&
+        input.spotId === null &&
+        input.code === "keys"
+      )
+        toast.success(t.keysSaved);
       else toast.success(t.released(input.plate));
-      setSelectedReservation(r => (r && r.id === input.reservationId ? { ...r, spotId: data.spotId ?? null, spot: data.spot, keyHook: data.keyHook ?? null } : r));
+      setSelectedReservation((r) =>
+        r && r.id === input.reservationId
+          ? {
+              ...r,
+              spotId: data.spotId ?? null,
+              spot: data.spot,
+              keyHook: data.keyHook ?? null,
+            }
+          : r,
+      );
     },
-    onError: (e: Error) => toast.error(e instanceof ApiError && e.code === "spot_taken" ? t.spotTaken : describeError(e)),
+    onError: (e: Error) =>
+      toast.error(
+        e instanceof ApiError && e.code === "spot_taken"
+          ? t.spotTaken
+          : describeError(e),
+      ),
   });
 
   const data = board.data;
   const spots = useMemo(() => data?.spots ?? [], [data]);
-  const spotById = useMemo(() => new Map(spots.map(s => [s.id, s])), [spots]);
-  const selectedSpot = selectedSpotId ? (spotById.get(selectedSpotId) ?? null) : null;
+  const spotById = useMemo(() => new Map(spots.map((s) => [s.id, s])), [spots]);
+  const selectedSpot = selectedSpotId
+    ? (spotById.get(selectedSpotId) ?? null)
+    : null;
 
   const onMapClick = (lngLat: LonLat) => {
-    const hit = spots.find(s => pointInRing(lngLat, s.geometry));
+    const hit = spots.find((s) => pointInRing(lngLat, s.geometry));
     if (!hit) return;
     if (choosing) {
       if (!hit.active || hit.occupant) return toast.error(t.spotTaken);
-      assign.mutate({ reservationId: choosing.reservationId, plate: choosing.plate, spotId: hit.id, code: hit.code });
+      assign.mutate({
+        reservationId: choosing.reservationId,
+        plate: choosing.plate,
+        spotId: hit.id,
+        code: hit.code,
+      });
       return;
     }
     setSelectedSpotId(hit.id);
@@ -91,10 +155,15 @@ export default function OccupationPage() {
   const layers = useMemo<MapLayer[]>(() => {
     if (!data) return [];
     const list: MapLayer[] = [];
-    const features = spots.map(s =>
+    const features = spots.map((s) =>
       feature(
         { type: "Polygon", coordinates: [s.geometry] },
-        { color: s.id === selectedSpotId ? SELECTED : TONE_COLORS[spotTone(s)], free: spotTone(s) === "free", active: s.active, selected: s.id === selectedSpotId },
+        {
+          color: s.id === selectedSpotId ? SELECTED : TONE_COLORS[spotTone(s)],
+          free: spotTone(s) === "free",
+          active: s.active,
+          selected: s.id === selectedSpotId,
+        },
       ),
     );
     // Free spots stay see-through so the photo reads; taken ones are solid.
@@ -102,26 +171,87 @@ export default function OccupationPage() {
       id: "spots-fill",
       type: "fill",
       data: fc(features),
-      paint: { "fill-color": ["get", "color"], "fill-opacity": ["case", ["get", "selected"], 0.9, ["get", "free"], 0.12, ["get", "active"], 0.7, 0.08] },
+      paint: {
+        "fill-color": ["get", "color"],
+        "fill-opacity": [
+          "case",
+          ["get", "selected"],
+          0.9,
+          ["get", "free"],
+          0.12,
+          ["get", "active"],
+          0.7,
+          0.08,
+        ],
+      },
     });
-    list.push({ id: "spots-line", type: "line", data: fc(features), paint: { "line-color": ["get", "color"], "line-opacity": ["case", ["get", "free"], 0.6, 1], "line-width": ["case", ["get", "selected"], 2.5, 1] } });
-    if (data.plan?.zones?.length) list.push({ id: "zones", type: "line", data: fc(data.plan.zones.map(z => feature(z.geometry))), paint: { "line-color": "#F5C400", "line-width": 1.5, "line-dasharray": [3, 2] } });
-    if (data.plan?.outline) list.push({ id: "outline", type: "line", data: fc([feature(data.plan.outline)]), paint: { "line-color": "#F5C400", "line-width": 3 } });
+    list.push({
+      id: "spots-line",
+      type: "line",
+      data: fc(features),
+      paint: {
+        "line-color": ["get", "color"],
+        "line-opacity": ["case", ["get", "free"], 0.6, 1],
+        "line-width": ["case", ["get", "selected"], 2.5, 1],
+      },
+    });
+    if (data.plan?.zones?.length)
+      list.push({
+        id: "zones",
+        type: "line",
+        data: fc(data.plan.zones.map((z) => feature(z.geometry))),
+        paint: {
+          "line-color": "#F5C400",
+          "line-width": 1.5,
+          "line-dasharray": [3, 2],
+        },
+      });
+    if (data.plan?.outline)
+      list.push({
+        id: "outline",
+        type: "line",
+        data: fc([feature(data.plan.outline)]),
+        paint: { "line-color": "#F5C400", "line-width": 3 },
+      });
     if (data.plan?.landmarks?.length) {
       list.push({
         id: "landmarks",
         type: "circle",
-        data: fc(data.plan.landmarks.map(l => feature(l.geometry, { color: LANDMARK_COLORS[l.kind] }))),
-        paint: { "circle-radius": 7, "circle-color": ["get", "color"], "circle-stroke-color": "#0B0B0C", "circle-stroke-width": 2 },
+        data: fc(
+          data.plan.landmarks.map((l) =>
+            feature(l.geometry, { color: LANDMARK_COLORS[l.kind] }),
+          ),
+        ),
+        paint: {
+          "circle-radius": 7,
+          "circle-color": ["get", "color"],
+          "circle-stroke-color": "#0B0B0C",
+          "circle-stroke-width": 2,
+        },
       });
     }
     return list;
   }, [data, spots, selectedSpotId]);
   const labels = useMemo<MapLabel[]>(
-    () => (data?.plan?.landmarks ?? []).map(l => ({ id: `lm-${l.id}`, lngLat: l.geometry.coordinates, text: fr.parkingPlan.landmarkKinds[l.kind], variant: "vertex" as const })),
+    () =>
+      (data?.plan?.landmarks ?? []).map((l) => ({
+        id: `lm-${l.id}`,
+        lngLat: l.geometry.coordinates,
+        text: fr.parkingPlan.landmarkKinds[l.kind],
+        variant: "vertex" as const,
+      })),
     [data],
   );
-  const initialBounds = useMemo(() => boundsOf(positionsOf((data?.plan?.outline as { coordinates?: unknown } | null)?.coordinates)), [data?.plan?.outline]);
+  const initialBounds = useMemo(
+    () =>
+      boundsOf(
+        positionsOf(
+          (data?.plan?.outline as { coordinates?: unknown } | null)
+            ?.coordinates,
+        ),
+      ),
+    [data?.plan?.outline],
+  );
 
   if (!parking || board.isLoading) {
     return (
@@ -135,7 +265,9 @@ export default function OccupationPage() {
     return (
       <>
         <ParkingTabs />
-        <p className="text-destructive">{describeError(board.error ?? new Error())}</p>
+        <p className="text-destructive">
+          {describeError(board.error ?? new Error())}
+        </p>
       </>
     );
   }
@@ -157,38 +289,67 @@ export default function OccupationPage() {
       ) : (
         <div className="-mx-4 flex h-[calc(100vh-280px)] min-h-[600px] flex-col border-y border-border sm:-mx-6">
           <div className="flex shrink-0 flex-wrap items-center gap-x-5 gap-y-1 border-b border-border px-6 py-2 text-sm">
-            <span className="font-mono font-bold" data-testid="occupation-stats">
-              {t.stats(data.stats.occupied, data.stats.active, data.stats.leavingToday)}
+            <span
+              className="font-mono font-bold"
+              data-testid="occupation-stats"
+            >
+              {t.stats(
+                data.stats.occupied,
+                data.stats.active,
+                data.stats.leavingToday,
+              )}
             </span>
-            {(Object.keys(TONE_COLORS) as (keyof typeof TONE_COLORS)[]).map(tone => (
-              <span key={tone} className="flex items-center gap-1.5 text-muted-foreground">
-                <span className="h-3 w-3" style={{ background: TONE_COLORS[tone], opacity: tone === "free" ? 0.5 : 1 }} />
-                {t.legend[tone]}
-              </span>
-            ))}
+            {(Object.keys(TONE_COLORS) as (keyof typeof TONE_COLORS)[]).map(
+              (tone) => (
+                <span
+                  key={tone}
+                  className="flex items-center gap-1.5 text-muted-foreground"
+                >
+                  <span
+                    className="h-3 w-3"
+                    style={{
+                      background: TONE_COLORS[tone],
+                      opacity: tone === "free" ? 0.5 : 1,
+                    }}
+                  />
+                  {t.legend[tone]}
+                </span>
+              ),
+            )}
             {choosing && (
               <span className="ml-auto flex items-center gap-2 text-primary">
                 {t.choosing(choosing.plate)}
-                <button type="button" className="underline" onClick={() => setChoosing(null)}>
+                <button
+                  type="button"
+                  className="underline"
+                  onClick={() => setChoosing(null)}
+                >
                   {t.cancelChoice}
                 </button>
               </span>
             )}
           </div>
           <main className="flex min-h-0 flex-1">
-            <MapView layers={layers} labels={labels} initialBounds={initialBounds} onMapClick={onMapClick} cursor={choosing ? "crosshair" : "pointer"} className="min-w-0 flex-1" />
+            <MapView
+              layers={layers}
+              labels={labels}
+              initialBounds={initialBounds}
+              onMapClick={onMapClick}
+              cursor={choosing ? "crosshair" : "pointer"}
+              className="min-w-0 flex-1"
+            />
             <Aside wide>
               <PanelLabel>{t.search}</PanelLabel>
               <input
                 aria-label={t.search}
                 value={query}
-                onChange={e => setQuery(e.target.value)}
+                onChange={(e) => setQuery(e.target.value)}
                 placeholder={t.searchPlaceholder}
                 className="h-11 w-full border border-primary bg-card px-3 font-mono text-base uppercase text-foreground"
               />
               {debounced.length >= 2 && !selectedReservation && (
                 <ul className="flex flex-col">
-                  {(search.data?.results ?? []).map(r => (
+                  {(search.data?.results ?? []).map((r) => (
                     <li key={r.id}>
                       <button
                         type="button"
@@ -199,12 +360,20 @@ export default function OccupationPage() {
                         className="flex min-h-11 w-full items-center gap-3 border-b border-border text-left hover:bg-accent"
                       >
                         <Plate value={r.plate} size="sm" />
-                        <span className="min-w-0 flex-1 truncate text-sm">{r.customerName}</span>
-                        <span className="font-mono text-sm font-bold text-primary">{r.spot?.code ?? "—"}</span>
+                        <span className="min-w-0 flex-1 truncate text-sm">
+                          {r.customerName}
+                        </span>
+                        <span className="font-mono text-sm font-bold text-primary">
+                          {r.spot?.code ?? "—"}
+                        </span>
                       </button>
                     </li>
                   ))}
-                  {search.data && search.data.results.length === 0 && <li className="py-2 text-sm text-muted-foreground">{t.noResult}</li>}
+                  {search.data && search.data.results.length === 0 && (
+                    <li className="py-2 text-sm text-muted-foreground">
+                      {t.noResult}
+                    </li>
+                  )}
                 </ul>
               )}
 
@@ -212,26 +381,72 @@ export default function OccupationPage() {
                 <VehicleCard
                   hit={selectedReservation}
                   onClose={() => setSelectedReservation(null)}
-                  onMove={() => setChoosing({ reservationId: selectedReservation.id, plate: selectedReservation.plate })}
-                  onRelease={() => assign.mutate({ reservationId: selectedReservation.id, plate: selectedReservation.plate, spotId: null })}
-                  onKeys={keyHook => assign.mutate({ reservationId: selectedReservation.id, plate: selectedReservation.plate, spotId: selectedReservation.spotId, keyHook, code: "keys" })}
+                  onMove={() =>
+                    setChoosing({
+                      reservationId: selectedReservation.id,
+                      plate: selectedReservation.plate,
+                    })
+                  }
+                  onRelease={() =>
+                    assign.mutate({
+                      reservationId: selectedReservation.id,
+                      plate: selectedReservation.plate,
+                      spotId: null,
+                    })
+                  }
+                  onKeys={(keyHook) =>
+                    assign.mutate({
+                      reservationId: selectedReservation.id,
+                      plate: selectedReservation.plate,
+                      spotId: selectedReservation.spotId,
+                      keyHook,
+                      code: "keys",
+                    })
+                  }
                 />
               ) : selectedSpot ? (
-                <SpotCard spot={selectedSpot} onMove={o => setChoosing({ reservationId: o.id, plate: o.plate })} onRelease={o => assign.mutate({ reservationId: o.id, plate: o.plate, spotId: null })} />
+                <SpotCard
+                  spot={selectedSpot}
+                  onMove={(o) =>
+                    setChoosing({ reservationId: o.id, plate: o.plate })
+                  }
+                  onRelease={(o) =>
+                    assign.mutate({
+                      reservationId: o.id,
+                      plate: o.plate,
+                      spotId: null,
+                    })
+                  }
+                />
               ) : (
-                <p className="text-[13px] text-muted-foreground">{t.clickSpot}</p>
+                <p className="text-[13px] text-muted-foreground">
+                  {t.clickSpot}
+                </p>
               )}
 
-              <PanelLabel className="mt-2">{t.arrivals(data.arrivals.length)}</PanelLabel>
-              {data.arrivals.length === 0 && <p className="text-sm text-muted-foreground">{t.noArrival}</p>}
+              <PanelLabel className="mt-2">
+                {t.arrivals(data.arrivals.length)}
+              </PanelLabel>
+              {data.arrivals.length === 0 && (
+                <p className="text-sm text-muted-foreground">{t.noArrival}</p>
+              )}
               <ul className="flex flex-col">
-                {data.arrivals.map(a => (
+                {data.arrivals.map((a) => (
                   <ArrivalRow
                     key={a.id}
                     arrival={a}
                     busy={assign.isPending}
-                    onPlace={s => assign.mutate({ reservationId: a.id, plate: a.plate, spotId: s.spotId, code: s.code })}
-                    onChoose={() => setChoosing({ reservationId: a.id, plate: a.plate })}
+                    onPlace={(s) =>
+                      assign.mutate({
+                        reservationId: a.id,
+                        plate: a.plate,
+                        spotId: s.spotId,
+                        code: s.code,
+                      })
+                    }
+                    onChoose={() =>
+                      setChoosing({ reservationId: a.id, plate: a.plate })
+                    }
                   />
                 ))}
               </ul>
@@ -243,28 +458,55 @@ export default function OccupationPage() {
   );
 }
 
-function ArrivalRow({ arrival, busy, onPlace, onChoose }: { arrival: ArrivalToPlace; busy: boolean; onPlace: (s: ArrivalToPlace["suggestions"][number]) => void; onChoose: () => void }) {
+function ArrivalRow({
+  arrival,
+  busy,
+  onPlace,
+  onChoose,
+}: {
+  arrival: ArrivalToPlace;
+  busy: boolean;
+  onPlace: (s: ArrivalToPlace["suggestions"][number]) => void;
+  onChoose: () => void;
+}) {
   const t = fr.occupation;
   const best = arrival.suggestions[0];
   return (
-    <li className="flex flex-col gap-1.5 border-b border-border py-2" data-testid={`arrival-${arrival.reference}`}>
+    <li
+      className="flex flex-col gap-1.5 border-b border-border py-2"
+      data-testid={`arrival-${arrival.reference}`}
+    >
       <div className="flex items-center gap-2.5">
-        <span className="font-mono text-primary">{timeOf(arrival.arrivalAt)}</span>
+        <span className="font-mono text-primary">
+          {timeOf(arrival.arrivalAt)}
+        </span>
         <Plate value={arrival.plate} size="sm" />
-        <span className="min-w-0 flex-1 truncate text-sm">{arrival.customerName}</span>
+        <span className="min-w-0 flex-1 truncate text-sm">
+          {arrival.customerName}
+        </span>
       </div>
       <div className="flex items-center gap-2 text-sm">
         {best ? (
           <>
             <span className="text-primary">{t.suggested(best.code)}</span>
-            <span className="text-muted-foreground">{best.reason === "free" ? t.reason.free : t.reason[best.reason](best.distanceM ?? 0)}</span>
+            <span className="text-muted-foreground">
+              {best.reason === "free"
+                ? t.reason.free
+                : t.reason[best.reason](best.distanceM ?? 0)}
+              {best.stayClass ? ` · ${t.stayZone[best.stayClass]}` : ""}
+            </span>
           </>
         ) : (
           <span className="text-muted-foreground">{t.noSpot}</span>
         )}
         <span className="ml-auto flex gap-1.5">
           {best && (
-            <ToolButton variant="primary" className="min-h-9" disabled={busy} onClick={() => onPlace(best)}>
+            <ToolButton
+              variant="primary"
+              className="min-h-9"
+              disabled={busy}
+              onClick={() => onPlace(best)}
+            >
               {t.place}
             </ToolButton>
           )}
@@ -277,14 +519,28 @@ function ArrivalRow({ arrival, busy, onPlace, onChoose }: { arrival: ArrivalToPl
   );
 }
 
-function SpotCard({ spot, onMove, onRelease }: { spot: SpotState; onMove: (o: NonNullable<SpotState["occupant"]>) => void; onRelease: (o: NonNullable<SpotState["occupant"]>) => void }) {
+function SpotCard({
+  spot,
+  onMove,
+  onRelease,
+}: {
+  spot: SpotState;
+  onMove: (o: NonNullable<SpotState["occupant"]>) => void;
+  onRelease: (o: NonNullable<SpotState["occupant"]>) => void;
+}) {
   const t = fr.occupation;
   const o = spot.occupant;
   return (
-    <div className="flex flex-col gap-2 border border-border p-3" data-testid="spot-card">
-      <div className="font-mono text-[34px] font-bold leading-none text-primary">{spot.code}</div>
+    <div
+      className="flex flex-col gap-2 border border-border p-3"
+      data-testid="spot-card"
+    >
+      <div className="font-mono text-[34px] font-bold leading-none text-primary">
+        {spot.code}
+      </div>
       <div className="text-[13px] text-muted-foreground">
-        {t.rowIndex(spot.row, spot.index)} · {fr.parkingPlan.spotKinds[spot.kind]}
+        {t.rowIndex(spot.row, spot.index)} ·{" "}
+        {fr.parkingPlan.spotKinds[spot.kind]}
       </div>
       {o ? (
         <>
@@ -293,7 +549,9 @@ function SpotCard({ spot, onMove, onRelease }: { spot: SpotState; onMove: (o: No
             <span className="text-sm">{o.customerName}</span>
           </div>
           <div className="text-sm text-muted-foreground">
-            {o.onSite ? t.returnOn(dateTimeShort(o.returnAt)) : t.bookedFor(o.plate, dateTimeShort(o.arrivalAt))}
+            {o.onSite
+              ? t.returnOn(dateTimeShort(o.returnAt))
+              : t.bookedFor(o.plate, dateTimeShort(o.arrivalAt))}
             {o.returnFlight ? ` · ${t.flight(o.returnFlight)}` : ""}
             {o.keyHook ? ` · ${t.keyHook} ${o.keyHook}` : ""}
           </div>
@@ -304,32 +562,61 @@ function SpotCard({ spot, onMove, onRelease }: { spot: SpotState; onMove: (o: No
             <ToolButton className="min-h-9" onClick={() => onRelease(o)}>
               {t.release}
             </ToolButton>
-            <Link to={`/reservations/${o.id}`} className="flex min-h-9 items-center px-2 text-sm text-primary underline">
+            <Link
+              to={`/reservations/${o.id}`}
+              className="flex min-h-9 items-center px-2 text-sm text-primary underline"
+            >
               {t.openBooking}
             </Link>
           </div>
         </>
       ) : (
-        <div className="text-sm">{spot.active ? t.freeSpot : fr.parkingPlan.legend.inactive}</div>
+        <div className="text-sm">
+          {spot.active ? t.freeSpot : fr.parkingPlan.legend.inactive}
+        </div>
       )}
     </div>
   );
 }
 
-function VehicleCard({ hit, onClose, onMove, onRelease, onKeys }: { hit: VehicleHit; onClose: () => void; onMove: () => void; onRelease: () => void; onKeys: (keyHook: string | null) => void }) {
+function VehicleCard({
+  hit,
+  onClose,
+  onMove,
+  onRelease,
+  onKeys,
+}: {
+  hit: VehicleHit;
+  onClose: () => void;
+  onMove: () => void;
+  onRelease: () => void;
+  onKeys: (keyHook: string | null) => void;
+}) {
   const t = fr.occupation;
   const [keys, setKeys] = useState(hit.keyHook ?? "");
   useEffect(() => setKeys(hit.keyHook ?? ""), [hit.keyHook]);
   return (
-    <div className="flex flex-col gap-2 border border-primary p-3" data-testid="vehicle-card">
+    <div
+      className="flex flex-col gap-2 border border-primary p-3"
+      data-testid="vehicle-card"
+    >
       <div className="flex items-center gap-2.5">
         <Plate value={hit.plate} />
-        <span className="min-w-0 flex-1 truncate text-sm">{hit.customerName}</span>
-        <button type="button" onClick={onClose} className="text-sm text-muted-foreground underline">
+        <span className="min-w-0 flex-1 truncate text-sm">
+          {hit.customerName}
+        </span>
+        <button
+          type="button"
+          onClick={onClose}
+          className="text-sm text-muted-foreground underline"
+        >
           {fr.common.close}
         </button>
       </div>
-      <div className="font-mono text-[34px] font-bold leading-none text-primary" data-testid="vehicle-spot">
+      <div
+        className="font-mono text-[34px] font-bold leading-none text-primary"
+        data-testid="vehicle-spot"
+      >
         {hit.spot?.code ?? t.noSpot}
       </div>
       <div className="text-sm text-muted-foreground">
@@ -338,7 +625,7 @@ function VehicleCard({ hit, onClose, onMove, onRelease, onKeys }: { hit: Vehicle
       </div>
       <form
         className={cn("flex items-center gap-2 text-sm")}
-        onSubmit={e => {
+        onSubmit={(e) => {
           e.preventDefault();
           onKeys(keys.trim() || null);
         }}
@@ -346,7 +633,14 @@ function VehicleCard({ hit, onClose, onMove, onRelease, onKeys }: { hit: Vehicle
         <label htmlFor="key-hook" className="text-muted-foreground">
           {t.keyHook}
         </label>
-        <input id="key-hook" value={keys} onChange={e => setKeys(e.target.value)} placeholder={t.keyHookPlaceholder} maxLength={12} className="h-9 w-20 border border-border bg-card px-2 font-mono" />
+        <input
+          id="key-hook"
+          value={keys}
+          onChange={(e) => setKeys(e.target.value)}
+          placeholder={t.keyHookPlaceholder}
+          maxLength={12}
+          className="h-9 w-20 border border-border bg-card px-2 font-mono"
+        />
         <ToolButton type="submit" className="min-h-9">
           {t.saveKeys}
         </ToolButton>
@@ -360,7 +654,10 @@ function VehicleCard({ hit, onClose, onMove, onRelease, onKeys }: { hit: Vehicle
             {t.release}
           </ToolButton>
         )}
-        <Link to={`/reservations/${hit.id}`} className="flex min-h-9 items-center px-2 text-sm text-primary underline">
+        <Link
+          to={`/reservations/${hit.id}`}
+          className="flex min-h-9 items-center px-2 text-sm text-primary underline"
+        >
           {t.openBooking}
         </Link>
       </div>

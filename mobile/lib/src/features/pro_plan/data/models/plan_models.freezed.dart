@@ -600,7 +600,7 @@ as String?,
 /// @nodoc
 mixin _$SpotModel {
 
- String get id; String get code; int get row; int get index; String get kind; bool get active;/// Closed ring, [lon, lat] × 5.
+ String get id; String get code; int get row; int get index; String get kind; bool get active; String? get stayClass;/// Closed ring, [lon, lat] × 5.
  List<List<double>> get geometry;
 /// Create a copy of SpotModel
 /// with the given fields replaced by the non-null parameter values.
@@ -615,20 +615,20 @@ $SpotModelCopyWith<SpotModel> get copyWith => _$SpotModelCopyWithImpl<SpotModel>
 @override
 bool operator ==(Object other) {
   final _this = this as SpotModel;
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is SpotModel&&(identical(other.id, _this.id) || other.id == _this.id)&&(identical(other.code, _this.code) || other.code == _this.code)&&(identical(other.row, _this.row) || other.row == _this.row)&&(identical(other.index, _this.index) || other.index == _this.index)&&(identical(other.kind, _this.kind) || other.kind == _this.kind)&&(identical(other.active, _this.active) || other.active == _this.active)&&const DeepCollectionEquality().equals(other.geometry, _this.geometry));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is SpotModel&&(identical(other.id, _this.id) || other.id == _this.id)&&(identical(other.code, _this.code) || other.code == _this.code)&&(identical(other.row, _this.row) || other.row == _this.row)&&(identical(other.index, _this.index) || other.index == _this.index)&&(identical(other.kind, _this.kind) || other.kind == _this.kind)&&(identical(other.active, _this.active) || other.active == _this.active)&&(identical(other.stayClass, _this.stayClass) || other.stayClass == _this.stayClass)&&const DeepCollectionEquality().equals(other.geometry, _this.geometry));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
 int get hashCode {
   final _this = this as SpotModel;
-  return Object.hash(runtimeType,_this.id,_this.code,_this.row,_this.index,_this.kind,_this.active,const DeepCollectionEquality().hash(_this.geometry));
+  return Object.hash(runtimeType,_this.id,_this.code,_this.row,_this.index,_this.kind,_this.active,_this.stayClass,const DeepCollectionEquality().hash(_this.geometry));
 }
 
 @override
 String toString() {
   final _this = this as SpotModel;
-  return 'SpotModel(id: ${_this.id}, code: ${_this.code}, row: ${_this.row}, index: ${_this.index}, kind: ${_this.kind}, active: ${_this.active}, geometry: ${_this.geometry})';
+  return 'SpotModel(id: ${_this.id}, code: ${_this.code}, row: ${_this.row}, index: ${_this.index}, kind: ${_this.kind}, active: ${_this.active}, stayClass: ${_this.stayClass}, geometry: ${_this.geometry})';
 }
 
 
@@ -639,7 +639,7 @@ abstract mixin class $SpotModelCopyWith<$Res>  {
   factory $SpotModelCopyWith(SpotModel value, $Res Function(SpotModel) _then) = _$SpotModelCopyWithImpl;
 @useResult
 $Res call({
- String id, String code, int row, int index, String kind, bool active, List<List<double>> geometry
+ String id, String code, int row, int index, String kind, bool active, String? stayClass, List<List<double>> geometry
 });
 
 
@@ -656,7 +656,7 @@ class _$SpotModelCopyWithImpl<$Res>
 
 /// Create a copy of SpotModel
 /// with the given fields replaced by the non-null parameter values.
-@pragma('vm:prefer-inline') @override $Res call({Object? id = null,Object? code = null,Object? row = null,Object? index = null,Object? kind = null,Object? active = null,Object? geometry = null,}) {
+@pragma('vm:prefer-inline') @override $Res call({Object? id = null,Object? code = null,Object? row = null,Object? index = null,Object? kind = null,Object? active = null,Object? stayClass = freezed,Object? geometry = null,}) {
   return _then(SpotModel(
 id: null == id ? _self.id : id // ignore: cast_nullable_to_non_nullable
 as String,code: null == code ? _self.code : code // ignore: cast_nullable_to_non_nullable
@@ -664,7 +664,8 @@ as String,row: null == row ? _self.row : row // ignore: cast_nullable_to_non_nul
 as int,index: null == index ? _self.index : index // ignore: cast_nullable_to_non_nullable
 as int,kind: null == kind ? _self.kind : kind // ignore: cast_nullable_to_non_nullable
 as String,active: null == active ? _self.active : active // ignore: cast_nullable_to_non_nullable
-as bool,geometry: null == geometry ? _self.geometry : geometry // ignore: cast_nullable_to_non_nullable
+as bool,stayClass: freezed == stayClass ? _self.stayClass : stayClass // ignore: cast_nullable_to_non_nullable
+as String?,geometry: null == geometry ? _self.geometry : geometry // ignore: cast_nullable_to_non_nullable
 as List<List<double>>,
   ));
 }
@@ -750,10 +751,10 @@ return $default(_that);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( String id,  String code,  int row,  int index,  String kind,  bool active,  List<List<double>> geometry)?  $default,{required TResult orElse(),}) {final _that = this;
+@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( String id,  String code,  int row,  int index,  String kind,  bool active,  String? stayClass,  List<List<double>> geometry)?  $default,{required TResult orElse(),}) {final _that = this;
 switch (_that) {
 case _SpotModel() when $default != null:
-return $default(_that.id,_that.code,_that.row,_that.index,_that.kind,_that.active,_that.geometry);case _:
+return $default(_that.id,_that.code,_that.row,_that.index,_that.kind,_that.active,_that.stayClass,_that.geometry);case _:
   return orElse();
 
 }
@@ -771,10 +772,10 @@ return $default(_that.id,_that.code,_that.row,_that.index,_that.kind,_that.activ
 /// }
 /// ```
 
-@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( String id,  String code,  int row,  int index,  String kind,  bool active,  List<List<double>> geometry)  $default,) {final _that = this;
+@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( String id,  String code,  int row,  int index,  String kind,  bool active,  String? stayClass,  List<List<double>> geometry)  $default,) {final _that = this;
 switch (_that) {
 case _SpotModel():
-return $default(_that.id,_that.code,_that.row,_that.index,_that.kind,_that.active,_that.geometry);case _:
+return $default(_that.id,_that.code,_that.row,_that.index,_that.kind,_that.active,_that.stayClass,_that.geometry);case _:
   throw StateError('Unexpected subclass');
 
 }
@@ -791,10 +792,10 @@ return $default(_that.id,_that.code,_that.row,_that.index,_that.kind,_that.activ
 /// }
 /// ```
 
-@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( String id,  String code,  int row,  int index,  String kind,  bool active,  List<List<double>> geometry)?  $default,) {final _that = this;
+@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( String id,  String code,  int row,  int index,  String kind,  bool active,  String? stayClass,  List<List<double>> geometry)?  $default,) {final _that = this;
 switch (_that) {
 case _SpotModel() when $default != null:
-return $default(_that.id,_that.code,_that.row,_that.index,_that.kind,_that.active,_that.geometry);case _:
+return $default(_that.id,_that.code,_that.row,_that.index,_that.kind,_that.active,_that.stayClass,_that.geometry);case _:
   return null;
 
 }
@@ -806,7 +807,7 @@ return $default(_that.id,_that.code,_that.row,_that.index,_that.kind,_that.activ
 @JsonSerializable()
 
 class _SpotModel implements SpotModel {
-  const _SpotModel({required this.id, required this.code, required this.row, required this.index, required this.kind, required this.active, required  List<List<double>> geometry}): _geometry = geometry;
+  const _SpotModel({required this.id, required this.code, required this.row, required this.index, required this.kind, required this.active, this.stayClass, required  List<List<double>> geometry}): _geometry = geometry;
   factory _SpotModel.fromJson(Map<String, dynamic> json) => _$SpotModelFromJson(json);
 
 @override final  String id;
@@ -815,6 +816,7 @@ class _SpotModel implements SpotModel {
 @override final  int index;
 @override final  String kind;
 @override final  bool active;
+@override final  String? stayClass;
 /// Closed ring, [lon, lat] × 5.
  final  List<List<double>> _geometry;
 /// Closed ring, [lon, lat] × 5.
@@ -838,18 +840,18 @@ Map<String, dynamic> toJson() {
 
 @override
 bool operator ==(Object other) {
-    return identical(this, other) || (other.runtimeType == runtimeType&&other is _SpotModel&&(identical(other.id, id) || other.id == id)&&(identical(other.code, code) || other.code == code)&&(identical(other.row, row) || other.row == row)&&(identical(other.index, index) || other.index == index)&&(identical(other.kind, kind) || other.kind == kind)&&(identical(other.active, active) || other.active == active)&&const DeepCollectionEquality().equals(other.geometry, _geometry));
+    return identical(this, other) || (other.runtimeType == runtimeType&&other is _SpotModel&&(identical(other.id, id) || other.id == id)&&(identical(other.code, code) || other.code == code)&&(identical(other.row, row) || other.row == row)&&(identical(other.index, index) || other.index == index)&&(identical(other.kind, kind) || other.kind == kind)&&(identical(other.active, active) || other.active == active)&&(identical(other.stayClass, stayClass) || other.stayClass == stayClass)&&const DeepCollectionEquality().equals(other.geometry, _geometry));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
 int get hashCode {
-    return Object.hash(runtimeType,id,code,row,index,kind,active,const DeepCollectionEquality().hash(_geometry));
+    return Object.hash(runtimeType,id,code,row,index,kind,active,stayClass,const DeepCollectionEquality().hash(_geometry));
 }
 
 @override
 String toString() {
-    return 'SpotModel(id: $id, code: $code, row: $row, index: $index, kind: $kind, active: $active, geometry: $geometry)';
+    return 'SpotModel(id: $id, code: $code, row: $row, index: $index, kind: $kind, active: $active, stayClass: $stayClass, geometry: $geometry)';
 }
 
 
@@ -860,7 +862,7 @@ abstract mixin class _$SpotModelCopyWith<$Res> implements $SpotModelCopyWith<$Re
   factory _$SpotModelCopyWith(_SpotModel value, $Res Function(_SpotModel) _then) = __$SpotModelCopyWithImpl;
 @override @useResult
 $Res call({
- String id, String code, int row, int index, String kind, bool active, List<List<double>> geometry
+ String id, String code, int row, int index, String kind, bool active, String? stayClass, List<List<double>> geometry
 });
 
 
@@ -877,7 +879,7 @@ class __$SpotModelCopyWithImpl<$Res>
 
 /// Create a copy of SpotModel
 /// with the given fields replaced by the non-null parameter values.
-@override @pragma('vm:prefer-inline') $Res call({Object? id = null,Object? code = null,Object? row = null,Object? index = null,Object? kind = null,Object? active = null,Object? geometry = null,}) {
+@override @pragma('vm:prefer-inline') $Res call({Object? id = null,Object? code = null,Object? row = null,Object? index = null,Object? kind = null,Object? active = null,Object? stayClass = freezed,Object? geometry = null,}) {
   return _then(_SpotModel(
 id: null == id ? _self.id : id // ignore: cast_nullable_to_non_nullable
 as String,code: null == code ? _self.code : code // ignore: cast_nullable_to_non_nullable
@@ -885,7 +887,8 @@ as String,row: null == row ? _self.row : row // ignore: cast_nullable_to_non_nul
 as int,index: null == index ? _self.index : index // ignore: cast_nullable_to_non_nullable
 as int,kind: null == kind ? _self.kind : kind // ignore: cast_nullable_to_non_nullable
 as String,active: null == active ? _self.active : active // ignore: cast_nullable_to_non_nullable
-as bool,geometry: null == geometry ? _self._geometry : geometry // ignore: cast_nullable_to_non_nullable
+as bool,stayClass: freezed == stayClass ? _self.stayClass : stayClass // ignore: cast_nullable_to_non_nullable
+as String?,geometry: null == geometry ? _self._geometry : geometry // ignore: cast_nullable_to_non_nullable
 as List<List<double>>,
   ));
 }

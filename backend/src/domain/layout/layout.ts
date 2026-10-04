@@ -37,11 +37,22 @@ export interface LayoutParams {
   oneSidedDepth: number;
   crossAisles: boolean;
   endStalls: boolean;
+  /**
+   * "edge" (T-A, 04/10/2026): one service aisle along a boundary edge, files perpendicular to it as
+   * deep as the land allows (up to `maxFiles`), no inner or cross aisle. Default: the band pattern.
+   */
+  mode?: 'bands' | 'edge';
+  maxFiles?: number;
 }
 
 export interface SearchOptions {
   /** Fixed orientation in degrees (rows along this bearing, counter-clockwise from east); null: search. */
   angle?: number | null;
+  /**
+   * Edge mode: the entrance (or handover point). Among the aisles within 3 % of the best count,
+   * the one nearest this point wins: the valet drives in straight onto the service aisle.
+   */
+  anchor?: XY | null;
   angleStep?: number;
   phaseStep?: number;
   /** Number of along-row offsets tried over one slot width. */
@@ -55,6 +66,10 @@ export interface LayoutResult {
   count: number;
   /** Rows bearing in degrees, 0..180. */
   angle: number;
+  /** Rank of each slot from the aisle that serves it (0: first in the file), parallel to `slots`. */
+  depths: number[];
+  /** Length of the file each slot belongs to, parallel to `slots`. */
+  files: number[];
   /** Rows per block in y order, with aisles between them, e.g. [3, 4, 2]. */
   pattern: number[];
   slots: Quad[];
@@ -181,6 +196,8 @@ interface Evaluation {
   count: number;
   pattern: number[];
   slots?: Quad[];
+  depths?: number[];
+  files?: number[];
 }
 
 function buildModules(shape: Rotated, p: LayoutParams, phase: number): Module[] {
@@ -227,6 +244,8 @@ function evaluate(shape: Rotated, modules: Module[], p: LayoutParams, along: num
   let count = 0;
   const pattern: number[] = [];
   const slots: Quad[] = [];
+  const depths: number[] = [];
+  const files: number[] = [];
   const rowUsed = new Array<boolean>(D);
 
   for (let k = 0; k < modules.length; k++) {
@@ -263,6 +282,9 @@ function evaluate(shape: Rotated, modules: Module[], p: LayoutParams, along: num
           [x1, y0 + l],
           [x0, y0 + l],
         ]);
+        const fromBelow = r < reachBelow;
+        depths.push(fromBelow ? r : D - 1 - r);
+        files.push(fromBelow ? reachBelow : reachAbove);
       }
     }
     if (emit) pattern.push(rowUsed.filter(Boolean).length);
@@ -294,19 +316,143 @@ function evaluate(shape: Rotated, modules: Module[], p: LayoutParams, along: num
             const ok = bands.every(band => band.to <= ys + EPS || band.from >= ys + w - EPS || fits(band.intervals, xa, xb));
             if (!ok) continue;
             count++;
-            if (emit)
+            if (emit) {
               slots.push([
                 [xa, ys],
                 [xb, ys],
                 [xb, ys + w],
                 [xa, ys + w],
               ]);
+              depths.push(0);
+              files.push(1);
+            }
           }
         }
       }
     }
   }
-  return { count, pattern, slots: emit ? slots : undefined };
+  return { count, pattern, slots: emit ? slots : undefined, depths: emit ? depths : undefined, files: emit ? files : undefined };
+}
+
+/**
+ * Edge mode: the aisle is the strip [aisleY, aisleY + aisleWidth]; every column of slot width that
+ * touches it takes a file going up, as long as the slots stay inside the polygon (up to maxFiles).
+ */
+function evaluateEdge(shape: Rotated, p: LayoutParams, aisleY: number, along: number, emit: boolean): Evaluation {
+  const w = p.slotWidth;
+  const l = p.slotLength;
+  const maxFiles = Math.max(1, p.maxFiles ?? 8);
+  const aisle = shape.strip(aisleY, aisleY + p.aisleWidth);
+  const empty: Evaluation = { count: 0, pattern: [] };
+  if (aisle.length === 0) return empty;
+  const cStart = Math.floor((shape.xmin - along) / w) - 1;
+  const cEnd = Math.ceil((shape.xmax - along) / w) + 1;
+  const nCols = cEnd - cStart + 1;
+  const aisleMask = new Uint8Array(nCols);
+  columnMask(aisle, along, w, cStart, aisleMask);
+  const rowMasks: Uint8Array[] = [];
+  for (let r = 0; r < maxFiles; r++) {
+    const y0 = aisleY + p.aisleWidth + r * l;
+    const mask = new Uint8Array(nCols);
+    if (y0 < shape.ymax) columnMask(shape.strip(y0, y0 + l), along, w, cStart, mask);
+    rowMasks.push(mask);
+  }
+  let count = 0;
+  let deepest = 0;
+  const slots: Quad[] = [];
+  const depths: number[] = [];
+  const files: number[] = [];
+  for (let i = 0; i < nCols; i++) {
+    if (!aisleMask[i]) continue;
+    let n = 0;
+    while (n < maxFiles && rowMasks[n][i]) n++;
+    if (n === 0) continue;
+    count += n;
+    deepest = Math.max(deepest, n);
+    if (!emit) continue;
+    const x0 = along + (cStart + i) * w;
+    for (let r = 0; r < n; r++) {
+      const y0 = aisleY + p.aisleWidth + r * l;
+      slots.push([
+        [x0, y0],
+        [x0 + w, y0],
+        [x0 + w, y0 + l],
+        [x0, y0 + l],
+      ]);
+      depths.push(r);
+      files.push(n);
+    }
+  }
+  return {
+    count,
+    pattern: count ? [deepest] : [],
+    slots: emit ? slots : undefined,
+    depths: emit ? depths : undefined,
+    files: emit ? files : undefined,
+  };
+}
+
+/** Bearings of the boundary edges, both ways round (the aisle lies on one side or the other). */
+function edgeAngles(multi: Multi): number[] {
+  const out: number[] = [];
+  for (const poly of multi)
+    for (const ring of poly)
+      for (let i = 0; i + 1 < ring.length; i++) {
+        const dx = ring[i + 1][0] - ring[i][0];
+        const dy = ring[i + 1][1] - ring[i][1];
+        if (Math.hypot(dx, dy) < 2) continue;
+        const a = (Math.atan2(dy, dx) * 180) / Math.PI;
+        for (const b of [a, a + 180]) {
+          const n = ((b % 360) + 360) % 360;
+          if (!out.some(x => Math.abs(x - n) < 0.25)) out.push(n);
+        }
+      }
+  return out;
+}
+
+function generateEdgeLayout(multi: Multi, params: LayoutParams, options: SearchOptions): LayoutResult {
+  const empty: LayoutResult = { count: 0, angle: options.angle ?? 0, pattern: [], slots: [], depths: [], files: [] };
+  const phaseStep = options.phaseStep ?? 0.5;
+  const alongSteps = Math.max(1, options.alongSteps ?? 6);
+  const angles = options.angle != null ? [options.angle, options.angle + 180] : edgeAngles(multi);
+  type Candidate = { count: number; angle: number; aisleY: number; along: number; anchorDistance: number };
+  const candidates: Candidate[] = [];
+  for (const angle of angles) {
+    const rad = (angle * Math.PI) / 180;
+    const cos = Math.cos(rad);
+    const sin = Math.sin(rad);
+    const shape = new Rotated(multi, cos, sin);
+    const anchor = options.anchor ? rotate(options.anchor, cos, sin) : null;
+    let bestForAngle: Candidate | null = null;
+    // The aisle hugs the edge, or floats a little inwards when the edge is not straight.
+    for (let aisleY = shape.ymin; aisleY < shape.ymin + params.slotLength; aisleY += phaseStep) {
+      for (let s = 0; s < alongSteps; s++) {
+        const along = shape.xmin + (s * params.slotWidth) / alongSteps;
+        const { count } = evaluateEdge(shape, params, aisleY, along, false);
+        const anchorDistance = anchor ? Math.abs(anchor[1] - (aisleY + params.aisleWidth / 2)) : 0;
+        if (!bestForAngle || count > bestForAngle.count) bestForAngle = { count, angle, aisleY, along, anchorDistance };
+      }
+    }
+    if (bestForAngle) candidates.push(bestForAngle);
+  }
+  const top = Math.max(0, ...candidates.map(c => c.count));
+  if (top === 0) return empty;
+  const best = candidates
+    .filter(c => c.count >= top * 0.97)
+    .sort((a, b) => a.anchorDistance - b.anchorDistance || b.count - a.count || a.angle - b.angle)[0];
+  const rad = (best.angle * Math.PI) / 180;
+  const cos = Math.cos(rad);
+  const sin = Math.sin(rad);
+  const shape = new Rotated(multi, cos, sin);
+  const result = evaluateEdge(shape, params, best.aisleY, best.along, true);
+  return {
+    count: result.count,
+    angle: Math.round((((best.angle % 180) + 180) % 180) * 10) / 10,
+    pattern: result.pattern,
+    slots: (result.slots ?? []).map(q => q.map(p => unrotate(p, cos, sin)) as Quad),
+    depths: result.depths ?? [],
+    files: result.files ?? [],
+  };
 }
 
 /** Trims empty blocks at both ends of a pattern. */
@@ -319,8 +465,9 @@ function trimPattern(pattern: number[]): number[] {
 }
 
 export function generateLayout(multi: Multi, params: LayoutParams, options: SearchOptions = {}): LayoutResult {
-  const empty: LayoutResult = { count: 0, angle: options.angle ?? 0, pattern: [], slots: [] };
+  const empty: LayoutResult = { count: 0, angle: options.angle ?? 0, pattern: [], slots: [], depths: [], files: [] };
   if (multi.length === 0) return empty;
+  if (params.mode === 'edge') return generateEdgeLayout(multi, params, options);
   const angleStep = options.angleStep ?? 2;
   const phaseStep = options.phaseStep ?? 0.5;
   const alongSteps = Math.max(1, options.alongSteps ?? 6);
@@ -376,5 +523,7 @@ export function generateLayout(multi: Multi, params: LayoutParams, options: Sear
     angle: Math.round(best.angle * 10) / 10,
     pattern: trimPattern(result.pattern),
     slots: (result.slots ?? []).map(q => q.map(p => unrotate(p, cos, sin)) as Quad),
+    depths: result.depths ?? [],
+    files: result.files ?? [],
   };
 }

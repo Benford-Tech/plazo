@@ -1,7 +1,8 @@
 import httpStatus from 'http-status';
 import { Container, Service } from 'typedi';
 import prisma, { ParkingSpot, Prisma, ReservationStatus } from '@/database';
-import { addDays, dayBounds, DATE_RE, localDate } from '@/domain/time';
+import { settingsOf, stayClassDistance, stayClassForNights, type StayClass } from '@/domain/layout/types';
+import { addDays, dayBounds, DATE_RE, localDate, nightsBetween } from '@/domain/time';
 import { AuthenticatedStaff } from '@/interfaces/auth.interface';
 import { HttpException } from '@/utils/httpException';
 import { AuditService } from './audit.service';
@@ -90,6 +91,7 @@ export class SpotPlanningService {
       index: s.index,
       kind: s.kind,
       active: s.active,
+      stayClass: s.stayClass ?? null,
       stays: (bySpot.get(s.id) ?? []).map(r => ({ ...r, onSite: ON_SITE.includes(r.status) })),
     }));
     const capacity = spots.filter(s => s.active).length;
@@ -122,9 +124,9 @@ export class SpotPlanningService {
   }
 
   /**
-   * Gives a spot to every booking of the window that has none, earliest arrival first: the free
-   * spot (over the whole stay) nearest the handover point, and among equals the one whose row
-   * neighbours leave closest to the same day, so a row empties together.
+   * Gives a spot to every booking of the window that has none, earliest arrival first: a free spot
+   * (over the whole stay) in the zone of the stay's class (Z-A), nearest the handover point, and
+   * among equals the one whose row neighbours leave closest to the same day, so a row empties together.
    */
   public async preassign(actor: AuthenticatedStaff, parkingId: string, query: { from?: unknown; days?: unknown }) {
     const parking = await this.parkingOf(actor, parkingId);
@@ -140,12 +142,13 @@ export class SpotPlanningService {
       l => l.geometry?.coordinates,
     );
     const target = landmarks.find(l => l.kind === 'handover') ?? landmarks.find(l => l.kind === 'entrance') ?? null;
+    const settings = settingsOf({ settings: (plan?.settings as object) ?? {} });
     const placed: Stay[] = holding.filter(r => r.spotId);
     const todo = holding.filter(r => !r.spotId && r.arrivalAt < end && r.returnAt > start);
     const assigned: { reservationId: string; reference: string; spotId: string; code: string }[] = [];
     const skipped: { reservationId: string; reference: string }[] = [];
     for (const r of todo) {
-      const spot = this.pick(spots, placed, r, target);
+      const spot = this.pick(spots, placed, r, target, stayClassForNights(nightsBetween(r.arrivalAt, r.returnAt, parking.timezone), settings));
       if (!spot) {
         skipped.push({ reservationId: r.id, reference: r.reference });
         continue;
@@ -169,7 +172,13 @@ export class SpotPlanningService {
     return { assigned, skipped };
   }
 
-  private pick(spots: ParkingSpot[], placed: Stay[], r: Stay, target: { geometry: { coordinates: [number, number] } } | null): ParkingSpot | null {
+  private pick(
+    spots: ParkingSpot[],
+    placed: Stay[],
+    r: Stay,
+    target: { geometry: { coordinates: [number, number] } } | null,
+    wanted: StayClass,
+  ): ParkingSpot | null {
     const overlapping = placed.filter(p => p.arrivalAt < r.returnAt && p.returnAt > r.arrivalAt);
     const busy = new Set(overlapping.map(p => p.spotId as string));
     const free = spots.filter(s => !busy.has(s.id));
@@ -187,11 +196,15 @@ export class SpotPlanningService {
     };
     const scored = free.map(s => ({
       spot: s,
+      zone: stayClassDistance(s.stayClass, wanted),
       distance: target ? distanceM([s.lon, s.lat], target.geometry.coordinates) : s.row * 1000 + s.index,
       spread: rowSpread(s),
     }));
-    // Distance in 10 m bands, then the row that empties with this vehicle, then the plan order.
-    scored.sort((a, b) => Math.floor(a.distance / 10) - Math.floor(b.distance / 10) || a.spread - b.spread || a.distance - b.distance);
+    // The stay's zone first (Z-A), then distance in 10 m bands, then the row that empties with this
+    // vehicle, then the plan order.
+    scored.sort(
+      (a, b) => a.zone - b.zone || Math.floor(a.distance / 10) - Math.floor(b.distance / 10) || a.spread - b.spread || a.distance - b.distance,
+    );
     return scored[0].spot;
   }
 

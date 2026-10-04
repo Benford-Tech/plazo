@@ -85,7 +85,8 @@
     "layouts": {
       "selfPark": "Clients garés seuls",
       "valet24": "Voiturier · files de 2 à 4",
-      "valet5": "Voiturier · files de 5"
+      "valet5": "Voiturier · files de 5",
+      "valetEdge": "Voiturier · files depuis le bord"
     },
     "places": "{} places",
     "declared": "Capacité déclarée",
@@ -100,7 +101,8 @@
     "location_denied": "Position refusée : saisissez une adresse.",
     "location_deniedForever": "Position refusée dans les réglages du téléphone : saisissez une adresse.",
     "location_serviceDisabled": "Localisation désactivée : saisissez une adresse.",
-    "location_granted": ""
+    "location_granted": "",
+    "stay_zones": "Zones de séjour : court (clair) devant, moyen, long (foncé) au fond."
   },
   "res": {
     "title": "Réservations",
@@ -205,7 +207,12 @@
     "legend_occupied": "Occupée",
     "legend_leaving": "Départ aujourd'hui",
     "legend_booked": "Réservée",
-    "no_plan": "Pas encore de plan : générez les places depuis « Plan du parking »."
+    "no_plan": "Pas encore de plan : générez les places depuis « Plan du parking ».",
+    "stay_zone": {
+      "short": "zone court séjour",
+      "medium": "zone moyen séjour",
+      "long": "zone long séjour"
+    }
   },
   "pro": {
     "login_title": "Connexion du personnel",

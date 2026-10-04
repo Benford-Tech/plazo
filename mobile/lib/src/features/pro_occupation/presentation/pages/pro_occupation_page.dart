@@ -315,7 +315,9 @@ class _ArrivalRow extends StatelessWidget {
           ),
           const SizedBox(height: 6),
           Text(
-            best == null ? 'occupation.no_free'.tr() : '${'occupation.suggested'.tr(args: [best.code])} · ${_reason(best)}',
+            best == null
+                ? 'occupation.no_free'.tr()
+                : '${'occupation.suggested'.tr(args: [best.code])} · ${_reason(best)}${best.stayClass != null ? ' · ${'occupation.stay_zone.${best.stayClass}'.tr()}' : ''}',
             style: AppText.muted(size: 12.5),
           ),
           const SizedBox(height: 8),

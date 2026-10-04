@@ -9,6 +9,14 @@ import '../../../../shared/widgets/ign_map.dart';
 import '../../data/models/plan_models.dart';
 
 /// The IGN aerial photo with the outline being drawn and, once generated, the spots.
+/// Z-A: the stay zones on the plan, from the aisle (light) to the back of the file (deep).
+Color stayFill(String? stayClass) => switch (stayClass) {
+  'short' => const Color(0x99FFF3B0),
+  'medium' => const Color(0x8CF5C400),
+  'long' => const Color(0xA6B58900),
+  _ => const Color(0x8CF5C400),
+};
+
 class PlanMap extends StatefulWidget {
   const PlanMap({
     super.key,
@@ -81,7 +89,7 @@ class _PlanMapState extends State<PlanMap> {
                   for (final s in widget.spots)
                     Polygon(
                       points: s.geometry.map((p) => LatLng(p[1], p[0])).toList(),
-                      color: s.active ? const Color(0x8CF5C400) : const Color(0x26F3F3F0),
+                      color: s.active ? stayFill(s.stayClass) : const Color(0x26F3F3F0),
                       borderColor: s.active ? const Color(0xFFF5C400) : const Color(0xFF9A9A94),
                       borderStrokeWidth: 1,
                     ),

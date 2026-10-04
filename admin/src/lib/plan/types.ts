@@ -1,10 +1,32 @@
-import type { CapacityStudy, GeoPoint, LayoutKey } from "@/lib/capacity/types";
+import type {
+  CapacityStudy,
+  GeoPoint,
+  LayoutKey,
+  StayClass,
+} from "@/lib/capacity/types";
 
-export type LandmarkKind = "entrance" | "exit" | "handover" | "shuttle_stop" | "key_box";
-export const LANDMARK_KINDS: LandmarkKind[] = ["entrance", "exit", "handover", "shuttle_stop", "key_box"];
+export type LandmarkKind =
+  | "entrance"
+  | "exit"
+  | "handover"
+  | "shuttle_stop"
+  | "key_box";
+export const LANDMARK_KINDS: LandmarkKind[] = [
+  "entrance",
+  "exit",
+  "handover",
+  "shuttle_stop",
+  "key_box",
+];
 
 export type SpotKind = "standard" | "large" | "covered" | "pmr" | "reserved";
-export const SPOT_KINDS: SpotKind[] = ["standard", "large", "covered", "pmr", "reserved"];
+export const SPOT_KINDS: SpotKind[] = [
+  "standard",
+  "large",
+  "covered",
+  "pmr",
+  "reserved",
+];
 
 export interface Landmark {
   id: string;
@@ -13,7 +35,10 @@ export interface Landmark {
 }
 
 /** The plan as the API stores it (bloc 2, step "Plan"): the estimator's fields plus the landmarks. */
-export interface ParkingPlan extends Pick<CapacityStudy, "outline" | "parcels" | "scaleFactor" | "zones" | "exclusions" | "settings"> {
+export interface ParkingPlan extends Pick<
+  CapacityStudy,
+  "outline" | "parcels" | "scaleFactor" | "zones" | "exclusions" | "settings"
+> {
   id: string;
   parkingId: string;
   landmarks: Landmark[];
@@ -34,6 +59,10 @@ export interface Spot {
   geometry: [number, number][];
   lon: number;
   lat: number;
+  /** Rank from the aisle, length of the file, and the stay class (valet layouts, Z-A). */
+  depth: number | null;
+  fileLength: number | null;
+  stayClass: StayClass | null;
 }
 
 export interface SpotInput {
@@ -42,6 +71,9 @@ export interface SpotInput {
   row: number;
   index: number;
   geometry: [number, number][];
+  depth?: number | null;
+  fileLength?: number | null;
+  stayClass?: StayClass | null;
 }
 
 export interface ParkingPlanView {
@@ -51,4 +83,15 @@ export interface ParkingPlanView {
   totalCapacity: number;
 }
 
-export type PlanPatch = Partial<Pick<ParkingPlan, "outline" | "parcels" | "scaleFactor" | "zones" | "exclusions" | "settings" | "landmarks">>;
+export type PlanPatch = Partial<
+  Pick<
+    ParkingPlan,
+    | "outline"
+    | "parcels"
+    | "scaleFactor"
+    | "zones"
+    | "exclusions"
+    | "settings"
+    | "landmarks"
+  >
+>;

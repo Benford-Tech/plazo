@@ -21,6 +21,9 @@ export interface LayoutEstimate {
   pattern: number[];
   /** Slot outlines as closed WGS84 rings. */
   slots: LonLat[][];
+  /** Rank from the aisle and length of the file, per slot (Z-A). */
+  depths: number[];
+  files: number[];
 }
 
 export interface ZoneEstimate {
@@ -39,7 +42,8 @@ export interface Estimate {
   totals: Record<LayoutKey, number>;
 }
 
-export type EstimateInput = Pick<CapacityStudy, 'outline' | 'zones' | 'exclusions' | 'scaleFactor' | 'settings'>;
+/** The plan, plus the entrance (or handover point) the edge layout should start from. */
+export type EstimateInput = Pick<CapacityStudy, 'outline' | 'zones' | 'exclusions' | 'scaleFactor' | 'settings'> & { anchor?: LonLat | null };
 
 export function layoutParams(key: LayoutKey, s: CapacitySettings): LayoutParams {
   const common = { aisleWidth: s.aisleWidth, crossAisles: s.crossAisles };
@@ -49,6 +53,20 @@ export function layoutParams(key: LayoutKey, s: CapacitySettings): LayoutParams 
   if (key === 'valet24') {
     const depth = Math.max(2, Math.round(s.maxDepth));
     return { ...common, slotWidth: s.valetSlot.width, slotLength: s.valetSlot.length, blockDepth: depth, oneSidedDepth: depth - 1, endStalls: false };
+  }
+  if (key === 'valetEdge') {
+    const files = Math.max(1, Math.round(s.edgeMaxFiles));
+    return {
+      ...common,
+      crossAisles: false,
+      slotWidth: s.valetSlot.width,
+      slotLength: s.valetSlot.length,
+      blockDepth: files,
+      oneSidedDepth: files,
+      endStalls: false,
+      mode: 'edge',
+      maxFiles: files,
+    };
   }
   return { ...common, slotWidth: s.valetSlot.width, slotLength: s.valetSlot.length, blockDepth: 10, oneSidedDepth: 5, endStalls: false };
 }
@@ -82,12 +100,13 @@ export function outlineMulti(frame: Frame, input: Pick<CapacityStudy, 'outline'>
 export const areaM2 = (polygon: GeoPolygon | null | undefined, scale = 1) => (polygon ? polygonAreaM2(polygon.coordinates, scale) : 0);
 
 export function estimate(input: EstimateInput): Estimate {
-  const empty: Estimate = { zones: [], usableArea: 0, totals: { selfPark: 0, valet24: 0, valet5: 0 } };
+  const empty: Estimate = { zones: [], usableArea: 0, totals: { selfPark: 0, valet24: 0, valet5: 0, valetEdge: 0 } };
   const frame = frameFor(input);
   if (!frame) return empty;
   const settings = settingsOf(input);
   const outline = outlineMulti(frame, input);
   const excluded = union(...input.exclusions.map(e => exclusionMulti(frame, e)));
+  const anchor = input.anchor ? frame.forward(input.anchor) : null;
 
   const zones: ZoneEstimate[] = input.zones.map(zone => {
     let land = polygonToMulti(frame, zone.geometry);
@@ -97,18 +116,20 @@ export function estimate(input: EstimateInput): Estimate {
     const forLayout = simplify(difference(shrink(land, settings.setback), excluded), LAYOUT_SIMPLIFY_M);
     const layouts = {} as Record<LayoutKey, LayoutEstimate>;
     for (const key of LAYOUT_KEYS) {
-      const r = generateLayout(forLayout, layoutParams(key, settings), { angle: settings.orientation });
+      const r = generateLayout(forLayout, layoutParams(key, settings), { angle: settings.orientation, anchor });
       layouts[key] = {
         count: r.count,
         angle: r.angle,
         pattern: r.pattern,
         slots: r.slots.map(q => [...q, q[0]].map(p => frame.inverse(p as XY))),
+        depths: r.depths,
+        files: r.files,
       };
     }
     return { zoneId: zone.id, name: zone.name, area: areaOf(land), usableArea: areaOf(usable), layouts };
   });
 
-  const totals = { selfPark: 0, valet24: 0, valet5: 0 };
+  const totals = { selfPark: 0, valet24: 0, valet5: 0, valetEdge: 0 };
   for (const z of zones) for (const key of LAYOUT_KEYS) totals[key] += z.layouts[key].count;
   return { zones, usableArea: zones.reduce((s, z) => s + z.usableArea, 0), totals };
 }
@@ -124,7 +145,12 @@ export function summarize(result: Estimate): StudyResults {
       name: z.name,
       area: Math.round(z.area),
       usableArea: Math.round(z.usableArea),
-      counts: { selfPark: z.layouts.selfPark.count, valet24: z.layouts.valet24.count, valet5: z.layouts.valet5.count },
+      counts: {
+        selfPark: z.layouts.selfPark.count,
+        valet24: z.layouts.valet24.count,
+        valet5: z.layouts.valet5.count,
+        valetEdge: z.layouts.valetEdge.count,
+      },
       angle: z.layouts.valet24.angle,
     })),
   };

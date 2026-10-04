@@ -386,6 +386,7 @@ class _GenerateStep extends StatelessWidget {
                 ),
               const SizedBox(height: 10),
               Text('plan.generate_help'.tr(), style: AppText.muted(size: 12.5)),
+              if (spots.any((s) => s.stayClass != null)) ...[const SizedBox(height: 6), Text('plan.stay_zones'.tr(), style: AppText.muted(size: 12.5))],
               const SizedBox(height: 8),
               OutlineAction(
                 key: const Key('plan-edit-outline'),

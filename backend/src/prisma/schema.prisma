@@ -201,6 +201,14 @@ enum SpotKind {
   reserved
 }
 
+// Z-A (04/10/2026): which stays a spot is meant for, from its rank in the file (short: first rank
+// from the aisle, long: the back of the file, medium: between).
+enum StayClass {
+  short
+  medium
+  long
+}
+
 // The operator's own parking plan (bloc 2, step "Plan"): the land, the zones and the fixed elements
 // drawn on the IGN aerial photo, scoped to its parking. The spots generated from it are rows of
 // ParkingSpot so the occupation and the per-spot planning can reference them. GeoJSON in WGS84.
@@ -248,6 +256,10 @@ model ParkingSpot {
   // Centre of the spot, for the search and the distances.
   lon       Float
   lat       Float
+  // Rank from the aisle (0: first), length of the file, and the stay class that follows (valet layouts).
+  depth      Int?
+  fileLength Int?
+  stayClass  StayClass?
   createdAt DateTime @default(now())
 
   parking      Parking       @relation(fields: [parkingId], references: [id], onDelete: Cascade)

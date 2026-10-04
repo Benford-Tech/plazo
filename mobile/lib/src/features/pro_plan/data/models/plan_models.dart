@@ -34,6 +34,7 @@ abstract class SpotModel with _$SpotModel {
     required int index,
     required String kind,
     required bool active,
+    String? stayClass,
 
     /// Closed ring, [lon, lat] × 5.
     required List<List<double>> geometry,

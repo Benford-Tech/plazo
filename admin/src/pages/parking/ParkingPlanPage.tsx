@@ -18,8 +18,21 @@ import SpotsStep from "./SpotsStep";
 export type PlanStep = "terrain" | "zones" | "places";
 const STEPS: PlanStep[] = ["terrain", "zones", "places"];
 /** The estimator's steps navigate to these names; the plan maps "capacite" to its "places" step. */
-const FROM_STUDY_STEP: Record<string, PlanStep> = { terrain: "terrain", zones: "zones", capacite: "places", photo: "places" };
-const PLAN_KEYS = ["outline", "parcels", "scaleFactor", "zones", "exclusions", "settings", "landmarks"] as const;
+const FROM_STUDY_STEP: Record<string, PlanStep> = {
+  terrain: "terrain",
+  zones: "zones",
+  capacite: "places",
+  photo: "places",
+};
+const PLAN_KEYS = [
+  "outline",
+  "parcels",
+  "scaleFactor",
+  "zones",
+  "exclusions",
+  "settings",
+  "landmarks",
+] as const;
 
 type SaveState = "idle" | "saving" | "saved" | "error";
 
@@ -31,7 +44,10 @@ export default function ParkingPlanPage() {
   const { step = "terrain" } = useParams<{ step: PlanStep }>();
   const navigate = useNavigate();
   const queryClient = useQueryClient();
-  const { data: parking, isLoading: loadingParking } = useQuery({ queryKey: ["parking"], queryFn: adminApi.getParking });
+  const { data: parking, isLoading: loadingParking } = useQuery({
+    queryKey: ["parking"],
+    queryFn: adminApi.getParking,
+  });
   const parkingId = parking?.id;
   const [view, setView] = useState<ParkingPlanView | null>(null);
   const [loadError, setLoadError] = useState<string | null>(null);
@@ -45,8 +61,8 @@ export default function ParkingPlanPage() {
     let cancelled = false;
     adminApi
       .getParkingPlan(parkingId)
-      .then(v => !cancelled && setView(v))
-      .catch(e => !cancelled && setLoadError(describeError(e)));
+      .then((v) => !cancelled && setView(v))
+      .catch((e) => !cancelled && setLoadError(describeError(e)));
     return () => {
       cancelled = true;
     };
@@ -79,9 +95,13 @@ export default function ParkingPlanPage() {
   const update = useCallback(
     (patch: StudyPatch | PlanPatch) => {
       const own: PlanPatch = {};
-      for (const key of PLAN_KEYS) if (key in patch) (own as Record<string, unknown>)[key] = (patch as Record<string, unknown>)[key];
+      for (const key of PLAN_KEYS)
+        if (key in patch)
+          (own as Record<string, unknown>)[key] = (
+            patch as Record<string, unknown>
+          )[key];
       if (Object.keys(own).length === 0) return;
-      setView(v => (v ? { ...v, plan: { ...v.plan, ...own } } : v));
+      setView((v) => (v ? { ...v, plan: { ...v.plan, ...own } } : v));
       pending.current = { ...pending.current, ...own };
       setSaveState("saving");
       if (timer.current) clearTimeout(timer.current);
@@ -92,13 +112,24 @@ export default function ParkingPlanPage() {
 
   useEffect(() => () => void flush(), [flush]);
 
-  const go = useCallback((s: string) => navigate(`/parking/plan/${FROM_STUDY_STEP[s] ?? s}`), [navigate]);
+  const go = useCallback(
+    (s: string) => navigate(`/parking/plan/${FROM_STUDY_STEP[s] ?? s}`),
+    [navigate],
+  );
 
   // The plan seen as a study, for the reused steps.
   const study = useMemo<CapacityStudy | null>(
     () =>
       view && parking
-        ? { ...view.plan, name: parking.name, results: {}, carMarkers: [], createdAt: view.plan.updatedAt, updatedAt: view.plan.updatedAt, createdBy: null }
+        ? {
+            ...view.plan,
+            name: parking.name,
+            results: {},
+            carMarkers: [],
+            createdAt: view.plan.updatedAt,
+            updatedAt: view.plan.updatedAt,
+            createdBy: null,
+          }
         : null,
     [view, parking],
   );
@@ -109,20 +140,38 @@ export default function ParkingPlanPage() {
       exclusions: view?.plan.exclusions ?? [],
       scaleFactor: view?.plan.scaleFactor ?? 1,
       settings: view?.plan.settings ?? {},
+      // The edge layout starts its aisle from the entrance (else the handover point).
+      anchor:
+        (
+          view?.plan.landmarks.find((l) => l.kind === "entrance") ??
+          view?.plan.landmarks.find((l) => l.kind === "handover")
+        )?.geometry.coordinates ?? null,
     }),
-    [view?.plan.outline, view?.plan.zones, view?.plan.exclusions, view?.plan.scaleFactor, view?.plan.settings],
+    [
+      view?.plan.outline,
+      view?.plan.zones,
+      view?.plan.exclusions,
+      view?.plan.scaleFactor,
+      view?.plan.settings,
+      view?.plan.landmarks,
+    ],
   );
-  const estimate = useEstimate(estimateInput, step === "places" && (view?.plan.zones.length ?? 0) > 0);
+  const estimate = useEstimate(
+    estimateInput,
+    step === "places" && (view?.plan.zones.length ?? 0) > 0,
+  );
 
   const replaceView = useCallback(
     (next: ParkingPlanView) => {
       setView(next);
-      if (parking && next.totalCapacity !== parking.totalCapacity) queryClient.invalidateQueries({ queryKey: ["parking"] });
+      if (parking && next.totalCapacity !== parking.totalCapacity)
+        queryClient.invalidateQueries({ queryKey: ["parking"] });
     },
     [parking, queryClient],
   );
 
-  if (!STEPS.includes(step)) return <Navigate to="/parking/plan/terrain" replace />;
+  if (!STEPS.includes(step))
+    return <Navigate to="/parking/plan/terrain" replace />;
   if (loadError) {
     return (
       <>
@@ -153,16 +202,40 @@ export default function ParkingPlanPage() {
         <main className="flex min-h-0 flex-1">
           {step === "terrain" && <TerrainStep key={parking.id} {...props} />}
           {step === "zones" && <ZonesStep key={parking.id} {...props} />}
-          {step === "places" && <SpotsStep key={parking.id} parkingId={parking.id} view={view} estimate={estimate} update={update} onView={replaceView} go={go} />}
+          {step === "places" && (
+            <SpotsStep
+              key={parking.id}
+              parkingId={parking.id}
+              view={view}
+              estimate={estimate}
+              update={update}
+              onView={replaceView}
+              go={go}
+            />
+          )}
         </main>
       </div>
     </>
   );
 }
 
-function StepsBar({ study, step, go, saveState }: { study: CapacityStudy; step: PlanStep; go: (s: string) => void; saveState: SaveState }) {
+function StepsBar({
+  study,
+  step,
+  go,
+  saveState,
+}: {
+  study: CapacityStudy;
+  step: PlanStep;
+  go: (s: string) => void;
+  saveState: SaveState;
+}) {
   const current = STEPS.indexOf(step);
-  const reachable = [true, !!study.outline, !!study.outline && study.zones.length > 0];
+  const reachable = [
+    true,
+    !!study.outline,
+    !!study.outline && study.zones.length > 0,
+  ];
   const t = fr.parkingPlan;
   return (
     <div className="flex shrink-0 items-center gap-7 border-b border-border px-6 py-3">
@@ -177,25 +250,47 @@ function StepsBar({ study, step, go, saveState }: { study: CapacityStudy; step: 
             aria-current={state === "active" ? "step" : undefined}
             className={cn(
               "flex items-center gap-2 text-[15px] font-bold uppercase disabled:cursor-not-allowed",
-              state === "active" ? "text-primary" : state === "done" ? "text-foreground" : "text-muted-foreground",
+              state === "active"
+                ? "text-primary"
+                : state === "done"
+                  ? "text-foreground"
+                  : "text-muted-foreground",
             )}
           >
             <span
               className={cn(
                 "flex h-[26px] w-[26px] items-center justify-center border font-mono text-sm",
-                state === "active" && "border-primary bg-primary text-primary-foreground",
+                state === "active" &&
+                  "border-primary bg-primary text-primary-foreground",
                 state === "done" && "border-foreground",
                 state === "todo" && "border-muted-foreground",
               )}
             >
-              {state === "done" ? <Check className="h-4 w-4" strokeWidth={3} /> : i + 1}
+              {state === "done" ? (
+                <Check className="h-4 w-4" strokeWidth={3} />
+              ) : (
+                i + 1
+              )}
             </span>
             {label}
           </button>
         );
       })}
-      <span className={cn("ml-auto w-28 text-right text-xs", saveState === "error" ? "text-destructive" : "text-muted-foreground")} role="status" aria-live="polite">
-        {saveState === "saving" ? t.saving : saveState === "saved" ? t.saved : saveState === "error" ? t.saveError : ""}
+      <span
+        className={cn(
+          "ml-auto w-28 text-right text-xs",
+          saveState === "error" ? "text-destructive" : "text-muted-foreground",
+        )}
+        role="status"
+        aria-live="polite"
+      >
+        {saveState === "saving"
+          ? t.saving
+          : saveState === "saved"
+            ? t.saved
+            : saveState === "error"
+              ? t.saveError
+              : ""}
       </span>
     </div>
   );

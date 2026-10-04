@@ -1,7 +1,8 @@
 import httpStatus from 'http-status';
 import { Container, Service } from 'typedi';
-import prisma, { ParkingSpot, Prisma, Reservation, ReservationStatus } from '@/database';
-import { dayBounds, localDate } from '@/domain/time';
+import prisma, { ParkingPlan, ParkingSpot, Prisma, Reservation, ReservationStatus } from '@/database';
+import { settingsOf, stayClassDistance, stayClassForNights, type StayClass } from '@/domain/layout/types';
+import { dayBounds, localDate, nightsBetween } from '@/domain/time';
 import { AssignSpotDto } from '@/dtos/occupation.dto';
 import { AuthenticatedStaff } from '@/interfaces/auth.interface';
 import { HttpException } from '@/utils/httpException';
@@ -31,6 +32,8 @@ export interface Suggestion {
   /** Metres to the handover point (or the entrance), when the plan has one. */
   distanceM: number | null;
   reason: 'near_handover' | 'near_entrance' | 'free';
+  /** The spot's stay class, when the plan has them (Z-A). */
+  stayClass: StayClass | null;
 }
 
 export interface SpotState {
@@ -42,6 +45,7 @@ export interface SpotState {
   kind: string;
   active: boolean;
   geometry: unknown;
+  stayClass: StayClass | null;
   /** The vehicle on it now (on site), else the next booking placed on it. */
   occupant: (Occupant & { onSite: boolean; leavesToday: boolean }) | null;
 }
@@ -86,6 +90,7 @@ export class OccupationService {
         kind: s.kind,
         active: s.active,
         geometry: s.geometry,
+        stayClass: s.stayClass ?? null,
         occupant: o ? { ...o, onSite: ON_SITE.includes(o.status), leavesToday: o.returnAt >= start && o.returnAt < end } : null,
       };
     });
@@ -100,7 +105,7 @@ export class OccupationService {
     const arrivals = [];
     const taken = new Set<string>();
     for (const r of unplaced) {
-      const suggestions = await this.suggest(parking.id, spots, r, landmarks, taken);
+      const suggestions = await this.suggest(parking.id, spots, r, landmarks, taken, plan, parking.timezone);
       // Each arrival gets its own first choice: the next one skips it.
       if (suggestions[0]) taken.add(suggestions[0].spotId);
       arrivals.push({ ...r, suggestions });
@@ -188,14 +193,20 @@ export class OccupationService {
     return updated;
   }
 
-  /** Top 3 free spots for a stay: nearest the handover point (else the entrance), never "reserved". */
+  /**
+   * Top 3 free spots for a stay: in the zone of the stay's class first (Z-A, a neighbouring zone
+   * when it is full), then nearest the handover point (else the entrance); never "reserved".
+   */
   private async suggest(
     parkingId: string,
     spots: ParkingSpot[],
     r: Pick<Reservation, 'id' | 'arrivalAt' | 'returnAt'>,
     landmarks: { kind: string; geometry: { coordinates: [number, number] } }[],
     skip: Set<string>,
+    plan: ParkingPlan | null,
+    timezone: string,
   ): Promise<Suggestion[]> {
+    const wanted = stayClassForNights(nightsBetween(r.arrivalAt, r.returnAt, timezone), settingsOf({ settings: (plan?.settings as object) ?? {} }));
     const busy = await prisma.reservation.findMany({
       where: {
         parkingId,
@@ -214,9 +225,13 @@ export class OccupationService {
       .filter(s => s.active && s.kind !== 'reserved' && !busyIds.has(s.id) && !skip.has(s.id))
       .map(s => {
         const distance = target ? Math.round(distanceM([s.lon, s.lat], target.geometry.coordinates)) : null;
-        return { suggestion: { spotId: s.id, code: s.code, distanceM: distance, reason }, order: distance ?? s.row * 1000 + s.index };
+        return {
+          suggestion: { spotId: s.id, code: s.code, distanceM: distance, reason, stayClass: s.stayClass ?? null },
+          zone: stayClassDistance(s.stayClass, wanted),
+          order: distance ?? s.row * 1000 + s.index,
+        };
       });
-    candidates.sort((a, b) => a.order - b.order);
+    candidates.sort((a, b) => a.zone - b.zone || a.order - b.order);
     return candidates.slice(0, 3).map(c => c.suggestion);
   }
 

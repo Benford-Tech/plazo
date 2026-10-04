@@ -158,3 +158,38 @@ describe('parking plan (bloc 2, step Plan)', () => {
     expect((await api().post(`/api/internal/parkings/${parking.id}/plan/generate`).set(auth(token)).send({ layout: 'grid' })).status).toBe(400);
   });
 });
+
+describe('disposition « files depuis le bord » (T-A) et zones de séjour (Z-A)', () => {
+  it('génère plus de places qu’en bandes sur un terrain en triangle, et classe chaque place par son rang dans la file', async () => {
+    const { token, parking } = await setupOperator();
+    // A right triangle of about 60 m × 45 m (1° of latitude ≈ 111 km; longitude scaled by cos 45.72°).
+    const tri = {
+      type: 'Polygon',
+      coordinates: [
+        [
+          [5.08, 45.72],
+          [5.08077, 45.72],
+          [5.08, 45.7204],
+          [5.08, 45.72],
+        ],
+      ],
+    };
+    await api()
+      .patch(`/api/internal/parkings/${parking.id}/plan`)
+      .set(auth(token))
+      .send({ outline: tri, zones: [{ id: 'z1', name: 'Zone A', geometry: tri }], settings: { setback: 0 } });
+    const est = await api().post(`/api/internal/parkings/${parking.id}/plan/estimate`).set(auth(token));
+    expect(est.status).toBe(200);
+    expect(est.body.totals.valetEdge).toBeGreaterThan(est.body.totals.valet24);
+    expect(est.body.zones[0].counts.valetEdge).toBe(est.body.totals.valetEdge);
+
+    const gen = await api().post(`/api/internal/parkings/${parking.id}/plan/generate`).set(auth(token)).send({ layout: 'valetEdge', applyCapacity: true });
+    expect(gen.status).toBe(200);
+    const spots = gen.body.data.spots as { stayClass: string | null; depth: number; fileLength: number }[];
+    expect(spots.length).toBe(est.body.totals.valetEdge);
+    expect(spots.every(s => s.stayClass === 'short' || s.stayClass === 'medium' || s.stayClass === 'long')).toBe(true);
+    expect(spots.filter(s => s.depth === 0).every(s => s.stayClass === 'short')).toBe(true);
+    expect(spots.filter(s => s.fileLength >= 3 && s.depth === s.fileLength - 1).every(s => s.stayClass === 'long')).toBe(true);
+    expect(spots.some(s => s.stayClass === 'medium')).toBe(true);
+  });
+});

@@ -49,6 +49,7 @@ _SuggestionModel _$SuggestionModelFromJson(Map<String, dynamic> json) => _Sugges
   code: json['code'] as String,
   distanceM: (json['distanceM'] as num?)?.toInt(),
   reason: json['reason'] as String,
+  stayClass: json['stayClass'] as String?,
 );
 
 Map<String, dynamic> _$SuggestionModelToJson(_SuggestionModel instance) => <String, dynamic>{
@@ -56,6 +57,7 @@ Map<String, dynamic> _$SuggestionModelToJson(_SuggestionModel instance) => <Stri
   'code': instance.code,
   'distanceM': instance.distanceM,
   'reason': instance.reason,
+  'stayClass': instance.stayClass,
 };
 
 _SpotStateModel _$SpotStateModelFromJson(Map<String, dynamic> json) => _SpotStateModel(
@@ -67,6 +69,7 @@ _SpotStateModel _$SpotStateModelFromJson(Map<String, dynamic> json) => _SpotStat
   kind: json['kind'] as String,
   active: json['active'] as bool,
   geometry: (json['geometry'] as List<dynamic>).map((e) => (e as List<dynamic>).map((e) => (e as num).toDouble()).toList()).toList(),
+  stayClass: json['stayClass'] as String?,
   occupant: json['occupant'] == null ? null : OccupantModel.fromJson(json['occupant'] as Map<String, dynamic>),
 );
 
@@ -79,6 +82,7 @@ Map<String, dynamic> _$SpotStateModelToJson(_SpotStateModel instance) => <String
   'kind': instance.kind,
   'active': instance.active,
   'geometry': instance.geometry,
+  'stayClass': instance.stayClass,
   'occupant': instance.occupant,
 };
 
