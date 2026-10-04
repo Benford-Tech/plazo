@@ -92,6 +92,9 @@ export class ParkingRoute implements Routes {
       ValidationMiddleware(AssignSpotDto),
       this.parking.assignSpot,
     );
+    // Bloc 2, step "Planning des places": one line per spot over the coming days.
+    this.router.get('/internal/parkings/:id/spot-planning', StaffAuthMiddleware('reservations:view'), this.parking.spotPlanningBoard);
+    this.router.post('/internal/parkings/:id/spot-planning/preassign', StaffAuthMiddleware('reservations:status'), this.parking.preassignSpots);
     this.router.get('/internal/geo/parcels', StaffAuthMiddleware('parking:manage'), this.geo.parcels);
     this.router.get('/internal/geo/parkings', StaffAuthMiddleware('parking:manage'), this.geo.parkings);
     this.router.get('/internal/geo/geocode', StaffAuthMiddleware('parking:manage'), this.geo.geocode);

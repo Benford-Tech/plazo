@@ -5,6 +5,7 @@ import { GenerateSpotsDto, ReplaceSpotsDto, UpdateParkingPlanDto, UpdateSpotDto 
 import { RequestWithStaffSession } from '@/middlewares/staff-auth.middleware';
 import { AssignSpotDto } from '@/dtos/occupation.dto';
 import { OccupationService } from '@/services/occupation.service';
+import { SpotPlanningService } from '@/services/spot-planning.service';
 import { ParkingPlanService } from '@/services/parking-plan.service';
 import { ParkingService } from '@/services/parking.service';
 import catchAsync from '@/utils/catchAsync';
@@ -13,6 +14,7 @@ export class ParkingController {
   public parkingService = Container.get(ParkingService);
   public plans = Container.get(ParkingPlanService);
   public occupation = Container.get(OccupationService);
+  public spotPlanning = Container.get(SpotPlanningService);
 
   /** GET /internal/parking */
   public getPrimary = catchAsync(async (req: RequestWithStaffSession, res: Response) => {
@@ -74,6 +76,16 @@ export class ParkingController {
   public occupationSearch = catchAsync(async (req: RequestWithStaffSession, res: Response) => {
     const q = typeof req.query.q === 'string' ? req.query.q : '';
     res.json({ results: await this.occupation.search(req.staff, req.params.id as string, q) });
+  });
+
+  /** GET /internal/parkings/:id/spot-planning?from=&days= */
+  public spotPlanningBoard = catchAsync(async (req: RequestWithStaffSession, res: Response) => {
+    res.json(await this.spotPlanning.board(req.staff, req.params.id as string, req.query));
+  });
+
+  /** POST /internal/parkings/:id/spot-planning/preassign?from=&days= */
+  public preassignSpots = catchAsync(async (req: RequestWithStaffSession, res: Response) => {
+    res.json({ message: 'Spots pre-assigned', data: await this.spotPlanning.preassign(req.staff, req.params.id as string, req.query) });
   });
 
   /** POST /internal/reservations/:id/spot */
