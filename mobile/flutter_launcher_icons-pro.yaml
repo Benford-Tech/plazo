@@ -1,8 +1,8 @@
-# Icon of the "pro" flavor (Plazo Pro, A-B 04/10/2026): dark brown, white P, orange plane.
+# Icon of the "pro" flavor (Plazo Pro, C-B 05/10/2026): lime, dark-green P and plane.
 # `dart run flutter_launcher_icons -f flutter_launcher_icons-pro.yaml` writes android/app/src/pro/res.
 flutter_launcher_icons:
   android: true
   ios: false
   image_path: "assets/brand/app-icon-pro.png"
-  adaptive_icon_background: "#2C1A0E"
+  adaptive_icon_background: "#A3E635"
   adaptive_icon_foreground: "assets/brand/app-icon-pro-foreground.png"
