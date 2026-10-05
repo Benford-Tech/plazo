@@ -82,6 +82,7 @@ void _initUseCaseLocator() {
     ..registerLazySingleton(() => SetPostUseCase(locator()))
     ..registerLazySingleton(() => SetVehicleUseCase(locator()))
     ..registerLazySingleton(() => GetPlanningUseCase(locator()))
+    ..registerLazySingleton(() => GetDashboardUseCase(locator()))
     ..registerLazySingleton(() => GetLiveArrivalsUseCase(locator()))
     ..registerLazySingleton(() => GetNotificationPreferencesUseCase(locator()))
     ..registerLazySingleton(() => UpdateNotificationPreferencesUseCase(locator()))

@@ -240,7 +240,10 @@ Canevas de référence : https://claude.ai/artifact/6ezoCDyLXFNwhAH5ZWUf4u (rang
   « Tableau de bord » (`/pro/`, `GET /api/internal/dashboard`) : cinq tuiles (Sur le parking, Arrivées, Retours,
   Navettes, À traiter), bandeau d'état des services (vols, SMS, notifications, paiements, import), liste « À traiter
   maintenant » (urgent → à surveiller → à faire), véhicules sur le parking avec place et clés, carte IGN des navettes en
-  direct (`GET /internal/shuttle/live`). Le planning passe à `/pro/planning`.
+  direct (`GET /internal/shuttle/live`). Le planning passe à `/pro/planning`. **Même tableau de bord dans l'app Plazo Pro**
+  (05/10/2026) : onglet Aujourd'hui, barre « Tableau de bord · Planning » (feature `pro_dashboard`, `ProDashboardBloc` toutes
+  les 30 s, `DashboardView` avec la carte des navettes `LiveShuttlesCard`) ; les onglets Arrivées / Retours du chauffeur
+  restent le planning seul.
 - **Site Plazo voyageurs (web)** : direction **M3 « Plazo voyageur »** (choix du 01/10/2026), le même
   univers que l'app voyageur : **en-tête orange easyJet `#FF6600`** (T-A, 03/10/2026, à la place du prune),
   bandeau photo sous un voile orange, pied de page orange foncé `#E65C00`, titres en Playfair Display italique,

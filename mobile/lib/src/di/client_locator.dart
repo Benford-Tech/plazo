@@ -7,6 +7,7 @@ void _initClients() {
     ..registerLazySingleton<ArrivalClient>(() => ArrivalClient(locator()))
     ..registerLazySingleton<AuthClient>(() => AuthClient(locator()))
     ..registerLazySingleton<PlanningClient>(() => PlanningClient(locator()))
+    ..registerLazySingleton<DashboardClient>(() => DashboardClient(locator()))
     ..registerLazySingleton<NotificationsClient>(() => NotificationsClient(locator()))
     ..registerLazySingleton<ReturnClient>(() => ReturnClient(locator()))
     ..registerLazySingleton<ShuttleClient>(() => ShuttleClient(locator()))

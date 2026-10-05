@@ -11,6 +11,8 @@ import '../../../../core/router/app_router.dart';
 import '../../../../di/locator.dart';
 import '../../../../shared/theme/theme.dart';
 import '../../../../shared/widgets/brand_header.dart';
+import '../../../pro_dashboard/presentation/bloc/pro_dashboard_bloc.dart';
+import '../../../pro_dashboard/presentation/widgets/dashboard_view.dart';
 import '../../../pro_shuttle/presentation/bloc/live_shuttles_bloc.dart';
 import '../../../pro_shuttle/presentation/widgets/live_shuttles_card.dart';
 import '../bloc/pro_today_bloc.dart';
@@ -35,6 +37,7 @@ Widget _withBlocs(Widget child) => MultiBlocProvider(
   providers: [
     BlocProvider(create: (_) => locator<ProTodayBloc>()..add(const ProTodayStarted())),
     BlocProvider(create: (_) => locator<LiveShuttlesBloc>()..add(const LiveShuttlesStarted())),
+    BlocProvider(create: (_) => locator<ProDashboardBloc>()..add(const ProDashboardStarted())),
   ],
   child: child,
 );
@@ -65,6 +68,8 @@ class ProReturnsPage extends StatelessWidget implements AutoRouteWrapper {
 
 enum TodaySide { arrivals, returns }
 
+enum TodayMode { dashboard, planning }
+
 /// The day's planning: both sides (tabs on a phone, two columns on a tablet), or one side only.
 class ProTodayView extends StatefulWidget {
   const ProTodayView({super.key, this.only});
@@ -79,6 +84,9 @@ class _ProTodayViewState extends State<ProTodayView> with SingleTickerProviderSt
   late final TabController _tabs = TabController(length: 2, vsync: this);
   Timer? _clock;
   DateTime _now = DateTime.now();
+
+  /// The web's home is the dashboard; the planning is one tap away. Only when both sides are shown.
+  TodayMode _mode = TodayMode.dashboard;
 
   @override
   void initState() {
@@ -126,6 +134,7 @@ class _ProTodayViewState extends State<ProTodayView> with SingleTickerProviderSt
       body: BlocBuilder<ProTodayBloc, ProTodayState>(
         builder: (context, state) {
           final wide = MediaQuery.sizeOf(context).width >= 760;
+          final dashboard = widget.only == null && _mode == TodayMode.dashboard;
           return Column(
             children: [
               if (state.banner != null)
@@ -134,90 +143,138 @@ class _ProTodayViewState extends State<ProTodayView> with SingleTickerProviderSt
                   onSee: () => _see(state),
                   onClose: () => context.read<ProTodayBloc>().add(const ProTodayBannerDismissed()),
                 ),
-              Container(
-                color: AppColors.canvas,
-                padding: const EdgeInsets.fromLTRB(16, 12, 16, 6),
-                child: Column(
-                  children: [
-                    Row(
+              if (widget.only == null) _ModeBar(mode: _mode, onChanged: (m) => setState(() => _mode = m)),
+              if (dashboard)
+                const Expanded(child: DashboardView())
+              else ...[
+                Container(
+                  color: AppColors.canvas,
+                  padding: const EdgeInsets.fromLTRB(16, 12, 16, 6),
+                  child: Column(
+                    children: [
+                      Row(
+                        children: [
+                          Expanded(
+                            child: Text(
+                              'pro.today_title'.tr(args: [planningDay(_shownDay(state))]),
+                              style: AppText.label(size: 14, color: AppColors.dark).copyWith(fontWeight: FontWeight.w800),
+                            ),
+                          ),
+                          if (state.date != null)
+                            TextButton(
+                              key: const Key('today-back'),
+                              onPressed: () => context.read<ProTodayBloc>().add(const ProTodayDateChanged(null)),
+                              child: Text('pro.back_to_today'.tr(), style: AppText.strong(size: 13, color: AppColors.accent)),
+                            )
+                          else
+                            Text(hhmm(_now), style: AppText.tabular(size: 16, color: AppColors.accent)),
+                        ],
+                      ),
+                      const SizedBox(height: 4),
+                      DateStrip(
+                        selected: _shownDay(state),
+                        today: _now,
+                        onSelected: (day) => context.read<ProTodayBloc>().add(ProTodayDateChanged(_isSameDay(day, _now) ? null : isoDay(day))),
+                      ),
+                    ],
+                  ),
+                ),
+                // P-A: the shuttles on the road, one line each; tap to open the Navette screen.
+                if (state.date == null) LiveShuttlesStrip(onTap: () => context.router.push(const ProShuttleRoute())),
+                if (state.planning == null)
+                  Expanded(
+                    child: Center(
+                      child: state.viewState.isError
+                          ? Text(state.errorMessage ?? 'errors.generic'.tr(), textAlign: TextAlign.center)
+                          : const CircularProgressIndicator(color: AppColors.accent),
+                    ),
+                  )
+                else if (widget.only != null)
+                  Expanded(
+                    child: widget.only == TodaySide.arrivals
+                        ? _Column(title: 'pro.arrivals'.tr(), rows: state.arrivals, isReturn: false, state: state, now: _now)
+                        : _Column(title: 'pro.returns'.tr(), rows: state.returns, isReturn: true, state: state, now: _now),
+                  )
+                else if (wide)
+                  Expanded(
+                    child: Row(
+                      crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Expanded(
-                          child: Text(
-                            'pro.today_title'.tr(args: [planningDay(_shownDay(state))]),
-                            style: AppText.label(size: 14, color: AppColors.dark).copyWith(fontWeight: FontWeight.w800),
-                          ),
+                          child: _Column(title: 'pro.arrivals'.tr(), rows: state.arrivals, isReturn: false, state: state, now: _now),
                         ),
-                        if (state.date != null)
-                          TextButton(
-                            key: const Key('today-back'),
-                            onPressed: () => context.read<ProTodayBloc>().add(const ProTodayDateChanged(null)),
-                            child: Text('pro.back_to_today'.tr(), style: AppText.strong(size: 13, color: AppColors.accent)),
-                          )
-                        else
-                          Text(hhmm(_now), style: AppText.tabular(size: 16, color: AppColors.accent)),
+                        const VerticalDivider(width: 1, color: AppColors.line),
+                        Expanded(
+                          child: _Column(title: 'pro.returns'.tr(), rows: state.returns, isReturn: true, state: state, now: _now),
+                        ),
                       ],
                     ),
-                    const SizedBox(height: 4),
-                    DateStrip(
-                      selected: _shownDay(state),
-                      today: _now,
-                      onSelected: (day) => context.read<ProTodayBloc>().add(ProTodayDateChanged(_isSameDay(day, _now) ? null : isoDay(day))),
-                    ),
-                  ],
-                ),
-              ),
-              // P-A: the shuttles on the road, one line each; tap to open the Navette screen.
-              if (state.date == null) LiveShuttlesStrip(onTap: () => context.router.push(const ProShuttleRoute())),
-              if (state.planning == null)
-                Expanded(
-                  child: Center(
-                    child: state.viewState.isError
-                        ? Text(state.errorMessage ?? 'errors.generic'.tr(), textAlign: TextAlign.center)
-                        : const CircularProgressIndicator(color: AppColors.accent),
-                  ),
-                )
-              else if (widget.only != null)
-                Expanded(
-                  child: widget.only == TodaySide.arrivals
-                      ? _Column(title: 'pro.arrivals'.tr(), rows: state.arrivals, isReturn: false, state: state, now: _now)
-                      : _Column(title: 'pro.returns'.tr(), rows: state.returns, isReturn: true, state: state, now: _now),
-                )
-              else if (wide)
-                Expanded(
-                  child: Row(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Expanded(
-                        child: _Column(title: 'pro.arrivals'.tr(), rows: state.arrivals, isReturn: false, state: state, now: _now),
-                      ),
-                      const VerticalDivider(width: 1, color: AppColors.line),
-                      Expanded(
-                        child: _Column(title: 'pro.returns'.tr(), rows: state.returns, isReturn: true, state: state, now: _now),
-                      ),
-                    ],
-                  ),
-                )
-              else ...[
-                TabBar(
-                  controller: _tabs,
-                  tabs: [
-                    Tab(text: '${'pro.arrivals'.tr().toUpperCase()} · ${state.arrivals.length}'),
-                    Tab(text: '${'pro.returns'.tr().toUpperCase()} · ${state.returns.length}'),
-                  ],
-                ),
-                Expanded(
-                  child: TabBarView(
+                  )
+                else ...[
+                  TabBar(
                     controller: _tabs,
-                    children: [
-                      _Column(rows: state.arrivals, isReturn: false, state: state, now: _now),
-                      _Column(rows: state.returns, isReturn: true, state: state, now: _now),
+                    tabs: [
+                      Tab(text: '${'pro.arrivals'.tr().toUpperCase()} · ${state.arrivals.length}'),
+                      Tab(text: '${'pro.returns'.tr().toUpperCase()} · ${state.returns.length}'),
                     ],
                   ),
-                ),
+                  Expanded(
+                    child: TabBarView(
+                      controller: _tabs,
+                      children: [
+                        _Column(rows: state.arrivals, isReturn: false, state: state, now: _now),
+                        _Column(rows: state.returns, isReturn: true, state: state, now: _now),
+                      ],
+                    ),
+                  ),
+                ],
               ],
             ],
           );
         },
+      ),
+    );
+  }
+}
+
+/// « Tableau de bord · Planning » in capitals, the current one underlined in yellow (direction B).
+class _ModeBar extends StatelessWidget {
+  const _ModeBar({required this.mode, required this.onChanged});
+  final TodayMode mode;
+  final ValueChanged<TodayMode> onChanged;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      color: AppColors.canvas,
+      child: Row(
+        children: [
+          for (final m in TodayMode.values)
+            Expanded(
+              child: Semantics(
+                selected: m == mode,
+                button: true,
+                inMutuallyExclusiveGroup: true,
+                child: InkWell(
+                  key: Key('today-mode-${m.name}'),
+                  onTap: () => onChanged(m),
+                  child: Container(
+                    height: 44,
+                    alignment: Alignment.center,
+                    decoration: BoxDecoration(
+                      border: Border(
+                        bottom: BorderSide(color: m == mode ? AppColors.accent : AppColors.line, width: m == mode ? 3 : 1),
+                      ),
+                    ),
+                    child: Text(
+                      (m == TodayMode.dashboard ? 'dashboard.tab'.tr() : 'dashboard.planning'.tr()).toUpperCase(),
+                      style: AppText.label(size: 13, color: m == mode ? AppColors.accent : AppColors.muted),
+                    ),
+                  ),
+                ),
+              ),
+            ),
+        ],
       ),
     );
   }
@@ -244,7 +301,9 @@ class _Column extends StatelessWidget {
             Padding(
               padding: const EdgeInsets.symmetric(vertical: 24),
               child: Text(
-                state.date == null ? (isReturn ? 'pro.no_return'.tr() : 'pro.no_arrival'.tr()) : (isReturn ? 'pro.no_return_day'.tr() : 'pro.no_arrival_day'.tr()),
+                state.date == null
+                    ? (isReturn ? 'pro.no_return'.tr() : 'pro.no_arrival'.tr())
+                    : (isReturn ? 'pro.no_return_day'.tr() : 'pro.no_arrival_day'.tr()),
                 style: AppText.muted(),
               ),
             ),

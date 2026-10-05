@@ -40,6 +40,11 @@ n'existent que dans Plazo Pro (`if (AppConstants.isPro)` dans `app_router.dart`)
 - **Pro — dessertes et navettes en direct** (D-A et P-A du 05/10/2026) : puces « Desserte » (Aéroport, gare…) au départ
   d'un trajet quand le parking en déclare ; carte « Navettes en cours » (`LiveShuttlesBloc`, `GET /internal/shuttle/live`,
   toutes les 12 s) en tête de l'écran Navette et bandeau sur Aujourd'hui.
+- **Pro — tableau de bord** (05/10/2026, le même que l'accueil de l'espace pro web) : l'onglet Aujourd'hui s'ouvre sur
+  « Tableau de bord » (barre « Tableau de bord · Planning ») : cinq tuiles (Sur le parking, Arrivées, Retours, Navettes,
+  À traiter), état des services (vols, SMS, notifs, paiements, import), « À traiter maintenant » classé, véhicules sur le
+  parking avec place et clés, carte des navettes en cours. Feature `pro_dashboard` (`GET /internal/dashboard`,
+  `ProDashboardBloc` toutes les 30 s). Les onglets Arrivées / Retours du chauffeur gardent le planning seul.
 - **Notifications navette** (N-A du 05/10/2026) : réglage « Navettes » du personnel ; côté voyageur, le téléphone est
   enregistré pendant le séjour (`PUT /public/bookings/:ref/devices`, `EnableShuttlePushesUseCase`) pour « Votre navette est
   partie » / « est là » — l'app voyageur a sa propre app OneSignal (`ONESIGNAL_APP_ID` à la compilation de ce flavor).
