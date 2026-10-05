@@ -44,6 +44,9 @@ export interface Parking {
   totalCapacity: number;
   safetyMarginPct: number;
   shuttleTravelMinutes: number;
+  /** Shuttle waves (V-A, 05/10/2026). */
+  terminalLeadMinutes: number;
+  landingDelayMinutes: number;
   bookableCapacity: number;
 }
 
@@ -53,6 +56,8 @@ export interface ParkingSettings {
   totalCapacity: number;
   safetyMarginPct: number;
   shuttleTravelMinutes: number;
+  terminalLeadMinutes?: number;
+  landingDelayMinutes?: number;
 }
 
 export interface NewStaff {
@@ -83,6 +88,12 @@ export interface Reservation {
   customerEmail: string | null;
   plate: string;
   returnFlight: string | null;
+  /** Outbound flight (V-A) and its tracking. */
+  departureFlight: string | null;
+  departureStatus: string | null;
+  departureScheduledAt: string | null;
+  departureEstimatedAt: string | null;
+  departureTerminal: string | null;
   notes: string | null;
   externalReference: string | null;
   priceCents: number | null;
@@ -246,6 +257,7 @@ export interface ReservationInput {
   customerEmail?: string | null;
   plate: string;
   returnFlight?: string | null;
+  departureFlight?: string | null;
   /** D-A: a stop of the parking, or null for the airport. */
   stopId?: string | null;
   notes?: string | null;
@@ -275,6 +287,7 @@ export interface ParsedBooking {
   customerEmail?: string;
   plate?: string;
   returnFlight?: string;
+  departureFlight?: string;
   passengers?: number;
   priceCents?: number;
 }
@@ -586,7 +599,10 @@ export type AlertKind =
   | "waiting_at_meeting_point"
   | "keys_missing"
   | "sms_pending"
-  | "overbooked";
+  | "overbooked"
+  | "departure_cancelled"
+  | "departure_delayed"
+  | "wave_overflow";
 
 /** A row of the home's "À traiter" list (GET /internal/dashboard). */
 export interface DashboardAlert {
@@ -645,6 +661,64 @@ export interface Dashboard {
     lastImportAt: string | null;
   };
   alerts: DashboardAlert[];
+  /** The next shuttle wave still to run today (V-A). */
+  nextWave: { leaveAt: string; direction: ShuttleDirection; stopName: string | null; passengers: number; vehiclesNeeded: number | null; flights: string[] } | null;
   breakdown: { onSiteQuiet: number; toPlaceToday: number; returnsThisWeek: number; toTreat: number; freeSpots: number | null };
   vehicles: DashboardVehicle[];
+}
+
+// ---------------------------------------------------------------- shuttle waves (V-A, 05/10/2026)
+
+export type WaveState = "planned" | "running" | "done";
+
+export interface WaveFlight {
+  number: string;
+  status: string | null;
+  scheduledAt: string | null;
+  estimatedAt: string | null;
+  actualAt: string | null;
+  terminal: string | null;
+}
+
+export interface WaveMember {
+  reservationId: string;
+  reference: string;
+  customerName: string;
+  passengers: number;
+  plate: string;
+  status: ReservationStatus;
+  direction: ShuttleDirection;
+  stopId: string | null;
+  stopName: string | null;
+  leaveAt: string;
+  meetAt: string | null;
+  flight: WaveFlight | null;
+  noFlight: boolean;
+  state: WaveState;
+  tripId: string | null;
+}
+
+export interface ShuttleWave {
+  id: string;
+  direction: ShuttleDirection;
+  stopId: string | null;
+  stopName: string | null;
+  leaveAt: string;
+  meetAt: string | null;
+  passengers: number;
+  seats: number | null;
+  vehiclesNeeded: number | null;
+  noFlight: number;
+  flights: string[];
+  state: WaveState;
+  members: WaveMember[];
+}
+
+export interface ShuttleForecast {
+  serverTime: string;
+  date: string;
+  times: { shuttleTravelMinutes: number; terminalLeadMinutes: number; landingDelayMinutes: number };
+  seats: number | null;
+  vehiclesInService: number;
+  waves: ShuttleWave[];
 }

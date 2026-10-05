@@ -3,7 +3,19 @@ import { flightTrackingSettings, FlightProviderName, PRODUCT_NAME } from '@/conf
 import prisma, { FlightLandedSource, Prisma, Reservation } from '@/database';
 import { manageToken } from '@/domain/booking';
 import { WITH_LISTING, BookingRecord } from '@/domain/booking-view';
-import { FINAL_FLIGHT_STATUSES, FlightInfo, flightNumberKey, flightUpdate, mapAeroDataBox, mapAirLabs, shouldLookupFlight } from '@/domain/flight';
+import {
+  departureUpdate,
+  FINAL_DEPARTURE_STATUSES,
+  FINAL_FLIGHT_STATUSES,
+  FlightInfo,
+  FlightRole,
+  flightNumberKey,
+  flightUpdate,
+  mapAeroDataBox,
+  mapAirLabs,
+  shouldLookupDeparture,
+  shouldLookupFlight,
+} from '@/domain/flight';
 import { landedPush, landedSms } from '@/domain/return-messages';
 import { localDate, localDateTime } from '@/domain/time';
 import { SECRET_KEY } from '@/config';
@@ -13,10 +25,13 @@ import { NotificationService } from './notification.service';
 import { PushService } from './push.service';
 import { SmsService } from './sms.service';
 
-/** A flight data provider. `date` is the local date of the landing (YYYY-MM-DD). */
+/**
+ * A flight data provider. `date` is the local date of the landing (role arrival, the default) or
+ * of the take-off (role departure, outbound flights); `airportIata` the parking's airport.
+ */
 export interface FlightTrackingProvider {
   readonly name: FlightProviderName | 'none';
-  lookup(flightKey: string, date: string, arrivalIata: string | null): Promise<FlightInfo | null>;
+  lookup(flightKey: string, date: string, airportIata: string | null, role?: FlightRole): Promise<FlightInfo | null>;
 }
 
 const LOOKUP_TIMEOUT_MS = 6000;
@@ -34,8 +49,9 @@ export class AeroDataBoxProvider implements FlightTrackingProvider {
     private readonly timeoutMs = LOOKUP_TIMEOUT_MS,
   ) {}
 
-  public async lookup(flightKey: string, date: string, arrivalIata: string | null): Promise<FlightInfo | null> {
-    const url = `${this.baseUrl}/flights/number/${encodeURIComponent(flightKey)}/${date}?withAircraftImage=false&withLocation=false&dateLocalRole=Arrival`;
+  public async lookup(flightKey: string, date: string, airportIata: string | null, role: FlightRole = 'arrival'): Promise<FlightInfo | null> {
+    const dateRole = role === 'arrival' ? 'Arrival' : 'Departure';
+    const url = `${this.baseUrl}/flights/number/${encodeURIComponent(flightKey)}/${date}?withAircraftImage=false&withLocation=false&dateLocalRole=${dateRole}`;
     const rapid = /rapidapi\.com/.test(this.baseUrl);
     const headers: Record<string, string> = rapid
       ? { 'x-rapidapi-key': this.apiKey, 'x-rapidapi-host': new URL(this.baseUrl).host }
@@ -44,7 +60,7 @@ export class AeroDataBoxProvider implements FlightTrackingProvider {
     // 204 / 404: the provider does not know this flight on that day.
     if (res.status === 204 || res.status === 404) return null;
     if (!res.ok) throw new Error(`AeroDataBox answered ${res.status}`);
-    return mapAeroDataBox(await res.json(), arrivalIata);
+    return mapAeroDataBox(await res.json(), airportIata, role);
   }
 }
 
@@ -57,16 +73,20 @@ export class AirLabsProvider implements FlightTrackingProvider {
     private readonly timeoutMs = LOOKUP_TIMEOUT_MS,
   ) {}
 
-  public async lookup(flightKey: string, date: string, arrivalIata: string | null): Promise<FlightInfo | null> {
+  public async lookup(flightKey: string, date: string, airportIata: string | null, role: FlightRole = 'arrival'): Promise<FlightInfo | null> {
     const url = `${this.baseUrl}/flight?flight_iata=${encodeURIComponent(flightKey)}&api_key=${encodeURIComponent(this.apiKey)}`;
     const res = await fetch(url, { headers: { accept: 'application/json' }, signal: AbortSignal.timeout(this.timeoutMs) });
     if (!res.ok) throw new Error(`AirLabs answered ${res.status}`);
     const info = mapAirLabs(await res.json());
     if (!info) return null;
-    // The endpoint has no date: an occurrence landing on another day is not this booking's flight.
-    const landing = info.actualArrivalAt ?? info.estimatedArrivalAt ?? info.scheduledArrivalAt;
-    if (landing && Math.abs(landing.getTime() - new Date(`${date}T12:00:00Z`).getTime()) > 36 * 3600000) return null;
-    if (arrivalIata && info.arrivalAirport && info.arrivalAirport !== arrivalIata.toUpperCase()) return null;
+    // The endpoint has no date: an occurrence on another day is not this booking's flight.
+    const when =
+      role === 'arrival'
+        ? (info.actualArrivalAt ?? info.estimatedArrivalAt ?? info.scheduledArrivalAt)
+        : (info.actualDepartureAt ?? info.estimatedDepartureAt ?? info.scheduledDepartureAt);
+    if (when && Math.abs(when.getTime() - new Date(`${date}T12:00:00Z`).getTime()) > 36 * 3600000) return null;
+    const airport = role === 'arrival' ? info.arrivalAirport : info.departureAirport;
+    if (airportIata && airport && airport !== airportIata.toUpperCase()) return null;
     return info;
   }
 }
@@ -116,6 +136,31 @@ export class FlightTrackingService {
     if (!reservationIds.length || !this.enabled()) return 0;
     const rows = await prisma.reservation.findMany({ where: { id: { in: reservationIds }, returnFlight: { not: null } }, include: WITH_AIRPORT });
     return this.refreshRows(rows);
+  }
+
+  /** Refreshes the given bookings' outbound flights when due (the shuttle forecast's lazy path). */
+  public async refreshDepartures(reservationIds: string[]): Promise<number> {
+    if (!reservationIds.length || !this.enabled()) return 0;
+    const rows = await prisma.reservation.findMany({ where: { id: { in: reservationIds }, departureFlight: { not: null } }, include: WITH_AIRPORT });
+    return this.refreshDepartureRows(rows);
+  }
+
+  /** The cron: every booking whose outbound flight is due for a lookup (take-off within 24 h). */
+  public async refreshDueDepartures(): Promise<number> {
+    if (!this.enabled()) return 0;
+    const now = new Date();
+    const rows = await prisma.reservation.findMany({
+      where: {
+        status: { in: ['upcoming', 'arrived'] },
+        departureFlight: { not: null },
+        arrivalAt: { gte: new Date(now.getTime() - 12 * 3600000), lte: new Date(now.getTime() + 30 * 3600000) },
+        OR: [{ departureStatus: null }, { departureStatus: { notIn: [...FINAL_DEPARTURE_STATUSES] } }],
+      },
+      include: WITH_AIRPORT,
+      orderBy: { arrivalAt: 'asc' },
+      take: MAX_LOOKUPS_PER_RUN,
+    });
+    return this.refreshDepartureRows(rows);
   }
 
   /** The cron: every active booking whose return flight is due for a lookup. */
@@ -171,6 +216,37 @@ export class FlightTrackingService {
     }
     const provider = this.provider();
     await Promise.all(claimed.map(row => this.refreshOne(provider, row, now)));
+    return claimed.length;
+  }
+
+  private async refreshDepartureRows(rows: TrackedBooking[]): Promise<number> {
+    const now = new Date();
+    const due = rows.filter(r => shouldLookupDeparture(r, now));
+    if (!due.length) return 0;
+    const claimed: TrackedBooking[] = [];
+    for (const row of due) {
+      const { count } = await prisma.reservation.updateMany({
+        where: { id: row.id, OR: [{ departureCheckedAt: null }, { departureCheckedAt: row.departureCheckedAt }] },
+        data: { departureCheckedAt: now },
+      });
+      if (count) claimed.push(row);
+    }
+    const provider = this.provider();
+    await Promise.all(
+      claimed.map(async row => {
+        const date = localDate(row.departureEstimatedAt ?? row.departureScheduledAt ?? row.arrivalAt, row.parking.timezone);
+        let info: FlightInfo | null;
+        try {
+          info = await provider.lookup(flightNumberKey(row.departureFlight!), date, row.parking.listing?.airport.code ?? null, 'departure');
+        } catch (error) {
+          logger.warn(
+            `[Flights] ${provider.name} departure lookup failed for booking ${row.reference}: ${error instanceof Error ? error.message : 'unknown error'}`,
+          );
+          return;
+        }
+        await prisma.reservation.updateMany({ where: { id: row.id }, data: departureUpdate(info, now) });
+      }),
+    );
     return claimed.length;
   }
 

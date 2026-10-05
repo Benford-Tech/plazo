@@ -75,6 +75,7 @@ describe("bookAction", () => {
       customerEmail: "camille@example.com",
       plate: "GK-318-PX",
       returnFlight: undefined,
+      departureFlight: undefined,
       passengers: 2,
       acceptTerms: true,
       idempotencyKey: "6f1c2a9e-3b7d-4e8f-9a0b-1c2d3e4f5a6b",
@@ -132,7 +133,10 @@ describe("booking management actions", () => {
     const flight = new FormData();
     flight.set("returnFlight", "to3627");
     expect(await changeFlightAction("RAB234", EMPTY_FORM, flight)).toMatchObject({ notice: "flight_saved" });
-    expect(changeFlight).toHaveBeenCalledWith("RAB234", "tok_0123456789abcdefghij", "to3627");
+    expect(changeFlight).toHaveBeenCalledWith("RAB234", "tok_0123456789abcdefghij", "to3627", undefined);
+    flight.set("departureFlight", "af7641");
+    await changeFlightAction("RAB234", EMPTY_FORM, flight);
+    expect(changeFlight).toHaveBeenLastCalledWith("RAB234", "tok_0123456789abcdefghij", "to3627", "af7641");
     await expect(cancelAction("RAB234", EMPTY_FORM)).rejects.toThrow("REDIRECT /ma-reservation/RAB234?annulee=1");
     expect(cancelBooking).toHaveBeenCalledWith("RAB234", "tok_0123456789abcdefghij");
   });

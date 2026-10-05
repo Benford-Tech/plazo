@@ -30,10 +30,11 @@ export class CronController {
   /** GET /internal/cron/track-return-flights */
   public trackReturnFlights = catchAsync(async (req: Request, res: Response) => {
     const result = await this.flights.refreshDue();
-    // The frequent cron: also the retries of the SMS waiting for an operator's phone.
+    // Outbound flights too (the shuttle waves), then the retries of the SMS waiting for an operator's phone.
+    const departures = await this.flights.refreshDueDepartures();
     const sms = await this.sms.refreshAll();
-    logger.info(`[Cron] Return flights: ${JSON.stringify(result)}; SMS queue: ${JSON.stringify(sms)}`);
-    res.json({ ...result, sms });
+    logger.info(`[Cron] Return flights: ${JSON.stringify(result)}; departures: ${departures}; SMS queue: ${JSON.stringify(sms)}`);
+    res.json({ ...result, departures, sms });
   });
 
   /** GET /internal/cron/payouts */

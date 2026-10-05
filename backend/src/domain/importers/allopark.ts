@@ -49,6 +49,7 @@ export const alloparkImporter: EmailImporter = {
     booking.customerEmail = valueAfterLabel(lines, LABELS.email, ALL_LABELS);
     booking.plate = valueAfterLabel(lines, LABELS.plate, ALL_LABELS);
     booking.returnFlight = valueAfterLabel(lines, LABELS.returnFlight, ALL_LABELS);
+    booking.departureFlight = valueAfterLabel(lines, LABELS.outboundFlight, ALL_LABELS);
     const passengers = Number(valueAfterLabel(lines, LABELS.passengers, ALL_LABELS));
     if (Number.isInteger(passengers) && passengers > 0) booking.passengers = passengers;
 

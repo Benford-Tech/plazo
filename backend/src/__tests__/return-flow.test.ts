@@ -320,9 +320,9 @@ describe('GET /public/bookings/:reference/return', () => {
     fetchMock.mockImplementation(async url => (/aerodatabox/.test(String(url)) ? json(adbLanded('Expected', minutesFromNow(60))) : json({})));
     expect((await api().get('/api/internal/cron/track-return-flights')).status).toBe(401);
     const run1 = await api().get('/api/internal/cron/track-return-flights').set(auth('test-cron-secret'));
-    expect(run1.body).toEqual({ checked: 1, landed: 0, skipped: false, sms: { operators: 0, checked: 0, sent: 0, abandoned: 0 } });
+    expect(run1.body).toEqual({ checked: 1, landed: 0, skipped: false, departures: 0, sms: { operators: 0, checked: 0, sent: 0, abandoned: 0 } });
     const run2 = await api().get('/api/internal/cron/track-return-flights').set(auth('test-cron-secret'));
-    expect(run2.body).toEqual({ checked: 0, landed: 0, skipped: false, sms: { operators: 0, checked: 0, sent: 0, abandoned: 0 } });
+    expect(run2.body).toEqual({ checked: 0, landed: 0, skipped: false, departures: 0, sms: { operators: 0, checked: 0, sent: 0, abandoned: 0 } });
     expect(calls(/aerodatabox/).length).toBe(1);
     const row = await prisma.reservation.findUniqueOrThrow({ where: { id: b.reservation.id } });
     expect(row.flightStatus).toBe('scheduled');

@@ -13,6 +13,13 @@ export const FLIGHT_LOOKUP_HOURS_BEFORE = 24;
 export const FLIGHT_LOOKUP_HOURS_AFTER = 6;
 /** Statuses after which nothing changes any more. */
 export const FINAL_FLIGHT_STATUSES: FlightStatus[] = ['landed', 'cancelled', 'diverted'];
+/** For an outbound flight (take-off), the departure itself is the end of the story. */
+export const FINAL_DEPARTURE_STATUSES: FlightStatus[] = ['departed', 'landed', 'cancelled', 'diverted'];
+/** An outbound flight is still refreshed this long after its expected take-off, then given up. */
+export const DEPARTURE_LOOKUP_HOURS_AFTER = 2;
+
+/** Which end of the flight a lookup is about: the landing (return) or the take-off (outbound). */
+export type FlightRole = 'arrival' | 'departure';
 
 /** What a provider knows about a flight. Times are instants (UTC). */
 export interface FlightInfo {
@@ -23,6 +30,19 @@ export interface FlightInfo {
   arrivalAirport: string | null; // IATA
   terminal: string | null;
   gate: string | null;
+  // The departure end (outbound flights, V-A 05/10/2026).
+  scheduledDepartureAt: Date | null;
+  estimatedDepartureAt: Date | null;
+  actualDepartureAt: Date | null;
+  departureAirport: string | null; // IATA
+  departureTerminal: string | null;
+}
+
+export interface TrackedDepartureFields {
+  departureStatus: FlightStatus | null;
+  departureScheduledAt: Date | null;
+  departureEstimatedAt: Date | null;
+  departureCheckedAt: Date | null;
 }
 
 export interface TrackedFlightFields {
@@ -54,6 +74,25 @@ export function shouldLookupFlight(
   if (landing.getTime() - now.getTime() > FLIGHT_LOOKUP_HOURS_BEFORE * 3600000) return false;
   if (now.getTime() - landing.getTime() > FLIGHT_LOOKUP_HOURS_AFTER * 3600000) return false;
   if (booking.flightCheckedAt && now.getTime() - booking.flightCheckedAt.getTime() < FLIGHT_CACHE_MINUTES * 60000) return false;
+  return true;
+}
+
+/**
+ * Whether the provider should be asked now about the outbound flight: the traveller has not left
+ * for the terminal yet, the take-off is less than 24 h away (and less than 2 h ago), the flight is
+ * not final, and the last lookup is older than the cache.
+ */
+export function shouldLookupDeparture(
+  booking: { departureFlight: string | null; status: string; arrivalAt: Date } & TrackedDepartureFields,
+  now = new Date(),
+): boolean {
+  if (!booking.departureFlight) return false;
+  if (!['upcoming', 'arrived'].includes(booking.status)) return false;
+  if (booking.departureStatus && FINAL_DEPARTURE_STATUSES.includes(booking.departureStatus)) return false;
+  const takeOff = booking.departureEstimatedAt ?? booking.departureScheduledAt ?? booking.arrivalAt;
+  if (takeOff.getTime() - now.getTime() > FLIGHT_LOOKUP_HOURS_BEFORE * 3600000) return false;
+  if (now.getTime() - takeOff.getTime() > DEPARTURE_LOOKUP_HOURS_AFTER * 3600000) return false;
+  if (booking.departureCheckedAt && now.getTime() - booking.departureCheckedAt.getTime() < FLIGHT_CACHE_MINUTES * 60000) return false;
   return true;
 }
 
@@ -102,25 +141,34 @@ function adbTime(value: unknown): Date | null {
 
 /**
  * Maps the answer of GET /flights/number/{number}/{date} (an array of legs). The leg landing at
- * `arrivalIata` is preferred (a flight number may cover several legs), else the last one.
+ * `airportIata` (role arrival) or taking off from it (role departure) is preferred, since a
+ * flight number may cover several legs; else the last (arrival) or first (departure) one.
  */
-export function mapAeroDataBox(body: unknown, arrivalIata: string | null): FlightInfo | null {
+export function mapAeroDataBox(body: unknown, airportIata: string | null, role: FlightRole = 'arrival'): FlightInfo | null {
   const legs = Array.isArray(body) ? body : body && typeof body === 'object' && Array.isArray((body as any).flights) ? (body as any).flights : [];
   if (!legs.length) return null;
+  const end = role === 'arrival' ? 'arrival' : 'departure';
   const leg =
-    (arrivalIata && legs.find((l: any) => String(l?.arrival?.airport?.iata ?? '').toUpperCase() === arrivalIata.toUpperCase())) ??
-    legs[legs.length - 1];
+    (airportIata && legs.find((l: any) => String(l?.[end]?.airport?.iata ?? '').toUpperCase() === airportIata.toUpperCase())) ??
+    (role === 'arrival' ? legs[legs.length - 1] : legs[0]);
   const arrival = leg?.arrival ?? {};
+  const departure = leg?.departure ?? {};
   const actual = adbTime(arrival.runwayTime) ?? adbTime(arrival.actualTime);
+  const takenOff = adbTime(departure.runwayTime) ?? adbTime(departure.actualTime);
   const status = aeroDataBoxStatus(leg?.status);
   return {
-    status: status === 'unknown' && actual ? 'landed' : status,
+    status: status === 'unknown' && actual ? 'landed' : status === 'unknown' && takenOff ? 'departed' : status,
     scheduledArrivalAt: adbTime(arrival.scheduledTime),
     estimatedArrivalAt: adbTime(arrival.revisedTime) ?? adbTime(arrival.predictedTime),
     actualArrivalAt: actual,
     arrivalAirport: text(arrival.airport?.iata)?.toUpperCase() ?? null,
     terminal: text(arrival.terminal),
     gate: text(arrival.gate),
+    scheduledDepartureAt: adbTime(departure.scheduledTime),
+    estimatedDepartureAt: adbTime(departure.revisedTime) ?? adbTime(departure.predictedTime),
+    actualDepartureAt: takenOff,
+    departureAirport: text(departure.airport?.iata)?.toUpperCase() ?? null,
+    departureTerminal: text(departure.terminal),
   };
 }
 
@@ -160,6 +208,11 @@ export function mapAirLabs(body: unknown): FlightInfo | null {
     arrivalAirport: text(flight.arr_iata)?.toUpperCase() ?? null,
     terminal: text(flight.arr_terminal),
     gate: text(flight.arr_gate),
+    scheduledDepartureAt: utc('dep_time_utc'),
+    estimatedDepartureAt: utc('dep_estimated_utc'),
+    actualDepartureAt: utc('dep_actual_utc'),
+    departureAirport: text(flight.dep_iata)?.toUpperCase() ?? null,
+    departureTerminal: text(flight.dep_terminal),
   };
 }
 
@@ -175,5 +228,19 @@ export function flightUpdate(info: FlightInfo | null, now: Date) {
     flightTerminal: info.terminal,
     flightGate: info.gate,
     flightCheckedAt: now,
+  };
+}
+
+/** The outbound-flight fields to store from a provider's answer (null answer: only the check time moves). */
+export function departureUpdate(info: FlightInfo | null, now: Date) {
+  if (!info) return { departureStatus: 'unknown' as FlightStatus, departureCheckedAt: now };
+  // A flight the provider reports as landed has taken off for sure.
+  const status: FlightStatus = info.status === 'landed' ? 'departed' : info.status;
+  return {
+    departureStatus: status,
+    departureScheduledAt: info.scheduledDepartureAt,
+    departureEstimatedAt: info.actualDepartureAt ?? info.estimatedDepartureAt,
+    departureTerminal: info.departureTerminal,
+    departureCheckedAt: now,
   };
 }

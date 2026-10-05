@@ -37,6 +37,15 @@ export interface PublicBooking {
   /** Display form, e.g. AB-123-CD. */
   plate: string;
   returnFlight: string | null;
+  departureFlight: string | null;
+  /** The outbound flight as tracked, and when the shuttle to the terminal is planned to leave (local). */
+  outbound: {
+    status: string | null;
+    scheduledAt: string | null;
+    estimatedAt: string | null;
+    terminal: string | null;
+    shuttleAt: string | null;
+  } | null;
   passengers: number;
   cancellationPolicy: CancellationPolicy;
   /** Last moment to cancel online; null when the policy allows no online cancellation. */

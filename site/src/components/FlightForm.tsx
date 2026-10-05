@@ -7,12 +7,33 @@ import { fr } from "@/lib/fr";
 
 type Action = (state: FormState, formData: FormData) => Promise<FormState>;
 
-/** Change (or clear) the return flight followed by the shuttle. */
-export function FlightForm({ action, flight }: { action: Action; flight: string | null }) {
+/** Change (or clear) the return flight followed by the shuttle, and the outbound flight (V-A). */
+export function FlightForm({ action, flight, outbound = null }: { action: Action; flight: string | null; outbound?: string | null }) {
   const [state, formAction, pending] = useActionState(action, EMPTY_FORM);
   const error = state.fields.returnFlight ?? (state.error && state.error !== "validation_failed" ? state.error : null);
+  const outboundError = state.fields.departureFlight ?? null;
   return (
     <form action={formAction} noValidate className="flex flex-col gap-2.5">
+      <div>
+        <label htmlFor="m-outbound" className="label">
+          {fr.manage.outboundLabel}
+        </label>
+        <input
+          id="m-outbound"
+          name="departureFlight"
+          type="text"
+          maxLength={10}
+          autoComplete="off"
+          autoCapitalize="characters"
+          spellCheck={false}
+          placeholder="AF 7641"
+          defaultValue={state.values.departureFlight ?? outbound ?? ""}
+          aria-invalid={outboundError ? true : undefined}
+          aria-describedby={outboundError ? "m-outbound-error" : undefined}
+          className="field font-semibold uppercase placeholder:font-normal placeholder:normal-case"
+        />
+        {outboundError && <FieldError id="m-outbound-error" code={outboundError} />}
+      </div>
       <div className="flex items-end gap-2">
         <div className="min-w-0 flex-1">
           <label htmlFor="m-flight" className="label">

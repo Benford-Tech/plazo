@@ -403,6 +403,7 @@ export class ReturnRoute implements Routes {
     this.router.delete('/internal/shuttle/stops/:id', StaffAuthMiddleware('parking:manage'), RefuseInViewAs(), this.shuttle.removeStop);
     this.router.get('/internal/shuttle/live', StaffAuthMiddleware('reservations:view'), this.shuttle.live);
 
+    this.router.get('/internal/shuttle/forecast', StaffAuthMiddleware('reservations:view'), this.shuttle.waves);
     this.router.get('/internal/shuttle/pickups', StaffAuthMiddleware('reservations:view'), this.shuttle.pickups);
     this.router.get('/internal/shuttle/departures', StaffAuthMiddleware('reservations:view'), this.shuttle.departures);
     this.router.get('/internal/shuttle/vehicles', StaffAuthMiddleware('reservations:view'), this.shuttle.vehicles);

@@ -86,6 +86,7 @@ export interface BookingInput {
   customerEmail: string;
   plate: string;
   returnFlight?: string;
+  departureFlight?: string;
   passengers: number;
   /** Must be true; false gets the "terms_required" field error back. */
   acceptTerms: boolean;
@@ -125,6 +126,9 @@ export interface PublicBooking {
   customerPhone: string;
   plate: string;
   returnFlight: string | null;
+  /** Outbound flight (V-A, 05/10/2026) and, when tracked, when the shuttle to the terminal leaves (local). */
+  departureFlight: string | null;
+  outbound: { status: string | null; scheduledAt: string | null; estimatedAt: string | null; terminal: string | null; shuttleAt: string | null } | null;
   passengers: number;
   cancellationPolicy: CancellationPolicy;
   /** Local datetime until which the traveller may cancel online; null when non-refundable. */

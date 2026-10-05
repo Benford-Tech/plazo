@@ -9,6 +9,7 @@ export interface ParsedBooking {
   customerEmail?: string;
   plate?: string;
   returnFlight?: string;
+  departureFlight?: string;
   passengers?: number;
   priceCents?: number;
 }

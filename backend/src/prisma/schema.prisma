@@ -179,6 +179,10 @@ model Parking {
   // Share of spots never offered for booking, in percent (0-50).
   safetyMarginPct           Int                                   @default(0)
   shuttleTravelMinutes      Int                                   @default(8)
+  // Shuttle waves (V-A, 05/10/2026): how long before take-off a traveller must be at the terminal,
+  // and how long after landing they reach the meeting point (baggage, customs).
+  terminalLeadMinutes       Int                                   @default(120)
+  landingDelayMinutes       Int                                   @default(30)
   // Where the shuttle picks travellers up at the airport on their return (WGS84, raw SQL like
   // location). Null: the airport of the parking's listing, else the parking itself.
   returnMeetingPoint        Unsupported("geometry(Point, 4326)")?
@@ -370,6 +374,8 @@ model Reservation {
   plate                   String // display form, e.g. AB-123-CD
   plateKey                String // letters and digits only, for search
   returnFlight            String? // e.g. TO 3627
+  // Outbound flight (V-A "Vagues de navettes", 05/10/2026): sets when the drop-off shuttle must leave.
+  departureFlight         String? // e.g. AF 7641
   notes                   String?
   // Booking number on the channel it came from (e.g. AL-884880719 on Allopark), to avoid importing it twice.
   externalReference       String?
@@ -426,6 +432,12 @@ model Reservation {
   flightTerminal          String?
   flightGate              String?
   flightCheckedAt         DateTime? // last lookup at the provider (cache)
+  // Outbound flight tracking (take-off), same provider and cache rules; nothing is sent on it.
+  departureStatus         FlightStatus?
+  departureScheduledAt    DateTime? // scheduled take-off
+  departureEstimatedAt    DateTime? // revised take-off
+  departureTerminal       String?
+  departureCheckedAt      DateTime?
   // Sent once per booking when the flight lands: the push to the staff, the SMS to the traveller.
   landingNotifiedAt       DateTime?
   landingSmsAt            DateTime?

@@ -11,6 +11,7 @@ import type {
   StaffRole,
   AlertKind,
   ShuttleDirection,
+  WaveState,
 } from "./types";
 import { ApiError } from "./api";
 import { PRODUCT } from "./product";
@@ -243,6 +244,7 @@ export const fr = {
   },
   nav: {
     planning: "Planning",
+    shuttles: "Navettes",
     plazo: `Sur ${PRODUCT.name}`,
     reservations: "Réservations",
     dashboard: "Tableau de bord",
@@ -268,6 +270,8 @@ export const fr = {
       returnsSub: (week: number) => `${week} cette semaine`,
       shuttles: "Navettes",
       shuttlesSub: (n: number) => (n === 0 ? "aucune en route" : n === 1 ? "en route" : "en route"),
+      nextWave: (time: string, passengers: number, vehicles: number | null) =>
+        `prochaine ${time} · ${passengers} pass.${vehicles && vehicles > 1 ? ` · ${vehicles} navettes` : ""}`,
       toTreat: "À traiter",
       toTreatSub: (urgent: number) => (urgent === 0 ? "rien d'urgent" : `${urgent} urgent${urgent > 1 ? "s" : ""}`),
     },
@@ -311,7 +315,12 @@ export const fr = {
         keys_missing: "Clés non accrochées",
         sms_pending: "SMS en attente",
         overbooked: "Surréservation",
+        departure_cancelled: "Vol aller annulé",
+        departure_delayed: "Vol aller retardé",
+        wave_overflow: "Vague au-delà d'une navette",
       } satisfies Record<AlertKind, string>,
+      waveDetail: (direction: ShuttleDirection, time: string, passengers: number) =>
+        `${direction === "dropoff" ? "Vers le terminal" : "Depuis l'aéroport"} ${time} · ${passengers} passagers`,
     },
     vehicles: {
       title: "Véhicules sur le parking",
@@ -380,6 +389,10 @@ export const fr = {
       "Part des places jamais proposées à la réservation (imprévus, prolongations).",
     shuttleTravelMinutes: "Durée du trajet navette (minutes)",
     shuttleHelp: "Entre le parking et le terminal.",
+    terminalLeadMinutes: "Présence au terminal avant le décollage (minutes)",
+    terminalLeadHelp: "La navette aller part ce délai plus le trajet avant le décollage du vol aller.",
+    landingDelayMinutes: "Délai après l'atterrissage (minutes)",
+    landingDelayHelp: "Bagages, douane : le temps entre l'atterrissage et le point de rendez-vous.",
     bookablePreview: (n: number) =>
       `Places réservables avec ces réglages : ${n}`,
   },
@@ -597,7 +610,19 @@ export const fr = {
     email: "Email",
     plate: "Plaque",
     returnFlight: "Vol retour",
-    returnFlightHelp: "Pour suivre l'atterrissage (jalon 5).",
+    returnFlightHelp: "Pour suivre l'atterrissage et prévoir la navette retour.",
+    departureFlight: "Vol aller (facultatif)",
+    departureFlightHelp: "Pour prévoir la navette vers le terminal avant le décollage.",
+    departureStatus: {
+      scheduled: "à l'heure",
+      delayed: "retardé",
+      departed: "parti",
+      landed: "parti",
+      cancelled: "annulé",
+      diverted: "dérouté",
+      unknown: "vol inconnu",
+    } as Record<string, string>,
+    takeOff: (time: string) => `décollage ${time}`,
     stop: "Desserte",
     stopAirport: "Aéroport",
     passengers: "Passagers",
@@ -1476,3 +1501,43 @@ export const dateTime = new Intl.DateTimeFormat("fr-FR", {
   timeStyle: "short",
   timeZone: "Europe/Paris",
 });
+
+export const shuttleWavesFr = {
+  title: "Navettes",
+  subtitle: "Ligne du jour : quand chaque navette doit partir, avec combien de passagers.",
+  today: "Aujourd'hui",
+  tomorrow: "Demain",
+  dayAfter: (day: string) => day,
+  refreshed: (ago: string) => `Actualisé ${ago}`,
+  loadError: "Impossible de charger la prévision des navettes.",
+  empty: "Aucune navette à prévoir ce jour-là.",
+  seats: (seats: number | null, vehicles: number) =>
+    seats === null ? `${vehicles} véhicule${vehicles > 1 ? "s" : ""} en service · places inconnues` : `${vehicles} véhicule${vehicles > 1 ? "s" : ""} en service · ${seats} places`,
+  times: (lead: number, delay: number, travel: number) =>
+    `Au terminal ${lead} min avant le décollage · rendez-vous ${delay} min après l'atterrissage · trajet ${travel} min`,
+  settings: "Modifier les délais",
+  wave: {
+    count: (n: number) => `${n} vague${n > 1 ? "s" : ""}`,
+    direction: { dropoff: "Vers le terminal", pickup: "Depuis l'aéroport" } satisfies Record<ShuttleDirection, string>,
+    airport: "Aéroport",
+    passengers: (n: number, seats: number | null) => (seats === null ? `${n}` : `${n} / ${seats}`),
+    vehicles: (n: number) => `${n} navettes`,
+    meetAt: (time: string) => `rendez-vous ${time}`,
+    noFlight: (n: number) => (n === 1 ? "1 sans vol" : `${n} sans vol`),
+    state: { planned: "À venir", running: "En cours", done: "Faite" } satisfies Record<WaveState, string>,
+    pax: (n: number) => `${n} pass.`,
+    flight: {
+      scheduled: "à l'heure",
+      delayed: (minutes: number) => `retardé +${minutes}`,
+      departed: "parti",
+      landed: "atterri",
+      cancelled: "annulé",
+      diverted: "dérouté",
+      unknown: "vol inconnu",
+      none: "heure saisie",
+    },
+    takeOff: (time: string) => `décollage ${time}`,
+    landing: (time: string) => `atterrissage ${time}`,
+    bookingTime: (time: string) => `heure saisie ${time}`,
+  },
+};

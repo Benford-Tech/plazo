@@ -1,4 +1,4 @@
-import { CalendarDays, ClipboardList, Globe, LayoutDashboard, LogOut, ShieldCheck, SquareParking, UserRound, Users } from "lucide-react";
+import { BusFront, CalendarDays, ClipboardList, Globe, LayoutDashboard, LogOut, ShieldCheck, SquareParking, UserRound, Users } from "lucide-react";
 import type { ComponentType, SVGProps } from "react";
 import { NavLink, Outlet, useNavigate } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
@@ -14,6 +14,7 @@ type Icon = ComponentType<SVGProps<SVGSVGElement>>;
 const NAV: { label: string; to: string; icon: Icon; permission?: Permission }[] = [
   { label: fr.nav.dashboard, to: "/", icon: LayoutDashboard, permission: "reservations:view" },
   { label: fr.nav.planning, to: "/planning", icon: CalendarDays, permission: "reservations:view" },
+  { label: fr.nav.shuttles, to: "/navettes", icon: BusFront, permission: "reservations:view" },
   { label: fr.nav.reservations, to: "/reservations", icon: ClipboardList, permission: "reservations:view" },
   { label: fr.nav.parking, to: "/parking", icon: SquareParking, permission: "reservations:view" },
   { label: fr.nav.plazo, to: "/plazo", icon: Globe, permission: "parking:manage" },

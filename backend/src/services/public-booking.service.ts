@@ -68,6 +68,7 @@ export class PublicBookingService {
     const { parking } = await this.publicService.findPublished(airport, data.parking);
     const stay = this.publicService.parseStay(parking, data.arrivalAt, data.returnAt)!;
     const returnFlight = this.reservations.normalizeFlight(data.returnFlight);
+    const departureFlight = this.reservations.normalizeFlight(data.departureFlight, 'departureFlight');
     const email = data.customerEmail.trim().toLowerCase();
     const plate = plateKey(data.plate);
     const online = this.payments.enabled();
@@ -118,6 +119,7 @@ export class PublicBookingService {
             plate: formatPlate(data.plate),
             plateKey: plate,
             returnFlight,
+            departureFlight,
             priceCents: quote.priceCents,
             cancellationPolicy: listing.cancellationPolicy,
             idempotencyKey: key,
@@ -251,18 +253,25 @@ export class PublicBookingService {
   }
 
   /** Sets or clears the return flight, until the vehicle is handed back. */
-  public async updateFlight(reference: string, token: string | undefined, flight: string | null): Promise<PublicBooking> {
+  public async updateFlight(reference: string, token: string | undefined, flight: string | null, outbound?: string | null): Promise<PublicBooking> {
     const before = await this.load(reference, token);
     const returnFlight = this.reservations.normalizeFlight(flight);
+    const departureFlight = outbound === undefined ? before.departureFlight : this.reservations.normalizeFlight(outbound, 'departureFlight');
     const locked = () => new HttpException(httpStatus.CONFLICT, 'The return flight can no longer be changed', 'flight_locked');
     if (!canEditFlight(before.status, before.returnAt)) throw locked();
-    if (returnFlight === before.returnFlight) return toPublicBooking(before);
+    if (returnFlight === before.returnFlight && departureFlight === before.departureFlight) return toPublicBooking(before);
 
     const after = await prisma.$transaction(async tx => {
       // Conditional update: staff may have closed the booking in the meantime.
       const { count } = await tx.reservation.updateMany({
         where: { id: before.id, status: { notIn: FLIGHT_LOCKED }, returnAt: { gt: new Date() } },
-        data: { returnFlight },
+        data: {
+          returnFlight,
+          departureFlight,
+          ...(departureFlight === before.departureFlight
+            ? {}
+            : { departureStatus: null, departureScheduledAt: null, departureEstimatedAt: null, departureTerminal: null, departureCheckedAt: null }),
+        },
       });
       if (!count) throw locked();
       await this.audit.record(
@@ -271,7 +280,11 @@ export class PublicBookingService {
           action: 'reservation.updated',
           entityType: 'reservation',
           entityId: before.id,
-          details: { returnFlight: { from: before.returnFlight, to: returnFlight }, by: 'traveller' },
+          details: {
+            returnFlight: { from: before.returnFlight, to: returnFlight },
+            ...(departureFlight === before.departureFlight ? {} : { departureFlight: { from: before.departureFlight, to: departureFlight } }),
+            by: 'traveller',
+          },
         },
         tx,
       );

@@ -18,6 +18,7 @@ type Form = {
   customerEmail: string;
   plate: string;
   returnFlight: string;
+  departureFlight: string;
   /** D-A: a stop's id, "" for the airport. */
   stopId: string;
   passengers: string;
@@ -42,6 +43,7 @@ function initialForm(reservation?: Reservation, defaultDate?: string, prefill?: 
       customerEmail: prefill.customerEmail ?? "",
       plate: prefill.plate ?? "",
       returnFlight: prefill.returnFlight ?? "",
+      departureFlight: prefill.departureFlight ?? "",
       stopId: "",
       passengers: String(prefill.passengers ?? 1),
       channel: "aggregator",
@@ -62,6 +64,7 @@ function initialForm(reservation?: Reservation, defaultDate?: string, prefill?: 
       customerEmail: reservation.customerEmail ?? "",
       plate: reservation.plate,
       returnFlight: reservation.returnFlight ?? "",
+      departureFlight: reservation.departureFlight ?? "",
       stopId: reservation.stopId ?? "",
       passengers: String(reservation.passengers),
       channel: reservation.channel,
@@ -79,6 +82,7 @@ function initialForm(reservation?: Reservation, defaultDate?: string, prefill?: 
     customerEmail: "",
     plate: "",
     returnFlight: "",
+    departureFlight: "",
     stopId: "",
     passengers: "1",
     channel: "phone",
@@ -157,6 +161,7 @@ export function ReservationForm({
         customerEmail: form.customerEmail.trim() || null,
         plate: form.plate,
         returnFlight: form.returnFlight.trim() || null,
+        departureFlight: form.departureFlight.trim() || null,
         stopId: form.stopId || null,
         notes: form.notes.trim() || null,
         ...(!reservation && prefill?.externalReference ? { externalReference: prefill.externalReference } : {}),
@@ -282,17 +287,30 @@ export function ReservationForm({
             />
           </div>
         </Field>
-        <Field id="returnFlight" label={t.returnFlight} error={fieldErrors.returnFlight} help={t.returnFlightHelp}>
-          <input
-            id="returnFlight"
-            autoCapitalize="characters"
-            value={form.returnFlight}
-            onChange={set("returnFlight")}
-            aria-invalid={!!fieldErrors.returnFlight}
-            placeholder="TO 3627"
-            className={cn(inputClass, "tabular font-mono uppercase")}
-          />
-        </Field>
+        <div className="grid gap-4 sm:grid-cols-2">
+          <Field id="departureFlight" label={t.departureFlight} error={fieldErrors.departureFlight} help={t.departureFlightHelp}>
+            <input
+              id="departureFlight"
+              autoCapitalize="characters"
+              value={form.departureFlight}
+              onChange={set("departureFlight")}
+              aria-invalid={!!fieldErrors.departureFlight}
+              placeholder="AF 7641"
+              className={cn(inputClass, "tabular font-mono uppercase")}
+            />
+          </Field>
+          <Field id="returnFlight" label={t.returnFlight} error={fieldErrors.returnFlight} help={t.returnFlightHelp}>
+            <input
+              id="returnFlight"
+              autoCapitalize="characters"
+              value={form.returnFlight}
+              onChange={set("returnFlight")}
+              aria-invalid={!!fieldErrors.returnFlight}
+              placeholder="TO 3627"
+              className={cn(inputClass, "tabular font-mono uppercase")}
+            />
+          </Field>
+        </div>
         {customStops.length > 0 && (
           <Field id="stopId" label={t.stop} error={fieldErrors.stopId}>
             <select id="stopId" value={form.stopId} onChange={set("stopId")} aria-invalid={!!fieldErrors.stopId} className={inputClass}>

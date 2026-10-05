@@ -14,6 +14,7 @@ import NewReservationPage from "@/pages/NewReservationPage";
 import ParkingPage from "@/pages/ParkingPage";
 import DashboardPage from "@/pages/DashboardPage";
 import PlanningPage from "@/pages/PlanningPage";
+import ShuttleWavesPage from "@/pages/ShuttleWavesPage";
 import PricingPage from "@/pages/PricingPage";
 import ReservationPage from "@/pages/ReservationPage";
 import ReservationsPage from "@/pages/ReservationsPage";
@@ -128,6 +129,7 @@ const App = () => (
             >
               <Route path="/" element={<DashboardPage />} />
               <Route path="/planning" element={<PlanningPage />} />
+              <Route path="/navettes" element={<ShuttleWavesPage />} />
               <Route path="/reservations" element={<ReservationsPage />} />
               <Route
                 path="/reservations/nouvelle"

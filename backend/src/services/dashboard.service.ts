@@ -8,6 +8,7 @@ import { FlightTrackingService } from './flight-tracking.service';
 import { ParkingService } from './parking.service';
 import { PushService } from './push.service';
 import { ReservationService } from './reservation.service';
+import { ShuttleForecastService } from './shuttle-forecast.service';
 import { ShuttleService } from './shuttle.service';
 import { SmsService } from './sms.service';
 
@@ -28,7 +29,11 @@ export type AlertKind =
   | 'waiting_at_meeting_point'
   | 'keys_missing'
   | 'sms_pending'
-  | 'overbooked';
+  | 'overbooked'
+  // Shuttle waves (V-A, 05/10/2026): an outbound flight cancelled or late, a wave beyond the seats.
+  | 'departure_cancelled'
+  | 'departure_delayed'
+  | 'wave_overflow';
 
 export interface DashboardAlert {
   kind: AlertKind;
@@ -90,6 +95,15 @@ export interface Dashboard {
     lastImportAt: string | null;
   };
   alerts: DashboardAlert[];
+  /** The next shuttle wave still to run today (V-A), for the "Navettes" tile. */
+  nextWave: {
+    leaveAt: string;
+    direction: ShuttleDirection;
+    stopName: string | null;
+    passengers: number;
+    vehiclesNeeded: number | null;
+    flights: string[];
+  } | null;
   breakdown: { onSiteQuiet: number; toPlaceToday: number; returnsThisWeek: number; toTreat: number; freeSpots: number | null };
   vehicles: DashboardVehicle[];
 }
@@ -107,6 +121,7 @@ export class DashboardService {
   public push = Container.get(PushService);
   public reservations = Container.get(ReservationService);
   public shuttle = Container.get(ShuttleService);
+  public forecast = Container.get(ShuttleForecastService);
   public sms = Container.get(SmsService);
 
   public async get(actor: AuthenticatedStaff): Promise<Dashboard> {
@@ -116,7 +131,7 @@ export class DashboardService {
     const refreshed = await this.flights.refreshBookings(planning.returns.filter(r => r.returnFlight).map(r => r.id));
     if (refreshed) planning = await this.reservations.planning(actor);
 
-    const [onSite, trips, signals, spotsTotal, operator, devices, lastImport, smsStatus] = await Promise.all([
+    const [onSite, trips, signals, spotsTotal, operator, devices, lastImport, smsStatus, forecast] = await Promise.all([
       prisma.reservation.findMany({
         where: { parkingId: parking.id, status: { in: ON_SITE } },
         include: { spot: { select: { code: true, stayClass: true } }, stop: { select: { name: true } } },
@@ -133,6 +148,7 @@ export class DashboardService {
         select: { createdAt: true },
       }),
       this.sms.status(actor),
+      this.forecast.day(actor),
     ]);
     const todayIds = new Set(planning.returns.map(r => r.id));
     const tripOf = (id: string) => trips.find(t => t.reservationIds.includes(id)) ?? null;
@@ -189,6 +205,34 @@ export class DashboardService {
             minutes: late,
           });
       }
+    }
+    // Today's outbound flights: cancelled or late (the traveller has not left for the terminal yet).
+    for (const w of forecast.waves.filter(w => w.direction === 'dropoff')) {
+      for (const m of w.members.filter(m => m.state === 'planned' && m.flight)) {
+        const f = m.flight!;
+        const member = { reservationId: m.reservationId, reference: m.reference, customerName: m.customerName, plate: m.plate };
+        if (f.status === 'cancelled' || f.status === 'diverted') {
+          alerts.push({ kind: 'departure_cancelled', severity: 'urgent', ...member, detail: f.number, since: null, minutes: null });
+        } else if (f.scheduledAt && f.estimatedAt && f.status !== 'departed') {
+          const late = Math.round((new Date(f.estimatedAt).getTime() - new Date(f.scheduledAt).getTime()) / 60000);
+          if (late >= DELAY_MINUTES)
+            alerts.push({ kind: 'departure_delayed', severity: 'watch', ...member, detail: f.number, since: f.estimatedAt, minutes: late });
+        }
+      }
+    }
+    // A wave still to run that needs more than one shuttle.
+    for (const w of forecast.waves.filter(w => w.state === 'planned' && (w.vehiclesNeeded ?? 1) > 1)) {
+      alerts.push({
+        kind: 'wave_overflow',
+        severity: 'watch',
+        reservationId: null,
+        reference: null,
+        customerName: null,
+        plate: null,
+        detail: w.direction,
+        since: w.leaveAt,
+        minutes: w.passengers,
+      });
     }
     // At the meeting point, and no shuttle on its way.
     for (const s of signals.filter(s => s.kind === 'return' && s.state === 'at_meeting_point')) {
@@ -291,6 +335,19 @@ export class DashboardService {
         lastImportAt: lastImport?.createdAt.toISOString() ?? null,
       },
       alerts,
+      nextWave: (() => {
+        const w = forecast.waves.find(w => w.state === 'planned' && new Date(w.leaveAt).getTime() >= now.getTime() - 30 * 60000);
+        return w
+          ? {
+              leaveAt: w.leaveAt,
+              direction: w.direction,
+              stopName: w.stopName,
+              passengers: w.passengers,
+              vehiclesNeeded: w.vehiclesNeeded,
+              flights: w.flights,
+            }
+          : null;
+      })(),
       breakdown: {
         onSiteQuiet: onSite.filter(r => r.spotId && !alerts.some(a => a.reservationId === r.id) && !todayIds.has(r.id)).length,
         toPlaceToday: planning.arrivals.filter(a => a.status === 'upcoming' || (a.status === 'arrived' && !a.spotId)).length,

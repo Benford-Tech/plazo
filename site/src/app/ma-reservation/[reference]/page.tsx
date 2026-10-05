@@ -172,6 +172,13 @@ export default async function ManageBookingPage({ params, searchParams }: PagePr
             {!confirmed && <Row label={fr.manage.reference}>{b.reference}</Row>}
             <Row label={fr.manage.dropOff}>{formatDateTime(b.arrivalAt)}</Row>
             <Row label={fr.manage.pickUp}>{formatDateTime(b.returnAt)}</Row>
+            {b.departureFlight && (
+              <Row label={fr.manage.outbound}>
+                {b.departureFlight}
+                {b.outbound?.status && <span className="font-normal text-soft"> · {fr.manage.outboundStatus[b.outbound.status] ?? b.outbound.status}</span>}
+                {b.outbound?.shuttleAt && <span className="block font-normal text-soft">{fr.manage.outboundShuttle(b.outbound.shuttleAt.slice(11, 16))}</span>}
+              </Row>
+            )}
             <Row label={fr.manage.flight}>{b.returnFlight ?? <span className="font-normal text-soft">{fr.manage.noFlight}</span>}</Row>
             <Row label={fr.manage.vehicle}>
               <Plate plate={b.plate} size="sm" />
@@ -237,7 +244,7 @@ export default async function ManageBookingPage({ params, searchParams }: PagePr
                 {fr.manage.flightTitle}
               </h2>
               {b.canEditFlight ? (
-                <FlightForm action={changeFlightAction.bind(null, b.reference)} flight={b.returnFlight} />
+                <FlightForm action={changeFlightAction.bind(null, b.reference)} flight={b.returnFlight} outbound={b.departureFlight} />
               ) : (
                 <p className="text-sm text-soft">{fr.manage.flightLocked}</p>
               )}

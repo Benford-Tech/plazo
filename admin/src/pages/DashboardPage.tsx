@@ -9,7 +9,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { adminApi } from "@/lib/api";
 import { longDate, shortDay, timeAgo, timeOf } from "@/lib/datetime";
 import { describeError, fr } from "@/lib/fr";
-import type { AlertSeverity, Dashboard, DashboardAlert, DashboardVehicle, LiveShuttles } from "@/lib/types";
+import type { AlertSeverity, Dashboard, DashboardAlert, DashboardVehicle, LiveShuttles, ShuttleDirection } from "@/lib/types";
 import { cn } from "@/lib/utils";
 
 const LiveShuttlesMap = lazy(() => import("@/components/dashboard/LiveShuttlesMap"));
@@ -88,14 +88,24 @@ function AlertRow({ alert }: { alert: DashboardAlert }) {
     <>
       <span className="flex min-w-0 flex-1 flex-col gap-0.5">
         <span className="truncate text-[15px] font-semibold">{a.kind[alert.kind]}</span>
-        <span className="truncate text-[13px] text-muted-foreground">{[alert.customerName, alert.detail].filter(Boolean).join(" · ")}</span>
+        <span className="truncate text-[13px] text-muted-foreground">
+          {alert.kind === "wave_overflow" && alert.since && alert.minutes !== null
+            ? a.waveDetail(alert.detail as ShuttleDirection, timeOf(alert.since), alert.minutes)
+            : [alert.customerName, alert.detail].filter(Boolean).join(" · ")}
+        </span>
       </span>
-      {alert.minutes !== null && alert.kind !== "flight_delayed" && <span className="hidden font-mono text-xs text-muted-foreground sm:inline">{a.since(alert.minutes)}</span>}
+      {alert.minutes !== null && !["flight_delayed", "departure_delayed", "wave_overflow"].includes(alert.kind) && <span className="hidden font-mono text-xs text-muted-foreground sm:inline">{a.since(alert.minutes)}</span>}
       {alert.plate && <Plate value={alert.plate} size="sm" className="hidden sm:inline-flex" />}
       <Badge tone={SEVERITY_TONE[alert.severity]}>{a.severity[alert.severity]}</Badge>
     </>
   );
   const className = "flex items-center gap-3 border-t border-panel-line px-1 py-2.5 first:border-t-0";
+  if (alert.kind === "wave_overflow")
+    return (
+      <Link to="/navettes" className={cn(className, "hover:bg-panel-2")}>
+        {body}
+      </Link>
+    );
   return alert.reservationId ? (
     <Link to={`/reservations/${alert.reservationId}`} className={cn(className, "hover:bg-panel-2")}>
       {body}
@@ -265,7 +275,15 @@ export default function DashboardPage() {
         <Kpi testId="kpi-on-site" label={k.onSite} value={d.counts.onSite} sub={k.onSiteSub(d.counts.freeSpots, d.parking.plannedSpots)} to="/parking/occupation" icon={SquareParking} />
         <Kpi testId="kpi-arrivals" label={k.arrivals} value={d.counts.arrivalsToday} sub={k.arrivalsSub(d.counts.arrivedToday, d.counts.arrivalsToday)} to="/planning" icon={ArrowDownToLine} />
         <Kpi testId="kpi-returns" label={k.returns} value={d.counts.returnsToday} sub={k.returnsSub(d.breakdown.returnsThisWeek)} to="/planning" icon={ArrowUpFromLine} />
-        <Kpi testId="kpi-shuttles" label={k.shuttles} value={d.counts.shuttlesRunning} sub={k.shuttlesSub(d.counts.shuttlesRunning)} to="/planning" icon={BusFront} />
+        <Kpi
+          testId="kpi-shuttles"
+          label={k.shuttles}
+          value={d.counts.shuttlesRunning}
+          sub={d.nextWave ? k.nextWave(timeOf(d.nextWave.leaveAt), d.nextWave.passengers, d.nextWave.vehiclesNeeded) : k.shuttlesSub(d.counts.shuttlesRunning)}
+          to="/navettes"
+          icon={BusFront}
+          alert={(d.nextWave?.vehiclesNeeded ?? 1) > 1}
+        />
         <Kpi testId="kpi-to-treat" label={k.toTreat} value={d.counts.toTreat} sub={k.toTreatSub(urgent)} to="/" icon={TriangleAlert} alert={urgent > 0} />
       </div>
 

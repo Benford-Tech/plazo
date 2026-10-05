@@ -152,10 +152,10 @@ export const api = {
   /** The return day of a booking (the app's live block), for the booking page's first paint. */
   returnState: (reference: string, token: string) => apiRequest<TravellerReturn>(`/api/public/bookings/${seg(reference)}/return`, { bookingToken: token }),
 
-  changeFlight: (reference: string, token: string, returnFlight: string | null) =>
+  changeFlight: (reference: string, token: string, returnFlight: string | null, departureFlight?: string | null) =>
     apiRequest<PublicBooking>(`/api/public/bookings/${seg(reference)}/flight`, {
       method: "PATCH",
-      body: { returnFlight },
+      body: departureFlight === undefined ? { returnFlight } : { returnFlight, departureFlight },
       bookingToken: token,
     }),
 

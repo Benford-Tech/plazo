@@ -143,6 +143,30 @@ export function BookingForm({
             <FieldError id="b-plate-error" code={f.plate} />
           </div>
           <div>
+            <label htmlFor="b-departureFlight" className="label">
+              {fr.booking.outboundFlight}
+            </label>
+            <input
+              {...field("departureFlight")}
+              aria-describedby={f.departureFlight ? "b-departureFlight-error" : "b-departureFlight-hint"}
+              type="text"
+              maxLength={10}
+              autoComplete="off"
+              autoCapitalize="characters"
+              spellCheck={false}
+              placeholder="AF 7641"
+              defaultValue={v.departureFlight}
+              className="field font-semibold uppercase placeholder:font-normal placeholder:normal-case"
+            />
+            {f.departureFlight ? (
+              <FieldError id="b-departureFlight-error" code={f.departureFlight} />
+            ) : (
+              <p id="b-departureFlight-hint" className="mt-1.5 text-[13px] text-soft">
+                {fr.booking.outboundFlightHint}
+              </p>
+            )}
+          </div>
+          <div>
             <label htmlFor="b-returnFlight" className="label">
               {fr.booking.flight}
             </label>

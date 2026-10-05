@@ -2,6 +2,7 @@ import { Airport, Listing, Parking, Reservation } from '@/database';
 import { PublicBooking } from '@/interfaces/booking.interface';
 import { cancellableUntil, canCancel, canEditFlight } from './booking';
 import { billableDays } from './pricing';
+import { dropoffTimes } from './shuttle-waves';
 import { localDateTime } from './time';
 
 /** A booking made on the site, with its parking's public page. */
@@ -15,6 +16,19 @@ export function bookingPolicy(reservation: BookingRecord) {
 }
 
 /** A booking as its traveller sees it (only with its manage token). */
+/** The outbound flight block of the public booking: null without a flight number. */
+function outboundView(reservation: Reservation, parking: Parking, tz: string): PublicBooking['outbound'] {
+  if (!reservation.departureFlight) return null;
+  const { leaveAt, noFlight } = dropoffTimes(reservation, parking);
+  return {
+    status: reservation.departureStatus,
+    scheduledAt: reservation.departureScheduledAt ? localDateTime(reservation.departureScheduledAt, tz) : null,
+    estimatedAt: reservation.departureEstimatedAt ? localDateTime(reservation.departureEstimatedAt, tz) : null,
+    terminal: reservation.departureTerminal,
+    shuttleAt: noFlight ? null : localDateTime(leaveAt, tz),
+  };
+}
+
 export function toPublicBooking(reservation: BookingRecord, now = new Date()): PublicBooking {
   const { parking } = reservation;
   const listing = parking.listing!;
@@ -51,6 +65,8 @@ export function toPublicBooking(reservation: BookingRecord, now = new Date()): P
     customerPhone: reservation.customerPhone,
     plate: reservation.plate,
     returnFlight: reservation.returnFlight,
+    departureFlight: reservation.departureFlight,
+    outbound: outboundView(reservation, parking, tz),
     passengers: reservation.passengers,
     cancellationPolicy: policy,
     cancellableUntil: until ? localDateTime(until, tz) : null,

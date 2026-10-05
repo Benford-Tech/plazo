@@ -25,4 +25,18 @@ export class UpdateParkingDto {
   @Min(1, { message: 'shuttle_range' })
   @Max(120, { message: 'shuttle_range' })
   public shuttleTravelMinutes: number;
+
+  /** Shuttle waves (V-A): minutes before take-off the traveller must be at the terminal. */
+  @IsOptional()
+  @IsInt({ message: 'integer' })
+  @Min(0, { message: 'lead_range' })
+  @Max(360, { message: 'lead_range' })
+  public terminalLeadMinutes?: number;
+
+  /** Minutes after the landing before the traveller reaches the meeting point. */
+  @IsOptional()
+  @IsInt({ message: 'integer' })
+  @Min(0, { message: 'delay_range' })
+  @Max(180, { message: 'delay_range' })
+  public landingDelayMinutes?: number;
 }

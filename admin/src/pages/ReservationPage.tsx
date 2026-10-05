@@ -8,7 +8,7 @@ import { ReservationForm } from "@/components/reservations/ReservationForm";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useAuth } from "@/contexts/AuthContext";
 import { adminApi } from "@/lib/api";
-import { dateTimeShort, localParts, nightsBetween } from "@/lib/datetime";
+import { dateTimeShort, localParts, nightsBetween, timeOf } from "@/lib/datetime";
 import { describeError, fr } from "@/lib/fr";
 import { can } from "@/lib/roles";
 import type { Reservation, ReservationStatus } from "@/lib/types";
@@ -141,6 +141,15 @@ export default function ReservationPage() {
               <Info label={t.return}>
                 <span className="tabular font-mono font-bold text-lime-deep">{dateTimeShort(r.returnAt)}</span>
                 <span className="ml-2 text-muted-foreground">· {t.nights(nights)}</span>
+              </Info>
+              <Info label={t.departureFlight}>
+                <span className="tabular font-mono">{r.departureFlight ?? "—"}</span>
+                {r.departureFlight && r.departureStatus && (
+                  <span className="ml-2 text-muted-foreground">
+                    · {t.departureStatus[r.departureStatus] ?? r.departureStatus}
+                    {(r.departureEstimatedAt ?? r.departureScheduledAt) && ` · ${t.takeOff(timeOf((r.departureEstimatedAt ?? r.departureScheduledAt)!))}`}
+                  </span>
+                )}
               </Info>
               <Info label={t.returnFlight}>
                 <span className="tabular font-mono">{r.returnFlight ?? "—"}</span>

@@ -33,6 +33,8 @@ const held: PublicBooking = {
   customerPhone: "06 12 34 56 78",
   plate: "AB-123-CD",
   returnFlight: null,
+  departureFlight: null,
+  outbound: null,
   passengers: 1,
   cancellationPolicy: "free_24h",
   cancellableUntil: "2026-10-02T08:00",

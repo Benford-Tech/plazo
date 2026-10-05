@@ -30,6 +30,7 @@ const dashboard: Dashboard = {
     { kind: "no_spot", severity: "urgent", reservationId: "r3", reference: "R3", customerName: "Louis Leroy", plate: "LM-789-NP", detail: null, since: null, minutes: 10 },
     { kind: "flight_delayed", severity: "watch", reservationId: "r1", reference: "R1", customerName: "Camille Martin", plate: "AB-123-CD", detail: "TO 3627", since: null, minutes: 60 },
   ],
+  nextWave: { leaveAt: "2026-10-05T08:40:00Z", direction: "dropoff", stopName: null, passengers: 11, vehiclesNeeded: 2, flights: ["AF 7641"] },
   breakdown: { onSiteQuiet: 1, toPlaceToday: 2, returnsThisWeek: 9, toTreat: 2, freeSpots: 1 },
   vehicles: [
     {

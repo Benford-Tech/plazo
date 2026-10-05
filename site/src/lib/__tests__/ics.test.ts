@@ -23,6 +23,8 @@ const booking: PublicBooking = {
   customerPhone: "0612345678",
   plate: "GK-318-PX",
   returnFlight: "TO 3627",
+  departureFlight: null,
+  outbound: null,
   passengers: 2,
   cancellationPolicy: "free_24h",
   cancellableUntil: "2026-10-03T06:30",

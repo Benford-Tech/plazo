@@ -40,6 +40,7 @@ const BOOKING_FIELDS = [
   "customerEmail",
   "plate",
   "returnFlight",
+  "departureFlight",
   "passengers",
 ] as const;
 
@@ -67,6 +68,7 @@ export async function bookAction(_previous: FormState, formData: FormData): Prom
       customerEmail: values.customerEmail,
       plate: values.plate,
       returnFlight: values.returnFlight || undefined,
+      departureFlight: values.departureFlight || undefined,
       passengers,
       acceptTerms: values.acceptTerms === "on",
       // Same key for every submission of this page: a retry returns the booking already made.
@@ -145,12 +147,19 @@ async function tokenFor(reference: string): Promise<string> {
 }
 
 export async function changeFlightAction(reference: string, _previous: FormState, formData: FormData): Promise<FormState> {
-  const values = { returnFlight: text(formData, "returnFlight") };
+  const values = { returnFlight: text(formData, "returnFlight"), departureFlight: text(formData, "departureFlight") };
   const token = await tokenFor(reference);
   try {
-    const booking = await api.changeFlight(reference, token, values.returnFlight || null);
+    // The outbound flight rides along only when the form has the field.
+    const outbound = formData.has("departureFlight") ? values.departureFlight || null : undefined;
+    const booking = await api.changeFlight(reference, token, values.returnFlight || null, outbound);
     refresh();
-    return { values: { returnFlight: booking.returnFlight ?? "" }, fields: {}, error: null, notice: "flight_saved" };
+    return {
+      values: { returnFlight: booking.returnFlight ?? "", departureFlight: booking.departureFlight ?? "" },
+      fields: {},
+      error: null,
+      notice: "flight_saved",
+    };
   } catch (error) {
     return failure(values, error);
   }

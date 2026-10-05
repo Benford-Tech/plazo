@@ -85,6 +85,12 @@ export class CreatePublicBookingDto {
   @IsString({ message: 'invalid_flight' })
   public returnFlight?: string | null;
 
+  /** Outbound flight (V-A, 05/10/2026): the shuttle to the terminal is planned before its take-off. */
+  @IsOptional()
+  @MaxLength(10, { message: 'invalid_flight' })
+  @IsString({ message: 'invalid_flight' })
+  public departureFlight?: string | null;
+
   @Max(9, { message: 'passengers_range' })
   @Min(1, { message: 'passengers_range' })
   @IsInt({ message: 'integer' })
@@ -119,11 +125,16 @@ export class LookupBookingDto {
   public email: string;
 }
 
-/** New return flight; empty or null clears it (the field itself is required). */
+/** New return flight; empty or null clears it (the field itself is required). The outbound flight may come along. */
 export class UpdateBookingFlightDto {
   @ValidateIf((_, value) => value !== null)
   @MaxLength(10, { message: 'invalid_flight' })
   @IsString({ message: 'invalid_flight' })
   @IsDefined({ message: 'required' })
   public returnFlight: string | null;
+
+  @IsOptional()
+  @MaxLength(10, { message: 'invalid_flight' })
+  @IsString({ message: 'invalid_flight' })
+  public departureFlight?: string | null;
 }

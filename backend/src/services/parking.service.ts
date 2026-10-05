@@ -11,7 +11,15 @@ import { ParkingLocationService, SAVE_GEOCODE_TIMEOUT_MS } from './parking-locat
 
 export type ParkingSummary = Parking & { bookableCapacity: number };
 
-const SETTINGS = ['name', 'address', 'totalCapacity', 'safetyMarginPct', 'shuttleTravelMinutes'] as const;
+const SETTINGS = [
+  'name',
+  'address',
+  'totalCapacity',
+  'safetyMarginPct',
+  'shuttleTravelMinutes',
+  'terminalLeadMinutes',
+  'landingDelayMinutes',
+] as const;
 
 function summarize(parking: Parking): ParkingSummary {
   return { ...parking, bookableCapacity: bookableCapacity(parking.totalCapacity, parking.safetyMarginPct) };
@@ -45,6 +53,8 @@ export class ParkingService {
           totalCapacity: data.totalCapacity,
           safetyMarginPct: data.safetyMarginPct,
           shuttleTravelMinutes: data.shuttleTravelMinutes,
+          terminalLeadMinutes: data.terminalLeadMinutes,
+          landingDelayMinutes: data.landingDelayMinutes,
         },
       });
 

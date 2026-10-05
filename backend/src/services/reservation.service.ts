@@ -66,10 +66,10 @@ export class ReservationService {
   }
 
   /** "to3627" -> "TO 3627"; empty -> null; 400 "invalid_flight" when it is not a flight number. */
-  public normalizeFlight(flight: string | null | undefined): string | null {
+  public normalizeFlight(flight: string | null | undefined, field: 'returnFlight' | 'departureFlight' = 'returnFlight'): string | null {
     if (!flight || !flight.trim()) return null;
     const formatted = formatFlight(flight);
-    if (!formatted) throw fieldError('returnFlight', 'invalid_flight');
+    if (!formatted) throw fieldError(field, 'invalid_flight');
     return formatted;
   }
 
@@ -104,6 +104,7 @@ export class ReservationService {
     const parking = await this.parkings.getPrimary(actor);
     const stay = this.parseStay(parking, data.arrivalAt, data.returnAt);
     const returnFlight = this.normalizeFlight(data.returnFlight);
+    const departureFlight = this.normalizeFlight(data.departureFlight, 'departureFlight');
     const stopId = await this.checkStop(parking.id, data.stopId);
 
     const externalReference = data.externalReference?.trim().toUpperCase() || null;
@@ -129,6 +130,7 @@ export class ReservationService {
           plate: formatPlate(data.plate),
           plateKey: plateKey(data.plate),
           returnFlight,
+          departureFlight,
           stopId,
           notes: data.notes?.trim() || null,
           externalReference,
@@ -235,6 +237,11 @@ export class ReservationService {
           plate: data.plate === undefined ? undefined : formatPlate(data.plate),
           plateKey: data.plate === undefined ? undefined : plateKey(data.plate),
           returnFlight: data.returnFlight === undefined ? undefined : this.normalizeFlight(data.returnFlight),
+          departureFlight: data.departureFlight === undefined ? undefined : this.normalizeFlight(data.departureFlight, 'departureFlight'),
+          // A new outbound flight starts its tracking over.
+          ...(data.departureFlight === undefined
+            ? {}
+            : { departureStatus: null, departureScheduledAt: null, departureEstimatedAt: null, departureTerminal: null, departureCheckedAt: null }),
           stopId,
           notes: data.notes === undefined ? undefined : data.notes?.trim() || null,
           overbooked: datesChanged ? full.length > 0 : undefined,

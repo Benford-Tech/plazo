@@ -110,7 +110,10 @@ export class ReturnService {
   }
 
   private async view(booking: BookingRecord): Promise<TravellerReturn> {
-    const fresh = await prisma.reservation.findUniqueOrThrow({ where: { id: booking.id }, include: { spot: { select: { code: true, stayClass: true } } } });
+    const fresh = await prisma.reservation.findUniqueOrThrow({
+      where: { id: booking.id },
+      include: { spot: { select: { code: true, stayClass: true } } },
+    });
     const location = (await this.locations.locations([booking.parking.id])).get(booking.parking.id) ?? null;
     const now = new Date();
     const window = arrivalWindows(fresh).return;

@@ -15,7 +15,7 @@ import { describeError, fr } from "@/lib/fr";
 import { bookableCapacity } from "@/lib/roles";
 import type { Parking } from "@/lib/types";
 
-type Form = { name: string; address: string; totalCapacity: string; safetyMarginPct: string; shuttleTravelMinutes: string };
+type Form = { name: string; address: string; totalCapacity: string; safetyMarginPct: string; shuttleTravelMinutes: string; terminalLeadMinutes: string; landingDelayMinutes: string };
 
 const toForm = (p: Parking): Form => ({
   name: p.name,
@@ -23,6 +23,8 @@ const toForm = (p: Parking): Form => ({
   totalCapacity: String(p.totalCapacity),
   safetyMarginPct: String(p.safetyMarginPct),
   shuttleTravelMinutes: String(p.shuttleTravelMinutes),
+  terminalLeadMinutes: String(p.terminalLeadMinutes ?? 120),
+  landingDelayMinutes: String(p.landingDelayMinutes ?? 30),
 });
 
 export default function ParkingPage() {
@@ -44,6 +46,8 @@ export default function ParkingPage() {
         totalCapacity: Number(f.totalCapacity),
         safetyMarginPct: Number(f.safetyMarginPct),
         shuttleTravelMinutes: Number(f.shuttleTravelMinutes),
+        terminalLeadMinutes: Number(f.terminalLeadMinutes),
+        landingDelayMinutes: Number(f.landingDelayMinutes),
       }),
     onSuccess: ({ data }) => {
       setFieldErrors({});
@@ -121,6 +125,32 @@ export default function ParkingPage() {
                 onChange={set("shuttleTravelMinutes")}
                 help={t.shuttleHelp}
                 error={fieldErrors.shuttleTravelMinutes}
+              />
+              <FormField
+                id="terminalLeadMinutes"
+                label={t.terminalLeadMinutes}
+                type="number"
+                inputMode="numeric"
+                min={0}
+                max={360}
+                required
+                value={form.terminalLeadMinutes}
+                onChange={set("terminalLeadMinutes")}
+                help={t.terminalLeadHelp}
+                error={fieldErrors.terminalLeadMinutes}
+              />
+              <FormField
+                id="landingDelayMinutes"
+                label={t.landingDelayMinutes}
+                type="number"
+                inputMode="numeric"
+                min={0}
+                max={180}
+                required
+                value={form.landingDelayMinutes}
+                onChange={set("landingDelayMinutes")}
+                help={t.landingDelayHelp}
+                error={fieldErrors.landingDelayMinutes}
               />
             </div>
             {preview !== null && (

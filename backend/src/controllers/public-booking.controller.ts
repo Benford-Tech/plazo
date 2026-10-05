@@ -37,7 +37,7 @@ export class PublicBookingController {
   public updateFlight = catchAsync(async (req: Request, res: Response) => {
     const data: UpdateBookingFlightDto = req.body;
     res.set('Cache-Control', 'no-store');
-    res.json(await this.bookingService.updateFlight(req.params.reference as string, bookingToken(req), data.returnFlight));
+    res.json(await this.bookingService.updateFlight(req.params.reference as string, bookingToken(req), data.returnFlight, data.departureFlight));
   });
 
   /** POST /public/bookings/:reference/checkout */

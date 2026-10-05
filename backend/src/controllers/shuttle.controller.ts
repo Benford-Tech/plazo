@@ -3,11 +3,19 @@ import httpStatus from 'http-status';
 import { Container } from 'typedi';
 import { ShuttleVehicleDto, StartTripDto, TripPositionDto, UpdateShuttleVehicleDto, ShuttleStopDto, UpdateShuttleStopDto } from '@/dtos/shuttle.dto';
 import { RequestWithStaffSession } from '@/middlewares/staff-auth.middleware';
+import { ShuttleForecastService } from '@/services/shuttle-forecast.service';
 import { ShuttleService } from '@/services/shuttle.service';
 import catchAsync from '@/utils/catchAsync';
 
 export class ShuttleController {
   public shuttle = Container.get(ShuttleService);
+  public forecast = Container.get(ShuttleForecastService);
+
+  /** GET /internal/shuttle/forecast?date=YYYY-MM-DD */
+  public waves = catchAsync(async (req: RequestWithStaffSession, res: Response) => {
+    const date = typeof req.query.date === 'string' ? req.query.date : undefined;
+    res.status(httpStatus.OK).json(await this.forecast.day(req.staff, date));
+  });
 
   /** GET /internal/shuttle/pickups */
   public pickups = catchAsync(async (req: RequestWithStaffSession, res: Response) => {
