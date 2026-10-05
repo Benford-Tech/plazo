@@ -1502,6 +1502,42 @@ export const dateTime = new Intl.DateTimeFormat("fr-FR", {
   timeZone: "Europe/Paris",
 });
 
+export const flightCheckFr = {
+  title: "Tester le suivi de vol",
+  intro: "Interroge le fournisseur de suivi de vols pour un vol et une date, et montre sa réponse telle quelle.",
+  flight: "Numéro de vol",
+  date: "Date (locale)",
+  role: "Côté",
+  arrival: "Atterrissage à l'aéroport (vol retour)",
+  departure: "Décollage de l'aéroport (vol aller)",
+  run: "Interroger",
+  running: "Interrogation…",
+  provider: (provider: string, host: string | null) => `Fournisseur : ${provider}${host ? ` · ${host}` : ""}`,
+  outcome: {
+    not_configured: "Aucun fournisseur configuré : ajoutez AERODATABOX_API_KEY (ou AIRLABS_API_KEY) sur Vercel.",
+    found: "Vol trouvé.",
+    not_found: "Le fournisseur ne connaît pas ce vol à cette date (vérifiez le numéro et la date).",
+    error: "Le fournisseur a refusé la demande.",
+  } as Record<string, string>,
+  errorHint: (error: string) =>
+    /403/.test(error)
+      ? `${error} — clé refusée ou endpoint hors forfait : sur RapidAPI, vérifiez l'abonnement au plan Basic d'AeroDataBox et la clé X-RapidAPI-Key.`
+      : /401/.test(error)
+        ? `${error} — clé invalide.`
+        : /429/.test(error)
+          ? `${error} — quota du forfait épuisé.`
+          : error,
+  fields: {
+    status: "Statut",
+    scheduled: "Prévu",
+    estimated: "Révisé",
+    actual: "Réel",
+    airport: "Aéroport",
+    terminal: "Terminal",
+    gate: "Porte",
+  },
+};
+
 export const shuttleWavesFr = {
   title: "Navettes",
   subtitle: "Ligne du jour : quand chaque navette doit partir, avec combien de passagers.",

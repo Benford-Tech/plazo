@@ -2,6 +2,7 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
 import { FormField } from "@/components/FormField";
+import { FlightCheckCard } from "@/components/parking/FlightCheckCard";
 import { ParkingTabs } from "@/components/parking/ParkingTabs";
 import { ReturnMeetingPointForm } from "@/components/parking/ReturnMeetingPointForm";
 import { ShuttleStops } from "@/components/parking/ShuttleStops";
@@ -167,6 +168,7 @@ export default function ParkingPage() {
       <ReturnMeetingPointForm />
       <ShuttleStops />
       <ShuttleVehicles />
+      <FlightCheckCard />
     </>
   );
 }

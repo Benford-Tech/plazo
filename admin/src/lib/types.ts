@@ -722,3 +722,28 @@ export interface ShuttleForecast {
   vehiclesInService: number;
   waves: ShuttleWave[];
 }
+
+/** GET /internal/flights/check: the flight provider's answer for one flight (diagnostic). */
+export interface FlightCheck {
+  provider: string;
+  host: string | null;
+  flight: string;
+  date: string;
+  role: "arrival" | "departure";
+  outcome: "not_configured" | "found" | "not_found" | "error";
+  info: {
+    status: string;
+    scheduledArrivalAt: string | null;
+    estimatedArrivalAt: string | null;
+    actualArrivalAt: string | null;
+    arrivalAirport: string | null;
+    terminal: string | null;
+    gate: string | null;
+    scheduledDepartureAt: string | null;
+    estimatedDepartureAt: string | null;
+    actualDepartureAt: string | null;
+    departureAirport: string | null;
+    departureTerminal: string | null;
+  } | null;
+  error: string | null;
+}

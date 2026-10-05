@@ -321,3 +321,26 @@ describe('GET /internal/shuttle/forecast', () => {
     expect(again.body.departures).toBe(0);
   });
 });
+
+describe('GET /internal/flights/check', () => {
+  it('montre la réponse du fournisseur, ou son erreur, pour un vol donné', async () => {
+    const op = await setupOperator();
+    expect((await api().get('/api/internal/flights/check?flight=AF7641').set(auth(op.token))).body.outcome).toBe('not_configured');
+    process.env.AERODATABOX_API_KEY = 'rapid-key';
+    fetchMock.mockImplementation(async url => (/aerodatabox/.test(String(url)) ? json(adbDeparture(new Date('2026-10-06T06:00:00Z'))) : json({})));
+    const found = await api().get('/api/internal/flights/check?flight=af7641&date=2026-10-06&role=departure').set(auth(op.token));
+    expect(found.status).toBe(200);
+    expect(found.body).toMatchObject({
+      provider: 'aerodatabox',
+      host: 'aerodatabox.p.rapidapi.com',
+      flight: 'AF7641',
+      outcome: 'found',
+      role: 'departure',
+    });
+    expect(found.body.info.departureTerminal).toBe('2');
+    fetchMock.mockImplementation(async () => json({ message: 'You are not subscribed to this API.' }, 403));
+    const refused = await api().get('/api/internal/flights/check?flight=AF7641&date=2026-10-06').set(auth(op.token));
+    expect(refused.body).toMatchObject({ outcome: 'error', error: 'AeroDataBox answered 403' });
+    expect((await api().get('/api/internal/flights/check?flight=zz').set(auth(op.token))).status).toBe(400);
+  });
+});

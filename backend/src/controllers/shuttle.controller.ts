@@ -2,7 +2,14 @@ import { Response } from 'express';
 import httpStatus from 'http-status';
 import { Container } from 'typedi';
 import { ShuttleVehicleDto, StartTripDto, TripPositionDto, UpdateShuttleVehicleDto, ShuttleStopDto, UpdateShuttleStopDto } from '@/dtos/shuttle.dto';
+import httpStatusCodes from 'http-status';
+import prisma from '@/database';
+import { DATE_RE, localDate } from '@/domain/time';
+import { formatFlight } from '@/domain/reservation';
 import { RequestWithStaffSession } from '@/middlewares/staff-auth.middleware';
+import { HttpException } from '@/utils/httpException';
+import { FlightTrackingService } from '@/services/flight-tracking.service';
+import { ParkingService } from '@/services/parking.service';
 import { ShuttleForecastService } from '@/services/shuttle-forecast.service';
 import { ShuttleService } from '@/services/shuttle.service';
 import catchAsync from '@/utils/catchAsync';
@@ -10,6 +17,20 @@ import catchAsync from '@/utils/catchAsync';
 export class ShuttleController {
   public shuttle = Container.get(ShuttleService);
   public forecast = Container.get(ShuttleForecastService);
+  public flights = Container.get(FlightTrackingService);
+  public parkings = Container.get(ParkingService);
+
+  /** GET /internal/flights/check?flight=&date=&role=arrival|departure — the provider's answer for one flight. */
+  public checkFlight = catchAsync(async (req: RequestWithStaffSession, res: Response) => {
+    const flight = typeof req.query.flight === 'string' ? formatFlight(req.query.flight) : null;
+    if (!flight) throw new HttpException(httpStatusCodes.BAD_REQUEST, 'Invalid flight number', 'invalid_flight');
+    const parking = await this.parkings.getPrimary(req.staff);
+    const date = typeof req.query.date === 'string' && DATE_RE.test(req.query.date) ? req.query.date : localDate(new Date(), parking.timezone);
+    const role = req.query.role === 'departure' ? 'departure' : 'arrival';
+    const listing = await prisma.listing.findUnique({ where: { parkingId: parking.id }, select: { airport: { select: { code: true } } } });
+    res.set('Cache-Control', 'no-store');
+    res.status(httpStatus.OK).json(await this.flights.check(flight, date, listing?.airport.code ?? null, role));
+  });
 
   /** GET /internal/shuttle/forecast?date=YYYY-MM-DD */
   public waves = catchAsync(async (req: RequestWithStaffSession, res: Response) => {

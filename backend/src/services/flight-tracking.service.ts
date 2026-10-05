@@ -34,6 +34,17 @@ export interface FlightTrackingProvider {
   lookup(flightKey: string, date: string, airportIata: string | null, role?: FlightRole): Promise<FlightInfo | null>;
 }
 
+export interface FlightCheck {
+  provider: string;
+  host: string | null;
+  flight: string;
+  date: string;
+  role: FlightRole;
+  outcome: 'not_configured' | 'found' | 'not_found' | 'error';
+  info: FlightInfo | null;
+  error: string | null;
+}
+
 const LOOKUP_TIMEOUT_MS = 6000;
 /** At most this many bookings asked to the provider per refresh (the free plans are small). */
 const MAX_LOOKUPS_PER_RUN = 50;
@@ -129,6 +140,23 @@ export class FlightTrackingService {
 
   public enabled(): boolean {
     return this.provider().name !== 'none';
+  }
+
+  /**
+   * Diagnostic for the manager ("Tester le suivi de vol"): asks the provider about one flight and
+   * returns its answer or the error, so that a wrong key, plan or host shows up without the logs.
+   */
+  public async check(flight: string, date: string, airportIata: string | null, role: FlightRole): Promise<FlightCheck> {
+    const settings = flightTrackingSettings();
+    const provider = this.provider();
+    const base = { provider: provider.name, host: settings ? new URL(settings.baseUrl).host : null, flight: flightNumberKey(flight), date, role };
+    if (provider.name === 'none') return { ...base, outcome: 'not_configured', info: null, error: null };
+    try {
+      const info = await provider.lookup(flightNumberKey(flight), date, airportIata, role);
+      return { ...base, outcome: info ? 'found' : 'not_found', info, error: null };
+    } catch (error) {
+      return { ...base, outcome: 'error', info: null, error: error instanceof Error ? error.message : 'unknown error' };
+    }
   }
 
   /** Refreshes the given bookings' flights when due (the lazy path of the reads). */
