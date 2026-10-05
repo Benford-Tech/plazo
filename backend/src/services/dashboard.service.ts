@@ -59,6 +59,7 @@ export interface DashboardVehicle {
   keyHook: string | null;
   returnFlight: string | null;
   flightStatus: string | null;
+  flightScheduledAt: string | null;
   flightEstimatedAt: string | null;
   flightLandedAt: string | null;
   /** The running trip carrying this traveller, if any. */
@@ -311,6 +312,7 @@ export class DashboardService {
         keyHook: r.keyHook,
         returnFlight: r.returnFlight,
         flightStatus: r.flightStatus,
+        flightScheduledAt: r.flightScheduledAt?.toISOString() ?? null,
         flightEstimatedAt: r.flightEstimatedAt?.toISOString() ?? null,
         flightLandedAt: r.flightLandedAt?.toISOString() ?? null,
         tripDirection: tripOf(r.id)?.direction ?? null,

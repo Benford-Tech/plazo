@@ -615,6 +615,7 @@ export interface DashboardVehicle {
   keyHook: string | null;
   returnFlight: string | null;
   flightStatus: string | null;
+  flightScheduledAt: string | null;
   flightEstimatedAt: string | null;
   flightLandedAt: string | null;
   tripDirection: ShuttleDirection | null;

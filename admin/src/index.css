@@ -75,3 +75,16 @@
   background: #f5c400;
   padding: 0 4px;
 }
+
+/* Dashboard map popups (fusion Flotte + Opérations): a dark card instead of MapLibre's white bubble. */
+.plazo-popup .maplibregl-popup-content {
+  background: #17171b;
+  border: 1px solid #2a2a30;
+  border-radius: 12px;
+  padding: 12px;
+  box-shadow: 0 14px 30px rgba(0, 0, 0, 0.5);
+}
+.plazo-popup .maplibregl-popup-tip {
+  border-top-color: #17171b;
+  border-bottom-color: #17171b;
+}

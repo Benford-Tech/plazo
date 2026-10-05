@@ -44,7 +44,7 @@ export function AdminLayout() {
     <div className="flex min-h-screen flex-col">
       <ViewAsBanner />
       <div className="flex flex-1 flex-col lg:flex-row">
-        <aside className="sticky top-0 z-20 shrink-0 border-b border-border bg-background lg:h-screen lg:w-[184px] lg:border-b-0 lg:border-r">
+        <aside className="sticky top-0 z-20 shrink-0 border-b border-panel-line bg-panel-shell lg:h-screen lg:w-[196px] lg:border-b-0 lg:border-r">
           <div className="flex items-center gap-3 px-4 pt-3 lg:px-4 lg:pb-5 lg:pt-5">
             <Logo height={28} suffix="Pro" className="shrink-0" />
             <button
@@ -63,21 +63,31 @@ export function AdminLayout() {
                 end={item.to === "/"}
                 className={({ isActive }) =>
                   cn(
-                    "flex min-h-11 shrink-0 items-center gap-2.5 px-3 text-[15px] font-semibold uppercase tracking-wide",
-                    isActive
-                      ? "bg-primary text-primary-foreground"
-                      : "text-muted-foreground hover:bg-accent hover:text-foreground lg:border-l-2 lg:border-transparent",
+                    "group flex min-h-11 shrink-0 items-center gap-2.5 rounded-xl px-1.5 text-[14px] font-semibold uppercase tracking-wide",
+                    isActive ? "text-foreground" : "text-muted-foreground hover:text-foreground",
                   )
                 }
               >
-                <item.icon className="h-[18px] w-[18px] shrink-0" aria-hidden="true" />
-                <span>{item.label}</span>
+                {({ isActive }) => (
+                  <>
+                    {/* The "Flotte" rail: a rounded tile per section, the current one yellow. */}
+                    <span
+                      className={cn(
+                        "flex h-10 w-10 shrink-0 items-center justify-center rounded-[10px] border",
+                        isActive ? "border-transparent bg-primary text-primary-foreground" : "border-panel-line bg-panel text-muted-foreground group-hover:bg-panel-2",
+                      )}
+                    >
+                      <item.icon className="h-[18px] w-[18px]" aria-hidden="true" />
+                    </span>
+                    <span>{item.label}</span>
+                  </>
+                )}
               </NavLink>
             ))}
           </nav>
         </aside>
         <div className="flex min-w-0 flex-1 flex-col">
-          <header className="hidden h-12 items-center gap-4 border-b border-border bg-background px-6 lg:flex">
+          <header className="hidden h-12 items-center gap-4 border-b border-panel-line bg-panel-shell px-6 lg:flex">
             <span className="truncate text-sm uppercase tracking-wide text-muted-foreground">{user?.operatorName}</span>
             {platformAdmin ? (
               <ViewSwitch current="own" className="ml-auto" />

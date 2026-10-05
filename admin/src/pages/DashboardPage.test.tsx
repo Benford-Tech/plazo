@@ -46,7 +46,8 @@ const dashboard: Dashboard = {
       keyHook: "12",
       returnFlight: "TO 3627",
       flightStatus: "delayed",
-      flightEstimatedAt: null,
+      flightScheduledAt: "2026-10-05T19:00:00Z",
+      flightEstimatedAt: "2026-10-05T19:40:00Z",
       flightLandedAt: null,
       tripDirection: null,
       stopName: null,
@@ -66,6 +67,7 @@ const dashboard: Dashboard = {
       keyHook: null,
       returnFlight: null,
       flightStatus: null,
+      flightScheduledAt: null,
       flightEstimatedAt: null,
       flightLandedAt: null,
       tripDirection: null,
@@ -114,24 +116,26 @@ describe("DashboardPage", () => {
     api.getLiveShuttles.mockResolvedValue(live);
   });
 
-  it("affiche les chiffres du jour, les services, les alertes classées, les véhicules et les navettes", async () => {
+  it("affiche les chiffres du jour, les services, les alertes classées, les véhicules avec badges et les navettes", async () => {
     renderPage();
     expect(await screen.findByRole("heading", { name: "Bonjour Joanny" })).toBeInTheDocument();
-    const onSite = screen.getByRole("link", { name: /Sur le parking/ });
+    const onSite = screen.getByTestId("kpi-on-site");
     expect(onSite).toHaveTextContent("3");
     expect(onSite).toHaveTextContent("1 libre sur 3");
     expect(onSite).toHaveAttribute("href", "/parking/occupation");
-    expect(screen.getByRole("link", { name: /Arrivées/ })).toHaveTextContent("3 / 5 sur place");
-    expect(screen.getByRole("link", { name: /À traiter/ })).toHaveTextContent("1 urgent");
+    expect(screen.getByTestId("kpi-arrivals")).toHaveTextContent("3 / 5 sur place");
+    expect(screen.getByTestId("kpi-to-treat")).toHaveTextContent("1 urgent");
+    expect(screen.getByTestId("kpi-to-treat")).toHaveClass("border-warn");
 
     const services = screen.getByLabelText("Services");
-    expect(services).toHaveTextContent("suivi aerodatabox");
-    expect(services).toHaveTextContent("2 en attente");
-    expect(services).toHaveTextContent("non configurées");
-    expect(services).toHaveTextContent("compte à finaliser");
-    expect(services).toHaveTextContent("jamais");
+    expect(services).toHaveTextContent("VolsOKsuivi aerodatabox");
+    expect(services).toHaveTextContent("SMSÀ voir2 en attente");
+    expect(services).toHaveTextContent("NotificationsOffnon configurées");
+    expect(services).toHaveTextContent("PaiementsÀ voircompte à finaliser");
+    expect(services).toHaveTextContent("ImportOffjamais");
 
     const alerts = screen.getByRole("heading", { name: "À traiter maintenant" }).closest("section")!;
+    expect(alerts).toHaveTextContent("1 urgent");
     const rows = within(alerts).getAllByRole("link");
     expect(rows[0]).toHaveTextContent("Sur place sans place");
     expect(rows[0]).toHaveTextContent("Urgent");
@@ -139,19 +143,25 @@ describe("DashboardPage", () => {
     expect(rows[0]).toHaveAttribute("href", "/reservations/r3");
     expect(rows[1]).toHaveTextContent("Vol retardé");
     expect(rows[1]).toHaveTextContent("Camille Martin · TO 3627");
+    expect(rows[1]).toHaveTextContent("À surveiller");
 
     const vehicles = screen.getByRole("heading", { name: "Véhicules sur le parking" }).closest("section")!;
     expect(vehicles).toHaveTextContent("2 véhicules");
     const camille = within(vehicles).getByRole("link", { name: /Camille Martin/ });
-    expect(camille).toHaveTextContent("A-01-01");
-    expect(camille).toHaveTextContent("Clés 12");
-    expect(camille).toHaveTextContent("Retour 23:00 · TO 3627");
+    expect(camille).toHaveTextContent("A-01-01 · zone court");
+    expect(camille).toHaveTextContent("Clés : crochet 12");
+    expect(camille).toHaveTextContent("Vol TO 3627 · 21:40");
+    expect(camille).toHaveTextContent("Retour 23:00");
+    expect(camille).toHaveTextContent("Retour du jour");
+    expect(camille).toHaveTextContent("Retardé +40 min");
     const louis = within(vehicles).getByRole("link", { name: /Louis Leroy/ });
     expect(louis).toHaveTextContent("Sans place");
     expect(louis).toHaveTextContent("Clés ?");
+    expect(louis).toHaveTextContent("Retour ven. 9");
 
     expect(await screen.findByTestId("live-shuttles-map")).toHaveTextContent("1 trajets");
-    const map = screen.getByRole("heading", { name: "Navettes en direct" }).closest("section")!;
+    const map = screen.getByLabelText("Navettes en direct");
+    expect(map).toHaveTextContent("Navettes en direct · Parking Lyon");
     expect(map).toHaveTextContent("Karim");
     expect(map).toHaveTextContent("Retours · aéroport");
     expect(map).toHaveTextContent("Aéroport dans 4 min");
@@ -164,6 +174,6 @@ describe("DashboardPage", () => {
     expect(await screen.findByText("Rien à traiter : tout est en ordre.")).toBeInTheDocument();
     expect(screen.getByText("Aucun véhicule sur le parking.")).toBeInTheDocument();
     expect(await screen.findByText("Aucune navette en route.")).toBeInTheDocument();
-    expect(screen.getByRole("link", { name: /À traiter/ })).toHaveTextContent("rien d'urgent");
+    expect(screen.getByTestId("kpi-to-treat")).toHaveTextContent("rien d'urgent");
   });
 });

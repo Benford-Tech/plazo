@@ -144,6 +144,7 @@ abstract class DashboardVehicleModel with _$DashboardVehicleModel {
     String? keyHook,
     String? returnFlight,
     String? flightStatus,
+    String? flightScheduledAt,
     String? flightEstimatedAt,
     String? flightLandedAt,
     String? tripDirection,

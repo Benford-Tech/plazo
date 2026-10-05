@@ -28,6 +28,12 @@ export default {
         popover: { DEFAULT: "hsl(var(--popover))", foreground: "hsl(var(--popover-foreground))" },
         card: { DEFAULT: "hsl(var(--card))", foreground: "hsl(var(--card-foreground))" },
         plate: { band: "#1F3FA6" },
+        // Dashboard (fusion Flotte + Opérations, 05/10/2026): anthracite panels and the four state colours.
+        panel: { DEFAULT: "#17171B", 2: "#1D1D22", shell: "#0F0F12", line: "#2A2A30" },
+        ok: { DEFAULT: "#22C55E", soft: "#12301C", text: "#4ADE80", ink: "#06240F" },
+        warn: { DEFAULT: "#F59E0B", soft: "#3A2A08", text: "#FBBF24", ink: "#2A1700" },
+        bad: { DEFAULT: "#EF4444", soft: "#3B1414", text: "#F87171" },
+        info: { DEFAULT: "#60A5FA", soft: "#132544", text: "#60A5FA", ink: "#06183A" },
         sidebar: {
           DEFAULT: "hsl(var(--sidebar-background))",
           foreground: "hsl(var(--sidebar-foreground))",

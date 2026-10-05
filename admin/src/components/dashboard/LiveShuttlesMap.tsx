@@ -3,14 +3,22 @@ import "maplibre-gl/dist/maplibre-gl.css";
 import maplibreWorkerUrl from "maplibre-gl/dist/maplibre-gl-worker.mjs?worker&url";
 import { useEffect, useRef } from "react";
 import { fr } from "@/lib/fr";
-import type { LiveShuttles, LiveTrip } from "@/lib/types";
+import type { LiveShuttles, LiveTrip, ShuttleStop } from "@/lib/types";
 
 /** IGN Géoplateforme "Plan IGN v2" (no key), like the meeting point map. */
 const IGN_PLAN_TILES =
   "https://data.geopf.fr/wmts?SERVICE=WMTS&REQUEST=GetTile&VERSION=1.0.0&LAYER=GEOGRAPHICALGRIDSYSTEMS.PLANIGNV2&STYLE=normal&TILEMATRIXSET=PM&FORMAT=image/png&TILEMATRIX={z}&TILEROW={y}&TILECOL={x}";
+/** Colours of the "Flotte" mockup (A-A). */
 const YELLOW = "#F5C400";
 const BLACK = "#0B0B0C";
-const GREY = "#A8A8A2";
+const CARD = "#17171B";
+const LINE = "#2A2A30";
+const FG = "#F3F3F0";
+const MUTED = "#A8A8A2";
+const OK = "#22C55E";
+const WARN = "#F59E0B";
+/** A position older than this is "stale": amber dot instead of green. */
+const FRESH_SECONDS = 90;
 
 setWorkerUrl(maplibreWorkerUrl);
 
@@ -18,34 +26,61 @@ const STYLE: StyleSpecification = {
   version: 8,
   sources: { ign: { type: "raster", tiles: [IGN_PLAN_TILES], tileSize: 256, maxzoom: 19 } },
   layers: [
-    { id: "background", type: "background", paint: { "background-color": "#1d1f1a" } },
-    { id: "ign-plan", type: "raster", source: "ign", paint: { "raster-saturation": -0.6, "raster-brightness-max": 0.75 } },
+    { id: "background", type: "background", paint: { "background-color": "#1B1C22" } },
+    // Dimmed and desaturated so the yellow pins stand out on the dark board.
+    { id: "ign-plan", type: "raster", source: "ign", paint: { "raster-saturation": -0.8, "raster-brightness-max": 0.42, "raster-contrast": 0.15 } },
   ],
 };
 
-function pinElement(text: string, kind: "parking" | "stop" | "bus"): HTMLElement {
-  const el = document.createElement("div");
-  el.className = "font-mono text-[12px] font-bold";
-  const box =
-    kind === "bus"
-      ? `background:${YELLOW};color:${BLACK};border:2px solid ${BLACK};padding:2px 6px`
-      : kind === "parking"
-        ? `background:${BLACK};color:${YELLOW};border:2px solid ${YELLOW};padding:2px 7px`
-        : `background:${BLACK};color:${GREY};border:1px solid ${GREY};padding:1px 6px`;
-  el.setAttribute("style", `${box};white-space:nowrap;box-shadow:0 1px 4px rgba(0,0,0,.6)`);
-  el.textContent = text;
-  return el;
+function el(html: string, style: string): HTMLElement {
+  const node = document.createElement("div");
+  node.setAttribute("style", style);
+  node.innerHTML = html;
+  return node;
 }
 
-function tripLabel(t: LiveTrip): string {
+/** The parking "P" and the stops: a small dark square with the label. */
+function squarePin(label: string): HTMLElement {
+  return el(
+    `<b>${label}</b>`,
+    `display:grid;place-items:center;min-width:34px;height:34px;padding:0 8px;border-radius:8px;background:${CARD};border:1px solid ${LINE};color:${FG};font:700 12px "JetBrains Mono",monospace;box-shadow:0 8px 20px rgba(0,0,0,.5)`,
+  );
+}
+
+/** A running shuttle: a yellow teardrop with its number and a green (fresh) or amber (stale) dot. */
+function busPin(index: number, fresh: boolean): HTMLElement {
+  const n = String(index + 1).padStart(2, "0");
+  return el(
+    `<span style="position:absolute;inset:0;border-radius:50% 50% 50% 0;transform:rotate(-45deg);background:${YELLOW};box-shadow:0 8px 20px rgba(0,0,0,.5)"></span>` +
+      `<b style="position:relative;font:700 13px 'JetBrains Mono',monospace;color:${BLACK}">${n}</b>` +
+      `<i style="position:absolute;top:-3px;right:-3px;width:12px;height:12px;border-radius:50%;border:2px solid #1B1C22;background:${fresh ? OK : WARN}"></i>`,
+    "position:relative;width:40px;height:40px;display:grid;place-items:center",
+  );
+}
+
+function popupHtml(trip: LiveTrip, index: number): string {
   const m = fr.dashboard.map;
-  const where = t.toStop && t.stop ? m.toStop(t.stop.name, t.toStop.etaMinutes) : t.toParking ? m.toParking(t.toParking.etaMinutes) : m.noPosition;
-  return `${t.driverName} · ${m.direction[t.direction]} · ${m.passengers(t.passengers)} · ${where}`;
+  const where = trip.toStop && trip.stop ? m.toStop(trip.stop.name, trip.toStop.etaMinutes) : trip.toParking ? m.toParking(trip.toParking.etaMinutes) : m.noPosition;
+  const vehicle = [trip.vehicle.model, trip.vehicle.colour].filter(Boolean).join(" ") || m.shuttle(index + 1);
+  const badge = `<span style="display:inline-block;margin-bottom:8px;padding:4px 9px;border-radius:999px;background:${OK};color:#06240f;font:600 11px 'JetBrains Mono',monospace">${m.passengers(trip.passengers)} · ${where}</span>`;
+  return (
+    `<div style="min-width:190px;color:${FG};font-family:'JetBrains Mono',monospace">${badge}` +
+    `<div style="font:500 16px 'JetBrains Mono',monospace">${vehicle}</div>` +
+    `<div style="font-size:12px;color:${MUTED};padding-bottom:8px;border-bottom:1px dashed ${LINE};margin-bottom:8px">${trip.vehicle.plate ?? ""} ${m.direction[trip.direction]}</div>` +
+    `<div style="font-size:15px">${trip.driverName}</div>` +
+    `<div style="font-size:12px;color:${MUTED}">${m.since(new Date(trip.startedAt))}</div></div>`
+  );
+}
+
+function stopLabel(stop: ShuttleStop): string {
+  if (stop.kind === "airport") return "T";
+  if (stop.kind === "station") return "TGV";
+  return stop.name.slice(0, 3).toUpperCase();
 }
 
 /**
- * The running shuttles on the plan (P-A): the parking "P", the stops, and a yellow bus pin per trip
- * with its driver, direction and distance. Loaded lazily (MapLibre is heavy, no place in the tests).
+ * The running shuttles on the plan (P-A, "Flotte" look): the parking and stops as dark squares, one
+ * yellow teardrop per trip with a popup card. Loaded lazily (MapLibre is heavy, no place in the tests).
  */
 export default function LiveShuttlesMap({ live }: { live: LiveShuttles }) {
   const containerRef = useRef<HTMLDivElement>(null);
@@ -84,28 +119,29 @@ export default function LiveShuttlesMap({ live }: { live: LiveShuttles }) {
     const markers: Marker[] = [];
     const points: [number, number][] = [];
     if (live.parking.lat !== null && live.parking.lng !== null) {
-      markers.push(new Marker({ element: pinElement("P", "parking") }).setLngLat([live.parking.lng, live.parking.lat]).addTo(map));
+      markers.push(new Marker({ element: squarePin("P") }).setLngLat([live.parking.lng, live.parking.lat]).addTo(map));
       points.push([live.parking.lng, live.parking.lat]);
     }
     for (const stop of live.stops) {
       markers.push(
-        new Marker({ element: pinElement(stop.name, "stop") })
+        new Marker({ element: squarePin(stopLabel(stop)) })
           .setLngLat([stop.lng, stop.lat])
-          .setPopup(new Popup({ closeButton: false, offset: 12 }).setText(stop.name))
+          .setPopup(new Popup({ closeButton: false, offset: 20, className: "plazo-popup" }).setText(stop.name))
           .addTo(map),
       );
       points.push([stop.lng, stop.lat]);
     }
-    for (const trip of live.trips) {
-      if (!trip.position) continue;
+    live.trips.forEach((trip, index) => {
+      if (!trip.position) return;
+      const fresh = (trip.positionAgeSeconds ?? 0) <= FRESH_SECONDS;
       markers.push(
-        new Marker({ element: pinElement(trip.vehicle.model ?? trip.driverName, "bus") })
+        new Marker({ element: busPin(index, fresh), anchor: "bottom" })
           .setLngLat([trip.position.lng, trip.position.lat])
-          .setPopup(new Popup({ closeButton: false, offset: 12 }).setText(tripLabel(trip)))
+          .setPopup(new Popup({ closeButton: false, offset: 44, className: "plazo-popup" }).setHTML(popupHtml(trip, index)))
           .addTo(map),
       );
       points.push([trip.position.lng, trip.position.lat]);
-    }
+    });
     markersRef.current = markers;
     // Frame everything once (then the user keeps control of the view).
     if (!fittedRef.current && points.length > 0) {
@@ -118,15 +154,17 @@ export default function LiveShuttlesMap({ live }: { live: LiveShuttles }) {
           [Math.min(...lngs), Math.min(...lats)],
           [Math.max(...lngs), Math.max(...lats)],
         ];
-        map.fitBounds(bounds, { padding: 48, maxZoom: 14, duration: 0 });
+        map.fitBounds(bounds, { padding: 56, maxZoom: 14, duration: 0 });
       }
     }
   }, [live]);
 
+  // MapLibre's own stylesheet forces `position: relative` on its container, so the container
+  // takes the full height explicitly rather than through `inset-0`.
   return (
-    <div className="relative h-full min-h-[320px]">
-      <div ref={containerRef} data-testid="live-shuttles-map" className="absolute inset-0 bg-[#1d1f1a]" />
-      <span className="pointer-events-none absolute bottom-1 right-1 bg-black/60 px-1.5 py-0.5 text-[10px] text-muted-foreground">© IGN – Plan IGN</span>
+    <div className="relative h-full w-full">
+      <div ref={containerRef} data-testid="live-shuttles-map" className="h-full w-full bg-[#1B1C22]" />
+      <span className="pointer-events-none absolute bottom-2 right-2 rounded-full bg-black/60 px-2 py-0.5 text-[10px] text-muted-foreground">© IGN – Plan IGN</span>
     </div>
   );
 }

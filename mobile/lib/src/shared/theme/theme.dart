@@ -39,10 +39,34 @@ abstract final class AppColors {
   static const danger = _pro ? Color(0xFFFF6B5E) : Color(0xFFB3261E);
   static const success = _pro ? Color(0xFF6EC071) : Color(0xFF2E7D4F);
 
+  /// Dashboard panels (fusion "Flotte + Opérations", 05/10/2026): anthracite cards on the pro's black.
+  static const panel = _pro ? Color(0xFF17171B) : Color(0xFFFFFFFF);
+  static const panel2 = _pro ? Color(0xFF1D1D22) : Color(0xFFF4F4F1);
+  static const panelLine = _pro ? Color(0xFF2A2A30) : Color(0xFFE4E4DF);
+
   /// French plate: EU blue band.
   static const plateBlue = Color(0xFF1F3FA6);
 
   static const primaryGradient = LinearGradient(begin: Alignment(-1, -0.2), end: Alignment(1, 0.2), colors: _pro ? [accent, accent] : [accent, peach]);
+}
+
+/// The four state colours of the dashboard mockups (same in both apps): filled badges use the
+/// strong colour with a dark ink, status pills the soft background with the light text.
+abstract final class AppStatus {
+  static const ok = Color(0xFF22C55E);
+  static const okInk = Color(0xFF06240F);
+  static const okSoft = Color(0xFF12301C);
+  static const okText = Color(0xFF4ADE80);
+  static const warn = Color(0xFFF59E0B);
+  static const warnInk = Color(0xFF2A1700);
+  static const warnSoft = Color(0xFF3A2A08);
+  static const warnText = Color(0xFFFBBF24);
+  static const bad = Color(0xFFEF4444);
+  static const badSoft = Color(0xFF3B1414);
+  static const badText = Color(0xFFF87171);
+  static const info = Color(0xFF60A5FA);
+  static const infoInk = Color(0xFF06183A);
+  static const infoSoft = Color(0xFF132544);
 }
 
 /// Corners: rounded for travellers (direction D), sharp for the pro (direction B).

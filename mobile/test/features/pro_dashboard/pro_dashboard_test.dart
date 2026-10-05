@@ -45,8 +45,12 @@ final dashboard = DashboardModel(
       arrivalAt: t0.toIso8601String(),
       returnAt: DateTime.utc(2026, 10, 3, 21).toIso8601String(),
       spotCode: 'A-01-01',
+      stayClass: 'short',
       keyHook: '12',
       returnFlight: 'TO 3627',
+      flightStatus: 'delayed',
+      flightScheduledAt: '2026-10-03T19:00:00Z',
+      flightEstimatedAt: '2026-10-03T19:40:00Z',
       returnsToday: true,
     ),
     DashboardVehicleModel(
@@ -103,7 +107,7 @@ void main() {
     await tester.pumpAndSettle();
   }
 
-  testWidgets('tableau de bord : tuiles, services, alertes classées, véhicules avec place et clés', (tester) async {
+  testWidgets('tableau de bord : tuiles, services en pilules, alertes avec badge, véhicules avec badges d’état', (tester) async {
     await show(tester, dashboard);
     expect(find.descendant(of: find.byKey(const Key('kpi-on-site')), matching: find.text('1 libres sur 3')), findsOneWidget);
     expect(find.descendant(of: find.byKey(const Key('kpi-arrivals')), matching: find.text('3 / 5 sur place')), findsOneWidget);
@@ -111,17 +115,21 @@ void main() {
     final services = find.byKey(const Key('dashboard-services'));
     expect(find.descendant(of: services, matching: find.text('suivi aerodatabox')), findsOneWidget);
     expect(find.descendant(of: services, matching: find.text('2 en attente')), findsOneWidget);
-    expect(find.descendant(of: services, matching: find.text('non configurées')), findsOneWidget);
-    expect(find.descendant(of: services, matching: find.text('compte à finaliser')), findsOneWidget);
+    expect(find.descendant(of: services, matching: find.text('À voir')), findsNWidgets(2));
+    expect(find.descendant(of: services, matching: find.text('Off')), findsNWidgets(2));
+    expect(find.descendant(of: services, matching: find.text('OK')), findsOneWidget);
     expect(find.text('Sur place sans place'), findsOneWidget);
     expect(find.text('Louis Leroy · depuis 10 min'), findsOneWidget);
+    expect(find.text('Urgent'), findsOneWidget);
     expect(find.text('Vol retardé'), findsOneWidget);
     expect(find.text('Camille Martin · TO 3627'), findsOneWidget);
-    expect(find.text('A-01-01'), findsOneWidget);
-    expect(find.text('Clés 12'), findsOneWidget);
-    expect(find.textContaining('TO 3627'), findsWidgets);
-    await tester.scrollUntilVisible(find.text('Sans place'), 200, scrollable: find.byType(Scrollable).first);
-    expect(find.text('Sans place'), findsOneWidget);
+    expect(find.text('À surveiller'), findsOneWidget);
+    expect(find.text('A-01-01 · zone court'), findsOneWidget);
+    expect(find.text('Clés : crochet 12'), findsOneWidget);
+    expect(find.text('Retour du jour'), findsOneWidget);
+    expect(find.text('Retardé +40 min'), findsOneWidget);
+    await tester.scrollUntilVisible(find.text('Clés ?'), 200, scrollable: find.byType(Scrollable).first);
+    expect(find.text('Sans place'), findsNWidgets(2));
     expect(find.text('Clés ?'), findsOneWidget);
   });
 
