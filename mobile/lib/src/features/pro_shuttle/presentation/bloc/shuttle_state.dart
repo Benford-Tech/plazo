@@ -15,6 +15,12 @@ abstract class ShuttleState with _$ShuttleState {
     /// `pickup` (to the airport, default) or `dropoff` (to the terminal).
     @Default('pickup') String direction,
     @Default([]) List<ShuttleVehicleModel> vehicles,
+
+    /// The places the shuttle serves (D-A): the airport first, then the parking's stops.
+    @Default([]) List<ShuttleStopModel> stops,
+
+    /// The stop served by the next trip; null: the airport.
+    String? stopId,
     /// The driver's running trip (null: none).
     StaffTripModel? trip,
     @Default({}) Set<String> selected,
@@ -32,6 +38,12 @@ abstract class ShuttleState with _$ShuttleState {
 
   bool get running => trip?.running ?? false;
   bool get dropoff => direction == 'dropoff';
+
+  /// The driver chooses a stop only when the parking serves more than the airport.
+  bool get hasStopChoice => stops.where((s) => !s.builtIn).isNotEmpty;
+
+  /// The stop of the next trip, as shown in the header (null: the airport's meeting point).
+  ShuttleStopModel? get chosenStop => stopId == null ? null : stops.where((s) => s.id == stopId).firstOrNull;
 
   /// Vehicles a trip can start with (the out-of-service ones stay on the sheet only).
   List<ShuttleVehicleModel> get availableVehicles => vehicles.where((v) => v.inService).toList();

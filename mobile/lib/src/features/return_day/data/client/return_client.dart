@@ -30,6 +30,17 @@ abstract class ReturnClient {
   @GET('public/bookings/{reference}/shuttles')
   Future<StayShuttlesModel> stayShuttles({@Path('reference') required String reference, @Header('x-booking-token') required String token});
 
+  /// This phone, for the pushes about the shuttle (N-A): { subscriptionId, platform }.
+  @PUT('public/bookings/{reference}/devices')
+  Future<dynamic> registerDevice({@Path('reference') required String reference, @Header('x-booking-token') required String token, @Body() required Map<String, dynamic> body});
+
+  @DELETE('public/bookings/{reference}/devices/{subscriptionId}')
+  Future<void> unregisterDevice({
+    @Path('reference') required String reference,
+    @Header('x-booking-token') required String token,
+    @Path('subscriptionId') required String subscriptionId,
+  });
+
   /// Polled every 10 s while the shuttle is on its way.
   @GET('public/bookings/{reference}/shuttle')
   Future<ShuttleStatusModel> shuttle({@Path('reference') required String reference, @Header('x-booking-token') required String token});

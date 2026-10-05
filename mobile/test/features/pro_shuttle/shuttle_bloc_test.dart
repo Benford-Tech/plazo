@@ -20,6 +20,8 @@ class MockDepartures extends Mock implements GetDeparturesUseCase {}
 
 class MockVehicles extends Mock implements GetVehiclesUseCase {}
 
+class MockStops extends Mock implements GetStopsUseCase {}
+
 class MockCurrent extends Mock implements GetCurrentTripUseCase {}
 
 class MockStart extends Mock implements StartTripUseCase {}
@@ -34,6 +36,7 @@ void main() {
   late MockPickups pickups;
   late MockDepartures departures;
   late MockVehicles vehicles;
+  late MockStops stops;
   late MockCurrent current;
   late MockStart start;
   late MockSend send;
@@ -53,6 +56,8 @@ void main() {
     pickups = MockPickups();
     departures = MockDepartures();
     vehicles = MockVehicles();
+    stops = MockStops();
+    when(() => stops(any())).thenAnswer((_) async => const Right([ShuttleStopModel(kind: 'airport', name: 'Terminal 1 · Porte 12', lat: 45.7205, lng: 5.0817, builtIn: true)]));
     current = MockCurrent();
     start = MockStart();
     send = MockSend();
@@ -97,7 +102,7 @@ void main() {
 
   tearDown(() => positions.close());
 
-  ShuttleBloc build() => ShuttleBloc(pickups, departures, vehicles, current, start, send, end, location, clock: () => now, autoPoll: false);
+  ShuttleBloc build() => ShuttleBloc(pickups, departures, vehicles, stops, current, start, send, end, location, clock: () => now, autoPoll: false);
   Future<void> settle() => Future<void>.delayed(Duration.zero).then((_) => Future<void>.delayed(Duration.zero));
 
   Future<ShuttleBloc> opened() async {
@@ -223,6 +228,45 @@ void main() {
     expect(bloc.state.trip, isNull);
     await bloc.close();
   });
+  test('V-A · le véhicule du jour passe devant l’habituel ; D-A · la desserte choisie part avec le trajet', () async {
+    when(() => vehicles(any())).thenAnswer(
+      (_) async => const Right([
+        ShuttleVehicleModel(id: 'v1', model: 'Mercedes Vito', colour: 'blanche', seats: 8, driverId: 'me'),
+        ShuttleVehicleModel(id: 'v3', model: 'Renault Trafic', seats: 8),
+      ]),
+    );
+    when(() => stops(any())).thenAnswer(
+      (_) async => const Right([
+        ShuttleStopModel(kind: 'airport', name: 'Terminal 1', lat: 45.7205, lng: 5.0817, builtIn: true),
+        ShuttleStopModel(id: 's1', kind: 'station', name: 'Gare TGV', lat: 45.7209, lng: 5.0756),
+      ]),
+    );
+    final bloc = build()..add(const ShuttleStarted(staffId: 'me', vehicleId: 'v3'));
+    await bloc.stream.firstWhere((s) => s.pickups != null);
+    expect(bloc.state.vehicle?.vehicleId, 'v3');
+    expect(bloc.state.hasStopChoice, isTrue);
+    expect(bloc.state.stopId, isNull, reason: 'the airport by default');
+
+    bloc.add(const ShuttleStopChanged('s1'));
+    bloc.add(const ShuttlePassengerToggled('r1'));
+    await settle();
+    expect(bloc.state.chosenStop?.name, 'Gare TGV');
+    when(() => start(any())).thenAnswer((invocation) async {
+      final params = invocation.positionalArguments.single as StartTripParams;
+      expect(params.stopId, 's1');
+      expect(params.vehicle.vehicleId, 'v3');
+      return Right(staffTrip());
+    });
+    bloc.add(const ShuttleStartRequested());
+    await bloc.stream.firstWhere((s) => s.trip != null);
+    // No changing the stop while the trip runs.
+    bloc.add(const ShuttleStopChanged(null));
+    await settle();
+    expect(bloc.state.stopId, 's1');
+    verify(() => start(any())).called(1);
+    await bloc.close();
+  });
+
   test('T-A · deux sens : « Départs · terminal » charge les arrivés, le trajet part en dropoff, et la fin', () async {
     final bloc = build()..add(const ShuttleStarted(staffId: 'me'));
     await bloc.stream.firstWhere((s) => s.pickups != null);

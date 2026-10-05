@@ -32,6 +32,7 @@ class ShuttleBloc extends Bloc<ShuttleEvent, ShuttleState> {
     this._pickups,
     this._departures,
     this._vehicles,
+    this._stops,
     this._current,
     this._start,
     this._send,
@@ -49,6 +50,7 @@ class ShuttleBloc extends Bloc<ShuttleEvent, ShuttleState> {
     on<ShuttleStarted>(_onStarted);
     on<ShuttlePolled>(_onPolled);
     on<ShuttleDirectionChanged>(_onDirectionChanged);
+    on<ShuttleStopChanged>((event, emit) => emit(state.copyWith(stopId: state.running ? state.stopId : event.stopId)));
     on<ShuttlePassengerToggled>(_onToggled);
     on<ShuttleVehicleChosen>((event, emit) => emit(state.copyWith(vehicle: event.vehicle)));
     on<ShuttleStartRequested>(_onStartRequested);
@@ -62,6 +64,7 @@ class ShuttleBloc extends Bloc<ShuttleEvent, ShuttleState> {
   final GetPickupsUseCase _pickups;
   final GetDeparturesUseCase _departures;
   final GetVehiclesUseCase _vehicles;
+  final GetStopsUseCase _stops;
   final GetCurrentTripUseCase _current;
   final StartTripUseCase _start;
   final SendTripPositionUseCase _send;
@@ -86,12 +89,15 @@ class ShuttleBloc extends Bloc<ShuttleEvent, ShuttleState> {
     final current = await _current(NoParams());
     final trip = current.fold((_) => null, (t) => t);
     final vehicles = (await _vehicles(NoParams())).fold((_) => const <ShuttleVehicleModel>[], (v) => v);
-    // The driver's usual vehicle (in service) is preselected.
-    final mine = event.staffId == null ? null : vehicles.where((v) => v.inService && v.driverId == event.staffId).firstOrNull;
+    final stops = (await _stops(NoParams())).fold((_) => const <ShuttleStopModel>[], (s) => s);
+    // The vehicle taken for the day (V-A), else the driver's usual one (in service), is preselected.
+    final today = event.vehicleId == null ? null : vehicles.where((v) => v.inService && v.id == event.vehicleId).firstOrNull;
+    final mine = today ?? (event.staffId == null ? null : vehicles.where((v) => v.inService && v.driverId == event.staffId).firstOrNull);
     emit(
       state.copyWith(
         trip: trip,
         vehicles: vehicles,
+        stops: stops,
         vehicle: state.vehicle ?? (mine == null ? null : TripVehicleChoice(vehicleId: mine.id)),
         // Back in the app while a drop-off runs: stay on that side.
         direction: trip != null && trip.running ? trip.direction : state.direction,
@@ -166,7 +172,9 @@ class ShuttleBloc extends Bloc<ShuttleEvent, ShuttleState> {
       emit(state.copyWith(actionState: ViewState.idle, locationProblem: access));
       return;
     }
-    final result = await _start(StartTripParams(reservationIds: state.selected.toList(), vehicle: state.vehicle ?? const TripVehicleChoice(), direction: state.direction));
+    final result = await _start(
+      StartTripParams(reservationIds: state.selected.toList(), vehicle: state.vehicle ?? const TripVehicleChoice(), direction: state.direction, stopId: state.stopId),
+    );
     await result.fold((failure) async => emit(state.copyWith(actionState: ViewState.error, errorCode: _code(failure))), (trip) async {
       _lastSentAt = null;
       _startTracking();

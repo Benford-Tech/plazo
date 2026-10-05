@@ -7,11 +7,14 @@ import '../../data/models/notification_preferences_model.dart';
 import '../repositories/notifications_repository.dart';
 
 class PreferencesPatch extends Equatable {
-  const PreferencesPatch({this.arrivals, this.returns});
+  const PreferencesPatch({this.arrivals, this.returns, this.shuttles});
   final bool? arrivals;
   final bool? returns;
+
+  /// The shuttles' departures and returns (N-A).
+  final bool? shuttles;
   @override
-  List<Object?> get props => [arrivals, returns];
+  List<Object?> get props => [arrivals, returns, shuttles];
 }
 
 class UpdateNotificationPreferencesUseCase with UseCase<NotificationPreferencesModel, PreferencesPatch> {
@@ -21,5 +24,5 @@ class UpdateNotificationPreferencesUseCase with UseCase<NotificationPreferencesM
 
   @override
   Future<Either<Failure, NotificationPreferencesModel>> call(PreferencesPatch params) =>
-      _repository.updatePreferences(arrivals: params.arrivals, returns: params.returns);
+      _repository.updatePreferences(arrivals: params.arrivals, returns: params.returns, shuttles: params.shuttles);
 }

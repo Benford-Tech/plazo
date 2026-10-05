@@ -11,6 +11,9 @@ abstract class ProAuthState with _$ProAuthState {
 
     /// Saving the post of the day.
     @Default(ViewState.idle) ViewState postState,
+
+    /// Saving the vehicle of the day (V-A).
+    @Default(ViewState.idle) ViewState vehicleState,
     String? errorCode,
     String? errorMessage,
   }) = _ProAuthState;

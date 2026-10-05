@@ -20,7 +20,9 @@ import '../../../arrival/data/models/arrival_model.dart';
 import '../../../pro_auth/presentation/bloc/pro_auth_bloc.dart';
 import '../../data/datasources/shuttle_data_source.dart';
 import '../../data/models/shuttle_models.dart';
+import '../bloc/live_shuttles_bloc.dart';
 import '../bloc/shuttle_bloc.dart';
+import '../widgets/live_shuttles_card.dart';
 import '../widgets/vehicle_sheet.dart';
 
 /// R4, the driver's "Navette" screen: the trip in progress (position shared), two sides (T-A,
@@ -33,9 +35,15 @@ class ProShuttlePage extends StatelessWidget implements AutoRouteWrapper {
 
   @override
   Widget wrappedRoute(BuildContext context) {
-    // The driver's usual vehicle (sheet) is preselected.
-    final staffId = context.read<ProAuthBloc?>()?.state.staff?.id;
-    return BlocProvider(create: (_) => locator<ShuttleBloc>()..add(ShuttleStarted(staffId: staffId)), child: this);
+    // The vehicle taken for the day (V-A), else the driver's usual one, is preselected.
+    final staff = context.read<ProAuthBloc?>()?.state.staff;
+    return MultiBlocProvider(
+      providers: [
+        BlocProvider(create: (_) => locator<ShuttleBloc>()..add(ShuttleStarted(staffId: staff?.id, vehicleId: staff?.vehicle?.id))),
+        BlocProvider(create: (_) => locator<LiveShuttlesBloc>()..add(const LiveShuttlesStarted())),
+      ],
+      child: this,
+    );
   }
 
   @override
@@ -55,15 +63,26 @@ class ProShuttlePage extends StatelessWidget implements AutoRouteWrapper {
           final meeting = state.meetingPoint;
           return RefreshIndicator(
             color: AppColors.accent,
-            onRefresh: () async => bloc.add(const ShuttlePolled()),
+            onRefresh: () async {
+              bloc.add(const ShuttlePolled());
+              context.read<LiveShuttlesBloc>().add(const LiveShuttlesPolled());
+            },
             child: ListView(
               padding: const EdgeInsets.fromLTRB(16, 14, 16, 28),
               children: [
+                // P-A: the team's shuttles on the road (the driver's own included).
+                const LiveShuttlesCard(),
+                const SizedBox(height: 12),
                 if (state.running) _RunningCard(state: state) else Text(state.dropoff ? 'shuttle.intro_dropoff'.tr() : 'shuttle.intro'.tr(), style: AppText.muted()),
                 const SizedBox(height: 10),
                 _DirectionToggle(direction: state.direction, enabled: !state.running, onChanged: (d) => bloc.add(ShuttleDirectionChanged(d))),
                 const SizedBox(height: 10),
-                if (!state.dropoff) _MeetingPoint(meeting: meeting),
+                if (state.hasStopChoice) ...[
+                  _StopChoice(stops: state.stops, stopId: state.stopId, enabled: !state.running, onChanged: (id) => bloc.add(ShuttleStopChanged(id))),
+                  const SizedBox(height: 10),
+                ],
+                if (!state.dropoff && state.chosenStop == null) _MeetingPoint(meeting: meeting),
+                if (state.chosenStop != null) _StopPoint(stop: state.chosenStop!),
                 if (state.endedNotice) ...[
                   const SizedBox(height: 10),
                   AppCard(
@@ -183,6 +202,7 @@ class _RunningCard extends StatelessWidget {
             ],
           ),
           const SizedBox(height: 6),
+          if (trip.stop != null && !trip.stop!.builtIn) Text('shuttle.running_stop'.tr(args: [trip.stop!.name]), key: const Key('trip-stop'), style: AppText.muted()),
           if (vehicle.isNotEmpty) Text('shuttle.running_vehicle'.tr(args: [vehicle]), style: AppText.muted()),
           Text(
             '${'shuttle.running_passengers'.tr(args: ['${trip.passengers.length}'])} · ${'shuttle.running_left'.tr(args: [durationLabel(state.remaining)])}',
@@ -219,6 +239,74 @@ class _DirectionToggle extends StatelessWidget {
         textStyle: WidgetStatePropertyAll(AppText.body(size: 13, weight: 600)),
       ),
       onSelectionChanged: enabled ? (set) => onChanged(set.first) : null,
+    );
+  }
+}
+
+/// "Desserte" (D-A): the airport, or one of the parking's stops (the station…), for the next trip.
+class _StopChoice extends StatelessWidget {
+  const _StopChoice({required this.stops, required this.stopId, required this.enabled, required this.onChanged});
+  final List<ShuttleStopModel> stops;
+  final String? stopId;
+  final bool enabled;
+  final ValueChanged<String?> onChanged;
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      key: const Key('stop-choice'),
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Padding(padding: const EdgeInsets.only(top: 9, right: 8), child: Text('shuttle.stop_label'.tr(), style: AppText.label(size: 11))),
+        Expanded(
+          child: Wrap(
+            spacing: 6,
+            runSpacing: 6,
+            children: [
+              for (final s in stops)
+                ChoiceChip(
+                  key: Key('stop-${s.id ?? 'airport'}'),
+                  label: Text(s.builtIn ? 'shuttle.stop_airport'.tr() : s.name),
+                  avatar: Icon(s.kind == 'station' ? Icons.train_rounded : (s.isAirport ? Icons.flight_rounded : Icons.place_rounded), size: 16),
+                  selected: s.id == stopId,
+                  onSelected: enabled ? (_) => onChanged(s.id) : null,
+                  showCheckmark: false,
+                  selectedColor: AppColors.accent,
+                  labelStyle: AppText.body(size: 13, weight: 600, color: s.id == stopId ? AppColors.onAccent : AppColors.ink),
+                  shape: const RoundedRectangleBorder(borderRadius: AppRadius.chip, side: BorderSide(color: AppColors.line)),
+                ),
+            ],
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+/// Read-only: the stop chosen for the next trip (name and directions).
+class _StopPoint extends StatelessWidget {
+  const _StopPoint({required this.stop});
+  final ShuttleStopModel stop;
+
+  @override
+  Widget build(BuildContext context) {
+    final instructions = stop.instructions;
+    return Row(
+      key: const Key('stop-point'),
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Padding(padding: const EdgeInsets.only(top: 2), child: Icon(stop.kind == 'station' ? Icons.train_rounded : Icons.place_rounded, size: 16, color: AppColors.accent)),
+        const SizedBox(width: 6),
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text('shuttle.stop_point'.tr(args: [stop.name]), style: AppText.body(size: 13.5, weight: 600)),
+              if (instructions != null && instructions.isNotEmpty) Text(instructions, maxLines: 3, overflow: TextOverflow.ellipsis, style: AppText.muted(size: 12.5)),
+            ],
+          ),
+        ),
+      ],
     );
   }
 }

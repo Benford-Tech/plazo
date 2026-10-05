@@ -23,4 +23,8 @@ abstract class AuthClient {
   /// "Aujourd'hui, je suis…" (R-C): the post held for the day.
   @PATCH('internal/staff/me/post')
   Future<StaffModel> setPost(@Body() Map<String, dynamic> body);
+
+  /// "Mon véhicule aujourd'hui" (V-A): { vehicleId } or { vehicleId: null } to hand it back.
+  @PATCH('internal/staff/me/vehicle')
+  Future<StaffModel> setVehicle(@Body() Map<String, dynamic> body);
 }

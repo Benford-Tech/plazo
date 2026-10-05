@@ -11,6 +11,8 @@ import '../../../../core/router/app_router.dart';
 import '../../../../di/locator.dart';
 import '../../../../shared/theme/theme.dart';
 import '../../../../shared/widgets/brand_header.dart';
+import '../../../pro_shuttle/presentation/bloc/live_shuttles_bloc.dart';
+import '../../../pro_shuttle/presentation/widgets/live_shuttles_card.dart';
 import '../bloc/pro_today_bloc.dart';
 import '../widgets/date_strip.dart';
 import '../widgets/today_row.dart';
@@ -22,11 +24,20 @@ class ProTodayPage extends StatelessWidget implements AutoRouteWrapper {
   const ProTodayPage({super.key});
 
   @override
-  Widget wrappedRoute(BuildContext context) => BlocProvider(create: (_) => locator<ProTodayBloc>()..add(const ProTodayStarted()), child: this);
+  Widget wrappedRoute(BuildContext context) => _withBlocs(this);
 
   @override
   Widget build(BuildContext context) => const ProTodayView();
 }
+
+/// The day's planning and, for the live strip (P-A), the running shuttles.
+Widget _withBlocs(Widget child) => MultiBlocProvider(
+  providers: [
+    BlocProvider(create: (_) => locator<ProTodayBloc>()..add(const ProTodayStarted())),
+    BlocProvider(create: (_) => locator<LiveShuttlesBloc>()..add(const LiveShuttlesStarted())),
+  ],
+  child: child,
+);
 
 /// The driver's "Arrivées" tab (R-C): the day's arrivals alone.
 @RoutePage()
@@ -34,7 +45,7 @@ class ProArrivalsPage extends StatelessWidget implements AutoRouteWrapper {
   const ProArrivalsPage({super.key});
 
   @override
-  Widget wrappedRoute(BuildContext context) => BlocProvider(create: (_) => locator<ProTodayBloc>()..add(const ProTodayStarted()), child: this);
+  Widget wrappedRoute(BuildContext context) => _withBlocs(this);
 
   @override
   Widget build(BuildContext context) => const ProTodayView(only: TodaySide.arrivals);
@@ -46,7 +57,7 @@ class ProReturnsPage extends StatelessWidget implements AutoRouteWrapper {
   const ProReturnsPage({super.key});
 
   @override
-  Widget wrappedRoute(BuildContext context) => BlocProvider(create: (_) => locator<ProTodayBloc>()..add(const ProTodayStarted()), child: this);
+  Widget wrappedRoute(BuildContext context) => _withBlocs(this);
 
   @override
   Widget build(BuildContext context) => const ProTodayView(only: TodaySide.returns);
@@ -155,6 +166,8 @@ class _ProTodayViewState extends State<ProTodayView> with SingleTickerProviderSt
                   ],
                 ),
               ),
+              // P-A: the shuttles on the road, one line each; tap to open the Navette screen.
+              if (state.date == null) LiveShuttlesStrip(onTap: () => context.router.push(const ProShuttleRoute())),
               if (state.planning == null)
                 Expanded(
                   child: Center(

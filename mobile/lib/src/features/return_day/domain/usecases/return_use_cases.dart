@@ -52,6 +52,16 @@ class GetShuttleStatusUseCase with UseCase<ShuttleStatusModel, String> {
 }
 
 /// The parking's running shuttles during the stay ("Navette" block, S-A).
+/// N-A: this phone receives "Votre navette est partie" / "est là" for the booking (asked once,
+/// during the stay). Nothing happens on the web or without OneSignal.
+class EnableShuttlePushesUseCase with UseCase<bool, String> {
+  EnableShuttlePushesUseCase(this._repository);
+  final ReturnRepository _repository;
+  bool get supported => _repository.pushSupported;
+  @override
+  Future<Either<Failure, bool>> call(String reference) => _repository.enableShuttlePushes(reference);
+}
+
 class GetStayShuttlesUseCase with UseCase<StayShuttlesModel, String> {
   GetStayShuttlesUseCase(this._repository);
   final ReturnRepository _repository;

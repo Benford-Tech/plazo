@@ -13,7 +13,9 @@ abstract class ShuttleRepository {
   Future<Either<Failure, ShuttleVehicleModel>> updateVehicle(String id, VehicleSheetInput input);
   Future<Either<Failure, void>> removeVehicle(String id);
   Future<Either<Failure, StaffTripModel?>> current();
-  Future<Either<Failure, StaffTripModel>> start(List<String> reservationIds, TripVehicleChoice vehicle, String direction);
+  Future<Either<Failure, List<ShuttleStopModel>>> stops();
+  Future<Either<Failure, LiveShuttlesModel>> live();
+  Future<Either<Failure, StaffTripModel>> start(List<String> reservationIds, TripVehicleChoice vehicle, String direction, String? stopId);
   Future<Either<Failure, StaffTripModel>> sendPosition(String tripId, GeoPosition position);
   Future<Either<Failure, StaffTripModel>> end(String tripId);
 }
@@ -45,8 +47,14 @@ class ShuttleRepositoryImpl implements ShuttleRepository {
   Future<Either<Failure, StaffTripModel?>> current() => _dataSource.current().makeRequest();
 
   @override
-  Future<Either<Failure, StaffTripModel>> start(List<String> reservationIds, TripVehicleChoice vehicle, String direction) =>
-      _dataSource.start(reservationIds, vehicle, direction).makeRequest();
+  Future<Either<Failure, List<ShuttleStopModel>>> stops() => _dataSource.stops().makeRequest();
+
+  @override
+  Future<Either<Failure, LiveShuttlesModel>> live() => _dataSource.live().makeRequest();
+
+  @override
+  Future<Either<Failure, StaffTripModel>> start(List<String> reservationIds, TripVehicleChoice vehicle, String direction, String? stopId) =>
+      _dataSource.start(reservationIds, vehicle, direction, stopId).makeRequest();
 
   @override
   Future<Either<Failure, StaffTripModel>> sendPosition(String tripId, GeoPosition position) => _dataSource.sendPosition(tripId, position).makeRequest();

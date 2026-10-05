@@ -20,6 +20,12 @@ class ProAuthPostChosen extends ProAuthEvent {
   final String post;
 }
 
+/// "Mon véhicule aujourd'hui" (V-A): the shuttle taken for the day (null: none).
+class ProAuthVehicleChosen extends ProAuthEvent {
+  const ProAuthVehicleChosen(this.vehicleId);
+  final String? vehicleId;
+}
+
 class ProAuthLogoutRequested extends ProAuthEvent {
   const ProAuthLogoutRequested();
 }

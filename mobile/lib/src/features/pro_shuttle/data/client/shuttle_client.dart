@@ -31,6 +31,14 @@ abstract class ShuttleClient {
   @DELETE('internal/shuttle/vehicles/{id}')
   Future<void> removeVehicle(@Path('id') String id);
 
+  /// The places the shuttle serves (D-A): the airport first, then the parking's stops.
+  @GET('internal/shuttle/stops')
+  Future<DataList<ShuttleStopModel>> stops();
+
+  /// The operator's running shuttles on the team's map (P-A); polled every 12 s.
+  @GET('internal/shuttle/live')
+  Future<LiveShuttlesModel> live();
+
   @GET('internal/shuttle/trips/current')
   Future<CurrentTripModel> current();
 

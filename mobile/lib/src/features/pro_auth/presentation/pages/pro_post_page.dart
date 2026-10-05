@@ -39,8 +39,8 @@ class _ProPostPageState extends State<ProPostPage> {
       listenWhen: (a, b) => a.postState != b.postState,
       listener: (context, state) {
         if (state.postState.isSuccess) {
-          // The tabs follow the new post: back to the shell, on its first tab.
-          context.router.replaceAll([const ProShellRoute()]);
+          // A driver picks the vehicle of the day next (V-A); the others go to their tabs.
+          context.router.replaceAll([if (state.staff?.activePost == 'driver') const ProVehicleRoute() else const ProShellRoute()]);
         } else if (state.postState.isError) {
           ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(translateErrorCode(state.errorCode))));
         }

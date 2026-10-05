@@ -11,6 +11,7 @@ import '../../domain/usecases/login_use_case.dart';
 import '../../domain/usecases/logout_use_case.dart';
 import '../../domain/usecases/restore_session_use_case.dart';
 import '../../domain/usecases/set_post_use_case.dart';
+import '../../domain/usecases/set_vehicle_use_case.dart';
 
 part 'pro_auth_bloc.freezed.dart';
 part 'pro_auth_event.dart';
@@ -19,11 +20,12 @@ part 'pro_auth_state.dart';
 /// The staff's session in the pro flow: login with the existing /internal/auth routes, restore at
 /// start-up, logout; a refused refresh (SessionEvents) signs out.
 class ProAuthBloc extends Bloc<ProAuthEvent, ProAuthState> {
-  ProAuthBloc(this._login, this._restore, this._logout, this._setPost, SessionEvents session) : super(const ProAuthState()) {
+  ProAuthBloc(this._login, this._restore, this._logout, this._setPost, this._setVehicle, SessionEvents session) : super(const ProAuthState()) {
     on<ProAuthRestoreRequested>(_onRestore);
     on<ProAuthLoginSubmitted>(_onLogin);
     on<ProAuthLogoutRequested>(_onLogout);
     on<ProAuthPostChosen>(_onPostChosen);
+    on<ProAuthVehicleChosen>(_onVehicleChosen);
     on<ProAuthSessionExpired>((event, emit) => emit(const ProAuthState(status: ProAuthStatus.signedOut, errorCode: 'session_expired')));
     _expired = session.expired.listen((_) => add(const ProAuthSessionExpired()));
   }
@@ -32,6 +34,7 @@ class ProAuthBloc extends Bloc<ProAuthEvent, ProAuthState> {
   final RestoreSessionUseCase _restore;
   final LogoutUseCase _logout;
   final SetPostUseCase _setPost;
+  final SetVehicleUseCase _setVehicle;
   late final StreamSubscription<void> _expired;
 
   Future<void> _onRestore(ProAuthRestoreRequested event, Emitter<ProAuthState> emit) async {
@@ -57,6 +60,15 @@ class ProAuthBloc extends Bloc<ProAuthEvent, ProAuthState> {
     result.fold(
       (failure) => emit(state.copyWith(postState: ViewState.error, errorCode: failure.code ?? 'generic')),
       (staff) => emit(state.copyWith(postState: ViewState.success, staff: staff)),
+    );
+  }
+
+  Future<void> _onVehicleChosen(ProAuthVehicleChosen event, Emitter<ProAuthState> emit) async {
+    emit(state.copyWith(vehicleState: ViewState.processing, errorCode: null));
+    final result = await _setVehicle(event.vehicleId);
+    result.fold(
+      (failure) => emit(state.copyWith(vehicleState: ViewState.error, errorCode: failure.code ?? 'generic')),
+      (staff) => emit(state.copyWith(vehicleState: ViewState.success, staff: staff)),
     );
   }
 

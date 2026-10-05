@@ -62,15 +62,34 @@ class GetCurrentTripUseCase with UseCase<StaffTripModel?, NoParams> {
   Future<Either<Failure, StaffTripModel?>> call(NoParams params) => _repository.current();
 }
 
+/// The places the shuttle serves (D-A): the airport first (built in), then the parking's stops.
+class GetStopsUseCase with UseCase<List<ShuttleStopModel>, NoParams> {
+  GetStopsUseCase(this._repository);
+  final ShuttleRepository _repository;
+  @override
+  Future<Either<Failure, List<ShuttleStopModel>>> call(NoParams params) => _repository.stops();
+}
+
+/// The operator's running shuttles for the team's live map (P-A).
+class GetLiveShuttlesUseCase with UseCase<LiveShuttlesModel, NoParams> {
+  GetLiveShuttlesUseCase(this._repository);
+  final ShuttleRepository _repository;
+  @override
+  Future<Either<Failure, LiveShuttlesModel>> call(NoParams params) => _repository.live();
+}
+
 class StartTripParams extends Equatable {
-  const StartTripParams({required this.reservationIds, required this.vehicle, this.direction = 'pickup'});
+  const StartTripParams({required this.reservationIds, required this.vehicle, this.direction = 'pickup', this.stopId});
   final List<String> reservationIds;
   final TripVehicleChoice vehicle;
 
   /// `pickup` (to the airport) or `dropoff` (to the terminal).
   final String direction;
+
+  /// The stop served (D-A); null: the airport.
+  final String? stopId;
   @override
-  List<Object?> get props => [reservationIds, vehicle.vehicleId, vehicle.model, vehicle.colour, vehicle.plate, direction];
+  List<Object?> get props => [reservationIds, vehicle.vehicleId, vehicle.model, vehicle.colour, vehicle.plate, direction, stopId];
 }
 
 /// "Démarrer le trajet (N clients)".
@@ -78,7 +97,7 @@ class StartTripUseCase with UseCase<StaffTripModel, StartTripParams> {
   StartTripUseCase(this._repository);
   final ShuttleRepository _repository;
   @override
-  Future<Either<Failure, StaffTripModel>> call(StartTripParams params) => _repository.start(params.reservationIds, params.vehicle, params.direction);
+  Future<Either<Failure, StaffTripModel>> call(StartTripParams params) => _repository.start(params.reservationIds, params.vehicle, params.direction, params.stopId);
 }
 
 class TripPositionParams extends Equatable {

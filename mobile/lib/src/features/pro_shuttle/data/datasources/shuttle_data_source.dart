@@ -45,8 +45,10 @@ abstract class ShuttleDataSource {
   Future<ShuttleVehicleModel> addVehicle(VehicleSheetInput input);
   Future<ShuttleVehicleModel> updateVehicle(String id, VehicleSheetInput input);
   Future<void> removeVehicle(String id);
+  Future<List<ShuttleStopModel>> stops();
+  Future<LiveShuttlesModel> live();
   Future<StaffTripModel?> current();
-  Future<StaffTripModel> start(List<String> reservationIds, TripVehicleChoice vehicle, String direction);
+  Future<StaffTripModel> start(List<String> reservationIds, TripVehicleChoice vehicle, String direction, String? stopId);
   Future<StaffTripModel> sendPosition(String tripId, GeoPosition position);
   Future<StaffTripModel> end(String tripId);
 }
@@ -75,11 +77,17 @@ class ShuttleDataSourceImpl implements ShuttleDataSource {
   Future<void> removeVehicle(String id) => client.removeVehicle(id);
 
   @override
+  Future<List<ShuttleStopModel>> stops() async => (await client.stops()).data;
+
+  @override
+  Future<LiveShuttlesModel> live() => client.live();
+
+  @override
   Future<StaffTripModel?> current() async => (await client.current()).trip;
 
   @override
-  Future<StaffTripModel> start(List<String> reservationIds, TripVehicleChoice vehicle, String direction) async =>
-      (await client.start({'reservationIds': reservationIds, 'direction': direction, ...vehicle.toJson()})).trip!;
+  Future<StaffTripModel> start(List<String> reservationIds, TripVehicleChoice vehicle, String direction, String? stopId) async =>
+      (await client.start({'reservationIds': reservationIds, 'direction': direction, 'stopId': ?stopId, ...vehicle.toJson()})).trip!;
 
   @override
   Future<StaffTripModel> sendPosition(String tripId, GeoPosition position) async => (await client.position(tripId, {

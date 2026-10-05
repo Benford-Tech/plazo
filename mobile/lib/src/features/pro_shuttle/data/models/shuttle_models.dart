@@ -21,6 +21,10 @@ abstract class PickupRowModel with _$PickupRowModel {
     required DateTime returnAt,
     @Default(FlightViewModel()) FlightViewModel flight,
     String? terminal,
+
+    /// The stop serving this traveller (D-A); null: the airport.
+    String? stopId,
+    String? stopName,
     DateTime? atMeetingPointAt,
     /// The running trip this traveller is on, if any.
     String? tripId,
@@ -56,6 +60,10 @@ abstract class ShuttleVehicleModel with _$ShuttleVehicleModel {
     /// The usual driver, preselected in their app.
     String? driverId,
     String? driverName,
+
+    /// Who took it today (V-A), null when free.
+    String? holderId,
+    String? holderName,
   }) = _ShuttleVehicleModel;
 
   factory ShuttleVehicleModel.fromJson(Map<String, dynamic> json) => _$ShuttleVehicleModelFromJson(json);
@@ -79,6 +87,8 @@ abstract class DepartureRowModel with _$DepartureRowModel {
 
     /// Spot code, when the vehicle was placed.
     String? spot,
+    String? stopId,
+    String? stopName,
     String? tripId,
   }) = _DepartureRowModel;
 
@@ -128,12 +138,95 @@ abstract class StaffTripModel with _$StaffTripModel {
     @Default([]) List<TripPassengerModel> passengers,
     DateTime? positionUpdatedAt,
     MeetingPointModel? meetingPoint,
+
+    /// Where the trip goes (D-A): the chosen stop, else the airport's meeting point.
+    ShuttleStopModel? stop,
   }) = _StaffTripModel;
 
   factory StaffTripModel.fromJson(Map<String, dynamic> json) => _$StaffTripModelFromJson(json);
 
   bool get running => status == 'running';
   bool get dropoff => direction == 'dropoff';
+}
+
+/// A place the shuttle serves (D-A, 05/10/2026): the airport (built in, id null) or a stop of the parking.
+@freezed
+abstract class ShuttleStopModel with _$ShuttleStopModel {
+  const ShuttleStopModel._();
+
+  const factory ShuttleStopModel({
+    String? id,
+    @Default('other') String kind,
+    required String name,
+    required double lat,
+    required double lng,
+    String? instructions,
+    @Default(false) bool builtIn,
+  }) = _ShuttleStopModel;
+
+  factory ShuttleStopModel.fromJson(Map<String, dynamic> json) => _$ShuttleStopModelFromJson(json);
+
+  bool get isAirport => builtIn || kind == 'airport';
+}
+
+/// Straight-line distance and time from a running shuttle to a place (P-A).
+@freezed
+abstract class LiveEstimateModel with _$LiveEstimateModel {
+  const factory LiveEstimateModel({required int distanceM, required int etaMinutes}) = _LiveEstimateModel;
+
+  factory LiveEstimateModel.fromJson(Map<String, dynamic> json) => _$LiveEstimateModelFromJson(json);
+}
+
+/// A running trip of the operator, as the team's live map shows it (GET /internal/shuttle/live).
+@freezed
+abstract class LiveTripModel with _$LiveTripModel {
+  const LiveTripModel._();
+
+  const factory LiveTripModel({
+    required String id,
+    @Default('pickup') String direction,
+    required String driverId,
+    required String driverName,
+    @Default(TripVehicleModel()) TripVehicleModel vehicle,
+    ShuttleStopModel? stop,
+    @Default(0) int passengers,
+    required DateTime startedAt,
+    required DateTime expiresAt,
+    ShuttlePositionModel? position,
+    int? positionAgeSeconds,
+    LiveEstimateModel? toStop,
+    LiveEstimateModel? toParking,
+  }) = _LiveTripModel;
+
+  factory LiveTripModel.fromJson(Map<String, dynamic> json) => _$LiveTripModelFromJson(json);
+
+  bool get dropoff => direction == 'dropoff';
+
+  /// "Vito blanche" (model and colour), or null when the driver typed nothing.
+  String? get vehicleTitle {
+    final parts = [vehicle.model, vehicle.colour].whereType<String>().join(' ');
+    return parts.isEmpty ? null : parts;
+  }
+}
+
+@freezed
+abstract class LiveParkingModel with _$LiveParkingModel {
+  const factory LiveParkingModel({required String id, required String name, double? lat, double? lng}) = _LiveParkingModel;
+
+  factory LiveParkingModel.fromJson(Map<String, dynamic> json) => _$LiveParkingModelFromJson(json);
+}
+
+/// The operator's running shuttles, the parking and the stops (P-A); polled every 12 s.
+@freezed
+abstract class LiveShuttlesModel with _$LiveShuttlesModel {
+  const factory LiveShuttlesModel({
+    required DateTime serverTime,
+    required LiveParkingModel parking,
+    @Default([]) List<ShuttleStopModel> stops,
+    @Default([]) List<LiveTripModel> trips,
+  }) = _LiveShuttlesModel;
+
+  factory LiveShuttlesModel.fromJson(Map<String, dynamic> json) => _$LiveShuttlesModelFromJson(json);
 }
 
 @freezed

@@ -19,6 +19,8 @@ _PickupRowModel _$PickupRowModelFromJson(Map<String, dynamic> json) =>
           ? const FlightViewModel()
           : FlightViewModel.fromJson(json['flight'] as Map<String, dynamic>),
       terminal: json['terminal'] as String?,
+      stopId: json['stopId'] as String?,
+      stopName: json['stopName'] as String?,
       atMeetingPointAt: json['atMeetingPointAt'] == null
           ? null
           : DateTime.parse(json['atMeetingPointAt'] as String),
@@ -36,6 +38,8 @@ Map<String, dynamic> _$PickupRowModelToJson(_PickupRowModel instance) =>
       'returnAt': instance.returnAt.toIso8601String(),
       'flight': instance.flight,
       'terminal': instance.terminal,
+      'stopId': instance.stopId,
+      'stopName': instance.stopName,
       'atMeetingPointAt': instance.atMeetingPointAt?.toIso8601String(),
       'tripId': instance.tripId,
     };
@@ -72,6 +76,8 @@ _ShuttleVehicleModel _$ShuttleVehicleModelFromJson(Map<String, dynamic> json) =>
       inService: json['inService'] as bool? ?? true,
       driverId: json['driverId'] as String?,
       driverName: json['driverName'] as String?,
+      holderId: json['holderId'] as String?,
+      holderName: json['holderName'] as String?,
     );
 
 Map<String, dynamic> _$ShuttleVehicleModelToJson(
@@ -85,6 +91,8 @@ Map<String, dynamic> _$ShuttleVehicleModelToJson(
   'inService': instance.inService,
   'driverId': instance.driverId,
   'driverName': instance.driverName,
+  'holderId': instance.holderId,
+  'holderName': instance.holderName,
 };
 
 _DepartureRowModel _$DepartureRowModelFromJson(Map<String, dynamic> json) =>
@@ -100,6 +108,8 @@ _DepartureRowModel _$DepartureRowModelFromJson(Map<String, dynamic> json) =>
           ? null
           : DateTime.parse(json['arrivedAt'] as String),
       spot: json['spot'] as String?,
+      stopId: json['stopId'] as String?,
+      stopName: json['stopName'] as String?,
       tripId: json['tripId'] as String?,
     );
 
@@ -114,6 +124,8 @@ Map<String, dynamic> _$DepartureRowModelToJson(_DepartureRowModel instance) =>
       'arrivalAt': instance.arrivalAt.toIso8601String(),
       'arrivedAt': instance.arrivedAt?.toIso8601String(),
       'spot': instance.spot,
+      'stopId': instance.stopId,
+      'stopName': instance.stopName,
       'tripId': instance.tripId,
     };
 
@@ -187,6 +199,9 @@ _StaffTripModel _$StaffTripModelFromJson(Map<String, dynamic> json) =>
           : MeetingPointModel.fromJson(
               json['meetingPoint'] as Map<String, dynamic>,
             ),
+      stop: json['stop'] == null
+          ? null
+          : ShuttleStopModel.fromJson(json['stop'] as Map<String, dynamic>),
     );
 
 Map<String, dynamic> _$StaffTripModelToJson(_StaffTripModel instance) =>
@@ -205,6 +220,128 @@ Map<String, dynamic> _$StaffTripModelToJson(_StaffTripModel instance) =>
       'passengers': instance.passengers,
       'positionUpdatedAt': instance.positionUpdatedAt?.toIso8601String(),
       'meetingPoint': instance.meetingPoint,
+      'stop': instance.stop,
+    };
+
+_ShuttleStopModel _$ShuttleStopModelFromJson(Map<String, dynamic> json) =>
+    _ShuttleStopModel(
+      id: json['id'] as String?,
+      kind: json['kind'] as String? ?? 'other',
+      name: json['name'] as String,
+      lat: (json['lat'] as num).toDouble(),
+      lng: (json['lng'] as num).toDouble(),
+      instructions: json['instructions'] as String?,
+      builtIn: json['builtIn'] as bool? ?? false,
+    );
+
+Map<String, dynamic> _$ShuttleStopModelToJson(_ShuttleStopModel instance) =>
+    <String, dynamic>{
+      'id': instance.id,
+      'kind': instance.kind,
+      'name': instance.name,
+      'lat': instance.lat,
+      'lng': instance.lng,
+      'instructions': instance.instructions,
+      'builtIn': instance.builtIn,
+    };
+
+_LiveEstimateModel _$LiveEstimateModelFromJson(Map<String, dynamic> json) =>
+    _LiveEstimateModel(
+      distanceM: (json['distanceM'] as num).toInt(),
+      etaMinutes: (json['etaMinutes'] as num).toInt(),
+    );
+
+Map<String, dynamic> _$LiveEstimateModelToJson(_LiveEstimateModel instance) =>
+    <String, dynamic>{
+      'distanceM': instance.distanceM,
+      'etaMinutes': instance.etaMinutes,
+    };
+
+_LiveTripModel _$LiveTripModelFromJson(
+  Map<String, dynamic> json,
+) => _LiveTripModel(
+  id: json['id'] as String,
+  direction: json['direction'] as String? ?? 'pickup',
+  driverId: json['driverId'] as String,
+  driverName: json['driverName'] as String,
+  vehicle: json['vehicle'] == null
+      ? const TripVehicleModel()
+      : TripVehicleModel.fromJson(json['vehicle'] as Map<String, dynamic>),
+  stop: json['stop'] == null
+      ? null
+      : ShuttleStopModel.fromJson(json['stop'] as Map<String, dynamic>),
+  passengers: (json['passengers'] as num?)?.toInt() ?? 0,
+  startedAt: DateTime.parse(json['startedAt'] as String),
+  expiresAt: DateTime.parse(json['expiresAt'] as String),
+  position: json['position'] == null
+      ? null
+      : ShuttlePositionModel.fromJson(json['position'] as Map<String, dynamic>),
+  positionAgeSeconds: (json['positionAgeSeconds'] as num?)?.toInt(),
+  toStop: json['toStop'] == null
+      ? null
+      : LiveEstimateModel.fromJson(json['toStop'] as Map<String, dynamic>),
+  toParking: json['toParking'] == null
+      ? null
+      : LiveEstimateModel.fromJson(json['toParking'] as Map<String, dynamic>),
+);
+
+Map<String, dynamic> _$LiveTripModelToJson(_LiveTripModel instance) =>
+    <String, dynamic>{
+      'id': instance.id,
+      'direction': instance.direction,
+      'driverId': instance.driverId,
+      'driverName': instance.driverName,
+      'vehicle': instance.vehicle,
+      'stop': instance.stop,
+      'passengers': instance.passengers,
+      'startedAt': instance.startedAt.toIso8601String(),
+      'expiresAt': instance.expiresAt.toIso8601String(),
+      'position': instance.position,
+      'positionAgeSeconds': instance.positionAgeSeconds,
+      'toStop': instance.toStop,
+      'toParking': instance.toParking,
+    };
+
+_LiveParkingModel _$LiveParkingModelFromJson(Map<String, dynamic> json) =>
+    _LiveParkingModel(
+      id: json['id'] as String,
+      name: json['name'] as String,
+      lat: (json['lat'] as num?)?.toDouble(),
+      lng: (json['lng'] as num?)?.toDouble(),
+    );
+
+Map<String, dynamic> _$LiveParkingModelToJson(_LiveParkingModel instance) =>
+    <String, dynamic>{
+      'id': instance.id,
+      'name': instance.name,
+      'lat': instance.lat,
+      'lng': instance.lng,
+    };
+
+_LiveShuttlesModel _$LiveShuttlesModelFromJson(Map<String, dynamic> json) =>
+    _LiveShuttlesModel(
+      serverTime: DateTime.parse(json['serverTime'] as String),
+      parking: LiveParkingModel.fromJson(
+        json['parking'] as Map<String, dynamic>,
+      ),
+      stops:
+          (json['stops'] as List<dynamic>?)
+              ?.map((e) => ShuttleStopModel.fromJson(e as Map<String, dynamic>))
+              .toList() ??
+          const [],
+      trips:
+          (json['trips'] as List<dynamic>?)
+              ?.map((e) => LiveTripModel.fromJson(e as Map<String, dynamic>))
+              .toList() ??
+          const [],
+    );
+
+Map<String, dynamic> _$LiveShuttlesModelToJson(_LiveShuttlesModel instance) =>
+    <String, dynamic>{
+      'serverTime': instance.serverTime.toIso8601String(),
+      'parking': instance.parking,
+      'stops': instance.stops,
+      'trips': instance.trips,
     };
 
 _CurrentTripModel _$CurrentTripModelFromJson(Map<String, dynamic> json) =>

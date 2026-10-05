@@ -4,6 +4,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:parking_app/src/features/pro_shuttle/data/models/shuttle_models.dart';
+import 'package:parking_app/src/features/pro_shuttle/presentation/bloc/live_shuttles_bloc.dart';
 import 'package:parking_app/src/features/pro_shuttle/presentation/bloc/shuttle_bloc.dart';
 import 'package:parking_app/src/features/pro_shuttle/presentation/pages/pro_shuttle_page.dart';
 import 'package:parking_app/src/features/return_day/data/models/return_model.dart';
@@ -12,6 +13,8 @@ import '../../helpers/fixtures.dart';
 import '../../helpers/pump_app.dart';
 
 class MockShuttleBloc extends MockBloc<ShuttleEvent, ShuttleState> implements ShuttleBloc {}
+
+class MockLiveBloc extends MockBloc<LiveShuttlesEvent, LiveShuttlesState> implements LiveShuttlesBloc {}
 
 void main() {
   setUpAll(() async {
@@ -34,8 +37,37 @@ void main() {
 
   Future<void> show(WidgetTester tester, ShuttleState state) async {
     whenListen(bloc, const Stream<ShuttleState>.empty(), initialState: state);
-    await pumpLocalized(tester, BlocProvider<ShuttleBloc>.value(value: bloc, child: const ProShuttlePage()));
+    final live = MockLiveBloc();
+    whenListen(live, const Stream<LiveShuttlesState>.empty(), initialState: LiveShuttlesState(now: t0));
+    await pumpLocalized(
+      tester,
+      MultiBlocProvider(
+        providers: [BlocProvider<ShuttleBloc>.value(value: bloc), BlocProvider<LiveShuttlesBloc>.value(value: live)],
+        child: const ProShuttlePage(),
+      ),
+    );
   }
+
+  const airport = ShuttleStopModel(kind: 'airport', name: 'Terminal 1 · Porte 12', lat: 45.7205, lng: 5.0817, builtIn: true);
+  const station = ShuttleStopModel(id: 's1', kind: 'station', name: 'Gare Saint-Exupéry TGV', lat: 45.7209, lng: 5.0756, instructions: 'Dépose-minute, côté parvis.');
+
+  testWidgets('D-A · dessertes : les puces n’apparaissent qu’avec une gare ; choisir la gare remplace le point de rendez-vous', (tester) async {
+    await show(tester, ShuttleState(now: t0, pickups: pickupsModel, stops: const [airport]));
+    expect(find.byKey(const Key('stop-choice')), findsNothing);
+    bloc = MockShuttleBloc();
+    await show(tester, ShuttleState(now: t0, pickups: pickupsModel, stops: const [airport, station]));
+    expect(find.byKey(const Key('stop-choice')), findsOneWidget);
+    expect(find.text('Aéroport'), findsOneWidget);
+    expect(find.text('Gare Saint-Exupéry TGV'), findsOneWidget);
+    expect(find.text('Point de rendez-vous : Terminal 1 · Porte 12'), findsOneWidget);
+    await tester.tap(find.byKey(const Key('stop-s1')));
+    expect(verify(() => bloc.add(captureAny())).captured.single, isA<ShuttleStopChanged>().having((e) => e.stopId, 'stopId', 's1'));
+    bloc = MockShuttleBloc();
+    await show(tester, ShuttleState(now: t0, pickups: pickupsModel, stops: const [airport, station], stopId: 's1'));
+    expect(find.text('Desserte : Gare Saint-Exupéry TGV'), findsOneWidget);
+    expect(find.text('Dépose-minute, côté parvis.'), findsOneWidget);
+    expect(find.text('Point de rendez-vous : Terminal 1 · Porte 12'), findsNothing);
+  });
 
   testWidgets('R4 · liste : badges au point de RDV / atterri / vol prévu, sélection, « Partir à l’aéroport · 2 clients »', (tester) async {
     await show(tester, ShuttleState(now: t0, pickups: pickupsModel, selected: const {'r1', 'r2'}));

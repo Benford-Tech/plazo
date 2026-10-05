@@ -90,6 +90,13 @@ class ProMoreTabPage extends StatelessWidget {
             label: 'post.mine'.tr(args: ['post.name.${staff?.activePost ?? 'agent'}'.tr()]),
             onTap: () => context.router.push(const ProPostRoute()),
           ),
+          if (staff?.activePost == 'driver')
+            _Tile(
+              key: const Key('pmore-vehicle'),
+              icon: Icons.airport_shuttle_rounded,
+              label: 'vehicle_day.mine'.tr(args: [staff?.vehicle?.title ?? 'vehicle_day.none_short'.tr()]),
+              onTap: () => context.router.push(const ProVehicleRoute()),
+            ),
           _Tile(
             key: const Key('pmore-account'),
             icon: Icons.person_outline_rounded,

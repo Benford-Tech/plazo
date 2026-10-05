@@ -9,6 +9,7 @@ import '../../features/checkout/presentation/pages/payment_page.dart';
 import '../../features/more/presentation/pages/more_tab_page.dart';
 import '../../features/pro_auth/presentation/pages/pro_login_page.dart';
 import '../../features/pro_auth/presentation/pages/pro_post_page.dart';
+import '../../features/pro_auth/presentation/pages/pro_vehicle_page.dart';
 import '../../features/pro_notifications/presentation/pages/pro_notifications_page.dart';
 import '../../features/pro_occupation/presentation/pages/pro_occupation_page.dart';
 import '../../features/pro_plan/presentation/pages/pro_plan_page.dart';
@@ -83,6 +84,7 @@ class AppRouter extends RootStackRouter {
         ],
       ),
       AutoRoute(page: ProPostRoute.page, path: '/pro/poste', guards: [proGuard]),
+      AutoRoute(page: ProVehicleRoute.page, path: '/pro/vehicule', guards: [proGuard]),
       AutoRoute(page: ProNotificationsRoute.page, path: '/pro/notifications', guards: [proGuard]),
       AutoRoute(page: ProShuttleRoute.page, path: '/pro/navette', guards: [proGuard]),
       AutoRoute(page: ProVehiclesRoute.page, path: '/pro/navettes', guards: [proGuard]),

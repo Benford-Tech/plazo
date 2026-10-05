@@ -9,6 +9,7 @@ import 'package:parking_app/src/features/pro_auth/domain/usecases/login_use_case
 import 'package:parking_app/src/features/pro_auth/domain/usecases/logout_use_case.dart';
 import 'package:parking_app/src/features/pro_auth/domain/usecases/restore_session_use_case.dart';
 import 'package:parking_app/src/features/pro_auth/domain/usecases/set_post_use_case.dart';
+import 'package:parking_app/src/features/pro_auth/domain/usecases/set_vehicle_use_case.dart';
 import 'package:parking_app/src/features/pro_auth/presentation/bloc/pro_auth_bloc.dart';
 import 'package:parking_app/src/features/pro_notifications/data/models/notification_preferences_model.dart';
 import 'package:parking_app/src/features/pro_notifications/domain/usecases/enable_push_use_case.dart';
@@ -23,6 +24,8 @@ class MockRestore extends Mock implements RestoreSessionUseCase {}
 class MockLogout extends Mock implements LogoutUseCase {}
 
 class MockSetPost extends Mock implements SetPostUseCase {}
+
+class MockSetVehicle extends Mock implements SetVehicleUseCase {}
 
 class MockGetPrefs extends Mock implements GetNotificationPreferencesUseCase {}
 
@@ -45,7 +48,7 @@ void main() {
       final login = MockLogin();
       final session = SessionEvents();
       when(() => login(any())).thenAnswer((_) async => const Right(staff));
-      final bloc = ProAuthBloc(login, MockRestore(), MockLogout(), MockSetPost(), session);
+      final bloc = ProAuthBloc(login, MockRestore(), MockLogout(), MockSetPost(), MockSetVehicle(), session);
       bloc.add(const ProAuthLoginSubmitted(email: 'gerant@example.com', password: 'secret'));
       await settle();
       expect(bloc.state.status, ProAuthStatus.signedIn);
@@ -59,7 +62,7 @@ void main() {
     test('identifiants refusés : code d’erreur pour l’écran', () async {
       final login = MockLogin();
       when(() => login(any())).thenAnswer((_) async => const Left(ServerFailure(code: 'invalid_credentials', statusCode: 401)));
-      final bloc = ProAuthBloc(login, MockRestore(), MockLogout(), MockSetPost(), SessionEvents());
+      final bloc = ProAuthBloc(login, MockRestore(), MockLogout(), MockSetPost(), MockSetVehicle(), SessionEvents());
       bloc.add(const ProAuthLoginSubmitted(email: 'x@example.com', password: 'bad'));
       await settle();
       expect(bloc.state.errorCode, 'invalid_credentials');
@@ -98,7 +101,7 @@ void main() {
     when(() => login(any())).thenAnswer((_) async => const Right(staff));
     when(() => setPost('driver')).thenAnswer((_) async => Right(staff.copyWith(post: 'driver', effectivePost: 'driver')));
     when(() => setPost('manager')).thenAnswer((_) async => const Left(ServerFailure(code: 'post_not_allowed', statusCode: 422)));
-    final bloc = ProAuthBloc(login, MockRestore(), MockLogout(), setPost, SessionEvents());
+    final bloc = ProAuthBloc(login, MockRestore(), MockLogout(), setPost, MockSetVehicle(), SessionEvents());
     bloc.add(const ProAuthLoginSubmitted(email: 'gerant@example.com', password: 'secret'));
     await settle();
     bloc.add(const ProAuthPostChosen('driver'));

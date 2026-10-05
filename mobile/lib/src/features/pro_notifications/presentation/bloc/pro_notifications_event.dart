@@ -9,9 +9,10 @@ class ProNotificationsLoaded extends ProNotificationsEvent {
 }
 
 class ProNotificationsToggled extends ProNotificationsEvent {
-  const ProNotificationsToggled({this.arrivals, this.returns});
+  const ProNotificationsToggled({this.arrivals, this.returns, this.shuttles});
   final bool? arrivals;
   final bool? returns;
+  final bool? shuttles;
 }
 
 class ProNotificationsPushEnabled extends ProNotificationsEvent {

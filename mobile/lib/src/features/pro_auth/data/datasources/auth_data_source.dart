@@ -8,6 +8,7 @@ abstract class AuthDataSource {
   Future<StaffModel?> restore();
   Future<void> logout();
   Future<StaffModel> setPost(String post);
+  Future<StaffModel> setVehicle(String? vehicleId);
 }
 
 class AuthDataSourceImpl implements AuthDataSource {
@@ -36,6 +37,9 @@ class AuthDataSourceImpl implements AuthDataSource {
 
   @override
   Future<StaffModel> setPost(String post) => client.setPost({'post': post});
+
+  @override
+  Future<StaffModel> setVehicle(String? vehicleId) => client.setVehicle({'vehicleId': vehicleId});
 
   @override
   Future<void> logout() async {
