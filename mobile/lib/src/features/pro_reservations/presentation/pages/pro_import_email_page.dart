@@ -124,6 +124,7 @@ class _ProImportEmailPageState extends State<ProImportEmailPage> {
     ('res.customer'.tr(), p.customerName),
     ('res.phone'.tr(), p.customerPhone),
     ('res.plate'.tr(), p.plate),
+    if (p.departureFlight != null) ('res.departure_flight'.tr(), p.departureFlight),
     if (p.returnFlight != null) ('res.return_flight'.tr(), p.returnFlight),
     if (p.externalReference != null) ('res.external_reference'.tr(), p.externalReference),
     if (p.priceCents != null) ('res.price'.tr(), '${(p.priceCents! / 100).toStringAsFixed(2).replaceAll('.', ',')} €'),

@@ -15,6 +15,7 @@ abstract class DashboardModel with _$DashboardModel {
     required DashboardCountsModel counts,
     required DashboardServicesModel services,
     @Default([]) List<DashboardAlertModel> alerts,
+    DashboardNextWaveModel? nextWave,
     required DashboardBreakdownModel breakdown,
     @Default([]) List<DashboardVehicleModel> vehicles,
   }) = _DashboardModel;
@@ -22,6 +23,21 @@ abstract class DashboardModel with _$DashboardModel {
   factory DashboardModel.fromJson(Map<String, dynamic> json) => _$DashboardModelFromJson(json);
 
   int get urgent => alerts.where((a) => a.severity == 'urgent').length;
+}
+
+/// The next shuttle wave still to run today (V-A, 05/10/2026), for the "Navettes" tile.
+@freezed
+abstract class DashboardNextWaveModel with _$DashboardNextWaveModel {
+  const factory DashboardNextWaveModel({
+    required DateTime leaveAt,
+    @Default('dropoff') String direction,
+    String? stopName,
+    @Default(0) int passengers,
+    int? vehiclesNeeded,
+    @Default([]) List<String> flights,
+  }) = _DashboardNextWaveModel;
+
+  factory DashboardNextWaveModel.fromJson(Map<String, dynamic> json) => _$DashboardNextWaveModelFromJson(json);
 }
 
 @freezed

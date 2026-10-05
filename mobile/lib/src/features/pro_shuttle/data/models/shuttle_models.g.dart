@@ -353,3 +353,158 @@ _CurrentTripModel _$CurrentTripModelFromJson(Map<String, dynamic> json) =>
 
 Map<String, dynamic> _$CurrentTripModelToJson(_CurrentTripModel instance) =>
     <String, dynamic>{'trip': instance.trip};
+
+_WaveFlightModel _$WaveFlightModelFromJson(Map<String, dynamic> json) =>
+    _WaveFlightModel(
+      number: json['number'] as String,
+      status: json['status'] as String?,
+      scheduledAt: json['scheduledAt'] == null
+          ? null
+          : DateTime.parse(json['scheduledAt'] as String),
+      estimatedAt: json['estimatedAt'] == null
+          ? null
+          : DateTime.parse(json['estimatedAt'] as String),
+      actualAt: json['actualAt'] == null
+          ? null
+          : DateTime.parse(json['actualAt'] as String),
+      terminal: json['terminal'] as String?,
+    );
+
+Map<String, dynamic> _$WaveFlightModelToJson(_WaveFlightModel instance) =>
+    <String, dynamic>{
+      'number': instance.number,
+      'status': instance.status,
+      'scheduledAt': instance.scheduledAt?.toIso8601String(),
+      'estimatedAt': instance.estimatedAt?.toIso8601String(),
+      'actualAt': instance.actualAt?.toIso8601String(),
+      'terminal': instance.terminal,
+    };
+
+_WaveMemberModel _$WaveMemberModelFromJson(Map<String, dynamic> json) =>
+    _WaveMemberModel(
+      reservationId: json['reservationId'] as String,
+      reference: json['reference'] as String,
+      customerName: json['customerName'] as String,
+      passengers: (json['passengers'] as num?)?.toInt() ?? 1,
+      plate: json['plate'] as String,
+      status: json['status'] as String? ?? 'upcoming',
+      direction: json['direction'] as String? ?? 'dropoff',
+      stopId: json['stopId'] as String?,
+      stopName: json['stopName'] as String?,
+      leaveAt: DateTime.parse(json['leaveAt'] as String),
+      meetAt: json['meetAt'] == null
+          ? null
+          : DateTime.parse(json['meetAt'] as String),
+      flight: json['flight'] == null
+          ? null
+          : WaveFlightModel.fromJson(json['flight'] as Map<String, dynamic>),
+      noFlight: json['noFlight'] as bool? ?? false,
+      state: json['state'] as String? ?? 'planned',
+      tripId: json['tripId'] as String?,
+    );
+
+Map<String, dynamic> _$WaveMemberModelToJson(_WaveMemberModel instance) =>
+    <String, dynamic>{
+      'reservationId': instance.reservationId,
+      'reference': instance.reference,
+      'customerName': instance.customerName,
+      'passengers': instance.passengers,
+      'plate': instance.plate,
+      'status': instance.status,
+      'direction': instance.direction,
+      'stopId': instance.stopId,
+      'stopName': instance.stopName,
+      'leaveAt': instance.leaveAt.toIso8601String(),
+      'meetAt': instance.meetAt?.toIso8601String(),
+      'flight': instance.flight,
+      'noFlight': instance.noFlight,
+      'state': instance.state,
+      'tripId': instance.tripId,
+    };
+
+_ShuttleWaveModel _$ShuttleWaveModelFromJson(Map<String, dynamic> json) =>
+    _ShuttleWaveModel(
+      id: json['id'] as String,
+      direction: json['direction'] as String? ?? 'dropoff',
+      stopId: json['stopId'] as String?,
+      stopName: json['stopName'] as String?,
+      leaveAt: DateTime.parse(json['leaveAt'] as String),
+      meetAt: json['meetAt'] == null
+          ? null
+          : DateTime.parse(json['meetAt'] as String),
+      passengers: (json['passengers'] as num?)?.toInt() ?? 0,
+      seats: (json['seats'] as num?)?.toInt(),
+      vehiclesNeeded: (json['vehiclesNeeded'] as num?)?.toInt(),
+      noFlight: (json['noFlight'] as num?)?.toInt() ?? 0,
+      flights:
+          (json['flights'] as List<dynamic>?)
+              ?.map((e) => e as String)
+              .toList() ??
+          const [],
+      state: json['state'] as String? ?? 'planned',
+      members:
+          (json['members'] as List<dynamic>?)
+              ?.map((e) => WaveMemberModel.fromJson(e as Map<String, dynamic>))
+              .toList() ??
+          const [],
+    );
+
+Map<String, dynamic> _$ShuttleWaveModelToJson(_ShuttleWaveModel instance) =>
+    <String, dynamic>{
+      'id': instance.id,
+      'direction': instance.direction,
+      'stopId': instance.stopId,
+      'stopName': instance.stopName,
+      'leaveAt': instance.leaveAt.toIso8601String(),
+      'meetAt': instance.meetAt?.toIso8601String(),
+      'passengers': instance.passengers,
+      'seats': instance.seats,
+      'vehiclesNeeded': instance.vehiclesNeeded,
+      'noFlight': instance.noFlight,
+      'flights': instance.flights,
+      'state': instance.state,
+      'members': instance.members,
+    };
+
+_WaveTimesModel _$WaveTimesModelFromJson(
+  Map<String, dynamic> json,
+) => _WaveTimesModel(
+  shuttleTravelMinutes: (json['shuttleTravelMinutes'] as num?)?.toInt() ?? 8,
+  terminalLeadMinutes: (json['terminalLeadMinutes'] as num?)?.toInt() ?? 120,
+  landingDelayMinutes: (json['landingDelayMinutes'] as num?)?.toInt() ?? 30,
+);
+
+Map<String, dynamic> _$WaveTimesModelToJson(_WaveTimesModel instance) =>
+    <String, dynamic>{
+      'shuttleTravelMinutes': instance.shuttleTravelMinutes,
+      'terminalLeadMinutes': instance.terminalLeadMinutes,
+      'landingDelayMinutes': instance.landingDelayMinutes,
+    };
+
+_ShuttleForecastModel _$ShuttleForecastModelFromJson(
+  Map<String, dynamic> json,
+) => _ShuttleForecastModel(
+  serverTime: DateTime.parse(json['serverTime'] as String),
+  date: json['date'] as String,
+  times: json['times'] == null
+      ? const WaveTimesModel()
+      : WaveTimesModel.fromJson(json['times'] as Map<String, dynamic>),
+  seats: (json['seats'] as num?)?.toInt(),
+  vehiclesInService: (json['vehiclesInService'] as num?)?.toInt() ?? 0,
+  waves:
+      (json['waves'] as List<dynamic>?)
+          ?.map((e) => ShuttleWaveModel.fromJson(e as Map<String, dynamic>))
+          .toList() ??
+      const [],
+);
+
+Map<String, dynamic> _$ShuttleForecastModelToJson(
+  _ShuttleForecastModel instance,
+) => <String, dynamic>{
+  'serverTime': instance.serverTime.toIso8601String(),
+  'date': instance.date,
+  'times': instance.times,
+  'seats': instance.seats,
+  'vehiclesInService': instance.vehiclesInService,
+  'waves': instance.waves,
+};

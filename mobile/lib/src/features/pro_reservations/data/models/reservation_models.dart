@@ -22,6 +22,12 @@ abstract class ReservationModel with _$ReservationModel {
     String? customerEmail,
     required String plate,
     String? returnFlight,
+
+    /// Outbound flight (V-A) and its tracking (take-off).
+    String? departureFlight,
+    String? departureStatus,
+    DateTime? departureScheduledAt,
+    DateTime? departureEstimatedAt,
     String? notes,
     String? externalReference,
     int? priceCents,
@@ -82,6 +88,7 @@ abstract class ParsedBookingModel with _$ParsedBookingModel {
     String? customerEmail,
     String? plate,
     String? returnFlight,
+    String? departureFlight,
     int? passengers,
     int? priceCents,
   }) = _ParsedBookingModel;
@@ -125,6 +132,7 @@ abstract class ReservationInput with _$ReservationInput {
     String? customerEmail,
     @Default('') String plate,
     String? returnFlight,
+    String? departureFlight,
     String? notes,
     String? externalReference,
     int? priceCents,

@@ -39,6 +39,10 @@ abstract class ShuttleClient {
   @GET('internal/shuttle/live')
   Future<LiveShuttlesModel> live();
 
+  /// The day's shuttle waves (V-A); `date` is a local day, today when absent.
+  @GET('internal/shuttle/forecast')
+  Future<ShuttleForecastModel> forecast(@Query('date') String? date);
+
   @GET('internal/shuttle/trips/current')
   Future<CurrentTripModel> current();
 

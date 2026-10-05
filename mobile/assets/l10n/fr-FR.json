@@ -19,7 +19,9 @@
     "pax": "{} pers.",
     "reference": "Réf. {}",
     "flight": "Vol {}",
-    "retry": "Réessayer"
+    "retry": "Réessayer",
+    "outbound": "Vol aller {}",
+    "outbound_shuttle": "Vol aller {} · navette vers le terminal prévue vers {}"
   },
   "arrival": {
     "explain_title": "Prévenez le parking de votre arrivée",
@@ -174,7 +176,19 @@
       "aggregator": "Comparateur",
       "import": "Import",
       "plazo": "{}"
-    }
+    },
+    "departure_flight": "Vol aller (facultatif)",
+    "departure_flight_help": "Pour prévoir la navette vers le terminal avant le décollage.",
+    "departure_status": {
+      "scheduled": "à l'heure",
+      "delayed": "retardé",
+      "departed": "parti",
+      "landed": "parti",
+      "cancelled": "annulé",
+      "diverted": "dérouté",
+      "unknown": "vol inconnu"
+    },
+    "take_off": "décollage {}"
   },
   "occupation": {
     "title": "Places",
@@ -364,7 +378,7 @@
     "sms_encryption_key_missing": "Le chiffrement des SMS n'est pas configuré sur le serveur.",
     "sms_encryption_key_invalid": "La clé de chiffrement des SMS est invalide sur le serveur.",
     "sms_gateway_failed": "Le téléphone n'a pas pu envoyer le SMS.",
-    "sms_gateway_offline": "Téléphone injoignable.",
+    "sms_gateway_offline": "Le téléphone est hors ligne.",
     "sms_body_unavailable": "Le texte du SMS n'est plus disponible.",
     "invalid_key_hook": "Crochet : 12 caractères max, lettres, chiffres, espace ou tiret.",
     "invalid": "Valeur invalide.",
@@ -389,12 +403,10 @@
     "sms_not_configured": "Les SMS ne sont pas configurés.",
     "sms_gateway_unauthorized": "Le téléphone refuse l'identifiant ou le mot de passe.",
     "sms_gateway_unreachable": "Le serveur de l'appli est injoignable.",
-    "sms_gateway_offline": "Le téléphone est hors ligne.",
     "sms_gateway_rejected": "Le téléphone a refusé le SMS.",
     "sms_gateway_error": "Erreur du téléphone.",
     "brevo_unavailable": "{} ne peut pas encore envoyer pour vous.",
-    "view_as_read_only": "Consultation seulement.",
-    "wrong_current_password": "Mot de passe actuel incorrect."
+    "view_as_read_only": "Consultation seulement."
   },
   "tabs": {
     "search": "Rechercher",
@@ -640,7 +652,9 @@
     "see_other": "Voir les autres parkings",
     "change_dates": "Changer de dates",
     "total": "Total",
-    "total_on_site": "Total à payer sur place"
+    "total_on_site": "Total à payer sur place",
+    "outbound_flight": "Vol aller (facultatif)",
+    "outbound_flight_hint": "Ex. AF 7641 : la navette vers le terminal est prévue avant votre décollage."
   },
   "pay": {
     "title": "Paiement",
@@ -919,7 +933,11 @@
     "alerts_title": "À traiter maintenant",
     "alerts_empty": "Rien à traiter : tout est en ordre.",
     "since": "depuis {} min",
-    "severity": { "urgent": "Urgent", "watch": "À surveiller", "todo": "À faire" },
+    "severity": {
+      "urgent": "Urgent",
+      "watch": "À surveiller",
+      "todo": "À faire"
+    },
     "kind": {
       "no_spot": "Sur place sans place",
       "no_free_spot": "Plus de place libre",
@@ -929,7 +947,10 @@
       "waiting_at_meeting_point": "Attend au point de rendez-vous",
       "keys_missing": "Clés non accrochées",
       "sms_pending": "SMS en attente",
-      "overbooked": "Surréservation"
+      "overbooked": "Surréservation",
+      "departure_cancelled": "Vol aller annulé",
+      "departure_delayed": "Vol aller retardé",
+      "wave_overflow": "Vague au-delà d'une navette"
     },
     "vehicles_title": "Véhicules sur le parking",
     "vehicles_empty": "Aucun véhicule sur le parking.",
@@ -960,7 +981,9 @@
     "badge_on_site": "Sur place",
     "badge_no_spot": "Sans place",
     "urgent_count": "{} urgent(s)",
-    "refreshed": "Actualisé à {}"
+    "refreshed": "Actualisé à {}",
+    "kpi_next_wave": "prochaine {} · {} pass.",
+    "kpi_wave_vehicles": "{} navettes"
   },
   "live_shuttles": {
     "title": "Navettes en cours",
@@ -1168,7 +1191,11 @@
     "shuttle_help": "Entre le parking et le terminal.",
     "save": "Enregistrer",
     "saved": "Réglages enregistrés",
-    "web_only": "Le point de rendez-vous au retour (carte, consignes, photo) se règle sur le web."
+    "web_only": "Le point de rendez-vous au retour (carte, consignes, photo) se règle sur le web.",
+    "terminal_lead": "Présence au terminal avant le décollage (minutes)",
+    "terminal_lead_help": "La navette aller part ce délai plus le trajet avant le décollage du vol aller.",
+    "landing_delay": "Délai après l'atterrissage (minutes)",
+    "landing_delay_help": "Bagages, douane : le temps entre l'atterrissage et le point de rendez-vous."
   },
   "sms": {
     "title": "SMS aux voyageurs",
@@ -1208,5 +1235,33 @@
     "pending_stale": "téléphone injoignable",
     "last_error": "dernière erreur : {}",
     "footnote": "Tant que rien n'est configuré, {} n'envoie pas de SMS pour votre parking (les emails partent quand même). Le mot de passe est chiffré côté serveur et jamais réaffiché."
+  },
+  "waves": {
+    "title": "Ligne du jour",
+    "count": "{} vagues",
+    "today": "Aujourd'hui",
+    "tomorrow": "Demain",
+    "seats": "{} véhicule(s) en service · {} places",
+    "seats_unknown": "{} véhicule(s) en service · places inconnues",
+    "empty": "Aucune navette à prévoir ce jour-là.",
+    "to_terminal": "Vers le terminal",
+    "from_airport": "Depuis l'aéroport",
+    "airport": "Aéroport",
+    "meet_at": "rendez-vous {}",
+    "vehicles": "{} navettes",
+    "no_flight": "{} sans vol",
+    "state_running": "En cours",
+    "state_done": "Faite",
+    "pax": "{} pass.",
+    "take_off": "décollage {}",
+    "landing": "atterrissage {}",
+    "booking_time": "heure saisie {}",
+    "flight_cancelled": "annulé",
+    "flight_diverted": "dérouté",
+    "flight_departed": "parti",
+    "flight_landed": "atterri",
+    "flight_unknown": "vol inconnu",
+    "flight_delayed": "retardé +{}",
+    "start": "Démarrer ce trajet"
   }
 }

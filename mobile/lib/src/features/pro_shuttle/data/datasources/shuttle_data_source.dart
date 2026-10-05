@@ -47,6 +47,7 @@ abstract class ShuttleDataSource {
   Future<void> removeVehicle(String id);
   Future<List<ShuttleStopModel>> stops();
   Future<LiveShuttlesModel> live();
+  Future<ShuttleForecastModel> forecast(String? date);
   Future<StaffTripModel?> current();
   Future<StaffTripModel> start(List<String> reservationIds, TripVehicleChoice vehicle, String direction, String? stopId);
   Future<StaffTripModel> sendPosition(String tripId, GeoPosition position);
@@ -81,6 +82,9 @@ class ShuttleDataSourceImpl implements ShuttleDataSource {
 
   @override
   Future<LiveShuttlesModel> live() => client.live();
+
+  @override
+  Future<ShuttleForecastModel> forecast(String? date) => client.forecast(date);
 
   @override
   Future<StaffTripModel?> current() async => (await client.current()).trip;

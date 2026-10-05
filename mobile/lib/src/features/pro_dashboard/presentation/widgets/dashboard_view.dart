@@ -150,7 +150,11 @@ class _Kpis extends StatelessWidget {
         label: 'dashboard.kpi_shuttles'.tr(),
         icon: Icons.directions_bus_rounded,
         value: c.shuttlesRunning,
-        sub: c.shuttlesRunning == 0 ? 'dashboard.kpi_no_shuttle'.tr() : 'dashboard.kpi_running'.tr(),
+        sub: d.nextWave != null
+            ? 'dashboard.kpi_next_wave'.tr(args: [hhmm(d.nextWave!.leaveAt), '${d.nextWave!.passengers}']) +
+                  ((d.nextWave!.vehiclesNeeded ?? 1) > 1 ? ' · ${'dashboard.kpi_wave_vehicles'.tr(args: ['${d.nextWave!.vehiclesNeeded}'])}' : '')
+            : (c.shuttlesRunning == 0 ? 'dashboard.kpi_no_shuttle'.tr() : 'dashboard.kpi_running'.tr()),
+        alert: (d.nextWave?.vehiclesNeeded ?? 1) > 1,
         onTap: () => context.router.push(const ProShuttleRoute()),
       ),
       _Kpi(
@@ -431,7 +435,9 @@ class _AlertRow extends StatelessWidget {
       _ => _Tone.line,
     };
     final who = [alert.customerName, alert.detail].whereType<String>().where((s) => s.isNotEmpty).join(' · ');
-    final since = alert.minutes != null && alert.kind != 'flight_delayed' ? 'dashboard.since'.tr(args: ['${alert.minutes}']) : null;
+    final since = alert.minutes != null && !const {'flight_delayed', 'departure_delayed', 'wave_overflow'}.contains(alert.kind)
+        ? 'dashboard.since'.tr(args: ['${alert.minutes}'])
+        : null;
     final id = alert.reservationId;
     return InkWell(
       key: Key('alert-${alert.kind}-${id ?? ''}'),

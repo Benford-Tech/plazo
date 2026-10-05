@@ -5,6 +5,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:parking_app/src/features/pro_shuttle/data/models/shuttle_models.dart';
 import 'package:parking_app/src/features/pro_shuttle/presentation/bloc/live_shuttles_bloc.dart';
+import 'package:parking_app/src/features/pro_shuttle/presentation/bloc/shuttle_waves_bloc.dart';
 import 'package:parking_app/src/features/pro_shuttle/presentation/bloc/shuttle_bloc.dart';
 import 'package:parking_app/src/features/pro_shuttle/presentation/pages/pro_shuttle_page.dart';
 import 'package:parking_app/src/features/return_day/data/models/return_model.dart';
@@ -15,6 +16,8 @@ import '../../helpers/pump_app.dart';
 class MockShuttleBloc extends MockBloc<ShuttleEvent, ShuttleState> implements ShuttleBloc {}
 
 class MockLiveBloc extends MockBloc<LiveShuttlesEvent, LiveShuttlesState> implements LiveShuttlesBloc {}
+
+class MockWavesBloc extends MockBloc<ShuttleWavesEvent, ShuttleWavesState> implements ShuttleWavesBloc {}
 
 void main() {
   setUpAll(() async {
@@ -39,12 +42,24 @@ void main() {
     whenListen(bloc, const Stream<ShuttleState>.empty(), initialState: state);
     final live = MockLiveBloc();
     whenListen(live, const Stream<LiveShuttlesState>.empty(), initialState: LiveShuttlesState(now: t0));
+    final waves = MockWavesBloc();
+    whenListen(
+      waves,
+      const Stream<ShuttleWavesState>.empty(),
+      initialState: ShuttleWavesState(now: t0, data: ShuttleForecastModel(serverTime: t0, date: '2026-10-05')),
+    );
     await pumpLocalized(
       tester,
       MultiBlocProvider(
-        providers: [BlocProvider<ShuttleBloc>.value(value: bloc), BlocProvider<LiveShuttlesBloc>.value(value: live)],
+        providers: [
+          BlocProvider<ShuttleBloc>.value(value: bloc),
+          BlocProvider<LiveShuttlesBloc>.value(value: live),
+          BlocProvider<ShuttleWavesBloc>.value(value: waves),
+        ],
         child: const ProShuttlePage(),
       ),
+      // The waves card (V-A) sits above the lists: a tall screen keeps the buttons on screen.
+      size: const Size(400, 1800),
     );
   }
 

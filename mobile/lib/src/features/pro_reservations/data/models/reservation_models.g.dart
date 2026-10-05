@@ -21,6 +21,14 @@ _ReservationModel _$ReservationModelFromJson(Map<String, dynamic> json) =>
       customerEmail: json['customerEmail'] as String?,
       plate: json['plate'] as String,
       returnFlight: json['returnFlight'] as String?,
+      departureFlight: json['departureFlight'] as String?,
+      departureStatus: json['departureStatus'] as String?,
+      departureScheduledAt: json['departureScheduledAt'] == null
+          ? null
+          : DateTime.parse(json['departureScheduledAt'] as String),
+      departureEstimatedAt: json['departureEstimatedAt'] == null
+          ? null
+          : DateTime.parse(json['departureEstimatedAt'] as String),
       notes: json['notes'] as String?,
       externalReference: json['externalReference'] as String?,
       priceCents: (json['priceCents'] as num?)?.toInt(),
@@ -51,6 +59,10 @@ Map<String, dynamic> _$ReservationModelToJson(_ReservationModel instance) =>
       'customerEmail': instance.customerEmail,
       'plate': instance.plate,
       'returnFlight': instance.returnFlight,
+      'departureFlight': instance.departureFlight,
+      'departureStatus': instance.departureStatus,
+      'departureScheduledAt': instance.departureScheduledAt?.toIso8601String(),
+      'departureEstimatedAt': instance.departureEstimatedAt?.toIso8601String(),
       'notes': instance.notes,
       'externalReference': instance.externalReference,
       'priceCents': instance.priceCents,
@@ -125,6 +137,7 @@ _ParsedBookingModel _$ParsedBookingModelFromJson(Map<String, dynamic> json) =>
       customerEmail: json['customerEmail'] as String?,
       plate: json['plate'] as String?,
       returnFlight: json['returnFlight'] as String?,
+      departureFlight: json['departureFlight'] as String?,
       passengers: (json['passengers'] as num?)?.toInt(),
       priceCents: (json['priceCents'] as num?)?.toInt(),
     );
@@ -140,6 +153,7 @@ Map<String, dynamic> _$ParsedBookingModelToJson(_ParsedBookingModel instance) =>
       'customerEmail': instance.customerEmail,
       'plate': instance.plate,
       'returnFlight': instance.returnFlight,
+      'departureFlight': instance.departureFlight,
       'passengers': instance.passengers,
       'priceCents': instance.priceCents,
     };
@@ -188,6 +202,7 @@ _ReservationInput _$ReservationInputFromJson(Map<String, dynamic> json) =>
       customerEmail: json['customerEmail'] as String?,
       plate: json['plate'] as String? ?? '',
       returnFlight: json['returnFlight'] as String?,
+      departureFlight: json['departureFlight'] as String?,
       notes: json['notes'] as String?,
       externalReference: json['externalReference'] as String?,
       priceCents: (json['priceCents'] as num?)?.toInt(),
@@ -206,6 +221,7 @@ Map<String, dynamic> _$ReservationInputToJson(_ReservationInput instance) =>
       'customerEmail': instance.customerEmail,
       'plate': instance.plate,
       'returnFlight': instance.returnFlight,
+      'departureFlight': instance.departureFlight,
       'notes': instance.notes,
       'externalReference': instance.externalReference,
       'priceCents': instance.priceCents,

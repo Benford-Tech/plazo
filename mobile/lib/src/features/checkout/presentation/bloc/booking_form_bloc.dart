@@ -89,6 +89,7 @@ Map<String, String> validateBookingDraft(BookingDraft d) {
     errors['plate'] = 'invalid_plate';
   }
   if (d.returnFlight.trim().length > 10) errors['returnFlight'] = 'invalid_flight';
+  if (d.departureFlight.trim().length > 10) errors['departureFlight'] = 'invalid_flight';
   if (d.passengers < 1 || d.passengers > 9) errors['passengers'] = 'passengers_range';
   if (!d.acceptTerms) errors['acceptTerms'] = 'terms_required';
   return errors;
@@ -153,6 +154,7 @@ class BookingFormBloc extends Bloc<BookingFormEvent, BookingFormState> {
         customerEmail: draft.customerEmail.trim(),
         plate: formatPlate(draft.plate),
         returnFlight: draft.returnFlight.trim().isEmpty ? null : draft.returnFlight.trim().toUpperCase(),
+        departureFlight: draft.departureFlight.trim().isEmpty ? null : draft.departureFlight.trim().toUpperCase(),
         passengers: draft.passengers,
         acceptTerms: draft.acceptTerms,
         idempotencyKey: _key,

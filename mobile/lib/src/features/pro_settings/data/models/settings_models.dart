@@ -34,6 +34,8 @@ abstract class ParkingSettingsModel with _$ParkingSettingsModel {
     required int totalCapacity,
     @Default(0) int safetyMarginPct,
     @Default(8) int shuttleTravelMinutes,
+    @Default(120) int terminalLeadMinutes,
+    @Default(30) int landingDelayMinutes,
     @Default(0) int bookableCapacity,
   }) = _ParkingSettingsModel;
 

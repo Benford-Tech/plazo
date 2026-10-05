@@ -36,6 +36,13 @@ class BookingCard extends StatelessWidget {
             children: [
               FrenchPlate(booking.plate),
               Text('booking.pax'.tr(args: ['${booking.passengers}']), style: AppText.muted()),
+              if (booking.departureFlight != null)
+                Text(
+                  booking.outbound?.shuttleAt != null
+                      ? 'booking.outbound_shuttle'.tr(args: [booking.departureFlight!, booking.outbound!.shuttleAt!.substring(11, 16)])
+                      : 'booking.outbound'.tr(args: [booking.departureFlight!]),
+                  style: AppText.muted(),
+                ),
               if (booking.returnFlight != null) Text('booking.flight'.tr(args: [booking.returnFlight!]), style: AppText.muted()),
             ],
           ),

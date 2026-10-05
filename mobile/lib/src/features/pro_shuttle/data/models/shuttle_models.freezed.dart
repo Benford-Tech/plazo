@@ -4069,4 +4069,1528 @@ $StaffTripModelCopyWith<$Res>? get trip {
 }
 }
 
+
+/// @nodoc
+mixin _$WaveFlightModel {
+
+ String get number; String? get status; DateTime? get scheduledAt; DateTime? get estimatedAt; DateTime? get actualAt; String? get terminal;
+/// Create a copy of WaveFlightModel
+/// with the given fields replaced by the non-null parameter values.
+@JsonKey(includeFromJson: false, includeToJson: false)
+@pragma('vm:prefer-inline')
+$WaveFlightModelCopyWith<WaveFlightModel> get copyWith => _$WaveFlightModelCopyWithImpl<WaveFlightModel>(this as WaveFlightModel, _$identity);
+
+  /// Serializes this WaveFlightModel to a JSON map.
+  Map<String, dynamic> toJson();
+
+
+@override
+bool operator ==(Object other) {
+  final _this = this as WaveFlightModel;
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is WaveFlightModel&&(identical(other.number, _this.number) || other.number == _this.number)&&(identical(other.status, _this.status) || other.status == _this.status)&&(identical(other.scheduledAt, _this.scheduledAt) || other.scheduledAt == _this.scheduledAt)&&(identical(other.estimatedAt, _this.estimatedAt) || other.estimatedAt == _this.estimatedAt)&&(identical(other.actualAt, _this.actualAt) || other.actualAt == _this.actualAt)&&(identical(other.terminal, _this.terminal) || other.terminal == _this.terminal));
+}
+
+@JsonKey(includeFromJson: false, includeToJson: false)
+@override
+int get hashCode {
+  final _this = this as WaveFlightModel;
+  return Object.hash(runtimeType,_this.number,_this.status,_this.scheduledAt,_this.estimatedAt,_this.actualAt,_this.terminal);
+}
+
+@override
+String toString() {
+  final _this = this as WaveFlightModel;
+  return 'WaveFlightModel(number: ${_this.number}, status: ${_this.status}, scheduledAt: ${_this.scheduledAt}, estimatedAt: ${_this.estimatedAt}, actualAt: ${_this.actualAt}, terminal: ${_this.terminal})';
+}
+
+
+}
+
+/// @nodoc
+abstract mixin class $WaveFlightModelCopyWith<$Res>  {
+  factory $WaveFlightModelCopyWith(WaveFlightModel value, $Res Function(WaveFlightModel) _then) = _$WaveFlightModelCopyWithImpl;
+@useResult
+$Res call({
+ String number, String? status, DateTime? scheduledAt, DateTime? estimatedAt, DateTime? actualAt, String? terminal
+});
+
+
+
+
+}
+/// @nodoc
+class _$WaveFlightModelCopyWithImpl<$Res>
+    implements $WaveFlightModelCopyWith<$Res> {
+  _$WaveFlightModelCopyWithImpl(this._self, this._then);
+
+  final WaveFlightModel _self;
+  final $Res Function(WaveFlightModel) _then;
+
+/// Create a copy of WaveFlightModel
+/// with the given fields replaced by the non-null parameter values.
+@pragma('vm:prefer-inline') @override $Res call({Object? number = null,Object? status = freezed,Object? scheduledAt = freezed,Object? estimatedAt = freezed,Object? actualAt = freezed,Object? terminal = freezed,}) {
+  return _then(WaveFlightModel(
+number: null == number ? _self.number : number // ignore: cast_nullable_to_non_nullable
+as String,status: freezed == status ? _self.status : status // ignore: cast_nullable_to_non_nullable
+as String?,scheduledAt: freezed == scheduledAt ? _self.scheduledAt : scheduledAt // ignore: cast_nullable_to_non_nullable
+as DateTime?,estimatedAt: freezed == estimatedAt ? _self.estimatedAt : estimatedAt // ignore: cast_nullable_to_non_nullable
+as DateTime?,actualAt: freezed == actualAt ? _self.actualAt : actualAt // ignore: cast_nullable_to_non_nullable
+as DateTime?,terminal: freezed == terminal ? _self.terminal : terminal // ignore: cast_nullable_to_non_nullable
+as String?,
+  ));
+}
+
+}
+
+
+/// Adds pattern-matching-related methods to [WaveFlightModel].
+extension WaveFlightModelPatterns on WaveFlightModel {
+/// A variant of `map` that fallback to returning `orElse`.
+///
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case final Subclass value:
+///     return ...;
+///   case _:
+///     return orElse();
+/// }
+/// ```
+
+@optionalTypeArgs TResult maybeMap<TResult extends Object?>(TResult Function( _WaveFlightModel value)?  $default,{required TResult orElse(),}){
+final _that = this;
+switch (_that) {
+case _WaveFlightModel() when $default != null:
+return $default(_that);case _:
+  return orElse();
+
+}
+}
+/// A `switch`-like method, using callbacks.
+///
+/// Callbacks receives the raw object, upcasted.
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case final Subclass value:
+///     return ...;
+///   case final Subclass2 value:
+///     return ...;
+/// }
+/// ```
+
+@optionalTypeArgs TResult map<TResult extends Object?>(TResult Function( _WaveFlightModel value)  $default,){
+final _that = this;
+switch (_that) {
+case _WaveFlightModel():
+return $default(_that);case _:
+  throw StateError('Unexpected subclass');
+
+}
+}
+/// A variant of `map` that fallback to returning `null`.
+///
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case final Subclass value:
+///     return ...;
+///   case _:
+///     return null;
+/// }
+/// ```
+
+@optionalTypeArgs TResult? mapOrNull<TResult extends Object?>(TResult? Function( _WaveFlightModel value)?  $default,){
+final _that = this;
+switch (_that) {
+case _WaveFlightModel() when $default != null:
+return $default(_that);case _:
+  return null;
+
+}
+}
+/// A variant of `when` that fallback to an `orElse` callback.
+///
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case Subclass(:final field):
+///     return ...;
+///   case _:
+///     return orElse();
+/// }
+/// ```
+
+@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( String number,  String? status,  DateTime? scheduledAt,  DateTime? estimatedAt,  DateTime? actualAt,  String? terminal)?  $default,{required TResult orElse(),}) {final _that = this;
+switch (_that) {
+case _WaveFlightModel() when $default != null:
+return $default(_that.number,_that.status,_that.scheduledAt,_that.estimatedAt,_that.actualAt,_that.terminal);case _:
+  return orElse();
+
+}
+}
+/// A `switch`-like method, using callbacks.
+///
+/// As opposed to `map`, this offers destructuring.
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case Subclass(:final field):
+///     return ...;
+///   case Subclass2(:final field2):
+///     return ...;
+/// }
+/// ```
+
+@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( String number,  String? status,  DateTime? scheduledAt,  DateTime? estimatedAt,  DateTime? actualAt,  String? terminal)  $default,) {final _that = this;
+switch (_that) {
+case _WaveFlightModel():
+return $default(_that.number,_that.status,_that.scheduledAt,_that.estimatedAt,_that.actualAt,_that.terminal);case _:
+  throw StateError('Unexpected subclass');
+
+}
+}
+/// A variant of `when` that fallback to returning `null`
+///
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case Subclass(:final field):
+///     return ...;
+///   case _:
+///     return null;
+/// }
+/// ```
+
+@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( String number,  String? status,  DateTime? scheduledAt,  DateTime? estimatedAt,  DateTime? actualAt,  String? terminal)?  $default,) {final _that = this;
+switch (_that) {
+case _WaveFlightModel() when $default != null:
+return $default(_that.number,_that.status,_that.scheduledAt,_that.estimatedAt,_that.actualAt,_that.terminal);case _:
+  return null;
+
+}
+}
+
+}
+
+/// @nodoc
+@JsonSerializable()
+
+class _WaveFlightModel extends WaveFlightModel {
+  const _WaveFlightModel({required this.number, this.status, this.scheduledAt, this.estimatedAt, this.actualAt, this.terminal}): super._();
+  factory _WaveFlightModel.fromJson(Map<String, dynamic> json) => _$WaveFlightModelFromJson(json);
+
+@override final  String number;
+@override final  String? status;
+@override final  DateTime? scheduledAt;
+@override final  DateTime? estimatedAt;
+@override final  DateTime? actualAt;
+@override final  String? terminal;
+
+/// Create a copy of WaveFlightModel
+/// with the given fields replaced by the non-null parameter values.
+@override @JsonKey(includeFromJson: false, includeToJson: false)
+@pragma('vm:prefer-inline')
+_$WaveFlightModelCopyWith<_WaveFlightModel> get copyWith => __$WaveFlightModelCopyWithImpl<_WaveFlightModel>(this, _$identity);
+
+@override
+Map<String, dynamic> toJson() {
+  return _$WaveFlightModelToJson(this, );
+}
+
+@override
+bool operator ==(Object other) {
+    return identical(this, other) || (other.runtimeType == runtimeType&&other is _WaveFlightModel&&(identical(other.number, number) || other.number == number)&&(identical(other.status, status) || other.status == status)&&(identical(other.scheduledAt, scheduledAt) || other.scheduledAt == scheduledAt)&&(identical(other.estimatedAt, estimatedAt) || other.estimatedAt == estimatedAt)&&(identical(other.actualAt, actualAt) || other.actualAt == actualAt)&&(identical(other.terminal, terminal) || other.terminal == terminal));
+}
+
+@JsonKey(includeFromJson: false, includeToJson: false)
+@override
+int get hashCode {
+    return Object.hash(runtimeType,number,status,scheduledAt,estimatedAt,actualAt,terminal);
+}
+
+@override
+String toString() {
+    return 'WaveFlightModel(number: $number, status: $status, scheduledAt: $scheduledAt, estimatedAt: $estimatedAt, actualAt: $actualAt, terminal: $terminal)';
+}
+
+
+}
+
+/// @nodoc
+abstract mixin class _$WaveFlightModelCopyWith<$Res> implements $WaveFlightModelCopyWith<$Res> {
+  factory _$WaveFlightModelCopyWith(_WaveFlightModel value, $Res Function(_WaveFlightModel) _then) = __$WaveFlightModelCopyWithImpl;
+@override @useResult
+$Res call({
+ String number, String? status, DateTime? scheduledAt, DateTime? estimatedAt, DateTime? actualAt, String? terminal
+});
+
+
+
+
+}
+/// @nodoc
+class __$WaveFlightModelCopyWithImpl<$Res>
+    implements _$WaveFlightModelCopyWith<$Res> {
+  __$WaveFlightModelCopyWithImpl(this._self, this._then);
+
+  final _WaveFlightModel _self;
+  final $Res Function(_WaveFlightModel) _then;
+
+/// Create a copy of WaveFlightModel
+/// with the given fields replaced by the non-null parameter values.
+@override @pragma('vm:prefer-inline') $Res call({Object? number = null,Object? status = freezed,Object? scheduledAt = freezed,Object? estimatedAt = freezed,Object? actualAt = freezed,Object? terminal = freezed,}) {
+  return _then(_WaveFlightModel(
+number: null == number ? _self.number : number // ignore: cast_nullable_to_non_nullable
+as String,status: freezed == status ? _self.status : status // ignore: cast_nullable_to_non_nullable
+as String?,scheduledAt: freezed == scheduledAt ? _self.scheduledAt : scheduledAt // ignore: cast_nullable_to_non_nullable
+as DateTime?,estimatedAt: freezed == estimatedAt ? _self.estimatedAt : estimatedAt // ignore: cast_nullable_to_non_nullable
+as DateTime?,actualAt: freezed == actualAt ? _self.actualAt : actualAt // ignore: cast_nullable_to_non_nullable
+as DateTime?,terminal: freezed == terminal ? _self.terminal : terminal // ignore: cast_nullable_to_non_nullable
+as String?,
+  ));
+}
+
+
+}
+
+
+/// @nodoc
+mixin _$WaveMemberModel {
+
+ String get reservationId; String get reference; String get customerName; int get passengers; String get plate; String get status; String get direction; String? get stopId; String? get stopName; DateTime get leaveAt; DateTime? get meetAt; WaveFlightModel? get flight; bool get noFlight; String get state; String? get tripId;
+/// Create a copy of WaveMemberModel
+/// with the given fields replaced by the non-null parameter values.
+@JsonKey(includeFromJson: false, includeToJson: false)
+@pragma('vm:prefer-inline')
+$WaveMemberModelCopyWith<WaveMemberModel> get copyWith => _$WaveMemberModelCopyWithImpl<WaveMemberModel>(this as WaveMemberModel, _$identity);
+
+  /// Serializes this WaveMemberModel to a JSON map.
+  Map<String, dynamic> toJson();
+
+
+@override
+bool operator ==(Object other) {
+  final _this = this as WaveMemberModel;
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is WaveMemberModel&&(identical(other.reservationId, _this.reservationId) || other.reservationId == _this.reservationId)&&(identical(other.reference, _this.reference) || other.reference == _this.reference)&&(identical(other.customerName, _this.customerName) || other.customerName == _this.customerName)&&(identical(other.passengers, _this.passengers) || other.passengers == _this.passengers)&&(identical(other.plate, _this.plate) || other.plate == _this.plate)&&(identical(other.status, _this.status) || other.status == _this.status)&&(identical(other.direction, _this.direction) || other.direction == _this.direction)&&(identical(other.stopId, _this.stopId) || other.stopId == _this.stopId)&&(identical(other.stopName, _this.stopName) || other.stopName == _this.stopName)&&(identical(other.leaveAt, _this.leaveAt) || other.leaveAt == _this.leaveAt)&&(identical(other.meetAt, _this.meetAt) || other.meetAt == _this.meetAt)&&(identical(other.flight, _this.flight) || other.flight == _this.flight)&&(identical(other.noFlight, _this.noFlight) || other.noFlight == _this.noFlight)&&(identical(other.state, _this.state) || other.state == _this.state)&&(identical(other.tripId, _this.tripId) || other.tripId == _this.tripId));
+}
+
+@JsonKey(includeFromJson: false, includeToJson: false)
+@override
+int get hashCode {
+  final _this = this as WaveMemberModel;
+  return Object.hash(runtimeType,_this.reservationId,_this.reference,_this.customerName,_this.passengers,_this.plate,_this.status,_this.direction,_this.stopId,_this.stopName,_this.leaveAt,_this.meetAt,_this.flight,_this.noFlight,_this.state,_this.tripId);
+}
+
+@override
+String toString() {
+  final _this = this as WaveMemberModel;
+  return 'WaveMemberModel(reservationId: ${_this.reservationId}, reference: ${_this.reference}, customerName: ${_this.customerName}, passengers: ${_this.passengers}, plate: ${_this.plate}, status: ${_this.status}, direction: ${_this.direction}, stopId: ${_this.stopId}, stopName: ${_this.stopName}, leaveAt: ${_this.leaveAt}, meetAt: ${_this.meetAt}, flight: ${_this.flight}, noFlight: ${_this.noFlight}, state: ${_this.state}, tripId: ${_this.tripId})';
+}
+
+
+}
+
+/// @nodoc
+abstract mixin class $WaveMemberModelCopyWith<$Res>  {
+  factory $WaveMemberModelCopyWith(WaveMemberModel value, $Res Function(WaveMemberModel) _then) = _$WaveMemberModelCopyWithImpl;
+@useResult
+$Res call({
+ String reservationId, String reference, String customerName, int passengers, String plate, String status, String direction, String? stopId, String? stopName, DateTime leaveAt, DateTime? meetAt, WaveFlightModel? flight, bool noFlight, String state, String? tripId
+});
+
+
+$WaveFlightModelCopyWith<$Res>? get flight;
+
+}
+/// @nodoc
+class _$WaveMemberModelCopyWithImpl<$Res>
+    implements $WaveMemberModelCopyWith<$Res> {
+  _$WaveMemberModelCopyWithImpl(this._self, this._then);
+
+  final WaveMemberModel _self;
+  final $Res Function(WaveMemberModel) _then;
+
+/// Create a copy of WaveMemberModel
+/// with the given fields replaced by the non-null parameter values.
+@pragma('vm:prefer-inline') @override $Res call({Object? reservationId = null,Object? reference = null,Object? customerName = null,Object? passengers = null,Object? plate = null,Object? status = null,Object? direction = null,Object? stopId = freezed,Object? stopName = freezed,Object? leaveAt = null,Object? meetAt = freezed,Object? flight = freezed,Object? noFlight = null,Object? state = null,Object? tripId = freezed,}) {
+  return _then(WaveMemberModel(
+reservationId: null == reservationId ? _self.reservationId : reservationId // ignore: cast_nullable_to_non_nullable
+as String,reference: null == reference ? _self.reference : reference // ignore: cast_nullable_to_non_nullable
+as String,customerName: null == customerName ? _self.customerName : customerName // ignore: cast_nullable_to_non_nullable
+as String,passengers: null == passengers ? _self.passengers : passengers // ignore: cast_nullable_to_non_nullable
+as int,plate: null == plate ? _self.plate : plate // ignore: cast_nullable_to_non_nullable
+as String,status: null == status ? _self.status : status // ignore: cast_nullable_to_non_nullable
+as String,direction: null == direction ? _self.direction : direction // ignore: cast_nullable_to_non_nullable
+as String,stopId: freezed == stopId ? _self.stopId : stopId // ignore: cast_nullable_to_non_nullable
+as String?,stopName: freezed == stopName ? _self.stopName : stopName // ignore: cast_nullable_to_non_nullable
+as String?,leaveAt: null == leaveAt ? _self.leaveAt : leaveAt // ignore: cast_nullable_to_non_nullable
+as DateTime,meetAt: freezed == meetAt ? _self.meetAt : meetAt // ignore: cast_nullable_to_non_nullable
+as DateTime?,flight: freezed == flight ? _self.flight : flight // ignore: cast_nullable_to_non_nullable
+as WaveFlightModel?,noFlight: null == noFlight ? _self.noFlight : noFlight // ignore: cast_nullable_to_non_nullable
+as bool,state: null == state ? _self.state : state // ignore: cast_nullable_to_non_nullable
+as String,tripId: freezed == tripId ? _self.tripId : tripId // ignore: cast_nullable_to_non_nullable
+as String?,
+  ));
+}
+/// Create a copy of WaveMemberModel
+/// with the given fields replaced by the non-null parameter values.
+@override
+@pragma('vm:prefer-inline')
+$WaveFlightModelCopyWith<$Res>? get flight {
+    if (_self.flight == null) {
+    return null;
+  }
+
+  return $WaveFlightModelCopyWith<$Res>(_self.flight!, (value) {
+    return _then(_self.copyWith(flight: value));
+  });
+}
+}
+
+
+/// Adds pattern-matching-related methods to [WaveMemberModel].
+extension WaveMemberModelPatterns on WaveMemberModel {
+/// A variant of `map` that fallback to returning `orElse`.
+///
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case final Subclass value:
+///     return ...;
+///   case _:
+///     return orElse();
+/// }
+/// ```
+
+@optionalTypeArgs TResult maybeMap<TResult extends Object?>(TResult Function( _WaveMemberModel value)?  $default,{required TResult orElse(),}){
+final _that = this;
+switch (_that) {
+case _WaveMemberModel() when $default != null:
+return $default(_that);case _:
+  return orElse();
+
+}
+}
+/// A `switch`-like method, using callbacks.
+///
+/// Callbacks receives the raw object, upcasted.
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case final Subclass value:
+///     return ...;
+///   case final Subclass2 value:
+///     return ...;
+/// }
+/// ```
+
+@optionalTypeArgs TResult map<TResult extends Object?>(TResult Function( _WaveMemberModel value)  $default,){
+final _that = this;
+switch (_that) {
+case _WaveMemberModel():
+return $default(_that);case _:
+  throw StateError('Unexpected subclass');
+
+}
+}
+/// A variant of `map` that fallback to returning `null`.
+///
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case final Subclass value:
+///     return ...;
+///   case _:
+///     return null;
+/// }
+/// ```
+
+@optionalTypeArgs TResult? mapOrNull<TResult extends Object?>(TResult? Function( _WaveMemberModel value)?  $default,){
+final _that = this;
+switch (_that) {
+case _WaveMemberModel() when $default != null:
+return $default(_that);case _:
+  return null;
+
+}
+}
+/// A variant of `when` that fallback to an `orElse` callback.
+///
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case Subclass(:final field):
+///     return ...;
+///   case _:
+///     return orElse();
+/// }
+/// ```
+
+@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( String reservationId,  String reference,  String customerName,  int passengers,  String plate,  String status,  String direction,  String? stopId,  String? stopName,  DateTime leaveAt,  DateTime? meetAt,  WaveFlightModel? flight,  bool noFlight,  String state,  String? tripId)?  $default,{required TResult orElse(),}) {final _that = this;
+switch (_that) {
+case _WaveMemberModel() when $default != null:
+return $default(_that.reservationId,_that.reference,_that.customerName,_that.passengers,_that.plate,_that.status,_that.direction,_that.stopId,_that.stopName,_that.leaveAt,_that.meetAt,_that.flight,_that.noFlight,_that.state,_that.tripId);case _:
+  return orElse();
+
+}
+}
+/// A `switch`-like method, using callbacks.
+///
+/// As opposed to `map`, this offers destructuring.
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case Subclass(:final field):
+///     return ...;
+///   case Subclass2(:final field2):
+///     return ...;
+/// }
+/// ```
+
+@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( String reservationId,  String reference,  String customerName,  int passengers,  String plate,  String status,  String direction,  String? stopId,  String? stopName,  DateTime leaveAt,  DateTime? meetAt,  WaveFlightModel? flight,  bool noFlight,  String state,  String? tripId)  $default,) {final _that = this;
+switch (_that) {
+case _WaveMemberModel():
+return $default(_that.reservationId,_that.reference,_that.customerName,_that.passengers,_that.plate,_that.status,_that.direction,_that.stopId,_that.stopName,_that.leaveAt,_that.meetAt,_that.flight,_that.noFlight,_that.state,_that.tripId);case _:
+  throw StateError('Unexpected subclass');
+
+}
+}
+/// A variant of `when` that fallback to returning `null`
+///
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case Subclass(:final field):
+///     return ...;
+///   case _:
+///     return null;
+/// }
+/// ```
+
+@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( String reservationId,  String reference,  String customerName,  int passengers,  String plate,  String status,  String direction,  String? stopId,  String? stopName,  DateTime leaveAt,  DateTime? meetAt,  WaveFlightModel? flight,  bool noFlight,  String state,  String? tripId)?  $default,) {final _that = this;
+switch (_that) {
+case _WaveMemberModel() when $default != null:
+return $default(_that.reservationId,_that.reference,_that.customerName,_that.passengers,_that.plate,_that.status,_that.direction,_that.stopId,_that.stopName,_that.leaveAt,_that.meetAt,_that.flight,_that.noFlight,_that.state,_that.tripId);case _:
+  return null;
+
+}
+}
+
+}
+
+/// @nodoc
+@JsonSerializable()
+
+class _WaveMemberModel implements WaveMemberModel {
+  const _WaveMemberModel({required this.reservationId, required this.reference, required this.customerName, this.passengers = 1, required this.plate, this.status = 'upcoming', this.direction = 'dropoff', this.stopId, this.stopName, required this.leaveAt, this.meetAt, this.flight, this.noFlight = false, this.state = 'planned', this.tripId});
+  factory _WaveMemberModel.fromJson(Map<String, dynamic> json) => _$WaveMemberModelFromJson(json);
+
+@override final  String reservationId;
+@override final  String reference;
+@override final  String customerName;
+@override@JsonKey() final  int passengers;
+@override final  String plate;
+@override@JsonKey() final  String status;
+@override@JsonKey() final  String direction;
+@override final  String? stopId;
+@override final  String? stopName;
+@override final  DateTime leaveAt;
+@override final  DateTime? meetAt;
+@override final  WaveFlightModel? flight;
+@override@JsonKey() final  bool noFlight;
+@override@JsonKey() final  String state;
+@override final  String? tripId;
+
+/// Create a copy of WaveMemberModel
+/// with the given fields replaced by the non-null parameter values.
+@override @JsonKey(includeFromJson: false, includeToJson: false)
+@pragma('vm:prefer-inline')
+_$WaveMemberModelCopyWith<_WaveMemberModel> get copyWith => __$WaveMemberModelCopyWithImpl<_WaveMemberModel>(this, _$identity);
+
+@override
+Map<String, dynamic> toJson() {
+  return _$WaveMemberModelToJson(this, );
+}
+
+@override
+bool operator ==(Object other) {
+    return identical(this, other) || (other.runtimeType == runtimeType&&other is _WaveMemberModel&&(identical(other.reservationId, reservationId) || other.reservationId == reservationId)&&(identical(other.reference, reference) || other.reference == reference)&&(identical(other.customerName, customerName) || other.customerName == customerName)&&(identical(other.passengers, passengers) || other.passengers == passengers)&&(identical(other.plate, plate) || other.plate == plate)&&(identical(other.status, status) || other.status == status)&&(identical(other.direction, direction) || other.direction == direction)&&(identical(other.stopId, stopId) || other.stopId == stopId)&&(identical(other.stopName, stopName) || other.stopName == stopName)&&(identical(other.leaveAt, leaveAt) || other.leaveAt == leaveAt)&&(identical(other.meetAt, meetAt) || other.meetAt == meetAt)&&(identical(other.flight, flight) || other.flight == flight)&&(identical(other.noFlight, noFlight) || other.noFlight == noFlight)&&(identical(other.state, state) || other.state == state)&&(identical(other.tripId, tripId) || other.tripId == tripId));
+}
+
+@JsonKey(includeFromJson: false, includeToJson: false)
+@override
+int get hashCode {
+    return Object.hash(runtimeType,reservationId,reference,customerName,passengers,plate,status,direction,stopId,stopName,leaveAt,meetAt,flight,noFlight,state,tripId);
+}
+
+@override
+String toString() {
+    return 'WaveMemberModel(reservationId: $reservationId, reference: $reference, customerName: $customerName, passengers: $passengers, plate: $plate, status: $status, direction: $direction, stopId: $stopId, stopName: $stopName, leaveAt: $leaveAt, meetAt: $meetAt, flight: $flight, noFlight: $noFlight, state: $state, tripId: $tripId)';
+}
+
+
+}
+
+/// @nodoc
+abstract mixin class _$WaveMemberModelCopyWith<$Res> implements $WaveMemberModelCopyWith<$Res> {
+  factory _$WaveMemberModelCopyWith(_WaveMemberModel value, $Res Function(_WaveMemberModel) _then) = __$WaveMemberModelCopyWithImpl;
+@override @useResult
+$Res call({
+ String reservationId, String reference, String customerName, int passengers, String plate, String status, String direction, String? stopId, String? stopName, DateTime leaveAt, DateTime? meetAt, WaveFlightModel? flight, bool noFlight, String state, String? tripId
+});
+
+
+@override $WaveFlightModelCopyWith<$Res>? get flight;
+
+}
+/// @nodoc
+class __$WaveMemberModelCopyWithImpl<$Res>
+    implements _$WaveMemberModelCopyWith<$Res> {
+  __$WaveMemberModelCopyWithImpl(this._self, this._then);
+
+  final _WaveMemberModel _self;
+  final $Res Function(_WaveMemberModel) _then;
+
+/// Create a copy of WaveMemberModel
+/// with the given fields replaced by the non-null parameter values.
+@override @pragma('vm:prefer-inline') $Res call({Object? reservationId = null,Object? reference = null,Object? customerName = null,Object? passengers = null,Object? plate = null,Object? status = null,Object? direction = null,Object? stopId = freezed,Object? stopName = freezed,Object? leaveAt = null,Object? meetAt = freezed,Object? flight = freezed,Object? noFlight = null,Object? state = null,Object? tripId = freezed,}) {
+  return _then(_WaveMemberModel(
+reservationId: null == reservationId ? _self.reservationId : reservationId // ignore: cast_nullable_to_non_nullable
+as String,reference: null == reference ? _self.reference : reference // ignore: cast_nullable_to_non_nullable
+as String,customerName: null == customerName ? _self.customerName : customerName // ignore: cast_nullable_to_non_nullable
+as String,passengers: null == passengers ? _self.passengers : passengers // ignore: cast_nullable_to_non_nullable
+as int,plate: null == plate ? _self.plate : plate // ignore: cast_nullable_to_non_nullable
+as String,status: null == status ? _self.status : status // ignore: cast_nullable_to_non_nullable
+as String,direction: null == direction ? _self.direction : direction // ignore: cast_nullable_to_non_nullable
+as String,stopId: freezed == stopId ? _self.stopId : stopId // ignore: cast_nullable_to_non_nullable
+as String?,stopName: freezed == stopName ? _self.stopName : stopName // ignore: cast_nullable_to_non_nullable
+as String?,leaveAt: null == leaveAt ? _self.leaveAt : leaveAt // ignore: cast_nullable_to_non_nullable
+as DateTime,meetAt: freezed == meetAt ? _self.meetAt : meetAt // ignore: cast_nullable_to_non_nullable
+as DateTime?,flight: freezed == flight ? _self.flight : flight // ignore: cast_nullable_to_non_nullable
+as WaveFlightModel?,noFlight: null == noFlight ? _self.noFlight : noFlight // ignore: cast_nullable_to_non_nullable
+as bool,state: null == state ? _self.state : state // ignore: cast_nullable_to_non_nullable
+as String,tripId: freezed == tripId ? _self.tripId : tripId // ignore: cast_nullable_to_non_nullable
+as String?,
+  ));
+}
+
+/// Create a copy of WaveMemberModel
+/// with the given fields replaced by the non-null parameter values.
+@override
+@pragma('vm:prefer-inline')
+$WaveFlightModelCopyWith<$Res>? get flight {
+    if (_self.flight == null) {
+    return null;
+  }
+
+  return $WaveFlightModelCopyWith<$Res>(_self.flight!, (value) {
+    return _then(_self.copyWith(flight: value));
+  });
+}
+}
+
+
+/// @nodoc
+mixin _$ShuttleWaveModel {
+
+ String get id; String get direction; String? get stopId; String? get stopName; DateTime get leaveAt; DateTime? get meetAt; int get passengers; int? get seats; int? get vehiclesNeeded; int get noFlight; List<String> get flights; String get state; List<WaveMemberModel> get members;
+/// Create a copy of ShuttleWaveModel
+/// with the given fields replaced by the non-null parameter values.
+@JsonKey(includeFromJson: false, includeToJson: false)
+@pragma('vm:prefer-inline')
+$ShuttleWaveModelCopyWith<ShuttleWaveModel> get copyWith => _$ShuttleWaveModelCopyWithImpl<ShuttleWaveModel>(this as ShuttleWaveModel, _$identity);
+
+  /// Serializes this ShuttleWaveModel to a JSON map.
+  Map<String, dynamic> toJson();
+
+
+@override
+bool operator ==(Object other) {
+  final _this = this as ShuttleWaveModel;
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is ShuttleWaveModel&&(identical(other.id, _this.id) || other.id == _this.id)&&(identical(other.direction, _this.direction) || other.direction == _this.direction)&&(identical(other.stopId, _this.stopId) || other.stopId == _this.stopId)&&(identical(other.stopName, _this.stopName) || other.stopName == _this.stopName)&&(identical(other.leaveAt, _this.leaveAt) || other.leaveAt == _this.leaveAt)&&(identical(other.meetAt, _this.meetAt) || other.meetAt == _this.meetAt)&&(identical(other.passengers, _this.passengers) || other.passengers == _this.passengers)&&(identical(other.seats, _this.seats) || other.seats == _this.seats)&&(identical(other.vehiclesNeeded, _this.vehiclesNeeded) || other.vehiclesNeeded == _this.vehiclesNeeded)&&(identical(other.noFlight, _this.noFlight) || other.noFlight == _this.noFlight)&&const DeepCollectionEquality().equals(other.flights, _this.flights)&&(identical(other.state, _this.state) || other.state == _this.state)&&const DeepCollectionEquality().equals(other.members, _this.members));
+}
+
+@JsonKey(includeFromJson: false, includeToJson: false)
+@override
+int get hashCode {
+  final _this = this as ShuttleWaveModel;
+  return Object.hash(runtimeType,_this.id,_this.direction,_this.stopId,_this.stopName,_this.leaveAt,_this.meetAt,_this.passengers,_this.seats,_this.vehiclesNeeded,_this.noFlight,const DeepCollectionEquality().hash(_this.flights),_this.state,const DeepCollectionEquality().hash(_this.members));
+}
+
+@override
+String toString() {
+  final _this = this as ShuttleWaveModel;
+  return 'ShuttleWaveModel(id: ${_this.id}, direction: ${_this.direction}, stopId: ${_this.stopId}, stopName: ${_this.stopName}, leaveAt: ${_this.leaveAt}, meetAt: ${_this.meetAt}, passengers: ${_this.passengers}, seats: ${_this.seats}, vehiclesNeeded: ${_this.vehiclesNeeded}, noFlight: ${_this.noFlight}, flights: ${_this.flights}, state: ${_this.state}, members: ${_this.members})';
+}
+
+
+}
+
+/// @nodoc
+abstract mixin class $ShuttleWaveModelCopyWith<$Res>  {
+  factory $ShuttleWaveModelCopyWith(ShuttleWaveModel value, $Res Function(ShuttleWaveModel) _then) = _$ShuttleWaveModelCopyWithImpl;
+@useResult
+$Res call({
+ String id, String direction, String? stopId, String? stopName, DateTime leaveAt, DateTime? meetAt, int passengers, int? seats, int? vehiclesNeeded, int noFlight, List<String> flights, String state, List<WaveMemberModel> members
+});
+
+
+
+
+}
+/// @nodoc
+class _$ShuttleWaveModelCopyWithImpl<$Res>
+    implements $ShuttleWaveModelCopyWith<$Res> {
+  _$ShuttleWaveModelCopyWithImpl(this._self, this._then);
+
+  final ShuttleWaveModel _self;
+  final $Res Function(ShuttleWaveModel) _then;
+
+/// Create a copy of ShuttleWaveModel
+/// with the given fields replaced by the non-null parameter values.
+@pragma('vm:prefer-inline') @override $Res call({Object? id = null,Object? direction = null,Object? stopId = freezed,Object? stopName = freezed,Object? leaveAt = null,Object? meetAt = freezed,Object? passengers = null,Object? seats = freezed,Object? vehiclesNeeded = freezed,Object? noFlight = null,Object? flights = null,Object? state = null,Object? members = null,}) {
+  return _then(ShuttleWaveModel(
+id: null == id ? _self.id : id // ignore: cast_nullable_to_non_nullable
+as String,direction: null == direction ? _self.direction : direction // ignore: cast_nullable_to_non_nullable
+as String,stopId: freezed == stopId ? _self.stopId : stopId // ignore: cast_nullable_to_non_nullable
+as String?,stopName: freezed == stopName ? _self.stopName : stopName // ignore: cast_nullable_to_non_nullable
+as String?,leaveAt: null == leaveAt ? _self.leaveAt : leaveAt // ignore: cast_nullable_to_non_nullable
+as DateTime,meetAt: freezed == meetAt ? _self.meetAt : meetAt // ignore: cast_nullable_to_non_nullable
+as DateTime?,passengers: null == passengers ? _self.passengers : passengers // ignore: cast_nullable_to_non_nullable
+as int,seats: freezed == seats ? _self.seats : seats // ignore: cast_nullable_to_non_nullable
+as int?,vehiclesNeeded: freezed == vehiclesNeeded ? _self.vehiclesNeeded : vehiclesNeeded // ignore: cast_nullable_to_non_nullable
+as int?,noFlight: null == noFlight ? _self.noFlight : noFlight // ignore: cast_nullable_to_non_nullable
+as int,flights: null == flights ? _self.flights : flights // ignore: cast_nullable_to_non_nullable
+as List<String>,state: null == state ? _self.state : state // ignore: cast_nullable_to_non_nullable
+as String,members: null == members ? _self.members : members // ignore: cast_nullable_to_non_nullable
+as List<WaveMemberModel>,
+  ));
+}
+
+}
+
+
+/// Adds pattern-matching-related methods to [ShuttleWaveModel].
+extension ShuttleWaveModelPatterns on ShuttleWaveModel {
+/// A variant of `map` that fallback to returning `orElse`.
+///
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case final Subclass value:
+///     return ...;
+///   case _:
+///     return orElse();
+/// }
+/// ```
+
+@optionalTypeArgs TResult maybeMap<TResult extends Object?>(TResult Function( _ShuttleWaveModel value)?  $default,{required TResult orElse(),}){
+final _that = this;
+switch (_that) {
+case _ShuttleWaveModel() when $default != null:
+return $default(_that);case _:
+  return orElse();
+
+}
+}
+/// A `switch`-like method, using callbacks.
+///
+/// Callbacks receives the raw object, upcasted.
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case final Subclass value:
+///     return ...;
+///   case final Subclass2 value:
+///     return ...;
+/// }
+/// ```
+
+@optionalTypeArgs TResult map<TResult extends Object?>(TResult Function( _ShuttleWaveModel value)  $default,){
+final _that = this;
+switch (_that) {
+case _ShuttleWaveModel():
+return $default(_that);case _:
+  throw StateError('Unexpected subclass');
+
+}
+}
+/// A variant of `map` that fallback to returning `null`.
+///
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case final Subclass value:
+///     return ...;
+///   case _:
+///     return null;
+/// }
+/// ```
+
+@optionalTypeArgs TResult? mapOrNull<TResult extends Object?>(TResult? Function( _ShuttleWaveModel value)?  $default,){
+final _that = this;
+switch (_that) {
+case _ShuttleWaveModel() when $default != null:
+return $default(_that);case _:
+  return null;
+
+}
+}
+/// A variant of `when` that fallback to an `orElse` callback.
+///
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case Subclass(:final field):
+///     return ...;
+///   case _:
+///     return orElse();
+/// }
+/// ```
+
+@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( String id,  String direction,  String? stopId,  String? stopName,  DateTime leaveAt,  DateTime? meetAt,  int passengers,  int? seats,  int? vehiclesNeeded,  int noFlight,  List<String> flights,  String state,  List<WaveMemberModel> members)?  $default,{required TResult orElse(),}) {final _that = this;
+switch (_that) {
+case _ShuttleWaveModel() when $default != null:
+return $default(_that.id,_that.direction,_that.stopId,_that.stopName,_that.leaveAt,_that.meetAt,_that.passengers,_that.seats,_that.vehiclesNeeded,_that.noFlight,_that.flights,_that.state,_that.members);case _:
+  return orElse();
+
+}
+}
+/// A `switch`-like method, using callbacks.
+///
+/// As opposed to `map`, this offers destructuring.
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case Subclass(:final field):
+///     return ...;
+///   case Subclass2(:final field2):
+///     return ...;
+/// }
+/// ```
+
+@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( String id,  String direction,  String? stopId,  String? stopName,  DateTime leaveAt,  DateTime? meetAt,  int passengers,  int? seats,  int? vehiclesNeeded,  int noFlight,  List<String> flights,  String state,  List<WaveMemberModel> members)  $default,) {final _that = this;
+switch (_that) {
+case _ShuttleWaveModel():
+return $default(_that.id,_that.direction,_that.stopId,_that.stopName,_that.leaveAt,_that.meetAt,_that.passengers,_that.seats,_that.vehiclesNeeded,_that.noFlight,_that.flights,_that.state,_that.members);case _:
+  throw StateError('Unexpected subclass');
+
+}
+}
+/// A variant of `when` that fallback to returning `null`
+///
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case Subclass(:final field):
+///     return ...;
+///   case _:
+///     return null;
+/// }
+/// ```
+
+@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( String id,  String direction,  String? stopId,  String? stopName,  DateTime leaveAt,  DateTime? meetAt,  int passengers,  int? seats,  int? vehiclesNeeded,  int noFlight,  List<String> flights,  String state,  List<WaveMemberModel> members)?  $default,) {final _that = this;
+switch (_that) {
+case _ShuttleWaveModel() when $default != null:
+return $default(_that.id,_that.direction,_that.stopId,_that.stopName,_that.leaveAt,_that.meetAt,_that.passengers,_that.seats,_that.vehiclesNeeded,_that.noFlight,_that.flights,_that.state,_that.members);case _:
+  return null;
+
+}
+}
+
+}
+
+/// @nodoc
+@JsonSerializable()
+
+class _ShuttleWaveModel extends ShuttleWaveModel {
+  const _ShuttleWaveModel({required this.id, this.direction = 'dropoff', this.stopId, this.stopName, required this.leaveAt, this.meetAt, this.passengers = 0, this.seats, this.vehiclesNeeded, this.noFlight = 0,  List<String> flights = const [], this.state = 'planned',  List<WaveMemberModel> members = const []}): _flights = flights,_members = members,super._();
+  factory _ShuttleWaveModel.fromJson(Map<String, dynamic> json) => _$ShuttleWaveModelFromJson(json);
+
+@override final  String id;
+@override@JsonKey() final  String direction;
+@override final  String? stopId;
+@override final  String? stopName;
+@override final  DateTime leaveAt;
+@override final  DateTime? meetAt;
+@override@JsonKey() final  int passengers;
+@override final  int? seats;
+@override final  int? vehiclesNeeded;
+@override@JsonKey() final  int noFlight;
+ final  List<String> _flights;
+@override@JsonKey() List<String> get flights {
+  if (_flights is EqualUnmodifiableListView) return _flights;
+  // ignore: implicit_dynamic_type
+  return EqualUnmodifiableListView(_flights);
+}
+
+@override@JsonKey() final  String state;
+ final  List<WaveMemberModel> _members;
+@override@JsonKey() List<WaveMemberModel> get members {
+  if (_members is EqualUnmodifiableListView) return _members;
+  // ignore: implicit_dynamic_type
+  return EqualUnmodifiableListView(_members);
+}
+
+
+/// Create a copy of ShuttleWaveModel
+/// with the given fields replaced by the non-null parameter values.
+@override @JsonKey(includeFromJson: false, includeToJson: false)
+@pragma('vm:prefer-inline')
+_$ShuttleWaveModelCopyWith<_ShuttleWaveModel> get copyWith => __$ShuttleWaveModelCopyWithImpl<_ShuttleWaveModel>(this, _$identity);
+
+@override
+Map<String, dynamic> toJson() {
+  return _$ShuttleWaveModelToJson(this, );
+}
+
+@override
+bool operator ==(Object other) {
+    return identical(this, other) || (other.runtimeType == runtimeType&&other is _ShuttleWaveModel&&(identical(other.id, id) || other.id == id)&&(identical(other.direction, direction) || other.direction == direction)&&(identical(other.stopId, stopId) || other.stopId == stopId)&&(identical(other.stopName, stopName) || other.stopName == stopName)&&(identical(other.leaveAt, leaveAt) || other.leaveAt == leaveAt)&&(identical(other.meetAt, meetAt) || other.meetAt == meetAt)&&(identical(other.passengers, passengers) || other.passengers == passengers)&&(identical(other.seats, seats) || other.seats == seats)&&(identical(other.vehiclesNeeded, vehiclesNeeded) || other.vehiclesNeeded == vehiclesNeeded)&&(identical(other.noFlight, noFlight) || other.noFlight == noFlight)&&const DeepCollectionEquality().equals(other.flights, _flights)&&(identical(other.state, state) || other.state == state)&&const DeepCollectionEquality().equals(other.members, _members));
+}
+
+@JsonKey(includeFromJson: false, includeToJson: false)
+@override
+int get hashCode {
+    return Object.hash(runtimeType,id,direction,stopId,stopName,leaveAt,meetAt,passengers,seats,vehiclesNeeded,noFlight,const DeepCollectionEquality().hash(_flights),state,const DeepCollectionEquality().hash(_members));
+}
+
+@override
+String toString() {
+    return 'ShuttleWaveModel(id: $id, direction: $direction, stopId: $stopId, stopName: $stopName, leaveAt: $leaveAt, meetAt: $meetAt, passengers: $passengers, seats: $seats, vehiclesNeeded: $vehiclesNeeded, noFlight: $noFlight, flights: $flights, state: $state, members: $members)';
+}
+
+
+}
+
+/// @nodoc
+abstract mixin class _$ShuttleWaveModelCopyWith<$Res> implements $ShuttleWaveModelCopyWith<$Res> {
+  factory _$ShuttleWaveModelCopyWith(_ShuttleWaveModel value, $Res Function(_ShuttleWaveModel) _then) = __$ShuttleWaveModelCopyWithImpl;
+@override @useResult
+$Res call({
+ String id, String direction, String? stopId, String? stopName, DateTime leaveAt, DateTime? meetAt, int passengers, int? seats, int? vehiclesNeeded, int noFlight, List<String> flights, String state, List<WaveMemberModel> members
+});
+
+
+
+
+}
+/// @nodoc
+class __$ShuttleWaveModelCopyWithImpl<$Res>
+    implements _$ShuttleWaveModelCopyWith<$Res> {
+  __$ShuttleWaveModelCopyWithImpl(this._self, this._then);
+
+  final _ShuttleWaveModel _self;
+  final $Res Function(_ShuttleWaveModel) _then;
+
+/// Create a copy of ShuttleWaveModel
+/// with the given fields replaced by the non-null parameter values.
+@override @pragma('vm:prefer-inline') $Res call({Object? id = null,Object? direction = null,Object? stopId = freezed,Object? stopName = freezed,Object? leaveAt = null,Object? meetAt = freezed,Object? passengers = null,Object? seats = freezed,Object? vehiclesNeeded = freezed,Object? noFlight = null,Object? flights = null,Object? state = null,Object? members = null,}) {
+  return _then(_ShuttleWaveModel(
+id: null == id ? _self.id : id // ignore: cast_nullable_to_non_nullable
+as String,direction: null == direction ? _self.direction : direction // ignore: cast_nullable_to_non_nullable
+as String,stopId: freezed == stopId ? _self.stopId : stopId // ignore: cast_nullable_to_non_nullable
+as String?,stopName: freezed == stopName ? _self.stopName : stopName // ignore: cast_nullable_to_non_nullable
+as String?,leaveAt: null == leaveAt ? _self.leaveAt : leaveAt // ignore: cast_nullable_to_non_nullable
+as DateTime,meetAt: freezed == meetAt ? _self.meetAt : meetAt // ignore: cast_nullable_to_non_nullable
+as DateTime?,passengers: null == passengers ? _self.passengers : passengers // ignore: cast_nullable_to_non_nullable
+as int,seats: freezed == seats ? _self.seats : seats // ignore: cast_nullable_to_non_nullable
+as int?,vehiclesNeeded: freezed == vehiclesNeeded ? _self.vehiclesNeeded : vehiclesNeeded // ignore: cast_nullable_to_non_nullable
+as int?,noFlight: null == noFlight ? _self.noFlight : noFlight // ignore: cast_nullable_to_non_nullable
+as int,flights: null == flights ? _self._flights : flights // ignore: cast_nullable_to_non_nullable
+as List<String>,state: null == state ? _self.state : state // ignore: cast_nullable_to_non_nullable
+as String,members: null == members ? _self._members : members // ignore: cast_nullable_to_non_nullable
+as List<WaveMemberModel>,
+  ));
+}
+
+
+}
+
+
+/// @nodoc
+mixin _$WaveTimesModel {
+
+ int get shuttleTravelMinutes; int get terminalLeadMinutes; int get landingDelayMinutes;
+/// Create a copy of WaveTimesModel
+/// with the given fields replaced by the non-null parameter values.
+@JsonKey(includeFromJson: false, includeToJson: false)
+@pragma('vm:prefer-inline')
+$WaveTimesModelCopyWith<WaveTimesModel> get copyWith => _$WaveTimesModelCopyWithImpl<WaveTimesModel>(this as WaveTimesModel, _$identity);
+
+  /// Serializes this WaveTimesModel to a JSON map.
+  Map<String, dynamic> toJson();
+
+
+@override
+bool operator ==(Object other) {
+  final _this = this as WaveTimesModel;
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is WaveTimesModel&&(identical(other.shuttleTravelMinutes, _this.shuttleTravelMinutes) || other.shuttleTravelMinutes == _this.shuttleTravelMinutes)&&(identical(other.terminalLeadMinutes, _this.terminalLeadMinutes) || other.terminalLeadMinutes == _this.terminalLeadMinutes)&&(identical(other.landingDelayMinutes, _this.landingDelayMinutes) || other.landingDelayMinutes == _this.landingDelayMinutes));
+}
+
+@JsonKey(includeFromJson: false, includeToJson: false)
+@override
+int get hashCode {
+  final _this = this as WaveTimesModel;
+  return Object.hash(runtimeType,_this.shuttleTravelMinutes,_this.terminalLeadMinutes,_this.landingDelayMinutes);
+}
+
+@override
+String toString() {
+  final _this = this as WaveTimesModel;
+  return 'WaveTimesModel(shuttleTravelMinutes: ${_this.shuttleTravelMinutes}, terminalLeadMinutes: ${_this.terminalLeadMinutes}, landingDelayMinutes: ${_this.landingDelayMinutes})';
+}
+
+
+}
+
+/// @nodoc
+abstract mixin class $WaveTimesModelCopyWith<$Res>  {
+  factory $WaveTimesModelCopyWith(WaveTimesModel value, $Res Function(WaveTimesModel) _then) = _$WaveTimesModelCopyWithImpl;
+@useResult
+$Res call({
+ int shuttleTravelMinutes, int terminalLeadMinutes, int landingDelayMinutes
+});
+
+
+
+
+}
+/// @nodoc
+class _$WaveTimesModelCopyWithImpl<$Res>
+    implements $WaveTimesModelCopyWith<$Res> {
+  _$WaveTimesModelCopyWithImpl(this._self, this._then);
+
+  final WaveTimesModel _self;
+  final $Res Function(WaveTimesModel) _then;
+
+/// Create a copy of WaveTimesModel
+/// with the given fields replaced by the non-null parameter values.
+@pragma('vm:prefer-inline') @override $Res call({Object? shuttleTravelMinutes = null,Object? terminalLeadMinutes = null,Object? landingDelayMinutes = null,}) {
+  return _then(WaveTimesModel(
+shuttleTravelMinutes: null == shuttleTravelMinutes ? _self.shuttleTravelMinutes : shuttleTravelMinutes // ignore: cast_nullable_to_non_nullable
+as int,terminalLeadMinutes: null == terminalLeadMinutes ? _self.terminalLeadMinutes : terminalLeadMinutes // ignore: cast_nullable_to_non_nullable
+as int,landingDelayMinutes: null == landingDelayMinutes ? _self.landingDelayMinutes : landingDelayMinutes // ignore: cast_nullable_to_non_nullable
+as int,
+  ));
+}
+
+}
+
+
+/// Adds pattern-matching-related methods to [WaveTimesModel].
+extension WaveTimesModelPatterns on WaveTimesModel {
+/// A variant of `map` that fallback to returning `orElse`.
+///
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case final Subclass value:
+///     return ...;
+///   case _:
+///     return orElse();
+/// }
+/// ```
+
+@optionalTypeArgs TResult maybeMap<TResult extends Object?>(TResult Function( _WaveTimesModel value)?  $default,{required TResult orElse(),}){
+final _that = this;
+switch (_that) {
+case _WaveTimesModel() when $default != null:
+return $default(_that);case _:
+  return orElse();
+
+}
+}
+/// A `switch`-like method, using callbacks.
+///
+/// Callbacks receives the raw object, upcasted.
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case final Subclass value:
+///     return ...;
+///   case final Subclass2 value:
+///     return ...;
+/// }
+/// ```
+
+@optionalTypeArgs TResult map<TResult extends Object?>(TResult Function( _WaveTimesModel value)  $default,){
+final _that = this;
+switch (_that) {
+case _WaveTimesModel():
+return $default(_that);case _:
+  throw StateError('Unexpected subclass');
+
+}
+}
+/// A variant of `map` that fallback to returning `null`.
+///
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case final Subclass value:
+///     return ...;
+///   case _:
+///     return null;
+/// }
+/// ```
+
+@optionalTypeArgs TResult? mapOrNull<TResult extends Object?>(TResult? Function( _WaveTimesModel value)?  $default,){
+final _that = this;
+switch (_that) {
+case _WaveTimesModel() when $default != null:
+return $default(_that);case _:
+  return null;
+
+}
+}
+/// A variant of `when` that fallback to an `orElse` callback.
+///
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case Subclass(:final field):
+///     return ...;
+///   case _:
+///     return orElse();
+/// }
+/// ```
+
+@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( int shuttleTravelMinutes,  int terminalLeadMinutes,  int landingDelayMinutes)?  $default,{required TResult orElse(),}) {final _that = this;
+switch (_that) {
+case _WaveTimesModel() when $default != null:
+return $default(_that.shuttleTravelMinutes,_that.terminalLeadMinutes,_that.landingDelayMinutes);case _:
+  return orElse();
+
+}
+}
+/// A `switch`-like method, using callbacks.
+///
+/// As opposed to `map`, this offers destructuring.
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case Subclass(:final field):
+///     return ...;
+///   case Subclass2(:final field2):
+///     return ...;
+/// }
+/// ```
+
+@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( int shuttleTravelMinutes,  int terminalLeadMinutes,  int landingDelayMinutes)  $default,) {final _that = this;
+switch (_that) {
+case _WaveTimesModel():
+return $default(_that.shuttleTravelMinutes,_that.terminalLeadMinutes,_that.landingDelayMinutes);case _:
+  throw StateError('Unexpected subclass');
+
+}
+}
+/// A variant of `when` that fallback to returning `null`
+///
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case Subclass(:final field):
+///     return ...;
+///   case _:
+///     return null;
+/// }
+/// ```
+
+@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( int shuttleTravelMinutes,  int terminalLeadMinutes,  int landingDelayMinutes)?  $default,) {final _that = this;
+switch (_that) {
+case _WaveTimesModel() when $default != null:
+return $default(_that.shuttleTravelMinutes,_that.terminalLeadMinutes,_that.landingDelayMinutes);case _:
+  return null;
+
+}
+}
+
+}
+
+/// @nodoc
+@JsonSerializable()
+
+class _WaveTimesModel implements WaveTimesModel {
+  const _WaveTimesModel({this.shuttleTravelMinutes = 8, this.terminalLeadMinutes = 120, this.landingDelayMinutes = 30});
+  factory _WaveTimesModel.fromJson(Map<String, dynamic> json) => _$WaveTimesModelFromJson(json);
+
+@override@JsonKey() final  int shuttleTravelMinutes;
+@override@JsonKey() final  int terminalLeadMinutes;
+@override@JsonKey() final  int landingDelayMinutes;
+
+/// Create a copy of WaveTimesModel
+/// with the given fields replaced by the non-null parameter values.
+@override @JsonKey(includeFromJson: false, includeToJson: false)
+@pragma('vm:prefer-inline')
+_$WaveTimesModelCopyWith<_WaveTimesModel> get copyWith => __$WaveTimesModelCopyWithImpl<_WaveTimesModel>(this, _$identity);
+
+@override
+Map<String, dynamic> toJson() {
+  return _$WaveTimesModelToJson(this, );
+}
+
+@override
+bool operator ==(Object other) {
+    return identical(this, other) || (other.runtimeType == runtimeType&&other is _WaveTimesModel&&(identical(other.shuttleTravelMinutes, shuttleTravelMinutes) || other.shuttleTravelMinutes == shuttleTravelMinutes)&&(identical(other.terminalLeadMinutes, terminalLeadMinutes) || other.terminalLeadMinutes == terminalLeadMinutes)&&(identical(other.landingDelayMinutes, landingDelayMinutes) || other.landingDelayMinutes == landingDelayMinutes));
+}
+
+@JsonKey(includeFromJson: false, includeToJson: false)
+@override
+int get hashCode {
+    return Object.hash(runtimeType,shuttleTravelMinutes,terminalLeadMinutes,landingDelayMinutes);
+}
+
+@override
+String toString() {
+    return 'WaveTimesModel(shuttleTravelMinutes: $shuttleTravelMinutes, terminalLeadMinutes: $terminalLeadMinutes, landingDelayMinutes: $landingDelayMinutes)';
+}
+
+
+}
+
+/// @nodoc
+abstract mixin class _$WaveTimesModelCopyWith<$Res> implements $WaveTimesModelCopyWith<$Res> {
+  factory _$WaveTimesModelCopyWith(_WaveTimesModel value, $Res Function(_WaveTimesModel) _then) = __$WaveTimesModelCopyWithImpl;
+@override @useResult
+$Res call({
+ int shuttleTravelMinutes, int terminalLeadMinutes, int landingDelayMinutes
+});
+
+
+
+
+}
+/// @nodoc
+class __$WaveTimesModelCopyWithImpl<$Res>
+    implements _$WaveTimesModelCopyWith<$Res> {
+  __$WaveTimesModelCopyWithImpl(this._self, this._then);
+
+  final _WaveTimesModel _self;
+  final $Res Function(_WaveTimesModel) _then;
+
+/// Create a copy of WaveTimesModel
+/// with the given fields replaced by the non-null parameter values.
+@override @pragma('vm:prefer-inline') $Res call({Object? shuttleTravelMinutes = null,Object? terminalLeadMinutes = null,Object? landingDelayMinutes = null,}) {
+  return _then(_WaveTimesModel(
+shuttleTravelMinutes: null == shuttleTravelMinutes ? _self.shuttleTravelMinutes : shuttleTravelMinutes // ignore: cast_nullable_to_non_nullable
+as int,terminalLeadMinutes: null == terminalLeadMinutes ? _self.terminalLeadMinutes : terminalLeadMinutes // ignore: cast_nullable_to_non_nullable
+as int,landingDelayMinutes: null == landingDelayMinutes ? _self.landingDelayMinutes : landingDelayMinutes // ignore: cast_nullable_to_non_nullable
+as int,
+  ));
+}
+
+
+}
+
+
+/// @nodoc
+mixin _$ShuttleForecastModel {
+
+ DateTime get serverTime; String get date; WaveTimesModel get times; int? get seats; int get vehiclesInService; List<ShuttleWaveModel> get waves;
+/// Create a copy of ShuttleForecastModel
+/// with the given fields replaced by the non-null parameter values.
+@JsonKey(includeFromJson: false, includeToJson: false)
+@pragma('vm:prefer-inline')
+$ShuttleForecastModelCopyWith<ShuttleForecastModel> get copyWith => _$ShuttleForecastModelCopyWithImpl<ShuttleForecastModel>(this as ShuttleForecastModel, _$identity);
+
+  /// Serializes this ShuttleForecastModel to a JSON map.
+  Map<String, dynamic> toJson();
+
+
+@override
+bool operator ==(Object other) {
+  final _this = this as ShuttleForecastModel;
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is ShuttleForecastModel&&(identical(other.serverTime, _this.serverTime) || other.serverTime == _this.serverTime)&&(identical(other.date, _this.date) || other.date == _this.date)&&(identical(other.times, _this.times) || other.times == _this.times)&&(identical(other.seats, _this.seats) || other.seats == _this.seats)&&(identical(other.vehiclesInService, _this.vehiclesInService) || other.vehiclesInService == _this.vehiclesInService)&&const DeepCollectionEquality().equals(other.waves, _this.waves));
+}
+
+@JsonKey(includeFromJson: false, includeToJson: false)
+@override
+int get hashCode {
+  final _this = this as ShuttleForecastModel;
+  return Object.hash(runtimeType,_this.serverTime,_this.date,_this.times,_this.seats,_this.vehiclesInService,const DeepCollectionEquality().hash(_this.waves));
+}
+
+@override
+String toString() {
+  final _this = this as ShuttleForecastModel;
+  return 'ShuttleForecastModel(serverTime: ${_this.serverTime}, date: ${_this.date}, times: ${_this.times}, seats: ${_this.seats}, vehiclesInService: ${_this.vehiclesInService}, waves: ${_this.waves})';
+}
+
+
+}
+
+/// @nodoc
+abstract mixin class $ShuttleForecastModelCopyWith<$Res>  {
+  factory $ShuttleForecastModelCopyWith(ShuttleForecastModel value, $Res Function(ShuttleForecastModel) _then) = _$ShuttleForecastModelCopyWithImpl;
+@useResult
+$Res call({
+ DateTime serverTime, String date, WaveTimesModel times, int? seats, int vehiclesInService, List<ShuttleWaveModel> waves
+});
+
+
+$WaveTimesModelCopyWith<$Res> get times;
+
+}
+/// @nodoc
+class _$ShuttleForecastModelCopyWithImpl<$Res>
+    implements $ShuttleForecastModelCopyWith<$Res> {
+  _$ShuttleForecastModelCopyWithImpl(this._self, this._then);
+
+  final ShuttleForecastModel _self;
+  final $Res Function(ShuttleForecastModel) _then;
+
+/// Create a copy of ShuttleForecastModel
+/// with the given fields replaced by the non-null parameter values.
+@pragma('vm:prefer-inline') @override $Res call({Object? serverTime = null,Object? date = null,Object? times = null,Object? seats = freezed,Object? vehiclesInService = null,Object? waves = null,}) {
+  return _then(ShuttleForecastModel(
+serverTime: null == serverTime ? _self.serverTime : serverTime // ignore: cast_nullable_to_non_nullable
+as DateTime,date: null == date ? _self.date : date // ignore: cast_nullable_to_non_nullable
+as String,times: null == times ? _self.times : times // ignore: cast_nullable_to_non_nullable
+as WaveTimesModel,seats: freezed == seats ? _self.seats : seats // ignore: cast_nullable_to_non_nullable
+as int?,vehiclesInService: null == vehiclesInService ? _self.vehiclesInService : vehiclesInService // ignore: cast_nullable_to_non_nullable
+as int,waves: null == waves ? _self.waves : waves // ignore: cast_nullable_to_non_nullable
+as List<ShuttleWaveModel>,
+  ));
+}
+/// Create a copy of ShuttleForecastModel
+/// with the given fields replaced by the non-null parameter values.
+@override
+@pragma('vm:prefer-inline')
+$WaveTimesModelCopyWith<$Res> get times {
+  
+  return $WaveTimesModelCopyWith<$Res>(_self.times, (value) {
+    return _then(_self.copyWith(times: value));
+  });
+}
+}
+
+
+/// Adds pattern-matching-related methods to [ShuttleForecastModel].
+extension ShuttleForecastModelPatterns on ShuttleForecastModel {
+/// A variant of `map` that fallback to returning `orElse`.
+///
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case final Subclass value:
+///     return ...;
+///   case _:
+///     return orElse();
+/// }
+/// ```
+
+@optionalTypeArgs TResult maybeMap<TResult extends Object?>(TResult Function( _ShuttleForecastModel value)?  $default,{required TResult orElse(),}){
+final _that = this;
+switch (_that) {
+case _ShuttleForecastModel() when $default != null:
+return $default(_that);case _:
+  return orElse();
+
+}
+}
+/// A `switch`-like method, using callbacks.
+///
+/// Callbacks receives the raw object, upcasted.
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case final Subclass value:
+///     return ...;
+///   case final Subclass2 value:
+///     return ...;
+/// }
+/// ```
+
+@optionalTypeArgs TResult map<TResult extends Object?>(TResult Function( _ShuttleForecastModel value)  $default,){
+final _that = this;
+switch (_that) {
+case _ShuttleForecastModel():
+return $default(_that);case _:
+  throw StateError('Unexpected subclass');
+
+}
+}
+/// A variant of `map` that fallback to returning `null`.
+///
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case final Subclass value:
+///     return ...;
+///   case _:
+///     return null;
+/// }
+/// ```
+
+@optionalTypeArgs TResult? mapOrNull<TResult extends Object?>(TResult? Function( _ShuttleForecastModel value)?  $default,){
+final _that = this;
+switch (_that) {
+case _ShuttleForecastModel() when $default != null:
+return $default(_that);case _:
+  return null;
+
+}
+}
+/// A variant of `when` that fallback to an `orElse` callback.
+///
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case Subclass(:final field):
+///     return ...;
+///   case _:
+///     return orElse();
+/// }
+/// ```
+
+@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( DateTime serverTime,  String date,  WaveTimesModel times,  int? seats,  int vehiclesInService,  List<ShuttleWaveModel> waves)?  $default,{required TResult orElse(),}) {final _that = this;
+switch (_that) {
+case _ShuttleForecastModel() when $default != null:
+return $default(_that.serverTime,_that.date,_that.times,_that.seats,_that.vehiclesInService,_that.waves);case _:
+  return orElse();
+
+}
+}
+/// A `switch`-like method, using callbacks.
+///
+/// As opposed to `map`, this offers destructuring.
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case Subclass(:final field):
+///     return ...;
+///   case Subclass2(:final field2):
+///     return ...;
+/// }
+/// ```
+
+@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( DateTime serverTime,  String date,  WaveTimesModel times,  int? seats,  int vehiclesInService,  List<ShuttleWaveModel> waves)  $default,) {final _that = this;
+switch (_that) {
+case _ShuttleForecastModel():
+return $default(_that.serverTime,_that.date,_that.times,_that.seats,_that.vehiclesInService,_that.waves);case _:
+  throw StateError('Unexpected subclass');
+
+}
+}
+/// A variant of `when` that fallback to returning `null`
+///
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case Subclass(:final field):
+///     return ...;
+///   case _:
+///     return null;
+/// }
+/// ```
+
+@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( DateTime serverTime,  String date,  WaveTimesModel times,  int? seats,  int vehiclesInService,  List<ShuttleWaveModel> waves)?  $default,) {final _that = this;
+switch (_that) {
+case _ShuttleForecastModel() when $default != null:
+return $default(_that.serverTime,_that.date,_that.times,_that.seats,_that.vehiclesInService,_that.waves);case _:
+  return null;
+
+}
+}
+
+}
+
+/// @nodoc
+@JsonSerializable()
+
+class _ShuttleForecastModel implements ShuttleForecastModel {
+  const _ShuttleForecastModel({required this.serverTime, required this.date, this.times = const WaveTimesModel(), this.seats, this.vehiclesInService = 0,  List<ShuttleWaveModel> waves = const []}): _waves = waves;
+  factory _ShuttleForecastModel.fromJson(Map<String, dynamic> json) => _$ShuttleForecastModelFromJson(json);
+
+@override final  DateTime serverTime;
+@override final  String date;
+@override@JsonKey() final  WaveTimesModel times;
+@override final  int? seats;
+@override@JsonKey() final  int vehiclesInService;
+ final  List<ShuttleWaveModel> _waves;
+@override@JsonKey() List<ShuttleWaveModel> get waves {
+  if (_waves is EqualUnmodifiableListView) return _waves;
+  // ignore: implicit_dynamic_type
+  return EqualUnmodifiableListView(_waves);
+}
+
+
+/// Create a copy of ShuttleForecastModel
+/// with the given fields replaced by the non-null parameter values.
+@override @JsonKey(includeFromJson: false, includeToJson: false)
+@pragma('vm:prefer-inline')
+_$ShuttleForecastModelCopyWith<_ShuttleForecastModel> get copyWith => __$ShuttleForecastModelCopyWithImpl<_ShuttleForecastModel>(this, _$identity);
+
+@override
+Map<String, dynamic> toJson() {
+  return _$ShuttleForecastModelToJson(this, );
+}
+
+@override
+bool operator ==(Object other) {
+    return identical(this, other) || (other.runtimeType == runtimeType&&other is _ShuttleForecastModel&&(identical(other.serverTime, serverTime) || other.serverTime == serverTime)&&(identical(other.date, date) || other.date == date)&&(identical(other.times, times) || other.times == times)&&(identical(other.seats, seats) || other.seats == seats)&&(identical(other.vehiclesInService, vehiclesInService) || other.vehiclesInService == vehiclesInService)&&const DeepCollectionEquality().equals(other.waves, _waves));
+}
+
+@JsonKey(includeFromJson: false, includeToJson: false)
+@override
+int get hashCode {
+    return Object.hash(runtimeType,serverTime,date,times,seats,vehiclesInService,const DeepCollectionEquality().hash(_waves));
+}
+
+@override
+String toString() {
+    return 'ShuttleForecastModel(serverTime: $serverTime, date: $date, times: $times, seats: $seats, vehiclesInService: $vehiclesInService, waves: $waves)';
+}
+
+
+}
+
+/// @nodoc
+abstract mixin class _$ShuttleForecastModelCopyWith<$Res> implements $ShuttleForecastModelCopyWith<$Res> {
+  factory _$ShuttleForecastModelCopyWith(_ShuttleForecastModel value, $Res Function(_ShuttleForecastModel) _then) = __$ShuttleForecastModelCopyWithImpl;
+@override @useResult
+$Res call({
+ DateTime serverTime, String date, WaveTimesModel times, int? seats, int vehiclesInService, List<ShuttleWaveModel> waves
+});
+
+
+@override $WaveTimesModelCopyWith<$Res> get times;
+
+}
+/// @nodoc
+class __$ShuttleForecastModelCopyWithImpl<$Res>
+    implements _$ShuttleForecastModelCopyWith<$Res> {
+  __$ShuttleForecastModelCopyWithImpl(this._self, this._then);
+
+  final _ShuttleForecastModel _self;
+  final $Res Function(_ShuttleForecastModel) _then;
+
+/// Create a copy of ShuttleForecastModel
+/// with the given fields replaced by the non-null parameter values.
+@override @pragma('vm:prefer-inline') $Res call({Object? serverTime = null,Object? date = null,Object? times = null,Object? seats = freezed,Object? vehiclesInService = null,Object? waves = null,}) {
+  return _then(_ShuttleForecastModel(
+serverTime: null == serverTime ? _self.serverTime : serverTime // ignore: cast_nullable_to_non_nullable
+as DateTime,date: null == date ? _self.date : date // ignore: cast_nullable_to_non_nullable
+as String,times: null == times ? _self.times : times // ignore: cast_nullable_to_non_nullable
+as WaveTimesModel,seats: freezed == seats ? _self.seats : seats // ignore: cast_nullable_to_non_nullable
+as int?,vehiclesInService: null == vehiclesInService ? _self.vehiclesInService : vehiclesInService // ignore: cast_nullable_to_non_nullable
+as int,waves: null == waves ? _self._waves : waves // ignore: cast_nullable_to_non_nullable
+as List<ShuttleWaveModel>,
+  ));
+}
+
+/// Create a copy of ShuttleForecastModel
+/// with the given fields replaced by the non-null parameter values.
+@override
+@pragma('vm:prefer-inline')
+$WaveTimesModelCopyWith<$Res> get times {
+  
+  return $WaveTimesModelCopyWith<$Res>(_self.times, (value) {
+    return _then(_self.copyWith(times: value));
+  });
+}
+}
+
 // dart format on

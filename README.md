@@ -309,7 +309,8 @@ Documentation interactive : `/api/docs` (Swagger). Toutes les routes sont sous `
 | GET | `/internal/sms/status` | Gérant : `{ lastSentAt, month: { sent, failed }, pending, pendingStale, lastError }` (relance la file au passage) |
 | GET | `/internal/cron/payouts` | Vercel Cron, chaque jour : transferts des parts dues aux loueurs |
 | GET | `/internal/cron/expire-payment-holds` | Vercel Cron (facultatif) : expire les places tenues non payées |
-| GET | `/internal/cron/track-return-flights` | Vercel Cron, toutes les 10 min (5 h – 0 h) : vols retour du jour (push et SMS à l'atterrissage), SMS en attente réessayés |
+| GET | `/internal/cron/track-return-flights` | Vercel Cron, toutes les 10 min (5 h – 0 h) : vols retour du jour (push et SMS à l'atterrissage), vols aller du jour (décollage), SMS en attente réessayés |
+| GET | `/internal/shuttle/forecast?date=` | Vagues de navettes du jour (V-A) : `{ date, times, seats, vehiclesInService, waves[] }` ; vols aller et retour rafraîchis si dus |
 | GET / PUT | `/internal/parking/return-meeting-point` | Point de rendez-vous au retour : `{ lat, lng, label, instructions (≤ 500), photoUrl }` (gérant) |
 | GET | `/public/bookings/:ref/return` | App, jour du retour : vol (rafraîchi si dû), point de rendez-vous, signal, navette en route |
 | POST | `/public/bookings/:ref/return/landed` | « J'ai atterri » (push au personnel) |

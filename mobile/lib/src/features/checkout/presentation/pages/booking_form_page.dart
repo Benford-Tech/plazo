@@ -64,7 +64,7 @@ class BookingFormView extends StatefulWidget {
 }
 
 class _BookingFormViewState extends State<BookingFormView> {
-  late final TextEditingController _name, _phone, _email, _plate, _flight;
+  late final TextEditingController _name, _phone, _email, _plate, _flight, _outbound;
   int _passengers = 1;
   bool _terms = false;
 
@@ -81,13 +81,14 @@ class _BookingFormViewState extends State<BookingFormView> {
     _email = TextEditingController(text: d.customerEmail);
     _plate = TextEditingController(text: d.plate);
     _flight = TextEditingController(text: d.returnFlight);
+    _outbound = TextEditingController(text: d.departureFlight);
     _passengers = d.passengers;
     _terms = d.acceptTerms;
   }
 
   @override
   void dispose() {
-    for (final c in [_name, _phone, _email, _plate, _flight]) {
+    for (final c in [_name, _phone, _email, _plate, _flight, _outbound]) {
       c.dispose();
     }
     _scroll.dispose();
@@ -105,6 +106,7 @@ class _BookingFormViewState extends State<BookingFormView> {
           customerEmail: _email.text,
           plate: _plate.text,
           returnFlight: _flight.text,
+          departureFlight: _outbound.text,
           passengers: _passengers,
           acceptTerms: _terms,
         ),
@@ -198,6 +200,17 @@ class _BookingFormViewState extends State<BookingFormView> {
                                 : (isFrenchPlate(value.text) ? 'book.plate_french'.tr() : 'book.plate_foreign'.tr()),
                           ),
                         ),
+                      ),
+                      _field(
+                        key: const Key('field-outbound'),
+                        field: 'departureFlight',
+                        controller: _outbound,
+                        label: 'book.outbound_flight'.tr(),
+                        hint: 'AF 7641',
+                        helper: 'book.outbound_flight_hint'.tr(),
+                        error: err('departureFlight'),
+                        capitalization: TextCapitalization.characters,
+                        maxLength: 10,
                       ),
                       _field(
                         key: const Key('field-flight'),

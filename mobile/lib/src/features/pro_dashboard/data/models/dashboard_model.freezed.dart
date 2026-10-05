@@ -16,7 +16,7 @@ T _$identity<T>(T value) => value;
 /// @nodoc
 mixin _$DashboardModel {
 
- DateTime get serverTime; String get date; DashboardParkingModel get parking; DashboardCountsModel get counts; DashboardServicesModel get services; List<DashboardAlertModel> get alerts; DashboardBreakdownModel get breakdown; List<DashboardVehicleModel> get vehicles;
+ DateTime get serverTime; String get date; DashboardParkingModel get parking; DashboardCountsModel get counts; DashboardServicesModel get services; List<DashboardAlertModel> get alerts; DashboardNextWaveModel? get nextWave; DashboardBreakdownModel get breakdown; List<DashboardVehicleModel> get vehicles;
 /// Create a copy of DashboardModel
 /// with the given fields replaced by the non-null parameter values.
 @JsonKey(includeFromJson: false, includeToJson: false)
@@ -30,20 +30,20 @@ $DashboardModelCopyWith<DashboardModel> get copyWith => _$DashboardModelCopyWith
 @override
 bool operator ==(Object other) {
   final _this = this as DashboardModel;
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is DashboardModel&&(identical(other.serverTime, _this.serverTime) || other.serverTime == _this.serverTime)&&(identical(other.date, _this.date) || other.date == _this.date)&&(identical(other.parking, _this.parking) || other.parking == _this.parking)&&(identical(other.counts, _this.counts) || other.counts == _this.counts)&&(identical(other.services, _this.services) || other.services == _this.services)&&const DeepCollectionEquality().equals(other.alerts, _this.alerts)&&(identical(other.breakdown, _this.breakdown) || other.breakdown == _this.breakdown)&&const DeepCollectionEquality().equals(other.vehicles, _this.vehicles));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is DashboardModel&&(identical(other.serverTime, _this.serverTime) || other.serverTime == _this.serverTime)&&(identical(other.date, _this.date) || other.date == _this.date)&&(identical(other.parking, _this.parking) || other.parking == _this.parking)&&(identical(other.counts, _this.counts) || other.counts == _this.counts)&&(identical(other.services, _this.services) || other.services == _this.services)&&const DeepCollectionEquality().equals(other.alerts, _this.alerts)&&(identical(other.nextWave, _this.nextWave) || other.nextWave == _this.nextWave)&&(identical(other.breakdown, _this.breakdown) || other.breakdown == _this.breakdown)&&const DeepCollectionEquality().equals(other.vehicles, _this.vehicles));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
 int get hashCode {
   final _this = this as DashboardModel;
-  return Object.hash(runtimeType,_this.serverTime,_this.date,_this.parking,_this.counts,_this.services,const DeepCollectionEquality().hash(_this.alerts),_this.breakdown,const DeepCollectionEquality().hash(_this.vehicles));
+  return Object.hash(runtimeType,_this.serverTime,_this.date,_this.parking,_this.counts,_this.services,const DeepCollectionEquality().hash(_this.alerts),_this.nextWave,_this.breakdown,const DeepCollectionEquality().hash(_this.vehicles));
 }
 
 @override
 String toString() {
   final _this = this as DashboardModel;
-  return 'DashboardModel(serverTime: ${_this.serverTime}, date: ${_this.date}, parking: ${_this.parking}, counts: ${_this.counts}, services: ${_this.services}, alerts: ${_this.alerts}, breakdown: ${_this.breakdown}, vehicles: ${_this.vehicles})';
+  return 'DashboardModel(serverTime: ${_this.serverTime}, date: ${_this.date}, parking: ${_this.parking}, counts: ${_this.counts}, services: ${_this.services}, alerts: ${_this.alerts}, nextWave: ${_this.nextWave}, breakdown: ${_this.breakdown}, vehicles: ${_this.vehicles})';
 }
 
 
@@ -54,11 +54,11 @@ abstract mixin class $DashboardModelCopyWith<$Res>  {
   factory $DashboardModelCopyWith(DashboardModel value, $Res Function(DashboardModel) _then) = _$DashboardModelCopyWithImpl;
 @useResult
 $Res call({
- DateTime serverTime, String date, DashboardParkingModel parking, DashboardCountsModel counts, DashboardServicesModel services, List<DashboardAlertModel> alerts, DashboardBreakdownModel breakdown, List<DashboardVehicleModel> vehicles
+ DateTime serverTime, String date, DashboardParkingModel parking, DashboardCountsModel counts, DashboardServicesModel services, List<DashboardAlertModel> alerts, DashboardNextWaveModel? nextWave, DashboardBreakdownModel breakdown, List<DashboardVehicleModel> vehicles
 });
 
 
-$DashboardParkingModelCopyWith<$Res> get parking;$DashboardCountsModelCopyWith<$Res> get counts;$DashboardServicesModelCopyWith<$Res> get services;$DashboardBreakdownModelCopyWith<$Res> get breakdown;
+$DashboardParkingModelCopyWith<$Res> get parking;$DashboardCountsModelCopyWith<$Res> get counts;$DashboardServicesModelCopyWith<$Res> get services;$DashboardNextWaveModelCopyWith<$Res>? get nextWave;$DashboardBreakdownModelCopyWith<$Res> get breakdown;
 
 }
 /// @nodoc
@@ -71,7 +71,7 @@ class _$DashboardModelCopyWithImpl<$Res>
 
 /// Create a copy of DashboardModel
 /// with the given fields replaced by the non-null parameter values.
-@pragma('vm:prefer-inline') @override $Res call({Object? serverTime = null,Object? date = null,Object? parking = null,Object? counts = null,Object? services = null,Object? alerts = null,Object? breakdown = null,Object? vehicles = null,}) {
+@pragma('vm:prefer-inline') @override $Res call({Object? serverTime = null,Object? date = null,Object? parking = null,Object? counts = null,Object? services = null,Object? alerts = null,Object? nextWave = freezed,Object? breakdown = null,Object? vehicles = null,}) {
   return _then(DashboardModel(
 serverTime: null == serverTime ? _self.serverTime : serverTime // ignore: cast_nullable_to_non_nullable
 as DateTime,date: null == date ? _self.date : date // ignore: cast_nullable_to_non_nullable
@@ -79,7 +79,8 @@ as String,parking: null == parking ? _self.parking : parking // ignore: cast_nul
 as DashboardParkingModel,counts: null == counts ? _self.counts : counts // ignore: cast_nullable_to_non_nullable
 as DashboardCountsModel,services: null == services ? _self.services : services // ignore: cast_nullable_to_non_nullable
 as DashboardServicesModel,alerts: null == alerts ? _self.alerts : alerts // ignore: cast_nullable_to_non_nullable
-as List<DashboardAlertModel>,breakdown: null == breakdown ? _self.breakdown : breakdown // ignore: cast_nullable_to_non_nullable
+as List<DashboardAlertModel>,nextWave: freezed == nextWave ? _self.nextWave : nextWave // ignore: cast_nullable_to_non_nullable
+as DashboardNextWaveModel?,breakdown: null == breakdown ? _self.breakdown : breakdown // ignore: cast_nullable_to_non_nullable
 as DashboardBreakdownModel,vehicles: null == vehicles ? _self.vehicles : vehicles // ignore: cast_nullable_to_non_nullable
 as List<DashboardVehicleModel>,
   ));
@@ -110,6 +111,18 @@ $DashboardServicesModelCopyWith<$Res> get services {
   
   return $DashboardServicesModelCopyWith<$Res>(_self.services, (value) {
     return _then(_self.copyWith(services: value));
+  });
+}/// Create a copy of DashboardModel
+/// with the given fields replaced by the non-null parameter values.
+@override
+@pragma('vm:prefer-inline')
+$DashboardNextWaveModelCopyWith<$Res>? get nextWave {
+    if (_self.nextWave == null) {
+    return null;
+  }
+
+  return $DashboardNextWaveModelCopyWith<$Res>(_self.nextWave!, (value) {
+    return _then(_self.copyWith(nextWave: value));
   });
 }/// Create a copy of DashboardModel
 /// with the given fields replaced by the non-null parameter values.
@@ -202,10 +215,10 @@ return $default(_that);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( DateTime serverTime,  String date,  DashboardParkingModel parking,  DashboardCountsModel counts,  DashboardServicesModel services,  List<DashboardAlertModel> alerts,  DashboardBreakdownModel breakdown,  List<DashboardVehicleModel> vehicles)?  $default,{required TResult orElse(),}) {final _that = this;
+@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( DateTime serverTime,  String date,  DashboardParkingModel parking,  DashboardCountsModel counts,  DashboardServicesModel services,  List<DashboardAlertModel> alerts,  DashboardNextWaveModel? nextWave,  DashboardBreakdownModel breakdown,  List<DashboardVehicleModel> vehicles)?  $default,{required TResult orElse(),}) {final _that = this;
 switch (_that) {
 case _DashboardModel() when $default != null:
-return $default(_that.serverTime,_that.date,_that.parking,_that.counts,_that.services,_that.alerts,_that.breakdown,_that.vehicles);case _:
+return $default(_that.serverTime,_that.date,_that.parking,_that.counts,_that.services,_that.alerts,_that.nextWave,_that.breakdown,_that.vehicles);case _:
   return orElse();
 
 }
@@ -223,10 +236,10 @@ return $default(_that.serverTime,_that.date,_that.parking,_that.counts,_that.ser
 /// }
 /// ```
 
-@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( DateTime serverTime,  String date,  DashboardParkingModel parking,  DashboardCountsModel counts,  DashboardServicesModel services,  List<DashboardAlertModel> alerts,  DashboardBreakdownModel breakdown,  List<DashboardVehicleModel> vehicles)  $default,) {final _that = this;
+@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( DateTime serverTime,  String date,  DashboardParkingModel parking,  DashboardCountsModel counts,  DashboardServicesModel services,  List<DashboardAlertModel> alerts,  DashboardNextWaveModel? nextWave,  DashboardBreakdownModel breakdown,  List<DashboardVehicleModel> vehicles)  $default,) {final _that = this;
 switch (_that) {
 case _DashboardModel():
-return $default(_that.serverTime,_that.date,_that.parking,_that.counts,_that.services,_that.alerts,_that.breakdown,_that.vehicles);case _:
+return $default(_that.serverTime,_that.date,_that.parking,_that.counts,_that.services,_that.alerts,_that.nextWave,_that.breakdown,_that.vehicles);case _:
   throw StateError('Unexpected subclass');
 
 }
@@ -243,10 +256,10 @@ return $default(_that.serverTime,_that.date,_that.parking,_that.counts,_that.ser
 /// }
 /// ```
 
-@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( DateTime serverTime,  String date,  DashboardParkingModel parking,  DashboardCountsModel counts,  DashboardServicesModel services,  List<DashboardAlertModel> alerts,  DashboardBreakdownModel breakdown,  List<DashboardVehicleModel> vehicles)?  $default,) {final _that = this;
+@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( DateTime serverTime,  String date,  DashboardParkingModel parking,  DashboardCountsModel counts,  DashboardServicesModel services,  List<DashboardAlertModel> alerts,  DashboardNextWaveModel? nextWave,  DashboardBreakdownModel breakdown,  List<DashboardVehicleModel> vehicles)?  $default,) {final _that = this;
 switch (_that) {
 case _DashboardModel() when $default != null:
-return $default(_that.serverTime,_that.date,_that.parking,_that.counts,_that.services,_that.alerts,_that.breakdown,_that.vehicles);case _:
+return $default(_that.serverTime,_that.date,_that.parking,_that.counts,_that.services,_that.alerts,_that.nextWave,_that.breakdown,_that.vehicles);case _:
   return null;
 
 }
@@ -258,7 +271,7 @@ return $default(_that.serverTime,_that.date,_that.parking,_that.counts,_that.ser
 @JsonSerializable()
 
 class _DashboardModel extends DashboardModel {
-  const _DashboardModel({required this.serverTime, required this.date, required this.parking, required this.counts, required this.services,  List<DashboardAlertModel> alerts = const [], required this.breakdown,  List<DashboardVehicleModel> vehicles = const []}): _alerts = alerts,_vehicles = vehicles,super._();
+  const _DashboardModel({required this.serverTime, required this.date, required this.parking, required this.counts, required this.services,  List<DashboardAlertModel> alerts = const [], this.nextWave, required this.breakdown,  List<DashboardVehicleModel> vehicles = const []}): _alerts = alerts,_vehicles = vehicles,super._();
   factory _DashboardModel.fromJson(Map<String, dynamic> json) => _$DashboardModelFromJson(json);
 
 @override final  DateTime serverTime;
@@ -273,6 +286,7 @@ class _DashboardModel extends DashboardModel {
   return EqualUnmodifiableListView(_alerts);
 }
 
+@override final  DashboardNextWaveModel? nextWave;
 @override final  DashboardBreakdownModel breakdown;
  final  List<DashboardVehicleModel> _vehicles;
 @override@JsonKey() List<DashboardVehicleModel> get vehicles {
@@ -295,18 +309,18 @@ Map<String, dynamic> toJson() {
 
 @override
 bool operator ==(Object other) {
-    return identical(this, other) || (other.runtimeType == runtimeType&&other is _DashboardModel&&(identical(other.serverTime, serverTime) || other.serverTime == serverTime)&&(identical(other.date, date) || other.date == date)&&(identical(other.parking, parking) || other.parking == parking)&&(identical(other.counts, counts) || other.counts == counts)&&(identical(other.services, services) || other.services == services)&&const DeepCollectionEquality().equals(other.alerts, _alerts)&&(identical(other.breakdown, breakdown) || other.breakdown == breakdown)&&const DeepCollectionEquality().equals(other.vehicles, _vehicles));
+    return identical(this, other) || (other.runtimeType == runtimeType&&other is _DashboardModel&&(identical(other.serverTime, serverTime) || other.serverTime == serverTime)&&(identical(other.date, date) || other.date == date)&&(identical(other.parking, parking) || other.parking == parking)&&(identical(other.counts, counts) || other.counts == counts)&&(identical(other.services, services) || other.services == services)&&const DeepCollectionEquality().equals(other.alerts, _alerts)&&(identical(other.nextWave, nextWave) || other.nextWave == nextWave)&&(identical(other.breakdown, breakdown) || other.breakdown == breakdown)&&const DeepCollectionEquality().equals(other.vehicles, _vehicles));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
 int get hashCode {
-    return Object.hash(runtimeType,serverTime,date,parking,counts,services,const DeepCollectionEquality().hash(_alerts),breakdown,const DeepCollectionEquality().hash(_vehicles));
+    return Object.hash(runtimeType,serverTime,date,parking,counts,services,const DeepCollectionEquality().hash(_alerts),nextWave,breakdown,const DeepCollectionEquality().hash(_vehicles));
 }
 
 @override
 String toString() {
-    return 'DashboardModel(serverTime: $serverTime, date: $date, parking: $parking, counts: $counts, services: $services, alerts: $alerts, breakdown: $breakdown, vehicles: $vehicles)';
+    return 'DashboardModel(serverTime: $serverTime, date: $date, parking: $parking, counts: $counts, services: $services, alerts: $alerts, nextWave: $nextWave, breakdown: $breakdown, vehicles: $vehicles)';
 }
 
 
@@ -317,11 +331,11 @@ abstract mixin class _$DashboardModelCopyWith<$Res> implements $DashboardModelCo
   factory _$DashboardModelCopyWith(_DashboardModel value, $Res Function(_DashboardModel) _then) = __$DashboardModelCopyWithImpl;
 @override @useResult
 $Res call({
- DateTime serverTime, String date, DashboardParkingModel parking, DashboardCountsModel counts, DashboardServicesModel services, List<DashboardAlertModel> alerts, DashboardBreakdownModel breakdown, List<DashboardVehicleModel> vehicles
+ DateTime serverTime, String date, DashboardParkingModel parking, DashboardCountsModel counts, DashboardServicesModel services, List<DashboardAlertModel> alerts, DashboardNextWaveModel? nextWave, DashboardBreakdownModel breakdown, List<DashboardVehicleModel> vehicles
 });
 
 
-@override $DashboardParkingModelCopyWith<$Res> get parking;@override $DashboardCountsModelCopyWith<$Res> get counts;@override $DashboardServicesModelCopyWith<$Res> get services;@override $DashboardBreakdownModelCopyWith<$Res> get breakdown;
+@override $DashboardParkingModelCopyWith<$Res> get parking;@override $DashboardCountsModelCopyWith<$Res> get counts;@override $DashboardServicesModelCopyWith<$Res> get services;@override $DashboardNextWaveModelCopyWith<$Res>? get nextWave;@override $DashboardBreakdownModelCopyWith<$Res> get breakdown;
 
 }
 /// @nodoc
@@ -334,7 +348,7 @@ class __$DashboardModelCopyWithImpl<$Res>
 
 /// Create a copy of DashboardModel
 /// with the given fields replaced by the non-null parameter values.
-@override @pragma('vm:prefer-inline') $Res call({Object? serverTime = null,Object? date = null,Object? parking = null,Object? counts = null,Object? services = null,Object? alerts = null,Object? breakdown = null,Object? vehicles = null,}) {
+@override @pragma('vm:prefer-inline') $Res call({Object? serverTime = null,Object? date = null,Object? parking = null,Object? counts = null,Object? services = null,Object? alerts = null,Object? nextWave = freezed,Object? breakdown = null,Object? vehicles = null,}) {
   return _then(_DashboardModel(
 serverTime: null == serverTime ? _self.serverTime : serverTime // ignore: cast_nullable_to_non_nullable
 as DateTime,date: null == date ? _self.date : date // ignore: cast_nullable_to_non_nullable
@@ -342,7 +356,8 @@ as String,parking: null == parking ? _self.parking : parking // ignore: cast_nul
 as DashboardParkingModel,counts: null == counts ? _self.counts : counts // ignore: cast_nullable_to_non_nullable
 as DashboardCountsModel,services: null == services ? _self.services : services // ignore: cast_nullable_to_non_nullable
 as DashboardServicesModel,alerts: null == alerts ? _self._alerts : alerts // ignore: cast_nullable_to_non_nullable
-as List<DashboardAlertModel>,breakdown: null == breakdown ? _self.breakdown : breakdown // ignore: cast_nullable_to_non_nullable
+as List<DashboardAlertModel>,nextWave: freezed == nextWave ? _self.nextWave : nextWave // ignore: cast_nullable_to_non_nullable
+as DashboardNextWaveModel?,breakdown: null == breakdown ? _self.breakdown : breakdown // ignore: cast_nullable_to_non_nullable
 as DashboardBreakdownModel,vehicles: null == vehicles ? _self._vehicles : vehicles // ignore: cast_nullable_to_non_nullable
 as List<DashboardVehicleModel>,
   ));
@@ -379,12 +394,315 @@ $DashboardServicesModelCopyWith<$Res> get services {
 /// with the given fields replaced by the non-null parameter values.
 @override
 @pragma('vm:prefer-inline')
+$DashboardNextWaveModelCopyWith<$Res>? get nextWave {
+    if (_self.nextWave == null) {
+    return null;
+  }
+
+  return $DashboardNextWaveModelCopyWith<$Res>(_self.nextWave!, (value) {
+    return _then(_self.copyWith(nextWave: value));
+  });
+}/// Create a copy of DashboardModel
+/// with the given fields replaced by the non-null parameter values.
+@override
+@pragma('vm:prefer-inline')
 $DashboardBreakdownModelCopyWith<$Res> get breakdown {
   
   return $DashboardBreakdownModelCopyWith<$Res>(_self.breakdown, (value) {
     return _then(_self.copyWith(breakdown: value));
   });
 }
+}
+
+
+/// @nodoc
+mixin _$DashboardNextWaveModel {
+
+ DateTime get leaveAt; String get direction; String? get stopName; int get passengers; int? get vehiclesNeeded; List<String> get flights;
+/// Create a copy of DashboardNextWaveModel
+/// with the given fields replaced by the non-null parameter values.
+@JsonKey(includeFromJson: false, includeToJson: false)
+@pragma('vm:prefer-inline')
+$DashboardNextWaveModelCopyWith<DashboardNextWaveModel> get copyWith => _$DashboardNextWaveModelCopyWithImpl<DashboardNextWaveModel>(this as DashboardNextWaveModel, _$identity);
+
+  /// Serializes this DashboardNextWaveModel to a JSON map.
+  Map<String, dynamic> toJson();
+
+
+@override
+bool operator ==(Object other) {
+  final _this = this as DashboardNextWaveModel;
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is DashboardNextWaveModel&&(identical(other.leaveAt, _this.leaveAt) || other.leaveAt == _this.leaveAt)&&(identical(other.direction, _this.direction) || other.direction == _this.direction)&&(identical(other.stopName, _this.stopName) || other.stopName == _this.stopName)&&(identical(other.passengers, _this.passengers) || other.passengers == _this.passengers)&&(identical(other.vehiclesNeeded, _this.vehiclesNeeded) || other.vehiclesNeeded == _this.vehiclesNeeded)&&const DeepCollectionEquality().equals(other.flights, _this.flights));
+}
+
+@JsonKey(includeFromJson: false, includeToJson: false)
+@override
+int get hashCode {
+  final _this = this as DashboardNextWaveModel;
+  return Object.hash(runtimeType,_this.leaveAt,_this.direction,_this.stopName,_this.passengers,_this.vehiclesNeeded,const DeepCollectionEquality().hash(_this.flights));
+}
+
+@override
+String toString() {
+  final _this = this as DashboardNextWaveModel;
+  return 'DashboardNextWaveModel(leaveAt: ${_this.leaveAt}, direction: ${_this.direction}, stopName: ${_this.stopName}, passengers: ${_this.passengers}, vehiclesNeeded: ${_this.vehiclesNeeded}, flights: ${_this.flights})';
+}
+
+
+}
+
+/// @nodoc
+abstract mixin class $DashboardNextWaveModelCopyWith<$Res>  {
+  factory $DashboardNextWaveModelCopyWith(DashboardNextWaveModel value, $Res Function(DashboardNextWaveModel) _then) = _$DashboardNextWaveModelCopyWithImpl;
+@useResult
+$Res call({
+ DateTime leaveAt, String direction, String? stopName, int passengers, int? vehiclesNeeded, List<String> flights
+});
+
+
+
+
+}
+/// @nodoc
+class _$DashboardNextWaveModelCopyWithImpl<$Res>
+    implements $DashboardNextWaveModelCopyWith<$Res> {
+  _$DashboardNextWaveModelCopyWithImpl(this._self, this._then);
+
+  final DashboardNextWaveModel _self;
+  final $Res Function(DashboardNextWaveModel) _then;
+
+/// Create a copy of DashboardNextWaveModel
+/// with the given fields replaced by the non-null parameter values.
+@pragma('vm:prefer-inline') @override $Res call({Object? leaveAt = null,Object? direction = null,Object? stopName = freezed,Object? passengers = null,Object? vehiclesNeeded = freezed,Object? flights = null,}) {
+  return _then(DashboardNextWaveModel(
+leaveAt: null == leaveAt ? _self.leaveAt : leaveAt // ignore: cast_nullable_to_non_nullable
+as DateTime,direction: null == direction ? _self.direction : direction // ignore: cast_nullable_to_non_nullable
+as String,stopName: freezed == stopName ? _self.stopName : stopName // ignore: cast_nullable_to_non_nullable
+as String?,passengers: null == passengers ? _self.passengers : passengers // ignore: cast_nullable_to_non_nullable
+as int,vehiclesNeeded: freezed == vehiclesNeeded ? _self.vehiclesNeeded : vehiclesNeeded // ignore: cast_nullable_to_non_nullable
+as int?,flights: null == flights ? _self.flights : flights // ignore: cast_nullable_to_non_nullable
+as List<String>,
+  ));
+}
+
+}
+
+
+/// Adds pattern-matching-related methods to [DashboardNextWaveModel].
+extension DashboardNextWaveModelPatterns on DashboardNextWaveModel {
+/// A variant of `map` that fallback to returning `orElse`.
+///
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case final Subclass value:
+///     return ...;
+///   case _:
+///     return orElse();
+/// }
+/// ```
+
+@optionalTypeArgs TResult maybeMap<TResult extends Object?>(TResult Function( _DashboardNextWaveModel value)?  $default,{required TResult orElse(),}){
+final _that = this;
+switch (_that) {
+case _DashboardNextWaveModel() when $default != null:
+return $default(_that);case _:
+  return orElse();
+
+}
+}
+/// A `switch`-like method, using callbacks.
+///
+/// Callbacks receives the raw object, upcasted.
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case final Subclass value:
+///     return ...;
+///   case final Subclass2 value:
+///     return ...;
+/// }
+/// ```
+
+@optionalTypeArgs TResult map<TResult extends Object?>(TResult Function( _DashboardNextWaveModel value)  $default,){
+final _that = this;
+switch (_that) {
+case _DashboardNextWaveModel():
+return $default(_that);case _:
+  throw StateError('Unexpected subclass');
+
+}
+}
+/// A variant of `map` that fallback to returning `null`.
+///
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case final Subclass value:
+///     return ...;
+///   case _:
+///     return null;
+/// }
+/// ```
+
+@optionalTypeArgs TResult? mapOrNull<TResult extends Object?>(TResult? Function( _DashboardNextWaveModel value)?  $default,){
+final _that = this;
+switch (_that) {
+case _DashboardNextWaveModel() when $default != null:
+return $default(_that);case _:
+  return null;
+
+}
+}
+/// A variant of `when` that fallback to an `orElse` callback.
+///
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case Subclass(:final field):
+///     return ...;
+///   case _:
+///     return orElse();
+/// }
+/// ```
+
+@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( DateTime leaveAt,  String direction,  String? stopName,  int passengers,  int? vehiclesNeeded,  List<String> flights)?  $default,{required TResult orElse(),}) {final _that = this;
+switch (_that) {
+case _DashboardNextWaveModel() when $default != null:
+return $default(_that.leaveAt,_that.direction,_that.stopName,_that.passengers,_that.vehiclesNeeded,_that.flights);case _:
+  return orElse();
+
+}
+}
+/// A `switch`-like method, using callbacks.
+///
+/// As opposed to `map`, this offers destructuring.
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case Subclass(:final field):
+///     return ...;
+///   case Subclass2(:final field2):
+///     return ...;
+/// }
+/// ```
+
+@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( DateTime leaveAt,  String direction,  String? stopName,  int passengers,  int? vehiclesNeeded,  List<String> flights)  $default,) {final _that = this;
+switch (_that) {
+case _DashboardNextWaveModel():
+return $default(_that.leaveAt,_that.direction,_that.stopName,_that.passengers,_that.vehiclesNeeded,_that.flights);case _:
+  throw StateError('Unexpected subclass');
+
+}
+}
+/// A variant of `when` that fallback to returning `null`
+///
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case Subclass(:final field):
+///     return ...;
+///   case _:
+///     return null;
+/// }
+/// ```
+
+@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( DateTime leaveAt,  String direction,  String? stopName,  int passengers,  int? vehiclesNeeded,  List<String> flights)?  $default,) {final _that = this;
+switch (_that) {
+case _DashboardNextWaveModel() when $default != null:
+return $default(_that.leaveAt,_that.direction,_that.stopName,_that.passengers,_that.vehiclesNeeded,_that.flights);case _:
+  return null;
+
+}
+}
+
+}
+
+/// @nodoc
+@JsonSerializable()
+
+class _DashboardNextWaveModel implements DashboardNextWaveModel {
+  const _DashboardNextWaveModel({required this.leaveAt, this.direction = 'dropoff', this.stopName, this.passengers = 0, this.vehiclesNeeded,  List<String> flights = const []}): _flights = flights;
+  factory _DashboardNextWaveModel.fromJson(Map<String, dynamic> json) => _$DashboardNextWaveModelFromJson(json);
+
+@override final  DateTime leaveAt;
+@override@JsonKey() final  String direction;
+@override final  String? stopName;
+@override@JsonKey() final  int passengers;
+@override final  int? vehiclesNeeded;
+ final  List<String> _flights;
+@override@JsonKey() List<String> get flights {
+  if (_flights is EqualUnmodifiableListView) return _flights;
+  // ignore: implicit_dynamic_type
+  return EqualUnmodifiableListView(_flights);
+}
+
+
+/// Create a copy of DashboardNextWaveModel
+/// with the given fields replaced by the non-null parameter values.
+@override @JsonKey(includeFromJson: false, includeToJson: false)
+@pragma('vm:prefer-inline')
+_$DashboardNextWaveModelCopyWith<_DashboardNextWaveModel> get copyWith => __$DashboardNextWaveModelCopyWithImpl<_DashboardNextWaveModel>(this, _$identity);
+
+@override
+Map<String, dynamic> toJson() {
+  return _$DashboardNextWaveModelToJson(this, );
+}
+
+@override
+bool operator ==(Object other) {
+    return identical(this, other) || (other.runtimeType == runtimeType&&other is _DashboardNextWaveModel&&(identical(other.leaveAt, leaveAt) || other.leaveAt == leaveAt)&&(identical(other.direction, direction) || other.direction == direction)&&(identical(other.stopName, stopName) || other.stopName == stopName)&&(identical(other.passengers, passengers) || other.passengers == passengers)&&(identical(other.vehiclesNeeded, vehiclesNeeded) || other.vehiclesNeeded == vehiclesNeeded)&&const DeepCollectionEquality().equals(other.flights, _flights));
+}
+
+@JsonKey(includeFromJson: false, includeToJson: false)
+@override
+int get hashCode {
+    return Object.hash(runtimeType,leaveAt,direction,stopName,passengers,vehiclesNeeded,const DeepCollectionEquality().hash(_flights));
+}
+
+@override
+String toString() {
+    return 'DashboardNextWaveModel(leaveAt: $leaveAt, direction: $direction, stopName: $stopName, passengers: $passengers, vehiclesNeeded: $vehiclesNeeded, flights: $flights)';
+}
+
+
+}
+
+/// @nodoc
+abstract mixin class _$DashboardNextWaveModelCopyWith<$Res> implements $DashboardNextWaveModelCopyWith<$Res> {
+  factory _$DashboardNextWaveModelCopyWith(_DashboardNextWaveModel value, $Res Function(_DashboardNextWaveModel) _then) = __$DashboardNextWaveModelCopyWithImpl;
+@override @useResult
+$Res call({
+ DateTime leaveAt, String direction, String? stopName, int passengers, int? vehiclesNeeded, List<String> flights
+});
+
+
+
+
+}
+/// @nodoc
+class __$DashboardNextWaveModelCopyWithImpl<$Res>
+    implements _$DashboardNextWaveModelCopyWith<$Res> {
+  __$DashboardNextWaveModelCopyWithImpl(this._self, this._then);
+
+  final _DashboardNextWaveModel _self;
+  final $Res Function(_DashboardNextWaveModel) _then;
+
+/// Create a copy of DashboardNextWaveModel
+/// with the given fields replaced by the non-null parameter values.
+@override @pragma('vm:prefer-inline') $Res call({Object? leaveAt = null,Object? direction = null,Object? stopName = freezed,Object? passengers = null,Object? vehiclesNeeded = freezed,Object? flights = null,}) {
+  return _then(_DashboardNextWaveModel(
+leaveAt: null == leaveAt ? _self.leaveAt : leaveAt // ignore: cast_nullable_to_non_nullable
+as DateTime,direction: null == direction ? _self.direction : direction // ignore: cast_nullable_to_non_nullable
+as String,stopName: freezed == stopName ? _self.stopName : stopName // ignore: cast_nullable_to_non_nullable
+as String?,passengers: null == passengers ? _self.passengers : passengers // ignore: cast_nullable_to_non_nullable
+as int,vehiclesNeeded: freezed == vehiclesNeeded ? _self.vehiclesNeeded : vehiclesNeeded // ignore: cast_nullable_to_non_nullable
+as int?,flights: null == flights ? _self._flights : flights // ignore: cast_nullable_to_non_nullable
+as List<String>,
+  ));
+}
+
+
 }
 
 

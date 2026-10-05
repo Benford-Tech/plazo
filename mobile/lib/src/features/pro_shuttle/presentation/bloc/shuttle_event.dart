@@ -33,6 +33,14 @@ class ShuttlePassengerToggled extends ShuttleEvent {
   final String reservationId;
 }
 
+/// "Démarrer ce trajet" on a wave (V-A): its direction, stop and travellers are taken over.
+class ShuttleWaveChosen extends ShuttleEvent {
+  const ShuttleWaveChosen({required this.direction, this.stopId, required this.reservationIds});
+  final String direction;
+  final String? stopId;
+  final List<String> reservationIds;
+}
+
 class ShuttleVehicleChosen extends ShuttleEvent {
   const ShuttleVehicleChosen(this.vehicle);
   final TripVehicleChoice vehicle;

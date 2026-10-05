@@ -34,6 +34,9 @@ n'existent que dans Plazo Pro (`if (AppConstants.isPro)` dans `app_router.dart`)
   ou « Déposer au terminal » (clients arrivés au parking), « Démarrer le trajet (N clients) » après le choix du véhicule
   (le sien présélectionné, places vérifiées, hors service exclus), position partagée avec les passagers jusqu'à
   « Clients récupérés · retour parking » / « Clients déposés au terminal » (90 min au plus).
+  En tête de l'écran, la **Ligne du jour** (V-A du 05/10/2026) : les vagues de navettes du jour (`GET /internal/shuttle/forecast`,
+  toutes les 30 s ; puces aujourd'hui / demain / après-demain), avec « Démarrer ce trajet » qui présélectionne le sens, la
+  desserte et les clients de la vague.
 - **Pro — véhicule du jour** (`/pro/vehicule`, V-A du 05/10/2026) : après le poste Chauffeur, « Mon véhicule aujourd'hui »
   (navettes en service, celles prises par un collègue en gris, « Sans véhicule attitré »), enregistré sur le compte
   (`PATCH /internal/staff/me/vehicle`), présélectionné au départ d'un trajet, puis Plus › Mon véhicule.

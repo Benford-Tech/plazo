@@ -25,6 +25,10 @@ _PublicBookingModel _$PublicBookingModelFromJson(
   customerPhone: json['customerPhone'] as String? ?? '',
   plate: json['plate'] as String,
   returnFlight: json['returnFlight'] as String?,
+  departureFlight: json['departureFlight'] as String?,
+  outbound: json['outbound'] == null
+      ? null
+      : OutboundFlightModel.fromJson(json['outbound'] as Map<String, dynamic>),
   passengers: (json['passengers'] as num).toInt(),
   days: (json['days'] as num?)?.toInt(),
   priceCents: (json['priceCents'] as num?)?.toInt(),
@@ -48,6 +52,8 @@ Map<String, dynamic> _$PublicBookingModelToJson(_PublicBookingModel instance) =>
       'customerPhone': instance.customerPhone,
       'plate': instance.plate,
       'returnFlight': instance.returnFlight,
+      'departureFlight': instance.departureFlight,
+      'outbound': instance.outbound,
       'passengers': instance.passengers,
       'days': instance.days,
       'priceCents': instance.priceCents,
@@ -166,3 +172,22 @@ _CheckoutModel _$CheckoutModelFromJson(Map<String, dynamic> json) =>
 
 Map<String, dynamic> _$CheckoutModelToJson(_CheckoutModel instance) =>
     <String, dynamic>{'url': instance.url, 'paid': instance.paid};
+
+_OutboundFlightModel _$OutboundFlightModelFromJson(Map<String, dynamic> json) =>
+    _OutboundFlightModel(
+      status: json['status'] as String?,
+      scheduledAt: json['scheduledAt'] as String?,
+      estimatedAt: json['estimatedAt'] as String?,
+      terminal: json['terminal'] as String?,
+      shuttleAt: json['shuttleAt'] as String?,
+    );
+
+Map<String, dynamic> _$OutboundFlightModelToJson(
+  _OutboundFlightModel instance,
+) => <String, dynamic>{
+  'status': instance.status,
+  'scheduledAt': instance.scheduledAt,
+  'estimatedAt': instance.estimatedAt,
+  'terminal': instance.terminal,
+  'shuttleAt': instance.shuttleAt,
+};

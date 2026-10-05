@@ -92,6 +92,16 @@ Ne construire QUE ce qui règle la douleur n°1 du client.
      « Votre navette est partie » puis « Votre navette est là » à 150 m de la desserte, via `traveller_devices` enregistrés par
      `PUT /public/bookings/:ref/devices` avec le jeton de la réservation ; app voyageur = seconde app OneSignal,
      `ONESIGNAL_TRAVELLER_APP_ID/_REST_API_KEY`, à défaut celles du personnel).
+   - Décisions du 05/10/2026 (soir) : **V-A « Ligne du jour »** et **F-A vol aller suivi** : le vol aller
+     (`Reservation.departureFlight`, suivi du décollage dans `departure*` par le même fournisseur, même cache, rafraîchi par le
+     cron `track-return-flights` et par la prévision ; champ facultatif sur le site, l'app, la saisie pro et l'import) et deux
+     réglages du parking (`terminalLeadMinutes` 120, `landingDelayMinutes` 30) donnent l'heure à laquelle chaque navette doit
+     partir ; `domain/shuttle-waves.ts` regroupe en **vagues** (15 min, même sens, même desserte ; passagers face aux places du
+     plus grand véhicule en service, « 2 navettes » au-delà) ; `GET /internal/shuttle/forecast?date=` ; page **Navettes**
+     (`/pro/navettes`, aujourd'hui / demain / après-demain) et tuile « Navettes » du tableau de bord (prochaine vague, alertes
+     `departure_cancelled`, `departure_delayed`, `wave_overflow`) ; dans Plazo Pro, carte « Ligne du jour » en tête de l'onglet
+     Navette avec « Démarrer ce trajet » (sens, desserte et passagers présélectionnés) ; le voyageur voit « navette vers le
+     terminal prévue vers HH:MM » (`PublicBooking.outbound`).
 
 ## Liste « plus tard » (le « bien plus »), hors MVP
 

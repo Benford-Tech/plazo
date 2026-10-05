@@ -15,6 +15,7 @@ abstract class ShuttleRepository {
   Future<Either<Failure, StaffTripModel?>> current();
   Future<Either<Failure, List<ShuttleStopModel>>> stops();
   Future<Either<Failure, LiveShuttlesModel>> live();
+  Future<Either<Failure, ShuttleForecastModel>> forecast(String? date);
   Future<Either<Failure, StaffTripModel>> start(List<String> reservationIds, TripVehicleChoice vehicle, String direction, String? stopId);
   Future<Either<Failure, StaffTripModel>> sendPosition(String tripId, GeoPosition position);
   Future<Either<Failure, StaffTripModel>> end(String tripId);
@@ -51,6 +52,9 @@ class ShuttleRepositoryImpl implements ShuttleRepository {
 
   @override
   Future<Either<Failure, LiveShuttlesModel>> live() => _dataSource.live().makeRequest();
+
+  @override
+  Future<Either<Failure, ShuttleForecastModel>> forecast(String? date) => _dataSource.forecast(date).makeRequest();
 
   @override
   Future<Either<Failure, StaffTripModel>> start(List<String> reservationIds, TripVehicleChoice vehicle, String direction, String? stopId) =>

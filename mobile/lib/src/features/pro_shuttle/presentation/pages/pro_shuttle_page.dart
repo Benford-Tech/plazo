@@ -22,7 +22,9 @@ import '../../data/datasources/shuttle_data_source.dart';
 import '../../data/models/shuttle_models.dart';
 import '../bloc/live_shuttles_bloc.dart';
 import '../bloc/shuttle_bloc.dart';
+import '../bloc/shuttle_waves_bloc.dart';
 import '../widgets/live_shuttles_card.dart';
+import '../widgets/shuttle_waves_card.dart';
 import '../widgets/vehicle_sheet.dart';
 
 /// R4, the driver's "Navette" screen: the trip in progress (position shared), two sides (T-A,
@@ -41,6 +43,7 @@ class ProShuttlePage extends StatelessWidget implements AutoRouteWrapper {
       providers: [
         BlocProvider(create: (_) => locator<ShuttleBloc>()..add(ShuttleStarted(staffId: staff?.id, vehicleId: staff?.vehicle?.id))),
         BlocProvider(create: (_) => locator<LiveShuttlesBloc>()..add(const LiveShuttlesStarted())),
+        BlocProvider(create: (_) => locator<ShuttleWavesBloc>()..add(const ShuttleWavesStarted())),
       ],
       child: this,
     );
@@ -66,12 +69,21 @@ class ProShuttlePage extends StatelessWidget implements AutoRouteWrapper {
             onRefresh: () async {
               bloc.add(const ShuttlePolled());
               context.read<LiveShuttlesBloc>().add(const LiveShuttlesPolled());
+              context.read<ShuttleWavesBloc>().add(const ShuttleWavesPolled());
             },
             child: ListView(
               padding: const EdgeInsets.fromLTRB(16, 14, 16, 28),
               children: [
                 // P-A: the team's shuttles on the road (the driver's own included).
                 const LiveShuttlesCard(),
+                const SizedBox(height: 12),
+                // V-A: the day's waves; "Démarrer ce trajet" preselects the wave's travellers below.
+                ShuttleWavesCard(
+                  running: state.running,
+                  onStart: (wave) => bloc.add(
+                    ShuttleWaveChosen(direction: wave.direction, stopId: wave.stopId, reservationIds: wave.members.map((m) => m.reservationId).toList()),
+                  ),
+                ),
                 const SizedBox(height: 12),
                 if (state.running) _RunningCard(state: state) else Text(state.dropoff ? 'shuttle.intro_dropoff'.tr() : 'shuttle.intro'.tr(), style: AppText.muted()),
                 const SizedBox(height: 10),

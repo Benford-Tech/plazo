@@ -67,6 +67,7 @@ class _FormState extends State<_Form> {
   late final _email = TextEditingController(text: _bloc.state.input.customerEmail ?? '');
   late final _plate = TextEditingController(text: _bloc.state.input.plate);
   late final _flight = TextEditingController(text: _bloc.state.input.returnFlight ?? '');
+  late final _outbound = TextEditingController(text: _bloc.state.input.departureFlight ?? '');
   late final _detail = TextEditingController(text: _bloc.state.input.channelDetail ?? '');
   late final _notes = TextEditingController(text: _bloc.state.input.notes ?? '');
 
@@ -173,6 +174,19 @@ class _FormState extends State<_Form> {
                 keyboardType: TextInputType.emailAddress,
                 decoration: InputDecoration(labelText: 'res.email_optional'.tr(), errorText: err('customerEmail')),
                 onChanged: (v) => _set((x) => x.copyWith(customerEmail: v)),
+              ),
+              const SizedBox(height: 12),
+              TextField(
+                key: const Key('f-outbound'),
+                controller: _outbound,
+                textCapitalization: TextCapitalization.characters,
+                decoration: InputDecoration(
+                  labelText: 'res.departure_flight'.tr(),
+                  hintText: 'AF 7641',
+                  helperText: 'res.departure_flight_help'.tr(),
+                  errorText: err('departureFlight'),
+                ),
+                onChanged: (v) => _set((x) => x.copyWith(departureFlight: v.toUpperCase())),
               ),
               const SizedBox(height: 12),
               Row(

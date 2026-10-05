@@ -53,6 +53,7 @@ class ShuttleBloc extends Bloc<ShuttleEvent, ShuttleState> {
     on<ShuttleStopChanged>((event, emit) => emit(state.copyWith(stopId: state.running ? state.stopId : event.stopId)));
     on<ShuttlePassengerToggled>(_onToggled);
     on<ShuttleVehicleChosen>((event, emit) => emit(state.copyWith(vehicle: event.vehicle)));
+    on<ShuttleWaveChosen>(_onWaveChosen);
     on<ShuttleStartRequested>(_onStartRequested);
     on<ShuttlePositionChanged>(_onPosition);
     on<ShuttleEndRequested>(_onEndRequested);
@@ -119,6 +120,17 @@ class ShuttleBloc extends Bloc<ShuttleEvent, ShuttleState> {
     if (state.running || event.direction == state.direction) return;
     emit(state.copyWith(direction: event.direction, selected: const {}, errorCode: null, actionState: ViewState.idle));
     await _loadPickups(emit, initial: !state.loaded);
+  }
+
+  /// A wave taken over: switch to its side and stop, then select the travellers the list offers.
+  Future<void> _onWaveChosen(ShuttleWaveChosen event, Emitter<ShuttleState> emit) async {
+    if (state.running) return;
+    emit(state.copyWith(direction: event.direction, stopId: event.stopId, selected: const {}, errorCode: null, actionState: ViewState.idle));
+    await _loadPickups(emit, initial: !state.loaded);
+    final offered = state.direction == 'dropoff'
+        ? (state.departures?.rows ?? const []).where((r) => r.tripId == null).map((r) => r.reservationId)
+        : (state.pickups?.rows ?? const []).where((r) => r.tripId == null).map((r) => r.reservationId);
+    emit(state.copyWith(selected: event.reservationIds.where(offered.toSet().contains).toSet()));
   }
 
   /// Loads the list of the current direction: the returns to pick up, or the arrivals to drop off.

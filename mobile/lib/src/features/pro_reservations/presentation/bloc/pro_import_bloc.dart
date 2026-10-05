@@ -42,6 +42,7 @@ abstract class ProImportState with _$ProImportState {
       customerEmail: p.customerEmail,
       plate: p.plate ?? '',
       returnFlight: p.returnFlight,
+      departureFlight: p.departureFlight,
       externalReference: p.externalReference,
       priceCents: p.priceCents,
     );

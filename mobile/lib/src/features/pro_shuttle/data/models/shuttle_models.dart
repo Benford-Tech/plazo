@@ -235,3 +235,96 @@ abstract class CurrentTripModel with _$CurrentTripModel {
 
   factory CurrentTripModel.fromJson(Map<String, dynamic> json) => _$CurrentTripModelFromJson(json);
 }
+
+// ---------------------------------------------------------------- shuttle waves (V-A, 05/10/2026)
+
+/// The flight end that matters for a wave member: take-off (drop-off) or landing (pick-up).
+@freezed
+abstract class WaveFlightModel with _$WaveFlightModel {
+  const WaveFlightModel._();
+
+  const factory WaveFlightModel({required String number, String? status, DateTime? scheduledAt, DateTime? estimatedAt, DateTime? actualAt, String? terminal}) =
+      _WaveFlightModel;
+
+  factory WaveFlightModel.fromJson(Map<String, dynamic> json) => _$WaveFlightModelFromJson(json);
+
+  /// The best known time: actual, revised, then scheduled.
+  DateTime? get at => actualAt ?? estimatedAt ?? scheduledAt;
+
+  /// Minutes of delay against the schedule (0 when unknown or on time).
+  int get lateMinutes => scheduledAt == null || estimatedAt == null ? 0 : estimatedAt!.difference(scheduledAt!).inMinutes.clamp(0, 1 << 20);
+}
+
+@freezed
+abstract class WaveMemberModel with _$WaveMemberModel {
+  const factory WaveMemberModel({
+    required String reservationId,
+    required String reference,
+    required String customerName,
+    @Default(1) int passengers,
+    required String plate,
+    @Default('upcoming') String status,
+    @Default('dropoff') String direction,
+    String? stopId,
+    String? stopName,
+    required DateTime leaveAt,
+    DateTime? meetAt,
+    WaveFlightModel? flight,
+    @Default(false) bool noFlight,
+    @Default('planned') String state,
+    String? tripId,
+  }) = _WaveMemberModel;
+
+  factory WaveMemberModel.fromJson(Map<String, dynamic> json) => _$WaveMemberModelFromJson(json);
+}
+
+/// Travellers whose shuttle must leave within the same window, same direction and stop.
+@freezed
+abstract class ShuttleWaveModel with _$ShuttleWaveModel {
+  const ShuttleWaveModel._();
+
+  const factory ShuttleWaveModel({
+    required String id,
+    @Default('dropoff') String direction,
+    String? stopId,
+    String? stopName,
+    required DateTime leaveAt,
+    DateTime? meetAt,
+    @Default(0) int passengers,
+    int? seats,
+    int? vehiclesNeeded,
+    @Default(0) int noFlight,
+    @Default([]) List<String> flights,
+    @Default('planned') String state,
+    @Default([]) List<WaveMemberModel> members,
+  }) = _ShuttleWaveModel;
+
+  factory ShuttleWaveModel.fromJson(Map<String, dynamic> json) => _$ShuttleWaveModelFromJson(json);
+
+  bool get dropoff => direction == 'dropoff';
+  bool get planned => state == 'planned';
+  bool get overflow => (vehiclesNeeded ?? 1) > 1;
+}
+
+@freezed
+abstract class WaveTimesModel with _$WaveTimesModel {
+  const factory WaveTimesModel({@Default(8) int shuttleTravelMinutes, @Default(120) int terminalLeadMinutes, @Default(30) int landingDelayMinutes}) =
+      _WaveTimesModel;
+
+  factory WaveTimesModel.fromJson(Map<String, dynamic> json) => _$WaveTimesModelFromJson(json);
+}
+
+/// GET /internal/shuttle/forecast?date=: the day's waves ("Ligne du jour").
+@freezed
+abstract class ShuttleForecastModel with _$ShuttleForecastModel {
+  const factory ShuttleForecastModel({
+    required DateTime serverTime,
+    required String date,
+    @Default(WaveTimesModel()) WaveTimesModel times,
+    int? seats,
+    @Default(0) int vehiclesInService,
+    @Default([]) List<ShuttleWaveModel> waves,
+  }) = _ShuttleForecastModel;
+
+  factory ShuttleForecastModel.fromJson(Map<String, dynamic> json) => _$ShuttleForecastModelFromJson(json);
+}

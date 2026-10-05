@@ -8,6 +8,7 @@ class BookingDraft {
     this.customerEmail = '',
     this.plate = '',
     this.returnFlight = '',
+    this.departureFlight = '',
     this.passengers = 1,
     this.acceptTerms = false,
   });
@@ -17,6 +18,7 @@ class BookingDraft {
   final String customerEmail;
   final String plate;
   final String returnFlight;
+  final String departureFlight;
   final int passengers;
   final bool acceptTerms;
 }

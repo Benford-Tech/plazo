@@ -70,6 +70,14 @@ class GetStopsUseCase with UseCase<List<ShuttleStopModel>, NoParams> {
   Future<Either<Failure, List<ShuttleStopModel>>> call(NoParams params) => _repository.stops();
 }
 
+/// The day's shuttle waves (V-A "Ligne du jour"): `params` is the local day, or null for today.
+class GetShuttleForecastUseCase with UseCase<ShuttleForecastModel, String?> {
+  GetShuttleForecastUseCase(this._repository);
+  final ShuttleRepository _repository;
+  @override
+  Future<Either<Failure, ShuttleForecastModel>> call(String? params) => _repository.forecast(params);
+}
+
 /// The operator's running shuttles for the team's live map (P-A).
 class GetLiveShuttlesUseCase with UseCase<LiveShuttlesModel, NoParams> {
   GetLiveShuttlesUseCase(this._repository);

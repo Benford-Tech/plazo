@@ -9,12 +9,16 @@ class ParkingSettingsInput {
     required this.totalCapacity,
     required this.safetyMarginPct,
     required this.shuttleTravelMinutes,
+    this.terminalLeadMinutes = 120,
+    this.landingDelayMinutes = 30,
   });
   final String name;
   final String? address;
   final int totalCapacity;
   final int safetyMarginPct;
   final int shuttleTravelMinutes;
+  final int terminalLeadMinutes;
+  final int landingDelayMinutes;
 
   Map<String, dynamic> toBody() => {
     'name': name,
@@ -22,6 +26,8 @@ class ParkingSettingsInput {
     'totalCapacity': totalCapacity,
     'safetyMarginPct': safetyMarginPct,
     'shuttleTravelMinutes': shuttleTravelMinutes,
+    'terminalLeadMinutes': terminalLeadMinutes,
+    'landingDelayMinutes': landingDelayMinutes,
   };
 }
 

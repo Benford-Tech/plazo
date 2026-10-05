@@ -21,6 +21,10 @@ abstract class PublicBookingModel with _$PublicBookingModel {
     @Default('') String customerPhone,
     required String plate,
     String? returnFlight,
+
+    /// Outbound flight (V-A) and, when tracked, when the shuttle to the terminal leaves (local).
+    String? departureFlight,
+    OutboundFlightModel? outbound,
     required int passengers,
     int? days,
     int? priceCents,
@@ -131,6 +135,7 @@ class BookingInput {
     required this.customerEmail,
     required this.plate,
     this.returnFlight,
+    this.departureFlight,
     required this.passengers,
     required this.acceptTerms,
     this.idempotencyKey,
@@ -145,6 +150,7 @@ class BookingInput {
   final String customerEmail;
   final String plate;
   final String? returnFlight;
+  final String? departureFlight;
   final int passengers;
   final bool acceptTerms;
   final String? idempotencyKey;
@@ -159,8 +165,17 @@ class BookingInput {
     'customerEmail': customerEmail,
     'plate': plate,
     if (returnFlight != null && returnFlight!.isNotEmpty) 'returnFlight': returnFlight,
+    if (departureFlight != null && departureFlight!.isNotEmpty) 'departureFlight': departureFlight,
     'passengers': passengers,
     'acceptTerms': acceptTerms,
     if (idempotencyKey != null) 'idempotencyKey': idempotencyKey,
   };
+}
+
+/// The outbound flight as tracked, and the planned departure of the shuttle to the terminal (local "YYYY-MM-DDTHH:mm").
+@freezed
+abstract class OutboundFlightModel with _$OutboundFlightModel {
+  const factory OutboundFlightModel({String? status, String? scheduledAt, String? estimatedAt, String? terminal, String? shuttleAt}) = _OutboundFlightModel;
+
+  factory OutboundFlightModel.fromJson(Map<String, dynamic> json) => _$OutboundFlightModelFromJson(json);
 }

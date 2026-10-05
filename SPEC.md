@@ -173,6 +173,25 @@ Hors MVP : optimisation d'itinéraire.
   navette est partie · arrivée dans ~N min » puis « Votre navette est là » quand la navette est à moins de 150 m de la
   desserte, une seule fois. Les téléphones des voyageurs sont effacés avec la réservation et deux jours après le retour.
 
+#### Vagues de navettes : vols aller et retour combinés aux passagers (décisions du 05/10/2026, mis en œuvre)
+
+- **F-A « Vol aller suivi »** : le n° de vol aller est demandé (facultatif) partout où le retour l'est : site, app voyageur,
+  saisie au comptoir, import d'un mail (« Numéro du vol aller » d'Allopark). Le serveur le suit comme le retour (même
+  fournisseur, une requête par vol, dans les 24 h avant le décollage et 2 h après, cache de 5 minutes, par le cron
+  `track-return-flights` et à chaque lecture de la prévision) : décollage prévu / révisé, statut (parti = final), terminal.
+  Rien n'est envoyé au voyageur sur ce vol ; un vol aller annulé ou retardé de 15 min et plus apparaît dans « À traiter ».
+- **Deux réglages par parking** : « Présence au terminal avant le décollage » (120 min) et « Délai après l'atterrissage »
+  (30 min), avec la durée du trajet navette. Pour chaque client, l'heure à laquelle sa navette doit quitter le parking :
+  aller = décollage − présence − trajet (sans vol : son heure d'arrivée au parking, signalé « sans vol ») ; retour =
+  atterrissage réel ou estimé + délai − trajet (sans vol : l'heure de retour saisie).
+- **V-A « Ligne du jour »** : les clients dont les heures tombent dans une même fenêtre de 15 minutes, même sens et même
+  desserte, forment une **vague** (heure de départ du parking, sens, desserte, passagers face aux places du plus grand
+  véhicule en service, « N navettes » au-delà, vols, état à venir / en cours / faite). `GET /internal/shuttle/forecast?date=`
+  (aujourd'hui par défaut). Espace pro web : page **Navettes** (aujourd'hui, demain, après-demain), tuile « Navettes » du
+  tableau de bord avec la prochaine vague. Plazo Pro : carte « Ligne du jour » en tête de l'onglet Navette, « Démarrer ce
+  trajet » bascule la file du chauffeur sur le sens et la desserte de la vague avec ses clients présélectionnés. Le voyageur
+  voit sur sa réservation « navette vers le terminal prévue vers HH:MM » quand son vol aller est suivi.
+
 #### Le jour du retour (mis en œuvre, maquette validée « Votre retour »)
 
 Le flux réel, côté voyageur (app, réservation Plazo ouverte par le lien ou par référence + email) :

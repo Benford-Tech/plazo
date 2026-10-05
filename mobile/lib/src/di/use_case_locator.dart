@@ -71,6 +71,7 @@ void _initUseCaseLocator() {
     ..registerLazySingleton(() => GetVehiclesUseCase(locator()))
     ..registerLazySingleton(() => GetStopsUseCase(locator()))
     ..registerLazySingleton(() => GetLiveShuttlesUseCase(locator()))
+    ..registerLazySingleton(() => GetShuttleForecastUseCase(locator()))
     ..registerLazySingleton(() => GetCurrentTripUseCase(locator()))
     ..registerLazySingleton(() => StartTripUseCase(locator()))
     ..registerLazySingleton(() => SendTripPositionUseCase(locator()))

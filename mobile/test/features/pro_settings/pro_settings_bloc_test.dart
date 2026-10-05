@@ -115,7 +115,7 @@ void main() {
       expect(b.state.parking?.bookableCapacity, 144);
       expect(b.state.notice, 'settings.saved');
       final params = verify(() => updateParking(captureAny())).captured.single as UpdateParkingParams;
-      expect(params.input.toBody(), {'name': 'Parkair Lyon', 'address': null, 'totalCapacity': 160, 'safetyMarginPct': 10, 'shuttleTravelMinutes': 9});
+      expect(params.input.toBody(), {'name': 'Parkair Lyon', 'address': null, 'totalCapacity': 160, 'safetyMarginPct': 10, 'shuttleTravelMinutes': 9, 'terminalLeadMinutes': 120, 'landingDelayMinutes': 30});
       expect(bookablePreview(160, 10), 144);
     });
 

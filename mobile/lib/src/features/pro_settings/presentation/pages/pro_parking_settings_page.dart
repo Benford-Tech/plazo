@@ -88,10 +88,12 @@ class _ParkingFormState extends State<_ParkingForm> {
   late final _capacity = TextEditingController(text: '${widget.parking.totalCapacity}');
   late final _margin = TextEditingController(text: '${widget.parking.safetyMarginPct}');
   late final _shuttle = TextEditingController(text: '${widget.parking.shuttleTravelMinutes}');
+  late final _lead = TextEditingController(text: '${widget.parking.terminalLeadMinutes}');
+  late final _delay = TextEditingController(text: '${widget.parking.landingDelayMinutes}');
 
   @override
   void dispose() {
-    for (final c in [_name, _address, _capacity, _margin, _shuttle]) {
+    for (final c in [_name, _address, _capacity, _margin, _shuttle, _lead, _delay]) {
       c.dispose();
     }
     super.dispose();
@@ -162,6 +164,30 @@ class _ParkingFormState extends State<_ParkingForm> {
             errorText: err('shuttleTravelMinutes'),
           ),
         ),
+        const SizedBox(height: 10),
+        TextField(
+          key: const Key('set-lead'),
+          controller: _lead,
+          keyboardType: TextInputType.number,
+          decoration: InputDecoration(
+            labelText: 'settings.terminal_lead'.tr(),
+            helperText: 'settings.terminal_lead_help'.tr(),
+            helperMaxLines: 3,
+            errorText: err('terminalLeadMinutes'),
+          ),
+        ),
+        const SizedBox(height: 10),
+        TextField(
+          key: const Key('set-delay'),
+          controller: _delay,
+          keyboardType: TextInputType.number,
+          decoration: InputDecoration(
+            labelText: 'settings.landing_delay'.tr(),
+            helperText: 'settings.landing_delay_help'.tr(),
+            helperMaxLines: 3,
+            errorText: err('landingDelayMinutes'),
+          ),
+        ),
         const SizedBox(height: 14),
         GradientButton(
           key: const Key('set-save'),
@@ -175,6 +201,8 @@ class _ParkingFormState extends State<_ParkingForm> {
                 totalCapacity: int.tryParse(_capacity.text) ?? 0,
                 safetyMarginPct: int.tryParse(_margin.text) ?? 0,
                 shuttleTravelMinutes: int.tryParse(_shuttle.text) ?? 0,
+                terminalLeadMinutes: int.tryParse(_lead.text) ?? 120,
+                landingDelayMinutes: int.tryParse(_delay.text) ?? 30,
               ),
             ),
           ),

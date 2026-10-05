@@ -5,6 +5,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 
 import '../../../../core/constants/product.g.dart';
 import '../../../../core/enums/view_state.dart';
+import '../../../../core/helpers/formatters.dart';
 import '../../../../core/helpers/plate.dart';
 import '../../../../core/helpers/roles.dart';
 import '../../../../core/router/app_router.dart';
@@ -109,6 +110,7 @@ class ProReservationPage extends StatelessWidget implements AutoRouteWrapper {
     customerEmail: r.customerEmail,
     plate: r.plate,
     returnFlight: r.returnFlight,
+    departureFlight: r.departureFlight,
     notes: r.notes,
   );
 }
@@ -147,6 +149,16 @@ class _Sheet extends StatelessWidget {
           rows: [
             ('res.arrival'.tr(), dayTime(r.arrivalAt)),
             ('res.return'.tr(), dayTime(r.returnAt)),
+            if (r.departureFlight != null)
+              (
+                'res.departure_flight'.tr(),
+                [
+                  r.departureFlight!,
+                  if (r.departureStatus != null) 'res.departure_status.${r.departureStatus}'.tr(),
+                  if ((r.departureEstimatedAt ?? r.departureScheduledAt) != null)
+                    'res.take_off'.tr(args: [hhmm((r.departureEstimatedAt ?? r.departureScheduledAt)!)]),
+                ].join(' · '),
+              ),
             if (r.returnFlight != null) ('res.return_flight'.tr(), r.returnFlight!),
             ('res.passengers'.tr(), '${r.passengers}'),
             ('res.channel_label'.tr(), r.channelDetail != null ? '$channel · ${r.channelDetail}' : channel),
