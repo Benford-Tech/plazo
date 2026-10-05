@@ -34,6 +34,15 @@ n'existent que dans Plazo Pro (`if (AppConstants.isPro)` dans `app_router.dart`)
   ou « Déposer au terminal » (clients arrivés au parking), « Démarrer le trajet (N clients) » après le choix du véhicule
   (le sien présélectionné, places vérifiées, hors service exclus), position partagée avec les passagers jusqu'à
   « Clients récupérés · retour parking » / « Clients déposés au terminal » (90 min au plus).
+- **Pro — véhicule du jour** (`/pro/vehicule`, V-A du 05/10/2026) : après le poste Chauffeur, « Mon véhicule aujourd'hui »
+  (navettes en service, celles prises par un collègue en gris, « Sans véhicule attitré »), enregistré sur le compte
+  (`PATCH /internal/staff/me/vehicle`), présélectionné au départ d'un trajet, puis Plus › Mon véhicule.
+- **Pro — dessertes et navettes en direct** (D-A et P-A du 05/10/2026) : puces « Desserte » (Aéroport, gare…) au départ
+  d'un trajet quand le parking en déclare ; carte « Navettes en cours » (`LiveShuttlesBloc`, `GET /internal/shuttle/live`,
+  toutes les 12 s) en tête de l'écran Navette et bandeau sur Aujourd'hui.
+- **Notifications navette** (N-A du 05/10/2026) : réglage « Navettes » du personnel ; côté voyageur, le téléphone est
+  enregistré pendant le séjour (`PUT /public/bookings/:ref/devices`, `EnableShuttlePushesUseCase`) pour « Votre navette est
+  partie » / « est là » — l'app voyageur a sa propre app OneSignal (`ONESIGNAL_APP_ID` à la compilation de ce flavor).
 - **Pro — poste du jour** (`/pro/poste`, R-C du 04/10/2026) : « Aujourd'hui, je suis… » après la première connexion, puis
   Plus › Mon poste ; enregistré sur le compte (`PATCH /internal/staff/me/post`), visible du gérant dans Équipe ; les quatre
   onglets de `ProShellPage` suivent le poste (`core/helpers/posts.dart`), les droits restent ceux du rôle.

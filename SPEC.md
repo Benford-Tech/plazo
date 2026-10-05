@@ -152,6 +152,26 @@ Hors MVP : optimisation d'itinéraire.
   d'atterrissage renvoie vers la réservation sans promettre ce suivi. Le jour du retour, quand sa propre navette vient le chercher, c'est la carte
   « Navette en route vers vous » qui prend le relais.
 
+#### Véhicule du jour, dessertes, navettes en direct, notifications (décisions du 05/10/2026, mis en œuvre)
+
+- **V-A « Mon véhicule aujourd'hui »** : quand un membre choisit le poste Chauffeur, l'app lui propose les navettes en
+  service et libres (celle prise par un collègue apparaît en gris avec son nom) ; le choix est enregistré sur le compte
+  (`Staff.vehicleId`, valable le jour même), présélectionné au départ de chaque trajet, modifiable dans Plus › Mon
+  véhicule, rendu dès qu'un autre poste est choisi ; le gérant le voit dans Équipe (web).
+- **D-A « Dessertes »** : en plus de l'aéroport (le point de rendez-vous du retour, toujours desservi), le gérant déclare
+  les lieux desservis (gare TGV, hôtel…) avec leurs coordonnées (géocodeur IGN) et des consignes pour le voyageur, dans
+  Réglages › Dessertes de la navette. Le chauffeur choisit la desserte au départ d'un trajet (puces « Desserte ») ; une
+  réservation peut indiquer la sienne (champ « Desserte » de la fiche, visible dans la file du chauffeur) ; le suivi du
+  voyageur le jour du retour mesure la distance jusqu'à la desserte du trajet.
+- **P-A « Navettes en direct »** : toute l'équipe voit les navettes en cours sur une carte IGN (parking, dessertes, un
+  bus par trajet, le sien en jaune) avec véhicule, chauffeur, sens, clients, distance à la desserte et au parking, en tête
+  de l'écran Navette et en bandeau sur Aujourd'hui ; rafraîchi toutes les 12 s (`GET /internal/shuttle/live`).
+- **N-A « Notifications »** : pushs OneSignal au personnel abonné (réglage « Navettes », le chauffeur du trajet exclu) :
+  « Navette partie chercher des clients » / « vers le terminal » au départ, « Navette de retour au parking » / « Clients
+  déposés » à la fin ; au voyageur (app, téléphone enregistré pendant le séjour avec le jeton de la réservation) : « Votre
+  navette est partie · arrivée dans ~N min » puis « Votre navette est là » quand la navette est à moins de 150 m de la
+  desserte, une seule fois. Les téléphones des voyageurs sont effacés avec la réservation et deux jours après le retour.
+
 #### Le jour du retour (mis en œuvre, maquette validée « Votre retour »)
 
 Le flux réel, côté voyageur (app, réservation Plazo ouverte par le lien ou par référence + email) :
