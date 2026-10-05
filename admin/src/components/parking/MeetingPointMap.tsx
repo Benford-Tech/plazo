@@ -6,7 +6,7 @@ import { useEffect, useRef } from "react";
 /** IGN Géoplateforme "Plan IGN v2" (no key): a plan is easier to read than the aerial photo to find a terminal door. */
 const IGN_PLAN_TILES =
   "https://data.geopf.fr/wmts?SERVICE=WMTS&REQUEST=GetTile&VERSION=1.0.0&LAYER=GEOGRAPHICALGRIDSYSTEMS.PLANIGNV2&STYLE=normal&TILEMATRIXSET=PM&FORMAT=image/png&TILEMATRIX={z}&TILEROW={y}&TILECOL={x}";
-const YELLOW = "#F5C400";
+const YELLOW = "#A3E635";
 
 setWorkerUrl(maplibreWorkerUrl);
 
@@ -14,7 +14,7 @@ const STYLE: StyleSpecification = {
   version: 8,
   sources: { ign: { type: "raster", tiles: [IGN_PLAN_TILES], tileSize: 256, maxzoom: 19 } },
   layers: [
-    { id: "background", type: "background", paint: { "background-color": "#1d1f1a" } },
+    { id: "background", type: "background", paint: { "background-color": "#E6E8E4" } },
     { id: "ign-plan", type: "raster", source: "ign" },
   ],
 };
@@ -92,8 +92,8 @@ export default function MeetingPointMap({ point, center, onPick, flyTo }: Props)
 
   return (
     <div className="relative">
-      <div ref={containerRef} data-testid="meeting-point-map" className="h-72 w-full border border-border bg-[#1d1f1a]" />
-      <span className="pointer-events-none absolute bottom-1 right-1 bg-black/60 px-1.5 py-0.5 text-[10px] text-muted-foreground">© IGN – Plan IGN</span>
+      <div ref={containerRef} data-testid="meeting-point-map" className="h-72 w-full border border-border bg-[#E6E8E4]" />
+      <span className="pointer-events-none absolute bottom-1 right-1 bg-white/80 px-1.5 py-0.5 text-[10px] text-muted-foreground">© IGN – Plan IGN</span>
     </div>
   );
 }

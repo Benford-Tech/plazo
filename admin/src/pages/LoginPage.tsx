@@ -46,7 +46,7 @@ export default function LoginPage() {
         </Alert>
       )}
       {/* F-A / C-C: the form in a card bordered in yellow, the eyebrow and the welcome inside it. */}
-      <Card className="border-primary bg-background">
+      <Card className="border-primary bg-card shadow-[0_18px_40px_-22px_rgba(20,30,20,.35)]">
         <CardContent className="pt-5">
           <p className="font-mono text-[13px] uppercase tracking-[0.06em] text-primary">{fr.login.subtitle}</p>
           <h1 className="mt-3 text-[26px] font-bold uppercase tracking-wide">{fr.login.welcome}</h1>

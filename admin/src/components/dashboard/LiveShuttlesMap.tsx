@@ -8,15 +8,15 @@ import type { LiveShuttles, LiveTrip, ShuttleStop } from "@/lib/types";
 /** IGN Géoplateforme "Plan IGN v2" (no key), like the meeting point map. */
 const IGN_PLAN_TILES =
   "https://data.geopf.fr/wmts?SERVICE=WMTS&REQUEST=GetTile&VERSION=1.0.0&LAYER=GEOGRAPHICALGRIDSYSTEMS.PLANIGNV2&STYLE=normal&TILEMATRIXSET=PM&FORMAT=image/png&TILEMATRIX={z}&TILEROW={y}&TILECOL={x}";
-/** Colours of the "Flotte" mockup (A-A). */
-const YELLOW = "#F5C400";
-const BLACK = "#0B0B0C";
-const CARD = "#17171B";
-const LINE = "#2A2A30";
-const FG = "#F3F3F0";
-const MUTED = "#A8A8A2";
-const OK = "#22C55E";
-const WARN = "#F59E0B";
+/** Colours of the "Opérations" mockup (C-B). */
+const YELLOW = "#A3E635";
+const BLACK = "#0F2A14";
+const CARD = "#FFFFFF";
+const LINE = "#E4E6E2";
+const FG = "#1A1D1A";
+const MUTED = "#6B7280";
+const OK = "#16A34A";
+const WARN = "#D97706";
 /** A position older than this is "stale": amber dot instead of green. */
 const FRESH_SECONDS = 90;
 
@@ -26,9 +26,9 @@ const STYLE: StyleSpecification = {
   version: 8,
   sources: { ign: { type: "raster", tiles: [IGN_PLAN_TILES], tileSize: 256, maxzoom: 19 } },
   layers: [
-    { id: "background", type: "background", paint: { "background-color": "#1B1C22" } },
-    // Dimmed and desaturated so the yellow pins stand out on the dark board.
-    { id: "ign-plan", type: "raster", source: "ign", paint: { "raster-saturation": -0.8, "raster-brightness-max": 0.42, "raster-contrast": 0.15 } },
+    { id: "background", type: "background", paint: { "background-color": "#E6E8E4" } },
+    // Slightly desaturated so the lime pins stand out on the plan.
+    { id: "ign-plan", type: "raster", source: "ign", paint: { "raster-saturation": -0.45 } },
   ],
 };
 
@@ -43,7 +43,7 @@ function el(html: string, style: string): HTMLElement {
 function squarePin(label: string): HTMLElement {
   return el(
     `<b>${label}</b>`,
-    `display:grid;place-items:center;min-width:34px;height:34px;padding:0 8px;border-radius:8px;background:${CARD};border:1px solid ${LINE};color:${FG};font:700 12px "JetBrains Mono",monospace;box-shadow:0 8px 20px rgba(0,0,0,.5)`,
+    `display:grid;place-items:center;min-width:34px;height:34px;padding:0 8px;border-radius:8px;background:${CARD};border:1px solid ${LINE};color:${FG};font:700 12px "JetBrains Mono",monospace;box-shadow:0 8px 20px rgba(0,0,0,.18)`,
   );
 }
 
@@ -51,9 +51,9 @@ function squarePin(label: string): HTMLElement {
 function busPin(index: number, fresh: boolean): HTMLElement {
   const n = String(index + 1).padStart(2, "0");
   return el(
-    `<span style="position:absolute;inset:0;border-radius:50% 50% 50% 0;transform:rotate(-45deg);background:${YELLOW};box-shadow:0 8px 20px rgba(0,0,0,.5)"></span>` +
+    `<span style="position:absolute;inset:0;border-radius:50% 50% 50% 0;transform:rotate(-45deg);background:${YELLOW};box-shadow:0 8px 20px rgba(0,0,0,.25)"></span>` +
       `<b style="position:relative;font:700 13px 'JetBrains Mono',monospace;color:${BLACK}">${n}</b>` +
-      `<i style="position:absolute;top:-3px;right:-3px;width:12px;height:12px;border-radius:50%;border:2px solid #1B1C22;background:${fresh ? OK : WARN}"></i>`,
+      `<i style="position:absolute;top:-3px;right:-3px;width:12px;height:12px;border-radius:50%;border:2px solid #FFFFFF;background:${fresh ? OK : WARN}"></i>`,
     "position:relative;width:40px;height:40px;display:grid;place-items:center",
   );
 }
@@ -62,7 +62,7 @@ function popupHtml(trip: LiveTrip, index: number): string {
   const m = fr.dashboard.map;
   const where = trip.toStop && trip.stop ? m.toStop(trip.stop.name, trip.toStop.etaMinutes) : trip.toParking ? m.toParking(trip.toParking.etaMinutes) : m.noPosition;
   const vehicle = [trip.vehicle.model, trip.vehicle.colour].filter(Boolean).join(" ") || m.shuttle(index + 1);
-  const badge = `<span style="display:inline-block;margin-bottom:8px;padding:4px 9px;border-radius:999px;background:${OK};color:#06240f;font:600 11px 'JetBrains Mono',monospace">${m.passengers(trip.passengers)} · ${where}</span>`;
+  const badge = `<span style="display:inline-block;margin-bottom:8px;padding:4px 9px;border-radius:999px;background:#E8F7EC;color:${OK};font:600 11px 'JetBrains Mono',monospace">${m.passengers(trip.passengers)} · ${where}</span>`;
   return (
     `<div style="min-width:190px;color:${FG};font-family:'JetBrains Mono',monospace">${badge}` +
     `<div style="font:500 16px 'JetBrains Mono',monospace">${vehicle}</div>` +
@@ -163,8 +163,8 @@ export default function LiveShuttlesMap({ live }: { live: LiveShuttles }) {
   // takes the full height explicitly rather than through `inset-0`.
   return (
     <div className="relative h-full w-full">
-      <div ref={containerRef} data-testid="live-shuttles-map" className="h-full w-full bg-[#1B1C22]" />
-      <span className="pointer-events-none absolute bottom-2 right-2 rounded-full bg-black/60 px-2 py-0.5 text-[10px] text-muted-foreground">© IGN – Plan IGN</span>
+      <div ref={containerRef} data-testid="live-shuttles-map" className="h-full w-full bg-[#E6E8E4]" />
+      <span className="pointer-events-none absolute bottom-2 right-2 rounded-full bg-white/80 px-2 py-0.5 text-[10px] text-muted-foreground">© IGN – Plan IGN</span>
     </div>
   );
 }

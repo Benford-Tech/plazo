@@ -49,7 +49,7 @@ function MiniMap({ s }: { s: ArrivalSignal }) {
       role="img"
       aria-label={fr.planning.miniMap(s.customerName)}
       viewBox={`0 0 ${box.width} ${box.height}`}
-      className="h-[110px] w-full border border-border bg-[#1b1c1a]"
+      className="h-[110px] w-full border border-border bg-muted"
       preserveAspectRatio="xMidYMid meet"
     >
       <line x1={me.x} y1={me.y} x2={meeting.x} y2={meeting.y} stroke="hsl(var(--primary))" strokeWidth="2" strokeDasharray="6 5" />
@@ -87,7 +87,7 @@ function Row({ r, kind, index, clock }: { r: PlanningRow; kind: "arrival" | "ret
         to={`/reservations/${r.id}`}
         className={cn(
           "grid min-h-16 grid-cols-[56px_1fr_auto] items-center gap-3 border-b border-[#262625] px-1 py-2 hover:bg-accent sm:grid-cols-[64px_1fr_auto] sm:gap-3.5",
-          live ? "border-b-0 bg-background px-2.5" : index % 2 ? "bg-[#111112]" : "bg-background",
+          live ? "border-b-0 bg-background px-2.5" : index % 2 ? "bg-muted/60" : "bg-card",
         )}
       >
         <span className="tabular font-mono text-xl font-bold text-primary">{timeOf(isArrival ? r.arrivalAt : r.returnAt)}</span>

@@ -177,7 +177,7 @@ function Panel({ title, sub, aside, children, className }: { title: string; sub?
 function LivePanel({ live, parkingName }: { live: LiveShuttles | undefined; parkingName: string }) {
   const m = t.map;
   return (
-    <section aria-label={m.title} className="relative min-h-[420px] overflow-hidden rounded-xl border border-panel-line bg-[#1B1C22] lg:h-full">
+    <section aria-label={m.title} className="relative min-h-[420px] overflow-hidden rounded-xl border border-panel-line bg-[#E6E8E4] lg:h-full">
       <div className="absolute inset-0">
         {live ? (
           <Suspense fallback={<Skeleton className="h-full w-full rounded-none" />}>

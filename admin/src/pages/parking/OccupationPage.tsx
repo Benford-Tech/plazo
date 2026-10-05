@@ -29,7 +29,7 @@ import { cn } from "@/lib/utils";
 
 const TONE_COLORS = {
   occupied: "#6ec071",
-  leaving: "#F5C400",
+  leaving: "#A3E635",
   booked: "#5fd3ff",
   free: "#F3F3F0",
   inactive: "#6b6b66",
@@ -38,7 +38,7 @@ const SELECTED = "#ff6600";
 const LANDMARK_COLORS: Record<LandmarkKind, string> = {
   entrance: "#6ec071",
   exit: "#ff8a3d",
-  handover: "#F5C400",
+  handover: "#A3E635",
   shuttle_stop: "#5fd3ff",
   key_box: "#f3f3f0",
 };
@@ -201,7 +201,7 @@ export default function OccupationPage() {
         type: "line",
         data: fc(data.plan.zones.map((z) => feature(z.geometry))),
         paint: {
-          "line-color": "#F5C400",
+          "line-color": "#A3E635",
           "line-width": 1.5,
           "line-dasharray": [3, 2],
         },
@@ -211,7 +211,7 @@ export default function OccupationPage() {
         id: "outline",
         type: "line",
         data: fc([feature(data.plan.outline)]),
-        paint: { "line-color": "#F5C400", "line-width": 3 },
+        paint: { "line-color": "#A3E635", "line-width": 3 },
       });
     if (data.plan?.landmarks?.length) {
       list.push({
@@ -225,7 +225,7 @@ export default function OccupationPage() {
         paint: {
           "circle-radius": 7,
           "circle-color": ["get", "color"],
-          "circle-stroke-color": "#0B0B0C",
+          "circle-stroke-color": "#0F2A14",
           "circle-stroke-width": 2,
         },
       });
@@ -287,7 +287,7 @@ export default function OccupationPage() {
           </Link>
         </p>
       ) : (
-        <div className="-mx-4 flex h-[calc(100vh-280px)] min-h-[600px] flex-col border-y border-border sm:-mx-6">
+        <div className="-mx-4 flex flex-col border-y border-border sm:-mx-6 lg:h-[calc(100vh-280px)] lg:min-h-[600px]">
           <div className="flex shrink-0 flex-wrap items-center gap-x-5 gap-y-1 border-b border-border px-6 py-2 text-sm">
             <span
               className="font-mono font-bold"
@@ -329,14 +329,14 @@ export default function OccupationPage() {
               </span>
             )}
           </div>
-          <main className="flex min-h-0 flex-1">
+          <main className="flex min-h-0 flex-1 flex-col lg:flex-row">
             <MapView
               layers={layers}
               labels={labels}
               initialBounds={initialBounds}
               onMapClick={onMapClick}
               cursor={choosing ? "crosshair" : "pointer"}
-              className="min-w-0 flex-1"
+              className="min-h-[55vh] min-w-0 flex-1 lg:min-h-0"
             />
             <Aside wide>
               <PanelLabel>{t.search}</PanelLabel>

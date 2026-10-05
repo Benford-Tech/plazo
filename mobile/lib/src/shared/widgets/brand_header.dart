@@ -24,9 +24,7 @@ class BrandAppBar extends StatelessWidget implements PreferredSizeWidget {
       toolbarHeight: 60,
       backgroundColor: isPro ? AppColors.brand : AppColors.background,
       leading: leading,
-      title: title == null
-          ? BrandLogo(height: 30, pro: pro)
-          : Text(title!, style: AppText.title(size: 24, color: pro && isPro ? AppColors.accent : AppColors.brownOrInk)),
+      title: title == null ? BrandLogo(height: 30, pro: pro) : Text(title!, style: AppText.title(size: 24, color: AppColors.brownOrInk)),
       actions: actions,
     );
   }

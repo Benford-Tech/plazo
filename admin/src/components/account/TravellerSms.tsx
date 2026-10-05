@@ -384,7 +384,7 @@ function LinkedBox({ settings, status, readOnly, onEdit }: { settings: SmsSettin
           </button>
         </div>
       )}
-      <p className="text-sm text-[#e8a33c]">
+      <p className="text-sm text-warn">
         <span aria-hidden="true">⚠ </span>
         {t.offlineWarning}
       </p>

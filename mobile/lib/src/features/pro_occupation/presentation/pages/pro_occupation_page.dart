@@ -22,7 +22,7 @@ import '../../data/models/occupation_models.dart';
 import '../bloc/pro_occupation_bloc.dart';
 
 const _occupied = Color(0xFF6EC071);
-const _leaving = Color(0xFFF5C400);
+const _leaving = Color(0xFFA3E635);
 const _booked = Color(0xFF5FD3FF);
 
 Color _tone(SpotStateModel s) {

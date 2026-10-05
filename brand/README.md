@@ -14,7 +14,7 @@ Le nom du produit reste dans `product.json` (seul endroit) : si le nom change, r
 |---|---|
 | `logo-horizontal-light.svg` | Le panneau sur fond clair : rectangle orange, lettres blanches. |
 | `logo-horizontal-dark.svg` | Le panneau sur fond sombre (orange, noir) : identique (rectangle orange, lettres blanches), gardé pour les chemins existants. |
-| `logo-horizontal-pro.svg` | **L'espace pro** (choix L-A du 05/10/2026) : le même panneau en jaune `#F5C400`, lettres noires `#0B0B0C`, pour la direction B (connexion et en-tête de l'espace pro web). |
+| `logo-horizontal-pro.svg` | **L'espace pro** (choix L-A du 05/10/2026) : le même panneau en vert citron `#A3E635`, lettres vert foncé `#0F2A14`, pour la direction C-B « Opérations » (05/10/2026 ; connexion et en-tête de l'espace pro web, app Plazo Pro). |
 | `logo-mono.svg` | Une seule couleur (brun foncé) pour l'impression, la gravure, le fax : les lettres sont évidées. Changer la couleur en remplaçant `#2c1a0e`. |
 | `symbol.svg` / `symbol-dark.svg` / `symbol-mono.svg` | Le symbole seul (carré orange + P blanc) ; `-dark` identique ; `-mono` une couleur. |
 | `wordmark.svg` / `wordmark-dark.svg` | Les lettres seules, sans le panneau, brun foncé / blanches (titres de documents). |

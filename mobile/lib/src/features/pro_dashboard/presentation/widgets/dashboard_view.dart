@@ -240,7 +240,7 @@ class _Kpi extends StatelessWidget {
 
 enum _Tone { ok, warn, bad, info, accent, line, off }
 
-/// A filled pill badge (A-A): green, amber, red, blue, yellow, or outlined.
+/// A pill badge (C-B): a soft tint behind a strong text, lime for the action, or outlined.
 class _Badge extends StatelessWidget {
   const _Badge({required this.tone, required this.text});
   final _Tone tone;
@@ -249,10 +249,10 @@ class _Badge extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final (bg, fg, border) = switch (tone) {
-      _Tone.ok => (AppStatus.ok, AppStatus.okInk, null),
-      _Tone.warn => (AppStatus.warn, AppStatus.warnInk, null),
-      _Tone.bad => (AppStatus.bad, Colors.white, null),
-      _Tone.info => (AppStatus.info, AppStatus.infoInk, null),
+      _Tone.ok => (AppStatus.okSoft, AppStatus.okText, null),
+      _Tone.warn => (AppStatus.warnSoft, AppStatus.warnText, null),
+      _Tone.bad => (AppStatus.badSoft, AppStatus.badText, null),
+      _Tone.info => (AppStatus.infoSoft, AppStatus.info, null),
       _Tone.accent => (AppColors.accent, AppColors.onAccent, null),
       _ => (Colors.transparent, AppColors.muted, AppColors.panelLine),
     };
@@ -547,20 +547,15 @@ class _VehicleTile extends StatelessWidget {
                       ],
                     ),
                   ),
-                  const SizedBox(width: 8),
-                  Column(
-                    crossAxisAlignment: CrossAxisAlignment.end,
-                    children: [
-                      for (final (tone, text) in _vehicleBadges(v))
-                        Padding(
-                          padding: const EdgeInsets.only(bottom: 4),
-                          child: _Badge(tone: tone, text: text),
-                        ),
-                    ],
-                  ),
                 ],
               ),
-              const SizedBox(height: 4),
+              const SizedBox(height: 6),
+              Wrap(
+                spacing: 5,
+                runSpacing: 5,
+                children: [for (final (tone, text) in _vehicleBadges(v)) _Badge(tone: tone, text: text)],
+              ),
+              const SizedBox(height: 5),
               Wrap(
                 spacing: 5,
                 runSpacing: 5,

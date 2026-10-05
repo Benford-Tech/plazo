@@ -28,7 +28,7 @@ export function PanelLabel({ children, className }: { children: React.ReactNode;
 
 export function Aside({ children, wide, className }: { children: React.ReactNode; wide?: boolean; className?: string }) {
   return (
-    <aside className={cn("flex min-h-0 shrink-0 flex-col gap-3.5 border-l border-border p-[18px]", wide ? "w-[420px]" : "w-[360px]", className)}>{children}</aside>
+    <aside className={cn("flex min-h-0 w-full shrink-0 flex-col gap-3.5 border-t border-border bg-card p-[18px] lg:border-l lg:border-t-0", wide ? "lg:w-[420px]" : "lg:w-[360px]", className)}>{children}</aside>
   );
 }
 

@@ -12,6 +12,7 @@ abstract class StaffModel with _$StaffModel {
     required String id,
     required String name,
     required String email,
+
     /// manager, agent, driver, valet
     required String role,
     String? operatorName,

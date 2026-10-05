@@ -11,7 +11,7 @@ import { fr } from "@/lib/fr";
 import { cn } from "@/lib/utils";
 import type { StepProps } from "./CapacityStudyPage";
 
-const YELLOW = "#F5C400";
+const YELLOW = "#A3E635";
 const EXCLUSION_COLORS: Record<ExclusionKind, string> = {
   building: "#d9d5cc",
   reception: "#8a7420",
@@ -167,7 +167,7 @@ export default function ZonesStep({ study, update, go }: StepProps) {
 
   return (
     <>
-      <div className="relative min-w-0 flex-1">
+      <div className="relative min-h-[55vh] min-w-0 flex-1 lg:min-h-0">
         <MapView
           layers={layers}
           labels={labels}

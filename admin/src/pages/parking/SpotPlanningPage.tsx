@@ -34,7 +34,7 @@ const LABEL_PX = 112;
 const COLORS = {
   onSite: "#6ec071",
   upcoming: "#5fd3ff",
-  leaving: "#F5C400",
+  leaving: "#A3E635",
 } as const;
 
 /** Where an instant falls in the window, in days from its first midnight (parking time), clamped to [0, days]. */

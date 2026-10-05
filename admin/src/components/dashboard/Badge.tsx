@@ -3,12 +3,12 @@ import { cn } from "@/lib/utils";
 
 export type BadgeTone = "ok" | "warn" | "bad" | "info" | "accent" | "line";
 
-/** Filled pill badges of the "Flotte" mockup (A-A): green, amber, red, blue, yellow, or outlined. */
+/** Pill badges of the "Opérations" mockup (C-B): a soft tint behind a strong text, lime for the action. */
 const TONES: Record<BadgeTone, string> = {
-  ok: "bg-ok text-ok-ink",
-  warn: "bg-warn text-warn-ink",
-  bad: "bg-bad text-white",
-  info: "bg-info text-info-ink",
+  ok: "bg-ok-soft text-ok-text",
+  warn: "bg-warn-soft text-warn-text",
+  bad: "bg-bad-soft text-bad-text",
+  info: "bg-info-soft text-info-text",
   accent: "bg-primary text-primary-foreground",
   line: "border border-panel-line text-muted-foreground",
 };

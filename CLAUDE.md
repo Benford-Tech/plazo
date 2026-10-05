@@ -227,7 +227,16 @@ Dans `site/` :
 
 Canevas de référence : https://claude.ai/artifact/6ezoCDyLXFNwhAH5ZWUf4u (rangée « Retenu »).
 
-- **Espace pro (web, `admin/`)** : direction **B « Tableau des vols »** — fond noir `#0B0B0C`,
+- **Espace pro (web, `admin/`)** : **direction C-B « Opérations » (choix du 05/10/2026, d'après la maquette 2 de Joanny ;
+  remplace la direction B noir et jaune)** : fond gris très clair `#EEF0EE`, cartes blanches arrondies (14 px, `--radius`),
+  filets `#E4E6E2`, texte `#1A1D1A`, gris `#6B7280`, **vert citron `#A3E635`** pour l'action, la section courante et les
+  épingles (texte vert foncé `#0F2A14` dessus), vert foncé `#1E5E2E` pour les onglets actifs ; états en pilules teintées
+  (vert `#16A34A`, ambre `#D97706`, rouge `#DC2626`, indigo `#4F46E5` sur fonds pâles) ; Inter pour le texte (Archivo Narrow
+  disponible en `font-narrow`), JetBrains Mono pour les heures et les chiffres ; **logo pro = panneau vert citron, lettres
+  vert foncé** (`brand/logo-horizontal-pro.svg`) ; fond de connexion = grille citron sur le fond clair. Les paragraphes
+  suivants décrivent la composition, qui reste celle de la fusion Flotte + Opérations ; leurs mentions de noir et de jaune
+  sont caduques.
+  Ancienne direction **B « Tableau des vols »** (01/10 → 05/10/2026) — fond noir `#0B0B0C`,
   jaune `#F5C400` pour l'action et les heures, texte `#F3F3F0`, gris `#A8A8A2`, filets `#3A3A38` ;
   Archivo Narrow (capitales pour les titres) + JetBrains Mono (heures, chiffres, vols) ; angles vifs.
   Avec deux emprunts à C : **arrivées et retours en deux colonnes séparées**, et les **plaques**
@@ -262,9 +271,10 @@ Canevas de référence : https://claude.ai/artifact/6ezoCDyLXFNwhAH5ZWUf4u (rang
   Inter pour le texte, accent **orange léger `#FF8A3D`** (V-A, 03/10/2026, à la place du violet), brun foncé
   `#2C1A0E` pour les surfaces sombres, bouton principal en dégradé orange léger → pêche, cartes arrondies (16 px),
   plaques façon C. **Plus aucun violet ni prune.** Maquettes : artboards `Plazo-M3-*` du canevas (couleurs d'origine).
-- **App Plazo Pro (Flutter, flavor `pro`, décision du 04/10/2026)** : les couleurs de l'espace pro web, direction B : noir
-  `#0B0B0C`, jaune `#F5C400`, texte `#F3F3F0`, gris `#A8A8A2`, filets `#3A3A38`, angles vifs, Archivo Narrow pour les
-  titres et JetBrains Mono pour les heures et les chiffres. Les couleurs, rayons et polices sont des constantes choisies
+- **App Plazo Pro (Flutter, flavor `pro`)** : les couleurs de l'espace pro web, **direction C-B « Opérations » depuis le
+  05/10/2026** : fond `#EEF0EE`, cartes blanches 14 px, vert citron `#A3E635` (texte vert foncé `#0F2A14`), vert foncé
+  `#1E5E2E` pour les titres et le « live », états en pastels (`AppStatus`), barre d'app blanche, Archivo Narrow pour les
+  titres et JetBrains Mono pour les heures et les chiffres (jusqu'au 05/10/2026 : direction B noir `#0B0B0C` et jaune `#F5C400`). Les couleurs, rayons et polices sont des constantes choisies
   à la compilation selon le flavor (`AppColors`, `AppRadius`, `AppFonts` dans `shared/theme/theme.dart`). Écran de connexion :
   direction **C-C « Tableau des vols »** (04/10/2026) : grille d'affichage sous un voile noir, formulaire dans une carte bordée de
   jaune ; rien ne nomme un parking avant la connexion (l'app sert plusieurs parkings).

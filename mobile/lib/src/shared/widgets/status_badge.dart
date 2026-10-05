@@ -25,11 +25,11 @@ class StatusBadge extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    // Pastel chips for travellers; on the pro's black, the ink colour at low alpha behind a bright ink.
+    // Pastel chips on both apps (the pro's lime for its "live" highlight).
     final (bg, fg) = switch (tone) {
-      BadgeTone.ok => AppConstants.isPro ? (const Color(0x336EC071), const Color(0xFF6EC071)) : (const Color(0xFFE9F7EE), const Color(0xFF1F7A3F)),
-      BadgeTone.peach => AppConstants.isPro ? (const Color(0x33F5C400), const Color(0xFFF5C400)) : (const Color(0xFFFDF0E6), const Color(0xFFB4581D)),
-      BadgeTone.danger => (AppConstants.isPro ? const Color(0x33FF6B5E) : const Color(0xFFFCE8E6), AppColors.danger),
+      BadgeTone.ok => (const Color(0xFFE9F7EE), const Color(0xFF1F7A3F)),
+      BadgeTone.peach => AppConstants.isPro ? (const Color(0xFFEEF7DD), AppColors.accentDeep) : (const Color(0xFFFDF0E6), const Color(0xFFB4581D)),
+      BadgeTone.danger => (const Color(0xFFFCE8E6), AppColors.danger),
       BadgeTone.tint => (AppColors.tint, AppColors.accentDeep),
       BadgeTone.muted => (AppColors.canvas, AppColors.muted),
     };

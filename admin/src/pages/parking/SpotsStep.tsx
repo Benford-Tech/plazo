@@ -43,7 +43,7 @@ import {
 } from "@/lib/plan/types";
 import { cn } from "@/lib/utils";
 
-const YELLOW = "#F5C400";
+const YELLOW = "#A3E635";
 const GREY = "#6b6b66";
 const KIND_COLORS: Record<SpotKind, string> = {
   standard: YELLOW,
@@ -199,7 +199,7 @@ export default function SpotsStep({
             ),
           ),
         ),
-        paint: { "fill-color": "#0B0B0C", "fill-opacity": 0.35 },
+        paint: { "fill-color": "#0F2A14", "fill-opacity": 0.35 },
       });
     }
     // A standard spot shows its stay zone; the other kinds keep their own colour.
@@ -279,7 +279,7 @@ export default function SpotsStep({
       paint: {
         "circle-radius": 7,
         "circle-color": ["get", "color"],
-        "circle-stroke-color": "#0B0B0C",
+        "circle-stroke-color": "#0F2A14",
         "circle-stroke-width": 2,
       },
     });
@@ -344,7 +344,7 @@ export default function SpotsStep({
         onDrawn={onDrawn}
         onMapClick={onMapClick}
         cursor={placing ? "crosshair" : "pointer"}
-        className="min-w-0 flex-1"
+        className="min-h-[55vh] min-w-0 flex-1 lg:min-h-0"
       />
       <Aside wide>
         <PanelLabel>{t.layout}</PanelLabel>
@@ -362,7 +362,7 @@ export default function SpotsStep({
                 name="layout"
                 checked={layout === key}
                 onChange={() => setLayout(key)}
-                className="h-[18px] w-[18px] accent-[#F5C400]"
+                className="h-[18px] w-[18px] accent-[#A3E635]"
               />
               <span className="flex-1">{t.layouts[key]}</span>
               <span className="font-mono font-bold">

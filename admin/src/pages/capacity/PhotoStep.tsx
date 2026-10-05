@@ -10,7 +10,7 @@ import { fr } from "@/lib/fr";
 import type { StepProps } from "./CapacityStudyPage";
 import type { EstimateState } from "./CapacityStep";
 
-const YELLOW = "#F5C400";
+const YELLOW = "#A3E635";
 /** A click this close to a marker (pixels) removes it. */
 const HIT_PX = 10;
 

@@ -9,7 +9,8 @@ export default {
     container: { center: true, padding: "2rem", screens: { "2xl": "1400px" } },
     extend: {
       fontFamily: {
-        sans: ["Archivo Narrow", "Arial Narrow", "sans-serif"],
+        sans: ["Inter", "system-ui", "sans-serif"],
+        narrow: ["Archivo Narrow", "Arial Narrow", "sans-serif"],
         mono: ["JetBrains Mono", "ui-monospace", "monospace"],
       },
       colors: {
@@ -29,11 +30,13 @@ export default {
         card: { DEFAULT: "hsl(var(--card))", foreground: "hsl(var(--card-foreground))" },
         plate: { band: "#1F3FA6" },
         // Dashboard (fusion Flotte + Opérations, 05/10/2026): anthracite panels and the four state colours.
-        panel: { DEFAULT: "#17171B", 2: "#1D1D22", shell: "#0F0F12", line: "#2A2A30" },
-        ok: { DEFAULT: "#22C55E", soft: "#12301C", text: "#4ADE80", ink: "#06240F" },
-        warn: { DEFAULT: "#F59E0B", soft: "#3A2A08", text: "#FBBF24", ink: "#2A1700" },
-        bad: { DEFAULT: "#EF4444", soft: "#3B1414", text: "#F87171" },
-        info: { DEFAULT: "#60A5FA", soft: "#132544", text: "#60A5FA", ink: "#06183A" },
+        // C-B « Opérations » (05/10/2026): white panels on the light ground, soft tints for the four states.
+        panel: { DEFAULT: "#FFFFFF", 2: "#F4F6F2", shell: "#FFFFFF", line: "#E4E6E2" },
+        lime: { DEFAULT: "#A3E635", ink: "#0F2A14", deep: "#1E5E2E" },
+        ok: { DEFAULT: "#16A34A", soft: "#E8F7EC", text: "#16A34A", ink: "#FFFFFF" },
+        warn: { DEFAULT: "#D97706", soft: "#FFF4E0", text: "#D97706", ink: "#FFFFFF" },
+        bad: { DEFAULT: "#DC2626", soft: "#FDECEC", text: "#DC2626" },
+        info: { DEFAULT: "#4F46E5", soft: "#E8EFFD", text: "#4F46E5", ink: "#FFFFFF" },
         sidebar: {
           DEFAULT: "hsl(var(--sidebar-background))",
           foreground: "hsl(var(--sidebar-foreground))",

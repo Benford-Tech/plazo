@@ -13,7 +13,7 @@ const labelClass = "text-[11px] uppercase tracking-[0.08em] text-muted-foregroun
 
 function StripeCell({ stripe }: { stripe: StripeState }) {
   if (stripe.connected && stripe.payoutsEnabled) return <span className="text-success">{t.stripeActive}</span>;
-  if (stripe.connected) return <span className="text-[#e8a33c]">{t.stripeIncomplete}</span>;
+  if (stripe.connected) return <span className="text-warn">{t.stripeIncomplete}</span>;
   return <span className="text-muted-foreground">{t.stripeNone}</span>;
 }
 

@@ -32,7 +32,7 @@ import { fr } from "@/lib/fr";
 import { cn } from "@/lib/utils";
 import type { StepProps } from "./CapacityStudyPage";
 
-const YELLOW = "#F5C400";
+const YELLOW = "#A3E635";
 
 export interface EstimateState {
   result: Estimate | null;
@@ -80,7 +80,7 @@ export default function CapacityStep({
             ),
           ),
         ),
-        paint: { "fill-color": "#0B0B0C", "fill-opacity": 0.35 },
+        paint: { "fill-color": "#0F2A14", "fill-opacity": 0.35 },
       });
     }
     list.push({
@@ -162,7 +162,7 @@ export default function CapacityStep({
 
   return (
     <>
-      <div className="relative min-w-0 flex-1">
+      <div className="relative min-h-[55vh] min-w-0 flex-1 lg:min-h-0">
         <MapView layers={layers} initialBounds={initialBounds}>
           <div
             className="absolute left-4 top-4 flex gap-[18px] border border-border bg-background/85 px-3 py-2.5"
@@ -342,7 +342,7 @@ export default function CapacityStep({
                 type="checkbox"
                 checked={settings.endStalls}
                 onChange={(e) => setSettings({ endStalls: e.target.checked })}
-                className="h-4 w-4 accent-[#F5C400]"
+                className="h-4 w-4 accent-[#A3E635]"
               />
               {fr.capacity.endStalls}
             </label>
@@ -351,7 +351,7 @@ export default function CapacityStep({
                 type="checkbox"
                 checked={settings.crossAisles}
                 onChange={(e) => setSettings({ crossAisles: e.target.checked })}
-                className="h-4 w-4 accent-[#F5C400]"
+                className="h-4 w-4 accent-[#A3E635]"
               />
               {fr.capacity.crossAisles}
             </label>

@@ -30,7 +30,7 @@ function PaymentsCell({ operator }: { operator: PlatformOperator }) {
   if (operator.invitation) return <span className="text-muted-foreground">—</span>;
   const { connected, payoutsEnabled } = operator.payments;
   if (connected && payoutsEnabled) return <span className="text-success">{t.paymentsActive}</span>;
-  if (connected) return <span className="text-[#e8a33c]">{t.paymentsToActivate}</span>;
+  if (connected) return <span className="text-warn">{t.paymentsToActivate}</span>;
   return <span className="text-muted-foreground">{t.paymentsNone}</span>;
 }
 

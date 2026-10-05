@@ -197,9 +197,9 @@ export default function ParkingPlanPage() {
         <h1 className="text-2xl font-semibold">{fr.parkingPlan.title}</h1>
         <p className="text-sm text-muted-foreground">{fr.parkingPlan.intro}</p>
       </div>
-      <div className="-mx-4 flex h-[calc(100vh-280px)] min-h-[600px] flex-col border-y border-border sm:-mx-6">
+      <div className="-mx-4 flex flex-col border-y border-border sm:-mx-6 lg:h-[calc(100vh-280px)] lg:min-h-[600px]">
         <StepsBar study={study} step={step} go={go} saveState={saveState} />
-        <main className="flex min-h-0 flex-1">
+        <main className="flex min-h-0 flex-1 flex-col lg:flex-row">
           {step === "terrain" && <TerrainStep key={parking.id} {...props} />}
           {step === "zones" && <ZonesStep key={parking.id} {...props} />}
           {step === "places" && (

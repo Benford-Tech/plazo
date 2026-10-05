@@ -55,7 +55,7 @@ interface Props {
   children?: React.ReactNode;
 }
 
-const YELLOW = "#F5C400";
+const YELLOW = "#A3E635";
 
 setWorkerUrl(maplibreWorkerUrl);
 
@@ -130,7 +130,7 @@ export const MapView = forwardRef<MapViewHandle, Props>(function MapView(props, 
     // would leave the map without its overlays and drawing tools.
     map.once("style.load", () => {
       const adapter = new TerraDrawMapLibreGLAdapter({ map, coordinatePrecision: 9 });
-      const point = { pointColor: YELLOW, pointOutlineColor: "#0B0B0C", pointWidth: 6, pointOutlineWidth: 2 } as const;
+      const point = { pointColor: YELLOW, pointOutlineColor: "#0F2A14", pointWidth: 6, pointOutlineWidth: 2 } as const;
       const draw = new TerraDraw({
         adapter,
         modes: [
@@ -145,16 +145,16 @@ export const MapView = forwardRef<MapViewHandle, Props>(function MapView(props, 
               selectedPolygonOutlineColor: YELLOW,
               selectedPolygonOutlineWidth: 3,
               selectionPointColor: YELLOW,
-              selectionPointOutlineColor: "#0B0B0C",
+              selectionPointOutlineColor: "#0F2A14",
               selectionPointWidth: 6,
               selectionPointOutlineWidth: 2,
               midPointColor: "#F3F3F0",
-              midPointOutlineColor: "#0B0B0C",
+              midPointOutlineColor: "#0F2A14",
               midPointWidth: 4,
             },
           }),
           new TerraDrawPolygonMode({
-            styles: { fillColor: YELLOW, fillOpacity: 0.15, outlineColor: YELLOW, outlineWidth: 3, closingPointColor: YELLOW, closingPointOutlineColor: "#0B0B0C" },
+            styles: { fillColor: YELLOW, fillOpacity: 0.15, outlineColor: YELLOW, outlineWidth: 3, closingPointColor: YELLOW, closingPointOutlineColor: "#0F2A14" },
           }),
           new TerraDrawLineStringMode({ styles: { lineStringColor: "#5fd3ff", lineStringWidth: 4, closingPointColor: "#5fd3ff" } }),
           new TerraDrawPointMode({ styles: point }),
@@ -307,11 +307,11 @@ export const MapView = forwardRef<MapViewHandle, Props>(function MapView(props, 
   }, [props.cursor]);
 
   return (
-    <div className={cn("relative h-full w-full overflow-hidden bg-[#1d1f1a]", props.className)}>
+    <div className={cn("relative h-full w-full overflow-hidden bg-[#E6E8E4]", props.className)}>
       {/* Inline: maplibre-gl.css gives the container "position: relative". */}
       <div ref={containerRef} style={{ position: "absolute", inset: 0 }} data-testid="capacity-map" />
       {props.children}
-      <div className="pointer-events-none absolute inset-x-0 bottom-0 bg-black/60 px-2.5 py-1 text-[13px] text-[#ddd]">{IGN_ATTRIBUTION}</div>
+      <div className="pointer-events-none absolute inset-x-0 bottom-0 bg-white/80 px-2.5 py-1 text-[13px] text-muted-foreground">{IGN_ATTRIBUTION}</div>
     </div>
   );
 });

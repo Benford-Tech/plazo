@@ -117,7 +117,10 @@ class _VehicleCard extends StatelessWidget {
       opacity: taken ? 0.55 : 1,
       child: Material(
         color: AppColors.surface,
-        shape: RoundedRectangleBorder(borderRadius: AppRadius.card, side: BorderSide(color: selected ? AppColors.accent : AppColors.line, width: selected ? 2 : 1)),
+        shape: RoundedRectangleBorder(
+          borderRadius: AppRadius.card,
+          side: BorderSide(color: selected ? AppColors.accent : AppColors.line, width: selected ? 2 : 1),
+        ),
         clipBehavior: Clip.antiAlias,
         child: InkWell(
           key: Key('vehicle-day-${v.id}'),
@@ -174,7 +177,10 @@ class _NoneCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) => Material(
     color: AppColors.surface,
-    shape: RoundedRectangleBorder(borderRadius: AppRadius.card, side: BorderSide(color: selected ? AppColors.accent : AppColors.line, width: selected ? 2 : 1)),
+    shape: RoundedRectangleBorder(
+      borderRadius: AppRadius.card,
+      side: BorderSide(color: selected ? AppColors.accent : AppColors.line, width: selected ? 2 : 1),
+    ),
     clipBehavior: Clip.antiAlias,
     child: InkWell(
       key: const Key('vehicle-day-none'),

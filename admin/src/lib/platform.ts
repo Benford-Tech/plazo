@@ -6,7 +6,7 @@ export const percent = (bps: number) => (bps / 100).toLocaleString("fr-FR", { ma
 /** Colour of a listing status in the platform lists (direction B; amber for "à valider", as in S-1). */
 export const LISTING_TONE: Record<ListingStatus, string> = {
   published: "text-success",
-  pending_review: "text-[#e8a33c]",
+  pending_review: "text-warn",
   rejected: "text-destructive",
   draft: "text-muted-foreground",
 };

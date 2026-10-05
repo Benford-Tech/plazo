@@ -96,7 +96,10 @@ class _PostCard extends StatelessWidget {
   Widget build(BuildContext context) {
     return Material(
       color: AppColors.surface,
-      shape: RoundedRectangleBorder(borderRadius: AppRadius.card, side: BorderSide(color: selected ? AppColors.accent : AppColors.line, width: selected ? 2 : 1)),
+      shape: RoundedRectangleBorder(
+        borderRadius: AppRadius.card,
+        side: BorderSide(color: selected ? AppColors.accent : AppColors.line, width: selected ? 2 : 1),
+      ),
       clipBehavior: Clip.antiAlias,
       child: InkWell(
         key: Key('post-$post'),

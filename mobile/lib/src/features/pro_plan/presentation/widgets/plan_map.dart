@@ -90,7 +90,7 @@ class _PlanMapState extends State<PlanMap> {
                     Polygon(
                       points: s.geometry.map((p) => LatLng(p[1], p[0])).toList(),
                       color: s.active ? stayFill(s.stayClass) : const Color(0x26F3F3F0),
-                      borderColor: s.active ? const Color(0xFFF5C400) : const Color(0xFF9A9A94),
+                      borderColor: s.active ? const Color(0xFFA3E635) : const Color(0xFF9A9A94),
                       borderStrokeWidth: 1,
                     ),
                 ],

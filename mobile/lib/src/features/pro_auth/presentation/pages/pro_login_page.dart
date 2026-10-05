@@ -43,7 +43,7 @@ class _ProLoginPageState extends State<ProLoginPage> {
   Widget build(BuildContext context) {
     String? required(String? v) => (v == null || v.isEmpty) ? 'open.required'.tr() : null;
     return Scaffold(
-      backgroundColor: AppColors.brand,
+      backgroundColor: AppColors.background,
       body: BlocConsumer<ProAuthBloc, ProAuthState>(
         listenWhen: (a, b) => a.status != b.status && b.status == ProAuthStatus.signedIn,
         // First sign-in on this account: "Aujourd'hui, je suis…" (R-C); afterwards straight to the tabs.
@@ -62,12 +62,19 @@ class _ProLoginPageState extends State<ProLoginPage> {
                     const SizedBox(height: 40),
                     Container(
                       key: const Key('pro-login-card'),
-                      decoration: BoxDecoration(color: AppColors.brand, border: Border.all(color: AppColors.accent, width: 1.2)),
+                      decoration: BoxDecoration(
+                        color: AppColors.surface,
+                        borderRadius: AppRadius.card,
+                        border: Border.all(color: AppColors.accent, width: 1.2),
+                      ),
                       padding: const EdgeInsets.fromLTRB(16, 18, 16, 16),
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.stretch,
                         children: [
-                          Text('pro.login_eyebrow'.tr().toUpperCase(), style: AppText.tabular(size: 13, color: AppColors.accent).copyWith(letterSpacing: 0.6)),
+                          Text(
+                            'pro.login_eyebrow'.tr().toUpperCase(),
+                            style: AppText.tabular(size: 13, color: AppColors.accentDeep).copyWith(letterSpacing: 0.6),
+                          ),
                           const SizedBox(height: 3),
                           Text('pro.login_roles'.tr(), style: AppText.label(size: 11)),
                           const SizedBox(height: 18),
@@ -95,7 +102,11 @@ class _ProLoginPageState extends State<ProLoginPage> {
                           ),
                           if (state.errorCode != null) ...[
                             const SizedBox(height: 10),
-                            Text(translateErrorCode(state.errorCode), key: const Key('pro-login-error'), style: AppText.body(size: 14, color: AppColors.danger)),
+                            Text(
+                              translateErrorCode(state.errorCode),
+                              key: const Key('pro-login-error'),
+                              style: AppText.body(size: 14, color: AppColors.danger),
+                            ),
                           ],
                           const SizedBox(height: 16),
                           GradientButton(key: const Key('pro-login'), label: 'pro.login'.tr(), busy: state.viewState.isProcessing, onPressed: _submit),
@@ -115,14 +126,14 @@ class _ProLoginPageState extends State<ProLoginPage> {
   }
 }
 
-/// The grid of a departures board: faint yellow rules, darker towards the bottom.
+/// The grid of a departures board: faint lime rules, whiter towards the bottom (C-B).
 class _BoardGridPainter extends CustomPainter {
   const _BoardGridPainter();
 
   @override
   void paint(Canvas canvas, Size size) {
     final line = Paint()
-      ..color = AppColors.accent.withValues(alpha: 0.16)
+      ..color = AppColors.accent.withValues(alpha: 0.35)
       ..strokeWidth = 1;
     for (var y = 34.0; y < size.height; y += 34) {
       canvas.drawLine(Offset(0, y), Offset(size.width, y), line);
@@ -134,7 +145,7 @@ class _BoardGridPainter extends CustomPainter {
       ..shader = LinearGradient(
         begin: Alignment.topCenter,
         end: Alignment.bottomCenter,
-        colors: [AppColors.brand.withValues(alpha: 0.35), AppColors.brand.withValues(alpha: 0.92)],
+        colors: [AppColors.background.withValues(alpha: 0.2), AppColors.background.withValues(alpha: 0.95)],
       ).createShader(Offset.zero & size);
     canvas.drawRect(Offset.zero & size, veil);
   }

@@ -22,7 +22,7 @@ const _labelPx = 64.0;
 const _rowPx = 30.0;
 const _onSite = Color(0xFF6EC071);
 const _upcoming = Color(0xFF5FD3FF);
-const _leaving = Color(0xFFF5C400);
+const _leaving = Color(0xFFA3E635);
 
 /// Where an instant falls in the window, in days from its first midnight (phone time), clamped.
 double _offsetDays(DateTime instant, DateTime from, int days) {

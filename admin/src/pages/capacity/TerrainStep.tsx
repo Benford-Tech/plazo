@@ -17,7 +17,7 @@ type Tool = "pan" | "addVertex" | "removeVertex" | "cut" | "draw" | "dimension";
 
 const ORANGE = "#ff8a3d";
 const CYAN = "#5fd3ff";
-const YELLOW = "#F5C400";
+const YELLOW = "#A3E635";
 /** BD TOPO parkings are only fetched from this zoom (a few hundred metres across). */
 const PARKINGS_MIN_ZOOM = 15;
 const MAX_BBOX_SPAN = 0.05;
@@ -249,7 +249,7 @@ export default function TerrainStep({ study, update, go, geoScope = "operator" }
           paint: {
             "circle-radius": 6,
             "circle-color": ["case", ["get", "picked"], "#F3F3F0", YELLOW],
-            "circle-stroke-color": "#0B0B0C",
+            "circle-stroke-color": "#0F2A14",
             "circle-stroke-width": 2,
           },
         });
@@ -283,7 +283,7 @@ export default function TerrainStep({ study, update, go, geoScope = "operator" }
 
   return (
     <>
-      <div className="relative min-w-0 flex-1">
+      <div className="relative min-h-[55vh] min-w-0 flex-1 lg:min-h-0">
         <MapView
           ref={mapRef}
           layers={layers}
@@ -377,7 +377,7 @@ export default function TerrainStep({ study, update, go, geoScope = "operator" }
                     type="checkbox"
                     checked={!!settings.clipToParking}
                     onChange={e => setParcels(parcels, e.target.checked)}
-                    className="h-4 w-4 accent-[#F5C400]"
+                    className="h-4 w-4 accent-[#A3E635]"
                   />
                   {fr.capacity.clipToParking}
                 </label>
@@ -499,7 +499,7 @@ export default function TerrainStep({ study, update, go, geoScope = "operator" }
 function SourceToggle(props: { checked: boolean; onChange: (v: boolean) => void; title: string; help: string; swatch?: string }) {
   return (
     <label className="flex min-h-10 cursor-pointer items-center gap-2.5 border-b border-border py-1 text-[15px]">
-      <input type="checkbox" checked={props.checked} onChange={e => props.onChange(e.target.checked)} className="h-[18px] w-[18px] shrink-0 accent-[#F5C400]" />
+      <input type="checkbox" checked={props.checked} onChange={e => props.onChange(e.target.checked)} className="h-[18px] w-[18px] shrink-0 accent-[#A3E635]" />
       {props.swatch && <span className="h-3.5 w-3.5 shrink-0 border-2 border-dashed" style={{ borderColor: props.swatch }} />}
       <span>
         <b>{props.title}</b>
