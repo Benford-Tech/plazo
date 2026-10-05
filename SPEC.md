@@ -46,6 +46,7 @@ Fonctionnel :
 - Saisie manuelle par le personnel (téléphone, comptoir).
 - Import des réservations d'autres canaux : CSV et saisie assistée à partir d'un mail de confirmation (connecteurs directs aux comparateurs : hors MVP).
 - Vue planning : arrivées et retours du jour, par heure.
+- Tableau de bord (accueil de l'espace pro, 05/10/2026) : chiffres du jour (sur le parking, arrivées, retours, navettes, à traiter), état des services (suivi de vols, SMS, notifications, paiements, import), liste des situations à traiter classées (sur place sans place, vol retardé ou annulé, voyageur au point de rendez-vous, clés non accrochées, SMS en attente, surréservation), véhicules sur le parking avec place et clés, navettes en direct sur la carte.
 - Contrôle de capacité : blocage ou alerte quand les réservations dépassent la capacité réelle sur une date.
 - Statuts : à venir → arrivé (véhicule déposé) → parti en navette → retour demandé → véhicule rendu / annulé / no-show.
 - Annulation et modification (règles configurables).

@@ -12,6 +12,7 @@ import ImportEmailPage from "@/pages/ImportEmailPage";
 import ListingPage from "@/pages/ListingPage";
 import NewReservationPage from "@/pages/NewReservationPage";
 import ParkingPage from "@/pages/ParkingPage";
+import DashboardPage from "@/pages/DashboardPage";
 import PlanningPage from "@/pages/PlanningPage";
 import PricingPage from "@/pages/PricingPage";
 import ReservationPage from "@/pages/ReservationPage";
@@ -125,7 +126,8 @@ const App = () => (
                 </ProtectedRoute>
               }
             >
-              <Route path="/" element={<PlanningPage />} />
+              <Route path="/" element={<DashboardPage />} />
+              <Route path="/planning" element={<PlanningPage />} />
               <Route path="/reservations" element={<ReservationsPage />} />
               <Route
                 path="/reservations/nouvelle"

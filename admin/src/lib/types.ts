@@ -548,3 +548,102 @@ export interface SmsStatus {
   lastError: string | null;
   lastErrorAt: string | null;
 }
+
+/** Direction of a shuttle trip (T-A): towards the airport for returns, towards the terminal for arrivals. */
+export type ShuttleDirection = "pickup" | "dropoff";
+
+/** A running trip as GET /internal/shuttle/live shows it (P-A, 05/10/2026). */
+export interface LiveTrip {
+  id: string;
+  direction: ShuttleDirection;
+  driverId: string;
+  driverName: string;
+  vehicle: { model: string | null; colour: string | null; plate: string | null };
+  stop: ShuttleStop | null;
+  passengers: number;
+  startedAt: string;
+  expiresAt: string;
+  position: { lat: number; lng: number } | null;
+  positionAgeSeconds: number | null;
+  toStop: { distanceM: number; etaMinutes: number } | null;
+  toParking: { distanceM: number; etaMinutes: number } | null;
+}
+
+export interface LiveShuttles {
+  serverTime: string;
+  parking: { id: string; name: string; lat: number | null; lng: number | null };
+  stops: ShuttleStop[];
+  trips: LiveTrip[];
+}
+
+export type AlertSeverity = "urgent" | "watch" | "todo";
+export type AlertKind =
+  | "no_spot"
+  | "no_free_spot"
+  | "arriving_unplaced"
+  | "flight_delayed"
+  | "flight_cancelled"
+  | "waiting_at_meeting_point"
+  | "keys_missing"
+  | "sms_pending"
+  | "overbooked";
+
+/** A row of the home's "À traiter" list (GET /internal/dashboard). */
+export interface DashboardAlert {
+  kind: AlertKind;
+  severity: AlertSeverity;
+  reservationId: string | null;
+  reference: string | null;
+  customerName: string | null;
+  plate: string | null;
+  detail: string | null;
+  since: string | null;
+  minutes: number | null;
+}
+
+export interface DashboardVehicle {
+  id: string;
+  reference: string;
+  customerName: string;
+  passengers: number;
+  plate: string;
+  status: ReservationStatus;
+  arrivalAt: string;
+  returnAt: string;
+  spotCode: string | null;
+  stayClass: string | null;
+  keyHook: string | null;
+  returnFlight: string | null;
+  flightStatus: string | null;
+  flightEstimatedAt: string | null;
+  flightLandedAt: string | null;
+  tripDirection: ShuttleDirection | null;
+  stopName: string | null;
+  returnsToday: boolean;
+}
+
+/** The pro space's home (05/10/2026). */
+export interface Dashboard {
+  serverTime: string;
+  date: string;
+  parking: { id: string; name: string; timezone: string; bookableCapacity: number; plannedSpots: number };
+  counts: {
+    onSite: number;
+    arrivalsToday: number;
+    arrivedToday: number;
+    returnsToday: number;
+    shuttlesRunning: number;
+    freeSpots: number | null;
+    toTreat: number;
+  };
+  services: {
+    flights: { configured: boolean; provider: string | null; lastCheckedAt: string | null };
+    sms: { mode: string; pending: number; stale: boolean; lastSentAt: string | null };
+    push: { configured: boolean; devices: number };
+    stripe: { connected: boolean; payoutsEnabled: boolean };
+    lastImportAt: string | null;
+  };
+  alerts: DashboardAlert[];
+  breakdown: { onSiteQuiet: number; toPlaceToday: number; returnsThisWeek: number; toTreat: number; freeSpots: number | null };
+  vehicles: DashboardVehicle[];
+}

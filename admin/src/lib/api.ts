@@ -1,5 +1,7 @@
 import type {
   Airport,
+  Dashboard,
+  LiveShuttles,
   CapacityPreview,
   InvitationResult,
   InviteInput,
@@ -393,6 +395,8 @@ export const adminApi = {
   getPlanning: (date?: string) =>
     apiRequest<Planning>(`/internal/planning${date ? `?date=${date}` : ""}`),
   getLiveArrivals: () => apiRequest<LiveArrivals>("/internal/arrivals/live"),
+  getDashboard: () => apiRequest<Dashboard>("/internal/dashboard"),
+  getLiveShuttles: () => apiRequest<LiveShuttles>("/internal/shuttle/live"),
   previewCapacity: (arrivalAt: string, returnAt: string, excludeId?: string) =>
     apiRequest<CapacityPreview>(
       `/internal/capacity?${new URLSearchParams({ arrivalAt, returnAt, ...(excludeId ? { excludeId } : {}) }).toString()}`,

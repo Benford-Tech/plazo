@@ -1,4 +1,5 @@
-import { LogOut } from "lucide-react";
+import { CalendarDays, ClipboardList, Globe, LayoutDashboard, LogOut, ShieldCheck, SquareParking, UserRound, Users } from "lucide-react";
+import type { ComponentType, SVGProps } from "react";
 import { NavLink, Outlet, useNavigate } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 import { fr } from "@/lib/fr";
@@ -9,16 +10,22 @@ import { Logo } from "./Logo";
 import { ViewAsBanner } from "./platform/ViewAsBanner";
 import { ViewSwitch } from "./platform/ViewSwitch";
 
-const NAV: { label: string; to: string; permission?: Permission }[] = [
-  { label: fr.nav.planning, to: "/", permission: "reservations:view" },
-  { label: fr.nav.reservations, to: "/reservations", permission: "reservations:view" },
-  { label: fr.nav.parking, to: "/parking", permission: "reservations:view" },
-  { label: fr.nav.plazo, to: "/plazo", permission: "parking:manage" },
-  { label: fr.nav.team, to: "/equipe", permission: "team:manage" },
-  { label: fr.nav.account, to: "/mon-compte" },
+type Icon = ComponentType<SVGProps<SVGSVGElement>>;
+const NAV: { label: string; to: string; icon: Icon; permission?: Permission }[] = [
+  { label: fr.nav.dashboard, to: "/", icon: LayoutDashboard, permission: "reservations:view" },
+  { label: fr.nav.planning, to: "/planning", icon: CalendarDays, permission: "reservations:view" },
+  { label: fr.nav.reservations, to: "/reservations", icon: ClipboardList, permission: "reservations:view" },
+  { label: fr.nav.parking, to: "/parking", icon: SquareParking, permission: "reservations:view" },
+  { label: fr.nav.plazo, to: "/plazo", icon: Globe, permission: "parking:manage" },
+  { label: fr.nav.team, to: "/equipe", icon: Users, permission: "team:manage" },
+  { label: fr.nav.account, to: "/mon-compte", icon: UserRound },
 ];
 
-/** Direction B: a black top bar with the sections in capitals; the current one in yellow. */
+/**
+ * Direction B, fusion "Flotte + Opérations" (05/10/2026): a black rail on the left with an icon and
+ * a label per section (the current one in yellow), a thin top bar with the parking and the account;
+ * on a phone the rail becomes a scrollable row under the top bar.
+ */
 export function AdminLayout() {
   const { user, logout } = useAuth();
   const navigate = useNavigate();
@@ -26,7 +33,7 @@ export function AdminLayout() {
   // The super admin's own operator space links to the "Plateforme" space (hidden from operators,
   // and while viewing another operator's space: the banner leads back).
   const platformAdmin = !!user?.isPlatformAdmin && !user.viewAs;
-  if (platformAdmin) items.push({ label: fr.nav.platform, to: "/plateforme" });
+  if (platformAdmin) items.push({ label: fr.nav.platform, to: "/plateforme", icon: ShieldCheck });
 
   const handleLogout = async () => {
     await logout();
@@ -36,47 +43,63 @@ export function AdminLayout() {
   return (
     <div className="flex min-h-screen flex-col">
       <ViewAsBanner />
-      <header className="sticky top-0 z-20 border-b border-border bg-background">
-        <div className="mx-auto flex max-w-7xl items-center gap-4 px-4 pt-3 sm:px-6">
-          <Logo height={28} suffix="Pro" className="shrink-0" />
-          <span className="hidden truncate text-sm uppercase tracking-wide text-muted-foreground sm:block">{user?.operatorName}</span>
-          {platformAdmin ? (
-            <ViewSwitch current="own" className="ml-auto hidden md:block" />
-          ) : (
-            <span className="ml-auto hidden truncate text-sm text-muted-foreground md:block">
-              {user?.name} · {user ? fr.roles[user.role] : ""}
-            </span>
-          )}
-          <button
-            onClick={handleLogout}
-            aria-label={fr.nav.logout}
-            className="ml-auto flex h-11 w-11 items-center justify-center text-muted-foreground hover:text-foreground md:ml-0"
-          >
-            <LogOut className="h-5 w-5" />
-          </button>
-        </div>
-        <nav aria-label="Navigation principale" className="mx-auto flex max-w-7xl gap-1 overflow-x-auto px-4 pb-3 pt-2 sm:px-6">
-          {items.map(item => (
-            <NavLink
-              key={item.to}
-              to={item.to}
-              end={item.to === "/"}
-              className={({ isActive }) =>
-                cn(
-                  "flex min-h-11 shrink-0 items-center px-3.5 text-base font-semibold uppercase tracking-wide",
-                  isActive ? "bg-primary text-primary-foreground" : "text-foreground hover:bg-accent",
-                )
-              }
+      <div className="flex flex-1 flex-col lg:flex-row">
+        <aside className="sticky top-0 z-20 shrink-0 border-b border-border bg-background lg:h-screen lg:w-[184px] lg:border-b-0 lg:border-r">
+          <div className="flex items-center gap-3 px-4 pt-3 lg:px-4 lg:pb-5 lg:pt-5">
+            <Logo height={28} suffix="Pro" className="shrink-0" />
+            <button
+              onClick={handleLogout}
+              aria-label={fr.nav.logout}
+              className="ml-auto flex h-11 w-11 items-center justify-center text-muted-foreground hover:text-foreground lg:hidden"
             >
-              {item.label}
-            </NavLink>
-          ))}
-        </nav>
-      </header>
-      <EmailVerificationBanner />
-      <main className="mx-auto w-full max-w-7xl flex-1 space-y-6 px-4 py-6 sm:px-6">
-        <Outlet />
-      </main>
+              <LogOut className="h-5 w-5" />
+            </button>
+          </div>
+          <nav aria-label="Navigation principale" className="flex gap-1 overflow-x-auto px-3 pb-2 pt-1 lg:flex-col lg:gap-0.5 lg:px-2 lg:pb-0">
+            {items.map(item => (
+              <NavLink
+                key={item.to}
+                to={item.to}
+                end={item.to === "/"}
+                className={({ isActive }) =>
+                  cn(
+                    "flex min-h-11 shrink-0 items-center gap-2.5 px-3 text-[15px] font-semibold uppercase tracking-wide",
+                    isActive
+                      ? "bg-primary text-primary-foreground"
+                      : "text-muted-foreground hover:bg-accent hover:text-foreground lg:border-l-2 lg:border-transparent",
+                  )
+                }
+              >
+                <item.icon className="h-[18px] w-[18px] shrink-0" aria-hidden="true" />
+                <span>{item.label}</span>
+              </NavLink>
+            ))}
+          </nav>
+        </aside>
+        <div className="flex min-w-0 flex-1 flex-col">
+          <header className="hidden h-12 items-center gap-4 border-b border-border bg-background px-6 lg:flex">
+            <span className="truncate text-sm uppercase tracking-wide text-muted-foreground">{user?.operatorName}</span>
+            {platformAdmin ? (
+              <ViewSwitch current="own" className="ml-auto" />
+            ) : (
+              <span className="ml-auto truncate text-sm text-muted-foreground">
+                {user?.name} · {user ? fr.roles[user.role] : ""}
+              </span>
+            )}
+            <button
+              onClick={handleLogout}
+              aria-label={fr.nav.logout}
+              className="flex h-11 w-11 items-center justify-center text-muted-foreground hover:text-foreground"
+            >
+              <LogOut className="h-5 w-5" />
+            </button>
+          </header>
+          <EmailVerificationBanner />
+          <main className="mx-auto w-full max-w-7xl flex-1 space-y-6 px-4 py-6 sm:px-6">
+            <Outlet />
+          </main>
+        </div>
+      </div>
     </div>
   );
 }
