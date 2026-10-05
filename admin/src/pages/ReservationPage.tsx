@@ -145,6 +145,7 @@ export default function ReservationPage() {
               <Info label={t.returnFlight}>
                 <span className="tabular font-mono">{r.returnFlight ?? "—"}</span>
               </Info>
+              {r.stop && <Info label={t.stop}>{r.stop.name}</Info>}
               <Info label={t.passengers}>{r.passengers}</Info>
             </dl>
             <dl>

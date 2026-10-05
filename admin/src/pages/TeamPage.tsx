@@ -183,6 +183,12 @@ export default function TeamPage() {
                         {t.postToday} : {fr.roles[m.post]}
                       </Badge>
                     )}
+                    {m.vehicle && (
+                      <Badge variant="outline">
+                        {t.vehicleToday} : {[m.vehicle.model, m.vehicle.colour].filter(Boolean).join(" ")}
+                        {m.vehicle.plate ? ` · ${m.vehicle.plate}` : ""}
+                      </Badge>
+                    )}
                     <span>
                       {t.lastLogin} : {m.lastLoginAt ? dateTime.format(new Date(m.lastLoginAt)) : fr.common.never}
                     </span>

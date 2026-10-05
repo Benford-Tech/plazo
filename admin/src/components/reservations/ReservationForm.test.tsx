@@ -13,6 +13,7 @@ vi.mock("@/lib/api", async importOriginal => {
       ...actual.adminApi,
       previewCapacity: (...args: unknown[]) => previewCapacity(...args),
       createReservation: (...args: unknown[]) => createReservation(...args),
+      getStops: async () => ({ data: [] }),
     },
   };
 });

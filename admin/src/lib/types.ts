@@ -24,6 +24,8 @@ export interface Staff {
   post?: StaffRole | null;
   postSetAt?: string | null;
   effectivePost?: StaffRole;
+  /** The shuttle taken for the day (V-A), null when none. */
+  vehicle?: { id: string; model: string; colour: string | null; plate: string | null; seats: number | null } | null;
   createdAt: string;
   operatorName?: string;
   /** Platform owner (PLATFORM_ADMIN_EMAILS): sees the "Plateforme" space. */
@@ -94,6 +96,9 @@ export interface Reservation {
   /** Bloc 2, Occupation: the spot and the key hook (null until placed). */
   spotId?: string | null;
   keyHook?: string | null;
+  /** D-A: the stop serving this traveller (null: the airport). */
+  stopId?: string | null;
+  stop?: { id: string; name: string; kind: ShuttleStopKind } | null;
 }
 
 export interface NightLoad {
@@ -183,6 +188,30 @@ export interface ShuttleVehicle {
   /** The usual driver, preselected in their app. */
   driverId: string | null;
   driverName: string | null;
+  /** Who took it today (V-A), null when free. */
+  holderId?: string | null;
+  holderName?: string | null;
+}
+
+export type ShuttleStopKind = "airport" | "station" | "other";
+
+/** A place the shuttle serves (D-A, 05/10/2026): the airport (built in, id null) or a stop of the parking. */
+export interface ShuttleStop {
+  id: string | null;
+  kind: ShuttleStopKind;
+  name: string;
+  lat: number;
+  lng: number;
+  instructions: string | null;
+  builtIn: boolean;
+}
+
+export interface ShuttleStopInput {
+  kind: ShuttleStopKind;
+  name: string;
+  lat: number;
+  lng: number;
+  instructions: string | null;
 }
 
 export type ShuttleVehicleInput = Omit<ShuttleVehicle, "id" | "driverName">;
@@ -217,6 +246,8 @@ export interface ReservationInput {
   customerEmail?: string | null;
   plate: string;
   returnFlight?: string | null;
+  /** D-A: a stop of the parking, or null for the airport. */
+  stopId?: string | null;
   notes?: string | null;
   externalReference?: string;
   priceCents?: number;

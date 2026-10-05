@@ -18,6 +18,8 @@ type Form = {
   customerEmail: string;
   plate: string;
   returnFlight: string;
+  /** D-A: a stop's id, "" for the airport. */
+  stopId: string;
   passengers: string;
   channel: ReservationChannel;
   channelDetail: string;
@@ -40,6 +42,7 @@ function initialForm(reservation?: Reservation, defaultDate?: string, prefill?: 
       customerEmail: prefill.customerEmail ?? "",
       plate: prefill.plate ?? "",
       returnFlight: prefill.returnFlight ?? "",
+      stopId: "",
       passengers: String(prefill.passengers ?? 1),
       channel: "aggregator",
       channelDetail: prefill.provider,
@@ -59,6 +62,7 @@ function initialForm(reservation?: Reservation, defaultDate?: string, prefill?: 
       customerEmail: reservation.customerEmail ?? "",
       plate: reservation.plate,
       returnFlight: reservation.returnFlight ?? "",
+      stopId: reservation.stopId ?? "",
       passengers: String(reservation.passengers),
       channel: reservation.channel,
       channelDetail: reservation.channelDetail ?? "",
@@ -75,6 +79,7 @@ function initialForm(reservation?: Reservation, defaultDate?: string, prefill?: 
     customerEmail: "",
     plate: "",
     returnFlight: "",
+    stopId: "",
     passengers: "1",
     channel: "phone",
     channelDetail: "",
@@ -127,6 +132,9 @@ export function ReservationForm({
     const handle = setTimeout(() => setStay(datesReady ? { a: arrivalAt, r: returnAt } : null), 300);
     return () => clearTimeout(handle);
   }, [arrivalAt, returnAt, datesReady]);
+  // D-A: the stops besides the airport; the field only shows when the parking has some.
+  const stops = useQuery({ queryKey: ["stops"], queryFn: adminApi.getStops });
+  const customStops = (stops.data?.data ?? []).filter(s => !s.builtIn && s.id);
   const capacity = useQuery({
     queryKey: ["capacity", stay?.a, stay?.r, reservation?.id],
     queryFn: () => adminApi.previewCapacity(stay!.a, stay!.r, reservation?.id),
@@ -149,6 +157,7 @@ export function ReservationForm({
         customerEmail: form.customerEmail.trim() || null,
         plate: form.plate,
         returnFlight: form.returnFlight.trim() || null,
+        stopId: form.stopId || null,
         notes: form.notes.trim() || null,
         ...(!reservation && prefill?.externalReference ? { externalReference: prefill.externalReference } : {}),
         ...(!reservation && prefill?.priceCents !== undefined ? { priceCents: prefill.priceCents } : {}),
@@ -164,7 +173,7 @@ export function ReservationForm({
     },
   });
 
-  const set = (key: keyof Form) => (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => setForm({ ...form, [key]: e.target.value });
+  const set = (key: keyof Form) => (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => setForm({ ...form, [key]: e.target.value });
   const missingDates = !arrivalAt ? fieldErrors.arrivalAt : !returnAt ? fieldErrors.returnAt : undefined;
   const nights = useMemo(() => (form.arrivalDate && form.returnDate ? nightsBetween(form.arrivalDate, form.returnDate) : null), [form.arrivalDate, form.returnDate]);
 
@@ -284,6 +293,18 @@ export function ReservationForm({
             className={cn(inputClass, "tabular font-mono uppercase")}
           />
         </Field>
+        {customStops.length > 0 && (
+          <Field id="stopId" label={t.stop} error={fieldErrors.stopId}>
+            <select id="stopId" value={form.stopId} onChange={set("stopId")} aria-invalid={!!fieldErrors.stopId} className={inputClass}>
+              <option value="">{t.stopAirport}</option>
+              {customStops.map(s => (
+                <option key={s.id!} value={s.id!}>
+                  {s.name}
+                </option>
+              ))}
+            </select>
+          </Field>
+        )}
         <Field id="passengers" label={t.passengers} error={fieldErrors.passengers}>
           <input
             id="passengers"

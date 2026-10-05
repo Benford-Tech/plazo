@@ -24,6 +24,8 @@ import type {
   Parking,
   ParkingSettings,
   ReturnMeetingPoint,
+  ShuttleStop,
+  ShuttleStopInput,
   ShuttleVehicle,
   ShuttleVehicleInput,
   LiveArrivals,
@@ -291,6 +293,20 @@ export const adminApi = {
     }),
   removeVehicle: (id: string) =>
     apiRequest<void>(`/internal/shuttle/vehicles/${id}`, { method: "DELETE" }),
+  // D-A: the places the shuttle serves (the airport first, built in, then the parking's stops).
+  getStops: () => apiRequest<{ data: ShuttleStop[] }>("/internal/shuttle/stops"),
+  addStop: (stop: ShuttleStopInput) =>
+    apiRequest<{ data: ShuttleStop }>("/internal/shuttle/stops", {
+      method: "POST",
+      body: json(stop),
+    }),
+  updateStop: (id: string, stop: Partial<ShuttleStopInput>) =>
+    apiRequest<{ data: ShuttleStop }>(`/internal/shuttle/stops/${id}`, {
+      method: "PATCH",
+      body: json(stop),
+    }),
+  removeStop: (id: string) =>
+    apiRequest<void>(`/internal/shuttle/stops/${id}`, { method: "DELETE" }),
   updateParking: (id: string, settings: ParkingSettings) =>
     apiRequest<{ data: Parking }>(`/internal/parkings/${id}`, {
       method: "PATCH",

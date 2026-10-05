@@ -4,6 +4,7 @@ import { toast } from "sonner";
 import { FormField } from "@/components/FormField";
 import { ParkingTabs } from "@/components/parking/ParkingTabs";
 import { ReturnMeetingPointForm } from "@/components/parking/ReturnMeetingPointForm";
+import { ShuttleStops } from "@/components/parking/ShuttleStops";
 import { ShuttleVehicles } from "@/components/parking/ShuttleVehicles";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
@@ -134,6 +135,7 @@ export default function ParkingPage() {
         </CardContent>
       </Card>
       <ReturnMeetingPointForm />
+      <ShuttleStops />
       <ShuttleVehicles />
     </>
   );
