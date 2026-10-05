@@ -2,25 +2,33 @@ import 'package:auto_route/auto_route.dart';
 import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:flutter_map/flutter_map.dart';
+import 'package:latlong2/latlong.dart';
 
+import '../../../../core/constants/app_constants.dart';
+import '../../../../core/enums/view_state.dart';
+import '../../../../core/helpers/money.dart';
 import '../../../../core/helpers/stay.dart';
 import '../../../../core/router/app_router.dart';
 import '../../../../core/utils/error_message_handler.dart';
 import '../../../../di/locator.dart';
 import '../../../../shared/theme/theme.dart';
 import '../../../../shared/widgets/app_card.dart';
-import '../../../../shared/widgets/brand_header.dart';
+import '../../../../shared/widgets/brand_logo.dart';
 import '../../../../shared/widgets/gradient_button.dart';
 import '../../../../shared/widgets/icon_tile.dart';
+import '../../../../shared/widgets/ign_map.dart';
 import '../../../../shared/widgets/status_badge.dart';
 import '../../../trips/presentation/bloc/trips_bloc.dart';
+import '../../data/models/public_models.dart';
 import '../bloc/search/search_bloc.dart';
 import '../widgets/dates_pill.dart';
 import '../widgets/stay_sheet.dart';
 
-/// A1, "Rechercher": the hero photo of the site (Pexels) under the orange veil, the airport, the
-/// single "Vos dates" pill and "Rechercher"; below, the next departure kept on this phone, the three
-/// steps and the trust chips (icons of direction H-B: filled, on gradient tiles).
+/// "Rechercher" in the mockup's composition (T-A, 05/10/2026): a greeting, the title in Playfair, the
+/// dates and "Rechercher" in a white card, then the map of the chosen stay with its floating pills
+/// (how many parkings, how far) and the best offer as the one orange card; below, the next
+/// departure kept on this phone, the three steps and the trust chips.
 @RoutePage()
 class SearchTabPage extends StatelessWidget implements AutoRouteWrapper {
   const SearchTabPage({super.key});
@@ -31,22 +39,25 @@ class SearchTabPage extends StatelessWidget implements AutoRouteWrapper {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: const BrandAppBar(),
       body: BlocListener<SearchBloc, SearchState>(
         listenWhen: (a, b) => a.submitted != b.submitted,
         listener: (context, s) => context.router.push(ResultsRoute(airport: s.airportSlug, arrivee: s.arrivalAt, retour: s.returnAt)),
         child: RefreshIndicator(
           color: AppColors.accent,
-          onRefresh: () async => context.read<TripsBloc>().add(const TripsLoaded(quiet: true)),
-          child: ListView(padding: EdgeInsets.zero, children: const [_Hero(), _NextDeparture(), _Steps(), _Trust()]),
+          onRefresh: () async {
+            context.read<TripsBloc>().add(const TripsLoaded(quiet: true));
+            context.read<SearchBloc>().add(const SearchPreviewRequested());
+          },
+          child: ListView(padding: EdgeInsets.zero, children: const [_Home(), _MapHero(), _NextDeparture(), _Steps(), _Trust()]),
         ),
       ),
     );
   }
 }
 
-class _Hero extends StatelessWidget {
-  const _Hero();
+/// The greeting row, the title and the search card.
+class _Home extends StatelessWidget {
+  const _Home();
 
   @override
   Widget build(BuildContext context) {
@@ -55,96 +66,99 @@ class _Hero extends StatelessWidget {
         final airportName = state.airport?.name ?? 'search.kicker'.tr();
         final canPick = state.airports.length > 1;
         final dateError = state.errors['arrivalAt'] ?? state.errors['returnAt'];
-        return Stack(
-          children: [
-            Positioned.fill(
-              child: Image.asset('assets/images/hero-tarmac-800.jpg', fit: BoxFit.cover, alignment: const Alignment(0, 0.2), excludeFromSemantics: true),
-            ),
-            const Positioned.fill(
-              child: DecoratedBox(
-                decoration: BoxDecoration(
-                  gradient: LinearGradient(
-                    begin: Alignment(-0.35, -1),
-                    end: Alignment(0.35, 1),
-                    colors: [Color(0xF0FF6600), Color(0xCCFF8A3D), Color(0x73F0A36B)],
-                    stops: [0, 0.55, 1],
-                  ),
-                ),
-              ),
-            ),
-            Padding(
-              padding: const EdgeInsets.fromLTRB(16, 20, 16, 26),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.stretch,
-                children: [
-                  Align(
-                    alignment: Alignment.centerLeft,
-                    child: Semantics(
+        return SafeArea(
+          bottom: false,
+          child: Padding(
+            padding: const EdgeInsets.fromLTRB(16, 10, 16, 0),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                Row(
+                  children: [
+                    const BrandLogo(height: 28),
+                    const Spacer(),
+                    Semantics(
                       button: canPick,
                       label: canPick ? 'search.airport_a11y'.tr(args: [airportName]) : airportName,
                       excludeSemantics: true,
-                      child: InkWell(
-                        key: const Key('airport-picker'),
-                        onTap: canPick ? () => _pickAirport(context, state) : null,
-                        child: ConstrainedBox(
-                          constraints: const BoxConstraints(minHeight: 32),
-                          child: Row(
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              const Icon(Icons.flight_takeoff_rounded, size: 15, color: AppColors.onBrandSoft),
-                              const SizedBox(width: 6),
-                              Text(airportName.toUpperCase(), style: AppText.label(size: 12, color: AppColors.onBrandSoft)),
-                              if (canPick) const Icon(Icons.expand_more_rounded, color: AppColors.onBrandSoft, size: 18),
-                            ],
+                      child: Material(
+                        color: Colors.white,
+                        shape: const StadiumBorder(),
+                        child: InkWell(
+                          key: const Key('airport-picker'),
+                          customBorder: const StadiumBorder(),
+                          onTap: canPick ? () => _pickAirport(context, state) : null,
+                          child: Padding(
+                            padding: const EdgeInsets.fromLTRB(12, 8, 10, 8),
+                            child: Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                const Icon(Icons.flight_takeoff_rounded, size: 15, color: AppColors.accent),
+                                const SizedBox(width: 6),
+                                Text(state.airport?.code ?? 'LYS', style: AppText.strong(size: 12.5)),
+                                if (canPick) const Icon(Icons.expand_more_rounded, color: AppColors.muted, size: 18),
+                              ],
+                            ),
                           ),
                         ),
                       ),
                     ),
-                  ),
-                  const SizedBox(height: 4),
-                  Semantics(
-                    header: true,
-                    child: Text('search.title'.tr(), style: AppText.title(size: 29, color: Colors.white).copyWith(height: 1.12)),
-                  ),
-                  const SizedBox(height: 16),
-                  Container(
-                    padding: const EdgeInsets.all(10),
-                    decoration: BoxDecoration(
-                      color: Colors.white,
-                      borderRadius: BorderRadius.circular(16),
-                      boxShadow: const [BoxShadow(color: Color(0x73000000), blurRadius: 30, offset: Offset(0, 12), spreadRadius: -12)],
-                    ),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.stretch,
+                  ],
+                ),
+                const SizedBox(height: 14),
+                Text('search.greeting_sub'.tr(), style: AppText.label(size: 12)),
+                const SizedBox(height: 2),
+                Semantics(
+                  header: true,
+                  child: Text.rich(
+                    TextSpan(
                       children: [
-                        DatesPill(
-                          arrivalAt: state.arrivalAt,
-                          returnAt: state.returnAt,
-                          errorText: dateError == null ? null : translateErrorCode(dateError),
-                          onTap: () async {
-                            final bloc = context.read<SearchBloc>();
-                            final stay = await showStaySheet(context, arrivalAt: state.arrivalAt, returnAt: state.returnAt);
-                            if (stay != null) bloc.add(SearchStayChanged(arrivalAt: stay.arrivalAt, returnAt: stay.returnAt));
-                          },
+                        TextSpan(
+                          text: '${'search.title_find'.tr()} ',
+                          style: AppText.title(size: 24, color: AppColors.muted),
                         ),
-                        const SizedBox(height: 10),
-                        GradientButton(
-                          key: const Key('search-submit'),
-                          label: 'search.submit'.tr(),
-                          onPressed: () => context.read<SearchBloc>().add(const SearchSubmitted()),
+                        TextSpan(
+                          text: 'search.title_near'.tr(args: [airportName]),
+                          style: AppText.title(size: 24, color: AppColors.brownOrInk).copyWith(fontWeight: FontWeight.w600),
                         ),
                       ],
                     ),
+                    style: const TextStyle(height: 1.12),
                   ),
-                ],
-              ),
+                ),
+                const SizedBox(height: 14),
+                Container(
+                  padding: const EdgeInsets.all(10),
+                  decoration: const BoxDecoration(
+                    color: Colors.white,
+                    borderRadius: AppRadius.card,
+                    boxShadow: [BoxShadow(color: Color(0x14000000), blurRadius: 24, offset: Offset(0, 10))],
+                  ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: [
+                      DatesPill(
+                        arrivalAt: state.arrivalAt,
+                        returnAt: state.returnAt,
+                        errorText: dateError == null ? null : translateErrorCode(dateError),
+                        onTap: () async {
+                          final bloc = context.read<SearchBloc>();
+                          final stay = await showStaySheet(context, arrivalAt: state.arrivalAt, returnAt: state.returnAt);
+                          if (stay != null) bloc.add(SearchStayChanged(arrivalAt: stay.arrivalAt, returnAt: stay.returnAt));
+                        },
+                      ),
+                      const SizedBox(height: 10),
+                      GradientButton(
+                        key: const Key('search-submit'),
+                        label: 'search.submit'.tr(),
+                        onPressed: () => context.read<SearchBloc>().add(const SearchSubmitted()),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
             ),
-            Positioned(
-              right: 10,
-              bottom: 5,
-              child: Text('search.photo_credit'.tr(), style: AppText.body(size: 10.5, color: Colors.white.withValues(alpha: 0.75))),
-            ),
-          ],
+          ),
         );
       },
     );
@@ -177,6 +191,234 @@ class _Hero extends StatelessWidget {
       ),
     );
     if (slug != null) bloc.add(SearchAirportChanged(slug));
+  }
+}
+
+/// The map of the stay: the terminals, the parkings as dots, a dashed line from the best offer to the
+/// terminal, the pills "N parkings disponibles" and "x km · navette n min", and the orange card.
+class _MapHero extends StatelessWidget {
+  const _MapHero();
+
+  @override
+  Widget build(BuildContext context) {
+    return BlocBuilder<SearchBloc, SearchState>(
+      builder: (context, state) {
+        final airport = state.preview?.airport ?? state.airport;
+        final terminals = airport?.location == null ? null : LatLng(airport!.location!.lat, airport.location!.lng);
+        final featured = state.featured;
+        final located = state.bookable.where((r) => r.location != null).toList();
+        final featuredPoint = featured?.location == null ? null : LatLng(featured!.location!.lat, featured.location!.lng);
+        final points = [?terminals, for (final r in located) LatLng(r.location!.lat, r.location!.lng)];
+        final center = featuredPoint ?? terminals ?? const LatLng(45.7256, 5.0811);
+        final count = state.bookable.length;
+        final countLabel = state.previewState.isProcessing && state.preview == null
+            ? 'search.preview_loading'.tr()
+            : count == 0
+            ? 'results.available_none'.tr()
+            : count == 1
+            ? 'results.available_one'.tr()
+            : 'results.available_many'.tr(args: ['$count']);
+        return Padding(
+          padding: const EdgeInsets.fromLTRB(16, 14, 16, 0),
+          child: ClipRRect(
+            borderRadius: AppRadius.card,
+            child: SizedBox(
+              key: const Key('search-map'),
+              height: 340,
+              child: Stack(
+                children: [
+                  Positioned.fill(child: Container(color: const Color(0xFFE6E6E9))),
+                  FlutterMap(
+                    key: ValueKey('${state.airportSlug}-${points.length}'),
+                    options: MapOptions(
+                      initialCenter: center,
+                      initialZoom: 12.5,
+                      initialCameraFit: points.length > 1
+                          ? CameraFit.bounds(bounds: LatLngBounds.fromPoints(points), padding: const EdgeInsets.fromLTRB(50, 96, 50, 170), maxZoom: 14)
+                          : null,
+                      interactionOptions: const InteractionOptions(flags: InteractiveFlag.none),
+                    ),
+                    children: [
+                      if (IgnMap.tilesEnabled)
+                        TileLayer(urlTemplate: AppConstants.ignPlanTilesUrl, userAgentPackageName: 'com.benfordtech.parking_app', maxNativeZoom: 19),
+                      if (featuredPoint != null && terminals != null)
+                        PolylineLayer(
+                          polylines: [
+                            Polyline(
+                              points: [featuredPoint, terminals],
+                              color: AppColors.brownOrInk,
+                              strokeWidth: 3,
+                              pattern: StrokePattern.dashed(segments: const [9, 7]),
+                            ),
+                          ],
+                        ),
+                      MarkerLayer(
+                        markers: [
+                          for (final r in located)
+                            Marker(
+                              point: LatLng(r.location!.lat, r.location!.lng),
+                              width: 18,
+                              height: 18,
+                              child: Container(
+                                decoration: BoxDecoration(
+                                  color: r.slug == featured?.slug ? AppColors.accent : Colors.white,
+                                  shape: BoxShape.circle,
+                                  border: Border.all(color: r.slug == featured?.slug ? Colors.white : AppColors.brownOrInk, width: 2.5),
+                                ),
+                              ),
+                            ),
+                          if (terminals != null)
+                            Marker(
+                              point: terminals,
+                              width: 160,
+                              height: 34,
+                              child: Center(child: _FloatingPill(text: 'search.map_airport'.tr(), dark: true)),
+                            ),
+                        ],
+                      ),
+                    ],
+                  ),
+                  Positioned(
+                    left: 12,
+                    top: 12,
+                    child: _FloatingPill(key: const Key('search-count'), text: countLabel, count: count > 0 ? '$count' : null),
+                  ),
+                  if (featured != null && (featured.distanceKm != null || featured.shuttleMinutes != null))
+                    Positioned(
+                      right: 12,
+                      top: 12,
+                      child: _FloatingPill(
+                        key: const Key('search-distance'),
+                        text: featured.distanceKm != null && featured.shuttleMinutes != null
+                            ? 'search.km_shuttle'.tr(args: [_km(featured.distanceKm!), '${featured.shuttleMinutes}'])
+                            : featured.distanceKm != null
+                            ? 'search.km'.tr(args: [_km(featured.distanceKm!)])
+                            : 'highlights.shuttle_min'.tr(args: ['${featured.shuttleMinutes}']),
+                      ),
+                    ),
+                  Positioned(
+                    right: 6,
+                    bottom: featured == null ? 6 : 118,
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 1),
+                      color: Colors.white.withValues(alpha: 0.8),
+                      child: Text(AppConstants.ignAttribution, style: AppText.body(size: 10, color: AppColors.muted)),
+                    ),
+                  ),
+                  if (featured != null)
+                    Positioned(
+                      left: 12,
+                      right: 12,
+                      bottom: 12,
+                      child: _FeaturedCard(result: featured, state: state),
+                    ),
+                ],
+              ),
+            ),
+          ),
+        );
+      },
+    );
+  }
+
+  static String _km(double km) => km < 10 ? km.toStringAsFixed(1).replaceAll('.', ',') : km.round().toString();
+}
+
+class _FloatingPill extends StatelessWidget {
+  const _FloatingPill({super.key, required this.text, this.count, this.dark = false});
+  final String text;
+  final String? count;
+  final bool dark;
+
+  @override
+  Widget build(BuildContext context) => Container(
+    padding: EdgeInsets.fromLTRB(count == null ? 12 : 6, 6, 12, 6),
+    decoration: BoxDecoration(
+      color: dark ? AppColors.brownOrInk : Colors.white,
+      borderRadius: AppRadius.pill,
+      boxShadow: const [BoxShadow(color: Color(0x22000000), blurRadius: 16, offset: Offset(0, 6))],
+    ),
+    child: Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        if (count != null) ...[
+          Container(
+            width: 24,
+            height: 24,
+            decoration: const BoxDecoration(color: AppColors.background, shape: BoxShape.circle),
+            child: Center(child: Text(count!, style: AppText.strong(size: 12))),
+          ),
+          const SizedBox(width: 7),
+        ],
+        Text(text, style: AppText.strong(size: 12, color: dark ? Colors.white : AppColors.ink)),
+      ],
+    ),
+  );
+}
+
+/// The one orange card: the best offer of the stay, opening its page.
+class _FeaturedCard extends StatelessWidget {
+  const _FeaturedCard({required this.result, required this.state});
+  final SearchResultModel result;
+  final SearchState state;
+
+  @override
+  Widget build(BuildContext context) {
+    final r = result;
+    final valet = r.services.contains('valet') ? 'search.featured_valet'.tr() : 'search.featured_self'.tr();
+    final sub = r.shuttleMinutes == null ? 'search.featured_sub_no_shuttle'.tr(args: [valet]) : 'search.featured_sub'.tr(args: [valet, '${r.shuttleMinutes}']);
+    return Semantics(
+      button: true,
+      label: 'search.see_parking'.tr(args: [r.title]),
+      excludeSemantics: true,
+      child: Material(
+        color: AppColors.accent,
+        borderRadius: AppRadius.card,
+        child: InkWell(
+          key: const Key('search-featured'),
+          borderRadius: AppRadius.card,
+          onTap: () => context.router.push(ParkingRoute(airport: state.airportSlug, parking: r.slug, arrivee: state.arrivalAt, retour: state.returnAt)),
+          child: Padding(
+            padding: const EdgeInsets.fromLTRB(14, 12, 12, 12),
+            child: Row(
+              children: [
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        'search.featured_from'.tr(args: [formatShortEuros(r.priceCents!)]),
+                        style: AppText.strong(size: 12, color: Colors.white.withValues(alpha: 0.85)),
+                      ),
+                      const SizedBox(height: 2),
+                      Text(
+                        r.title,
+                        style: AppText.strong(size: 17, color: Colors.white),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                      Text(
+                        sub,
+                        style: AppText.body(size: 12, weight: 600, color: Colors.white.withValues(alpha: 0.85)),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ],
+                  ),
+                ),
+                const SizedBox(width: 10),
+                Container(
+                  width: 40,
+                  height: 40,
+                  decoration: const BoxDecoration(color: Colors.white, shape: BoxShape.circle),
+                  child: const Icon(Icons.north_east_rounded, color: AppColors.accent, size: 20),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
   }
 }
 

@@ -65,7 +65,7 @@ class ReturnBloc extends Bloc<ReturnEvent, ReturnState> {
     final result = await _get(reference);
     result.fold(
       (failure) => emit(state.copyWith(loadState: initial ? ViewState.error : state.loadState, errorCode: _code(failure), now: _clock())),
-      (data) => emit(state.copyWith(loadState: ViewState.success, data: data, errorCode: null, now: _clock())),
+      (data) => emit(state.copyWith(loadState: ViewState.success, data: data, errorCode: null, now: _clock(), fetchedAt: _clock())),
     );
   }
 
@@ -76,7 +76,7 @@ class ReturnBloc extends Bloc<ReturnEvent, ReturnState> {
     final result = await _landed(reference);
     result.fold(
       (failure) => emit(state.copyWith(actionState: ViewState.error, errorCode: _code(failure))),
-      (data) => emit(state.copyWith(actionState: ViewState.success, data: data, now: _clock())),
+      (data) => emit(state.copyWith(actionState: ViewState.success, data: data, now: _clock(), fetchedAt: _clock())),
     );
   }
 
@@ -94,7 +94,12 @@ class ReturnBloc extends Bloc<ReturnEvent, ReturnState> {
           emit(state.copyWith(data: data.copyWith(shuttle: null), shuttleEndedAt: _clock(), now: _clock()));
           await _load(emit, initial: false);
         } else {
-          emit(state.copyWith(data: data.copyWith(shuttle: status.shuttle), now: _clock()));
+          emit(
+            state.copyWith(
+              data: data.copyWith(shuttle: status.shuttle),
+              now: _clock(),
+            ),
+          );
         }
       });
       return;

@@ -23,3 +23,8 @@ class SearchStayChanged extends SearchEvent {
 class SearchSubmitted extends SearchEvent {
   const SearchSubmitted();
 }
+
+/// The home's preview of the current stay (map and featured parking).
+class SearchPreviewRequested extends SearchEvent {
+  const SearchPreviewRequested();
+}

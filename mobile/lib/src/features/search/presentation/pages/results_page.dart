@@ -24,12 +24,7 @@ import '../widgets/stay_sheet.dart';
 /// one tap, the site's sorts and filters.
 @RoutePage()
 class ResultsPage extends StatelessWidget implements AutoRouteWrapper {
-  const ResultsPage({
-    super.key,
-    @PathParam('airport') required this.airport,
-    @QueryParam('arrivee') this.arrivee,
-    @QueryParam('retour') this.retour,
-  });
+  const ResultsPage({super.key, @PathParam('airport') required this.airport, @QueryParam('arrivee') this.arrivee, @QueryParam('retour') this.retour});
 
   final String airport;
   final String? arrivee;
@@ -84,15 +79,18 @@ class _ResultsView extends StatelessWidget {
               child: FittedBox(
                 fit: BoxFit.scaleDown,
                 alignment: Alignment.centerLeft,
-                child: Text('results.header'.tr(args: [name, range, '$days']), style: AppText.strong(size: 15.5, color: Colors.white)),
+                child: Text(
+                  'results.header'.tr(args: [name, range, '$days']),
+                  style: AppText.strong(size: 15.5, color: AppColors.brownOrInk),
+                ),
               ),
             ),
             actions: [
               TextButton(
                 key: const Key('results-modify'),
                 onPressed: () => _modify(context),
-                style: TextButton.styleFrom(minimumSize: const Size(48, 48), foregroundColor: Colors.white),
-                child: Text('results.modify'.tr(), style: AppText.strong(size: 14, color: Colors.white)),
+                style: TextButton.styleFrom(minimumSize: const Size(48, 48), foregroundColor: AppColors.accent),
+                child: Text('results.modify'.tr(), style: AppText.strong(size: 14, color: AppColors.accent)),
               ),
               const SizedBox(width: 4),
             ],
@@ -214,9 +212,7 @@ class _ResultsView extends StatelessWidget {
         title: none ? 'results.none_title'.tr() : 'results.no_match_title'.tr(),
         text: none ? 'results.none_text'.tr() : 'results.no_match_text'.tr(),
         action: none ? 'parking.change_dates'.tr() : 'results.clear'.tr(),
-        onAction: none
-            ? () => _modify(context)
-            : () => context.read<ResultsBloc>().add(ResultsFiltersChanged(state.filters.cleared())),
+        onAction: none ? () => _modify(context) : () => context.read<ResultsBloc>().add(ResultsFiltersChanged(state.filters.cleared())),
       );
     }
     final count = state.availableCount;
@@ -247,12 +243,7 @@ class _ResultsView extends StatelessWidget {
             return Text(state.online ? 'results.footnote_online'.tr() : 'results.footnote_on_site'.tr(), style: AppText.muted(size: 12.5));
           }
           final r = shown[i - 1];
-          return ResultCard(
-            result: r,
-            highlighted: i == 1 && r.available,
-            badges: state.badges[r.slug] ?? const [],
-            onTap: () => _open(context, r),
-          );
+          return ResultCard(result: r, highlighted: i == 1 && r.available, badges: state.badges[r.slug] ?? const [], onTap: () => _open(context, r));
         },
       ),
     );

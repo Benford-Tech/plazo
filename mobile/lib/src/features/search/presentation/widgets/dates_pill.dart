@@ -57,10 +57,19 @@ class DatesPill extends StatelessWidget {
                             TextSpan(
                               children: [
                                 TextSpan(text: short.start, style: AppText.strong(size: 14.5)),
-                                TextSpan(text: ' ${a!.time}', style: AppText.body(size: 12.5, weight: 500, color: AppColors.muted)),
-                                TextSpan(text: '  →  ', style: AppText.body(size: 13, color: AppColors.muted)),
+                                TextSpan(
+                                  text: ' ${a!.time}',
+                                  style: AppText.body(size: 12.5, weight: 500, color: AppColors.muted),
+                                ),
+                                TextSpan(
+                                  text: '  →  ',
+                                  style: AppText.body(size: 13, color: AppColors.muted),
+                                ),
                                 TextSpan(text: short.end, style: AppText.strong(size: 14.5)),
-                                TextSpan(text: ' ${r!.time}', style: AppText.body(size: 12.5, weight: 500, color: AppColors.muted)),
+                                TextSpan(
+                                  text: ' ${r!.time}',
+                                  style: AppText.body(size: 12.5, weight: 500, color: AppColors.muted),
+                                ),
                               ],
                             ),
                             maxLines: 1,

@@ -12,10 +12,14 @@ abstract class ReturnState with _$ReturnState {
     @Default(ViewState.idle) ViewState loadState,
     @Default(ViewState.idle) ViewState actionState,
     TravellerReturnModel? data,
+
     /// The trip that was on its way just ended (a short notice).
     DateTime? shuttleEndedAt,
     String? errorCode,
     required DateTime now,
+
+    /// When the return state was last read from the API (the "En direct" pills count from it).
+    DateTime? fetchedAt,
   }) = _ReturnState;
 
   /// Landed (by the API or the traveller) → at the meeting point → the shuttle on its way → the car.

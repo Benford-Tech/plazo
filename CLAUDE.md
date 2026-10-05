@@ -260,7 +260,17 @@ Canevas de référence : https://claude.ai/artifact/6ezoCDyLXFNwhAH5ZWUf4u (rang
   à la compilation selon le flavor (`AppColors`, `AppRadius`, `AppFonts` dans `shared/theme/theme.dart`). Écran de connexion :
   direction **C-C « Tableau des vols »** (04/10/2026) : grille d'affichage sous un voile noir, formulaire dans une carte bordée de
   jaune ; rien ne nomme un parking avant la connexion (l'app sert plusieurs parkings).
-- **App Plazo voyageur (Flutter)** : direction **D « style Thempo »** — **en-tête orange easyJet `#FF6600`** (T-A,
+- **App Plazo voyageur (Flutter)** : **direction T-A « Parking » (choix T-A + F-A du 05/10/2026, d'après la maquette de Joanny)** :
+  fond gris clair `#ECECEE`, cartes blanches très arrondies (22 px) à ombre douce, **plus d'en-tête orange** (barre sur le
+  fond gris, logo ou titre brun), une seule carte orange `#FF6600` par écran (parking recommandé, bouton d'action), pilules
+  flottantes sur la carte, police **Manrope** pour le texte et les chiffres, Playfair italique gardé sur le titre d'accueil et
+  les petits mots de l'anneau ; **accent sur le temps réel** : pilule « EN DIRECT · il y a N s » (`LivePill`) partout où
+  l'app interroge l'API, anneau de compte à rebours à la seconde (`ReturnRing` : atterrissage, puis navette), écran
+  « Retrouver ma voiture » (`/ma-reservation/:ref/ma-voiture`, place et zone du voiturier via `TravellerReturn.spot`,
+  position du parking, itinéraire à pied). Accueil Rechercher : salutation, titre, dates et bouton dans une carte blanche,
+  carte IGN du séjour avec « N parkings disponibles », distance et navette, carte orange du moins cher
+  (`SearchBloc.preview`). L'ancienne direction D reste documentée ci-dessous pour mémoire.
+  Direction **D « style Thempo »** (jusqu'au 05/10/2026) — **en-tête orange easyJet `#FF6600`** (T-A,
   03/10/2026, à la place du prune), brun foncé `#2C1A0E` pour les textes forts et les surfaces sombres, accent
   **orange léger `#FF8A3D`** (V-A, 03/10/2026, à la place du violet), pêche `#f0a36b` pour le temps fort,
   dégradé orange léger → pêche sur les actions principales, Playfair Display (titres) + Inter, cartes arrondies ; plaques façon C aussi.

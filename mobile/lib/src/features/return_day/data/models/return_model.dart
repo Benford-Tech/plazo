@@ -12,11 +12,13 @@ abstract class FlightViewModel with _$FlightViewModel {
 
   const factory FlightViewModel({
     String? number,
+
     /// scheduled, delayed, departed, landed, cancelled, diverted, unknown; null: not looked up yet.
     String? status,
     DateTime? scheduledAt,
     DateTime? estimatedAt,
     DateTime? landedAt,
+
     /// tracking (the flight API) or traveller ("J'ai atterri").
     String? landedSource,
     String? terminal,
@@ -101,7 +103,8 @@ abstract class StayShuttlesModel with _$StayShuttlesModel {
 
 @freezed
 abstract class ReturnParkingModel with _$ReturnParkingModel {
-  const factory ReturnParkingModel({required String name, String? phone, int? shuttleMinutes, String? address}) = _ReturnParkingModel;
+  const factory ReturnParkingModel({required String name, String? phone, int? shuttleMinutes, String? address, ShuttlePositionModel? location}) =
+      _ReturnParkingModel;
 
   factory ReturnParkingModel.fromJson(Map<String, dynamic> json) => _$ReturnParkingModelFromJson(json);
 }
@@ -123,12 +126,22 @@ abstract class TravellerReturnModel with _$TravellerReturnModel {
     TravellerShuttleModel? shuttle,
     required ReturnParkingModel parking,
     required String plate,
+
+    /// The spot the valet placed the vehicle on (bloc 2), for "Retrouver ma voiture"; null until placed.
+    ReturnSpotModel? spot,
   }) = _TravellerReturnModel;
 
   factory TravellerReturnModel.fromJson(Map<String, dynamic> json) => _$TravellerReturnModelFromJson(json);
 
   bool get atMeetingPoint => atMeetingPointAt != null;
   bool get shuttleRunning => shuttle != null;
+}
+
+@freezed
+abstract class ReturnSpotModel with _$ReturnSpotModel {
+  const factory ReturnSpotModel({required String code, String? stayClass}) = _ReturnSpotModel;
+
+  factory ReturnSpotModel.fromJson(Map<String, dynamic> json) => _$ReturnSpotModelFromJson(json);
 }
 
 /// GET /public/bookings/:reference/shuttle.
@@ -156,6 +169,7 @@ abstract class WalkingRouteModel with _$WalkingRouteModel {
     @Default([]) List<List<double>> geometry,
     @Default(0) int distanceM,
     @Default(1) int durationMinutes,
+
     /// The routing service failed: a straight line.
     @Default(false) bool fallback,
     required RoutePointModel from,

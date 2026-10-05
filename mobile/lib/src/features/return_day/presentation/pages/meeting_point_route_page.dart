@@ -29,8 +29,7 @@ class MeetingPointRoutePage extends StatelessWidget implements AutoRouteWrapper 
   final String reference;
 
   @override
-  Widget wrappedRoute(BuildContext context) =>
-      BlocProvider(create: (_) => locator<MeetingRouteBloc>()..add(MeetingRouteOpened(reference)), child: this);
+  Widget wrappedRoute(BuildContext context) => BlocProvider(create: (_) => locator<MeetingRouteBloc>()..add(MeetingRouteOpened(reference)), child: this);
 
   @override
   Widget build(BuildContext context) {
@@ -67,7 +66,10 @@ class MeetingPointRoutePage extends StatelessWidget implements AutoRouteWrapper 
                 ? Column(
                     children: [
                       const LinearProgressIndicator(color: AppColors.accent, backgroundColor: AppColors.canvas),
-                      Padding(padding: const EdgeInsets.all(24), child: Text('return_day.route_loading'.tr(), style: AppText.muted())),
+                      Padding(
+                        padding: const EdgeInsets.all(24),
+                        child: Text('return_day.route_loading'.tr(), style: AppText.muted()),
+                      ),
                     ],
                   )
                 : ListView(
@@ -86,7 +88,11 @@ class MeetingPointRoutePage extends StatelessWidget implements AutoRouteWrapper 
                                     child: Column(
                                       crossAxisAlignment: CrossAxisAlignment.start,
                                       children: [
-                                        Text('return_day.route_minutes'.tr(args: ['${route.durationMinutes}']), key: const Key('route-minutes'), style: AppText.big()),
+                                        Text(
+                                          'return_day.route_minutes'.tr(args: ['${route.durationMinutes}']),
+                                          key: const Key('route-minutes'),
+                                          style: AppText.big(),
+                                        ),
                                         Text('return_day.route_distance_walk'.tr(args: [distanceLabel(route.distanceM)]), style: AppText.muted()),
                                       ],
                                     ),
@@ -97,7 +103,10 @@ class MeetingPointRoutePage extends StatelessWidget implements AutoRouteWrapper 
                             ),
                             if (route.fallback) ...[
                               const SizedBox(height: 10),
-                              AppCard(color: AppColors.canvas, child: Text('return_day.route_fallback'.tr(), key: const Key('route-fallback'), style: AppText.muted())),
+                              AppCard(
+                                color: AppColors.canvas,
+                                child: Text('return_day.route_fallback'.tr(), key: const Key('route-fallback'), style: AppText.muted()),
+                              ),
                             ],
                             if (!state.fromMe) ...[
                               const SizedBox(height: 10),
@@ -173,7 +182,10 @@ class _RouteMap extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final points = [for (final p in route.geometry) if (p.length >= 2) LatLng(p[0], p[1])];
+    final points = [
+      for (final p in route.geometry)
+        if (p.length >= 2) LatLng(p[0], p[1]),
+    ];
     return Padding(
       padding: EdgeInsets.zero,
       child: IgnMap(
@@ -224,7 +236,10 @@ class _Instructions extends StatelessWidget {
             child: Row(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                SizedBox(width: 26, child: Text('${i + 1}.', style: AppText.strong(size: 14, color: AppColors.accent))),
+                SizedBox(
+                  width: 26,
+                  child: Text('${i + 1}.', style: AppText.strong(size: 14, color: AppColors.accent)),
+                ),
                 Expanded(child: Text(lines[i].replaceFirst(RegExp(r'^\d+[.)]\s*'), ''), style: AppText.body(size: 14, height: 1.45))),
               ],
             ),

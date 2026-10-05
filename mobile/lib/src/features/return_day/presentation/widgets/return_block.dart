@@ -14,10 +14,12 @@ import '../../../../shared/widgets/app_card.dart';
 import '../../../../shared/widgets/gradient_button.dart';
 import '../../../../shared/widgets/ign_map.dart';
 import '../../../../shared/widgets/live_dot.dart';
+import '../../../../shared/widgets/live_pill.dart';
 import '../../../arrival/data/models/arrival_model.dart';
 import '../../../arrival/presentation/bloc/arrival_bloc.dart';
 import '../../data/models/return_model.dart';
 import '../bloc/return_bloc.dart';
+import 'return_ring.dart';
 
 /// "Votre retour aujourd'hui" (approved design R1, and R3 inline while the shuttle is on its way):
 /// the timeline of the return, "Itinéraire vers le point de rendez-vous" and "Je suis au point de
@@ -41,7 +43,12 @@ class ReturnBlock extends StatelessWidget {
           if (!data.returnDay) return const SizedBox.shrink();
           final shuttle = data.shuttle;
           final children = <Widget>[
-            if (shuttle != null) _ShuttleLive(data: data, shuttle: shuttle, now: state.now) else _Timeline(state: state),
+            // T-A: the ring counts the landing, then the shuttle, in real time.
+            ReturnRing(data: data, step: state.step, fetchedAt: state.fetchedAt ?? state.now),
+            if (shuttle != null)
+              _ShuttleLive(data: data, shuttle: shuttle, now: state.now, fetchedAt: state.fetchedAt ?? state.now)
+            else
+              _Timeline(state: state),
             if (shuttle == null && state.shuttleEndedAt != null) _Notice(text: 'return_day.shuttle_ended'.tr()),
             if (shuttle == null) ..._actions(context, state),
             if (state.errorCode != null && state.actionState.isError) _Notice(text: translateErrorCode(state.errorCode), error: true),
@@ -70,6 +77,14 @@ class ReturnBlock extends StatelessWidget {
         label: 'return_day.directions'.tr(),
         onPressed: () => context.router.push(MeetingPointRouteRoute(reference: data.reference)),
       ),
+      // The valet placed the car (bloc 2): where it is, for when the shuttle drops the traveller back.
+      if (data.spot != null)
+        OutlineAction(
+          key: const Key('find-car-button'),
+          icon: Icons.directions_car_rounded,
+          label: 'find_car.button'.tr(args: [data.spot!.code]),
+          onPressed: () => context.router.push(FindCarRoute(reference: data.reference)),
+        ),
       if (!data.atMeetingPoint) ...[
         OutlineAction(
           key: const Key('at-point-button'),
@@ -81,7 +96,11 @@ class ReturnBlock extends StatelessWidget {
         ),
         Text('return_day.at_point_help'.tr(), style: AppText.muted()),
       ] else
-        Text('return_day.at_point_done'.tr(args: [hhmm(data.atMeetingPointAt!)]), key: const Key('at-point-done'), style: AppText.muted()),
+        Text(
+          'return_day.at_point_done'.tr(args: [hhmm(data.atMeetingPointAt!)]),
+          key: const Key('at-point-done'),
+          style: AppText.muted(),
+        ),
     ];
   }
 }
@@ -164,7 +183,12 @@ class _Timeline extends StatelessWidget {
           bold: step == ReturnStep.shuttle,
         ),
         const _Link(),
-        _Step(title: 'return_day.step_car'.tr(), subtitle: 'return_day.step_car_help'.tr(args: [formatPlate(d.plate)]), dot: _Dot.todo, bold: false),
+        _Step(
+          title: 'return_day.step_car'.tr(),
+          subtitle: 'return_day.step_car_help'.tr(args: [formatPlate(d.plate)]),
+          dot: _Dot.todo,
+          bold: false,
+        ),
       ],
     );
   }
@@ -188,8 +212,26 @@ class _Step extends StatelessWidget {
           padding: const EdgeInsets.only(top: 4),
           child: switch (dot) {
             _Dot.now => const LiveDot(color: AppColors.peach, size: 10),
-            _Dot.done => Container(width: 20, height: 20, alignment: Alignment.center, child: Container(width: 10, height: 10, decoration: const BoxDecoration(shape: BoxShape.circle, color: AppColors.accent))),
-            _Dot.todo => Container(width: 20, height: 20, alignment: Alignment.center, child: Container(width: 10, height: 10, decoration: const BoxDecoration(shape: BoxShape.circle, color: AppColors.line))),
+            _Dot.done => Container(
+              width: 20,
+              height: 20,
+              alignment: Alignment.center,
+              child: Container(
+                width: 10,
+                height: 10,
+                decoration: const BoxDecoration(shape: BoxShape.circle, color: AppColors.accent),
+              ),
+            ),
+            _Dot.todo => Container(
+              width: 20,
+              height: 20,
+              alignment: Alignment.center,
+              child: Container(
+                width: 10,
+                height: 10,
+                decoration: const BoxDecoration(shape: BoxShape.circle, color: AppColors.line),
+              ),
+            ),
           },
         ),
         const SizedBox(width: 8),
@@ -213,16 +255,19 @@ class _Link extends StatelessWidget {
   Widget build(BuildContext context) => Container(
     margin: const EdgeInsets.only(left: 9),
     height: 14,
-    decoration: const BoxDecoration(border: Border(left: BorderSide(color: AppColors.line, width: 2))),
+    decoration: const BoxDecoration(
+      border: Border(left: BorderSide(color: AppColors.line, width: 2)),
+    ),
   );
 }
 
 /// R3: the shuttle on its way (map, ETA, vehicle, driver, instructions, "Appeler le parking").
 class _ShuttleLive extends StatelessWidget {
-  const _ShuttleLive({required this.data, required this.shuttle, required this.now});
+  const _ShuttleLive({required this.data, required this.shuttle, required this.now, required this.fetchedAt});
   final TravellerReturnModel data;
   final TravellerShuttleModel shuttle;
   final DateTime now;
+  final DateTime fetchedAt;
 
   @override
   Widget build(BuildContext context) {
@@ -240,7 +285,15 @@ class _ShuttleLive extends StatelessWidget {
           children: [
             const LiveDot(color: AppColors.peach),
             const SizedBox(width: 6),
-            Flexible(child: Text('return_day.shuttle_live'.tr(), style: AppText.strong(size: 16, color: AppColors.peach))),
+            Expanded(
+              child: Text('return_day.shuttle_live'.tr(), style: AppText.strong(size: 16, color: AppColors.peach)),
+            ),
+            // The position's own age, counting between two polls.
+            LivePill(
+              label: 'live.position'.tr(),
+              at: fetchedAt.subtract(Duration(seconds: shuttle.positionAgeSeconds ?? 0)),
+              color: AppColors.peach,
+            ),
           ],
         ),
         if (meeting != null)
@@ -259,7 +312,11 @@ class _ShuttleLive extends StatelessWidget {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text(eta == null ? 'return_day.shuttle_eta_unknown'.tr() : 'return_day.shuttle_eta'.tr(args: ['$eta']), key: const Key('shuttle-eta'), style: AppText.big()),
+                    Text(
+                      eta == null ? 'return_day.shuttle_eta_unknown'.tr() : 'return_day.shuttle_eta'.tr(args: ['$eta']),
+                      key: const Key('shuttle-eta'),
+                      style: AppText.big(),
+                    ),
                     Text(
                       shuttle.etaAt != null ? 'return_day.shuttle_arrival_around'.tr(args: [hhmm(shuttle.etaAt!)]) : 'return_day.shuttle_waiting_position'.tr(),
                       style: AppText.muted(),
@@ -278,11 +335,16 @@ class _ShuttleLive extends StatelessWidget {
                         children: [
                           if (vehicle.model != null) TextSpan(text: vehicle.model),
                           if (vehicle.model != null && vehicle.plate != null) const TextSpan(text: ' · '),
-                          if (vehicle.plate != null) TextSpan(text: formatPlate(vehicle.plate!), style: AppText.muted(size: 12.5).copyWith(fontWeight: FontWeight.w700, color: AppColors.ink)),
+                          if (vehicle.plate != null)
+                            TextSpan(
+                              text: formatPlate(vehicle.plate!),
+                              style: AppText.muted(size: 12.5).copyWith(fontWeight: FontWeight.w700, color: AppColors.ink),
+                            ),
                         ],
                       ),
                     ),
-                  if (shuttle.driverFirstName.isNotEmpty) Text('return_day.shuttle_driver'.tr(args: [shuttle.driverFirstName]), style: AppText.muted(size: 12.5)),
+                  if (shuttle.driverFirstName.isNotEmpty)
+                    Text('return_day.shuttle_driver'.tr(args: [shuttle.driverFirstName]), style: AppText.muted(size: 12.5)),
                 ],
               ),
             ],

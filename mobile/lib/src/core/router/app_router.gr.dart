@@ -123,6 +123,60 @@ class BookingFormRouteArgs {
 }
 
 /// generated route for
+/// [FindCarPage]
+class FindCarRoute extends PageRouteInfo<FindCarRouteArgs> {
+  FindCarRoute({
+    Key? key,
+    required String reference,
+    List<PageRouteInfo>? children,
+  }) : super(
+         FindCarRoute.name,
+         args: FindCarRouteArgs(key: key, reference: reference),
+         rawPathParams: {'reference': reference},
+         initialChildren: children,
+       );
+
+  static const String name = 'FindCarRoute';
+
+  static PageInfo page = PageInfo(
+    name,
+    builder: (data) {
+      final pathParams = data.inheritedPathParams;
+      final args = data.argsAs<FindCarRouteArgs>(
+        orElse: () =>
+            FindCarRouteArgs(reference: pathParams.getString('reference')),
+      );
+      return WrappedRoute(
+        child: FindCarPage(key: args.key, reference: args.reference),
+      );
+    },
+  );
+}
+
+class FindCarRouteArgs {
+  const FindCarRouteArgs({this.key, required this.reference});
+
+  final Key? key;
+
+  final String reference;
+
+  @override
+  String toString() {
+    return 'FindCarRouteArgs{key: $key, reference: $reference}';
+  }
+
+  @override
+  bool operator ==(Object other) {
+    if (identical(this, other)) return true;
+    if (other is! FindCarRouteArgs) return false;
+    return key == other.key && reference == other.reference;
+  }
+
+  @override
+  int get hashCode => key.hashCode ^ reference.hashCode;
+}
+
+/// generated route for
 /// [MeetingPointRoutePage]
 class MeetingPointRouteRoute extends PageRouteInfo<MeetingPointRouteRouteArgs> {
   MeetingPointRouteRoute({

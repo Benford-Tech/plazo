@@ -8,6 +8,7 @@ abstract class MeetingRouteState with _$MeetingRouteState {
     @Default(ViewState.idle) ViewState actionState,
     TravellerReturnModel? data,
     WalkingRouteModel? route,
+
     /// The route starts at the phone's position (else at the terminal).
     @Default(false) bool fromMe,
     LocationAccess? locationProblem,

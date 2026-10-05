@@ -89,7 +89,7 @@ class MyBookingPage extends StatelessWidget implements AutoRouteWrapper {
       child: Scaffold(
         appBar: AppBar(
           titleSpacing: NavigationToolbar.kMiddleSpacing,
-          title: Text('trips.title'.tr(), style: AppText.strong(size: 16, color: Colors.white)),
+          title: Text('trips.title'.tr(), style: AppText.strong(size: 16, color: AppColors.brownOrInk)),
           leading: BackButton(
             onPressed: () => context.router.canPop() ? context.router.maybePop() : context.router.replaceAll([const AppShellRoute(children: [TripsTabRoute()])]),
           ),

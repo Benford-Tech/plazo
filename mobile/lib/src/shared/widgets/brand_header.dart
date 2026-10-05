@@ -18,13 +18,15 @@ class BrandAppBar extends StatelessWidget implements PreferredSizeWidget {
 
   @override
   Widget build(BuildContext context) {
+    // T-A (05/10/2026): the traveller's bar is the grey ground itself, the logo (an orange sign) or a brown title on it.
+    final isPro = AppConstants.isPro;
     return AppBar(
       toolbarHeight: 60,
-      backgroundColor: AppColors.brand,
+      backgroundColor: isPro ? AppColors.brand : AppColors.background,
       leading: leading,
       title: title == null
           ? BrandLogo(height: 30, pro: pro)
-          : Text(title!, style: AppText.title(size: 24, color: pro && AppConstants.isPro ? AppColors.accent : Colors.white)),
+          : Text(title!, style: AppText.title(size: 24, color: pro && isPro ? AppColors.accent : AppColors.brownOrInk)),
       actions: actions,
     );
   }

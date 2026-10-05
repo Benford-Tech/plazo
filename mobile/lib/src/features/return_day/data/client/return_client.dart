@@ -32,7 +32,11 @@ abstract class ReturnClient {
 
   /// This phone, for the pushes about the shuttle (N-A): { subscriptionId, platform }.
   @PUT('public/bookings/{reference}/devices')
-  Future<dynamic> registerDevice({@Path('reference') required String reference, @Header('x-booking-token') required String token, @Body() required Map<String, dynamic> body});
+  Future<dynamic> registerDevice({
+    @Path('reference') required String reference,
+    @Header('x-booking-token') required String token,
+    @Body() required Map<String, dynamic> body,
+  });
 
   @DELETE('public/bookings/{reference}/devices/{subscriptionId}')
   Future<void> unregisterDevice({

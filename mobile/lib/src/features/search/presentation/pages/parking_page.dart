@@ -41,9 +41,9 @@ class ParkingPage extends StatelessWidget implements AutoRouteWrapper {
 
   @override
   Widget wrappedRoute(BuildContext context) => BlocProvider(
-    create: (_) =>
-        locator<ParkingBloc>(param1: StayParams(airport: airport, parking: parking, arrivalAt: arrivee, returnAt: retour))
-          ..add(const ParkingRequested()),
+    create: (_) => locator<ParkingBloc>(
+      param1: StayParams(airport: airport, parking: parking, arrivalAt: arrivee, returnAt: retour),
+    )..add(const ParkingRequested()),
     child: this,
   );
 
@@ -59,7 +59,9 @@ class _ParkingView extends StatefulWidget {
 }
 
 class _ParkingViewState extends State<_ParkingView> {
-  final _sections = {for (final k in ['outbound', 'inbound', 'access']) k: GlobalKey()};
+  final _sections = {
+    for (final k in ['outbound', 'inbound', 'access']) k: GlobalKey(),
+  };
 
   void _goTo(String key) {
     final ctx = _sections[key]?.currentContext;
@@ -80,7 +82,7 @@ class _ParkingViewState extends State<_ParkingView> {
         return Scaffold(
           appBar: AppBar(
             titleSpacing: NavigationToolbar.kMiddleSpacing,
-            title: Text(response?.parking.title ?? '', style: AppText.strong(size: 16, color: Colors.white)),
+            title: Text(response?.parking.title ?? '', style: AppText.strong(size: 16, color: AppColors.brownOrInk)),
           ),
           body: response == null
               ? Center(
@@ -135,7 +137,10 @@ class _ParkingViewState extends State<_ParkingView> {
               const SizedBox(height: 10),
               TrustBand(tiles: tiles),
               const SizedBox(height: 8),
-              Text(factsLine(services: p.services, distanceKm: p.distanceKm), style: AppText.muted()),
+              Text(
+                factsLine(services: p.services, distanceKm: p.distanceKm),
+                style: AppText.muted(),
+              ),
               const SizedBox(height: 12),
               Semantics(
                 label: 'parking.anchors'.tr(),
@@ -154,10 +159,7 @@ class _ParkingViewState extends State<_ParkingView> {
                 Text(p.description!, style: AppText.body(height: 1.5)),
               ],
               _sectionTitle('parking.outbound'.tr(), key: _sections['outbound']),
-              Text(
-                shuttle != null ? 'parking.outbound_text_min'.tr(args: ['$shuttle']) : 'parking.outbound_text'.tr(),
-                style: AppText.body(height: 1.5),
-              ),
+              Text(shuttle != null ? 'parking.outbound_text_min'.tr(args: ['$shuttle']) : 'parking.outbound_text'.tr(), style: AppText.body(height: 1.5)),
               _sectionTitle('parking.inbound'.tr(), key: _sections['inbound']),
               Text('parking.inbound_text'.tr(), style: AppText.body(height: 1.5)),
               _sectionTitle('parking.access'.tr(), key: _sections['access']),
@@ -181,7 +183,6 @@ class _ParkingViewState extends State<_ParkingView> {
     padding: const EdgeInsets.only(top: 22, bottom: 6),
     child: Semantics(header: true, child: Text(text, style: AppText.title(size: 21))),
   );
-
 }
 
 class _Photos extends StatefulWidget {
@@ -263,16 +264,15 @@ class _BookingBar extends StatelessWidget {
       left = Text(cheapest == null ? '' : 'parking.from'.tr(args: [formatEuros(cheapest.priceCents)]), style: AppText.strong(size: 18));
       right = GradientButton(key: const Key('parking-choose-dates'), label: 'parking.choose_dates'.tr(), onPressed: onChangeDates);
     } else if (!offer.bookable) {
-      left = _priceAndDates(
-        offer.priceCents == null ? 'parking.no_price'.tr() : 'parking.full'.tr(),
-        datesLine!,
-        onChangeDates,
-        muted: true,
-      );
+      left = _priceAndDates(offer.priceCents == null ? 'parking.no_price'.tr() : 'parking.full'.tr(), datesLine!, onChangeDates, muted: true);
       right = OutlinedButton(
         key: const Key('parking-other'),
         onPressed: () => context.router.maybePop(),
-        style: OutlinedButton.styleFrom(minimumSize: const Size(48, 48), shape: const StadiumBorder(), side: const BorderSide(color: AppColors.line)),
+        style: OutlinedButton.styleFrom(
+          minimumSize: const Size(48, 48),
+          shape: const StadiumBorder(),
+          side: const BorderSide(color: AppColors.line),
+        ),
         child: Text('parking.other_parkings'.tr(), textAlign: TextAlign.center, style: AppText.strong(size: 13.5)),
       );
     } else {
@@ -282,14 +282,17 @@ class _BookingBar extends StatelessWidget {
               key: const Key('parking-online-soon'),
               padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
               decoration: BoxDecoration(color: AppColors.tint, borderRadius: BorderRadius.circular(14)),
-              child: Text('parking.online_soon'.tr(), textAlign: TextAlign.center, style: AppText.strong(size: 13, color: AppColors.accentDeep)),
+              child: Text(
+                'parking.online_soon'.tr(),
+                textAlign: TextAlign.center,
+                style: AppText.strong(size: 13, color: AppColors.accentDeep),
+              ),
             )
           : GradientButton(
               key: const Key('parking-book'),
               label: 'parking.book'.tr(),
-              onPressed: () => context.router.push(
-                BookingFormRoute(airport: state.airport, parking: state.slug, arrivee: state.arrivalAt!, retour: state.returnAt!),
-              ),
+              onPressed: () =>
+                  context.router.push(BookingFormRoute(airport: state.airport, parking: state.slug, arrivee: state.arrivalAt!, retour: state.returnAt!)),
             );
     }
     return Material(
@@ -297,9 +300,17 @@ class _BookingBar extends StatelessWidget {
       child: SafeArea(
         top: false,
         child: Container(
-          decoration: const BoxDecoration(border: Border(top: BorderSide(color: AppColors.line))),
+          decoration: const BoxDecoration(
+            border: Border(top: BorderSide(color: AppColors.line)),
+          ),
           padding: const EdgeInsets.fromLTRB(16, 10, 16, 10),
-          child: Row(children: [Expanded(flex: 5, child: left), const SizedBox(width: 10), Flexible(flex: 4, child: right)]),
+          child: Row(
+            children: [
+              Expanded(flex: 5, child: left),
+              const SizedBox(width: 10),
+              Flexible(flex: 4, child: right),
+            ],
+          ),
         ),
       ),
     );
@@ -319,8 +330,14 @@ class _BookingBar extends StatelessWidget {
           crossAxisAlignment: CrossAxisAlignment.start,
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Text(main, style: AppText.strong(size: muted ? 15 : 20, color: muted ? AppColors.muted : AppColors.ink)),
-            Text(dates, style: AppText.muted(size: 12.5).copyWith(decoration: TextDecoration.underline, decorationColor: AppColors.line)),
+            Text(
+              main,
+              style: AppText.strong(size: muted ? 15 : 20, color: muted ? AppColors.muted : AppColors.ink),
+            ),
+            Text(
+              dates,
+              style: AppText.muted(size: 12.5).copyWith(decoration: TextDecoration.underline, decorationColor: AppColors.line),
+            ),
             if (perDay != null) Text(perDay, key: const Key('parking-per-day'), style: AppText.strong(size: 12.5)),
           ],
         ),

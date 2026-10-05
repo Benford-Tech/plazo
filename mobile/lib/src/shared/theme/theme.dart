@@ -17,7 +17,9 @@ abstract final class AppColors {
 
   /// The dark neutral (strong text, dark surfaces) in place of the former purple; light text on the pro's black.
   static const dark = _pro ? Color(0xFFF3F3F0) : Color(0xFF2C1A0E);
-  static const accent = _pro ? Color(0xFFF5C400) : Color(0xFFFF8A3D);
+
+  /// T-A (05/10/2026): the traveller's action is the easyJet orange itself, no lighter orange.
+  static const accent = _pro ? Color(0xFFF5C400) : Color(0xFFFF6600);
   static const peach = _pro ? Color(0xFFFFE066) : Color(0xFFF0A36B);
 
   /// Pale tints: selected backgrounds and the light text on the header.
@@ -25,11 +27,17 @@ abstract final class AppColors {
   static const tintSoft = _pro ? Color(0xFF17170F) : Color(0xFFFFF7F1);
   static const onBrandSoft = _pro ? Color(0xFFA8A8A2) : Color(0xFFFFE9D6);
   static const accentDeep = _pro ? Color(0xFFF5C400) : Color(0xFFC24E00);
+  static const accentLight = _pro ? Color(0xFFFFE066) : Color(0xFFFF8A3D);
+
+  /// Titles on the traveller's light ground (dark brown), the ink on the pro.
+  static const brownOrInk = _pro ? Color(0xFFF3F3F0) : Color(0xFF2C1A0E);
   static const ink = _pro ? Color(0xFFF3F3F0) : Color(0xFF1E1E1E);
   static const muted = _pro ? Color(0xFFA8A8A2) : Color(0xFF6F6A66);
-  static const line = _pro ? Color(0xFF3A3A38) : Color(0xFFECE4DE);
-  static const background = _pro ? Color(0xFF0B0B0C) : Color(0xFFFFFFFF);
-  static const canvas = _pro ? Color(0xFF151516) : Color(0xFFFAF5F0);
+  static const line = _pro ? Color(0xFF3A3A38) : Color(0xFFE3E1DE);
+
+  /// T-A: the traveller's pages sit on a light grey ground, cards white on it.
+  static const background = _pro ? Color(0xFF0B0B0C) : Color(0xFFECECEE);
+  static const canvas = _pro ? Color(0xFF151516) : Color(0xFFF5F5F7);
 
   /// Cards and sheets (white for travellers, a slightly lighter black for the pro).
   static const surface = _pro ? Color(0xFF141415) : Color(0xFFFFFFFF);
@@ -47,7 +55,8 @@ abstract final class AppColors {
   /// French plate: EU blue band.
   static const plateBlue = Color(0xFF1F3FA6);
 
-  static const primaryGradient = LinearGradient(begin: Alignment(-1, -0.2), end: Alignment(1, 0.2), colors: _pro ? [accent, accent] : [accent, peach]);
+  /// Solid on both apps since T-A (the traveller's buttons are plain orange, as the mockup).
+  static const primaryGradient = LinearGradient(begin: Alignment(-1, -0.2), end: Alignment(1, 0.2), colors: [accent, accent]);
 }
 
 /// The four state colours of the dashboard mockups (same in both apps): filled badges use the
@@ -71,9 +80,9 @@ abstract final class AppStatus {
 
 /// Corners: rounded for travellers (direction D), sharp for the pro (direction B).
 abstract final class AppRadius {
-  static const card = BorderRadius.all(Radius.circular(_pro ? 2 : 16));
-  static const field = BorderRadius.all(Radius.circular(_pro ? 2 : 14));
-  static const chip = BorderRadius.all(Radius.circular(_pro ? 2 : 12));
+  static const card = BorderRadius.all(Radius.circular(_pro ? 2 : 22));
+  static const field = BorderRadius.all(Radius.circular(_pro ? 2 : 16));
+  static const chip = BorderRadius.all(Radius.circular(_pro ? 2 : 14));
   static const pill = BorderRadius.all(Radius.circular(_pro ? 2 : 26));
   static const small = BorderRadius.all(Radius.circular(_pro ? 1 : 8));
 }
@@ -81,8 +90,10 @@ abstract final class AppRadius {
 /// Fonts: Playfair Display + Inter for travellers; Archivo Narrow + JetBrains Mono for the pro.
 abstract final class AppFonts {
   static const title = _pro ? 'ArchivoNarrow' : 'PlayfairDisplay';
-  static const body = 'Inter';
-  static const mono = _pro ? 'JetBrainsMono' : 'Inter';
+
+  /// F-A (05/10/2026): Manrope for the traveller's text and figures; Inter stays on the pro.
+  static const body = _pro ? 'Inter' : 'Manrope';
+  static const mono = _pro ? 'JetBrainsMono' : 'Manrope';
 }
 
 /// Bundled variable fonts: the weight goes through the 'wght' axis too.
@@ -100,11 +111,11 @@ abstract final class AppText {
   static TextStyle title({double size = 24, Color color = AppColors.ink}) =>
       _pro ? _font(AppFonts.title, size, 700, color: color).copyWith(letterSpacing: 0.3) : _font(AppFonts.title, size, 500, italic: true, color: color);
   static TextStyle body({double size = 15, int weight = 400, Color color = AppColors.ink, double? height}) =>
-      _font('Inter', size, weight, color: color, height: height);
-  static TextStyle muted({double size = 13.5}) => _font('Inter', size, 400, color: AppColors.muted, height: 1.45);
-  static TextStyle strong({double size = 15, Color color = AppColors.ink}) => _font('Inter', size, 700, color: color);
-  static TextStyle big({double size = 34, Color color = AppColors.ink}) => _font('Inter', size, 700, color: color, height: 1.1);
-  static TextStyle label({double size = 12.5, Color color = AppColors.muted}) => _font('Inter', size, 600, color: color).copyWith(letterSpacing: 0.8);
+      _font(AppFonts.body, size, weight, color: color, height: height);
+  static TextStyle muted({double size = 13.5}) => _font(AppFonts.body, size, 400, color: AppColors.muted, height: 1.45);
+  static TextStyle strong({double size = 15, Color color = AppColors.ink}) => _font(AppFonts.body, size, 700, color: color);
+  static TextStyle big({double size = 34, Color color = AppColors.ink}) => _font(AppFonts.body, size, 800, color: color, height: 1.1);
+  static TextStyle label({double size = 12.5, Color color = AppColors.muted}) => _font(AppFonts.body, size, 600, color: color).copyWith(letterSpacing: 0.8);
   static TextStyle tabular({double size = 15, int weight = 700, Color color = AppColors.ink}) =>
       _font(AppFonts.mono, size, weight, color: color).copyWith(fontFeatures: const [FontFeature.tabularFigures()]);
 }
@@ -130,13 +141,17 @@ ThemeData appTheme() {
       shape: RoundedRectangleBorder(borderRadius: _pro ? BorderRadius.zero : BorderRadius.vertical(top: Radius.circular(20))),
     ),
     dividerColor: AppColors.line,
-    fontFamily: 'Inter',
-    textTheme: _pro ? ThemeData.dark().textTheme.apply(fontFamily: 'Inter', bodyColor: AppColors.ink, displayColor: AppColors.ink) : null,
+    fontFamily: AppFonts.body,
+    textTheme: _pro
+        ? ThemeData.dark().textTheme.apply(fontFamily: 'Inter', bodyColor: AppColors.ink, displayColor: AppColors.ink)
+        : ThemeData.light().textTheme.apply(fontFamily: 'Manrope', bodyColor: AppColors.ink, displayColor: AppColors.ink),
     appBarTheme: AppBarTheme(
-      backgroundColor: AppColors.brand,
-      foregroundColor: _pro ? AppColors.accent : Colors.white,
+      // T-A (05/10/2026): the traveller's bar sits on the grey ground, no orange band; the pro keeps its black.
+      backgroundColor: _pro ? AppColors.brand : AppColors.background,
+      foregroundColor: _pro ? AppColors.accent : AppColors.ink,
       elevation: 0,
-      titleTextStyle: AppText.title(size: 24, color: _pro ? AppColors.accent : Colors.white),
+      scrolledUnderElevation: 0,
+      titleTextStyle: AppText.title(size: 24, color: _pro ? AppColors.accent : AppColors.brownOrInk),
     ),
     inputDecorationTheme: const InputDecorationTheme(
       border: OutlineInputBorder(

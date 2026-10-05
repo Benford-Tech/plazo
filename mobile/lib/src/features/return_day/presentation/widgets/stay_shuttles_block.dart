@@ -8,6 +8,7 @@ import '../../../../shared/theme/theme.dart';
 import '../../../../shared/widgets/app_card.dart';
 import '../../../../shared/widgets/ign_map.dart';
 import '../../../../shared/widgets/live_dot.dart';
+import '../../../../shared/widgets/live_pill.dart';
 import '../../../../shared/widgets/status_badge.dart';
 import '../../data/models/return_model.dart';
 import '../bloc/stay_shuttles_bloc.dart';
@@ -44,6 +45,7 @@ class StayShuttlesBlock extends StatelessWidget {
                     ),
                   ),
                 ),
+                if (shuttles.isNotEmpty) LivePill(at: state.now, color: AppColors.peach),
               ],
             ),
             const SizedBox(height: 8),
@@ -96,7 +98,10 @@ class _ShuttleCard extends StatelessWidget {
           Row(
             children: [
               Expanded(child: Text(title, style: AppText.strong(size: 15))),
-              if (s.mine) StatusBadge(text: 'stay_shuttles.mine'.tr(), tone: BadgeTone.peach) else StatusBadge(text: 'stay_shuttles.direction.${s.direction}'.tr(), tone: BadgeTone.tint),
+              if (s.mine)
+                StatusBadge(text: 'stay_shuttles.mine'.tr(), tone: BadgeTone.peach)
+              else
+                StatusBadge(text: 'stay_shuttles.direction.${s.direction}'.tr(), tone: BadgeTone.tint),
             ],
           ),
           if (v.model != null || v.plate != null)
@@ -106,7 +111,11 @@ class _ShuttleCard extends StatelessWidget {
                 children: [
                   if (v.model != null) TextSpan(text: v.model),
                   if (v.model != null && v.plate != null) const TextSpan(text: ' · '),
-                  if (v.plate != null) TextSpan(text: formatPlate(v.plate!), style: AppText.muted(size: 12.5).copyWith(fontWeight: FontWeight.w700, color: AppColors.ink)),
+                  if (v.plate != null)
+                    TextSpan(
+                      text: formatPlate(v.plate!),
+                      style: AppText.muted(size: 12.5).copyWith(fontWeight: FontWeight.w700, color: AppColors.ink),
+                    ),
                 ],
               ),
             ),

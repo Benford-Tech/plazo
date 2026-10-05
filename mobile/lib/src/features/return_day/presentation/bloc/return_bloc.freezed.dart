@@ -16,7 +16,8 @@ T _$identity<T>(T value) => value;
 mixin _$ReturnState {
 
  String? get reference; ViewState get loadState; ViewState get actionState; TravellerReturnModel? get data;/// The trip that was on its way just ended (a short notice).
- DateTime? get shuttleEndedAt; String? get errorCode; DateTime get now;
+ DateTime? get shuttleEndedAt; String? get errorCode; DateTime get now;/// When the return state was last read from the API (the "En direct" pills count from it).
+ DateTime? get fetchedAt;
 /// Create a copy of ReturnState
 /// with the given fields replaced by the non-null parameter values.
 @JsonKey(includeFromJson: false, includeToJson: false)
@@ -28,20 +29,20 @@ $ReturnStateCopyWith<ReturnState> get copyWith => _$ReturnStateCopyWithImpl<Retu
 @override
 bool operator ==(Object other) {
   final _this = this as ReturnState;
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is ReturnState&&(identical(other.reference, _this.reference) || other.reference == _this.reference)&&(identical(other.loadState, _this.loadState) || other.loadState == _this.loadState)&&(identical(other.actionState, _this.actionState) || other.actionState == _this.actionState)&&(identical(other.data, _this.data) || other.data == _this.data)&&(identical(other.shuttleEndedAt, _this.shuttleEndedAt) || other.shuttleEndedAt == _this.shuttleEndedAt)&&(identical(other.errorCode, _this.errorCode) || other.errorCode == _this.errorCode)&&(identical(other.now, _this.now) || other.now == _this.now));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is ReturnState&&(identical(other.reference, _this.reference) || other.reference == _this.reference)&&(identical(other.loadState, _this.loadState) || other.loadState == _this.loadState)&&(identical(other.actionState, _this.actionState) || other.actionState == _this.actionState)&&(identical(other.data, _this.data) || other.data == _this.data)&&(identical(other.shuttleEndedAt, _this.shuttleEndedAt) || other.shuttleEndedAt == _this.shuttleEndedAt)&&(identical(other.errorCode, _this.errorCode) || other.errorCode == _this.errorCode)&&(identical(other.now, _this.now) || other.now == _this.now)&&(identical(other.fetchedAt, _this.fetchedAt) || other.fetchedAt == _this.fetchedAt));
 }
 
 
 @override
 int get hashCode {
   final _this = this as ReturnState;
-  return Object.hash(runtimeType,_this.reference,_this.loadState,_this.actionState,_this.data,_this.shuttleEndedAt,_this.errorCode,_this.now);
+  return Object.hash(runtimeType,_this.reference,_this.loadState,_this.actionState,_this.data,_this.shuttleEndedAt,_this.errorCode,_this.now,_this.fetchedAt);
 }
 
 @override
 String toString() {
   final _this = this as ReturnState;
-  return 'ReturnState(reference: ${_this.reference}, loadState: ${_this.loadState}, actionState: ${_this.actionState}, data: ${_this.data}, shuttleEndedAt: ${_this.shuttleEndedAt}, errorCode: ${_this.errorCode}, now: ${_this.now})';
+  return 'ReturnState(reference: ${_this.reference}, loadState: ${_this.loadState}, actionState: ${_this.actionState}, data: ${_this.data}, shuttleEndedAt: ${_this.shuttleEndedAt}, errorCode: ${_this.errorCode}, now: ${_this.now}, fetchedAt: ${_this.fetchedAt})';
 }
 
 
@@ -52,7 +53,7 @@ abstract mixin class $ReturnStateCopyWith<$Res>  {
   factory $ReturnStateCopyWith(ReturnState value, $Res Function(ReturnState) _then) = _$ReturnStateCopyWithImpl;
 @useResult
 $Res call({
- String? reference, ViewState loadState, ViewState actionState, TravellerReturnModel? data, DateTime? shuttleEndedAt, String? errorCode, DateTime now
+ String? reference, ViewState loadState, ViewState actionState, TravellerReturnModel? data, DateTime? shuttleEndedAt, String? errorCode, DateTime now, DateTime? fetchedAt
 });
 
 
@@ -69,7 +70,7 @@ class _$ReturnStateCopyWithImpl<$Res>
 
 /// Create a copy of ReturnState
 /// with the given fields replaced by the non-null parameter values.
-@pragma('vm:prefer-inline') @override $Res call({Object? reference = freezed,Object? loadState = null,Object? actionState = null,Object? data = freezed,Object? shuttleEndedAt = freezed,Object? errorCode = freezed,Object? now = null,}) {
+@pragma('vm:prefer-inline') @override $Res call({Object? reference = freezed,Object? loadState = null,Object? actionState = null,Object? data = freezed,Object? shuttleEndedAt = freezed,Object? errorCode = freezed,Object? now = null,Object? fetchedAt = freezed,}) {
   return _then(ReturnState(
 reference: freezed == reference ? _self.reference : reference // ignore: cast_nullable_to_non_nullable
 as String?,loadState: null == loadState ? _self.loadState : loadState // ignore: cast_nullable_to_non_nullable
@@ -78,7 +79,8 @@ as ViewState,data: freezed == data ? _self.data : data // ignore: cast_nullable_
 as TravellerReturnModel?,shuttleEndedAt: freezed == shuttleEndedAt ? _self.shuttleEndedAt : shuttleEndedAt // ignore: cast_nullable_to_non_nullable
 as DateTime?,errorCode: freezed == errorCode ? _self.errorCode : errorCode // ignore: cast_nullable_to_non_nullable
 as String?,now: null == now ? _self.now : now // ignore: cast_nullable_to_non_nullable
-as DateTime,
+as DateTime,fetchedAt: freezed == fetchedAt ? _self.fetchedAt : fetchedAt // ignore: cast_nullable_to_non_nullable
+as DateTime?,
   ));
 }
 /// Create a copy of ReturnState
@@ -175,10 +177,10 @@ return $default(_that);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( String? reference,  ViewState loadState,  ViewState actionState,  TravellerReturnModel? data,  DateTime? shuttleEndedAt,  String? errorCode,  DateTime now)?  $default,{required TResult orElse(),}) {final _that = this;
+@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( String? reference,  ViewState loadState,  ViewState actionState,  TravellerReturnModel? data,  DateTime? shuttleEndedAt,  String? errorCode,  DateTime now,  DateTime? fetchedAt)?  $default,{required TResult orElse(),}) {final _that = this;
 switch (_that) {
 case _ReturnState() when $default != null:
-return $default(_that.reference,_that.loadState,_that.actionState,_that.data,_that.shuttleEndedAt,_that.errorCode,_that.now);case _:
+return $default(_that.reference,_that.loadState,_that.actionState,_that.data,_that.shuttleEndedAt,_that.errorCode,_that.now,_that.fetchedAt);case _:
   return orElse();
 
 }
@@ -196,10 +198,10 @@ return $default(_that.reference,_that.loadState,_that.actionState,_that.data,_th
 /// }
 /// ```
 
-@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( String? reference,  ViewState loadState,  ViewState actionState,  TravellerReturnModel? data,  DateTime? shuttleEndedAt,  String? errorCode,  DateTime now)  $default,) {final _that = this;
+@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( String? reference,  ViewState loadState,  ViewState actionState,  TravellerReturnModel? data,  DateTime? shuttleEndedAt,  String? errorCode,  DateTime now,  DateTime? fetchedAt)  $default,) {final _that = this;
 switch (_that) {
 case _ReturnState():
-return $default(_that.reference,_that.loadState,_that.actionState,_that.data,_that.shuttleEndedAt,_that.errorCode,_that.now);case _:
+return $default(_that.reference,_that.loadState,_that.actionState,_that.data,_that.shuttleEndedAt,_that.errorCode,_that.now,_that.fetchedAt);case _:
   throw StateError('Unexpected subclass');
 
 }
@@ -216,10 +218,10 @@ return $default(_that.reference,_that.loadState,_that.actionState,_that.data,_th
 /// }
 /// ```
 
-@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( String? reference,  ViewState loadState,  ViewState actionState,  TravellerReturnModel? data,  DateTime? shuttleEndedAt,  String? errorCode,  DateTime now)?  $default,) {final _that = this;
+@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( String? reference,  ViewState loadState,  ViewState actionState,  TravellerReturnModel? data,  DateTime? shuttleEndedAt,  String? errorCode,  DateTime now,  DateTime? fetchedAt)?  $default,) {final _that = this;
 switch (_that) {
 case _ReturnState() when $default != null:
-return $default(_that.reference,_that.loadState,_that.actionState,_that.data,_that.shuttleEndedAt,_that.errorCode,_that.now);case _:
+return $default(_that.reference,_that.loadState,_that.actionState,_that.data,_that.shuttleEndedAt,_that.errorCode,_that.now,_that.fetchedAt);case _:
   return null;
 
 }
@@ -231,7 +233,7 @@ return $default(_that.reference,_that.loadState,_that.actionState,_that.data,_th
 
 
 class _ReturnState extends ReturnState {
-  const _ReturnState({this.reference, this.loadState = ViewState.idle, this.actionState = ViewState.idle, this.data, this.shuttleEndedAt, this.errorCode, required this.now}): super._();
+  const _ReturnState({this.reference, this.loadState = ViewState.idle, this.actionState = ViewState.idle, this.data, this.shuttleEndedAt, this.errorCode, required this.now, this.fetchedAt}): super._();
   
 
 @override final  String? reference;
@@ -242,6 +244,8 @@ class _ReturnState extends ReturnState {
 @override final  DateTime? shuttleEndedAt;
 @override final  String? errorCode;
 @override final  DateTime now;
+/// When the return state was last read from the API (the "En direct" pills count from it).
+@override final  DateTime? fetchedAt;
 
 /// Create a copy of ReturnState
 /// with the given fields replaced by the non-null parameter values.
@@ -253,18 +257,18 @@ _$ReturnStateCopyWith<_ReturnState> get copyWith => __$ReturnStateCopyWithImpl<_
 
 @override
 bool operator ==(Object other) {
-    return identical(this, other) || (other.runtimeType == runtimeType&&other is _ReturnState&&(identical(other.reference, reference) || other.reference == reference)&&(identical(other.loadState, loadState) || other.loadState == loadState)&&(identical(other.actionState, actionState) || other.actionState == actionState)&&(identical(other.data, data) || other.data == data)&&(identical(other.shuttleEndedAt, shuttleEndedAt) || other.shuttleEndedAt == shuttleEndedAt)&&(identical(other.errorCode, errorCode) || other.errorCode == errorCode)&&(identical(other.now, now) || other.now == now));
+    return identical(this, other) || (other.runtimeType == runtimeType&&other is _ReturnState&&(identical(other.reference, reference) || other.reference == reference)&&(identical(other.loadState, loadState) || other.loadState == loadState)&&(identical(other.actionState, actionState) || other.actionState == actionState)&&(identical(other.data, data) || other.data == data)&&(identical(other.shuttleEndedAt, shuttleEndedAt) || other.shuttleEndedAt == shuttleEndedAt)&&(identical(other.errorCode, errorCode) || other.errorCode == errorCode)&&(identical(other.now, now) || other.now == now)&&(identical(other.fetchedAt, fetchedAt) || other.fetchedAt == fetchedAt));
 }
 
 
 @override
 int get hashCode {
-    return Object.hash(runtimeType,reference,loadState,actionState,data,shuttleEndedAt,errorCode,now);
+    return Object.hash(runtimeType,reference,loadState,actionState,data,shuttleEndedAt,errorCode,now,fetchedAt);
 }
 
 @override
 String toString() {
-    return 'ReturnState(reference: $reference, loadState: $loadState, actionState: $actionState, data: $data, shuttleEndedAt: $shuttleEndedAt, errorCode: $errorCode, now: $now)';
+    return 'ReturnState(reference: $reference, loadState: $loadState, actionState: $actionState, data: $data, shuttleEndedAt: $shuttleEndedAt, errorCode: $errorCode, now: $now, fetchedAt: $fetchedAt)';
 }
 
 
@@ -275,7 +279,7 @@ abstract mixin class _$ReturnStateCopyWith<$Res> implements $ReturnStateCopyWith
   factory _$ReturnStateCopyWith(_ReturnState value, $Res Function(_ReturnState) _then) = __$ReturnStateCopyWithImpl;
 @override @useResult
 $Res call({
- String? reference, ViewState loadState, ViewState actionState, TravellerReturnModel? data, DateTime? shuttleEndedAt, String? errorCode, DateTime now
+ String? reference, ViewState loadState, ViewState actionState, TravellerReturnModel? data, DateTime? shuttleEndedAt, String? errorCode, DateTime now, DateTime? fetchedAt
 });
 
 
@@ -292,7 +296,7 @@ class __$ReturnStateCopyWithImpl<$Res>
 
 /// Create a copy of ReturnState
 /// with the given fields replaced by the non-null parameter values.
-@override @pragma('vm:prefer-inline') $Res call({Object? reference = freezed,Object? loadState = null,Object? actionState = null,Object? data = freezed,Object? shuttleEndedAt = freezed,Object? errorCode = freezed,Object? now = null,}) {
+@override @pragma('vm:prefer-inline') $Res call({Object? reference = freezed,Object? loadState = null,Object? actionState = null,Object? data = freezed,Object? shuttleEndedAt = freezed,Object? errorCode = freezed,Object? now = null,Object? fetchedAt = freezed,}) {
   return _then(_ReturnState(
 reference: freezed == reference ? _self.reference : reference // ignore: cast_nullable_to_non_nullable
 as String?,loadState: null == loadState ? _self.loadState : loadState // ignore: cast_nullable_to_non_nullable
@@ -301,7 +305,8 @@ as ViewState,data: freezed == data ? _self.data : data // ignore: cast_nullable_
 as TravellerReturnModel?,shuttleEndedAt: freezed == shuttleEndedAt ? _self.shuttleEndedAt : shuttleEndedAt // ignore: cast_nullable_to_non_nullable
 as DateTime?,errorCode: freezed == errorCode ? _self.errorCode : errorCode // ignore: cast_nullable_to_non_nullable
 as String?,now: null == now ? _self.now : now // ignore: cast_nullable_to_non_nullable
-as DateTime,
+as DateTime,fetchedAt: freezed == fetchedAt ? _self.fetchedAt : fetchedAt // ignore: cast_nullable_to_non_nullable
+as DateTime?,
   ));
 }
 

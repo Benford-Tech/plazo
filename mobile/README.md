@@ -40,6 +40,10 @@ n'existent que dans Plazo Pro (`if (AppConstants.isPro)` dans `app_router.dart`)
 - **Pro — dessertes et navettes en direct** (D-A et P-A du 05/10/2026) : puces « Desserte » (Aéroport, gare…) au départ
   d'un trajet quand le parking en déclare ; carte « Navettes en cours » (`LiveShuttlesBloc`, `GET /internal/shuttle/live`,
   toutes les 12 s) en tête de l'écran Navette et bandeau sur Aujourd'hui.
+- **Voyageur — direction T-A « Parking »** (05/10/2026, T-A + F-A) : fond gris clair, cartes blanches 22 px, plus d'en-tête
+  orange, Manrope ; accueil avec la carte du séjour (`SearchBloc.preview`, pilules, carte orange du moins cher) ; jour du
+  retour avec l'anneau de compte à rebours (`ReturnRing`) et les pilules « En direct » (`LivePill`) ; écran « Retrouver ma
+  voiture » (`FindCarPage`, place du voiturier et itinéraire à pied).
 - **Pro — tableau de bord** (05/10/2026, le même que l'accueil de l'espace pro web) : l'onglet Aujourd'hui s'ouvre sur
   « Tableau de bord » (barre « Tableau de bord · Planning ») : cinq tuiles (Sur le parking, Arrivées, Retours, Navettes,
   À traiter), état des services (vols, SMS, notifs, paiements, import), « À traiter maintenant » classé, véhicules sur le

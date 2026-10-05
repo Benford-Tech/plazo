@@ -25,7 +25,7 @@ class BrandLogo extends StatelessWidget {
         ExcludeSemantics(
           child: Text(
             'Pro',
-            style: AppText.strong(size: height * 0.5, color: Colors.white).copyWith(letterSpacing: 1),
+            style: AppText.strong(size: height * 0.5, color: AppColors.brownOrInk).copyWith(letterSpacing: 1),
           ),
         ),
       ],

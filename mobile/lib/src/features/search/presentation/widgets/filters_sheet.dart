@@ -89,9 +89,7 @@ class _FiltersSheetState extends State<FiltersSheet> {
                       controlAffinity: ListTileControlAffinity.leading,
                       activeColor: AppColors.accent,
                       value: _f.services.contains(s),
-                      onChanged: (v) => setState(
-                        () => _f = _f.copyWith(services: v == true ? [..._f.services, s] : _f.services.where((x) => x != s).toList()),
-                      ),
+                      onChanged: (v) => setState(() => _f = _f.copyWith(services: v == true ? [..._f.services, s] : _f.services.where((x) => x != s).toList())),
                       title: Text(serviceLabel(s), style: AppText.body()),
                       secondary: Text('${counts[s]}', style: AppText.muted()),
                     ),

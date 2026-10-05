@@ -97,7 +97,11 @@ class _StaySheetState extends State<StaySheet> {
           mainAxisSize: MainAxisSize.min,
           children: [
             Center(
-              child: Container(width: 44, height: 5, decoration: BoxDecoration(color: AppColors.line, borderRadius: BorderRadius.circular(3))),
+              child: Container(
+                width: 44,
+                height: 5,
+                decoration: BoxDecoration(color: AppColors.line, borderRadius: BorderRadius.circular(3)),
+              ),
             ),
             const SizedBox(height: 6),
             Row(
@@ -105,7 +109,14 @@ class _StaySheetState extends State<StaySheet> {
                 Semantics(header: true, child: Text('picker.title'.tr(), style: AppText.title(size: 22))),
                 const Spacer(),
                 if (days != null)
-                  Semantics(liveRegion: true, child: Text(daysLabel(days), key: const Key('stay-days'), style: AppText.strong(size: 13.5, color: AppColors.accent))),
+                  Semantics(
+                    liveRegion: true,
+                    child: Text(
+                      daysLabel(days),
+                      key: const Key('stay-days'),
+                      style: AppText.strong(size: 13.5, color: AppColors.accent),
+                    ),
+                  ),
                 IconButton(
                   tooltip: 'common.close'.tr(),
                   onPressed: () => Navigator.of(context).pop(),
@@ -141,7 +152,14 @@ class _StaySheetState extends State<StaySheet> {
             ),
             if (_error != null) ...[
               const SizedBox(height: 10),
-              Semantics(liveRegion: true, child: Text(_error!, key: const Key('stay-error'), style: AppText.body(size: 14, color: AppColors.danger))),
+              Semantics(
+                liveRegion: true,
+                child: Text(
+                  _error!,
+                  key: const Key('stay-error'),
+                  style: AppText.body(size: 14, color: AppColors.danger),
+                ),
+              ),
             ],
             const SizedBox(height: 14),
             GradientButton(
@@ -192,18 +210,9 @@ class _StaySheetState extends State<StaySheet> {
 
   Widget _monthHeader() => Row(
     children: [
-      IconButton(
-        tooltip: 'picker.prev_month'.tr(),
-        onPressed: _canGoBack ? () => _moveMonth(-1) : null,
-        icon: const Icon(Icons.chevron_left_rounded),
-      ),
+      IconButton(tooltip: 'picker.prev_month'.tr(), onPressed: _canGoBack ? () => _moveMonth(-1) : null, icon: const Icon(Icons.chevron_left_rounded)),
       Expanded(
-        child: Text(
-          _capitalize(monthTitle(_year, _month)),
-          key: const Key('stay-month'),
-          textAlign: TextAlign.center,
-          style: AppText.strong(size: 15),
-        ),
+        child: Text(_capitalize(monthTitle(_year, _month)), key: const Key('stay-month'), textAlign: TextAlign.center, style: AppText.strong(size: 15)),
       ),
       IconButton(tooltip: 'picker.next_month'.tr(), onPressed: () => _moveMonth(1), icon: const Icon(Icons.chevron_right_rounded)),
     ],
@@ -217,17 +226,15 @@ class _StaySheetState extends State<StaySheet> {
         ExcludeSemantics(
           child: Row(
             children: [
-              for (final l in letters) Expanded(child: Center(child: Text(l, style: AppText.label(size: 11.5)))),
+              for (final l in letters)
+                Expanded(
+                  child: Center(child: Text(l, style: AppText.label(size: 11.5))),
+                ),
             ],
           ),
         ),
         const SizedBox(height: 4),
-        for (final week in weeks)
-          Row(
-            children: [
-              for (final day in week) Expanded(child: day == null ? const SizedBox(height: 46) : _day(day)),
-            ],
-          ),
+        for (final week in weeks) Row(children: [for (final day in week) Expanded(child: day == null ? const SizedBox(height: 46) : _day(day))]),
       ],
     );
   }
@@ -270,11 +277,7 @@ class _StaySheetState extends State<StaySheet> {
             ),
             child: Text(
               '${int.parse(day.substring(8))}',
-              style: AppText.body(
-                size: 14.5,
-                weight: selected ? 700 : 500,
-                color: selected ? Colors.white : (disabled ? AppColors.line : AppColors.ink),
-              ),
+              style: AppText.body(size: 14.5, weight: selected ? 700 : 500, color: selected ? Colors.white : (disabled ? AppColors.line : AppColors.ink)),
             ),
           ),
         ),

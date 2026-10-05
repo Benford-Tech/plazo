@@ -5,6 +5,7 @@ import { BookingRecord } from '@/domain/booking-view';
 import { localDateTime } from '@/domain/time';
 import { ArrivalService, MeetingPoint } from './arrival.service';
 import { FlightTrackingService } from './flight-tracking.service';
+import { ParkingLocationService } from './parking-location.service';
 import { PublicBookingService } from './public-booking.service';
 import { RoutingService, WalkingRoute } from './routing.service';
 import { flightView, FlightView, ShuttleService, StayShuttles, TravellerShuttle } from './shuttle.service';
@@ -23,8 +24,10 @@ export interface TravellerReturn {
   /** The traveller signalled they are at the meeting point (arrival signal, return moment). */
   atMeetingPointAt: string | null;
   shuttle: TravellerShuttle | null;
-  parking: { name: string; phone: string | null; shuttleMinutes: number | null; address: string | null };
+  parking: { name: string; phone: string | null; shuttleMinutes: number | null; address: string | null; location: LatLng | null };
   plate: string;
+  /** The spot the valet placed the vehicle on (bloc 2), for "Retrouver ma voiture"; null until placed. */
+  spot: { code: string; stayClass: string | null } | null;
 }
 
 /** The return day of a traveller: the flight, the meeting point, the walking route and the shuttle. */
@@ -35,6 +38,7 @@ export class ReturnService {
   public flights = Container.get(FlightTrackingService);
   public routing = Container.get(RoutingService);
   public shuttle = Container.get(ShuttleService);
+  public locations = Container.get(ParkingLocationService);
 
   public async state(reference: string, token: string | undefined): Promise<TravellerReturn> {
     const booking = await this.bookings.load(reference, token);
@@ -106,7 +110,8 @@ export class ReturnService {
   }
 
   private async view(booking: BookingRecord): Promise<TravellerReturn> {
-    const fresh = await prisma.reservation.findUniqueOrThrow({ where: { id: booking.id } });
+    const fresh = await prisma.reservation.findUniqueOrThrow({ where: { id: booking.id }, include: { spot: { select: { code: true, stayClass: true } } } });
+    const location = (await this.locations.locations([booking.parking.id])).get(booking.parking.id) ?? null;
     const now = new Date();
     const window = arrivalWindows(fresh).return;
     const onSite = ['arrived', 'shuttled_out', 'return_requested'].includes(fresh.status);
@@ -127,8 +132,10 @@ export class ReturnService {
         phone: listing?.contactPhone ?? null,
         shuttleMinutes: listing?.shuttleMinutes ?? booking.parking.shuttleTravelMinutes,
         address: booking.parking.address,
+        location,
       },
       plate: fresh.plate,
+      spot: onSite && fresh.spot ? { code: fresh.spot.code, stayClass: fresh.spot.stayClass } : null,
     };
   }
 }

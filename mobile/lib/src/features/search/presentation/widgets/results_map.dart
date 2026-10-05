@@ -47,14 +47,18 @@ class ResultsMap extends StatelessWidget {
                     point: terminals,
                     width: 120,
                     height: 36,
-                    child: Center(child: _Pill(label: 'results.map_terminals'.tr(), color: AppColors.dark, textColor: Colors.white)),
+                    child: Center(
+                      child: _Pill(label: 'results.map_terminals'.tr(), color: AppColors.dark, textColor: Colors.white),
+                    ),
                   ),
                 for (final r in located)
                   Marker(
                     point: LatLng(r.location!.lat, r.location!.lng),
                     width: 104,
                     height: 48,
-                    child: Center(child: _PricePill(result: r, selected: r.slug == selected, onTap: () => onSelect(r.slug))),
+                    child: Center(
+                      child: _PricePill(result: r, selected: r.slug == selected, onTap: () => onSelect(r.slug)),
+                    ),
                   ),
               ],
             ),
@@ -93,9 +97,7 @@ class _PricePill extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final label = result.bookable
-        ? formatShortEuros(result.priceCents!)
-        : (result.priceCents == null ? 'results.no_price'.tr() : 'results.full'.tr());
+    final label = result.bookable ? formatShortEuros(result.priceCents!) : (result.priceCents == null ? 'results.no_price'.tr() : 'results.full'.tr());
     final bookable = result.bookable;
     return Semantics(
       button: true,

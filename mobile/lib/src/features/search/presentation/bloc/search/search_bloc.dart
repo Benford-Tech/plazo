@@ -15,14 +15,18 @@ part 'search_state.dart';
 
 /// A1, the search: airport (a picker when there is more than one) and the stay, as on the site.
 class SearchBloc extends Bloc<SearchEvent, SearchState> {
-  SearchBloc(this._airports, {Clock clock = systemClock}) : _clock = clock, super(SearchState.initial(clock())) {
+  SearchBloc(this._airports, {this.preview, Clock clock = systemClock}) : _clock = clock, super(SearchState.initial(clock())) {
     on<SearchStarted>(_onStarted);
-    on<SearchAirportChanged>((event, emit) => emit(state.copyWith(airportSlug: event.slug)));
+    on<SearchAirportChanged>(_onAirportChanged);
+    on<SearchPreviewRequested>(_onPreviewRequested);
     on<SearchStayChanged>(_onStayChanged);
     on<SearchSubmitted>(_onSubmitted);
   }
 
   final GetAirportsUseCase _airports;
+
+  /// The home's preview search (T-A); absent in the tests that only need the dates.
+  final SearchParkingsUseCase? preview;
   final Clock _clock;
 
   Future<void> _onStarted(SearchStarted event, Emitter<SearchState> emit) async {
@@ -33,10 +37,32 @@ class SearchBloc extends Bloc<SearchEvent, SearchState> {
       (_) => emit(state.copyWith(loadState: ViewState.error)),
       (airports) => emit(state.copyWith(loadState: ViewState.success, airports: airports)),
     );
+    add(const SearchPreviewRequested());
+  }
+
+  void _onAirportChanged(SearchAirportChanged event, Emitter<SearchState> emit) {
+    emit(state.copyWith(airportSlug: event.slug));
+    add(const SearchPreviewRequested());
   }
 
   void _onStayChanged(SearchStayChanged event, Emitter<SearchState> emit) {
     emit(state.copyWith(arrivalAt: event.arrivalAt, returnAt: event.returnAt, errors: const {}));
+    add(const SearchPreviewRequested());
+  }
+
+  /// T-A (05/10/2026): the home shows the parkings of the chosen stay on the map, and the best offer.
+  Future<void> _onPreviewRequested(SearchPreviewRequested event, Emitter<SearchState> emit) async {
+    final search = preview;
+    if (search == null) return;
+    final params = StayParams(airport: state.airportSlug, arrivalAt: state.arrivalAt, returnAt: state.returnAt);
+    emit(state.copyWith(previewState: ViewState.processing));
+    final result = await search(params);
+    // The stay changed while loading: this answer is stale.
+    if (params.airport != state.airportSlug || params.arrivalAt != state.arrivalAt || params.returnAt != state.returnAt) return;
+    result.fold(
+      (_) => emit(state.copyWith(previewState: ViewState.error)),
+      (response) => emit(state.copyWith(previewState: ViewState.success, preview: response, previewAt: _clock())),
+    );
   }
 
   void _onSubmitted(SearchSubmitted event, Emitter<SearchState> emit) {

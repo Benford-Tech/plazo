@@ -50,12 +50,17 @@ abstract class StayShuttlesState with _$StayShuttlesState {
 /// [pollInterval] (12 s) while the booking is open. Outside those days the first answer says so and
 /// the polling stops. Nothing is stored on the phone.
 class StayShuttlesBloc extends Bloc<StayShuttlesEvent, StayShuttlesState> {
-  StayShuttlesBloc(this._get, {EnableShuttlePushesUseCase? enablePushes, Clock clock = systemClock, Duration pollInterval = const Duration(seconds: 12), bool autoPoll = true})
-    : _enablePushes = enablePushes,
-      _clock = clock,
-      _pollInterval = pollInterval,
-      _autoPoll = autoPoll,
-      super(StayShuttlesState(now: clock())) {
+  StayShuttlesBloc(
+    this._get, {
+    EnableShuttlePushesUseCase? enablePushes,
+    Clock clock = systemClock,
+    Duration pollInterval = const Duration(seconds: 12),
+    bool autoPoll = true,
+  }) : _enablePushes = enablePushes,
+       _clock = clock,
+       _pollInterval = pollInterval,
+       _autoPoll = autoPoll,
+       super(StayShuttlesState(now: clock())) {
     on<StayShuttlesOpened>(_onOpened);
     on<StayShuttlesRefreshRequested>((e, emit) => _load(emit, initial: false));
     on<StayShuttlesTicked>((e, emit) => _load(emit, initial: false));
@@ -81,22 +86,19 @@ class StayShuttlesBloc extends Bloc<StayShuttlesEvent, StayShuttlesState> {
     final reference = state.reference;
     if (reference == null) return;
     final result = await _get(reference);
-    result.fold(
-      (failure) => emit(state.copyWith(loadState: initial ? ViewState.error : state.loadState, errorCode: _code(failure), now: _clock())),
-      (data) {
-        emit(state.copyWith(loadState: ViewState.success, data: data, errorCode: null, now: _clock()));
-        // During the stay, this phone gets the pushes about the shuttle (N-A): asked once per opening.
-        if (data.visible && !_pushesAsked && (_enablePushes?.supported ?? false)) {
-          _pushesAsked = true;
-          unawaited(_enablePushes!(reference));
-        }
-        if (!data.visible) {
-          // Outside the stay: nothing to follow until the booking is reopened.
-          _timer?.cancel();
-          _timer = null;
-        }
-      },
-    );
+    result.fold((failure) => emit(state.copyWith(loadState: initial ? ViewState.error : state.loadState, errorCode: _code(failure), now: _clock())), (data) {
+      emit(state.copyWith(loadState: ViewState.success, data: data, errorCode: null, now: _clock()));
+      // During the stay, this phone gets the pushes about the shuttle (N-A): asked once per opening.
+      if (data.visible && !_pushesAsked && (_enablePushes?.supported ?? false)) {
+        _pushesAsked = true;
+        unawaited(_enablePushes!(reference));
+      }
+      if (!data.visible) {
+        // Outside the stay: nothing to follow until the booking is reopened.
+        _timer?.cancel();
+        _timer = null;
+      }
+    });
   }
 
   @override

@@ -107,6 +107,9 @@ flutter:
     - family: Inter
       fonts:
         - asset: assets/fonts/Inter.ttf
+    - family: Manrope
+      fonts:
+        - asset: assets/fonts/Manrope.ttf
 
 # App icon (brand/ at the repository root, option L-B, kept for the app): `dart run flutter_launcher_icons`.
 # Android: adaptive icon, orange background and the "P" as foreground (inside the inner 66 %).
