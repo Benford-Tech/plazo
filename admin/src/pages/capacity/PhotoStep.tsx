@@ -74,7 +74,7 @@ export default function PhotoStep({ study, update, flush, go, estimate }: StepPr
       </div>
       <Aside className="gap-3">
         <PanelLabel>{fr.capacity.photoTitle}</PanelLabel>
-        <div className="font-mono text-[40px] font-bold leading-none text-primary" data-testid="car-count">
+        <div className="font-mono text-[40px] font-bold leading-none text-lime-deep" data-testid="car-count">
           {markers.length}
         </div>
         <div className="text-muted-foreground">{fr.capacity.photoHelp(IGN_PHOTO_DATE)}</div>
@@ -89,7 +89,7 @@ export default function PhotoStep({ study, update, flush, go, estimate }: StepPr
           <b className="font-mono">{estimated} m²</b>
         </div>
         <p className="m-0 text-sm leading-[1.45] text-muted-foreground">{fr.capacity.photoNote}</p>
-        <button type="button" className="self-start text-sm text-primary underline" onClick={() => go("capacite")}>
+        <button type="button" className="self-start text-sm text-lime-deep underline" onClick={() => go("capacite")}>
           {fr.capacity.backToEstimate}
         </button>
         <AsideActions>

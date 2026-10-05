@@ -10,7 +10,7 @@ import { cn } from "@/lib/utils";
 
 const t = fr.platform.reservations;
 const labelClass = "text-[11px] uppercase tracking-[0.08em] text-muted-foreground";
-const inputClass = "h-11 border border-border bg-background px-3 text-base outline-none focus-visible:border-primary";
+const inputClass = "h-11 border border-border bg-background px-3 text-base outline-none focus-visible:border-lime-deep";
 
 const statusLabel = (status: PlatformReservation["status"]) => (status === "pending_payment" ? t.pendingPayment : fr.status[status]);
 
@@ -83,7 +83,7 @@ export default function PlatformReservationsPage() {
             <tbody>
               {data.docs.map(r => (
                 <tr key={r.id} className="border-b border-border">
-                  <td className="whitespace-nowrap px-2 py-2.5 font-mono text-primary">{dateTime.format(new Date(r.arrivalAt))}</td>
+                  <td className="whitespace-nowrap px-2 py-2.5 font-mono text-lime-deep">{dateTime.format(new Date(r.arrivalAt))}</td>
                   <td className="px-2 py-2.5 font-bold">{r.operator.name}</td>
                   <td className="px-2 py-2.5">{r.parking.name}</td>
                   <td className="px-2 py-2.5 font-mono">{r.reference}</td>

@@ -13,7 +13,7 @@ import { cn } from "@/lib/utils";
 const t = fr.platform.operators;
 
 const labelClass = "text-[11px] uppercase tracking-[0.08em] text-muted-foreground";
-const inputClass = "h-11 w-full border border-border bg-background px-3 text-base outline-none focus-visible:border-primary aria-[invalid=true]:border-destructive";
+const inputClass = "h-11 w-full border border-border bg-background px-3 text-base outline-none focus-visible:border-lime-deep aria-[invalid=true]:border-destructive";
 const ghostButton = "min-h-10 whitespace-nowrap border border-border px-3 text-base hover:bg-accent disabled:opacity-50";
 
 function ListingCell({ operator }: { operator: PlatformOperator }) {
@@ -64,7 +64,7 @@ function CommissionCell({ operator, defaultBps }: { operator: PlatformOperator; 
           setError(undefined);
           setEditing(true);
         }}
-        className="font-mono text-primary underline-offset-4 hover:underline"
+        className="font-mono text-lime-deep underline-offset-4 hover:underline"
       >
         {label}
       </button>
@@ -97,7 +97,7 @@ function CommissionCell({ operator, defaultBps }: { operator: PlatformOperator; 
         className={cn(inputClass, "h-10 w-16 px-2 font-mono")}
       />
       <span className="text-muted-foreground">%</span>
-      <button type="submit" disabled={save.isPending} className={cn(ghostButton, "border-primary text-primary")}>
+      <button type="submit" disabled={save.isPending} className={cn(ghostButton, "border-lime-deep text-lime-deep")}>
         {t.save}
       </button>
       <button type="button" onClick={() => setEditing(false)} className={ghostButton}>
@@ -111,8 +111,8 @@ function CommissionCell({ operator, defaultBps }: { operator: PlatformOperator; 
 function InviteLink({ result, onClose }: { result: InvitationResult; onClose: () => void }) {
   const url = result.inviteUrl?.startsWith("/") ? `${window.location.origin}${result.inviteUrl}` : (result.inviteUrl ?? "");
   return (
-    <div role="alert" className="flex flex-col gap-2 border border-primary p-4">
-      <span className="font-bold uppercase tracking-wide text-primary">{t.linkTitle}</span>
+    <div role="alert" className="flex flex-col gap-2 border border-lime-deep p-4">
+      <span className="font-bold uppercase tracking-wide text-lime-deep">{t.linkTitle}</span>
       <p className="text-base">{t.linkWarning}</p>
       <div className="flex flex-col gap-2 sm:flex-row">
         <input readOnly value={url} aria-label={t.linkTitle} onFocus={e => e.currentTarget.select()} className={cn(inputClass, "font-mono text-sm")} />
@@ -258,7 +258,7 @@ function RowActions({ operator, onLink }: { operator: PlatformOperator; onLink: 
       {!operator.isPlatform && (
         <button
           type="button"
-          className={cn(ghostButton, operator.status === "active" ? "text-muted-foreground hover:text-destructive" : "border-primary text-primary")}
+          className={cn(ghostButton, operator.status === "active" ? "text-muted-foreground hover:text-destructive" : "border-lime-deep text-lime-deep")}
           disabled={suspension.isPending}
           onClick={() => {
             if (operator.status === "active" && !window.confirm(t.confirmSuspend(operator.name))) return;

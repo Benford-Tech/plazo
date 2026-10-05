@@ -13,7 +13,7 @@ export function Logo({ height = 28, className, suffix }: Props) {
       <img src={logoPro} alt={PRODUCT.name} width={Math.round(height * 2.32)} height={height} />
       {suffix && (
         // Centred on the sign, a step smaller than its letters.
-        <span className="truncate font-bold uppercase leading-none tracking-wider text-primary" style={{ fontSize: Math.round(height * 0.5) }}>
+        <span className="truncate font-bold uppercase leading-none tracking-wider text-lime-deep" style={{ fontSize: Math.round(height * 0.5) }}>
           {suffix}
         </span>
       )}

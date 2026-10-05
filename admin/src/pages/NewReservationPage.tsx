@@ -14,7 +14,7 @@ export default function NewReservationPage() {
   const t = fr.reservation;
   return (
     <div className="mx-auto max-w-2xl space-y-5">
-      <div className="flex items-center gap-3 border-b-2 border-primary pb-3">
+      <div className="flex items-center gap-3 border-b-2 border-lime-deep pb-3">
         <Link to="/" aria-label={t.back} className="flex h-11 w-11 items-center justify-center border border-border hover:bg-accent">
           <ChevronLeft className="h-5 w-5" />
         </Link>

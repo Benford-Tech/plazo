@@ -97,11 +97,11 @@ function ModeTiles({ value, brevoAvailable, readOnly, onChange }: { value: SmsMo
             onKeyDown={onKeyDown(i)}
             className={cn(
               "flex min-h-[68px] flex-col justify-center px-3 py-2 text-left outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background",
-              checked ? "border-2 border-primary px-[11px]" : "border border-border",
+              checked ? "border-2 border-lime-deep px-[11px]" : "border border-border",
               readOnly ? "cursor-default" : "cursor-pointer hover:bg-accent",
             )}
           >
-            <span className={cn("font-bold", checked && "text-primary")}>
+            <span className={cn("font-bold", checked && "text-lime-deep")}>
               {checked && <span aria-hidden="true">● </span>}
               {t.modes[mode].title}
             </span>
@@ -179,7 +179,7 @@ function SetupBox({ settings, readOnly, onDone, onCancel }: { settings: SmsSetti
   const noAndroid = () => setMode(settings.brevoAvailable ? "brevo" : "none");
 
   return (
-    <section data-testid="sms-setup" aria-labelledby="sms-setup-title" className="flex flex-col gap-3 border border-primary p-4">
+    <section data-testid="sms-setup" aria-labelledby="sms-setup-title" className="flex flex-col gap-3 border border-lime-deep p-4">
       <p className={kicker}>{t.kickerSetup}</p>
       <h3 id="sms-setup-title" className="text-xl font-bold leading-tight">
         {t.headline}
@@ -199,8 +199,8 @@ function SetupBox({ settings, readOnly, onDone, onCancel }: { settings: SmsSetti
           <ol className="flex flex-col gap-0.5 text-[15px] leading-relaxed">
             {t.steps.map((step, i) => (
               <li key={i}>
-                <span className="font-bold text-primary">{i + 1}.</span> {step.before}
-                {step.strong && <span className="font-bold text-primary">{step.strong}</span>}
+                <span className="font-bold text-lime-deep">{i + 1}.</span> {step.before}
+                {step.strong && <span className="font-bold text-lime-deep">{step.strong}</span>}
                 {step.after}
               </li>
             ))}
@@ -338,7 +338,7 @@ function LinkedBox({ settings, status, readOnly, onEdit }: { settings: SmsSettin
         <p id="sms-linked-title" className={kicker}>
           {t.kickerGateway}
         </p>
-        <p className={cn("font-semibold", status?.pendingStale ? "text-primary" : "text-success")}>
+        <p className={cn("font-semibold", status?.pendingStale ? "text-lime-deep" : "text-success")}>
           <span aria-hidden="true">● </span>
           {t.linkedStatus} · {statusLine}
         </p>
@@ -347,7 +347,7 @@ function LinkedBox({ settings, status, readOnly, onEdit }: { settings: SmsSettin
         {t.sender} <span className="font-mono">{formatPhone(gateway.senderPhone)}</span> · {counters.join(" · ")}
       </p>
       {status?.lastError && (
-        <p className="text-sm text-primary">
+        <p className="text-sm text-lime-deep">
           {t.lastError(status.lastErrorAt ? timeAgo(status.lastErrorAt) : "")} {errorMessage(status.lastError)}
         </p>
       )}

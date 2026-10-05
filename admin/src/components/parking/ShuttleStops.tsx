@@ -156,7 +156,7 @@ export function ShuttleStops() {
             else add.mutate();
           }}
         >
-          {editing && <p className="text-sm font-semibold text-primary">{t.editing(editing.name)}</p>}
+          {editing && <p className="text-sm font-semibold text-lime-deep">{t.editing(editing.name)}</p>}
           <div className="space-y-1.5">
             <Label htmlFor="stop-search">{t.search}</Label>
             <div className="flex gap-2">

@@ -77,7 +77,7 @@ class _ViewState extends State<_View> {
       floatingActionButton: manage
           ? FloatingActionButton.extended(
               key: const Key('res-new'),
-              backgroundColor: AppColors.accent,
+              backgroundColor: AppColors.action,
               foregroundColor: AppColors.onAccent,
               icon: const Icon(Icons.add_rounded),
               label: Text('res.new'.tr()),

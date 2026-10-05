@@ -217,7 +217,7 @@ class _Kpi extends StatelessWidget {
                   Container(
                     width: 28,
                     height: 28,
-                    decoration: const BoxDecoration(color: AppColors.panel2, shape: BoxShape.circle),
+                    decoration: BoxDecoration(color: alert ? AppStatus.warnSoft : AppColors.tint, shape: BoxShape.circle),
                     child: Icon(icon, size: 15, color: alert ? AppStatus.warn : AppColors.accent),
                   ),
                   const SizedBox(width: 10),
@@ -253,7 +253,7 @@ class _Badge extends StatelessWidget {
       _Tone.warn => (AppStatus.warnSoft, AppStatus.warnText, null),
       _Tone.bad => (AppStatus.badSoft, AppStatus.badText, null),
       _Tone.info => (AppStatus.infoSoft, AppStatus.info, null),
-      _Tone.accent => (AppColors.accent, AppColors.onAccent, null),
+      _Tone.accent => (AppColors.action, AppColors.onAccent, null),
       _ => (Colors.transparent, AppColors.muted, AppColors.panelLine),
     };
     return Container(

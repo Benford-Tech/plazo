@@ -354,7 +354,7 @@ export default function SpotsStep({
               key={key}
               className={cn(
                 "flex min-h-11 cursor-pointer items-center gap-2.5 border-b border-border py-1 text-[15px]",
-                layout === key && "text-primary",
+                layout === key && "text-lime-deep",
               )}
             >
               <input
@@ -473,7 +473,7 @@ export default function SpotsStep({
                     className={cn(
                       "flex min-h-9 items-center gap-1.5 border px-2 text-sm",
                       kind === k
-                        ? "border-primary text-primary"
+                        ? "border-lime-deep text-lime-deep"
                         : "border-border",
                     )}
                   >
@@ -510,7 +510,7 @@ export default function SpotsStep({
           ))}
         </div>
         {placing && (
-          <p className="text-sm text-primary">
+          <p className="text-sm text-lime-deep">
             {t.placeLandmark(t.landmarkKinds[placing])}
           </p>
         )}
@@ -563,7 +563,7 @@ function Row({
   return (
     <div className="flex justify-between border-b border-border py-1.5">
       <dt className="text-muted-foreground">{label}</dt>
-      <dd className={cn("font-mono font-bold", highlight && "text-primary")}>
+      <dd className={cn("font-mono font-bold", highlight && "text-lime-deep")}>
         {value}
       </dd>
     </div>

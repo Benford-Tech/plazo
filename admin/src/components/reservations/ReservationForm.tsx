@@ -89,7 +89,7 @@ function initialForm(reservation?: Reservation, defaultDate?: string, prefill?: 
 
 const labelClass = "mb-1 block text-[13px] font-semibold uppercase tracking-wide text-muted-foreground";
 const inputClass =
-  "h-12 w-full border border-border bg-card px-3 text-lg text-foreground outline-none focus-visible:border-primary aria-[invalid=true]:border-destructive";
+  "h-12 w-full border border-border bg-card px-3 text-lg text-foreground outline-none focus-visible:border-lime-deep aria-[invalid=true]:border-destructive";
 
 function Field({ id, label, error, help, children }: { id: string; label: string; error?: string; help?: string; children: React.ReactNode }) {
   return (
@@ -206,7 +206,7 @@ export function ReservationForm({
               value={form[dateKey]}
               onChange={set(dateKey)}
               aria-invalid={!!fieldErrors[`${key}At`]}
-              className="tabular h-10 w-full bg-transparent font-mono text-lg font-bold text-primary outline-none [color-scheme:dark]"
+              className="tabular h-10 w-full bg-transparent font-mono text-lg font-bold text-lime-deep outline-none [color-scheme:dark]"
             />
             <label htmlFor={`${key}-time`} className="sr-only">
               {label} — {t.time}
@@ -217,7 +217,7 @@ export function ReservationForm({
               required
               value={form[timeKey]}
               onChange={set(timeKey)}
-              className="tabular h-10 w-full bg-transparent font-mono text-lg font-bold text-primary outline-none [color-scheme:dark]"
+              className="tabular h-10 w-full bg-transparent font-mono text-lg font-bold text-lime-deep outline-none [color-scheme:dark]"
             />
             {fieldErrors[`${key}At`] && <p className="text-sm text-destructive">{errorMessage(fieldErrors[`${key}At`])}</p>}
           </div>

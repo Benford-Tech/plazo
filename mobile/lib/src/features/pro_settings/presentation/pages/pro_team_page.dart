@@ -44,7 +44,7 @@ class ProTeamPage extends StatelessWidget implements AutoRouteWrapper {
           appBar: BrandAppBar(pro: true, title: 'team.title'.tr()),
           floatingActionButton: FloatingActionButton.extended(
             key: const Key('team-add'),
-            backgroundColor: AppColors.accent,
+            backgroundColor: AppColors.action,
             foregroundColor: AppColors.onAccent,
             icon: const Icon(Icons.person_add_alt_1_rounded),
             label: Text('team.add'.tr()),

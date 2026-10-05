@@ -71,7 +71,7 @@ function SignalLabel({ s }: { s: ArrivalSignal }) {
     return <span className="whitespace-nowrap text-sm text-muted-foreground">{t.announced(s.announcedMinutes ?? s.etaMinutes ?? 0)}</span>;
   }
   const text = s.state === "sharing" ? t.approaching(s.etaMinutes) : s.kind === "return" ? t.atMeetingPoint : t.atReception;
-  return <span className="whitespace-nowrap text-xs font-bold uppercase text-primary sm:text-sm">● {text}</span>;
+  return <span className="whitespace-nowrap text-xs font-bold uppercase text-lime-deep sm:text-sm">● {text}</span>;
 }
 
 function Row({ r, kind, index, clock }: { r: PlanningRow; kind: "arrival" | "return"; index: number; clock: { fetchedAt: number; now: number } }) {
@@ -82,7 +82,7 @@ function Row({ r, kind, index, clock }: { r: PlanningRow; kind: "arrival" | "ret
   const live = s?.state === "sharing";
   const age = s && live ? positionAge(s, clock.fetchedAt, clock.now) : null;
   return (
-    <li id={`row-${r.id}`} className={cn(live && "my-1 border-2 border-primary")}>
+    <li id={`row-${r.id}`} className={cn(live && "my-1 border-2 border-lime-deep")}>
       <Link
         to={`/reservations/${r.id}`}
         className={cn(
@@ -90,7 +90,7 @@ function Row({ r, kind, index, clock }: { r: PlanningRow; kind: "arrival" | "ret
           live ? "border-b-0 bg-background px-2.5" : index % 2 ? "bg-muted/60" : "bg-card",
         )}
       >
-        <span className="tabular font-mono text-xl font-bold text-primary">{timeOf(isArrival ? r.arrivalAt : r.returnAt)}</span>
+        <span className="tabular font-mono text-xl font-bold text-lime-deep">{timeOf(isArrival ? r.arrivalAt : r.returnAt)}</span>
         {/* On a phone the plate sits above the name; side by side from sm up. */}
         <span className="flex min-w-0 flex-col items-start gap-1 sm:flex-row sm:items-center sm:gap-3.5">
           <Plate value={r.plate} />
@@ -118,7 +118,7 @@ function Row({ r, kind, index, clock }: { r: PlanningRow; kind: "arrival" | "ret
             {fr.status[r.status]}
           </span>
         ) : r.returnFlight ? (
-          <span className="tabular whitespace-nowrap border border-primary px-2 py-1 font-mono text-sm font-bold text-primary sm:text-[15px]">{r.returnFlight}</span>
+          <span className="tabular whitespace-nowrap border border-lime-deep px-2 py-1 font-mono text-sm font-bold text-lime-deep sm:text-[15px]">{r.returnFlight}</span>
         ) : (
           <span />
         )}
@@ -154,7 +154,7 @@ function Column({
 }) {
   return (
     <section className="flex min-w-0 flex-col">
-      <div className="flex items-baseline justify-between border-b-2 border-primary px-1 pb-2">
+      <div className="flex items-baseline justify-between border-b-2 border-lime-deep px-1 pb-2">
         <h2 className="text-2xl font-bold uppercase tracking-wider">{title}</h2>
         <span className="tabular font-mono text-muted-foreground">{count}</span>
       </div>
@@ -197,9 +197,9 @@ function ArrivalBanner({ signal, onClose }: { signal: ArrivalSignal; onClose: ()
 function SmsWarning({ pending, manager }: { pending: number; manager: boolean }) {
   const t = fr.planning;
   return (
-    <p role="status" data-testid="sms-warning" className="flex flex-wrap items-center gap-x-2 gap-y-1 border border-primary px-3 py-2 text-sm">
-      <MessageSquareWarning className="h-4 w-4 shrink-0 text-primary" aria-hidden="true" />
-      <span className="font-bold uppercase text-primary">{t.smsWarning(pending)}</span>
+    <p role="status" data-testid="sms-warning" className="flex flex-wrap items-center gap-x-2 gap-y-1 border border-lime-deep px-3 py-2 text-sm">
+      <MessageSquareWarning className="h-4 w-4 shrink-0 text-lime-deep" aria-hidden="true" />
+      <span className="font-bold uppercase text-lime-deep">{t.smsWarning(pending)}</span>
       <span className="text-muted-foreground">{t.smsWarningHint}</span>
       {manager && (
         <Link to="/mon-compte" className="font-semibold underline-offset-4 hover:underline">

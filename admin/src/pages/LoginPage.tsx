@@ -46,9 +46,9 @@ export default function LoginPage() {
         </Alert>
       )}
       {/* F-A / C-C: the form in a card bordered in yellow, the eyebrow and the welcome inside it. */}
-      <Card className="border-primary bg-card shadow-[0_18px_40px_-22px_rgba(20,30,20,.35)]">
+      <Card className="border-lime-deep bg-card shadow-[0_18px_40px_-22px_rgba(20,30,20,.35)]">
         <CardContent className="pt-5">
-          <p className="font-mono text-[13px] uppercase tracking-[0.06em] text-primary">{fr.login.subtitle}</p>
+          <p className="font-mono text-[13px] uppercase tracking-[0.06em] text-lime-deep">{fr.login.subtitle}</p>
           <h1 className="mt-3 text-[26px] font-bold uppercase tracking-wide">{fr.login.welcome}</h1>
           <p className="mb-5 mt-1 text-muted-foreground">{fr.login.intro}</p>
           <form onSubmit={handleSubmit} className="space-y-4">
@@ -75,7 +75,7 @@ export default function LoginPage() {
       </Card>
       <p className="mt-6 text-center text-muted-foreground">
         {fr.login.noAccount}{" "}
-        <Link to="/inscription" className="font-semibold text-primary underline-offset-4 hover:underline">
+        <Link to="/inscription" className="font-semibold text-lime-deep underline-offset-4 hover:underline">
           {fr.login.signup}
         </Link>
       </p>

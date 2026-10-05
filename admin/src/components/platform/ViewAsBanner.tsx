@@ -34,7 +34,7 @@ export function ViewAsBanner() {
           type="button"
           onClick={back}
           disabled={leaving}
-          className="ml-auto min-h-11 border-2 border-primary-foreground px-3 text-base font-bold uppercase tracking-wide hover:bg-primary-foreground hover:text-primary disabled:opacity-60"
+          className="ml-auto min-h-11 border-2 border-primary-foreground px-3 text-base font-bold uppercase tracking-wide hover:bg-primary-foreground hover:text-lime-deep disabled:opacity-60"
         >
           {fr.viewAs.back}
         </button>

@@ -31,7 +31,7 @@ function Kpi({ label, value, sub, to, icon: IconC, alert, testId }: { label: str
     >
       <span className="font-mono text-xs font-medium text-muted-foreground">{label}</span>
       <span className="flex items-center gap-3">
-        <span className={cn("flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-panel-2", alert ? "text-warn" : "text-primary")}>
+        <span className={cn("flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-panel-2", alert ? "text-warn" : "text-lime-deep")}>
           <IconC className="h-4 w-4" aria-hidden="true" />
         </span>
         <span className="tabular font-mono text-3xl font-medium leading-none tracking-tight">{value}</span>
@@ -199,7 +199,7 @@ function LivePanel({ live, parkingName }: { live: LiveShuttles | undefined; park
         )}
         {live?.trips.map((trip, i) => (
           <li key={trip.id} className="flex w-fit max-w-full items-center gap-2 rounded-full border border-panel-line bg-panel px-3 py-1.5 font-mono text-xs">
-            <BusFront className="h-3.5 w-3.5 shrink-0 text-primary" aria-hidden="true" />
+            <BusFront className="h-3.5 w-3.5 shrink-0 text-lime-deep" aria-hidden="true" />
             <b className="font-medium">{String(i + 1).padStart(2, "0")}</b>
             <span>{trip.driverName}</span>
             <span className="text-muted-foreground">{m.direction[trip.direction]}</span>
@@ -302,7 +302,7 @@ export default function DashboardPage() {
               </ul>
             )}
             {d.vehicles.length > vehicles.length && (
-              <button onClick={() => setAllVehicles(true)} className="mt-3 w-full rounded-full border border-panel-line py-2 text-sm font-semibold text-primary hover:bg-panel-2">
+              <button onClick={() => setAllVehicles(true)} className="mt-3 w-full rounded-full border border-panel-line py-2 text-sm font-semibold text-lime-deep hover:bg-panel-2">
                 {t.vehicles.all}
               </button>
             )}

@@ -251,7 +251,7 @@ function StepsBar({
             className={cn(
               "flex items-center gap-2 text-[15px] font-bold uppercase disabled:cursor-not-allowed",
               state === "active"
-                ? "text-primary"
+                ? "text-lime-deep"
                 : state === "done"
                   ? "text-foreground"
                   : "text-muted-foreground",
@@ -261,7 +261,7 @@ function StepsBar({
               className={cn(
                 "flex h-[26px] w-[26px] items-center justify-center border font-mono text-sm",
                 state === "active" &&
-                  "border-primary bg-primary text-primary-foreground",
+                  "border-lime-deep bg-primary text-primary-foreground",
                 state === "done" && "border-foreground",
                 state === "todo" && "border-muted-foreground",
               )}

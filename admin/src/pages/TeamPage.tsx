@@ -159,7 +159,7 @@ export default function TeamPage() {
   return (
     <>
       <h1 className="text-2xl font-semibold">{t.title}</h1>
-      {readOnly && <p className="border border-primary p-3 text-base">{fr.viewAs.readOnly}</p>}
+      {readOnly && <p className="border border-lime-deep p-3 text-base">{fr.viewAs.readOnly}</p>}
       <Card>
         <CardContent className="pt-2">
           {isLoading && <Skeleton className="my-4 h-24 w-full" />}

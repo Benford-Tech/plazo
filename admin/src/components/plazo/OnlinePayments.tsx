@@ -134,14 +134,14 @@ function ReadOnlyNote() {
 function ActivateBox({ status, readOnly, busy, onActivate }: { status: PaymentStatus; readOnly: boolean; busy: boolean; onActivate: () => void }) {
   const t = fr.payments;
   return (
-    <section data-testid="payments-activate" aria-labelledby="payments-title" className="flex flex-col gap-2.5 border border-primary p-4">
+    <section data-testid="payments-activate" aria-labelledby="payments-title" className="flex flex-col gap-2.5 border border-lime-deep p-4">
       <p className={kicker}>{t.kicker}</p>
       <h2 id="payments-title" className="text-xl font-bold leading-tight">
         {t.title}
       </h2>
       <p className="max-w-4xl text-base leading-snug text-muted-foreground">
         {t.intro.before}
-        <span className="font-mono text-primary">{status.commissionBps !== null ? `${percent(status.commissionBps)} %` : t.commissionUnset}</span>
+        <span className="font-mono text-lime-deep">{status.commissionBps !== null ? `${percent(status.commissionBps)} %` : t.commissionUnset}</span>
         {t.intro.after}
       </p>
       <Steps current={0} />
@@ -165,10 +165,10 @@ function ActivateBox({ status, readOnly, busy, onActivate }: { status: PaymentSt
 function PendingBox({ status, readOnly, busy, onComplete }: { status: PaymentStatus; readOnly: boolean; busy: boolean; onComplete: () => void }) {
   const t = fr.payments;
   return (
-    <section data-testid="payments-pending" aria-labelledby="payments-title" className="flex flex-col gap-2.5 border border-primary p-4">
+    <section data-testid="payments-pending" aria-labelledby="payments-title" className="flex flex-col gap-2.5 border border-lime-deep p-4">
       <p className={kicker}>{t.pendingKicker}</p>
       <h2 id="payments-title" className="text-xl font-bold leading-tight">
-        <span aria-hidden="true" className="text-primary">
+        <span aria-hidden="true" className="text-lime-deep">
           ●{" "}
         </span>
         {t.pendingTitle}
@@ -210,7 +210,7 @@ function ActiveLine({ readOnly, busy, onManage }: { readOnly: boolean; busy: boo
             type="button"
             onClick={onManage}
             disabled={busy}
-            className="min-h-11 font-semibold text-primary underline-offset-4 hover:underline disabled:opacity-50"
+            className="min-h-11 font-semibold text-lime-deep underline-offset-4 hover:underline disabled:opacity-50"
           >
             {t.manage}
           </button>
@@ -255,11 +255,11 @@ function ScheduleTiles({ value, readOnly, onChange }: { value: PayoutSchedule; r
             onKeyDown={onKeyDown(i)}
             className={cn(
               "flex min-h-[68px] flex-col justify-center px-3 py-2 text-left outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background",
-              checked ? "border-2 border-primary px-[11px]" : "border border-border",
+              checked ? "border-2 border-lime-deep px-[11px]" : "border border-border",
               readOnly ? "cursor-default" : "cursor-pointer hover:bg-accent",
             )}
           >
-            <span className={cn("font-bold", checked && "text-primary")}>
+            <span className={cn("font-bold", checked && "text-lime-deep")}>
               {checked && <span aria-hidden="true">● </span>}
               {t.schedule[option].title}
             </span>

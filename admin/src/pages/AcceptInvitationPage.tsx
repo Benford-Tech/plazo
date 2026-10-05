@@ -64,7 +64,7 @@ export default function AcceptInvitationPage() {
               <Alert variant="destructive">
                 <AlertDescription>{t.invalid}</AlertDescription>
               </Alert>
-              <Link to="/login" className="block text-primary underline">
+              <Link to="/login" className="block text-lime-deep underline">
                 {fr.verifyEmail.toLogin}
               </Link>
             </>

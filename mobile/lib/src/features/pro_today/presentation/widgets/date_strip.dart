@@ -26,7 +26,12 @@ class DateStrip extends StatelessWidget {
     return Row(
       key: const Key('date-strip'),
       children: [
-        _Arrow(key: const Key('date-prev-week'), icon: Icons.chevron_left_rounded, tooltip: 'pro.prev_week'.tr(), onTap: () => onSelected(sel.subtract(const Duration(days: 7)))),
+        _Arrow(
+          key: const Key('date-prev-week'),
+          icon: Icons.chevron_left_rounded,
+          tooltip: 'pro.prev_week'.tr(),
+          onTap: () => onSelected(sel.subtract(const Duration(days: 7))),
+        ),
         for (final d in days)
           Expanded(
             child: _Day(
@@ -39,7 +44,12 @@ class DateStrip extends StatelessWidget {
               onTap: () => onSelected(d),
             ),
           ),
-        _Arrow(key: const Key('date-next-week'), icon: Icons.chevron_right_rounded, tooltip: 'pro.next_week'.tr(), onTap: () => onSelected(sel.add(const Duration(days: 7)))),
+        _Arrow(
+          key: const Key('date-next-week'),
+          icon: Icons.chevron_right_rounded,
+          tooltip: 'pro.next_week'.tr(),
+          onTap: () => onSelected(sel.add(const Duration(days: 7))),
+        ),
         _Arrow(
           key: const Key('date-pick'),
           icon: Icons.calendar_month_rounded,
@@ -71,16 +81,17 @@ class _Day extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final color = selected ? AppColors.accent : (isToday ? AppColors.ink : AppColors.muted);
+    // The selected day on the action colour (lime for the pro, orange for travellers); today ringed.
+    final color = selected ? AppColors.onAccent : (isToday ? AppColors.accent : AppColors.muted);
     return InkWell(
       onTap: onTap,
       borderRadius: AppRadius.chip,
       child: Container(
         padding: const EdgeInsets.symmetric(vertical: 6),
         decoration: BoxDecoration(
-          color: selected ? AppColors.tint : null,
+          color: selected ? AppColors.action : null,
           borderRadius: AppRadius.chip,
-          border: isToday && !selected ? Border.all(color: AppColors.line) : null,
+          border: isToday && !selected ? Border.all(color: AppColors.accent, width: 1.5) : null,
         ),
         child: Column(
           mainAxisSize: MainAxisSize.min,

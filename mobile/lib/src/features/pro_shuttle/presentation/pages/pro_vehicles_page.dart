@@ -43,7 +43,7 @@ class ProVehiclesPage extends StatelessWidget implements AutoRouteWrapper {
           appBar: BrandAppBar(pro: true, title: 'vehicles.title'.tr()),
           floatingActionButton: FloatingActionButton.extended(
             key: const Key('vehicle-add'),
-            backgroundColor: AppColors.accent,
+            backgroundColor: AppColors.action,
             foregroundColor: AppColors.onAccent,
             icon: const Icon(Icons.add_rounded),
             label: Text('vehicles.add'.tr()),

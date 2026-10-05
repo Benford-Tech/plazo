@@ -69,7 +69,7 @@ function ListingDetails({ listing }: { listing: PlatformListing }) {
         {listing.reviewMessage && (
           <>
             <dt className={labelClass}>{t.lastMessage}</dt>
-            <dd className="border-l-2 border-primary pl-3">{listing.reviewMessage}</dd>
+            <dd className="border-l-2 border-lime-deep pl-3">{listing.reviewMessage}</dd>
           </>
         )}
       </dl>
@@ -117,7 +117,7 @@ function MessageForm({
         value={message}
         placeholder={placeholder}
         onChange={e => setMessage(e.target.value)}
-        className="w-full border border-border bg-background px-3 py-2 text-base outline-none focus-visible:border-primary"
+        className="w-full border border-border bg-background px-3 py-2 text-base outline-none focus-visible:border-lime-deep"
       />
       <div className="flex gap-2">
         <button type="submit" disabled={pending || (required && !message.trim())} className={primaryButton}>

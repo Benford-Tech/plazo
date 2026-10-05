@@ -73,7 +73,7 @@ export default function SignupPage() {
         <Alert className="mb-4 border-success/40 bg-success/10">
           <AlertDescription>
             {notice}{" "}
-            <Link to="/login" className="font-semibold text-primary underline">
+            <Link to="/login" className="font-semibold text-lime-deep underline">
               {t.login}
             </Link>
           </AlertDescription>
@@ -172,7 +172,7 @@ export default function SignupPage() {
                 />
                 <span>
                   {t.terms}{" "}
-                  <a href="/conditions" target="_blank" rel="noreferrer" className="text-primary underline">
+                  <a href="/conditions" target="_blank" rel="noreferrer" className="text-lime-deep underline">
                     {t.termsLink}
                   </a>
                 </span>
@@ -192,7 +192,7 @@ export default function SignupPage() {
       </Card>
       <p className="mt-6 text-center text-muted-foreground">
         {t.hasAccount}{" "}
-        <Link to="/login" className="font-semibold text-primary underline-offset-4 hover:underline">
+        <Link to="/login" className="font-semibold text-lime-deep underline-offset-4 hover:underline">
           {t.login}
         </Link>
       </p>

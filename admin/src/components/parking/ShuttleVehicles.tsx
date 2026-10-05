@@ -170,7 +170,7 @@ export function ShuttleVehicles() {
             else add.mutate();
           }}
         >
-          {editing && <p className="text-sm font-semibold text-primary">{t.editing(editing.model)}</p>}
+          {editing && <p className="text-sm font-semibold text-lime-deep">{t.editing(editing.model)}</p>}
           <div className="grid gap-3 sm:grid-cols-[2fr_1fr_1fr_1fr]">
             <FormField id="vehicle-model" label={t.model} placeholder={t.modelPlaceholder} maxLength={60} required value={form.model} onChange={e => setForm({ ...form, model: e.target.value })} error={fieldErrors.model} />
             <FormField id="vehicle-colour" label={t.colour} placeholder={t.colourPlaceholder} maxLength={30} value={form.colour} onChange={e => setForm({ ...form, colour: e.target.value })} error={fieldErrors.colour} />

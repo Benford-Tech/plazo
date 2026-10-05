@@ -115,7 +115,7 @@ export default function CapacityStudyPage() {
     return (
       <div className="p-6">
         <p className="text-destructive">{loadError}</p>
-        <Link to="/plateforme/capacite" className="text-primary underline">
+        <Link to="/plateforme/capacite" className="text-lime-deep underline">
           {fr.capacity.listTitle}
         </Link>
       </div>
@@ -175,13 +175,13 @@ function StepsBar({
             aria-current={state === "active" ? "step" : undefined}
             className={cn(
               "flex items-center gap-2 text-[15px] font-bold uppercase disabled:cursor-not-allowed",
-              state === "active" ? "text-primary" : state === "done" ? "text-foreground" : "text-muted-foreground",
+              state === "active" ? "text-lime-deep" : state === "done" ? "text-foreground" : "text-muted-foreground",
             )}
           >
             <span
               className={cn(
                 "flex h-[26px] w-[26px] items-center justify-center border font-mono text-sm",
-                state === "active" && "border-primary bg-primary text-primary-foreground",
+                state === "active" && "border-lime-deep bg-primary text-primary-foreground",
                 state === "done" && "border-foreground",
                 state === "todo" && "border-muted-foreground",
               )}

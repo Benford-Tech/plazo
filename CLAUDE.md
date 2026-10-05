@@ -229,8 +229,10 @@ Canevas de référence : https://claude.ai/artifact/6ezoCDyLXFNwhAH5ZWUf4u (rang
 
 - **Espace pro (web, `admin/`)** : **direction C-B « Opérations » (choix du 05/10/2026, d'après la maquette 2 de Joanny ;
   remplace la direction B noir et jaune)** : fond gris très clair `#EEF0EE`, cartes blanches arrondies (14 px, `--radius`),
-  filets `#E4E6E2`, texte `#1A1D1A`, gris `#6B7280`, **vert citron `#A3E635`** pour l'action, la section courante et les
-  épingles (texte vert foncé `#0F2A14` dessus), vert foncé `#1E5E2E` pour les onglets actifs ; états en pilules teintées
+  filets `#E4E6E2`, texte `#1A1D1A`, gris `#6B7280`, **vert citron `#A3E635`** en aplat seulement (boutons, section courante, jour sélectionné, épingles ; texte vert
+  foncé `#0F2A14` dessus), **vert foncé `#1E5E2E`** pour tout ce qui est texte, icône ou contour d'accent (classe
+  `text-lime-deep` ; dans l'app `AppColors.accent` = vert foncé et `AppColors.action` = citron, décision du 05/10/2026 :
+  « pas assez voyant » en citron sur blanc) ; états en pilules teintées
   (vert `#16A34A`, ambre `#D97706`, rouge `#DC2626`, indigo `#4F46E5` sur fonds pâles) ; Inter pour le texte (Archivo Narrow
   disponible en `font-narrow`), JetBrains Mono pour les heures et les chiffres ; **logo pro = panneau vert citron, lettres
   vert foncé** (`brand/logo-horizontal-pro.svg`) ; fond de connexion = grille citron sur le fond clair. Les paragraphes

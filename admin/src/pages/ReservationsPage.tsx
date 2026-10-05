@@ -54,7 +54,7 @@ export default function ReservationsPage() {
           value={input}
           onChange={e => setInput(e.target.value)}
           placeholder={t.searchPlaceholder}
-          className="h-12 min-w-0 flex-1 border border-border bg-card px-3 text-lg outline-none placeholder:text-muted-foreground focus-visible:border-primary"
+          className="h-12 min-w-0 flex-1 border border-border bg-card px-3 text-lg outline-none placeholder:text-muted-foreground focus-visible:border-lime-deep"
         />
         <button type="submit" aria-label={t.search} className="flex h-12 w-12 items-center justify-center bg-primary text-primary-foreground">
           <Search className="h-5 w-5" />

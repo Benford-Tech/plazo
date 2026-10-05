@@ -35,8 +35,8 @@ export function ViewSwitch({ current, className }: { current: "platform" | "own"
         onClick={() => setOpen(!open)}
         className="flex min-h-11 items-center gap-1.5 border border-border px-3 text-base text-muted-foreground hover:bg-accent"
       >
-        {t.view} <b className="max-w-[16rem] truncate font-bold text-primary">{current === "platform" ? t.viewAll : own}</b>
-        <ChevronDown className="h-4 w-4 text-primary" aria-hidden="true" />
+        {t.view} <b className="max-w-[16rem] truncate font-bold text-lime-deep">{current === "platform" ? t.viewAll : own}</b>
+        <ChevronDown className="h-4 w-4 text-lime-deep" aria-hidden="true" />
       </button>
       {open && (
         <div role="menu" className="absolute right-0 top-full z-30 mt-1 min-w-full border border-border bg-background">
@@ -52,7 +52,7 @@ export function ViewSwitch({ current, className }: { current: "platform" | "own"
               }}
               className={cn(
                 "flex min-h-11 w-full items-center whitespace-nowrap px-3 text-left text-base hover:bg-accent",
-                current === o.key ? "font-bold text-primary" : "text-foreground",
+                current === o.key ? "font-bold text-lime-deep" : "text-foreground",
               )}
             >
               {o.label}

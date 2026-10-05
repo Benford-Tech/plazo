@@ -140,7 +140,7 @@ export default function NotificationsPage() {
       </form>
       {confirming && (
         <div role="dialog" aria-modal="true" aria-labelledby="pn-confirm-title" className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 p-4">
-          <div className="w-full max-w-md space-y-4 border border-primary bg-background p-5">
+          <div className="w-full max-w-md space-y-4 border border-lime-deep bg-background p-5">
             <h2 id="pn-confirm-title" className="text-xl font-bold uppercase tracking-wide">
               {t.confirmTitle}
             </h2>
@@ -183,13 +183,13 @@ export default function NotificationsPage() {
               <tbody>
                 {history.data!.data.map(n => (
                   <tr key={n.id} className="border-b border-border align-top">
-                    <td className="tabular whitespace-nowrap px-2 py-2 font-mono text-primary">{dateTimeShort(n.createdAt)}</td>
+                    <td className="tabular whitespace-nowrap px-2 py-2 font-mono text-lime-deep">{dateTimeShort(n.createdAt)}</td>
                     <td className="px-2 py-2">{audienceLabel(n)}</td>
                     <td className="px-2 py-2">
                       <span className="font-semibold">{n.title}</span>
                       <span className="block text-sm text-muted-foreground">{n.body}</span>
                       {n.url && (
-                        <a href={n.url} className="block text-sm text-primary underline-offset-4 hover:underline" target="_blank" rel="noreferrer">
+                        <a href={n.url} className="block text-sm text-lime-deep underline-offset-4 hover:underline" target="_blank" rel="noreferrer">
                           {n.url}
                         </a>
                       )}

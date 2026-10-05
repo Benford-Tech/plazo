@@ -13,7 +13,7 @@ export const ToolButton = forwardRef<HTMLButtonElement, React.ButtonHTMLAttribut
           variant === "primary" && "bg-primary text-primary-foreground hover:bg-primary/90",
           variant === "outline" && "border border-border text-foreground hover:bg-accent",
           variant === "map" && "border border-border bg-background/70 text-foreground backdrop-blur-sm hover:bg-background/90",
-          active && "border-primary bg-primary text-primary-foreground hover:bg-primary",
+          active && "border-lime-deep bg-primary text-primary-foreground hover:bg-primary",
           className,
         )}
         {...props}

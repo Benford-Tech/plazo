@@ -21,7 +21,7 @@ const POLICIES: CancellationPolicy[] = ["free_24h", "free_48h", "free_until_arri
 const SITE_URL = (import.meta.env.VITE_SITE_URL ?? "").replace(/\/$/, "");
 
 const labelClass = "mb-1 block text-[13px] font-semibold uppercase tracking-wide text-muted-foreground";
-const inputClass = "h-11 w-full border border-border bg-card px-3 text-lg outline-none focus-visible:border-primary aria-[invalid=true]:border-destructive";
+const inputClass = "h-11 w-full border border-border bg-card px-3 text-lg outline-none focus-visible:border-lime-deep aria-[invalid=true]:border-destructive";
 
 type Form = {
   title: string;
@@ -179,8 +179,8 @@ export default function ListingPage() {
         }
       />
       {params.get("bienvenue") && (
-        <div role="status" className="border border-primary p-4">
-          <p className="text-lg font-bold uppercase tracking-wide text-primary">{fr.onboarding.title}</p>
+        <div role="status" className="border border-lime-deep p-4">
+          <p className="text-lg font-bold uppercase tracking-wide text-lime-deep">{fr.onboarding.title}</p>
           <ol className="mt-1 list-decimal pl-5 text-base">
             {fr.onboarding.steps.map(step => (
               <li key={step}>{step}</li>
@@ -191,7 +191,7 @@ export default function ListingPage() {
       <div className="flex flex-col gap-1">
         <p className="text-muted-foreground">{emailPending && status !== "published" ? t.verifyFirst : t.statusHelp[status]}</p>
         {current?.reviewMessage && (status === "rejected" || status === "draft") && (
-          <p className="border-l-2 border-primary pl-3">
+          <p className="border-l-2 border-lime-deep pl-3">
             <span className="block text-[13px] font-semibold uppercase tracking-wide text-muted-foreground">{t.reviewMessage}</span>
             {current.reviewMessage}
           </p>
@@ -288,7 +288,7 @@ export default function ListingPage() {
                 const on = form.cancellationPolicy === p;
                 const [label, sub] = fr.cancellation[p];
                 return (
-                  <label key={p} className={cn("flex min-h-11 cursor-pointer items-center gap-2.5 border px-3", on ? "border-primary" : "border-border")}>
+                  <label key={p} className={cn("flex min-h-11 cursor-pointer items-center gap-2.5 border px-3", on ? "border-lime-deep" : "border-border")}>
                     <input type="radio" name="policy" checked={on} onChange={() => setForm({ ...form, cancellationPolicy: p })} className="h-4 w-4 accent-[hsl(var(--primary))]" />
                     <span>
                       <b>{label}</b> <span className="text-sm text-muted-foreground">{sub}</span>

@@ -96,7 +96,7 @@ export default function ReservationPage() {
 
   return (
     <div className="mx-auto max-w-3xl space-y-5">
-      <div className="flex flex-wrap items-center gap-3 border-b-2 border-primary pb-3">
+      <div className="flex flex-wrap items-center gap-3 border-b-2 border-lime-deep pb-3">
         <Link to={`/?date=${localParts(r.arrivalAt).date}`} aria-label={t.back} className="flex h-11 w-11 items-center justify-center border border-border hover:bg-accent">
           <ChevronLeft className="h-5 w-5" />
         </Link>
@@ -136,10 +136,10 @@ export default function ReservationPage() {
           <div className="grid gap-x-8 sm:grid-cols-2">
             <dl>
               <Info label={t.arrival}>
-                <span className="tabular font-mono font-bold text-primary">{dateTimeShort(r.arrivalAt)}</span>
+                <span className="tabular font-mono font-bold text-lime-deep">{dateTimeShort(r.arrivalAt)}</span>
               </Info>
               <Info label={t.return}>
-                <span className="tabular font-mono font-bold text-primary">{dateTimeShort(r.returnAt)}</span>
+                <span className="tabular font-mono font-bold text-lime-deep">{dateTimeShort(r.returnAt)}</span>
                 <span className="ml-2 text-muted-foreground">· {t.nights(nights)}</span>
               </Info>
               <Info label={t.returnFlight}>
@@ -150,7 +150,7 @@ export default function ReservationPage() {
             </dl>
             <dl>
               <Info label={t.customerPhone}>
-                <a href={`tel:${r.customerPhone.replace(/[^+\d]/g, "")}`} className="tabular font-mono text-primary underline-offset-4 hover:underline">
+                <a href={`tel:${r.customerPhone.replace(/[^+\d]/g, "")}`} className="tabular font-mono text-lime-deep underline-offset-4 hover:underline">
                   {r.customerPhone}
                 </a>
               </Info>

@@ -124,7 +124,7 @@ export default function ParkingPage() {
               />
             </div>
             {preview !== null && (
-              <Alert className="border-primary/30 bg-accent">
+              <Alert className="border-lime-deep/30 bg-accent">
                 <AlertDescription>{t.bookablePreview(preview)}</AlertDescription>
               </Alert>
             )}

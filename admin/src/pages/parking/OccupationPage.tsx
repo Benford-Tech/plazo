@@ -282,7 +282,7 @@ export default function OccupationPage() {
       {spots.length === 0 ? (
         <p className="rounded-none border border-border p-5 text-muted-foreground">
           {t.noPlan}{" "}
-          <Link to="/parking/plan" className="text-primary underline">
+          <Link to="/parking/plan" className="text-lime-deep underline">
             {fr.parking.tabs.plan}
           </Link>
         </p>
@@ -317,7 +317,7 @@ export default function OccupationPage() {
               ),
             )}
             {choosing && (
-              <span className="ml-auto flex items-center gap-2 text-primary">
+              <span className="ml-auto flex items-center gap-2 text-lime-deep">
                 {t.choosing(choosing.plate)}
                 <button
                   type="button"
@@ -345,7 +345,7 @@ export default function OccupationPage() {
                 value={query}
                 onChange={(e) => setQuery(e.target.value)}
                 placeholder={t.searchPlaceholder}
-                className="h-11 w-full border border-primary bg-card px-3 font-mono text-base uppercase text-foreground"
+                className="h-11 w-full border border-lime-deep bg-card px-3 font-mono text-base uppercase text-foreground"
               />
               {debounced.length >= 2 && !selectedReservation && (
                 <ul className="flex flex-col">
@@ -363,7 +363,7 @@ export default function OccupationPage() {
                         <span className="min-w-0 flex-1 truncate text-sm">
                           {r.customerName}
                         </span>
-                        <span className="font-mono text-sm font-bold text-primary">
+                        <span className="font-mono text-sm font-bold text-lime-deep">
                           {r.spot?.code ?? "—"}
                         </span>
                       </button>
@@ -477,7 +477,7 @@ function ArrivalRow({
       data-testid={`arrival-${arrival.reference}`}
     >
       <div className="flex items-center gap-2.5">
-        <span className="font-mono text-primary">
+        <span className="font-mono text-lime-deep">
           {timeOf(arrival.arrivalAt)}
         </span>
         <Plate value={arrival.plate} size="sm" />
@@ -488,7 +488,7 @@ function ArrivalRow({
       <div className="flex items-center gap-2 text-sm">
         {best ? (
           <>
-            <span className="text-primary">{t.suggested(best.code)}</span>
+            <span className="text-lime-deep">{t.suggested(best.code)}</span>
             <span className="text-muted-foreground">
               {best.reason === "free"
                 ? t.reason.free
@@ -535,7 +535,7 @@ function SpotCard({
       className="flex flex-col gap-2 border border-border p-3"
       data-testid="spot-card"
     >
-      <div className="font-mono text-[34px] font-bold leading-none text-primary">
+      <div className="font-mono text-[34px] font-bold leading-none text-lime-deep">
         {spot.code}
       </div>
       <div className="text-[13px] text-muted-foreground">
@@ -564,7 +564,7 @@ function SpotCard({
             </ToolButton>
             <Link
               to={`/reservations/${o.id}`}
-              className="flex min-h-9 items-center px-2 text-sm text-primary underline"
+              className="flex min-h-9 items-center px-2 text-sm text-lime-deep underline"
             >
               {t.openBooking}
             </Link>
@@ -597,7 +597,7 @@ function VehicleCard({
   useEffect(() => setKeys(hit.keyHook ?? ""), [hit.keyHook]);
   return (
     <div
-      className="flex flex-col gap-2 border border-primary p-3"
+      className="flex flex-col gap-2 border border-lime-deep p-3"
       data-testid="vehicle-card"
     >
       <div className="flex items-center gap-2.5">
@@ -614,7 +614,7 @@ function VehicleCard({
         </button>
       </div>
       <div
-        className="font-mono text-[34px] font-bold leading-none text-primary"
+        className="font-mono text-[34px] font-bold leading-none text-lime-deep"
         data-testid="vehicle-spot"
       >
         {hit.spot?.code ?? t.noSpot}
@@ -656,7 +656,7 @@ function VehicleCard({
         )}
         <Link
           to={`/reservations/${hit.id}`}
-          className="flex min-h-9 items-center px-2 text-sm text-primary underline"
+          className="flex min-h-9 items-center px-2 text-sm text-lime-deep underline"
         >
           {t.openBooking}
         </Link>

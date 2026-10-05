@@ -196,7 +196,7 @@ export default function CapacityStep({
             />
           </div>
           {computing && (
-            <div className="absolute right-4 top-4 bg-background/85 px-3 py-2 text-sm text-primary">
+            <div className="absolute right-4 top-4 bg-background/85 px-3 py-2 text-sm text-lime-deep">
               {fr.capacity.computing}
             </div>
           )}
@@ -217,7 +217,7 @@ export default function CapacityStep({
               className={cn(
                 "flex flex-col gap-1 p-3 text-left",
                 active
-                  ? "border-2 border-primary bg-card"
+                  ? "border-2 border-lime-deep bg-card"
                   : "border border-border hover:bg-card/60",
               )}
               data-testid={`layout-${key}`}
@@ -226,7 +226,7 @@ export default function CapacityStep({
                 <b className="text-base uppercase">
                   {fr.capacity.layouts[key]}
                 </b>
-                <span className="font-mono text-sm font-bold text-primary">
+                <span className="font-mono text-sm font-bold text-lime-deep">
                   {key === "selfPark"
                     ? "—"
                     : `${gain(count) >= 0 ? "+" : ""}${gain(count)} %`}
@@ -236,7 +236,7 @@ export default function CapacityStep({
                 <span
                   className={cn(
                     "font-mono text-[34px] font-bold leading-tight",
-                    active ? "text-primary" : "text-foreground",
+                    active ? "text-lime-deep" : "text-foreground",
                   )}
                   data-testid={`count-${key}`}
                 >
@@ -257,7 +257,7 @@ export default function CapacityStep({
           <p className="text-sm text-destructive">{fr.capacity.noResult3}</p>
         )}
 
-        <div className="border-l-2 border-primary pl-2.5 text-sm leading-[1.45] text-muted-foreground">
+        <div className="border-l-2 border-lime-deep pl-2.5 text-sm leading-[1.45] text-muted-foreground">
           {fr.capacity.rangeLabel}
           <b className="text-foreground">
             {fr.capacity.range(totals.selfPark, totals.valet24)}
@@ -279,7 +279,7 @@ export default function CapacityStep({
           ) : (
             <button
               type="button"
-              className="text-primary underline"
+              className="text-lime-deep underline"
               onClick={() => go("photo")}
             >
               {fr.capacity.photoTodo}

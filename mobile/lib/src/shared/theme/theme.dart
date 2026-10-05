@@ -19,7 +19,10 @@ abstract final class AppColors {
   static const dark = _pro ? Color(0xFF1E5E2E) : Color(0xFF2C1A0E);
 
   /// T-A (05/10/2026): the traveller's action is the easyJet orange itself, no lighter orange.
-  static const accent = _pro ? Color(0xFFA3E635) : Color(0xFFFF6600);
+  /// The pro's accent is the dark green (text, icons, outlines read well on white); the lime goes on
+  /// surfaces only, through [action] (buttons, the selected day, active tiles).
+  static const accent = _pro ? Color(0xFF1E5E2E) : Color(0xFFFF6600);
+  static const action = _pro ? Color(0xFFA3E635) : Color(0xFFFF6600);
   static const peach = _pro ? Color(0xFF16A34A) : Color(0xFFF0A36B);
 
   /// Pale tints: selected backgrounds and the light text on the header.
@@ -27,7 +30,7 @@ abstract final class AppColors {
   static const tintSoft = _pro ? Color(0xFFF4F9EA) : Color(0xFFFFF7F1);
   static const onBrandSoft = _pro ? Color(0xFF6B7280) : Color(0xFFFFE9D6);
   static const accentDeep = _pro ? Color(0xFF1E5E2E) : Color(0xFFC24E00);
-  static const accentLight = _pro ? Color(0xFFC7F06B) : Color(0xFFFF8A3D);
+  static const accentLight = _pro ? Color(0xFFA3E635) : Color(0xFFFF8A3D);
 
   /// Titles on the traveller's light ground (dark brown), the ink on the pro.
   static const brownOrInk = _pro ? Color(0xFF1E5E2E) : Color(0xFF2C1A0E);
@@ -56,7 +59,7 @@ abstract final class AppColors {
   static const plateBlue = Color(0xFF1F3FA6);
 
   /// Solid on both apps since T-A (the traveller's buttons are plain orange, as the mockup).
-  static const primaryGradient = LinearGradient(begin: Alignment(-1, -0.2), end: Alignment(1, 0.2), colors: [accent, accent]);
+  static const primaryGradient = LinearGradient(begin: Alignment(-1, -0.2), end: Alignment(1, 0.2), colors: [action, action]);
 }
 
 /// The four state colours of the dashboard mockups (same in both apps): filled badges use the

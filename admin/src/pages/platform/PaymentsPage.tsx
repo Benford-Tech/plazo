@@ -73,7 +73,7 @@ export default function PaymentsPage() {
                     <StripeCell stripe={o.stripe} />
                   </td>
                   <td className="px-2 py-3">{fr.platform.payoutSchedule[o.payoutSchedule]}</td>
-                  <td className="px-2 py-3 font-mono text-primary">{o.commissionBps !== null ? `${percent(o.commissionBps)} %` : "—"}</td>
+                  <td className="px-2 py-3 font-mono text-lime-deep">{o.commissionBps !== null ? `${percent(o.commissionBps)} %` : "—"}</td>
                   <td className="px-2 py-3 font-mono">{t.pending(o.pending.count, euros(o.pending.amountCents))}</td>
                   <td className="px-2 py-3">
                     {o.failed.length ? (

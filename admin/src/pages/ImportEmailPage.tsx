@@ -10,7 +10,7 @@ import type { EmailImportResult, Reservation } from "@/lib/types";
 import { cn } from "@/lib/utils";
 
 const labelClass = "mb-1 block text-[13px] font-semibold uppercase tracking-wide text-muted-foreground";
-const inputClass = "h-12 w-full border bg-card px-3 text-lg text-foreground outline-none focus-visible:border-primary";
+const inputClass = "h-12 w-full border bg-card px-3 text-lg text-foreground outline-none focus-visible:border-lime-deep";
 
 /** "2026-10-01T08:30" -> "jeu. 1 oct. · 08:30" */
 function localLabel(local: string): string {
@@ -23,7 +23,7 @@ const euros = (cents: number) => new Intl.NumberFormat("fr-FR", { style: "curren
 function Found({ label, value, mono = true }: { label: string; value: string; mono?: boolean }) {
   return (
     <div className="grid min-h-11 grid-cols-[24px_120px_1fr] items-center gap-2.5 border-b border-[#262625]">
-      <Check className="h-[18px] w-[18px] text-primary" strokeWidth={2.5} aria-label={fr.importEmail.found} />
+      <Check className="h-[18px] w-[18px] text-lime-deep" strokeWidth={2.5} aria-label={fr.importEmail.found} />
       <span className="text-sm font-semibold uppercase tracking-wide text-muted-foreground">{label}</span>
       <span className={mono ? "tabular font-mono text-lg font-bold" : "text-lg font-semibold"}>{value}</span>
     </div>
@@ -112,21 +112,21 @@ export default function ImportEmailPage() {
   const minFree = result?.capacity?.nights.length ? Math.min(...result.capacity.nights.map(n => n.free)) : null;
   const canCreate = !!result && datesFound && !result.duplicate && (fullNights.length === 0 || force) && !create.isPending;
   const set = (key: keyof Completion) => (e: React.ChangeEvent<HTMLInputElement>) => setCompletion({ ...completion, [key]: e.target.value });
-  const todoBorder = (key: keyof Completion) => (missing.has(key as never) && !completion[key].trim() ? "border-primary" : "border-border");
+  const todoBorder = (key: keyof Completion) => (missing.has(key as never) && !completion[key].trim() ? "border-lime-deep" : "border-border");
   const analyseError = analyse.error instanceof ApiError ? errorMessage(analyse.error.code) : analyse.error ? describeError(analyse.error) : null;
 
   return (
     <>
-      <div className="flex flex-wrap items-center gap-3 border-b-2 border-primary pb-2.5">
+      <div className="flex flex-wrap items-center gap-3 border-b-2 border-lime-deep pb-2.5">
         <h1 className="text-3xl font-bold uppercase tracking-wide">{t.title}</h1>
         <span className="ml-auto text-muted-foreground">{t.known}</span>
       </div>
 
       {lastCreated && (
         <p role="status" className="flex items-center gap-3 border border-border px-3 py-2">
-          <Check className="h-5 w-5 text-primary" />
+          <Check className="h-5 w-5 text-lime-deep" />
           {t.created(lastCreated.reference)}
-          <Link to={`/reservations/${lastCreated.id}`} className="ml-auto font-semibold uppercase text-primary">
+          <Link to={`/reservations/${lastCreated.id}`} className="ml-auto font-semibold uppercase text-lime-deep">
             {t.openCreated}
           </Link>
         </p>
@@ -144,7 +144,7 @@ export default function ImportEmailPage() {
             value={text}
             onChange={e => setText(e.target.value)}
             placeholder={t.pastePlaceholder}
-            className="tabular min-h-[420px] resize-y border border-border bg-card p-3.5 font-mono text-sm leading-relaxed text-muted-foreground outline-none placeholder:text-muted-foreground/70 focus-visible:border-primary"
+            className="tabular min-h-[420px] resize-y border border-border bg-card p-3.5 font-mono text-sm leading-relaxed text-muted-foreground outline-none placeholder:text-muted-foreground/70 focus-visible:border-lime-deep"
           />
           <button
             onClick={() => analyse.mutate(text)}
@@ -167,7 +167,7 @@ export default function ImportEmailPage() {
             <>
               <div className="flex flex-wrap items-baseline gap-3">
                 <span className="bg-foreground px-2.5 py-1 font-bold uppercase text-background">{parsed.provider}</span>
-                {parsed.externalReference && <span className="tabular font-mono text-xl font-bold text-primary">{parsed.externalReference}</span>}
+                {parsed.externalReference && <span className="tabular font-mono text-xl font-bold text-lime-deep">{parsed.externalReference}</span>}
                 <span className="ml-auto text-muted-foreground">{t.nothingSaved}</span>
               </div>
 
@@ -187,14 +187,14 @@ export default function ImportEmailPage() {
                 {parsed.customerEmail && <Found label={t.email} value={parsed.customerEmail} mono={false} />}
                 {parsed.priceCents !== undefined && <Found label={t.price} value={euros(parsed.priceCents)} />}
               </div>
-              {!datesFound && <p className="border border-primary px-3 py-2 text-primary">{t.datesMissing}</p>}
+              {!datesFound && <p className="border border-lime-deep px-3 py-2 text-lime-deep">{t.datesMissing}</p>}
 
               <div className="grid gap-3.5 sm:grid-cols-2">
                 {!parsed.customerName && (
                   <div className="sm:col-span-2">
                     <label htmlFor="imp-name" className={labelClass}>
                       {t.customer}
-                      <span className="text-primary">{t.toComplete}</span>
+                      <span className="text-lime-deep">{t.toComplete}</span>
                     </label>
                     <input id="imp-name" value={completion.customerName} onChange={set("customerName")} className={cn(inputClass, todoBorder("customerName"))} />
                     {fieldErrors.customerName && <p className="mt-1 text-sm text-destructive">{errorMessage(fieldErrors.customerName)}</p>}
@@ -203,7 +203,7 @@ export default function ImportEmailPage() {
                 <div>
                   <label htmlFor="imp-phone" className={labelClass}>
                     {t.phone}
-                    {missing.has("customerPhone") && <span className="text-primary">{t.toComplete}</span>}
+                    {missing.has("customerPhone") && <span className="text-lime-deep">{t.toComplete}</span>}
                   </label>
                   <input
                     id="imp-phone"
@@ -217,7 +217,7 @@ export default function ImportEmailPage() {
                 <div>
                   <label htmlFor="imp-plate" className={labelClass}>
                     {t.plate}
-                    {missing.has("plate") && <span className="text-primary">{t.toComplete}</span>}
+                    {missing.has("plate") && <span className="text-lime-deep">{t.toComplete}</span>}
                   </label>
                   <div
                     className={cn(

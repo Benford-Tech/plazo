@@ -26,16 +26,16 @@ export function EmailVerificationBanner() {
   if (!user || user.viewAs || user.emailVerified !== false) return null;
 
   return (
-    <div role="status" className="border-b border-primary bg-card">
+    <div role="status" className="border-b border-lime-deep bg-card">
       <div className="mx-auto flex max-w-7xl flex-wrap items-center gap-x-4 gap-y-2 px-4 py-2.5 sm:px-6">
         <p className="flex-1 text-base">
-          <span aria-hidden="true" className="mr-2 font-bold text-primary">
+          <span aria-hidden="true" className="mr-2 font-bold text-lime-deep">
             ●
           </span>
           {fr.emailBanner.text}
         </p>
         {devLink && (
-          <a href={devLink} className="text-sm text-primary underline">
+          <a href={devLink} className="text-sm text-lime-deep underline">
             {fr.emailBanner.devLink}
           </a>
         )}

@@ -19,7 +19,7 @@ export function ParkingTabs({ right }: { right?: React.ReactNode }) {
         : "hover:bg-accent",
     );
   return (
-    <div className="flex flex-wrap items-center gap-1 border-b-2 border-primary">
+    <div className="flex flex-wrap items-center gap-1 border-b-2 border-lime-deep">
       {manager && (
         <NavLink to="/parking/plan" className={link}>
           {t.plan}

@@ -12,7 +12,7 @@ import type { Pricing, PricingTier } from "@/lib/types";
 import { cn } from "@/lib/utils";
 
 const SIMULATED_DAYS = [1, 2, 5, 10, 20];
-const cell = "h-11 border border-border bg-card px-3 text-lg tabular font-mono outline-none focus-visible:border-primary aria-[invalid=true]:border-destructive";
+const cell = "h-11 border border-border bg-card px-3 text-lg tabular font-mono outline-none focus-visible:border-lime-deep aria-[invalid=true]:border-destructive";
 
 const toRows = (p: Pricing): Row[] => p.tiers.map(t => ({ days: String(t.days), price: centsToInput(t.priceCents) }));
 
@@ -62,7 +62,7 @@ export default function PricingPage() {
   return (
     <>
       <OnlinePayments />
-      <PlazoTabs right={dirty ? <span className="font-semibold uppercase text-primary">{t.unsaved}</span> : null} />
+      <PlazoTabs right={dirty ? <span className="font-semibold uppercase text-lime-deep">{t.unsaved}</span> : null} />
       <div className="grid gap-8 lg:grid-cols-[1fr_400px]">
         <form
           className="flex flex-col gap-4"
@@ -132,7 +132,7 @@ export default function PricingPage() {
               const reason = quoteReason(tiers, extraCents, d);
               return (
                 <li key={d} data-testid={`sim-${d}`} className="grid grid-cols-[56px_1fr_auto] items-baseline gap-3 border-b border-border py-2.5">
-                  <span className="font-mono text-lg font-bold text-primary">{t.simDays(d)}</span>
+                  <span className="font-mono text-lg font-bold text-lime-deep">{t.simDays(d)}</span>
                   <span className="text-sm text-muted-foreground">
                     {reason?.kind === "tier" ? t.simTier(reason.days) : reason?.kind === "extra" ? t.simExtra(reason.base, reason.extra, euros(extraCents!)) : t.simNone}
                   </span>
@@ -141,7 +141,7 @@ export default function PricingPage() {
               );
             })}
           </ul>
-          <p className="border-l-2 border-primary pl-3 text-sm text-muted-foreground">
+          <p className="border-l-2 border-lime-deep pl-3 text-sm text-muted-foreground">
             {commission !== null ? t.commission((commission / 100).toLocaleString("fr-FR")) : t.commissionUnset}
           </p>
         </aside>

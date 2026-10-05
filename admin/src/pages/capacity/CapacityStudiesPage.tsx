@@ -57,7 +57,7 @@ export default function CapacityStudiesPage() {
             </div>
             {studies.data.map(s => (
               <div key={s.id} className="grid min-h-14 grid-cols-[1fr_200px_170px_140px_44px] items-center gap-3 border-b border-border">
-                <button type="button" className="truncate text-left text-base font-bold hover:text-primary" onClick={() => navigate(`/plateforme/capacite/${s.id}/terrain`)}>
+                <button type="button" className="truncate text-left text-base font-bold hover:text-lime-deep" onClick={() => navigate(`/plateforme/capacite/${s.id}/terrain`)}>
                   {s.name}
                   {s.createdBy && <span className="block text-[13px] font-normal text-muted-foreground">{s.createdBy.name}</span>}
                 </button>

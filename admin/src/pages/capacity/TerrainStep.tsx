@@ -352,8 +352,8 @@ export default function TerrainStep({ study, update, go, geoScope = "operator" }
           )}
         </div>
 
-        <div className="border border-primary p-3">
-          <div className="font-bold uppercase text-primary">{outline ? fr.capacity.outline : fr.capacity.noOutline}</div>
+        <div className="border border-lime-deep p-3">
+          <div className="font-bold uppercase text-lime-deep">{outline ? fr.capacity.outline : fr.capacity.noOutline}</div>
           {outline ? (
             <>
               <div className="mt-1 font-mono text-[28px] font-bold leading-tight" data-testid="outline-area">
@@ -386,7 +386,7 @@ export default function TerrainStep({ study, update, go, geoScope = "operator" }
           ) : (
             <p className="mt-1 text-sm text-muted-foreground">
               {fr.capacity.noOutlineHelp}{" "}
-              <button type="button" className="text-primary underline" onClick={() => setTool("draw")}>
+              <button type="button" className="text-lime-deep underline" onClick={() => setTool("draw")}>
                 {fr.capacity.drawByHand}
               </button>
             </p>
@@ -422,7 +422,7 @@ export default function TerrainStep({ study, update, go, geoScope = "operator" }
           {settings.calibration && study.scaleFactor !== 1 ? (
             <>
               <span className="font-mono">{fr.capacity.scaleValue(dec3.format(study.scaleFactor), dec2.format(settings.calibration.measured))}</span>{" "}
-              <button type="button" className="text-primary underline" onClick={() => update({ scaleFactor: 1, settings: { ...study.settings, calibration: null } })}>
+              <button type="button" className="text-lime-deep underline" onClick={() => update({ scaleFactor: 1, settings: { ...study.settings, calibration: null } })}>
                 {fr.capacity.removeScale}
               </button>
             </>

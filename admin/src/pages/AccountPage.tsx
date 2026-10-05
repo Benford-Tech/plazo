@@ -37,7 +37,7 @@ export default function AccountPage() {
     return (
       <>
         <h1 className="text-2xl font-semibold">{t.title}</h1>
-        <p className="border border-primary p-3 text-base">{fr.viewAs.readOnly}</p>
+        <p className="border border-lime-deep p-3 text-base">{fr.viewAs.readOnly}</p>
         <TravellerSms />
       </>
     );

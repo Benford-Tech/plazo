@@ -165,7 +165,7 @@ export default function SpotPlanningPage() {
       {data.spots.length === 0 ? (
         <p className="rounded-none border border-border p-5 text-muted-foreground">
           {t.noPlan}{" "}
-          <Link to="/parking/plan" className="text-primary underline">
+          <Link to="/parking/plan" className="text-lime-deep underline">
             {fr.parking.tabs.plan}
           </Link>
         </p>
@@ -244,7 +244,7 @@ export default function SpotPlanningPage() {
                           className={cn(
                             "uppercase",
                             d === today
-                              ? "font-bold text-primary"
+                              ? "font-bold text-lime-deep"
                               : "text-muted-foreground",
                           )}
                         >
@@ -345,7 +345,7 @@ export default function SpotPlanningPage() {
                       "border-l-2 pl-2",
                       a.kind === "over_capacity"
                         ? "border-destructive"
-                        : "border-primary",
+                        : "border-lime-deep",
                     )}
                   >
                     {a.kind === "over_capacity"
@@ -408,7 +408,7 @@ export default function SpotPlanningPage() {
                             selectedId === r.id && "bg-accent",
                           )}
                         >
-                          <span className="font-mono text-xs text-primary">
+                          <span className="font-mono text-xs text-lime-deep">
                             {shortDay(localParts(r.arrivalAt).date)}
                           </span>
                           <Plate value={r.plate} size="sm" />
@@ -448,7 +448,7 @@ function StayCard({
   const free = freeSpotsFor(spots, stay);
   return (
     <div
-      className="flex flex-col gap-2 border border-primary p-3"
+      className="flex flex-col gap-2 border border-lime-deep p-3"
       data-testid="stay-card"
     >
       <div className="flex items-center gap-2">
@@ -466,7 +466,7 @@ function StayCard({
         </button>
       </div>
       <div
-        className="font-mono text-3xl font-bold text-primary"
+        className="font-mono text-3xl font-bold text-lime-deep"
         data-testid="stay-spot"
       >
         {stay.spot?.code ?? fr.occupation.noSpot}
@@ -506,7 +506,7 @@ function StayCard({
         )}
         <Link
           to={`/reservations/${stay.id}`}
-          className="flex min-h-9 items-center text-sm text-primary underline"
+          className="flex min-h-9 items-center text-sm text-lime-deep underline"
         >
           {t.openBooking}
         </Link>
