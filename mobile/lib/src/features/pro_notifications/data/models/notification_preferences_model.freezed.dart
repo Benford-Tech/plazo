@@ -16,7 +16,7 @@ T _$identity<T>(T value) => value;
 /// @nodoc
 mixin _$NotificationPreferencesModel {
 
- bool get arrivals; bool get returns; bool get shuttles; int get devices;
+ bool get arrivals; bool get returns; bool get shuttles; bool get platform; int get devices;
 /// Create a copy of NotificationPreferencesModel
 /// with the given fields replaced by the non-null parameter values.
 @JsonKey(includeFromJson: false, includeToJson: false)
@@ -30,20 +30,20 @@ $NotificationPreferencesModelCopyWith<NotificationPreferencesModel> get copyWith
 @override
 bool operator ==(Object other) {
   final _this = this as NotificationPreferencesModel;
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is NotificationPreferencesModel&&(identical(other.arrivals, _this.arrivals) || other.arrivals == _this.arrivals)&&(identical(other.returns, _this.returns) || other.returns == _this.returns)&&(identical(other.shuttles, _this.shuttles) || other.shuttles == _this.shuttles)&&(identical(other.devices, _this.devices) || other.devices == _this.devices));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is NotificationPreferencesModel&&(identical(other.arrivals, _this.arrivals) || other.arrivals == _this.arrivals)&&(identical(other.returns, _this.returns) || other.returns == _this.returns)&&(identical(other.shuttles, _this.shuttles) || other.shuttles == _this.shuttles)&&(identical(other.platform, _this.platform) || other.platform == _this.platform)&&(identical(other.devices, _this.devices) || other.devices == _this.devices));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
 int get hashCode {
   final _this = this as NotificationPreferencesModel;
-  return Object.hash(runtimeType,_this.arrivals,_this.returns,_this.shuttles,_this.devices);
+  return Object.hash(runtimeType,_this.arrivals,_this.returns,_this.shuttles,_this.platform,_this.devices);
 }
 
 @override
 String toString() {
   final _this = this as NotificationPreferencesModel;
-  return 'NotificationPreferencesModel(arrivals: ${_this.arrivals}, returns: ${_this.returns}, shuttles: ${_this.shuttles}, devices: ${_this.devices})';
+  return 'NotificationPreferencesModel(arrivals: ${_this.arrivals}, returns: ${_this.returns}, shuttles: ${_this.shuttles}, platform: ${_this.platform}, devices: ${_this.devices})';
 }
 
 
@@ -54,7 +54,7 @@ abstract mixin class $NotificationPreferencesModelCopyWith<$Res>  {
   factory $NotificationPreferencesModelCopyWith(NotificationPreferencesModel value, $Res Function(NotificationPreferencesModel) _then) = _$NotificationPreferencesModelCopyWithImpl;
 @useResult
 $Res call({
- bool arrivals, bool returns, bool shuttles, int devices
+ bool arrivals, bool returns, bool shuttles, bool platform, int devices
 });
 
 
@@ -71,11 +71,12 @@ class _$NotificationPreferencesModelCopyWithImpl<$Res>
 
 /// Create a copy of NotificationPreferencesModel
 /// with the given fields replaced by the non-null parameter values.
-@pragma('vm:prefer-inline') @override $Res call({Object? arrivals = null,Object? returns = null,Object? shuttles = null,Object? devices = null,}) {
+@pragma('vm:prefer-inline') @override $Res call({Object? arrivals = null,Object? returns = null,Object? shuttles = null,Object? platform = null,Object? devices = null,}) {
   return _then(NotificationPreferencesModel(
 arrivals: null == arrivals ? _self.arrivals : arrivals // ignore: cast_nullable_to_non_nullable
 as bool,returns: null == returns ? _self.returns : returns // ignore: cast_nullable_to_non_nullable
 as bool,shuttles: null == shuttles ? _self.shuttles : shuttles // ignore: cast_nullable_to_non_nullable
+as bool,platform: null == platform ? _self.platform : platform // ignore: cast_nullable_to_non_nullable
 as bool,devices: null == devices ? _self.devices : devices // ignore: cast_nullable_to_non_nullable
 as int,
   ));
@@ -162,10 +163,10 @@ return $default(_that);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( bool arrivals,  bool returns,  bool shuttles,  int devices)?  $default,{required TResult orElse(),}) {final _that = this;
+@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( bool arrivals,  bool returns,  bool shuttles,  bool platform,  int devices)?  $default,{required TResult orElse(),}) {final _that = this;
 switch (_that) {
 case _NotificationPreferencesModel() when $default != null:
-return $default(_that.arrivals,_that.returns,_that.shuttles,_that.devices);case _:
+return $default(_that.arrivals,_that.returns,_that.shuttles,_that.platform,_that.devices);case _:
   return orElse();
 
 }
@@ -183,10 +184,10 @@ return $default(_that.arrivals,_that.returns,_that.shuttles,_that.devices);case 
 /// }
 /// ```
 
-@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( bool arrivals,  bool returns,  bool shuttles,  int devices)  $default,) {final _that = this;
+@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( bool arrivals,  bool returns,  bool shuttles,  bool platform,  int devices)  $default,) {final _that = this;
 switch (_that) {
 case _NotificationPreferencesModel():
-return $default(_that.arrivals,_that.returns,_that.shuttles,_that.devices);case _:
+return $default(_that.arrivals,_that.returns,_that.shuttles,_that.platform,_that.devices);case _:
   throw StateError('Unexpected subclass');
 
 }
@@ -203,10 +204,10 @@ return $default(_that.arrivals,_that.returns,_that.shuttles,_that.devices);case 
 /// }
 /// ```
 
-@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( bool arrivals,  bool returns,  bool shuttles,  int devices)?  $default,) {final _that = this;
+@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( bool arrivals,  bool returns,  bool shuttles,  bool platform,  int devices)?  $default,) {final _that = this;
 switch (_that) {
 case _NotificationPreferencesModel() when $default != null:
-return $default(_that.arrivals,_that.returns,_that.shuttles,_that.devices);case _:
+return $default(_that.arrivals,_that.returns,_that.shuttles,_that.platform,_that.devices);case _:
   return null;
 
 }
@@ -218,12 +219,13 @@ return $default(_that.arrivals,_that.returns,_that.shuttles,_that.devices);case 
 @JsonSerializable()
 
 class _NotificationPreferencesModel implements NotificationPreferencesModel {
-  const _NotificationPreferencesModel({required this.arrivals, required this.returns, this.shuttles = true, this.devices = 0});
+  const _NotificationPreferencesModel({required this.arrivals, required this.returns, this.shuttles = true, this.platform = true, this.devices = 0});
   factory _NotificationPreferencesModel.fromJson(Map<String, dynamic> json) => _$NotificationPreferencesModelFromJson(json);
 
 @override final  bool arrivals;
 @override final  bool returns;
 @override@JsonKey() final  bool shuttles;
+@override@JsonKey() final  bool platform;
 @override@JsonKey() final  int devices;
 
 /// Create a copy of NotificationPreferencesModel
@@ -239,18 +241,18 @@ Map<String, dynamic> toJson() {
 
 @override
 bool operator ==(Object other) {
-    return identical(this, other) || (other.runtimeType == runtimeType&&other is _NotificationPreferencesModel&&(identical(other.arrivals, arrivals) || other.arrivals == arrivals)&&(identical(other.returns, returns) || other.returns == returns)&&(identical(other.shuttles, shuttles) || other.shuttles == shuttles)&&(identical(other.devices, devices) || other.devices == devices));
+    return identical(this, other) || (other.runtimeType == runtimeType&&other is _NotificationPreferencesModel&&(identical(other.arrivals, arrivals) || other.arrivals == arrivals)&&(identical(other.returns, returns) || other.returns == returns)&&(identical(other.shuttles, shuttles) || other.shuttles == shuttles)&&(identical(other.platform, platform) || other.platform == platform)&&(identical(other.devices, devices) || other.devices == devices));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
 int get hashCode {
-    return Object.hash(runtimeType,arrivals,returns,shuttles,devices);
+    return Object.hash(runtimeType,arrivals,returns,shuttles,platform,devices);
 }
 
 @override
 String toString() {
-    return 'NotificationPreferencesModel(arrivals: $arrivals, returns: $returns, shuttles: $shuttles, devices: $devices)';
+    return 'NotificationPreferencesModel(arrivals: $arrivals, returns: $returns, shuttles: $shuttles, platform: $platform, devices: $devices)';
 }
 
 
@@ -261,7 +263,7 @@ abstract mixin class _$NotificationPreferencesModelCopyWith<$Res> implements $No
   factory _$NotificationPreferencesModelCopyWith(_NotificationPreferencesModel value, $Res Function(_NotificationPreferencesModel) _then) = __$NotificationPreferencesModelCopyWithImpl;
 @override @useResult
 $Res call({
- bool arrivals, bool returns, bool shuttles, int devices
+ bool arrivals, bool returns, bool shuttles, bool platform, int devices
 });
 
 
@@ -278,11 +280,12 @@ class __$NotificationPreferencesModelCopyWithImpl<$Res>
 
 /// Create a copy of NotificationPreferencesModel
 /// with the given fields replaced by the non-null parameter values.
-@override @pragma('vm:prefer-inline') $Res call({Object? arrivals = null,Object? returns = null,Object? shuttles = null,Object? devices = null,}) {
+@override @pragma('vm:prefer-inline') $Res call({Object? arrivals = null,Object? returns = null,Object? shuttles = null,Object? platform = null,Object? devices = null,}) {
   return _then(_NotificationPreferencesModel(
 arrivals: null == arrivals ? _self.arrivals : arrivals // ignore: cast_nullable_to_non_nullable
 as bool,returns: null == returns ? _self.returns : returns // ignore: cast_nullable_to_non_nullable
 as bool,shuttles: null == shuttles ? _self.shuttles : shuttles // ignore: cast_nullable_to_non_nullable
+as bool,platform: null == platform ? _self.platform : platform // ignore: cast_nullable_to_non_nullable
 as bool,devices: null == devices ? _self.devices : devices // ignore: cast_nullable_to_non_nullable
 as int,
   ));

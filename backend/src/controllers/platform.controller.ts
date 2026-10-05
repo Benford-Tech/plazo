@@ -2,7 +2,7 @@ import { Request, Response } from 'express';
 import httpStatus from 'http-status';
 import { Container } from 'typedi';
 import { CreateCapacityStudyDto, UpdateCapacityStudyDto } from '@/dtos/capacity-study.dto';
-import { InviteOperatorDto, RejectListingDto, UnpublishListingDto, UpdateCommissionDto } from '@/dtos/platform.dto';
+import { InviteOperatorDto, PlatformNotificationDto, RejectListingDto, UnpublishListingDto, UpdateCommissionDto } from '@/dtos/platform.dto';
 import { RequestWithStaffSession } from '@/middlewares/staff-auth.middleware';
 import { ValidationException } from '@/middlewares/validation.middleware';
 import { CapacityStudyService } from '@/services/capacity-study.service';
@@ -24,6 +24,30 @@ export class PlatformController {
   public platform = Container.get(PlatformService);
 
   /** GET /internal/platform/operators */
+  /** GET /internal/platform/notifications */
+  public notifications = catchAsync(async (req: Request, res: Response) => {
+    res.json({ data: await this.platform.listNotifications() });
+  });
+
+  /** GET /internal/platform/notifications/audience?audience=&operatorId= */
+  public notificationAudience = catchAsync(async (req: Request, res: Response) => {
+    const audience = String(req.query.audience ?? 'staff');
+    if (!['staff', 'travellers', 'operator'].includes(audience)) throw new ValidationException({ audience: 'invalid_audience' });
+    res.set('Cache-Control', 'no-store');
+    res.json(
+      await this.platform.notificationAudience(
+        audience as 'staff' | 'travellers' | 'operator',
+        req.query.operatorId ? String(req.query.operatorId) : null,
+      ),
+    );
+  });
+
+  /** POST /internal/platform/notifications */
+  public sendNotification = catchAsync(async (req: RequestWithStaffSession, res: Response) => {
+    const data: PlatformNotificationDto = req.body;
+    res.status(httpStatus.CREATED).json({ data: await this.platform.sendNotification(req.staff, data) });
+  });
+
   public operators = catchAsync(async (req: Request, res: Response) => {
     res.json(await this.platform.operators());
   });

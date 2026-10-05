@@ -23,6 +23,9 @@ import type {
   Paginated,
   Parking,
   ParkingSettings,
+  PlatformAudience,
+  PlatformNotification,
+  PlatformNotificationInput,
   ReturnMeetingPoint,
   ShuttleStop,
   ShuttleStopInput,
@@ -550,6 +553,18 @@ export const adminApi = {
 
   getPlatformPayments: () =>
     apiRequest<PlatformPayments>("/internal/platform/payments"),
+  // E-A: the platform's broadcasts.
+  getPlatformNotifications: () =>
+    apiRequest<{ data: PlatformNotification[] }>("/internal/platform/notifications"),
+  getPlatformNotificationAudience: (audience: PlatformAudience, operatorId?: string | null) =>
+    apiRequest<{ devices: number; configured: boolean }>(
+      `/internal/platform/notifications/audience?${new URLSearchParams({ audience, ...(operatorId ? { operatorId } : {}) })}`,
+    ),
+  sendPlatformNotification: (input: PlatformNotificationInput) =>
+    apiRequest<{ data: PlatformNotification }>("/internal/platform/notifications", {
+      method: "POST",
+      body: json(input),
+    }),
   retryPayout: (reservationId: string) =>
     apiRequest<{
       result: "transferred" | "failed" | "skipped";

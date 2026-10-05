@@ -8,6 +8,8 @@ export interface NotificationPreferences {
   returns: boolean;
   /** The shuttles' departures and returns (N-A). */
   shuttles: boolean;
+  /** The platform's messages (E-A). */
+  platform: boolean;
   /** Phones of the person registered for pushes. */
   devices: number;
 }
@@ -35,15 +37,15 @@ export class StaffDeviceService {
   public async preferences(actor: AuthenticatedStaff): Promise<NotificationPreferences> {
     const staff = await prisma.staff.findUniqueOrThrow({
       where: { id: actor.id },
-      select: { notifyArrivals: true, notifyReturns: true, notifyShuttles: true },
+      select: { notifyArrivals: true, notifyReturns: true, notifyShuttles: true, notifyPlatform: true },
     });
     const devices = await prisma.staffDevice.count({ where: { staffId: actor.id } });
-    return { arrivals: staff.notifyArrivals, returns: staff.notifyReturns, shuttles: staff.notifyShuttles, devices };
+    return { arrivals: staff.notifyArrivals, returns: staff.notifyReturns, shuttles: staff.notifyShuttles, platform: staff.notifyPlatform, devices };
   }
 
   public async updatePreferences(
     actor: AuthenticatedStaff,
-    patch: { arrivals?: boolean; returns?: boolean; shuttles?: boolean },
+    patch: { arrivals?: boolean; returns?: boolean; shuttles?: boolean; platform?: boolean },
   ): Promise<NotificationPreferences> {
     await prisma.staff.update({
       where: { id: actor.id },
@@ -51,6 +53,7 @@ export class StaffDeviceService {
         ...(patch.arrivals !== undefined ? { notifyArrivals: patch.arrivals } : {}),
         ...(patch.returns !== undefined ? { notifyReturns: patch.returns } : {}),
         ...(patch.shuttles !== undefined ? { notifyShuttles: patch.shuttles } : {}),
+        ...(patch.platform !== undefined ? { notifyPlatform: patch.platform } : {}),
       },
     });
     return this.preferences(actor);

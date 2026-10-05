@@ -260,6 +260,8 @@
     "notify_returns_help": "Un client est au point de rendez-vous de l'aéroport.",
     "notify_shuttles": "Navettes",
     "notify_shuttles_help": "Une navette part chercher ou déposer des clients, ou revient au parking.",
+    "notify_platform": "Messages de Plazo",
+    "notify_platform_help": "Les informations envoyées par Plazo à tous les parkings (nouveautés, incidents).",
     "enable_push": "Activer les notifications sur ce téléphone",
     "push_enabled": "Notifications activées sur ce téléphone.",
     "push_unsupported": "Les notifications push ne sont disponibles que dans l'application installée (iPhone ou Android).",

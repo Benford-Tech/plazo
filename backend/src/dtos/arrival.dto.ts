@@ -136,4 +136,9 @@ export class NotificationPreferencesDto {
   @IsOptional()
   @IsBoolean({ message: 'invalid' })
   public shuttles?: boolean;
+
+  /** The platform's messages (E-A). */
+  @IsOptional()
+  @IsBoolean({ message: 'invalid' })
+  public platform?: boolean;
 }

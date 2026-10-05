@@ -7,7 +7,7 @@ import '../../data/models/notification_preferences_model.dart';
 abstract class NotificationsRepository {
   bool get pushSupported;
   Future<Either<Failure, NotificationPreferencesModel>> getPreferences();
-  Future<Either<Failure, NotificationPreferencesModel>> updatePreferences({bool? arrivals, bool? returns, bool? shuttles});
+  Future<Either<Failure, NotificationPreferencesModel>> updatePreferences({bool? arrivals, bool? returns, bool? shuttles, bool? platform});
   Future<Either<Failure, String>> enablePush();
 }
 
@@ -23,8 +23,8 @@ class NotificationsRepositoryImpl implements NotificationsRepository {
   Future<Either<Failure, NotificationPreferencesModel>> getPreferences() => _dataSource.getPreferences().makeRequest();
 
   @override
-  Future<Either<Failure, NotificationPreferencesModel>> updatePreferences({bool? arrivals, bool? returns, bool? shuttles}) =>
-      _dataSource.updatePreferences(arrivals: arrivals, returns: returns, shuttles: shuttles).makeRequest();
+  Future<Either<Failure, NotificationPreferencesModel>> updatePreferences({bool? arrivals, bool? returns, bool? shuttles, bool? platform}) =>
+      _dataSource.updatePreferences(arrivals: arrivals, returns: returns, shuttles: shuttles, platform: platform).makeRequest();
 
   @override
   Future<Either<Failure, String>> enablePush() => _dataSource.enablePush().makeRequest();

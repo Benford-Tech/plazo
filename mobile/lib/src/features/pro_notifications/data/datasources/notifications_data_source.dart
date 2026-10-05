@@ -8,7 +8,7 @@ import '../models/notification_preferences_model.dart';
 abstract class NotificationsDataSource {
   bool get pushSupported;
   Future<NotificationPreferencesModel> getPreferences();
-  Future<NotificationPreferencesModel> updatePreferences({bool? arrivals, bool? returns, bool? shuttles});
+  Future<NotificationPreferencesModel> updatePreferences({bool? arrivals, bool? returns, bool? shuttles, bool? platform});
 
   /// Asks the permission, then registers this phone with the API. Returns the subscription id.
   Future<String> enablePush();
@@ -27,8 +27,8 @@ class NotificationsDataSourceImpl implements NotificationsDataSource {
   Future<NotificationPreferencesModel> getPreferences() => client.getPreferences();
 
   @override
-  Future<NotificationPreferencesModel> updatePreferences({bool? arrivals, bool? returns, bool? shuttles}) =>
-      client.updatePreferences(body: {'arrivals': ?arrivals, 'returns': ?returns, 'shuttles': ?shuttles});
+  Future<NotificationPreferencesModel> updatePreferences({bool? arrivals, bool? returns, bool? shuttles, bool? platform}) =>
+      client.updatePreferences(body: {'arrivals': ?arrivals, 'returns': ?returns, 'shuttles': ?shuttles, 'platform': ?platform});
 
   @override
   Future<String> enablePush() async {

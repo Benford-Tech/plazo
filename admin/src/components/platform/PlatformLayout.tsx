@@ -12,6 +12,7 @@ const TABS = [
   { to: "/plateforme/annonces", label: fr.platform.tabs.listings },
   { to: "/plateforme/reservations", label: fr.platform.tabs.reservations },
   { to: "/plateforme/paiements", label: fr.platform.tabs.payments },
+  { to: "/plateforme/notifications", label: fr.platform.tabs.notifications },
   { to: "/plateforme/capacite", label: fr.platform.tabs.capacity },
 ];
 

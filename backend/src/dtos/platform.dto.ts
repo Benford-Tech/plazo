@@ -1,5 +1,5 @@
 import { Transform, Type } from 'class-transformer';
-import { IsEmail, IsInt, IsNotEmpty, IsOptional, IsString, Max, MaxLength, Min, ValidateIf } from 'class-validator';
+import { IsEmail, IsIn, IsInt, IsNotEmpty, IsOptional, IsString, IsUrl, Max, MaxLength, Min, ValidateIf } from 'class-validator';
 
 // Validation messages are codes: the pro space translates them.
 const MAX_COMMISSION_BPS = 5000;
@@ -61,4 +61,33 @@ export class UnpublishListingDto {
   @IsString()
   @MaxLength(1000, { message: 'too_long' })
   public message?: string;
+}
+
+/** A push from the platform (E-A, 05/10/2026): to every operator's staff, every traveller, or one operator's staff. */
+export class PlatformNotificationDto {
+  @IsIn(['staff', 'travellers', 'operator'], { message: 'invalid_audience' })
+  public audience: 'staff' | 'travellers' | 'operator';
+
+  /** Required with audience "operator". */
+  @IsOptional()
+  @IsString({ message: 'invalid' })
+  @MaxLength(40, { message: 'invalid' })
+  public operatorId?: string | null;
+
+  @IsString({ message: 'required' })
+  @IsNotEmpty({ message: 'required' })
+  @MaxLength(50, { message: 'too_long' })
+  public title: string;
+
+  @IsString({ message: 'required' })
+  @IsNotEmpty({ message: 'required' })
+  @MaxLength(160, { message: 'too_long' })
+  public body: string;
+
+  /** Opened when the notification is tapped (https only). */
+  @IsOptional()
+  @ValidateIf((_, value) => value !== null && value !== '')
+  @IsUrl({ protocols: ['https'], require_protocol: true }, { message: 'invalid_url' })
+  @MaxLength(300, { message: 'too_long' })
+  public url?: string | null;
 }

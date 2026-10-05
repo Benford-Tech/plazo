@@ -413,7 +413,7 @@ describe('personnel : notifications push', () => {
       .set(auth(b.op.token))
       .send({ subscriptionId: 'sub-manager', platform: 'android' });
     expect(reg.status).toBe(200);
-    expect(reg.body.preferences).toEqual({ arrivals: true, returns: true, shuttles: true, devices: 1 });
+    expect(reg.body.preferences).toEqual({ arrivals: true, returns: true, shuttles: true, platform: true, devices: 1 });
   }
 
   it('prévient au départ, au seuil des 10 min et à l’arrivée, sans répéter', async () => {
@@ -460,6 +460,7 @@ describe('personnel : notifications push', () => {
       arrivals: false,
       returns: true,
       shuttles: true,
+      platform: true,
       devices: 1,
     });
     await api().post(arrival(b, '/announce')).set(bookingToken(b.manageToken)).send({ kind: 'outbound', minutes: 20 });

@@ -1,7 +1,7 @@
 import { Router } from 'express';
 import { PlatformController } from '@/controllers/platform.controller';
 import { CreateCapacityStudyDto, UpdateCapacityStudyDto } from '@/dtos/capacity-study.dto';
-import { InviteOperatorDto, RejectListingDto, UnpublishListingDto, UpdateCommissionDto } from '@/dtos/platform.dto';
+import { InviteOperatorDto, PlatformNotificationDto, RejectListingDto, UnpublishListingDto, UpdateCommissionDto } from '@/dtos/platform.dto';
 import { Routes } from '@/interfaces/routes.interface';
 import { PlatformAdminMiddleware } from '@/middlewares/platform-admin.middleware';
 import { ValidationMiddleware } from '@/middlewares/validation.middleware';
@@ -63,6 +63,37 @@ import { ValidationMiddleware } from '@/middlewares/validation.middleware';
  *     responses:
  *       201:
  *         description: "{ access: { token, expires }, operator: { id, name } }"
+ * /internal/platform/notifications:
+ *   get:
+ *     summary: E-A — the last platform broadcasts ({ data [{ id, audience, operatorName, title, body, url, recipients, sentByName, createdAt }] })
+ *     tags: [Platform]
+ *     responses:
+ *       200: { description: History }
+ *   post:
+ *     summary: E-A — push to every operator's staff ("staff"), every traveller with a current booking ("travellers") or one operator's staff ("operator" + operatorId); 429 daily_limit past 2 traveller broadcasts a day (C-A); audited
+ *     tags: [Platform]
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required: [audience, title, body]
+ *             properties:
+ *               audience: { type: string, enum: [staff, travellers, operator] }
+ *               operatorId: { type: string, nullable: true }
+ *               title: { type: string, maxLength: 50 }
+ *               body: { type: string, maxLength: 160 }
+ *               url: { type: string, nullable: true }
+ *     responses:
+ *       201: { description: "{ data }" }
+ * /internal/platform/notifications/audience:
+ *   get:
+ *     summary: E-A — how many phones a broadcast would reach ({ devices, configured })
+ *     tags: [Platform]
+ *     parameters:
+ *       - { in: query, name: audience, schema: { type: string, enum: [staff, travellers, operator] } }
+ *       - { in: query, name: operatorId, schema: { type: string } }
  * /internal/platform/invitations:
  *   post:
  *     summary: Invite an operator — creates it with its parking and manager, emails a link (7 days, single use) to set the password
@@ -241,6 +272,14 @@ export class PlatformRoute implements Routes {
 
   private initializeRoutes() {
     const base = '/internal/platform';
+    this.router.get(`${base}/notifications`, PlatformAdminMiddleware(), this.platform.notifications);
+    this.router.get(`${base}/notifications/audience`, PlatformAdminMiddleware(), this.platform.notificationAudience);
+    this.router.post(
+      `${base}/notifications`,
+      PlatformAdminMiddleware(),
+      ValidationMiddleware(PlatformNotificationDto),
+      this.platform.sendNotification,
+    );
     this.router.get(`${base}/operators`, PlatformAdminMiddleware(), this.platform.operators);
     this.router.patch(
       `${base}/operators/:id/commission`,

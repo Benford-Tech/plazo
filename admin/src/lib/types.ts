@@ -477,6 +477,30 @@ export interface PaymentStatus {
   payoutSchedule: PayoutSchedule;
 }
 
+export type PlatformAudience = "staff" | "travellers" | "operator";
+
+/** A push sent by the platform (E-A, 05/10/2026). */
+export interface PlatformNotification {
+  id: string;
+  audience: PlatformAudience;
+  operatorId: string | null;
+  operatorName: string | null;
+  title: string;
+  body: string;
+  url: string | null;
+  recipients: number;
+  sentByName: string;
+  createdAt: string;
+}
+
+export interface PlatformNotificationInput {
+  audience: PlatformAudience;
+  operatorId?: string | null;
+  title: string;
+  body: string;
+  url?: string | null;
+}
+
 export interface PlatformPayments {
   paymentsEnabled: boolean;
   operators: {

@@ -52,6 +52,7 @@ model Operator {
   auditLogs    AuditLog[]
   reservations Reservation[]
   vehicles     ShuttleVehicle[]
+  platformNotifications PlatformNotification[]
   shuttleTrips ShuttleTrip[]
   smsSettings  OperatorSmsSettings?
   smsOutbox    SmsOutbox[]
@@ -93,6 +94,8 @@ model Staff {
   vehicleSetAt    DateTime?
   // Push notifications of the shuttles' departures and returns (N-A, 05/10/2026).
   notifyShuttles  Boolean    @default(true)
+  // Messages from the platform (E-A, 05/10/2026): the super admin's broadcasts to the staff.
+  notifyPlatform  Boolean    @default(true)
   createdAt       DateTime   @default(now())
   updatedAt       DateTime   @default(now()) @updatedAt
 
@@ -799,6 +802,33 @@ model TravellerDevice {
 
   @@index([reservationId])
   @@map("traveller_devices")
+}
+
+/// Who a platform broadcast goes to (E-A, 05/10/2026).
+enum PlatformAudience {
+  staff // every operator's active staff (notifyPlatform)
+  travellers // every traveller phone registered on a current booking
+  operator // one operator's staff
+}
+
+// A push sent by the super admin to the staff or the travellers (E-A, 05/10/2026): the history of
+// the "Notifications" tab of the platform space. The text is kept (the audit log has it too).
+model PlatformNotification {
+  id         String           @id @default(cuid())
+  audience   PlatformAudience
+  operatorId String? // audience "operator"
+  title      String
+  body       String
+  url        String? // opened when the notification is tapped
+  recipients Int // phones the push went to
+  sentById   String?
+  sentByName String
+  createdAt  DateTime         @default(now())
+
+  operator Operator? @relation(fields: [operatorId], references: [id], onDelete: SetNull)
+
+  @@index([createdAt])
+  @@map("platform_notifications")
 }
 
 // How an operator's SMS to travellers go out (see src/services/sms.service.ts).

@@ -1,10 +1,10 @@
 import httpStatus from 'http-status';
 import { Container, Service } from 'typedi';
 import { isPlatformAdmin, PLATFORM_COMMISSION_BPS, PRODUCT_NAME } from '@/config';
-import prisma, { ListingStatus, Prisma } from '@/database';
+import prisma, { ListingStatus, PlatformAudience, Prisma } from '@/database';
 import { listingApprovedEmail, listingRejectedEmail, listingUnpublishedEmail } from '@/domain/account-messages';
 import { DATE_RE, dayBounds, localDate } from '@/domain/time';
-import { InviteOperatorDto } from '@/dtos/platform.dto';
+import { InviteOperatorDto, PlatformNotificationDto } from '@/dtos/platform.dto';
 import { AuthenticatedStaff } from '@/interfaces/auth.interface';
 import { ValidationException } from '@/middlewares/validation.middleware';
 import { HttpException } from '@/utils/httpException';
@@ -16,11 +16,14 @@ import { ListingService } from './listing.service';
 import { NotificationService } from './notification.service';
 import { OperatorService } from './operator.service';
 import { PaymentService } from './payment.service';
+import { PushService } from './push.service';
 import { TokenService } from './token.service';
 
 // The platform's dashboards read every operator's data: they use Europe/Paris for "this month".
 const PLATFORM_TZ = 'Europe/Paris';
 const PAGE_SIZE = 50;
+/** C-A: broadcasts to every traveller are rare; this many per local day at most. */
+export const TRAVELLER_BROADCASTS_PER_DAY = 2;
 export const LISTING_STATUSES = Object.values(ListingStatus);
 
 const notFound = (what: string) => new HttpException(httpStatus.NOT_FOUND, `${what} not found`, 'not_found');
@@ -48,6 +51,7 @@ export class PlatformService {
   public notifications = Container.get(NotificationService);
   public operatorService = Container.get(OperatorService);
   public paymentService = Container.get(PaymentService);
+  public push = Container.get(PushService);
   public tokens = Container.get(TokenService);
 
   private async operatorOrThrow(id: string) {
@@ -59,6 +63,96 @@ export class PlatformService {
   /** Audit entry about an operator, by the platform admin (real staff id). */
   private record(actor: AuthenticatedStaff, operatorId: string, action: string, details: Prisma.InputJsonValue = {}) {
     return this.audit.record({ id: actor.id, operatorId }, { action, entityType: 'operator', entityId: operatorId, details });
+  }
+
+  // ---- Notifications (E-A, 05/10/2026) ------------------------------------------------------------
+
+  /** How many phones a broadcast would reach, before sending ("Envoyer à N téléphones"). */
+  public async notificationAudience(audience: PlatformAudience, operatorId?: string | null): Promise<{ devices: number; configured: boolean }> {
+    const ids = await this.broadcastIds(audience, operatorId);
+    return { devices: ids.length, configured: this.push.enabled() };
+  }
+
+  private async broadcastIds(audience: PlatformAudience, operatorId?: string | null): Promise<string[]> {
+    if (audience === 'travellers') return this.push.travellerBroadcastIds();
+    if (audience === 'operator') {
+      if (!operatorId) throw new ValidationException({ operatorId: 'required' });
+      await this.operatorOrThrow(operatorId);
+      return this.push.staffBroadcastIds(operatorId);
+    }
+    return this.push.staffBroadcastIds();
+  }
+
+  /** Sends the push, keeps the row and the audit entry; 429 daily_limit past the travellers' cap (C-A). */
+  public async sendNotification(actor: AuthenticatedStaff, data: PlatformNotificationDto) {
+    const audience = data.audience as PlatformAudience;
+    const operatorId = audience === 'operator' ? (data.operatorId ?? null) : null;
+    const ids = await this.broadcastIds(audience, operatorId);
+    const now = new Date();
+    if (audience === 'travellers') {
+      const since = dayBounds(localDate(now, PLATFORM_TZ), PLATFORM_TZ).start;
+      const today = await prisma.platformNotification.count({ where: { audience: 'travellers', createdAt: { gte: since } } });
+      if (today >= TRAVELLER_BROADCASTS_PER_DAY) {
+        throw new HttpException(httpStatus.TOO_MANY_REQUESTS, 'Daily limit of traveller broadcasts reached', 'daily_limit', {
+          limit: TRAVELLER_BROADCASTS_PER_DAY,
+        });
+      }
+    }
+    const message = { title: data.title.trim(), body: data.body.trim() };
+    const url = data.url?.trim() || null;
+    const options = { data: { type: 'platform' }, ...(url ? { url } : {}) };
+    const recipients =
+      audience === 'travellers' ? await this.push.broadcastTravellers(ids, message, options) : await this.push.broadcastStaff(ids, message, options);
+    const row = await prisma.platformNotification.create({
+      data: { audience, operatorId, title: message.title, body: message.body, url, recipients, sentById: actor.id, sentByName: actor.name },
+      include: { operator: { select: { name: true } } },
+    });
+    await this.audit.record(
+      { id: actor.id, operatorId: actor.operatorId },
+      {
+        action: 'platform.notification_sent',
+        entityType: 'platform_notification',
+        entityId: row.id,
+        details: { audience, operatorId, title: message.title, body: message.body, recipients },
+      },
+    );
+    return this.notificationView(row);
+  }
+
+  /** The last broadcasts, newest first. */
+  public async listNotifications() {
+    const rows = await prisma.platformNotification.findMany({
+      orderBy: { createdAt: 'desc' },
+      take: PAGE_SIZE,
+      include: { operator: { select: { name: true } } },
+    });
+    return rows.map(r => this.notificationView(r));
+  }
+
+  private notificationView(r: {
+    id: string;
+    audience: PlatformAudience;
+    operatorId: string | null;
+    operator: { name: string } | null;
+    title: string;
+    body: string;
+    url: string | null;
+    recipients: number;
+    sentByName: string;
+    createdAt: Date;
+  }) {
+    return {
+      id: r.id,
+      audience: r.audience,
+      operatorId: r.operatorId,
+      operatorName: r.operator?.name ?? null,
+      title: r.title,
+      body: r.body,
+      url: r.url,
+      recipients: r.recipients,
+      sentByName: r.sentByName,
+      createdAt: r.createdAt.toISOString(),
+    };
   }
 
   // ---- Operators ----------------------------------------------------------------------------------
