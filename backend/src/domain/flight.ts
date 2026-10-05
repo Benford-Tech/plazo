@@ -244,3 +244,52 @@ export function departureUpdate(info: FlightInfo | null, now: Date) {
     departureCheckedAt: now,
   };
 }
+
+// ---------------------------------------------------------------- FlightAware AeroAPI v4
+
+/** AeroAPI "status" texts ("Scheduled", "Delayed", "En Route", "Landed", "Arrived / Gate Arrival"…). */
+export function aeroApiStatus(flight: {
+  status?: unknown;
+  cancelled?: unknown;
+  diverted?: unknown;
+  actual_on?: unknown;
+  actual_off?: unknown;
+}): FlightStatus {
+  if (flight.cancelled === true) return 'cancelled';
+  if (flight.diverted === true) return 'diverted';
+  const status = String(flight.status ?? '').toLowerCase();
+  if (status.includes('cancel')) return 'cancelled';
+  if (status.includes('divert')) return 'diverted';
+  if (flight.actual_on || status.includes('arrived') || status.includes('landed')) return 'landed';
+  if (flight.actual_off || status.includes('en route') || status.includes('taxiing') || status.includes('departed')) return 'departed';
+  if (status.includes('delay')) return 'delayed';
+  if (status.includes('scheduled') || status.includes('on time') || status.includes('boarding')) return 'scheduled';
+  return status ? 'unknown' : 'unknown';
+}
+
+/**
+ * Maps the answer of GET /flights/{ident}?ident_type=designator ({ flights: [...] }): the leg landing
+ * at (role arrival) or taking off from (role departure) `airportIata` is preferred, else the first.
+ * Times are ISO 8601 (UTC); "on" is the landing, "off" the take-off.
+ */
+export function mapAeroApi(body: unknown, airportIata: string | null, role: FlightRole = 'arrival'): FlightInfo | null {
+  const flights = body && typeof body === 'object' && Array.isArray((body as any).flights) ? ((body as any).flights as any[]) : [];
+  if (!flights.length) return null;
+  const end = role === 'arrival' ? 'destination' : 'origin';
+  const leg = (airportIata && flights.find(f => String(f?.[end]?.code_iata ?? '').toUpperCase() === airportIata.toUpperCase())) ?? flights[0];
+  const status = aeroApiStatus(leg);
+  return {
+    status,
+    scheduledArrivalAt: parseDate(leg.scheduled_on) ?? parseDate(leg.scheduled_in),
+    estimatedArrivalAt: parseDate(leg.estimated_on) ?? parseDate(leg.estimated_in),
+    actualArrivalAt: parseDate(leg.actual_on) ?? parseDate(leg.actual_in),
+    arrivalAirport: text(leg.destination?.code_iata)?.toUpperCase() ?? null,
+    terminal: text(leg.terminal_destination),
+    gate: text(leg.gate_destination),
+    scheduledDepartureAt: parseDate(leg.scheduled_off) ?? parseDate(leg.scheduled_out),
+    estimatedDepartureAt: parseDate(leg.estimated_off) ?? parseDate(leg.estimated_out),
+    actualDepartureAt: parseDate(leg.actual_off) ?? parseDate(leg.actual_out),
+    departureAirport: text(leg.origin?.code_iata)?.toUpperCase() ?? null,
+    departureTerminal: text(leg.terminal_origin),
+  };
+}

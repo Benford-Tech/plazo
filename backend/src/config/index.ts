@@ -141,26 +141,33 @@ export function oneSignalTravellerSettings(): { appId: string; restApiKey: strin
   return appId && restApiKey ? { appId, restApiKey } : oneSignalSettings();
 }
 
-// Return flight tracking. Both providers are optional; the active one is FLIGHT_TRACKING_PROVIDER
-// (airlabs | aerodatabox), else whichever key is set (AeroDataBox when both). Read on every call so
-// that tests can switch providers. Without a key, flights are not tracked (the traveller's
-// "J'ai atterri" and the return time typed at booking still work).
-export type FlightProviderName = 'airlabs' | 'aerodatabox';
+// Return flight tracking. The providers are optional; the active one is FLIGHT_TRACKING_PROVIDER
+// (flightaware | aerodatabox | airlabs), else whichever key is set (FlightAware, then AeroDataBox,
+// then AirLabs). Read on every call so that tests can switch providers. Without a key, flights
+// are not tracked (the traveller's "J'ai atterri" and the return time typed at booking still work).
+export type FlightProviderName = 'flightaware' | 'aerodatabox' | 'airlabs';
 export function flightTrackingSettings(): { provider: FlightProviderName; apiKey: string; baseUrl: string } | null {
-  const airlabs = process.env.AIRLABS_API_KEY?.trim() || '';
-  const aerodatabox = process.env.AERODATABOX_API_KEY?.trim() || '';
+  const keys: Record<FlightProviderName, string> = {
+    flightaware: process.env.FLIGHTAWARE_API_KEY?.trim() || '',
+    aerodatabox: process.env.AERODATABOX_API_KEY?.trim() || '',
+    airlabs: process.env.AIRLABS_API_KEY?.trim() || '',
+  };
   const chosen = (process.env.FLIGHT_TRACKING_PROVIDER?.trim().toLowerCase() || '') as FlightProviderName | '';
   const provider: FlightProviderName | null =
-    chosen === 'airlabs' || chosen === 'aerodatabox' ? chosen : aerodatabox ? 'aerodatabox' : airlabs ? 'airlabs' : null;
+    chosen === 'flightaware' || chosen === 'aerodatabox' || chosen === 'airlabs'
+      ? chosen
+      : ((['flightaware', 'aerodatabox', 'airlabs'] as FlightProviderName[]).find(name => keys[name]) ?? null);
   if (!provider) return null;
-  const apiKey = provider === 'airlabs' ? airlabs : aerodatabox;
+  const apiKey = keys[provider];
   if (!apiKey) return null;
-  const baseUrl =
-    provider === 'airlabs'
-      ? process.env.AIRLABS_BASE_URL?.trim() || 'https://airlabs.co/api/v9'
-      : // RapidAPI by default; the direct API.Market host also works (see README).
-        process.env.AERODATABOX_BASE_URL?.trim() || 'https://aerodatabox.p.rapidapi.com';
-  return { provider, apiKey, baseUrl: baseUrl.replace(/\/+$/, '') };
+  const defaults: Record<FlightProviderName, string> = {
+    // AeroAPI v4 (Personal plan: 5 $ of queries offered every month).
+    flightaware: process.env.FLIGHTAWARE_BASE_URL?.trim() || 'https://aeroapi.flightaware.com/aeroapi',
+    // RapidAPI by default; the direct API.Market host also works (see README).
+    aerodatabox: process.env.AERODATABOX_BASE_URL?.trim() || 'https://aerodatabox.p.rapidapi.com',
+    airlabs: process.env.AIRLABS_BASE_URL?.trim() || 'https://airlabs.co/api/v9',
+  };
+  return { provider, apiKey, baseUrl: defaults[provider].replace(/\/+$/, '') };
 }
 
 // The product name is still a working name: it lives only in the repository's product.json.

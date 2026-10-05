@@ -1,6 +1,6 @@
 import { Container } from 'typedi';
 import prisma from '@/database';
-import { mapAeroDataBox, shouldLookupDeparture } from '@/domain/flight';
+import { mapAeroApi, mapAeroDataBox, shouldLookupDeparture } from '@/domain/flight';
 import { buildWaves, dropoffTimes, pickupTimes, WaveMember } from '@/domain/shuttle-waves';
 import { localDateTime } from '@/domain/time';
 import { FlightTrackingService } from '@/services/flight-tracking.service';
@@ -57,6 +57,7 @@ beforeEach(async () => {
   delete process.env.ONESIGNAL_APP_ID;
   delete process.env.ONESIGNAL_REST_API_KEY;
   delete process.env.AERODATABOX_API_KEY;
+  delete process.env.FLIGHTAWARE_API_KEY;
   delete process.env.FLIGHT_TRACKING_PROVIDER;
   Container.get(FlightTrackingService).providerOverride = null;
   Container.get(NotificationService).settings.apiKey = '';
@@ -342,5 +343,73 @@ describe('GET /internal/flights/check', () => {
     const refused = await api().get('/api/internal/flights/check?flight=AF7641&date=2026-10-06').set(auth(op.token));
     expect(refused.body).toMatchObject({ outcome: 'error', error: 'AeroDataBox answered 403' });
     expect((await api().get('/api/internal/flights/check?flight=zz').set(auth(op.token))).status).toBe(400);
+  });
+});
+
+describe('FlightAware AeroAPI', () => {
+  const leg = (over: Record<string, unknown> = {}) => ({
+    ident: 'TVF3627',
+    ident_iata: 'TO3627',
+    status: 'Scheduled',
+    cancelled: false,
+    diverted: false,
+    origin: { code_iata: 'MRS' },
+    destination: { code_iata: 'LYS' },
+    scheduled_off: '2026-10-06T07:00:00Z',
+    estimated_off: '2026-10-06T07:20:00Z',
+    actual_off: null,
+    scheduled_on: '2026-10-06T08:00:00Z',
+    estimated_on: '2026-10-06T08:15:00Z',
+    actual_on: null,
+    terminal_origin: '1',
+    terminal_destination: '1',
+    gate_destination: '12',
+    ...over,
+  });
+
+  it('traduit un vol AeroAPI (atterrissage et décollage, statuts)', () => {
+    const info = mapAeroApi({ flights: [leg({ destination: { code_iata: 'CDG' }, origin: { code_iata: 'LYS' } }), leg()] }, 'LYS')!;
+    expect(info.arrivalAirport).toBe('LYS');
+    expect(info.status).toBe('scheduled');
+    expect(info.scheduledArrivalAt).toEqual(new Date('2026-10-06T08:00:00Z'));
+    expect(info.estimatedArrivalAt).toEqual(new Date('2026-10-06T08:15:00Z'));
+    expect(info.scheduledDepartureAt).toEqual(new Date('2026-10-06T07:00:00Z'));
+    expect(info.terminal).toBe('1');
+    expect(info.gate).toBe('12');
+    expect(mapAeroApi({ flights: [leg({ status: 'Delayed' })] }, 'LYS')!.status).toBe('delayed');
+    expect(mapAeroApi({ flights: [leg({ status: 'En Route', actual_off: '2026-10-06T07:25:00Z' })] }, 'LYS')!.status).toBe('departed');
+    expect(mapAeroApi({ flights: [leg({ status: 'Arrived / Gate Arrival', actual_on: '2026-10-06T08:10:00Z' })] }, 'LYS')!).toMatchObject({
+      status: 'landed',
+      actualArrivalAt: new Date('2026-10-06T08:10:00Z'),
+    });
+    expect(mapAeroApi({ flights: [leg({ cancelled: true })] }, 'LYS')!.status).toBe('cancelled');
+    expect(mapAeroApi({ flights: [] }, 'LYS')).toBeNull();
+  });
+
+  it('est choisi par sa clé, interroge AeroAPI avec le désignateur et la journée, et borne au jour demandé', async () => {
+    process.env.FLIGHTAWARE_API_KEY = 'fa-key';
+    fetchMock.mockImplementation(async url =>
+      /aeroapi/.test(String(url))
+        ? json({
+            flights: [
+              leg({
+                scheduled_on: '2026-10-05T08:00:00Z',
+                estimated_on: '2026-10-05T08:00:00Z',
+                scheduled_off: '2026-10-05T07:00:00Z',
+                estimated_off: '2026-10-05T07:00:00Z',
+              }),
+              leg(),
+            ],
+          })
+        : json({}),
+    );
+    const op = await setupOperator();
+    const res = await api().get('/api/internal/flights/check?flight=to3627&date=2026-10-06').set(auth(op.token));
+    expect(res.body).toMatchObject({ provider: 'flightaware', host: 'aeroapi.flightaware.com', outcome: 'found' });
+    expect(res.body.info.scheduledArrivalAt).toBe('2026-10-06T08:00:00.000Z');
+    const [url, init] = fetchMock.mock.calls.find(([u]) => /aeroapi/.test(String(u)))!;
+    expect(String(url)).toContain('/flights/TO3627?ident_type=designator&start=2026-10-05T00%3A00%3A00Z&end=2026-10-08T00%3A00%3A00Z');
+    expect((init as RequestInit).headers).toMatchObject({ 'x-apikey': 'fa-key' });
+    delete process.env.FLIGHTAWARE_API_KEY;
   });
 });

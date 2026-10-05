@@ -11,6 +11,7 @@ import {
   FlightRole,
   flightNumberKey,
   flightUpdate,
+  mapAeroApi,
   mapAeroDataBox,
   mapAirLabs,
   shouldLookupDeparture,
@@ -102,6 +103,45 @@ export class AirLabsProvider implements FlightTrackingProvider {
   }
 }
 
+/**
+ * FlightAware AeroAPI v4 "GET /flights/{ident}" (Personal plan: 5 $ of queries offered per month,
+ * 0,005 $ per result set of 15 flights). The IATA designator (TO3627) is accepted as ident; the
+ * day is bounded with start/end so that one result set covers the booking's date.
+ */
+export class FlightAwareProvider implements FlightTrackingProvider {
+  public readonly name = 'flightaware' as const;
+  constructor(
+    private readonly apiKey: string,
+    private readonly baseUrl: string,
+    private readonly timeoutMs = LOOKUP_TIMEOUT_MS,
+  ) {}
+
+  public async lookup(flightKey: string, date: string, airportIata: string | null, role: FlightRole = 'arrival'): Promise<FlightInfo | null> {
+    // The local day, widened by a day on each side (AeroAPI filters on the scheduled departure, UTC).
+    const start = new Date(`${date}T00:00:00Z`);
+    start.setUTCDate(start.getUTCDate() - 1);
+    const end = new Date(`${date}T00:00:00Z`);
+    end.setUTCDate(end.getUTCDate() + 2);
+    const params = new URLSearchParams({
+      ident_type: 'designator',
+      start: start.toISOString().slice(0, 19) + 'Z',
+      end: end.toISOString().slice(0, 19) + 'Z',
+    });
+    const url = `${this.baseUrl}/flights/${encodeURIComponent(flightKey)}?${params}`;
+    const res = await fetch(url, { headers: { 'x-apikey': this.apiKey, accept: 'application/json' }, signal: AbortSignal.timeout(this.timeoutMs) });
+    if (res.status === 404) return null;
+    if (!res.ok) throw new Error(`FlightAware answered ${res.status}`);
+    const body = await res.json();
+    // Several days may come back: keep the legs of the booking's day (local date of the relevant end).
+    const flights = body && typeof body === 'object' && Array.isArray((body as any).flights) ? ((body as any).flights as any[]) : [];
+    const sameDay = flights.filter(f => {
+      const at = role === 'arrival' ? (f.actual_on ?? f.estimated_on ?? f.scheduled_on) : (f.actual_off ?? f.estimated_off ?? f.scheduled_off);
+      return typeof at === 'string' && Math.abs(new Date(at).getTime() - new Date(`${date}T12:00:00Z`).getTime()) <= 18 * 3600000;
+    });
+    return mapAeroApi({ flights: sameDay.length ? sameDay : flights }, airportIata, role);
+  }
+}
+
 export class NoopFlightProvider implements FlightTrackingProvider {
   public readonly name = 'none' as const;
   public async lookup(): Promise<FlightInfo | null> {
@@ -133,9 +173,14 @@ export class FlightTrackingService {
     if (this.providerOverride) return this.providerOverride;
     const settings = flightTrackingSettings();
     if (!settings) return new NoopFlightProvider();
-    return settings.provider === 'airlabs'
-      ? new AirLabsProvider(settings.apiKey, settings.baseUrl)
-      : new AeroDataBoxProvider(settings.apiKey, settings.baseUrl);
+    switch (settings.provider) {
+      case 'flightaware':
+        return new FlightAwareProvider(settings.apiKey, settings.baseUrl);
+      case 'airlabs':
+        return new AirLabsProvider(settings.apiKey, settings.baseUrl);
+      default:
+        return new AeroDataBoxProvider(settings.apiKey, settings.baseUrl);
+    }
   }
 
   public enabled(): boolean {

@@ -180,10 +180,14 @@ le navigateur de l'espace pro appelle `/api` sur le même domaine (pas de CORS).
    existe pour une passe plus fréquente si besoin.
 
 6. **Suivi des vols au retour** — facultatif : sans clé, les vols ne sont pas suivis (le voyageur dit « J'ai atterri »
-   dans l'app, et l'heure de retour saisie fait foi). Deux fournisseurs derrière la même interface, choisis par
-   `FLIGHT_TRACKING_PROVIDER` (`aerodatabox` | `airlabs` ; vide : celui dont la clé est renseignée, AeroDataBox si les
-   deux) :
-   - **AeroDataBox** (celui qui fonctionne aujourd'hui) : sur [rapidapi.com](https://rapidapi.com), chercher
+   dans l'app, et l'heure de retour saisie fait foi). Trois fournisseurs derrière la même interface, choisis par
+   `FLIGHT_TRACKING_PROVIDER` (`flightaware` | `aerodatabox` | `airlabs` ; vide : celui dont la clé est renseignée, dans
+   cet ordre) :
+   - **FlightAware AeroAPI** (recommandé, 05/10/2026) : sur [flightaware.com/aeroapi](https://www.flightaware.com/aeroapi/),
+     plan **Personal** : 5 $ de requêtes offerts chaque mois (carte demandée à l'inscription, rien n'est prélevé en
+     dessous), une recherche de vol = 0,005 $ ; créer une clé API et la mettre dans `FLIGHTAWARE_API_KEY`. Compter une
+     trentaine de vols suivis par mois dans l'enveloppe gratuite avec les règles frugales ci-dessous.
+   - **AeroDataBox** : sur [rapidapi.com](https://rapidapi.com), chercher
      « AeroDataBox », s'abonner au plan **Basic (gratuit)**, copier la clé *X-RapidAPI-Key* dans `AERODATABOX_API_KEY`.
      Acheté sur API.Market plutôt que RapidAPI ? Mettre aussi `AERODATABOX_BASE_URL=https://prod.api.market/api/v1/aedbx/aerodatabox`
      (la clé part alors dans l'en-tête `x-magicapi-key`). Appels frugaux : une recherche par réservation et par passage
