@@ -8,7 +8,7 @@ import { LoginDto } from '@/dtos/auth.dto';
 import { TokenData } from '@/interfaces/auth.interface';
 import { HttpException } from '@/utils/httpException';
 import { TokenService } from './token.service';
-import { toSessionUser } from './staff.service';
+import { StaffService } from './staff.service';
 
 const suspended = () => new HttpException(httpStatus.FORBIDDEN, 'This account is suspended', 'account_suspended');
 
@@ -44,7 +44,7 @@ export class AuthService {
     const tokenData = await this.tokenService.generateAuthTokens(staff.id, metadata);
     return {
       tokenData,
-      user: toSessionUser({ ...withoutOperator(staff), operatorName: staff.operator.name }),
+      user: await Container.get(StaffService).sessionUser({ ...withoutOperator(staff), operatorName: staff.operator.name }),
     };
   }
 

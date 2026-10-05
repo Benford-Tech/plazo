@@ -2,6 +2,7 @@ import { Request, Response } from 'express';
 import { Container } from 'typedi';
 import { ArrivalService } from '@/services/arrival.service';
 import { FlightTrackingService } from '@/services/flight-tracking.service';
+import { ReturnService } from '@/services/return.service';
 import { ShuttleService } from '@/services/shuttle.service';
 import { SmsService } from '@/services/sms.service';
 import { PaymentService } from '@/services/payment.service';
@@ -15,6 +16,7 @@ export class CronController {
   public arrivals = Container.get(ArrivalService);
   public flights = Container.get(FlightTrackingService);
   public shuttle = Container.get(ShuttleService);
+  public returns = Container.get(ReturnService);
   public sms = Container.get(SmsService);
 
   /** GET /internal/cron/expire-arrival-signals */
@@ -57,10 +59,12 @@ export class CronController {
     // SMS: retry or abandon the waiting ones, and the 30-day retention of the outbox (recipients' numbers).
     const sms = await this.sms.refreshAll();
     const smsPurged = await this.sms.purgeOld();
+    // Travellers' phones registered for the shuttle pushes: two days after the return.
+    const travellerDevicesPurged = await this.returns.purgeDevices();
     logger.info(
       `[Cron] ${deleted} expired staff tokens deleted, ${arrivalSignalsEnded} arrival signals ended, ${shuttleTripsEnded} shuttle trips ended, ` +
         `SMS queue ${JSON.stringify(sms)}, ${smsPurged} outbox rows purged`,
     );
-    res.json({ deleted, arrivalSignalsEnded, shuttleTripsEnded, smsAbandoned: sms.abandoned, smsPurged });
+    res.json({ deleted, arrivalSignalsEnded, shuttleTripsEnded, smsAbandoned: sms.abandoned, smsPurged, travellerDevicesPurged });
   });
 }

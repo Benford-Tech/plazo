@@ -1,6 +1,6 @@
 import { Router } from 'express';
 import { StaffController } from '@/controllers/staff.controller';
-import { ChangePasswordDto, CreateStaffDto, ResetPasswordDto, UpdateStaffDto, SetPostDto } from '@/dtos/staff.dto';
+import { ChangePasswordDto, CreateStaffDto, ResetPasswordDto, UpdateStaffDto, SetPostDto, SetVehicleDto } from '@/dtos/staff.dto';
 import { Routes } from '@/interfaces/routes.interface';
 import { RefuseInViewAs, StaffAuthMiddleware } from '@/middlewares/staff-auth.middleware';
 import { ValidationMiddleware } from '@/middlewares/validation.middleware';
@@ -17,9 +17,13 @@ import { ValidationMiddleware } from '@/middlewares/validation.middleware';
  *   get:
  *     summary: Current staff member, with the operator name, isPlatformAdmin, emailVerified, viewAs ({ operatorId, operatorName } in a platform admin's view-as session, else null), post / postSetAt, effectivePost and allowedPosts
  *     tags: [Staff]
+ * /internal/staff/me/vehicle:
+ *   patch:
+ *     summary: Mon véhicule aujourd'hui (V-A) — the shuttle taken for the day ({ vehicleId } or null to hand it back; 409 vehicle_taken with holderName, 422 vehicle_out_of_service); the session user then carries `vehicle`
+ *     tags: [Staff]
  * /internal/staff/me/post:
  *   patch:
- *     summary: "Aujourd'hui, je suis…" (R-C) — the post held for the day, among those the role covers (422 post_not_allowed)
+ *     summary: Aujourd'hui, je suis… (R-C) — the post held for the day, among those the role covers (422 post_not_allowed)
  *     tags: [Staff]
  *     requestBody:
  *       required: true
@@ -92,6 +96,13 @@ export class StaffRoute implements Routes {
   private initializeRoutes() {
     this.router.get('/internal/staff/me', StaffAuthMiddleware(), this.staff.me);
     this.router.patch('/internal/staff/me/post', StaffAuthMiddleware(), RefuseInViewAs(), ValidationMiddleware(SetPostDto), this.staff.setPost);
+    this.router.patch(
+      '/internal/staff/me/vehicle',
+      StaffAuthMiddleware(),
+      RefuseInViewAs(),
+      ValidationMiddleware(SetVehicleDto),
+      this.staff.setVehicle,
+    );
     // Read-only while a platform admin views the operator's space (RefuseInViewAs: 403 view_as_read_only).
     this.router.patch(
       '/internal/staff/me/password',

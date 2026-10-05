@@ -1,5 +1,7 @@
 import { Request, Response } from 'express';
+import httpStatus from 'http-status';
 import { Container } from 'typedi';
+import { TravellerDeviceDto } from '@/dtos/shuttle.dto';
 import { ReturnService } from '@/services/return.service';
 import catchAsync from '@/utils/catchAsync';
 
@@ -37,6 +39,18 @@ export class ReturnController {
   public shuttles = catchAsync(async (req: Request, res: Response) => {
     res.set('Cache-Control', 'no-store');
     res.json(await this.returns.stayShuttles(reference(req), bookingToken(req)));
+  });
+
+  /** PUT /public/bookings/:reference/devices */
+  public registerDevice = catchAsync(async (req: Request, res: Response) => {
+    const data: TravellerDeviceDto = req.body;
+    res.json(await this.returns.registerDevice(reference(req), bookingToken(req), data.subscriptionId.trim(), data.platform));
+  });
+
+  /** DELETE /public/bookings/:reference/devices/:subscriptionId */
+  public unregisterDevice = catchAsync(async (req: Request, res: Response) => {
+    await this.returns.unregisterDevice(reference(req), bookingToken(req), req.params.subscriptionId as string);
+    res.status(httpStatus.NO_CONTENT).send();
   });
 
   /** GET /public/bookings/:reference/shuttle */

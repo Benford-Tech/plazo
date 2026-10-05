@@ -1,7 +1,15 @@
 import { Router } from 'express';
 import { ReturnController } from '@/controllers/return.controller';
 import { ShuttleController } from '@/controllers/shuttle.controller';
-import { ShuttleVehicleDto, StartTripDto, TripPositionDto, UpdateShuttleVehicleDto } from '@/dtos/shuttle.dto';
+import {
+  ShuttleStopDto,
+  ShuttleVehicleDto,
+  StartTripDto,
+  TravellerDeviceDto,
+  TripPositionDto,
+  UpdateShuttleStopDto,
+  UpdateShuttleVehicleDto,
+} from '@/dtos/shuttle.dto';
 import { Routes } from '@/interfaces/routes.interface';
 import { RefuseInViewAs, StaffAuthMiddleware } from '@/middlewares/staff-auth.middleware';
 import { ValidationMiddleware } from '@/middlewares/validation.middleware';
@@ -210,6 +218,46 @@ import { ValidationMiddleware } from '@/middlewares/validation.middleware';
  *       200:
  *         description: "{ serverTime, meetingPoint, rows }"
  *         content: { application/json: { schema: { type: object, properties: { serverTime: { type: string }, meetingPoint: { $ref: '#/components/schemas/MeetingPoint' }, rows: { type: array, items: { $ref: '#/components/schemas/PickupRow' } } } } } }
+ * /public/bookings/{reference}/devices:
+ *   put:
+ *     summary: Registers the traveller's phone (OneSignal subscription id) for the pushes about their shuttle (N-A) — x-booking-token required
+ *     tags: [Return]
+ *     responses:
+ *       200: { description: "{ subscriptionId, platform }" }
+ * /public/bookings/{reference}/devices/{subscriptionId}:
+ *   delete:
+ *     summary: Forgets that phone
+ *     tags: [Return]
+ *     responses:
+ *       204: { description: Removed }
+ * /internal/shuttle/stops:
+ *   get:
+ *     summary: The places the shuttle serves (D-A) — the airport first (builtIn, id null, from the return meeting point), then the parking's own stops (station…)
+ *     tags: [Shuttle]
+ *     responses:
+ *       200: { description: "{ data: [{ id, kind, name, lat, lng, instructions, builtIn }] }" }
+ *   post:
+ *     summary: Add a stop (manager) — { kind airport|station|other, name, lat, lng, instructions?, sortOrder? }
+ *     tags: [Shuttle]
+ *     responses:
+ *       201: { description: "{ data }" }
+ * /internal/shuttle/stops/{id}:
+ *   patch:
+ *     summary: Edit a stop (manager)
+ *     tags: [Shuttle]
+ *     responses:
+ *       200: { description: "{ data }" }
+ *   delete:
+ *     summary: Remove a stop (manager); trips and bookings that referred to it fall back to the airport
+ *     tags: [Shuttle]
+ *     responses:
+ *       204: { description: Removed }
+ * /internal/shuttle/live:
+ *   get:
+ *     summary: P-A — the operator's running shuttles for the team's live map ({ serverTime, parking { id, name, lat, lng }, stops, trips [{ id, direction, driverName, vehicle, stop, passengers, position, positionAgeSeconds, toStop { distanceM, etaMinutes }, toParking }] })
+ *     tags: [Shuttle]
+ *     responses:
+ *       200: { description: Live shuttles }
  * /internal/shuttle/vehicles:
  *   get:
  *     summary: The operator's shuttles
@@ -334,6 +382,26 @@ export class ReturnRoute implements Routes {
     this.router.get(`${base}/return/route`, this.returns.route);
     this.router.get(`${base}/shuttle`, this.returns.shuttle);
     this.router.get(`${base}/shuttles`, this.returns.shuttles);
+    this.router.put(`${base}/devices`, ValidationMiddleware(TravellerDeviceDto), this.returns.registerDevice);
+    this.router.delete(`${base}/devices/:subscriptionId`, this.returns.unregisterDevice);
+
+    this.router.get('/internal/shuttle/stops', StaffAuthMiddleware('reservations:view'), this.shuttle.stops);
+    this.router.post(
+      '/internal/shuttle/stops',
+      StaffAuthMiddleware('parking:manage'),
+      RefuseInViewAs(),
+      ValidationMiddleware(ShuttleStopDto),
+      this.shuttle.addStop,
+    );
+    this.router.patch(
+      '/internal/shuttle/stops/:id',
+      StaffAuthMiddleware('parking:manage'),
+      RefuseInViewAs(),
+      ValidationMiddleware(UpdateShuttleStopDto),
+      this.shuttle.updateStop,
+    );
+    this.router.delete('/internal/shuttle/stops/:id', StaffAuthMiddleware('parking:manage'), RefuseInViewAs(), this.shuttle.removeStop);
+    this.router.get('/internal/shuttle/live', StaffAuthMiddleware('reservations:view'), this.shuttle.live);
 
     this.router.get('/internal/shuttle/pickups', StaffAuthMiddleware('reservations:view'), this.shuttle.pickups);
     this.router.get('/internal/shuttle/departures', StaffAuthMiddleware('reservations:view'), this.shuttle.departures);

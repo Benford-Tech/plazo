@@ -35,6 +35,11 @@ export const ValidateEnv = () => {
     // Push notifications to the staff app. Without both, no push is sent.
     ONESIGNAL_APP_ID: str({ default: '', desc: 'OneSignal app id (push notifications to the staff)' }),
     ONESIGNAL_REST_API_KEY: str({ default: '', desc: 'OneSignal REST API key of that app' }),
+    ONESIGNAL_TRAVELLER_APP_ID: str({
+      default: '',
+      desc: 'OneSignal app id of the traveller app (pushes about the shuttle); defaults to the staff one',
+    }),
+    ONESIGNAL_TRAVELLER_REST_API_KEY: str({ default: '', desc: 'OneSignal REST API key of the traveller app' }),
     // Return flight tracking (optional). AeroDataBox through RapidAPI is the one that works today;
     // AirLabs is kept for when its registration reopens.
     AERODATABOX_API_KEY: str({ default: '', desc: 'AeroDataBox key (RapidAPI "Basic" plan, or API.Market with AERODATABOX_BASE_URL)' }),

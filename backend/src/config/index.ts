@@ -133,6 +133,14 @@ export function oneSignalSettings(): { appId: string; restApiKey: string } | nul
   return appId && restApiKey ? { appId, restApiKey } : null;
 }
 
+// The traveller app is another OneSignal app (another Android package / iOS bundle). Without its own
+// values, the staff app's are used (one OneSignal app for both during the tests).
+export function oneSignalTravellerSettings(): { appId: string; restApiKey: string } | null {
+  const appId = process.env.ONESIGNAL_TRAVELLER_APP_ID?.trim() || '';
+  const restApiKey = process.env.ONESIGNAL_TRAVELLER_REST_API_KEY?.trim() || '';
+  return appId && restApiKey ? { appId, restApiKey } : oneSignalSettings();
+}
+
 // Return flight tracking. Both providers are optional; the active one is FLIGHT_TRACKING_PROVIDER
 // (airlabs | aerodatabox), else whichever key is set (AeroDataBox when both). Read on every call so
 // that tests can switch providers. Without a key, flights are not tracked (the traveller's

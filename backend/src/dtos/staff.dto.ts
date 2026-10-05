@@ -44,6 +44,14 @@ export class SetPostDto {
   public post: StaffRole;
 }
 
+/** "Mon véhicule aujourd'hui" (V-A): a vehicle of the operator, or null to hand it back. */
+export class SetVehicleDto {
+  @IsOptional()
+  @MaxLength(40, { message: 'invalid' })
+  @IsString({ message: 'invalid' })
+  public vehicleId?: string | null;
+}
+
 export class ResetPasswordDto {
   @IsString()
   @MinLength(MIN_PASSWORD_LENGTH, { message: 'password_too_short' })

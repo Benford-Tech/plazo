@@ -1,9 +1,9 @@
 import { Response } from 'express';
 import httpStatus from 'http-status';
 import { Container } from 'typedi';
-import { ChangePasswordDto, CreateStaffDto, ResetPasswordDto, UpdateStaffDto, SetPostDto } from '@/dtos/staff.dto';
+import { ChangePasswordDto, CreateStaffDto, ResetPasswordDto, UpdateStaffDto, SetPostDto, SetVehicleDto } from '@/dtos/staff.dto';
 import { RequestWithStaffSession } from '@/middlewares/staff-auth.middleware';
-import { StaffService, toSessionUser } from '@/services/staff.service';
+import { StaffService } from '@/services/staff.service';
 import catchAsync from '@/utils/catchAsync';
 
 export class StaffController {
@@ -11,13 +11,19 @@ export class StaffController {
 
   /** GET /internal/staff/me */
   public me = catchAsync(async (req: RequestWithStaffSession, res: Response) => {
-    res.json(toSessionUser(req.staff));
+    res.json(await this.staffService.sessionUser(req.staff));
   });
 
   /** PATCH /internal/staff/me/post */
   public setPost = catchAsync(async (req: RequestWithStaffSession, res: Response) => {
     const data: SetPostDto = req.body;
     res.json(await this.staffService.setPost(req.staff, data.post));
+  });
+
+  /** PATCH /internal/staff/me/vehicle */
+  public setVehicle = catchAsync(async (req: RequestWithStaffSession, res: Response) => {
+    const data: SetVehicleDto = req.body;
+    res.json(await this.staffService.setVehicle(req.staff, data.vehicleId ?? null));
   });
 
   /** PATCH /internal/staff/me/password */

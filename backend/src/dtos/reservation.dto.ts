@@ -54,6 +54,12 @@ export class CreateReservationDto {
   @MaxLength(10, { message: 'invalid_flight' })
   public returnFlight?: string;
 
+  /** The stop serving this traveller (D-A): a stop of the parking; absent or null: the airport. */
+  @IsOptional()
+  @IsString({ message: 'invalid_stop' })
+  @MaxLength(40, { message: 'invalid_stop' })
+  public stopId?: string | null;
+
   @IsOptional()
   @IsString()
   @MaxLength(1000, { message: 'too_long' })
@@ -134,6 +140,11 @@ export class UpdateReservationDto {
   @IsString()
   @MaxLength(10, { message: 'invalid_flight' })
   public returnFlight?: string | null;
+
+  @IsOptional()
+  @IsString({ message: 'invalid_stop' })
+  @MaxLength(40, { message: 'invalid_stop' })
+  public stopId?: string | null;
 
   @IsOptional()
   @IsString()

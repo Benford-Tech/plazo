@@ -4,6 +4,7 @@ import { Container, Service } from 'typedi';
 import { BCRYPT_ROUNDS, isPlatformAdmin } from '@/config';
 import prisma, { Staff, StaffRole } from '@/database';
 import { allowedPosts, can, effectivePost } from '@/domain/roles';
+import { localDate } from '@/domain/time';
 import { ChangePasswordDto, CreateStaffDto, UpdateStaffDto } from '@/dtos/staff.dto';
 import { AuthenticatedStaff } from '@/interfaces/auth.interface';
 import { HttpException } from '@/utils/httpException';
@@ -22,11 +23,26 @@ export function toPublicStaff<T extends Staff>(staff: T): Omit<T, 'password'> {
  * The signed-in person as the pro space sees them: no password, whether they are a platform admin,
  * whether their email is confirmed, and the operator they are viewing as a platform admin.
  */
-export function toSessionUser(staff: AuthenticatedStaff) {
+/** The shuttle taken for the day, as the apps show it. */
+export interface VehicleOfTheDay {
+  id: string;
+  model: string;
+  colour: string | null;
+  plate: string | null;
+  seats: number | null;
+}
+
+/** A vehicle taken on another local day is free again (nobody "releases" it at night). */
+export function holdsVehicleToday(staff: { vehicleId: string | null; vehicleSetAt: Date | null }, timezone: string, now = new Date()): boolean {
+  return !!staff.vehicleId && !!staff.vehicleSetAt && localDate(staff.vehicleSetAt, timezone) === localDate(now, timezone);
+}
+
+export function toSessionUser(staff: AuthenticatedStaff & { vehicle?: VehicleOfTheDay | null }) {
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const { actingAs, ...rest } = toPublicStaff(staff);
   return {
     ...rest,
+    vehicle: staff.vehicle ?? null,
     effectivePost: effectivePost(staff),
     allowedPosts: allowedPosts(staff.role),
     isPlatformAdmin: isPlatformAdmin(staff.email),
@@ -34,6 +50,20 @@ export function toSessionUser(staff: AuthenticatedStaff) {
     viewAs: actingAs ? { operatorId: staff.operatorId, operatorName: staff.operatorName } : null,
   };
 }
+
+export const vehicleOfTheDay = (v: {
+  id: string;
+  model: string;
+  colour: string | null;
+  plate: string | null;
+  seats: number | null;
+}): VehicleOfTheDay => ({
+  id: v.id,
+  model: v.model,
+  colour: v.colour,
+  plate: v.plate,
+  seats: v.seats,
+});
 
 const forbidden = () => new HttpException(httpStatus.FORBIDDEN, 'You do not have access to this action', 'forbidden');
 const notFound = () => new HttpException(httpStatus.NOT_FOUND, 'Staff member not found', 'not_found');
@@ -55,8 +85,54 @@ export class StaffService {
 
   public async list(actor: AuthenticatedStaff) {
     this.requireTeamManager(actor);
-    const team = await prisma.staff.findMany({ where: { operatorId: actor.operatorId }, orderBy: { name: 'asc' } });
-    return team.map(s => ({ ...toPublicStaff(s), effectivePost: effectivePost(s) }));
+    const team = await prisma.staff.findMany({ where: { operatorId: actor.operatorId }, orderBy: { name: 'asc' }, include: { vehicle: true } });
+    const timezone = await this.timezone(actor);
+    return team.map(({ vehicle, ...s }) => ({
+      ...toPublicStaff(s),
+      effectivePost: effectivePost(s),
+      vehicle: vehicle && holdsVehicleToday(s, timezone) ? vehicleOfTheDay(vehicle) : null,
+    }));
+  }
+
+  /** The operator's time zone (its first parking's), for "today". */
+  private async timezone(actor: AuthenticatedStaff): Promise<string> {
+    const parking = await prisma.parking.findFirst({
+      where: { operatorId: actor.operatorId },
+      orderBy: { createdAt: 'asc' },
+      select: { timezone: true },
+    });
+    return parking?.timezone ?? 'Europe/Paris';
+  }
+
+  /** The session user with the vehicle taken today (V-A), for GET /me and the login. */
+  public async sessionUser(actor: AuthenticatedStaff) {
+    const fresh = await prisma.staff.findUnique({ where: { id: actor.id }, select: { vehicleId: true, vehicleSetAt: true, vehicle: true } });
+    const timezone = await this.timezone(actor);
+    const vehicle = fresh?.vehicle && holdsVehicleToday(fresh, timezone) ? vehicleOfTheDay(fresh.vehicle) : null;
+    return toSessionUser({ ...actor, vehicleId: fresh?.vehicleId ?? null, vehicleSetAt: fresh?.vehicleSetAt ?? null, vehicle });
+  }
+
+  /**
+   * "Mon véhicule aujourd'hui" (V-A, 05/10/2026): the shuttle the driver takes for the day, among the
+   * operator's vehicles in service and not taken by someone else today. `null` hands it back.
+   */
+  public async setVehicle(actor: AuthenticatedStaff, vehicleId: string | null) {
+    const timezone = await this.timezone(actor);
+    if (vehicleId) {
+      const vehicle = await prisma.shuttleVehicle.findFirst({ where: { id: vehicleId, operatorId: actor.operatorId }, include: { holders: true } });
+      if (!vehicle) throw new HttpException(httpStatus.NOT_FOUND, 'Vehicle not found', 'not_found');
+      if (!vehicle.inService) throw new HttpException(httpStatus.UNPROCESSABLE_ENTITY, 'This vehicle is out of service', 'vehicle_out_of_service');
+      const holder = vehicle.holders.find(h => h.id !== actor.id && h.isActive && holdsVehicleToday(h, timezone));
+      if (holder) {
+        throw new HttpException(httpStatus.CONFLICT, 'This vehicle is taken today', 'vehicle_taken', {
+          holderId: holder.id,
+          holderName: holder.name,
+        });
+      }
+    }
+    const staff = await prisma.staff.update({ where: { id: actor.id }, data: { vehicleId, vehicleSetAt: vehicleId ? new Date() : null } });
+    await this.audit.record(actor, { action: 'staff.vehicle_set', entityType: 'staff', entityId: actor.id, details: { vehicleId } });
+    return this.sessionUser({ ...actor, ...staff });
   }
 
   /** "Aujourd'hui, je suis…": the post held for the day, among those the role covers. */
@@ -66,9 +142,11 @@ export class StaffService {
         allowed: allowedPosts(actor.role),
       });
     }
-    const staff = await prisma.staff.update({ where: { id: actor.id }, data: { post, postSetAt: new Date() } });
+    // Another post than the driver's: the shuttle taken for the day goes back to the pool.
+    const release = post === 'driver' ? {} : { vehicleId: null, vehicleSetAt: null };
+    const staff = await prisma.staff.update({ where: { id: actor.id }, data: { post, postSetAt: new Date(), ...release } });
     await this.audit.record(actor, { action: 'staff.post_set', entityType: 'staff', entityId: actor.id, details: { post } });
-    return toSessionUser({ ...actor, ...staff });
+    return this.sessionUser({ ...actor, ...staff });
   }
 
   public async create(actor: AuthenticatedStaff, data: CreateStaffDto) {

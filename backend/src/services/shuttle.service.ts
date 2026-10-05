@@ -1,7 +1,8 @@
 import httpStatus from 'http-status';
 import { Container, Service } from 'typedi';
-import prisma, { Prisma, ReservationStatus, ShuttleTrip, ShuttleVehicle } from '@/database';
-import { ArrivalEstimator, straightLineEstimate } from '@/domain/arrival';
+import prisma, { Prisma, ReservationStatus, ShuttleStop, ShuttleStopKind, ShuttleTrip, ShuttleVehicle, Staff } from '@/database';
+import { ArrivalEstimator, haversineMeters, straightLineEstimate } from '@/domain/arrival';
+import { shuttleArrivedPush, shuttleLeavingPush, ShuttleTripFacts, tripEndedPush, tripStartedPush } from '@/domain/shuttle-messages';
 import { localDate } from '@/domain/time';
 import {
   canBoard,
@@ -28,8 +29,15 @@ import { AuditService } from './audit.service';
 import { FlightTrackingService } from './flight-tracking.service';
 import { ParkingLocationService } from './parking-location.service';
 import { ParkingService } from './parking.service';
+import { PushService } from './push.service';
+import { holdsVehicleToday } from './staff.service';
 
 /** Fields of the position: all cleared together, whenever a trip ends. */
+/** The shuttle is "there" within this distance of the stop (N-A: "Votre navette est là"). */
+export const STOP_REACHED_METERS = 150;
+/** A stop's instructions to the traveller, like the meeting point's. */
+export const STOP_INSTRUCTIONS_MAX = 500;
+
 const ERASED_POSITION = { lat: null, lng: null, accuracyM: null, positionRecordedAt: null };
 const dayBounds = (now: Date, tz: string) => {
   const day = localDate(now, tz);
@@ -50,6 +58,51 @@ export interface FlightView {
 }
 
 /** A return to pick up, as the driver sees it. */
+/** A place the shuttle serves (D-A): the airport (built in, id null) or one of the parking's stops. */
+export interface ShuttleStopView {
+  id: string | null;
+  kind: ShuttleStopKind;
+  name: string;
+  lat: number;
+  lng: number;
+  instructions: string | null;
+  builtIn: boolean;
+}
+
+export interface StopInput {
+  kind?: ShuttleStopKind;
+  name?: string;
+  lat?: number;
+  lng?: number;
+  instructions?: string | null;
+  sortOrder?: number;
+}
+
+/** A running trip as the staff's live map shows it (P-A). */
+export interface LiveTrip {
+  id: string;
+  direction: ShuttleDirection;
+  driverId: string;
+  driverName: string;
+  vehicle: TripVehicle;
+  stop: ShuttleStopView | null;
+  passengers: number;
+  startedAt: string;
+  expiresAt: string;
+  position: { lat: number; lng: number } | null;
+  positionAgeSeconds: number | null;
+  /** Straight-line distance and time to the stop, and to the parking. */
+  toStop: { distanceM: number; etaMinutes: number } | null;
+  toParking: { distanceM: number; etaMinutes: number } | null;
+}
+
+export interface LiveShuttles {
+  serverTime: string;
+  parking: { id: string; name: string; lat: number | null; lng: number | null };
+  stops: ShuttleStopView[];
+  trips: LiveTrip[];
+}
+
 export interface PickupRow {
   reservationId: string;
   reference: string;
@@ -61,6 +114,9 @@ export interface PickupRow {
   flight: FlightView;
   /** "Terminal 1" when the flight says so, else the meeting point's label. */
   terminal: string | null;
+  /** The stop serving this traveller (D-A); null: the airport. */
+  stopId: string | null;
+  stopName: string | null;
   /** The traveller said (or was seen) at the meeting point. */
   atMeetingPointAt: string | null;
   /** Id of the running trip this traveller is on, if any. */
@@ -83,6 +139,9 @@ export interface ShuttleVehicleView {
   inService: boolean;
   driverId: string | null;
   driverName: string | null;
+  /** Who took it today (V-A), null when free. */
+  holderId: string | null;
+  holderName: string | null;
 }
 
 export interface VehicleInput {
@@ -106,6 +165,8 @@ export interface DepartureRow {
   arrivedAt: string | null;
   /** Spot code, when the vehicle was placed. */
   spot: string | null;
+  stopId: string | null;
+  stopName: string | null;
   tripId: string | null;
 }
 
@@ -132,6 +193,8 @@ export interface StaffTrip {
   passengers: { reservationId: string; reference: string; customerName: string; passengers: number; plate: string; terminal: string | null }[];
   positionUpdatedAt: string | null;
   meetingPoint: MeetingPoint | null;
+  /** Where the trip goes (D-A): the chosen stop, else the airport's meeting point. */
+  stop: ShuttleStopView | null;
 }
 
 /** What a traveller sees of the shuttle coming for them: the vehicle and its position, never the other passengers. */
@@ -183,17 +246,48 @@ export const flightView = (r: {
 });
 
 const notRunning = () => new HttpException(httpStatus.CONFLICT, 'No trip is running', 'trip_not_running');
-const WITH_DRIVER = { driver: { select: { name: true } } } as const;
-const vehicleView = (v: ShuttleVehicle & { driver: { name: string } | null }): ShuttleVehicleView => ({
-  id: v.id,
-  model: v.model,
-  colour: v.colour,
-  plate: v.plate,
-  seats: v.seats,
-  inService: v.inService,
-  driverId: v.driverId,
-  driverName: v.driver?.name ?? null,
+type VehicleRow = ShuttleVehicle & { driver: { name: string } | null; holders?: Staff[] };
+const vehicleView = (v: VehicleRow, timezone: string): ShuttleVehicleView => {
+  const holder = (v.holders ?? []).find(h => h.isActive && holdsVehicleToday(h, timezone)) ?? null;
+  return {
+    id: v.id,
+    model: v.model,
+    colour: v.colour,
+    plate: v.plate,
+    seats: v.seats,
+    inService: v.inService,
+    driverId: v.driverId,
+    driverName: v.driver?.name ?? null,
+    holderId: holder?.id ?? null,
+    holderName: holder?.name ?? null,
+  };
+};
+const WITH_DRIVER_AND_HOLDERS = { driver: { select: { name: true } }, holders: true } as const;
+
+const stopView = (stop: ShuttleStop): ShuttleStopView => ({
+  id: stop.id,
+  kind: stop.kind,
+  name: stop.name,
+  lat: stop.lat,
+  lng: stop.lng,
+  instructions: stop.instructions,
+  builtIn: false,
 });
+/** The airport as a stop: the operator's return meeting point, else the listing's airport. */
+const airportStop = (meeting: MeetingPoint | null): ShuttleStopView | null =>
+  meeting && meeting.source !== 'parking'
+    ? {
+        id: null,
+        kind: 'airport',
+        name: meeting.label ?? 'Aéroport',
+        lat: meeting.lat,
+        lng: meeting.lng,
+        instructions: meeting.instructions ?? null,
+        builtIn: true,
+      }
+    : null;
+/** "Vito blanc" for the pushes. */
+const vehicleShort = (v: TripVehicle): string | null => [v.model, v.colour].filter(Boolean).join(' ') || null;
 
 /**
  * Driver mode: a trip to the airport with its passengers (bookings) and the driver's latest
@@ -208,6 +302,7 @@ export class ShuttleService {
   public flights = Container.get(FlightTrackingService);
   public parkings = Container.get(ParkingService);
   public locations = Container.get(ParkingLocationService);
+  public push = Container.get(PushService);
   public estimator: ArrivalEstimator = straightLineEstimate;
 
   // ---------------------------------------------------------------- vehicles
@@ -215,17 +310,27 @@ export class ShuttleService {
   public async vehicles(actor: AuthenticatedStaff): Promise<ShuttleVehicleView[]> {
     const rows = await prisma.shuttleVehicle.findMany({
       where: { operatorId: actor.operatorId },
-      include: WITH_DRIVER,
+      include: WITH_DRIVER_AND_HOLDERS,
       orderBy: { createdAt: 'asc' },
     });
-    return rows.map(vehicleView);
+    const timezone = await this.timezone(actor);
+    return rows.map(v => vehicleView(v, timezone));
+  }
+
+  private async timezone(actor: AuthenticatedStaff): Promise<string> {
+    const parking = await prisma.parking.findFirst({
+      where: { operatorId: actor.operatorId },
+      orderBy: { createdAt: 'asc' },
+      select: { timezone: true },
+    });
+    return parking?.timezone ?? 'Europe/Paris';
   }
 
   public async addVehicle(actor: AuthenticatedStaff, data: VehicleInput & { model: string }): Promise<ShuttleVehicleView> {
     const fields = await this.vehicleFields(actor, data);
     const vehicle = await prisma.shuttleVehicle.create({
       data: { operatorId: actor.operatorId, ...fields, model: fields.model! },
-      include: WITH_DRIVER,
+      include: WITH_DRIVER_AND_HOLDERS,
     });
     await this.audit.record(actor, {
       action: 'shuttle.vehicle_added',
@@ -233,7 +338,7 @@ export class ShuttleService {
       entityId: vehicle.id,
       details: { model: vehicle.model },
     });
-    return vehicleView(vehicle);
+    return vehicleView(vehicle, await this.timezone(actor));
   }
 
   /** Edits the sheet: fields left out keep their value, `null` clears one. */
@@ -241,14 +346,14 @@ export class ShuttleService {
     const existing = await prisma.shuttleVehicle.findFirst({ where: { id, operatorId: actor.operatorId } });
     if (!existing) throw new HttpException(httpStatus.NOT_FOUND, 'Vehicle not found', 'not_found');
     const fields = await this.vehicleFields(actor, data);
-    const vehicle = await prisma.shuttleVehicle.update({ where: { id }, data: fields, include: WITH_DRIVER });
+    const vehicle = await prisma.shuttleVehicle.update({ where: { id }, data: fields, include: WITH_DRIVER_AND_HOLDERS });
     await this.audit.record(actor, {
       action: 'shuttle.vehicle_updated',
       entityType: 'shuttle_vehicle',
       entityId: vehicle.id,
       details: { model: vehicle.model, inService: vehicle.inService, seats: vehicle.seats },
     });
-    return vehicleView(vehicle);
+    return vehicleView(vehicle, await this.timezone(actor));
   }
 
   /** Normalises the sheet; the usual driver must belong to the team. */
@@ -278,6 +383,86 @@ export class ShuttleService {
     await this.audit.record(actor, { action: 'shuttle.vehicle_removed', entityType: 'shuttle_vehicle', entityId: id });
   }
 
+  // ---------------------------------------------------------------- stops (D-A)
+
+  /** The places the shuttle serves: the airport first (built in), then the parking's own stops. */
+  public async stops(actor: AuthenticatedStaff): Promise<ShuttleStopView[]> {
+    const parking = await this.parkings.getPrimary(actor);
+    return this.stopsOf(parking.id, await this.meetingOf(parking.id, parking.address));
+  }
+
+  private async stopsOf(parkingId: string, meeting: MeetingPoint | null): Promise<ShuttleStopView[]> {
+    const rows = await prisma.shuttleStop.findMany({ where: { parkingId }, orderBy: [{ sortOrder: 'asc' }, { createdAt: 'asc' }] });
+    const airport = airportStop(meeting);
+    return [...(airport ? [airport] : []), ...rows.map(stopView)];
+  }
+
+  public async addStop(actor: AuthenticatedStaff, data: StopInput & { name: string; lat: number; lng: number }): Promise<ShuttleStopView> {
+    const parking = await this.parkings.getPrimary(actor);
+    const stop = await prisma.shuttleStop.create({
+      data: {
+        parkingId: parking.id,
+        kind: data.kind ?? 'other',
+        name: data.name.trim(),
+        lat: data.lat,
+        lng: data.lng,
+        instructions: data.instructions?.trim() || null,
+        sortOrder: data.sortOrder ?? 0,
+      },
+    });
+    await this.audit.record(actor, {
+      action: 'shuttle.stop_added',
+      entityType: 'shuttle_stop',
+      entityId: stop.id,
+      details: { name: stop.name, kind: stop.kind },
+    });
+    return stopView(stop);
+  }
+
+  public async updateStop(actor: AuthenticatedStaff, id: string, data: StopInput): Promise<ShuttleStopView> {
+    const parking = await this.parkings.getPrimary(actor);
+    const existing = await prisma.shuttleStop.findFirst({ where: { id, parkingId: parking.id } });
+    if (!existing) throw new HttpException(httpStatus.NOT_FOUND, 'Stop not found', 'not_found');
+    const stop = await prisma.shuttleStop.update({ where: { id }, data: this.stopFields(data) });
+    await this.audit.record(actor, {
+      action: 'shuttle.stop_updated',
+      entityType: 'shuttle_stop',
+      entityId: stop.id,
+      details: { name: stop.name, kind: stop.kind },
+    });
+    return stopView(stop);
+  }
+
+  public async removeStop(actor: AuthenticatedStaff, id: string): Promise<void> {
+    const parking = await this.parkings.getPrimary(actor);
+    const { count } = await prisma.shuttleStop.deleteMany({ where: { id, parkingId: parking.id } });
+    if (!count) throw new HttpException(httpStatus.NOT_FOUND, 'Stop not found', 'not_found');
+    await this.audit.record(actor, { action: 'shuttle.stop_removed', entityType: 'shuttle_stop', entityId: id });
+  }
+
+  private stopFields(data: StopInput): Prisma.ShuttleStopUpdateInput {
+    const fields: Prisma.ShuttleStopUpdateInput = {};
+    if (data.kind !== undefined) fields.kind = data.kind;
+    if (data.name !== undefined) fields.name = data.name.trim();
+    if (data.lat !== undefined) fields.lat = data.lat;
+    if (data.lng !== undefined) fields.lng = data.lng;
+    if (data.instructions !== undefined) fields.instructions = data.instructions?.trim() || null;
+    if (data.sortOrder !== undefined) fields.sortOrder = data.sortOrder;
+    return fields;
+  }
+
+  /** The stop a trip or a booking refers to, checked against the parking. */
+  private async stopOf(parkingId: string, stopId: string | null | undefined): Promise<ShuttleStop | null> {
+    if (!stopId) return null;
+    const stop = await prisma.shuttleStop.findFirst({ where: { id: stopId, parkingId } });
+    if (!stop) throw new ValidationException({ stopId: 'invalid_stop' });
+    return stop;
+  }
+
+  private async meetingOf(parkingId: string, address: string | null): Promise<MeetingPoint | null> {
+    return this.arrivals.meetingPoint({ parkingId, parking: { id: parkingId, address, listing: await this.listingOf(parkingId) } }, 'return');
+  }
+
   // ---------------------------------------------------------------- the driver's list
 
   /** Today's returns to pick up at the airport, flights refreshed when due, soonest first. */
@@ -294,7 +479,11 @@ export class ShuttleService {
     const ids = (await prisma.reservation.findMany({ where, select: { id: true } })).map(r => r.id);
     await this.flights.refreshBookings(ids);
     const [rows, signals, trips] = await Promise.all([
-      prisma.reservation.findMany({ where: { id: { in: ids } }, orderBy: { returnAt: 'asc' } }),
+      prisma.reservation.findMany({
+        where: { id: { in: ids } },
+        orderBy: { returnAt: 'asc' },
+        include: { stop: { select: { id: true, name: true } } },
+      }),
       prisma.arrivalSignal.findMany({
         where: { reservationId: { in: ids }, kind: 'return', state: 'at_meeting_point' },
         select: { reservationId: true, atMeetingPointAt: true },
@@ -319,7 +508,9 @@ export class ShuttleService {
         status: r.status,
         returnAt: r.returnAt.toISOString(),
         flight: flightView(r),
-        terminal: terminalOf(r.flightTerminal, meetingPoint),
+        terminal: r.stop ? r.stop.name : terminalOf(r.flightTerminal, meetingPoint),
+        stopId: r.stop?.id ?? null,
+        stopName: r.stop?.name ?? null,
         atMeetingPointAt: iso(signals.find(s => s.reservationId === r.id)?.atMeetingPointAt),
         tripId: trips.find(t => t.reservationId === r.id)?.tripId ?? null,
       }));
@@ -351,7 +542,7 @@ export class ShuttleService {
           },
         ],
       },
-      include: { spot: { select: { code: true } } },
+      include: { spot: { select: { code: true } }, stop: { select: { id: true, name: true } } },
       orderBy: [{ arrivedAt: 'asc' }, { arrivalAt: 'asc' }],
     });
     const trips = await prisma.shuttleTripPassenger.findMany({
@@ -370,6 +561,8 @@ export class ShuttleService {
         arrivalAt: r.arrivalAt.toISOString(),
         arrivedAt: iso(r.arrivedAt),
         spot: r.spot?.code ?? null,
+        stopId: r.stop?.id ?? null,
+        stopName: r.stop?.name ?? null,
         tripId: trips.find(t => t.reservationId === r.id)?.tripId ?? null,
       })),
     };
@@ -388,11 +581,17 @@ export class ShuttleService {
       vehicleId?: string | null;
       vehicle?: { model?: string | null; colour?: string | null; plate?: string | null } | null;
       direction?: ShuttleDirection;
+      /** The stop served (D-A); null or absent: the airport. */
+      stopId?: string | null;
     },
   ): Promise<StaffTrip> {
     await this.sweep({ operatorId: actor.operatorId });
     const parking = await this.parkings.getPrimary(actor);
     const direction: ShuttleDirection = data.direction ?? 'pickup';
+    const stop = await this.stopOf(parking.id, data.stopId);
+    // No vehicle given: the one taken for the day (V-A).
+    const me = await prisma.staff.findUnique({ where: { id: actor.id }, select: { vehicleId: true, vehicleSetAt: true } });
+    const vehicleId = data.vehicleId ?? (!data.vehicle && me && holdsVehicleToday(me, parking.timezone) ? me.vehicleId : null);
     const running = await prisma.shuttleTrip.findFirst({ where: { driverId: actor.id, status: 'running' } });
     if (running) throw new HttpException(httpStatus.CONFLICT, 'A trip is already running', 'trip_already_running', { tripId: running.id });
     const ids = [...new Set(data.reservationIds)];
@@ -412,8 +611,8 @@ export class ShuttleService {
       colour: data.vehicle?.colour?.trim() || null,
       plate: data.vehicle?.plate?.trim().toUpperCase() || null,
     };
-    if (data.vehicleId) {
-      const known = await prisma.shuttleVehicle.findFirst({ where: { id: data.vehicleId, operatorId: actor.operatorId } });
+    if (vehicleId) {
+      const known = await prisma.shuttleVehicle.findFirst({ where: { id: vehicleId, operatorId: actor.operatorId } });
       if (!known) throw new HttpException(httpStatus.NOT_FOUND, 'Vehicle not found', 'not_found');
       if (!known.inService) throw new HttpException(httpStatus.UNPROCESSABLE_ENTITY, 'This vehicle is out of service', 'vehicle_out_of_service');
       const seated = bookings.reduce((sum, b) => sum + b.passengers, 0);
@@ -436,6 +635,9 @@ export class ShuttleService {
         vehicleColour: vehicle.colour,
         vehiclePlate: vehicle.plate,
         direction,
+        stopId: stop?.id ?? null,
+        stopKind: stop?.kind ?? null,
+        stopName: stop?.name ?? null,
         status: 'running',
         startedAt: now,
         expiresAt: new Date(now.getTime() + TRIP_MAX_MINUTES * 60000),
@@ -446,9 +648,38 @@ export class ShuttleService {
       action: 'shuttle.trip_started',
       entityType: 'shuttle_trip',
       entityId: trip.id,
-      details: { direction, passengers: ids.length, reservationIds: ids, vehicle: vehicle.model ?? null },
+      details: { direction, passengers: ids.length, reservationIds: ids, vehicle: vehicle.model ?? null, stop: stop?.name ?? null },
     });
-    return (await this.staffTrip(trip.id))!;
+    const view = (await this.staffTrip(trip.id))!;
+    await this.notifyStarted(actor, trip, view, ids);
+    return view;
+  }
+
+  /** N-A: the team hears of the departure; the passengers of a pick-up, that their shuttle left. */
+  private async notifyStarted(actor: AuthenticatedStaff, trip: ShuttleTrip, view: StaffTrip, reservationIds: string[]) {
+    const facts = this.facts(view);
+    await this.push.notifyStaff(actor.operatorId, 'shuttles', tripStartedPush(facts), {
+      excludeStaffId: actor.id,
+      data: { type: 'shuttle', event: 'started', tripId: trip.id, direction: trip.direction },
+      collapseId: `shuttle-${trip.id}`,
+    });
+    if (trip.direction !== 'pickup') return;
+    const here = (await this.locations.locations([trip.parkingId])).get(trip.parkingId);
+    const eta = here && view.stop ? this.estimator(here, view.stop).etaMinutes : null;
+    await this.push.notifyTravellers(reservationIds, shuttleLeavingPush({ ...facts, etaMinutes: eta }), {
+      data: { type: 'shuttle', event: 'started', tripId: trip.id },
+      collapseId: `shuttle-${trip.id}`,
+    });
+  }
+
+  private facts(view: StaffTrip): ShuttleTripFacts {
+    return {
+      direction: view.direction,
+      driverFirstName: firstName(view.driverName),
+      vehicle: vehicleShort(view.vehicle),
+      stopName: view.stop && !view.stop.builtIn ? view.stop.name : null,
+      passengers: view.passengers.reduce((sum, p) => sum + p.passengers, 0),
+    };
   }
 
   /** The driver's latest position: one per 10 s at most, kept only while the trip runs. */
@@ -489,7 +720,22 @@ export class ShuttleService {
         retryAfterSeconds: Math.max(1, Math.ceil(TRIP_POSITION_MIN_INTERVAL_SECONDS - waited)),
       });
     }
-    return (await this.staffTrip(trip.id))!;
+    const view = (await this.staffTrip(trip.id))!;
+    // N-A: the shuttle reached the stop, its passengers hear it once.
+    if (trip.direction === 'pickup' && !trip.arrivedNotifiedAt && view.stop && haversineMeters(position, view.stop) <= STOP_REACHED_METERS) {
+      const { count: flagged } = await prisma.shuttleTrip.updateMany({
+        where: { id: trip.id, arrivedNotifiedAt: null },
+        data: { arrivedNotifiedAt: now },
+      });
+      if (flagged) {
+        await this.push.notifyTravellers(
+          view.passengers.map(p => p.reservationId),
+          shuttleArrivedPush(this.facts(view)),
+          { data: { type: 'shuttle', event: 'arrived', tripId: trip.id }, collapseId: `shuttle-${trip.id}` },
+        );
+      }
+    }
+    return view;
   }
 
   /**
@@ -531,7 +777,63 @@ export class ShuttleService {
         }
       }
     }
-    return (await this.staffTrip(trip.id))!;
+    const view = (await this.staffTrip(trip.id))!;
+    if (count) {
+      await this.push.notifyStaff(actor.operatorId, 'shuttles', tripEndedPush(this.facts(view)), {
+        excludeStaffId: actor.id,
+        data: { type: 'shuttle', event: 'ended', tripId: trip.id, direction: trip.direction },
+        collapseId: `shuttle-${trip.id}`,
+      });
+    }
+    return view;
+  }
+
+  /** P-A: the operator's running shuttles on a map, for the whole team (position, where they go, how far). */
+  public async live(actor: AuthenticatedStaff): Promise<LiveShuttles> {
+    await this.sweep({ operatorId: actor.operatorId });
+    const parking = await this.parkings.getPrimary(actor);
+    const now = new Date();
+    const [trips, meeting, here] = await Promise.all([
+      prisma.shuttleTrip.findMany({
+        where: { operatorId: actor.operatorId, status: 'running' },
+        include: { driver: { select: { name: true } }, stop: true, passengers: { include: { reservation: { select: { passengers: true } } } } },
+        orderBy: { startedAt: 'asc' },
+      }),
+      this.meetingOf(parking.id, parking.address),
+      this.locations.locations([parking.id]).then(m => m.get(parking.id) ?? null),
+    ]);
+    const stops = await this.stopsOf(parking.id, meeting);
+    const airport = airportStop(meeting);
+    return {
+      serverTime: now.toISOString(),
+      parking: { id: parking.id, name: parking.name, lat: here?.lat ?? null, lng: here?.lng ?? null },
+      stops,
+      trips: trips.map(t => {
+        const position = t.lat !== null && t.lng !== null ? { lat: t.lat, lng: t.lng } : null;
+        const stop = t.stop ? stopView(t.stop) : airport;
+        const estimate = (to: { lat: number; lng: number } | null) => {
+          if (!position || !to) return null;
+          const e = this.estimator(position, to);
+          return { distanceM: e.distanceM, etaMinutes: e.etaMinutes };
+        };
+        return {
+          id: t.id,
+          direction: t.direction,
+          driverId: t.driverId,
+          driverName: t.driver.name,
+          vehicle: { model: t.vehicleModel, colour: t.vehicleColour, plate: t.vehiclePlate },
+          stop,
+          passengers: t.passengers.reduce((sum, p) => sum + p.reservation.passengers, 0),
+          startedAt: t.startedAt.toISOString(),
+          expiresAt: t.expiresAt.toISOString(),
+          position,
+          positionAgeSeconds:
+            position && t.positionReceivedAt ? Math.max(0, Math.round((now.getTime() - t.positionReceivedAt.getTime()) / 1000)) : null,
+          toStop: estimate(stop),
+          toParking: estimate(here),
+        };
+      }),
+    };
   }
 
   /** The driver's running trip, or null. */
@@ -568,18 +870,12 @@ export class ShuttleService {
     await this.sweep({ reservationId });
     const passenger = await prisma.shuttleTripPassenger.findFirst({
       where: { reservationId, trip: { status: 'running', direction: 'pickup' } },
-      include: { trip: { include: { driver: { select: { name: true } }, parking: { select: { id: true, address: true } } } } },
+      include: { trip: { include: { driver: { select: { name: true } }, parking: { select: { id: true, address: true } }, stop: true } } },
     });
     if (!passenger) return null;
     const trip = passenger.trip;
-    const meeting = await this.arrivals.meetingPoint(
-      { parkingId: trip.parkingId, parking: { id: trip.parkingId, address: trip.parking.address, listing: await this.listingOf(trip.parkingId) } },
-      'return',
-    );
-    const destination: ShuttleDestination | null = meeting
-      ? { kind: 'meeting_point', lat: meeting.lat, lng: meeting.lng, label: meeting.label }
-      : null;
-    return this.travellerView(trip, { mine: true, meeting, destination });
+    const meeting = await this.meetingOf(trip.parkingId, trip.parking.address);
+    return this.travellerView(trip, { mine: true, meeting, destination: this.stopDestination(trip, meeting) });
   }
 
   /**
@@ -602,7 +898,7 @@ export class ShuttleService {
     await this.sweep({ parkingId: booking.parkingId });
     const trips = await prisma.shuttleTrip.findMany({
       where: { parkingId: booking.parkingId, status: 'running' },
-      include: { driver: { select: { name: true } }, passengers: { select: { reservationId: true } } },
+      include: { driver: { select: { name: true } }, passengers: { select: { reservationId: true } }, stop: true },
       orderBy: { startedAt: 'asc' },
     });
     if (!trips.length) return { phase, serverTime: now.toISOString(), shuttles: [] };
@@ -622,7 +918,8 @@ export class ShuttleService {
         this.travellerView(trip, {
           mine: trip.passengers.some(p => p.reservationId === booking.id),
           meeting: phase === 'return' ? meeting : null,
-          destination,
+          // On the return day a trip serving a stop (the station…) is measured to that stop.
+          destination: phase === 'return' ? this.stopDestination(trip, meeting) : destination,
         }),
       ),
     };
@@ -651,6 +948,12 @@ export class ShuttleService {
       meetingPoint: options.meeting,
       destination: options.destination,
     };
+  }
+
+  /** Where a trip goes: its stop (D-A), else the airport's meeting point. */
+  private stopDestination(trip: ShuttleTrip & { stop: ShuttleStop | null }, meeting: MeetingPoint | null): ShuttleDestination | null {
+    if (trip.stop) return { kind: 'meeting_point', lat: trip.stop.lat, lng: trip.stop.lng, label: trip.stop.name };
+    return meeting ? { kind: 'meeting_point', lat: meeting.lat, lng: meeting.lng, label: meeting.label } : null;
   }
 
   // ---------------------------------------------------------------- retention
@@ -696,6 +999,7 @@ export class ShuttleService {
       include: {
         driver: { select: { name: true } },
         parking: { select: { id: true, address: true } },
+        stop: true,
         passengers: {
           include: {
             reservation: { select: { id: true, reference: true, customerName: true, passengers: true, plate: true, flightTerminal: true } },
@@ -705,10 +1009,7 @@ export class ShuttleService {
     });
     if (!trip) return null;
     const now = new Date();
-    const meeting = await this.arrivals.meetingPoint(
-      { parkingId: trip.parkingId, parking: { id: trip.parkingId, address: trip.parking.address, listing: await this.listingOf(trip.parkingId) } },
-      'return',
-    );
+    const meeting = await this.meetingOf(trip.parkingId, trip.parking.address);
     return {
       id: trip.id,
       status: trip.status,
@@ -732,6 +1033,7 @@ export class ShuttleService {
       // The driver's own position is never sent back (the phone has it); only when it was last received.
       positionUpdatedAt: trip.status === 'running' ? iso(trip.positionReceivedAt) : null,
       meetingPoint: meeting,
+      stop: trip.stop ? stopView(trip.stop) : airportStop(meeting),
     };
   }
 }

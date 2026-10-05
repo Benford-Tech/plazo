@@ -87,6 +87,12 @@ model Staff {
   // covers (see domain/roles.ts allowedPosts); the role, not the post, decides the permissions.
   post            StaffRole?
   postSetAt       DateTime?
+  // The shuttle vehicle taken for the day (V-A, 05/10/2026), chosen with the "Chauffeur" post and
+  // preselected at the start of each trip. Counts for the local day of vehicleSetAt only.
+  vehicleId       String?
+  vehicleSetAt    DateTime?
+  // Push notifications of the shuttles' departures and returns (N-A, 05/10/2026).
+  notifyShuttles  Boolean    @default(true)
   createdAt       DateTime   @default(now())
   updatedAt       DateTime   @default(now()) @updatedAt
 
@@ -98,7 +104,8 @@ model Staff {
   capacityStudies     CapacityStudy[]
   devices             StaffDevice[]
   shuttleTrips        ShuttleTrip[]
-  shuttleVehicles     ShuttleVehicle[]
+  shuttleVehicles     ShuttleVehicle[] @relation("UsualDriver")
+  vehicle             ShuttleVehicle?  @relation("VehicleOfTheDay", fields: [vehicleId], references: [id], onDelete: SetNull)
 
   @@index([operatorId])
   @@map("staff")
@@ -192,6 +199,7 @@ model Parking {
   shuttleTrips   ShuttleTrip[]
   plan           ParkingPlan?
   spots          ParkingSpot[]
+  stops          ShuttleStop[]
 
   @@index([operatorId])
   @@map("parkings")
@@ -377,6 +385,9 @@ model Reservation {
   // Bloc 2, Occupation: the spot the vehicle is (or will be) parked on, and where its keys hang.
   spotId                  String?
   keyHook                 String?
+  // Where the shuttle serves this traveller (D-A, 05/10/2026): a stop of the parking (train station…);
+  // null: the airport (the return meeting point).
+  stopId                  String?
   // Online payment (Stripe Checkout on Plazo's account; "separate charges and transfers").
   paymentStatus           PaymentStatus?
   // End of the place's hold while the payment is pending (lazy expiry: past it, the place is free).
@@ -422,6 +433,8 @@ model Reservation {
   parking        Parking                @relation(fields: [parkingId], references: [id], onDelete: Cascade)
   createdBy      Staff?                 @relation(fields: [createdById], references: [id], onDelete: SetNull)
   spot           ParkingSpot?           @relation(fields: [spotId], references: [id], onDelete: SetNull)
+  stop           ShuttleStop?           @relation(fields: [stopId], references: [id], onDelete: SetNull)
+  devices        TravellerDevice[]
   arrivalSignals ArrivalSignal[]
   shuttleTrips   ShuttleTripPassenger[]
   smsOutbox      SmsOutbox[]
@@ -654,8 +667,10 @@ model ShuttleVehicle {
   updatedAt  DateTime @default(now()) @updatedAt
 
   operator Operator      @relation(fields: [operatorId], references: [id], onDelete: Cascade)
-  driver   Staff?        @relation(fields: [driverId], references: [id], onDelete: SetNull)
+  driver   Staff?        @relation("UsualDriver", fields: [driverId], references: [id], onDelete: SetNull)
   trips    ShuttleTrip[]
+  // Who took it today (V-A).
+  holders  Staff[]       @relation("VehicleOfTheDay")
 
   @@index([operatorId])
   @@map("shuttle_vehicles")
@@ -694,6 +709,12 @@ model ShuttleTrip {
   vehicleColour      String?
   vehiclePlate       String?
   direction          ShuttleTripDirection  @default(pickup)
+  // The stop served (D-A): null = the airport (return meeting point). Snapshot for the history.
+  stopId             String?
+  stopKind           ShuttleStopKind?
+  stopName           String?
+  // "Votre navette est là" sent to the passengers once (N-A).
+  arrivedNotifiedAt  DateTime?
   status             ShuttleTripStatus
   endReason          ShuttleTripEndReason?
   startedAt          DateTime
@@ -712,6 +733,7 @@ model ShuttleTrip {
   parking    Parking                @relation(fields: [parkingId], references: [id], onDelete: Cascade)
   driver     Staff                  @relation(fields: [driverId], references: [id], onDelete: Cascade)
   vehicle    ShuttleVehicle?        @relation(fields: [vehicleId], references: [id], onDelete: SetNull)
+  stop       ShuttleStop?           @relation(fields: [stopId], references: [id], onDelete: SetNull)
   passengers ShuttleTripPassenger[]
 
   @@index([operatorId, status])
@@ -731,6 +753,52 @@ model ShuttleTripPassenger {
   @@id([tripId, reservationId])
   @@index([reservationId])
   @@map("shuttle_trip_passengers")
+}
+
+/// Kind of a place the shuttle serves besides the airport (D-A, 05/10/2026).
+enum ShuttleStopKind {
+  airport
+  station
+  other
+}
+
+// A place the shuttle serves (D-A, 05/10/2026): a train station, a hotel, a second terminal… The
+// airport itself is implicit (the parking's return meeting point, else the listing's airport) and
+// is not a row here. Coordinates as plain WGS84 floats, like the trips' positions.
+model ShuttleStop {
+  id           String          @id @default(cuid())
+  parkingId    String
+  kind         ShuttleStopKind @default(other)
+  name         String // e.g. "Gare Saint-Exupéry TGV"
+  lat          Float
+  lng          Float
+  instructions String? // for the traveller (500 characters at most)
+  sortOrder    Int             @default(0)
+  createdAt    DateTime        @default(now())
+  updatedAt    DateTime        @default(now()) @updatedAt
+
+  parking      Parking       @relation(fields: [parkingId], references: [id], onDelete: Cascade)
+  trips        ShuttleTrip[]
+  reservations Reservation[]
+
+  @@index([parkingId])
+  @@map("shuttle_stops")
+}
+
+// A traveller's phone registered for the pushes about their shuttle (N-A, 05/10/2026), through the
+// booking's manage token. Removed with the booking, and by the nightly cron two days after the return.
+model TravellerDevice {
+  id             String   @id @default(cuid())
+  reservationId  String
+  subscriptionId String   @unique
+  platform       String?
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @default(now()) @updatedAt
+
+  reservation Reservation @relation(fields: [reservationId], references: [id], onDelete: Cascade)
+
+  @@index([reservationId])
+  @@map("traveller_devices")
 }
 
 // How an operator's SMS to travellers go out (see src/services/sms.service.ts).

@@ -106,6 +106,81 @@ export class FreeVehicleDto {
   public plate?: string | null;
 }
 
+/** A place the shuttle serves besides the airport (D-A, 05/10/2026). */
+export class ShuttleStopDto {
+  @IsOptional()
+  @IsIn(['airport', 'station', 'other'], { message: 'invalid_kind' })
+  public kind?: 'airport' | 'station' | 'other';
+
+  @MaxLength(80, { message: 'too_long' })
+  @MinLength(1, { message: 'required' })
+  @IsString({ message: 'required' })
+  public name: string;
+
+  @IsLatitude({ message: 'invalid_lat' })
+  @IsNumber({}, { message: 'required' })
+  public lat: number;
+
+  @IsLongitude({ message: 'invalid_lng' })
+  @IsNumber({}, { message: 'required' })
+  public lng: number;
+
+  @IsOptional()
+  @MaxLength(500, { message: 'too_long' })
+  @IsString({ message: 'invalid' })
+  public instructions?: string | null;
+
+  @IsOptional()
+  @Max(1000, { message: 'invalid' })
+  @Min(0, { message: 'invalid' })
+  @IsInt({ message: 'invalid' })
+  public sortOrder?: number;
+}
+
+export class UpdateShuttleStopDto {
+  @IsOptional()
+  @IsIn(['airport', 'station', 'other'], { message: 'invalid_kind' })
+  public kind?: 'airport' | 'station' | 'other';
+
+  @IsOptional()
+  @MaxLength(80, { message: 'too_long' })
+  @MinLength(1, { message: 'required' })
+  @IsString({ message: 'required' })
+  public name?: string;
+
+  @IsOptional()
+  @IsLatitude({ message: 'invalid_lat' })
+  @IsNumber({}, { message: 'invalid_lat' })
+  public lat?: number;
+
+  @IsOptional()
+  @IsLongitude({ message: 'invalid_lng' })
+  @IsNumber({}, { message: 'invalid_lng' })
+  public lng?: number;
+
+  @IsOptional()
+  @MaxLength(500, { message: 'too_long' })
+  @IsString({ message: 'invalid' })
+  public instructions?: string | null;
+
+  @IsOptional()
+  @Max(1000, { message: 'invalid' })
+  @Min(0, { message: 'invalid' })
+  @IsInt({ message: 'invalid' })
+  public sortOrder?: number;
+}
+
+/** The traveller's phone, registered for the pushes about their shuttle (N-A). */
+export class TravellerDeviceDto {
+  @MaxLength(100, { message: 'too_long' })
+  @IsString({ message: 'required' })
+  public subscriptionId: string;
+
+  @IsOptional()
+  @IsIn(['ios', 'android', 'web'], { message: 'invalid_platform' })
+  public platform?: 'ios' | 'android' | 'web';
+}
+
 export class StartTripDto {
   @ArrayMaxSize(30, { message: 'too_many' })
   @ArrayMinSize(1, { message: 'required' })
@@ -126,6 +201,12 @@ export class StartTripDto {
   @IsOptional()
   @IsIn(['pickup', 'dropoff'], { message: 'invalid_direction' })
   public direction?: 'pickup' | 'dropoff';
+
+  /** The stop served (D-A); absent or null: the airport. */
+  @IsOptional()
+  @MaxLength(40, { message: 'invalid_stop' })
+  @IsString({ message: 'invalid_stop' })
+  public stopId?: string | null;
 }
 
 export class TripPositionDto {

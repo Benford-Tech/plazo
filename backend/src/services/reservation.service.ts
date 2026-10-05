@@ -104,6 +104,7 @@ export class ReservationService {
     const parking = await this.parkings.getPrimary(actor);
     const stay = this.parseStay(parking, data.arrivalAt, data.returnAt);
     const returnFlight = this.normalizeFlight(data.returnFlight);
+    const stopId = await this.checkStop(parking.id, data.stopId);
 
     const externalReference = data.externalReference?.trim().toUpperCase() || null;
 
@@ -128,6 +129,7 @@ export class ReservationService {
           plate: formatPlate(data.plate),
           plateKey: plateKey(data.plate),
           returnFlight,
+          stopId,
           notes: data.notes?.trim() || null,
           externalReference,
           priceCents: data.priceCents ?? null,
@@ -190,6 +192,14 @@ export class ReservationService {
     return { parsed, missing, duplicate, capacity };
   }
 
+  /** A stop of the parking (D-A), or null for the airport. */
+  private async checkStop(parkingId: string, stopId: string | null | undefined): Promise<string | null> {
+    if (!stopId) return null;
+    const stop = await prisma.shuttleStop.findFirst({ where: { id: stopId, parkingId }, select: { id: true } });
+    if (!stop) throw fieldError('stopId', 'invalid_stop');
+    return stop.id;
+  }
+
   public async update(actor: AuthenticatedStaff, id: string, data: UpdateReservationDto) {
     this.require(actor, 'reservations:manage');
     const parking = await this.parkings.getPrimary(actor);
@@ -210,6 +220,7 @@ export class ReservationService {
         ? this.parseStay(parking, data.arrivalAt ?? before.arrivalAt.toISOString(), data.returnAt ?? before.returnAt.toISOString())
         : { arrivalAt: before.arrivalAt, returnAt: before.returnAt };
       const full = datesChanged ? await this.checkCapacity(tx, actor, parking, stay, data.force, id) : [];
+      const stopId = data.stopId === undefined ? undefined : await this.checkStop(parking.id, data.stopId);
 
       const after = await tx.reservation.update({
         where: { id },
@@ -224,6 +235,7 @@ export class ReservationService {
           plate: data.plate === undefined ? undefined : formatPlate(data.plate),
           plateKey: data.plate === undefined ? undefined : plateKey(data.plate),
           returnFlight: data.returnFlight === undefined ? undefined : this.normalizeFlight(data.returnFlight),
+          stopId,
           notes: data.notes === undefined ? undefined : data.notes?.trim() || null,
           overbooked: datesChanged ? full.length > 0 : undefined,
         },
@@ -332,12 +344,12 @@ export class ReservationService {
     });
   }
 
-  /** The sheet, with the code of the spot the vehicle is on (bloc 2). */
+  /** The sheet, with the code of the spot the vehicle is on (bloc 2) and the stop served (D-A). */
   public async get(actor: AuthenticatedStaff, id: string) {
     this.require(actor, 'reservations:view');
     const reservation = await prisma.reservation.findFirst({
       where: { id, operatorId: actor.operatorId, AND: [STAFF_VISIBLE] },
-      include: { spot: { select: { code: true } } },
+      include: { spot: { select: { code: true } }, stop: { select: { id: true, name: true, kind: true } } },
     });
     if (!reservation) throw notFound();
     return reservation;

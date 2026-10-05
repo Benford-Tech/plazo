@@ -6,6 +6,8 @@ import { AuditService } from './audit.service';
 export interface NotificationPreferences {
   arrivals: boolean;
   returns: boolean;
+  /** The shuttles' departures and returns (N-A). */
+  shuttles: boolean;
   /** Phones of the person registered for pushes. */
   devices: number;
 }
@@ -31,17 +33,24 @@ export class StaffDeviceService {
   }
 
   public async preferences(actor: AuthenticatedStaff): Promise<NotificationPreferences> {
-    const staff = await prisma.staff.findUniqueOrThrow({ where: { id: actor.id }, select: { notifyArrivals: true, notifyReturns: true } });
+    const staff = await prisma.staff.findUniqueOrThrow({
+      where: { id: actor.id },
+      select: { notifyArrivals: true, notifyReturns: true, notifyShuttles: true },
+    });
     const devices = await prisma.staffDevice.count({ where: { staffId: actor.id } });
-    return { arrivals: staff.notifyArrivals, returns: staff.notifyReturns, devices };
+    return { arrivals: staff.notifyArrivals, returns: staff.notifyReturns, shuttles: staff.notifyShuttles, devices };
   }
 
-  public async updatePreferences(actor: AuthenticatedStaff, patch: { arrivals?: boolean; returns?: boolean }): Promise<NotificationPreferences> {
+  public async updatePreferences(
+    actor: AuthenticatedStaff,
+    patch: { arrivals?: boolean; returns?: boolean; shuttles?: boolean },
+  ): Promise<NotificationPreferences> {
     await prisma.staff.update({
       where: { id: actor.id },
       data: {
         ...(patch.arrivals !== undefined ? { notifyArrivals: patch.arrivals } : {}),
         ...(patch.returns !== undefined ? { notifyReturns: patch.returns } : {}),
+        ...(patch.shuttles !== undefined ? { notifyShuttles: patch.shuttles } : {}),
       },
     });
     return this.preferences(actor);

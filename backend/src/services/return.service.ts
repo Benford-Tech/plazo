@@ -75,6 +75,30 @@ export class ReturnService {
     return this.shuttle.forStay(booking);
   }
 
+  /** N-A: the traveller's phone, registered for the pushes about their shuttle (one phone, one booking). */
+  public async registerDevice(reference: string, token: string | undefined, subscriptionId: string, platform?: string | null) {
+    const booking = await this.bookings.load(reference, token);
+    const device = await prisma.travellerDevice.upsert({
+      where: { subscriptionId },
+      create: { reservationId: booking.id, subscriptionId, platform: platform ?? null },
+      update: { reservationId: booking.id, platform: platform ?? null },
+    });
+    return { subscriptionId: device.subscriptionId, platform: device.platform };
+  }
+
+  public async unregisterDevice(reference: string, token: string | undefined, subscriptionId: string) {
+    const booking = await this.bookings.load(reference, token);
+    await prisma.travellerDevice.deleteMany({ where: { subscriptionId, reservationId: booking.id } });
+  }
+
+  /** Retention: the phones of bookings whose return is two days past (also removed with the booking). */
+  public async purgeDevices(now = new Date()): Promise<number> {
+    const { count } = await prisma.travellerDevice.deleteMany({
+      where: { reservation: { returnAt: { lt: new Date(now.getTime() - 2 * 86400000) } } },
+    });
+    return count;
+  }
+
   /** Polled every 10 s while the trip card is open. */
   public async shuttleStatus(reference: string, token: string | undefined): Promise<{ shuttle: TravellerShuttle | null; serverTime: string }> {
     const booking = await this.bookings.load(reference, token);

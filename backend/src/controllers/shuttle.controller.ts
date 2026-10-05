@@ -1,7 +1,7 @@
 import { Response } from 'express';
 import httpStatus from 'http-status';
 import { Container } from 'typedi';
-import { ShuttleVehicleDto, StartTripDto, TripPositionDto, UpdateShuttleVehicleDto } from '@/dtos/shuttle.dto';
+import { ShuttleVehicleDto, StartTripDto, TripPositionDto, UpdateShuttleVehicleDto, ShuttleStopDto, UpdateShuttleStopDto } from '@/dtos/shuttle.dto';
 import { RequestWithStaffSession } from '@/middlewares/staff-auth.middleware';
 import { ShuttleService } from '@/services/shuttle.service';
 import catchAsync from '@/utils/catchAsync';
@@ -42,6 +42,35 @@ export class ShuttleController {
   public removeVehicle = catchAsync(async (req: RequestWithStaffSession, res: Response) => {
     await this.shuttle.removeVehicle(req.staff, req.params.id as string);
     res.status(httpStatus.NO_CONTENT).send();
+  });
+
+  /** GET /internal/shuttle/stops */
+  public stops = catchAsync(async (req: RequestWithStaffSession, res: Response) => {
+    res.json({ data: await this.shuttle.stops(req.staff) });
+  });
+
+  /** POST /internal/shuttle/stops */
+  public addStop = catchAsync(async (req: RequestWithStaffSession, res: Response) => {
+    const data: ShuttleStopDto = req.body;
+    res.status(httpStatus.CREATED).json({ data: await this.shuttle.addStop(req.staff, data) });
+  });
+
+  /** PATCH /internal/shuttle/stops/:id */
+  public updateStop = catchAsync(async (req: RequestWithStaffSession, res: Response) => {
+    const data: UpdateShuttleStopDto = req.body;
+    res.json({ data: await this.shuttle.updateStop(req.staff, req.params.id as string, data) });
+  });
+
+  /** DELETE /internal/shuttle/stops/:id */
+  public removeStop = catchAsync(async (req: RequestWithStaffSession, res: Response) => {
+    await this.shuttle.removeStop(req.staff, req.params.id as string);
+    res.status(httpStatus.NO_CONTENT).send();
+  });
+
+  /** GET /internal/shuttle/live */
+  public live = catchAsync(async (req: RequestWithStaffSession, res: Response) => {
+    res.set('Cache-Control', 'no-store');
+    res.json(await this.shuttle.live(req.staff));
   });
 
   /** GET /internal/shuttle/trips/current */

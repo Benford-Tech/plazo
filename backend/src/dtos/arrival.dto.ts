@@ -131,4 +131,9 @@ export class NotificationPreferencesDto {
   @IsOptional()
   @IsBoolean({ message: 'invalid' })
   public returns?: boolean;
+
+  /** The shuttles' departures and returns (N-A). */
+  @IsOptional()
+  @IsBoolean({ message: 'invalid' })
+  public shuttles?: boolean;
 }
