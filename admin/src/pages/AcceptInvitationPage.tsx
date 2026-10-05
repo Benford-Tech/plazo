@@ -2,6 +2,7 @@ import { useQuery } from "@tanstack/react-query";
 import { useState } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import { FormField } from "@/components/FormField";
+import { BoardBackdrop } from "@/components/BoardBackdrop";
 import { Logo } from "@/components/Logo";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
@@ -51,6 +52,7 @@ export default function AcceptInvitationPage() {
   const invalid = !token || invitation.isError;
   return (
     <main className="mx-auto flex min-h-screen max-w-sm flex-col justify-center px-4 py-10">
+      <BoardBackdrop />
       <Logo height={40} suffix="Pro" className="mb-2" />
       <h1 className="mb-6 mt-1 text-muted-foreground">{fr.login.subtitle}</h1>
       <Card>

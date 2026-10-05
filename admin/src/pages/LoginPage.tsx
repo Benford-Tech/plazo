@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { Link, Navigate, useLocation, useNavigate } from "react-router-dom";
+import { BoardBackdrop } from "@/components/BoardBackdrop";
 import { FormField } from "@/components/FormField";
 import { Logo } from "@/components/Logo";
 import { Alert, AlertDescription } from "@/components/ui/alert";
@@ -37,15 +38,19 @@ export default function LoginPage() {
 
   return (
     <main className="mx-auto flex min-h-screen max-w-sm flex-col justify-center px-4 py-10">
-      <Logo height={40} suffix="Pro" className="mb-2" />
-      <h1 className="mb-6 mt-1 text-muted-foreground">{fr.login.subtitle}</h1>
+      <BoardBackdrop />
+      <Logo height={40} suffix="Pro" className="mb-8" />
       {passwordChanged && (
         <Alert className="mb-4 border-success/40 bg-success/10">
           <AlertDescription>{fr.login.passwordChanged}</AlertDescription>
         </Alert>
       )}
-      <Card>
-        <CardContent className="pt-6">
+      {/* F-A / C-C: the form in a card bordered in yellow, the eyebrow and the welcome inside it. */}
+      <Card className="border-primary bg-background">
+        <CardContent className="pt-5">
+          <p className="font-mono text-[13px] uppercase tracking-[0.06em] text-primary">{fr.login.subtitle}</p>
+          <h1 className="mt-3 text-[26px] font-bold uppercase tracking-wide">{fr.login.welcome}</h1>
+          <p className="mb-5 mt-1 text-muted-foreground">{fr.login.intro}</p>
           <form onSubmit={handleSubmit} className="space-y-4">
             {error && (
               <Alert variant="destructive">

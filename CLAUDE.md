@@ -229,6 +229,9 @@ Canevas de référence : https://claude.ai/artifact/6ezoCDyLXFNwhAH5ZWUf4u (rang
   Archivo Narrow (capitales pour les titres) + JetBrains Mono (heures, chiffres, vols) ; angles vifs.
   Avec deux emprunts à C : **arrivées et retours en deux colonnes séparées**, et les **plaques**
   dessinées comme une plaque française (bande bleue `#1F3FA6` « F », fond blanc).
+  Connexion et inscription web (choix F-A + L-A du 05/10/2026) : la grille « tableau des vols » de l'app Pro en fond
+  (`BoardBackdrop`), formulaire dans une carte bordée de jaune ; **logo pro = panneau jaune `#F5C400`, lettres noires**
+  (`brand/logo-horizontal-pro.svg`) dans tout l'espace pro web, le panneau orange restant au site voyageurs.
 - **Site Plazo voyageurs (web)** : direction **M3 « Plazo voyageur »** (choix du 01/10/2026), le même
   univers que l'app voyageur : **en-tête orange easyJet `#FF6600`** (T-A, 03/10/2026, à la place du prune),
   bandeau photo sous un voile orange, pied de page orange foncé `#E65C00`, titres en Playfair Display italique,

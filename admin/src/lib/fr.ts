@@ -162,6 +162,8 @@ export const fr = {
   login: {
     title: "Connexion",
     subtitle: "Espace professionnel",
+    welcome: "Bienvenue",
+    intro: "Connectez-vous avec le compte de votre parking.",
     email: "Email",
     password: "Mot de passe",
     submit: "Se connecter",

@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { Link, useLocation } from "react-router-dom";
+import { BoardBackdrop } from "@/components/BoardBackdrop";
 import { Logo } from "@/components/Logo";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Card, CardContent } from "@/components/ui/card";
@@ -36,6 +37,7 @@ export default function VerifyEmailPage() {
 
   return (
     <main className="mx-auto flex min-h-screen max-w-sm flex-col justify-center px-4 py-10">
+      <BoardBackdrop />
       <Logo height={40} suffix="Pro" className="mb-2" />
       <h1 className="mb-6 mt-1 text-muted-foreground">{fr.login.subtitle}</h1>
       <Card>
