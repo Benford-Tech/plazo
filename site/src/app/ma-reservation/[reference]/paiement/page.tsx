@@ -57,7 +57,7 @@ export default async function PaymentPage({ params }: PageProps<"/ma-reservation
       <h1 className="font-title text-[30px] md:text-[40px]">{fr.pay.title}</h1>
 
       {expired ? (
-        <section role="alert" aria-labelledby="delai" className="flex flex-col items-start gap-3 rounded-[20px] border border-danger-line bg-danger-bg p-5">
+        <section role="alert" aria-labelledby="delai" className="flex flex-col items-start gap-3 rounded-[22px] border border-danger-line bg-danger-bg p-5">
           <h2 id="delai" className="text-lg font-bold text-danger">
             {fr.pay.expiredTitle}
           </h2>
@@ -66,7 +66,7 @@ export default async function PaymentPage({ params }: PageProps<"/ma-reservation
         </section>
       ) : (
         <>
-          <section aria-labelledby="recap" className="flex flex-col gap-2.5 rounded-[20px] border border-line p-4 md:p-[22px]">
+          <section aria-labelledby="recap" className="flex flex-col gap-2.5 card p-4 md:p-[22px]">
             <div className="flex items-baseline justify-between gap-3">
               <h2 id="recap" className="font-title text-[22px] md:text-2xl">
                 {fr.pay.recap}

@@ -258,7 +258,7 @@ export default async function ResultsPage({ params, searchParams }: PageProps<"/
         </div>
 
         {map && (
-          <div className="-mx-4 h-[300px] overflow-hidden [grid-area:map] sm:mx-0 sm:h-[380px] sm:rounded-[20px] lg:sticky lg:top-4 lg:h-[calc(100dvh-2rem)] lg:max-h-[860px] lg:self-start">
+          <div className="-mx-4 h-[300px] overflow-hidden [grid-area:map] sm:mx-0 sm:h-[380px] sm:rounded-[22px] lg:sticky lg:top-4 lg:h-[calc(100dvh-2rem)] lg:max-h-[860px] lg:self-start">
             <div className="relative h-full">
               <ResultsMapPanel airport={{ name: airport.name, location: airport.location ?? null }} parkings={mapParkings} />
               {notDrawn > 0 && (
@@ -272,7 +272,7 @@ export default async function ResultsPage({ params, searchParams }: PageProps<"/
 
         <section aria-labelledby="resultats" className={`flex min-w-0 flex-col gap-4 ${map ? "[grid-area:list]" : "md:col-start-2"}`}>
           {shown.length === 0 ? (
-            <div className="flex flex-col items-start gap-3 rounded-[16px] bg-tint p-6">
+            <div className="flex flex-col items-start gap-3 rounded-[22px] bg-white p-6">
               <h2 className="text-lg font-bold">{results.length === 0 ? fr.results.noneTitle : fr.results.noMatchTitle}</h2>
               <p className="text-soft">{results.length === 0 ? fr.results.noneText : fr.results.noMatchText}</p>
               {results.length > 0 && (

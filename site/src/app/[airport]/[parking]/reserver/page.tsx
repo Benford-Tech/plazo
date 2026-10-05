@@ -91,7 +91,7 @@ export default async function BookingPage({ params, searchParams }: PageProps<"/
       <h1 className="font-title text-[30px] md:text-[40px]">{fr.booking.title}</h1>
 
       <div className="grid gap-6 md:grid-cols-[1fr_340px] md:gap-10 lg:grid-cols-[1fr_380px]">
-        <aside aria-labelledby="recap" className="self-start overflow-hidden rounded-[20px] border border-line md:col-start-2 md:row-start-1">
+        <aside aria-labelledby="recap" className="card self-start overflow-hidden md:col-start-2 md:row-start-1">
           <Photo src={parking.photo ?? parking.photos[0]} alt={parking.title} className="hidden h-[130px] w-full md:block" />
           <div className="flex flex-col gap-3 p-4 md:p-5">
             <h2 id="recap" className="font-title text-[22px]">
@@ -134,7 +134,7 @@ export default async function BookingPage({ params, searchParams }: PageProps<"/
 
         <div className="md:col-start-1 md:row-start-1">
           {bookable && soon ? (
-            <div role="status" className="flex flex-col items-start gap-3 rounded-[20px] border border-line bg-tint p-5">
+            <div role="status" className="flex flex-col items-start gap-3 card p-5">
               <h2 className="text-lg font-bold">{fr.parking.onlineSoon}</h2>
               <p className="text-soft">{fr.parking.onlineSoonHint}</p>
               <Link href={resultsHref} className="btn-secondary h-11 px-5 text-[15px]">
@@ -152,7 +152,7 @@ export default async function BookingPage({ params, searchParams }: PageProps<"/
               initialState={initialState}
             />
           ) : (
-            <div role="alert" className="flex flex-col items-start gap-3 rounded-[20px] border border-danger-line bg-danger-bg p-5 text-danger">
+            <div role="alert" className="flex flex-col items-start gap-3 rounded-[22px] border border-danger-line bg-danger-bg p-5 text-danger">
               <h2 className="text-lg font-bold">{fr.booking.unavailableTitle}</h2>
               <p>{errorMessage(offer?.priceCents === null ? "no_price" : "overbooked")}</p>
               <div className="flex flex-wrap gap-2">

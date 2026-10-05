@@ -41,9 +41,9 @@ export function ResultCard({
       data-result-slug={result.slug}
       tabIndex={-1}
       aria-labelledby={`resultat-${result.slug}-titre`}
-      className={`grid scroll-mt-4 overflow-hidden rounded-[16px] outline-none transition-shadow data-map-active:shadow-[0_0_0_3px_#ff8a3d,0_12px_30px_-16px_rgba(44,26,14,.5)] focus-visible:shadow-[0_0_0_3px_#ff8a3d] ${
+      className={`grid scroll-mt-4 overflow-hidden rounded-[22px] outline-none transition-shadow data-map-active:shadow-[0_0_0_3px_#ff8a3d,0_12px_30px_-16px_rgba(44,26,14,.5)] focus-visible:shadow-[0_0_0_3px_#ff8a3d] ${
         compact ? "sm:grid-cols-[150px_1fr]" : "md:grid-cols-[210px_1fr_190px]"
-      } ${highlighted ? "border-2 border-accent" : "border border-line"} ${bookable ? "" : "opacity-60"}`}
+      } bg-white shadow-[0_18px_40px_-22px_rgba(30,20,10,.35)] ${highlighted ? "border-2 border-accent" : ""} ${bookable ? "" : "opacity-60"}`}
     >
       <Photo src={result.photo} alt={result.title} className={`h-[110px] w-full ${compact ? "sm:h-full sm:min-h-[132px]" : "md:h-full md:min-h-[170px]"}`} />
       <div className={compact ? "flex min-w-0 flex-col" : "contents"}>

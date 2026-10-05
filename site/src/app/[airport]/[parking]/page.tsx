@@ -96,12 +96,12 @@ export default async function ParkingPage({ params, searchParams }: Props) {
 
       {photos.length >= 3 ? (
         <div className="grid grid-cols-[2fr_1fr] grid-rows-[120px_120px] gap-2.5 md:grid-rows-[170px_170px]">
-          <Photo src={photos[0]} alt={fr.a11y.photoOf(parking.title, 1)} className="row-span-2 h-full w-full rounded-[16px]" />
-          <Photo src={photos[1]} alt={fr.a11y.photoOf(parking.title, 2)} className="h-full w-full rounded-[16px]" />
-          <Photo src={photos[2]} alt={fr.a11y.photoOf(parking.title, 3)} className="h-full w-full rounded-[16px]" />
+          <Photo src={photos[0]} alt={fr.a11y.photoOf(parking.title, 1)} className="row-span-2 h-full w-full rounded-[22px]" />
+          <Photo src={photos[1]} alt={fr.a11y.photoOf(parking.title, 2)} className="h-full w-full rounded-[22px]" />
+          <Photo src={photos[2]} alt={fr.a11y.photoOf(parking.title, 3)} className="h-full w-full rounded-[22px]" />
         </div>
       ) : (
-        <Photo src={photos[0]} alt={fr.a11y.photoOf(parking.title, 1)} className="h-[190px] w-full rounded-[16px] md:h-[300px]" />
+        <Photo src={photos[0]} alt={fr.a11y.photoOf(parking.title, 1)} className="h-[190px] w-full rounded-[22px] md:h-[300px]" />
       )}
 
       <div className="grid gap-6 md:grid-cols-[1fr_340px] md:gap-x-10 lg:grid-cols-[1fr_380px] lg:gap-x-12">
@@ -134,7 +134,7 @@ export default async function ParkingPage({ params, searchParams }: Props) {
             {parking.services.length > 0 && (
               <ul className="flex flex-wrap gap-2">
                 {parking.services.map(s => (
-                  <li key={s} className="rounded-[16px] border border-line px-3 py-1.5 text-sm">
+                  <li key={s} className="card px-3 py-1.5 text-sm">
                     <span aria-hidden="true">✓ </span>
                     {serviceLabel(s, true)}
                   </li>
@@ -164,7 +164,7 @@ export default async function ParkingPage({ params, searchParams }: Props) {
           <h2 id="acces" className={sectionTitle}>
             {fr.parking.access}
           </h2>
-          <div className="bg-stripes flex min-h-[200px] items-end rounded-[16px] p-3">
+          <div className="bg-stripes flex min-h-[200px] items-end rounded-[22px] p-3">
             <div className="flex w-full flex-col gap-3 rounded-[14px] bg-white p-4 shadow-sm sm:flex-row sm:items-center sm:justify-between">
               <p className="text-[15px]">{parking.address ?? fr.parking.addressUnknown}</p>
               <a href={mapsUrl(destination)} target="_blank" rel="noopener noreferrer" className="btn-secondary h-11 flex-none px-4 text-[15px]">

@@ -108,7 +108,7 @@ export function TrustBand({ tiles }: { tiles: TrustTile[] }) {
   return (
     <ul aria-label={fr.highlights.bandLabel} className="grid grid-cols-2 gap-2 lg:grid-cols-4 lg:gap-2.5">
       {tiles.map(tile => (
-        <li key={tile.kind} data-tile={tile.kind} className="flex items-start gap-2 rounded-[14px] border border-line p-2.5 md:p-3">
+        <li key={tile.kind} data-tile={tile.kind} className="flex items-start gap-2 rounded-[16px] bg-white p-2.5 md:p-3">
           <span aria-hidden="true" className="flex size-7 flex-none items-center justify-center rounded-full bg-tint text-accent">
             <FactIcon icon={TILE_ICON[tile.kind]} size={15} />
           </span>

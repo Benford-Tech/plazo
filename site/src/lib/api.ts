@@ -9,8 +9,7 @@ import type {
   CreatedBooking,
   ParkingResponse,
   PublicBooking,
-  SearchResponse,
-} from "./types";
+  SearchResponse, TravellerReturn } from "./types";
 
 /**
  * Server-side client of the backend's public API. The browser never calls the API: pages (server
@@ -149,6 +148,9 @@ export const api = {
   booking: cache((reference: string, token: string) =>
     apiRequest<PublicBooking>(`/api/public/bookings/${seg(reference)}`, { bookingToken: token }),
   ),
+
+  /** The return day of a booking (the app's live block), for the booking page's first paint. */
+  returnState: (reference: string, token: string) => apiRequest<TravellerReturn>(`/api/public/bookings/${seg(reference)}/return`, { bookingToken: token }),
 
   changeFlight: (reference: string, token: string, returnFlight: string | null) =>
     apiRequest<PublicBooking>(`/api/public/bookings/${seg(reference)}/flight`, {

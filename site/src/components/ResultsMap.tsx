@@ -20,7 +20,7 @@ export interface MapParking {
 }
 
 const PILL = "rounded-[14px] border px-2.5 py-[5px] text-sm font-bold whitespace-nowrap shadow-[0_6px_14px_-6px_rgba(0,0,0,.4)] transition-transform";
-const BOOKABLE = "border-accent bg-accent text-white data-[active=true]:border-dark data-[active=true]:bg-brand";
+const BOOKABLE = "border-accent bg-accent text-white data-[active=true]:border-dark data-[active=true]:bg-dark";
 const UNAVAILABLE = "border-line bg-white text-soft data-[active=true]:border-dark data-[active=true]:text-ink";
 
 function hasWebGL(): boolean {
@@ -50,7 +50,19 @@ function highlight(markers: Map<string, HTMLElement>, slug: string | null) {
  * Hovering or focusing a card highlights its pill and the other way round; a click on a pill brings
  * its card into view and focuses it. Loaded only when the traveller shows the map.
  */
-export default function ResultsMap({ airport, parkings }: { airport: { name: string; location: LatLng | null }; parkings: MapParking[] }) {
+export default function ResultsMap({
+  airport,
+  parkings,
+  controls = true,
+  padding = { top: 70, bottom: 50, left: 60, right: 60 },
+}: {
+  airport: { name: string; location: LatLng | null };
+  parkings: MapParking[];
+  /** The zoom buttons (off on the home's hero map, whose corners hold the pills). */
+  controls?: boolean;
+  /** Room kept around the pins when framing them (the home's orange card sits at the bottom). */
+  padding?: { top: number; bottom: number; left: number; right: number };
+}) {
   const container = useRef<HTMLDivElement>(null);
   // Rendered in the browser only (dynamic import without SSR): WebGL can be checked right away.
   const [failed, setFailed] = useState(() => !hasWebGL());
@@ -91,7 +103,7 @@ export default function ResultsMap({ airport, parkings }: { airport: { name: str
     // A tile that fails to load stays blank: nothing to report to the traveller (or the console).
     map.on("error", () => {});
     map.touchZoomRotate.disableRotation();
-    map.addControl(new maplibregl.NavigationControl({ showCompass: false }), "top-right");
+    if (controls) map.addControl(new maplibregl.NavigationControl({ showCompass: false }), "top-right");
 
     const markers = new Map<string, HTMLElement>();
     const added: maplibregl.Marker[] = [];
@@ -133,7 +145,7 @@ export default function ResultsMap({ airport, parkings }: { airport: { name: str
     if (points.length > 1) {
       const bounds = new maplibregl.LngLatBounds();
       points.forEach(pt => bounds.extend([pt.lng, pt.lat]));
-      map.fitBounds(bounds, { padding: { top: 70, bottom: 50, left: 60, right: 60 }, maxZoom: 15, duration: 0 });
+      map.fitBounds(bounds, { padding, maxZoom: 15, duration: 0 });
     } else if (points.length === 1) {
       map.setZoom(13);
     }

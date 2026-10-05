@@ -248,8 +248,16 @@ Canevas de référence : https://claude.ai/artifact/6ezoCDyLXFNwhAH5ZWUf4u (rang
   (05/10/2026) : onglet Aujourd'hui, barre « Tableau de bord · Planning » (feature `pro_dashboard`, `ProDashboardBloc` toutes
   les 30 s, `DashboardView` avec la carte des navettes `LiveShuttlesCard`) ; les onglets Arrivées / Retours du chauffeur
   restent le planning seul.
-- **Site Plazo voyageurs (web)** : direction **M3 « Plazo voyageur »** (choix du 01/10/2026), le même
-  univers que l'app voyageur : **en-tête orange easyJet `#FF6600`** (T-A, 03/10/2026, à la place du prune),
+- **Site Plazo voyageurs (web)** : **aligné sur la direction T-A « Parking » de l'app (05/10/2026)** : fond gris clair
+  `#ECECEE` (`--color-ground`), cartes blanches 22 px à ombre douce (utilitaire `card`), en-tête sur le fond (plus de bande
+  orange ; logo et liens sombres, « Pour les loueurs » en pilule blanche), pied de page brun foncé, Manrope (`--font-manrope`)
+  avec Playfair italique sur les titres, orange `#FF6600` réservé à l'action (`btn-primary` plein) et à une carte par écran.
+  Accueil : titre en deux tons « Trouvons votre parking à … », carte de recherche blanche, carte IGN du séjour par défaut
+  (`api.search` dans `AirportView`, `HomeMap` sur `ResultsMap`) avec pilules « N parkings disponibles » et distance, carte
+  orange du moins cher. Page Ma réservation, véhicule sur place : bloc `ReturnLive` (client, `GET /api/public/bookings/:ref/return`
+  toutes les 10 s avec le jeton en en-tête) : anneau de compte à rebours à la seconde, puces Atterrissage · Rendez-vous ·
+  Navette, pilule « En direct · il y a N s », âge de la position de la navette, encart sombre « Retrouver ma voiture »
+  avec la place du voiturier. Ancienne direction M3 (01/10 → 05/10/2026), pour mémoire : **en-tête orange easyJet `#FF6600`** (T-A, 03/10/2026, à la place du prune),
   bandeau photo sous un voile orange, pied de page orange foncé `#E65C00`, titres en Playfair Display italique,
   Inter pour le texte, accent **orange léger `#FF8A3D`** (V-A, 03/10/2026, à la place du violet), brun foncé
   `#2C1A0E` pour les surfaces sombres, bouton principal en dégradé orange léger → pêche, cartes arrondies (16 px),

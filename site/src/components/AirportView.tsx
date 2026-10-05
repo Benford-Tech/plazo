@@ -10,7 +10,7 @@ import { fr, fromPriceUnit, texts } from "@/lib/fr";
 import { factChips } from "@/lib/highlights";
 import { formatEuros } from "@/lib/money";
 import { PRO_SIGNUP_PATH } from "@/lib/site";
-import type { AirportResponse } from "@/lib/types";
+import type { AirportResponse, SearchResponse } from "@/lib/types";
 
 /** The step photos of the home (site/public/images/step-*.{jpg,webp}), in the order of fr.home.how. */
 const STEP_PHOTOS = ["compare", "book", "fly"] as const;
@@ -30,10 +30,17 @@ export async function AirportView({ slug, showBreadcrumb }: { slug: string; show
   const t = texts(payments === "online");
   const stay = defaultStay();
   const faq = [...t.home.faq, ...(t.home.airportFaq[airport.slug] ?? [])];
+  // T-A: the hero's map shows the parkings of the default stay and its best offer (the page works without it).
+  let preview: SearchResponse | null = null;
+  try {
+    preview = await api.search(airport.slug, stay.arrivee, stay.retour);
+  } catch {
+    preview = null;
+  }
 
   return (
     <>
-      <HomeHero airport={airport} arrivee={stay.arrivee} retour={stay.retour} minDate={todayLocal()} breadcrumb={showBreadcrumb} />
+      <HomeHero airport={airport} arrivee={stay.arrivee} retour={stay.retour} minDate={todayLocal()} breadcrumb={showBreadcrumb} preview={preview} />
 
       <main className="mx-auto flex w-full max-w-[1280px] flex-col gap-10 px-4 py-8 md:gap-12 md:px-12 md:py-12">
         <section aria-labelledby="comment" className="flex flex-col gap-4">
@@ -42,17 +49,16 @@ export async function AirportView({ slug, showBreadcrumb }: { slug: string; show
           </h2>
           <ol className="grid gap-3 md:grid-cols-3 md:gap-[18px]">
             {t.home.how.map(([title, text], i) => (
-              <li key={title} className="flex flex-col overflow-hidden rounded-[16px] border border-line">
+              <li key={title} className="flex flex-col overflow-hidden card">
                 {/* I-A (03/10/2026): a photo per step (Pexels, free licence), the number as a badge over it. */}
                 <div className="relative">
                   <picture>
                     <source srcSet={`/images/step-${STEP_PHOTOS[i]}.webp`} type="image/webp" />
-                    {/* eslint-disable-next-line @next/next/no-img-element */}
                     <img src={`/images/step-${STEP_PHOTOS[i]}.jpg`} alt="" width={600} height={400} loading="lazy" decoding="async" className="aspect-[3/2] w-full object-cover md:aspect-[2/1]" />
                   </picture>
                   <span
                     aria-hidden="true"
-                    className="absolute bottom-0 left-[22px] flex h-11 w-11 translate-y-1/2 items-center justify-center rounded-[12px] border-2 border-white bg-[linear-gradient(135deg,#ff8a3d,#f0a36b)] font-title text-[24px] leading-none text-white"
+                    className="absolute bottom-0 left-[22px] flex h-11 w-11 translate-y-1/2 items-center justify-center rounded-[12px] border-2 border-white bg-accent font-title text-[24px] leading-none text-white"
                   >
                     {i + 1}
                   </span>
@@ -74,13 +80,13 @@ export async function AirportView({ slug, showBreadcrumb }: { slug: string; show
             {listings.length > 0 && <span className="text-soft">{fr.home.partnersCount(listings.length)}</span>}
           </div>
           {listings.length === 0 ? (
-            <p className="rounded-[16px] bg-tint p-5 text-soft">{fr.home.noPartners(airport.name)}</p>
+            <p className="rounded-[22px] bg-white p-5 text-soft">{fr.home.noPartners(airport.name)}</p>
           ) : (
             <ul className="flex flex-col gap-4">
               {listings.map((listing, i) => (
                 <li key={listing.slug}>
                   <article
-                    className={`grid overflow-hidden rounded-[16px] md:grid-cols-[260px_1fr] ${i === 0 ? "border-2 border-accent" : "border border-line"}`}
+                    className={`grid overflow-hidden rounded-[22px] bg-white shadow-[0_18px_40px_-22px_rgba(30,20,10,.35)] md:grid-cols-[260px_1fr] ${i === 0 ? "border-2 border-accent" : ""}`}
                   >
                     <Photo src={listing.photo} alt={listing.title} className="h-[140px] w-full md:h-full md:min-h-[190px]" />
                     <div className="flex flex-col gap-2 px-4 py-4 md:px-[22px] md:py-[18px]">
@@ -110,7 +116,7 @@ export async function AirportView({ slug, showBreadcrumb }: { slug: string; show
               ))}
             </ul>
           )}
-          <p className="rounded-[16px] bg-tint px-[18px] py-3.5 text-[15px] text-soft">
+          <p className="rounded-[22px] bg-white px-[18px] py-3.5 text-[15px] text-soft">
             {fr.home.ownerCallout}{" "}
             <a href={PRO_SIGNUP_PATH} className="font-semibold">
               {fr.home.ownerJoin}

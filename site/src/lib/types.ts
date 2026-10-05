@@ -150,3 +150,40 @@ export type CheckoutResult = { url: string } | { paid: true };
 export interface SiteConfig {
   payments: PaymentsMode;
 }
+
+/** GET /api/public/bookings/:ref/return (the app's return day), read live by the booking page. */
+export interface TravellerReturn {
+  reference: string;
+  status: BookingStatus;
+  returnAt: string;
+  returnDay: boolean;
+  flight: {
+    number: string | null;
+    status: string | null;
+    scheduledAt: string | null;
+    estimatedAt: string | null;
+    landedAt: string | null;
+    landedSource: string | null;
+    terminal: string | null;
+    gate: string | null;
+  };
+  flightTracked: boolean;
+  meetingPoint: { lat: number; lng: number; label: string | null; instructions: string | null } | null;
+  atMeetingPointAt: string | null;
+  shuttle: {
+    tripId: string;
+    direction: "pickup" | "dropoff";
+    mine: boolean;
+    startedAt: string;
+    vehicle: { model: string | null; colour: string | null; plate: string | null };
+    driverFirstName: string;
+    position: LatLng | null;
+    positionAgeSeconds: number | null;
+    distanceM: number | null;
+    etaMinutes: number | null;
+    etaAt: string | null;
+  } | null;
+  parking: { name: string; phone: string | null; shuttleMinutes: number | null; address: string | null; location: LatLng | null };
+  plate: string;
+  spot: { code: string; stayClass: string | null } | null;
+}

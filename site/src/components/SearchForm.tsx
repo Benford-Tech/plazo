@@ -17,6 +17,7 @@ export function SearchForm({
   floating = false,
   keepMap = false,
   compactPhone = false,
+  stacked = false,
 }: {
   airport: { slug: string; name: string; code?: string };
   arrivee: string | null;
@@ -33,18 +34,20 @@ export function SearchForm({
    * pills, and no airport pill while there is a single airport (its value is still sent).
    */
   compactPhone?: boolean;
+  /** Fields under one another at every width (the home's half-width column, T-A). */
+  stacked?: boolean;
 }) {
   const airports = AIRPORTS.some(a => a.slug === airport.slug) ? AIRPORTS : [{ slug: airport.slug, name: airport.name }, ...AIRPORTS];
   return (
     <form
       action="/recherche"
       method="get"
-      className={`flex flex-col gap-2.5 rounded-[20px] bg-white p-3 text-ink xl:flex-row xl:items-start ${
-        floating ? "shadow-[0_24px_50px_-20px_rgba(30,10,40,.55)]" : "border border-line"
+      className={`flex flex-col gap-2.5 rounded-[22px] bg-white p-3 text-ink ${stacked ? "" : "xl:flex-row xl:items-start"} ${
+        floating ? "shadow-[0_24px_50px_-20px_rgba(30,20,10,.35)]" : "shadow-[0_18px_40px_-22px_rgba(30,20,10,.35)]"
       }`}
     >
       {keepMap && <input type="hidden" name="carte" value="1" />}
-      <div className={`${pillBox} ${pillFocusWithin} w-full xl:w-[250px] xl:flex-none ${compactPhone && airports.length === 1 ? "max-sm:hidden" : ""}`}>
+      <div className={`${pillBox} ${pillFocusWithin} w-full ${stacked ? "" : "xl:w-[250px] xl:flex-none"} ${compactPhone && airports.length === 1 ? "max-sm:hidden" : ""}`}>
         <IconChip>
           <PlaneIcon />
         </IconChip>
@@ -67,7 +70,7 @@ export function SearchForm({
         minDate={minDate}
         errors={errors}
         phoneSummary={compactPhone}
-        className="sm:flex-row xl:min-w-0 xl:flex-1"
+        className={stacked ? "" : "sm:flex-row xl:min-w-0 xl:flex-1"}
       />
       <button type="submit" className="btn-primary h-14 flex-none px-7 text-[17px]">
         {fr.search.submit}

@@ -4,6 +4,7 @@ import { CancelForm } from "@/components/CancelForm";
 import { FlightForm } from "@/components/FlightForm";
 import { LookupForm } from "@/components/LookupForm";
 import { Plate } from "@/components/Plate";
+import { ReturnLive } from "@/components/ReturnLive";
 import { StatusBadge } from "@/components/StatusBadge";
 import { api, ApiError } from "@/lib/api";
 import { cancelAction, changeFlightAction, lookupAction } from "@/lib/actions";
@@ -15,7 +16,7 @@ import { formatEuros } from "@/lib/money";
 import { managePath as manageHrefFor, REFERENCE_RE } from "@/lib/manage-access";
 import { manageTokenFor } from "@/lib/manage-session";
 import { firstName, formatPhone, isFrenchMobile } from "@/lib/phone";
-import type { PublicBooking } from "@/lib/types";
+import type { PublicBooking, TravellerReturn } from "@/lib/types";
 
 export const dynamic = "force-dynamic";
 
@@ -52,7 +53,7 @@ export default async function ManageBookingPage({ params, searchParams }: PagePr
   if (!booking) {
     return (
       <main className="mx-auto flex w-full max-w-[560px] flex-col gap-4 px-4 py-6 md:py-12">
-        <section className="flex flex-col gap-2.5 rounded-[16px] bg-tint p-4 md:p-6">
+        <section className="flex flex-col gap-2.5 rounded-[22px] bg-white p-4 md:p-6">
           <h1 className="font-title text-2xl md:text-[30px]">{fr.manage.notFoundTitle}</h1>
           <p className="text-sm leading-snug text-soft">{fr.manage.notFoundText}</p>
           <LookupForm action={lookupAction} reference={reference.toUpperCase()} />
@@ -73,7 +74,7 @@ export default async function ManageBookingPage({ params, searchParams }: PagePr
     return (
       <main className="mx-auto flex w-full max-w-[560px] flex-col gap-4 px-4 py-8 md:py-12">
         <meta httpEquiv="refresh" content="3" />
-        <section role="status" className="flex flex-col items-start gap-3 rounded-[20px] bg-tint p-5 md:p-6">
+        <section role="status" className="flex flex-col items-start gap-3 rounded-[22px] bg-white p-5 md:p-6">
           <span aria-hidden="true" className="size-8 animate-spin rounded-full border-[3px] border-lilac border-t-accent" />
           <h1 className="font-title text-[26px] md:text-[30px]">{fr.pay.verifyingTitle}</h1>
           <p className="text-soft">{fr.pay.verifyingText}</p>
@@ -114,6 +115,16 @@ export default async function ManageBookingPage({ params, searchParams }: PagePr
   ) : (
     ` ${fr.manage.contactParkingDesk}`
   );
+  // The vehicle is at the parking: the live return block (the landing, the shuttle, the car's spot).
+  const onSite = b.status === "arrived" || b.status === "shuttled_out" || b.status === "return_requested";
+  let returnState: TravellerReturn | null = null;
+  if (onSite) {
+    try {
+      returnState = await api.returnState(b.reference, token);
+    } catch {
+      returnState = null;
+    }
+  }
   const steps: [string, string][] = [
     [fr.manage.step1Title, fr.manage.step1Text(b.parking.address, b.parking.shuttleMinutes)],
     [fr.manage.step2Title, t.manage.step2Text(total)],
@@ -123,14 +134,14 @@ export default async function ManageBookingPage({ params, searchParams }: PagePr
   return (
     <>
       {confirmed ? (
-        <section className="on-dark bg-hero text-white">
-          <div className="mx-auto flex max-w-[720px] flex-col gap-2.5 px-4 pt-6 pb-[30px]">
+        <section className="on-dark mx-auto w-full max-w-[720px] px-4 pt-6">
+          <div className="flex flex-col gap-2.5 rounded-[22px] bg-hero px-5 pt-5 pb-6 text-white shadow-[0_18px_40px_-18px_rgba(255,102,0,.5)]">
             <span aria-hidden="true" className="flex size-12 items-center justify-center rounded-full bg-white/20 text-2xl">
               ✓
             </span>
             <h1 className="font-title text-[32px] leading-tight md:text-[40px]">{fr.manage.confirmedTitle(firstName(b.customerName))}</h1>
             <p className="text-[15px] text-lilac">{fr.manage.confirmedText(b.customerEmail, isFrenchMobile(b.customerPhone) ? formatPhone(b.customerPhone) : null)}</p>
-            <div className="mt-1.5 flex items-center justify-between rounded-[16px] bg-white px-3.5 py-3 text-ink">
+            <div className="mt-1.5 flex items-center justify-between rounded-[22px] bg-white px-3.5 py-3 text-ink">
               <span className="text-[13px] text-soft">{fr.manage.reference}</span>
               <b className="text-2xl tracking-[.08em]">{b.reference}</b>
             </div>
@@ -143,13 +154,14 @@ export default async function ManageBookingPage({ params, searchParams }: PagePr
       )}
 
       <main className="mx-auto flex w-full max-w-[720px] flex-col gap-[18px] px-4 py-[18px] md:pb-12">
+        {onSite && <ReturnLive reference={b.reference} token={token} initial={returnState} />}
         {b.status === "cancelled" && (
-          <p role="status" className="rounded-[16px] bg-danger-bg p-4 font-semibold text-danger">
+          <p role="status" className="rounded-[22px] bg-danger-bg p-4 font-semibold text-danger">
             {justCancelled ? (refunded ? t.manage.cancelledNow : fr.manage.cancelledNow) : refunded ? fr.manage.cancelledRefunded : fr.manage.cancelled}
           </p>
         )}
 
-        <section aria-labelledby="recap" className="rounded-[16px] border border-line px-4 py-3.5">
+        <section aria-labelledby="recap" className="card px-4 py-4 md:px-[22px]">
           <div className="flex items-center justify-between gap-3">
             <h2 id="recap" className="font-title text-[21px]">
               {b.parking.title}
@@ -220,7 +232,7 @@ export default async function ManageBookingPage({ params, searchParams }: PagePr
 
         <div id="gerer" className="flex scroll-mt-4 flex-col gap-4">
           {active && (
-            <section aria-labelledby="vol" className="flex flex-col gap-2.5 rounded-[16px] border border-line px-4 py-3.5">
+            <section aria-labelledby="vol" className="flex flex-col gap-2.5 card px-4 py-3.5">
               <h2 id="vol" className="text-base font-bold">
                 {fr.manage.flightTitle}
               </h2>
@@ -233,7 +245,7 @@ export default async function ManageBookingPage({ params, searchParams }: PagePr
           )}
 
           {b.status === "upcoming" && (
-            <section aria-labelledby="annuler" className="flex flex-col gap-2 rounded-[16px] border border-danger-line px-4 py-3.5">
+            <section aria-labelledby="annuler" className="flex flex-col gap-2 rounded-[22px] border border-danger-line px-4 py-3.5">
               <h2 id="annuler" className="text-base font-bold">
                 {fr.manage.cancelTitle}
               </h2>

@@ -1,5 +1,5 @@
 import type { Metadata, Viewport } from "next";
-import { Inter, Playfair_Display } from "next/font/google";
+import { Manrope, Playfair_Display } from "next/font/google";
 import { SiteFooter } from "@/components/SiteFooter";
 import { SiteHeader } from "@/components/SiteHeader";
 import { fr, texts } from "@/lib/fr";
@@ -9,7 +9,8 @@ import { openGraph } from "@/lib/seo";
 import { siteUrl } from "@/lib/site";
 import "./globals.css";
 
-const inter = Inter({ subsets: ["latin"], variable: "--font-inter", display: "swap" });
+// F-A (05/10/2026): Manrope for the text and the figures, Playfair italic kept as the signature of the titles.
+const manrope = Manrope({ subsets: ["latin"], weight: ["500", "600", "700", "800"], variable: "--font-manrope", display: "swap" });
 const playfair = Playfair_Display({
   subsets: ["latin"],
   style: ["italic"],
@@ -32,12 +33,12 @@ export async function generateMetadata(): Promise<Metadata> {
 }
 
 export const viewport: Viewport = {
-  themeColor: "#ff6600",
+  themeColor: "#ececee",
 };
 
 export default function RootLayout({ children }: LayoutProps<"/">) {
   return (
-    <html lang="fr" className={`${inter.variable} ${playfair.variable}`}>
+    <html lang="fr" className={`${manrope.variable} ${playfair.variable}`}>
       <body className="flex min-h-dvh flex-col font-sans antialiased">
         <a
           href="#contenu"

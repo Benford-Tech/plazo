@@ -55,7 +55,7 @@ export function BookingForm({
   });
   const hiddenErrors = HIDDEN_FIELDS.filter(name => f[name]);
   const unavailable = state.error !== null && UNAVAILABLE.includes(state.error);
-  const sectionClass = "flex flex-col gap-3.5 rounded-[20px] border border-line p-4 md:p-[22px]";
+  const sectionClass = "card flex flex-col gap-3.5 p-4 md:p-[22px]";
   const sectionTitle = "font-title text-[22px] md:text-2xl";
   const t = texts(online);
 
@@ -67,7 +67,7 @@ export function BookingForm({
       {idempotencyKey && <input type="hidden" name="idempotencyKey" value={idempotencyKey} />}
 
       {state.error && (
-        <div ref={alertRef} tabIndex={-1} role="alert" className="flex flex-col gap-2 rounded-[16px] border border-danger-line bg-danger-bg p-4 text-danger">
+        <div ref={alertRef} tabIndex={-1} role="alert" className="flex flex-col gap-2 rounded-[22px] border border-danger-line bg-danger-bg p-4 text-danger">
           {unavailable ? (
             <>
               <p className="font-bold">{fr.booking.unavailableTitle}</p>

@@ -1,18 +1,21 @@
 @import "tailwindcss";
 
-/* Direction M3 "Plazo voyageur": easyJet-orange header (T-A, 03/10/2026), light-orange accent (V-A), peach highlight, rounded cards. No purple left. */
+/* Direction T-A "Parking" (05/10/2026, the same as the traveller app): light grey ground, white cards of 22 px with a soft
+   shadow, no orange header, the easyJet orange kept for the action and one card per screen, Manrope for the text. */
 @theme {
   --color-brand: #ff6600;
   --color-brand-deep: #e65c00;
   --color-dark: #2c1a0e;
-  --color-accent: #ff8a3d;
+  --color-ground: #ececee;
+  --color-accent: #ff6600;
+  --color-accent-light: #ff8a3d;
   --color-accent-dark: #c24e00;
   --color-peach: #f0a36b;
   --color-ink: #1e1e1e;
   --color-soft: #6f6a66;
-  --color-line: #ece4de;
-  --color-tint: #fff7f1;
-  --color-lilac: #ffe3cc;
+  --color-line: #e3e1de;
+  --color-tint: #f5f5f7;
+  --color-lilac: #efe9e2;
   --color-ok-bg: #e3f5eb;
   --color-ok: #0c7440;
   --color-danger: #8f0f35;
@@ -21,11 +24,34 @@
   --color-plate-blue: #1f3fa6;
   --color-plate-ink: #0b0b0c;
 
-  --font-sans: var(--font-inter), ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
+  --font-sans: var(--font-manrope), ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
   --font-display: var(--font-playfair), Georgia, "Times New Roman", serif;
 
-  --radius-card: 16px;
-  --radius-panel: 20px;
+  --radius-card: 22px;
+  --radius-panel: 22px;
+  --shadow-card: 0 18px 40px -22px rgba(30, 20, 10, 0.35);
+}
+
+/* A white card on the grey ground (the mockup's), no border. */
+@utility card {
+  background: #ffffff;
+  border-radius: var(--radius-card);
+  box-shadow: var(--shadow-card);
+}
+
+/* A floating pill over the map or a photo. */
+@utility pill-float {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  border-radius: 9999px;
+  background: #ffffff;
+  padding: 7px 12px;
+  font-size: 13px;
+  font-weight: 800;
+  color: var(--color-ink);
+  white-space: nowrap;
+  box-shadow: 0 10px 24px -10px rgba(0, 0, 0, 0.35);
 }
 
 @utility font-title {
@@ -35,10 +61,10 @@
 }
 
 @utility bg-hero {
-  background: linear-gradient(160deg, #ff6600, #ff8a3d 60%, #f0a36b);
+  background: #ff6600;
 }
 
-/* Primary action: light orange -> peach gradient, pill shape, soft shadow. */
+/* Primary action: plain easyJet orange, pill shape, orange shadow (T-A). */
 @utility btn-primary {
   display: inline-flex;
   align-items: center;
@@ -47,11 +73,11 @@
   min-height: 44px;
   border: none;
   border-radius: 9999px;
-  background: linear-gradient(96deg, #ff8a3d, #f0a36b);
+  background: var(--color-accent);
   color: #ffffff;
-  font-weight: 700;
+  font-weight: 800;
   text-decoration: none;
-  box-shadow: 0 8px 22px -8px rgba(207, 79, 110, 0.55);
+  box-shadow: 0 12px 26px -10px rgba(255, 102, 0, 0.55);
   cursor: pointer;
   &:hover {
     filter: brightness(1.05);
@@ -74,7 +100,7 @@
   border-radius: 9999px;
   background: #ffffff;
   color: var(--color-ink);
-  font-weight: 600;
+  font-weight: 700;
   text-decoration: none;
   cursor: pointer;
   &:hover {
@@ -94,7 +120,7 @@
   }
 
   body {
-    background: #ffffff;
+    background: var(--color-ground);
     color: var(--color-ink);
   }
 
@@ -121,7 +147,7 @@
     width: 100%;
     min-width: 0;
     border: 1px solid var(--color-line);
-    border-radius: var(--radius-card);
+    border-radius: 16px;
     background: #ffffff;
     padding: 0 14px;
     font-size: 16px;
