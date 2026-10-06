@@ -8,6 +8,7 @@ import { localDate } from '@/domain/time';
 import { ChangePasswordDto, CreateStaffDto, UpdateStaffDto } from '@/dtos/staff.dto';
 import { AuthenticatedStaff } from '@/interfaces/auth.interface';
 import { HttpException } from '@/utils/httpException';
+import { namesOf } from '@/domain/staff-name';
 import { AuditService } from './audit.service';
 import { TokenService } from './token.service';
 
@@ -159,7 +160,7 @@ export class StaffService {
       data: {
         operatorId: actor.operatorId,
         email,
-        name: data.name.trim(),
+        ...namesOf(data),
         phone: data.phone?.trim() || null,
         role: data.role,
         password: await hash(data.password, BCRYPT_ROUNDS),

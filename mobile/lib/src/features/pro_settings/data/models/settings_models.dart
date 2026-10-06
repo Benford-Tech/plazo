@@ -10,6 +10,8 @@ abstract class TeamMemberModel with _$TeamMemberModel {
     required String id,
     required String email,
     required String name,
+    @Default('') String firstName,
+    @Default('') String lastName,
     String? phone,
     required String role,
     @Default(true) bool isActive,

@@ -127,7 +127,8 @@ export default function SignupPage() {
               </div>
             </div>
             <div className="grid gap-4 sm:grid-cols-2">
-              <FormField id="managerName" label={t.managerName} autoComplete="name" required maxLength={120} value={form.managerName} onChange={set("managerName")} error={fieldErrors.managerName} />
+              <FormField id="firstName" label={t.firstName} autoComplete="given-name" required maxLength={60} value={form.firstName} onChange={set("firstName")} error={fieldErrors.firstName} />
+              <FormField id="lastName" label={t.lastName} autoComplete="family-name" required maxLength={60} value={form.lastName} onChange={set("lastName")} error={fieldErrors.lastName} />
               <FormField id="phone" label={t.phone} type="tel" autoComplete="tel" required value={form.phone} onChange={set("phone")} error={fieldErrors.phone} />
             </div>
             <FormField id="email" label={t.email} type="email" autoComplete="email" required value={form.email} onChange={set("email")} error={fieldErrors.email} />

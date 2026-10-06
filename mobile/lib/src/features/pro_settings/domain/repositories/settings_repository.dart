@@ -7,7 +7,8 @@ import '../../data/models/settings_models.dart';
 abstract class SettingsRepository {
   Future<Either<Failure, List<TeamMemberModel>>> team();
   Future<Either<Failure, TeamMemberModel>> createStaff({
-    required String name,
+    required String firstName,
+    required String lastName,
     required String email,
     String? phone,
     required String role,
@@ -34,12 +35,13 @@ class SettingsRepositoryImpl implements SettingsRepository {
 
   @override
   Future<Either<Failure, TeamMemberModel>> createStaff({
-    required String name,
+    required String firstName,
+    required String lastName,
     required String email,
     String? phone,
     required String role,
     required String password,
-  }) => _source.createStaff(name: name, email: email, phone: phone, role: role, password: password).makeRequest();
+  }) => _source.createStaff(firstName: firstName, lastName: lastName, email: email, phone: phone, role: role, password: password).makeRequest();
 
   @override
   Future<Either<Failure, TeamMemberModel>> updateStaff(String id, {String? role, bool? isActive}) =>

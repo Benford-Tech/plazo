@@ -219,6 +219,12 @@ Le nom du produit doit rester dans UN seul fichier de configuration (il peut enc
   nom du produit recopié depuis `product.json` par `tool/sync_product.dart`, builds par `codemagic.yaml` (racine du dépôt, `working_directory: mobile`).
   Voir `mobile/README.md`.
 
+## Personnel
+
+- Chaque membre a un **prénom et un nom** (06/10/2026 : `Staff.firstName/lastName`, `name` = « Prénom Nom » calculé par le serveur,
+  `domain/staff-name.ts`) : création d'un membre, inscription du gérant et invitation par la plateforme en deux champs ; les pushs
+  et la remarque de remise utilisent le prénom.
+
 ## Conventions (reprises de LoveNest)
 
 - Serveur : une route `xxx.route.ts` (classe `Routes`, JSDoc Swagger) → un contrôleur

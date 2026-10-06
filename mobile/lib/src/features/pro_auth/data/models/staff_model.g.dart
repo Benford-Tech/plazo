@@ -9,6 +9,8 @@ part of 'staff_model.dart';
 _StaffModel _$StaffModelFromJson(Map<String, dynamic> json) => _StaffModel(
   id: json['id'] as String,
   name: json['name'] as String,
+  firstName: json['firstName'] as String? ?? '',
+  lastName: json['lastName'] as String? ?? '',
   email: json['email'] as String,
   role: json['role'] as String,
   operatorName: json['operatorName'] as String?,
@@ -31,6 +33,8 @@ Map<String, dynamic> _$StaffModelToJson(_StaffModel instance) =>
     <String, dynamic>{
       'id': instance.id,
       'name': instance.name,
+      'firstName': instance.firstName,
+      'lastName': instance.lastName,
       'email': instance.email,
       'role': instance.role,
       'operatorName': instance.operatorName,

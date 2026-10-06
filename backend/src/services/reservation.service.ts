@@ -380,7 +380,7 @@ export class ReservationService {
     const now = new Date();
     // A remark made with the change (06/10/2026: the handover checklist's "dégât, litige…") joins the notes, dated and signed.
     const remark = note?.trim();
-    const stamp = `${localDateTime(now, 'Europe/Paris').slice(0, 16).replace('T', ' ')} · ${actor.name.split(' ')[0]}`;
+    const stamp = `${localDateTime(now, 'Europe/Paris').slice(0, 16).replace('T', ' ')} · ${actor.firstName || actor.name.split(' ')[0]}`;
     const notes = remark ? [before.notes?.trim(), `[${stamp}] ${remark}`].filter(Boolean).join('\n') : undefined;
     const after = await client.reservation.update({
       where: { id: before.id },

@@ -30,6 +30,16 @@ export class InviteOperatorDto {
   @MaxLength(120, { message: 'too_long' })
   public managerName?: string;
 
+  @IsOptional()
+  @IsString()
+  @MaxLength(60, { message: 'too_long' })
+  public managerFirstName?: string;
+
+  @IsOptional()
+  @IsString()
+  @MaxLength(60, { message: 'too_long' })
+  public managerLastName?: string;
+
   @Type(() => Number)
   @IsInt({ message: 'integer' })
   @Min(1, { message: 'min_1' })

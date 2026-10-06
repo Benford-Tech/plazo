@@ -262,7 +262,7 @@ const vehicleView = (v: VehicleRow, timezone: string): ShuttleVehicleView => {
     holderName: holder?.name ?? null,
   };
 };
-const WITH_DRIVER_AND_HOLDERS = { driver: { select: { name: true } }, holders: true } as const;
+const WITH_DRIVER_AND_HOLDERS = { driver: { select: { name: true, firstName: true } }, holders: true } as const;
 
 const stopView = (stop: ShuttleStop): ShuttleStopView => ({
   id: stop.id,
@@ -797,7 +797,11 @@ export class ShuttleService {
     const [trips, meeting, here] = await Promise.all([
       prisma.shuttleTrip.findMany({
         where: { operatorId: actor.operatorId, status: 'running' },
-        include: { driver: { select: { name: true } }, stop: true, passengers: { include: { reservation: { select: { passengers: true } } } } },
+        include: {
+          driver: { select: { name: true, firstName: true } },
+          stop: true,
+          passengers: { include: { reservation: { select: { passengers: true } } } },
+        },
         orderBy: { startedAt: 'asc' },
       }),
       this.meetingOf(parking.id, parking.address),
@@ -851,7 +855,7 @@ export class ShuttleService {
     await this.sweep({ operatorId: actor.operatorId });
     const trips = await prisma.shuttleTrip.findMany({
       where: { operatorId: actor.operatorId, status: 'running' },
-      include: { driver: { select: { name: true } }, passengers: { select: { reservationId: true } } },
+      include: { driver: { select: { name: true, firstName: true } }, passengers: { select: { reservationId: true } } },
       orderBy: { startedAt: 'asc' },
     });
     return trips.map(t => ({
@@ -871,7 +875,9 @@ export class ShuttleService {
     await this.sweep({ reservationId });
     const passenger = await prisma.shuttleTripPassenger.findFirst({
       where: { reservationId, trip: { status: 'running', direction: 'pickup' } },
-      include: { trip: { include: { driver: { select: { name: true } }, parking: { select: { id: true, address: true } }, stop: true } } },
+      include: {
+        trip: { include: { driver: { select: { name: true, firstName: true } }, parking: { select: { id: true, address: true } }, stop: true } },
+      },
     });
     if (!passenger) return null;
     const trip = passenger.trip;
@@ -899,7 +905,7 @@ export class ShuttleService {
     await this.sweep({ parkingId: booking.parkingId });
     const trips = await prisma.shuttleTrip.findMany({
       where: { parkingId: booking.parkingId, status: 'running' },
-      include: { driver: { select: { name: true } }, passengers: { select: { reservationId: true } }, stop: true },
+      include: { driver: { select: { name: true, firstName: true } }, passengers: { select: { reservationId: true } }, stop: true },
       orderBy: { startedAt: 'asc' },
     });
     if (!trips.length) return { phase, serverTime: now.toISOString(), shuttles: [] };
@@ -927,7 +933,7 @@ export class ShuttleService {
   }
 
   private travellerView(
-    trip: ShuttleTrip & { driver: { name: string } },
+    trip: ShuttleTrip & { driver: { name: string; firstName?: string } },
     options: { mine: boolean; meeting: MeetingPoint | null; destination: ShuttleDestination | null },
   ): TravellerShuttle {
     const now = new Date();
@@ -939,7 +945,7 @@ export class ShuttleService {
       mine: options.mine,
       startedAt: trip.startedAt.toISOString(),
       vehicle: { model: trip.vehicleModel, colour: trip.vehicleColour, plate: trip.vehiclePlate },
-      driverFirstName: firstName(trip.driver.name),
+      driverFirstName: trip.driver.firstName || firstName(trip.driver.name),
       position,
       positionAgeSeconds:
         position && trip.positionReceivedAt ? Math.max(0, Math.round((now.getTime() - trip.positionReceivedAt.getTime()) / 1000)) : null,
@@ -998,7 +1004,7 @@ export class ShuttleService {
     const trip = await prisma.shuttleTrip.findUnique({
       where: { id },
       include: {
-        driver: { select: { name: true } },
+        driver: { select: { name: true, firstName: true } },
         parking: { select: { id: true, address: true } },
         stop: true,
         passengers: {

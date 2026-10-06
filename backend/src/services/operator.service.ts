@@ -1,4 +1,5 @@
 import { hash } from 'bcrypt';
+import { namesOf } from '@/domain/staff-name';
 import { randomBytes } from 'crypto';
 import httpStatus from 'http-status';
 import { Service } from 'typedi';
@@ -11,7 +12,10 @@ export interface OperatorSetup {
   operatorName: string;
   parkingName: string;
   totalCapacity: number;
-  managerName: string;
+  /** The manager's first and last name; `managerName` alone (scripts) is split on its first space. */
+  managerName?: string;
+  managerFirstName?: string;
+  managerLastName?: string;
   managerEmail: string;
   /** null: an invited manager, who chooses the password through the invitation link. */
   managerPassword: string | null;
@@ -74,7 +78,7 @@ export class OperatorService {
           data: {
             operatorId: operator.id,
             email,
-            name: data.managerName.trim(),
+            ...namesOf({ firstName: data.managerFirstName, lastName: data.managerLastName, name: data.managerName }),
             phone: data.managerPhone?.trim() || null,
             role: 'manager',
             password,

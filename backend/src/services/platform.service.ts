@@ -261,6 +261,8 @@ export class PlatformService {
       operatorName: data.operatorName,
       parkingName: data.operatorName,
       totalCapacity: data.totalCapacity,
+      managerFirstName: data.managerFirstName,
+      managerLastName: data.managerLastName,
       managerName: data.managerName?.trim() || data.operatorName,
       managerEmail: normalizeEmail(data.managerEmail),
       managerPassword: null,

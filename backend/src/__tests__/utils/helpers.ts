@@ -31,7 +31,8 @@ export async function setupOperator(name = 'Parking Test') {
     operatorName: `${name} ${counter}`,
     parkingName: `${name} LYS`,
     totalCapacity: 200,
-    managerName: 'Gérant Test',
+    managerFirstName: 'Gérant',
+    managerLastName: 'Test',
     managerEmail: `gerant${counter}@example.com`,
     managerPassword: PASSWORD,
   });
@@ -46,7 +47,7 @@ export async function addStaff(managerToken: string, role: string) {
   const res = await api()
     .post('/api/internal/staff')
     .set('Authorization', `Bearer ${managerToken}`)
-    .send({ name: `${role} ${counter}`, email, role, password: PASSWORD });
+    .send({ firstName: role, lastName: `${counter}`, email, role, password: PASSWORD });
   if (res.status !== 201) throw new Error(`addStaff failed: ${res.status} ${JSON.stringify(res.body)}`);
   const session = await login(email);
   return { id: res.body.data.id as string, email, token: session.tokenData.access.token, session };

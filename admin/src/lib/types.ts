@@ -15,6 +15,9 @@ export interface Staff {
   id: string;
   operatorId: string;
   email: string;
+  /** First and last name (06/10/2026); `name` is the display form "Prénom Nom". */
+  firstName?: string;
+  lastName?: string;
   name: string;
   phone: string | null;
   role: StaffRole;
@@ -61,7 +64,8 @@ export interface ParkingSettings {
 }
 
 export interface NewStaff {
-  name: string;
+  firstName: string;
+  lastName: string;
   email: string;
   phone?: string;
   role: StaffRole;
@@ -404,7 +408,8 @@ export interface SignupInput {
   parkingName: string;
   totalCapacity: number;
   airportCode: string;
-  managerName: string;
+  firstName: string;
+  lastName: string;
   email: string;
   phone: string;
   password: string;

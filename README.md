@@ -72,6 +72,7 @@ npm install
 npm run prisma:deploy         # crée les tables
 npm run seed:operator -- --operator "Mon parking" --capacity 250 \
   --name "Prénom Nom" --email gerant@exemple.fr --password "mot-de-passe-solide"
+# (le prénom est le premier mot, le reste est le nom : chaque membre a un prénom et un nom depuis le 06/10/2026)
 npm run dev
 
 # Espace pro (http://localhost:8080/pro/ ; /api est relayé vers le serveur local)

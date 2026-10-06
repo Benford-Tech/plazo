@@ -281,7 +281,7 @@ export default function DashboardPage() {
   return (
     <div className="space-y-3">
       <div className="flex flex-wrap items-center gap-x-3 gap-y-1 px-1 font-mono text-[13px] text-muted-foreground">
-        <h1 className="font-sans text-2xl font-bold uppercase tracking-wide text-foreground">{t.hello(user?.name?.split(" ")[0] ?? "")}</h1>
+        <h1 className="font-sans text-2xl font-bold uppercase tracking-wide text-foreground">{t.hello(user?.firstName || (user?.name?.split(" ")[0] ?? ""))}</h1>
         <span>/</span>
         <span>{d.parking.name}</span>
         <span>/</span>

@@ -76,6 +76,9 @@ model Staff {
   id              String     @id @default(cuid())
   operatorId      String
   email           String     @unique // always lower-cased
+  // First and last name (06/10/2026); `name` stays the display form "Prénom Nom", kept in sync by the server.
+  firstName       String     @default("")
+  lastName        String     @default("")
   name            String
   phone           String?
   role            StaffRole

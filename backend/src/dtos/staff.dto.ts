@@ -8,8 +8,13 @@ export const MIN_PASSWORD_LENGTH = 10;
 export class CreateStaffDto {
   @IsString()
   @IsNotEmpty({ message: 'required' })
-  @MaxLength(120, { message: 'too_long' })
-  public name: string;
+  @MaxLength(60, { message: 'too_long' })
+  public firstName: string;
+
+  @IsString()
+  @IsNotEmpty({ message: 'required' })
+  @MaxLength(60, { message: 'too_long' })
+  public lastName: string;
 
   @IsEmail({}, { message: 'invalid_email' })
   public email: string;

@@ -1192,7 +1192,9 @@
     "updated": "Membre mis à jour",
     "reset_password": "Nouveau mot de passe",
     "password_reset": "Mot de passe réinitialisé. Ses sessions ont été fermées.",
-    "you": "vous"
+    "you": "vous",
+    "first_name": "Prénom",
+    "last_name": "Nom"
   },
   "account": {
     "title": "Mon compte",
