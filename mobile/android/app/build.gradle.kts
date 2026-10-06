@@ -73,6 +73,8 @@ android {
     buildTypes {
         release {
             signingConfig = if (keystorePropertiesFile.exists()) signingConfigs.getByName("release") else signingConfigs.getByName("debug")
+            // Keeps the Stripe SDK whole under R8 (flutter_stripe README, Android step 7).
+            proguardFiles(getDefaultProguardFile("proguard-android-optimize.txt"), "proguard-rules.pro")
         }
     }
 }

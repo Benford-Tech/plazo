@@ -79,7 +79,9 @@ class StripePaymentSheetService implements PaymentSheetService {
       return PaymentSheetOutcome(PaymentSheetResult.failed, message: e.error.localizedMessage);
     } catch (e) {
       debugPrint('Payment sheet error: ${e.runtimeType}');
-      return const PaymentSheetOutcome(PaymentSheetResult.failed);
+      // Test keys only: the raw error helps diagnose a device or setup problem; never with live keys.
+      final testKeys = publishableKey.startsWith('pk_test_');
+      return PaymentSheetOutcome(PaymentSheetResult.failed, message: testKeys ? '[test] ${e.runtimeType} : $e' : null);
     }
   }
 }
