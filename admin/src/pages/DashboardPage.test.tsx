@@ -174,7 +174,9 @@ describe("DashboardPage", () => {
     renderPage();
     expect(await screen.findByText("Rien à traiter : tout est en ordre.")).toBeInTheDocument();
     expect(screen.getByText("Aucun véhicule sur le parking.")).toBeInTheDocument();
-    expect(await screen.findByText("Aucune navette en route.")).toBeInTheDocument();
+    // No shuttle running: the map stays clean, without an empty-state pill.
+    expect(await screen.findByTestId("live-shuttles-map")).toHaveTextContent("0 trajets");
+    expect(screen.queryByText(/Aucune navette/)).not.toBeInTheDocument();
     expect(screen.getByTestId("kpi-to-treat")).toHaveTextContent("rien d'urgent");
   });
 });

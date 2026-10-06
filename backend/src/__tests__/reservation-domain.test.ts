@@ -1,3 +1,4 @@
+import { ANONYMIZED_TRAVELLER, anonymizeReturnedBefore, PERSONAL_AUDIT_KEYS } from '@/domain/retention';
 import { canTransition, formatFlight, formatPlate, newReference, plateKey } from '@/domain/reservation';
 import { addDays, dayBounds, exceedsCalendarDays, localDate, parseInstant } from '@/domain/time';
 import { occupiedNights } from '@/services/capacity.service';
@@ -88,5 +89,17 @@ describe('plaques, vols, statuts', () => {
 
   it('génère des références lisibles', () => {
     expect(newReference()).toMatch(/^R[A-HJ-NP-Z2-9]{5}$/);
+  });
+});
+
+describe('retention (privacy policy)', () => {
+  it('anonymises the bookings returned more than 12 calendar months ago', () => {
+    expect(anonymizeReturnedBefore(new Date('2027-10-06T01:00:00Z')).toISOString()).toBe('2026-10-06T01:00:00.000Z');
+    expect(anonymizeReturnedBefore(new Date('2027-01-15T00:00:00Z')).toISOString()).toBe('2026-01-15T00:00:00.000Z');
+  });
+
+  it('scrubs from the audit details every field it clears, plus the landed flight', () => {
+    expect(PERSONAL_AUDIT_KEYS).toEqual(expect.arrayContaining([...Object.keys(ANONYMIZED_TRAVELLER), 'flight']));
+    expect(PERSONAL_AUDIT_KEYS).not.toContain('reference');
   });
 });

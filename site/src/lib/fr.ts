@@ -614,8 +614,10 @@ const frBase = {
       `Réservation ${reference}. ${total ? `${total} à payer sur place. ` : "Paiement sur place. "}Gérer la réservation : ${manageUrl}`,
   },
   legal: {
-    pending: "À compléter avec le juriste",
-    pendingText: "Ce texte sera rédigé et validé avec un juriste avant l’ouverture du service au public.",
+    draft: "Projet, à valider avec un juriste",
+    draftText: "Ce texte décrit le fonctionnement actuel du service ; il sera relu et validé par un juriste avant l’ouverture au public.",
+    version: (date: string) => `Version du ${date}`,
+    contents: "Sommaire",
     terms: "Conditions générales",
     privacy: "Politique de confidentialité",
     legalNotice: "Mentions légales",

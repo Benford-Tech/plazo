@@ -1,5 +1,16 @@
 {
   "name": "Plazo",
   "tagline": "Gestion de parkings d'aéroport",
-  "supportEmail": "support@example.com"
+  "supportEmail": "support@example.com",
+  "company": {
+    "name": "Plazo Aéroports",
+    "legalForm": "",
+    "shareCapital": "",
+    "address": "",
+    "registration": "",
+    "vatNumber": "",
+    "phone": "",
+    "publicationDirector": "",
+    "mediator": ""
+  }
 }
