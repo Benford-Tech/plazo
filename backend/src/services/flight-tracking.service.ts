@@ -381,8 +381,9 @@ export class FlightTrackingService {
         { data: { type: 'flight', event: 'landed', reservationId }, collapseId: `flight-${reservationId}` },
       );
     }
-    // The traveller who tapped "J'ai atterri" is in the app already: no SMS for them.
-    if (source !== 'tracking' || booking.channel !== 'plazo' || !booking.parking.listing) return;
+    // The traveller who tapped "J'ai atterri" is in the app already: no SMS for them. B (06/10/2026): every
+    // channel gets it (phone, comparator…), as long as the number is a mobile and the parking is on Plazo.
+    if (source !== 'tracking' || !booking.parking.listing) return;
     const smsClaim = await prisma.reservation.updateMany({ where: { id: reservationId, landingSmsAt: null }, data: { landingSmsAt: now } });
     if (!smsClaim.count) return;
     const [point] = await prisma.$queryRaw<{ label: string | null; instructions: string | null }[]>`
@@ -396,7 +397,7 @@ export class FlightTrackingService {
       text: landedSms({
         productName: PRODUCT_NAME,
         parkingName: booking.parking.listing.title,
-        meetingLabel: point?.label ?? null,
+        meetingLabel: point?.label ?? booking.parking.listing.airport.name,
         instructions: point?.instructions ?? null,
         phone: booking.parking.listing.contactPhone,
         manageUrl: url,

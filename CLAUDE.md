@@ -116,6 +116,11 @@ Ne construire QUE ce qui règle la douleur n°1 du client.
      `departure_cancelled`, `departure_delayed`, `wave_overflow`) ; dans Plazo Pro, carte « Ligne du jour » en tête de l'onglet
      Navette avec « Démarrer ce trajet » (sens, desserte et passagers présélectionnés) ; le voyageur voit « navette vers le
      terminal prévue vers HH:MM » (`PublicBooking.outbound`).
+   - Décision **B du 06/10/2026 (messages au voyageur)** : confirmation enrichie (vol aller, navette aller, téléphone, rendez-vous
+     au retour, étapes du jour du dépôt), rappel la veille (mail, SMS, push ; cron `remind-tomorrow`, `Reservation.reminderSentAt`),
+     push « Votre voiture est garée » (`parkedNotifiedAt`), push « Bon voyage ! » à la fin de la dépose, SMS d'atterrissage pour
+     tous les canaux, mail et push de clôture après la remise (`closingSentAt`) ; `domain/booking-messages.ts`,
+     `services/traveller-messages.service.ts` ; un message n'échoue jamais l'action qui le déclenche.
    - Décision du 06/10/2026 : **position GPS de la voiture** enregistrée par la personne qui la gare : le voyageur depuis
      l'app (carte « Ma voiture » sur la réservation, du dépôt au retour, note facultative ; `PUT/DELETE
      /public/bookings/:ref/car-location`) ou le voiturier depuis Plazo Pro (fix pris automatiquement à l'affectation de la

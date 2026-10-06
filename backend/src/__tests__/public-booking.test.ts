@@ -129,6 +129,8 @@ describe('réservation sur le site', () => {
         shuttleMinutes: 8,
         openingHours: '24h/24',
         phone: '04 72 00 00 00',
+        meetingLabel: null,
+        meetingInstructions: null,
       },
       arrivalAt: inDays(5, '06:30'),
       returnAt: inDays(7, '15:05'),

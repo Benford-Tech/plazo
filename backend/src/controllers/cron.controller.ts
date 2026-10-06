@@ -8,6 +8,7 @@ import { ShuttleService } from '@/services/shuttle.service';
 import { SmsService } from '@/services/sms.service';
 import { PaymentService } from '@/services/payment.service';
 import { TokenService } from '@/services/token.service';
+import { TravellerMessagesService } from '@/services/traveller-messages.service';
 import catchAsync from '@/utils/catchAsync';
 import { logger } from '@/utils/logger';
 
@@ -19,6 +20,7 @@ export class CronController {
   public shuttle = Container.get(ShuttleService);
   public returns = Container.get(ReturnService);
   public inbound = Container.get(InboundEmailService);
+  public messages = Container.get(TravellerMessagesService);
   public sms = Container.get(SmsService);
 
   /** GET /internal/cron/expire-arrival-signals */
@@ -51,6 +53,13 @@ export class CronController {
     const expired = await this.payments.expireLapsedHolds();
     logger.info(`[Cron] ${expired} lapsed payment holds expired`);
     res.json({ expired });
+  });
+
+  /** GET /internal/cron/remind-tomorrow (B, 06/10/2026): the day-before reminders, once per booking. */
+  public remindTomorrow = catchAsync(async (req: Request, res: Response) => {
+    const result = await this.messages.remindTomorrow();
+    logger.info(`[Cron] Reminders: ${JSON.stringify(result)}`);
+    res.json(result);
   });
 
   /** GET /internal/cron/purge-expired-tokens */

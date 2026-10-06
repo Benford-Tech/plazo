@@ -494,6 +494,11 @@ model Reservation {
   // Sent once per booking when the flight lands: the push to the staff, the SMS to the traveller.
   landingNotifiedAt       DateTime?
   landingSmsAt            DateTime?
+  // The traveller's message thread (B, 06/10/2026), each sent once: the day-before reminder, "votre
+  // voiture est garée", the closing message after the handover.
+  reminderSentAt          DateTime?
+  parkedNotifiedAt        DateTime?
+  closingSentAt           DateTime?
   createdAt               DateTime            @default(now())
   updatedAt               DateTime            @default(now()) @updatedAt
 

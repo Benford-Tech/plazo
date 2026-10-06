@@ -213,6 +213,11 @@ le navigateur de l'espace pro appelle `/api` sur le même domaine (pas de CORS).
      n'accepte que des crons quotidiens : les lectures (app, planning, file du chauffeur) rafraîchissent aussi le vol
      avec le même cache de 5 minutes, donc le bloc fonctionne sans cron (seul le SMS à l'atterrissage dépend alors d'une
      lecture).
+   - **Messages au voyageur (décision B du 06/10/2026)** : confirmation enrichie (vol aller, navette aller prévue, téléphone du
+     parking, point de rendez-vous au retour, « le jour du dépôt » en étapes), rappel la veille (mail + SMS + push, cron
+     `remind-tomorrow`), push « Votre voiture est garée » (place et crochet) quand le voiturier la place, push « Bon voyage ! »
+     à la fin de la navette de dépose, SMS d'atterrissage pour tous les canaux (plus seulement Plazo), mail et push de clôture
+     après la remise (`closingSentAt`). Textes dans `domain/booking-messages.ts`, service `TravellerMessagesService`.
    - Le SMS d'atterrissage (point de rendez-vous, consignes, lien de la réservation) part par le canal SMS du loueur
      (voir « SMS depuis le téléphone du parking ») une seule fois par réservation, seulement quand le fournisseur a vu
      l'atterrissage (pas quand le voyageur l'a déclaré lui-même : il est déjà dans l'app).
@@ -332,6 +337,7 @@ Documentation interactive : `/api/docs` (Swagger). Toutes les routes sont sous `
 | POST | `/internal/inbound/emails/:id/dismiss` · `/attach` | Classer sans suite · rattacher à la réservation saisie (`{ reservationId }`) |
 | GET | `/internal/cron/payouts` | Vercel Cron, chaque jour : transferts des parts dues aux loueurs |
 | GET | `/internal/cron/expire-payment-holds` | Vercel Cron (facultatif) : expire les places tenues non payées |
+| GET | `/internal/cron/remind-tomorrow` | Vercel Cron, 16 h UTC : rappel de la veille aux réservations attendues le lendemain (mail, SMS par le canal du loueur, push ; une fois, `reminderSentAt`) |
 | GET | `/internal/cron/track-return-flights` | Vercel Cron, toutes les 10 min (5 h – 0 h) : vols retour du jour (push et SMS à l'atterrissage), vols aller du jour (décollage), SMS en attente réessayés |
 | GET | `/internal/shuttle/forecast?date=` | Vagues de navettes du jour (V-A) : `{ date, times, seats, vehiclesInService, waves[] }` ; vols aller et retour rafraîchis si dus |
 | PUT / DELETE | `/internal/reservations/:id/car-location` | Position GPS de la voiture prise par l'équipe `{ lat, lng, accuracyM?, note? }` (aussi `car` dans `POST …/spot`) |

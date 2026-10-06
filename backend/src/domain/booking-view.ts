@@ -56,6 +56,8 @@ export function toPublicBooking(reservation: BookingRecord, now = new Date()): P
       shuttleMinutes: listing.shuttleMinutes ?? parking.shuttleTravelMinutes,
       openingHours: listing.openingHours,
       phone: listing.contactPhone,
+      meetingLabel: parking.returnMeetingLabel,
+      meetingInstructions: parking.returnMeetingInstructions,
     },
     arrivalAt: localDateTime(reservation.arrivalAt, tz),
     returnAt: localDateTime(reservation.returnAt, tz),

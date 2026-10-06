@@ -27,6 +27,9 @@ export interface PublicBooking {
     openingHours: string | null;
     /** Phone travellers can call, when the parking gave one. */
     phone: string | null;
+    /** The return meeting point (B, 06/10/2026): the parking's label and directions, or null when not set. */
+    meetingLabel: string | null;
+    meetingInstructions: string | null;
   };
   arrivalAt: string;
   returnAt: string;

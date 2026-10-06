@@ -10,6 +10,7 @@ import { AssignSpotDto } from '@/dtos/occupation.dto';
 import { AuthenticatedStaff } from '@/interfaces/auth.interface';
 import { HttpException } from '@/utils/httpException';
 import { AuditService } from './audit.service';
+import { TravellerMessagesService } from './traveller-messages.service';
 
 /** Statuses that hold a spot: the vehicle is on site, or booked and already placed. */
 /** A car placed this long before its booked arrival counts as a check-in (an early traveller), later as a pre-assignment. */
@@ -68,6 +69,7 @@ export interface SpotState {
 @Service()
 export class OccupationService {
   public audit = Container.get(AuditService);
+  public messages = Container.get(TravellerMessagesService);
 
   public async board(actor: AuthenticatedStaff, parkingId: string) {
     const parking = await this.parkingOf(actor, parkingId);
@@ -232,6 +234,8 @@ export class OccupationService {
       );
       return row;
     });
+    // B (06/10/2026): the traveller hears where their car stands, once.
+    if (spot && !reservation.spotId) await this.messages.carParked(reservation.id);
     return updated;
   }
 

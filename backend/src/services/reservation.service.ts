@@ -15,6 +15,7 @@ import { AuditService } from './audit.service';
 import { CapacityService, NightLoad } from './capacity.service';
 import { NotificationService } from './notification.service';
 import { PushService } from './push.service';
+import { TravellerMessagesService } from './traveller-messages.service';
 import { ParkingService } from './parking.service';
 import { PaymentService } from './payment.service';
 import { SmsService } from './sms.service';
@@ -46,6 +47,7 @@ export class ReservationService {
   public payments = Container.get(PaymentService);
   public notifications = Container.get(NotificationService);
   public push = Container.get(PushService);
+  public messages = Container.get(TravellerMessagesService);
 
   private require(actor: AuthenticatedStaff, permission: Parameters<typeof can>[1]) {
     if (!can(actor.role, permission)) throw forbidden();
@@ -366,7 +368,10 @@ export class ReservationService {
         return this.applyStatus(actor, before, data.status, tx, undefined, data.note);
       });
     }
-    return this.applyStatus(actor, before, data.status, prisma, undefined, data.note);
+    const after = await this.applyStatus(actor, before, data.status, prisma, undefined, data.note);
+    // B (06/10/2026): the closing message after the handover.
+    if (after.status === 'returned') await this.messages.handedBack(after.id);
+    return after;
   }
 
   private async applyStatus(

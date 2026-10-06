@@ -4,7 +4,7 @@ import { Container, Service } from 'typedi';
 import { PRODUCT_NAME, SECRET_KEY, SMS_DAILY_LIMIT, smsGatewayEncryptionKey } from '@/config';
 import prisma, { OperatorSmsSettings, SmsMode, SmsOutbox } from '@/database';
 import { manageToken } from '@/domain/booking';
-import { confirmationSms } from '@/domain/booking-messages';
+import { confirmationSms, reminderSms } from '@/domain/booking-messages';
 import { toPublicBooking, WITH_LISTING } from '@/domain/booking-view';
 import { smsRecipient } from '@/domain/phone';
 import { landedSms } from '@/domain/return-messages';
@@ -29,7 +29,7 @@ const QUEUE_CHECK_EVERY_MS = 60 * 1000;
 const MAX_GATEWAY_CALLS_PER_RUN = 25;
 const MAX_ATTEMPTS = 6;
 
-export const SMS_KINDS = ['booking_confirmed', 'flight_landed', 'test'] as const;
+export const SMS_KINDS = ['booking_confirmed', 'booking_reminder', 'flight_landed', 'test'] as const;
 export type SmsKind = (typeof SMS_KINDS)[number];
 
 export interface TravellerSms {
@@ -115,7 +115,7 @@ export class SmsService {
   }
 
   private async sendViaBrevo(operatorId: string, sms: TravellerSms, recipient: string, about: string): Promise<SendOutcome> {
-    if (sms.kind === 'booking_confirmed' && !(await this.brevoBudgetLeft(about))) return 'skipped';
+    if ((sms.kind === 'booking_confirmed' || sms.kind === 'booking_reminder') && !(await this.brevoBudgetLeft(about))) return 'skipped';
     const ok = await this.notifications.smsViaBrevo(recipient, sms.kind, about, sms.text);
     await prisma.smsOutbox.create({
       data: {
@@ -141,7 +141,7 @@ export class SmsService {
   /** Confirmation SMS through Brevo per rolling 24 hours at most (bookings are free to make: a cap on the bill). */
   private async brevoBudgetLeft(about: string): Promise<boolean> {
     const today = await prisma.smsOutbox.count({
-      where: { provider: 'brevo', kind: 'booking_confirmed', createdAt: { gt: new Date(Date.now() - 86400000) } },
+      where: { provider: 'brevo', kind: { in: ['booking_confirmed', 'booking_reminder'] }, createdAt: { gt: new Date(Date.now() - 86400000) } },
     });
     if (today < SMS_DAILY_LIMIT) return true;
     logger.warn(`[SMS] Daily Brevo SMS budget (${SMS_DAILY_LIMIT}) reached: booking_confirmed not sent for ${about}`);
@@ -282,13 +282,14 @@ export class SmsService {
     const publicBooking = toPublicBooking(booking);
     const url = SECRET_KEY ? this.notifications.manageUrl(booking.reference, manageToken(booking.id, SECRET_KEY, booking.manageTokenVersion)) : null;
     if (row.kind === 'booking_confirmed') return confirmationSms(PRODUCT_NAME, publicBooking, url);
+    if (row.kind === 'booking_reminder') return reminderSms(PRODUCT_NAME, publicBooking, url);
     if (row.kind === 'flight_landed') {
       const [point] = await prisma.$queryRaw<{ label: string | null; instructions: string | null }[]>`
         SELECT "returnMeetingLabel" AS label, "returnMeetingInstructions" AS instructions FROM parkings WHERE id = ${booking.parkingId}`;
       return landedSms({
         productName: PRODUCT_NAME,
         parkingName: booking.parking.listing.title,
-        meetingLabel: point?.label ?? null,
+        meetingLabel: point?.label ?? booking.parking.listing.airport.name,
         instructions: point?.instructions ?? null,
         phone: booking.parking.listing.contactPhone,
         manageUrl: url,

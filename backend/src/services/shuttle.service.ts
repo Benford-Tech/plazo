@@ -30,6 +30,7 @@ import { FlightTrackingService } from './flight-tracking.service';
 import { ParkingLocationService } from './parking-location.service';
 import { ParkingService } from './parking.service';
 import { PushService } from './push.service';
+import { TravellerMessagesService } from './traveller-messages.service';
 import { holdsVehicleToday } from './staff.service';
 
 /** Fields of the position: all cleared together, whenever a trip ends. */
@@ -303,6 +304,7 @@ export class ShuttleService {
   public parkings = Container.get(ParkingService);
   public locations = Container.get(ParkingLocationService);
   public push = Container.get(PushService);
+  public messages = Container.get(TravellerMessagesService);
   public estimator: ArrivalEstimator = straightLineEstimate;
 
   // ---------------------------------------------------------------- vehicles
@@ -775,6 +777,17 @@ export class ShuttleService {
             entityId: r.id,
             details: { from: r.status, to, by: trip.direction === 'dropoff' ? 'shuttle_dropoff' : 'shuttle_pickup', tripId: trip.id },
           });
+        }
+        // B (06/10/2026): "Bon voyage" to the travellers just dropped at the terminal.
+        if (trip.direction === 'dropoff') {
+          const parking = await prisma.parking.findUnique({
+            where: { id: trip.parkingId },
+            select: { name: true, listing: { select: { title: true } } },
+          });
+          await this.messages.droppedOff(
+            moved.map(r => r.id),
+            parking?.listing?.title ?? parking?.name ?? '',
+          );
         }
       }
     }

@@ -11,6 +11,13 @@ import { CronAuthMiddleware } from '@/middlewares/cron-auth.middleware';
  */
 /**
  * @swagger
+ * /internal/cron/remind-tomorrow:
+ *   get:
+ *     summary: Send the day-before reminders (email, SMS, push) to the travellers arriving tomorrow, once each (every afternoon)
+ *     tags: [Cron]
+ *     responses:
+ *       200:
+ *         description: "{ checked, sent }"
  * /internal/cron/purge-expired-tokens:
  *   get:
  *     summary: Delete expired staff tokens, end lapsed arrival signals and shuttle trips, retry or abandon waiting SMS, purge the SMS outbox after 30 days (every night)
@@ -76,5 +83,6 @@ export class CronRoute implements Routes {
     this.router.get('/internal/cron/expire-arrival-signals', CronAuthMiddleware(), this.cron.expireArrivalSignals);
     this.router.get('/internal/cron/expire-payment-holds', CronAuthMiddleware(), this.cron.expirePaymentHolds);
     this.router.get('/internal/cron/track-return-flights', CronAuthMiddleware(), this.cron.trackReturnFlights);
+    this.router.get('/internal/cron/remind-tomorrow', CronAuthMiddleware(), this.cron.remindTomorrow);
   }
 }

@@ -77,11 +77,49 @@ function detailRows(booking: PublicBooking): [string, string][] {
     ['Véhicule', booking.plate],
     ['Passagers', String(booking.passengers)],
   ];
+  if (booking.departureFlight) rows.push(['Vol aller', booking.departureFlight]);
+  if (booking.outbound?.shuttleAt) rows.push(['Navette aller', `vers le terminal, départ prévu vers ${booking.outbound.shuttleAt.slice(11, 16)}`]);
   if (booking.returnFlight) rows.push(['Vol retour', booking.returnFlight]);
   if (booking.parking.address) rows.push(['Adresse', booking.parking.address]);
+  if (booking.parking.phone) rows.push(['Téléphone', booking.parking.phone]);
   if (booking.parking.shuttleMinutes) rows.push(['Navette', `environ ${booking.parking.shuttleMinutes} min jusqu'au terminal`]);
   if (booking.parking.openingHours) rows.push(['Horaires', booking.parking.openingHours]);
+  if (booking.parking.meetingLabel) {
+    rows.push([
+      'Retour',
+      `rendez-vous navette : ${booking.parking.meetingLabel}${booking.parking.meetingInstructions ? ` · ${booking.parking.meetingInstructions}` : ''}`,
+    ]);
+  }
   return rows;
+}
+
+/** "Le jour du départ", in three steps (B, 06/10/2026): the same words as the site's confirmation page. */
+export function departureDaySteps(booking: PublicBooking): [string, string][] {
+  const shuttle = booking.parking.shuttleMinutes
+    ? ` Prévoyez ${booking.parking.shuttleMinutes} min de navette avant l'heure conseillée par votre compagnie.`
+    : '';
+  return [
+    ['Rendez-vous au parking', `${booking.parking.address ?? booking.parking.title}.${shuttle}`],
+    [
+      'Donnez votre référence ou votre plaque',
+      "L'accueil vous attend : tout est déjà réglé, vous laissez la voiture et les clés, la navette vous dépose au terminal.",
+    ],
+    [
+      'Au retour, on suit votre vol',
+      booking.returnFlight
+        ? `Dès l'atterrissage du ${booking.returnFlight}, vous recevez un SMS avec le point de rendez-vous de la navette.`
+        : "Indiquez votre vol retour dans votre réservation : vous recevrez un SMS à l'atterrissage avec le point de rendez-vous de la navette.",
+    ],
+  ];
+}
+
+function stepsHtml(booking: PublicBooking): string {
+  const items = departureDaySteps(booking)
+    .map(
+      ([title, text], i) => `<li style="margin:0 0 8px;font-size:14px"><strong>${i + 1}. ${escapeHtml(title)}</strong><br>${escapeHtml(text)}</li>`,
+    )
+    .join('');
+  return `<h2 style="margin:20px 0 8px;font-size:15px">Le jour du départ</h2><ol style="margin:0;padding-left:18px">${items}</ol>`;
 }
 
 function plateHtml(plate: string): string {
@@ -136,6 +174,7 @@ export function confirmationEmail(productName: string, booking: PublicBooking, m
 <p style="margin:0;font-size:15px">Bonjour ${escapeHtml(booking.customerName)}, merci pour votre réservation.</p>
 ${detailsTable(booking)}
 ${total ? totalHtml(booking, total) : ''}
+${stepsHtml(booking)}
 <p style="margin:16px 0 0;font-size:14px">${escapeHtml(cancellationSentence(booking))}</p>
 ${manage}`,
   );
@@ -148,6 +187,9 @@ ${manage}`,
     ...detailRows(booking).map(([label, value]) => `${label} : ${value}`),
     '',
     ...(total ? [(([label, rest, note]) => `${label}${rest} ${note}`)(totalParts(booking, total)), ''] : []),
+    'Le jour du départ :',
+    ...departureDaySteps(booking).map(([title, body], i) => `${i + 1}. ${title} — ${body}`),
+    '',
     cancellationSentence(booking),
     '',
     manageUrl
@@ -185,8 +227,102 @@ export function confirmationSms(productName: string, booking: PublicBooking, man
   return (
     `${productName} : réservation ${booking.reference} confirmée. ${booking.parking.title}, ` +
     `arrivée le ${formatLocalShort(booking.arrivalAt)}, retour le ${formatLocalShort(booking.returnAt)}.${total}` +
+    (booking.parking.phone ? ` Parking : ${booking.parking.phone}.` : '') +
     (manageUrl ? ` Gérer : ${manageUrl}` : '')
   );
+}
+
+// ---- The traveller's thread (B, 06/10/2026) ---------------------------------------------------
+
+/** The day before the drop-off: where, when, the shuttle, the phone. */
+export function reminderEmail(productName: string, booking: PublicBooking, manageUrl: string | null): EmailMessage {
+  const subject = `Demain : votre parking ${booking.parking.title}, ${booking.arrivalAt.slice(11, 16)}`;
+  const steps = departureDaySteps(booking);
+  const html = layout(
+    productName,
+    subject,
+    `<h1 style="margin:0 0 8px;font-family:'Playfair Display',Georgia,serif;font-style:italic;font-weight:500;font-size:26px">À demain, ${escapeHtml(booking.customerName.split(' ')[0])}</h1>
+<p style="margin:0;font-size:15px">Votre dépôt est prévu <strong>${escapeHtml(formatLocalLong(booking.arrivalAt))}</strong> à ${escapeHtml(booking.parking.title)}.</p>
+${detailsTable(booking)}
+<ol style="margin:0;padding-left:18px">${steps.map(([t, b], i) => `<li style="margin:0 0 8px;font-size:14px"><strong>${i + 1}. ${escapeHtml(t)}</strong><br>${escapeHtml(b)}</li>`).join('')}</ol>
+${manageUrl ? `<p style="margin:20px 0 0"><a href="${escapeHtml(manageUrl)}" style="display:inline-block;background:${COLORS.accent};background-image:linear-gradient(96deg,#ff8a3d,#f0a36b);color:#fff;text-decoration:none;font-weight:600;padding:12px 22px;border-radius:999px">Ma réservation</a></p>` : ''}`,
+  );
+  const text = [
+    `Bonjour ${booking.customerName},`,
+    '',
+    `À demain : dépôt prévu ${formatLocalLong(booking.arrivalAt)} à ${booking.parking.title}.`,
+    '',
+    ...detailRows(booking).map(([label, value]) => `${label} : ${value}`),
+    '',
+    ...steps.map(([t, b], i) => `${i + 1}. ${t} — ${b}`),
+    '',
+    ...(manageUrl ? [`Ma réservation : ${manageUrl}`, ''] : []),
+    `— ${productName}`,
+  ].join('\n');
+  return { subject, html, text };
+}
+
+/** "Plazo : à demain ! Dépôt 06:30, Parking Démo LYS, 12 rue… Parking : 04 72…" */
+export function reminderSms(productName: string, booking: PublicBooking, manageUrl: string | null): string {
+  const where = booking.parking.address ? `, ${booking.parking.address}` : '';
+  return (
+    `${productName} : à demain ! Dépôt le ${formatLocalShort(booking.arrivalAt)} à ${booking.parking.title}${where}.` +
+    (booking.parking.shuttleMinutes ? ` Navette ${booking.parking.shuttleMinutes} min jusqu'au terminal.` : '') +
+    (booking.parking.phone ? ` Parking : ${booking.parking.phone}.` : '') +
+    (manageUrl ? ` ${manageUrl}` : '')
+  );
+}
+
+/** After the handover: thanks, the stay's summary, the amount paid. */
+export function closingEmail(productName: string, booking: PublicBooking, returnedAtLocal: string): EmailMessage {
+  const subject = `Merci, et à bientôt · ${booking.parking.title}`;
+  const total = booking.priceCents !== null ? formatEuros(booking.priceCents) : null;
+  const html = layout(
+    productName,
+    subject,
+    `<h1 style="margin:0 0 8px;font-family:'Playfair Display',Georgia,serif;font-style:italic;font-weight:500;font-size:26px">Bon retour, ${escapeHtml(booking.customerName.split(' ')[0])}</h1>
+<p style="margin:0;font-size:15px">Votre véhicule vous a été rendu le ${escapeHtml(formatLocalLong(returnedAtLocal))} à ${escapeHtml(booking.parking.title)}.</p>
+${detailsTable(booking)}
+${total ? `<p style="margin:0;font-size:16px"><strong>Total : ${escapeHtml(total)}</strong>, payé en ligne par carte.</p>` : ''}
+<p style="margin:16px 0 0;font-size:14px">Un oubli dans la voiture, une remarque ? Le parking reste joignable${booking.parking.phone ? ` au ${escapeHtml(booking.parking.phone)}` : ''}.</p>
+<p style="margin:12px 0 0;font-size:14px;color:${COLORS.soft}">Merci d'avoir choisi ${escapeHtml(productName)} : à bientôt pour votre prochain voyage.</p>`,
+  );
+  const text = [
+    `Bonjour ${booking.customerName},`,
+    '',
+    `Votre véhicule vous a été rendu le ${formatLocalLong(returnedAtLocal)} à ${booking.parking.title}.`,
+    '',
+    ...detailRows(booking).map(([label, value]) => `${label} : ${value}`),
+    '',
+    ...(total ? [`Total : ${total}, payé en ligne par carte.`, ''] : []),
+    `Un oubli dans la voiture, une remarque ? Le parking reste joignable${booking.parking.phone ? ` au ${booking.parking.phone}` : ''}.`,
+    '',
+    `Merci d'avoir choisi ${productName} : à bientôt pour votre prochain voyage.`,
+  ].join('\n');
+  return { subject, html, text };
+}
+
+/** Pushes of the thread (traveller app). */
+export interface TravellerPush {
+  title: string;
+  body: string;
+}
+
+export function carParkedPush(spotCode: string | null, keyHook: string | null): TravellerPush {
+  return {
+    title: 'Votre voiture est garée',
+    body: spotCode
+      ? `Place ${spotCode}${keyHook ? ` · clés au crochet ${keyHook}` : ''} · elle vous attendra là au retour.`
+      : 'Elle vous attendra au parking à votre retour.',
+  };
+}
+
+export function bonVoyagePush(parkingTitle: string): TravellerPush {
+  return { title: 'Bon voyage !', body: `Vous êtes déposé au terminal. ${parkingTitle} s'occupe de votre voiture jusqu'à votre retour.` };
+}
+
+export function handedBackPush(parkingTitle: string): TravellerPush {
+  return { title: 'Bon retour !', body: `Votre véhicule vous a été rendu. Merci d'avoir choisi ${parkingTitle}, à bientôt.` };
 }
 
 // GSM 03.38 alphabet (basic set and extension table): anything else makes the SMS unicode.

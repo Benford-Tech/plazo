@@ -29,11 +29,11 @@ import { RefuseInViewAs, StaffAuthMiddleware } from '@/middlewares/staff-auth.mi
  * /internal/inbound/address:
  *   post:
  *     tags: [Inbound email]
- *     summary: Manager — enables the address, or gives a new one (`{ regenerate: true }`)
+ *     summary: "Manager: enables the address, or gives a new one with { regenerate: true }"
  * /internal/inbound/emails:
  *   get:
  *     tags: [Inbound email]
- *     summary: "À vérifier" — the emails waiting for the staff first, then the last 30 days (`?status=`)
+ *     summary: "« À vérifier »: the emails waiting for the staff first, then the last 30 days (?status=)"
  * /internal/inbound/emails/{id}/dismiss:
  *   post:
  *     tags: [Inbound email]
@@ -41,7 +41,7 @@ import { RefuseInViewAs, StaffAuthMiddleware } from '@/middlewares/staff-auth.mi
  * /internal/inbound/emails/{id}/attach:
  *   post:
  *     tags: [Inbound email]
- *     summary: Link an email to the booking typed from it (`{ reservationId }`)
+ *     summary: "Link an email to the booking typed from it ({ reservationId })"
  */
 export class InboundEmailRoute implements Routes {
   public router = Router();
