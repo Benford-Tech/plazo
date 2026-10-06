@@ -38,7 +38,7 @@ void main() {
     );
     await tester.pumpAndSettle();
     expect(find.text('Prêt à partir ?'), findsOneWidget);
-    expect(find.textContaining('Trouvons votre parking'), findsOneWidget);
+    expect(find.textContaining('Votre parking'), findsOneWidget);
     expect(find.byKey(const Key('search-map')), findsOneWidget);
     expect(find.descendant(of: find.byKey(const Key('search-count')), matching: find.text('2 parkings disponibles')), findsOneWidget);
     expect(find.descendant(of: find.byKey(const Key('search-distance')), matching: find.text('3,5 km · navette 8 min')), findsOneWidget);

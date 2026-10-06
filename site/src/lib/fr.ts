@@ -98,8 +98,8 @@ export const fr = {
     /** Phones: the reassurance strip becomes three chips on the photo. */
     chips: ["Prix total", "Navette gratuite", "Annulation claire"],
     heroLead: "Comparez les parkings privés autour de l’aéroport, voyez le prix total pour vos dates et réservez en ligne.",
-    /** T-A (05/10/2026): the title in two tones, "Trouvons votre parking" then the airport. */
-    heroFind: "Trouvons votre parking",
+    /** T-A (05/10/2026): the title in two tones, "Votre parking" then the airport. */
+    heroFind: "Votre parking",
     heroNear: (airport: string) => `à ${airport}`,
     heroKicker: "Prêt à partir ?",
     mapAvailable: (n: number) => (n === 0 ? "Aucune place à ces dates" : n === 1 ? "1 parking disponible" : `${n} parkings disponibles`),
