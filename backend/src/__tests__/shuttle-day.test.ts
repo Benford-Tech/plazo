@@ -4,7 +4,17 @@ import { ArrivalService } from '@/services/arrival.service';
 import { NotificationService } from '@/services/notification.service';
 import { ParkingLocationService } from '@/services/parking-location.service';
 import { ONESIGNAL_NOTIFICATIONS_URL } from '@/services/push.service';
-import { addStaff, api, publishListing, resetDatabase, setupOperator } from './utils/helpers';
+import {
+  addStaff,
+  api,
+  disableFakePayments,
+  enableFakePayments,
+  onboardOperator,
+  payBooking,
+  publishListing,
+  resetDatabase,
+  setupOperator,
+} from './utils/helpers';
 
 /** Shuttle, 05/10/2026: the vehicle of the day (V-A), the stops (D-A), the live map (P-A), the pushes (N-A). */
 
@@ -35,14 +45,20 @@ beforeEach(async () => {
   delete process.env.ONESIGNAL_TRAVELLER_APP_ID;
   delete process.env.ONESIGNAL_TRAVELLER_REST_API_KEY;
   Container.get(NotificationService).settings.apiKey = '';
+  stripe = enableFakePayments();
   fetchMock = jest.spyOn(global, 'fetch').mockImplementation(async () => new Response(JSON.stringify({ id: 'n1' }), { status: 200 }));
 });
-afterEach(() => fetchMock.mockRestore());
+afterEach(() => {
+  fetchMock.mockRestore();
+  disableFakePayments();
+});
+let stripe: ReturnType<typeof enableFakePayments>;
 afterAll(() => prisma.$disconnect());
 
 /** An operator with a published listing, its meeting point and a traveller on site returning in an hour. */
 async function setup() {
   const op = await setupOperator();
+  await onboardOperator(op.operator.id);
   await api()
     .put('/api/internal/pricing')
     .set(auth(op.token))
@@ -82,6 +98,7 @@ async function setup() {
       acceptTerms: true,
     });
   if (res.status !== 201) throw new Error(JSON.stringify(res.body));
+  await payBooking(res.body.reference, res.body.manageToken, stripe.sessions);
   const reservation = await prisma.reservation.update({
     where: { reference: res.body.reference },
     data: { status: 'arrived', arrivedAt: minutesFromNow(-3 * 24 * 60), arrivalAt: minutesFromNow(-3 * 24 * 60), returnAt: minutesFromNow(60) },

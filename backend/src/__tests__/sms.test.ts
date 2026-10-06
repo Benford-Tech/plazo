@@ -6,7 +6,18 @@ import { NotificationService } from '@/services/notification.service';
 import { SMS_GATEWAY_CLOUD_URL } from '@/services/sms-gateway.service';
 import { SmsService } from '@/services/sms.service';
 import { decryptSecret, encryptSecret, SecretBoxError } from '@/utils/secret-box';
-import { addStaff, api, publishListing, resetDatabase, setupOperator, useBrevoSms } from './utils/helpers';
+import {
+  addStaff,
+  api,
+  disableFakePayments,
+  enableFakePayments,
+  onboardOperator,
+  payBooking,
+  publishListing,
+  resetDatabase,
+  setupOperator,
+  useBrevoSms,
+} from './utils/helpers';
 
 // SMS through the operator's own Android phone ("SMS Gateway for Android", cloud mode). fetch is mocked: no network.
 
@@ -35,10 +46,13 @@ beforeEach(async () => {
   process.env.SMS_GATEWAY_ENCRYPTION_KEY = KEY;
   delete process.env.PLATFORM_ADMIN_EMAILS;
   Object.assign(notifications.settings, defaultNotificationSettings, { apiKey: '' });
+  stripe = enableFakePayments();
   fetchMock = jest.spyOn(global, 'fetch').mockImplementation(async () => json({ id: 'gw-1', state: 'Pending' }, 202));
 });
+let stripe: ReturnType<typeof enableFakePayments>;
 afterEach(() => {
   fetchMock.mockRestore();
+  disableFakePayments();
   delete process.env.SMS_GATEWAY_ENCRYPTION_KEY;
 });
 afterAll(() => prisma.$disconnect());
@@ -53,6 +67,7 @@ async function linkedOperator() {
 
 /** A parking bookable on the site (bookings send the confirmation SMS). */
 async function publishedParking(op: Awaited<ReturnType<typeof setupOperator>>) {
+  await onboardOperator(op.operator.id);
   await api()
     .put('/api/internal/pricing')
     .set(auth(op.token))
@@ -269,6 +284,9 @@ describe('envoi par le téléphone du parking', () => {
     await publishedParking(op);
     const res = await book(op);
     expect(res.status).toBe(201);
+    // Confirmed (and the SMS sent) once the traveller paid.
+    expect(calls(GATEWAY_MESSAGES)).toHaveLength(0);
+    await payBooking(res.body.reference, res.body.manageToken, stripe.sessions);
     expect(calls(GATEWAY_MESSAGES)).toHaveLength(1);
     expect(lastBody(GATEWAY_MESSAGES).textMessage.text).toContain(res.body.reference);
     const row = await prisma.smsOutbox.findFirstOrThrow({ where: { operatorId: op.operator.id } });

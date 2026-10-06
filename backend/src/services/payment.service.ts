@@ -127,7 +127,8 @@ export class PaymentService {
    * enabled (Plazo takes the payment, then transfers the operator's share) and it has a commission.
    */
   public modeFor(operator: PaymentOperator): BookingPaymentMode {
-    if (!this.enabled()) return 'on_site';
+    // Every Plazo booking is paid online (06/10/2026): without Stripe, nothing can be booked.
+    if (!this.enabled()) return 'unavailable';
     return operator.stripeAccountId && operator.stripePayoutsEnabled && this.commissionBps(operator) !== null ? 'online' : 'unavailable';
   }
 
@@ -353,7 +354,7 @@ export class PaymentService {
   public sheetConfig() {
     const enabled = this.enabled();
     return {
-      payments: enabled ? ('online' as const) : ('on_site' as const),
+      payments: enabled ? ('online' as const) : ('unavailable' as const),
       publishableKey: enabled ? stripePublishableKey() || null : null,
       merchantDisplayName: PRODUCT_NAME,
       merchantCountryCode: 'FR',

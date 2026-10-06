@@ -14,9 +14,9 @@ const UNAVAILABLE = ["overbooked", "no_price", "not_found"];
 const HIDDEN_FIELDS = ["airport", "parking", "arrivalAt", "returnAt"] as const;
 
 /**
- * "Vos informations" + "Paiement sur place" + terms. Submitted to a server action; the price is never
- * sent: the API computes it. Field errors come back from the action and show under each field.
- * Paid online, it is step 1 of 2 ("Continuer vers le paiement"): the payment page comes next.
+ * "Vos informations" + terms, step 1 of 2 ("Continuer vers le paiement"): the payment page comes
+ * next. Submitted to a server action; the price is never sent: the API computes it. Field errors
+ * come back from the action and show under each field.
  */
 export function BookingForm({
   action,
@@ -24,17 +24,17 @@ export function BookingForm({
   total,
   links,
   idempotencyKey,
-  online = false,
+  online = true,
   initialState = EMPTY_FORM,
 }: {
   action: Action;
   stay: { airport: string; parking: string; arrivalAt: string; returnAt: string };
-  /** Total to pay on site, already formatted (display only). */
+  /** Total to pay, already formatted (display only). */
   total: string;
   links: { results: string; parking: string };
   /** Random key of this page's form: a second submission returns the booking already made. */
   idempotencyKey?: string;
-  /** Paid by card on the next step (otherwise at the parking). */
+  /** Paid by card on the next step (always, kept for the callers). */
   online?: boolean;
   initialState?: FormState;
 }) {
@@ -205,15 +205,6 @@ export function BookingForm({
           </div>
         </div>
       </section>
-
-      {!online && (
-        <section className={sectionClass} aria-labelledby="b-paiement">
-          <h2 id="b-paiement" className={sectionTitle}>
-            <span className="text-accent">2.</span> {fr.booking.payment}
-          </h2>
-          <p className="text-[15px] leading-relaxed">{fr.booking.paymentText(total)}</p>
-        </section>
-      )}
 
       <div>
         <label htmlFor="b-acceptTerms" className="flex min-h-11 items-start gap-2.5 text-sm leading-normal">

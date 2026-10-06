@@ -20,7 +20,7 @@ export function BookingCard({
   policy,
   minDate,
   errors,
-  payment = "on_site",
+  payment = "unavailable",
 }: {
   airportSlug: string;
   parkingSlug: string;
@@ -35,7 +35,7 @@ export function BookingCard({
   /** "unavailable": payments are online but this parking cannot take them yet (no "Réserver"). */
   payment?: ParkingPayment;
 }) {
-  const t = texts(payment !== "on_site");
+  const t = texts(true);
   const bookable = !!offer && offer.available && offer.priceCents !== null;
   const until = bookable && stay.arrivee ? cancellableUntil(policy, stay.arrivee) : null;
   const query = stayQuery(stay);

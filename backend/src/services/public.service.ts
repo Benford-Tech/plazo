@@ -33,9 +33,9 @@ export class PublicService {
   public locations = Container.get(ParkingLocationService);
   public payments = Container.get(PaymentService);
 
-  /** How travellers pay on the site: "online" (card, Stripe) or "on_site" (at the parking). */
+  /** How travellers pay on the site: "online" (card, Stripe), or "unavailable" while Stripe is not configured (06/10/2026: no payment at the parking). */
   public config() {
-    return { payments: this.payments.enabled() ? ('online' as const) : ('on_site' as const) };
+    return { payments: this.payments.enabled() ? ('online' as const) : ('unavailable' as const) };
   }
 
   public async airports() {

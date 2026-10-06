@@ -35,7 +35,7 @@ class ApiError implements Exception {
 PublicBookingModel booking({
   String reference = 'R7KQ2M',
   String status = 'upcoming',
-  String paymentMode = 'on_site',
+  String paymentMode = 'online',
   BookingPaymentModel? payment,
   String arrivalAt = '2026-10-10T08:00',
   String returnAt = '2026-10-17T18:00',
@@ -190,7 +190,7 @@ SearchResultModel result(
 
 ParkingResponseModel parkingResponse({String payment = 'online', OfferModel? offer = const OfferModel(available: true, days: 8, priceCents: 4500)}) =>
     ParkingResponseModel(
-      payments: payment == 'on_site' ? 'on_site' : 'online',
+      payments: payment == 'online' ? 'online' : 'unavailable',
       airport: lys,
       parking: ParkingDetailModel(
         slug: 'parking-demo-lys',

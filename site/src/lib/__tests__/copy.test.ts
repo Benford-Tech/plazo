@@ -12,12 +12,15 @@ function strings(node: unknown): string[] {
 
 const ON_SITE_WORDING = /sur place|rien à payer en ligne|rien à rembourser|rien n’est payé en ligne|ne payez rien en ligne|rien n’a été payé en ligne|réglez sur place/i;
 
-describe("copy switching (online payment)", () => {
-  it("payments off: the texts stay as they are", () => {
+describe("copy (every booking is paid online, 06/10/2026)", () => {
+  it("there is one copy: texts() always gives the online wording", () => {
     expect(texts(false)).toBe(fr);
-    expect(fr.home.faq[2][1]).toMatch(/Rien n’est payé en ligne/);
-    expect(fr.parking.payOnSite).toBe("À payer sur place");
-    expect(fr.booking.submit).toBe("Confirmer la réservation");
+    expect(texts(true)).toBe(fr);
+    expect(fr.parking.payOnSite).toBe("Total à payer en ligne");
+    expect(fr.booking.submit).toBe("Continuer vers le paiement");
+    for (const key of ["meta", "home", "results", "parking", "booking", "manage", "calendar"] as const) {
+      for (const text of strings(fr[key])) expect(text).not.toMatch(ON_SITE_WORDING);
+    }
   });
 
   it("payments on: no « paid at the parking » wording left in the replaced texts", () => {

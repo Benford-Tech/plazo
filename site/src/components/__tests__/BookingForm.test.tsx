@@ -23,7 +23,7 @@ describe("BookingForm", () => {
     await user.type(screen.getByLabelText(/Email/), "camille@example.com");
     await user.type(screen.getByLabelText("Plaque d’immatriculation"), "gk318px");
     await user.click(screen.getByRole("checkbox"));
-    await user.click(screen.getByRole("button", { name: "Confirmer la réservation" }));
+    await user.click(screen.getByRole("button", { name: "Continuer vers le paiement" }));
 
     await waitFor(() => expect(action).toHaveBeenCalledTimes(1));
     const data = action.mock.calls[0][1];
@@ -50,7 +50,7 @@ describe("BookingForm", () => {
       }),
     );
     renderForm(action);
-    await userEvent.setup().click(screen.getByRole("button", { name: "Confirmer la réservation" }));
+    await userEvent.setup().click(screen.getByRole("button", { name: "Continuer vers le paiement" }));
 
     expect(await screen.findByRole("alert")).toHaveTextContent("Certains champs sont à corriger.");
     expect(screen.getByLabelText(/Email/)).toHaveAccessibleDescription("Adresse email invalide.");
@@ -65,19 +65,13 @@ describe("BookingForm", () => {
   it("explains an overbooking with the full nights and a way out", async () => {
     const action = vi.fn(async (): Promise<FormState> => ({ values: {}, fields: {}, error: "overbooked", fullNights: ["2026-10-04", "2026-10-05"] }));
     renderForm(action);
-    await userEvent.setup().click(screen.getByRole("button", { name: "Confirmer la réservation" }));
+    await userEvent.setup().click(screen.getByRole("button", { name: "Continuer vers le paiement" }));
 
     const alert = await screen.findByRole("alert");
     expect(alert).toHaveTextContent("Ce parking n’est plus disponible pour vos dates");
     expect(alert).toHaveTextContent("Nuits complètes : dim. 4 oct., lun. 5 oct.");
     expect(alert).not.toHaveTextContent("oct..");
     expect(screen.getByRole("link", { name: "Voir les autres parkings" })).toHaveAttribute("href", links.results);
-  });
-
-  it("says that payment happens at the parking", () => {
-    renderForm(vi.fn());
-    expect(screen.getByText(/Vous ne payez rien en ligne : vous réglez 55,00 € directement à l’accueil du parking/)).toBeInTheDocument();
-    expect(screen.queryByText(/carte bancaire n’est demandée/)).toBeInTheDocument();
   });
 
   it("paid online: step 1 of 2, « Continuer vers le paiement », no « paid at the parking » section", () => {

@@ -11,7 +11,7 @@ abstract class PublicBookingModel with _$PublicBookingModel {
     required String reference,
     required String status,
     /// "online": paid by card in the app or on the site; "on_site": paid at the parking.
-    @Default('on_site') String paymentMode,
+    @Default('online') String paymentMode,
     BookingPaymentModel? payment,
     required BookingParkingModel parking,
     required String arrivalAt,

@@ -4,7 +4,17 @@ import { manageToken } from '@/domain/booking';
 import { localDateTime, parseInstant } from '@/domain/time';
 import { NotificationService } from '@/services/notification.service';
 import { logger } from '@/utils/logger';
-import { api, resetDatabase, setupOperator, publishListing, useBrevoSms } from './utils/helpers';
+import {
+  api,
+  disableFakePayments,
+  enableFakePayments,
+  onboardOperator,
+  payBooking,
+  publishListing,
+  resetDatabase,
+  setupOperator,
+  useBrevoSms,
+} from './utils/helpers';
 
 const TZ = 'Europe/Paris';
 const auth = (token: string) => ({ Authorization: `Bearer ${token}` });
@@ -47,6 +57,7 @@ async function publishedParking(options: { slug?: string; policy?: string; capac
     });
   if (res.status !== 200) throw new Error(JSON.stringify(res.body));
   if (options.published ?? true) await publishListing(op.parking.id);
+  await onboardOperator(op.operator.id);
   if (options.capacity) await prisma.parking.update({ where: { id: op.parking.id }, data: { totalCapacity: options.capacity, safetyMarginPct: 0 } });
   return op;
 }
@@ -70,17 +81,32 @@ const bookingBody = (overrides: Record<string, unknown> = {}) => ({
   ...overrides,
 });
 
-const book = (overrides: Record<string, unknown> = {}) => api().post('/api/public/bookings').send(bookingBody(overrides));
+/** The booking form sent (the place is held until the payment). */
+const hold = (overrides: Record<string, unknown> = {}) => api().post('/api/public/bookings').send(bookingBody(overrides));
+/** A booking made and paid, as every confirmed Plazo booking: the creation's response with the paid booking. */
+async function book(overrides: Record<string, unknown> = {}) {
+  const res = await hold(overrides);
+  if (res.status !== 201 && res.status !== 200) return res;
+  await payBooking(res.body.reference, res.body.manageToken, stripe.sessions);
+  const paid = await api().get(`/api/public/bookings/${res.body.reference}`).set(token(res.body.manageToken));
+  res.body.booking = paid.body;
+  return res;
+}
 const token = (value: string) => ({ 'x-booking-token': value });
 
 let fetchMock: jest.SpyInstance;
 
+let stripe: ReturnType<typeof enableFakePayments>;
 beforeEach(async () => {
   await resetDatabase();
   Object.assign(notifications.settings, defaultSettings, { apiKey: '' });
+  stripe = enableFakePayments();
   fetchMock = jest.spyOn(global, 'fetch').mockImplementation(async () => new Response(JSON.stringify({ messageId: 'm1' }), { status: 201 }));
 });
-afterEach(() => fetchMock.mockRestore());
+afterEach(() => {
+  fetchMock.mockRestore();
+  disableFakePayments();
+});
 afterAll(() => prisma.$disconnect());
 
 describe('réservation sur le site', () => {
@@ -93,8 +119,8 @@ describe('réservation sur le site', () => {
     expect(res.body.booking).toEqual({
       reference: res.body.reference,
       status: 'upcoming',
-      paymentMode: 'on_site',
-      payment: null,
+      paymentMode: 'online',
+      payment: { status: 'paid', holdExpiresAt: null, holdSecondsLeft: null },
       parking: {
         title: 'Parking Démo LYS',
         slug: 'parking-demo',
@@ -590,7 +616,7 @@ describe('notifications', () => {
     });
     expect(email.body.htmlContent).toContain(manageUrl);
     expect(email.body.htmlContent).toContain('34,99 €');
-    expect(email.body.textContent).toContain('à régler sur place');
+    expect(email.body.textContent).toContain('payé en ligne par carte');
     expect(email.body.textContent).toContain(manageUrl);
 
     expect(sms.init.headers).toMatchObject({ 'api-key': 'test-brevo-key' });
@@ -602,7 +628,7 @@ describe('notifications', () => {
       tag: 'booking_confirmed',
       unicodeEnabled: false,
     });
-    expect(sms.body.content).toContain('34,99 € à régler sur place');
+    expect(sms.body.content).toContain('34,99 € payés');
     expect(sms.body.content).toContain(manageUrl);
   });
 

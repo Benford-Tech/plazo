@@ -18,10 +18,11 @@ const props = {
 };
 
 describe("BookingCard", () => {
-  it("paid at the parking: « À payer sur place » and the booking button", () => {
+  it("without a payment mode: « bientôt disponible » (every booking is paid online)", () => {
     render(<BookingCard {...props} />);
-    expect(screen.getByText("À payer sur place")).toBeInTheDocument();
-    expect(screen.getByRole("link", { name: "Réserver" })).toHaveAttribute("href", expect.stringContaining("/reserver?arrivee="));
+    expect(screen.queryByText(/sur place/)).not.toBeInTheDocument();
+    expect(screen.getByText("Réservation en ligne bientôt disponible")).toBeInTheDocument();
+    expect(screen.queryByRole("link", { name: "Réserver" })).not.toBeInTheDocument();
   });
 
   it("paid online: the total is paid online", () => {

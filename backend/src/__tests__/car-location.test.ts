@@ -3,7 +3,16 @@ import prisma from '@/database';
 import { ArrivalService } from '@/services/arrival.service';
 import { NotificationService } from '@/services/notification.service';
 import { ParkingLocationService } from '@/services/parking-location.service';
-import { api, publishListing, resetDatabase, setupOperator } from './utils/helpers';
+import {
+  api,
+  disableFakePayments,
+  enableFakePayments,
+  onboardOperator,
+  payBooking,
+  publishListing,
+  resetDatabase,
+  setupOperator,
+} from './utils/helpers';
 
 /** Where the car is parked (06/10/2026): recorded by whoever parks it, the valet's position prevails. */
 
@@ -11,16 +20,22 @@ const auth = (token: string) => ({ Authorization: `Bearer ${token}` });
 const bookingToken = (token: string) => ({ 'x-booking-token': token });
 const CAR = { lat: 45.7301, lng: 5.0502, accuracyM: 6, note: 'Rangée 3, près du portail' };
 
+let stripe: ReturnType<typeof enableFakePayments>;
 beforeEach(async () => {
   await resetDatabase();
   Container.get(NotificationService).settings.apiKey = '';
+  stripe = enableFakePayments();
   jest.spyOn(global, 'fetch').mockImplementation(async () => new Response('{}', { status: 200 }));
 });
-afterEach(() => jest.restoreAllMocks());
+afterEach(() => {
+  jest.restoreAllMocks();
+  disableFakePayments();
+});
 afterAll(() => prisma.$disconnect());
 
 async function setup() {
   const op = await setupOperator();
+  await onboardOperator(op.operator.id);
   await api()
     .put('/api/internal/pricing')
     .set(auth(op.token))
@@ -60,6 +75,7 @@ async function setup() {
       acceptTerms: true,
     });
   expect(res.status).toBe(201);
+  await payBooking(res.body.reference, res.body.manageToken, stripe.sessions);
   return {
     op,
     reference: res.body.reference as string,

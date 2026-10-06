@@ -274,17 +274,17 @@ const brevoCalls = (tag: string) =>
 // ---- Tests ------------------------------------------------------------------------------------
 
 describe('paiement désactivé (sans STRIPE_SECRET_KEY)', () => {
-  it('garde le paiement sur place : réservation confirmée tout de suite, aucun appel à Stripe', async () => {
+  it('rien n’est réservable : tout paiement se fait en ligne (06/10/2026), jamais au parking', async () => {
     delete process.env.STRIPE_SECRET_KEY;
     await publishedParking({ onboarded: false });
-    expect((await api().get('/api/public/config')).body).toEqual({ payments: 'on_site' });
+    expect((await api().get('/api/public/config')).body).toEqual({ payments: 'unavailable' });
     const page = await api().get('/api/public/airports/lyon-saint-exupery/parkings/parking-demo');
-    expect(page.body).toMatchObject({ payments: 'on_site', parking: { payment: 'on_site' } });
+    expect(page.body).toMatchObject({ payments: 'unavailable', parking: { payment: 'unavailable' } });
     const res = await book();
-    expect(res.status).toBe(201);
-    expect(res.body.booking).toMatchObject({ status: 'upcoming', paymentMode: 'on_site', payment: null });
+    expect(res.status).toBe(409);
+    expect(res.body.code).toBe('online_booking_unavailable');
     expect(fake.checkout.sessions.create).not.toHaveBeenCalled();
-    expect((await checkout(res.body.reference, res.body.manageToken)).status).toBe(404);
+    expect(await prisma.reservation.count()).toBe(0);
   });
 });
 
@@ -627,9 +627,9 @@ describe('feuille de paiement de l’app (PaymentIntent)', () => {
     expect((await api().get('/api/public/payments/config')).body).toMatchObject({ payments: 'online', publishableKey: null });
     delete process.env.STRIPE_SECRET_KEY;
     process.env.STRIPE_PUBLISHABLE_KEY = 'pk_test_fake';
-    expect((await api().get('/api/public/payments/config')).body).toMatchObject({ payments: 'on_site', publishableKey: null });
+    expect((await api().get('/api/public/payments/config')).body).toMatchObject({ payments: 'unavailable', publishableKey: null });
     // The site's config route keeps its exact answer.
-    expect((await api().get('/api/public/config')).body).toEqual({ payments: 'on_site' });
+    expect((await api().get('/api/public/config')).body).toEqual({ payments: 'unavailable' });
   });
 
   it('crée le PaymentIntent : même montant et même commission que Checkout, metadata, clé d’idempotence', async () => {
@@ -675,9 +675,9 @@ describe('feuille de paiement de l’app (PaymentIntent)', () => {
     const disabled = await intent(held.reference, held.manageToken);
     expect(disabled.status).toBe(409);
     expect(disabled.body.code).toBe('online_booking_unavailable');
-    const onSite = (await book({ plate: 'BB-222-BB', customerEmail: 'b@example.com', customerPhone: '06 99 99 99 99' })).body;
-    expect(onSite.booking.paymentMode).toBe('on_site');
-    expect((await intent(onSite.reference, onSite.manageToken)).status).toBe(404);
+    // Payments off: nothing can be booked at all (every booking is paid online).
+    const refused = await book({ plate: 'BB-222-BB', customerEmail: 'b@example.com', customerPhone: '06 99 99 99 99' });
+    expect(refused.status).toBe(409);
     expect(fake.paymentIntents.create).not.toHaveBeenCalled();
   });
 

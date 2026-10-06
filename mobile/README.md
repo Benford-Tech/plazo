@@ -12,8 +12,8 @@ n'existent que dans Plazo Pro (`if (AppConstants.isPro)` dans `app_router.dart`)
   prix total de l'API, « Réservation en ligne bientôt disponible » si le loueur n'encaisse pas encore), réservation
   `/:aeroport/:parking/reserver` (mêmes champs et contrôles que le site, erreurs de l'API traduites), paiement
   `/ma-reservation/REF/paiement` (compte à rebours de la place tenue, **feuille de paiement native Stripe** avec
-  Apple Pay / Google Pay ; la version web passe par Stripe Checkout ; sans paiement en ligne côté serveur, paiement
-  sur place comme le site), confirmation « C'est réservé ! ». Aucun prix n'est calculé dans l'app.
+  Apple Pay / Google Pay ; la version web passe par Stripe Checkout ; sans paiement en ligne côté serveur, la
+  réservation est indisponible, comme sur le site), confirmation « C'est réservé ! ». Aucun prix n'est calculé dans l'app.
 - **Voyageur — Mes réservations** (`/ma-reservation`) : les réservations gardées sur le téléphone (référence + clé de
   gestion dans le trousseau, pas de compte), À venir / Passées, « Ajouter une réservation » (référence + email),
   Modifier le vol, Itinéraire, Annuler (règles et remboursement du site), « Je suis en route » le jour J.

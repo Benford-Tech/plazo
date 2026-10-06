@@ -5,7 +5,7 @@ import type { BookingStatus, CancellationPolicy, Service } from "./types";
 const P = PRODUCT_NAME;
 
 /** Every text of the site. The product name always comes from product.json. */
-export const fr = {
+const frBase = {
   meta: {
     defaultTitle: `${P} · Parkings d’aéroport avec navette`,
     defaultDescription:
@@ -303,9 +303,6 @@ export const fr = {
     outboundFlight: "Vol aller (facultatif)",
     outboundFlightHint: "Ex. AF 7641 : la navette vers le terminal est prévue avant votre décollage.",
     passengers: "Passagers",
-    payment: "Paiement sur place",
-    paymentText: (total: string) =>
-      `Vous ne payez rien en ligne : vous réglez ${total} directement à l’accueil du parking. Aucune carte bancaire n’est demandée ici.`,
     termsBefore: "J’accepte les ",
     termsLink: `conditions de ${P}`,
     termsAfter: " et celles du parking. Mes données servent uniquement à ce séjour.",
@@ -578,7 +575,7 @@ type DeepPartial<T> = { [K in keyof T]?: T[K] extends (...args: never[]) => unkn
  * Texts that change when bookings are paid by card on the site (Stripe): everything that says
  * "paid at the parking" says "paid online" instead. The rest of `fr` stays as it is.
  */
-export const frOnline: DeepPartial<typeof fr> = {
+export const frOnline: DeepPartial<typeof frBase> = {
   meta: {
     defaultDescription:
       "Comparez les parkings privés avec navette autour de l’aéroport, voyez le prix total pour vos dates et réservez en ligne. Paiement sécurisé par carte.",
@@ -647,11 +644,12 @@ function merge<T>(base: T, overrides: DeepPartial<T>): T {
   return out as T;
 }
 
-const FR_ONLINE = merge(fr, frOnline);
+/** The site's texts. Every Plazo booking is paid online (06/10/2026): the online wording is the only one. */
+export const fr: typeof frBase = merge(frBase, frOnline);
 
-/** The site's texts: `fr` when travellers pay at the parking, with the online-payment wording otherwise. */
-export function texts(online: boolean): typeof fr {
-  return online ? FR_ONLINE : fr;
+/** Kept for the callers that switched copy by payment mode: there is one copy now. */
+export function texts(_online?: boolean): typeof fr {
+  return fr;
 }
 
 /** Unit after a "dès" price: the days the cheapest package covers ("la journée", "pour 3 jours"). */

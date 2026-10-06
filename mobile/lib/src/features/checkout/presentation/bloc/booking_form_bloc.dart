@@ -48,7 +48,7 @@ abstract class BookingFormState with _$BookingFormState {
   }) = _BookingFormState;
 
   /// Paid by card on the next step (otherwise at the parking).
-  bool get online => (parkingResponse?.parking.payment ?? 'on_site') == 'online';
+  bool get online => parkingResponse?.parking.payment == 'online';
 
   int? get priceCents => parkingResponse?.offer?.priceCents;
 

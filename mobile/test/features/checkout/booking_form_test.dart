@@ -108,18 +108,6 @@ void main() {
       await bloc.close();
     });
 
-    test('paiement désactivé : confirmée tout de suite (sur place), brouillon oublié', () async {
-      public.parking_ = parkingResponse(payment: 'on_site');
-      api.answer('create', CreatedBookingModel(reference: 'R7KQ2M', manageToken: 't', booking: booking()));
-      final bloc = makeBloc()..add(const BookingFormStarted());
-      await bloc.stream.firstWhere((s) => s.parkingResponse != null);
-      expect(bloc.state.online, isFalse);
-      bloc.add(const BookingFormSubmitted(valid));
-      expect((await bloc.stream.firstWhere((s) => s.created != null)).created!.booking.status, 'upcoming');
-      expect(drafts.draft, isNull);
-      await bloc.close();
-    });
-
     test('erreurs de l’API : par champ, et complet avec les nuits', () async {
       api
         ..answer('create', const ApiError('validation_failed', fields: {'customerPhone': 'invalid_phone'}))
@@ -183,12 +171,5 @@ void main() {
       expect(find.text('Indiquez votre prénom et votre nom (lettres, espaces, apostrophes et tirets).'), findsOneWidget);
     });
 
-    testWidgets('paiement sur place : section « Paiement sur place », « Confirmer la réservation »', (tester) async {
-      public.parking_ = parkingResponse(payment: 'on_site');
-      await pump(tester);
-      expect(find.text('1 · Vos informations'), findsNothing);
-      expect(find.text('Paiement sur place'), findsOneWidget);
-      expect(find.text('Confirmer la réservation'), findsOneWidget);
-    });
   });
 }

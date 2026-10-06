@@ -233,21 +233,6 @@ class _BookingFormViewState extends State<BookingFormView> {
                           _edited.add('passengers');
                         }),
                       ),
-                      if (!state.online) ...[
-                        const SizedBox(height: 18),
-                        AppCard(
-                          color: AppColors.canvas,
-                          borderColor: AppColors.canvas,
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text('book.pay_on_site'.tr(), style: AppText.strong()),
-                              const SizedBox(height: 4),
-                              Text('book.pay_on_site_text'.tr(args: [total]), style: AppText.body(size: 14, height: 1.45)),
-                            ],
-                          ),
-                        ),
-                      ],
                       const SizedBox(height: 14),
                       _Terms(
                         value: _terms,
@@ -260,11 +245,11 @@ class _BookingFormViewState extends State<BookingFormView> {
                       const SizedBox(height: 14),
                       GradientButton(
                         key: const Key('booking-submit'),
-                        label: state.online ? 'book.submit_online'.tr() : 'book.submit_on_site'.tr(),
+                        label: 'book.submit_online'.tr(),
                         busy: state.submitState.isProcessing,
                         onPressed: state.loadState.isSuccess ? _submit : null,
                       ),
-                      if (state.online && total.isNotEmpty) ...[
+                      if (total.isNotEmpty) ...[
                         const SizedBox(height: 8),
                         Text('book.payment_next'.tr(args: [total]), textAlign: TextAlign.center, style: AppText.muted(size: 13)),
                       ],
@@ -327,7 +312,7 @@ class _Recap extends StatelessWidget {
             const Divider(height: 18, color: AppColors.line),
             RecapRow(
               left: Text(
-                '${state.online ? 'book.total'.tr() : 'book.total_on_site'.tr()} · ${daysLabel(state.days ?? stayDays(state.arrivalAt, state.returnAt))}',
+                '${'book.total'.tr()} · ${daysLabel(state.days ?? stayDays(state.arrivalAt, state.returnAt))}',
                 style: AppText.strong(),
               ),
               right: Text(total, style: AppText.strong(size: 18)),

@@ -42,7 +42,7 @@ abstract class SearchResultModel with _$SearchResultModel {
     String? openingHours,
     @Default('non_refundable') String cancellationPolicy,
     String? photo,
-    @Default('on_site') String payment,
+    @Default('unavailable') String payment,
     LatLngModel? location,
     @Default(false) bool available,
     @Default(0) int days,
@@ -62,7 +62,7 @@ abstract class SearchResultModel with _$SearchResultModel {
 @freezed
 abstract class SearchResponseModel with _$SearchResponseModel {
   const factory SearchResponseModel({
-    @Default('on_site') String payments,
+    @Default('unavailable') String payments,
     required AirportModel airport,
     @Default(<SearchResultModel>[]) List<SearchResultModel> results,
   }) = _SearchResponseModel;
@@ -107,7 +107,7 @@ abstract class ParkingDetailModel with _$ParkingDetailModel {
     String? openingHours,
     @Default('non_refundable') String cancellationPolicy,
     String? photo,
-    @Default('on_site') String payment,
+    @Default('unavailable') String payment,
     LatLngModel? location,
     String? description,
     @Default(<String>[]) List<String> photos,
@@ -123,7 +123,7 @@ abstract class ParkingDetailModel with _$ParkingDetailModel {
 @freezed
 abstract class ParkingResponseModel with _$ParkingResponseModel {
   const factory ParkingResponseModel({
-    @Default('on_site') String payments,
+    @Default('unavailable') String payments,
     required AirportModel airport,
     required ParkingDetailModel parking,
     OfferModel? offer,
@@ -137,7 +137,7 @@ abstract class ParkingResponseModel with _$ParkingResponseModel {
 @freezed
 abstract class PaymentsConfigModel with _$PaymentsConfigModel {
   const factory PaymentsConfigModel({
-    @Default('on_site') String payments,
+    @Default('unavailable') String payments,
     String? publishableKey,
     @Default(Product.name) String merchantDisplayName,
     @Default('FR') String merchantCountryCode,

@@ -187,7 +187,7 @@ void main() {
     api
       ..answer('get', held())
       ..answer('intent', const ApiError('online_booking_unavailable'));
-    public.config = const PaymentsConfigModel(payments: 'on_site', publishableKey: 'pk_test_1');
+    public.config = const PaymentsConfigModel(payments: 'unavailable', publishableKey: 'pk_test_1');
     final bloc = await ready();
     bloc.add(const PaymentPayPressed());
     final s = await bloc.stream.firstWhere((s) => s.message != null);

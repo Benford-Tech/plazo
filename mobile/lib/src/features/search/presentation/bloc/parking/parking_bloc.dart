@@ -39,7 +39,7 @@ abstract class ParkingState with _$ParkingState {
   OfferModel? get offer => response?.offer;
 
   /// "online", "on_site" or "unavailable" (not bookable in the app yet).
-  String get payment => response?.parking.payment ?? 'on_site';
+  String get payment => response?.parking.payment ?? 'unavailable';
 
   bool get bookable => (offer?.bookable ?? false) && payment != 'unavailable';
 }

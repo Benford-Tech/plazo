@@ -148,8 +148,9 @@ le navigateur de l'espace pro appelle `/api` sur le même domaine (pas de CORS).
    et réservations), puis enlever la variable. Depuis un poste : `npm run seed:demo -- --apply` ou `--remove`
    dans `backend/`. Le script n'échoue jamais le déploiement et ne journalise que des comptages.
 
-4. **Paiement en ligne (Stripe Connect, mode test)** — facultatif : sans `STRIPE_SECRET_KEY`, le site garde le
-   paiement sur place. Pour l'activer :
+4. **Paiement en ligne (Stripe Connect, mode test)** — **obligatoire pour réserver sur le site et l'app** : sans
+   `STRIPE_SECRET_KEY`, la réservation en ligne est indisponible (plus de paiement sur place depuis le 06/10/2026 ; la saisie
+   manuelle de l'espace pro reste possible). Pour l'activer :
    - Variables : `STRIPE_SECRET_KEY` (clé **de test** `sk_test_…` ; une clé `sk_live_`/`rk_live_` est refusée en production
      tant que `STRIPE_ALLOW_LIVE` n'est pas `true`), `STRIPE_WEBHOOK_SECRET` (secret(s) de signature `whsec_…` des
      destinations du webhook, séparés par des virgules), `PLATFORM_COMMISSION_BPS` (commission par défaut, ex. `1200` =

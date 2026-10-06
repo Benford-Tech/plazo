@@ -240,7 +240,7 @@ class _ResultsView extends StatelessWidget {
             );
           }
           if (i == shown.length + 1) {
-            return Text(state.online ? 'results.footnote_online'.tr() : 'results.footnote_on_site'.tr(), style: AppText.muted(size: 12.5));
+            return Text('results.footnote_online'.tr(), style: AppText.muted(size: 12.5));
           }
           final r = shown[i - 1];
           return ResultCard(result: r, highlighted: i == 1 && r.available, badges: state.badges[r.slug] ?? const [], onTap: () => _open(context, r));

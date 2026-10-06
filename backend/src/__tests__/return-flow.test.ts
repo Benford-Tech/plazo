@@ -10,7 +10,18 @@ import { NotificationService } from '@/services/notification.service';
 import { ParkingLocationService } from '@/services/parking-location.service';
 import { ONESIGNAL_NOTIFICATIONS_URL } from '@/services/push.service';
 import { IGN_ROUTING_URL, RoutingService } from '@/services/routing.service';
-import { addStaff, api, publishListing, resetDatabase, setupOperator, useBrevoSms } from './utils/helpers';
+import {
+  addStaff,
+  api,
+  disableFakePayments,
+  enableFakePayments,
+  onboardOperator,
+  payBooking,
+  publishListing,
+  resetDatabase,
+  setupOperator,
+  useBrevoSms,
+} from './utils/helpers';
 
 const TZ = 'Europe/Paris';
 const auth = (token: string) => ({ Authorization: `Bearer ${token}` });
@@ -24,6 +35,7 @@ const SMS_URL = 'https://api.brevo.com/v3/transactionalSMS/send';
 
 async function parkingWithReturningBooking(options: { flight?: string | null; meetingPoint?: boolean } = {}) {
   const op = await setupOperator();
+  await onboardOperator(op.operator.id);
   await api()
     .put('/api/internal/pricing')
     .set(auth(op.token))
@@ -68,6 +80,7 @@ async function parkingWithReturningBooking(options: { flight?: string | null; me
       acceptTerms: true,
     });
   if (res.status !== 201) throw new Error(JSON.stringify(res.body));
+  await payBooking(res.body.reference, res.body.manageToken, stripe.sessions);
   const { reference, manageToken } = res.body as { reference: string; manageToken: string };
   // The vehicle is on site, the return is in an hour: the return day.
   const reservation = await prisma.reservation.update({
@@ -121,9 +134,14 @@ beforeEach(async () => {
   Container.get(FlightTrackingService).providerOverride = null;
   Container.get(NotificationService).settings.apiKey = '';
   Container.get(RoutingService).clearCache();
+  stripe = enableFakePayments();
   fetchMock = jest.spyOn(global, 'fetch').mockImplementation(async () => json({ ok: true }));
 });
-afterEach(() => fetchMock.mockRestore());
+afterEach(() => {
+  fetchMock.mockRestore();
+  disableFakePayments();
+});
+let stripe: ReturnType<typeof enableFakePayments>;
 afterAll(() => prisma.$disconnect());
 
 describe('vols (domaine)', () => {
@@ -495,6 +513,7 @@ describe('navette (mode chauffeur)', () => {
         passengers: 1,
         acceptTerms: true,
       });
+    await payBooking(second.body.reference, second.body.manageToken, stripe.sessions);
     const secondRow = await prisma.reservation.update({
       where: { reference: second.body.reference },
       data: { status: 'arrived', arrivalAt: minutesFromNow(-3 * 24 * 60), returnAt: minutesFromNow(90) },
@@ -651,6 +670,7 @@ describe('navette (mode chauffeur)', () => {
         passengers: 1,
         acceptTerms: true,
       });
+    await payBooking(arriving.body.reference, arriving.body.manageToken, stripe.sessions);
     const row = await prisma.reservation.update({
       where: { reference: arriving.body.reference },
       data: { status: 'arrived', arrivedAt: minutesFromNow(-10), arrivalAt: minutesFromNow(-20), returnAt: minutesFromNow(2 * 24 * 60) },
@@ -702,6 +722,7 @@ describe('navette (mode chauffeur)', () => {
         passengers: 1,
         acceptTerms: true,
       });
+    await payBooking(today.body.reference, today.body.manageToken, stripe.sessions);
     await prisma.reservation.update({
       where: { reference: today.body.reference },
       data: { status: 'arrived', arrivedAt: minutesFromNow(-10), arrivalAt: minutesFromNow(-20), returnAt: minutesFromNow(2 * 24 * 60) },
@@ -720,6 +741,7 @@ describe('navette (mode chauffeur)', () => {
         passengers: 1,
         acceptTerms: true,
       });
+    await payBooking(later.body.reference, later.body.manageToken, stripe.sessions);
     expect((await shuttles(later.body.reference, later.body.manageToken)).body).toMatchObject({ phase: null, shuttles: [] });
 
     const started = await start(driver.token, [b.reservation.id], { vehicle: { model: 'Vito', colour: 'blanche' } });

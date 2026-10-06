@@ -5,7 +5,17 @@ import { arrivalPush } from '@/domain/arrival-messages';
 import { localDateTime } from '@/domain/time';
 import { ParkingLocationService } from '@/services/parking-location.service';
 import { ONESIGNAL_NOTIFICATIONS_URL } from '@/services/push.service';
-import { addStaff, api, publishListing, resetDatabase, setupOperator } from './utils/helpers';
+import {
+  addStaff,
+  api,
+  disableFakePayments,
+  enableFakePayments,
+  onboardOperator,
+  payBooking,
+  publishListing,
+  resetDatabase,
+  setupOperator,
+} from './utils/helpers';
 
 const TZ = 'Europe/Paris';
 const auth = (token: string) => ({ Authorization: `Bearer ${token}` });
@@ -25,6 +35,7 @@ const at = (point: { lat: number; lng: number }, extra: Record<string, unknown> 
 
 async function parkingWithBooking() {
   const op = await setupOperator();
+  await onboardOperator(op.operator.id);
   await api()
     .put('/api/internal/pricing')
     .set(auth(op.token))
@@ -65,6 +76,7 @@ async function parkingWithBooking() {
     });
   if (res.status !== 201) throw new Error(JSON.stringify(res.body));
   const { reference, manageToken } = res.body as { reference: string; manageToken: string };
+  await payBooking(reference, manageToken, stripe.sessions);
   // The drop-off is in an hour: the arrival block is open.
   const reservation = await prisma.reservation.update({
     where: { reference },
@@ -86,13 +98,18 @@ let fetchMock: jest.SpyInstance;
 const pushCalls = () => fetchMock.mock.calls.filter(([url]) => String(url) === ONESIGNAL_NOTIFICATIONS_URL);
 const pushBodies = () => pushCalls().map(([, init]) => JSON.parse((init as RequestInit).body as string));
 
+let stripe: ReturnType<typeof enableFakePayments>;
 beforeEach(async () => {
   await resetDatabase();
   delete process.env.ONESIGNAL_APP_ID;
   delete process.env.ONESIGNAL_REST_API_KEY;
+  stripe = enableFakePayments();
   fetchMock = jest.spyOn(global, 'fetch').mockImplementation(async () => new Response(JSON.stringify({ id: 'n1' }), { status: 200 }));
 });
-afterEach(() => fetchMock.mockRestore());
+afterEach(() => {
+  fetchMock.mockRestore();
+  disableFakePayments();
+});
 afterAll(() => prisma.$disconnect());
 
 describe('règles (domaine)', () => {

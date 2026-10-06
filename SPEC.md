@@ -56,7 +56,7 @@ Règles métier :
 - Une marge de sécurité configurable (ex. 5 % de places non réservables).
 - Les fuseaux horaires sont gérés en Europe/Paris côté interface, UTC en base.
 
-Paiement : le MVP peut démarrer avec paiement sur place (le plus simple pour le client n°1), mais la page de réservation doit être conçue pour accueillir le paiement en ligne dès le jalon 3 (voir section 3 bis, qui le détaille). Hors MVP : codes promo, avoirs, facturation automatique.
+Paiement : **tout paiement se fait en ligne sur Plazo** (décision du 06/10/2026 : plus de paiement sur place, même avec un seul loueur) ; voir section 3 bis. Hors MVP : codes promo, avoirs, facturation automatique.
 
 ### Bloc 2 — Plan du parking et affectation des véhicules
 
@@ -354,7 +354,7 @@ Version mobile d'abord (la majorité des réservations se fait sur téléphone),
 4. **Confirmation** : au retour, le serveur interroge Stripe et confirme aussitôt si c'est payé ; le webhook de Stripe fait de même (sans doublon). En attendant : « Paiement en cours de vérification… » (la page se met à jour seule). L'email et le SMS de confirmation partent une seule fois, après le paiement.
 5. **Expiration** : à la fin du délai sans paiement (webhook `checkout.session.expired`, lecture de la réservation, tâche planifiée), la réservation est annulée et la place libérée ; l'étape 2 affiche « Le délai est dépassé » avec « Recommencer la réservation ». Un paiement arrivé juste après l'expiration garde la réservation si la place est encore libre, sinon il est remboursé.
 6. **Dans l'app mobile**, l'étape 2 ouvre la **feuille de paiement native de Stripe** (carte, Apple Pay, Google Pay) au lieu de quitter l'app : le serveur crée (ou reprend) un *PaymentIntent* pour la réservation tenue (`POST /public/bookings/:ref/payment-intent`, mêmes montants et même commission que Checkout, une seule façon de payer à la fois : la page Checkout ouverte est fermée, et inversement). La confirmation est la même (webhook `payment_intent.succeeded` ou lecture de la réservation, messages envoyés une fois, paiement tardif gardé ou remboursé) ; un refus de carte (`payment_intent.payment_failed`) laisse la place tenue pour réessayer. La version web de l'app garde la page Checkout.
-7. **Sans clé Stripe** (`STRIPE_SECRET_KEY` vide), rien ne change : réservation confirmée tout de suite, paiement sur place, textes « paiement sur place ».
+7. **Sans clé Stripe** (`STRIPE_SECRET_KEY` vide), la réservation en ligne est **indisponible** (décision du 06/10/2026 : plus de paiement sur place) : le site et l'app affichent « Réservation en ligne indisponible pour le moment » et `POST /public/bookings` répond 409 `online_booking_unavailable`. Le loueur garde la saisie manuelle (téléphone, comptoir) dans l'espace pro.
 
 ### Règles métier spécifiques
 

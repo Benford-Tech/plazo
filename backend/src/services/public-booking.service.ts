@@ -72,9 +72,10 @@ export class PublicBookingService {
     const departureFlight = this.reservations.normalizeFlight(data.departureFlight, 'departureFlight');
     const email = data.customerEmail.trim().toLowerCase();
     const plate = plateKey(data.plate);
-    const online = this.payments.enabled();
+    // Every Plazo booking is paid online (06/10/2026): without Stripe on the platform, no booking.
+    if (!this.payments.enabled()) throw new HttpException(httpStatus.CONFLICT, 'Online booking is not available yet', 'online_booking_unavailable');
     // Lapsed holds first: their places and their vehicles are free again.
-    if (online) await this.payments.expireLapsedHolds();
+    await this.payments.expireLapsedHolds();
 
     let reservation: BookingRecord | null;
     try {
@@ -90,21 +91,19 @@ export class PublicBookingService {
         if (quote.fullNights.length) {
           throw new HttpException(httpStatus.CONFLICT, 'At least one night is full', 'overbooked', { fullNights: quote.fullNights });
         }
-        // Payments on: only parkings whose operator takes online payments can be booked.
-        const operator = online ? await tx.operator.findUniqueOrThrow({ where: { id: listing.parking.operatorId } }) : null;
-        if (operator && this.payments.modeFor(operator) !== 'online') {
+        // Only parkings whose operator takes online payments can be booked.
+        const operator = await tx.operator.findUniqueOrThrow({ where: { id: listing.parking.operatorId } });
+        if (this.payments.modeFor(operator) !== 'online') {
           throw new HttpException(httpStatus.CONFLICT, 'This parking cannot be booked online yet', 'online_booking_unavailable');
         }
-        const payment = operator
-          ? {
-              status: 'pending_payment' as const,
-              paymentStatus: 'pending' as const,
-              holdExpiresAt: new Date(Date.now() + HOLD_MINUTES * 60000),
-              // Amount, Plazo's commission and the operator's share, from the price computed here
-              // (never the client's).
-              ...this.payments.split(operator, quote.priceCents),
-            }
-          : {};
+        const payment = {
+          status: 'pending_payment' as const,
+          paymentStatus: 'pending' as const,
+          holdExpiresAt: new Date(Date.now() + HOLD_MINUTES * 60000),
+          // Amount, Plazo's commission and the operator's share, from the price computed here
+          // (never the client's).
+          ...this.payments.split(operator, quote.priceCents),
+        };
 
         const created = await tx.reservation.create({
           data: {
