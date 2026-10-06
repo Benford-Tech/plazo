@@ -225,11 +225,7 @@ class _MapHero extends StatelessWidget {
             : 'results.available_many'.tr(args: ['$count']);
         final live = state.live;
         final shuttleCount = live?.shuttles.length ?? 0;
-        final shuttlesLabel = shuttleCount == 0
-            ? 'search.shuttles_none'.tr()
-            : shuttleCount == 1
-            ? 'search.shuttles_one'.tr()
-            : 'search.shuttles_many'.tr(args: ['$shuttleCount']);
+        final shuttlesLabel = shuttleCount == 1 ? 'search.shuttles_one'.tr() : 'search.shuttles_many'.tr(args: ['$shuttleCount']);
         final titles = {for (final r in located) r.slug: r.title, for (final p in live?.parkings ?? const <LiveParkingModel>[]) p.slug: p.title};
         return Padding(
           padding: const EdgeInsets.fromLTRB(16, 14, 16, 0),
@@ -305,12 +301,13 @@ class _MapHero extends StatelessWidget {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         _FloatingPill(key: const Key('search-count'), text: countLabel, count: count > 0 ? '$count' : null),
-                        if (live != null) ...[
+                        // Only while shuttles are running: no "none" pill on a quiet map.
+                        if (shuttleCount > 0) ...[
                           const SizedBox(height: 8),
                           _FloatingPill(
                             key: const Key('search-shuttles'),
                             text: shuttlesLabel,
-                            leading: ShuttleIcon(tone: shuttleCount > 0 ? ShuttleTone.terminal : ShuttleTone.unknown, size: 18),
+                            leading: const ShuttleIcon(tone: ShuttleTone.terminal, size: 18),
                           ),
                         ],
                       ],

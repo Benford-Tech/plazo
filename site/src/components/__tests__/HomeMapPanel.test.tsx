@@ -62,6 +62,28 @@ describe("HomeMapPanel (K-A : carte vivante)", () => {
     vi.unstubAllGlobals();
   });
 
+  it("sans navette en circulation, aucune pastille de navettes", async () => {
+    const fetchMock = vi.fn().mockResolvedValue({ ok: true, json: async () => ({ ...live, shuttles: [] }) });
+    vi.stubGlobal("fetch", fetchMock);
+    render(
+      <HomeMapPanel
+        airport={{ slug: "lyon-saint-exupery", name: "Lyon Saint-Exupéry", location: { lat: 45.7256, lng: 5.0811 } }}
+        results={[result("soleil")]}
+        featured="soleil"
+        arrivee="2026-10-07T08:00"
+        retour="2026-10-14T18:00"
+        days={7}
+      />,
+    );
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(0);
+    });
+    expect(fetchMock).toHaveBeenCalled();
+    expect(screen.getByTestId("home-map-count")).toBeInTheDocument();
+    expect(screen.queryByTestId("home-map-shuttles")).not.toBeInTheDocument();
+    expect(screen.queryByText(/Aucune navette/)).not.toBeInTheDocument();
+  });
+
   it("montre les navettes en circulation, et la pastille choisie devient la carte orange", async () => {
     const fetchMock = vi.fn().mockResolvedValue({ ok: true, json: async () => live });
     vi.stubGlobal("fetch", fetchMock);

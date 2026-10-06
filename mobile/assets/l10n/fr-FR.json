@@ -496,7 +496,6 @@
       "fly": "Décollez",
       "fly_sub": "Navette jusqu'au terminal"
     },
-    "shuttles_none": "Aucune navette en circulation",
     "shuttles_one": "1 navette en circulation",
     "shuttles_many": "{} navettes en circulation",
     "shuttle_marker": "Navette de {}",
