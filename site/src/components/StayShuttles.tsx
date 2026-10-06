@@ -5,6 +5,7 @@ import { LivePill } from "./ReturnLive";
 import { Plate } from "./Plate";
 import { bookingRequest } from "@/lib/booking-client";
 import { fr } from "@/lib/fr";
+import { ShuttleIcon, shuttleTone } from "@/lib/shuttle-icon";
 import type { StayShuttles as StayShuttlesData } from "@/lib/types";
 
 const POLL_MS = 12_000;
@@ -47,12 +48,7 @@ export function StayShuttles({ reference, token, initial = null }: { reference: 
     <section aria-labelledby="navette-sejour" data-testid="stay-shuttles" className="card flex flex-col gap-3 p-4 md:p-[22px]">
       <div className="flex items-center justify-between gap-3">
         <h2 id="navette-sejour" className={`flex items-center gap-2 text-base font-extrabold ${shuttles.length ? "text-peach" : ""}`}>
-          {shuttles.length > 0 && (
-            <span aria-hidden="true" className="relative flex size-2.5">
-              <span className="absolute inline-flex size-full animate-ping rounded-full bg-peach opacity-60 motion-reduce:hidden" />
-              <span className="relative inline-flex size-2.5 rounded-full bg-peach" />
-            </span>
-          )}
+          <ShuttleIcon tone={shuttles.length ? "airport" : "unknown"} size={20} />
           {shuttles.length ? t.titleLive(shuttles.length) : t.title}
         </h2>
         {shuttles.length > 0 && <LivePill at={fetchedAt} now={now} />}
@@ -67,7 +63,10 @@ export function StayShuttles({ reference, token, initial = null }: { reference: 
             return (
               <li key={s.tripId} data-testid={`stay-shuttle-${s.tripId}`} className={`flex flex-col gap-1 rounded-[18px] border bg-white px-4 py-3 ${s.mine ? "border-2 border-peach" : "border-line"}`}>
                 <div className="flex flex-wrap items-center justify-between gap-2">
-                  <b className="text-[15px]">{t.vehicle(s.vehicle.colour)}</b>
+                  <b className="flex items-center gap-2 text-[15px]">
+                    <ShuttleIcon tone={shuttleTone(s.direction, !!s.position)} size={20} />
+                    {t.vehicle(s.vehicle.colour)}
+                  </b>
                   <span className={`rounded-full px-2.5 py-1 text-xs font-bold ${s.mine ? "bg-peach text-white" : "bg-tint text-soft"}`}>{s.mine ? t.mine : t.direction[s.direction]}</span>
                 </div>
                 {(s.vehicle.model || s.vehicle.plate) && (

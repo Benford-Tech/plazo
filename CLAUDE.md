@@ -323,7 +323,12 @@ Canevas de référence : https://claude.ai/artifact/6ezoCDyLXFNwhAH5ZWUf4u (rang
   boutons de zoom ; deux doigts sur téléphone), montre tous les parkings du séjour en pastilles (prix, ou « Complet »), les
   navettes en circulation en marqueurs orange animés (`GET /public/airports/:slug/live`, anonyme : position, sens, véhicule ;
   toutes les 12 s, `useAirportLive` / `SearchLivePolled`) et la pilule « N navettes en circulation » ; toucher une pastille met ce
-  parking dans la carte orange (sombre et « Complet à ces dates » s'il n'a pas de place). Page Ma réservation, véhicule sur place : bloc `ReturnLive` (client, `GET /api/public/bookings/:ref/return`
+  parking dans la carte orange (sombre et « Complet à ces dates » s'il n'a pas de place). **I-C « Icône navette » (06/10/2026,
+  site, app et pro)** : pictogramme de minibus vu de côté (Material `airport_shuttle`), tourné dans le sens du déplacement (cap
+  calculé côté client entre deux positions, `bearing` / `shuttleBearing`), couleur par sens : orange vers le terminal, pêche vers
+  l'aéroport, gris sans position (vert foncé / vert / gris dans l'espace pro) ; `site/src/lib/shuttle-icon.tsx`,
+  `admin/src/lib/shuttle-icon.tsx`, `mobile/lib/src/shared/widgets/shuttle_icon.dart` (`ShuttleIcon`, `ShuttlePin`) ; repris sur
+  la carte d'accueil, la pilule « N navettes », le bloc Navette, le retour en direct, la carte et les lignes des navettes pro. Page Ma réservation, véhicule sur place : bloc `ReturnLive` (client, `GET /api/public/bookings/:ref/return`
   toutes les 10 s avec le jeton en en-tête) : anneau de compte à rebours à la seconde, puces Atterrissage · Rendez-vous ·
   Navette, pilule « En direct · il y a N s », âge de la position de la navette, encart sombre « Retrouver ma voiture »
   avec la place du voiturier. **D (06/10/2026) : le site au niveau de l'app le jour J** : bloc `ArrivalBlock` « Prévenir de mon

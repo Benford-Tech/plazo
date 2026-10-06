@@ -234,7 +234,7 @@ class _MePill extends StatelessWidget {
     child: Row(
       mainAxisSize: MainAxisSize.min,
       children: [
-        const Icon(Icons.directions_bus_rounded, size: 14, color: Colors.white),
+        const Icon(Icons.airport_shuttle_rounded, size: 15, color: Colors.white),
         const SizedBox(width: 4),
         Text(label, style: AppText.strong(size: 12, color: Colors.white)),
       ],

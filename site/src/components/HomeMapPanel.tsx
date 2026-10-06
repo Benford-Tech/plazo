@@ -6,6 +6,7 @@ import { HomeMap, shuttlesOf, useAirportLive } from "./HomeMap";
 import { stayQuery } from "@/lib/dates";
 import { fr } from "@/lib/fr";
 import { formatShortEuros } from "@/lib/money";
+import { ShuttleIcon } from "@/lib/shuttle-icon";
 import type { LatLng, SearchResult } from "@/lib/types";
 
 const km = (value: number) => (value < 10 ? value.toFixed(1).replace(".", ",") : String(Math.round(value)));
@@ -51,10 +52,7 @@ export function HomeMapPanel({
         <span className="pill-float text-soft">{fr.home.mapStay(days)}</span>
         {live && (
           <span className="pill-float" data-testid="home-map-shuttles">
-            <span aria-hidden="true" className="relative flex size-2.5">
-              {live.shuttles.length > 0 && <span className="absolute inline-flex size-full animate-ping rounded-full bg-accent opacity-60 motion-reduce:hidden" />}
-              <span className={`relative inline-flex size-2.5 rounded-full ${live.shuttles.length > 0 ? "bg-accent" : "bg-line"}`} />
-            </span>
+            <ShuttleIcon tone={live.shuttles.length > 0 ? "terminal" : "unknown"} size={18} />
             {fr.home.mapShuttles(live.shuttles.length)}
           </span>
         )}

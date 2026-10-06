@@ -3,6 +3,7 @@ import "maplibre-gl/dist/maplibre-gl.css";
 import maplibreWorkerUrl from "maplibre-gl/dist/maplibre-gl-worker.mjs?worker&url";
 import { useEffect, useRef } from "react";
 import { fr } from "@/lib/fr";
+import { nextHeadings, SHUTTLE_COLOURS, shuttleSvg, shuttleTone, shuttleTransform } from "@/lib/shuttle-icon";
 import type { LiveShuttles, LiveTrip, ShuttleStop } from "@/lib/types";
 
 /** IGN Géoplateforme "Plan IGN v2" (no key), like the meeting point map. */
@@ -47,14 +48,19 @@ function squarePin(label: string): HTMLElement {
   );
 }
 
-/** A running shuttle: a yellow teardrop with its number and a green (fresh) or amber (stale) dot. */
-function busPin(index: number, fresh: boolean): HTMLElement {
+/**
+ * A running shuttle (I-C, 06/10/2026): the minibus pictogram turned the way it drives, in a lime pill
+ * with its number, and a green (fresh) or amber (stale) dot.
+ */
+function busPin(index: number, fresh: boolean, trip: LiveTrip, heading: number | null): HTMLElement {
   const n = String(index + 1).padStart(2, "0");
+  const colour = SHUTTLE_COLOURS[shuttleTone(trip.direction, true)];
   return el(
-    `<span style="position:absolute;inset:0;border-radius:50% 50% 50% 0;transform:rotate(-45deg);background:${YELLOW};box-shadow:0 8px 20px rgba(0,0,0,.25)"></span>` +
-      `<b style="position:relative;font:700 13px 'JetBrains Mono',monospace;color:${BLACK}">${n}</b>` +
+    `<span style="position:relative;display:flex;align-items:center;gap:4px;height:34px;padding:0 9px 0 6px;border-radius:999px;background:${YELLOW};border:2px solid ${colour};color:${colour};box-shadow:0 8px 20px rgba(0,0,0,.25)">` +
+      `<span style="display:flex;transform:${shuttleTransform(heading) || "none"}">${shuttleSvg(20)}</span>` +
+      `<b style="font:700 13px 'JetBrains Mono',monospace;color:${BLACK}">${n}</b></span>` +
       `<i style="position:absolute;top:-3px;right:-3px;width:12px;height:12px;border-radius:50%;border:2px solid #FFFFFF;background:${fresh ? OK : WARN}"></i>`,
-    "position:relative;width:40px;height:40px;display:grid;place-items:center",
+    "position:relative;display:grid;place-items:center",
   );
 }
 
@@ -86,6 +92,8 @@ export default function LiveShuttlesMap({ live }: { live: LiveShuttles }) {
   const containerRef = useRef<HTMLDivElement>(null);
   const mapRef = useRef<MapLibreMap | null>(null);
   const markersRef = useRef<Marker[]>([]);
+  // I-C: each shuttle's heading from its previous position (the API gives none).
+  const headingsRef = useRef(new Map<string, { position: { lat: number; lng: number }; heading: number | null }>());
   const fittedRef = useRef(false);
 
   useEffect(() => {
@@ -116,6 +124,7 @@ export default function LiveShuttlesMap({ live }: { live: LiveShuttles }) {
     const map = mapRef.current;
     if (!map) return;
     markersRef.current.forEach(m => m.remove());
+    headingsRef.current = nextHeadings(headingsRef.current, live.trips);
     const markers: Marker[] = [];
     const points: [number, number][] = [];
     if (live.parking.lat !== null && live.parking.lng !== null) {
@@ -135,7 +144,7 @@ export default function LiveShuttlesMap({ live }: { live: LiveShuttles }) {
       if (!trip.position) return;
       const fresh = (trip.positionAgeSeconds ?? 0) <= FRESH_SECONDS;
       markers.push(
-        new Marker({ element: busPin(index, fresh), anchor: "bottom" })
+        new Marker({ element: busPin(index, fresh, trip, headingsRef.current.get(trip.id)?.heading ?? null), anchor: "bottom" })
           .setLngLat([trip.position.lng, trip.position.lat])
           .setPopup(new Popup({ closeButton: false, offset: 44, className: "plazo-popup" }).setHTML(popupHtml(trip, index)))
           .addTo(map),

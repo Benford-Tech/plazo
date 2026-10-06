@@ -19,6 +19,7 @@ import '../../../../shared/widgets/gradient_button.dart';
 import '../../../../shared/widgets/icon_tile.dart';
 import '../../../../shared/widgets/ign_map.dart';
 import '../../../../shared/widgets/live_dot.dart';
+import '../../../../shared/widgets/shuttle_icon.dart';
 import '../../../../shared/widgets/status_badge.dart';
 import '../../../trips/presentation/bloc/trips_bloc.dart';
 import '../../data/models/public_models.dart';
@@ -291,7 +292,7 @@ class _MapHero extends StatelessWidget {
                               point: LatLng(s.position!.lat, s.position!.lng),
                               width: 36,
                               height: 36,
-                              child: _ShuttleMarker(shuttle: s, parkingTitle: titles[s.parking] ?? s.parking),
+                              child: _ShuttleMarker(shuttle: s, parkingTitle: titles[s.parking] ?? s.parking, heading: state.headings[s.id]),
                             ),
                         ],
                       ),
@@ -306,7 +307,11 @@ class _MapHero extends StatelessWidget {
                         _FloatingPill(key: const Key('search-count'), text: countLabel, count: count > 0 ? '$count' : null),
                         if (live != null) ...[
                           const SizedBox(height: 8),
-                          _FloatingPill(key: const Key('search-shuttles'), text: shuttlesLabel, live: shuttleCount > 0),
+                          _FloatingPill(
+                            key: const Key('search-shuttles'),
+                            text: shuttlesLabel,
+                            leading: ShuttleIcon(tone: shuttleCount > 0 ? ShuttleTone.terminal : ShuttleTone.unknown, size: 18),
+                          ),
                         ],
                       ],
                     ),
@@ -389,12 +394,14 @@ class _ParkingPin extends StatelessWidget {
   }
 }
 
-/// A shuttle on the road (K-A): an orange bus with a pulsing halo; its label names the parking,
-/// the direction and the age of the position — never the driver.
+/// A shuttle on the road (K-A, then I-C): the minibus pictogram turned the way it drives, orange to
+/// the terminal and peach to the airport, with a pulsing halo; its label names the parking, the
+/// direction and the age of the position — never the driver.
 class _ShuttleMarker extends StatelessWidget {
-  const _ShuttleMarker({required this.shuttle, required this.parkingTitle});
+  const _ShuttleMarker({required this.shuttle, required this.parkingTitle, this.heading});
   final LiveShuttleModel shuttle;
   final String parkingTitle;
+  final double? heading;
 
   @override
   Widget build(BuildContext context) {
@@ -412,18 +419,8 @@ class _ShuttleMarker extends StatelessWidget {
         child: Stack(
           alignment: Alignment.center,
           children: [
-            const LiveDot(color: AppColors.accent, size: 36),
-            Container(
-              width: 30,
-              height: 30,
-              decoration: BoxDecoration(
-                color: AppColors.accent,
-                shape: BoxShape.circle,
-                border: Border.all(color: Colors.white, width: 2),
-                boxShadow: const [BoxShadow(color: Color(0x55000000), blurRadius: 6, offset: Offset(0, 2))],
-              ),
-              child: const Icon(Icons.directions_bus_rounded, size: 17, color: Colors.white),
-            ),
+            LiveDot(color: shuttleColour(shuttleToneOf(shuttle.direction, hasPosition: true)), size: 36),
+            ShuttlePin(tone: shuttleToneOf(shuttle.direction, hasPosition: true), heading: heading, size: 32),
           ],
         ),
       ),
@@ -432,17 +429,17 @@ class _ShuttleMarker extends StatelessWidget {
 }
 
 class _FloatingPill extends StatelessWidget {
-  const _FloatingPill({super.key, required this.text, this.count, this.dark = false, this.live});
+  const _FloatingPill({super.key, required this.text, this.count, this.dark = false, this.leading});
   final String text;
   final String? count;
   final bool dark;
 
-  /// K-A: a dot before the text — pulsing orange when true, grey when false, none when null.
-  final bool? live;
+  /// I-C: the shuttle pictogram before the text.
+  final Widget? leading;
 
   @override
   Widget build(BuildContext context) => Container(
-    padding: EdgeInsets.fromLTRB(count == null && live == null ? 12 : 6, 6, 12, 6),
+    padding: EdgeInsets.fromLTRB(count == null && leading == null ? 12 : 6, 6, 12, 6),
     decoration: BoxDecoration(
       color: dark ? AppColors.brownOrInk : Colors.white,
       borderRadius: AppRadius.pill,
@@ -460,16 +457,7 @@ class _FloatingPill extends StatelessWidget {
           ),
           const SizedBox(width: 7),
         ],
-        if (live != null) ...[
-          SizedBox(
-            width: 24,
-            height: 24,
-            child: Center(
-              child: LiveDot(color: live! ? AppColors.accent : AppColors.muted, size: 10, animate: live!),
-            ),
-          ),
-          const SizedBox(width: 4),
-        ],
+        if (leading != null) ...[SizedBox(width: 24, height: 24, child: Center(child: leading)), const SizedBox(width: 4)],
         Text(text, style: AppText.strong(size: 12, color: dark ? Colors.white : AppColors.ink)),
       ],
     ),

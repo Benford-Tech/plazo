@@ -5,6 +5,7 @@ import { Plate } from "./Plate";
 import { bookingRequest } from "@/lib/booking-client";
 import { fr } from "@/lib/fr";
 import { directionsUrl } from "@/lib/listing";
+import { ShuttleIcon, shuttleTone } from "@/lib/shuttle-icon";
 import type { ReturnNoticeKind, TravellerReturn } from "@/lib/types";
 
 const POLL_MS = 10_000;
@@ -274,7 +275,10 @@ export function ReturnLive({ reference, token, initial }: { reference: string; t
       )}
       {shuttle && (
         <div className="flex flex-wrap items-center justify-between gap-2 rounded-[16px] bg-tint px-3.5 py-3 text-sm">
-          <span className="font-semibold">{t.shuttleLine(shuttle.driverFirstName, vehicle) || t.stepShuttle}</span>
+          <span className="flex items-center gap-2 font-semibold">
+            <ShuttleIcon tone={shuttleTone(shuttle.direction, !!shuttle.position)} size={20} />
+            {t.shuttleLine(shuttle.driverFirstName, vehicle) || t.stepShuttle}
+          </span>
           <LivePill label={t.position} at={fetchedAt - (shuttle.positionAgeSeconds ?? 0) * 1000} now={now} />
         </div>
       )}

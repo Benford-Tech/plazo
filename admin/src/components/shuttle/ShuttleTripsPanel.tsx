@@ -12,6 +12,8 @@ import { adminApi } from "@/lib/api";
 import { timeAgo, timeOf } from "@/lib/datetime";
 import { describeError, shuttleTripsFr as t } from "@/lib/fr";
 import { can } from "@/lib/roles";
+import { shuttleTone } from "@/lib/shuttle-icon";
+import { ShuttleIcon } from "./ShuttleIcon";
 import type { DepartureRow, LiveShuttles, LiveTrip, PickupRow, ShuttleDirection, ShuttleStop, ShuttleVehicle, StaffTrip } from "@/lib/types";
 import { cn } from "@/lib/utils";
 
@@ -68,7 +70,7 @@ function LiveTrips({ live, now, canEnd, onEnd, ending }: { live: LiveShuttles | 
         {live && live.trips.length === 0 && <li className="px-3.5 py-3 text-[13px] text-muted-foreground">{l.none}</li>}
         {live?.trips.map((trip, i) => (
           <li key={trip.id} data-testid="live-trip" className="flex flex-wrap items-center gap-x-3 gap-y-1 px-3.5 py-2.5 font-mono text-xs">
-            <BusFront className="h-4 w-4 shrink-0 text-lime-deep" aria-hidden="true" />
+            <ShuttleIcon tone={shuttleTone(trip.direction, !!trip.position)} size={18} />
             <b className="font-medium">{String(i + 1).padStart(2, "0")}</b>
             <span className="text-[13px] font-sans font-semibold">{trip.driverName}</span>
             <span className="text-muted-foreground">{t.start.direction[trip.direction]}</span>

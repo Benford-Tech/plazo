@@ -26,6 +26,9 @@ abstract class SearchState with _$SearchState {
     AirportLiveModel? live,
     DateTime? liveAt,
 
+    /// I-C: the heading of each moving shuttle, from its previous position (trip id → degrees).
+    @Default(<String, double>{}) Map<String, double> headings,
+
     /// K-A: the parking the traveller tapped on the map; null: the cheapest one.
     String? selectedSlug,
   }) = _SearchState;

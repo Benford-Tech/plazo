@@ -4,6 +4,7 @@ import maplibregl from "maplibre-gl";
 import "maplibre-gl/dist/maplibre-gl.css";
 import { useEffect, useRef, useState } from "react";
 import { fr } from "@/lib/fr";
+import { shuttleMarkerHtml, type ShuttleTone } from "@/lib/shuttle-icon";
 import type { LatLng } from "@/lib/types";
 
 /** IGN Géoplateforme "Plan IGN v2" raster tiles (WMTS, Web Mercator): open licence, no key. */
@@ -19,7 +20,7 @@ export interface MapParking {
   location: LatLng;
 }
 
-/** A shuttle on the road (K-A): where it is and whose it is — nothing else. */
+/** A shuttle on the road (K-A): where it is, where it goes and whose it is — nothing else. */
 export interface MapShuttle {
   id: string;
   /** "Navette de Parking Soleil · vers le terminal" */
@@ -27,24 +28,22 @@ export interface MapShuttle {
   position: LatLng;
   /** "position il y a 12 s", when known. */
   age: string | null;
+  /** I-C: the direction gives the colour, the heading turns the bus. */
+  tone: ShuttleTone;
+  heading: number | null;
 }
-
-/** Material "directions_bus", drawn white inside the orange marker. */
-const BUS_PATH =
-  "M4 16c0 .88.39 1.67 1 2.22V20c0 .55.45 1 1 1h1c.55 0 1-.45 1-1v-1h8v1c0 .55.45 1 1 1h1c.55 0 1-.45 1-1v-1.78c.61-.55 1-1.34 1-2.22V6c0-3.5-3.58-4-8-4s-8 .5-8 4v10zm3.5 1c-.83 0-1.5-.67-1.5-1.5S6.67 14 7.5 14s1.5.67 1.5 1.5S8.33 17 7.5 17zm9 0c-.83 0-1.5-.67-1.5-1.5s.67-1.5 1.5-1.5 1.5.67 1.5 1.5-.67 1.5-1.5 1.5zm1.5-6H6V6h12v5z";
 
 function shuttleElement(shuttle: MapShuttle): HTMLElement {
   const el = document.createElement("div");
-  el.className = "relative flex size-9 items-center justify-center rounded-full bg-accent text-white shadow-[0_6px_14px_-6px_rgba(0,0,0,.5)] ring-2 ring-white";
+  el.className = "relative flex size-[38px] items-center justify-center";
   el.setAttribute("role", "img");
   el.dataset.shuttle = shuttle.id;
-  el.innerHTML =
-    '<span class="absolute inset-0 rounded-full bg-accent opacity-50 animate-ping motion-reduce:hidden"></span>' +
-    `<svg viewBox="0 0 24 24" width="20" height="20" fill="currentColor" aria-hidden="true" class="relative"><path d="${BUS_PATH}"/></svg>`;
+  el.dataset.look = `${shuttle.tone}:${shuttle.heading ?? ""}`;
+  el.innerHTML = shuttleMarkerHtml(shuttle.tone, shuttle.heading);
   return el;
 }
 
-/** One marker per shuttle: added, moved or dropped so the map is never rebuilt for them. */
+/** One marker per shuttle: added, moved, redrawn when it turns, or dropped — the map is never rebuilt for them. */
 function syncShuttles(map: maplibregl.Map, current: Map<string, maplibregl.Marker>, list: MapShuttle[]) {
   const seen = new Set<string>();
   for (const s of list) {
@@ -53,8 +52,14 @@ function syncShuttles(map: maplibregl.Map, current: Map<string, maplibregl.Marke
     const existing = current.get(s.id);
     if (existing) {
       existing.setLngLat([s.position.lng, s.position.lat]);
-      existing.getElement().setAttribute("aria-label", label);
-      existing.getElement().title = label;
+      const el = existing.getElement();
+      const look = `${s.tone}:${s.heading ?? ""}`;
+      if (el.dataset.look !== look) {
+        el.dataset.look = look;
+        el.innerHTML = shuttleMarkerHtml(s.tone, s.heading);
+      }
+      el.setAttribute("aria-label", label);
+      el.title = label;
       continue;
     }
     const el = shuttleElement(s);

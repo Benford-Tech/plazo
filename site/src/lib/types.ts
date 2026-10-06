@@ -50,6 +50,8 @@ export interface LiveShuttle {
   position: LatLng | null;
   positionAgeSeconds: number | null;
   startedAt: string;
+  /** I-C: computed in the browser from the previous position (never sent by the API). */
+  heading?: number | null;
 }
 
 export interface AirportResponse {

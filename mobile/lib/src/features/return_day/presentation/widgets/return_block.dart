@@ -13,6 +13,7 @@ import '../../../../shared/theme/theme.dart';
 import '../../../../shared/widgets/app_card.dart';
 import '../../../../shared/widgets/gradient_button.dart';
 import '../../../../shared/widgets/ign_map.dart';
+import '../../../../shared/widgets/shuttle_icon.dart';
 import '../../../../shared/widgets/live_dot.dart';
 import '../../../../shared/widgets/live_pill.dart';
 import '../../../arrival/data/models/arrival_model.dart';
@@ -396,7 +397,7 @@ class _ShuttleLive extends StatelessWidget {
       children: _spaced([
         Row(
           children: [
-            const LiveDot(color: AppColors.peach),
+            ShuttleIcon(tone: shuttleToneOf(shuttle.direction, hasPosition: position != null), size: 22),
             const SizedBox(width: 6),
             Expanded(
               child: Text('return_day.shuttle_live'.tr(), style: AppText.strong(size: 16, color: AppColors.peach)),

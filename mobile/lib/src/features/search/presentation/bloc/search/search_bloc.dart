@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:bloc/bloc.dart';
+import 'package:latlong2/latlong.dart';
 import 'package:freezed_annotation/freezed_annotation.dart';
 
 import '../../../../../core/constants/app_constants.dart';
@@ -8,6 +9,7 @@ import '../../../../../core/enums/view_state.dart';
 import '../../../../../core/helpers/stay.dart';
 import '../../../../../core/utils/clock.dart';
 import '../../../../../core/utils/use_case.dart';
+import '../../../../../shared/widgets/shuttle_icon.dart';
 import '../../../data/models/public_models.dart';
 import '../../../domain/usecases/public_use_cases.dart';
 
@@ -75,7 +77,11 @@ class SearchBloc extends Bloc<SearchEvent, SearchState> {
     final slug = state.airportSlug;
     final result = await fetch(slug);
     if (slug != state.airportSlug) return;
-    result.fold((_) {}, (data) => emit(state.copyWith(live: data, liveAt: _clock())));
+    result.fold((_) {}, (data) {
+      final before = {for (final s in state.movingShuttles) s.id: LatLng(s.position!.lat, s.position!.lng)};
+      final now = {for (final s in data.shuttles) if (s.position != null) s.id: LatLng(s.position!.lat, s.position!.lng)};
+      emit(state.copyWith(live: data, liveAt: _clock(), headings: shuttleHeadings(before, state.headings, now)));
+    });
   }
 
   void _onStayChanged(SearchStayChanged event, Emitter<SearchState> emit) {

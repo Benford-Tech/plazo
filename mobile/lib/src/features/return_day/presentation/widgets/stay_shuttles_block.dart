@@ -7,8 +7,8 @@ import '../../../../core/helpers/plate.dart';
 import '../../../../shared/theme/theme.dart';
 import '../../../../shared/widgets/app_card.dart';
 import '../../../../shared/widgets/ign_map.dart';
-import '../../../../shared/widgets/live_dot.dart';
 import '../../../../shared/widgets/live_pill.dart';
+import '../../../../shared/widgets/shuttle_icon.dart';
 import '../../../../shared/widgets/status_badge.dart';
 import '../../data/models/return_model.dart';
 import '../bloc/stay_shuttles_bloc.dart';
@@ -35,7 +35,8 @@ class StayShuttlesBlock extends StatelessWidget {
           children: [
             Row(
               children: [
-                if (shuttles.isNotEmpty) ...[const LiveDot(color: AppColors.peach), const SizedBox(width: 6)],
+                ShuttleIcon(tone: shuttles.isNotEmpty ? ShuttleTone.airport : ShuttleTone.unknown, size: 20),
+                const SizedBox(width: 6),
                 Expanded(
                   child: Semantics(
                     header: true,
@@ -97,6 +98,8 @@ class _ShuttleCard extends StatelessWidget {
         children: [
           Row(
             children: [
+              ShuttleIcon(tone: shuttleToneOf(s.direction, hasPosition: s.position != null), size: 20),
+              const SizedBox(width: 8),
               Expanded(child: Text(title, style: AppText.strong(size: 15))),
               if (s.mine)
                 StatusBadge(text: 'stay_shuttles.mine'.tr(), tone: BadgeTone.peach)
