@@ -666,6 +666,8 @@ export interface PickupRow {
   tripId: string | null;
   /** E (06/10/2026): what the traveller signalled today. */
   notice?: ReturnNotice | null;
+  /** F-A: when the shuttle should leave the parking (missing from an older API). */
+  leaveAt?: string;
 }
 
 /** An arrived traveller waiting at the parking for the shuttle to the terminal (drop-off). */
@@ -682,6 +684,31 @@ export interface DepartureRow {
   stopId: string | null;
   stopName: string | null;
   tripId: string | null;
+  /** F-A: when the shuttle should leave for the terminal; `expected`: still to come (greyed, not selectable). */
+  leaveAt?: string;
+  expected?: boolean;
+}
+
+/** F-A: a traveller dropped at the terminal (or fetched back), kept on the driver's list until their return. */
+export interface StayingRow {
+  reservationId: string;
+  reference: string;
+  customerName: string;
+  passengers: number;
+  plate: string;
+  status: ReservationStatus;
+  returnAt: string;
+  returnFlight: string | null;
+  flight: PickupFlight;
+  spot: string | null;
+  stopName: string | null;
+  returnedAt: string | null;
+}
+
+export interface Staying {
+  serverTime: string;
+  days: { date: string; rows: StayingRow[] }[];
+  returnedToday: StayingRow[];
 }
 
 /** A shuttle trip as its driver (or the team) sees it. */

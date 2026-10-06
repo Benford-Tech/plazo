@@ -25,7 +25,7 @@ void _initBlocs() {
     ..registerFactory(() => ArrivalBloc(locator(), locator(), locator(), locator(), locator(), locator(), locator()))
     ..registerFactory(() => ReturnBloc(locator(), locator(), locator(), notice: locator()))
     ..registerFactory(() => MeetingRouteBloc(locator(), locator(), locator(), locator()))
-    ..registerFactory(() => ShuttleBloc(locator(), locator(), locator(), locator(), locator(), locator(), locator(), locator(), locator(), pollInterval: AppConstants.livePollInterval))
+    ..registerFactory(() => ShuttleBloc(locator(), locator(), locator(), locator(), locator(), locator(), locator(), locator(), locator(), staying: locator(), pollInterval: AppConstants.livePollInterval))
     ..registerFactory(() => LiveShuttlesBloc(locator(), pollInterval: AppConstants.livePollInterval))
     ..registerFactory(() => ShuttleWavesBloc(locator()))
     ..registerFactory(() => ProVehiclesBloc(locator(), locator(), locator(), locator()))

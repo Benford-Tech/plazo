@@ -1,5 +1,5 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { ArrowDownToLine, ArrowUpFromLine, BusFront, Check, CircleCheck, Circle, Info, MapPin, Navigation, TrainFront, Plane } from "lucide-react";
+import { ArrowDownToLine, ArrowUpFromLine, BusFront, Check, CircleCheck, Circle, Clock, Info, MapPin, Navigation, TrainFront, Plane } from "lucide-react";
 import { Suspense, lazy, useEffect, useMemo, useRef, useState } from "react";
 import { Link, useSearchParams } from "react-router-dom";
 import { toast } from "sonner";
@@ -9,12 +9,12 @@ import { useQuickCard } from "@/components/reservations/ReservationQuickCard";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useAuth } from "@/contexts/AuthContext";
 import { adminApi } from "@/lib/api";
-import { timeAgo, timeOf } from "@/lib/datetime";
-import { describeError, shuttleTripsFr as t } from "@/lib/fr";
+import { shortDay, timeAgo, timeOf } from "@/lib/datetime";
+import { describeError, fr, shuttleTripsFr as t } from "@/lib/fr";
 import { can } from "@/lib/roles";
 import { shuttleTone } from "@/lib/shuttle-icon";
 import { ShuttleIcon } from "./ShuttleIcon";
-import type { DepartureRow, LiveShuttles, LiveTrip, PickupRow, ShuttleDirection, ShuttleStop, ShuttleVehicle, StaffTrip } from "@/lib/types";
+import type { DepartureRow, LiveShuttles, LiveTrip, PickupRow, ShuttleDirection, ShuttleStop, ShuttleVehicle, StaffTrip, StayingRow } from "@/lib/types";
 import { cn } from "@/lib/utils";
 
 const LiveShuttlesMap = lazy(() => import("@/components/dashboard/LiveShuttlesMap"));
@@ -26,6 +26,9 @@ const POSITION_MIN_INTERVAL_MS = 10_000;
 
 /** The vehicle chosen for the next trip: one of the operator's, or a free description. */
 type VehicleChoice = { kind: "known"; id: string } | { kind: "free"; model: string; colour: string; plate: string };
+
+/** F-A: the earliest advised leave time of a group of rows. */
+const earliestLeave = (list: { leaveAt?: string }[]) => list.map(r => r.leaveAt).filter((x): x is string => !!x).sort()[0] ?? null;
 
 const vehicleLabel = (v: { model: string | null; colour: string | null; plate: string | null }) => [v.model, v.colour, v.plate].filter(Boolean).join(" · ");
 
@@ -270,16 +273,51 @@ function DepartureTile({ row, selected, onTrip, selectable, onToggle }: { row: D
   const s = t.start;
   const details = [row.arrivedAt ? s.arrivedAt(timeOf(row.arrivedAt)) : s.arrivalPlanned(timeOf(row.arrivalAt)), row.spot ? s.spot(row.spot) : null].filter(Boolean).join(" · ");
   return (
-    <li data-testid="departure-row" aria-selected={selected} className={cn("flex items-center gap-1 rounded-xl border bg-panel pr-2", selected || onTrip ? "border-2 border-primary" : "border-panel-line")}>
+    <li
+      data-testid="departure-row"
+      aria-selected={selected}
+      className={cn("flex items-center gap-1 rounded-xl border bg-panel pr-2", selected || onTrip ? "border-2 border-primary" : "border-panel-line", row.expected && "opacity-70")}
+    >
       <button type="button" disabled={!selectable} onClick={onToggle} className="flex min-w-0 flex-1 flex-wrap items-center gap-x-3 gap-y-1 px-3 py-2.5 text-left disabled:cursor-default">
         {selectable && (selected ? <CircleCheck className="h-5 w-5 text-lime-deep" aria-hidden="true" /> : <Circle className="h-5 w-5 text-panel-line" aria-hidden="true" />)}
         <span className="min-w-0 flex-1 truncate text-[14px] font-semibold">
           {row.customerName} <span className="font-normal text-muted-foreground">· {s.pax(row.passengers)}</span>
         </span>
-        {(onTrip || row.tripId) && <Badge tone="info">{s.badge.onTrip}</Badge>}
+        {onTrip || row.tripId ? <Badge tone="info">{s.badge.onTrip}</Badge> : row.expected ? <Badge tone="line">{s.expectedAt(timeOf(row.arrivalAt))}</Badge> : null}
         <span className="font-mono text-xs text-muted-foreground">{details}</span>
         <Plate value={row.plate} size="sm" />
       </button>
+      <CardLink id={row.reservationId} />
+    </li>
+  );
+}
+
+/** F-A: "Terminal 1" with, under it, "Départ conseillé 10:05" (the earliest leave time of the group). */
+function GroupHeader({ title, leaveAt }: { title: string; leaveAt: string | null }) {
+  return (
+    <h3 className="mb-1.5 px-1 font-mono text-[15px] font-medium">
+      {title}
+      {leaveAt && (
+        <span className="ml-2 inline-flex items-center gap-1 font-sans text-xs font-semibold text-lime-deep">
+          <Clock className="h-3.5 w-3.5" aria-hidden="true" />
+          {t.start.leaveAt(timeOf(leaveAt))}
+        </span>
+      )}
+    </h3>
+  );
+}
+
+/** F-A: a traveller away (band "En séjour") or back today (band "Rendus"): spot, name, return flight and time, status. */
+function StayingTile({ row }: { row: StayingRow }) {
+  const details = [row.returnFlight ?? row.stopName, timeOf(row.returnedAt ?? row.returnAt)].filter(Boolean).join(" · ");
+  return (
+    <li data-testid="staying-row" className="flex items-center gap-3 rounded-xl border border-panel-line bg-panel px-3 py-2">
+      {row.spot && <span className="rounded-md bg-panel-2 px-1.5 py-0.5 font-mono text-xs font-bold">{row.spot}</span>}
+      <Link to={`/reservations/${row.reservationId}`} className="min-w-0 flex-1 truncate text-[14px] font-semibold hover:underline">
+        {row.customerName} <span className="font-normal text-muted-foreground">· {details}</span>
+      </Link>
+      <Plate value={row.plate} size="sm" />
+      <Badge tone={row.status === "shuttled_out" || row.status === "return_requested" ? "info" : "ok"}>{fr.status[row.status as keyof typeof fr.status] ?? row.status}</Badge>
       <CardLink id={row.reservationId} />
     </li>
   );
@@ -305,6 +343,8 @@ export default function ShuttleTripsPanel() {
   const [selected, setSelected] = useState<string[]>([]);
   const [vehicle, setVehicle] = useState<VehicleChoice | null>(() => (user?.vehicle ? { kind: "known", id: user.vehicle.id } : null));
   const [endedNotice, setEndedNotice] = useState(false);
+  // F-A: the band shown; a trip starting opens "En route", its end goes back to the first band.
+  const [band, setBand] = useState<0 | 1 | 2>(0);
   const [problem, setProblem] = useState<"denied" | "unavailable" | null>(null);
 
   useEffect(() => {
@@ -318,10 +358,17 @@ export default function ShuttleTripsPanel() {
   const departures = useQuery({ queryKey: ["shuttle-departures"], queryFn: adminApi.getDepartures, enabled: mayDrive && direction === "dropoff", refetchInterval: LIST_POLL_MS });
   const vehicles = useQuery({ queryKey: ["shuttle-vehicles"], queryFn: adminApi.getVehicles, enabled: mayDrive });
   const stops = useQuery({ queryKey: ["shuttle-stops"], queryFn: adminApi.getStops, enabled: mayDrive });
+  const staying = useQuery({ queryKey: ["shuttle-staying"], queryFn: adminApi.getStaying, enabled: mayDrive, refetchInterval: LIST_POLL_MS });
 
   const trip = current.data?.trip ?? null;
   const running = trip?.status === "running";
-  const offeredIds = (direction === "pickup" ? (pickups.data?.rows ?? []) : (departures.data?.rows ?? [])).filter(r => !r.tripId).map(r => r.reservationId);
+  // Coming back on the page while a trip runs: the "En route" band.
+  const runningRef = useRef(false);
+  useEffect(() => {
+    if (running && !runningRef.current) setBand(1);
+    runningRef.current = !!running;
+  }, [running]);
+  const offeredIds = (direction === "pickup" ? (pickups.data?.rows ?? []) : (departures.data?.rows ?? [])).filter(r => !r.tripId && !("expected" in r && r.expected)).map(r => r.reservationId);
   useEffect(() => {
     if (!wanted || running || !offeredIds.includes(wanted)) return;
     setSelected(list => (list.includes(wanted) ? list : [...list, wanted]));
@@ -340,6 +387,7 @@ export default function ShuttleTripsPanel() {
     if (withCurrent) void queryClient.invalidateQueries({ queryKey: ["shuttle-current"] });
     void queryClient.invalidateQueries({ queryKey: ["shuttle-pickups"] });
     void queryClient.invalidateQueries({ queryKey: ["shuttle-departures"] });
+    void queryClient.invalidateQueries({ queryKey: ["shuttle-staying"] });
     void queryClient.invalidateQueries({ queryKey: ["dashboard"] });
   };
 
@@ -357,6 +405,7 @@ export default function ShuttleTripsPanel() {
       queryClient.setQueryData(["shuttle-current"], { trip });
       setSelected([]);
       setEndedNotice(false);
+      setBand(1);
       refresh(false);
     },
     onError: error => toast.error(describeError(error)),
@@ -368,6 +417,7 @@ export default function ShuttleTripsPanel() {
       if (mine) {
         queryClient.setQueryData(["shuttle-current"], { trip: null });
         setEndedNotice(true);
+        setBand(0);
       }
       refresh(!mine);
     },
@@ -386,8 +436,32 @@ export default function ShuttleTripsPanel() {
       const key = row.terminal ?? t.start.noTerminal;
       map.set(key, [...(map.get(key) ?? []), row]);
     }
-    return [...map.entries()];
+    return [...map.entries()].map(([terminal, list]) => ({ title: t.start.toPickUp(terminal), leaveAt: earliestLeave(list), list }));
   }, [direction, pickups.data]);
+  // F-A: the arrived travellers by stop ("À conduire au terminal", "À conduire · Gare TGV"), soonest leave time first.
+  const dropoffGroups = useMemo(() => {
+    if (direction !== "dropoff") return [];
+    const map = new Map<string, DepartureRow[]>();
+    for (const row of departures.data?.rows ?? []) {
+      const key = row.stopName ?? "";
+      map.set(key, [...(map.get(key) ?? []), row]);
+    }
+    return [...map.entries()]
+      .map(([stop, list]) => ({ title: stop ? t.start.toDropOffStop(stop) : t.start.toDropOff, leaveAt: earliestLeave(list), list }))
+      .sort((a, b) => (a.leaveAt ?? "9").localeCompare(b.leaveAt ?? "9"));
+  }, [direction, departures.data]);
+  const stayingDays = staying.data?.days ?? [];
+  const returnedToday = staying.data?.returnedToday ?? [];
+  const counts: [number, number, number] = [
+    rows.length,
+    running && trip ? trip.passengers.length : 0,
+    direction === "dropoff" ? stayingDays.reduce((n, d) => n + d.rows.length, 0) : returnedToday.length,
+  ];
+  const bandLabels = [
+    direction === "dropoff" ? t.start.bandTake(counts[0]) : t.start.bandFetch(counts[0]),
+    t.start.bandRoute(counts[1]),
+    direction === "dropoff" ? t.start.bandStay(counts[2]) : t.start.bandBack(counts[2]),
+  ];
   const listError = direction === "pickup" ? pickups.error : departures.error;
   const listLoading = direction === "pickup" ? pickups.isPending : departures.isPending;
 
@@ -397,23 +471,9 @@ export default function ShuttleTripsPanel() {
     end.mutate(lt.id);
   };
   const s = t.start;
-
-  return (
-    <div className="space-y-3">
-      <LiveTrips live={live.data} now={now} canEnd={lt => lt.driverId === user?.id || mayManage} onEnd={onEndLive} ending={end.isPending} />
-
-      {!mayDrive ? (
-        <p className="rounded-xl border border-panel-line bg-panel p-3.5 text-[13px] text-muted-foreground">{s.needsStatus}</p>
-      ) : (
-        <section aria-label={s.title} data-testid="start-trip" className="space-y-3">
-          {running && trip ? (
-            <RunningCard trip={trip} now={now} onEnd={() => end.mutate(trip.id)} ending={end.isPending} problem={problem} />
-          ) : (
-            <h2 className="flex items-center gap-2 px-1 font-mono text-[19px] font-medium">
-              <Navigation className="h-5 w-5 text-lime-deep" aria-hidden="true" />
-              {s.title}
-            </h2>
-          )}
+  const liveTrips = <LiveTrips live={live.data} now={now} canEnd={lt => lt.driverId === user?.id || mayManage} onEnd={onEndLive} ending={end.isPending} />;
+  const notices = (
+    <>
           {endedNotice && (
             <p role="status" className="flex items-center gap-3 rounded-xl border border-panel-line bg-panel px-3.5 py-2.5 text-[13px]">
               <span className="flex-1">{t.running.ended}</span>
@@ -422,8 +482,18 @@ export default function ShuttleTripsPanel() {
               </button>
             </p>
           )}
-          {!running && <p className="px-1 text-[13px] text-muted-foreground">{direction === "dropoff" ? s.introDropoff : s.introPickup}</p>}
+    </>
+  );
 
+  // Band 1, "À emmener" / "À récupérer": the travellers to take, grouped by stop with the advised leave time.
+  const tourBand = (
+    <>
+      <h2 className="flex items-center gap-2 px-1 font-mono text-[19px] font-medium">
+        <Navigation className="h-5 w-5 text-lime-deep" aria-hidden="true" />
+        {s.title}
+      </h2>
+      {notices}
+      {!running && <p className="px-1 text-[13px] text-muted-foreground">{direction === "dropoff" ? s.introDropoff : s.introPickup}</p>}
           <div className="flex flex-wrap items-center gap-2 px-1" role="tablist">
             {(["pickup", "dropoff"] as const).map(d => {
               const IconC = d === "pickup" ? ArrowDownToLine : ArrowUpFromLine;
@@ -492,68 +562,150 @@ export default function ShuttleTripsPanel() {
             </p>
           )}
 
-          {listError ? (
-            <p className="rounded-xl border border-bad bg-bad-soft p-3 text-sm text-bad-text">{describeError(listError) || s.loadError}</p>
-          ) : listLoading ? (
-            <Skeleton className="h-24 rounded-xl" />
-          ) : direction === "pickup" ? (
-            groups.length === 0 ? (
-              <p className="rounded-xl border border-panel-line bg-panel p-4 text-sm text-muted-foreground">{s.emptyPickup}</p>
-            ) : (
-              groups.map(([terminal, list]) => (
-                <div key={terminal}>
-                  <h3 className="mb-1.5 px-1 font-mono text-[15px] font-medium">{s.toPickUp(terminal)}</h3>
-                  <ul className="space-y-1.5">
-                    {list.map(row => (
-                      <PickupTile
-                        key={row.reservationId}
-                        row={row}
-                        selected={selected.includes(row.reservationId)}
-                        onTrip={!!running && !!trip?.passengers.some(p => p.reservationId === row.reservationId)}
-                        selectable={!running && !row.tripId}
-                        onToggle={() => toggle(row.reservationId)}
-                      />
-                    ))}
-                  </ul>
-                </div>
-              ))
-            )
-          ) : rows.length === 0 ? (
-            <p className="rounded-xl border border-panel-line bg-panel p-4 text-sm text-muted-foreground">{s.emptyDropoff}</p>
-          ) : (
-            <div>
-              <h3 className="mb-1.5 px-1 font-mono text-[15px] font-medium">{s.toDropOff}</h3>
-              <ul className="space-y-1.5">
-                {(rows as DepartureRow[]).map(row => (
-                  <DepartureTile
-                    key={row.reservationId}
-                    row={row}
-                    selected={selected.includes(row.reservationId)}
-                    onTrip={!!running && !!trip?.passengers.some(p => p.reservationId === row.reservationId)}
-                    selectable={!running && !row.tripId}
-                    onToggle={() => toggle(row.reservationId)}
-                  />
-                ))}
-              </ul>
-            </div>
-          )}
+      {listError ? (
+        <p className="rounded-xl border border-bad bg-bad-soft p-3 text-sm text-bad-text">{describeError(listError) || s.loadError}</p>
+      ) : listLoading ? (
+        <Skeleton className="h-24 rounded-xl" />
+      ) : rows.length === 0 ? (
+        <p className="rounded-xl border border-panel-line bg-panel p-4 text-sm text-muted-foreground">{direction === "pickup" ? s.emptyPickup : s.emptyDropoff}</p>
+      ) : direction === "pickup" ? (
+        groups.map(group => (
+          <div key={group.title}>
+            <GroupHeader title={group.title} leaveAt={group.leaveAt} />
+            <ul className="space-y-1.5">
+              {group.list.map(row => (
+                <PickupTile
+                  key={row.reservationId}
+                  row={row}
+                  selected={selected.includes(row.reservationId)}
+                  onTrip={!!running && !!trip?.passengers.some(p => p.reservationId === row.reservationId)}
+                  selectable={!running && !row.tripId}
+                  onToggle={() => toggle(row.reservationId)}
+                />
+              ))}
+            </ul>
+          </div>
+        ))
+      ) : (
+        dropoffGroups.map(group => (
+          <div key={group.title}>
+            <GroupHeader title={group.title} leaveAt={group.leaveAt} />
+            <ul className="space-y-1.5">
+              {group.list.map(row => (
+                <DepartureTile
+                  key={row.reservationId}
+                  row={row}
+                  selected={selected.includes(row.reservationId)}
+                  onTrip={!!running && !!trip?.passengers.some(p => p.reservationId === row.reservationId)}
+                  selectable={!running && !row.tripId && !row.expected}
+                  onToggle={() => toggle(row.reservationId)}
+                />
+              ))}
+            </ul>
+          </div>
+        ))
+      )}
+      {!running && selected.length > 0 && (
+        <>
+          <p data-testid="selected-summary" className="px-1 text-center text-[13px] text-muted-foreground">
+            {s.selectedSummary(selected.length, selectedPassengers)}
+          </p>
+          <VehiclePicker vehicles={vehicleList} choice={vehicle} onChange={setVehicle} passengers={selectedPassengers} />
+          <button
+            type="button"
+            data-testid="start-trip-button"
+            disabled={start.isPending}
+            onClick={() => start.mutate()}
+            className="flex h-12 w-full items-center justify-center gap-2 rounded-full bg-primary text-[15px] font-bold text-primary-foreground hover:brightness-110 disabled:opacity-60"
+          >
+            <BusFront className="h-5 w-5" aria-hidden="true" />
+            {start.isPending ? s.starting : direction === "dropoff" ? s.dropoff(selected.length) : s.pickup(selected.length)}
+          </button>
+        </>
+      )}
+      {!running && selected.length === 0 && rows.length > 0 && <p className="px-1 text-center text-[13px] text-muted-foreground">{s.none}</p>}
+      {running && (
+        <button type="button" data-testid="go-route" onClick={() => setBand(1)} className="flex h-11 w-full items-center justify-center gap-2 rounded-full border border-lime-deep font-semibold text-lime-deep hover:bg-panel-2">
+          <BusFront className="h-4 w-4" aria-hidden="true" />
+          {s.bandRoute(counts[1])}
+        </button>
+      )}
+    </>
+  );
 
-          {!running && selected.length > 0 && (
-            <>
-              <VehiclePicker vehicles={vehicleList} choice={vehicle} onChange={setVehicle} passengers={selectedPassengers} />
+  // Band 2, "En route": the team's shuttles on the map, my trip with its passengers, "Clients déposés".
+  const routeBand = (
+    <>
+      {liveTrips}
+      {notices}
+      {running && trip ? (
+        <RunningCard trip={trip} now={now} onEnd={() => end.mutate(trip.id)} ending={end.isPending} problem={problem} />
+      ) : (
+        <p data-testid="route-none" className="rounded-xl border border-panel-line bg-panel p-4 text-center text-sm text-muted-foreground">
+          {s.routeNone(direction === "dropoff" ? s.bandTakeName : s.bandFetchName)}
+        </p>
+      )}
+    </>
+  );
+
+  // Band 3: "En séjour" by return day on the drop-off side, "Rendus" today on the pick-up side.
+  const stayBand =
+    direction === "dropoff" ? (
+      stayingDays.length === 0 ? (
+        <p data-testid="stay-none" className="rounded-xl border border-panel-line bg-panel p-4 text-sm text-muted-foreground">{s.stayNone}</p>
+      ) : (
+        stayingDays.map(day => (
+          <div key={day.date}>
+            <h3 className="mb-1.5 px-1 font-mono text-xs font-bold uppercase tracking-wide text-muted-foreground">{s.stayDay(shortDay(day.date), day.rows.length)}</h3>
+            <ul className="space-y-1.5">
+              {day.rows.map(row => (
+                <StayingTile key={row.reservationId} row={row} />
+              ))}
+            </ul>
+          </div>
+        ))
+      )
+    ) : (
+      <div>
+        <h3 className="mb-1.5 px-1 font-mono text-[15px] font-medium">{s.backToday}</h3>
+        {returnedToday.length === 0 ? (
+          <p data-testid="back-none" className="rounded-xl border border-panel-line bg-panel p-4 text-sm text-muted-foreground">{s.backNone}</p>
+        ) : (
+          <ul className="space-y-1.5">
+            {returnedToday.map(row => (
+              <StayingTile key={row.reservationId} row={row} />
+            ))}
+          </ul>
+        )}
+      </div>
+    );
+
+  return (
+    <div className="space-y-3">
+      {!mayDrive ? (
+        <>
+          {liveTrips}
+          <p className="rounded-xl border border-panel-line bg-panel p-3.5 text-[13px] text-muted-foreground">{s.needsStatus}</p>
+        </>
+      ) : (
+        <section aria-label={s.tourTitle} data-testid="start-trip" className="space-y-3">
+          {/* F-A: three bands that the travellers move through as the driver ticks them. */}
+          <div role="tablist" aria-label={s.tourTitle} className="grid grid-cols-3 gap-1.5 rounded-xl border border-panel-line bg-panel p-1.5">
+            {bandLabels.map((label, i) => (
               <button
+                key={label}
                 type="button"
-                data-testid="start-trip-button"
-                disabled={start.isPending}
-                onClick={() => start.mutate()}
-                className="flex h-12 w-full items-center justify-center gap-2 rounded-full bg-primary text-[15px] font-bold text-primary-foreground hover:brightness-110 disabled:opacity-60"
+                role="tab"
+                data-testid={`band-${i}`}
+                aria-selected={band === i}
+                onClick={() => setBand(i as 0 | 1 | 2)}
+                className={cn("truncate rounded-full px-2 py-2 text-[13px] font-semibold", band === i ? "bg-primary text-primary-foreground" : "text-muted-foreground hover:bg-panel-2")}
               >
-                <BusFront className="h-5 w-5" aria-hidden="true" />
-                {start.isPending ? s.starting : direction === "dropoff" ? s.dropoff(selected.length) : s.pickup(selected.length)}
+                {label}
               </button>
-            </>
-          )}
-          {!running && selected.length === 0 && rows.length > 0 && <p className="px-1 text-center text-[13px] text-muted-foreground">{s.none}</p>}
+            ))}
+          </div>
+          {band === 0 ? tourBand : band === 1 ? routeBand : stayBand}
         </section>
       )}
     </div>

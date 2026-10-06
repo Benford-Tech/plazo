@@ -28,6 +28,9 @@ _PickupRowModel _$PickupRowModelFromJson(Map<String, dynamic> json) =>
       notice: json['notice'] == null
           ? null
           : PickupNoticeModel.fromJson(json['notice'] as Map<String, dynamic>),
+      leaveAt: json['leaveAt'] == null
+          ? null
+          : DateTime.parse(json['leaveAt'] as String),
     );
 
 Map<String, dynamic> _$PickupRowModelToJson(_PickupRowModel instance) =>
@@ -46,6 +49,7 @@ Map<String, dynamic> _$PickupRowModelToJson(_PickupRowModel instance) =>
       'atMeetingPointAt': instance.atMeetingPointAt?.toIso8601String(),
       'tripId': instance.tripId,
       'notice': instance.notice,
+      'leaveAt': instance.leaveAt?.toIso8601String(),
     };
 
 _PickupsModel _$PickupsModelFromJson(Map<String, dynamic> json) =>
@@ -115,6 +119,10 @@ _DepartureRowModel _$DepartureRowModelFromJson(Map<String, dynamic> json) =>
       stopId: json['stopId'] as String?,
       stopName: json['stopName'] as String?,
       tripId: json['tripId'] as String?,
+      leaveAt: json['leaveAt'] == null
+          ? null
+          : DateTime.parse(json['leaveAt'] as String),
+      expected: json['expected'] as bool? ?? false,
     );
 
 Map<String, dynamic> _$DepartureRowModelToJson(_DepartureRowModel instance) =>
@@ -131,6 +139,8 @@ Map<String, dynamic> _$DepartureRowModelToJson(_DepartureRowModel instance) =>
       'stopId': instance.stopId,
       'stopName': instance.stopName,
       'tripId': instance.tripId,
+      'leaveAt': instance.leaveAt?.toIso8601String(),
+      'expected': instance.expected,
     };
 
 _DeparturesModel _$DeparturesModelFromJson(Map<String, dynamic> json) =>
@@ -525,4 +535,75 @@ Map<String, dynamic> _$PickupNoticeModelToJson(_PickupNoticeModel instance) =>
       'kind': instance.kind,
       'text': instance.text,
       'at': instance.at.toIso8601String(),
+    };
+
+_StayingRowModel _$StayingRowModelFromJson(Map<String, dynamic> json) =>
+    _StayingRowModel(
+      reservationId: json['reservationId'] as String,
+      reference: json['reference'] as String,
+      customerName: json['customerName'] as String,
+      passengers: (json['passengers'] as num).toInt(),
+      plate: json['plate'] as String,
+      status: json['status'] as String,
+      returnAt: DateTime.parse(json['returnAt'] as String),
+      returnFlight: json['returnFlight'] as String?,
+      flight: json['flight'] == null
+          ? const FlightViewModel()
+          : FlightViewModel.fromJson(json['flight'] as Map<String, dynamic>),
+      spot: json['spot'] as String?,
+      stopName: json['stopName'] as String?,
+      returnedAt: json['returnedAt'] == null
+          ? null
+          : DateTime.parse(json['returnedAt'] as String),
+    );
+
+Map<String, dynamic> _$StayingRowModelToJson(_StayingRowModel instance) =>
+    <String, dynamic>{
+      'reservationId': instance.reservationId,
+      'reference': instance.reference,
+      'customerName': instance.customerName,
+      'passengers': instance.passengers,
+      'plate': instance.plate,
+      'status': instance.status,
+      'returnAt': instance.returnAt.toIso8601String(),
+      'returnFlight': instance.returnFlight,
+      'flight': instance.flight,
+      'spot': instance.spot,
+      'stopName': instance.stopName,
+      'returnedAt': instance.returnedAt?.toIso8601String(),
+    };
+
+_StayingDayModel _$StayingDayModelFromJson(Map<String, dynamic> json) =>
+    _StayingDayModel(
+      date: json['date'] as String,
+      rows:
+          (json['rows'] as List<dynamic>?)
+              ?.map((e) => StayingRowModel.fromJson(e as Map<String, dynamic>))
+              .toList() ??
+          const <StayingRowModel>[],
+    );
+
+Map<String, dynamic> _$StayingDayModelToJson(_StayingDayModel instance) =>
+    <String, dynamic>{'date': instance.date, 'rows': instance.rows};
+
+_StayingModel _$StayingModelFromJson(Map<String, dynamic> json) =>
+    _StayingModel(
+      serverTime: DateTime.parse(json['serverTime'] as String),
+      days:
+          (json['days'] as List<dynamic>?)
+              ?.map((e) => StayingDayModel.fromJson(e as Map<String, dynamic>))
+              .toList() ??
+          const <StayingDayModel>[],
+      returnedToday:
+          (json['returnedToday'] as List<dynamic>?)
+              ?.map((e) => StayingRowModel.fromJson(e as Map<String, dynamic>))
+              .toList() ??
+          const <StayingRowModel>[],
+    );
+
+Map<String, dynamic> _$StayingModelToJson(_StayingModel instance) =>
+    <String, dynamic>{
+      'serverTime': instance.serverTime.toIso8601String(),
+      'days': instance.days,
+      'returnedToday': instance.returnedToday,
     };

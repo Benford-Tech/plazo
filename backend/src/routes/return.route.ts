@@ -210,6 +210,13 @@ import { ValidationMiddleware } from '@/middlewares/validation.middleware';
  *       200:
  *         description: "{ serverTime, rows }"
  *         content: { application/json: { schema: { type: object, properties: { serverTime: { type: string }, rows: { type: array, items: { $ref: '#/components/schemas/DepartureRow' } } } } } }
+ * /internal/shuttle/staying:
+ *   get:
+ *     summary: "F-A: the travellers away (dropped at the terminal) by return day, and those back today"
+ *     tags: [Shuttle]
+ *     responses:
+ *       200:
+ *         description: "{ serverTime, days: [{ date, rows }], returnedToday }"
  * /internal/shuttle/pickups:
  *   get:
  *     summary: Today's returns to pick up at the airport (driver), flights refreshed when due
@@ -409,6 +416,7 @@ export class ReturnRoute implements Routes {
     this.router.get('/internal/flights/check', StaffAuthMiddleware('parking:manage'), this.shuttle.checkFlight);
     this.router.get('/internal/shuttle/pickups', StaffAuthMiddleware('reservations:view'), this.shuttle.pickups);
     this.router.get('/internal/shuttle/departures', StaffAuthMiddleware('reservations:view'), this.shuttle.departures);
+    this.router.get('/internal/shuttle/staying', StaffAuthMiddleware('reservations:view'), this.shuttle.staying);
     this.router.get('/internal/shuttle/vehicles', StaffAuthMiddleware('reservations:view'), this.shuttle.vehicles);
     this.router.post(
       '/internal/shuttle/vehicles',

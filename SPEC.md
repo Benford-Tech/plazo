@@ -202,6 +202,19 @@ Hors MVP : optimisation d'itinéraire.
   trajet » bascule la file du chauffeur sur le sens et la desserte de la vague avec ses clients présélectionnés. Le voyageur
   voit sur sa réservation « navette vers le terminal prévue vers HH:MM » quand son vol aller est suivi.
 
+#### Tournée du chauffeur en trois bandes (décision F-A du 06/10/2026, mis en œuvre)
+
+- L'onglet Navette de Plazo Pro et le mode chauffeur de la page Navettes du web deviennent **« Ma tournée »** : trois bandes
+  que les voyageurs traversent à mesure que le chauffeur les coche. Côté départs : **À emmener** (les clients sur place,
+  groupés par desserte avec l'heure de départ conseillée de la vague, les clients encore attendus en gris « Attendu HH:MM »
+  et non cochables ; cocher, véhicule, « Partir au terminal · N clients ») → **En route** (carte des navettes en cours, mon
+  trajet avec ses passagers, « Clients déposés au terminal ») → **En séjour** (les déposés rangés par jour de retour avec
+  place, vol et heure). Côté retours, les mêmes bandes s'appellent **À récupérer** → **En route** → **Rendus** (revenus
+  aujourd'hui). Le départ d'un trajet ouvre « En route », sa fin ramène sur la première bande.
+- Serveur : `leaveAt` sur chaque ligne des listes `pickups` et `departures` (calcul des vagues), `expected` sur les
+  départs (arrivée prévue dans la fenêtre, pas encore sur place), `GET /internal/shuttle/staying` (`days[]` par jour de
+  retour local, `returnedToday`).
+
 #### Position GPS de la voiture (décision du 06/10/2026, mis en œuvre)
 
 - **Qui** : la personne qui gare la voiture. Le voyageur, s'il se gare lui-même, depuis la carte « Ma voiture » de sa

@@ -27,6 +27,12 @@ class ShuttleDirectionChanged extends ShuttleEvent {
   final String direction;
 }
 
+/// F-A: the band shown (0 "À emmener / À récupérer", 1 "En route", 2 "En séjour / Rendus").
+class ShuttleBandChanged extends ShuttleEvent {
+  const ShuttleBandChanged(this.band);
+  final int band;
+}
+
 class ShuttlePolled extends ShuttleEvent {
   const ShuttlePolled();
 }

@@ -75,6 +75,33 @@ class _ShuttleClient implements ShuttleClient {
   }
 
   @override
+  Future<StayingModel> staying() async {
+    final _extra = <String, dynamic>{};
+    final queryParameters = <String, dynamic>{};
+    final _headers = <String, dynamic>{};
+    const Map<String, dynamic>? _data = null;
+    final _options = _setStreamType<StayingModel>(
+      Options(method: 'GET', headers: _headers, extra: _extra)
+          .compose(
+            _dio.options,
+            'internal/shuttle/staying',
+            queryParameters: queryParameters,
+            data: _data,
+          )
+          .copyWith(baseUrl: _combineBaseUrls(_dio.options.baseUrl, baseUrl)),
+    );
+    final _result = await _dio.fetch<Map<String, dynamic>>(_options);
+    late StayingModel _value;
+    try {
+      _value = StayingModel.fromJson(_result.data!);
+    } on Object catch (e, s) {
+      errorLogger?.logError(e, s, _options, response: _result);
+      rethrow;
+    }
+    return _value;
+  }
+
+  @override
   Future<DataList<ShuttleVehicleModel>> vehicles() async {
     final _extra = <String, dynamic>{};
     final queryParameters = <String, dynamic>{};

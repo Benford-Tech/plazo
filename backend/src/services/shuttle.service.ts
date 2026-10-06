@@ -3,7 +3,8 @@ import { Container, Service } from 'typedi';
 import prisma, { Prisma, ReservationStatus, ShuttleStop, ShuttleStopKind, ShuttleTrip, ShuttleVehicle, Staff } from '@/database';
 import { ArrivalEstimator, haversineMeters, straightLineEstimate } from '@/domain/arrival';
 import { shuttleArrivedPush, shuttleLeavingPush, ShuttleTripFacts, tripEndedPush, tripStartedPush } from '@/domain/shuttle-messages';
-import { localDate } from '@/domain/time';
+import { dayBounds as localDayBounds, localDate } from '@/domain/time';
+import { dropoffTimes, pickupTimes, WaveTimes } from '@/domain/shuttle-waves';
 import {
   canBoard,
   DROPOFF_LIST_HOURS_AFTER,
@@ -125,6 +126,8 @@ export interface PickupRow {
   tripId: string | null;
   /** E (06/10/2026): what the traveller signalled today ("mon vol a du retard", "bagage perdu"). */
   notice: ReturnNotice | null;
+  /** F-A: when the shuttle should leave the parking to be at the meeting point in time. */
+  leaveAt: string;
 }
 
 export interface TripVehicle {
@@ -172,6 +175,34 @@ export interface DepartureRow {
   stopId: string | null;
   stopName: string | null;
   tripId: string | null;
+  /** F-A: when the shuttle should leave for the terminal (before the take-off, else when the traveller came). */
+  leaveAt: string;
+  /** F-A: still expected (status upcoming): shown greyed, not selectable. */
+  expected: boolean;
+}
+
+/** F-A: a traveller dropped at the terminal (or fetched back), kept on the list until their return. */
+export interface StayingRow {
+  reservationId: string;
+  reference: string;
+  customerName: string;
+  passengers: number;
+  plate: string;
+  status: ReservationStatus;
+  returnAt: string;
+  returnFlight: string | null;
+  flight: FlightView;
+  spot: string | null;
+  stopName: string | null;
+  returnedAt: string | null;
+}
+
+export interface Staying {
+  serverTime: string;
+  /** Away travellers by local return day, soonest first. */
+  days: { date: string; rows: StayingRow[] }[];
+  /** Back at the parking or handed back today (the return side's "Rendus"). */
+  returnedToday: StayingRow[];
 }
 
 /** Where a traveller's shuttle is measured to. */
@@ -519,6 +550,7 @@ export class ShuttleService {
         atMeetingPointAt: iso(signals.find(s => s.reservationId === r.id)?.atMeetingPointAt),
         tripId: trips.find(t => t.reservationId === r.id)?.tripId ?? null,
         notice: returnNoticeView(r),
+        leaveAt: pickupTimes(r, this.waveTimes(parking)).leaveAt.toISOString(),
       }));
     // At the meeting point first, then landed, then by expected landing.
     const rank = (r: PickupRow) => (r.atMeetingPointAt ? 0 : r.flight.status === 'landed' ? 1 : 2);
@@ -551,27 +583,90 @@ export class ShuttleService {
       include: { spot: { select: { code: true } }, stop: { select: { id: true, name: true } } },
       orderBy: [{ arrivedAt: 'asc' }, { arrivalAt: 'asc' }],
     });
+    // F-A: the travellers still expected in the coming hours, greyed on the driver's list.
+    const expected = await prisma.reservation.findMany({
+      where: {
+        parkingId: parking.id,
+        status: 'upcoming',
+        arrivalAt: { gte: new Date(now.getTime() - 3600000), lte: new Date(now.getTime() + DROPOFF_LIST_HOURS_AFTER * 3600000) },
+      },
+      include: { spot: { select: { code: true } }, stop: { select: { id: true, name: true } } },
+      orderBy: { arrivalAt: 'asc' },
+    });
     const trips = await prisma.shuttleTripPassenger.findMany({
       where: { reservationId: { in: rows.map(r => r.id) }, trip: { status: 'running' } },
       select: { reservationId: true, tripId: true },
     });
+    const times = this.waveTimes(parking);
+    const view = (r: (typeof rows)[number], isExpected: boolean): DepartureRow => ({
+      reservationId: r.id,
+      reference: r.reference,
+      customerName: r.customerName,
+      passengers: r.passengers,
+      plate: r.plate,
+      status: r.status,
+      arrivalAt: r.arrivalAt.toISOString(),
+      arrivedAt: iso(r.arrivedAt),
+      spot: r.spot?.code ?? null,
+      stopId: r.stop?.id ?? null,
+      stopName: r.stop?.name ?? null,
+      tripId: trips.find(t => t.reservationId === r.id)?.tripId ?? null,
+      leaveAt: dropoffTimes(r, times).leaveAt.toISOString(),
+      expected: isExpected,
+    });
+    return { serverTime: now.toISOString(), rows: [...rows.map(r => view(r, false)), ...expected.map(r => view(r, true))] };
+  }
+
+  /** The parking's shuttle timing (the forecast's figures). */
+  private waveTimes(parking: { shuttleTravelMinutes: number; terminalLeadMinutes: number; landingDelayMinutes: number }): WaveTimes {
     return {
-      serverTime: now.toISOString(),
-      rows: rows.map(r => ({
-        reservationId: r.id,
-        reference: r.reference,
-        customerName: r.customerName,
-        passengers: r.passengers,
-        plate: r.plate,
-        status: r.status,
-        arrivalAt: r.arrivalAt.toISOString(),
-        arrivedAt: iso(r.arrivedAt),
-        spot: r.spot?.code ?? null,
-        stopId: r.stop?.id ?? null,
-        stopName: r.stop?.name ?? null,
-        tripId: trips.find(t => t.reservationId === r.id)?.tripId ?? null,
-      })),
+      shuttleTravelMinutes: parking.shuttleTravelMinutes,
+      terminalLeadMinutes: parking.terminalLeadMinutes,
+      landingDelayMinutes: parking.landingDelayMinutes,
     };
+  }
+
+  /**
+   * F-A (06/10/2026): the travellers the shuttle dropped at the terminal, kept on the driver's
+   * list by return day until they come back, plus those brought back or handed back today.
+   */
+  public async staying(actor: AuthenticatedStaff): Promise<Staying> {
+    const parking = await this.parkings.getPrimary(actor);
+    const now = new Date();
+    const { start } = localDayBounds(localDate(now, parking.timezone), parking.timezone);
+    const include = { spot: { select: { code: true } }, stop: { select: { name: true } } };
+    const [away, back] = await Promise.all([
+      prisma.reservation.findMany({
+        where: { parkingId: parking.id, status: { in: ['shuttled_out', 'return_requested'] } },
+        include,
+        orderBy: { returnAt: 'asc' },
+      }),
+      prisma.reservation.findMany({
+        where: { parkingId: parking.id, OR: [{ status: 'back_at_parking' }, { status: 'returned', returnedAt: { gte: start } }] },
+        include,
+        orderBy: [{ returnedAt: 'desc' }, { returnAt: 'asc' }],
+      }),
+    ]);
+    const view = (r: (typeof away)[number]): StayingRow => ({
+      reservationId: r.id,
+      reference: r.reference,
+      customerName: r.customerName,
+      passengers: r.passengers,
+      plate: r.plate,
+      status: r.status,
+      returnAt: r.returnAt.toISOString(),
+      returnFlight: r.returnFlight,
+      flight: flightView(r),
+      spot: r.spot?.code ?? null,
+      stopName: r.stop?.name ?? null,
+      returnedAt: iso(r.returnedAt),
+    });
+    const days = new Map<string, StayingRow[]>();
+    for (const r of away) {
+      const date = localDate(r.returnAt, parking.timezone);
+      days.set(date, [...(days.get(date) ?? []), view(r)]);
+    }
+    return { serverTime: now.toISOString(), days: [...days.entries()].map(([date, rows]) => ({ date, rows })), returnedToday: back.map(view) };
   }
 
   // ---------------------------------------------------------------- trips (driver)

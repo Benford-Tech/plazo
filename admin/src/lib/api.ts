@@ -50,7 +50,7 @@ import type {
   Staff,
   StaffRole,
   TokenData,
-} from "./types";
+ Staying } from "./types";
 
 import type {
   CapacityStudy,
@@ -416,6 +416,7 @@ export const adminApi = {
   // The driver's screen on the web (06/10/2026): the same trips as Plazo Pro.
   getPickups: () => apiRequest<{ serverTime: string; meetingPoint: MeetingPoint | null; rows: PickupRow[] }>("/internal/shuttle/pickups"),
   getDepartures: () => apiRequest<{ serverTime: string; rows: DepartureRow[] }>("/internal/shuttle/departures"),
+  getStaying: () => apiRequest<Staying>("/internal/shuttle/staying"),
   getCurrentTrip: () => apiRequest<{ trip: StaffTrip | null }>("/internal/shuttle/trips/current"),
   startTrip: (input: StartTripInput) => apiRequest<{ trip: StaffTrip }>("/internal/shuttle/trips", { method: "POST", body: json(input) }),
   sendTripPosition: (tripId: string, position: { lat: number; lng: number; accuracy?: number | null; recordedAt: string }) =>

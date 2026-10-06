@@ -116,6 +116,10 @@ Ne construire QUE ce qui règle la douleur n°1 du client.
      `departure_cancelled`, `departure_delayed`, `wave_overflow`) ; dans Plazo Pro, carte « Ligne du jour » en tête de l'onglet
      Navette avec « Démarrer ce trajet » (sens, desserte et passagers présélectionnés) ; le voyageur voit « navette vers le
      terminal prévue vers HH:MM » (`PublicBooking.outbound`).
+   - Décision **F-A du 06/10/2026 (« Ma tournée »)** : l'onglet Navette de Plazo Pro et le mode chauffeur du web en trois
+     bandes À emmener · En route · En séjour (retours : À récupérer · En route · Rendus) ; `leaveAt` sur `PickupRow` et
+     `DepartureRow`, `DepartureRow.expected` (attendu, grisé), `GET /internal/shuttle/staying` (`days[]`, `returnedToday`) ;
+     `ShuttleState.band`, `_BandBar` ; `ShuttleTripsPanel` onglets `band-0/1/2`.
    - Décision **E du 06/10/2026 (communication voyageur ↔ parking)** : `Reservation.customerNote` (message à la réservation, ≤ 300),
      `vehicleModel` / `vehicleColour` (site, app, saisie et modification pro, fiche, fiche opérationnelle) ; `ArrivalSignal.note`
      (mot joint à « Je suis en route », « J'arrive dans… », « Je suis au point de rendez-vous », champ sur le site et dans l'app

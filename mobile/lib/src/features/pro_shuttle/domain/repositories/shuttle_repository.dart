@@ -8,6 +8,7 @@ import '../../data/models/shuttle_models.dart';
 abstract class ShuttleRepository {
   Future<Either<Failure, PickupsModel>> pickups();
   Future<Either<Failure, DeparturesModel>> departures();
+  Future<Either<Failure, StayingModel>> staying();
   Future<Either<Failure, List<ShuttleVehicleModel>>> vehicles();
   Future<Either<Failure, ShuttleVehicleModel>> addVehicle(VehicleSheetInput input);
   Future<Either<Failure, ShuttleVehicleModel>> updateVehicle(String id, VehicleSheetInput input);
@@ -31,6 +32,9 @@ class ShuttleRepositoryImpl implements ShuttleRepository {
 
   @override
   Future<Either<Failure, DeparturesModel>> departures() => _dataSource.departures().makeRequest();
+
+  @override
+  Future<Either<Failure, StayingModel>> staying() => _dataSource.staying().makeRequest();
 
   @override
   Future<Either<Failure, List<ShuttleVehicleModel>>> vehicles() => _dataSource.vehicles().makeRequest();

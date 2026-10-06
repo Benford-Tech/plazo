@@ -31,6 +31,9 @@ abstract class PickupRowModel with _$PickupRowModel {
 
     /// E (06/10/2026): what the traveller signalled today ("mon vol a du retard", "bagage perdu").
     PickupNoticeModel? notice,
+
+    /// F-A: when the shuttle should leave the parking to be at the meeting point in time.
+    DateTime? leaveAt,
   }) = _PickupRowModel;
 
   factory PickupRowModel.fromJson(Map<String, dynamic> json) => _$PickupRowModelFromJson(json);
@@ -93,6 +96,10 @@ abstract class DepartureRowModel with _$DepartureRowModel {
     String? stopId,
     String? stopName,
     String? tripId,
+
+    /// F-A: when the shuttle should leave for the terminal; `expected`: still to come (greyed).
+    DateTime? leaveAt,
+    @Default(false) bool expected,
   }) = _DepartureRowModel;
 
   factory DepartureRowModel.fromJson(Map<String, dynamic> json) => _$DepartureRowModelFromJson(json);
@@ -338,4 +345,44 @@ abstract class PickupNoticeModel with _$PickupNoticeModel {
   const factory PickupNoticeModel({required String kind, String? text, required DateTime at}) = _PickupNoticeModel;
 
   factory PickupNoticeModel.fromJson(Map<String, dynamic> json) => _$PickupNoticeModelFromJson(json);
+}
+
+/// F-A (06/10/2026): a traveller dropped at the terminal (or fetched back), kept until their return.
+@freezed
+abstract class StayingRowModel with _$StayingRowModel {
+  const factory StayingRowModel({
+    required String reservationId,
+    required String reference,
+    required String customerName,
+    required int passengers,
+    required String plate,
+    required String status,
+    required DateTime returnAt,
+    String? returnFlight,
+    @Default(FlightViewModel()) FlightViewModel flight,
+    String? spot,
+    String? stopName,
+    DateTime? returnedAt,
+  }) = _StayingRowModel;
+
+  factory StayingRowModel.fromJson(Map<String, dynamic> json) => _$StayingRowModelFromJson(json);
+}
+
+@freezed
+abstract class StayingDayModel with _$StayingDayModel {
+  const factory StayingDayModel({required String date, @Default(<StayingRowModel>[]) List<StayingRowModel> rows}) = _StayingDayModel;
+
+  factory StayingDayModel.fromJson(Map<String, dynamic> json) => _$StayingDayModelFromJson(json);
+}
+
+/// GET /internal/shuttle/staying: away travellers by return day, and those back today.
+@freezed
+abstract class StayingModel with _$StayingModel {
+  const factory StayingModel({
+    required DateTime serverTime,
+    @Default(<StayingDayModel>[]) List<StayingDayModel> days,
+    @Default(<StayingRowModel>[]) List<StayingRowModel> returnedToday,
+  }) = _StayingModel;
+
+  factory StayingModel.fromJson(Map<String, dynamic> json) => _$StayingModelFromJson(json);
 }

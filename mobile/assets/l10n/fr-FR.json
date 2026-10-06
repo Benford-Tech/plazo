@@ -951,7 +951,27 @@
       "flight_delayed": "Vol en retard (client)",
       "luggage": "Bagage perdu",
       "other": "Mot du client"
-    }
+    },
+    "tour_title": "Ma tournée",
+    "band_take": "À emmener",
+    "band_fetch": "À récupérer",
+    "band_route": "En route",
+    "band_stay": "En séjour",
+    "band_back": "Rendus",
+    "group_leave": "Départ conseillé {}",
+    "group_terminal": "Terminal",
+    "expected_at": "Attendu {}",
+    "route_none": "Aucun trajet en cours. Cochez des voyageurs dans « {} » puis partez.",
+    "route_passengers": "Passagers du trajet",
+    "stay_none": "Personne en séjour : les voyageurs déposés au terminal apparaîtront ici jusqu'à leur retour.",
+    "stay_day": "{} · {} retours",
+    "stay_day_one": "{} · 1 retour",
+    "stay_row": "{} · {}",
+    "back_today": "Revenus aujourd'hui",
+    "back_none": "Personne n'est encore revenu aujourd'hui.",
+    "selected_summary": "{} voyageurs · {} pass. cochés",
+    "selected_one": "1 voyageur · {} pass. coché",
+    "to_drop_off_stop": "À conduire · {}"
   },
   "vehicle_day": {
     "title": "Mon véhicule aujourd'hui",

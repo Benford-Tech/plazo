@@ -38,6 +38,7 @@ class ShuttleBloc extends Bloc<ShuttleEvent, ShuttleState> {
     this._send,
     this._end,
     this._location, {
+    this.staying,
     Clock clock = systemClock,
     Duration pollInterval = const Duration(seconds: 12),
     Duration tickInterval = const Duration(seconds: 1),
@@ -49,6 +50,7 @@ class ShuttleBloc extends Bloc<ShuttleEvent, ShuttleState> {
        super(ShuttleState(now: clock())) {
     on<ShuttleStarted>(_onStarted);
     on<ShuttlePolled>(_onPolled);
+    on<ShuttleBandChanged>((event, emit) => emit(state.copyWith(band: event.band)));
     on<ShuttleDirectionChanged>(_onDirectionChanged);
     on<ShuttleStopChanged>((event, emit) => emit(state.copyWith(stopId: state.running ? state.stopId : event.stopId)));
     on<ShuttlePassengerToggled>(_onToggled);
@@ -64,6 +66,9 @@ class ShuttleBloc extends Bloc<ShuttleEvent, ShuttleState> {
 
   final GetPickupsUseCase _pickups;
   final GetDeparturesUseCase _departures;
+
+  /// F-A: the third band; absent in the tests that only drive a trip.
+  final GetStayingUseCase? staying;
   final GetVehiclesUseCase _vehicles;
   final GetStopsUseCase _stops;
   final GetCurrentTripUseCase _current;
@@ -100,8 +105,9 @@ class ShuttleBloc extends Bloc<ShuttleEvent, ShuttleState> {
         vehicles: vehicles,
         stops: stops,
         vehicle: state.vehicle ?? (mine == null ? null : TripVehicleChoice(vehicleId: mine.id)),
-        // Back in the app while a drop-off runs: stay on that side.
+        // Back in the app while a drop-off runs: stay on that side, on the "En route" band.
         direction: trip != null && trip.running ? trip.direction : (event.direction ?? state.direction),
+        band: trip != null && trip.running ? 1 : 0,
       ),
     );
     await _loadPickups(emit, initial: true);
@@ -141,9 +147,12 @@ class ShuttleBloc extends Bloc<ShuttleEvent, ShuttleState> {
     emit(state.copyWith(selected: event.reservationIds.where(offered.toSet().contains).toSet()));
   }
 
-  /// Loads the list of the current direction: the returns to pick up, or the arrivals to drop off.
+  /// Loads the list of the current direction: the returns to pick up, or the arrivals to drop off,
+  /// and (F-A) the travellers away or back today.
   Future<void> _loadPickups(Emitter<ShuttleState> emit, {required bool initial}) async {
     final direction = state.direction;
+    final away = staying;
+    if (away != null) (await away(NoParams())).fold((_) {}, (data) => emit(state.copyWith(staying: data)));
     if (direction == 'dropoff') {
       final result = await _departures(NoParams());
       result.fold(
@@ -198,7 +207,7 @@ class ShuttleBloc extends Bloc<ShuttleEvent, ShuttleState> {
     await result.fold((failure) async => emit(state.copyWith(actionState: ViewState.error, errorCode: _code(failure))), (trip) async {
       _lastSentAt = null;
       _startTracking();
-      emit(state.copyWith(actionState: ViewState.success, trip: trip, tracking: true, selected: const {}));
+      emit(state.copyWith(actionState: ViewState.success, trip: trip, tracking: true, selected: const {}, band: 1));
       await _loadPickups(emit, initial: false);
     });
   }
@@ -242,7 +251,7 @@ class ShuttleBloc extends Bloc<ShuttleEvent, ShuttleState> {
     emit(state.copyWith(actionState: ViewState.processing, tracking: false, lastPosition: null, errorCode: null));
     final result = await _end(trip.id);
     await result.fold((failure) async => emit(state.copyWith(actionState: ViewState.error, errorCode: _code(failure))), (_) async {
-      emit(state.copyWith(actionState: ViewState.success, trip: null, endedNotice: true));
+      emit(state.copyWith(actionState: ViewState.success, trip: null, endedNotice: true, band: 0));
       await _loadPickups(emit, initial: false);
     });
   }
@@ -254,7 +263,7 @@ class ShuttleBloc extends Bloc<ShuttleEvent, ShuttleState> {
     if (trip != null && trip.running && !now.isBefore(trip.expiresAt)) {
       // The 90 minutes are over: the server erased the position; stop here at once.
       _stopTracking();
-      emit(state.copyWith(tracking: false, lastPosition: null, trip: null, endedNotice: true));
+      emit(state.copyWith(tracking: false, lastPosition: null, trip: null, endedNotice: true, band: 0));
       return;
     }
     await _flush(emit);

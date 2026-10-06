@@ -41,6 +41,7 @@ void _initUseCaseLocator() {
     // Staff: driver mode
     ..registerLazySingleton(() => GetPickupsUseCase(locator()))
     ..registerLazySingleton(() => GetDeparturesUseCase(locator()))
+    ..registerLazySingleton(() => GetStayingUseCase(locator()))
     ..registerLazySingleton(() => SaveVehicleUseCase(locator()))
     ..registerLazySingleton(() => RemoveVehicleUseCase(locator()))
     ..registerLazySingleton(() => GetProParkingUseCase(locator()))

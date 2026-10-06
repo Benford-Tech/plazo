@@ -18,6 +18,7 @@ import '../../../../shared/widgets/live_dot.dart';
 import '../../../../shared/widgets/status_badge.dart';
 import '../../../arrival/data/models/arrival_model.dart';
 import '../../../pro_auth/presentation/bloc/pro_auth_bloc.dart';
+import '../../../pro_reservations/presentation/widgets/reservation_tile.dart';
 import '../../data/datasources/shuttle_data_source.dart';
 import '../../data/models/shuttle_models.dart';
 import '../bloc/live_shuttles_bloc.dart';
@@ -59,7 +60,7 @@ class ProShuttlePage extends StatelessWidget implements AutoRouteWrapper {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: BrandAppBar(pro: true, title: '${Product.proName} · ${'shuttle.title'.tr()}'),
+      appBar: BrandAppBar(pro: true, title: '${Product.proName} · ${'shuttle.tour_title'.tr()}'),
       body: BlocBuilder<ShuttleBloc, ShuttleState>(
         builder: (context, state) {
           final bloc = context.read<ShuttleBloc>();
@@ -70,120 +71,215 @@ class ProShuttlePage extends StatelessWidget implements AutoRouteWrapper {
                   : const CircularProgressIndicator(color: AppColors.accent),
             );
           }
-          final meeting = state.meetingPoint;
-          return RefreshIndicator(
-            color: AppColors.accent,
-            onRefresh: () async {
-              bloc.add(const ShuttlePolled());
-              context.read<LiveShuttlesBloc>().add(const LiveShuttlesPolled());
-              context.read<ShuttleWavesBloc>().add(const ShuttleWavesPolled());
-            },
-            child: ListView(
-              padding: const EdgeInsets.fromLTRB(16, 14, 16, 28),
-              children: [
-                // P-A: the team's shuttles on the road (the driver's own included).
-                const LiveShuttlesCard(),
-                const SizedBox(height: 12),
-                // V-A: the day's waves; "Démarrer ce trajet" preselects the wave's travellers below.
-                ShuttleWavesCard(
-                  running: state.running,
-                  onStart: (wave) => bloc.add(
-                    ShuttleWaveChosen(direction: wave.direction, stopId: wave.stopId, reservationIds: wave.members.map((m) => m.reservationId).toList()),
+          return Column(
+            children: [
+              // F-A: three bands that the travellers move through as the driver ticks them.
+              _BandBar(state: state, onChanged: (b) => bloc.add(ShuttleBandChanged(b))),
+              Expanded(
+                child: RefreshIndicator(
+                  color: AppColors.accent,
+                  onRefresh: () async {
+                    bloc.add(const ShuttlePolled());
+                    context.read<LiveShuttlesBloc>().add(const LiveShuttlesPolled());
+                    context.read<ShuttleWavesBloc>().add(const ShuttleWavesPolled());
+                  },
+                  child: ListView(
+                    key: ValueKey('band-list-${state.band}'),
+                    padding: const EdgeInsets.fromLTRB(16, 14, 16, 28),
+                    children: switch (state.band) {
+                      1 => _routeBand(context, state),
+                      2 => _stayBand(state),
+                      _ => _tourBand(context, state),
+                    },
                   ),
                 ),
-                const SizedBox(height: 12),
-                if (state.running) _RunningCard(state: state) else Text(state.dropoff ? 'shuttle.intro_dropoff'.tr() : 'shuttle.intro'.tr(), style: AppText.muted()),
-                const SizedBox(height: 10),
-                _DirectionToggle(direction: state.direction, enabled: !state.running, onChanged: (d) => bloc.add(ShuttleDirectionChanged(d))),
-                const SizedBox(height: 10),
-                if (state.hasStopChoice) ...[
-                  _StopChoice(stops: state.stops, stopId: state.stopId, enabled: !state.running, onChanged: (id) => bloc.add(ShuttleStopChanged(id))),
-                  const SizedBox(height: 10),
-                ],
-                if (!state.dropoff && state.chosenStop == null) _MeetingPoint(meeting: meeting),
-                if (state.chosenStop != null) _StopPoint(stop: state.chosenStop!),
-                if (state.endedNotice) ...[
-                  const SizedBox(height: 10),
-                  AppCard(
-                    color: AppColors.canvas,
-                    child: Row(
-                      children: [
-                        Expanded(child: Text('shuttle.ended'.tr(), key: const Key('trip-ended'), style: AppText.body(size: 14))),
-                        IconButton(icon: const Icon(Icons.close_rounded, size: 18), onPressed: () => bloc.add(const ShuttleErrorDismissed())),
-                      ],
-                    ),
-                  ),
-                ],
-                if (state.locationProblem != null) ...[
-                  const SizedBox(height: 10),
-                  AppCard(color: const Color(0xFFFDF1F0), borderColor: const Color(0xFFF2C9C5), child: Text('shuttle.location_denied'.tr(), style: AppText.body(size: 14, color: AppColors.danger))),
-                ],
-                if (state.errorCode != null && state.actionState.isError) ...[
-                  const SizedBox(height: 10),
-                  AppCard(color: const Color(0xFFFDF1F0), borderColor: const Color(0xFFF2C9C5), child: Text(translateErrorCode(state.errorCode), style: AppText.body(size: 14, color: AppColors.danger))),
-                ],
-                const SizedBox(height: 14),
-                if (state.dropoff) ...[
-                  Semantics(header: true, child: Text('shuttle.to_drop_off'.tr(), style: AppText.title(size: 20))),
-                  const SizedBox(height: 8),
-                  if (state.departures!.rows.isEmpty) Padding(padding: const EdgeInsets.symmetric(vertical: 24), child: Text('shuttle.empty_dropoff'.tr(), style: AppText.muted())),
-                  for (final row in state.departures!.rows) ...[
-                    _DepartureTile(
-                      row: row,
-                      selected: state.selected.contains(row.reservationId),
-                      onTrip: state.running && state.trip!.passengers.any((p) => p.reservationId == row.reservationId),
-                      selectable: !state.running && row.tripId == null,
-                      onTap: () => bloc.add(ShuttlePassengerToggled(row.reservationId)),
-                    ),
-                    const SizedBox(height: 8),
-                  ],
-                ] else ...[
-                  if (state.pickups!.rows.isEmpty) Padding(padding: const EdgeInsets.symmetric(vertical: 24), child: Text('shuttle.empty'.tr(), style: AppText.muted())),
-                  for (final group in state.groups) ...[
-                    Semantics(
-                      header: true,
-                      child: Text('shuttle.to_pick_up'.tr(args: [group.terminal ?? 'shuttle.no_terminal'.tr()]), style: AppText.title(size: 20)),
-                    ),
-                    const SizedBox(height: 8),
-                    for (final row in group.rows) ...[
-                      _PickupTile(
-                        row: row,
-                        selected: state.selected.contains(row.reservationId),
-                        onTrip: state.running && state.trip!.passengers.any((p) => p.reservationId == row.reservationId),
-                        selectable: !state.running && row.tripId == null,
-                        onTap: () => bloc.add(ShuttlePassengerToggled(row.reservationId)),
-                      ),
-                      const SizedBox(height: 8),
-                    ],
-                    const SizedBox(height: 6),
-                  ],
-                ],
-                const SizedBox(height: 8),
-                if (state.running)
-                  OutlineAction(
-                    key: const Key('end-trip'),
-                    icon: Icons.check_rounded,
-                    label: state.trip!.dropoff ? 'shuttle.end_dropoff'.tr() : 'shuttle.end'.tr(),
-                    onPressed: state.actionState.isProcessing ? null : () => bloc.add(const ShuttleEndRequested()),
-                  )
-                else
-                  GradientButton(
-                    key: const Key('start-trip'),
-                    icon: Icons.directions_bus_rounded,
-                    label: state.selected.isEmpty
-                        ? 'shuttle.start_none'.tr()
-                        : state.selected.length == 1
-                        ? (state.dropoff ? 'shuttle.start_one_dropoff' : 'shuttle.start_one').tr()
-                        : (state.dropoff ? 'shuttle.start_dropoff' : 'shuttle.start').tr(args: ['${state.selected.length}']),
-                    busy: state.actionState.isProcessing,
-                    onPressed: state.selected.isEmpty ? null : () => _confirmVehicle(context, state),
-                  ),
-              ],
-            ),
+              ),
+            ],
           );
         },
       ),
     );
+  }
+
+  /// Band 1, "À emmener" / "À récupérer": the travellers to take, grouped by stop with the advised leave time.
+  List<Widget> _tourBand(BuildContext context, ShuttleState state) {
+    final bloc = context.read<ShuttleBloc>();
+    final meeting = state.meetingPoint;
+    final empty = state.dropoff ? state.departures!.rows.isEmpty : state.pickups!.rows.isEmpty;
+    return [
+      // V-A: the day's waves; "Démarrer ce trajet" preselects the wave's travellers below.
+      ShuttleWavesCard(
+        running: state.running,
+        onStart: (wave) => bloc.add(ShuttleWaveChosen(direction: wave.direction, stopId: wave.stopId, reservationIds: wave.members.map((m) => m.reservationId).toList())),
+      ),
+      const SizedBox(height: 12),
+      if (!state.running) Text(state.dropoff ? 'shuttle.intro_dropoff'.tr() : 'shuttle.intro'.tr(), style: AppText.muted()),
+      const SizedBox(height: 10),
+      _DirectionToggle(direction: state.direction, enabled: !state.running, onChanged: (d) => bloc.add(ShuttleDirectionChanged(d))),
+      const SizedBox(height: 10),
+      if (state.hasStopChoice) ...[
+        _StopChoice(stops: state.stops, stopId: state.stopId, enabled: !state.running, onChanged: (id) => bloc.add(ShuttleStopChanged(id))),
+        const SizedBox(height: 10),
+      ],
+      if (!state.dropoff && state.chosenStop == null) _MeetingPoint(meeting: meeting),
+      if (state.chosenStop != null) _StopPoint(stop: state.chosenStop!),
+      ..._notices(context, state),
+      const SizedBox(height: 14),
+      if (empty) Padding(padding: const EdgeInsets.symmetric(vertical: 24), child: Text(state.dropoff ? 'shuttle.empty_dropoff'.tr() : 'shuttle.empty'.tr(), style: AppText.muted())),
+      for (final group in state.tourGroups) ...[
+        _GroupHeader(
+          title: state.dropoff
+              ? (group.stop.isEmpty ? 'shuttle.to_drop_off'.tr() : 'shuttle.to_drop_off_stop'.tr(args: [group.stop]))
+              : 'shuttle.to_pick_up'.tr(args: [group.stop.isEmpty ? 'shuttle.no_terminal'.tr() : group.stop]),
+          leaveAt: group.leaveAt,
+        ),
+        const SizedBox(height: 8),
+        for (final row in group.departures) ...[
+          _DepartureTile(
+            row: row,
+            selected: state.selected.contains(row.reservationId),
+            onTrip: state.running && state.trip!.passengers.any((p) => p.reservationId == row.reservationId),
+            selectable: !state.running && row.tripId == null && !row.expected,
+            onTap: () => bloc.add(ShuttlePassengerToggled(row.reservationId)),
+          ),
+          const SizedBox(height: 8),
+        ],
+        for (final row in group.pickups) ...[
+          _PickupTile(
+            row: row,
+            selected: state.selected.contains(row.reservationId),
+            onTrip: state.running && state.trip!.passengers.any((p) => p.reservationId == row.reservationId),
+            selectable: !state.running && row.tripId == null,
+            onTap: () => bloc.add(ShuttlePassengerToggled(row.reservationId)),
+          ),
+          const SizedBox(height: 8),
+        ],
+        const SizedBox(height: 6),
+      ],
+      const SizedBox(height: 8),
+      if (!state.running) ...[
+        if (state.selected.isNotEmpty) ...[
+          Text(
+            state.selected.length == 1
+                ? 'shuttle.selected_one'.tr(args: ['${state.selectedPassengers}'])
+                : 'shuttle.selected_summary'.tr(args: ['${state.selected.length}', '${state.selectedPassengers}']),
+            key: const Key('selected-summary'),
+            textAlign: TextAlign.center,
+            style: AppText.muted(size: 12.5),
+          ),
+          const SizedBox(height: 8),
+        ],
+        GradientButton(
+          key: const Key('start-trip'),
+          icon: Icons.directions_bus_rounded,
+          label: state.selected.isEmpty
+              ? 'shuttle.start_none'.tr()
+              : state.selected.length == 1
+              ? (state.dropoff ? 'shuttle.start_one_dropoff' : 'shuttle.start_one').tr()
+              : (state.dropoff ? 'shuttle.start_dropoff' : 'shuttle.start').tr(args: ['${state.selected.length}']),
+          busy: state.actionState.isProcessing,
+          onPressed: state.selected.isEmpty ? null : () => _confirmVehicle(context, state),
+        ),
+      ] else
+        OutlineAction(key: const Key('go-route'), icon: Icons.directions_bus_rounded, label: 'shuttle.band_route'.tr(), onPressed: () => bloc.add(const ShuttleBandChanged(1))),
+    ];
+  }
+
+  /// Band 2, "En route": the team's shuttles on the map, my trip with its passengers, "Clients déposés".
+  List<Widget> _routeBand(BuildContext context, ShuttleState state) {
+    final bloc = context.read<ShuttleBloc>();
+    return [
+      // P-A: the team's shuttles on the road (the driver's own included).
+      const LiveShuttlesCard(),
+      const SizedBox(height: 12),
+      ..._notices(context, state),
+      if (state.running) ...[
+        _RunningCard(state: state),
+        const SizedBox(height: 12),
+        Semantics(header: true, child: Text('shuttle.route_passengers'.tr(), style: AppText.title(size: 18))),
+        const SizedBox(height: 8),
+        for (final p in state.trip!.passengers) ...[
+          AppCard(
+            key: Key('route-${p.reservationId}'),
+            child: Row(
+              children: [
+                const Icon(Icons.person_rounded, size: 18, color: AppColors.accent),
+                const SizedBox(width: 8),
+                Expanded(child: Text('${p.customerName} · ${'shuttle.pax'.tr(args: ['${p.passengers}'])}', style: AppText.strong(size: 14.5))),
+                if (p.terminal != null) ...[Text(p.terminal!, style: AppText.muted(size: 12.5)), const SizedBox(width: 8)],
+                FrenchPlate(p.plate, size: 11),
+              ],
+            ),
+          ),
+          const SizedBox(height: 8),
+        ],
+        const SizedBox(height: 8),
+        GradientButton(
+          key: const Key('end-trip'),
+          icon: Icons.check_rounded,
+          label: state.trip!.dropoff ? 'shuttle.end_dropoff'.tr() : 'shuttle.end'.tr(),
+          busy: state.actionState.isProcessing,
+          onPressed: state.actionState.isProcessing ? null : () => bloc.add(const ShuttleEndRequested()),
+        ),
+      ] else
+        Padding(
+          padding: const EdgeInsets.symmetric(vertical: 24),
+          child: Text('shuttle.route_none'.tr(args: [(state.dropoff ? 'shuttle.band_take' : 'shuttle.band_fetch').tr()]), key: const Key('route-none'), textAlign: TextAlign.center, style: AppText.muted()),
+        ),
+    ];
+  }
+
+  /// Band 3: "En séjour" by return day on the drop-off side, "Rendus" today on the pick-up side.
+  List<Widget> _stayBand(ShuttleState state) {
+    final staying = state.staying;
+    if (state.dropoff) {
+      final days = staying?.days ?? const <StayingDayModel>[];
+      return [
+        if (days.isEmpty) Padding(padding: const EdgeInsets.symmetric(vertical: 24), child: Text('shuttle.stay_none'.tr(), key: const Key('stay-none'), textAlign: TextAlign.center, style: AppText.muted())),
+        for (final day in days) ...[
+          Text(
+            day.rows.length == 1 ? 'shuttle.stay_day_one'.tr(args: [planningDay(DateTime.parse(day.date))]) : 'shuttle.stay_day'.tr(args: [planningDay(DateTime.parse(day.date)), '${day.rows.length}']),
+            style: AppText.label(size: 12),
+          ),
+          const SizedBox(height: 6),
+          for (final row in day.rows) ...[_StayingTile(row: row), const SizedBox(height: 6)],
+          const SizedBox(height: 8),
+        ],
+      ];
+    }
+    final back = staying?.returnedToday ?? const <StayingRowModel>[];
+    return [
+      Semantics(header: true, child: Text('shuttle.back_today'.tr(), style: AppText.title(size: 18))),
+      const SizedBox(height: 8),
+      if (back.isEmpty) Padding(padding: const EdgeInsets.symmetric(vertical: 24), child: Text('shuttle.back_none'.tr(), key: const Key('back-none'), textAlign: TextAlign.center, style: AppText.muted())),
+      for (final row in back) ...[_StayingTile(row: row), const SizedBox(height: 6)],
+    ];
+  }
+
+  List<Widget> _notices(BuildContext context, ShuttleState state) {
+    final bloc = context.read<ShuttleBloc>();
+    return [
+      if (state.endedNotice) ...[
+        const SizedBox(height: 10),
+        AppCard(
+          color: AppColors.canvas,
+          child: Row(
+            children: [
+              Expanded(child: Text('shuttle.ended'.tr(), key: const Key('trip-ended'), style: AppText.body(size: 14))),
+              IconButton(icon: const Icon(Icons.close_rounded, size: 18), onPressed: () => bloc.add(const ShuttleErrorDismissed())),
+            ],
+          ),
+        ),
+      ],
+      if (state.locationProblem != null) ...[
+        const SizedBox(height: 10),
+        AppCard(color: const Color(0xFFFDF1F0), borderColor: const Color(0xFFF2C9C5), child: Text('shuttle.location_denied'.tr(), style: AppText.body(size: 14, color: AppColors.danger))),
+      ],
+      if (state.errorCode != null && state.actionState.isError) ...[
+        const SizedBox(height: 10),
+        AppCard(color: const Color(0xFFFDF1F0), borderColor: const Color(0xFFF2C9C5), child: Text(translateErrorCode(state.errorCode), style: AppText.body(size: 14, color: AppColors.danger))),
+      ],
+    ];
   }
 
   Future<void> _confirmVehicle(BuildContext context, ShuttleState state) async {
@@ -193,6 +289,116 @@ class ProShuttlePage extends StatelessWidget implements AutoRouteWrapper {
     bloc
       ..add(ShuttleVehicleChosen(choice))
       ..add(const ShuttleStartRequested());
+  }
+}
+
+/// F-A: the three bands with their counts ("À emmener · 5", "En route · 1", "En séjour · 12").
+class _BandBar extends StatelessWidget {
+  const _BandBar({required this.state, required this.onChanged});
+  final ShuttleState state;
+  final ValueChanged<int> onChanged;
+
+  @override
+  Widget build(BuildContext context) {
+    final labels = [
+      (state.dropoff ? 'shuttle.band_take' : 'shuttle.band_fetch').tr(),
+      'shuttle.band_route'.tr(),
+      (state.dropoff ? 'shuttle.band_stay' : 'shuttle.band_back').tr(),
+    ];
+    final counts = [state.bandCount1, state.bandCount2, state.bandCount3];
+    return Container(
+      color: AppColors.surface,
+      padding: const EdgeInsets.fromLTRB(16, 10, 16, 10),
+      child: Row(
+        children: [
+          for (var i = 0; i < 3; i++) ...[
+            if (i > 0) const SizedBox(width: 6),
+            Expanded(
+              child: Material(
+                color: state.band == i ? AppColors.action : AppColors.canvas,
+                borderRadius: AppRadius.pill,
+                child: InkWell(
+                  key: Key('band-$i'),
+                  borderRadius: AppRadius.pill,
+                  onTap: () => onChanged(i),
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(vertical: 8),
+                    child: Text(
+                      '${labels[i]} · ${counts[i]}',
+                      textAlign: TextAlign.center,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: AppText.body(size: 12.5, weight: state.band == i ? 700 : 600, color: state.band == i ? AppColors.onAccent : AppColors.muted),
+                    ),
+                  ),
+                ),
+              ),
+            ),
+          ],
+        ],
+      ),
+    );
+  }
+}
+
+/// "Terminal 1" and, under it, "Départ conseillé 10:05" (the earliest leave time of the group).
+class _GroupHeader extends StatelessWidget {
+  const _GroupHeader({required this.title, this.leaveAt});
+  final String title;
+  final DateTime? leaveAt;
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Semantics(header: true, child: Text(title, style: AppText.title(size: 20))),
+        if (leaveAt != null)
+          Row(
+            children: [
+              const Icon(Icons.schedule_rounded, size: 14, color: AppColors.accent),
+              const SizedBox(width: 4),
+              Text('shuttle.group_leave'.tr(args: [hhmm(leaveAt!)]), style: AppText.strong(size: 12.5, color: AppColors.accent)),
+            ],
+          ),
+      ],
+    );
+  }
+}
+
+/// A traveller away (band "En séjour") or back today (band "Rendus"): spot, name, return flight and time, status.
+class _StayingTile extends StatelessWidget {
+  const _StayingTile({required this.row});
+  final StayingRowModel row;
+
+  @override
+  Widget build(BuildContext context) {
+    final details = [if (row.returnFlight != null) row.returnFlight! else if (row.stopName != null) row.stopName!, hhmm(row.returnedAt ?? row.returnAt)].join(' · ');
+    return AppCard(
+      key: Key('staying-${row.reservationId}'),
+      padding: const EdgeInsets.fromLTRB(12, 9, 12, 9),
+      child: Row(
+        children: [
+          if (row.spot != null) ...[
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 3),
+              decoration: BoxDecoration(color: AppColors.canvas, borderRadius: BorderRadius.circular(6)),
+              child: Text(row.spot!, style: AppText.tabular(size: 12)),
+            ),
+            const SizedBox(width: 10),
+          ],
+          Expanded(
+            child: Text.rich(
+              TextSpan(children: [TextSpan(text: row.customerName, style: AppText.strong(size: 14)), TextSpan(text: ' · $details', style: AppText.muted(size: 13))]),
+              maxLines: 2,
+              overflow: TextOverflow.ellipsis,
+            ),
+          ),
+          const SizedBox(width: 8),
+          proStatusBadge(row.status),
+        ],
+      ),
+    );
   }
 }
 
@@ -447,7 +653,9 @@ class _DepartureTile extends StatelessWidget {
       if (row.arrivedAt != null) 'shuttle.arrived_at'.tr(args: [hhmm(row.arrivedAt!)]) else 'shuttle.arrival_planned'.tr(args: [hhmm(row.arrivalAt)]),
       if (row.spot != null) 'shuttle.spot'.tr(args: [row.spot!]),
     ].join(' · ');
-    return Material(
+    return Opacity(
+      opacity: row.expected ? 0.7 : 1,
+      child: Material(
       color: AppColors.surface,
       shape: RoundedRectangleBorder(
         borderRadius: AppRadius.card,
@@ -470,7 +678,10 @@ class _DepartureTile extends StatelessWidget {
                   ],
                   Expanded(child: Text('${row.customerName} · ${'shuttle.pax'.tr(args: ['${row.passengers}'])}', style: AppText.strong(size: 14.5))),
                   const SizedBox(width: 8),
-                  if (onTrip || row.tripId != null) StatusBadge(text: 'shuttle.badge_on_trip'.tr(), tone: BadgeTone.tint),
+                  if (onTrip || row.tripId != null)
+                    StatusBadge(text: 'shuttle.badge_on_trip'.tr(), tone: BadgeTone.tint)
+                  else if (row.expected)
+                    StatusBadge(key: Key('expected-${row.reservationId}'), text: 'shuttle.expected_at'.tr(args: [hhmm(row.arrivalAt)]), tone: BadgeTone.muted),
                 ],
               ),
               const SizedBox(height: 4),
@@ -484,6 +695,7 @@ class _DepartureTile extends StatelessWidget {
             ],
           ),
         ),
+      ),
       ),
     );
   }

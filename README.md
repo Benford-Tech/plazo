@@ -356,7 +356,8 @@ Documentation interactive : `/api/docs` (Swagger). Toutes les routes sont sous `
 | POST | `/public/bookings/:ref/return/notice` | E (06/10/2026) : « Mon vol a du retard », « Bagage perdu » ou un mot `{ kind: flight_delayed·luggage·other, text? }` pendant que le véhicule est sur place (409 `vehicle_not_on_site`) ; gardé sur la réservation (`returnNotice*`), push aux retours, visible dans la file du chauffeur et la fiche |
 | GET | `/public/bookings/:ref/return/route?lat=&lng=` | Chemin à pied vers le point de rendez-vous (IGN, cache 3 min, ligne droite en repli) |
 | GET | `/public/bookings/:ref/shuttle` | La navette qui vient (position, ETA, véhicule) : seulement pendant un trajet qui inclut la réservation |
-| GET | `/internal/shuttle/pickups` | Chauffeur : retours à récupérer (vol, terminal, au point de rendez-vous, trajet) |
+| GET | `/internal/shuttle/pickups` | Chauffeur : retours à récupérer (vol, terminal, au point de rendez-vous, trajet, `leaveAt` heure de départ conseillée) |
+| GET | `/internal/shuttle/staying` | F-A : voyageurs en séjour par jour de retour (`days[]`) et revenus aujourd'hui (`returnedToday`) |
 | GET / POST | `/internal/shuttle/vehicles`, DELETE `…/:id` | Navettes du loueur (gérant) |
 | GET | `/internal/shuttle/trips/current` | Le trajet en cours du chauffeur connecté |
 | POST | `/internal/shuttle/trips` | « Démarrer le trajet » `{ reservationIds, vehicleId \| vehicle }` (un par chauffeur, 90 min max) |
