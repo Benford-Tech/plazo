@@ -6,6 +6,7 @@ import 'package:parking_app/src/features/search/data/datasources/public_data_sou
 import 'package:parking_app/src/features/search/data/models/public_models.dart';
 import 'package:parking_app/src/services/link_service.dart';
 import 'package:parking_app/src/services/payment_sheet_service.dart';
+import 'package:parking_app/src/services/location_service.dart';
 import 'package:parking_app/src/services/secure_storage_service.dart';
 
 /// An API error as the repositories receive it (code, fields, details).
@@ -121,6 +122,17 @@ class FakeBookingDataSource implements BookingDataSource {
   @override
   Future<PublicBookingModel> updateFlight({required String reference, required String? flight}) =>
       _next('flight', () => booking(reference: reference, returnFlight: flight));
+
+  @override
+  Future<PublicBookingModel> locateCar({required String reference, required GeoPosition position, String? note}) => _next(
+    'locateCar',
+    () => booking(reference: reference).copyWith(
+      car: CarLocationModel(lat: position.lat, lng: position.lng, accuracyM: position.accuracy?.round(), at: position.recordedAt, note: note),
+    ),
+  );
+
+  @override
+  Future<PublicBookingModel> clearCar({required String reference}) => _next('clearCar', () => booking(reference: reference));
 
   @override
   Future<PaymentIntentModel> paymentIntent({required String reference}) => _next(

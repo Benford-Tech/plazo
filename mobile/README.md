@@ -26,6 +26,9 @@ n'existent que dans Plazo Pro (`if (AppConstants.isPro)` dans `app_router.dart`)
   (`/ma-reservation/REF/point-de-rendez-vous` : chemin piéton IGN calculé par l'API depuis la position du téléphone ou
   le terminal, consignes et photo du loueur, « Ouvrir dans Plans »), « Je suis au point de rendez-vous », puis la
   **navette en direct** (position du chauffeur, ETA, véhicule, prénom ; interrogée toutes les 10 s).
+- **Voyageur — ma voiture** (06/10/2026) : carte « Ma voiture » sur la réservation, du dépôt au retour : « Enregistrer où je
+  suis garé » (position du téléphone, repère facultatif), corriger, effacer ; « Retrouver ma voiture » mène à l'épingle.
+  Si le voiturier a pris la position depuis Plazo Pro, elle prime et ne se change plus dans l'app.
 - **Voyageur — pendant le séjour** (bloc « Navette » de `/ma-reservation/REF`, S-A du 04/10/2026) : du jour d'arrivée
   au jour du retour, les navettes du parking en route (véhicule, prénom, sens, carte, distance au parking ou au point de
   rendez-vous), la sienne mise en avant ; interrogé toutes les 12 s (`StayShuttlesBloc`).

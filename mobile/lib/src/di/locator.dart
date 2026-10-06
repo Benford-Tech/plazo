@@ -26,6 +26,7 @@ import '../features/booking/domain/usecases/lookup_booking_use_case.dart';
 import '../features/booking/domain/usecases/save_booking_access_use_case.dart';
 import '../features/booking/domain/usecases/saved_bookings_use_case.dart';
 import '../features/booking/presentation/bloc/booking_bloc.dart';
+import '../features/booking/presentation/bloc/car_location_bloc.dart';
 import '../features/checkout/domain/booking_draft.dart';
 import '../features/checkout/presentation/bloc/booking_form_bloc.dart';
 import '../features/checkout/presentation/bloc/payment_bloc.dart';

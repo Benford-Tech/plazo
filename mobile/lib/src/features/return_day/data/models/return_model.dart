@@ -1,4 +1,5 @@
 import 'package:freezed_annotation/freezed_annotation.dart';
+import '../../../booking/data/models/public_booking_model.dart';
 
 import '../../../arrival/data/models/arrival_model.dart';
 
@@ -129,6 +130,9 @@ abstract class TravellerReturnModel with _$TravellerReturnModel {
 
     /// The spot the valet placed the vehicle on (bloc 2), for "Retrouver ma voiture"; null until placed.
     ReturnSpotModel? spot,
+
+    /// Where the car is parked (GPS), recorded by the traveller or the valet; null until then.
+    CarLocationModel? car,
   }) = _TravellerReturnModel;
 
   factory TravellerReturnModel.fromJson(Map<String, dynamic> json) => _$TravellerReturnModelFromJson(json);

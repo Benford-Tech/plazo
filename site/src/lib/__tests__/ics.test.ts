@@ -24,6 +24,7 @@ const booking: PublicBooking = {
   plate: "GK-318-PX",
   returnFlight: "TO 3627",
   departureFlight: null,
+  car: null,
   outbound: null,
   passengers: 2,
   cancellationPolicy: "free_24h",

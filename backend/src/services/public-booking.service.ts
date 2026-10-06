@@ -1,11 +1,12 @@
 import httpStatus from 'http-status';
+import { CAR_LOCATABLE_STATUSES, canLocateCar, canReplaceCarLocation, CLEARED_CAR_LOCATION } from '@/domain/car-location';
 import { Container, Service } from 'typedi';
 import { SECRET_KEY } from '@/config';
 import prisma, { Prisma, ReservationStatus } from '@/database';
 import { cancellableUntil, canCancel, canEditFlight, isValidManageToken, manageLinkExpired, manageToken } from '@/domain/booking';
 import { BookingRecord, bookingPolicy, toPublicBooking, WITH_LISTING } from '@/domain/booking-view';
 import { formatPlate, plateKey, RELEASED_STATUSES } from '@/domain/reservation';
-import { CreatePublicBookingDto, LookupBookingDto } from '@/dtos/public-booking.dto';
+import { CreatePublicBookingDto, LookupBookingDto, CarLocationDto } from '@/dtos/public-booking.dto';
 import { PublicBooking } from '@/interfaces/booking.interface';
 import { HttpException } from '@/utils/httpException';
 import { AuditService } from './audit.service';
@@ -334,6 +335,47 @@ export class PublicBookingService {
   }
 
   /** A booking made on the site, if the token is its own. */
+  /** The traveller records where they parked (self-parking); refused once a valet recorded the position. */
+  public async locateCar(reference: string, token: string | undefined, data: CarLocationDto): Promise<PublicBooking> {
+    const before = await this.load(reference, token);
+    if (!canLocateCar(before.status))
+      throw new HttpException(httpStatus.CONFLICT, 'The car position can no longer be recorded', 'car_location_closed');
+    if (!canReplaceCarLocation('traveller', before.carLocatedBy))
+      throw new HttpException(httpStatus.CONFLICT, 'The parking recorded the car position', 'car_location_locked');
+    const now = new Date();
+    const { count } = await prisma.reservation.updateMany({
+      where: { id: before.id, status: { in: CAR_LOCATABLE_STATUSES }, OR: [{ carLocatedBy: null }, { carLocatedBy: 'traveller' }] },
+      data: {
+        carLat: data.lat,
+        carLng: data.lng,
+        carAccuracyM: data.accuracyM ?? null,
+        carLocatedAt: now,
+        carLocatedBy: 'traveller',
+        carNote: data.note?.trim() || null,
+      },
+    });
+    if (!count) throw new HttpException(httpStatus.CONFLICT, 'The parking recorded the car position', 'car_location_locked');
+    // Coordinates stay out of the audit trail (the row holds them).
+    await this.audit.record(
+      { id: null, operatorId: before.operatorId },
+      {
+        action: 'reservation.car_located',
+        entityType: 'reservation',
+        entityId: before.id,
+        details: { by: 'traveller', accuracyM: data.accuracyM ?? null },
+      },
+    );
+    return toPublicBooking(await this.find(before.id, prisma));
+  }
+
+  /** The traveller clears their own position (a valet's one stays). */
+  public async clearCarLocation(reference: string, token: string | undefined): Promise<PublicBooking> {
+    const before = await this.load(reference, token);
+    if (before.carLocatedBy === 'staff') throw new HttpException(httpStatus.CONFLICT, 'The parking recorded the car position', 'car_location_locked');
+    await prisma.reservation.updateMany({ where: { id: before.id, carLocatedBy: 'traveller' }, data: CLEARED_CAR_LOCATION });
+    return toPublicBooking(await this.find(before.id, prisma));
+  }
+
   public async load(reference: string, token: string | undefined): Promise<BookingRecord> {
     if (!reference || reference.length > 20 || !token) throw notFound();
     const reservation = await prisma.reservation.findFirst({

@@ -102,6 +102,13 @@ Ne construire QUE ce qui règle la douleur n°1 du client.
      `departure_cancelled`, `departure_delayed`, `wave_overflow`) ; dans Plazo Pro, carte « Ligne du jour » en tête de l'onglet
      Navette avec « Démarrer ce trajet » (sens, desserte et passagers présélectionnés) ; le voyageur voit « navette vers le
      terminal prévue vers HH:MM » (`PublicBooking.outbound`).
+   - Décision du 06/10/2026 : **position GPS de la voiture** enregistrée par la personne qui la gare : le voyageur depuis
+     l'app (carte « Ma voiture » sur la réservation, du dépôt au retour, note facultative ; `PUT/DELETE
+     /public/bookings/:ref/car-location`) ou le voiturier depuis Plazo Pro (fix pris automatiquement à l'affectation de la
+     place, `AssignSpotDto.car`, ou `PUT/DELETE /internal/reservations/:id/car-location`) ; la position de l'équipe prime
+     (409 `car_location_locked` pour le voyageur). Champs `Reservation.car*`, `domain/car-location.ts`, vue
+     `PublicBooking.car` / `TravellerReturn.car` ; « Retrouver ma voiture » (app) et le bloc du site mènent à l'épingle ;
+     épingle sur l'Occupation web et ligne sur les fiches ; effacée deux jours après le retour par le cron de nuit.
 
 ## Liste « plus tard » (le « bien plus »), hors MVP
 

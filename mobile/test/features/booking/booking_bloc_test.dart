@@ -12,6 +12,7 @@ import 'package:parking_app/src/features/booking/domain/usecases/lookup_booking_
 import 'package:parking_app/src/features/booking/domain/usecases/save_booking_access_use_case.dart';
 import 'package:parking_app/src/features/booking/domain/usecases/saved_bookings_use_case.dart';
 import 'package:parking_app/src/features/booking/presentation/bloc/booking_bloc.dart';
+import 'package:parking_app/src/services/location_service.dart';
 import 'package:parking_app/src/services/secure_storage_service.dart';
 
 /// The data source over a real (in-memory) secure storage, without network.
@@ -57,6 +58,10 @@ class FakeBookingDataSource implements BookingDataSource {
   Future<CreatedBookingModel> create(BookingInput input) => throw UnimplementedError();
   @override
   Future<PublicBookingModel> updateFlight({required String reference, required String? flight}) => throw UnimplementedError();
+  @override
+  Future<PublicBookingModel> locateCar({required String reference, required GeoPosition position, String? note}) => throw UnimplementedError();
+  @override
+  Future<PublicBookingModel> clearCar({required String reference}) => throw UnimplementedError();
   @override
   Future<PaymentIntentModel> paymentIntent({required String reference}) => throw UnimplementedError();
   @override

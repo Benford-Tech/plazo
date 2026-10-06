@@ -3,6 +3,7 @@ import 'package:equatable/equatable.dart';
 import '../../../../core/error/failure.dart';
 import '../../../../core/utils/either.dart';
 import '../../../../core/utils/use_case.dart';
+import '../../../../services/location_service.dart';
 import '../../data/models/public_booking_model.dart';
 import '../repositories/booking_repository.dart';
 
@@ -101,4 +102,32 @@ class LoadSavedBookingsUseCase with UseCase<List<PublicBookingModel>, NoParams> 
     if (bookings.isEmpty && firstFailure != null) return Left(firstFailure);
     return Right(bookings);
   }
+}
+
+/// "Enregistrer où je suis garé" (06/10/2026): the phone's GPS fix and an optional note.
+class LocateCarParams extends Equatable {
+  const LocateCarParams({required this.reference, required this.position, this.note});
+  final String reference;
+  final GeoPosition position;
+  final String? note;
+  @override
+  List<Object?> get props => [reference, position, note];
+}
+
+class LocateCarUseCase with UseCase<PublicBookingModel, LocateCarParams> {
+  LocateCarUseCase(this._repository);
+  final BookingRepository _repository;
+
+  @override
+  Future<Either<Failure, PublicBookingModel>> call(LocateCarParams params) =>
+      _repository.locateCar(reference: params.reference, position: params.position, note: params.note);
+}
+
+/// Clears the traveller's own position (a valet's one stays).
+class ClearCarUseCase with UseCase<PublicBookingModel, String> {
+  ClearCarUseCase(this._repository);
+  final BookingRepository _repository;
+
+  @override
+  Future<Either<Failure, PublicBookingModel>> call(String params) => _repository.clearCar(reference: params);
 }

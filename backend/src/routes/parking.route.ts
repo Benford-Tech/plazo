@@ -2,6 +2,7 @@ import { Router } from 'express';
 import { ParkingController } from '@/controllers/parking.controller';
 import { UpdateParkingDto } from '@/dtos/parking.dto';
 import { AssignSpotDto } from '@/dtos/occupation.dto';
+import { CarLocationDto } from '@/dtos/public-booking.dto';
 import { GenerateSpotsDto, ReplaceSpotsDto, UpdateParkingPlanDto, UpdateSpotDto } from '@/dtos/parking-plan.dto';
 import { PlatformController } from '@/controllers/platform.controller';
 import { Routes } from '@/interfaces/routes.interface';
@@ -92,6 +93,14 @@ export class ParkingRoute implements Routes {
       ValidationMiddleware(AssignSpotDto),
       this.parking.assignSpot,
     );
+    // Where the car is parked (06/10/2026): the valet's GPS fix, apart from the spot assignment.
+    this.router.put(
+      '/internal/reservations/:id/car-location',
+      StaffAuthMiddleware('reservations:status'),
+      ValidationMiddleware(CarLocationDto),
+      this.parking.locateCar,
+    );
+    this.router.delete('/internal/reservations/:id/car-location', StaffAuthMiddleware('reservations:status'), this.parking.clearCar);
     // Bloc 2, step "Planning des places": one line per spot over the coming days.
     this.router.get('/internal/parkings/:id/spot-planning', StaffAuthMiddleware('reservations:view'), this.parking.spotPlanningBoard);
     this.router.post('/internal/parkings/:id/spot-planning/preassign', StaffAuthMiddleware('reservations:status'), this.parking.preassignSpots);

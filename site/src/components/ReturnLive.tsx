@@ -137,7 +137,10 @@ export function ReturnLive({ reference, token, initial }: { reference: string; t
   const shuttle = data.shuttle;
   const vehicle = shuttle ? [shuttle.vehicle.model, shuttle.vehicle.colour].filter(Boolean).join(" ") || null : null;
   const spot = data.spot;
+  const car = data.car;
   const parkingDestination = data.parking.location ? `${data.parking.location.lat},${data.parking.location.lng}` : (data.parking.address ?? data.parking.name);
+  // The recorded GPS fix of the car (06/10/2026) beats the parking's entrance for the route.
+  const destination = car ? `${car.lat},${car.lng}` : parkingDestination;
   return (
     <section aria-labelledby="retour-direct" data-testid="return-live" className="card flex flex-col gap-3.5 p-4 md:p-[22px]">
       <div className="flex items-center justify-between gap-3">
@@ -170,7 +173,7 @@ export function ReturnLive({ reference, token, initial }: { reference: string; t
           <LivePill label={t.position} at={fetchedAt - (shuttle.positionAgeSeconds ?? 0) * 1000} now={now} />
         </div>
       )}
-      {spot && (
+      {(spot || car) && (
         <div data-testid="find-car" className="flex flex-col gap-3 rounded-[18px] bg-dark p-4 text-white">
           <div className="flex items-center justify-between gap-3">
             <span className="text-[13px] font-bold tracking-[.04em] text-white/70 uppercase">{t.carTitle}</span>
@@ -181,13 +184,19 @@ export function ReturnLive({ reference, token, initial }: { reference: string; t
               P
             </span>
             <div>
-              <div className="text-[26px] leading-none font-extrabold">{t.carSpot(spot.code)}</div>
-              <div className="text-[13px] text-white/75">{(spot.stayClass && t.carZone[spot.stayClass]) || data.parking.name}</div>
+              <div className="text-[26px] leading-none font-extrabold">{spot ? t.carSpot(spot.code) : t.carNoSpot}</div>
+              <div className="text-[13px] text-white/75">{(spot?.stayClass && t.carZone[spot.stayClass]) || data.parking.name}</div>
             </div>
           </div>
+          {car && (
+            <p data-testid="car-position" className="text-[13px] text-white/75">
+              {t.carPosition(car.by, new Date(car.at).toLocaleTimeString("fr-FR", { hour: "2-digit", minute: "2-digit", timeZone: "Europe/Paris" }), car.accuracyM)}
+              {car.note ? ` ${car.note}.` : ""}
+            </p>
+          )}
           <p className="text-[13px] text-white/75">{t.carKeys}</p>
-          <a href={directionsUrl(parkingDestination)} target="_blank" rel="noopener noreferrer" className="btn-primary h-11 text-[15px]">
-            {t.carRoute}
+          <a href={directionsUrl(destination)} target="_blank" rel="noopener noreferrer" className="btn-primary h-11 text-[15px]">
+            {car ? t.carRouteToCar : t.carRoute}
             <span className="sr-only"> {fr.a11y.opensNewTab}</span>
           </a>
         </div>

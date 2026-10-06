@@ -17,6 +17,14 @@ abstract class OccupantModel with _$OccupantModel {
     String? returnFlight,
     String? spotId,
     String? keyHook,
+
+    /// Where the car is parked (06/10/2026), when recorded (by the traveller or the staff).
+    double? carLat,
+    double? carLng,
+    int? carAccuracyM,
+    DateTime? carLocatedAt,
+    String? carLocatedBy,
+    String? carNote,
     @Default(false) bool onSite,
     @Default(false) bool leavesToday,
 

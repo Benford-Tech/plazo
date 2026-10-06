@@ -62,10 +62,11 @@ export class CronController {
     const smsPurged = await this.sms.purgeOld();
     // Travellers' phones registered for the shuttle pushes: two days after the return.
     const travellerDevicesPurged = await this.returns.purgeDevices();
+    const carLocationsPurged = await this.returns.purgeCarLocations();
     logger.info(
       `[Cron] ${deleted} expired staff tokens deleted, ${arrivalSignalsEnded} arrival signals ended, ${shuttleTripsEnded} shuttle trips ended, ` +
         `SMS queue ${JSON.stringify(sms)}, ${smsPurged} outbox rows purged`,
     );
-    res.json({ deleted, arrivalSignalsEnded, shuttleTripsEnded, smsAbandoned: sms.abandoned, smsPurged, travellerDevicesPurged });
+    res.json({ deleted, arrivalSignalsEnded, shuttleTripsEnded, smsAbandoned: sms.abandoned, smsPurged, travellerDevicesPurged, carLocationsPurged });
   });
 }

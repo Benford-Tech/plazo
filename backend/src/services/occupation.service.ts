@@ -1,4 +1,6 @@
 import httpStatus from 'http-status';
+import { canLocateCar, carView, CLEARED_CAR_LOCATION } from '@/domain/car-location';
+import { CarLocationDto } from '@/dtos/public-booking.dto';
 import { Container, Service } from 'typedi';
 import prisma, { ParkingPlan, ParkingSpot, Prisma, Reservation, ReservationStatus } from '@/database';
 import { settingsOf, stayClassDistance, stayClassForNights, type StayClass } from '@/domain/layout/types';
@@ -23,6 +25,12 @@ const occupantSelect = {
   returnFlight: true,
   spotId: true,
   keyHook: true,
+  carLat: true,
+  carLng: true,
+  carAccuracyM: true,
+  carLocatedAt: true,
+  carLocatedBy: true,
+  carNote: true,
 } as const;
 type Occupant = Prisma.ReservationGetPayload<{ select: typeof occupantSelect }>;
 
@@ -172,10 +180,21 @@ export class OccupationService {
       if (clash) throw new HttpException(httpStatus.CONFLICT, `Spot ${spot.code} is taken by ${clash.reference}`, 'spot_taken');
     }
     const keyHook = data.keyHook === undefined ? reservation.keyHook : data.keyHook?.trim() || null;
+    // The valet's fix where the car stands (06/10/2026); the staff's position always wins.
+    const car = data.car
+      ? {
+          carLat: data.car.lat,
+          carLng: data.car.lng,
+          carAccuracyM: data.car.accuracyM ?? null,
+          carLocatedAt: new Date(),
+          carLocatedBy: 'staff' as const,
+          carNote: data.car.note?.trim() || null,
+        }
+      : {};
     const updated = await prisma.$transaction(async tx => {
       const row = await tx.reservation.update({
         where: { id: reservation.id },
-        data: { spotId: spot?.id ?? null, keyHook },
+        data: { spotId: spot?.id ?? null, keyHook, ...car },
         include: { spot: { select: { code: true } } },
       });
       await this.audit.record(
@@ -184,13 +203,51 @@ export class OccupationService {
           action: 'reservation.spot_assigned',
           entityType: 'reservation',
           entityId: reservation.id,
-          details: { from: reservation.spot?.code ?? null, to: spot?.code ?? null, keyHook },
+          details: { from: reservation.spot?.code ?? null, to: spot?.code ?? null, keyHook, carLocated: !!data.car },
         },
         tx,
       );
       return row;
     });
     return updated;
+  }
+
+  /** A staff member records (or corrects) where the car stands, apart from a spot assignment. */
+  public async locateCar(actor: AuthenticatedStaff, reservationId: string, data: CarLocationDto) {
+    const reservation = await prisma.reservation.findFirst({ where: { id: reservationId, operatorId: actor.operatorId } });
+    if (!reservation) throw new HttpException(httpStatus.NOT_FOUND, 'Reservation not found', 'not_found');
+    if (!canLocateCar(reservation.status)) throw new HttpException(httpStatus.BAD_REQUEST, 'This booking cannot be located', 'car_location_closed');
+    const row = await prisma.reservation.update({
+      where: { id: reservation.id },
+      data: {
+        carLat: data.lat,
+        carLng: data.lng,
+        carAccuracyM: data.accuracyM ?? null,
+        carLocatedAt: new Date(),
+        carLocatedBy: 'staff',
+        carNote: data.note?.trim() || null,
+      },
+    });
+    await this.audit.record(actor, {
+      action: 'reservation.car_located',
+      entityType: 'reservation',
+      entityId: reservation.id,
+      details: { by: 'staff', accuracyM: data.accuracyM ?? null },
+    });
+    return { car: carView(row) };
+  }
+
+  public async clearCar(actor: AuthenticatedStaff, reservationId: string) {
+    const reservation = await prisma.reservation.findFirst({ where: { id: reservationId, operatorId: actor.operatorId } });
+    if (!reservation) throw new HttpException(httpStatus.NOT_FOUND, 'Reservation not found', 'not_found');
+    await prisma.reservation.update({ where: { id: reservation.id }, data: CLEARED_CAR_LOCATION });
+    await this.audit.record(actor, {
+      action: 'reservation.car_located',
+      entityType: 'reservation',
+      entityId: reservation.id,
+      details: { by: 'staff', cleared: true },
+    });
+    return { car: null };
   }
 
   /**

@@ -1,4 +1,5 @@
 import { Container, Service } from 'typedi';
+import { CarLocation, carView, CLEARED_CAR_LOCATION } from '@/domain/car-location';
 import prisma from '@/database';
 import { arrivalWindows, LatLng } from '@/domain/arrival';
 import { BookingRecord } from '@/domain/booking-view';
@@ -28,6 +29,8 @@ export interface TravellerReturn {
   plate: string;
   /** The spot the valet placed the vehicle on (bloc 2), for "Retrouver ma voiture"; null until placed. */
   spot: { code: string; stayClass: string | null } | null;
+  /** Where the car is parked (GPS), recorded by the traveller or the valet; null until then. */
+  car: CarLocation | null;
 }
 
 /** The return day of a traveller: the flight, the meeting point, the walking route and the shuttle. */
@@ -95,6 +98,15 @@ export class ReturnService {
     await prisma.travellerDevice.deleteMany({ where: { subscriptionId, reservationId: booking.id } });
   }
 
+  /** Retention: the cars' positions of bookings whose return is two days past. */
+  public async purgeCarLocations(now = new Date()): Promise<number> {
+    const { count } = await prisma.reservation.updateMany({
+      where: { returnAt: { lt: new Date(now.getTime() - 2 * 86400000) }, carLocatedAt: { not: null } },
+      data: CLEARED_CAR_LOCATION,
+    });
+    return count;
+  }
+
   /** Retention: the phones of bookings whose return is two days past (also removed with the booking). */
   public async purgeDevices(now = new Date()): Promise<number> {
     const { count } = await prisma.travellerDevice.deleteMany({
@@ -139,6 +151,7 @@ export class ReturnService {
       },
       plate: fresh.plate,
       spot: onSite && fresh.spot ? { code: fresh.spot.code, stayClass: fresh.spot.stayClass } : null,
+      car: carView(fresh),
     };
   }
 }

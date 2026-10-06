@@ -34,6 +34,12 @@ abstract class ReservationModel with _$ReservationModel {
     @Default(false) bool overbooked,
     String? spotId,
     String? keyHook,
+    double? carLat,
+    double? carLng,
+    int? carAccuracyM,
+    DateTime? carLocatedAt,
+    String? carLocatedBy,
+    String? carNote,
     String? paymentStatus,
     DateTime? createdAt,
 

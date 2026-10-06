@@ -16,7 +16,8 @@ T _$identity<T>(T value) => value;
 /// @nodoc
 mixin _$OccupantModel {
 
- String get id; String get reference; String get customerName; String get plate; String get status; String get arrivalAt; String get returnAt; String? get returnFlight; String? get spotId; String? get keyHook; bool get onSite; bool get leavesToday;/// Search results carry the spot's code.
+ String get id; String get reference; String get customerName; String get plate; String get status; String get arrivalAt; String get returnAt; String? get returnFlight; String? get spotId; String? get keyHook;/// Where the car is parked (06/10/2026), when recorded (by the traveller or the staff).
+ double? get carLat; double? get carLng; int? get carAccuracyM; DateTime? get carLocatedAt; String? get carLocatedBy; String? get carNote; bool get onSite; bool get leavesToday;/// Search results carry the spot's code.
  SpotRefModel? get spot;/// Arrivals to place carry their suggestions.
  List<SuggestionModel> get suggestions;
 /// Create a copy of OccupantModel
@@ -32,20 +33,20 @@ $OccupantModelCopyWith<OccupantModel> get copyWith => _$OccupantModelCopyWithImp
 @override
 bool operator ==(Object other) {
   final _this = this as OccupantModel;
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is OccupantModel&&(identical(other.id, _this.id) || other.id == _this.id)&&(identical(other.reference, _this.reference) || other.reference == _this.reference)&&(identical(other.customerName, _this.customerName) || other.customerName == _this.customerName)&&(identical(other.plate, _this.plate) || other.plate == _this.plate)&&(identical(other.status, _this.status) || other.status == _this.status)&&(identical(other.arrivalAt, _this.arrivalAt) || other.arrivalAt == _this.arrivalAt)&&(identical(other.returnAt, _this.returnAt) || other.returnAt == _this.returnAt)&&(identical(other.returnFlight, _this.returnFlight) || other.returnFlight == _this.returnFlight)&&(identical(other.spotId, _this.spotId) || other.spotId == _this.spotId)&&(identical(other.keyHook, _this.keyHook) || other.keyHook == _this.keyHook)&&(identical(other.onSite, _this.onSite) || other.onSite == _this.onSite)&&(identical(other.leavesToday, _this.leavesToday) || other.leavesToday == _this.leavesToday)&&(identical(other.spot, _this.spot) || other.spot == _this.spot)&&const DeepCollectionEquality().equals(other.suggestions, _this.suggestions));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is OccupantModel&&(identical(other.id, _this.id) || other.id == _this.id)&&(identical(other.reference, _this.reference) || other.reference == _this.reference)&&(identical(other.customerName, _this.customerName) || other.customerName == _this.customerName)&&(identical(other.plate, _this.plate) || other.plate == _this.plate)&&(identical(other.status, _this.status) || other.status == _this.status)&&(identical(other.arrivalAt, _this.arrivalAt) || other.arrivalAt == _this.arrivalAt)&&(identical(other.returnAt, _this.returnAt) || other.returnAt == _this.returnAt)&&(identical(other.returnFlight, _this.returnFlight) || other.returnFlight == _this.returnFlight)&&(identical(other.spotId, _this.spotId) || other.spotId == _this.spotId)&&(identical(other.keyHook, _this.keyHook) || other.keyHook == _this.keyHook)&&(identical(other.carLat, _this.carLat) || other.carLat == _this.carLat)&&(identical(other.carLng, _this.carLng) || other.carLng == _this.carLng)&&(identical(other.carAccuracyM, _this.carAccuracyM) || other.carAccuracyM == _this.carAccuracyM)&&(identical(other.carLocatedAt, _this.carLocatedAt) || other.carLocatedAt == _this.carLocatedAt)&&(identical(other.carLocatedBy, _this.carLocatedBy) || other.carLocatedBy == _this.carLocatedBy)&&(identical(other.carNote, _this.carNote) || other.carNote == _this.carNote)&&(identical(other.onSite, _this.onSite) || other.onSite == _this.onSite)&&(identical(other.leavesToday, _this.leavesToday) || other.leavesToday == _this.leavesToday)&&(identical(other.spot, _this.spot) || other.spot == _this.spot)&&const DeepCollectionEquality().equals(other.suggestions, _this.suggestions));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
 int get hashCode {
   final _this = this as OccupantModel;
-  return Object.hash(runtimeType,_this.id,_this.reference,_this.customerName,_this.plate,_this.status,_this.arrivalAt,_this.returnAt,_this.returnFlight,_this.spotId,_this.keyHook,_this.onSite,_this.leavesToday,_this.spot,const DeepCollectionEquality().hash(_this.suggestions));
+  return Object.hashAll([runtimeType,_this.id,_this.reference,_this.customerName,_this.plate,_this.status,_this.arrivalAt,_this.returnAt,_this.returnFlight,_this.spotId,_this.keyHook,_this.carLat,_this.carLng,_this.carAccuracyM,_this.carLocatedAt,_this.carLocatedBy,_this.carNote,_this.onSite,_this.leavesToday,_this.spot,const DeepCollectionEquality().hash(_this.suggestions)]);
 }
 
 @override
 String toString() {
   final _this = this as OccupantModel;
-  return 'OccupantModel(id: ${_this.id}, reference: ${_this.reference}, customerName: ${_this.customerName}, plate: ${_this.plate}, status: ${_this.status}, arrivalAt: ${_this.arrivalAt}, returnAt: ${_this.returnAt}, returnFlight: ${_this.returnFlight}, spotId: ${_this.spotId}, keyHook: ${_this.keyHook}, onSite: ${_this.onSite}, leavesToday: ${_this.leavesToday}, spot: ${_this.spot}, suggestions: ${_this.suggestions})';
+  return 'OccupantModel(id: ${_this.id}, reference: ${_this.reference}, customerName: ${_this.customerName}, plate: ${_this.plate}, status: ${_this.status}, arrivalAt: ${_this.arrivalAt}, returnAt: ${_this.returnAt}, returnFlight: ${_this.returnFlight}, spotId: ${_this.spotId}, keyHook: ${_this.keyHook}, carLat: ${_this.carLat}, carLng: ${_this.carLng}, carAccuracyM: ${_this.carAccuracyM}, carLocatedAt: ${_this.carLocatedAt}, carLocatedBy: ${_this.carLocatedBy}, carNote: ${_this.carNote}, onSite: ${_this.onSite}, leavesToday: ${_this.leavesToday}, spot: ${_this.spot}, suggestions: ${_this.suggestions})';
 }
 
 
@@ -56,7 +57,7 @@ abstract mixin class $OccupantModelCopyWith<$Res>  {
   factory $OccupantModelCopyWith(OccupantModel value, $Res Function(OccupantModel) _then) = _$OccupantModelCopyWithImpl;
 @useResult
 $Res call({
- String id, String reference, String customerName, String plate, String status, String arrivalAt, String returnAt, String? returnFlight, String? spotId, String? keyHook, bool onSite, bool leavesToday, SpotRefModel? spot, List<SuggestionModel> suggestions
+ String id, String reference, String customerName, String plate, String status, String arrivalAt, String returnAt, String? returnFlight, String? spotId, String? keyHook, double? carLat, double? carLng, int? carAccuracyM, DateTime? carLocatedAt, String? carLocatedBy, String? carNote, bool onSite, bool leavesToday, SpotRefModel? spot, List<SuggestionModel> suggestions
 });
 
 
@@ -73,7 +74,7 @@ class _$OccupantModelCopyWithImpl<$Res>
 
 /// Create a copy of OccupantModel
 /// with the given fields replaced by the non-null parameter values.
-@pragma('vm:prefer-inline') @override $Res call({Object? id = null,Object? reference = null,Object? customerName = null,Object? plate = null,Object? status = null,Object? arrivalAt = null,Object? returnAt = null,Object? returnFlight = freezed,Object? spotId = freezed,Object? keyHook = freezed,Object? onSite = null,Object? leavesToday = null,Object? spot = freezed,Object? suggestions = null,}) {
+@pragma('vm:prefer-inline') @override $Res call({Object? id = null,Object? reference = null,Object? customerName = null,Object? plate = null,Object? status = null,Object? arrivalAt = null,Object? returnAt = null,Object? returnFlight = freezed,Object? spotId = freezed,Object? keyHook = freezed,Object? carLat = freezed,Object? carLng = freezed,Object? carAccuracyM = freezed,Object? carLocatedAt = freezed,Object? carLocatedBy = freezed,Object? carNote = freezed,Object? onSite = null,Object? leavesToday = null,Object? spot = freezed,Object? suggestions = null,}) {
   return _then(OccupantModel(
 id: null == id ? _self.id : id // ignore: cast_nullable_to_non_nullable
 as String,reference: null == reference ? _self.reference : reference // ignore: cast_nullable_to_non_nullable
@@ -85,6 +86,12 @@ as String,returnAt: null == returnAt ? _self.returnAt : returnAt // ignore: cast
 as String,returnFlight: freezed == returnFlight ? _self.returnFlight : returnFlight // ignore: cast_nullable_to_non_nullable
 as String?,spotId: freezed == spotId ? _self.spotId : spotId // ignore: cast_nullable_to_non_nullable
 as String?,keyHook: freezed == keyHook ? _self.keyHook : keyHook // ignore: cast_nullable_to_non_nullable
+as String?,carLat: freezed == carLat ? _self.carLat : carLat // ignore: cast_nullable_to_non_nullable
+as double?,carLng: freezed == carLng ? _self.carLng : carLng // ignore: cast_nullable_to_non_nullable
+as double?,carAccuracyM: freezed == carAccuracyM ? _self.carAccuracyM : carAccuracyM // ignore: cast_nullable_to_non_nullable
+as int?,carLocatedAt: freezed == carLocatedAt ? _self.carLocatedAt : carLocatedAt // ignore: cast_nullable_to_non_nullable
+as DateTime?,carLocatedBy: freezed == carLocatedBy ? _self.carLocatedBy : carLocatedBy // ignore: cast_nullable_to_non_nullable
+as String?,carNote: freezed == carNote ? _self.carNote : carNote // ignore: cast_nullable_to_non_nullable
 as String?,onSite: null == onSite ? _self.onSite : onSite // ignore: cast_nullable_to_non_nullable
 as bool,leavesToday: null == leavesToday ? _self.leavesToday : leavesToday // ignore: cast_nullable_to_non_nullable
 as bool,spot: freezed == spot ? _self.spot : spot // ignore: cast_nullable_to_non_nullable
@@ -186,10 +193,10 @@ return $default(_that);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( String id,  String reference,  String customerName,  String plate,  String status,  String arrivalAt,  String returnAt,  String? returnFlight,  String? spotId,  String? keyHook,  bool onSite,  bool leavesToday,  SpotRefModel? spot,  List<SuggestionModel> suggestions)?  $default,{required TResult orElse(),}) {final _that = this;
+@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( String id,  String reference,  String customerName,  String plate,  String status,  String arrivalAt,  String returnAt,  String? returnFlight,  String? spotId,  String? keyHook,  double? carLat,  double? carLng,  int? carAccuracyM,  DateTime? carLocatedAt,  String? carLocatedBy,  String? carNote,  bool onSite,  bool leavesToday,  SpotRefModel? spot,  List<SuggestionModel> suggestions)?  $default,{required TResult orElse(),}) {final _that = this;
 switch (_that) {
 case _OccupantModel() when $default != null:
-return $default(_that.id,_that.reference,_that.customerName,_that.plate,_that.status,_that.arrivalAt,_that.returnAt,_that.returnFlight,_that.spotId,_that.keyHook,_that.onSite,_that.leavesToday,_that.spot,_that.suggestions);case _:
+return $default(_that.id,_that.reference,_that.customerName,_that.plate,_that.status,_that.arrivalAt,_that.returnAt,_that.returnFlight,_that.spotId,_that.keyHook,_that.carLat,_that.carLng,_that.carAccuracyM,_that.carLocatedAt,_that.carLocatedBy,_that.carNote,_that.onSite,_that.leavesToday,_that.spot,_that.suggestions);case _:
   return orElse();
 
 }
@@ -207,10 +214,10 @@ return $default(_that.id,_that.reference,_that.customerName,_that.plate,_that.st
 /// }
 /// ```
 
-@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( String id,  String reference,  String customerName,  String plate,  String status,  String arrivalAt,  String returnAt,  String? returnFlight,  String? spotId,  String? keyHook,  bool onSite,  bool leavesToday,  SpotRefModel? spot,  List<SuggestionModel> suggestions)  $default,) {final _that = this;
+@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( String id,  String reference,  String customerName,  String plate,  String status,  String arrivalAt,  String returnAt,  String? returnFlight,  String? spotId,  String? keyHook,  double? carLat,  double? carLng,  int? carAccuracyM,  DateTime? carLocatedAt,  String? carLocatedBy,  String? carNote,  bool onSite,  bool leavesToday,  SpotRefModel? spot,  List<SuggestionModel> suggestions)  $default,) {final _that = this;
 switch (_that) {
 case _OccupantModel():
-return $default(_that.id,_that.reference,_that.customerName,_that.plate,_that.status,_that.arrivalAt,_that.returnAt,_that.returnFlight,_that.spotId,_that.keyHook,_that.onSite,_that.leavesToday,_that.spot,_that.suggestions);case _:
+return $default(_that.id,_that.reference,_that.customerName,_that.plate,_that.status,_that.arrivalAt,_that.returnAt,_that.returnFlight,_that.spotId,_that.keyHook,_that.carLat,_that.carLng,_that.carAccuracyM,_that.carLocatedAt,_that.carLocatedBy,_that.carNote,_that.onSite,_that.leavesToday,_that.spot,_that.suggestions);case _:
   throw StateError('Unexpected subclass');
 
 }
@@ -227,10 +234,10 @@ return $default(_that.id,_that.reference,_that.customerName,_that.plate,_that.st
 /// }
 /// ```
 
-@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( String id,  String reference,  String customerName,  String plate,  String status,  String arrivalAt,  String returnAt,  String? returnFlight,  String? spotId,  String? keyHook,  bool onSite,  bool leavesToday,  SpotRefModel? spot,  List<SuggestionModel> suggestions)?  $default,) {final _that = this;
+@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( String id,  String reference,  String customerName,  String plate,  String status,  String arrivalAt,  String returnAt,  String? returnFlight,  String? spotId,  String? keyHook,  double? carLat,  double? carLng,  int? carAccuracyM,  DateTime? carLocatedAt,  String? carLocatedBy,  String? carNote,  bool onSite,  bool leavesToday,  SpotRefModel? spot,  List<SuggestionModel> suggestions)?  $default,) {final _that = this;
 switch (_that) {
 case _OccupantModel() when $default != null:
-return $default(_that.id,_that.reference,_that.customerName,_that.plate,_that.status,_that.arrivalAt,_that.returnAt,_that.returnFlight,_that.spotId,_that.keyHook,_that.onSite,_that.leavesToday,_that.spot,_that.suggestions);case _:
+return $default(_that.id,_that.reference,_that.customerName,_that.plate,_that.status,_that.arrivalAt,_that.returnAt,_that.returnFlight,_that.spotId,_that.keyHook,_that.carLat,_that.carLng,_that.carAccuracyM,_that.carLocatedAt,_that.carLocatedBy,_that.carNote,_that.onSite,_that.leavesToday,_that.spot,_that.suggestions);case _:
   return null;
 
 }
@@ -242,7 +249,7 @@ return $default(_that.id,_that.reference,_that.customerName,_that.plate,_that.st
 @JsonSerializable()
 
 class _OccupantModel implements OccupantModel {
-  const _OccupantModel({required this.id, required this.reference, required this.customerName, required this.plate, required this.status, required this.arrivalAt, required this.returnAt, this.returnFlight, this.spotId, this.keyHook, this.onSite = false, this.leavesToday = false, this.spot,  List<SuggestionModel> suggestions = const []}): _suggestions = suggestions;
+  const _OccupantModel({required this.id, required this.reference, required this.customerName, required this.plate, required this.status, required this.arrivalAt, required this.returnAt, this.returnFlight, this.spotId, this.keyHook, this.carLat, this.carLng, this.carAccuracyM, this.carLocatedAt, this.carLocatedBy, this.carNote, this.onSite = false, this.leavesToday = false, this.spot,  List<SuggestionModel> suggestions = const []}): _suggestions = suggestions;
   factory _OccupantModel.fromJson(Map<String, dynamic> json) => _$OccupantModelFromJson(json);
 
 @override final  String id;
@@ -255,6 +262,13 @@ class _OccupantModel implements OccupantModel {
 @override final  String? returnFlight;
 @override final  String? spotId;
 @override final  String? keyHook;
+/// Where the car is parked (06/10/2026), when recorded (by the traveller or the staff).
+@override final  double? carLat;
+@override final  double? carLng;
+@override final  int? carAccuracyM;
+@override final  DateTime? carLocatedAt;
+@override final  String? carLocatedBy;
+@override final  String? carNote;
 @override@JsonKey() final  bool onSite;
 @override@JsonKey() final  bool leavesToday;
 /// Search results carry the spot's code.
@@ -282,18 +296,18 @@ Map<String, dynamic> toJson() {
 
 @override
 bool operator ==(Object other) {
-    return identical(this, other) || (other.runtimeType == runtimeType&&other is _OccupantModel&&(identical(other.id, id) || other.id == id)&&(identical(other.reference, reference) || other.reference == reference)&&(identical(other.customerName, customerName) || other.customerName == customerName)&&(identical(other.plate, plate) || other.plate == plate)&&(identical(other.status, status) || other.status == status)&&(identical(other.arrivalAt, arrivalAt) || other.arrivalAt == arrivalAt)&&(identical(other.returnAt, returnAt) || other.returnAt == returnAt)&&(identical(other.returnFlight, returnFlight) || other.returnFlight == returnFlight)&&(identical(other.spotId, spotId) || other.spotId == spotId)&&(identical(other.keyHook, keyHook) || other.keyHook == keyHook)&&(identical(other.onSite, onSite) || other.onSite == onSite)&&(identical(other.leavesToday, leavesToday) || other.leavesToday == leavesToday)&&(identical(other.spot, spot) || other.spot == spot)&&const DeepCollectionEquality().equals(other.suggestions, _suggestions));
+    return identical(this, other) || (other.runtimeType == runtimeType&&other is _OccupantModel&&(identical(other.id, id) || other.id == id)&&(identical(other.reference, reference) || other.reference == reference)&&(identical(other.customerName, customerName) || other.customerName == customerName)&&(identical(other.plate, plate) || other.plate == plate)&&(identical(other.status, status) || other.status == status)&&(identical(other.arrivalAt, arrivalAt) || other.arrivalAt == arrivalAt)&&(identical(other.returnAt, returnAt) || other.returnAt == returnAt)&&(identical(other.returnFlight, returnFlight) || other.returnFlight == returnFlight)&&(identical(other.spotId, spotId) || other.spotId == spotId)&&(identical(other.keyHook, keyHook) || other.keyHook == keyHook)&&(identical(other.carLat, carLat) || other.carLat == carLat)&&(identical(other.carLng, carLng) || other.carLng == carLng)&&(identical(other.carAccuracyM, carAccuracyM) || other.carAccuracyM == carAccuracyM)&&(identical(other.carLocatedAt, carLocatedAt) || other.carLocatedAt == carLocatedAt)&&(identical(other.carLocatedBy, carLocatedBy) || other.carLocatedBy == carLocatedBy)&&(identical(other.carNote, carNote) || other.carNote == carNote)&&(identical(other.onSite, onSite) || other.onSite == onSite)&&(identical(other.leavesToday, leavesToday) || other.leavesToday == leavesToday)&&(identical(other.spot, spot) || other.spot == spot)&&const DeepCollectionEquality().equals(other.suggestions, _suggestions));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
 int get hashCode {
-    return Object.hash(runtimeType,id,reference,customerName,plate,status,arrivalAt,returnAt,returnFlight,spotId,keyHook,onSite,leavesToday,spot,const DeepCollectionEquality().hash(_suggestions));
+    return Object.hashAll([runtimeType,id,reference,customerName,plate,status,arrivalAt,returnAt,returnFlight,spotId,keyHook,carLat,carLng,carAccuracyM,carLocatedAt,carLocatedBy,carNote,onSite,leavesToday,spot,const DeepCollectionEquality().hash(_suggestions)]);
 }
 
 @override
 String toString() {
-    return 'OccupantModel(id: $id, reference: $reference, customerName: $customerName, plate: $plate, status: $status, arrivalAt: $arrivalAt, returnAt: $returnAt, returnFlight: $returnFlight, spotId: $spotId, keyHook: $keyHook, onSite: $onSite, leavesToday: $leavesToday, spot: $spot, suggestions: $suggestions)';
+    return 'OccupantModel(id: $id, reference: $reference, customerName: $customerName, plate: $plate, status: $status, arrivalAt: $arrivalAt, returnAt: $returnAt, returnFlight: $returnFlight, spotId: $spotId, keyHook: $keyHook, carLat: $carLat, carLng: $carLng, carAccuracyM: $carAccuracyM, carLocatedAt: $carLocatedAt, carLocatedBy: $carLocatedBy, carNote: $carNote, onSite: $onSite, leavesToday: $leavesToday, spot: $spot, suggestions: $suggestions)';
 }
 
 
@@ -304,7 +318,7 @@ abstract mixin class _$OccupantModelCopyWith<$Res> implements $OccupantModelCopy
   factory _$OccupantModelCopyWith(_OccupantModel value, $Res Function(_OccupantModel) _then) = __$OccupantModelCopyWithImpl;
 @override @useResult
 $Res call({
- String id, String reference, String customerName, String plate, String status, String arrivalAt, String returnAt, String? returnFlight, String? spotId, String? keyHook, bool onSite, bool leavesToday, SpotRefModel? spot, List<SuggestionModel> suggestions
+ String id, String reference, String customerName, String plate, String status, String arrivalAt, String returnAt, String? returnFlight, String? spotId, String? keyHook, double? carLat, double? carLng, int? carAccuracyM, DateTime? carLocatedAt, String? carLocatedBy, String? carNote, bool onSite, bool leavesToday, SpotRefModel? spot, List<SuggestionModel> suggestions
 });
 
 
@@ -321,7 +335,7 @@ class __$OccupantModelCopyWithImpl<$Res>
 
 /// Create a copy of OccupantModel
 /// with the given fields replaced by the non-null parameter values.
-@override @pragma('vm:prefer-inline') $Res call({Object? id = null,Object? reference = null,Object? customerName = null,Object? plate = null,Object? status = null,Object? arrivalAt = null,Object? returnAt = null,Object? returnFlight = freezed,Object? spotId = freezed,Object? keyHook = freezed,Object? onSite = null,Object? leavesToday = null,Object? spot = freezed,Object? suggestions = null,}) {
+@override @pragma('vm:prefer-inline') $Res call({Object? id = null,Object? reference = null,Object? customerName = null,Object? plate = null,Object? status = null,Object? arrivalAt = null,Object? returnAt = null,Object? returnFlight = freezed,Object? spotId = freezed,Object? keyHook = freezed,Object? carLat = freezed,Object? carLng = freezed,Object? carAccuracyM = freezed,Object? carLocatedAt = freezed,Object? carLocatedBy = freezed,Object? carNote = freezed,Object? onSite = null,Object? leavesToday = null,Object? spot = freezed,Object? suggestions = null,}) {
   return _then(_OccupantModel(
 id: null == id ? _self.id : id // ignore: cast_nullable_to_non_nullable
 as String,reference: null == reference ? _self.reference : reference // ignore: cast_nullable_to_non_nullable
@@ -333,6 +347,12 @@ as String,returnAt: null == returnAt ? _self.returnAt : returnAt // ignore: cast
 as String,returnFlight: freezed == returnFlight ? _self.returnFlight : returnFlight // ignore: cast_nullable_to_non_nullable
 as String?,spotId: freezed == spotId ? _self.spotId : spotId // ignore: cast_nullable_to_non_nullable
 as String?,keyHook: freezed == keyHook ? _self.keyHook : keyHook // ignore: cast_nullable_to_non_nullable
+as String?,carLat: freezed == carLat ? _self.carLat : carLat // ignore: cast_nullable_to_non_nullable
+as double?,carLng: freezed == carLng ? _self.carLng : carLng // ignore: cast_nullable_to_non_nullable
+as double?,carAccuracyM: freezed == carAccuracyM ? _self.carAccuracyM : carAccuracyM // ignore: cast_nullable_to_non_nullable
+as int?,carLocatedAt: freezed == carLocatedAt ? _self.carLocatedAt : carLocatedAt // ignore: cast_nullable_to_non_nullable
+as DateTime?,carLocatedBy: freezed == carLocatedBy ? _self.carLocatedBy : carLocatedBy // ignore: cast_nullable_to_non_nullable
+as String?,carNote: freezed == carNote ? _self.carNote : carNote // ignore: cast_nullable_to_non_nullable
 as String?,onSite: null == onSite ? _self.onSite : onSite // ignore: cast_nullable_to_non_nullable
 as bool,leavesToday: null == leavesToday ? _self.leavesToday : leavesToday // ignore: cast_nullable_to_non_nullable
 as bool,spot: freezed == spot ? _self.spot : spot // ignore: cast_nullable_to_non_nullable

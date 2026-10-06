@@ -4,6 +4,7 @@ import { UpdateParkingDto } from '@/dtos/parking.dto';
 import { GenerateSpotsDto, ReplaceSpotsDto, UpdateParkingPlanDto, UpdateSpotDto } from '@/dtos/parking-plan.dto';
 import { RequestWithStaffSession } from '@/middlewares/staff-auth.middleware';
 import { AssignSpotDto } from '@/dtos/occupation.dto';
+import { CarLocationDto } from '@/dtos/public-booking.dto';
 import { OccupationService } from '@/services/occupation.service';
 import { SpotPlanningService } from '@/services/spot-planning.service';
 import { ParkingPlanService } from '@/services/parking-plan.service';
@@ -89,6 +90,17 @@ export class ParkingController {
   });
 
   /** POST /internal/reservations/:id/spot */
+  /** PUT /internal/reservations/:id/car-location */
+  public locateCar = catchAsync(async (req: RequestWithStaffSession, res: Response) => {
+    const data: CarLocationDto = req.body;
+    res.json({ message: 'Car located', data: await this.occupation.locateCar(req.staff, req.params.id as string, data) });
+  });
+
+  /** DELETE /internal/reservations/:id/car-location */
+  public clearCar = catchAsync(async (req: RequestWithStaffSession, res: Response) => {
+    res.json({ message: 'Car location cleared', data: await this.occupation.clearCar(req.staff, req.params.id as string) });
+  });
+
   public assignSpot = catchAsync(async (req: RequestWithStaffSession, res: Response) => {
     const data: AssignSpotDto = req.body;
     res.json({ message: 'Spot assigned', data: await this.occupation.assign(req.staff, req.params.id as string, data) });

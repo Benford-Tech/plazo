@@ -29,6 +29,9 @@ _PublicBookingModel _$PublicBookingModelFromJson(
   outbound: json['outbound'] == null
       ? null
       : OutboundFlightModel.fromJson(json['outbound'] as Map<String, dynamic>),
+  car: json['car'] == null
+      ? null
+      : CarLocationModel.fromJson(json['car'] as Map<String, dynamic>),
   passengers: (json['passengers'] as num).toInt(),
   days: (json['days'] as num?)?.toInt(),
   priceCents: (json['priceCents'] as num?)?.toInt(),
@@ -54,6 +57,7 @@ Map<String, dynamic> _$PublicBookingModelToJson(_PublicBookingModel instance) =>
       'returnFlight': instance.returnFlight,
       'departureFlight': instance.departureFlight,
       'outbound': instance.outbound,
+      'car': instance.car,
       'passengers': instance.passengers,
       'days': instance.days,
       'priceCents': instance.priceCents,
@@ -191,3 +195,23 @@ Map<String, dynamic> _$OutboundFlightModelToJson(
   'terminal': instance.terminal,
   'shuttleAt': instance.shuttleAt,
 };
+
+_CarLocationModel _$CarLocationModelFromJson(Map<String, dynamic> json) =>
+    _CarLocationModel(
+      lat: (json['lat'] as num).toDouble(),
+      lng: (json['lng'] as num).toDouble(),
+      accuracyM: (json['accuracyM'] as num?)?.toInt(),
+      at: DateTime.parse(json['at'] as String),
+      by: json['by'] as String? ?? 'traveller',
+      note: json['note'] as String?,
+    );
+
+Map<String, dynamic> _$CarLocationModelToJson(_CarLocationModel instance) =>
+    <String, dynamic>{
+      'lat': instance.lat,
+      'lng': instance.lng,
+      'accuracyM': instance.accuracyM,
+      'at': instance.at.toIso8601String(),
+      'by': instance.by,
+      'note': instance.note,
+    };

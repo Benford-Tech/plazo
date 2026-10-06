@@ -1,4 +1,5 @@
 import 'package:equatable/equatable.dart';
+import '../../../../services/location_service.dart';
 
 import '../../../../core/error/failure.dart';
 import '../../../../core/utils/either.dart';
@@ -29,15 +30,18 @@ class SearchVehiclesUseCase with UseCase<List<OccupantModel>, SearchVehiclesPara
 }
 
 class AssignSpotParams extends Equatable {
-  const AssignSpotParams({required this.reservationId, required this.spotId, this.keyHook, this.keysOnly = false});
+  const AssignSpotParams({required this.reservationId, required this.spotId, this.keyHook, this.keysOnly = false, this.car});
   final String reservationId;
   final String? spotId;
   final String? keyHook;
 
   /// Only the key hook changes (the spot stays as it is).
   final bool keysOnly;
+
+  /// The valet's GPS fix where the car stands (06/10/2026), taken as the spot is assigned.
+  final GeoPosition? car;
   @override
-  List<Object?> get props => [reservationId, spotId, keyHook, keysOnly];
+  List<Object?> get props => [reservationId, spotId, keyHook, keysOnly, car];
 }
 
 class AssignSpotUseCase with UseCase<OccupantModel, AssignSpotParams> {
@@ -45,5 +49,5 @@ class AssignSpotUseCase with UseCase<OccupantModel, AssignSpotParams> {
   final OccupationRepository _repository;
   @override
   Future<Either<Failure, OccupantModel>> call(AssignSpotParams params) =>
-      _repository.assign(params.reservationId, spotId: params.spotId, keyHook: params.keyHook, keysOnly: params.keysOnly);
+      _repository.assign(params.reservationId, spotId: params.spotId, keyHook: params.keyHook, keysOnly: params.keysOnly, car: params.car);
 }

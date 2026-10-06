@@ -156,6 +156,24 @@ export default function ReservationPage() {
               </Info>
               {r.stop && <Info label={t.stop}>{r.stop.name}</Info>}
               <Info label={t.passengers}>{r.passengers}</Info>
+              {r.carLat != null && r.carLng != null && r.carLocatedAt && (
+                <Info label={t.carPosition}>
+                  <span className="tabular font-mono">{r.carLat.toFixed(5)}, {r.carLng.toFixed(5)}</span>
+                  <span className="ml-2 text-muted-foreground">
+                    · {t.carBy[r.carLocatedBy ?? "traveller"]} · {dateTimeShort(r.carLocatedAt)}
+                    {r.carAccuracyM != null && ` · ${t.carAccuracy(r.carAccuracyM)}`}
+                    {r.carNote && ` · ${r.carNote}`}
+                  </span>{" "}
+                  <a
+                    href={`https://www.google.com/maps/dir/?api=1&destination=${r.carLat},${r.carLng}&travelmode=walking`}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="text-lime-deep underline"
+                  >
+                    {t.carDirections}
+                  </a>
+                </Info>
+              )}
             </dl>
             <dl>
               <Info label={t.customerPhone}>

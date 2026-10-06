@@ -115,6 +115,7 @@ describe('réservation sur le site', () => {
       returnFlight: 'TO 3627',
       departureFlight: null,
       outbound: null,
+      car: null,
       passengers: 2,
       cancellationPolicy: 'free_24h',
       cancellableUntil: shift(inDays(5, '06:30'), -24),

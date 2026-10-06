@@ -230,6 +230,26 @@ export default function OccupationPage() {
         },
       });
     }
+    // Where the cars stand (06/10/2026): the GPS fixes recorded by the travellers or the valets.
+    const located = [...data.arrivals, ...spots.map((s) => s.occupant).filter((o): o is NonNullable<typeof o> => !!o)].filter(
+      (o) => o.carLat != null && o.carLng != null,
+    );
+    if (located.length)
+      list.push({
+        id: "cars",
+        type: "circle",
+        data: fc(
+          located.map((o) =>
+            feature({ type: "Point", coordinates: [o.carLng!, o.carLat!] }, { color: o.carLocatedBy === "staff" ? "#1E5E2E" : "#FF6600" }),
+          ),
+        ),
+        paint: {
+          "circle-radius": 6,
+          "circle-color": ["get", "color"],
+          "circle-stroke-color": "#FFFFFF",
+          "circle-stroke-width": 2,
+        },
+      });
     return list;
   }, [data, spots, selectedSpotId]);
   const labels = useMemo<MapLabel[]>(
@@ -623,6 +643,20 @@ function VehicleCard({
         {fr.status[hit.status]} · {t.returnOn(dateTimeShort(hit.returnAt))}
         {hit.returnFlight ? ` · ${t.flight(hit.returnFlight)}` : ""}
       </div>
+      {hit.carLat != null && hit.carLng != null && hit.carLocatedAt && (
+        <div className="text-sm text-muted-foreground" data-testid="vehicle-car-position">
+          {t.carPosition(hit.carLocatedBy ?? "traveller", dateTimeShort(hit.carLocatedAt), hit.carAccuracyM ?? null)}
+          {hit.carNote ? ` · ${hit.carNote}` : ""}{" "}
+          <a
+            href={`https://www.google.com/maps/dir/?api=1&destination=${hit.carLat},${hit.carLng}&travelmode=walking`}
+            target="_blank"
+            rel="noreferrer"
+            className="text-lime-deep underline"
+          >
+            {t.carDirections}
+          </a>
+        </div>
+      )}
       <form
         className={cn("flex items-center gap-2 text-sm")}
         onSubmit={(e) => {

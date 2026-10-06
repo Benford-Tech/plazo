@@ -27,6 +27,17 @@ abstract class BookingClient {
     @Body() required Map<String, dynamic> body,
   });
 
+  /// Where the car is parked (06/10/2026): the traveller's GPS fix after parking.
+  @PUT('public/bookings/{reference}/car-location')
+  Future<PublicBookingModel> locateCar({
+    @Path('reference') required String reference,
+    @Header('x-booking-token') required String token,
+    @Body() required Map<String, dynamic> body,
+  });
+
+  @DELETE('public/bookings/{reference}/car-location')
+  Future<PublicBookingModel> clearCar({@Path('reference') required String reference, @Header('x-booking-token') required String token});
+
   @POST('public/bookings/{reference}/payment-intent')
   Future<PaymentIntentModel> paymentIntent({@Path('reference') required String reference, @Header('x-booking-token') required String token});
 

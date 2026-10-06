@@ -26,7 +26,9 @@ import '../../../trips/presentation/bloc/trips_bloc.dart';
 import '../../../trips/presentation/widgets/booking_actions.dart';
 import '../../data/models/public_booking_model.dart';
 import '../bloc/booking_bloc.dart';
+import '../bloc/car_location_bloc.dart';
 import '../widgets/booking_card.dart';
+import '../widgets/car_location_card.dart';
 
 /// A traveller's booking, opened from "Mes réservations", from the link of the confirmation (deep
 /// link /ma-reservation/REF?cle=TOKEN, the same as the site's), or right after booking
@@ -60,6 +62,7 @@ class MyBookingPage extends StatelessWidget implements AutoRouteWrapper {
         BlocProvider(create: (_) => locator<ArrivalBloc>()),
         BlocProvider(create: (_) => locator<ReturnBloc>()),
         BlocProvider(create: (_) => locator<StayShuttlesBloc>()),
+        BlocProvider(create: (_) => locator<CarLocationBloc>()),
       ],
       child: this,
     );
@@ -154,6 +157,11 @@ class MyBookingPage extends StatelessWidget implements AutoRouteWrapper {
                               const SizedBox(height: 12),
                               // The return day has its own block (R1/R3); the drop-off keeps the arrival block.
                               if (kind == ArrivalKind.returnTrip) const ReturnBlock() else const ArrivalBlock(),
+                              // Where the car is parked (06/10/2026): from the drop-off to the return day's own screen.
+                              if (kind != ArrivalKind.returnTrip && CarLocationCard.relevant(b)) ...[
+                                const SizedBox(height: 12),
+                                CarLocationCard(booking: b, onChanged: (_) => context.read<BookingBloc>().add(const BookingRefreshed())),
+                              ],
                               // The parking's shuttles during the stay, unless the return block already follows the traveller's own.
                               BlocBuilder<ReturnBloc, ReturnState>(
                                 buildWhen: (a, b) => a.data?.shuttle != b.data?.shuttle,

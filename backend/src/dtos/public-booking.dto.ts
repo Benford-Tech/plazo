@@ -5,6 +5,7 @@ import {
   IsEmail,
   IsInt,
   IsNotEmpty,
+  IsNumber,
   IsOptional,
   IsString,
   Matches,
@@ -137,4 +138,33 @@ export class UpdateBookingFlightDto {
   @MaxLength(10, { message: 'invalid_flight' })
   @IsString({ message: 'invalid_flight' })
   public departureFlight?: string | null;
+}
+
+/** The car's position after parking (06/10/2026): the phone's GPS fix, with an optional short note. */
+export class CarLocationDto {
+  @Max(90, { message: 'invalid_position' })
+  @Min(-90, { message: 'invalid_position' })
+  @IsNumber({}, { message: 'invalid_position' })
+  @IsDefined({ message: 'required' })
+  @Type(() => Number)
+  public lat: number;
+
+  @Max(180, { message: 'invalid_position' })
+  @Min(-180, { message: 'invalid_position' })
+  @IsNumber({}, { message: 'invalid_position' })
+  @IsDefined({ message: 'required' })
+  @Type(() => Number)
+  public lng: number;
+
+  @IsOptional()
+  @Max(10000, { message: 'invalid_accuracy' })
+  @Min(0, { message: 'invalid_accuracy' })
+  @IsInt({ message: 'invalid_accuracy' })
+  @Type(() => Number)
+  public accuracyM?: number | null;
+
+  @IsOptional()
+  @MaxLength(120, { message: 'too_long' })
+  @IsString({ message: 'too_long' })
+  public note?: string | null;
 }

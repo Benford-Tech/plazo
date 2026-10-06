@@ -18,7 +18,8 @@ mixin _$PublicBookingModel {
 
  String get reference; String get status;/// "online": paid by card in the app or on the site; "on_site": paid at the parking.
  String get paymentMode; BookingPaymentModel? get payment; BookingParkingModel get parking; String get arrivalAt; String get returnAt; String get customerName; String? get customerEmail; String get customerPhone; String get plate; String? get returnFlight;/// Outbound flight (V-A) and, when tracked, when the shuttle to the terminal leaves (local).
- String? get departureFlight; OutboundFlightModel? get outbound; int get passengers; int? get days; int? get priceCents; String get cancellationPolicy;/// Local datetime until which the traveller may cancel online; null when non-refundable.
+ String? get departureFlight; OutboundFlightModel? get outbound;/// Where the car is parked (06/10/2026), recorded by the traveller or the valet; null until then.
+ CarLocationModel? get car; int get passengers; int? get days; int? get priceCents; String get cancellationPolicy;/// Local datetime until which the traveller may cancel online; null when non-refundable.
  String? get cancellableUntil; bool get canCancel; bool get canEditFlight;
 /// Create a copy of PublicBookingModel
 /// with the given fields replaced by the non-null parameter values.
@@ -33,20 +34,20 @@ $PublicBookingModelCopyWith<PublicBookingModel> get copyWith => _$PublicBookingM
 @override
 bool operator ==(Object other) {
   final _this = this as PublicBookingModel;
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is PublicBookingModel&&(identical(other.reference, _this.reference) || other.reference == _this.reference)&&(identical(other.status, _this.status) || other.status == _this.status)&&(identical(other.paymentMode, _this.paymentMode) || other.paymentMode == _this.paymentMode)&&(identical(other.payment, _this.payment) || other.payment == _this.payment)&&(identical(other.parking, _this.parking) || other.parking == _this.parking)&&(identical(other.arrivalAt, _this.arrivalAt) || other.arrivalAt == _this.arrivalAt)&&(identical(other.returnAt, _this.returnAt) || other.returnAt == _this.returnAt)&&(identical(other.customerName, _this.customerName) || other.customerName == _this.customerName)&&(identical(other.customerEmail, _this.customerEmail) || other.customerEmail == _this.customerEmail)&&(identical(other.customerPhone, _this.customerPhone) || other.customerPhone == _this.customerPhone)&&(identical(other.plate, _this.plate) || other.plate == _this.plate)&&(identical(other.returnFlight, _this.returnFlight) || other.returnFlight == _this.returnFlight)&&(identical(other.departureFlight, _this.departureFlight) || other.departureFlight == _this.departureFlight)&&(identical(other.outbound, _this.outbound) || other.outbound == _this.outbound)&&(identical(other.passengers, _this.passengers) || other.passengers == _this.passengers)&&(identical(other.days, _this.days) || other.days == _this.days)&&(identical(other.priceCents, _this.priceCents) || other.priceCents == _this.priceCents)&&(identical(other.cancellationPolicy, _this.cancellationPolicy) || other.cancellationPolicy == _this.cancellationPolicy)&&(identical(other.cancellableUntil, _this.cancellableUntil) || other.cancellableUntil == _this.cancellableUntil)&&(identical(other.canCancel, _this.canCancel) || other.canCancel == _this.canCancel)&&(identical(other.canEditFlight, _this.canEditFlight) || other.canEditFlight == _this.canEditFlight));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is PublicBookingModel&&(identical(other.reference, _this.reference) || other.reference == _this.reference)&&(identical(other.status, _this.status) || other.status == _this.status)&&(identical(other.paymentMode, _this.paymentMode) || other.paymentMode == _this.paymentMode)&&(identical(other.payment, _this.payment) || other.payment == _this.payment)&&(identical(other.parking, _this.parking) || other.parking == _this.parking)&&(identical(other.arrivalAt, _this.arrivalAt) || other.arrivalAt == _this.arrivalAt)&&(identical(other.returnAt, _this.returnAt) || other.returnAt == _this.returnAt)&&(identical(other.customerName, _this.customerName) || other.customerName == _this.customerName)&&(identical(other.customerEmail, _this.customerEmail) || other.customerEmail == _this.customerEmail)&&(identical(other.customerPhone, _this.customerPhone) || other.customerPhone == _this.customerPhone)&&(identical(other.plate, _this.plate) || other.plate == _this.plate)&&(identical(other.returnFlight, _this.returnFlight) || other.returnFlight == _this.returnFlight)&&(identical(other.departureFlight, _this.departureFlight) || other.departureFlight == _this.departureFlight)&&(identical(other.outbound, _this.outbound) || other.outbound == _this.outbound)&&(identical(other.car, _this.car) || other.car == _this.car)&&(identical(other.passengers, _this.passengers) || other.passengers == _this.passengers)&&(identical(other.days, _this.days) || other.days == _this.days)&&(identical(other.priceCents, _this.priceCents) || other.priceCents == _this.priceCents)&&(identical(other.cancellationPolicy, _this.cancellationPolicy) || other.cancellationPolicy == _this.cancellationPolicy)&&(identical(other.cancellableUntil, _this.cancellableUntil) || other.cancellableUntil == _this.cancellableUntil)&&(identical(other.canCancel, _this.canCancel) || other.canCancel == _this.canCancel)&&(identical(other.canEditFlight, _this.canEditFlight) || other.canEditFlight == _this.canEditFlight));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
 int get hashCode {
   final _this = this as PublicBookingModel;
-  return Object.hashAll([runtimeType,_this.reference,_this.status,_this.paymentMode,_this.payment,_this.parking,_this.arrivalAt,_this.returnAt,_this.customerName,_this.customerEmail,_this.customerPhone,_this.plate,_this.returnFlight,_this.departureFlight,_this.outbound,_this.passengers,_this.days,_this.priceCents,_this.cancellationPolicy,_this.cancellableUntil,_this.canCancel,_this.canEditFlight]);
+  return Object.hashAll([runtimeType,_this.reference,_this.status,_this.paymentMode,_this.payment,_this.parking,_this.arrivalAt,_this.returnAt,_this.customerName,_this.customerEmail,_this.customerPhone,_this.plate,_this.returnFlight,_this.departureFlight,_this.outbound,_this.car,_this.passengers,_this.days,_this.priceCents,_this.cancellationPolicy,_this.cancellableUntil,_this.canCancel,_this.canEditFlight]);
 }
 
 @override
 String toString() {
   final _this = this as PublicBookingModel;
-  return 'PublicBookingModel(reference: ${_this.reference}, status: ${_this.status}, paymentMode: ${_this.paymentMode}, payment: ${_this.payment}, parking: ${_this.parking}, arrivalAt: ${_this.arrivalAt}, returnAt: ${_this.returnAt}, customerName: ${_this.customerName}, customerEmail: ${_this.customerEmail}, customerPhone: ${_this.customerPhone}, plate: ${_this.plate}, returnFlight: ${_this.returnFlight}, departureFlight: ${_this.departureFlight}, outbound: ${_this.outbound}, passengers: ${_this.passengers}, days: ${_this.days}, priceCents: ${_this.priceCents}, cancellationPolicy: ${_this.cancellationPolicy}, cancellableUntil: ${_this.cancellableUntil}, canCancel: ${_this.canCancel}, canEditFlight: ${_this.canEditFlight})';
+  return 'PublicBookingModel(reference: ${_this.reference}, status: ${_this.status}, paymentMode: ${_this.paymentMode}, payment: ${_this.payment}, parking: ${_this.parking}, arrivalAt: ${_this.arrivalAt}, returnAt: ${_this.returnAt}, customerName: ${_this.customerName}, customerEmail: ${_this.customerEmail}, customerPhone: ${_this.customerPhone}, plate: ${_this.plate}, returnFlight: ${_this.returnFlight}, departureFlight: ${_this.departureFlight}, outbound: ${_this.outbound}, car: ${_this.car}, passengers: ${_this.passengers}, days: ${_this.days}, priceCents: ${_this.priceCents}, cancellationPolicy: ${_this.cancellationPolicy}, cancellableUntil: ${_this.cancellableUntil}, canCancel: ${_this.canCancel}, canEditFlight: ${_this.canEditFlight})';
 }
 
 
@@ -57,11 +58,11 @@ abstract mixin class $PublicBookingModelCopyWith<$Res>  {
   factory $PublicBookingModelCopyWith(PublicBookingModel value, $Res Function(PublicBookingModel) _then) = _$PublicBookingModelCopyWithImpl;
 @useResult
 $Res call({
- String reference, String status, String paymentMode, BookingPaymentModel? payment, BookingParkingModel parking, String arrivalAt, String returnAt, String customerName, String? customerEmail, String customerPhone, String plate, String? returnFlight, String? departureFlight, OutboundFlightModel? outbound, int passengers, int? days, int? priceCents, String cancellationPolicy, String? cancellableUntil, bool canCancel, bool canEditFlight
+ String reference, String status, String paymentMode, BookingPaymentModel? payment, BookingParkingModel parking, String arrivalAt, String returnAt, String customerName, String? customerEmail, String customerPhone, String plate, String? returnFlight, String? departureFlight, OutboundFlightModel? outbound, CarLocationModel? car, int passengers, int? days, int? priceCents, String cancellationPolicy, String? cancellableUntil, bool canCancel, bool canEditFlight
 });
 
 
-$BookingPaymentModelCopyWith<$Res>? get payment;$BookingParkingModelCopyWith<$Res> get parking;$OutboundFlightModelCopyWith<$Res>? get outbound;
+$BookingPaymentModelCopyWith<$Res>? get payment;$BookingParkingModelCopyWith<$Res> get parking;$OutboundFlightModelCopyWith<$Res>? get outbound;$CarLocationModelCopyWith<$Res>? get car;
 
 }
 /// @nodoc
@@ -74,7 +75,7 @@ class _$PublicBookingModelCopyWithImpl<$Res>
 
 /// Create a copy of PublicBookingModel
 /// with the given fields replaced by the non-null parameter values.
-@pragma('vm:prefer-inline') @override $Res call({Object? reference = null,Object? status = null,Object? paymentMode = null,Object? payment = freezed,Object? parking = null,Object? arrivalAt = null,Object? returnAt = null,Object? customerName = null,Object? customerEmail = freezed,Object? customerPhone = null,Object? plate = null,Object? returnFlight = freezed,Object? departureFlight = freezed,Object? outbound = freezed,Object? passengers = null,Object? days = freezed,Object? priceCents = freezed,Object? cancellationPolicy = null,Object? cancellableUntil = freezed,Object? canCancel = null,Object? canEditFlight = null,}) {
+@pragma('vm:prefer-inline') @override $Res call({Object? reference = null,Object? status = null,Object? paymentMode = null,Object? payment = freezed,Object? parking = null,Object? arrivalAt = null,Object? returnAt = null,Object? customerName = null,Object? customerEmail = freezed,Object? customerPhone = null,Object? plate = null,Object? returnFlight = freezed,Object? departureFlight = freezed,Object? outbound = freezed,Object? car = freezed,Object? passengers = null,Object? days = freezed,Object? priceCents = freezed,Object? cancellationPolicy = null,Object? cancellableUntil = freezed,Object? canCancel = null,Object? canEditFlight = null,}) {
   return _then(PublicBookingModel(
 reference: null == reference ? _self.reference : reference // ignore: cast_nullable_to_non_nullable
 as String,status: null == status ? _self.status : status // ignore: cast_nullable_to_non_nullable
@@ -90,7 +91,8 @@ as String,plate: null == plate ? _self.plate : plate // ignore: cast_nullable_to
 as String,returnFlight: freezed == returnFlight ? _self.returnFlight : returnFlight // ignore: cast_nullable_to_non_nullable
 as String?,departureFlight: freezed == departureFlight ? _self.departureFlight : departureFlight // ignore: cast_nullable_to_non_nullable
 as String?,outbound: freezed == outbound ? _self.outbound : outbound // ignore: cast_nullable_to_non_nullable
-as OutboundFlightModel?,passengers: null == passengers ? _self.passengers : passengers // ignore: cast_nullable_to_non_nullable
+as OutboundFlightModel?,car: freezed == car ? _self.car : car // ignore: cast_nullable_to_non_nullable
+as CarLocationModel?,passengers: null == passengers ? _self.passengers : passengers // ignore: cast_nullable_to_non_nullable
 as int,days: freezed == days ? _self.days : days // ignore: cast_nullable_to_non_nullable
 as int?,priceCents: freezed == priceCents ? _self.priceCents : priceCents // ignore: cast_nullable_to_non_nullable
 as int?,cancellationPolicy: null == cancellationPolicy ? _self.cancellationPolicy : cancellationPolicy // ignore: cast_nullable_to_non_nullable
@@ -132,6 +134,18 @@ $OutboundFlightModelCopyWith<$Res>? get outbound {
 
   return $OutboundFlightModelCopyWith<$Res>(_self.outbound!, (value) {
     return _then(_self.copyWith(outbound: value));
+  });
+}/// Create a copy of PublicBookingModel
+/// with the given fields replaced by the non-null parameter values.
+@override
+@pragma('vm:prefer-inline')
+$CarLocationModelCopyWith<$Res>? get car {
+    if (_self.car == null) {
+    return null;
+  }
+
+  return $CarLocationModelCopyWith<$Res>(_self.car!, (value) {
+    return _then(_self.copyWith(car: value));
   });
 }
 }
@@ -215,10 +229,10 @@ return $default(_that);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( String reference,  String status,  String paymentMode,  BookingPaymentModel? payment,  BookingParkingModel parking,  String arrivalAt,  String returnAt,  String customerName,  String? customerEmail,  String customerPhone,  String plate,  String? returnFlight,  String? departureFlight,  OutboundFlightModel? outbound,  int passengers,  int? days,  int? priceCents,  String cancellationPolicy,  String? cancellableUntil,  bool canCancel,  bool canEditFlight)?  $default,{required TResult orElse(),}) {final _that = this;
+@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( String reference,  String status,  String paymentMode,  BookingPaymentModel? payment,  BookingParkingModel parking,  String arrivalAt,  String returnAt,  String customerName,  String? customerEmail,  String customerPhone,  String plate,  String? returnFlight,  String? departureFlight,  OutboundFlightModel? outbound,  CarLocationModel? car,  int passengers,  int? days,  int? priceCents,  String cancellationPolicy,  String? cancellableUntil,  bool canCancel,  bool canEditFlight)?  $default,{required TResult orElse(),}) {final _that = this;
 switch (_that) {
 case _PublicBookingModel() when $default != null:
-return $default(_that.reference,_that.status,_that.paymentMode,_that.payment,_that.parking,_that.arrivalAt,_that.returnAt,_that.customerName,_that.customerEmail,_that.customerPhone,_that.plate,_that.returnFlight,_that.departureFlight,_that.outbound,_that.passengers,_that.days,_that.priceCents,_that.cancellationPolicy,_that.cancellableUntil,_that.canCancel,_that.canEditFlight);case _:
+return $default(_that.reference,_that.status,_that.paymentMode,_that.payment,_that.parking,_that.arrivalAt,_that.returnAt,_that.customerName,_that.customerEmail,_that.customerPhone,_that.plate,_that.returnFlight,_that.departureFlight,_that.outbound,_that.car,_that.passengers,_that.days,_that.priceCents,_that.cancellationPolicy,_that.cancellableUntil,_that.canCancel,_that.canEditFlight);case _:
   return orElse();
 
 }
@@ -236,10 +250,10 @@ return $default(_that.reference,_that.status,_that.paymentMode,_that.payment,_th
 /// }
 /// ```
 
-@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( String reference,  String status,  String paymentMode,  BookingPaymentModel? payment,  BookingParkingModel parking,  String arrivalAt,  String returnAt,  String customerName,  String? customerEmail,  String customerPhone,  String plate,  String? returnFlight,  String? departureFlight,  OutboundFlightModel? outbound,  int passengers,  int? days,  int? priceCents,  String cancellationPolicy,  String? cancellableUntil,  bool canCancel,  bool canEditFlight)  $default,) {final _that = this;
+@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( String reference,  String status,  String paymentMode,  BookingPaymentModel? payment,  BookingParkingModel parking,  String arrivalAt,  String returnAt,  String customerName,  String? customerEmail,  String customerPhone,  String plate,  String? returnFlight,  String? departureFlight,  OutboundFlightModel? outbound,  CarLocationModel? car,  int passengers,  int? days,  int? priceCents,  String cancellationPolicy,  String? cancellableUntil,  bool canCancel,  bool canEditFlight)  $default,) {final _that = this;
 switch (_that) {
 case _PublicBookingModel():
-return $default(_that.reference,_that.status,_that.paymentMode,_that.payment,_that.parking,_that.arrivalAt,_that.returnAt,_that.customerName,_that.customerEmail,_that.customerPhone,_that.plate,_that.returnFlight,_that.departureFlight,_that.outbound,_that.passengers,_that.days,_that.priceCents,_that.cancellationPolicy,_that.cancellableUntil,_that.canCancel,_that.canEditFlight);case _:
+return $default(_that.reference,_that.status,_that.paymentMode,_that.payment,_that.parking,_that.arrivalAt,_that.returnAt,_that.customerName,_that.customerEmail,_that.customerPhone,_that.plate,_that.returnFlight,_that.departureFlight,_that.outbound,_that.car,_that.passengers,_that.days,_that.priceCents,_that.cancellationPolicy,_that.cancellableUntil,_that.canCancel,_that.canEditFlight);case _:
   throw StateError('Unexpected subclass');
 
 }
@@ -256,10 +270,10 @@ return $default(_that.reference,_that.status,_that.paymentMode,_that.payment,_th
 /// }
 /// ```
 
-@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( String reference,  String status,  String paymentMode,  BookingPaymentModel? payment,  BookingParkingModel parking,  String arrivalAt,  String returnAt,  String customerName,  String? customerEmail,  String customerPhone,  String plate,  String? returnFlight,  String? departureFlight,  OutboundFlightModel? outbound,  int passengers,  int? days,  int? priceCents,  String cancellationPolicy,  String? cancellableUntil,  bool canCancel,  bool canEditFlight)?  $default,) {final _that = this;
+@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( String reference,  String status,  String paymentMode,  BookingPaymentModel? payment,  BookingParkingModel parking,  String arrivalAt,  String returnAt,  String customerName,  String? customerEmail,  String customerPhone,  String plate,  String? returnFlight,  String? departureFlight,  OutboundFlightModel? outbound,  CarLocationModel? car,  int passengers,  int? days,  int? priceCents,  String cancellationPolicy,  String? cancellableUntil,  bool canCancel,  bool canEditFlight)?  $default,) {final _that = this;
 switch (_that) {
 case _PublicBookingModel() when $default != null:
-return $default(_that.reference,_that.status,_that.paymentMode,_that.payment,_that.parking,_that.arrivalAt,_that.returnAt,_that.customerName,_that.customerEmail,_that.customerPhone,_that.plate,_that.returnFlight,_that.departureFlight,_that.outbound,_that.passengers,_that.days,_that.priceCents,_that.cancellationPolicy,_that.cancellableUntil,_that.canCancel,_that.canEditFlight);case _:
+return $default(_that.reference,_that.status,_that.paymentMode,_that.payment,_that.parking,_that.arrivalAt,_that.returnAt,_that.customerName,_that.customerEmail,_that.customerPhone,_that.plate,_that.returnFlight,_that.departureFlight,_that.outbound,_that.car,_that.passengers,_that.days,_that.priceCents,_that.cancellationPolicy,_that.cancellableUntil,_that.canCancel,_that.canEditFlight);case _:
   return null;
 
 }
@@ -271,7 +285,7 @@ return $default(_that.reference,_that.status,_that.paymentMode,_that.payment,_th
 @JsonSerializable()
 
 class _PublicBookingModel extends PublicBookingModel {
-  const _PublicBookingModel({required this.reference, required this.status, this.paymentMode = 'on_site', this.payment, required this.parking, required this.arrivalAt, required this.returnAt, required this.customerName, this.customerEmail, this.customerPhone = '', required this.plate, this.returnFlight, this.departureFlight, this.outbound, required this.passengers, this.days, this.priceCents, this.cancellationPolicy = 'non_refundable', this.cancellableUntil, this.canCancel = false, this.canEditFlight = false}): super._();
+  const _PublicBookingModel({required this.reference, required this.status, this.paymentMode = 'on_site', this.payment, required this.parking, required this.arrivalAt, required this.returnAt, required this.customerName, this.customerEmail, this.customerPhone = '', required this.plate, this.returnFlight, this.departureFlight, this.outbound, this.car, required this.passengers, this.days, this.priceCents, this.cancellationPolicy = 'non_refundable', this.cancellableUntil, this.canCancel = false, this.canEditFlight = false}): super._();
   factory _PublicBookingModel.fromJson(Map<String, dynamic> json) => _$PublicBookingModelFromJson(json);
 
 @override final  String reference;
@@ -290,6 +304,8 @@ class _PublicBookingModel extends PublicBookingModel {
 /// Outbound flight (V-A) and, when tracked, when the shuttle to the terminal leaves (local).
 @override final  String? departureFlight;
 @override final  OutboundFlightModel? outbound;
+/// Where the car is parked (06/10/2026), recorded by the traveller or the valet; null until then.
+@override final  CarLocationModel? car;
 @override final  int passengers;
 @override final  int? days;
 @override final  int? priceCents;
@@ -312,18 +328,18 @@ Map<String, dynamic> toJson() {
 
 @override
 bool operator ==(Object other) {
-    return identical(this, other) || (other.runtimeType == runtimeType&&other is _PublicBookingModel&&(identical(other.reference, reference) || other.reference == reference)&&(identical(other.status, status) || other.status == status)&&(identical(other.paymentMode, paymentMode) || other.paymentMode == paymentMode)&&(identical(other.payment, payment) || other.payment == payment)&&(identical(other.parking, parking) || other.parking == parking)&&(identical(other.arrivalAt, arrivalAt) || other.arrivalAt == arrivalAt)&&(identical(other.returnAt, returnAt) || other.returnAt == returnAt)&&(identical(other.customerName, customerName) || other.customerName == customerName)&&(identical(other.customerEmail, customerEmail) || other.customerEmail == customerEmail)&&(identical(other.customerPhone, customerPhone) || other.customerPhone == customerPhone)&&(identical(other.plate, plate) || other.plate == plate)&&(identical(other.returnFlight, returnFlight) || other.returnFlight == returnFlight)&&(identical(other.departureFlight, departureFlight) || other.departureFlight == departureFlight)&&(identical(other.outbound, outbound) || other.outbound == outbound)&&(identical(other.passengers, passengers) || other.passengers == passengers)&&(identical(other.days, days) || other.days == days)&&(identical(other.priceCents, priceCents) || other.priceCents == priceCents)&&(identical(other.cancellationPolicy, cancellationPolicy) || other.cancellationPolicy == cancellationPolicy)&&(identical(other.cancellableUntil, cancellableUntil) || other.cancellableUntil == cancellableUntil)&&(identical(other.canCancel, canCancel) || other.canCancel == canCancel)&&(identical(other.canEditFlight, canEditFlight) || other.canEditFlight == canEditFlight));
+    return identical(this, other) || (other.runtimeType == runtimeType&&other is _PublicBookingModel&&(identical(other.reference, reference) || other.reference == reference)&&(identical(other.status, status) || other.status == status)&&(identical(other.paymentMode, paymentMode) || other.paymentMode == paymentMode)&&(identical(other.payment, payment) || other.payment == payment)&&(identical(other.parking, parking) || other.parking == parking)&&(identical(other.arrivalAt, arrivalAt) || other.arrivalAt == arrivalAt)&&(identical(other.returnAt, returnAt) || other.returnAt == returnAt)&&(identical(other.customerName, customerName) || other.customerName == customerName)&&(identical(other.customerEmail, customerEmail) || other.customerEmail == customerEmail)&&(identical(other.customerPhone, customerPhone) || other.customerPhone == customerPhone)&&(identical(other.plate, plate) || other.plate == plate)&&(identical(other.returnFlight, returnFlight) || other.returnFlight == returnFlight)&&(identical(other.departureFlight, departureFlight) || other.departureFlight == departureFlight)&&(identical(other.outbound, outbound) || other.outbound == outbound)&&(identical(other.car, car) || other.car == car)&&(identical(other.passengers, passengers) || other.passengers == passengers)&&(identical(other.days, days) || other.days == days)&&(identical(other.priceCents, priceCents) || other.priceCents == priceCents)&&(identical(other.cancellationPolicy, cancellationPolicy) || other.cancellationPolicy == cancellationPolicy)&&(identical(other.cancellableUntil, cancellableUntil) || other.cancellableUntil == cancellableUntil)&&(identical(other.canCancel, canCancel) || other.canCancel == canCancel)&&(identical(other.canEditFlight, canEditFlight) || other.canEditFlight == canEditFlight));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
 int get hashCode {
-    return Object.hashAll([runtimeType,reference,status,paymentMode,payment,parking,arrivalAt,returnAt,customerName,customerEmail,customerPhone,plate,returnFlight,departureFlight,outbound,passengers,days,priceCents,cancellationPolicy,cancellableUntil,canCancel,canEditFlight]);
+    return Object.hashAll([runtimeType,reference,status,paymentMode,payment,parking,arrivalAt,returnAt,customerName,customerEmail,customerPhone,plate,returnFlight,departureFlight,outbound,car,passengers,days,priceCents,cancellationPolicy,cancellableUntil,canCancel,canEditFlight]);
 }
 
 @override
 String toString() {
-    return 'PublicBookingModel(reference: $reference, status: $status, paymentMode: $paymentMode, payment: $payment, parking: $parking, arrivalAt: $arrivalAt, returnAt: $returnAt, customerName: $customerName, customerEmail: $customerEmail, customerPhone: $customerPhone, plate: $plate, returnFlight: $returnFlight, departureFlight: $departureFlight, outbound: $outbound, passengers: $passengers, days: $days, priceCents: $priceCents, cancellationPolicy: $cancellationPolicy, cancellableUntil: $cancellableUntil, canCancel: $canCancel, canEditFlight: $canEditFlight)';
+    return 'PublicBookingModel(reference: $reference, status: $status, paymentMode: $paymentMode, payment: $payment, parking: $parking, arrivalAt: $arrivalAt, returnAt: $returnAt, customerName: $customerName, customerEmail: $customerEmail, customerPhone: $customerPhone, plate: $plate, returnFlight: $returnFlight, departureFlight: $departureFlight, outbound: $outbound, car: $car, passengers: $passengers, days: $days, priceCents: $priceCents, cancellationPolicy: $cancellationPolicy, cancellableUntil: $cancellableUntil, canCancel: $canCancel, canEditFlight: $canEditFlight)';
 }
 
 
@@ -334,11 +350,11 @@ abstract mixin class _$PublicBookingModelCopyWith<$Res> implements $PublicBookin
   factory _$PublicBookingModelCopyWith(_PublicBookingModel value, $Res Function(_PublicBookingModel) _then) = __$PublicBookingModelCopyWithImpl;
 @override @useResult
 $Res call({
- String reference, String status, String paymentMode, BookingPaymentModel? payment, BookingParkingModel parking, String arrivalAt, String returnAt, String customerName, String? customerEmail, String customerPhone, String plate, String? returnFlight, String? departureFlight, OutboundFlightModel? outbound, int passengers, int? days, int? priceCents, String cancellationPolicy, String? cancellableUntil, bool canCancel, bool canEditFlight
+ String reference, String status, String paymentMode, BookingPaymentModel? payment, BookingParkingModel parking, String arrivalAt, String returnAt, String customerName, String? customerEmail, String customerPhone, String plate, String? returnFlight, String? departureFlight, OutboundFlightModel? outbound, CarLocationModel? car, int passengers, int? days, int? priceCents, String cancellationPolicy, String? cancellableUntil, bool canCancel, bool canEditFlight
 });
 
 
-@override $BookingPaymentModelCopyWith<$Res>? get payment;@override $BookingParkingModelCopyWith<$Res> get parking;@override $OutboundFlightModelCopyWith<$Res>? get outbound;
+@override $BookingPaymentModelCopyWith<$Res>? get payment;@override $BookingParkingModelCopyWith<$Res> get parking;@override $OutboundFlightModelCopyWith<$Res>? get outbound;@override $CarLocationModelCopyWith<$Res>? get car;
 
 }
 /// @nodoc
@@ -351,7 +367,7 @@ class __$PublicBookingModelCopyWithImpl<$Res>
 
 /// Create a copy of PublicBookingModel
 /// with the given fields replaced by the non-null parameter values.
-@override @pragma('vm:prefer-inline') $Res call({Object? reference = null,Object? status = null,Object? paymentMode = null,Object? payment = freezed,Object? parking = null,Object? arrivalAt = null,Object? returnAt = null,Object? customerName = null,Object? customerEmail = freezed,Object? customerPhone = null,Object? plate = null,Object? returnFlight = freezed,Object? departureFlight = freezed,Object? outbound = freezed,Object? passengers = null,Object? days = freezed,Object? priceCents = freezed,Object? cancellationPolicy = null,Object? cancellableUntil = freezed,Object? canCancel = null,Object? canEditFlight = null,}) {
+@override @pragma('vm:prefer-inline') $Res call({Object? reference = null,Object? status = null,Object? paymentMode = null,Object? payment = freezed,Object? parking = null,Object? arrivalAt = null,Object? returnAt = null,Object? customerName = null,Object? customerEmail = freezed,Object? customerPhone = null,Object? plate = null,Object? returnFlight = freezed,Object? departureFlight = freezed,Object? outbound = freezed,Object? car = freezed,Object? passengers = null,Object? days = freezed,Object? priceCents = freezed,Object? cancellationPolicy = null,Object? cancellableUntil = freezed,Object? canCancel = null,Object? canEditFlight = null,}) {
   return _then(_PublicBookingModel(
 reference: null == reference ? _self.reference : reference // ignore: cast_nullable_to_non_nullable
 as String,status: null == status ? _self.status : status // ignore: cast_nullable_to_non_nullable
@@ -367,7 +383,8 @@ as String,plate: null == plate ? _self.plate : plate // ignore: cast_nullable_to
 as String,returnFlight: freezed == returnFlight ? _self.returnFlight : returnFlight // ignore: cast_nullable_to_non_nullable
 as String?,departureFlight: freezed == departureFlight ? _self.departureFlight : departureFlight // ignore: cast_nullable_to_non_nullable
 as String?,outbound: freezed == outbound ? _self.outbound : outbound // ignore: cast_nullable_to_non_nullable
-as OutboundFlightModel?,passengers: null == passengers ? _self.passengers : passengers // ignore: cast_nullable_to_non_nullable
+as OutboundFlightModel?,car: freezed == car ? _self.car : car // ignore: cast_nullable_to_non_nullable
+as CarLocationModel?,passengers: null == passengers ? _self.passengers : passengers // ignore: cast_nullable_to_non_nullable
 as int,days: freezed == days ? _self.days : days // ignore: cast_nullable_to_non_nullable
 as int?,priceCents: freezed == priceCents ? _self.priceCents : priceCents // ignore: cast_nullable_to_non_nullable
 as int?,cancellationPolicy: null == cancellationPolicy ? _self.cancellationPolicy : cancellationPolicy // ignore: cast_nullable_to_non_nullable
@@ -410,6 +427,18 @@ $OutboundFlightModelCopyWith<$Res>? get outbound {
 
   return $OutboundFlightModelCopyWith<$Res>(_self.outbound!, (value) {
     return _then(_self.copyWith(outbound: value));
+  });
+}/// Create a copy of PublicBookingModel
+/// with the given fields replaced by the non-null parameter values.
+@override
+@pragma('vm:prefer-inline')
+$CarLocationModelCopyWith<$Res>? get car {
+    if (_self.car == null) {
+    return null;
+  }
+
+  return $CarLocationModelCopyWith<$Res>(_self.car!, (value) {
+    return _then(_self.copyWith(car: value));
   });
 }
 }
@@ -2677,6 +2706,291 @@ as String?,scheduledAt: freezed == scheduledAt ? _self.scheduledAt : scheduledAt
 as String?,estimatedAt: freezed == estimatedAt ? _self.estimatedAt : estimatedAt // ignore: cast_nullable_to_non_nullable
 as String?,terminal: freezed == terminal ? _self.terminal : terminal // ignore: cast_nullable_to_non_nullable
 as String?,shuttleAt: freezed == shuttleAt ? _self.shuttleAt : shuttleAt // ignore: cast_nullable_to_non_nullable
+as String?,
+  ));
+}
+
+
+}
+
+
+/// @nodoc
+mixin _$CarLocationModel {
+
+ double get lat; double get lng; int? get accuracyM; DateTime get at; String get by; String? get note;
+/// Create a copy of CarLocationModel
+/// with the given fields replaced by the non-null parameter values.
+@JsonKey(includeFromJson: false, includeToJson: false)
+@pragma('vm:prefer-inline')
+$CarLocationModelCopyWith<CarLocationModel> get copyWith => _$CarLocationModelCopyWithImpl<CarLocationModel>(this as CarLocationModel, _$identity);
+
+  /// Serializes this CarLocationModel to a JSON map.
+  Map<String, dynamic> toJson();
+
+
+@override
+bool operator ==(Object other) {
+  final _this = this as CarLocationModel;
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is CarLocationModel&&(identical(other.lat, _this.lat) || other.lat == _this.lat)&&(identical(other.lng, _this.lng) || other.lng == _this.lng)&&(identical(other.accuracyM, _this.accuracyM) || other.accuracyM == _this.accuracyM)&&(identical(other.at, _this.at) || other.at == _this.at)&&(identical(other.by, _this.by) || other.by == _this.by)&&(identical(other.note, _this.note) || other.note == _this.note));
+}
+
+@JsonKey(includeFromJson: false, includeToJson: false)
+@override
+int get hashCode {
+  final _this = this as CarLocationModel;
+  return Object.hash(runtimeType,_this.lat,_this.lng,_this.accuracyM,_this.at,_this.by,_this.note);
+}
+
+@override
+String toString() {
+  final _this = this as CarLocationModel;
+  return 'CarLocationModel(lat: ${_this.lat}, lng: ${_this.lng}, accuracyM: ${_this.accuracyM}, at: ${_this.at}, by: ${_this.by}, note: ${_this.note})';
+}
+
+
+}
+
+/// @nodoc
+abstract mixin class $CarLocationModelCopyWith<$Res>  {
+  factory $CarLocationModelCopyWith(CarLocationModel value, $Res Function(CarLocationModel) _then) = _$CarLocationModelCopyWithImpl;
+@useResult
+$Res call({
+ double lat, double lng, int? accuracyM, DateTime at, String by, String? note
+});
+
+
+
+
+}
+/// @nodoc
+class _$CarLocationModelCopyWithImpl<$Res>
+    implements $CarLocationModelCopyWith<$Res> {
+  _$CarLocationModelCopyWithImpl(this._self, this._then);
+
+  final CarLocationModel _self;
+  final $Res Function(CarLocationModel) _then;
+
+/// Create a copy of CarLocationModel
+/// with the given fields replaced by the non-null parameter values.
+@pragma('vm:prefer-inline') @override $Res call({Object? lat = null,Object? lng = null,Object? accuracyM = freezed,Object? at = null,Object? by = null,Object? note = freezed,}) {
+  return _then(CarLocationModel(
+lat: null == lat ? _self.lat : lat // ignore: cast_nullable_to_non_nullable
+as double,lng: null == lng ? _self.lng : lng // ignore: cast_nullable_to_non_nullable
+as double,accuracyM: freezed == accuracyM ? _self.accuracyM : accuracyM // ignore: cast_nullable_to_non_nullable
+as int?,at: null == at ? _self.at : at // ignore: cast_nullable_to_non_nullable
+as DateTime,by: null == by ? _self.by : by // ignore: cast_nullable_to_non_nullable
+as String,note: freezed == note ? _self.note : note // ignore: cast_nullable_to_non_nullable
+as String?,
+  ));
+}
+
+}
+
+
+/// Adds pattern-matching-related methods to [CarLocationModel].
+extension CarLocationModelPatterns on CarLocationModel {
+/// A variant of `map` that fallback to returning `orElse`.
+///
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case final Subclass value:
+///     return ...;
+///   case _:
+///     return orElse();
+/// }
+/// ```
+
+@optionalTypeArgs TResult maybeMap<TResult extends Object?>(TResult Function( _CarLocationModel value)?  $default,{required TResult orElse(),}){
+final _that = this;
+switch (_that) {
+case _CarLocationModel() when $default != null:
+return $default(_that);case _:
+  return orElse();
+
+}
+}
+/// A `switch`-like method, using callbacks.
+///
+/// Callbacks receives the raw object, upcasted.
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case final Subclass value:
+///     return ...;
+///   case final Subclass2 value:
+///     return ...;
+/// }
+/// ```
+
+@optionalTypeArgs TResult map<TResult extends Object?>(TResult Function( _CarLocationModel value)  $default,){
+final _that = this;
+switch (_that) {
+case _CarLocationModel():
+return $default(_that);case _:
+  throw StateError('Unexpected subclass');
+
+}
+}
+/// A variant of `map` that fallback to returning `null`.
+///
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case final Subclass value:
+///     return ...;
+///   case _:
+///     return null;
+/// }
+/// ```
+
+@optionalTypeArgs TResult? mapOrNull<TResult extends Object?>(TResult? Function( _CarLocationModel value)?  $default,){
+final _that = this;
+switch (_that) {
+case _CarLocationModel() when $default != null:
+return $default(_that);case _:
+  return null;
+
+}
+}
+/// A variant of `when` that fallback to an `orElse` callback.
+///
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case Subclass(:final field):
+///     return ...;
+///   case _:
+///     return orElse();
+/// }
+/// ```
+
+@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( double lat,  double lng,  int? accuracyM,  DateTime at,  String by,  String? note)?  $default,{required TResult orElse(),}) {final _that = this;
+switch (_that) {
+case _CarLocationModel() when $default != null:
+return $default(_that.lat,_that.lng,_that.accuracyM,_that.at,_that.by,_that.note);case _:
+  return orElse();
+
+}
+}
+/// A `switch`-like method, using callbacks.
+///
+/// As opposed to `map`, this offers destructuring.
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case Subclass(:final field):
+///     return ...;
+///   case Subclass2(:final field2):
+///     return ...;
+/// }
+/// ```
+
+@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( double lat,  double lng,  int? accuracyM,  DateTime at,  String by,  String? note)  $default,) {final _that = this;
+switch (_that) {
+case _CarLocationModel():
+return $default(_that.lat,_that.lng,_that.accuracyM,_that.at,_that.by,_that.note);case _:
+  throw StateError('Unexpected subclass');
+
+}
+}
+/// A variant of `when` that fallback to returning `null`
+///
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case Subclass(:final field):
+///     return ...;
+///   case _:
+///     return null;
+/// }
+/// ```
+
+@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( double lat,  double lng,  int? accuracyM,  DateTime at,  String by,  String? note)?  $default,) {final _that = this;
+switch (_that) {
+case _CarLocationModel() when $default != null:
+return $default(_that.lat,_that.lng,_that.accuracyM,_that.at,_that.by,_that.note);case _:
+  return null;
+
+}
+}
+
+}
+
+/// @nodoc
+@JsonSerializable()
+
+class _CarLocationModel extends CarLocationModel {
+  const _CarLocationModel({required this.lat, required this.lng, this.accuracyM, required this.at, this.by = 'traveller', this.note}): super._();
+  factory _CarLocationModel.fromJson(Map<String, dynamic> json) => _$CarLocationModelFromJson(json);
+
+@override final  double lat;
+@override final  double lng;
+@override final  int? accuracyM;
+@override final  DateTime at;
+@override@JsonKey() final  String by;
+@override final  String? note;
+
+/// Create a copy of CarLocationModel
+/// with the given fields replaced by the non-null parameter values.
+@override @JsonKey(includeFromJson: false, includeToJson: false)
+@pragma('vm:prefer-inline')
+_$CarLocationModelCopyWith<_CarLocationModel> get copyWith => __$CarLocationModelCopyWithImpl<_CarLocationModel>(this, _$identity);
+
+@override
+Map<String, dynamic> toJson() {
+  return _$CarLocationModelToJson(this, );
+}
+
+@override
+bool operator ==(Object other) {
+    return identical(this, other) || (other.runtimeType == runtimeType&&other is _CarLocationModel&&(identical(other.lat, lat) || other.lat == lat)&&(identical(other.lng, lng) || other.lng == lng)&&(identical(other.accuracyM, accuracyM) || other.accuracyM == accuracyM)&&(identical(other.at, at) || other.at == at)&&(identical(other.by, by) || other.by == by)&&(identical(other.note, note) || other.note == note));
+}
+
+@JsonKey(includeFromJson: false, includeToJson: false)
+@override
+int get hashCode {
+    return Object.hash(runtimeType,lat,lng,accuracyM,at,by,note);
+}
+
+@override
+String toString() {
+    return 'CarLocationModel(lat: $lat, lng: $lng, accuracyM: $accuracyM, at: $at, by: $by, note: $note)';
+}
+
+
+}
+
+/// @nodoc
+abstract mixin class _$CarLocationModelCopyWith<$Res> implements $CarLocationModelCopyWith<$Res> {
+  factory _$CarLocationModelCopyWith(_CarLocationModel value, $Res Function(_CarLocationModel) _then) = __$CarLocationModelCopyWithImpl;
+@override @useResult
+$Res call({
+ double lat, double lng, int? accuracyM, DateTime at, String by, String? note
+});
+
+
+
+
+}
+/// @nodoc
+class __$CarLocationModelCopyWithImpl<$Res>
+    implements _$CarLocationModelCopyWith<$Res> {
+  __$CarLocationModelCopyWithImpl(this._self, this._then);
+
+  final _CarLocationModel _self;
+  final $Res Function(_CarLocationModel) _then;
+
+/// Create a copy of CarLocationModel
+/// with the given fields replaced by the non-null parameter values.
+@override @pragma('vm:prefer-inline') $Res call({Object? lat = null,Object? lng = null,Object? accuracyM = freezed,Object? at = null,Object? by = null,Object? note = freezed,}) {
+  return _then(_CarLocationModel(
+lat: null == lat ? _self.lat : lat // ignore: cast_nullable_to_non_nullable
+as double,lng: null == lng ? _self.lng : lng // ignore: cast_nullable_to_non_nullable
+as double,accuracyM: freezed == accuracyM ? _self.accuracyM : accuracyM // ignore: cast_nullable_to_non_nullable
+as int?,at: null == at ? _self.at : at // ignore: cast_nullable_to_non_nullable
+as DateTime,by: null == by ? _self.by : by // ignore: cast_nullable_to_non_nullable
+as String,note: freezed == note ? _self.note : note // ignore: cast_nullable_to_non_nullable
 as String?,
   ));
 }

@@ -128,6 +128,7 @@ export interface PublicBooking {
   returnFlight: string | null;
   /** Outbound flight (V-A, 05/10/2026) and, when tracked, when the shuttle to the terminal leaves (local). */
   departureFlight: string | null;
+  car: CarLocation | null;
   outbound: { status: string | null; scheduledAt: string | null; estimatedAt: string | null; terminal: string | null; shuttleAt: string | null } | null;
   passengers: number;
   cancellationPolicy: CancellationPolicy;
@@ -190,4 +191,15 @@ export interface TravellerReturn {
   parking: { name: string; phone: string | null; shuttleMinutes: number | null; address: string | null; location: LatLng | null };
   plate: string;
   spot: { code: string; stayClass: string | null } | null;
+  /** Where the car is parked (06/10/2026), recorded by the traveller or the valet; null until then. */
+  car: CarLocation | null;
+}
+
+export interface CarLocation {
+  lat: number;
+  lng: number;
+  accuracyM: number | null;
+  at: string;
+  by: "traveller" | "staff";
+  note: string | null;
 }

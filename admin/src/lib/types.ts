@@ -107,6 +107,13 @@ export interface Reservation {
   /** Bloc 2, Occupation: the spot and the key hook (null until placed). */
   spotId?: string | null;
   keyHook?: string | null;
+  /** Where the car is parked (06/10/2026): GPS fix by the traveller or the valet. */
+  carLat?: number | null;
+  carLng?: number | null;
+  carAccuracyM?: number | null;
+  carLocatedAt?: string | null;
+  carLocatedBy?: "traveller" | "staff" | null;
+  carNote?: string | null;
   /** D-A: the stop serving this traveller (null: the airport). */
   stopId?: string | null;
   stop?: { id: string; name: string; kind: ShuttleStopKind } | null;

@@ -25,6 +25,9 @@ abstract class PublicBookingModel with _$PublicBookingModel {
     /// Outbound flight (V-A) and, when tracked, when the shuttle to the terminal leaves (local).
     String? departureFlight,
     OutboundFlightModel? outbound,
+
+    /// Where the car is parked (06/10/2026), recorded by the traveller or the valet; null until then.
+    CarLocationModel? car,
     required int passengers,
     int? days,
     int? priceCents,
@@ -178,4 +181,17 @@ abstract class OutboundFlightModel with _$OutboundFlightModel {
   const factory OutboundFlightModel({String? status, String? scheduledAt, String? estimatedAt, String? terminal, String? shuttleAt}) = _OutboundFlightModel;
 
   factory OutboundFlightModel.fromJson(Map<String, dynamic> json) => _$OutboundFlightModelFromJson(json);
+}
+
+/// Where the car is parked (06/10/2026): a GPS fix, by the traveller (self-parking) or the staff (valet).
+@freezed
+abstract class CarLocationModel with _$CarLocationModel {
+  const CarLocationModel._();
+
+  const factory CarLocationModel({required double lat, required double lng, int? accuracyM, required DateTime at, @Default('traveller') String by, String? note}) =
+      _CarLocationModel;
+
+  factory CarLocationModel.fromJson(Map<String, dynamic> json) => _$CarLocationModelFromJson(json);
+
+  bool get byStaff => by == 'staff';
 }

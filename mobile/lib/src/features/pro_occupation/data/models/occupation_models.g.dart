@@ -18,6 +18,14 @@ _OccupantModel _$OccupantModelFromJson(Map<String, dynamic> json) =>
       returnFlight: json['returnFlight'] as String?,
       spotId: json['spotId'] as String?,
       keyHook: json['keyHook'] as String?,
+      carLat: (json['carLat'] as num?)?.toDouble(),
+      carLng: (json['carLng'] as num?)?.toDouble(),
+      carAccuracyM: (json['carAccuracyM'] as num?)?.toInt(),
+      carLocatedAt: json['carLocatedAt'] == null
+          ? null
+          : DateTime.parse(json['carLocatedAt'] as String),
+      carLocatedBy: json['carLocatedBy'] as String?,
+      carNote: json['carNote'] as String?,
       onSite: json['onSite'] as bool? ?? false,
       leavesToday: json['leavesToday'] as bool? ?? false,
       spot: json['spot'] == null
@@ -42,6 +50,12 @@ Map<String, dynamic> _$OccupantModelToJson(_OccupantModel instance) =>
       'returnFlight': instance.returnFlight,
       'spotId': instance.spotId,
       'keyHook': instance.keyHook,
+      'carLat': instance.carLat,
+      'carLng': instance.carLng,
+      'carAccuracyM': instance.carAccuracyM,
+      'carLocatedAt': instance.carLocatedAt?.toIso8601String(),
+      'carLocatedBy': instance.carLocatedBy,
+      'carNote': instance.carNote,
       'onSite': instance.onSite,
       'leavesToday': instance.leavesToday,
       'spot': instance.spot,

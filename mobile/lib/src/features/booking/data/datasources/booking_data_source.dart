@@ -1,4 +1,5 @@
 import '../../../../core/error/exceptions.dart';
+import '../../../../services/location_service.dart';
 import '../../../../services/secure_storage_service.dart';
 import '../client/booking_client.dart';
 import '../models/public_booking_model.dart';
@@ -8,6 +9,8 @@ abstract class BookingDataSource {
   Future<BookingAccessModel> lookup({required String reference, required String email});
   Future<PublicBookingModel> getBooking({required String reference});
   Future<PublicBookingModel> updateFlight({required String reference, required String? flight});
+  Future<PublicBookingModel> locateCar({required String reference, required GeoPosition position, String? note});
+  Future<PublicBookingModel> clearCar({required String reference});
   Future<PaymentIntentModel> paymentIntent({required String reference});
   Future<CheckoutModel> checkout({required String reference});
   Future<PublicBookingModel> release({required String reference});
@@ -55,6 +58,22 @@ class BookingDataSourceImpl implements BookingDataSource {
     token: await _token(reference),
     body: {'returnFlight': (flight == null || flight.trim().isEmpty) ? null : flight.trim().toUpperCase()},
   );
+
+  @override
+  Future<PublicBookingModel> locateCar({required String reference, required GeoPosition position, String? note}) async => client.locateCar(
+    reference: reference.toUpperCase(),
+    token: await _token(reference),
+    body: {
+      'lat': position.lat,
+      'lng': position.lng,
+      if (position.accuracy != null) 'accuracyM': position.accuracy!.round(),
+      'note': (note ?? '').trim().isEmpty ? null : note!.trim(),
+    },
+  );
+
+  @override
+  Future<PublicBookingModel> clearCar({required String reference}) async =>
+      client.clearCar(reference: reference.toUpperCase(), token: await _token(reference));
 
   @override
   Future<PaymentIntentModel> paymentIntent({required String reference}) async =>

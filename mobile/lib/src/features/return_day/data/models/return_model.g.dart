@@ -201,6 +201,9 @@ _TravellerReturnModel _$TravellerReturnModelFromJson(
   spot: json['spot'] == null
       ? null
       : ReturnSpotModel.fromJson(json['spot'] as Map<String, dynamic>),
+  car: json['car'] == null
+      ? null
+      : CarLocationModel.fromJson(json['car'] as Map<String, dynamic>),
 );
 
 Map<String, dynamic> _$TravellerReturnModelToJson(
@@ -218,6 +221,7 @@ Map<String, dynamic> _$TravellerReturnModelToJson(
   'parking': instance.parking,
   'plate': instance.plate,
   'spot': instance.spot,
+  'car': instance.car,
 };
 
 _ReturnSpotModel _$ReturnSpotModelFromJson(Map<String, dynamic> json) =>

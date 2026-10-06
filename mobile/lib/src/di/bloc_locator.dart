@@ -8,6 +8,7 @@ void _initBlocs() {
     // Shared by the search tab, "Mes réservations" and the pages that change a booking.
     ..registerLazySingleton(() => TripsBloc(locator()))
     ..registerFactory(() => ManageBookingBloc(locator(), locator()))
+    ..registerFactory(() => CarLocationBloc(locator(), locator(), locator()))
     // Screens opened with parameters (airport, parking, dates, reference).
     ..registerFactoryParam<ResultsBloc, StayParams, void>(
       (p, _) => ResultsBloc(locator(), airport: p.airport, arrivalAt: p.arrivalAt!, returnAt: p.returnAt!),
@@ -30,7 +31,7 @@ void _initBlocs() {
     ..registerFactory(() => ProVehiclesBloc(locator(), locator(), locator(), locator()))
     ..registerFactory(() => StayShuttlesBloc(locator(), enablePushes: locator(), pollInterval: AppConstants.livePollInterval))
     ..registerFactory(() => ProPlanBloc(locator(), locator(), locator(), locator(), locator(), locator(), locator()))
-    ..registerFactory(() => ProOccupationBloc(locator(), locator(), locator(), locator()))
+    ..registerFactory(() => ProOccupationBloc(locator(), locator(), locator(), locator(), location: locator()))
     ..registerFactory(() => ProReservationsBloc(locator()))
     ..registerFactory(() => ProReservationBloc(locator(), locator()))
     ..registerFactory(() => ProImportBloc(locator()))

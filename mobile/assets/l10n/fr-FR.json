@@ -226,7 +226,10 @@
       "short": "zone court séjour",
       "medium": "zone moyen séjour",
       "long": "zone long séjour"
-    }
+    },
+    "car_position": "Position GPS",
+    "car_by_staff": "Position GPS prise par l'équipe à {}",
+    "car_by_traveller": "Position GPS donnée par le client à {}"
   },
   "pro": {
     "login_eyebrow": "Espace du personnel",
@@ -406,7 +409,10 @@
     "sms_gateway_rejected": "Le téléphone a refusé le SMS.",
     "sms_gateway_error": "Erreur du téléphone.",
     "brevo_unavailable": "{} ne peut pas encore envoyer pour vous.",
-    "view_as_read_only": "Consultation seulement."
+    "view_as_read_only": "Consultation seulement.",
+    "car_location_locked": "Le parking a enregistré l'emplacement de votre voiture : elle ne peut plus être modifiée ici.",
+    "car_location_closed": "La position ne peut plus être enregistrée pour cette réservation.",
+    "invalid_position": "Position invalide."
   },
   "tabs": {
     "search": "Rechercher",
@@ -1061,7 +1067,11 @@
     "zone_medium": "zone séjours moyens",
     "zone_long": "zone séjours longs",
     "keys": "Les clés vous attendent à l'accueil du parking.",
-    "route": "Itinéraire à pied jusqu'au parking"
+    "route": "Itinéraire à pied jusqu'au parking",
+    "car_title": "Votre voiture",
+    "car_help": "Position GPS enregistrée{}",
+    "route_car": "Itinéraire à pied jusqu'à ma voiture",
+    "distance": "à {} de vous"
   },
   "stay_shuttles": {
     "title": "Navette",
@@ -1263,5 +1273,24 @@
     "flight_unknown": "vol inconnu",
     "flight_delayed": "retardé +{}",
     "start": "Démarrer ce trajet"
+  },
+  "car": {
+    "title": "Ma voiture",
+    "intro": "Garé ? Enregistrez l'emplacement pour la retrouver au retour.",
+    "edit_intro": "Replacez-vous près de la voiture, puis enregistrez à nouveau.",
+    "note": "Repère (facultatif)",
+    "note_hint": "ex. rangée 3, près du portail",
+    "save": "Enregistrer où je suis garé",
+    "resave": "Enregistrer la nouvelle position",
+    "cancel": "Annuler",
+    "pin": "Ma voiture",
+    "accuracy": "± {} m",
+    "by_me": "Position enregistrée à {}",
+    "by_staff": "Position prise par le parking à {}",
+    "rough": "Position imprécise : rapprochez-vous de la voiture et réessayez.",
+    "edit": "Corriger la position",
+    "clear": "Effacer",
+    "staff_locked": "Le parking a enregistré l'emplacement de votre voiture.",
+    "no_fix": "Pas de signal GPS pour le moment. Réessayez à l'air libre."
   }
 }

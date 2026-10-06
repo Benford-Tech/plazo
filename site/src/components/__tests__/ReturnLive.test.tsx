@@ -16,6 +16,7 @@ const base: TravellerReturn = {
   parking: { name: "Parking Démo LYS", phone: null, shuttleMinutes: 8, address: "12 route de l’Aéroport", location: { lat: 45.7375, lng: 5.0745 } },
   plate: "AB-123-CD",
   spot: null,
+  car: null,
 };
 
 describe("ReturnLive", () => {
@@ -64,6 +65,16 @@ describe("ReturnLive", () => {
     expect(screen.getByTestId("find-car")).toHaveTextContent("Place A-07");
     expect(screen.getByTestId("find-car")).toHaveTextContent("zone séjours courts");
     expect(screen.getByRole("link", { name: /Itinéraire à pied/ })).toHaveAttribute("href", expect.stringContaining("45.7375"));
+    vi.unstubAllGlobals();
+  });
+
+  it("routes to the recorded GPS position of the car when there is one", async () => {
+    const car = { lat: 45.7301, lng: 5.0502, accuracyM: 6, at: "2026-10-06T07:15:00Z", by: "staff" as const, note: "Rangée 3" };
+    vi.stubGlobal("fetch", vi.fn().mockResolvedValue({ ok: true, json: async () => base }));
+    render(<ReturnLive reference="R7KQ2M" token="tok" initial={{ ...base, car }} />);
+    expect(screen.getByTestId("find-car")).toHaveTextContent("Votre voiture");
+    expect(screen.getByTestId("car-position")).toHaveTextContent("enregistrée par le parking à 09:15 (± 6 m). Rangée 3.");
+    expect(screen.getByRole("link", { name: /jusqu’à ma voiture/ })).toHaveAttribute("href", expect.stringContaining("45.7301%2C5.0502"));
     vi.unstubAllGlobals();
   });
 });

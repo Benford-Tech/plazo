@@ -4,6 +4,7 @@ import 'package:freezed_annotation/freezed_annotation.dart';
 import '../../../../core/enums/view_state.dart';
 import '../../../../core/error/failure.dart';
 import '../../../../core/utils/use_case.dart';
+import '../../../../services/location_service.dart';
 import '../../../pro_plan/data/models/plan_models.dart';
 import '../../../pro_plan/domain/usecases/plan_use_cases.dart';
 import '../../data/models/occupation_models.dart';
@@ -15,7 +16,9 @@ part 'pro_occupation_state.dart';
 
 /// Bloc 2, step "Occupation" in the app: find a vehicle, place an arrival, note the key hook.
 class ProOccupationBloc extends Bloc<ProOccupationEvent, ProOccupationState> {
-  ProOccupationBloc(this._getParking, this._getBoard, this._search, this._assign) : super(const ProOccupationState()) {
+  ProOccupationBloc(this._getParking, this._getBoard, this._search, this._assign, {LocationService? location})
+    : _location = location,
+      super(const ProOccupationState()) {
     on<ProOccupationStarted>(_onStarted);
     on<ProOccupationRefreshed>((e, emit) => _load(emit));
     on<ProOccupationSearched>(_onSearched);
@@ -65,9 +68,25 @@ class ProOccupationBloc extends Bloc<ProOccupationEvent, ProOccupationState> {
     );
   }
 
+  final LocationService? _location;
+
+  /// The valet's own position as the car is placed (06/10/2026): one quick fix, when allowed; a
+  /// refused permission or no signal just places the car without it.
+  Future<GeoPosition?> _fix() async {
+    final location = _location;
+    if (location == null) return null;
+    try {
+      if (await location.requestAccess() != LocationAccess.granted) return null;
+      return await location.current().timeout(const Duration(seconds: 8), onTimeout: () => null);
+    } catch (_) {
+      return null;
+    }
+  }
+
   Future<void> _onPlaced(ProOccupationPlaced event, Emitter<ProOccupationState> emit) async {
     emit(state.copyWith(actionState: ViewState.processing, errorCode: null, notice: null));
-    final result = await _assign(AssignSpotParams(reservationId: event.reservationId, spotId: event.spotId, keyHook: event.keyHook));
+    final car = event.spotId == null ? null : await _fix();
+    final result = await _assign(AssignSpotParams(reservationId: event.reservationId, spotId: event.spotId, keyHook: event.keyHook, car: car));
     await result.fold((f) async => emit(state.copyWith(actionState: ViewState.error, errorCode: _code(f))), (updated) async {
       final code = updated.spot?.code;
       emit(

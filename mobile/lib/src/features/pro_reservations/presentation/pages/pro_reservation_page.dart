@@ -191,6 +191,12 @@ class _Sheet extends StatelessWidget {
           rows: [
             ('res.spot'.tr(), r.spot?.code ?? (r.spotId == null ? 'occupation.no_spot'.tr() : 'res.spot_placed'.tr())),
             if (r.keyHook != null) ('occupation.key_hook'.tr(), r.keyHook!),
+            if (r.carLat != null && r.carLng != null && r.carLocatedAt != null)
+              (
+                'occupation.car_position'.tr(),
+                '${(r.carLocatedBy == 'staff' ? 'occupation.car_by_staff' : 'occupation.car_by_traveller').tr(args: [hhmm(r.carLocatedAt!)])}'
+                    '${r.carAccuracyM != null ? ' · ± ${r.carAccuracyM} m' : ''}${r.carNote != null ? ' · ${r.carNote}' : ''}',
+              ),
           ],
           trailing: TextButton(
             key: const Key('res-places'),

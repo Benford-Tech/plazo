@@ -230,6 +230,15 @@ class _VehicleCardState extends State<_VehicleCard> {
             '${v.returnFlight != null ? ' · ${'occupation.flight'.tr(args: [v.returnFlight!])}' : ''}',
             style: AppText.muted(size: 13),
           ),
+          if (v.carLat != null && v.carLng != null && v.carLocatedAt != null) ...[
+            const SizedBox(height: 4),
+            Text(
+              '${(v.carLocatedBy == 'staff' ? 'occupation.car_by_staff' : 'occupation.car_by_traveller').tr(args: [hhmm(v.carLocatedAt!)])}'
+              '${v.carAccuracyM != null ? ' · ± ${v.carAccuracyM} m' : ''}${v.carNote != null ? ' · ${v.carNote}' : ''}',
+              key: const Key('vehicle-car-position'),
+              style: AppText.muted(size: 12.5),
+            ),
+          ],
           const SizedBox(height: 10),
           Row(
             children: [

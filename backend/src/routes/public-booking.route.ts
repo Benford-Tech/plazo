@@ -1,6 +1,6 @@
 import { Router } from 'express';
 import { PublicBookingController } from '@/controllers/public-booking.controller';
-import { CreatePublicBookingDto, LookupBookingDto, UpdateBookingFlightDto } from '@/dtos/public-booking.dto';
+import { CreatePublicBookingDto, LookupBookingDto, UpdateBookingFlightDto, CarLocationDto } from '@/dtos/public-booking.dto';
 import { Routes } from '@/interfaces/routes.interface';
 import { bookingLimiter, lookupLimiter, lookupReferenceLimiter } from '@/middlewares/rateLimiter';
 import { ValidationMiddleware } from '@/middlewares/validation.middleware';
@@ -206,6 +206,9 @@ export class PublicBookingRoute implements Routes {
     this.router.post('/public/bookings/lookup', lookupLimiter, lookupReferenceLimiter, ValidationMiddleware(LookupBookingDto), this.bookings.lookup);
     this.router.get('/public/bookings/:reference', this.bookings.get);
     this.router.patch('/public/bookings/:reference/flight', ValidationMiddleware(UpdateBookingFlightDto), this.bookings.updateFlight);
+    // Where the car is parked (06/10/2026), recorded by the traveller who parked it themselves.
+    this.router.put('/public/bookings/:reference/car-location', ValidationMiddleware(CarLocationDto), this.bookings.locateCar);
+    this.router.delete('/public/bookings/:reference/car-location', this.bookings.clearCarLocation);
     this.router.post('/public/bookings/:reference/checkout', this.bookings.checkout);
     this.router.post('/public/bookings/:reference/payment-intent', this.bookings.paymentIntent);
     this.router.post('/public/bookings/:reference/release', this.bookings.release);

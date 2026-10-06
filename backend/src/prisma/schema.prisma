@@ -438,6 +438,15 @@ model Reservation {
   departureEstimatedAt    DateTime? // revised take-off
   departureTerminal       String?
   departureCheckedAt      DateTime?
+  // Where the car is parked (06/10/2026): recorded by whoever parks it, the traveller from the app
+  // or a staff member (valet) from Plazo Pro, whose position prevails. Erased with the traveller
+  // devices two days after the return.
+  carLat                  Float?
+  carLng                  Float?
+  carAccuracyM            Int?
+  carLocatedAt            DateTime?
+  carLocatedBy            CarLocatedBy?
+  carNote                 String?
   // Sent once per booking when the flight lands: the push to the staff, the SMS to the traveller.
   landingNotifiedAt       DateTime?
   landingSmsAt            DateTime?
@@ -661,6 +670,12 @@ enum FlightStatus {
   cancelled
   diverted
   unknown // the provider does not know this flight (or on that day)
+}
+
+/// Who recorded the car's position: the traveller (self-parking) or the staff (valet).
+enum CarLocatedBy {
+  traveller
+  staff
 }
 
 enum FlightLandedSource {

@@ -1,7 +1,7 @@
 import { Request, Response } from 'express';
 import httpStatus from 'http-status';
 import { Container } from 'typedi';
-import { CreatePublicBookingDto, LookupBookingDto, UpdateBookingFlightDto } from '@/dtos/public-booking.dto';
+import { CreatePublicBookingDto, LookupBookingDto, UpdateBookingFlightDto, CarLocationDto } from '@/dtos/public-booking.dto';
 import { PublicBookingService } from '@/services/public-booking.service';
 import catchAsync from '@/utils/catchAsync';
 
@@ -38,6 +38,19 @@ export class PublicBookingController {
     const data: UpdateBookingFlightDto = req.body;
     res.set('Cache-Control', 'no-store');
     res.json(await this.bookingService.updateFlight(req.params.reference as string, bookingToken(req), data.returnFlight, data.departureFlight));
+  });
+
+  /** PUT /public/bookings/:reference/car-location */
+  public locateCar = catchAsync(async (req: Request, res: Response) => {
+    const data: CarLocationDto = req.body;
+    res.set('Cache-Control', 'no-store');
+    res.json(await this.bookingService.locateCar(req.params.reference as string, bookingToken(req), data));
+  });
+
+  /** DELETE /public/bookings/:reference/car-location */
+  public clearCarLocation = catchAsync(async (req: Request, res: Response) => {
+    res.set('Cache-Control', 'no-store');
+    res.json(await this.bookingService.clearCarLocation(req.params.reference as string, bookingToken(req)));
   });
 
   /** POST /public/bookings/:reference/checkout */

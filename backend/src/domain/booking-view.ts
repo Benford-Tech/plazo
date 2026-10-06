@@ -2,6 +2,7 @@ import { Airport, Listing, Parking, Reservation } from '@/database';
 import { PublicBooking } from '@/interfaces/booking.interface';
 import { cancellableUntil, canCancel, canEditFlight } from './booking';
 import { billableDays } from './pricing';
+import { carView } from './car-location';
 import { dropoffTimes } from './shuttle-waves';
 import { localDateTime } from './time';
 
@@ -67,6 +68,7 @@ export function toPublicBooking(reservation: BookingRecord, now = new Date()): P
     returnFlight: reservation.returnFlight,
     departureFlight: reservation.departureFlight,
     outbound: outboundView(reservation, parking, tz),
+    car: carView(reservation),
     passengers: reservation.passengers,
     cancellationPolicy: policy,
     cancellableUntil: until ? localDateTime(until, tz) : null,

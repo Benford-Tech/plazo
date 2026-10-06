@@ -34,6 +34,7 @@ const held: PublicBooking = {
   plate: "AB-123-CD",
   returnFlight: null,
   departureFlight: null,
+  car: null,
   outbound: null,
   passengers: 1,
   cancellationPolicy: "free_24h",

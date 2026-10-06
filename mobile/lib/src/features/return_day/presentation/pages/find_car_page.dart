@@ -48,7 +48,10 @@ class FindCarPage extends StatelessWidget implements AutoRouteWrapper {
             );
           }
           final spot = d.spot;
+          final car = d.car;
           final location = d.parking.location;
+          // The recorded GPS fix of the car (06/10/2026) is the destination when there is one.
+          final target = car != null ? LatLng(car.lat, car.lng) : (location == null ? null : LatLng(location.lat, location.lng));
           final stay = spot?.stayClass == null ? null : 'find_car.zone_${spot!.stayClass}'.tr();
           return ListView(
             padding: const EdgeInsets.fromLTRB(16, 8, 16, 24),
@@ -103,10 +106,21 @@ class FindCarPage extends StatelessWidget implements AutoRouteWrapper {
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           Text(
-                            spot == null ? 'find_car.no_spot'.tr() : 'find_car.spot'.tr(args: [spot.code]),
-                            style: AppText.big(size: spot == null ? 18 : 30, color: Colors.white),
+                            spot != null
+                                ? 'find_car.spot'.tr(args: [spot.code])
+                                : car != null
+                                ? 'find_car.car_title'.tr()
+                                : 'find_car.no_spot'.tr(),
+                            style: AppText.big(size: spot == null && car == null ? 18 : 30, color: Colors.white),
                           ),
-                          Text(spot == null ? 'find_car.no_spot_help'.tr() : (stay ?? d.parking.name), style: AppText.body(size: 13, color: Colors.white70)),
+                          Text(
+                            spot != null
+                                ? (stay ?? d.parking.name)
+                                : car != null
+                                ? 'find_car.car_help'.tr(args: [car.note != null ? ' · ${car.note}' : ''])
+                                : 'find_car.no_spot_help'.tr(),
+                            style: AppText.body(size: 13, color: Colors.white70),
+                          ),
                         ],
                       ),
                     ),
@@ -114,8 +128,15 @@ class FindCarPage extends StatelessWidget implements AutoRouteWrapper {
                 ),
               ),
               const SizedBox(height: 14),
-              if (location != null) ...[
-                IgnMap(meeting: LatLng(location.lat, location.lng), meetingLabel: d.parking.name, height: 240, interactive: true, accent: AppColors.accent),
+              if (target != null) ...[
+                IgnMap(
+                  key: const Key('find-car-map'),
+                  meeting: target,
+                  meetingLabel: car != null ? 'car.pin'.tr() : d.parking.name,
+                  height: 240,
+                  interactive: true,
+                  accent: AppColors.accent,
+                ),
                 const SizedBox(height: 8),
               ],
               Container(
@@ -135,13 +156,13 @@ class FindCarPage extends StatelessWidget implements AutoRouteWrapper {
               GradientButton(
                 key: const Key('find-car-route'),
                 icon: Icons.directions_walk_rounded,
-                label: 'find_car.route'.tr(),
-                onPressed: location == null && d.parking.address == null
+                label: car != null ? 'find_car.route_car'.tr() : 'find_car.route'.tr(),
+                onPressed: target == null && d.parking.address == null
                     ? null
                     : () => locator<LinkService>().open(
                         Uri.https('www.google.com', '/maps/dir/', {
                           'api': '1',
-                          'destination': location != null ? '${location.lat},${location.lng}' : d.parking.address!,
+                          'destination': target != null ? '${target.latitude},${target.longitude}' : d.parking.address!,
                           'travelmode': 'walking',
                         }),
                       ),

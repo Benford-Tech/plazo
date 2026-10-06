@@ -461,6 +461,10 @@ export const fr = {
     carZone: { short: "zone séjours courts", medium: "zone séjours moyens", long: "zone séjours longs" } as Record<string, string>,
     carKeys: "Les clés vous attendent à l’accueil du parking.",
     carRoute: "Itinéraire à pied jusqu’au parking",
+    carRouteToCar: "Itinéraire à pied jusqu’à ma voiture",
+    carPosition: (by: "traveller" | "staff", time: string, accuracy: number | null) =>
+      `Position GPS ${by === "staff" ? "enregistrée par le parking" : "que vous avez enregistrée"} à ${time}${accuracy !== null ? ` (± ${accuracy} m)` : ""}.`,
+    carNoSpot: "Votre voiture",
     offline: "Impossible de lire l’état du retour pour le moment.",
   },
   status: {

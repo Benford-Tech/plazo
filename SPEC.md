@@ -192,6 +192,23 @@ Hors MVP : optimisation d'itinéraire.
   trajet » bascule la file du chauffeur sur le sens et la desserte de la vague avec ses clients présélectionnés. Le voyageur
   voit sur sa réservation « navette vers le terminal prévue vers HH:MM » quand son vol aller est suivi.
 
+#### Position GPS de la voiture (décision du 06/10/2026, mis en œuvre)
+
+- **Qui** : la personne qui gare la voiture. Le voyageur, s'il se gare lui-même, depuis la carte « Ma voiture » de sa
+  réservation dans l'app (du dépôt jusqu'au retour) : un appui prend la position du téléphone (permission demandée à ce
+  moment, rien n'est gardé sur le téléphone), avec un repère facultatif (« rangée 3, près du portail ») ; il peut la
+  corriger ou l'effacer. Le voiturier, depuis Plazo Pro : la position de son téléphone est prise automatiquement au moment
+  où il affecte la place (Occupation), et peut être reprise depuis l'espace pro ; **la position de l'équipe prime** : le
+  voyageur ne peut plus la remplacer.
+- **Ce qui est gardé** : latitude, longitude, précision (m), heure, auteur (voyageur / équipe), repère. Au-delà de 30 m de
+  précision, l'app signale une position imprécise et propose de réessayer. Effacée avec la réservation et deux jours
+  après le retour (cron de nuit), comme les téléphones des voyageurs.
+- **Où ça sert** : app voyageur, « Retrouver ma voiture » mène à l'épingle de la voiture (sinon à l'entrée du parking) ;
+  site, bloc « Retrouver ma voiture » en lecture (position, auteur, heure, itinéraire à pied) ; espace pro, épingle sur le
+  plan Occupation (vert foncé prise par l'équipe, orange donnée par le client), ligne sur la carte véhicule et la fiche
+  réservation avec un lien d'itinéraire ; Plazo Pro, même ligne sur la fiche et la carte véhicule.
+- Pas de photo pour l'instant (pas d'envoi de fichiers dans l'app) : étape à part.
+
 #### Le jour du retour (mis en œuvre, maquette validée « Votre retour »)
 
 Le flux réel, côté voyageur (app, réservation Plazo ouverte par le lien ou par référence + email) :

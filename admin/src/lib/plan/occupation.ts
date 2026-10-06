@@ -13,6 +13,13 @@ export interface Occupant {
   returnFlight: string | null;
   spotId: string | null;
   keyHook: string | null;
+  /** Where the car is parked (06/10/2026), when recorded. */
+  carLat?: number | null;
+  carLng?: number | null;
+  carAccuracyM?: number | null;
+  carLocatedAt?: string | null;
+  carLocatedBy?: "traveller" | "staff" | null;
+  carNote?: string | null;
   onSite: boolean;
   leavesToday: boolean;
 }
