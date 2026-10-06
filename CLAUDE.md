@@ -13,6 +13,9 @@ deux phases) : la place de marché grand public fait partie du MVP. Deux faces, 
   (Stripe Connect : Plazo encaisse, prélève sa commission, reverse le loueur). Voir SPEC.md, section 3 bis.
   **Décision du 06/10/2026 : tout paiement se fait en ligne**, plus de paiement sur place ; sans clé Stripe la
   réservation en ligne est indisponible (409 `online_booking_unavailable`), la saisie manuelle du loueur reste.
+  **Décision du 06/10/2026 (soir) : le compte Stripe Connect du loueur n'est pas obligatoire** : réservable dès que la
+  plateforme a ses clés et une commission (`PaymentService.modeFor`) ; le reversement reste `pending` tant que le compte
+  n'est pas relié (`runPayouts` → `waitingForAccount`) ; les loueurs `isDemo` ne sont jamais réservables.
 - **Espace pro pour les loueurs** : planning, plan du parking, navette, import des autres canaux
   (blocs 1 à 3 ci-dessous), plus leur fiche Plazo, leurs tarifs et leurs reversements.
 - À valider avec un juriste / expert-comptable **avant la mise en ligne du paiement** : statut de la

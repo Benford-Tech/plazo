@@ -21,7 +21,7 @@ type Client = Prisma.TransactionClient | typeof prisma;
 type Stay = { arrivalAt: Date; returnAt: Date };
 
 /** Operator fields the public pages need: how it takes payments, and whether it is a demo. */
-const PUBLIC_OPERATOR_FIELDS = { ...OPERATOR_PAYMENT_FIELDS, isDemo: true } as const;
+const PUBLIC_OPERATOR_FIELDS = OPERATOR_PAYMENT_FIELDS;
 
 /** Listings travellers may see: validated by the platform, of an operator that is not suspended. */
 export const ONLINE = { status: 'published', parking: { operator: { status: 'active' } } } satisfies Prisma.ListingWhereInput;

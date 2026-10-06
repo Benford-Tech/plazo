@@ -695,7 +695,7 @@ export const fr = {
     intro: {
       before: `Les voyageurs paient par carte sur ${PRODUCT.name}. ${PRODUCT.name} garde sa commission (`,
       after:
-        ") et vous reverse le reste automatiquement. Tant que ce n'est pas activé, votre fiche affiche « Réservation en ligne bientôt disponible ».",
+        ") et vous reverse le reste automatiquement. Vos réservations en ligne sont déjà ouvertes : tant que ce n'est pas activé, vos reversements restent en attente.",
     },
     commissionUnset: "à définir",
     steps: [
