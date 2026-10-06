@@ -44,18 +44,22 @@ model Operator {
   // Fictional operator created by the demo seed (scripts/seed-demo.ts): listed with a "Démo" badge
   // on the site and in the platform space, removed as a whole by the seed's --remove.
   isDemo                 Boolean        @default(false)
+  // M-A (06/10/2026): the local part of the operator's inbound address (<slug>@<INBOUND_EMAIL_DOMAIN>),
+  // where their mailbox forwards the comparators' confirmations. Null until the manager enables it.
+  inboundSlug            String?        @unique
   createdAt              DateTime       @default(now())
   updatedAt              DateTime       @default(now()) @updatedAt
 
-  staff        Staff[]
-  parkings     Parking[]
-  auditLogs    AuditLog[]
-  reservations Reservation[]
-  vehicles     ShuttleVehicle[]
+  staff                 Staff[]
+  parkings              Parking[]
+  auditLogs             AuditLog[]
+  reservations          Reservation[]
+  inboundEmails         InboundEmail[]
+  vehicles              ShuttleVehicle[]
   platformNotifications PlatformNotification[]
-  shuttleTrips ShuttleTrip[]
-  smsSettings  OperatorSmsSettings?
-  smsOutbox    SmsOutbox[]
+  shuttleTrips          ShuttleTrip[]
+  smsSettings           OperatorSmsSettings?
+  smsOutbox             SmsOutbox[]
 
   @@map("operators")
 }
@@ -94,7 +98,9 @@ model Staff {
   vehicleSetAt    DateTime?
   // Push notifications of the shuttles' departures and returns (N-A, 05/10/2026).
   notifyShuttles  Boolean    @default(true)
-  /** Push "Nouvelle réservation" for bookings made on the site or imported (06/10/2026). */
+  /**
+   * Push "Nouvelle réservation" for bookings made on the site or imported (06/10/2026).
+   */
   notifyBookings  Boolean    @default(true)
   // Messages from the platform (E-A, 05/10/2026): the super admin's broadcasts to the staff.
   notifyPlatform  Boolean    @default(true)
@@ -292,6 +298,38 @@ model ParkingSpot {
   @@map("parking_spots")
 }
 
+// M-A (06/10/2026): a confirmation email forwarded to the operator's inbound address, and what became of it.
+enum InboundEmailStatus {
+  imported // a booking was created
+  duplicate // the booking already existed (external reference)
+  incomplete // recognised, but a required field is missing: staff complete it from "À vérifier"
+  unrecognised // no importer knows this email: staff read it and type the booking
+  dismissed // staff closed it without a booking
+}
+
+model InboundEmail {
+  id            String             @id @default(cuid())
+  operatorId    String
+  status        InboundEmailStatus
+  fromAddress   String?
+  fromName      String?
+  subject       String?
+  // The email's text, kept 30 days for "À vérifier" (RGPD), then cleared by the nightly purge.
+  textBody      String?
+  provider      String?
+  parsed        Json?
+  missing       Json?
+  reservationId String?
+  receivedAt    DateTime           @default(now())
+  createdAt     DateTime           @default(now())
+
+  operator    Operator     @relation(fields: [operatorId], references: [id], onDelete: Cascade)
+  reservation Reservation? @relation(fields: [reservationId], references: [id], onDelete: SetNull)
+
+  @@index([operatorId, status, receivedAt])
+  @@map("inbound_emails")
+}
+
 model AuditLog {
   id         String   @id @default(cuid())
   operatorId String
@@ -463,6 +501,7 @@ model Reservation {
   stop           ShuttleStop?           @relation(fields: [stopId], references: [id], onDelete: SetNull)
   devices        TravellerDevice[]
   arrivalSignals ArrivalSignal[]
+  inboundEmails  InboundEmail[]
   shuttleTrips   ShuttleTripPassenger[]
   smsOutbox      SmsOutbox[]
 

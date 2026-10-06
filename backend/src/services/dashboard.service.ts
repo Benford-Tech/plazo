@@ -10,6 +10,7 @@ import { ParkingService } from './parking.service';
 import { PushService } from './push.service';
 import { ReservationService } from './reservation.service';
 import { ShuttleForecastService } from './shuttle-forecast.service';
+import { InboundEmailService } from './inbound-email.service';
 import { ShuttleService } from './shuttle.service';
 import { SmsService } from './sms.service';
 
@@ -38,7 +39,9 @@ export type AlertKind =
   | 'departure_delayed'
   | 'wave_overflow'
   // Decision A (06/10/2026): expected hours ago, no car placed; the staff decide (never automatic).
-  | 'no_show_suspected';
+  | 'no_show_suspected'
+  // M-A (06/10/2026): forwarded confirmation emails waiting for the staff.
+  | 'inbound_to_check';
 
 export interface DashboardAlert {
   kind: AlertKind;
@@ -126,6 +129,7 @@ export class DashboardService {
   public push = Container.get(PushService);
   public reservations = Container.get(ReservationService);
   public shuttle = Container.get(ShuttleService);
+  public inbound = Container.get(InboundEmailService);
   public forecast = Container.get(ShuttleForecastService);
   public sms = Container.get(SmsService);
 
@@ -285,6 +289,20 @@ export class DashboardService {
         detail: null,
         since: r.arrivalAt.toISOString(),
         minutes: minutesSince(r.arrivalAt),
+      });
+    }
+    const inboundToCheck = await this.inbound.toCheckCount(actor.operatorId);
+    if (inboundToCheck > 0) {
+      alerts.push({
+        kind: 'inbound_to_check',
+        severity: 'watch',
+        reservationId: null,
+        reference: null,
+        customerName: null,
+        plate: null,
+        detail: String(inboundToCheck),
+        since: null,
+        minutes: null,
       });
     }
     if (planning.smsWarning) {

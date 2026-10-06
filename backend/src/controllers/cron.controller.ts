@@ -2,6 +2,7 @@ import { Request, Response } from 'express';
 import { Container } from 'typedi';
 import { ArrivalService } from '@/services/arrival.service';
 import { FlightTrackingService } from '@/services/flight-tracking.service';
+import { InboundEmailService } from '@/services/inbound-email.service';
 import { ReturnService } from '@/services/return.service';
 import { ShuttleService } from '@/services/shuttle.service';
 import { SmsService } from '@/services/sms.service';
@@ -17,6 +18,7 @@ export class CronController {
   public flights = Container.get(FlightTrackingService);
   public shuttle = Container.get(ShuttleService);
   public returns = Container.get(ReturnService);
+  public inbound = Container.get(InboundEmailService);
   public sms = Container.get(SmsService);
 
   /** GET /internal/cron/expire-arrival-signals */
@@ -63,10 +65,21 @@ export class CronController {
     // Travellers' phones registered for the shuttle pushes: two days after the return.
     const travellerDevicesPurged = await this.returns.purgeDevices();
     const carLocationsPurged = await this.returns.purgeCarLocations();
+    // Forwarded confirmation emails: text after 30 days, rows after 90 (M-A).
+    const inboundEmails = await this.inbound.purge();
     logger.info(
       `[Cron] ${deleted} expired staff tokens deleted, ${arrivalSignalsEnded} arrival signals ended, ${shuttleTripsEnded} shuttle trips ended, ` +
         `SMS queue ${JSON.stringify(sms)}, ${smsPurged} outbox rows purged`,
     );
-    res.json({ deleted, arrivalSignalsEnded, shuttleTripsEnded, smsAbandoned: sms.abandoned, smsPurged, travellerDevicesPurged, carLocationsPurged });
+    res.json({
+      deleted,
+      arrivalSignalsEnded,
+      shuttleTripsEnded,
+      smsAbandoned: sms.abandoned,
+      smsPurged,
+      travellerDevicesPurged,
+      carLocationsPurged,
+      inboundEmails,
+    });
   });
 }

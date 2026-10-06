@@ -971,7 +971,8 @@
       "departure_cancelled": "Vol aller annulé",
       "departure_delayed": "Vol aller retardé",
       "wave_overflow": "Vague au-delà d'une navette",
-      "no_show_suspected": "Attendu, toujours pas là"
+      "no_show_suspected": "Attendu, toujours pas là",
+      "inbound_to_check": "Mails à vérifier"
     },
     "vehicles_title": "Véhicules sur le parking",
     "vehicles_empty": "Aucun véhicule sur le parking.",

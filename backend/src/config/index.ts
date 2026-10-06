@@ -43,6 +43,11 @@ export const SITE_API_KEY = process.env.SITE_API_KEY || '';
 
 // Brevo (transactional email and SMS). Without an API key, nothing is sent.
 export const BREVO_API_KEY = process.env.BREVO_API_KEY || '';
+// M-A (06/10/2026): the domain of the operators' inbound addresses (<slug>@<domain>), whose mail Brevo's
+// inbound parsing posts to POST /public/inbound/email?secret=<INBOUND_EMAIL_SECRET>. Both empty: feature off.
+export const INBOUND_EMAIL_DOMAIN = (process.env.INBOUND_EMAIL_DOMAIN || '').trim().toLowerCase();
+export const INBOUND_EMAIL_SECRET = (process.env.INBOUND_EMAIL_SECRET || '').trim();
+export const inboundEmailAvailable = (): boolean => !!INBOUND_EMAIL_DOMAIN && !!INBOUND_EMAIL_SECRET;
 // Sender of the emails, e.g. "Plazo <reservations@example.com>" (a sender verified in Brevo).
 export const EMAIL_FROM = process.env.EMAIL_FROM || '';
 // Alphanumeric SMS sender, 11 characters at most (default: the product name).

@@ -310,6 +310,32 @@ export interface ParsedBooking {
   priceCents?: number;
 }
 
+/** M-A (06/10/2026): the operator's inbound address and the forwarded confirmation emails. */
+export type InboundEmailStatus = "imported" | "duplicate" | "incomplete" | "unrecognised" | "dismissed";
+
+export interface InboundSettings {
+  available: boolean;
+  address: string | null;
+  lastReceivedAt: string | null;
+  counts: Record<InboundEmailStatus, number>;
+  toCheck: number;
+}
+
+export interface InboundEmail {
+  id: string;
+  status: InboundEmailStatus;
+  fromAddress: string | null;
+  fromName: string | null;
+  subject: string | null;
+  textBody: string | null;
+  provider: string | null;
+  parsed: ParsedBooking | null;
+  missing: string[];
+  reservationId: string | null;
+  reservationReference: string | null;
+  receivedAt: string;
+}
+
 export type CancellationPolicy = "free_until_arrival" | "free_24h" | "free_48h" | "non_refundable";
 export type ListingService = "shuttle" | "valet" | "covered" | "ev_charging" | "open_24h" | "fenced" | "cctv";
 
@@ -687,7 +713,8 @@ export type AlertKind =
   | "departure_cancelled"
   | "departure_delayed"
   | "wave_overflow"
-  | "no_show_suspected";
+  | "no_show_suspected"
+  | "inbound_to_check";
 
 /** A row of the home's "À traiter" list (GET /internal/dashboard). */
 export interface DashboardAlert {

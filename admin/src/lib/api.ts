@@ -2,6 +2,9 @@ import type {
   Airport,
   Dashboard,
   LiveShuttles,
+  InboundSettings,
+  InboundEmail,
+  InboundEmailStatus,
   MeetingPoint,
   PickupRow,
   DepartureRow,
@@ -403,6 +406,13 @@ export const adminApi = {
   getLiveArrivals: () => apiRequest<LiveArrivals>("/internal/arrivals/live"),
   getDashboard: () => apiRequest<Dashboard>("/internal/dashboard"),
   getLiveShuttles: () => apiRequest<LiveShuttles>("/internal/shuttle/live"),
+  // M-A (06/10/2026): the inbound address and the forwarded confirmation emails.
+  getInboundSettings: () => apiRequest<InboundSettings>("/internal/inbound/settings"),
+  enableInboundAddress: (regenerate = false) => apiRequest<InboundSettings>("/internal/inbound/address", { method: "POST", body: json({ regenerate }) }),
+  getInboundEmails: (status?: InboundEmailStatus) => apiRequest<{ data: InboundEmail[] }>(`/internal/inbound/emails${status ? `?status=${status}` : ""}`),
+  dismissInboundEmail: (id: string) => apiRequest<{ data: InboundEmail }>(`/internal/inbound/emails/${id}/dismiss`, { method: "POST" }),
+  attachInboundEmail: (id: string, reservationId: string) =>
+    apiRequest<{ message: string }>(`/internal/inbound/emails/${id}/attach`, { method: "POST", body: json({ reservationId }) }),
   // The driver's screen on the web (06/10/2026): the same trips as Plazo Pro.
   getPickups: () => apiRequest<{ serverTime: string; meetingPoint: MeetingPoint | null; rows: PickupRow[] }>("/internal/shuttle/pickups"),
   getDepartures: () => apiRequest<{ serverTime: string; rows: DepartureRow[] }>("/internal/shuttle/departures"),

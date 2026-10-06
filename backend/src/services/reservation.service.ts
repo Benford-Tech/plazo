@@ -3,7 +3,7 @@ import { Container, Service } from 'typedi';
 import prisma, { Parking, Prisma, Reservation, ReservationStatus } from '@/database';
 import { can } from '@/domain/roles';
 import { canTransition, formatFlight, formatPlate, newReference, plateKey, RELEASED_STATUSES, STATUS_TRANSITIONS } from '@/domain/reservation';
-import { parseConfirmationEmail } from '@/domain/importers';
+import { ParsedBooking, parseConfirmationEmail } from '@/domain/importers';
 import { addDays, DATE_RE, dayBounds, exceedsCalendarDays, localDate, localDateTime, parseInstant } from '@/domain/time';
 import { ChangeStatusDto, CreateReservationDto, UpdateReservationDto } from '@/dtos/reservation.dto';
 import { AuthenticatedStaff } from '@/interfaces/auth.interface';
@@ -159,6 +159,64 @@ export class ReservationService {
         await this.push.notifyNewBooking({ ...reservation, createdById: actor.id }, parking.timezone);
         return reservation;
       });
+  }
+
+  /**
+   * M-A (06/10/2026): a booking read from a forwarded confirmation email, created without staff.
+   * The external reference stops a second import (the existing booking is returned instead); a full
+   * night does not stop it (the comparator already sold the place: overbooked and flagged).
+   */
+  public async createFromImport(operatorId: string, parsed: ParsedBooking): Promise<{ reservation: Reservation; duplicate: boolean }> {
+    const parking = await prisma.parking.findFirst({ where: { operatorId }, orderBy: { createdAt: 'asc' } });
+    if (!parking) throw notFound();
+    const stay = this.parseStay(parking, parsed.arrivalAt!, parsed.returnAt!);
+    const returnFlight = this.normalizeFlight(parsed.returnFlight);
+    const departureFlight = this.normalizeFlight(parsed.departureFlight, 'departureFlight');
+    const externalReference = parsed.externalReference?.trim().toUpperCase() || null;
+    const system = { id: null, operatorId };
+    const created = await prisma.$transaction(async tx => {
+      await this.capacity.lock(tx, parking.id);
+      if (externalReference) {
+        const existing = await tx.reservation.findUnique({ where: { operatorId_externalReference: { operatorId, externalReference } } });
+        if (existing) return { reservation: existing, duplicate: true };
+      }
+      const { full } = await this.capacity.fullNights(parking, stay.arrivalAt, stay.returnAt, { client: tx });
+      const reference = await this.newUniqueReference(tx);
+      const reservation = await tx.reservation.create({
+        data: {
+          reference,
+          operatorId,
+          parkingId: parking.id,
+          channel: 'aggregator',
+          channelDetail: parsed.provider,
+          ...stay,
+          passengers: parsed.passengers ?? 1,
+          customerName: parsed.customerName!.trim(),
+          customerPhone: parsed.customerPhone!.trim(),
+          customerEmail: parsed.customerEmail?.trim().toLowerCase() || null,
+          plate: formatPlate(parsed.plate!),
+          plateKey: plateKey(parsed.plate!),
+          returnFlight,
+          departureFlight,
+          externalReference,
+          priceCents: parsed.priceCents ?? null,
+          overbooked: full.length > 0,
+        },
+      });
+      await this.audit.record(
+        system,
+        {
+          action: full.length ? 'reservation.created_overbooked' : 'reservation.created',
+          entityType: 'reservation',
+          entityId: reservation.id,
+          details: { by: 'inbound_email', provider: parsed.provider, ...(full.length ? { fullNights: full.map(n => n.date) } : {}) },
+        },
+        tx,
+      );
+      return { reservation, duplicate: false };
+    });
+    if (!created.duplicate) await this.push.notifyNewBooking(created.reservation, parking.timezone);
+    return created;
   }
 
   /** A booking already imported from its channel is never created twice. */

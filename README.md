@@ -13,7 +13,7 @@ et affectation des véhicules, navette au retour.
   API documentée, espace pro.
 - [ ] **Jalon 2 — Réservations** (en cours) : fait — saisie manuelle, planning du jour (arrivées et retours,
   7 nuits), contrôle de capacité par nuit avec surréservation forcée et tracée, statuts, fiche et recherche,
-  lecture des mails de confirmation Allopark côté serveur (`domain/importers`, doublons refusés) en attendant la synchronisation de la boîte mail ; l'import par copier-coller a été retiré le 06/10/2026.
+  **synchronisation de la boîte mail** (M-A, 06/10/2026 : adresse de réception par loueur, webhook Brevo, lecteur Allopark de `domain/importers`, « Mails à vérifier ») ; l'import par copier-coller a été retiré le 06/10/2026.
   Reste : lecteurs Parkos, Onepark… (un exemple de mail par comparateur), import CSV si besoin.
 - [ ] **Jalon 3a — Fiche et tarifs** (fait) : dans l'espace pro, onglet « Sur Plazo » : « Ma fiche » (présentation,
   services, annulation, photos par adresse, aperçu en direct, envoi en validation refusé tant qu'il n'y a pas de tarifs)
@@ -180,6 +180,18 @@ le navigateur de l'espace pro appelle `/api` sur le même domaine (pas de CORS).
    (position effacée) à chaque lecture et par la purge nocturne existante ; `/api/internal/cron/expire-arrival-signals`
    existe pour une passe plus fréquente si besoin.
 
+7. **Synchronisation de la boîte mail (M-A, 06/10/2026)** — facultatif : sans `INBOUND_EMAIL_DOMAIN` et
+   `INBOUND_EMAIL_SECRET`, le bloc « Mails entrants » des réglages explique que la réception n'est pas configurée.
+   Principe : chaque loueur active une adresse `<slug>@<INBOUND_EMAIL_DOMAIN>` (Parking › Réglages) et crée dans sa
+   messagerie une règle qui lui transfère les mails des comparateurs ; Brevo (*Inbound parsing*) reçoit le domaine et
+   appelle `POST /api/public/inbound/email?secret=<INBOUND_EMAIL_SECRET>` ; un mail reconnu et complet (Allopark) crée
+   la réservation (canal comparateur, doublon refusé par la référence externe, push « Nouvelle réservation ») ; un
+   mail incomplet ou inconnu attend dans « Mails à vérifier » (`/pro/reservations/a-verifier`, alerte du tableau de
+   bord), où l'équipe le complète dans le formulaire prérempli ou le classe. Texte des mails gardé 30 jours, lignes 90.
+   Mise en place côté Brevo : choisir un sous-domaine (ex. `in.plazo.fr`), y mettre l'enregistrement MX que Brevo
+   indique (Transactional › Inbound parsing › *Add a domain*), puis créer le webhook *inbound* avec ce domaine et
+   l'URL ci-dessus (le secret dans l'URL ; Brevo ne signe pas ses appels).
+
 6. **Suivi des vols au retour** — facultatif : sans clé, les vols ne sont pas suivis (le voyageur dit « J'ai atterri »
    dans l'app, et l'heure de retour saisie fait foi). Trois fournisseurs derrière la même interface, choisis par
    `FLIGHT_TRACKING_PROVIDER` (`flightaware` | `aerodatabox` | `airlabs` ; vide : celui dont la clé est renseignée, dans
@@ -312,6 +324,11 @@ Documentation interactive : `/api/docs` (Swagger). Toutes les routes sont sous `
 | POST | `/internal/sms/test` | Gérant : SMS de test `{ to }` → `{ outcome: sent \| queued }`, 502 avec le code de l'appli en cas de refus |
 | POST | `/internal/sms/disable` | Gérant : plus de SMS, identifiants oubliés |
 | GET | `/internal/sms/status` | Gérant : `{ lastSentAt, month: { sent, failed }, pending, pendingStale, lastError }` (relance la file au passage) |
+| POST | `/public/inbound/email?secret=` | Webhook *Inbound parsing* de Brevo (M-A) : `{ items: [...] }` → `{ received, imported, toCheck, ignored }` |
+| GET | `/internal/inbound/settings` | Adresse de réception du loueur, dernier mail, comptages sur 30 jours, mails à vérifier |
+| POST | `/internal/inbound/address` | Gérant : active l'adresse (`{ regenerate: true }` : nouvelle adresse) |
+| GET | `/internal/inbound/emails?status=` | « Mails à vérifier » : en attente d'abord, puis 30 jours |
+| POST | `/internal/inbound/emails/:id/dismiss` · `/attach` | Classer sans suite · rattacher à la réservation saisie (`{ reservationId }`) |
 | GET | `/internal/cron/payouts` | Vercel Cron, chaque jour : transferts des parts dues aux loueurs |
 | GET | `/internal/cron/expire-payment-holds` | Vercel Cron (facultatif) : expire les places tenues non payées |
 | GET | `/internal/cron/track-return-flights` | Vercel Cron, toutes les 10 min (5 h – 0 h) : vols retour du jour (push et SMS à l'atterrissage), vols aller du jour (décollage), SMS en attente réessayés |

@@ -107,6 +107,12 @@ function AlertRow({ alert }: { alert: DashboardAlert }) {
         {body}
       </Link>
     );
+  if (alert.kind === "inbound_to_check")
+    return (
+      <Link to="/reservations/a-verifier" className={cn(className, "hover:bg-panel-2")}>
+        {body}
+      </Link>
+    );
   return alert.reservationId ? (
     <CardButton id={alert.reservationId} className={cn(className, "w-full text-left hover:bg-panel-2")}>
       {body}

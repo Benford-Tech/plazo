@@ -46,8 +46,11 @@ Ne construire QUE ce qui règle la douleur n°1 du client.
 
 1. **Réservations**
    - Saisie manuelle (téléphone, comptoir) + import des réservations des autres canaux
-     (06/10/2026 : l'import par copier-coller d'un mail est retiré ; à venir, synchronisation de la boîte mail du loueur
-     pour enregistrer chaque réservation entrante, design à trancher ; connecteurs plus tard).
+     (06/10/2026 : l'import par copier-coller d'un mail est retiré ; **M-A « synchronisation de la boîte mail »** : adresse de
+     réception `Operator.inboundSlug@INBOUND_EMAIL_DOMAIN` activée dans Réglages, règle de transfert dans la messagerie du loueur,
+     webhook Brevo `POST /public/inbound/email?secret=INBOUND_EMAIL_SECRET`, `InboundEmailService` + `domain/inbound-email.ts`,
+     table `inbound_emails`, réservation créée seule si complète (`ReservationService.createFromImport`), sinon page
+     « Mails à vérifier » `/pro/reservations/a-verifier` et alerte `inbound_to_check` ; connecteurs plus tard).
    - Page de réservation propre à l'opérateur (formulaire simple, confirmation par mail/SMS).
    - Vue planning : arrivées et retours du jour, taux d'occupation, alerte de surréservation
      calculée sur la capacité réelle.

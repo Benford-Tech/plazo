@@ -23,6 +23,7 @@ describe('GET /internal/cron/purge-expired-tokens', () => {
       smsPurged: 0,
       travellerDevicesPurged: 0,
       carLocationsPurged: 0,
+      inboundEmails: { textsCleared: 0, rowsDeleted: 0 },
     });
     expect(await prisma.staffToken.count()).toBe(2); // the login's access + refresh pair
   });
