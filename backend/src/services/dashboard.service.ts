@@ -286,7 +286,19 @@ export class DashboardService {
       }
     }
     // Expected for hours, nothing placed: probably a no-show (the staff decide).
-    for (const r of planning.arrivals.filter(a => a.status === 'upcoming' && !a.spotId && minutesSince(a.arrivalAt) >= NO_SHOW_MINUTES)) {
+    // Looked up over the last 24 h, not today's planning only: a traveller expected yesterday evening
+    // and still missing after midnight is the same case.
+    const lateArrivals = await prisma.reservation.findMany({
+      where: {
+        parkingId: parking.id,
+        status: 'upcoming',
+        spotId: null,
+        arrivalAt: { gte: new Date(now.getTime() - 24 * 3600000), lte: new Date(now.getTime() - NO_SHOW_MINUTES * 60000) },
+      },
+      select: { id: true, reference: true, customerName: true, plate: true, arrivalAt: true },
+      orderBy: { arrivalAt: 'asc' },
+    });
+    for (const r of lateArrivals) {
       alerts.push({
         kind: 'no_show_suspected',
         severity: 'watch',

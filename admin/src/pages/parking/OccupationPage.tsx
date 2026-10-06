@@ -14,6 +14,7 @@ import { useQuickCard } from "@/components/reservations/ReservationQuickCard";
 import { Skeleton } from "@/components/ui/skeleton";
 import { adminApi, ApiError } from "@/lib/api";
 import { boundsOf, fc, feature, positionsOf } from "@/lib/capacity/mapData";
+import { carIcons, filesOf, headingOf, manoeuvreStrip, ringCentroid } from "@/lib/plan/files";
 import type { LonLat } from "@/lib/capacity/projection";
 import { dateTimeShort, timeOf } from "@/lib/datetime";
 import { describeError, fr } from "@/lib/fr";
@@ -36,6 +37,11 @@ const TONE_COLORS = {
   inactive: "#6b6b66",
 } as const;
 const SELECTED = "#ff6600";
+/** O-A (06/10/2026): a car to take out before a return. */
+const TO_TAKE_OUT = "#D97706";
+/** The plate, name and return read on a spot from this zoom (a spot is about 5 m long). */
+const SPOT_LABEL_MIN_ZOOM = 19;
+const CAR_ICONS = carIcons(TONE_COLORS);
 const LANDMARK_COLORS: Record<LandmarkKind, string> = {
   entrance: "#6ec071",
   exit: "#ff8a3d",
@@ -83,6 +89,8 @@ export default function OccupationPage() {
   const [selectedReservation, setSelectedReservation] =
     useState<VehicleHit | null>(null);
   const [choosing, setChoosing] = useState<Choosing>(null);
+  // O-A (06/10/2026): the arrival whose file is read on the plan (hovered or being placed).
+  const [focusArrivalId, setFocusArrivalId] = useState<string | null>(null);
   const [query, setQuery] = useState("");
   const [debounced, setDebounced] = useState("");
   useEffect(() => {
@@ -200,6 +208,20 @@ export default function OccupationPage() {
     setSelectedReservation(null);
   };
 
+  const files = useMemo(() => filesOf(spots), [spots]);
+  const fileByKey = useMemo(() => new Map(files.map((f) => [f.key, f])), [files]);
+  // The file marks of the focused arrival: its proposed spot, and the cars to take out.
+  const fileFocus = useMemo(() => {
+    const arrival = data?.arrivals.find((a) => a.id === (focusArrivalId ?? choosing?.reservationId)) ?? null;
+    const best = arrival?.suggestions[0];
+    if (!arrival || !best) return null;
+    const spot = spots.find((s) => s.id === best.spotId);
+    return {
+      proposedId: best.spotId,
+      fileKey: spot?.fileKey ?? null,
+      takeOut: new Set((best.blocking ?? []).map((b) => b.spotCode)),
+    };
+  }, [data, spots, focusArrivalId, choosing]);
   const layers = useMemo<MapLayer[]>(() => {
     if (!data) return [];
     const list: MapLayer[] = [];
@@ -214,6 +236,22 @@ export default function OccupationPage() {
         },
       ),
     );
+    // O-A: the manoeuvring strips in front of every file (kept clear), under the spots.
+    const strips = files.map(manoeuvreStrip).filter((r): r is NonNullable<typeof r> => !!r);
+    if (strips.length) {
+      list.push({
+        id: "manoeuvre-fill",
+        type: "fill",
+        data: fc(strips.map((ring) => feature({ type: "Polygon", coordinates: [ring] }))),
+        paint: { "fill-color": "#FFFFFF", "fill-opacity": 0.18 },
+      });
+      list.push({
+        id: "manoeuvre-line",
+        type: "line",
+        data: fc(strips.map((ring) => feature({ type: "Polygon", coordinates: [ring] }))),
+        paint: { "line-color": "#FFFFFF", "line-width": 1.5, "line-dasharray": [2, 2], "line-opacity": 0.9 },
+      });
+    }
     // Free spots stay see-through so the photo reads; taken ones are solid.
     list.push({
       id: "spots-fill",
@@ -243,6 +281,42 @@ export default function OccupationPage() {
         "line-width": ["case", ["get", "selected"], 2.5, 1],
       },
     });
+    // O-A: the file of the focused arrival: the proposed spot in orange, the cars to take out in amber.
+    if (fileFocus) {
+      const marked = spots.filter((s) => s.id === fileFocus.proposedId || (fileFocus.takeOut.has(s.code) && s.fileKey === fileFocus.fileKey));
+      if (marked.length)
+        list.push({
+          id: "file-marks",
+          type: "line",
+          data: fc(
+            marked.map((s) =>
+              feature({ type: "Polygon", coordinates: [s.geometry] }, { color: s.id === fileFocus.proposedId ? SELECTED : TO_TAKE_OUT, proposed: s.id === fileFocus.proposedId }),
+            ),
+          ),
+          paint: { "line-color": ["get", "color"], "line-width": ["case", ["get", "proposed"], 4, 3] },
+        });
+    }
+    // The cars, nose towards the aisle, in the colour of their spot.
+    const cars = spots.filter((s) => s.occupant && s.active);
+    if (cars.length)
+      list.push({
+        id: "cars-icons",
+        type: "symbol",
+        data: fc(
+          cars.map((s) =>
+            feature({ type: "Point", coordinates: ringCentroid(s.geometry) }, { icon: `car-${spotTone(s)}`, bearing: headingOf(s, s.fileKey ? fileByKey.get(s.fileKey) : undefined) }),
+          ),
+        ),
+        paint: { "icon-opacity": 0.95 },
+        layout: {
+          "icon-image": ["get", "icon"],
+          "icon-rotate": ["get", "bearing"],
+          "icon-rotation-alignment": "map",
+          "icon-allow-overlap": true,
+          "icon-ignore-placement": true,
+          "icon-size": ["interpolate", ["linear"], ["zoom"], 16, 0.12, 18, 0.35, 20, 1.1, 21, 2.1],
+        },
+      });
     if (data.plan?.zones?.length)
       list.push({
         id: "zones",
@@ -299,17 +373,29 @@ export default function OccupationPage() {
         },
       });
     return list;
-  }, [data, spots, selectedSpotId]);
-  const labels = useMemo<MapLabel[]>(
-    () =>
-      (data?.plan?.landmarks ?? []).map((l) => ({
-        id: `lm-${l.id}`,
-        lngLat: l.geometry.coordinates,
-        text: fr.parkingPlan.landmarkKinds[l.kind],
-        variant: "vertex" as const,
-      })),
-    [data],
-  );
+  }, [data, spots, selectedSpotId, files, fileByKey, fileFocus]);
+  const labels = useMemo<MapLabel[]>(() => {
+    const list: MapLabel[] = (data?.plan?.landmarks ?? []).map((l) => ({
+      id: `lm-${l.id}`,
+      lngLat: l.geometry.coordinates,
+      text: fr.parkingPlan.landmarkKinds[l.kind],
+      variant: "vertex" as const,
+    }));
+    // O-A: plate, name and return on every taken spot once close enough; the focused file reads at any zoom.
+    for (const s of spots) {
+      const o = s.occupant;
+      if (!o || !s.active) continue;
+      const inFocus = !!fileFocus && !!fileFocus.fileKey && s.fileKey === fileFocus.fileKey;
+      list.push({
+        id: `spot-${s.id}`,
+        lngLat: ringCentroid(s.geometry),
+        text: `${o.plate}\n${o.customerName}\n${t.returnOn(dateTimeShort(o.returnAt))}`,
+        variant: "spot",
+        minZoom: inFocus ? 0 : SPOT_LABEL_MIN_ZOOM,
+      });
+    }
+    return list;
+  }, [data, spots, fileFocus, t]);
   const initialBounds = useMemo(
     () =>
       boundsOf(
@@ -384,6 +470,18 @@ export default function OccupationPage() {
                 </span>
               ),
             )}
+            <span className="flex items-center gap-1.5 text-muted-foreground">
+              <span className="h-3 w-3 border-2" style={{ borderColor: SELECTED }} />
+              {t.legend.proposed}
+            </span>
+            <span className="flex items-center gap-1.5 text-muted-foreground">
+              <span className="h-3 w-3 border-2" style={{ borderColor: TO_TAKE_OUT, background: TONE_COLORS.occupied }} />
+              {t.legend.toTakeOut}
+            </span>
+            <span className="flex items-center gap-1.5 text-muted-foreground">
+              <span className="h-3 w-3 border border-dashed border-foreground/60 bg-white/40" />
+              {t.legend.manoeuvre}
+            </span>
             {choosing && (
               <span className="ml-auto flex items-center gap-2 text-lime-deep">
                 {t.choosing(choosing.plate)}
@@ -401,6 +499,7 @@ export default function OccupationPage() {
             <MapView
               layers={layers}
               labels={labels}
+              icons={CAR_ICONS}
               initialBounds={initialBounds}
               onMapClick={onMapClick}
               cursor={choosing ? "crosshair" : "pointer"}
@@ -504,6 +603,8 @@ export default function OccupationPage() {
                     key={a.id}
                     arrival={a}
                     busy={assign.isPending}
+                    focused={(focusArrivalId ?? choosing?.reservationId) === a.id}
+                    onFocus={setFocusArrivalId}
                     onPlace={(s) =>
                       assign.mutate({
                         reservationId: a.id,
@@ -529,11 +630,15 @@ export default function OccupationPage() {
 function ArrivalRow({
   arrival,
   busy,
+  focused,
+  onFocus,
   onPlace,
   onChoose,
 }: {
   arrival: ArrivalToPlace;
   busy: boolean;
+  focused: boolean;
+  onFocus: (id: string | null) => void;
   onPlace: (s: ArrivalToPlace["suggestions"][number]) => void;
   onChoose: () => void;
 }) {
@@ -541,8 +646,11 @@ function ArrivalRow({
   const best = arrival.suggestions[0];
   return (
     <li
-      className="flex flex-col gap-1.5 border-b border-border py-2"
+      className={cn("flex flex-col gap-1.5 border-b border-border py-2", focused && "-mx-2 border-l-4 border-l-[#ff6600] bg-lime/10 px-2")}
       data-testid={`arrival-${arrival.reference}`}
+      onMouseEnter={() => onFocus(arrival.id)}
+      onMouseLeave={() => onFocus(null)}
+      onFocusCapture={() => onFocus(arrival.id)}
     >
       <div className="flex items-center gap-2.5">
         <span className="font-mono text-lime-deep">

@@ -1160,6 +1160,10 @@ export const fr = {
       booked: "Réservée (à venir)",
       free: "Libre",
       inactive: "Désactivée",
+      // O-A (06/10/2026) marks on the plan.
+      proposed: "Proposée",
+      toTakeOut: "À sortir avant un retour",
+      manoeuvre: "Manœuvre",
     },
     stats: (occupied: number, active: number, leaving: number) =>
       `${occupied} / ${active} places occupées · ${leaving} départ${leaving > 1 ? "s" : ""} aujourd'hui`,

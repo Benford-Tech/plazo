@@ -1,5 +1,5 @@
 import prisma from '@/database';
-import { addDays } from '@/domain/time';
+import { addDays, localDate } from '@/domain/time';
 import { api, resetDatabase, setupOperator } from './utils/helpers';
 
 beforeEach(resetDatabase);
@@ -23,7 +23,7 @@ const spots = [1, 2].flatMap(row =>
     geometry: square(5.08 + index * 0.00004, 45.72 + row * 0.00005),
   })),
 );
-const today = new Date().toISOString().slice(0, 10);
+const today = localDate(new Date(), 'Europe/Paris');
 const booking = (plate: string, arrival: string, ret: string, overrides: Record<string, unknown> = {}) => ({
   channel: 'phone',
   arrivalAt: `${arrival}T06:30`,

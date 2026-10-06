@@ -1,5 +1,6 @@
 import { Container } from 'typedi';
 import prisma from '@/database';
+import { localDate } from '@/domain/time';
 import { closingEmail, confirmationEmail, departureDaySteps, reminderSms } from '@/domain/booking-messages';
 import { toPublicBooking, WITH_LISTING } from '@/domain/booking-view';
 import { landedSms } from '@/domain/return-messages';
@@ -153,7 +154,7 @@ describe('le fil de messages du voyageur (B)', () => {
       .send({ subscriptionId: 'sub-camille', platform: 'android' });
     // Arriving tomorrow at 06:30 Paris time.
     const tomorrow = new Date(Date.now() + 86400000);
-    const local = `${tomorrow.toISOString().slice(0, 10)}T06:30`;
+    const local = `${localDate(tomorrow, 'Europe/Paris')}T06:30`;
     await prisma.reservation.update({
       where: { id: reservation.id },
       data: { arrivalAt: new Date(`${local}:00+02:00`), returnAt: new Date(tomorrow.getTime() + 3 * 86400000) },

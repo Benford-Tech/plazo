@@ -60,7 +60,7 @@ Ne construire QUE ce qui règle la douleur n°1 du client.
    - Fiche réservation : client, téléphone, plaque, dates/heures, n° de vol retour, nb de passagers, statut.
    - **Décision A du 06/10/2026 (« un seul geste par étape », voir SPEC.md bloc 1)** : statut `back_at_parking` « De retour au
      parking » entre « Retour demandé » et « Rendu » ; placer la voiture = arrivée enregistrée ; fin de navette de retour =
-     « De retour au parking » ; « Rendu » décroche les clés et accepte une remarque ; alerte `no_show_suspected` ; push
+     « De retour au parking » ; « Rendu » décroche les clés et accepte une remarque ; alerte `no_show_suspected` (sur les arrivées des 24 dernières heures) ; push
      « Nouvelle réservation » (`Staff.notifyBookings`) ; `nextStatuses` servi par l'API, listes dans `domain/reservation.ts`.
      Libellés unifiés web et app : Attendu · Sur place · Parti en navette · Retour demandé · De retour au parking · Rendu ·
      Annulé · Non venu.
@@ -85,6 +85,12 @@ Ne construire QUE ce qui règle la douleur n°1 du client.
      puis distance ; `Suggestion.moves/blocking/blocked`, planning `stays[].blockedBy` + alerte `blocked`, tableau de bord
      `blocked_return` (retour du jour derrière une voiture partant plus tard) ; libellés « sans déplacement » /
      « N voitures à sortir » (web et app).
+     **Plan de l'Occupation web (06/10/2026, maquette validée)** : `SpotState.depth/fileKey` ; `admin/src/lib/plan/files.ts`
+     (files, cap des voitures vers l'allée, bande de manœuvre `MANOEUVRE_M` 3 m devant chaque file) ; `MapView` accepte les
+     couches `symbol` (`layout`), des icônes SVG (`icons`) et des étiquettes `spot` masquées sous `minZoom` ; voiture vue de
+     dessus dans chaque place occupée (couleur de l'état), plaque + nom + retour dès le zoom 19, file de l'arrivée survolée
+     avec la place proposée cerclée d'orange et les voitures à sortir en ambre, légende « Proposée · À sortir avant un
+     retour · Manœuvre ».
    - Retrouver un véhicule en quelques secondes (plaque, emplacement, emplacement des clés).
    - Si voiturier : suivi des clés confiées.
 

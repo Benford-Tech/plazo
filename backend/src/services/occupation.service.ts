@@ -74,6 +74,9 @@ export interface SpotState {
   active: boolean;
   geometry: unknown;
   stayClass: StayClass | null;
+  /** O-A (06/10/2026): rank from the aisle and the file the spot belongs to (null on a self-park plan). */
+  depth: number | null;
+  fileKey: string | null;
   /** The vehicle on it now (on site), else the next booking placed on it. */
   occupant: (Occupant & { onSite: boolean; leavesToday: boolean }) | null;
 }
@@ -108,6 +111,19 @@ export class OccupationService {
       // On site wins over a future booking; otherwise the earliest arrival.
       if (!current || (ON_SITE.includes(r.status) && !ON_SITE.includes(current.status))) bySpot.set(r.spotId, r);
     }
+    const files = buildFiles(spots);
+    const fileKeys = new Map<ParkingSpot[], string>();
+    const fileKeyOf = (s: ParkingSpot): string | null => {
+      if (s.depth === null) return null;
+      const file = files.get(s.id) as ParkingSpot[] | undefined;
+      if (!file) return null;
+      let key = fileKeys.get(file);
+      if (!key) {
+        key = `${s.zoneId}:${fileKeys.size + 1}`;
+        fileKeys.set(file, key);
+      }
+      return key;
+    };
     const states: SpotState[] = spots.map(s => {
       const o = bySpot.get(s.id) ?? null;
       return {
@@ -120,6 +136,8 @@ export class OccupationService {
         active: s.active,
         geometry: s.geometry,
         stayClass: s.stayClass ?? null,
+        depth: s.depth ?? null,
+        fileKey: fileKeyOf(s),
         occupant: o ? { ...o, onSite: ON_SITE.includes(o.status), leavesToday: o.returnAt >= start && o.returnAt < end } : null,
       };
     });
@@ -133,7 +151,6 @@ export class OccupationService {
     );
     const arrivals = [];
     const taken = new Set<string>();
-    const files = buildFiles(spots);
     for (const r of unplaced) {
       const suggestions = await this.suggest(parking.id, spots, files, r, landmarks, taken, plan, parking.timezone);
       // Each arrival gets its own first choice: the next one skips it.

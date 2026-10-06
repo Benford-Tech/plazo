@@ -14,16 +14,21 @@ export type FeatureCollection = { type: "FeatureCollection"; features: { type: "
 
 export interface MapLayer {
   id: string;
-  type: "fill" | "line" | "circle";
+  type: "fill" | "line" | "circle" | "symbol";
   data: FeatureCollection;
   paint: Record<string, unknown>;
+  /** Layout properties (symbol layers: the icon, its size and rotation). */
+  layout?: Record<string, unknown>;
 }
 
 export interface MapLabel {
   id: string;
   lngLat: LonLat;
+  /** Lines separated by "\n" (the "spot" variant shows them stacked). */
   text: string;
-  variant: "zone" | "length" | "vertex";
+  variant: "zone" | "length" | "vertex" | "spot";
+  /** Hidden below this zoom (the "spot" labels only read once the map is close enough). */
+  minZoom?: number;
 }
 
 export type DrawKind = "polygon" | "linestring" | "point";
@@ -38,6 +43,8 @@ export interface MapViewHandle {
 interface Props {
   layers: MapLayer[];
   labels?: MapLabel[];
+  /** SVG icons by name, for symbol layers (`icon-image`); drawn at 2× for sharpness. */
+  icons?: Record<string, string>;
   showPhoto?: boolean;
   /** Fitted once, when the map is created. */
   initialBounds?: [LonLat, LonLat] | null;
@@ -84,8 +91,9 @@ export const MapView = forwardRef<MapViewHandle, Props>(function MapView(props, 
   const readyRef = useRef(false);
   const editIdRef = useRef<string | null>(null);
   const lastEmittedRef = useRef<string>("");
-  const markersRef = useRef<Marker[]>([]);
+  const markersRef = useRef<{ marker: Marker; minZoom: number }[]>([]);
   const appliedLayersRef = useRef<Map<string, string>>(new Map());
+  const iconsRef = useRef<Set<string>>(new Set());
   const propsRef = useRef(props);
   propsRef.current = props;
 
@@ -180,12 +188,17 @@ export const MapView = forwardRef<MapViewHandle, Props>(function MapView(props, 
       });
 
       readyRef.current = true;
+      syncIcons();
       syncLayers();
       syncDraw();
       emitView();
     });
 
     map.on("moveend", emitView);
+    map.on("zoom", () => {
+      const zoom = map.getZoom();
+      for (const { marker, minZoom } of markersRef.current) marker.getElement().style.display = zoom >= minZoom ? "" : "none";
+    });
     map.on("click", e => {
       const draw = drawRef.current;
       if (draw && draw.getMode() !== "static" && draw.getMode() !== "select") return;
@@ -204,13 +217,37 @@ export const MapView = forwardRef<MapViewHandle, Props>(function MapView(props, 
       mapRef.current = null;
       applied.clear();
     };
+    // The sync helpers read the latest props through refs: the map is created once.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
+  /** Registers the SVG icons the symbol layers name; a symbol layer waits for its icon. */
+  function syncIcons() {
+    const map = mapRef.current;
+    if (!map || !readyRef.current) return;
+    for (const [id, svg] of Object.entries(propsRef.current.icons ?? {})) {
+      if (iconsRef.current.has(id)) continue;
+      iconsRef.current.add(id);
+      const img = new Image();
+      img.onload = () => {
+        if (!mapRef.current || mapRef.current !== map) return;
+        if (!map.hasImage(id)) map.addImage(id, img, { pixelRatio: 2 });
+        syncLayers();
+      };
+      img.src = `data:image/svg+xml;charset=utf-8,${encodeURIComponent(svg)}`;
+    }
+  }
 
   /** Adds, updates and removes the overlay layers, below Terra Draw's own layers. */
   function syncLayers() {
     const map = mapRef.current;
     if (!map || !readyRef.current) return;
-    const wanted = propsRef.current.layers;
+    const iconOf = (layer: MapLayer) => (layer.type === "symbol" ? (layer.layout?.["icon-image"] as string | undefined) : undefined);
+    // A symbol layer whose icon is not registered yet is left out until the image loads.
+    const wanted = propsRef.current.layers.filter(layer => {
+      const icon = iconOf(layer);
+      return !icon || typeof icon !== "string" || map.hasImage(icon);
+    });
     const applied = appliedLayersRef.current;
     const firstDrawLayer = map.getStyle().layers.find(l => l.id.startsWith("td-"))?.id;
     for (const [id] of applied) {
@@ -225,10 +262,10 @@ export const MapView = forwardRef<MapViewHandle, Props>(function MapView(props, 
       const source = map.getSource(sourceId) as GeoJSONSource | undefined;
       if (source) source.setData(layer.data as never);
       else map.addSource(sourceId, { type: "geojson", data: layer.data as never });
-      const paintKey = `${layer.type}:${JSON.stringify(layer.paint)}`;
+      const paintKey = `${layer.type}:${JSON.stringify(layer.paint)}:${JSON.stringify(layer.layout ?? null)}`;
       if (applied.get(layer.id) !== paintKey) {
         if (map.getLayer(sourceId)) map.removeLayer(sourceId);
-        map.addLayer({ id: sourceId, type: layer.type, source: sourceId, paint: layer.paint } as LayerSpecification, firstDrawLayer);
+        map.addLayer({ id: sourceId, type: layer.type, source: sourceId, paint: layer.paint, ...(layer.layout ? { layout: layer.layout } : {}) } as LayerSpecification, firstDrawLayer);
         applied.set(layer.id, paintKey);
       }
     }
@@ -292,14 +329,28 @@ export const MapView = forwardRef<MapViewHandle, Props>(function MapView(props, 
   useEffect(() => {
     const map = mapRef.current;
     if (!map) return;
-    markersRef.current.forEach(m => m.remove());
+    markersRef.current.forEach(m => m.marker.remove());
+    const zoom = map.getZoom();
     markersRef.current = (props.labels ?? []).map(label => {
       const el = document.createElement("div");
       el.className = `cap-label cap-label-${label.variant}`;
-      el.textContent = label.text;
-      return new Marker({ element: el, offset: label.variant === "vertex" ? [0, -16] : [0, 0] }).setLngLat(label.lngLat).addTo(map);
+      if (label.variant === "spot") {
+        for (const line of label.text.split("\n")) {
+          const span = document.createElement("span");
+          span.textContent = line;
+          el.appendChild(span);
+        }
+      } else el.textContent = label.text;
+      const minZoom = label.minZoom ?? 0;
+      if (zoom < minZoom) el.style.display = "none";
+      return { marker: new Marker({ element: el, offset: label.variant === "vertex" ? [0, -16] : [0, 0] }).setLngLat(label.lngLat).addTo(map), minZoom };
     });
   }, [props.labels]);
+
+  useEffect(() => {
+    syncIcons();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [props.icons]);
 
   useEffect(() => {
     const canvas = mapRef.current?.getCanvas();

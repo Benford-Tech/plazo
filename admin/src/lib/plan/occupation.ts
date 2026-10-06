@@ -34,6 +34,9 @@ export interface SpotState {
   active: boolean;
   geometry: [number, number][];
   stayClass: StayClass | null;
+  /** O-A (06/10/2026): rank from the aisle and the file (null on a self-park plan; missing from an older API). */
+  depth?: number | null;
+  fileKey?: string | null;
   occupant: Occupant | null;
 }
 

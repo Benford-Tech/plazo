@@ -1,4 +1,5 @@
 import prisma from '@/database';
+import { localDate } from '@/domain/time';
 import { addStaff, api, resetDatabase, setupOperator } from './utils/helpers';
 
 /** The pro space's home (05/10/2026): figures, services, alerts, vehicles. */
@@ -21,7 +22,7 @@ const spots = Array.from({ length: 3 }, (_, i) => ({
   index: i + 1,
   geometry: square(5.08 + i * 0.00004, 45.72),
 }));
-const today = () => new Date().toISOString().slice(0, 10);
+const today = () => localDate(new Date(), 'Europe/Paris');
 const booking = (plate: string, name: string, overrides: Record<string, unknown> = {}) => ({
   channel: 'phone',
   arrivalAt: `${today()}T06:30`,
