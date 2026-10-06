@@ -3,6 +3,12 @@ import { ReservationStatus } from '@/database';
 
 /** Statuses that no longer hold a spot. */
 export const RELEASED_STATUSES: ReservationStatus[] = ['cancelled', 'no_show'];
+/** The vehicle is on the parking: from the check-in to the handover (06/10/2026: `back_at_parking` included). */
+export const ON_SITE_STATUSES: ReservationStatus[] = ['arrived', 'shuttled_out', 'return_requested', 'back_at_parking'];
+/** Statuses that hold (or will hold) a spot: booked and on site. */
+export const HOLDING_STATUSES: ReservationStatus[] = ['upcoming', ...ON_SITE_STATUSES];
+/** The traveller is away or on their way back: the return shuttle still applies. */
+export const AWAY_STATUSES: ReservationStatus[] = ['arrived', 'shuttled_out', 'return_requested'];
 
 /** Allowed status changes, following the customer's journey. */
 // A booking waiting for its online payment is not the staff's to move: only the payment (or its
@@ -10,10 +16,11 @@ export const RELEASED_STATUSES: ReservationStatus[] = ['cancelled', 'no_show'];
 export const STATUS_TRANSITIONS: Record<ReservationStatus, ReservationStatus[]> = {
   pending_payment: [],
   upcoming: ['arrived', 'cancelled', 'no_show'],
-  arrived: ['shuttled_out', 'return_requested', 'returned', 'upcoming'],
-  shuttled_out: ['return_requested', 'returned', 'arrived'],
-  return_requested: ['returned', 'shuttled_out'],
-  returned: ['return_requested'],
+  arrived: ['shuttled_out', 'return_requested', 'back_at_parking', 'returned', 'upcoming'],
+  shuttled_out: ['return_requested', 'back_at_parking', 'returned', 'arrived'],
+  return_requested: ['back_at_parking', 'returned', 'shuttled_out'],
+  back_at_parking: ['returned', 'return_requested'],
+  returned: ['back_at_parking'],
   cancelled: ['upcoming'],
   no_show: ['upcoming'],
 };

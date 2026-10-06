@@ -11,6 +11,8 @@ export interface NotificationPreferences {
   /** The platform's messages (E-A). */
   platform: boolean;
   /** Phones of the person registered for pushes. */
+  /** "Nouvelle réservation" from the site or an import (06/10/2026). */
+  bookings: boolean;
   devices: number;
 }
 
@@ -37,15 +39,22 @@ export class StaffDeviceService {
   public async preferences(actor: AuthenticatedStaff): Promise<NotificationPreferences> {
     const staff = await prisma.staff.findUniqueOrThrow({
       where: { id: actor.id },
-      select: { notifyArrivals: true, notifyReturns: true, notifyShuttles: true, notifyPlatform: true },
+      select: { notifyArrivals: true, notifyReturns: true, notifyShuttles: true, notifyPlatform: true, notifyBookings: true },
     });
     const devices = await prisma.staffDevice.count({ where: { staffId: actor.id } });
-    return { arrivals: staff.notifyArrivals, returns: staff.notifyReturns, shuttles: staff.notifyShuttles, platform: staff.notifyPlatform, devices };
+    return {
+      arrivals: staff.notifyArrivals,
+      returns: staff.notifyReturns,
+      shuttles: staff.notifyShuttles,
+      platform: staff.notifyPlatform,
+      bookings: staff.notifyBookings,
+      devices,
+    };
   }
 
   public async updatePreferences(
     actor: AuthenticatedStaff,
-    patch: { arrivals?: boolean; returns?: boolean; shuttles?: boolean; platform?: boolean },
+    patch: { arrivals?: boolean; returns?: boolean; shuttles?: boolean; platform?: boolean; bookings?: boolean },
   ): Promise<NotificationPreferences> {
     await prisma.staff.update({
       where: { id: actor.id },
@@ -54,6 +63,7 @@ export class StaffDeviceService {
         ...(patch.returns !== undefined ? { notifyReturns: patch.returns } : {}),
         ...(patch.shuttles !== undefined ? { notifyShuttles: patch.shuttles } : {}),
         ...(patch.platform !== undefined ? { notifyPlatform: patch.platform } : {}),
+        ...(patch.bookings !== undefined ? { notifyBookings: patch.bookings } : {}),
       },
     });
     return this.preferences(actor);

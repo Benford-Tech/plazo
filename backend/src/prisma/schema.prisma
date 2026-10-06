@@ -94,6 +94,8 @@ model Staff {
   vehicleSetAt    DateTime?
   // Push notifications of the shuttles' departures and returns (N-A, 05/10/2026).
   notifyShuttles  Boolean    @default(true)
+  /** Push "Nouvelle réservation" for bookings made on the site or imported (06/10/2026). */
+  notifyBookings  Boolean    @default(true)
   // Messages from the platform (E-A, 05/10/2026): the super admin's broadcasts to the staff.
   notifyPlatform  Boolean    @default(true)
   createdAt       DateTime   @default(now())
@@ -315,6 +317,7 @@ enum ReservationStatus {
   arrived // vehicle dropped at the parking
   shuttled_out // customer driven to the terminal
   return_requested // customer back, waiting for pick-up
+  back_at_parking // customer brought back to the parking (06/10/2026), vehicle not handed back yet
   returned // vehicle handed back
   cancelled
   no_show

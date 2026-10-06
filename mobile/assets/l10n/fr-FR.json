@@ -153,10 +153,11 @@
       "upcoming": "Remettre en attente",
       "arrived": "Enregistrer l'arrivée",
       "shuttled_out": "Parti en navette",
-      "return_requested": "Client de retour",
+      "return_requested": "Client au point de rendez-vous",
       "returned": "Véhicule rendu",
       "cancelled": "Annuler la réservation",
-      "no_show": "Marquer non venu"
+      "no_show": "Marquer non venu",
+      "back_at_parking": "Client de retour au parking"
     },
     "channel": {
       "website": "Site du parking",
@@ -273,16 +274,19 @@
     "push_unsupported": "Les notifications push ne sont disponibles que dans l'application installée (iPhone ou Android).",
     "devices": "Téléphones enregistrés : {}",
     "status": {
-      "upcoming": "À venir",
+      "pending_payment": "Paiement en attente",
+      "upcoming": "Attendu",
       "arrived": "Sur place",
-      "shuttled_out": "Navette faite",
-      "return_requested": "Attend la navette",
+      "shuttled_out": "Parti en navette",
+      "return_requested": "Retour demandé",
+      "back_at_parking": "De retour au parking",
       "returned": "Rendu",
-      "cancelled": "Annulée",
-      "no_show": "Absent",
-      "pending_payment": "Paiement en attente"
+      "cancelled": "Annulé",
+      "no_show": "Non venu"
     },
-    "shuttle": "Navette"
+    "shuttle": "Navette",
+    "notify_bookings": "Nouvelles réservations",
+    "notify_bookings_help": "Une réservation arrive du site Plazo ou d'un import, sans passer par vous."
   },
   "errors": {
     "generic": "Une erreur est survenue. Réessayez.",
@@ -711,7 +715,8 @@
     "return_requested": "En cours",
     "returned": "Terminée",
     "cancelled": "Annulée",
-    "no_show": "Non présentée"
+    "no_show": "Non présentée",
+    "back_at_parking": "En cours"
   },
   "manage": {
     "drop_off": "Dépôt",
@@ -940,7 +945,8 @@
       "overbooked": "Surréservation",
       "departure_cancelled": "Vol aller annulé",
       "departure_delayed": "Vol aller retardé",
-      "wave_overflow": "Vague au-delà d'une navette"
+      "wave_overflow": "Vague au-delà d'une navette",
+      "no_show_suspected": "Attendu, toujours pas là"
     },
     "vehicles_title": "Véhicules sur le parking",
     "vehicles_empty": "Aucun véhicule sur le parking.",

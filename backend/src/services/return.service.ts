@@ -1,4 +1,5 @@
 import { Container, Service } from 'typedi';
+import { ON_SITE_STATUSES } from '@/domain/reservation';
 import { CarLocation, carView, CLEARED_CAR_LOCATION } from '@/domain/car-location';
 import prisma from '@/database';
 import { arrivalWindows, LatLng } from '@/domain/arrival';
@@ -129,7 +130,7 @@ export class ReturnService {
     const location = (await this.locations.locations([booking.parking.id])).get(booking.parking.id) ?? null;
     const now = new Date();
     const window = arrivalWindows(fresh).return;
-    const onSite = ['arrived', 'shuttled_out', 'return_requested'].includes(fresh.status);
+    const onSite = ON_SITE_STATUSES.includes(fresh.status);
     const signal = await prisma.arrivalSignal.findUnique({ where: { reservationId_kind: { reservationId: booking.id, kind: 'return' } } });
     const listing = booking.parking.listing;
     return {

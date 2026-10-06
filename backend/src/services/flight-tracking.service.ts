@@ -1,4 +1,5 @@
 import { Container, Service } from 'typedi';
+import { AWAY_STATUSES } from '@/domain/reservation';
 import { flightTrackingSettings, FlightProviderName, PRODUCT_NAME } from '@/config';
 import prisma, { FlightLandedSource, Prisma, Reservation } from '@/database';
 import { manageToken } from '@/domain/booking';
@@ -50,7 +51,7 @@ const LOOKUP_TIMEOUT_MS = 6000;
 /** At most this many bookings asked to the provider per refresh (the free plans are small). */
 const MAX_LOOKUPS_PER_RUN = 50;
 
-const PICKUP_STATUSES = ['arrived', 'shuttled_out', 'return_requested'] as const;
+const PICKUP_STATUSES = AWAY_STATUSES;
 
 /** AeroDataBox "Flight status by flight number and date" (RapidAPI, or API.Market with another base URL). */
 export class AeroDataBoxProvider implements FlightTrackingProvider {

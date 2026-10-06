@@ -42,7 +42,7 @@ void main() {
     );
     expect(find.text('Prévenu · « dans 20 min »'), findsOneWidget);
     expect(find.text('● AU POINT DE RENDEZ-VOUS'), findsOneWidget);
-    expect(find.text('À venir'), findsOneWidget);
+    expect(find.text('Attendu'), findsOneWidget);
     expect(find.byType(IgnMap), findsNothing);
   });
 

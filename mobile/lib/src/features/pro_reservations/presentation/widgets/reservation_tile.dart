@@ -16,7 +16,7 @@ String dayOf(DateTime instant) => DateFormat('EEE d MMM', 'fr_FR').format(instan
 StatusBadge proStatusBadge(String status, {Key? key}) {
   final tone = switch (status) {
     'upcoming' => BadgeTone.ok,
-    'arrived' || 'shuttled_out' || 'return_requested' => BadgeTone.peach,
+    'arrived' || 'shuttled_out' || 'return_requested' || 'back_at_parking' => BadgeTone.peach,
     'cancelled' || 'no_show' => BadgeTone.danger,
     _ => BadgeTone.muted,
   };

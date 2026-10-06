@@ -14,16 +14,7 @@ import { can } from "@/lib/roles";
 import type { Reservation, ReservationStatus } from "@/lib/types";
 import { cn } from "@/lib/utils";
 
-// Mirrors backend/src/domain/reservation.ts. Forward steps first, then the corrections.
-const NEXT_STEPS: Record<ReservationStatus, ReservationStatus[]> = {
-  upcoming: ["arrived", "no_show", "cancelled"],
-  arrived: ["shuttled_out", "return_requested", "returned", "upcoming"],
-  shuttled_out: ["return_requested", "returned", "arrived"],
-  return_requested: ["returned", "shuttled_out"],
-  returned: ["return_requested"],
-  cancelled: ["upcoming"],
-  no_show: ["upcoming"],
-};
+// The next statuses come from the API (GET /internal/reservations/:id, 06/10/2026): one table, on the server.
 const MANAGE_ONLY: ReservationStatus[] = ["cancelled", "no_show"];
 const CLOSED: ReservationStatus[] = ["returned", "cancelled", "no_show"];
 
@@ -48,10 +39,8 @@ function StatusActions({ reservation }: { reservation: Reservation }) {
     },
     onError: (err: Error) => toast.error(describeError(err)),
   });
-  // A booking refunded online stays closed: the API refuses every status change (booking_refunded).
-  const steps = (reservation.paymentStatus === "refunded" ? [] : NEXT_STEPS[reservation.status]).filter(
-    s => can(user?.role, "reservations:status") && (!MANAGE_ONLY.includes(s) && !MANAGE_ONLY.includes(reservation.status) ? true : can(user?.role, "reservations:manage")),
-  );
+  // Served by the API, already filtered by role (a refunded booking has none).
+  const steps = reservation.nextStatuses ?? [];
   if (!steps.length) return null;
   const [primary, ...others] = steps;
   return (

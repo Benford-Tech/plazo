@@ -325,6 +325,7 @@ export const fr = {
         departure_cancelled: "Vol aller annulé",
         departure_delayed: "Vol aller retardé",
         wave_overflow: "Vague au-delà d'une navette",
+        no_show_suspected: "Attendu, toujours pas là",
       } satisfies Record<AlertKind, string>,
       waveDetail: (direction: ShuttleDirection, time: string, passengers: number) =>
         `${direction === "dropoff" ? "Vers le terminal" : "Depuis l'aéroport"} ${time} · ${passengers} passagers`,
@@ -527,8 +528,9 @@ export const fr = {
   status: {
     upcoming: "Attendu",
     arrived: "Sur place",
-    shuttled_out: "En navette",
+    shuttled_out: "Parti en navette",
     return_requested: "Retour demandé",
+    back_at_parking: "De retour au parking",
     returned: "Rendu",
     cancelled: "Annulé",
     no_show: "Non venu",
@@ -537,7 +539,8 @@ export const fr = {
     upcoming: "Remettre en attente",
     arrived: "Enregistrer l'arrivée",
     shuttled_out: "Parti en navette",
-    return_requested: "Client de retour",
+    return_requested: "Client au point de rendez-vous",
+    back_at_parking: "Client de retour au parking",
     returned: "Véhicule rendu",
     cancelled: "Annuler la réservation",
     no_show: "Marquer non venu",

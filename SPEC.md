@@ -48,7 +48,16 @@ Fonctionnel :
 - Vue planning : arrivées et retours du jour, par heure.
 - Tableau de bord (accueil de l'espace pro, 05/10/2026) : chiffres du jour (sur le parking, arrivées, retours, navettes, à traiter), état des services (suivi de vols, SMS, notifications, paiements, import), liste des situations à traiter classées (sur place sans place, vol retardé ou annulé, voyageur au point de rendez-vous, clés non accrochées, SMS en attente, surréservation), véhicules sur le parking avec place et clés, navettes en direct sur la carte.
 - Contrôle de capacité : blocage ou alerte quand les réservations dépassent la capacité réelle sur une date.
-- Statuts : à venir → arrivé (véhicule déposé) → parti en navette → retour demandé → véhicule rendu / annulé / no-show.
+- Statuts : attendu → sur place (véhicule déposé) → parti en navette → retour demandé → **de retour au parking** (06/10/2026) → véhicule rendu / annulé / non venu.
+- **Décision A « un seul geste par étape » (06/10/2026)** : placer la voiture d'un client attendu le jour même (jusqu'à 6 h avant
+  l'heure prévue) l'enregistre « Sur place » ; la fin d'une navette de dépose passe ses passagers « Parti en navette » et la fin
+  d'une navette de retour les passe « De retour au parking » ; « Véhicule rendu » décroche les clés (`keyHook` effacé) et peut
+  porter une remarque (`note`, datée et signée dans les notes : dégât, litige) ; un client attendu depuis 3 h sans voiture placée
+  apparaît « Attendu, toujours pas là » dans À traiter (`no_show_suspected`), jamais marqué absent tout seul ; l'équipe reçoit un
+  push « Nouvelle réservation · Plazo / Allopark… » pour toute réservation du site ou d'un import (réglage `Staff.notifyBookings`,
+  l'auteur d'une saisie n'est pas prévenu) ; la table des transitions vit sur le serveur seulement et `GET /internal/reservations/:id`
+  renvoie `nextStatuses` déjà filtré par rôle (web et app l'affichent tel quel). Listes de statuts centralisées dans
+  `domain/reservation.ts` (`ON_SITE_STATUSES`, `HOLDING_STATUSES`, `AWAY_STATUSES`).
 - Annulation et modification (règles configurables).
 
 Règles métier :

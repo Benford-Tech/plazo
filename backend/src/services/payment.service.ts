@@ -25,6 +25,7 @@ import { logger } from '@/utils/logger';
 import { AuditService } from './audit.service';
 import { CapacityService } from './capacity.service';
 import { NotificationService } from './notification.service';
+import { PushService } from './push.service';
 import { SmsService } from './sms.service';
 import { StripeService } from './stripe.service';
 
@@ -108,6 +109,7 @@ export class PaymentService {
   public audit = Container.get(AuditService);
   public capacity = Container.get(CapacityService);
   public notifications = Container.get(NotificationService);
+  public push = Container.get(PushService);
   public sms = Container.get(SmsService);
   public stripe = Container.get(StripeService);
   /** Read from the environment once; tests override it. */
@@ -517,6 +519,8 @@ export class PaymentService {
     const token = manageToken(record.id, SECRET_KEY, record.manageTokenVersion);
     const booking = toPublicBooking(record);
     await this.notifications.bookingConfirmed(booking, token);
+    // The team hears of it (06/10/2026): nobody typed this booking.
+    await this.push.notifyNewBooking(record, record.parking.timezone);
     // The SMS goes through the operator's own channel (their phone, Brevo, or none).
     await this.sms.sendTravellerSms(record.operatorId, {
       reservationId: record.id,

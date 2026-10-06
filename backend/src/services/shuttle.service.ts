@@ -761,19 +761,20 @@ export class ShuttleService {
         entityId: trip.id,
         details: { reason: 'completed', direction: trip.direction },
       });
-      if (trip.direction === 'dropoff') {
-        const ids = trip.passengers.map(p => p.reservationId);
-        const moved = await prisma.reservation.findMany({ where: { id: { in: ids }, status: 'arrived' }, select: { id: true } });
-        if (moved.length) {
-          await prisma.reservation.updateMany({ where: { id: { in: moved.map(r => r.id) }, status: 'arrived' }, data: { status: 'shuttled_out' } });
-          for (const r of moved) {
-            await this.audit.record(actor, {
-              action: 'reservation.status_changed',
-              entityType: 'reservation',
-              entityId: r.id,
-              details: { from: 'arrived', to: 'shuttled_out', by: 'shuttle_dropoff', tripId: trip.id },
-            });
-          }
+      // A drop-off leaves its passengers "Parti en navette"; a pick-up brings them "De retour au parking" (A, 06/10/2026).
+      const ids = trip.passengers.map(p => p.reservationId);
+      const from: ReservationStatus[] = trip.direction === 'dropoff' ? ['arrived'] : PICKUP_STATUSES;
+      const to: ReservationStatus = trip.direction === 'dropoff' ? 'shuttled_out' : 'back_at_parking';
+      const moved = await prisma.reservation.findMany({ where: { id: { in: ids }, status: { in: from } }, select: { id: true, status: true } });
+      if (moved.length) {
+        await prisma.reservation.updateMany({ where: { id: { in: moved.map(r => r.id) }, status: { in: from } }, data: { status: to } });
+        for (const r of moved) {
+          await this.audit.record(actor, {
+            action: 'reservation.status_changed',
+            entityType: 'reservation',
+            entityId: r.id,
+            details: { from: r.status, to, by: trip.direction === 'dropoff' ? 'shuttle_dropoff' : 'shuttle_pickup', tripId: trip.id },
+          });
         }
       }
     }

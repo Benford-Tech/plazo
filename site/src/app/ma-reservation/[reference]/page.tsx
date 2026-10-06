@@ -116,7 +116,7 @@ export default async function ManageBookingPage({ params, searchParams }: PagePr
     ` ${fr.manage.contactParkingDesk}`
   );
   // The vehicle is at the parking: the live return block (the landing, the shuttle, the car's spot).
-  const onSite = b.status === "arrived" || b.status === "shuttled_out" || b.status === "return_requested";
+  const onSite = b.status === "arrived" || b.status === "shuttled_out" || b.status === "return_requested" || b.status === "back_at_parking";
   let returnState: TravellerReturn | null = null;
   if (onSite) {
     try {

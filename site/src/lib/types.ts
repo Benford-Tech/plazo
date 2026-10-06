@@ -2,7 +2,7 @@
 
 export type Service = "shuttle" | "valet" | "covered" | "ev_charging" | "open_24h" | "fenced" | "cctv";
 export type CancellationPolicy = "free_until_arrival" | "free_24h" | "free_48h" | "non_refundable";
-export type BookingStatus = "pending_payment" | "upcoming" | "arrived" | "shuttled_out" | "return_requested" | "returned" | "cancelled" | "no_show";
+export type BookingStatus = "pending_payment" | "upcoming" | "arrived" | "shuttled_out" | "return_requested" | "back_at_parking" | "returned" | "cancelled" | "no_show";
 
 /** How travellers pay on the site: by card online (Stripe), or at the parking. */
 export type PaymentsMode = "online" | "on_site";

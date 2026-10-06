@@ -43,6 +43,9 @@ abstract class ReservationModel with _$ReservationModel {
     String? paymentStatus,
     DateTime? createdAt,
 
+    /// The statuses this staff member may set next, served by the API (06/10/2026).
+    @Default([]) List<String> nextStatuses,
+
     /// The sheet route carries the spot's code (bloc 2).
     ReservationSpotModel? spot,
   }) = _ReservationModel;

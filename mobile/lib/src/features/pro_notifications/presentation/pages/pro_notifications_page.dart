@@ -65,6 +65,14 @@ class ProNotificationsPage extends StatelessWidget implements AutoRouteWrapper {
                       ),
                       const Divider(height: 1, color: AppColors.line),
                       SwitchListTile(
+                        key: const Key('notify-bookings'),
+                        value: prefs.bookings,
+                        title: Text('pro.notify_bookings'.tr(), style: AppText.strong()),
+                        subtitle: Text('pro.notify_bookings_help'.tr(), style: AppText.muted()),
+                        onChanged: (v) => bloc.add(ProNotificationsToggled(bookings: v)),
+                      ),
+                      const Divider(height: 1, color: AppColors.line),
+                      SwitchListTile(
                         key: const Key('notify-platform'),
                         value: prefs.platform,
                         title: Text('pro.notify_platform'.tr(), style: AppText.strong()),

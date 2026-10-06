@@ -137,6 +137,11 @@ export class NotificationPreferencesDto {
   @IsBoolean({ message: 'invalid' })
   public shuttles?: boolean;
 
+  /** New bookings from the site or an import (06/10/2026). */
+  @IsOptional()
+  @IsBoolean({ message: 'invalid' })
+  public bookings?: boolean;
+
   /** The platform's messages (E-A). */
   @IsOptional()
   @IsBoolean({ message: 'invalid' })

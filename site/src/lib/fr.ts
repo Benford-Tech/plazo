@@ -470,6 +470,7 @@ const frBase = {
     arrived: "En cours",
     shuttled_out: "En cours",
     return_requested: "En cours",
+    back_at_parking: "En cours",
     returned: "Terminée",
     cancelled: "Annulée",
     no_show: "Non présentée",

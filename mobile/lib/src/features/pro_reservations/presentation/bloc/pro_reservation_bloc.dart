@@ -45,13 +45,15 @@ abstract class ProReservationState with _$ProReservationState {
 }
 
 /// Allowed status changes (backend/src/domain/reservation.ts), in the order the buttons show.
+/// Since 06/10/2026 the API serves them (`ReservationModel.nextStatuses`); this table is the fallback.
 const Map<String, List<String>> statusTransitions = {
   'pending_payment': [],
   'upcoming': ['arrived', 'cancelled', 'no_show'],
-  'arrived': ['shuttled_out', 'return_requested', 'returned', 'upcoming'],
-  'shuttled_out': ['return_requested', 'returned', 'arrived'],
-  'return_requested': ['returned', 'shuttled_out'],
-  'returned': ['return_requested'],
+  'arrived': ['shuttled_out', 'return_requested', 'back_at_parking', 'returned', 'upcoming'],
+  'shuttled_out': ['return_requested', 'back_at_parking', 'returned', 'arrived'],
+  'return_requested': ['back_at_parking', 'returned', 'shuttled_out'],
+  'back_at_parking': ['returned', 'return_requested'],
+  'returned': ['back_at_parking'],
   'cancelled': ['upcoming'],
   'no_show': ['upcoming'],
 };

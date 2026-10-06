@@ -2,9 +2,9 @@ import httpStatus from 'http-status';
 import { Container, Service } from 'typedi';
 import prisma, { Parking, Prisma, Reservation, ReservationStatus } from '@/database';
 import { can } from '@/domain/roles';
-import { canTransition, formatFlight, formatPlate, newReference, plateKey, RELEASED_STATUSES } from '@/domain/reservation';
+import { canTransition, formatFlight, formatPlate, newReference, plateKey, RELEASED_STATUSES, STATUS_TRANSITIONS } from '@/domain/reservation';
 import { parseConfirmationEmail } from '@/domain/importers';
-import { addDays, DATE_RE, dayBounds, exceedsCalendarDays, localDate, parseInstant } from '@/domain/time';
+import { addDays, DATE_RE, dayBounds, exceedsCalendarDays, localDate, localDateTime, parseInstant } from '@/domain/time';
 import { ChangeStatusDto, CreateReservationDto, UpdateReservationDto } from '@/dtos/reservation.dto';
 import { AuthenticatedStaff } from '@/interfaces/auth.interface';
 import { ValidationException } from '@/middlewares/validation.middleware';
@@ -14,6 +14,7 @@ import { toPublicBooking, WITH_LISTING } from '@/domain/booking-view';
 import { AuditService } from './audit.service';
 import { CapacityService, NightLoad } from './capacity.service';
 import { NotificationService } from './notification.service';
+import { PushService } from './push.service';
 import { ParkingService } from './parking.service';
 import { PaymentService } from './payment.service';
 import { SmsService } from './sms.service';
@@ -44,6 +45,7 @@ export class ReservationService {
   public parkings = Container.get(ParkingService);
   public payments = Container.get(PaymentService);
   public notifications = Container.get(NotificationService);
+  public push = Container.get(PushService);
 
   private require(actor: AuthenticatedStaff, permission: Parameters<typeof can>[1]) {
     if (!can(actor.role, permission)) throw forbidden();
@@ -109,48 +111,54 @@ export class ReservationService {
 
     const externalReference = data.externalReference?.trim().toUpperCase() || null;
 
-    return prisma.$transaction(async tx => {
-      await this.capacity.lock(tx, parking.id);
-      if (externalReference) await this.refuseDuplicate(tx, actor, externalReference);
-      const full = await this.checkCapacity(tx, actor, parking, stay, data.force);
-      const reference = await this.newUniqueReference(tx);
+    return prisma
+      .$transaction(async tx => {
+        await this.capacity.lock(tx, parking.id);
+        if (externalReference) await this.refuseDuplicate(tx, actor, externalReference);
+        const full = await this.checkCapacity(tx, actor, parking, stay, data.force);
+        const reference = await this.newUniqueReference(tx);
 
-      const reservation = await tx.reservation.create({
-        data: {
-          reference,
-          operatorId: actor.operatorId,
-          parkingId: parking.id,
-          channel: data.channel,
-          channelDetail: data.channelDetail?.trim() || null,
-          ...stay,
-          passengers: data.passengers,
-          customerName: data.customerName.trim(),
-          customerPhone: data.customerPhone.trim(),
-          customerEmail: data.customerEmail?.trim().toLowerCase() || null,
-          plate: formatPlate(data.plate),
-          plateKey: plateKey(data.plate),
-          returnFlight,
-          departureFlight,
-          stopId,
-          notes: data.notes?.trim() || null,
-          externalReference,
-          priceCents: data.priceCents ?? null,
-          overbooked: full.length > 0,
-          createdById: actor.id,
-        },
+        const reservation = await tx.reservation.create({
+          data: {
+            reference,
+            operatorId: actor.operatorId,
+            parkingId: parking.id,
+            channel: data.channel,
+            channelDetail: data.channelDetail?.trim() || null,
+            ...stay,
+            passengers: data.passengers,
+            customerName: data.customerName.trim(),
+            customerPhone: data.customerPhone.trim(),
+            customerEmail: data.customerEmail?.trim().toLowerCase() || null,
+            plate: formatPlate(data.plate),
+            plateKey: plateKey(data.plate),
+            returnFlight,
+            departureFlight,
+            stopId,
+            notes: data.notes?.trim() || null,
+            externalReference,
+            priceCents: data.priceCents ?? null,
+            overbooked: full.length > 0,
+            createdById: actor.id,
+          },
+        });
+        await this.audit.record(
+          actor,
+          {
+            action: full.length ? 'reservation.created_overbooked' : 'reservation.created',
+            entityType: 'reservation',
+            entityId: reservation.id,
+            details: full.length ? { fullNights: full.map(n => n.date) } : {},
+          },
+          tx,
+        );
+        return reservation;
+      })
+      .then(async reservation => {
+        // Colleagues hear of it (06/10/2026); the creator is left out.
+        await this.push.notifyNewBooking({ ...reservation, createdById: actor.id }, parking.timezone);
+        return reservation;
       });
-      await this.audit.record(
-        actor,
-        {
-          action: full.length ? 'reservation.created_overbooked' : 'reservation.created',
-          entityType: 'reservation',
-          entityId: reservation.id,
-          details: full.length ? { fullNights: full.map(n => n.date) } : {},
-        },
-        tx,
-      );
-      return reservation;
-    });
   }
 
   /** A booking already imported from its channel is never created twice. */
@@ -285,7 +293,7 @@ export class ReservationService {
             throw new HttpException(httpStatus.BAD_REQUEST, `Cannot go from ${current.status} to cancelled`, 'invalid_transition');
           }
         },
-        (tx, refund) => this.applyStatus(actor, before, 'cancelled', tx, refund ?? undefined),
+        (tx, refund) => this.applyStatus(actor, before, 'cancelled', tx, refund ?? undefined, data.note),
       );
       const record = await prisma.reservation.findUnique({ where: { id: before.id }, include: WITH_LISTING });
       if (record?.parking.listing) await this.notifications.bookingCancelled(toPublicBooking(record));
@@ -297,10 +305,10 @@ export class ReservationService {
       return prisma.$transaction(async tx => {
         await this.capacity.lock(tx, parking.id);
         await this.checkCapacity(tx, actor, parking, before, false, id);
-        return this.applyStatus(actor, before, data.status, tx);
+        return this.applyStatus(actor, before, data.status, tx, undefined, data.note);
       });
     }
-    return this.applyStatus(actor, before, data.status, prisma);
+    return this.applyStatus(actor, before, data.status, prisma, undefined, data.note);
   }
 
   private async applyStatus(
@@ -309,8 +317,13 @@ export class ReservationService {
     status: ReservationStatus,
     client: Client,
     refund?: { paymentStatus: 'refunded'; refundedAt: Date; stripeRefundId: string; payoutStatus: 'cancelled' | 'reversed' },
+    note?: string,
   ) {
     const now = new Date();
+    // A remark made with the change (06/10/2026: the handover checklist's "dégât, litige…") joins the notes, dated and signed.
+    const remark = note?.trim();
+    const stamp = `${localDateTime(now, 'Europe/Paris').slice(0, 16).replace('T', ' ')} · ${actor.name.split(' ')[0]}`;
+    const notes = remark ? [before.notes?.trim(), `[${stamp}] ${remark}`].filter(Boolean).join('\n') : undefined;
     const after = await client.reservation.update({
       where: { id: before.id },
       data: {
@@ -318,6 +331,9 @@ export class ReservationService {
         arrivedAt: status === 'arrived' && !before.arrivedAt ? now : status === 'upcoming' ? null : undefined,
         returnedAt: status === 'returned' ? now : before.status === 'returned' ? null : undefined,
         cancelledAt: status === 'cancelled' ? now : before.status === 'cancelled' ? null : undefined,
+        // Handed back: the keys left the hook with the car.
+        keyHook: status === 'returned' ? null : undefined,
+        notes,
         ...refund,
       },
     });
@@ -327,7 +343,7 @@ export class ReservationService {
         action: 'reservation.status_changed',
         entityType: 'reservation',
         entityId: before.id,
-        details: { from: before.status, to: status, ...(refund ? { refunded: true } : {}) },
+        details: { from: before.status, to: status, ...(refund ? { refunded: true } : {}), ...(remark ? { note: remark } : {}) },
       },
       client,
     );
@@ -359,7 +375,19 @@ export class ReservationService {
       include: { spot: { select: { code: true } }, stop: { select: { id: true, name: true, kind: true } } },
     });
     if (!reservation) throw notFound();
-    return reservation;
+    return { ...reservation, nextStatuses: this.nextStatuses(actor, reservation) };
+  }
+
+  /**
+   * The statuses this staff member may set next, in the journey's order (06/10/2026: served by the API
+   * so the web and the app no longer copy the table). A refunded booking is closed for good.
+   */
+  public nextStatuses(actor: AuthenticatedStaff, booking: { status: ReservationStatus; paymentStatus: string | null }): ReservationStatus[] {
+    if (booking.paymentStatus === 'refunded' || !can(actor.role, 'reservations:status')) return [];
+    const decisions = can(actor.role, 'reservations:manage');
+    return STATUS_TRANSITIONS[booking.status].filter(
+      s => decisions || (!RELEASED_STATUSES.includes(s) && !RELEASED_STATUSES.includes(booking.status)),
+    );
   }
 
   /** Search by plate, name, phone or reference; most recent arrivals first. */

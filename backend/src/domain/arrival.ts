@@ -1,4 +1,5 @@
 import { ArrivalKind, ReservationStatus } from '@/database';
+import { AWAY_STATUSES } from './reservation';
 
 /**
  * Rules of the "Prévenir de son arrivée" feature: a traveller tells the parking they are coming,
@@ -53,7 +54,7 @@ export const straightLineEstimate: ArrivalEstimator = (from, to) => {
 
 /** Statuses in which each moment can be signalled. */
 const OUTBOUND_STATUSES: ReservationStatus[] = ['upcoming'];
-const RETURN_STATUSES: ReservationStatus[] = ['arrived', 'shuttled_out', 'return_requested'];
+const RETURN_STATUSES: ReservationStatus[] = AWAY_STATUSES;
 
 export type ArrivalWindow = { kind: ArrivalKind; opensAt: Date; closesAt: Date };
 

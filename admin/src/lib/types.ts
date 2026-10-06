@@ -68,7 +68,7 @@ export interface NewStaff {
   password: string;
 }
 
-export type ReservationStatus = "upcoming" | "arrived" | "shuttled_out" | "return_requested" | "returned" | "cancelled" | "no_show";
+export type ReservationStatus = "upcoming" | "arrived" | "shuttled_out" | "return_requested" | "back_at_parking" | "returned" | "cancelled" | "no_show";
 export type ReservationChannel = "website" | "phone" | "counter" | "aggregator" | "import" | "plazo";
 
 export interface Reservation {
@@ -104,6 +104,8 @@ export interface Reservation {
   returnedAt: string | null;
   cancelledAt: string | null;
   createdAt: string;
+  /** The statuses this staff member may set next (served by GET /internal/reservations/:id, 06/10/2026). */
+  nextStatuses?: ReservationStatus[];
   /** Bloc 2, Occupation: the spot and the key hook (null until placed). */
   spotId?: string | null;
   keyHook?: string | null;
@@ -675,7 +677,8 @@ export type AlertKind =
   | "overbooked"
   | "departure_cancelled"
   | "departure_delayed"
-  | "wave_overflow";
+  | "wave_overflow"
+  | "no_show_suspected";
 
 /** A row of the home's "À traiter" list (GET /internal/dashboard). */
 export interface DashboardAlert {

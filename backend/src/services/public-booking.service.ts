@@ -5,7 +5,7 @@ import { SECRET_KEY } from '@/config';
 import prisma, { Prisma, ReservationStatus } from '@/database';
 import { cancellableUntil, canCancel, canEditFlight, isValidManageToken, manageLinkExpired, manageToken } from '@/domain/booking';
 import { BookingRecord, bookingPolicy, toPublicBooking, WITH_LISTING } from '@/domain/booking-view';
-import { formatPlate, plateKey, RELEASED_STATUSES } from '@/domain/reservation';
+import { formatPlate, HOLDING_STATUSES, plateKey, RELEASED_STATUSES } from '@/domain/reservation';
 import { CreatePublicBookingDto, LookupBookingDto, CarLocationDto } from '@/dtos/public-booking.dto';
 import { PublicBooking } from '@/interfaces/booking.interface';
 import { HttpException } from '@/utils/httpException';
@@ -28,7 +28,7 @@ const FLIGHT_LOCKED: ReservationStatus[] = ['cancelled', 'returned', 'no_show'];
 export const MAX_ACTIVE_SITE_BOOKINGS_PER_CONTACT = 3;
 const IDEMPOTENCY_WINDOW_MS = 24 * 3600000;
 // A place held for an online payment counts too (lapsed holds are swept before the check).
-const ACTIVE_STATUSES: ReservationStatus[] = ['pending_payment', 'upcoming', 'arrived', 'shuttled_out', 'return_requested'];
+const ACTIVE_STATUSES: ReservationStatus[] = ['pending_payment', ...HOLDING_STATUSES];
 
 /** Last 9 digits of a phone number: the same for "06 12 34 56 78", "+33612345678" and "0033 6…". */
 export function phoneKey(phone: string): string {

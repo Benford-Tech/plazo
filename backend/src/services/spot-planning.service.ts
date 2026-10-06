@@ -1,4 +1,5 @@
 import httpStatus from 'http-status';
+import { HOLDING_STATUSES, ON_SITE_STATUSES } from '@/domain/reservation';
 import { Container, Service } from 'typedi';
 import prisma, { ParkingSpot, Prisma, ReservationStatus } from '@/database';
 import { settingsOf, stayClassDistance, stayClassForNights, type StayClass } from '@/domain/layout/types';
@@ -7,8 +8,8 @@ import { AuthenticatedStaff } from '@/interfaces/auth.interface';
 import { HttpException } from '@/utils/httpException';
 import { AuditService } from './audit.service';
 
-const HOLDING: ReservationStatus[] = ['upcoming', 'arrived', 'shuttled_out', 'return_requested'];
-const ON_SITE: ReservationStatus[] = ['arrived', 'shuttled_out', 'return_requested'];
+const HOLDING: ReservationStatus[] = HOLDING_STATUSES;
+const ON_SITE: ReservationStatus[] = ON_SITE_STATUSES;
 const MAX_DAYS = 31;
 
 const staySelect = {

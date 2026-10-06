@@ -38,10 +38,16 @@ class ProNotificationsBloc extends Bloc<ProNotificationsEvent, ProNotificationsS
     // Optimistic: the switch moves at once, and comes back if the API refuses.
     emit(
       state.copyWith(
-        preferences: before.copyWith(arrivals: event.arrivals ?? before.arrivals, returns: event.returns ?? before.returns, shuttles: event.shuttles ?? before.shuttles, platform: event.platform ?? before.platform),
+        preferences: before.copyWith(
+          arrivals: event.arrivals ?? before.arrivals,
+          returns: event.returns ?? before.returns,
+          shuttles: event.shuttles ?? before.shuttles,
+          platform: event.platform ?? before.platform,
+          bookings: event.bookings ?? before.bookings,
+        ),
       ),
     );
-    final result = await _update(PreferencesPatch(arrivals: event.arrivals, returns: event.returns, shuttles: event.shuttles, platform: event.platform));
+    final result = await _update(PreferencesPatch(arrivals: event.arrivals, returns: event.returns, shuttles: event.shuttles, platform: event.platform, bookings: event.bookings));
     result.fold(
       (failure) => emit(state.copyWith(preferences: before, errorMessage: failure.message)),
       (prefs) => emit(state.copyWith(preferences: prefs, errorMessage: null)),

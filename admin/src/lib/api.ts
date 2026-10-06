@@ -623,9 +623,9 @@ export const adminApi = {
       `${geoBase(scope)}/geocode?${new URLSearchParams({ q }).toString()}`,
     ),
 
-  changeReservationStatus: (id: string, status: ReservationStatus) =>
+  changeReservationStatus: (id: string, status: ReservationStatus, note?: string) =>
     apiRequest<{ data: Reservation }>(`/internal/reservations/${id}/status`, {
       method: "POST",
-      body: json({ status }),
+      body: json(note ? { status, note } : { status }),
     }),
 };

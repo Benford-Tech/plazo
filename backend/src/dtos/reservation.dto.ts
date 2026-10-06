@@ -170,4 +170,10 @@ export class UpdateReservationDto {
 export class ChangeStatusDto {
   @IsIn(STATUSES, { message: 'invalid_status' })
   public status: ReservationStatus;
+
+  /** A remark saved with the change (06/10/2026): damage noticed at the handover, a dispute… */
+  @IsOptional()
+  @MaxLength(500, { message: 'too_long' })
+  @IsString({ message: 'invalid' })
+  public note?: string;
 }

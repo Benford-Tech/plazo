@@ -126,10 +126,13 @@ class _Sheet extends StatelessWidget {
     final r = reservation;
     final bloc = context.read<ProReservationBloc>();
     final links = locator<LinkService>();
-    final next = (statusTransitions[r.status] ?? const []).where((s) {
-      final decision = s == 'cancelled' || s == 'no_show' || r.status == 'cancelled' || r.status == 'no_show';
-      return can(role, decision ? 'reservations:manage' : 'reservations:status');
-    }).toList();
+    // The API says what comes next (06/10/2026); the local table only serves an older server.
+    final next = r.nextStatuses.isNotEmpty || r.paymentStatus == 'refunded'
+        ? r.nextStatuses
+        : (statusTransitions[r.status] ?? const []).where((s) {
+            final decision = s == 'cancelled' || s == 'no_show' || r.status == 'cancelled' || r.status == 'no_show';
+            return can(role, decision ? 'reservations:manage' : 'reservations:status');
+          }).toList();
     final channel = 'res.channel.${r.channel}'.tr(args: [Product.name]);
     return ListView(
       padding: const EdgeInsets.fromLTRB(16, 14, 16, 28),

@@ -47,6 +47,11 @@ _ReservationModel _$ReservationModelFromJson(Map<String, dynamic> json) =>
       createdAt: json['createdAt'] == null
           ? null
           : DateTime.parse(json['createdAt'] as String),
+      nextStatuses:
+          (json['nextStatuses'] as List<dynamic>?)
+              ?.map((e) => e as String)
+              .toList() ??
+          const [],
       spot: json['spot'] == null
           ? null
           : ReservationSpotModel.fromJson(json['spot'] as Map<String, dynamic>),
@@ -85,6 +90,7 @@ Map<String, dynamic> _$ReservationModelToJson(_ReservationModel instance) =>
       'carNote': instance.carNote,
       'paymentStatus': instance.paymentStatus,
       'createdAt': instance.createdAt?.toIso8601String(),
+      'nextStatuses': instance.nextStatuses,
       'spot': instance.spot,
     };
 

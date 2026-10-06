@@ -489,6 +489,8 @@ List<(_Tone, String)> _vehicleBadges(DashboardVehicleModel v) {
     out.add((_Tone.warn, 'dashboard.badge_waiting'.tr()));
   } else if (v.status == 'shuttled_out') {
     out.add((_Tone.line, 'dashboard.badge_shuttled'.tr()));
+  } else if (v.status == 'back_at_parking') {
+    out.add((_Tone.accent, 'pro.status.back_at_parking'.tr()));
   }
   if (v.spotCode == null) {
     out.add((_Tone.bad, 'dashboard.badge_no_spot'.tr()));

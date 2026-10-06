@@ -1,4 +1,5 @@
 import { ReservationStatus } from '@/database';
+import { AWAY_STATUSES, HOLDING_STATUSES } from './reservation';
 
 /**
  * Rules of the shuttle trips (driver mode, see SPEC.md block 3): a driver shares their position
@@ -14,7 +15,7 @@ export const POSITION_INTERVAL_TOLERANCE_MS = 2000;
 /** A position recorded longer ago than this by the phone is refused. */
 export const TRIP_POSITION_MAX_AGE_SECONDS = 300;
 /** Bookings whose traveller can be picked up at the airport. */
-export const PICKUP_STATUSES: ReservationStatus[] = ['arrived', 'shuttled_out', 'return_requested'];
+export const PICKUP_STATUSES: ReservationStatus[] = AWAY_STATUSES;
 /** Returns listed for the driver: this long before the first return of the day… */
 export const PICKUP_LIST_HOURS_BEFORE = 3;
 /** …and this long after a return time, for late flights. */
@@ -58,7 +59,7 @@ export function stayPhase(
   localArrivalDay: string,
   localReturnDay: string,
 ): 'arrival' | 'stay' | 'return' | null {
-  if (!['upcoming', 'arrived', 'shuttled_out', 'return_requested'].includes(booking.status)) return null;
+  if (!HOLDING_STATUSES.includes(booking.status)) return null;
   if (localToday < localArrivalDay || localToday > localReturnDay) return null;
   if (localToday === localReturnDay && booking.status !== 'upcoming') return 'return';
   if (localToday === localArrivalDay) return 'arrival';

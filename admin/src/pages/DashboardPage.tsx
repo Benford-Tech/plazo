@@ -128,6 +128,7 @@ function vehicleBadges(v: DashboardVehicle): { tone: BadgeTone; text: string }[]
   }
   if (v.tripDirection) out.push({ tone: "accent", text: b.onTrip });
   else if (v.status === "return_requested") out.push({ tone: "warn", text: b.waiting });
+  else if (v.status === "back_at_parking") out.push({ tone: "info", text: fr.status.back_at_parking });
   else if (v.status === "shuttled_out") out.push({ tone: "line", text: b.shuttled });
   if (!v.spotCode) out.push({ tone: "bad", text: b.noSpot });
   else if (out.length === 0) out.push({ tone: "ok", text: b.onSite });

@@ -1,4 +1,5 @@
 import { Container, Service } from 'typedi';
+import { HOLDING_STATUSES, ON_SITE_STATUSES } from '@/domain/reservation';
 import prisma, { Prisma, ReservationStatus } from '@/database';
 import { buildWaves, dropoffTimes, pickupTimes, ShuttleWave, WaveMember, WaveTimes } from '@/domain/shuttle-waves';
 import { DATE_RE, dayBounds, localDate } from '@/domain/time';
@@ -18,10 +19,10 @@ export interface ShuttleForecast {
 }
 
 /** Drop-offs: the travellers arriving that day (done once they left for the terminal). */
-const DROPOFF_DAY_STATUSES: ReservationStatus[] = ['upcoming', 'arrived', 'shuttled_out', 'return_requested', 'returned'];
-const DROPOFF_DONE: ReservationStatus[] = ['shuttled_out', 'return_requested', 'returned'];
+const DROPOFF_DAY_STATUSES: ReservationStatus[] = [...HOLDING_STATUSES, 'returned'];
+const DROPOFF_DONE: ReservationStatus[] = ['shuttled_out', 'return_requested', 'back_at_parking', 'returned'];
 /** Pick-ups: the travellers returning that day (done once the vehicle is handed back). */
-const PICKUP_DAY_STATUSES: ReservationStatus[] = ['arrived', 'shuttled_out', 'return_requested', 'returned'];
+const PICKUP_DAY_STATUSES: ReservationStatus[] = [...ON_SITE_STATUSES, 'returned'];
 
 const iso = (d: Date | null | undefined) => (d ? d.toISOString() : null);
 
