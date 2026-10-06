@@ -128,10 +128,12 @@ export class PaymentService {
    * Online as soon as the platform has Stripe keys and the operator a commission: Plazo takes every
    * payment itself. Decision of 06/10/2026 (evening): the operator's connected account is NOT required
    * to be booked; its share stays "pending" (`runPayouts` → waitingForAccount) until it links one, or is
-   * paid by hand. Demo operators are never bookable with real money.
+   * paid by hand. Demo operators are bookable with test keys only, never with real money.
    */
   public modeFor(operator: PaymentOperator): BookingPaymentMode {
-    if (!this.enabled() || operator.isDemo) return 'unavailable';
+    if (!this.enabled()) return 'unavailable';
+    // Demo parkings: bookable with test keys only (end-to-end trials), never with real money.
+    if (operator.isDemo && isLiveStripeKey(stripeSecretKey())) return 'unavailable';
     return this.commissionBps(operator) !== null ? 'online' : 'unavailable';
   }
 

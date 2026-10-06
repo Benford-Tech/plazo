@@ -301,13 +301,22 @@ describe('paiement en ligne : place tenue pendant le paiement', () => {
     expect(fake.transfers.create).not.toHaveBeenCalled();
   });
 
-  it('un parking de démonstration n’est jamais réservable', async () => {
+  it('un parking de démonstration est réservable avec des clés de test, jamais avec des clés réelles', async () => {
     const { operator } = await publishedParking();
     await prisma.operator.update({ where: { id: operator.id }, data: { isDemo: true } });
-    expect((await api().get('/api/public/airports/lyon-saint-exupery/parkings/parking-demo')).body.parking.payment).toBe('unavailable');
-    const res = await book();
-    expect(res.status).toBe(409);
-    expect(res.body.code).toBe('online_booking_unavailable');
+    expect((await api().get('/api/public/airports/lyon-saint-exupery/parkings/parking-demo')).body.parking.payment).toBe('online');
+    const key = process.env.STRIPE_SECRET_KEY;
+    process.env.STRIPE_SECRET_KEY = 'sk_live_fake';
+    process.env.STRIPE_ALLOW_LIVE = 'true';
+    try {
+      expect((await api().get('/api/public/airports/lyon-saint-exupery/parkings/parking-demo')).body.parking.payment).toBe('unavailable');
+      const res = await book();
+      expect(res.status).toBe(409);
+      expect(res.body.code).toBe('online_booking_unavailable');
+    } finally {
+      process.env.STRIPE_SECRET_KEY = key;
+      delete process.env.STRIPE_ALLOW_LIVE;
+    }
   });
 
   it('sans commission configurée non plus', async () => {

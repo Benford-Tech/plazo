@@ -15,7 +15,7 @@ deux phases) : la place de marché grand public fait partie du MVP. Deux faces, 
   réservation en ligne est indisponible (409 `online_booking_unavailable`), la saisie manuelle du loueur reste.
   **Décision du 06/10/2026 (soir) : le compte Stripe Connect du loueur n'est pas obligatoire** : réservable dès que la
   plateforme a ses clés et une commission (`PaymentService.modeFor`) ; le reversement reste `pending` tant que le compte
-  n'est pas relié (`runPayouts` → `waitingForAccount`) ; les loueurs `isDemo` ne sont jamais réservables.
+  n'est pas relié (`runPayouts` → `waitingForAccount`) ; les loueurs `isDemo` ne sont réservables qu'avec des clés Stripe de test.
 - **Espace pro pour les loueurs** : planning, plan du parking, navette, import des autres canaux
   (blocs 1 à 3 ci-dessous), plus leur fiche Plazo, leurs tarifs et leurs reversements.
 - À valider avec un juriste / expert-comptable **avant la mise en ligne du paiement** : statut de la
