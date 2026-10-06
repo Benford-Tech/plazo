@@ -1,5 +1,5 @@
 import { useQuery } from "@tanstack/react-query";
-import { ArrowDownToLine, ArrowUpFromLine, BusFront, Settings2 } from "lucide-react";
+import { ArrowDownToLine, ArrowUpFromLine, BusFront, Settings2, ChevronDown, ChevronUp } from "lucide-react";
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { Badge, type BadgeTone } from "@/components/dashboard/Badge";
@@ -95,6 +95,8 @@ export default function ShuttleWavesPage() {
   const today = todayLocal();
   const [date, setDate] = useState(today);
   const [now, setNow] = useState(() => Date.now());
+  // 06/10/2026: today, the waves already behind (done, or due more than 30 min ago by the server's clock) are folded.
+  const [showPast, setShowPast] = useState(false);
   const forecast = useQuery({ queryKey: ["shuttle-forecast", date], queryFn: () => adminApi.getShuttleForecast(date), refetchInterval: POLL_MS });
   useEffect(() => {
     const id = setInterval(() => setNow(Date.now()), 10_000);
@@ -103,6 +105,9 @@ export default function ShuttleWavesPage() {
   const days = [today, addDays(today, 1), addDays(today, 2)];
   const labels = [t.today, t.tomorrow, shortDay(days[2])];
   const d = forecast.data;
+  const isPast = (w: ShuttleWave) => date === today && !!d && (w.state === "done" || new Date(w.leaveAt).getTime() < new Date(d.serverTime).getTime() - 30 * 60000);
+  const upcoming = d?.waves.filter(w => !isPast(w)) ?? [];
+  const past = d?.waves.filter(isPast) ?? [];
 
   return (
     <div className="space-y-3">
@@ -135,7 +140,7 @@ export default function ShuttleWavesPage() {
             )}
           >
             {labels[i]}
-            {date === day && d ? ` · ${t.wave.count(d.waves.length)}` : ""}
+            {date === day && d ? ` · ${day === today ? t.wave.countUpcoming(upcoming.length) : t.wave.count(d.waves.length)}` : ""}
           </button>
         ))}
         {d && (
@@ -160,11 +165,36 @@ export default function ShuttleWavesPage() {
       ) : d.waves.length === 0 ? (
         <p className="rounded-xl border border-panel-line bg-panel p-4 text-sm text-muted-foreground">{t.empty}</p>
       ) : (
-        <ol className="space-y-2">
-          {d.waves.map(wave => (
-            <WaveCard key={wave.id} wave={wave} />
-          ))}
-        </ol>
+        <>
+          {upcoming.length === 0 && <p className="rounded-xl border border-panel-line bg-panel p-4 text-sm text-muted-foreground">{t.emptyUpcoming}</p>}
+          <ol className="space-y-2">
+            {upcoming.map(wave => (
+              <WaveCard key={wave.id} wave={wave} />
+            ))}
+          </ol>
+          {past.length > 0 && (
+            <>
+              <button
+                type="button"
+                data-testid="waves-past"
+                aria-expanded={showPast}
+                onClick={() => setShowPast(v => !v)}
+                className="flex w-full items-center gap-2 px-2 py-2 text-left text-[13px] font-semibold text-muted-foreground hover:underline"
+              >
+                {showPast ? <ChevronUp className="h-4 w-4" aria-hidden="true" /> : <ChevronDown className="h-4 w-4" aria-hidden="true" />}
+                <span className="flex-1">{t.pastCount(past.length)}</span>
+                <span className="text-lime-deep">{showPast ? t.pastHide : t.pastShow}</span>
+              </button>
+              {showPast && (
+                <ol className="space-y-2">
+                  {past.map(wave => (
+                    <WaveCard key={wave.id} wave={wave} />
+                  ))}
+                </ol>
+              )}
+            </>
+          )}
+        </>
       )}
     </div>
   );

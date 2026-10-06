@@ -1548,6 +1548,10 @@ export const shuttleWavesFr = {
   refreshed: (ago: string) => `Actualisé ${ago}`,
   loadError: "Impossible de charger la prévision des navettes.",
   empty: "Aucune navette à prévoir ce jour-là.",
+  emptyUpcoming: "Plus aucune navette à prévoir aujourd'hui.",
+  pastCount: (n: number) => (n > 1 ? `${n} créneaux passés` : "1 créneau passé"),
+  pastShow: "Afficher",
+  pastHide: "Masquer",
   seats: (seats: number | null, vehicles: number) =>
     seats === null ? `${vehicles} véhicule${vehicles > 1 ? "s" : ""} en service · places inconnues` : `${vehicles} véhicule${vehicles > 1 ? "s" : ""} en service · ${seats} places`,
   times: (lead: number, delay: number, travel: number) =>
@@ -1555,6 +1559,7 @@ export const shuttleWavesFr = {
   settings: "Modifier les délais",
   wave: {
     count: (n: number) => `${n} vague${n > 1 ? "s" : ""}`,
+    countUpcoming: (n: number) => `${n} à venir`,
     direction: { dropoff: "Vers le terminal", pickup: "Depuis l'aéroport" } satisfies Record<ShuttleDirection, string>,
     airport: "Aéroport",
     passengers: (n: number, seats: number | null) => (seats === null ? `${n}` : `${n} / ${seats}`),

@@ -1359,7 +1359,13 @@
     "flight_landed": "atterri",
     "flight_unknown": "vol inconnu",
     "flight_delayed": "retardé +{}",
-    "start": "Démarrer ce trajet"
+    "start": "Démarrer ce trajet",
+    "count_upcoming": "{} à venir",
+    "empty_upcoming": "Plus aucune navette à prévoir aujourd'hui.",
+    "past_count": "{} créneaux passés",
+    "past_one": "1 créneau passé",
+    "past_show": "Afficher",
+    "past_hide": "Masquer"
   },
   "car": {
     "title": "Ma voiture",

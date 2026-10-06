@@ -123,6 +123,9 @@ Ne construire QUE ce qui règle la douleur n°1 du client.
      bandes À emmener · En route · En séjour (retours : À récupérer · En route · Rendus) ; `leaveAt` sur `PickupRow` et
      `DepartureRow`, `DepartureRow.expected` (attendu, grisé), `GET /internal/shuttle/staying` (`days[]`, `returnedToday`) ;
      `ShuttleState.band`, `_BandBar` ; `ShuttleTripsPanel` onglets `band-0/1/2`.
+     **Ligne du jour cohérente avec l'heure (06/10/2026)** : aujourd'hui, seules les vagues à venir sont listées (`ShuttleWavesState.upcoming`,
+     une vague est passée si elle est faite ou devait partir il y a plus de 30 min) ; les passées sont repliées sous « N créneaux passés »
+     (app `waves-past`, web `waves-past`, heure du serveur) ; le compteur devient « N à venir ».
    - Décision **E du 06/10/2026 (communication voyageur ↔ parking)** : `Reservation.customerNote` (message à la réservation, ≤ 300),
      `vehicleModel` / `vehicleColour` (site, app, saisie et modification pro, fiche, fiche opérationnelle) ; `ArrivalSignal.note`
      (mot joint à « Je suis en route », « J'arrive dans… », « Je suis au point de rendez-vous », champ sur le site et dans l'app

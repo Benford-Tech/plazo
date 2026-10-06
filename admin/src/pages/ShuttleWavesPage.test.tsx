@@ -4,6 +4,11 @@ import userEvent from "@testing-library/user-event";
 import { MemoryRouter } from "react-router-dom";
 import type { ShuttleForecast } from "@/lib/types";
 import ShuttleWavesPage from "./ShuttleWavesPage";
+// The fixtures live on 06/10/2026: pin "today" so the past/upcoming split does not depend on the clock.
+vi.mock("@/lib/datetime", async importOriginal => {
+  const actual = await importOriginal<typeof import("@/lib/datetime")>();
+  return { ...actual, todayLocal: () => "2026-10-06" };
+});
 
 const api = vi.hoisted(() => ({ getShuttleForecast: vi.fn() }));
 vi.mock("@/lib/api", async importOriginal => {
@@ -111,7 +116,11 @@ describe("ShuttleWavesPage (V-A ligne du jour)", () => {
 
   it("liste les vagues avec heure, sens, passagers, navettes nécessaires et vols", async () => {
     renderPage();
-    const waves = await screen.findAllByTestId("wave");
+    // 06/10/2026: only the waves ahead are listed; the done one is folded under "1 créneau passé".
+    expect(await screen.findAllByTestId("wave")).toHaveLength(1);
+    expect(screen.getByText("1 créneau passé")).toBeInTheDocument();
+    await userEvent.click(screen.getByTestId("waves-past"));
+    const waves = screen.getAllByTestId("wave");
     expect(waves).toHaveLength(2);
     const first = within(waves[0]);
     expect(first.getByText("05:40")).toBeInTheDocument();
