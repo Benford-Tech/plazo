@@ -25,6 +25,9 @@ _PickupRowModel _$PickupRowModelFromJson(Map<String, dynamic> json) =>
           ? null
           : DateTime.parse(json['atMeetingPointAt'] as String),
       tripId: json['tripId'] as String?,
+      notice: json['notice'] == null
+          ? null
+          : PickupNoticeModel.fromJson(json['notice'] as Map<String, dynamic>),
     );
 
 Map<String, dynamic> _$PickupRowModelToJson(_PickupRowModel instance) =>
@@ -42,6 +45,7 @@ Map<String, dynamic> _$PickupRowModelToJson(_PickupRowModel instance) =>
       'stopName': instance.stopName,
       'atMeetingPointAt': instance.atMeetingPointAt?.toIso8601String(),
       'tripId': instance.tripId,
+      'notice': instance.notice,
     };
 
 _PickupsModel _$PickupsModelFromJson(Map<String, dynamic> json) =>
@@ -508,3 +512,17 @@ Map<String, dynamic> _$ShuttleForecastModelToJson(
   'vehiclesInService': instance.vehiclesInService,
   'waves': instance.waves,
 };
+
+_PickupNoticeModel _$PickupNoticeModelFromJson(Map<String, dynamic> json) =>
+    _PickupNoticeModel(
+      kind: json['kind'] as String,
+      text: json['text'] as String?,
+      at: DateTime.parse(json['at'] as String),
+    );
+
+Map<String, dynamic> _$PickupNoticeModelToJson(_PickupNoticeModel instance) =>
+    <String, dynamic>{
+      'kind': instance.kind,
+      'text': instance.text,
+      'at': instance.at.toIso8601String(),
+    };

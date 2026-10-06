@@ -107,6 +107,10 @@ export interface BookingInput {
   returnFlight?: string;
   departureFlight?: string;
   passengers: number;
+  /** E (06/10/2026): a message for the parking, and the vehicle so the valet spots it. */
+  customerNote?: string;
+  vehicleModel?: string;
+  vehicleColour?: string;
   /** Must be true; false gets the "terms_required" field error back. */
   acceptTerms: boolean;
   /** Random key of the booking form: sending it again returns the booking already made. */
@@ -144,6 +148,9 @@ export interface PublicBooking {
   customerEmail: string | null;
   customerPhone: string;
   plate: string;
+  /** E (06/10/2026): the traveller's message for the parking, and their vehicle (missing from an older API). */
+  customerNote?: string | null;
+  vehicle?: { model: string | null; colour: string | null };
   returnFlight: string | null;
   /** Outbound flight (V-A, 05/10/2026) and, when tracked, when the shuttle to the terminal leaves (local). */
   departureFlight: string | null;
@@ -197,6 +204,8 @@ export interface TravellerArrival {
     announcedMinutes: number | null;
     atMeetingPointAt: string | null;
     positionUpdatedAt: string | null;
+    /** E: the traveller's word for the parking. */
+    note?: string | null;
   } | null;
   rules: { maxMinutes: number; arrivedWithinMeters: number; positionIntervalSeconds: number; announceMinutes: number[] };
 }
@@ -258,6 +267,8 @@ export interface TravellerReturn {
   parking: { name: string; phone: string | null; shuttleMinutes: number | null; address: string | null; location: LatLng | null };
   plate: string;
   spot: { code: string; stayClass: string | null } | null;
+  /** E (06/10/2026): what the traveller signalled today ("mon vol a du retard", "bagage perdu"). */
+  notice?: ReturnNotice | null;
   /** Where the car is parked (06/10/2026), recorded by the traveller or the valet; null until then. */
   car: CarLocation | null;
 }
@@ -269,4 +280,11 @@ export interface CarLocation {
   at: string;
   by: "traveller" | "staff";
   note: string | null;
+}
+
+export type ReturnNoticeKind = "flight_delayed" | "luggage" | "other";
+export interface ReturnNotice {
+  kind: ReturnNoticeKind;
+  text: string | null;
+  at: string;
 }

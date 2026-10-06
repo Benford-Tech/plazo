@@ -13,6 +13,8 @@ export interface ArrivalPushInput {
   parkingName: string;
   etaMinutes: number | null;
   meetingLabel: string | null;
+  /** E (06/10/2026): the traveller's word, appended to the body. */
+  note?: string | null;
 }
 
 export interface PushMessage {
@@ -21,6 +23,12 @@ export interface PushMessage {
 }
 
 export function arrivalPush(input: ArrivalPushInput): PushMessage {
+  const message = arrivalPushBase(input);
+  const note = input.note?.trim();
+  return note ? { ...message, body: `${message.body} · « ${note} »` } : message;
+}
+
+function arrivalPushBase(input: ArrivalPushInput): PushMessage {
   const who = shortName(input.customerName);
   const eta = input.etaMinutes;
   const isReturn = input.kind === 'return';

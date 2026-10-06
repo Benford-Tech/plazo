@@ -69,6 +69,8 @@ export function toPublicBooking(reservation: BookingRecord, now = new Date()): P
     plate: reservation.plate,
     returnFlight: reservation.returnFlight,
     departureFlight: reservation.departureFlight,
+    customerNote: reservation.customerNote,
+    vehicle: { model: reservation.vehicleModel, colour: reservation.vehicleColour },
     outbound: outboundView(reservation, parking, tz),
     car: carView(reservation),
     passengers: reservation.passengers,

@@ -35,6 +35,8 @@ class BookingCard extends StatelessWidget {
             crossAxisAlignment: WrapCrossAlignment.center,
             children: [
               FrenchPlate(booking.plate),
+              if (booking.vehicle?.model != null || booking.vehicle?.colour != null)
+                Text([booking.vehicle?.model, booking.vehicle?.colour].whereType<String>().join(' · '), key: const Key('booking-vehicle'), style: AppText.muted()),
               Text('booking.pax'.tr(args: ['${booking.passengers}']), style: AppText.muted()),
               if (booking.departureFlight != null)
                 Text(
@@ -53,6 +55,10 @@ class BookingCard extends StatelessWidget {
             style: AppText.muted(size: 12.5),
           ),
           Text('booking.reference'.tr(args: [booking.reference]), style: AppText.muted(size: 12.5)),
+          if (booking.customerNote != null && booking.customerNote!.trim().isNotEmpty) ...[
+            const SizedBox(height: 6),
+            Text('${'manage.message'.tr()} : « ${booking.customerNote!.trim()} »', key: const Key('booking-message'), style: AppText.muted(size: 12.5)),
+          ],
         ],
       ),
     );

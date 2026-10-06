@@ -1,6 +1,7 @@
 import { Request, Response } from 'express';
 import httpStatus from 'http-status';
 import { Container } from 'typedi';
+import { ReturnNoticeDto } from '@/dtos/arrival.dto';
 import { TravellerDeviceDto } from '@/dtos/shuttle.dto';
 import { ReturnService } from '@/services/return.service';
 import catchAsync from '@/utils/catchAsync';
@@ -24,6 +25,13 @@ export class ReturnController {
   public landed = catchAsync(async (req: Request, res: Response) => {
     res.set('Cache-Control', 'no-store');
     res.json(await this.returns.landed(reference(req), bookingToken(req)));
+  });
+
+  /** POST /public/bookings/:reference/return/notice */
+  public notice = catchAsync(async (req: Request, res: Response) => {
+    const data: ReturnNoticeDto = req.body;
+    res.set('Cache-Control', 'no-store');
+    res.json(await this.returns.notice(reference(req), bookingToken(req), data.kind, data.text));
   });
 
   /** GET /public/bookings/:reference/return/route?lat=&lng= */

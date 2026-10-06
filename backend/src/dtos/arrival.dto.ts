@@ -28,6 +28,12 @@ export class StartArrivalDto {
   // The traveller ticked / tapped the explicit consent: nothing is shared without it.
   @Equals(true, { message: 'consent_required' })
   public consent: boolean;
+
+  /** E (06/10/2026): a word for the parking, sent with the signal. */
+  @IsOptional()
+  @IsString({ message: 'too_long' })
+  @MaxLength(200, { message: 'too_long' })
+  public note?: string | null;
 }
 
 export class ArrivalPositionDto {
@@ -58,6 +64,12 @@ export class AnnounceArrivalDto {
   @IsIn([10, 20, 30], { message: 'invalid_minutes' })
   @Type(() => Number)
   public minutes: number;
+
+  /** E (06/10/2026): a word for the parking, sent with the signal. */
+  @IsOptional()
+  @IsString({ message: 'too_long' })
+  @MaxLength(200, { message: 'too_long' })
+  public note?: string | null;
 }
 
 export class AtMeetingPointDto {
@@ -73,6 +85,12 @@ export class AtMeetingPointDto {
   @IsLongitude({ message: 'invalid_lng' })
   @IsNumber({}, { message: 'required' })
   public lng?: number | null;
+
+  /** E (06/10/2026): a word for the parking, sent with the signal. */
+  @IsOptional()
+  @IsString({ message: 'too_long' })
+  @MaxLength(200, { message: 'too_long' })
+  public note?: string | null;
 }
 
 export class StopArrivalDto {
@@ -146,4 +164,15 @@ export class NotificationPreferencesDto {
   @IsOptional()
   @IsBoolean({ message: 'invalid' })
   public platform?: boolean;
+}
+
+/** E (06/10/2026): "Mon vol a du retard", "Bagage perdu", or a free word, on the return day. */
+export class ReturnNoticeDto {
+  @IsIn(['flight_delayed', 'luggage', 'other'], { message: 'invalid_kind' })
+  public kind: 'flight_delayed' | 'luggage' | 'other';
+
+  @IsOptional()
+  @IsString({ message: 'too_long' })
+  @MaxLength(200, { message: 'too_long' })
+  public text?: string | null;
 }

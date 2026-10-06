@@ -142,6 +142,12 @@ class ArrivalBanner extends StatelessWidget {
   final VoidCallback onClose;
 
   static String text(StaffSignalModel s) {
+    final base = _base(s);
+    final note = s.note;
+    return note == null || note.trim().isEmpty ? base : '$base · « ${note.trim()} »';
+  }
+
+  static String _base(StaffSignalModel s) {
     final who = shortName(s.customerName);
     return switch (s.state) {
       ArrivalSignalState.announced => 'pro.banner_announced'.tr(args: [who, '${s.announcedMinutes ?? s.etaMinutes ?? 0}', s.plate]),

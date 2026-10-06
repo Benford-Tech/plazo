@@ -251,6 +251,11 @@ function PickupTile({ row, selected, onTrip, selectable, onToggle }: { row: Pick
           {row.customerName} <span className="font-normal text-muted-foreground">· {s.pax(row.passengers)}</span>
         </span>
         <Badge tone={badge.tone}>{badge.text}</Badge>
+        {row.notice && (
+          <Badge tone="warn">
+            {row.notice.kind === "flight_delayed" ? s.badge.noticeFlightDelayed : row.notice.kind === "luggage" ? s.badge.noticeLuggage : s.badge.noticeOther(row.notice.text)}
+          </Badge>
+        )}
         {details && <span className="font-mono text-xs text-muted-foreground">{details}</span>}
         <Plate value={row.plate} size="sm" />
       </button>

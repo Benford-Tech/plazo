@@ -460,6 +460,14 @@ model Reservation {
   transferredAt           DateTime?
   paidAt                  DateTime?
   refundedAt              DateTime?
+  // E (06/10/2026): what the traveller tells the parking — a message at booking, the vehicle
+  // (so the valet spots it), and a notice on the return day ("mon vol a du retard", "bagage perdu").
+  customerNote            String?
+  vehicleModel            String?
+  vehicleColour           String?
+  returnNoticeKind        ReturnNoticeKind?
+  returnNoticeText        String?
+  returnNoticeAt          DateTime?
   // Set when the confirmation email/SMS went out: they are sent exactly once.
   confirmationSentAt      DateTime?
   createdById             String?
@@ -640,6 +648,13 @@ enum ArrivalKind {
   return
 }
 
+/** E (06/10/2026): what a traveller can signal on the return day. */
+enum ReturnNoticeKind {
+  flight_delayed
+  luggage
+  other
+}
+
 enum ArrivalState {
   sharing // live position shared with the parking
   announced // "J'arrive dans 10 / 20 / 30 min", no position
@@ -676,6 +691,8 @@ model ArrivalSignal {
   etaMinutes         Int?
   etaAt              DateTime?
   announcedMinutes   Int?
+  // E (06/10/2026): a word for the parking, sent with the signal ("2 enfants, poussette").
+  note               String?
   startedAt          DateTime
   expiresAt          DateTime
   atMeetingPointAt   DateTime?

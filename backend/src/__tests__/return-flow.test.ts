@@ -263,6 +263,37 @@ describe('fournisseurs de vols (fetch simulé)', () => {
   });
 });
 
+describe('POST /public/bookings/:reference/return/notice (E)', () => {
+  it('garde le signalement du voyageur, prévient le personnel des retours, et le montre au chauffeur', async () => {
+    const b = await parkingWithReturningBooking();
+    process.env.ONESIGNAL_APP_ID = 'app';
+    process.env.ONESIGNAL_REST_API_KEY = 'key';
+    const driver = await addStaff(b.op.token, 'driver');
+    await api().put('/api/internal/notifications/devices').set(auth(driver.token)).send({ subscriptionId: 'sub-driver' });
+    const notice = (body: Record<string, unknown>) =>
+      api().post(`/api/public/bookings/${b.reference}/return/notice`).set(bookingToken(b.manageToken)).send(body);
+    expect((await notice({ kind: 'lost_car' })).status).toBe(400);
+    const res = await notice({ kind: 'luggage', text: ' Bagage pas sur le tapis, 20 min de plus ' });
+    expect(res.status).toBe(200);
+    expect(res.body.notice).toMatchObject({ kind: 'luggage', text: 'Bagage pas sur le tapis, 20 min de plus' });
+    const pushes = calls(ONESIGNAL_NOTIFICATIONS_URL).map(([, init]) => JSON.parse((init as RequestInit).body as string));
+    expect(pushes.length).toBe(1);
+    expect(pushes[0].headings.fr).toBe('Retour : Bagage perdu ou retardé');
+    expect(pushes[0].contents.fr).toBe('C. Martin : bagage perdu ou retardé · « Bagage pas sur le tapis, 20 min de plus » · AB-123-CD');
+    expect(pushes[0].include_subscription_ids).toEqual(['sub-driver']);
+    const pickups = await api().get('/api/internal/shuttle/pickups').set(auth(driver.token));
+    expect(pickups.body.rows[0]).toMatchObject({
+      reference: b.reference,
+      notice: { kind: 'luggage', text: 'Bagage pas sur le tapis, 20 min de plus' },
+    });
+    expect((await getReturn(b)).body.notice.kind).toBe('luggage');
+
+    // Vehicle handed back: nothing more to signal.
+    await prisma.reservation.update({ where: { reference: b.reference }, data: { status: 'returned' } });
+    expect((await notice({ kind: 'flight_delayed' })).body.code).toBe('vehicle_not_on_site');
+  });
+});
+
 describe('GET /public/bookings/:reference/return', () => {
   it('refuse sans jeton, et décrit le jour du retour (point de rendez-vous, consignes, vol)', async () => {
     const b = await parkingWithReturningBooking();

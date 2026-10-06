@@ -45,11 +45,12 @@ describe("ArrivalBlock (D : prévenir de mon arrivée sur le site)", () => {
     });
     expect(screen.getByRole("button", { name: "Je suis en route — partager ma position" })).toBeInTheDocument();
     fireEvent.click(screen.getByRole("button", { name: "Prévenir sans partager ma position" }));
+    fireEvent.change(screen.getByLabelText("Un mot pour le parking (facultatif)"), { target: { value: " 2 enfants, poussette " } });
     await act(async () => {
       fireEvent.click(screen.getByRole("button", { name: "J’arrive dans 20 min" }));
       await vi.advanceTimersByTimeAsync(0);
     });
-    expect(fetchMock).toHaveBeenLastCalledWith("/api/public/bookings/R7KQ2M/arrival/announce", expect.objectContaining({ method: "POST", body: JSON.stringify({ kind: "outbound", minutes: 20 }) }));
+    expect(fetchMock).toHaveBeenLastCalledWith("/api/public/bookings/R7KQ2M/arrival/announce", expect.objectContaining({ method: "POST", body: JSON.stringify({ kind: "outbound", minutes: 20, note: "2 enfants, poussette" }) }));
     expect(screen.getByTestId("arrival-announced")).toHaveTextContent("Le parking est prévenu : vous arrivez dans 20 min (vers 08:20).");
     await act(async () => {
       fireEvent.click(screen.getByRole("button", { name: "Annuler" }));

@@ -35,6 +35,9 @@ export function ArrivalBlock({ reference, token, initial = null }: { reference: 
   const [error, setError] = useState<string | null>(null);
   const [showAnnounce, setShowAnnounce] = useState(false);
   const [withPosition, setWithPosition] = useState(false);
+  // E (06/10/2026): a word for the parking, sent with the signal ("2 enfants, poussette").
+  const [note, setNote] = useState("");
+  const noteBody = () => (note.trim() ? { note: note.trim() } : {});
   const [problem, setProblem] = useState<LocationProblem>(null);
   const [now, setNow] = useState(() => Date.now());
   const watchId = useRef<number | null>(null);
@@ -113,7 +116,7 @@ export function ArrivalBlock({ reference, token, initial = null }: { reference: 
     }
     setBusy(true);
     // The tap on this button, right under the explanation, is the consent.
-    const next = await call("/arrival/start", { kind: "outbound", consent: true });
+    const next = await call("/arrival/start", { kind: "outbound", consent: true, ...noteBody() });
     setBusy(false);
     if (!next || next.signal?.state !== "sharing") return;
     lastSentAt.current = 0;
@@ -123,7 +126,7 @@ export function ArrivalBlock({ reference, token, initial = null }: { reference: 
 
   const announce = async (kind: ArrivalKind, minutes: number) => {
     setBusy(true);
-    await call("/arrival/announce", { kind, minutes });
+    await call("/arrival/announce", { kind, minutes, ...noteBody() });
     setBusy(false);
     setShowAnnounce(false);
   };
@@ -140,7 +143,7 @@ export function ArrivalBlock({ reference, token, initial = null }: { reference: 
         ),
       );
     }
-    await call("/arrival/at-meeting-point", { kind: "return", ...(position ?? {}) });
+    await call("/arrival/at-meeting-point", { kind: "return", ...(position ?? {}), ...noteBody() });
     setBusy(false);
   };
 
@@ -180,12 +183,20 @@ export function ArrivalBlock({ reference, token, initial = null }: { reference: 
       </span>
       <span className="min-w-0 flex-1">
         {(kind === "outbound" ? t.announcedText : t.announcedReturnText)(signal.announcedMinutes ?? signal.etaMinutes ?? 0, signal.etaAt ? hhmm(signal.etaAt) : "")}
+        {signal.note && <span className="block text-soft">{t.noteSent(signal.note)}</span>}
       </span>
       <button type="button" disabled={busy} onClick={() => stop(kind)} className="text-sm font-semibold text-accent underline-offset-2 hover:underline">
         {t.cancelAnnounce}
       </button>
     </div>
   );
+  const noteField = (
+    <label className="flex flex-col gap-1 text-sm text-soft">
+      {t.noteLabel}
+      <input type="text" value={note} onChange={e => setNote(e.target.value)} maxLength={200} placeholder={t.notePlaceholder} className="field h-11" />
+    </label>
+  );
+  const sentNote = signal?.note ? <p className="text-sm text-soft">{t.noteSent(signal.note)}</p> : null;
   const announceChips = (label: (m: number) => string) => (
     <>
       <button type="button" onClick={() => setShowAnnounce(v => !v)} className="btn-secondary h-12 text-[15px]" aria-expanded={showAnnounce}>
@@ -232,6 +243,7 @@ export function ArrivalBlock({ reference, token, initial = null }: { reference: 
             </div>
           </div>
           {notice(`✓ ${t.notified}`)}
+          {sentNote}
           <p className="text-sm text-soft">{t.autoStop(durationLabel(left))}</p>
           <button type="button" disabled={busy} onClick={() => stop("outbound")} className="btn-secondary h-12 text-[15px]">
             {t.stop}
@@ -253,6 +265,7 @@ export function ArrivalBlock({ reference, token, initial = null }: { reference: 
               {t.explainAfter}
             </p>
           </div>
+          {noteField}
           <button type="button" disabled={busy} onClick={share} className="btn-primary h-[52px] text-base">
             {busy ? t.sharing : t.share}
           </button>
@@ -271,6 +284,7 @@ export function ArrivalBlock({ reference, token, initial = null }: { reference: 
           <b>{t.returnExplainTitle}</b>
           <p className="mt-1.5 text-sm text-soft">{t.returnExplain(meeting)}</p>
         </div>
+        {noteField}
         <button type="button" disabled={busy} onClick={atMeetingPoint} className="btn-primary h-[52px] text-base">
           {t.atPoint}
         </button>

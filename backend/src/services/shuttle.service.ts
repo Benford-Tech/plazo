@@ -27,6 +27,7 @@ import { HttpException } from '@/utils/httpException';
 import { ArrivalService, MeetingPoint } from './arrival.service';
 import { AuditService } from './audit.service';
 import { FlightTrackingService } from './flight-tracking.service';
+import { ReturnNotice, returnNoticeView } from '@/domain/return-messages';
 import { ParkingLocationService } from './parking-location.service';
 import { ParkingService } from './parking.service';
 import { PushService } from './push.service';
@@ -122,6 +123,8 @@ export interface PickupRow {
   atMeetingPointAt: string | null;
   /** Id of the running trip this traveller is on, if any. */
   tripId: string | null;
+  /** E (06/10/2026): what the traveller signalled today ("mon vol a du retard", "bagage perdu"). */
+  notice: ReturnNotice | null;
 }
 
 export interface TripVehicle {
@@ -515,6 +518,7 @@ export class ShuttleService {
         stopName: r.stop?.name ?? null,
         atMeetingPointAt: iso(signals.find(s => s.reservationId === r.id)?.atMeetingPointAt),
         tripId: trips.find(t => t.reservationId === r.id)?.tripId ?? null,
+        notice: returnNoticeView(r),
       }));
     // At the meeting point first, then landed, then by expected landing.
     const rank = (r: PickupRow) => (r.atMeetingPointAt ? 0 : r.flight.status === 'landed' ? 1 : 2);

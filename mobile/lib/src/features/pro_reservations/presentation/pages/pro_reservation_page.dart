@@ -112,6 +112,9 @@ class ProReservationPage extends StatelessWidget implements AutoRouteWrapper {
     returnFlight: r.returnFlight,
     departureFlight: r.departureFlight,
     notes: r.notes,
+    customerNote: r.customerNote,
+    vehicleModel: r.vehicleModel,
+    vehicleColour: r.vehicleColour,
   );
 }
 
@@ -191,6 +194,7 @@ class _Sheet extends StatelessWidget {
         _Section(
           title: 'res.vehicle'.tr(),
           rows: [
+            if (r.vehicleModel != null || r.vehicleColour != null) ('res.vehicle_model'.tr(), [r.vehicleModel, r.vehicleColour].whereType<String>().join(' · ')),
             ('res.spot'.tr(), r.spot?.code ?? (r.spotId == null ? 'occupation.no_spot'.tr() : 'res.spot_placed'.tr())),
             if (r.keyHook != null) ('occupation.key_hook'.tr(), r.keyHook!),
             if (r.carLat != null && r.carLng != null && r.carLocatedAt != null)
@@ -206,6 +210,13 @@ class _Sheet extends StatelessWidget {
             child: Text('occupation.title'.tr(), style: AppText.strong(size: 14, color: AppColors.accentDeep)),
           ),
         ),
+        if (r.returnNoticeKind != null && r.returnNoticeAt != null)
+          _Section(
+            title: 'res.return_notice'.tr(),
+            text:
+                '${r.returnNoticeKind == 'other' && r.returnNoticeText != null ? '« ${r.returnNoticeText} »' : 'res.return_notice_kind.${r.returnNoticeKind}'.tr() + (r.returnNoticeText != null ? ' · « ${r.returnNoticeText} »' : '')} · ${hhmm(r.returnNoticeAt!)}',
+          ),
+        if (r.customerNote != null && r.customerNote!.trim().isNotEmpty) _Section(title: 'res.customer_note'.tr(), text: r.customerNote),
         if (r.notes != null && r.notes!.trim().isNotEmpty) _Section(title: 'res.notes'.tr(), text: r.notes),
         // C-B (06/10/2026): one gesture, the journey's next step; every other status change waits in a menu.
         if (next.isNotEmpty || r.closed) ...[

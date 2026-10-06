@@ -103,6 +103,23 @@ export class CreatePublicBookingDto {
   @Equals(true, { message: 'terms_required' })
   public acceptTerms: boolean;
 
+  /** E (06/10/2026): a message for the parking ("j'arrive avec une poussette"). */
+  @IsOptional()
+  @IsString({ message: 'too_long' })
+  @MaxLength(300, { message: 'too_long' })
+  public customerNote?: string | null;
+
+  /** E: the vehicle, so the valet spots it ("Peugeot 308", "grise"). */
+  @IsOptional()
+  @IsString({ message: 'too_long' })
+  @MaxLength(40, { message: 'too_long' })
+  public vehicleModel?: string | null;
+
+  @IsOptional()
+  @IsString({ message: 'too_long' })
+  @MaxLength(30, { message: 'too_long' })
+  public vehicleColour?: string | null;
+
   /**
    * Random key of the booking form (one per page shown): sending the same form twice (retry after
    * a timeout, double submit) returns the booking already made instead of creating another.

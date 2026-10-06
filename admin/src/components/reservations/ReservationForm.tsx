@@ -25,6 +25,10 @@ type Form = {
   channel: ReservationChannel;
   channelDetail: string;
   notes: string;
+  /** E (06/10/2026): the traveller's message and vehicle, as given at the counter or on the phone. */
+  customerNote: string;
+  vehicleModel: string;
+  vehicleColour: string;
 };
 
 const split = (local?: string) => (local ? { date: local.slice(0, 10), time: local.slice(11, 16) } : { date: "", time: "" });
@@ -49,6 +53,9 @@ function initialForm(reservation?: Reservation, defaultDate?: string, prefill?: 
       channel: "aggregator",
       channelDetail: prefill.provider,
       notes: "",
+      customerNote: "",
+      vehicleModel: "",
+      vehicleColour: "",
     };
   }
   if (reservation) {
@@ -70,6 +77,9 @@ function initialForm(reservation?: Reservation, defaultDate?: string, prefill?: 
       channel: reservation.channel,
       channelDetail: reservation.channelDetail ?? "",
       notes: reservation.notes ?? "",
+      customerNote: reservation.customerNote ?? "",
+      vehicleModel: reservation.vehicleModel ?? "",
+      vehicleColour: reservation.vehicleColour ?? "",
     };
   }
   return {
@@ -88,6 +98,9 @@ function initialForm(reservation?: Reservation, defaultDate?: string, prefill?: 
     channel: "phone",
     channelDetail: "",
     notes: "",
+    customerNote: "",
+    vehicleModel: "",
+    vehicleColour: "",
   };
 }
 
@@ -164,6 +177,9 @@ export function ReservationForm({
         departureFlight: form.departureFlight.trim() || null,
         stopId: form.stopId || null,
         notes: form.notes.trim() || null,
+        customerNote: form.customerNote.trim() || null,
+        vehicleModel: form.vehicleModel.trim() || null,
+        vehicleColour: form.vehicleColour.trim() || null,
         ...(!reservation && prefill?.externalReference ? { externalReference: prefill.externalReference } : {}),
         ...(!reservation && prefill?.priceCents !== undefined ? { priceCents: prefill.priceCents } : {}),
         force: force || undefined,
@@ -363,6 +379,17 @@ export function ReservationForm({
           <input id="channelDetail" value={form.channelDetail} onChange={set("channelDetail")} placeholder="Parkos, Onepark…" className={inputClass} />
         </Field>
       )}
+      <div className="grid gap-3 sm:grid-cols-2">
+        <Field id="vehicleModel" label={t.vehicleModel} error={fieldErrors.vehicleModel}>
+          <input id="vehicleModel" value={form.vehicleModel} onChange={set("vehicleModel")} maxLength={40} placeholder="Peugeot 308" className={inputClass} />
+        </Field>
+        <Field id="vehicleColour" label={t.vehicleColour} error={fieldErrors.vehicleColour}>
+          <input id="vehicleColour" value={form.vehicleColour} onChange={set("vehicleColour")} maxLength={30} placeholder="grise" className={inputClass} />
+        </Field>
+      </div>
+      <Field id="customerNote" label={t.customerNote} error={fieldErrors.customerNote}>
+        <textarea id="customerNote" rows={2} maxLength={300} value={form.customerNote} onChange={set("customerNote")} className={cn(inputClass, "h-auto py-2 text-base")} />
+      </Field>
       <Field id="notes" label={t.notes} error={fieldErrors.notes}>
         <textarea id="notes" rows={2} value={form.notes} onChange={set("notes")} className={cn(inputClass, "h-auto py-2 text-base")} />
       </Field>

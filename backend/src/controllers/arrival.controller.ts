@@ -39,7 +39,7 @@ export class ArrivalController {
   public start = catchAsync(async (req: Request, res: Response) => {
     const data: StartArrivalDto = req.body;
     res.set('Cache-Control', 'no-store');
-    res.json(await this.arrivals.start(reference(req), bookingToken(req), data.kind, data.consent));
+    res.json(await this.arrivals.start(reference(req), bookingToken(req), data.kind, data.consent, data.note));
   });
 
   /** POST /public/bookings/:reference/arrival/position */
@@ -53,7 +53,7 @@ export class ArrivalController {
   public announce = catchAsync(async (req: Request, res: Response) => {
     const data: AnnounceArrivalDto = req.body;
     res.set('Cache-Control', 'no-store');
-    res.json(await this.arrivals.announce(reference(req), bookingToken(req), data.kind, data.minutes));
+    res.json(await this.arrivals.announce(reference(req), bookingToken(req), data.kind, data.minutes, data.note));
   });
 
   /** POST /public/bookings/:reference/arrival/at-meeting-point */
@@ -61,7 +61,7 @@ export class ArrivalController {
     const data: AtMeetingPointDto = req.body;
     const position = typeof data.lat === 'number' && typeof data.lng === 'number' ? { lat: data.lat, lng: data.lng } : null;
     res.set('Cache-Control', 'no-store');
-    res.json(await this.arrivals.atMeetingPoint(reference(req), bookingToken(req), data.kind, position));
+    res.json(await this.arrivals.atMeetingPoint(reference(req), bookingToken(req), data.kind, position, data.note));
   });
 
   /** POST /public/bookings/:reference/arrival/stop */

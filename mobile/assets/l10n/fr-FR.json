@@ -200,6 +200,15 @@
       "note_hint": "Facultatif · gardée dans les notes, datée et signée",
       "confirm": "Véhicule rendu",
       "keys_required": "Confirmez que les clés sont rendues."
+    },
+    "vehicle_model": "Modèle du véhicule",
+    "vehicle_colour": "Couleur",
+    "customer_note": "Message du client",
+    "return_notice": "Signalé au retour",
+    "return_notice_kind": {
+      "flight_delayed": "Mon vol a du retard",
+      "luggage": "Bagage perdu ou retardé",
+      "other": "Un mot du voyageur"
     }
   },
   "occupation": {
@@ -684,7 +693,12 @@
     "change_dates": "Changer de dates",
     "total": "Total",
     "outbound_flight": "Vol aller (facultatif)",
-    "outbound_flight_hint": "Ex. AF 7641 : la navette vers le terminal est prévue avant votre décollage."
+    "outbound_flight_hint": "Ex. AF 7641 : la navette vers le terminal est prévue avant votre décollage.",
+    "vehicle_title": "Pour vous reconnaître (facultatif)",
+    "vehicle_model": "Modèle du véhicule",
+    "vehicle_colour": "Couleur",
+    "message": "Un mot pour le parking",
+    "message_hint": "Poussette, siège bébé, arrivée tardive… Le parking le lit avant votre venue."
   },
   "pay": {
     "title": "Paiement",
@@ -790,7 +804,9 @@
     "cancelled_now": "Votre réservation est annulée. Un email de confirmation vous est envoyé.",
     "cancelled_now_refunded": "Votre réservation est annulée. Remboursement intégral sur votre carte sous 5 à 10 jours. Un email de confirmation vous est envoyé.",
     "change_dates": "Pour changer les dates, annulez puis réservez de nouveau (gratuit avant le {}).",
-    "call": "Appeler le parking"
+    "call": "Appeler le parking",
+    "vehicle_details": "{}",
+    "message": "Votre mot pour le parking"
   },
   "more": {
     "title": "Plus",
@@ -855,7 +871,21 @@
     "route_photo": "Photo du point de rendez-vous",
     "route_arrived": "Je suis arrivé au point de rendez-vous",
     "route_arrived_done": "C'est noté : le chauffeur sait que vous êtes là.",
-    "route_retry": "Réessayer"
+    "route_retry": "Réessayer",
+    "notice_title": "Un souci ? Prévenez le parking",
+    "notice_help": "Le chauffeur et l'accueil le voient aussitôt dans leur file.",
+    "notice_flight_delayed": "Mon vol a du retard",
+    "notice_luggage": "Bagage perdu ou retardé",
+    "notice_other": "Autre…",
+    "notice_other_hint": "Dites-nous en un mot",
+    "notice_send": "Envoyer",
+    "notice_kind": {
+      "flight_delayed": "Mon vol a du retard",
+      "luggage": "Bagage perdu ou retardé",
+      "other": "Votre message"
+    },
+    "noticed": "Transmis au parking à {} : {}.",
+    "notice_again": "Signaler autre chose"
   },
   "shuttle": {
     "title": "Navette",
@@ -913,7 +943,12 @@
     "ended": "Trajet terminé : votre position n'est plus partagée et a été effacée.",
     "location_denied": "Sans accès à la position, le trajet ne peut pas être partagé. Activez-la dans les réglages du téléphone.",
     "notification_title": "Trajet navette en cours — position partagée avec vos clients",
-    "notification_text": "S'arrête quand vous terminez le trajet, ou au bout de 90 min."
+    "notification_text": "S'arrête quand vous terminez le trajet, ou au bout de 90 min.",
+    "notice": {
+      "flight_delayed": "Vol en retard (client)",
+      "luggage": "Bagage perdu",
+      "other": "Mot du client"
+    }
   },
   "vehicle_day": {
     "title": "Mon véhicule aujourd'hui",

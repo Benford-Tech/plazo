@@ -46,6 +46,10 @@ et affectation des véhicules, navette au retour.
   trajet », position partagée avec les passagers seulement, « Clients récupérés »), point de rendez-vous (carte, libellé,
   consignes, photo) et navettes dans l'espace pro, « Navette en route (Karim) » sur le planning. Reste : « bagages
   récupérés / pris en charge » détaillés, regroupement par vague, SMS au voyageur sans réservation Plazo.
+  **Communication voyageur ↔ parking (E, 06/10/2026)** : à la réservation (site, app, saisie pro) un message pour le parking
+  (`customerNote`) et le véhicule (`vehicleModel`, `vehicleColour`) ; un mot joint aux signaux d'arrivée (`note`, dans le push et
+  le bandeau) ; le jour du retour « Mon vol a du retard », « Bagage perdu » ou un mot libre (`POST …/return/notice`), poussé aux
+  retours et affiché dans la file du chauffeur, la fiche opérationnelle et la fiche complète.
   **Le site au niveau de l'app le jour J (D, 06/10/2026)** : sur « Ma réservation », « Prévenir de mon arrivée » (position du
   navigateur partagée avec consentement, « J'arrive dans 10 / 20 / 30 min », « Je suis au point de rendez-vous »), bloc
   « Navette » du séjour, « J'ai atterri » sans vol suivi, consignes, photo et itinéraire du point de rendez-vous.
@@ -349,6 +353,7 @@ Documentation interactive : `/api/docs` (Swagger). Toutes les routes sont sous `
 | GET / PUT | `/internal/parking/return-meeting-point` | Point de rendez-vous au retour : `{ lat, lng, label, instructions (≤ 500), photoUrl }` (gérant) |
 | GET | `/public/bookings/:ref/return` | App, jour du retour : vol (rafraîchi si dû), point de rendez-vous, signal, navette en route |
 | POST | `/public/bookings/:ref/return/landed` | « J'ai atterri » (push au personnel) |
+| POST | `/public/bookings/:ref/return/notice` | E (06/10/2026) : « Mon vol a du retard », « Bagage perdu » ou un mot `{ kind: flight_delayed·luggage·other, text? }` pendant que le véhicule est sur place (409 `vehicle_not_on_site`) ; gardé sur la réservation (`returnNotice*`), push aux retours, visible dans la file du chauffeur et la fiche |
 | GET | `/public/bookings/:ref/return/route?lat=&lng=` | Chemin à pied vers le point de rendez-vous (IGN, cache 3 min, ligne droite en repli) |
 | GET | `/public/bookings/:ref/shuttle` | La navette qui vient (position, ETA, véhicule) : seulement pendant un trajet qui inclut la réservation |
 | GET | `/internal/shuttle/pickups` | Chauffeur : retours à récupérer (vol, terminal, au point de rendez-vous, trajet) |

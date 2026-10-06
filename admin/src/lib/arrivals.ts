@@ -34,9 +34,10 @@ export function eventKey(s: ArrivalSignal): string {
 export function bannerText(s: ArrivalSignal): string {
   const t = fr.planning;
   const who = shortName(s.customerName);
-  if (s.state === "announced") return t.toastAnnounced(who, s.announcedMinutes ?? s.etaMinutes ?? 0, s.plate);
-  if (s.state === "at_meeting_point") return s.kind === "return" ? t.toastAtMeetingPoint(who, s.plate) : t.toastAtReception(who, s.plate);
-  return t.toastApproaching(who, s.etaMinutes, s.plate);
+  const note = s.note ? t.toastNote(s.note) : "";
+  if (s.state === "announced") return t.toastAnnounced(who, s.announcedMinutes ?? s.etaMinutes ?? 0, s.plate) + note;
+  if (s.state === "at_meeting_point") return (s.kind === "return" ? t.toastAtMeetingPoint(who, s.plate) : t.toastAtReception(who, s.plate)) + note;
+  return t.toastApproaching(who, s.etaMinutes, s.plate) + note;
 }
 
 /** Age of the position now, from the server's figure and the time since it was fetched. */

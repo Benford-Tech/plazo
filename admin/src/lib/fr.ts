@@ -601,6 +601,8 @@ export const fr = {
         : `${who} arrive dans ${eta} min — ${plate}`,
     toastAnnounced: (who: string, minutes: number, plate: string) =>
       `${who} : « J'arrive dans ${minutes} min » — ${plate}`,
+    /** E: the traveller's word, after the banner. */
+    toastNote: (note: string) => ` · « ${note} »`,
     toastAtReception: (who: string, plate: string) =>
       `${who} est à l'accueil — ${plate}`,
     toastAtMeetingPoint: (who: string, plate: string) =>
@@ -650,6 +652,15 @@ export const fr = {
     channel: "Canal",
     channelDetail: "Nom du comparateur",
     notes: "Notes",
+    /** E (06/10/2026): what the traveller told the parking. */
+    customerNote: "Message du client",
+    vehicleModel: "Modèle du véhicule",
+    vehicleColour: "Couleur",
+    vehicleDetails: (model: string | null | undefined, colour: string | null | undefined) => [model, colour].filter(Boolean).join(" · "),
+    returnNotice: "Signalé au retour",
+    returnNoticeKinds: { flight_delayed: "Mon vol a du retard", luggage: "Bagage perdu ou retardé", other: "Un mot du voyageur" } as Record<string, string>,
+    returnNoticeLine: (kind: string, text: string | null, time: string) =>
+      `${kind === "other" && text ? `« ${text} »` : `${{ flight_delayed: "Mon vol a du retard", luggage: "Bagage perdu ou retardé", other: "Un mot du voyageur" }[kind] ?? kind}${text ? ` · « ${text} »` : ""}`} · ${time}`,
     nights: (n: number) => `${n} nuit${n > 1 ? "s" : ""}`,
     save: "Enregistrer",
     saved: "Réservation enregistrée",
@@ -1620,6 +1631,9 @@ export const shuttleTripsFr = {
     badge: {
       onTrip: "Sur un trajet",
       atPoint: (t: string) => `Au point de RDV ${t}`,
+      noticeFlightDelayed: "Vol en retard (client)",
+      noticeLuggage: "Bagage perdu",
+      noticeOther: (text: string | null) => (text ? `« ${text} »` : "Mot du client"),
       landed: (t: string) => `Atterri ${t} · en chemin`,
       cancelled: "Vol annulé",
       returnAt: (t: string) => `Retour prévu ${t}`,
@@ -1676,6 +1690,9 @@ export const quickCardFr = {
   stop: "Desserte",
   passengers: (n: number) => `${n} pass.`,
   notes: "Notes",
+  customerNote: "Message du client",
+  vehicle: "Véhicule",
+  returnNotice: "Signalé au retour",
   next: {
     title: "Prochaine étape",
     place: "Placer la voiture",

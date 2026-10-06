@@ -204,6 +204,37 @@ export function BookingForm({
             <FieldError id="b-passengers-error" code={f.passengers} />
           </div>
         </div>
+        {/* E (06/10/2026): the vehicle (so the valet spots it) and a word for the parking. */}
+        <p className="pt-1 text-[15px] font-bold">{fr.booking.vehicleTitle}</p>
+        <div className="grid gap-3.5 md:grid-cols-2 md:gap-3">
+          <div>
+            <label htmlFor="b-vehicleModel" className="label">
+              {fr.booking.vehicleModel}
+            </label>
+            <input {...field("vehicleModel")} type="text" maxLength={40} autoComplete="off" placeholder={fr.booking.vehicleModelHint} defaultValue={v.vehicleModel} className="field" />
+            <FieldError id="b-vehicleModel-error" code={f.vehicleModel} />
+          </div>
+          <div>
+            <label htmlFor="b-vehicleColour" className="label">
+              {fr.booking.vehicleColour}
+            </label>
+            <input {...field("vehicleColour")} type="text" maxLength={30} autoComplete="off" placeholder={fr.booking.vehicleColourHint} defaultValue={v.vehicleColour} className="field" />
+            <FieldError id="b-vehicleColour-error" code={f.vehicleColour} />
+          </div>
+        </div>
+        <div>
+          <label htmlFor="b-customerNote" className="label">
+            {fr.booking.message}
+          </label>
+          <textarea {...field("customerNote")} maxLength={300} rows={2} defaultValue={v.customerNote} aria-describedby={f.customerNote ? "b-customerNote-error" : "b-customerNote-hint"} className="field min-h-[72px] py-2.5" />
+          {f.customerNote ? (
+            <FieldError id="b-customerNote-error" code={f.customerNote} />
+          ) : (
+            <p id="b-customerNote-hint" className="mt-1.5 text-[13px] text-soft">
+              {fr.booking.messageHint}
+            </p>
+          )}
+        </div>
       </section>
 
       <div>

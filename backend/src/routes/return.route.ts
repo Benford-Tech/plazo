@@ -12,6 +12,7 @@ import {
 } from '@/dtos/shuttle.dto';
 import { Routes } from '@/interfaces/routes.interface';
 import { RefuseInViewAs, StaffAuthMiddleware } from '@/middlewares/staff-auth.middleware';
+import { ReturnNoticeDto } from '@/dtos/arrival.dto';
 import { ValidationMiddleware } from '@/middlewares/validation.middleware';
 
 /**
@@ -379,6 +380,7 @@ export class ReturnRoute implements Routes {
     const base = '/public/bookings/:reference';
     this.router.get(`${base}/return`, this.returns.state);
     this.router.post(`${base}/return/landed`, this.returns.landed);
+    this.router.post(`${base}/return/notice`, ValidationMiddleware(ReturnNoticeDto), this.returns.notice);
     this.router.get(`${base}/return/route`, this.returns.route);
     this.router.get(`${base}/shuttle`, this.returns.shuttle);
     this.router.get(`${base}/shuttles`, this.returns.shuttles);

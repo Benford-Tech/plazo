@@ -187,7 +187,13 @@ export default async function ManageBookingPage({ params, searchParams }: PagePr
             <Row label={fr.manage.flight}>{b.returnFlight ?? <span className="font-normal text-soft">{fr.manage.noFlight}</span>}</Row>
             <Row label={fr.manage.vehicle}>
               <Plate plate={b.plate} size="sm" />
+              {(b.vehicle?.model || b.vehicle?.colour) && <span className="block font-normal text-soft">{fr.manage.vehicleDetails(b.vehicle.model, b.vehicle.colour)}</span>}
             </Row>
+            {b.customerNote && (
+              <Row label={fr.manage.message}>
+                <span className="font-normal">{b.customerNote}</span>
+              </Row>
+            )}
             <Row label={fr.manage.passengers}>{b.passengers}</Row>
             {total && (
               <Row label={totalLabel}>

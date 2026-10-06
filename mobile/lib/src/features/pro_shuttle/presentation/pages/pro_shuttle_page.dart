@@ -409,6 +409,20 @@ class _PickupTile extends StatelessWidget {
                   FrenchPlate(row.plate, size: 11),
                 ],
               ),
+              // E (06/10/2026): what the traveller signalled today.
+              if (row.notice != null) ...[
+                const SizedBox(height: 6),
+                Align(
+                  alignment: Alignment.centerLeft,
+                  child: StatusBadge(
+                    key: Key('pickup-notice-${row.reservationId}'),
+                    text: row.notice!.kind == 'other' && row.notice!.text != null
+                        ? '« ${row.notice!.text} »'
+                        : 'shuttle.notice.${row.notice!.kind}'.tr() + (row.notice!.text != null ? ' · « ${row.notice!.text} »' : ''),
+                    tone: BadgeTone.peach,
+                  ),
+                ),
+              ],
             ],
           ),
         ),

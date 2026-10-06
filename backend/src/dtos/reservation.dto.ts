@@ -71,6 +71,22 @@ export class CreateReservationDto {
   @MaxLength(1000, { message: 'too_long' })
   public notes?: string;
 
+  /** E (06/10/2026): the traveller's message and vehicle, as typed at the counter or on the phone. */
+  @IsOptional()
+  @IsString()
+  @MaxLength(300, { message: 'too_long' })
+  public customerNote?: string | null;
+
+  @IsOptional()
+  @IsString()
+  @MaxLength(40, { message: 'too_long' })
+  public vehicleModel?: string | null;
+
+  @IsOptional()
+  @IsString()
+  @MaxLength(30, { message: 'too_long' })
+  public vehicleColour?: string | null;
+
   /** Booking number on the source channel (imports), unique per operator. */
   @IsOptional()
   @IsString()
@@ -161,6 +177,21 @@ export class UpdateReservationDto {
   @IsString()
   @MaxLength(1000, { message: 'too_long' })
   public notes?: string | null;
+
+  @IsOptional()
+  @IsString()
+  @MaxLength(300, { message: 'too_long' })
+  public customerNote?: string | null;
+
+  @IsOptional()
+  @IsString()
+  @MaxLength(40, { message: 'too_long' })
+  public vehicleModel?: string | null;
+
+  @IsOptional()
+  @IsString()
+  @MaxLength(30, { message: 'too_long' })
+  public vehicleColour?: string | null;
 
   @IsOptional()
   @IsBoolean()

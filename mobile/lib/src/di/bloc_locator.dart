@@ -23,7 +23,7 @@ void _initBlocs() {
       (reference, _) => PaymentBloc(locator(), locator(), locator(), locator(), locator(), locator(), locator(), locator(), reference: reference),
     )
     ..registerFactory(() => ArrivalBloc(locator(), locator(), locator(), locator(), locator(), locator(), locator()))
-    ..registerFactory(() => ReturnBloc(locator(), locator(), locator()))
+    ..registerFactory(() => ReturnBloc(locator(), locator(), locator(), notice: locator()))
     ..registerFactory(() => MeetingRouteBloc(locator(), locator(), locator(), locator()))
     ..registerFactory(() => ShuttleBloc(locator(), locator(), locator(), locator(), locator(), locator(), locator(), locator(), locator(), pollInterval: AppConstants.livePollInterval))
     ..registerFactory(() => LiveShuttlesBloc(locator(), pollInterval: AppConstants.livePollInterval))

@@ -33,6 +33,7 @@ void _initUseCaseLocator() {
     // Traveller: the return day
     ..registerLazySingleton(() => GetReturnUseCase(locator()))
     ..registerLazySingleton(() => DeclareLandedUseCase(locator()))
+    ..registerLazySingleton(() => SendReturnNoticeUseCase(locator()))
     ..registerLazySingleton(() => GetWalkingRouteUseCase(locator()))
     ..registerLazySingleton(() => GetShuttleStatusUseCase(locator()))
     ..registerLazySingleton(() => GetStayShuttlesUseCase(locator()))

@@ -164,6 +164,21 @@ export function ReservationQuickCard({ id, onClose }: { id: string; onClose: () 
                 </>
               )}
             </dl>
+            {(r.vehicleModel || r.vehicleColour) && (
+              <p data-testid="card-vehicle" className="text-[13px] text-muted-foreground">
+                {t.vehicle} · {fr.reservation.vehicleDetails(r.vehicleModel, r.vehicleColour)}
+              </p>
+            )}
+            {r.returnNoticeKind && r.returnNoticeAt && (
+              <p data-testid="card-notice" className="rounded-xl border border-panel-line bg-warn-soft p-3 text-[13px] font-semibold text-warn-text">
+                {t.returnNotice} · {fr.reservation.returnNoticeLine(r.returnNoticeKind, r.returnNoticeText ?? null, dateTimeShort(r.returnNoticeAt))}
+              </p>
+            )}
+            {r.customerNote && (
+              <p data-testid="card-message" className="whitespace-pre-line rounded-xl border border-lime-deep/40 bg-panel p-3 text-[13px]">
+                <span className="font-semibold">{t.customerNote} :</span> {r.customerNote}
+              </p>
+            )}
             {r.notes && <p className="whitespace-pre-line rounded-xl border border-panel-line bg-panel p-3 text-[13px]">{r.notes}</p>}
             <section className="space-y-2">
               <h3 className="text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">{t.next.title}</h3>

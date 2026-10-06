@@ -42,6 +42,9 @@ export interface PublicBooking {
   plate: string;
   returnFlight: string | null;
   departureFlight: string | null;
+  /** E (06/10/2026): the traveller's message for the parking, and their vehicle. */
+  customerNote: string | null;
+  vehicle: { model: string | null; colour: string | null };
   /** Where the car is parked (06/10/2026), recorded by the traveller or the valet; null until then. */
   car: CarLocation | null;
   /** The outbound flight as tracked, and when the shuttle to the terminal is planned to leave (local). */

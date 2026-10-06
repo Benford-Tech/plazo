@@ -292,7 +292,8 @@ as double?,
 /// @nodoc
 mixin _$StaffSignalModel {
 
- String get id; String get reservationId; String get reference; ArrivalKind get kind;@JsonKey(unknownEnumValue: ArrivalSignalState.ended) ArrivalSignalState get state; String get customerName; String get plate; int get passengers; String? get returnFlight; DateTime get scheduledAt; DateTime get startedAt; DateTime get expiresAt; int? get distanceM; int? get etaMinutes; DateTime? get etaAt; int? get announcedMinutes; DateTime? get atMeetingPointAt; SignalPositionModel? get position; DateTime? get positionUpdatedAt; int? get positionAgeSeconds; MeetingPointModel? get meetingPoint;
+ String get id; String get reservationId; String get reference; ArrivalKind get kind;@JsonKey(unknownEnumValue: ArrivalSignalState.ended) ArrivalSignalState get state; String get customerName; String get plate; int get passengers; String? get returnFlight; DateTime get scheduledAt; DateTime get startedAt; DateTime get expiresAt; int? get distanceM; int? get etaMinutes; DateTime? get etaAt; int? get announcedMinutes; DateTime? get atMeetingPointAt; SignalPositionModel? get position; DateTime? get positionUpdatedAt; int? get positionAgeSeconds; MeetingPointModel? get meetingPoint;/// E (06/10/2026): the traveller's word for the parking, sent with the signal.
+ String? get note;
 /// Create a copy of StaffSignalModel
 /// with the given fields replaced by the non-null parameter values.
 @JsonKey(includeFromJson: false, includeToJson: false)
@@ -306,20 +307,20 @@ $StaffSignalModelCopyWith<StaffSignalModel> get copyWith => _$StaffSignalModelCo
 @override
 bool operator ==(Object other) {
   final _this = this as StaffSignalModel;
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is StaffSignalModel&&(identical(other.id, _this.id) || other.id == _this.id)&&(identical(other.reservationId, _this.reservationId) || other.reservationId == _this.reservationId)&&(identical(other.reference, _this.reference) || other.reference == _this.reference)&&(identical(other.kind, _this.kind) || other.kind == _this.kind)&&(identical(other.state, _this.state) || other.state == _this.state)&&(identical(other.customerName, _this.customerName) || other.customerName == _this.customerName)&&(identical(other.plate, _this.plate) || other.plate == _this.plate)&&(identical(other.passengers, _this.passengers) || other.passengers == _this.passengers)&&(identical(other.returnFlight, _this.returnFlight) || other.returnFlight == _this.returnFlight)&&(identical(other.scheduledAt, _this.scheduledAt) || other.scheduledAt == _this.scheduledAt)&&(identical(other.startedAt, _this.startedAt) || other.startedAt == _this.startedAt)&&(identical(other.expiresAt, _this.expiresAt) || other.expiresAt == _this.expiresAt)&&(identical(other.distanceM, _this.distanceM) || other.distanceM == _this.distanceM)&&(identical(other.etaMinutes, _this.etaMinutes) || other.etaMinutes == _this.etaMinutes)&&(identical(other.etaAt, _this.etaAt) || other.etaAt == _this.etaAt)&&(identical(other.announcedMinutes, _this.announcedMinutes) || other.announcedMinutes == _this.announcedMinutes)&&(identical(other.atMeetingPointAt, _this.atMeetingPointAt) || other.atMeetingPointAt == _this.atMeetingPointAt)&&(identical(other.position, _this.position) || other.position == _this.position)&&(identical(other.positionUpdatedAt, _this.positionUpdatedAt) || other.positionUpdatedAt == _this.positionUpdatedAt)&&(identical(other.positionAgeSeconds, _this.positionAgeSeconds) || other.positionAgeSeconds == _this.positionAgeSeconds)&&(identical(other.meetingPoint, _this.meetingPoint) || other.meetingPoint == _this.meetingPoint));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is StaffSignalModel&&(identical(other.id, _this.id) || other.id == _this.id)&&(identical(other.reservationId, _this.reservationId) || other.reservationId == _this.reservationId)&&(identical(other.reference, _this.reference) || other.reference == _this.reference)&&(identical(other.kind, _this.kind) || other.kind == _this.kind)&&(identical(other.state, _this.state) || other.state == _this.state)&&(identical(other.customerName, _this.customerName) || other.customerName == _this.customerName)&&(identical(other.plate, _this.plate) || other.plate == _this.plate)&&(identical(other.passengers, _this.passengers) || other.passengers == _this.passengers)&&(identical(other.returnFlight, _this.returnFlight) || other.returnFlight == _this.returnFlight)&&(identical(other.scheduledAt, _this.scheduledAt) || other.scheduledAt == _this.scheduledAt)&&(identical(other.startedAt, _this.startedAt) || other.startedAt == _this.startedAt)&&(identical(other.expiresAt, _this.expiresAt) || other.expiresAt == _this.expiresAt)&&(identical(other.distanceM, _this.distanceM) || other.distanceM == _this.distanceM)&&(identical(other.etaMinutes, _this.etaMinutes) || other.etaMinutes == _this.etaMinutes)&&(identical(other.etaAt, _this.etaAt) || other.etaAt == _this.etaAt)&&(identical(other.announcedMinutes, _this.announcedMinutes) || other.announcedMinutes == _this.announcedMinutes)&&(identical(other.atMeetingPointAt, _this.atMeetingPointAt) || other.atMeetingPointAt == _this.atMeetingPointAt)&&(identical(other.position, _this.position) || other.position == _this.position)&&(identical(other.positionUpdatedAt, _this.positionUpdatedAt) || other.positionUpdatedAt == _this.positionUpdatedAt)&&(identical(other.positionAgeSeconds, _this.positionAgeSeconds) || other.positionAgeSeconds == _this.positionAgeSeconds)&&(identical(other.meetingPoint, _this.meetingPoint) || other.meetingPoint == _this.meetingPoint)&&(identical(other.note, _this.note) || other.note == _this.note));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
 int get hashCode {
   final _this = this as StaffSignalModel;
-  return Object.hashAll([runtimeType,_this.id,_this.reservationId,_this.reference,_this.kind,_this.state,_this.customerName,_this.plate,_this.passengers,_this.returnFlight,_this.scheduledAt,_this.startedAt,_this.expiresAt,_this.distanceM,_this.etaMinutes,_this.etaAt,_this.announcedMinutes,_this.atMeetingPointAt,_this.position,_this.positionUpdatedAt,_this.positionAgeSeconds,_this.meetingPoint]);
+  return Object.hashAll([runtimeType,_this.id,_this.reservationId,_this.reference,_this.kind,_this.state,_this.customerName,_this.plate,_this.passengers,_this.returnFlight,_this.scheduledAt,_this.startedAt,_this.expiresAt,_this.distanceM,_this.etaMinutes,_this.etaAt,_this.announcedMinutes,_this.atMeetingPointAt,_this.position,_this.positionUpdatedAt,_this.positionAgeSeconds,_this.meetingPoint,_this.note]);
 }
 
 @override
 String toString() {
   final _this = this as StaffSignalModel;
-  return 'StaffSignalModel(id: ${_this.id}, reservationId: ${_this.reservationId}, reference: ${_this.reference}, kind: ${_this.kind}, state: ${_this.state}, customerName: ${_this.customerName}, plate: ${_this.plate}, passengers: ${_this.passengers}, returnFlight: ${_this.returnFlight}, scheduledAt: ${_this.scheduledAt}, startedAt: ${_this.startedAt}, expiresAt: ${_this.expiresAt}, distanceM: ${_this.distanceM}, etaMinutes: ${_this.etaMinutes}, etaAt: ${_this.etaAt}, announcedMinutes: ${_this.announcedMinutes}, atMeetingPointAt: ${_this.atMeetingPointAt}, position: ${_this.position}, positionUpdatedAt: ${_this.positionUpdatedAt}, positionAgeSeconds: ${_this.positionAgeSeconds}, meetingPoint: ${_this.meetingPoint})';
+  return 'StaffSignalModel(id: ${_this.id}, reservationId: ${_this.reservationId}, reference: ${_this.reference}, kind: ${_this.kind}, state: ${_this.state}, customerName: ${_this.customerName}, plate: ${_this.plate}, passengers: ${_this.passengers}, returnFlight: ${_this.returnFlight}, scheduledAt: ${_this.scheduledAt}, startedAt: ${_this.startedAt}, expiresAt: ${_this.expiresAt}, distanceM: ${_this.distanceM}, etaMinutes: ${_this.etaMinutes}, etaAt: ${_this.etaAt}, announcedMinutes: ${_this.announcedMinutes}, atMeetingPointAt: ${_this.atMeetingPointAt}, position: ${_this.position}, positionUpdatedAt: ${_this.positionUpdatedAt}, positionAgeSeconds: ${_this.positionAgeSeconds}, meetingPoint: ${_this.meetingPoint}, note: ${_this.note})';
 }
 
 
@@ -330,7 +331,7 @@ abstract mixin class $StaffSignalModelCopyWith<$Res>  {
   factory $StaffSignalModelCopyWith(StaffSignalModel value, $Res Function(StaffSignalModel) _then) = _$StaffSignalModelCopyWithImpl;
 @useResult
 $Res call({
- String id, String reservationId, String reference, ArrivalKind kind,@JsonKey(unknownEnumValue: ArrivalSignalState.ended) ArrivalSignalState state, String customerName, String plate, int passengers, String? returnFlight, DateTime scheduledAt, DateTime startedAt, DateTime expiresAt, int? distanceM, int? etaMinutes, DateTime? etaAt, int? announcedMinutes, DateTime? atMeetingPointAt, SignalPositionModel? position, DateTime? positionUpdatedAt, int? positionAgeSeconds, MeetingPointModel? meetingPoint
+ String id, String reservationId, String reference, ArrivalKind kind,@JsonKey(unknownEnumValue: ArrivalSignalState.ended) ArrivalSignalState state, String customerName, String plate, int passengers, String? returnFlight, DateTime scheduledAt, DateTime startedAt, DateTime expiresAt, int? distanceM, int? etaMinutes, DateTime? etaAt, int? announcedMinutes, DateTime? atMeetingPointAt, SignalPositionModel? position, DateTime? positionUpdatedAt, int? positionAgeSeconds, MeetingPointModel? meetingPoint, String? note
 });
 
 
@@ -347,7 +348,7 @@ class _$StaffSignalModelCopyWithImpl<$Res>
 
 /// Create a copy of StaffSignalModel
 /// with the given fields replaced by the non-null parameter values.
-@pragma('vm:prefer-inline') @override $Res call({Object? id = null,Object? reservationId = null,Object? reference = null,Object? kind = null,Object? state = null,Object? customerName = null,Object? plate = null,Object? passengers = null,Object? returnFlight = freezed,Object? scheduledAt = null,Object? startedAt = null,Object? expiresAt = null,Object? distanceM = freezed,Object? etaMinutes = freezed,Object? etaAt = freezed,Object? announcedMinutes = freezed,Object? atMeetingPointAt = freezed,Object? position = freezed,Object? positionUpdatedAt = freezed,Object? positionAgeSeconds = freezed,Object? meetingPoint = freezed,}) {
+@pragma('vm:prefer-inline') @override $Res call({Object? id = null,Object? reservationId = null,Object? reference = null,Object? kind = null,Object? state = null,Object? customerName = null,Object? plate = null,Object? passengers = null,Object? returnFlight = freezed,Object? scheduledAt = null,Object? startedAt = null,Object? expiresAt = null,Object? distanceM = freezed,Object? etaMinutes = freezed,Object? etaAt = freezed,Object? announcedMinutes = freezed,Object? atMeetingPointAt = freezed,Object? position = freezed,Object? positionUpdatedAt = freezed,Object? positionAgeSeconds = freezed,Object? meetingPoint = freezed,Object? note = freezed,}) {
   return _then(StaffSignalModel(
 id: null == id ? _self.id : id // ignore: cast_nullable_to_non_nullable
 as String,reservationId: null == reservationId ? _self.reservationId : reservationId // ignore: cast_nullable_to_non_nullable
@@ -370,7 +371,8 @@ as DateTime?,position: freezed == position ? _self.position : position // ignore
 as SignalPositionModel?,positionUpdatedAt: freezed == positionUpdatedAt ? _self.positionUpdatedAt : positionUpdatedAt // ignore: cast_nullable_to_non_nullable
 as DateTime?,positionAgeSeconds: freezed == positionAgeSeconds ? _self.positionAgeSeconds : positionAgeSeconds // ignore: cast_nullable_to_non_nullable
 as int?,meetingPoint: freezed == meetingPoint ? _self.meetingPoint : meetingPoint // ignore: cast_nullable_to_non_nullable
-as MeetingPointModel?,
+as MeetingPointModel?,note: freezed == note ? _self.note : note // ignore: cast_nullable_to_non_nullable
+as String?,
   ));
 }
 /// Create a copy of StaffSignalModel
@@ -479,10 +481,10 @@ return $default(_that);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( String id,  String reservationId,  String reference,  ArrivalKind kind, @JsonKey(unknownEnumValue: ArrivalSignalState.ended)  ArrivalSignalState state,  String customerName,  String plate,  int passengers,  String? returnFlight,  DateTime scheduledAt,  DateTime startedAt,  DateTime expiresAt,  int? distanceM,  int? etaMinutes,  DateTime? etaAt,  int? announcedMinutes,  DateTime? atMeetingPointAt,  SignalPositionModel? position,  DateTime? positionUpdatedAt,  int? positionAgeSeconds,  MeetingPointModel? meetingPoint)?  $default,{required TResult orElse(),}) {final _that = this;
+@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( String id,  String reservationId,  String reference,  ArrivalKind kind, @JsonKey(unknownEnumValue: ArrivalSignalState.ended)  ArrivalSignalState state,  String customerName,  String plate,  int passengers,  String? returnFlight,  DateTime scheduledAt,  DateTime startedAt,  DateTime expiresAt,  int? distanceM,  int? etaMinutes,  DateTime? etaAt,  int? announcedMinutes,  DateTime? atMeetingPointAt,  SignalPositionModel? position,  DateTime? positionUpdatedAt,  int? positionAgeSeconds,  MeetingPointModel? meetingPoint,  String? note)?  $default,{required TResult orElse(),}) {final _that = this;
 switch (_that) {
 case _StaffSignalModel() when $default != null:
-return $default(_that.id,_that.reservationId,_that.reference,_that.kind,_that.state,_that.customerName,_that.plate,_that.passengers,_that.returnFlight,_that.scheduledAt,_that.startedAt,_that.expiresAt,_that.distanceM,_that.etaMinutes,_that.etaAt,_that.announcedMinutes,_that.atMeetingPointAt,_that.position,_that.positionUpdatedAt,_that.positionAgeSeconds,_that.meetingPoint);case _:
+return $default(_that.id,_that.reservationId,_that.reference,_that.kind,_that.state,_that.customerName,_that.plate,_that.passengers,_that.returnFlight,_that.scheduledAt,_that.startedAt,_that.expiresAt,_that.distanceM,_that.etaMinutes,_that.etaAt,_that.announcedMinutes,_that.atMeetingPointAt,_that.position,_that.positionUpdatedAt,_that.positionAgeSeconds,_that.meetingPoint,_that.note);case _:
   return orElse();
 
 }
@@ -500,10 +502,10 @@ return $default(_that.id,_that.reservationId,_that.reference,_that.kind,_that.st
 /// }
 /// ```
 
-@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( String id,  String reservationId,  String reference,  ArrivalKind kind, @JsonKey(unknownEnumValue: ArrivalSignalState.ended)  ArrivalSignalState state,  String customerName,  String plate,  int passengers,  String? returnFlight,  DateTime scheduledAt,  DateTime startedAt,  DateTime expiresAt,  int? distanceM,  int? etaMinutes,  DateTime? etaAt,  int? announcedMinutes,  DateTime? atMeetingPointAt,  SignalPositionModel? position,  DateTime? positionUpdatedAt,  int? positionAgeSeconds,  MeetingPointModel? meetingPoint)  $default,) {final _that = this;
+@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( String id,  String reservationId,  String reference,  ArrivalKind kind, @JsonKey(unknownEnumValue: ArrivalSignalState.ended)  ArrivalSignalState state,  String customerName,  String plate,  int passengers,  String? returnFlight,  DateTime scheduledAt,  DateTime startedAt,  DateTime expiresAt,  int? distanceM,  int? etaMinutes,  DateTime? etaAt,  int? announcedMinutes,  DateTime? atMeetingPointAt,  SignalPositionModel? position,  DateTime? positionUpdatedAt,  int? positionAgeSeconds,  MeetingPointModel? meetingPoint,  String? note)  $default,) {final _that = this;
 switch (_that) {
 case _StaffSignalModel():
-return $default(_that.id,_that.reservationId,_that.reference,_that.kind,_that.state,_that.customerName,_that.plate,_that.passengers,_that.returnFlight,_that.scheduledAt,_that.startedAt,_that.expiresAt,_that.distanceM,_that.etaMinutes,_that.etaAt,_that.announcedMinutes,_that.atMeetingPointAt,_that.position,_that.positionUpdatedAt,_that.positionAgeSeconds,_that.meetingPoint);case _:
+return $default(_that.id,_that.reservationId,_that.reference,_that.kind,_that.state,_that.customerName,_that.plate,_that.passengers,_that.returnFlight,_that.scheduledAt,_that.startedAt,_that.expiresAt,_that.distanceM,_that.etaMinutes,_that.etaAt,_that.announcedMinutes,_that.atMeetingPointAt,_that.position,_that.positionUpdatedAt,_that.positionAgeSeconds,_that.meetingPoint,_that.note);case _:
   throw StateError('Unexpected subclass');
 
 }
@@ -520,10 +522,10 @@ return $default(_that.id,_that.reservationId,_that.reference,_that.kind,_that.st
 /// }
 /// ```
 
-@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( String id,  String reservationId,  String reference,  ArrivalKind kind, @JsonKey(unknownEnumValue: ArrivalSignalState.ended)  ArrivalSignalState state,  String customerName,  String plate,  int passengers,  String? returnFlight,  DateTime scheduledAt,  DateTime startedAt,  DateTime expiresAt,  int? distanceM,  int? etaMinutes,  DateTime? etaAt,  int? announcedMinutes,  DateTime? atMeetingPointAt,  SignalPositionModel? position,  DateTime? positionUpdatedAt,  int? positionAgeSeconds,  MeetingPointModel? meetingPoint)?  $default,) {final _that = this;
+@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( String id,  String reservationId,  String reference,  ArrivalKind kind, @JsonKey(unknownEnumValue: ArrivalSignalState.ended)  ArrivalSignalState state,  String customerName,  String plate,  int passengers,  String? returnFlight,  DateTime scheduledAt,  DateTime startedAt,  DateTime expiresAt,  int? distanceM,  int? etaMinutes,  DateTime? etaAt,  int? announcedMinutes,  DateTime? atMeetingPointAt,  SignalPositionModel? position,  DateTime? positionUpdatedAt,  int? positionAgeSeconds,  MeetingPointModel? meetingPoint,  String? note)?  $default,) {final _that = this;
 switch (_that) {
 case _StaffSignalModel() when $default != null:
-return $default(_that.id,_that.reservationId,_that.reference,_that.kind,_that.state,_that.customerName,_that.plate,_that.passengers,_that.returnFlight,_that.scheduledAt,_that.startedAt,_that.expiresAt,_that.distanceM,_that.etaMinutes,_that.etaAt,_that.announcedMinutes,_that.atMeetingPointAt,_that.position,_that.positionUpdatedAt,_that.positionAgeSeconds,_that.meetingPoint);case _:
+return $default(_that.id,_that.reservationId,_that.reference,_that.kind,_that.state,_that.customerName,_that.plate,_that.passengers,_that.returnFlight,_that.scheduledAt,_that.startedAt,_that.expiresAt,_that.distanceM,_that.etaMinutes,_that.etaAt,_that.announcedMinutes,_that.atMeetingPointAt,_that.position,_that.positionUpdatedAt,_that.positionAgeSeconds,_that.meetingPoint,_that.note);case _:
   return null;
 
 }
@@ -535,7 +537,7 @@ return $default(_that.id,_that.reservationId,_that.reference,_that.kind,_that.st
 @JsonSerializable()
 
 class _StaffSignalModel extends StaffSignalModel {
-  const _StaffSignalModel({required this.id, required this.reservationId, required this.reference, required this.kind, @JsonKey(unknownEnumValue: ArrivalSignalState.ended) required this.state, required this.customerName, required this.plate, required this.passengers, this.returnFlight, required this.scheduledAt, required this.startedAt, required this.expiresAt, this.distanceM, this.etaMinutes, this.etaAt, this.announcedMinutes, this.atMeetingPointAt, this.position, this.positionUpdatedAt, this.positionAgeSeconds, this.meetingPoint}): super._();
+  const _StaffSignalModel({required this.id, required this.reservationId, required this.reference, required this.kind, @JsonKey(unknownEnumValue: ArrivalSignalState.ended) required this.state, required this.customerName, required this.plate, required this.passengers, this.returnFlight, required this.scheduledAt, required this.startedAt, required this.expiresAt, this.distanceM, this.etaMinutes, this.etaAt, this.announcedMinutes, this.atMeetingPointAt, this.position, this.positionUpdatedAt, this.positionAgeSeconds, this.meetingPoint, this.note}): super._();
   factory _StaffSignalModel.fromJson(Map<String, dynamic> json) => _$StaffSignalModelFromJson(json);
 
 @override final  String id;
@@ -559,6 +561,8 @@ class _StaffSignalModel extends StaffSignalModel {
 @override final  DateTime? positionUpdatedAt;
 @override final  int? positionAgeSeconds;
 @override final  MeetingPointModel? meetingPoint;
+/// E (06/10/2026): the traveller's word for the parking, sent with the signal.
+@override final  String? note;
 
 /// Create a copy of StaffSignalModel
 /// with the given fields replaced by the non-null parameter values.
@@ -573,18 +577,18 @@ Map<String, dynamic> toJson() {
 
 @override
 bool operator ==(Object other) {
-    return identical(this, other) || (other.runtimeType == runtimeType&&other is _StaffSignalModel&&(identical(other.id, id) || other.id == id)&&(identical(other.reservationId, reservationId) || other.reservationId == reservationId)&&(identical(other.reference, reference) || other.reference == reference)&&(identical(other.kind, kind) || other.kind == kind)&&(identical(other.state, state) || other.state == state)&&(identical(other.customerName, customerName) || other.customerName == customerName)&&(identical(other.plate, plate) || other.plate == plate)&&(identical(other.passengers, passengers) || other.passengers == passengers)&&(identical(other.returnFlight, returnFlight) || other.returnFlight == returnFlight)&&(identical(other.scheduledAt, scheduledAt) || other.scheduledAt == scheduledAt)&&(identical(other.startedAt, startedAt) || other.startedAt == startedAt)&&(identical(other.expiresAt, expiresAt) || other.expiresAt == expiresAt)&&(identical(other.distanceM, distanceM) || other.distanceM == distanceM)&&(identical(other.etaMinutes, etaMinutes) || other.etaMinutes == etaMinutes)&&(identical(other.etaAt, etaAt) || other.etaAt == etaAt)&&(identical(other.announcedMinutes, announcedMinutes) || other.announcedMinutes == announcedMinutes)&&(identical(other.atMeetingPointAt, atMeetingPointAt) || other.atMeetingPointAt == atMeetingPointAt)&&(identical(other.position, position) || other.position == position)&&(identical(other.positionUpdatedAt, positionUpdatedAt) || other.positionUpdatedAt == positionUpdatedAt)&&(identical(other.positionAgeSeconds, positionAgeSeconds) || other.positionAgeSeconds == positionAgeSeconds)&&(identical(other.meetingPoint, meetingPoint) || other.meetingPoint == meetingPoint));
+    return identical(this, other) || (other.runtimeType == runtimeType&&other is _StaffSignalModel&&(identical(other.id, id) || other.id == id)&&(identical(other.reservationId, reservationId) || other.reservationId == reservationId)&&(identical(other.reference, reference) || other.reference == reference)&&(identical(other.kind, kind) || other.kind == kind)&&(identical(other.state, state) || other.state == state)&&(identical(other.customerName, customerName) || other.customerName == customerName)&&(identical(other.plate, plate) || other.plate == plate)&&(identical(other.passengers, passengers) || other.passengers == passengers)&&(identical(other.returnFlight, returnFlight) || other.returnFlight == returnFlight)&&(identical(other.scheduledAt, scheduledAt) || other.scheduledAt == scheduledAt)&&(identical(other.startedAt, startedAt) || other.startedAt == startedAt)&&(identical(other.expiresAt, expiresAt) || other.expiresAt == expiresAt)&&(identical(other.distanceM, distanceM) || other.distanceM == distanceM)&&(identical(other.etaMinutes, etaMinutes) || other.etaMinutes == etaMinutes)&&(identical(other.etaAt, etaAt) || other.etaAt == etaAt)&&(identical(other.announcedMinutes, announcedMinutes) || other.announcedMinutes == announcedMinutes)&&(identical(other.atMeetingPointAt, atMeetingPointAt) || other.atMeetingPointAt == atMeetingPointAt)&&(identical(other.position, position) || other.position == position)&&(identical(other.positionUpdatedAt, positionUpdatedAt) || other.positionUpdatedAt == positionUpdatedAt)&&(identical(other.positionAgeSeconds, positionAgeSeconds) || other.positionAgeSeconds == positionAgeSeconds)&&(identical(other.meetingPoint, meetingPoint) || other.meetingPoint == meetingPoint)&&(identical(other.note, note) || other.note == note));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
 int get hashCode {
-    return Object.hashAll([runtimeType,id,reservationId,reference,kind,state,customerName,plate,passengers,returnFlight,scheduledAt,startedAt,expiresAt,distanceM,etaMinutes,etaAt,announcedMinutes,atMeetingPointAt,position,positionUpdatedAt,positionAgeSeconds,meetingPoint]);
+    return Object.hashAll([runtimeType,id,reservationId,reference,kind,state,customerName,plate,passengers,returnFlight,scheduledAt,startedAt,expiresAt,distanceM,etaMinutes,etaAt,announcedMinutes,atMeetingPointAt,position,positionUpdatedAt,positionAgeSeconds,meetingPoint,note]);
 }
 
 @override
 String toString() {
-    return 'StaffSignalModel(id: $id, reservationId: $reservationId, reference: $reference, kind: $kind, state: $state, customerName: $customerName, plate: $plate, passengers: $passengers, returnFlight: $returnFlight, scheduledAt: $scheduledAt, startedAt: $startedAt, expiresAt: $expiresAt, distanceM: $distanceM, etaMinutes: $etaMinutes, etaAt: $etaAt, announcedMinutes: $announcedMinutes, atMeetingPointAt: $atMeetingPointAt, position: $position, positionUpdatedAt: $positionUpdatedAt, positionAgeSeconds: $positionAgeSeconds, meetingPoint: $meetingPoint)';
+    return 'StaffSignalModel(id: $id, reservationId: $reservationId, reference: $reference, kind: $kind, state: $state, customerName: $customerName, plate: $plate, passengers: $passengers, returnFlight: $returnFlight, scheduledAt: $scheduledAt, startedAt: $startedAt, expiresAt: $expiresAt, distanceM: $distanceM, etaMinutes: $etaMinutes, etaAt: $etaAt, announcedMinutes: $announcedMinutes, atMeetingPointAt: $atMeetingPointAt, position: $position, positionUpdatedAt: $positionUpdatedAt, positionAgeSeconds: $positionAgeSeconds, meetingPoint: $meetingPoint, note: $note)';
 }
 
 
@@ -595,7 +599,7 @@ abstract mixin class _$StaffSignalModelCopyWith<$Res> implements $StaffSignalMod
   factory _$StaffSignalModelCopyWith(_StaffSignalModel value, $Res Function(_StaffSignalModel) _then) = __$StaffSignalModelCopyWithImpl;
 @override @useResult
 $Res call({
- String id, String reservationId, String reference, ArrivalKind kind,@JsonKey(unknownEnumValue: ArrivalSignalState.ended) ArrivalSignalState state, String customerName, String plate, int passengers, String? returnFlight, DateTime scheduledAt, DateTime startedAt, DateTime expiresAt, int? distanceM, int? etaMinutes, DateTime? etaAt, int? announcedMinutes, DateTime? atMeetingPointAt, SignalPositionModel? position, DateTime? positionUpdatedAt, int? positionAgeSeconds, MeetingPointModel? meetingPoint
+ String id, String reservationId, String reference, ArrivalKind kind,@JsonKey(unknownEnumValue: ArrivalSignalState.ended) ArrivalSignalState state, String customerName, String plate, int passengers, String? returnFlight, DateTime scheduledAt, DateTime startedAt, DateTime expiresAt, int? distanceM, int? etaMinutes, DateTime? etaAt, int? announcedMinutes, DateTime? atMeetingPointAt, SignalPositionModel? position, DateTime? positionUpdatedAt, int? positionAgeSeconds, MeetingPointModel? meetingPoint, String? note
 });
 
 
@@ -612,7 +616,7 @@ class __$StaffSignalModelCopyWithImpl<$Res>
 
 /// Create a copy of StaffSignalModel
 /// with the given fields replaced by the non-null parameter values.
-@override @pragma('vm:prefer-inline') $Res call({Object? id = null,Object? reservationId = null,Object? reference = null,Object? kind = null,Object? state = null,Object? customerName = null,Object? plate = null,Object? passengers = null,Object? returnFlight = freezed,Object? scheduledAt = null,Object? startedAt = null,Object? expiresAt = null,Object? distanceM = freezed,Object? etaMinutes = freezed,Object? etaAt = freezed,Object? announcedMinutes = freezed,Object? atMeetingPointAt = freezed,Object? position = freezed,Object? positionUpdatedAt = freezed,Object? positionAgeSeconds = freezed,Object? meetingPoint = freezed,}) {
+@override @pragma('vm:prefer-inline') $Res call({Object? id = null,Object? reservationId = null,Object? reference = null,Object? kind = null,Object? state = null,Object? customerName = null,Object? plate = null,Object? passengers = null,Object? returnFlight = freezed,Object? scheduledAt = null,Object? startedAt = null,Object? expiresAt = null,Object? distanceM = freezed,Object? etaMinutes = freezed,Object? etaAt = freezed,Object? announcedMinutes = freezed,Object? atMeetingPointAt = freezed,Object? position = freezed,Object? positionUpdatedAt = freezed,Object? positionAgeSeconds = freezed,Object? meetingPoint = freezed,Object? note = freezed,}) {
   return _then(_StaffSignalModel(
 id: null == id ? _self.id : id // ignore: cast_nullable_to_non_nullable
 as String,reservationId: null == reservationId ? _self.reservationId : reservationId // ignore: cast_nullable_to_non_nullable
@@ -635,7 +639,8 @@ as DateTime?,position: freezed == position ? _self.position : position // ignore
 as SignalPositionModel?,positionUpdatedAt: freezed == positionUpdatedAt ? _self.positionUpdatedAt : positionUpdatedAt // ignore: cast_nullable_to_non_nullable
 as DateTime?,positionAgeSeconds: freezed == positionAgeSeconds ? _self.positionAgeSeconds : positionAgeSeconds // ignore: cast_nullable_to_non_nullable
 as int?,meetingPoint: freezed == meetingPoint ? _self.meetingPoint : meetingPoint // ignore: cast_nullable_to_non_nullable
-as MeetingPointModel?,
+as MeetingPointModel?,note: freezed == note ? _self.note : note // ignore: cast_nullable_to_non_nullable
+as String?,
   ));
 }
 

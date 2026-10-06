@@ -1,4 +1,4 @@
-import { act, render, screen } from "@testing-library/react";
+import { act, fireEvent, render, screen } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { hms, mmss, ReturnLive, ringState, stepOf } from "../ReturnLive";
 import type { TravellerReturn } from "@/lib/types";
@@ -84,6 +84,31 @@ describe("ReturnLive", () => {
     expect(screen.getByTestId("meeting-help")).toHaveTextContent("Consignes du parking : Sortie 2, sous l’horloge");
     expect(screen.getByRole("img", { name: "Photo du point de rendez-vous" })).toHaveAttribute("src", "https://example.com/rdv.jpg");
     expect(screen.getByRole("link", { name: /Itinéraire vers le point de rendez-vous/ })).toHaveAttribute("href", expect.stringContaining("45.72%2C5.08"));
+    vi.unstubAllGlobals();
+  });
+
+  it("E : « Bagage perdu » puis un mot libre partent au parking et restent affichés", async () => {
+    const noticed = { ...base, notice: { kind: "luggage" as const, text: null, at: "2026-10-05T12:10:00Z" } };
+    const fetchMock = vi.fn().mockResolvedValueOnce({ ok: true, json: async () => noticed }).mockResolvedValue({ ok: true, json: async () => ({ ...base, notice: { kind: "other", text: "Je prends un café, 15 min", at: "2026-10-05T12:20:00Z" } }) });
+    vi.stubGlobal("fetch", fetchMock);
+    render(<ReturnLive reference="R7KQ2M" token="tok" initial={base} />);
+    await act(async () => {
+      screen.getByRole("button", { name: "Bagage perdu ou retardé" }).click();
+      await vi.advanceTimersByTimeAsync(0);
+    });
+    expect(fetchMock).toHaveBeenCalledWith("/api/public/bookings/R7KQ2M/return/notice", expect.objectContaining({ method: "POST", body: JSON.stringify({ kind: "luggage" }) }));
+    expect(screen.getByTestId("return-notice")).toHaveTextContent("Transmis au parking à 14:10 : Bagage perdu ou retardé.");
+    await act(async () => {
+      screen.getByRole("button", { name: "Signaler autre chose" }).click();
+    });
+    const input = screen.getByRole("textbox", { name: "Autre…" });
+    fireEvent.change(input, { target: { value: "Je prends un café, 15 min" } });
+    await act(async () => {
+      fireEvent.submit(input.closest("form")!);
+      await vi.advanceTimersByTimeAsync(0);
+    });
+    expect(fetchMock).toHaveBeenLastCalledWith("/api/public/bookings/R7KQ2M/return/notice", expect.objectContaining({ body: JSON.stringify({ kind: "other", text: "Je prends un café, 15 min" }) }));
+    expect(screen.getByTestId("return-notice")).toHaveTextContent("Transmis au parking à 14:20 : « Je prends un café, 15 min ».");
     vi.unstubAllGlobals();
   });
 

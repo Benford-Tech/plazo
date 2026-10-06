@@ -63,6 +63,30 @@ void main() {
     expect(verify(() => arrivalBloc.add(captureAny())).captured.single, isA<ArrivalAtMeetingPointRequested>());
   });
 
+  testWidgets('E · « Bagage perdu » puis un mot libre partent au parking ; le signalement envoyé reste affiché', (tester) async {
+    await show(tester, ReturnState(now: t0, reference: 'R7KQ2M', data: travellerReturn()));
+    expect(find.text('Un souci ? Prévenez le parking'), findsOneWidget);
+    await tester.ensureVisible(find.byKey(const Key('notice-luggage')));
+    await tester.tap(find.byKey(const Key('notice-luggage')));
+    var sent = verify(() => bloc.add(captureAny())).captured.single;
+    expect(sent, isA<ReturnNoticeSent>().having((e) => e.kind, 'kind', 'luggage').having((e) => e.text, 'text', isNull));
+
+    await tester.ensureVisible(find.byKey(const Key('notice-other')));
+    await tester.tap(find.byKey(const Key('notice-other')));
+    await tester.pumpAndSettle();
+    await tester.enterText(find.byKey(const Key('notice-text')), 'Je prends un café, 15 min');
+    await tester.ensureVisible(find.byKey(const Key('notice-send')));
+    await tester.tap(find.byKey(const Key('notice-send')));
+    sent = verify(() => bloc.add(captureAny())).captured.single;
+    expect(sent, isA<ReturnNoticeSent>().having((e) => e.kind, 'kind', 'other').having((e) => e.text, 'text', 'Je prends un café, 15 min'));
+
+    // A fresh bloc and tree: the block opens on the notice already sent.
+    bloc = MockReturnBloc();
+    await show(tester, ReturnState(now: t0, reference: 'R7KQ2M', data: travellerReturn().copyWith(notice: ReturnNoticeModel(kind: 'luggage', at: t0))));
+    expect(find.byKey(const Key('return-notice-done')), findsOneWidget);
+    expect(find.textContaining('Bagage perdu ou retardé'), findsOneWidget);
+  });
+
   testWidgets('R1 · sans suivi de vol : « J’ai atterri »', (tester) async {
     await show(tester, ReturnState(now: t0, reference: 'R7KQ2M', data: travellerReturn(flightTracked: false)));
     expect(find.text('Sans numéro de vol, dites-nous quand vous avez atterri.'), findsOneWidget);

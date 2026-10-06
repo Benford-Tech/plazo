@@ -11,6 +11,9 @@ class BookingDraft {
     this.departureFlight = '',
     this.passengers = 1,
     this.acceptTerms = false,
+    this.vehicleModel = '',
+    this.vehicleColour = '',
+    this.customerNote = '',
   });
 
   final String customerName;
@@ -21,6 +24,11 @@ class BookingDraft {
   final String departureFlight;
   final int passengers;
   final bool acceptTerms;
+
+  /// E (06/10/2026): the vehicle (so the valet spots it) and a word for the parking.
+  final String vehicleModel;
+  final String vehicleColour;
+  final String customerNote;
 }
 
 class BookingDraftStore {

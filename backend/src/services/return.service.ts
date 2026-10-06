@@ -1,5 +1,8 @@
 import { Container, Service } from 'typedi';
+import httpStatus from 'http-status';
 import { ON_SITE_STATUSES } from '@/domain/reservation';
+import { ReturnNotice, ReturnNoticeKind, returnNoticePush, returnNoticeView } from '@/domain/return-messages';
+import { HttpException } from '@/utils/httpException';
 import { CarLocation, carView, CLEARED_CAR_LOCATION } from '@/domain/car-location';
 import prisma from '@/database';
 import { arrivalWindows, LatLng } from '@/domain/arrival';
@@ -9,6 +12,7 @@ import { ArrivalService, MeetingPoint } from './arrival.service';
 import { FlightTrackingService } from './flight-tracking.service';
 import { ParkingLocationService } from './parking-location.service';
 import { PublicBookingService } from './public-booking.service';
+import { PushService } from './push.service';
 import { RoutingService, WalkingRoute } from './routing.service';
 import { flightView, FlightView, ShuttleService, StayShuttles, TravellerShuttle } from './shuttle.service';
 
@@ -30,6 +34,8 @@ export interface TravellerReturn {
   plate: string;
   /** The spot the valet placed the vehicle on (bloc 2), for "Retrouver ma voiture"; null until placed. */
   spot: { code: string; stayClass: string | null } | null;
+  /** E (06/10/2026): what the traveller signalled on the return day ("mon vol a du retard"); null until then. */
+  notice: ReturnNotice | null;
   /** Where the car is parked (GPS), recorded by the traveller or the valet; null until then. */
   car: CarLocation | null;
 }
@@ -43,6 +49,7 @@ export class ReturnService {
   public routing = Container.get(RoutingService);
   public shuttle = Container.get(ShuttleService);
   public locations = Container.get(ParkingLocationService);
+  public push = Container.get(PushService);
 
   public async state(reference: string, token: string | undefined): Promise<TravellerReturn> {
     const booking = await this.bookings.load(reference, token);
@@ -55,6 +62,38 @@ export class ReturnService {
   public async landed(reference: string, token: string | undefined): Promise<TravellerReturn> {
     const booking = await this.bookings.load(reference, token);
     await this.flights.markLandedByTraveller(booking);
+    return this.view(booking);
+  }
+
+  /**
+   * E (06/10/2026): "Mon vol a du retard", "Bagage perdu", or a word — while the vehicle is on site.
+   * Kept on the booking (the driver's list and the operational card show it) and pushed to the
+   * staff who follow the returns. 409 "vehicle_not_on_site" otherwise.
+   */
+  public async notice(
+    reference: string,
+    token: string | undefined,
+    kind: ReturnNoticeKind,
+    text: string | null | undefined,
+  ): Promise<TravellerReturn> {
+    const booking = await this.bookings.load(reference, token);
+    if (!ON_SITE_STATUSES.includes(booking.status)) {
+      throw new HttpException(httpStatus.CONFLICT, 'The vehicle is not at the parking', 'vehicle_not_on_site');
+    }
+    const clean = text?.trim() || null;
+    await prisma.reservation.update({
+      where: { id: booking.id },
+      data: { returnNoticeKind: kind, returnNoticeText: clean, returnNoticeAt: new Date() },
+    });
+    await this.push.notifyStaff(
+      booking.operatorId,
+      'returns',
+      returnNoticePush({ customerName: booking.customerName, plate: booking.plate, kind, text: clean }),
+      {
+        data: { type: 'return_notice', kind, reservationId: booking.id },
+        collapseId: `return-notice-${booking.id}`,
+      },
+    );
     return this.view(booking);
   }
 
@@ -152,6 +191,7 @@ export class ReturnService {
       },
       plate: fresh.plate,
       spot: onSite && fresh.spot ? { code: fresh.spot.code, stayClass: fresh.spot.stayClass } : null,
+      notice: returnNoticeView(fresh),
       car: carView(fresh),
     };
   }

@@ -28,6 +28,9 @@ abstract class PickupRowModel with _$PickupRowModel {
     DateTime? atMeetingPointAt,
     /// The running trip this traveller is on, if any.
     String? tripId,
+
+    /// E (06/10/2026): what the traveller signalled today ("mon vol a du retard", "bagage perdu").
+    PickupNoticeModel? notice,
   }) = _PickupRowModel;
 
   factory PickupRowModel.fromJson(Map<String, dynamic> json) => _$PickupRowModelFromJson(json);
@@ -327,4 +330,12 @@ abstract class ShuttleForecastModel with _$ShuttleForecastModel {
   }) = _ShuttleForecastModel;
 
   factory ShuttleForecastModel.fromJson(Map<String, dynamic> json) => _$ShuttleForecastModelFromJson(json);
+}
+
+/// E (06/10/2026): a return-day notice as the driver's list shows it.
+@freezed
+abstract class PickupNoticeModel with _$PickupNoticeModel {
+  const factory PickupNoticeModel({required String kind, String? text, required DateTime at}) = _PickupNoticeModel;
+
+  factory PickupNoticeModel.fromJson(Map<String, dynamic> json) => _$PickupNoticeModelFromJson(json);
 }

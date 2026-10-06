@@ -18,6 +18,7 @@ export const signal = (overrides: Partial<ArrivalSignal> = {}): ArrivalSignal =>
   etaMinutes: 12,
   etaAt: "2026-10-03T05:52:00.000Z",
   announcedMinutes: null,
+  note: null,
   atMeetingPointAt: null,
   position: { lat: 45.8, lng: 5.05, accuracyM: 10 },
   positionUpdatedAt: "2026-10-03T05:40:00.000Z",

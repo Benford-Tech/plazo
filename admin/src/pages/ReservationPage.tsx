@@ -108,6 +108,12 @@ export default function ReservationPage() {
                 <span className="ml-2 text-muted-foreground">· {quickCardFr.keys} {r.keyHook ?? quickCardFr.noKeys}</span>
               </Info>
               <Info label={t.passengers}>{r.passengers}</Info>
+              {(r.vehicleModel || r.vehicleColour) && <Info label={t.vehicleModel}>{t.vehicleDetails(r.vehicleModel, r.vehicleColour)}</Info>}
+              {r.returnNoticeKind && r.returnNoticeAt && (
+                <Info label={t.returnNotice}>
+                  <span className="font-semibold text-warn-text">{t.returnNoticeLine(r.returnNoticeKind, r.returnNoticeText ?? null, dateTimeShort(r.returnNoticeAt))}</span>
+                </Info>
+              )}
               {r.carLat != null && r.carLng != null && r.carLocatedAt && (
                 <Info label={t.carPosition}>
                   <span className="tabular font-mono">{r.carLat.toFixed(5)}, {r.carLng.toFixed(5)}</span>
@@ -149,11 +155,18 @@ export default function ReservationPage() {
               <Info label={t.created}>{dateTimeShort(r.createdAt)}</Info>
             </dl>
           </div>
-          {r.notes && (
+          {(r.notes || r.customerNote) && (
             <dl>
-              <Info label={t.notes}>
-                <span className="whitespace-pre-line">{r.notes}</span>
-              </Info>
+              {r.customerNote && (
+                <Info label={t.customerNote}>
+                  <span className="whitespace-pre-line">{r.customerNote}</span>
+                </Info>
+              )}
+              {r.notes && (
+                <Info label={t.notes}>
+                  <span className="whitespace-pre-line">{r.notes}</span>
+                </Info>
+              )}
             </dl>
           )}
         </>

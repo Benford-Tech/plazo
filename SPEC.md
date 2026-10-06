@@ -462,7 +462,8 @@ Ajouts phase 2 (marketplace) :
 3. **Retour** : vol suivi → atterrissage → SMS au client → il appuie sur « Je suis prêt » → le chauffeur voit le client en tête de file → prise en charge → arrivée au parking → l'agent affiche l'emplacement du véhicule → remise → statut « rendu ».
 4. **Surréservation évitée** : une réservation qui dépasserait la capacité sur au moins une nuit est refusée sur la page publique et signalée au personnel en saisie manuelle.
 5. **Fil de messages au voyageur (B, 06/10/2026)** : confirmation (mail + SMS) → rappel la veille (mail + SMS + push) → « Votre voiture est garée » (push, place et clés) → « Bon voyage ! » (push, fin de la dépose) → SMS d'atterrissage (tous canaux) → mail et push de clôture après la remise. Chaque message part une seule fois, par le canal SMS du loueur, et n'échoue jamais l'action qui le déclenche.
-6. **Retard de vol** : l'API remonte un retard → l'heure estimée se met à jour → la file se réordonne → le client reçoit un SMS d'info si le décalage dépasse un seuil.
+6. **Communication voyageur ↔ parking (E, 06/10/2026)** : à la réservation, un mot pour le parking et le véhicule (modèle, couleur) ; le jour J, un mot joint à chaque signal d'arrivée ; le jour du retour, « Mon vol a du retard », « Bagage perdu » ou un mot libre, poussé à l'équipe des retours et visible dans la file du chauffeur et sur la fiche.
+7. **Retard de vol** : l'API remonte un retard → l'heure estimée se met à jour → la file se réordonne → le client reçoit un SMS d'info si le décalage dépasse un seuil.
 
 ## 6. Exigences non fonctionnelles
 

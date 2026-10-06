@@ -25,6 +25,7 @@ class ReturnBloc extends Bloc<ReturnEvent, ReturnState> {
     this._get,
     this._landed,
     this._shuttle, {
+    this.notice,
     Clock clock = systemClock,
     Duration pollInterval = const Duration(seconds: 10),
     this.refreshEvery = 3,
@@ -36,12 +37,16 @@ class ReturnBloc extends Bloc<ReturnEvent, ReturnState> {
     on<ReturnOpened>(_onOpened);
     on<ReturnRefreshRequested>(_onRefresh);
     on<ReturnLandedDeclared>(_onLanded);
+    on<ReturnNoticeSent>(_onNotice);
     on<ReturnTicked>(_onTicked);
   }
 
   final GetReturnUseCase _get;
   final DeclareLandedUseCase _landed;
   final GetShuttleStatusUseCase _shuttle;
+
+  /// E (06/10/2026): the return-day notice; absent in the tests that only read the state.
+  final SendReturnNoticeUseCase? notice;
   final Clock _clock;
   final Duration _pollInterval;
   final int refreshEvery;
@@ -74,6 +79,18 @@ class ReturnBloc extends Bloc<ReturnEvent, ReturnState> {
     if (reference == null) return;
     emit(state.copyWith(actionState: ViewState.processing, errorCode: null));
     final result = await _landed(reference);
+    result.fold(
+      (failure) => emit(state.copyWith(actionState: ViewState.error, errorCode: _code(failure))),
+      (data) => emit(state.copyWith(actionState: ViewState.success, data: data, now: _clock(), fetchedAt: _clock())),
+    );
+  }
+
+  Future<void> _onNotice(ReturnNoticeSent event, Emitter<ReturnState> emit) async {
+    final reference = state.reference;
+    final send = notice;
+    if (reference == null || send == null) return;
+    emit(state.copyWith(actionState: ViewState.processing, errorCode: null));
+    final result = await send(ReturnNoticeParams(reference: reference, kind: event.kind, text: event.text));
     result.fold(
       (failure) => emit(state.copyWith(actionState: ViewState.error, errorCode: _code(failure))),
       (data) => emit(state.copyWith(actionState: ViewState.success, data: data, now: _clock(), fetchedAt: _clock())),

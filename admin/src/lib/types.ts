@@ -99,6 +99,13 @@ export interface Reservation {
   departureEstimatedAt: string | null;
   departureTerminal: string | null;
   notes: string | null;
+  /** E (06/10/2026): the traveller's message for the parking, their vehicle, and today's return notice. */
+  customerNote?: string | null;
+  vehicleModel?: string | null;
+  vehicleColour?: string | null;
+  returnNoticeKind?: ReturnNoticeKind | null;
+  returnNoticeText?: string | null;
+  returnNoticeAt?: string | null;
   externalReference: string | null;
   priceCents: number | null;
   overbooked: boolean;
@@ -175,6 +182,8 @@ export interface ArrivalSignal {
   positionUpdatedAt: string | null;
   positionAgeSeconds: number | null;
   meetingPoint: MeetingPoint | null;
+  /** E (06/10/2026): the traveller's word for the parking, sent with the signal. */
+  note?: string | null;
 }
 
 /** A driver's running trip (position shared with its passengers), as the planning shows it. */
@@ -283,6 +292,9 @@ export interface ReservationInput {
   /** D-A: a stop of the parking, or null for the airport. */
   stopId?: string | null;
   notes?: string | null;
+  customerNote?: string | null;
+  vehicleModel?: string | null;
+  vehicleColour?: string | null;
   externalReference?: string;
   priceCents?: number;
   force?: boolean;
@@ -652,6 +664,8 @@ export interface PickupRow {
   stopName: string | null;
   atMeetingPointAt: string | null;
   tripId: string | null;
+  /** E (06/10/2026): what the traveller signalled today. */
+  notice?: ReturnNotice | null;
 }
 
 /** An arrived traveller waiting at the parking for the shuttle to the terminal (drop-off). */
@@ -863,4 +877,12 @@ export interface FlightCheck {
     departureTerminal: string | null;
   } | null;
   error: string | null;
+}
+
+/** E (06/10/2026): what a traveller can signal on the return day. */
+export type ReturnNoticeKind = "flight_delayed" | "luggage" | "other";
+export interface ReturnNotice {
+  kind: ReturnNoticeKind;
+  text: string | null;
+  at: string;
 }

@@ -63,6 +63,8 @@ export interface TravellerSignal {
   announcedMinutes: number | null;
   atMeetingPointAt: string | null;
   positionUpdatedAt: string | null;
+  /** E (06/10/2026): the traveller's word for the parking. */
+  note: string | null;
 }
 
 export interface TravellerArrival {
@@ -96,6 +98,8 @@ export interface StaffSignal {
   positionUpdatedAt: string | null;
   positionAgeSeconds: number | null;
   meetingPoint: MeetingPoint | null;
+  /** E (06/10/2026): the traveller's word for the parking. */
+  note: string | null;
 }
 
 type SignalWithReservation = ArrivalSignal & {
@@ -141,7 +145,13 @@ export class ArrivalService {
   }
 
   /** Starts sharing the live position (consent required). Idempotent while sharing. */
-  public async start(reference: string, token: string | undefined, kind: ArrivalKind, consent: boolean): Promise<TravellerArrival> {
+  public async start(
+    reference: string,
+    token: string | undefined,
+    kind: ArrivalKind,
+    consent: boolean,
+    note?: string | null,
+  ): Promise<TravellerArrival> {
     if (consent !== true) throw new HttpException(httpStatus.BAD_REQUEST, 'Consent is required to share a position', 'consent_required');
     const booking = await this.openMoment(reference, token, kind);
     const existing = await this.find(booking.id, kind);
@@ -149,6 +159,7 @@ export class ArrivalService {
       const now = new Date();
       await this.upsert(booking, kind, {
         state: 'sharing',
+        note: note?.trim() || null,
         ...ERASED_POSITION,
         positionReceivedAt: null,
         distanceM: null,
@@ -244,7 +255,13 @@ export class ArrivalService {
   }
 
   /** "J'arrive dans 10 / 20 / 30 min", without sharing the position (stops a sharing). */
-  public async announce(reference: string, token: string | undefined, kind: ArrivalKind, minutes: number): Promise<TravellerArrival> {
+  public async announce(
+    reference: string,
+    token: string | undefined,
+    kind: ArrivalKind,
+    minutes: number,
+    note?: string | null,
+  ): Promise<TravellerArrival> {
     if (!(ANNOUNCE_MINUTES as readonly number[]).includes(minutes)) {
       throw new HttpException(httpStatus.BAD_REQUEST, 'Announce 10, 20 or 30 minutes', 'invalid_minutes');
     }
@@ -252,6 +269,7 @@ export class ArrivalService {
     const now = new Date();
     const signal = await this.upsert(booking, kind, {
       state: 'announced',
+      note: note?.trim() || null,
       ...ERASED_POSITION,
       distanceM: null,
       etaMinutes: minutes,
@@ -268,7 +286,7 @@ export class ArrivalService {
       where: { id: signal.id, OR: [{ notifiedStartAt: null }, { notifiedStartAt: { lte: new Date(now.getTime() - ANNOUNCE_PUSH_DEBOUNCE_MS) } }] },
       data: { notifiedStartAt: now },
     });
-    if (count) await this.sendPush(booking, signal.kind, 'announced', minutes, await this.meetingPoint(booking, kind));
+    if (count) await this.sendPush(booking, signal.kind, 'announced', minutes, await this.meetingPoint(booking, kind), signal.note);
     return this.travellerView(booking);
   }
 
@@ -278,6 +296,7 @@ export class ArrivalService {
     token: string | undefined,
     kind: ArrivalKind,
     position?: { lat: number; lng: number } | null,
+    note?: string | null,
   ): Promise<TravellerArrival> {
     const booking = await this.openMoment(reference, token, kind);
     const existing = await this.find(booking.id, kind);
@@ -288,6 +307,8 @@ export class ArrivalService {
     const ongoing = existing && existing.state !== 'ended';
     const signal = await this.upsert(booking, kind, {
       state: 'at_meeting_point',
+      // A word given now wins; else the one sent with the sharing or the announce stays.
+      ...(note?.trim() ? { note: note.trim() } : {}),
       ...ERASED_POSITION,
       distanceM,
       etaMinutes: 0,
@@ -503,12 +524,12 @@ export class ArrivalService {
       data: { notifiedStartAt: now, ...(etaMinutes !== null && etaMinutes <= SOON_THRESHOLD_MINUTES ? { notifiedSoonAt: now } : {}) },
     });
     if (start.count) {
-      await this.sendPush(booking, before.kind, 'started', etaMinutes, meeting);
+      await this.sendPush(booking, before.kind, 'started', etaMinutes, meeting, before.note);
       return;
     }
     if (!crossesSoonThreshold(before.etaMinutes, etaMinutes)) return;
     const soon = await prisma.arrivalSignal.updateMany({ where: { id: before.id, notifiedSoonAt: null }, data: { notifiedSoonAt: now } });
-    if (soon.count) await this.sendPush(booking, before.kind, 'soon', etaMinutes, meeting);
+    if (soon.count) await this.sendPush(booking, before.kind, 'soon', etaMinutes, meeting, before.note);
   }
 
   private async notifyOnce(
@@ -522,7 +543,7 @@ export class ArrivalService {
       where: { id: signal.id, notifiedArrivedAt: null },
       data: { notifiedArrivedAt: new Date() },
     });
-    if (count) await this.sendPush(booking, signal.kind, event, etaMinutes, meeting);
+    if (count) await this.sendPush(booking, signal.kind, event, etaMinutes, meeting, signal.note);
   }
 
   private async sendPush(
@@ -531,6 +552,7 @@ export class ArrivalService {
     event: ArrivalPushEvent,
     etaMinutes: number | null,
     meeting: MeetingPoint | null,
+    note: string | null = null,
   ) {
     const message = arrivalPush({
       event,
@@ -540,6 +562,7 @@ export class ArrivalService {
       parkingName: booking.parking.name,
       etaMinutes,
       meetingLabel: meeting?.label ?? null,
+      note,
     });
     await this.push.notifyStaff(booking.operatorId, kind === 'outbound' ? 'arrivals' : 'returns', message, {
       data: { type: 'arrival', event, kind, reservationId: booking.id },
@@ -593,6 +616,7 @@ export class ArrivalService {
             announcedMinutes: signal.announcedMinutes,
             atMeetingPointAt: iso(signal.atMeetingPointAt),
             positionUpdatedAt: signal.state === 'sharing' ? iso(signal.positionReceivedAt) : null,
+            note: signal.note,
           }
         : null,
       rules: {
@@ -649,6 +673,7 @@ export class ArrivalService {
         positionAgeSeconds:
           row.lat !== null && row.positionReceivedAt ? Math.max(0, Math.round((now.getTime() - row.positionReceivedAt.getTime()) / 1000)) : null,
         meetingPoint: await meetingFor(row),
+        note: row.note,
       })),
     );
   }

@@ -70,10 +70,13 @@ class _FormState extends State<_Form> {
   late final _outbound = TextEditingController(text: _bloc.state.input.departureFlight ?? '');
   late final _detail = TextEditingController(text: _bloc.state.input.channelDetail ?? '');
   late final _notes = TextEditingController(text: _bloc.state.input.notes ?? '');
+  late final _vehicleModel = TextEditingController(text: _bloc.state.input.vehicleModel ?? '');
+  late final _vehicleColour = TextEditingController(text: _bloc.state.input.vehicleColour ?? '');
+  late final _customerNote = TextEditingController(text: _bloc.state.input.customerNote ?? '');
 
   @override
   void dispose() {
-    for (final c in [_name, _phone, _email, _plate, _flight, _detail, _notes]) {
+    for (final c in [_name, _phone, _email, _plate, _flight, _detail, _notes, _vehicleModel, _vehicleColour, _customerNote]) {
       c.dispose();
     }
     super.dispose();
@@ -229,6 +232,37 @@ class _FormState extends State<_Form> {
                   onChanged: (v) => _set((x) => x.copyWith(channelDetail: v)),
                 ),
               ],
+              const SizedBox(height: 12),
+              // E (06/10/2026): the traveller's vehicle and message, as given at the counter.
+              Row(
+                children: [
+                  Expanded(
+                    child: TextField(
+                      key: const Key('f-vehicle-model'),
+                      controller: _vehicleModel,
+                      decoration: InputDecoration(labelText: 'res.vehicle_model'.tr(), hintText: 'Peugeot 308', errorText: err('vehicleModel')),
+                      onChanged: (v) => _set((x) => x.copyWith(vehicleModel: v)),
+                    ),
+                  ),
+                  const SizedBox(width: 10),
+                  Expanded(
+                    child: TextField(
+                      key: const Key('f-vehicle-colour'),
+                      controller: _vehicleColour,
+                      decoration: InputDecoration(labelText: 'res.vehicle_colour'.tr(), hintText: 'grise', errorText: err('vehicleColour')),
+                      onChanged: (v) => _set((x) => x.copyWith(vehicleColour: v)),
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 12),
+              TextField(
+                key: const Key('f-customer-note'),
+                controller: _customerNote,
+                maxLines: 2,
+                decoration: InputDecoration(labelText: 'res.customer_note'.tr(), alignLabelWithHint: true, errorText: err('customerNote')),
+                onChanged: (v) => _set((x) => x.copyWith(customerNote: v)),
+              ),
               const SizedBox(height: 12),
               TextField(
                 key: const Key('f-notes'),

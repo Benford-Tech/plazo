@@ -204,6 +204,9 @@ _TravellerReturnModel _$TravellerReturnModelFromJson(
   car: json['car'] == null
       ? null
       : CarLocationModel.fromJson(json['car'] as Map<String, dynamic>),
+  notice: json['notice'] == null
+      ? null
+      : ReturnNoticeModel.fromJson(json['notice'] as Map<String, dynamic>),
 );
 
 Map<String, dynamic> _$TravellerReturnModelToJson(
@@ -222,6 +225,7 @@ Map<String, dynamic> _$TravellerReturnModelToJson(
   'plate': instance.plate,
   'spot': instance.spot,
   'car': instance.car,
+  'notice': instance.notice,
 };
 
 _ReturnSpotModel _$ReturnSpotModelFromJson(Map<String, dynamic> json) =>
@@ -290,4 +294,18 @@ Map<String, dynamic> _$WalkingRouteModelToJson(_WalkingRouteModel instance) =>
       'from': instance.from,
       'to': instance.to,
       'meetingPoint': instance.meetingPoint,
+    };
+
+_ReturnNoticeModel _$ReturnNoticeModelFromJson(Map<String, dynamic> json) =>
+    _ReturnNoticeModel(
+      kind: json['kind'] as String,
+      text: json['text'] as String?,
+      at: DateTime.parse(json['at'] as String),
+    );
+
+Map<String, dynamic> _$ReturnNoticeModelToJson(_ReturnNoticeModel instance) =>
+    <String, dynamic>{
+      'kind': instance.kind,
+      'text': instance.text,
+      'at': instance.at.toIso8601String(),
     };
