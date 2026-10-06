@@ -3,6 +3,7 @@ import { ChevronLeft } from "lucide-react";
 import { Link, useLocation, useNavigate, useSearchParams } from "react-router-dom";
 import { toast } from "sonner";
 import { ReservationForm } from "@/components/reservations/ReservationForm";
+import { adminApi } from "@/lib/api";
 import { fr } from "@/lib/fr";
 import type { ParsedBooking } from "@/lib/types";
 
@@ -10,7 +11,9 @@ export default function NewReservationPage() {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   const [params] = useSearchParams();
-  const prefill = (useLocation().state as { prefill?: ParsedBooking } | null)?.prefill;
+  const state = useLocation().state as { prefill?: ParsedBooking; inboundId?: string } | null;
+  const prefill = state?.prefill;
+  const inboundId = state?.inboundId;
   const t = fr.reservation;
   return (
     <div className="mx-auto max-w-2xl space-y-5">
@@ -23,9 +26,15 @@ export default function NewReservationPage() {
       <ReservationForm
         defaultDate={params.get("date") ?? undefined}
         prefill={prefill}
-        onSaved={reservation => {
+        onSaved={async reservation => {
           toast.success(t.saved);
           queryClient.invalidateQueries({ queryKey: ["planning"] });
+          // Typed from a forwarded email (M-A): the email leaves "À vérifier", linked to this booking.
+          if (inboundId) {
+            await adminApi.attachInboundEmail(inboundId, reservation.id).catch(() => undefined);
+            queryClient.invalidateQueries({ queryKey: ["inbound-emails"] });
+            queryClient.invalidateQueries({ queryKey: ["dashboard"] });
+          }
           navigate(`/reservations/${reservation.id}`);
         }}
       />

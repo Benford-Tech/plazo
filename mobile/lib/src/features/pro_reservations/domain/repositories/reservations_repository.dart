@@ -9,7 +9,7 @@ abstract class ReservationsRepository {
   Future<Either<Failure, ReservationModel>> get(String id);
   Future<Either<Failure, ReservationModel>> create(ReservationInput input);
   Future<Either<Failure, ReservationModel>> update(String id, ReservationInput input);
-  Future<Either<Failure, ReservationModel>> changeStatus(String id, String status);
+  Future<Either<Failure, ReservationModel>> changeStatus(String id, String status, {String? note});
   Future<Either<Failure, CapacityPreviewModel>> capacity(String arrivalAt, String returnAt, {String? excludeId});
 }
 
@@ -30,7 +30,7 @@ class ReservationsRepositoryImpl implements ReservationsRepository {
   Future<Either<Failure, ReservationModel>> update(String id, ReservationInput input) => _source.update(id, input).makeRequest();
 
   @override
-  Future<Either<Failure, ReservationModel>> changeStatus(String id, String status) => _source.changeStatus(id, status).makeRequest();
+  Future<Either<Failure, ReservationModel>> changeStatus(String id, String status, {String? note}) => _source.changeStatus(id, status, note: note).makeRequest();
 
   @override
 

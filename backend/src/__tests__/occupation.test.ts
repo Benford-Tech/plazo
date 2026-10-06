@@ -117,8 +117,11 @@ describe('occupation (bloc 2, step 2)', () => {
       (await api().post(`/api/internal/reservations/${r.id}/spot`).set(auth(agent.token)).send({ spotId: list[0].id, keyHook: 'B3' })).status,
     ).toBe(200);
     expect((await api().get(`/api/internal/parkings/${parking.id}/occupation`).set(auth(other.token))).status).toBe(404);
-    await api().post(`/api/internal/reservations/${r.id}/status`).set(auth(token)).send({ status: 'cancelled' });
-    expect((await api().post(`/api/internal/reservations/${r.id}/spot`).set(auth(token)).send({ spotId: list[1].id })).body.code).toBe(
+    // Placed today: checked in (A, 06/10/2026). A cancelled booking cannot be placed.
+    expect((await api().get(`/api/internal/reservations/${r.id}`).set(auth(token))).body.status).toBe('arrived');
+    const gone = (await api().post('/api/internal/reservations').set(auth(token)).send(booking('YY-888-YY'))).body.data;
+    await api().post(`/api/internal/reservations/${gone.id}/status`).set(auth(token)).send({ status: 'cancelled' });
+    expect((await api().post(`/api/internal/reservations/${gone.id}/spot`).set(auth(token)).send({ spotId: list[1].id })).body.code).toBe(
       'not_placeable',
     );
     expect((await api().post(`/api/internal/reservations/${r.id}/spot`).set(auth(token)).send({ keyHook: 'nope!!' })).status).toBe(400);

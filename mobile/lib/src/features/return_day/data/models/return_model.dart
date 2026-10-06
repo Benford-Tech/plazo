@@ -133,6 +133,9 @@ abstract class TravellerReturnModel with _$TravellerReturnModel {
 
     /// Where the car is parked (GPS), recorded by the traveller or the valet; null until then.
     CarLocationModel? car,
+
+    /// E (06/10/2026): what the traveller signalled today ("mon vol a du retard", "bagage perdu").
+    ReturnNoticeModel? notice,
   }) = _TravellerReturnModel;
 
   factory TravellerReturnModel.fromJson(Map<String, dynamic> json) => _$TravellerReturnModelFromJson(json);
@@ -182,4 +185,12 @@ abstract class WalkingRouteModel with _$WalkingRouteModel {
   }) = _WalkingRouteModel;
 
   factory WalkingRouteModel.fromJson(Map<String, dynamic> json) => _$WalkingRouteModelFromJson(json);
+}
+
+/// E (06/10/2026): a notice sent on the return day (kind: flight_delayed, luggage, other).
+@freezed
+abstract class ReturnNoticeModel with _$ReturnNoticeModel {
+  const factory ReturnNoticeModel({required String kind, String? text, required DateTime at}) = _ReturnNoticeModel;
+
+  factory ReturnNoticeModel.fromJson(Map<String, dynamic> json) => _$ReturnNoticeModelFromJson(json);
 }

@@ -54,7 +54,7 @@ describe('planning des places (bloc 2, step 3)', () => {
         .post('/api/internal/reservations')
         .set(auth(token))
         .send(booking(plate, d(a), d(r)));
-    const a = (await create('AA-111-AA', 0, 3)).body.data;
+    const a = (await create('AA-111-AA', 1, 3)).body.data;
     await create('BB-222-BB', 1, 4);
     await create('CC-333-CC', 2, 5);
     await create('DD-444-DD', 2, 6);

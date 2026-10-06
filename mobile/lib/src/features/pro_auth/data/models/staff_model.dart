@@ -11,6 +11,10 @@ abstract class StaffModel with _$StaffModel {
   const factory StaffModel({
     required String id,
     required String name,
+
+    /// First and last name (06/10/2026); `name` is the display form.
+    @Default('') String firstName,
+    @Default('') String lastName,
     required String email,
 
     /// manager, agent, driver, valet

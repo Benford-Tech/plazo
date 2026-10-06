@@ -7,10 +7,10 @@ import '../../data/models/arrival_model.dart';
 
 abstract class ArrivalRepository {
   Future<Either<Failure, ArrivalModel>> getArrival(String reference);
-  Future<Either<Failure, ArrivalModel>> start(String reference, ArrivalKind kind);
+  Future<Either<Failure, ArrivalModel>> start(String reference, ArrivalKind kind, {String? note});
   Future<Either<Failure, ArrivalModel>> sendPosition(String reference, GeoPosition position);
-  Future<Either<Failure, ArrivalModel>> announce(String reference, ArrivalKind kind, int minutes);
-  Future<Either<Failure, ArrivalModel>> atMeetingPoint(String reference, ArrivalKind kind, GeoPosition? position);
+  Future<Either<Failure, ArrivalModel>> announce(String reference, ArrivalKind kind, int minutes, {String? note});
+  Future<Either<Failure, ArrivalModel>> atMeetingPoint(String reference, ArrivalKind kind, GeoPosition? position, {String? note});
   Future<Either<Failure, ArrivalModel>> stop(String reference, ArrivalKind? kind);
 }
 
@@ -23,19 +23,19 @@ class ArrivalRepositoryImpl implements ArrivalRepository {
   Future<Either<Failure, ArrivalModel>> getArrival(String reference) => _dataSource.getArrival(reference).makeRequest();
 
   @override
-  Future<Either<Failure, ArrivalModel>> start(String reference, ArrivalKind kind) => _dataSource.start(reference, kind).makeRequest();
+  Future<Either<Failure, ArrivalModel>> start(String reference, ArrivalKind kind, {String? note}) => _dataSource.start(reference, kind, note: note).makeRequest();
 
   @override
   Future<Either<Failure, ArrivalModel>> sendPosition(String reference, GeoPosition position) =>
       _dataSource.sendPosition(reference, position).makeRequest();
 
   @override
-  Future<Either<Failure, ArrivalModel>> announce(String reference, ArrivalKind kind, int minutes) =>
-      _dataSource.announce(reference, kind, minutes).makeRequest();
+  Future<Either<Failure, ArrivalModel>> announce(String reference, ArrivalKind kind, int minutes, {String? note}) =>
+      _dataSource.announce(reference, kind, minutes, note: note).makeRequest();
 
   @override
-  Future<Either<Failure, ArrivalModel>> atMeetingPoint(String reference, ArrivalKind kind, GeoPosition? position) =>
-      _dataSource.atMeetingPoint(reference, kind, position).makeRequest();
+  Future<Either<Failure, ArrivalModel>> atMeetingPoint(String reference, ArrivalKind kind, GeoPosition? position, {String? note}) =>
+      _dataSource.atMeetingPoint(reference, kind, position, note: note).makeRequest();
 
   @override
   Future<Either<Failure, ArrivalModel>> stop(String reference, ArrivalKind? kind) => _dataSource.stop(reference, kind).makeRequest();

@@ -1,4 +1,5 @@
 import { CarLocatedBy, ReservationStatus } from '@/database';
+import { HOLDING_STATUSES } from './reservation';
 
 /**
  * Where the car is parked (06/10/2026): recorded by whoever parks it, the traveller (self-parking,
@@ -7,7 +8,7 @@ import { CarLocatedBy, ReservationStatus } from '@/database';
  */
 
 /** Statuses during which the position can be recorded: from the booking's start to the hand-back. */
-export const CAR_LOCATABLE_STATUSES: ReservationStatus[] = ['upcoming', 'arrived', 'shuttled_out', 'return_requested'];
+export const CAR_LOCATABLE_STATUSES: ReservationStatus[] = HOLDING_STATUSES;
 /** Beyond this, the position is flagged as rough in the apps (the phone may retry). */
 export const CAR_ACCURACY_ROUGH_M = 30;
 export const CAR_NOTE_MAX = 120;

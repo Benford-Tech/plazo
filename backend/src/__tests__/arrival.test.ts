@@ -430,7 +430,7 @@ describe('personnel : notifications push', () => {
       .set(auth(b.op.token))
       .send({ subscriptionId: 'sub-manager', platform: 'android' });
     expect(reg.status).toBe(200);
-    expect(reg.body.preferences).toEqual({ arrivals: true, returns: true, shuttles: true, platform: true, devices: 1 });
+    expect(reg.body.preferences).toEqual({ arrivals: true, returns: true, shuttles: true, platform: true, bookings: true, devices: 1 });
   }
 
   it('prévient au départ, au seuil des 10 min et à l’arrivée, sans répéter', async () => {
@@ -478,6 +478,7 @@ describe('personnel : notifications push', () => {
       returns: true,
       shuttles: true,
       platform: true,
+      bookings: true,
       devices: 1,
     });
     await api().post(arrival(b, '/announce')).set(bookingToken(b.manageToken)).send({ kind: 'outbound', minutes: 20 });
@@ -493,6 +494,28 @@ describe('personnel : notifications push', () => {
     await prisma.arrivalSignal.updateMany({ data: { notifiedStartAt: null } });
     await api().post(arrival(b, '/announce')).set(bookingToken(b.manageToken)).send({ kind: 'outbound', minutes: 30 });
     expect(pushBodies().map(p => p.contents.fr)).toEqual(["C. Martin : « J'arrive dans 30 min » · AB-123-CD"]);
+  });
+
+  it('E : un mot pour le parking part avec le signal et reste visible du personnel', async () => {
+    const b = await parkingWithBooking();
+    const agent = await addStaff(b.op.token, 'agent');
+    process.env.ONESIGNAL_APP_ID = 'app-1';
+    process.env.ONESIGNAL_REST_API_KEY = 'key-1';
+    await api().put('/api/internal/notifications/devices').set(auth(agent.token)).send({ subscriptionId: 'sub-agent' });
+    const tooLong = await api()
+      .post(arrival(b, '/announce'))
+      .set(bookingToken(b.manageToken))
+      .send({ kind: 'outbound', minutes: 20, note: 'x'.repeat(201) });
+    expect(tooLong.status).toBe(400);
+    const res = await api()
+      .post(arrival(b, '/announce'))
+      .set(bookingToken(b.manageToken))
+      .send({ kind: 'outbound', minutes: 20, note: ' 2 enfants, poussette ' });
+    expect(res.status).toBe(200);
+    expect(res.body.signal).toMatchObject({ state: 'announced', note: '2 enfants, poussette' });
+    expect(pushBodies().map(p => p.contents.fr)).toEqual(["C. Martin : « J'arrive dans 20 min » · AB-123-CD · « 2 enfants, poussette »"]);
+    const live = await api().get('/api/internal/arrivals/live').set(auth(agent.token));
+    expect(live.body.signals[0]).toMatchObject({ reference: b.reference, state: 'announced', note: '2 enfants, poussette' });
   });
 
   it('un échec de OneSignal ne fait pas échouer le voyageur', async () => {

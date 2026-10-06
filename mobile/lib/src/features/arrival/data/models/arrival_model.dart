@@ -67,6 +67,9 @@ abstract class ArrivalSignalModel with _$ArrivalSignalModel {
     int? announcedMinutes,
     DateTime? atMeetingPointAt,
     DateTime? positionUpdatedAt,
+
+    /// E (06/10/2026): the traveller's word for the parking, sent with the signal.
+    String? note,
   }) = _ArrivalSignalModel;
 
   factory ArrivalSignalModel.fromJson(Map<String, dynamic> json) => _$ArrivalSignalModelFromJson(json);

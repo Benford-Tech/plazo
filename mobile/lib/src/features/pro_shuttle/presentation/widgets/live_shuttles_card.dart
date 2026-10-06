@@ -9,6 +9,7 @@ import '../../../../shared/widgets/live_dot.dart';
 import '../../../pro_auth/presentation/bloc/pro_auth_bloc.dart';
 import '../../data/models/shuttle_models.dart';
 import '../bloc/live_shuttles_bloc.dart';
+import '../../../../shared/widgets/shuttle_icon.dart';
 import 'live_shuttles_map.dart';
 
 /// "Navettes en cours · N" (P-A): the map and one row per running shuttle (vehicle, driver, where it
@@ -46,7 +47,7 @@ class LiveShuttlesCard extends StatelessWidget {
             if (trips.isEmpty)
               AppCard(color: AppColors.canvas, child: Text('live_shuttles.none'.tr(), key: const Key('live-shuttles-none'), style: AppText.body(size: 14)))
             else ...[
-              if (trips.any((t) => t.position != null)) ...[LiveShuttlesMap(data: data, myStaffId: me), const SizedBox(height: 8)],
+              if (trips.any((t) => t.position != null)) ...[LiveShuttlesMap(data: data, myStaffId: me, headings: state.headings), const SizedBox(height: 8)],
               for (final t in trips) ...[LiveTripRow(trip: t, mine: t.driverId == me), const SizedBox(height: 6)],
             ],
           ],
@@ -77,7 +78,7 @@ class LiveTripRow extends StatelessWidget {
       borderWidth: mine ? 2 : 1,
       child: Row(
         children: [
-          Icon(Icons.directions_bus_rounded, size: 20, color: mine ? AppColors.accent : AppColors.peach),
+          ShuttleIcon(tone: shuttleToneOf(t.direction, hasPosition: t.position != null), size: 22),
           const SizedBox(width: 10),
           Expanded(
             child: Column(

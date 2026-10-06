@@ -85,6 +85,12 @@ void main() {
       await settle();
       expect(b.state.errorCode, 'invalid_transition');
       expect(statusTransitions['arrived'], contains('shuttled_out'));
+      // The handover (C-B, 06/10/2026): the remark travels with the status.
+      when(() => status(const ChangeStatusParams(id: 'r1', status: 'returned', note: 'Rayure aile avant'))).thenAnswer((_) async => Right(booking.copyWith(status: 'returned', keyHook: null)));
+      b.add(const ProReservationStatusChanged('returned', note: 'Rayure aile avant'));
+      await settle();
+      expect(b.state.reservation?.status, 'returned');
+      expect(b.state.reservation?.keyHook, isNull);
     });
   });
 

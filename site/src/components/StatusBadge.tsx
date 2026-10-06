@@ -7,6 +7,7 @@ const TONES: Record<BookingStatus, string> = {
   arrived: "bg-tint text-accent-dark",
   shuttled_out: "bg-tint text-accent-dark",
   return_requested: "bg-tint text-accent-dark",
+  back_at_parking: "bg-tint text-accent-dark",
   returned: "bg-tint text-soft",
   cancelled: "bg-danger-bg text-danger",
   no_show: "bg-danger-bg text-danger",

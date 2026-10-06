@@ -3,6 +3,7 @@ import { Bell, BusFront, ChevronLeft, ChevronRight, MessageSquareWarning, X } fr
 import { useEffect, useRef, useState } from "react";
 import { Link, useSearchParams } from "react-router-dom";
 import { Plate } from "@/components/Plate";
+import { useQuickCard } from "@/components/reservations/ReservationQuickCard";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useAuth } from "@/contexts/AuthContext";
 import { adminApi } from "@/lib/api";
@@ -81,12 +82,16 @@ function Row({ r, kind, index, clock }: { r: PlanningRow; kind: "arrival" | "ret
   const s = r.arrivalSignal ?? null;
   const live = s?.state === "sharing";
   const age = s && live ? positionAge(s, clock.fetchedAt, clock.now) : null;
+  const card = useQuickCard();
   return (
     <li id={`row-${r.id}`} className={cn(live && "my-1 border-2 border-lime-deep")}>
-      <Link
-        to={`/reservations/${r.id}`}
+      {/* C-A (06/10/2026): a row opens the operational card; the full page is one link further. */}
+      <button
+        type="button"
+        data-testid={`planning-row-${r.id}`}
+        onClick={() => card.open(r.id)}
         className={cn(
-          "grid min-h-16 grid-cols-[56px_1fr_auto] items-center gap-3 border-b border-[#262625] px-1 py-2 hover:bg-accent sm:grid-cols-[64px_1fr_auto] sm:gap-3.5",
+          "grid min-h-16 w-full grid-cols-[56px_1fr_auto] items-center gap-3 border-b border-[#262625] px-1 py-2 text-left hover:bg-accent sm:grid-cols-[64px_1fr_auto] sm:gap-3.5",
           live ? "border-b-0 bg-background px-2.5" : index % 2 ? "bg-muted/60" : "bg-card",
         )}
       >
@@ -122,7 +127,7 @@ function Row({ r, kind, index, clock }: { r: PlanningRow; kind: "arrival" | "ret
         ) : (
           <span />
         )}
-      </Link>
+      </button>
       {live && s && (
         <div className="flex flex-col gap-1.5 px-2.5 pb-2.5">
           <MiniMap s={s} />

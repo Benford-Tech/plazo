@@ -1,4 +1,5 @@
 import { Container, Service } from 'typedi';
+import { ON_SITE_STATUSES } from '@/domain/reservation';
 import { flightTrackingSettings } from '@/config';
 import prisma, { ReservationStatus } from '@/database';
 import { ShuttleDirection } from '@/domain/shuttle';
@@ -9,15 +10,18 @@ import { ParkingService } from './parking.service';
 import { PushService } from './push.service';
 import { ReservationService } from './reservation.service';
 import { ShuttleForecastService } from './shuttle-forecast.service';
+import { InboundEmailService } from './inbound-email.service';
 import { ShuttleService } from './shuttle.service';
 import { SmsService } from './sms.service';
 
 /** The statuses of a vehicle on the parking. */
-const ON_SITE: ReservationStatus[] = ['arrived', 'shuttled_out', 'return_requested'];
+const ON_SITE: ReservationStatus[] = ON_SITE_STATUSES;
 /** A flight is "delayed" from this many minutes past its schedule. */
 const DELAY_MINUTES = 15;
 /** A placed vehicle whose keys are not hung after this long is worth a nudge. */
 const KEYS_MINUTES = 20;
+/** An expected traveller still unplaced this long after their time is probably not coming. */
+const NO_SHOW_MINUTES = 180;
 
 export type AlertSeverity = 'urgent' | 'watch' | 'todo';
 export type AlertKind =
@@ -33,7 +37,11 @@ export type AlertKind =
   // Shuttle waves (V-A, 05/10/2026): an outbound flight cancelled or late, a wave beyond the seats.
   | 'departure_cancelled'
   | 'departure_delayed'
-  | 'wave_overflow';
+  | 'wave_overflow'
+  // Decision A (06/10/2026): expected hours ago, no car placed; the staff decide (never automatic).
+  | 'no_show_suspected'
+  // M-A (06/10/2026): forwarded confirmation emails waiting for the staff.
+  | 'inbound_to_check';
 
 export interface DashboardAlert {
   kind: AlertKind;
@@ -121,6 +129,7 @@ export class DashboardService {
   public push = Container.get(PushService);
   public reservations = Container.get(ReservationService);
   public shuttle = Container.get(ShuttleService);
+  public inbound = Container.get(InboundEmailService);
   public forecast = Container.get(ShuttleForecastService);
   public sms = Container.get(SmsService);
 
@@ -270,6 +279,31 @@ export class DashboardService {
           });
         }
       }
+    }
+    // Expected for hours, nothing placed: probably a no-show (the staff decide).
+    for (const r of planning.arrivals.filter(a => a.status === 'upcoming' && !a.spotId && minutesSince(a.arrivalAt) >= NO_SHOW_MINUTES)) {
+      alerts.push({
+        kind: 'no_show_suspected',
+        severity: 'watch',
+        ...row(r),
+        detail: null,
+        since: r.arrivalAt.toISOString(),
+        minutes: minutesSince(r.arrivalAt),
+      });
+    }
+    const inboundToCheck = await this.inbound.toCheckCount(actor.operatorId);
+    if (inboundToCheck > 0) {
+      alerts.push({
+        kind: 'inbound_to_check',
+        severity: 'watch',
+        reservationId: null,
+        reference: null,
+        customerName: null,
+        plate: null,
+        detail: String(inboundToCheck),
+        since: null,
+        minutes: null,
+      });
     }
     if (planning.smsWarning) {
       alerts.push({

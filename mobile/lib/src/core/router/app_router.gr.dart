@@ -579,18 +579,53 @@ class ProNotificationsRoute extends PageRouteInfo<void> {
 
 /// generated route for
 /// [ProOccupationPage]
-class ProOccupationRoute extends PageRouteInfo<void> {
-  const ProOccupationRoute({List<PageRouteInfo>? children})
-    : super(ProOccupationRoute.name, initialChildren: children);
+class ProOccupationRoute extends PageRouteInfo<ProOccupationRouteArgs> {
+  ProOccupationRoute({Key? key, String? focus, List<PageRouteInfo>? children})
+    : super(
+        ProOccupationRoute.name,
+        args: ProOccupationRouteArgs(key: key, focus: focus),
+        rawQueryParams: {'focus': focus},
+        initialChildren: children,
+      );
 
   static const String name = 'ProOccupationRoute';
 
   static PageInfo page = PageInfo(
     name,
     builder: (data) {
-      return WrappedRoute(child: const ProOccupationPage());
+      final queryParams = data.queryParams;
+      final args = data.argsAs<ProOccupationRouteArgs>(
+        orElse: () =>
+            ProOccupationRouteArgs(focus: queryParams.optString('focus')),
+      );
+      return WrappedRoute(
+        child: ProOccupationPage(key: args.key, focus: args.focus),
+      );
     },
   );
+}
+
+class ProOccupationRouteArgs {
+  const ProOccupationRouteArgs({this.key, this.focus});
+
+  final Key? key;
+
+  final String? focus;
+
+  @override
+  String toString() {
+    return 'ProOccupationRouteArgs{key: $key, focus: $focus}';
+  }
+
+  @override
+  bool operator ==(Object other) {
+    if (identical(this, other)) return true;
+    if (other is! ProOccupationRouteArgs) return false;
+    return key == other.key && focus == other.focus;
+  }
+
+  @override
+  int get hashCode => key.hashCode ^ focus.hashCode;
 }
 
 /// generated route for
@@ -803,18 +838,72 @@ class ProShellRoute extends PageRouteInfo<void> {
 
 /// generated route for
 /// [ProShuttlePage]
-class ProShuttleRoute extends PageRouteInfo<void> {
-  const ProShuttleRoute({List<PageRouteInfo>? children})
-    : super(ProShuttleRoute.name, initialChildren: children);
+class ProShuttleRoute extends PageRouteInfo<ProShuttleRouteArgs> {
+  ProShuttleRoute({
+    Key? key,
+    String? direction,
+    String? reservationId,
+    List<PageRouteInfo>? children,
+  }) : super(
+         ProShuttleRoute.name,
+         args: ProShuttleRouteArgs(
+           key: key,
+           direction: direction,
+           reservationId: reservationId,
+         ),
+         rawQueryParams: {'sens': direction, 'reservation': reservationId},
+         initialChildren: children,
+       );
 
   static const String name = 'ProShuttleRoute';
 
   static PageInfo page = PageInfo(
     name,
     builder: (data) {
-      return WrappedRoute(child: const ProShuttlePage());
+      final queryParams = data.queryParams;
+      final args = data.argsAs<ProShuttleRouteArgs>(
+        orElse: () => ProShuttleRouteArgs(
+          direction: queryParams.optString('sens'),
+          reservationId: queryParams.optString('reservation'),
+        ),
+      );
+      return WrappedRoute(
+        child: ProShuttlePage(
+          key: args.key,
+          direction: args.direction,
+          reservationId: args.reservationId,
+        ),
+      );
     },
   );
+}
+
+class ProShuttleRouteArgs {
+  const ProShuttleRouteArgs({this.key, this.direction, this.reservationId});
+
+  final Key? key;
+
+  final String? direction;
+
+  final String? reservationId;
+
+  @override
+  String toString() {
+    return 'ProShuttleRouteArgs{key: $key, direction: $direction, reservationId: $reservationId}';
+  }
+
+  @override
+  bool operator ==(Object other) {
+    if (identical(this, other)) return true;
+    if (other is! ProShuttleRouteArgs) return false;
+    return key == other.key &&
+        direction == other.direction &&
+        reservationId == other.reservationId;
+  }
+
+  @override
+  int get hashCode =>
+      key.hashCode ^ direction.hashCode ^ reservationId.hashCode;
 }
 
 /// generated route for

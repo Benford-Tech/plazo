@@ -6,10 +6,10 @@ import '../models/arrival_model.dart';
 
 abstract class ArrivalDataSource {
   Future<ArrivalModel> getArrival(String reference);
-  Future<ArrivalModel> start(String reference, ArrivalKind kind);
+  Future<ArrivalModel> start(String reference, ArrivalKind kind, {String? note});
   Future<ArrivalModel> sendPosition(String reference, GeoPosition position);
-  Future<ArrivalModel> announce(String reference, ArrivalKind kind, int minutes);
-  Future<ArrivalModel> atMeetingPoint(String reference, ArrivalKind kind, GeoPosition? position);
+  Future<ArrivalModel> announce(String reference, ArrivalKind kind, int minutes, {String? note});
+  Future<ArrivalModel> atMeetingPoint(String reference, ArrivalKind kind, GeoPosition? position, {String? note});
   Future<ArrivalModel> stop(String reference, ArrivalKind? kind);
 }
 
@@ -31,9 +31,9 @@ class ArrivalDataSourceImpl implements ArrivalDataSource {
   Future<ArrivalModel> getArrival(String reference) async => client.getArrival(reference: reference, token: await _token(reference));
 
   @override
-  Future<ArrivalModel> start(String reference, ArrivalKind kind) async =>
+  Future<ArrivalModel> start(String reference, ArrivalKind kind, {String? note}) async =>
       // The traveller tapped "Je suis en route — partager ma position" after reading what is shared.
-      client.start(reference: reference, token: await _token(reference), body: {'kind': kind.apiValue, 'consent': true});
+      client.start(reference: reference, token: await _token(reference), body: {'kind': kind.apiValue, 'consent': true, ..._note(note)});
 
   @override
   Future<ArrivalModel> sendPosition(String reference, GeoPosition position) async => client.sendPosition(
@@ -48,15 +48,18 @@ class ArrivalDataSourceImpl implements ArrivalDataSource {
   );
 
   @override
-  Future<ArrivalModel> announce(String reference, ArrivalKind kind, int minutes) async =>
-      client.announce(reference: reference, token: await _token(reference), body: {'kind': kind.apiValue, 'minutes': minutes});
+  Future<ArrivalModel> announce(String reference, ArrivalKind kind, int minutes, {String? note}) async =>
+      client.announce(reference: reference, token: await _token(reference), body: {'kind': kind.apiValue, 'minutes': minutes, ..._note(note)});
 
   @override
-  Future<ArrivalModel> atMeetingPoint(String reference, ArrivalKind kind, GeoPosition? position) async => client.atMeetingPoint(
+  Future<ArrivalModel> atMeetingPoint(String reference, ArrivalKind kind, GeoPosition? position, {String? note}) async => client.atMeetingPoint(
     reference: reference,
     token: await _token(reference),
-    body: {'kind': kind.apiValue, if (position != null) ...{'lat': position.lat, 'lng': position.lng}},
+    body: {'kind': kind.apiValue, if (position != null) ...{'lat': position.lat, 'lng': position.lng}, ..._note(note)},
   );
+
+  /// E (06/10/2026): the traveller's word, only when there is one.
+  static Map<String, dynamic> _note(String? note) => note != null && note.trim().isNotEmpty ? {'note': note.trim()} : const {};
 
   @override
   Future<ArrivalModel> stop(String reference, ArrivalKind? kind) async =>

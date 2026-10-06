@@ -53,7 +53,7 @@ class SmsSettingsInput {
 
 abstract class SettingsDataSource {
   Future<List<TeamMemberModel>> team();
-  Future<TeamMemberModel> createStaff({required String name, required String email, String? phone, required String role, required String password});
+  Future<TeamMemberModel> createStaff({required String firstName, required String lastName, required String email, String? phone, required String role, required String password});
   Future<TeamMemberModel> updateStaff(String id, {String? role, bool? isActive});
   Future<void> resetPassword(String id, String password);
   Future<void> changePassword(String currentPassword, String newPassword);
@@ -74,9 +74,10 @@ class SettingsDataSourceImpl implements SettingsDataSource {
   Future<List<TeamMemberModel>> team() => _client.team();
 
   @override
-  Future<TeamMemberModel> createStaff({required String name, required String email, String? phone, required String role, required String password}) async =>
+  Future<TeamMemberModel> createStaff({required String firstName, required String lastName, required String email, String? phone, required String role, required String password}) async =>
       (await _client.createStaff({
-        'name': name,
+        'firstName': firstName,
+        'lastName': lastName,
         'email': email,
         if ((phone ?? '').trim().isNotEmpty) 'phone': phone!.trim(),
         'role': role,

@@ -1,6 +1,6 @@
 import { Service } from 'typedi';
 import { BREVO_API_KEY, EMAIL_FROM, PRODUCT_NAME, PUBLIC_SITE_URL, SMS_SENDER } from '@/config';
-import { cancellationEmail, confirmationEmail, EmailMessage, isGsm7 } from '@/domain/booking-messages';
+import { cancellationEmail, closingEmail, confirmationEmail, EmailMessage, isGsm7, reminderEmail } from '@/domain/booking-messages';
 import { PublicBooking } from '@/interfaces/booking.interface';
 import { logger } from '@/utils/logger';
 
@@ -46,6 +46,22 @@ export class NotificationService {
   public async bookingConfirmed(booking: PublicBooking, manageToken: string): Promise<void> {
     if (!this.configured(booking.reference, 'booking_confirmed')) return;
     await this.sendEmail(booking, 'booking_confirmed', confirmationEmail(PRODUCT_NAME, booking, this.manageUrl(booking.reference, manageToken)));
+  }
+
+  /** The day before the drop-off (B, 06/10/2026). */
+  public async bookingReminder(booking: PublicBooking, manageToken: string | null): Promise<void> {
+    if (!this.configured(booking.reference, 'booking_reminder')) return;
+    await this.sendEmail(
+      booking,
+      'booking_reminder',
+      reminderEmail(PRODUCT_NAME, booking, manageToken ? this.manageUrl(booking.reference, manageToken) : null),
+    );
+  }
+
+  /** After the handover (B, 06/10/2026). */
+  public async bookingClosed(booking: PublicBooking, returnedAtLocal: string): Promise<void> {
+    if (!this.configured(booking.reference, 'booking_closed')) return;
+    await this.sendEmail(booking, 'booking_closed', closingEmail(PRODUCT_NAME, booking, returnedAtLocal));
   }
 
   /** Email after the traveller cancelled on the site. */

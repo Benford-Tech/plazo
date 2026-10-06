@@ -4,6 +4,7 @@ import { lazy, Suspense, useEffect, useState, type ComponentType, type ReactNode
 import { Link } from "react-router-dom";
 import { Badge, StatusPill, type BadgeTone } from "@/components/dashboard/Badge";
 import { Plate } from "@/components/Plate";
+import { useQuickCard } from "@/components/reservations/ReservationQuickCard";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useAuth } from "@/contexts/AuthContext";
 import { adminApi } from "@/lib/api";
@@ -106,12 +107,28 @@ function AlertRow({ alert }: { alert: DashboardAlert }) {
         {body}
       </Link>
     );
+  if (alert.kind === "inbound_to_check")
+    return (
+      <Link to="/reservations/a-verifier" className={cn(className, "hover:bg-panel-2")}>
+        {body}
+      </Link>
+    );
   return alert.reservationId ? (
-    <Link to={`/reservations/${alert.reservationId}`} className={cn(className, "hover:bg-panel-2")}>
+    <CardButton id={alert.reservationId} className={cn(className, "w-full text-left hover:bg-panel-2")}>
       {body}
-    </Link>
+    </CardButton>
   ) : (
     <div className={className}>{body}</div>
+  );
+}
+
+/** C-A (06/10/2026): a booking anywhere on the home opens its operational card. */
+function CardButton({ id, className, children }: { id: string; className?: string; children: ReactNode }) {
+  const card = useQuickCard();
+  return (
+    <button type="button" onClick={() => card.open(id)} className={className}>
+      {children}
+    </button>
   );
 }
 
@@ -128,6 +145,7 @@ function vehicleBadges(v: DashboardVehicle): { tone: BadgeTone; text: string }[]
   }
   if (v.tripDirection) out.push({ tone: "accent", text: b.onTrip });
   else if (v.status === "return_requested") out.push({ tone: "warn", text: b.waiting });
+  else if (v.status === "back_at_parking") out.push({ tone: "info", text: fr.status.back_at_parking });
   else if (v.status === "shuttled_out") out.push({ tone: "line", text: b.shuttled });
   if (!v.spotCode) out.push({ tone: "bad", text: b.noSpot });
   else if (out.length === 0) out.push({ tone: "ok", text: b.onSite });
@@ -143,7 +161,7 @@ function VehicleRow({ v }: { v: DashboardVehicle }) {
   ].filter(Boolean) as string[];
   const place = v.spotCode ? [v.spotCode, v.stayClass ? s.stay[v.stayClass] : null].filter(Boolean).join(" · ") : s.noSpot;
   return (
-    <Link to={`/reservations/${v.id}`} className="grid grid-cols-[auto_minmax(0,1fr)_auto] items-center gap-3 rounded-xl border border-panel-line bg-panel-2 p-3 hover:border-muted-foreground/40">
+    <CardButton id={v.id} className="grid w-full grid-cols-[auto_minmax(0,1fr)_auto] items-center gap-3 rounded-xl border border-panel-line bg-panel-2 p-3 text-left hover:border-muted-foreground/40">
       <Plate value={v.plate} size="sm" />
       <span className="min-w-0">
         <span className={cn("block font-mono text-xs font-medium", v.spotCode ? "text-muted-foreground" : "text-bad-text")}>{place}</span>
@@ -165,7 +183,7 @@ function VehicleRow({ v }: { v: DashboardVehicle }) {
           </Badge>
         ))}
       </span>
-    </Link>
+    </CardButton>
   );
 }
 
@@ -260,7 +278,7 @@ export default function DashboardPage() {
   return (
     <div className="space-y-3">
       <div className="flex flex-wrap items-center gap-x-3 gap-y-1 px-1 font-mono text-[13px] text-muted-foreground">
-        <h1 className="font-sans text-2xl font-bold uppercase tracking-wide text-foreground">{t.hello(user?.name?.split(" ")[0] ?? "")}</h1>
+        <h1 className="font-sans text-2xl font-bold uppercase tracking-wide text-foreground">{t.hello(user?.firstName || (user?.name?.split(" ")[0] ?? ""))}</h1>
         <span>/</span>
         <span>{d.parking.name}</span>
         <span>/</span>

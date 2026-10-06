@@ -28,7 +28,7 @@ class CarLocationCard extends StatefulWidget {
   final void Function(PublicBookingModel booking)? onChanged;
 
   /// Shown from the booking's start to the hand-back.
-  static bool relevant(PublicBookingModel b) => const {'upcoming', 'arrived', 'shuttled_out', 'return_requested'}.contains(b.status);
+  static bool relevant(PublicBookingModel b) => const {'upcoming', 'arrived', 'shuttled_out', 'return_requested', 'back_at_parking'}.contains(b.status);
 
   @override
   State<CarLocationCard> createState() => _CarLocationCardState();

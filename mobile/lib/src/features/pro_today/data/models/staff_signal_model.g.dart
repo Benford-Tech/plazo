@@ -59,6 +59,7 @@ _StaffSignalModel _$StaffSignalModelFromJson(
       : MeetingPointModel.fromJson(
           json['meetingPoint'] as Map<String, dynamic>,
         ),
+  note: json['note'] as String?,
 );
 
 Map<String, dynamic> _$StaffSignalModelToJson(_StaffSignalModel instance) =>
@@ -84,6 +85,7 @@ Map<String, dynamic> _$StaffSignalModelToJson(_StaffSignalModel instance) =>
       'positionUpdatedAt': instance.positionUpdatedAt?.toIso8601String(),
       'positionAgeSeconds': instance.positionAgeSeconds,
       'meetingPoint': instance.meetingPoint,
+      'note': instance.note,
     };
 
 const _$ArrivalKindEnumMap = {

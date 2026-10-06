@@ -229,6 +229,15 @@ class FakePublicDataSource implements PublicDataSource {
 
   @override
   Future<PaymentsConfigModel> paymentsConfig() async => config;
+
+  AirportLiveModel liveResponse = const AirportLiveModel(serverTime: '2026-10-02T10:00:00Z', airport: lys);
+  int lives = 0;
+
+  @override
+  Future<AirportLiveModel> live(String slug) async {
+    lives += 1;
+    return liveResponse;
+  }
 }
 
 class FakePaymentSheet implements PaymentSheetService {

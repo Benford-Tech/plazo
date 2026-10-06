@@ -67,6 +67,12 @@ export class ShuttleController {
     res.json(await this.shuttle.departures(req.staff));
   });
 
+  /** GET /internal/shuttle/staying */
+  public staying = catchAsync(async (req: RequestWithStaffSession, res: Response) => {
+    res.set('Cache-Control', 'no-store');
+    res.json(await this.shuttle.staying(req.staff));
+  });
+
   /** DELETE /internal/shuttle/vehicles/:id */
   public removeVehicle = catchAsync(async (req: RequestWithStaffSession, res: Response) => {
     await this.shuttle.removeVehicle(req.staff, req.params.id as string);

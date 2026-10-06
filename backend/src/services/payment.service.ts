@@ -25,12 +25,13 @@ import { logger } from '@/utils/logger';
 import { AuditService } from './audit.service';
 import { CapacityService } from './capacity.service';
 import { NotificationService } from './notification.service';
+import { PushService } from './push.service';
 import { SmsService } from './sms.service';
 import { StripeService } from './stripe.service';
 
 type Client = Prisma.TransactionClient | typeof prisma;
 type RefundFields = { paymentStatus: 'refunded'; refundedAt: Date; stripeRefundId: string; payoutStatus: 'cancelled' | 'reversed' };
-type PaymentOperator = Pick<Operator, 'commissionBps' | 'stripeAccountId' | 'stripePayoutsEnabled'>;
+type PaymentOperator = Pick<Operator, 'commissionBps' | 'stripeAccountId' | 'stripePayoutsEnabled' | 'isDemo'>;
 
 /** The app's payment sheet: the PaymentIntent to confirm, or the news that the booking is paid. */
 export type PaymentIntentResult =
@@ -65,7 +66,7 @@ export type PaymentStatus = {
   payoutSchedule: PayoutSchedule;
 };
 
-export const OPERATOR_PAYMENT_FIELDS = { commissionBps: true, stripeAccountId: true, stripePayoutsEnabled: true } as const;
+export const OPERATOR_PAYMENT_FIELDS = { commissionBps: true, stripeAccountId: true, stripePayoutsEnabled: true, isDemo: true } as const;
 
 const unavailable = () => new HttpException(httpStatus.CONFLICT, 'This parking cannot be booked online yet', 'online_booking_unavailable');
 const holdExpired = () => new HttpException(httpStatus.CONFLICT, 'The hold on this place has ended', 'hold_expired');
@@ -108,6 +109,7 @@ export class PaymentService {
   public audit = Container.get(AuditService);
   public capacity = Container.get(CapacityService);
   public notifications = Container.get(NotificationService);
+  public push = Container.get(PushService);
   public sms = Container.get(SmsService);
   public stripe = Container.get(StripeService);
   /** Read from the environment once; tests override it. */
@@ -123,13 +125,14 @@ export class PaymentService {
   }
 
   /**
-   * On site while payments are off; online once the operator's connected account has payouts
-   * enabled (Plazo takes the payment, then transfers the operator's share) and it has a commission.
+   * Online as soon as the platform has Stripe keys and the operator a commission: Plazo takes every
+   * payment itself. Decision of 06/10/2026 (evening): the operator's connected account is NOT required
+   * to be booked; its share stays "pending" (`runPayouts` → waitingForAccount) until it links one, or is
+   * paid by hand. Demo operators are never bookable with real money.
    */
   public modeFor(operator: PaymentOperator): BookingPaymentMode {
-    // Every Plazo booking is paid online (06/10/2026): without Stripe, nothing can be booked.
-    if (!this.enabled()) return 'unavailable';
-    return operator.stripeAccountId && operator.stripePayoutsEnabled && this.commissionBps(operator) !== null ? 'online' : 'unavailable';
+    if (!this.enabled() || operator.isDemo) return 'unavailable';
+    return this.commissionBps(operator) !== null ? 'online' : 'unavailable';
   }
 
   /** What the traveller pays, split between Plazo's commission and the operator's share (cents). */
@@ -517,6 +520,8 @@ export class PaymentService {
     const token = manageToken(record.id, SECRET_KEY, record.manageTokenVersion);
     const booking = toPublicBooking(record);
     await this.notifications.bookingConfirmed(booking, token);
+    // The team hears of it (06/10/2026): nobody typed this booking.
+    await this.push.notifyNewBooking(record, record.parking.timezone);
     // The SMS goes through the operator's own channel (their phone, Brevo, or none).
     await this.sms.sendTravellerSms(record.operatorId, {
       reservationId: record.id,

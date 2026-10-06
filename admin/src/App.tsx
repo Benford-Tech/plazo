@@ -10,10 +10,12 @@ import LoginPage from "@/pages/LoginPage";
 import NotFound from "@/pages/NotFound";
 import ListingPage from "@/pages/ListingPage";
 import NewReservationPage from "@/pages/NewReservationPage";
+import InboundEmailsPage from "@/pages/InboundEmailsPage";
 import ParkingPage from "@/pages/ParkingPage";
 import DashboardPage from "@/pages/DashboardPage";
 import PlanningPage from "@/pages/PlanningPage";
 import ShuttleWavesPage from "@/pages/ShuttleWavesPage";
+import { QuickCardProvider } from "@/components/reservations/ReservationQuickCard";
 import PricingPage from "@/pages/PricingPage";
 import ReservationPage from "@/pages/ReservationPage";
 import ReservationsPage from "@/pages/ReservationsPage";
@@ -122,7 +124,9 @@ const App = () => (
             <Route
               element={
                 <ProtectedRoute>
-                  <AdminLayout />
+                  <QuickCardProvider>
+                    <AdminLayout />
+                  </QuickCardProvider>
                 </ProtectedRoute>
               }
             >
@@ -135,6 +139,14 @@ const App = () => (
                 element={
                   <RequirePermission permission="reservations:manage">
                     <NewReservationPage />
+                  </RequirePermission>
+                }
+              />
+              <Route
+                path="/reservations/a-verifier"
+                element={
+                  <RequirePermission permission="reservations:manage">
+                    <InboundEmailsPage />
                   </RequirePermission>
                 }
               />

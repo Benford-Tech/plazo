@@ -83,6 +83,7 @@ class ArrivalBlock extends StatelessWidget {
           ],
         ),
       ),
+      const _NoteField(),
       GradientButton(
         key: const Key('share-button'),
         label: 'arrival.share'.tr(),
@@ -115,6 +116,7 @@ class ArrivalBlock extends StatelessWidget {
           ],
         ),
       ),
+      const _NoteField(),
       _AtPointButton(busy: state.actionState.isProcessing),
       ..._announce(context, state, 'arrival.return_announce_in'),
     ];
@@ -153,6 +155,34 @@ String _meetingLabel(MeetingPointModel? point, ArrivalKind kind) {
 List<Widget> _spaced(List<Widget> children) => [
   for (var i = 0; i < children.length; i++) ...[if (i > 0) const SizedBox(height: 12), children[i]],
 ];
+
+/// E (06/10/2026): a word for the parking, sent with the next signal ("2 enfants, poussette").
+class _NoteField extends StatefulWidget {
+  const _NoteField();
+
+  @override
+  State<_NoteField> createState() => _NoteFieldState();
+}
+
+class _NoteFieldState extends State<_NoteField> {
+  late final _controller = TextEditingController(text: context.read<ArrivalBloc>().state.note);
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) => TextField(
+    key: const Key('arrival-note'),
+    controller: _controller,
+    maxLength: 200,
+    textCapitalization: TextCapitalization.sentences,
+    decoration: InputDecoration(labelText: 'arrival.note_label'.tr(), hintText: 'arrival.note_hint'.tr(), counterText: ''),
+    onChanged: (v) => context.read<ArrivalBloc>().add(ArrivalNoteChanged(v)),
+  );
+}
 
 /// Frame 2: sharing in progress.
 class _Sharing extends StatelessWidget {
@@ -224,6 +254,7 @@ class _Sharing extends StatelessWidget {
             ],
           ),
         ),
+        if (signal.note != null) Text('arrival.note_sent'.tr(args: [signal.note!]), key: const Key('note-sent'), style: AppText.muted()),
         Text('arrival.auto_stop'.tr(args: [durationLabel(state.remaining)]), key: const Key('auto-stop'), style: AppText.muted()),
         OutlineAction(
           key: const Key('stop-button'),
@@ -252,7 +283,12 @@ class _AnnouncedCard extends StatelessWidget {
         children: [
           const Icon(Icons.check_circle_rounded, color: AppColors.peach),
           const SizedBox(width: 10),
-          Expanded(child: Text(key.tr(args: ['$minutes', at]), style: AppText.body(size: 14.5))),
+          Expanded(
+            child: Text(
+              signal.note == null ? key.tr(args: ['$minutes', at]) : '${key.tr(args: ['$minutes', at])}\n${'arrival.note_sent'.tr(args: [signal.note!])}',
+              style: AppText.body(size: 14.5),
+            ),
+          ),
           TextButton(onPressed: onCancel, child: Text('arrival.cancel_announce'.tr())),
         ],
       ),

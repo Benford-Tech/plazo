@@ -129,7 +129,7 @@ class _Kpis extends StatelessWidget {
         sub: free == null
             ? (d.parking.plannedSpots == 0 ? 'dashboard.kpi_no_plan'.tr() : '')
             : 'dashboard.kpi_free'.tr(args: ['$free', '${d.parking.plannedSpots}']),
-        onTap: () => context.router.navigate(const ProOccupationRoute()),
+        onTap: () => context.router.navigate(ProOccupationRoute()),
       ),
       _Kpi(
         key: const Key('kpi-arrivals'),
@@ -155,7 +155,7 @@ class _Kpis extends StatelessWidget {
                   ((d.nextWave!.vehiclesNeeded ?? 1) > 1 ? ' · ${'dashboard.kpi_wave_vehicles'.tr(args: ['${d.nextWave!.vehiclesNeeded}'])}' : '')
             : (c.shuttlesRunning == 0 ? 'dashboard.kpi_no_shuttle'.tr() : 'dashboard.kpi_running'.tr()),
         alert: (d.nextWave?.vehiclesNeeded ?? 1) > 1,
-        onTap: () => context.router.push(const ProShuttleRoute()),
+        onTap: () => context.router.push(ProShuttleRoute()),
       ),
       _Kpi(
         key: const Key('kpi-to-treat'),
@@ -489,6 +489,8 @@ List<(_Tone, String)> _vehicleBadges(DashboardVehicleModel v) {
     out.add((_Tone.warn, 'dashboard.badge_waiting'.tr()));
   } else if (v.status == 'shuttled_out') {
     out.add((_Tone.line, 'dashboard.badge_shuttled'.tr()));
+  } else if (v.status == 'back_at_parking') {
+    out.add((_Tone.accent, 'pro.status.back_at_parking'.tr()));
   }
   if (v.spotCode == null) {
     out.add((_Tone.bad, 'dashboard.badge_no_spot'.tr()));

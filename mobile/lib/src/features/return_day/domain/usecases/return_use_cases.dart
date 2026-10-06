@@ -25,6 +25,25 @@ class DeclareLandedUseCase with UseCase<TravellerReturnModel, String> {
   Future<Either<Failure, TravellerReturnModel>> call(String reference) => _repository.landed(reference);
 }
 
+/// E (06/10/2026): "Mon vol a du retard", "Bagage perdu", or a word for the parking.
+class ReturnNoticeParams extends Equatable {
+  const ReturnNoticeParams({required this.reference, required this.kind, this.text});
+  final String reference;
+  final String kind;
+  final String? text;
+  @override
+  List<Object?> get props => [reference, kind, text];
+}
+
+class SendReturnNoticeUseCase with UseCase<TravellerReturnModel, ReturnNoticeParams> {
+  SendReturnNoticeUseCase(this._repository);
+  final ReturnRepository _repository;
+
+  @override
+  Future<Either<Failure, TravellerReturnModel>> call(ReturnNoticeParams params) =>
+      _repository.notice(params.reference, kind: params.kind, text: params.text);
+}
+
 class WalkingRouteParams extends Equatable {
   const WalkingRouteParams({required this.reference, this.from});
   final String reference;

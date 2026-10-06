@@ -180,7 +180,7 @@ class _ProTodayViewState extends State<ProTodayView> with SingleTickerProviderSt
                   ),
                 ),
                 // P-A: the shuttles on the road, one line each; tap to open the Navette screen.
-                if (state.date == null) LiveShuttlesStrip(onTap: () => context.router.push(const ProShuttleRoute())),
+                if (state.date == null) LiveShuttlesStrip(onTap: () => context.router.push(ProShuttleRoute())),
                 if (state.planning == null)
                   Expanded(
                     child: Center(

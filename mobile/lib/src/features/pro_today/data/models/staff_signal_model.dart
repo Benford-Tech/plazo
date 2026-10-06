@@ -39,6 +39,9 @@ abstract class StaffSignalModel with _$StaffSignalModel {
     DateTime? positionUpdatedAt,
     int? positionAgeSeconds,
     MeetingPointModel? meetingPoint,
+
+    /// E (06/10/2026): the traveller's word for the parking, sent with the signal.
+    String? note,
   }) = _StaffSignalModel;
 
   factory StaffSignalModel.fromJson(Map<String, dynamic> json) => _$StaffSignalModelFromJson(json);

@@ -46,9 +46,19 @@ Fonctionnel :
 - Saisie manuelle par le personnel (téléphone, comptoir).
 - Import des réservations d'autres canaux : CSV et saisie assistée à partir d'un mail de confirmation (connecteurs directs aux comparateurs : hors MVP).
 - Vue planning : arrivées et retours du jour, par heure.
+- Fiche opérationnelle (C-A, 06/10/2026) : la même fiche courte (contact, vol, place, clés, desserte, prochaine étape) s'ouvre en tiroir depuis le planning, le tableau de bord, la page Navettes et l'Occupation ; la fiche complète reste un lien plus loin.
 - Tableau de bord (accueil de l'espace pro, 05/10/2026) : chiffres du jour (sur le parking, arrivées, retours, navettes, à traiter), état des services (suivi de vols, SMS, notifications, paiements, import), liste des situations à traiter classées (sur place sans place, vol retardé ou annulé, voyageur au point de rendez-vous, clés non accrochées, SMS en attente, surréservation), véhicules sur le parking avec place et clés, navettes en direct sur la carte.
 - Contrôle de capacité : blocage ou alerte quand les réservations dépassent la capacité réelle sur une date.
-- Statuts : à venir → arrivé (véhicule déposé) → parti en navette → retour demandé → véhicule rendu / annulé / no-show.
+- Statuts : attendu → sur place (véhicule déposé) → parti en navette → retour demandé → **de retour au parking** (06/10/2026) → véhicule rendu / annulé / non venu.
+- **Décision A « un seul geste par étape » (06/10/2026)** : placer la voiture d'un client attendu le jour même (jusqu'à 6 h avant
+  l'heure prévue) l'enregistre « Sur place » ; la fin d'une navette de dépose passe ses passagers « Parti en navette » et la fin
+  d'une navette de retour les passe « De retour au parking » ; « Véhicule rendu » décroche les clés (`keyHook` effacé) et peut
+  porter une remarque (`note`, datée et signée dans les notes : dégât, litige) ; un client attendu depuis 3 h sans voiture placée
+  apparaît « Attendu, toujours pas là » dans À traiter (`no_show_suspected`), jamais marqué absent tout seul ; l'équipe reçoit un
+  push « Nouvelle réservation · Plazo / Allopark… » pour toute réservation du site ou d'un import (réglage `Staff.notifyBookings`,
+  l'auteur d'une saisie n'est pas prévenu) ; la table des transitions vit sur le serveur seulement et `GET /internal/reservations/:id`
+  renvoie `nextStatuses` déjà filtré par rôle (web et app l'affichent tel quel). Listes de statuts centralisées dans
+  `domain/reservation.ts` (`ON_SITE_STATUSES`, `HOLDING_STATUSES`, `AWAY_STATUSES`).
 - Annulation et modification (règles configurables).
 
 Règles métier :
@@ -192,6 +202,19 @@ Hors MVP : optimisation d'itinéraire.
   trajet » bascule la file du chauffeur sur le sens et la desserte de la vague avec ses clients présélectionnés. Le voyageur
   voit sur sa réservation « navette vers le terminal prévue vers HH:MM » quand son vol aller est suivi.
 
+#### Tournée du chauffeur en trois bandes (décision F-A du 06/10/2026, mis en œuvre)
+
+- L'onglet Navette de Plazo Pro et le mode chauffeur de la page Navettes du web deviennent **« Ma tournée »** : trois bandes
+  que les voyageurs traversent à mesure que le chauffeur les coche. Côté départs : **À emmener** (les clients sur place,
+  groupés par desserte avec l'heure de départ conseillée de la vague, les clients encore attendus en gris « Attendu HH:MM »
+  et non cochables ; cocher, véhicule, « Partir au terminal · N clients ») → **En route** (carte des navettes en cours, mon
+  trajet avec ses passagers, « Clients déposés au terminal ») → **En séjour** (les déposés rangés par jour de retour avec
+  place, vol et heure). Côté retours, les mêmes bandes s'appellent **À récupérer** → **En route** → **Rendus** (revenus
+  aujourd'hui). Le départ d'un trajet ouvre « En route », sa fin ramène sur la première bande.
+- Serveur : `leaveAt` sur chaque ligne des listes `pickups` et `departures` (calcul des vagues), `expected` sur les
+  départs (arrivée prévue dans la fenêtre, pas encore sur place), `GET /internal/shuttle/staying` (`days[]` par jour de
+  retour local, `returnedToday`).
+
 #### Position GPS de la voiture (décision du 06/10/2026, mis en œuvre)
 
 - **Qui** : la personne qui gare la voiture. Le voyageur, s'il se gare lui-même, depuis la carte « Ma voiture » de sa
@@ -322,7 +345,7 @@ Version mobile d'abord (la majorité des réservations se fait sur téléphone),
 ### Paiement et commission
 
 - Le paiement en ligne passe par **Stripe Connect** en mode « charges et transferts séparés » : **Plazo encaisse, puis reverse la part du loueur** (par défaut le lendemain de la fin du séjour), sans que la plateforme ait à détenir elle-même un statut d'établissement de paiement. À valider avec un juriste ou un expert-comptable **avant la mise en ligne du paiement réel** (statut, TVA sur la commission, mandat de facturation, CGU/CGV). D'ici là : **mode test Stripe uniquement** (une clé live est refusée en production sans `STRIPE_ALLOW_LIVE=true`).
-- Chaque loueur est « onboardé » chez Stripe (compte Express : vérification d'identité et coordonnées bancaires saisies chez Stripe, jamais stockées par la plateforme). Un parking n'est réservable en ligne que si son loueur a un compte Stripe avec les **virements activés** (`payouts_enabled`) et une commission (la sienne ou celle de la plateforme). Sinon, le site affiche « Réservation en ligne bientôt disponible ».
+- Chaque loueur est « onboardé » chez Stripe (compte Express : vérification d'identité et coordonnées bancaires saisies chez Stripe, jamais stockées par la plateforme). **Décision du 06/10/2026 (soir) : le compte Stripe du loueur n'est pas obligatoire pour l'instant.** Un parking est réservable en ligne dès que la plateforme a ses clés Stripe et que le loueur a une commission (la sienne ou celle de la plateforme) ; Plazo encaisse tout. Sans compte connecté, la part du loueur reste « en attente » (le cron `payouts` la garde, `waitingForAccount`) jusqu'à ce qu'il relie son compte, ou est réglée à la main par la plateforme (page Plateforme › Paiements). Les parkings de démonstration ne sont jamais réservables. Sans clé Stripe côté plateforme, le site affiche « Réservation en ligne bientôt disponible ».
 - Commission : pourcentage par réservation, configurable par loueur (`commissionBps`, à défaut `PLATFORM_COMMISSION_BPS`) ; l'affichage au voyageur reste le prix total. Valeur à fixer après échange avec le client n°1 et les futurs loueurs.
 - **Montants** (calculés par le serveur à la création, jamais repris du navigateur) : montant payé, commission Plazo, part du loueur, en centimes (montant = commission + part, au centime).
 - **Reversements** : **le loueur choisit quand il reçoit son argent : le lendemain du dépôt, le lendemain de la fin du séjour (par défaut), chaque semaine ou chaque mois.** (`AT_DROP_OFF`, `AFTER_STAY`, `WEEKLY` = le lundi pour les séjours terminés la semaine précédente, `MONTHLY` = le 1er pour les séjours terminés le mois précédent ; dates à l'heure du parking). La date se calcule au moment du reversement avec le choix actuel du loueur ; une part déjà reversée ne l'est jamais une deuxième fois. Une tâche quotidienne fait un transfert Stripe par réservation (`source_transaction` = le paiement, clé d'idempotence par réservation), sauf si la réservation est annulée. Si le compte du loueur ne peut pas encore encaisser, le reversement reste en attente et repart à la tâche suivante.
@@ -451,7 +474,9 @@ Ajouts phase 2 (marketplace) :
 2. **Arrivée au parking** : agent ouvre la fiche (plaque ou nom) → confirme l'arrivée → affecte l'emplacement → (si voiturier) enregistre la clé → le client monte dans la navette.
 3. **Retour** : vol suivi → atterrissage → SMS au client → il appuie sur « Je suis prêt » → le chauffeur voit le client en tête de file → prise en charge → arrivée au parking → l'agent affiche l'emplacement du véhicule → remise → statut « rendu ».
 4. **Surréservation évitée** : une réservation qui dépasserait la capacité sur au moins une nuit est refusée sur la page publique et signalée au personnel en saisie manuelle.
-5. **Retard de vol** : l'API remonte un retard → l'heure estimée se met à jour → la file se réordonne → le client reçoit un SMS d'info si le décalage dépasse un seuil.
+5. **Fil de messages au voyageur (B, 06/10/2026)** : confirmation (mail + SMS) → rappel la veille (mail + SMS + push) → « Votre voiture est garée » (push, place et clés) → « Bon voyage ! » (push, fin de la dépose) → SMS d'atterrissage (tous canaux) → mail et push de clôture après la remise. Chaque message part une seule fois, par le canal SMS du loueur, et n'échoue jamais l'action qui le déclenche.
+6. **Communication voyageur ↔ parking (E, 06/10/2026)** : à la réservation, un mot pour le parking et le véhicule (modèle, couleur) ; le jour J, un mot joint à chaque signal d'arrivée ; le jour du retour, « Mon vol a du retard », « Bagage perdu » ou un mot libre, poussé à l'équipe des retours et visible dans la file du chauffeur et sur la fiche.
+7. **Retard de vol** : l'API remonte un retard → l'heure estimée se met à jour → la file se réordonne → le client reçoit un SMS d'info si le décalage dépasse un seuil.
 
 ## 6. Exigences non fonctionnelles
 

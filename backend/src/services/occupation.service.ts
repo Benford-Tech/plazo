@@ -1,4 +1,5 @@
 import httpStatus from 'http-status';
+import { HOLDING_STATUSES, ON_SITE_STATUSES } from '@/domain/reservation';
 import { canLocateCar, carView, CLEARED_CAR_LOCATION } from '@/domain/car-location';
 import { CarLocationDto } from '@/dtos/public-booking.dto';
 import { Container, Service } from 'typedi';
@@ -9,10 +10,13 @@ import { AssignSpotDto } from '@/dtos/occupation.dto';
 import { AuthenticatedStaff } from '@/interfaces/auth.interface';
 import { HttpException } from '@/utils/httpException';
 import { AuditService } from './audit.service';
+import { TravellerMessagesService } from './traveller-messages.service';
 
 /** Statuses that hold a spot: the vehicle is on site, or booked and already placed. */
-const HOLDING: ReservationStatus[] = ['upcoming', 'arrived', 'shuttled_out', 'return_requested'];
-const ON_SITE: ReservationStatus[] = ['arrived', 'shuttled_out', 'return_requested'];
+/** A car placed this long before its booked arrival counts as a check-in (an early traveller), later as a pre-assignment. */
+const CHECK_IN_AHEAD_HOURS = 6;
+const HOLDING: ReservationStatus[] = HOLDING_STATUSES;
+const ON_SITE: ReservationStatus[] = ON_SITE_STATUSES;
 
 const occupantSelect = {
   id: true,
@@ -65,6 +69,7 @@ export interface SpotState {
 @Service()
 export class OccupationService {
   public audit = Container.get(AuditService);
+  public messages = Container.get(TravellerMessagesService);
 
   public async board(actor: AuthenticatedStaff, parkingId: string) {
     const parking = await this.parkingOf(actor, parkingId);
@@ -191,12 +196,32 @@ export class OccupationService {
           carNote: data.car.note?.trim() || null,
         }
       : {};
+    // Decision A (06/10/2026): placing the car of a traveller expected today (or late) is the check-in;
+    // a spot given days ahead is a pre-assignment and changes nothing.
+    const checkIn = !!spot && reservation.status === 'upcoming' && reservation.arrivalAt.getTime() - Date.now() <= CHECK_IN_AHEAD_HOURS * 3600000;
     const updated = await prisma.$transaction(async tx => {
       const row = await tx.reservation.update({
         where: { id: reservation.id },
-        data: { spotId: spot?.id ?? null, keyHook, ...car },
+        data: {
+          spotId: spot?.id ?? null,
+          keyHook,
+          ...car,
+          ...(checkIn ? { status: 'arrived', arrivedAt: reservation.arrivedAt ?? new Date() } : {}),
+        },
         include: { spot: { select: { code: true } } },
       });
+      if (checkIn) {
+        await this.audit.record(
+          actor,
+          {
+            action: 'reservation.status_changed',
+            entityType: 'reservation',
+            entityId: reservation.id,
+            details: { from: 'upcoming', to: 'arrived', by: 'spot_assigned' },
+          },
+          tx,
+        );
+      }
       await this.audit.record(
         actor,
         {
@@ -209,6 +234,8 @@ export class OccupationService {
       );
       return row;
     });
+    // B (06/10/2026): the traveller hears where their car stands, once.
+    if (spot && !reservation.spotId) await this.messages.carParked(reservation.id);
     return updated;
   }
 

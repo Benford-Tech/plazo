@@ -10,6 +10,7 @@ import '../models/return_model.dart';
 abstract class ReturnDataSource {
   Future<TravellerReturnModel> getReturn(String reference);
   Future<TravellerReturnModel> landed(String reference);
+  Future<TravellerReturnModel> notice(String reference, {required String kind, String? text});
   Future<StayShuttlesModel> stayShuttles(String reference);
   Future<WalkingRouteModel> route(String reference, GeoPosition? from);
   Future<ShuttleStatusModel> shuttle(String reference);
@@ -56,6 +57,10 @@ class ReturnDataSourceImpl implements ReturnDataSource {
 
   @override
   Future<TravellerReturnModel> landed(String reference) async => client.landed(reference: reference, token: await _token(reference));
+
+  @override
+  Future<TravellerReturnModel> notice(String reference, {required String kind, String? text}) async =>
+      client.notice(reference: reference, token: await _token(reference), body: {'kind': kind, if (text != null && text.trim().isNotEmpty) 'text': text.trim()});
 
   @override
   Future<WalkingRouteModel> route(String reference, GeoPosition? from) async =>

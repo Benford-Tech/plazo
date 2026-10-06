@@ -64,7 +64,7 @@ class BookingFormView extends StatefulWidget {
 }
 
 class _BookingFormViewState extends State<BookingFormView> {
-  late final TextEditingController _name, _phone, _email, _plate, _flight, _outbound;
+  late final TextEditingController _name, _phone, _email, _plate, _flight, _outbound, _vehicleModel, _vehicleColour, _note;
   int _passengers = 1;
   bool _terms = false;
 
@@ -82,13 +82,16 @@ class _BookingFormViewState extends State<BookingFormView> {
     _plate = TextEditingController(text: d.plate);
     _flight = TextEditingController(text: d.returnFlight);
     _outbound = TextEditingController(text: d.departureFlight);
+    _vehicleModel = TextEditingController(text: d.vehicleModel);
+    _vehicleColour = TextEditingController(text: d.vehicleColour);
+    _note = TextEditingController(text: d.customerNote);
     _passengers = d.passengers;
     _terms = d.acceptTerms;
   }
 
   @override
   void dispose() {
-    for (final c in [_name, _phone, _email, _plate, _flight, _outbound]) {
+    for (final c in [_name, _phone, _email, _plate, _flight, _outbound, _vehicleModel, _vehicleColour, _note]) {
       c.dispose();
     }
     _scroll.dispose();
@@ -109,6 +112,9 @@ class _BookingFormViewState extends State<BookingFormView> {
           departureFlight: _outbound.text,
           passengers: _passengers,
           acceptTerms: _terms,
+          vehicleModel: _vehicleModel.text,
+          vehicleColour: _vehicleColour.text,
+          customerNote: _note.text,
         ),
       ),
     );
@@ -233,6 +239,46 @@ class _BookingFormViewState extends State<BookingFormView> {
                           _edited.add('passengers');
                         }),
                       ),
+                      // E (06/10/2026): the vehicle (so the valet spots it) and a word for the parking.
+                      const SizedBox(height: 14),
+                      Text('book.vehicle_title'.tr(), style: AppText.strong(size: 15)),
+                      Row(
+                        children: [
+                          Expanded(
+                            child: _field(
+                              key: const Key('field-vehicle-model'),
+                              field: 'vehicleModel',
+                              controller: _vehicleModel,
+                              label: 'book.vehicle_model'.tr(),
+                              hint: 'Peugeot 308',
+                              error: err('vehicleModel'),
+                              maxLength: 40,
+                            ),
+                          ),
+                          const SizedBox(width: 10),
+                          Expanded(
+                            child: _field(
+                              key: const Key('field-vehicle-colour'),
+                              field: 'vehicleColour',
+                              controller: _vehicleColour,
+                              label: 'book.vehicle_colour'.tr(),
+                              hint: 'grise',
+                              error: err('vehicleColour'),
+                              maxLength: 30,
+                            ),
+                          ),
+                        ],
+                      ),
+                      _field(
+                        key: const Key('field-note'),
+                        field: 'customerNote',
+                        controller: _note,
+                        label: 'book.message'.tr(),
+                        helper: 'book.message_hint'.tr(),
+                        error: err('customerNote'),
+                        maxLength: 300,
+                        maxLines: 2,
+                      ),
                       const SizedBox(height: 14),
                       _Terms(
                         value: _terms,
@@ -275,6 +321,7 @@ class _BookingFormViewState extends State<BookingFormView> {
     TextInputType? keyboard,
     TextCapitalization capitalization = TextCapitalization.none,
     int? maxLength,
+    int maxLines = 1,
   }) => Padding(
     padding: const EdgeInsets.only(bottom: 14),
     child: TextField(
@@ -283,6 +330,7 @@ class _BookingFormViewState extends State<BookingFormView> {
       keyboardType: keyboard,
       textCapitalization: capitalization,
       maxLength: maxLength,
+      maxLines: maxLines,
       autofillHints: autofill == null ? null : [autofill],
       onChanged: (_) {
         if (_edited.add(field)) setState(() {});

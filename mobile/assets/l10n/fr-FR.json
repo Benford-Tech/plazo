@@ -66,7 +66,10 @@
     "location_denied_forever": "L'accès à la position est refusé. Activez-le dans les réglages du téléphone, ou prévenez sans partager.",
     "location_service_disabled": "La localisation du téléphone est désactivée. Activez-la, ou prévenez sans partager.",
     "hours_minutes": "{} h {}",
-    "minutes_only": "{} min"
+    "minutes_only": "{} min",
+    "note_label": "Un mot pour le parking (facultatif)",
+    "note_hint": "Ex. 2 enfants, poussette",
+    "note_sent": "Votre mot : « {} »"
   },
   "plan": {
     "title": "Plan du parking",
@@ -153,10 +156,11 @@
       "upcoming": "Remettre en attente",
       "arrived": "Enregistrer l'arrivée",
       "shuttled_out": "Parti en navette",
-      "return_requested": "Client de retour",
+      "return_requested": "Client au point de rendez-vous",
       "returned": "Véhicule rendu",
       "cancelled": "Annuler la réservation",
-      "no_show": "Marquer non venu"
+      "no_show": "Marquer non venu",
+      "back_at_parking": "Client de retour au parking"
     },
     "channel": {
       "website": "Site du parking",
@@ -177,7 +181,38 @@
       "diverted": "dérouté",
       "unknown": "vol inconnu"
     },
-    "take_off": "décollage {}"
+    "take_off": "décollage {}",
+    "next_step": "Prochaine étape",
+    "next": {
+      "place": "Placer la voiture",
+      "place_help": "Sur le plan, avec le crochet des clés : le client est enregistré « Sur place ».",
+      "drop_off": "Déposer au terminal",
+      "drop_off_help": "Ouvre la navette, côté départs, avec ce client sélectionné.",
+      "pick_up": "Récupérer à l'aéroport",
+      "pick_up_help": "Ouvre la navette, côté retours, avec ce client sélectionné.",
+      "hand_over": "Rendre le véhicule",
+      "hand_over_help": "Clés rendues, état du véhicule, remarque éventuelle.",
+      "none_closed": "Réservation close."
+    },
+    "more_actions": "Autres actions",
+    "handover": {
+      "title": "Rendre le véhicule",
+      "keys": "Clés rendues au client",
+      "keys_help": "Le crochet est libéré.",
+      "note": "Remarque (dégât, litige, objet oublié…)",
+      "note_hint": "Facultatif · gardée dans les notes, datée et signée",
+      "confirm": "Véhicule rendu",
+      "keys_required": "Confirmez que les clés sont rendues."
+    },
+    "vehicle_model": "Modèle du véhicule",
+    "vehicle_colour": "Couleur",
+    "customer_note": "Message du client",
+    "return_notice": "Signalé au retour",
+    "return_notice_kind": {
+      "flight_delayed": "Mon vol a du retard",
+      "luggage": "Bagage perdu ou retardé",
+      "other": "Un mot du voyageur"
+    }
   },
   "occupation": {
     "title": "Places",
@@ -218,7 +253,10 @@
     },
     "car_position": "Position GPS",
     "car_by_staff": "Position GPS prise par l'équipe à {}",
-    "car_by_traveller": "Position GPS donnée par le client à {}"
+    "car_by_traveller": "Position GPS donnée par le client à {}",
+    "place_in": "Placer en {}",
+    "key_hook_optional": "Facultatif : où les clés sont accrochées.",
+    "place_confirm": "Placer la voiture"
   },
   "pro": {
     "login_eyebrow": "Espace du personnel",
@@ -273,16 +311,19 @@
     "push_unsupported": "Les notifications push ne sont disponibles que dans l'application installée (iPhone ou Android).",
     "devices": "Téléphones enregistrés : {}",
     "status": {
-      "upcoming": "À venir",
+      "pending_payment": "Paiement en attente",
+      "upcoming": "Attendu",
       "arrived": "Sur place",
-      "shuttled_out": "Navette faite",
-      "return_requested": "Attend la navette",
+      "shuttled_out": "Parti en navette",
+      "return_requested": "Retour demandé",
+      "back_at_parking": "De retour au parking",
       "returned": "Rendu",
-      "cancelled": "Annulée",
-      "no_show": "Absent",
-      "pending_payment": "Paiement en attente"
+      "cancelled": "Annulé",
+      "no_show": "Non venu"
     },
-    "shuttle": "Navette"
+    "shuttle": "Navette",
+    "notify_bookings": "Nouvelles réservations",
+    "notify_bookings_help": "Une réservation arrive du site Plazo ou d'un import, sans passer par vous."
   },
   "errors": {
     "generic": "Une erreur est survenue. Réessayez.",
@@ -454,7 +495,18 @@
       "book_sub": "Confirmation immédiate",
       "fly": "Décollez",
       "fly_sub": "Navette jusqu'au terminal"
-    }
+    },
+    "shuttles_none": "Aucune navette en circulation",
+    "shuttles_one": "1 navette en circulation",
+    "shuttles_many": "{} navettes en circulation",
+    "shuttle_marker": "Navette de {}",
+    "shuttle_to_terminal": "vers le terminal",
+    "shuttle_to_airport": "vers l'aéroport",
+    "shuttle_age_s": "position il y a {} s",
+    "shuttle_age_min": "position il y a {} min",
+    "parking_pin": "Parking {} : {}",
+    "pin_full": "complet à ces dates",
+    "featured_full": "Complet à ces dates"
   },
   "picker": {
     "title": "Vos dates",
@@ -644,7 +696,12 @@
     "change_dates": "Changer de dates",
     "total": "Total",
     "outbound_flight": "Vol aller (facultatif)",
-    "outbound_flight_hint": "Ex. AF 7641 : la navette vers le terminal est prévue avant votre décollage."
+    "outbound_flight_hint": "Ex. AF 7641 : la navette vers le terminal est prévue avant votre décollage.",
+    "vehicle_title": "Pour vous reconnaître (facultatif)",
+    "vehicle_model": "Modèle du véhicule",
+    "vehicle_colour": "Couleur",
+    "message": "Un mot pour le parking",
+    "message_hint": "Poussette, siège bébé, arrivée tardive… Le parking le lit avant votre venue."
   },
   "pay": {
     "title": "Paiement",
@@ -711,7 +768,8 @@
     "return_requested": "En cours",
     "returned": "Terminée",
     "cancelled": "Annulée",
-    "no_show": "Non présentée"
+    "no_show": "Non présentée",
+    "back_at_parking": "En cours"
   },
   "manage": {
     "drop_off": "Dépôt",
@@ -749,7 +807,9 @@
     "cancelled_now": "Votre réservation est annulée. Un email de confirmation vous est envoyé.",
     "cancelled_now_refunded": "Votre réservation est annulée. Remboursement intégral sur votre carte sous 5 à 10 jours. Un email de confirmation vous est envoyé.",
     "change_dates": "Pour changer les dates, annulez puis réservez de nouveau (gratuit avant le {}).",
-    "call": "Appeler le parking"
+    "call": "Appeler le parking",
+    "vehicle_details": "{}",
+    "message": "Votre mot pour le parking"
   },
   "more": {
     "title": "Plus",
@@ -814,7 +874,21 @@
     "route_photo": "Photo du point de rendez-vous",
     "route_arrived": "Je suis arrivé au point de rendez-vous",
     "route_arrived_done": "C'est noté : le chauffeur sait que vous êtes là.",
-    "route_retry": "Réessayer"
+    "route_retry": "Réessayer",
+    "notice_title": "Un souci ? Prévenez le parking",
+    "notice_help": "Le chauffeur et l'accueil le voient aussitôt dans leur file.",
+    "notice_flight_delayed": "Mon vol a du retard",
+    "notice_luggage": "Bagage perdu ou retardé",
+    "notice_other": "Autre…",
+    "notice_other_hint": "Dites-nous en un mot",
+    "notice_send": "Envoyer",
+    "notice_kind": {
+      "flight_delayed": "Mon vol a du retard",
+      "luggage": "Bagage perdu ou retardé",
+      "other": "Votre message"
+    },
+    "noticed": "Transmis au parking à {} : {}.",
+    "notice_again": "Signaler autre chose"
   },
   "shuttle": {
     "title": "Navette",
@@ -872,7 +946,32 @@
     "ended": "Trajet terminé : votre position n'est plus partagée et a été effacée.",
     "location_denied": "Sans accès à la position, le trajet ne peut pas être partagé. Activez-la dans les réglages du téléphone.",
     "notification_title": "Trajet navette en cours — position partagée avec vos clients",
-    "notification_text": "S'arrête quand vous terminez le trajet, ou au bout de 90 min."
+    "notification_text": "S'arrête quand vous terminez le trajet, ou au bout de 90 min.",
+    "notice": {
+      "flight_delayed": "Vol en retard (client)",
+      "luggage": "Bagage perdu",
+      "other": "Mot du client"
+    },
+    "tour_title": "Ma tournée",
+    "band_take": "À emmener",
+    "band_fetch": "À récupérer",
+    "band_route": "En route",
+    "band_stay": "En séjour",
+    "band_back": "Rendus",
+    "group_leave": "Départ conseillé {}",
+    "group_terminal": "Terminal",
+    "expected_at": "Attendu {}",
+    "route_none": "Aucun trajet en cours. Cochez des voyageurs dans « {} » puis partez.",
+    "route_passengers": "Passagers du trajet",
+    "stay_none": "Personne en séjour : les voyageurs déposés au terminal apparaîtront ici jusqu'à leur retour.",
+    "stay_day": "{} · {} retours",
+    "stay_day_one": "{} · 1 retour",
+    "stay_row": "{} · {}",
+    "back_today": "Revenus aujourd'hui",
+    "back_none": "Personne n'est encore revenu aujourd'hui.",
+    "selected_summary": "{} voyageurs · {} pass. cochés",
+    "selected_one": "1 voyageur · {} pass. coché",
+    "to_drop_off_stop": "À conduire · {}"
   },
   "vehicle_day": {
     "title": "Mon véhicule aujourd'hui",
@@ -940,7 +1039,9 @@
       "overbooked": "Surréservation",
       "departure_cancelled": "Vol aller annulé",
       "departure_delayed": "Vol aller retardé",
-      "wave_overflow": "Vague au-delà d'une navette"
+      "wave_overflow": "Vague au-delà d'une navette",
+      "no_show_suspected": "Attendu, toujours pas là",
+      "inbound_to_check": "Mails à vérifier"
     },
     "vehicles_title": "Véhicules sur le parking",
     "vehicles_empty": "Aucun véhicule sur le parking.",
@@ -1160,7 +1261,9 @@
     "updated": "Membre mis à jour",
     "reset_password": "Nouveau mot de passe",
     "password_reset": "Mot de passe réinitialisé. Ses sessions ont été fermées.",
-    "you": "vous"
+    "you": "vous",
+    "first_name": "Prénom",
+    "last_name": "Nom"
   },
   "account": {
     "title": "Mon compte",

@@ -10,7 +10,8 @@ export const emptySignup: SignupForm = {
   parkingName: "",
   totalCapacity: "",
   airportCode: "",
-  managerName: "",
+  firstName: "",
+  lastName: "",
   email: "",
   phone: "",
   password: "",
@@ -22,7 +23,7 @@ export const emptySignup: SignupForm = {
 /** Same rules as the API, checked before sending (the API stays the authority). Error codes as the API's. */
 export function validateSignup(form: SignupForm): Record<string, string> {
   const errors: Record<string, string> = {};
-  for (const key of ["companyName", "parkingName", "airportCode", "managerName", "email", "phone"] as const) {
+  for (const key of ["companyName", "parkingName", "airportCode", "firstName", "lastName", "email", "phone"] as const) {
     if (!form[key].trim()) errors[key] = "required";
   }
   const capacity = Number(form.totalCapacity);

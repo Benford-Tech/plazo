@@ -112,7 +112,7 @@ afterAll(() => prisma.$disconnect());
 describe('réservation sur le site', () => {
   it('enregistre la réservation au prix recalculé par le serveur, canal plazo', async () => {
     const { token: staffToken, operator } = await publishedParking();
-    const res = await book({ priceCents: 1 });
+    const res = await book({ priceCents: 1, customerNote: '  Poussette et 2 enfants ', vehicleModel: 'Peugeot 308', vehicleColour: 'grise' });
     expect(res.status).toBe(201);
     expect(res.body.reference).toMatch(/^R[A-HJ-NP-Z2-9]{5}$/);
     expect(res.body.manageToken).toMatch(/^[A-Za-z0-9_-]{32}$/);
@@ -129,6 +129,8 @@ describe('réservation sur le site', () => {
         shuttleMinutes: 8,
         openingHours: '24h/24',
         phone: '04 72 00 00 00',
+        meetingLabel: null,
+        meetingInstructions: null,
       },
       arrivalAt: inDays(5, '06:30'),
       returnAt: inDays(7, '15:05'),
@@ -140,6 +142,8 @@ describe('réservation sur le site', () => {
       plate: 'GK-318-PX',
       returnFlight: 'TO 3627',
       departureFlight: null,
+      customerNote: 'Poussette et 2 enfants',
+      vehicle: { model: 'Peugeot 308', colour: 'grise' },
       outbound: null,
       car: null,
       passengers: 2,

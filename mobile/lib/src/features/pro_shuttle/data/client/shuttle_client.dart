@@ -19,6 +19,9 @@ abstract class ShuttleClient {
   @GET('internal/shuttle/departures')
   Future<DeparturesModel> departures();
 
+  @GET('internal/shuttle/staying')
+  Future<StayingModel> staying();
+
   @GET('internal/shuttle/vehicles')
   Future<DataList<ShuttleVehicleModel>> vehicles();
 

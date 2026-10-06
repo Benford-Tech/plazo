@@ -25,7 +25,7 @@ describe('équipe', () => {
     const create = await api()
       .post('/api/internal/staff')
       .set(auth(driver.token))
-      .send({ name: 'X', email: 'x@example.com', role: 'agent', password: PASSWORD });
+      .send({ firstName: 'X', lastName: 'Y', email: 'x@example.com', role: 'agent', password: PASSWORD });
     expect(create.status).toBe(403);
   });
 
@@ -35,12 +35,15 @@ describe('équipe', () => {
     const dup = await api()
       .post('/api/internal/staff')
       .set(auth(token))
-      .send({ name: 'X', email: driver.email.toUpperCase(), role: 'agent', password: PASSWORD });
+      .send({ firstName: 'X', lastName: 'Y', email: driver.email.toUpperCase(), role: 'agent', password: PASSWORD });
     expect(dup.status).toBe(409);
     expect(dup.body.code).toBe('email_taken');
-    const bad = await api().post('/api/internal/staff').set(auth(token)).send({ name: '', email: 'x', role: 'boss', password: 'court' });
+    const bad = await api()
+      .post('/api/internal/staff')
+      .set(auth(token))
+      .send({ firstName: '', lastName: 'Y', email: 'x', role: 'boss', password: 'court' });
     expect(bad.status).toBe(400);
-    expect(bad.body.fields).toMatchObject({ name: 'required', email: 'invalid_email', role: 'invalid_role', password: 'password_too_short' });
+    expect(bad.body.fields).toMatchObject({ firstName: 'required', email: 'invalid_email', role: 'invalid_role', password: 'password_too_short' });
   });
 
   it('désactiver quelqu’un ferme ses sessions et l’empêche de se reconnecter', async () => {

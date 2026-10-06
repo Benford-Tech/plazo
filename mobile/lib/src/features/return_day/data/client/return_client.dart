@@ -17,6 +17,14 @@ abstract class ReturnClient {
   @POST('public/bookings/{reference}/return/landed')
   Future<TravellerReturnModel> landed({@Path('reference') required String reference, @Header('x-booking-token') required String token});
 
+  /// E (06/10/2026): "Mon vol a du retard", "Bagage perdu", or a word for the parking.
+  @POST('public/bookings/{reference}/return/notice')
+  Future<TravellerReturnModel> notice({
+    @Path('reference') required String reference,
+    @Header('x-booking-token') required String token,
+    @Body() required Map<String, dynamic> body,
+  });
+
   /// The position only serves the routing call (never stored); without it, from the terminal.
   @GET('public/bookings/{reference}/return/route')
   Future<WalkingRouteModel> route({

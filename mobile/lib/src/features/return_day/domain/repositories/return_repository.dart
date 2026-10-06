@@ -8,6 +8,7 @@ import '../../data/models/return_model.dart';
 abstract class ReturnRepository {
   Future<Either<Failure, TravellerReturnModel>> getReturn(String reference);
   Future<Either<Failure, TravellerReturnModel>> landed(String reference);
+  Future<Either<Failure, TravellerReturnModel>> notice(String reference, {required String kind, String? text});
   Future<Either<Failure, WalkingRouteModel>> route(String reference, GeoPosition? from);
   Future<Either<Failure, ShuttleStatusModel>> shuttle(String reference);
   Future<Either<Failure, StayShuttlesModel>> stayShuttles(String reference);
@@ -31,6 +32,10 @@ class ReturnRepositoryImpl implements ReturnRepository {
 
   @override
   Future<Either<Failure, TravellerReturnModel>> landed(String reference) => _dataSource.landed(reference).makeRequest();
+
+  @override
+  Future<Either<Failure, TravellerReturnModel>> notice(String reference, {required String kind, String? text}) =>
+      _dataSource.notice(reference, kind: kind, text: text).makeRequest();
 
   @override
   Future<Either<Failure, WalkingRouteModel>> route(String reference, GeoPosition? from) => _dataSource.route(reference, from).makeRequest();

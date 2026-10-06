@@ -1,4 +1,5 @@
 import { FlightStatus } from '@/database';
+import { AWAY_STATUSES } from './reservation';
 
 /**
  * Return flight tracking rules (see SPEC.md, block 3). Pure functions: the providers' answers are
@@ -68,7 +69,7 @@ export function shouldLookupFlight(
   now = new Date(),
 ): boolean {
   if (!booking.returnFlight) return false;
-  if (!['arrived', 'shuttled_out', 'return_requested'].includes(booking.status)) return false;
+  if (!(AWAY_STATUSES as string[]).includes(booking.status)) return false;
   if (booking.flightStatus && FINAL_FLIGHT_STATUSES.includes(booking.flightStatus)) return false;
   const landing = booking.flightEstimatedAt ?? booking.flightScheduledAt ?? booking.returnAt;
   if (landing.getTime() - now.getTime() > FLIGHT_LOOKUP_HOURS_BEFORE * 3600000) return false;

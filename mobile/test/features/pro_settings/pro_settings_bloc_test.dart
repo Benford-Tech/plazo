@@ -43,7 +43,7 @@ const parking = ParkingSettingsModel(id: 'p1', name: 'Parkair', totalCapacity: 1
 void main() {
   setUpAll(() {
     registerFallbackValue(NoParams());
-    registerFallbackValue(const NewStaffParams(name: '', email: '', role: 'agent', password: ''));
+    registerFallbackValue(const NewStaffParams(firstName: '', lastName: '', email: '', role: 'agent', password: ''));
     registerFallbackValue(const UpdateStaffParams(id: ''));
     registerFallbackValue(const ResetPasswordParams(id: '', password: ''));
     registerFallbackValue(const UpdateParkingParams(id: '', input: ParkingSettingsInput(name: '', totalCapacity: 0, safetyMarginPct: 0, shuttleTravelMinutes: 0)));
@@ -64,7 +64,7 @@ void main() {
       final b = ProTeamBloc(get, create, update, reset)..add(const ProTeamStarted());
       await settle();
       expect(b.state.members.map((m) => m.name), ['Alex Agent']);
-      b.add(const ProTeamMemberCreated(NewStaffParams(name: 'Dan Driver', email: 'd@demo.fr', role: 'driver', password: 'mot-de-passe-solide')));
+      b.add(const ProTeamMemberCreated(NewStaffParams(firstName: 'Dan', lastName: 'Driver', email: 'd@demo.fr', role: 'driver', password: 'mot-de-passe-solide')));
       await settle();
       expect(b.state.members, hasLength(2));
       expect(b.state.notice, 'team.created');

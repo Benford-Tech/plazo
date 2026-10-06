@@ -25,6 +25,10 @@ _PublicBookingModel _$PublicBookingModelFromJson(
   customerPhone: json['customerPhone'] as String? ?? '',
   plate: json['plate'] as String,
   returnFlight: json['returnFlight'] as String?,
+  customerNote: json['customerNote'] as String?,
+  vehicle: json['vehicle'] == null
+      ? null
+      : BookingVehicleModel.fromJson(json['vehicle'] as Map<String, dynamic>),
   departureFlight: json['departureFlight'] as String?,
   outbound: json['outbound'] == null
       ? null
@@ -55,6 +59,8 @@ Map<String, dynamic> _$PublicBookingModelToJson(_PublicBookingModel instance) =>
       'customerPhone': instance.customerPhone,
       'plate': instance.plate,
       'returnFlight': instance.returnFlight,
+      'customerNote': instance.customerNote,
+      'vehicle': instance.vehicle,
       'departureFlight': instance.departureFlight,
       'outbound': instance.outbound,
       'car': instance.car,
@@ -176,6 +182,16 @@ _CheckoutModel _$CheckoutModelFromJson(Map<String, dynamic> json) =>
 
 Map<String, dynamic> _$CheckoutModelToJson(_CheckoutModel instance) =>
     <String, dynamic>{'url': instance.url, 'paid': instance.paid};
+
+_BookingVehicleModel _$BookingVehicleModelFromJson(Map<String, dynamic> json) =>
+    _BookingVehicleModel(
+      model: json['model'] as String?,
+      colour: json['colour'] as String?,
+    );
+
+Map<String, dynamic> _$BookingVehicleModelToJson(
+  _BookingVehicleModel instance,
+) => <String, dynamic>{'model': instance.model, 'colour': instance.colour};
 
 _OutboundFlightModel _$OutboundFlightModelFromJson(Map<String, dynamic> json) =>
     _OutboundFlightModel(

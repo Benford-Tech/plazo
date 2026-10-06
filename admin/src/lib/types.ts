@@ -15,6 +15,9 @@ export interface Staff {
   id: string;
   operatorId: string;
   email: string;
+  /** First and last name (06/10/2026); `name` is the display form "Prénom Nom". */
+  firstName?: string;
+  lastName?: string;
   name: string;
   phone: string | null;
   role: StaffRole;
@@ -61,14 +64,15 @@ export interface ParkingSettings {
 }
 
 export interface NewStaff {
-  name: string;
+  firstName: string;
+  lastName: string;
   email: string;
   phone?: string;
   role: StaffRole;
   password: string;
 }
 
-export type ReservationStatus = "upcoming" | "arrived" | "shuttled_out" | "return_requested" | "returned" | "cancelled" | "no_show";
+export type ReservationStatus = "upcoming" | "arrived" | "shuttled_out" | "return_requested" | "back_at_parking" | "returned" | "cancelled" | "no_show";
 export type ReservationChannel = "website" | "phone" | "counter" | "aggregator" | "import" | "plazo";
 
 export interface Reservation {
@@ -95,6 +99,13 @@ export interface Reservation {
   departureEstimatedAt: string | null;
   departureTerminal: string | null;
   notes: string | null;
+  /** E (06/10/2026): the traveller's message for the parking, their vehicle, and today's return notice. */
+  customerNote?: string | null;
+  vehicleModel?: string | null;
+  vehicleColour?: string | null;
+  returnNoticeKind?: ReturnNoticeKind | null;
+  returnNoticeText?: string | null;
+  returnNoticeAt?: string | null;
   externalReference: string | null;
   priceCents: number | null;
   overbooked: boolean;
@@ -104,6 +115,17 @@ export interface Reservation {
   returnedAt: string | null;
   cancelledAt: string | null;
   createdAt: string;
+  /** The statuses this staff member may set next (served by GET /internal/reservations/:id, 06/10/2026). */
+  nextStatuses?: ReservationStatus[];
+  /** Return flight tracking (bloc 3), on the full row. */
+  flightStatus?: string | null;
+  flightScheduledAt?: string | null;
+  flightEstimatedAt?: string | null;
+  flightLandedAt?: string | null;
+  flightTerminal?: string | null;
+  flightGate?: string | null;
+  /** The spot's code, when placed (GET /internal/reservations/:id includes it). */
+  spot?: { code: string } | null;
   /** Bloc 2, Occupation: the spot and the key hook (null until placed). */
   spotId?: string | null;
   keyHook?: string | null;
@@ -160,6 +182,8 @@ export interface ArrivalSignal {
   positionUpdatedAt: string | null;
   positionAgeSeconds: number | null;
   meetingPoint: MeetingPoint | null;
+  /** E (06/10/2026): the traveller's word for the parking, sent with the signal. */
+  note?: string | null;
 }
 
 /** A driver's running trip (position shared with its passengers), as the planning shows it. */
@@ -268,6 +292,9 @@ export interface ReservationInput {
   /** D-A: a stop of the parking, or null for the airport. */
   stopId?: string | null;
   notes?: string | null;
+  customerNote?: string | null;
+  vehicleModel?: string | null;
+  vehicleColour?: string | null;
   externalReference?: string;
   priceCents?: number;
   force?: boolean;
@@ -297,6 +324,32 @@ export interface ParsedBooking {
   departureFlight?: string;
   passengers?: number;
   priceCents?: number;
+}
+
+/** M-A (06/10/2026): the operator's inbound address and the forwarded confirmation emails. */
+export type InboundEmailStatus = "imported" | "duplicate" | "incomplete" | "unrecognised" | "dismissed";
+
+export interface InboundSettings {
+  available: boolean;
+  address: string | null;
+  lastReceivedAt: string | null;
+  counts: Record<InboundEmailStatus, number>;
+  toCheck: number;
+}
+
+export interface InboundEmail {
+  id: string;
+  status: InboundEmailStatus;
+  fromAddress: string | null;
+  fromName: string | null;
+  subject: string | null;
+  textBody: string | null;
+  provider: string | null;
+  parsed: ParsedBooking | null;
+  missing: string[];
+  reservationId: string | null;
+  reservationReference: string | null;
+  receivedAt: string;
 }
 
 export type CancellationPolicy = "free_until_arrival" | "free_24h" | "free_48h" | "non_refundable";
@@ -367,7 +420,8 @@ export interface SignupInput {
   parkingName: string;
   totalCapacity: number;
   airportCode: string;
-  managerName: string;
+  firstName: string;
+  lastName: string;
   email: string;
   phone: string;
   password: string;
@@ -610,6 +664,10 @@ export interface PickupRow {
   stopName: string | null;
   atMeetingPointAt: string | null;
   tripId: string | null;
+  /** E (06/10/2026): what the traveller signalled today. */
+  notice?: ReturnNotice | null;
+  /** F-A: when the shuttle should leave the parking (missing from an older API). */
+  leaveAt?: string;
 }
 
 /** An arrived traveller waiting at the parking for the shuttle to the terminal (drop-off). */
@@ -626,6 +684,31 @@ export interface DepartureRow {
   stopId: string | null;
   stopName: string | null;
   tripId: string | null;
+  /** F-A: when the shuttle should leave for the terminal; `expected`: still to come (greyed, not selectable). */
+  leaveAt?: string;
+  expected?: boolean;
+}
+
+/** F-A: a traveller dropped at the terminal (or fetched back), kept on the driver's list until their return. */
+export interface StayingRow {
+  reservationId: string;
+  reference: string;
+  customerName: string;
+  passengers: number;
+  plate: string;
+  status: ReservationStatus;
+  returnAt: string;
+  returnFlight: string | null;
+  flight: PickupFlight;
+  spot: string | null;
+  stopName: string | null;
+  returnedAt: string | null;
+}
+
+export interface Staying {
+  serverTime: string;
+  days: { date: string; rows: StayingRow[] }[];
+  returnedToday: StayingRow[];
 }
 
 /** A shuttle trip as its driver (or the team) sees it. */
@@ -675,7 +758,9 @@ export type AlertKind =
   | "overbooked"
   | "departure_cancelled"
   | "departure_delayed"
-  | "wave_overflow";
+  | "wave_overflow"
+  | "no_show_suspected"
+  | "inbound_to_check";
 
 /** A row of the home's "À traiter" list (GET /internal/dashboard). */
 export interface DashboardAlert {
@@ -819,4 +904,12 @@ export interface FlightCheck {
     departureTerminal: string | null;
   } | null;
   error: string | null;
+}
+
+/** E (06/10/2026): what a traveller can signal on the return day. */
+export type ReturnNoticeKind = "flight_delayed" | "luggage" | "other";
+export interface ReturnNotice {
+  kind: ReturnNoticeKind;
+  text: string | null;
+  at: string;
 }

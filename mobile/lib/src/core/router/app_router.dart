@@ -87,6 +87,7 @@ class AppRouter extends RootStackRouter {
       AutoRoute(page: ProVehicleRoute.page, path: '/pro/vehicule', guards: [proGuard]),
       AutoRoute(page: ProNotificationsRoute.page, path: '/pro/notifications', guards: [proGuard]),
       AutoRoute(page: ProShuttleRoute.page, path: '/pro/navette', guards: [proGuard]),
+      AutoRoute(page: ProOccupationRoute.page, path: '/pro/occupation', guards: [proGuard]),
       AutoRoute(page: ProVehiclesRoute.page, path: '/pro/navettes', guards: [proGuard]),
       AutoRoute(page: ProPlanRoute.page, path: '/pro/plan', guards: [proGuard]),
       AutoRoute(page: ProSpotPlanningRoute.page, path: '/pro/planning-places', guards: [proGuard]),

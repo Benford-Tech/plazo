@@ -13,6 +13,7 @@ _NotificationPreferencesModel _$NotificationPreferencesModelFromJson(
   returns: json['returns'] as bool,
   shuttles: json['shuttles'] as bool? ?? true,
   platform: json['platform'] as bool? ?? true,
+  bookings: json['bookings'] as bool? ?? true,
   devices: (json['devices'] as num?)?.toInt() ?? 0,
 );
 
@@ -23,5 +24,6 @@ Map<String, dynamic> _$NotificationPreferencesModelToJson(
   'returns': instance.returns,
   'shuttles': instance.shuttles,
   'platform': instance.platform,
+  'bookings': instance.bookings,
   'devices': instance.devices,
 };

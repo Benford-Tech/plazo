@@ -41,6 +41,11 @@ class ProOccupationBloc extends Bloc<ProOccupationEvent, ProOccupationState> {
     await parking.fold((f) async => emit(state.copyWith(viewState: ViewState.error, errorCode: _code(f))), (p) async {
       emit(state.copyWith(parking: p));
       await _load(emit);
+      final focus = event.focus;
+      if (focus == null) return;
+      // The vehicle asked for: among today's arrivals, else on its spot.
+      final found = state.arrivals.where((a) => a.id == focus).firstOrNull ?? state.spots.map((s) => s.occupant).whereType<OccupantModel>().where((o) => o.id == focus).firstOrNull;
+      if (found != null) emit(state.copyWith(vehicle: found));
     });
   }
 

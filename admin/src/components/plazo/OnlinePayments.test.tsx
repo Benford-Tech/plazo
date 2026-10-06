@@ -94,7 +94,7 @@ describe("Paiements en ligne", () => {
       }),
     ).toBeInTheDocument();
     expect(within(box).getByText("12 %")).toBeInTheDocument();
-    expect(box).toHaveTextContent("« Réservation en ligne bientôt disponible »");
+    expect(box).toHaveTextContent("vos reversements restent en attente");
     expect(within(box).getByText("1. Vos informations et votre IBAN chez Stripe")).toHaveAttribute("aria-current", "step");
     expect(box).toHaveTextContent("Mode test : aucun argent réel.");
 

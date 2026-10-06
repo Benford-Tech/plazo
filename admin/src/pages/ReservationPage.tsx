@@ -5,25 +5,17 @@ import { Link, useParams } from "react-router-dom";
 import { toast } from "sonner";
 import { Plate } from "@/components/Plate";
 import { ReservationForm } from "@/components/reservations/ReservationForm";
+import { NextStep } from "@/components/reservations/NextStep";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useAuth } from "@/contexts/AuthContext";
 import { adminApi } from "@/lib/api";
 import { dateTimeShort, localParts, nightsBetween, timeOf } from "@/lib/datetime";
-import { describeError, fr } from "@/lib/fr";
+import { describeError, fr, quickCardFr } from "@/lib/fr";
 import { can } from "@/lib/roles";
 import type { Reservation, ReservationStatus } from "@/lib/types";
 import { cn } from "@/lib/utils";
 
-// Mirrors backend/src/domain/reservation.ts. Forward steps first, then the corrections.
-const NEXT_STEPS: Record<ReservationStatus, ReservationStatus[]> = {
-  upcoming: ["arrived", "no_show", "cancelled"],
-  arrived: ["shuttled_out", "return_requested", "returned", "upcoming"],
-  shuttled_out: ["return_requested", "returned", "arrived"],
-  return_requested: ["returned", "shuttled_out"],
-  returned: ["return_requested"],
-  cancelled: ["upcoming"],
-  no_show: ["upcoming"],
-};
+// The next statuses come from the API (GET /internal/reservations/:id, 06/10/2026): one table, on the server.
 const MANAGE_ONLY: ReservationStatus[] = ["cancelled", "no_show"];
 const CLOSED: ReservationStatus[] = ["returned", "cancelled", "no_show"];
 
@@ -32,50 +24,6 @@ function Info({ label, children }: { label: string; children: React.ReactNode })
     <div className="border-b border-border py-2.5">
       <dt className="text-[13px] font-semibold uppercase tracking-wide text-muted-foreground">{label}</dt>
       <dd className="mt-0.5 text-lg">{children}</dd>
-    </div>
-  );
-}
-
-function StatusActions({ reservation }: { reservation: Reservation }) {
-  const { user } = useAuth();
-  const queryClient = useQueryClient();
-  const change = useMutation({
-    mutationFn: (status: ReservationStatus) => adminApi.changeReservationStatus(reservation.id, status),
-    onSuccess: ({ data }) => {
-      queryClient.setQueryData(["reservation", reservation.id], data);
-      queryClient.invalidateQueries({ queryKey: ["planning"] });
-      toast.success(fr.status[data.status]);
-    },
-    onError: (err: Error) => toast.error(describeError(err)),
-  });
-  // A booking refunded online stays closed: the API refuses every status change (booking_refunded).
-  const steps = (reservation.paymentStatus === "refunded" ? [] : NEXT_STEPS[reservation.status]).filter(
-    s => can(user?.role, "reservations:status") && (!MANAGE_ONLY.includes(s) && !MANAGE_ONLY.includes(reservation.status) ? true : can(user?.role, "reservations:manage")),
-  );
-  if (!steps.length) return null;
-  const [primary, ...others] = steps;
-  return (
-    <div className="flex flex-wrap gap-2">
-      <button
-        onClick={() => change.mutate(primary)}
-        disabled={change.isPending}
-        className="h-12 bg-primary px-5 text-lg font-bold uppercase tracking-wide text-primary-foreground hover:brightness-110 disabled:opacity-50"
-      >
-        {fr.statusAction[primary]}
-      </button>
-      {others.map(s => (
-        <button
-          key={s}
-          onClick={() => change.mutate(s)}
-          disabled={change.isPending}
-          className={cn(
-            "h-12 border px-4 font-semibold uppercase tracking-wide hover:bg-accent disabled:opacity-50",
-            MANAGE_ONLY.includes(s) ? "border-destructive/60 text-destructive" : "border-border",
-          )}
-        >
-          {fr.statusAction[s]}
-        </button>
-      ))}
     </div>
   );
 }
@@ -132,7 +80,7 @@ export default function ReservationPage() {
         />
       ) : (
         <>
-          <StatusActions reservation={r} />
+          <NextStep reservation={r} />
           <div className="grid gap-x-8 sm:grid-cols-2">
             <dl>
               <Info label={t.arrival}>
@@ -155,7 +103,17 @@ export default function ReservationPage() {
                 <span className="tabular font-mono">{r.returnFlight ?? "—"}</span>
               </Info>
               {r.stop && <Info label={t.stop}>{r.stop.name}</Info>}
+              <Info label={quickCardFr.spot}>
+                <span className="tabular font-mono">{r.spot?.code ?? quickCardFr.noSpot}</span>
+                <span className="ml-2 text-muted-foreground">· {quickCardFr.keys} {r.keyHook ?? quickCardFr.noKeys}</span>
+              </Info>
               <Info label={t.passengers}>{r.passengers}</Info>
+              {(r.vehicleModel || r.vehicleColour) && <Info label={t.vehicleModel}>{t.vehicleDetails(r.vehicleModel, r.vehicleColour)}</Info>}
+              {r.returnNoticeKind && r.returnNoticeAt && (
+                <Info label={t.returnNotice}>
+                  <span className="font-semibold text-warn-text">{t.returnNoticeLine(r.returnNoticeKind, r.returnNoticeText ?? null, dateTimeShort(r.returnNoticeAt))}</span>
+                </Info>
+              )}
               {r.carLat != null && r.carLng != null && r.carLocatedAt && (
                 <Info label={t.carPosition}>
                   <span className="tabular font-mono">{r.carLat.toFixed(5)}, {r.carLng.toFixed(5)}</span>
@@ -197,11 +155,18 @@ export default function ReservationPage() {
               <Info label={t.created}>{dateTimeShort(r.createdAt)}</Info>
             </dl>
           </div>
-          {r.notes && (
+          {(r.notes || r.customerNote) && (
             <dl>
-              <Info label={t.notes}>
-                <span className="whitespace-pre-line">{r.notes}</span>
-              </Info>
+              {r.customerNote && (
+                <Info label={t.customerNote}>
+                  <span className="whitespace-pre-line">{r.customerNote}</span>
+                </Info>
+              )}
+              {r.notes && (
+                <Info label={t.notes}>
+                  <span className="whitespace-pre-line">{r.notes}</span>
+                </Info>
+              )}
             </dl>
           )}
         </>

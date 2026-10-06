@@ -4,7 +4,7 @@ void _initBlocs() {
   locator
     // One per screen.
     ..registerFactory(() => BookingBloc(locator(), locator(), locator(), locator()))
-    ..registerFactory(() => SearchBloc(locator(), preview: locator()))
+    ..registerFactory(() => SearchBloc(locator(), preview: locator(), live: locator()))
     // Shared by the search tab, "Mes réservations" and the pages that change a booking.
     ..registerLazySingleton(() => TripsBloc(locator()))
     ..registerFactory(() => ManageBookingBloc(locator(), locator()))
@@ -23,9 +23,9 @@ void _initBlocs() {
       (reference, _) => PaymentBloc(locator(), locator(), locator(), locator(), locator(), locator(), locator(), locator(), reference: reference),
     )
     ..registerFactory(() => ArrivalBloc(locator(), locator(), locator(), locator(), locator(), locator(), locator()))
-    ..registerFactory(() => ReturnBloc(locator(), locator(), locator()))
+    ..registerFactory(() => ReturnBloc(locator(), locator(), locator(), notice: locator()))
     ..registerFactory(() => MeetingRouteBloc(locator(), locator(), locator(), locator()))
-    ..registerFactory(() => ShuttleBloc(locator(), locator(), locator(), locator(), locator(), locator(), locator(), locator(), locator(), pollInterval: AppConstants.livePollInterval))
+    ..registerFactory(() => ShuttleBloc(locator(), locator(), locator(), locator(), locator(), locator(), locator(), locator(), locator(), staying: locator(), pollInterval: AppConstants.livePollInterval))
     ..registerFactory(() => LiveShuttlesBloc(locator(), pollInterval: AppConstants.livePollInterval))
     ..registerFactory(() => ShuttleWavesBloc(locator()))
     ..registerFactory(() => ProVehiclesBloc(locator(), locator(), locator(), locator()))

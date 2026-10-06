@@ -2,6 +2,9 @@ import type {
   Airport,
   Dashboard,
   LiveShuttles,
+  InboundSettings,
+  InboundEmail,
+  InboundEmailStatus,
   MeetingPoint,
   PickupRow,
   DepartureRow,
@@ -47,7 +50,7 @@ import type {
   Staff,
   StaffRole,
   TokenData,
-} from "./types";
+ Staying } from "./types";
 
 import type {
   CapacityStudy,
@@ -403,9 +406,17 @@ export const adminApi = {
   getLiveArrivals: () => apiRequest<LiveArrivals>("/internal/arrivals/live"),
   getDashboard: () => apiRequest<Dashboard>("/internal/dashboard"),
   getLiveShuttles: () => apiRequest<LiveShuttles>("/internal/shuttle/live"),
+  // M-A (06/10/2026): the inbound address and the forwarded confirmation emails.
+  getInboundSettings: () => apiRequest<InboundSettings>("/internal/inbound/settings"),
+  enableInboundAddress: (regenerate = false) => apiRequest<InboundSettings>("/internal/inbound/address", { method: "POST", body: json({ regenerate }) }),
+  getInboundEmails: (status?: InboundEmailStatus) => apiRequest<{ data: InboundEmail[] }>(`/internal/inbound/emails${status ? `?status=${status}` : ""}`),
+  dismissInboundEmail: (id: string) => apiRequest<{ data: InboundEmail }>(`/internal/inbound/emails/${id}/dismiss`, { method: "POST" }),
+  attachInboundEmail: (id: string, reservationId: string) =>
+    apiRequest<{ message: string }>(`/internal/inbound/emails/${id}/attach`, { method: "POST", body: json({ reservationId }) }),
   // The driver's screen on the web (06/10/2026): the same trips as Plazo Pro.
   getPickups: () => apiRequest<{ serverTime: string; meetingPoint: MeetingPoint | null; rows: PickupRow[] }>("/internal/shuttle/pickups"),
   getDepartures: () => apiRequest<{ serverTime: string; rows: DepartureRow[] }>("/internal/shuttle/departures"),
+  getStaying: () => apiRequest<Staying>("/internal/shuttle/staying"),
   getCurrentTrip: () => apiRequest<{ trip: StaffTrip | null }>("/internal/shuttle/trips/current"),
   startTrip: (input: StartTripInput) => apiRequest<{ trip: StaffTrip }>("/internal/shuttle/trips", { method: "POST", body: json(input) }),
   sendTripPosition: (tripId: string, position: { lat: number; lng: number; accuracy?: number | null; recordedAt: string }) =>
@@ -623,9 +634,9 @@ export const adminApi = {
       `${geoBase(scope)}/geocode?${new URLSearchParams({ q }).toString()}`,
     ),
 
-  changeReservationStatus: (id: string, status: ReservationStatus) =>
+  changeReservationStatus: (id: string, status: ReservationStatus, note?: string) =>
     apiRequest<{ data: Reservation }>(`/internal/reservations/${id}/status`, {
       method: "POST",
-      body: json({ status }),
+      body: json(note ? { status, note } : { status }),
     }),
 };

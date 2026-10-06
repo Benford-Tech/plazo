@@ -6,6 +6,7 @@ abstract class PublicDataSource {
   Future<SearchResponseModel> search({required String airport, required String arrivalAt, required String returnAt});
   Future<ParkingResponseModel> parking({required String airport, required String slug, String? arrivalAt, String? returnAt});
   Future<PaymentsConfigModel> paymentsConfig();
+  Future<AirportLiveModel> live(String slug);
 }
 
 class PublicDataSourceImpl implements PublicDataSource {
@@ -26,4 +27,7 @@ class PublicDataSourceImpl implements PublicDataSource {
 
   @override
   Future<PaymentsConfigModel> paymentsConfig() => client.paymentsConfig();
+
+  @override
+  Future<AirportLiveModel> live(String slug) => client.live(slug: slug);
 }

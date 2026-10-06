@@ -37,10 +37,14 @@ Color _tone(SpotStateModel s) {
 /// plate (spot in large type, key hook), the arrivals to place with a suggested spot.
 @RoutePage()
 class ProOccupationPage extends StatelessWidget implements AutoRouteWrapper {
-  const ProOccupationPage({super.key});
+  /// `focus`: a reservation id whose vehicle card opens at once (C-B: "Placer la voiture" from the sheet).
+  const ProOccupationPage({super.key, @QueryParam('focus') this.focus});
+
+  final String? focus;
 
   @override
-  Widget wrappedRoute(BuildContext context) => BlocProvider(create: (_) => locator<ProOccupationBloc>()..add(const ProOccupationStarted()), child: this);
+  Widget wrappedRoute(BuildContext context) =>
+      BlocProvider(create: (_) => locator<ProOccupationBloc>()..add(ProOccupationStarted(focus: focus)), child: this);
 
   @override
   Widget build(BuildContext context) {
@@ -348,7 +352,12 @@ class _ArrivalRow extends StatelessWidget {
                     key: Key('place-${arrival.reference}'),
                     label: 'occupation.place'.tr(),
                     busy: busy,
-                    onPressed: () => bloc.add(ProOccupationPlaced(reservationId: arrival.id, spotId: best.spotId)),
+                    // C-B (06/10/2026): the keys are asked in the same gesture, no second search.
+                    onPressed: () async {
+                      final keyHook = await showKeysSheet(context, arrival, best.code);
+                      if (keyHook == null || !context.mounted) return;
+                      bloc.add(ProOccupationPlaced(reservationId: arrival.id, spotId: best.spotId, keyHook: keyHook.isEmpty ? null : keyHook));
+                    },
                   ),
                 ),
               if (best != null) const SizedBox(width: 8),
@@ -367,6 +376,42 @@ class _ArrivalRow extends StatelessWidget {
     'near_entrance' => 'occupation.reason_entrance'.tr(args: ['${s.distanceM ?? 0}']),
     _ => 'occupation.reason_free'.tr(),
   };
+}
+
+/// "Placer en A-05 · crochet des clés": the keys asked as the car is placed (C-B). Returns the hook
+/// ("" when none), or null when dismissed.
+Future<String?> showKeysSheet(BuildContext context, OccupantModel vehicle, String spotCode) {
+  final controller = TextEditingController();
+  return showModalBottomSheet<String>(
+    context: context,
+    showDragHandle: true,
+    isScrollControlled: true,
+    backgroundColor: AppColors.surface,
+    shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(24))),
+    builder: (ctx) => Padding(
+      padding: EdgeInsets.fromLTRB(20, 4, 20, 20 + MediaQuery.of(ctx).viewInsets.bottom),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text('occupation.place_in'.tr(args: [spotCode]), style: AppText.title(size: 20)),
+          const SizedBox(height: 4),
+          Text('${vehicle.customerName} · ${vehicle.plate}', style: AppText.muted()),
+          const SizedBox(height: 14),
+          TextField(
+            key: const Key('place-keys'),
+            controller: controller,
+            autofocus: true,
+            textCapitalization: TextCapitalization.characters,
+            decoration: InputDecoration(labelText: 'occupation.key_hook'.tr(), hintText: 'occupation.key_hook_hint'.tr(), helperText: 'occupation.key_hook_optional'.tr()),
+            onSubmitted: (v) => Navigator.of(ctx).pop(v.trim()),
+          ),
+          const SizedBox(height: 14),
+          GradientButton(key: const Key('place-confirm'), icon: Icons.local_parking_rounded, label: 'occupation.place_confirm'.tr(), onPressed: () => Navigator.of(ctx).pop(controller.text.trim())),
+        ],
+      ),
+    ),
+  );
 }
 
 /// The free spots, suggestions first, as a bottom sheet; choosing one places the vehicle.

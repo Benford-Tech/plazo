@@ -1,7 +1,9 @@
 import { Service } from 'typedi';
 import { oneSignalSettings, oneSignalTravellerSettings } from '@/config';
-import prisma, { Prisma } from '@/database';
+import prisma, { Prisma, ReservationChannel } from '@/database';
 import { PushMessage } from '@/domain/arrival-messages';
+import { newBookingPush } from '@/domain/reservation-messages';
+import { localDateTime } from '@/domain/time';
 import { logger } from '@/utils/logger';
 
 export const ONESIGNAL_NOTIFICATIONS_URL = 'https://api.onesignal.com/notifications?c=push';
@@ -9,7 +11,7 @@ export const ONESIGNAL_NOTIFICATIONS_URL = 'https://api.onesignal.com/notificati
 const MAX_SUBSCRIPTIONS_PER_CALL = 2000;
 
 /** What a staff member subscribed to: travellers' arrivals, returns, the shuttles' trips (N-A), or the platform's messages (E-A). */
-export type PushAudience = 'arrivals' | 'returns' | 'shuttles' | 'platform';
+export type PushAudience = 'arrivals' | 'returns' | 'shuttles' | 'platform' | 'bookings';
 
 /** Travellers reachable by a platform broadcast: a booking not cancelled, whose return is at most a day past. */
 const currentTravellers = (now: Date): Prisma.TravellerDeviceWhereInput => ({
@@ -35,7 +37,9 @@ const wantsAudience = (audience: PushAudience): Prisma.StaffWhereInput =>
       ? { notifyReturns: true }
       : audience === 'shuttles'
         ? { notifyShuttles: true }
-        : { notifyPlatform: true };
+        : audience === 'bookings'
+          ? { notifyBookings: true }
+          : { notifyPlatform: true };
 
 /**
  * Push notifications through the OneSignal REST API: to the staff's phones (StaffDevice), and to
@@ -49,6 +53,37 @@ export class PushService {
 
   public enabled(): boolean {
     return oneSignalSettings() !== null;
+  }
+
+  /** "Nouvelle réservation" to the team (06/10/2026): bookings made on the site or imported, never the one a colleague just typed. */
+  public async notifyNewBooking(
+    booking: {
+      id: string;
+      operatorId: string;
+      customerName: string;
+      plate: string;
+      passengers: number;
+      channel: ReservationChannel;
+      channelDetail: string | null;
+      arrivalAt: Date;
+      returnAt: Date;
+      createdById?: string | null;
+    },
+    timezone: string,
+  ): Promise<number> {
+    const arrival = localDateTime(booking.arrivalAt, timezone);
+    const returnDay = localDateTime(booking.returnAt, timezone);
+    const dayMonth = (local: string) => `${local.slice(8, 10)}/${local.slice(5, 7)}`;
+    return this.notifyStaff(
+      booking.operatorId,
+      'bookings',
+      newBookingPush({ ...booking, arrival: `${dayMonth(arrival)} ${arrival.slice(11, 16)}`, returnDay: dayMonth(returnDay) }),
+      {
+        excludeStaffId: booking.createdById ?? undefined,
+        data: { type: 'booking', event: 'created', reservationId: booking.id },
+        collapseId: `booking-${booking.id}`,
+      },
+    );
   }
 
   /** Subscription ids of the operator's active staff who want this kind of notification. */

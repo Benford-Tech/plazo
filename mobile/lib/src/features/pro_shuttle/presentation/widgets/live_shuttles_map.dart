@@ -5,15 +5,25 @@ import 'package:latlong2/latlong.dart';
 import '../../../../core/constants/app_constants.dart';
 import '../../../../shared/theme/theme.dart';
 import '../../../../shared/widgets/ign_map.dart';
+import '../../../../shared/widgets/shuttle_icon.dart';
 import '../../data/models/shuttle_models.dart';
 
 /// P-A (05/10/2026): the operator's shuttles on the road, on IGN's plan: the parking ("P"), the stops
 /// served (airport, station…) and one bus per running trip, the signed-in driver's own in accent.
 /// Shuttles without a position yet are listed below the map, not drawn.
 class LiveShuttlesMap extends StatefulWidget {
-  const LiveShuttlesMap({super.key, required this.data, this.myStaffId, this.height = 190});
+  const LiveShuttlesMap({
+    super.key,
+    required this.data,
+    this.myStaffId,
+    this.height = 190,
+    this.headings = const {},
+  });
 
   final LiveShuttlesModel data;
+
+  /// I-C: trip id → heading in degrees, from the bloc.
+  final Map<String, double> headings;
   final String? myStaffId;
   final double height;
 
@@ -97,7 +107,7 @@ class _LiveShuttlesMapState extends State<LiveShuttlesMap> {
                           point: LatLng(t.position!.lat, t.position!.lng),
                           width: 36,
                           height: 36,
-                          child: _Bus(mine: t.driverId == widget.myStaffId),
+                          child: ShuttlePin(tone: shuttleToneOf(t.direction, hasPosition: true), heading: widget.headings[t.id], filled: t.driverId == widget.myStaffId, size: 36),
                         ),
                   ],
                 ),
@@ -135,21 +145,5 @@ class _Pin extends StatelessWidget {
         Flexible(child: Text(label, maxLines: 1, overflow: TextOverflow.ellipsis, style: AppText.strong(size: 12, color: Colors.white))),
       ],
     ),
-  );
-}
-
-class _Bus extends StatelessWidget {
-  const _Bus({required this.mine});
-  final bool mine;
-
-  @override
-  Widget build(BuildContext context) => Container(
-    decoration: BoxDecoration(
-      color: mine ? AppColors.accent : AppColors.peach,
-      shape: BoxShape.circle,
-      border: Border.all(color: Colors.white, width: 2),
-      boxShadow: const [BoxShadow(color: Color(0x55000000), blurRadius: 6, offset: Offset(0, 2))],
-    ),
-    child: Icon(Icons.directions_bus_rounded, size: 18, color: mine ? AppColors.onAccent : const Color(0xFF2C1A0E)),
   );
 }

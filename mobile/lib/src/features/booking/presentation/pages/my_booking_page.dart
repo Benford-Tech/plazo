@@ -81,11 +81,11 @@ class MyBookingPage extends StatelessWidget implements AutoRouteWrapper {
         if (token != null) locator<TripsBloc>().add(const TripsLoaded(quiet: true));
         if (state.booking?.active ?? false) context.read<ArrivalBloc>().add(ArrivalOpened(state.reference!));
         // The return day (vehicle on site): the flight, the meeting point and the shuttle.
-        if (const ['arrived', 'shuttled_out', 'return_requested'].contains(state.booking?.status)) {
+        if (const ['arrived', 'shuttled_out', 'return_requested', 'back_at_parking'].contains(state.booking?.status)) {
           context.read<ReturnBloc>().add(ReturnOpened(state.reference!));
         }
         // The stay (S-A): the parking's shuttles on the road, from the arrival day to the return day.
-        if (const ['upcoming', 'arrived', 'shuttled_out', 'return_requested'].contains(state.booking?.status)) {
+        if (const ['upcoming', 'arrived', 'shuttled_out', 'return_requested', 'back_at_parking'].contains(state.booking?.status)) {
           context.read<StayShuttlesBloc>().add(StayShuttlesOpened(state.reference!));
         }
       },

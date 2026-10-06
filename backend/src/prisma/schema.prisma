@@ -44,18 +44,22 @@ model Operator {
   // Fictional operator created by the demo seed (scripts/seed-demo.ts): listed with a "Démo" badge
   // on the site and in the platform space, removed as a whole by the seed's --remove.
   isDemo                 Boolean        @default(false)
+  // M-A (06/10/2026): the local part of the operator's inbound address (<slug>@<INBOUND_EMAIL_DOMAIN>),
+  // where their mailbox forwards the comparators' confirmations. Null until the manager enables it.
+  inboundSlug            String?        @unique
   createdAt              DateTime       @default(now())
   updatedAt              DateTime       @default(now()) @updatedAt
 
-  staff        Staff[]
-  parkings     Parking[]
-  auditLogs    AuditLog[]
-  reservations Reservation[]
-  vehicles     ShuttleVehicle[]
+  staff                 Staff[]
+  parkings              Parking[]
+  auditLogs             AuditLog[]
+  reservations          Reservation[]
+  inboundEmails         InboundEmail[]
+  vehicles              ShuttleVehicle[]
   platformNotifications PlatformNotification[]
-  shuttleTrips ShuttleTrip[]
-  smsSettings  OperatorSmsSettings?
-  smsOutbox    SmsOutbox[]
+  shuttleTrips          ShuttleTrip[]
+  smsSettings           OperatorSmsSettings?
+  smsOutbox             SmsOutbox[]
 
   @@map("operators")
 }
@@ -72,6 +76,9 @@ model Staff {
   id              String     @id @default(cuid())
   operatorId      String
   email           String     @unique // always lower-cased
+  // First and last name (06/10/2026); `name` stays the display form "Prénom Nom", kept in sync by the server.
+  firstName       String     @default("")
+  lastName        String     @default("")
   name            String
   phone           String?
   role            StaffRole
@@ -94,6 +101,10 @@ model Staff {
   vehicleSetAt    DateTime?
   // Push notifications of the shuttles' departures and returns (N-A, 05/10/2026).
   notifyShuttles  Boolean    @default(true)
+  /**
+   * Push "Nouvelle réservation" for bookings made on the site or imported (06/10/2026).
+   */
+  notifyBookings  Boolean    @default(true)
   // Messages from the platform (E-A, 05/10/2026): the super admin's broadcasts to the staff.
   notifyPlatform  Boolean    @default(true)
   createdAt       DateTime   @default(now())
@@ -290,6 +301,38 @@ model ParkingSpot {
   @@map("parking_spots")
 }
 
+// M-A (06/10/2026): a confirmation email forwarded to the operator's inbound address, and what became of it.
+enum InboundEmailStatus {
+  imported // a booking was created
+  duplicate // the booking already existed (external reference)
+  incomplete // recognised, but a required field is missing: staff complete it from "À vérifier"
+  unrecognised // no importer knows this email: staff read it and type the booking
+  dismissed // staff closed it without a booking
+}
+
+model InboundEmail {
+  id            String             @id @default(cuid())
+  operatorId    String
+  status        InboundEmailStatus
+  fromAddress   String?
+  fromName      String?
+  subject       String?
+  // The email's text, kept 30 days for "À vérifier" (RGPD), then cleared by the nightly purge.
+  textBody      String?
+  provider      String?
+  parsed        Json?
+  missing       Json?
+  reservationId String?
+  receivedAt    DateTime           @default(now())
+  createdAt     DateTime           @default(now())
+
+  operator    Operator     @relation(fields: [operatorId], references: [id], onDelete: Cascade)
+  reservation Reservation? @relation(fields: [reservationId], references: [id], onDelete: SetNull)
+
+  @@index([operatorId, status, receivedAt])
+  @@map("inbound_emails")
+}
+
 model AuditLog {
   id         String   @id @default(cuid())
   operatorId String
@@ -315,6 +358,7 @@ enum ReservationStatus {
   arrived // vehicle dropped at the parking
   shuttled_out // customer driven to the terminal
   return_requested // customer back, waiting for pick-up
+  back_at_parking // customer brought back to the parking (06/10/2026), vehicle not handed back yet
   returned // vehicle handed back
   cancelled
   no_show
@@ -416,6 +460,14 @@ model Reservation {
   transferredAt           DateTime?
   paidAt                  DateTime?
   refundedAt              DateTime?
+  // E (06/10/2026): what the traveller tells the parking — a message at booking, the vehicle
+  // (so the valet spots it), and a notice on the return day ("mon vol a du retard", "bagage perdu").
+  customerNote            String?
+  vehicleModel            String?
+  vehicleColour           String?
+  returnNoticeKind        ReturnNoticeKind?
+  returnNoticeText        String?
+  returnNoticeAt          DateTime?
   // Set when the confirmation email/SMS went out: they are sent exactly once.
   confirmationSentAt      DateTime?
   createdById             String?
@@ -450,6 +502,11 @@ model Reservation {
   // Sent once per booking when the flight lands: the push to the staff, the SMS to the traveller.
   landingNotifiedAt       DateTime?
   landingSmsAt            DateTime?
+  // The traveller's message thread (B, 06/10/2026), each sent once: the day-before reminder, "votre
+  // voiture est garée", the closing message after the handover.
+  reminderSentAt          DateTime?
+  parkedNotifiedAt        DateTime?
+  closingSentAt           DateTime?
   // Retention (privacy policy, 06/10/2026): 12 months after the return, the nightly cron removes who
   // the traveller is (name, contact details, plate, flights, notes); see src/domain/retention.ts.
   anonymizedAt            DateTime?
@@ -463,6 +520,7 @@ model Reservation {
   stop           ShuttleStop?           @relation(fields: [stopId], references: [id], onDelete: SetNull)
   devices        TravellerDevice[]
   arrivalSignals ArrivalSignal[]
+  inboundEmails  InboundEmail[]
   shuttleTrips   ShuttleTripPassenger[]
   smsOutbox      SmsOutbox[]
 
@@ -593,6 +651,13 @@ enum ArrivalKind {
   return
 }
 
+/** E (06/10/2026): what a traveller can signal on the return day. */
+enum ReturnNoticeKind {
+  flight_delayed
+  luggage
+  other
+}
+
 enum ArrivalState {
   sharing // live position shared with the parking
   announced // "J'arrive dans 10 / 20 / 30 min", no position
@@ -629,6 +694,8 @@ model ArrivalSignal {
   etaMinutes         Int?
   etaAt              DateTime?
   announcedMinutes   Int?
+  // E (06/10/2026): a word for the parking, sent with the signal ("2 enfants, poussette").
+  note               String?
   startedAt          DateTime
   expiresAt          DateTime
   atMeetingPointAt   DateTime?

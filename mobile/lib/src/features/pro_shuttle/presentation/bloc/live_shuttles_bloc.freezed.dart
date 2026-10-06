@@ -15,7 +15,8 @@ T _$identity<T>(T value) => value;
 /// @nodoc
 mixin _$LiveShuttlesState {
 
- ViewState get viewState; LiveShuttlesModel? get data; String? get errorCode; DateTime get now;
+ ViewState get viewState; LiveShuttlesModel? get data; String? get errorCode; DateTime get now;/// I-C: the heading of each moving shuttle, from its previous position (trip id → degrees).
+ Map<String, double> get headings;
 /// Create a copy of LiveShuttlesState
 /// with the given fields replaced by the non-null parameter values.
 @JsonKey(includeFromJson: false, includeToJson: false)
@@ -27,20 +28,20 @@ $LiveShuttlesStateCopyWith<LiveShuttlesState> get copyWith => _$LiveShuttlesStat
 @override
 bool operator ==(Object other) {
   final _this = this as LiveShuttlesState;
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is LiveShuttlesState&&(identical(other.viewState, _this.viewState) || other.viewState == _this.viewState)&&(identical(other.data, _this.data) || other.data == _this.data)&&(identical(other.errorCode, _this.errorCode) || other.errorCode == _this.errorCode)&&(identical(other.now, _this.now) || other.now == _this.now));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is LiveShuttlesState&&(identical(other.viewState, _this.viewState) || other.viewState == _this.viewState)&&(identical(other.data, _this.data) || other.data == _this.data)&&(identical(other.errorCode, _this.errorCode) || other.errorCode == _this.errorCode)&&(identical(other.now, _this.now) || other.now == _this.now)&&const DeepCollectionEquality().equals(other.headings, _this.headings));
 }
 
 
 @override
 int get hashCode {
   final _this = this as LiveShuttlesState;
-  return Object.hash(runtimeType,_this.viewState,_this.data,_this.errorCode,_this.now);
+  return Object.hash(runtimeType,_this.viewState,_this.data,_this.errorCode,_this.now,const DeepCollectionEquality().hash(_this.headings));
 }
 
 @override
 String toString() {
   final _this = this as LiveShuttlesState;
-  return 'LiveShuttlesState(viewState: ${_this.viewState}, data: ${_this.data}, errorCode: ${_this.errorCode}, now: ${_this.now})';
+  return 'LiveShuttlesState(viewState: ${_this.viewState}, data: ${_this.data}, errorCode: ${_this.errorCode}, now: ${_this.now}, headings: ${_this.headings})';
 }
 
 
@@ -51,7 +52,7 @@ abstract mixin class $LiveShuttlesStateCopyWith<$Res>  {
   factory $LiveShuttlesStateCopyWith(LiveShuttlesState value, $Res Function(LiveShuttlesState) _then) = _$LiveShuttlesStateCopyWithImpl;
 @useResult
 $Res call({
- ViewState viewState, LiveShuttlesModel? data, String? errorCode, DateTime now
+ ViewState viewState, LiveShuttlesModel? data, String? errorCode, DateTime now, Map<String, double> headings
 });
 
 
@@ -68,13 +69,14 @@ class _$LiveShuttlesStateCopyWithImpl<$Res>
 
 /// Create a copy of LiveShuttlesState
 /// with the given fields replaced by the non-null parameter values.
-@pragma('vm:prefer-inline') @override $Res call({Object? viewState = null,Object? data = freezed,Object? errorCode = freezed,Object? now = null,}) {
+@pragma('vm:prefer-inline') @override $Res call({Object? viewState = null,Object? data = freezed,Object? errorCode = freezed,Object? now = null,Object? headings = null,}) {
   return _then(LiveShuttlesState(
 viewState: null == viewState ? _self.viewState : viewState // ignore: cast_nullable_to_non_nullable
 as ViewState,data: freezed == data ? _self.data : data // ignore: cast_nullable_to_non_nullable
 as LiveShuttlesModel?,errorCode: freezed == errorCode ? _self.errorCode : errorCode // ignore: cast_nullable_to_non_nullable
 as String?,now: null == now ? _self.now : now // ignore: cast_nullable_to_non_nullable
-as DateTime,
+as DateTime,headings: null == headings ? _self.headings : headings // ignore: cast_nullable_to_non_nullable
+as Map<String, double>,
   ));
 }
 /// Create a copy of LiveShuttlesState
@@ -171,10 +173,10 @@ return $default(_that);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( ViewState viewState,  LiveShuttlesModel? data,  String? errorCode,  DateTime now)?  $default,{required TResult orElse(),}) {final _that = this;
+@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( ViewState viewState,  LiveShuttlesModel? data,  String? errorCode,  DateTime now,  Map<String, double> headings)?  $default,{required TResult orElse(),}) {final _that = this;
 switch (_that) {
 case _LiveShuttlesState() when $default != null:
-return $default(_that.viewState,_that.data,_that.errorCode,_that.now);case _:
+return $default(_that.viewState,_that.data,_that.errorCode,_that.now,_that.headings);case _:
   return orElse();
 
 }
@@ -192,10 +194,10 @@ return $default(_that.viewState,_that.data,_that.errorCode,_that.now);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( ViewState viewState,  LiveShuttlesModel? data,  String? errorCode,  DateTime now)  $default,) {final _that = this;
+@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( ViewState viewState,  LiveShuttlesModel? data,  String? errorCode,  DateTime now,  Map<String, double> headings)  $default,) {final _that = this;
 switch (_that) {
 case _LiveShuttlesState():
-return $default(_that.viewState,_that.data,_that.errorCode,_that.now);case _:
+return $default(_that.viewState,_that.data,_that.errorCode,_that.now,_that.headings);case _:
   throw StateError('Unexpected subclass');
 
 }
@@ -212,10 +214,10 @@ return $default(_that.viewState,_that.data,_that.errorCode,_that.now);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( ViewState viewState,  LiveShuttlesModel? data,  String? errorCode,  DateTime now)?  $default,) {final _that = this;
+@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( ViewState viewState,  LiveShuttlesModel? data,  String? errorCode,  DateTime now,  Map<String, double> headings)?  $default,) {final _that = this;
 switch (_that) {
 case _LiveShuttlesState() when $default != null:
-return $default(_that.viewState,_that.data,_that.errorCode,_that.now);case _:
+return $default(_that.viewState,_that.data,_that.errorCode,_that.now,_that.headings);case _:
   return null;
 
 }
@@ -227,13 +229,22 @@ return $default(_that.viewState,_that.data,_that.errorCode,_that.now);case _:
 
 
 class _LiveShuttlesState extends LiveShuttlesState {
-  const _LiveShuttlesState({this.viewState = ViewState.idle, this.data, this.errorCode, required this.now}): super._();
+  const _LiveShuttlesState({this.viewState = ViewState.idle, this.data, this.errorCode, required this.now,  Map<String, double> headings = const <String, double>{}}): _headings = headings,super._();
   
 
 @override@JsonKey() final  ViewState viewState;
 @override final  LiveShuttlesModel? data;
 @override final  String? errorCode;
 @override final  DateTime now;
+/// I-C: the heading of each moving shuttle, from its previous position (trip id → degrees).
+ final  Map<String, double> _headings;
+/// I-C: the heading of each moving shuttle, from its previous position (trip id → degrees).
+@override@JsonKey() Map<String, double> get headings {
+  if (_headings is EqualUnmodifiableMapView) return _headings;
+  // ignore: implicit_dynamic_type
+  return EqualUnmodifiableMapView(_headings);
+}
+
 
 /// Create a copy of LiveShuttlesState
 /// with the given fields replaced by the non-null parameter values.
@@ -245,18 +256,18 @@ _$LiveShuttlesStateCopyWith<_LiveShuttlesState> get copyWith => __$LiveShuttlesS
 
 @override
 bool operator ==(Object other) {
-    return identical(this, other) || (other.runtimeType == runtimeType&&other is _LiveShuttlesState&&(identical(other.viewState, viewState) || other.viewState == viewState)&&(identical(other.data, data) || other.data == data)&&(identical(other.errorCode, errorCode) || other.errorCode == errorCode)&&(identical(other.now, now) || other.now == now));
+    return identical(this, other) || (other.runtimeType == runtimeType&&other is _LiveShuttlesState&&(identical(other.viewState, viewState) || other.viewState == viewState)&&(identical(other.data, data) || other.data == data)&&(identical(other.errorCode, errorCode) || other.errorCode == errorCode)&&(identical(other.now, now) || other.now == now)&&const DeepCollectionEquality().equals(other.headings, _headings));
 }
 
 
 @override
 int get hashCode {
-    return Object.hash(runtimeType,viewState,data,errorCode,now);
+    return Object.hash(runtimeType,viewState,data,errorCode,now,const DeepCollectionEquality().hash(_headings));
 }
 
 @override
 String toString() {
-    return 'LiveShuttlesState(viewState: $viewState, data: $data, errorCode: $errorCode, now: $now)';
+    return 'LiveShuttlesState(viewState: $viewState, data: $data, errorCode: $errorCode, now: $now, headings: $headings)';
 }
 
 
@@ -267,7 +278,7 @@ abstract mixin class _$LiveShuttlesStateCopyWith<$Res> implements $LiveShuttlesS
   factory _$LiveShuttlesStateCopyWith(_LiveShuttlesState value, $Res Function(_LiveShuttlesState) _then) = __$LiveShuttlesStateCopyWithImpl;
 @override @useResult
 $Res call({
- ViewState viewState, LiveShuttlesModel? data, String? errorCode, DateTime now
+ ViewState viewState, LiveShuttlesModel? data, String? errorCode, DateTime now, Map<String, double> headings
 });
 
 
@@ -284,13 +295,14 @@ class __$LiveShuttlesStateCopyWithImpl<$Res>
 
 /// Create a copy of LiveShuttlesState
 /// with the given fields replaced by the non-null parameter values.
-@override @pragma('vm:prefer-inline') $Res call({Object? viewState = null,Object? data = freezed,Object? errorCode = freezed,Object? now = null,}) {
+@override @pragma('vm:prefer-inline') $Res call({Object? viewState = null,Object? data = freezed,Object? errorCode = freezed,Object? now = null,Object? headings = null,}) {
   return _then(_LiveShuttlesState(
 viewState: null == viewState ? _self.viewState : viewState // ignore: cast_nullable_to_non_nullable
 as ViewState,data: freezed == data ? _self.data : data // ignore: cast_nullable_to_non_nullable
 as LiveShuttlesModel?,errorCode: freezed == errorCode ? _self.errorCode : errorCode // ignore: cast_nullable_to_non_nullable
 as String?,now: null == now ? _self.now : now // ignore: cast_nullable_to_non_nullable
-as DateTime,
+as DateTime,headings: null == headings ? _self._headings : headings // ignore: cast_nullable_to_non_nullable
+as Map<String, double>,
   ));
 }
 

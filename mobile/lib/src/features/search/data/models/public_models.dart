@@ -132,6 +132,61 @@ abstract class ParkingResponseModel with _$ParkingResponseModel {
   factory ParkingResponseModel.fromJson(Map<String, dynamic> json) => _$ParkingResponseModelFromJson(json);
 }
 
+/// GET /public/airports/:slug/live (K-A, 06/10/2026): the airport's parkings and the shuttles on the
+/// road right now, anonymous (a position, a direction, a vehicle; never a driver or a passenger).
+@freezed
+abstract class AirportLiveModel with _$AirportLiveModel {
+  const factory AirportLiveModel({
+    required String serverTime,
+    required AirportModel airport,
+    @Default(<LiveParkingModel>[]) List<LiveParkingModel> parkings,
+    @Default(<LiveShuttleModel>[]) List<LiveShuttleModel> shuttles,
+  }) = _AirportLiveModel;
+
+  factory AirportLiveModel.fromJson(Map<String, dynamic> json) => _$AirportLiveModelFromJson(json);
+}
+
+@freezed
+abstract class LiveParkingModel with _$LiveParkingModel {
+  const factory LiveParkingModel({
+    required String slug,
+    required String title,
+    @Default(<String>[]) List<String> services,
+    int? shuttleMinutes,
+    LatLngModel? location,
+  }) = _LiveParkingModel;
+
+  factory LiveParkingModel.fromJson(Map<String, dynamic> json) => _$LiveParkingModelFromJson(json);
+}
+
+@freezed
+abstract class LiveVehicleModel with _$LiveVehicleModel {
+  const factory LiveVehicleModel({String? model, String? colour}) = _LiveVehicleModel;
+
+  factory LiveVehicleModel.fromJson(Map<String, dynamic> json) => _$LiveVehicleModelFromJson(json);
+}
+
+@freezed
+abstract class LiveShuttleModel with _$LiveShuttleModel {
+  const factory LiveShuttleModel({
+    required String id,
+
+    /// Slug of the parking the shuttle belongs to.
+    required String parking,
+    @Default('pickup') String direction,
+    @Default(LiveVehicleModel()) LiveVehicleModel vehicle,
+    LatLngModel? position,
+    int? positionAgeSeconds,
+    required String startedAt,
+  }) = _LiveShuttleModel;
+
+  const LiveShuttleModel._();
+
+  factory LiveShuttleModel.fromJson(Map<String, dynamic> json) => _$LiveShuttleModelFromJson(json);
+
+  bool get dropoff => direction == 'dropoff';
+}
+
 /// GET /public/payments/config: the native payment sheet's settings. `publishableKey` null: no
 /// sheet (payments off, or no key on the server), the Checkout page is used instead.
 @freezed

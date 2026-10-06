@@ -238,6 +238,42 @@ describe('dessertes (D-A)', () => {
   });
 });
 
+describe('tournée du chauffeur (F-A)', () => {
+  it('liste les attendus grisés avec l’heure de départ conseillée, puis range les déposés par jour de retour', async () => {
+    const { op, reservation } = await setup();
+    const driver = await addStaff(op.token, 'driver');
+    // Still expected, in an hour: greyed on the drop-off list, with a leave time.
+    await prisma.reservation.update({
+      where: { id: reservation.id },
+      data: { status: 'upcoming', arrivedAt: null, arrivalAt: minutesFromNow(60), returnAt: minutesFromNow(60 * 48) },
+    });
+    const departures = await api().get('/api/internal/shuttle/departures').set(auth(driver.token));
+    expect(departures.status).toBe(200);
+    expect(departures.body.rows).toHaveLength(1);
+    expect(departures.body.rows[0]).toMatchObject({ reservationId: reservation.id, expected: true, status: 'upcoming' });
+    expect(departures.body.rows[0].leaveAt).toEqual(expect.any(String));
+    // Dropped at the terminal: on the staying list, under its return day.
+    await prisma.reservation.update({ where: { id: reservation.id }, data: { status: 'shuttled_out' } });
+    const staying = await api().get('/api/internal/shuttle/staying').set(auth(driver.token));
+    expect(staying.status).toBe(200);
+    expect(staying.body.days).toHaveLength(1);
+    expect(staying.body.days[0].rows[0]).toMatchObject({ reservationId: reservation.id, status: 'shuttled_out', plate: 'AB-123-CD' });
+    expect(staying.body.returnedToday).toEqual([]);
+    // Back at the parking: on the return side's "Rendus".
+    await prisma.reservation.update({ where: { id: reservation.id }, data: { status: 'back_at_parking' } });
+    const back = await api().get('/api/internal/shuttle/staying').set(auth(driver.token));
+    expect(back.body.days).toEqual([]);
+    expect(back.body.returnedToday[0]).toMatchObject({ reservationId: reservation.id, status: 'back_at_parking' });
+    // The pick-up list carries a leave time too.
+    await prisma.reservation.update({
+      where: { id: reservation.id },
+      data: { status: 'arrived', arrivalAt: minutesFromNow(-60), returnAt: minutesFromNow(120) },
+    });
+    const pickups = await api().get('/api/internal/shuttle/pickups').set(auth(driver.token));
+    expect(pickups.body.rows[0].leaveAt).toEqual(expect.any(String));
+  });
+});
+
 describe('navettes en direct (P-A) et notifications (N-A)', () => {
   it('toute l’équipe voit les navettes en cours ; départs, arrivée au point et retour sont notifiés', async () => {
     const { op, reservation, reference, manageToken } = await setup();

@@ -289,11 +289,22 @@ describe('paiement désactivé (sans STRIPE_SECRET_KEY)', () => {
 });
 
 describe('paiement en ligne : place tenue pendant le paiement', () => {
-  it('un parking dont le loueur n’encaisse pas encore n’est pas réservable en ligne', async () => {
-    await publishedParking({ onboarded: false });
+  it('un loueur sans compte Stripe est réservable quand même : Plazo encaisse, son reversement attend (06/10/2026)', async () => {
+    const { operator } = await publishedParking({ onboarded: false });
     expect((await api().get('/api/public/config')).body).toEqual({ payments: 'online' });
     const page = await api().get('/api/public/airports/lyon-saint-exupery/parkings/parking-demo');
-    expect(page.body.parking.payment).toBe('unavailable');
+    expect(page.body.parking.payment).toBe('online');
+    const held = await paidBooking();
+    const r = await prisma.reservation.findUniqueOrThrow({ where: { reference: held.reference } });
+    expect(r).toMatchObject({ paymentStatus: 'paid', payoutStatus: 'pending', operatorId: operator.id });
+    expect(await payments.runPayouts(new Date(r.returnAt.getTime() + 3 * 86400000))).toMatchObject({ transferred: 0, waitingForAccount: 1 });
+    expect(fake.transfers.create).not.toHaveBeenCalled();
+  });
+
+  it('un parking de démonstration n’est jamais réservable', async () => {
+    const { operator } = await publishedParking();
+    await prisma.operator.update({ where: { id: operator.id }, data: { isDemo: true } });
+    expect((await api().get('/api/public/airports/lyon-saint-exupery/parkings/parking-demo')).body.parking.payment).toBe('unavailable');
     const res = await book();
     expect(res.status).toBe(409);
     expect(res.body.code).toBe('online_booking_unavailable');
@@ -977,8 +988,9 @@ describe('compte Stripe du loueur', () => {
     expect((await sendWebhook(event.payload, event.signature)).status).toBe(200);
     expect((await prisma.operator.findUniqueOrThrow({ where: { id: a.operator.id } })).stripePayoutsEnabled).toBe(false);
     expect((await prisma.operator.findUniqueOrThrow({ where: { id: b.operator.id } })).stripePayoutsEnabled).toBe(true);
+    // Still bookable: the lessor's account only gates the payout, not the booking (06/10/2026).
     const page = await api().get('/api/public/airports/lyon-saint-exupery/parkings/parking-demo');
-    expect(page.body.parking.payment).toBe('unavailable');
+    expect(page.body.parking.payment).toBe('online');
   });
 
   it('vérification en cours : dossier envoyé, virements pas encore ouverts ; commission du loueur', async () => {

@@ -32,7 +32,8 @@ async function fill(overrides: { confirmation?: string; terms?: boolean } = {}) 
   await userEvent.type(await screen.findByLabelText("Entreprise"), "Parking Express SARL");
   await userEvent.type(screen.getByLabelText("Nom du parking"), "Parking Express LYS");
   await userEvent.type(screen.getByLabelText("Capacité (places)"), "180");
-  await userEvent.type(screen.getByLabelText("Prénom et nom"), "Lucie Martin");
+  await userEvent.type(screen.getByLabelText("Prénom"), "Lucie");
+  await userEvent.type(screen.getByLabelText("Nom"), "Martin");
   await userEvent.type(screen.getByLabelText("Téléphone"), "06 12 34 56 78");
   await userEvent.type(screen.getByLabelText("Email"), "lucie@example.com");
   await userEvent.type(screen.getByLabelText("Mot de passe"), "mot-de-passe-solide");
@@ -73,7 +74,8 @@ describe("Inscription d'un loueur", () => {
         parkingName: "Parking Express LYS",
         totalCapacity: 180,
         airportCode: "LYS",
-        managerName: "Lucie Martin",
+        firstName: "Lucie",
+        lastName: "Martin",
         email: "lucie@example.com",
         phone: "06 12 34 56 78",
         password: "mot-de-passe-solide",

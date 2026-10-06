@@ -17,7 +17,7 @@ enum TripDay { dropOff, returnDay, other }
 TripDay tripDay(PublicBookingModel b, DateTime now) {
   final today = todayLocal(now);
   if (b.status == 'upcoming' && b.arrivalAt.startsWith(today)) return TripDay.dropOff;
-  if (b.returnAt.startsWith(today) && const ['arrived', 'shuttled_out', 'return_requested'].contains(b.status)) return TripDay.returnDay;
+  if (b.returnAt.startsWith(today) && const ['arrived', 'shuttled_out', 'return_requested', 'back_at_parking'].contains(b.status)) return TripDay.returnDay;
   return TripDay.other;
 }
 

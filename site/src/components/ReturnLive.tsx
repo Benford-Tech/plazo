@@ -2,9 +2,11 @@
 
 import { useEffect, useRef, useState } from "react";
 import { Plate } from "./Plate";
+import { bookingRequest } from "@/lib/booking-client";
 import { fr } from "@/lib/fr";
 import { directionsUrl } from "@/lib/listing";
-import type { TravellerReturn } from "@/lib/types";
+import { ShuttleIcon, shuttleTone } from "@/lib/shuttle-icon";
+import type { ReturnNoticeKind, TravellerReturn } from "@/lib/types";
 
 const POLL_MS = 10_000;
 /** The ring spans this long before the landing (full at 3 h, empty at touchdown). */
@@ -94,6 +96,9 @@ export function ReturnLive({ reference, token, initial }: { reference: string; t
   const [fetchedAt, setFetchedAt] = useState(() => Date.now());
   const [now, setNow] = useState(() => Date.now());
   const [failed, setFailed] = useState(initial === null);
+  const [noticeMode, setNoticeMode] = useState<"buttons" | "other" | "done">("buttons");
+  const [noticeText, setNoticeText] = useState("");
+  const [noticeBusy, setNoticeBusy] = useState(false);
   const alive = useRef(true);
 
   useEffect(() => {
@@ -128,6 +133,35 @@ export function ReturnLive({ reference, token, initial }: { reference: string; t
   const t = fr.live;
   const ring = ringState(data, now);
   const step = stepOf(data);
+  // D (06/10/2026): without a tracked flight, the traveller says "J'ai atterri" (as in the app).
+  const f = data.flight;
+  const needsLanded = step === "flight" && f.status !== "landed" && (!f.number || !data.flightTracked || !f.status || f.status === "unknown");
+  const declareLanded = async () => {
+    try {
+      const next = await bookingRequest<TravellerReturn>(reference, "/return/landed", token, {});
+      setData(next);
+      setFetchedAt(Date.now());
+    } catch {
+      // The poll will tell; nothing else to say here.
+    }
+  };
+  const meetingRoute = data.meetingPoint ? directionsUrl(`${data.meetingPoint.lat},${data.meetingPoint.lng}`) : null;
+  // E (06/10/2026): "Mon vol a du retard", "Bagage perdu", or a word, pushed to the staff at once.
+  const sendNotice = async (kind: ReturnNoticeKind, text?: string) => {
+    setNoticeBusy(true);
+    try {
+      const next = await bookingRequest<TravellerReturn>(reference, "/return/notice", token, { kind, ...(text?.trim() ? { text: text.trim() } : {}) });
+      setData(next);
+      setFetchedAt(Date.now());
+      setNoticeMode("done");
+      setNoticeText("");
+    } catch {
+      // The poll will tell; the buttons stay.
+    } finally {
+      setNoticeBusy(false);
+    }
+  };
+  const notice = data.notice ?? null;
   const steps: [Step, string][] = [
     ["flight", t.stepLanding],
     ["meeting", t.stepMeeting],
@@ -167,9 +201,84 @@ export function ReturnLive({ reference, token, initial }: { reference: string; t
         </div>
       </div>
       <p className="text-center text-sm text-soft">{t.meetingPoint(meeting)}</p>
+      {needsLanded && (
+        <div className="flex flex-col gap-2">
+          <button type="button" data-testid="landed-button" onClick={declareLanded} className="btn-primary h-[52px] text-base">
+            {t.landedButton}
+          </button>
+          <p className="text-center text-[13px] text-soft">{t.landedHelp}</p>
+        </div>
+      )}
+      <div data-testid="return-notice" className="flex flex-col gap-2 rounded-[18px] border border-line bg-white px-4 py-3.5">
+        {notice && noticeMode !== "other" ? (
+          <>
+            <p className="text-sm">
+              <span aria-hidden="true" className="text-peach">
+                ✓{" "}
+              </span>
+              {t.noticed(notice.kind === "other" && notice.text ? `« ${notice.text} »` : t.noticeKinds[notice.kind] + (notice.text ? ` · « ${notice.text} »` : ""), hhmm(notice.at))}
+            </p>
+            <button type="button" onClick={() => setNoticeMode("other")} className="self-start text-sm font-semibold text-accent underline-offset-2 hover:underline">
+              {t.noticeAgain}
+            </button>
+          </>
+        ) : (
+          <>
+            <b className="text-[15px]">{t.noticeTitle}</b>
+            <p className="text-[13px] text-soft">{t.noticeHelp}</p>
+            <div className="flex flex-wrap gap-2">
+              <button type="button" disabled={noticeBusy} onClick={() => sendNotice("flight_delayed")} className="h-10 rounded-full border border-accent bg-white px-4 text-sm font-semibold text-dark hover:bg-tint">
+                {t.noticeFlightDelayed}
+              </button>
+              <button type="button" disabled={noticeBusy} onClick={() => sendNotice("luggage")} className="h-10 rounded-full border border-accent bg-white px-4 text-sm font-semibold text-dark hover:bg-tint">
+                {t.noticeLuggage}
+              </button>
+              <button type="button" disabled={noticeBusy} onClick={() => setNoticeMode("other")} aria-expanded={noticeMode === "other"} className="h-10 rounded-full border border-line bg-white px-4 text-sm font-semibold text-dark hover:bg-tint">
+                {t.noticeOther}
+              </button>
+            </div>
+            {noticeMode === "other" && (
+              <form
+                className="flex gap-2"
+                onSubmit={e => {
+                  e.preventDefault();
+                  void sendNotice("other", noticeText);
+                }}
+              >
+                <input type="text" value={noticeText} onChange={e => setNoticeText(e.target.value)} maxLength={200} required aria-label={t.noticeOther} placeholder={t.noticeOtherPlaceholder} className="field h-10 flex-1" />
+                <button type="submit" disabled={noticeBusy || !noticeText.trim()} className="btn-primary h-10 px-4 text-sm">
+                  {noticeBusy ? t.noticeSending : t.noticeSend}
+                </button>
+              </form>
+            )}
+          </>
+        )}
+      </div>
+      {step === "meeting" && data.meetingPoint && (
+        <div data-testid="meeting-help" className="flex flex-col gap-2.5 rounded-[18px] bg-tint px-4 py-3.5">
+          {data.meetingPoint.instructions && (
+            <p className="text-sm">
+              <b>{t.instructions} :</b> {data.meetingPoint.instructions}
+            </p>
+          )}
+          {data.meetingPoint.photoUrl && (
+            // eslint-disable-next-line @next/next/no-img-element
+            <img src={data.meetingPoint.photoUrl} alt={t.photoAlt} className="max-h-56 w-full rounded-[14px] object-cover" loading="lazy" />
+          )}
+          {meetingRoute && (
+            <a href={meetingRoute} target="_blank" rel="noopener noreferrer" className="btn-secondary h-11 text-[15px]">
+              {t.routeToMeeting}
+              <span className="sr-only"> {fr.a11y.opensNewTab}</span>
+            </a>
+          )}
+        </div>
+      )}
       {shuttle && (
         <div className="flex flex-wrap items-center justify-between gap-2 rounded-[16px] bg-tint px-3.5 py-3 text-sm">
-          <span className="font-semibold">{t.shuttleLine(shuttle.driverFirstName, vehicle) || t.stepShuttle}</span>
+          <span className="flex items-center gap-2 font-semibold">
+            <ShuttleIcon tone={shuttleTone(shuttle.direction, !!shuttle.position)} size={20} />
+            {t.shuttleLine(shuttle.driverFirstName, vehicle) || t.stepShuttle}
+          </span>
           <LivePill label={t.position} at={fetchedAt - (shuttle.positionAgeSeconds ?? 0) * 1000} now={now} />
         </div>
       )}

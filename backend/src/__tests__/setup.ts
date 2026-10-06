@@ -7,3 +7,5 @@ process.env.SECRET_KEY = 'test-secret';
 process.env.CLIENT_URL = 'http://localhost:8080';
 process.env.PORT = '3005';
 process.env.CRON_SECRET = 'test-cron-secret';
+process.env.INBOUND_EMAIL_DOMAIN = 'in.plazo.test';
+process.env.INBOUND_EMAIL_SECRET = 'inbound-test-secret';

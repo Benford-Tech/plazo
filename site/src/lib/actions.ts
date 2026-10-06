@@ -42,6 +42,9 @@ const BOOKING_FIELDS = [
   "returnFlight",
   "departureFlight",
   "passengers",
+  "vehicleModel",
+  "vehicleColour",
+  "customerNote",
 ] as const;
 
 const IDEMPOTENCY_KEY_RE = /^[A-Za-z0-9-]{16,64}$/;
@@ -70,6 +73,9 @@ export async function bookAction(_previous: FormState, formData: FormData): Prom
       returnFlight: values.returnFlight || undefined,
       departureFlight: values.departureFlight || undefined,
       passengers,
+      vehicleModel: values.vehicleModel || undefined,
+      vehicleColour: values.vehicleColour || undefined,
+      customerNote: values.customerNote || undefined,
       acceptTerms: values.acceptTerms === "on",
       // Same key for every submission of this page: a retry returns the booking already made.
       idempotencyKey: IDEMPOTENCY_KEY_RE.test(idempotencyKey) ? idempotencyKey : undefined,

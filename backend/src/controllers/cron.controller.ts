@@ -2,12 +2,14 @@ import { Request, Response } from 'express';
 import { Container } from 'typedi';
 import { ArrivalService } from '@/services/arrival.service';
 import { FlightTrackingService } from '@/services/flight-tracking.service';
+import { InboundEmailService } from '@/services/inbound-email.service';
 import { ReturnService } from '@/services/return.service';
 import { ShuttleService } from '@/services/shuttle.service';
 import { SmsService } from '@/services/sms.service';
 import { PaymentService } from '@/services/payment.service';
 import { RetentionService } from '@/services/retention.service';
 import { TokenService } from '@/services/token.service';
+import { TravellerMessagesService } from '@/services/traveller-messages.service';
 import catchAsync from '@/utils/catchAsync';
 import { logger } from '@/utils/logger';
 
@@ -18,6 +20,8 @@ export class CronController {
   public flights = Container.get(FlightTrackingService);
   public shuttle = Container.get(ShuttleService);
   public returns = Container.get(ReturnService);
+  public inbound = Container.get(InboundEmailService);
+  public messages = Container.get(TravellerMessagesService);
   public sms = Container.get(SmsService);
   public retention = Container.get(RetentionService);
 
@@ -53,6 +57,13 @@ export class CronController {
     res.json({ expired });
   });
 
+  /** GET /internal/cron/remind-tomorrow (B, 06/10/2026): the day-before reminders, once per booking. */
+  public remindTomorrow = catchAsync(async (req: Request, res: Response) => {
+    const result = await this.messages.remindTomorrow();
+    logger.info(`[Cron] Reminders: ${JSON.stringify(result)}`);
+    res.json(result);
+  });
+
   /** GET /internal/cron/purge-expired-tokens */
   public purgeExpiredTokens = catchAsync(async (req: Request, res: Response) => {
     const deleted = await this.tokenService.deleteExpired();
@@ -65,6 +76,8 @@ export class CronController {
     // Travellers' phones registered for the shuttle pushes: two days after the return.
     const travellerDevicesPurged = await this.returns.purgeDevices();
     const carLocationsPurged = await this.returns.purgeCarLocations();
+    // Forwarded confirmation emails: text after 30 days, rows after 90 (M-A).
+    const inboundEmails = await this.inbound.purge();
     // Bookings returned more than 12 months ago lose the traveller's data (privacy policy).
     const reservationsAnonymized = await this.retention.anonymizeReservations();
     logger.info(
@@ -79,6 +92,7 @@ export class CronController {
       smsPurged,
       travellerDevicesPurged,
       carLocationsPurged,
+      inboundEmails,
       reservationsAnonymized,
     });
   });

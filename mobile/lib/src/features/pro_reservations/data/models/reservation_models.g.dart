@@ -30,6 +30,14 @@ _ReservationModel _$ReservationModelFromJson(Map<String, dynamic> json) =>
           ? null
           : DateTime.parse(json['departureEstimatedAt'] as String),
       notes: json['notes'] as String?,
+      customerNote: json['customerNote'] as String?,
+      vehicleModel: json['vehicleModel'] as String?,
+      vehicleColour: json['vehicleColour'] as String?,
+      returnNoticeKind: json['returnNoticeKind'] as String?,
+      returnNoticeText: json['returnNoticeText'] as String?,
+      returnNoticeAt: json['returnNoticeAt'] == null
+          ? null
+          : DateTime.parse(json['returnNoticeAt'] as String),
       externalReference: json['externalReference'] as String?,
       priceCents: (json['priceCents'] as num?)?.toInt(),
       overbooked: json['overbooked'] as bool? ?? false,
@@ -47,6 +55,11 @@ _ReservationModel _$ReservationModelFromJson(Map<String, dynamic> json) =>
       createdAt: json['createdAt'] == null
           ? null
           : DateTime.parse(json['createdAt'] as String),
+      nextStatuses:
+          (json['nextStatuses'] as List<dynamic>?)
+              ?.map((e) => e as String)
+              .toList() ??
+          const [],
       spot: json['spot'] == null
           ? null
           : ReservationSpotModel.fromJson(json['spot'] as Map<String, dynamic>),
@@ -72,6 +85,12 @@ Map<String, dynamic> _$ReservationModelToJson(_ReservationModel instance) =>
       'departureScheduledAt': instance.departureScheduledAt?.toIso8601String(),
       'departureEstimatedAt': instance.departureEstimatedAt?.toIso8601String(),
       'notes': instance.notes,
+      'customerNote': instance.customerNote,
+      'vehicleModel': instance.vehicleModel,
+      'vehicleColour': instance.vehicleColour,
+      'returnNoticeKind': instance.returnNoticeKind,
+      'returnNoticeText': instance.returnNoticeText,
+      'returnNoticeAt': instance.returnNoticeAt?.toIso8601String(),
       'externalReference': instance.externalReference,
       'priceCents': instance.priceCents,
       'overbooked': instance.overbooked,
@@ -85,6 +104,7 @@ Map<String, dynamic> _$ReservationModelToJson(_ReservationModel instance) =>
       'carNote': instance.carNote,
       'paymentStatus': instance.paymentStatus,
       'createdAt': instance.createdAt?.toIso8601String(),
+      'nextStatuses': instance.nextStatuses,
       'spot': instance.spot,
     };
 
@@ -154,6 +174,9 @@ _ReservationInput _$ReservationInputFromJson(Map<String, dynamic> json) =>
       returnFlight: json['returnFlight'] as String?,
       departureFlight: json['departureFlight'] as String?,
       notes: json['notes'] as String?,
+      customerNote: json['customerNote'] as String?,
+      vehicleModel: json['vehicleModel'] as String?,
+      vehicleColour: json['vehicleColour'] as String?,
       externalReference: json['externalReference'] as String?,
       priceCents: (json['priceCents'] as num?)?.toInt(),
       force: json['force'] as bool? ?? false,
@@ -173,6 +196,9 @@ Map<String, dynamic> _$ReservationInputToJson(_ReservationInput instance) =>
       'returnFlight': instance.returnFlight,
       'departureFlight': instance.departureFlight,
       'notes': instance.notes,
+      'customerNote': instance.customerNote,
+      'vehicleModel': instance.vehicleModel,
+      'vehicleColour': instance.vehicleColour,
       'externalReference': instance.externalReference,
       'priceCents': instance.priceCents,
       'force': instance.force,

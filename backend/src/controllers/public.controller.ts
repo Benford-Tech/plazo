@@ -26,6 +26,12 @@ export class PublicController {
     res.json(await this.publicService.airport(req.params.slug as string));
   });
 
+  /** GET /public/airports/:slug/live — polled by the home map every 12 s, never cached. */
+  public live = catchAsync(async (req: Request, res: Response) => {
+    res.set('Cache-Control', 'no-store');
+    res.json(await this.publicService.live(req.params.slug as string));
+  });
+
   /** GET /public/search?airport=&arrivalAt=&returnAt= */
   public search = catchAsync(async (req: Request, res: Response) => {
     res.json(await this.publicService.search(str(req.query.airport) ?? '', str(req.query.arrivalAt), str(req.query.returnAt)));

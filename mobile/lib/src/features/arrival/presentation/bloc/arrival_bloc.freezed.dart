@@ -16,7 +16,8 @@ T _$identity<T>(T value) => value;
 mixin _$ArrivalState {
 
  String? get reference; ViewState get loadState; ViewState get actionState; ArrivalModel? get arrival;/// Positions are being watched and sent.
- bool get tracking; bool get showAnnounceOptions; LocationAccess? get locationProblem;/// API code (or consent_required, network): translated by the page.
+ bool get tracking; bool get showAnnounceOptions;/// E (06/10/2026): the word typed for the parking (sent with the next signal, empty: none).
+ String get note; LocationAccess? get locationProblem;/// API code (or consent_required, network): translated by the page.
  String? get errorCode;/// The latest local position, for the map only (memory, never stored).
  GeoPosition? get lastPosition; DateTime get now;
 /// Create a copy of ArrivalState
@@ -30,20 +31,20 @@ $ArrivalStateCopyWith<ArrivalState> get copyWith => _$ArrivalStateCopyWithImpl<A
 @override
 bool operator ==(Object other) {
   final _this = this as ArrivalState;
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is ArrivalState&&(identical(other.reference, _this.reference) || other.reference == _this.reference)&&(identical(other.loadState, _this.loadState) || other.loadState == _this.loadState)&&(identical(other.actionState, _this.actionState) || other.actionState == _this.actionState)&&(identical(other.arrival, _this.arrival) || other.arrival == _this.arrival)&&(identical(other.tracking, _this.tracking) || other.tracking == _this.tracking)&&(identical(other.showAnnounceOptions, _this.showAnnounceOptions) || other.showAnnounceOptions == _this.showAnnounceOptions)&&(identical(other.locationProblem, _this.locationProblem) || other.locationProblem == _this.locationProblem)&&(identical(other.errorCode, _this.errorCode) || other.errorCode == _this.errorCode)&&(identical(other.lastPosition, _this.lastPosition) || other.lastPosition == _this.lastPosition)&&(identical(other.now, _this.now) || other.now == _this.now));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is ArrivalState&&(identical(other.reference, _this.reference) || other.reference == _this.reference)&&(identical(other.loadState, _this.loadState) || other.loadState == _this.loadState)&&(identical(other.actionState, _this.actionState) || other.actionState == _this.actionState)&&(identical(other.arrival, _this.arrival) || other.arrival == _this.arrival)&&(identical(other.tracking, _this.tracking) || other.tracking == _this.tracking)&&(identical(other.showAnnounceOptions, _this.showAnnounceOptions) || other.showAnnounceOptions == _this.showAnnounceOptions)&&(identical(other.note, _this.note) || other.note == _this.note)&&(identical(other.locationProblem, _this.locationProblem) || other.locationProblem == _this.locationProblem)&&(identical(other.errorCode, _this.errorCode) || other.errorCode == _this.errorCode)&&(identical(other.lastPosition, _this.lastPosition) || other.lastPosition == _this.lastPosition)&&(identical(other.now, _this.now) || other.now == _this.now));
 }
 
 
 @override
 int get hashCode {
   final _this = this as ArrivalState;
-  return Object.hash(runtimeType,_this.reference,_this.loadState,_this.actionState,_this.arrival,_this.tracking,_this.showAnnounceOptions,_this.locationProblem,_this.errorCode,_this.lastPosition,_this.now);
+  return Object.hash(runtimeType,_this.reference,_this.loadState,_this.actionState,_this.arrival,_this.tracking,_this.showAnnounceOptions,_this.note,_this.locationProblem,_this.errorCode,_this.lastPosition,_this.now);
 }
 
 @override
 String toString() {
   final _this = this as ArrivalState;
-  return 'ArrivalState(reference: ${_this.reference}, loadState: ${_this.loadState}, actionState: ${_this.actionState}, arrival: ${_this.arrival}, tracking: ${_this.tracking}, showAnnounceOptions: ${_this.showAnnounceOptions}, locationProblem: ${_this.locationProblem}, errorCode: ${_this.errorCode}, lastPosition: ${_this.lastPosition}, now: ${_this.now})';
+  return 'ArrivalState(reference: ${_this.reference}, loadState: ${_this.loadState}, actionState: ${_this.actionState}, arrival: ${_this.arrival}, tracking: ${_this.tracking}, showAnnounceOptions: ${_this.showAnnounceOptions}, note: ${_this.note}, locationProblem: ${_this.locationProblem}, errorCode: ${_this.errorCode}, lastPosition: ${_this.lastPosition}, now: ${_this.now})';
 }
 
 
@@ -54,7 +55,7 @@ abstract mixin class $ArrivalStateCopyWith<$Res>  {
   factory $ArrivalStateCopyWith(ArrivalState value, $Res Function(ArrivalState) _then) = _$ArrivalStateCopyWithImpl;
 @useResult
 $Res call({
- String? reference, ViewState loadState, ViewState actionState, ArrivalModel? arrival, bool tracking, bool showAnnounceOptions, LocationAccess? locationProblem, String? errorCode, GeoPosition? lastPosition, DateTime now
+ String? reference, ViewState loadState, ViewState actionState, ArrivalModel? arrival, bool tracking, bool showAnnounceOptions, String note, LocationAccess? locationProblem, String? errorCode, GeoPosition? lastPosition, DateTime now
 });
 
 
@@ -71,7 +72,7 @@ class _$ArrivalStateCopyWithImpl<$Res>
 
 /// Create a copy of ArrivalState
 /// with the given fields replaced by the non-null parameter values.
-@pragma('vm:prefer-inline') @override $Res call({Object? reference = freezed,Object? loadState = null,Object? actionState = null,Object? arrival = freezed,Object? tracking = null,Object? showAnnounceOptions = null,Object? locationProblem = freezed,Object? errorCode = freezed,Object? lastPosition = freezed,Object? now = null,}) {
+@pragma('vm:prefer-inline') @override $Res call({Object? reference = freezed,Object? loadState = null,Object? actionState = null,Object? arrival = freezed,Object? tracking = null,Object? showAnnounceOptions = null,Object? note = null,Object? locationProblem = freezed,Object? errorCode = freezed,Object? lastPosition = freezed,Object? now = null,}) {
   return _then(ArrivalState(
 reference: freezed == reference ? _self.reference : reference // ignore: cast_nullable_to_non_nullable
 as String?,loadState: null == loadState ? _self.loadState : loadState // ignore: cast_nullable_to_non_nullable
@@ -79,7 +80,8 @@ as ViewState,actionState: null == actionState ? _self.actionState : actionState 
 as ViewState,arrival: freezed == arrival ? _self.arrival : arrival // ignore: cast_nullable_to_non_nullable
 as ArrivalModel?,tracking: null == tracking ? _self.tracking : tracking // ignore: cast_nullable_to_non_nullable
 as bool,showAnnounceOptions: null == showAnnounceOptions ? _self.showAnnounceOptions : showAnnounceOptions // ignore: cast_nullable_to_non_nullable
-as bool,locationProblem: freezed == locationProblem ? _self.locationProblem : locationProblem // ignore: cast_nullable_to_non_nullable
+as bool,note: null == note ? _self.note : note // ignore: cast_nullable_to_non_nullable
+as String,locationProblem: freezed == locationProblem ? _self.locationProblem : locationProblem // ignore: cast_nullable_to_non_nullable
 as LocationAccess?,errorCode: freezed == errorCode ? _self.errorCode : errorCode // ignore: cast_nullable_to_non_nullable
 as String?,lastPosition: freezed == lastPosition ? _self.lastPosition : lastPosition // ignore: cast_nullable_to_non_nullable
 as GeoPosition?,now: null == now ? _self.now : now // ignore: cast_nullable_to_non_nullable
@@ -180,10 +182,10 @@ return $default(_that);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( String? reference,  ViewState loadState,  ViewState actionState,  ArrivalModel? arrival,  bool tracking,  bool showAnnounceOptions,  LocationAccess? locationProblem,  String? errorCode,  GeoPosition? lastPosition,  DateTime now)?  $default,{required TResult orElse(),}) {final _that = this;
+@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( String? reference,  ViewState loadState,  ViewState actionState,  ArrivalModel? arrival,  bool tracking,  bool showAnnounceOptions,  String note,  LocationAccess? locationProblem,  String? errorCode,  GeoPosition? lastPosition,  DateTime now)?  $default,{required TResult orElse(),}) {final _that = this;
 switch (_that) {
 case _ArrivalState() when $default != null:
-return $default(_that.reference,_that.loadState,_that.actionState,_that.arrival,_that.tracking,_that.showAnnounceOptions,_that.locationProblem,_that.errorCode,_that.lastPosition,_that.now);case _:
+return $default(_that.reference,_that.loadState,_that.actionState,_that.arrival,_that.tracking,_that.showAnnounceOptions,_that.note,_that.locationProblem,_that.errorCode,_that.lastPosition,_that.now);case _:
   return orElse();
 
 }
@@ -201,10 +203,10 @@ return $default(_that.reference,_that.loadState,_that.actionState,_that.arrival,
 /// }
 /// ```
 
-@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( String? reference,  ViewState loadState,  ViewState actionState,  ArrivalModel? arrival,  bool tracking,  bool showAnnounceOptions,  LocationAccess? locationProblem,  String? errorCode,  GeoPosition? lastPosition,  DateTime now)  $default,) {final _that = this;
+@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( String? reference,  ViewState loadState,  ViewState actionState,  ArrivalModel? arrival,  bool tracking,  bool showAnnounceOptions,  String note,  LocationAccess? locationProblem,  String? errorCode,  GeoPosition? lastPosition,  DateTime now)  $default,) {final _that = this;
 switch (_that) {
 case _ArrivalState():
-return $default(_that.reference,_that.loadState,_that.actionState,_that.arrival,_that.tracking,_that.showAnnounceOptions,_that.locationProblem,_that.errorCode,_that.lastPosition,_that.now);case _:
+return $default(_that.reference,_that.loadState,_that.actionState,_that.arrival,_that.tracking,_that.showAnnounceOptions,_that.note,_that.locationProblem,_that.errorCode,_that.lastPosition,_that.now);case _:
   throw StateError('Unexpected subclass');
 
 }
@@ -221,10 +223,10 @@ return $default(_that.reference,_that.loadState,_that.actionState,_that.arrival,
 /// }
 /// ```
 
-@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( String? reference,  ViewState loadState,  ViewState actionState,  ArrivalModel? arrival,  bool tracking,  bool showAnnounceOptions,  LocationAccess? locationProblem,  String? errorCode,  GeoPosition? lastPosition,  DateTime now)?  $default,) {final _that = this;
+@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( String? reference,  ViewState loadState,  ViewState actionState,  ArrivalModel? arrival,  bool tracking,  bool showAnnounceOptions,  String note,  LocationAccess? locationProblem,  String? errorCode,  GeoPosition? lastPosition,  DateTime now)?  $default,) {final _that = this;
 switch (_that) {
 case _ArrivalState() when $default != null:
-return $default(_that.reference,_that.loadState,_that.actionState,_that.arrival,_that.tracking,_that.showAnnounceOptions,_that.locationProblem,_that.errorCode,_that.lastPosition,_that.now);case _:
+return $default(_that.reference,_that.loadState,_that.actionState,_that.arrival,_that.tracking,_that.showAnnounceOptions,_that.note,_that.locationProblem,_that.errorCode,_that.lastPosition,_that.now);case _:
   return null;
 
 }
@@ -236,7 +238,7 @@ return $default(_that.reference,_that.loadState,_that.actionState,_that.arrival,
 
 
 class _ArrivalState extends ArrivalState {
-  const _ArrivalState({this.reference, this.loadState = ViewState.idle, this.actionState = ViewState.idle, this.arrival, this.tracking = false, this.showAnnounceOptions = false, this.locationProblem, this.errorCode, this.lastPosition, required this.now}): super._();
+  const _ArrivalState({this.reference, this.loadState = ViewState.idle, this.actionState = ViewState.idle, this.arrival, this.tracking = false, this.showAnnounceOptions = false, this.note = '', this.locationProblem, this.errorCode, this.lastPosition, required this.now}): super._();
   
 
 @override final  String? reference;
@@ -246,6 +248,8 @@ class _ArrivalState extends ArrivalState {
 /// Positions are being watched and sent.
 @override@JsonKey() final  bool tracking;
 @override@JsonKey() final  bool showAnnounceOptions;
+/// E (06/10/2026): the word typed for the parking (sent with the next signal, empty: none).
+@override@JsonKey() final  String note;
 @override final  LocationAccess? locationProblem;
 /// API code (or consent_required, network): translated by the page.
 @override final  String? errorCode;
@@ -263,18 +267,18 @@ _$ArrivalStateCopyWith<_ArrivalState> get copyWith => __$ArrivalStateCopyWithImp
 
 @override
 bool operator ==(Object other) {
-    return identical(this, other) || (other.runtimeType == runtimeType&&other is _ArrivalState&&(identical(other.reference, reference) || other.reference == reference)&&(identical(other.loadState, loadState) || other.loadState == loadState)&&(identical(other.actionState, actionState) || other.actionState == actionState)&&(identical(other.arrival, arrival) || other.arrival == arrival)&&(identical(other.tracking, tracking) || other.tracking == tracking)&&(identical(other.showAnnounceOptions, showAnnounceOptions) || other.showAnnounceOptions == showAnnounceOptions)&&(identical(other.locationProblem, locationProblem) || other.locationProblem == locationProblem)&&(identical(other.errorCode, errorCode) || other.errorCode == errorCode)&&(identical(other.lastPosition, lastPosition) || other.lastPosition == lastPosition)&&(identical(other.now, now) || other.now == now));
+    return identical(this, other) || (other.runtimeType == runtimeType&&other is _ArrivalState&&(identical(other.reference, reference) || other.reference == reference)&&(identical(other.loadState, loadState) || other.loadState == loadState)&&(identical(other.actionState, actionState) || other.actionState == actionState)&&(identical(other.arrival, arrival) || other.arrival == arrival)&&(identical(other.tracking, tracking) || other.tracking == tracking)&&(identical(other.showAnnounceOptions, showAnnounceOptions) || other.showAnnounceOptions == showAnnounceOptions)&&(identical(other.note, note) || other.note == note)&&(identical(other.locationProblem, locationProblem) || other.locationProblem == locationProblem)&&(identical(other.errorCode, errorCode) || other.errorCode == errorCode)&&(identical(other.lastPosition, lastPosition) || other.lastPosition == lastPosition)&&(identical(other.now, now) || other.now == now));
 }
 
 
 @override
 int get hashCode {
-    return Object.hash(runtimeType,reference,loadState,actionState,arrival,tracking,showAnnounceOptions,locationProblem,errorCode,lastPosition,now);
+    return Object.hash(runtimeType,reference,loadState,actionState,arrival,tracking,showAnnounceOptions,note,locationProblem,errorCode,lastPosition,now);
 }
 
 @override
 String toString() {
-    return 'ArrivalState(reference: $reference, loadState: $loadState, actionState: $actionState, arrival: $arrival, tracking: $tracking, showAnnounceOptions: $showAnnounceOptions, locationProblem: $locationProblem, errorCode: $errorCode, lastPosition: $lastPosition, now: $now)';
+    return 'ArrivalState(reference: $reference, loadState: $loadState, actionState: $actionState, arrival: $arrival, tracking: $tracking, showAnnounceOptions: $showAnnounceOptions, note: $note, locationProblem: $locationProblem, errorCode: $errorCode, lastPosition: $lastPosition, now: $now)';
 }
 
 
@@ -285,7 +289,7 @@ abstract mixin class _$ArrivalStateCopyWith<$Res> implements $ArrivalStateCopyWi
   factory _$ArrivalStateCopyWith(_ArrivalState value, $Res Function(_ArrivalState) _then) = __$ArrivalStateCopyWithImpl;
 @override @useResult
 $Res call({
- String? reference, ViewState loadState, ViewState actionState, ArrivalModel? arrival, bool tracking, bool showAnnounceOptions, LocationAccess? locationProblem, String? errorCode, GeoPosition? lastPosition, DateTime now
+ String? reference, ViewState loadState, ViewState actionState, ArrivalModel? arrival, bool tracking, bool showAnnounceOptions, String note, LocationAccess? locationProblem, String? errorCode, GeoPosition? lastPosition, DateTime now
 });
 
 
@@ -302,7 +306,7 @@ class __$ArrivalStateCopyWithImpl<$Res>
 
 /// Create a copy of ArrivalState
 /// with the given fields replaced by the non-null parameter values.
-@override @pragma('vm:prefer-inline') $Res call({Object? reference = freezed,Object? loadState = null,Object? actionState = null,Object? arrival = freezed,Object? tracking = null,Object? showAnnounceOptions = null,Object? locationProblem = freezed,Object? errorCode = freezed,Object? lastPosition = freezed,Object? now = null,}) {
+@override @pragma('vm:prefer-inline') $Res call({Object? reference = freezed,Object? loadState = null,Object? actionState = null,Object? arrival = freezed,Object? tracking = null,Object? showAnnounceOptions = null,Object? note = null,Object? locationProblem = freezed,Object? errorCode = freezed,Object? lastPosition = freezed,Object? now = null,}) {
   return _then(_ArrivalState(
 reference: freezed == reference ? _self.reference : reference // ignore: cast_nullable_to_non_nullable
 as String?,loadState: null == loadState ? _self.loadState : loadState // ignore: cast_nullable_to_non_nullable
@@ -310,7 +314,8 @@ as ViewState,actionState: null == actionState ? _self.actionState : actionState 
 as ViewState,arrival: freezed == arrival ? _self.arrival : arrival // ignore: cast_nullable_to_non_nullable
 as ArrivalModel?,tracking: null == tracking ? _self.tracking : tracking // ignore: cast_nullable_to_non_nullable
 as bool,showAnnounceOptions: null == showAnnounceOptions ? _self.showAnnounceOptions : showAnnounceOptions // ignore: cast_nullable_to_non_nullable
-as bool,locationProblem: freezed == locationProblem ? _self.locationProblem : locationProblem // ignore: cast_nullable_to_non_nullable
+as bool,note: null == note ? _self.note : note // ignore: cast_nullable_to_non_nullable
+as String,locationProblem: freezed == locationProblem ? _self.locationProblem : locationProblem // ignore: cast_nullable_to_non_nullable
 as LocationAccess?,errorCode: freezed == errorCode ? _self.errorCode : errorCode // ignore: cast_nullable_to_non_nullable
 as String?,lastPosition: freezed == lastPosition ? _self.lastPosition : lastPosition // ignore: cast_nullable_to_non_nullable
 as GeoPosition?,now: null == now ? _self.now : now // ignore: cast_nullable_to_non_nullable

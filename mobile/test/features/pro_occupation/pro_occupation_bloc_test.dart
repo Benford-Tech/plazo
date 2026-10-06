@@ -92,6 +92,15 @@ void main() {
     expect(b.state.freeSpots(first: arrival.suggestions).map((s) => s.code), ['A-01-02', 'A-01-03']);
   });
 
+  test('ouvert depuis une fiche (C-B) : la carte du véhicule demandé est ouverte', () async {
+    final b = bloc()..add(const ProOccupationStarted(focus: 'r2'));
+    await settle();
+    expect(b.state.vehicle?.id, 'r2');
+    final none = bloc()..add(const ProOccupationStarted(focus: 'unknown'));
+    await settle();
+    expect(none.state.vehicle, isNull);
+  });
+
   test('place une arrivée sur la place proposée, recharge et signale', () async {
     when(() => assign(any())).thenAnswer((_) async => Right(arrival.copyWith(spotId: 's2', spot: const SpotRefModel(code: 'A-01-02'))));
     final b = bloc()..add(const ProOccupationStarted());

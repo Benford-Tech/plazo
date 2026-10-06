@@ -21,10 +21,27 @@ type Client = Prisma.TransactionClient | typeof prisma;
 type Stay = { arrivalAt: Date; returnAt: Date };
 
 /** Operator fields the public pages need: how it takes payments, and whether it is a demo. */
-const PUBLIC_OPERATOR_FIELDS = { ...OPERATOR_PAYMENT_FIELDS, isDemo: true } as const;
+const PUBLIC_OPERATOR_FIELDS = OPERATOR_PAYMENT_FIELDS;
 
 /** Listings travellers may see: validated by the platform, of an operator that is not suspended. */
 export const ONLINE = { status: 'published', parking: { operator: { status: 'active' } } } satisfies Prisma.ListingWhereInput;
+
+/** The home map's live layer (K-A): the airport, its parkings and the shuttles on the road. */
+export interface AirportLive {
+  serverTime: string;
+  airport: { code: string; name: string; slug: string; location: LatLng };
+  parkings: { slug: string; title: string; services: string[]; shuttleMinutes: number | null; location: LatLng | null }[];
+  shuttles: {
+    id: string;
+    /** Slug of the parking the shuttle belongs to. */
+    parking: string;
+    direction: 'pickup' | 'dropoff';
+    vehicle: { model: string | null; colour: string | null };
+    position: LatLng | null;
+    positionAgeSeconds: number | null;
+    startedAt: string;
+  }[];
+}
 
 /** What travellers see on the Plazo site: published listings only, never operator or customer data. */
 @Service()
@@ -130,6 +147,57 @@ export class PublicService {
         const cheapest = [...l.parking.pricingTiers].sort((a, b) => a.priceCents - b.priceCents || a.days - b.days)[0];
         return { ...this.summary(l, locations), fromPriceCents: cheapest?.priceCents ?? null, fromDays: cheapest?.days ?? null };
       }),
+    };
+  }
+
+  /**
+   * K-A (06/10/2026): the home map's live layer, anonymous — the airport's published parkings and
+   * their shuttles on the road right now (position, direction, vehicle). Never a driver, a plate,
+   * a passenger: the traveller only sees that a shuttle is moving.
+   */
+  public async live(slug: string): Promise<AirportLive> {
+    const airport = await this.airportBySlug(slug);
+    const listings = await this.publishedAt(airport.id);
+    const locations = await this.positions(listings);
+    const now = new Date();
+    const slugOf = new Map(listings.map(l => [l.parkingId, l.slug]));
+    const trips = listings.length
+      ? await prisma.shuttleTrip.findMany({
+          where: { parkingId: { in: listings.map(l => l.parkingId) }, status: 'running', expiresAt: { gt: now } },
+          select: {
+            id: true,
+            parkingId: true,
+            direction: true,
+            lat: true,
+            lng: true,
+            positionReceivedAt: true,
+            vehicleModel: true,
+            vehicleColour: true,
+            startedAt: true,
+          },
+          orderBy: { startedAt: 'asc' },
+        })
+      : [];
+    return {
+      serverTime: now.toISOString(),
+      airport: { code: airport.code, name: airport.name, slug: airport.slug, location: { lat: airport.latitude, lng: airport.longitude } },
+      parkings: listings.map(l => ({
+        slug: l.slug,
+        title: l.title,
+        services: l.services,
+        shuttleMinutes: l.shuttleMinutes ?? l.parking.shuttleTravelMinutes,
+        location: locations.get(l.parkingId) ?? null,
+      })),
+      shuttles: trips.map(t => ({
+        id: t.id,
+        parking: slugOf.get(t.parkingId) ?? '',
+        direction: t.direction,
+        vehicle: { model: t.vehicleModel, colour: t.vehicleColour },
+        position: t.lat !== null && t.lng !== null ? { lat: t.lat, lng: t.lng } : null,
+        positionAgeSeconds:
+          t.lat !== null && t.positionReceivedAt ? Math.max(0, Math.round((now.getTime() - t.positionReceivedAt.getTime()) / 1000)) : null,
+        startedAt: t.startedAt.toISOString(),
+      })),
     };
   }
 

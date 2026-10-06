@@ -2,7 +2,7 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { render, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { MemoryRouter } from "react-router-dom";
-import type { DepartureRow, LiveShuttles, PickupRow, StaffTrip } from "@/lib/types";
+import type { DepartureRow, LiveShuttles, PickupRow, StaffTrip, StayingRow } from "@/lib/types";
 import ShuttleTripsPanel from "./ShuttleTripsPanel";
 
 const auth = vi.hoisted(() => ({ user: { id: "me", name: "Karim Benali", role: "driver", vehicle: null } as Record<string, unknown> }));
@@ -14,6 +14,7 @@ const api = vi.hoisted(() => ({
   getCurrentTrip: vi.fn(),
   getPickups: vi.fn(),
   getDepartures: vi.fn(),
+  getStaying: vi.fn(),
   getVehicles: vi.fn(),
   getStops: vi.fn(),
   startTrip: vi.fn(),
@@ -56,7 +57,7 @@ const pickup = (id: string, name: string, passengers: number, over: Partial<Pick
   tripId: null,
   ...over,
 });
-const departure = (id: string, name: string, passengers: number): DepartureRow => ({
+const departure = (id: string, name: string, passengers: number, over: Partial<DepartureRow> = {}): DepartureRow => ({
   reservationId: id,
   reference: id.toUpperCase(),
   customerName: name,
@@ -69,6 +70,23 @@ const departure = (id: string, name: string, passengers: number): DepartureRow =
   stopId: null,
   stopName: null,
   tripId: null,
+  leaveAt: "2026-10-06T09:30:00Z",
+  ...over,
+});
+const stayingRow = (id: string, name: string, over: Partial<StayingRow> = {}): StayingRow => ({
+  reservationId: id,
+  reference: id.toUpperCase(),
+  customerName: name,
+  passengers: 2,
+  plate: "AB-123-CD",
+  status: "shuttled_out",
+  returnAt: "2026-10-08T16:40:00Z",
+  returnFlight: "AF 7642",
+  flight: flight({ status: "scheduled", landedAt: null }),
+  spot: "A-07",
+  stopName: null,
+  returnedAt: null,
+  ...over,
 });
 const trip = (over: Partial<StaffTrip> = {}): StaffTrip => ({
   id: "t1",
@@ -114,7 +132,15 @@ describe("ShuttleTripsPanel (le mode chauffeur sur le web)", () => {
         pickup("r3", "Lan Nguyen", 1, { tripId: "other" }),
       ],
     });
-    api.getDepartures.mockReset().mockResolvedValue({ serverTime: live.serverTime, rows: [departure("d1", "Marco Rossi", 4)] });
+    api.getDepartures.mockReset().mockResolvedValue({
+      serverTime: live.serverTime,
+      rows: [departure("d1", "Marco Rossi", 4), departure("d2", "Nadia Roux", 1, { status: "upcoming", arrivedAt: null, spot: null, arrivalAt: "2026-10-06T08:30:00Z", stopName: "Gare TGV", expected: true })],
+    });
+    api.getStaying.mockReset().mockResolvedValue({
+      serverTime: live.serverTime,
+      days: [{ date: "2026-10-08", rows: [stayingRow("s1", "Camille Martin")] }],
+      returnedToday: [stayingRow("s2", "Yanis Benali", { status: "back_at_parking", returnedAt: "2026-10-06T07:50:00Z", returnAt: "2026-10-06T07:30:00Z" })],
+    });
     api.getVehicles.mockReset().mockResolvedValue({ data: [{ id: "v1", model: "Vito", colour: "blanc", plate: "GH-789-IJ", seats: 8, inService: true, driverId: "me", driverName: "Karim Benali" }] });
     api.getStops.mockReset().mockResolvedValue({ data: [airport, station] });
     api.startTrip.mockReset();
@@ -125,20 +151,24 @@ describe("ShuttleTripsPanel (le mode chauffeur sur le web)", () => {
 
   it("liste les retours par terminal avec leur état, puis démarre le trajet avec le véhicule et la desserte", async () => {
     renderPanel();
-    expect(await screen.findByText("Aucune navette en route pour le moment.")).toBeInTheDocument();
     expect(await screen.findByText("À récupérer · Terminal 1")).toBeInTheDocument();
     expect(screen.getByText("À récupérer · Terminal 2")).toBeInTheDocument();
+    // F-A: the three bands with their counts; the first band carries the advised leave time of each stop.
+    expect(screen.getByRole("tab", { name: "À récupérer · 3" })).toHaveAttribute("aria-selected", "true");
+    expect(screen.getByRole("tab", { name: "En route · 0" })).toBeInTheDocument();
+    expect(screen.getByRole("tab", { name: "Rendus · 1" })).toBeInTheDocument();
     expect(screen.getByText("Point de rendez-vous : Terminal 1 · Porte 12")).toBeInTheDocument();
     // Grouped by terminal: Terminal 1 (Camille, Lan), then Terminal 2 (Paul).
     const rows = screen.getAllByTestId("pickup-row");
     expect(within(rows[0]).getByText("Au point de RDV 10:10")).toBeInTheDocument();
     expect(within(rows[1]).getByText("Sur un trajet")).toBeInTheDocument();
-    expect(within(rows[1]).getByRole("button")).toBeDisabled();
+    expect(within(rows[1]).getAllByRole("button")[0]).toBeDisabled();
     expect(within(rows[2]).getByText("Retardé · 10:40")).toBeInTheDocument();
     expect(screen.getByText("Sélectionnez des clients")).toBeInTheDocument();
 
-    await userEvent.click(within(rows[0]).getByRole("button"));
-    await userEvent.click(within(rows[2]).getByRole("button"));
+    await userEvent.click(within(rows[0]).getAllByRole("button")[0]);
+    await userEvent.click(within(rows[2]).getAllByRole("button")[0]);
+    expect(screen.getByTestId("selected-summary")).toHaveTextContent("2 voyageurs · 5 pass. cochés");
     await userEvent.click(screen.getByRole("button", { name: /Gare TGV/ }));
     expect(screen.getByText("Desserte : Gare TGV")).toBeInTheDocument();
     expect(screen.getByText("Dépose minute, sortie 2")).toBeInTheDocument();
@@ -148,15 +178,25 @@ describe("ShuttleTripsPanel (le mode chauffeur sur le web)", () => {
     await userEvent.click(screen.getByRole("button", { name: "Partir à l'aéroport · 2 clients" }));
     await waitFor(() => expect(api.startTrip).toHaveBeenCalledWith({ reservationIds: ["r1", "r2"], direction: "pickup", stopId: "gare", vehicleId: "v1", vehicle: null }));
     expect(await screen.findByTestId("trip-running")).toHaveTextContent("En route vers l'aéroport · position partagée");
+    expect(screen.getByRole("tab", { name: "En route · 0" })).toHaveAttribute("aria-selected", "true");
+    expect(screen.getByText("Aucune navette en route pour le moment.")).toBeInTheDocument();
     expect(screen.getByText("Ce navigateur ne donne pas la position : le trajet est visible sans sa position.")).toBeInTheDocument();
+    // Back on the first band, the trip stays reachable.
+    await userEvent.click(screen.getByRole("tab", { name: /À récupérer/ }));
+    expect(screen.getByTestId("go-route")).toBeInTheDocument();
+    // "Rendus": who came back today.
+    await userEvent.click(screen.getByRole("tab", { name: /Rendus/ }));
+    expect(screen.getByText("Revenus aujourd'hui")).toBeInTheDocument();
+    expect(screen.getByTestId("staying-row")).toHaveTextContent("Yanis Benali");
+    expect(screen.getByTestId("staying-row")).toHaveTextContent("De retour au parking");
   });
 
   it("refuse plus de passagers que de places et explique l'erreur du serveur", async () => {
     api.getVehicles.mockResolvedValue({ data: [{ id: "v2", model: "Clio", colour: null, plate: null, seats: 1, inService: true, driverId: null, driverName: null }] });
     renderPanel();
     const rows = await screen.findAllByTestId("pickup-row");
-    await userEvent.click(within(rows[0]).getByRole("button"));
-    await userEvent.click(within(rows[2]).getByRole("button"));
+    await userEvent.click(within(rows[0]).getAllByRole("button")[0]);
+    await userEvent.click(within(rows[2]).getAllByRole("button")[0]);
     await userEvent.click(await screen.findByRole("button", { name: /Clio/ }));
     expect(screen.getByText("5 passagers pour 1 places : choisissez un autre véhicule ou moins de clients.")).toBeInTheDocument();
   });
@@ -171,18 +211,34 @@ describe("ShuttleTripsPanel (le mode chauffeur sur le web)", () => {
     renderPanel();
     await screen.findAllByTestId("pickup-row");
     await userEvent.click(screen.getByRole("tab", { name: /Départs · terminal/ }));
-    const row = await screen.findByTestId("departure-row");
+    const departureRows = await screen.findAllByTestId("departure-row");
+    const row = departureRows[0];
     expect(within(row).getByText("Arrivé 08:25 · Place A12")).toBeInTheDocument();
-    await userEvent.click(within(row).getByRole("button"));
+    // F-A: grouped by stop with the advised leave time; the expected traveller is greyed and not selectable.
+    expect(screen.getByRole("tab", { name: "À emmener · 2" })).toHaveAttribute("aria-selected", "true");
+    expect(screen.getByText("À conduire au terminal")).toBeInTheDocument();
+    expect(screen.getByText("À conduire · Gare TGV")).toBeInTheDocument();
+    expect(screen.getAllByText("Départ conseillé 11:30")).toHaveLength(2);
+    expect(within(departureRows[1]).getByText("Attendu 10:30")).toBeInTheDocument();
+    expect(within(departureRows[1]).getAllByRole("button")[0]).toBeDisabled();
+    await userEvent.click(within(row).getAllByRole("button")[0]);
     api.startTrip.mockResolvedValue({ trip: trip({ direction: "dropoff", passengers: [{ reservationId: "d1", reference: "D1", customerName: "Marco Rossi", passengers: 4, plate: "CD-456-EF", terminal: null }] }) });
     await userEvent.click(screen.getByRole("button", { name: "Partir au terminal · 1 client" }));
     expect(await screen.findByTestId("trip-running")).toHaveTextContent("En route vers le terminal");
     await waitFor(() => expect(api.sendTripPosition).toHaveBeenCalledWith("t1", expect.objectContaining({ lat: 45.71, lng: 5.05, accuracy: 12 })));
 
+    // "En séjour": the travellers dropped at the terminal, by return day.
+    await userEvent.click(screen.getByRole("tab", { name: /En séjour/ }));
+    expect(screen.getByText("jeu. 8 · 1 retour")).toBeInTheDocument();
+    expect(screen.getByTestId("staying-row")).toHaveTextContent("Camille Martin · AF 7642 · 18:40");
+    expect(screen.getByTestId("staying-row")).toHaveTextContent("Parti en navette");
+    await userEvent.click(screen.getByRole("tab", { name: /En route/ }));
+
     api.endTrip.mockResolvedValue({ trip: trip({ direction: "dropoff", status: "ended" }) });
     await userEvent.click(screen.getByTestId("end-trip"));
     expect(await screen.findByRole("status")).toHaveTextContent("Trajet terminé");
     expect(api.endTrip).toHaveBeenCalledWith("t1");
+    expect(screen.getByRole("tab", { name: /À emmener/ })).toHaveAttribute("aria-selected", "true");
   });
 
   it("montre les navettes de l'équipe et laisse un gérant terminer un trajet oublié", async () => {
@@ -210,6 +266,8 @@ describe("ShuttleTripsPanel (le mode chauffeur sur le web)", () => {
     vi.spyOn(window, "confirm").mockReturnValue(true);
     api.endTrip.mockResolvedValue({ trip: trip({ id: "t9", status: "ended" }) });
     renderPanel();
+    // The team's shuttles live on the "En route" band.
+    await userEvent.click(await screen.findByRole("tab", { name: /En route/ }));
     const row = await screen.findByTestId("live-trip");
     expect(row).toHaveTextContent("Karim Benali");
     expect(row).toHaveTextContent("3 clients");

@@ -22,6 +22,7 @@ void _initUseCaseLocator() {
     ..registerLazySingleton(() => SearchParkingsUseCase(locator()))
     ..registerLazySingleton(() => GetParkingUseCase(locator()))
     ..registerLazySingleton(() => GetPaymentsConfigUseCase(locator()))
+    ..registerLazySingleton(() => GetAirportLiveUseCase(locator()))
     // Traveller: arrival
     ..registerLazySingleton(() => GetArrivalUseCase(locator()))
     ..registerLazySingleton(() => StartSharingUseCase(locator()))
@@ -32,6 +33,7 @@ void _initUseCaseLocator() {
     // Traveller: the return day
     ..registerLazySingleton(() => GetReturnUseCase(locator()))
     ..registerLazySingleton(() => DeclareLandedUseCase(locator()))
+    ..registerLazySingleton(() => SendReturnNoticeUseCase(locator()))
     ..registerLazySingleton(() => GetWalkingRouteUseCase(locator()))
     ..registerLazySingleton(() => GetShuttleStatusUseCase(locator()))
     ..registerLazySingleton(() => GetStayShuttlesUseCase(locator()))
@@ -39,6 +41,7 @@ void _initUseCaseLocator() {
     // Staff: driver mode
     ..registerLazySingleton(() => GetPickupsUseCase(locator()))
     ..registerLazySingleton(() => GetDeparturesUseCase(locator()))
+    ..registerLazySingleton(() => GetStayingUseCase(locator()))
     ..registerLazySingleton(() => SaveVehicleUseCase(locator()))
     ..registerLazySingleton(() => RemoveVehicleUseCase(locator()))
     ..registerLazySingleton(() => GetProParkingUseCase(locator()))

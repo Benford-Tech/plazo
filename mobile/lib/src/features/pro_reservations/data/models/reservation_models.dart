@@ -29,6 +29,14 @@ abstract class ReservationModel with _$ReservationModel {
     DateTime? departureScheduledAt,
     DateTime? departureEstimatedAt,
     String? notes,
+
+    /// E (06/10/2026): the traveller's message for the parking, their vehicle, and today's return notice.
+    String? customerNote,
+    String? vehicleModel,
+    String? vehicleColour,
+    String? returnNoticeKind,
+    String? returnNoticeText,
+    DateTime? returnNoticeAt,
     String? externalReference,
     int? priceCents,
     @Default(false) bool overbooked,
@@ -42,6 +50,9 @@ abstract class ReservationModel with _$ReservationModel {
     String? carNote,
     String? paymentStatus,
     DateTime? createdAt,
+
+    /// The statuses this staff member may set next, served by the API (06/10/2026).
+    @Default([]) List<String> nextStatuses,
 
     /// The sheet route carries the spot's code (bloc 2).
     ReservationSpotModel? spot,
@@ -99,6 +110,9 @@ abstract class ReservationInput with _$ReservationInput {
     String? returnFlight,
     String? departureFlight,
     String? notes,
+    String? customerNote,
+    String? vehicleModel,
+    String? vehicleColour,
     String? externalReference,
     int? priceCents,
     @Default(false) bool force,

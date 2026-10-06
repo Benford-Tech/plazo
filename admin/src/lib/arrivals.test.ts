@@ -14,6 +14,7 @@ describe("arrivées en direct", () => {
     expect(bannerText(signal())).toBe("C. Martin arrive dans 12 min — AB-123-CD");
     expect(bannerText(signal({ state: "announced", announcedMinutes: 20 }))).toBe("C. Martin : « J'arrive dans 20 min » — AB-123-CD");
     expect(bannerText(signal({ kind: "return", state: "at_meeting_point" }))).toBe("Retour : C. Martin est au point de rendez-vous — AB-123-CD");
+    expect(bannerText(signal({ state: "announced", announcedMinutes: 10, note: "2 enfants, poussette" }))).toBe("C. Martin : « J'arrive dans 10 min » — AB-123-CD · « 2 enfants, poussette »");
   });
 
   it("met en tête les voyageurs en approche, triés par ETA", () => {

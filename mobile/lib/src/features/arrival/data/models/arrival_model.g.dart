@@ -75,6 +75,7 @@ _ArrivalSignalModel _$ArrivalSignalModelFromJson(Map<String, dynamic> json) =>
       positionUpdatedAt: json['positionUpdatedAt'] == null
           ? null
           : DateTime.parse(json['positionUpdatedAt'] as String),
+      note: json['note'] as String?,
     );
 
 Map<String, dynamic> _$ArrivalSignalModelToJson(_ArrivalSignalModel instance) =>
@@ -91,6 +92,7 @@ Map<String, dynamic> _$ArrivalSignalModelToJson(_ArrivalSignalModel instance) =>
       'announcedMinutes': instance.announcedMinutes,
       'atMeetingPointAt': instance.atMeetingPointAt?.toIso8601String(),
       'positionUpdatedAt': instance.positionUpdatedAt?.toIso8601String(),
+      'note': instance.note,
     };
 
 const _$ArrivalSignalStateEnumMap = {

@@ -13,7 +13,7 @@ et affectation des véhicules, navette au retour.
   API documentée, espace pro.
 - [ ] **Jalon 2 — Réservations** (en cours) : fait — saisie manuelle, planning du jour (arrivées et retours,
   7 nuits), contrôle de capacité par nuit avec surréservation forcée et tracée, statuts, fiche et recherche,
-  lecture des mails de confirmation Allopark côté serveur (`domain/importers`, doublons refusés) en attendant la synchronisation de la boîte mail ; l'import par copier-coller a été retiré le 06/10/2026.
+  **synchronisation de la boîte mail** (M-A, 06/10/2026 : adresse de réception par loueur, webhook Brevo, lecteur Allopark de `domain/importers`, « Mails à vérifier ») ; l'import par copier-coller a été retiré le 06/10/2026.
   Reste : lecteurs Parkos, Onepark… (un exemple de mail par comparateur), import CSV si besoin.
 - [ ] **Jalon 3a — Fiche et tarifs** (fait) : dans l'espace pro, onglet « Sur Plazo » : « Ma fiche » (présentation,
   services, annulation, photos par adresse, aperçu en direct, envoi en validation refusé tant qu'il n'y a pas de tarifs)
@@ -46,6 +46,13 @@ et affectation des véhicules, navette au retour.
   trajet », position partagée avec les passagers seulement, « Clients récupérés »), point de rendez-vous (carte, libellé,
   consignes, photo) et navettes dans l'espace pro, « Navette en route (Karim) » sur le planning. Reste : « bagages
   récupérés / pris en charge » détaillés, regroupement par vague, SMS au voyageur sans réservation Plazo.
+  **Communication voyageur ↔ parking (E, 06/10/2026)** : à la réservation (site, app, saisie pro) un message pour le parking
+  (`customerNote`) et le véhicule (`vehicleModel`, `vehicleColour`) ; un mot joint aux signaux d'arrivée (`note`, dans le push et
+  le bandeau) ; le jour du retour « Mon vol a du retard », « Bagage perdu » ou un mot libre (`POST …/return/notice`), poussé aux
+  retours et affiché dans la file du chauffeur, la fiche opérationnelle et la fiche complète.
+  **Le site au niveau de l'app le jour J (D, 06/10/2026)** : sur « Ma réservation », « Prévenir de mon arrivée » (position du
+  navigateur partagée avec consentement, « J'arrive dans 10 / 20 / 30 min », « Je suis au point de rendez-vous »), bloc
+  « Navette » du séjour, « J'ai atterri » sans vol suivi, consignes, photo et itinéraire du point de rendez-vous.
 - [ ] **Jalon 6 — App mobile (Flutter)** (commencé, `mobile/`) : fait — **« Prévenir de son arrivée »** (maquette
   validée) : le voyageur ouvre sa réservation par le lien reçu ou par référence + email, partage sa position jusqu'à
   son arrivée (2 h au plus, effacée ensuite, arrêt automatique à 150 m de l'accueil) ou annonce « J'arrive dans
@@ -72,6 +79,7 @@ npm install
 npm run prisma:deploy         # crée les tables
 npm run seed:operator -- --operator "Mon parking" --capacity 250 \
   --name "Prénom Nom" --email gerant@exemple.fr --password "mot-de-passe-solide"
+# (le prénom est le premier mot, le reste est le nom : chaque membre a un prénom et un nom depuis le 06/10/2026)
 npm run dev
 
 # Espace pro (http://localhost:8080/pro/ ; /api est relayé vers le serveur local)
@@ -181,6 +189,18 @@ le navigateur de l'espace pro appelle `/api` sur le même domaine (pas de CORS).
    (position effacée) à chaque lecture et par la purge nocturne existante ; `/api/internal/cron/expire-arrival-signals`
    existe pour une passe plus fréquente si besoin.
 
+7. **Synchronisation de la boîte mail (M-A, 06/10/2026)** — facultatif : sans `INBOUND_EMAIL_DOMAIN` et
+   `INBOUND_EMAIL_SECRET`, le bloc « Mails entrants » des réglages explique que la réception n'est pas configurée.
+   Principe : chaque loueur active une adresse `<slug>@<INBOUND_EMAIL_DOMAIN>` (Parking › Réglages) et crée dans sa
+   messagerie une règle qui lui transfère les mails des comparateurs ; Brevo (*Inbound parsing*) reçoit le domaine et
+   appelle `POST /api/public/inbound/email?secret=<INBOUND_EMAIL_SECRET>` ; un mail reconnu et complet (Allopark) crée
+   la réservation (canal comparateur, doublon refusé par la référence externe, push « Nouvelle réservation ») ; un
+   mail incomplet ou inconnu attend dans « Mails à vérifier » (`/pro/reservations/a-verifier`, alerte du tableau de
+   bord), où l'équipe le complète dans le formulaire prérempli ou le classe. Texte des mails gardé 30 jours, lignes 90.
+   Mise en place côté Brevo : choisir un sous-domaine (ex. `in.plazo.fr`), y mettre l'enregistrement MX que Brevo
+   indique (Transactional › Inbound parsing › *Add a domain*), puis créer le webhook *inbound* avec ce domaine et
+   l'URL ci-dessus (le secret dans l'URL ; Brevo ne signe pas ses appels).
+
 6. **Suivi des vols au retour** — facultatif : sans clé, les vols ne sont pas suivis (le voyageur dit « J'ai atterri »
    dans l'app, et l'heure de retour saisie fait foi). Trois fournisseurs derrière la même interface, choisis par
    `FLIGHT_TRACKING_PROVIDER` (`flightaware` | `aerodatabox` | `airlabs` ; vide : celui dont la clé est renseignée, dans
@@ -201,6 +221,11 @@ le navigateur de l'espace pro appelle `/api` sur le même domaine (pas de CORS).
      n'accepte que des crons quotidiens : les lectures (app, planning, file du chauffeur) rafraîchissent aussi le vol
      avec le même cache de 5 minutes, donc le bloc fonctionne sans cron (seul le SMS à l'atterrissage dépend alors d'une
      lecture).
+   - **Messages au voyageur (décision B du 06/10/2026)** : confirmation enrichie (vol aller, navette aller prévue, téléphone du
+     parking, point de rendez-vous au retour, « le jour du dépôt » en étapes), rappel la veille (mail + SMS + push, cron
+     `remind-tomorrow`), push « Votre voiture est garée » (place et crochet) quand le voiturier la place, push « Bon voyage ! »
+     à la fin de la navette de dépose, SMS d'atterrissage pour tous les canaux (plus seulement Plazo), mail et push de clôture
+     après la remise (`closingSentAt`). Textes dans `domain/booking-messages.ts`, service `TravellerMessagesService`.
    - Le SMS d'atterrissage (point de rendez-vous, consignes, lien de la réservation) part par le canal SMS du loueur
      (voir « SMS depuis le téléphone du parking ») une seule fois par réservation, seulement quand le fournisseur a vu
      l'atterrissage (pas quand le voyageur l'a déclaré lui-même : il est déjà dans l'app).
@@ -295,6 +320,7 @@ Documentation interactive : `/api/docs` (Swagger). Toutes les routes sont sous `
 | GET / PUT | `/internal/pricing` | Grille tarifaire : forfaits « jusqu'à N jours » + prix du jour supplémentaire |
 | GET | `/public/airports` | Aéroports desservis (formulaire d'inscription) |
 | GET | `/public/airports/:slug` | Site voyageurs : parkings publiés d'un aéroport (sans authentification) |
+| GET | `/public/airports/:slug/live` | Carte vivante de l'accueil (K-A) : parkings publiés et navettes en circulation (position, sens, véhicule ; jamais de chauffeur ni de passager), interrogée toutes les 12 s, `Cache-Control: no-store` |
 | GET | `/public/search?airport=&arrivalAt=&returnAt=` | Site voyageurs : disponibilité et prix total pour un séjour |
 | GET | `/public/airports/:airport/parkings/:slug` | Site voyageurs : fiche parking, avec l'offre si des dates sont données |
 | POST | `/internal/reservations/:id/status` | Étape suivante : arrivée, navette, retour, rendu, annulation… (annuler une réservation payée en ligne la rembourse) |
@@ -313,8 +339,14 @@ Documentation interactive : `/api/docs` (Swagger). Toutes les routes sont sous `
 | POST | `/internal/sms/test` | Gérant : SMS de test `{ to }` → `{ outcome: sent \| queued }`, 502 avec le code de l'appli en cas de refus |
 | POST | `/internal/sms/disable` | Gérant : plus de SMS, identifiants oubliés |
 | GET | `/internal/sms/status` | Gérant : `{ lastSentAt, month: { sent, failed }, pending, pendingStale, lastError }` (relance la file au passage) |
+| POST | `/public/inbound/email?secret=` | Webhook *Inbound parsing* de Brevo (M-A) : `{ items: [...] }` → `{ received, imported, toCheck, ignored }` |
+| GET | `/internal/inbound/settings` | Adresse de réception du loueur, dernier mail, comptages sur 30 jours, mails à vérifier |
+| POST | `/internal/inbound/address` | Gérant : active l'adresse (`{ regenerate: true }` : nouvelle adresse) |
+| GET | `/internal/inbound/emails?status=` | « Mails à vérifier » : en attente d'abord, puis 30 jours |
+| POST | `/internal/inbound/emails/:id/dismiss` · `/attach` | Classer sans suite · rattacher à la réservation saisie (`{ reservationId }`) |
 | GET | `/internal/cron/payouts` | Vercel Cron, chaque jour : transferts des parts dues aux loueurs |
 | GET | `/internal/cron/expire-payment-holds` | Vercel Cron (facultatif) : expire les places tenues non payées |
+| GET | `/internal/cron/remind-tomorrow` | Vercel Cron, 16 h UTC : rappel de la veille aux réservations attendues le lendemain (mail, SMS par le canal du loueur, push ; une fois, `reminderSentAt`) |
 | GET | `/internal/cron/track-return-flights` | Vercel Cron, toutes les 10 min (5 h – 0 h) : vols retour du jour (push et SMS à l'atterrissage), vols aller du jour (décollage), SMS en attente réessayés |
 | GET | `/internal/shuttle/forecast?date=` | Vagues de navettes du jour (V-A) : `{ date, times, seats, vehiclesInService, waves[] }` ; vols aller et retour rafraîchis si dus |
 | PUT / DELETE | `/internal/reservations/:id/car-location` | Position GPS de la voiture prise par l'équipe `{ lat, lng, accuracyM?, note? }` (aussi `car` dans `POST …/spot`) |
@@ -322,9 +354,11 @@ Documentation interactive : `/api/docs` (Swagger). Toutes les routes sont sous `
 | GET / PUT | `/internal/parking/return-meeting-point` | Point de rendez-vous au retour : `{ lat, lng, label, instructions (≤ 500), photoUrl }` (gérant) |
 | GET | `/public/bookings/:ref/return` | App, jour du retour : vol (rafraîchi si dû), point de rendez-vous, signal, navette en route |
 | POST | `/public/bookings/:ref/return/landed` | « J'ai atterri » (push au personnel) |
+| POST | `/public/bookings/:ref/return/notice` | E (06/10/2026) : « Mon vol a du retard », « Bagage perdu » ou un mot `{ kind: flight_delayed·luggage·other, text? }` pendant que le véhicule est sur place (409 `vehicle_not_on_site`) ; gardé sur la réservation (`returnNotice*`), push aux retours, visible dans la file du chauffeur et la fiche |
 | GET | `/public/bookings/:ref/return/route?lat=&lng=` | Chemin à pied vers le point de rendez-vous (IGN, cache 3 min, ligne droite en repli) |
 | GET | `/public/bookings/:ref/shuttle` | La navette qui vient (position, ETA, véhicule) : seulement pendant un trajet qui inclut la réservation |
-| GET | `/internal/shuttle/pickups` | Chauffeur : retours à récupérer (vol, terminal, au point de rendez-vous, trajet) |
+| GET | `/internal/shuttle/pickups` | Chauffeur : retours à récupérer (vol, terminal, au point de rendez-vous, trajet, `leaveAt` heure de départ conseillée) |
+| GET | `/internal/shuttle/staying` | F-A : voyageurs en séjour par jour de retour (`days[]`) et revenus aujourd'hui (`returnedToday`) |
 | GET / POST | `/internal/shuttle/vehicles`, DELETE `…/:id` | Navettes du loueur (gérant) |
 | GET | `/internal/shuttle/trips/current` | Le trajet en cours du chauffeur connecté |
 | POST | `/internal/shuttle/trips` | « Démarrer le trajet » `{ reservationIds, vehicleId \| vehicle }` (un par chauffeur, 90 min max) |

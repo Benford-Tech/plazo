@@ -198,7 +198,8 @@ class _NewMemberSheet extends StatefulWidget {
 }
 
 class _NewMemberSheetState extends State<_NewMemberSheet> {
-  final _name = TextEditingController();
+  final _firstName = TextEditingController();
+  final _lastName = TextEditingController();
   final _email = TextEditingController();
   final _phone = TextEditingController();
   final _password = TextEditingController();
@@ -206,7 +207,7 @@ class _NewMemberSheetState extends State<_NewMemberSheet> {
 
   @override
   void dispose() {
-    for (final c in [_name, _email, _phone, _password]) {
+    for (final c in [_firstName, _lastName, _email, _phone, _password]) {
       c.dispose();
     }
     super.dispose();
@@ -228,10 +229,17 @@ class _NewMemberSheetState extends State<_NewMemberSheet> {
               Text('team.add'.tr(), style: AppText.title(size: 20)),
               const SizedBox(height: 12),
               TextField(
-                key: const Key('new-name'),
-                controller: _name,
+                key: const Key('new-first-name'),
+                controller: _firstName,
                 textCapitalization: TextCapitalization.words,
-                decoration: InputDecoration(labelText: 'team.name'.tr(), errorText: err('name')),
+                decoration: InputDecoration(labelText: 'team.first_name'.tr(), errorText: err('firstName')),
+              ),
+              const SizedBox(height: 10),
+              TextField(
+                key: const Key('new-last-name'),
+                controller: _lastName,
+                textCapitalization: TextCapitalization.words,
+                decoration: InputDecoration(labelText: 'team.last_name'.tr(), errorText: err('lastName')),
               ),
               const SizedBox(height: 10),
               TextField(
@@ -273,7 +281,7 @@ class _NewMemberSheetState extends State<_NewMemberSheet> {
                 busy: state.actionState.isProcessing,
                 onPressed: () => bloc.add(
                   ProTeamMemberCreated(
-                    NewStaffParams(name: _name.text.trim(), email: _email.text.trim(), phone: _phone.text, role: _role, password: _password.text),
+                    NewStaffParams(firstName: _firstName.text.trim(), lastName: _lastName.text.trim(), email: _email.text.trim(), phone: _phone.text, role: _role, password: _password.text),
                   ),
                 ),
               ),

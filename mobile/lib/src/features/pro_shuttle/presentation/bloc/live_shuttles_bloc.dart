@@ -1,9 +1,11 @@
 import 'dart:async';
 
 import 'package:bloc/bloc.dart';
+import 'package:latlong2/latlong.dart';
 import 'package:freezed_annotation/freezed_annotation.dart';
 
 import '../../../../core/enums/view_state.dart';
+import '../../../../shared/widgets/shuttle_icon.dart';
 import '../../../../core/error/failure.dart';
 import '../../../../core/utils/clock.dart';
 import '../../../../core/utils/use_case.dart';
@@ -28,8 +30,15 @@ class LiveShuttlesPolled extends LiveShuttlesEvent {
 abstract class LiveShuttlesState with _$LiveShuttlesState {
   const LiveShuttlesState._();
 
-  const factory LiveShuttlesState({@Default(ViewState.idle) ViewState viewState, LiveShuttlesModel? data, String? errorCode, required DateTime now}) =
-      _LiveShuttlesState;
+  const factory LiveShuttlesState({
+    @Default(ViewState.idle) ViewState viewState,
+    LiveShuttlesModel? data,
+    String? errorCode,
+    required DateTime now,
+
+    /// I-C: the heading of each moving shuttle, from its previous position (trip id → degrees).
+    @Default(<String, double>{}) Map<String, double> headings,
+  }) = _LiveShuttlesState;
 
   List<LiveTripModel> get trips => data?.trips ?? const [];
   bool get loaded => data != null;
@@ -63,7 +72,11 @@ class LiveShuttlesBloc extends Bloc<LiveShuttlesEvent, LiveShuttlesState> {
     final result = await _live(NoParams());
     result.fold(
       (failure) => emit(state.copyWith(viewState: initial ? ViewState.error : state.viewState, errorCode: _code(failure), now: _clock())),
-      (data) => emit(state.copyWith(viewState: ViewState.success, data: data, errorCode: null, now: _clock())),
+      (data) {
+        final before = {for (final t in state.trips) if (t.position != null) t.id: LatLng(t.position!.lat, t.position!.lng)};
+        final now = {for (final t in data.trips) if (t.position != null) t.id: LatLng(t.position!.lat, t.position!.lng)};
+        emit(state.copyWith(viewState: ViewState.success, data: data, errorCode: null, now: _clock(), headings: shuttleHeadings(before, state.headings, now)));
+      },
     );
   }
 

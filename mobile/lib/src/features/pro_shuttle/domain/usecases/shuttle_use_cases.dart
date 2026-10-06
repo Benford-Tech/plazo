@@ -22,6 +22,14 @@ class GetDeparturesUseCase with UseCase<DeparturesModel, NoParams> {
   Future<Either<Failure, DeparturesModel>> call(NoParams params) => _repository.departures();
 }
 
+/// F-A: the travellers away by return day, and those back today.
+class GetStayingUseCase with UseCase<StayingModel, NoParams> {
+  GetStayingUseCase(this._repository);
+  final ShuttleRepository _repository;
+  @override
+  Future<Either<Failure, StayingModel>> call(NoParams params) => _repository.staying();
+}
+
 class VehicleSheetParams extends Equatable {
   const VehicleSheetParams({this.id, required this.input});
 

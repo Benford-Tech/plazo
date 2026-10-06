@@ -41,6 +41,7 @@ class VehicleSheetInput {
 abstract class ShuttleDataSource {
   Future<PickupsModel> pickups();
   Future<DeparturesModel> departures();
+  Future<StayingModel> staying();
   Future<List<ShuttleVehicleModel>> vehicles();
   Future<ShuttleVehicleModel> addVehicle(VehicleSheetInput input);
   Future<ShuttleVehicleModel> updateVehicle(String id, VehicleSheetInput input);
@@ -64,6 +65,9 @@ class ShuttleDataSourceImpl implements ShuttleDataSource {
 
   @override
   Future<DeparturesModel> departures() => client.departures();
+
+  @override
+  Future<StayingModel> staying() => client.staying();
 
   @override
   Future<List<ShuttleVehicleModel>> vehicles() async => (await client.vehicles()).data;

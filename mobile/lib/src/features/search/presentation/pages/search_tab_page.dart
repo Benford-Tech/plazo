@@ -18,6 +18,8 @@ import '../../../../shared/widgets/brand_logo.dart';
 import '../../../../shared/widgets/gradient_button.dart';
 import '../../../../shared/widgets/icon_tile.dart';
 import '../../../../shared/widgets/ign_map.dart';
+import '../../../../shared/widgets/live_dot.dart';
+import '../../../../shared/widgets/shuttle_icon.dart';
 import '../../../../shared/widgets/status_badge.dart';
 import '../../../trips/presentation/bloc/trips_bloc.dart';
 import '../../data/models/public_models.dart';
@@ -194,8 +196,11 @@ class _Home extends StatelessWidget {
   }
 }
 
-/// The map of the stay: the terminals, the parkings as dots, a dashed line from the best offer to the
-/// terminal, the pills "N parkings disponibles" and "x km · navette n min", and the orange card.
+/// The map of the stay (T-A, then K-A "carte vivante", 06/10/2026): interactive (drag, pinch),
+/// every parking of the stay as a tappable pin (the chosen one orange, full ones white), the
+/// terminals, the shuttles on the road as moving orange markers (polled every 12 s), the pills
+/// "N parkings disponibles", "N navettes en circulation" and "x km · navette n min", and the card
+/// of the chosen parking (the cheapest until the traveller taps another pin).
 class _MapHero extends StatelessWidget {
   const _MapHero();
 
@@ -205,11 +210,11 @@ class _MapHero extends StatelessWidget {
       builder: (context, state) {
         final airport = state.preview?.airport ?? state.airport;
         final terminals = airport?.location == null ? null : LatLng(airport!.location!.lat, airport.location!.lng);
-        final featured = state.featured;
-        final located = state.bookable.where((r) => r.location != null).toList();
-        final featuredPoint = featured?.location == null ? null : LatLng(featured!.location!.lat, featured.location!.lng);
+        final selected = state.selected;
+        final located = state.located;
+        final selectedPoint = selected?.location == null ? null : LatLng(selected!.location!.lat, selected.location!.lng);
         final points = [?terminals, for (final r in located) LatLng(r.location!.lat, r.location!.lng)];
-        final center = featuredPoint ?? terminals ?? const LatLng(45.7256, 5.0811);
+        final center = selectedPoint ?? terminals ?? const LatLng(45.7256, 5.0811);
         final count = state.bookable.length;
         final countLabel = state.previewState.isProcessing && state.preview == null
             ? 'search.preview_loading'.tr()
@@ -218,6 +223,14 @@ class _MapHero extends StatelessWidget {
             : count == 1
             ? 'results.available_one'.tr()
             : 'results.available_many'.tr(args: ['$count']);
+        final live = state.live;
+        final shuttleCount = live?.shuttles.length ?? 0;
+        final shuttlesLabel = shuttleCount == 0
+            ? 'search.shuttles_none'.tr()
+            : shuttleCount == 1
+            ? 'search.shuttles_one'.tr()
+            : 'search.shuttles_many'.tr(args: ['$shuttleCount']);
+        final titles = {for (final r in located) r.slug: r.title, for (final p in live?.parkings ?? const <LiveParkingModel>[]) p.slug: p.title};
         return Padding(
           padding: const EdgeInsets.fromLTRB(16, 14, 16, 0),
           child: ClipRRect(
@@ -234,18 +247,18 @@ class _MapHero extends StatelessWidget {
                       initialCenter: center,
                       initialZoom: 12.5,
                       initialCameraFit: points.length > 1
-                          ? CameraFit.bounds(bounds: LatLngBounds.fromPoints(points), padding: const EdgeInsets.fromLTRB(50, 96, 50, 170), maxZoom: 14)
+                          ? CameraFit.bounds(bounds: LatLngBounds.fromPoints(points), padding: const EdgeInsets.fromLTRB(50, 120, 50, 170), maxZoom: 14)
                           : null,
-                      interactionOptions: const InteractionOptions(flags: InteractiveFlag.none),
+                      interactionOptions: const InteractionOptions(flags: InteractiveFlag.all & ~InteractiveFlag.rotate),
                     ),
                     children: [
                       if (IgnMap.tilesEnabled)
                         TileLayer(urlTemplate: AppConstants.ignPlanTilesUrl, userAgentPackageName: 'com.benfordtech.parking_app', maxNativeZoom: 19),
-                      if (featuredPoint != null && terminals != null)
+                      if (selectedPoint != null && terminals != null)
                         PolylineLayer(
                           polylines: [
                             Polyline(
-                              points: [featuredPoint, terminals],
+                              points: [selectedPoint, terminals],
                               color: AppColors.brownOrInk,
                               strokeWidth: 3,
                               pattern: StrokePattern.dashed(segments: const [9, 7]),
@@ -256,15 +269,14 @@ class _MapHero extends StatelessWidget {
                         markers: [
                           for (final r in located)
                             Marker(
+                              key: Key('search-pin-${r.slug}'),
                               point: LatLng(r.location!.lat, r.location!.lng),
-                              width: 18,
-                              height: 18,
-                              child: Container(
-                                decoration: BoxDecoration(
-                                  color: r.slug == featured?.slug ? AppColors.accent : Colors.white,
-                                  shape: BoxShape.circle,
-                                  border: Border.all(color: r.slug == featured?.slug ? Colors.white : AppColors.brownOrInk, width: 2.5),
-                                ),
+                              width: 44,
+                              height: 44,
+                              child: _ParkingPin(
+                                result: r,
+                                selected: r.slug == selected?.slug,
+                                onTap: () => context.read<SearchBloc>().add(SearchParkingSelected(r.slug)),
                               ),
                             ),
                           if (terminals != null)
@@ -274,6 +286,14 @@ class _MapHero extends StatelessWidget {
                               height: 34,
                               child: Center(child: _FloatingPill(text: 'search.map_airport'.tr(), dark: true)),
                             ),
+                          for (final s in state.movingShuttles)
+                            Marker(
+                              key: Key('search-shuttle-${s.id}'),
+                              point: LatLng(s.position!.lat, s.position!.lng),
+                              width: 36,
+                              height: 36,
+                              child: _ShuttleMarker(shuttle: s, parkingTitle: titles[s.parking] ?? s.parking, heading: state.headings[s.id]),
+                            ),
                         ],
                       ),
                     ],
@@ -281,36 +301,49 @@ class _MapHero extends StatelessWidget {
                   Positioned(
                     left: 12,
                     top: 12,
-                    child: _FloatingPill(key: const Key('search-count'), text: countLabel, count: count > 0 ? '$count' : null),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        _FloatingPill(key: const Key('search-count'), text: countLabel, count: count > 0 ? '$count' : null),
+                        if (live != null) ...[
+                          const SizedBox(height: 8),
+                          _FloatingPill(
+                            key: const Key('search-shuttles'),
+                            text: shuttlesLabel,
+                            leading: ShuttleIcon(tone: shuttleCount > 0 ? ShuttleTone.terminal : ShuttleTone.unknown, size: 18),
+                          ),
+                        ],
+                      ],
+                    ),
                   ),
-                  if (featured != null && (featured.distanceKm != null || featured.shuttleMinutes != null))
+                  if (selected != null && (selected.distanceKm != null || selected.shuttleMinutes != null))
                     Positioned(
                       right: 12,
                       top: 12,
                       child: _FloatingPill(
                         key: const Key('search-distance'),
-                        text: featured.distanceKm != null && featured.shuttleMinutes != null
-                            ? 'search.km_shuttle'.tr(args: [_km(featured.distanceKm!), '${featured.shuttleMinutes}'])
-                            : featured.distanceKm != null
-                            ? 'search.km'.tr(args: [_km(featured.distanceKm!)])
-                            : 'highlights.shuttle_min'.tr(args: ['${featured.shuttleMinutes}']),
+                        text: selected.distanceKm != null && selected.shuttleMinutes != null
+                            ? 'search.km_shuttle'.tr(args: [_km(selected.distanceKm!), '${selected.shuttleMinutes}'])
+                            : selected.distanceKm != null
+                            ? 'search.km'.tr(args: [_km(selected.distanceKm!)])
+                            : 'highlights.shuttle_min'.tr(args: ['${selected.shuttleMinutes}']),
                       ),
                     ),
                   Positioned(
                     right: 6,
-                    bottom: featured == null ? 6 : 118,
+                    bottom: selected == null ? 6 : 118,
                     child: Container(
                       padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 1),
                       color: Colors.white.withValues(alpha: 0.8),
                       child: Text(AppConstants.ignAttribution, style: AppText.body(size: 10, color: AppColors.muted)),
                     ),
                   ),
-                  if (featured != null)
+                  if (selected != null)
                     Positioned(
                       left: 12,
                       right: 12,
                       bottom: 12,
-                      child: _FeaturedCard(result: featured, state: state),
+                      child: _FeaturedCard(result: selected, state: state),
                     ),
                 ],
               ),
@@ -324,15 +357,89 @@ class _MapHero extends StatelessWidget {
   static String _km(double km) => km < 10 ? km.toStringAsFixed(1).replaceAll('.', ',') : km.round().toString();
 }
 
+/// A parking's pin (K-A): a tappable dot, orange when chosen, white when not, hollow when full.
+class _ParkingPin extends StatelessWidget {
+  const _ParkingPin({required this.result, required this.selected, required this.onTap});
+  final SearchResultModel result;
+  final bool selected;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final r = result;
+    final state = r.bookable ? formatShortEuros(r.priceCents!) : 'search.pin_full'.tr();
+    return Semantics(
+      button: true,
+      selected: selected,
+      label: 'search.parking_pin'.tr(args: [r.title, state]),
+      excludeSemantics: true,
+      child: GestureDetector(
+        behavior: HitTestBehavior.opaque,
+        onTap: onTap,
+        child: Center(
+          child: AnimatedContainer(
+            duration: const Duration(milliseconds: 150),
+            width: selected ? 22 : 18,
+            height: selected ? 22 : 18,
+            decoration: BoxDecoration(
+              color: selected ? AppColors.accent : Colors.white,
+              shape: BoxShape.circle,
+              border: Border.all(color: selected ? Colors.white : (r.bookable ? AppColors.brownOrInk : AppColors.muted), width: 2.5),
+              boxShadow: const [BoxShadow(color: Color(0x33000000), blurRadius: 6, offset: Offset(0, 2))],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+/// A shuttle on the road (K-A, then I-C): the minibus pictogram turned the way it drives, orange to
+/// the terminal and peach to the airport, with a pulsing halo; its label names the parking, the
+/// direction and the age of the position — never the driver.
+class _ShuttleMarker extends StatelessWidget {
+  const _ShuttleMarker({required this.shuttle, required this.parkingTitle, this.heading});
+  final LiveShuttleModel shuttle;
+  final String parkingTitle;
+  final double? heading;
+
+  @override
+  Widget build(BuildContext context) {
+    final age = shuttle.positionAgeSeconds;
+    final label = [
+      'search.shuttle_marker'.tr(args: [parkingTitle]),
+      shuttle.dropoff ? 'search.shuttle_to_terminal'.tr() : 'search.shuttle_to_airport'.tr(),
+      if (age != null) age < 60 ? 'search.shuttle_age_s'.tr(args: ['$age']) : 'search.shuttle_age_min'.tr(args: ['${(age / 60).round()}']),
+    ].join(' · ');
+    return Semantics(
+      label: label,
+      excludeSemantics: true,
+      child: Tooltip(
+        message: label,
+        child: Stack(
+          alignment: Alignment.center,
+          children: [
+            LiveDot(color: shuttleColour(shuttleToneOf(shuttle.direction, hasPosition: true)), size: 36),
+            ShuttlePin(tone: shuttleToneOf(shuttle.direction, hasPosition: true), heading: heading, size: 32),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
 class _FloatingPill extends StatelessWidget {
-  const _FloatingPill({super.key, required this.text, this.count, this.dark = false});
+  const _FloatingPill({super.key, required this.text, this.count, this.dark = false, this.leading});
   final String text;
   final String? count;
   final bool dark;
 
+  /// I-C: the shuttle pictogram before the text.
+  final Widget? leading;
+
   @override
   Widget build(BuildContext context) => Container(
-    padding: EdgeInsets.fromLTRB(count == null ? 12 : 6, 6, 12, 6),
+    padding: EdgeInsets.fromLTRB(count == null && leading == null ? 12 : 6, 6, 12, 6),
     decoration: BoxDecoration(
       color: dark ? AppColors.brownOrInk : Colors.white,
       borderRadius: AppRadius.pill,
@@ -350,13 +457,15 @@ class _FloatingPill extends StatelessWidget {
           ),
           const SizedBox(width: 7),
         ],
+        if (leading != null) ...[SizedBox(width: 24, height: 24, child: Center(child: leading)), const SizedBox(width: 4)],
         Text(text, style: AppText.strong(size: 12, color: dark ? Colors.white : AppColors.ink)),
       ],
     ),
   );
 }
 
-/// The one orange card: the best offer of the stay, opening its page.
+/// The one orange card: the chosen parking of the stay (the cheapest by default), opening its
+/// page; dark, with "Complet à ces dates", when the chosen pin has no place.
 class _FeaturedCard extends StatelessWidget {
   const _FeaturedCard({required this.result, required this.state});
   final SearchResultModel result;
@@ -367,12 +476,13 @@ class _FeaturedCard extends StatelessWidget {
     final r = result;
     final valet = r.services.contains('valet') ? 'search.featured_valet'.tr() : 'search.featured_self'.tr();
     final sub = r.shuttleMinutes == null ? 'search.featured_sub_no_shuttle'.tr(args: [valet]) : 'search.featured_sub'.tr(args: [valet, '${r.shuttleMinutes}']);
+    final tone = r.bookable ? AppColors.accent : AppColors.brownOrInk;
     return Semantics(
       button: true,
       label: 'search.see_parking'.tr(args: [r.title]),
       excludeSemantics: true,
       child: Material(
-        color: AppColors.accent,
+        color: tone,
         borderRadius: AppRadius.card,
         child: InkWell(
           key: const Key('search-featured'),
@@ -387,7 +497,7 @@ class _FeaturedCard extends StatelessWidget {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
-                        'search.featured_from'.tr(args: [formatShortEuros(r.priceCents!)]),
+                        r.bookable ? 'search.featured_from'.tr(args: [formatShortEuros(r.priceCents!)]) : 'search.featured_full'.tr(),
                         style: AppText.strong(size: 12, color: Colors.white.withValues(alpha: 0.85)),
                       ),
                       const SizedBox(height: 2),
@@ -411,7 +521,7 @@ class _FeaturedCard extends StatelessWidget {
                   width: 40,
                   height: 40,
                   decoration: const BoxDecoration(color: Colors.white, shape: BoxShape.circle),
-                  child: const Icon(Icons.north_east_rounded, color: AppColors.accent, size: 20),
+                  child: Icon(Icons.north_east_rounded, color: tone, size: 20),
                 ),
               ],
             ),

@@ -29,6 +29,9 @@ abstract class PublicClient {
     @Query('returnAt') String? returnAt,
   });
 
+  @GET('public/airports/{slug}/live')
+  Future<AirportLiveModel> live({@Path('slug') required String slug});
+
   @GET('public/payments/config')
   Future<PaymentsConfigModel> paymentsConfig();
 }

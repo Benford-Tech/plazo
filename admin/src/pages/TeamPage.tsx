@@ -91,7 +91,7 @@ function MemberActions({ member }: { member: Staff }) {
   );
 }
 
-const emptyMember = { name: "", email: "", phone: "", role: "agent" as StaffRole, password: "" };
+const emptyMember = { firstName: "", lastName: "", email: "", phone: "", role: "agent" as StaffRole, password: "" };
 
 function CreateStaffForm() {
   const queryClient = useQueryClient();
@@ -124,7 +124,8 @@ function CreateStaffForm() {
       }}
     >
       <div className="grid gap-4 sm:grid-cols-2">
-        <FormField id="new-name" label={t.name} required value={form.name} onChange={set("name")} error={fieldErrors.name} />
+        <FormField id="new-first-name" label={t.firstName} required maxLength={60} value={form.firstName} onChange={set("firstName")} error={fieldErrors.firstName} />
+        <FormField id="new-last-name" label={t.lastName} required maxLength={60} value={form.lastName} onChange={set("lastName")} error={fieldErrors.lastName} />
         <FormField id="new-email" label={t.email} type="email" required value={form.email} onChange={set("email")} error={fieldErrors.email} />
         <FormField id="new-phone" label={t.phone} type="tel" value={form.phone} onChange={set("phone")} error={fieldErrors.phone} />
         <div className="space-y-1.5">

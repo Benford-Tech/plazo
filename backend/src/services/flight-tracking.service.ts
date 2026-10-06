@@ -1,4 +1,5 @@
 import { Container, Service } from 'typedi';
+import { AWAY_STATUSES } from '@/domain/reservation';
 import { flightTrackingSettings, FlightProviderName, PRODUCT_NAME } from '@/config';
 import prisma, { FlightLandedSource, Prisma, Reservation } from '@/database';
 import { manageToken } from '@/domain/booking';
@@ -50,7 +51,7 @@ const LOOKUP_TIMEOUT_MS = 6000;
 /** At most this many bookings asked to the provider per refresh (the free plans are small). */
 const MAX_LOOKUPS_PER_RUN = 50;
 
-const PICKUP_STATUSES = ['arrived', 'shuttled_out', 'return_requested'] as const;
+const PICKUP_STATUSES = AWAY_STATUSES;
 
 /** AeroDataBox "Flight status by flight number and date" (RapidAPI, or API.Market with another base URL). */
 export class AeroDataBoxProvider implements FlightTrackingProvider {
@@ -380,8 +381,9 @@ export class FlightTrackingService {
         { data: { type: 'flight', event: 'landed', reservationId }, collapseId: `flight-${reservationId}` },
       );
     }
-    // The traveller who tapped "J'ai atterri" is in the app already: no SMS for them.
-    if (source !== 'tracking' || booking.channel !== 'plazo' || !booking.parking.listing) return;
+    // The traveller who tapped "J'ai atterri" is in the app already: no SMS for them. B (06/10/2026): every
+    // channel gets it (phone, comparator…), as long as the number is a mobile and the parking is on Plazo.
+    if (source !== 'tracking' || !booking.parking.listing) return;
     const smsClaim = await prisma.reservation.updateMany({ where: { id: reservationId, landingSmsAt: null }, data: { landingSmsAt: now } });
     if (!smsClaim.count) return;
     const [point] = await prisma.$queryRaw<{ label: string | null; instructions: string | null }[]>`
@@ -395,7 +397,7 @@ export class FlightTrackingService {
       text: landedSms({
         productName: PRODUCT_NAME,
         parkingName: booking.parking.listing.title,
-        meetingLabel: point?.label ?? null,
+        meetingLabel: point?.label ?? booking.parking.listing.airport.name,
         instructions: point?.instructions ?? null,
         phone: booking.parking.listing.contactPhone,
         manageUrl: url,

@@ -18,6 +18,13 @@ class ReturnLandedDeclared extends ReturnEvent {
   const ReturnLandedDeclared();
 }
 
+/// E (06/10/2026): "Mon vol a du retard", "Bagage perdu", or a word for the parking.
+class ReturnNoticeSent extends ReturnEvent {
+  const ReturnNoticeSent(this.kind, {this.text});
+  final String kind;
+  final String? text;
+}
+
 class ReturnTicked extends ReturnEvent {
   const ReturnTicked();
 }

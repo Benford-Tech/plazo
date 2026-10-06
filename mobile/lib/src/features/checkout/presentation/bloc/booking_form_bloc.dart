@@ -158,6 +158,9 @@ class BookingFormBloc extends Bloc<BookingFormEvent, BookingFormState> {
         passengers: draft.passengers,
         acceptTerms: draft.acceptTerms,
         idempotencyKey: _key,
+        vehicleModel: draft.vehicleModel,
+        vehicleColour: draft.vehicleColour,
+        customerNote: draft.customerNote,
       ),
     );
     result.fold(

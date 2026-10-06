@@ -13,6 +13,7 @@ import '../../../../shared/theme/theme.dart';
 import '../../../../shared/widgets/app_card.dart';
 import '../../../../shared/widgets/gradient_button.dart';
 import '../../../../shared/widgets/ign_map.dart';
+import '../../../../shared/widgets/shuttle_icon.dart';
 import '../../../../shared/widgets/live_dot.dart';
 import '../../../../shared/widgets/live_pill.dart';
 import '../../../arrival/data/models/arrival_model.dart';
@@ -101,7 +102,120 @@ class ReturnBlock extends StatelessWidget {
           key: const Key('at-point-done'),
           style: AppText.muted(),
         ),
+      // E (06/10/2026): "Mon vol a du retard", "Bagage perdu", or a word — the staff hear at once.
+      _NoticeChips(data: data, busy: state.actionState.isProcessing),
     ];
+  }
+}
+
+/// E: the return-day notices, and the one already sent.
+class _NoticeChips extends StatefulWidget {
+  const _NoticeChips({required this.data, required this.busy});
+  final TravellerReturnModel data;
+  final bool busy;
+
+  @override
+  State<_NoticeChips> createState() => _NoticeChipsState();
+}
+
+class _NoticeChipsState extends State<_NoticeChips> {
+  bool _other = false;
+  final _text = TextEditingController();
+
+  @override
+  void dispose() {
+    _text.dispose();
+    super.dispose();
+  }
+
+  void _send(String kind, {String? text}) {
+    context.read<ReturnBloc>().add(ReturnNoticeSent(kind, text: text));
+    setState(() {
+      _other = false;
+      _text.clear();
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final notice = widget.data.notice;
+    Widget chip(String key, String kind, String label) => ActionChip(
+      key: Key(key),
+      label: Text(label, style: AppText.body(size: 14, weight: 600, color: AppColors.dark)),
+      shape: const StadiumBorder(side: BorderSide(color: AppColors.accent)),
+      backgroundColor: Colors.white,
+      onPressed: widget.busy ? null : () => _send(kind),
+    );
+    return AppCard(
+      key: const Key('return-notice'),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          if (notice != null && !_other) ...[
+            Row(
+              children: [
+                const Icon(Icons.check_circle_rounded, color: AppColors.peach, size: 18),
+                const SizedBox(width: 6),
+                Expanded(
+                  child: Text(
+                    'return_day.noticed'.tr(args: [_label(notice), hhmm(notice.at)]),
+                    key: const Key('return-notice-done'),
+                    style: AppText.body(size: 14),
+                  ),
+                ),
+              ],
+            ),
+            TextButton(onPressed: () => setState(() => _other = true), child: Text('return_day.notice_again'.tr())),
+          ] else ...[
+            Text('return_day.notice_title'.tr(), style: AppText.strong()),
+            const SizedBox(height: 4),
+            Text('return_day.notice_help'.tr(), style: AppText.muted()),
+            const SizedBox(height: 8),
+            Wrap(
+              spacing: 8,
+              runSpacing: 8,
+              children: [
+                chip('notice-flight-delayed', 'flight_delayed', 'return_day.notice_flight_delayed'.tr()),
+                chip('notice-luggage', 'luggage', 'return_day.notice_luggage'.tr()),
+                ActionChip(
+                  key: const Key('notice-other'),
+                  label: Text('return_day.notice_other'.tr(), style: AppText.body(size: 14, weight: 600, color: AppColors.dark)),
+                  shape: const StadiumBorder(side: BorderSide(color: AppColors.line)),
+                  backgroundColor: Colors.white,
+                  onPressed: widget.busy ? null : () => setState(() => _other = !_other),
+                ),
+              ],
+            ),
+            if (_other) ...[
+              const SizedBox(height: 8),
+              TextField(
+                key: const Key('notice-text'),
+                controller: _text,
+                maxLength: 200,
+                decoration: InputDecoration(hintText: 'return_day.notice_other_hint'.tr()),
+                onSubmitted: (v) => v.trim().isEmpty ? null : _send('other', text: v),
+              ),
+              Align(
+                alignment: Alignment.centerRight,
+                child: TextButton(
+                  key: const Key('notice-send'),
+                  onPressed: widget.busy ? null : () => _text.text.trim().isEmpty ? null : _send('other', text: _text.text),
+                  child: Text('return_day.notice_send'.tr()),
+                ),
+              ),
+            ],
+          ],
+        ],
+      ),
+    );
+  }
+
+  static String _label(ReturnNoticeModel n) {
+    final text = n.text;
+    if (n.kind == 'other' && text != null) return '« $text »';
+    final key = 'return_day.notice_kind.${n.kind}';
+    final base = key.tr();
+    return text != null ? '$base · « $text »' : base;
   }
 }
 
@@ -283,7 +397,7 @@ class _ShuttleLive extends StatelessWidget {
       children: _spaced([
         Row(
           children: [
-            const LiveDot(color: AppColors.peach),
+            ShuttleIcon(tone: shuttleToneOf(shuttle.direction, hasPosition: position != null), size: 22),
             const SizedBox(width: 6),
             Expanded(
               child: Text('return_day.shuttle_live'.tr(), style: AppText.strong(size: 16, color: AppColors.peach)),

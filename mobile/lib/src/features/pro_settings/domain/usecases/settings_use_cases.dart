@@ -15,14 +15,15 @@ class GetTeamUseCase with UseCase<List<TeamMemberModel>, NoParams> {
 }
 
 class NewStaffParams extends Equatable {
-  const NewStaffParams({required this.name, required this.email, this.phone, required this.role, required this.password});
-  final String name;
+  const NewStaffParams({required this.firstName, required this.lastName, required this.email, this.phone, required this.role, required this.password});
+  final String firstName;
+  final String lastName;
   final String email;
   final String? phone;
   final String role;
   final String password;
   @override
-  List<Object?> get props => [name, email, phone, role, password];
+  List<Object?> get props => [firstName, lastName, email, phone, role, password];
 }
 
 class CreateStaffUseCase with UseCase<TeamMemberModel, NewStaffParams> {
@@ -30,7 +31,7 @@ class CreateStaffUseCase with UseCase<TeamMemberModel, NewStaffParams> {
   final SettingsRepository _r;
   @override
   Future<Either<Failure, TeamMemberModel>> call(NewStaffParams p) =>
-      _r.createStaff(name: p.name, email: p.email, phone: p.phone, role: p.role, password: p.password);
+      _r.createStaff(firstName: p.firstName, lastName: p.lastName, email: p.email, phone: p.phone, role: p.role, password: p.password);
 }
 
 class UpdateStaffParams extends Equatable {

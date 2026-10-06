@@ -18,8 +18,11 @@ class ProReservationStarted extends ProReservationEvent {
 }
 
 class ProReservationStatusChanged extends ProReservationEvent {
-  const ProReservationStatusChanged(this.status);
+  const ProReservationStatusChanged(this.status, {this.note});
   final String status;
+
+  /// The handover's remark (damage, dispute…), kept with the booking.
+  final String? note;
 }
 
 class ProReservationReplaced extends ProReservationEvent {
@@ -45,13 +48,15 @@ abstract class ProReservationState with _$ProReservationState {
 }
 
 /// Allowed status changes (backend/src/domain/reservation.ts), in the order the buttons show.
+/// Since 06/10/2026 the API serves them (`ReservationModel.nextStatuses`); this table is the fallback.
 const Map<String, List<String>> statusTransitions = {
   'pending_payment': [],
   'upcoming': ['arrived', 'cancelled', 'no_show'],
-  'arrived': ['shuttled_out', 'return_requested', 'returned', 'upcoming'],
-  'shuttled_out': ['return_requested', 'returned', 'arrived'],
-  'return_requested': ['returned', 'shuttled_out'],
-  'returned': ['return_requested'],
+  'arrived': ['shuttled_out', 'return_requested', 'back_at_parking', 'returned', 'upcoming'],
+  'shuttled_out': ['return_requested', 'back_at_parking', 'returned', 'arrived'],
+  'return_requested': ['back_at_parking', 'returned', 'shuttled_out'],
+  'back_at_parking': ['returned', 'return_requested'],
+  'returned': ['back_at_parking'],
   'cancelled': ['upcoming'],
   'no_show': ['upcoming'],
 };
@@ -83,7 +88,7 @@ class ProReservationBloc extends Bloc<ProReservationEvent, ProReservationState> 
     final current = state.reservation;
     if (current == null) return;
     emit(state.copyWith(actionState: ViewState.processing, errorCode: null, notice: null));
-    final result = await _changeStatus(ChangeStatusParams(id: current.id, status: event.status));
+    final result = await _changeStatus(ChangeStatusParams(id: current.id, status: event.status, note: event.note));
     result.fold(
       (f) => emit(state.copyWith(actionState: ViewState.error, errorCode: _code(f))),
       (r) => emit(state.copyWith(actionState: ViewState.success, reservation: r, notice: r.status)),

@@ -4,7 +4,9 @@ import { CancelForm } from "@/components/CancelForm";
 import { FlightForm } from "@/components/FlightForm";
 import { LookupForm } from "@/components/LookupForm";
 import { Plate } from "@/components/Plate";
+import { ArrivalBlock } from "@/components/ArrivalBlock";
 import { ReturnLive } from "@/components/ReturnLive";
+import { StayShuttles } from "@/components/StayShuttles";
 import { StatusBadge } from "@/components/StatusBadge";
 import { api, ApiError } from "@/lib/api";
 import { cancelAction, changeFlightAction, lookupAction } from "@/lib/actions";
@@ -116,7 +118,7 @@ export default async function ManageBookingPage({ params, searchParams }: PagePr
     ` ${fr.manage.contactParkingDesk}`
   );
   // The vehicle is at the parking: the live return block (the landing, the shuttle, the car's spot).
-  const onSite = b.status === "arrived" || b.status === "shuttled_out" || b.status === "return_requested";
+  const onSite = b.status === "arrived" || b.status === "shuttled_out" || b.status === "return_requested" || b.status === "back_at_parking";
   let returnState: TravellerReturn | null = null;
   if (onSite) {
     try {
@@ -155,6 +157,9 @@ export default async function ManageBookingPage({ params, searchParams }: PagePr
 
       <main className="mx-auto flex w-full max-w-[720px] flex-col gap-[18px] px-4 py-[18px] md:pb-12">
         {onSite && <ReturnLive reference={b.reference} token={token} initial={returnState} />}
+        {/* D (06/10/2026): the app's day-J gestures on the site — the blocks hide themselves outside their window. */}
+        {active && <ArrivalBlock reference={b.reference} token={token} />}
+        {active && <StayShuttles reference={b.reference} token={token} />}
         {b.status === "cancelled" && (
           <p role="status" className="rounded-[22px] bg-danger-bg p-4 font-semibold text-danger">
             {justCancelled ? (refunded ? t.manage.cancelledNow : fr.manage.cancelledNow) : refunded ? fr.manage.cancelledRefunded : fr.manage.cancelled}
@@ -182,7 +187,13 @@ export default async function ManageBookingPage({ params, searchParams }: PagePr
             <Row label={fr.manage.flight}>{b.returnFlight ?? <span className="font-normal text-soft">{fr.manage.noFlight}</span>}</Row>
             <Row label={fr.manage.vehicle}>
               <Plate plate={b.plate} size="sm" />
+              {(b.vehicle?.model || b.vehicle?.colour) && <span className="block font-normal text-soft">{fr.manage.vehicleDetails(b.vehicle.model, b.vehicle.colour)}</span>}
             </Row>
+            {b.customerNote && (
+              <Row label={fr.manage.message}>
+                <span className="font-normal">{b.customerNote}</span>
+              </Row>
+            )}
             <Row label={fr.manage.passengers}>{b.passengers}</Row>
             {total && (
               <Row label={totalLabel}>

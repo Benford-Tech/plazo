@@ -49,6 +49,7 @@ class ArrivalBloc extends Bloc<ArrivalEvent, ArrivalState> {
     on<ArrivalAnnounceToggled>((event, emit) => emit(state.copyWith(showAnnounceOptions: !state.showAnnounceOptions)));
     on<ArrivalAnnounced>(_onAnnounced);
     on<ArrivalAtMeetingPointRequested>(_onAtMeetingPoint);
+    on<ArrivalNoteChanged>((e, emit) => emit(state.copyWith(note: e.note)));
     on<ArrivalStopRequested>(_onStop);
     on<ArrivalTicked>(_onTick);
     on<ArrivalTrackingFailed>(_onTrackingFailed);
@@ -70,6 +71,9 @@ class ArrivalBloc extends Bloc<ArrivalEvent, ArrivalState> {
   GeoPosition? _pending;
   DateTime? _lastSentAt;
   bool _sending = false;
+
+  /// The typed word, or null when empty (the params then equal the ones without a note).
+  String? get _noteOrNull => state.note.trim().isEmpty ? null : state.note.trim();
 
   static String _code(Failure f) => f.code ?? (f.statusCode == null ? 'network' : 'generic');
 
@@ -115,7 +119,7 @@ class ArrivalBloc extends Bloc<ArrivalEvent, ArrivalState> {
       emit(state.copyWith(actionState: ViewState.idle, locationProblem: access));
       return;
     }
-    final result = await _start(StartSharingParams(reference: reference, kind: kind));
+    final result = await _start(StartSharingParams(reference: reference, kind: kind, note: _noteOrNull));
     result.fold(
       (failure) => emit(state.copyWith(actionState: ViewState.error, errorCode: _code(failure))),
       (arrival) {
@@ -165,7 +169,7 @@ class ArrivalBloc extends Bloc<ArrivalEvent, ArrivalState> {
     if (reference == null || kind == null) return;
     _stopTracking();
     emit(state.copyWith(actionState: ViewState.processing, tracking: false, lastPosition: null, errorCode: null));
-    final result = await _announce(AnnounceParams(reference: reference, kind: kind, minutes: event.minutes));
+    final result = await _announce(AnnounceParams(reference: reference, kind: kind, minutes: event.minutes, note: _noteOrNull));
     result.fold(
       (failure) => emit(state.copyWith(actionState: ViewState.error, errorCode: _code(failure))),
       (arrival) => emit(state.copyWith(actionState: ViewState.success, arrival: arrival, showAnnounceOptions: false)),
@@ -187,7 +191,7 @@ class ArrivalBloc extends Bloc<ArrivalEvent, ArrivalState> {
       }
     }
     _stopTracking();
-    final result = await _atMeetingPoint(AtMeetingPointParams(reference: reference, kind: kind, position: position));
+    final result = await _atMeetingPoint(AtMeetingPointParams(reference: reference, kind: kind, position: position, note: _noteOrNull));
     result.fold(
       (failure) => emit(state.copyWith(actionState: ViewState.error, errorCode: _code(failure))),
       (arrival) => emit(state.copyWith(actionState: ViewState.success, arrival: arrival, tracking: false, lastPosition: null)),

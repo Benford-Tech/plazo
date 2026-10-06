@@ -22,6 +22,10 @@ abstract class PublicBookingModel with _$PublicBookingModel {
     required String plate,
     String? returnFlight,
 
+    /// E (06/10/2026): the traveller's message for the parking, and their vehicle.
+    String? customerNote,
+    BookingVehicleModel? vehicle,
+
     /// Outbound flight (V-A) and, when tracked, when the shuttle to the terminal leaves (local).
     String? departureFlight,
     OutboundFlightModel? outbound,
@@ -142,6 +146,9 @@ class BookingInput {
     required this.passengers,
     required this.acceptTerms,
     this.idempotencyKey,
+    this.customerNote,
+    this.vehicleModel,
+    this.vehicleColour,
   });
 
   final String airport;
@@ -158,6 +165,11 @@ class BookingInput {
   final bool acceptTerms;
   final String? idempotencyKey;
 
+  /// E (06/10/2026): a message for the parking, and the vehicle so the valet spots it.
+  final String? customerNote;
+  final String? vehicleModel;
+  final String? vehicleColour;
+
   Map<String, dynamic> toJson() => {
     'airport': airport,
     'parking': parking,
@@ -172,7 +184,18 @@ class BookingInput {
     'passengers': passengers,
     'acceptTerms': acceptTerms,
     if (idempotencyKey != null) 'idempotencyKey': idempotencyKey,
+    if (customerNote != null && customerNote!.trim().isNotEmpty) 'customerNote': customerNote!.trim(),
+    if (vehicleModel != null && vehicleModel!.trim().isNotEmpty) 'vehicleModel': vehicleModel!.trim(),
+    if (vehicleColour != null && vehicleColour!.trim().isNotEmpty) 'vehicleColour': vehicleColour!.trim(),
   };
+}
+
+/// E (06/10/2026): the vehicle as the traveller described it ("Peugeot 308", "grise").
+@freezed
+abstract class BookingVehicleModel with _$BookingVehicleModel {
+  const factory BookingVehicleModel({String? model, String? colour}) = _BookingVehicleModel;
+
+  factory BookingVehicleModel.fromJson(Map<String, dynamic> json) => _$BookingVehicleModelFromJson(json);
 }
 
 /// The outbound flight as tracked, and the planned departure of the shuttle to the terminal (local "YYYY-MM-DDTHH:mm").
