@@ -4,7 +4,9 @@ import { CancelForm } from "@/components/CancelForm";
 import { FlightForm } from "@/components/FlightForm";
 import { LookupForm } from "@/components/LookupForm";
 import { Plate } from "@/components/Plate";
+import { ArrivalBlock } from "@/components/ArrivalBlock";
 import { ReturnLive } from "@/components/ReturnLive";
+import { StayShuttles } from "@/components/StayShuttles";
 import { StatusBadge } from "@/components/StatusBadge";
 import { api, ApiError } from "@/lib/api";
 import { cancelAction, changeFlightAction, lookupAction } from "@/lib/actions";
@@ -155,6 +157,9 @@ export default async function ManageBookingPage({ params, searchParams }: PagePr
 
       <main className="mx-auto flex w-full max-w-[720px] flex-col gap-[18px] px-4 py-[18px] md:pb-12">
         {onSite && <ReturnLive reference={b.reference} token={token} initial={returnState} />}
+        {/* D (06/10/2026): the app's day-J gestures on the site — the blocks hide themselves outside their window. */}
+        {active && <ArrivalBlock reference={b.reference} token={token} />}
+        {active && <StayShuttles reference={b.reference} token={token} />}
         {b.status === "cancelled" && (
           <p role="status" className="rounded-[22px] bg-danger-bg p-4 font-semibold text-danger">
             {justCancelled ? (refunded ? t.manage.cancelledNow : fr.manage.cancelledNow) : refunded ? fr.manage.cancelledRefunded : fr.manage.cancelled}

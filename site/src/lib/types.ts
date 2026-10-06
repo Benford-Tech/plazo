@@ -176,6 +176,54 @@ export interface SiteConfig {
 }
 
 /** GET /api/public/bookings/:ref/return (the app's return day), read live by the booking page. */
+/** GET /public/bookings/:ref/arrival (D, 06/10/2026): the "Prévenir de mon arrivée" block, as in the app. */
+export type ArrivalKind = "outbound" | "return";
+export type ArrivalSignalState = "sharing" | "announced" | "at_meeting_point" | "ended";
+export interface TravellerArrival {
+  reference: string;
+  /** The moment offered now (open) or the next one (opensAt); null when nothing is left. */
+  moment: { kind: ArrivalKind; open: boolean; opensAt: string; closesAt: string } | null;
+  meetingPoint: { lat: number; lng: number; source: "parking" | "return_point" | "airport"; label: string | null; instructions?: string | null; photoUrl?: string | null } | null;
+  signal: {
+    kind: ArrivalKind;
+    state: ArrivalSignalState;
+    endReason: string | null;
+    startedAt: string;
+    expiresAt: string;
+    secondsLeft: number;
+    distanceM: number | null;
+    etaMinutes: number | null;
+    etaAt: string | null;
+    announcedMinutes: number | null;
+    atMeetingPointAt: string | null;
+    positionUpdatedAt: string | null;
+  } | null;
+  rules: { maxMinutes: number; arrivedWithinMeters: number; positionIntervalSeconds: number; announceMinutes: number[] };
+}
+
+/** GET /public/bookings/:ref/shuttles (S-A): the parking's shuttles on the road during the stay. */
+export interface StayShuttles {
+  /** null: outside the arrival day → return day window (the block is hidden). */
+  phase: "arrival" | "stay" | "return" | null;
+  serverTime: string;
+  shuttles: TravellerShuttle[];
+}
+
+export interface TravellerShuttle {
+  tripId: string;
+  direction: "pickup" | "dropoff";
+  mine: boolean;
+  startedAt: string;
+  vehicle: { model: string | null; colour: string | null; plate: string | null };
+  driverFirstName: string;
+  position: LatLng | null;
+  positionAgeSeconds: number | null;
+  distanceM: number | null;
+  etaMinutes: number | null;
+  etaAt: string | null;
+  destination: { kind: "parking" | "meeting_point"; lat: number; lng: number; label: string | null } | null;
+}
+
 export interface TravellerReturn {
   reference: string;
   status: BookingStatus;
@@ -192,7 +240,7 @@ export interface TravellerReturn {
     gate: string | null;
   };
   flightTracked: boolean;
-  meetingPoint: { lat: number; lng: number; label: string | null; instructions: string | null } | null;
+  meetingPoint: { lat: number; lng: number; label: string | null; instructions: string | null; photoUrl?: string | null } | null;
   atMeetingPointAt: string | null;
   shuttle: {
     tripId: string;

@@ -68,6 +68,25 @@ describe("ReturnLive", () => {
     vi.unstubAllGlobals();
   });
 
+  it("« J’ai atterri » sans vol suivi, puis les consignes et l’itinéraire du point de rendez-vous", async () => {
+    const untracked: TravellerReturn = { ...base, flight: { ...base.flight, status: null }, flightTracked: false, meetingPoint: { ...base.meetingPoint!, instructions: "Sortie 2, sous l’horloge", photoUrl: "https://example.com/rdv.jpg" } };
+    const landed = { ...untracked, flight: { ...untracked.flight, status: "landed", landedAt: "2026-10-05T12:00:00Z", landedSource: "traveller" } };
+    const fetchMock = vi.fn().mockResolvedValue({ ok: true, json: async () => landed });
+    vi.stubGlobal("fetch", fetchMock);
+    render(<ReturnLive reference="R7KQ2M" token="tok" initial={untracked} />);
+    expect(screen.queryByTestId("meeting-help")).not.toBeInTheDocument();
+    await act(async () => {
+      screen.getByTestId("landed-button").click();
+      await vi.advanceTimersByTimeAsync(0);
+    });
+    expect(fetchMock).toHaveBeenCalledWith("/api/public/bookings/R7KQ2M/return/landed", expect.objectContaining({ method: "POST" }));
+    expect(screen.queryByTestId("landed-button")).not.toBeInTheDocument();
+    expect(screen.getByTestId("meeting-help")).toHaveTextContent("Consignes du parking : Sortie 2, sous l’horloge");
+    expect(screen.getByRole("img", { name: "Photo du point de rendez-vous" })).toHaveAttribute("src", "https://example.com/rdv.jpg");
+    expect(screen.getByRole("link", { name: /Itinéraire vers le point de rendez-vous/ })).toHaveAttribute("href", expect.stringContaining("45.72%2C5.08"));
+    vi.unstubAllGlobals();
+  });
+
   it("routes to the recorded GPS position of the car when there is one", async () => {
     const car = { lat: 45.7301, lng: 5.0502, accuracyM: 6, at: "2026-10-06T07:15:00Z", by: "staff" as const, note: "Rangée 3" };
     vi.stubGlobal("fetch", vi.fn().mockResolvedValue({ ok: true, json: async () => base }));

@@ -46,6 +46,9 @@ et affectation des véhicules, navette au retour.
   trajet », position partagée avec les passagers seulement, « Clients récupérés »), point de rendez-vous (carte, libellé,
   consignes, photo) et navettes dans l'espace pro, « Navette en route (Karim) » sur le planning. Reste : « bagages
   récupérés / pris en charge » détaillés, regroupement par vague, SMS au voyageur sans réservation Plazo.
+  **Le site au niveau de l'app le jour J (D, 06/10/2026)** : sur « Ma réservation », « Prévenir de mon arrivée » (position du
+  navigateur partagée avec consentement, « J'arrive dans 10 / 20 / 30 min », « Je suis au point de rendez-vous »), bloc
+  « Navette » du séjour, « J'ai atterri » sans vol suivi, consignes, photo et itinéraire du point de rendez-vous.
 - [ ] **Jalon 6 — App mobile (Flutter)** (commencé, `mobile/`) : fait — **« Prévenir de son arrivée »** (maquette
   validée) : le voyageur ouvre sa réservation par le lien reçu ou par référence + email, partage sa position jusqu'à
   son arrivée (2 h au plus, effacée ensuite, arrêt automatique à 150 m de l'accueil) ou annonce « J'arrive dans

@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import { Plate } from "./Plate";
+import { bookingRequest } from "@/lib/booking-client";
 import { fr } from "@/lib/fr";
 import { directionsUrl } from "@/lib/listing";
 import type { TravellerReturn } from "@/lib/types";
@@ -128,6 +129,19 @@ export function ReturnLive({ reference, token, initial }: { reference: string; t
   const t = fr.live;
   const ring = ringState(data, now);
   const step = stepOf(data);
+  // D (06/10/2026): without a tracked flight, the traveller says "J'ai atterri" (as in the app).
+  const f = data.flight;
+  const needsLanded = step === "flight" && f.status !== "landed" && (!f.number || !data.flightTracked || !f.status || f.status === "unknown");
+  const declareLanded = async () => {
+    try {
+      const next = await bookingRequest<TravellerReturn>(reference, "/return/landed", token, {});
+      setData(next);
+      setFetchedAt(Date.now());
+    } catch {
+      // The poll will tell; nothing else to say here.
+    }
+  };
+  const meetingRoute = data.meetingPoint ? directionsUrl(`${data.meetingPoint.lat},${data.meetingPoint.lng}`) : null;
   const steps: [Step, string][] = [
     ["flight", t.stepLanding],
     ["meeting", t.stepMeeting],
@@ -167,6 +181,33 @@ export function ReturnLive({ reference, token, initial }: { reference: string; t
         </div>
       </div>
       <p className="text-center text-sm text-soft">{t.meetingPoint(meeting)}</p>
+      {needsLanded && (
+        <div className="flex flex-col gap-2">
+          <button type="button" data-testid="landed-button" onClick={declareLanded} className="btn-primary h-[52px] text-base">
+            {t.landedButton}
+          </button>
+          <p className="text-center text-[13px] text-soft">{t.landedHelp}</p>
+        </div>
+      )}
+      {step === "meeting" && data.meetingPoint && (
+        <div data-testid="meeting-help" className="flex flex-col gap-2.5 rounded-[18px] bg-tint px-4 py-3.5">
+          {data.meetingPoint.instructions && (
+            <p className="text-sm">
+              <b>{t.instructions} :</b> {data.meetingPoint.instructions}
+            </p>
+          )}
+          {data.meetingPoint.photoUrl && (
+            // eslint-disable-next-line @next/next/no-img-element
+            <img src={data.meetingPoint.photoUrl} alt={t.photoAlt} className="max-h-56 w-full rounded-[14px] object-cover" loading="lazy" />
+          )}
+          {meetingRoute && (
+            <a href={meetingRoute} target="_blank" rel="noopener noreferrer" className="btn-secondary h-11 text-[15px]">
+              {t.routeToMeeting}
+              <span className="sr-only"> {fr.a11y.opensNewTab}</span>
+            </a>
+          )}
+        </div>
+      )}
       {shuttle && (
         <div className="flex flex-wrap items-center justify-between gap-2 rounded-[16px] bg-tint px-3.5 py-3 text-sm">
           <span className="font-semibold">{t.shuttleLine(shuttle.driverFirstName, vehicle) || t.stepShuttle}</span>
