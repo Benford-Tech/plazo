@@ -14,6 +14,7 @@ import ParkingPage from "@/pages/ParkingPage";
 import DashboardPage from "@/pages/DashboardPage";
 import PlanningPage from "@/pages/PlanningPage";
 import ShuttleWavesPage from "@/pages/ShuttleWavesPage";
+import { QuickCardProvider } from "@/components/reservations/ReservationQuickCard";
 import PricingPage from "@/pages/PricingPage";
 import ReservationPage from "@/pages/ReservationPage";
 import ReservationsPage from "@/pages/ReservationsPage";
@@ -122,7 +123,9 @@ const App = () => (
             <Route
               element={
                 <ProtectedRoute>
-                  <AdminLayout />
+                  <QuickCardProvider>
+                    <AdminLayout />
+                  </QuickCardProvider>
                 </ProtectedRoute>
               }
             >

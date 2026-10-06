@@ -5,11 +5,12 @@ import { Link, useParams } from "react-router-dom";
 import { toast } from "sonner";
 import { Plate } from "@/components/Plate";
 import { ReservationForm } from "@/components/reservations/ReservationForm";
+import { NextStep } from "@/components/reservations/NextStep";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useAuth } from "@/contexts/AuthContext";
 import { adminApi } from "@/lib/api";
 import { dateTimeShort, localParts, nightsBetween, timeOf } from "@/lib/datetime";
-import { describeError, fr } from "@/lib/fr";
+import { describeError, fr, quickCardFr } from "@/lib/fr";
 import { can } from "@/lib/roles";
 import type { Reservation, ReservationStatus } from "@/lib/types";
 import { cn } from "@/lib/utils";
@@ -23,48 +24,6 @@ function Info({ label, children }: { label: string; children: React.ReactNode })
     <div className="border-b border-border py-2.5">
       <dt className="text-[13px] font-semibold uppercase tracking-wide text-muted-foreground">{label}</dt>
       <dd className="mt-0.5 text-lg">{children}</dd>
-    </div>
-  );
-}
-
-function StatusActions({ reservation }: { reservation: Reservation }) {
-  const { user } = useAuth();
-  const queryClient = useQueryClient();
-  const change = useMutation({
-    mutationFn: (status: ReservationStatus) => adminApi.changeReservationStatus(reservation.id, status),
-    onSuccess: ({ data }) => {
-      queryClient.setQueryData(["reservation", reservation.id], data);
-      queryClient.invalidateQueries({ queryKey: ["planning"] });
-      toast.success(fr.status[data.status]);
-    },
-    onError: (err: Error) => toast.error(describeError(err)),
-  });
-  // Served by the API, already filtered by role (a refunded booking has none).
-  const steps = reservation.nextStatuses ?? [];
-  if (!steps.length) return null;
-  const [primary, ...others] = steps;
-  return (
-    <div className="flex flex-wrap gap-2">
-      <button
-        onClick={() => change.mutate(primary)}
-        disabled={change.isPending}
-        className="h-12 bg-primary px-5 text-lg font-bold uppercase tracking-wide text-primary-foreground hover:brightness-110 disabled:opacity-50"
-      >
-        {fr.statusAction[primary]}
-      </button>
-      {others.map(s => (
-        <button
-          key={s}
-          onClick={() => change.mutate(s)}
-          disabled={change.isPending}
-          className={cn(
-            "h-12 border px-4 font-semibold uppercase tracking-wide hover:bg-accent disabled:opacity-50",
-            MANAGE_ONLY.includes(s) ? "border-destructive/60 text-destructive" : "border-border",
-          )}
-        >
-          {fr.statusAction[s]}
-        </button>
-      ))}
     </div>
   );
 }
@@ -121,7 +80,7 @@ export default function ReservationPage() {
         />
       ) : (
         <>
-          <StatusActions reservation={r} />
+          <NextStep reservation={r} />
           <div className="grid gap-x-8 sm:grid-cols-2">
             <dl>
               <Info label={t.arrival}>
@@ -144,6 +103,10 @@ export default function ReservationPage() {
                 <span className="tabular font-mono">{r.returnFlight ?? "—"}</span>
               </Info>
               {r.stop && <Info label={t.stop}>{r.stop.name}</Info>}
+              <Info label={quickCardFr.spot}>
+                <span className="tabular font-mono">{r.spot?.code ?? quickCardFr.noSpot}</span>
+                <span className="ml-2 text-muted-foreground">· {quickCardFr.keys} {r.keyHook ?? quickCardFr.noKeys}</span>
+              </Info>
               <Info label={t.passengers}>{r.passengers}</Info>
               {r.carLat != null && r.carLng != null && r.carLocatedAt && (
                 <Info label={t.carPosition}>

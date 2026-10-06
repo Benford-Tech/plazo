@@ -133,12 +133,12 @@ describe("ShuttleTripsPanel (le mode chauffeur sur le web)", () => {
     const rows = screen.getAllByTestId("pickup-row");
     expect(within(rows[0]).getByText("Au point de RDV 10:10")).toBeInTheDocument();
     expect(within(rows[1]).getByText("Sur un trajet")).toBeInTheDocument();
-    expect(within(rows[1]).getByRole("button")).toBeDisabled();
+    expect(within(rows[1]).getAllByRole("button")[0]).toBeDisabled();
     expect(within(rows[2]).getByText("Retardé · 10:40")).toBeInTheDocument();
     expect(screen.getByText("Sélectionnez des clients")).toBeInTheDocument();
 
-    await userEvent.click(within(rows[0]).getByRole("button"));
-    await userEvent.click(within(rows[2]).getByRole("button"));
+    await userEvent.click(within(rows[0]).getAllByRole("button")[0]);
+    await userEvent.click(within(rows[2]).getAllByRole("button")[0]);
     await userEvent.click(screen.getByRole("button", { name: /Gare TGV/ }));
     expect(screen.getByText("Desserte : Gare TGV")).toBeInTheDocument();
     expect(screen.getByText("Dépose minute, sortie 2")).toBeInTheDocument();
@@ -155,8 +155,8 @@ describe("ShuttleTripsPanel (le mode chauffeur sur le web)", () => {
     api.getVehicles.mockResolvedValue({ data: [{ id: "v2", model: "Clio", colour: null, plate: null, seats: 1, inService: true, driverId: null, driverName: null }] });
     renderPanel();
     const rows = await screen.findAllByTestId("pickup-row");
-    await userEvent.click(within(rows[0]).getByRole("button"));
-    await userEvent.click(within(rows[2]).getByRole("button"));
+    await userEvent.click(within(rows[0]).getAllByRole("button")[0]);
+    await userEvent.click(within(rows[2]).getAllByRole("button")[0]);
     await userEvent.click(await screen.findByRole("button", { name: /Clio/ }));
     expect(screen.getByText("5 passagers pour 1 places : choisissez un autre véhicule ou moins de clients.")).toBeInTheDocument();
   });
@@ -173,7 +173,7 @@ describe("ShuttleTripsPanel (le mode chauffeur sur le web)", () => {
     await userEvent.click(screen.getByRole("tab", { name: /Départs · terminal/ }));
     const row = await screen.findByTestId("departure-row");
     expect(within(row).getByText("Arrivé 08:25 · Place A12")).toBeInTheDocument();
-    await userEvent.click(within(row).getByRole("button"));
+    await userEvent.click(within(row).getAllByRole("button")[0]);
     api.startTrip.mockResolvedValue({ trip: trip({ direction: "dropoff", passengers: [{ reservationId: "d1", reference: "D1", customerName: "Marco Rossi", passengers: 4, plate: "CD-456-EF", terminal: null }] }) });
     await userEvent.click(screen.getByRole("button", { name: "Partir au terminal · 1 client" }));
     expect(await screen.findByTestId("trip-running")).toHaveTextContent("En route vers le terminal");

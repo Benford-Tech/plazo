@@ -106,6 +106,15 @@ export interface Reservation {
   createdAt: string;
   /** The statuses this staff member may set next (served by GET /internal/reservations/:id, 06/10/2026). */
   nextStatuses?: ReservationStatus[];
+  /** Return flight tracking (bloc 3), on the full row. */
+  flightStatus?: string | null;
+  flightScheduledAt?: string | null;
+  flightEstimatedAt?: string | null;
+  flightLandedAt?: string | null;
+  flightTerminal?: string | null;
+  flightGate?: string | null;
+  /** The spot's code, when placed (GET /internal/reservations/:id includes it). */
+  spot?: { code: string } | null;
   /** Bloc 2, Occupation: the spot and the key hook (null until placed). */
   spotId?: string | null;
   keyHook?: string | null;

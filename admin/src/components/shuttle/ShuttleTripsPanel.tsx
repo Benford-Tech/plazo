@@ -1,10 +1,11 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { ArrowDownToLine, ArrowUpFromLine, BusFront, Check, CircleCheck, Circle, MapPin, Navigation, TrainFront, Plane } from "lucide-react";
+import { ArrowDownToLine, ArrowUpFromLine, BusFront, Check, CircleCheck, Circle, Info, MapPin, Navigation, TrainFront, Plane } from "lucide-react";
 import { Suspense, lazy, useEffect, useMemo, useRef, useState } from "react";
-import { Link } from "react-router-dom";
+import { Link, useSearchParams } from "react-router-dom";
 import { toast } from "sonner";
 import { Badge, type BadgeTone } from "@/components/dashboard/Badge";
 import { Plate } from "@/components/Plate";
+import { useQuickCard } from "@/components/reservations/ReservationQuickCard";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useAuth } from "@/contexts/AuthContext";
 import { adminApi } from "@/lib/api";
@@ -223,6 +224,16 @@ function VehiclePicker({ vehicles, choice, onChange, passengers }: { vehicles: S
   );
 }
 
+/** The small "fiche" button on a tile (C-A): phone, flight, spot, next gesture. */
+function CardLink({ id }: { id: string }) {
+  const card = useQuickCard();
+  return (
+    <button type="button" aria-label={t.card} title={t.card} onClick={() => card.open(id)} className="rounded-full border border-panel-line p-1.5 text-lime-deep hover:bg-panel-2">
+      <Info className="h-4 w-4" aria-hidden="true" />
+    </button>
+  );
+}
+
 function PickupTile({ row, selected, onTrip, selectable, onToggle }: { row: PickupRow; selected: boolean; onTrip: boolean; selectable: boolean; onToggle: () => void }) {
   const s = t.start;
   const badge = pickupBadge(row, onTrip);
@@ -232,9 +243,9 @@ function PickupTile({ row, selected, onTrip, selectable, onToggle }: { row: Pick
     <li
       data-testid="pickup-row"
       aria-selected={selected}
-      className={cn("rounded-xl border bg-panel", selected || onTrip ? "border-2 border-primary" : "border-panel-line")}
+      className={cn("flex items-center gap-1 rounded-xl border bg-panel pr-2", selected || onTrip ? "border-2 border-primary" : "border-panel-line")}
     >
-      <button type="button" disabled={!selectable} onClick={onToggle} className="flex w-full flex-wrap items-center gap-x-3 gap-y-1 px-3 py-2.5 text-left disabled:cursor-default">
+      <button type="button" disabled={!selectable} onClick={onToggle} className="flex min-w-0 flex-1 flex-wrap items-center gap-x-3 gap-y-1 px-3 py-2.5 text-left disabled:cursor-default">
         {selectable && (selected ? <CircleCheck className="h-5 w-5 text-lime-deep" aria-hidden="true" /> : <Circle className="h-5 w-5 text-panel-line" aria-hidden="true" />)}
         <span className="min-w-0 flex-1 truncate text-[14px] font-semibold">
           {row.customerName} <span className="font-normal text-muted-foreground">· {s.pax(row.passengers)}</span>
@@ -243,6 +254,7 @@ function PickupTile({ row, selected, onTrip, selectable, onToggle }: { row: Pick
         {details && <span className="font-mono text-xs text-muted-foreground">{details}</span>}
         <Plate value={row.plate} size="sm" />
       </button>
+      <CardLink id={row.reservationId} />
     </li>
   );
 }
@@ -251,8 +263,8 @@ function DepartureTile({ row, selected, onTrip, selectable, onToggle }: { row: D
   const s = t.start;
   const details = [row.arrivedAt ? s.arrivedAt(timeOf(row.arrivedAt)) : s.arrivalPlanned(timeOf(row.arrivalAt)), row.spot ? s.spot(row.spot) : null].filter(Boolean).join(" · ");
   return (
-    <li data-testid="departure-row" aria-selected={selected} className={cn("rounded-xl border bg-panel", selected || onTrip ? "border-2 border-primary" : "border-panel-line")}>
-      <button type="button" disabled={!selectable} onClick={onToggle} className="flex w-full flex-wrap items-center gap-x-3 gap-y-1 px-3 py-2.5 text-left disabled:cursor-default">
+    <li data-testid="departure-row" aria-selected={selected} className={cn("flex items-center gap-1 rounded-xl border bg-panel pr-2", selected || onTrip ? "border-2 border-primary" : "border-panel-line")}>
+      <button type="button" disabled={!selectable} onClick={onToggle} className="flex min-w-0 flex-1 flex-wrap items-center gap-x-3 gap-y-1 px-3 py-2.5 text-left disabled:cursor-default">
         {selectable && (selected ? <CircleCheck className="h-5 w-5 text-lime-deep" aria-hidden="true" /> : <Circle className="h-5 w-5 text-panel-line" aria-hidden="true" />)}
         <span className="min-w-0 flex-1 truncate text-[14px] font-semibold">
           {row.customerName} <span className="font-normal text-muted-foreground">· {s.pax(row.passengers)}</span>
@@ -261,6 +273,7 @@ function DepartureTile({ row, selected, onTrip, selectable, onToggle }: { row: D
         <span className="font-mono text-xs text-muted-foreground">{details}</span>
         <Plate value={row.plate} size="sm" />
       </button>
+      <CardLink id={row.reservationId} />
     </li>
   );
 }
@@ -276,7 +289,11 @@ export default function ShuttleTripsPanel() {
   const mayDrive = can(user?.role, "reservations:status");
   const mayManage = can(user?.role, "reservations:manage");
   const [now, setNow] = useState(() => Date.now());
-  const [direction, setDirection] = useState<ShuttleDirection>("pickup");
+  // Opened from a booking's card (C-A): "?sens=dropoff&reservation=…" preselects the side and the traveller.
+  const [params, setParams] = useSearchParams();
+  const wantedSide = params.get("sens");
+  const wanted = params.get("reservation");
+  const [direction, setDirection] = useState<ShuttleDirection>(wantedSide === "dropoff" ? "dropoff" : "pickup");
   const [stopId, setStopId] = useState<string | null>(null);
   const [selected, setSelected] = useState<string[]>([]);
   const [vehicle, setVehicle] = useState<VehicleChoice | null>(() => (user?.vehicle ? { kind: "known", id: user.vehicle.id } : null));
@@ -297,6 +314,18 @@ export default function ShuttleTripsPanel() {
 
   const trip = current.data?.trip ?? null;
   const running = trip?.status === "running";
+  const offeredIds = (direction === "pickup" ? (pickups.data?.rows ?? []) : (departures.data?.rows ?? [])).filter(r => !r.tripId).map(r => r.reservationId);
+  useEffect(() => {
+    if (!wanted || running || !offeredIds.includes(wanted)) return;
+    setSelected(list => (list.includes(wanted) ? list : [...list, wanted]));
+    setParams(p => {
+      p.delete("reservation");
+      p.delete("sens");
+      return p;
+    }, { replace: true });
+    // The offered list is what decides; the params are consumed once.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [wanted, running, offeredIds.join(",")]);
   useTripPosition(trip, setProblem);
 
   const refresh = (withCurrent = true) => {

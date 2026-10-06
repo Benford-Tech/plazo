@@ -137,25 +137,25 @@ describe("DashboardPage", () => {
 
     const alerts = screen.getByRole("heading", { name: "À traiter maintenant" }).closest("section")!;
     expect(alerts).toHaveTextContent("1 urgent");
-    const rows = within(alerts).getAllByRole("link");
+    // C-A (06/10/2026): a row opens the operational card (a button), no longer a page link.
+    const rows = within(alerts).getAllByRole("button");
     expect(rows[0]).toHaveTextContent("Sur place sans place");
     expect(rows[0]).toHaveTextContent("Urgent");
     expect(rows[0]).toHaveTextContent("depuis 10 min");
-    expect(rows[0]).toHaveAttribute("href", "/reservations/r3");
     expect(rows[1]).toHaveTextContent("Vol retardé");
     expect(rows[1]).toHaveTextContent("Camille Martin · TO 3627");
     expect(rows[1]).toHaveTextContent("À surveiller");
 
     const vehicles = screen.getByRole("heading", { name: "Véhicules sur le parking" }).closest("section")!;
     expect(vehicles).toHaveTextContent("2 véhicules");
-    const camille = within(vehicles).getByRole("link", { name: /Camille Martin/ });
+    const camille = within(vehicles).getByRole("button", { name: /Camille Martin/ });
     expect(camille).toHaveTextContent("A-01-01 · zone court");
     expect(camille).toHaveTextContent("Clés : crochet 12");
     expect(camille).toHaveTextContent("Vol TO 3627 · 21:40");
     expect(camille).toHaveTextContent("Retour 23:00");
     expect(camille).toHaveTextContent("Retour du jour");
     expect(camille).toHaveTextContent("Retardé +40 min");
-    const louis = within(vehicles).getByRole("link", { name: /Louis Leroy/ });
+    const louis = within(vehicles).getByRole("button", { name: /Louis Leroy/ });
     expect(louis).toHaveTextContent("Sans place");
     expect(louis).toHaveTextContent("Clés ?");
     expect(louis).toHaveTextContent("Retour ven. 9");

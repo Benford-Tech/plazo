@@ -1565,6 +1565,7 @@ export const shuttleWavesFr = {
 
 /** The driver's part of the Navettes page (06/10/2026): the same trips as the Plazo Pro app. */
 export const shuttleTripsFr = {
+  card: "Fiche du client",
   live: {
     title: "Navettes en cours",
     none: "Aucune navette en route pour le moment.",
@@ -1634,5 +1635,64 @@ export const shuttleTripsFr = {
     starting: "Démarrage…",
     needsStatus: "Seuls les chauffeurs, voituriers, agents et gérants peuvent démarrer un trajet.",
     loadError: "Impossible de charger les clients à transporter.",
+  },
+};
+
+/** The operational card (C-A, 06/10/2026): the same short sheet from Planning, Navettes and Occupation, with the next gesture. */
+export const quickCardFr = {
+  title: "Fiche",
+  close: "Fermer",
+  open: "Ouvrir la fiche complète",
+  call: "Appeler",
+  sms: "SMS",
+  loadError: "Impossible de charger la réservation.",
+  arrival: "Dépôt",
+  return: "Retour",
+  flight: "Vol retour",
+  departureFlight: "Vol aller",
+  noFlight: "sans vol",
+  flightState: {
+    landed: (t: string) => `atterri ${t}`,
+    delayed: (t: string) => `retardé · ${t}`,
+    cancelled: "annulé",
+    diverted: "dérouté",
+    scheduled: (t: string) => `prévu ${t}`,
+    unknown: "vol inconnu",
+  },
+  terminal: (t: string) => `Terminal ${t}`,
+  gate: (g: string) => `porte ${g}`,
+  spot: "Place",
+  noSpot: "pas de place",
+  keys: "Clés",
+  noKeys: "crochet non noté",
+  car: "Voiture",
+  carDirections: "itinéraire",
+  stop: "Desserte",
+  passengers: (n: number) => `${n} pass.`,
+  notes: "Notes",
+  next: {
+    title: "Prochaine étape",
+    place: "Placer la voiture",
+    placeHelp: "Sur le plan, avec le crochet des clés : le client passe « Sur place ».",
+    dropOff: "Déposer au terminal",
+    dropOffHelp: "Ouvre la navette, côté départs, avec ce client sélectionné.",
+    pickUp: "Récupérer à l'aéroport",
+    pickUpHelp: "Ouvre la navette, côté retours, avec ce client sélectionné.",
+    handOver: "Rendre le véhicule",
+    handOverHelp: "Clés rendues, état du véhicule, remarque éventuelle.",
+    closed: "Réservation close.",
+    more: "Autres actions…",
+    confirmCancel: "Annuler cette réservation ? Le client ne sera pas attendu.",
+    confirmNoShow: "Marquer le client comme non venu ?",
+  },
+  handover: {
+    title: "Rendre le véhicule",
+    keys: "Clés rendues au client",
+    keysHelp: "Le crochet est libéré.",
+    keysRequired: "Confirmez que les clés sont rendues.",
+    note: "Remarque (dégât, litige, objet oublié…)",
+    noteHint: "Facultatif · gardée dans les notes, datée et signée",
+    confirm: "Véhicule rendu",
+    back: "Retour",
   },
 };

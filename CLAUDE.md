@@ -280,7 +280,12 @@ Canevas de référence : https://claude.ai/artifact/6ezoCDyLXFNwhAH5ZWUf4u (rang
   « Tableau de bord » (`/pro/`, `GET /api/internal/dashboard`) : cinq tuiles (Sur le parking, Arrivées, Retours,
   Navettes, À traiter), bandeau d'état des services (vols, SMS, notifications, paiements, import), liste « À traiter
   maintenant » (urgent → à surveiller → à faire), véhicules sur le parking avec place et clés, carte IGN des navettes en
-  direct (`GET /internal/shuttle/live`). Le planning passe à `/pro/planning`. Palette de ces maquettes (web et app) : cartes
+  direct (`GET /internal/shuttle/live`). Le planning passe à `/pro/planning`. **Fiche opérationnelle (C-A, 06/10/2026)** :
+  `ReservationQuickCard` (tiroir, `QuickCardProvider` dans `App.tsx`, `useQuickCard().open(id)`) ouverte depuis les lignes du
+  planning, les alertes et véhicules du tableau de bord, les tuiles de la page Navettes et « Ouvrir la réservation » de
+  l'Occupation : appel / SMS, vols et état, place et clés, voiture, desserte, puis `NextStep` (un bouton « Prochaine étape » :
+  Placer → `/parking/occupation?focus=`, Déposer / Récupérer → `/navettes?sens=&reservation=`, Rendre → formulaire clés +
+  remarque ; « Autres actions… » pour les autres statuts, servis par `nextStatuses`) ; même `NextStep` sur la fiche complète. Palette de ces maquettes (web et app) : cartes
   arrondies 12 px sur anthracite `#17171B` / `#1D1D22`, filets `#2A2A30`, jaune pour l'action et les épingles, et quatre
   couleurs d'état en badges pleins (vert `#22C55E` atterri / sur place, ambre `#F59E0B` retardé / à surveiller, rouge `#EF4444`
   sans place / urgent, bleu `#60A5FA` retour du jour) ; pilules teintées « OK · À voir · Off » pour les services

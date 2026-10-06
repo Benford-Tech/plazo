@@ -1,6 +1,6 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useEffect, useMemo, useState } from "react";
-import { Link } from "react-router-dom";
+import { Link, useSearchParams } from "react-router-dom";
 import { toast } from "sonner";
 import {
   MapView,
@@ -10,6 +10,7 @@ import {
 import { Aside, PanelLabel, ToolButton } from "@/components/capacity/ui";
 import { ParkingTabs } from "@/components/parking/ParkingTabs";
 import { Plate } from "@/components/Plate";
+import { useQuickCard } from "@/components/reservations/ReservationQuickCard";
 import { Skeleton } from "@/components/ui/skeleton";
 import { adminApi, ApiError } from "@/lib/api";
 import { boundsOf, fc, feature, positionsOf } from "@/lib/capacity/mapData";
@@ -42,6 +43,20 @@ const LANDMARK_COLORS: Record<LandmarkKind, string> = {
   shuttle_stop: "#5fd3ff",
   key_box: "#f3f3f0",
 };
+
+/** "Ouvrir la réservation" (C-A, 06/10/2026): the operational card, not a page change. */
+function OpenBooking({ id }: { id: string }) {
+  const card = useQuickCard();
+  return (
+    <button
+      type="button"
+      onClick={() => card.open(id)}
+      className="flex min-h-9 items-center px-2 text-sm text-lime-deep underline"
+    >
+      {fr.occupation.openBooking}
+    </button>
+  );
+}
 
 /** A vehicle being placed: the next click on a free spot assigns it. */
 type Choosing = { reservationId: string; plate: string } | null;
@@ -79,6 +94,39 @@ export default function OccupationPage() {
     queryFn: () => adminApi.searchVehicles(parkingId!, debounced),
     enabled: !!parkingId && debounced.length >= 2,
   });
+  // C-A (06/10/2026): "?focus=<reservation>" from a booking's card opens that vehicle's card at once.
+  const [params, setParams] = useSearchParams();
+  const focus = params.get("focus");
+  useEffect(() => {
+    if (!focus || !parkingId) return;
+    let cancelled = false;
+    (async () => {
+      try {
+        const booking = await adminApi.getReservation(focus);
+        const hits = await adminApi.searchVehicles(parkingId, booking.reference);
+        const hit = hits.results.find((h) => h.id === focus) ?? null;
+        if (cancelled) return;
+        setQuery(booking.reference);
+        if (hit) {
+          setSelectedReservation(hit);
+          setSelectedSpotId(hit.spotId);
+        }
+      } catch {
+        // The booking is gone or not placeable: the page simply opens as usual.
+      }
+      if (!cancelled)
+        setParams(
+          (p) => {
+            p.delete("focus");
+            return p;
+          },
+          { replace: true },
+        );
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [focus, parkingId, setParams]);
 
   const refresh = () =>
     queryClient.invalidateQueries({ queryKey: ["occupation", parkingId] });
@@ -582,12 +630,7 @@ function SpotCard({
             <ToolButton className="min-h-9" onClick={() => onRelease(o)}>
               {t.release}
             </ToolButton>
-            <Link
-              to={`/reservations/${o.id}`}
-              className="flex min-h-9 items-center px-2 text-sm text-lime-deep underline"
-            >
-              {t.openBooking}
-            </Link>
+            <OpenBooking id={o.id} />
           </div>
         </>
       ) : (
@@ -688,12 +731,7 @@ function VehicleCard({
             {t.release}
           </ToolButton>
         )}
-        <Link
-          to={`/reservations/${hit.id}`}
-          className="flex min-h-9 items-center px-2 text-sm text-lime-deep underline"
-        >
-          {t.openBooking}
-        </Link>
+        <OpenBooking id={hit.id} />
       </div>
     </div>
   );
