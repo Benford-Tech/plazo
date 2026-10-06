@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { Badge, type BadgeTone } from "@/components/dashboard/Badge";
 import { Plate } from "@/components/Plate";
+import ShuttleTripsPanel from "@/components/shuttle/ShuttleTripsPanel";
 import { Skeleton } from "@/components/ui/skeleton";
 import { adminApi } from "@/lib/api";
 import { addDays, shortDay, timeAgo, timeOf, todayLocal } from "@/lib/datetime";
@@ -110,9 +111,15 @@ export default function ShuttleWavesPage() {
           <BusFront className="h-6 w-6 text-lime-deep" aria-hidden="true" />
           {t.title}
         </h1>
-        <span className="text-[13px] text-muted-foreground">{t.subtitle}</span>
         {d && <span className="ml-auto rounded-full border border-panel-line bg-panel px-3 py-1.5 font-mono text-xs text-muted-foreground">{t.refreshed(timeAgo(d.serverTime, now))}</span>}
       </div>
+
+      <ShuttleTripsPanel />
+
+      <h2 className="flex flex-wrap items-center gap-x-3 gap-y-1 px-1 pt-2 font-mono text-[19px] font-medium">
+        {t.wavesTitle}
+        <span className="font-sans text-[13px] font-normal text-muted-foreground">{t.subtitle}</span>
+      </h2>
 
       <div className="flex flex-wrap items-center gap-2 px-1" role="tablist">
         {days.map((day, i) => (

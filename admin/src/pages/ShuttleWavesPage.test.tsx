@@ -10,6 +10,8 @@ vi.mock("@/lib/api", async importOriginal => {
   const actual = await importOriginal<typeof import("@/lib/api")>();
   return { ...actual, adminApi: { ...actual.adminApi, getShuttleForecast: (date?: string) => api.getShuttleForecast(date) } };
 });
+// The trips panel at the top of the page has its own tests.
+vi.mock("@/components/shuttle/ShuttleTripsPanel", () => ({ default: () => <div data-testid="trips-panel" /> }));
 
 const flight = (number: string, status: string | null, scheduledAt: string, estimatedAt: string | null = null) => ({
   number,

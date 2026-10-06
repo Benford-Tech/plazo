@@ -101,7 +101,9 @@ Ne construire QUE ce qui règle la douleur n°1 du client.
      réglages du parking (`terminalLeadMinutes` 120, `landingDelayMinutes` 30) donnent l'heure à laquelle chaque navette doit
      partir ; `domain/shuttle-waves.ts` regroupe en **vagues** (15 min, même sens, même desserte ; passagers face aux places du
      plus grand véhicule en service, « 2 navettes » au-delà) ; `GET /internal/shuttle/forecast?date=` ; page **Navettes**
-     (`/pro/navettes`, aujourd'hui / demain / après-demain) et tuile « Navettes » du tableau de bord (prochaine vague, alertes
+     (`/pro/navettes`, aujourd'hui / demain / après-demain ; depuis le 06/10/2026 elle porte aussi le **mode chauffeur du web**,
+     `ShuttleTripsPanel` : navettes en cours sur la carte IGN avec « Terminer ce trajet » pour le chauffeur ou un gérant, mon trajet avec
+     position partagée par le navigateur, « Démarrer un trajet » retours / départs avec véhicule et desserte, comme l'onglet Navette de Plazo Pro) et tuile « Navettes » du tableau de bord (prochaine vague, alertes
      `departure_cancelled`, `departure_delayed`, `wave_overflow`) ; dans Plazo Pro, carte « Ligne du jour » en tête de l'onglet
      Navette avec « Démarrer ce trajet » (sens, desserte et passagers présélectionnés) ; le voyageur voit « navette vers le
      terminal prévue vers HH:MM » (`PublicBooking.outbound`).

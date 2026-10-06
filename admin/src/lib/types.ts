@@ -582,6 +582,79 @@ export interface LiveTrip {
   toParking: { distanceM: number; etaMinutes: number } | null;
 }
 
+/** The flight of a traveller to pick up (GET /internal/shuttle/pickups). */
+export interface PickupFlight {
+  number: string | null;
+  status: string | null;
+  scheduledAt: string | null;
+  estimatedAt: string | null;
+  landedAt: string | null;
+  landedSource: string | null;
+  terminal: string | null;
+  gate: string | null;
+  checkedAt: string | null;
+}
+
+/** A returning traveller to fetch at the airport today. */
+export interface PickupRow {
+  reservationId: string;
+  reference: string;
+  customerName: string;
+  passengers: number;
+  plate: string;
+  status: ReservationStatus;
+  returnAt: string;
+  flight: PickupFlight;
+  terminal: string | null;
+  stopId: string | null;
+  stopName: string | null;
+  atMeetingPointAt: string | null;
+  tripId: string | null;
+}
+
+/** An arrived traveller waiting at the parking for the shuttle to the terminal (drop-off). */
+export interface DepartureRow {
+  reservationId: string;
+  reference: string;
+  customerName: string;
+  passengers: number;
+  plate: string;
+  status: ReservationStatus;
+  arrivalAt: string;
+  arrivedAt: string | null;
+  spot: string | null;
+  stopId: string | null;
+  stopName: string | null;
+  tripId: string | null;
+}
+
+/** A shuttle trip as its driver (or the team) sees it. */
+export interface StaffTrip {
+  id: string;
+  status: string;
+  direction: ShuttleDirection;
+  driverId: string;
+  driverName: string;
+  vehicle: { model: string | null; colour: string | null; plate: string | null };
+  startedAt: string;
+  expiresAt: string;
+  endedAt: string | null;
+  endReason: string | null;
+  secondsLeft: number;
+  passengers: { reservationId: string; reference: string; customerName: string; passengers: number; plate: string; terminal: string | null }[];
+  positionUpdatedAt: string | null;
+  meetingPoint: MeetingPoint | null;
+  stop: ShuttleStop | null;
+}
+
+export interface StartTripInput {
+  reservationIds: string[];
+  direction: ShuttleDirection;
+  stopId: string | null;
+  vehicleId?: string | null;
+  vehicle?: { model: string; colour?: string | null; plate?: string | null } | null;
+}
+
 export interface LiveShuttles {
   serverTime: string;
   parking: { id: string; name: string; lat: number | null; lng: number | null };

@@ -187,7 +187,7 @@ Hors MVP : optimisation d'itinéraire.
 - **V-A « Ligne du jour »** : les clients dont les heures tombent dans une même fenêtre de 15 minutes, même sens et même
   desserte, forment une **vague** (heure de départ du parking, sens, desserte, passagers face aux places du plus grand
   véhicule en service, « N navettes » au-delà, vols, état à venir / en cours / faite). `GET /internal/shuttle/forecast?date=`
-  (aujourd'hui par défaut). Espace pro web : page **Navettes** (aujourd'hui, demain, après-demain), tuile « Navettes » du
+  (aujourd'hui par défaut). Espace pro web : page **Navettes** (aujourd'hui, demain, après-demain ; en tête, depuis le 06/10/2026, le mode chauffeur : navettes en cours, mon trajet avec position partagée, démarrer un trajet retours / départs, terminer un trajet oublié pour un gérant), tuile « Navettes » du
   tableau de bord avec la prochaine vague. Plazo Pro : carte « Ligne du jour » en tête de l'onglet Navette, « Démarrer ce
   trajet » bascule la file du chauffeur sur le sens et la desserte de la vague avec ses clients présélectionnés. Le voyageur
   voit sur sa réservation « navette vers le terminal prévue vers HH:MM » quand son vol aller est suivi.
