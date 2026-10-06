@@ -12,6 +12,9 @@ abstract class ArrivalState with _$ArrivalState {
     /// Positions are being watched and sent.
     @Default(false) bool tracking,
     @Default(false) bool showAnnounceOptions,
+
+    /// E (06/10/2026): the word typed for the parking (sent with the next signal, empty: none).
+    @Default('') String note,
     LocationAccess? locationProblem,
     /// API code (or consent_required, network): translated by the page.
     String? errorCode,

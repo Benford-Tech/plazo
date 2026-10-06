@@ -66,7 +66,10 @@
     "location_denied_forever": "L'accès à la position est refusé. Activez-le dans les réglages du téléphone, ou prévenez sans partager.",
     "location_service_disabled": "La localisation du téléphone est désactivée. Activez-la, ou prévenez sans partager.",
     "hours_minutes": "{} h {}",
-    "minutes_only": "{} min"
+    "minutes_only": "{} min",
+    "note_label": "Un mot pour le parking (facultatif)",
+    "note_hint": "Ex. 2 enfants, poussette",
+    "note_sent": "Votre mot : « {} »"
   },
   "plan": {
     "title": "Plan du parking",

@@ -41,6 +41,12 @@ class ArrivalAtMeetingPointRequested extends ArrivalEvent {
   final bool withPosition;
 }
 
+/// E (06/10/2026): the word typed for the parking, sent with the next signal.
+class ArrivalNoteChanged extends ArrivalEvent {
+  const ArrivalNoteChanged(this.note);
+  final String note;
+}
+
 class ArrivalStopRequested extends ArrivalEvent {
   const ArrivalStopRequested();
 }

@@ -118,7 +118,8 @@ Ne construire QUE ce qui règle la douleur n°1 du client.
      terminal prévue vers HH:MM » (`PublicBooking.outbound`).
    - Décision **E du 06/10/2026 (communication voyageur ↔ parking)** : `Reservation.customerNote` (message à la réservation, ≤ 300),
      `vehicleModel` / `vehicleColour` (site, app, saisie et modification pro, fiche, fiche opérationnelle) ; `ArrivalSignal.note`
-     (mot joint à « Je suis en route », « J'arrive dans… », « Je suis au point de rendez-vous » ; dans le push et le bandeau) ;
+     (mot joint à « Je suis en route », « J'arrive dans… », « Je suis au point de rendez-vous », champ sur le site et dans l'app
+     `ArrivalNoteChanged` / `ArrivalState.note` ; dans le push et le bandeau) ;
      `returnNoticeKind/Text/At` + `POST /public/bookings/:ref/return/notice` (« Mon vol a du retard », « Bagage perdu », autre ;
      409 `vehicle_not_on_site` ; push `returns` ; `PickupRow.notice`, `TravellerReturn.notice`) ; textes `domain/return-messages.ts`.
    - Décision **B du 06/10/2026 (messages au voyageur)** : confirmation enrichie (vol aller, navette aller, téléphone, rendez-vous

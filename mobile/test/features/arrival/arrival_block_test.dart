@@ -46,6 +46,10 @@ void main() {
 
     await tester.tap(find.text('Prévenir sans partager ma position'));
     expect(verify(() => bloc.add(captureAny())).captured.single, isA<ArrivalAnnounceToggled>());
+
+    // E: the word typed for the parking goes to the bloc, sent with the next signal.
+    await tester.enterText(find.byKey(const Key('arrival-note')), '2 enfants, poussette');
+    expect(verify(() => bloc.add(captureAny())).captured.single, isA<ArrivalNoteChanged>().having((e) => e.note, 'note', '2 enfants, poussette'));
   });
 
   testWidgets('écran 1 : les choix 10 / 20 / 30 min', (tester) async {

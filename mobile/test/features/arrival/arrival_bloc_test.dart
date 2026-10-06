@@ -230,10 +230,12 @@ void main() {
         await bloc.stream.firstWhere((s) => s.arrival != null);
         bloc
           ..add(const ArrivalAnnounceToggled())
+          ..add(const ArrivalNoteChanged(' 2 enfants, poussette '))
           ..add(const ArrivalAnnounced(20));
       },
       verify: (bloc) {
-        verify(() => announce(const AnnounceParams(reference: 'R7KQ2M', kind: ArrivalKind.outbound, minutes: 20))).called(1);
+        // E: the typed word travels with the signal, trimmed.
+        verify(() => announce(const AnnounceParams(reference: 'R7KQ2M', kind: ArrivalKind.outbound, minutes: 20, note: '2 enfants, poussette'))).called(1);
         expect(bloc.state.showAnnounceOptions, isFalse);
         expect(bloc.state.signal?.announcedMinutes, 20);
         verifyNever(() => location.requestAccess());

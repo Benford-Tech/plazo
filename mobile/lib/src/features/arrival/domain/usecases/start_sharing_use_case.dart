@@ -7,11 +7,14 @@ import '../../data/models/arrival_model.dart';
 import '../repositories/arrival_repository.dart';
 
 class StartSharingParams extends Equatable {
-  const StartSharingParams({required this.reference, required this.kind});
+  const StartSharingParams({required this.reference, required this.kind, this.note});
   final String reference;
   final ArrivalKind kind;
+
+  /// E (06/10/2026): a word for the parking, sent with the signal.
+  final String? note;
   @override
-  List<Object?> get props => [reference, kind];
+  List<Object?> get props => [reference, kind, note];
 }
 
 /// Starts sharing the live position (the traveller consented by tapping the button).
@@ -21,5 +24,5 @@ class StartSharingUseCase with UseCase<ArrivalModel, StartSharingParams> {
   final ArrivalRepository _repository;
 
   @override
-  Future<Either<Failure, ArrivalModel>> call(StartSharingParams params) => _repository.start(params.reference, params.kind);
+  Future<Either<Failure, ArrivalModel>> call(StartSharingParams params) => _repository.start(params.reference, params.kind, note: params.note);
 }
