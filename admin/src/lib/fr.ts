@@ -359,7 +359,6 @@ export const fr = {
     },
     map: {
       title: "Navettes en direct",
-      none: "Aucune navette en route.",
       parking: "Parking",
       direction: { pickup: "Retours · aéroport", dropoff: "Départs · terminal" } satisfies Record<ShuttleDirection, string>,
       passengers: (n: number) => `${n} pass.`,
