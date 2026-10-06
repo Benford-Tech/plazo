@@ -75,7 +75,9 @@ describe("privacy policy", () => {
     expect(all).toContain("au plus tard 2 heures après le début"); // SIGNAL_MAX_MINUTES
     expect(all).toContain("Position GPS de la voiture : effacée 2 jours après le retour."); // purgeCarLocations
     expect(all).toContain("supprimés 2 jours après le retour"); // purgeDevices
-    expect(all).toContain("File d’envoi des SMS (numéro et texte) : 30 jours."); // SMS_OUTBOX_RETENTION_DAYS
+    expect(all).toContain("File d’envoi des SMS (numéro du destinataire ; le texte n’est pas conservé) : 30 jours."); // SMS_OUTBOX_RETENTION_DAYS
+    expect(all).toContain("12 mois après la date de retour"); // RESERVATION_RETENTION_MONTHS (backend/src/domain/retention.ts)
+    expect(all).toContain("anonymisée automatiquement");
   });
 
   it("names the recipients and the authority, and keeps its promises narrow", () => {

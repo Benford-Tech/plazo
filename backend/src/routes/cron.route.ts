@@ -13,12 +13,12 @@ import { CronAuthMiddleware } from '@/middlewares/cron-auth.middleware';
  * @swagger
  * /internal/cron/purge-expired-tokens:
  *   get:
- *     summary: Delete expired staff tokens, end lapsed arrival signals and shuttle trips, retry or abandon waiting SMS, purge the SMS outbox after 30 days (every night)
+ *     summary: Delete expired staff tokens, end lapsed arrival signals and shuttle trips, retry or abandon waiting SMS, purge the SMS outbox after 30 days, erase car positions and push phones 2 days after the return, anonymise bookings 12 months after it (every night)
  *     tags: [Cron]
  *     description: "Requires Authorization: Bearer <CRON_SECRET>."
  *     responses:
  *       200:
- *         description: "{ deleted, arrivalSignalsEnded, shuttleTripsEnded, smsAbandoned, smsPurged }"
+ *         description: "{ deleted, arrivalSignalsEnded, shuttleTripsEnded, smsAbandoned, smsPurged, travellerDevicesPurged, carLocationsPurged, reservationsAnonymized }"
  * /internal/cron/payouts:
  *   get:
  *     summary: Transfer the operators' shares that are due (every day)

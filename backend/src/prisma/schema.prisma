@@ -450,6 +450,9 @@ model Reservation {
   // Sent once per booking when the flight lands: the push to the staff, the SMS to the traveller.
   landingNotifiedAt       DateTime?
   landingSmsAt            DateTime?
+  // Retention (privacy policy, 06/10/2026): 12 months after the return, the nightly cron removes who
+  // the traveller is (name, contact details, plate, flights, notes); see src/domain/retention.ts.
+  anonymizedAt            DateTime?
   createdAt               DateTime            @default(now())
   updatedAt               DateTime            @default(now()) @updatedAt
 

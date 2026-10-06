@@ -6,6 +6,7 @@ import { ReturnService } from '@/services/return.service';
 import { ShuttleService } from '@/services/shuttle.service';
 import { SmsService } from '@/services/sms.service';
 import { PaymentService } from '@/services/payment.service';
+import { RetentionService } from '@/services/retention.service';
 import { TokenService } from '@/services/token.service';
 import catchAsync from '@/utils/catchAsync';
 import { logger } from '@/utils/logger';
@@ -18,6 +19,7 @@ export class CronController {
   public shuttle = Container.get(ShuttleService);
   public returns = Container.get(ReturnService);
   public sms = Container.get(SmsService);
+  public retention = Container.get(RetentionService);
 
   /** GET /internal/cron/expire-arrival-signals */
   public expireArrivalSignals = catchAsync(async (req: Request, res: Response) => {
@@ -63,10 +65,21 @@ export class CronController {
     // Travellers' phones registered for the shuttle pushes: two days after the return.
     const travellerDevicesPurged = await this.returns.purgeDevices();
     const carLocationsPurged = await this.returns.purgeCarLocations();
+    // Bookings returned more than 12 months ago lose the traveller's data (privacy policy).
+    const reservationsAnonymized = await this.retention.anonymizeReservations();
     logger.info(
       `[Cron] ${deleted} expired staff tokens deleted, ${arrivalSignalsEnded} arrival signals ended, ${shuttleTripsEnded} shuttle trips ended, ` +
-        `SMS queue ${JSON.stringify(sms)}, ${smsPurged} outbox rows purged`,
+        `SMS queue ${JSON.stringify(sms)}, ${smsPurged} outbox rows purged, ${reservationsAnonymized} bookings anonymised`,
     );
-    res.json({ deleted, arrivalSignalsEnded, shuttleTripsEnded, smsAbandoned: sms.abandoned, smsPurged, travellerDevicesPurged, carLocationsPurged });
+    res.json({
+      deleted,
+      arrivalSignalsEnded,
+      shuttleTripsEnded,
+      smsAbandoned: sms.abandoned,
+      smsPurged,
+      travellerDevicesPurged,
+      carLocationsPurged,
+      reservationsAnonymized,
+    });
   });
 }

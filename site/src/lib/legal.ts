@@ -368,13 +368,13 @@ export function privacyDoc(company: Company = COMPANY, email: string = SUPPORT_E
         title: "6. Combien de temps",
         blocks: [
           [
-            "Réservation (identité, coordonnées, plaque, vols, passagers, notes) : pendant le séjour, puis 12 mois après la date de retour pour traiter les réclamations et litiges ; ensuite supprimée ou anonymisée.",
+            "Réservation (identité, coordonnées, plaque, vols, notes, y compris dans l’historique de ses modifications) : pendant le séjour, puis 12 mois après la date de retour pour traiter les réclamations et litiges. Elle est ensuite anonymisée automatiquement : il ne reste que sa référence, le parking, les dates, le nombre de passagers et les montants.",
             "Éléments comptables (référence, dates, montants, paiements et remboursements) : 10 ans, comme l’impose le Code de commerce.",
             "Accès à Ma réservation par le lien reçu par e-mail ou SMS : jusqu’à 30 jours après le retour.",
             "Position partagée à l’arrivée : seule la dernière est gardée ; elle est effacée à l’arrivée, à l’arrêt du partage et au plus tard 2 heures après le début.",
             "Position GPS de la voiture : effacée 2 jours après le retour.",
             "Téléphones inscrits aux notifications du séjour : supprimés 2 jours après le retour.",
-            "File d’envoi des SMS (numéro et texte) : 30 jours.",
+            "File d’envoi des SMS (numéro du destinataire ; le texte n’est pas conservé) : 30 jours.",
             "Adresse IP : quelques minutes en mémoire pour limiter les abus ; les journaux techniques de l’hébergeur sont gardés quelques jours au plus.",
             "Sur votre téléphone : les références de vos réservations restent dans l’application jusqu’à ce que vous les retiriez ou que vous la désinstalliez.",
           ],
@@ -385,7 +385,7 @@ export function privacyDoc(company: Company = COMPANY, email: string = SUPPORT_E
         title: "7. Sécurité",
         blocks: [
           "Les échanges sont chiffrés (HTTPS). Chaque membre d’une équipe a son propre compte, ses droits dépendent de son rôle et il ne voit que les réservations de son parking ; les mots de passe sont stockés sous forme hachée et les modifications des réservations sont tracées.",
-          "Le lien de votre réservation contient une clé secrète : ne le transférez qu’à des personnes de confiance.",
+          "Le lien de votre réservation contient une clé secrète : ne le transférez qu’à des personnes de confiance. En cas de doute, le parking peut le désactiver ; vous retrouvez alors l’accès depuis [Ma réservation](/ma-reservation) avec votre référence et votre e-mail.",
           `Aucune donnée de carte bancaire n’est stockée par ${p}.`,
         ],
       },

@@ -182,7 +182,8 @@ Le nom du produit doit rester dans UN seul fichier de configuration (il peut enc
   lu par le serveur, l'espace pro et le site), et `company` : la société éditrice (« Plazo Aéroports », forme, siège,
   immatriculation, TVA, directeur de la publication, médiateur ; un champ vide s'affiche « [à compléter] »).
 - `site/src/lib/legal.ts` : textes des Conditions générales (`/conditions`), des Mentions légales (`/mentions-legales`)
-  et de la Politique de confidentialité (`/confidentialite`, durées de conservation reprises du code),
+  et de la Politique de confidentialité (`/confidentialite`, durées de conservation reprises du code ; réservations
+  anonymisées 12 mois après le retour par le cron de nuit, `backend/src/domain/retention.ts`, `Reservation.anonymizedAt`),
   rédigés d'après le fonctionnement réel (06/10/2026), **projet à faire valider par un juriste** (bandeau sur la page,
   pages non indexées) ; à tenir à jour quand une règle change (paiement, annulation, classement, données).
 - `backend/` : API REST sous `/api` (`index.js` = point d'entrée Vercel). Les routes du personnel du loueur
