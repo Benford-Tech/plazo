@@ -6,7 +6,7 @@ import { CancellationPolicy, ReservationStatus } from '@/database';
  * the link they receive: no account, a per-booking secret instead.
  */
 
-const MANAGE_TOKEN_LENGTH = 32;
+export const MANAGE_TOKEN_LENGTH = 32;
 
 /**
  * Secret giving access to one booking: HMAC-SHA256 of its id, base64url, 32 characters. The

@@ -11,6 +11,7 @@ import NotFound from "@/pages/NotFound";
 import ListingPage from "@/pages/ListingPage";
 import NewReservationPage from "@/pages/NewReservationPage";
 import InboundEmailsPage from "@/pages/InboundEmailsPage";
+import RemindersPage from "@/pages/RemindersPage";
 import ParkingPage from "@/pages/ParkingPage";
 import DashboardPage from "@/pages/DashboardPage";
 import PlanningPage from "@/pages/PlanningPage";
@@ -150,6 +151,7 @@ const App = () => (
                   </RequirePermission>
                 }
               />
+              <Route path="/reservations/sms-veille" element={<RemindersPage />} />
               <Route path="/reservations/:id" element={<ReservationPage />} />
               <Route path="/parking" element={<ParkingIndex />} />
               <Route

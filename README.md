@@ -222,8 +222,8 @@ le navigateur de l'espace pro appelle `/api` sur le même domaine (pas de CORS).
      avec le même cache de 5 minutes, donc le bloc fonctionne sans cron (seul le SMS à l'atterrissage dépend alors d'une
      lecture).
    - **Messages au voyageur (décision B du 06/10/2026)** : confirmation enrichie (vol aller, navette aller prévue, téléphone du
-     parking, point de rendez-vous au retour, « le jour du dépôt » en étapes), rappel la veille (mail + SMS + push, cron
-     `remind-tomorrow`), push « Votre voiture est garée » (place et crochet) quand le voiturier la place, push « Bon voyage ! »
+     parking, point de rendez-vous au retour, « le jour du dépôt » en étapes), rappel la veille (mail + SMS + push, à l'heure
+     et avec le texte choisis par le parking dans « SMS de la veille », voir plus bas), push « Votre voiture est garée » (place et crochet) quand le voiturier la place, push « Bon voyage ! »
      à la fin de la navette de dépose, SMS d'atterrissage pour tous les canaux (plus seulement Plazo), mail et push de clôture
      après la remise (`closingSentAt`). Textes dans `domain/booking-messages.ts`, service `TravellerMessagesService`.
    - Le SMS d'atterrissage (point de rendez-vous, consignes, lien de la réservation) part par le canal SMS du loueur
@@ -257,6 +257,22 @@ Pour relier le téléphone (un Android allumé, chargé, avec des SMS illimités
 
 La boîte d'envoi (`sms_outbox`) garde le destinataire et l'empreinte SHA-256 du texte, jamais le texte (reconstruit
 depuis la réservation pour un nouvel essai) ; ses lignes sont purgées après 30 jours par le cron de nuit.
+
+### SMS de la veille et planificateur externe
+
+Chaque parking choisit dans **Réservations › SMS de la veille** l'heure du rappel (16:00 à 21:30), son texte, et peut
+décaler ou mettre en pause une soirée. Vercel Hobby ne lance une tâche planifiée qu'une fois par jour : la route
+`/api/internal/cron/remind-tomorrow` est donc appelée **toutes les 15 minutes par un planificateur externe gratuit**
+(cron-job.org). Le Vercel Cron de 19:00 UTC reste un filet si le planificateur s'arrête (les rappels partent alors à
+21:00 l'été, 20:00 l'hiver). Appeler la route plusieurs fois ne renvoie rien en double ; elle relance aussi les SMS en
+attente du téléphone du parking. Mise en place :
+1. Créer un compte gratuit sur [cron-job.org](https://cron-job.org), puis **Create cronjob**.
+2. *Title* « Plazo · SMS de la veille », *URL* `https://www.plazo.fr/api/internal/cron/remind-tomorrow`, *Execution
+   schedule* **Every 15 minutes**.
+3. Onglet *Advanced* : méthode **GET**, en-tête **`Authorization`** = `Bearer ` suivi de la valeur de `CRON_SECRET` (Vercel ›
+   Settings › Environment Variables), *Timeout* au maximum.
+4. Enregistrer, puis **Test run** : la réponse doit être `200` avec `{"checked":…,"sent":…,"sms":{…}}` ; un `401` signale
+   un secret erroné.
 
 Vérifier la configuration sans déployer : `npx vercel build` (avec un `.vercel/project.json` local),
 ou `vercel dev` pour lancer les trois services ensemble.

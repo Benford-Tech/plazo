@@ -24,6 +24,8 @@ import type {
   SmsSettingsInput,
   SmsStatus,
   PlatformReservations,
+  ReminderBoard,
+  ReminderSettingsInput,
   SignupInput,
   ListingInput,
   ListingResponse,
@@ -406,6 +408,19 @@ export const adminApi = {
   getLiveArrivals: () => apiRequest<LiveArrivals>("/internal/arrivals/live"),
   getDashboard: () => apiRequest<Dashboard>("/internal/dashboard"),
   getLiveShuttles: () => apiRequest<LiveShuttles>("/internal/shuttle/live"),
+  // « SMS de la veille » (S-A + S-B, 06/10/2026): the usual rule, the evenings and each booking's SMS.
+  getReminders: (parkingId: string, evening?: string) =>
+    apiRequest<ReminderBoard>(`/internal/parkings/${parkingId}/reminders${evening ? `?evening=${evening}` : ""}`),
+  updateReminders: (parkingId: string, input: ReminderSettingsInput) =>
+    apiRequest<ReminderBoard>(`/internal/parkings/${parkingId}/reminders`, { method: "PUT", body: json(input) }),
+  updateReminderEvening: (parkingId: string, date: string, input: { sendTime?: string | null; paused?: boolean }) =>
+    apiRequest<ReminderBoard>(`/internal/parkings/${parkingId}/reminders/evenings/${date}`, { method: "PUT", body: json(input) }),
+  sendRemindersNow: (parkingId: string, date: string) =>
+    apiRequest<ReminderBoard>(`/internal/parkings/${parkingId}/reminders/evenings/${date}/send`, { method: "POST" }),
+  testReminder: (parkingId: string, input: { to?: string; template?: string }) =>
+    apiRequest<{ outcome: string; to: string }>(`/internal/parkings/${parkingId}/reminders/test`, { method: "POST", body: json(input) }),
+  setReminderExcluded: (reservationId: string, excluded: boolean) =>
+    apiRequest<{ excluded: boolean }>(`/internal/reservations/${reservationId}/reminder`, { method: "PUT", body: json({ excluded }) }),
   // M-A (06/10/2026): the inbound address and the forwarded confirmation emails.
   getInboundSettings: () => apiRequest<InboundSettings>("/internal/inbound/settings"),
   enableInboundAddress: (regenerate = false) => apiRequest<InboundSettings>("/internal/inbound/address", { method: "POST", body: json({ regenerate }) }),
