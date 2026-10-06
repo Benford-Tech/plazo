@@ -14,7 +14,6 @@ import '../../features/pro_notifications/presentation/pages/pro_notifications_pa
 import '../../features/pro_occupation/presentation/pages/pro_occupation_page.dart';
 import '../../features/pro_plan/presentation/pages/pro_plan_page.dart';
 import '../../features/pro_reservations/data/models/reservation_models.dart';
-import '../../features/pro_reservations/presentation/pages/pro_import_email_page.dart';
 import '../../features/pro_reservations/presentation/pages/pro_reservation_form_page.dart';
 import '../../features/pro_reservations/presentation/pages/pro_reservation_page.dart';
 import '../../features/pro_reservations/presentation/pages/pro_reservations_page.dart';
@@ -94,7 +93,6 @@ class AppRouter extends RootStackRouter {
       AutoRoute(page: ProTeamRoute.page, path: '/pro/equipe', guards: [proGuard]),
       AutoRoute(page: ProAccountRoute.page, path: '/pro/compte', guards: [proGuard]),
       AutoRoute(page: ProParkingSettingsRoute.page, path: '/pro/reglages', guards: [proGuard]),
-      AutoRoute(page: ProImportEmailRoute.page, path: '/pro/reservations/import', guards: [proGuard]),
       AutoRoute(page: ProReservationFormRoute.page, path: '/pro/reservations/formulaire', guards: [proGuard]),
       AutoRoute(page: ProReservationRoute.page, path: '/pro/reservations/:id', guards: [proGuard]),
     ],

@@ -64,15 +64,6 @@ class _ViewState extends State<_View> {
       appBar: BrandAppBar(
         pro: true,
         title: 'res.title'.tr(),
-        actions: [
-          if (manage)
-            IconButton(
-              key: const Key('res-import'),
-              tooltip: 'res.import'.tr(),
-              icon: const Icon(Icons.mail_outline_rounded),
-              onPressed: () => _open(context, const ProImportEmailRoute()),
-            ),
-        ],
       ),
       floatingActionButton: manage
           ? FloatingActionButton.extended(

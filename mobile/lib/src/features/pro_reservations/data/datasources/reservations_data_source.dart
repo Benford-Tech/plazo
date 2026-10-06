@@ -7,7 +7,6 @@ abstract class ReservationsDataSource {
   Future<ReservationModel> create(ReservationInput input);
   Future<ReservationModel> update(String id, ReservationInput input);
   Future<ReservationModel> changeStatus(String id, String status);
-  Future<ParsedEmailModel> parseEmail(String text);
   Future<CapacityPreviewModel> capacity(String arrivalAt, String returnAt, {String? excludeId});
 }
 
@@ -31,7 +30,6 @@ class ReservationsDataSourceImpl implements ReservationsDataSource {
   Future<ReservationModel> changeStatus(String id, String status) async => (await _client.changeStatus(id, {'status': status})).data;
 
   @override
-  Future<ParsedEmailModel> parseEmail(String text) => _client.parseEmail({'text': text});
 
   @override
   Future<CapacityPreviewModel> capacity(String arrivalAt, String returnAt, {String? excludeId}) => _client.capacity(arrivalAt, returnAt, excludeId);

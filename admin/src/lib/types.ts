@@ -299,13 +299,6 @@ export interface ParsedBooking {
   priceCents?: number;
 }
 
-export interface EmailImportResult {
-  parsed: ParsedBooking;
-  missing: ("arrivalAt" | "returnAt" | "customerName" | "customerPhone" | "plate")[];
-  duplicate: { id: string; reference: string } | null;
-  capacity: CapacityPreview | null;
-}
-
 export type CancellationPolicy = "free_until_arrival" | "free_24h" | "free_48h" | "non_refundable";
 export type ListingService = "shuttle" | "valet" | "covered" | "ev_charging" | "open_24h" | "fenced" | "cctv";
 

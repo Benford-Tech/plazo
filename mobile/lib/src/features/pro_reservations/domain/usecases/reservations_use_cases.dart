@@ -61,13 +61,6 @@ class ChangeReservationStatusUseCase with UseCase<ReservationModel, ChangeStatus
   Future<Either<Failure, ReservationModel>> call(ChangeStatusParams params) => _repository.changeStatus(params.id, params.status);
 }
 
-class ParseEmailUseCase with UseCase<ParsedEmailModel, String> {
-  ParseEmailUseCase(this._repository);
-  final ReservationsRepository _repository;
-  @override
-  Future<Either<Failure, ParsedEmailModel>> call(String text) => _repository.parseEmail(text);
-}
-
 class CapacityParams extends Equatable {
   const CapacityParams({required this.arrivalAt, required this.returnAt, this.excludeId});
   final String arrivalAt;

@@ -47,7 +47,7 @@ _SearchResultModel _$SearchResultModelFromJson(
   openingHours: json['openingHours'] as String?,
   cancellationPolicy: json['cancellationPolicy'] as String? ?? 'non_refundable',
   photo: json['photo'] as String?,
-  payment: json['payment'] as String? ?? 'on_site',
+  payment: json['payment'] as String? ?? 'unavailable',
   location: json['location'] == null
       ? null
       : LatLngModel.fromJson(json['location'] as Map<String, dynamic>),
@@ -77,7 +77,7 @@ Map<String, dynamic> _$SearchResultModelToJson(_SearchResultModel instance) =>
 
 _SearchResponseModel _$SearchResponseModelFromJson(Map<String, dynamic> json) =>
     _SearchResponseModel(
-      payments: json['payments'] as String? ?? 'on_site',
+      payments: json['payments'] as String? ?? 'unavailable',
       airport: AirportModel.fromJson(json['airport'] as Map<String, dynamic>),
       results:
           (json['results'] as List<dynamic>?)
@@ -147,7 +147,7 @@ _ParkingDetailModel _$ParkingDetailModelFromJson(
   openingHours: json['openingHours'] as String?,
   cancellationPolicy: json['cancellationPolicy'] as String? ?? 'non_refundable',
   photo: json['photo'] as String?,
-  payment: json['payment'] as String? ?? 'on_site',
+  payment: json['payment'] as String? ?? 'unavailable',
   location: json['location'] == null
       ? null
       : LatLngModel.fromJson(json['location'] as Map<String, dynamic>),
@@ -186,7 +186,7 @@ Map<String, dynamic> _$ParkingDetailModelToJson(_ParkingDetailModel instance) =>
 _ParkingResponseModel _$ParkingResponseModelFromJson(
   Map<String, dynamic> json,
 ) => _ParkingResponseModel(
-  payments: json['payments'] as String? ?? 'on_site',
+  payments: json['payments'] as String? ?? 'unavailable',
   airport: AirportModel.fromJson(json['airport'] as Map<String, dynamic>),
   parking: ParkingDetailModel.fromJson(json['parking'] as Map<String, dynamic>),
   offer: json['offer'] == null
@@ -205,7 +205,7 @@ Map<String, dynamic> _$ParkingResponseModelToJson(
 
 _PaymentsConfigModel _$PaymentsConfigModelFromJson(Map<String, dynamic> json) =>
     _PaymentsConfigModel(
-      payments: json['payments'] as String? ?? 'on_site',
+      payments: json['payments'] as String? ?? 'unavailable',
       publishableKey: json['publishableKey'] as String?,
       merchantDisplayName:
           json['merchantDisplayName'] as String? ?? Product.name,

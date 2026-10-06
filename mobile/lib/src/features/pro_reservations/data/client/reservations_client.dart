@@ -24,9 +24,6 @@ abstract class ReservationsClient {
   @POST('internal/reservations/{id}/status')
   Future<DataEnvelope<ReservationModel>> changeStatus(@Path('id') String id, @Body() Map<String, dynamic> body);
 
-  @POST('internal/imports/email')
-  Future<ParsedEmailModel> parseEmail(@Body() Map<String, dynamic> body);
-
   @GET('internal/capacity')
   Future<CapacityPreviewModel> capacity(@Query('arrivalAt') String arrivalAt, @Query('returnAt') String returnAt, @Query('excludeId') String? excludeId);
 }

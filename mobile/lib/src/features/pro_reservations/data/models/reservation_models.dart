@@ -81,47 +81,6 @@ abstract class CapacityPreviewModel with _$CapacityPreviewModel {
   factory CapacityPreviewModel.fromJson(Map<String, dynamic> json) => _$CapacityPreviewModelFromJson(json);
 }
 
-/// What an importer read in a confirmation email (dates local to the parking, "YYYY-MM-DDTHH:mm").
-@freezed
-abstract class ParsedBookingModel with _$ParsedBookingModel {
-  const factory ParsedBookingModel({
-    required String provider,
-    String? externalReference,
-    String? arrivalAt,
-    String? returnAt,
-    String? customerName,
-    String? customerPhone,
-    String? customerEmail,
-    String? plate,
-    String? returnFlight,
-    String? departureFlight,
-    int? passengers,
-    int? priceCents,
-  }) = _ParsedBookingModel;
-
-  factory ParsedBookingModel.fromJson(Map<String, dynamic> json) => _$ParsedBookingModelFromJson(json);
-}
-
-@freezed
-abstract class DuplicateRefModel with _$DuplicateRefModel {
-  const factory DuplicateRefModel({required String id, required String reference}) = _DuplicateRefModel;
-
-  factory DuplicateRefModel.fromJson(Map<String, dynamic> json) => _$DuplicateRefModelFromJson(json);
-}
-
-/// POST /internal/imports/email.
-@freezed
-abstract class ParsedEmailModel with _$ParsedEmailModel {
-  const factory ParsedEmailModel({
-    required ParsedBookingModel parsed,
-    @Default([]) List<String> missing,
-    DuplicateRefModel? duplicate,
-    CapacityPreviewModel? capacity,
-  }) = _ParsedEmailModel;
-
-  factory ParsedEmailModel.fromJson(Map<String, dynamic> json) => _$ParsedEmailModelFromJson(json);
-}
-
 /// The form's values, sent as-is to POST (create) or PATCH (edit); dates local to the parking.
 @freezed
 abstract class ReservationInput with _$ReservationInput {

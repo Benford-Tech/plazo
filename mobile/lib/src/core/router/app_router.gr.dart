@@ -530,22 +530,6 @@ class ProArrivalsRoute extends PageRouteInfo<void> {
 }
 
 /// generated route for
-/// [ProImportEmailPage]
-class ProImportEmailRoute extends PageRouteInfo<void> {
-  const ProImportEmailRoute({List<PageRouteInfo>? children})
-    : super(ProImportEmailRoute.name, initialChildren: children);
-
-  static const String name = 'ProImportEmailRoute';
-
-  static PageInfo page = PageInfo(
-    name,
-    builder: (data) {
-      return WrappedRoute(child: const ProImportEmailPage());
-    },
-  );
-}
-
-/// generated route for
 /// [ProLoginPage]
 class ProLoginRoute extends PageRouteInfo<void> {
   const ProLoginRoute({List<PageRouteInfo>? children})

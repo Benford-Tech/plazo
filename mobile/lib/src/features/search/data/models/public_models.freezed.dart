@@ -820,7 +820,7 @@ return $default(_that.slug,_that.title,_that.services,_that.shuttleMinutes,_that
 @JsonSerializable()
 
 class _SearchResultModel extends SearchResultModel {
-  const _SearchResultModel({required this.slug, required this.title,  List<String> services = const <String>[], this.shuttleMinutes, this.distanceKm, this.openingHours, this.cancellationPolicy = 'non_refundable', this.photo, this.payment = 'on_site', this.location, this.available = false, this.days = 0, this.priceCents, this.isDemo = false}): _services = services,super._();
+  const _SearchResultModel({required this.slug, required this.title,  List<String> services = const <String>[], this.shuttleMinutes, this.distanceKm, this.openingHours, this.cancellationPolicy = 'non_refundable', this.photo, this.payment = 'unavailable', this.location, this.available = false, this.days = 0, this.priceCents, this.isDemo = false}): _services = services,super._();
   factory _SearchResultModel.fromJson(Map<String, dynamic> json) => _$SearchResultModelFromJson(json);
 
 @override final  String slug;
@@ -1146,7 +1146,7 @@ return $default(_that.payments,_that.airport,_that.results);case _:
 @JsonSerializable()
 
 class _SearchResponseModel implements SearchResponseModel {
-  const _SearchResponseModel({this.payments = 'on_site', required this.airport,  List<SearchResultModel> results = const <SearchResultModel>[]}): _results = results;
+  const _SearchResponseModel({this.payments = 'unavailable', required this.airport,  List<SearchResultModel> results = const <SearchResultModel>[]}): _results = results;
   factory _SearchResponseModel.fromJson(Map<String, dynamic> json) => _$SearchResponseModelFromJson(json);
 
 @override@JsonKey() final  String payments;
@@ -2299,7 +2299,7 @@ return $default(_that.slug,_that.title,_that.services,_that.shuttleMinutes,_that
 @JsonSerializable()
 
 class _ParkingDetailModel implements ParkingDetailModel {
-  const _ParkingDetailModel({required this.slug, required this.title,  List<String> services = const <String>[], this.shuttleMinutes, this.distanceKm, this.openingHours, this.cancellationPolicy = 'non_refundable', this.photo, this.payment = 'on_site', this.location, this.description,  List<String> photos = const <String>[], this.address, this.phone, this.pricing = const PricingModel(), this.isDemo = false}): _services = services,_photos = photos;
+  const _ParkingDetailModel({required this.slug, required this.title,  List<String> services = const <String>[], this.shuttleMinutes, this.distanceKm, this.openingHours, this.cancellationPolicy = 'non_refundable', this.photo, this.payment = 'unavailable', this.location, this.description,  List<String> photos = const <String>[], this.address, this.phone, this.pricing = const PricingModel(), this.isDemo = false}): _services = services,_photos = photos;
   factory _ParkingDetailModel.fromJson(Map<String, dynamic> json) => _$ParkingDetailModelFromJson(json);
 
 @override final  String slug;
@@ -2665,7 +2665,7 @@ return $default(_that.payments,_that.airport,_that.parking,_that.offer);case _:
 @JsonSerializable()
 
 class _ParkingResponseModel implements ParkingResponseModel {
-  const _ParkingResponseModel({this.payments = 'on_site', required this.airport, required this.parking, this.offer});
+  const _ParkingResponseModel({this.payments = 'unavailable', required this.airport, required this.parking, this.offer});
   factory _ParkingResponseModel.fromJson(Map<String, dynamic> json) => _$ParkingResponseModelFromJson(json);
 
 @override@JsonKey() final  String payments;
@@ -2975,7 +2975,7 @@ return $default(_that.payments,_that.publishableKey,_that.merchantDisplayName,_t
 @JsonSerializable()
 
 class _PaymentsConfigModel implements PaymentsConfigModel {
-  const _PaymentsConfigModel({this.payments = 'on_site', this.publishableKey, this.merchantDisplayName = Product.name, this.merchantCountryCode = 'FR', this.currency = 'eur'});
+  const _PaymentsConfigModel({this.payments = 'unavailable', this.publishableKey, this.merchantDisplayName = Product.name, this.merchantCountryCode = 'FR', this.currency = 'eur'});
   factory _PaymentsConfigModel.fromJson(Map<String, dynamic> json) => _$PaymentsConfigModelFromJson(json);
 
 @override@JsonKey() final  String payments;

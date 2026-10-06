@@ -11,7 +11,7 @@ _PublicBookingModel _$PublicBookingModelFromJson(
 ) => _PublicBookingModel(
   reference: json['reference'] as String,
   status: json['status'] as String,
-  paymentMode: json['paymentMode'] as String? ?? 'on_site',
+  paymentMode: json['paymentMode'] as String? ?? 'online',
   payment: json['payment'] == null
       ? null
       : BookingPaymentModel.fromJson(json['payment'] as Map<String, dynamic>),

@@ -46,7 +46,8 @@ Ne construire QUE ce qui règle la douleur n°1 du client.
 
 1. **Réservations**
    - Saisie manuelle (téléphone, comptoir) + import des réservations des autres canaux
-     (au départ : import CSV / copier-coller de mails de confirmation ; connecteurs plus tard).
+     (06/10/2026 : l'import par copier-coller d'un mail est retiré ; à venir, synchronisation de la boîte mail du loueur
+     pour enregistrer chaque réservation entrante, design à trancher ; connecteurs plus tard).
    - Page de réservation propre à l'opérateur (formulaire simple, confirmation par mail/SMS).
    - Vue planning : arrivées et retours du jour, taux d'occupation, alerte de surréservation
      calculée sur la capacité réelle.
@@ -197,7 +198,7 @@ Le nom du produit doit rester dans UN seul fichier de configuration (il peut enc
 - `mobile/` : app Flutter (jalon 6 commencé) : un seul projet, deux apps (`AppConstants.flavor`) : « Plazo », onglets
   Rechercher / Mes réservations / Plus pour le voyageur (mêmes chemins que le site : `/:airport/recherche`, `/:airport/:parking`, `/ma-reservation…`), et le
   parcours pro (`/pro…`, comptes du personnel ; `/pro/plan` et `/pro/parking` (Occupation) pour le bloc 2 ; `/pro/reservations…` : liste,
-  recherche, fiche avec statuts, saisie, import d'un mail, feature `pro_reservations`, 04/10/2026) **dans Plazo Pro seulement**
+  recherche, fiche avec statuts, saisie, feature `pro_reservations`, 04/10/2026) **dans Plazo Pro seulement**
   (décision du 04/10/2026 : l'app voyageur n'embarque plus l'espace pro, et Plazo Pro aucun écran voyageur), dont le plan du parking pour les gérants
   (`/pro/plan`, M-A + rectangle auto du 04/10/2026 : adresse ou GPS, coins sur la photo IGN, génération côté serveur
   par `/plan/estimate` et `/plan/generate`) ; paiement par la feuille native Stripe

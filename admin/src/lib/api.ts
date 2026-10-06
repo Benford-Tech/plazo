@@ -17,7 +17,6 @@ import type {
   SmsStatus,
   PlatformReservations,
   SignupInput,
-  EmailImportResult,
   ListingInput,
   ListingResponse,
   Listing,
@@ -421,11 +420,6 @@ export const adminApi = {
     apiRequest<{ data: Reservation }>(`/internal/reservations/${id}`, {
       method: "PATCH",
       body: json(input),
-    }),
-  parseEmail: (text: string) =>
-    apiRequest<EmailImportResult>("/internal/imports/email", {
-      method: "POST",
-      body: json({ text }),
     }),
   getListing: () => apiRequest<ListingResponse>("/internal/listing"),
   updateListing: (input: ListingInput) =>

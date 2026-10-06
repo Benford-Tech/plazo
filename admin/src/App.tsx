@@ -8,7 +8,6 @@ import { can, type Permission } from "@/lib/roles";
 import AccountPage from "@/pages/AccountPage";
 import LoginPage from "@/pages/LoginPage";
 import NotFound from "@/pages/NotFound";
-import ImportEmailPage from "@/pages/ImportEmailPage";
 import ListingPage from "@/pages/ListingPage";
 import NewReservationPage from "@/pages/NewReservationPage";
 import ParkingPage from "@/pages/ParkingPage";
@@ -136,14 +135,6 @@ const App = () => (
                 element={
                   <RequirePermission permission="reservations:manage">
                     <NewReservationPage />
-                  </RequirePermission>
-                }
-              />
-              <Route
-                path="/reservations/import"
-                element={
-                  <RequirePermission permission="reservations:manage">
-                    <ImportEmailPage />
                   </RequirePermission>
                 }
               />

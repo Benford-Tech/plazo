@@ -285,7 +285,7 @@ return $default(_that.reference,_that.status,_that.paymentMode,_that.payment,_th
 @JsonSerializable()
 
 class _PublicBookingModel extends PublicBookingModel {
-  const _PublicBookingModel({required this.reference, required this.status, this.paymentMode = 'on_site', this.payment, required this.parking, required this.arrivalAt, required this.returnAt, required this.customerName, this.customerEmail, this.customerPhone = '', required this.plate, this.returnFlight, this.departureFlight, this.outbound, this.car, required this.passengers, this.days, this.priceCents, this.cancellationPolicy = 'non_refundable', this.cancellableUntil, this.canCancel = false, this.canEditFlight = false}): super._();
+  const _PublicBookingModel({required this.reference, required this.status, this.paymentMode = 'online', this.payment, required this.parking, required this.arrivalAt, required this.returnAt, required this.customerName, this.customerEmail, this.customerPhone = '', required this.plate, this.returnFlight, this.departureFlight, this.outbound, this.car, required this.passengers, this.days, this.priceCents, this.cancellationPolicy = 'non_refundable', this.cancellableUntil, this.canCancel = false, this.canEditFlight = false}): super._();
   factory _PublicBookingModel.fromJson(Map<String, dynamic> json) => _$PublicBookingModelFromJson(json);
 
 @override final  String reference;

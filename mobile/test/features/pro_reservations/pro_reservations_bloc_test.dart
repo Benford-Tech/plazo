@@ -5,7 +5,6 @@ import 'package:parking_app/src/core/error/failure.dart';
 import 'package:parking_app/src/core/utils/either.dart';
 import 'package:parking_app/src/features/pro_reservations/data/models/reservation_models.dart';
 import 'package:parking_app/src/features/pro_reservations/domain/usecases/reservations_use_cases.dart';
-import 'package:parking_app/src/features/pro_reservations/presentation/bloc/pro_import_bloc.dart';
 import 'package:parking_app/src/features/pro_reservations/presentation/bloc/pro_reservation_bloc.dart';
 import 'package:parking_app/src/features/pro_reservations/presentation/bloc/pro_reservation_form_bloc.dart';
 import 'package:parking_app/src/features/pro_reservations/presentation/bloc/pro_reservations_bloc.dart';
@@ -17,8 +16,6 @@ class MockGet extends Mock implements GetReservationUseCase {}
 class MockSave extends Mock implements SaveReservationUseCase {}
 
 class MockStatus extends Mock implements ChangeReservationStatusUseCase {}
-
-class MockParse extends Mock implements ParseEmailUseCase {}
 
 class MockCapacity extends Mock implements PreviewCapacityUseCase {}
 
@@ -130,29 +127,4 @@ void main() {
     });
   });
 
-  group('import', () {
-    test('un mail lu devient les valeurs du formulaire ; un mail inconnu remonte son code', () async {
-      final parse = MockParse();
-      when(() => parse('bonjour')).thenAnswer((_) async => const Left(ServerFailure(statusCode: 422, code: 'unrecognised_email')));
-      when(() => parse('mail allopark')).thenAnswer(
-        (_) async => const Right(
-          ParsedEmailModel(
-            parsed: ParsedBookingModel(provider: 'Allopark', externalReference: 'AL-1', arrivalAt: '2026-10-05T06:30', returnAt: '2026-10-12T18:00', customerName: 'M. Petit', plate: 'AB-123-CD', passengers: 3),
-            missing: ['customerPhone'],
-          ),
-        ),
-      );
-      final b = ProImportBloc(parse)..add(const ProImportParsed('bonjour'));
-      await settle();
-      expect(b.state.errorCode, 'unrecognised_email');
-      b.add(const ProImportParsed('mail allopark'));
-      await settle();
-      final input = b.state.input!;
-      expect(input.channel, 'aggregator');
-      expect(input.channelDetail, 'Allopark');
-      expect(input.passengers, 3);
-      expect(input.customerPhone, '');
-      expect(input.externalReference, 'AL-1');
-    });
-  });
 }

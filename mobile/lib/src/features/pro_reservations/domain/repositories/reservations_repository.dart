@@ -10,7 +10,6 @@ abstract class ReservationsRepository {
   Future<Either<Failure, ReservationModel>> create(ReservationInput input);
   Future<Either<Failure, ReservationModel>> update(String id, ReservationInput input);
   Future<Either<Failure, ReservationModel>> changeStatus(String id, String status);
-  Future<Either<Failure, ParsedEmailModel>> parseEmail(String text);
   Future<Either<Failure, CapacityPreviewModel>> capacity(String arrivalAt, String returnAt, {String? excludeId});
 }
 
@@ -34,7 +33,6 @@ class ReservationsRepositoryImpl implements ReservationsRepository {
   Future<Either<Failure, ReservationModel>> changeStatus(String id, String status) => _source.changeStatus(id, status).makeRequest();
 
   @override
-  Future<Either<Failure, ParsedEmailModel>> parseEmail(String text) => _source.parseEmail(text).makeRequest();
 
   @override
   Future<Either<Failure, CapacityPreviewModel>> capacity(String arrivalAt, String returnAt, {String? excludeId}) =>

@@ -13,7 +13,7 @@ et affectation des véhicules, navette au retour.
   API documentée, espace pro.
 - [ ] **Jalon 2 — Réservations** (en cours) : fait — saisie manuelle, planning du jour (arrivées et retours,
   7 nuits), contrôle de capacité par nuit avec surréservation forcée et tracée, statuts, fiche et recherche,
-  import des mails de confirmation Allopark par copier-coller (doublons refusés).
+  lecture des mails de confirmation Allopark côté serveur (`domain/importers`, doublons refusés) en attendant la synchronisation de la boîte mail ; l'import par copier-coller a été retiré le 06/10/2026.
   Reste : lecteurs Parkos, Onepark… (un exemple de mail par comparateur), import CSV si besoin.
 - [ ] **Jalon 3a — Fiche et tarifs** (fait) : dans l'espace pro, onglet « Sur Plazo » : « Ma fiche » (présentation,
   services, annulation, photos par adresse, aperçu en direct, envoi en validation refusé tant qu'il n'y a pas de tarifs)

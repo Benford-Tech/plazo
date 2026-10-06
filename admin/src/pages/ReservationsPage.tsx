@@ -28,9 +28,6 @@ export default function ReservationsPage() {
         <h1 className="text-3xl font-bold uppercase tracking-wide">{t.listTitle}</h1>
         {can(user?.role, "reservations:manage") && (
           <div className="flex gap-2">
-            <Link to="/reservations/import" className="flex h-11 items-center border border-border px-4 font-semibold uppercase tracking-wide hover:bg-accent">
-              {fr.importEmail.action}
-            </Link>
             <Link to="/reservations/nouvelle" className="flex h-11 items-center bg-primary px-5 font-bold uppercase tracking-wide text-primary-foreground hover:brightness-110">
               {fr.planning.newReservation}
             </Link>
