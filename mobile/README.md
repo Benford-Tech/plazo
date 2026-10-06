@@ -118,7 +118,8 @@ de la réservation) ; l'app attend seulement que la réservation passe à « Con
 version web, « Payer » ouvre la page Stripe Checkout.
 
 - **Android** : `MainActivity` hérite de `FlutterFragmentActivity` et le thème est `Theme.MaterialComponents`
-  (exigés par la feuille de paiement). **Google Pay** : activé dans le tableau de bord Stripe (*Moyens de paiement*) ;
+  (exigés par la feuille de paiement). **Google Pay** : `com.google.android.gms.wallet.api.enabled` dans le manifeste,
+  activé dans le tableau de bord Stripe (*Moyens de paiement*) ;
   `GOOGLE_PAY_TEST=true` jusqu'aux clés live, puis demande d'accès à la production Google Pay (console Google Pay &
   Wallet) avec des captures du parcours.
 - **iOS — Apple Pay** : créer un *Merchant ID* (`merchant.com.<entreprise>.plazo`) dans le compte Apple Developer,
