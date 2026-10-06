@@ -22,6 +22,7 @@ void _initUseCaseLocator() {
     ..registerLazySingleton(() => SearchParkingsUseCase(locator()))
     ..registerLazySingleton(() => GetParkingUseCase(locator()))
     ..registerLazySingleton(() => GetPaymentsConfigUseCase(locator()))
+    ..registerLazySingleton(() => GetAirportLiveUseCase(locator()))
     // Traveller: arrival
     ..registerLazySingleton(() => GetArrivalUseCase(locator()))
     ..registerLazySingleton(() => StartSharingUseCase(locator()))

@@ -172,3 +172,11 @@
     cursor: pointer;
   }
 }
+
+/* The home map (K-A): the zoom buttons sit above the orange card, under the pills. */
+[data-home-map] .maplibregl-ctrl-bottom-right {
+  bottom: 112px;
+}
+[data-home-map] .maplibregl-ctrl-bottom-right .maplibregl-ctrl-attrib {
+  margin-bottom: 0;
+}

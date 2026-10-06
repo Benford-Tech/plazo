@@ -312,6 +312,7 @@ Documentation interactive : `/api/docs` (Swagger). Toutes les routes sont sous `
 | GET / PUT | `/internal/pricing` | Grille tarifaire : forfaits « jusqu'à N jours » + prix du jour supplémentaire |
 | GET | `/public/airports` | Aéroports desservis (formulaire d'inscription) |
 | GET | `/public/airports/:slug` | Site voyageurs : parkings publiés d'un aéroport (sans authentification) |
+| GET | `/public/airports/:slug/live` | Carte vivante de l'accueil (K-A) : parkings publiés et navettes en circulation (position, sens, véhicule ; jamais de chauffeur ni de passager), interrogée toutes les 12 s, `Cache-Control: no-store` |
 | GET | `/public/search?airport=&arrivalAt=&returnAt=` | Site voyageurs : disponibilité et prix total pour un séjour |
 | GET | `/public/airports/:airport/parkings/:slug` | Site voyageurs : fiche parking, avec l'offre si des dates sont données |
 | POST | `/internal/reservations/:id/status` | Étape suivante : arrivée, navette, retour, rendu, annulation… (annuler une réservation payée en ligne la rembourse) |

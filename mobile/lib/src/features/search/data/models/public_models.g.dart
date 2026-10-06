@@ -203,6 +203,89 @@ Map<String, dynamic> _$ParkingResponseModelToJson(
   'offer': instance.offer,
 };
 
+_AirportLiveModel _$AirportLiveModelFromJson(Map<String, dynamic> json) =>
+    _AirportLiveModel(
+      serverTime: json['serverTime'] as String,
+      airport: AirportModel.fromJson(json['airport'] as Map<String, dynamic>),
+      parkings:
+          (json['parkings'] as List<dynamic>?)
+              ?.map((e) => LiveParkingModel.fromJson(e as Map<String, dynamic>))
+              .toList() ??
+          const <LiveParkingModel>[],
+      shuttles:
+          (json['shuttles'] as List<dynamic>?)
+              ?.map((e) => LiveShuttleModel.fromJson(e as Map<String, dynamic>))
+              .toList() ??
+          const <LiveShuttleModel>[],
+    );
+
+Map<String, dynamic> _$AirportLiveModelToJson(_AirportLiveModel instance) =>
+    <String, dynamic>{
+      'serverTime': instance.serverTime,
+      'airport': instance.airport,
+      'parkings': instance.parkings,
+      'shuttles': instance.shuttles,
+    };
+
+_LiveParkingModel _$LiveParkingModelFromJson(Map<String, dynamic> json) =>
+    _LiveParkingModel(
+      slug: json['slug'] as String,
+      title: json['title'] as String,
+      services:
+          (json['services'] as List<dynamic>?)
+              ?.map((e) => e as String)
+              .toList() ??
+          const <String>[],
+      shuttleMinutes: (json['shuttleMinutes'] as num?)?.toInt(),
+      location: json['location'] == null
+          ? null
+          : LatLngModel.fromJson(json['location'] as Map<String, dynamic>),
+    );
+
+Map<String, dynamic> _$LiveParkingModelToJson(_LiveParkingModel instance) =>
+    <String, dynamic>{
+      'slug': instance.slug,
+      'title': instance.title,
+      'services': instance.services,
+      'shuttleMinutes': instance.shuttleMinutes,
+      'location': instance.location,
+    };
+
+_LiveVehicleModel _$LiveVehicleModelFromJson(Map<String, dynamic> json) =>
+    _LiveVehicleModel(
+      model: json['model'] as String?,
+      colour: json['colour'] as String?,
+    );
+
+Map<String, dynamic> _$LiveVehicleModelToJson(_LiveVehicleModel instance) =>
+    <String, dynamic>{'model': instance.model, 'colour': instance.colour};
+
+_LiveShuttleModel _$LiveShuttleModelFromJson(Map<String, dynamic> json) =>
+    _LiveShuttleModel(
+      id: json['id'] as String,
+      parking: json['parking'] as String,
+      direction: json['direction'] as String? ?? 'pickup',
+      vehicle: json['vehicle'] == null
+          ? const LiveVehicleModel()
+          : LiveVehicleModel.fromJson(json['vehicle'] as Map<String, dynamic>),
+      position: json['position'] == null
+          ? null
+          : LatLngModel.fromJson(json['position'] as Map<String, dynamic>),
+      positionAgeSeconds: (json['positionAgeSeconds'] as num?)?.toInt(),
+      startedAt: json['startedAt'] as String,
+    );
+
+Map<String, dynamic> _$LiveShuttleModelToJson(_LiveShuttleModel instance) =>
+    <String, dynamic>{
+      'id': instance.id,
+      'parking': instance.parking,
+      'direction': instance.direction,
+      'vehicle': instance.vehicle,
+      'position': instance.position,
+      'positionAgeSeconds': instance.positionAgeSeconds,
+      'startedAt': instance.startedAt,
+    };
+
 _PaymentsConfigModel _$PaymentsConfigModelFromJson(Map<String, dynamic> json) =>
     _PaymentsConfigModel(
       payments: json['payments'] as String? ?? 'unavailable',

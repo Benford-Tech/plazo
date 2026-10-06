@@ -35,6 +35,14 @@ import { Routes } from '@/interfaces/routes.interface';
  *     security: []
  *     parameters:
  *       - { in: path, name: slug, required: true, schema: { type: string, example: lyon-saint-exupery } }
+ * /public/airports/{slug}/live:
+ *   get:
+ *     summary: "Live layer of the home map (K-A): the airport's parkings and their shuttles on the road"
+ *     description: "Anonymous: shuttle position, direction and vehicle only — never a driver, a plate or a passenger. Polled every 12 s."
+ *     tags: [Public]
+ *     security: []
+ *     parameters:
+ *       - { in: path, name: slug, required: true, schema: { type: string, example: lyon-saint-exupery } }
  * /public/search:
  *   get:
  *     summary: Parkings for a stay — availability and total price, available first then cheapest
@@ -66,6 +74,7 @@ export class PublicRoute implements Routes {
     this.router.get('/public/config', this.public.config);
     this.router.get('/public/airports', this.public.airports);
     this.router.get('/public/airports/:slug', this.public.airport);
+    this.router.get('/public/airports/:slug/live', this.public.live);
     this.router.get('/public/search', this.public.search);
     this.router.get('/public/airports/:airport/parkings/:slug', this.public.parking);
   }

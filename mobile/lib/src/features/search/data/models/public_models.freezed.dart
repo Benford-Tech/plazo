@@ -2770,6 +2770,1232 @@ $OfferModelCopyWith<$Res>? get offer {
 
 
 /// @nodoc
+mixin _$AirportLiveModel {
+
+ String get serverTime; AirportModel get airport; List<LiveParkingModel> get parkings; List<LiveShuttleModel> get shuttles;
+/// Create a copy of AirportLiveModel
+/// with the given fields replaced by the non-null parameter values.
+@JsonKey(includeFromJson: false, includeToJson: false)
+@pragma('vm:prefer-inline')
+$AirportLiveModelCopyWith<AirportLiveModel> get copyWith => _$AirportLiveModelCopyWithImpl<AirportLiveModel>(this as AirportLiveModel, _$identity);
+
+  /// Serializes this AirportLiveModel to a JSON map.
+  Map<String, dynamic> toJson();
+
+
+@override
+bool operator ==(Object other) {
+  final _this = this as AirportLiveModel;
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is AirportLiveModel&&(identical(other.serverTime, _this.serverTime) || other.serverTime == _this.serverTime)&&(identical(other.airport, _this.airport) || other.airport == _this.airport)&&const DeepCollectionEquality().equals(other.parkings, _this.parkings)&&const DeepCollectionEquality().equals(other.shuttles, _this.shuttles));
+}
+
+@JsonKey(includeFromJson: false, includeToJson: false)
+@override
+int get hashCode {
+  final _this = this as AirportLiveModel;
+  return Object.hash(runtimeType,_this.serverTime,_this.airport,const DeepCollectionEquality().hash(_this.parkings),const DeepCollectionEquality().hash(_this.shuttles));
+}
+
+@override
+String toString() {
+  final _this = this as AirportLiveModel;
+  return 'AirportLiveModel(serverTime: ${_this.serverTime}, airport: ${_this.airport}, parkings: ${_this.parkings}, shuttles: ${_this.shuttles})';
+}
+
+
+}
+
+/// @nodoc
+abstract mixin class $AirportLiveModelCopyWith<$Res>  {
+  factory $AirportLiveModelCopyWith(AirportLiveModel value, $Res Function(AirportLiveModel) _then) = _$AirportLiveModelCopyWithImpl;
+@useResult
+$Res call({
+ String serverTime, AirportModel airport, List<LiveParkingModel> parkings, List<LiveShuttleModel> shuttles
+});
+
+
+$AirportModelCopyWith<$Res> get airport;
+
+}
+/// @nodoc
+class _$AirportLiveModelCopyWithImpl<$Res>
+    implements $AirportLiveModelCopyWith<$Res> {
+  _$AirportLiveModelCopyWithImpl(this._self, this._then);
+
+  final AirportLiveModel _self;
+  final $Res Function(AirportLiveModel) _then;
+
+/// Create a copy of AirportLiveModel
+/// with the given fields replaced by the non-null parameter values.
+@pragma('vm:prefer-inline') @override $Res call({Object? serverTime = null,Object? airport = null,Object? parkings = null,Object? shuttles = null,}) {
+  return _then(AirportLiveModel(
+serverTime: null == serverTime ? _self.serverTime : serverTime // ignore: cast_nullable_to_non_nullable
+as String,airport: null == airport ? _self.airport : airport // ignore: cast_nullable_to_non_nullable
+as AirportModel,parkings: null == parkings ? _self.parkings : parkings // ignore: cast_nullable_to_non_nullable
+as List<LiveParkingModel>,shuttles: null == shuttles ? _self.shuttles : shuttles // ignore: cast_nullable_to_non_nullable
+as List<LiveShuttleModel>,
+  ));
+}
+/// Create a copy of AirportLiveModel
+/// with the given fields replaced by the non-null parameter values.
+@override
+@pragma('vm:prefer-inline')
+$AirportModelCopyWith<$Res> get airport {
+  
+  return $AirportModelCopyWith<$Res>(_self.airport, (value) {
+    return _then(_self.copyWith(airport: value));
+  });
+}
+}
+
+
+/// Adds pattern-matching-related methods to [AirportLiveModel].
+extension AirportLiveModelPatterns on AirportLiveModel {
+/// A variant of `map` that fallback to returning `orElse`.
+///
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case final Subclass value:
+///     return ...;
+///   case _:
+///     return orElse();
+/// }
+/// ```
+
+@optionalTypeArgs TResult maybeMap<TResult extends Object?>(TResult Function( _AirportLiveModel value)?  $default,{required TResult orElse(),}){
+final _that = this;
+switch (_that) {
+case _AirportLiveModel() when $default != null:
+return $default(_that);case _:
+  return orElse();
+
+}
+}
+/// A `switch`-like method, using callbacks.
+///
+/// Callbacks receives the raw object, upcasted.
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case final Subclass value:
+///     return ...;
+///   case final Subclass2 value:
+///     return ...;
+/// }
+/// ```
+
+@optionalTypeArgs TResult map<TResult extends Object?>(TResult Function( _AirportLiveModel value)  $default,){
+final _that = this;
+switch (_that) {
+case _AirportLiveModel():
+return $default(_that);case _:
+  throw StateError('Unexpected subclass');
+
+}
+}
+/// A variant of `map` that fallback to returning `null`.
+///
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case final Subclass value:
+///     return ...;
+///   case _:
+///     return null;
+/// }
+/// ```
+
+@optionalTypeArgs TResult? mapOrNull<TResult extends Object?>(TResult? Function( _AirportLiveModel value)?  $default,){
+final _that = this;
+switch (_that) {
+case _AirportLiveModel() when $default != null:
+return $default(_that);case _:
+  return null;
+
+}
+}
+/// A variant of `when` that fallback to an `orElse` callback.
+///
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case Subclass(:final field):
+///     return ...;
+///   case _:
+///     return orElse();
+/// }
+/// ```
+
+@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( String serverTime,  AirportModel airport,  List<LiveParkingModel> parkings,  List<LiveShuttleModel> shuttles)?  $default,{required TResult orElse(),}) {final _that = this;
+switch (_that) {
+case _AirportLiveModel() when $default != null:
+return $default(_that.serverTime,_that.airport,_that.parkings,_that.shuttles);case _:
+  return orElse();
+
+}
+}
+/// A `switch`-like method, using callbacks.
+///
+/// As opposed to `map`, this offers destructuring.
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case Subclass(:final field):
+///     return ...;
+///   case Subclass2(:final field2):
+///     return ...;
+/// }
+/// ```
+
+@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( String serverTime,  AirportModel airport,  List<LiveParkingModel> parkings,  List<LiveShuttleModel> shuttles)  $default,) {final _that = this;
+switch (_that) {
+case _AirportLiveModel():
+return $default(_that.serverTime,_that.airport,_that.parkings,_that.shuttles);case _:
+  throw StateError('Unexpected subclass');
+
+}
+}
+/// A variant of `when` that fallback to returning `null`
+///
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case Subclass(:final field):
+///     return ...;
+///   case _:
+///     return null;
+/// }
+/// ```
+
+@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( String serverTime,  AirportModel airport,  List<LiveParkingModel> parkings,  List<LiveShuttleModel> shuttles)?  $default,) {final _that = this;
+switch (_that) {
+case _AirportLiveModel() when $default != null:
+return $default(_that.serverTime,_that.airport,_that.parkings,_that.shuttles);case _:
+  return null;
+
+}
+}
+
+}
+
+/// @nodoc
+@JsonSerializable()
+
+class _AirportLiveModel implements AirportLiveModel {
+  const _AirportLiveModel({required this.serverTime, required this.airport,  List<LiveParkingModel> parkings = const <LiveParkingModel>[],  List<LiveShuttleModel> shuttles = const <LiveShuttleModel>[]}): _parkings = parkings,_shuttles = shuttles;
+  factory _AirportLiveModel.fromJson(Map<String, dynamic> json) => _$AirportLiveModelFromJson(json);
+
+@override final  String serverTime;
+@override final  AirportModel airport;
+ final  List<LiveParkingModel> _parkings;
+@override@JsonKey() List<LiveParkingModel> get parkings {
+  if (_parkings is EqualUnmodifiableListView) return _parkings;
+  // ignore: implicit_dynamic_type
+  return EqualUnmodifiableListView(_parkings);
+}
+
+ final  List<LiveShuttleModel> _shuttles;
+@override@JsonKey() List<LiveShuttleModel> get shuttles {
+  if (_shuttles is EqualUnmodifiableListView) return _shuttles;
+  // ignore: implicit_dynamic_type
+  return EqualUnmodifiableListView(_shuttles);
+}
+
+
+/// Create a copy of AirportLiveModel
+/// with the given fields replaced by the non-null parameter values.
+@override @JsonKey(includeFromJson: false, includeToJson: false)
+@pragma('vm:prefer-inline')
+_$AirportLiveModelCopyWith<_AirportLiveModel> get copyWith => __$AirportLiveModelCopyWithImpl<_AirportLiveModel>(this, _$identity);
+
+@override
+Map<String, dynamic> toJson() {
+  return _$AirportLiveModelToJson(this, );
+}
+
+@override
+bool operator ==(Object other) {
+    return identical(this, other) || (other.runtimeType == runtimeType&&other is _AirportLiveModel&&(identical(other.serverTime, serverTime) || other.serverTime == serverTime)&&(identical(other.airport, airport) || other.airport == airport)&&const DeepCollectionEquality().equals(other.parkings, _parkings)&&const DeepCollectionEquality().equals(other.shuttles, _shuttles));
+}
+
+@JsonKey(includeFromJson: false, includeToJson: false)
+@override
+int get hashCode {
+    return Object.hash(runtimeType,serverTime,airport,const DeepCollectionEquality().hash(_parkings),const DeepCollectionEquality().hash(_shuttles));
+}
+
+@override
+String toString() {
+    return 'AirportLiveModel(serverTime: $serverTime, airport: $airport, parkings: $parkings, shuttles: $shuttles)';
+}
+
+
+}
+
+/// @nodoc
+abstract mixin class _$AirportLiveModelCopyWith<$Res> implements $AirportLiveModelCopyWith<$Res> {
+  factory _$AirportLiveModelCopyWith(_AirportLiveModel value, $Res Function(_AirportLiveModel) _then) = __$AirportLiveModelCopyWithImpl;
+@override @useResult
+$Res call({
+ String serverTime, AirportModel airport, List<LiveParkingModel> parkings, List<LiveShuttleModel> shuttles
+});
+
+
+@override $AirportModelCopyWith<$Res> get airport;
+
+}
+/// @nodoc
+class __$AirportLiveModelCopyWithImpl<$Res>
+    implements _$AirportLiveModelCopyWith<$Res> {
+  __$AirportLiveModelCopyWithImpl(this._self, this._then);
+
+  final _AirportLiveModel _self;
+  final $Res Function(_AirportLiveModel) _then;
+
+/// Create a copy of AirportLiveModel
+/// with the given fields replaced by the non-null parameter values.
+@override @pragma('vm:prefer-inline') $Res call({Object? serverTime = null,Object? airport = null,Object? parkings = null,Object? shuttles = null,}) {
+  return _then(_AirportLiveModel(
+serverTime: null == serverTime ? _self.serverTime : serverTime // ignore: cast_nullable_to_non_nullable
+as String,airport: null == airport ? _self.airport : airport // ignore: cast_nullable_to_non_nullable
+as AirportModel,parkings: null == parkings ? _self._parkings : parkings // ignore: cast_nullable_to_non_nullable
+as List<LiveParkingModel>,shuttles: null == shuttles ? _self._shuttles : shuttles // ignore: cast_nullable_to_non_nullable
+as List<LiveShuttleModel>,
+  ));
+}
+
+/// Create a copy of AirportLiveModel
+/// with the given fields replaced by the non-null parameter values.
+@override
+@pragma('vm:prefer-inline')
+$AirportModelCopyWith<$Res> get airport {
+  
+  return $AirportModelCopyWith<$Res>(_self.airport, (value) {
+    return _then(_self.copyWith(airport: value));
+  });
+}
+}
+
+
+/// @nodoc
+mixin _$LiveParkingModel {
+
+ String get slug; String get title; List<String> get services; int? get shuttleMinutes; LatLngModel? get location;
+/// Create a copy of LiveParkingModel
+/// with the given fields replaced by the non-null parameter values.
+@JsonKey(includeFromJson: false, includeToJson: false)
+@pragma('vm:prefer-inline')
+$LiveParkingModelCopyWith<LiveParkingModel> get copyWith => _$LiveParkingModelCopyWithImpl<LiveParkingModel>(this as LiveParkingModel, _$identity);
+
+  /// Serializes this LiveParkingModel to a JSON map.
+  Map<String, dynamic> toJson();
+
+
+@override
+bool operator ==(Object other) {
+  final _this = this as LiveParkingModel;
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is LiveParkingModel&&(identical(other.slug, _this.slug) || other.slug == _this.slug)&&(identical(other.title, _this.title) || other.title == _this.title)&&const DeepCollectionEquality().equals(other.services, _this.services)&&(identical(other.shuttleMinutes, _this.shuttleMinutes) || other.shuttleMinutes == _this.shuttleMinutes)&&(identical(other.location, _this.location) || other.location == _this.location));
+}
+
+@JsonKey(includeFromJson: false, includeToJson: false)
+@override
+int get hashCode {
+  final _this = this as LiveParkingModel;
+  return Object.hash(runtimeType,_this.slug,_this.title,const DeepCollectionEquality().hash(_this.services),_this.shuttleMinutes,_this.location);
+}
+
+@override
+String toString() {
+  final _this = this as LiveParkingModel;
+  return 'LiveParkingModel(slug: ${_this.slug}, title: ${_this.title}, services: ${_this.services}, shuttleMinutes: ${_this.shuttleMinutes}, location: ${_this.location})';
+}
+
+
+}
+
+/// @nodoc
+abstract mixin class $LiveParkingModelCopyWith<$Res>  {
+  factory $LiveParkingModelCopyWith(LiveParkingModel value, $Res Function(LiveParkingModel) _then) = _$LiveParkingModelCopyWithImpl;
+@useResult
+$Res call({
+ String slug, String title, List<String> services, int? shuttleMinutes, LatLngModel? location
+});
+
+
+$LatLngModelCopyWith<$Res>? get location;
+
+}
+/// @nodoc
+class _$LiveParkingModelCopyWithImpl<$Res>
+    implements $LiveParkingModelCopyWith<$Res> {
+  _$LiveParkingModelCopyWithImpl(this._self, this._then);
+
+  final LiveParkingModel _self;
+  final $Res Function(LiveParkingModel) _then;
+
+/// Create a copy of LiveParkingModel
+/// with the given fields replaced by the non-null parameter values.
+@pragma('vm:prefer-inline') @override $Res call({Object? slug = null,Object? title = null,Object? services = null,Object? shuttleMinutes = freezed,Object? location = freezed,}) {
+  return _then(LiveParkingModel(
+slug: null == slug ? _self.slug : slug // ignore: cast_nullable_to_non_nullable
+as String,title: null == title ? _self.title : title // ignore: cast_nullable_to_non_nullable
+as String,services: null == services ? _self.services : services // ignore: cast_nullable_to_non_nullable
+as List<String>,shuttleMinutes: freezed == shuttleMinutes ? _self.shuttleMinutes : shuttleMinutes // ignore: cast_nullable_to_non_nullable
+as int?,location: freezed == location ? _self.location : location // ignore: cast_nullable_to_non_nullable
+as LatLngModel?,
+  ));
+}
+/// Create a copy of LiveParkingModel
+/// with the given fields replaced by the non-null parameter values.
+@override
+@pragma('vm:prefer-inline')
+$LatLngModelCopyWith<$Res>? get location {
+    if (_self.location == null) {
+    return null;
+  }
+
+  return $LatLngModelCopyWith<$Res>(_self.location!, (value) {
+    return _then(_self.copyWith(location: value));
+  });
+}
+}
+
+
+/// Adds pattern-matching-related methods to [LiveParkingModel].
+extension LiveParkingModelPatterns on LiveParkingModel {
+/// A variant of `map` that fallback to returning `orElse`.
+///
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case final Subclass value:
+///     return ...;
+///   case _:
+///     return orElse();
+/// }
+/// ```
+
+@optionalTypeArgs TResult maybeMap<TResult extends Object?>(TResult Function( _LiveParkingModel value)?  $default,{required TResult orElse(),}){
+final _that = this;
+switch (_that) {
+case _LiveParkingModel() when $default != null:
+return $default(_that);case _:
+  return orElse();
+
+}
+}
+/// A `switch`-like method, using callbacks.
+///
+/// Callbacks receives the raw object, upcasted.
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case final Subclass value:
+///     return ...;
+///   case final Subclass2 value:
+///     return ...;
+/// }
+/// ```
+
+@optionalTypeArgs TResult map<TResult extends Object?>(TResult Function( _LiveParkingModel value)  $default,){
+final _that = this;
+switch (_that) {
+case _LiveParkingModel():
+return $default(_that);case _:
+  throw StateError('Unexpected subclass');
+
+}
+}
+/// A variant of `map` that fallback to returning `null`.
+///
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case final Subclass value:
+///     return ...;
+///   case _:
+///     return null;
+/// }
+/// ```
+
+@optionalTypeArgs TResult? mapOrNull<TResult extends Object?>(TResult? Function( _LiveParkingModel value)?  $default,){
+final _that = this;
+switch (_that) {
+case _LiveParkingModel() when $default != null:
+return $default(_that);case _:
+  return null;
+
+}
+}
+/// A variant of `when` that fallback to an `orElse` callback.
+///
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case Subclass(:final field):
+///     return ...;
+///   case _:
+///     return orElse();
+/// }
+/// ```
+
+@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( String slug,  String title,  List<String> services,  int? shuttleMinutes,  LatLngModel? location)?  $default,{required TResult orElse(),}) {final _that = this;
+switch (_that) {
+case _LiveParkingModel() when $default != null:
+return $default(_that.slug,_that.title,_that.services,_that.shuttleMinutes,_that.location);case _:
+  return orElse();
+
+}
+}
+/// A `switch`-like method, using callbacks.
+///
+/// As opposed to `map`, this offers destructuring.
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case Subclass(:final field):
+///     return ...;
+///   case Subclass2(:final field2):
+///     return ...;
+/// }
+/// ```
+
+@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( String slug,  String title,  List<String> services,  int? shuttleMinutes,  LatLngModel? location)  $default,) {final _that = this;
+switch (_that) {
+case _LiveParkingModel():
+return $default(_that.slug,_that.title,_that.services,_that.shuttleMinutes,_that.location);case _:
+  throw StateError('Unexpected subclass');
+
+}
+}
+/// A variant of `when` that fallback to returning `null`
+///
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case Subclass(:final field):
+///     return ...;
+///   case _:
+///     return null;
+/// }
+/// ```
+
+@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( String slug,  String title,  List<String> services,  int? shuttleMinutes,  LatLngModel? location)?  $default,) {final _that = this;
+switch (_that) {
+case _LiveParkingModel() when $default != null:
+return $default(_that.slug,_that.title,_that.services,_that.shuttleMinutes,_that.location);case _:
+  return null;
+
+}
+}
+
+}
+
+/// @nodoc
+@JsonSerializable()
+
+class _LiveParkingModel implements LiveParkingModel {
+  const _LiveParkingModel({required this.slug, required this.title,  List<String> services = const <String>[], this.shuttleMinutes, this.location}): _services = services;
+  factory _LiveParkingModel.fromJson(Map<String, dynamic> json) => _$LiveParkingModelFromJson(json);
+
+@override final  String slug;
+@override final  String title;
+ final  List<String> _services;
+@override@JsonKey() List<String> get services {
+  if (_services is EqualUnmodifiableListView) return _services;
+  // ignore: implicit_dynamic_type
+  return EqualUnmodifiableListView(_services);
+}
+
+@override final  int? shuttleMinutes;
+@override final  LatLngModel? location;
+
+/// Create a copy of LiveParkingModel
+/// with the given fields replaced by the non-null parameter values.
+@override @JsonKey(includeFromJson: false, includeToJson: false)
+@pragma('vm:prefer-inline')
+_$LiveParkingModelCopyWith<_LiveParkingModel> get copyWith => __$LiveParkingModelCopyWithImpl<_LiveParkingModel>(this, _$identity);
+
+@override
+Map<String, dynamic> toJson() {
+  return _$LiveParkingModelToJson(this, );
+}
+
+@override
+bool operator ==(Object other) {
+    return identical(this, other) || (other.runtimeType == runtimeType&&other is _LiveParkingModel&&(identical(other.slug, slug) || other.slug == slug)&&(identical(other.title, title) || other.title == title)&&const DeepCollectionEquality().equals(other.services, _services)&&(identical(other.shuttleMinutes, shuttleMinutes) || other.shuttleMinutes == shuttleMinutes)&&(identical(other.location, location) || other.location == location));
+}
+
+@JsonKey(includeFromJson: false, includeToJson: false)
+@override
+int get hashCode {
+    return Object.hash(runtimeType,slug,title,const DeepCollectionEquality().hash(_services),shuttleMinutes,location);
+}
+
+@override
+String toString() {
+    return 'LiveParkingModel(slug: $slug, title: $title, services: $services, shuttleMinutes: $shuttleMinutes, location: $location)';
+}
+
+
+}
+
+/// @nodoc
+abstract mixin class _$LiveParkingModelCopyWith<$Res> implements $LiveParkingModelCopyWith<$Res> {
+  factory _$LiveParkingModelCopyWith(_LiveParkingModel value, $Res Function(_LiveParkingModel) _then) = __$LiveParkingModelCopyWithImpl;
+@override @useResult
+$Res call({
+ String slug, String title, List<String> services, int? shuttleMinutes, LatLngModel? location
+});
+
+
+@override $LatLngModelCopyWith<$Res>? get location;
+
+}
+/// @nodoc
+class __$LiveParkingModelCopyWithImpl<$Res>
+    implements _$LiveParkingModelCopyWith<$Res> {
+  __$LiveParkingModelCopyWithImpl(this._self, this._then);
+
+  final _LiveParkingModel _self;
+  final $Res Function(_LiveParkingModel) _then;
+
+/// Create a copy of LiveParkingModel
+/// with the given fields replaced by the non-null parameter values.
+@override @pragma('vm:prefer-inline') $Res call({Object? slug = null,Object? title = null,Object? services = null,Object? shuttleMinutes = freezed,Object? location = freezed,}) {
+  return _then(_LiveParkingModel(
+slug: null == slug ? _self.slug : slug // ignore: cast_nullable_to_non_nullable
+as String,title: null == title ? _self.title : title // ignore: cast_nullable_to_non_nullable
+as String,services: null == services ? _self._services : services // ignore: cast_nullable_to_non_nullable
+as List<String>,shuttleMinutes: freezed == shuttleMinutes ? _self.shuttleMinutes : shuttleMinutes // ignore: cast_nullable_to_non_nullable
+as int?,location: freezed == location ? _self.location : location // ignore: cast_nullable_to_non_nullable
+as LatLngModel?,
+  ));
+}
+
+/// Create a copy of LiveParkingModel
+/// with the given fields replaced by the non-null parameter values.
+@override
+@pragma('vm:prefer-inline')
+$LatLngModelCopyWith<$Res>? get location {
+    if (_self.location == null) {
+    return null;
+  }
+
+  return $LatLngModelCopyWith<$Res>(_self.location!, (value) {
+    return _then(_self.copyWith(location: value));
+  });
+}
+}
+
+
+/// @nodoc
+mixin _$LiveVehicleModel {
+
+ String? get model; String? get colour;
+/// Create a copy of LiveVehicleModel
+/// with the given fields replaced by the non-null parameter values.
+@JsonKey(includeFromJson: false, includeToJson: false)
+@pragma('vm:prefer-inline')
+$LiveVehicleModelCopyWith<LiveVehicleModel> get copyWith => _$LiveVehicleModelCopyWithImpl<LiveVehicleModel>(this as LiveVehicleModel, _$identity);
+
+  /// Serializes this LiveVehicleModel to a JSON map.
+  Map<String, dynamic> toJson();
+
+
+@override
+bool operator ==(Object other) {
+  final _this = this as LiveVehicleModel;
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is LiveVehicleModel&&(identical(other.model, _this.model) || other.model == _this.model)&&(identical(other.colour, _this.colour) || other.colour == _this.colour));
+}
+
+@JsonKey(includeFromJson: false, includeToJson: false)
+@override
+int get hashCode {
+  final _this = this as LiveVehicleModel;
+  return Object.hash(runtimeType,_this.model,_this.colour);
+}
+
+@override
+String toString() {
+  final _this = this as LiveVehicleModel;
+  return 'LiveVehicleModel(model: ${_this.model}, colour: ${_this.colour})';
+}
+
+
+}
+
+/// @nodoc
+abstract mixin class $LiveVehicleModelCopyWith<$Res>  {
+  factory $LiveVehicleModelCopyWith(LiveVehicleModel value, $Res Function(LiveVehicleModel) _then) = _$LiveVehicleModelCopyWithImpl;
+@useResult
+$Res call({
+ String? model, String? colour
+});
+
+
+
+
+}
+/// @nodoc
+class _$LiveVehicleModelCopyWithImpl<$Res>
+    implements $LiveVehicleModelCopyWith<$Res> {
+  _$LiveVehicleModelCopyWithImpl(this._self, this._then);
+
+  final LiveVehicleModel _self;
+  final $Res Function(LiveVehicleModel) _then;
+
+/// Create a copy of LiveVehicleModel
+/// with the given fields replaced by the non-null parameter values.
+@pragma('vm:prefer-inline') @override $Res call({Object? model = freezed,Object? colour = freezed,}) {
+  return _then(LiveVehicleModel(
+model: freezed == model ? _self.model : model // ignore: cast_nullable_to_non_nullable
+as String?,colour: freezed == colour ? _self.colour : colour // ignore: cast_nullable_to_non_nullable
+as String?,
+  ));
+}
+
+}
+
+
+/// Adds pattern-matching-related methods to [LiveVehicleModel].
+extension LiveVehicleModelPatterns on LiveVehicleModel {
+/// A variant of `map` that fallback to returning `orElse`.
+///
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case final Subclass value:
+///     return ...;
+///   case _:
+///     return orElse();
+/// }
+/// ```
+
+@optionalTypeArgs TResult maybeMap<TResult extends Object?>(TResult Function( _LiveVehicleModel value)?  $default,{required TResult orElse(),}){
+final _that = this;
+switch (_that) {
+case _LiveVehicleModel() when $default != null:
+return $default(_that);case _:
+  return orElse();
+
+}
+}
+/// A `switch`-like method, using callbacks.
+///
+/// Callbacks receives the raw object, upcasted.
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case final Subclass value:
+///     return ...;
+///   case final Subclass2 value:
+///     return ...;
+/// }
+/// ```
+
+@optionalTypeArgs TResult map<TResult extends Object?>(TResult Function( _LiveVehicleModel value)  $default,){
+final _that = this;
+switch (_that) {
+case _LiveVehicleModel():
+return $default(_that);case _:
+  throw StateError('Unexpected subclass');
+
+}
+}
+/// A variant of `map` that fallback to returning `null`.
+///
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case final Subclass value:
+///     return ...;
+///   case _:
+///     return null;
+/// }
+/// ```
+
+@optionalTypeArgs TResult? mapOrNull<TResult extends Object?>(TResult? Function( _LiveVehicleModel value)?  $default,){
+final _that = this;
+switch (_that) {
+case _LiveVehicleModel() when $default != null:
+return $default(_that);case _:
+  return null;
+
+}
+}
+/// A variant of `when` that fallback to an `orElse` callback.
+///
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case Subclass(:final field):
+///     return ...;
+///   case _:
+///     return orElse();
+/// }
+/// ```
+
+@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( String? model,  String? colour)?  $default,{required TResult orElse(),}) {final _that = this;
+switch (_that) {
+case _LiveVehicleModel() when $default != null:
+return $default(_that.model,_that.colour);case _:
+  return orElse();
+
+}
+}
+/// A `switch`-like method, using callbacks.
+///
+/// As opposed to `map`, this offers destructuring.
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case Subclass(:final field):
+///     return ...;
+///   case Subclass2(:final field2):
+///     return ...;
+/// }
+/// ```
+
+@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( String? model,  String? colour)  $default,) {final _that = this;
+switch (_that) {
+case _LiveVehicleModel():
+return $default(_that.model,_that.colour);case _:
+  throw StateError('Unexpected subclass');
+
+}
+}
+/// A variant of `when` that fallback to returning `null`
+///
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case Subclass(:final field):
+///     return ...;
+///   case _:
+///     return null;
+/// }
+/// ```
+
+@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( String? model,  String? colour)?  $default,) {final _that = this;
+switch (_that) {
+case _LiveVehicleModel() when $default != null:
+return $default(_that.model,_that.colour);case _:
+  return null;
+
+}
+}
+
+}
+
+/// @nodoc
+@JsonSerializable()
+
+class _LiveVehicleModel implements LiveVehicleModel {
+  const _LiveVehicleModel({this.model, this.colour});
+  factory _LiveVehicleModel.fromJson(Map<String, dynamic> json) => _$LiveVehicleModelFromJson(json);
+
+@override final  String? model;
+@override final  String? colour;
+
+/// Create a copy of LiveVehicleModel
+/// with the given fields replaced by the non-null parameter values.
+@override @JsonKey(includeFromJson: false, includeToJson: false)
+@pragma('vm:prefer-inline')
+_$LiveVehicleModelCopyWith<_LiveVehicleModel> get copyWith => __$LiveVehicleModelCopyWithImpl<_LiveVehicleModel>(this, _$identity);
+
+@override
+Map<String, dynamic> toJson() {
+  return _$LiveVehicleModelToJson(this, );
+}
+
+@override
+bool operator ==(Object other) {
+    return identical(this, other) || (other.runtimeType == runtimeType&&other is _LiveVehicleModel&&(identical(other.model, model) || other.model == model)&&(identical(other.colour, colour) || other.colour == colour));
+}
+
+@JsonKey(includeFromJson: false, includeToJson: false)
+@override
+int get hashCode {
+    return Object.hash(runtimeType,model,colour);
+}
+
+@override
+String toString() {
+    return 'LiveVehicleModel(model: $model, colour: $colour)';
+}
+
+
+}
+
+/// @nodoc
+abstract mixin class _$LiveVehicleModelCopyWith<$Res> implements $LiveVehicleModelCopyWith<$Res> {
+  factory _$LiveVehicleModelCopyWith(_LiveVehicleModel value, $Res Function(_LiveVehicleModel) _then) = __$LiveVehicleModelCopyWithImpl;
+@override @useResult
+$Res call({
+ String? model, String? colour
+});
+
+
+
+
+}
+/// @nodoc
+class __$LiveVehicleModelCopyWithImpl<$Res>
+    implements _$LiveVehicleModelCopyWith<$Res> {
+  __$LiveVehicleModelCopyWithImpl(this._self, this._then);
+
+  final _LiveVehicleModel _self;
+  final $Res Function(_LiveVehicleModel) _then;
+
+/// Create a copy of LiveVehicleModel
+/// with the given fields replaced by the non-null parameter values.
+@override @pragma('vm:prefer-inline') $Res call({Object? model = freezed,Object? colour = freezed,}) {
+  return _then(_LiveVehicleModel(
+model: freezed == model ? _self.model : model // ignore: cast_nullable_to_non_nullable
+as String?,colour: freezed == colour ? _self.colour : colour // ignore: cast_nullable_to_non_nullable
+as String?,
+  ));
+}
+
+
+}
+
+
+/// @nodoc
+mixin _$LiveShuttleModel {
+
+ String get id;/// Slug of the parking the shuttle belongs to.
+ String get parking; String get direction; LiveVehicleModel get vehicle; LatLngModel? get position; int? get positionAgeSeconds; String get startedAt;
+/// Create a copy of LiveShuttleModel
+/// with the given fields replaced by the non-null parameter values.
+@JsonKey(includeFromJson: false, includeToJson: false)
+@pragma('vm:prefer-inline')
+$LiveShuttleModelCopyWith<LiveShuttleModel> get copyWith => _$LiveShuttleModelCopyWithImpl<LiveShuttleModel>(this as LiveShuttleModel, _$identity);
+
+  /// Serializes this LiveShuttleModel to a JSON map.
+  Map<String, dynamic> toJson();
+
+
+@override
+bool operator ==(Object other) {
+  final _this = this as LiveShuttleModel;
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is LiveShuttleModel&&(identical(other.id, _this.id) || other.id == _this.id)&&(identical(other.parking, _this.parking) || other.parking == _this.parking)&&(identical(other.direction, _this.direction) || other.direction == _this.direction)&&(identical(other.vehicle, _this.vehicle) || other.vehicle == _this.vehicle)&&(identical(other.position, _this.position) || other.position == _this.position)&&(identical(other.positionAgeSeconds, _this.positionAgeSeconds) || other.positionAgeSeconds == _this.positionAgeSeconds)&&(identical(other.startedAt, _this.startedAt) || other.startedAt == _this.startedAt));
+}
+
+@JsonKey(includeFromJson: false, includeToJson: false)
+@override
+int get hashCode {
+  final _this = this as LiveShuttleModel;
+  return Object.hash(runtimeType,_this.id,_this.parking,_this.direction,_this.vehicle,_this.position,_this.positionAgeSeconds,_this.startedAt);
+}
+
+@override
+String toString() {
+  final _this = this as LiveShuttleModel;
+  return 'LiveShuttleModel(id: ${_this.id}, parking: ${_this.parking}, direction: ${_this.direction}, vehicle: ${_this.vehicle}, position: ${_this.position}, positionAgeSeconds: ${_this.positionAgeSeconds}, startedAt: ${_this.startedAt})';
+}
+
+
+}
+
+/// @nodoc
+abstract mixin class $LiveShuttleModelCopyWith<$Res>  {
+  factory $LiveShuttleModelCopyWith(LiveShuttleModel value, $Res Function(LiveShuttleModel) _then) = _$LiveShuttleModelCopyWithImpl;
+@useResult
+$Res call({
+ String id, String parking, String direction, LiveVehicleModel vehicle, LatLngModel? position, int? positionAgeSeconds, String startedAt
+});
+
+
+$LiveVehicleModelCopyWith<$Res> get vehicle;$LatLngModelCopyWith<$Res>? get position;
+
+}
+/// @nodoc
+class _$LiveShuttleModelCopyWithImpl<$Res>
+    implements $LiveShuttleModelCopyWith<$Res> {
+  _$LiveShuttleModelCopyWithImpl(this._self, this._then);
+
+  final LiveShuttleModel _self;
+  final $Res Function(LiveShuttleModel) _then;
+
+/// Create a copy of LiveShuttleModel
+/// with the given fields replaced by the non-null parameter values.
+@pragma('vm:prefer-inline') @override $Res call({Object? id = null,Object? parking = null,Object? direction = null,Object? vehicle = null,Object? position = freezed,Object? positionAgeSeconds = freezed,Object? startedAt = null,}) {
+  return _then(LiveShuttleModel(
+id: null == id ? _self.id : id // ignore: cast_nullable_to_non_nullable
+as String,parking: null == parking ? _self.parking : parking // ignore: cast_nullable_to_non_nullable
+as String,direction: null == direction ? _self.direction : direction // ignore: cast_nullable_to_non_nullable
+as String,vehicle: null == vehicle ? _self.vehicle : vehicle // ignore: cast_nullable_to_non_nullable
+as LiveVehicleModel,position: freezed == position ? _self.position : position // ignore: cast_nullable_to_non_nullable
+as LatLngModel?,positionAgeSeconds: freezed == positionAgeSeconds ? _self.positionAgeSeconds : positionAgeSeconds // ignore: cast_nullable_to_non_nullable
+as int?,startedAt: null == startedAt ? _self.startedAt : startedAt // ignore: cast_nullable_to_non_nullable
+as String,
+  ));
+}
+/// Create a copy of LiveShuttleModel
+/// with the given fields replaced by the non-null parameter values.
+@override
+@pragma('vm:prefer-inline')
+$LiveVehicleModelCopyWith<$Res> get vehicle {
+  
+  return $LiveVehicleModelCopyWith<$Res>(_self.vehicle, (value) {
+    return _then(_self.copyWith(vehicle: value));
+  });
+}/// Create a copy of LiveShuttleModel
+/// with the given fields replaced by the non-null parameter values.
+@override
+@pragma('vm:prefer-inline')
+$LatLngModelCopyWith<$Res>? get position {
+    if (_self.position == null) {
+    return null;
+  }
+
+  return $LatLngModelCopyWith<$Res>(_self.position!, (value) {
+    return _then(_self.copyWith(position: value));
+  });
+}
+}
+
+
+/// Adds pattern-matching-related methods to [LiveShuttleModel].
+extension LiveShuttleModelPatterns on LiveShuttleModel {
+/// A variant of `map` that fallback to returning `orElse`.
+///
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case final Subclass value:
+///     return ...;
+///   case _:
+///     return orElse();
+/// }
+/// ```
+
+@optionalTypeArgs TResult maybeMap<TResult extends Object?>(TResult Function( _LiveShuttleModel value)?  $default,{required TResult orElse(),}){
+final _that = this;
+switch (_that) {
+case _LiveShuttleModel() when $default != null:
+return $default(_that);case _:
+  return orElse();
+
+}
+}
+/// A `switch`-like method, using callbacks.
+///
+/// Callbacks receives the raw object, upcasted.
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case final Subclass value:
+///     return ...;
+///   case final Subclass2 value:
+///     return ...;
+/// }
+/// ```
+
+@optionalTypeArgs TResult map<TResult extends Object?>(TResult Function( _LiveShuttleModel value)  $default,){
+final _that = this;
+switch (_that) {
+case _LiveShuttleModel():
+return $default(_that);case _:
+  throw StateError('Unexpected subclass');
+
+}
+}
+/// A variant of `map` that fallback to returning `null`.
+///
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case final Subclass value:
+///     return ...;
+///   case _:
+///     return null;
+/// }
+/// ```
+
+@optionalTypeArgs TResult? mapOrNull<TResult extends Object?>(TResult? Function( _LiveShuttleModel value)?  $default,){
+final _that = this;
+switch (_that) {
+case _LiveShuttleModel() when $default != null:
+return $default(_that);case _:
+  return null;
+
+}
+}
+/// A variant of `when` that fallback to an `orElse` callback.
+///
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case Subclass(:final field):
+///     return ...;
+///   case _:
+///     return orElse();
+/// }
+/// ```
+
+@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( String id,  String parking,  String direction,  LiveVehicleModel vehicle,  LatLngModel? position,  int? positionAgeSeconds,  String startedAt)?  $default,{required TResult orElse(),}) {final _that = this;
+switch (_that) {
+case _LiveShuttleModel() when $default != null:
+return $default(_that.id,_that.parking,_that.direction,_that.vehicle,_that.position,_that.positionAgeSeconds,_that.startedAt);case _:
+  return orElse();
+
+}
+}
+/// A `switch`-like method, using callbacks.
+///
+/// As opposed to `map`, this offers destructuring.
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case Subclass(:final field):
+///     return ...;
+///   case Subclass2(:final field2):
+///     return ...;
+/// }
+/// ```
+
+@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( String id,  String parking,  String direction,  LiveVehicleModel vehicle,  LatLngModel? position,  int? positionAgeSeconds,  String startedAt)  $default,) {final _that = this;
+switch (_that) {
+case _LiveShuttleModel():
+return $default(_that.id,_that.parking,_that.direction,_that.vehicle,_that.position,_that.positionAgeSeconds,_that.startedAt);case _:
+  throw StateError('Unexpected subclass');
+
+}
+}
+/// A variant of `when` that fallback to returning `null`
+///
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case Subclass(:final field):
+///     return ...;
+///   case _:
+///     return null;
+/// }
+/// ```
+
+@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( String id,  String parking,  String direction,  LiveVehicleModel vehicle,  LatLngModel? position,  int? positionAgeSeconds,  String startedAt)?  $default,) {final _that = this;
+switch (_that) {
+case _LiveShuttleModel() when $default != null:
+return $default(_that.id,_that.parking,_that.direction,_that.vehicle,_that.position,_that.positionAgeSeconds,_that.startedAt);case _:
+  return null;
+
+}
+}
+
+}
+
+/// @nodoc
+@JsonSerializable()
+
+class _LiveShuttleModel extends LiveShuttleModel {
+  const _LiveShuttleModel({required this.id, required this.parking, this.direction = 'pickup', this.vehicle = const LiveVehicleModel(), this.position, this.positionAgeSeconds, required this.startedAt}): super._();
+  factory _LiveShuttleModel.fromJson(Map<String, dynamic> json) => _$LiveShuttleModelFromJson(json);
+
+@override final  String id;
+/// Slug of the parking the shuttle belongs to.
+@override final  String parking;
+@override@JsonKey() final  String direction;
+@override@JsonKey() final  LiveVehicleModel vehicle;
+@override final  LatLngModel? position;
+@override final  int? positionAgeSeconds;
+@override final  String startedAt;
+
+/// Create a copy of LiveShuttleModel
+/// with the given fields replaced by the non-null parameter values.
+@override @JsonKey(includeFromJson: false, includeToJson: false)
+@pragma('vm:prefer-inline')
+_$LiveShuttleModelCopyWith<_LiveShuttleModel> get copyWith => __$LiveShuttleModelCopyWithImpl<_LiveShuttleModel>(this, _$identity);
+
+@override
+Map<String, dynamic> toJson() {
+  return _$LiveShuttleModelToJson(this, );
+}
+
+@override
+bool operator ==(Object other) {
+    return identical(this, other) || (other.runtimeType == runtimeType&&other is _LiveShuttleModel&&(identical(other.id, id) || other.id == id)&&(identical(other.parking, parking) || other.parking == parking)&&(identical(other.direction, direction) || other.direction == direction)&&(identical(other.vehicle, vehicle) || other.vehicle == vehicle)&&(identical(other.position, position) || other.position == position)&&(identical(other.positionAgeSeconds, positionAgeSeconds) || other.positionAgeSeconds == positionAgeSeconds)&&(identical(other.startedAt, startedAt) || other.startedAt == startedAt));
+}
+
+@JsonKey(includeFromJson: false, includeToJson: false)
+@override
+int get hashCode {
+    return Object.hash(runtimeType,id,parking,direction,vehicle,position,positionAgeSeconds,startedAt);
+}
+
+@override
+String toString() {
+    return 'LiveShuttleModel(id: $id, parking: $parking, direction: $direction, vehicle: $vehicle, position: $position, positionAgeSeconds: $positionAgeSeconds, startedAt: $startedAt)';
+}
+
+
+}
+
+/// @nodoc
+abstract mixin class _$LiveShuttleModelCopyWith<$Res> implements $LiveShuttleModelCopyWith<$Res> {
+  factory _$LiveShuttleModelCopyWith(_LiveShuttleModel value, $Res Function(_LiveShuttleModel) _then) = __$LiveShuttleModelCopyWithImpl;
+@override @useResult
+$Res call({
+ String id, String parking, String direction, LiveVehicleModel vehicle, LatLngModel? position, int? positionAgeSeconds, String startedAt
+});
+
+
+@override $LiveVehicleModelCopyWith<$Res> get vehicle;@override $LatLngModelCopyWith<$Res>? get position;
+
+}
+/// @nodoc
+class __$LiveShuttleModelCopyWithImpl<$Res>
+    implements _$LiveShuttleModelCopyWith<$Res> {
+  __$LiveShuttleModelCopyWithImpl(this._self, this._then);
+
+  final _LiveShuttleModel _self;
+  final $Res Function(_LiveShuttleModel) _then;
+
+/// Create a copy of LiveShuttleModel
+/// with the given fields replaced by the non-null parameter values.
+@override @pragma('vm:prefer-inline') $Res call({Object? id = null,Object? parking = null,Object? direction = null,Object? vehicle = null,Object? position = freezed,Object? positionAgeSeconds = freezed,Object? startedAt = null,}) {
+  return _then(_LiveShuttleModel(
+id: null == id ? _self.id : id // ignore: cast_nullable_to_non_nullable
+as String,parking: null == parking ? _self.parking : parking // ignore: cast_nullable_to_non_nullable
+as String,direction: null == direction ? _self.direction : direction // ignore: cast_nullable_to_non_nullable
+as String,vehicle: null == vehicle ? _self.vehicle : vehicle // ignore: cast_nullable_to_non_nullable
+as LiveVehicleModel,position: freezed == position ? _self.position : position // ignore: cast_nullable_to_non_nullable
+as LatLngModel?,positionAgeSeconds: freezed == positionAgeSeconds ? _self.positionAgeSeconds : positionAgeSeconds // ignore: cast_nullable_to_non_nullable
+as int?,startedAt: null == startedAt ? _self.startedAt : startedAt // ignore: cast_nullable_to_non_nullable
+as String,
+  ));
+}
+
+/// Create a copy of LiveShuttleModel
+/// with the given fields replaced by the non-null parameter values.
+@override
+@pragma('vm:prefer-inline')
+$LiveVehicleModelCopyWith<$Res> get vehicle {
+  
+  return $LiveVehicleModelCopyWith<$Res>(_self.vehicle, (value) {
+    return _then(_self.copyWith(vehicle: value));
+  });
+}/// Create a copy of LiveShuttleModel
+/// with the given fields replaced by the non-null parameter values.
+@override
+@pragma('vm:prefer-inline')
+$LatLngModelCopyWith<$Res>? get position {
+    if (_self.position == null) {
+    return null;
+  }
+
+  return $LatLngModelCopyWith<$Res>(_self.position!, (value) {
+    return _then(_self.copyWith(position: value));
+  });
+}
+}
+
+
+/// @nodoc
 mixin _$PaymentsConfigModel {
 
  String get payments; String? get publishableKey; String get merchantDisplayName; String get merchantCountryCode; String get currency;

@@ -33,6 +33,25 @@ export interface LatLng {
   lng: number;
 }
 
+/** GET /public/airports/:slug/live (K-A): the airport's parkings and the shuttles on the road, anonymous. */
+export interface AirportLive {
+  serverTime: string;
+  airport: { code: string; name: string; slug: string; location: LatLng };
+  parkings: { slug: string; title: string; services: string[]; shuttleMinutes: number | null; location: LatLng | null }[];
+  shuttles: LiveShuttle[];
+}
+
+export interface LiveShuttle {
+  id: string;
+  /** Slug of the parking the shuttle belongs to. */
+  parking: string;
+  direction: "pickup" | "dropoff";
+  vehicle: { model: string | null; colour: string | null };
+  position: LatLng | null;
+  positionAgeSeconds: number | null;
+  startedAt: string;
+}
+
 export interface AirportResponse {
   /** Missing from an older API: paid at the parking. */
   payments?: PaymentsMode;

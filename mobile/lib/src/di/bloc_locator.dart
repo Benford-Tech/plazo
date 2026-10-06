@@ -4,7 +4,7 @@ void _initBlocs() {
   locator
     // One per screen.
     ..registerFactory(() => BookingBloc(locator(), locator(), locator(), locator()))
-    ..registerFactory(() => SearchBloc(locator(), preview: locator()))
+    ..registerFactory(() => SearchBloc(locator(), preview: locator(), live: locator()))
     // Shared by the search tab, "Mes réservations" and the pages that change a booking.
     ..registerLazySingleton(() => TripsBloc(locator()))
     ..registerFactory(() => ManageBookingBloc(locator(), locator()))

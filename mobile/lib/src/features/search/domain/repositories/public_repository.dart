@@ -9,6 +9,7 @@ abstract class PublicRepository {
   Future<Either<Failure, SearchResponseModel>> search({required String airport, required String arrivalAt, required String returnAt});
   Future<Either<Failure, ParkingResponseModel>> parking({required String airport, required String slug, String? arrivalAt, String? returnAt});
   Future<Either<Failure, PaymentsConfigModel>> paymentsConfig();
+  Future<Either<Failure, AirportLiveModel>> live(String slug);
 }
 
 class PublicRepositoryImpl implements PublicRepository {
@@ -29,4 +30,7 @@ class PublicRepositoryImpl implements PublicRepository {
 
   @override
   Future<Either<Failure, PaymentsConfigModel>> paymentsConfig() => _dataSource.paymentsConfig().makeRequest();
+
+  @override
+  Future<Either<Failure, AirportLiveModel>> live(String slug) => _dataSource.live(slug).makeRequest();
 }

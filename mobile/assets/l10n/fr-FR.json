@@ -483,7 +483,18 @@
       "book_sub": "Confirmation immédiate",
       "fly": "Décollez",
       "fly_sub": "Navette jusqu'au terminal"
-    }
+    },
+    "shuttles_none": "Aucune navette en circulation",
+    "shuttles_one": "1 navette en circulation",
+    "shuttles_many": "{} navettes en circulation",
+    "shuttle_marker": "Navette de {}",
+    "shuttle_to_terminal": "vers le terminal",
+    "shuttle_to_airport": "vers l'aéroport",
+    "shuttle_age_s": "position il y a {} s",
+    "shuttle_age_min": "position il y a {} min",
+    "parking_pin": "Parking {} : {}",
+    "pin_full": "complet à ces dates",
+    "featured_full": "Complet à ces dates"
   },
   "picker": {
     "title": "Vos dates",

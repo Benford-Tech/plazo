@@ -21,6 +21,13 @@ abstract class SearchState with _$SearchState {
     @Default(ViewState.idle) ViewState previewState,
     SearchResponseModel? preview,
     DateTime? previewAt,
+
+    /// K-A: the live layer (shuttles on the road), null until the first answer.
+    AirportLiveModel? live,
+    DateTime? liveAt,
+
+    /// K-A: the parking the traveller tapped on the map; null: the cheapest one.
+    String? selectedSlug,
   }) = _SearchState;
 
   /// Tomorrow 08:00 to a week later 18:00, at the default airport (as the site).
@@ -41,4 +48,13 @@ abstract class SearchState with _$SearchState {
     if (list.isEmpty) return null;
     return list.reduce((a, b) => a.priceCents! <= b.priceCents! ? a : b);
   }
+
+  /// Every parking of the stay with a position (K-A: full ones too, as white pins).
+  List<SearchResultModel> get located => preview?.results.where((r) => r.location != null).toList() ?? const [];
+
+  /// K-A: the parking in the card — the tapped one, else the cheapest.
+  SearchResultModel? get selected => located.where((r) => r.slug == selectedSlug).firstOrNull ?? featured;
+
+  /// K-A: the shuttles on the road with a position (the pill counts them all).
+  List<LiveShuttleModel> get movingShuttles => live?.shuttles.where((s) => s.position != null).toList() ?? const [];
 }

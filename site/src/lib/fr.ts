@@ -109,6 +109,10 @@ const frBase = {
     featuredSub: (valet: boolean, shuttle: number | null) => `${valet ? "Voiturier" : "Vous vous garez"}${shuttle ? ` · navette ${shuttle} min` : ""}`,
     featuredSee: (title: string) => `Voir ${title}`,
     mapStay: (days: number) => `pour vos dates · ${days} jour${days > 1 ? "s" : ""}`,
+    /** K-A (06/10/2026): the shuttles on the road right now, from the live layer. */
+    mapShuttles: (n: number) => (n === 0 ? "Aucune navette en circulation" : n === 1 ? "1 navette en circulation" : `${n} navettes en circulation`),
+    mapFull: "Complet à ces dates",
+    mapSeeAnyway: "Voir le parking",
     trust: [
       ["Prix total affiché", "aucun frais ajouté"],
       ["Navette gratuite", "jusqu’aux terminaux"],
@@ -236,6 +240,8 @@ const frBase = {
     failed: "La carte n’a pas pu s’afficher.",
     attribution: "© IGN – Plan IGN",
     marker: (title: string, state: string) => `${title}, ${state}`,
+    shuttle: (parking: string, direction: "pickup" | "dropoff") => `Navette de ${parking} · ${direction === "dropoff" ? "vers le terminal" : "vers l’aéroport"}`,
+    shuttleAge: (seconds: number) => (seconds < 60 ? `position il y a ${seconds} s` : `position il y a ${Math.round(seconds / 60)} min`),
     /** Texts of the map's own controls (MapLibre). */
     controls: {
       "Map.Title": "Carte",

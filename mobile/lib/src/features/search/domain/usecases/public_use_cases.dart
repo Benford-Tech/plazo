@@ -53,3 +53,12 @@ class GetPaymentsConfigUseCase with UseCase<PaymentsConfigModel, NoParams> {
   @override
   Future<Either<Failure, PaymentsConfigModel>> call(NoParams params) => _repository.paymentsConfig();
 }
+
+/// K-A (06/10/2026): the home map's live layer — the airport's parkings and its shuttles on the road.
+class GetAirportLiveUseCase with UseCase<AirportLiveModel, String> {
+  GetAirportLiveUseCase(this._repository);
+  final PublicRepository _repository;
+
+  @override
+  Future<Either<Failure, AirportLiveModel>> call(String params) => _repository.live(params);
+}
