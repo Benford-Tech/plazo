@@ -45,11 +45,11 @@ class StripePaymentSheetService implements PaymentSheetService {
     String? amountLabel,
   }) async {
     try {
-      if (Stripe.publishableKey != publishableKey) {
-        Stripe.publishableKey = publishableKey;
-        if (AppConstants.appleMerchantId.isNotEmpty) Stripe.merchantIdentifier = AppConstants.appleMerchantId;
-        await Stripe.instance.applySettings();
-      }
+      // Reading `Stripe.publishableKey` before it is set throws StripeConfigException: the setter
+      // itself ignores an unchanged value, so set it every time and apply the settings once needed.
+      Stripe.publishableKey = publishableKey;
+      if (AppConstants.appleMerchantId.isNotEmpty) Stripe.merchantIdentifier = AppConstants.appleMerchantId;
+      await Stripe.instance.applySettings();
       await Stripe.instance.initPaymentSheet(
         paymentSheetParameters: SetupPaymentSheetParameters(
           paymentIntentClientSecret: clientSecret,
