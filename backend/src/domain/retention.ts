@@ -25,8 +25,13 @@ export const ANONYMIZED_TRAVELLER = {
   returnFlight: null,
   departureFlight: null,
   notes: null,
+  // What the traveller tells the parking (E, 06/10/2026): note, vehicle, message about the return.
+  customerNote: null,
+  vehicleModel: null,
+  vehicleColour: null,
+  returnNoticeText: null,
   ...CLEARED_CAR_LOCATION,
 };
 
-/** Keys of the audit details that carry the same data (field changes, landed flight). */
-export const PERSONAL_AUDIT_KEYS = [...Object.keys(ANONYMIZED_TRAVELLER), 'flight'];
+/** Keys of the audit details that carry the same data (field changes, landed flight, remark on a status change). */
+export const PERSONAL_AUDIT_KEYS = [...Object.keys(ANONYMIZED_TRAVELLER), 'flight', 'note'];

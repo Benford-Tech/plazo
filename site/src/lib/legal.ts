@@ -295,7 +295,7 @@ export function privacyDoc(company: Company = COMPANY, email: string = SUPPORT_E
         blocks: [
           `${c.name}, qui exploite ${p} (siège : ${c.address}), est responsable des traitements liés au site, aux applications et aux réservations faites sur ${p}. Contact pour vos données : ${c.email}.`,
           "Le parking que vous réservez reçoit les informations de votre réservation pour vous accueillir, garer votre véhicule, organiser la navette et vous le rendre. Il en est responsable pour ces usages, comme pour ses propres registres.",
-          `Lorsque vous réservez directement auprès d’un parking (téléphone, comptoir, autre site) et que celui-ci gère ses réservations avec ${p}, c’est le parking qui est responsable de vos données ; ${p} les traite pour son compte, comme sous-traitant, et vous pouvez exercer vos droits auprès de lui comme auprès de nous.`,
+          `Lorsque vous réservez directement auprès d’un parking (téléphone, comptoir, autre site) et que celui-ci gère ses réservations avec ${p}, y compris en transférant à ${p} les e-mails de confirmation qu’il reçoit, c’est le parking qui est responsable de vos données ; ${p} les traite pour son compte, comme sous-traitant, et vous pouvez exercer vos droits auprès de lui comme auprès de nous.`,
         ],
       },
       {
@@ -305,7 +305,7 @@ export function privacyDoc(company: Company = COMPANY, email: string = SUPPORT_E
           "Quand vous réservez :",
           [
             "prénom et nom, téléphone mobile, adresse e-mail ;",
-            "plaque d’immatriculation du véhicule ;",
+            "plaque d’immatriculation, et modèle et couleur du véhicule si vous les indiquez ;",
             "dates et heures de dépôt et de retour, nombre de passagers, desserte de la navette le cas échéant ;",
             "numéros de vol aller et retour, si vous les indiquez, et les horaires de ces vols (décollage, atterrissage, terminal).",
           ],
@@ -315,6 +315,7 @@ export function privacyDoc(company: Company = COMPANY, email: string = SUPPORT_E
             "la place de votre véhicule et le crochet de ses clés, notés par le parking ;",
             "la position GPS de votre voiture, si le voiturier ou vous-même l’enregistrez, avec une note facultative ;",
             "votre position, seulement si vous choisissez de la partager pour prévenir le parking de votre arrivée (dernière position uniquement), ou le délai que vous annoncez à la place ;",
+            "ce que vous écrivez au parking : un mot à la réservation ou à votre arrivée, un message sur votre retour (vol retardé, bagages…) ;",
             "le statut de la réservation et l’historique de ses modifications par l’équipe du parking.",
           ],
           "Dans l’application : l’identifiant d’abonnement aux notifications de votre téléphone, si vous les autorisez, et, sur le téléphone lui-même, les références et clés d’accès de vos réservations.",
@@ -328,7 +329,7 @@ export function privacyDoc(company: Company = COMPANY, email: string = SUPPORT_E
         blocks: [
           [
             "Enregistrer et confirmer votre réservation, encaisser le paiement, rembourser une annulation, transmettre la réservation au parking : exécution du contrat.",
-            "Vous envoyer les messages pratiques du séjour (confirmation, atterrissage, navette, annulation) par e-mail, SMS ou notification : exécution du contrat.",
+            "Vous envoyer les messages pratiques du séjour (confirmation, rappel la veille, voiture garée, atterrissage, navette, fin de séjour, annulation) par e-mail, SMS ou notification : exécution du contrat.",
             "Suivre vos vols pour caler la navette : exécution du contrat.",
             "Partager votre position à l’arrivée, enregistrer vous-même la position de votre voiture, recevoir des notifications sur votre téléphone : votre consentement, que vous retirez à tout moment (arrêt du partage, effacement de la position, réglages du téléphone).",
             `Sécuriser le service, prévenir la fraude et les abus, garder la trace des modifications des réservations, traiter vos réclamations et défendre nos droits : intérêt légitime de ${p} et du parking.`,
@@ -346,7 +347,7 @@ export function privacyDoc(company: Company = COMPANY, email: string = SUPPORT_E
           [
             `Vercel (hébergement du site et de l’API, fonctions exécutées à Paris) et Neon (base de données, région ${TO_COMPLETE}) ;`,
             "Stripe (paiement et remboursements) ; Stripe traite aussi certaines données en tant que responsable distinct, pour ses obligations de lutte contre la fraude et le blanchiment ;",
-            "Brevo (e-mails et, selon le choix du parking, SMS) ;",
+            "Brevo (e-mails, réception des e-mails de confirmation transférés par les parkings et, selon le choix du parking, SMS) ;",
             "selon le choix du parking, l’application SMS Gateway for Android, qui envoie les SMS depuis le téléphone du parking : votre numéro et le texte du message passent alors par le serveur de cette application ;",
             "OneSignal (notifications de l’application) ;",
             "un fournisseur de suivi des vols, qui ne reçoit que le numéro et la date du vol, jamais votre nom ;",
@@ -368,13 +369,14 @@ export function privacyDoc(company: Company = COMPANY, email: string = SUPPORT_E
         title: "6. Combien de temps",
         blocks: [
           [
-            "Réservation (identité, coordonnées, plaque, vols, notes, y compris dans l’historique de ses modifications) : pendant le séjour, puis 12 mois après la date de retour pour traiter les réclamations et litiges. Elle est ensuite anonymisée automatiquement : il ne reste que sa référence, le parking, les dates, le nombre de passagers et les montants.",
+            "Réservation (identité, coordonnées, véhicule, vols, notes et messages au parking, y compris dans l’historique de ses modifications) : pendant le séjour, puis 12 mois après la date de retour pour traiter les réclamations et litiges. Elle est ensuite anonymisée automatiquement : il ne reste que sa référence, le parking, les dates, le nombre de passagers et les montants.",
             "Éléments comptables (référence, dates, montants, paiements et remboursements) : 10 ans, comme l’impose le Code de commerce.",
             "Accès à Ma réservation par le lien reçu par e-mail ou SMS : jusqu’à 30 jours après le retour.",
             "Position partagée à l’arrivée : seule la dernière est gardée ; elle est effacée à l’arrivée, à l’arrêt du partage et au plus tard 2 heures après le début.",
             "Position GPS de la voiture : effacée 2 jours après le retour.",
             "Téléphones inscrits aux notifications du séjour : supprimés 2 jours après le retour.",
             "File d’envoi des SMS (numéro du destinataire ; le texte n’est pas conservé) : 30 jours.",
+            "E-mails de confirmation transférés par un parking : texte effacé après 30 jours, trace de réception supprimée après 90 jours.",
             "Adresse IP : quelques minutes en mémoire pour limiter les abus ; les journaux techniques de l’hébergeur sont gardés quelques jours au plus.",
             "Sur votre téléphone : les références de vos réservations restent dans l’application jusqu’à ce que vous les retiriez ou que vous la désinstalliez.",
           ],
@@ -414,7 +416,7 @@ export function privacyDoc(company: Company = COMPANY, email: string = SUPPORT_E
         id: "professionnels",
         title: "10. Comptes des professionnels",
         blocks: [
-          `Pour les équipes des parkings qui utilisent l’espace pro et l’application ${p} Pro, ${p} traite : nom, e-mail, téléphone facultatif, rôle, poste et véhicule du jour, préférences de notifications, mot de passe haché, sessions de connexion (30 jours au plus) et historique des actions sur les réservations. Pendant un trajet de navette, seule la dernière position du chauffeur est gardée ; elle est effacée à la fin du trajet.`,
+          `Pour les équipes des parkings qui utilisent l’espace pro et l’application ${p} Pro, ${p} traite : prénom et nom, e-mail, téléphone facultatif, rôle, poste et véhicule du jour, préférences de notifications, mot de passe haché, sessions de connexion (30 jours au plus) et historique des actions sur les réservations. Pendant un trajet de navette, seule la dernière position du chauffeur est gardée ; elle est effacée à la fin du trajet.`,
           `Ces données servent à fournir l’espace pro au parking, qui décide de son organisation ; elles sont gardées tant que le compte existe, puis le temps des obligations légales. Les informations de l’entreprise et du gérant fournies à l’inscription servent au contrat entre le parking et ${p}. Les droits ci-dessus s’exercent de la même façon.`,
         ],
       },

@@ -11,7 +11,8 @@ export class RetentionService {
   /**
    * Anonymises the bookings returned more than 12 months ago (see src/domain/retention.ts): the
    * traveller's data goes from the booking and from its audit entries, which keep the action and the
-   * other changes; anything still attached (phones for pushes, queued SMS) is deleted. Idempotent.
+   * other changes; the words joined to arrival signals are cleared, and anything still attached
+   * (phones for pushes, queued SMS) is deleted. Idempotent.
    * Returns the number of bookings anonymised.
    */
   public async anonymizeReservations(now = new Date()): Promise<number> {
@@ -33,6 +34,7 @@ export class RetentionService {
           SET "details" = ("details" - ${PERSONAL_AUDIT_KEYS}::text[]) || '{"anonymized": true}'::jsonb
           WHERE "entityType" = 'reservation' AND "entityId" = ANY(${ids}::text[])
             AND jsonb_typeof("details") = 'object' AND jsonb_exists_any("details", ${PERSONAL_AUDIT_KEYS}::text[])`,
+        prisma.arrivalSignal.updateMany({ where: { reservationId: { in: ids }, note: { not: null } }, data: { note: null } }),
         prisma.travellerDevice.deleteMany({ where: { reservationId: { in: ids } } }),
         prisma.smsOutbox.deleteMany({ where: { reservationId: { in: ids } } }),
       ]);

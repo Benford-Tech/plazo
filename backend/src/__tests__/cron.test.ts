@@ -62,6 +62,11 @@ describe('anonymisation des réservations 12 mois après le retour (politique de
         carLocatedAt: new Date(),
         carLocatedBy: 'staff',
         carNote: 'Au fond',
+        customerNote: 'Je serai un peu en retard',
+        vehicleModel: 'Clio',
+        vehicleColour: 'rouge',
+        returnNoticeKind: 'other',
+        returnNoticeText: 'Valise perdue, appelez-moi',
       },
     });
   }
@@ -86,6 +91,27 @@ describe('anonymisation des réservations 12 mois après le retour (politique de
         entityType: 'reservation',
         entityId: old.id,
         details: { source: 'tracking', flight: 'TO 3627' },
+      },
+    });
+    await prisma.auditLog.create({
+      data: {
+        operatorId: operator.id,
+        action: 'reservation.status_changed',
+        entityType: 'reservation',
+        entityId: old.id,
+        details: { from: 'back_at_parking', to: 'returned', note: 'Rayure signalée par Camille' },
+      },
+    });
+    await prisma.arrivalSignal.create({
+      data: {
+        reservationId: old.id,
+        operatorId: operator.id,
+        parkingId: parking.id,
+        kind: 'return',
+        state: 'ended',
+        note: 'Camille, 2 valises',
+        startedAt: old.returnAt,
+        expiresAt: new Date(old.returnAt.getTime() + 2 * 3600000),
       },
     });
     await prisma.travellerDevice.create({ data: { reservationId: old.id, subscriptionId: 'sub-old' } });
@@ -119,6 +145,10 @@ describe('anonymisation des réservations 12 mois après le retour (politique de
       carLng: null,
       carNote: null,
       carLocatedBy: null,
+      customerNote: null,
+      vehicleModel: null,
+      vehicleColour: null,
+      returnNoticeText: null,
       // Kept: accounting and the operator's reconciliations.
       reference: 'OLD1',
       channelDetail: 'Allopark',
@@ -137,6 +167,12 @@ describe('anonymisation des réservations 12 mois après le retour (politique de
     const updated = entries.find(e => e.action === 'reservation.updated')!;
     expect(updated.details).toEqual({ passengers: { from: 3, to: 2 }, anonymized: true });
     expect(entries.find(e => e.action === 'return.landed')!.details).toEqual({ source: 'tracking', anonymized: true });
+    expect(entries.find(e => e.action === 'reservation.status_changed')!.details).toEqual({
+      from: 'back_at_parking',
+      to: 'returned',
+      anonymized: true,
+    });
+    expect((await prisma.arrivalSignal.findFirstOrThrow({ where: { reservationId: old.id } })).note).toBeNull();
     expect(await prisma.travellerDevice.count({ where: { reservationId: old.id } })).toBe(0);
     expect(await prisma.smsOutbox.count({ where: { reservationId: old.id } })).toBe(0);
 
