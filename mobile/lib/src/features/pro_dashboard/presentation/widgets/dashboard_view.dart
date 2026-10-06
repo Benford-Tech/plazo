@@ -129,7 +129,7 @@ class _Kpis extends StatelessWidget {
         sub: free == null
             ? (d.parking.plannedSpots == 0 ? 'dashboard.kpi_no_plan'.tr() : '')
             : 'dashboard.kpi_free'.tr(args: ['$free', '${d.parking.plannedSpots}']),
-        onTap: () => context.router.navigate(const ProOccupationRoute()),
+        onTap: () => context.router.navigate(ProOccupationRoute()),
       ),
       _Kpi(
         key: const Key('kpi-arrivals'),
@@ -155,7 +155,7 @@ class _Kpis extends StatelessWidget {
                   ((d.nextWave!.vehiclesNeeded ?? 1) > 1 ? ' · ${'dashboard.kpi_wave_vehicles'.tr(args: ['${d.nextWave!.vehiclesNeeded}'])}' : '')
             : (c.shuttlesRunning == 0 ? 'dashboard.kpi_no_shuttle'.tr() : 'dashboard.kpi_running'.tr()),
         alert: (d.nextWave?.vehiclesNeeded ?? 1) > 1,
-        onTap: () => context.router.push(const ProShuttleRoute()),
+        onTap: () => context.router.push(ProShuttleRoute()),
       ),
       _Kpi(
         key: const Key('kpi-to-treat'),

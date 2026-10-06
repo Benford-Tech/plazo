@@ -6,9 +6,13 @@ sealed class ShuttleEvent {
 
 class ShuttleStarted extends ShuttleEvent {
   /// The signed-in driver: the vehicle taken for the day (V-A), else their usual one, is preselected.
-  const ShuttleStarted({this.staffId, this.vehicleId});
+  /// `direction` and `reservationId` (C-B, 06/10/2026): opened from a booking's sheet with "Déposer au
+  /// terminal" / "Récupérer à l'aéroport", that side and that traveller are preselected.
+  const ShuttleStarted({this.staffId, this.vehicleId, this.direction, this.reservationId});
   final String? staffId;
   final String? vehicleId;
+  final String? direction;
+  final String? reservationId;
 }
 
 /// The stop served by the next trip (D-A): a stop's id, or null for the airport.

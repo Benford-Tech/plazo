@@ -178,7 +178,29 @@
       "diverted": "dérouté",
       "unknown": "vol inconnu"
     },
-    "take_off": "décollage {}"
+    "take_off": "décollage {}",
+    "next_step": "Prochaine étape",
+    "next": {
+      "place": "Placer la voiture",
+      "place_help": "Sur le plan, avec le crochet des clés : le client est enregistré « Sur place ».",
+      "drop_off": "Déposer au terminal",
+      "drop_off_help": "Ouvre la navette, côté départs, avec ce client sélectionné.",
+      "pick_up": "Récupérer à l'aéroport",
+      "pick_up_help": "Ouvre la navette, côté retours, avec ce client sélectionné.",
+      "hand_over": "Rendre le véhicule",
+      "hand_over_help": "Clés rendues, état du véhicule, remarque éventuelle.",
+      "none_closed": "Réservation close."
+    },
+    "more_actions": "Autres actions",
+    "handover": {
+      "title": "Rendre le véhicule",
+      "keys": "Clés rendues au client",
+      "keys_help": "Le crochet est libéré.",
+      "note": "Remarque (dégât, litige, objet oublié…)",
+      "note_hint": "Facultatif · gardée dans les notes, datée et signée",
+      "confirm": "Véhicule rendu",
+      "keys_required": "Confirmez que les clés sont rendues."
+    }
   },
   "occupation": {
     "title": "Places",
@@ -219,7 +241,10 @@
     },
     "car_position": "Position GPS",
     "car_by_staff": "Position GPS prise par l'équipe à {}",
-    "car_by_traveller": "Position GPS donnée par le client à {}"
+    "car_by_traveller": "Position GPS donnée par le client à {}",
+    "place_in": "Placer en {}",
+    "key_hook_optional": "Facultatif : où les clés sont accrochées.",
+    "place_confirm": "Placer la voiture"
   },
   "pro": {
     "login_eyebrow": "Espace du personnel",

@@ -18,8 +18,11 @@ class ProReservationStarted extends ProReservationEvent {
 }
 
 class ProReservationStatusChanged extends ProReservationEvent {
-  const ProReservationStatusChanged(this.status);
+  const ProReservationStatusChanged(this.status, {this.note});
   final String status;
+
+  /// The handover's remark (damage, dispute…), kept with the booking.
+  final String? note;
 }
 
 class ProReservationReplaced extends ProReservationEvent {
@@ -85,7 +88,7 @@ class ProReservationBloc extends Bloc<ProReservationEvent, ProReservationState> 
     final current = state.reservation;
     if (current == null) return;
     emit(state.copyWith(actionState: ViewState.processing, errorCode: null, notice: null));
-    final result = await _changeStatus(ChangeStatusParams(id: current.id, status: event.status));
+    final result = await _changeStatus(ChangeStatusParams(id: current.id, status: event.status, note: event.note));
     result.fold(
       (f) => emit(state.copyWith(actionState: ViewState.error, errorCode: _code(f))),
       (r) => emit(state.copyWith(actionState: ViewState.success, reservation: r, notice: r.status)),

@@ -47,18 +47,21 @@ class SaveReservationUseCase with UseCase<ReservationModel, SaveReservationParam
 }
 
 class ChangeStatusParams extends Equatable {
-  const ChangeStatusParams({required this.id, required this.status});
+  const ChangeStatusParams({required this.id, required this.status, this.note});
   final String id;
   final String status;
+
+  /// A remark saved with the change (the handover checklist, 06/10/2026).
+  final String? note;
   @override
-  List<Object?> get props => [id, status];
+  List<Object?> get props => [id, status, note];
 }
 
 class ChangeReservationStatusUseCase with UseCase<ReservationModel, ChangeStatusParams> {
   ChangeReservationStatusUseCase(this._repository);
   final ReservationsRepository _repository;
   @override
-  Future<Either<Failure, ReservationModel>> call(ChangeStatusParams params) => _repository.changeStatus(params.id, params.status);
+  Future<Either<Failure, ReservationModel>> call(ChangeStatusParams params) => _repository.changeStatus(params.id, params.status, note: params.note);
 }
 
 class CapacityParams extends Equatable {

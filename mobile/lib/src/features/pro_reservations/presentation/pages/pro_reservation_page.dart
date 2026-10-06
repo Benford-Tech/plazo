@@ -124,7 +124,6 @@ class _Sheet extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final r = reservation;
-    final bloc = context.read<ProReservationBloc>();
     final links = locator<LinkService>();
     // The API says what comes next (06/10/2026); the local table only serves an older server.
     final next = r.nextStatuses.isNotEmpty || r.paymentStatus == 'refunded'
@@ -203,28 +202,131 @@ class _Sheet extends StatelessWidget {
           ],
           trailing: TextButton(
             key: const Key('res-places'),
-            onPressed: () => context.router.navigate(const ProShellRoute(children: [ProOccupationRoute()])),
+            onPressed: () => context.router.push(ProOccupationRoute(focus: r.id)),
             child: Text('occupation.title'.tr(), style: AppText.strong(size: 14, color: AppColors.accentDeep)),
           ),
         ),
         if (r.notes != null && r.notes!.trim().isNotEmpty) _Section(title: 'res.notes'.tr(), text: r.notes),
-        if (next.isNotEmpty) ...[
+        // C-B (06/10/2026): one gesture, the journey's next step; every other status change waits in a menu.
+        if (next.isNotEmpty || r.closed) ...[
           const SizedBox(height: 8),
-          Text('res.actions'.tr().toUpperCase(), style: AppText.label(size: 11)),
+          Text('res.next_step'.tr().toUpperCase(), style: AppText.label(size: 11)),
           const SizedBox(height: 8),
-          for (final s in next) ...[
-            s == 'cancelled' || s == 'no_show'
-                ? OutlineAction(
-                    key: Key('status-$s'),
-                    label: 'res.action.$s'.tr(),
-                    onPressed: busy ? null : () => _confirm(context, s, () => bloc.add(ProReservationStatusChanged(s))),
-                  )
-                : GradientButton(key: Key('status-$s'), label: 'res.action.$s'.tr(), busy: busy, onPressed: () => bloc.add(ProReservationStatusChanged(s))),
-            const SizedBox(height: 8),
-          ],
+          _NextStep(reservation: r, next: next, busy: busy),
+          const SizedBox(height: 8),
         ],
       ],
     );
+  }
+}
+
+/// The journey's next gesture for this booking, as one button (C-B), and the other statuses behind "Autres actions".
+class _NextStep extends StatelessWidget {
+  const _NextStep({required this.reservation, required this.next, required this.busy});
+  final ReservationModel reservation;
+  final List<String> next;
+  final bool busy;
+
+  @override
+  Widget build(BuildContext context) {
+    final r = reservation;
+    final bloc = context.read<ProReservationBloc>();
+    final (String key, String label, String help, IconData icon, Future<void> Function() go)? step = switch (r.status) {
+      'upcoming' when next.contains('arrived') => (
+        'place',
+        'res.next.place'.tr(),
+        'res.next.place_help'.tr(),
+        Icons.local_parking_rounded,
+        () => context.router.push(ProOccupationRoute(focus: r.id)),
+      ),
+      'arrived' when next.contains('shuttled_out') => (
+        'drop_off',
+        'res.next.drop_off'.tr(),
+        'res.next.drop_off_help'.tr(),
+        Icons.flight_takeoff_rounded,
+        () => context.router.push(ProShuttleRoute(direction: 'dropoff', reservationId: r.id)),
+      ),
+      'shuttled_out' || 'return_requested' when next.contains('back_at_parking') => (
+        'pick_up',
+        'res.next.pick_up'.tr(),
+        'res.next.pick_up_help'.tr(),
+        Icons.flight_land_rounded,
+        () => context.router.push(ProShuttleRoute(direction: 'pickup', reservationId: r.id)),
+      ),
+      'back_at_parking' when next.contains('returned') => (
+        'hand_over',
+        'res.next.hand_over'.tr(),
+        'res.next.hand_over_help'.tr(),
+        Icons.key_rounded,
+        () => _handOver(context, bloc),
+      ),
+      _ => null,
+    };
+    // The statuses the menu offers: everything the API allows, the primary gesture's target included
+    // (a manual fallback), but "returned" always goes through the handover sheet.
+    final others = next;
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        if (step != null) ...[
+          GradientButton(key: Key('next-${step.$1}'), icon: step.$4, label: step.$2, busy: busy, onPressed: busy ? null : () => step.$5()),
+          const SizedBox(height: 6),
+          Text(step.$3, style: AppText.muted(size: 12.5), textAlign: TextAlign.center),
+        ] else if (r.closed)
+          Text('res.next.none_closed'.tr(), style: AppText.muted(size: 13), textAlign: TextAlign.center),
+        if (others.isNotEmpty) ...[
+          const SizedBox(height: 10),
+          Align(
+            alignment: Alignment.center,
+            child: PopupMenuButton<String>(
+              key: const Key('more-actions'),
+              enabled: !busy,
+              onSelected: (s) {
+                if (s == 'returned') {
+                  _handOver(context, bloc);
+                } else if (s == 'cancelled' || s == 'no_show') {
+                  _confirm(context, s, () => bloc.add(ProReservationStatusChanged(s)));
+                } else {
+                  bloc.add(ProReservationStatusChanged(s));
+                }
+              },
+              itemBuilder: (_) => [
+                for (final s in others)
+                  PopupMenuItem(
+                    key: Key('status-$s'),
+                    value: s,
+                    child: Text('res.action.$s'.tr(), style: AppText.body(size: 14, color: s == 'cancelled' || s == 'no_show' ? AppColors.danger : AppColors.ink)),
+                  ),
+              ],
+              child: Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Text('res.more_actions'.tr(), style: AppText.strong(size: 14, color: AppColors.accentDeep)),
+                    const Icon(Icons.expand_more_rounded, size: 20, color: AppColors.accentDeep),
+                  ],
+                ),
+              ),
+            ),
+          ),
+        ],
+      ],
+    );
+  }
+
+  /// The handover checklist: keys given back (required), a remark kept with the booking (optional).
+  Future<void> _handOver(BuildContext context, ProReservationBloc bloc) async {
+    final result = await showModalBottomSheet<String>(
+      context: context,
+      showDragHandle: true,
+      isScrollControlled: true,
+      backgroundColor: AppColors.surface,
+      shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(24))),
+      builder: (_) => _HandoverSheet(reservation: reservation),
+    );
+    if (result == null) return;
+    bloc.add(ProReservationStatusChanged('returned', note: result.isEmpty ? null : result));
   }
 
   Future<void> _confirm(BuildContext context, String status, VoidCallback go) async {
@@ -241,6 +343,73 @@ class _Sheet extends StatelessWidget {
     );
     if (ok == true) go();
   }
+}
+
+/// "Rendre le véhicule": the keys switch and the remark; pops the remark ("" when none) on confirm.
+class _HandoverSheet extends StatefulWidget {
+  const _HandoverSheet({required this.reservation});
+  final ReservationModel reservation;
+
+  @override
+  State<_HandoverSheet> createState() => _HandoverSheetState();
+}
+
+class _HandoverSheetState extends State<_HandoverSheet> {
+  bool _keys = false;
+  bool _tried = false;
+  final _note = TextEditingController();
+
+  @override
+  void dispose() {
+    _note.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final r = widget.reservation;
+    return Padding(
+      padding: EdgeInsets.fromLTRB(20, 4, 20, 20 + MediaQuery.of(context).viewInsets.bottom),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text('res.handover.title'.tr(), style: AppText.title(size: 20)),
+          const SizedBox(height: 4),
+          Text('${r.customerName} · ${r.plate}${r.spot != null ? ' · ${'res.spot'.tr()} ${r.spot!.code}' : ''}${r.keyHook != null ? ' · ${'occupation.key_hook'.tr()} ${r.keyHook}' : ''}', style: AppText.muted()),
+          const SizedBox(height: 10),
+          SwitchListTile(
+            key: const Key('handover-keys'),
+            contentPadding: EdgeInsets.zero,
+            value: _keys,
+            title: Text('res.handover.keys'.tr(), style: AppText.strong()),
+            subtitle: Text(_tried && !_keys ? 'res.handover.keys_required'.tr() : 'res.handover.keys_help'.tr(), style: _tried && !_keys ? AppText.body(size: 13.5, color: AppColors.danger) : AppText.muted()),
+            activeColor: AppColors.accent,
+            onChanged: (v) => setState(() => _keys = v),
+          ),
+          TextField(
+            key: const Key('handover-note'),
+            controller: _note,
+            maxLines: 3,
+            minLines: 1,
+            maxLength: 500,
+            decoration: InputDecoration(labelText: 'res.handover.note'.tr(), helperText: 'res.handover.note_hint'.tr()),
+          ),
+          const SizedBox(height: 10),
+          GradientButton(
+            key: const Key('handover-confirm'),
+            icon: Icons.check_rounded,
+            label: 'res.handover.confirm'.tr(),
+            onPressed: () {
+              if (!_keys) return setState(() => _tried = true);
+              Navigator.of(context).pop(_note.text.trim());
+            },
+          ),
+        ],
+      ),
+    );
+  }
+
 }
 
 class _Section extends StatelessWidget {

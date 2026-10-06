@@ -5,7 +5,9 @@ sealed class ProOccupationEvent {
 }
 
 class ProOccupationStarted extends ProOccupationEvent {
-  const ProOccupationStarted();
+  /// `focus`: the reservation whose vehicle card opens at once (C-B, 06/10/2026: "Placer la voiture" from the sheet).
+  const ProOccupationStarted({this.focus});
+  final String? focus;
 }
 
 class ProOccupationRefreshed extends ProOccupationEvent {

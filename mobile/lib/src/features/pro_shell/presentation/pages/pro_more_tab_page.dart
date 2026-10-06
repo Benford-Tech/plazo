@@ -59,7 +59,7 @@ class ProMoreTabPage extends StatelessWidget {
             key: const Key('pmore-shuttle'),
             icon: Icons.directions_bus_rounded,
             label: 'shuttle.title'.tr(),
-            onTap: () => context.router.push(const ProShuttleRoute()),
+            onTap: () => context.router.push(ProShuttleRoute()),
           ),
           _Tile(
             key: const Key('pmore-planning'),

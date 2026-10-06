@@ -111,6 +111,20 @@ void main() {
     return bloc;
   }
 
+  test('ouvert depuis une fiche (C-B) : le côté et le client sont présélectionnés', () async {
+    final bloc = build()..add(const ShuttleStarted(direction: 'dropoff', reservationId: 'a1'));
+    await bloc.stream.firstWhere((s) => s.departures != null);
+    expect(bloc.state.direction, 'dropoff');
+    expect(bloc.state.selected, {'a1'});
+    await bloc.close();
+    // A traveller the list does not offer (already on a trip, gone) stays unselected.
+    final other = build()..add(const ShuttleStarted(direction: 'pickup', reservationId: 'nope'));
+    await other.stream.firstWhere((s) => s.pickups != null);
+    expect(other.state.direction, 'pickup');
+    expect(other.state.selected, isEmpty);
+    await other.close();
+  });
+
   test('liste les retours groupés par terminal, sans demander la position', () async {
     final bloc = await opened();
     expect(bloc.state.groups.map((g) => g.terminal), ['Terminal 1', 'Terminal 2']);

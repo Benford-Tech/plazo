@@ -101,10 +101,18 @@ class ShuttleBloc extends Bloc<ShuttleEvent, ShuttleState> {
         stops: stops,
         vehicle: state.vehicle ?? (mine == null ? null : TripVehicleChoice(vehicleId: mine.id)),
         // Back in the app while a drop-off runs: stay on that side.
-        direction: trip != null && trip.running ? trip.direction : state.direction,
+        direction: trip != null && trip.running ? trip.direction : (event.direction ?? state.direction),
       ),
     );
     await _loadPickups(emit, initial: true);
+    // Opened from a booking's sheet: that traveller is selected when the list offers them.
+    final wanted = event.reservationId;
+    if (wanted != null && !state.running) {
+      final offered = state.direction == 'dropoff'
+          ? (state.departures?.rows ?? const []).where((r) => r.tripId == null).map((r) => r.reservationId)
+          : (state.pickups?.rows ?? const []).where((r) => r.tripId == null).map((r) => r.reservationId);
+      if (offered.contains(wanted)) emit(state.copyWith(selected: {wanted}));
+    }
     // Back in the app while a trip runs: carry on sharing.
     if (trip != null && trip.running && !state.tracking) await _resumeTracking(emit);
     if (_autoPoll) {

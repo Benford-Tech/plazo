@@ -23,26 +23,26 @@ const posts = ['manager', 'agent', 'driver', 'valet'];
 List<ProTab> tabsFor(String post) {
   const more = ProTab(route: ProMoreTabRoute(), icon: Icons.more_horiz_rounded, label: 'more', key: 'ptab-more');
   const today = ProTab(route: ProTodayRoute(), icon: Icons.today_rounded, label: 'today', key: 'ptab-today');
-  const parking = ProTab(route: ProOccupationRoute(), icon: Icons.local_parking_rounded, label: 'parking', key: 'ptab-parking');
+  final parking = ProTab(route: ProOccupationRoute(), icon: Icons.local_parking_rounded, label: 'parking', key: 'ptab-parking');
   switch (post) {
     case 'driver':
-      return const [
+      return [
         ProTab(route: ProShuttleRoute(), icon: Icons.directions_bus_rounded, label: 'shuttle', key: 'ptab-shuttle'),
-        ProTab(route: ProArrivalsRoute(), icon: Icons.flight_takeoff_rounded, label: 'arrivals', key: 'ptab-arrivals'),
-        ProTab(route: ProReturnsRoute(), icon: Icons.flight_land_rounded, label: 'returns', key: 'ptab-returns'),
+        const ProTab(route: ProArrivalsRoute(), icon: Icons.flight_takeoff_rounded, label: 'arrivals', key: 'ptab-arrivals'),
+        const ProTab(route: ProReturnsRoute(), icon: Icons.flight_land_rounded, label: 'returns', key: 'ptab-returns'),
         more,
       ];
     case 'valet':
-      return const [
+      return [
         parking,
         today,
-        ProTab(route: ProSpotPlanningRoute(), icon: Icons.view_timeline_outlined, label: 'places', key: 'ptab-places'),
+        const ProTab(route: ProSpotPlanningRoute(), icon: Icons.view_timeline_outlined, label: 'places', key: 'ptab-places'),
         more,
       ];
     default:
-      return const [
+      return [
         today,
-        ProTab(route: ProReservationsRoute(), icon: Icons.list_alt_rounded, label: 'reservations', key: 'ptab-reservations'),
+        const ProTab(route: ProReservationsRoute(), icon: Icons.list_alt_rounded, label: 'reservations', key: 'ptab-reservations'),
         parking,
         more,
       ];

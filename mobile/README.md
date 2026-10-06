@@ -179,7 +179,7 @@ version web, « Payer » ouvre la page Stripe Checkout.
 - `/pro/parking` (onglet Parking) : Occupation (bloc 2, étape 2) — recherche par plaque, place proposée à l'arrivée, crochet des clés.
 - `/pro/equipe` (gérants : membres, rôles, accès, mot de passe provisoire), `/pro/compte` (changement de mot de passe), `/pro/reglages` (gérants : nom, adresse, places, marge, navette, canal SMS avec le téléphone Android du parking).
 - `/pro/planning-places` : planning des places (une ligne par place sur 7 ou 14 jours, besoin par jour, alertes, sans place, pré-affectation, déplacement d'un séjour).
-- `/pro/reservations`, `/pro/reservations/:id`, `/pro/reservations/formulaire` : réservations du personnel (liste et recherche, fiche avec les étapes de statut, saisie, modification). Les rôles cachent les actions (`core/helpers/roles.dart`), le serveur reste l'autorité.
+- `/pro/reservations`, `/pro/reservations/:id`, `/pro/reservations/formulaire` : réservations du personnel (liste et recherche, fiche avec **une seule « Prochaine étape »** (C-B, 06/10/2026 : Placer la voiture → Occupation avec la carte du véhicule ouverte, `/pro/occupation?focus=` ; Déposer au terminal / Récupérer à l'aéroport → Navette avec le côté et le client présélectionnés, `/pro/navette?sens=&reservation=` ; Rendre le véhicule → feuille clés rendues + remarque, envoyée avec le statut), les autres statuts derrière « Autres actions », saisie, modification). Dans Occupation, « Placer » demande le crochet des clés dans le même geste. Les statuts suivants viennent de l'API (`nextStatuses`), le serveur reste l'autorité.
 
 ## Deux apps, un projet (A-B, 04/10/2026)
 

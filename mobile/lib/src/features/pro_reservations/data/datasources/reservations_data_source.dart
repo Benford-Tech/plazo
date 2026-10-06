@@ -6,7 +6,7 @@ abstract class ReservationsDataSource {
   Future<ReservationModel> get(String id);
   Future<ReservationModel> create(ReservationInput input);
   Future<ReservationModel> update(String id, ReservationInput input);
-  Future<ReservationModel> changeStatus(String id, String status);
+  Future<ReservationModel> changeStatus(String id, String status, {String? note});
   Future<CapacityPreviewModel> capacity(String arrivalAt, String returnAt, {String? excludeId});
 }
 
@@ -27,7 +27,8 @@ class ReservationsDataSourceImpl implements ReservationsDataSource {
   Future<ReservationModel> update(String id, ReservationInput input) async => (await _client.update(id, input.toBody(patch: true))).data;
 
   @override
-  Future<ReservationModel> changeStatus(String id, String status) async => (await _client.changeStatus(id, {'status': status})).data;
+  Future<ReservationModel> changeStatus(String id, String status, {String? note}) async =>
+      (await _client.changeStatus(id, {'status': status, if (note != null && note.trim().isNotEmpty) 'note': note.trim()})).data;
 
   @override
 

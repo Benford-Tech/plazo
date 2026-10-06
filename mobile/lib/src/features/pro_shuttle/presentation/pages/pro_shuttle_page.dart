@@ -33,7 +33,11 @@ import '../widgets/vehicle_sheet.dart';
 /// "Clients récupérés · retour parking" / "Clients déposés au terminal".
 @RoutePage()
 class ProShuttlePage extends StatelessWidget implements AutoRouteWrapper {
-  const ProShuttlePage({super.key});
+  /// `direction` / `reservationId` (C-B, 06/10/2026): opened from a booking's sheet, that side and traveller are preselected.
+  const ProShuttlePage({super.key, @QueryParam('sens') this.direction, @QueryParam('reservation') this.reservationId});
+
+  final String? direction;
+  final String? reservationId;
 
   @override
   Widget wrappedRoute(BuildContext context) {
@@ -41,7 +45,10 @@ class ProShuttlePage extends StatelessWidget implements AutoRouteWrapper {
     final staff = context.read<ProAuthBloc?>()?.state.staff;
     return MultiBlocProvider(
       providers: [
-        BlocProvider(create: (_) => locator<ShuttleBloc>()..add(ShuttleStarted(staffId: staff?.id, vehicleId: staff?.vehicle?.id))),
+        BlocProvider(
+          create: (_) => locator<ShuttleBloc>()
+            ..add(ShuttleStarted(staffId: staff?.id, vehicleId: staff?.vehicle?.id, direction: direction == 'dropoff' || direction == 'pickup' ? direction : null, reservationId: reservationId)),
+        ),
         BlocProvider(create: (_) => locator<LiveShuttlesBloc>()..add(const LiveShuttlesStarted())),
         BlocProvider(create: (_) => locator<ShuttleWavesBloc>()..add(const ShuttleWavesStarted())),
       ],
