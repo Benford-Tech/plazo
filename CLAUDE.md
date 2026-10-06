@@ -181,7 +181,8 @@ Le nom du produit doit rester dans UN seul fichier de configuration (il peut enc
 - `product.json` : nom du produit et libellés de marque (seul endroit où le nom apparaît ;
   lu par le serveur, l'espace pro et le site), et `company` : la société éditrice (« Plazo Aéroports », forme, siège,
   immatriculation, TVA, directeur de la publication, médiateur ; un champ vide s'affiche « [à compléter] »).
-- `site/src/lib/legal.ts` : textes des Conditions générales (`/conditions`) et des Mentions légales (`/mentions-legales`),
+- `site/src/lib/legal.ts` : textes des Conditions générales (`/conditions`), des Mentions légales (`/mentions-legales`)
+  et de la Politique de confidentialité (`/confidentialite`, durées de conservation reprises du code),
   rédigés d'après le fonctionnement réel (06/10/2026), **projet à faire valider par un juriste** (bandeau sur la page,
   pages non indexées) ; à tenir à jour quand une règle change (paiement, annulation, classement, données).
 - `backend/` : API REST sous `/api` (`index.js` = point d'entrée Vercel). Les routes du personnel du loueur

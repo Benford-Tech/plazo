@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { legalNoticeDoc, termsDoc, TO_COMPLETE, type LegalDoc } from "../legal";
+import { legalNoticeDoc, privacyDoc, termsDoc, TO_COMPLETE, type LegalDoc } from "../legal";
 import type { Company } from "../product";
 
 const EMPTY: Company = {
@@ -60,9 +60,28 @@ describe("legal pages", () => {
   });
 
   it("section ids are unique (anchors of the contents)", () => {
-    for (const doc of [termsDoc(), legalNoticeDoc()]) {
+    for (const doc of [termsDoc(), legalNoticeDoc(), privacyDoc()]) {
       const ids = doc.sections.map(s => s.id);
       expect(new Set(ids).size).toBe(ids.length);
     }
+  });
+});
+
+describe("privacy policy", () => {
+  const all = text(privacyDoc(EMPTY, "contact@plazo.fr", "Plazo"));
+
+  it("states the retention periods the code applies", () => {
+    expect(all).toContain("jusqu’à 30 jours après le retour"); // MANAGE_LINK_DAYS_AFTER_RETURN
+    expect(all).toContain("au plus tard 2 heures après le début"); // SIGNAL_MAX_MINUTES
+    expect(all).toContain("Position GPS de la voiture : effacée 2 jours après le retour."); // purgeCarLocations
+    expect(all).toContain("supprimés 2 jours après le retour"); // purgeDevices
+    expect(all).toContain("File d’envoi des SMS (numéro et texte) : 30 jours."); // SMS_OUTBOX_RETENTION_DAYS
+  });
+
+  it("names the recipients and the authority, and keeps its promises narrow", () => {
+    for (const name of ["Vercel", "Neon", "Stripe", "Brevo", "OneSignal", "SMS Gateway for Android", "IGN", "CNIL"]) expect(all).toContain(name);
+    expect(all).toContain("ne vend pas vos données");
+    expect(all).toContain("aucun cookie publicitaire");
+    expect(all).toContain(`région ${TO_COMPLETE}`);
   });
 });
