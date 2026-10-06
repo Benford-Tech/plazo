@@ -78,6 +78,21 @@ Ne construire QUE ce qui règle la douleur n°1 du client.
      (`ParkingSpot.depth`, `fileLength`, `stayClass` court / moyen / long ; seuils `stayShortMaxNights` 3 et
      `stayMediumMaxNights` 8 dans les réglages du plan) : suggestions et pré-affectation prennent d'abord la zone
      de la durée du séjour, puis la zone voisine.
+     **Décisions du 07/10/2026 (« l'estimation n'est pas réelle, bâtiment non reconnu, tracé difficile »)** :
+     **M-A « Voiturier · peigne »** remplace les files depuis le bord sous la même clé `valetEdge` (`mode: 'comb'` dans
+     `layout.ts`, web et serveur) : autant d'allées de service que le terrain en demande, files jusqu'à `edgeMaxFiles`
+     de chaque côté, une allée de bout (« spine ») les relie du côté de l'entrée, orientation cherchée dans les deux
+     sens de chaque bord (alignée sur un bord sauf gain > 1 %), puis les restes reçoivent des files dans l'autre sens
+     depuis une courte allée qui touche le réseau (`fillLeftovers`) ; `LayoutResult.aisles` et
+     `LayoutEstimate.aisles` (allées hachurées sur l'aperçu, « N m² par place » sous chaque disposition) ;
+     **B-A bâtiments IGN** : `GET /internal/geo/buildings?bbox=` (BD TOPO `batiment`), à l'étape Terrain les
+     bâtiments qui touchent le contour deviennent des exclusions `kind: 'building'` avec `source: 'ign'`, `ref`
+     et 1 m de marge (`withIgnBuildings`, case « Exclure les bâtiments repérés par l'IGN », réglages
+     `ignBuildings` / `ignBuildingsSynced`), retirables d'un clic à l'étape Zones ; le serveur fait de même quand
+     l'app n'envoie que le contour (`ParkingPlanService.followLand`) ; **T-A zones automatiques** : les zones
+     sont les morceaux du terrain hors exclusions (`autoZones`, une orientation par morceau, réglage `zonesAuto`,
+     bouton « Zones automatiques », passage en manuel dès qu'une zone est tracée ou modifiée) et le tracé
+     s'aimante aux parcelles, parkings, bâtiments et au contour (`snapToRings`, `MapView.snapTo`).
    - Décision **O-A « File triée » (06/10/2026)** : sur une file de voiturier, les retours doivent décroître de l'allée vers le
      fond ; `domain/files.ts` reconstitue les files (profondeur + position) et score chaque place libre par le nombre de
      voitures à déplacer (`blocking` devant partant après, `blocked` derrière partant avant ; même vague = 2 h) ;

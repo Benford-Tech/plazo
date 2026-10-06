@@ -988,6 +988,16 @@ export const fr = {
     sourceParcelsHelp: "API Carto · cadastre",
     sourceParkings: "Parkings BD TOPO",
     sourceParkingsHelp: "IGN · surfaces de parking",
+    // B-A (07/10/2026): the IGN buildings become exclusions by themselves.
+    sourceBuildings: "Bâtiments BD TOPO",
+    sourceBuildingsHelp: "IGN · emprise des bâtiments",
+    ignBuildings: "Exclure les bâtiments repérés par l'IGN",
+    ignBuildingsCount: (n: number) =>
+      n === 0
+        ? "Aucun bâtiment IGN sur le terrain"
+        : `${n} bâtiment${n > 1 ? "s" : ""} IGN exclu${n > 1 ? "s" : ""} (1 m de marge, à retirer d'un clic à l'étape Zones)`,
+    ignBuildingsLoading: "Recherche des bâtiments IGN…",
+    ignBuildingsError: "Bâtiments IGN indisponibles pour l'instant : ajoutez-les à la main à l'étape Zones.",
     parkingsZoom: "zoomez pour les afficher",
     help: "Corrigez le contour à la souris (déplacer un sommet, en ajouter, en retirer), puis saisissez une cote mesurée sur place pour caler l'échelle.",
     addDimension: "Ajouter une cote",
@@ -1009,6 +1019,11 @@ export const fr = {
     zoneName: (letter: string) => `Zone ${letter}`,
     zoneSubtitle: "stationnement",
     zoneDetail: "voitures légères",
+    // T-A (07/10/2026): the zones follow the land and its exclusions unless drawn by hand.
+    autoZones: "Zones automatiques",
+    autoZonesOn:
+      "Zones découpées automatiquement autour des bâtiments et des parties exclues : chacune reçoit sa propre orientation. Ajoutez ou modifiez une zone pour les tracer vous-même.",
+    autoZonesOff: "Zones tracées à la main.",
     addZone: "+ Zone de stationnement",
     addExclusion: "+ Partie exclue (bâtiment, arbre, poteau)",
     chooseExclusion: "Quelle partie exclure ?",
@@ -1048,7 +1063,7 @@ export const fr = {
       selfPark: "Clients garés seuls",
       valet24: "Voiturier · files de 2 à 4",
       valet5: "Voiturier · files de 5",
-      valetEdge: "Voiturier · files depuis le bord",
+      valetEdge: "Voiturier · peigne",
     },
     cars: "voitures",
     perCar: (m2: string) => `${m2} m² par voiture`,
@@ -1059,7 +1074,7 @@ export const fr = {
     valet5Detail: (pattern: string) =>
       `Blocs ${pattern} : plus dense, mais fragile en cas de retour avancé`,
     valetEdgeDetail: (deepest: number) =>
-      `Une allée le long du bord, files jusqu'à ${deepest} voitures ; les coins sont remplis, aucune allée intérieure`,
+      `Allées de service en peigne reliées par une allée de bout, files jusqu'à ${deepest} voitures de chaque côté, restes remplis dans l'autre sens`,
     aisle: "allée",
     range: (a: number, b: number) => `${a} à ${b} voitures`,
     rangeLabel: "Fourchette à annoncer : ",
@@ -1223,10 +1238,12 @@ export const fr = {
       selfPark: "Clients garés seuls",
       valet24: "Voiturier · files de 2 à 4",
       valet5: "Voiturier · files de 5",
-      valetEdge: "Voiturier · files depuis le bord",
+      valetEdge: "Voiturier · peigne",
     },
     computing: "Calcul des dispositions…",
     places: (n: number) => `${n} place${n > 1 ? "s" : ""}`,
+    /** M-A: the yield of a layout, usable area over places (aisles included). */
+    perCar: (m2: number) => `${m2} m² par place`,
     // Z-A (04/10/2026): stay classes by rank in the file.
     stayZones: "Zones de séjour",
     stayClasses: {

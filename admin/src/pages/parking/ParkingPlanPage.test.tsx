@@ -45,6 +45,7 @@ const api = vi.hoisted(() => ({
   replaceSpots: vi.fn(),
   updateSpot: vi.fn(),
   applyPlanCapacity: vi.fn(),
+  buildingsIn: vi.fn(async () => ({ buildings: [] })),
 }));
 vi.mock("@/lib/api", async (importOriginal) => {
   const actual = await importOriginal<typeof import("@/lib/api")>();

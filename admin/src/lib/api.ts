@@ -78,6 +78,13 @@ export interface ParkingFeature {
   name: string | null;
   geometry: { type: "Polygon" | "MultiPolygon"; coordinates: unknown };
 }
+
+/** A BD TOPO building (B-A). */
+export interface BuildingFeature {
+  id: string;
+  nature: string | null;
+  geometry: { type: "Polygon" | "MultiPolygon"; coordinates: unknown };
+}
 export interface GeocodeResult {
   label: string;
   type: string;
@@ -628,6 +635,10 @@ export const adminApi = {
   parkingsIn: (bbox: [number, number, number, number], scope: GeoScope = "operator") =>
     apiRequest<{ parkings: ParkingFeature[] }>(
       `${geoBase(scope)}/parkings?bbox=${bbox.map((n) => n.toFixed(6)).join(",")}`,
+    ),
+  buildingsIn: (bbox: [number, number, number, number], scope: GeoScope = "operator") =>
+    apiRequest<{ buildings: BuildingFeature[] }>(
+      `${geoBase(scope)}/buildings?bbox=${bbox.map((n) => n.toFixed(6)).join(",")}`,
     ),
   geocode: (q: string, scope: GeoScope = "operator") =>
     apiRequest<{ results: GeocodeResult[] }>(

@@ -128,9 +128,26 @@ Une vue « réorganisation » propose, en heure creuse, une liste de déplacemen
 
 Hors MVP : caméras, lecture de plaque, capteurs de présence sur les places.
 
+#### Peigne, bâtiments IGN et zones automatiques (décisions M-A, B-A, T-A du 07/10/2026, mis en œuvre)
+
+- **Peigne (M-A)** : la disposition « Voiturier · peigne » remplace « files depuis le bord ». Le moteur pose autant
+  d'allées de service que le terrain en demande (une tous les 2 × 8 rangs au plus), des files de chaque côté de chaque
+  allée, et une allée de bout qui les relie du côté de l'entrée ; chaque rang est vérifié place par place (un bord biais
+  ne coûte qu'une partie de rangée) ; l'orientation est cherchée dans les deux sens de chaque bord du terrain et reste
+  alignée sur un bord sauf gain supérieur à 1 % ; les restes (coins, bandes le long d'un bâtiment) reçoivent des files
+  dans l'autre sens depuis une courte allée qui touche le réseau. L'aperçu montre les allées hachurées et chaque
+  disposition annonce son rendement en m² par place, allées comprises.
+- **Bâtiments IGN (B-A)** : à l'étape Terrain, les bâtiments de la BD TOPO qui touchent le contour sont exclus d'office
+  (1 m de marge) et affichés en gris ; une case permet de ne pas les prendre, et chacun se retire d'un clic à l'étape
+  Zones comme toute partie exclue. L'app, qui n'envoie que le contour, obtient le même résultat du serveur.
+- **Zones automatiques (T-A)** : les zones sont les morceaux du terrain qu'il reste hors bâtiments et parties exclues,
+  nommés A, B, C… par taille, chacun avec sa propre orientation ; tracer ou modifier une zone passe en manuel, et
+  « Zones automatiques » y revient. En traçant, le pointeur s'aimante aux sommets et aux bords des parcelles, des
+  parkings et bâtiments IGN et du contour.
+
 #### File triée : zéro déplacement (décision O-A du 06/10/2026, mis en œuvre)
 
-- Sur un parking « voiturier · files depuis le bord », la voiture au fond d'une file repart en dernier. Une file est
+- Sur un parking « voiturier · peigne » (ex-files depuis le bord), la voiture au fond d'une file repart en dernier. Une file est
   « saine » quand les dates de retour décroissent de l'allée vers le fond : aucune voiture ne bloque alors une autre.
 - À l'arrivée (Occupation, web et app) et à la pré-affectation (Planning des places), le serveur reconstitue les files à
   partir des rangs et des positions des places, puis classe chaque place libre : 1) aucune voiture à déplacer (ni devant

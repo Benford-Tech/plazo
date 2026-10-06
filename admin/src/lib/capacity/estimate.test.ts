@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { ceilingOf, estimate, subtractFromOutline, summarize, unionPolygons, frameFor } from "./estimate";
+import { autoZones, ceilingOf, estimate, subtractFromOutline, summarize, unionPolygons, frameFor, withIgnBuildings } from "./estimate";
 import { studyToGeoJSON } from "./export";
 import { fromL93, polygonAreaM2 } from "./projection";
 import { l93Rect } from "./testUtils";
@@ -74,5 +74,33 @@ describe("estimation d'une étude", () => {
     expect(kinds.filter(k => k === "outline")).toHaveLength(1);
     expect(kinds.filter(k => k === "zone")).toHaveLength(1);
     expect(kinds.filter(k => k === "slot")).toHaveLength(r.totals.selfPark + r.totals.valet24 + r.totals.valet5 + r.totals.valetEdge);
+  });
+});
+
+describe("bâtiments IGN et zones automatiques (B-A, T-A, 07/10/2026)", () => {
+  // A 20 m × 60 m building across the middle of the 100 m × 60 m land: two pieces remain.
+  const building = { id: "BATIMENT0001", geometry: { type: "Polygon" as const, coordinates: l93Rect(20, 60, 868040) } };
+  const shed = { id: "BATIMENT0002", geometry: { type: "Polygon" as const, coordinates: l93Rect(10, 10, 868200, 6516200) } };
+
+  it("exclut les bâtiments qui touchent le terrain, avec 1 m de marge, et garde les parties exclues à la main", () => {
+    const hand = { id: "h", name: "Arbre", kind: "tree" as const, clearance: 2, geometry: { type: "Point" as const, coordinates: fromL93([868010, 6516010]) } };
+    const old = { id: "ign-old", name: "Bâtiment", kind: "building" as const, clearance: 1, geometry: outline, source: "ign" as const, ref: "old" };
+    const list = withIgnBuildings({ ...base, exclusions: [hand, old] }, [building, shed], "Bâtiment");
+    expect(list.map((e) => e.id)).toEqual(["h", "ign-BATIMENT0001"]);
+    expect(list[1]).toMatchObject({ kind: "building", clearance: 1, source: "ign", ref: "BATIMENT0001", name: "Bâtiment" });
+    expect(estimate({ ...base, exclusions: list }).totals.valet24).toBeLessThan(324);
+  });
+
+  it("découpe les zones autour des bâtiments, la plus grande en premier, en gardant les identifiants", () => {
+    const exclusions = withIgnBuildings(base, [building], "Bâtiment");
+    const ids = ["keep-a", "keep-b"];
+    const zones = autoZones({ ...base, exclusions }, (l) => `Zone ${l}`, () => ids.shift() ?? "new");
+    expect(zones.map((z) => z.name)).toEqual(["Zone A", "Zone B"]);
+    expect(zones.map((z) => z.id)).toEqual(["keep-a", "keep-b"]);
+    const areas = zones.map((z) => polygonAreaM2(z.geometry.coordinates, 1));
+    expect(areas[0]).toBeGreaterThanOrEqual(areas[1]);
+    expect(areas[0] + areas[1]).toBeCloseTo(6000 - 22 * 60, -1);
+    // No zone without a building: the whole land.
+    expect(autoZones(base, (l) => `Zone ${l}`, () => "z")).toHaveLength(1);
   });
 });

@@ -30,7 +30,13 @@ export interface Exclusion {
   /** Margin kept around the geometry, in metres (a lane: half its width; a tree: its radius). */
   clearance: number;
   geometry: GeoPolygon | GeoLineString | GeoPoint;
+  /** B-A (07/10/2026): "ign" when the building comes from the BD TOPO; `ref` is its IGN id. */
+  source?: 'ign';
+  ref?: string;
 }
+
+/** Margin kept around a BD TOPO building (its footprint is the roof's, to the metre). */
+export const IGN_BUILDING_CLEARANCE = 1;
 
 export interface ParcelRef {
   id: string;
@@ -63,7 +69,7 @@ export interface CapacitySettings {
   crossAisles: boolean;
   /** Fixed row bearing in degrees; null: automatic. */
   orientation: number | null;
-  /** Valet "files depuis le bord" (T-A): deepest file allowed. */
+  /** Valet comb (M-A, ex-"files depuis le bord"): deepest file allowed on each side of an aisle. */
   edgeMaxFiles: number;
   /** Stay classes by depth (Z-A): a stay up to `stayShortMaxNights` is short, up to `stayMediumMaxNights` medium, else long. */
   stayShortMaxNights: number;
@@ -73,6 +79,12 @@ export interface CapacitySettings {
   calibration?: Calibration | null;
   /** How the outline was made: from parcels, edited by hand after that, or drawn by hand. */
   outlineSource?: 'parcels' | 'edited' | 'drawn';
+  /** B-A: false stops the IGN buildings from being added as exclusions. */
+  ignBuildings?: boolean;
+  /** B-A: set once the buildings of this land were synced (a building removed by hand stays removed). */
+  ignBuildingsSynced?: boolean;
+  /** T-A: false once the zones were drawn by hand; else they follow the land and its exclusions. */
+  zonesAuto?: boolean;
 }
 
 export const DEFAULT_SETTINGS: CapacitySettings = {
@@ -124,7 +136,14 @@ export interface StudyResults {
   computedAt?: string;
   usableArea?: number;
   totals?: Record<LayoutKey, number>;
-  zones?: { zoneId: string; name: string; area: number; usableArea: number; counts: Record<LayoutKey, number>; angle: number }[];
+  zones?: {
+    zoneId: string;
+    name: string;
+    area: number;
+    usableArea: number;
+    counts: Record<LayoutKey, number>;
+    angle: number;
+  }[];
 }
 
 /** The plan fields the engine reads (the pro space's CapacityStudy carries the same ones). */
@@ -154,7 +173,10 @@ export function settingsOf(study: Pick<CapacityStudy, 'settings'>): CapacitySett
   return {
     ...DEFAULT_SETTINGS,
     ...study.settings,
-    selfParkSlot: { ...DEFAULT_SETTINGS.selfParkSlot, ...study.settings?.selfParkSlot },
+    selfParkSlot: {
+      ...DEFAULT_SETTINGS.selfParkSlot,
+      ...study.settings?.selfParkSlot,
+    },
     valetSlot: { ...DEFAULT_SETTINGS.valetSlot, ...study.settings?.valetSlot },
   };
 }

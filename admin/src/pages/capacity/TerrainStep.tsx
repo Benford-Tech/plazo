@@ -2,8 +2,8 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { MapView, type MapLabel, type MapLayer, type MapViewHandle } from "@/components/capacity/MapView";
 import { Aside, AsideActions, PanelLabel, ToolButton } from "@/components/capacity/ui";
 import { dec2, dec3, m2 } from "@/lib/capacity/format";
-import { adminApi, type GeocodeResult, type ParkingFeature } from "@/lib/api";
-import { areaM2, subtractFromOutline, unionPolygons } from "@/lib/capacity/estimate";
+import { adminApi, type BuildingFeature, type GeocodeResult, type ParkingFeature } from "@/lib/api";
+import { areaM2, subtractFromOutline, unionPolygons, withIgnBuildings } from "@/lib/capacity/estimate";
 import { IGN_PHOTO_DATE } from "@/lib/capacity/ign";
 import { parseLatLon } from "@/lib/capacity/latlon";
 import { boundsOf, edgeLabels, fc, feature, polygonsOf, positionsOf } from "@/lib/capacity/mapData";
@@ -18,6 +18,7 @@ type Tool = "pan" | "addVertex" | "removeVertex" | "cut" | "draw" | "dimension";
 const ORANGE = "#ff8a3d";
 const CYAN = "#5fd3ff";
 const YELLOW = "#A3E635";
+const BUILDING = "#d9d5cc";
 /** BD TOPO parkings are only fetched from this zoom (a few hundred metres across). */
 const PARKINGS_MIN_ZOOM = 15;
 const MAX_BBOX_SPAN = 0.05;
@@ -50,6 +51,13 @@ export default function TerrainStep({ study, update, go, geoScope = "operator" }
   const [showParkings, setShowParkings] = useState(true);
   const [parkings, setParkings] = useState<ParkingFeature[]>([]);
   const [parkingsHint, setParkingsHint] = useState<string | null>(null);
+  const [showBuildings, setShowBuildings] = useState(true);
+  const [buildings, setBuildings] = useState<BuildingFeature[]>([]);
+  const [buildingsState, setBuildingsState] = useState<"idle" | "loading" | "error">("idle");
+  const studyRef = useRef(study);
+  studyRef.current = study;
+  const buildingsRequest = useRef(0);
+  const mounted = useRef(false);
   const [message, setMessage] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
   const [picks, setPicks] = useState<LonLat[]>([]);
@@ -109,6 +117,60 @@ export default function TerrainStep({ study, update, go, geoScope = "operator" }
       setBusy(false);
     }
   }
+
+  // ---- BD TOPO buildings of the land (B-A, 07/10/2026) -------------------------------------
+
+  /** Every building overlapping the outline becomes a "building" exclusion; the hand-made ones stay. */
+  async function syncBuildings() {
+    const current = studyRef.current;
+    const ring = current.outline?.coordinates[0];
+    const bounds = ring ? boundsOf(ring) : null;
+    if (!bounds) return;
+    const [[w, s], [e, n]] = bounds;
+    if (e - w > MAX_BBOX_SPAN || n - s > MAX_BBOX_SPAN) return;
+    const id = ++buildingsRequest.current;
+    setBuildingsState("loading");
+    try {
+      const { buildings: found } = await adminApi.buildingsIn([w, s, e, n], geoScope);
+      if (id !== buildingsRequest.current) return;
+      setBuildings(found);
+      setBuildingsState("idle");
+      const latest = studyRef.current;
+      const next = withIgnBuildings(latest, found, fr.capacity.exclusionKinds.building);
+      const key = (list: typeof next) => list.map(x => `${x.id}:${x.source ?? ""}`).join("|");
+      update({
+        ...(key(next) !== key(latest.exclusions) ? { exclusions: next } : {}),
+        settings: { ...latest.settings, ignBuildingsSynced: true },
+      });
+    } catch {
+      if (id === buildingsRequest.current) setBuildingsState("error");
+    }
+  }
+
+  // On opening, only a land never synced gets its buildings (a building removed by hand stays
+  // removed); every later change of the outline syncs them again.
+  const outlineKey = JSON.stringify(outline);
+  useEffect(() => {
+    const first = !mounted.current;
+    mounted.current = true;
+    if (!outline || settings.ignBuildings === false) return;
+    if (first && settings.ignBuildingsSynced) return;
+    void syncBuildings();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [outlineKey]);
+
+  function setIgnBuildings(on: boolean) {
+    if (on) {
+      update({ settings: { ...study.settings, ignBuildings: true } });
+      void syncBuildings();
+    } else {
+      update({
+        exclusions: study.exclusions.filter(e => e.source !== "ign"),
+        settings: { ...study.settings, ignBuildings: false },
+      });
+    }
+  }
+  const ignCount = study.exclusions.filter(e => e.source === "ign").length;
 
   // ---- BD TOPO parkings of the view ---------------------------------------------------------
 
@@ -230,6 +292,14 @@ export default function TerrainStep({ study, update, go, geoScope = "operator" }
         paint: { "line-color": CYAN, "line-width": 2, "line-dasharray": [3, 2] },
       });
     }
+    if (showBuildings && buildings.length) {
+      list.push({
+        id: "buildings",
+        type: "fill",
+        data: fc(buildings.flatMap(b => polygonsOf(b.geometry).map(p => feature(p)))),
+        paint: { "fill-color": BUILDING, "fill-opacity": 0.45 },
+      });
+    }
     if (showParcels) {
       list.push({
         id: "parcels",
@@ -264,7 +334,17 @@ export default function TerrainStep({ study, update, go, geoScope = "operator" }
       });
     }
     return list;
-  }, [showParkings, showParcels, parkings, parcels, outline, ring, tool, picks]);
+  }, [showParkings, showParcels, showBuildings, buildings, parkings, parcels, outline, ring, tool, picks]);
+
+  // While drawing or cutting, the pointer snaps to the parcels, the parkings and the buildings.
+  const snapTo = useMemo<LonLat[][]>(
+    () => [
+      ...parcels.flatMap(p => (p.geometry ? polygonsOf(p.geometry).flatMap(g => g.coordinates) : [])),
+      ...parkings.flatMap(p => polygonsOf(p.geometry).flatMap(g => g.coordinates)),
+      ...buildings.flatMap(b => polygonsOf(b.geometry).flatMap(g => g.coordinates)),
+    ],
+    [parcels, parkings, buildings],
+  );
 
   const labels = useMemo<MapLabel[]>(() => edgeLabels(outline, study.scaleFactor), [outline, study.scaleFactor]);
 
@@ -297,6 +377,7 @@ export default function TerrainStep({ study, update, go, geoScope = "operator" }
           }
           drawMode={drawMode}
           onDrawn={onDrawn}
+          snapTo={snapTo}
           onMapClick={onMapClick}
           onViewChange={(bbox, zoom) => {
             view.current = { bbox, zoom };
@@ -371,6 +452,24 @@ export default function TerrainStep({ study, update, go, geoScope = "operator" }
                   </>
                 )}
               </div>
+              <label className="mt-2 flex items-center gap-2 text-sm">
+                <input
+                  type="checkbox"
+                  checked={settings.ignBuildings !== false}
+                  onChange={e => setIgnBuildings(e.target.checked)}
+                  className="h-4 w-4 accent-[#A3E635]"
+                />
+                {fr.capacity.ignBuildings}
+              </label>
+              {settings.ignBuildings !== false && (
+                <p className="mt-1 text-[13px] text-muted-foreground" data-testid="ign-buildings">
+                  {buildingsState === "loading"
+                    ? fr.capacity.ignBuildingsLoading
+                    : buildingsState === "error"
+                      ? fr.capacity.ignBuildingsError
+                      : fr.capacity.ignBuildingsCount(ignCount)}
+                </p>
+              )}
               {parcels.length > 0 && source !== "drawn" && (parkingOverlaps || settings.clipToParking) && (
                 <label className="mt-2 flex items-center gap-2 text-sm">
                   <input
@@ -414,6 +513,13 @@ export default function TerrainStep({ study, update, go, geoScope = "operator" }
             title={fr.capacity.sourceParkings}
             help={parkingsHint ? `${fr.capacity.sourceParkingsHelp} · ${parkingsHint}` : fr.capacity.sourceParkingsHelp}
             swatch={CYAN}
+          />
+          <SourceToggle
+            checked={showBuildings}
+            onChange={setShowBuildings}
+            title={fr.capacity.sourceBuildings}
+            help={fr.capacity.sourceBuildingsHelp}
+            swatch={BUILDING}
           />
         </div>
 

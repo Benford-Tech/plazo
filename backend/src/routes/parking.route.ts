@@ -106,6 +106,7 @@ export class ParkingRoute implements Routes {
     this.router.post('/internal/parkings/:id/spot-planning/preassign', StaffAuthMiddleware('reservations:status'), this.parking.preassignSpots);
     this.router.get('/internal/geo/parcels', StaffAuthMiddleware('parking:manage'), this.geo.parcels);
     this.router.get('/internal/geo/parkings', StaffAuthMiddleware('parking:manage'), this.geo.parkings);
+    this.router.get('/internal/geo/buildings', StaffAuthMiddleware('parking:manage'), this.geo.buildings);
     this.router.get('/internal/geo/geocode', StaffAuthMiddleware('parking:manage'), this.geo.geocode);
   }
 }

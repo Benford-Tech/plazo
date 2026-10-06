@@ -1,13 +1,33 @@
 import httpStatus from 'http-status';
 import { Container, Service } from 'typedi';
 import prisma, { ParkingPlan, ParkingSpot, Prisma } from '@/database';
-import { estimate, frameFor, type Estimate, type EstimateInput } from '@/domain/layout/estimate';
+import { autoZones, estimate, frameFor, withIgnBuildings, type Estimate, type EstimateInput } from '@/domain/layout/estimate';
 import { spotsFromLayout } from '@/domain/layout/numbering';
 import { settingsOf, type CapacityStudy, type LayoutKey } from '@/domain/layout/types';
 import { GenerateSpotsDto, ReplaceSpotsDto, UpdateParkingPlanDto, UpdateSpotDto } from '@/dtos/parking-plan.dto';
 import { AuthenticatedStaff } from '@/interfaces/auth.interface';
 import { HttpException } from '@/utils/httpException';
+import { logger } from '@/utils/logger';
 import { AuditService } from './audit.service';
+import { GeoService, MAX_BBOX_SPAN } from './geo.service';
+
+/** Names of the exclusions and zones the server makes itself (user-facing, in French like the app's "Zone A"). */
+const IGN_BUILDING_NAME = 'Bâtiment';
+const ZONE_NAME = (letter: string) => `Zone ${letter}`;
+const newId = () => Math.random().toString(36).slice(2, 10);
+
+function bboxOf(ring: [number, number][]): [number, number, number, number] | null {
+  if (!ring.length) return null;
+  let [w, s] = ring[0];
+  let [e, n] = ring[0];
+  for (const [x, y] of ring) {
+    w = Math.min(w, x);
+    e = Math.max(e, x);
+    s = Math.min(s, y);
+    n = Math.max(n, y);
+  }
+  return [w, s, e, n];
+}
 
 export interface ParkingPlanView {
   plan: ParkingPlan;
@@ -27,6 +47,7 @@ const notFound = () => new HttpException(httpStatus.NOT_FOUND, 'Parking not foun
 @Service()
 export class ParkingPlanService {
   public audit = Container.get(AuditService);
+  public geo = Container.get(GeoService);
 
   public async get(actor: AuthenticatedStaff, parkingId: string): Promise<ParkingPlanView> {
     const parking = await this.parkingOf(actor, parkingId);
@@ -56,7 +77,46 @@ export class ParkingPlanService {
       ...(data.landmarks != null ? { landmarks: json(data.landmarks) } : {}),
     };
     await prisma.parkingPlan.upsert({ where: { parkingId: parking.id }, create: { parkingId: parking.id, ...patch }, update: patch });
+    if (data.outline || data.exclusions != null) await this.followLand(parking.id, data);
     return this.get(actor, parkingId);
+  }
+
+  /**
+   * B-A and T-A (07/10/2026), for the app, which only sends the outline: the IGN buildings
+   * overlapping the land become exclusions (unless `settings.ignBuildings` is false, or the patch
+   * carries its own exclusions, as the pro space's does), then the zones follow the land when
+   * they are automatic (`settings.zonesAuto`, or no zone yet) and the patch brought none.
+   */
+  private async followLand(parkingId: string, data: UpdateParkingPlanDto): Promise<void> {
+    const plan = await prisma.parkingPlan.findUnique({ where: { parkingId } });
+    if (!plan?.outline) return;
+    const input = planInput(plan);
+    const settings = settingsOf(input);
+    let exclusions = input.exclusions;
+    let changed = false;
+    if (data.outline && data.exclusions == null && settings.ignBuildings !== false) {
+      const bbox = bboxOf(input.outline!.coordinates[0]);
+      if (bbox && bbox[2] - bbox[0] <= MAX_BBOX_SPAN && bbox[3] - bbox[1] <= MAX_BBOX_SPAN) {
+        try {
+          const buildings = await this.geo.buildingsIn(bbox);
+          exclusions = withIgnBuildings(input, buildings, IGN_BUILDING_NAME);
+          changed = true;
+        } catch (error) {
+          // The plan is saved all the same: the buildings are synced again on the next outline change.
+          logger.warn(`[Plan] IGN buildings not synced: ${error instanceof Error ? error.message : 'unknown error'}`);
+        }
+      }
+    }
+    const auto = settings.zonesAuto === true || (settings.zonesAuto == null && input.zones.length === 0);
+    const zones = data.zones == null && auto ? autoZones({ ...input, exclusions }, ZONE_NAME, newId) : null;
+    if (!changed && !zones) return;
+    await prisma.parkingPlan.update({
+      where: { parkingId },
+      data: {
+        ...(changed ? { exclusions: exclusions as unknown as Prisma.InputJsonValue } : {}),
+        ...(zones ? { zones: zones as unknown as Prisma.InputJsonValue } : {}),
+      },
+    });
   }
 
   /** A new generation: every spot is replaced. Codes must be unique within the parking. */

@@ -3,10 +3,10 @@ import { useEffect, useMemo, useState } from "react";
 import { MapView, type DrawKind, type MapLabel, type MapLayer } from "@/components/capacity/MapView";
 import { Aside, AsideActions, PanelLabel, ToolButton } from "@/components/capacity/ui";
 import { m2 } from "@/lib/capacity/format";
-import { areaM2, exclusionMulti, frameFor, multiToPolygons, outlineMulti, polygonToMulti } from "@/lib/capacity/estimate";
+import { areaM2, autoZones, exclusionMulti, frameFor, multiToPolygons, outlineMulti, polygonToMulti } from "@/lib/capacity/estimate";
 import { areaOf, intersection } from "@/lib/capacity/geometry";
 import { boundsOf, edgeLabels, fc, feature, polygonCentroid, positionsOf } from "@/lib/capacity/mapData";
-import { EXCLUSION_DEFAULTS, type Exclusion, type ExclusionKind, type GeoPolygon, type Zone } from "@/lib/capacity/types";
+import { EXCLUSION_DEFAULTS, settingsOf, type Exclusion, type ExclusionKind, type GeoPolygon, type LonLat, type Zone } from "@/lib/capacity/types";
 import { fr } from "@/lib/fr";
 import { cn } from "@/lib/utils";
 import type { StepProps } from "./CapacityStudyPage";
@@ -39,12 +39,26 @@ export default function ZonesStep({ study, update, go }: StepProps) {
   const [adding, setAdding] = useState<Adding>(null);
   const [choosing, setChoosing] = useState(false);
   const { outline, zones, exclusions } = study;
+  const settings = settingsOf(study);
 
-  // The whole land is the first parking zone until the user draws others.
+  // T-A (07/10/2026): the zones follow the land and its exclusions (one per piece, each with its
+  // own orientation) until the user draws or edits one by hand.
+  const auto = settings.zonesAuto === true || (settings.zonesAuto == null && zones.length === 0);
+  const exclusionsKey = JSON.stringify(exclusions.map(e => [e.id, e.clearance, e.geometry]));
+  function applyAutoZones(current: Zone[]) {
+    let i = 0;
+    const pieces = autoZones(study, fr.capacity.zoneName, () => current[i++]?.id ?? newId());
+    const key = (list: Zone[]) => JSON.stringify(list.map(z => [z.id, z.geometry.coordinates]));
+    update({
+      ...(key(pieces) !== key(current) ? { zones: pieces } : {}),
+      ...(settings.zonesAuto !== true ? { settings: { ...study.settings, zonesAuto: true } } : {}),
+    });
+  }
   useEffect(() => {
-    if (outline && zones.length === 0) update({ zones: [{ id: newId(), name: fr.capacity.zoneName("A"), geometry: outline }] });
+    if (outline && auto) applyAutoZones(zones);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [exclusionsKey, outline]);
+  const manual = { ...study.settings, zonesAuto: false };
 
   const frame = useMemo(() => frameFor(study), [study]);
   const land = useMemo(() => (frame ? outlineMulti(frame, study) : null), [frame, study]);
@@ -84,7 +98,7 @@ export default function ZonesStep({ study, update, go }: StepProps) {
     if (!adding) return;
     if (adding.type === "zone" && geometry.type === "Polygon") {
       const zone = { id: newId(), name: fr.capacity.zoneName(zoneLetter(zones)), geometry };
-      update({ zones: [...zones, zone] });
+      update({ zones: [...zones, zone], settings: manual });
       setSelected({ type: "zone", id: zone.id });
     } else if (adding.type === "exclusion") {
       const kind = adding.kind;
@@ -96,12 +110,12 @@ export default function ZonesStep({ study, update, go }: StepProps) {
   }
 
   function onEditPolygon(polygon: GeoPolygon) {
-    if (selectedZone) update({ zones: zones.map(z => (z.id === selectedZone.id ? { ...z, geometry: polygon } : z)) });
+    if (selectedZone) update({ zones: zones.map(z => (z.id === selectedZone.id ? { ...z, geometry: polygon } : z)), settings: manual });
     else if (selectedExclusion) update({ exclusions: exclusions.map(e => (e.id === selectedExclusion.id ? { ...e, geometry: polygon } : e)) });
   }
 
   function remove(sel: NonNullable<Selection>) {
-    if (sel.type === "zone") update({ zones: zones.filter(z => z.id !== sel.id) });
+    if (sel.type === "zone") update({ zones: zones.filter(z => z.id !== sel.id), settings: manual });
     else update({ exclusions: exclusions.filter(e => e.id !== sel.id) });
     if (selected?.id === sel.id) setSelected(null);
   }
@@ -149,6 +163,12 @@ export default function ZonesStep({ study, update, go }: StepProps) {
     [outline, study.scaleFactor, zones, zoneAreas],
   );
 
+  // While drawing, the pointer snaps to the land's outline and to the excluded parts.
+  const snapTo = useMemo<LonLat[][]>(
+    () => [...(outline ? outline.coordinates : []), ...[...exclusionShapes.values()].flatMap(v => v.polygons.flatMap(p => p.coordinates))],
+    [outline, exclusionShapes],
+  );
+
   const initialBounds = useMemo(
     () => boundsOf(positionsOf(outline?.coordinates ?? zones[0]?.geometry.coordinates)),
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -177,6 +197,7 @@ export default function ZonesStep({ study, update, go }: StepProps) {
           onEditPolygon={onEditPolygon}
           drawMode={drawMode}
           onDrawn={onDrawn}
+          snapTo={snapTo}
         >
           {help && <div className="absolute left-4 top-4 max-w-md bg-background/80 px-3 py-1.5 text-sm text-muted-foreground">{help}</div>}
         </MapView>
@@ -232,6 +253,12 @@ export default function ZonesStep({ study, update, go }: StepProps) {
           ))}
         </div>
 
+        <p className="text-[13px] text-muted-foreground" data-testid="zones-mode">
+          {auto ? fr.capacity.autoZonesOn : fr.capacity.autoZonesOff}
+        </p>
+        {!auto && outline && (
+          <ToolButton onClick={() => applyAutoZones(zones)}>{fr.capacity.autoZones}</ToolButton>
+        )}
         <ToolButton
           active={adding?.type === "zone"}
           onClick={() => {

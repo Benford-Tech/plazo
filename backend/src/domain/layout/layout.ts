@@ -1,4 +1,4 @@
-import { pointInMulti, type Multi } from './geometry';
+import { areaOf, difference, grow, intersection, pointInMulti, union, type Multi, type Poly } from './geometry';
 import type { XY } from './projection';
 
 /**
@@ -39,9 +39,13 @@ export interface LayoutParams {
   endStalls: boolean;
   /**
    * "edge" (T-A, 04/10/2026): one service aisle along a boundary edge, files perpendicular to it as
-   * deep as the land allows (up to `maxFiles`), no inner or cross aisle. Default: the band pattern.
+   * deep as the land allows (up to `maxFiles`), no inner or cross aisle.
+   * "comb" (M-A, 07/10/2026): as many service aisles as the land needs, files up to `maxFiles` deep
+   * on both sides of each one, a single spine aisle joining them at one end, and the leftovers
+   * filled with files in the other direction from a short aisle touching the network.
+   * Default: the band pattern.
    */
-  mode?: 'bands' | 'edge';
+  mode?: 'bands' | 'edge' | 'comb';
   maxFiles?: number;
 }
 
@@ -57,6 +61,8 @@ export interface SearchOptions {
   phaseStep?: number;
   /** Number of along-row offsets tried over one slot width. */
   alongSteps?: number;
+  /** Edge mode: the aisle must touch this area (the aisles already laid), else the piece stays empty. */
+  mustTouch?: Multi;
 }
 
 /** A slot as its 4 corners, in the input frame. */
@@ -73,10 +79,19 @@ export interface LayoutResult {
   /** Rows per block in y order, with aisles between them, e.g. [3, 4, 2]. */
   pattern: number[];
   slots: Quad[];
+  /** The service aisles (and the spine of a comb), as rectangles in the input frame; may overshoot the land. */
+  aisles: Quad[];
 }
 
 type Interval = [number, number];
-type Edge = { x1: number; y1: number; x2: number; y2: number; ymin: number; ymax: number };
+type Edge = {
+  x1: number;
+  y1: number;
+  x2: number;
+  y2: number;
+  ymin: number;
+  ymax: number;
+};
 
 const EPS = 1e-6;
 
@@ -103,7 +118,10 @@ export function candidateAngles(multi: Multi, step = 2): number[] {
       for (let i = 0; i + 1 < ring.length; i++) {
         const dx = ring[i + 1][0] - ring[i][0];
         const dy = ring[i + 1][1] - ring[i][1];
-        edges.push({ angle: (Math.atan2(dy, dx) * 180) / Math.PI, length: Math.hypot(dx, dy) });
+        edges.push({
+          angle: (Math.atan2(dy, dx) * 180) / Math.PI,
+          length: Math.hypot(dx, dy),
+        });
       }
   edges.sort((a, b) => b.length - a.length);
   for (const e of edges) if (e.length >= 2) push(Math.round(e.angle * 100) / 100);
@@ -126,7 +144,14 @@ class Rotated {
         for (let i = 0; i + 1 < ring.length; i++) {
           const [x1, y1] = ring[i];
           const [x2, y2] = ring[i + 1];
-          this.edges.push({ x1, y1, x2, y2, ymin: Math.min(y1, y2), ymax: Math.max(y1, y2) });
+          this.edges.push({
+            x1,
+            y1,
+            x2,
+            y2,
+            ymin: Math.min(y1, y2),
+            ymax: Math.max(y1, y2),
+          });
           this.ymin = Math.min(this.ymin, y1);
           this.ymax = Math.max(this.ymax, y1);
           this.xmin = Math.min(this.xmin, x1);
@@ -198,17 +223,28 @@ interface Evaluation {
   slots?: Quad[];
   depths?: number[];
   files?: number[];
+  aisles?: Quad[];
 }
+
+const quad = (x0: number, y0: number, x1: number, y1: number): Quad => [
+  [x0, y0],
+  [x1, y0],
+  [x1, y1],
+  [x0, y1],
+];
 
 function buildModules(shape: Rotated, p: LayoutParams, phase: number): Module[] {
   const period = p.blockDepth * p.slotLength + p.aisleWidth;
   const modules: Module[] = [];
-  const cut = p.crossAisles ? p.aisleWidth + (p.endStalls ? p.slotLength : 0) : 0;
+  // A comb keeps one cross aisle, the spine, at the start of every run; the other end is closed.
+  const comb = p.mode === 'comb';
+  const cut = p.crossAisles || comb ? p.aisleWidth + (p.endStalls && !comb ? p.slotLength : 0) : 0;
+  const cutEnd = comb ? 0 : cut;
   for (let y = shape.ymin - period + phase; y < shape.ymax; y += period) {
     const raw = y + p.aisleWidth > shape.ymin && y < shape.ymax ? shape.strip(y, y + p.aisleWidth) : [];
     const aisle: Interval[] = [];
     for (const [a, b] of raw) {
-      const s: Interval = [a + cut, b - cut];
+      const s: Interval = [a + cut, b - cutEnd];
       if (s[1] - s[0] >= p.slotWidth - EPS) aisle.push(s);
     }
     const rows: Interval[][] = [];
@@ -216,7 +252,7 @@ function buildModules(shape: Rotated, p: LayoutParams, phase: number): Module[] 
       const r0 = y + p.aisleWidth + r * p.slotLength;
       rows.push(r0 + p.slotLength > shape.ymin && r0 < shape.ymax ? shape.strip(r0, r0 + p.slotLength) : []);
     }
-    modules.push({ aisleY: y, aisle, aisleRaw: p.crossAisles && p.endStalls ? raw : [], rows });
+    modules.push({ aisleY: y, aisle, aisleRaw: raw, rows });
   }
   return modules;
 }
@@ -246,12 +282,22 @@ function evaluate(shape: Rotated, modules: Module[], p: LayoutParams, along: num
   const slots: Quad[] = [];
   const depths: number[] = [];
   const files: number[] = [];
+  const aisles: Quad[] = [];
   const rowUsed = new Array<boolean>(D);
+  const period = D * l + p.aisleWidth;
 
   for (let k = 0; k < modules.length; k++) {
     const m = modules[k];
     const below = m.aisle;
     const above = k + 1 < modules.length ? modules[k + 1].aisle : [];
+    if (emit && below.length) {
+      for (const [a, b] of m.aisleRaw) {
+        if (!below.some(([c, d]) => c >= a - EPS && d <= b + EPS)) continue;
+        aisles.push(quad(a, m.aisleY, b, m.aisleY + p.aisleWidth));
+        // The spine of a comb runs along the start of the block, down to the next aisle.
+        if (p.mode === 'comb') aisles.push(quad(a, m.aisleY, a + p.aisleWidth, m.aisleY + period));
+      }
+    }
     if (below.length === 0 && above.length === 0) {
       if (emit) pattern.push(0);
       continue;
@@ -331,7 +377,14 @@ function evaluate(shape: Rotated, modules: Module[], p: LayoutParams, along: num
       }
     }
   }
-  return { count, pattern, slots: emit ? slots : undefined, depths: emit ? depths : undefined, files: emit ? files : undefined };
+  return {
+    count,
+    pattern,
+    slots: emit ? slots : undefined,
+    depths: emit ? depths : undefined,
+    files: emit ? files : undefined,
+    aisles: emit ? aisles : undefined,
+  };
 }
 
 /**
@@ -389,6 +442,7 @@ function evaluateEdge(shape: Rotated, p: LayoutParams, aisleY: number, along: nu
     slots: emit ? slots : undefined,
     depths: emit ? depths : undefined,
     files: emit ? files : undefined,
+    aisles: emit ? aisle.map(([a, b]) => quad(a, aisleY, b, aisleY + p.aisleWidth)) : undefined,
   };
 }
 
@@ -411,11 +465,25 @@ function edgeAngles(multi: Multi): number[] {
 }
 
 function generateEdgeLayout(multi: Multi, params: LayoutParams, options: SearchOptions): LayoutResult {
-  const empty: LayoutResult = { count: 0, angle: options.angle ?? 0, pattern: [], slots: [], depths: [], files: [] };
+  const empty: LayoutResult = {
+    count: 0,
+    angle: options.angle ?? 0,
+    pattern: [],
+    slots: [],
+    depths: [],
+    files: [],
+    aisles: [],
+  };
   const phaseStep = options.phaseStep ?? 0.5;
   const alongSteps = Math.max(1, options.alongSteps ?? 6);
   const angles = options.angle != null ? [options.angle, options.angle + 180] : edgeAngles(multi);
-  type Candidate = { count: number; angle: number; aisleY: number; along: number; anchorDistance: number };
+  type Candidate = {
+    count: number;
+    angle: number;
+    aisleY: number;
+    along: number;
+    anchorDistance: number;
+  };
   const candidates: Candidate[] = [];
   for (const angle of angles) {
     const rad = (angle * Math.PI) / 180;
@@ -437,22 +505,80 @@ function generateEdgeLayout(multi: Multi, params: LayoutParams, options: SearchO
   }
   const top = Math.max(0, ...candidates.map(c => c.count));
   if (top === 0) return empty;
-  const best = candidates
-    .filter(c => c.count >= top * 0.97)
-    .sort((a, b) => a.anchorDistance - b.anchorDistance || b.count - a.count || a.angle - b.angle)[0];
-  const rad = (best.angle * Math.PI) / 180;
-  const cos = Math.cos(rad);
-  const sin = Math.sin(rad);
-  const shape = new Rotated(multi, cos, sin);
-  const result = evaluateEdge(shape, params, best.aisleY, best.along, true);
-  return {
-    count: result.count,
-    angle: Math.round((((best.angle % 180) + 180) % 180) * 10) / 10,
-    pattern: result.pattern,
-    slots: (result.slots ?? []).map(q => q.map(p => unrotate(p, cos, sin)) as Quad),
-    depths: result.depths ?? [],
-    files: result.files ?? [],
+  const ranked = candidates
+    .filter(c => c.count >= top * 0.97 || options.mustTouch)
+    .sort(
+      (a, b) =>
+        (a.count >= top * 0.97 ? 0 : 1) - (b.count >= top * 0.97 ? 0 : 1) ||
+        a.anchorDistance - b.anchorDistance ||
+        b.count - a.count ||
+        a.angle - b.angle,
+    );
+  for (const best of ranked) {
+    const rad = (best.angle * Math.PI) / 180;
+    const cos = Math.cos(rad);
+    const sin = Math.sin(rad);
+    const shape = new Rotated(multi, cos, sin);
+    const result = evaluateEdge(shape, params, best.aisleY, best.along, true);
+    const back = (q: Quad) => q.map(p => unrotate(p, cos, sin)) as Quad;
+    const aisles = (result.aisles ?? []).map(back);
+    // A leftover piece is only worth filling when its aisle joins the aisles already laid.
+    if (options.mustTouch && intersection(aisles.map(quadPoly), options.mustTouch).length === 0) continue;
+    return {
+      count: result.count,
+      angle: Math.round((((best.angle % 180) + 180) % 180) * 10) / 10,
+      pattern: result.pattern,
+      slots: (result.slots ?? []).map(back),
+      depths: result.depths ?? [],
+      files: result.files ?? [],
+      aisles,
+    };
+  }
+  return empty;
+}
+
+const quadPoly = (q: Quad): Poly => [[...q, q[0]]];
+
+/** Pieces of the land the layout left empty, largest first, big enough for two files of one car. */
+export function leftoverPieces(multi: Multi, result: Pick<LayoutResult, 'slots' | 'aisles'>, params: LayoutParams): Multi {
+  // The aisle rectangles overlap (an aisle and the spine): the union makes them one valid area.
+  const occupied = union(result.slots.map(quadPoly), result.aisles.map(quadPoly));
+  if (occupied.length === 0) return [];
+  // 30 cm around what is laid: a car never touches another or the aisle's edge.
+  const free = difference(multi, grow(occupied, 0.3));
+  const minArea = 2 * params.slotWidth * params.slotLength;
+  return free
+    .filter(poly => areaOf([poly]) >= minArea)
+    .sort((a, b) => areaOf([b]) - areaOf([a]))
+    .slice(0, 12);
+}
+
+/**
+ * Comb (M-A): the leftovers of the band layout take files in another direction, from a short
+ * aisle of their own that joins the aisles already laid. Returns the enriched result.
+ */
+function fillLeftovers(multi: Multi, result: LayoutResult, params: LayoutParams): LayoutResult {
+  const pieces = leftoverPieces(multi, result, params);
+  if (pieces.length === 0) return result;
+  const network = grow(union(result.aisles.map(quadPoly)), 0.5);
+  const edge: LayoutParams = {
+    ...params,
+    mode: 'edge',
+    crossAisles: false,
+    endStalls: false,
+    maxFiles: params.maxFiles ?? params.oneSidedDepth,
   };
+  const out = { ...result, slots: [...result.slots], depths: [...result.depths], files: [...result.files], aisles: [...result.aisles] };
+  for (const piece of pieces) {
+    const r = generateEdgeLayout([piece], edge, { mustTouch: network });
+    if (r.count === 0) continue;
+    out.count += r.count;
+    out.slots.push(...r.slots);
+    out.depths.push(...r.depths);
+    out.files.push(...r.files);
+    out.aisles.push(...r.aisles);
+  }
+  return out;
 }
 
 /** Trims empty blocks at both ends of a pattern. */
@@ -465,28 +591,52 @@ function trimPattern(pattern: number[]): number[] {
 }
 
 export function generateLayout(multi: Multi, params: LayoutParams, options: SearchOptions = {}): LayoutResult {
-  const empty: LayoutResult = { count: 0, angle: options.angle ?? 0, pattern: [], slots: [], depths: [], files: [] };
+  const empty: LayoutResult = {
+    count: 0,
+    angle: options.angle ?? 0,
+    pattern: [],
+    slots: [],
+    depths: [],
+    files: [],
+    aisles: [],
+  };
   if (multi.length === 0) return empty;
   if (params.mode === 'edge') return generateEdgeLayout(multi, params, options);
+  const comb = params.mode === 'comb';
   const angleStep = options.angleStep ?? 2;
   const phaseStep = options.phaseStep ?? 0.5;
   const alongSteps = Math.max(1, options.alongSteps ?? 6);
-  const angles = options.angle != null ? [options.angle] : candidateAngles(multi, angleStep);
+  // A comb is not symmetric: its spine sits at one end of the aisles, so both directions of
+  // every bearing are tried (the angle keeps its full 0..360 range until the result is reported).
+  const bearings = options.angle != null ? [options.angle] : candidateAngles(multi, angleStep);
+  const angles = comb ? bearings.flatMap(a => [a, (a + 180) % 360]) : bearings;
   const period = params.blockDepth * params.slotLength + params.aisleWidth;
 
-  type Candidate = { count: number; angle: number; phase: number; along: number };
+  type Candidate = {
+    count: number;
+    angle: number;
+    phase: number;
+    along: number;
+    /** Comb: distance from the entrance to the spine, when an anchor is given. */
+    anchorDistance: number;
+  };
   const search = (angleList: number[], step: number, steps: number) => {
     const found: Candidate[] = [];
     for (const angle of angleList) {
       const rad = (angle * Math.PI) / 180;
-      const shape = new Rotated(multi, Math.cos(rad), Math.sin(rad));
+      const cos = Math.cos(rad);
+      const sin = Math.sin(rad);
+      const shape = new Rotated(multi, cos, sin);
+      const anchor = comb && options.anchor ? rotate(options.anchor, cos, sin) : null;
+      // The spine is the aisle-wide strip at the start of the runs, along the whole land.
+      const anchorDistance = anchor ? Math.max(0, shape.xmin - anchor[0], anchor[0] - shape.xmin - params.aisleWidth) : 0;
       let bestForAngle: Candidate | null = null;
       for (let phase = 0; phase < period - EPS; phase += step) {
         const modules = buildModules(shape, params, phase);
         for (let s = 0; s < steps; s++) {
           const along = shape.xmin + (s * params.slotWidth) / steps;
           const { count } = evaluate(shape, modules, params, along, false);
-          if (!bestForAngle || count > bestForAngle.count) bestForAngle = { count, angle, phase, along };
+          if (!bestForAngle || count > bestForAngle.count) bestForAngle = { count, angle, phase, along, anchorDistance };
         }
       }
       if (bestForAngle) found.push(bestForAngle);
@@ -496,21 +646,37 @@ export function generateLayout(multi: Multi, params: LayoutParams, options: Sear
 
   // Coarse pass over every angle (1 m phases, 2 along-row offsets), then the full grid on the
   // best angles and their neighbours: same result as the full search in practice, far faster.
-  let best: Candidate | null = null;
-  const coarse = angles.length > 1 ? search(angles, Math.max(phaseStep, 1), Math.min(2, alongSteps)) : [];
+  // A comb's period is long (two deep blocks and an aisle): its coarse phases are spaced out too.
+  const coarseStep = Math.max(phaseStep, 1, comb ? period / 40 : 0);
+  const coarse = angles.length > 1 ? search(angles, coarseStep, Math.min(2, alongSteps)) : [];
   const finalists: number[] = [];
   if (angles.length === 1) finalists.push(angles[0]);
   else {
     const ranked = [...coarse].sort((a, b) => b.count - a.count || angles.indexOf(a.angle) - angles.indexOf(b.angle));
+    const span = comb ? 360 : 180;
     for (const c of ranked.slice(0, 6)) {
       for (const a of [c.angle, c.angle - angleStep / 2, c.angle + angleStep / 2]) {
-        const n = ((a % 180) + 180) % 180;
+        const n = ((a % span) + span) % span;
         if (!finalists.some(f => Math.abs(f - n) < 0.1)) finalists.push(n);
       }
     }
   }
-  for (const c of search(finalists, phaseStep, alongSteps)) if (!best || c.count > best.count) best = c;
-  if (!best || best.count === 0) return empty;
+  const finals = search(finalists, phaseStep, alongSteps);
+  const top = Math.max(0, ...finals.map(c => c.count));
+  if (top === 0) return empty;
+  // The best count wins (first found on ties). A comb prefers, among the layouts within 1 % of
+  // the best, one aligned on a boundary edge (a plan tilted by 2° for one more car reads badly),
+  // then, with an entrance, the one whose spine is nearest to it.
+  const edges = comb ? edgeAngles(multi) : [];
+  const onEdge = (angle: number) => edges.some(e => Math.abs(e - angle) < 0.3 || Math.abs(e - angle) > 359.7);
+  const best = comb
+    ? finals
+        .filter(c => c.count >= top * 0.99)
+        .sort(
+          (a, b) =>
+            Number(onEdge(b.angle)) - Number(onEdge(a.angle)) || a.anchorDistance - b.anchorDistance || b.count - a.count || a.angle - b.angle,
+        )[0]
+    : finals.find(c => c.count === top)!;
 
   // Rebuild the winner with its slots, back in the input frame.
   const rad = (best.angle * Math.PI) / 180;
@@ -518,12 +684,15 @@ export function generateLayout(multi: Multi, params: LayoutParams, options: Sear
   const sin = Math.sin(rad);
   const shape = new Rotated(multi, cos, sin);
   const result = evaluate(shape, buildModules(shape, params, best.phase), params, best.along, true);
-  return {
+  const back = (q: Quad) => q.map(p => unrotate(p, cos, sin)) as Quad;
+  const laid: LayoutResult = {
     count: result.count,
-    angle: Math.round(best.angle * 10) / 10,
+    angle: Math.round((((best.angle % 180) + 180) % 180) * 10) / 10,
     pattern: trimPattern(result.pattern),
-    slots: (result.slots ?? []).map(q => q.map(p => unrotate(p, cos, sin)) as Quad),
+    slots: (result.slots ?? []).map(back),
     depths: result.depths ?? [],
     files: result.files ?? [],
+    aisles: (result.aisles ?? []).map(back),
   };
+  return comb ? fillLeftovers(multi, laid, params) : laid;
 }

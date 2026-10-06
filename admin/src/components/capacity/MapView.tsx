@@ -7,6 +7,7 @@ import { forwardRef, useEffect, useImperativeHandle, useRef } from "react";
 import { TerraDraw, TerraDrawLineStringMode, TerraDrawPointMode, TerraDrawPolygonMode, TerraDrawSelectMode, type GeoJSONStoreFeatures } from "terra-draw";
 import { TerraDrawMapLibreGLAdapter } from "terra-draw-maplibre-gl-adapter";
 import { DEFAULT_CENTER, IGN_ATTRIBUTION, IGN_ORTHO_MAX_ZOOM, IGN_ORTHO_TILES } from "@/lib/capacity/ign";
+import { snapToRings } from "@/lib/capacity/snap";
 import type { GeoLineString, GeoPoint, GeoPolygon, LonLat } from "@/lib/capacity/types";
 import { cn } from "@/lib/utils";
 
@@ -55,6 +56,8 @@ interface Props {
   /** Active drawing tool, or null. */
   drawMode?: DrawKind | null;
   onDrawn?: (geometry: GeoPolygon | GeoLineString | GeoPoint) => void;
+  /** Rings the pointer snaps to while drawing (T-A): a vertex within 12 px, else an edge within 8 px. */
+  snapTo?: LonLat[][];
   onMapClick?: (lngLat: LonLat, point: { x: number; y: number }) => void;
   onViewChange?: (bbox: [number, number, number, number], zoom: number) => void;
   cursor?: string;
@@ -65,6 +68,7 @@ interface Props {
 const YELLOW = "#A3E635";
 
 setWorkerUrl(maplibreWorkerUrl);
+
 
 const STYLE: StyleSpecification = {
   version: 8,
@@ -162,7 +166,19 @@ export const MapView = forwardRef<MapViewHandle, Props>(function MapView(props, 
             },
           }),
           new TerraDrawPolygonMode({
-            styles: { fillColor: YELLOW, fillOpacity: 0.15, outlineColor: YELLOW, outlineWidth: 3, closingPointColor: YELLOW, closingPointOutlineColor: "#0F2A14" },
+            snapping: { toCustom: (event, context) => snapToRings(propsRef.current.snapTo, event, context) },
+            styles: {
+              fillColor: YELLOW,
+              fillOpacity: 0.15,
+              outlineColor: YELLOW,
+              outlineWidth: 3,
+              closingPointColor: YELLOW,
+              closingPointOutlineColor: "#0F2A14",
+              snappingPointColor: "#F3F3F0",
+              snappingPointOutlineColor: "#0F2A14",
+              snappingPointWidth: 6,
+              snappingPointOutlineWidth: 2,
+            },
           }),
           new TerraDrawLineStringMode({ styles: { lineStringColor: "#5fd3ff", lineStringWidth: 4, closingPointColor: "#5fd3ff" } }),
           new TerraDrawPointMode({ styles: point }),

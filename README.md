@@ -379,4 +379,5 @@ Documentation interactive : `/api/docs` (Swagger). Toutes les routes sont sous `
 | GET / PATCH / DELETE | `/internal/platform/capacity-studies/:id` | Une étude (enregistrement automatique par PATCH) |
 | GET | `/internal/platform/geo/parcels?lon=&lat=` | Parcelles cadastrales au point cliqué (relais vers API Carto de l'IGN) |
 | GET | `/internal/platform/geo/parkings?bbox=` | Parkings BD TOPO de la vue (relais vers le WFS de la Géoplateforme) |
+| GET | `/internal/platform/geo/buildings?bbox=` | Bâtiments BD TOPO de la vue (B-A, même relais) |
 | GET | `/internal/platform/geo/geocode?q=` | Recherche d'adresse (relais vers le géocodage de la Géoplateforme) |

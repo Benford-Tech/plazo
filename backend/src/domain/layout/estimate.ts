@@ -2,6 +2,7 @@ import { areaOf, bufferLine, circle, difference, grow, intersection, shrink, sim
 import { generateLayout, type LayoutParams } from './layout';
 import { makeFrame, polygonAreaM2, type Frame, type LonLat, type XY } from './projection';
 import {
+  IGN_BUILDING_CLEARANCE,
   LAYOUT_KEYS,
   settingsOf,
   type CapacitySettings,
@@ -10,6 +11,7 @@ import {
   type GeoPolygon,
   type LayoutKey,
   type StudyResults,
+  type Zone,
 } from './types';
 
 /** Tolerance of the outline simplification before the layout search, in metres. */
@@ -24,6 +26,8 @@ export interface LayoutEstimate {
   /** Rank from the aisle and length of the file, per slot (Z-A). */
   depths: number[];
   files: number[];
+  /** The service aisles, clipped to the zone, as closed WGS84 rings (M-A). */
+  aisles: LonLat[][];
 }
 
 export interface ZoneEstimate {
@@ -48,11 +52,25 @@ export type EstimateInput = Pick<CapacityStudy, 'outline' | 'zones' | 'exclusion
 export function layoutParams(key: LayoutKey, s: CapacitySettings): LayoutParams {
   const common = { aisleWidth: s.aisleWidth, crossAisles: s.crossAisles };
   if (key === 'selfPark') {
-    return { ...common, slotWidth: s.selfParkSlot.width, slotLength: s.selfParkSlot.length, blockDepth: 2, oneSidedDepth: 1, endStalls: s.endStalls };
+    return {
+      ...common,
+      slotWidth: s.selfParkSlot.width,
+      slotLength: s.selfParkSlot.length,
+      blockDepth: 2,
+      oneSidedDepth: 1,
+      endStalls: s.endStalls,
+    };
   }
   if (key === 'valet24') {
     const depth = Math.max(2, Math.round(s.maxDepth));
-    return { ...common, slotWidth: s.valetSlot.width, slotLength: s.valetSlot.length, blockDepth: depth, oneSidedDepth: depth - 1, endStalls: false };
+    return {
+      ...common,
+      slotWidth: s.valetSlot.width,
+      slotLength: s.valetSlot.length,
+      blockDepth: depth,
+      oneSidedDepth: depth - 1,
+      endStalls: false,
+    };
   }
   if (key === 'valetEdge') {
     const files = Math.max(1, Math.round(s.edgeMaxFiles));
@@ -61,14 +79,21 @@ export function layoutParams(key: LayoutKey, s: CapacitySettings): LayoutParams 
       crossAisles: false,
       slotWidth: s.valetSlot.width,
       slotLength: s.valetSlot.length,
-      blockDepth: files,
+      blockDepth: 2 * files,
       oneSidedDepth: files,
       endStalls: false,
-      mode: 'edge',
+      mode: 'comb',
       maxFiles: files,
     };
   }
-  return { ...common, slotWidth: s.valetSlot.width, slotLength: s.valetSlot.length, blockDepth: 10, oneSidedDepth: 5, endStalls: false };
+  return {
+    ...common,
+    slotWidth: s.valetSlot.width,
+    slotLength: s.valetSlot.length,
+    blockDepth: 10,
+    oneSidedDepth: 5,
+    endStalls: false,
+  };
 }
 
 export function frameFor(input: Pick<CapacityStudy, 'outline' | 'zones' | 'scaleFactor'>): Frame | null {
@@ -80,7 +105,10 @@ export function frameFor(input: Pick<CapacityStudy, 'outline' | 'zones' | 'scale
 export const polygonToMulti = (frame: Frame, polygon: GeoPolygon): Multi => [polygon.coordinates.map(ring => ring.map(frame.forward))];
 
 export function multiToPolygons(frame: Frame, multi: Multi): GeoPolygon[] {
-  return multi.map(poly => ({ type: 'Polygon', coordinates: poly.map(ring => ring.map(frame.inverse)) }));
+  return multi.map(poly => ({
+    type: 'Polygon',
+    coordinates: poly.map(ring => ring.map(frame.inverse)),
+  }));
 }
 
 /** The area an exclusion removes, its margin included. */
@@ -100,7 +128,11 @@ export function outlineMulti(frame: Frame, input: Pick<CapacityStudy, 'outline'>
 export const areaM2 = (polygon: GeoPolygon | null | undefined, scale = 1) => (polygon ? polygonAreaM2(polygon.coordinates, scale) : 0);
 
 export function estimate(input: EstimateInput): Estimate {
-  const empty: Estimate = { zones: [], usableArea: 0, totals: { selfPark: 0, valet24: 0, valet5: 0, valetEdge: 0 } };
+  const empty: Estimate = {
+    zones: [],
+    usableArea: 0,
+    totals: { selfPark: 0, valet24: 0, valet5: 0, valetEdge: 0 },
+  };
   const frame = frameFor(input);
   if (!frame) return empty;
   const settings = settingsOf(input);
@@ -116,7 +148,12 @@ export function estimate(input: EstimateInput): Estimate {
     const forLayout = simplify(difference(shrink(land, settings.setback), excluded), LAYOUT_SIMPLIFY_M);
     const layouts = {} as Record<LayoutKey, LayoutEstimate>;
     for (const key of LAYOUT_KEYS) {
-      const r = generateLayout(forLayout, layoutParams(key, settings), { angle: settings.orientation, anchor });
+      const r = generateLayout(forLayout, layoutParams(key, settings), {
+        angle: settings.orientation,
+        anchor,
+      });
+      // The aisle rectangles overlap (an aisle and the spine of a comb) and may overshoot the land.
+      const aisles = r.aisles.length ? intersection(union(r.aisles.map(q => [[...q, q[0]]])), forLayout) : [];
       layouts[key] = {
         count: r.count,
         angle: r.angle,
@@ -124,14 +161,25 @@ export function estimate(input: EstimateInput): Estimate {
         slots: r.slots.map(q => [...q, q[0]].map(p => frame.inverse(p as XY))),
         depths: r.depths,
         files: r.files,
+        aisles: aisles.map(poly => poly[0].map(p => frame.inverse(p))),
       };
     }
-    return { zoneId: zone.id, name: zone.name, area: areaOf(land), usableArea: areaOf(usable), layouts };
+    return {
+      zoneId: zone.id,
+      name: zone.name,
+      area: areaOf(land),
+      usableArea: areaOf(usable),
+      layouts,
+    };
   });
 
   const totals = { selfPark: 0, valet24: 0, valet5: 0, valetEdge: 0 };
   for (const z of zones) for (const key of LAYOUT_KEYS) totals[key] += z.layouts[key].count;
-  return { zones, usableArea: zones.reduce((s, z) => s + z.usableArea, 0), totals };
+  return {
+    zones,
+    usableArea: zones.reduce((s, z) => s + z.usableArea, 0),
+    totals,
+  };
 }
 
 /** The small summary stored with the study. */
@@ -172,7 +220,84 @@ export function unionPolygons(polygons: GeoPolygon[], frame: Frame, clip?: GeoPo
   return merged
     .map((poly: Poly) => [poly[0]] as Poly)
     .sort((a, b) => areaOf([b]) - areaOf([a]))
-    .map(poly => ({ type: 'Polygon', coordinates: poly.map(ring => ring.map(frame.inverse)) }) as GeoPolygon);
+    .map(
+      poly =>
+        ({
+          type: 'Polygon',
+          coordinates: poly.map(ring => ring.map(frame.inverse)),
+        }) as GeoPolygon,
+    );
+}
+
+/** A building must overlap the land by at least this area (m²) to be excluded (B-A). */
+export const IGN_BUILDING_MIN_M2 = 4;
+/** The plan keeps at most this many IGN buildings (the server allows 200 exclusions in all). */
+export const IGN_BUILDINGS_MAX = 60;
+
+/**
+ * B-A (07/10/2026): the exclusions after the IGN buildings were synced: the hand-made ones are
+ * kept, the previous IGN ones replaced by every building overlapping the land, each as a
+ * "building" exclusion with a 1 m margin that can be removed like any other.
+ */
+export function withIgnBuildings(
+  input: Pick<CapacityStudy, 'outline' | 'exclusions' | 'scaleFactor'>,
+  buildings: {
+    id: string;
+    geometry: { type: 'Polygon' | 'MultiPolygon'; coordinates: unknown };
+  }[],
+  name: string,
+): Exclusion[] {
+  const kept = input.exclusions.filter(e => e.source !== 'ign');
+  const frame = frameFor({ ...input, zones: [] });
+  if (!frame || !input.outline) return kept;
+  const land = polygonToMulti(frame, input.outline);
+  const added: Exclusion[] = [];
+  for (const b of buildings) {
+    const polygons = b.geometry.type === 'Polygon' ? [b.geometry.coordinates as LonLat[][]] : (b.geometry.coordinates as LonLat[][][]);
+    polygons.forEach((rings, i) => {
+      if (added.length >= IGN_BUILDINGS_MAX) return;
+      const multi: Multi = [rings.map(ring => ring.map(frame.forward))];
+      if (areaOf(intersection(multi, land)) < IGN_BUILDING_MIN_M2) return;
+      const ref = polygons.length > 1 ? `${b.id}-${i + 1}` : b.id;
+      added.push({
+        id: `ign-${ref}`.replace(/[^A-Za-z0-9_-]/g, '').slice(0, 64),
+        name,
+        kind: 'building',
+        clearance: IGN_BUILDING_CLEARANCE,
+        geometry: { type: 'Polygon', coordinates: [rings[0]] },
+        source: 'ign',
+        ref,
+      });
+    });
+  }
+  return [...kept, ...added];
+}
+
+/** Below this area a piece of land is not worth a zone of its own (m²). */
+export const AUTO_ZONE_MIN_M2 = 30;
+
+/**
+ * T-A (07/10/2026): the parking zones made by the land itself, one per piece the exclusions leave
+ * (a building across the land splits it in two, each with its own orientation), largest first,
+ * named A, B, C… Holes are dropped: the exclusions are deducted again at estimate time.
+ */
+export function autoZones(
+  input: Pick<CapacityStudy, 'outline' | 'exclusions' | 'scaleFactor'>,
+  zoneName: (letter: string) => string,
+  ids: () => string,
+): Zone[] {
+  const frame = frameFor({ ...input, zones: [] });
+  if (!frame || !input.outline) return [];
+  const land = polygonToMulti(frame, input.outline);
+  const excluded = union(...input.exclusions.map(e => exclusionMulti(frame, e)));
+  const pieces = simplify(difference(land, excluded), OUTLINE_SIMPLIFY_M)
+    .filter(poly => areaOf([poly]) >= AUTO_ZONE_MIN_M2)
+    .sort((a, b) => areaOf([b]) - areaOf([a]));
+  return pieces.map((poly, i) => ({
+    id: ids(),
+    name: zoneName(i < 26 ? String.fromCharCode(65 + i) : String(i + 1)),
+    geometry: { type: 'Polygon', coordinates: [poly[0].map(frame.inverse)] },
+  }));
 }
 
 /** Outline minus a drawn part ("Exclure une partie"): the largest remaining piece. */

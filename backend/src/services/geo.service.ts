@@ -35,6 +35,14 @@ export interface ParkingArea {
   geometry: Geometry;
 }
 
+/** A BD TOPO building (B-A, 07/10/2026): the footprint the plan excludes by itself. */
+export interface BuildingArea {
+  id: string;
+  /** BD TOPO "nature", e.g. "Indifférenciée", "Industriel, agricole ou commercial". */
+  nature: string | null;
+  geometry: { type: 'Polygon' | 'MultiPolygon'; coordinates: unknown };
+}
+
 export interface GeocodeResult {
   label: string;
   type: string;
@@ -119,6 +127,30 @@ export class GeoService {
         id: String(f.properties?.cleabs ?? f.id),
         name: typeof f.properties?.toponyme === 'string' ? f.properties.toponyme : null,
         geometry: { type: f.geometry.type, coordinates: to2d(f.geometry.coordinates) },
+      }));
+  }
+
+  /** BD TOPO buildings within a box (B-A): light constructions (sheds, shelters) included. */
+  public async buildingsIn(bbox: [number, number, number, number]): Promise<BuildingArea[]> {
+    const [minLon, minLat, maxLon, maxLat] = bbox;
+    const params = new URLSearchParams({
+      SERVICE: 'WFS',
+      VERSION: '2.0.0',
+      REQUEST: 'GetFeature',
+      TYPENAMES: 'BDTOPO_V3:batiment',
+      OUTPUTFORMAT: 'application/json',
+      SRSNAME: 'EPSG:4326',
+      COUNT: '500',
+      CQL_FILTER: `BBOX(geometrie,${minLon},${minLat},${maxLon},${maxLat},'EPSG:4326')`,
+    });
+    const data = await this.getJson('Géoplateforme WFS', `${GEOPF_WFS_URL}?${params.toString()}`);
+    const features: any[] = Array.isArray(data?.features) ? data.features : [];
+    return features
+      .filter(f => f?.geometry && ['Polygon', 'MultiPolygon'].includes(f.geometry.type))
+      .map(f => ({
+        id: String(f.properties?.cleabs ?? f.id),
+        nature: typeof f.properties?.nature === 'string' ? f.properties.nature : null,
+        geometry: { type: f.geometry.type as 'Polygon' | 'MultiPolygon', coordinates: to2d(f.geometry.coordinates) },
       }));
   }
 
