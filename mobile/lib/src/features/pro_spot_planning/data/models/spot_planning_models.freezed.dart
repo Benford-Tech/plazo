@@ -16,7 +16,8 @@ T _$identity<T>(T value) => value;
 /// @nodoc
 mixin _$PlannedStayModel {
 
- String get id; String get reference; String get customerName; String get plate; String get status; DateTime get arrivalAt; DateTime get returnAt; String? get returnFlight; String? get spotId; String? get keyHook; bool get onSite;
+ String get id; String get reference; String get customerName; String get plate; String get status; DateTime get arrivalAt; DateTime get returnAt; String? get returnFlight; String? get spotId; String? get keyHook; bool get onSite;/// O-A (06/10/2026): the cars in front of this one that leave later.
+ List<PlanningBlockerModel> get blockedBy;
 /// Create a copy of PlannedStayModel
 /// with the given fields replaced by the non-null parameter values.
 @JsonKey(includeFromJson: false, includeToJson: false)
@@ -30,20 +31,20 @@ $PlannedStayModelCopyWith<PlannedStayModel> get copyWith => _$PlannedStayModelCo
 @override
 bool operator ==(Object other) {
   final _this = this as PlannedStayModel;
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is PlannedStayModel&&(identical(other.id, _this.id) || other.id == _this.id)&&(identical(other.reference, _this.reference) || other.reference == _this.reference)&&(identical(other.customerName, _this.customerName) || other.customerName == _this.customerName)&&(identical(other.plate, _this.plate) || other.plate == _this.plate)&&(identical(other.status, _this.status) || other.status == _this.status)&&(identical(other.arrivalAt, _this.arrivalAt) || other.arrivalAt == _this.arrivalAt)&&(identical(other.returnAt, _this.returnAt) || other.returnAt == _this.returnAt)&&(identical(other.returnFlight, _this.returnFlight) || other.returnFlight == _this.returnFlight)&&(identical(other.spotId, _this.spotId) || other.spotId == _this.spotId)&&(identical(other.keyHook, _this.keyHook) || other.keyHook == _this.keyHook)&&(identical(other.onSite, _this.onSite) || other.onSite == _this.onSite));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is PlannedStayModel&&(identical(other.id, _this.id) || other.id == _this.id)&&(identical(other.reference, _this.reference) || other.reference == _this.reference)&&(identical(other.customerName, _this.customerName) || other.customerName == _this.customerName)&&(identical(other.plate, _this.plate) || other.plate == _this.plate)&&(identical(other.status, _this.status) || other.status == _this.status)&&(identical(other.arrivalAt, _this.arrivalAt) || other.arrivalAt == _this.arrivalAt)&&(identical(other.returnAt, _this.returnAt) || other.returnAt == _this.returnAt)&&(identical(other.returnFlight, _this.returnFlight) || other.returnFlight == _this.returnFlight)&&(identical(other.spotId, _this.spotId) || other.spotId == _this.spotId)&&(identical(other.keyHook, _this.keyHook) || other.keyHook == _this.keyHook)&&(identical(other.onSite, _this.onSite) || other.onSite == _this.onSite)&&const DeepCollectionEquality().equals(other.blockedBy, _this.blockedBy));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
 int get hashCode {
   final _this = this as PlannedStayModel;
-  return Object.hash(runtimeType,_this.id,_this.reference,_this.customerName,_this.plate,_this.status,_this.arrivalAt,_this.returnAt,_this.returnFlight,_this.spotId,_this.keyHook,_this.onSite);
+  return Object.hash(runtimeType,_this.id,_this.reference,_this.customerName,_this.plate,_this.status,_this.arrivalAt,_this.returnAt,_this.returnFlight,_this.spotId,_this.keyHook,_this.onSite,const DeepCollectionEquality().hash(_this.blockedBy));
 }
 
 @override
 String toString() {
   final _this = this as PlannedStayModel;
-  return 'PlannedStayModel(id: ${_this.id}, reference: ${_this.reference}, customerName: ${_this.customerName}, plate: ${_this.plate}, status: ${_this.status}, arrivalAt: ${_this.arrivalAt}, returnAt: ${_this.returnAt}, returnFlight: ${_this.returnFlight}, spotId: ${_this.spotId}, keyHook: ${_this.keyHook}, onSite: ${_this.onSite})';
+  return 'PlannedStayModel(id: ${_this.id}, reference: ${_this.reference}, customerName: ${_this.customerName}, plate: ${_this.plate}, status: ${_this.status}, arrivalAt: ${_this.arrivalAt}, returnAt: ${_this.returnAt}, returnFlight: ${_this.returnFlight}, spotId: ${_this.spotId}, keyHook: ${_this.keyHook}, onSite: ${_this.onSite}, blockedBy: ${_this.blockedBy})';
 }
 
 
@@ -54,7 +55,7 @@ abstract mixin class $PlannedStayModelCopyWith<$Res>  {
   factory $PlannedStayModelCopyWith(PlannedStayModel value, $Res Function(PlannedStayModel) _then) = _$PlannedStayModelCopyWithImpl;
 @useResult
 $Res call({
- String id, String reference, String customerName, String plate, String status, DateTime arrivalAt, DateTime returnAt, String? returnFlight, String? spotId, String? keyHook, bool onSite
+ String id, String reference, String customerName, String plate, String status, DateTime arrivalAt, DateTime returnAt, String? returnFlight, String? spotId, String? keyHook, bool onSite, List<PlanningBlockerModel> blockedBy
 });
 
 
@@ -71,7 +72,7 @@ class _$PlannedStayModelCopyWithImpl<$Res>
 
 /// Create a copy of PlannedStayModel
 /// with the given fields replaced by the non-null parameter values.
-@pragma('vm:prefer-inline') @override $Res call({Object? id = null,Object? reference = null,Object? customerName = null,Object? plate = null,Object? status = null,Object? arrivalAt = null,Object? returnAt = null,Object? returnFlight = freezed,Object? spotId = freezed,Object? keyHook = freezed,Object? onSite = null,}) {
+@pragma('vm:prefer-inline') @override $Res call({Object? id = null,Object? reference = null,Object? customerName = null,Object? plate = null,Object? status = null,Object? arrivalAt = null,Object? returnAt = null,Object? returnFlight = freezed,Object? spotId = freezed,Object? keyHook = freezed,Object? onSite = null,Object? blockedBy = null,}) {
   return _then(PlannedStayModel(
 id: null == id ? _self.id : id // ignore: cast_nullable_to_non_nullable
 as String,reference: null == reference ? _self.reference : reference // ignore: cast_nullable_to_non_nullable
@@ -84,7 +85,8 @@ as DateTime,returnFlight: freezed == returnFlight ? _self.returnFlight : returnF
 as String?,spotId: freezed == spotId ? _self.spotId : spotId // ignore: cast_nullable_to_non_nullable
 as String?,keyHook: freezed == keyHook ? _self.keyHook : keyHook // ignore: cast_nullable_to_non_nullable
 as String?,onSite: null == onSite ? _self.onSite : onSite // ignore: cast_nullable_to_non_nullable
-as bool,
+as bool,blockedBy: null == blockedBy ? _self.blockedBy : blockedBy // ignore: cast_nullable_to_non_nullable
+as List<PlanningBlockerModel>,
   ));
 }
 
@@ -169,10 +171,10 @@ return $default(_that);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( String id,  String reference,  String customerName,  String plate,  String status,  DateTime arrivalAt,  DateTime returnAt,  String? returnFlight,  String? spotId,  String? keyHook,  bool onSite)?  $default,{required TResult orElse(),}) {final _that = this;
+@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( String id,  String reference,  String customerName,  String plate,  String status,  DateTime arrivalAt,  DateTime returnAt,  String? returnFlight,  String? spotId,  String? keyHook,  bool onSite,  List<PlanningBlockerModel> blockedBy)?  $default,{required TResult orElse(),}) {final _that = this;
 switch (_that) {
 case _PlannedStayModel() when $default != null:
-return $default(_that.id,_that.reference,_that.customerName,_that.plate,_that.status,_that.arrivalAt,_that.returnAt,_that.returnFlight,_that.spotId,_that.keyHook,_that.onSite);case _:
+return $default(_that.id,_that.reference,_that.customerName,_that.plate,_that.status,_that.arrivalAt,_that.returnAt,_that.returnFlight,_that.spotId,_that.keyHook,_that.onSite,_that.blockedBy);case _:
   return orElse();
 
 }
@@ -190,10 +192,10 @@ return $default(_that.id,_that.reference,_that.customerName,_that.plate,_that.st
 /// }
 /// ```
 
-@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( String id,  String reference,  String customerName,  String plate,  String status,  DateTime arrivalAt,  DateTime returnAt,  String? returnFlight,  String? spotId,  String? keyHook,  bool onSite)  $default,) {final _that = this;
+@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( String id,  String reference,  String customerName,  String plate,  String status,  DateTime arrivalAt,  DateTime returnAt,  String? returnFlight,  String? spotId,  String? keyHook,  bool onSite,  List<PlanningBlockerModel> blockedBy)  $default,) {final _that = this;
 switch (_that) {
 case _PlannedStayModel():
-return $default(_that.id,_that.reference,_that.customerName,_that.plate,_that.status,_that.arrivalAt,_that.returnAt,_that.returnFlight,_that.spotId,_that.keyHook,_that.onSite);case _:
+return $default(_that.id,_that.reference,_that.customerName,_that.plate,_that.status,_that.arrivalAt,_that.returnAt,_that.returnFlight,_that.spotId,_that.keyHook,_that.onSite,_that.blockedBy);case _:
   throw StateError('Unexpected subclass');
 
 }
@@ -210,10 +212,10 @@ return $default(_that.id,_that.reference,_that.customerName,_that.plate,_that.st
 /// }
 /// ```
 
-@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( String id,  String reference,  String customerName,  String plate,  String status,  DateTime arrivalAt,  DateTime returnAt,  String? returnFlight,  String? spotId,  String? keyHook,  bool onSite)?  $default,) {final _that = this;
+@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( String id,  String reference,  String customerName,  String plate,  String status,  DateTime arrivalAt,  DateTime returnAt,  String? returnFlight,  String? spotId,  String? keyHook,  bool onSite,  List<PlanningBlockerModel> blockedBy)?  $default,) {final _that = this;
 switch (_that) {
 case _PlannedStayModel() when $default != null:
-return $default(_that.id,_that.reference,_that.customerName,_that.plate,_that.status,_that.arrivalAt,_that.returnAt,_that.returnFlight,_that.spotId,_that.keyHook,_that.onSite);case _:
+return $default(_that.id,_that.reference,_that.customerName,_that.plate,_that.status,_that.arrivalAt,_that.returnAt,_that.returnFlight,_that.spotId,_that.keyHook,_that.onSite,_that.blockedBy);case _:
   return null;
 
 }
@@ -225,7 +227,7 @@ return $default(_that.id,_that.reference,_that.customerName,_that.plate,_that.st
 @JsonSerializable()
 
 class _PlannedStayModel implements PlannedStayModel {
-  const _PlannedStayModel({required this.id, required this.reference, required this.customerName, required this.plate, required this.status, required this.arrivalAt, required this.returnAt, this.returnFlight, this.spotId, this.keyHook, this.onSite = false});
+  const _PlannedStayModel({required this.id, required this.reference, required this.customerName, required this.plate, required this.status, required this.arrivalAt, required this.returnAt, this.returnFlight, this.spotId, this.keyHook, this.onSite = false,  List<PlanningBlockerModel> blockedBy = const <PlanningBlockerModel>[]}): _blockedBy = blockedBy;
   factory _PlannedStayModel.fromJson(Map<String, dynamic> json) => _$PlannedStayModelFromJson(json);
 
 @override final  String id;
@@ -239,6 +241,15 @@ class _PlannedStayModel implements PlannedStayModel {
 @override final  String? spotId;
 @override final  String? keyHook;
 @override@JsonKey() final  bool onSite;
+/// O-A (06/10/2026): the cars in front of this one that leave later.
+ final  List<PlanningBlockerModel> _blockedBy;
+/// O-A (06/10/2026): the cars in front of this one that leave later.
+@override@JsonKey() List<PlanningBlockerModel> get blockedBy {
+  if (_blockedBy is EqualUnmodifiableListView) return _blockedBy;
+  // ignore: implicit_dynamic_type
+  return EqualUnmodifiableListView(_blockedBy);
+}
+
 
 /// Create a copy of PlannedStayModel
 /// with the given fields replaced by the non-null parameter values.
@@ -253,18 +264,18 @@ Map<String, dynamic> toJson() {
 
 @override
 bool operator ==(Object other) {
-    return identical(this, other) || (other.runtimeType == runtimeType&&other is _PlannedStayModel&&(identical(other.id, id) || other.id == id)&&(identical(other.reference, reference) || other.reference == reference)&&(identical(other.customerName, customerName) || other.customerName == customerName)&&(identical(other.plate, plate) || other.plate == plate)&&(identical(other.status, status) || other.status == status)&&(identical(other.arrivalAt, arrivalAt) || other.arrivalAt == arrivalAt)&&(identical(other.returnAt, returnAt) || other.returnAt == returnAt)&&(identical(other.returnFlight, returnFlight) || other.returnFlight == returnFlight)&&(identical(other.spotId, spotId) || other.spotId == spotId)&&(identical(other.keyHook, keyHook) || other.keyHook == keyHook)&&(identical(other.onSite, onSite) || other.onSite == onSite));
+    return identical(this, other) || (other.runtimeType == runtimeType&&other is _PlannedStayModel&&(identical(other.id, id) || other.id == id)&&(identical(other.reference, reference) || other.reference == reference)&&(identical(other.customerName, customerName) || other.customerName == customerName)&&(identical(other.plate, plate) || other.plate == plate)&&(identical(other.status, status) || other.status == status)&&(identical(other.arrivalAt, arrivalAt) || other.arrivalAt == arrivalAt)&&(identical(other.returnAt, returnAt) || other.returnAt == returnAt)&&(identical(other.returnFlight, returnFlight) || other.returnFlight == returnFlight)&&(identical(other.spotId, spotId) || other.spotId == spotId)&&(identical(other.keyHook, keyHook) || other.keyHook == keyHook)&&(identical(other.onSite, onSite) || other.onSite == onSite)&&const DeepCollectionEquality().equals(other.blockedBy, _blockedBy));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
 int get hashCode {
-    return Object.hash(runtimeType,id,reference,customerName,plate,status,arrivalAt,returnAt,returnFlight,spotId,keyHook,onSite);
+    return Object.hash(runtimeType,id,reference,customerName,plate,status,arrivalAt,returnAt,returnFlight,spotId,keyHook,onSite,const DeepCollectionEquality().hash(_blockedBy));
 }
 
 @override
 String toString() {
-    return 'PlannedStayModel(id: $id, reference: $reference, customerName: $customerName, plate: $plate, status: $status, arrivalAt: $arrivalAt, returnAt: $returnAt, returnFlight: $returnFlight, spotId: $spotId, keyHook: $keyHook, onSite: $onSite)';
+    return 'PlannedStayModel(id: $id, reference: $reference, customerName: $customerName, plate: $plate, status: $status, arrivalAt: $arrivalAt, returnAt: $returnAt, returnFlight: $returnFlight, spotId: $spotId, keyHook: $keyHook, onSite: $onSite, blockedBy: $blockedBy)';
 }
 
 
@@ -275,7 +286,7 @@ abstract mixin class _$PlannedStayModelCopyWith<$Res> implements $PlannedStayMod
   factory _$PlannedStayModelCopyWith(_PlannedStayModel value, $Res Function(_PlannedStayModel) _then) = __$PlannedStayModelCopyWithImpl;
 @override @useResult
 $Res call({
- String id, String reference, String customerName, String plate, String status, DateTime arrivalAt, DateTime returnAt, String? returnFlight, String? spotId, String? keyHook, bool onSite
+ String id, String reference, String customerName, String plate, String status, DateTime arrivalAt, DateTime returnAt, String? returnFlight, String? spotId, String? keyHook, bool onSite, List<PlanningBlockerModel> blockedBy
 });
 
 
@@ -292,7 +303,7 @@ class __$PlannedStayModelCopyWithImpl<$Res>
 
 /// Create a copy of PlannedStayModel
 /// with the given fields replaced by the non-null parameter values.
-@override @pragma('vm:prefer-inline') $Res call({Object? id = null,Object? reference = null,Object? customerName = null,Object? plate = null,Object? status = null,Object? arrivalAt = null,Object? returnAt = null,Object? returnFlight = freezed,Object? spotId = freezed,Object? keyHook = freezed,Object? onSite = null,}) {
+@override @pragma('vm:prefer-inline') $Res call({Object? id = null,Object? reference = null,Object? customerName = null,Object? plate = null,Object? status = null,Object? arrivalAt = null,Object? returnAt = null,Object? returnFlight = freezed,Object? spotId = freezed,Object? keyHook = freezed,Object? onSite = null,Object? blockedBy = null,}) {
   return _then(_PlannedStayModel(
 id: null == id ? _self.id : id // ignore: cast_nullable_to_non_nullable
 as String,reference: null == reference ? _self.reference : reference // ignore: cast_nullable_to_non_nullable
@@ -305,7 +316,8 @@ as DateTime,returnFlight: freezed == returnFlight ? _self.returnFlight : returnF
 as String?,spotId: freezed == spotId ? _self.spotId : spotId // ignore: cast_nullable_to_non_nullable
 as String?,keyHook: freezed == keyHook ? _self.keyHook : keyHook // ignore: cast_nullable_to_non_nullable
 as String?,onSite: null == onSite ? _self.onSite : onSite // ignore: cast_nullable_to_non_nullable
-as bool,
+as bool,blockedBy: null == blockedBy ? _self._blockedBy : blockedBy // ignore: cast_nullable_to_non_nullable
+as List<PlanningBlockerModel>,
   ));
 }
 
@@ -2335,6 +2347,285 @@ $PreassignResultModelCopyWith<$Res> get data {
     return _then(_self.copyWith(data: value));
   });
 }
+}
+
+
+/// @nodoc
+mixin _$PlanningBlockerModel {
+
+ String get reservationId; String get reference; String get spotCode; DateTime get returnAt;
+/// Create a copy of PlanningBlockerModel
+/// with the given fields replaced by the non-null parameter values.
+@JsonKey(includeFromJson: false, includeToJson: false)
+@pragma('vm:prefer-inline')
+$PlanningBlockerModelCopyWith<PlanningBlockerModel> get copyWith => _$PlanningBlockerModelCopyWithImpl<PlanningBlockerModel>(this as PlanningBlockerModel, _$identity);
+
+  /// Serializes this PlanningBlockerModel to a JSON map.
+  Map<String, dynamic> toJson();
+
+
+@override
+bool operator ==(Object other) {
+  final _this = this as PlanningBlockerModel;
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is PlanningBlockerModel&&(identical(other.reservationId, _this.reservationId) || other.reservationId == _this.reservationId)&&(identical(other.reference, _this.reference) || other.reference == _this.reference)&&(identical(other.spotCode, _this.spotCode) || other.spotCode == _this.spotCode)&&(identical(other.returnAt, _this.returnAt) || other.returnAt == _this.returnAt));
+}
+
+@JsonKey(includeFromJson: false, includeToJson: false)
+@override
+int get hashCode {
+  final _this = this as PlanningBlockerModel;
+  return Object.hash(runtimeType,_this.reservationId,_this.reference,_this.spotCode,_this.returnAt);
+}
+
+@override
+String toString() {
+  final _this = this as PlanningBlockerModel;
+  return 'PlanningBlockerModel(reservationId: ${_this.reservationId}, reference: ${_this.reference}, spotCode: ${_this.spotCode}, returnAt: ${_this.returnAt})';
+}
+
+
+}
+
+/// @nodoc
+abstract mixin class $PlanningBlockerModelCopyWith<$Res>  {
+  factory $PlanningBlockerModelCopyWith(PlanningBlockerModel value, $Res Function(PlanningBlockerModel) _then) = _$PlanningBlockerModelCopyWithImpl;
+@useResult
+$Res call({
+ String reservationId, String reference, String spotCode, DateTime returnAt
+});
+
+
+
+
+}
+/// @nodoc
+class _$PlanningBlockerModelCopyWithImpl<$Res>
+    implements $PlanningBlockerModelCopyWith<$Res> {
+  _$PlanningBlockerModelCopyWithImpl(this._self, this._then);
+
+  final PlanningBlockerModel _self;
+  final $Res Function(PlanningBlockerModel) _then;
+
+/// Create a copy of PlanningBlockerModel
+/// with the given fields replaced by the non-null parameter values.
+@pragma('vm:prefer-inline') @override $Res call({Object? reservationId = null,Object? reference = null,Object? spotCode = null,Object? returnAt = null,}) {
+  return _then(PlanningBlockerModel(
+reservationId: null == reservationId ? _self.reservationId : reservationId // ignore: cast_nullable_to_non_nullable
+as String,reference: null == reference ? _self.reference : reference // ignore: cast_nullable_to_non_nullable
+as String,spotCode: null == spotCode ? _self.spotCode : spotCode // ignore: cast_nullable_to_non_nullable
+as String,returnAt: null == returnAt ? _self.returnAt : returnAt // ignore: cast_nullable_to_non_nullable
+as DateTime,
+  ));
+}
+
+}
+
+
+/// Adds pattern-matching-related methods to [PlanningBlockerModel].
+extension PlanningBlockerModelPatterns on PlanningBlockerModel {
+/// A variant of `map` that fallback to returning `orElse`.
+///
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case final Subclass value:
+///     return ...;
+///   case _:
+///     return orElse();
+/// }
+/// ```
+
+@optionalTypeArgs TResult maybeMap<TResult extends Object?>(TResult Function( _PlanningBlockerModel value)?  $default,{required TResult orElse(),}){
+final _that = this;
+switch (_that) {
+case _PlanningBlockerModel() when $default != null:
+return $default(_that);case _:
+  return orElse();
+
+}
+}
+/// A `switch`-like method, using callbacks.
+///
+/// Callbacks receives the raw object, upcasted.
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case final Subclass value:
+///     return ...;
+///   case final Subclass2 value:
+///     return ...;
+/// }
+/// ```
+
+@optionalTypeArgs TResult map<TResult extends Object?>(TResult Function( _PlanningBlockerModel value)  $default,){
+final _that = this;
+switch (_that) {
+case _PlanningBlockerModel():
+return $default(_that);case _:
+  throw StateError('Unexpected subclass');
+
+}
+}
+/// A variant of `map` that fallback to returning `null`.
+///
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case final Subclass value:
+///     return ...;
+///   case _:
+///     return null;
+/// }
+/// ```
+
+@optionalTypeArgs TResult? mapOrNull<TResult extends Object?>(TResult? Function( _PlanningBlockerModel value)?  $default,){
+final _that = this;
+switch (_that) {
+case _PlanningBlockerModel() when $default != null:
+return $default(_that);case _:
+  return null;
+
+}
+}
+/// A variant of `when` that fallback to an `orElse` callback.
+///
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case Subclass(:final field):
+///     return ...;
+///   case _:
+///     return orElse();
+/// }
+/// ```
+
+@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( String reservationId,  String reference,  String spotCode,  DateTime returnAt)?  $default,{required TResult orElse(),}) {final _that = this;
+switch (_that) {
+case _PlanningBlockerModel() when $default != null:
+return $default(_that.reservationId,_that.reference,_that.spotCode,_that.returnAt);case _:
+  return orElse();
+
+}
+}
+/// A `switch`-like method, using callbacks.
+///
+/// As opposed to `map`, this offers destructuring.
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case Subclass(:final field):
+///     return ...;
+///   case Subclass2(:final field2):
+///     return ...;
+/// }
+/// ```
+
+@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( String reservationId,  String reference,  String spotCode,  DateTime returnAt)  $default,) {final _that = this;
+switch (_that) {
+case _PlanningBlockerModel():
+return $default(_that.reservationId,_that.reference,_that.spotCode,_that.returnAt);case _:
+  throw StateError('Unexpected subclass');
+
+}
+}
+/// A variant of `when` that fallback to returning `null`
+///
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case Subclass(:final field):
+///     return ...;
+///   case _:
+///     return null;
+/// }
+/// ```
+
+@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( String reservationId,  String reference,  String spotCode,  DateTime returnAt)?  $default,) {final _that = this;
+switch (_that) {
+case _PlanningBlockerModel() when $default != null:
+return $default(_that.reservationId,_that.reference,_that.spotCode,_that.returnAt);case _:
+  return null;
+
+}
+}
+
+}
+
+/// @nodoc
+@JsonSerializable()
+
+class _PlanningBlockerModel implements PlanningBlockerModel {
+  const _PlanningBlockerModel({required this.reservationId, required this.reference, required this.spotCode, required this.returnAt});
+  factory _PlanningBlockerModel.fromJson(Map<String, dynamic> json) => _$PlanningBlockerModelFromJson(json);
+
+@override final  String reservationId;
+@override final  String reference;
+@override final  String spotCode;
+@override final  DateTime returnAt;
+
+/// Create a copy of PlanningBlockerModel
+/// with the given fields replaced by the non-null parameter values.
+@override @JsonKey(includeFromJson: false, includeToJson: false)
+@pragma('vm:prefer-inline')
+_$PlanningBlockerModelCopyWith<_PlanningBlockerModel> get copyWith => __$PlanningBlockerModelCopyWithImpl<_PlanningBlockerModel>(this, _$identity);
+
+@override
+Map<String, dynamic> toJson() {
+  return _$PlanningBlockerModelToJson(this, );
+}
+
+@override
+bool operator ==(Object other) {
+    return identical(this, other) || (other.runtimeType == runtimeType&&other is _PlanningBlockerModel&&(identical(other.reservationId, reservationId) || other.reservationId == reservationId)&&(identical(other.reference, reference) || other.reference == reference)&&(identical(other.spotCode, spotCode) || other.spotCode == spotCode)&&(identical(other.returnAt, returnAt) || other.returnAt == returnAt));
+}
+
+@JsonKey(includeFromJson: false, includeToJson: false)
+@override
+int get hashCode {
+    return Object.hash(runtimeType,reservationId,reference,spotCode,returnAt);
+}
+
+@override
+String toString() {
+    return 'PlanningBlockerModel(reservationId: $reservationId, reference: $reference, spotCode: $spotCode, returnAt: $returnAt)';
+}
+
+
+}
+
+/// @nodoc
+abstract mixin class _$PlanningBlockerModelCopyWith<$Res> implements $PlanningBlockerModelCopyWith<$Res> {
+  factory _$PlanningBlockerModelCopyWith(_PlanningBlockerModel value, $Res Function(_PlanningBlockerModel) _then) = __$PlanningBlockerModelCopyWithImpl;
+@override @useResult
+$Res call({
+ String reservationId, String reference, String spotCode, DateTime returnAt
+});
+
+
+
+
+}
+/// @nodoc
+class __$PlanningBlockerModelCopyWithImpl<$Res>
+    implements _$PlanningBlockerModelCopyWith<$Res> {
+  __$PlanningBlockerModelCopyWithImpl(this._self, this._then);
+
+  final _PlanningBlockerModel _self;
+  final $Res Function(_PlanningBlockerModel) _then;
+
+/// Create a copy of PlanningBlockerModel
+/// with the given fields replaced by the non-null parameter values.
+@override @pragma('vm:prefer-inline') $Res call({Object? reservationId = null,Object? reference = null,Object? spotCode = null,Object? returnAt = null,}) {
+  return _then(_PlanningBlockerModel(
+reservationId: null == reservationId ? _self.reservationId : reservationId // ignore: cast_nullable_to_non_nullable
+as String,reference: null == reference ? _self.reference : reference // ignore: cast_nullable_to_non_nullable
+as String,spotCode: null == spotCode ? _self.spotCode : spotCode // ignore: cast_nullable_to_non_nullable
+as String,returnAt: null == returnAt ? _self.returnAt : returnAt // ignore: cast_nullable_to_non_nullable
+as DateTime,
+  ));
+}
+
+
 }
 
 // dart format on

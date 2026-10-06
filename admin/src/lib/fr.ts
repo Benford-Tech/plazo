@@ -329,6 +329,7 @@ export const fr = {
         departure_delayed: "Vol aller retardé",
         wave_overflow: "Vague au-delà d'une navette",
         no_show_suspected: "Attendu, toujours pas là",
+        blocked_return: "Retour du jour bloqué : sortir d'abord",
         inbound_to_check: "Mails à vérifier",
       } satisfies Record<AlertKind, string>,
       waveDetail: (direction: ShuttleDirection, time: string, passengers: number) =>
@@ -1124,6 +1125,7 @@ export const fr = {
       `${n} réservation${n > 1 ? "s" : ""} sans place`,
     inactiveUsed: (code: string, ref: string) =>
       `${code} est désactivée mais tient ${ref}`,
+    blockedAlert: (n: number) => `${n} voiture${n > 1 ? "s" : ""} derrière une autre qui repart plus tard`,
     unplaced: (n: number) => `Sans place · ${n}`,
     allPlaced: "Toutes les réservations de la fenêtre ont une place.",
     preassign: "Pré-affecter",
@@ -1170,6 +1172,11 @@ export const fr = {
       near_entrance: (m: number) => `à ${m} m de l'entrée`,
       free: "libre pendant le séjour",
     },
+    // O-A (06/10/2026): the file keeps its order, or cars will have to move.
+    noMove: "sans déplacement",
+    movesOut: (n: number, code: string, when: string) => `${n} voiture${n > 1 ? "s" : ""} à sortir (${code}, retour ${when})`,
+    movesBlocked: (n: number, code: string) => `bloquerait ${n} voiture${n > 1 ? "s" : ""} (${code})`,
+    blockedBy: (code: string, when: string) => `Derrière ${code} · retour ${when}`,
     place: "Placer",
     chooseOnMap: "Choisir sur le plan",
     choosing: (plate: string) =>

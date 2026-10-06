@@ -357,6 +357,7 @@ class _Alerts extends StatelessWidget {
               switch (a.kind) {
                 'over_capacity' => 'planning.over_capacity'.tr(args: [dayOf(DateTime.parse(a.date!)), '${a.count}']),
                 'unplaced' => 'planning.unplaced_alert'.tr(args: ['${a.count}']),
+                'blocked' => 'planning.blocked_alert'.tr(args: ['${a.count}']),
                 _ => 'planning.inactive_used'.tr(args: [a.spotCode ?? '', a.reference ?? '']),
               },
               key: Key('alert-${a.kind}'),
@@ -450,6 +451,16 @@ Future<void> showStaySheet(BuildContext context, ProSpotPlanningState state, Pla
               padding: const EdgeInsets.fromLTRB(16, 0, 16, 8),
               child: Text('${'pro.status.${stay.status}'.tr()} · ${dayTime(stay.arrivalAt)} → ${dayTime(stay.returnAt)}', style: AppText.muted(size: 12.5)),
             ),
+            // O-A (06/10/2026): who must be taken out before this car can leave.
+            if (stay.blockedBy.isNotEmpty)
+              Padding(
+                padding: const EdgeInsets.fromLTRB(16, 0, 16, 8),
+                child: Text(
+                  'occupation.blocked_by'.tr(args: [stay.blockedBy.first.spotCode, dayTime(stay.blockedBy.first.returnAt)]) + (stay.blockedBy.length > 1 ? ' (+${stay.blockedBy.length - 1})' : ''),
+                  key: const Key('sheet-blocked'),
+                  style: AppText.strong(size: 12.5, color: AppStatus.warnText),
+                ),
+              ),
             Padding(
               padding: const EdgeInsets.fromLTRB(16, 0, 16, 4),
               child: Row(

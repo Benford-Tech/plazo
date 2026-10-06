@@ -128,6 +128,20 @@ Une vue « réorganisation » propose, en heure creuse, une liste de déplacemen
 
 Hors MVP : caméras, lecture de plaque, capteurs de présence sur les places.
 
+#### File triée : zéro déplacement (décision O-A du 06/10/2026, mis en œuvre)
+
+- Sur un parking « voiturier · files depuis le bord », la voiture au fond d'une file repart en dernier. Une file est
+  « saine » quand les dates de retour décroissent de l'allée vers le fond : aucune voiture ne bloque alors une autre.
+- À l'arrivée (Occupation, web et app) et à la pré-affectation (Planning des places), le serveur reconstitue les files à
+  partir des rangs et des positions des places, puis classe chaque place libre : 1) aucune voiture à déplacer (ni devant
+  qui repart après, ni derrière qui repart avant ; deux retours à moins de 2 h comptent ensemble), 2) la zone de séjour
+  (Z-A), 3) l'ajustement le plus serré derrière la voiture de devant, 4) la distance au point de remise. La place
+  proposée porte « sans déplacement » ou « N voiture(s) à sortir (A-02-03, retour mer. 14 oct. 08:00) » /
+  « bloquerait N voiture(s) ».
+- Le Planning des places indique pour chaque séjour « Derrière A-02-03 · retour … » et compte les voitures bloquées dans
+  ses alertes ; le tableau de bord signale les retours du jour bloqués (« Retour du jour bloqué : sortir d'abord », à
+  surveiller) pour que le voiturier sorte la voiture de devant pendant un creux.
+
 ### Bloc 3 — Navette au retour
 
 Fonctionnel :

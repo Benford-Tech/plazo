@@ -5,6 +5,7 @@ import { CarLocationDto } from '@/dtos/public-booking.dto';
 import { Container, Service } from 'typedi';
 import prisma, { ParkingPlan, ParkingSpot, Prisma, Reservation, ReservationStatus } from '@/database';
 import { settingsOf, stayClassDistance, stayClassForNights, type StayClass } from '@/domain/layout/types';
+import { type Blocker, blockersOf, buildFiles, type FileSpot, type FileStay, scoreSpot } from '@/domain/files';
 import { dayBounds, localDate, nightsBetween } from '@/domain/time';
 import { AssignSpotDto } from '@/dtos/occupation.dto';
 import { AuthenticatedStaff } from '@/interfaces/auth.interface';
@@ -46,7 +47,22 @@ export interface Suggestion {
   reason: 'near_handover' | 'near_entrance' | 'free';
   /** The spot's stay class, when the plan has them (Z-A). */
   stayClass: StayClass | null;
+  /** O-A (06/10/2026): cars to move because of this choice (0: the file stays sound). */
+  moves: number;
+  /** Cars in front that leave after this stay (to take out at its return). */
+  blocking: BlockerView[];
+  /** Cars behind that leave before this stay (this car would block them). */
+  blocked: BlockerView[];
 }
+
+export interface BlockerView {
+  reservationId: string;
+  reference: string;
+  spotCode: string;
+  returnAt: string;
+}
+
+const blockerView = (b: Blocker): BlockerView => ({ ...b, returnAt: b.returnAt.toISOString() });
 
 export interface SpotState {
   id: string;
@@ -117,8 +133,9 @@ export class OccupationService {
     );
     const arrivals = [];
     const taken = new Set<string>();
+    const files = buildFiles(spots);
     for (const r of unplaced) {
-      const suggestions = await this.suggest(parking.id, spots, r, landmarks, taken, plan, parking.timezone);
+      const suggestions = await this.suggest(parking.id, spots, files, r, landmarks, taken, plan, parking.timezone);
       // Each arrival gets its own first choice: the next one skips it.
       if (suggestions[0]) taken.add(suggestions[0].spotId);
       arrivals.push({ ...r, suggestions });
@@ -278,12 +295,41 @@ export class OccupationService {
   }
 
   /**
-   * Top 3 free spots for a stay: in the zone of the stay's class first (Z-A, a neighbouring zone
-   * when it is full), then nearest the handover point (else the entrance); never "reserved".
+   * O-A (06/10/2026): today's returns whose car stands behind one that leaves later (to take out first).
+   */
+  public async blockedReturns(parkingId: string, start: Date, end: Date): Promise<{ stay: FileStay & { customerName: string; plate: string }; blockers: Blocker[] }[]> {
+    const spots = await prisma.parkingSpot.findMany({ where: { parkingId } });
+    if (!spots.some(s => s.depth !== null)) return [];
+    const placed = await prisma.reservation.findMany({
+      where: { parkingId, status: { in: HOLDING }, spotId: { not: null }, arrivalAt: { lt: end } },
+      select: { id: true, reference: true, customerName: true, plate: true, spotId: true, arrivalAt: true, returnAt: true },
+    });
+    const files = buildFiles(spots);
+    const spotById = new Map(spots.map(s => [s.id, s]));
+    const staysBySpot = new Map<string, FileStay[]>();
+    const stays = placed.map(p => ({ reservationId: p.id, reference: p.reference, customerName: p.customerName, plate: p.plate, spotId: p.spotId!, arrivalAt: p.arrivalAt, returnAt: p.returnAt }));
+    for (const st of stays) staysBySpot.set(st.spotId, [...(staysBySpot.get(st.spotId) ?? []), st]);
+    const out = [];
+    for (const st of stays) {
+      if (st.returnAt < start || st.returnAt >= end) continue;
+      const spot = spotById.get(st.spotId);
+      if (!spot) continue;
+      const blockers = blockersOf(st, spot, files.get(spot.id) ?? [spot], staysBySpot);
+      if (blockers.length) out.push({ stay: st, blockers });
+    }
+    return out;
+  }
+
+  /**
+   * Top 3 free spots for a stay. O-A (06/10/2026): first the spots that cost no move (the file keeps
+   * its returns decreasing from the aisle), then the zone of the stay's class (Z-A, a neighbouring
+   * zone when it is full), then the tightest fit behind the car in front, then nearest the handover
+   * point (else the entrance); never "reserved".
    */
   private async suggest(
     parkingId: string,
     spots: ParkingSpot[],
+    files: Map<string, FileSpot[]>,
     r: Pick<Reservation, 'id' | 'arrivalAt' | 'returnAt'>,
     landmarks: { kind: string; geometry: { coordinates: [number, number] } }[],
     skip: Set<string>,
@@ -300,22 +346,39 @@ export class OccupationService {
         arrivalAt: { lt: r.returnAt },
         returnAt: { gt: r.arrivalAt },
       },
-      select: { spotId: true },
+      select: { id: true, reference: true, spotId: true, arrivalAt: true, returnAt: true },
     });
     const busyIds = new Set(busy.map(b => b.spotId as string));
+    const staysBySpot = new Map<string, FileStay[]>();
+    for (const b of busy) {
+      const st: FileStay = { reservationId: b.id, reference: b.reference, spotId: b.spotId as string, arrivalAt: b.arrivalAt, returnAt: b.returnAt };
+      staysBySpot.set(st.spotId, [...(staysBySpot.get(st.spotId) ?? []), st]);
+    }
     const target = landmarks.find(l => l.kind === 'handover') ?? landmarks.find(l => l.kind === 'entrance') ?? null;
     const reason: Suggestion['reason'] = target ? (target.kind === 'handover' ? 'near_handover' : 'near_entrance') : 'free';
     const candidates = spots
       .filter(s => s.active && s.kind !== 'reserved' && !busyIds.has(s.id) && !skip.has(s.id))
       .map(s => {
         const distance = target ? Math.round(distanceM([s.lon, s.lat], target.geometry.coordinates)) : null;
+        const score = scoreSpot(s, files.get(s.id) ?? [s], r, staysBySpot);
         return {
-          suggestion: { spotId: s.id, code: s.code, distanceM: distance, reason, stayClass: s.stayClass ?? null },
+          suggestion: {
+            spotId: s.id,
+            code: s.code,
+            distanceM: distance,
+            reason,
+            stayClass: s.stayClass ?? null,
+            moves: score.moves,
+            blocking: score.blocking.map(blockerView),
+            blocked: score.blocked.map(blockerView),
+          },
+          moves: score.moves,
           zone: stayClassDistance(s.stayClass, wanted),
+          fit: score.fitMinutes ?? Number.MAX_SAFE_INTEGER,
           order: distance ?? s.row * 1000 + s.index,
         };
       });
-    candidates.sort((a, b) => a.zone - b.zone || a.order - b.order);
+    candidates.sort((a, b) => a.moves - b.moves || a.zone - b.zone || a.fit - b.fit || a.order - b.order);
     return candidates.slice(0, 3).map(c => c.suggestion);
   }
 

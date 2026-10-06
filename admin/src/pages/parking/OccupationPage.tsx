@@ -563,6 +563,11 @@ function ArrivalRow({
                 : t.reason[best.reason](best.distanceM ?? 0)}
               {best.stayClass ? ` · ${t.stayZone[best.stayClass]}` : ""}
             </span>
+            {best.moves !== undefined && (
+              <span data-testid="moves" className={best.moves === 0 ? "text-ok-text" : "text-warn-text"}>
+                {movesLabel(best)}
+              </span>
+            )}
           </>
         ) : (
           <span className="text-muted-foreground">{t.noSpot}</span>
@@ -585,6 +590,16 @@ function ArrivalRow({
       </div>
     </li>
   );
+}
+
+/** O-A (06/10/2026): "sans déplacement", or the cars this choice would make the valet move. */
+function movesLabel(s: ArrivalToPlace["suggestions"][number]): string {
+  const t = fr.occupation;
+  if (!s.moves) return t.noMove;
+  const parts: string[] = [];
+  if (s.blocking?.length) parts.push(t.movesOut(s.blocking.length, s.blocking[0].spotCode, dateTimeShort(s.blocking[0].returnAt)));
+  if (s.blocked?.length) parts.push(t.movesBlocked(s.blocked.length, s.blocked[0].spotCode));
+  return parts.join(" · ");
 }
 
 function SpotCard({

@@ -169,3 +169,67 @@ describe('zones de séjour (Z-A)', () => {
     expect(rows.body.spots.map((s: { stayClass: string | null }) => s.stayClass)).toEqual(['short', 'medium', 'long', 'short']);
   });
 });
+
+describe('files triées (O-A, 06/10/2026)', () => {
+  const file = [
+    { code: 'A-01-01', index: 1, depth: 0, fileLength: 3, stayClass: 'short' },
+    { code: 'A-01-02', index: 2, depth: 1, fileLength: 3, stayClass: 'medium' },
+    { code: 'A-01-03', index: 3, depth: 2, fileLength: 3, stayClass: 'long' },
+  ].map((s, i) => ({ zoneId: 'z1', row: 1, geometry: square(5.08, 45.72 + i * 0.00005), ...s }));
+
+  it('propose la place qui ne coûte aucun déplacement, compte les voitures à sortir, signale les retours bloqués', async () => {
+    const { token, parking } = await setupOperator();
+    await api().put(`/api/internal/parkings/${parking.id}/plan/spots`).set(auth(token)).send({ layout: 'valetEdge', spots: file });
+    const d = (n: number) => addDays(today, n);
+    const create = async (plate: string, a: number, r: number) =>
+      (await api().post('/api/internal/reservations').set(auth(token)).send(booking(plate, d(a), d(r)))).body.data;
+    const spotId = async (code: string) => (await prisma.parkingSpot.findFirstOrThrow({ where: { parkingId: parking.id, code } })).id;
+    // A car in the middle of the file (rank 1), away for 10 days.
+    const middle = await create('MM-111-MM', 0, 10);
+    await api().post(`/api/internal/reservations/${middle.id}/spot`).set(auth(token)).send({ spotId: await spotId('A-01-02') });
+    // A 2-night stay: the front spot costs nothing; the back one would be blocked by the middle car.
+    const short = await create('SS-222-SS', 0, 2);
+    // A 15-night stay: the back spot costs nothing; the front one would block the middle car.
+    const long = await create('LL-333-LL', 0, 15);
+    const board = await api().get(`/api/internal/parkings/${parking.id}/occupation`).set(auth(token));
+    const arrival = (id: string) => board.body.arrivals.find((r: { id: string }) => r.id === id);
+    expect(arrival(short.id).suggestions[0]).toMatchObject({ code: 'A-01-01', moves: 0, blocking: [], blocked: [] });
+    expect(arrival(short.id).suggestions.find((s: { code: string }) => s.code === 'A-01-03')).toMatchObject({
+      moves: 1,
+      blocking: [{ reference: middle.reference, spotCode: 'A-01-02' }],
+    });
+    // The front spot is kept for the short stay's first choice; the back one is free of moves for the long one.
+    expect(arrival(long.id).suggestions[0]).toMatchObject({ code: 'A-01-03', moves: 0 });
+    // The pre-assignment follows the same rule.
+    const run = await api().post(`/api/internal/parkings/${parking.id}/spot-planning/preassign?from=${today}&days=20`).set(auth(token));
+    const codes = Object.fromEntries(run.body.data.assigned.map((x: { reservationId: string; code: string }) => [x.reservationId, x.code]));
+    expect(codes[short.id]).toBe('A-01-01');
+    expect(codes[long.id]).toBe('A-01-03');
+    // Forcing the long stay in front of the middle car: the planning says who is blocked by whom.
+    await api().post(`/api/internal/reservations/${short.id}/spot`).set(auth(token)).send({ spotId: null });
+    expect((await api().post(`/api/internal/reservations/${long.id}/spot`).set(auth(token)).send({ spotId: await spotId('A-01-01') })).status).toBe(200);
+    const planning = await api().get(`/api/internal/parkings/${parking.id}/spot-planning?from=${today}&days=14`).set(auth(token));
+    const middleRow = planning.body.spots.find((s: { code: string }) => s.code === 'A-01-02').stays[0];
+    expect(middleRow.blockedBy).toEqual([expect.objectContaining({ reference: long.reference, spotCode: 'A-01-01' })]);
+    expect(planning.body.alerts).toEqual(expect.arrayContaining([{ kind: 'blocked', count: 1 }]));
+  });
+
+  it('le tableau de bord signale le retour du jour qui est derrière une voiture partant plus tard', async () => {
+    const { token, parking } = await setupOperator();
+    await api().put(`/api/internal/parkings/${parking.id}/plan/spots`).set(auth(token)).send({ layout: 'valetEdge', spots: file });
+    const spotId = async (code: string) => (await prisma.parkingSpot.findFirstOrThrow({ where: { parkingId: parking.id, code } })).id;
+    const back = (await api().post('/api/internal/reservations').set(auth(token)).send(booking('BB-444-BB', addDays(today, -3), today))).body.data;
+    const front = (await api().post('/api/internal/reservations').set(auth(token)).send(booking('FF-555-FF', addDays(today, -1), addDays(today, 4)))).body.data;
+    for (const [r, code] of [
+      [back, 'A-01-02'],
+      [front, 'A-01-01'],
+    ] as const) {
+      await api().post(`/api/internal/reservations/${r.id}/status`).set(auth(token)).send({ status: 'arrived' });
+      await api().post(`/api/internal/reservations/${r.id}/spot`).set(auth(token)).send({ spotId: await spotId(code) });
+    }
+    const dash = await api().get('/api/internal/dashboard').set(auth(token));
+    const alert = dash.body.alerts.find((a: { kind: string }) => a.kind === 'blocked_return');
+    expect(alert).toMatchObject({ reference: back.reference, severity: 'watch' });
+    expect(alert.detail).toContain('A-01-01');
+  });
+});

@@ -78,6 +78,13 @@ Ne construire QUE ce qui règle la douleur n°1 du client.
      (`ParkingSpot.depth`, `fileLength`, `stayClass` court / moyen / long ; seuils `stayShortMaxNights` 3 et
      `stayMediumMaxNights` 8 dans les réglages du plan) : suggestions et pré-affectation prennent d'abord la zone
      de la durée du séjour, puis la zone voisine.
+   - Décision **O-A « File triée » (06/10/2026)** : sur une file de voiturier, les retours doivent décroître de l'allée vers le
+     fond ; `domain/files.ts` reconstitue les files (profondeur + position) et score chaque place libre par le nombre de
+     voitures à déplacer (`blocking` devant partant après, `blocked` derrière partant avant ; même vague = 2 h) ;
+     suggestions de l'Occupation et pré-affectation : d'abord 0 déplacement, puis zone de séjour, puis ajustement serré,
+     puis distance ; `Suggestion.moves/blocking/blocked`, planning `stays[].blockedBy` + alerte `blocked`, tableau de bord
+     `blocked_return` (retour du jour derrière une voiture partant plus tard) ; libellés « sans déplacement » /
+     « N voitures à sortir » (web et app).
    - Retrouver un véhicule en quelques secondes (plaque, emplacement, emplacement des clés).
    - Si voiturier : suivi des clés confiées.
 

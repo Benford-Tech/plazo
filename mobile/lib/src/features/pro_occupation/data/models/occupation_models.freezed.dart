@@ -648,9 +648,289 @@ as String,
 
 
 /// @nodoc
+mixin _$BlockerModel {
+
+ String get reservationId; String get reference; String get spotCode; DateTime get returnAt;
+/// Create a copy of BlockerModel
+/// with the given fields replaced by the non-null parameter values.
+@JsonKey(includeFromJson: false, includeToJson: false)
+@pragma('vm:prefer-inline')
+$BlockerModelCopyWith<BlockerModel> get copyWith => _$BlockerModelCopyWithImpl<BlockerModel>(this as BlockerModel, _$identity);
+
+  /// Serializes this BlockerModel to a JSON map.
+  Map<String, dynamic> toJson();
+
+
+@override
+bool operator ==(Object other) {
+  final _this = this as BlockerModel;
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is BlockerModel&&(identical(other.reservationId, _this.reservationId) || other.reservationId == _this.reservationId)&&(identical(other.reference, _this.reference) || other.reference == _this.reference)&&(identical(other.spotCode, _this.spotCode) || other.spotCode == _this.spotCode)&&(identical(other.returnAt, _this.returnAt) || other.returnAt == _this.returnAt));
+}
+
+@JsonKey(includeFromJson: false, includeToJson: false)
+@override
+int get hashCode {
+  final _this = this as BlockerModel;
+  return Object.hash(runtimeType,_this.reservationId,_this.reference,_this.spotCode,_this.returnAt);
+}
+
+@override
+String toString() {
+  final _this = this as BlockerModel;
+  return 'BlockerModel(reservationId: ${_this.reservationId}, reference: ${_this.reference}, spotCode: ${_this.spotCode}, returnAt: ${_this.returnAt})';
+}
+
+
+}
+
+/// @nodoc
+abstract mixin class $BlockerModelCopyWith<$Res>  {
+  factory $BlockerModelCopyWith(BlockerModel value, $Res Function(BlockerModel) _then) = _$BlockerModelCopyWithImpl;
+@useResult
+$Res call({
+ String reservationId, String reference, String spotCode, DateTime returnAt
+});
+
+
+
+
+}
+/// @nodoc
+class _$BlockerModelCopyWithImpl<$Res>
+    implements $BlockerModelCopyWith<$Res> {
+  _$BlockerModelCopyWithImpl(this._self, this._then);
+
+  final BlockerModel _self;
+  final $Res Function(BlockerModel) _then;
+
+/// Create a copy of BlockerModel
+/// with the given fields replaced by the non-null parameter values.
+@pragma('vm:prefer-inline') @override $Res call({Object? reservationId = null,Object? reference = null,Object? spotCode = null,Object? returnAt = null,}) {
+  return _then(BlockerModel(
+reservationId: null == reservationId ? _self.reservationId : reservationId // ignore: cast_nullable_to_non_nullable
+as String,reference: null == reference ? _self.reference : reference // ignore: cast_nullable_to_non_nullable
+as String,spotCode: null == spotCode ? _self.spotCode : spotCode // ignore: cast_nullable_to_non_nullable
+as String,returnAt: null == returnAt ? _self.returnAt : returnAt // ignore: cast_nullable_to_non_nullable
+as DateTime,
+  ));
+}
+
+}
+
+
+/// Adds pattern-matching-related methods to [BlockerModel].
+extension BlockerModelPatterns on BlockerModel {
+/// A variant of `map` that fallback to returning `orElse`.
+///
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case final Subclass value:
+///     return ...;
+///   case _:
+///     return orElse();
+/// }
+/// ```
+
+@optionalTypeArgs TResult maybeMap<TResult extends Object?>(TResult Function( _BlockerModel value)?  $default,{required TResult orElse(),}){
+final _that = this;
+switch (_that) {
+case _BlockerModel() when $default != null:
+return $default(_that);case _:
+  return orElse();
+
+}
+}
+/// A `switch`-like method, using callbacks.
+///
+/// Callbacks receives the raw object, upcasted.
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case final Subclass value:
+///     return ...;
+///   case final Subclass2 value:
+///     return ...;
+/// }
+/// ```
+
+@optionalTypeArgs TResult map<TResult extends Object?>(TResult Function( _BlockerModel value)  $default,){
+final _that = this;
+switch (_that) {
+case _BlockerModel():
+return $default(_that);case _:
+  throw StateError('Unexpected subclass');
+
+}
+}
+/// A variant of `map` that fallback to returning `null`.
+///
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case final Subclass value:
+///     return ...;
+///   case _:
+///     return null;
+/// }
+/// ```
+
+@optionalTypeArgs TResult? mapOrNull<TResult extends Object?>(TResult? Function( _BlockerModel value)?  $default,){
+final _that = this;
+switch (_that) {
+case _BlockerModel() when $default != null:
+return $default(_that);case _:
+  return null;
+
+}
+}
+/// A variant of `when` that fallback to an `orElse` callback.
+///
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case Subclass(:final field):
+///     return ...;
+///   case _:
+///     return orElse();
+/// }
+/// ```
+
+@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( String reservationId,  String reference,  String spotCode,  DateTime returnAt)?  $default,{required TResult orElse(),}) {final _that = this;
+switch (_that) {
+case _BlockerModel() when $default != null:
+return $default(_that.reservationId,_that.reference,_that.spotCode,_that.returnAt);case _:
+  return orElse();
+
+}
+}
+/// A `switch`-like method, using callbacks.
+///
+/// As opposed to `map`, this offers destructuring.
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case Subclass(:final field):
+///     return ...;
+///   case Subclass2(:final field2):
+///     return ...;
+/// }
+/// ```
+
+@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( String reservationId,  String reference,  String spotCode,  DateTime returnAt)  $default,) {final _that = this;
+switch (_that) {
+case _BlockerModel():
+return $default(_that.reservationId,_that.reference,_that.spotCode,_that.returnAt);case _:
+  throw StateError('Unexpected subclass');
+
+}
+}
+/// A variant of `when` that fallback to returning `null`
+///
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case Subclass(:final field):
+///     return ...;
+///   case _:
+///     return null;
+/// }
+/// ```
+
+@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( String reservationId,  String reference,  String spotCode,  DateTime returnAt)?  $default,) {final _that = this;
+switch (_that) {
+case _BlockerModel() when $default != null:
+return $default(_that.reservationId,_that.reference,_that.spotCode,_that.returnAt);case _:
+  return null;
+
+}
+}
+
+}
+
+/// @nodoc
+@JsonSerializable()
+
+class _BlockerModel implements BlockerModel {
+  const _BlockerModel({required this.reservationId, required this.reference, required this.spotCode, required this.returnAt});
+  factory _BlockerModel.fromJson(Map<String, dynamic> json) => _$BlockerModelFromJson(json);
+
+@override final  String reservationId;
+@override final  String reference;
+@override final  String spotCode;
+@override final  DateTime returnAt;
+
+/// Create a copy of BlockerModel
+/// with the given fields replaced by the non-null parameter values.
+@override @JsonKey(includeFromJson: false, includeToJson: false)
+@pragma('vm:prefer-inline')
+_$BlockerModelCopyWith<_BlockerModel> get copyWith => __$BlockerModelCopyWithImpl<_BlockerModel>(this, _$identity);
+
+@override
+Map<String, dynamic> toJson() {
+  return _$BlockerModelToJson(this, );
+}
+
+@override
+bool operator ==(Object other) {
+    return identical(this, other) || (other.runtimeType == runtimeType&&other is _BlockerModel&&(identical(other.reservationId, reservationId) || other.reservationId == reservationId)&&(identical(other.reference, reference) || other.reference == reference)&&(identical(other.spotCode, spotCode) || other.spotCode == spotCode)&&(identical(other.returnAt, returnAt) || other.returnAt == returnAt));
+}
+
+@JsonKey(includeFromJson: false, includeToJson: false)
+@override
+int get hashCode {
+    return Object.hash(runtimeType,reservationId,reference,spotCode,returnAt);
+}
+
+@override
+String toString() {
+    return 'BlockerModel(reservationId: $reservationId, reference: $reference, spotCode: $spotCode, returnAt: $returnAt)';
+}
+
+
+}
+
+/// @nodoc
+abstract mixin class _$BlockerModelCopyWith<$Res> implements $BlockerModelCopyWith<$Res> {
+  factory _$BlockerModelCopyWith(_BlockerModel value, $Res Function(_BlockerModel) _then) = __$BlockerModelCopyWithImpl;
+@override @useResult
+$Res call({
+ String reservationId, String reference, String spotCode, DateTime returnAt
+});
+
+
+
+
+}
+/// @nodoc
+class __$BlockerModelCopyWithImpl<$Res>
+    implements _$BlockerModelCopyWith<$Res> {
+  __$BlockerModelCopyWithImpl(this._self, this._then);
+
+  final _BlockerModel _self;
+  final $Res Function(_BlockerModel) _then;
+
+/// Create a copy of BlockerModel
+/// with the given fields replaced by the non-null parameter values.
+@override @pragma('vm:prefer-inline') $Res call({Object? reservationId = null,Object? reference = null,Object? spotCode = null,Object? returnAt = null,}) {
+  return _then(_BlockerModel(
+reservationId: null == reservationId ? _self.reservationId : reservationId // ignore: cast_nullable_to_non_nullable
+as String,reference: null == reference ? _self.reference : reference // ignore: cast_nullable_to_non_nullable
+as String,spotCode: null == spotCode ? _self.spotCode : spotCode // ignore: cast_nullable_to_non_nullable
+as String,returnAt: null == returnAt ? _self.returnAt : returnAt // ignore: cast_nullable_to_non_nullable
+as DateTime,
+  ));
+}
+
+
+}
+
+
+/// @nodoc
 mixin _$SuggestionModel {
 
- String get spotId; String get code; int? get distanceM; String get reason; String? get stayClass;
+ String get spotId; String get code; int? get distanceM; String get reason; String? get stayClass;/// O-A (06/10/2026): cars to move because of this choice (0: the file stays sound).
+ int get moves; List<BlockerModel> get blocking; List<BlockerModel> get blocked;
 /// Create a copy of SuggestionModel
 /// with the given fields replaced by the non-null parameter values.
 @JsonKey(includeFromJson: false, includeToJson: false)
@@ -664,20 +944,20 @@ $SuggestionModelCopyWith<SuggestionModel> get copyWith => _$SuggestionModelCopyW
 @override
 bool operator ==(Object other) {
   final _this = this as SuggestionModel;
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is SuggestionModel&&(identical(other.spotId, _this.spotId) || other.spotId == _this.spotId)&&(identical(other.code, _this.code) || other.code == _this.code)&&(identical(other.distanceM, _this.distanceM) || other.distanceM == _this.distanceM)&&(identical(other.reason, _this.reason) || other.reason == _this.reason)&&(identical(other.stayClass, _this.stayClass) || other.stayClass == _this.stayClass));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is SuggestionModel&&(identical(other.spotId, _this.spotId) || other.spotId == _this.spotId)&&(identical(other.code, _this.code) || other.code == _this.code)&&(identical(other.distanceM, _this.distanceM) || other.distanceM == _this.distanceM)&&(identical(other.reason, _this.reason) || other.reason == _this.reason)&&(identical(other.stayClass, _this.stayClass) || other.stayClass == _this.stayClass)&&(identical(other.moves, _this.moves) || other.moves == _this.moves)&&const DeepCollectionEquality().equals(other.blocking, _this.blocking)&&const DeepCollectionEquality().equals(other.blocked, _this.blocked));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
 int get hashCode {
   final _this = this as SuggestionModel;
-  return Object.hash(runtimeType,_this.spotId,_this.code,_this.distanceM,_this.reason,_this.stayClass);
+  return Object.hash(runtimeType,_this.spotId,_this.code,_this.distanceM,_this.reason,_this.stayClass,_this.moves,const DeepCollectionEquality().hash(_this.blocking),const DeepCollectionEquality().hash(_this.blocked));
 }
 
 @override
 String toString() {
   final _this = this as SuggestionModel;
-  return 'SuggestionModel(spotId: ${_this.spotId}, code: ${_this.code}, distanceM: ${_this.distanceM}, reason: ${_this.reason}, stayClass: ${_this.stayClass})';
+  return 'SuggestionModel(spotId: ${_this.spotId}, code: ${_this.code}, distanceM: ${_this.distanceM}, reason: ${_this.reason}, stayClass: ${_this.stayClass}, moves: ${_this.moves}, blocking: ${_this.blocking}, blocked: ${_this.blocked})';
 }
 
 
@@ -688,7 +968,7 @@ abstract mixin class $SuggestionModelCopyWith<$Res>  {
   factory $SuggestionModelCopyWith(SuggestionModel value, $Res Function(SuggestionModel) _then) = _$SuggestionModelCopyWithImpl;
 @useResult
 $Res call({
- String spotId, String code, int? distanceM, String reason, String? stayClass
+ String spotId, String code, int? distanceM, String reason, String? stayClass, int moves, List<BlockerModel> blocking, List<BlockerModel> blocked
 });
 
 
@@ -705,14 +985,17 @@ class _$SuggestionModelCopyWithImpl<$Res>
 
 /// Create a copy of SuggestionModel
 /// with the given fields replaced by the non-null parameter values.
-@pragma('vm:prefer-inline') @override $Res call({Object? spotId = null,Object? code = null,Object? distanceM = freezed,Object? reason = null,Object? stayClass = freezed,}) {
+@pragma('vm:prefer-inline') @override $Res call({Object? spotId = null,Object? code = null,Object? distanceM = freezed,Object? reason = null,Object? stayClass = freezed,Object? moves = null,Object? blocking = null,Object? blocked = null,}) {
   return _then(SuggestionModel(
 spotId: null == spotId ? _self.spotId : spotId // ignore: cast_nullable_to_non_nullable
 as String,code: null == code ? _self.code : code // ignore: cast_nullable_to_non_nullable
 as String,distanceM: freezed == distanceM ? _self.distanceM : distanceM // ignore: cast_nullable_to_non_nullable
 as int?,reason: null == reason ? _self.reason : reason // ignore: cast_nullable_to_non_nullable
 as String,stayClass: freezed == stayClass ? _self.stayClass : stayClass // ignore: cast_nullable_to_non_nullable
-as String?,
+as String?,moves: null == moves ? _self.moves : moves // ignore: cast_nullable_to_non_nullable
+as int,blocking: null == blocking ? _self.blocking : blocking // ignore: cast_nullable_to_non_nullable
+as List<BlockerModel>,blocked: null == blocked ? _self.blocked : blocked // ignore: cast_nullable_to_non_nullable
+as List<BlockerModel>,
   ));
 }
 
@@ -797,10 +1080,10 @@ return $default(_that);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( String spotId,  String code,  int? distanceM,  String reason,  String? stayClass)?  $default,{required TResult orElse(),}) {final _that = this;
+@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( String spotId,  String code,  int? distanceM,  String reason,  String? stayClass,  int moves,  List<BlockerModel> blocking,  List<BlockerModel> blocked)?  $default,{required TResult orElse(),}) {final _that = this;
 switch (_that) {
 case _SuggestionModel() when $default != null:
-return $default(_that.spotId,_that.code,_that.distanceM,_that.reason,_that.stayClass);case _:
+return $default(_that.spotId,_that.code,_that.distanceM,_that.reason,_that.stayClass,_that.moves,_that.blocking,_that.blocked);case _:
   return orElse();
 
 }
@@ -818,10 +1101,10 @@ return $default(_that.spotId,_that.code,_that.distanceM,_that.reason,_that.stayC
 /// }
 /// ```
 
-@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( String spotId,  String code,  int? distanceM,  String reason,  String? stayClass)  $default,) {final _that = this;
+@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( String spotId,  String code,  int? distanceM,  String reason,  String? stayClass,  int moves,  List<BlockerModel> blocking,  List<BlockerModel> blocked)  $default,) {final _that = this;
 switch (_that) {
 case _SuggestionModel():
-return $default(_that.spotId,_that.code,_that.distanceM,_that.reason,_that.stayClass);case _:
+return $default(_that.spotId,_that.code,_that.distanceM,_that.reason,_that.stayClass,_that.moves,_that.blocking,_that.blocked);case _:
   throw StateError('Unexpected subclass');
 
 }
@@ -838,10 +1121,10 @@ return $default(_that.spotId,_that.code,_that.distanceM,_that.reason,_that.stayC
 /// }
 /// ```
 
-@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( String spotId,  String code,  int? distanceM,  String reason,  String? stayClass)?  $default,) {final _that = this;
+@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( String spotId,  String code,  int? distanceM,  String reason,  String? stayClass,  int moves,  List<BlockerModel> blocking,  List<BlockerModel> blocked)?  $default,) {final _that = this;
 switch (_that) {
 case _SuggestionModel() when $default != null:
-return $default(_that.spotId,_that.code,_that.distanceM,_that.reason,_that.stayClass);case _:
+return $default(_that.spotId,_that.code,_that.distanceM,_that.reason,_that.stayClass,_that.moves,_that.blocking,_that.blocked);case _:
   return null;
 
 }
@@ -853,7 +1136,7 @@ return $default(_that.spotId,_that.code,_that.distanceM,_that.reason,_that.stayC
 @JsonSerializable()
 
 class _SuggestionModel implements SuggestionModel {
-  const _SuggestionModel({required this.spotId, required this.code, this.distanceM, required this.reason, this.stayClass});
+  const _SuggestionModel({required this.spotId, required this.code, this.distanceM, required this.reason, this.stayClass, this.moves = 0,  List<BlockerModel> blocking = const <BlockerModel>[],  List<BlockerModel> blocked = const <BlockerModel>[]}): _blocking = blocking,_blocked = blocked;
   factory _SuggestionModel.fromJson(Map<String, dynamic> json) => _$SuggestionModelFromJson(json);
 
 @override final  String spotId;
@@ -861,6 +1144,22 @@ class _SuggestionModel implements SuggestionModel {
 @override final  int? distanceM;
 @override final  String reason;
 @override final  String? stayClass;
+/// O-A (06/10/2026): cars to move because of this choice (0: the file stays sound).
+@override@JsonKey() final  int moves;
+ final  List<BlockerModel> _blocking;
+@override@JsonKey() List<BlockerModel> get blocking {
+  if (_blocking is EqualUnmodifiableListView) return _blocking;
+  // ignore: implicit_dynamic_type
+  return EqualUnmodifiableListView(_blocking);
+}
+
+ final  List<BlockerModel> _blocked;
+@override@JsonKey() List<BlockerModel> get blocked {
+  if (_blocked is EqualUnmodifiableListView) return _blocked;
+  // ignore: implicit_dynamic_type
+  return EqualUnmodifiableListView(_blocked);
+}
+
 
 /// Create a copy of SuggestionModel
 /// with the given fields replaced by the non-null parameter values.
@@ -875,18 +1174,18 @@ Map<String, dynamic> toJson() {
 
 @override
 bool operator ==(Object other) {
-    return identical(this, other) || (other.runtimeType == runtimeType&&other is _SuggestionModel&&(identical(other.spotId, spotId) || other.spotId == spotId)&&(identical(other.code, code) || other.code == code)&&(identical(other.distanceM, distanceM) || other.distanceM == distanceM)&&(identical(other.reason, reason) || other.reason == reason)&&(identical(other.stayClass, stayClass) || other.stayClass == stayClass));
+    return identical(this, other) || (other.runtimeType == runtimeType&&other is _SuggestionModel&&(identical(other.spotId, spotId) || other.spotId == spotId)&&(identical(other.code, code) || other.code == code)&&(identical(other.distanceM, distanceM) || other.distanceM == distanceM)&&(identical(other.reason, reason) || other.reason == reason)&&(identical(other.stayClass, stayClass) || other.stayClass == stayClass)&&(identical(other.moves, moves) || other.moves == moves)&&const DeepCollectionEquality().equals(other.blocking, _blocking)&&const DeepCollectionEquality().equals(other.blocked, _blocked));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
 int get hashCode {
-    return Object.hash(runtimeType,spotId,code,distanceM,reason,stayClass);
+    return Object.hash(runtimeType,spotId,code,distanceM,reason,stayClass,moves,const DeepCollectionEquality().hash(_blocking),const DeepCollectionEquality().hash(_blocked));
 }
 
 @override
 String toString() {
-    return 'SuggestionModel(spotId: $spotId, code: $code, distanceM: $distanceM, reason: $reason, stayClass: $stayClass)';
+    return 'SuggestionModel(spotId: $spotId, code: $code, distanceM: $distanceM, reason: $reason, stayClass: $stayClass, moves: $moves, blocking: $blocking, blocked: $blocked)';
 }
 
 
@@ -897,7 +1196,7 @@ abstract mixin class _$SuggestionModelCopyWith<$Res> implements $SuggestionModel
   factory _$SuggestionModelCopyWith(_SuggestionModel value, $Res Function(_SuggestionModel) _then) = __$SuggestionModelCopyWithImpl;
 @override @useResult
 $Res call({
- String spotId, String code, int? distanceM, String reason, String? stayClass
+ String spotId, String code, int? distanceM, String reason, String? stayClass, int moves, List<BlockerModel> blocking, List<BlockerModel> blocked
 });
 
 
@@ -914,14 +1213,17 @@ class __$SuggestionModelCopyWithImpl<$Res>
 
 /// Create a copy of SuggestionModel
 /// with the given fields replaced by the non-null parameter values.
-@override @pragma('vm:prefer-inline') $Res call({Object? spotId = null,Object? code = null,Object? distanceM = freezed,Object? reason = null,Object? stayClass = freezed,}) {
+@override @pragma('vm:prefer-inline') $Res call({Object? spotId = null,Object? code = null,Object? distanceM = freezed,Object? reason = null,Object? stayClass = freezed,Object? moves = null,Object? blocking = null,Object? blocked = null,}) {
   return _then(_SuggestionModel(
 spotId: null == spotId ? _self.spotId : spotId // ignore: cast_nullable_to_non_nullable
 as String,code: null == code ? _self.code : code // ignore: cast_nullable_to_non_nullable
 as String,distanceM: freezed == distanceM ? _self.distanceM : distanceM // ignore: cast_nullable_to_non_nullable
 as int?,reason: null == reason ? _self.reason : reason // ignore: cast_nullable_to_non_nullable
 as String,stayClass: freezed == stayClass ? _self.stayClass : stayClass // ignore: cast_nullable_to_non_nullable
-as String?,
+as String?,moves: null == moves ? _self.moves : moves // ignore: cast_nullable_to_non_nullable
+as int,blocking: null == blocking ? _self._blocking : blocking // ignore: cast_nullable_to_non_nullable
+as List<BlockerModel>,blocked: null == blocked ? _self._blocked : blocked // ignore: cast_nullable_to_non_nullable
+as List<BlockerModel>,
   ));
 }
 

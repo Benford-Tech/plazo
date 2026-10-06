@@ -13,6 +13,7 @@ import '../../../../core/helpers/formatters.dart';
 import '../../../../core/utils/error_message_handler.dart';
 import '../../../../di/locator.dart';
 import '../../../../shared/theme/theme.dart';
+import '../../../pro_reservations/presentation/widgets/reservation_tile.dart';
 import '../../../../shared/widgets/brand_header.dart';
 import '../../../../shared/widgets/french_plate.dart';
 import '../../../../shared/widgets/gradient_button.dart';
@@ -343,6 +344,11 @@ class _ArrivalRow extends StatelessWidget {
                 : '${'occupation.suggested'.tr(args: [best.code])} · ${_reason(best)}${best.stayClass != null ? ' · ${'occupation.stay_zone.${best.stayClass}'.tr()}' : ''}',
             style: AppText.muted(size: 12.5),
           ),
+          // O-A (06/10/2026): the file keeps its order, or cars will have to move.
+          if (best != null) ...[
+            const SizedBox(height: 2),
+            Text(_moves(best), key: Key('moves-${arrival.reference}'), style: AppText.strong(size: 12.5, color: best.moves == 0 ? AppStatus.okText : AppStatus.warnText)),
+          ],
           const SizedBox(height: 8),
           Row(
             children: [
@@ -369,6 +375,15 @@ class _ArrivalRow extends StatelessWidget {
         ],
       ),
     );
+  }
+
+  static String _moves(SuggestionModel s) {
+    if (s.moves == 0) return 'occupation.no_move'.tr();
+    final parts = <String>[
+      if (s.blocking.isNotEmpty) 'occupation.moves_out'.tr(args: ['${s.blocking.length}', s.blocking.first.spotCode, dayTime(s.blocking.first.returnAt)]),
+      if (s.blocked.isNotEmpty) 'occupation.moves_blocked'.tr(args: ['${s.blocked.length}', s.blocked.first.spotCode]),
+    ];
+    return parts.join(' · ');
   }
 
   static String _reason(SuggestionModel s) => switch (s.reason) {

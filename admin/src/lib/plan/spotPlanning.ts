@@ -13,6 +13,8 @@ export interface PlannedStay {
   spotId: string | null;
   keyHook: string | null;
   onSite: boolean;
+  /** O-A (06/10/2026): the cars in front of this one that leave later (missing from an older API). */
+  blockedBy?: { reservationId: string; reference: string; spotCode: string; returnAt: string }[];
 }
 
 export interface PlannedSpot {
@@ -36,7 +38,8 @@ export interface DayLoad {
 export type PlanningAlert =
   | { kind: "over_capacity"; date: string; count: number }
   | { kind: "unplaced"; count: number }
-  | { kind: "inactive_spot_used"; spotCode: string; reference: string };
+  | { kind: "inactive_spot_used"; spotCode: string; reference: string }
+  | { kind: "blocked"; count: number };
 
 export interface SpotPlanning {
   from: string;

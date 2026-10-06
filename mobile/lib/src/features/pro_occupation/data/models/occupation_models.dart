@@ -43,9 +43,27 @@ abstract class SpotRefModel with _$SpotRefModel {
   factory SpotRefModel.fromJson(Map<String, dynamic> json) => _$SpotRefModelFromJson(json);
 }
 
+/// O-A: a car in the way (in front, leaving later) or blocked (behind, leaving earlier).
+@freezed
+abstract class BlockerModel with _$BlockerModel {
+  const factory BlockerModel({required String reservationId, required String reference, required String spotCode, required DateTime returnAt}) = _BlockerModel;
+  factory BlockerModel.fromJson(Map<String, dynamic> json) => _$BlockerModelFromJson(json);
+}
+
 @freezed
 abstract class SuggestionModel with _$SuggestionModel {
-  const factory SuggestionModel({required String spotId, required String code, int? distanceM, required String reason, String? stayClass}) = _SuggestionModel;
+  const factory SuggestionModel({
+    required String spotId,
+    required String code,
+    int? distanceM,
+    required String reason,
+    String? stayClass,
+
+    /// O-A (06/10/2026): cars to move because of this choice (0: the file stays sound).
+    @Default(0) int moves,
+    @Default(<BlockerModel>[]) List<BlockerModel> blocking,
+    @Default(<BlockerModel>[]) List<BlockerModel> blocked,
+  }) = _SuggestionModel;
   factory SuggestionModel.fromJson(Map<String, dynamic> json) => _$SuggestionModelFromJson(json);
 }
 
