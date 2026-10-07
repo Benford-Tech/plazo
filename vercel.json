@@ -48,6 +48,6 @@
     { "path": "/api/internal/cron/payouts", "schedule": "0 6 * * *" },
     { "path": "/api/internal/cron/track-return-flights", "schedule": "0 3 * * *" },
     { "path": "/api/internal/cron/expire-payment-holds", "schedule": "30 1 * * *" },
-    { "path": "/api/internal/cron/remind-tomorrow", "schedule": "0 16 * * *" }
+    { "path": "/api/internal/cron/remind-tomorrow", "schedule": "0 19 * * *" }
   ]
 }

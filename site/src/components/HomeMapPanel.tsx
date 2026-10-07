@@ -50,9 +50,10 @@ export function HomeMapPanel({
           {fr.home.mapAvailable(bookable.length)}
         </span>
         <span className="pill-float text-soft">{fr.home.mapStay(days)}</span>
-        {live && (
+        {/* Only while shuttles are running: no "none" pill on a quiet map. */}
+        {live && live.shuttles.length > 0 && (
           <span className="pill-float" data-testid="home-map-shuttles">
-            <ShuttleIcon tone={live.shuttles.length > 0 ? "terminal" : "unknown"} size={18} />
+            <ShuttleIcon tone="terminal" size={18} />
             {fr.home.mapShuttles(live.shuttles.length)}
           </span>
         )}

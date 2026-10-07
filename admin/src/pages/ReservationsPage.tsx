@@ -6,7 +6,7 @@ import { Plate } from "@/components/Plate";
 import { useAuth } from "@/contexts/AuthContext";
 import { adminApi } from "@/lib/api";
 import { dateTimeShort } from "@/lib/datetime";
-import { describeError, fr, inboundFr } from "@/lib/fr";
+import { describeError, fr, inboundFr, remindersFr } from "@/lib/fr";
 import { can } from "@/lib/roles";
 
 export default function ReservationsPage() {
@@ -27,7 +27,10 @@ export default function ReservationsPage() {
       <div className="flex flex-wrap items-center justify-between gap-3">
         <h1 className="text-3xl font-bold uppercase tracking-wide">{t.listTitle}</h1>
         {can(user?.role, "reservations:manage") && (
-          <div className="flex gap-2">
+          <div className="flex flex-wrap gap-2">
+            <Link to="/reservations/sms-veille" className="flex h-11 items-center border border-border px-4 font-semibold uppercase tracking-wide hover:bg-accent">
+              {remindersFr.link}
+            </Link>
             <Link to="/reservations/a-verifier" className="flex h-11 items-center border border-border px-4 font-semibold uppercase tracking-wide hover:bg-accent">
               {inboundFr.list.title}
             </Link>

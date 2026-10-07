@@ -222,6 +222,9 @@ function LivePanel({ live, parkingName }: { live: LiveShuttles | undefined; park
         {m.open}
       </Link>
       <ul className="absolute bottom-3 left-3 right-3 flex flex-col gap-1.5">
+        {live && live.trips.length === 0 && (
+          <li className="w-fit rounded-full border border-panel-line bg-panel px-3 py-1.5 font-mono text-xs text-foreground">{m.none}</li>
+        )}
         {live?.trips.map((trip, i) => (
           <li key={trip.id} className="flex w-fit max-w-full items-center gap-2 rounded-full border border-panel-line bg-panel px-3 py-1.5 font-mono text-xs">
             <BusFront className="h-3.5 w-3.5 shrink-0 text-lime-deep" aria-hidden="true" />

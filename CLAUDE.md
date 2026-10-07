@@ -64,6 +64,18 @@ Ne construire QUE ce qui règle la douleur n°1 du client.
      « Nouvelle réservation » (`Staff.notifyBookings`) ; `nextStatuses` servi par l'API, listes dans `domain/reservation.ts`.
      Libellés unifiés web et app : Attendu · Sur place · Parti en navette · Retour demandé · De retour au parking · Rendu ·
      Annulé · Non venu.
+   - **Décision S-A + S-B du 06/10/2026 (« SMS de la veille »)** : page `/pro/reservations/sms-veille` (lien depuis Réservations) :
+     réglages habituels (envoi activé, heure de 16:00 à 21:30 par demi-heure, téléphone d'envoi), les sept soirées d'hier à J+5
+     (heure changée, en pause, envoyés, échecs), la soirée choisie (heure de cet envoi, pause, « Envoyer maintenant », départs du
+     lendemain avec l'état de chaque SMS, « Ne pas envoyer » / « Rétablir »), le texte du parking avec ses variables `{prénom}
+     {nom} {date} {heure} {plaque} {référence} {lien}`, compteur de SMS (GSM-7 ou Unicode), « Retirer les émojis et signes »,
+     « Version courte avec lien », aperçu et « M'envoyer un test ». Tables `reminder_settings` et `reminder_evenings`,
+     `Reservation.reminderExcludedAt/ById`, `domain/day-before-sms.ts`, `ReminderService` : le rappel (SMS au texte du parking,
+     mail et push de B) part une fois, à l'heure de sa soirée ou dès la réservation si elle est plus tardive, jamais de 22:00 à
+     07:00, ni le jour du dépôt pour un envoi manqué la veille ; sans ligne `reminder_settings` : activé, 18:00, texte de Plazo.
+     `GET /internal/cron/remind-tomorrow` est appelé **toutes les 15 minutes par un planificateur externe** (cron-job.org,
+     `Authorization: Bearer <CRON_SECRET>`), le Vercel Cron quotidien de 19:00 UTC restant un filet ; routes
+     `/internal/parkings/:id/reminders…` et `PUT /internal/reservations/:id/reminder`. Web seulement pour l'instant.
 
 2. **Plan du parking et affectation des véhicules** (direction P-A du 03/10/2026 : trois vues
    Plan · Occupation · Planning des places dans l'onglet « Parking » ; les étapes Plan et Occupation sont livrées)
@@ -176,7 +188,8 @@ Ne construire QUE ce qui règle la douleur n°1 du client.
      `returnNoticeKind/Text/At` + `POST /public/bookings/:ref/return/notice` (« Mon vol a du retard », « Bagage perdu », autre ;
      409 `vehicle_not_on_site` ; push `returns` ; `PickupRow.notice`, `TravellerReturn.notice`) ; textes `domain/return-messages.ts`.
    - Décision **B du 06/10/2026 (messages au voyageur)** : confirmation enrichie (vol aller, navette aller, téléphone, rendez-vous
-     au retour, étapes du jour du dépôt), rappel la veille (mail, SMS, push ; cron `remind-tomorrow`, `Reservation.reminderSentAt`),
+     au retour, étapes du jour du dépôt), rappel la veille (mail, SMS, push ; heure et texte du SMS choisis par le parking depuis
+     « SMS de la veille », `ReminderService`, `Reservation.reminderSentAt`),
      push « Votre voiture est garée » (`parkedNotifiedAt`), push « Bon voyage ! » à la fin de la dépose, SMS d'atterrissage pour
      tous les canaux, mail et push de clôture après la remise (`closingSentAt`) ; `domain/booking-messages.ts`,
      `services/traveller-messages.service.ts` ; un message n'échoue jamais l'action qui le déclenche.
@@ -216,7 +229,8 @@ Plazo reprend la stack et les conventions des dépôts `lovenest-backend`, `love
   (`backend/index.js`, qui charge le code compilé dans `lib/`).
   Conséquences : pas de pg-boss (pas de processus permanent), les tâches planifiées sont des routes
   `/internal/cron/...` appelées par Vercel Cron (`vercel.json` à la racine, protégées par `CRON_SECRET` ; Vercel Hobby
-  n'accepte que des crons quotidiens, les lectures rafraîchissent aussi les vols) ;
+  n'accepte que des crons quotidiens, les lectures rafraîchissent aussi les vols ; `remind-tomorrow` est aussi appelé toutes
+  les 15 minutes par un planificateur externe, cron-job.org) ;
   pas de fichiers de logs (winston écrit dans la console, que Vercel collecte).
 - **Base de données** : PostgreSQL + PostGIS, hébergée sur **Neon** via l'intégration Vercel (base `Plazo-db`,
   02/10/2026, à la place de Supabase). Variables injectées par Vercel : `POSTGRES_PRISMA_URL` (connexion

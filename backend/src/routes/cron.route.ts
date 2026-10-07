@@ -13,11 +13,16 @@ import { CronAuthMiddleware } from '@/middlewares/cron-auth.middleware';
  * @swagger
  * /internal/cron/remind-tomorrow:
  *   get:
- *     summary: Send the day-before reminders (email, SMS, push) to the travellers arriving tomorrow, once each (every afternoon)
+ *     summary: Send the day-before reminders due now (SMS with the parking's text, email, push), once each, then retry the SMS waiting for an operator's phone
  *     tags: [Cron]
+ *     description: >
+ *       "Requires Authorization: Bearer <CRON_SECRET>." Each parking chooses its time (« SMS de la veille »,
+ *       S-A + S-B, 06/10/2026), so an external scheduler calls this every 15 minutes; Vercel Hobby only
+ *       runs it once a day, as a fallback. Nothing leaves between 22:00 and 07:00 (local), and a reminder
+ *       never leaves twice, however often this is called.
  *     responses:
  *       200:
- *         description: "{ checked, sent }"
+ *         description: "{ checked, sent, sms: { operators, checked, sent, abandoned } }"
  * /internal/cron/purge-expired-tokens:
  *   get:
  *     summary: Delete expired staff tokens, end lapsed arrival signals and shuttle trips, retry or abandon waiting SMS, purge the SMS outbox after 30 days, erase car positions and push phones 2 days after the return, anonymise bookings 12 months after it (every night)

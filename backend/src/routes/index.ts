@@ -10,6 +10,7 @@ import { PaymentRoute } from './payment.route';
 import { PlatformRoute } from './platform.route';
 import { PublicBookingRoute } from './public-booking.route';
 import { PublicRoute } from './public.route';
+import { ReminderRoute } from './reminder.route';
 import { ReservationRoute } from './reservation.route';
 import { ReturnRoute } from './return.route';
 import { SmsRoute } from './sms.route';
@@ -31,6 +32,7 @@ const AppRoutes = [
   new PaymentRoute(),
   new SmsRoute(),
   new InboundEmailRoute(),
+  new ReminderRoute(),
   new CronRoute(),
 ];
 

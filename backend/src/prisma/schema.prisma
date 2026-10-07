@@ -218,6 +218,8 @@ model Parking {
   plan           ParkingPlan?
   spots          ParkingSpot[]
   stops          ShuttleStop[]
+  reminderSettings ReminderSettings?
+  reminderEvenings ReminderEvening[]
 
   @@index([operatorId])
   @@map("parkings")
@@ -505,6 +507,9 @@ model Reservation {
   // The traveller's message thread (B, 06/10/2026), each sent once: the day-before reminder, "votre
   // voiture est garée", the closing message after the handover.
   reminderSentAt          DateTime?
+  // The day-before SMS (S-A + S-B, 06/10/2026): left out by a staff member ("Ne pas envoyer").
+  reminderExcludedAt      DateTime?
+  reminderExcludedById    String?
   parkedNotifiedAt        DateTime?
   closingSentAt           DateTime?
   // Retention (privacy policy, 06/10/2026): 12 months after the return, the nightly cron removes who
@@ -999,4 +1004,42 @@ model SmsOutbox {
   @@index([operatorId, status])
   @@index([createdAt])
   @@map("sms_outbox")
+}
+
+// The day-before SMS of a parking (« SMS de la veille », S-A + S-B, 06/10/2026). No row: on, 18:00,
+// Plazo's text. The reminder (SMS, email, push) leaves at that local time the evening before the
+// drop-off; see src/domain/day-before-sms.ts.
+model ReminderSettings {
+  id          String   @id @default(cuid())
+  parkingId   String   @unique
+  enabled     Boolean  @default(true)
+  // Local "HH:MM", every half hour from 16:00 to 21:30 (CHECK in the migration).
+  sendTime    String   @default("18:00")
+  // The parking's own text with its variables ({prénom}, {date}…); null: Plazo's text.
+  template    String?
+  updatedById String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @default(now()) @updatedAt
+
+  parking Parking @relation(fields: [parkingId], references: [id], onDelete: Cascade)
+
+  @@map("reminder_settings")
+}
+
+// One evening that differs from the parking's usual rule: another time, or paused.
+model ReminderEvening {
+  id          String   @id @default(cuid())
+  parkingId   String
+  // Local date of the evening ("YYYY-MM-DD"); its reminders are for the next day's drop-offs.
+  date        String
+  sendTime    String?
+  paused      Boolean  @default(false)
+  updatedById String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @default(now()) @updatedAt
+
+  parking Parking @relation(fields: [parkingId], references: [id], onDelete: Cascade)
+
+  @@unique([parkingId, date])
+  @@map("reminder_evenings")
 }

@@ -262,17 +262,6 @@ ${manageUrl ? `<p style="margin:20px 0 0"><a href="${escapeHtml(manageUrl)}" sty
   return { subject, html, text };
 }
 
-/** "Plazo : à demain ! Dépôt 06:30, Parking Démo LYS, 12 rue… Parking : 04 72…" */
-export function reminderSms(productName: string, booking: PublicBooking, manageUrl: string | null): string {
-  const where = booking.parking.address ? `, ${booking.parking.address}` : '';
-  return (
-    `${productName} : à demain ! Dépôt le ${formatLocalShort(booking.arrivalAt)} à ${booking.parking.title}${where}.` +
-    (booking.parking.shuttleMinutes ? ` Navette ${booking.parking.shuttleMinutes} min jusqu'au terminal.` : '') +
-    (booking.parking.phone ? ` Parking : ${booking.parking.phone}.` : '') +
-    (manageUrl ? ` ${manageUrl}` : '')
-  );
-}
-
 /** After the handover: thanks, the stay's summary, the amount paid. */
 export function closingEmail(productName: string, booking: PublicBooking, returnedAtLocal: string): EmailMessage {
   const subject = `Merci, et à bientôt · ${booking.parking.title}`;
