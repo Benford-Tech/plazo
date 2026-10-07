@@ -4,7 +4,7 @@ import maplibregl from "maplibre-gl";
 import "maplibre-gl/dist/maplibre-gl.css";
 import { useEffect, useRef, useState } from "react";
 import { fr } from "@/lib/fr";
-import { shuttleMarkerHtml, type ShuttleTone } from "@/lib/shuttle-icon";
+import { shuttleMarkerHtml, shuttleSvg, type ShuttleTone } from "@/lib/shuttle-icon";
 import type { LatLng } from "@/lib/types";
 
 /** IGN Géoplateforme "Plan IGN v2" raster tiles (WMTS, Web Mercator): open licence, no key. */
@@ -18,6 +18,8 @@ export interface MapParking {
   label: string;
   bookable: boolean;
   location: LatLng;
+  /** I-C: the parking's shuttles are followed live (a minibus in the pill). */
+  live?: boolean;
 }
 
 /** A shuttle on the road (K-A): where it is, where it goes and whose it is — nothing else. */
@@ -199,8 +201,13 @@ export default function ResultsMap({
       const pill = document.createElement("button");
       pill.type = "button";
       pill.className = `${PILL} ${p.bookable ? BOOKABLE : UNAVAILABLE} cursor-pointer focus-visible:outline-3 focus-visible:outline-offset-2 focus-visible:outline-accent`;
-      pill.textContent = p.label;
-      pill.setAttribute("aria-label", fr.map.marker(p.title, p.label));
+      if (p.live) {
+        const bus = document.createElement("span");
+        bus.className = "mr-1 inline-flex align-[-2px]";
+        bus.innerHTML = shuttleSvg(14);
+        pill.append(bus, document.createTextNode(p.label));
+      } else pill.textContent = p.label;
+      pill.setAttribute("aria-label", p.live ? fr.map.markerLive(p.title, p.label) : fr.map.marker(p.title, p.label));
       pill.dataset.active = String(p.slug === selectedRef.current);
       pill.addEventListener("mouseenter", () => highlight(markers, p.slug));
       pill.addEventListener("focus", () => highlight(markers, p.slug));

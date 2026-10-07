@@ -49,6 +49,9 @@ abstract class SearchResultModel with _$SearchResultModel {
     int? priceCents,
     /// Fictional parking of the demo data: shown like the others, with a small "Démo" tag.
     @Default(false) bool isDemo,
+
+    /// R-B + I-C (07/10/2026): the parking shows its shuttles to the travellers ("EN DIRECT").
+    @Default(false) bool liveShuttle,
   }) = _SearchResultModel;
 
   const SearchResultModel._();

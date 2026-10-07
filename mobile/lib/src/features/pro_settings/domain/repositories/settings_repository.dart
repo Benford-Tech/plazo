@@ -19,6 +19,7 @@ abstract class SettingsRepository {
   Future<Either<Failure, void>> changePassword(String currentPassword, String newPassword);
   Future<Either<Failure, ParkingSettingsModel>> parking();
   Future<Either<Failure, ParkingSettingsModel>> updateParking(String id, ParkingSettingsInput input);
+  Future<Either<Failure, ParkingSettingsModel>> setShuttleTracking(String id, String tracking);
   Future<Either<Failure, SmsSettingsModel>> smsSettings();
   Future<Either<Failure, SmsSettingsModel>> saveSmsSettings(SmsSettingsInput input);
   Future<Either<Failure, SmsTestModel>> testSms(String to);
@@ -59,6 +60,9 @@ class SettingsRepositoryImpl implements SettingsRepository {
 
   @override
   Future<Either<Failure, ParkingSettingsModel>> updateParking(String id, ParkingSettingsInput input) => _source.updateParking(id, input).makeRequest();
+
+  @override
+  Future<Either<Failure, ParkingSettingsModel>> setShuttleTracking(String id, String tracking) => _source.setShuttleTracking(id, tracking).makeRequest();
 
   @override
   Future<Either<Failure, SmsSettingsModel>> smsSettings() => _source.smsSettings().makeRequest();

@@ -2,6 +2,7 @@ import Link from "next/link";
 import { DemoBadge } from "./DemoBadge";
 import { FactChips, ResultBadges } from "./Highlights";
 import { Photo } from "./Photo";
+import { ShuttleIcon } from "@/lib/shuttle-icon";
 import { fr } from "@/lib/fr";
 import { type Badge, factChips, perDayLabel } from "@/lib/highlights";
 import { formatEuros } from "@/lib/money";
@@ -45,7 +46,10 @@ export function ResultCard({
         compact ? "sm:grid-cols-[150px_1fr]" : "md:grid-cols-[210px_1fr_190px]"
       } bg-white shadow-[0_18px_40px_-22px_rgba(30,20,10,.35)] ${highlighted ? "border-2 border-accent" : ""} ${bookable ? "" : "opacity-60"}`}
     >
-      <Photo src={result.photo} alt={result.title} className={`h-[110px] w-full ${compact ? "sm:h-full sm:min-h-[132px]" : "md:h-full md:min-h-[170px]"}`} />
+      <div className="relative">
+        <Photo src={result.photo} alt={result.title} className={`h-[110px] w-full ${compact ? "sm:h-full sm:min-h-[132px]" : "md:h-full md:min-h-[170px]"}`} />
+        {result.liveShuttle && <LiveShuttlePill />}
+      </div>
       <div className={compact ? "flex min-w-0 flex-col" : "contents"}>
         <div className={`flex flex-col gap-1.5 px-4 pt-3 ${compact ? "sm:px-4 sm:pt-3.5" : "md:px-[18px] md:py-4"}`}>
           <ResultBadges badges={badges} />
@@ -86,5 +90,24 @@ export function ResultCard({
         </div>
       </div>
     </article>
+  );
+}
+
+/** I-C (07/10/2026): "EN DIRECT" on the photo of a parking whose shuttles are followed live. */
+export function LiveShuttlePill() {
+  return (
+    <span
+      data-testid="live-shuttle"
+      title={fr.results.liveTitle}
+      className="absolute bottom-2.5 left-2.5 inline-flex items-center gap-1.5 rounded-full bg-white py-1 pr-2.5 pl-2 text-xs font-extrabold tracking-[0.3px] uppercase shadow-[0_6px_16px_-8px_rgba(30,20,10,.6)]"
+    >
+      <span className="relative flex size-2">
+        <span className="absolute inline-flex size-full animate-ping rounded-full bg-accent opacity-60 motion-reduce:hidden" />
+        <span className="relative inline-flex size-2 rounded-full bg-accent" />
+      </span>
+      {fr.results.live}
+      <ShuttleIcon size={15} />
+      <span className="sr-only"> : {fr.results.liveTitle}</span>
+    </span>
   );
 }

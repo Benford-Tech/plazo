@@ -14,6 +14,7 @@ import {
   publishListing,
   resetDatabase,
   setupOperator,
+  shareShuttlesWithTravellers,
 } from './utils/helpers';
 
 /** Shuttle, 05/10/2026: the vehicle of the day (V-A), the stops (D-A), the live map (P-A), the pushes (N-A). */
@@ -59,6 +60,7 @@ afterAll(() => prisma.$disconnect());
 async function setup() {
   const op = await setupOperator();
   await onboardOperator(op.operator.id);
+  await shareShuttlesWithTravellers(op.token, op.parking.id);
   await api()
     .put('/api/internal/pricing')
     .set(auth(op.token))

@@ -271,6 +271,28 @@ Hors MVP : optimisation d'itinéraire.
   départs (arrivée prévue dans la fenêtre, pas encore sur place), `GET /internal/shuttle/staying` (`days[]` par jour de
   retour local, `returnedToday`).
 
+#### Suivi des navettes réglable et mention « En direct » (décisions R-B + I-C du 07/10/2026, mis en œuvre)
+
+- **Pourquoi** : tous les partenaires ne veulent pas que leurs navettes soient suivies. Chaque parking choisit, dans la page
+  Parking de l'espace pro (bloc « Suivi des navettes », gérants) ou dans Plus › Réglages du parking de Plazo Pro :
+  - **Pas de suivi** (`off`) : le téléphone du chauffeur ne partage pas sa position ; le trajet se démarre et se termine
+    quand même (clients cochés, statuts, pushs de départ et de fin), mais sans carte. L'API refuse toute position
+    (409 `shuttle_tracking_off`), l'app et le web ne demandent pas la localisation.
+  - **Équipe seulement** (`team`) : position partagée avec l'équipe (carte des navettes en direct, tableau de bord), jamais
+    avec les voyageurs : pas de position, de distance ni de délai dans la réservation, pas de bloc « Navette » du séjour, pas
+    de push « Votre navette est là », pas de navette sur la carte d'accueil du site et de l'app.
+  - **Équipe et clients** (`everyone`, recommandé) : comme jusqu'ici ; la position est aussi montrée aux voyageurs.
+- **Toujours visibles**, quel que soit le niveau : le véhicule, le prénom du chauffeur, l'heure de départ et le push
+  « Votre navette est partie ».
+- **Valeurs** : `Parking.shuttleTracking` (`off` | `team` | `everyone`), `team` pour un nouveau parking (rien n'est montré
+  aux voyageurs sans choix explicite) ; les parkings existants au 07/10/2026 et les parkings de démonstration sont à
+  `everyone` (comportement inchangé). `PUT /internal/parkings/:id/shuttle-tracking` (`parking:manage`, journalisé
+  `parking.settings_updated`). Les listes du chauffeur (`pickups`, `departures`) et le trajet portent `sharePosition`.
+- **I-C « En direct » dans la recherche** (règle 1 : dès que le parking choisit « Équipe et clients », et que sa fiche
+  propose la navette) : `liveShuttle` sur chaque résultat et sur la fiche ; pilule blanche « EN DIRECT » (point animé,
+  minibus) en bas à gauche de la photo du résultat, minibus devant le prix sur la pastille de la carte des résultats,
+  site et app ; libellé d'accessibilité « Navette suivie en direct : vous la verrez arriver dans votre réservation ».
+
 #### Position GPS de la voiture (décision du 06/10/2026, mis en œuvre)
 
 - **Qui** : la personne qui gare la voiture. Le voyageur, s'il se gare lui-même, depuis la carte « Ma voiture » de sa
@@ -390,7 +412,7 @@ Condition de lancement : 3 à 5 loueurs actifs sur au moins un même aéroport (
 ### Écrans grand public
 
 1. **Accueil et recherche** : aéroport, dates et heures d'arrivée et de retour, nombre de passagers.
-2. **Résultats** : liste et carte, filtres (navette, voiturier, couvert, recharge électrique, annulation gratuite, note), tri (prix, distance, avis). Le prix affiché est le prix total du séjour, tout compris.
+2. **Résultats** : liste et carte, filtres (navette, voiturier, couvert, recharge électrique, annulation gratuite, note), tri (prix, distance, avis). Le prix affiché est le prix total du séjour, tout compris. Les parkings qui montrent leurs navettes aux voyageurs portent « EN DIRECT » sur la photo et un minibus sur leur pastille de carte (I-C, 07/10/2026).
 3. **Fiche parking** : photos, description, services, distance et durée de navette, horaires, conditions d'annulation, avis, politique de retour (appel, SMS, bouton « Je suis prêt »).
 4. **Récapitulatif et paiement** : coordonnées, plaque, n° de vol retour, options, paiement par carte (et Apple Pay / Google Pay), conditions générales.
 5. **Confirmation et billet** : email et SMS, QR code ou code d'entrée, instructions d'arrivée, lien de gestion.

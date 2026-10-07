@@ -125,6 +125,27 @@ void main() {
     await other.close();
   });
 
+  test('suivi désactivé par le parking (R-B) : le trajet part sans demander ni partager la position', () async {
+    when(() => pickups(any())).thenAnswer(
+      (_) async => Right(PickupsModel(serverTime: now, meetingPoint: meetingT1, sharePosition: false, rows: [pickup('r1', 'Camille Martin', flight: landedFlight())])),
+    );
+    final trip = staffTrip(passengers: const [TripPassengerModel(reservationId: 'r1', reference: 'Rr1', customerName: 'Camille Martin', passengers: 2, plate: 'AB-123-CD')]).copyWith(sharePosition: false);
+    when(() => start(any())).thenAnswer((_) async => Right(trip));
+    final bloc = await opened();
+    expect(bloc.state.sharePosition, isFalse);
+    bloc.add(const ShuttlePassengerToggled('r1'));
+    bloc.add(const ShuttleVehicleChosen(TripVehicleChoice(vehicleId: 'v1')));
+    bloc.add(const ShuttleStartRequested());
+    await bloc.stream.firstWhere((s) => s.running);
+    await settle();
+    expect(bloc.state.tracking, isFalse);
+    expect(bloc.state.sharePosition, isFalse);
+    verifyNever(() => location.requestAccess());
+    verifyNever(() => location.positions(background: any(named: 'background'), notice: any(named: 'notice')));
+    verifyNever(() => send(any()));
+    await bloc.close();
+  });
+
   test('liste les retours groupés par terminal, sans demander la position', () async {
     final bloc = await opened();
     expect(bloc.state.groups.map((g) => g.terminal), ['Terminal 1', 'Terminal 2']);

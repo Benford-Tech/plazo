@@ -354,7 +354,7 @@ export function privacyDoc(company: Company = COMPANY, email: string = SUPPORT_E
             "l’IGN (Géoplateforme), dont les serveurs fournissent les fonds de carte à votre navigateur ou à l’application.",
           ],
           "Les autorités, uniquement lorsque la loi l’exige.",
-          "Pendant un trajet de navette, les passagers concernés voient le prénom du chauffeur, le véhicule et sa position ; les autres voyageurs ne voient jamais vos informations.",
+          "Pendant un trajet de navette, les passagers concernés voient le prénom du chauffeur, le véhicule et, si le parking a choisi de la montrer, sa position ; les autres voyageurs ne voient jamais vos informations.",
         ],
       },
       {
@@ -416,7 +416,7 @@ export function privacyDoc(company: Company = COMPANY, email: string = SUPPORT_E
         id: "professionnels",
         title: "10. Comptes des professionnels",
         blocks: [
-          `Pour les équipes des parkings qui utilisent l’espace pro et l’application ${p} Pro, ${p} traite : prénom et nom, e-mail, téléphone facultatif, rôle, poste et véhicule du jour, préférences de notifications, mot de passe haché, sessions de connexion (30 jours au plus) et historique des actions sur les réservations. Pendant un trajet de navette, seule la dernière position du chauffeur est gardée ; elle est effacée à la fin du trajet.`,
+          `Pour les équipes des parkings qui utilisent l’espace pro et l’application ${p} Pro, ${p} traite : prénom et nom, e-mail, téléphone facultatif, rôle, poste et véhicule du jour, préférences de notifications, mot de passe haché, sessions de connexion (30 jours au plus) et historique des actions sur les réservations. Pendant un trajet de navette, si le parking a activé le suivi, seule la dernière position du chauffeur est gardée ; elle est effacée à la fin du trajet. Le parking choisit qui la voit : personne (pas de suivi), son équipe seulement, ou aussi les voyageurs.`,
           `Ces données servent à fournir l’espace pro au parking, qui décide de son organisation ; elles sont gardées tant que le compte existe, puis le temps des obligations légales. Les informations de l’entreprise et du gérant fournies à l’inscription servent au contrat entre le parking et ${p}. Les droits ci-dessus s’exercent de la même façon.`,
         ],
       },

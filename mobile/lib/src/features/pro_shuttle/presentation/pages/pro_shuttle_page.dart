@@ -113,7 +113,13 @@ class ProShuttlePage extends StatelessWidget implements AutoRouteWrapper {
         onStart: (wave) => bloc.add(ShuttleWaveChosen(direction: wave.direction, stopId: wave.stopId, reservationIds: wave.members.map((m) => m.reservationId).toList())),
       ),
       const SizedBox(height: 12),
-      if (!state.running) Text(state.dropoff ? 'shuttle.intro_dropoff'.tr() : 'shuttle.intro'.tr(), style: AppText.muted()),
+      if (!state.running)
+        Text(
+          state.sharePosition
+              ? (state.dropoff ? 'shuttle.intro_dropoff'.tr() : 'shuttle.intro'.tr())
+              : (state.dropoff ? 'shuttle.intro_dropoff_no_share'.tr() : 'shuttle.intro_no_share'.tr()),
+          style: AppText.muted(),
+        ),
       const SizedBox(height: 10),
       _DirectionToggle(direction: state.direction, enabled: !state.running, onChanged: (d) => bloc.add(ShuttleDirectionChanged(d))),
       const SizedBox(height: 10),
@@ -423,7 +429,14 @@ class _RunningCard extends StatelessWidget {
             children: [
               const LiveDot(color: AppColors.peach),
               const SizedBox(width: 6),
-              Expanded(child: Text(trip.dropoff ? 'shuttle.running_dropoff'.tr() : 'shuttle.running'.tr(), style: AppText.strong(size: 15, color: AppColors.peach))),
+              Expanded(
+                child: Text(
+                  trip.sharePosition
+                      ? (trip.dropoff ? 'shuttle.running_dropoff'.tr() : 'shuttle.running'.tr())
+                      : (trip.dropoff ? 'shuttle.running_dropoff_no_share'.tr() : 'shuttle.running_no_share'.tr()),
+                  style: AppText.strong(size: 15, color: AppColors.peach),
+                ),
+              ),
             ],
           ),
           const SizedBox(height: 6),

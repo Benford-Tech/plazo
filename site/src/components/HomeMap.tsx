@@ -67,6 +67,7 @@ export function pinsOf(results: SearchResult[]): MapParking[] {
       label: r.available && r.priceCents !== null ? formatShortEuros(r.priceCents) : r.priceCents === null ? fr.map.noPrice : fr.map.full,
       bookable: r.available && r.priceCents !== null,
       location: r.location!,
+      live: r.liveShuttle === true,
     }));
 }
 

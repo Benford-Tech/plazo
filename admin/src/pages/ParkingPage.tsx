@@ -7,6 +7,7 @@ import { InboundEmailCard } from "@/components/parking/InboundEmailCard";
 import { ParkingTabs } from "@/components/parking/ParkingTabs";
 import { ReturnMeetingPointForm } from "@/components/parking/ReturnMeetingPointForm";
 import { ShuttleStops } from "@/components/parking/ShuttleStops";
+import { ShuttleTrackingCard } from "@/components/parking/ShuttleTrackingCard";
 import { ShuttleVehicles } from "@/components/parking/ShuttleVehicles";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
@@ -168,6 +169,7 @@ export default function ParkingPage() {
       </Card>
       <InboundEmailCard />
       <ReturnMeetingPointForm />
+      {parking && <ShuttleTrackingCard parking={parking} />}
       <ShuttleStops />
       <ShuttleVehicles />
       <FlightCheckCard />

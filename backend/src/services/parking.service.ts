@@ -1,8 +1,9 @@
 import httpStatus from 'http-status';
 import { Container, Service } from 'typedi';
-import prisma, { Parking } from '@/database';
+import prisma, { Parking, ShuttleTracking } from '@/database';
 import { bookableCapacity } from '@/domain/capacity';
 import { can } from '@/domain/roles';
+import { sharesPosition } from '@/domain/shuttle-tracking';
 import { UpdateParkingDto } from '@/dtos/parking.dto';
 import { AuthenticatedStaff } from '@/interfaces/auth.interface';
 import { HttpException } from '@/utils/httpException';
@@ -79,5 +80,37 @@ export class ParkingService {
     // The new address's position for the site's map (never fails the save).
     if (saved.addressChanged) await this.locations.locate(saved.summary, SAVE_GEOCODE_TIMEOUT_MS);
     return saved.summary;
+  }
+
+  /** R-B (07/10/2026): who sees the position of the parking's shuttles (managers, audited). */
+  public async setShuttleTracking(actor: AuthenticatedStaff, parkingId: string, tracking: ShuttleTracking): Promise<ParkingSummary> {
+    if (!can(actor.role, 'parking:manage')) {
+      throw new HttpException(httpStatus.FORBIDDEN, 'You do not have access to this action', 'forbidden');
+    }
+    return prisma.$transaction(async tx => {
+      const before = await tx.parking.findFirst({ where: { id: parkingId, operatorId: actor.operatorId } });
+      if (!before) throw new HttpException(httpStatus.NOT_FOUND, 'Parking not found', 'not_found');
+      const after = await tx.parking.update({ where: { id: parkingId }, data: { shuttleTracking: tracking } });
+      // "Pas de suivi": the trips under way forget the position they already sent.
+      if (!sharesPosition(tracking)) {
+        await tx.shuttleTrip.updateMany({
+          where: { parkingId, status: 'running' },
+          data: { lat: null, lng: null, accuracyM: null, positionRecordedAt: null },
+        });
+      }
+      if (before.shuttleTracking !== tracking) {
+        await this.audit.record(
+          actor,
+          {
+            action: 'parking.settings_updated',
+            entityType: 'parking',
+            entityId: parkingId,
+            details: { shuttleTracking: { from: before.shuttleTracking, to: tracking } },
+          },
+          tx,
+        );
+      }
+      return summarize(after);
+    });
   }
 }

@@ -69,6 +69,9 @@ abstract class ShuttleState with _$ShuttleState {
   /// The list of the current direction is loaded.
   bool get loaded => dropoff ? departures != null : pickups != null;
 
+  /// R-B: the parking shares its shuttles' position (the list says so before a trip, the trip once it runs).
+  bool get sharePosition => trip != null && trip!.running ? trip!.sharePosition : (dropoff ? departures?.sharePosition : pickups?.sharePosition) ?? true;
+
   /// Departure rows that can be put on a trip to the terminal (the expected ones wait).
   List<DepartureRowModel> get selectableDepartures => (departures?.rows ?? const []).where((r) => r.tripId == null && !r.expected).toList();
 
