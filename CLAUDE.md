@@ -151,6 +151,11 @@ Ne construire QUE ce qui règle la douleur n°1 du client.
      dessus dans chaque place occupée (couleur de l'état), plaque + nom + retour dès le zoom 19, file de l'arrivée survolée
      avec la place proposée cerclée d'orange et les voitures à sortir en ambre, légende « Proposée · À sortir avant un
      retour · Manœuvre ».
+     **D-B « Par durée » (07/10/2026)** : pilules « Par état · Par durée » en tête de l'Occupation ; par durée, chaque voiture
+     prend la couleur de la classe de son séjour (court jaune pâle, moyen citron, long ocre, comme les zones du plan ; gris
+     hors classe), les places libres montrent leur zone de séjour en pâle, légende adaptée ; la fiche d'une place dit « N nuits ·
+     Moyen séjour · place en zone court séjour » ; le serveur ajoute `occupant.nights` et `occupant.stayClass` au tableau
+     (`OccupationService.board`, seuils du plan).
    - Retrouver un véhicule en quelques secondes (plaque, emplacement, emplacement des clés).
    - Si voiturier : suivi des clés confiées.
 

@@ -65,6 +65,8 @@ const occupant = {
   keyHook: "17",
   onSite: true,
   leavesToday: false,
+  nights: 7,
+  stayClass: "medium" as const,
 };
 const board: OccupationBoard = {
   date: "2026-10-04",
@@ -203,11 +205,19 @@ describe("occupation (bloc 2, étape 2)", () => {
   it("un clic sur une place montre son occupant ; « Choisir sur le plan » puis un clic place le véhicule", async () => {
     renderPage();
     await screen.findByTestId("occupation-stats");
+    // D-B: the plan reads by state, or by stay length with its own legend.
+    expect(screen.getByText("Départ aujourd'hui")).toBeInTheDocument();
+    fireEvent.click(screen.getByRole("radio", { name: "Par durée" }));
+    expect(screen.getByText("Long séjour")).toBeInTheDocument();
+    expect(screen.queryByText("Départ aujourd'hui")).not.toBeInTheDocument();
     fireEvent.click(screen.getByText("click-spot-1"));
     const card = await screen.findByTestId("spot-card");
     expect(card).toHaveTextContent("A-01-01");
     expect(card).toHaveTextContent("Mme Laurent");
     expect(card).toHaveTextContent("Clés : crochet 17");
+    expect(screen.getByTestId("spot-stay")).toHaveTextContent(
+      "7 nuits · Moyen séjour",
+    );
     fireEvent.click(
       screen.getByRole("button", { name: "Choisir sur le plan" }),
     );

@@ -78,7 +78,8 @@ export interface SpotState {
   depth: number | null;
   fileKey: string | null;
   /** The vehicle on it now (on site), else the next booking placed on it. */
-  occupant: (Occupant & { onSite: boolean; leavesToday: boolean }) | null;
+  /** D-B (07/10/2026): nights of the stay and its class, for the occupation plan coloured by stay. */
+  occupant: (Occupant & { onSite: boolean; leavesToday: boolean; nights: number; stayClass: StayClass }) | null;
 }
 
 /**
@@ -124,6 +125,7 @@ export class OccupationService {
       }
       return key;
     };
+    const staySettings = settingsOf({ settings: (plan?.settings as object) ?? {} });
     const states: SpotState[] = spots.map(s => {
       const o = bySpot.get(s.id) ?? null;
       return {
@@ -138,7 +140,15 @@ export class OccupationService {
         stayClass: s.stayClass ?? null,
         depth: s.depth ?? null,
         fileKey: fileKeyOf(s),
-        occupant: o ? { ...o, onSite: ON_SITE.includes(o.status), leavesToday: o.returnAt >= start && o.returnAt < end } : null,
+        occupant: o
+          ? {
+              ...o,
+              onSite: ON_SITE.includes(o.status),
+              leavesToday: o.returnAt >= start && o.returnAt < end,
+              nights: nightsBetween(o.arrivalAt, o.returnAt, parking.timezone),
+              stayClass: stayClassForNights(nightsBetween(o.arrivalAt, o.returnAt, parking.timezone), staySettings),
+            }
+          : null,
       };
     });
     // Arrivals to place: on site without a spot, or booked for today and not placed yet.

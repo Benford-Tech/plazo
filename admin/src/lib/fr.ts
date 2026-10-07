@@ -1275,6 +1275,17 @@ export const fr = {
     search: "Rechercher un véhicule",
     searchPlaceholder: "Plaque, nom ou référence",
     noResult: "Aucun véhicule ne correspond.",
+    // D-B (07/10/2026): the plan read by stay length, the classes of the plan's stay zones.
+    mode: { state: "Par état", stay: "Par durée" },
+    stayLegend: {
+      short: "Court séjour",
+      medium: "Moyen séjour",
+      long: "Long séjour",
+      freeZone: "Libre : sa zone en pâle",
+      none: "Hors zone de séjour",
+    },
+    stayLine: (nights: number, stay: string, zone: string | null) =>
+      `${nights} nuit${nights > 1 ? "s" : ""} · ${stay}${zone ? ` · place en ${zone}` : ""}`,
     legend: {
       occupied: "Occupée",
       leaving: "Départ aujourd'hui",

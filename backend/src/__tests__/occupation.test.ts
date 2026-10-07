@@ -81,6 +81,9 @@ describe('occupation (bloc 2, step 2)', () => {
     expect(after.body.arrivals[0].suggestions[0].code).toBe('A-01-02');
     const taken = after.body.spots.find((s: { code: string }) => s.code === 'A-01-01');
     expect(taken.occupant).toMatchObject({ plate: 'GK-318-PX', onSite: true, leavesToday: true, keyHook: '17' });
+    // D-B: the stay's nights and class travel with the occupant, for the plan coloured by stay.
+    expect(taken.occupant.nights).toBeGreaterThanOrEqual(1);
+    expect(['short', 'medium', 'long']).toContain(taken.occupant.stayClass);
 
     const found = await api().get(`/api/internal/parkings/${parking.id}/occupation/search?q=gk 318`).set(auth(token));
     expect(found.body.results).toHaveLength(1);

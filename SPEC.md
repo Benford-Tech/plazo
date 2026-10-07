@@ -218,6 +218,15 @@ reçoivent les codes `M-01`, `M-02`…, la zone où elles tombent, le type chois
 la capacité. Elles survivent à « Régénérer » (qui ne remplace que les places générées) et se retirent avec l'outil
 « Supprimer » (sur une place générée, ce même outil la désactive). Sur la carte, un bord blanc tireté les distingue.
 
+#### Occupation par durée de séjour (décision D-B du 07/10/2026, mis en œuvre)
+
+En tête de l'Occupation, deux pilules : « Par état » (la vue habituelle) et « Par durée ». Par durée, chaque voiture prend
+la couleur de la classe de son séjour, calculée avec les seuils du plan (court jusqu'à 3 nuits, moyen jusqu'à 8, long
+au-delà, réglables) : jaune pâle, citron, ocre, les mêmes couleurs que les zones de séjour du plan ; gris quand le plan n'a
+pas de zones de séjour. Les places libres montrent leur zone en pâle. On repère ainsi d'un coup d'œil une voiture de long
+séjour garée dans une zone courte, celle qui bloquera une file. La fiche d'une place occupée indique « N nuits · Moyen
+séjour · place en zone court séjour ».
+
 #### File triée : zéro déplacement (décision O-A du 06/10/2026, mis en œuvre)
 
 - Sur un parking « voiturier · peigne » (ex-files depuis le bord), la voiture au fond d'une file repart en dernier. Une file est
