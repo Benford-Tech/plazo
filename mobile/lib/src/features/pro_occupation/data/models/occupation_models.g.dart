@@ -28,6 +28,8 @@ _OccupantModel _$OccupantModelFromJson(Map<String, dynamic> json) =>
       carNote: json['carNote'] as String?,
       onSite: json['onSite'] as bool? ?? false,
       leavesToday: json['leavesToday'] as bool? ?? false,
+      nights: (json['nights'] as num?)?.toInt(),
+      stayClass: json['stayClass'] as String?,
       spot: json['spot'] == null
           ? null
           : SpotRefModel.fromJson(json['spot'] as Map<String, dynamic>),
@@ -58,6 +60,8 @@ Map<String, dynamic> _$OccupantModelToJson(_OccupantModel instance) =>
       'carNote': instance.carNote,
       'onSite': instance.onSite,
       'leavesToday': instance.leavesToday,
+      'nights': instance.nights,
+      'stayClass': instance.stayClass,
       'spot': instance.spot,
       'suggestions': instance.suggestions,
     };

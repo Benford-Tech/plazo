@@ -34,6 +34,16 @@ Color _tone(SpotStateModel s) {
   return _booked;
 }
 
+/// D-B (07/10/2026): the plan read by stay length, in the plan's stay-zone colours.
+const _stayColours = <String, Color>{'short': Color(0xFFFFF3B0), 'medium': Color(0xFFA3E635), 'long': Color(0xFFB58900)};
+const _noStay = Color(0xFF9A9A94);
+
+Color _stayTone(SpotStateModel s) {
+  if (!s.active) return _noStay;
+  final key = s.occupant != null ? s.occupant!.stayClass : s.stayClass;
+  return _stayColours[key] ?? (s.occupant == null ? Colors.white : _noStay);
+}
+
 /// Bloc 2, step "Occupation" in the app (04/10/2026): the plan in colours, a vehicle by its
 /// plate (spot in large type, key hook), the arrivals to place with a suggested spot.
 @RoutePage()
@@ -476,12 +486,20 @@ Future<void> showSpotPicker(BuildContext context, ProOccupationState state, Occu
   );
 }
 
-class _MiniMap extends StatelessWidget {
+class _MiniMap extends StatefulWidget {
   const _MiniMap({required this.state});
   final ProOccupationState state;
 
   @override
+  State<_MiniMap> createState() => _MiniMapState();
+}
+
+class _MiniMapState extends State<_MiniMap> {
+  bool _byStay = false;
+
+  @override
   Widget build(BuildContext context) {
+    final state = widget.state;
     final spots = state.spots;
     if (spots.isEmpty) return Text('occupation.no_plan'.tr(), style: AppText.muted());
     final all = spots.expand((s) => s.geometry).toList();
@@ -507,8 +525,9 @@ class _MiniMap extends StatelessWidget {
                 for (final s in spots)
                   Polygon(
                     points: s.geometry.map((p) => LatLng(p[1], p[0])).toList(),
-                    color: _tone(s).withValues(alpha: s.occupant == null && s.active ? 0.15 : 0.7),
-                    borderColor: _tone(s).withValues(alpha: s.occupant == null ? 0.6 : 1),
+                    // By stay, a free spot shows its own zone a little stronger than the see-through default.
+                    color: (_byStay ? _stayTone(s) : _tone(s)).withValues(alpha: s.occupant == null && s.active ? (_byStay && s.stayClass != null ? 0.35 : 0.15) : 0.7),
+                    borderColor: (_byStay ? _stayTone(s) : _tone(s)).withValues(alpha: s.occupant == null ? 0.6 : 1),
                     borderStrokeWidth: 1,
                   ),
               ],
@@ -518,15 +537,46 @@ class _MiniMap extends StatelessWidget {
         const SizedBox(height: 6),
         Wrap(
           spacing: 12,
+          runSpacing: 4,
+          crossAxisAlignment: WrapCrossAlignment.center,
           children: [
-            _Legend(color: _occupied, label: 'occupation.legend_occupied'.tr()),
-            _Legend(color: _leaving, label: 'occupation.legend_leaving'.tr()),
-            _Legend(color: _booked, label: 'occupation.legend_booked'.tr()),
+            _ModeChip(label: 'occupation.mode_state'.tr(), selected: !_byStay, onTap: () => setState(() => _byStay = false)),
+            _ModeChip(label: 'occupation.mode_stay'.tr(), selected: _byStay, onTap: () => setState(() => _byStay = true)),
+            if (_byStay) ...[
+              _Legend(color: _stayColours['short']!, label: 'occupation.stay_legend.short'.tr()),
+              _Legend(color: _stayColours['medium']!, label: 'occupation.stay_legend.medium'.tr()),
+              _Legend(color: _stayColours['long']!, label: 'occupation.stay_legend.long'.tr()),
+              _Legend(color: _noStay, label: 'occupation.stay_legend.none'.tr()),
+            ] else ...[
+              _Legend(color: _occupied, label: 'occupation.legend_occupied'.tr()),
+              _Legend(color: _leaving, label: 'occupation.legend_leaving'.tr()),
+              _Legend(color: _booked, label: 'occupation.legend_booked'.tr()),
+            ],
           ],
         ),
       ],
     );
   }
+}
+
+/// "Par état · Par durée": which reading the mini map gives.
+class _ModeChip extends StatelessWidget {
+  const _ModeChip({required this.label, required this.selected, required this.onTap});
+  final String label;
+  final bool selected;
+  final VoidCallback onTap;
+  @override
+  Widget build(BuildContext context) => InkWell(
+    onTap: onTap,
+    child: Container(
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+      decoration: BoxDecoration(
+        color: selected ? AppColors.action : Colors.transparent,
+        border: Border.all(color: selected ? AppColors.accent : AppColors.line),
+      ),
+      child: Text(label, style: AppText.strong(size: 11.5, color: selected ? const Color(0xFF0F2A14) : AppColors.ink)),
+    ),
+  );
 }
 
 class _Legend extends StatelessWidget {

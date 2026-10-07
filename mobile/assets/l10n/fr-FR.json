@@ -245,6 +245,14 @@
     "legend_occupied": "Occupée",
     "legend_leaving": "Départ aujourd'hui",
     "legend_booked": "Réservée",
+    "mode_state": "Par état",
+    "mode_stay": "Par durée",
+    "stay_legend": {
+      "short": "Court séjour",
+      "medium": "Moyen séjour",
+      "long": "Long séjour",
+      "none": "Hors zone de séjour"
+    },
     "no_plan": "Pas encore de plan : générez les places depuis « Plan du parking ».",
     "stay_zone": {
       "short": "zone court séjour",

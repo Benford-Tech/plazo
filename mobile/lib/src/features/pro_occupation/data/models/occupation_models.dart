@@ -28,6 +28,10 @@ abstract class OccupantModel with _$OccupantModel {
     @Default(false) bool onSite,
     @Default(false) bool leavesToday,
 
+    /// D-B (07/10/2026): nights of the stay and its class (short, medium, long), for the plan by stay.
+    int? nights,
+    String? stayClass,
+
     /// Search results carry the spot's code.
     SpotRefModel? spot,
 
