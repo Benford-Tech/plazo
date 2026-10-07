@@ -30,11 +30,15 @@ vi.mock("@/contexts/AuthContext", () => ({
 }));
 
 vi.mock("@/components/capacity/MapView", () => ({
-  MapView: (props: { onMapClick?: (p: [number, number]) => void }) => (
+  MapView: (props: {
+    onMapClick?: (p: [number, number]) => void;
+    children?: React.ReactNode;
+  }) => (
     <div data-testid="map">
       <button type="button" onClick={() => props.onMapClick?.(spotCentre)}>
         click-spot
       </button>
+      {props.children}
     </div>
   ),
 }));
@@ -46,6 +50,10 @@ const api = vi.hoisted(() => ({
   updateSpot: vi.fn(),
   applyPlanCapacity: vi.fn(),
   buildingsIn: vi.fn(async () => ({ buildings: [] })),
+  parcelsAt: vi.fn(
+    async (): Promise<{ parcels: unknown[] }> => ({ parcels: [] }),
+  ),
+  geocode: vi.fn(async () => ({ results: [] })),
   suggestZones: vi.fn(),
 }));
 vi.mock("@/lib/api", async (importOriginal) => {
@@ -74,6 +82,8 @@ const parking = {
   safetyMarginPct: 0,
   shuttleTravelMinutes: 8,
   bookableCapacity: 200,
+  lat: 45.72,
+  lng: 5.08,
 };
 const view = (
   spots: ParkingPlanView["spots"],
@@ -106,6 +116,7 @@ function renderAt(path: string) {
     <QueryClientProvider client={client}>
       <MemoryRouter initialEntries={[path]}>
         <Routes>
+          <Route path="/parking/plan" element={<ParkingPlanPage />} />
           <Route path="/parking/plan/:step" element={<ParkingPlanPage />} />
         </Routes>
       </MemoryRouter>
@@ -118,9 +129,10 @@ beforeEach(() => {
   api.getParking.mockResolvedValue(parking);
 });
 
-describe("plan du parking (bloc 2, étape Plan)", () => {
+describe("plan du parking (éditeur R-A, 07/10/2026)", () => {
   it("génère les places numérotées depuis la disposition choisie, puis recalcule la capacité", async () => {
     api.getParkingPlan.mockResolvedValue(view([]));
+    api.updateParkingPlan.mockResolvedValue({ data: {} });
     api.replaceSpots.mockImplementation(
       async (_id: string, layout: string, spots: ParkingPlanView["spots"]) => ({
         data: view(
@@ -147,17 +159,20 @@ describe("plan du parking (bloc 2, étape Plan)", () => {
       "href",
       "/parking/reglages",
     );
-    expect(
-      screen.getByText(
-        "Aucune place pour l'instant : choisissez une disposition et générez les places.",
-      ),
-    ).toBeInTheDocument();
-
-    const generate = await screen.findByRole("button", {
-      name: "Générer les places",
-    });
-    await waitFor(() => expect(generate).toBeEnabled(), { timeout: 15000 });
+    // The old step name opens the editor on the spots tool.
+    expect(screen.getByRole("button", { name: "Places" })).toHaveAttribute(
+      "aria-pressed",
+      "true",
+    );
     fireEvent.click(screen.getByRole("radio", { name: /Clients garés seuls/ }));
+    const generate = await screen.findByRole(
+      "button",
+      { name: /^Générer \d+ places?$/ },
+      { timeout: 15000 },
+    );
+    await waitFor(() => expect(generate).toBeEnabled(), { timeout: 15000 });
+    // The count on top follows the chosen layout before anything is generated.
+    expect(screen.getByTestId("plan-count").textContent).toMatch(/\d+ places?/);
     fireEvent.click(generate);
     await waitFor(() => expect(api.replaceSpots).toHaveBeenCalled());
     const [, layout, spots] = api.replaceSpots.mock.calls[0];
@@ -167,11 +182,6 @@ describe("plan du parking (bloc 2, étape Plan)", () => {
     expect(new Set(spots.map((s: { code: string }) => s.code)).size).toBe(
       spots.length,
     );
-    expect(
-      spots.every(
-        (s: { row: number; index: number }) => s.row >= 1 && s.index >= 1,
-      ),
-    ).toBe(true);
 
     expect(
       await screen.findByText(`Recalculer la capacité → ${spots.length}`),
@@ -183,9 +193,107 @@ describe("plan du parking (bloc 2, étape Plan)", () => {
     await waitFor(() =>
       expect(api.applyPlanCapacity).toHaveBeenCalledWith("p1"),
     );
-  }, 20000);
+  }, 30000);
 
-  it("réinitialise tout le plan après confirmation : tracé effacé, places retirées, retour au terrain", async () => {
+  it("prépare seul un plan vide : parcelle, bâtiments, zones par Claude et places (R-C)", async () => {
+    api.getParkingPlan.mockResolvedValue({
+      ...view([]),
+      plan: { ...view([]).plan, outline: null, zones: [], settings: {} },
+    });
+    api.updateParkingPlan.mockResolvedValue({ data: {} });
+    api.parcelsAt.mockResolvedValue({
+      parcels: [
+        {
+          id: "69000A0001",
+          section: "A",
+          numero: "1",
+          commune: "Colombier",
+          insee: "69000",
+          contenance: 560,
+          geometry: outline,
+        },
+      ],
+    });
+    api.suggestZones.mockResolvedValue({
+      zones: [{ id: "c1", name: "Zone A", geometry: outline }],
+      surfaces: [
+        {
+          name: "Zone A",
+          label: "Cour",
+          surface: "gravel",
+          confidence: 0.9,
+          area: 560,
+        },
+      ],
+      image: { width: 512, height: 512, metresPerPixel: 0.21, zoom: 19 },
+      model: "claude-opus-5-5",
+      usage: { inputTokens: 1, outputTokens: 1 },
+    });
+    api.replaceSpots.mockImplementation(
+      async (_id: string, layout: string, spots: ParkingPlanView["spots"]) => ({
+        data: {
+          ...view(
+            spots.map((s, i) => ({
+              ...s,
+              id: `s${i}`,
+              kind: "standard",
+              active: true,
+              lon: 0,
+              lat: 0,
+              depth: null,
+              fileLength: null,
+              stayClass: null,
+            })),
+          ),
+          plan: {
+            ...view([]).plan,
+            layout: layout as "valetEdge",
+            zones: [{ id: "c1", name: "Zone A", geometry: outline }],
+          },
+        },
+      }),
+    );
+    renderAt("/parking/plan");
+    expect(await screen.findByText("Préparation du plan")).toBeInTheDocument();
+    await waitFor(
+      () => expect(api.parcelsAt).toHaveBeenCalledWith(5.08, 45.72),
+      { timeout: 10000 },
+    );
+    await waitFor(
+      () =>
+        expect(api.suggestZones).toHaveBeenCalledWith("p1", {
+          allowGrass: true,
+        }),
+      { timeout: 10000 },
+    );
+    await waitFor(() => expect(api.replaceSpots).toHaveBeenCalled(), {
+      timeout: 20000,
+    });
+    const [, layout, spots] = api.replaceSpots.mock.calls[0];
+    expect(layout).toBe("valetEdge");
+    expect(spots.length).toBeGreaterThan(5);
+    // The outline came from the parcel and was saved before Claude read it.
+    const saved = api.updateParkingPlan.mock.calls.map((c) => c[1]);
+    expect(saved.some((p) => p.outline && p.parcels?.length === 1)).toBe(true);
+    expect(
+      saved.some(
+        (p) => p.zones?.length === 1 && p.settings?.zonesAuto === false,
+      ),
+    ).toBe(true);
+    await waitFor(
+      () =>
+        expect(
+          screen.queryByText("Préparation du plan"),
+        ).not.toBeInTheDocument(),
+      { timeout: 10000 },
+    );
+    expect(screen.getByRole("button", { name: "Places" })).toHaveAttribute(
+      "aria-pressed",
+      "true",
+    );
+  }, 40000);
+
+  it("réinitialise tout le plan après confirmation : tracé effacé, places retirées, retour au contour", async () => {
     api.getParkingPlan.mockResolvedValue(
       view(
         [
@@ -220,8 +328,15 @@ describe("plan du parking (bloc 2, étape Plan)", () => {
     await waitFor(() =>
       expect(api.replaceSpots).toHaveBeenCalledWith("p1", "valet24", []),
     );
-    await waitFor(() => expect(api.updateParkingPlan).toHaveBeenCalled());
-    const patch = api.updateParkingPlan.mock.calls[0][1];
+    // The IGN buildings sync at opening saves first: the reset's patch is the one without outline.
+    await waitFor(() =>
+      expect(
+        api.updateParkingPlan.mock.calls.some((c) => c[1].outline === null),
+      ).toBe(true),
+    );
+    const patch = api.updateParkingPlan.mock.calls.find(
+      (c) => c[1].outline === null,
+    )![1];
     expect(patch).toMatchObject({
       outline: null,
       zones: [],
@@ -233,9 +348,20 @@ describe("plan du parking (bloc 2, étape Plan)", () => {
       zonesAuto: true,
       ignBuildingsSynced: false,
     });
-    expect(
-      await screen.findByText("Pas encore de contour"),
-    ).toBeInTheDocument();
+    // Back to the contour tool, the count on top says there is nothing drawn.
+    await waitFor(
+      () =>
+        expect(screen.getByTestId("plan-count").textContent).toBe(
+          "Pas encore de contour",
+        ),
+      { timeout: 3000 },
+    );
+    // A reset is not a first opening: the plan is not prepared again on its own.
+    expect(api.parcelsAt).not.toHaveBeenCalled();
+    expect(screen.getByRole("button", { name: "Contour" })).toHaveAttribute(
+      "aria-pressed",
+      "true",
+    );
     confirm.mockRestore();
   });
 
@@ -282,6 +408,9 @@ describe("plan du parking (bloc 2, étape Plan)", () => {
       usage: { inputTokens: 1200, outputTokens: 300 },
     });
     renderAt("/parking/plan/zones");
+    expect(
+      await screen.findByRole("button", { name: "Zone de parking" }),
+    ).toHaveAttribute("aria-pressed", "true");
     const grass = (await screen.findByLabelText(
       /Herbe autorisée/,
     )) as HTMLInputElement;

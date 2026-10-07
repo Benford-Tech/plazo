@@ -1,8 +1,7 @@
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { Check, RotateCcw } from "lucide-react";
 import { toast } from "sonner";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { Navigate, useNavigate, useParams } from "react-router-dom";
+import { useParams } from "react-router-dom";
 import { ParkingTabs } from "@/components/parking/ParkingTabs";
 import { Skeleton } from "@/components/ui/skeleton";
 import { adminApi } from "@/lib/api";
@@ -10,20 +9,14 @@ import type { CapacityStudy, StudyPatch } from "@/lib/capacity/types";
 import { useEstimate } from "@/lib/capacity/useEstimate";
 import { describeError, fr } from "@/lib/fr";
 import type { ParkingPlanView, PlanPatch } from "@/lib/plan/types";
-import { cn } from "@/lib/utils";
-import type { StepProps } from "@/pages/capacity/CapacityStudyPage";
-import TerrainStep from "@/pages/capacity/TerrainStep";
-import ZonesStep from "@/pages/capacity/ZonesStep";
-import SpotsStep from "./SpotsStep";
+import { PlanEditor } from "./plan/PlanEditor";
+import { TOOLS, type ResetScope, type Tool } from "./plan/types";
 
-export type PlanStep = "terrain" | "zones" | "places";
-const STEPS: PlanStep[] = ["terrain", "zones", "places"];
-/** The estimator's steps navigate to these names; the plan maps "capacite" to its "places" step. */
-const FROM_STUDY_STEP: Record<string, PlanStep> = {
-  terrain: "terrain",
-  zones: "zones",
-  capacite: "places",
-  photo: "places",
+/** The old step names still open the editor, on the matching tool. */
+const LEGACY_TOOLS: Record<string, Tool> = {
+  terrain: "contour",
+  zones: "parking",
+  places: "spots",
 };
 const PLAN_KEYS = [
   "outline",
@@ -42,8 +35,11 @@ type SaveState = "idle" | "saving" | "saved" | "error";
  * estimator's terrain and zones steps, then generates and adjusts the spots. Autosaves like a study.
  */
 export default function ParkingPlanPage() {
-  const { step = "terrain" } = useParams<{ step: PlanStep }>();
-  const navigate = useNavigate();
+  const { step } = useParams<{ step?: string }>();
+  const initialTool: Tool | null = step
+    ? (LEGACY_TOOLS[step] ??
+      (TOOLS.includes(step as Tool) ? (step as Tool) : null))
+    : null;
   const queryClient = useQueryClient();
   const { data: parking, isLoading: loadingParking } = useQuery({
     queryKey: ["parking"],
@@ -113,11 +109,6 @@ export default function ParkingPlanPage() {
 
   useEffect(() => () => void flush(), [flush]);
 
-  const go = useCallback(
-    (s: string) => navigate(`/parking/plan/${FROM_STUDY_STEP[s] ?? s}`),
-    [navigate],
-  );
-
   // The plan seen as a study, for the reused steps.
   const study = useMemo<CapacityStudy | null>(
     () =>
@@ -157,10 +148,20 @@ export default function ParkingPlanPage() {
       view?.plan.landmarks,
     ],
   );
+  // The count on top follows every stroke: the engine runs on the input settled for 500 ms.
+  const [settledInput, setSettledInput] = useState(estimateInput);
+  useEffect(() => {
+    const timer = setTimeout(() => setSettledInput(estimateInput), 500);
+    return () => clearTimeout(timer);
+  }, [estimateInput]);
   const estimate = useEstimate(
-    estimateInput,
-    step === "places" && (view?.plan.zones.length ?? 0) > 0,
+    settledInput,
+    (settledInput.zones.length ?? 0) > 0,
   );
+  // R-C: an empty plan is prepared on its own at its first opening only (not after a reset).
+  const autoRun = useRef<boolean | null>(null);
+  if (view && autoRun.current === null)
+    autoRun.current = !view.plan.outline && !view.spots.length;
 
   const replaceView = useCallback(
     (next: ParkingPlanView) => {
@@ -211,15 +212,11 @@ export default function ParkingPlanPage() {
       }
       await flush();
       toast.success(fr.parkingPlan.resetDone);
-      if (scope === "all") go("terrain");
-      else if (scope === "zones") go("zones");
     } catch (e) {
       toast.error(describeError(e));
     }
   };
 
-  if (!STEPS.includes(step))
-    return <Navigate to="/parking/plan/terrain" replace />;
   if (loadError) {
     return (
       <>
@@ -237,18 +234,6 @@ export default function ParkingPlanPage() {
     );
   }
 
-  const props: StepProps = {
-    study,
-    update,
-    flush,
-    go,
-    home: parking.lat != null && parking.lng != null ? [parking.lng, parking.lat] : null,
-    // V-A: the saved outline is what Claude reads, so pending changes go first.
-    suggestZones: async options => {
-      await flush();
-      return adminApi.suggestZones(parking.id, options);
-    },
-  };
   return (
     <>
       <ParkingTabs />
@@ -256,155 +241,26 @@ export default function ParkingPlanPage() {
         <h1 className="text-2xl font-semibold">{fr.parkingPlan.title}</h1>
         <p className="text-sm text-muted-foreground">{fr.parkingPlan.intro}</p>
       </div>
-      <div className="-mx-4 flex flex-col border-y border-border sm:-mx-6 lg:h-[calc(100vh-280px)] lg:min-h-[600px]">
-        <StepsBar
-          study={study}
-          step={step}
-          go={go}
-          saveState={saveState}
-          onReset={reset}
-        />
-        <main className="flex min-h-0 flex-1 flex-col lg:flex-row">
-          {step === "terrain" && <TerrainStep key={parking.id} {...props} />}
-          {step === "zones" && <ZonesStep key={parking.id} {...props} />}
-          {step === "places" && (
-            <SpotsStep
-              key={parking.id}
-              parkingId={parking.id}
-              view={view}
-              estimate={estimate}
-              update={update}
-              onView={replaceView}
-              go={go}
-            />
-          )}
-        </main>
-      </div>
+      <PlanEditor
+        key={parking.id}
+        parkingId={parking.id}
+        parking={parking}
+        view={view}
+        study={study}
+        estimate={estimate}
+        update={update}
+        flush={flush}
+        onView={replaceView}
+        // V-A: the saved outline is what Claude reads, so pending changes go first.
+        suggest={async (options) => {
+          await flush();
+          return adminApi.suggestZones(parking.id, options);
+        }}
+        initialTool={initialTool}
+        autoRun={autoRun.current === true}
+        saveState={saveState}
+        onReset={reset}
+      />
     </>
-  );
-}
-
-type ResetScope = "all" | "zones" | "spots";
-
-function StepsBar({
-  study,
-  step,
-  go,
-  saveState,
-  onReset,
-}: {
-  study: CapacityStudy;
-  step: PlanStep;
-  go: (s: string) => void;
-  saveState: SaveState;
-  onReset: (scope: ResetScope) => void;
-}) {
-  const [resetOpen, setResetOpen] = useState(false);
-  const current = STEPS.indexOf(step);
-  const reachable = [
-    true,
-    !!study.outline,
-    !!study.outline && study.zones.length > 0,
-  ];
-  const t = fr.parkingPlan;
-  return (
-    <div className="flex shrink-0 items-center gap-7 border-b border-border px-6 py-3">
-      {t.steps.map((label, i) => {
-        const state = i < current ? "done" : i === current ? "active" : "todo";
-        return (
-          <button
-            key={label}
-            type="button"
-            disabled={!reachable[i]}
-            onClick={() => go(STEPS[i])}
-            aria-current={state === "active" ? "step" : undefined}
-            className={cn(
-              "flex items-center gap-2 text-[15px] font-bold uppercase disabled:cursor-not-allowed",
-              state === "active"
-                ? "text-lime-deep"
-                : state === "done"
-                  ? "text-foreground"
-                  : "text-muted-foreground",
-            )}
-          >
-            <span
-              className={cn(
-                "flex h-[26px] w-[26px] items-center justify-center border font-mono text-sm",
-                state === "active" &&
-                  "border-lime-deep bg-primary text-primary-foreground",
-                state === "done" && "border-foreground",
-                state === "todo" && "border-muted-foreground",
-              )}
-            >
-              {state === "done" ? (
-                <Check className="h-4 w-4" strokeWidth={3} />
-              ) : (
-                i + 1
-              )}
-            </span>
-            {label}
-          </button>
-        );
-      })}
-      <div className="relative ml-auto">
-        <button
-          type="button"
-          aria-haspopup="menu"
-          aria-expanded={resetOpen}
-          disabled={!study.outline}
-          onClick={() => setResetOpen((o) => !o)}
-          className="flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground disabled:cursor-not-allowed disabled:opacity-50"
-        >
-          <RotateCcw className="h-4 w-4" />
-          {t.reset}
-        </button>
-        {resetOpen && (
-          <div
-            role="menu"
-            className="absolute right-0 top-full z-20 mt-1 w-80 border border-border bg-card p-1 shadow-lg"
-          >
-            {(
-              [
-                ["all", t.resetAll, t.resetAllHelp],
-                ["zones", t.resetZones, t.resetZonesHelp],
-                ["spots", t.resetSpots, t.resetSpotsHelp],
-              ] as const
-            ).map(([scope, label, help]) => (
-              <button
-                key={scope}
-                type="button"
-                role="menuitem"
-                onClick={() => {
-                  setResetOpen(false);
-                  onReset(scope);
-                }}
-                className="block w-full px-3 py-2 text-left hover:bg-accent"
-              >
-                <span className="block text-sm font-semibold">{label}</span>
-                <span className="block text-xs text-muted-foreground">
-                  {help}
-                </span>
-              </button>
-            ))}
-          </div>
-        )}
-      </div>
-      <span
-        className={cn(
-          "w-28 text-right text-xs",
-          saveState === "error" ? "text-destructive" : "text-muted-foreground",
-        )}
-        role="status"
-        aria-live="polite"
-      >
-        {saveState === "saving"
-          ? t.saving
-          : saveState === "saved"
-            ? t.saved
-            : saveState === "error"
-              ? t.saveError
-              : ""}
-      </span>
-    </div>
   );
 }

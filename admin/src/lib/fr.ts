@@ -1341,6 +1341,132 @@ export const fr = {
     spotTaken: "Cette place est déjà prise sur ces dates.",
   },
   // Bloc 2, step "Plan" (P-A, 03/10/2026): the operator's own parking plan.
+  // R-A (07/10/2026): the plan editor, one map and one toolbar; see CLAUDE.md, bloc 2.
+  planEditor: {
+    tools: {
+      contour: "Contour",
+      parking: "Zone de parking",
+      passage: "Zone de passage",
+      obstacle: "Obstacle",
+      landmark: "Repères",
+      spots: "Places",
+    },
+    toolHelp: {
+      contour:
+        "Cliquez votre terrain : sa parcelle cadastrale devient le contour. Cliquez les voisines pour les ajouter.",
+      parking:
+        "Maintenez le clic et peignez où les voitures peuvent se garer ; les traits qui se touchent fusionnent.",
+      passage:
+        "Maintenez le clic et peignez les allées, accès et endroits où l'on ne peut pas se garer.",
+      obstacle:
+        "Choisissez un obstacle puis cliquez ou tracez-le sur la carte. Cliquez un obstacle existant pour le modifier.",
+      landmark:
+        "Choisissez un repère puis cliquez son emplacement. Un repère d'un même type remplace le précédent.",
+      spots:
+        "Choisissez une disposition et générez les places, puis cliquez une place pour la désactiver ou changer son type.",
+    },
+    count: (n: number) => `${n} place${n > 1 ? "s" : ""}`,
+    countEstimated: "estimation",
+    countGenerated: (active: number, total: number) =>
+      active === total ? "générées" : `actives sur ${total}`,
+    noOutlineYet: "Pas encore de contour",
+    settings: "Réglages…",
+    // The first pass (R-C): the parking arrives already filled in, the operator corrects.
+    auto: {
+      title: "Préparation du plan",
+      intro:
+        "Depuis l'adresse du parking : parcelle, bâtiments, zones et places. Vous corrigerez ensuite.",
+      steps: {
+        parcel: "Parcelle cadastrale",
+        buildings: "Bâtiments IGN",
+        zones: "Zones garables",
+        spots: "Places",
+      },
+      zonesByClaude: "proposées par Claude",
+      zonesAuto: "tout le terrain hors bâtiments",
+      noParcel:
+        "Aucune parcelle à l'adresse du parking : cliquez votre terrain ou tracez son contour.",
+      noPosition:
+        "Le parking n'a pas d'adresse localisée : cliquez votre terrain ou tracez son contour.",
+      done: (n: number) =>
+        `Plan préparé : ${n} place${n > 1 ? "s" : ""}. Corrigez ce qui ne va pas.`,
+      failed: "La préparation s'est arrêtée : continuez à la main.",
+    },
+    contour: {
+      parcels: (ids: string) => `Parcelles ${ids}`,
+      drawn: "Contour tracé à la main",
+      draw: "Tracer à la main",
+      drawHelp:
+        "Cliquez chaque coin du terrain ; double-cliquez pour terminer.",
+      edit: "Corriger les sommets",
+      editHelp:
+        "Faites glisser un sommet, ou un point milieu pour en ajouter un.",
+      cut: "Retirer une partie",
+      cutHelp:
+        "Tracez la partie à retirer du contour ; double-cliquez pour terminer.",
+      stop: "Terminer",
+      clear: "Effacer le contour",
+      clearConfirm:
+        "Effacer le contour ? Les zones, obstacles et places tracés dessus seront effacés aussi.",
+      area: (m2: string) => `${m2} m²`,
+    },
+    brush: {
+      width: "Largeur",
+      zones: (n: number) =>
+        n === 0 ? "Aucune zone" : `${n} zone${n > 1 ? "s" : ""}`,
+      removeZone: "Retirer",
+      autoHelp: "Sans tracé, les zones suivent le terrain hors obstacles.",
+    },
+    obstacle: {
+      add: "Ajouter",
+      selected: "Obstacle sélectionné",
+      clearance: "Marge (m)",
+      remove: "Supprimer",
+      list: (n: number) =>
+        n === 0 ? "Aucun obstacle" : `${n} obstacle${n > 1 ? "s" : ""}`,
+      ign: "repéré par l'IGN",
+      drawPolygon: "Tracez son contour ; double-cliquez pour terminer.",
+      drawLine: "Tracez l'axe de la voie ; double-cliquez pour terminer.",
+      drawPoint:
+        "Cliquez son emplacement. Cliquez ailleurs pour en placer d'autres.",
+    },
+    landmark: {
+      placed: "Placés",
+      none: "Aucun repère pour l'instant.",
+      remove: "Retirer",
+      placeHelp: (kind: string) => `Cliquez l'emplacement de « ${kind} ».`,
+    },
+    spots: {
+      layout: "Disposition",
+      generate: (n: number) => `Générer ${n} place${n > 1 ? "s" : ""}`,
+      regenerate: (n: number) => `Régénérer (${n} place${n > 1 ? "s" : ""})`,
+      adjust: "Ajuster",
+      needZones: "Peignez d'abord une zone de parking.",
+    },
+    drawer: {
+      title: "Réglages du plan",
+      geometry: "Dimensions",
+      aisleWidth: "Largeur d'allée (m)",
+      setback: "Recul au bord des zones (m)",
+      edgeMaxFiles: "Files au plus, de chaque côté d'une allée",
+      valetSlot: "Place voiturier (largeur × longueur, m)",
+      selfParkSlot: "Place client (largeur × longueur, m)",
+      orientation: "Orientation des rangées",
+      orientationAuto: "Automatique",
+      orientationFixed: "Fixe (degrés)",
+      stays: "Zones de séjour",
+      stayShort: "Court séjour jusqu'à (nuits)",
+      stayMedium: "Moyen séjour jusqu'à (nuits)",
+      sources: "Sources IGN",
+      ignBuildings: "Exclure les bâtiments repérés par l'IGN",
+      clipToParking: "Recouper le contour avec le parking BD TOPO",
+      photo: "Photo aérienne",
+      scale: "Échelle de la photo",
+      scaleHelp:
+        "Facteur appliqué aux distances mesurées sur la photo (1 = telle quelle).",
+      close: "Fermer",
+    },
+  },
   parkingPlan: {
     steps: ["Repérer le terrain", "Découper en zones", "Générer les places"],
     title: "Plan du parking",
@@ -2077,13 +2203,21 @@ export const inboundWizardFr = {
       ovh: { label: "OVH", hint: "Webmail OVH (Roundcube)" },
       other: { label: "Autre messagerie", hint: "Orange, Free, Ionos…" },
     } satisfies Record<MailProvider, { label: string; hint: string }>,
-    noAuth: "Pas d'autorisation à donner à cette messagerie : la règle de l'étape suivante suffit.",
+    noAuth:
+      "Pas d'autorisation à donner à cette messagerie : la règle de l'étape suivante suffit.",
     gmail: {
       title: "Autorisez Gmail à transférer vers Plazo",
       lines: [
-        { text: "Dans Gmail, ouvrez la roue dentée › **Voir tous les paramètres** › onglet **Transfert et POP/IMAP**." },
-        { text: "Cliquez **Ajouter une adresse de transfert**, collez votre adresse Plazo, puis **Suivant** › **Continuer** :", copy: "address" },
-        { text: "Gmail envoie un code de confirmation à Plazo : il s'affiche ci-dessous. Collez-le dans Gmail et cliquez **Valider**." },
+        {
+          text: "Dans Gmail, ouvrez la roue dentée › **Voir tous les paramètres** › onglet **Transfert et POP/IMAP**.",
+        },
+        {
+          text: "Cliquez **Ajouter une adresse de transfert**, collez votre adresse Plazo, puis **Suivant** › **Continuer** :",
+          copy: "address",
+        },
+        {
+          text: "Gmail envoie un code de confirmation à Plazo : il s'affiche ci-dessous. Collez-le dans Gmail et cliquez **Valider**.",
+        },
       ] satisfies WizardLine[],
       waiting: "En attente du code de Gmail…",
       received: (time: string) => `Code de confirmation Gmail reçu à ${time}`,
@@ -2097,9 +2231,17 @@ export const inboundWizardFr = {
     gmail: {
       title: "Créez le filtre dans Gmail",
       lines: [
-        { text: "Dans la barre de recherche de Gmail, cliquez l'icône des options de recherche, à droite." },
-        { text: "Dans **De**, collez l'expéditeur d'Allopark :", copy: "sender" },
-        { text: "Cliquez **Créer un filtre**, cochez **Transférer à** et choisissez votre adresse Plazo :", copy: "address" },
+        {
+          text: "Dans la barre de recherche de Gmail, cliquez l'icône des options de recherche, à droite.",
+        },
+        {
+          text: "Dans **De**, collez l'expéditeur d'Allopark :",
+          copy: "sender",
+        },
+        {
+          text: "Cliquez **Créer un filtre**, cochez **Transférer à** et choisissez votre adresse Plazo :",
+          copy: "address",
+        },
         { text: "Validez avec **Créer un filtre**." },
       ] satisfies WizardLine[],
       note: "L'adresse n'apparaît pas dans « Transférer à » ? Gmail doit d'abord la valider : revenez à l'étape 2, le code de confirmation y est affiché.",
@@ -2112,7 +2254,13 @@ export const inboundWizardFr = {
         { kind: "field", label: "Contient les mots" },
         { kind: "check", label: "Ignorer la boîte de réception" },
         { kind: "check", label: "Marquer comme lu" },
-        { kind: "check", label: "Transférer à", value: "address", highlight: true, checked: true },
+        {
+          kind: "check",
+          label: "Transférer à",
+          value: "address",
+          highlight: true,
+          checked: true,
+        },
         { kind: "check", label: "Supprimer" },
         { kind: "button", label: "Créer un filtre" },
       ] satisfies PreviewRow[],
@@ -2120,9 +2268,17 @@ export const inboundWizardFr = {
     outlook: {
       title: "Créez la règle dans Outlook",
       lines: [
-        { text: "Dans Outlook sur le web, ouvrez la roue dentée › **Courrier** › **Règles** › **Ajouter une nouvelle règle**." },
-        { text: "Nommez-la « Plazo ». Condition : **De**, puis collez l'expéditeur d'Allopark :", copy: "sender" },
-        { text: "Action : **Transférer à**, puis collez votre adresse Plazo :", copy: "address" },
+        {
+          text: "Dans Outlook sur le web, ouvrez la roue dentée › **Courrier** › **Règles** › **Ajouter une nouvelle règle**.",
+        },
+        {
+          text: "Nommez-la « Plazo ». Condition : **De**, puis collez l'expéditeur d'Allopark :",
+          copy: "sender",
+        },
+        {
+          text: "Action : **Transférer à**, puis collez votre adresse Plazo :",
+          copy: "address",
+        },
         { text: "Cliquez **Enregistrer**." },
       ] satisfies WizardLine[],
       note: "Messagerie d'entreprise (Microsoft 365) : le transfert vers une adresse extérieure peut être bloqué. Si rien n'arrive à l'étape 4, demandez à la personne qui gère la messagerie de l'autoriser.",
@@ -2130,8 +2286,18 @@ export const inboundWizardFr = {
       screen: "Outlook",
       preview: [
         { kind: "field", label: "Nom", value: "Plazo" },
-        { kind: "field", label: "Condition · De", value: "sender", highlight: true },
-        { kind: "field", label: "Action · Transférer à", value: "address", highlight: true },
+        {
+          kind: "field",
+          label: "Condition · De",
+          value: "sender",
+          highlight: true,
+        },
+        {
+          kind: "field",
+          label: "Action · Transférer à",
+          value: "address",
+          highlight: true,
+        },
         { kind: "check", label: "Arrêter le traitement d'autres règles" },
         { kind: "button", label: "Enregistrer" },
       ] satisfies PreviewRow[],
@@ -2139,9 +2305,17 @@ export const inboundWizardFr = {
     ovh: {
       title: "Créez le filtre dans le webmail OVH",
       lines: [
-        { text: "Dans le webmail, ouvrez **Paramètres** › **Filtres**, puis **Créer** (+)." },
-        { text: "Nom du filtre : « Plazo ». Règle : **De** contient, puis collez l'expéditeur d'Allopark :", copy: "sender" },
-        { text: "Action : **Envoyer une copie du message à**, puis collez votre adresse Plazo :", copy: "address" },
+        {
+          text: "Dans le webmail, ouvrez **Paramètres** › **Filtres**, puis **Créer** (+).",
+        },
+        {
+          text: "Nom du filtre : « Plazo ». Règle : **De** contient, puis collez l'expéditeur d'Allopark :",
+          copy: "sender",
+        },
+        {
+          text: "Action : **Envoyer une copie du message à**, puis collez votre adresse Plazo :",
+          copy: "address",
+        },
         { text: "Cliquez **Enregistrer**." },
       ] satisfies WizardLine[],
       note: "Choisissez bien « Envoyer une copie » : avec « Rediriger », le mail quitterait votre boîte.",
@@ -2149,43 +2323,83 @@ export const inboundWizardFr = {
       screen: "webmail OVH",
       preview: [
         { kind: "field", label: "Nom du filtre", value: "Plazo" },
-        { kind: "field", label: "De · contient", value: "sender", highlight: true },
-        { kind: "field", label: "Envoyer une copie du message à", value: "address", highlight: true },
+        {
+          kind: "field",
+          label: "De · contient",
+          value: "sender",
+          highlight: true,
+        },
+        {
+          kind: "field",
+          label: "Envoyer une copie du message à",
+          value: "address",
+          highlight: true,
+        },
         { kind: "button", label: "Enregistrer" },
       ] satisfies PreviewRow[],
     },
     other: {
       title: "Créez la règle de transfert",
       lines: [
-        { text: "Dans les réglages de votre messagerie, cherchez **Règles**, **Filtres** ou **Redirection**." },
+        {
+          text: "Dans les réglages de votre messagerie, cherchez **Règles**, **Filtres** ou **Redirection**.",
+        },
         { text: "Condition : l'expéditeur est", copy: "sender" },
-        { text: "Action : transférer une copie à votre adresse Plazo :", copy: "address" },
+        {
+          text: "Action : transférer une copie à votre adresse Plazo :",
+          copy: "address",
+        },
         { text: "Enregistrez, en gardant le mail dans votre boîte." },
       ] satisfies WizardLine[],
       note: "Vous ne trouvez pas ? Envoyez ces étapes à la personne qui gère votre messagerie, avec le lien en bas de cette fenêtre.",
       done: "J'ai créé la règle",
       screen: "votre messagerie",
       preview: [
-        { kind: "field", label: "Si l'expéditeur est", value: "sender", highlight: true },
-        { kind: "field", label: "Transférer une copie à", value: "address", highlight: true },
+        {
+          kind: "field",
+          label: "Si l'expéditeur est",
+          value: "sender",
+          highlight: true,
+        },
+        {
+          kind: "field",
+          label: "Transférer une copie à",
+          value: "address",
+          highlight: true,
+        },
         { kind: "check", label: "Garder le mail dans la boîte", checked: true },
         { kind: "button", label: "Enregistrer" },
       ] satisfies PreviewRow[],
     },
-  } satisfies Record<MailProvider, { title: string; lines: WizardLine[]; note: string; done: string; screen: string; preview: PreviewRow[] }>,
+  } satisfies Record<
+    MailProvider,
+    {
+      title: string;
+      lines: WizardLine[];
+      note: string;
+      done: string;
+      screen: string;
+      preview: PreviewRow[];
+    }
+  >,
   preview: (screen: string) => `Aperçu simplifié de l'écran ${screen}`,
   check: {
     title: "Vérifiez que tout arrive",
     lines: [
-      { text: "Dans votre messagerie, ouvrez un ancien mail de réservation Allopark et transférez-le à votre adresse Plazo :", copy: "address" },
+      {
+        text: "Dans votre messagerie, ouvrez un ancien mail de réservation Allopark et transférez-le à votre adresse Plazo :",
+        copy: "address",
+      },
       { text: "Il apparaît ci-dessous en quelques secondes." },
     ] satisfies WizardLine[],
     received: "Ce que Plazo a reçu",
     live: "En direct",
     waiting: "En attente du premier mail…",
-    waitingHint: "Il apparaît ici quelques secondes après son arrivée dans votre boîte.",
+    waitingHint:
+      "Il apparaît ici quelques secondes après son arrivée dans votre boîte.",
     ok: "C'est relié. Les prochaines réservations Allopark arriveront toutes seules dans le planning.",
-    toCheck: "Bien reçu. Plazo n'a pas pu le lire en entier : il attend dans « À vérifier », où vous pouvez le compléter.",
+    toCheck:
+      "Bien reçu. Plazo n'a pas pu le lire en entier : il attend dans « À vérifier », où vous pouvez le compléter.",
     openToCheck: "Voir les mails à vérifier",
     status: {
       imported: "Enregistrée",
@@ -2203,8 +2417,10 @@ export const inboundWizardFr = {
       "Bonjour,\n\nPour que nos réservations Allopark arrivent toutes seules dans Plazo, pourrais-tu créer une règle de transfert dans notre messagerie ?",
     sender: (address: string) => `Expéditeur : ${address}`,
     address: (address: string) => `Transférer une copie à : ${address}`,
-    gmailCode: "Gmail envoie alors un code de confirmation à Plazo : je te le transmets dès qu'il s'affiche.",
-    outro: "Seuls ces mails sont transférés ; nos autres mails restent privés. Merci !",
+    gmailCode:
+      "Gmail envoie alors un code de confirmation à Plazo : je te le transmets dès qu'il s'affiche.",
+    outro:
+      "Seuls ces mails sont transférés ; nos autres mails restent privés. Merci !",
   },
 };
 

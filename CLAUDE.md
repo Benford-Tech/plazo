@@ -123,6 +123,15 @@ Ne construire QUE ce qui règle la douleur n°1 du client.
      « Herbe autorisée » (réglage `suggestGrass`, vrai par défaut, corps `{ allowGrass }` de la route, `systemPrompt(allowGrass)`,
      sol `grass`) et la proposition **s'ajoute** aux zones déjà tracées (fusion des zones qui se touchent par `paintZones`),
      avant ou après le pinceau ; « Réinitialiser… » pour repartir de zéro.
+     **R-A + R-C « éditeur du plan » (07/10/2026, « la page est inutilisable »)** : plus d'étapes ni de panneau latéral ;
+     `admin/src/pages/parking/plan/PlanEditor.tsx` (barre d'outils, carte flottante de l'outil, compteur de places en
+     direct recalculé 500 ms après chaque trait, tiroir `PlanSettings.tsx` pour allée, recul, files, gabarits, séjours,
+     sources IGN, échelle), `planLayers.ts` (couches et étiquettes), `autoSetup.ts` (**première ouverture d'un plan vide** :
+     parcelle à l'adresse du parking → bâtiments IGN → zones par Claude, sinon tout le terrain hors bâtiments → places
+     « Voiturier · peigne », chaque étape enregistrée ; bandeau « Préparation du plan » ; jamais rejoué après une
+     réinitialisation). L'outil Obstacle regroupe les parties exclues (clic sur un obstacle : marge, suppression) ;
+     l'étape « Places » de l'ancien `SpotsStep.tsx` est fondue dans l'outil Places. Les pages `capacity/TerrainStep` et
+     `ZonesStep` ne servent plus qu'à l'outil capacité de la plateforme.
    - Décision **O-A « File triée » (06/10/2026)** : sur une file de voiturier, les retours doivent décroître de l'allée vers le
      fond ; `domain/files.ts` reconstitue les files (profondeur + position) et score chaque place libre par le nombre de
      voitures à déplacer (`blocking` devant partant après, `blocked` derrière partant avant ; même vague = 2 h) ;
@@ -288,10 +297,12 @@ Le nom du produit doit rester dans UN seul fichier de configuration (il peut enc
 - `backend/` : API REST sous `/api` (`index.js` = point d'entrée Vercel). Les routes du personnel du loueur
   sont sous `/api/internal/...` (`StaffAuthMiddleware`, jetons stockés en base et révocables), comme les
   routes staff de LoveNest ; celles du site voyageurs sous `/api/public/...`.
-- `admin/` : espace pro, servi sous `/pro`. L'onglet « Parking » a quatre volets : `/parking/plan/:step` (bloc 2, étape
-  « Plan » : terrain, zones, places, repères, tracés sur la photo IGN avec le moteur de l'estimateur `src/lib/capacity/*`,
-  places numérotées par `src/lib/plan/numbering.ts`, routes `/api/internal/parkings/:id/plan…`, tables `parking_plans` et
-  `parking_spots`), `/parking/occupation` (étape « Occupation », 04/10/2026 : plan en couleurs, arrivées à placer avec
+- `admin/` : espace pro, servi sous `/pro`. L'onglet « Parking » a quatre volets : `/parking/plan` (bloc 2, étape
+  « Plan », **éditeur R-A du 07/10/2026** : une seule carte IGN, une barre d'outils à gauche Contour · Zone de parking ·
+  Zone de passage · Obstacle · Repères · Places, une carte flottante par outil, le nombre de places en tête ; moteur de
+  l'estimateur `src/lib/capacity/*`, pages `src/pages/parking/plan/*`, places numérotées par `src/lib/plan/numbering.ts`,
+  routes `/api/internal/parkings/:id/plan…`, tables `parking_plans` et `parking_spots` ; les anciens chemins
+  `/parking/plan/terrain|zones|places` ouvrent l'outil correspondant), `/parking/occupation` (étape « Occupation », 04/10/2026 : plan en couleurs, arrivées à placer avec
   place proposée, recherche par plaque / nom / référence, crochet des clés ; routes `/api/internal/parkings/:id/occupation…`
   et `POST /api/internal/reservations/:id/spot` ; champs `Reservation.spotId` et `keyHook`), `/parking/planning` (étape
   « Planning des places ») et `/parking/reglages`.

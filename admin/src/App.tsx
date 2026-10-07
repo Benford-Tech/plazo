@@ -164,7 +164,11 @@ const App = () => (
               />
               <Route
                 path="/parking/plan"
-                element={<Navigate to="/parking/plan/terrain" replace />}
+                element={
+                  <RequirePermission permission="parking:manage">
+                    {lazyPage(<ParkingPlanPage />)}
+                  </RequirePermission>
+                }
               />
               <Route
                 path="/parking/plan/:step"

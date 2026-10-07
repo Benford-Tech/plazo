@@ -185,6 +185,30 @@ Hors MVP : caméras, lecture de plaque, capteurs de présence sur les places.
   liste). « Ajouter à mes zones » ajoute la proposition aux zones déjà tracées, en fusionnant celles qui se touchent comme le
   pinceau : on peut tracer à la main avant ou après, et redemander une proposition sans perdre ses tracés.
 
+#### Éditeur du plan : une carte, une barre d'outils (décisions R-A + R-C du 07/10/2026, mis en œuvre)
+
+Joanny : « refais la page de définition des plans car c'est inutilisable ». Les trois étapes et leur long panneau
+disparaissent. La page est la photo IGN plein cadre avec, à gauche, six outils à un geste chacun :
+
+- **Contour** : un clic sur le terrain prend sa parcelle cadastrale (les voisines s'ajoutent d'un clic), ou « Tracer à la
+  main », « Corriger les sommets », « Retirer une partie » ; recherche d'adresse dans la carte de l'outil.
+- **Zone de parking** et **Zone de passage** : les deux pinceaux (3, 6, 12 m), « Proposer les zones avec Claude » avec
+  la case « Herbe autorisée », la liste des zones avec leur surface.
+- **Obstacle** : bâtiment, arbre, poteau, voie navette, accueil, autre ; un clic sur un obstacle existant montre sa marge et
+  permet de le supprimer ; les bâtiments IGN arrivent seuls.
+- **Repères** : entrée, sortie, remise des clés, arrêt navette, boîte à clés.
+- **Places** : les quatre dispositions avec leur nombre de places, « Générer N places », puis activer / désactiver et
+  typer les places d'un clic, recalcul de la capacité déclarée.
+
+En tête, en permanence : le nombre de places (estimation de la disposition choisie, puis places générées), l'état de
+l'enregistrement, « Réglages… » (tiroir : largeur d'allée, recul, files, gabarits, orientation, seuils de séjour, sources
+IGN, échelle) et « Réinitialiser… ». Chaque trait recalcule l'estimation après 500 ms de calme.
+
+**Première ouverture (R-C)** : un plan vide sur un parking localisé se prépare seul, étape par étape et enregistré au fur
+et à mesure : parcelle à l'adresse → bâtiments IGN → zones (Claude si la clé est là, sinon le terrain hors bâtiments) →
+places « Voiturier · peigne ». Un bandeau suit la préparation ; sans parcelle ou sans adresse, un message invite à
+cliquer ou tracer le terrain. La préparation ne se rejoue pas après une réinitialisation.
+
 #### File triée : zéro déplacement (décision O-A du 06/10/2026, mis en œuvre)
 
 - Sur un parking « voiturier · peigne » (ex-files depuis le bord), la voiture au fond d'une file repart en dernier. Une file est

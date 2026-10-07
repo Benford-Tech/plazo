@@ -1,0 +1,1518 @@
+import {
+  Check,
+  Loader2,
+  MapPin,
+  Paintbrush,
+  Route,
+  RotateCcw,
+  Settings2,
+  Sparkles,
+  Square,
+  TreeDeciduous,
+  X,
+} from "lucide-react";
+import { useEffect, useMemo, useRef, useState } from "react";
+import { toast } from "sonner";
+import {
+  MapView,
+  type DrawKind,
+  type MapViewHandle,
+} from "@/components/capacity/MapView";
+import { ToolButton } from "@/components/capacity/ui";
+import { adminApi, ApiError, type GeocodeResult } from "@/lib/api";
+import {
+  BRUSH_WIDTHS_M,
+  eraseZones,
+  paintZones,
+  strokeArea,
+  type BrushWidth,
+} from "@/lib/capacity/brush";
+import {
+  areaM2,
+  autoZones,
+  frameFor,
+  outlineMulti,
+  polygonToMulti,
+  subtractFromOutline,
+  unionPolygons,
+  withIgnBuildings,
+  type Estimate,
+} from "@/lib/capacity/estimate";
+import { m2 } from "@/lib/capacity/format";
+import { pointInMulti } from "@/lib/capacity/geometry";
+import { parseLatLon } from "@/lib/capacity/latlon";
+import { boundsOf, polygonsOf, positionsOf } from "@/lib/capacity/mapData";
+import { distanceM, type LonLat } from "@/lib/capacity/projection";
+import { estimateFrame } from "@/lib/capacity/studyFrame";
+import {
+  EXCLUSION_DEFAULTS,
+  LAYOUT_KEYS,
+  settingsOf,
+  STAY_CLASSES,
+  type CapacityStudy,
+  type Exclusion,
+  type ExclusionKind,
+  type GeoPoint,
+  type GeoPolygon,
+  type LayoutKey,
+  type ParcelRef,
+  type StayClass,
+  type Zone,
+  type ZoneSuggestion,
+} from "@/lib/capacity/types";
+import { describeError, fr } from "@/lib/fr";
+import { pointInRing, spotsFromLayout } from "@/lib/plan/numbering";
+import {
+  LANDMARK_KINDS,
+  SPOT_KINDS,
+  type Landmark,
+  type LandmarkKind,
+  type ParkingPlanView,
+  type PlanPatch,
+  type Spot,
+  type SpotKind,
+} from "@/lib/plan/types";
+import { cn } from "@/lib/utils";
+import {
+  autoSetup,
+  NoParcelError,
+  type AutoProgress,
+  type AutoStep,
+  type SuggestFn,
+} from "./autoSetup";
+import {
+  EXCLUSION_COLORS,
+  exclusionShapes,
+  LANDMARK_COLORS,
+  planLabels,
+  planLayers,
+  PROPOSAL,
+  snapTargets,
+  SPOT_KIND_COLORS,
+  STAY_COLORS,
+  zoneAreas,
+} from "./planLayers";
+import { PlanSettings } from "./PlanSettings";
+
+import { TOOLS, type ResetScope, type Tool } from "./types";
+type ContourMode = "parcel" | "draw" | "edit" | "cut";
+type SaveState = "idle" | "saving" | "saved" | "error";
+
+const OBSTACLE_KINDS: ExclusionKind[] = [
+  "building",
+  "tree",
+  "post",
+  "shuttle_lane",
+  "reception",
+  "other",
+];
+const AUTO_STEPS: AutoStep[] = ["parcel", "buildings", "zones", "spots"];
+/** Half-size of the box the map opens on around the parking's position, in degrees (≈ 150 m). */
+const HOME_HALF_SPAN = 0.0015;
+const MAX_BBOX_SPAN = 0.02;
+/** A click this close to a point obstacle or a landmark hits it (metres). */
+const HIT_M = 4;
+const newId = () => Math.random().toString(36).slice(2, 10);
+const TOOL_ICONS: Record<Tool, React.ComponentType<{ className?: string }>> = {
+  contour: Square,
+  parking: Paintbrush,
+  passage: Route,
+  obstacle: TreeDeciduous,
+  landmark: MapPin,
+  spots: Check,
+};
+
+interface Props {
+  parkingId: string;
+  parking: {
+    name: string;
+    lat?: number | null;
+    lng?: number | null;
+    totalCapacity: number;
+  };
+  view: ParkingPlanView;
+  study: CapacityStudy;
+  estimate: {
+    result: Estimate | null;
+    computing: boolean;
+    error: string | null;
+  };
+  update: (patch: PlanPatch) => void;
+  flush: () => Promise<boolean>;
+  onView: (view: ParkingPlanView) => void;
+  suggest: SuggestFn;
+  initialTool: Tool | null;
+  /** R-C: run the first pass (parcel, buildings, zones, spots) on an empty plan. */
+  autoRun: boolean;
+  saveState: SaveState;
+  onReset: (scope: ResetScope) => Promise<void>;
+}
+
+/**
+ * R-A (07/10/2026): the plan editor. One map, one toolbar on the left (contour, parking zone,
+ * passage zone, obstacle, landmarks, spots), one floating card for the tool in hand, the count
+ * of spots always on top. The numbers the engine uses live in a drawer.
+ */
+export function PlanEditor({
+  parkingId,
+  parking,
+  view,
+  study,
+  estimate,
+  update,
+  flush,
+  onView,
+  suggest,
+  initialTool,
+  autoRun,
+  saveState,
+  onReset,
+}: Props) {
+  const t = fr.planEditor;
+  const tp = fr.parkingPlan;
+  const { plan, spots } = view;
+  const { outline, zones, exclusions, landmarks } = plan;
+  const settings = settingsOf(study);
+  const mapRef = useRef<MapViewHandle>(null);
+  const studyRef = useRef(study);
+  studyRef.current = study;
+
+  const [tool, setToolState] = useState<Tool>(
+    initialTool ?? (!outline ? "contour" : spots.length ? "spots" : "parking"),
+  );
+  const [contourMode, setContourMode] = useState<ContourMode>("parcel");
+  const [brushWidth, setBrushWidth] = useState<BrushWidth>(6);
+  const [obstacleKind, setObstacleKind] = useState<ExclusionKind | null>(null);
+  const [selectedExclusion, setSelectedExclusion] = useState<string | null>(
+    null,
+  );
+  const [landmarkKind, setLandmarkKind] = useState<LandmarkKind | null>(null);
+  const [spotTool, setSpotTool] = useState<"toggle" | "kind">("toggle");
+  const [spotKind, setSpotKind] = useState<SpotKind>("standard");
+  const [layout, setLayout] = useState<LayoutKey>(plan.layout ?? "valetEdge");
+  const [suggestion, setSuggestion] = useState<ZoneSuggestion | null>(null);
+  const [suggesting, setSuggesting] = useState(false);
+  const [query, setQuery] = useState("");
+  const [results, setResults] = useState<GeocodeResult[] | null>(null);
+  const [searching, setSearching] = useState(false);
+  const [parcelBusy, setParcelBusy] = useState(false);
+  const [message, setMessage] = useState<string | null>(null);
+  const [showPhoto, setShowPhoto] = useState(true);
+  const [settingsOpen, setSettingsOpen] = useState(false);
+  const [resetOpen, setResetOpen] = useState(false);
+  const [busy, setBusy] = useState(false);
+  const [auto, setAuto] = useState<Partial<
+    Record<AutoStep, AutoProgress>
+  > | null>(null);
+  const autoStarted = useRef(false);
+  const buildingsRequest = useRef(0);
+  const mounted = useRef(false);
+
+  function setTool(next: Tool) {
+    setToolState(next);
+    setContourMode("parcel");
+    setObstacleKind(null);
+    setSelectedExclusion(null);
+    setLandmarkKind(null);
+    setSuggestion(null);
+  }
+
+  // ---- Geometry helpers -----------------------------------------------------------------------
+  const frame = useMemo(() => frameFor(plan), [plan]);
+  const land = useMemo(
+    () => (frame ? outlineMulti(frame, plan) : null),
+    [frame, plan],
+  );
+  const shapes = useMemo(
+    () => exclusionShapes(frame, exclusions, land),
+    [frame, exclusions, land],
+  );
+  const areas = useMemo(
+    () => zoneAreas(frame, zones, land),
+    [frame, zones, land],
+  );
+  const manual = { ...study.settings, zonesAuto: false };
+  const zonesAuto =
+    settings.zonesAuto === true ||
+    (settings.zonesAuto == null && zones.length === 0);
+
+  // T-A: without a hand-drawn zone, the zones follow the land minus its obstacles.
+  function applyAutoZones(current: Zone[]) {
+    let i = 0;
+    const pieces = autoZones(
+      studyRef.current,
+      fr.capacity.zoneName,
+      () => current[i++]?.id ?? newId(),
+    );
+    const key = (list: Zone[]) =>
+      JSON.stringify(list.map((z) => [z.id, z.geometry.coordinates]));
+    update({
+      ...(key(pieces) !== key(current) ? { zones: pieces } : {}),
+      ...(settings.zonesAuto !== true
+        ? { settings: { ...study.settings, zonesAuto: true } }
+        : {}),
+    });
+  }
+  const exclusionsKey = JSON.stringify(
+    exclusions.map((e) => [e.id, e.clearance, e.geometry]),
+  );
+  const outlineKey = JSON.stringify(outline);
+  useEffect(() => {
+    if (auto || !outline || !zonesAuto) return;
+    applyAutoZones(zones);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [exclusionsKey, outlineKey]);
+
+  // B-A: every building of the BD TOPO on the land becomes an obstacle (once, then on each outline change).
+  async function syncBuildings() {
+    const current = studyRef.current;
+    const ring = current.outline?.coordinates[0];
+    const bounds = ring ? boundsOf(ring) : null;
+    if (!bounds) return;
+    const [[w, s], [e, n]] = bounds;
+    if (e - w > MAX_BBOX_SPAN || n - s > MAX_BBOX_SPAN) return;
+    const id = ++buildingsRequest.current;
+    try {
+      const { buildings } = await adminApi.buildingsIn([w, s, e, n]);
+      if (id !== buildingsRequest.current) return;
+      const latest = studyRef.current;
+      const next = withIgnBuildings(
+        latest,
+        buildings,
+        fr.capacity.exclusionKinds.building,
+      );
+      const key = (list: Exclusion[]) =>
+        list.map((x) => `${x.id}:${x.source ?? ""}`).join("|");
+      update({
+        ...(key(next) !== key(latest.exclusions) ? { exclusions: next } : {}),
+        settings: { ...latest.settings, ignBuildingsSynced: true },
+      });
+    } catch {
+      // The IGN did not answer: the operator adds the buildings by hand.
+    }
+  }
+  useEffect(() => {
+    const first = !mounted.current;
+    mounted.current = true;
+    if (auto || autoRun || !outline || settings.ignBuildings === false) return;
+    if (first && settings.ignBuildingsSynced) return;
+    void syncBuildings();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [outlineKey]);
+
+  function setIgnBuildings(on: boolean) {
+    if (on) {
+      update({ settings: { ...study.settings, ignBuildings: true } });
+      void syncBuildings();
+    } else {
+      update({
+        exclusions: exclusions.filter((e) => e.source !== "ign"),
+        settings: { ...study.settings, ignBuildings: false },
+      });
+    }
+  }
+
+  // ---- R-C: the first pass on an empty plan ---------------------------------------------------
+  useEffect(() => {
+    if (!autoRun || autoStarted.current) return;
+    autoStarted.current = true;
+    if (parking.lat == null || parking.lng == null) {
+      toast.message(t.auto.noPosition);
+      return;
+    }
+    const position: LonLat = [parking.lng, parking.lat];
+    setAuto({});
+    void (async () => {
+      try {
+        const r = await autoSetup({
+          position,
+          study: studyRef.current,
+          layout,
+          newId,
+          save: async (patch) => {
+            update(patch);
+            return flush();
+          },
+          suggest,
+          onProgress: (p) => setAuto((a) => ({ ...(a ?? {}), [p.step]: p })),
+          yieldToUi: () => new Promise((resolve) => setTimeout(resolve, 30)),
+        });
+        const { data } = await adminApi.replaceSpots(
+          parkingId,
+          r.layout,
+          r.spots,
+        );
+        onView(data);
+        toast.success(t.auto.done(data.spots.length));
+        setToolState("spots");
+        const bounds = boundsOf(r.outline.coordinates[0]);
+        if (bounds) mapRef.current?.fitTo(bounds);
+      } catch (e) {
+        toast.error(
+          e instanceof NoParcelError
+            ? t.auto.noParcel
+            : `${t.auto.failed} ${describeError(e)}`,
+          { duration: 10000 },
+        );
+      } finally {
+        setAuto(null);
+      }
+    })();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [autoRun]);
+
+  // ---- Contour: parcels, address, drawing -----------------------------------------------------
+  function outlineFrom(list: ParcelRef[]): GeoPolygon | null {
+    const polygons = list.flatMap((p) =>
+      p.geometry ? polygonsOf(p.geometry) : [],
+    );
+    if (!polygons.length) return null;
+    return unionPolygons(polygons, estimateFrame(polygons[0]))[0] ?? null;
+  }
+  async function toggleParcelAt(lngLat: LonLat) {
+    setParcelBusy(true);
+    setMessage(fr.capacity.parcelLoading);
+    try {
+      const { parcels: found } = await adminApi.parcelsAt(lngLat[0], lngLat[1]);
+      if (!found.length) {
+        setMessage(fr.capacity.parcelNone);
+        return;
+      }
+      const hit = found[0];
+      const current = studyRef.current.parcels;
+      const list = current.some((p) => p.id === hit.id)
+        ? current.filter((p) => p.id !== hit.id)
+        : [...current, hit];
+      update({
+        parcels: list,
+        outline: outlineFrom(list),
+        settings: { ...study.settings, outlineSource: "parcels" },
+      });
+      setMessage(null);
+    } catch (e) {
+      setMessage(describeError(e));
+    } finally {
+      setParcelBusy(false);
+    }
+  }
+  useEffect(() => {
+    const q = query.trim();
+    if (q.length < 3 || results?.some((r) => r.label === q)) return;
+    const point = parseLatLon(q);
+    if (point) {
+      setResults([point]);
+      return;
+    }
+    const timer = setTimeout(async () => {
+      setSearching(true);
+      try {
+        setResults((await adminApi.geocode(q)).results);
+      } catch (e) {
+        setResults([]);
+        setMessage(describeError(e));
+      } finally {
+        setSearching(false);
+      }
+    }, 450);
+    return () => clearTimeout(timer);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [query]);
+  function goTo(r: GeocodeResult) {
+    setQuery(r.label);
+    setResults(null);
+    mapRef.current?.flyTo([r.lon, r.lat], 18);
+  }
+  function clearOutline() {
+    if (!window.confirm(t.contour.clearConfirm)) return;
+    update({
+      outline: null,
+      parcels: [],
+      zones: [],
+      exclusions: [],
+      landmarks: [],
+      settings: {
+        ...study.settings,
+        outlineSource: undefined,
+        ignBuildingsSynced: false,
+        zonesAuto: true,
+      },
+    });
+    if (spots.length)
+      void adminApi
+        .replaceSpots(parkingId, plan.layout ?? layout, [])
+        .then(({ data }) => onView(data));
+  }
+
+  // ---- Brushes --------------------------------------------------------------------------------
+  function onPaintStroke(points: LonLat[]) {
+    if (!frame || (tool !== "parking" && tool !== "passage")) return;
+    const ctx = { frame, outline, name: fr.capacity.zoneName, newId };
+    const area = strokeArea(points, brushWidth, ctx);
+    const next =
+      tool === "parking"
+        ? paintZones(zones, area, ctx)
+        : eraseZones(zones, area, ctx);
+    if (next !== zones) update({ zones: next, settings: manual });
+  }
+  async function askClaude() {
+    if (suggesting) return;
+    setSuggesting(true);
+    setSuggestion(null);
+    try {
+      await flush();
+      setSuggestion(
+        await suggest({ allowGrass: settings.suggestGrass !== false }),
+      );
+    } catch (e) {
+      const reason =
+        e instanceof ApiError && e.code === "ai_failed"
+          ? (e.details as { reason?: string } | undefined)?.reason
+          : undefined;
+      toast.error(
+        reason ? `${describeError(e)} (${reason})` : describeError(e),
+        { duration: 12000 },
+      );
+    } finally {
+      setSuggesting(false);
+    }
+  }
+  function applySuggestion() {
+    if (!suggestion || !frame) return;
+    const ctx = { frame, outline, name: fr.capacity.zoneName, newId };
+    const before = zonesAuto ? [] : zones;
+    const next = suggestion.zones.reduce(
+      (acc, z) => paintZones(acc, polygonToMulti(frame, z.geometry), ctx),
+      before,
+    );
+    update({ zones: next, settings: manual });
+    toast.success(
+      fr.capacity.suggestion.applied(suggestion.zones.length, next.length),
+    );
+    setSuggestion(null);
+  }
+
+  // ---- Obstacles and landmarks ----------------------------------------------------------------
+  const selected = selectedExclusion
+    ? (exclusions.find((e) => e.id === selectedExclusion) ?? null)
+    : null;
+  function addExclusion(kind: ExclusionKind, geometry: Exclusion["geometry"]) {
+    const exclusion: Exclusion = {
+      id: newId(),
+      name: fr.capacity.exclusionKinds[kind],
+      kind,
+      clearance: EXCLUSION_DEFAULTS[kind].clearance,
+      geometry,
+    };
+    update({ exclusions: [...exclusions, exclusion] });
+    setSelectedExclusion(exclusion.id);
+  }
+  function patchExclusion(id: string, patch: Partial<Exclusion>) {
+    update({
+      exclusions: exclusions.map((e) => (e.id === id ? { ...e, ...patch } : e)),
+    });
+  }
+  function removeExclusion(id: string) {
+    update({ exclusions: exclusions.filter((e) => e.id !== id) });
+    if (selectedExclusion === id) setSelectedExclusion(null);
+  }
+  function hitExclusion(lngLat: LonLat): Exclusion | null {
+    if (!frame) return null;
+    const p = frame.forward(lngLat);
+    for (const e of [...exclusions].reverse()) {
+      const shape = shapes.get(e.id);
+      if (shape && pointInMulti(p, shape.multi)) return e;
+      if (
+        e.geometry.type === "Point" &&
+        distanceM(e.geometry.coordinates, lngLat, study.scaleFactor) <= HIT_M
+      )
+        return e;
+    }
+    return null;
+  }
+  function placeLandmark(kind: LandmarkKind, geometry: GeoPoint) {
+    const landmark: Landmark = { id: newId(), kind, geometry };
+    update({
+      landmarks: [...landmarks.filter((l) => l.kind !== kind), landmark],
+    });
+  }
+
+  // ---- Spots ----------------------------------------------------------------------------------
+  // Without a zone the engine does not run: its last result is not the plan's any more.
+  const result = zones.length ? estimate.result : null;
+  const computing = estimate.computing && zones.length > 0;
+  const counts = result?.totals;
+  async function generate() {
+    if (!result || !frame) return;
+    if (spots.length && !window.confirm(tp.regenerateConfirm)) return;
+    const slotLength = (
+      layout === "selfPark" ? settings.selfParkSlot : settings.valetSlot
+    ).length;
+    const list = spotsFromLayout(result, zones, layout, frame, slotLength);
+    setBusy(true);
+    try {
+      await flush();
+      const { data } = await adminApi.replaceSpots(parkingId, layout, list);
+      onView(data);
+      toast.success(tp.generated(data.spots.length));
+    } catch (e) {
+      toast.error(describeError(e));
+    } finally {
+      setBusy(false);
+    }
+  }
+  async function patchSpot(
+    spot: Spot,
+    patch: { active?: boolean; kind?: SpotKind },
+  ) {
+    const before = view.spots;
+    const next = before.map((s) => (s.id === spot.id ? { ...s, ...patch } : s));
+    onView({
+      ...view,
+      spots: next,
+      activeSpots: next.filter((s) => s.active).length,
+    });
+    try {
+      await adminApi.updateSpot(parkingId, spot.id, patch);
+    } catch (e) {
+      onView({
+        ...view,
+        spots: before,
+        activeSpots: before.filter((s) => s.active).length,
+      });
+      toast.error(describeError(e));
+    }
+  }
+  async function applyCapacity() {
+    setBusy(true);
+    try {
+      const { data } = await adminApi.applyPlanCapacity(parkingId);
+      onView(data);
+      toast.success(tp.capacityApplied(data.totalCapacity));
+    } catch (e) {
+      toast.error(describeError(e));
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  // ---- Map interactions -----------------------------------------------------------------------
+  const drawMode: DrawKind | null =
+    tool === "contour"
+      ? contourMode === "draw" || contourMode === "cut"
+        ? "polygon"
+        : null
+      : tool === "obstacle" && obstacleKind
+        ? (
+            {
+              Polygon: "polygon",
+              LineString: "linestring",
+              Point: "point",
+            } as const
+          )[EXCLUSION_DEFAULTS[obstacleKind].geometry]
+        : tool === "landmark" && landmarkKind
+          ? "point"
+          : null;
+  const editPolygon: GeoPolygon | null =
+    tool === "contour" && contourMode === "edit"
+      ? outline
+      : tool === "obstacle" && selected?.geometry.type === "Polygon"
+        ? selected.geometry
+        : null;
+  const paint =
+    tool === "parking" || tool === "passage"
+      ? {
+          widthM: brushWidth,
+          mode: tool === "parking" ? ("paint" as const) : ("erase" as const),
+        }
+      : null;
+
+  function onMapClick(lngLat: LonLat) {
+    if (auto) return;
+    if (tool === "contour" && contourMode === "parcel") {
+      if (!parcelBusy) void toggleParcelAt(lngLat);
+    } else if (tool === "obstacle" && !obstacleKind) {
+      setSelectedExclusion(hitExclusion(lngLat)?.id ?? null);
+    } else if (tool === "spots" && !busy) {
+      const hit = spots.find((s) => pointInRing(lngLat, s.geometry));
+      if (!hit) return;
+      if (spotTool === "toggle") void patchSpot(hit, { active: !hit.active });
+      else if (hit.kind !== spotKind) void patchSpot(hit, { kind: spotKind });
+    }
+  }
+  function onDrawn(geometry: Exclusion["geometry"]) {
+    if (tool === "contour" && geometry.type === "Polygon") {
+      if (contourMode === "draw")
+        update({
+          outline: { type: "Polygon", coordinates: [geometry.coordinates[0]] },
+          parcels: [],
+          settings: { ...study.settings, outlineSource: "drawn" },
+        });
+      else if (contourMode === "cut" && outline) {
+        const rest = subtractFromOutline(
+          outline,
+          geometry,
+          estimateFrame(outline),
+        );
+        if (rest)
+          update({
+            outline: rest,
+            settings: {
+              ...study.settings,
+              outlineSource:
+                settings.outlineSource === "drawn" ? "drawn" : "edited",
+            },
+          });
+      }
+      setContourMode("parcel");
+    } else if (tool === "obstacle" && obstacleKind) {
+      addExclusion(obstacleKind, geometry);
+      // A point obstacle (tree, post) is placed several times in a row; a shape once.
+      if (geometry.type !== "Point") setObstacleKind(null);
+    } else if (
+      tool === "landmark" &&
+      landmarkKind &&
+      geometry.type === "Point"
+    ) {
+      placeLandmark(landmarkKind, geometry);
+      setTimeout(() => setLandmarkKind(null), 0);
+    }
+  }
+  function onEditPolygon(polygon: GeoPolygon) {
+    if (tool === "contour")
+      update({
+        outline: polygon,
+        settings: {
+          ...study.settings,
+          outlineSource:
+            settings.outlineSource === "drawn" ? "drawn" : "edited",
+        },
+      });
+    else if (selected) patchExclusion(selected.id, { geometry: polygon });
+  }
+
+  const focus =
+    tool === "contour" ? "land" : tool === "spots" ? "spots" : "zones";
+  const layers = useMemo(
+    () =>
+      planLayers({
+        plan,
+        parcels: study.parcels,
+        showParcels: tool === "contour",
+        shapes,
+        selectedExclusion,
+        spots,
+        preview:
+          tool === "spots" && result ? { estimate: result, layout } : null,
+        suggestion,
+        focus,
+      }),
+    [
+      plan,
+      study.parcels,
+      tool,
+      shapes,
+      selectedExclusion,
+      spots,
+      result,
+      layout,
+      suggestion,
+      focus,
+    ],
+  );
+  const labels = useMemo(
+    () => planLabels(plan, study.scaleFactor, areas, focus),
+    [plan, study.scaleFactor, areas, focus],
+  );
+  const snapTo = useMemo(
+    () => snapTargets(outline, study.parcels, shapes),
+    [outline, study.parcels, shapes],
+  );
+  const initialBounds = useMemo(() => {
+    const drawn = boundsOf([
+      ...positionsOf(outline?.coordinates),
+      ...study.parcels.flatMap((p) => positionsOf(p.geometry?.coordinates)),
+    ]);
+    if (drawn) return drawn;
+    if (parking.lat == null || parking.lng == null) return null;
+    return [
+      [parking.lng - HOME_HALF_SPAN, parking.lat - HOME_HALF_SPAN],
+      [parking.lng + HOME_HALF_SPAN, parking.lat + HOME_HALF_SPAN],
+    ] as [LonLat, LonLat];
+    // The map is fitted once, on the plan as it was opened.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  // ---- The count on top -----------------------------------------------------------------------
+  const estimated = counts?.[layout] ?? null;
+  const headline = spots.length
+    ? t.count(view.activeSpots)
+    : estimated != null
+      ? t.count(estimated)
+      : outline
+        ? computing
+          ? tp.computing
+          : t.count(0)
+        : t.noOutlineYet;
+  const subline = spots.length
+    ? `${t.countGenerated(view.activeSpots, spots.length)} · ${tp.layouts[plan.layout ?? layout]}`
+    : estimated != null
+      ? `${t.countEstimated} · ${tp.layouts[layout]}`
+      : "";
+  const inSync =
+    view.activeSpots > 0 && view.activeSpots === view.totalCapacity;
+
+  const help = (() => {
+    if (tool === "contour")
+      return contourMode === "draw"
+        ? t.contour.drawHelp
+        : contourMode === "edit"
+          ? t.contour.editHelp
+          : contourMode === "cut"
+            ? t.contour.cutHelp
+            : t.toolHelp.contour;
+    if (tool === "obstacle" && obstacleKind) {
+      const g = EXCLUSION_DEFAULTS[obstacleKind].geometry;
+      return g === "Polygon"
+        ? t.obstacle.drawPolygon
+        : g === "LineString"
+          ? t.obstacle.drawLine
+          : t.obstacle.drawPoint;
+    }
+    if (tool === "landmark" && landmarkKind)
+      return t.landmark.placeHelp(tp.landmarkKinds[landmarkKind]);
+    return t.toolHelp[tool];
+  })();
+
+  const chip = (
+    label: string,
+    active: boolean,
+    onClick: () => void,
+    swatch?: string,
+    disabled = false,
+  ) => (
+    <button
+      key={label}
+      type="button"
+      aria-pressed={active}
+      disabled={disabled}
+      onClick={onClick}
+      className={cn(
+        "inline-flex min-h-9 items-center gap-1.5 border px-2.5 text-[13px] font-semibold disabled:cursor-not-allowed disabled:opacity-50",
+        active
+          ? "border-lime-deep bg-primary text-primary-foreground"
+          : "border-border hover:bg-accent",
+      )}
+    >
+      {swatch && <span className="h-3 w-3" style={{ background: swatch }} />}
+      {label}
+    </button>
+  );
+
+  // ---- Tool cards -----------------------------------------------------------------------------
+  function contourCard() {
+    const c = t.contour;
+    const parcelIds = study.parcels
+      .map(
+        (p) => `${p.section.replace(/^0+/, "")} ${p.numero.replace(/^0+/, "")}`,
+      )
+      .join(" + ");
+    return (
+      <>
+        <div className="relative">
+          <input
+            type="search"
+            value={query}
+            onChange={(e) => setQuery(e.target.value)}
+            placeholder={fr.capacity.addressPlaceholder}
+            aria-label={fr.capacity.address}
+            className="h-10 w-full border border-border bg-background px-3 text-sm"
+          />
+          {results && query.trim().length >= 3 && (
+            <ul className="absolute left-0 right-0 top-full z-10 max-h-48 overflow-y-auto border border-border bg-card shadow-lg">
+              {searching && (
+                <li className="px-3 py-2 text-xs text-muted-foreground">
+                  {fr.capacity.searching}
+                </li>
+              )}
+              {!searching && results.length === 0 && (
+                <li className="px-3 py-2 text-xs text-muted-foreground">
+                  {fr.capacity.noResult}
+                </li>
+              )}
+              {results.map((r) => (
+                <li key={`${r.lon},${r.lat}`}>
+                  <button
+                    type="button"
+                    onClick={() => goTo(r)}
+                    className="block w-full px-3 py-2 text-left text-sm hover:bg-accent"
+                  >
+                    {r.label}
+                  </button>
+                </li>
+              ))}
+            </ul>
+          )}
+        </div>
+        <div className="text-sm">
+          {outline ? (
+            <>
+              <b>
+                {settings.outlineSource === "drawn" || !study.parcels.length
+                  ? c.drawn
+                  : c.parcels(parcelIds)}
+              </b>
+              <span className="ml-2 font-mono text-muted-foreground">
+                {c.area(m2.format(areaM2(outline, study.scaleFactor)))}
+              </span>
+            </>
+          ) : (
+            <span className="text-muted-foreground">
+              {message ?? fr.capacity.noOutline}
+            </span>
+          )}
+          {outline && message && (
+            <div className="text-muted-foreground">{message}</div>
+          )}
+        </div>
+        <div className="flex flex-wrap gap-1.5">
+          {chip(c.draw, contourMode === "draw", () =>
+            setContourMode(contourMode === "draw" ? "parcel" : "draw"),
+          )}
+          {chip(
+            c.edit,
+            contourMode === "edit",
+            () => setContourMode(contourMode === "edit" ? "parcel" : "edit"),
+            undefined,
+            !outline,
+          )}
+          {chip(
+            c.cut,
+            contourMode === "cut",
+            () => setContourMode(contourMode === "cut" ? "parcel" : "cut"),
+            undefined,
+            !outline,
+          )}
+        </div>
+        {outline && (
+          <button
+            type="button"
+            onClick={clearOutline}
+            className="self-start text-xs text-muted-foreground underline hover:text-foreground"
+          >
+            {c.clear}
+          </button>
+        )}
+      </>
+    );
+  }
+
+  function brushCard() {
+    const painting = tool === "parking";
+    return (
+      <>
+        <div className="flex items-center gap-1.5 text-[13px]">
+          <span className="text-muted-foreground">{t.brush.width}</span>
+          {BRUSH_WIDTHS_M.map((w) =>
+            chip(`${w} m`, brushWidth === w, () => setBrushWidth(w)),
+          )}
+        </div>
+        {painting && (
+          <div
+            className="border-t border-border pt-2"
+            data-testid="zone-suggestion"
+          >
+            {suggestion ? (
+              <>
+                <div className="font-bold">
+                  {fr.capacity.suggestion.title(suggestion.zones.length)}
+                </div>
+                {suggestion.zones.length === 0 ? (
+                  <p className="mt-1 text-[13px] text-muted-foreground">
+                    {fr.capacity.suggestion.none}
+                  </p>
+                ) : (
+                  <ul className="mt-1 space-y-0.5 text-[13px]">
+                    {suggestion.surfaces.map((s) => (
+                      <li key={s.name} className="flex items-center gap-2">
+                        <span
+                          className="h-3 w-3 shrink-0 border-2 border-dashed"
+                          style={{ borderColor: PROPOSAL }}
+                        />
+                        <b>{s.name}</b>
+                        <span className="text-muted-foreground">
+                          {s.label} ·{" "}
+                          {fr.capacity.suggestion.surfaces[
+                            s.surface as keyof typeof fr.capacity.suggestion.surfaces
+                          ] ?? s.surface}{" "}
+                          ·{" "}
+                          {fr.capacity.suggestion.confidence(
+                            Math.round(s.confidence * 100),
+                          )}
+                        </span>
+                        <span className="ml-auto font-mono">
+                          {m2.format(s.area)} m²
+                        </span>
+                      </li>
+                    ))}
+                  </ul>
+                )}
+                <div className="mt-2 flex gap-2">
+                  {suggestion.zones.length > 0 && (
+                    <ToolButton
+                      variant="primary"
+                      className="min-h-9"
+                      onClick={applySuggestion}
+                    >
+                      {fr.capacity.suggestion.apply}
+                    </ToolButton>
+                  )}
+                  <ToolButton
+                    className="min-h-9"
+                    onClick={() => setSuggestion(null)}
+                  >
+                    {fr.capacity.suggestion.dismiss}
+                  </ToolButton>
+                </div>
+              </>
+            ) : (
+              <>
+                <ToolButton
+                  className="min-h-9 w-full"
+                  disabled={suggesting || !outline}
+                  onClick={() => void askClaude()}
+                >
+                  <Sparkles className="mr-1.5 inline h-4 w-4" />
+                  {suggesting ? fr.capacity.suggesting : fr.capacity.suggest}
+                </ToolButton>
+                <label className="mt-2 flex items-center gap-2 text-sm">
+                  <input
+                    type="checkbox"
+                    checked={settings.suggestGrass !== false}
+                    onChange={(e) =>
+                      update({
+                        settings: {
+                          ...study.settings,
+                          suggestGrass: e.target.checked,
+                        },
+                      })
+                    }
+                    className="h-4 w-4 accent-[#A3E635]"
+                  />
+                  {fr.capacity.suggestGrass}
+                </label>
+              </>
+            )}
+          </div>
+        )}
+        <div className="border-t border-border pt-2 text-[13px]">
+          <div className="flex items-center justify-between">
+            <b>{t.brush.zones(zones.length)}</b>
+            {!zonesAuto && outline && (
+              <button
+                type="button"
+                onClick={() => applyAutoZones(zones)}
+                className="text-xs text-muted-foreground underline hover:text-foreground"
+              >
+                {fr.capacity.autoZones}
+              </button>
+            )}
+          </div>
+          {zonesAuto && (
+            <p className="text-muted-foreground">{t.brush.autoHelp}</p>
+          )}
+          <ul className="mt-1 max-h-40 overflow-y-auto">
+            {zones.map((z) => (
+              <li key={z.id} className="flex items-center gap-2 py-0.5">
+                <span className="h-3 w-3 bg-primary" />
+                <span>{z.name}</span>
+                <span className="ml-auto font-mono text-muted-foreground">
+                  {m2.format(areas.get(z.id) ?? 0)} m²
+                </span>
+                <button
+                  type="button"
+                  aria-label={`${t.brush.removeZone} ${z.name}`}
+                  title={t.brush.removeZone}
+                  onClick={() =>
+                    update({
+                      zones: zones.filter((x) => x.id !== z.id),
+                      settings: manual,
+                    })
+                  }
+                  className="text-muted-foreground hover:text-foreground"
+                >
+                  <X className="h-3.5 w-3.5" />
+                </button>
+              </li>
+            ))}
+          </ul>
+        </div>
+      </>
+    );
+  }
+
+  function obstacleCard() {
+    const o = t.obstacle;
+    return (
+      <>
+        <div className="flex flex-wrap gap-1.5">
+          {OBSTACLE_KINDS.map((k) =>
+            chip(
+              fr.capacity.exclusionKinds[k],
+              obstacleKind === k,
+              () => {
+                setObstacleKind(obstacleKind === k ? null : k);
+                setSelectedExclusion(null);
+              },
+              EXCLUSION_COLORS[k],
+            ),
+          )}
+        </div>
+        {selected && (
+          <div className="border border-lime-deep p-2 text-sm">
+            <div className="flex items-center justify-between">
+              <b>
+                {fr.capacity.exclusionKinds[selected.kind]}
+                {selected.source === "ign" && (
+                  <span className="ml-1 font-normal text-muted-foreground">
+                    ({o.ign})
+                  </span>
+                )}
+              </b>
+              <span className="font-mono text-muted-foreground">
+                {m2.format(shapes.get(selected.id)?.area ?? 0)} m²
+              </span>
+            </div>
+            <label className="mt-1 flex items-center justify-between gap-2">
+              <span>{o.clearance}</span>
+              <input
+                type="number"
+                min={0}
+                max={10}
+                step={0.5}
+                value={selected.clearance}
+                onChange={(e) =>
+                  patchExclusion(selected.id, {
+                    clearance: Math.max(0, Number(e.target.value) || 0),
+                  })
+                }
+                className="h-8 w-20 border border-border bg-background px-2 text-right font-mono"
+              />
+            </label>
+            <ToolButton
+              className="mt-2 min-h-8 w-full"
+              onClick={() => removeExclusion(selected.id)}
+            >
+              {o.remove}
+            </ToolButton>
+          </div>
+        )}
+        <div className="text-[13px] text-muted-foreground">
+          {o.list(exclusions.length)}
+        </div>
+      </>
+    );
+  }
+
+  function landmarkCard() {
+    const l = t.landmark;
+    return (
+      <>
+        <div className="flex flex-wrap gap-1.5">
+          {LANDMARK_KINDS.map((k) =>
+            chip(
+              tp.landmarkKinds[k],
+              landmarkKind === k,
+              () => setLandmarkKind(landmarkKind === k ? null : k),
+              LANDMARK_COLORS[k],
+            ),
+          )}
+        </div>
+        <div className="text-[13px]">
+          <b>{l.placed}</b>
+          {landmarks.length === 0 ? (
+            <p className="text-muted-foreground">{l.none}</p>
+          ) : (
+            <ul className="mt-1">
+              {landmarks.map((lm) => (
+                <li key={lm.id} className="flex items-center gap-2 py-0.5">
+                  <span
+                    className="h-3 w-3 rounded-full"
+                    style={{ background: LANDMARK_COLORS[lm.kind] }}
+                  />
+                  {tp.landmarkKinds[lm.kind]}
+                  <button
+                    type="button"
+                    aria-label={`${l.remove} ${tp.landmarkKinds[lm.kind]}`}
+                    onClick={() =>
+                      update({
+                        landmarks: landmarks.filter((x) => x.id !== lm.id),
+                      })
+                    }
+                    className="ml-auto text-muted-foreground hover:text-foreground"
+                  >
+                    <X className="h-3.5 w-3.5" />
+                  </button>
+                </li>
+              ))}
+            </ul>
+          )}
+        </div>
+      </>
+    );
+  }
+
+  function spotsCard() {
+    const s = t.spots;
+    if (!zones.length)
+      return <p className="text-sm text-muted-foreground">{s.needZones}</p>;
+    const stayCounts: Record<StayClass, number> = {
+      short: 0,
+      medium: 0,
+      long: 0,
+    };
+    for (const sp of spots)
+      if (sp.active && sp.stayClass) stayCounts[sp.stayClass] += 1;
+    const hasStay = stayCounts.short + stayCounts.medium + stayCounts.long > 0;
+    const n = counts?.[layout] ?? 0;
+    return (
+      <>
+        <div
+          role="radiogroup"
+          aria-label={s.layout}
+          className="flex flex-col gap-1"
+        >
+          {LAYOUT_KEYS.map((key) => (
+            <label
+              key={key}
+              className={cn(
+                "flex min-h-10 cursor-pointer items-center gap-2 border px-2 text-sm",
+                layout === key
+                  ? "border-lime-deep bg-primary/20"
+                  : "border-border hover:bg-accent",
+              )}
+            >
+              <input
+                type="radio"
+                name="layout"
+                value={key}
+                checked={layout === key}
+                onChange={() => setLayout(key)}
+                className="accent-[#A3E635]"
+              />
+              <span className="flex-1">{tp.layouts[key]}</span>
+              <span className="font-mono font-bold">
+                {counts ? tp.places(counts[key]) : "…"}
+              </span>
+            </label>
+          ))}
+        </div>
+        <ToolButton
+          variant="primary"
+          className="min-h-10 w-full"
+          disabled={!result || computing || busy || n === 0}
+          onClick={() => void generate()}
+        >
+          {spots.length ? s.regenerate(n) : s.generate(n)}
+        </ToolButton>
+        {spots.length > 0 && (
+          <>
+            <div className="border-t border-border pt-2 text-[13px]">
+              <b>{s.adjust}</b>
+              <div className="mt-1 flex flex-wrap gap-1.5">
+                {chip(tp.tools.toggle, spotTool === "toggle", () =>
+                  setSpotTool("toggle"),
+                )}
+                {SPOT_KINDS.map((k) =>
+                  chip(
+                    tp.spotKinds[k],
+                    spotTool === "kind" && spotKind === k,
+                    () => {
+                      setSpotTool("kind");
+                      setSpotKind(k);
+                    },
+                    SPOT_KIND_COLORS[k],
+                  ),
+                )}
+              </div>
+            </div>
+            {hasStay && (
+              <div className="flex flex-wrap gap-3 text-[13px]">
+                {STAY_CLASSES.map((c) => (
+                  <span key={c} className="inline-flex items-center gap-1.5">
+                    <span
+                      className="h-3 w-3"
+                      style={{ background: STAY_COLORS[c] }}
+                    />
+                    {tp.stayClasses[c]}{" "}
+                    <span className="font-mono">{stayCounts[c]}</span>
+                  </span>
+                ))}
+              </div>
+            )}
+            <div className="border-t border-border pt-2 text-[13px]">
+              <div className="flex justify-between">
+                <span>{tp.countDeclared}</span>
+                <span className="font-mono font-bold">
+                  {view.totalCapacity}
+                </span>
+              </div>
+              {inSync ? (
+                <p className="mt-1 text-muted-foreground">
+                  {tp.capacityInSync}
+                </p>
+              ) : (
+                <ToolButton
+                  className="mt-1 min-h-9 w-full"
+                  disabled={busy || view.activeSpots === 0}
+                  onClick={() => void applyCapacity()}
+                >
+                  {tp.applyCapacity(view.activeSpots)}
+                </ToolButton>
+              )}
+            </div>
+          </>
+        )}
+      </>
+    );
+  }
+
+  const card =
+    tool === "contour"
+      ? contourCard()
+      : tool === "parking" || tool === "passage"
+        ? brushCard()
+        : tool === "obstacle"
+          ? obstacleCard()
+          : tool === "landmark"
+            ? landmarkCard()
+            : spotsCard();
+  const toolEnabled = (k: Tool) => k === "contour" || !!outline;
+
+  return (
+    <div className="-mx-4 flex flex-col border-y border-border sm:-mx-6 lg:h-[calc(100vh-200px)] lg:min-h-[640px]">
+      {/* Top bar: the count, the save state, the drawer and the reset menu. */}
+      <div className="flex shrink-0 flex-wrap items-center gap-x-5 gap-y-1 border-b border-border px-4 py-2 sm:px-6">
+        <div className="flex items-baseline gap-2">
+          <span
+            className="font-mono text-2xl font-bold text-lime-deep"
+            data-testid="plan-count"
+          >
+            {headline}
+          </span>
+          <span className="text-sm text-muted-foreground">{subline}</span>
+        </div>
+        <span
+          className={cn(
+            "text-xs",
+            saveState === "error"
+              ? "text-destructive"
+              : "text-muted-foreground",
+          )}
+          role="status"
+          aria-live="polite"
+        >
+          {saveState === "saving"
+            ? tp.saving
+            : saveState === "saved"
+              ? tp.saved
+              : saveState === "error"
+                ? tp.saveError
+                : ""}
+        </span>
+        <div className="ml-auto flex items-center gap-4">
+          <button
+            type="button"
+            onClick={() => setSettingsOpen((o) => !o)}
+            className="flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground"
+          >
+            <Settings2 className="h-4 w-4" />
+            {t.settings}
+          </button>
+          <div className="relative">
+            <button
+              type="button"
+              aria-haspopup="menu"
+              aria-expanded={resetOpen}
+              disabled={!outline}
+              onClick={() => setResetOpen((o) => !o)}
+              className="flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground disabled:cursor-not-allowed disabled:opacity-50"
+            >
+              <RotateCcw className="h-4 w-4" />
+              {tp.reset}
+            </button>
+            {resetOpen && (
+              <div
+                role="menu"
+                className="absolute right-0 top-full z-40 mt-1 w-80 border border-border bg-card p-1 shadow-lg"
+              >
+                {(
+                  [
+                    ["all", tp.resetAll, tp.resetAllHelp],
+                    ["zones", tp.resetZones, tp.resetZonesHelp],
+                    ["spots", tp.resetSpots, tp.resetSpotsHelp],
+                  ] as const
+                ).map(([scope, label, helpText]) => (
+                  <button
+                    key={scope}
+                    type="button"
+                    role="menuitem"
+                    onClick={() => {
+                      setResetOpen(false);
+                      void onReset(scope).then(() =>
+                        setTool(
+                          scope === "all"
+                            ? "contour"
+                            : scope === "zones"
+                              ? "parking"
+                              : "spots",
+                        ),
+                      );
+                    }}
+                    className="block w-full px-3 py-2 text-left hover:bg-accent"
+                  >
+                    <span className="block text-sm font-semibold">{label}</span>
+                    <span className="block text-xs text-muted-foreground">
+                      {helpText}
+                    </span>
+                  </button>
+                ))}
+              </div>
+            )}
+          </div>
+        </div>
+      </div>
+
+      <div className="relative flex min-h-0 flex-1">
+        {/* The toolbar: six tools, one gesture each. */}
+        <nav
+          aria-label={fr.parkingPlan.title}
+          className="flex w-[92px] shrink-0 flex-col border-r border-border bg-card"
+        >
+          {TOOLS.map((k) => {
+            const Icon = TOOL_ICONS[k];
+            return (
+              <button
+                key={k}
+                type="button"
+                aria-pressed={tool === k}
+                disabled={!toolEnabled(k)}
+                onClick={() => setTool(k)}
+                className={cn(
+                  "flex min-h-[72px] flex-col items-center justify-center gap-1 px-1 text-center text-[11px] font-semibold uppercase leading-tight tracking-[0.3px] disabled:cursor-not-allowed disabled:opacity-40",
+                  tool === k
+                    ? "bg-primary text-primary-foreground"
+                    : "text-foreground hover:bg-accent",
+                )}
+              >
+                <Icon className="h-5 w-5" />
+                {t.tools[k]}
+              </button>
+            );
+          })}
+        </nav>
+
+        <div className="relative min-h-[55vh] min-w-0 flex-1 lg:min-h-0">
+          <MapView
+            ref={mapRef}
+            layers={layers}
+            labels={labels}
+            showPhoto={showPhoto}
+            initialBounds={initialBounds}
+            editPolygon={editPolygon}
+            midpoints
+            onEditPolygon={onEditPolygon}
+            drawMode={drawMode}
+            onDrawn={onDrawn}
+            snapTo={snapTo}
+            paint={paint}
+            onPaintStroke={onPaintStroke}
+            onMapClick={onMapClick}
+            cursor={
+              tool === "contour" && contourMode === "parcel"
+                ? parcelBusy
+                  ? "progress"
+                  : "pointer"
+                : drawMode
+                  ? "crosshair"
+                  : "pointer"
+            }
+            className="h-full w-full"
+          >
+            {/* The tool's card: its two or three options, and the help line. */}
+            <div
+              className="absolute left-3 top-3 z-10 flex max-h-[calc(100%-24px)] w-[340px] max-w-[calc(100%-24px)] flex-col gap-2.5 overflow-y-auto bg-card/95 p-3 shadow-lg backdrop-blur-sm"
+              data-testid="tool-card"
+            >
+              <div className="flex items-center justify-between">
+                <b className="text-sm uppercase tracking-[0.5px]">
+                  {t.tools[tool]}
+                </b>
+                {(contourMode !== "parcel" || obstacleKind || landmarkKind) && (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setContourMode("parcel");
+                      setObstacleKind(null);
+                      setLandmarkKind(null);
+                    }}
+                    className="text-xs text-muted-foreground underline"
+                  >
+                    {t.contour.stop}
+                  </button>
+                )}
+              </div>
+              <p className="text-[13px] text-muted-foreground">{help}</p>
+              {card}
+            </div>
+            {auto && (
+              <div
+                role="status"
+                className="absolute left-1/2 top-3 z-20 w-[360px] max-w-[calc(100%-24px)] -translate-x-1/2 border border-lime-deep bg-card p-3 shadow-lg"
+              >
+                <div className="flex items-center gap-2 font-bold">
+                  <Loader2 className="h-4 w-4 animate-spin text-lime-deep" />
+                  {t.auto.title}
+                </div>
+                <p className="mt-1 text-[13px] text-muted-foreground">
+                  {t.auto.intro}
+                </p>
+                <ul className="mt-2 space-y-1 text-sm">
+                  {AUTO_STEPS.map((step) => {
+                    const p = auto[step];
+                    return (
+                      <li key={step} className="flex items-center gap-2">
+                        {p?.state === "done" ? (
+                          <Check className="h-4 w-4 text-lime-deep" />
+                        ) : p?.state === "running" ? (
+                          <Loader2 className="h-4 w-4 animate-spin" />
+                        ) : (
+                          <span className="h-4 w-4 border border-border" />
+                        )}
+                        {t.auto.steps[step]}
+                        {p?.note && (
+                          <span className="ml-auto font-mono text-xs text-muted-foreground">
+                            {p.note}
+                          </span>
+                        )}
+                      </li>
+                    );
+                  })}
+                </ul>
+              </div>
+            )}
+          </MapView>
+          {settingsOpen && (
+            <PlanSettings
+              study={study}
+              update={update}
+              showPhoto={showPhoto}
+              onShowPhoto={setShowPhoto}
+              onIgnBuildings={setIgnBuildings}
+              onClose={() => setSettingsOpen(false)}
+            />
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}
