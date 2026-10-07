@@ -308,11 +308,15 @@ class _Services extends StatelessWidget {
         : s.sms.pending > 0
         ? (_Tone.warn, 'dashboard.sms_pending'.tr(args: ['${s.sms.pending}']))
         : (_Tone.ok, 'dashboard.sms_ok'.tr());
-    final stripe = s.stripe.payoutsEnabled
+    // Online payment needs the platform only (06/10/2026); the operator's Stripe account moves the payouts.
+    final online = s.stripe.online ?? s.stripe.connected;
+    final stripe = !online
+        ? (_Tone.off, 'dashboard.stripe_off'.tr())
+        : s.stripe.payoutsEnabled
         ? (_Tone.ok, 'dashboard.stripe_on'.tr())
         : s.stripe.connected
         ? (_Tone.warn, 'dashboard.stripe_pending'.tr())
-        : (_Tone.off, 'dashboard.stripe_off'.tr());
+        : (_Tone.warn, 'dashboard.stripe_no_account'.tr());
     final items = [
       (
         Icons.flight_rounded,

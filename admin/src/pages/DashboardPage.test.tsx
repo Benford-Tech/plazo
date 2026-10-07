@@ -23,7 +23,7 @@ const dashboard: Dashboard = {
     flights: { configured: true, provider: "aerodatabox", lastCheckedAt: null },
     sms: { mode: "brevo", pending: 2, stale: false, lastSentAt: null },
     push: { configured: false, devices: 0 },
-    stripe: { connected: true, payoutsEnabled: false },
+    stripe: { online: true, connected: true, payoutsEnabled: false },
     lastImportAt: null,
   },
   alerts: [
@@ -132,7 +132,7 @@ describe("DashboardPage", () => {
     expect(services).toHaveTextContent("VolsOKsuivi aerodatabox");
     expect(services).toHaveTextContent("SMSÀ voir2 en attente");
     expect(services).toHaveTextContent("NotificationsOffnon configurées");
-    expect(services).toHaveTextContent("PaiementsÀ voircompte à finaliser");
+    expect(services).toHaveTextContent("PaiementsÀ voiren ligne · compte Stripe à finaliser");
     expect(services).toHaveTextContent("ImportOffjamais");
 
     const alerts = screen.getByRole("heading", { name: "À traiter maintenant" }).closest("section")!;

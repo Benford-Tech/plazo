@@ -45,7 +45,7 @@ describe('GET /internal/dashboard', () => {
       flights: { configured: false },
       sms: { mode: 'none', pending: 0 },
       push: { configured: false, devices: 0 },
-      stripe: { connected: false },
+      stripe: { online: false, connected: false },
       lastImportAt: null,
     });
     expect(empty.body.alerts).toEqual([]);

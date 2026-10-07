@@ -2107,7 +2107,7 @@ as int,
 /// @nodoc
 mixin _$DashboardStripeModel {
 
- bool get connected; bool get payoutsEnabled;
+ bool? get online; bool get connected; bool get payoutsEnabled;
 /// Create a copy of DashboardStripeModel
 /// with the given fields replaced by the non-null parameter values.
 @JsonKey(includeFromJson: false, includeToJson: false)
@@ -2121,20 +2121,20 @@ $DashboardStripeModelCopyWith<DashboardStripeModel> get copyWith => _$DashboardS
 @override
 bool operator ==(Object other) {
   final _this = this as DashboardStripeModel;
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is DashboardStripeModel&&(identical(other.connected, _this.connected) || other.connected == _this.connected)&&(identical(other.payoutsEnabled, _this.payoutsEnabled) || other.payoutsEnabled == _this.payoutsEnabled));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is DashboardStripeModel&&(identical(other.online, _this.online) || other.online == _this.online)&&(identical(other.connected, _this.connected) || other.connected == _this.connected)&&(identical(other.payoutsEnabled, _this.payoutsEnabled) || other.payoutsEnabled == _this.payoutsEnabled));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
 int get hashCode {
   final _this = this as DashboardStripeModel;
-  return Object.hash(runtimeType,_this.connected,_this.payoutsEnabled);
+  return Object.hash(runtimeType,_this.online,_this.connected,_this.payoutsEnabled);
 }
 
 @override
 String toString() {
   final _this = this as DashboardStripeModel;
-  return 'DashboardStripeModel(connected: ${_this.connected}, payoutsEnabled: ${_this.payoutsEnabled})';
+  return 'DashboardStripeModel(online: ${_this.online}, connected: ${_this.connected}, payoutsEnabled: ${_this.payoutsEnabled})';
 }
 
 
@@ -2145,7 +2145,7 @@ abstract mixin class $DashboardStripeModelCopyWith<$Res>  {
   factory $DashboardStripeModelCopyWith(DashboardStripeModel value, $Res Function(DashboardStripeModel) _then) = _$DashboardStripeModelCopyWithImpl;
 @useResult
 $Res call({
- bool connected, bool payoutsEnabled
+ bool? online, bool connected, bool payoutsEnabled
 });
 
 
@@ -2162,9 +2162,10 @@ class _$DashboardStripeModelCopyWithImpl<$Res>
 
 /// Create a copy of DashboardStripeModel
 /// with the given fields replaced by the non-null parameter values.
-@pragma('vm:prefer-inline') @override $Res call({Object? connected = null,Object? payoutsEnabled = null,}) {
+@pragma('vm:prefer-inline') @override $Res call({Object? online = freezed,Object? connected = null,Object? payoutsEnabled = null,}) {
   return _then(DashboardStripeModel(
-connected: null == connected ? _self.connected : connected // ignore: cast_nullable_to_non_nullable
+online: freezed == online ? _self.online : online // ignore: cast_nullable_to_non_nullable
+as bool?,connected: null == connected ? _self.connected : connected // ignore: cast_nullable_to_non_nullable
 as bool,payoutsEnabled: null == payoutsEnabled ? _self.payoutsEnabled : payoutsEnabled // ignore: cast_nullable_to_non_nullable
 as bool,
   ));
@@ -2251,10 +2252,10 @@ return $default(_that);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( bool connected,  bool payoutsEnabled)?  $default,{required TResult orElse(),}) {final _that = this;
+@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( bool? online,  bool connected,  bool payoutsEnabled)?  $default,{required TResult orElse(),}) {final _that = this;
 switch (_that) {
 case _DashboardStripeModel() when $default != null:
-return $default(_that.connected,_that.payoutsEnabled);case _:
+return $default(_that.online,_that.connected,_that.payoutsEnabled);case _:
   return orElse();
 
 }
@@ -2272,10 +2273,10 @@ return $default(_that.connected,_that.payoutsEnabled);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( bool connected,  bool payoutsEnabled)  $default,) {final _that = this;
+@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( bool? online,  bool connected,  bool payoutsEnabled)  $default,) {final _that = this;
 switch (_that) {
 case _DashboardStripeModel():
-return $default(_that.connected,_that.payoutsEnabled);case _:
+return $default(_that.online,_that.connected,_that.payoutsEnabled);case _:
   throw StateError('Unexpected subclass');
 
 }
@@ -2292,10 +2293,10 @@ return $default(_that.connected,_that.payoutsEnabled);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( bool connected,  bool payoutsEnabled)?  $default,) {final _that = this;
+@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( bool? online,  bool connected,  bool payoutsEnabled)?  $default,) {final _that = this;
 switch (_that) {
 case _DashboardStripeModel() when $default != null:
-return $default(_that.connected,_that.payoutsEnabled);case _:
+return $default(_that.online,_that.connected,_that.payoutsEnabled);case _:
   return null;
 
 }
@@ -2307,9 +2308,10 @@ return $default(_that.connected,_that.payoutsEnabled);case _:
 @JsonSerializable()
 
 class _DashboardStripeModel implements DashboardStripeModel {
-  const _DashboardStripeModel({this.connected = false, this.payoutsEnabled = false});
+  const _DashboardStripeModel({this.online, this.connected = false, this.payoutsEnabled = false});
   factory _DashboardStripeModel.fromJson(Map<String, dynamic> json) => _$DashboardStripeModelFromJson(json);
 
+@override final  bool? online;
 @override@JsonKey() final  bool connected;
 @override@JsonKey() final  bool payoutsEnabled;
 
@@ -2326,18 +2328,18 @@ Map<String, dynamic> toJson() {
 
 @override
 bool operator ==(Object other) {
-    return identical(this, other) || (other.runtimeType == runtimeType&&other is _DashboardStripeModel&&(identical(other.connected, connected) || other.connected == connected)&&(identical(other.payoutsEnabled, payoutsEnabled) || other.payoutsEnabled == payoutsEnabled));
+    return identical(this, other) || (other.runtimeType == runtimeType&&other is _DashboardStripeModel&&(identical(other.online, online) || other.online == online)&&(identical(other.connected, connected) || other.connected == connected)&&(identical(other.payoutsEnabled, payoutsEnabled) || other.payoutsEnabled == payoutsEnabled));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
 int get hashCode {
-    return Object.hash(runtimeType,connected,payoutsEnabled);
+    return Object.hash(runtimeType,online,connected,payoutsEnabled);
 }
 
 @override
 String toString() {
-    return 'DashboardStripeModel(connected: $connected, payoutsEnabled: $payoutsEnabled)';
+    return 'DashboardStripeModel(online: $online, connected: $connected, payoutsEnabled: $payoutsEnabled)';
 }
 
 
@@ -2348,7 +2350,7 @@ abstract mixin class _$DashboardStripeModelCopyWith<$Res> implements $DashboardS
   factory _$DashboardStripeModelCopyWith(_DashboardStripeModel value, $Res Function(_DashboardStripeModel) _then) = __$DashboardStripeModelCopyWithImpl;
 @override @useResult
 $Res call({
- bool connected, bool payoutsEnabled
+ bool? online, bool connected, bool payoutsEnabled
 });
 
 
@@ -2365,9 +2367,10 @@ class __$DashboardStripeModelCopyWithImpl<$Res>
 
 /// Create a copy of DashboardStripeModel
 /// with the given fields replaced by the non-null parameter values.
-@override @pragma('vm:prefer-inline') $Res call({Object? connected = null,Object? payoutsEnabled = null,}) {
+@override @pragma('vm:prefer-inline') $Res call({Object? online = freezed,Object? connected = null,Object? payoutsEnabled = null,}) {
   return _then(_DashboardStripeModel(
-connected: null == connected ? _self.connected : connected // ignore: cast_nullable_to_non_nullable
+online: freezed == online ? _self.online : online // ignore: cast_nullable_to_non_nullable
+as bool?,connected: null == connected ? _self.connected : connected // ignore: cast_nullable_to_non_nullable
 as bool,payoutsEnabled: null == payoutsEnabled ? _self.payoutsEnabled : payoutsEnabled // ignore: cast_nullable_to_non_nullable
 as bool,
   ));

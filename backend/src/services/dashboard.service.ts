@@ -15,6 +15,7 @@ import { ShuttleForecastService } from './shuttle-forecast.service';
 import { InboundEmailService } from './inbound-email.service';
 import { ShuttleService } from './shuttle.service';
 import { SmsService } from './sms.service';
+import { OPERATOR_PAYMENT_FIELDS, PaymentService } from './payment.service';
 
 /** The statuses of a vehicle on the parking. */
 const ON_SITE: ReservationStatus[] = ON_SITE_STATUSES;
@@ -103,7 +104,8 @@ export interface Dashboard {
     flights: { configured: boolean; provider: string | null; lastCheckedAt: string | null };
     sms: { mode: string; pending: number; stale: boolean; lastSentAt: string | null };
     push: { configured: boolean; devices: number };
-    stripe: { connected: boolean; payoutsEnabled: boolean };
+    /** `online`: travellers can pay on the site (platform keys + commission); the account only moves the payouts. */
+    stripe: { online: boolean; connected: boolean; payoutsEnabled: boolean };
     lastImportAt: string | null;
   };
   alerts: DashboardAlert[];
@@ -136,6 +138,7 @@ export class DashboardService {
   public inbound = Container.get(InboundEmailService);
   public forecast = Container.get(ShuttleForecastService);
   public sms = Container.get(SmsService);
+  public payments = Container.get(PaymentService);
   public occupation = Container.get(OccupationService);
 
   public async get(actor: AuthenticatedStaff): Promise<Dashboard> {
@@ -154,7 +157,7 @@ export class DashboardService {
       this.shuttle.running(actor),
       this.arrivals.live(actor).then(l => l.signals),
       prisma.parkingSpot.count({ where: { parkingId: parking.id, active: true } }),
-      prisma.operator.findUniqueOrThrow({ where: { id: actor.operatorId }, select: { stripeAccountId: true, stripePayoutsEnabled: true } }),
+      prisma.operator.findUniqueOrThrow({ where: { id: actor.operatorId }, select: OPERATOR_PAYMENT_FIELDS }),
       prisma.staffDevice.count({ where: { staff: { operatorId: actor.operatorId, isActive: true } } }),
       prisma.reservation.findFirst({
         where: { operatorId: actor.operatorId, channel: { in: ['import', 'aggregator'] } },
@@ -400,7 +403,11 @@ export class DashboardService {
         flights: { configured: !!flights, provider: flights?.provider ?? null, lastCheckedAt: lastChecked?.toISOString() ?? null },
         sms: { mode: smsStatus.mode, pending: smsStatus.pending, stale: smsStatus.pendingStale, lastSentAt: smsStatus.lastSentAt },
         push: { configured: this.push.enabled(), devices },
-        stripe: { connected: !!operator.stripeAccountId, payoutsEnabled: operator.stripePayoutsEnabled },
+        stripe: {
+          online: this.payments.modeFor(operator) === 'online',
+          connected: !!operator.stripeAccountId,
+          payoutsEnabled: operator.stripePayoutsEnabled,
+        },
         lastImportAt: lastImport?.createdAt.toISOString() ?? null,
       },
       alerts,
