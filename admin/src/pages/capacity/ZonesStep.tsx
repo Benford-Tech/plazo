@@ -9,6 +9,7 @@ import { areaM2, autoZones, exclusionMulti, frameFor, multiToPolygons, outlineMu
 import { areaOf, intersection } from "@/lib/capacity/geometry";
 import { boundsOf, edgeLabels, fc, feature, polygonCentroid, positionsOf } from "@/lib/capacity/mapData";
 import { EXCLUSION_DEFAULTS, settingsOf, type Exclusion, type ExclusionKind, type GeoPolygon, type LonLat, type Zone, type ZoneSuggestion } from "@/lib/capacity/types";
+import { ApiError } from "@/lib/api";
 import { describeError, fr } from "@/lib/fr";
 import { cn } from "@/lib/utils";
 import type { StepProps } from "./CapacityStudyPage";
@@ -75,7 +76,9 @@ export default function ZonesStep({ study, update, go, suggestZones }: StepProps
     try {
       setSuggestion(await suggestZones());
     } catch (e) {
-      toast.error(describeError(e));
+      // ai_failed carries the API's own words: shown, so a rejected request is understood at once.
+      const reason = e instanceof ApiError && e.code === "ai_failed" ? (e.details as { reason?: string } | undefined)?.reason : undefined;
+      toast.error(reason ? `${describeError(e)} (${reason})` : describeError(e), { duration: 12000 });
     } finally {
       setSuggesting(false);
     }

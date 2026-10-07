@@ -50,14 +50,11 @@ const RESPONSE_SCHEMA = {
         additionalProperties: false,
         required: ['points', 'label', 'surface', 'confidence'],
         properties: {
-          points: {
-            type: 'array',
-            minItems: 3,
-            items: { type: 'array', minItems: 2, maxItems: 2, items: { type: 'number' } },
-          },
+          // Kept to the keywords structured outputs accept everywhere; sizes and ranges are checked in code.
+          points: { type: 'array', items: { type: 'array', items: { type: 'number' } } },
           label: { type: 'string' },
           surface: { type: 'string', enum: ['asphalt', 'gravel', 'concrete', 'other'] },
-          confidence: { type: 'number', minimum: 0, maximum: 1 },
+          confidence: { type: 'number' },
         },
       },
     },
@@ -112,8 +109,28 @@ export class ZoneSuggestionService {
     const jpg = jpeg.encode(photo, 85).data;
 
     const { surfaces, usage } = await this.ask(jpg.toString('base64'), photo.width, photo.height, mpp, outlinePx);
+    try {
+      return this.toZones(surfaces, usage, { outline, exclusions, scaleFactor }, range, photo, mpp, zoom);
+    } catch (error) {
+      // A geometry the engine cannot digest: said as such rather than a bare 500.
+      const reason = error instanceof Error ? error.message : String(error);
+      logger.error(`[Zones] proposal could not be converted: ${reason}`);
+      throw new HttpException(httpStatus.BAD_GATEWAY, `The proposal could not be converted: ${reason}`, 'ai_failed', { reason });
+    }
+  }
 
-    const input = { outline, exclusions, scaleFactor } as Pick<CapacityStudy, 'outline' | 'exclusions' | 'scaleFactor'>;
+  private toZones(
+    surfaces: SuggestedSurface[],
+    usage: ZoneSuggestion['usage'],
+    input: Pick<CapacityStudy, 'outline' | 'exclusions' | 'scaleFactor'>,
+    range: TileRange,
+    photo: { width: number; height: number },
+    mpp: number,
+    zoom: number,
+  ): ZoneSuggestion {
+    const { outline } = input;
+    if (!outline) throw new HttpException(httpStatus.BAD_REQUEST, 'The plan has no outline', 'no_outline');
+
     const frame = frameFor({ ...input, zones: [] });
     if (!frame) throw new HttpException(httpStatus.BAD_REQUEST, 'The plan has no outline', 'no_outline');
     const land = polygonToMulti(frame, outline);
@@ -256,11 +273,15 @@ export class ZoneSuggestionService {
         throw new HttpException(httpStatus.GATEWAY_TIMEOUT, 'Claude did not answer in time', 'ai_timeout');
       }
       if (error instanceof Anthropic.APIError) {
+        // The answer's own words reach the pro space: a rejected request is fixed from them.
         logger.error(`[Zones] Anthropic answered ${error.status}: ${error.message}`);
-        throw new HttpException(httpStatus.BAD_GATEWAY, 'Claude could not be reached', 'ai_unavailable');
+        throw new HttpException(httpStatus.BAD_GATEWAY, `Anthropic answered ${error.status}`, 'ai_failed', {
+          reason: `${error.status ?? '?'} ${error.message}`.slice(0, 300),
+        });
       }
-      logger.error(`[Zones] Anthropic call failed: ${error instanceof Error ? error.message : 'unknown error'}`);
-      throw new HttpException(httpStatus.BAD_GATEWAY, 'Claude could not be reached', 'ai_unavailable');
+      const reason = error instanceof Error ? error.message : 'unknown error';
+      logger.error(`[Zones] Anthropic call failed: ${reason}`);
+      throw new HttpException(httpStatus.BAD_GATEWAY, 'Claude could not be reached', 'ai_failed', { reason: reason.slice(0, 300) });
     }
     if (response.stop_reason === 'refusal') {
       throw new HttpException(httpStatus.BAD_GATEWAY, 'Claude declined to read this photo', 'ai_refused');
@@ -273,11 +294,18 @@ export class ZoneSuggestionService {
     try {
       parsed = JSON.parse(text);
     } catch {
-      throw new HttpException(httpStatus.BAD_GATEWAY, 'Claude answered something that is not JSON', 'ai_unavailable');
+      throw new HttpException(httpStatus.BAD_GATEWAY, 'Claude answered something that is not JSON', 'ai_failed', {
+        reason: `not JSON: ${text.slice(0, 120)}`,
+      });
     }
-    const surfaces = (parsed.surfaces ?? []).filter(
-      s => Array.isArray(s.points) && s.points.every(p => Array.isArray(p) && p.length === 2 && p.every(Number.isFinite)),
-    );
+    if (response.stop_reason === 'max_tokens') {
+      throw new HttpException(httpStatus.BAD_GATEWAY, 'Claude ran out of room for its answer', 'ai_failed', { reason: 'max_tokens' });
+    }
+    const surfaces = (parsed.surfaces ?? [])
+      .filter(
+        s => Array.isArray(s.points) && s.points.length >= 3 && s.points.every(p => Array.isArray(p) && p.length === 2 && p.every(Number.isFinite)),
+      )
+      .map(s => ({ ...s, confidence: Math.min(1, Math.max(0, Number(s.confidence) || 0)) }));
     return { surfaces, usage: { inputTokens: response.usage.input_tokens, outputTokens: response.usage.output_tokens } };
   }
 }

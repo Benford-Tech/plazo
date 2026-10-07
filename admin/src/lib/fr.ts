@@ -109,6 +109,7 @@ export const fr = {
       "La proposition par Claude n'est pas disponible : clé API absente ou réponse inexploitable.",
     ai_refused: "Claude n'a pas pu lire cette photo. Tracez les zones au pinceau.",
     ai_busy: "Claude est saturé pour l'instant. Réessayez dans une minute.",
+    ai_failed: "La lecture par Claude a échoué",
     ai_timeout: "Claude a mis trop de temps à lire la photo. Réessayez.",
     no_outline: "Repérez d'abord le terrain (étape 1).",
     geo_timeout:
