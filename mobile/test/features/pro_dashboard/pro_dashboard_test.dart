@@ -28,7 +28,8 @@ final dashboard = DashboardModel(
   services: const DashboardServicesModel(
     flights: DashboardFlightsModel(configured: true, provider: 'aerodatabox'),
     sms: DashboardSmsModel(mode: 'brevo', pending: 2),
-    stripe: DashboardStripeModel(connected: true),
+    // Payments are centralised: the tile is OK as soon as the platform takes them online.
+    stripe: DashboardStripeModel(online: true, connected: false),
   ),
   alerts: const [
     DashboardAlertModel(kind: 'no_spot', severity: 'urgent', reservationId: 'r3', customerName: 'Louis Leroy', plate: 'LM-789-NP', minutes: 10),
@@ -115,9 +116,10 @@ void main() {
     final services = find.byKey(const Key('dashboard-services'));
     expect(find.descendant(of: services, matching: find.text('suivi aerodatabox')), findsOneWidget);
     expect(find.descendant(of: services, matching: find.text('2 en attente')), findsOneWidget);
-    expect(find.descendant(of: services, matching: find.text('À voir')), findsNWidgets(2));
+    expect(find.descendant(of: services, matching: find.text('À voir')), findsOneWidget);
     expect(find.descendant(of: services, matching: find.text('Off')), findsNWidgets(2));
-    expect(find.descendant(of: services, matching: find.text('OK')), findsOneWidget);
+    expect(find.descendant(of: services, matching: find.text('OK')), findsNWidgets(2));
+    expect(find.descendant(of: services, matching: find.text('en ligne, encaissés par Plazo')), findsOneWidget);
     expect(find.text('Sur place sans place'), findsOneWidget);
     expect(find.text('Louis Leroy · depuis 10 min'), findsOneWidget);
     expect(find.text('Urgent'), findsOneWidget);

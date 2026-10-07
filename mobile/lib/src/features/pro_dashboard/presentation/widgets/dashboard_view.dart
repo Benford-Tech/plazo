@@ -310,13 +310,8 @@ class _Services extends StatelessWidget {
         : (_Tone.ok, 'dashboard.sms_ok'.tr());
     // Online payment needs the platform only (06/10/2026); the operator's Stripe account moves the payouts.
     final online = s.stripe.online ?? s.stripe.connected;
-    final stripe = !online
-        ? (_Tone.off, 'dashboard.stripe_off'.tr())
-        : s.stripe.payoutsEnabled
-        ? (_Tone.ok, 'dashboard.stripe_on'.tr())
-        : s.stripe.connected
-        ? (_Tone.warn, 'dashboard.stripe_pending'.tr())
-        : (_Tone.warn, 'dashboard.stripe_no_account'.tr());
+    // Payments are centralised (Plazo takes every payment): the tile only says whether online payment is on.
+    final stripe = online ? (_Tone.ok, 'dashboard.stripe_on'.tr()) : (_Tone.off, 'dashboard.stripe_off'.tr());
     final items = [
       (
         Icons.flight_rounded,

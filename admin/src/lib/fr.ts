@@ -337,13 +337,9 @@ export const fr = {
         `${devices} appareil${devices > 1 ? "s" : ""}`,
       pushOff: "non configurées",
       stripe: "Paiements",
-      // The tile says two things: whether travellers can pay online, and whether the payouts reach the operator.
-      stripeOn: "en ligne · reversements actifs",
-      stripePending: "en ligne · compte Stripe à finaliser",
-      stripeNoAccount:
-        "en ligne · reversements en attente, compte Stripe à relier",
-      stripeOff:
-        "paiement en ligne non activé (clés Stripe et commission de la plateforme)",
+      // Payments are centralised: Plazo takes every payment. The tile only says whether travellers can pay online.
+      stripeOn: "en ligne, encaissés par Plazo",
+      stripeOff: "paiement en ligne non activé par Plazo",
       importLabel: "Import",
       importAt: (ago: string) => `dernier ${ago}`,
       importNever: "jamais",

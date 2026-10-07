@@ -139,15 +139,11 @@ function ServicesStrip({ services }: { services: Dashboard["services"] }) {
         : services.sms.pending > 0
           ? { state: "warn", detail: s.smsPending(services.sms.pending) }
           : { state: "ok", detail: s.smsOk };
-  // Online payment needs the platform only (06/10/2026); the operator's Stripe account moves the payouts.
+  // Payments are centralised (Plazo takes every payment): the tile only says whether online payment is on.
   const online = services.stripe.online ?? services.stripe.connected;
-  const stripe: { state: Health; detail: string } = !online
-    ? { state: "off", detail: s.stripeOff }
-    : services.stripe.payoutsEnabled
-      ? { state: "ok", detail: s.stripeOn }
-      : services.stripe.connected
-        ? { state: "warn", detail: s.stripePending }
-        : { state: "warn", detail: s.stripeNoAccount };
+  const stripe: { state: Health; detail: string } = online
+    ? { state: "ok", detail: s.stripeOn }
+    : { state: "off", detail: s.stripeOff };
   return (
     <div
       aria-label={s.title}
