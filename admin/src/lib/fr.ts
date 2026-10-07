@@ -139,6 +139,8 @@ export const fr = {
     invalid_payout_schedule: "Calendrier de reversement inconnu.",
     invalid_date: "Date invalide.",
     invalid_sms_mode: "Choix inconnu.",
+    invalid_tracking: "Choix inconnu.",
+    shuttle_tracking_off: "Le suivi des navettes est désactivé pour ce parking.",
     unknown_variable: "Une variable entre accolades est inconnue : utilisez celles proposées.",
     invalid_time: "Heure non proposée.",
     reminder_not_tonight: "Seuls les SMS de ce soir peuvent partir maintenant.",
@@ -1673,6 +1675,9 @@ export const shuttleTripsFr = {
   running: {
     pickup: "En route vers l'aéroport · position partagée",
     dropoff: "En route vers le terminal · position partagée",
+    // R-B: the parking turned the tracking off.
+    pickupNoShare: "En route vers l'aéroport · suivi désactivé",
+    dropoffNoShare: "En route vers le terminal · suivi désactivé",
     stop: (name: string) => `Desserte : ${name}`,
     vehicle: (v: string) => `Véhicule : ${v}`,
     passengers: (n: number) => `${n} client${n > 1 ? "s" : ""} suivent votre trajet`,
@@ -1992,4 +1997,26 @@ export const remindersFr = {
     sentAt: (day: string, time: string) => `${day} · ${time}`,
     also: "Le mail de rappel et la notification de l’app partent en même temps.",
   },
+};
+
+/** R-B (07/10/2026): who sees the position of the shuttles. */
+export const shuttleTrackingFr = {
+  title: "Suivi des navettes",
+  intro: "Qui voit la position de vos navettes pendant les trajets ?",
+  legend: "Niveau de suivi",
+  recommended: "Recommandé",
+  levels: {
+    off: { title: "Pas de suivi", text: "Les chauffeurs ne partagent pas leur position." },
+    team: { title: "Équipe seulement", text: "La position sert à organiser les navettes. Vos clients ne la voient pas." },
+    everyone: {
+      title: "Équipe et clients",
+      text: "Vos clients suivent leur navette et reçoivent « Votre navette est là ». Votre parking porte la mention « En direct » dans les résultats.",
+    },
+  },
+  who: { team: "Équipe", clients: "Clients", mention: "Mention" },
+  yes: "oui",
+  no: "non",
+  always: "Dans tous les cas, « Votre navette est partie » est envoyé au départ de chaque trajet.",
+  save: "Enregistrer",
+  saved: "Suivi des navettes enregistré.",
 };

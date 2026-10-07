@@ -1,12 +1,12 @@
 import { Router } from 'express';
 import { ParkingController } from '@/controllers/parking.controller';
-import { UpdateParkingDto } from '@/dtos/parking.dto';
+import { UpdateParkingDto, UpdateShuttleTrackingDto } from '@/dtos/parking.dto';
 import { AssignSpotDto } from '@/dtos/occupation.dto';
 import { CarLocationDto } from '@/dtos/public-booking.dto';
 import { GenerateSpotsDto, ReplaceSpotsDto, UpdateParkingPlanDto, UpdateSpotDto } from '@/dtos/parking-plan.dto';
 import { PlatformController } from '@/controllers/platform.controller';
 import { Routes } from '@/interfaces/routes.interface';
-import { StaffAuthMiddleware } from '@/middlewares/staff-auth.middleware';
+import { RefuseInViewAs, StaffAuthMiddleware } from '@/middlewares/staff-auth.middleware';
 import { ValidationMiddleware } from '@/middlewares/validation.middleware';
 
 /**
@@ -40,6 +40,23 @@ import { ValidationMiddleware } from '@/middlewares/validation.middleware';
  *               totalCapacity: { type: integer, minimum: 1 }
  *               safetyMarginPct: { type: integer, minimum: 0, maximum: 50 }
  *               shuttleTravelMinutes: { type: integer, minimum: 1, maximum: 120 }
+ * /internal/parkings/{id}/shuttle-tracking:
+ *   put:
+ *     summary: Who sees the position of the parking's shuttles (R-B, managers, audited)
+ *     tags: [Parking]
+ *     description: >
+ *       "off": the drivers do not share it (the position route answers 409 shuttle_tracking_off);
+ *       "team": the staff's live maps only; "everyone": also the travellers (booking, home map,
+ *       "Votre navette est là") and "EN DIRECT" on the search results (liveShuttle).
+ *     parameters:
+ *       - { in: path, name: id, required: true, schema: { type: string } }
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema: { type: object, required: [tracking], properties: { tracking: { type: string, enum: [off, team, everyone] } } }
+ *     responses:
+ *       200: { description: "{ data: the parking }" }
  */
 export class ParkingRoute implements Routes {
   public router = Router();
@@ -54,6 +71,13 @@ export class ParkingRoute implements Routes {
   private initializeRoutes() {
     this.router.get('/internal/parking', StaffAuthMiddleware('dashboard:view'), this.parking.getPrimary);
     this.router.patch('/internal/parkings/:id', StaffAuthMiddleware('parking:manage'), ValidationMiddleware(UpdateParkingDto), this.parking.update);
+    this.router.put(
+      '/internal/parkings/:id/shuttle-tracking',
+      StaffAuthMiddleware('parking:manage'),
+      RefuseInViewAs(),
+      ValidationMiddleware(UpdateShuttleTrackingDto),
+      this.parking.setShuttleTracking,
+    );
 
     // Bloc 2, step "Plan": the operator's parking plan and its spots.
     this.router.get('/internal/parkings/:id/plan', StaffAuthMiddleware('dashboard:view'), this.parking.getPlan);

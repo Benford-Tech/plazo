@@ -181,6 +181,15 @@ Ne construire QUE ce qui règle la douleur n°1 du client.
      **Ligne du jour cohérente avec l'heure (06/10/2026)** : aujourd'hui, seules les vagues à venir sont listées (`ShuttleWavesState.upcoming`,
      une vague est passée si elle est faite ou devait partir il y a plus de 30 min) ; les passées sont repliées sous « N créneaux passés »
      (app `waves-past`, web `waves-past`, heure du serveur) ; le compteur devient « N à venir ».
+   - Décisions **R-B + I-C du 07/10/2026 (« suivi des navettes réglable », règle 1)** : `Parking.shuttleTracking` `off` | `team` |
+     `everyone` (`team` par défaut pour un nouveau parking ; les parkings existants et ceux de démonstration à `everyone`),
+     `PUT /internal/parkings/:id/shuttle-tracking` (`parking:manage`), `domain/shuttle-tracking.ts` ; bloc « Suivi des navettes »
+     de la page Parking (`ShuttleTrackingCard`) et section de Plus › Réglages du parking dans Plazo Pro ; `off` : trajets sans
+     position (409 `shuttle_tracking_off`, `sharePosition` faux sur `pickups`, `departures` et le trajet, ni le web ni l'app ne
+     demandent la localisation) ; `team` : l'équipe seule, aucune position, distance ni « Votre navette est là » au voyageur, pas de
+     navette sur la carte d'accueil ; `everyone` : comme avant. `liveShuttle` sur les résultats et fiches (navette proposée et
+     `everyone`) : pilule blanche « EN DIRECT » sur la photo (`LiveShuttlePill` site, `LiveShuttleTag` app) et minibus devant le
+     prix sur la pastille de la carte des résultats.
    - Décision **E du 06/10/2026 (communication voyageur ↔ parking)** : `Reservation.customerNote` (message à la réservation, ≤ 300),
      `vehicleModel` / `vehicleColour` (site, app, saisie et modification pro, fiche, fiche opérationnelle) ; `ArrivalSignal.note`
      (mot joint à « Je suis en route », « J'arrive dans… », « Je suis au point de rendez-vous », champ sur le site et dans l'app

@@ -596,7 +596,8 @@ $LatLngModelCopyWith<$Res>? get location {
 mixin _$SearchResultModel {
 
  String get slug; String get title; List<String> get services; int? get shuttleMinutes; double? get distanceKm; String? get openingHours; String get cancellationPolicy; String? get photo; String get payment; LatLngModel? get location; bool get available; int get days; int? get priceCents;/// Fictional parking of the demo data: shown like the others, with a small "Démo" tag.
- bool get isDemo;
+ bool get isDemo;/// R-B + I-C (07/10/2026): the parking shows its shuttles to the travellers ("EN DIRECT").
+ bool get liveShuttle;
 /// Create a copy of SearchResultModel
 /// with the given fields replaced by the non-null parameter values.
 @JsonKey(includeFromJson: false, includeToJson: false)
@@ -610,20 +611,20 @@ $SearchResultModelCopyWith<SearchResultModel> get copyWith => _$SearchResultMode
 @override
 bool operator ==(Object other) {
   final _this = this as SearchResultModel;
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is SearchResultModel&&(identical(other.slug, _this.slug) || other.slug == _this.slug)&&(identical(other.title, _this.title) || other.title == _this.title)&&const DeepCollectionEquality().equals(other.services, _this.services)&&(identical(other.shuttleMinutes, _this.shuttleMinutes) || other.shuttleMinutes == _this.shuttleMinutes)&&(identical(other.distanceKm, _this.distanceKm) || other.distanceKm == _this.distanceKm)&&(identical(other.openingHours, _this.openingHours) || other.openingHours == _this.openingHours)&&(identical(other.cancellationPolicy, _this.cancellationPolicy) || other.cancellationPolicy == _this.cancellationPolicy)&&(identical(other.photo, _this.photo) || other.photo == _this.photo)&&(identical(other.payment, _this.payment) || other.payment == _this.payment)&&(identical(other.location, _this.location) || other.location == _this.location)&&(identical(other.available, _this.available) || other.available == _this.available)&&(identical(other.days, _this.days) || other.days == _this.days)&&(identical(other.priceCents, _this.priceCents) || other.priceCents == _this.priceCents)&&(identical(other.isDemo, _this.isDemo) || other.isDemo == _this.isDemo));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is SearchResultModel&&(identical(other.slug, _this.slug) || other.slug == _this.slug)&&(identical(other.title, _this.title) || other.title == _this.title)&&const DeepCollectionEquality().equals(other.services, _this.services)&&(identical(other.shuttleMinutes, _this.shuttleMinutes) || other.shuttleMinutes == _this.shuttleMinutes)&&(identical(other.distanceKm, _this.distanceKm) || other.distanceKm == _this.distanceKm)&&(identical(other.openingHours, _this.openingHours) || other.openingHours == _this.openingHours)&&(identical(other.cancellationPolicy, _this.cancellationPolicy) || other.cancellationPolicy == _this.cancellationPolicy)&&(identical(other.photo, _this.photo) || other.photo == _this.photo)&&(identical(other.payment, _this.payment) || other.payment == _this.payment)&&(identical(other.location, _this.location) || other.location == _this.location)&&(identical(other.available, _this.available) || other.available == _this.available)&&(identical(other.days, _this.days) || other.days == _this.days)&&(identical(other.priceCents, _this.priceCents) || other.priceCents == _this.priceCents)&&(identical(other.isDemo, _this.isDemo) || other.isDemo == _this.isDemo)&&(identical(other.liveShuttle, _this.liveShuttle) || other.liveShuttle == _this.liveShuttle));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
 int get hashCode {
   final _this = this as SearchResultModel;
-  return Object.hash(runtimeType,_this.slug,_this.title,const DeepCollectionEquality().hash(_this.services),_this.shuttleMinutes,_this.distanceKm,_this.openingHours,_this.cancellationPolicy,_this.photo,_this.payment,_this.location,_this.available,_this.days,_this.priceCents,_this.isDemo);
+  return Object.hash(runtimeType,_this.slug,_this.title,const DeepCollectionEquality().hash(_this.services),_this.shuttleMinutes,_this.distanceKm,_this.openingHours,_this.cancellationPolicy,_this.photo,_this.payment,_this.location,_this.available,_this.days,_this.priceCents,_this.isDemo,_this.liveShuttle);
 }
 
 @override
 String toString() {
   final _this = this as SearchResultModel;
-  return 'SearchResultModel(slug: ${_this.slug}, title: ${_this.title}, services: ${_this.services}, shuttleMinutes: ${_this.shuttleMinutes}, distanceKm: ${_this.distanceKm}, openingHours: ${_this.openingHours}, cancellationPolicy: ${_this.cancellationPolicy}, photo: ${_this.photo}, payment: ${_this.payment}, location: ${_this.location}, available: ${_this.available}, days: ${_this.days}, priceCents: ${_this.priceCents}, isDemo: ${_this.isDemo})';
+  return 'SearchResultModel(slug: ${_this.slug}, title: ${_this.title}, services: ${_this.services}, shuttleMinutes: ${_this.shuttleMinutes}, distanceKm: ${_this.distanceKm}, openingHours: ${_this.openingHours}, cancellationPolicy: ${_this.cancellationPolicy}, photo: ${_this.photo}, payment: ${_this.payment}, location: ${_this.location}, available: ${_this.available}, days: ${_this.days}, priceCents: ${_this.priceCents}, isDemo: ${_this.isDemo}, liveShuttle: ${_this.liveShuttle})';
 }
 
 
@@ -634,7 +635,7 @@ abstract mixin class $SearchResultModelCopyWith<$Res>  {
   factory $SearchResultModelCopyWith(SearchResultModel value, $Res Function(SearchResultModel) _then) = _$SearchResultModelCopyWithImpl;
 @useResult
 $Res call({
- String slug, String title, List<String> services, int? shuttleMinutes, double? distanceKm, String? openingHours, String cancellationPolicy, String? photo, String payment, LatLngModel? location, bool available, int days, int? priceCents, bool isDemo
+ String slug, String title, List<String> services, int? shuttleMinutes, double? distanceKm, String? openingHours, String cancellationPolicy, String? photo, String payment, LatLngModel? location, bool available, int days, int? priceCents, bool isDemo, bool liveShuttle
 });
 
 
@@ -651,7 +652,7 @@ class _$SearchResultModelCopyWithImpl<$Res>
 
 /// Create a copy of SearchResultModel
 /// with the given fields replaced by the non-null parameter values.
-@pragma('vm:prefer-inline') @override $Res call({Object? slug = null,Object? title = null,Object? services = null,Object? shuttleMinutes = freezed,Object? distanceKm = freezed,Object? openingHours = freezed,Object? cancellationPolicy = null,Object? photo = freezed,Object? payment = null,Object? location = freezed,Object? available = null,Object? days = null,Object? priceCents = freezed,Object? isDemo = null,}) {
+@pragma('vm:prefer-inline') @override $Res call({Object? slug = null,Object? title = null,Object? services = null,Object? shuttleMinutes = freezed,Object? distanceKm = freezed,Object? openingHours = freezed,Object? cancellationPolicy = null,Object? photo = freezed,Object? payment = null,Object? location = freezed,Object? available = null,Object? days = null,Object? priceCents = freezed,Object? isDemo = null,Object? liveShuttle = null,}) {
   return _then(SearchResultModel(
 slug: null == slug ? _self.slug : slug // ignore: cast_nullable_to_non_nullable
 as String,title: null == title ? _self.title : title // ignore: cast_nullable_to_non_nullable
@@ -667,6 +668,7 @@ as LatLngModel?,available: null == available ? _self.available : available // ig
 as bool,days: null == days ? _self.days : days // ignore: cast_nullable_to_non_nullable
 as int,priceCents: freezed == priceCents ? _self.priceCents : priceCents // ignore: cast_nullable_to_non_nullable
 as int?,isDemo: null == isDemo ? _self.isDemo : isDemo // ignore: cast_nullable_to_non_nullable
+as bool,liveShuttle: null == liveShuttle ? _self.liveShuttle : liveShuttle // ignore: cast_nullable_to_non_nullable
 as bool,
   ));
 }
@@ -764,10 +766,10 @@ return $default(_that);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( String slug,  String title,  List<String> services,  int? shuttleMinutes,  double? distanceKm,  String? openingHours,  String cancellationPolicy,  String? photo,  String payment,  LatLngModel? location,  bool available,  int days,  int? priceCents,  bool isDemo)?  $default,{required TResult orElse(),}) {final _that = this;
+@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( String slug,  String title,  List<String> services,  int? shuttleMinutes,  double? distanceKm,  String? openingHours,  String cancellationPolicy,  String? photo,  String payment,  LatLngModel? location,  bool available,  int days,  int? priceCents,  bool isDemo,  bool liveShuttle)?  $default,{required TResult orElse(),}) {final _that = this;
 switch (_that) {
 case _SearchResultModel() when $default != null:
-return $default(_that.slug,_that.title,_that.services,_that.shuttleMinutes,_that.distanceKm,_that.openingHours,_that.cancellationPolicy,_that.photo,_that.payment,_that.location,_that.available,_that.days,_that.priceCents,_that.isDemo);case _:
+return $default(_that.slug,_that.title,_that.services,_that.shuttleMinutes,_that.distanceKm,_that.openingHours,_that.cancellationPolicy,_that.photo,_that.payment,_that.location,_that.available,_that.days,_that.priceCents,_that.isDemo,_that.liveShuttle);case _:
   return orElse();
 
 }
@@ -785,10 +787,10 @@ return $default(_that.slug,_that.title,_that.services,_that.shuttleMinutes,_that
 /// }
 /// ```
 
-@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( String slug,  String title,  List<String> services,  int? shuttleMinutes,  double? distanceKm,  String? openingHours,  String cancellationPolicy,  String? photo,  String payment,  LatLngModel? location,  bool available,  int days,  int? priceCents,  bool isDemo)  $default,) {final _that = this;
+@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( String slug,  String title,  List<String> services,  int? shuttleMinutes,  double? distanceKm,  String? openingHours,  String cancellationPolicy,  String? photo,  String payment,  LatLngModel? location,  bool available,  int days,  int? priceCents,  bool isDemo,  bool liveShuttle)  $default,) {final _that = this;
 switch (_that) {
 case _SearchResultModel():
-return $default(_that.slug,_that.title,_that.services,_that.shuttleMinutes,_that.distanceKm,_that.openingHours,_that.cancellationPolicy,_that.photo,_that.payment,_that.location,_that.available,_that.days,_that.priceCents,_that.isDemo);case _:
+return $default(_that.slug,_that.title,_that.services,_that.shuttleMinutes,_that.distanceKm,_that.openingHours,_that.cancellationPolicy,_that.photo,_that.payment,_that.location,_that.available,_that.days,_that.priceCents,_that.isDemo,_that.liveShuttle);case _:
   throw StateError('Unexpected subclass');
 
 }
@@ -805,10 +807,10 @@ return $default(_that.slug,_that.title,_that.services,_that.shuttleMinutes,_that
 /// }
 /// ```
 
-@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( String slug,  String title,  List<String> services,  int? shuttleMinutes,  double? distanceKm,  String? openingHours,  String cancellationPolicy,  String? photo,  String payment,  LatLngModel? location,  bool available,  int days,  int? priceCents,  bool isDemo)?  $default,) {final _that = this;
+@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( String slug,  String title,  List<String> services,  int? shuttleMinutes,  double? distanceKm,  String? openingHours,  String cancellationPolicy,  String? photo,  String payment,  LatLngModel? location,  bool available,  int days,  int? priceCents,  bool isDemo,  bool liveShuttle)?  $default,) {final _that = this;
 switch (_that) {
 case _SearchResultModel() when $default != null:
-return $default(_that.slug,_that.title,_that.services,_that.shuttleMinutes,_that.distanceKm,_that.openingHours,_that.cancellationPolicy,_that.photo,_that.payment,_that.location,_that.available,_that.days,_that.priceCents,_that.isDemo);case _:
+return $default(_that.slug,_that.title,_that.services,_that.shuttleMinutes,_that.distanceKm,_that.openingHours,_that.cancellationPolicy,_that.photo,_that.payment,_that.location,_that.available,_that.days,_that.priceCents,_that.isDemo,_that.liveShuttle);case _:
   return null;
 
 }
@@ -820,7 +822,7 @@ return $default(_that.slug,_that.title,_that.services,_that.shuttleMinutes,_that
 @JsonSerializable()
 
 class _SearchResultModel extends SearchResultModel {
-  const _SearchResultModel({required this.slug, required this.title,  List<String> services = const <String>[], this.shuttleMinutes, this.distanceKm, this.openingHours, this.cancellationPolicy = 'non_refundable', this.photo, this.payment = 'unavailable', this.location, this.available = false, this.days = 0, this.priceCents, this.isDemo = false}): _services = services,super._();
+  const _SearchResultModel({required this.slug, required this.title,  List<String> services = const <String>[], this.shuttleMinutes, this.distanceKm, this.openingHours, this.cancellationPolicy = 'non_refundable', this.photo, this.payment = 'unavailable', this.location, this.available = false, this.days = 0, this.priceCents, this.isDemo = false, this.liveShuttle = false}): _services = services,super._();
   factory _SearchResultModel.fromJson(Map<String, dynamic> json) => _$SearchResultModelFromJson(json);
 
 @override final  String slug;
@@ -844,6 +846,8 @@ class _SearchResultModel extends SearchResultModel {
 @override final  int? priceCents;
 /// Fictional parking of the demo data: shown like the others, with a small "Démo" tag.
 @override@JsonKey() final  bool isDemo;
+/// R-B + I-C (07/10/2026): the parking shows its shuttles to the travellers ("EN DIRECT").
+@override@JsonKey() final  bool liveShuttle;
 
 /// Create a copy of SearchResultModel
 /// with the given fields replaced by the non-null parameter values.
@@ -858,18 +862,18 @@ Map<String, dynamic> toJson() {
 
 @override
 bool operator ==(Object other) {
-    return identical(this, other) || (other.runtimeType == runtimeType&&other is _SearchResultModel&&(identical(other.slug, slug) || other.slug == slug)&&(identical(other.title, title) || other.title == title)&&const DeepCollectionEquality().equals(other.services, _services)&&(identical(other.shuttleMinutes, shuttleMinutes) || other.shuttleMinutes == shuttleMinutes)&&(identical(other.distanceKm, distanceKm) || other.distanceKm == distanceKm)&&(identical(other.openingHours, openingHours) || other.openingHours == openingHours)&&(identical(other.cancellationPolicy, cancellationPolicy) || other.cancellationPolicy == cancellationPolicy)&&(identical(other.photo, photo) || other.photo == photo)&&(identical(other.payment, payment) || other.payment == payment)&&(identical(other.location, location) || other.location == location)&&(identical(other.available, available) || other.available == available)&&(identical(other.days, days) || other.days == days)&&(identical(other.priceCents, priceCents) || other.priceCents == priceCents)&&(identical(other.isDemo, isDemo) || other.isDemo == isDemo));
+    return identical(this, other) || (other.runtimeType == runtimeType&&other is _SearchResultModel&&(identical(other.slug, slug) || other.slug == slug)&&(identical(other.title, title) || other.title == title)&&const DeepCollectionEquality().equals(other.services, _services)&&(identical(other.shuttleMinutes, shuttleMinutes) || other.shuttleMinutes == shuttleMinutes)&&(identical(other.distanceKm, distanceKm) || other.distanceKm == distanceKm)&&(identical(other.openingHours, openingHours) || other.openingHours == openingHours)&&(identical(other.cancellationPolicy, cancellationPolicy) || other.cancellationPolicy == cancellationPolicy)&&(identical(other.photo, photo) || other.photo == photo)&&(identical(other.payment, payment) || other.payment == payment)&&(identical(other.location, location) || other.location == location)&&(identical(other.available, available) || other.available == available)&&(identical(other.days, days) || other.days == days)&&(identical(other.priceCents, priceCents) || other.priceCents == priceCents)&&(identical(other.isDemo, isDemo) || other.isDemo == isDemo)&&(identical(other.liveShuttle, liveShuttle) || other.liveShuttle == liveShuttle));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
 int get hashCode {
-    return Object.hash(runtimeType,slug,title,const DeepCollectionEquality().hash(_services),shuttleMinutes,distanceKm,openingHours,cancellationPolicy,photo,payment,location,available,days,priceCents,isDemo);
+    return Object.hash(runtimeType,slug,title,const DeepCollectionEquality().hash(_services),shuttleMinutes,distanceKm,openingHours,cancellationPolicy,photo,payment,location,available,days,priceCents,isDemo,liveShuttle);
 }
 
 @override
 String toString() {
-    return 'SearchResultModel(slug: $slug, title: $title, services: $services, shuttleMinutes: $shuttleMinutes, distanceKm: $distanceKm, openingHours: $openingHours, cancellationPolicy: $cancellationPolicy, photo: $photo, payment: $payment, location: $location, available: $available, days: $days, priceCents: $priceCents, isDemo: $isDemo)';
+    return 'SearchResultModel(slug: $slug, title: $title, services: $services, shuttleMinutes: $shuttleMinutes, distanceKm: $distanceKm, openingHours: $openingHours, cancellationPolicy: $cancellationPolicy, photo: $photo, payment: $payment, location: $location, available: $available, days: $days, priceCents: $priceCents, isDemo: $isDemo, liveShuttle: $liveShuttle)';
 }
 
 
@@ -880,7 +884,7 @@ abstract mixin class _$SearchResultModelCopyWith<$Res> implements $SearchResultM
   factory _$SearchResultModelCopyWith(_SearchResultModel value, $Res Function(_SearchResultModel) _then) = __$SearchResultModelCopyWithImpl;
 @override @useResult
 $Res call({
- String slug, String title, List<String> services, int? shuttleMinutes, double? distanceKm, String? openingHours, String cancellationPolicy, String? photo, String payment, LatLngModel? location, bool available, int days, int? priceCents, bool isDemo
+ String slug, String title, List<String> services, int? shuttleMinutes, double? distanceKm, String? openingHours, String cancellationPolicy, String? photo, String payment, LatLngModel? location, bool available, int days, int? priceCents, bool isDemo, bool liveShuttle
 });
 
 
@@ -897,7 +901,7 @@ class __$SearchResultModelCopyWithImpl<$Res>
 
 /// Create a copy of SearchResultModel
 /// with the given fields replaced by the non-null parameter values.
-@override @pragma('vm:prefer-inline') $Res call({Object? slug = null,Object? title = null,Object? services = null,Object? shuttleMinutes = freezed,Object? distanceKm = freezed,Object? openingHours = freezed,Object? cancellationPolicy = null,Object? photo = freezed,Object? payment = null,Object? location = freezed,Object? available = null,Object? days = null,Object? priceCents = freezed,Object? isDemo = null,}) {
+@override @pragma('vm:prefer-inline') $Res call({Object? slug = null,Object? title = null,Object? services = null,Object? shuttleMinutes = freezed,Object? distanceKm = freezed,Object? openingHours = freezed,Object? cancellationPolicy = null,Object? photo = freezed,Object? payment = null,Object? location = freezed,Object? available = null,Object? days = null,Object? priceCents = freezed,Object? isDemo = null,Object? liveShuttle = null,}) {
   return _then(_SearchResultModel(
 slug: null == slug ? _self.slug : slug // ignore: cast_nullable_to_non_nullable
 as String,title: null == title ? _self.title : title // ignore: cast_nullable_to_non_nullable
@@ -913,6 +917,7 @@ as LatLngModel?,available: null == available ? _self.available : available // ig
 as bool,days: null == days ? _self.days : days // ignore: cast_nullable_to_non_nullable
 as int,priceCents: freezed == priceCents ? _self.priceCents : priceCents // ignore: cast_nullable_to_non_nullable
 as int?,isDemo: null == isDemo ? _self.isDemo : isDemo // ignore: cast_nullable_to_non_nullable
+as bool,liveShuttle: null == liveShuttle ? _self.liveShuttle : liveShuttle // ignore: cast_nullable_to_non_nullable
 as bool,
   ));
 }

@@ -98,6 +98,8 @@ export class DemoSeedService {
         returnMeetingInstructions: demo.meetingPoint.instructions,
         returnMeetingPhotoUrl: null,
         extraDayPriceCents: grid.extraDayPriceCents,
+        // The demo shows every feature of the site, "EN DIRECT" included (R-B + I-C).
+        shuttleTracking: 'everyone' as const,
       };
       const parking = existing?.parkings[0]
         ? await tx.parking.update({ where: { id: existing.parkings[0].id }, data: parkingData })

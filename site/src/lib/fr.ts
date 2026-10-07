@@ -178,6 +178,9 @@ const frBase = {
     cheapest: "Le moins cher",
     fastestShuttle: "Navette la plus rapide",
     allIn: (days: number) => `${daysLabel(days)}, tout compris`,
+    // R-B + I-C (07/10/2026): the parking shows its shuttles to the travellers.
+    live: "En direct",
+    liveTitle: "Navette suivie en direct : vous la verrez arriver dans votre réservation.",
     seeAndBook: "Voir et réserver",
     full: "Complet à ces dates",
     fullHint: "Essayez d’autres dates",
@@ -240,6 +243,7 @@ const frBase = {
     failed: "La carte n’a pas pu s’afficher.",
     attribution: "© IGN – Plan IGN",
     marker: (title: string, state: string) => `${title}, ${state}`,
+    markerLive: (title: string, state: string) => `${title}, ${state}, navette suivie en direct`,
     shuttle: (parking: string, direction: "pickup" | "dropoff") => `Navette de ${parking} · ${direction === "dropoff" ? "vers le terminal" : "vers l’aéroport"}`,
     shuttleAge: (seconds: number) => (seconds < 60 ? `position il y a ${seconds} s` : `position il y a ${Math.round(seconds / 60)} min`),
     /** Texts of the map's own controls (MapLibre). */

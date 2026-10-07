@@ -102,6 +102,23 @@ class UpdateParkingSettingsUseCase with UseCase<ParkingSettingsModel, UpdatePark
   Future<Either<Failure, ParkingSettingsModel>> call(UpdateParkingParams p) => _r.updateParking(p.id, p.input);
 }
 
+class ShuttleTrackingParams extends Equatable {
+  const ShuttleTrackingParams({required this.id, required this.tracking});
+  final String id;
+
+  /// "off", "team" or "everyone" (R-B, 07/10/2026).
+  final String tracking;
+  @override
+  List<Object?> get props => [id, tracking];
+}
+
+class SetShuttleTrackingUseCase with UseCase<ParkingSettingsModel, ShuttleTrackingParams> {
+  SetShuttleTrackingUseCase(this._r);
+  final SettingsRepository _r;
+  @override
+  Future<Either<Failure, ParkingSettingsModel>> call(ShuttleTrackingParams p) => _r.setShuttleTracking(p.id, p.tracking);
+}
+
 class GetSmsSettingsUseCase with UseCase<SmsSettingsModel, NoParams> {
   GetSmsSettingsUseCase(this._r);
   final SettingsRepository _r;

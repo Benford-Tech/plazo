@@ -23,6 +23,12 @@ class ProSettingsParkingSaved extends ProSettingsEvent {
   final ParkingSettingsInput input;
 }
 
+/// R-B (07/10/2026): who sees the shuttles' position.
+class ProSettingsShuttleTrackingSaved extends ProSettingsEvent {
+  const ProSettingsShuttleTrackingSaved(this.tracking);
+  final String tracking;
+}
+
 class ProSettingsSmsSaved extends ProSettingsEvent {
   const ProSettingsSmsSaved(this.input, {this.testTo});
   final SmsSettingsInput input;
@@ -59,7 +65,7 @@ abstract class ProSettingsState with _$ProSettingsState {
     SmsSettingsModel? sms,
     SmsStatusModel? smsStatus,
 
-    /// "settings.saved", "sms.saved", "sms.test_sent:`to`", "sms.test_queued:`to`", "sms.disabled", "account.password_changed".
+    /// "settings.saved", "tracking.saved", "sms.saved", "sms.test_sent:`to`", "sms.test_queued:`to`", "sms.disabled", "account.password_changed".
     String? notice,
     String? errorCode,
     @Default({}) Map<String, String> fieldErrors,
@@ -68,10 +74,20 @@ abstract class ProSettingsState with _$ProSettingsState {
 
 /// Parking settings and SMS channel (managers), and the signed-in member's password (everyone).
 class ProSettingsBloc extends Bloc<ProSettingsEvent, ProSettingsState> {
-  ProSettingsBloc(this._getParking, this._updateParking, this._getSms, this._getStatus, this._saveSms, this._testSms, this._disableSms, this._changePassword)
-    : super(const ProSettingsState()) {
+  ProSettingsBloc(
+    this._getParking,
+    this._updateParking,
+    this._getSms,
+    this._getStatus,
+    this._saveSms,
+    this._testSms,
+    this._disableSms,
+    this._changePassword,
+    this._setTracking,
+  ) : super(const ProSettingsState()) {
     on<ProSettingsStarted>(_onStarted);
     on<ProSettingsParkingSaved>(_onParkingSaved);
+    on<ProSettingsShuttleTrackingSaved>(_onTrackingSaved);
     on<ProSettingsSmsSaved>(_onSmsSaved);
     on<ProSettingsSmsTested>(_onSmsTested);
     on<ProSettingsSmsDisabled>(_onSmsDisabled);
@@ -87,6 +103,7 @@ class ProSettingsBloc extends Bloc<ProSettingsEvent, ProSettingsState> {
   final TestSmsUseCase _testSms;
   final DisableSmsUseCase _disableSms;
   final ChangePasswordUseCase _changePassword;
+  final SetShuttleTrackingUseCase _setTracking;
 
   static String _code(Failure f) => f.code ?? (f.statusCode == null ? 'network' : 'generic');
 
@@ -108,6 +125,17 @@ class ProSettingsBloc extends Bloc<ProSettingsEvent, ProSettingsState> {
     result.fold(
       (f) => emit(state.copyWith(actionState: ViewState.error, errorCode: f.fields?.isNotEmpty == true ? null : _code(f), fieldErrors: f.fields ?? const {})),
       (p) => emit(state.copyWith(actionState: ViewState.success, parking: p, notice: 'settings.saved')),
+    );
+  }
+
+  Future<void> _onTrackingSaved(ProSettingsShuttleTrackingSaved event, Emitter<ProSettingsState> emit) async {
+    final parking = state.parking;
+    if (parking == null) return;
+    emit(state.copyWith(actionState: ViewState.processing, errorCode: null));
+    final result = await _setTracking(ShuttleTrackingParams(id: parking.id, tracking: event.tracking));
+    result.fold(
+      (f) => emit(state.copyWith(actionState: ViewState.error, errorCode: _code(f))),
+      (p) => emit(state.copyWith(actionState: ViewState.success, parking: p, notice: 'tracking.saved')),
     );
   }
 

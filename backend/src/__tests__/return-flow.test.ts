@@ -20,6 +20,7 @@ import {
   publishListing,
   resetDatabase,
   setupOperator,
+  shareShuttlesWithTravellers,
   useBrevoSms,
 } from './utils/helpers';
 
@@ -36,6 +37,7 @@ const SMS_URL = 'https://api.brevo.com/v3/transactionalSMS/send';
 async function parkingWithReturningBooking(options: { flight?: string | null; meetingPoint?: boolean } = {}) {
   const op = await setupOperator();
   await onboardOperator(op.operator.id);
+  await shareShuttlesWithTravellers(op.token, op.parking.id);
   await api()
     .put('/api/internal/pricing')
     .set(auth(op.token))
@@ -835,5 +837,95 @@ describe('navette (mode chauffeur)', () => {
     const read = await api().get('/api/internal/parking/return-meeting-point').set(auth(b.op.token));
     expect(read.body.data.instructions).toBe('Porte 12, traversez.');
     expect((await getReturn(b)).body.meetingPoint).toMatchObject({ instructions: 'Porte 12, traversez.', photoUrl: 'https://example.com/p.jpg' });
+  });
+});
+
+describe('suivi des navettes réglable (R-B)', () => {
+  const tracking = (token: string, parkingId: string, value: string) =>
+    api().put(`/api/internal/parkings/${parkingId}/shuttle-tracking`).set(auth(token)).send({ tracking: value });
+  const position = (token: string, id: string, at = MEETING) =>
+    api()
+      .post(`/api/internal/shuttle/trips/${id}/position`)
+      .set(auth(token))
+      .send({ lat: at.lat, lng: at.lng, accuracy: 8, recordedAt: new Date().toISOString() });
+  const search = () =>
+    api()
+      .get('/api/public/search')
+      .query({ airport: 'lyon-saint-exupery', arrivalAt: inDays(10, '08:00'), returnAt: inDays(12, '18:00') });
+
+  it('rien, l’équipe, ou l’équipe et les voyageurs : partage, vues, notification et mention « EN DIRECT »', async () => {
+    const b = await parkingWithReturningBooking();
+    const driver = await addStaff(b.op.token, 'driver');
+    // Managers only, three values; the parking read carries it.
+    expect((await tracking(driver.token, b.op.parking.id, 'off')).status).toBe(403);
+    expect((await tracking(b.op.token, b.op.parking.id, 'public')).body.fields).toEqual({ tracking: 'invalid_tracking' });
+    const team = await tracking(b.op.token, b.op.parking.id, 'team');
+    expect(team.status).toBe(200);
+    expect(team.body.data.shuttleTracking).toBe('team');
+    expect((await api().get('/api/internal/parking').set(auth(b.op.token))).body.shuttleTracking).toBe('team');
+
+    // Team only: the driver shares, the team sees it, the traveller does not, nor the home map, nor the search.
+    const started = await api()
+      .post('/api/internal/shuttle/trips')
+      .set(auth(driver.token))
+      .send({ reservationIds: [b.reservation.id] });
+    expect(started.status).toBe(201);
+    const trip = started.body.trip;
+    expect(trip.sharePosition).toBe(true);
+    expect((await position(driver.token, trip.id)).status).toBe(200);
+    const live = await api().get('/api/internal/shuttle/live').set(auth(b.op.token));
+    expect(live.body.trips[0].position).toEqual({ lat: MEETING.lat, lng: MEETING.lng });
+    expect((await getShuttle(b)).body.shuttle).toMatchObject({ tripId: trip.id, position: null, etaMinutes: null, distanceM: null });
+    expect((await api().get(`/api/public/bookings/${b.reference}/shuttles`).set(bookingToken(b.manageToken))).body.phase).toBeNull();
+    // At the meeting point, but "Votre navette est là" is not sent.
+    expect((await prisma.shuttleTrip.findUniqueOrThrow({ where: { id: trip.id } })).arrivedNotifiedAt).toBeNull();
+    const home = await api().get('/api/public/airports/lyon-saint-exupery/live');
+    expect(home.body.shuttles).toEqual([]);
+    expect(home.body.parkings[0].liveShuttle).toBe(false);
+    expect((await search()).body.results[0].liveShuttle).toBe(false);
+
+    expect((await api().get('/api/internal/shuttle/pickups').set(auth(driver.token))).body.sharePosition).toBe(true);
+    // Off: the drivers stop sharing, and their app knows it before starting.
+    await tracking(b.op.token, b.op.parking.id, 'off');
+    expect((await api().get('/api/internal/shuttle/pickups').set(auth(driver.token))).body.sharePosition).toBe(false);
+    expect((await api().get('/api/internal/shuttle/departures').set(auth(driver.token))).body.sharePosition).toBe(false);
+    const refused = await position(driver.token, trip.id);
+    expect(refused.status).toBe(409);
+    expect(refused.body.code).toBe('shuttle_tracking_off');
+    expect((await api().get('/api/internal/shuttle/trips/current').set(auth(driver.token))).body.trip.sharePosition).toBe(false);
+    // The position already sent is forgotten: nothing left on the team's map.
+    expect((await api().get('/api/internal/shuttle/live').set(auth(b.op.token))).body.trips[0].position).toBeNull();
+
+    // Everyone: the traveller sees it, the parking is "EN DIRECT".
+    await tracking(b.op.token, b.op.parking.id, 'everyone');
+    await prisma.shuttleTrip.update({ where: { id: trip.id }, data: { positionReceivedAt: null, positionRecordedAt: null } });
+    expect((await position(driver.token, trip.id)).status).toBe(200);
+    expect((await getShuttle(b)).body.shuttle.position).toEqual({ lat: MEETING.lat, lng: MEETING.lng });
+    expect((await prisma.shuttleTrip.findUniqueOrThrow({ where: { id: trip.id } })).arrivedNotifiedAt).not.toBeNull();
+    expect((await api().get('/api/public/airports/lyon-saint-exupery/live')).body.shuttles).toHaveLength(1);
+    expect((await search()).body.results[0].liveShuttle).toBe(true);
+    // Every change is audited.
+    const audits = await prisma.auditLog.findMany({
+      where: { entityType: 'parking', entityId: b.op.parking.id, action: 'parking.settings_updated' },
+    });
+    expect(audits.map(a => (a.details as { shuttleTracking: { to: string } }).shuttleTracking.to)).toEqual(['everyone', 'team', 'off', 'everyone']);
+  });
+
+  it('pas de navette proposée : jamais « EN DIRECT » ; un nouveau parking partage avec l’équipe seulement', async () => {
+    const b = await parkingWithReturningBooking();
+    await api()
+      .put('/api/internal/listing')
+      .set(auth(b.op.token))
+      .send({
+        airportCode: 'LYS',
+        slug: `parking-${b.op.parking.id}`,
+        title: 'Parking Démo LYS',
+        services: ['valet'],
+        cancellationPolicy: 'free_24h',
+        photos: [],
+      });
+    expect((await search()).body.results[0].liveShuttle).toBe(false);
+    const fresh = await setupOperator('Nouveau');
+    expect((await api().get('/api/internal/parking').set(auth(fresh.token))).body.shuttleTracking).toBe('team');
   });
 });

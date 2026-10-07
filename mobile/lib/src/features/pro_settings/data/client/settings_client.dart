@@ -31,6 +31,9 @@ abstract class SettingsClient {
   @PATCH('internal/parkings/{id}')
   Future<DataEnvelope<ParkingSettingsModel>> updateParking(@Path('id') String id, @Body() Map<String, dynamic> body);
 
+  @PUT('internal/parkings/{id}/shuttle-tracking')
+  Future<DataEnvelope<ParkingSettingsModel>> setShuttleTracking(@Path('id') String id, @Body() Map<String, dynamic> body);
+
   @GET('internal/sms/settings')
   Future<SmsSettingsModel> smsSettings();
 

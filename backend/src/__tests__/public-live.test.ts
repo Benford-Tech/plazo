@@ -11,6 +11,7 @@ import {
   publishListing,
   resetDatabase,
   setupOperator,
+  shareShuttlesWithTravellers,
 } from './utils/helpers';
 
 beforeEach(resetDatabase);
@@ -25,6 +26,7 @@ describe('carte vivante de l’accueil (K-A)', () => {
     try {
       const op = await setupOperator('Parking Soleil');
       await onboardOperator(op.operator.id);
+      await shareShuttlesWithTravellers(op.token, op.parking.id);
       await api()
         .put('/api/internal/pricing')
         .set(auth(op.token))
@@ -69,7 +71,14 @@ describe('carte vivante de l’accueil (K-A)', () => {
       expect(quiet.headers['cache-control']).toBe('no-store');
       expect(quiet.body.airport).toMatchObject({ slug: 'lyon-saint-exupery', location: { lat: expect.any(Number), lng: expect.any(Number) } });
       expect(quiet.body.parkings).toEqual([
-        { slug: 'parking-soleil', title: 'Parking Soleil', services: ['shuttle'], shuttleMinutes: 8, location: { lat: 45.73, lng: 5.05 } },
+        {
+          slug: 'parking-soleil',
+          title: 'Parking Soleil',
+          services: ['shuttle'],
+          shuttleMinutes: 8,
+          location: { lat: 45.73, lng: 5.05 },
+          liveShuttle: true,
+        },
       ]);
       expect(quiet.body.shuttles).toEqual([]);
 

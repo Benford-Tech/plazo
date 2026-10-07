@@ -1,6 +1,6 @@
 import { Response } from 'express';
 import { Container } from 'typedi';
-import { UpdateParkingDto } from '@/dtos/parking.dto';
+import { UpdateParkingDto, UpdateShuttleTrackingDto } from '@/dtos/parking.dto';
 import { GenerateSpotsDto, ReplaceSpotsDto, UpdateParkingPlanDto, UpdateSpotDto } from '@/dtos/parking-plan.dto';
 import { RequestWithStaffSession } from '@/middlewares/staff-auth.middleware';
 import { AssignSpotDto } from '@/dtos/occupation.dto';
@@ -29,6 +29,12 @@ export class ParkingController {
     const data: UpdateParkingDto = req.body;
     const parking = await this.parkingService.update(req.staff, req.params.id as string, data);
     res.json({ message: 'Parking updated', data: parking });
+  });
+
+  /** PUT /internal/parkings/:id/shuttle-tracking (R-B, 07/10/2026) */
+  public setShuttleTracking = catchAsync(async (req: RequestWithStaffSession, res: Response) => {
+    const data: UpdateShuttleTrackingDto = req.body;
+    res.json({ data: await this.parkingService.setShuttleTracking(req.staff, req.params.id as string, data.tracking) });
   });
 
   /** GET /internal/parkings/:id/plan */

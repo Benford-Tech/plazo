@@ -126,6 +126,25 @@ void main() {
       expect(find.bySemanticsLabel(RegExp('Parking demo.*Parking fictif')), findsOneWidget);
     });
 
+    testWidgets('I-C : « EN DIRECT » sur la photo et minibus sur la pastille des parkings qui suivent leurs navettes', (tester) async {
+      final fake = FakePublicDataSource()
+        ..searchResponse = SearchResponseModel(
+          payments: 'online',
+          airport: lys,
+          results: [result('suivi', location: const LatLngModel(lat: 45.70, lng: 5.12)).copyWith(liveShuttle: true), result('discret')],
+        );
+      final b = await pump(tester, fake);
+      expect(find.byKey(const Key('live-shuttle')), findsOneWidget);
+      expect(find.text('EN DIRECT'), findsOneWidget);
+      expect(find.bySemanticsLabel(RegExp('Parking suivi.*Navette suivie en direct')), findsOneWidget);
+      expect(find.bySemanticsLabel(RegExp('Parking discret.*Navette suivie')), findsNothing);
+
+      b.add(const ResultsViewChanged(ResultsView.map));
+      await tester.pumpAndSettle();
+      expect(find.descendant(of: find.byKey(const Key('pill-suivi')), matching: find.byIcon(Icons.airport_shuttle_rounded)), findsOneWidget);
+      expect(find.descendant(of: find.byKey(const Key('pill-discret')), matching: find.byIcon(Icons.airport_shuttle_rounded)), findsNothing);
+    });
+
     testWidgets('tri par puce, et le panneau « Filtres » (compte en direct, effacer)', (tester) async {
       final b = await pump(tester, api());
       await tester.tapAt(tester.getTopLeft(find.byKey(const Key('sort-shuttle'))) + const Offset(20, 20));

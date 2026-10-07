@@ -67,6 +67,7 @@ void _initUseCaseLocator() {
     ..registerLazySingleton(() => ChangePasswordUseCase(locator()))
     ..registerLazySingleton(() => GetParkingSettingsUseCase(locator()))
     ..registerLazySingleton(() => UpdateParkingSettingsUseCase(locator()))
+    ..registerLazySingleton(() => SetShuttleTrackingUseCase(locator()))
     ..registerLazySingleton(() => GetSmsSettingsUseCase(locator()))
     ..registerLazySingleton(() => GetSmsStatusUseCase(locator()))
     ..registerLazySingleton(() => SaveSmsSettingsUseCase(locator()))

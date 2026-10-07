@@ -43,7 +43,14 @@ abstract class PickupRowModel with _$PickupRowModel {
 
 @freezed
 abstract class PickupsModel with _$PickupsModel {
-  const factory PickupsModel({required DateTime serverTime, MeetingPointModel? meetingPoint, @Default([]) List<PickupRowModel> rows}) = _PickupsModel;
+  const factory PickupsModel({
+    required DateTime serverTime,
+    MeetingPointModel? meetingPoint,
+    @Default([]) List<PickupRowModel> rows,
+
+    /// R-B (07/10/2026): the parking shares its shuttles' position; false when it turned the tracking off.
+    @Default(true) bool sharePosition,
+  }) = _PickupsModel;
 
   factory PickupsModel.fromJson(Map<String, dynamic> json) => _$PickupsModelFromJson(json);
 }
@@ -107,7 +114,7 @@ abstract class DepartureRowModel with _$DepartureRowModel {
 
 @freezed
 abstract class DeparturesModel with _$DeparturesModel {
-  const factory DeparturesModel({required DateTime serverTime, @Default([]) List<DepartureRowModel> rows}) = _DeparturesModel;
+  const factory DeparturesModel({required DateTime serverTime, @Default([]) List<DepartureRowModel> rows, @Default(true) bool sharePosition}) = _DeparturesModel;
 
   factory DeparturesModel.fromJson(Map<String, dynamic> json) => _$DeparturesModelFromJson(json);
 }
@@ -151,6 +158,9 @@ abstract class StaffTripModel with _$StaffTripModel {
 
     /// Where the trip goes (D-A): the chosen stop, else the airport's meeting point.
     ShuttleStopModel? stop,
+
+    /// R-B: the phone shares its position during the trip; false when the parking turned the tracking off.
+    @Default(true) bool sharePosition,
   }) = _StaffTripModel;
 
   factory StaffTripModel.fromJson(Map<String, dynamic> json) => _$StaffTripModelFromJson(json);

@@ -446,7 +446,9 @@
     "view_as_read_only": "Consultation seulement.",
     "car_location_locked": "Le parking a enregistré l'emplacement de votre voiture : elle ne peut plus être modifiée ici.",
     "car_location_closed": "La position ne peut plus être enregistrée pour cette réservation.",
-    "invalid_position": "Position invalide."
+    "invalid_position": "Position invalide.",
+    "shuttle_tracking_off": "Le suivi des navettes est désactivé pour ce parking.",
+    "invalid_tracking": "Choix inconnu."
   },
   "tabs": {
     "search": "Rechercher",
@@ -559,7 +561,10 @@
     "map_terminals": "Terminaux",
     "map_no_position": "Sans position sur la carte : {}",
     "map_pill_a11y": "{}, {}",
-    "no_position": "Position non renseignée"
+    "no_position": "Position non renseignée",
+    "live": "En direct",
+    "live_hint": "Navette suivie en direct : vous la verrez arriver dans votre réservation",
+    "map_pill_live_a11y": "{}, {}, navette suivie en direct"
   },
   "highlights": {
     "per_day": "{}/jour",
@@ -974,7 +979,11 @@
     "back_none": "Personne n'est encore revenu aujourd'hui.",
     "selected_summary": "{} voyageurs · {} pass. cochés",
     "selected_one": "1 voyageur · {} pass. coché",
-    "to_drop_off_stop": "À conduire · {}"
+    "to_drop_off_stop": "À conduire · {}",
+    "running_no_share": "En route vers l'aéroport · suivi désactivé",
+    "running_dropoff_no_share": "En route vers le terminal · suivi désactivé",
+    "intro_no_share": "Vos clients de retour, à récupérer à l'aéroport. Le suivi des navettes est désactivé : votre position n'est pas partagée.",
+    "intro_dropoff_no_share": "Vos clients arrivés au parking, à conduire au terminal. Le suivi des navettes est désactivé : votre position n'est pas partagée."
   },
   "vehicle_day": {
     "title": "Mon véhicule aujourd'hui",
@@ -1390,5 +1399,28 @@
     "clear": "Effacer",
     "staff_locked": "Le parking a enregistré l'emplacement de votre voiture.",
     "no_fix": "Pas de signal GPS pour le moment. Réessayez à l'air libre."
+  },
+  "tracking": {
+    "title": "Suivi des navettes",
+    "intro": "Qui voit la position de vos navettes pendant les trajets ?",
+    "recommended": "Recommandé",
+    "off": {
+      "title": "Pas de suivi",
+      "text": "Les chauffeurs ne partagent pas leur position."
+    },
+    "team": {
+      "title": "Équipe seulement",
+      "text": "La position sert à organiser les navettes. Vos clients ne la voient pas."
+    },
+    "everyone": {
+      "title": "Équipe et clients",
+      "text": "Vos clients suivent leur navette et reçoivent « Votre navette est là ». Votre parking porte la mention « En direct » dans les résultats."
+    },
+    "who_team": "Équipe",
+    "who_clients": "Clients",
+    "who_mention": "Mention",
+    "always": "Dans tous les cas, « Votre navette est partie » est envoyé au départ de chaque trajet.",
+    "save": "Enregistrer",
+    "saved": "Suivi des navettes enregistré."
   }
 }

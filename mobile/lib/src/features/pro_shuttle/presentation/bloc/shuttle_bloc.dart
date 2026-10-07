@@ -119,8 +119,8 @@ class ShuttleBloc extends Bloc<ShuttleEvent, ShuttleState> {
           : (state.pickups?.rows ?? const []).where((r) => r.tripId == null).map((r) => r.reservationId);
       if (offered.contains(wanted)) emit(state.copyWith(selected: {wanted}));
     }
-    // Back in the app while a trip runs: carry on sharing.
-    if (trip != null && trip.running && !state.tracking) await _resumeTracking(emit);
+    // Back in the app while a trip runs: carry on sharing (when the parking shares its shuttles, R-B).
+    if (trip != null && trip.running && trip.sharePosition && !state.tracking) await _resumeTracking(emit);
     if (_autoPoll) {
       _poll ??= Timer.periodic(_pollInterval, (_) => add(const ShuttlePolled()));
       _ticker ??= Timer.periodic(_tickInterval, (_) => add(const ShuttleTicked()));
@@ -195,19 +195,21 @@ class ShuttleBloc extends Bloc<ShuttleEvent, ShuttleState> {
       emit(state.copyWith(actionState: ViewState.error, errorCode: 'too_many_passengers'));
       return;
     }
-    // No position, no trip: the whole point is to share it with the travellers.
-    final access = await _location.requestAccess();
-    if (access != LocationAccess.granted) {
-      emit(state.copyWith(actionState: ViewState.idle, locationProblem: access));
-      return;
+    // No position, no trip: the whole point is to share it — unless the parking turned the tracking off (R-B).
+    if (state.sharePosition) {
+      final access = await _location.requestAccess();
+      if (access != LocationAccess.granted) {
+        emit(state.copyWith(actionState: ViewState.idle, locationProblem: access));
+        return;
+      }
     }
     final result = await _start(
       StartTripParams(reservationIds: state.selected.toList(), vehicle: state.vehicle ?? const TripVehicleChoice(), direction: state.direction, stopId: state.stopId),
     );
     await result.fold((failure) async => emit(state.copyWith(actionState: ViewState.error, errorCode: _code(failure))), (trip) async {
       _lastSentAt = null;
-      _startTracking();
-      emit(state.copyWith(actionState: ViewState.success, trip: trip, tracking: true, selected: const {}, band: 1));
+      if (trip.sharePosition) _startTracking();
+      emit(state.copyWith(actionState: ViewState.success, trip: trip, tracking: trip.sharePosition, selected: const {}, band: 1));
       await _loadPickups(emit, initial: false);
     });
   }

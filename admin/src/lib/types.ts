@@ -50,11 +50,16 @@ export interface Parking {
   /** Shuttle waves (V-A, 05/10/2026). */
   terminalLeadMinutes: number;
   landingDelayMinutes: number;
+  /** R-B (07/10/2026): who sees the position of the shuttles. */
+  shuttleTracking: ShuttleTracking;
   bookableCapacity: number;
   /** The parking's position (its address's when not placed), null when unknown. */
   lat: number | null;
   lng: number | null;
 }
+
+/** R-B (07/10/2026): nobody (the drivers do not share it), the team only, or the team and the travellers. */
+export type ShuttleTracking = "off" | "team" | "everyone";
 
 export interface ParkingSettings {
   name: string;
@@ -731,6 +736,8 @@ export interface StaffTrip {
   positionUpdatedAt: string | null;
   meetingPoint: MeetingPoint | null;
   stop: ShuttleStop | null;
+  /** R-B: false when the parking turned the tracking off: the browser does not share its position. */
+  sharePosition: boolean;
 }
 
 export interface StartTripInput {

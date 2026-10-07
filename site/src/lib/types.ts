@@ -26,6 +26,8 @@ export interface ListingSummary {
   payment?: ParkingPayment;
   /** Fictional parking of the demo data (a small "Démo" badge); missing from an older API. */
   isDemo?: boolean;
+  /** R-B + I-C (07/10/2026): the parking shows its shuttles to the travellers ("EN DIRECT"); missing from an older API. */
+  liveShuttle?: boolean;
 }
 
 export interface LatLng {
@@ -37,7 +39,7 @@ export interface LatLng {
 export interface AirportLive {
   serverTime: string;
   airport: { code: string; name: string; slug: string; location: LatLng };
-  parkings: { slug: string; title: string; services: string[]; shuttleMinutes: number | null; location: LatLng | null }[];
+  parkings: { slug: string; title: string; services: string[]; shuttleMinutes: number | null; location: LatLng | null; liveShuttle?: boolean }[];
   shuttles: LiveShuttle[];
 }
 
