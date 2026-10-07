@@ -9,7 +9,8 @@
       "buildCommand": "npm run vercel-build",
       "functions": {
         "index.js": {
-          "includeFiles": "{backend/lib/product.json,backend/lib/routes/*.js,backend/node_modules/swagger-ui-dist/**}"
+          "includeFiles": "{backend/lib/product.json,backend/lib/routes/*.js,backend/node_modules/swagger-ui-dist/**}",
+          "maxDuration": 60
         }
       },
       "headers": [{ "source": "/(.*)", "headers": [{ "key": "X-Robots-Tag", "value": "noindex, nofollow" }] }]

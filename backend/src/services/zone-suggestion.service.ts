@@ -217,29 +217,51 @@ export class ZoneSuggestionService {
     mpp: number,
     outlinePx: [number, number][],
   ): Promise<{ surfaces: SuggestedSurface[]; usage: ZoneSuggestion['usage'] }> {
-    this.client ??= new Anthropic({ apiKey: anthropicApiKey(), timeout: 120000 });
+    // Vercel allows this function 60 s: the call stays well under it (medium effort, short answer).
+    this.client ??= new Anthropic({ apiKey: anthropicApiKey(), timeout: 45000, maxRetries: 0 });
     const outlineText = outlinePx.map(([x, y]) => `(${Math.round(x)}, ${Math.round(y)})`).join(', ');
-    const response = await this.client.messages.create({
-      model: zoneSuggestionModel(),
-      max_tokens: 8000,
-      system: SYSTEM_PROMPT,
-      output_config: { effort: 'high', format: { type: 'json_schema', schema: RESPONSE_SCHEMA } },
-      messages: [
-        {
-          role: 'user',
-          content: [
-            { type: 'image', source: { type: 'base64', media_type: 'image/jpeg', data: imageBase64 } },
-            {
-              type: 'text',
-              text:
-                `Image: ${width} × ${height} px, ${mpp.toFixed(2)} m per pixel. ` +
-                `The green outline passes through these pixels: ${outlineText}. ` +
-                'Return the drivable surfaces inside it as JSON.',
-            },
-          ],
-        },
-      ],
-    });
+    let response: Anthropic.Message;
+    try {
+      response = await this.client.messages.create({
+        model: zoneSuggestionModel(),
+        max_tokens: 4000,
+        system: SYSTEM_PROMPT,
+        output_config: { effort: 'medium', format: { type: 'json_schema', schema: RESPONSE_SCHEMA } },
+        messages: [
+          {
+            role: 'user',
+            content: [
+              { type: 'image', source: { type: 'base64', media_type: 'image/jpeg', data: imageBase64 } },
+              {
+                type: 'text',
+                text:
+                  `Image: ${width} × ${height} px, ${mpp.toFixed(2)} m per pixel. ` +
+                  `The green outline passes through these pixels: ${outlineText}. ` +
+                  'Return the drivable surfaces inside it as JSON.',
+              },
+            ],
+          },
+        ],
+      });
+    } catch (error) {
+      // Most specific first: a bad key, a rate limit, a timeout, any other API answer, the network.
+      if (error instanceof Anthropic.AuthenticationError) {
+        logger.error('[Zones] Anthropic rejected the API key');
+        throw new HttpException(httpStatus.CONFLICT, 'The Anthropic API key is not accepted', 'ai_unavailable');
+      }
+      if (error instanceof Anthropic.RateLimitError) {
+        throw new HttpException(httpStatus.SERVICE_UNAVAILABLE, 'Claude is busy, try again shortly', 'ai_busy');
+      }
+      if (error instanceof Anthropic.APIConnectionTimeoutError) {
+        throw new HttpException(httpStatus.GATEWAY_TIMEOUT, 'Claude did not answer in time', 'ai_timeout');
+      }
+      if (error instanceof Anthropic.APIError) {
+        logger.error(`[Zones] Anthropic answered ${error.status}: ${error.message}`);
+        throw new HttpException(httpStatus.BAD_GATEWAY, 'Claude could not be reached', 'ai_unavailable');
+      }
+      logger.error(`[Zones] Anthropic call failed: ${error instanceof Error ? error.message : 'unknown error'}`);
+      throw new HttpException(httpStatus.BAD_GATEWAY, 'Claude could not be reached', 'ai_unavailable');
+    }
     if (response.stop_reason === 'refusal') {
       throw new HttpException(httpStatus.BAD_GATEWAY, 'Claude declined to read this photo', 'ai_refused');
     }

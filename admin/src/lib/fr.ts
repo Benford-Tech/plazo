@@ -102,11 +102,14 @@ export const fr = {
       "Enregistrez d'abord vos tarifs : une fiche sans prix ne peut pas être envoyée en validation.",
     duplicate_days: "Deux forfaits ont la même durée.",
     unknown: "Une erreur est survenue. Réessayez.",
+    gateway: "Le serveur n'a pas répondu à temps. Réessayez dans un instant.",
     geo_unavailable:
       "Le service de l'IGN ne répond pas. Réessayez dans un instant.",
     ai_unavailable:
       "La proposition par Claude n'est pas disponible : clé API absente ou réponse inexploitable.",
     ai_refused: "Claude n'a pas pu lire cette photo. Tracez les zones au pinceau.",
+    ai_busy: "Claude est saturé pour l'instant. Réessayez dans une minute.",
+    ai_timeout: "Claude a mis trop de temps à lire la photo. Réessayez.",
     no_outline: "Repérez d'abord le terrain (étape 1).",
     geo_timeout:
       "Le service de l'IGN a mis trop de temps à répondre. Réessayez.",
@@ -1557,6 +1560,8 @@ export function errorMessage(code: string | undefined): string {
 
 /** French message for any error thrown by the API client. */
 export function describeError(error: unknown): string {
+  // A gateway answer (the function cut short, the API down) carries no code of ours.
+  if (error instanceof ApiError && !error.code && error.status >= 502 && error.status <= 504) return fr.errors.gateway;
   if (error instanceof ApiError) return errorMessage(error.code);
   if (error instanceof TypeError) return fr.errors.network;
   return fr.errors.unknown;
