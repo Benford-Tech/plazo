@@ -104,6 +104,10 @@ export const fr = {
     unknown: "Une erreur est survenue. Réessayez.",
     geo_unavailable:
       "Le service de l'IGN ne répond pas. Réessayez dans un instant.",
+    ai_unavailable:
+      "La proposition par Claude n'est pas disponible : clé API absente ou réponse inexploitable.",
+    ai_refused: "Claude n'a pas pu lire cette photo. Tracez les zones au pinceau.",
+    no_outline: "Repérez d'abord le terrain (étape 1).",
     geo_timeout:
       "Le service de l'IGN a mis trop de temps à répondre. Réessayez.",
     bbox_too_large: "Zoomez davantage pour afficher les parkings.",
@@ -1025,6 +1029,20 @@ export const fr = {
     brushWidth: "Largeur",
     brushHelp: "Maintenez le clic et peignez où l'on peut garer ; les traits qui se touchent fusionnent.",
     eraserHelp: "Maintenez le clic et effacez ce qui ne doit pas recevoir de voitures.",
+    // V-A (07/10/2026): Claude proposes the zones from the photo.
+    suggest: "Proposer les zones avec Claude",
+    suggesting: "Claude lit la photo…",
+    suggestHelp: "Claude lit la photo aérienne du terrain et propose les surfaces où l'on peut garer. Vous gardez la main : appliquez, puis ajustez au pinceau.",
+    suggestion: {
+      title: (n: number) => (n === 0 ? "Aucune surface reconnue" : `${n} zone${n > 1 ? "s" : ""} proposée${n > 1 ? "s" : ""}`),
+      none: "Claude n'a reconnu aucune surface garable dans le contour. Tracez les zones au pinceau.",
+      surfaces: { asphalt: "enrobé", gravel: "gravier", concrete: "béton", other: "autre sol" },
+      confidence: (pct: number) => `sûr à ${pct} %`,
+      apply: "Appliquer",
+      dismiss: "Ignorer",
+      applied: (n: number) => `${n} zone${n > 1 ? "s" : ""} appliquée${n > 1 ? "s" : ""} : ajustez-les au pinceau si besoin.`,
+      cost: (model: string, tokens: number) => `${model} · ${tokens} jetons`,
+    },
     // T-A (07/10/2026): the zones follow the land and its exclusions unless drawn by hand.
     autoZones: "Zones automatiques",
     autoZonesOn:

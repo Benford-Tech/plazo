@@ -155,6 +155,17 @@ Hors MVP : caméras, lecture de plaque, capteurs de présence sur les places.
   repart vide, sur l'adresse du parking), les zones et parties exclues (le contour reste, les bâtiments IGN sont gardés)
   ou les places seulement. La capacité déclarée ne change jamais.
 
+#### Peigne à profondeur adaptée et zones proposées par Claude (décisions E-A, V-A du 07/10/2026, mis en œuvre)
+
+- **E-A** : le peigne ne se contente plus des files les plus profondes ; il essaie chaque profondeur (plus d'allées,
+  plus rapprochées) et garde celle qui place le plus de voitures. Un terrain étroit ou coupé par un bâtiment reçoit ainsi
+  une allée au milieu au lieu de rester vide.
+- **V-A** : à l'étape Zones, « Proposer les zones avec Claude » envoie la photo IGN du terrain (contour tracé en vert,
+  20 à 30 cm par pixel) à Claude, qui renvoie les surfaces où l'on peut garer ou circuler (enrobé, gravier, béton), hors
+  bâtiments, végétation et voirie. Elles sont coupées au contour, les bâtiments et parties exclues déduits, puis montrées
+  en bleu avec le type de sol et la confiance : le loueur applique ou ignore, puis ajuste au pinceau. Rien n'est enregistré
+  sans « Appliquer ». Environ un centime par lecture ; sans clé API, le bouton répond « indisponible ».
+
 #### File triée : zéro déplacement (décision O-A du 06/10/2026, mis en œuvre)
 
 - Sur un parking « voiturier · peigne » (ex-files depuis le bord), la voiture au fond d'une file repart en dernier. Une file est

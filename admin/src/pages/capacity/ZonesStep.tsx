@@ -1,5 +1,6 @@
-import { X } from "lucide-react";
+import { Sparkles, X } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
+import { toast } from "sonner";
 import { MapView, type DrawKind, type MapLabel, type MapLayer } from "@/components/capacity/MapView";
 import { Aside, AsideActions, PanelLabel, ToolButton } from "@/components/capacity/ui";
 import { m2 } from "@/lib/capacity/format";
@@ -7,12 +8,14 @@ import { BRUSH_WIDTHS_M, eraseZones, paintZones, strokeArea, type BrushWidth } f
 import { areaM2, autoZones, exclusionMulti, frameFor, multiToPolygons, outlineMulti, polygonToMulti } from "@/lib/capacity/estimate";
 import { areaOf, intersection } from "@/lib/capacity/geometry";
 import { boundsOf, edgeLabels, fc, feature, polygonCentroid, positionsOf } from "@/lib/capacity/mapData";
-import { EXCLUSION_DEFAULTS, settingsOf, type Exclusion, type ExclusionKind, type GeoPolygon, type LonLat, type Zone } from "@/lib/capacity/types";
-import { fr } from "@/lib/fr";
+import { EXCLUSION_DEFAULTS, settingsOf, type Exclusion, type ExclusionKind, type GeoPolygon, type LonLat, type Zone, type ZoneSuggestion } from "@/lib/capacity/types";
+import { describeError, fr } from "@/lib/fr";
 import { cn } from "@/lib/utils";
 import type { StepProps } from "./CapacityStudyPage";
 
 const YELLOW = "#A3E635";
+/** V-A: Claude's proposal, before it is applied. */
+const PROPOSAL = "#5fd3ff";
 const EXCLUSION_COLORS: Record<ExclusionKind, string> = {
   building: "#d9d5cc",
   reception: "#8a7420",
@@ -35,11 +38,13 @@ const zoneLetter = (zones: Zone[]) => {
   return String(zones.length + 1);
 };
 
-export default function ZonesStep({ study, update, go }: StepProps) {
+export default function ZonesStep({ study, update, go, suggestZones }: StepProps) {
   const [selected, setSelected] = useState<Selection>(null);
   const [adding, setAdding] = useState<Adding>(null);
   const [choosing, setChoosing] = useState(false);
   const [brushWidth, setBrushWidth] = useState<BrushWidth>(6);
+  const [suggesting, setSuggesting] = useState(false);
+  const [suggestion, setSuggestion] = useState<ZoneSuggestion | null>(null);
   const { outline, zones, exclusions } = study;
   const settings = settingsOf(study);
 
@@ -61,6 +66,27 @@ export default function ZonesStep({ study, update, go }: StepProps) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [exclusionsKey, outline]);
   const manual = { ...study.settings, zonesAuto: false };
+
+  // V-A (07/10/2026): Claude reads the photo; its zones are shown in blue until applied.
+  async function askClaude() {
+    if (!suggestZones || suggesting) return;
+    setSuggesting(true);
+    setSuggestion(null);
+    try {
+      setSuggestion(await suggestZones());
+    } catch (e) {
+      toast.error(describeError(e));
+    } finally {
+      setSuggesting(false);
+    }
+  }
+  function applySuggestion() {
+    if (!suggestion) return;
+    update({ zones: suggestion.zones, settings: manual });
+    toast.success(fr.capacity.suggestion.applied(suggestion.zones.length));
+    setSuggestion(null);
+    setSelected(null);
+  }
 
   const frame = useMemo(() => frameFor(study), [study]);
   const land = useMemo(() => (frame ? outlineMulti(frame, study) : null), [frame, study]);
@@ -161,8 +187,22 @@ export default function ZonesStep({ study, update, go }: StepProps) {
       paint: { "line-color": YELLOW, "line-width": 2 },
     });
     if (outline) list.push({ id: "outline", type: "line", data: fc([feature(outline)]), paint: { "line-color": YELLOW, "line-width": 3.5 } });
+    if (suggestion?.zones.length) {
+      list.push({
+        id: "proposal-fill",
+        type: "fill",
+        data: fc(suggestion.zones.map(z => feature(z.geometry))),
+        paint: { "fill-color": PROPOSAL, "fill-opacity": 0.25 },
+      });
+      list.push({
+        id: "proposal-line",
+        type: "line",
+        data: fc(suggestion.zones.map(z => feature(z.geometry))),
+        paint: { "line-color": PROPOSAL, "line-width": 2.5, "line-dasharray": [2, 1.5] },
+      });
+    }
     return list;
-  }, [zones, exclusions, exclusionShapes, outline, selected]);
+  }, [zones, exclusions, exclusionShapes, outline, selected, suggestion]);
 
   const labels = useMemo<MapLabel[]>(
     () => [
@@ -273,6 +313,53 @@ export default function ZonesStep({ study, update, go }: StepProps) {
           ))}
         </div>
 
+        {suggestZones && outline && (
+          <div className="border border-border p-2" data-testid="zone-suggestion">
+            {suggestion ? (
+              <>
+                <div className="font-bold">{fr.capacity.suggestion.title(suggestion.zones.length)}</div>
+                {suggestion.zones.length === 0 ? (
+                  <p className="mt-1 text-[13px] text-muted-foreground">{fr.capacity.suggestion.none}</p>
+                ) : (
+                  <ul className="mt-1 space-y-0.5 text-[13px]">
+                    {suggestion.surfaces.map(s => (
+                      <li key={s.name} className="flex items-center gap-2">
+                        <span className="h-3 w-3 shrink-0 border-2 border-dashed" style={{ borderColor: PROPOSAL }} />
+                        <b>{s.name}</b>
+                        <span className="text-muted-foreground">
+                          {s.label} · {fr.capacity.suggestion.surfaces[s.surface as keyof typeof fr.capacity.suggestion.surfaces] ?? s.surface} ·{" "}
+                          {fr.capacity.suggestion.confidence(Math.round(s.confidence * 100))}
+                        </span>
+                        <span className="ml-auto font-mono">{m2.format(s.area)} m²</span>
+                      </li>
+                    ))}
+                  </ul>
+                )}
+                <div className="mt-2 flex gap-2">
+                  {suggestion.zones.length > 0 && (
+                    <ToolButton variant="primary" className="min-h-9" onClick={applySuggestion}>
+                      {fr.capacity.suggestion.apply}
+                    </ToolButton>
+                  )}
+                  <ToolButton className="min-h-9" onClick={() => setSuggestion(null)}>
+                    {fr.capacity.suggestion.dismiss}
+                  </ToolButton>
+                </div>
+                <p className="mt-1 font-mono text-[11px] text-muted-foreground">
+                  {fr.capacity.suggestion.cost(suggestion.model, suggestion.usage.inputTokens + suggestion.usage.outputTokens)}
+                </p>
+              </>
+            ) : (
+              <>
+                <ToolButton className="w-full" disabled={suggesting} onClick={() => void askClaude()}>
+                  <Sparkles className="mr-1.5 inline h-4 w-4" />
+                  {suggesting ? fr.capacity.suggesting : fr.capacity.suggest}
+                </ToolButton>
+                <p className="mt-1 text-[13px] text-muted-foreground">{fr.capacity.suggestHelp}</p>
+              </>
+            )}
+          </div>
+        )}
         <p className="text-[13px] text-muted-foreground" data-testid="zones-mode">
           {auto ? fr.capacity.autoZonesOn : fr.capacity.autoZonesOff}
         </p>

@@ -78,6 +78,7 @@ export class ParkingRoute implements Routes {
     this.router.post('/internal/parkings/:id/plan/apply-capacity', StaffAuthMiddleware('parking:manage'), this.parking.applyCapacity);
     // The app: the layout engine runs on the server.
     this.router.post('/internal/parkings/:id/plan/estimate', StaffAuthMiddleware('parking:manage'), this.parking.estimatePlan);
+    this.router.post('/internal/parkings/:id/plan/suggest-zones', StaffAuthMiddleware('parking:manage'), this.parking.suggestZones);
     this.router.post(
       '/internal/parkings/:id/plan/generate',
       StaffAuthMiddleware('parking:manage'),

@@ -1,4 +1,4 @@
-import type { LonLat } from "@/lib/capacity/types";
+import type { LonLat, ZoneSuggestion } from "@/lib/capacity/types";
 import { Check } from "lucide-react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Link, Navigate, useNavigate, useParams } from "react-router-dom";
@@ -26,6 +26,8 @@ export interface StepProps {
   geoScope?: "operator" | "platform";
   /** Where the map opens when nothing is drawn yet: the parking's position (07/10/2026). */
   home?: LonLat | null;
+  /** V-A: asks Claude to read the photo and propose the zones; absent on the platform's studies. */
+  suggestZones?: () => Promise<ZoneSuggestion>;
 }
 
 type SaveState = "idle" | "saving" | "saved" | "error";

@@ -294,3 +294,23 @@ describe("voiturier « peigne » (M-A, 07/10/2026)", () => {
     expect(spine(west, (x) => x >= 94 - 1e-6)).toBe(false);
   });
 });
+
+describe("peigne à profondeur adaptée (E-A, 07/10/2026)", () => {
+  const COMB: LayoutParams = {
+    ...VALET_24,
+    blockDepth: 16,
+    oneSidedDepth: 8,
+    crossAisles: false,
+    mode: "comb",
+    maxFiles: 8,
+  };
+  it("sur un terrain découpé par un bâtiment, des files moins profondes et plus d'allées gagnent des places", () => {
+    const land = difference(rect(90, 70), rect(40, 30, 25, 20));
+    const adaptive = generateLayout(land, COMB);
+    // The old behaviour: the deepest files only, hence one aisle every 86 m.
+    const fixed = generateLayout(land, { ...COMB, oneSidedDepth: 8 }, { angle: adaptive.angle });
+    expect(adaptive.count).toBeGreaterThanOrEqual(fixed.count);
+    expect(adaptive.count).toBeGreaterThanOrEqual(265);
+    expect(Math.max(...adaptive.files)).toBeLessThanOrEqual(8);
+  });
+});

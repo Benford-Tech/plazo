@@ -350,7 +350,23 @@ export function autoZones(
 ): Zone[] {
   const frame = frameFor({ ...input, zones: [] });
   if (!frame || !input.outline) return [];
-  const land = polygonToMulti(frame, input.outline);
+  return autoZonesFrom(polygonToMulti(frame, input.outline), input, zoneName, ids);
+}
+
+/**
+ * The zones made of a given surface (local frame): kept inside the land, the exclusions deducted,
+ * one zone per piece, largest first, named A, B, C… Used by the automatic zones (the whole land)
+ * and by Claude's proposal (V-A: the surfaces it read on the photo).
+ */
+export function autoZonesFrom(
+  surface: Multi,
+  input: Pick<CapacityStudy, "outline" | "exclusions" | "scaleFactor">,
+  zoneName: (letter: string) => string,
+  ids: () => string,
+): Zone[] {
+  const frame = frameFor({ ...input, zones: [] });
+  if (!frame || !input.outline || !surface.length) return [];
+  const land = intersection(surface, polygonToMulti(frame, input.outline));
   const excluded = union(
     ...input.exclusions.map((e) => exclusionMulti(frame, e)),
   );

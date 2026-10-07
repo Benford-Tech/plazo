@@ -243,6 +243,11 @@ export default function ParkingPlanPage() {
     flush,
     go,
     home: parking.lat != null && parking.lng != null ? [parking.lng, parking.lat] : null,
+    // V-A: the saved outline is what Claude reads, so pending changes go first.
+    suggestZones: async () => {
+      await flush();
+      return adminApi.suggestZones(parking.id);
+    },
   };
   return (
     <>

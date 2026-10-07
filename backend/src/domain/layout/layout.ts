@@ -620,8 +620,9 @@ export function generateLayout(multi: Multi, params: LayoutParams, options: Sear
     /** Comb: distance from the entrance to the spine, when an anchor is given. */
     anchorDistance: number;
   };
-  const search = (angleList: number[], step: number, steps: number) => {
+  const search = (angleList: number[], step: number, steps: number, p: LayoutParams = params) => {
     const found: Candidate[] = [];
+    const period = p.blockDepth * p.slotLength + p.aisleWidth;
     for (const angle of angleList) {
       const rad = (angle * Math.PI) / 180;
       const cos = Math.cos(rad);
@@ -629,13 +630,13 @@ export function generateLayout(multi: Multi, params: LayoutParams, options: Sear
       const shape = new Rotated(multi, cos, sin);
       const anchor = comb && options.anchor ? rotate(options.anchor, cos, sin) : null;
       // The spine is the aisle-wide strip at the start of the runs, along the whole land.
-      const anchorDistance = anchor ? Math.max(0, shape.xmin - anchor[0], anchor[0] - shape.xmin - params.aisleWidth) : 0;
+      const anchorDistance = anchor ? Math.max(0, shape.xmin - anchor[0], anchor[0] - shape.xmin - p.aisleWidth) : 0;
       let bestForAngle: Candidate | null = null;
       for (let phase = 0; phase < period - EPS; phase += step) {
-        const modules = buildModules(shape, params, phase);
+        const modules = buildModules(shape, p, phase);
         for (let s = 0; s < steps; s++) {
-          const along = shape.xmin + (s * params.slotWidth) / steps;
-          const { count } = evaluate(shape, modules, params, along, false);
+          const along = shape.xmin + (s * p.slotWidth) / steps;
+          const { count } = evaluate(shape, modules, p, along, false);
           if (!bestForAngle || count > bestForAngle.count) bestForAngle = { count, angle, phase, along, anchorDistance };
         }
       }
@@ -661,7 +662,27 @@ export function generateLayout(multi: Multi, params: LayoutParams, options: Sear
       }
     }
   }
-  const finals = search(finalists, phaseStep, alongSteps);
+  // E-A (07/10/2026): a comb's files need not be as deep as allowed. Shallower blocks mean more
+  // aisles, closer together: on a land too small or too cut up for the full period, the only way
+  // to serve its middle. Every depth is tried on the finalist angles (coarse grid), the best wins
+  // (the deepest on ties: fewer aisles), and the full grid then runs on that depth alone.
+  let chosen = params;
+  if (comb && angles.length > 0) {
+    const maxDepth = Math.max(1, params.oneSidedDepth);
+    let bestDepth: { count: number; p: LayoutParams } | null = null;
+    for (let depth = maxDepth; depth >= 1; depth--) {
+      const p: LayoutParams = {
+        ...params,
+        blockDepth: 2 * depth,
+        oneSidedDepth: depth,
+      };
+      const step = Math.max(phaseStep, 1, (p.blockDepth * p.slotLength + p.aisleWidth) / 40);
+      const count = Math.max(0, ...search(finalists, step, Math.min(2, alongSteps), p).map(c => c.count));
+      if (!bestDepth || count > bestDepth.count) bestDepth = { count, p };
+    }
+    if (bestDepth) chosen = bestDepth.p;
+  }
+  const finals = search(finalists, phaseStep, alongSteps, chosen);
   const top = Math.max(0, ...finals.map(c => c.count));
   if (top === 0) return empty;
   // The best count wins (first found on ties). A comb prefers, among the layouts within 1 % of
@@ -683,7 +704,7 @@ export function generateLayout(multi: Multi, params: LayoutParams, options: Sear
   const cos = Math.cos(rad);
   const sin = Math.sin(rad);
   const shape = new Rotated(multi, cos, sin);
-  const result = evaluate(shape, buildModules(shape, params, best.phase), params, best.along, true);
+  const result = evaluate(shape, buildModules(shape, chosen, best.phase), chosen, best.along, true);
   const back = (q: Quad) => q.map(p => unrotate(p, cos, sin)) as Quad;
   const laid: LayoutResult = {
     count: result.count,

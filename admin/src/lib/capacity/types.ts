@@ -232,3 +232,12 @@ export const EXCLUSION_DEFAULTS: Record<
   post: { geometry: "Point", clearance: 0.5 },
   other: { geometry: "Polygon", clearance: 0 },
 };
+
+/** V-A (07/10/2026): what the server returns when Claude proposes the zones. */
+export interface ZoneSuggestion {
+  zones: Zone[];
+  surfaces: { name: string; label: string; surface: string; confidence: number; area: number }[];
+  image: { width: number; height: number; metresPerPixel: number; zoom: number };
+  model: string;
+  usage: { inputTokens: number; outputTokens: number };
+}

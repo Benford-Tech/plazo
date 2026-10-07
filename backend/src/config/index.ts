@@ -41,6 +41,11 @@ export const VIEW_AS_TTL_MINUTES = 60;
 // matches, rate limits count the traveller's IP (x-plazo-client-ip) instead of the site's own IP.
 export const SITE_API_KEY = process.env.SITE_API_KEY || '';
 
+// V-A (07/10/2026): Claude proposes the parking zones from the IGN photo. Without a key, the pro
+// space's button answers 409 `ai_unavailable`. The model can be pinned (default: Claude Opus 5.5).
+export const anthropicApiKey = (): string => (process.env.ANTHROPIC_API_KEY || '').trim();
+export const zoneSuggestionModel = (): string => (process.env.ZONE_SUGGESTION_MODEL || '').trim() || 'claude-opus-5-5';
+
 // Brevo (transactional email and SMS). Without an API key, nothing is sent.
 export const BREVO_API_KEY = process.env.BREVO_API_KEY || '';
 // M-A (06/10/2026): the domain of the operators' inbound addresses (<slug>@<domain>), whose mail Brevo's

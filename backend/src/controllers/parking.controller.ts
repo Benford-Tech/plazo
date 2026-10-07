@@ -9,11 +9,13 @@ import { OccupationService } from '@/services/occupation.service';
 import { SpotPlanningService } from '@/services/spot-planning.service';
 import { ParkingPlanService } from '@/services/parking-plan.service';
 import { ParkingService } from '@/services/parking.service';
+import { ZoneSuggestionService } from '@/services/zone-suggestion.service';
 import catchAsync from '@/utils/catchAsync';
 
 export class ParkingController {
   public parkingService = Container.get(ParkingService);
   public plans = Container.get(ParkingPlanService);
+  public zoneSuggestions = Container.get(ZoneSuggestionService);
   public occupation = Container.get(OccupationService);
   public spotPlanning = Container.get(SpotPlanningService);
 
@@ -60,6 +62,11 @@ export class ParkingController {
   /** POST /internal/parkings/:id/plan/estimate */
   public estimatePlan = catchAsync(async (req: RequestWithStaffSession, res: Response) => {
     res.json(await this.plans.estimate(req.staff, req.params.id as string));
+  });
+
+  /** POST /internal/parkings/:id/plan/suggest-zones (V-A): Claude reads the IGN photo of the land. */
+  public suggestZones = catchAsync(async (req: RequestWithStaffSession, res: Response) => {
+    res.json(await this.zoneSuggestions.suggest(req.staff, req.params.id as string));
   });
 
   /** POST /internal/parkings/:id/plan/generate */

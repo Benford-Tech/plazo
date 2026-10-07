@@ -130,7 +130,8 @@ le navigateur de l'espace pro appelle `/api` sur le même domaine (pas de CORS).
    `vercel.json`) ; les fonctions tournent à Paris (`cdg1`). Variables (communes aux trois services) :
    `NODE_ENV=production`, `SECRET_KEY`, `CRON_SECRET`, `SITE_API_KEY`
    (secret partagé entre le site et l'API), `PUBLIC_SITE_URL` (adresse publique du site, pour les liens
-   des mails), pour les mails et SMS `BREVO_API_KEY`, `EMAIL_FROM`, `SMS_SENDER`,
+   des mails), pour la proposition des zones par Claude `ANTHROPIC_API_KEY` (et `ZONE_SUGGESTION_MODEL`,
+   facultatif), pour les mails et SMS `BREVO_API_KEY`, `EMAIL_FROM`, `SMS_SENDER`,
    `SMS_GATEWAY_ENCRYPTION_KEY` (clé qui chiffre les mots de passe des téléphones reliés par les loueurs, voir
    « SMS depuis le téléphone du parking » ; `openssl rand -base64 32`), et
    `PLATFORM_ADMIN_EMAILS` (emails des administrateurs de la plateforme, séparés par des virgules : eux seuls
@@ -380,4 +381,5 @@ Documentation interactive : `/api/docs` (Swagger). Toutes les routes sont sous `
 | GET | `/internal/platform/geo/parcels?lon=&lat=` | Parcelles cadastrales au point cliqué (relais vers API Carto de l'IGN) |
 | GET | `/internal/platform/geo/parkings?bbox=` | Parkings BD TOPO de la vue (relais vers le WFS de la Géoplateforme) |
 | GET | `/internal/platform/geo/buildings?bbox=` | Bâtiments BD TOPO de la vue (B-A, même relais) |
+| POST | `/internal/parkings/:id/plan/suggest-zones` | V-A : Claude lit la photo IGN du terrain et propose les zones (rien n'est enregistré ; 409 `ai_unavailable` sans `ANTHROPIC_API_KEY`) |
 | GET | `/internal/platform/geo/geocode?q=` | Recherche d'adresse (relais vers le géocodage de la Géoplateforme) |

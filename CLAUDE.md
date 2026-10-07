@@ -99,6 +99,15 @@ Ne construire QUE ce qui règle la douleur n°1 du client.
      `eraseZones` : retrait, coupe en deux ou disparition) ; passe les zones en manuel. **R-A réinitialiser** : menu
      « Réinitialiser… » dans la barre des étapes (tout le plan / zones et parties exclues, bâtiments IGN gardés / places
      seulement), avec confirmation ; la capacité déclarée ne change jamais.
+     **E-A (07/10/2026)** : le peigne essaie toutes les profondeurs de files (1 à `edgeMaxFiles` de chaque côté) sur les
+     orientations finalistes et garde la meilleure (la plus profonde à égalité) : un terrain étroit ou découpé reçoit une
+     allée au milieu au lieu de rester vide. **V-A (07/10/2026)** : `POST /internal/parkings/:id/plan/suggest-zones`
+     (`ZoneSuggestionService`) assemble les tuiles IGN du terrain (`domain/layout/tiles.ts`, zoom 19, 4 tuiles de côté au
+     plus, contour tracé en vert, `jpeg-js`), demande à Claude Opus 5.5 (`@anthropic-ai/sdk`, sortie structurée JSON,
+     `ANTHROPIC_API_KEY`, `ZONE_SUGGESTION_MODEL`) les surfaces garables en pixels, les reconvertit, les coupe au contour
+     moins les exclusions (`autoZonesFrom`) et renvoie des zones sans rien enregistrer ; bouton « Proposer les zones avec
+     Claude » à l'étape Zones (proposition en bleu, carte « N zones proposées » avec sol et confiance, Appliquer / Ignorer) ;
+     409 `ai_unavailable` sans clé, `ai_refused` si Claude décline.
    - Décision **O-A « File triée » (06/10/2026)** : sur une file de voiturier, les retours doivent décroître de l'allée vers le
      fond ; `domain/files.ts` reconstitue les files (profondeur + position) et score chaque place libre par le nombre de
      voitures à déplacer (`blocking` devant partant après, `blocked` derrière partant avant ; même vague = 2 h) ;

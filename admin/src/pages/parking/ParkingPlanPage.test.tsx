@@ -46,6 +46,7 @@ const api = vi.hoisted(() => ({
   updateSpot: vi.fn(),
   applyPlanCapacity: vi.fn(),
   buildingsIn: vi.fn(async () => ({ buildings: [] })),
+  suggestZones: vi.fn(),
 }));
 vi.mock("@/lib/api", async (importOriginal) => {
   const actual = await importOriginal<typeof import("@/lib/api")>();
@@ -221,6 +222,31 @@ describe("plan du parking (bloc 2, étape Plan)", () => {
     expect(patch.settings).toMatchObject({ zonesAuto: true, ignBuildingsSynced: false });
     expect(await screen.findByText("Pas encore de contour")).toBeInTheDocument();
     confirm.mockRestore();
+  });
+
+  it("demande à Claude de proposer les zones, les montre, puis les applique (V-A)", async () => {
+    api.getParkingPlan.mockResolvedValue({ ...view([]), plan: { ...view([]).plan, zones: [], settings: { zonesAuto: false } } });
+    api.updateParkingPlan.mockResolvedValue({ data: {} });
+    const half = { type: "Polygon" as const, coordinates: [rect.map(([x, y]) => [x, y] as [number, number])] };
+    api.suggestZones.mockResolvedValue({
+      zones: [{ id: "c1", name: "Zone A", geometry: half }],
+      surfaces: [{ name: "Zone A", label: "Cour en enrobé", surface: "asphalt", confidence: 0.9, area: 520 }],
+      image: { width: 512, height: 512, metresPerPixel: 0.21, zoom: 19 },
+      model: "claude-opus-5-5",
+      usage: { inputTokens: 1200, outputTokens: 300 },
+    });
+    renderAt("/parking/plan/zones");
+    fireEvent.click(await screen.findByRole("button", { name: /Proposer les zones avec Claude/ }));
+    expect(await screen.findByText("1 zone proposée")).toBeInTheDocument();
+    expect(screen.getByText(/Cour en enrobé · enrobé · sûr à 90 %/)).toBeInTheDocument();
+    expect(api.suggestZones).toHaveBeenCalledWith("p1");
+    fireEvent.click(screen.getByRole("button", { name: "Appliquer" }));
+    await waitFor(() => expect(api.updateParkingPlan).toHaveBeenCalled());
+    const patch = api.updateParkingPlan.mock.calls.at(-1)![1];
+    expect(patch.zones).toHaveLength(1);
+    expect(patch.zones[0].name).toBe("Zone A");
+    expect(patch.settings.zonesAuto).toBe(false);
+    expect(screen.queryByText("1 zone proposée")).not.toBeInTheDocument();
   });
 
   it("désactive une place d'un clic sur la carte", async () => {
