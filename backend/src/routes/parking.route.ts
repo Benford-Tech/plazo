@@ -3,7 +3,7 @@ import { ParkingController } from '@/controllers/parking.controller';
 import { UpdateParkingDto, UpdateShuttleTrackingDto } from '@/dtos/parking.dto';
 import { AssignSpotDto } from '@/dtos/occupation.dto';
 import { CarLocationDto } from '@/dtos/public-booking.dto';
-import { GenerateSpotsDto, ReplaceSpotsDto, UpdateParkingPlanDto, UpdateSpotDto } from '@/dtos/parking-plan.dto';
+import { GenerateSpotsDto, ReplaceSpotsDto, SuggestZonesDto, UpdateParkingPlanDto, UpdateSpotDto } from '@/dtos/parking-plan.dto';
 import { PlatformController } from '@/controllers/platform.controller';
 import { Routes } from '@/interfaces/routes.interface';
 import { RefuseInViewAs, StaffAuthMiddleware } from '@/middlewares/staff-auth.middleware';
@@ -102,7 +102,12 @@ export class ParkingRoute implements Routes {
     this.router.post('/internal/parkings/:id/plan/apply-capacity', StaffAuthMiddleware('parking:manage'), this.parking.applyCapacity);
     // The app: the layout engine runs on the server.
     this.router.post('/internal/parkings/:id/plan/estimate', StaffAuthMiddleware('parking:manage'), this.parking.estimatePlan);
-    this.router.post('/internal/parkings/:id/plan/suggest-zones', StaffAuthMiddleware('parking:manage'), this.parking.suggestZones);
+    this.router.post(
+      '/internal/parkings/:id/plan/suggest-zones',
+      StaffAuthMiddleware('parking:manage'),
+      ValidationMiddleware(SuggestZonesDto),
+      this.parking.suggestZones,
+    );
     this.router.post(
       '/internal/parkings/:id/plan/generate',
       StaffAuthMiddleware('parking:manage'),

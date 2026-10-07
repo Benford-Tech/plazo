@@ -91,6 +91,8 @@ export interface CapacitySettings {
   ignBuildingsSynced?: boolean;
   /** T-A: false once the zones were drawn by hand; else they follow the land and its exclusions. */
   zonesAuto?: boolean;
+  /** H-A: false stops Claude's proposal from counting grass as parkable. */
+  suggestGrass?: boolean;
 }
 
 export const DEFAULT_SETTINGS: CapacitySettings = {
@@ -234,6 +236,10 @@ export const EXCLUSION_DEFAULTS: Record<
 };
 
 /** V-A (07/10/2026): what the server returns when Claude proposes the zones. */
+export interface ZoneSuggestionOptions {
+  allowGrass: boolean;
+}
+
 export interface ZoneSuggestion {
   zones: Zone[];
   surfaces: { name: string; label: string; surface: string; confidence: number; area: number }[];

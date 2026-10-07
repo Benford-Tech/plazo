@@ -180,6 +180,13 @@ export class UpdateSpotDto {
   public code?: string;
 }
 
+/** V-A + H-A (07/10/2026): the zone proposal; grass is parkable unless `allowGrass` is false. */
+export class SuggestZonesDto {
+  @IsOptional()
+  @IsBoolean({ message: 'boolean' })
+  public allowGrass?: boolean;
+}
+
 /** Server-side generation (the app): the engine runs on the stored plan. */
 export class GenerateSpotsDto {
   @IsIn(LAYOUT_KEYS, { message: 'invalid_layout' })

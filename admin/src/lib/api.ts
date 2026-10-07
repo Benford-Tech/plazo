@@ -72,7 +72,7 @@ import type {
   SpotInput,
   SpotKind,
 } from "./plan/types";
-import type { ZoneSuggestion } from "@/lib/capacity/types";
+import type { ZoneSuggestion, ZoneSuggestionOptions } from "@/lib/capacity/types";
 
 export interface ParcelFeature extends ParcelRef {
   geometry: { type: "Polygon" | "MultiPolygon"; coordinates: unknown };
@@ -363,8 +363,8 @@ export const adminApi = {
       { method: "PATCH", body: json(patch) },
     ),
   /** V-A (07/10/2026): Claude reads the IGN photo of the land and proposes the zones (nothing saved). */
-  suggestZones: (parkingId: string) =>
-    apiRequest<ZoneSuggestion>(`/internal/parkings/${parkingId}/plan/suggest-zones`, { method: "POST" }),
+  suggestZones: (parkingId: string, options: ZoneSuggestionOptions) =>
+    apiRequest<ZoneSuggestion>(`/internal/parkings/${parkingId}/plan/suggest-zones`, { method: "POST", body: json(options) }),
   applyPlanCapacity: (parkingId: string) =>
     apiRequest<{ data: ParkingPlanView }>(
       `/internal/parkings/${parkingId}/plan/apply-capacity`,

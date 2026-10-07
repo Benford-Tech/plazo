@@ -9,6 +9,7 @@ import { areaOf, intersection, simplify, type Multi } from '@/domain/layout/geom
 import { metresPerPixel, TILE_SIZE, tileColumns, tileRows, tilesCovering, toLonLat, toPixel, zoomFor, type TileRange } from '@/domain/layout/tiles';
 import type { CapacityStudy, Exclusion, GeoPolygon, Zone } from '@/domain/layout/types';
 import { AuthenticatedStaff } from '@/interfaces/auth.interface';
+import { SuggestZonesDto } from '@/dtos/parking-plan.dto';
 import { HttpException } from '@/utils/httpException';
 import { logger } from '@/utils/logger';
 
@@ -25,7 +26,7 @@ export interface SuggestedSurface {
   /** Pixel ring of the stitched image, [x, y] × n. */
   points: [number, number][];
   label: string;
-  surface: 'asphalt' | 'gravel' | 'concrete' | 'other';
+  surface: 'asphalt' | 'gravel' | 'concrete' | 'grass' | 'other';
   confidence: number;
 }
 
@@ -50,28 +51,35 @@ const RESPONSE_SCHEMA = {
         additionalProperties: false,
         required: ['points', 'label', 'surface', 'confidence'],
         properties: {
-          points: {
-            type: 'array',
-            minItems: 3,
-            items: { type: 'array', minItems: 2, maxItems: 2, items: { type: 'number' } },
-          },
+          // Kept to the keywords structured outputs accept everywhere; sizes and ranges are checked in code.
+          points: { type: 'array', items: { type: 'array', items: { type: 'number' } } },
           label: { type: 'string' },
-          surface: { type: 'string', enum: ['asphalt', 'gravel', 'concrete', 'other'] },
-          confidence: { type: 'number', minimum: 0, maximum: 1 },
+          surface: { type: 'string', enum: ['asphalt', 'gravel', 'concrete', 'grass', 'other'] },
+          confidence: { type: 'number' },
         },
       },
     },
   },
 };
 
-const SYSTEM_PROMPT = `You read aerial photographs of car parks for a parking operator's planning tool.
+/** The instructions, with grass as a parkable surface or not (H-A, 07/10/2026). */
+export function systemPrompt(allowGrass: boolean): string {
+  const ground = allowGrass
+    ? 'asphalt, gravel, concrete, compacted ground or flat grass (a lawn, a meadow, a field) that is open to the sky'
+    : 'asphalt, gravel, concrete or compacted ground that is open to the sky';
+  const excluded = allowGrass
+    ? 'buildings and roofs, awnings, hedges, bushes and tree canopies, water, public roads'
+    : 'buildings and roofs, awnings, vegetation (lawn, hedges, tree canopies), water, public roads';
+  const cut = allowGrass ? 'a building, a hedge or a line of trees' : 'a building or vegetation';
+  return `You read aerial photographs of car parks for a parking operator's planning tool.
 The photo is an IGN orthophoto (France, 20 cm resolution, north up). A bright green outline marks the operator's land.
 Your job: outline every surface INSIDE the green outline where cars can be parked or driven to park:
-asphalt, gravel, concrete or compacted ground that is open to the sky. Include the lanes between rows (the tool lays
-its own aisles). Exclude buildings and roofs, awnings, vegetation (lawn, hedges, tree canopies), water, public roads
+${ground}. Include the lanes between rows (the tool lays
+its own aisles). Exclude ${excluded}
 outside the land, and clearly pedestrian or technical areas. Follow the real edges of the surface, with 6 to 20
-points per surface. Separate surfaces that are cut from each other by a building or vegetation. Coordinates are pixels
+points per surface. Separate surfaces that are cut from each other by ${cut}. Coordinates are pixels
 of the image, origin at its top-left corner, x to the right, y downwards.`;
+}
 
 /**
  * V-A (07/10/2026): Claude proposes the parking zones from the IGN photo. The server stitches the
@@ -88,7 +96,7 @@ export class ZoneSuggestionService {
     return !!anthropicApiKey();
   }
 
-  public async suggest(actor: AuthenticatedStaff, parkingId: string): Promise<ZoneSuggestion> {
+  public async suggest(actor: AuthenticatedStaff, parkingId: string, options: SuggestZonesDto = {}): Promise<ZoneSuggestion> {
     if (!ZoneSuggestionService.enabled()) {
       throw new HttpException(httpStatus.CONFLICT, 'The zone proposal needs an Anthropic API key', 'ai_unavailable');
     }
@@ -111,9 +119,29 @@ export class ZoneSuggestionService {
     const mpp = metresPerPixel(midLat, zoom);
     const jpg = jpeg.encode(photo, 85).data;
 
-    const { surfaces, usage } = await this.ask(jpg.toString('base64'), photo.width, photo.height, mpp, outlinePx);
+    const { surfaces, usage } = await this.ask(jpg.toString('base64'), photo.width, photo.height, mpp, outlinePx, options.allowGrass !== false);
+    try {
+      return this.toZones(surfaces, usage, { outline, exclusions, scaleFactor }, range, photo, mpp, zoom);
+    } catch (error) {
+      // A geometry the engine cannot digest: said as such rather than a bare 500.
+      const reason = error instanceof Error ? error.message : String(error);
+      logger.error(`[Zones] proposal could not be converted: ${reason}`);
+      throw new HttpException(httpStatus.BAD_GATEWAY, `The proposal could not be converted: ${reason}`, 'ai_failed', { reason });
+    }
+  }
 
-    const input = { outline, exclusions, scaleFactor } as Pick<CapacityStudy, 'outline' | 'exclusions' | 'scaleFactor'>;
+  private toZones(
+    surfaces: SuggestedSurface[],
+    usage: ZoneSuggestion['usage'],
+    input: Pick<CapacityStudy, 'outline' | 'exclusions' | 'scaleFactor'>,
+    range: TileRange,
+    photo: { width: number; height: number },
+    mpp: number,
+    zoom: number,
+  ): ZoneSuggestion {
+    const { outline } = input;
+    if (!outline) throw new HttpException(httpStatus.BAD_REQUEST, 'The plan has no outline', 'no_outline');
+
     const frame = frameFor({ ...input, zones: [] });
     if (!frame) throw new HttpException(httpStatus.BAD_REQUEST, 'The plan has no outline', 'no_outline');
     const land = polygonToMulti(frame, outline);
@@ -216,30 +244,58 @@ export class ZoneSuggestionService {
     height: number,
     mpp: number,
     outlinePx: [number, number][],
+    allowGrass = true,
   ): Promise<{ surfaces: SuggestedSurface[]; usage: ZoneSuggestion['usage'] }> {
-    this.client ??= new Anthropic({ apiKey: anthropicApiKey(), timeout: 120000 });
+    // Vercel allows this function 60 s: the call stays well under it (medium effort, short answer).
+    this.client ??= new Anthropic({ apiKey: anthropicApiKey(), timeout: 45000, maxRetries: 0 });
     const outlineText = outlinePx.map(([x, y]) => `(${Math.round(x)}, ${Math.round(y)})`).join(', ');
-    const response = await this.client.messages.create({
-      model: zoneSuggestionModel(),
-      max_tokens: 8000,
-      system: SYSTEM_PROMPT,
-      output_config: { effort: 'high', format: { type: 'json_schema', schema: RESPONSE_SCHEMA } },
-      messages: [
-        {
-          role: 'user',
-          content: [
-            { type: 'image', source: { type: 'base64', media_type: 'image/jpeg', data: imageBase64 } },
-            {
-              type: 'text',
-              text:
-                `Image: ${width} × ${height} px, ${mpp.toFixed(2)} m per pixel. ` +
-                `The green outline passes through these pixels: ${outlineText}. ` +
-                'Return the drivable surfaces inside it as JSON.',
-            },
-          ],
-        },
-      ],
-    });
+    let response: Anthropic.Message;
+    try {
+      response = await this.client.messages.create({
+        model: zoneSuggestionModel(),
+        max_tokens: 4000,
+        system: systemPrompt(allowGrass),
+        output_config: { effort: 'medium', format: { type: 'json_schema', schema: RESPONSE_SCHEMA } },
+        messages: [
+          {
+            role: 'user',
+            content: [
+              { type: 'image', source: { type: 'base64', media_type: 'image/jpeg', data: imageBase64 } },
+              {
+                type: 'text',
+                text:
+                  `Image: ${width} × ${height} px, ${mpp.toFixed(2)} m per pixel. ` +
+                  `The green outline passes through these pixels: ${outlineText}. ` +
+                  (allowGrass ? 'Grass is allowed. ' : '') +
+                  'Return the drivable surfaces inside it as JSON.',
+              },
+            ],
+          },
+        ],
+      });
+    } catch (error) {
+      // Most specific first: a bad key, a rate limit, a timeout, any other API answer, the network.
+      if (error instanceof Anthropic.AuthenticationError) {
+        logger.error('[Zones] Anthropic rejected the API key');
+        throw new HttpException(httpStatus.CONFLICT, 'The Anthropic API key is not accepted', 'ai_unavailable');
+      }
+      if (error instanceof Anthropic.RateLimitError) {
+        throw new HttpException(httpStatus.SERVICE_UNAVAILABLE, 'Claude is busy, try again shortly', 'ai_busy');
+      }
+      if (error instanceof Anthropic.APIConnectionTimeoutError) {
+        throw new HttpException(httpStatus.GATEWAY_TIMEOUT, 'Claude did not answer in time', 'ai_timeout');
+      }
+      if (error instanceof Anthropic.APIError) {
+        // The answer's own words reach the pro space: a rejected request is fixed from them.
+        logger.error(`[Zones] Anthropic answered ${error.status}: ${error.message}`);
+        throw new HttpException(httpStatus.BAD_GATEWAY, `Anthropic answered ${error.status}`, 'ai_failed', {
+          reason: `${error.status ?? '?'} ${error.message}`.slice(0, 300),
+        });
+      }
+      const reason = error instanceof Error ? error.message : 'unknown error';
+      logger.error(`[Zones] Anthropic call failed: ${reason}`);
+      throw new HttpException(httpStatus.BAD_GATEWAY, 'Claude could not be reached', 'ai_failed', { reason: reason.slice(0, 300) });
+    }
     if (response.stop_reason === 'refusal') {
       throw new HttpException(httpStatus.BAD_GATEWAY, 'Claude declined to read this photo', 'ai_refused');
     }
@@ -251,11 +307,18 @@ export class ZoneSuggestionService {
     try {
       parsed = JSON.parse(text);
     } catch {
-      throw new HttpException(httpStatus.BAD_GATEWAY, 'Claude answered something that is not JSON', 'ai_unavailable');
+      throw new HttpException(httpStatus.BAD_GATEWAY, 'Claude answered something that is not JSON', 'ai_failed', {
+        reason: `not JSON: ${text.slice(0, 120)}`,
+      });
     }
-    const surfaces = (parsed.surfaces ?? []).filter(
-      s => Array.isArray(s.points) && s.points.every(p => Array.isArray(p) && p.length === 2 && p.every(Number.isFinite)),
-    );
+    if (response.stop_reason === 'max_tokens') {
+      throw new HttpException(httpStatus.BAD_GATEWAY, 'Claude ran out of room for its answer', 'ai_failed', { reason: 'max_tokens' });
+    }
+    const surfaces = (parsed.surfaces ?? [])
+      .filter(
+        s => Array.isArray(s.points) && s.points.length >= 3 && s.points.every(p => Array.isArray(p) && p.length === 2 && p.every(Number.isFinite)),
+      )
+      .map(s => ({ ...s, confidence: Math.min(1, Math.max(0, Number(s.confidence) || 0)) }));
     return { surfaces, usage: { inputTokens: response.usage.input_tokens, outputTokens: response.usage.output_tokens } };
   }
 }

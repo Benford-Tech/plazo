@@ -48,7 +48,8 @@ export const fr = {
     invalid_credentials: "Email ou mot de passe incorrect.",
     too_many_attempts: "Trop de tentatives. Réessayez dans 15 minutes.",
     too_many_requests: "Trop de demandes. Réessayez dans un instant.",
-    daily_limit: "Limite atteinte : deux envois aux voyageurs par jour au plus.",
+    daily_limit:
+      "Limite atteinte : deux envois aux voyageurs par jour au plus.",
     invalid_audience: "Destinataires inconnus.",
     email_taken: "Cette adresse email est déjà utilisée.",
     cannot_demote_self:
@@ -56,10 +57,13 @@ export const fr = {
     last_manager: "Il doit rester au moins un gérant actif.",
     wrong_current_password: "Mot de passe actuel incorrect.",
     forbidden: "Vous n'avez pas accès à cette action.",
-    trip_already_running: "Un trajet est déjà en cours : terminez-le avant d'en démarrer un autre.",
-    inbound_unavailable: "La réception des mails n'est pas configurée sur la plateforme.",
+    trip_already_running:
+      "Un trajet est déjà en cours : terminez-le avant d'en démarrer un autre.",
+    inbound_unavailable:
+      "La réception des mails n'est pas configurée sur la plateforme.",
     trip_not_running: "Ce trajet est terminé.",
-    invalid_passengers: "Un des clients ne peut pas monter dans cette navette (statut changé ?). Actualisez la liste.",
+    invalid_passengers:
+      "Un des clients ne peut pas monter dans cette navette (statut changé ?). Actualisez la liste.",
     already_on_trip: "Un des clients est déjà sur un trajet en cours.",
     invalid_direction: "Sens du trajet invalide.",
     position_too_old: "Position trop ancienne : nouvel essai en cours.",
@@ -102,11 +106,16 @@ export const fr = {
       "Enregistrez d'abord vos tarifs : une fiche sans prix ne peut pas être envoyée en validation.",
     duplicate_days: "Deux forfaits ont la même durée.",
     unknown: "Une erreur est survenue. Réessayez.",
+    gateway: "Le serveur n'a pas répondu à temps. Réessayez dans un instant.",
     geo_unavailable:
       "Le service de l'IGN ne répond pas. Réessayez dans un instant.",
     ai_unavailable:
       "La proposition par Claude n'est pas disponible : clé API absente ou réponse inexploitable.",
-    ai_refused: "Claude n'a pas pu lire cette photo. Tracez les zones au pinceau.",
+    ai_refused:
+      "Claude n'a pas pu lire cette photo. Tracez les zones au pinceau.",
+    ai_busy: "Claude est saturé pour l'instant. Réessayez dans une minute.",
+    ai_failed: "La lecture par Claude a échoué",
+    ai_timeout: "Claude a mis trop de temps à lire la photo. Réessayez.",
     no_outline: "Repérez d'abord le terrain (étape 1).",
     geo_timeout:
       "Le service de l'IGN a mis trop de temps à répondre. Réessayez.",
@@ -141,7 +150,8 @@ export const fr = {
     invalid_sms_mode: "Choix inconnu.",
     invalid_tracking: "Choix inconnu.",
     shuttle_tracking_off: "Le suivi des navettes est désactivé pour ce parking.",
-    unknown_variable: "Une variable entre accolades est inconnue : utilisez celles proposées.",
+    unknown_variable:
+      "Une variable entre accolades est inconnue : utilisez celles proposées.",
     invalid_time: "Heure non proposée.",
     reminder_not_tonight: "Seuls les SMS de ce soir peuvent partir maintenant.",
     reminder_already_sent: "Le SMS est déjà parti.",
@@ -162,20 +172,23 @@ export const fr = {
     sms_gateway_error: "L'appli SMS a renvoyé une erreur. Réessayez.",
     sms_gateway_failed:
       "Le téléphone n'a pas pu envoyer le SMS (réseau ou forfait).",
-    booking_refunded: "Réservation remboursée : elle ne peut plus être rouverte.",
+    booking_refunded:
+      "Réservation remboursée : elle ne peut plus être rouverte.",
     refund_failed: "Le remboursement a échoué. Réessayez.",
     spot_not_found: "Place introuvable.",
     spot_inactive: "Cette place est désactivée.",
     not_placeable: "Cette réservation ne peut pas être placée.",
     duplicate_code: "Code de place déjà utilisé.",
-    no_spots: "Aucune place ne tient sur ce terrain : agrandissez-le ou vérifiez le tracé.",
+    no_spots:
+      "Aucune place ne tient sur ce terrain : agrandissez-le ou vérifiez le tracé.",
     not_site_booking: `Seules les réservations ${PRODUCT.name} ont un lien de gestion.`,
     invalid_code: "Code de place invalide.",
     invalid_kind: "Type invalide.",
     boolean: "Oui ou non attendu.",
     invalid_stay_class: "Zone de séjour invalide.",
     invalid_layout: "Disposition invalide.",
-    invalid_key_hook: "Crochet : 12 caractères max, lettres, chiffres, espace ou tiret.",
+    invalid_key_hook:
+      "Crochet : 12 caractères max, lettres, chiffres, espace ou tiret.",
     invalid_airport: "Code aéroport invalide (3 lettres).",
     invalid: "Valeur invalide.",
     invalid_coordinate: "Coordonnées invalides.",
@@ -284,17 +297,24 @@ export const fr = {
     kpi: {
       onSite: "Sur le parking",
       onSiteSub: (free: number | null, planned: number) =>
-        free === null ? `${planned === 0 ? "plan à dessiner" : ""}` : `${free} libre${free > 1 ? "s" : ""} sur ${planned}`,
+        free === null
+          ? `${planned === 0 ? "plan à dessiner" : ""}`
+          : `${free} libre${free > 1 ? "s" : ""} sur ${planned}`,
       arrivals: "Arrivées",
-      arrivalsSub: (arrived: number, total: number) => `${arrived} / ${total} sur place`,
+      arrivalsSub: (arrived: number, total: number) =>
+        `${arrived} / ${total} sur place`,
       returns: "Retours",
       returnsSub: (week: number) => `${week} cette semaine`,
       shuttles: "Navettes",
-      shuttlesSub: (n: number) => (n === 0 ? "aucune en route" : n === 1 ? "en route" : "en route"),
+      shuttlesSub: (n: number) =>
+        n === 0 ? "aucune en route" : n === 1 ? "en route" : "en route",
       nextWave: (time: string, passengers: number, vehicles: number | null) =>
         `prochaine ${time} · ${passengers} pass.${vehicles && vehicles > 1 ? ` · ${vehicles} navettes` : ""}`,
       toTreat: "À traiter",
-      toTreatSub: (urgent: number) => (urgent === 0 ? "rien d'urgent" : `${urgent} urgent${urgent > 1 ? "s" : ""}`),
+      toTreatSub: (urgent: number) =>
+        urgent === 0
+          ? "rien d'urgent"
+          : `${urgent} urgent${urgent > 1 ? "s" : ""}`,
     },
     services: {
       title: "Services",
@@ -302,7 +322,8 @@ export const fr = {
       warn: "À voir",
       off: "Off",
       flights: "Vols",
-      flightsOn: (provider: string | null) => (provider ? `suivi ${provider}` : "suivi actif"),
+      flightsOn: (provider: string | null) =>
+        provider ? `suivi ${provider}` : "suivi actif",
       flightsOff: "non configuré",
       sms: "SMS",
       smsOff: "désactivés",
@@ -310,7 +331,8 @@ export const fr = {
       smsOk: "prêts",
       smsStale: "en retard",
       push: "Notifications",
-      pushOn: (devices: number) => `${devices} appareil${devices > 1 ? "s" : ""}`,
+      pushOn: (devices: number) =>
+        `${devices} appareil${devices > 1 ? "s" : ""}`,
       pushOff: "non configurées",
       stripe: "Paiements",
       stripeOn: "reversements actifs",
@@ -343,7 +365,11 @@ export const fr = {
         blocked_return: "Retour du jour bloqué : sortir d'abord",
         inbound_to_check: "Mails à vérifier",
       } satisfies Record<AlertKind, string>,
-      waveDetail: (direction: ShuttleDirection, time: string, passengers: number) =>
+      waveDetail: (
+        direction: ShuttleDirection,
+        time: string,
+        passengers: number,
+      ) =>
         `${direction === "dropoff" ? "Vers le terminal" : "Depuis l'aéroport"} ${time} · ${passengers} passagers`,
     },
     vehicles: {
@@ -355,8 +381,15 @@ export const fr = {
       noKeys: "Clés ?",
       returnToday: (time: string) => `Retour ${time}`,
       returnLater: (day: string) => `Retour ${day}`,
-      onTrip: { pickup: "Navette · retour", dropoff: "Navette · terminal" } satisfies Record<ShuttleDirection, string>,
-      stay: { short: "zone court", medium: "zone moyen", long: "zone long" } as Record<string, string>,
+      onTrip: {
+        pickup: "Navette · retour",
+        dropoff: "Navette · terminal",
+      } satisfies Record<ShuttleDirection, string>,
+      stay: {
+        short: "zone court",
+        medium: "zone moyen",
+        long: "zone long",
+      } as Record<string, string>,
       all: "Tous les véhicules",
       pax: (n: number) => `${n} pass.`,
       keysHook: (hook: string) => `Clés : crochet ${hook}`,
@@ -378,14 +411,18 @@ export const fr = {
       title: "Navettes en direct",
       none: "Aucune navette en route.",
       parking: "Parking",
-      direction: { pickup: "Retours · aéroport", dropoff: "Départs · terminal" } satisfies Record<ShuttleDirection, string>,
+      direction: {
+        pickup: "Retours · aéroport",
+        dropoff: "Départs · terminal",
+      } satisfies Record<ShuttleDirection, string>,
       passengers: (n: number) => `${n} pass.`,
       toStop: (name: string, min: number) => `${name} dans ${min} min`,
       toParking: (min: number) => `parking dans ${min} min`,
       noPosition: "position inconnue",
       open: "Ouvrir les retours",
       shuttle: (n: number) => `Navette ${String(n).padStart(2, "0")}`,
-      since: (at: Date) => `partie à ${new Intl.DateTimeFormat("fr-FR", { hour: "2-digit", minute: "2-digit", timeZone: "Europe/Paris" }).format(at)}`,
+      since: (at: Date) =>
+        `partie à ${new Intl.DateTimeFormat("fr-FR", { hour: "2-digit", minute: "2-digit", timeZone: "Europe/Paris" }).format(at)}`,
       legend: { fresh: "position récente", stale: "position ancienne" },
     },
     totalCapacity: "Places au total",
@@ -414,9 +451,11 @@ export const fr = {
     shuttleTravelMinutes: "Durée du trajet navette (minutes)",
     shuttleHelp: "Entre le parking et le terminal.",
     terminalLeadMinutes: "Présence au terminal avant le décollage (minutes)",
-    terminalLeadHelp: "La navette aller part ce délai plus le trajet avant le décollage du vol aller.",
+    terminalLeadHelp:
+      "La navette aller part ce délai plus le trajet avant le décollage du vol aller.",
     landingDelayMinutes: "Délai après l'atterrissage (minutes)",
-    landingDelayHelp: "Bagages, douane : le temps entre l'atterrissage et le point de rendez-vous.",
+    landingDelayHelp:
+      "Bagages, douane : le temps entre l'atterrissage et le point de rendez-vous.",
     bookablePreview: (n: number) =>
       `Places réservables avec ces réglages : ${n}`,
   },
@@ -465,7 +504,8 @@ export const fr = {
     driverNone: "Aucun (au choix du chauffeur)",
     inService: "En service",
     outOfService: "Hors service",
-    outOfServiceHelp: "Un véhicule hors service n'est pas proposé au départ d'un trajet.",
+    outOfServiceHelp:
+      "Un véhicule hors service n'est pas proposé au départ d'un trajet.",
     add: "Ajouter la navette",
     edit: "Modifier",
     editLabel: (model: string) => `Modifier la navette ${model}`,
@@ -487,14 +527,19 @@ export const fr = {
     airportUnset: "Aéroport : point de rendez-vous à définir ci-dessus.",
     empty: "Aucune autre desserte : la navette ne va qu'à l'aéroport.",
     kind: "Type",
-    kinds: { airport: "Aéroport", station: "Gare", other: "Autre lieu" } as Record<ShuttleStopKind, string>,
+    kinds: {
+      airport: "Aéroport",
+      station: "Gare",
+      other: "Autre lieu",
+    } as Record<ShuttleStopKind, string>,
     name: "Nom",
     namePlaceholder: "ex. Gare Saint-Exupéry TGV",
     search: "Adresse ou lieu",
     searchPlaceholder: "ex. Gare Lyon Saint-Exupéry",
     searchAction: "Chercher",
     noResult: "Aucun lieu trouvé.",
-    coordinates: (lat: number, lng: number) => `${lat.toFixed(5)}, ${lng.toFixed(5)}`,
+    coordinates: (lat: number, lng: number) =>
+      `${lat.toFixed(5)}, ${lng.toFixed(5)}`,
     needPoint: "Cherchez d'abord le lieu pour le placer.",
     instructions: "Consignes pour le voyageur (facultatif)",
     instructionsHelp: (left: number) => `${left} caractères restants.`,
@@ -641,9 +686,11 @@ export const fr = {
     email: "Email",
     plate: "Plaque",
     returnFlight: "Vol retour",
-    returnFlightHelp: "Pour suivre l'atterrissage et prévoir la navette retour.",
+    returnFlightHelp:
+      "Pour suivre l'atterrissage et prévoir la navette retour.",
     departureFlight: "Vol aller (facultatif)",
-    departureFlightHelp: "Pour prévoir la navette vers le terminal avant le décollage.",
+    departureFlightHelp:
+      "Pour prévoir la navette vers le terminal avant le décollage.",
     departureStatus: {
       scheduled: "à l'heure",
       delayed: "retardé",
@@ -655,7 +702,10 @@ export const fr = {
     } as Record<string, string>,
     takeOff: (time: string) => `décollage ${time}`,
     carPosition: "Position de la voiture",
-    carBy: { traveller: "donnée par le client", staff: "prise par l'équipe" } as Record<string, string>,
+    carBy: {
+      traveller: "donnée par le client",
+      staff: "prise par l'équipe",
+    } as Record<string, string>,
     carAccuracy: (m: number) => `± ${m} m`,
     carDirections: "Itinéraire à pied",
     stop: "Desserte",
@@ -668,9 +718,16 @@ export const fr = {
     customerNote: "Message du client",
     vehicleModel: "Modèle du véhicule",
     vehicleColour: "Couleur",
-    vehicleDetails: (model: string | null | undefined, colour: string | null | undefined) => [model, colour].filter(Boolean).join(" · "),
+    vehicleDetails: (
+      model: string | null | undefined,
+      colour: string | null | undefined,
+    ) => [model, colour].filter(Boolean).join(" · "),
     returnNotice: "Signalé au retour",
-    returnNoticeKinds: { flight_delayed: "Mon vol a du retard", luggage: "Bagage perdu ou retardé", other: "Un mot du voyageur" } as Record<string, string>,
+    returnNoticeKinds: {
+      flight_delayed: "Mon vol a du retard",
+      luggage: "Bagage perdu ou retardé",
+      other: "Un mot du voyageur",
+    } as Record<string, string>,
     returnNoticeLine: (kind: string, text: string | null, time: string) =>
       `${kind === "other" && text ? `« ${text} »` : `${{ flight_delayed: "Mon vol a du retard", luggage: "Bagage perdu ou retardé", other: "Un mot du voyageur" }[kind] ?? kind}${text ? ` · « ${text} »` : ""}`} · ${time}`,
     nights: (n: number) => `${n} nuit${n > 1 ? "s" : ""}`,
@@ -907,8 +964,7 @@ export const fr = {
     simNone: "Pas de prix : ajoutez un forfait plus long ou un prix par jour",
     commission: (pct: string) =>
       `Sur une réservation payée en ligne, ${PRODUCT.name} retient sa commission (${pct} %) et vous reverse le reste. Les réservations au comptoir, par téléphone ou via les comparateurs ne sont pas concernées.`,
-    commissionUnset:
-      `Sur une réservation payée en ligne, ${PRODUCT.name} retient une commission (taux à convenir) et vous reverse le reste. Les réservations au comptoir, par téléphone ou via les comparateurs ne sont pas concernées.`,
+    commissionUnset: `Sur une réservation payée en ligne, ${PRODUCT.name} retient une commission (taux à convenir) et vous reverse le reste. Les réservations au comptoir, par téléphone ou via les comparateurs ne sont pas concernées.`,
     invalidPrice: "Prix invalide (ex. 34,99).",
     invalidDays: "Entre 1 et 90 jours.",
   },
@@ -1009,7 +1065,8 @@ export const fr = {
         ? "Aucun bâtiment IGN sur le terrain"
         : `${n} bâtiment${n > 1 ? "s" : ""} IGN exclu${n > 1 ? "s" : ""} (1 m de marge, à retirer d'un clic à l'étape Zones)`,
     ignBuildingsLoading: "Recherche des bâtiments IGN…",
-    ignBuildingsError: "Bâtiments IGN indisponibles pour l'instant : ajoutez-les à la main à l'étape Zones.",
+    ignBuildingsError:
+      "Bâtiments IGN indisponibles pour l'instant : ajoutez-les à la main à l'étape Zones.",
     parkingsZoom: "zoomez pour les afficher",
     help: "Corrigez le contour à la souris (déplacer un sommet, en ajouter, en retirer), puis saisissez une cote mesurée sur place pour caler l'échelle.",
     addDimension: "Ajouter une cote",
@@ -1035,20 +1092,34 @@ export const fr = {
     brush: "Pinceau",
     eraser: "Gomme",
     brushWidth: "Largeur",
-    brushHelp: "Maintenez le clic et peignez où l'on peut garer ; les traits qui se touchent fusionnent.",
-    eraserHelp: "Maintenez le clic et effacez ce qui ne doit pas recevoir de voitures.",
+    brushHelp:
+      "Maintenez le clic et peignez où l'on peut garer ; les traits qui se touchent fusionnent.",
+    eraserHelp:
+      "Maintenez le clic et effacez ce qui ne doit pas recevoir de voitures.",
     // V-A (07/10/2026): Claude proposes the zones from the photo.
     suggest: "Proposer les zones avec Claude",
     suggesting: "Claude lit la photo…",
-    suggestHelp: "Claude lit la photo aérienne du terrain et propose les surfaces où l'on peut garer. Vous gardez la main : appliquez, puis ajustez au pinceau.",
+    suggestHelp:
+      "Claude lit la photo aérienne du terrain et propose les surfaces où l'on peut garer. Vous gardez la main : la proposition s'ajoute à vos zones, à compléter au pinceau avant ou après.",
+    suggestGrass: "Herbe autorisée (pelouse, pré)",
     suggestion: {
-      title: (n: number) => (n === 0 ? "Aucune surface reconnue" : `${n} zone${n > 1 ? "s" : ""} proposée${n > 1 ? "s" : ""}`),
+      title: (n: number) =>
+        n === 0
+          ? "Aucune surface reconnue"
+          : `${n} zone${n > 1 ? "s" : ""} proposée${n > 1 ? "s" : ""}`,
       none: "Claude n'a reconnu aucune surface garable dans le contour. Tracez les zones au pinceau.",
-      surfaces: { asphalt: "enrobé", gravel: "gravier", concrete: "béton", other: "autre sol" },
+      surfaces: {
+        asphalt: "enrobé",
+        gravel: "gravier",
+        concrete: "béton",
+        grass: "herbe",
+        other: "autre sol",
+      },
       confidence: (pct: number) => `sûr à ${pct} %`,
-      apply: "Appliquer",
+      apply: "Ajouter à mes zones",
       dismiss: "Ignorer",
-      applied: (n: number) => `${n} zone${n > 1 ? "s" : ""} appliquée${n > 1 ? "s" : ""} : ajustez-les au pinceau si besoin.`,
+      applied: (n: number, total: number) =>
+        `${n} zone${n > 1 ? "s" : ""} ajoutée${n > 1 ? "s" : ""}, ${total} au total : ajustez-les au pinceau si besoin.`,
       cost: (model: string, tokens: number) => `${model} · ${tokens} jetons`,
     },
     // T-A (07/10/2026): the zones follow the land and its exclusions unless drawn by hand.
@@ -1172,7 +1243,8 @@ export const fr = {
       `${n} réservation${n > 1 ? "s" : ""} sans place`,
     inactiveUsed: (code: string, ref: string) =>
       `${code} est désactivée mais tient ${ref}`,
-    blockedAlert: (n: number) => `${n} voiture${n > 1 ? "s" : ""} derrière une autre qui repart plus tard`,
+    blockedAlert: (n: number) =>
+      `${n} voiture${n > 1 ? "s" : ""} derrière une autre qui repart plus tard`,
     unplaced: (n: number) => `Sans place · ${n}`,
     allPlaced: "Toutes les réservations de la fenêtre ont une place.",
     preassign: "Pré-affecter",
@@ -1215,7 +1287,11 @@ export const fr = {
     stats: (occupied: number, active: number, leaving: number) =>
       `${occupied} / ${active} places occupées · ${leaving} départ${leaving > 1 ? "s" : ""} aujourd'hui`,
     arrivals: (n: number) => `Arrivées à placer · ${n}`,
-    stayZone: { short: "zone court séjour", medium: "zone moyen séjour", long: "zone long séjour" },
+    stayZone: {
+      short: "zone court séjour",
+      medium: "zone moyen séjour",
+      long: "zone long séjour",
+    },
     noArrival: "Toutes les arrivées du jour ont une place.",
     suggested: (code: string) => `→ ${code} proposé`,
     reason: {
@@ -1225,9 +1301,12 @@ export const fr = {
     },
     // O-A (06/10/2026): the file keeps its order, or cars will have to move.
     noMove: "sans déplacement",
-    movesOut: (n: number, code: string, when: string) => `${n} voiture${n > 1 ? "s" : ""} à sortir (${code}, retour ${when})`,
-    movesBlocked: (n: number, code: string) => `bloquerait ${n} voiture${n > 1 ? "s" : ""} (${code})`,
-    blockedBy: (code: string, when: string) => `Derrière ${code} · retour ${when}`,
+    movesOut: (n: number, code: string, when: string) =>
+      `${n} voiture${n > 1 ? "s" : ""} à sortir (${code}, retour ${when})`,
+    movesBlocked: (n: number, code: string) =>
+      `bloquerait ${n} voiture${n > 1 ? "s" : ""} (${code})`,
+    blockedBy: (code: string, when: string) =>
+      `Derrière ${code} · retour ${when}`,
     place: "Placer",
     chooseOnMap: "Choisir sur le plan",
     choosing: (plate: string) =>
@@ -1238,7 +1317,11 @@ export const fr = {
     rowIndex: (row: number, index: number) => `Rangée ${row}, place ${index}`,
     keyHook: "Clés : crochet",
     keyHookPlaceholder: "n°",
-    carPosition: (by: "traveller" | "staff", time: string, accuracy: number | null) =>
+    carPosition: (
+      by: "traveller" | "staff",
+      time: string,
+      accuracy: number | null,
+    ) =>
       `Position GPS ${by === "staff" ? "prise par l'équipe" : "donnée par le client"} à ${time}${accuracy !== null ? ` (± ${accuracy} m)` : ""}`,
     carDirections: "Itinéraire",
     legendCar: "Position GPS d'une voiture",
@@ -1268,14 +1351,18 @@ export const fr = {
     // R-A (07/10/2026): start again, in whole or in part.
     reset: "Réinitialiser…",
     resetAll: "Tout le plan",
-    resetAllHelp: "Contour, zones, parties exclues, repères et places : la carte repart vide, sur l'adresse du parking.",
+    resetAllHelp:
+      "Contour, zones, parties exclues, repères et places : la carte repart vide, sur l'adresse du parking.",
     resetZones: "Les zones et parties exclues",
-    resetZonesHelp: "Le contour reste ; les zones sont redécoupées, les bâtiments IGN gardés.",
+    resetZonesHelp:
+      "Le contour reste ; les zones sont redécoupées, les bâtiments IGN gardés.",
     resetSpots: "Les places seulement",
-    resetSpotsHelp: "Le tracé reste ; les places sont effacées, la capacité déclarée ne bouge pas.",
+    resetSpotsHelp:
+      "Le tracé reste ; les places sont effacées, la capacité déclarée ne bouge pas.",
     resetConfirm: {
       all: "Effacer tout le plan (contour, zones, parties exclues, repères et places) ? La capacité déclarée ne change pas.",
-      zones: "Effacer les zones et les parties exclues tracées à la main ? Les places générées seront effacées aussi.",
+      zones:
+        "Effacer les zones et les parties exclues tracées à la main ? Les places générées seront effacées aussi.",
       spots: "Effacer toutes les places ? La capacité déclarée ne change pas.",
     },
     resetDone: "Plan réinitialisé",
@@ -1360,23 +1447,33 @@ export const fr = {
       title: "Notifications",
       intro:
         "Un message push aux téléphones qui ont activé les notifications : le personnel de tous les parkings, les voyageurs qui ont une réservation en cours, ou l'équipe d'un seul loueur. À réserver aux informations utiles (incident, nouveauté, fermeture).",
-      notConfigured: "OneSignal n'est pas configuré sur le serveur : l'envoi n'atteindra personne.",
+      notConfigured:
+        "OneSignal n'est pas configuré sur le serveur : l'envoi n'atteindra personne.",
       audience: "Destinataires",
-      audiences: { staff: "Tout le personnel", travellers: "Tous les voyageurs", operator: "Un loueur" } as Record<PlatformAudience, string>,
+      audiences: {
+        staff: "Tout le personnel",
+        travellers: "Tous les voyageurs",
+        operator: "Un loueur",
+      } as Record<PlatformAudience, string>,
       operator: "Loueur",
       operatorNone: "Choisir un loueur",
       titleField: "Titre",
       titlePlaceholder: "ex. Mise à jour de Plazo Pro",
       body: "Message",
-      bodyPlaceholder: "ex. Une nouvelle version est disponible : mettez l'application à jour.",
+      bodyPlaceholder:
+        "ex. Une nouvelle version est disponible : mettez l'application à jour.",
       charsLeft: (n: number) => `${n} caractères restants.`,
       url: "Lien à l'ouverture (facultatif)",
       urlHelp: "Adresse https ouverte quand on touche la notification.",
       counting: "Comptage des téléphones…",
-      reach: (n: number) => (n === 0 ? "Aucun téléphone à joindre" : `${n} téléphone${n > 1 ? "s" : ""} à joindre`),
+      reach: (n: number) =>
+        n === 0
+          ? "Aucun téléphone à joindre"
+          : `${n} téléphone${n > 1 ? "s" : ""} à joindre`,
       send: (n: number) => `Envoyer à ${n} téléphone${n > 1 ? "s" : ""}`,
       confirmTitle: "Confirmer l'envoi",
-      confirm: (n: number, audience: string) => `Envoyer ce message à ${n} téléphone${n > 1 ? "s" : ""} (${audience.toLowerCase()}) ? Il ne peut pas être rappelé.`,
+      confirm: (n: number, audience: string) =>
+        `Envoyer ce message à ${n} téléphone${n > 1 ? "s" : ""} (${audience.toLowerCase()}) ? Il ne peut pas être rappelé.`,
       confirmYes: "Envoyer",
       cancel: "Annuler",
       travellersLimit: "Voyageurs : deux envois par jour au plus.",
@@ -1565,6 +1662,14 @@ export function errorMessage(code: string | undefined): string {
 
 /** French message for any error thrown by the API client. */
 export function describeError(error: unknown): string {
+  // A gateway answer (the function cut short, the API down) carries no code of ours.
+  if (
+    error instanceof ApiError &&
+    !error.code &&
+    error.status >= 502 &&
+    error.status <= 504
+  )
+    return fr.errors.gateway;
   if (error instanceof ApiError) return errorMessage(error.code);
   if (error instanceof TypeError) return fr.errors.network;
   return fr.errors.unknown;
@@ -1578,7 +1683,8 @@ export const dateTime = new Intl.DateTimeFormat("fr-FR", {
 
 export const flightCheckFr = {
   title: "Tester le suivi de vol",
-  intro: "Interroge le fournisseur de suivi de vols pour un vol et une date, et montre sa réponse telle quelle.",
+  intro:
+    "Interroge le fournisseur de suivi de vols pour un vol et une date, et montre sa réponse telle quelle.",
   flight: "Numéro de vol",
   date: "Date (locale)",
   role: "Côté",
@@ -1586,11 +1692,14 @@ export const flightCheckFr = {
   departure: "Décollage de l'aéroport (vol aller)",
   run: "Interroger",
   running: "Interrogation…",
-  provider: (provider: string, host: string | null) => `Fournisseur : ${provider}${host ? ` · ${host}` : ""}`,
+  provider: (provider: string, host: string | null) =>
+    `Fournisseur : ${provider}${host ? ` · ${host}` : ""}`,
   outcome: {
-    not_configured: "Aucun fournisseur configuré : ajoutez AERODATABOX_API_KEY (ou AIRLABS_API_KEY) sur Vercel.",
+    not_configured:
+      "Aucun fournisseur configuré : ajoutez AERODATABOX_API_KEY (ou AIRLABS_API_KEY) sur Vercel.",
     found: "Vol trouvé.",
-    not_found: "Le fournisseur ne connaît pas ce vol à cette date (vérifiez le numéro et la date).",
+    not_found:
+      "Le fournisseur ne connaît pas ce vol à cette date (vérifiez le numéro et la date).",
     error: "Le fournisseur a refusé la demande.",
   } as Record<string, string>,
   errorHint: (error: string) =>
@@ -1615,7 +1724,8 @@ export const flightCheckFr = {
 export const shuttleWavesFr = {
   title: "Navettes",
   wavesTitle: "Ligne du jour",
-  subtitle: "Ligne du jour : quand chaque navette doit partir, avec combien de passagers.",
+  subtitle:
+    "Ligne du jour : quand chaque navette doit partir, avec combien de passagers.",
   today: "Aujourd'hui",
   tomorrow: "Demain",
   dayAfter: (day: string) => day,
@@ -1623,24 +1733,35 @@ export const shuttleWavesFr = {
   loadError: "Impossible de charger la prévision des navettes.",
   empty: "Aucune navette à prévoir ce jour-là.",
   emptyUpcoming: "Plus aucune navette à prévoir aujourd'hui.",
-  pastCount: (n: number) => (n > 1 ? `${n} créneaux passés` : "1 créneau passé"),
+  pastCount: (n: number) =>
+    n > 1 ? `${n} créneaux passés` : "1 créneau passé",
   pastShow: "Afficher",
   pastHide: "Masquer",
   seats: (seats: number | null, vehicles: number) =>
-    seats === null ? `${vehicles} véhicule${vehicles > 1 ? "s" : ""} en service · places inconnues` : `${vehicles} véhicule${vehicles > 1 ? "s" : ""} en service · ${seats} places`,
+    seats === null
+      ? `${vehicles} véhicule${vehicles > 1 ? "s" : ""} en service · places inconnues`
+      : `${vehicles} véhicule${vehicles > 1 ? "s" : ""} en service · ${seats} places`,
   times: (lead: number, delay: number, travel: number) =>
     `Au terminal ${lead} min avant le décollage · rendez-vous ${delay} min après l'atterrissage · trajet ${travel} min`,
   settings: "Modifier les délais",
   wave: {
     count: (n: number) => `${n} vague${n > 1 ? "s" : ""}`,
     countUpcoming: (n: number) => `${n} à venir`,
-    direction: { dropoff: "Vers le terminal", pickup: "Depuis l'aéroport" } satisfies Record<ShuttleDirection, string>,
+    direction: {
+      dropoff: "Vers le terminal",
+      pickup: "Depuis l'aéroport",
+    } satisfies Record<ShuttleDirection, string>,
     airport: "Aéroport",
-    passengers: (n: number, seats: number | null) => (seats === null ? `${n}` : `${n} / ${seats}`),
+    passengers: (n: number, seats: number | null) =>
+      seats === null ? `${n}` : `${n} / ${seats}`,
     vehicles: (n: number) => `${n} navettes`,
     meetAt: (time: string) => `rendez-vous ${time}`,
     noFlight: (n: number) => (n === 1 ? "1 sans vol" : `${n} sans vol`),
-    state: { planned: "À venir", running: "En cours", done: "Faite" } satisfies Record<WaveState, string>,
+    state: {
+      planned: "À venir",
+      running: "En cours",
+      done: "Faite",
+    } satisfies Record<WaveState, string>,
     pax: (n: number) => `${n} pass.`,
     flight: {
       scheduled: "à l'heure",
@@ -1670,7 +1791,8 @@ export const shuttleTripsFr = {
     toStop: (name: string, min: number) => `${name} dans ${min} min`,
     toParking: (min: number) => `parking dans ${min} min`,
     end: "Terminer ce trajet",
-    endConfirm: (driver: string) => `Terminer le trajet de ${driver} ? Sa position ne sera plus partagée.`,
+    endConfirm: (driver: string) =>
+      `Terminer le trajet de ${driver} ? Sa position ne sera plus partagée.`,
   },
   running: {
     pickup: "En route vers l'aéroport · position partagée",
@@ -1680,24 +1802,34 @@ export const shuttleTripsFr = {
     dropoffNoShare: "En route vers le terminal · suivi désactivé",
     stop: (name: string) => `Desserte : ${name}`,
     vehicle: (v: string) => `Véhicule : ${v}`,
-    passengers: (n: number) => `${n} client${n > 1 ? "s" : ""} suivent votre trajet`,
+    passengers: (n: number) =>
+      `${n} client${n > 1 ? "s" : ""} suivent votre trajet`,
     left: (m: number) => `arrêt automatique dans ${m} min`,
     endPickup: "Clients récupérés · retour parking",
     endDropoff: "Clients déposés · retour parking",
-    ended: "Trajet terminé : votre position n'est plus partagée et a été effacée.",
-    locationDenied: "Sans accès à la position, les clients ne verront pas la navette avancer. Autorisez la position dans le navigateur.",
+    ended:
+      "Trajet terminé : votre position n'est plus partagée et a été effacée.",
+    locationDenied:
+      "Sans accès à la position, les clients ne verront pas la navette avancer. Autorisez la position dans le navigateur.",
     sharing: "Position partagée",
-    noGeolocation: "Ce navigateur ne donne pas la position : le trajet est visible sans sa position.",
+    noGeolocation:
+      "Ce navigateur ne donne pas la position : le trajet est visible sans sa position.",
   },
   start: {
     title: "Démarrer un trajet",
-    introPickup: "Vos clients de retour, à récupérer à l'aéroport. Démarrez le trajet : ils suivent votre position.",
-    introDropoff: "Vos clients arrivés au parking, à conduire au terminal. Démarrez le trajet : ils suivent votre position.",
-    direction: { pickup: "Retours · aéroport", dropoff: "Départs · terminal" } satisfies Record<ShuttleDirection, string>,
+    introPickup:
+      "Vos clients de retour, à récupérer à l'aéroport. Démarrez le trajet : ils suivent votre position.",
+    introDropoff:
+      "Vos clients arrivés au parking, à conduire au terminal. Démarrez le trajet : ils suivent votre position.",
+    direction: {
+      pickup: "Retours · aéroport",
+      dropoff: "Départs · terminal",
+    } satisfies Record<ShuttleDirection, string>,
     stop: "Desserte",
     airport: "Aéroport",
     meetingPoint: (label: string) => `Point de rendez-vous : ${label}`,
-    meetingPointNone: "Point de rendez-vous : l'aéroport (à définir dans Parking › Réglages).",
+    meetingPointNone:
+      "Point de rendez-vous : l'aéroport (à définir dans Parking › Réglages).",
     toPickUp: (terminal: string) => `À récupérer · ${terminal}`,
     noTerminal: "Terminal",
     toDropOff: "À conduire au terminal",
@@ -1720,20 +1852,25 @@ export const shuttleTripsFr = {
     leaveAt: (time: string) => `Départ conseillé ${time}`,
     toDropOffStop: (stop: string) => `À conduire · ${stop}`,
     expectedAt: (t: string) => `Attendu ${t}`,
-    routeNone: (band: string) => `Aucun trajet en cours. Cochez des voyageurs dans « ${band} » puis partez.`,
+    routeNone: (band: string) =>
+      `Aucun trajet en cours. Cochez des voyageurs dans « ${band} » puis partez.`,
     routePassengers: "Passagers du trajet",
-    stayNone: "Personne en séjour : les voyageurs déposés au terminal apparaîtront ici jusqu'à leur retour.",
-    stayDay: (day: string, n: number) => `${day} · ${n} retour${n > 1 ? "s" : ""}`,
+    stayNone:
+      "Personne en séjour : les voyageurs déposés au terminal apparaîtront ici jusqu'à leur retour.",
+    stayDay: (day: string, n: number) =>
+      `${day} · ${n} retour${n > 1 ? "s" : ""}`,
     backToday: "Revenus aujourd'hui",
     backNone: "Personne n'est encore revenu aujourd'hui.",
-    selectedSummary: (travellers: number, passengers: number) => `${travellers} voyageur${travellers > 1 ? "s" : ""} · ${passengers} pass. coché${travellers > 1 ? "s" : ""}`,
+    selectedSummary: (travellers: number, passengers: number) =>
+      `${travellers} voyageur${travellers > 1 ? "s" : ""} · ${passengers} pass. coché${travellers > 1 ? "s" : ""}`,
     spot: (code: string) => `Place ${code}`,
     badge: {
       onTrip: "Sur un trajet",
       atPoint: (t: string) => `Au point de RDV ${t}`,
       noticeFlightDelayed: "Vol en retard (client)",
       noticeLuggage: "Bagage perdu",
-      noticeOther: (text: string | null) => (text ? `« ${text} »` : "Mot du client"),
+      noticeOther: (text: string | null) =>
+        text ? `« ${text} »` : "Mot du client",
       landed: (t: string) => `Atterri ${t} · en chemin`,
       cancelled: "Vol annulé",
       returnAt: (t: string) => `Retour prévu ${t}`,
@@ -1748,12 +1885,20 @@ export const shuttleTripsFr = {
     vehicleColour: "Couleur",
     vehiclePlate: "Plaque",
     vehicleHelp: "Vos clients verront ce véhicule et votre prénom.",
-    tooMany: (p: number, seats: number) => `${p} passagers pour ${seats} places : choisissez un autre véhicule ou moins de clients.`,
+    tooMany: (p: number, seats: number) =>
+      `${p} passagers pour ${seats} places : choisissez un autre véhicule ou moins de clients.`,
     none: "Sélectionnez des clients",
-    pickup: (n: number) => (n === 1 ? "Partir à l'aéroport · 1 client" : `Partir à l'aéroport · ${n} clients`),
-    dropoff: (n: number) => (n === 1 ? "Partir au terminal · 1 client" : `Partir au terminal · ${n} clients`),
+    pickup: (n: number) =>
+      n === 1
+        ? "Partir à l'aéroport · 1 client"
+        : `Partir à l'aéroport · ${n} clients`,
+    dropoff: (n: number) =>
+      n === 1
+        ? "Partir au terminal · 1 client"
+        : `Partir au terminal · ${n} clients`,
     starting: "Démarrage…",
-    needsStatus: "Seuls les chauffeurs, voituriers, agents et gérants peuvent démarrer un trajet.",
+    needsStatus:
+      "Seuls les chauffeurs, voituriers, agents et gérants peuvent démarrer un trajet.",
     loadError: "Impossible de charger les clients à transporter.",
   },
 };
@@ -1796,7 +1941,8 @@ export const quickCardFr = {
   next: {
     title: "Prochaine étape",
     place: "Placer la voiture",
-    placeHelp: "Sur le plan, avec le crochet des clés : le client passe « Sur place ».",
+    placeHelp:
+      "Sur le plan, avec le crochet des clés : le client passe « Sur place ».",
     dropOff: "Déposer au terminal",
     dropOffHelp: "Ouvre la navette, côté départs, avec ce client sélectionné.",
     pickUp: "Récupérer à l'aéroport",
@@ -1825,11 +1971,13 @@ export const inboundFr = {
   title: "Mails entrants",
   intro:
     "Faites suivre les mails de confirmation des comparateurs (Allopark, bientôt Parkos, Onepark…) à cette adresse : chaque réservation est enregistrée toute seule, les mails incomplets ou inconnus attendent dans « À vérifier ».",
-  unavailable: "La réception des mails n'est pas encore configurée sur la plateforme (domaine de réception et secret Brevo).",
+  unavailable:
+    "La réception des mails n'est pas encore configurée sur la plateforme (domaine de réception et secret Brevo).",
   addressLabel: "Votre adresse Plazo",
   enable: "Activer l'adresse",
   regenerate: "Nouvelle adresse",
-  regenerateConfirm: "Remplacer l'adresse ? L'ancienne ne recevra plus rien : pensez à mettre à jour la règle de transfert.",
+  regenerateConfirm:
+    "Remplacer l'adresse ? L'ancienne ne recevra plus rien : pensez à mettre à jour la règle de transfert.",
   copy: "Copier",
   copied: "Adresse copiée",
   howTo: "Comment faire",
@@ -1848,14 +1996,21 @@ export const inboundFr = {
     unrecognised: "Non reconnus",
     dismissed: "Classés",
   } satisfies Record<InboundEmailStatus, string>,
-  toCheck: (n: number) => (n === 0 ? "Rien à vérifier" : n === 1 ? "1 mail à vérifier" : `${n} mails à vérifier`),
+  toCheck: (n: number) =>
+    n === 0
+      ? "Rien à vérifier"
+      : n === 1
+        ? "1 mail à vérifier"
+        : `${n} mails à vérifier`,
   openList: "Voir les mails",
   list: {
     title: "Mails à vérifier",
-    subtitle: "Les mails transférés que Plazo n'a pas pu enregistrer seul, puis ceux des 30 derniers jours.",
+    subtitle:
+      "Les mails transférés que Plazo n'a pas pu enregistrer seul, puis ceux des 30 derniers jours.",
     empty: "Aucun mail à vérifier.",
     loadError: "Impossible de charger les mails.",
-    from: (name: string | null, address: string | null) => [name, address].filter(Boolean).join(" · ") || "expéditeur inconnu",
+    from: (name: string | null, address: string | null) =>
+      [name, address].filter(Boolean).join(" · ") || "expéditeur inconnu",
     received: (at: string) => `reçu le ${at}`,
     provider: (p: string) => `Reconnu : ${p}`,
     missing: (fields: string) => `Manque : ${fields}`,
@@ -1882,7 +2037,8 @@ export const inboundFr = {
 /** « SMS de la veille » (S-A + S-B, 06/10/2026). */
 export const remindersFr = {
   title: "SMS de la veille",
-  subtitle: "Chaque soir, un SMS part à chaque client qui dépose sa voiture le lendemain.",
+  subtitle:
+    "Chaque soir, un SMS part à chaque client qui dépose sa voiture le lendemain.",
   back: "Retour aux réservations",
   loadError: "Impossible de charger les SMS de la veille.",
   link: "SMS de la veille",
@@ -1921,14 +2077,23 @@ export const remindersFr = {
     sent: (n: number) => `${n} envoyé${n > 1 ? "s" : ""}`,
     planned: (n: number) => `${n} SMS prévu${n > 1 ? "s" : ""}`,
     failed: (n: number) => `${n} échec${n > 1 ? "s" : ""}`,
-    in: (minutes: number) => (minutes < 60 ? `dans ${minutes} min` : `dans ${Math.floor(minutes / 60)} h ${String(minutes % 60).padStart(2, "0")}`),
+    in: (minutes: number) =>
+      minutes < 60
+        ? `dans ${minutes} min`
+        : `dans ${Math.floor(minutes / 60)} h ${String(minutes % 60).padStart(2, "0")}`,
     timeChanged: "heure changée",
     paused: "En pause",
   },
   evening: {
-    title: (when: "past" | "tonight" | "future", day: string, count: number, departuresDay: string) =>
+    title: (
+      when: "past" | "tonight" | "future",
+      day: string,
+      count: number,
+      departuresDay: string,
+    ) =>
       `${when === "tonight" ? `Ce soir, ${day}` : day} · pour ${count === 0 ? "aucun départ" : `${count === 1 ? "le départ" : `les ${count} départs`}`} de ${departuresDay}`,
-    planned: (n: number, time: string) => `${n} SMS prévu${n > 1 ? "s" : ""} à ${time}`,
+    planned: (n: number, time: string) =>
+      `${n} SMS prévu${n > 1 ? "s" : ""} à ${time}`,
     sent: (n: number) => `${n} envoyé${n > 1 ? "s" : ""}`,
     waiting: (n: number) => `${n} en attente du téléphone`,
     failed: (n: number) => `${n} échec${n > 1 ? "s" : ""}`,
@@ -1937,10 +2102,18 @@ export const remindersFr = {
     pause: "Mettre en pause",
     resume: "Reprendre",
     sendNow: "Envoyer maintenant",
-    sentNow: (n: number) => (n === 0 ? "Aucun SMS à envoyer." : `${n} SMS envoyé${n > 1 ? "s" : ""}.`),
+    sentNow: (n: number) =>
+      n === 0 ? "Aucun SMS à envoyer." : `${n} SMS envoyé${n > 1 ? "s" : ""}.`,
     empty: "Aucun départ ce jour-là.",
     late: "Une réservation pour le lendemain enregistrée après l’heure d’envoi reçoit son SMS tout de suite, sauf entre 22:00 et 7:00 : il part alors à 7:00.",
-    columns: { arrival: "Dépôt", customer: "Client", phone: "Mobile", channel: "Canal", sms: "SMS", action: "Action" },
+    columns: {
+      arrival: "Dépôt",
+      customer: "Client",
+      phone: "Mobile",
+      channel: "Canal",
+      sms: "SMS",
+      action: "Action",
+    },
     exclude: "Ne pas envoyer",
     include: "Rétablir",
     fixPhone: "Corriger le numéro",
@@ -1963,7 +2136,8 @@ export const remindersFr = {
   message: {
     title: "Le message",
     label: "Texte du SMS",
-    updated: (by: string | null, when: string) => `Modifié${by ? ` par ${by}` : ""}, le ${when}`,
+    updated: (by: string | null, when: string) =>
+      `Modifié${by ? ` par ${by}` : ""}, le ${when}`,
     plazoText: `Texte de ${PRODUCT.name}, tant que vous n’écrivez pas le vôtre.`,
     insert: "Insérer",
     variableHint: {
@@ -1976,14 +2150,18 @@ export const remindersFr = {
       lien: "Lien vers la réservation (photo, retour, infos)",
     },
     count: (segments: number) => `${segments} SMS`,
-    perClient: (characters: number) => `par client · ${characters.toLocaleString("fr-FR")} caractères`,
+    perClient: (characters: number) =>
+      `par client · ${characters.toLocaleString("fr-FR")} caractères`,
     unicode: (chars: string) =>
       `Ces signes font passer le message en Unicode : ${chars}. Il tient alors en 67 caractères par SMS au lieu de 153.`,
     long: `Un long message arrive parfois en plusieurs morceaux, et chaque SMS compte s’il part par ${PRODUCT.name} (Brevo).`,
-    noPhoto: "Une photo ne peut pas partir par SMS : mettez-la sur votre fiche, le lien y mène.",
-    toGsm7: (segments: number) => `Retirer les émojis et signes · ${segments} SMS`,
+    noPhoto:
+      "Une photo ne peut pas partir par SMS : mettez-la sur votre fiche, le lien y mène.",
+    toGsm7: (segments: number) =>
+      `Retirer les émojis et signes · ${segments} SMS`,
     short: (segments: number) => `Version courte avec lien · ${segments} SMS`,
-    unknown: (tokens: string) => `Variable inconnue : ${tokens}. Utilisez celles proposées.`,
+    unknown: (tokens: string) =>
+      `Variable inconnue : ${tokens}. Utilisez celles proposées.`,
     noLink: "Votre parking n’est pas encore sur le site : {lien} restera vide.",
     save: "Enregistrer le message",
     saved: "Message enregistré.",
@@ -1993,7 +2171,8 @@ export const remindersFr = {
   },
   preview: {
     title: "Aperçu",
-    for: (name: string, date: string, time: string) => `Tel que le recevra ${name}, dépôt le ${date} à ${time}`,
+    for: (name: string, date: string, time: string) =>
+      `Tel que le recevra ${name}, dépôt le ${date} à ${time}`,
     sentAt: (day: string, time: string) => `${day} · ${time}`,
     also: "Le mail de rappel et la notification de l’app partent en même temps.",
   },

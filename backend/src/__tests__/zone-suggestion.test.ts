@@ -1,7 +1,7 @@
 import prisma from '@/database';
 import { Container } from 'typedi';
 import { metresPerPixel, tilesCovering, toLonLat, toPixel, zoomFor } from '@/domain/layout/tiles';
-import { ZoneSuggestionService, drawRing } from '@/services/zone-suggestion.service';
+import { ZoneSuggestionService, drawRing, systemPrompt } from '@/services/zone-suggestion.service';
 import { api, resetDatabase, setupOperator } from './utils/helpers';
 
 beforeEach(resetDatabase);
@@ -122,8 +122,10 @@ describe('proposition des zones par Claude (V-A, 07/10/2026)', () => {
     expect(res.status).toBe(200);
     expect(tile).toHaveBeenCalled();
     expect(ask).toHaveBeenCalledTimes(1);
-    const [image, width, height, mpp] = ask.mock.calls[0];
+    const [image, width, height, mpp, , allowGrass] = ask.mock.calls[0];
     expect(typeof image).toBe('string');
+    // H-A: grass is parkable unless the pro space says otherwise.
+    expect(allowGrass).toBe(true);
     expect(image.length).toBeGreaterThan(1000);
     expect(width % 256).toBe(0);
     expect(height % 256).toBe(0);
@@ -139,6 +141,22 @@ describe('proposition des zones par Claude (V-A, 07/10/2026)', () => {
     // Nothing is saved: the pro space applies the proposal itself.
     const plan = await prisma.parkingPlan.findUniqueOrThrow({ where: { parkingId: parking.id } });
     expect(plan.zones).toEqual([]);
+  });
+
+  it('transmet « herbe interdite » à Claude et le dit dans la consigne (H-A)', async () => {
+    const { token, parking } = await setupOperator();
+    await api().patch(`/api/internal/parkings/${parking.id}/plan`).set(auth(token)).send({ outline: land, zones: [] });
+    ask.mockResolvedValue({ surfaces: [], usage: { inputTokens: 1, outputTokens: 1 } });
+    const res = await api().post(`/api/internal/parkings/${parking.id}/plan/suggest-zones`).set(auth(token)).send({ allowGrass: false });
+    expect(res.status).toBe(200);
+    expect(res.body.zones).toEqual([]);
+    expect(ask.mock.calls[0][5]).toBe(false);
+    expect(systemPrompt(true)).toMatch(/flat grass/);
+    expect(systemPrompt(true)).not.toMatch(/lawn, hedges/);
+    expect(systemPrompt(false)).toMatch(/vegetation \(lawn, hedges/);
+    expect(systemPrompt(false)).not.toMatch(/flat grass/);
+    const bad = await api().post(`/api/internal/parkings/${parking.id}/plan/suggest-zones`).set(auth(token)).send({ allowGrass: 'oui' });
+    expect(bad.status).toBe(400);
   });
 
   it('refuse sans clé API, sans contour, et à un autre loueur', async () => {

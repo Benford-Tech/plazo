@@ -1,14 +1,55 @@
 import { Sparkles, X } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
-import { MapView, type DrawKind, type MapLabel, type MapLayer } from "@/components/capacity/MapView";
-import { Aside, AsideActions, PanelLabel, ToolButton } from "@/components/capacity/ui";
+import {
+  MapView,
+  type DrawKind,
+  type MapLabel,
+  type MapLayer,
+} from "@/components/capacity/MapView";
+import {
+  Aside,
+  AsideActions,
+  PanelLabel,
+  ToolButton,
+} from "@/components/capacity/ui";
 import { m2 } from "@/lib/capacity/format";
-import { BRUSH_WIDTHS_M, eraseZones, paintZones, strokeArea, type BrushWidth } from "@/lib/capacity/brush";
-import { areaM2, autoZones, exclusionMulti, frameFor, multiToPolygons, outlineMulti, polygonToMulti } from "@/lib/capacity/estimate";
+import {
+  BRUSH_WIDTHS_M,
+  eraseZones,
+  paintZones,
+  strokeArea,
+  type BrushWidth,
+} from "@/lib/capacity/brush";
+import {
+  areaM2,
+  autoZones,
+  exclusionMulti,
+  frameFor,
+  multiToPolygons,
+  outlineMulti,
+  polygonToMulti,
+} from "@/lib/capacity/estimate";
 import { areaOf, intersection } from "@/lib/capacity/geometry";
-import { boundsOf, edgeLabels, fc, feature, polygonCentroid, positionsOf } from "@/lib/capacity/mapData";
-import { EXCLUSION_DEFAULTS, settingsOf, type Exclusion, type ExclusionKind, type GeoPolygon, type LonLat, type Zone, type ZoneSuggestion } from "@/lib/capacity/types";
+import {
+  boundsOf,
+  edgeLabels,
+  fc,
+  feature,
+  polygonCentroid,
+  positionsOf,
+} from "@/lib/capacity/mapData";
+import {
+  EXCLUSION_DEFAULTS,
+  settingsOf,
+  type Exclusion,
+  type ExclusionKind,
+  type GeoPolygon,
+  type LonLat,
+  type Zone,
+  type ZoneSuggestion,
+} from "@/lib/capacity/types";
+import { ApiError } from "@/lib/api";
 import { describeError, fr } from "@/lib/fr";
 import { cn } from "@/lib/utils";
 import type { StepProps } from "./CapacityStudyPage";
@@ -24,21 +65,38 @@ const EXCLUSION_COLORS: Record<ExclusionKind, string> = {
   post: "#ff8a3d",
   other: "#c0392b",
 };
-const KINDS: ExclusionKind[] = ["building", "reception", "shuttle_lane", "tree", "post", "other"];
+const KINDS: ExclusionKind[] = [
+  "building",
+  "reception",
+  "shuttle_lane",
+  "tree",
+  "post",
+  "other",
+];
 
 type Selection = { type: "zone" | "exclusion"; id: string } | null;
-type Adding = { type: "zone" } | { type: "exclusion"; kind: ExclusionKind } | { type: "brush"; mode: "paint" | "erase" } | null;
+type Adding =
+  | { type: "zone" }
+  | { type: "exclusion"; kind: ExclusionKind }
+  | { type: "brush"; mode: "paint" | "erase" }
+  | null;
 
 const newId = () => Math.random().toString(36).slice(2, 10);
 const zoneLetter = (zones: Zone[]) => {
   for (let i = 0; i < 26; i++) {
     const letter = String.fromCharCode(65 + i);
-    if (!zones.some(z => z.name === fr.capacity.zoneName(letter))) return letter;
+    if (!zones.some((z) => z.name === fr.capacity.zoneName(letter)))
+      return letter;
   }
   return String(zones.length + 1);
 };
 
-export default function ZonesStep({ study, update, go, suggestZones }: StepProps) {
+export default function ZonesStep({
+  study,
+  update,
+  go,
+  suggestZones,
+}: StepProps) {
   const [selected, setSelected] = useState<Selection>(null);
   const [adding, setAdding] = useState<Adding>(null);
   const [choosing, setChoosing] = useState(false);
@@ -50,15 +108,26 @@ export default function ZonesStep({ study, update, go, suggestZones }: StepProps
 
   // T-A (07/10/2026): the zones follow the land and its exclusions (one per piece, each with its
   // own orientation) until the user draws or edits one by hand.
-  const auto = settings.zonesAuto === true || (settings.zonesAuto == null && zones.length === 0);
-  const exclusionsKey = JSON.stringify(exclusions.map(e => [e.id, e.clearance, e.geometry]));
+  const auto =
+    settings.zonesAuto === true ||
+    (settings.zonesAuto == null && zones.length === 0);
+  const exclusionsKey = JSON.stringify(
+    exclusions.map((e) => [e.id, e.clearance, e.geometry]),
+  );
   function applyAutoZones(current: Zone[]) {
     let i = 0;
-    const pieces = autoZones(study, fr.capacity.zoneName, () => current[i++]?.id ?? newId());
-    const key = (list: Zone[]) => JSON.stringify(list.map(z => [z.id, z.geometry.coordinates]));
+    const pieces = autoZones(
+      study,
+      fr.capacity.zoneName,
+      () => current[i++]?.id ?? newId(),
+    );
+    const key = (list: Zone[]) =>
+      JSON.stringify(list.map((z) => [z.id, z.geometry.coordinates]));
     update({
       ...(key(pieces) !== key(current) ? { zones: pieces } : {}),
-      ...(settings.zonesAuto !== true ? { settings: { ...study.settings, zonesAuto: true } } : {}),
+      ...(settings.zonesAuto !== true
+        ? { settings: { ...study.settings, zonesAuto: true } }
+        : {}),
     });
   }
   useEffect(() => {
@@ -73,23 +142,46 @@ export default function ZonesStep({ study, update, go, suggestZones }: StepProps
     setSuggesting(true);
     setSuggestion(null);
     try {
-      setSuggestion(await suggestZones());
+      setSuggestion(
+        await suggestZones({ allowGrass: settings.suggestGrass !== false }),
+      );
     } catch (e) {
-      toast.error(describeError(e));
+      // ai_failed carries the API's own words: shown, so a rejected request is understood at once.
+      const reason =
+        e instanceof ApiError && e.code === "ai_failed"
+          ? (e.details as { reason?: string } | undefined)?.reason
+          : undefined;
+      toast.error(
+        reason ? `${describeError(e)} (${reason})` : describeError(e),
+        { duration: 12000 },
+      );
     } finally {
       setSuggesting(false);
     }
   }
+  // Z-A (07/10/2026): the proposal is added to the zones already there (touching ones merge, as
+  // with the brush), so hand-drawn zones and a new proposal complete each other.
   function applySuggestion() {
-    if (!suggestion) return;
-    update({ zones: suggestion.zones, settings: manual });
-    toast.success(fr.capacity.suggestion.applied(suggestion.zones.length));
+    if (!suggestion || !frame) return;
+    const ctx = { frame, outline, name: fr.capacity.zoneName, newId };
+    const before = auto ? [] : zones;
+    const next = suggestion.zones.reduce(
+      (acc, z) => paintZones(acc, polygonToMulti(frame, z.geometry), ctx),
+      before,
+    );
+    update({ zones: next, settings: manual });
+    toast.success(
+      fr.capacity.suggestion.applied(suggestion.zones.length, next.length),
+    );
     setSuggestion(null);
     setSelected(null);
   }
 
   const frame = useMemo(() => frameFor(study), [study]);
-  const land = useMemo(() => (frame ? outlineMulti(frame, study) : null), [frame, study]);
+  const land = useMemo(
+    () => (frame ? outlineMulti(frame, study) : null),
+    [frame, study],
+  );
 
   const zoneAreas = useMemo(() => {
     const map = new Map<string, number>();
@@ -107,7 +199,10 @@ export default function ZonesStep({ study, update, go, suggestZones }: StepProps
     for (const e of exclusions) {
       const multi = exclusionMulti(frame, e);
       const clipped = land ? intersection(multi, land) : multi;
-      map.set(e.id, { area: areaOf(clipped), polygons: multiToPolygons(frame, multi) });
+      map.set(e.id, {
+        area: areaOf(clipped),
+        polygons: multiToPolygons(frame, multi),
+      });
     }
     return map;
   }, [frame, land, exclusions]);
@@ -117,7 +212,13 @@ export default function ZonesStep({ study, update, go, suggestZones }: StepProps
       ? "polygon"
       : adding.type === "brush"
         ? null
-        : ({ Polygon: "polygon", LineString: "linestring", Point: "point" } as const)[EXCLUSION_DEFAULTS[adding.kind].geometry]
+        : (
+            {
+              Polygon: "polygon",
+              LineString: "linestring",
+              Point: "point",
+            } as const
+          )[EXCLUSION_DEFAULTS[adding.kind].geometry]
     : null;
   const brush = adding?.type === "brush" ? adding : null;
 
@@ -126,23 +227,50 @@ export default function ZonesStep({ study, update, go, suggestZones }: StepProps
     if (!brush || !frame) return;
     const ctx = { frame, outline, name: fr.capacity.zoneName, newId };
     const area = strokeArea(points, brushWidth, ctx);
-    const next = brush.mode === "paint" ? paintZones(zones, area, ctx) : eraseZones(zones, area, ctx);
-    if (next !== zones) update({ zones: next, settings: { ...study.settings, zonesAuto: false } });
+    const next =
+      brush.mode === "paint"
+        ? paintZones(zones, area, ctx)
+        : eraseZones(zones, area, ctx);
+    if (next !== zones)
+      update({
+        zones: next,
+        settings: { ...study.settings, zonesAuto: false },
+      });
   }
 
-  const selectedZone = selected?.type === "zone" ? zones.find(z => z.id === selected.id) : undefined;
-  const selectedExclusion = selected?.type === "exclusion" ? exclusions.find(e => e.id === selected.id) : undefined;
-  const editPolygon = selectedZone?.geometry ?? (selectedExclusion?.geometry.type === "Polygon" ? selectedExclusion.geometry : null);
+  const selectedZone =
+    selected?.type === "zone"
+      ? zones.find((z) => z.id === selected.id)
+      : undefined;
+  const selectedExclusion =
+    selected?.type === "exclusion"
+      ? exclusions.find((e) => e.id === selected.id)
+      : undefined;
+  const editPolygon =
+    selectedZone?.geometry ??
+    (selectedExclusion?.geometry.type === "Polygon"
+      ? selectedExclusion.geometry
+      : null);
 
   function onDrawn(geometry: Exclusion["geometry"]) {
     if (!adding) return;
     if (adding.type === "zone" && geometry.type === "Polygon") {
-      const zone = { id: newId(), name: fr.capacity.zoneName(zoneLetter(zones)), geometry };
+      const zone = {
+        id: newId(),
+        name: fr.capacity.zoneName(zoneLetter(zones)),
+        geometry,
+      };
       update({ zones: [...zones, zone], settings: manual });
       setSelected({ type: "zone", id: zone.id });
     } else if (adding.type === "exclusion") {
       const kind = adding.kind;
-      const exclusion: Exclusion = { id: newId(), name: fr.capacity.exclusionKinds[kind], kind, clearance: EXCLUSION_DEFAULTS[kind].clearance, geometry };
+      const exclusion: Exclusion = {
+        id: newId(),
+        name: fr.capacity.exclusionKinds[kind],
+        kind,
+        clearance: EXCLUSION_DEFAULTS[kind].clearance,
+        geometry,
+      };
       update({ exclusions: [...exclusions, exclusion] });
       setSelected({ type: "exclusion", id: exclusion.id });
     }
@@ -150,13 +278,25 @@ export default function ZonesStep({ study, update, go, suggestZones }: StepProps
   }
 
   function onEditPolygon(polygon: GeoPolygon) {
-    if (selectedZone) update({ zones: zones.map(z => (z.id === selectedZone.id ? { ...z, geometry: polygon } : z)), settings: manual });
-    else if (selectedExclusion) update({ exclusions: exclusions.map(e => (e.id === selectedExclusion.id ? { ...e, geometry: polygon } : e)) });
+    if (selectedZone)
+      update({
+        zones: zones.map((z) =>
+          z.id === selectedZone.id ? { ...z, geometry: polygon } : z,
+        ),
+        settings: manual,
+      });
+    else if (selectedExclusion)
+      update({
+        exclusions: exclusions.map((e) =>
+          e.id === selectedExclusion.id ? { ...e, geometry: polygon } : e,
+        ),
+      });
   }
 
   function remove(sel: NonNullable<Selection>) {
-    if (sel.type === "zone") update({ zones: zones.filter(z => z.id !== sel.id), settings: manual });
-    else update({ exclusions: exclusions.filter(e => e.id !== sel.id) });
+    if (sel.type === "zone")
+      update({ zones: zones.filter((z) => z.id !== sel.id), settings: manual });
+    else update({ exclusions: exclusions.filter((e) => e.id !== sel.id) });
     if (selected?.id === sel.id) setSelected(null);
   }
 
@@ -165,40 +305,73 @@ export default function ZonesStep({ study, update, go, suggestZones }: StepProps
     list.push({
       id: "zones-fill",
       type: "fill",
-      data: fc(zones.map(z => feature(z.geometry, { selected: selected?.id === z.id }))),
-      paint: { "fill-color": YELLOW, "fill-opacity": ["case", ["get", "selected"], 0.22, 0.12] },
+      data: fc(
+        zones.map((z) =>
+          feature(z.geometry, { selected: selected?.id === z.id }),
+        ),
+      ),
+      paint: {
+        "fill-color": YELLOW,
+        "fill-opacity": ["case", ["get", "selected"], 0.22, 0.12],
+      },
     });
     list.push({
       id: "exclusions-fill",
       type: "fill",
-      data: fc(exclusions.flatMap(e => (exclusionShapes.get(e.id)?.polygons ?? []).map(p => feature(p, { color: EXCLUSION_COLORS[e.kind] })))),
+      data: fc(
+        exclusions.flatMap((e) =>
+          (exclusionShapes.get(e.id)?.polygons ?? []).map((p) =>
+            feature(p, { color: EXCLUSION_COLORS[e.kind] }),
+          ),
+        ),
+      ),
       paint: { "fill-color": ["get", "color"], "fill-opacity": 0.6 },
     });
     list.push({
       id: "exclusions-line",
       type: "line",
-      data: fc(exclusions.flatMap(e => (exclusionShapes.get(e.id)?.polygons ?? []).map(p => feature(p, { selected: selected?.id === e.id })))),
-      paint: { "line-color": ["case", ["get", "selected"], "#F3F3F0", YELLOW], "line-width": ["case", ["get", "selected"], 2.5, 1.5], "line-dasharray": [3, 2] },
+      data: fc(
+        exclusions.flatMap((e) =>
+          (exclusionShapes.get(e.id)?.polygons ?? []).map((p) =>
+            feature(p, { selected: selected?.id === e.id }),
+          ),
+        ),
+      ),
+      paint: {
+        "line-color": ["case", ["get", "selected"], "#F3F3F0", YELLOW],
+        "line-width": ["case", ["get", "selected"], 2.5, 1.5],
+        "line-dasharray": [3, 2],
+      },
     });
     list.push({
       id: "zones-line",
       type: "line",
-      data: fc(zones.map(z => feature(z.geometry))),
+      data: fc(zones.map((z) => feature(z.geometry))),
       paint: { "line-color": YELLOW, "line-width": 2 },
     });
-    if (outline) list.push({ id: "outline", type: "line", data: fc([feature(outline)]), paint: { "line-color": YELLOW, "line-width": 3.5 } });
+    if (outline)
+      list.push({
+        id: "outline",
+        type: "line",
+        data: fc([feature(outline)]),
+        paint: { "line-color": YELLOW, "line-width": 3.5 },
+      });
     if (suggestion?.zones.length) {
       list.push({
         id: "proposal-fill",
         type: "fill",
-        data: fc(suggestion.zones.map(z => feature(z.geometry))),
+        data: fc(suggestion.zones.map((z) => feature(z.geometry))),
         paint: { "fill-color": PROPOSAL, "fill-opacity": 0.25 },
       });
       list.push({
         id: "proposal-line",
         type: "line",
-        data: fc(suggestion.zones.map(z => feature(z.geometry))),
-        paint: { "line-color": PROPOSAL, "line-width": 2.5, "line-dasharray": [2, 1.5] },
+        data: fc(suggestion.zones.map((z) => feature(z.geometry))),
+        paint: {
+          "line-color": PROPOSAL,
+          "line-width": 2.5,
+          "line-dasharray": [2, 1.5],
+        },
       });
     }
     return list;
@@ -207,7 +380,7 @@ export default function ZonesStep({ study, update, go, suggestZones }: StepProps
   const labels = useMemo<MapLabel[]>(
     () => [
       ...edgeLabels(outline, study.scaleFactor),
-      ...zones.map(z => ({
+      ...zones.map((z) => ({
         id: `zone-${z.id}`,
         lngLat: polygonCentroid(z.geometry),
         text: `${z.name} · ${m2.format(zoneAreas.get(z.id) ?? 0)} m²`,
@@ -219,12 +392,20 @@ export default function ZonesStep({ study, update, go, suggestZones }: StepProps
 
   // While drawing, the pointer snaps to the land's outline and to the excluded parts.
   const snapTo = useMemo<LonLat[][]>(
-    () => [...(outline ? outline.coordinates : []), ...[...exclusionShapes.values()].flatMap(v => v.polygons.flatMap(p => p.coordinates))],
+    () => [
+      ...(outline ? outline.coordinates : []),
+      ...[...exclusionShapes.values()].flatMap((v) =>
+        v.polygons.flatMap((p) => p.coordinates),
+      ),
+    ],
     [outline, exclusionShapes],
   );
 
   const initialBounds = useMemo(
-    () => boundsOf(positionsOf(outline?.coordinates ?? zones[0]?.geometry.coordinates)),
+    () =>
+      boundsOf(
+        positionsOf(outline?.coordinates ?? zones[0]?.geometry.coordinates),
+      ),
     // eslint-disable-next-line react-hooks/exhaustive-deps
     [],
   );
@@ -235,10 +416,10 @@ export default function ZonesStep({ study, update, go, suggestZones }: StepProps
         ? fr.capacity.brushHelp
         : fr.capacity.eraserHelp
       : adding.type === "zone" || drawMode === "polygon"
-      ? fr.capacity.drawZoneHelp
-      : drawMode === "linestring"
-        ? fr.capacity.drawLineHelp
-        : fr.capacity.drawPointHelp
+        ? fr.capacity.drawZoneHelp
+        : drawMode === "linestring"
+          ? fr.capacity.drawLineHelp
+          : fr.capacity.drawPointHelp
     : editPolygon
       ? fr.capacity.editHelp
       : null;
@@ -259,14 +440,22 @@ export default function ZonesStep({ study, update, go, suggestZones }: StepProps
           paint={brush ? { widthM: brushWidth, mode: brush.mode } : null}
           onPaintStroke={onPaintStroke}
         >
-          {help && <div className="absolute left-4 top-4 max-w-md bg-background/80 px-3 py-1.5 text-sm text-muted-foreground">{help}</div>}
+          {help && (
+            <div className="absolute left-4 top-4 max-w-md bg-background/80 px-3 py-1.5 text-sm text-muted-foreground">
+              {help}
+            </div>
+          )}
         </MapView>
       </div>
 
       <Aside className="gap-3 overflow-y-auto">
-        <PanelLabel>{fr.capacity.zonesTitle(m2.format(areaM2(outline, study.scaleFactor)))}</PanelLabel>
+        <PanelLabel>
+          {fr.capacity.zonesTitle(
+            m2.format(areaM2(outline, study.scaleFactor)),
+          )}
+        </PanelLabel>
         <div>
-          {zones.map(z => (
+          {zones.map((z) => (
             <ItemRow
               key={z.id}
               swatch={YELLOW}
@@ -274,36 +463,61 @@ export default function ZonesStep({ study, update, go, suggestZones }: StepProps
               subtitle={fr.capacity.zoneDetail}
               area={zoneAreas.get(z.id) ?? 0}
               selected={selected?.id === z.id}
-              onSelect={() => setSelected(selected?.id === z.id ? null : { type: "zone", id: z.id })}
+              onSelect={() =>
+                setSelected(
+                  selected?.id === z.id ? null : { type: "zone", id: z.id },
+                )
+              }
               onRemove={() => remove({ type: "zone", id: z.id })}
             />
           ))}
-          {exclusions.map(e => (
+          {exclusions.map((e) => (
             <ItemRow
               key={e.id}
               swatch={EXCLUSION_COLORS[e.kind]}
-              title={e.kind === "shuttle_lane" ? `${e.name} (${m2.format(e.clearance * 2)} m)` : e.name}
+              title={
+                e.kind === "shuttle_lane"
+                  ? `${e.name} (${m2.format(e.clearance * 2)} m)`
+                  : e.name
+              }
               subtitle={fr.capacity.exclusionSubtitle[e.kind]}
               area={exclusionShapes.get(e.id)?.area ?? 0}
               selected={selected?.id === e.id}
-              onSelect={() => setSelected(selected?.id === e.id ? null : { type: "exclusion", id: e.id })}
+              onSelect={() =>
+                setSelected(
+                  selected?.id === e.id
+                    ? null
+                    : { type: "exclusion", id: e.id },
+                )
+              }
               onRemove={() => remove({ type: "exclusion", id: e.id })}
             >
               {selected?.id === e.id && e.geometry.type !== "Polygon" && (
                 <label className="mt-1 flex items-center gap-2 text-[13px] text-muted-foreground">
-                  {e.kind === "shuttle_lane" ? fr.capacity.laneWidth : fr.capacity.clearance}
+                  {e.kind === "shuttle_lane"
+                    ? fr.capacity.laneWidth
+                    : fr.capacity.clearance}
                   <input
                     type="number"
                     min={e.kind === "shuttle_lane" ? 2 : 0.5}
                     max={e.kind === "shuttle_lane" ? 20 : 10}
                     step={0.5}
-                    value={e.kind === "shuttle_lane" ? e.clearance * 2 : e.clearance}
-                    onClick={ev => ev.stopPropagation()}
-                    onChange={ev => {
+                    value={
+                      e.kind === "shuttle_lane" ? e.clearance * 2 : e.clearance
+                    }
+                    onClick={(ev) => ev.stopPropagation()}
+                    onChange={(ev) => {
                       const v = Number(ev.target.value);
                       if (!(v > 0)) return;
-                      const clearance = Math.min(50, e.kind === "shuttle_lane" ? v / 2 : v);
-                      update({ exclusions: exclusions.map(x => (x.id === e.id ? { ...x, clearance } : x)) });
+                      const clearance = Math.min(
+                        50,
+                        e.kind === "shuttle_lane" ? v / 2 : v,
+                      );
+                      update({
+                        exclusions: exclusions.map((x) =>
+                          x.id === e.id ? { ...x, clearance } : x,
+                        ),
+                      });
                     }}
                     className="h-8 w-20 border border-border bg-card px-2 font-mono text-foreground"
                   />
@@ -314,60 +528,119 @@ export default function ZonesStep({ study, update, go, suggestZones }: StepProps
         </div>
 
         {suggestZones && outline && (
-          <div className="border border-border p-2" data-testid="zone-suggestion">
+          <div
+            className="border border-border p-2"
+            data-testid="zone-suggestion"
+          >
             {suggestion ? (
               <>
-                <div className="font-bold">{fr.capacity.suggestion.title(suggestion.zones.length)}</div>
+                <div className="font-bold">
+                  {fr.capacity.suggestion.title(suggestion.zones.length)}
+                </div>
                 {suggestion.zones.length === 0 ? (
-                  <p className="mt-1 text-[13px] text-muted-foreground">{fr.capacity.suggestion.none}</p>
+                  <p className="mt-1 text-[13px] text-muted-foreground">
+                    {fr.capacity.suggestion.none}
+                  </p>
                 ) : (
                   <ul className="mt-1 space-y-0.5 text-[13px]">
-                    {suggestion.surfaces.map(s => (
+                    {suggestion.surfaces.map((s) => (
                       <li key={s.name} className="flex items-center gap-2">
-                        <span className="h-3 w-3 shrink-0 border-2 border-dashed" style={{ borderColor: PROPOSAL }} />
+                        <span
+                          className="h-3 w-3 shrink-0 border-2 border-dashed"
+                          style={{ borderColor: PROPOSAL }}
+                        />
                         <b>{s.name}</b>
                         <span className="text-muted-foreground">
-                          {s.label} · {fr.capacity.suggestion.surfaces[s.surface as keyof typeof fr.capacity.suggestion.surfaces] ?? s.surface} ·{" "}
-                          {fr.capacity.suggestion.confidence(Math.round(s.confidence * 100))}
+                          {s.label} ·{" "}
+                          {fr.capacity.suggestion.surfaces[
+                            s.surface as keyof typeof fr.capacity.suggestion.surfaces
+                          ] ?? s.surface}{" "}
+                          ·{" "}
+                          {fr.capacity.suggestion.confidence(
+                            Math.round(s.confidence * 100),
+                          )}
                         </span>
-                        <span className="ml-auto font-mono">{m2.format(s.area)} m²</span>
+                        <span className="ml-auto font-mono">
+                          {m2.format(s.area)} m²
+                        </span>
                       </li>
                     ))}
                   </ul>
                 )}
                 <div className="mt-2 flex gap-2">
                   {suggestion.zones.length > 0 && (
-                    <ToolButton variant="primary" className="min-h-9" onClick={applySuggestion}>
+                    <ToolButton
+                      variant="primary"
+                      className="min-h-9"
+                      onClick={applySuggestion}
+                    >
                       {fr.capacity.suggestion.apply}
                     </ToolButton>
                   )}
-                  <ToolButton className="min-h-9" onClick={() => setSuggestion(null)}>
+                  <ToolButton
+                    className="min-h-9"
+                    onClick={() => setSuggestion(null)}
+                  >
                     {fr.capacity.suggestion.dismiss}
                   </ToolButton>
                 </div>
                 <p className="mt-1 font-mono text-[11px] text-muted-foreground">
-                  {fr.capacity.suggestion.cost(suggestion.model, suggestion.usage.inputTokens + suggestion.usage.outputTokens)}
+                  {fr.capacity.suggestion.cost(
+                    suggestion.model,
+                    suggestion.usage.inputTokens +
+                      suggestion.usage.outputTokens,
+                  )}
                 </p>
               </>
             ) : (
               <>
-                <ToolButton className="w-full" disabled={suggesting} onClick={() => void askClaude()}>
+                <ToolButton
+                  className="w-full"
+                  disabled={suggesting}
+                  onClick={() => void askClaude()}
+                >
                   <Sparkles className="mr-1.5 inline h-4 w-4" />
                   {suggesting ? fr.capacity.suggesting : fr.capacity.suggest}
                 </ToolButton>
-                <p className="mt-1 text-[13px] text-muted-foreground">{fr.capacity.suggestHelp}</p>
+                <label className="mt-2 flex items-center gap-2 text-sm">
+                  <input
+                    type="checkbox"
+                    checked={settings.suggestGrass !== false}
+                    onChange={(e) =>
+                      update({
+                        settings: {
+                          ...study.settings,
+                          suggestGrass: e.target.checked,
+                        },
+                      })
+                    }
+                    className="h-4 w-4 accent-[#A3E635]"
+                  />
+                  {fr.capacity.suggestGrass}
+                </label>
+                <p className="mt-1 text-[13px] text-muted-foreground">
+                  {fr.capacity.suggestHelp}
+                </p>
               </>
             )}
           </div>
         )}
-        <p className="text-[13px] text-muted-foreground" data-testid="zones-mode">
+        <p
+          className="text-[13px] text-muted-foreground"
+          data-testid="zones-mode"
+        >
           {auto ? fr.capacity.autoZonesOn : fr.capacity.autoZonesOff}
         </p>
         {!auto && outline && (
-          <ToolButton onClick={() => applyAutoZones(zones)}>{fr.capacity.autoZones}</ToolButton>
+          <ToolButton onClick={() => applyAutoZones(zones)}>
+            {fr.capacity.autoZones}
+          </ToolButton>
         )}
-        <div className="flex flex-wrap items-center gap-1" data-testid="brush-tools">
-          {(["paint", "erase"] as const).map(mode => (
+        <div
+          className="flex flex-wrap items-center gap-1"
+          data-testid="brush-tools"
+        >
+          {(["paint", "erase"] as const).map((mode) => (
             <ToolButton
               key={mode}
               active={brush?.mode === mode}
@@ -375,7 +648,9 @@ export default function ZonesStep({ study, update, go, suggestZones }: StepProps
               onClick={() => {
                 setChoosing(false);
                 setSelected(null);
-                setAdding(brush?.mode === mode ? null : { type: "brush", mode });
+                setAdding(
+                  brush?.mode === mode ? null : { type: "brush", mode },
+                );
               }}
             >
               {mode === "paint" ? fr.capacity.brush : fr.capacity.eraser}
@@ -384,13 +659,16 @@ export default function ZonesStep({ study, update, go, suggestZones }: StepProps
           {brush && (
             <span className="ml-1 flex items-center gap-1 text-[13px] text-muted-foreground">
               {fr.capacity.brushWidth}
-              {BRUSH_WIDTHS_M.map(w => (
+              {BRUSH_WIDTHS_M.map((w) => (
                 <button
                   key={w}
                   type="button"
                   aria-pressed={brushWidth === w}
                   onClick={() => setBrushWidth(w)}
-                  className={cn("min-h-8 border border-border px-2 font-mono", brushWidth === w && "bg-primary text-primary-foreground")}
+                  className={cn(
+                    "min-h-8 border border-border px-2 font-mono",
+                    brushWidth === w && "bg-primary text-primary-foreground",
+                  )}
                 >
                   {w} m
                 </button>
@@ -422,9 +700,11 @@ export default function ZonesStep({ study, update, go, suggestZones }: StepProps
         </ToolButton>
         {choosing && (
           <div className="border border-border p-2">
-            <div className="mb-1 text-sm text-muted-foreground">{fr.capacity.chooseExclusion}</div>
+            <div className="mb-1 text-sm text-muted-foreground">
+              {fr.capacity.chooseExclusion}
+            </div>
             <div className="grid grid-cols-2 gap-1">
-              {KINDS.map(kind => (
+              {KINDS.map((kind) => (
                 <button
                   key={kind}
                   type="button"
@@ -434,7 +714,10 @@ export default function ZonesStep({ study, update, go, suggestZones }: StepProps
                     setAdding({ type: "exclusion", kind });
                   }}
                 >
-                  <span className="h-3 w-3 shrink-0" style={{ background: EXCLUSION_COLORS[kind] }} />
+                  <span
+                    className="h-3 w-3 shrink-0"
+                    style={{ background: EXCLUSION_COLORS[kind] }}
+                  />
                   {fr.capacity.exclusionKinds[kind]}
                 </button>
               ))}
@@ -442,11 +725,19 @@ export default function ZonesStep({ study, update, go, suggestZones }: StepProps
           </div>
         )}
 
-        {zones.length === 0 && <p className="text-sm text-muted-foreground">{fr.capacity.noZone}</p>}
+        {zones.length === 0 && (
+          <p className="text-sm text-muted-foreground">{fr.capacity.noZone}</p>
+        )}
 
         <AsideActions>
-          <ToolButton onClick={() => go("terrain")}>{fr.capacity.back}</ToolButton>
-          <ToolButton variant="primary" disabled={zones.length === 0} onClick={() => go("capacite")}>
+          <ToolButton onClick={() => go("terrain")}>
+            {fr.capacity.back}
+          </ToolButton>
+          <ToolButton
+            variant="primary"
+            disabled={zones.length === 0}
+            onClick={() => go("capacite")}
+          >
             {fr.capacity.estimate}
           </ToolButton>
         </AsideActions>
@@ -471,7 +762,9 @@ function ItemRow(props: {
       tabIndex={0}
       aria-pressed={props.selected}
       onClick={props.onSelect}
-      onKeyDown={e => (e.key === "Enter" || e.key === " ") && props.onSelect()}
+      onKeyDown={(e) =>
+        (e.key === "Enter" || e.key === " ") && props.onSelect()
+      }
       className={cn(
         "grid min-h-12 cursor-pointer grid-cols-[18px_1fr_auto_28px] items-center gap-2.5 border-b border-border py-1.5",
         props.selected && "bg-card outline outline-1 outline-primary",
@@ -481,15 +774,19 @@ function ItemRow(props: {
       <span>
         <b>{props.title}</b>
         <br />
-        <span className="text-[13px] text-muted-foreground">{props.subtitle}</span>
+        <span className="text-[13px] text-muted-foreground">
+          {props.subtitle}
+        </span>
         {props.children}
       </span>
-      <span className="font-mono text-base font-bold">{m2.format(props.area)} m²</span>
+      <span className="font-mono text-base font-bold">
+        {m2.format(props.area)} m²
+      </span>
       <button
         type="button"
         aria-label={fr.capacity.remove}
         title={fr.capacity.remove}
-        onClick={e => {
+        onClick={(e) => {
           e.stopPropagation();
           props.onRemove();
         }}
