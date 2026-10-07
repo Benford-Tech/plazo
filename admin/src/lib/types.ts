@@ -917,3 +917,64 @@ export interface ReturnNotice {
   text: string | null;
   at: string;
 }
+
+/** « SMS de la veille » (S-A + S-B, 06/10/2026): what happens to one booking's day-before SMS. */
+export type ReminderRowStatus =
+  | "planned"
+  | "sent"
+  | "waiting"
+  | "failed"
+  | "excluded"
+  | "disabled"
+  | "no_mobile"
+  | "foreign"
+  | "no_channel"
+  | "not_sent"
+  | "paused"
+  | "same_day"
+  | "too_late";
+export type TemplateVariable = "prénom" | "nom" | "date" | "heure" | "plaque" | "référence" | "lien";
+export type TemplateValues = Record<TemplateVariable, string>;
+export interface ReminderRow {
+  reservationId: string;
+  reference: string;
+  /** Local "YYYY-MM-DDTHH:mm" of the drop-off. */
+  arrivalAt: string;
+  customerName: string;
+  customerPhone: string;
+  channel: ReservationChannel;
+  channelDetail: string | null;
+  status: ReminderRowStatus;
+  /** Local "YYYY-MM-DDTHH:mm": when it leaves (planned) or left. */
+  at: string | null;
+  excludedBy: string | null;
+}
+export interface ReminderEvening {
+  date: string;
+  departuresDate: string;
+  when: "past" | "tonight" | "future";
+  sendTime: string;
+  timeChanged: boolean;
+  paused: boolean;
+  canSendNow: boolean;
+  counts: { departures: number; planned: number; sent: number; waiting: number; failed: number; withoutSms: number };
+}
+export interface ReminderBoard {
+  parkingId: string;
+  today: string;
+  settings: { enabled: boolean; sendTime: string; template: string; custom: boolean; updatedAt: string | null; updatedBy: string | null };
+  defaults: { template: string; short: string };
+  sendTimes: string[];
+  variables: TemplateVariable[];
+  channel: { mode: SmsMode; repliesReachParking: boolean };
+  linkAvailable: boolean;
+  evenings: ReminderEvening[];
+  evening: ReminderEvening & { rows: ReminderRow[] };
+  sample: { customerName: string; values: TemplateValues };
+  can: { edit: boolean; manage: boolean };
+}
+export interface ReminderSettingsInput {
+  enabled?: boolean;
+  sendTime?: string;
+  template?: string | null;
+}

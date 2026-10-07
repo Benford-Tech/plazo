@@ -7,9 +7,9 @@ import { ReturnService } from '@/services/return.service';
 import { ShuttleService } from '@/services/shuttle.service';
 import { SmsService } from '@/services/sms.service';
 import { PaymentService } from '@/services/payment.service';
+import { ReminderService } from '@/services/reminder.service';
 import { RetentionService } from '@/services/retention.service';
 import { TokenService } from '@/services/token.service';
-import { TravellerMessagesService } from '@/services/traveller-messages.service';
 import catchAsync from '@/utils/catchAsync';
 import { logger } from '@/utils/logger';
 
@@ -21,7 +21,7 @@ export class CronController {
   public shuttle = Container.get(ShuttleService);
   public returns = Container.get(ReturnService);
   public inbound = Container.get(InboundEmailService);
-  public messages = Container.get(TravellerMessagesService);
+  public reminders = Container.get(ReminderService);
   public sms = Container.get(SmsService);
   public retention = Container.get(RetentionService);
 
@@ -57,11 +57,16 @@ export class CronController {
     res.json({ expired });
   });
 
-  /** GET /internal/cron/remind-tomorrow (B, 06/10/2026): the day-before reminders, once per booking. */
+  /**
+   * GET /internal/cron/remind-tomorrow: the day-before reminders due now (S-A + S-B, 06/10/2026), once
+   * per booking, then the retries of the SMS waiting for an operator's phone. Called every 15 minutes
+   * by an external scheduler (Vercel Hobby only runs it once a day, as a fallback).
+   */
   public remindTomorrow = catchAsync(async (req: Request, res: Response) => {
-    const result = await this.messages.remindTomorrow();
-    logger.info(`[Cron] Reminders: ${JSON.stringify(result)}`);
-    res.json(result);
+    const result = await this.reminders.dispatchDue();
+    const sms = await this.sms.refreshAll();
+    logger.info(`[Cron] Reminders: ${JSON.stringify(result)}; SMS queue: ${JSON.stringify(sms)}`);
+    res.json({ ...result, sms });
   });
 
   /** GET /internal/cron/purge-expired-tokens */

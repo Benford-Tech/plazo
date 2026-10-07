@@ -4,8 +4,9 @@ import { Container, Service } from 'typedi';
 import { PRODUCT_NAME, SECRET_KEY, SMS_DAILY_LIMIT, smsGatewayEncryptionKey } from '@/config';
 import prisma, { OperatorSmsSettings, SmsMode, SmsOutbox } from '@/database';
 import { manageToken } from '@/domain/booking';
-import { confirmationSms, reminderSms } from '@/domain/booking-messages';
-import { toPublicBooking, WITH_LISTING } from '@/domain/booking-view';
+import { confirmationSms } from '@/domain/booking-messages';
+import { BookingRecord, toPublicBooking, WITH_LISTING } from '@/domain/booking-view';
+import { defaultTemplate, renderTemplate, templateContextOf, valuesOf } from '@/domain/day-before-sms';
 import { smsRecipient } from '@/domain/phone';
 import { landedSms } from '@/domain/return-messages';
 import { AuthenticatedStaff } from '@/interfaces/auth.interface';
@@ -29,7 +30,7 @@ const QUEUE_CHECK_EVERY_MS = 60 * 1000;
 const MAX_GATEWAY_CALLS_PER_RUN = 25;
 const MAX_ATTEMPTS = 6;
 
-export const SMS_KINDS = ['booking_confirmed', 'booking_reminder', 'flight_landed', 'test'] as const;
+export const SMS_KINDS = ['booking_confirmed', 'booking_reminder', 'flight_landed', 'test', 'reminder_test'] as const;
 export type SmsKind = (typeof SMS_KINDS)[number];
 
 export interface TravellerSms {
@@ -278,11 +279,13 @@ export class SmsService {
     if (row.kind === 'test') return this.testText();
     if (!row.reservationId) return null;
     const booking = await prisma.reservation.findUnique({ where: { id: row.reservationId }, include: WITH_LISTING });
-    if (!booking?.parking.listing || booking.status === 'cancelled') return null;
+    if (!booking || booking.status === 'cancelled') return null;
+    // The day-before SMS exists without a listing (the parking's own text).
+    if (row.kind === 'booking_reminder') return this.reminderText(booking, this.bookingLink(booking));
+    if (!booking.parking.listing) return null;
     const publicBooking = toPublicBooking(booking);
-    const url = SECRET_KEY ? this.notifications.manageUrl(booking.reference, manageToken(booking.id, SECRET_KEY, booking.manageTokenVersion)) : null;
+    const url = this.bookingLink(booking);
     if (row.kind === 'booking_confirmed') return confirmationSms(PRODUCT_NAME, publicBooking, url);
-    if (row.kind === 'booking_reminder') return reminderSms(PRODUCT_NAME, publicBooking, url);
     if (row.kind === 'flight_landed') {
       const [point] = await prisma.$queryRaw<{ label: string | null; instructions: string | null }[]>`
         SELECT "returnMeetingLabel" AS label, "returnMeetingInstructions" AS instructions FROM parkings WHERE id = ${booking.parkingId}`;
@@ -296,6 +299,22 @@ export class SmsService {
       });
     }
     return null;
+  }
+
+  /** The traveller's manage link, when the site can show the booking (its parking is listed). */
+  public bookingLink(booking: BookingRecord): string | null {
+    if (!SECRET_KEY || !booking.parking.listing) return null;
+    return this.notifications.manageUrl(booking.reference, manageToken(booking.id, SECRET_KEY, booking.manageTokenVersion));
+  }
+
+  /** The day-before SMS of a booking (S-A + S-B, 06/10/2026): the parking's own text, else Plazo's. */
+  public async reminderText(booking: BookingRecord, link: string | null): Promise<string> {
+    const [settings, sms] = await Promise.all([
+      prisma.reminderSettings.findUnique({ where: { parkingId: booking.parkingId }, select: { template: true } }),
+      prisma.operatorSmsSettings.findUnique({ where: { operatorId: booking.operatorId }, select: { mode: true } }),
+    ]);
+    const template = settings?.template ?? defaultTemplate(templateContextOf(PRODUCT_NAME, booking.parking, sms?.mode === 'gateway'));
+    return renderTemplate(template, valuesOf(booking, booking.parking.timezone, link));
   }
 
   private testText(): string {

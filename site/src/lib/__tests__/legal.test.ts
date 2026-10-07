@@ -78,6 +78,7 @@ describe("privacy policy", () => {
     expect(all).toContain("File d’envoi des SMS (numéro du destinataire ; le texte n’est pas conservé) : 30 jours."); // SMS_OUTBOX_RETENTION_DAYS
     expect(all).toContain("12 mois après la date de retour"); // RESERVATION_RETENTION_MONTHS (backend/src/domain/retention.ts)
     expect(all).toContain("anonymisée automatiquement");
+    expect(all).toContain("texte effacé après 30 jours, trace de réception supprimée après 90 jours"); // inbound emails (M-A)
   });
 
   it("names the recipients and the authority, and keeps its promises narrow", () => {

@@ -1,12 +1,13 @@
 import { Container } from 'typedi';
 import prisma from '@/database';
-import { localDate } from '@/domain/time';
-import { closingEmail, confirmationEmail, departureDaySteps, reminderSms } from '@/domain/booking-messages';
+import { closingEmail, confirmationEmail, departureDaySteps } from '@/domain/booking-messages';
 import { toPublicBooking, WITH_LISTING } from '@/domain/booking-view';
 import { landedSms } from '@/domain/return-messages';
 import { ArrivalService } from '@/services/arrival.service';
 import { NotificationService } from '@/services/notification.service';
 import { ParkingLocationService } from '@/services/parking-location.service';
+import { ReminderService } from '@/services/reminder.service';
+import { SmsService } from '@/services/sms.service';
 import { ONESIGNAL_NOTIFICATIONS_URL } from '@/services/push.service';
 import {
   addStaff,
@@ -146,34 +147,32 @@ describe('le fil de messages du voyageur (B)', () => {
     expect(confirmationEmail('Plazo', toPublicBooking(record), null).text).toContain('Retrouvez votre réservation sur le site');
   });
 
-  it('la veille : rappel par email, SMS et push, une seule fois', async () => {
+  it('la veille : rappel par email, SMS et push à 18:00, une seule fois', async () => {
     const { reservation, manageToken, reference } = await setup();
     await api()
       .put(`/api/public/bookings/${reference}/devices`)
       .set(bookingToken(manageToken))
       .send({ subscriptionId: 'sub-camille', platform: 'android' });
-    // Arriving tomorrow at 06:30 Paris time.
-    const tomorrow = new Date(Date.now() + 86400000);
-    const local = `${localDate(tomorrow, 'Europe/Paris')}T06:30`;
-    await prisma.reservation.update({
-      where: { id: reservation.id },
-      data: { arrivalAt: new Date(`${local}:00+02:00`), returnAt: new Date(tomorrow.getTime() + 3 * 86400000) },
-    });
+    // Dropped off on 1 March 2027 at 06:30 (Paris, UTC+1): reminded on 28 February from 18:00.
+    const reminders = Container.get(ReminderService);
     fetchMock.mockClear();
-    const first = await api().get('/api/internal/cron/remind-tomorrow').set('Authorization', `Bearer ${process.env.CRON_SECRET}`);
-    expect(first.status).toBe(200);
-    expect(first.body).toEqual({ checked: 1, sent: 1 });
+    expect(await reminders.dispatchDue(new Date('2027-02-28T16:55:00Z'))).toEqual({ checked: 1, sent: 0 });
+    expect(await reminders.dispatchDue(new Date('2027-02-28T17:05:00Z'))).toEqual({ checked: 1, sent: 1 });
     const email = calls(BREVO_EMAIL).find(e => e.tags?.[0] === 'booking_reminder');
     expect(email.subject).toBe('Demain : votre parking Parking LYS, 06:30');
     expect(email.textContent).toContain('Téléphone : 04 72 00 00 00');
     const sms = calls(BREVO_SMS).find(s => s.tag === 'booking_reminder');
-    expect(sms.content).toMatch(/^Plazo : à demain ! Dépôt le \d{2}\/\d{2} à 06:30 à Parking LYS\./);
+    expect(sms.content).toMatch(/^Plazo : à demain ! Dépôt le 01\/03\/2027 à 06:30 à Parking LYS\./);
     expect(sms.content).toContain('Parking : 04 72 00 00 00.');
+    expect(sms.content).toContain(`https://site.example/ma-reservation/${reference}?cle=`);
     expect(pushes().map(p => p.headings.fr)).toEqual(['À demain, Camille !']);
     // Already reminded: nothing more.
-    const second = await api().get('/api/internal/cron/remind-tomorrow').set('Authorization', `Bearer ${process.env.CRON_SECRET}`);
-    expect(second.body).toEqual({ checked: 0, sent: 0 });
+    expect(await reminders.dispatchDue(new Date('2027-02-28T17:20:00Z'))).toEqual({ checked: 0, sent: 0 });
     expect((await prisma.reservation.findUniqueOrThrow({ where: { id: reservation.id } })).reminderSentAt).not.toBeNull();
+    // The scheduler's route answers with the SMS queue too.
+    const run = await api().get('/api/internal/cron/remind-tomorrow').set('Authorization', `Bearer ${process.env.CRON_SECRET}`);
+    expect(run.status).toBe(200);
+    expect(run.body).toEqual({ checked: 0, sent: 0, sms: { operators: 0, checked: 0, sent: 0, abandoned: 0 } });
   });
 
   it('voiture garée, bon voyage, puis bon retour avec le mail de clôture ; chacun une fois', async () => {
@@ -240,7 +239,7 @@ describe('le fil de messages du voyageur (B)', () => {
     ).toBe('Plazo : votre vol a atterri. Rendez-vous navette : Lyon Saint-Exupéry. Votre reservation : https://s/x Parking : 04 72 00 00 00');
     const { reservation } = await setup();
     const record = await prisma.reservation.findUniqueOrThrow({ where: { id: reservation.id }, include: WITH_LISTING });
-    const sms = reminderSms('Plazo', toPublicBooking(record), null);
+    const sms = await Container.get(SmsService).reminderText(record, null);
     expect(sms.length).toBeLessThanOrEqual(306);
     expect(sms).toContain('Navette');
   });
