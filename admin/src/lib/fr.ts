@@ -112,7 +112,7 @@ export const fr = {
     ai_unavailable:
       "La proposition par Claude n'est pas disponible : clé API absente ou réponse inexploitable.",
     ai_refused:
-      "Claude n'a pas pu lire cette photo. Tracez les zones au pinceau.",
+      "Claude n'a pas pu lire cette photo. Peignez les zones de parking vous-même.",
     ai_busy: "Claude est saturé pour l'instant. Réessayez dans une minute.",
     ai_failed: "La lecture par Claude a échoué",
     ai_timeout: "Claude a mis trop de temps à lire la photo. Réessayez.",
@@ -149,7 +149,8 @@ export const fr = {
     invalid_date: "Date invalide.",
     invalid_sms_mode: "Choix inconnu.",
     invalid_tracking: "Choix inconnu.",
-    shuttle_tracking_off: "Le suivi des navettes est désactivé pour ce parking.",
+    shuttle_tracking_off:
+      "Le suivi des navettes est désactivé pour ce parking.",
     unknown_variable:
       "Une variable entre accolades est inconnue : utilisez celles proposées.",
     invalid_time: "Heure non proposée.",
@@ -1089,25 +1090,25 @@ export const fr = {
     zoneSubtitle: "stationnement",
     zoneDetail: "voitures légères",
     // P-A (07/10/2026): the brush of the zones step.
-    brush: "Pinceau",
-    eraser: "Gomme",
+    brush: "Zone de parking",
+    eraser: "Zone de passage",
     brushWidth: "Largeur",
     brushHelp:
-      "Maintenez le clic et peignez où l'on peut garer ; les traits qui se touchent fusionnent.",
+      "Maintenez le clic et peignez où les voitures peuvent se garer ; les traits qui se touchent fusionnent.",
     eraserHelp:
-      "Maintenez le clic et effacez ce qui ne doit pas recevoir de voitures.",
+      "Maintenez le clic et peignez les zones de passage : allées, accès, endroits où l'on ne peut pas se garer.",
     // V-A (07/10/2026): Claude proposes the zones from the photo.
     suggest: "Proposer les zones avec Claude",
     suggesting: "Claude lit la photo…",
     suggestHelp:
-      "Claude lit la photo aérienne du terrain et propose les surfaces où l'on peut garer. Vous gardez la main : la proposition s'ajoute à vos zones, à compléter au pinceau avant ou après.",
+      "Claude lit la photo aérienne du terrain et propose les surfaces où l'on peut garer. Vous gardez la main : la proposition s'ajoute à vos zones, à compléter avec « Zone de parking » et « Zone de passage » avant ou après.",
     suggestGrass: "Herbe autorisée (pelouse, pré)",
     suggestion: {
       title: (n: number) =>
         n === 0
           ? "Aucune surface reconnue"
           : `${n} zone${n > 1 ? "s" : ""} proposée${n > 1 ? "s" : ""}`,
-      none: "Claude n'a reconnu aucune surface garable dans le contour. Tracez les zones au pinceau.",
+      none: "Claude n'a reconnu aucune surface garable dans le contour. Peignez les zones de parking vous-même.",
       surfaces: {
         asphalt: "enrobé",
         gravel: "gravier",
@@ -1119,7 +1120,7 @@ export const fr = {
       apply: "Ajouter à mes zones",
       dismiss: "Ignorer",
       applied: (n: number, total: number) =>
-        `${n} zone${n > 1 ? "s" : ""} ajoutée${n > 1 ? "s" : ""}, ${total} au total : ajustez-les au pinceau si besoin.`,
+        `${n} zone${n > 1 ? "s" : ""} ajoutée${n > 1 ? "s" : ""}, ${total} au total : ajustez-les avec « Zone de parking » et « Zone de passage » si besoin.`,
       cost: (model: string, tokens: number) => `${model} · ${tokens} jetons`,
     },
     // T-A (07/10/2026): the zones follow the land and its exclusions unless drawn by hand.
@@ -2185,8 +2186,14 @@ export const shuttleTrackingFr = {
   legend: "Niveau de suivi",
   recommended: "Recommandé",
   levels: {
-    off: { title: "Pas de suivi", text: "Les chauffeurs ne partagent pas leur position." },
-    team: { title: "Équipe seulement", text: "La position sert à organiser les navettes. Vos clients ne la voient pas." },
+    off: {
+      title: "Pas de suivi",
+      text: "Les chauffeurs ne partagent pas leur position.",
+    },
+    team: {
+      title: "Équipe seulement",
+      text: "La position sert à organiser les navettes. Vos clients ne la voient pas.",
+    },
     everyone: {
       title: "Équipe et clients",
       text: "Vos clients suivent leur navette et reçoivent « Votre navette est là ». Votre parking porte la mention « En direct » dans les résultats.",
@@ -2195,7 +2202,8 @@ export const shuttleTrackingFr = {
   who: { team: "Équipe", clients: "Clients", mention: "Mention" },
   yes: "oui",
   no: "non",
-  always: "Dans tous les cas, « Votre navette est partie » est envoyé au départ de chaque trajet.",
+  always:
+    "Dans tous les cas, « Votre navette est partie » est envoyé au départ de chaque trajet.",
   save: "Enregistrer",
   saved: "Suivi des navettes enregistré.",
 };

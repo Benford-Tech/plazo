@@ -147,9 +147,10 @@ Hors MVP : caméras, lecture de plaque, capteurs de présence sur les places.
 
 #### Pinceau et réinitialisation (décisions P-A, R-A du 07/10/2026, mis en œuvre)
 
-- **Pinceau (P-A)** : à l'étape Zones, un pinceau de 3, 6 ou 12 m (largeur réelle sur la photo, anneau sous le curseur)
-  peint où l'on peut garer : chaque trait s'ajoute, les traits et zones qui se touchent fusionnent, une gomme de même
-  largeur retire ce qu'on a peint en trop (une zone coupée en deux devient deux zones). Les bâtiments et parties exclues
+- **Pinceau (P-A)** : à l'étape Zones, deux pinceaux de 3, 6 ou 12 m (largeur réelle sur la photo, anneau sous le curseur),
+  renommés le 07/10/2026 d'après leur sens métier : **« Zone de parking »** peint où les voitures peuvent se garer (chaque
+  trait s'ajoute, les traits et zones qui se touchent fusionnent) et **« Zone de passage »** peint les allées, accès et
+  endroits où l'on ne peut pas se garer (retire ce qui a été peint en trop ; une zone coupée en deux devient deux zones). Les bâtiments et parties exclues
   restent soustraits ; le résultat est une zone tracée à la main, modifiable par ses sommets.
 - **Réinitialiser (R-A)** : menu « Réinitialiser… » dans la barre des étapes, avec confirmation : tout le plan (la carte
   repart vide, sur l'adresse du parking), les zones et parties exclues (le contour reste, les bâtiments IGN sont gardés)

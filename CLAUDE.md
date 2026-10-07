@@ -105,7 +105,7 @@ Ne construire QUE ce qui règle la douleur n°1 du client.
      sont les morceaux du terrain hors exclusions (`autoZones`, une orientation par morceau, réglage `zonesAuto`,
      bouton « Zones automatiques », passage en manuel dès qu'une zone est tracée ou modifiée) et le tracé
      s'aimante aux parcelles, parkings, bâtiments et au contour (`snapToRings`, `MapView.snapTo`).
-     **P-A pinceau (07/10/2026)** : à l'étape Zones, « Pinceau » et « Gomme » (largeur 3 / 6 / 12 m) : glisser sur la carte
+     **P-A pinceau (07/10/2026)** : à l'étape Zones, « Zone de parking » (pinceau) et « Zone de passage » (gomme ; libellés métier du 07/10/2026) (largeur 3 / 6 / 12 m) : glisser sur la carte
      peint une surface (`MapView.paint` / `onPaintStroke`, anneau du curseur à la largeur réelle, `metresToPixels`),
      `admin/src/lib/capacity/brush.ts` (`strokeArea`, `paintZones` : les zones touchées et le trait fusionnent,
      `eraseZones` : retrait, coupe en deux ou disparition) ; passe les zones en manuel. **R-A réinitialiser** : menu
