@@ -75,7 +75,10 @@ class ProPlanBloc extends Bloc<ProPlanEvent, ProPlanState> {
             view: view,
             corners: corners,
             layout: view.plan.layout ?? state.layout,
-            center: corners.isNotEmpty ? centroidOf(corners) : state.center,
+            // The map opens on the drawn land, else on the parking itself (its address's position).
+            center: corners.isNotEmpty
+                ? centroidOf(corners)
+                : (p.lat != null && p.lng != null ? LatLng(p.lat!, p.lng!) : state.center),
             step: corners.isNotEmpty ? (view.spots.isNotEmpty ? PlanStep.generate : PlanStep.draw) : PlanStep.locate,
           ),
         );

@@ -6,7 +6,8 @@ part 'plan_models.g.dart';
 /// GET /internal/parking (the fields the plan needs).
 @freezed
 abstract class ParkingSummaryModel with _$ParkingSummaryModel {
-  const factory ParkingSummaryModel({required String id, required String name, required int totalCapacity}) = _ParkingSummaryModel;
+  const factory ParkingSummaryModel({required String id, required String name, required int totalCapacity, double? lat, double? lng}) =
+      _ParkingSummaryModel;
   factory ParkingSummaryModel.fromJson(Map<String, dynamic> json) => _$ParkingSummaryModelFromJson(json);
 }
 

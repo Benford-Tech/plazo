@@ -90,12 +90,18 @@ export class SpotPlanningService {
     const files = buildFiles(spots);
     const staysBySpot = new Map<string, FileStay[]>();
     for (const [spotId, list] of bySpot) {
-      staysBySpot.set(spotId, list.map(r => ({ reservationId: r.id, reference: r.reference, spotId, arrivalAt: r.arrivalAt, returnAt: r.returnAt })));
+      staysBySpot.set(
+        spotId,
+        list.map(r => ({ reservationId: r.id, reference: r.reference, spotId, arrivalAt: r.arrivalAt, returnAt: r.returnAt })),
+      );
     }
     const blockedBy = (spot: ParkingSpot, r: Stay) =>
-      blockersOf({ reservationId: r.id, reference: r.reference, spotId: spot.id, arrivalAt: r.arrivalAt, returnAt: r.returnAt }, spot, files.get(spot.id) ?? [spot], staysBySpot).map(
-        (b: Blocker) => ({ ...b, returnAt: b.returnAt.toISOString() }),
-      );
+      blockersOf(
+        { reservationId: r.id, reference: r.reference, spotId: spot.id, arrivalAt: r.arrivalAt, returnAt: r.returnAt },
+        spot,
+        files.get(spot.id) ?? [spot],
+        staysBySpot,
+      ).map((b: Blocker) => ({ ...b, returnAt: b.returnAt.toISOString() }));
     let blockedCount = 0;
     const withStays = spots.map(s => ({
       id: s.id,
@@ -224,7 +230,8 @@ export class SpotPlanningService {
     // the stay's zone (Z-A), then distance in 10 m bands, then the tightest fit behind the car in
     // front, then the plan order.
     scored.sort(
-      (a, b) => a.moves - b.moves || a.zone - b.zone || Math.floor(a.distance / 10) - Math.floor(b.distance / 10) || a.fit - b.fit || a.distance - b.distance,
+      (a, b) =>
+        a.moves - b.moves || a.zone - b.zone || Math.floor(a.distance / 10) - Math.floor(b.distance / 10) || a.fit - b.fit || a.distance - b.distance,
     );
     return scored[0].spot;
   }

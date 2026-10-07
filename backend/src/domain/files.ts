@@ -133,6 +133,12 @@ export function scoreSpot(
 }
 
 /** The cars in front of a placed stay that leave after it: what blocks its return today. */
-export function blockersOf(stay: FileStay, spot: FileSpot, file: FileSpot[], staysBySpot: Map<string, FileStay[]>, sameWaveHours = SAME_WAVE_HOURS): Blocker[] {
+export function blockersOf(
+  stay: FileStay,
+  spot: FileSpot,
+  file: FileSpot[],
+  staysBySpot: Map<string, FileStay[]>,
+  sameWaveHours = SAME_WAVE_HOURS,
+): Blocker[] {
   return scoreSpot(spot, file, stay, staysBySpot, sameWaveHours).blocking;
 }

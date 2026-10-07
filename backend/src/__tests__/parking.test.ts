@@ -1,4 +1,5 @@
 import prisma from '@/database';
+import { GeoService } from '@/services/geo.service';
 import { addStaff, api, resetDatabase, setupOperator } from './utils/helpers';
 
 beforeEach(resetDatabase);
@@ -12,7 +13,23 @@ describe('parking', () => {
     const { token } = await setupOperator();
     const res = await api().get('/api/internal/parking').set(auth(token));
     expect(res.status).toBe(200);
-    expect(res.body).toMatchObject({ totalCapacity: 200, safetyMarginPct: 0, bookableCapacity: 200 });
+    expect(res.body).toMatchObject({ totalCapacity: 200, safetyMarginPct: 0, bookableCapacity: 200, lat: null, lng: null });
+  });
+
+  it('renvoie la position du parking, celle de son adresse à défaut (le plan s’ouvre dessus)', async () => {
+    const { token, parking } = await setupOperator();
+    const geocode = jest.spyOn(GeoService.prototype, 'geocodeBest').mockResolvedValue({ lat: 45.7256, lng: 5.0811 });
+    try {
+      await prisma.parking.update({ where: { id: parking.id }, data: { address: '1 rue du Parking, 69125 Colombier-Saugnieu' } });
+      const res = await api().get('/api/internal/parking').set(auth(token));
+      expect(res.body).toMatchObject({ lat: 45.7256, lng: 5.0811 });
+      expect(geocode).toHaveBeenCalledTimes(1);
+      // Stored: the next read does not geocode again.
+      await api().get('/api/internal/parking').set(auth(token));
+      expect(geocode).toHaveBeenCalledTimes(1);
+    } finally {
+      geocode.mockRestore();
+    }
   });
 
   it('met à jour les réglages et trace la modification', async () => {

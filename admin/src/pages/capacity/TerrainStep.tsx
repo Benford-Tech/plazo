@@ -42,7 +42,10 @@ function nearestVertex(map: MapViewHandle | null, ring: LonLat[], point: { x: nu
   return best;
 }
 
-export default function TerrainStep({ study, update, go, geoScope = "operator" }: StepProps) {
+/** Half-size of the box the map opens on around the parking's position, in degrees (≈ 150 m). */
+const HOME_HALF_SPAN = 0.0015;
+
+export default function TerrainStep({ study, update, go, geoScope = "operator", home = null }: StepProps) {
   const mapRef = useRef<MapViewHandle>(null);
   const settings = settingsOf(study);
   const [tool, setTool] = useState<Tool>("pan");
@@ -73,7 +76,15 @@ export default function TerrainStep({ study, update, go, geoScope = "operator" }
   const parcels = study.parcels;
 
   const initialBounds = useMemo(
-    () => boundsOf([...positionsOf(outline?.coordinates), ...parcels.flatMap(p => positionsOf(p.geometry?.coordinates))]),
+    () =>
+      boundsOf([...positionsOf(outline?.coordinates), ...parcels.flatMap(p => positionsOf(p.geometry?.coordinates))]) ??
+      // Nothing drawn yet: the map opens on the parking itself.
+      (home
+        ? ([
+            [home[0] - HOME_HALF_SPAN, home[1] - HOME_HALF_SPAN],
+            [home[0] + HOME_HALF_SPAN, home[1] + HOME_HALF_SPAN],
+          ] as [LonLat, LonLat])
+        : null),
     // The map is fitted once, on the study as it was opened.
     // eslint-disable-next-line react-hooks/exhaustive-deps
     [],

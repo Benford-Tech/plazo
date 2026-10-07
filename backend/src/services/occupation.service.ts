@@ -314,7 +314,11 @@ export class OccupationService {
   /**
    * O-A (06/10/2026): today's returns whose car stands behind one that leaves later (to take out first).
    */
-  public async blockedReturns(parkingId: string, start: Date, end: Date): Promise<{ stay: FileStay & { customerName: string; plate: string }; blockers: Blocker[] }[]> {
+  public async blockedReturns(
+    parkingId: string,
+    start: Date,
+    end: Date,
+  ): Promise<{ stay: FileStay & { customerName: string; plate: string }; blockers: Blocker[] }[]> {
     const spots = await prisma.parkingSpot.findMany({ where: { parkingId } });
     if (!spots.some(s => s.depth !== null)) return [];
     const placed = await prisma.reservation.findMany({
@@ -324,7 +328,15 @@ export class OccupationService {
     const files = buildFiles(spots);
     const spotById = new Map(spots.map(s => [s.id, s]));
     const staysBySpot = new Map<string, FileStay[]>();
-    const stays = placed.map(p => ({ reservationId: p.id, reference: p.reference, customerName: p.customerName, plate: p.plate, spotId: p.spotId!, arrivalAt: p.arrivalAt, returnAt: p.returnAt }));
+    const stays = placed.map(p => ({
+      reservationId: p.id,
+      reference: p.reference,
+      customerName: p.customerName,
+      plate: p.plate,
+      spotId: p.spotId!,
+      arrivalAt: p.arrivalAt,
+      returnAt: p.returnAt,
+    }));
     for (const st of stays) staysBySpot.set(st.spotId, [...(staysBySpot.get(st.spotId) ?? []), st]);
     const out = [];
     for (const st of stays) {

@@ -189,7 +189,13 @@ export default function ParkingPlanPage() {
     );
   }
 
-  const props: StepProps = { study, update, flush, go };
+  const props: StepProps = {
+    study,
+    update,
+    flush,
+    go,
+    home: parking.lat != null && parking.lng != null ? [parking.lng, parking.lat] : null,
+  };
   return (
     <>
       <ParkingTabs />

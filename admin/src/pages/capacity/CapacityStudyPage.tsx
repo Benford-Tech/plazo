@@ -1,3 +1,4 @@
+import type { LonLat } from "@/lib/capacity/types";
 import { Check } from "lucide-react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Link, Navigate, useNavigate, useParams } from "react-router-dom";
@@ -23,6 +24,8 @@ export interface StepProps {
   go: (step: StepKey) => void;
   /** Which geo routes the terrain step calls: the platform's for a capacity study. */
   geoScope?: "operator" | "platform";
+  /** Where the map opens when nothing is drawn yet: the parking's position (07/10/2026). */
+  home?: LonLat | null;
 }
 
 type SaveState = "idle" | "saving" | "saved" | "error";

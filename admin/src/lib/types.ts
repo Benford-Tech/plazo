@@ -51,6 +51,9 @@ export interface Parking {
   terminalLeadMinutes: number;
   landingDelayMinutes: number;
   bookableCapacity: number;
+  /** The parking's position (its address's when not placed), null when unknown. */
+  lat: number | null;
+  lng: number | null;
 }
 
 export interface ParkingSettings {
