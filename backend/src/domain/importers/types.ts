@@ -16,6 +16,8 @@ export interface ParsedBooking {
 
 export interface EmailImporter {
   provider: string;
+  /** Addresses its confirmations come from: the setup wizard (G-B) puts them in the operator's forwarding rule. */
+  senders: string[];
   /** True when the text looks like this provider's confirmation. */
   detect(text: string): boolean;
   parse(text: string): ParsedBooking;

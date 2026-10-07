@@ -44,7 +44,21 @@ Fonctionnel :
 - Calcul du prix selon une grille tarifaire simple (par jour, forfaits).
 - Confirmation par email et SMS.
 - Saisie manuelle par le personnel (téléphone, comptoir).
-- Import des réservations d'autres canaux : CSV et saisie assistée à partir d'un mail de confirmation (connecteurs directs aux comparateurs : hors MVP).
+- Import des réservations d'autres canaux (M-A, 06/10/2026) : la messagerie du loueur transfère les mails de confirmation des
+  comparateurs (Allopark aujourd'hui) à son adresse Plazo ; une réservation complète est créée seule, les autres attendent dans
+  « Mails à vérifier » (connecteurs directs aux comparateurs : hors MVP).
+- **Assistant « Relier votre boîte mail » (G-B, 07/10/2026, mis en œuvre)** : bouton « Relier ma boîte mail » du bloc Mails entrants
+  (Parking › Réglages, « Revoir les étapes » une fois relié), quatre étapes avec leur progression :
+  1. **Adresse** : activer puis copier l'adresse Plazo ;
+  2. **Messagerie** : Gmail, Outlook / Microsoft 365, OVH (Roundcube) ou autre. Pour Gmail, autoriser l'adresse de transfert : le
+     mail de confirmation que Gmail envoie à Plazo (`forwarding-noreply@google.com`) est reconnu, gardé sans son texte (statut
+     `forwarding`, hors « À vérifier ») et son code s'affiche en direct pendant 7 jours ;
+  3. **Transfert** : le filtre ou la règle propre à la messagerie, expéditeurs et adresse Plazo à copier, à côté d'un aperçu simplifié
+     de l'écran où les champs à remplir sont surlignés ;
+  4. **Vérification** : transférer un ancien mail Allopark ; « Ce que Plazo a reçu » en direct (les 5 derniers mails), puis « C'est
+     relié » ou un renvoi vers « À vérifier ».
+  Lien « Envoyer ces étapes à la personne qui gère notre messagerie » (mail prérempli). `InboundSettings.senders/forwarding/recent`,
+  expéditeurs déclarés par importateur (`EmailImporter.senders`).
 - Vue planning : arrivées et retours du jour, par heure.
 - Fiche opérationnelle (C-A, 06/10/2026) : la même fiche courte (contact, vol, place, clés, desserte, prochaine étape) s'ouvre en tiroir depuis le planning, le tableau de bord, la page Navettes et l'Occupation ; la fiche complète reste un lien plus loin.
 - Tableau de bord (accueil de l'espace pro, 05/10/2026) : chiffres du jour (sur le parking, arrivées, retours, navettes, à traiter), état des services (suivi de vols, SMS, notifications, paiements, import), liste des situations à traiter classées (sur place sans place, vol retardé ou annulé, voyageur au point de rendez-vous, clés non accrochées, SMS en attente, surréservation), véhicules sur le parking avec place et clés, navettes en direct sur la carte.

@@ -2,7 +2,7 @@ import { readFileSync } from 'fs';
 import { join } from 'path';
 import { Container } from 'typedi';
 import prisma from '@/database';
-import { inboundSlugOf, newInboundSlug, recipientsOf, stripHtml, textOf } from '@/domain/inbound-email';
+import { forwardingConfirmationOf, inboundSlugOf, newInboundSlug, recipientsOf, stripHtml, textOf } from '@/domain/inbound-email';
 import { NotificationService } from '@/services/notification.service';
 import { ONESIGNAL_NOTIFICATIONS_URL } from '@/services/push.service';
 import { addStaff, api, resetDatabase, setupOperator } from './utils/helpers';
@@ -59,6 +59,27 @@ describe('lecture du webhook (domaine)', () => {
     expect(textOf({ RawTextBody: '  texte  ', RawHtmlBody: '<p>html</p>' })).toBe('texte');
     expect(stripHtml('<style>p{}</style><div>a</div><div>b</div>')).toBe('a\nb');
     expect(newInboundSlug('Parking Démo LYS', () => '7f3a')).toBe('parking-demo-lys-7f3a');
+  });
+
+  it('G-B : lit le code de confirmation de transfert de Gmail, en anglais comme en français, et seulement de Google', () => {
+    const google = 'forwarding-noreply@google.com';
+    expect(
+      forwardingConfirmationOf({
+        from: google,
+        subject: '(#482913507) Gmail Forwarding Confirmation - Receive Mail from Boss.Parking@gmail.com',
+        text: 'Confirmation code: 482913507',
+      }),
+    ).toEqual({ provider: 'gmail', code: '482913507', requester: 'boss.parking@gmail.com' });
+    expect(
+      forwardingConfirmationOf({
+        from: 'Forwarding-NoReply@google.com',
+        subject: '(n° 123456789) Confirmation de transfert Gmail - Recevoir des messages de contact@parking.fr',
+        text: '',
+      }),
+    ).toEqual({ provider: 'gmail', code: '123456789', requester: 'contact@parking.fr' });
+    expect(forwardingConfirmationOf({ from: google, subject: 'Gmail', text: 'Code de confirmation : 555666777' })?.code).toBe('555666777');
+    expect(forwardingConfirmationOf({ from: 'pirate@example.com', subject: '(#482913507) Gmail Forwarding Confirmation', text: '' })).toBeNull();
+    expect(forwardingConfirmationOf({ from: google, subject: 'Autre chose', text: 'rien' })).toBeNull();
   });
 });
 
@@ -177,6 +198,43 @@ describe('POST /public/inbound/email', () => {
     const purge = await api().get('/api/internal/cron/purge-expired-tokens').set('Authorization', `Bearer ${process.env.CRON_SECRET}`);
     expect(purge.body.inboundEmails).toEqual({ textsCleared: 0, rowsDeleted: 0 });
     expect((await prisma.inboundEmail.findMany()).every(e => e.textBody === null)).toBe(true);
+  });
+
+  it('G-B : le code de Gmail est montré à l’assistant, pas dans « À vérifier » ; les derniers mails et les expéditeurs aussi', async () => {
+    const op = await setupOperator();
+    const address = (await api().post('/api/internal/inbound/address').set(auth(op.token)).send({})).body.address as string;
+    const before = (await api().get('/api/internal/inbound/settings').set(auth(op.token))).body;
+    expect(before.forwarding).toBeNull();
+    expect(before.recent).toEqual([]);
+    expect(before.senders).toEqual([{ provider: 'Allopark', address: 'info@allopark.com' }]);
+
+    const confirmation = item(address, 'Confirmation code: 482913507\nhttps://mail-settings.google.com/mail/vf-xyz', {
+      From: { Name: 'Gmail Team', Address: 'forwarding-noreply@google.com' },
+      Subject: '(#482913507) Gmail Forwarding Confirmation - Receive Mail from boss@gmail.com',
+    });
+    const received = await api()
+      .post('/api/public/inbound/email?secret=inbound-test-secret')
+      .send({ items: [confirmation] });
+    expect(received.body).toEqual({ received: 1, imported: 0, toCheck: 0, ignored: 0 });
+    const row = await prisma.inboundEmail.findFirstOrThrow({ where: { status: 'forwarding' } });
+    // Minimal: the code and who asked, never the confirmation link.
+    expect(row.textBody).toBeNull();
+
+    await api()
+      .post('/api/public/inbound/email?secret=inbound-test-secret')
+      .send({ items: [item(address, filled)] });
+    const after = (await api().get('/api/internal/inbound/settings').set(auth(op.token))).body;
+    expect(after.forwarding).toEqual({ provider: 'gmail', code: '482913507', requester: 'boss@gmail.com', receivedAt: expect.any(String) });
+    expect(after.toCheck).toBe(0);
+    expect(after.recent.map((r: { status: string }) => r.status)).toEqual(['imported', 'forwarding']);
+    expect(after.recent[0]).toMatchObject({ fromAddress: 'info@allopark.com', reservationReference: expect.any(String) });
+    expect(after.recent[0].textBody).toBeUndefined();
+    const list = (await api().get('/api/internal/inbound/emails').set(auth(op.token))).body.data as { status: string }[];
+    expect(list.map(e => e.status)).toEqual(['imported']);
+
+    // After a week the code is no longer shown.
+    await prisma.inboundEmail.update({ where: { id: row.id }, data: { receivedAt: new Date(Date.now() - 8 * 86400000) } });
+    expect((await api().get('/api/internal/inbound/settings').set(auth(op.token))).body.forwarding).toBeNull();
   });
 
   it('une nouvelle adresse remplace l’ancienne ; un gérant seulement', async () => {

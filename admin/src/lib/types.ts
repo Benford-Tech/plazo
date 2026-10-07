@@ -335,7 +335,7 @@ export interface ParsedBooking {
 }
 
 /** M-A (06/10/2026): the operator's inbound address and the forwarded confirmation emails. */
-export type InboundEmailStatus = "imported" | "duplicate" | "incomplete" | "unrecognised" | "dismissed";
+export type InboundEmailStatus = "imported" | "duplicate" | "incomplete" | "unrecognised" | "dismissed" | "forwarding";
 
 export interface InboundSettings {
   available: boolean;
@@ -343,6 +343,23 @@ export interface InboundSettings {
   lastReceivedAt: string | null;
   counts: Record<InboundEmailStatus, number>;
   toCheck: number;
+  /** G-B: the comparators' sender addresses, for the forwarding rule. */
+  senders: { provider: string; address: string }[];
+  /** G-B: Gmail's latest forwarding confirmation code (7 days). */
+  forwarding: { provider: "gmail"; code: string; requester: string | null; receivedAt: string } | null;
+  /** G-B: the last emails received, newest first. */
+  recent: InboundRecent[];
+}
+
+export interface InboundRecent {
+  id: string;
+  status: InboundEmailStatus;
+  fromAddress: string | null;
+  fromName: string | null;
+  subject: string | null;
+  provider: string | null;
+  reservationReference: string | null;
+  receivedAt: string;
 }
 
 export interface InboundEmail {

@@ -1,5 +1,6 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Copy, Mail } from "lucide-react";
+import { useState } from "react";
 import { Link } from "react-router-dom";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
@@ -9,12 +10,14 @@ import { adminApi } from "@/lib/api";
 import { timeAgo } from "@/lib/datetime";
 import { describeError, inboundFr as t } from "@/lib/fr";
 import type { InboundEmailStatus } from "@/lib/types";
+import { InboundSetupWizard } from "./InboundSetupWizard";
 
 const SHOWN: InboundEmailStatus[] = ["imported", "duplicate", "incomplete", "unrecognised"];
 
-/** M-A (06/10/2026): the operator's inbound address, how to forward to it, and what came in. */
+/** M-A (06/10/2026): the operator's inbound address, the setup wizard (G-B, 07/10/2026) and what came in. */
 export function InboundEmailCard() {
   const queryClient = useQueryClient();
+  const [wizard, setWizard] = useState(false);
   const settings = useQuery({ queryKey: ["inbound-settings"], queryFn: adminApi.getInboundSettings });
   const enable = useMutation({
     mutationFn: (regenerate: boolean) => adminApi.enableInboundAddress(regenerate),
@@ -22,6 +25,8 @@ export function InboundEmailCard() {
     onError: (err: Error) => toast.error(describeError(err)),
   });
   const s = settings.data;
+  // Once a booking email came in, the wizard is only there to look the steps up again.
+  const connected = s ? s.counts.imported + s.counts.duplicate + s.counts.incomplete + s.counts.unrecognised > 0 : false;
   const copy = async (address: string) => {
     try {
       await navigator.clipboard.writeText(address);
@@ -48,9 +53,9 @@ export function InboundEmailCard() {
           <p className="rounded-lg border border-border bg-muted/50 p-3 text-sm text-muted-foreground">{t.unavailable}</p>
         ) : (
           <>
-            <div className="space-y-2">
-              <p className="text-[13px] font-semibold uppercase tracking-wide text-muted-foreground">{t.addressLabel}</p>
-              {s.address ? (
+            {s.address && (
+              <div className="space-y-2">
+                <p className="text-[13px] font-semibold uppercase tracking-wide text-muted-foreground">{t.addressLabel}</p>
                 <div className="flex flex-wrap items-center gap-2">
                   <code data-testid="inbound-address" className="rounded-lg border border-lime-deep bg-accent px-3 py-2 font-mono text-[15px]">
                     {s.address}
@@ -68,20 +73,11 @@ export function InboundEmailCard() {
                     {t.regenerate}
                   </button>
                 </div>
-              ) : (
-                <Button type="button" className="h-11" disabled={enable.isPending} onClick={() => enable.mutate(false)}>
-                  {t.enable}
-                </Button>
-              )}
-            </div>
-            <div>
-              <p className="text-[13px] font-semibold uppercase tracking-wide text-muted-foreground">{t.howTo}</p>
-              <ol className="mt-1 list-decimal space-y-1 pl-5 text-sm">
-                {t.steps.map(step => (
-                  <li key={step}>{step}</li>
-                ))}
-              </ol>
-            </div>
+              </div>
+            )}
+            <Button type="button" data-testid="inbound-connect" variant={connected ? "outline" : "default"} className="h-11" onClick={() => setWizard(true)}>
+              {connected ? t.reviewSteps : t.connect}
+            </Button>
             <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-sm">
               <span className="text-muted-foreground">{s.lastReceivedAt ? t.lastReceived(timeAgo(s.lastReceivedAt)) : t.neverReceived}</span>
               <span className="text-muted-foreground">
@@ -95,6 +91,7 @@ export function InboundEmailCard() {
           </>
         )}
       </CardContent>
+      {wizard && <InboundSetupWizard onClose={() => setWizard(false)} />}
     </Card>
   );
 }
