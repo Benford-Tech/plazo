@@ -398,4 +398,6 @@ Documentation interactive : `/api/docs` (Swagger). Toutes les routes sont sous `
 | GET | `/internal/platform/geo/parkings?bbox=` | Parkings BD TOPO de la vue (relais vers le WFS de la Géoplateforme) |
 | GET | `/internal/platform/geo/buildings?bbox=` | Bâtiments BD TOPO de la vue (B-A, même relais) |
 | POST | `/internal/parkings/:id/plan/suggest-zones` | V-A : Claude lit la photo IGN du terrain et propose les zones (corps `{ allowGrass }`, vrai par défaut ; rien n'est enregistré ; 409 `ai_unavailable` sans `ANTHROPIC_API_KEY`) |
+| POST | `/internal/parkings/:id/plan/spots` | P-B : places posées à la main (rangée tracée sur la carte), gardées à la régénération ; 400 `duplicate_code` |
+| DELETE | `/internal/parkings/:id/plan/spots/:spotId` | P-B : retire une place posée à la main (409 `not_manual` pour une place générée) |
 | GET | `/internal/platform/geo/geocode?q=` | Recherche d'adresse (relais vers le géocodage de la Géoplateforme) |

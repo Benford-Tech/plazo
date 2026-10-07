@@ -4,7 +4,7 @@ import prisma, { ParkingPlan, ParkingSpot, Prisma } from '@/database';
 import { autoZones, estimate, frameFor, withIgnBuildings, type Estimate, type EstimateInput } from '@/domain/layout/estimate';
 import { spotsFromLayout } from '@/domain/layout/numbering';
 import { settingsOf, type CapacityStudy, type LayoutKey } from '@/domain/layout/types';
-import { GenerateSpotsDto, ReplaceSpotsDto, UpdateParkingPlanDto, UpdateSpotDto } from '@/dtos/parking-plan.dto';
+import { AddSpotsDto, GenerateSpotsDto, ReplaceSpotsDto, SpotInputDto, UpdateParkingPlanDto, UpdateSpotDto } from '@/dtos/parking-plan.dto';
 import { AuthenticatedStaff } from '@/interfaces/auth.interface';
 import { HttpException } from '@/utils/httpException';
 import { logger } from '@/utils/logger';
@@ -119,39 +119,43 @@ export class ParkingPlanService {
     });
   }
 
-  /** A new generation: every spot is replaced. Codes must be unique within the parking. */
-  public async replaceSpots(actor: AuthenticatedStaff, parkingId: string, data: ReplaceSpotsDto): Promise<ParkingPlanView> {
-    const parking = await this.parkingOf(actor, parkingId);
+  /** The rows to insert for a list of spots; codes must be unique within the parking. */
+  private rowsOf(parkingId: string, spots: SpotInputDto[], manual: boolean, taken: Set<string>): Prisma.ParkingSpotCreateManyInput[] {
     const codes = new Set<string>();
-    for (const s of data.spots) {
-      if (codes.has(s.code)) throw new HttpException(httpStatus.BAD_REQUEST, `Duplicate spot code ${s.code}`, 'duplicate_code');
+    for (const s of spots) {
+      if (codes.has(s.code) || taken.has(s.code)) throw new HttpException(httpStatus.BAD_REQUEST, `Duplicate spot code ${s.code}`, 'duplicate_code');
       codes.add(s.code);
     }
+    return spots.map(s => {
+      const [lon, lat] = centroid(s.geometry);
+      return {
+        parkingId,
+        zoneId: s.zoneId,
+        code: s.code,
+        row: s.row,
+        index: s.index,
+        kind: s.kind ?? 'standard',
+        active: s.active ?? true,
+        geometry: s.geometry as Prisma.InputJsonValue,
+        lon,
+        lat,
+        depth: s.depth ?? null,
+        fileLength: s.fileLength ?? null,
+        stayClass: s.stayClass ?? null,
+        manual,
+      };
+    });
+  }
+
+  /** A new generation: every generated spot is replaced; the spots laid by hand stay (P-B). */
+  public async replaceSpots(actor: AuthenticatedStaff, parkingId: string, data: ReplaceSpotsDto): Promise<ParkingPlanView> {
+    const parking = await this.parkingOf(actor, parkingId);
+    const kept = await prisma.parkingSpot.findMany({ where: { parkingId: parking.id, manual: true }, select: { code: true } });
+    const rows = this.rowsOf(parking.id, data.spots, false, new Set(kept.map(k => k.code)));
     await prisma.$transaction(async tx => {
       await tx.parkingPlan.upsert({ where: { parkingId: parking.id }, create: { parkingId: parking.id }, update: {} });
-      await tx.parkingSpot.deleteMany({ where: { parkingId: parking.id } });
-      if (data.spots.length) {
-        await tx.parkingSpot.createMany({
-          data: data.spots.map(s => {
-            const [lon, lat] = centroid(s.geometry);
-            return {
-              parkingId: parking.id,
-              zoneId: s.zoneId,
-              code: s.code,
-              row: s.row,
-              index: s.index,
-              kind: s.kind ?? 'standard',
-              active: s.active ?? true,
-              geometry: s.geometry as Prisma.InputJsonValue,
-              lon,
-              lat,
-              depth: s.depth ?? null,
-              fileLength: s.fileLength ?? null,
-              stayClass: s.stayClass ?? null,
-            };
-          }),
-        });
-      }
+      await tx.parkingSpot.deleteMany({ where: { parkingId: parking.id, manual: false } });
+      if (rows.length) await tx.parkingSpot.createMany({ data: rows });
       await tx.parkingPlan.update({ where: { parkingId: parking.id }, data: { layout: data.layout, generatedAt: new Date() } });
       await this.audit.record(
         actor,
@@ -164,6 +168,34 @@ export class ParkingPlanService {
         tx,
       );
     });
+    return this.get(actor, parkingId);
+  }
+
+  /** P-B (07/10/2026): spots laid by hand (a row drawn on the map), kept through regenerations. */
+  public async addSpots(actor: AuthenticatedStaff, parkingId: string, data: AddSpotsDto): Promise<ParkingPlanView> {
+    const parking = await this.parkingOf(actor, parkingId);
+    if (!data.spots.length) throw new HttpException(httpStatus.BAD_REQUEST, 'No spot to add', 'no_spots');
+    const existing = await prisma.parkingSpot.findMany({ where: { parkingId: parking.id }, select: { code: true } });
+    const rows = this.rowsOf(parking.id, data.spots, true, new Set(existing.map(e => e.code)));
+    await prisma.$transaction(async tx => {
+      await tx.parkingPlan.upsert({ where: { parkingId: parking.id }, create: { parkingId: parking.id }, update: {} });
+      await tx.parkingSpot.createMany({ data: rows });
+      await this.audit.record(
+        actor,
+        { action: 'parking.spots_added', entityType: 'parking', entityId: parking.id, details: { spots: rows.length } },
+        tx,
+      );
+    });
+    return this.get(actor, parkingId);
+  }
+
+  /** Only a spot laid by hand can be removed; a generated one is deactivated instead. */
+  public async deleteSpot(actor: AuthenticatedStaff, parkingId: string, spotId: string): Promise<ParkingPlanView> {
+    const parking = await this.parkingOf(actor, parkingId);
+    const spot = await prisma.parkingSpot.findFirst({ where: { id: spotId, parkingId: parking.id } });
+    if (!spot) throw new HttpException(httpStatus.NOT_FOUND, 'Spot not found', 'not_found');
+    if (!spot.manual) throw new HttpException(httpStatus.CONFLICT, 'Only a spot laid by hand can be removed', 'not_manual');
+    await prisma.parkingSpot.delete({ where: { id: spot.id } });
     return this.get(actor, parkingId);
   }
 

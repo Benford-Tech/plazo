@@ -1442,6 +1442,18 @@ export const fr = {
       regenerate: (n: number) => `Régénérer (${n} place${n > 1 ? "s" : ""})`,
       adjust: "Ajuster",
       needZones: "Peignez d'abord une zone de parking.",
+      // P-B (07/10/2026): a row of spots along a line drawn on the map.
+      row: "+ Rangée de places",
+      rowHelp:
+        "Tracez l'axe de la rangée ; double-cliquez pour terminer. Les places se posent côte à côte le long du trait.",
+      rowAdded: (n: number) =>
+        `${n} place${n > 1 ? "s" : ""} ajoutée${n > 1 ? "s" : ""} à la main`,
+      rowTooShort: "Trait trop court pour une place.",
+      remove: "Supprimer",
+      removeHelp:
+        "Cliquez une place posée à la main pour la supprimer ; une place générée se désactive.",
+      removed: "Place supprimée",
+      manualCount: (n: number) => `${n} à la main`,
     },
     drawer: {
       title: "Réglages du plan",

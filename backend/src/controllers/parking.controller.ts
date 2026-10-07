@@ -1,7 +1,7 @@
 import { Response } from 'express';
 import { Container } from 'typedi';
 import { UpdateParkingDto, UpdateShuttleTrackingDto } from '@/dtos/parking.dto';
-import { SuggestZonesDto, GenerateSpotsDto, ReplaceSpotsDto, UpdateParkingPlanDto, UpdateSpotDto } from '@/dtos/parking-plan.dto';
+import { AddSpotsDto, SuggestZonesDto, GenerateSpotsDto, ReplaceSpotsDto, UpdateParkingPlanDto, UpdateSpotDto } from '@/dtos/parking-plan.dto';
 import { RequestWithStaffSession } from '@/middlewares/staff-auth.middleware';
 import { AssignSpotDto } from '@/dtos/occupation.dto';
 import { CarLocationDto } from '@/dtos/public-booking.dto';
@@ -52,6 +52,17 @@ export class ParkingController {
   public replaceSpots = catchAsync(async (req: RequestWithStaffSession, res: Response) => {
     const data: ReplaceSpotsDto = req.body;
     res.json({ message: 'Spots replaced', data: await this.plans.replaceSpots(req.staff, req.params.id as string, data) });
+  });
+
+  /** POST /internal/parkings/:id/plan/spots (P-B): spots laid by hand. */
+  public addSpots = catchAsync(async (req: RequestWithStaffSession, res: Response) => {
+    const data: AddSpotsDto = req.body;
+    res.json({ message: 'Spots added', data: await this.plans.addSpots(req.staff, req.params.id as string, data) });
+  });
+
+  /** DELETE /internal/parkings/:id/plan/spots/:spotId (P-B): a spot laid by hand. */
+  public deleteSpot = catchAsync(async (req: RequestWithStaffSession, res: Response) => {
+    res.json({ message: 'Spot removed', data: await this.plans.deleteSpot(req.staff, req.params.id as string, req.params.spotId as string) });
   });
 
   /** PATCH /internal/parkings/:id/plan/spots/:spotId */

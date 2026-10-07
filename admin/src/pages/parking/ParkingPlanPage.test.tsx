@@ -32,11 +32,21 @@ vi.mock("@/contexts/AuthContext", () => ({
 vi.mock("@/components/capacity/MapView", () => ({
   MapView: (props: {
     onMapClick?: (p: [number, number]) => void;
+    onDrawn?: (g: { type: string; coordinates: unknown }) => void;
+    drawMode?: string | null;
     children?: React.ReactNode;
   }) => (
-    <div data-testid="map">
+    <div data-testid="map" data-drawmode={props.drawMode ?? ""}>
       <button type="button" onClick={() => props.onMapClick?.(spotCentre)}>
         click-spot
+      </button>
+      <button
+        type="button"
+        onClick={() =>
+          props.onDrawn?.({ type: "LineString", coordinates: drawnLine })
+        }
+      >
+        draw-line
       </button>
       {props.children}
     </div>
@@ -47,6 +57,8 @@ const api = vi.hoisted(() => ({
   getParkingPlan: vi.fn(),
   updateParkingPlan: vi.fn(),
   replaceSpots: vi.fn(),
+  addSpots: vi.fn(),
+  deleteSpot: vi.fn(),
   updateSpot: vi.fn(),
   applyPlanCapacity: vi.fn(),
   buildingsIn: vi.fn(async () => ({ buildings: [] })),
@@ -72,6 +84,11 @@ const rect = [
 ].map((p) => frame.inverse(p as [number, number])) as [number, number][];
 const outline = { type: "Polygon" as const, coordinates: [rect] };
 let spotCentre: [number, number] = [5.08, 45.72];
+// A 12.5 m line across the land: five valet spots of 2.4 m.
+const drawnLine: [number, number][] = [
+  frame.inverse([0, 7]) as [number, number],
+  frame.inverse([12.5, 7]) as [number, number],
+];
 
 const parking = {
   id: "p1",
@@ -146,6 +163,7 @@ describe("plan du parking (éditeur R-A, 07/10/2026)", () => {
             depth: s.depth ?? null,
             fileLength: s.fileLength ?? null,
             stayClass: s.stayClass ?? null,
+            manual: false,
           })),
           200,
         ),
@@ -243,6 +261,7 @@ describe("plan du parking (éditeur R-A, 07/10/2026)", () => {
               depth: null,
               fileLength: null,
               stayClass: null,
+              manual: false,
             })),
           ),
           plan: {
@@ -311,6 +330,7 @@ describe("plan du parking (éditeur R-A, 07/10/2026)", () => {
             depth: null,
             fileLength: null,
             stayClass: null,
+            manual: false,
           },
         ],
         1,
@@ -446,6 +466,62 @@ describe("plan du parking (éditeur R-A, 07/10/2026)", () => {
     expect(screen.queryByText("1 zone proposée")).not.toBeInTheDocument();
   });
 
+  it("pose une rangée de places à la main le long d'un trait, puis la supprime d'un clic (P-B)", async () => {
+    api.getParkingPlan.mockResolvedValue(view([]));
+    api.updateParkingPlan.mockResolvedValue({ data: {} });
+    const manualSpot = (code: string, i: number) => ({
+      id: `m${i}`,
+      zoneId: "z1",
+      code,
+      row: 1,
+      index: i + 1,
+      kind: "standard" as const,
+      active: true,
+      geometry: rect,
+      lon: 5.08,
+      lat: 45.72,
+      depth: null,
+      fileLength: null,
+      stayClass: null,
+      manual: true,
+    });
+    api.addSpots.mockImplementation(
+      async (_id: string, spots: { code: string }[]) => ({
+        data: view(spots.map((s, i) => manualSpot(s.code, i))),
+      }),
+    );
+    api.deleteSpot.mockResolvedValue({ data: view([]) });
+    renderAt("/parking/plan/places");
+    const row = await screen.findByRole("button", {
+      name: "+ Rangée de places",
+    });
+    fireEvent.click(row);
+    expect(screen.getByTestId("map")).toHaveAttribute(
+      "data-drawmode",
+      "linestring",
+    );
+    fireEvent.click(screen.getByText("draw-line"));
+    await waitFor(() => expect(api.addSpots).toHaveBeenCalled());
+    const [, spots] = api.addSpots.mock.calls[0];
+    expect(spots.map((s: { code: string }) => s.code)).toEqual([
+      "M-01",
+      "M-02",
+      "M-03",
+      "M-04",
+      "M-05",
+    ]);
+    expect(spots[0]).toMatchObject({ zoneId: "z1", row: 1, index: 1 });
+    expect(await screen.findByText("5 à la main")).toBeInTheDocument();
+    expect(screen.getByTestId("plan-count").textContent).toBe("5 places");
+    // The delete tool removes a spot laid by hand.
+    spotCentre = frame.inverse([1, 1]) as [number, number];
+    fireEvent.click(screen.getByRole("button", { name: "Supprimer" }));
+    fireEvent.click(screen.getByText("click-spot"));
+    await waitFor(() =>
+      expect(api.deleteSpot).toHaveBeenCalledWith("p1", "m0"),
+    );
+  });
+
   it("désactive une place d'un clic sur la carte", async () => {
     const ring = [
       [0, 0],
@@ -472,6 +548,7 @@ describe("plan du parking (éditeur R-A, 07/10/2026)", () => {
             depth: null,
             fileLength: null,
             stayClass: null,
+            manual: false,
           },
         ],
         1,

@@ -304,6 +304,8 @@ model ParkingSpot {
   depth      Int?
   fileLength Int?
   stayClass  StayClass?
+  // P-B (07/10/2026): a spot laid by hand (a row drawn on the map) survives a regeneration.
+  manual     Boolean    @default(false)
   createdAt  DateTime   @default(now())
 
   parking      Parking       @relation(fields: [parkingId], references: [id], onDelete: Cascade)

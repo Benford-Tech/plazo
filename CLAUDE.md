@@ -132,6 +132,12 @@ Ne construire QUE ce qui règle la douleur n°1 du client.
      réinitialisation). L'outil Obstacle regroupe les parties exclues (clic sur un obstacle : marge, suppression) ;
      l'étape « Places » de l'ancien `SpotsStep.tsx` est fondue dans l'outil Places. Les pages `capacity/TerrainStep` et
      `ZonesStep` ne servent plus qu'à l'outil capacité de la plateforme.
+     **P-B « Une rangée d'un trait » (07/10/2026, places à la main)** : dans l'outil Places, « + Rangée de places » puis un
+     trait sur la carte : des places au gabarit voiturier se posent côte à côte le long du trait, perpendiculaires et
+     centrées dessus (`admin/src/lib/plan/manualRow.ts`, codes `M-01`, `M-02`…, zone du point milieu) ;
+     `ParkingSpot.manual`, `POST /internal/parkings/:id/plan/spots` (`AddSpotsDto`, 400 `duplicate_code`),
+     `DELETE /internal/parkings/:id/plan/spots/:spotId` (409 `not_manual`) ; une régénération ne remplace que les places
+     générées ; outil « Supprimer » (une place générée se désactive) ; bord blanc tireté sur la carte.
    - Décision **O-A « File triée » (06/10/2026)** : sur une file de voiturier, les retours doivent décroître de l'allée vers le
      fond ; `domain/files.ts` reconstitue les files (profondeur + position) et score chaque place libre par le nombre de
      voitures à déplacer (`blocking` devant partant après, `blocked` derrière partant avant ; même vague = 2 h) ;

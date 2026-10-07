@@ -53,7 +53,8 @@ import type {
   Staff,
   StaffRole,
   TokenData,
- Staying } from "./types";
+  Staying,
+} from "./types";
 
 import type {
   CapacityStudy,
@@ -72,7 +73,10 @@ import type {
   SpotInput,
   SpotKind,
 } from "./plan/types";
-import type { ZoneSuggestion, ZoneSuggestionOptions } from "@/lib/capacity/types";
+import type {
+  ZoneSuggestion,
+  ZoneSuggestionOptions,
+} from "@/lib/capacity/types";
 
 export interface ParcelFeature extends ParcelRef {
   geometry: { type: "Polygon" | "MultiPolygon"; coordinates: unknown };
@@ -249,7 +253,8 @@ export async function apiRequest<T = unknown>(
 const json = (body: unknown) => JSON.stringify(body);
 
 export type GeoScope = "operator" | "platform";
-const geoBase = (scope: GeoScope) => (scope === "platform" ? "/internal/platform/geo" : "/internal/geo");
+const geoBase = (scope: GeoScope) =>
+  scope === "platform" ? "/internal/platform/geo" : "/internal/geo";
 
 export const adminApi = {
   login: (email: string, password: string) =>
@@ -319,7 +324,8 @@ export const adminApi = {
   removeVehicle: (id: string) =>
     apiRequest<void>(`/internal/shuttle/vehicles/${id}`, { method: "DELETE" }),
   // D-A: the places the shuttle serves (the airport first, built in, then the parking's stops).
-  getStops: () => apiRequest<{ data: ShuttleStop[] }>("/internal/shuttle/stops"),
+  getStops: () =>
+    apiRequest<{ data: ShuttleStop[] }>("/internal/shuttle/stops"),
   addStop: (stop: ShuttleStopInput) =>
     apiRequest<{ data: ShuttleStop }>("/internal/shuttle/stops", {
       method: "POST",
@@ -333,7 +339,10 @@ export const adminApi = {
   removeStop: (id: string) =>
     apiRequest<void>(`/internal/shuttle/stops/${id}`, { method: "DELETE" }),
   setShuttleTracking: (id: string, tracking: ShuttleTracking) =>
-    apiRequest<{ data: Parking }>(`/internal/parkings/${id}/shuttle-tracking`, { method: "PUT", body: json({ tracking }) }),
+    apiRequest<{ data: Parking }>(`/internal/parkings/${id}/shuttle-tracking`, {
+      method: "PUT",
+      body: json({ tracking }),
+    }),
   updateParking: (id: string, settings: ParkingSettings) =>
     apiRequest<{ data: Parking }>(`/internal/parkings/${id}`, {
       method: "PATCH",
@@ -353,6 +362,17 @@ export const adminApi = {
       `/internal/parkings/${parkingId}/plan/spots`,
       { method: "PUT", body: json({ layout, spots }) },
     ),
+  /** P-B (07/10/2026): spots laid by hand, kept through regenerations. */
+  addSpots: (parkingId: string, spots: SpotInput[]) =>
+    apiRequest<{ data: ParkingPlanView }>(
+      `/internal/parkings/${parkingId}/plan/spots`,
+      { method: "POST", body: json({ spots }) },
+    ),
+  deleteSpot: (parkingId: string, spotId: string) =>
+    apiRequest<{ data: ParkingPlanView }>(
+      `/internal/parkings/${parkingId}/plan/spots/${spotId}`,
+      { method: "DELETE" },
+    ),
   updateSpot: (
     parkingId: string,
     spotId: string,
@@ -364,7 +384,10 @@ export const adminApi = {
     ),
   /** V-A (07/10/2026): Claude reads the IGN photo of the land and proposes the zones (nothing saved). */
   suggestZones: (parkingId: string, options: ZoneSuggestionOptions) =>
-    apiRequest<ZoneSuggestion>(`/internal/parkings/${parkingId}/plan/suggest-zones`, { method: "POST", body: json(options) }),
+    apiRequest<ZoneSuggestion>(
+      `/internal/parkings/${parkingId}/plan/suggest-zones`,
+      { method: "POST", body: json(options) },
+    ),
   applyPlanCapacity: (parkingId: string) =>
     apiRequest<{ data: ParkingPlanView }>(
       `/internal/parkings/${parkingId}/plan/apply-capacity`,
@@ -424,36 +447,107 @@ export const adminApi = {
   getLiveShuttles: () => apiRequest<LiveShuttles>("/internal/shuttle/live"),
   // « SMS de la veille » (S-A + S-B, 06/10/2026): the usual rule, the evenings and each booking's SMS.
   getReminders: (parkingId: string, evening?: string) =>
-    apiRequest<ReminderBoard>(`/internal/parkings/${parkingId}/reminders${evening ? `?evening=${evening}` : ""}`),
+    apiRequest<ReminderBoard>(
+      `/internal/parkings/${parkingId}/reminders${evening ? `?evening=${evening}` : ""}`,
+    ),
   updateReminders: (parkingId: string, input: ReminderSettingsInput) =>
-    apiRequest<ReminderBoard>(`/internal/parkings/${parkingId}/reminders`, { method: "PUT", body: json(input) }),
-  updateReminderEvening: (parkingId: string, date: string, input: { sendTime?: string | null; paused?: boolean }) =>
-    apiRequest<ReminderBoard>(`/internal/parkings/${parkingId}/reminders/evenings/${date}`, { method: "PUT", body: json(input) }),
+    apiRequest<ReminderBoard>(`/internal/parkings/${parkingId}/reminders`, {
+      method: "PUT",
+      body: json(input),
+    }),
+  updateReminderEvening: (
+    parkingId: string,
+    date: string,
+    input: { sendTime?: string | null; paused?: boolean },
+  ) =>
+    apiRequest<ReminderBoard>(
+      `/internal/parkings/${parkingId}/reminders/evenings/${date}`,
+      { method: "PUT", body: json(input) },
+    ),
   sendRemindersNow: (parkingId: string, date: string) =>
-    apiRequest<ReminderBoard>(`/internal/parkings/${parkingId}/reminders/evenings/${date}/send`, { method: "POST" }),
-  testReminder: (parkingId: string, input: { to?: string; template?: string }) =>
-    apiRequest<{ outcome: string; to: string }>(`/internal/parkings/${parkingId}/reminders/test`, { method: "POST", body: json(input) }),
+    apiRequest<ReminderBoard>(
+      `/internal/parkings/${parkingId}/reminders/evenings/${date}/send`,
+      { method: "POST" },
+    ),
+  testReminder: (
+    parkingId: string,
+    input: { to?: string; template?: string },
+  ) =>
+    apiRequest<{ outcome: string; to: string }>(
+      `/internal/parkings/${parkingId}/reminders/test`,
+      { method: "POST", body: json(input) },
+    ),
   setReminderExcluded: (reservationId: string, excluded: boolean) =>
-    apiRequest<{ excluded: boolean }>(`/internal/reservations/${reservationId}/reminder`, { method: "PUT", body: json({ excluded }) }),
+    apiRequest<{ excluded: boolean }>(
+      `/internal/reservations/${reservationId}/reminder`,
+      { method: "PUT", body: json({ excluded }) },
+    ),
   // M-A (06/10/2026): the inbound address and the forwarded confirmation emails.
-  getInboundSettings: () => apiRequest<InboundSettings>("/internal/inbound/settings"),
-  enableInboundAddress: (regenerate = false) => apiRequest<InboundSettings>("/internal/inbound/address", { method: "POST", body: json({ regenerate }) }),
-  getInboundEmails: (status?: InboundEmailStatus) => apiRequest<{ data: InboundEmail[] }>(`/internal/inbound/emails${status ? `?status=${status}` : ""}`),
-  dismissInboundEmail: (id: string) => apiRequest<{ data: InboundEmail }>(`/internal/inbound/emails/${id}/dismiss`, { method: "POST" }),
+  getInboundSettings: () =>
+    apiRequest<InboundSettings>("/internal/inbound/settings"),
+  enableInboundAddress: (regenerate = false) =>
+    apiRequest<InboundSettings>("/internal/inbound/address", {
+      method: "POST",
+      body: json({ regenerate }),
+    }),
+  getInboundEmails: (status?: InboundEmailStatus) =>
+    apiRequest<{ data: InboundEmail[] }>(
+      `/internal/inbound/emails${status ? `?status=${status}` : ""}`,
+    ),
+  dismissInboundEmail: (id: string) =>
+    apiRequest<{ data: InboundEmail }>(
+      `/internal/inbound/emails/${id}/dismiss`,
+      { method: "POST" },
+    ),
   attachInboundEmail: (id: string, reservationId: string) =>
-    apiRequest<{ message: string }>(`/internal/inbound/emails/${id}/attach`, { method: "POST", body: json({ reservationId }) }),
+    apiRequest<{ message: string }>(`/internal/inbound/emails/${id}/attach`, {
+      method: "POST",
+      body: json({ reservationId }),
+    }),
   // The driver's screen on the web (06/10/2026): the same trips as Plazo Pro.
-  getPickups: () => apiRequest<{ serverTime: string; meetingPoint: MeetingPoint | null; rows: PickupRow[] }>("/internal/shuttle/pickups"),
-  getDepartures: () => apiRequest<{ serverTime: string; rows: DepartureRow[] }>("/internal/shuttle/departures"),
+  getPickups: () =>
+    apiRequest<{
+      serverTime: string;
+      meetingPoint: MeetingPoint | null;
+      rows: PickupRow[];
+    }>("/internal/shuttle/pickups"),
+  getDepartures: () =>
+    apiRequest<{ serverTime: string; rows: DepartureRow[] }>(
+      "/internal/shuttle/departures",
+    ),
   getStaying: () => apiRequest<Staying>("/internal/shuttle/staying"),
-  getCurrentTrip: () => apiRequest<{ trip: StaffTrip | null }>("/internal/shuttle/trips/current"),
-  startTrip: (input: StartTripInput) => apiRequest<{ trip: StaffTrip }>("/internal/shuttle/trips", { method: "POST", body: json(input) }),
-  sendTripPosition: (tripId: string, position: { lat: number; lng: number; accuracy?: number | null; recordedAt: string }) =>
-    apiRequest<{ trip: StaffTrip }>(`/internal/shuttle/trips/${tripId}/position`, { method: "POST", body: json(position) }),
-  endTrip: (tripId: string) => apiRequest<{ trip: StaffTrip }>(`/internal/shuttle/trips/${tripId}/end`, { method: "POST" }),
+  getCurrentTrip: () =>
+    apiRequest<{ trip: StaffTrip | null }>("/internal/shuttle/trips/current"),
+  startTrip: (input: StartTripInput) =>
+    apiRequest<{ trip: StaffTrip }>("/internal/shuttle/trips", {
+      method: "POST",
+      body: json(input),
+    }),
+  sendTripPosition: (
+    tripId: string,
+    position: {
+      lat: number;
+      lng: number;
+      accuracy?: number | null;
+      recordedAt: string;
+    },
+  ) =>
+    apiRequest<{ trip: StaffTrip }>(
+      `/internal/shuttle/trips/${tripId}/position`,
+      { method: "POST", body: json(position) },
+    ),
+  endTrip: (tripId: string) =>
+    apiRequest<{ trip: StaffTrip }>(`/internal/shuttle/trips/${tripId}/end`, {
+      method: "POST",
+    }),
   checkFlight: (flight: string, date: string, role: "arrival" | "departure") =>
-    apiRequest<FlightCheck>(`/internal/flights/check?flight=${encodeURIComponent(flight)}&date=${date}&role=${role}`),
-  getShuttleForecast: (date?: string) => apiRequest<ShuttleForecast>(`/internal/shuttle/forecast${date ? `?date=${date}` : ""}`),
+    apiRequest<FlightCheck>(
+      `/internal/flights/check?flight=${encodeURIComponent(flight)}&date=${date}&role=${role}`,
+    ),
+  getShuttleForecast: (date?: string) =>
+    apiRequest<ShuttleForecast>(
+      `/internal/shuttle/forecast${date ? `?date=${date}` : ""}`,
+    ),
   previewCapacity: (arrivalAt: string, returnAt: string, excludeId?: string) =>
     apiRequest<CapacityPreview>(
       `/internal/capacity?${new URLSearchParams({ arrivalAt, returnAt, ...(excludeId ? { excludeId } : {}) }).toString()}`,
@@ -469,7 +563,10 @@ export const adminApi = {
       method: "POST",
       body: json(input),
     }),
-  updateReservation: (id: string, input: Partial<Omit<ReservationInput, "externalReference" | "priceCents">>) =>
+  updateReservation: (
+    id: string,
+    input: Partial<Omit<ReservationInput, "externalReference" | "priceCents">>,
+  ) =>
     apiRequest<{ data: Reservation }>(`/internal/reservations/${id}`, {
       method: "PATCH",
       body: json(input),
@@ -611,16 +708,24 @@ export const adminApi = {
     apiRequest<PlatformPayments>("/internal/platform/payments"),
   // E-A: the platform's broadcasts.
   getPlatformNotifications: () =>
-    apiRequest<{ data: PlatformNotification[] }>("/internal/platform/notifications"),
-  getPlatformNotificationAudience: (audience: PlatformAudience, operatorId?: string | null) =>
+    apiRequest<{ data: PlatformNotification[] }>(
+      "/internal/platform/notifications",
+    ),
+  getPlatformNotificationAudience: (
+    audience: PlatformAudience,
+    operatorId?: string | null,
+  ) =>
     apiRequest<{ devices: number; configured: boolean }>(
       `/internal/platform/notifications/audience?${new URLSearchParams({ audience, ...(operatorId ? { operatorId } : {}) })}`,
     ),
   sendPlatformNotification: (input: PlatformNotificationInput) =>
-    apiRequest<{ data: PlatformNotification }>("/internal/platform/notifications", {
-      method: "POST",
-      body: json(input),
-    }),
+    apiRequest<{ data: PlatformNotification }>(
+      "/internal/platform/notifications",
+      {
+        method: "POST",
+        body: json(input),
+      },
+    ),
   retryPayout: (reservationId: string) =>
     apiRequest<{
       result: "transferred" | "failed" | "skipped";
@@ -654,11 +759,17 @@ export const adminApi = {
     apiRequest<{ parcels: ParcelFeature[] }>(
       `${geoBase(scope)}/parcels?${new URLSearchParams({ lon: String(lon), lat: String(lat) }).toString()}`,
     ),
-  parkingsIn: (bbox: [number, number, number, number], scope: GeoScope = "operator") =>
+  parkingsIn: (
+    bbox: [number, number, number, number],
+    scope: GeoScope = "operator",
+  ) =>
     apiRequest<{ parkings: ParkingFeature[] }>(
       `${geoBase(scope)}/parkings?bbox=${bbox.map((n) => n.toFixed(6)).join(",")}`,
     ),
-  buildingsIn: (bbox: [number, number, number, number], scope: GeoScope = "operator") =>
+  buildingsIn: (
+    bbox: [number, number, number, number],
+    scope: GeoScope = "operator",
+  ) =>
     apiRequest<{ buildings: BuildingFeature[] }>(
       `${geoBase(scope)}/buildings?bbox=${bbox.map((n) => n.toFixed(6)).join(",")}`,
     ),
@@ -667,7 +778,11 @@ export const adminApi = {
       `${geoBase(scope)}/geocode?${new URLSearchParams({ q }).toString()}`,
     ),
 
-  changeReservationStatus: (id: string, status: ReservationStatus, note?: string) =>
+  changeReservationStatus: (
+    id: string,
+    status: ReservationStatus,
+    note?: string,
+  ) =>
     apiRequest<{ data: Reservation }>(`/internal/reservations/${id}/status`, {
       method: "POST",
       body: json(note ? { status, note } : { status }),

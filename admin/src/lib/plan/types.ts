@@ -63,6 +63,8 @@ export interface Spot {
   depth: number | null;
   fileLength: number | null;
   stayClass: StayClass | null;
+  /** P-B (07/10/2026): laid by hand (a row drawn on the map); kept through regenerations. */
+  manual: boolean;
 }
 
 export interface SpotInput {

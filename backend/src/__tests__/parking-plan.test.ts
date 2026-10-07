@@ -96,6 +96,48 @@ describe('parking plan (bloc 2, step Plan)', () => {
     expect(again.body.data.spots.every((s: { active: boolean }) => s.active)).toBe(true);
   });
 
+  it('garde les places posées à la main à travers une régénération, et ne supprime qu’elles (P-B)', async () => {
+    const { token, parking } = await setupOperator();
+    await api()
+      .put(`/api/internal/parkings/${parking.id}/plan/spots`)
+      .set(auth(token))
+      .send({ layout: 'valetEdge', spots: spots(2) });
+    const manual = [
+      { zoneId: 'z1', code: 'M-01', row: 1, index: 1, geometry: square(5.081, 45.721) },
+      { zoneId: 'z1', code: 'M-02', row: 1, index: 2, geometry: square(5.08104, 45.721) },
+    ];
+    const added = await api().post(`/api/internal/parkings/${parking.id}/plan/spots`).set(auth(token)).send({ spots: manual });
+    expect(added.status).toBe(200);
+    expect(added.body.data.spots).toHaveLength(4);
+    expect(added.body.data.spots.filter((s: { manual: boolean }) => s.manual).map((s: { code: string }) => s.code)).toEqual(['M-01', 'M-02']);
+    expect(added.body.data.activeSpots).toBe(4);
+    // A code already there, by hand or generated, is refused.
+    const clash = await api()
+      .post(`/api/internal/parkings/${parking.id}/plan/spots`)
+      .set(auth(token))
+      .send({ spots: [{ ...manual[0], code: 'A-01-01' }] });
+    expect(clash.status).toBe(400);
+    expect(clash.body.code).toBe('duplicate_code');
+    // A regeneration replaces the generated spots and keeps the manual ones.
+    const again = await api()
+      .put(`/api/internal/parkings/${parking.id}/plan/spots`)
+      .set(auth(token))
+      .send({ layout: 'valet24', spots: spots(5) });
+    expect(again.body.data.spots).toHaveLength(7);
+    expect(again.body.data.spots.filter((s: { manual: boolean }) => s.manual)).toHaveLength(2);
+    // Only a manual spot can be removed.
+    const generated = again.body.data.spots.find((s: { manual: boolean }) => !s.manual);
+    const byHand = again.body.data.spots.find((s: { manual: boolean }) => s.manual);
+    const refused = await api().delete(`/api/internal/parkings/${parking.id}/plan/spots/${generated.id}`).set(auth(token));
+    expect(refused.status).toBe(409);
+    expect(refused.body.code).toBe('not_manual');
+    const removed = await api().delete(`/api/internal/parkings/${parking.id}/plan/spots/${byHand.id}`).set(auth(token));
+    expect(removed.status).toBe(200);
+    expect(removed.body.data.spots).toHaveLength(6);
+    const logs = await prisma.auditLog.findMany({ where: { action: 'parking.spots_added' } });
+    expect(logs).toHaveLength(1);
+  });
+
   it('est réservé au gérant pour l’écriture, et jamais au parking d’un autre loueur', async () => {
     const a = await setupOperator('A');
     const b = await setupOperator('B');

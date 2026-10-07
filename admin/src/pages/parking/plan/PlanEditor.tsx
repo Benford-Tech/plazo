@@ -61,6 +61,7 @@ import {
   type ZoneSuggestion,
 } from "@/lib/capacity/types";
 import { describeError, fr } from "@/lib/fr";
+import { rowAlong } from "@/lib/plan/manualRow";
 import { pointInRing, spotsFromLayout } from "@/lib/plan/numbering";
 import {
   LANDMARK_KINDS,
@@ -187,7 +188,11 @@ export function PlanEditor({
     null,
   );
   const [landmarkKind, setLandmarkKind] = useState<LandmarkKind | null>(null);
-  const [spotTool, setSpotTool] = useState<"toggle" | "kind">("toggle");
+  const [spotTool, setSpotTool] = useState<"toggle" | "kind" | "delete">(
+    "toggle",
+  );
+  // P-B: a row of spots along a line drawn on the map.
+  const [rowArmed, setRowArmed] = useState(false);
   const [spotKind, setSpotKind] = useState<SpotKind>("standard");
   const [layout, setLayout] = useState<LayoutKey>(plan.layout ?? "valetEdge");
   const [suggestion, setSuggestion] = useState<ZoneSuggestion | null>(null);
@@ -210,6 +215,7 @@ export function PlanEditor({
 
   function setTool(next: Tool) {
     setToolState(next);
+    setRowArmed(false);
     setContourMode("parcel");
     setObstacleKind(null);
     setSelectedExclusion(null);
@@ -611,7 +617,9 @@ export function PlanEditor({
           )[EXCLUSION_DEFAULTS[obstacleKind].geometry]
         : tool === "landmark" && landmarkKind
           ? "point"
-          : null;
+          : tool === "spots" && rowArmed
+            ? "linestring"
+            : null;
   const editPolygon: GeoPolygon | null =
     tool === "contour" && contourMode === "edit"
       ? outline
@@ -632,10 +640,11 @@ export function PlanEditor({
       if (!parcelBusy) void toggleParcelAt(lngLat);
     } else if (tool === "obstacle" && !obstacleKind) {
       setSelectedExclusion(hitExclusion(lngLat)?.id ?? null);
-    } else if (tool === "spots" && !busy) {
+    } else if (tool === "spots" && !busy && !rowArmed) {
       const hit = spots.find((s) => pointInRing(lngLat, s.geometry));
       if (!hit) return;
       if (spotTool === "toggle") void patchSpot(hit, { active: !hit.active });
+      else if (spotTool === "delete") void removeSpot(hit);
       else if (hit.kind !== spotKind) void patchSpot(hit, { kind: spotKind });
     }
   }
@@ -675,6 +684,51 @@ export function PlanEditor({
     ) {
       placeLandmark(landmarkKind, geometry);
       setTimeout(() => setLandmarkKind(null), 0);
+    } else if (tool === "spots" && rowArmed && geometry.type === "LineString") {
+      void addRow(geometry.coordinates);
+    }
+  }
+  // P-B (07/10/2026): the spots of a drawn row are laid at once and kept through regenerations.
+  async function addRow(line: LonLat[]) {
+    if (!frame) return;
+    const list = rowAlong(
+      line,
+      frame,
+      settings.valetSlot.width,
+      settings.valetSlot.length,
+      zones,
+      spots,
+    );
+    setRowArmed(false);
+    if (!list.length) {
+      toast.message(t.spots.rowTooShort);
+      return;
+    }
+    setBusy(true);
+    try {
+      const { data } = await adminApi.addSpots(parkingId, list);
+      onView(data);
+      toast.success(t.spots.rowAdded(list.length));
+    } catch (e) {
+      toast.error(describeError(e));
+    } finally {
+      setBusy(false);
+    }
+  }
+  async function removeSpot(spot: Spot) {
+    if (!spot.manual) {
+      void patchSpot(spot, { active: false });
+      return;
+    }
+    setBusy(true);
+    try {
+      const { data } = await adminApi.deleteSpot(parkingId, spot.id);
+      onView(data);
+      toast.success(t.spots.removed);
+    } catch (e) {
+      toast.error(describeError(e));
+    } finally {
+      setBusy(false);
     }
   }
   function onEditPolygon(polygon: GeoPolygon) {
@@ -762,6 +816,8 @@ export function PlanEditor({
     view.activeSpots > 0 && view.activeSpots === view.totalCapacity;
 
   const help = (() => {
+    if (tool === "spots" && rowArmed) return t.spots.rowHelp;
+    if (tool === "spots" && spotTool === "delete") return t.spots.removeHelp;
     if (tool === "contour")
       return contourMode === "draw"
         ? t.contour.drawHelp
@@ -1163,8 +1219,25 @@ export function PlanEditor({
 
   function spotsCard() {
     const s = t.spots;
+    const manualCount = spots.filter((sp) => sp.manual).length;
+    const rowButton = (
+      <ToolButton
+        className="min-h-9 w-full"
+        active={rowArmed}
+        aria-pressed={rowArmed}
+        disabled={!outline || busy}
+        onClick={() => setRowArmed((a) => !a)}
+      >
+        {s.row}
+      </ToolButton>
+    );
     if (!zones.length)
-      return <p className="text-sm text-muted-foreground">{s.needZones}</p>;
+      return (
+        <>
+          <p className="text-sm text-muted-foreground">{s.needZones}</p>
+          {rowButton}
+        </>
+      );
     const stayCounts: Record<StayClass, number> = {
       short: 0,
       medium: 0,
@@ -1214,13 +1287,22 @@ export function PlanEditor({
         >
           {spots.length ? s.regenerate(n) : s.generate(n)}
         </ToolButton>
+        {rowButton}
         {spots.length > 0 && (
           <>
             <div className="border-t border-border pt-2 text-[13px]">
               <b>{s.adjust}</b>
+              {manualCount > 0 && (
+                <span className="ml-2 text-muted-foreground">
+                  {s.manualCount(manualCount)}
+                </span>
+              )}
               <div className="mt-1 flex flex-wrap gap-1.5">
                 {chip(tp.tools.toggle, spotTool === "toggle", () =>
                   setSpotTool("toggle"),
+                )}
+                {chip(s.remove, spotTool === "delete", () =>
+                  setSpotTool("delete"),
                 )}
                 {SPOT_KINDS.map((k) =>
                   chip(
@@ -1447,13 +1529,17 @@ export function PlanEditor({
                 <b className="text-sm uppercase tracking-[0.5px]">
                   {t.tools[tool]}
                 </b>
-                {(contourMode !== "parcel" || obstacleKind || landmarkKind) && (
+                {(contourMode !== "parcel" ||
+                  obstacleKind ||
+                  landmarkKind ||
+                  rowArmed) && (
                   <button
                     type="button"
                     onClick={() => {
                       setContourMode("parcel");
                       setObstacleKind(null);
                       setLandmarkKind(null);
+                      setRowArmed(false);
                     }}
                     className="text-xs text-muted-foreground underline"
                   >

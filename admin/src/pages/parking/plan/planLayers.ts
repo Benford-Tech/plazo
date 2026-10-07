@@ -193,6 +193,7 @@ export function planLayers(input: LayerInput): MapLayer[] {
         { type: "Polygon", coordinates: [s.geometry] },
         {
           active: s.active,
+          manual: s.manual,
           color:
             s.kind === "standard" && s.stayClass
               ? STAY_COLORS[s.stayClass]
@@ -220,7 +221,18 @@ export function planLayers(input: LayerInput): MapLayer[] {
       data: fc(spotFeatures),
       paint: {
         "line-color": ["case", ["get", "active"], ["get", "color"], GREY],
-        "line-width": 1.2,
+        // A spot laid by hand (P-B) reads with a thicker white edge.
+        "line-width": ["case", ["get", "manual"], 2.2, 1.2],
+      },
+    });
+    list.push({
+      id: "spots-manual",
+      type: "line",
+      data: fc(spotFeatures.filter((f) => f.properties?.manual)),
+      paint: {
+        "line-color": "#F3F3F0",
+        "line-width": 1,
+        "line-dasharray": [2, 1.5],
       },
     });
   } else if (preview) {

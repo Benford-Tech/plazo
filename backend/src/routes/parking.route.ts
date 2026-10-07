@@ -3,7 +3,7 @@ import { ParkingController } from '@/controllers/parking.controller';
 import { UpdateParkingDto, UpdateShuttleTrackingDto } from '@/dtos/parking.dto';
 import { AssignSpotDto } from '@/dtos/occupation.dto';
 import { CarLocationDto } from '@/dtos/public-booking.dto';
-import { GenerateSpotsDto, ReplaceSpotsDto, SuggestZonesDto, UpdateParkingPlanDto, UpdateSpotDto } from '@/dtos/parking-plan.dto';
+import { AddSpotsDto, GenerateSpotsDto, ReplaceSpotsDto, SuggestZonesDto, UpdateParkingPlanDto, UpdateSpotDto } from '@/dtos/parking-plan.dto';
 import { PlatformController } from '@/controllers/platform.controller';
 import { Routes } from '@/interfaces/routes.interface';
 import { RefuseInViewAs, StaffAuthMiddleware } from '@/middlewares/staff-auth.middleware';
@@ -93,6 +93,13 @@ export class ParkingRoute implements Routes {
       ValidationMiddleware(ReplaceSpotsDto),
       this.parking.replaceSpots,
     );
+    this.router.post(
+      '/internal/parkings/:id/plan/spots',
+      StaffAuthMiddleware('parking:manage'),
+      ValidationMiddleware(AddSpotsDto),
+      this.parking.addSpots,
+    );
+    this.router.delete('/internal/parkings/:id/plan/spots/:spotId', StaffAuthMiddleware('parking:manage'), this.parking.deleteSpot);
     this.router.patch(
       '/internal/parkings/:id/plan/spots/:spotId',
       StaffAuthMiddleware('parking:manage'),

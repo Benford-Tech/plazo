@@ -209,6 +209,15 @@ et à mesure : parcelle à l'adresse → bâtiments IGN → zones (Claude si la 
 places « Voiturier · peigne ». Un bandeau suit la préparation ; sans parcelle ou sans adresse, un message invite à
 cliquer ou tracer le terrain. La préparation ne se rejoue pas après une réinitialisation.
 
+#### Places à la main : une rangée d'un trait (décision P-B du 07/10/2026, mis en œuvre)
+
+Dans l'outil Places, « + Rangée de places » puis un trait sur la carte (plusieurs segments possibles, double-clic pour
+finir) : des places au gabarit voiturier du plan (2,4 × 5 m par défaut) se posent côte à côte le long du trait,
+perpendiculaires et centrées dessus ; le reste du trait trop court pour une place est réparti aux deux bouts. Elles
+reçoivent les codes `M-01`, `M-02`…, la zone où elles tombent, le type choisi ensuite comme les autres, et comptent dans
+la capacité. Elles survivent à « Régénérer » (qui ne remplace que les places générées) et se retirent avec l'outil
+« Supprimer » (sur une place générée, ce même outil la désactive). Sur la carte, un bord blanc tireté les distingue.
+
 #### File triée : zéro déplacement (décision O-A du 06/10/2026, mis en œuvre)
 
 - Sur un parking « voiturier · peigne » (ex-files depuis le bord), la voiture au fond d'une file repart en dernier. Une file est
