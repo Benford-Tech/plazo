@@ -164,14 +164,14 @@ Hors MVP : caméras, lecture de plaque, capteurs de présence sur les places.
   20 à 30 cm par pixel) à Claude, qui renvoie les surfaces où l'on peut garer ou circuler (enrobé, gravier, béton), hors
   bâtiments, végétation et voirie. Elles sont coupées au contour, les bâtiments et parties exclues déduits, puis montrées
   en bleu avec le type de sol et la confiance : le loueur les ajoute à ses zones ou les ignore, puis ajuste au pinceau. Rien n'est enregistré
-  sans « Appliquer ». Environ un centime par lecture ; sans clé API, le bouton répond « indisponible ».
-
-#### File triée : zéro déplacement (décision O-A du 06/10/2026, mis en œuvre)
-
+  sans « Ajouter à mes zones ». Environ un centime par lecture ; sans clé API, le bouton répond « indisponible ».
 - **H-A + Z-A (07/10/2026)** : la case « Herbe autorisée (pelouse, pré) », cochée par défaut et mémorisée dans le plan,
   demande à Claude de compter aussi l'herbe plate comme garable (haies, arbres et eau restent exclus ; sol « herbe » dans la
   liste). « Ajouter à mes zones » ajoute la proposition aux zones déjà tracées, en fusionnant celles qui se touchent comme le
   pinceau : on peut tracer à la main avant ou après, et redemander une proposition sans perdre ses tracés.
+
+#### File triée : zéro déplacement (décision O-A du 06/10/2026, mis en œuvre)
+
 - Sur un parking « voiturier · peigne » (ex-files depuis le bord), la voiture au fond d'une file repart en dernier. Une file est
   « saine » quand les dates de retour décroissent de l'allée vers le fond : aucune voiture ne bloque alors une autre.
 - À l'arrivée (Occupation, web et app) et à la pré-affectation (Planning des places), le serveur reconstitue les files à
