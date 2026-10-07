@@ -1,5 +1,6 @@
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { Check } from "lucide-react";
+import { Check, RotateCcw } from "lucide-react";
+import { toast } from "sonner";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Navigate, useNavigate, useParams } from "react-router-dom";
 import { ParkingTabs } from "@/components/parking/ParkingTabs";
@@ -170,6 +171,53 @@ export default function ParkingPlanPage() {
     [parking, queryClient],
   );
 
+  // R-A (07/10/2026): start again, in whole or in part. The declared capacity never changes.
+  const reset = async (scope: ResetScope) => {
+    if (!view || !parkingId) return;
+    if (!window.confirm(fr.parkingPlan.resetConfirm[scope])) return;
+    const settings = view.plan.settings;
+    try {
+      if (scope === "all") {
+        update({
+          outline: null,
+          parcels: [],
+          scaleFactor: 1,
+          zones: [],
+          exclusions: [],
+          landmarks: [],
+          settings: {
+            ...settings,
+            outlineSource: undefined,
+            clipToParking: false,
+            calibration: null,
+            ignBuildingsSynced: false,
+            zonesAuto: true,
+          },
+        });
+      } else if (scope === "zones") {
+        update({
+          zones: [],
+          exclusions: view.plan.exclusions.filter((e) => e.source === "ign"),
+          settings: { ...settings, zonesAuto: true },
+        });
+      }
+      if (view.spots.length) {
+        const { data } = await adminApi.replaceSpots(
+          parkingId,
+          view.plan.layout ?? "valet24",
+          [],
+        );
+        setView((v) => (v ? { ...v, spots: data.spots, activeSpots: 0 } : v));
+      }
+      await flush();
+      toast.success(fr.parkingPlan.resetDone);
+      if (scope === "all") go("terrain");
+      else if (scope === "zones") go("zones");
+    } catch (e) {
+      toast.error(describeError(e));
+    }
+  };
+
   if (!STEPS.includes(step))
     return <Navigate to="/parking/plan/terrain" replace />;
   if (loadError) {
@@ -204,7 +252,13 @@ export default function ParkingPlanPage() {
         <p className="text-sm text-muted-foreground">{fr.parkingPlan.intro}</p>
       </div>
       <div className="-mx-4 flex flex-col border-y border-border sm:-mx-6 lg:h-[calc(100vh-280px)] lg:min-h-[600px]">
-        <StepsBar study={study} step={step} go={go} saveState={saveState} />
+        <StepsBar
+          study={study}
+          step={step}
+          go={go}
+          saveState={saveState}
+          onReset={reset}
+        />
         <main className="flex min-h-0 flex-1 flex-col lg:flex-row">
           {step === "terrain" && <TerrainStep key={parking.id} {...props} />}
           {step === "zones" && <ZonesStep key={parking.id} {...props} />}
@@ -225,17 +279,22 @@ export default function ParkingPlanPage() {
   );
 }
 
+type ResetScope = "all" | "zones" | "spots";
+
 function StepsBar({
   study,
   step,
   go,
   saveState,
+  onReset,
 }: {
   study: CapacityStudy;
   step: PlanStep;
   go: (s: string) => void;
   saveState: SaveState;
+  onReset: (scope: ResetScope) => void;
 }) {
+  const [resetOpen, setResetOpen] = useState(false);
   const current = STEPS.indexOf(step);
   const reachable = [
     true,
@@ -282,9 +341,52 @@ function StepsBar({
           </button>
         );
       })}
+      <div className="relative ml-auto">
+        <button
+          type="button"
+          aria-haspopup="menu"
+          aria-expanded={resetOpen}
+          disabled={!study.outline}
+          onClick={() => setResetOpen((o) => !o)}
+          className="flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground disabled:cursor-not-allowed disabled:opacity-50"
+        >
+          <RotateCcw className="h-4 w-4" />
+          {t.reset}
+        </button>
+        {resetOpen && (
+          <div
+            role="menu"
+            className="absolute right-0 top-full z-20 mt-1 w-80 border border-border bg-card p-1 shadow-lg"
+          >
+            {(
+              [
+                ["all", t.resetAll, t.resetAllHelp],
+                ["zones", t.resetZones, t.resetZonesHelp],
+                ["spots", t.resetSpots, t.resetSpotsHelp],
+              ] as const
+            ).map(([scope, label, help]) => (
+              <button
+                key={scope}
+                type="button"
+                role="menuitem"
+                onClick={() => {
+                  setResetOpen(false);
+                  onReset(scope);
+                }}
+                className="block w-full px-3 py-2 text-left hover:bg-accent"
+              >
+                <span className="block text-sm font-semibold">{label}</span>
+                <span className="block text-xs text-muted-foreground">
+                  {help}
+                </span>
+              </button>
+            ))}
+          </div>
+        )}
+      </div>
       <span
         className={cn(
-          "ml-auto w-28 text-right text-xs",
+          "w-28 text-right text-xs",
           saveState === "error" ? "text-destructive" : "text-muted-foreground",
         )}
         role="status"

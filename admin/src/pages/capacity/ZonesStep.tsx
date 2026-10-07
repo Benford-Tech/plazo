@@ -3,6 +3,7 @@ import { useEffect, useMemo, useState } from "react";
 import { MapView, type DrawKind, type MapLabel, type MapLayer } from "@/components/capacity/MapView";
 import { Aside, AsideActions, PanelLabel, ToolButton } from "@/components/capacity/ui";
 import { m2 } from "@/lib/capacity/format";
+import { BRUSH_WIDTHS_M, eraseZones, paintZones, strokeArea, type BrushWidth } from "@/lib/capacity/brush";
 import { areaM2, autoZones, exclusionMulti, frameFor, multiToPolygons, outlineMulti, polygonToMulti } from "@/lib/capacity/estimate";
 import { areaOf, intersection } from "@/lib/capacity/geometry";
 import { boundsOf, edgeLabels, fc, feature, polygonCentroid, positionsOf } from "@/lib/capacity/mapData";
@@ -23,7 +24,7 @@ const EXCLUSION_COLORS: Record<ExclusionKind, string> = {
 const KINDS: ExclusionKind[] = ["building", "reception", "shuttle_lane", "tree", "post", "other"];
 
 type Selection = { type: "zone" | "exclusion"; id: string } | null;
-type Adding = { type: "zone" } | { type: "exclusion"; kind: ExclusionKind } | null;
+type Adding = { type: "zone" } | { type: "exclusion"; kind: ExclusionKind } | { type: "brush"; mode: "paint" | "erase" } | null;
 
 const newId = () => Math.random().toString(36).slice(2, 10);
 const zoneLetter = (zones: Zone[]) => {
@@ -38,6 +39,7 @@ export default function ZonesStep({ study, update, go }: StepProps) {
   const [selected, setSelected] = useState<Selection>(null);
   const [adding, setAdding] = useState<Adding>(null);
   const [choosing, setChoosing] = useState(false);
+  const [brushWidth, setBrushWidth] = useState<BrushWidth>(6);
   const { outline, zones, exclusions } = study;
   const settings = settingsOf(study);
 
@@ -87,8 +89,20 @@ export default function ZonesStep({ study, update, go }: StepProps) {
   const drawMode: DrawKind | null = adding
     ? adding.type === "zone"
       ? "polygon"
-      : ({ Polygon: "polygon", LineString: "linestring", Point: "point" } as const)[EXCLUSION_DEFAULTS[adding.kind].geometry]
+      : adding.type === "brush"
+        ? null
+        : ({ Polygon: "polygon", LineString: "linestring", Point: "point" } as const)[EXCLUSION_DEFAULTS[adding.kind].geometry]
     : null;
+  const brush = adding?.type === "brush" ? adding : null;
+
+  // P-A: a stroke of the brush paints or erases; the zones are then drawn by hand.
+  function onPaintStroke(points: LonLat[]) {
+    if (!brush || !frame) return;
+    const ctx = { frame, outline, name: fr.capacity.zoneName, newId };
+    const area = strokeArea(points, brushWidth, ctx);
+    const next = brush.mode === "paint" ? paintZones(zones, area, ctx) : eraseZones(zones, area, ctx);
+    if (next !== zones) update({ zones: next, settings: { ...study.settings, zonesAuto: false } });
+  }
 
   const selectedZone = selected?.type === "zone" ? zones.find(z => z.id === selected.id) : undefined;
   const selectedExclusion = selected?.type === "exclusion" ? exclusions.find(e => e.id === selected.id) : undefined;
@@ -176,7 +190,11 @@ export default function ZonesStep({ study, update, go }: StepProps) {
   );
 
   const help = adding
-    ? adding.type === "zone" || drawMode === "polygon"
+    ? adding.type === "brush"
+      ? adding.mode === "paint"
+        ? fr.capacity.brushHelp
+        : fr.capacity.eraserHelp
+      : adding.type === "zone" || drawMode === "polygon"
       ? fr.capacity.drawZoneHelp
       : drawMode === "linestring"
         ? fr.capacity.drawLineHelp
@@ -198,6 +216,8 @@ export default function ZonesStep({ study, update, go }: StepProps) {
           drawMode={drawMode}
           onDrawn={onDrawn}
           snapTo={snapTo}
+          paint={brush ? { widthM: brushWidth, mode: brush.mode } : null}
+          onPaintStroke={onPaintStroke}
         >
           {help && <div className="absolute left-4 top-4 max-w-md bg-background/80 px-3 py-1.5 text-sm text-muted-foreground">{help}</div>}
         </MapView>
@@ -259,6 +279,38 @@ export default function ZonesStep({ study, update, go }: StepProps) {
         {!auto && outline && (
           <ToolButton onClick={() => applyAutoZones(zones)}>{fr.capacity.autoZones}</ToolButton>
         )}
+        <div className="flex flex-wrap items-center gap-1" data-testid="brush-tools">
+          {(["paint", "erase"] as const).map(mode => (
+            <ToolButton
+              key={mode}
+              active={brush?.mode === mode}
+              aria-pressed={brush?.mode === mode}
+              onClick={() => {
+                setChoosing(false);
+                setSelected(null);
+                setAdding(brush?.mode === mode ? null : { type: "brush", mode });
+              }}
+            >
+              {mode === "paint" ? fr.capacity.brush : fr.capacity.eraser}
+            </ToolButton>
+          ))}
+          {brush && (
+            <span className="ml-1 flex items-center gap-1 text-[13px] text-muted-foreground">
+              {fr.capacity.brushWidth}
+              {BRUSH_WIDTHS_M.map(w => (
+                <button
+                  key={w}
+                  type="button"
+                  aria-pressed={brushWidth === w}
+                  onClick={() => setBrushWidth(w)}
+                  className={cn("min-h-8 border border-border px-2 font-mono", brushWidth === w && "bg-primary text-primary-foreground")}
+                >
+                  {w} m
+                </button>
+              ))}
+            </span>
+          )}
+        </div>
         <ToolButton
           active={adding?.type === "zone"}
           onClick={() => {

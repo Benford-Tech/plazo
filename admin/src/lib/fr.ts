@@ -1019,6 +1019,12 @@ export const fr = {
     zoneName: (letter: string) => `Zone ${letter}`,
     zoneSubtitle: "stationnement",
     zoneDetail: "voitures légères",
+    // P-A (07/10/2026): the brush of the zones step.
+    brush: "Pinceau",
+    eraser: "Gomme",
+    brushWidth: "Largeur",
+    brushHelp: "Maintenez le clic et peignez où l'on peut garer ; les traits qui se touchent fusionnent.",
+    eraserHelp: "Maintenez le clic et effacez ce qui ne doit pas recevoir de voitures.",
     // T-A (07/10/2026): the zones follow the land and its exclusions unless drawn by hand.
     autoZones: "Zones automatiques",
     autoZonesOn:
@@ -1233,6 +1239,20 @@ export const fr = {
     saving: "Enregistrement…",
     saved: "Enregistré",
     saveError: "Non enregistré",
+    // R-A (07/10/2026): start again, in whole or in part.
+    reset: "Réinitialiser…",
+    resetAll: "Tout le plan",
+    resetAllHelp: "Contour, zones, parties exclues, repères et places : la carte repart vide, sur l'adresse du parking.",
+    resetZones: "Les zones et parties exclues",
+    resetZonesHelp: "Le contour reste ; les zones sont redécoupées, les bâtiments IGN gardés.",
+    resetSpots: "Les places seulement",
+    resetSpotsHelp: "Le tracé reste ; les places sont effacées, la capacité déclarée ne bouge pas.",
+    resetConfirm: {
+      all: "Effacer tout le plan (contour, zones, parties exclues, repères et places) ? La capacité déclarée ne change pas.",
+      zones: "Effacer les zones et les parties exclues tracées à la main ? Les places générées seront effacées aussi.",
+      spots: "Effacer toutes les places ? La capacité déclarée ne change pas.",
+    },
+    resetDone: "Plan réinitialisé",
     layout: "Disposition",
     layouts: {
       selfPark: "Clients garés seuls",

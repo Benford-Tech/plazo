@@ -1,4 +1,4 @@
-import { Map as MapLibreMap, Marker, setWorkerUrl, type GeoJSONSource, type LayerSpecification, type StyleSpecification } from "maplibre-gl";
+import { Map as MapLibreMap, Marker, setWorkerUrl, type ExpressionSpecification, type GeoJSONSource, type LayerSpecification, type StyleSpecification } from "maplibre-gl";
 import "maplibre-gl/dist/maplibre-gl.css";
 // MapLibre loads its worker next to its own module, a file the bundler does not emit: Vite
 // bundles the worker (with the chunk it shares with the main module) and gives its URL.
@@ -58,6 +58,10 @@ interface Props {
   onDrawn?: (geometry: GeoPolygon | GeoLineString | GeoPoint) => void;
   /** Rings the pointer snaps to while drawing (T-A): a vertex within 12 px, else an edge within 8 px. */
   snapTo?: LonLat[][];
+  /** P-A: the brush. While set, dragging paints a stroke of `widthM` metres instead of panning. */
+  paint?: { widthM: number; mode: "paint" | "erase" } | null;
+  /** The points of a finished stroke, in map order. */
+  onPaintStroke?: (points: LonLat[]) => void;
   onMapClick?: (lngLat: LonLat, point: { x: number; y: number }) => void;
   onViewChange?: (bbox: [number, number, number, number], zoom: number) => void;
   cursor?: string;
@@ -66,6 +70,15 @@ interface Props {
 }
 
 const YELLOW = "#A3E635";
+const ERASER = "#DC2626";
+/** Metres per pixel at zoom 0 on the equator (Web Mercator, 512 px tiles). */
+const METRES_PER_PIXEL_Z0 = 78271.517;
+
+/** A MapLibre expression giving `metres` on the ground in pixels at every zoom, at latitude `lat`. */
+function metresToPixels(metres: number, lat: number): ExpressionSpecification {
+  const px0 = metres / (METRES_PER_PIXEL_Z0 * Math.cos((lat * Math.PI) / 180));
+  return ["interpolate", ["exponential", 2], ["zoom"], 0, px0, 24, px0 * 2 ** 24];
+}
 
 setWorkerUrl(maplibreWorkerUrl);
 
@@ -100,6 +113,7 @@ export const MapView = forwardRef<MapViewHandle, Props>(function MapView(props, 
   const iconsRef = useRef<Set<string>>(new Set());
   const propsRef = useRef(props);
   propsRef.current = props;
+  const strokeRef = useRef<LonLat[] | null>(null);
 
   useImperativeHandle(ref, () => ({
     flyTo: (center, zoom = 18) => mapRef.current?.flyTo({ center, zoom, duration: 800 }),
@@ -203,10 +217,27 @@ export const MapView = forwardRef<MapViewHandle, Props>(function MapView(props, 
         }
       });
 
+      map.addSource("paint", { type: "geojson", data: { type: "FeatureCollection", features: [] } });
+      map.addLayer({
+        id: "paint-stroke",
+        type: "line",
+        source: "paint",
+        filter: ["==", ["get", "kind"], "stroke"],
+        layout: { "line-cap": "round", "line-join": "round" },
+        paint: { "line-color": YELLOW, "line-opacity": 0.55, "line-width": 1 },
+      });
+      map.addLayer({
+        id: "paint-cursor",
+        type: "circle",
+        source: "paint",
+        filter: ["==", ["get", "kind"], "cursor"],
+        paint: { "circle-radius": 1, "circle-color": YELLOW, "circle-opacity": 0.25, "circle-stroke-color": YELLOW, "circle-stroke-width": 2 },
+      });
       readyRef.current = true;
       syncIcons();
       syncLayers();
       syncDraw();
+      syncPaint();
       emitView();
     });
 
@@ -218,8 +249,54 @@ export const MapView = forwardRef<MapViewHandle, Props>(function MapView(props, 
     map.on("click", e => {
       const draw = drawRef.current;
       if (draw && draw.getMode() !== "static" && draw.getMode() !== "select") return;
+      if (propsRef.current.paint) return;
       propsRef.current.onMapClick?.([e.lngLat.lng, e.lngLat.lat], { x: e.point.x, y: e.point.y });
     });
+
+    // P-A: the brush. Pressing starts a stroke (the map does not pan), moving extends it, releasing
+    // hands it over; the cursor ring follows the pointer at the brush's real width.
+    const setStrokeData = (points: LonLat[] | null, cursor: LonLat | null) => {
+      const source = map.getSource("paint") as GeoJSONSource | undefined;
+      if (!source) return;
+      source.setData({
+        type: "FeatureCollection",
+        features: [
+          ...(points && points.length ? [{ type: "Feature" as const, geometry: { type: "LineString" as const, coordinates: points.length > 1 ? points : [points[0], points[0]] }, properties: { kind: "stroke" } }] : []),
+          ...(cursor ? [{ type: "Feature" as const, geometry: { type: "Point" as const, coordinates: cursor }, properties: { kind: "cursor" } }] : []),
+        ],
+      });
+    };
+    const start = (e: { lngLat: { lng: number; lat: number }; preventDefault(): void }) => {
+      if (!propsRef.current.paint) return;
+      e.preventDefault();
+      strokeRef.current = [[e.lngLat.lng, e.lngLat.lat]];
+      setStrokeData(strokeRef.current, strokeRef.current[0]);
+    };
+    const move = (e: { lngLat: { lng: number; lat: number } }) => {
+      if (!propsRef.current.paint) return;
+      const p: LonLat = [e.lngLat.lng, e.lngLat.lat];
+      if (strokeRef.current) strokeRef.current.push(p);
+      setStrokeData(strokeRef.current, p);
+    };
+    const end = () => {
+      const points = strokeRef.current;
+      strokeRef.current = null;
+      if (!points) return;
+      setStrokeData(null, points[points.length - 1]);
+      propsRef.current.onPaintStroke?.(points);
+    };
+    map.on("mousedown", start);
+    map.on("mousemove", move);
+    map.on("mouseup", end);
+    map.on("mouseout", end);
+    map.on("touchstart", e => {
+      if (e.points.length === 1) start(e);
+    });
+    map.on("touchmove", e => {
+      if (e.points.length === 1) move(e);
+    });
+    map.on("touchend", end);
+    map.on("touchcancel", end);
 
     return () => {
       readyRef.current = false;
@@ -236,6 +313,28 @@ export const MapView = forwardRef<MapViewHandle, Props>(function MapView(props, 
     // The sync helpers read the latest props through refs: the map is created once.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
+  /** Shows the brush at its real width and colour, or hides it. */
+  function syncPaint() {
+    const map = mapRef.current;
+    if (!map || !readyRef.current || !map.getLayer("paint-stroke")) return;
+    const paint = propsRef.current.paint;
+    const visible = paint ? "visible" : "none";
+    map.setLayoutProperty("paint-stroke", "visibility", visible);
+    map.setLayoutProperty("paint-cursor", "visibility", visible);
+    if (!paint) {
+      strokeRef.current = null;
+      (map.getSource("paint") as GeoJSONSource | undefined)?.setData({ type: "FeatureCollection", features: [] });
+      return;
+    }
+    const lat = map.getCenter().lat;
+    const colour = paint.mode === "erase" ? ERASER : YELLOW;
+    map.setPaintProperty("paint-stroke", "line-width", metresToPixels(paint.widthM, lat));
+    map.setPaintProperty("paint-stroke", "line-color", colour);
+    map.setPaintProperty("paint-cursor", "circle-radius", metresToPixels(paint.widthM / 2, lat));
+    map.setPaintProperty("paint-cursor", "circle-color", colour);
+    map.setPaintProperty("paint-cursor", "circle-stroke-color", colour);
+  }
 
   /** Registers the SVG icons the symbol layers name; a symbol layer waits for its icon. */
   function syncIcons() {
@@ -332,6 +431,7 @@ export const MapView = forwardRef<MapViewHandle, Props>(function MapView(props, 
 
   useEffect(syncLayers, [props.layers]);
   useEffect(syncDraw, [props.drawMode, props.editPolygon, props.midpoints]);
+  useEffect(syncPaint, [props.paint?.widthM, props.paint?.mode]);
 
   useEffect(() => {
     const map = mapRef.current;
@@ -370,8 +470,8 @@ export const MapView = forwardRef<MapViewHandle, Props>(function MapView(props, 
 
   useEffect(() => {
     const canvas = mapRef.current?.getCanvas();
-    if (canvas) canvas.style.cursor = props.cursor ?? "";
-  }, [props.cursor]);
+    if (canvas) canvas.style.cursor = props.paint ? "crosshair" : (props.cursor ?? "");
+  }, [props.cursor, props.paint]);
 
   return (
     <div className={cn("relative h-full w-full overflow-hidden bg-[#E6E8E4]", props.className)}>

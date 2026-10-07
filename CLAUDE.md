@@ -93,6 +93,12 @@ Ne construire QUE ce qui règle la douleur n°1 du client.
      sont les morceaux du terrain hors exclusions (`autoZones`, une orientation par morceau, réglage `zonesAuto`,
      bouton « Zones automatiques », passage en manuel dès qu'une zone est tracée ou modifiée) et le tracé
      s'aimante aux parcelles, parkings, bâtiments et au contour (`snapToRings`, `MapView.snapTo`).
+     **P-A pinceau (07/10/2026)** : à l'étape Zones, « Pinceau » et « Gomme » (largeur 3 / 6 / 12 m) : glisser sur la carte
+     peint une surface (`MapView.paint` / `onPaintStroke`, anneau du curseur à la largeur réelle, `metresToPixels`),
+     `admin/src/lib/capacity/brush.ts` (`strokeArea`, `paintZones` : les zones touchées et le trait fusionnent,
+     `eraseZones` : retrait, coupe en deux ou disparition) ; passe les zones en manuel. **R-A réinitialiser** : menu
+     « Réinitialiser… » dans la barre des étapes (tout le plan / zones et parties exclues, bâtiments IGN gardés / places
+     seulement), avec confirmation ; la capacité déclarée ne change jamais.
    - Décision **O-A « File triée » (06/10/2026)** : sur une file de voiturier, les retours doivent décroître de l'allée vers le
      fond ; `domain/files.ts` reconstitue les files (profondeur + position) et score chaque place libre par le nombre de
      voitures à déplacer (`blocking` devant partant après, `blocked` derrière partant avant ; même vague = 2 h) ;

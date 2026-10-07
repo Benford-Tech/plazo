@@ -145,6 +145,16 @@ Hors MVP : caméras, lecture de plaque, capteurs de présence sur les places.
   « Zones automatiques » y revient. En traçant, le pointeur s'aimante aux sommets et aux bords des parcelles, des
   parkings et bâtiments IGN et du contour.
 
+#### Pinceau et réinitialisation (décisions P-A, R-A du 07/10/2026, mis en œuvre)
+
+- **Pinceau (P-A)** : à l'étape Zones, un pinceau de 3, 6 ou 12 m (largeur réelle sur la photo, anneau sous le curseur)
+  peint où l'on peut garer : chaque trait s'ajoute, les traits et zones qui se touchent fusionnent, une gomme de même
+  largeur retire ce qu'on a peint en trop (une zone coupée en deux devient deux zones). Les bâtiments et parties exclues
+  restent soustraits ; le résultat est une zone tracée à la main, modifiable par ses sommets.
+- **Réinitialiser (R-A)** : menu « Réinitialiser… » dans la barre des étapes, avec confirmation : tout le plan (la carte
+  repart vide, sur l'adresse du parking), les zones et parties exclues (le contour reste, les bâtiments IGN sont gardés)
+  ou les places seulement. La capacité déclarée ne change jamais.
+
 #### File triée : zéro déplacement (décision O-A du 06/10/2026, mis en œuvre)
 
 - Sur un parking « voiturier · peigne » (ex-files depuis le bord), la voiture au fond d'une file repart en dernier. Une file est
