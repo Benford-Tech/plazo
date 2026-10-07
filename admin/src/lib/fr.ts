@@ -21,6 +21,7 @@ import { PRODUCT } from "./product";
 export const fr = {
   common: {
     close: "Fermer",
+    confirm: { title: "Confirmer", yes: "Confirmer", no: "Annuler" },
     save: "Enregistrer",
     saved: "Modifications enregistrées",
     never: "Jamais",

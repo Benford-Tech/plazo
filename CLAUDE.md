@@ -350,6 +350,10 @@ Le nom du produit doit rester dans UN seul fichier de configuration (il peut enc
   dans la migration.
 - Espace pro : `src/lib/api.ts` (`adminApi`), `AuthContext`, pages `XxxPage.tsx`, composants shadcn
   dans `components/ui`, textes dans `src/lib/fr.ts`.
+  **Plus d'alerte native (07/10/2026)** : jamais `window.confirm` / `window.alert` ; une question se pose avec
+  `useConfirm()` (`components/ui/confirm-context.ts`, promesse de booléen, options `title`, `confirmLabel`,
+  `destructive`), servie par `ConfirmProvider` (`components/ui/confirm.tsx`) monté dans `App.tsx` autour de l'espace pro ;
+  sans fournisseur (test d'un composant seul), repli sur la boîte native.
 - Tests serveur : Jest + supertest contre une vraie base de test (`DATABASE_URL_TEST`, nom en `_test`
   obligatoire). Tests espace pro : Vitest + Testing Library.
 

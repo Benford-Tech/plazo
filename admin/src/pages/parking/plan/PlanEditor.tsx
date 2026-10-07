@@ -94,6 +94,7 @@ import {
   zoneAreas,
 } from "./planLayers";
 import { PlanSettings } from "./PlanSettings";
+import { useConfirm } from "@/components/ui/confirm-context";
 
 import { TOOLS, type ResetScope, type Tool } from "./types";
 type ContourMode = "parcel" | "draw" | "edit" | "cut";
@@ -178,6 +179,7 @@ export function PlanEditor({
   const studyRef = useRef(study);
   studyRef.current = study;
 
+  const confirm = useConfirm();
   const [tool, setToolState] = useState<Tool>(
     initialTool ?? (!outline ? "contour" : spots.length ? "spots" : "parking"),
   );
@@ -428,8 +430,8 @@ export function PlanEditor({
     setResults(null);
     mapRef.current?.flyTo([r.lon, r.lat], 18);
   }
-  function clearOutline() {
-    if (!window.confirm(t.contour.clearConfirm)) return;
+  async function clearOutline() {
+    if (!(await confirm(t.contour.clearConfirm, { destructive: true }))) return;
     update({
       outline: null,
       parcels: [],
@@ -549,7 +551,7 @@ export function PlanEditor({
   const counts = result?.totals;
   async function generate() {
     if (!result || !frame) return;
-    if (spots.length && !window.confirm(tp.regenerateConfirm)) return;
+    if (spots.length && !(await confirm(tp.regenerateConfirm))) return;
     const slotLength = (
       layout === "selfPark" ? settings.selfParkSlot : settings.valetSlot
     ).length;

@@ -3,6 +3,7 @@ import { toast } from "sonner";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useParams } from "react-router-dom";
 import { ParkingTabs } from "@/components/parking/ParkingTabs";
+import { useConfirm } from "@/components/ui/confirm-context";
 import { Skeleton } from "@/components/ui/skeleton";
 import { adminApi } from "@/lib/api";
 import type { CapacityStudy, StudyPatch } from "@/lib/capacity/types";
@@ -41,6 +42,7 @@ export default function ParkingPlanPage() {
       (TOOLS.includes(step as Tool) ? (step as Tool) : null))
     : null;
   const queryClient = useQueryClient();
+  const confirm = useConfirm();
   const { data: parking, isLoading: loadingParking } = useQuery({
     queryKey: ["parking"],
     queryFn: adminApi.getParking,
@@ -175,7 +177,12 @@ export default function ParkingPlanPage() {
   // R-A (07/10/2026): start again, in whole or in part. The declared capacity never changes.
   const reset = async (scope: ResetScope) => {
     if (!view || !parkingId) return;
-    if (!window.confirm(fr.parkingPlan.resetConfirm[scope])) return;
+    if (
+      !(await confirm(fr.parkingPlan.resetConfirm[scope], {
+        destructive: true,
+      }))
+    )
+      return;
     const settings = view.plan.settings;
     try {
       if (scope === "all") {

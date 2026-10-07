@@ -1,6 +1,14 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query";
-import { Check, ChevronDown, KeyRound, PlaneLanding, PlaneTakeoff, SquareParking } from "lucide-react";
+import {
+  Check,
+  ChevronDown,
+  KeyRound,
+  PlaneLanding,
+  PlaneTakeoff,
+  SquareParking,
+} from "lucide-react";
 import { useState, type ReactNode } from "react";
+import { useConfirm } from "@/components/ui/confirm-context";
 import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
 import { adminApi } from "@/lib/api";
@@ -12,15 +20,35 @@ const CLOSED: ReservationStatus[] = ["returned", "cancelled", "no_show"];
 const DECISIONS: ReservationStatus[] = ["cancelled", "no_show"];
 
 /** The journey's next gesture for a booking (C-A, 06/10/2026): one button, the other statuses behind a menu. */
-export function NextStep({ reservation, onNavigate, compact = false }: { reservation: Reservation; onNavigate?: () => void; compact?: boolean }) {
+export function NextStep({
+  reservation,
+  onNavigate,
+  compact = false,
+}: {
+  reservation: Reservation;
+  onNavigate?: () => void;
+  compact?: boolean;
+}) {
+  const confirm = useConfirm();
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   const [handover, setHandover] = useState(false);
   const change = useMutation({
-    mutationFn: ({ status, note }: { status: ReservationStatus; note?: string }) => adminApi.changeReservationStatus(reservation.id, status, note),
+    mutationFn: ({
+      status,
+      note,
+    }: {
+      status: ReservationStatus;
+      note?: string;
+    }) => adminApi.changeReservationStatus(reservation.id, status, note),
     onSuccess: ({ data }) => {
-      queryClient.setQueryData(["reservation", reservation.id], { ...data, nextStatuses: data.nextStatuses ?? [] });
-      void queryClient.invalidateQueries({ queryKey: ["reservation", reservation.id] });
+      queryClient.setQueryData(["reservation", reservation.id], {
+        ...data,
+        nextStatuses: data.nextStatuses ?? [],
+      });
+      void queryClient.invalidateQueries({
+        queryKey: ["reservation", reservation.id],
+      });
       void queryClient.invalidateQueries({ queryKey: ["planning"] });
       void queryClient.invalidateQueries({ queryKey: ["dashboard"] });
       void queryClient.invalidateQueries({ queryKey: ["occupation"] });
@@ -37,23 +65,67 @@ export function NextStep({ reservation, onNavigate, compact = false }: { reserva
     navigate(to);
   };
   const n = t.next;
-  const step: { key: string; label: string; help: string; icon: ReactNode; run: () => void } | null =
+  const step: {
+    key: string;
+    label: string;
+    help: string;
+    icon: ReactNode;
+    run: () => void;
+  } | null =
     reservation.status === "upcoming" && next.includes("arrived")
-      ? { key: "place", label: n.place, help: n.placeHelp, icon: <SquareParking className="h-5 w-5" aria-hidden="true" />, run: () => go(`/parking/occupation?focus=${reservation.id}`) }
+      ? {
+          key: "place",
+          label: n.place,
+          help: n.placeHelp,
+          icon: <SquareParking className="h-5 w-5" aria-hidden="true" />,
+          run: () => go(`/parking/occupation?focus=${reservation.id}`),
+        }
       : reservation.status === "arrived" && next.includes("shuttled_out")
-        ? { key: "drop_off", label: n.dropOff, help: n.dropOffHelp, icon: <PlaneTakeoff className="h-5 w-5" aria-hidden="true" />, run: () => go(`/navettes?sens=dropoff&reservation=${reservation.id}`) }
-        : (reservation.status === "shuttled_out" || reservation.status === "return_requested") && next.includes("back_at_parking")
-          ? { key: "pick_up", label: n.pickUp, help: n.pickUpHelp, icon: <PlaneLanding className="h-5 w-5" aria-hidden="true" />, run: () => go(`/navettes?sens=pickup&reservation=${reservation.id}`) }
-          : reservation.status === "back_at_parking" && next.includes("returned")
-            ? { key: "hand_over", label: n.handOver, help: n.handOverHelp, icon: <KeyRound className="h-5 w-5" aria-hidden="true" />, run: () => setHandover(true) }
+        ? {
+            key: "drop_off",
+            label: n.dropOff,
+            help: n.dropOffHelp,
+            icon: <PlaneTakeoff className="h-5 w-5" aria-hidden="true" />,
+            run: () =>
+              go(`/navettes?sens=dropoff&reservation=${reservation.id}`),
+          }
+        : (reservation.status === "shuttled_out" ||
+              reservation.status === "return_requested") &&
+            next.includes("back_at_parking")
+          ? {
+              key: "pick_up",
+              label: n.pickUp,
+              help: n.pickUpHelp,
+              icon: <PlaneLanding className="h-5 w-5" aria-hidden="true" />,
+              run: () =>
+                go(`/navettes?sens=pickup&reservation=${reservation.id}`),
+            }
+          : reservation.status === "back_at_parking" &&
+              next.includes("returned")
+            ? {
+                key: "hand_over",
+                label: n.handOver,
+                help: n.handOverHelp,
+                icon: <KeyRound className="h-5 w-5" aria-hidden="true" />,
+                run: () => setHandover(true),
+              }
             : null;
-  const pick = (status: ReservationStatus) => {
+  const pick = async (status: ReservationStatus) => {
     if (status === "returned") return setHandover(true);
-    if (DECISIONS.includes(status) && !window.confirm(status === "cancelled" ? n.confirmCancel : n.confirmNoShow)) return;
+    if (
+      DECISIONS.includes(status) &&
+      !(await confirm(
+        status === "cancelled" ? n.confirmCancel : n.confirmNoShow,
+        { destructive: true },
+      ))
+    )
+      return;
     change.mutate({ status });
   };
   if (!step && next.length === 0) {
-    return CLOSED.includes(reservation.status) ? <p className="text-[13px] text-muted-foreground">{n.closed}</p> : null;
+    return CLOSED.includes(reservation.status) ? (
+      <p className="text-[13px] text-muted-foreground">{n.closed}</p>
+    ) : null;
   }
   return (
     <div data-testid="next-step" className="space-y-2">
@@ -72,10 +144,19 @@ export function NextStep({ reservation, onNavigate, compact = false }: { reserva
             {step.icon}
             {step.label}
           </button>
-          <p className="text-center text-xs text-muted-foreground">{step.help}</p>
+          <p className="text-center text-xs text-muted-foreground">
+            {step.help}
+          </p>
         </>
       )}
-      {handover && <HandoverForm reservation={reservation} busy={change.isPending} onCancel={() => setHandover(false)} onConfirm={note => change.mutate({ status: "returned", note })} />}
+      {handover && (
+        <HandoverForm
+          reservation={reservation}
+          busy={change.isPending}
+          onCancel={() => setHandover(false)}
+          onConfirm={(note) => change.mutate({ status: "returned", note })}
+        />
+      )}
       {next.length > 0 && !handover && (
         <label className="relative mx-auto flex w-fit items-center gap-1 text-[13px] font-semibold text-lime-deep">
           <span>{n.more}</span>
@@ -85,11 +166,13 @@ export function NextStep({ reservation, onNavigate, compact = false }: { reserva
             data-testid="more-actions"
             value=""
             disabled={change.isPending}
-            onChange={e => e.target.value && pick(e.target.value as ReservationStatus)}
+            onChange={(e) =>
+              e.target.value && pick(e.target.value as ReservationStatus)
+            }
             className="absolute inset-0 cursor-pointer opacity-0"
           >
             <option value="">{n.more}</option>
-            {next.map(s => (
+            {next.map((s) => (
               <option key={s} value={s}>
                 {fr.statusAction[s]}
               </option>
@@ -102,7 +185,17 @@ export function NextStep({ reservation, onNavigate, compact = false }: { reserva
 }
 
 /** "Rendre le véhicule": the keys switch (required) and the remark (optional). */
-function HandoverForm({ reservation, busy, onCancel, onConfirm }: { reservation: Reservation; busy: boolean; onCancel: () => void; onConfirm: (note?: string) => void }) {
+function HandoverForm({
+  reservation,
+  busy,
+  onCancel,
+  onConfirm,
+}: {
+  reservation: Reservation;
+  busy: boolean;
+  onCancel: () => void;
+  onConfirm: (note?: string) => void;
+}) {
   const h = t.handover;
   const [keys, setKeys] = useState(false);
   const [tried, setTried] = useState(false);
@@ -111,7 +204,7 @@ function HandoverForm({ reservation, busy, onCancel, onConfirm }: { reservation:
     <form
       data-testid="handover"
       className="space-y-3 rounded-xl border border-panel-line bg-panel p-3.5"
-      onSubmit={e => {
+      onSubmit={(e) => {
         e.preventDefault();
         if (!keys) return setTried(true);
         onConfirm(note.trim() || undefined);
@@ -124,22 +217,51 @@ function HandoverForm({ reservation, busy, onCancel, onConfirm }: { reservation:
         {reservation.keyHook ? ` · ${t.keys} ${reservation.keyHook}` : ""}
       </p>
       <label className="flex items-start gap-3">
-        <input type="checkbox" data-testid="handover-keys" checked={keys} onChange={e => setKeys(e.target.checked)} className="mt-1 h-5 w-5 accent-[#1E5E2E]" />
+        <input
+          type="checkbox"
+          data-testid="handover-keys"
+          checked={keys}
+          onChange={(e) => setKeys(e.target.checked)}
+          className="mt-1 h-5 w-5 accent-[#1E5E2E]"
+        />
         <span>
           <span className="block text-[14px] font-semibold">{h.keys}</span>
-          <span className={cn("block text-xs", tried && !keys ? "text-bad-text" : "text-muted-foreground")}>{tried && !keys ? h.keysRequired : h.keysHelp}</span>
+          <span
+            className={cn(
+              "block text-xs",
+              tried && !keys ? "text-bad-text" : "text-muted-foreground",
+            )}
+          >
+            {tried && !keys ? h.keysRequired : h.keysHelp}
+          </span>
         </span>
       </label>
       <label className="block">
         <span className="text-[13px] font-semibold">{h.note}</span>
-        <textarea data-testid="handover-note" value={note} onChange={e => setNote(e.target.value)} maxLength={500} rows={2} className="mt-1 w-full rounded-lg border border-panel-line bg-background px-3 py-2 text-sm" />
+        <textarea
+          data-testid="handover-note"
+          value={note}
+          onChange={(e) => setNote(e.target.value)}
+          maxLength={500}
+          rows={2}
+          className="mt-1 w-full rounded-lg border border-panel-line bg-background px-3 py-2 text-sm"
+        />
         <span className="text-xs text-muted-foreground">{h.noteHint}</span>
       </label>
       <div className="flex gap-2">
-        <button type="button" onClick={onCancel} className="h-11 flex-1 rounded-full border border-panel-line text-[14px] font-semibold hover:bg-panel-2">
+        <button
+          type="button"
+          onClick={onCancel}
+          className="h-11 flex-1 rounded-full border border-panel-line text-[14px] font-semibold hover:bg-panel-2"
+        >
           {h.back}
         </button>
-        <button type="submit" data-testid="handover-confirm" disabled={busy} className="flex h-11 flex-[2] items-center justify-center gap-2 rounded-full bg-primary text-[14px] font-bold text-primary-foreground hover:brightness-110 disabled:opacity-60">
+        <button
+          type="submit"
+          data-testid="handover-confirm"
+          disabled={busy}
+          className="flex h-11 flex-[2] items-center justify-center gap-2 rounded-full bg-primary text-[14px] font-bold text-primary-foreground hover:brightness-110 disabled:opacity-60"
+        >
           <Check className="h-4 w-4" aria-hidden="true" />
           {h.confirm}
         </button>
