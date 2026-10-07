@@ -104,6 +104,7 @@ const trip = (over: Partial<StaffTrip> = {}): StaffTrip => ({
   positionUpdatedAt: null,
   meetingPoint: { lat: 45.72, lng: 5.08, source: "airport", label: "Terminal 1 · Porte 12" },
   stop: airport,
+  sharePosition: true,
   ...over,
 });
 
@@ -199,6 +200,15 @@ describe("ShuttleTripsPanel (le mode chauffeur sur le web)", () => {
     await userEvent.click(within(rows[2]).getAllByRole("button")[0]);
     await userEvent.click(await screen.findByRole("button", { name: /Clio/ }));
     expect(screen.getByText("5 passagers pour 1 places : choisissez un autre véhicule ou moins de clients.")).toBeInTheDocument();
+  });
+
+  it("suivi désactivé par le parking (R-B) : le navigateur ne partage pas sa position", async () => {
+    const watchPosition = vi.fn(() => 7);
+    Object.defineProperty(window.navigator, "geolocation", { configurable: true, value: { watchPosition, clearWatch: vi.fn() } });
+    api.getCurrentTrip.mockResolvedValue({ trip: trip({ sharePosition: false }) });
+    renderPanel();
+    expect(await screen.findByTestId("trip-running")).toHaveTextContent("En route vers l'aéroport · suivi désactivé");
+    expect(watchPosition).not.toHaveBeenCalled();
   });
 
   it("bascule sur les départs vers le terminal et partage la position pendant le trajet", async () => {

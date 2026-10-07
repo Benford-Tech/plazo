@@ -7,6 +7,7 @@ import '../../../../core/constants/app_constants.dart';
 import '../../../../core/helpers/money.dart';
 import '../../../../shared/theme/theme.dart';
 import '../../../../shared/widgets/ign_map.dart';
+import '../../../../shared/widgets/shuttle_icon.dart';
 import '../../data/models/public_models.dart';
 
 /// The results on the IGN plan (as the site's map): the terminals, and each parking as a price pill
@@ -54,7 +55,7 @@ class ResultsMap extends StatelessWidget {
                 for (final r in located)
                   Marker(
                     point: LatLng(r.location!.lat, r.location!.lng),
-                    width: 104,
+                    width: r.liveShuttle ? 124 : 104,
                     height: 48,
                     child: Center(
                       child: _PricePill(result: r, selected: r.slug == selected, onTap: () => onSelect(r.slug)),
@@ -102,7 +103,7 @@ class _PricePill extends StatelessWidget {
     return Semantics(
       button: true,
       selected: selected,
-      label: 'results.map_pill_a11y'.tr(args: [result.title, label]),
+      label: (result.liveShuttle ? 'results.map_pill_live_a11y' : 'results.map_pill_a11y').tr(args: [result.title, label]),
       excludeSemantics: true,
       child: GestureDetector(
         key: Key('pill-${result.slug}'),
@@ -116,6 +117,7 @@ class _PricePill extends StatelessWidget {
               duration: const Duration(milliseconds: 150),
               child: _Pill(
                 label: label,
+                live: result.liveShuttle,
                 color: selected ? AppColors.dark : (bookable ? AppColors.accent : Colors.white),
                 textColor: bookable || selected ? Colors.white : AppColors.muted,
                 border: bookable || selected ? null : AppColors.line,
@@ -129,9 +131,12 @@ class _PricePill extends StatelessWidget {
 }
 
 class _Pill extends StatelessWidget {
-  const _Pill({required this.label, required this.color, required this.textColor, this.border});
+  const _Pill({required this.label, required this.color, required this.textColor, this.border, this.live = false});
 
   final String label;
+
+  /// I-C: the parking's shuttles are followed live (a minibus before the price).
+  final bool live;
   final Color color;
   final Color textColor;
   final Color? border;
@@ -145,6 +150,12 @@ class _Pill extends StatelessWidget {
       border: border == null ? null : Border.all(color: border!),
       boxShadow: const [BoxShadow(color: Color(0x66000000), blurRadius: 14, offset: Offset(0, 6), spreadRadius: -6)],
     ),
-    child: Text(label, maxLines: 1, style: AppText.strong(size: 13.5, color: textColor)),
+    child: Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        if (live) ...[ShuttleIcon(size: 14, color: textColor), const SizedBox(width: 4)],
+        Flexible(child: Text(label, maxLines: 1, overflow: TextOverflow.ellipsis, style: AppText.strong(size: 13.5, color: textColor))),
+      ],
+    ),
   );
 }

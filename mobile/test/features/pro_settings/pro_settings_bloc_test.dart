@@ -35,6 +35,8 @@ class MockDisableSms extends Mock implements DisableSmsUseCase {}
 
 class MockChangePassword extends Mock implements ChangePasswordUseCase {}
 
+class MockSetTracking extends Mock implements SetShuttleTrackingUseCase {}
+
 Future<void> settle() => Future<void>.delayed(const Duration(milliseconds: 2));
 
 const alex = TeamMemberModel(id: 's1', email: 'alex@demo.fr', name: 'Alex Agent', role: 'agent');
@@ -49,6 +51,7 @@ void main() {
     registerFallbackValue(const UpdateParkingParams(id: '', input: ParkingSettingsInput(name: '', totalCapacity: 0, safetyMarginPct: 0, shuttleTravelMinutes: 0)));
     registerFallbackValue(const SmsSettingsInput(mode: 'none'));
     registerFallbackValue(const ChangePasswordParams(currentPassword: '', newPassword: ''));
+    registerFallbackValue(const ShuttleTrackingParams(id: '', tracking: 'team'));
   });
 
   group('équipe', () {
@@ -87,6 +90,7 @@ void main() {
     late MockTestSms testSms;
     late MockDisableSms disableSms;
     late MockChangePassword changePassword;
+    late MockSetTracking setTracking;
 
     setUp(() {
       getParking = MockGetParking();
@@ -97,12 +101,26 @@ void main() {
       testSms = MockTestSms();
       disableSms = MockDisableSms();
       changePassword = MockChangePassword();
+      setTracking = MockSetTracking();
       when(() => getParking(any())).thenAnswer((_) async => const Right(parking));
       when(() => getSms(any())).thenAnswer((_) async => const Right(SmsSettingsModel(mode: 'none')));
       when(() => getStatus(any())).thenAnswer((_) async => const Right(SmsStatusModel(mode: 'none')));
     });
 
-    ProSettingsBloc bloc() => ProSettingsBloc(getParking, updateParking, getSms, getStatus, saveSms, testSms, disableSms, changePassword);
+    ProSettingsBloc bloc() => ProSettingsBloc(getParking, updateParking, getSms, getStatus, saveSms, testSms, disableSms, changePassword, setTracking);
+
+    test('suivi des navettes (R-B) : trois niveaux, enregistrés à part', () async {
+      when(() => setTracking(any())).thenAnswer((_) async => const Right(ParkingSettingsModel(id: 'p1', name: 'Parkair', totalCapacity: 150, shuttleTracking: 'off')));
+      final b = bloc()..add(const ProSettingsStarted());
+      await settle();
+      expect(b.state.parking?.shuttleTracking, 'team');
+      b.add(const ProSettingsShuttleTrackingSaved('off'));
+      await settle();
+      expect(b.state.parking?.shuttleTracking, 'off');
+      expect(b.state.notice, 'tracking.saved');
+      final params = verify(() => setTracking(captureAny())).captured.single as ShuttleTrackingParams;
+      expect(params, const ShuttleTrackingParams(id: 'p1', tracking: 'off'));
+    });
 
     test('charge le parking et le canal SMS, enregistre le parking', () async {
       when(() => updateParking(any())).thenAnswer((_) async => const Right(ParkingSettingsModel(id: 'p1', name: 'Parkair Lyon', totalCapacity: 160, safetyMarginPct: 10, shuttleTravelMinutes: 9, bookableCapacity: 144)));

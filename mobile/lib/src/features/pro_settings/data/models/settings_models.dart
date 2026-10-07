@@ -38,6 +38,9 @@ abstract class ParkingSettingsModel with _$ParkingSettingsModel {
     @Default(8) int shuttleTravelMinutes,
     @Default(120) int terminalLeadMinutes,
     @Default(30) int landingDelayMinutes,
+
+    /// R-B (07/10/2026): who sees the shuttles' position: "off", "team" or "everyone".
+    @Default('team') String shuttleTracking,
     @Default(0) int bookableCapacity,
   }) = _ParkingSettingsModel;
 

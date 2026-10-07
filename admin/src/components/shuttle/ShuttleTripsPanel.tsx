@@ -103,7 +103,8 @@ function LiveTrips({ live, now, canEnd, onEnd, ending }: { live: LiveShuttles | 
 /** Shares the browser's position with the server while the trip runs (one fix every 10 s at most). */
 function useTripPosition(trip: StaffTrip | null, onProblem: (code: "denied" | "unavailable" | null) => void) {
   const lastSentAt = useRef(0);
-  const tripId = trip?.status === "running" ? trip.id : null;
+  // R-B: a parking that turned the tracking off never asks the browser for its position.
+  const tripId = trip?.status === "running" && trip.sharePosition !== false ? trip.id : null;
   useEffect(() => {
     if (!tripId) return;
     if (typeof navigator === "undefined" || !navigator.geolocation) {
@@ -144,7 +145,7 @@ function RunningCard({ trip, now, onEnd, ending, problem }: { trip: StaffTrip; n
           <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-primary opacity-75" />
           <span className="relative inline-flex h-2.5 w-2.5 rounded-full bg-primary" />
         </span>
-        {trip.direction === "dropoff" ? r.dropoff : r.pickup}
+        {trip.sharePosition === false ? (trip.direction === "dropoff" ? r.dropoffNoShare : r.pickupNoShare) : trip.direction === "dropoff" ? r.dropoff : r.pickup}
       </p>
       <p className="mt-1 font-mono text-xs text-muted-foreground">
         {trip.stop && !trip.stop.builtIn && <>{r.stop(trip.stop.name)} · </>}

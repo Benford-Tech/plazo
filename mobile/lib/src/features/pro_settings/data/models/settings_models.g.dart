@@ -52,6 +52,7 @@ _ParkingSettingsModel _$ParkingSettingsModelFromJson(
   shuttleTravelMinutes: (json['shuttleTravelMinutes'] as num?)?.toInt() ?? 8,
   terminalLeadMinutes: (json['terminalLeadMinutes'] as num?)?.toInt() ?? 120,
   landingDelayMinutes: (json['landingDelayMinutes'] as num?)?.toInt() ?? 30,
+  shuttleTracking: json['shuttleTracking'] as String? ?? 'team',
   bookableCapacity: (json['bookableCapacity'] as num?)?.toInt() ?? 0,
 );
 
@@ -67,6 +68,7 @@ Map<String, dynamic> _$ParkingSettingsModelToJson(
   'shuttleTravelMinutes': instance.shuttleTravelMinutes,
   'terminalLeadMinutes': instance.terminalLeadMinutes,
   'landingDelayMinutes': instance.landingDelayMinutes,
+  'shuttleTracking': instance.shuttleTracking,
   'bookableCapacity': instance.bookableCapacity,
 };
 

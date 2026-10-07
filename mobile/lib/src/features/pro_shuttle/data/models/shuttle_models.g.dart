@@ -65,6 +65,7 @@ _PickupsModel _$PickupsModelFromJson(Map<String, dynamic> json) =>
               ?.map((e) => PickupRowModel.fromJson(e as Map<String, dynamic>))
               .toList() ??
           const [],
+      sharePosition: json['sharePosition'] as bool? ?? true,
     );
 
 Map<String, dynamic> _$PickupsModelToJson(_PickupsModel instance) =>
@@ -72,6 +73,7 @@ Map<String, dynamic> _$PickupsModelToJson(_PickupsModel instance) =>
       'serverTime': instance.serverTime.toIso8601String(),
       'meetingPoint': instance.meetingPoint,
       'rows': instance.rows,
+      'sharePosition': instance.sharePosition,
     };
 
 _ShuttleVehicleModel _$ShuttleVehicleModelFromJson(Map<String, dynamic> json) =>
@@ -153,12 +155,14 @@ _DeparturesModel _$DeparturesModelFromJson(Map<String, dynamic> json) =>
               )
               .toList() ??
           const [],
+      sharePosition: json['sharePosition'] as bool? ?? true,
     );
 
 Map<String, dynamic> _$DeparturesModelToJson(_DeparturesModel instance) =>
     <String, dynamic>{
       'serverTime': instance.serverTime.toIso8601String(),
       'rows': instance.rows,
+      'sharePosition': instance.sharePosition,
     };
 
 _TripPassengerModel _$TripPassengerModelFromJson(Map<String, dynamic> json) =>
@@ -216,6 +220,7 @@ _StaffTripModel _$StaffTripModelFromJson(Map<String, dynamic> json) =>
       stop: json['stop'] == null
           ? null
           : ShuttleStopModel.fromJson(json['stop'] as Map<String, dynamic>),
+      sharePosition: json['sharePosition'] as bool? ?? true,
     );
 
 Map<String, dynamic> _$StaffTripModelToJson(_StaffTripModel instance) =>
@@ -235,6 +240,7 @@ Map<String, dynamic> _$StaffTripModelToJson(_StaffTripModel instance) =>
       'positionUpdatedAt': instance.positionUpdatedAt?.toIso8601String(),
       'meetingPoint': instance.meetingPoint,
       'stop': instance.stop,
+      'sharePosition': instance.sharePosition,
     };
 
 _ShuttleStopModel _$ShuttleStopModelFromJson(Map<String, dynamic> json) =>

@@ -378,7 +378,8 @@ $PickupNoticeModelCopyWith<$Res>? get notice {
 /// @nodoc
 mixin _$PickupsModel {
 
- DateTime get serverTime; MeetingPointModel? get meetingPoint; List<PickupRowModel> get rows;
+ DateTime get serverTime; MeetingPointModel? get meetingPoint; List<PickupRowModel> get rows;/// R-B (07/10/2026): the parking shares its shuttles' position; false when it turned the tracking off.
+ bool get sharePosition;
 /// Create a copy of PickupsModel
 /// with the given fields replaced by the non-null parameter values.
 @JsonKey(includeFromJson: false, includeToJson: false)
@@ -392,20 +393,20 @@ $PickupsModelCopyWith<PickupsModel> get copyWith => _$PickupsModelCopyWithImpl<P
 @override
 bool operator ==(Object other) {
   final _this = this as PickupsModel;
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is PickupsModel&&(identical(other.serverTime, _this.serverTime) || other.serverTime == _this.serverTime)&&(identical(other.meetingPoint, _this.meetingPoint) || other.meetingPoint == _this.meetingPoint)&&const DeepCollectionEquality().equals(other.rows, _this.rows));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is PickupsModel&&(identical(other.serverTime, _this.serverTime) || other.serverTime == _this.serverTime)&&(identical(other.meetingPoint, _this.meetingPoint) || other.meetingPoint == _this.meetingPoint)&&const DeepCollectionEquality().equals(other.rows, _this.rows)&&(identical(other.sharePosition, _this.sharePosition) || other.sharePosition == _this.sharePosition));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
 int get hashCode {
   final _this = this as PickupsModel;
-  return Object.hash(runtimeType,_this.serverTime,_this.meetingPoint,const DeepCollectionEquality().hash(_this.rows));
+  return Object.hash(runtimeType,_this.serverTime,_this.meetingPoint,const DeepCollectionEquality().hash(_this.rows),_this.sharePosition);
 }
 
 @override
 String toString() {
   final _this = this as PickupsModel;
-  return 'PickupsModel(serverTime: ${_this.serverTime}, meetingPoint: ${_this.meetingPoint}, rows: ${_this.rows})';
+  return 'PickupsModel(serverTime: ${_this.serverTime}, meetingPoint: ${_this.meetingPoint}, rows: ${_this.rows}, sharePosition: ${_this.sharePosition})';
 }
 
 
@@ -416,7 +417,7 @@ abstract mixin class $PickupsModelCopyWith<$Res>  {
   factory $PickupsModelCopyWith(PickupsModel value, $Res Function(PickupsModel) _then) = _$PickupsModelCopyWithImpl;
 @useResult
 $Res call({
- DateTime serverTime, MeetingPointModel? meetingPoint, List<PickupRowModel> rows
+ DateTime serverTime, MeetingPointModel? meetingPoint, List<PickupRowModel> rows, bool sharePosition
 });
 
 
@@ -433,12 +434,13 @@ class _$PickupsModelCopyWithImpl<$Res>
 
 /// Create a copy of PickupsModel
 /// with the given fields replaced by the non-null parameter values.
-@pragma('vm:prefer-inline') @override $Res call({Object? serverTime = null,Object? meetingPoint = freezed,Object? rows = null,}) {
+@pragma('vm:prefer-inline') @override $Res call({Object? serverTime = null,Object? meetingPoint = freezed,Object? rows = null,Object? sharePosition = null,}) {
   return _then(PickupsModel(
 serverTime: null == serverTime ? _self.serverTime : serverTime // ignore: cast_nullable_to_non_nullable
 as DateTime,meetingPoint: freezed == meetingPoint ? _self.meetingPoint : meetingPoint // ignore: cast_nullable_to_non_nullable
 as MeetingPointModel?,rows: null == rows ? _self.rows : rows // ignore: cast_nullable_to_non_nullable
-as List<PickupRowModel>,
+as List<PickupRowModel>,sharePosition: null == sharePosition ? _self.sharePosition : sharePosition // ignore: cast_nullable_to_non_nullable
+as bool,
   ));
 }
 /// Create a copy of PickupsModel
@@ -535,10 +537,10 @@ return $default(_that);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( DateTime serverTime,  MeetingPointModel? meetingPoint,  List<PickupRowModel> rows)?  $default,{required TResult orElse(),}) {final _that = this;
+@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( DateTime serverTime,  MeetingPointModel? meetingPoint,  List<PickupRowModel> rows,  bool sharePosition)?  $default,{required TResult orElse(),}) {final _that = this;
 switch (_that) {
 case _PickupsModel() when $default != null:
-return $default(_that.serverTime,_that.meetingPoint,_that.rows);case _:
+return $default(_that.serverTime,_that.meetingPoint,_that.rows,_that.sharePosition);case _:
   return orElse();
 
 }
@@ -556,10 +558,10 @@ return $default(_that.serverTime,_that.meetingPoint,_that.rows);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( DateTime serverTime,  MeetingPointModel? meetingPoint,  List<PickupRowModel> rows)  $default,) {final _that = this;
+@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( DateTime serverTime,  MeetingPointModel? meetingPoint,  List<PickupRowModel> rows,  bool sharePosition)  $default,) {final _that = this;
 switch (_that) {
 case _PickupsModel():
-return $default(_that.serverTime,_that.meetingPoint,_that.rows);case _:
+return $default(_that.serverTime,_that.meetingPoint,_that.rows,_that.sharePosition);case _:
   throw StateError('Unexpected subclass');
 
 }
@@ -576,10 +578,10 @@ return $default(_that.serverTime,_that.meetingPoint,_that.rows);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( DateTime serverTime,  MeetingPointModel? meetingPoint,  List<PickupRowModel> rows)?  $default,) {final _that = this;
+@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( DateTime serverTime,  MeetingPointModel? meetingPoint,  List<PickupRowModel> rows,  bool sharePosition)?  $default,) {final _that = this;
 switch (_that) {
 case _PickupsModel() when $default != null:
-return $default(_that.serverTime,_that.meetingPoint,_that.rows);case _:
+return $default(_that.serverTime,_that.meetingPoint,_that.rows,_that.sharePosition);case _:
   return null;
 
 }
@@ -591,7 +593,7 @@ return $default(_that.serverTime,_that.meetingPoint,_that.rows);case _:
 @JsonSerializable()
 
 class _PickupsModel implements PickupsModel {
-  const _PickupsModel({required this.serverTime, this.meetingPoint,  List<PickupRowModel> rows = const []}): _rows = rows;
+  const _PickupsModel({required this.serverTime, this.meetingPoint,  List<PickupRowModel> rows = const [], this.sharePosition = true}): _rows = rows;
   factory _PickupsModel.fromJson(Map<String, dynamic> json) => _$PickupsModelFromJson(json);
 
 @override final  DateTime serverTime;
@@ -603,6 +605,8 @@ class _PickupsModel implements PickupsModel {
   return EqualUnmodifiableListView(_rows);
 }
 
+/// R-B (07/10/2026): the parking shares its shuttles' position; false when it turned the tracking off.
+@override@JsonKey() final  bool sharePosition;
 
 /// Create a copy of PickupsModel
 /// with the given fields replaced by the non-null parameter values.
@@ -617,18 +621,18 @@ Map<String, dynamic> toJson() {
 
 @override
 bool operator ==(Object other) {
-    return identical(this, other) || (other.runtimeType == runtimeType&&other is _PickupsModel&&(identical(other.serverTime, serverTime) || other.serverTime == serverTime)&&(identical(other.meetingPoint, meetingPoint) || other.meetingPoint == meetingPoint)&&const DeepCollectionEquality().equals(other.rows, _rows));
+    return identical(this, other) || (other.runtimeType == runtimeType&&other is _PickupsModel&&(identical(other.serverTime, serverTime) || other.serverTime == serverTime)&&(identical(other.meetingPoint, meetingPoint) || other.meetingPoint == meetingPoint)&&const DeepCollectionEquality().equals(other.rows, _rows)&&(identical(other.sharePosition, sharePosition) || other.sharePosition == sharePosition));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
 int get hashCode {
-    return Object.hash(runtimeType,serverTime,meetingPoint,const DeepCollectionEquality().hash(_rows));
+    return Object.hash(runtimeType,serverTime,meetingPoint,const DeepCollectionEquality().hash(_rows),sharePosition);
 }
 
 @override
 String toString() {
-    return 'PickupsModel(serverTime: $serverTime, meetingPoint: $meetingPoint, rows: $rows)';
+    return 'PickupsModel(serverTime: $serverTime, meetingPoint: $meetingPoint, rows: $rows, sharePosition: $sharePosition)';
 }
 
 
@@ -639,7 +643,7 @@ abstract mixin class _$PickupsModelCopyWith<$Res> implements $PickupsModelCopyWi
   factory _$PickupsModelCopyWith(_PickupsModel value, $Res Function(_PickupsModel) _then) = __$PickupsModelCopyWithImpl;
 @override @useResult
 $Res call({
- DateTime serverTime, MeetingPointModel? meetingPoint, List<PickupRowModel> rows
+ DateTime serverTime, MeetingPointModel? meetingPoint, List<PickupRowModel> rows, bool sharePosition
 });
 
 
@@ -656,12 +660,13 @@ class __$PickupsModelCopyWithImpl<$Res>
 
 /// Create a copy of PickupsModel
 /// with the given fields replaced by the non-null parameter values.
-@override @pragma('vm:prefer-inline') $Res call({Object? serverTime = null,Object? meetingPoint = freezed,Object? rows = null,}) {
+@override @pragma('vm:prefer-inline') $Res call({Object? serverTime = null,Object? meetingPoint = freezed,Object? rows = null,Object? sharePosition = null,}) {
   return _then(_PickupsModel(
 serverTime: null == serverTime ? _self.serverTime : serverTime // ignore: cast_nullable_to_non_nullable
 as DateTime,meetingPoint: freezed == meetingPoint ? _self.meetingPoint : meetingPoint // ignore: cast_nullable_to_non_nullable
 as MeetingPointModel?,rows: null == rows ? _self._rows : rows // ignore: cast_nullable_to_non_nullable
-as List<PickupRowModel>,
+as List<PickupRowModel>,sharePosition: null == sharePosition ? _self.sharePosition : sharePosition // ignore: cast_nullable_to_non_nullable
+as bool,
   ));
 }
 
@@ -1300,7 +1305,7 @@ as bool,
 /// @nodoc
 mixin _$DeparturesModel {
 
- DateTime get serverTime; List<DepartureRowModel> get rows;
+ DateTime get serverTime; List<DepartureRowModel> get rows; bool get sharePosition;
 /// Create a copy of DeparturesModel
 /// with the given fields replaced by the non-null parameter values.
 @JsonKey(includeFromJson: false, includeToJson: false)
@@ -1314,20 +1319,20 @@ $DeparturesModelCopyWith<DeparturesModel> get copyWith => _$DeparturesModelCopyW
 @override
 bool operator ==(Object other) {
   final _this = this as DeparturesModel;
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is DeparturesModel&&(identical(other.serverTime, _this.serverTime) || other.serverTime == _this.serverTime)&&const DeepCollectionEquality().equals(other.rows, _this.rows));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is DeparturesModel&&(identical(other.serverTime, _this.serverTime) || other.serverTime == _this.serverTime)&&const DeepCollectionEquality().equals(other.rows, _this.rows)&&(identical(other.sharePosition, _this.sharePosition) || other.sharePosition == _this.sharePosition));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
 int get hashCode {
   final _this = this as DeparturesModel;
-  return Object.hash(runtimeType,_this.serverTime,const DeepCollectionEquality().hash(_this.rows));
+  return Object.hash(runtimeType,_this.serverTime,const DeepCollectionEquality().hash(_this.rows),_this.sharePosition);
 }
 
 @override
 String toString() {
   final _this = this as DeparturesModel;
-  return 'DeparturesModel(serverTime: ${_this.serverTime}, rows: ${_this.rows})';
+  return 'DeparturesModel(serverTime: ${_this.serverTime}, rows: ${_this.rows}, sharePosition: ${_this.sharePosition})';
 }
 
 
@@ -1338,7 +1343,7 @@ abstract mixin class $DeparturesModelCopyWith<$Res>  {
   factory $DeparturesModelCopyWith(DeparturesModel value, $Res Function(DeparturesModel) _then) = _$DeparturesModelCopyWithImpl;
 @useResult
 $Res call({
- DateTime serverTime, List<DepartureRowModel> rows
+ DateTime serverTime, List<DepartureRowModel> rows, bool sharePosition
 });
 
 
@@ -1355,11 +1360,12 @@ class _$DeparturesModelCopyWithImpl<$Res>
 
 /// Create a copy of DeparturesModel
 /// with the given fields replaced by the non-null parameter values.
-@pragma('vm:prefer-inline') @override $Res call({Object? serverTime = null,Object? rows = null,}) {
+@pragma('vm:prefer-inline') @override $Res call({Object? serverTime = null,Object? rows = null,Object? sharePosition = null,}) {
   return _then(DeparturesModel(
 serverTime: null == serverTime ? _self.serverTime : serverTime // ignore: cast_nullable_to_non_nullable
 as DateTime,rows: null == rows ? _self.rows : rows // ignore: cast_nullable_to_non_nullable
-as List<DepartureRowModel>,
+as List<DepartureRowModel>,sharePosition: null == sharePosition ? _self.sharePosition : sharePosition // ignore: cast_nullable_to_non_nullable
+as bool,
   ));
 }
 
@@ -1444,10 +1450,10 @@ return $default(_that);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( DateTime serverTime,  List<DepartureRowModel> rows)?  $default,{required TResult orElse(),}) {final _that = this;
+@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( DateTime serverTime,  List<DepartureRowModel> rows,  bool sharePosition)?  $default,{required TResult orElse(),}) {final _that = this;
 switch (_that) {
 case _DeparturesModel() when $default != null:
-return $default(_that.serverTime,_that.rows);case _:
+return $default(_that.serverTime,_that.rows,_that.sharePosition);case _:
   return orElse();
 
 }
@@ -1465,10 +1471,10 @@ return $default(_that.serverTime,_that.rows);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( DateTime serverTime,  List<DepartureRowModel> rows)  $default,) {final _that = this;
+@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( DateTime serverTime,  List<DepartureRowModel> rows,  bool sharePosition)  $default,) {final _that = this;
 switch (_that) {
 case _DeparturesModel():
-return $default(_that.serverTime,_that.rows);case _:
+return $default(_that.serverTime,_that.rows,_that.sharePosition);case _:
   throw StateError('Unexpected subclass');
 
 }
@@ -1485,10 +1491,10 @@ return $default(_that.serverTime,_that.rows);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( DateTime serverTime,  List<DepartureRowModel> rows)?  $default,) {final _that = this;
+@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( DateTime serverTime,  List<DepartureRowModel> rows,  bool sharePosition)?  $default,) {final _that = this;
 switch (_that) {
 case _DeparturesModel() when $default != null:
-return $default(_that.serverTime,_that.rows);case _:
+return $default(_that.serverTime,_that.rows,_that.sharePosition);case _:
   return null;
 
 }
@@ -1500,7 +1506,7 @@ return $default(_that.serverTime,_that.rows);case _:
 @JsonSerializable()
 
 class _DeparturesModel implements DeparturesModel {
-  const _DeparturesModel({required this.serverTime,  List<DepartureRowModel> rows = const []}): _rows = rows;
+  const _DeparturesModel({required this.serverTime,  List<DepartureRowModel> rows = const [], this.sharePosition = true}): _rows = rows;
   factory _DeparturesModel.fromJson(Map<String, dynamic> json) => _$DeparturesModelFromJson(json);
 
 @override final  DateTime serverTime;
@@ -1511,6 +1517,7 @@ class _DeparturesModel implements DeparturesModel {
   return EqualUnmodifiableListView(_rows);
 }
 
+@override@JsonKey() final  bool sharePosition;
 
 /// Create a copy of DeparturesModel
 /// with the given fields replaced by the non-null parameter values.
@@ -1525,18 +1532,18 @@ Map<String, dynamic> toJson() {
 
 @override
 bool operator ==(Object other) {
-    return identical(this, other) || (other.runtimeType == runtimeType&&other is _DeparturesModel&&(identical(other.serverTime, serverTime) || other.serverTime == serverTime)&&const DeepCollectionEquality().equals(other.rows, _rows));
+    return identical(this, other) || (other.runtimeType == runtimeType&&other is _DeparturesModel&&(identical(other.serverTime, serverTime) || other.serverTime == serverTime)&&const DeepCollectionEquality().equals(other.rows, _rows)&&(identical(other.sharePosition, sharePosition) || other.sharePosition == sharePosition));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
 int get hashCode {
-    return Object.hash(runtimeType,serverTime,const DeepCollectionEquality().hash(_rows));
+    return Object.hash(runtimeType,serverTime,const DeepCollectionEquality().hash(_rows),sharePosition);
 }
 
 @override
 String toString() {
-    return 'DeparturesModel(serverTime: $serverTime, rows: $rows)';
+    return 'DeparturesModel(serverTime: $serverTime, rows: $rows, sharePosition: $sharePosition)';
 }
 
 
@@ -1547,7 +1554,7 @@ abstract mixin class _$DeparturesModelCopyWith<$Res> implements $DeparturesModel
   factory _$DeparturesModelCopyWith(_DeparturesModel value, $Res Function(_DeparturesModel) _then) = __$DeparturesModelCopyWithImpl;
 @override @useResult
 $Res call({
- DateTime serverTime, List<DepartureRowModel> rows
+ DateTime serverTime, List<DepartureRowModel> rows, bool sharePosition
 });
 
 
@@ -1564,11 +1571,12 @@ class __$DeparturesModelCopyWithImpl<$Res>
 
 /// Create a copy of DeparturesModel
 /// with the given fields replaced by the non-null parameter values.
-@override @pragma('vm:prefer-inline') $Res call({Object? serverTime = null,Object? rows = null,}) {
+@override @pragma('vm:prefer-inline') $Res call({Object? serverTime = null,Object? rows = null,Object? sharePosition = null,}) {
   return _then(_DeparturesModel(
 serverTime: null == serverTime ? _self.serverTime : serverTime // ignore: cast_nullable_to_non_nullable
 as DateTime,rows: null == rows ? _self._rows : rows // ignore: cast_nullable_to_non_nullable
-as List<DepartureRowModel>,
+as List<DepartureRowModel>,sharePosition: null == sharePosition ? _self.sharePosition : sharePosition // ignore: cast_nullable_to_non_nullable
+as bool,
   ));
 }
 
@@ -1866,7 +1874,8 @@ mixin _$StaffTripModel {
 
  String get id; String get status;/// `pickup`: to the airport for returning travellers; `dropoff`: to the terminal with arrived ones.
  String get direction; String get driverId; String get driverName; TripVehicleModel get vehicle; DateTime get startedAt; DateTime get expiresAt; DateTime? get endedAt; String? get endReason; int get secondsLeft; List<TripPassengerModel> get passengers; DateTime? get positionUpdatedAt; MeetingPointModel? get meetingPoint;/// Where the trip goes (D-A): the chosen stop, else the airport's meeting point.
- ShuttleStopModel? get stop;
+ ShuttleStopModel? get stop;/// R-B: the phone shares its position during the trip; false when the parking turned the tracking off.
+ bool get sharePosition;
 /// Create a copy of StaffTripModel
 /// with the given fields replaced by the non-null parameter values.
 @JsonKey(includeFromJson: false, includeToJson: false)
@@ -1880,20 +1889,20 @@ $StaffTripModelCopyWith<StaffTripModel> get copyWith => _$StaffTripModelCopyWith
 @override
 bool operator ==(Object other) {
   final _this = this as StaffTripModel;
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is StaffTripModel&&(identical(other.id, _this.id) || other.id == _this.id)&&(identical(other.status, _this.status) || other.status == _this.status)&&(identical(other.direction, _this.direction) || other.direction == _this.direction)&&(identical(other.driverId, _this.driverId) || other.driverId == _this.driverId)&&(identical(other.driverName, _this.driverName) || other.driverName == _this.driverName)&&(identical(other.vehicle, _this.vehicle) || other.vehicle == _this.vehicle)&&(identical(other.startedAt, _this.startedAt) || other.startedAt == _this.startedAt)&&(identical(other.expiresAt, _this.expiresAt) || other.expiresAt == _this.expiresAt)&&(identical(other.endedAt, _this.endedAt) || other.endedAt == _this.endedAt)&&(identical(other.endReason, _this.endReason) || other.endReason == _this.endReason)&&(identical(other.secondsLeft, _this.secondsLeft) || other.secondsLeft == _this.secondsLeft)&&const DeepCollectionEquality().equals(other.passengers, _this.passengers)&&(identical(other.positionUpdatedAt, _this.positionUpdatedAt) || other.positionUpdatedAt == _this.positionUpdatedAt)&&(identical(other.meetingPoint, _this.meetingPoint) || other.meetingPoint == _this.meetingPoint)&&(identical(other.stop, _this.stop) || other.stop == _this.stop));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is StaffTripModel&&(identical(other.id, _this.id) || other.id == _this.id)&&(identical(other.status, _this.status) || other.status == _this.status)&&(identical(other.direction, _this.direction) || other.direction == _this.direction)&&(identical(other.driverId, _this.driverId) || other.driverId == _this.driverId)&&(identical(other.driverName, _this.driverName) || other.driverName == _this.driverName)&&(identical(other.vehicle, _this.vehicle) || other.vehicle == _this.vehicle)&&(identical(other.startedAt, _this.startedAt) || other.startedAt == _this.startedAt)&&(identical(other.expiresAt, _this.expiresAt) || other.expiresAt == _this.expiresAt)&&(identical(other.endedAt, _this.endedAt) || other.endedAt == _this.endedAt)&&(identical(other.endReason, _this.endReason) || other.endReason == _this.endReason)&&(identical(other.secondsLeft, _this.secondsLeft) || other.secondsLeft == _this.secondsLeft)&&const DeepCollectionEquality().equals(other.passengers, _this.passengers)&&(identical(other.positionUpdatedAt, _this.positionUpdatedAt) || other.positionUpdatedAt == _this.positionUpdatedAt)&&(identical(other.meetingPoint, _this.meetingPoint) || other.meetingPoint == _this.meetingPoint)&&(identical(other.stop, _this.stop) || other.stop == _this.stop)&&(identical(other.sharePosition, _this.sharePosition) || other.sharePosition == _this.sharePosition));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
 int get hashCode {
   final _this = this as StaffTripModel;
-  return Object.hash(runtimeType,_this.id,_this.status,_this.direction,_this.driverId,_this.driverName,_this.vehicle,_this.startedAt,_this.expiresAt,_this.endedAt,_this.endReason,_this.secondsLeft,const DeepCollectionEquality().hash(_this.passengers),_this.positionUpdatedAt,_this.meetingPoint,_this.stop);
+  return Object.hash(runtimeType,_this.id,_this.status,_this.direction,_this.driverId,_this.driverName,_this.vehicle,_this.startedAt,_this.expiresAt,_this.endedAt,_this.endReason,_this.secondsLeft,const DeepCollectionEquality().hash(_this.passengers),_this.positionUpdatedAt,_this.meetingPoint,_this.stop,_this.sharePosition);
 }
 
 @override
 String toString() {
   final _this = this as StaffTripModel;
-  return 'StaffTripModel(id: ${_this.id}, status: ${_this.status}, direction: ${_this.direction}, driverId: ${_this.driverId}, driverName: ${_this.driverName}, vehicle: ${_this.vehicle}, startedAt: ${_this.startedAt}, expiresAt: ${_this.expiresAt}, endedAt: ${_this.endedAt}, endReason: ${_this.endReason}, secondsLeft: ${_this.secondsLeft}, passengers: ${_this.passengers}, positionUpdatedAt: ${_this.positionUpdatedAt}, meetingPoint: ${_this.meetingPoint}, stop: ${_this.stop})';
+  return 'StaffTripModel(id: ${_this.id}, status: ${_this.status}, direction: ${_this.direction}, driverId: ${_this.driverId}, driverName: ${_this.driverName}, vehicle: ${_this.vehicle}, startedAt: ${_this.startedAt}, expiresAt: ${_this.expiresAt}, endedAt: ${_this.endedAt}, endReason: ${_this.endReason}, secondsLeft: ${_this.secondsLeft}, passengers: ${_this.passengers}, positionUpdatedAt: ${_this.positionUpdatedAt}, meetingPoint: ${_this.meetingPoint}, stop: ${_this.stop}, sharePosition: ${_this.sharePosition})';
 }
 
 
@@ -1904,7 +1913,7 @@ abstract mixin class $StaffTripModelCopyWith<$Res>  {
   factory $StaffTripModelCopyWith(StaffTripModel value, $Res Function(StaffTripModel) _then) = _$StaffTripModelCopyWithImpl;
 @useResult
 $Res call({
- String id, String status, String direction, String driverId, String driverName, TripVehicleModel vehicle, DateTime startedAt, DateTime expiresAt, DateTime? endedAt, String? endReason, int secondsLeft, List<TripPassengerModel> passengers, DateTime? positionUpdatedAt, MeetingPointModel? meetingPoint, ShuttleStopModel? stop
+ String id, String status, String direction, String driverId, String driverName, TripVehicleModel vehicle, DateTime startedAt, DateTime expiresAt, DateTime? endedAt, String? endReason, int secondsLeft, List<TripPassengerModel> passengers, DateTime? positionUpdatedAt, MeetingPointModel? meetingPoint, ShuttleStopModel? stop, bool sharePosition
 });
 
 
@@ -1921,7 +1930,7 @@ class _$StaffTripModelCopyWithImpl<$Res>
 
 /// Create a copy of StaffTripModel
 /// with the given fields replaced by the non-null parameter values.
-@pragma('vm:prefer-inline') @override $Res call({Object? id = null,Object? status = null,Object? direction = null,Object? driverId = null,Object? driverName = null,Object? vehicle = null,Object? startedAt = null,Object? expiresAt = null,Object? endedAt = freezed,Object? endReason = freezed,Object? secondsLeft = null,Object? passengers = null,Object? positionUpdatedAt = freezed,Object? meetingPoint = freezed,Object? stop = freezed,}) {
+@pragma('vm:prefer-inline') @override $Res call({Object? id = null,Object? status = null,Object? direction = null,Object? driverId = null,Object? driverName = null,Object? vehicle = null,Object? startedAt = null,Object? expiresAt = null,Object? endedAt = freezed,Object? endReason = freezed,Object? secondsLeft = null,Object? passengers = null,Object? positionUpdatedAt = freezed,Object? meetingPoint = freezed,Object? stop = freezed,Object? sharePosition = null,}) {
   return _then(StaffTripModel(
 id: null == id ? _self.id : id // ignore: cast_nullable_to_non_nullable
 as String,status: null == status ? _self.status : status // ignore: cast_nullable_to_non_nullable
@@ -1938,7 +1947,8 @@ as int,passengers: null == passengers ? _self.passengers : passengers // ignore:
 as List<TripPassengerModel>,positionUpdatedAt: freezed == positionUpdatedAt ? _self.positionUpdatedAt : positionUpdatedAt // ignore: cast_nullable_to_non_nullable
 as DateTime?,meetingPoint: freezed == meetingPoint ? _self.meetingPoint : meetingPoint // ignore: cast_nullable_to_non_nullable
 as MeetingPointModel?,stop: freezed == stop ? _self.stop : stop // ignore: cast_nullable_to_non_nullable
-as ShuttleStopModel?,
+as ShuttleStopModel?,sharePosition: null == sharePosition ? _self.sharePosition : sharePosition // ignore: cast_nullable_to_non_nullable
+as bool,
   ));
 }
 /// Create a copy of StaffTripModel
@@ -2056,10 +2066,10 @@ return $default(_that);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( String id,  String status,  String direction,  String driverId,  String driverName,  TripVehicleModel vehicle,  DateTime startedAt,  DateTime expiresAt,  DateTime? endedAt,  String? endReason,  int secondsLeft,  List<TripPassengerModel> passengers,  DateTime? positionUpdatedAt,  MeetingPointModel? meetingPoint,  ShuttleStopModel? stop)?  $default,{required TResult orElse(),}) {final _that = this;
+@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( String id,  String status,  String direction,  String driverId,  String driverName,  TripVehicleModel vehicle,  DateTime startedAt,  DateTime expiresAt,  DateTime? endedAt,  String? endReason,  int secondsLeft,  List<TripPassengerModel> passengers,  DateTime? positionUpdatedAt,  MeetingPointModel? meetingPoint,  ShuttleStopModel? stop,  bool sharePosition)?  $default,{required TResult orElse(),}) {final _that = this;
 switch (_that) {
 case _StaffTripModel() when $default != null:
-return $default(_that.id,_that.status,_that.direction,_that.driverId,_that.driverName,_that.vehicle,_that.startedAt,_that.expiresAt,_that.endedAt,_that.endReason,_that.secondsLeft,_that.passengers,_that.positionUpdatedAt,_that.meetingPoint,_that.stop);case _:
+return $default(_that.id,_that.status,_that.direction,_that.driverId,_that.driverName,_that.vehicle,_that.startedAt,_that.expiresAt,_that.endedAt,_that.endReason,_that.secondsLeft,_that.passengers,_that.positionUpdatedAt,_that.meetingPoint,_that.stop,_that.sharePosition);case _:
   return orElse();
 
 }
@@ -2077,10 +2087,10 @@ return $default(_that.id,_that.status,_that.direction,_that.driverId,_that.drive
 /// }
 /// ```
 
-@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( String id,  String status,  String direction,  String driverId,  String driverName,  TripVehicleModel vehicle,  DateTime startedAt,  DateTime expiresAt,  DateTime? endedAt,  String? endReason,  int secondsLeft,  List<TripPassengerModel> passengers,  DateTime? positionUpdatedAt,  MeetingPointModel? meetingPoint,  ShuttleStopModel? stop)  $default,) {final _that = this;
+@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( String id,  String status,  String direction,  String driverId,  String driverName,  TripVehicleModel vehicle,  DateTime startedAt,  DateTime expiresAt,  DateTime? endedAt,  String? endReason,  int secondsLeft,  List<TripPassengerModel> passengers,  DateTime? positionUpdatedAt,  MeetingPointModel? meetingPoint,  ShuttleStopModel? stop,  bool sharePosition)  $default,) {final _that = this;
 switch (_that) {
 case _StaffTripModel():
-return $default(_that.id,_that.status,_that.direction,_that.driverId,_that.driverName,_that.vehicle,_that.startedAt,_that.expiresAt,_that.endedAt,_that.endReason,_that.secondsLeft,_that.passengers,_that.positionUpdatedAt,_that.meetingPoint,_that.stop);case _:
+return $default(_that.id,_that.status,_that.direction,_that.driverId,_that.driverName,_that.vehicle,_that.startedAt,_that.expiresAt,_that.endedAt,_that.endReason,_that.secondsLeft,_that.passengers,_that.positionUpdatedAt,_that.meetingPoint,_that.stop,_that.sharePosition);case _:
   throw StateError('Unexpected subclass');
 
 }
@@ -2097,10 +2107,10 @@ return $default(_that.id,_that.status,_that.direction,_that.driverId,_that.drive
 /// }
 /// ```
 
-@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( String id,  String status,  String direction,  String driverId,  String driverName,  TripVehicleModel vehicle,  DateTime startedAt,  DateTime expiresAt,  DateTime? endedAt,  String? endReason,  int secondsLeft,  List<TripPassengerModel> passengers,  DateTime? positionUpdatedAt,  MeetingPointModel? meetingPoint,  ShuttleStopModel? stop)?  $default,) {final _that = this;
+@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( String id,  String status,  String direction,  String driverId,  String driverName,  TripVehicleModel vehicle,  DateTime startedAt,  DateTime expiresAt,  DateTime? endedAt,  String? endReason,  int secondsLeft,  List<TripPassengerModel> passengers,  DateTime? positionUpdatedAt,  MeetingPointModel? meetingPoint,  ShuttleStopModel? stop,  bool sharePosition)?  $default,) {final _that = this;
 switch (_that) {
 case _StaffTripModel() when $default != null:
-return $default(_that.id,_that.status,_that.direction,_that.driverId,_that.driverName,_that.vehicle,_that.startedAt,_that.expiresAt,_that.endedAt,_that.endReason,_that.secondsLeft,_that.passengers,_that.positionUpdatedAt,_that.meetingPoint,_that.stop);case _:
+return $default(_that.id,_that.status,_that.direction,_that.driverId,_that.driverName,_that.vehicle,_that.startedAt,_that.expiresAt,_that.endedAt,_that.endReason,_that.secondsLeft,_that.passengers,_that.positionUpdatedAt,_that.meetingPoint,_that.stop,_that.sharePosition);case _:
   return null;
 
 }
@@ -2112,7 +2122,7 @@ return $default(_that.id,_that.status,_that.direction,_that.driverId,_that.drive
 @JsonSerializable()
 
 class _StaffTripModel extends StaffTripModel {
-  const _StaffTripModel({required this.id, required this.status, this.direction = 'pickup', required this.driverId, required this.driverName, this.vehicle = const TripVehicleModel(), required this.startedAt, required this.expiresAt, this.endedAt, this.endReason, this.secondsLeft = 0,  List<TripPassengerModel> passengers = const [], this.positionUpdatedAt, this.meetingPoint, this.stop}): _passengers = passengers,super._();
+  const _StaffTripModel({required this.id, required this.status, this.direction = 'pickup', required this.driverId, required this.driverName, this.vehicle = const TripVehicleModel(), required this.startedAt, required this.expiresAt, this.endedAt, this.endReason, this.secondsLeft = 0,  List<TripPassengerModel> passengers = const [], this.positionUpdatedAt, this.meetingPoint, this.stop, this.sharePosition = true}): _passengers = passengers,super._();
   factory _StaffTripModel.fromJson(Map<String, dynamic> json) => _$StaffTripModelFromJson(json);
 
 @override final  String id;
@@ -2138,6 +2148,8 @@ class _StaffTripModel extends StaffTripModel {
 @override final  MeetingPointModel? meetingPoint;
 /// Where the trip goes (D-A): the chosen stop, else the airport's meeting point.
 @override final  ShuttleStopModel? stop;
+/// R-B: the phone shares its position during the trip; false when the parking turned the tracking off.
+@override@JsonKey() final  bool sharePosition;
 
 /// Create a copy of StaffTripModel
 /// with the given fields replaced by the non-null parameter values.
@@ -2152,18 +2164,18 @@ Map<String, dynamic> toJson() {
 
 @override
 bool operator ==(Object other) {
-    return identical(this, other) || (other.runtimeType == runtimeType&&other is _StaffTripModel&&(identical(other.id, id) || other.id == id)&&(identical(other.status, status) || other.status == status)&&(identical(other.direction, direction) || other.direction == direction)&&(identical(other.driverId, driverId) || other.driverId == driverId)&&(identical(other.driverName, driverName) || other.driverName == driverName)&&(identical(other.vehicle, vehicle) || other.vehicle == vehicle)&&(identical(other.startedAt, startedAt) || other.startedAt == startedAt)&&(identical(other.expiresAt, expiresAt) || other.expiresAt == expiresAt)&&(identical(other.endedAt, endedAt) || other.endedAt == endedAt)&&(identical(other.endReason, endReason) || other.endReason == endReason)&&(identical(other.secondsLeft, secondsLeft) || other.secondsLeft == secondsLeft)&&const DeepCollectionEquality().equals(other.passengers, _passengers)&&(identical(other.positionUpdatedAt, positionUpdatedAt) || other.positionUpdatedAt == positionUpdatedAt)&&(identical(other.meetingPoint, meetingPoint) || other.meetingPoint == meetingPoint)&&(identical(other.stop, stop) || other.stop == stop));
+    return identical(this, other) || (other.runtimeType == runtimeType&&other is _StaffTripModel&&(identical(other.id, id) || other.id == id)&&(identical(other.status, status) || other.status == status)&&(identical(other.direction, direction) || other.direction == direction)&&(identical(other.driverId, driverId) || other.driverId == driverId)&&(identical(other.driverName, driverName) || other.driverName == driverName)&&(identical(other.vehicle, vehicle) || other.vehicle == vehicle)&&(identical(other.startedAt, startedAt) || other.startedAt == startedAt)&&(identical(other.expiresAt, expiresAt) || other.expiresAt == expiresAt)&&(identical(other.endedAt, endedAt) || other.endedAt == endedAt)&&(identical(other.endReason, endReason) || other.endReason == endReason)&&(identical(other.secondsLeft, secondsLeft) || other.secondsLeft == secondsLeft)&&const DeepCollectionEquality().equals(other.passengers, _passengers)&&(identical(other.positionUpdatedAt, positionUpdatedAt) || other.positionUpdatedAt == positionUpdatedAt)&&(identical(other.meetingPoint, meetingPoint) || other.meetingPoint == meetingPoint)&&(identical(other.stop, stop) || other.stop == stop)&&(identical(other.sharePosition, sharePosition) || other.sharePosition == sharePosition));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
 int get hashCode {
-    return Object.hash(runtimeType,id,status,direction,driverId,driverName,vehicle,startedAt,expiresAt,endedAt,endReason,secondsLeft,const DeepCollectionEquality().hash(_passengers),positionUpdatedAt,meetingPoint,stop);
+    return Object.hash(runtimeType,id,status,direction,driverId,driverName,vehicle,startedAt,expiresAt,endedAt,endReason,secondsLeft,const DeepCollectionEquality().hash(_passengers),positionUpdatedAt,meetingPoint,stop,sharePosition);
 }
 
 @override
 String toString() {
-    return 'StaffTripModel(id: $id, status: $status, direction: $direction, driverId: $driverId, driverName: $driverName, vehicle: $vehicle, startedAt: $startedAt, expiresAt: $expiresAt, endedAt: $endedAt, endReason: $endReason, secondsLeft: $secondsLeft, passengers: $passengers, positionUpdatedAt: $positionUpdatedAt, meetingPoint: $meetingPoint, stop: $stop)';
+    return 'StaffTripModel(id: $id, status: $status, direction: $direction, driverId: $driverId, driverName: $driverName, vehicle: $vehicle, startedAt: $startedAt, expiresAt: $expiresAt, endedAt: $endedAt, endReason: $endReason, secondsLeft: $secondsLeft, passengers: $passengers, positionUpdatedAt: $positionUpdatedAt, meetingPoint: $meetingPoint, stop: $stop, sharePosition: $sharePosition)';
 }
 
 
@@ -2174,7 +2186,7 @@ abstract mixin class _$StaffTripModelCopyWith<$Res> implements $StaffTripModelCo
   factory _$StaffTripModelCopyWith(_StaffTripModel value, $Res Function(_StaffTripModel) _then) = __$StaffTripModelCopyWithImpl;
 @override @useResult
 $Res call({
- String id, String status, String direction, String driverId, String driverName, TripVehicleModel vehicle, DateTime startedAt, DateTime expiresAt, DateTime? endedAt, String? endReason, int secondsLeft, List<TripPassengerModel> passengers, DateTime? positionUpdatedAt, MeetingPointModel? meetingPoint, ShuttleStopModel? stop
+ String id, String status, String direction, String driverId, String driverName, TripVehicleModel vehicle, DateTime startedAt, DateTime expiresAt, DateTime? endedAt, String? endReason, int secondsLeft, List<TripPassengerModel> passengers, DateTime? positionUpdatedAt, MeetingPointModel? meetingPoint, ShuttleStopModel? stop, bool sharePosition
 });
 
 
@@ -2191,7 +2203,7 @@ class __$StaffTripModelCopyWithImpl<$Res>
 
 /// Create a copy of StaffTripModel
 /// with the given fields replaced by the non-null parameter values.
-@override @pragma('vm:prefer-inline') $Res call({Object? id = null,Object? status = null,Object? direction = null,Object? driverId = null,Object? driverName = null,Object? vehicle = null,Object? startedAt = null,Object? expiresAt = null,Object? endedAt = freezed,Object? endReason = freezed,Object? secondsLeft = null,Object? passengers = null,Object? positionUpdatedAt = freezed,Object? meetingPoint = freezed,Object? stop = freezed,}) {
+@override @pragma('vm:prefer-inline') $Res call({Object? id = null,Object? status = null,Object? direction = null,Object? driverId = null,Object? driverName = null,Object? vehicle = null,Object? startedAt = null,Object? expiresAt = null,Object? endedAt = freezed,Object? endReason = freezed,Object? secondsLeft = null,Object? passengers = null,Object? positionUpdatedAt = freezed,Object? meetingPoint = freezed,Object? stop = freezed,Object? sharePosition = null,}) {
   return _then(_StaffTripModel(
 id: null == id ? _self.id : id // ignore: cast_nullable_to_non_nullable
 as String,status: null == status ? _self.status : status // ignore: cast_nullable_to_non_nullable
@@ -2208,7 +2220,8 @@ as int,passengers: null == passengers ? _self._passengers : passengers // ignore
 as List<TripPassengerModel>,positionUpdatedAt: freezed == positionUpdatedAt ? _self.positionUpdatedAt : positionUpdatedAt // ignore: cast_nullable_to_non_nullable
 as DateTime?,meetingPoint: freezed == meetingPoint ? _self.meetingPoint : meetingPoint // ignore: cast_nullable_to_non_nullable
 as MeetingPointModel?,stop: freezed == stop ? _self.stop : stop // ignore: cast_nullable_to_non_nullable
-as ShuttleStopModel?,
+as ShuttleStopModel?,sharePosition: null == sharePosition ? _self.sharePosition : sharePosition // ignore: cast_nullable_to_non_nullable
+as bool,
   ));
 }
 

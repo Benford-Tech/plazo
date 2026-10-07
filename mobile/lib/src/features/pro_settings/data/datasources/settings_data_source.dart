@@ -59,6 +59,7 @@ abstract class SettingsDataSource {
   Future<void> changePassword(String currentPassword, String newPassword);
   Future<ParkingSettingsModel> parking();
   Future<ParkingSettingsModel> updateParking(String id, ParkingSettingsInput input);
+  Future<ParkingSettingsModel> setShuttleTracking(String id, String tracking);
   Future<SmsSettingsModel> smsSettings();
   Future<SmsSettingsModel> saveSmsSettings(SmsSettingsInput input);
   Future<SmsTestModel> testSms(String to);
@@ -100,6 +101,9 @@ class SettingsDataSourceImpl implements SettingsDataSource {
 
   @override
   Future<ParkingSettingsModel> updateParking(String id, ParkingSettingsInput input) async => (await _client.updateParking(id, input.toBody())).data;
+
+  @override
+  Future<ParkingSettingsModel> setShuttleTracking(String id, String tracking) async => (await _client.setShuttleTracking(id, {'tracking': tracking})).data;
 
   @override
   Future<SmsSettingsModel> smsSettings() => _client.smsSettings();

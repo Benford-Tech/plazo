@@ -7,6 +7,8 @@ import '../../../../core/helpers/stay.dart';
 import '../../../../shared/theme/theme.dart';
 import '../../../../shared/widgets/demo_tag.dart';
 import '../../../../shared/widgets/highlights.dart';
+import '../../../../shared/widgets/live_dot.dart';
+import '../../../../shared/widgets/shuttle_icon.dart';
 import '../../../../shared/widgets/striped_placeholder.dart';
 import '../../data/models/public_models.dart';
 
@@ -41,6 +43,7 @@ class ResultCard extends StatelessWidget {
         if (price != null) '$price, ${'results.all_in'.tr(args: [daysLabel(result.days)])}, ${perDayLabel(result.priceCents!, result.days)}',
         if (!bookable) result.priceCents == null ? 'results.no_price'.tr() : 'results.full'.tr(),
         if (result.isDemo) 'results.demo_hint'.tr(),
+        if (result.liveShuttle) 'results.live_hint'.tr(),
       ].join('. '),
       excludeSemantics: true,
       child: Opacity(
@@ -63,6 +66,7 @@ class ResultCard extends StatelessWidget {
                     children: [
                       ParkingPhoto(url: result.photo, height: 92),
                       if (badges.isNotEmpty) Positioned(top: 8, right: 8, child: ResultBadges(badges: badges, alignEnd: true)),
+                      if (result.liveShuttle) const Positioned(left: 8, bottom: 8, child: LiveShuttleTag()),
                     ],
                   ),
                 Padding(
@@ -71,6 +75,7 @@ class ResultCard extends StatelessWidget {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       if (compact && badges.isNotEmpty) ...[ResultBadges(badges: badges), const SizedBox(height: 6)],
+                      if (compact && result.liveShuttle) ...[const LiveShuttleTag(), const SizedBox(height: 6)],
                       Row(
                         crossAxisAlignment: CrossAxisAlignment.center,
                         children: [
@@ -133,4 +138,30 @@ class ResultCard extends StatelessWidget {
       ),
     );
   }
+}
+
+/// I-C (07/10/2026): "EN DIRECT" on a parking whose shuttles are followed live — the dot, the word and the minibus.
+class LiveShuttleTag extends StatelessWidget {
+  const LiveShuttleTag({super.key});
+
+  @override
+  Widget build(BuildContext context) => Container(
+    key: const Key('live-shuttle'),
+    padding: const EdgeInsets.fromLTRB(8, 4, 9, 4),
+    decoration: const BoxDecoration(
+      color: Colors.white,
+      borderRadius: AppRadius.pill,
+      boxShadow: [BoxShadow(color: Color(0x33000000), blurRadius: 10, offset: Offset(0, 3))],
+    ),
+    child: Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        const LiveDot(size: 7),
+        const SizedBox(width: 5),
+        Text('results.live'.tr().toUpperCase(), style: AppText.label(size: 10.5, color: AppColors.ink)),
+        const SizedBox(width: 4),
+        const ShuttleIcon(size: 14),
+      ],
+    ),
+  );
 }

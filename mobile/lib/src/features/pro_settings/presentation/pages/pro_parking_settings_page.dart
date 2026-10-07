@@ -55,6 +55,8 @@ class ProParkingSettingsPage extends StatelessWidget implements AutoRouteWrapper
                   children: [
                     _ParkingForm(parking: p, state: state),
                     const SizedBox(height: 24),
+                    _TrackingSection(state: state),
+                    const SizedBox(height: 24),
                     _SmsSection(state: state),
                   ],
                 ),
@@ -212,6 +214,108 @@ class _ParkingFormState extends State<_ParkingForm> {
       ],
     );
   }
+}
+
+/// R-B (07/10/2026): who sees the shuttles' position — nobody, the team, or the team and the travellers.
+class _TrackingSection extends StatefulWidget {
+  const _TrackingSection({required this.state});
+  final ProSettingsState state;
+  @override
+  State<_TrackingSection> createState() => _TrackingSectionState();
+}
+
+class _TrackingSectionState extends State<_TrackingSection> {
+  static const _levels = ['off', 'team', 'everyone'];
+
+  /// Who sees what, per level: the team's live map, the travellers, "EN DIRECT" in the search results.
+  static const _sees = {
+    'off': (false, false, false),
+    'team': (true, false, false),
+    'everyone': (true, true, true),
+  };
+
+  late String _choice = widget.state.parking?.shuttleTracking ?? 'team';
+
+  @override
+  Widget build(BuildContext context) {
+    final bloc = context.read<ProSettingsBloc>();
+    final saved = widget.state.parking?.shuttleTracking ?? 'team';
+    final busy = widget.state.actionState.isProcessing;
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text('tracking.title'.tr().toUpperCase(), style: AppText.label(size: 11)),
+        const SizedBox(height: 4),
+        Text('tracking.intro'.tr(), style: AppText.muted(size: 12.5)),
+        const SizedBox(height: 8),
+        for (final level in _levels)
+          RadioListTile<String>(
+            key: Key('tracking-$level'),
+            value: level,
+            // ignore: deprecated_member_use
+            groupValue: _choice,
+            contentPadding: EdgeInsets.zero,
+            activeColor: AppColors.accent,
+            title: Row(
+              children: [
+                Flexible(child: Text('tracking.$level.title'.tr(), style: AppText.body(size: 14.5, weight: 600))),
+                if (level == 'everyone') ...[
+                  const SizedBox(width: 8),
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                    decoration: const BoxDecoration(color: AppColors.action, borderRadius: AppRadius.pill),
+                    child: Text('tracking.recommended'.tr(), style: AppText.label(size: 10, color: AppColors.onAccent)),
+                  ),
+                ],
+              ],
+            ),
+            subtitle: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text('tracking.$level.text'.tr(), style: AppText.muted(size: 12)),
+                const SizedBox(height: 6),
+                Wrap(
+                  spacing: 6,
+                  runSpacing: 4,
+                  children: [
+                    _Sees(label: 'tracking.who_team'.tr(), yes: _sees[level]!.$1),
+                    _Sees(label: 'tracking.who_clients'.tr(), yes: _sees[level]!.$2),
+                    _Sees(label: 'tracking.who_mention'.tr(), yes: _sees[level]!.$3),
+                  ],
+                ),
+              ],
+            ),
+            // ignore: deprecated_member_use
+            onChanged: busy ? null : (v) => setState(() => _choice = v ?? saved),
+          ),
+        const SizedBox(height: 4),
+        Text('tracking.always'.tr(), style: AppText.muted(size: 12)),
+        const SizedBox(height: 10),
+        Align(
+          alignment: Alignment.centerRight,
+          child: FilledButton(
+            key: const Key('tracking-save'),
+            onPressed: busy || _choice == saved ? null : () => bloc.add(ProSettingsShuttleTrackingSaved(_choice)),
+            child: Text('tracking.save'.tr()),
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+/// "Équipe ✓", "Clients ✕": who sees the position at this level.
+class _Sees extends StatelessWidget {
+  const _Sees({required this.label, required this.yes});
+  final String label;
+  final bool yes;
+
+  @override
+  Widget build(BuildContext context) => Container(
+    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+    decoration: BoxDecoration(color: yes ? AppStatus.okSoft : AppColors.panel2, borderRadius: AppRadius.pill),
+    child: Text('$label ${yes ? '✓' : '✕'}', style: AppText.body(size: 11.5, weight: 600, color: yes ? AppStatus.okText : AppColors.muted)),
+  );
 }
 
 class _SmsSection extends StatefulWidget {

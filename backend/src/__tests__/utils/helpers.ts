@@ -53,6 +53,15 @@ export async function addStaff(managerToken: string, role: string) {
   return { id: res.body.data.id as string, email, token: session.tokenData.access.token, session };
 }
 
+/** R-B (07/10/2026): the parking shows its shuttles to the travellers too (new parkings: the team only). */
+export async function shareShuttlesWithTravellers(managerToken: string, parkingId: string) {
+  const res = await api()
+    .put(`/api/internal/parkings/${parkingId}/shuttle-tracking`)
+    .set('Authorization', `Bearer ${managerToken}`)
+    .send({ tracking: 'everyone' });
+  if (res.status !== 200) throw new Error(`shareShuttlesWithTravellers failed: ${res.status} ${JSON.stringify(res.body)}`);
+}
+
 /** Puts a parking's listing online directly (the review flow itself is covered by platform-space.test.ts). */
 export async function publishListing(parkingId: string) {
   await prisma.listing.update({ where: { parkingId }, data: { status: 'published', reviewedAt: new Date() } });

@@ -1,7 +1,8 @@
 import httpStatus from 'http-status';
 import { Container, Service } from 'typedi';
-import prisma, { Airport, Listing, Operator, Parking, Prisma } from '@/database';
+import prisma, { Airport, Listing, Operator, Parking, Prisma, ShuttleTracking } from '@/database';
 import { billableDays, quoteCents } from '@/domain/pricing';
+import { travellersSeePosition } from '@/domain/shuttle-tracking';
 import { exceedsCalendarDays, parseInstant } from '@/domain/time';
 import { ValidationException } from '@/middlewares/validation.middleware';
 import { HttpException } from '@/utils/httpException';
@@ -30,7 +31,7 @@ export const ONLINE = { status: 'published', parking: { operator: { status: 'act
 export interface AirportLive {
   serverTime: string;
   airport: { code: string; name: string; slug: string; location: LatLng };
-  parkings: { slug: string; title: string; services: string[]; shuttleMinutes: number | null; location: LatLng | null }[];
+  parkings: { slug: string; title: string; services: string[]; shuttleMinutes: number | null; location: LatLng | null; liveShuttle: boolean }[];
   shuttles: {
     id: string;
     /** Slug of the parking the shuttle belongs to. */
@@ -41,6 +42,11 @@ export interface AirportLive {
     positionAgeSeconds: number | null;
     startedAt: string;
   }[];
+}
+
+/** "EN DIRECT" (R-B + I-C, 07/10/2026): a shuttle is offered and its position is shown to the travellers. */
+function liveShuttle(listing: { services: string[]; parking: { shuttleTracking: ShuttleTracking } }): boolean {
+  return listing.services.includes('shuttle') && travellersSeePosition(listing.parking.shuttleTracking);
 }
 
 /** What travellers see on the Plazo site: published listings only, never operator or customer data. */
@@ -95,6 +101,8 @@ export class PublicService {
       location: locations.get(listing.parkingId) ?? null,
       // Fictional parking of the demo seed: shown like the others, with a small "Démo" badge.
       isDemo: listing.parking.operator.isDemo,
+      // R-B + I-C (07/10/2026): the parking shows its shuttles to the travellers ("EN DIRECT").
+      liveShuttle: liveShuttle(listing),
     };
   }
 
@@ -163,7 +171,8 @@ export class PublicService {
     const slugOf = new Map(listings.map(l => [l.parkingId, l.slug]));
     const trips = listings.length
       ? await prisma.shuttleTrip.findMany({
-          where: { parkingId: { in: listings.map(l => l.parkingId) }, status: 'running', expiresAt: { gt: now } },
+          // R-B: only the parkings that show their shuttles to the travellers.
+          where: { parkingId: { in: listings.filter(liveShuttle).map(l => l.parkingId) }, status: 'running', expiresAt: { gt: now } },
           select: {
             id: true,
             parkingId: true,
@@ -187,6 +196,7 @@ export class PublicService {
         services: l.services,
         shuttleMinutes: l.shuttleMinutes ?? l.parking.shuttleTravelMinutes,
         location: locations.get(l.parkingId) ?? null,
+        liveShuttle: liveShuttle(l),
       })),
       shuttles: trips.map(t => ({
         id: t.id,

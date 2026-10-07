@@ -55,6 +55,7 @@ _SearchResultModel _$SearchResultModelFromJson(
   days: (json['days'] as num?)?.toInt() ?? 0,
   priceCents: (json['priceCents'] as num?)?.toInt(),
   isDemo: json['isDemo'] as bool? ?? false,
+  liveShuttle: json['liveShuttle'] as bool? ?? false,
 );
 
 Map<String, dynamic> _$SearchResultModelToJson(_SearchResultModel instance) =>
@@ -73,6 +74,7 @@ Map<String, dynamic> _$SearchResultModelToJson(_SearchResultModel instance) =>
       'days': instance.days,
       'priceCents': instance.priceCents,
       'isDemo': instance.isDemo,
+      'liveShuttle': instance.liveShuttle,
     };
 
 _SearchResponseModel _$SearchResponseModelFromJson(Map<String, dynamic> json) =>

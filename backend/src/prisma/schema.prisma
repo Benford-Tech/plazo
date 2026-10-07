@@ -209,6 +209,10 @@ model Parking {
   // Price per day beyond the longest package of the grid, in cents.
   extraDayPriceCents Int?
 
+  // Who sees the shuttles' position during the trips (R-B, 07/10/2026): nobody (the drivers do not
+  // share it), the team only, or the team and the travellers (then "EN DIRECT" in the search results).
+  shuttleTracking ShuttleTracking @default(team)
+
   operator       Operator        @relation(fields: [operatorId], references: [id], onDelete: Cascade)
   reservations   Reservation[]
   pricingTiers   PricingTier[]
@@ -223,6 +227,13 @@ model Parking {
 
   @@index([operatorId])
   @@map("parkings")
+}
+
+// R-B (07/10/2026): who sees the position of a parking's shuttles.
+enum ShuttleTracking {
+  off // the drivers do not share it
+  team // the staff's live map only
+  everyone // the staff and the travellers (booking, home map, "EN DIRECT")
 }
 
 // Kind of a parking spot (bloc 2). "reserved" keeps a spot out of the automatic assignment.

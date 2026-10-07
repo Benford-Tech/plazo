@@ -26,6 +26,7 @@ import type {
   PlatformReservations,
   ReminderBoard,
   ReminderSettingsInput,
+  ShuttleTracking,
   SignupInput,
   ListingInput,
   ListingResponse,
@@ -331,6 +332,8 @@ export const adminApi = {
     }),
   removeStop: (id: string) =>
     apiRequest<void>(`/internal/shuttle/stops/${id}`, { method: "DELETE" }),
+  setShuttleTracking: (id: string, tracking: ShuttleTracking) =>
+    apiRequest<{ data: Parking }>(`/internal/parkings/${id}/shuttle-tracking`, { method: "PUT", body: json({ tracking }) }),
   updateParking: (id: string, settings: ParkingSettings) =>
     apiRequest<{ data: Parking }>(`/internal/parkings/${id}`, {
       method: "PATCH",
