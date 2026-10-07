@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+	<!-- Plazo Pro (flavor pro): staff push notifications only. The booking universal links belong to
+	     the traveller app (Runner.entitlements). Codemagic signs with an App Store profile: production. -->
+	<key>aps-environment</key>
+	<string>production</string>
+</dict>
+</plist>

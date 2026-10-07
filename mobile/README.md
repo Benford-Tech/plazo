@@ -175,7 +175,33 @@ version web, « Payer » ouvre la page Stripe Checkout.
    politique de confidentialité (URL), coordonnées d'assistance, catégorie, classification, justification de la
    position en arrière-plan (Apple) et formulaire « Sécurité des données » (Google).
 7. **Codemagic** : l'app ajoutée sur le dépôt avec `codemagic.yaml` (à la racine du dépôt), le groupe de variables `mobile_secrets`
-   (voir l'en-tête du fichier).
+   (voir l'en-tête du fichier) et l'intégration App Store Connect `plazo-asc`.
+
+## Publier sur les stores (pipelines, 07/10/2026)
+
+Trois workflows Codemagic dans `codemagic.yaml` (racine du dépôt, `working_directory: mobile`) :
+
+| Workflow | Quand | Ce qu'il fait |
+| --- | --- | --- |
+| `mobile-check` | chaque push qui touche `mobile/` | nom du produit à jour, `flutter analyze`, `flutter test`, APK **debug** des deux apps (à installer pour essayer) |
+| `plazo-release` | tag `mobile-v*` ou lancement manuel | Plazo (voyageurs) : AAB signé → **Google Play, piste interne** ; IPA signé → **TestFlight** |
+| `plazo-pro-release` | tag `mobile-v*` ou lancement manuel | Plazo Pro (personnel) : idem avec le flavor `pro` (id `.pro`, schéma iOS `pro`) |
+
+- Une version = le `version:` de `pubspec.yaml` (ex. `1.0.0`) + un numéro de build = compteur Codemagic + 100, jamais
+  inférieur au dernier build connu de Google Play ou de TestFlight (lu au moment du build). Pour publier : monter
+  `version:` dans `pubspec.yaml`, pousser, poser le tag `mobile-v1.0.0` (les deux workflows partent), ou lancer un workflow
+  depuis Codemagic.
+- Les deux stores reçoivent une version **de test** (piste interne, TestFlight) : la mise en production se décide dans
+  chaque console. `submit_as_draft: true` tant que l'app n'a pas été publiée une première fois sur Google Play, puis `false`.
+- Le **premier envoi** de chaque app sur Google Play se fait à la main dans la Play Console (la fiche doit exister avant
+  que l'API accepte un bundle) ; sur App Store Connect, l'app doit être créée avec son bundle id avant le premier build.
+- Secrets, dans Codemagic seulement (jamais dans le dépôt ni dans une conversation) : groupe `mobile_secrets` avec
+  `KEYSTORE_FILE`, `KEY_PROPERTIES_FILE`, `GCLOUD_SERVICE_ACCOUNT_CREDENTIALS` (compte de service Google Play, rôle
+  « Release manager » sur les deux apps), `CERTIFICATE_PRIVATE_KEY`, `ONESIGNAL_APP_ID`, `ONESIGNAL_TRAVELLER_APP_ID`,
+  `API_BASE_URL` ; intégration App Store Connect `plazo-asc` (clé API, rôle App Manager). Les capacités de l'App ID :
+  Push Notifications (les deux apps) et Associated Domains (Plazo seulement).
+- À remplacer dans `codemagic.yaml` quand les apps existent dans App Store Connect : `APP_STORE_APP_ID` (Apple ID numérique
+  de chaque app, sert à lire le dernier build TestFlight ; `"0"` = ignoré).
 
 - `/pro/parking` (onglet Parking) : Occupation (bloc 2, étape 2) — recherche par plaque, place proposée à l'arrivée, crochet des clés.
 - `/pro/equipe` (gérants : membres, rôles, accès, mot de passe provisoire), `/pro/compte` (changement de mot de passe), `/pro/reglages` (gérants : nom, adresse, places, marge, navette, canal SMS avec le téléphone Android du parking).
@@ -192,5 +218,9 @@ version web, « Payer » ouvre la page Stripe Checkout.
   flavor `traveller`, `android/app/src/traveller/AndroidManifest.xml`).
 - Exemple : `flutter build apk --release --flavor pro --dart-define=APP_FLAVOR=pro`. Toujours passer le même nom aux deux
   options (le flavor choisit l'id et l'icône, la define choisit le parcours).
-- iOS : un seul schéma pour l'instant (app voyageur). Pour Plazo Pro sur iOS, créer dans Xcode une configuration et un
-  schéma `pro` avec le bundle id `com.benfordtech.parkingApp.pro`, puis `flutter build ipa --flavor pro --dart-define=APP_FLAVOR=pro`.
+- iOS (07/10/2026) : deux schémas partagés `traveller` et `pro` (`ios/Runner.xcodeproj/xcshareddata/xcschemes/`) et les
+  configurations `Debug-… / Release-… / Profile-…` de chaque flavor dans le projet Xcode : bundle id `com.benfordtech.parkingApp`
+  ou `.pro`, nom affiché (`APP_DISPLAY_NAME` → `CFBundleDisplayName`), jeu d'icônes `AppIcon` ou `AppIcon-pro`
+  (`Assets.xcassets/AppIcon-pro.appiconset`, généré depuis `assets/brand/app-icon-pro.png`), droits `Runner.entitlements`
+  (push + liens universels) ou `RunnerPro.entitlements` (push seul). `flutter build ipa --flavor pro --dart-define=APP_FLAVOR=pro`.
+  Le schéma `Runner` d'origine reste l'app voyageur (configurations de base).

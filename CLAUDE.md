@@ -275,7 +275,9 @@ Plazo reprend la stack et les conventions des dépôts `lovenest-backend`, `love
   parcours bien séparés, puis deux points d'entrée (flavors). **Décision du 04/10/2026 : app pro complète, équivalente
   à l'espace pro web** (A-B : deux apps « Plazo » et « Plazo Pro » sur un seul projet ; N-A : quatre onglets
   Aujourd'hui · Réservations · Parking · Plus), livrée par étapes : 1 réservations (fait), 2 flavors et onglets (fait : `--flavor pro --dart-define=APP_FLAVOR=pro`,
-  `ProShellPage` à quatre onglets sous `/pro`, icône Pro vert citron (P et avion vert foncé, C-B 05/10/2026) ; iOS : second schéma Xcode à créer),
+  `ProShellPage` à quatre onglets sous `/pro`, icône Pro vert citron (P et avion vert foncé, C-B 05/10/2026) ; iOS : schémas
+  Xcode `traveller` et `pro` avec leurs configurations `-traveller` / `-pro`, bundle id `.pro`, `AppIcon-pro`, `RunnerPro.entitlements`
+  (07/10/2026)),
   **R-C « Poste du jour » (04/10/2026)** : chaque membre choisit son poste (gérant, accueil, chauffeur, voiturier) parmi ceux
   que son rôle couvre (`allowedPosts` dans `domain/roles.ts`, `Staff.post/postSetAt`, `PATCH /internal/staff/me/post`) ; les quatre
   onglets suivent le poste (`core/helpers/posts.dart` : chauffeur Navette · Arrivées · Retours · Plus, voiturier Parking ·
@@ -334,7 +336,11 @@ Le nom du produit doit rester dans UN seul fichier de configuration (il peut enc
   par `/plan/estimate` et `/plan/generate`) ; paiement par la feuille native Stripe
   (`flutter_stripe`) ; architecture de `lovenest-frontend`
   (`lib/src/features/<x>/{data,domain,presentation}`, `di/`, `core/`), textes dans `assets/l10n/fr-FR.json`,
-  nom du produit recopié depuis `product.json` par `tool/sync_product.dart`, builds par `codemagic.yaml` (racine du dépôt, `working_directory: mobile`).
+  nom du produit recopié depuis `product.json` par `tool/sync_product.dart`, builds par `codemagic.yaml` (racine du dépôt, `working_directory: mobile`). **Pipelines de publication (07/10/2026)** :
+  `mobile-check` (chaque push : vérifications + APK debug), `plazo-release` et `plazo-pro-release` (tag `mobile-v*` ou manuel :
+  AAB signé → Google Play piste interne, IPA signé → TestFlight ; numéro de build = compteur Codemagic + 100, jamais sous le
+  dernier des stores ; secrets dans le groupe Codemagic `mobile_secrets` et l'intégration `plazo-asc`, voir `mobile/README.md`
+  « Publier sur les stores »).
   Voir `mobile/README.md`.
 
 ## Personnel
