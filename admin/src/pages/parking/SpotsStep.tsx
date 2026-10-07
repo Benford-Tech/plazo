@@ -234,6 +234,19 @@ export default function SpotsStep({
       },
     });
     if (!spots.length && result) {
+      // M-A: the service aisles of the chosen layout, hatched, under the slots.
+      list.push({
+        id: "preview-aisles",
+        type: "fill",
+        data: fc(
+          result.zones.flatMap((z) =>
+            z.layouts[layout].aisles.map((ring) =>
+              feature({ type: "Polygon", coordinates: [ring] }),
+            ),
+          ),
+        ),
+        paint: { "fill-color": "#F3F3F0", "fill-opacity": 0.18 },
+      });
       list.push({
         id: "preview",
         type: "line",
@@ -365,8 +378,15 @@ export default function SpotsStep({
                 className="h-[18px] w-[18px] accent-[#A3E635]"
               />
               <span className="flex-1">{t.layouts[key]}</span>
-              <span className="font-mono font-bold">
-                {computing || !counts ? "…" : t.places(counts[key])}
+              <span className="text-right">
+                <span className="block font-mono font-bold">
+                  {computing || !counts ? "…" : t.places(counts[key])}
+                </span>
+                {!computing && counts && counts[key] > 0 && result && (
+                  <span className="block font-mono text-[11px] text-muted-foreground">
+                    {t.perCar(Math.round(result.usableArea / counts[key]))}
+                  </span>
+                )}
               </span>
             </label>
           ))}

@@ -46,8 +46,16 @@ abstract class ShuttleWavesState with _$ShuttleWavesState {
   bool get loaded => data != null;
 
   /// The first wave still to run (today only).
-  ShuttleWaveModel? get next =>
-      dayOffset == 0 ? waves.where((w) => w.planned && !w.leaveAt.isBefore(now.subtract(const Duration(minutes: 30)))).firstOrNull : null;
+  ShuttleWaveModel? get next => dayOffset == 0 ? upcoming.where((w) => w.planned).firstOrNull : null;
+
+  /// Today, a wave is past once it is done or should have left more than 30 minutes ago.
+  bool isPast(ShuttleWaveModel w) => dayOffset == 0 && (w.state == 'done' || w.leaveAt.isBefore(now.subtract(const Duration(minutes: 30))));
+
+  /// The waves the driver still has ahead (every wave of another day).
+  List<ShuttleWaveModel> get upcoming => waves.where((w) => !isPast(w)).toList();
+
+  /// Today's waves already behind, folded under "N créneaux passés".
+  List<ShuttleWaveModel> get past => waves.where(isPast).toList();
 }
 
 /// V-A "Ligne du jour" (05/10/2026): the day's shuttle waves, polled every [pollInterval]

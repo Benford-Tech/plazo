@@ -19,7 +19,7 @@ export class ParkingController {
 
   /** GET /internal/parking */
   public getPrimary = catchAsync(async (req: RequestWithStaffSession, res: Response) => {
-    res.json(await this.parkingService.getPrimary(req.staff));
+    res.json(await this.parkingService.getPrimaryWithPosition(req.staff));
   });
 
   /** PATCH /internal/parkings/:id */

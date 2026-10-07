@@ -18,6 +18,9 @@ abstract class PlannedStayModel with _$PlannedStayModel {
     String? spotId,
     String? keyHook,
     @Default(false) bool onSite,
+
+    /// O-A (06/10/2026): the cars in front of this one that leave later.
+    @Default(<PlanningBlockerModel>[]) List<PlanningBlockerModel> blockedBy,
   }) = _PlannedStayModel;
 
   factory PlannedStayModel.fromJson(Map<String, dynamic> json) => _$PlannedStayModelFromJson(json);
@@ -90,4 +93,10 @@ abstract class PreassignEnvelopeModel with _$PreassignEnvelopeModel {
   const factory PreassignEnvelopeModel({required PreassignResultModel data}) = _PreassignEnvelopeModel;
 
   factory PreassignEnvelopeModel.fromJson(Map<String, dynamic> json) => _$PreassignEnvelopeModelFromJson(json);
+}
+
+@freezed
+abstract class PlanningBlockerModel with _$PlanningBlockerModel {
+  const factory PlanningBlockerModel({required String reservationId, required String reference, required String spotCode, required DateTime returnAt}) = _PlanningBlockerModel;
+  factory PlanningBlockerModel.fromJson(Map<String, dynamic> json) => _$PlanningBlockerModelFromJson(json);
 }

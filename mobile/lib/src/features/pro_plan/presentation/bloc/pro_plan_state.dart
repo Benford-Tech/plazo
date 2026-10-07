@@ -3,7 +3,7 @@ part of 'pro_plan_bloc.dart';
 /// The three screens of M-A: where, draw, generate.
 enum PlanStep { locate, draw, generate }
 
-const planLayouts = ['selfPark', 'valet24', 'valet5'];
+const planLayouts = ['selfPark', 'valet24', 'valet5', 'valetEdge'];
 
 @freezed
 abstract class ProPlanState with _$ProPlanState {

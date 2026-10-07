@@ -122,8 +122,13 @@ void main() {
       ),
     );
     expect(find.text('Ligne du jour'), findsOneWidget);
-    expect(find.text('2 vagues'), findsOneWidget);
+    // 06/10/2026: only the waves ahead are listed; the done one is folded under "1 créneau passé".
+    expect(find.text('1 à venir'), findsOneWidget);
     expect(find.text('05:40'), findsOneWidget);
+    expect(find.text('Faite'), findsNothing);
+    expect(find.text('1 créneau passé'), findsOneWidget);
+    await tester.tap(find.byKey(const Key('waves-past')));
+    await tester.pump();
     expect(find.text('Vers le terminal · Aéroport'), findsOneWidget);
     expect(find.text('11 / 8'), findsOneWidget);
     expect(find.text('2 navettes'), findsOneWidget);

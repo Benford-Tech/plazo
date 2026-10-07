@@ -1,4 +1,4 @@
-import { Map as MapLibreMap, Marker, setWorkerUrl, type GeoJSONSource, type LayerSpecification, type StyleSpecification } from "maplibre-gl";
+import { Map as MapLibreMap, Marker, setWorkerUrl, type ExpressionSpecification, type GeoJSONSource, type LayerSpecification, type StyleSpecification } from "maplibre-gl";
 import "maplibre-gl/dist/maplibre-gl.css";
 // MapLibre loads its worker next to its own module, a file the bundler does not emit: Vite
 // bundles the worker (with the chunk it shares with the main module) and gives its URL.
@@ -7,6 +7,7 @@ import { forwardRef, useEffect, useImperativeHandle, useRef } from "react";
 import { TerraDraw, TerraDrawLineStringMode, TerraDrawPointMode, TerraDrawPolygonMode, TerraDrawSelectMode, type GeoJSONStoreFeatures } from "terra-draw";
 import { TerraDrawMapLibreGLAdapter } from "terra-draw-maplibre-gl-adapter";
 import { DEFAULT_CENTER, IGN_ATTRIBUTION, IGN_ORTHO_MAX_ZOOM, IGN_ORTHO_TILES } from "@/lib/capacity/ign";
+import { snapToRings } from "@/lib/capacity/snap";
 import type { GeoLineString, GeoPoint, GeoPolygon, LonLat } from "@/lib/capacity/types";
 import { cn } from "@/lib/utils";
 
@@ -14,16 +15,21 @@ export type FeatureCollection = { type: "FeatureCollection"; features: { type: "
 
 export interface MapLayer {
   id: string;
-  type: "fill" | "line" | "circle";
+  type: "fill" | "line" | "circle" | "symbol";
   data: FeatureCollection;
   paint: Record<string, unknown>;
+  /** Layout properties (symbol layers: the icon, its size and rotation). */
+  layout?: Record<string, unknown>;
 }
 
 export interface MapLabel {
   id: string;
   lngLat: LonLat;
+  /** Lines separated by "\n" (the "spot" variant shows them stacked). */
   text: string;
-  variant: "zone" | "length" | "vertex";
+  variant: "zone" | "length" | "vertex" | "spot";
+  /** Hidden below this zoom (the "spot" labels only read once the map is close enough). */
+  minZoom?: number;
 }
 
 export type DrawKind = "polygon" | "linestring" | "point";
@@ -38,6 +44,8 @@ export interface MapViewHandle {
 interface Props {
   layers: MapLayer[];
   labels?: MapLabel[];
+  /** SVG icons by name, for symbol layers (`icon-image`); drawn at 2× for sharpness. */
+  icons?: Record<string, string>;
   showPhoto?: boolean;
   /** Fitted once, when the map is created. */
   initialBounds?: [LonLat, LonLat] | null;
@@ -48,6 +56,12 @@ interface Props {
   /** Active drawing tool, or null. */
   drawMode?: DrawKind | null;
   onDrawn?: (geometry: GeoPolygon | GeoLineString | GeoPoint) => void;
+  /** Rings the pointer snaps to while drawing (T-A): a vertex within 12 px, else an edge within 8 px. */
+  snapTo?: LonLat[][];
+  /** P-A: the brush. While set, dragging paints a stroke of `widthM` metres instead of panning. */
+  paint?: { widthM: number; mode: "paint" | "erase" } | null;
+  /** The points of a finished stroke, in map order. */
+  onPaintStroke?: (points: LonLat[]) => void;
   onMapClick?: (lngLat: LonLat, point: { x: number; y: number }) => void;
   onViewChange?: (bbox: [number, number, number, number], zoom: number) => void;
   cursor?: string;
@@ -56,8 +70,18 @@ interface Props {
 }
 
 const YELLOW = "#A3E635";
+const ERASER = "#DC2626";
+/** Metres per pixel at zoom 0 on the equator (Web Mercator, 512 px tiles). */
+const METRES_PER_PIXEL_Z0 = 78271.517;
+
+/** A MapLibre expression giving `metres` on the ground in pixels at every zoom, at latitude `lat`. */
+function metresToPixels(metres: number, lat: number): ExpressionSpecification {
+  const px0 = metres / (METRES_PER_PIXEL_Z0 * Math.cos((lat * Math.PI) / 180));
+  return ["interpolate", ["exponential", 2], ["zoom"], 0, px0, 24, px0 * 2 ** 24];
+}
 
 setWorkerUrl(maplibreWorkerUrl);
+
 
 const STYLE: StyleSpecification = {
   version: 8,
@@ -84,10 +108,12 @@ export const MapView = forwardRef<MapViewHandle, Props>(function MapView(props, 
   const readyRef = useRef(false);
   const editIdRef = useRef<string | null>(null);
   const lastEmittedRef = useRef<string>("");
-  const markersRef = useRef<Marker[]>([]);
+  const markersRef = useRef<{ marker: Marker; minZoom: number }[]>([]);
   const appliedLayersRef = useRef<Map<string, string>>(new Map());
+  const iconsRef = useRef<Set<string>>(new Set());
   const propsRef = useRef(props);
   propsRef.current = props;
+  const strokeRef = useRef<LonLat[] | null>(null);
 
   useImperativeHandle(ref, () => ({
     flyTo: (center, zoom = 18) => mapRef.current?.flyTo({ center, zoom, duration: 800 }),
@@ -154,7 +180,19 @@ export const MapView = forwardRef<MapViewHandle, Props>(function MapView(props, 
             },
           }),
           new TerraDrawPolygonMode({
-            styles: { fillColor: YELLOW, fillOpacity: 0.15, outlineColor: YELLOW, outlineWidth: 3, closingPointColor: YELLOW, closingPointOutlineColor: "#0F2A14" },
+            snapping: { toCustom: (event, context) => snapToRings(propsRef.current.snapTo, event, context) },
+            styles: {
+              fillColor: YELLOW,
+              fillOpacity: 0.15,
+              outlineColor: YELLOW,
+              outlineWidth: 3,
+              closingPointColor: YELLOW,
+              closingPointOutlineColor: "#0F2A14",
+              snappingPointColor: "#F3F3F0",
+              snappingPointOutlineColor: "#0F2A14",
+              snappingPointWidth: 6,
+              snappingPointOutlineWidth: 2,
+            },
           }),
           new TerraDrawLineStringMode({ styles: { lineStringColor: "#5fd3ff", lineStringWidth: 4, closingPointColor: "#5fd3ff" } }),
           new TerraDrawPointMode({ styles: point }),
@@ -179,18 +217,86 @@ export const MapView = forwardRef<MapViewHandle, Props>(function MapView(props, 
         }
       });
 
+      map.addSource("paint", { type: "geojson", data: { type: "FeatureCollection", features: [] } });
+      map.addLayer({
+        id: "paint-stroke",
+        type: "line",
+        source: "paint",
+        filter: ["==", ["get", "kind"], "stroke"],
+        layout: { "line-cap": "round", "line-join": "round" },
+        paint: { "line-color": YELLOW, "line-opacity": 0.55, "line-width": 1 },
+      });
+      map.addLayer({
+        id: "paint-cursor",
+        type: "circle",
+        source: "paint",
+        filter: ["==", ["get", "kind"], "cursor"],
+        paint: { "circle-radius": 1, "circle-color": YELLOW, "circle-opacity": 0.25, "circle-stroke-color": YELLOW, "circle-stroke-width": 2 },
+      });
       readyRef.current = true;
+      syncIcons();
       syncLayers();
       syncDraw();
+      syncPaint();
       emitView();
     });
 
     map.on("moveend", emitView);
+    map.on("zoom", () => {
+      const zoom = map.getZoom();
+      for (const { marker, minZoom } of markersRef.current) marker.getElement().style.display = zoom >= minZoom ? "" : "none";
+    });
     map.on("click", e => {
       const draw = drawRef.current;
       if (draw && draw.getMode() !== "static" && draw.getMode() !== "select") return;
+      if (propsRef.current.paint) return;
       propsRef.current.onMapClick?.([e.lngLat.lng, e.lngLat.lat], { x: e.point.x, y: e.point.y });
     });
+
+    // P-A: the brush. Pressing starts a stroke (the map does not pan), moving extends it, releasing
+    // hands it over; the cursor ring follows the pointer at the brush's real width.
+    const setStrokeData = (points: LonLat[] | null, cursor: LonLat | null) => {
+      const source = map.getSource("paint") as GeoJSONSource | undefined;
+      if (!source) return;
+      source.setData({
+        type: "FeatureCollection",
+        features: [
+          ...(points && points.length ? [{ type: "Feature" as const, geometry: { type: "LineString" as const, coordinates: points.length > 1 ? points : [points[0], points[0]] }, properties: { kind: "stroke" } }] : []),
+          ...(cursor ? [{ type: "Feature" as const, geometry: { type: "Point" as const, coordinates: cursor }, properties: { kind: "cursor" } }] : []),
+        ],
+      });
+    };
+    const start = (e: { lngLat: { lng: number; lat: number }; preventDefault(): void }) => {
+      if (!propsRef.current.paint) return;
+      e.preventDefault();
+      strokeRef.current = [[e.lngLat.lng, e.lngLat.lat]];
+      setStrokeData(strokeRef.current, strokeRef.current[0]);
+    };
+    const move = (e: { lngLat: { lng: number; lat: number } }) => {
+      if (!propsRef.current.paint) return;
+      const p: LonLat = [e.lngLat.lng, e.lngLat.lat];
+      if (strokeRef.current) strokeRef.current.push(p);
+      setStrokeData(strokeRef.current, p);
+    };
+    const end = () => {
+      const points = strokeRef.current;
+      strokeRef.current = null;
+      if (!points) return;
+      setStrokeData(null, points[points.length - 1]);
+      propsRef.current.onPaintStroke?.(points);
+    };
+    map.on("mousedown", start);
+    map.on("mousemove", move);
+    map.on("mouseup", end);
+    map.on("mouseout", end);
+    map.on("touchstart", e => {
+      if (e.points.length === 1) start(e);
+    });
+    map.on("touchmove", e => {
+      if (e.points.length === 1) move(e);
+    });
+    map.on("touchend", end);
+    map.on("touchcancel", end);
 
     return () => {
       readyRef.current = false;
@@ -204,13 +310,59 @@ export const MapView = forwardRef<MapViewHandle, Props>(function MapView(props, 
       mapRef.current = null;
       applied.clear();
     };
+    // The sync helpers read the latest props through refs: the map is created once.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
+  /** Shows the brush at its real width and colour, or hides it. */
+  function syncPaint() {
+    const map = mapRef.current;
+    if (!map || !readyRef.current || !map.getLayer("paint-stroke")) return;
+    const paint = propsRef.current.paint;
+    const visible = paint ? "visible" : "none";
+    map.setLayoutProperty("paint-stroke", "visibility", visible);
+    map.setLayoutProperty("paint-cursor", "visibility", visible);
+    if (!paint) {
+      strokeRef.current = null;
+      (map.getSource("paint") as GeoJSONSource | undefined)?.setData({ type: "FeatureCollection", features: [] });
+      return;
+    }
+    const lat = map.getCenter().lat;
+    const colour = paint.mode === "erase" ? ERASER : YELLOW;
+    map.setPaintProperty("paint-stroke", "line-width", metresToPixels(paint.widthM, lat));
+    map.setPaintProperty("paint-stroke", "line-color", colour);
+    map.setPaintProperty("paint-cursor", "circle-radius", metresToPixels(paint.widthM / 2, lat));
+    map.setPaintProperty("paint-cursor", "circle-color", colour);
+    map.setPaintProperty("paint-cursor", "circle-stroke-color", colour);
+  }
+
+  /** Registers the SVG icons the symbol layers name; a symbol layer waits for its icon. */
+  function syncIcons() {
+    const map = mapRef.current;
+    if (!map || !readyRef.current) return;
+    for (const [id, svg] of Object.entries(propsRef.current.icons ?? {})) {
+      if (iconsRef.current.has(id)) continue;
+      iconsRef.current.add(id);
+      const img = new Image();
+      img.onload = () => {
+        if (!mapRef.current || mapRef.current !== map) return;
+        if (!map.hasImage(id)) map.addImage(id, img, { pixelRatio: 2 });
+        syncLayers();
+      };
+      img.src = `data:image/svg+xml;charset=utf-8,${encodeURIComponent(svg)}`;
+    }
+  }
 
   /** Adds, updates and removes the overlay layers, below Terra Draw's own layers. */
   function syncLayers() {
     const map = mapRef.current;
     if (!map || !readyRef.current) return;
-    const wanted = propsRef.current.layers;
+    const iconOf = (layer: MapLayer) => (layer.type === "symbol" ? (layer.layout?.["icon-image"] as string | undefined) : undefined);
+    // A symbol layer whose icon is not registered yet is left out until the image loads.
+    const wanted = propsRef.current.layers.filter(layer => {
+      const icon = iconOf(layer);
+      return !icon || typeof icon !== "string" || map.hasImage(icon);
+    });
     const applied = appliedLayersRef.current;
     const firstDrawLayer = map.getStyle().layers.find(l => l.id.startsWith("td-"))?.id;
     for (const [id] of applied) {
@@ -225,10 +377,10 @@ export const MapView = forwardRef<MapViewHandle, Props>(function MapView(props, 
       const source = map.getSource(sourceId) as GeoJSONSource | undefined;
       if (source) source.setData(layer.data as never);
       else map.addSource(sourceId, { type: "geojson", data: layer.data as never });
-      const paintKey = `${layer.type}:${JSON.stringify(layer.paint)}`;
+      const paintKey = `${layer.type}:${JSON.stringify(layer.paint)}:${JSON.stringify(layer.layout ?? null)}`;
       if (applied.get(layer.id) !== paintKey) {
         if (map.getLayer(sourceId)) map.removeLayer(sourceId);
-        map.addLayer({ id: sourceId, type: layer.type, source: sourceId, paint: layer.paint } as LayerSpecification, firstDrawLayer);
+        map.addLayer({ id: sourceId, type: layer.type, source: sourceId, paint: layer.paint, ...(layer.layout ? { layout: layer.layout } : {}) } as LayerSpecification, firstDrawLayer);
         applied.set(layer.id, paintKey);
       }
     }
@@ -279,6 +431,7 @@ export const MapView = forwardRef<MapViewHandle, Props>(function MapView(props, 
 
   useEffect(syncLayers, [props.layers]);
   useEffect(syncDraw, [props.drawMode, props.editPolygon, props.midpoints]);
+  useEffect(syncPaint, [props.paint?.widthM, props.paint?.mode]);
 
   useEffect(() => {
     const map = mapRef.current;
@@ -292,19 +445,33 @@ export const MapView = forwardRef<MapViewHandle, Props>(function MapView(props, 
   useEffect(() => {
     const map = mapRef.current;
     if (!map) return;
-    markersRef.current.forEach(m => m.remove());
+    markersRef.current.forEach(m => m.marker.remove());
+    const zoom = map.getZoom();
     markersRef.current = (props.labels ?? []).map(label => {
       const el = document.createElement("div");
       el.className = `cap-label cap-label-${label.variant}`;
-      el.textContent = label.text;
-      return new Marker({ element: el, offset: label.variant === "vertex" ? [0, -16] : [0, 0] }).setLngLat(label.lngLat).addTo(map);
+      if (label.variant === "spot") {
+        for (const line of label.text.split("\n")) {
+          const span = document.createElement("span");
+          span.textContent = line;
+          el.appendChild(span);
+        }
+      } else el.textContent = label.text;
+      const minZoom = label.minZoom ?? 0;
+      if (zoom < minZoom) el.style.display = "none";
+      return { marker: new Marker({ element: el, offset: label.variant === "vertex" ? [0, -16] : [0, 0] }).setLngLat(label.lngLat).addTo(map), minZoom };
     });
   }, [props.labels]);
 
   useEffect(() => {
+    syncIcons();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [props.icons]);
+
+  useEffect(() => {
     const canvas = mapRef.current?.getCanvas();
-    if (canvas) canvas.style.cursor = props.cursor ?? "";
-  }, [props.cursor]);
+    if (canvas) canvas.style.cursor = props.paint ? "crosshair" : (props.cursor ?? "");
+  }, [props.cursor, props.paint]);
 
   return (
     <div className={cn("relative h-full w-full overflow-hidden bg-[#E6E8E4]", props.className)}>

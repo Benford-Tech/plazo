@@ -11,6 +11,8 @@ _ParkingSummaryModel _$ParkingSummaryModelFromJson(Map<String, dynamic> json) =>
       id: json['id'] as String,
       name: json['name'] as String,
       totalCapacity: (json['totalCapacity'] as num).toInt(),
+      lat: (json['lat'] as num?)?.toDouble(),
+      lng: (json['lng'] as num?)?.toDouble(),
     );
 
 Map<String, dynamic> _$ParkingSummaryModelToJson(
@@ -19,6 +21,8 @@ Map<String, dynamic> _$ParkingSummaryModelToJson(
   'id': instance.id,
   'name': instance.name,
   'totalCapacity': instance.totalCapacity,
+  'lat': instance.lat,
+  'lng': instance.lng,
 };
 
 _ParkingPlanModel _$ParkingPlanModelFromJson(Map<String, dynamic> json) =>

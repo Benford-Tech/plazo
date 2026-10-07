@@ -334,6 +334,7 @@ export const fr = {
         departure_delayed: "Vol aller retardé",
         wave_overflow: "Vague au-delà d'une navette",
         no_show_suspected: "Attendu, toujours pas là",
+        blocked_return: "Retour du jour bloqué : sortir d'abord",
         inbound_to_check: "Mails à vérifier",
       } satisfies Record<AlertKind, string>,
       waveDetail: (direction: ShuttleDirection, time: string, passengers: number) =>
@@ -993,6 +994,16 @@ export const fr = {
     sourceParcelsHelp: "API Carto · cadastre",
     sourceParkings: "Parkings BD TOPO",
     sourceParkingsHelp: "IGN · surfaces de parking",
+    // B-A (07/10/2026): the IGN buildings become exclusions by themselves.
+    sourceBuildings: "Bâtiments BD TOPO",
+    sourceBuildingsHelp: "IGN · emprise des bâtiments",
+    ignBuildings: "Exclure les bâtiments repérés par l'IGN",
+    ignBuildingsCount: (n: number) =>
+      n === 0
+        ? "Aucun bâtiment IGN sur le terrain"
+        : `${n} bâtiment${n > 1 ? "s" : ""} IGN exclu${n > 1 ? "s" : ""} (1 m de marge, à retirer d'un clic à l'étape Zones)`,
+    ignBuildingsLoading: "Recherche des bâtiments IGN…",
+    ignBuildingsError: "Bâtiments IGN indisponibles pour l'instant : ajoutez-les à la main à l'étape Zones.",
     parkingsZoom: "zoomez pour les afficher",
     help: "Corrigez le contour à la souris (déplacer un sommet, en ajouter, en retirer), puis saisissez une cote mesurée sur place pour caler l'échelle.",
     addDimension: "Ajouter une cote",
@@ -1014,6 +1025,17 @@ export const fr = {
     zoneName: (letter: string) => `Zone ${letter}`,
     zoneSubtitle: "stationnement",
     zoneDetail: "voitures légères",
+    // P-A (07/10/2026): the brush of the zones step.
+    brush: "Pinceau",
+    eraser: "Gomme",
+    brushWidth: "Largeur",
+    brushHelp: "Maintenez le clic et peignez où l'on peut garer ; les traits qui se touchent fusionnent.",
+    eraserHelp: "Maintenez le clic et effacez ce qui ne doit pas recevoir de voitures.",
+    // T-A (07/10/2026): the zones follow the land and its exclusions unless drawn by hand.
+    autoZones: "Zones automatiques",
+    autoZonesOn:
+      "Zones découpées automatiquement autour des bâtiments et des parties exclues : chacune reçoit sa propre orientation. Ajoutez ou modifiez une zone pour les tracer vous-même.",
+    autoZonesOff: "Zones tracées à la main.",
     addZone: "+ Zone de stationnement",
     addExclusion: "+ Partie exclue (bâtiment, arbre, poteau)",
     chooseExclusion: "Quelle partie exclure ?",
@@ -1053,7 +1075,7 @@ export const fr = {
       selfPark: "Clients garés seuls",
       valet24: "Voiturier · files de 2 à 4",
       valet5: "Voiturier · files de 5",
-      valetEdge: "Voiturier · files depuis le bord",
+      valetEdge: "Voiturier · peigne",
     },
     cars: "voitures",
     perCar: (m2: string) => `${m2} m² par voiture`,
@@ -1064,7 +1086,7 @@ export const fr = {
     valet5Detail: (pattern: string) =>
       `Blocs ${pattern} : plus dense, mais fragile en cas de retour avancé`,
     valetEdgeDetail: (deepest: number) =>
-      `Une allée le long du bord, files jusqu'à ${deepest} voitures ; les coins sont remplis, aucune allée intérieure`,
+      `Allées de service en peigne reliées par une allée de bout, files jusqu'à ${deepest} voitures de chaque côté, restes remplis dans l'autre sens`,
     aisle: "allée",
     range: (a: number, b: number) => `${a} à ${b} voitures`,
     rangeLabel: "Fourchette à annoncer : ",
@@ -1130,6 +1152,7 @@ export const fr = {
       `${n} réservation${n > 1 ? "s" : ""} sans place`,
     inactiveUsed: (code: string, ref: string) =>
       `${code} est désactivée mais tient ${ref}`,
+    blockedAlert: (n: number) => `${n} voiture${n > 1 ? "s" : ""} derrière une autre qui repart plus tard`,
     unplaced: (n: number) => `Sans place · ${n}`,
     allPlaced: "Toutes les réservations de la fenêtre ont une place.",
     preassign: "Pré-affecter",
@@ -1164,6 +1187,10 @@ export const fr = {
       booked: "Réservée (à venir)",
       free: "Libre",
       inactive: "Désactivée",
+      // O-A (06/10/2026) marks on the plan.
+      proposed: "Proposée",
+      toTakeOut: "À sortir avant un retour",
+      manoeuvre: "Manœuvre",
     },
     stats: (occupied: number, active: number, leaving: number) =>
       `${occupied} / ${active} places occupées · ${leaving} départ${leaving > 1 ? "s" : ""} aujourd'hui`,
@@ -1176,6 +1203,11 @@ export const fr = {
       near_entrance: (m: number) => `à ${m} m de l'entrée`,
       free: "libre pendant le séjour",
     },
+    // O-A (06/10/2026): the file keeps its order, or cars will have to move.
+    noMove: "sans déplacement",
+    movesOut: (n: number, code: string, when: string) => `${n} voiture${n > 1 ? "s" : ""} à sortir (${code}, retour ${when})`,
+    movesBlocked: (n: number, code: string) => `bloquerait ${n} voiture${n > 1 ? "s" : ""} (${code})`,
+    blockedBy: (code: string, when: string) => `Derrière ${code} · retour ${when}`,
     place: "Placer",
     chooseOnMap: "Choisir sur le plan",
     choosing: (plate: string) =>
@@ -1213,15 +1245,31 @@ export const fr = {
     saving: "Enregistrement…",
     saved: "Enregistré",
     saveError: "Non enregistré",
+    // R-A (07/10/2026): start again, in whole or in part.
+    reset: "Réinitialiser…",
+    resetAll: "Tout le plan",
+    resetAllHelp: "Contour, zones, parties exclues, repères et places : la carte repart vide, sur l'adresse du parking.",
+    resetZones: "Les zones et parties exclues",
+    resetZonesHelp: "Le contour reste ; les zones sont redécoupées, les bâtiments IGN gardés.",
+    resetSpots: "Les places seulement",
+    resetSpotsHelp: "Le tracé reste ; les places sont effacées, la capacité déclarée ne bouge pas.",
+    resetConfirm: {
+      all: "Effacer tout le plan (contour, zones, parties exclues, repères et places) ? La capacité déclarée ne change pas.",
+      zones: "Effacer les zones et les parties exclues tracées à la main ? Les places générées seront effacées aussi.",
+      spots: "Effacer toutes les places ? La capacité déclarée ne change pas.",
+    },
+    resetDone: "Plan réinitialisé",
     layout: "Disposition",
     layouts: {
       selfPark: "Clients garés seuls",
       valet24: "Voiturier · files de 2 à 4",
       valet5: "Voiturier · files de 5",
-      valetEdge: "Voiturier · files depuis le bord",
+      valetEdge: "Voiturier · peigne",
     },
     computing: "Calcul des dispositions…",
     places: (n: number) => `${n} place${n > 1 ? "s" : ""}`,
+    /** M-A: the yield of a layout, usable area over places (aisles included). */
+    perCar: (m2: number) => `${m2} m² par place`,
     // Z-A (04/10/2026): stay classes by rank in the file.
     stayZones: "Zones de séjour",
     stayClasses: {
@@ -1554,6 +1602,10 @@ export const shuttleWavesFr = {
   refreshed: (ago: string) => `Actualisé ${ago}`,
   loadError: "Impossible de charger la prévision des navettes.",
   empty: "Aucune navette à prévoir ce jour-là.",
+  emptyUpcoming: "Plus aucune navette à prévoir aujourd'hui.",
+  pastCount: (n: number) => (n > 1 ? `${n} créneaux passés` : "1 créneau passé"),
+  pastShow: "Afficher",
+  pastHide: "Masquer",
   seats: (seats: number | null, vehicles: number) =>
     seats === null ? `${vehicles} véhicule${vehicles > 1 ? "s" : ""} en service · places inconnues` : `${vehicles} véhicule${vehicles > 1 ? "s" : ""} en service · ${seats} places`,
   times: (lead: number, delay: number, travel: number) =>
@@ -1561,6 +1613,7 @@ export const shuttleWavesFr = {
   settings: "Modifier les délais",
   wave: {
     count: (n: number) => `${n} vague${n > 1 ? "s" : ""}`,
+    countUpcoming: (n: number) => `${n} à venir`,
     direction: { dropoff: "Vers le terminal", pickup: "Depuis l'aéroport" } satisfies Record<ShuttleDirection, string>,
     airport: "Aéroport",
     passengers: (n: number, seats: number | null) => (seats === null ? `${n}` : `${n} / ${seats}`),

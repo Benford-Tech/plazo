@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { areaOf, type Multi } from "./geometry";
+import { areaOf, difference, pointInMulti, type Multi } from "./geometry";
 import { candidateAngles, generateLayout, type LayoutParams } from "./layout";
 
 const rect = (w: number, h: number, x = 0, y = 0): Multi => [
@@ -232,5 +232,65 @@ describe("files depuis le bord : l'allée part de l'entrée", () => {
     // South entrance: the aisle is the 6 m strip at the bottom, the files start above it.
     expect(minY(south)).toBeCloseTo(6, 0);
     expect(maxY(north)).toBeCloseTo(54, 0);
+  });
+});
+
+describe("voiturier « peigne » (M-A, 07/10/2026)", () => {
+  const COMB: LayoutParams = {
+    ...VALET_24,
+    blockDepth: 16,
+    oneSidedDepth: 8,
+    crossAisles: false,
+    mode: "comb",
+    maxFiles: 8,
+  };
+  const EDGE: LayoutParams = { ...COMB, blockDepth: 8, mode: "edge" };
+
+  it("sur le rectangle de référence, bat les files depuis le bord et les files de 5, avec ses allées", () => {
+    const lot = rect(100, 60);
+    const comb = generateLayout(lot, COMB);
+    expect(comb.count).toBeGreaterThan(generateLayout(lot, EDGE).count);
+    expect(comb.count).toBeGreaterThan(generateLayout(lot, VALET_5).count);
+    expect(comb.count).toBeGreaterThanOrEqual(390);
+    expect(comb.aisles.length).toBeGreaterThan(0);
+    expect(comb.depths).toHaveLength(comb.count);
+    expect(comb.files).toHaveLength(comb.count);
+    for (let i = 0; i < comb.count; i++) {
+      expect(comb.depths[i]).toBeLessThan(comb.files[i]);
+      expect(comb.files[i]).toBeLessThanOrEqual(8);
+    }
+  });
+
+  it("contourne un bâtiment au milieu du terrain et remplit les restes dans l'autre sens", () => {
+    // 90 m × 70 m with a 40 m × 30 m building in the middle-left.
+    const land = difference(rect(90, 70), rect(40, 30, 25, 20));
+    const comb = generateLayout(land, COMB);
+    expect(comb.count).toBeGreaterThan(generateLayout(land, VALET_5).count);
+    expect(comb.count).toBeGreaterThan(generateLayout(land, EDGE).count * 1.2);
+    // Every slot lies inside the land, outside the building.
+    for (const q of comb.slots) {
+      const cx = (q[0][0] + q[2][0]) / 2;
+      const cy = (q[0][1] + q[2][1]) / 2;
+      expect(pointInMulti([cx, cy], land)).toBe(true);
+    }
+    // The leftovers took files in another direction: not every slot shares the main angle.
+    const bearings = new Set(
+      comb.slots.map((q) => Math.round(((Math.atan2(q[1][1] - q[0][1], q[1][0] - q[0][0]) * 180) / Math.PI + 360) % 180)),
+    );
+    expect(bearings.size).toBeGreaterThan(1);
+  });
+
+  it("à nombre de places égal, l'allée de bout part de l'entrée", () => {
+    const lot = rect(100, 60);
+    const west = generateLayout(lot, COMB, { anchor: [-5, 30] });
+    const east = generateLayout(lot, COMB, { anchor: [105, 30] });
+    expect(west.count).toBe(east.count);
+    // The spine is a 6 m strip along the entrance side, running across the land, on the edge's bearing.
+    expect(west.angle % 180).toBe(0);
+    const spine = (r: ReturnType<typeof generateLayout>, test: (x: number) => boolean) =>
+      r.aisles.some((q) => q.every((p) => test(p[0])) && Math.max(...q.map((p) => p[1])) - Math.min(...q.map((p) => p[1])) >= 30);
+    expect(spine(west, (x) => x <= 6 + 1e-6)).toBe(true);
+    expect(spine(east, (x) => x >= 94 - 1e-6)).toBe(true);
+    expect(spine(west, (x) => x >= 94 - 1e-6)).toBe(false);
   });
 });

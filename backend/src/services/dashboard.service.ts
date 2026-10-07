@@ -4,6 +4,8 @@ import { flightTrackingSettings } from '@/config';
 import prisma, { ReservationStatus } from '@/database';
 import { ShuttleDirection } from '@/domain/shuttle';
 import { AuthenticatedStaff } from '@/interfaces/auth.interface';
+import { dayBounds, localDate, localDateTime } from '@/domain/time';
+import { OccupationService } from './occupation.service';
 import { ArrivalService } from './arrival.service';
 import { FlightTrackingService } from './flight-tracking.service';
 import { ParkingService } from './parking.service';
@@ -41,7 +43,9 @@ export type AlertKind =
   // Decision A (06/10/2026): expected hours ago, no car placed; the staff decide (never automatic).
   | 'no_show_suspected'
   // M-A (06/10/2026): forwarded confirmation emails waiting for the staff.
-  | 'inbound_to_check';
+  | 'inbound_to_check'
+  // O-A (06/10/2026): a car returning today stands behind one that leaves later.
+  | 'blocked_return';
 
 export interface DashboardAlert {
   kind: AlertKind;
@@ -132,6 +136,7 @@ export class DashboardService {
   public inbound = Container.get(InboundEmailService);
   public forecast = Container.get(ShuttleForecastService);
   public sms = Container.get(SmsService);
+  public occupation = Container.get(OccupationService);
 
   public async get(actor: AuthenticatedStaff): Promise<Dashboard> {
     const parking = await this.parkings.getPrimary(actor);
@@ -281,7 +286,19 @@ export class DashboardService {
       }
     }
     // Expected for hours, nothing placed: probably a no-show (the staff decide).
-    for (const r of planning.arrivals.filter(a => a.status === 'upcoming' && !a.spotId && minutesSince(a.arrivalAt) >= NO_SHOW_MINUTES)) {
+    // Looked up over the last 24 h, not today's planning only: a traveller expected yesterday evening
+    // and still missing after midnight is the same case.
+    const lateArrivals = await prisma.reservation.findMany({
+      where: {
+        parkingId: parking.id,
+        status: 'upcoming',
+        spotId: null,
+        arrivalAt: { gte: new Date(now.getTime() - 24 * 3600000), lte: new Date(now.getTime() - NO_SHOW_MINUTES * 60000) },
+      },
+      select: { id: true, reference: true, customerName: true, plate: true, arrivalAt: true },
+      orderBy: { arrivalAt: 'asc' },
+    });
+    for (const r of lateArrivals) {
       alerts.push({
         kind: 'no_show_suspected',
         severity: 'watch',
@@ -290,6 +307,24 @@ export class DashboardService {
         since: r.arrivalAt.toISOString(),
         minutes: minutesSince(r.arrivalAt),
       });
+    }
+    // O-A (06/10/2026): a car returning today behind one that leaves later: take the front one out first.
+    if (spotsTotal) {
+      const bounds = dayBounds(localDate(now, parking.timezone), parking.timezone);
+      for (const { stay, blockers } of await this.occupation.blockedReturns(parking.id, bounds.start, bounds.end)) {
+        const front = blockers[0];
+        alerts.push({
+          kind: 'blocked_return',
+          severity: 'watch',
+          reservationId: stay.reservationId,
+          reference: stay.reference,
+          customerName: stay.customerName,
+          plate: stay.plate,
+          detail: `${front.spotCode} · retour ${localDateTime(front.returnAt, parking.timezone)}${blockers.length > 1 ? ` (+${blockers.length - 1})` : ''}`,
+          since: null,
+          minutes: null,
+        });
+      }
     }
     const inboundToCheck = await this.inbound.toCheckCount(actor.operatorId);
     if (inboundToCheck > 0) {

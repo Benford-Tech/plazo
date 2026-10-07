@@ -19,6 +19,13 @@ _PlannedStayModel _$PlannedStayModelFromJson(Map<String, dynamic> json) =>
       spotId: json['spotId'] as String?,
       keyHook: json['keyHook'] as String?,
       onSite: json['onSite'] as bool? ?? false,
+      blockedBy:
+          (json['blockedBy'] as List<dynamic>?)
+              ?.map(
+                (e) => PlanningBlockerModel.fromJson(e as Map<String, dynamic>),
+              )
+              .toList() ??
+          const <PlanningBlockerModel>[],
     );
 
 Map<String, dynamic> _$PlannedStayModelToJson(_PlannedStayModel instance) =>
@@ -34,6 +41,7 @@ Map<String, dynamic> _$PlannedStayModelToJson(_PlannedStayModel instance) =>
       'spotId': instance.spotId,
       'keyHook': instance.keyHook,
       'onSite': instance.onSite,
+      'blockedBy': instance.blockedBy,
     };
 
 _PlannedSpotModel _$PlannedSpotModelFromJson(Map<String, dynamic> json) =>
@@ -187,3 +195,21 @@ _PreassignEnvelopeModel _$PreassignEnvelopeModelFromJson(
 Map<String, dynamic> _$PreassignEnvelopeModelToJson(
   _PreassignEnvelopeModel instance,
 ) => <String, dynamic>{'data': instance.data};
+
+_PlanningBlockerModel _$PlanningBlockerModelFromJson(
+  Map<String, dynamic> json,
+) => _PlanningBlockerModel(
+  reservationId: json['reservationId'] as String,
+  reference: json['reference'] as String,
+  spotCode: json['spotCode'] as String,
+  returnAt: DateTime.parse(json['returnAt'] as String),
+);
+
+Map<String, dynamic> _$PlanningBlockerModelToJson(
+  _PlanningBlockerModel instance,
+) => <String, dynamic>{
+  'reservationId': instance.reservationId,
+  'reference': instance.reference,
+  'spotCode': instance.spotCode,
+  'returnAt': instance.returnAt.toIso8601String(),
+};

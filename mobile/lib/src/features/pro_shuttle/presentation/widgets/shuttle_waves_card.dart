@@ -13,7 +13,7 @@ import '../bloc/shuttle_waves_bloc.dart';
 /// V-A "Ligne du jour" (05/10/2026): the day's shuttle waves, both directions on one timeline,
 /// with the passengers against the seats; "Démarrer ce trajet" hands a wave to the driver's
 /// list (direction, stop and travellers preselected). Needs a [ShuttleWavesBloc] above.
-class ShuttleWavesCard extends StatelessWidget {
+class ShuttleWavesCard extends StatefulWidget {
   const ShuttleWavesCard({super.key, this.onStart, this.running = false});
 
   /// Called with the wave to take over; null hides the buttons (the web, a non-driver).
@@ -23,11 +23,23 @@ class ShuttleWavesCard extends StatelessWidget {
   final bool running;
 
   @override
+  State<ShuttleWavesCard> createState() => _ShuttleWavesCardState();
+}
+
+class _ShuttleWavesCardState extends State<ShuttleWavesCard> {
+  /// Today's past waves are folded by default (06/10/2026: the driver sees what is ahead of them).
+  bool _showPast = false;
+
+  @override
   Widget build(BuildContext context) {
+    final onStart = widget.onStart;
+    final running = widget.running;
     return BlocBuilder<ShuttleWavesBloc, ShuttleWavesState>(
       builder: (context, state) {
         final bloc = context.read<ShuttleWavesBloc>();
         final d = state.data;
+        final upcoming = state.upcoming;
+        final past = state.past;
         return Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
@@ -38,7 +50,7 @@ class ShuttleWavesCard extends StatelessWidget {
                 ),
                 if (d != null)
                   Text(
-                    'waves.count'.tr(args: ['${d.waves.length}']),
+                    (state.dayOffset == 0 ? 'waves.count_upcoming' : 'waves.count').tr(args: ['${upcoming.length}']),
                     style: AppText.tabular(size: 12, color: AppColors.muted),
                   ),
               ],
@@ -80,11 +92,37 @@ class ShuttleWavesCard extends StatelessWidget {
                 padding: const EdgeInsets.symmetric(vertical: 12),
                 child: Text('waves.empty'.tr(), style: AppText.muted()),
               )
-            else
-              for (final wave in d.waves) ...[
-                _WaveTile(wave: wave, onStart: onStart == null || running || !wave.planned ? null : () => onStart!(wave)),
+            else ...[
+              if (upcoming.isEmpty)
+                Padding(
+                  padding: const EdgeInsets.symmetric(vertical: 12),
+                  child: Text('waves.empty_upcoming'.tr(), key: const Key('waves-empty-upcoming'), style: AppText.muted()),
+                ),
+              for (final wave in upcoming) ...[
+                _WaveTile(wave: wave, onStart: onStart == null || running || !wave.planned ? null : () => onStart(wave)),
                 const SizedBox(height: 8),
               ],
+              if (past.isNotEmpty) ...[
+                InkWell(
+                  key: const Key('waves-past'),
+                  borderRadius: AppRadius.chip,
+                  onTap: () => setState(() => _showPast = !_showPast),
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 4),
+                    child: Row(
+                      children: [
+                        Icon(_showPast ? Icons.expand_less_rounded : Icons.expand_more_rounded, size: 18, color: AppColors.muted),
+                        const SizedBox(width: 6),
+                        Expanded(child: Text((past.length == 1 ? 'waves.past_one' : 'waves.past_count').tr(args: ['${past.length}']), style: AppText.body(size: 13, weight: 600, color: AppColors.muted))),
+                        Text((_showPast ? 'waves.past_hide' : 'waves.past_show').tr(), style: AppText.body(size: 13, weight: 600, color: AppColors.accent)),
+                      ],
+                    ),
+                  ),
+                ),
+                if (_showPast)
+                  for (final wave in past) ...[const SizedBox(height: 8), _WaveTile(wave: wave)],
+              ],
+            ],
           ],
         );
       },

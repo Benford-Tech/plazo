@@ -51,6 +51,9 @@ export interface Parking {
   terminalLeadMinutes: number;
   landingDelayMinutes: number;
   bookableCapacity: number;
+  /** The parking's position (its address's when not placed), null when unknown. */
+  lat: number | null;
+  lng: number | null;
 }
 
 export interface ParkingSettings {
@@ -760,7 +763,8 @@ export type AlertKind =
   | "departure_delayed"
   | "wave_overflow"
   | "no_show_suspected"
-  | "inbound_to_check";
+  | "inbound_to_check"
+  | "blocked_return";
 
 /** A row of the home's "À traiter" list (GET /internal/dashboard). */
 export interface DashboardAlert {

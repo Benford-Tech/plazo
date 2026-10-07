@@ -352,6 +352,8 @@ export default function SpotPlanningPage() {
                       ? t.overCapacity(shortDay(a.date), a.count)
                       : a.kind === "unplaced"
                         ? t.unplacedAlert(a.count)
+                        : a.kind === "blocked"
+                          ? t.blockedAlert(a.count)
                         : t.inactiveUsed(a.spotCode, a.reference)}
                   </li>
                 ))}
@@ -478,6 +480,12 @@ function StayCard({
           ? ` · ${fr.occupation.flight(stay.returnFlight)}`
           : ""}
       </p>
+      {stay.blockedBy && stay.blockedBy.length > 0 && (
+        <p data-testid="stay-blocked" className="text-[13px] font-semibold text-warn-text">
+          {fr.occupation.blockedBy(stay.blockedBy[0].spotCode, dateTimeShort(stay.blockedBy[0].returnAt))}
+          {stay.blockedBy.length > 1 ? ` (+${stay.blockedBy.length - 1})` : ""}
+        </p>
+      )}
       <label className="flex items-center gap-2 text-sm">
         <span className="shrink-0">{stay.spot ? t.moveTo : t.placeIn}</span>
         <select

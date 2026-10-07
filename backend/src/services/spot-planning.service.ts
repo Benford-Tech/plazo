@@ -3,6 +3,7 @@ import { HOLDING_STATUSES, ON_SITE_STATUSES } from '@/domain/reservation';
 import { Container, Service } from 'typedi';
 import prisma, { ParkingSpot, Prisma, ReservationStatus } from '@/database';
 import { settingsOf, stayClassDistance, stayClassForNights, type StayClass } from '@/domain/layout/types';
+import { type Blocker, blockersOf, buildFiles, type FileSpot, type FileStay, scoreSpot } from '@/domain/files';
 import { addDays, dayBounds, DATE_RE, localDate, nightsBetween } from '@/domain/time';
 import { AuthenticatedStaff } from '@/interfaces/auth.interface';
 import { HttpException } from '@/utils/httpException';
@@ -41,7 +42,8 @@ export interface DayLoad {
 }
 
 export interface PlanningAlert {
-  kind: 'over_capacity' | 'unplaced' | 'inactive_spot_used';
+  /** `blocked` (O-A, 06/10/2026): stays whose car stands behind one that leaves later. */
+  kind: 'over_capacity' | 'unplaced' | 'inactive_spot_used' | 'blocked';
   date?: string;
   count?: number;
   spotCode?: string;
@@ -84,6 +86,23 @@ export class SpotPlanningService {
       else bySpot.set(r.spotId, [...(bySpot.get(r.spotId) ?? []), r]);
     }
     const spotById = new Map(spots.map(s => [s.id, s]));
+    // O-A (06/10/2026): a stay is "blocked" by the cars in front of it that leave later.
+    const files = buildFiles(spots);
+    const staysBySpot = new Map<string, FileStay[]>();
+    for (const [spotId, list] of bySpot) {
+      staysBySpot.set(
+        spotId,
+        list.map(r => ({ reservationId: r.id, reference: r.reference, spotId, arrivalAt: r.arrivalAt, returnAt: r.returnAt })),
+      );
+    }
+    const blockedBy = (spot: ParkingSpot, r: Stay) =>
+      blockersOf(
+        { reservationId: r.id, reference: r.reference, spotId: spot.id, arrivalAt: r.arrivalAt, returnAt: r.returnAt },
+        spot,
+        files.get(spot.id) ?? [spot],
+        staysBySpot,
+      ).map((b: Blocker) => ({ ...b, returnAt: b.returnAt.toISOString() }));
+    let blockedCount = 0;
     const withStays = spots.map(s => ({
       id: s.id,
       zoneId: s.zoneId,
@@ -93,7 +112,12 @@ export class SpotPlanningService {
       kind: s.kind,
       active: s.active,
       stayClass: s.stayClass ?? null,
-      stays: (bySpot.get(s.id) ?? []).map(r => ({ ...r, onSite: ON_SITE.includes(r.status) })),
+      depth: s.depth ?? null,
+      stays: (bySpot.get(s.id) ?? []).map(r => {
+        const blockers = blockedBy(s, r);
+        if (blockers.length) blockedCount += 1;
+        return { ...r, onSite: ON_SITE.includes(r.status), blockedBy: blockers };
+      }),
     }));
     const capacity = spots.filter(s => s.active).length;
     const days: DayLoad[] = [];
@@ -108,6 +132,7 @@ export class SpotPlanningService {
       if (placed + open > capacity) alerts.push({ kind: 'over_capacity', date, count: placed + open - capacity });
     }
     if (unplaced.length) alerts.push({ kind: 'unplaced', count: unplaced.length });
+    if (blockedCount) alerts.push({ kind: 'blocked', count: blockedCount });
     for (const r of holding) {
       const spot = r.spotId ? spotById.get(r.spotId) : null;
       if (spot && !spot.active) alerts.push({ kind: 'inactive_spot_used', spotCode: spot.code, reference: r.reference });
@@ -139,6 +164,7 @@ export class SpotPlanningService {
       prisma.parkingPlan.findUnique({ where: { parkingId: parking.id } }),
       prisma.reservation.findMany({ where: { parkingId: parking.id, status: { in: HOLDING } }, select: staySelect, orderBy: { arrivalAt: 'asc' } }),
     ]);
+    const files = buildFiles(spots);
     const landmarks = ((plan?.landmarks as { kind: string; geometry: { coordinates: [number, number] } }[] | null) ?? []).filter(
       l => l.geometry?.coordinates,
     );
@@ -149,7 +175,7 @@ export class SpotPlanningService {
     const assigned: { reservationId: string; reference: string; spotId: string; code: string }[] = [];
     const skipped: { reservationId: string; reference: string }[] = [];
     for (const r of todo) {
-      const spot = this.pick(spots, placed, r, target, stayClassForNights(nightsBetween(r.arrivalAt, r.returnAt, parking.timezone), settings));
+      const spot = this.pick(spots, files, placed, r, target, stayClassForNights(nightsBetween(r.arrivalAt, r.returnAt, parking.timezone), settings));
       if (!spot) {
         skipped.push({ reservationId: r.id, reference: r.reference });
         continue;
@@ -175,6 +201,7 @@ export class SpotPlanningService {
 
   private pick(
     spots: ParkingSpot[],
+    files: Map<string, FileSpot[]>,
     placed: Stay[],
     r: Stay,
     target: { geometry: { coordinates: [number, number] } } | null,
@@ -184,27 +211,27 @@ export class SpotPlanningService {
     const busy = new Set(overlapping.map(p => p.spotId as string));
     const free = spots.filter(s => !busy.has(s.id));
     if (!free.length) return null;
-    const spotById = new Map(spots.map(s => [s.id, s]));
-    // Days between this stay's return and the returns already planned in the same row.
-    const rowSpread = (s: ParkingSpot) => {
-      const returns = placed
-        .filter(p => {
-          const ps = p.spotId ? spotById.get(p.spotId) : null;
-          return ps && ps.zoneId === s.zoneId && ps.row === s.row && p.returnAt > r.arrivalAt;
-        })
-        .map(p => Math.abs(p.returnAt.getTime() - r.returnAt.getTime()) / 86_400_000);
-      return returns.length ? Math.min(...returns) : 0.5;
-    };
-    const scored = free.map(s => ({
-      spot: s,
-      zone: stayClassDistance(s.stayClass, wanted),
-      distance: target ? distanceM([s.lon, s.lat], target.geometry.coordinates) : s.row * 1000 + s.index,
-      spread: rowSpread(s),
-    }));
-    // The stay's zone first (Z-A), then distance in 10 m bands, then the row that empties with this
-    // vehicle, then the plan order.
+    const staysBySpot = new Map<string, FileStay[]>();
+    for (const p of overlapping) {
+      const st: FileStay = { reservationId: p.id, reference: p.reference, spotId: p.spotId as string, arrivalAt: p.arrivalAt, returnAt: p.returnAt };
+      staysBySpot.set(st.spotId, [...(staysBySpot.get(st.spotId) ?? []), st]);
+    }
+    const scored = free.map(s => {
+      const score = scoreSpot(s, files.get(s.id) ?? [s], r, staysBySpot);
+      return {
+        spot: s,
+        moves: score.moves,
+        zone: stayClassDistance(s.stayClass, wanted),
+        fit: score.fitMinutes ?? Number.MAX_SAFE_INTEGER,
+        distance: target ? distanceM([s.lon, s.lat], target.geometry.coordinates) : s.row * 1000 + s.index,
+      };
+    });
+    // O-A (06/10/2026): no move first (the file keeps its returns decreasing from the aisle), then
+    // the stay's zone (Z-A), then distance in 10 m bands, then the tightest fit behind the car in
+    // front, then the plan order.
     scored.sort(
-      (a, b) => a.zone - b.zone || Math.floor(a.distance / 10) - Math.floor(b.distance / 10) || a.spread - b.spread || a.distance - b.distance,
+      (a, b) =>
+        a.moves - b.moves || a.zone - b.zone || Math.floor(a.distance / 10) - Math.floor(b.distance / 10) || a.fit - b.fit || a.distance - b.distance,
     );
     return scored[0].spot;
   }

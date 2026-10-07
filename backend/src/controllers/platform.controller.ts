@@ -12,6 +12,17 @@ import catchAsync from '@/utils/catchAsync';
 
 const str = (value: unknown) => (typeof value === 'string' ? value : undefined);
 
+/** The `bbox` query of a BD TOPO lookup: four coordinates, at most MAX_BBOX_SPAN degrees across. */
+function bboxOf(req: Request): [number, number, number, number] {
+  const parts = (str(req.query.bbox) ?? '').split(',').map(v => coordinate(v, 180));
+  const [minLon, minLat, maxLon, maxLat] = parts as number[];
+  const valid =
+    parts.length === 4 && parts.every(v => v !== null) && Math.abs(minLat) <= 90 && Math.abs(maxLat) <= 90 && minLon < maxLon && minLat < maxLat;
+  if (!valid) throw new ValidationException({ bbox: 'invalid_bbox' });
+  if (maxLon - minLon > MAX_BBOX_SPAN || maxLat - minLat > MAX_BBOX_SPAN) throw new ValidationException({ bbox: 'bbox_too_large' });
+  return [minLon, minLat, maxLon, maxLat];
+}
+
 function coordinate(value: unknown, max: number): number | null {
   const n = Number(str(value));
   return str(value) !== undefined && str(value) !== '' && Number.isFinite(n) && Math.abs(n) <= max ? n : null;
@@ -172,13 +183,12 @@ export class PlatformController {
 
   /** GET /internal/platform/geo/parkings?bbox=minLon,minLat,maxLon,maxLat */
   public parkings = catchAsync(async (req: Request, res: Response) => {
-    const parts = (str(req.query.bbox) ?? '').split(',').map(v => coordinate(v, 180));
-    const [minLon, minLat, maxLon, maxLat] = parts as number[];
-    const valid =
-      parts.length === 4 && parts.every(v => v !== null) && Math.abs(minLat) <= 90 && Math.abs(maxLat) <= 90 && minLon < maxLon && minLat < maxLat;
-    if (!valid) throw new ValidationException({ bbox: 'invalid_bbox' });
-    if (maxLon - minLon > MAX_BBOX_SPAN || maxLat - minLat > MAX_BBOX_SPAN) throw new ValidationException({ bbox: 'bbox_too_large' });
-    res.json({ parkings: await this.geo.parkingsIn([minLon, minLat, maxLon, maxLat]) });
+    res.json({ parkings: await this.geo.parkingsIn(bboxOf(req)) });
+  });
+
+  /** GET /internal/platform/geo/buildings?bbox=minLon,minLat,maxLon,maxLat (B-A) */
+  public buildings = catchAsync(async (req: Request, res: Response) => {
+    res.json({ buildings: await this.geo.buildingsIn(bboxOf(req)) });
   });
 
   /** GET /internal/platform/geo/geocode?q= */

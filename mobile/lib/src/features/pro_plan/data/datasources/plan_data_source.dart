@@ -21,7 +21,8 @@ class PlanDataSourceImpl implements PlanDataSource {
   @override
   Future<ParkingPlanViewModel> getPlan(String parkingId) => client.getPlan(parkingId);
 
-  /// The drawn outline is also the single zone "Zone A" (the pro space can split it later).
+  /// Only the outline is sent: the server excludes the IGN buildings it overlaps (B-A) and cuts
+  /// the zones around them itself (T-A, `zonesAuto`); the pro space can refine both later.
   @override
   Future<ParkingPlanViewModel> saveOutline(String parkingId, List<List<double>> ring) async {
     final outline = {
@@ -30,10 +31,7 @@ class PlanDataSourceImpl implements PlanDataSource {
     };
     final envelope = await client.updatePlan(parkingId, {
       'outline': outline,
-      'zones': [
-        {'id': 'main', 'name': 'Zone A', 'geometry': outline},
-      ],
-      'settings': {'outlineSource': 'drawn'},
+      'settings': {'outlineSource': 'drawn', 'zonesAuto': true},
     });
     return envelope.data;
   }

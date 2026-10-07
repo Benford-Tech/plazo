@@ -128,6 +128,47 @@ Une vue « réorganisation » propose, en heure creuse, une liste de déplacemen
 
 Hors MVP : caméras, lecture de plaque, capteurs de présence sur les places.
 
+#### Peigne, bâtiments IGN et zones automatiques (décisions M-A, B-A, T-A du 07/10/2026, mis en œuvre)
+
+- **Peigne (M-A)** : la disposition « Voiturier · peigne » remplace « files depuis le bord ». Le moteur pose autant
+  d'allées de service que le terrain en demande (une tous les 2 × 8 rangs au plus), des files de chaque côté de chaque
+  allée, et une allée de bout qui les relie du côté de l'entrée ; chaque rang est vérifié place par place (un bord biais
+  ne coûte qu'une partie de rangée) ; l'orientation est cherchée dans les deux sens de chaque bord du terrain et reste
+  alignée sur un bord sauf gain supérieur à 1 % ; les restes (coins, bandes le long d'un bâtiment) reçoivent des files
+  dans l'autre sens depuis une courte allée qui touche le réseau. L'aperçu montre les allées hachurées et chaque
+  disposition annonce son rendement en m² par place, allées comprises.
+- **Bâtiments IGN (B-A)** : à l'étape Terrain, les bâtiments de la BD TOPO qui touchent le contour sont exclus d'office
+  (1 m de marge) et affichés en gris ; une case permet de ne pas les prendre, et chacun se retire d'un clic à l'étape
+  Zones comme toute partie exclue. L'app, qui n'envoie que le contour, obtient le même résultat du serveur.
+- **Zones automatiques (T-A)** : les zones sont les morceaux du terrain qu'il reste hors bâtiments et parties exclues,
+  nommés A, B, C… par taille, chacun avec sa propre orientation ; tracer ou modifier une zone passe en manuel, et
+  « Zones automatiques » y revient. En traçant, le pointeur s'aimante aux sommets et aux bords des parcelles, des
+  parkings et bâtiments IGN et du contour.
+
+#### Pinceau et réinitialisation (décisions P-A, R-A du 07/10/2026, mis en œuvre)
+
+- **Pinceau (P-A)** : à l'étape Zones, un pinceau de 3, 6 ou 12 m (largeur réelle sur la photo, anneau sous le curseur)
+  peint où l'on peut garer : chaque trait s'ajoute, les traits et zones qui se touchent fusionnent, une gomme de même
+  largeur retire ce qu'on a peint en trop (une zone coupée en deux devient deux zones). Les bâtiments et parties exclues
+  restent soustraits ; le résultat est une zone tracée à la main, modifiable par ses sommets.
+- **Réinitialiser (R-A)** : menu « Réinitialiser… » dans la barre des étapes, avec confirmation : tout le plan (la carte
+  repart vide, sur l'adresse du parking), les zones et parties exclues (le contour reste, les bâtiments IGN sont gardés)
+  ou les places seulement. La capacité déclarée ne change jamais.
+
+#### File triée : zéro déplacement (décision O-A du 06/10/2026, mis en œuvre)
+
+- Sur un parking « voiturier · peigne » (ex-files depuis le bord), la voiture au fond d'une file repart en dernier. Une file est
+  « saine » quand les dates de retour décroissent de l'allée vers le fond : aucune voiture ne bloque alors une autre.
+- À l'arrivée (Occupation, web et app) et à la pré-affectation (Planning des places), le serveur reconstitue les files à
+  partir des rangs et des positions des places, puis classe chaque place libre : 1) aucune voiture à déplacer (ni devant
+  qui repart après, ni derrière qui repart avant ; deux retours à moins de 2 h comptent ensemble), 2) la zone de séjour
+  (Z-A), 3) l'ajustement le plus serré derrière la voiture de devant, 4) la distance au point de remise. La place
+  proposée porte « sans déplacement » ou « N voiture(s) à sortir (A-02-03, retour mer. 14 oct. 08:00) » /
+  « bloquerait N voiture(s) ».
+- Le Planning des places indique pour chaque séjour « Derrière A-02-03 · retour … » et compte les voitures bloquées dans
+  ses alertes ; le tableau de bord signale les retours du jour bloqués (« Retour du jour bloqué : sortir d'abord », à
+  surveiller) pour que le voiturier sorte la voiture de devant pendant un creux.
+
 ### Bloc 3 — Navette au retour
 
 Fonctionnel :

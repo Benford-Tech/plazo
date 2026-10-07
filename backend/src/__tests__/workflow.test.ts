@@ -1,5 +1,6 @@
 import { Container } from 'typedi';
 import prisma from '@/database';
+import { localDate } from '@/domain/time';
 import { NotificationService } from '@/services/notification.service';
 import { ONESIGNAL_NOTIFICATIONS_URL } from '@/services/push.service';
 import { addStaff, api, resetDatabase, setupOperator } from './utils/helpers';
@@ -26,7 +27,7 @@ const spots = Array.from({ length: 2 }, (_, i) => ({
   index: i + 1,
   geometry: square(5.08 + i * 0.00004, 45.72),
 }));
-const today = () => new Date().toISOString().slice(0, 10);
+const today = () => localDate(new Date(), 'Europe/Paris');
 const booking = (plate: string, name: string, overrides: Record<string, unknown> = {}) => ({
   channel: 'phone',
   arrivalAt: `${today()}T06:30`,

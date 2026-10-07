@@ -91,7 +91,7 @@
       "selfPark": "Clients garés seuls",
       "valet24": "Voiturier · files de 2 à 4",
       "valet5": "Voiturier · files de 5",
-      "valetEdge": "Voiturier · files depuis le bord"
+      "valetEdge": "Voiturier · peigne"
     },
     "places": "{} places",
     "declared": "Capacité déclarée",
@@ -256,7 +256,11 @@
     "car_by_traveller": "Position GPS donnée par le client à {}",
     "place_in": "Placer en {}",
     "key_hook_optional": "Facultatif : où les clés sont accrochées.",
-    "place_confirm": "Placer la voiture"
+    "place_confirm": "Placer la voiture",
+    "no_move": "sans déplacement",
+    "moves_out": "{} voiture(s) à sortir ({}, retour {})",
+    "moves_blocked": "bloquerait {} voiture(s) ({})",
+    "blocked_by": "Derrière {} · retour {}"
   },
   "pro": {
     "login_eyebrow": "Espace du personnel",
@@ -1040,7 +1044,8 @@
       "departure_delayed": "Vol aller retardé",
       "wave_overflow": "Vague au-delà d'une navette",
       "no_show_suspected": "Attendu, toujours pas là",
-      "inbound_to_check": "Mails à vérifier"
+      "inbound_to_check": "Mails à vérifier",
+      "blocked_return": "Retour du jour bloqué : sortir d'abord"
     },
     "vehicles_title": "Véhicules sur le parking",
     "vehicles_empty": "Aucun véhicule sur le parking.",
@@ -1240,7 +1245,8 @@
     "grid": "Par place",
     "all_spots": "Toutes · {}",
     "busy_spots": "Avec séjour · {}",
-    "no_busy": "Aucune place occupée sur la période. Activez « Toutes » pour voir le plan complet."
+    "no_busy": "Aucune place occupée sur la période. Activez « Toutes » pour voir le plan complet.",
+    "blocked_alert": "{} voiture(s) derrière une autre qui repart plus tard"
   },
   "team": {
     "title": "Équipe",
@@ -1358,7 +1364,13 @@
     "flight_landed": "atterri",
     "flight_unknown": "vol inconnu",
     "flight_delayed": "retardé +{}",
-    "start": "Démarrer ce trajet"
+    "start": "Démarrer ce trajet",
+    "count_upcoming": "{} à venir",
+    "empty_upcoming": "Plus aucune navette à prévoir aujourd'hui.",
+    "past_count": "{} créneaux passés",
+    "past_one": "1 créneau passé",
+    "past_show": "Afficher",
+    "past_hide": "Masquer"
   },
   "car": {
     "title": "Ma voiture",

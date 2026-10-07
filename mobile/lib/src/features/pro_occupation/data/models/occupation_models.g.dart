@@ -68,6 +68,22 @@ _SpotRefModel _$SpotRefModelFromJson(Map<String, dynamic> json) =>
 Map<String, dynamic> _$SpotRefModelToJson(_SpotRefModel instance) =>
     <String, dynamic>{'code': instance.code};
 
+_BlockerModel _$BlockerModelFromJson(Map<String, dynamic> json) =>
+    _BlockerModel(
+      reservationId: json['reservationId'] as String,
+      reference: json['reference'] as String,
+      spotCode: json['spotCode'] as String,
+      returnAt: DateTime.parse(json['returnAt'] as String),
+    );
+
+Map<String, dynamic> _$BlockerModelToJson(_BlockerModel instance) =>
+    <String, dynamic>{
+      'reservationId': instance.reservationId,
+      'reference': instance.reference,
+      'spotCode': instance.spotCode,
+      'returnAt': instance.returnAt.toIso8601String(),
+    };
+
 _SuggestionModel _$SuggestionModelFromJson(Map<String, dynamic> json) =>
     _SuggestionModel(
       spotId: json['spotId'] as String,
@@ -75,6 +91,17 @@ _SuggestionModel _$SuggestionModelFromJson(Map<String, dynamic> json) =>
       distanceM: (json['distanceM'] as num?)?.toInt(),
       reason: json['reason'] as String,
       stayClass: json['stayClass'] as String?,
+      moves: (json['moves'] as num?)?.toInt() ?? 0,
+      blocking:
+          (json['blocking'] as List<dynamic>?)
+              ?.map((e) => BlockerModel.fromJson(e as Map<String, dynamic>))
+              .toList() ??
+          const <BlockerModel>[],
+      blocked:
+          (json['blocked'] as List<dynamic>?)
+              ?.map((e) => BlockerModel.fromJson(e as Map<String, dynamic>))
+              .toList() ??
+          const <BlockerModel>[],
     );
 
 Map<String, dynamic> _$SuggestionModelToJson(_SuggestionModel instance) =>
@@ -84,6 +111,9 @@ Map<String, dynamic> _$SuggestionModelToJson(_SuggestionModel instance) =>
       'distanceM': instance.distanceM,
       'reason': instance.reason,
       'stayClass': instance.stayClass,
+      'moves': instance.moves,
+      'blocking': instance.blocking,
+      'blocked': instance.blocked,
     };
 
 _SpotStateModel _$SpotStateModelFromJson(Map<String, dynamic> json) =>

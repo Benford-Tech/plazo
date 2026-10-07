@@ -45,6 +45,7 @@ const api = vi.hoisted(() => ({
   replaceSpots: vi.fn(),
   updateSpot: vi.fn(),
   applyPlanCapacity: vi.fn(),
+  buildingsIn: vi.fn(async () => ({ buildings: [] })),
 }));
 vi.mock("@/lib/api", async (importOriginal) => {
   const actual = await importOriginal<typeof import("@/lib/api")>();
@@ -182,6 +183,45 @@ describe("plan du parking (bloc 2, étape Plan)", () => {
       expect(api.applyPlanCapacity).toHaveBeenCalledWith("p1"),
     );
   }, 20000);
+
+  it("réinitialise tout le plan après confirmation : tracé effacé, places retirées, retour au terrain", async () => {
+    api.getParkingPlan.mockResolvedValue(
+      view(
+        [
+          {
+            id: "s1",
+            zoneId: "z1",
+            code: "A-01-01",
+            row: 1,
+            index: 1,
+            kind: "standard",
+            active: true,
+            geometry: rect,
+            lon: 5.08,
+            lat: 45.72,
+            depth: null,
+            fileLength: null,
+            stayClass: null,
+          },
+        ],
+        1,
+      ),
+    );
+    api.updateParkingPlan.mockResolvedValue({ data: {} });
+    api.replaceSpots.mockResolvedValue({ data: view([], 1) });
+    const confirm = vi.spyOn(window, "confirm").mockReturnValue(true);
+    renderAt("/parking/plan/places");
+    fireEvent.click(await screen.findByRole("button", { name: "Réinitialiser…" }));
+    fireEvent.click(screen.getByRole("menuitem", { name: /Tout le plan/ }));
+    expect(confirm).toHaveBeenCalledTimes(1);
+    await waitFor(() => expect(api.replaceSpots).toHaveBeenCalledWith("p1", "valet24", []));
+    await waitFor(() => expect(api.updateParkingPlan).toHaveBeenCalled());
+    const patch = api.updateParkingPlan.mock.calls[0][1];
+    expect(patch).toMatchObject({ outline: null, zones: [], exclusions: [], landmarks: [], scaleFactor: 1 });
+    expect(patch.settings).toMatchObject({ zonesAuto: true, ignBuildingsSynced: false });
+    expect(await screen.findByText("Pas encore de contour")).toBeInTheDocument();
+    confirm.mockRestore();
+  });
 
   it("désactive une place d'un clic sur la carte", async () => {
     const ring = [

@@ -255,6 +255,12 @@ import { ValidationMiddleware } from '@/middlewares/validation.middleware';
  *     tags: [Platform]
  *     parameters:
  *       - { in: query, name: bbox, required: true, schema: { type: string, example: "5.07,45.715,5.09,45.73" }, description: "minLon,minLat,maxLon,maxLat" }
+ * /internal/platform/geo/buildings:
+ *   get:
+ *     summary: BD TOPO buildings in a box of 0.05° at most (proxy to the Géoplateforme WFS), B-A
+ *     tags: [Platform]
+ *     parameters:
+ *       - { in: query, name: bbox, required: true, schema: { type: string, example: "5.07,45.715,5.09,45.73" }, description: "minLon,minLat,maxLon,maxLat" }
  * /internal/platform/geo/geocode:
  *   get:
  *     summary: Address search (proxy to the Géoplateforme geocoding service)
@@ -316,6 +322,7 @@ export class PlatformRoute implements Routes {
     this.router.delete(`${base}/capacity-studies/:id`, PlatformAdminMiddleware(), this.platform.deleteStudy);
     this.router.get(`${base}/geo/parcels`, PlatformAdminMiddleware(), this.platform.parcels);
     this.router.get(`${base}/geo/parkings`, PlatformAdminMiddleware(), this.platform.parkings);
+    this.router.get(`${base}/geo/buildings`, PlatformAdminMiddleware(), this.platform.buildings);
     this.router.get(`${base}/geo/geocode`, PlatformAdminMiddleware(), this.platform.geocode);
   }
 }

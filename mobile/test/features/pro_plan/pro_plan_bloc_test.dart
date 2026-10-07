@@ -84,6 +84,15 @@ void main() {
     expect(b.state.center, const LatLng(45.7, 5.0));
   });
 
+  test('sans plan mais avec une adresse connue : la carte s’ouvre sur le parking', () async {
+    when(() => getParking(any())).thenAnswer((_) async => const Right(ParkingSummaryModel(id: 'p1', name: 'Parkair', totalCapacity: 150, lat: 45.7256, lng: 5.0811)));
+    when(() => getPlan('p1')).thenAnswer((_) async => const Right(emptyPlan));
+    final b = bloc()..add(const ProPlanStarted());
+    await settle();
+    expect(b.state.step, PlanStep.locate);
+    expect(b.state.center, const LatLng(45.7256, 5.0811));
+  });
+
   test('tracé : coins, rectangle auto, validation → estimation, puis génération applique la capacité', () async {
     when(() => getPlan('p1')).thenAnswer((_) async => const Right(emptyPlan));
     when(() => save(any())).thenAnswer((_) async => const Right(emptyPlan));

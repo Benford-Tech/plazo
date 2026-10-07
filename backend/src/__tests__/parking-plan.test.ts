@@ -1,4 +1,5 @@
 import prisma from '@/database';
+import { GeoService } from '@/services/geo.service';
 import { addStaff, api, resetDatabase, setupOperator } from './utils/helpers';
 
 beforeEach(resetDatabase);
@@ -159,7 +160,7 @@ describe('parking plan (bloc 2, step Plan)', () => {
   });
 });
 
-describe('disposition « files depuis le bord » (T-A) et zones de séjour (Z-A)', () => {
+describe('disposition « peigne » (M-A, ex-files depuis le bord) et zones de séjour (Z-A)', () => {
   it('génère plus de places qu’en bandes sur un terrain en triangle, et classe chaque place par son rang dans la file', async () => {
     const { token, parking } = await setupOperator();
     // A right triangle of about 60 m × 45 m (1° of latitude ≈ 111 km; longitude scaled by cos 45.72°).
@@ -194,5 +195,81 @@ describe('disposition « files depuis le bord » (T-A) et zones de séjour (Z-A)
     expect(spots.filter(s => s.depth === 0).every(s => s.stayClass === 'short')).toBe(true);
     expect(spots.filter(s => s.fileLength >= 3 && s.depth === s.fileLength - 1).every(s => s.stayClass === 'long')).toBe(true);
     expect(spots.some(s => s.stayClass === 'medium')).toBe(true);
+  });
+});
+
+describe('bâtiments IGN et zones automatiques à l’enregistrement du terrain (B-A, T-A, 07/10/2026)', () => {
+  const lon0 = 5.08;
+  const lat0 = 45.72;
+  const dx = 100 / (111320 * Math.cos((lat0 * Math.PI) / 180));
+  const dy = 60 / 110540;
+  const box = (x: number, y: number, w: number, h: number) => ({
+    type: 'Polygon',
+    coordinates: [
+      [
+        [lon0 + (x / 100) * dx, lat0 + (y / 60) * dy],
+        [lon0 + ((x + w) / 100) * dx, lat0 + (y / 60) * dy],
+        [lon0 + ((x + w) / 100) * dx, lat0 + ((y + h) / 60) * dy],
+        [lon0 + (x / 100) * dx, lat0 + ((y + h) / 60) * dy],
+        [lon0 + (x / 100) * dx, lat0 + (y / 60) * dy],
+      ],
+    ],
+  });
+  const land = box(0, 0, 100, 60);
+  let buildings: jest.SpyInstance;
+  beforeEach(() => {
+    // A building across the middle of the land, and one next to it.
+    buildings = jest.spyOn(GeoService.prototype, 'buildingsIn').mockResolvedValue([
+      { id: 'BAT1', nature: 'Indifférenciée', geometry: box(40, 0, 20, 60) as any },
+      { id: 'BAT2', nature: 'Indifférenciée', geometry: box(150, 0, 10, 10) as any },
+    ]);
+  });
+  afterEach(() => buildings.mockRestore());
+
+  it('l’app n’envoie que le contour : les bâtiments deviennent des exclusions et les zones suivent', async () => {
+    const { token, parking } = await setupOperator();
+    const saved = await api()
+      .patch(`/api/internal/parkings/${parking.id}/plan`)
+      .set(auth(token))
+      .send({ outline: land, settings: { outlineSource: 'drawn', zonesAuto: true } });
+    expect(saved.status).toBe(200);
+    expect(buildings).toHaveBeenCalledTimes(1);
+    const plan = saved.body.data.plan;
+    expect(plan.exclusions).toHaveLength(1);
+    expect(plan.exclusions[0]).toMatchObject({ id: 'ign-BAT1', kind: 'building', clearance: 1, source: 'ign', ref: 'BAT1', name: 'Bâtiment' });
+    expect(plan.zones.map((z: { name: string }) => z.name)).toEqual(['Zone A', 'Zone B']);
+
+    // The estimate runs on both pieces; the comb is on offer.
+    const est = await api().post(`/api/internal/parkings/${parking.id}/plan/estimate`).set(auth(token));
+    expect(est.status).toBe(200);
+    expect(est.body.zones).toHaveLength(2);
+    expect(est.body.totals.valetEdge).toBeGreaterThan(0);
+
+    // The pro space sends its own exclusions and zones: the server keeps its hands off.
+    const web = await api()
+      .patch(`/api/internal/parkings/${parking.id}/plan`)
+      .set(auth(token))
+      .send({ outline: land, exclusions: [], zones: [{ id: 'z1', name: 'Zone A', geometry: land }], settings: { zonesAuto: false } });
+    expect(web.body.data.plan.exclusions).toEqual([]);
+    expect(web.body.data.plan.zones).toHaveLength(1);
+    expect(buildings).toHaveBeenCalledTimes(1);
+  });
+
+  it('un service IGN en panne n’empêche pas d’enregistrer le terrain', async () => {
+    buildings.mockRejectedValue(new Error('down'));
+    const { token, parking } = await setupOperator();
+    const saved = await api().patch(`/api/internal/parkings/${parking.id}/plan`).set(auth(token)).send({ outline: land });
+    expect(saved.status).toBe(200);
+    expect(saved.body.data.plan.exclusions).toEqual([]);
+    expect(saved.body.data.plan.zones.map((z: { name: string }) => z.name)).toEqual(['Zone A']);
+  });
+
+  it('la route des bâtiments contrôle sa boîte', async () => {
+    const { token } = await setupOperator();
+    expect((await api().get('/api/internal/geo/buildings?bbox=5,45').set(auth(token))).body.fields).toEqual({ bbox: 'invalid_bbox' });
+    expect((await api().get('/api/internal/geo/buildings?bbox=5,45,5.2,45.2').set(auth(token))).body.fields).toEqual({ bbox: 'bbox_too_large' });
+    const ok = await api().get('/api/internal/geo/buildings?bbox=5.08,45.72,5.081,45.721').set(auth(token));
+    expect(ok.status).toBe(200);
+    expect(ok.body.buildings).toHaveLength(2);
   });
 });

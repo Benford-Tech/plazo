@@ -34,6 +34,9 @@ export interface SpotState {
   active: boolean;
   geometry: [number, number][];
   stayClass: StayClass | null;
+  /** O-A (06/10/2026): rank from the aisle and the file (null on a self-park plan; missing from an older API). */
+  depth?: number | null;
+  fileKey?: string | null;
   occupant: Occupant | null;
 }
 
@@ -44,6 +47,19 @@ export interface Suggestion {
   reason: "near_handover" | "near_entrance" | "free";
   /** The spot's stay class, when the plan has them (Z-A). */
   stayClass: StayClass | null;
+  /** O-A (06/10/2026): cars to move because of this choice (0: the file stays sound); missing from an older API. */
+  moves?: number;
+  /** Cars in front that leave after this stay (to take out at its return). */
+  blocking?: Blocker[];
+  /** Cars behind that leave before this stay (this car would block them). */
+  blocked?: Blocker[];
+}
+
+export interface Blocker {
+  reservationId: string;
+  reference: string;
+  spotCode: string;
+  returnAt: string;
 }
 
 export type ArrivalToPlace = Omit<Occupant, "onSite" | "leavesToday"> & {

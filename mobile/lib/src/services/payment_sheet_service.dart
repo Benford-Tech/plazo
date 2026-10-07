@@ -45,11 +45,11 @@ class StripePaymentSheetService implements PaymentSheetService {
     String? amountLabel,
   }) async {
     try {
-      if (Stripe.publishableKey != publishableKey) {
-        Stripe.publishableKey = publishableKey;
-        if (AppConstants.appleMerchantId.isNotEmpty) Stripe.merchantIdentifier = AppConstants.appleMerchantId;
-        await Stripe.instance.applySettings();
-      }
+      // Reading `Stripe.publishableKey` before it is set throws StripeConfigException: the setter
+      // itself ignores an unchanged value, so set it every time and apply the settings once needed.
+      Stripe.publishableKey = publishableKey;
+      if (AppConstants.appleMerchantId.isNotEmpty) Stripe.merchantIdentifier = AppConstants.appleMerchantId;
+      await Stripe.instance.applySettings();
       await Stripe.instance.initPaymentSheet(
         paymentSheetParameters: SetupPaymentSheetParameters(
           paymentIntentClientSecret: clientSecret,
@@ -79,7 +79,9 @@ class StripePaymentSheetService implements PaymentSheetService {
       return PaymentSheetOutcome(PaymentSheetResult.failed, message: e.error.localizedMessage);
     } catch (e) {
       debugPrint('Payment sheet error: ${e.runtimeType}');
-      return const PaymentSheetOutcome(PaymentSheetResult.failed);
+      // Test keys only: the raw error helps diagnose a device or setup problem; never with live keys.
+      final testKeys = publishableKey.startsWith('pk_test_');
+      return PaymentSheetOutcome(PaymentSheetResult.failed, message: testKeys ? '[test] ${e.runtimeType} : $e' : null);
     }
   }
 }

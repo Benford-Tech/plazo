@@ -7,9 +7,11 @@ import { UpdateParkingDto } from '@/dtos/parking.dto';
 import { AuthenticatedStaff } from '@/interfaces/auth.interface';
 import { HttpException } from '@/utils/httpException';
 import { AuditService } from './audit.service';
-import { ParkingLocationService, SAVE_GEOCODE_TIMEOUT_MS } from './parking-location.service';
+import { ParkingLocationService, READ_GEOCODE_TIMEOUT_MS, SAVE_GEOCODE_TIMEOUT_MS, type LatLng } from './parking-location.service';
 
 export type ParkingSummary = Parking & { bookableCapacity: number };
+/** What GET /internal/parking serves: the summary plus the parking's position (its address's when not placed). */
+export type ParkingSummaryWithPosition = ParkingSummary & { lat: number | null; lng: number | null };
 
 const SETTINGS = [
   'name',
@@ -35,6 +37,13 @@ export class ParkingService {
     const parking = await prisma.parking.findFirst({ where: { operatorId: actor.operatorId }, orderBy: { createdAt: 'asc' } });
     if (!parking) throw new HttpException(httpStatus.NOT_FOUND, 'Parking not found', 'not_found');
     return summarize(parking);
+  }
+
+  /** The pro space's and the app's read: the plan opens its map on the parking (07/10/2026), so its position comes along. */
+  public async getPrimaryWithPosition(actor: AuthenticatedStaff): Promise<ParkingSummaryWithPosition> {
+    const summary = await this.getPrimary(actor);
+    const position: LatLng | null = await this.locations.locate(summary, READ_GEOCODE_TIMEOUT_MS);
+    return { ...summary, lat: position?.lat ?? null, lng: position?.lng ?? null };
   }
 
   public async update(actor: AuthenticatedStaff, parkingId: string, data: UpdateParkingDto): Promise<ParkingSummary> {
