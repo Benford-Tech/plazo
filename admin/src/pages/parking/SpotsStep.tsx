@@ -1,4 +1,4 @@
-import { X } from "lucide-react";
+import { ArrowLeft, X } from "lucide-react";
 import { useMemo, useState } from "react";
 import { toast } from "sonner";
 import {
@@ -6,12 +6,7 @@ import {
   type MapLabel,
   type MapLayer,
 } from "@/components/capacity/MapView";
-import {
-  Aside,
-  AsideActions,
-  PanelLabel,
-  ToolButton,
-} from "@/components/capacity/ui";
+import { Aside, PanelLabel, ToolButton } from "@/components/capacity/ui";
 import { adminApi } from "@/lib/api";
 import {
   exclusionMulti,
@@ -360,6 +355,13 @@ export default function SpotsStep({
         className="min-h-[55vh] min-w-0 flex-1 lg:min-h-0"
       />
       <Aside wide>
+        {/* The way back sits at the top: the panel below is long (07/10/2026). */}
+        <div>
+          <ToolButton onClick={() => go("zones")}>
+            <ArrowLeft className="mr-1.5 inline h-4 w-4" />
+            {t.back}
+          </ToolButton>
+        </div>
         <PanelLabel>{t.layout}</PanelLabel>
         <div role="radiogroup" aria-label={t.layout} className="flex flex-col">
           {LAYOUT_KEYS.map((key) => (
@@ -562,10 +564,6 @@ export default function SpotsStep({
             ))}
           </ul>
         )}
-
-        <AsideActions>
-          <ToolButton onClick={() => go("zones")}>{t.back}</ToolButton>
-        </AsideActions>
       </Aside>
     </>
   );
