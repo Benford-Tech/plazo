@@ -10,7 +10,7 @@ import { dateTimeShort } from "@/lib/datetime";
 import { describeError, inboundFr as t } from "@/lib/fr";
 import type { InboundEmail, InboundEmailStatus } from "@/lib/types";
 
-const TONE: Record<InboundEmailStatus, BadgeTone> = { imported: "ok", duplicate: "line", incomplete: "warn", unrecognised: "bad", dismissed: "line" };
+const TONE: Record<InboundEmailStatus, BadgeTone> = { imported: "ok", duplicate: "line", incomplete: "warn", unrecognised: "bad", dismissed: "line", forwarding: "info" };
 const TO_CHECK: InboundEmailStatus[] = ["incomplete", "unrecognised"];
 
 function Row({ email }: { email: InboundEmail }) {

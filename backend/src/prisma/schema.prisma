@@ -321,6 +321,7 @@ enum InboundEmailStatus {
   incomplete // recognised, but a required field is missing: staff complete it from "À vérifier"
   unrecognised // no importer knows this email: staff read it and type the booking
   dismissed // staff closed it without a booking
+  forwarding // G-B (07/10/2026): a mail provider's forwarding confirmation (Gmail's code), shown in the setup wizard
 }
 
 model InboundEmail {

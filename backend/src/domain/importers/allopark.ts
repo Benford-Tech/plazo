@@ -20,6 +20,7 @@ const ALL_LABELS = Object.values(LABELS);
 /** Allopark booking confirmation, as copied from the email client. */
 export const alloparkImporter: EmailImporter = {
   provider: 'Allopark',
+  senders: ['info@allopark.com'],
 
   detect: text => /allopark/i.test(text) && /\bAL-\d{6,}\b/.test(text),
 

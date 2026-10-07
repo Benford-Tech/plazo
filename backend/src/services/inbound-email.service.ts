@@ -3,8 +3,17 @@ import httpStatus from 'http-status';
 import { Container, Service } from 'typedi';
 import { INBOUND_EMAIL_DOMAIN, inboundEmailAvailable } from '@/config';
 import prisma, { InboundEmailStatus, Prisma } from '@/database';
-import { parseConfirmationEmail, ParsedBooking } from '@/domain/importers';
-import { InboundItem, InboundPayload, inboundSlugOf, newInboundSlug, recipientsOf, REQUIRED_FOR_IMPORT, textOf } from '@/domain/inbound-email';
+import { IMPORT_SENDERS, parseConfirmationEmail, ParsedBooking } from '@/domain/importers';
+import {
+  forwardingConfirmationOf,
+  InboundItem,
+  InboundPayload,
+  inboundSlugOf,
+  newInboundSlug,
+  recipientsOf,
+  REQUIRED_FOR_IMPORT,
+  textOf,
+} from '@/domain/inbound-email';
 import { can } from '@/domain/roles';
 import { HttpException } from '@/utils/httpException';
 import { AuthenticatedStaff } from '@/interfaces/auth.interface';
@@ -18,6 +27,10 @@ const ROW_RETENTION_DAYS = 90;
 /** What the settings block counts: the last 30 days. */
 const COUNT_WINDOW_DAYS = 30;
 const TEXT_MAX_CHARS = 20000;
+/** Gmail's confirmation code is shown in the setup wizard this long. */
+const FORWARDING_SHOWN_DAYS = 7;
+/** "Ce que Plazo a reçu" in the wizard's last step. */
+const RECENT_SHOWN = 5;
 
 export interface InboundSettings {
   /** False when the platform has no inbound domain or secret: the block explains it. */
@@ -28,6 +41,23 @@ export interface InboundSettings {
   counts: Record<InboundEmailStatus, number>;
   /** Emails waiting for the staff (incomplete or unrecognised). */
   toCheck: number;
+  /** G-B: the comparators' sender addresses, for the forwarding rule. */
+  senders: { provider: string; address: string }[];
+  /** G-B: Gmail's latest forwarding confirmation (7 days), its code typed back in Gmail. */
+  forwarding: { provider: 'gmail'; code: string; requester: string | null; receivedAt: string } | null;
+  /** G-B: the last emails received, newest first, for the wizard's check step. */
+  recent: InboundRecent[];
+}
+
+export interface InboundRecent {
+  id: string;
+  status: InboundEmailStatus;
+  fromAddress: string | null;
+  fromName: string | null;
+  subject: string | null;
+  provider: string | null;
+  reservationReference: string | null;
+  receivedAt: string;
 }
 
 export interface InboundEmailView {
@@ -76,9 +106,26 @@ export class InboundEmailService {
     const operator = await prisma.operator.findUnique({ where: { inboundSlug: slug }, select: { id: true, status: true } });
     if (!operator || operator.status !== 'active') return 'ignored';
     const text = textOf(item).slice(0, TEXT_MAX_CHARS);
+    const fromAddress = item.From?.Address?.trim().toLowerCase().slice(0, 200) || null;
+    // G-B: Gmail asks the Plazo address to confirm the forwarding; the code is shown in the setup wizard.
+    const confirmation = forwardingConfirmationOf({ from: fromAddress, subject: item.Subject ?? null, text });
+    if (confirmation) {
+      await prisma.inboundEmail.create({
+        data: {
+          operatorId: operator.id,
+          status: 'forwarding',
+          fromAddress,
+          fromName: item.From?.Name?.trim().slice(0, 120) || null,
+          subject: item.Subject?.trim().slice(0, 200) || null,
+          provider: confirmation.provider,
+          parsed: { code: confirmation.code, requester: confirmation.requester },
+        },
+      });
+      return 'forwarding';
+    }
     const base = {
       operatorId: operator.id,
-      fromAddress: item.From?.Address?.trim().toLowerCase().slice(0, 200) || null,
+      fromAddress,
       fromName: item.From?.Name?.trim().slice(0, 120) || null,
       subject: item.Subject?.trim().slice(0, 200) || null,
       textBody: text || null,
@@ -125,12 +172,23 @@ export class InboundEmailService {
   public async settings(actor: AuthenticatedStaff): Promise<InboundSettings> {
     const operator = await prisma.operator.findUniqueOrThrow({ where: { id: actor.operatorId }, select: { inboundSlug: true } });
     const since = new Date(Date.now() - COUNT_WINDOW_DAYS * 86400000);
-    const [grouped, last, toCheck] = await Promise.all([
+    const [grouped, last, toCheck, forwarding, recent] = await Promise.all([
       prisma.inboundEmail.groupBy({ by: ['status'], where: { operatorId: actor.operatorId, receivedAt: { gte: since } }, _count: { _all: true } }),
       prisma.inboundEmail.findFirst({ where: { operatorId: actor.operatorId }, orderBy: { receivedAt: 'desc' }, select: { receivedAt: true } }),
       prisma.inboundEmail.count({ where: { operatorId: actor.operatorId, status: { in: TO_CHECK } } }),
+      prisma.inboundEmail.findFirst({
+        where: { operatorId: actor.operatorId, status: 'forwarding', receivedAt: { gte: new Date(Date.now() - FORWARDING_SHOWN_DAYS * 86400000) } },
+        orderBy: { receivedAt: 'desc' },
+        select: { parsed: true, receivedAt: true },
+      }),
+      prisma.inboundEmail.findMany({
+        where: { operatorId: actor.operatorId },
+        include: { reservation: { select: { reference: true } } },
+        orderBy: { receivedAt: 'desc' },
+        take: RECENT_SHOWN,
+      }),
     ]);
-    const counts: Record<InboundEmailStatus, number> = { imported: 0, duplicate: 0, incomplete: 0, unrecognised: 0, dismissed: 0 };
+    const counts: Record<InboundEmailStatus, number> = { imported: 0, duplicate: 0, incomplete: 0, unrecognised: 0, dismissed: 0, forwarding: 0 };
     for (const g of grouped) counts[g.status] = g._count._all;
     const available = inboundEmailAvailable();
     return {
@@ -139,6 +197,18 @@ export class InboundEmailService {
       lastReceivedAt: last?.receivedAt.toISOString() ?? null,
       counts,
       toCheck,
+      senders: IMPORT_SENDERS,
+      forwarding: forwardingView(forwarding),
+      recent: recent.map(r => ({
+        id: r.id,
+        status: r.status,
+        fromAddress: r.fromAddress,
+        fromName: r.fromName,
+        subject: r.subject,
+        provider: r.provider,
+        reservationReference: r.reservation?.reference ?? null,
+        receivedAt: r.receivedAt.toISOString(),
+      })),
     };
   }
 
@@ -169,7 +239,10 @@ export class InboundEmailService {
     const rows = await prisma.inboundEmail.findMany({
       where: {
         operatorId: actor.operatorId,
-        ...(filter.status ? { status: filter.status } : { OR: [{ status: { in: TO_CHECK } }, { receivedAt: { gte: since } }] }),
+        // Gmail's forwarding confirmations belong to the setup wizard, not to "À vérifier".
+        ...(filter.status
+          ? { status: filter.status }
+          : { status: { not: 'forwarding' }, OR: [{ status: { in: TO_CHECK } }, { receivedAt: { gte: since } }] }),
       },
       include: { reservation: { select: { reference: true } } },
       orderBy: { receivedAt: 'desc' },
@@ -264,4 +337,15 @@ export class InboundEmailService {
   private require(actor: AuthenticatedStaff, permission: Parameters<typeof can>[1]) {
     if (!can(actor.role, permission)) throw new HttpException(httpStatus.FORBIDDEN, 'You do not have access to this action', 'forbidden');
   }
+}
+
+function forwardingView(row: { parsed: Prisma.JsonValue | null; receivedAt: Date } | null): InboundSettings['forwarding'] {
+  const parsed = row?.parsed as { code?: unknown; requester?: unknown } | null | undefined;
+  if (!row || typeof parsed?.code !== 'string') return null;
+  return {
+    provider: 'gmail',
+    code: parsed.code,
+    requester: typeof parsed.requester === 'string' ? parsed.requester : null,
+    receivedAt: row.receivedAt.toISOString(),
+  };
 }
