@@ -9,6 +9,7 @@ import { areaOf, intersection, simplify, type Multi } from '@/domain/layout/geom
 import { metresPerPixel, TILE_SIZE, tileColumns, tileRows, tilesCovering, toLonLat, toPixel, zoomFor, type TileRange } from '@/domain/layout/tiles';
 import type { CapacityStudy, Exclusion, GeoPolygon, Zone } from '@/domain/layout/types';
 import { AuthenticatedStaff } from '@/interfaces/auth.interface';
+import { SuggestZonesDto } from '@/dtos/parking-plan.dto';
 import { HttpException } from '@/utils/httpException';
 import { logger } from '@/utils/logger';
 
@@ -25,7 +26,7 @@ export interface SuggestedSurface {
   /** Pixel ring of the stitched image, [x, y] × n. */
   points: [number, number][];
   label: string;
-  surface: 'asphalt' | 'gravel' | 'concrete' | 'other';
+  surface: 'asphalt' | 'gravel' | 'concrete' | 'grass' | 'other';
   confidence: number;
 }
 
@@ -53,7 +54,7 @@ const RESPONSE_SCHEMA = {
           // Kept to the keywords structured outputs accept everywhere; sizes and ranges are checked in code.
           points: { type: 'array', items: { type: 'array', items: { type: 'number' } } },
           label: { type: 'string' },
-          surface: { type: 'string', enum: ['asphalt', 'gravel', 'concrete', 'other'] },
+          surface: { type: 'string', enum: ['asphalt', 'gravel', 'concrete', 'grass', 'other'] },
           confidence: { type: 'number' },
         },
       },
@@ -61,14 +62,24 @@ const RESPONSE_SCHEMA = {
   },
 };
 
-const SYSTEM_PROMPT = `You read aerial photographs of car parks for a parking operator's planning tool.
+/** The instructions, with grass as a parkable surface or not (H-A, 07/10/2026). */
+export function systemPrompt(allowGrass: boolean): string {
+  const ground = allowGrass
+    ? 'asphalt, gravel, concrete, compacted ground or flat grass (a lawn, a meadow, a field) that is open to the sky'
+    : 'asphalt, gravel, concrete or compacted ground that is open to the sky';
+  const excluded = allowGrass
+    ? 'buildings and roofs, awnings, hedges, bushes and tree canopies, water, public roads'
+    : 'buildings and roofs, awnings, vegetation (lawn, hedges, tree canopies), water, public roads';
+  const cut = allowGrass ? 'a building, a hedge or a line of trees' : 'a building or vegetation';
+  return `You read aerial photographs of car parks for a parking operator's planning tool.
 The photo is an IGN orthophoto (France, 20 cm resolution, north up). A bright green outline marks the operator's land.
 Your job: outline every surface INSIDE the green outline where cars can be parked or driven to park:
-asphalt, gravel, concrete or compacted ground that is open to the sky. Include the lanes between rows (the tool lays
-its own aisles). Exclude buildings and roofs, awnings, vegetation (lawn, hedges, tree canopies), water, public roads
+${ground}. Include the lanes between rows (the tool lays
+its own aisles). Exclude ${excluded}
 outside the land, and clearly pedestrian or technical areas. Follow the real edges of the surface, with 6 to 20
-points per surface. Separate surfaces that are cut from each other by a building or vegetation. Coordinates are pixels
+points per surface. Separate surfaces that are cut from each other by ${cut}. Coordinates are pixels
 of the image, origin at its top-left corner, x to the right, y downwards.`;
+}
 
 /**
  * V-A (07/10/2026): Claude proposes the parking zones from the IGN photo. The server stitches the
@@ -85,7 +96,7 @@ export class ZoneSuggestionService {
     return !!anthropicApiKey();
   }
 
-  public async suggest(actor: AuthenticatedStaff, parkingId: string): Promise<ZoneSuggestion> {
+  public async suggest(actor: AuthenticatedStaff, parkingId: string, options: SuggestZonesDto = {}): Promise<ZoneSuggestion> {
     if (!ZoneSuggestionService.enabled()) {
       throw new HttpException(httpStatus.CONFLICT, 'The zone proposal needs an Anthropic API key', 'ai_unavailable');
     }
@@ -108,7 +119,7 @@ export class ZoneSuggestionService {
     const mpp = metresPerPixel(midLat, zoom);
     const jpg = jpeg.encode(photo, 85).data;
 
-    const { surfaces, usage } = await this.ask(jpg.toString('base64'), photo.width, photo.height, mpp, outlinePx);
+    const { surfaces, usage } = await this.ask(jpg.toString('base64'), photo.width, photo.height, mpp, outlinePx, options.allowGrass !== false);
     try {
       return this.toZones(surfaces, usage, { outline, exclusions, scaleFactor }, range, photo, mpp, zoom);
     } catch (error) {
@@ -233,6 +244,7 @@ export class ZoneSuggestionService {
     height: number,
     mpp: number,
     outlinePx: [number, number][],
+    allowGrass = true,
   ): Promise<{ surfaces: SuggestedSurface[]; usage: ZoneSuggestion['usage'] }> {
     // Vercel allows this function 60 s: the call stays well under it (medium effort, short answer).
     this.client ??= new Anthropic({ apiKey: anthropicApiKey(), timeout: 45000, maxRetries: 0 });
@@ -242,7 +254,7 @@ export class ZoneSuggestionService {
       response = await this.client.messages.create({
         model: zoneSuggestionModel(),
         max_tokens: 4000,
-        system: SYSTEM_PROMPT,
+        system: systemPrompt(allowGrass),
         output_config: { effort: 'medium', format: { type: 'json_schema', schema: RESPONSE_SCHEMA } },
         messages: [
           {
@@ -254,6 +266,7 @@ export class ZoneSuggestionService {
                 text:
                   `Image: ${width} × ${height} px, ${mpp.toFixed(2)} m per pixel. ` +
                   `The green outline passes through these pixels: ${outlineText}. ` +
+                  (allowGrass ? 'Grass is allowed. ' : '') +
                   'Return the drivable surfaces inside it as JSON.',
               },
             ],

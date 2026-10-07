@@ -118,8 +118,11 @@ Ne construire QUE ce qui règle la douleur n°1 du client.
      plus, contour tracé en vert, `jpeg-js`), demande à Claude Opus 5.5 (`@anthropic-ai/sdk`, sortie structurée JSON,
      `ANTHROPIC_API_KEY`, `ZONE_SUGGESTION_MODEL`) les surfaces garables en pixels, les reconvertit, les coupe au contour
      moins les exclusions (`autoZonesFrom`) et renvoie des zones sans rien enregistrer ; bouton « Proposer les zones avec
-     Claude » à l'étape Zones (proposition en bleu, carte « N zones proposées » avec sol et confiance, Appliquer / Ignorer) ;
-     409 `ai_unavailable` sans clé, `ai_refused` si Claude décline.
+     Claude » à l'étape Zones (proposition en bleu, carte « N zones proposées » avec sol et confiance, « Ajouter à mes
+     zones » / Ignorer) ; 409 `ai_unavailable` sans clé, `ai_refused` si Claude décline. **H-A + Z-A (07/10/2026)** : case
+     « Herbe autorisée » (réglage `suggestGrass`, vrai par défaut, corps `{ allowGrass }` de la route, `systemPrompt(allowGrass)`,
+     sol `grass`) et la proposition **s'ajoute** aux zones déjà tracées (fusion des zones qui se touchent par `paintZones`),
+     avant ou après le pinceau ; « Réinitialiser… » pour repartir de zéro.
    - Décision **O-A « File triée » (06/10/2026)** : sur une file de voiturier, les retours doivent décroître de l'allée vers le
      fond ; `domain/files.ts` reconstitue les files (profondeur + position) et score chaque place libre par le nombre de
      voitures à déplacer (`blocking` devant partant après, `blocked` derrière partant avant ; même vague = 2 h) ;

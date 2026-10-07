@@ -212,39 +212,107 @@ describe("plan du parking (bloc 2, étape Plan)", () => {
     api.replaceSpots.mockResolvedValue({ data: view([], 1) });
     const confirm = vi.spyOn(window, "confirm").mockReturnValue(true);
     renderAt("/parking/plan/places");
-    fireEvent.click(await screen.findByRole("button", { name: "Réinitialiser…" }));
+    fireEvent.click(
+      await screen.findByRole("button", { name: "Réinitialiser…" }),
+    );
     fireEvent.click(screen.getByRole("menuitem", { name: /Tout le plan/ }));
     expect(confirm).toHaveBeenCalledTimes(1);
-    await waitFor(() => expect(api.replaceSpots).toHaveBeenCalledWith("p1", "valet24", []));
+    await waitFor(() =>
+      expect(api.replaceSpots).toHaveBeenCalledWith("p1", "valet24", []),
+    );
     await waitFor(() => expect(api.updateParkingPlan).toHaveBeenCalled());
     const patch = api.updateParkingPlan.mock.calls[0][1];
-    expect(patch).toMatchObject({ outline: null, zones: [], exclusions: [], landmarks: [], scaleFactor: 1 });
-    expect(patch.settings).toMatchObject({ zonesAuto: true, ignBuildingsSynced: false });
-    expect(await screen.findByText("Pas encore de contour")).toBeInTheDocument();
+    expect(patch).toMatchObject({
+      outline: null,
+      zones: [],
+      exclusions: [],
+      landmarks: [],
+      scaleFactor: 1,
+    });
+    expect(patch.settings).toMatchObject({
+      zonesAuto: true,
+      ignBuildingsSynced: false,
+    });
+    expect(
+      await screen.findByText("Pas encore de contour"),
+    ).toBeInTheDocument();
     confirm.mockRestore();
   });
 
-  it("demande à Claude de proposer les zones, les montre, puis les applique (V-A)", async () => {
-    api.getParkingPlan.mockResolvedValue({ ...view([]), plan: { ...view([]).plan, zones: [], settings: { zonesAuto: false } } });
+  it("demande à Claude de proposer les zones, les montre, puis les ajoute aux zones tracées (V-A, H-A, Z-A)", async () => {
+    // A hand-drawn zone in the far corner, which the proposal does not touch: it survives.
+    const corner = {
+      type: "Polygon" as const,
+      coordinates: [
+        [
+          [30, 30],
+          [38, 30],
+          [38, 38],
+          [30, 38],
+          [30, 30],
+        ].map((p) => frame.inverse(p as [number, number]) as [number, number]),
+      ],
+    };
+    api.getParkingPlan.mockResolvedValue({
+      ...view([]),
+      plan: {
+        ...view([]).plan,
+        zones: [{ id: "h1", name: "Zone A", geometry: corner }],
+        settings: { zonesAuto: false, suggestGrass: false },
+      },
+    });
     api.updateParkingPlan.mockResolvedValue({ data: {} });
-    const half = { type: "Polygon" as const, coordinates: [rect.map(([x, y]) => [x, y] as [number, number])] };
+    const half = {
+      type: "Polygon" as const,
+      coordinates: [rect.map(([x, y]) => [x, y] as [number, number])],
+    };
     api.suggestZones.mockResolvedValue({
       zones: [{ id: "c1", name: "Zone A", geometry: half }],
-      surfaces: [{ name: "Zone A", label: "Cour en enrobé", surface: "asphalt", confidence: 0.9, area: 520 }],
+      surfaces: [
+        {
+          name: "Zone A",
+          label: "Pré fauché",
+          surface: "grass",
+          confidence: 0.8,
+          area: 520,
+        },
+      ],
       image: { width: 512, height: 512, metresPerPixel: 0.21, zoom: 19 },
       model: "claude-opus-5-5",
       usage: { inputTokens: 1200, outputTokens: 300 },
     });
     renderAt("/parking/plan/zones");
-    fireEvent.click(await screen.findByRole("button", { name: /Proposer les zones avec Claude/ }));
+    const grass = (await screen.findByLabelText(
+      /Herbe autorisée/,
+    )) as HTMLInputElement;
+    expect(grass.checked).toBe(false);
+    fireEvent.click(grass);
+    await waitFor(() =>
+      expect(
+        api.updateParkingPlan.mock.calls.at(-1)![1].settings.suggestGrass,
+      ).toBe(true),
+    );
+    fireEvent.click(
+      screen.getByRole("button", { name: /Proposer les zones avec Claude/ }),
+    );
     expect(await screen.findByText("1 zone proposée")).toBeInTheDocument();
-    expect(screen.getByText(/Cour en enrobé · enrobé · sûr à 90 %/)).toBeInTheDocument();
-    expect(api.suggestZones).toHaveBeenCalledWith("p1");
-    fireEvent.click(screen.getByRole("button", { name: "Appliquer" }));
-    await waitFor(() => expect(api.updateParkingPlan).toHaveBeenCalled());
+    expect(
+      screen.getByText(/Pré fauché · herbe · sûr à 80 %/),
+    ).toBeInTheDocument();
+    expect(api.suggestZones).toHaveBeenCalledWith("p1", { allowGrass: true });
+    fireEvent.click(
+      screen.getByRole("button", { name: "Ajouter à mes zones" }),
+    );
+    await waitFor(() =>
+      expect(api.updateParkingPlan.mock.calls.at(-1)![1].zones).toHaveLength(2),
+    );
     const patch = api.updateParkingPlan.mock.calls.at(-1)![1];
-    expect(patch.zones).toHaveLength(1);
-    expect(patch.zones[0].name).toBe("Zone A");
+    expect(
+      patch.zones.map((z: { id: string; name: string }) => [z.id, z.name]),
+    ).toEqual([
+      ["h1", "Zone A"],
+      [expect.any(String), "Zone B"],
+    ]);
     expect(patch.settings.zonesAuto).toBe(false);
     expect(screen.queryByText("1 zone proposée")).not.toBeInTheDocument();
   });

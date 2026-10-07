@@ -397,5 +397,5 @@ Documentation interactive : `/api/docs` (Swagger). Toutes les routes sont sous `
 | GET | `/internal/platform/geo/parcels?lon=&lat=` | Parcelles cadastrales au point cliqué (relais vers API Carto de l'IGN) |
 | GET | `/internal/platform/geo/parkings?bbox=` | Parkings BD TOPO de la vue (relais vers le WFS de la Géoplateforme) |
 | GET | `/internal/platform/geo/buildings?bbox=` | Bâtiments BD TOPO de la vue (B-A, même relais) |
-| POST | `/internal/parkings/:id/plan/suggest-zones` | V-A : Claude lit la photo IGN du terrain et propose les zones (rien n'est enregistré ; 409 `ai_unavailable` sans `ANTHROPIC_API_KEY`) |
+| POST | `/internal/parkings/:id/plan/suggest-zones` | V-A : Claude lit la photo IGN du terrain et propose les zones (corps `{ allowGrass }`, vrai par défaut ; rien n'est enregistré ; 409 `ai_unavailable` sans `ANTHROPIC_API_KEY`) |
 | GET | `/internal/platform/geo/geocode?q=` | Recherche d'adresse (relais vers le géocodage de la Géoplateforme) |

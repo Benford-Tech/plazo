@@ -1,7 +1,7 @@
 import { Response } from 'express';
 import { Container } from 'typedi';
 import { UpdateParkingDto } from '@/dtos/parking.dto';
-import { GenerateSpotsDto, ReplaceSpotsDto, UpdateParkingPlanDto, UpdateSpotDto } from '@/dtos/parking-plan.dto';
+import { SuggestZonesDto, GenerateSpotsDto, ReplaceSpotsDto, UpdateParkingPlanDto, UpdateSpotDto } from '@/dtos/parking-plan.dto';
 import { RequestWithStaffSession } from '@/middlewares/staff-auth.middleware';
 import { AssignSpotDto } from '@/dtos/occupation.dto';
 import { CarLocationDto } from '@/dtos/public-booking.dto';
@@ -66,7 +66,8 @@ export class ParkingController {
 
   /** POST /internal/parkings/:id/plan/suggest-zones (V-A): Claude reads the IGN photo of the land. */
   public suggestZones = catchAsync(async (req: RequestWithStaffSession, res: Response) => {
-    res.json(await this.zoneSuggestions.suggest(req.staff, req.params.id as string));
+    const options: SuggestZonesDto = req.body;
+    res.json(await this.zoneSuggestions.suggest(req.staff, req.params.id as string, options));
   });
 
   /** POST /internal/parkings/:id/plan/generate */
