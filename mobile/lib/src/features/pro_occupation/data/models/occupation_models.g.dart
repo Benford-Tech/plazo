@@ -38,6 +38,24 @@ _OccupantModel _$OccupantModelFromJson(Map<String, dynamic> json) =>
               ?.map((e) => SuggestionModel.fromJson(e as Map<String, dynamic>))
               .toList() ??
           const [],
+      file: json['file'] == null
+          ? null
+          : FileRefModel.fromJson(json['file'] as Map<String, dynamic>),
+      filePosition: (json['filePosition'] as num?)?.toInt(),
+      position: (json['position'] as num?)?.toInt(),
+      blockedBy:
+          (json['blockedBy'] as List<dynamic>?)
+              ?.map((e) => FileBlockerModel.fromJson(e as Map<String, dynamic>))
+              .toList() ??
+          const <FileBlockerModel>[],
+      choices:
+          (json['choices'] as List<dynamic>?)
+              ?.map((e) => FileChoiceModel.fromJson(e as Map<String, dynamic>))
+              .toList() ??
+          const <FileChoiceModel>[],
+      suggested: json['suggested'] == null
+          ? null
+          : FileChoiceModel.fromJson(json['suggested'] as Map<String, dynamic>),
     );
 
 Map<String, dynamic> _$OccupantModelToJson(_OccupantModel instance) =>
@@ -64,6 +82,12 @@ Map<String, dynamic> _$OccupantModelToJson(_OccupantModel instance) =>
       'stayClass': instance.stayClass,
       'spot': instance.spot,
       'suggestions': instance.suggestions,
+      'file': instance.file,
+      'filePosition': instance.filePosition,
+      'position': instance.position,
+      'blockedBy': instance.blockedBy,
+      'choices': instance.choices,
+      'suggested': instance.suggested,
     };
 
 _SpotRefModel _$SpotRefModelFromJson(Map<String, dynamic> json) =>
@@ -216,3 +240,156 @@ _AssignedModel _$AssignedModelFromJson(Map<String, dynamic> json) =>
 
 Map<String, dynamic> _$AssignedModelToJson(_AssignedModel instance) =>
     <String, dynamic>{'data': instance.data};
+
+_FileRefModel _$FileRefModelFromJson(Map<String, dynamic> json) =>
+    _FileRefModel(
+      id: json['id'] as String,
+      code: json['code'] as String,
+      name: json['name'] as String?,
+    );
+
+Map<String, dynamic> _$FileRefModelToJson(_FileRefModel instance) =>
+    <String, dynamic>{
+      'id': instance.id,
+      'code': instance.code,
+      'name': instance.name,
+    };
+
+_FileBlockerModel _$FileBlockerModelFromJson(Map<String, dynamic> json) =>
+    _FileBlockerModel(
+      reservationId: json['reservationId'] as String,
+      reference: json['reference'] as String,
+      plate: json['plate'] as String,
+      returnAt: json['returnAt'] as String,
+    );
+
+Map<String, dynamic> _$FileBlockerModelToJson(_FileBlockerModel instance) =>
+    <String, dynamic>{
+      'reservationId': instance.reservationId,
+      'reference': instance.reference,
+      'plate': instance.plate,
+      'returnAt': instance.returnAt,
+    };
+
+_FileChoiceModel _$FileChoiceModelFromJson(Map<String, dynamic> json) =>
+    _FileChoiceModel(
+      fileId: json['fileId'] as String,
+      code: json['code'] as String,
+      reason: json['reason'] as String,
+      moves: (json['moves'] as num?)?.toInt() ?? 0,
+      cars: (json['cars'] as num?)?.toInt() ?? 0,
+      capacity: (json['capacity'] as num?)?.toInt() ?? 0,
+      fitMinutes: (json['fitMinutes'] as num?)?.toInt(),
+    );
+
+Map<String, dynamic> _$FileChoiceModelToJson(_FileChoiceModel instance) =>
+    <String, dynamic>{
+      'fileId': instance.fileId,
+      'code': instance.code,
+      'reason': instance.reason,
+      'moves': instance.moves,
+      'cars': instance.cars,
+      'capacity': instance.capacity,
+      'fitMinutes': instance.fitMinutes,
+    };
+
+_FileViewModel _$FileViewModelFromJson(Map<String, dynamic> json) =>
+    _FileViewModel(
+      id: json['id'] as String,
+      code: json['code'] as String,
+      name: json['name'] as String?,
+      capacity: (json['capacity'] as num).toInt(),
+      sortOrder: (json['sortOrder'] as num?)?.toInt() ?? 0,
+      active: json['active'] as bool? ?? true,
+      plannedDay: json['plannedDay'] as String?,
+      day: json['day'] as String?,
+      cars:
+          (json['cars'] as List<dynamic>?)
+              ?.map((e) => OccupantModel.fromJson(e as Map<String, dynamic>))
+              .toList() ??
+          const <OccupantModel>[],
+      movesToday: (json['movesToday'] as num?)?.toInt() ?? 0,
+      sound: json['sound'] as bool? ?? true,
+    );
+
+Map<String, dynamic> _$FileViewModelToJson(_FileViewModel instance) =>
+    <String, dynamic>{
+      'id': instance.id,
+      'code': instance.code,
+      'name': instance.name,
+      'capacity': instance.capacity,
+      'sortOrder': instance.sortOrder,
+      'active': instance.active,
+      'plannedDay': instance.plannedDay,
+      'day': instance.day,
+      'cars': instance.cars,
+      'movesToday': instance.movesToday,
+      'sound': instance.sound,
+    };
+
+_FileStatsModel _$FileStatsModelFromJson(Map<String, dynamic> json) =>
+    _FileStatsModel(
+      files: (json['files'] as num?)?.toInt() ?? 0,
+      capacity: (json['capacity'] as num?)?.toInt() ?? 0,
+      cars: (json['cars'] as num?)?.toInt() ?? 0,
+      onSite: (json['onSite'] as num?)?.toInt() ?? 0,
+      leavingToday: (json['leavingToday'] as num?)?.toInt() ?? 0,
+      movesToday: (json['movesToday'] as num?)?.toInt() ?? 0,
+      unsound: (json['unsound'] as num?)?.toInt() ?? 0,
+    );
+
+Map<String, dynamic> _$FileStatsModelToJson(_FileStatsModel instance) =>
+    <String, dynamic>{
+      'files': instance.files,
+      'capacity': instance.capacity,
+      'cars': instance.cars,
+      'onSite': instance.onSite,
+      'leavingToday': instance.leavingToday,
+      'movesToday': instance.movesToday,
+      'unsound': instance.unsound,
+    };
+
+_FileBoardModel _$FileBoardModelFromJson(Map<String, dynamic> json) =>
+    _FileBoardModel(
+      date: json['date'] as String,
+      files:
+          (json['files'] as List<dynamic>?)
+              ?.map((e) => FileViewModel.fromJson(e as Map<String, dynamic>))
+              .toList() ??
+          const <FileViewModel>[],
+      arrivals:
+          (json['arrivals'] as List<dynamic>?)
+              ?.map((e) => OccupantModel.fromJson(e as Map<String, dynamic>))
+              .toList() ??
+          const <OccupantModel>[],
+      stats: json['stats'] == null
+          ? const FileStatsModel()
+          : FileStatsModel.fromJson(json['stats'] as Map<String, dynamic>),
+    );
+
+Map<String, dynamic> _$FileBoardModelToJson(_FileBoardModel instance) =>
+    <String, dynamic>{
+      'date': instance.date,
+      'files': instance.files,
+      'arrivals': instance.arrivals,
+      'stats': instance.stats,
+    };
+
+_FilesPreparedModel _$FilesPreparedModelFromJson(Map<String, dynamic> json) =>
+    _FilesPreparedModel(
+      planned: (json['planned'] as num?)?.toInt() ?? 0,
+      free: (json['free'] as num?)?.toInt() ?? 0,
+    );
+
+Map<String, dynamic> _$FilesPreparedModelToJson(_FilesPreparedModel instance) =>
+    <String, dynamic>{'planned': instance.planned, 'free': instance.free};
+
+_FilesPreparedResponse _$FilesPreparedResponseFromJson(
+  Map<String, dynamic> json,
+) => _FilesPreparedResponse(
+  data: FilesPreparedModel.fromJson(json['data'] as Map<String, dynamic>),
+);
+
+Map<String, dynamic> _$FilesPreparedResponseToJson(
+  _FilesPreparedResponse instance,
+) => <String, dynamic>{'data': instance.data};

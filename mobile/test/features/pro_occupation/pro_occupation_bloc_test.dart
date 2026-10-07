@@ -18,6 +18,12 @@ class MockSearch extends Mock implements SearchVehiclesUseCase {}
 
 class MockAssign extends Mock implements AssignSpotUseCase {}
 
+class MockGetFiles extends Mock implements GetFilesUseCase {}
+
+class MockAssignFile extends Mock implements AssignFileUseCase {}
+
+class MockPrepareFiles extends Mock implements PrepareFilesUseCase {}
+
 Future<void> settle() => Future<void>.delayed(const Duration(milliseconds: 2));
 
 const parking = ParkingSummaryModel(id: 'p1', name: 'Parkair', totalCapacity: 2);
@@ -66,11 +72,15 @@ void main() {
   late MockGetBoard getBoard;
   late MockSearch search;
   late MockAssign assign;
+  late MockGetFiles getFiles;
+  late MockAssignFile assignFile;
+  late MockPrepareFiles prepareFiles;
 
   setUpAll(() {
     registerFallbackValue(NoParams());
     registerFallbackValue(const SearchVehiclesParams(parkingId: '', query: ''));
     registerFallbackValue(const AssignSpotParams(reservationId: '', spotId: null));
+    registerFallbackValue(const AssignFileParams(reservationId: '', fileId: null));
   });
 
   setUp(() {
@@ -78,11 +88,16 @@ void main() {
     getBoard = MockGetBoard();
     search = MockSearch();
     assign = MockAssign();
+    getFiles = MockGetFiles();
+    assignFile = MockAssignFile();
+    prepareFiles = MockPrepareFiles();
     when(() => getParking(any())).thenAnswer((_) async => const Right(parking));
     when(() => getBoard('p1')).thenAnswer((_) async => Right(board));
+    // No file: the parking reads its spots.
+    when(() => getFiles('p1')).thenAnswer((_) async => const Right(FileBoardModel(date: '2026-10-04')));
   });
 
-  ProOccupationBloc bloc() => ProOccupationBloc(getParking, getBoard, search, assign);
+  ProOccupationBloc bloc() => ProOccupationBloc(getParking, getBoard, search, assign, getFiles, assignFile, prepareFiles);
 
   test('charge le tableau ; les places libres sont proposées suggestion en tête', () async {
     final b = bloc()..add(const ProOccupationStarted());
@@ -142,5 +157,69 @@ void main() {
     expect(params.keysOnly, isTrue);
     expect(b.state.vehicle?.keyHook, 'B4');
     expect(b.state.notice, 'occupation.keys_saved');
+  });
+
+  group('S-C (07/10/2026) : files', () {
+    const inFile = OccupantModel(
+      id: 'r5',
+      reference: 'RFIL05',
+      customerName: 'M. Fond',
+      plate: 'FO-555-ND',
+      status: 'arrived',
+      arrivalAt: '2026-10-01T06:30',
+      returnAt: '2026-10-12T16:00',
+      onSite: true,
+      position: 1,
+    );
+    const choice = FileChoiceModel(fileId: 'f1', code: 'F01', reason: 'tight_fit', cars: 1, capacity: 3);
+    final fileBoard = FileBoardModel(
+      date: '2026-10-04',
+      files: const [FileViewModel(id: 'f1', code: 'F01', capacity: 3, day: '2026-10-12', cars: [inFile])],
+      arrivals: [arrival.copyWith(suggestions: const [], choices: const [choice], suggested: choice)],
+      stats: const FileStatsModel(files: 1, capacity: 3, cars: 1, onSite: 1),
+    );
+
+    test('un parking en files lit ses files, pas ses places ; la fiche demandée se trouve dans une file', () async {
+      when(() => getFiles('p1')).thenAnswer((_) async => Right(fileBoard));
+      final b = bloc()..add(const ProOccupationStarted(focus: 'r5'));
+      await settle();
+      expect(b.state.filesMode, isTrue);
+      expect(b.state.arrivals.single.suggested?.code, 'F01');
+      expect(b.state.vehicle?.id, 'r5');
+      verifyNever(() => getBoard(any()));
+    });
+
+    test('range une arrivée dans la file proposée, recharge et signale ; les clés suivent la file', () async {
+      when(() => getFiles('p1')).thenAnswer((_) async => Right(fileBoard));
+      when(() => assignFile(any())).thenAnswer(
+        (_) async => Right(arrival.copyWith(file: const FileRefModel(id: 'f1', code: 'F01'), filePosition: 1, keyHook: '7')),
+      );
+      final b = bloc()..add(const ProOccupationStarted());
+      await settle();
+      b.add(const ProOccupationFiled(reservationId: 'r2', fileId: 'f1', keyHook: '7'));
+      await settle();
+      final params = verify(() => assignFile(captureAny())).captured.single as AssignFileParams;
+      expect(params.fileId, 'f1');
+      expect(params.keyHook, '7');
+      expect(b.state.notice, 'occupation.filed:AB-123-CD:F01');
+      verify(() => getFiles('p1')).called(2);
+      // The keys of a car in a file ride the file assignment.
+      b.add(ProOccupationVehicleChosen(b.state.files.single.cars.single.copyWith(file: const FileRefModel(id: 'f1', code: 'F01'))));
+      b.add(const ProOccupationKeysSaved(reservationId: 'r5', keyHook: 'B2'));
+      await settle();
+      final keys = verify(() => assignFile(captureAny())).captured.last as AssignFileParams;
+      expect(keys.keysOnly, isTrue);
+      expect(keys.fileId, 'f1');
+    });
+
+    test('la préparation de la veille se lance à la demande', () async {
+      when(() => getFiles('p1')).thenAnswer((_) async => Right(fileBoard));
+      when(() => prepareFiles('p1')).thenAnswer((_) async => const Right(FilesPreparedModel(planned: 2, free: 1)));
+      final b = bloc()..add(const ProOccupationStarted());
+      await settle();
+      b.add(const ProOccupationFilesPrepared());
+      await settle();
+      expect(b.state.notice, 'occupation.prepared:2:1');
+    });
   });
 }

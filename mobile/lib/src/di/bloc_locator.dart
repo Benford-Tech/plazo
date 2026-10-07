@@ -31,7 +31,7 @@ void _initBlocs() {
     ..registerFactory(() => ProVehiclesBloc(locator(), locator(), locator(), locator()))
     ..registerFactory(() => StayShuttlesBloc(locator(), enablePushes: locator(), pollInterval: AppConstants.livePollInterval))
     ..registerFactory(() => ProPlanBloc(locator(), locator(), locator(), locator(), locator(), locator(), locator()))
-    ..registerFactory(() => ProOccupationBloc(locator(), locator(), locator(), locator(), location: locator()))
+    ..registerFactory(() => ProOccupationBloc(locator(), locator(), locator(), locator(), locator(), locator(), locator(), location: locator()))
     ..registerFactory(() => ProReservationsBloc(locator()))
     ..registerFactory(() => ProReservationBloc(locator(), locator()))
     ..registerFactory(() => ProSpotPlanningBloc(locator(), locator(), locator(), locator()))

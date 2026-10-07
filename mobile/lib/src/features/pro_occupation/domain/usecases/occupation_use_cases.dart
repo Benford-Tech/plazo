@@ -51,3 +51,40 @@ class AssignSpotUseCase with UseCase<OccupantModel, AssignSpotParams> {
   Future<Either<Failure, OccupantModel>> call(AssignSpotParams params) =>
       _repository.assign(params.reservationId, spotId: params.spotId, keyHook: params.keyHook, keysOnly: params.keysOnly, car: params.car);
 }
+
+// ---- S-C (07/10/2026): files as the unit of storage -------------------------------------------
+
+class GetFilesUseCase with UseCase<FileBoardModel, String> {
+  GetFilesUseCase(this._repository);
+  final OccupationRepository _repository;
+  @override
+  Future<Either<Failure, FileBoardModel>> call(String parkingId) => _repository.files(parkingId);
+}
+
+class AssignFileParams extends Equatable {
+  const AssignFileParams({required this.reservationId, required this.fileId, this.keyHook, this.keysOnly = false, this.car});
+  final String reservationId;
+
+  /// Null takes the car out of its file.
+  final String? fileId;
+  final String? keyHook;
+  final bool keysOnly;
+  final GeoPosition? car;
+  @override
+  List<Object?> get props => [reservationId, fileId, keyHook, keysOnly, car];
+}
+
+class AssignFileUseCase with UseCase<OccupantModel, AssignFileParams> {
+  AssignFileUseCase(this._repository);
+  final OccupationRepository _repository;
+  @override
+  Future<Either<Failure, OccupantModel>> call(AssignFileParams params) =>
+      _repository.assignFile(params.reservationId, fileId: params.fileId, keyHook: params.keyHook, keysOnly: params.keysOnly, car: params.car);
+}
+
+class PrepareFilesUseCase with UseCase<FilesPreparedModel, String> {
+  PrepareFilesUseCase(this._repository);
+  final OccupationRepository _repository;
+  @override
+  Future<Either<Failure, FilesPreparedModel>> call(String parkingId) => _repository.prepareFiles(parkingId);
+}

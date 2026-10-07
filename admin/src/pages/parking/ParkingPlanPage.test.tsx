@@ -67,6 +67,23 @@ const api = vi.hoisted(() => ({
   ),
   geocode: vi.fn(async () => ({ results: [] })),
   suggestZones: vi.fn(),
+  getFiles: vi.fn(async () => ({
+    date: "2026-10-07",
+    timezone: "Europe/Paris",
+    files: [],
+    arrivals: [],
+    stats: {
+      files: 0,
+      capacity: 0,
+      cars: 0,
+      onSite: 0,
+      leavingToday: 0,
+      movesToday: 0,
+      unsound: 0,
+    },
+  })),
+  replaceFiles: vi.fn(),
+  filesFromPlan: vi.fn(),
 }));
 vi.mock("@/lib/api", async (importOriginal) => {
   const actual = await importOriginal<typeof import("@/lib/api")>();
@@ -568,5 +585,62 @@ describe("plan du parking (éditeur R-A, 07/10/2026)", () => {
     expect(
       await screen.findByText("Recalculer la capacité → 0"),
     ).toBeInTheDocument();
+  });
+
+  it("trace une file d'un trait et déduit sa capacité de la longueur (S-C)", async () => {
+    api.getParkingPlan.mockResolvedValue(view([]));
+    api.updateParkingPlan.mockResolvedValue({ data: {} });
+    api.replaceFiles.mockImplementation(
+      async (_id: string, files: { code: string; capacity: number }[]) => {
+        api.getFiles.mockResolvedValue({
+          date: "2026-10-07",
+          timezone: "Europe/Paris",
+          files: files.map((f, i) => ({
+            id: `f${i}`,
+            name: null,
+            geometry: null,
+            sortOrder: i,
+            active: true,
+            plannedDay: null,
+            day: null,
+            cars: [],
+            movesToday: 0,
+            sound: true,
+            ...f,
+          })),
+          arrivals: [],
+          stats: {
+            files: files.length,
+            capacity: 0,
+            cars: 0,
+            onSite: 0,
+            leavingToday: 0,
+            movesToday: 0,
+            unsound: 0,
+          },
+        } as never);
+        return { data: files.map((f, i) => ({ id: `f${i}`, ...f })) };
+      },
+    );
+    renderAt("/parking/plan/files");
+    const draw = await screen.findByRole("button", {
+      name: "+ Tracer une file",
+    });
+    fireEvent.click(draw);
+    expect(screen.getByTestId("map")).toHaveAttribute(
+      "data-drawmode",
+      "linestring",
+    );
+    fireEvent.click(screen.getByText("draw-line"));
+    await waitFor(() => expect(api.replaceFiles).toHaveBeenCalled());
+    const [, files] = api.replaceFiles.mock.calls[0];
+    // A 12.5 m line at 5 m per car holds 2 cars.
+    expect(files).toEqual([
+      expect.objectContaining({ code: "F01", capacity: 2, sortOrder: 0 }),
+    ]);
+    expect(await screen.findByTestId("file-F01")).toBeInTheDocument();
+    expect(screen.getByTestId("plan-count").textContent).toBe(
+      "1 file · 2 voitures",
+    );
   });
 });

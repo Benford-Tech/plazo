@@ -212,7 +212,8 @@
       "flight_delayed": "Mon vol a du retard",
       "luggage": "Bagage perdu ou retardé",
       "other": "Un mot du voyageur"
-    }
+    },
+    "file": "File"
   },
   "occupation": {
     "title": "Places",
@@ -268,7 +269,43 @@
     "no_move": "sans déplacement",
     "moves_out": "{} voiture(s) à sortir ({}, retour {})",
     "moves_blocked": "bloquerait {} voiture(s) ({})",
-    "blocked_by": "Derrière {} · retour {}"
+    "blocked_by": "Derrière {} · retour {}",
+    "filed": "{} rangée en {}",
+    "prepared": "{} file(s) gardée(s) pour les gros retours, {} libre(s)",
+    "files": {
+      "intro": "Chaque file se lit de l'allée vers le fond : une voiture ne repart jamais après celle qui est derrière elle.",
+      "moves_today": "À sortir aujourd'hui",
+      "moves_help": "Voitures à déplacer pour que les retours du jour sortent. L'objectif : 0.",
+      "stats": "{} / {} voitures · {} file(s)",
+      "unsound": "{} file(s) à remettre en ordre",
+      "aisle": "Allée",
+      "back": "Fond",
+      "free_file": "Libre",
+      "kept_for": "Gardée pour {}",
+      "returns_of": "Retours {}",
+      "today": "aujourd'hui",
+      "full": "Complète",
+      "to_take_out": "{} à sortir avant",
+      "place_in": "Ranger en {}",
+      "other_file": "Autre file…",
+      "pick_title": "Une file pour {}",
+      "no_file": "Aucune file ne convient sans déplacement : choisissez-en une.",
+      "reason": {
+        "planned_day": "retours du même jour",
+        "tight_fit": "derrière un retour plus tard",
+        "empty": "file vide",
+        "moves": "{} voiture(s) à sortir plus tard",
+        "full": "complète"
+      },
+      "choice": "{} · {}/{} · {}",
+      "prepare": "Préparer les files",
+      "position": "{}e depuis l'allée",
+      "position_first": "1re depuis l'allée",
+      "take_out": "Retirer de la file",
+      "in_file": "File {}",
+      "no_file_yet": "Pas encore de file",
+      "choose_file": "Choisir une file"
+    }
   },
   "pro": {
     "login_eyebrow": "Espace du personnel",

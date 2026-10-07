@@ -4,6 +4,8 @@ import { UpdateParkingDto, UpdateShuttleTrackingDto } from '@/dtos/parking.dto';
 import { AddSpotsDto, SuggestZonesDto, GenerateSpotsDto, ReplaceSpotsDto, UpdateParkingPlanDto, UpdateSpotDto } from '@/dtos/parking-plan.dto';
 import { RequestWithStaffSession } from '@/middlewares/staff-auth.middleware';
 import { AssignSpotDto } from '@/dtos/occupation.dto';
+import { AssignFileDto, ReplaceFilesDto } from '@/dtos/file.dto';
+import { FileService } from '@/services/file.service';
 import { CarLocationDto } from '@/dtos/public-booking.dto';
 import { OccupationService } from '@/services/occupation.service';
 import { SpotPlanningService } from '@/services/spot-planning.service';
@@ -18,6 +20,7 @@ export class ParkingController {
   public zoneSuggestions = Container.get(ZoneSuggestionService);
   public occupation = Container.get(OccupationService);
   public spotPlanning = Container.get(SpotPlanningService);
+  public files = Container.get(FileService);
 
   /** GET /internal/parking */
   public getPrimary = catchAsync(async (req: RequestWithStaffSession, res: Response) => {
@@ -129,5 +132,38 @@ export class ParkingController {
   public assignSpot = catchAsync(async (req: RequestWithStaffSession, res: Response) => {
     const data: AssignSpotDto = req.body;
     res.json({ message: 'Spot assigned', data: await this.occupation.assign(req.staff, req.params.id as string, data) });
+  });
+
+  /** GET /internal/parkings/:id/files (S-C, 07/10/2026) */
+  public filesBoard = catchAsync(async (req: RequestWithStaffSession, res: Response) => {
+    res.json(await this.files.board(req.staff, req.params.id as string));
+  });
+
+  /** GET /internal/parkings/:id/files/choices?reservationId= */
+  public fileChoices = catchAsync(async (req: RequestWithStaffSession, res: Response) => {
+    const reservationId = typeof req.query.reservationId === 'string' ? req.query.reservationId : '';
+    res.json({ choices: await this.files.choicesFor(req.staff, req.params.id as string, reservationId) });
+  });
+
+  /** PUT /internal/parkings/:id/files */
+  public replaceFiles = catchAsync(async (req: RequestWithStaffSession, res: Response) => {
+    const data: ReplaceFilesDto = req.body;
+    res.json({ message: 'Files saved', data: await this.files.replace(req.staff, req.params.id as string, data) });
+  });
+
+  /** POST /internal/parkings/:id/files/from-plan */
+  public filesFromPlan = catchAsync(async (req: RequestWithStaffSession, res: Response) => {
+    res.json({ message: 'Files built from the plan', data: await this.files.fromSpots(req.staff, req.params.id as string) });
+  });
+
+  /** POST /internal/parkings/:id/files/prepare */
+  public prepareFiles = catchAsync(async (req: RequestWithStaffSession, res: Response) => {
+    res.json({ message: 'Files prepared', data: await this.files.prepareFor(req.staff, req.params.id as string) });
+  });
+
+  /** POST /internal/reservations/:id/file */
+  public assignFile = catchAsync(async (req: RequestWithStaffSession, res: Response) => {
+    const data: AssignFileDto = req.body;
+    res.json({ message: 'File assigned', data: await this.files.assign(req.staff, req.params.id as string, data) });
   });
 }

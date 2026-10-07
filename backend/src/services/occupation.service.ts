@@ -208,7 +208,7 @@ export class OccupationService {
           { reference: { equals: q.toUpperCase() } },
         ],
       },
-      select: { ...occupantSelect, spot: { select: { code: true } } },
+      select: { ...occupantSelect, spot: { select: { code: true } }, file: { select: { id: true, code: true } } },
       orderBy: [{ status: 'asc' }, { arrivalAt: 'asc' }],
       take: 10,
     });

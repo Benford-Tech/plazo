@@ -56,6 +56,10 @@ abstract class ReservationModel with _$ReservationModel {
 
     /// The sheet route carries the spot's code (bloc 2).
     ReservationSpotModel? spot,
+
+    /// S-C (07/10/2026): the file the car stands in and its position from the aisle (1 = first out).
+    ReservationFileModel? file,
+    int? filePosition,
   }) = _ReservationModel;
 
   factory ReservationModel.fromJson(Map<String, dynamic> json) => _$ReservationModelFromJson(json);
@@ -131,4 +135,10 @@ abstract class ReservationInput with _$ReservationInput {
     }
     return json;
   }
+}
+
+@freezed
+abstract class ReservationFileModel with _$ReservationFileModel {
+  const factory ReservationFileModel({required String id, required String code, String? name}) = _ReservationFileModel;
+  factory ReservationFileModel.fromJson(Map<String, dynamic> json) => _$ReservationFileModelFromJson(json);
 }

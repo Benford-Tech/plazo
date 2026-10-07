@@ -302,6 +302,11 @@ export const fr = {
         free === null
           ? `${planned === 0 ? "plan à dessiner" : ""}`
           : `${free} libre${free > 1 ? "s" : ""} sur ${planned}`,
+      // S-C (07/10/2026): on a parking stored in files, the figure that matters.
+      movesSub: (moves: number) =>
+        moves === 0
+          ? "aucune voiture à sortir aujourd'hui"
+          : `${moves} voiture${moves > 1 ? "s" : ""} à sortir aujourd'hui`,
       arrivals: "Arrivées",
       arrivalsSub: (arrived: number, total: number) =>
         `${arrived} / ${total} sur place`,
@@ -1350,6 +1355,60 @@ export const fr = {
     freeSpot: "Place libre",
     clickSpot: "Cliquez une place sur le plan pour voir qui l'occupe.",
     bookedFor: (plate: string, date: string) => `${plate} attendu le ${date}`,
+    // S-C (07/10/2026): the occupation read in files.
+    files: {
+      intro:
+        "Chaque file se lit de l'allée vers le fond : une voiture ne doit jamais repartir après celle qui est derrière elle. Plazo dit dans quelle file ranger chaque arrivée.",
+      movesToday: "À sortir aujourd'hui",
+      movesHelp:
+        "Voitures à déplacer pour que les retours du jour sortent. L'objectif : 0.",
+      cars: (cars: number, capacity: number) =>
+        `${cars} / ${capacity} voitures`,
+      filesCount: (sound: number, total: number) =>
+        `${total} file${total > 1 ? "s" : ""}${sound < total ? ` · ${total - sound} à remettre en ordre` : ""}`,
+      aisle: "Allée",
+      back: "Fond",
+      empty: "Vide",
+      freeFile: "Libre",
+      keptFor: (day: string) => `Gardée pour ${day}`,
+      returnsOf: (day: string) => `Retours ${day}`,
+      full: "Complète",
+      toTakeOut: (n: number) => `${n} à sortir avant`,
+      blockedBy: (plates: string) => `Bloquée par ${plates}`,
+      takeOut: "Retirer de la file",
+      removed: (plate: string) => `${plate} retirée de sa file`,
+      placed: (plate: string, code: string) => `${plate} rangée en ${code}`,
+      place: "Ranger",
+      placeIn: (code: string) => `Ranger en ${code}`,
+      otherFile: "Autre file…",
+      noFile: "Aucune file ne convient sans déplacement : choisissez-en une.",
+      reason: {
+        planned_day: "retours du même jour",
+        tight_fit: "derrière un retour plus tard",
+        empty: "file vide",
+        moves: (n: number) =>
+          `${n} voiture${n > 1 ? "s" : ""} à sortir plus tard`,
+        full: "complète",
+      },
+      choiceLine: (
+        code: string,
+        cars: number,
+        capacity: number,
+        reason: string,
+      ) => `${code} · ${cars}/${capacity} · ${reason}`,
+      prepare: "Préparer les files",
+      prepared: (planned: number, free: number) =>
+        `${planned} file${planned > 1 ? "s" : ""} gardée${planned > 1 ? "s" : ""} pour les gros retours, ${free} libre${free > 1 ? "s" : ""}`,
+      keysPrompt: "Crochet des clés (facultatif)",
+      confirm: "Confirmer",
+      cancel: "Annuler",
+      noArrival: "Aucune arrivée à placer.",
+      arrivals: (n: number) => `Arrivées à placer · ${n}`,
+      position: (n: number) =>
+        n === 1 ? "1re depuis l'allée" : `${n}e depuis l'allée`,
+      plan: "Modifier les files sur le plan",
+      inFile: (code: string) => `File ${code}`,
+    },
     spotTaken: "Cette place est déjà prise sur ces dates.",
   },
   // Bloc 2, step "Plan" (P-A, 03/10/2026): the operator's own parking plan.
@@ -1361,6 +1420,7 @@ export const fr = {
       passage: "Zone de passage",
       obstacle: "Obstacle",
       landmark: "Repères",
+      files: "Files",
       spots: "Places",
     },
     toolHelp: {
@@ -1374,6 +1434,8 @@ export const fr = {
         "Choisissez un obstacle puis cliquez ou tracez-le sur la carte. Cliquez un obstacle existant pour le modifier.",
       landmark:
         "Choisissez un repère puis cliquez son emplacement. Un repère d'un même type remplace le précédent.",
+      files:
+        "Une file = un trait sur la photo, de l'allée vers le fond : les voitures s'y rangent nez à queue, la première entrée au fond. C'est l'unité de rangement d'un parking voiturier.",
       spots:
         "Choisissez une disposition et générez les places, puis cliquez une place pour la désactiver ou changer son type.",
     },
@@ -1466,6 +1528,34 @@ export const fr = {
         "Cliquez une place posée à la main pour la supprimer ; une place générée se désactive.",
       removed: "Place supprimée",
       manualCount: (n: number) => `${n} à la main`,
+    },
+    // S-C (07/10/2026): files as the unit of storage.
+    files: {
+      draw: "+ Tracer une file",
+      drawHelp:
+        "Cliquez au bord de l'allée puis au fond de la file ; double-cliquez pour terminer. La capacité se déduit de la longueur, corrigez-la si besoin.",
+      count: (n: number) => `${n} file${n > 1 ? "s" : ""}`,
+      cars: (n: number) => `${n} voiture${n > 1 ? "s" : ""}`,
+      capacity: "voitures",
+      code: "Code",
+      name: "Nom (facultatif)",
+      none: "Aucune file pour l'instant. Tracez-en une, ou créez-les depuis les places générées.",
+      fromPlan: "Créer les files depuis les places",
+      fromPlanHelp:
+        "Chaque file de places générées devient une file de rangement, avec sa capacité.",
+      fromPlanDone: (n: number) =>
+        `${n} file${n > 1 ? "s" : ""} créée${n > 1 ? "s" : ""} depuis le plan`,
+      remove: "Retirer",
+      removeConfirm: (code: string) => `Retirer la file ${code} ?`,
+      occupied: "Cette file contient des voitures : videz-la d'abord.",
+      duplicate: "Ce code est déjà pris.",
+      added: (code: string, n: number) =>
+        `File ${code} tracée : ${n} voiture${n > 1 ? "s" : ""}`,
+      tooShort: "Trait trop court pour une voiture.",
+      headline: (files: number, cars: number) =>
+        `${files} file${files > 1 ? "s" : ""} · ${cars} voiture${cars > 1 ? "s" : ""}`,
+      subline: "Rangement en files (voiturier)",
+      occupation: "Voir l'occupation en files",
     },
     drawer: {
       title: "Réglages du plan",
@@ -2079,6 +2169,11 @@ export const quickCardFr = {
   gate: (g: string) => `porte ${g}`,
   spot: "Place",
   noSpot: "pas de place",
+  // S-C (07/10/2026): "F07 · 3e depuis l'allée".
+  inFile: (code: string, position: number | null) =>
+    position === null
+      ? code
+      : `${code} · ${position === 1 ? "1re" : `${position}e`} depuis l'allée`,
   keys: "Clés",
   noKeys: "crochet non noté",
   car: "Voiture",

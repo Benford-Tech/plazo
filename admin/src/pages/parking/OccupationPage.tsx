@@ -11,6 +11,9 @@ import { Aside, PanelLabel, ToolButton } from "@/components/capacity/ui";
 import { ParkingTabs } from "@/components/parking/ParkingTabs";
 import { Plate } from "@/components/Plate";
 import { useQuickCard } from "@/components/reservations/ReservationQuickCard";
+import { FilesOccupation } from "./FilesOccupation";
+import { useAuth } from "@/contexts/AuthContext";
+import { can } from "@/lib/roles";
 import { Skeleton } from "@/components/ui/skeleton";
 import { adminApi, ApiError } from "@/lib/api";
 import { boundsOf, fc, feature, positionsOf } from "@/lib/capacity/mapData";
@@ -90,6 +93,7 @@ type Choosing = { reservationId: string; plate: string } | null;
  */
 export default function OccupationPage() {
   const t = fr.occupation;
+  const { user } = useAuth();
   const queryClient = useQueryClient();
   const { data: parking } = useQuery({
     queryKey: ["parking"],
@@ -99,6 +103,13 @@ export default function OccupationPage() {
   const board = useQuery({
     queryKey: ["occupation", parkingId],
     queryFn: () => adminApi.getOccupation(parkingId!),
+    enabled: !!parkingId,
+    refetchInterval: 30_000,
+  });
+  // S-C (07/10/2026): a parking stored in files reads its occupation in files.
+  const filesBoard = useQuery({
+    queryKey: ["files", parkingId],
+    queryFn: () => adminApi.getFiles(parkingId!),
     enabled: !!parkingId,
     refetchInterval: 30_000,
   });
@@ -517,6 +528,15 @@ export default function OccupationPage() {
     );
   }
 
+  if (parkingId && filesBoard.data && filesBoard.data.files.length > 0)
+    return (
+      <FilesOccupation
+        parkingId={parkingId}
+        board={filesBoard.data}
+        focus={params.get("focus")}
+        canManage={can(user?.role, "parking:manage")}
+      />
+    );
   return (
     <>
       <ParkingTabs />

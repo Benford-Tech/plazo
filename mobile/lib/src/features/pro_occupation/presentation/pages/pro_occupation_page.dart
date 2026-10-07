@@ -90,7 +90,7 @@ class ProOccupationPage extends StatelessWidget implements AutoRouteWrapper {
                 ),
             ],
           ),
-          body: state.board == null
+          body: !state.loaded
               ? Center(
                   child: state.viewState.isError
                       ? Padding(
@@ -109,12 +109,18 @@ class ProOccupationPage extends StatelessWidget implements AutoRouteWrapper {
                       if (state.vehicle != null) ...[const SizedBox(height: 10), _VehicleCard(vehicle: state.vehicle!, state: state)],
                       if (state.vehicle == null && state.query.trim().length >= 2) ...[const SizedBox(height: 6), _Results(state: state)],
                       const SizedBox(height: 14),
-                      _MiniMap(state: state),
+                      // S-C (07/10/2026): a parking stored in files reads its occupation in files.
+                      if (state.filesMode) _FilesSummary(state: state) else _MiniMap(state: state),
                       const SizedBox(height: 14),
                       Text('occupation.arrivals'.tr(args: ['${state.arrivals.length}']).toUpperCase(), style: AppText.label(size: 11)),
                       const SizedBox(height: 6),
                       if (state.arrivals.isEmpty) Text('occupation.no_arrival'.tr(), style: AppText.muted()),
-                      for (final a in state.arrivals) _ArrivalRow(arrival: a, state: state),
+                      for (final a in state.arrivals)
+                        if (state.filesMode) _FileArrivalRow(arrival: a, state: state) else _ArrivalRow(arrival: a, state: state),
+                      if (state.filesMode) ...[
+                        const SizedBox(height: 14),
+                        for (final f in state.files) _FileCard(file: f, state: state),
+                      ],
                     ],
                   ),
                 ),
@@ -128,6 +134,8 @@ class ProOccupationPage extends StatelessWidget implements AutoRouteWrapper {
     final parts = notice.split(':');
     return switch (parts.first) {
       'occupation.placed' => 'occupation.placed'.tr(args: [parts[1], parts[2]]),
+      'occupation.filed' => 'occupation.filed'.tr(args: [parts[1], parts[2]]),
+      'occupation.prepared' => 'occupation.prepared'.tr(args: [parts[1], parts[2]]),
       'occupation.released' => 'occupation.released'.tr(args: [parts[1]]),
       _ => 'occupation.keys_saved'.tr(),
     };
@@ -235,10 +243,12 @@ class _VehicleCardState extends State<_VehicleCard> {
             ],
           ),
           Text(
-            v.spot?.code ?? 'occupation.no_spot'.tr(),
+            widget.state.filesMode ? (v.file?.code ?? 'occupation.no_spot'.tr()) : (v.spot?.code ?? 'occupation.no_spot'.tr()),
             key: const Key('vehicle-spot'),
             style: AppText.big(size: 36, color: AppColors.accent),
           ),
+          if (widget.state.filesMode && v.file != null && v.filePosition != null)
+            Text(_positionLabel(v.filePosition!), key: const Key('vehicle-position'), style: AppText.strong(size: 13.5, color: AppColors.accentDeep)),
           const SizedBox(height: 4),
           Text(
             '${'status.${v.status}'.tr()} · ${'occupation.return_on'.tr(args: ['${localDay(v.returnAt)} ${localTime(v.returnAt)}'])}'
@@ -292,18 +302,26 @@ class _VehicleCardState extends State<_VehicleCard> {
               Expanded(
                 child: GradientButton(
                   key: const Key('vehicle-place'),
-                  label: v.spot == null ? 'occupation.choose_spot'.tr() : 'occupation.move'.tr(),
+                  label: widget.state.filesMode
+                      ? (v.file == null ? 'occupation.files.choose_file'.tr() : 'occupation.move'.tr())
+                      : (v.spot == null ? 'occupation.choose_spot'.tr() : 'occupation.move'.tr()),
                   busy: busy,
-                  onPressed: () => showSpotPicker(context, widget.state, v, keyHook: _keys.text.trim().isEmpty ? null : _keys.text.trim()),
+                  onPressed: () => widget.state.filesMode
+                      ? showFilePicker(context, widget.state, v, keyHook: _keys.text.trim().isEmpty ? null : _keys.text.trim())
+                      : showSpotPicker(context, widget.state, v, keyHook: _keys.text.trim().isEmpty ? null : _keys.text.trim()),
                 ),
               ),
-              if (v.spot != null) ...[
+              if (widget.state.filesMode ? v.file != null : v.spot != null) ...[
                 const SizedBox(width: 8),
                 Expanded(
                   child: OutlineAction(
                     key: const Key('vehicle-release'),
-                    label: 'occupation.release'.tr(),
-                    onPressed: busy ? null : () => bloc.add(ProOccupationPlaced(reservationId: v.id, spotId: null)),
+                    label: widget.state.filesMode ? 'occupation.files.take_out'.tr() : 'occupation.release'.tr(),
+                    onPressed: busy
+                        ? null
+                        : () => bloc.add(
+                            widget.state.filesMode ? ProOccupationFiled(reservationId: v.id, fileId: null) : ProOccupationPlaced(reservationId: v.id, spotId: null),
+                          ),
                   ),
                 ),
               ],
@@ -591,5 +609,263 @@ class _Legend extends StatelessWidget {
       const SizedBox(width: 4),
       Text(label, style: AppText.muted(size: 11.5)),
     ],
+  );
+}
+
+// ---- S-C (07/10/2026): the occupation read in files ----------------------------------------------
+
+String _positionLabel(int position) => position == 1 ? 'occupation.files.position_first'.tr() : 'occupation.files.position'.tr(args: ['$position']);
+
+String _choiceReason(FileChoiceModel c) => c.reason == 'moves' ? 'occupation.files.reason.moves'.tr(args: ['${c.moves}']) : 'occupation.files.reason.${c.reason}'.tr();
+
+/// The figure that matters on a valet parking: cars to take out today (0 is the goal), then the room.
+class _FilesSummary extends StatelessWidget {
+  const _FilesSummary({required this.state});
+  final ProOccupationState state;
+
+  @override
+  Widget build(BuildContext context) {
+    final s = state.fileBoard!.stats;
+    final ok = s.movesToday == 0;
+    return Container(
+      key: const Key('files-summary'),
+      padding: const EdgeInsets.all(14),
+      decoration: BoxDecoration(color: AppColors.surface, borderRadius: AppRadius.card, border: Border.all(color: AppColors.line)),
+      child: Row(
+        children: [
+          Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text('${s.movesToday}', key: const Key('moves-today'), style: AppText.big(size: 34, color: ok ? AppStatus.okText : AppStatus.badText)),
+              Text('occupation.files.moves_today'.tr().toUpperCase(), style: AppText.label(size: 10.5)),
+            ],
+          ),
+          const SizedBox(width: 16),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text('occupation.files.stats'.tr(args: ['${s.onSite}', '${s.capacity}', '${s.files}']), key: const Key('files-stats'), style: AppText.strong(size: 13.5)),
+                if (s.unsound > 0) Text('occupation.files.unsound'.tr(args: ['${s.unsound}']), style: AppText.strong(size: 12.5, color: AppStatus.badText)),
+                Text('occupation.files.moves_help'.tr(), style: AppText.muted(size: 12)),
+                TextButton(
+                  key: const Key('files-prepare'),
+                  style: TextButton.styleFrom(padding: EdgeInsets.zero, foregroundColor: AppColors.accentDeep, textStyle: AppText.body(size: 13.5, weight: 700)),
+                  onPressed: state.actionState.isProcessing ? null : () => context.read<ProOccupationBloc>().add(const ProOccupationFilesPrepared()),
+                  child: Text('occupation.files.prepare'.tr()),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+/// An arrival to place, with the file the rule picks: "Ranger en F07" asks the keys in the same gesture.
+class _FileArrivalRow extends StatelessWidget {
+  const _FileArrivalRow({required this.arrival, required this.state});
+  final OccupantModel arrival;
+  final ProOccupationState state;
+
+  @override
+  Widget build(BuildContext context) {
+    final bloc = context.read<ProOccupationBloc>();
+    final best = arrival.suggested;
+    final busy = state.actionState.isProcessing;
+    return Container(
+      key: Key('arrival-${arrival.reference}'),
+      margin: const EdgeInsets.only(bottom: 8),
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(border: Border.all(color: AppColors.line), borderRadius: AppRadius.chip),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Text(localTime(arrival.arrivalAt), style: AppText.tabular(size: 15, color: AppColors.accent)),
+              const SizedBox(width: 8),
+              FrenchPlate(arrival.plate, size: 12),
+              const SizedBox(width: 8),
+              Expanded(child: Text(arrival.customerName, style: AppText.body(size: 14), overflow: TextOverflow.ellipsis)),
+            ],
+          ),
+          const SizedBox(height: 4),
+          Text('occupation.return_on'.tr(args: ['${localDay(arrival.returnAt)} ${localTime(arrival.returnAt)}']), style: AppText.muted(size: 12.5)),
+          const SizedBox(height: 6),
+          Text(
+            best == null ? 'occupation.files.no_file'.tr() : 'occupation.files.choice'.tr(args: [best.code, '${best.cars}', '${best.capacity}', _choiceReason(best)]),
+            key: Key('suggested-${arrival.reference}'),
+            style: AppText.strong(size: 13, color: best == null ? AppStatus.badText : AppColors.accentDeep),
+          ),
+          const SizedBox(height: 8),
+          Row(
+            children: [
+              if (best != null)
+                Expanded(
+                  child: GradientButton(
+                    key: Key('place-${arrival.reference}'),
+                    label: 'occupation.files.place_in'.tr(args: [best.code]),
+                    busy: busy,
+                    onPressed: () async {
+                      final keyHook = await showKeysSheet(context, arrival, best.code);
+                      if (keyHook == null || !context.mounted) return;
+                      bloc.add(ProOccupationFiled(reservationId: arrival.id, fileId: best.fileId, keyHook: keyHook.isEmpty ? null : keyHook));
+                    },
+                  ),
+                ),
+              if (best != null) const SizedBox(width: 8),
+              Expanded(child: OutlineAction(label: 'occupation.files.other_file'.tr(), onPressed: busy ? null : () => showFilePicker(context, state, arrival))),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+/// One file as a stack, from the aisle (top) to the back: a car in red must wait for the ones in front.
+class _FileCard extends StatelessWidget {
+  const _FileCard({required this.file, required this.state});
+  final FileViewModel file;
+  final ProOccupationState state;
+
+  String _dayLabel() {
+    if (file.cars.isEmpty) return file.plannedDay != null ? 'occupation.files.kept_for'.tr(args: [localDay('${file.plannedDay}T00:00')]) : 'occupation.files.free_file'.tr();
+    final day = file.day;
+    if (day == null) return '';
+    return 'occupation.files.returns_of'.tr(args: [day == state.fileBoard!.date ? 'occupation.files.today'.tr() : localDay('${day}T00:00')]);
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final bloc = context.read<ProOccupationBloc>();
+    final full = file.cars.length >= file.capacity;
+    return Container(
+      key: Key('file-${file.code}'),
+      margin: const EdgeInsets.only(bottom: 10),
+      decoration: BoxDecoration(
+        color: AppColors.surface,
+        border: Border.all(color: file.sound ? AppColors.line : AppStatus.badText, width: file.sound ? 1 : 1.5),
+        borderRadius: AppRadius.card,
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Padding(
+            padding: const EdgeInsets.fromLTRB(14, 10, 14, 6),
+            child: Row(
+              children: [
+                Text(file.code, style: AppText.tabular(size: 18, color: AppColors.accentDeep)),
+                const SizedBox(width: 10),
+                Expanded(child: Text(file.name ?? _dayLabel(), style: AppText.muted(size: 12.5), overflow: TextOverflow.ellipsis)),
+                Text('${file.cars.length}/${file.capacity}', style: AppText.tabular(size: 13, color: full ? AppStatus.badText : AppColors.muted)),
+              ],
+            ),
+          ),
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 14),
+            child: Text('occupation.files.aisle'.tr().toUpperCase(), style: AppText.label(size: 9.5)),
+          ),
+          for (final c in file.cars)
+            InkWell(
+              key: Key('car-${c.reference}'),
+              onTap: () => bloc.add(ProOccupationVehicleChosen(c.copyWith(file: FileRefModel(id: file.id, code: file.code, name: file.name), filePosition: c.position))),
+              child: Container(
+                margin: const EdgeInsets.fromLTRB(10, 3, 10, 3),
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
+                decoration: BoxDecoration(
+                  color: c.blockedBy.isNotEmpty ? AppStatus.badSoft : (c.leavesToday ? AppStatus.infoSoft : Colors.transparent),
+                  border: Border.all(color: c.blockedBy.isNotEmpty ? AppStatus.badText : AppColors.line),
+                  borderRadius: AppRadius.chip,
+                ),
+                child: Row(
+                  children: [
+                    Text('${c.position ?? ''}', style: AppText.tabular(size: 12, color: AppColors.muted)),
+                    const SizedBox(width: 8),
+                    FrenchPlate(c.plate, size: 11),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(c.customerName, style: AppText.body(size: 13), overflow: TextOverflow.ellipsis),
+                          Text('${localDay(c.returnAt)} ${localTime(c.returnAt)}', style: AppText.muted(size: 11.5)),
+                          if (c.blockedBy.isNotEmpty)
+                            Text('occupation.files.to_take_out'.tr(args: ['${c.blockedBy.length}']), style: AppText.strong(size: 11.5, color: AppStatus.badText)),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          for (var i = file.cars.length; i < file.capacity; i++)
+            Container(
+              margin: const EdgeInsets.fromLTRB(10, 3, 10, 3),
+              height: 18,
+              decoration: BoxDecoration(border: Border.all(color: AppColors.line.withValues(alpha: 0.6)), borderRadius: AppRadius.chip),
+            ),
+          Padding(
+            padding: const EdgeInsets.fromLTRB(14, 4, 14, 10),
+            child: Text('occupation.files.back'.tr().toUpperCase(), style: AppText.label(size: 9.5)),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+/// The files for a vehicle: the ranked choices of an arrival, else every file with room.
+Future<void> showFilePicker(BuildContext context, ProOccupationState state, OccupantModel vehicle, {String? keyHook}) {
+  final bloc = context.read<ProOccupationBloc>();
+  final choices = vehicle.choices.isNotEmpty
+      ? vehicle.choices
+      : state.files
+            .where((f) => f.active)
+            .map((f) => FileChoiceModel(fileId: f.id, code: f.code, reason: f.cars.length >= f.capacity ? 'full' : 'empty', cars: f.cars.length, capacity: f.capacity))
+            .toList();
+  return showModalBottomSheet<void>(
+    context: context,
+    showDragHandle: true,
+    isScrollControlled: true,
+    builder: (sheet) => SafeArea(
+      child: SizedBox(
+        height: MediaQuery.sizeOf(sheet).height * 0.7,
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            Padding(
+              padding: const EdgeInsets.fromLTRB(16, 0, 16, 8),
+              child: Text('occupation.files.pick_title'.tr(args: [vehicle.plate]), style: AppText.title(size: 20)),
+            ),
+            Expanded(
+              child: choices.isEmpty
+                  ? Center(child: Text('occupation.files.no_file_yet'.tr(), style: AppText.muted()))
+                  : ListView.builder(
+                      itemCount: choices.length,
+                      itemBuilder: (_, i) {
+                        final c = choices[i];
+                        final sound = c.moves == 0 && c.reason != 'full';
+                        return ListTile(
+                          key: Key('pick-${c.code}'),
+                          minTileHeight: 52,
+                          enabled: c.reason != 'full',
+                          leading: Icon(Icons.view_stream_rounded, color: sound ? AppColors.accent : AppStatus.warnText),
+                          title: Text(c.code, style: AppText.tabular(size: 16)),
+                          subtitle: Text('${c.cars}/${c.capacity} · ${_choiceReason(c)}', style: AppText.muted(size: 12)),
+                          onTap: () {
+                            Navigator.of(sheet).pop();
+                            bloc.add(ProOccupationFiled(reservationId: vehicle.id, fileId: c.fileId, keyHook: keyHook));
+                          },
+                        );
+                      },
+                    ),
+            ),
+          ],
+        ),
+      ),
+    ),
   );
 }

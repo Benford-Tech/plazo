@@ -564,7 +564,11 @@ export default function DashboardPage() {
           testId="kpi-on-site"
           label={k.onSite}
           value={d.counts.onSite}
-          sub={k.onSiteSub(d.counts.freeSpots, d.parking.plannedSpots)}
+          sub={
+            d.parking.storedInFiles && d.breakdown.movesToday !== undefined
+              ? k.movesSub(d.breakdown.movesToday)
+              : k.onSiteSub(d.counts.freeSpots, d.parking.plannedSpots)
+          }
           to="/parking/occupation"
           icon={SquareParking}
         />

@@ -20,7 +20,10 @@ mixin _$OccupantModel {
  double? get carLat; double? get carLng; int? get carAccuracyM; DateTime? get carLocatedAt; String? get carLocatedBy; String? get carNote; bool get onSite; bool get leavesToday;/// D-B (07/10/2026): nights of the stay and its class (short, medium, long), for the plan by stay.
  int? get nights; String? get stayClass;/// Search results carry the spot's code.
  SpotRefModel? get spot;/// Arrivals to place carry their suggestions.
- List<SuggestionModel> get suggestions;
+ List<SuggestionModel> get suggestions;/// S-C (07/10/2026): the file the car stands in and its position from the aisle (1 = first out).
+ FileRefModel? get file; int? get filePosition; int? get position;/// Cars in front that leave later: to take out before this one (file board).
+ List<FileBlockerModel> get blockedBy;/// Arrivals of the file board: the ranked files and the one the rule picks.
+ List<FileChoiceModel> get choices; FileChoiceModel? get suggested;
 /// Create a copy of OccupantModel
 /// with the given fields replaced by the non-null parameter values.
 @JsonKey(includeFromJson: false, includeToJson: false)
@@ -34,20 +37,20 @@ $OccupantModelCopyWith<OccupantModel> get copyWith => _$OccupantModelCopyWithImp
 @override
 bool operator ==(Object other) {
   final _this = this as OccupantModel;
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is OccupantModel&&(identical(other.id, _this.id) || other.id == _this.id)&&(identical(other.reference, _this.reference) || other.reference == _this.reference)&&(identical(other.customerName, _this.customerName) || other.customerName == _this.customerName)&&(identical(other.plate, _this.plate) || other.plate == _this.plate)&&(identical(other.status, _this.status) || other.status == _this.status)&&(identical(other.arrivalAt, _this.arrivalAt) || other.arrivalAt == _this.arrivalAt)&&(identical(other.returnAt, _this.returnAt) || other.returnAt == _this.returnAt)&&(identical(other.returnFlight, _this.returnFlight) || other.returnFlight == _this.returnFlight)&&(identical(other.spotId, _this.spotId) || other.spotId == _this.spotId)&&(identical(other.keyHook, _this.keyHook) || other.keyHook == _this.keyHook)&&(identical(other.carLat, _this.carLat) || other.carLat == _this.carLat)&&(identical(other.carLng, _this.carLng) || other.carLng == _this.carLng)&&(identical(other.carAccuracyM, _this.carAccuracyM) || other.carAccuracyM == _this.carAccuracyM)&&(identical(other.carLocatedAt, _this.carLocatedAt) || other.carLocatedAt == _this.carLocatedAt)&&(identical(other.carLocatedBy, _this.carLocatedBy) || other.carLocatedBy == _this.carLocatedBy)&&(identical(other.carNote, _this.carNote) || other.carNote == _this.carNote)&&(identical(other.onSite, _this.onSite) || other.onSite == _this.onSite)&&(identical(other.leavesToday, _this.leavesToday) || other.leavesToday == _this.leavesToday)&&(identical(other.nights, _this.nights) || other.nights == _this.nights)&&(identical(other.stayClass, _this.stayClass) || other.stayClass == _this.stayClass)&&(identical(other.spot, _this.spot) || other.spot == _this.spot)&&const DeepCollectionEquality().equals(other.suggestions, _this.suggestions));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is OccupantModel&&(identical(other.id, _this.id) || other.id == _this.id)&&(identical(other.reference, _this.reference) || other.reference == _this.reference)&&(identical(other.customerName, _this.customerName) || other.customerName == _this.customerName)&&(identical(other.plate, _this.plate) || other.plate == _this.plate)&&(identical(other.status, _this.status) || other.status == _this.status)&&(identical(other.arrivalAt, _this.arrivalAt) || other.arrivalAt == _this.arrivalAt)&&(identical(other.returnAt, _this.returnAt) || other.returnAt == _this.returnAt)&&(identical(other.returnFlight, _this.returnFlight) || other.returnFlight == _this.returnFlight)&&(identical(other.spotId, _this.spotId) || other.spotId == _this.spotId)&&(identical(other.keyHook, _this.keyHook) || other.keyHook == _this.keyHook)&&(identical(other.carLat, _this.carLat) || other.carLat == _this.carLat)&&(identical(other.carLng, _this.carLng) || other.carLng == _this.carLng)&&(identical(other.carAccuracyM, _this.carAccuracyM) || other.carAccuracyM == _this.carAccuracyM)&&(identical(other.carLocatedAt, _this.carLocatedAt) || other.carLocatedAt == _this.carLocatedAt)&&(identical(other.carLocatedBy, _this.carLocatedBy) || other.carLocatedBy == _this.carLocatedBy)&&(identical(other.carNote, _this.carNote) || other.carNote == _this.carNote)&&(identical(other.onSite, _this.onSite) || other.onSite == _this.onSite)&&(identical(other.leavesToday, _this.leavesToday) || other.leavesToday == _this.leavesToday)&&(identical(other.nights, _this.nights) || other.nights == _this.nights)&&(identical(other.stayClass, _this.stayClass) || other.stayClass == _this.stayClass)&&(identical(other.spot, _this.spot) || other.spot == _this.spot)&&const DeepCollectionEquality().equals(other.suggestions, _this.suggestions)&&(identical(other.file, _this.file) || other.file == _this.file)&&(identical(other.filePosition, _this.filePosition) || other.filePosition == _this.filePosition)&&(identical(other.position, _this.position) || other.position == _this.position)&&const DeepCollectionEquality().equals(other.blockedBy, _this.blockedBy)&&const DeepCollectionEquality().equals(other.choices, _this.choices)&&(identical(other.suggested, _this.suggested) || other.suggested == _this.suggested));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
 int get hashCode {
   final _this = this as OccupantModel;
-  return Object.hashAll([runtimeType,_this.id,_this.reference,_this.customerName,_this.plate,_this.status,_this.arrivalAt,_this.returnAt,_this.returnFlight,_this.spotId,_this.keyHook,_this.carLat,_this.carLng,_this.carAccuracyM,_this.carLocatedAt,_this.carLocatedBy,_this.carNote,_this.onSite,_this.leavesToday,_this.nights,_this.stayClass,_this.spot,const DeepCollectionEquality().hash(_this.suggestions)]);
+  return Object.hashAll([runtimeType,_this.id,_this.reference,_this.customerName,_this.plate,_this.status,_this.arrivalAt,_this.returnAt,_this.returnFlight,_this.spotId,_this.keyHook,_this.carLat,_this.carLng,_this.carAccuracyM,_this.carLocatedAt,_this.carLocatedBy,_this.carNote,_this.onSite,_this.leavesToday,_this.nights,_this.stayClass,_this.spot,const DeepCollectionEquality().hash(_this.suggestions),_this.file,_this.filePosition,_this.position,const DeepCollectionEquality().hash(_this.blockedBy),const DeepCollectionEquality().hash(_this.choices),_this.suggested]);
 }
 
 @override
 String toString() {
   final _this = this as OccupantModel;
-  return 'OccupantModel(id: ${_this.id}, reference: ${_this.reference}, customerName: ${_this.customerName}, plate: ${_this.plate}, status: ${_this.status}, arrivalAt: ${_this.arrivalAt}, returnAt: ${_this.returnAt}, returnFlight: ${_this.returnFlight}, spotId: ${_this.spotId}, keyHook: ${_this.keyHook}, carLat: ${_this.carLat}, carLng: ${_this.carLng}, carAccuracyM: ${_this.carAccuracyM}, carLocatedAt: ${_this.carLocatedAt}, carLocatedBy: ${_this.carLocatedBy}, carNote: ${_this.carNote}, onSite: ${_this.onSite}, leavesToday: ${_this.leavesToday}, nights: ${_this.nights}, stayClass: ${_this.stayClass}, spot: ${_this.spot}, suggestions: ${_this.suggestions})';
+  return 'OccupantModel(id: ${_this.id}, reference: ${_this.reference}, customerName: ${_this.customerName}, plate: ${_this.plate}, status: ${_this.status}, arrivalAt: ${_this.arrivalAt}, returnAt: ${_this.returnAt}, returnFlight: ${_this.returnFlight}, spotId: ${_this.spotId}, keyHook: ${_this.keyHook}, carLat: ${_this.carLat}, carLng: ${_this.carLng}, carAccuracyM: ${_this.carAccuracyM}, carLocatedAt: ${_this.carLocatedAt}, carLocatedBy: ${_this.carLocatedBy}, carNote: ${_this.carNote}, onSite: ${_this.onSite}, leavesToday: ${_this.leavesToday}, nights: ${_this.nights}, stayClass: ${_this.stayClass}, spot: ${_this.spot}, suggestions: ${_this.suggestions}, file: ${_this.file}, filePosition: ${_this.filePosition}, position: ${_this.position}, blockedBy: ${_this.blockedBy}, choices: ${_this.choices}, suggested: ${_this.suggested})';
 }
 
 
@@ -58,11 +61,11 @@ abstract mixin class $OccupantModelCopyWith<$Res>  {
   factory $OccupantModelCopyWith(OccupantModel value, $Res Function(OccupantModel) _then) = _$OccupantModelCopyWithImpl;
 @useResult
 $Res call({
- String id, String reference, String customerName, String plate, String status, String arrivalAt, String returnAt, String? returnFlight, String? spotId, String? keyHook, double? carLat, double? carLng, int? carAccuracyM, DateTime? carLocatedAt, String? carLocatedBy, String? carNote, bool onSite, bool leavesToday, int? nights, String? stayClass, SpotRefModel? spot, List<SuggestionModel> suggestions
+ String id, String reference, String customerName, String plate, String status, String arrivalAt, String returnAt, String? returnFlight, String? spotId, String? keyHook, double? carLat, double? carLng, int? carAccuracyM, DateTime? carLocatedAt, String? carLocatedBy, String? carNote, bool onSite, bool leavesToday, int? nights, String? stayClass, SpotRefModel? spot, List<SuggestionModel> suggestions, FileRefModel? file, int? filePosition, int? position, List<FileBlockerModel> blockedBy, List<FileChoiceModel> choices, FileChoiceModel? suggested
 });
 
 
-$SpotRefModelCopyWith<$Res>? get spot;
+$SpotRefModelCopyWith<$Res>? get spot;$FileRefModelCopyWith<$Res>? get file;$FileChoiceModelCopyWith<$Res>? get suggested;
 
 }
 /// @nodoc
@@ -75,7 +78,7 @@ class _$OccupantModelCopyWithImpl<$Res>
 
 /// Create a copy of OccupantModel
 /// with the given fields replaced by the non-null parameter values.
-@pragma('vm:prefer-inline') @override $Res call({Object? id = null,Object? reference = null,Object? customerName = null,Object? plate = null,Object? status = null,Object? arrivalAt = null,Object? returnAt = null,Object? returnFlight = freezed,Object? spotId = freezed,Object? keyHook = freezed,Object? carLat = freezed,Object? carLng = freezed,Object? carAccuracyM = freezed,Object? carLocatedAt = freezed,Object? carLocatedBy = freezed,Object? carNote = freezed,Object? onSite = null,Object? leavesToday = null,Object? nights = freezed,Object? stayClass = freezed,Object? spot = freezed,Object? suggestions = null,}) {
+@pragma('vm:prefer-inline') @override $Res call({Object? id = null,Object? reference = null,Object? customerName = null,Object? plate = null,Object? status = null,Object? arrivalAt = null,Object? returnAt = null,Object? returnFlight = freezed,Object? spotId = freezed,Object? keyHook = freezed,Object? carLat = freezed,Object? carLng = freezed,Object? carAccuracyM = freezed,Object? carLocatedAt = freezed,Object? carLocatedBy = freezed,Object? carNote = freezed,Object? onSite = null,Object? leavesToday = null,Object? nights = freezed,Object? stayClass = freezed,Object? spot = freezed,Object? suggestions = null,Object? file = freezed,Object? filePosition = freezed,Object? position = freezed,Object? blockedBy = null,Object? choices = null,Object? suggested = freezed,}) {
   return _then(OccupantModel(
 id: null == id ? _self.id : id // ignore: cast_nullable_to_non_nullable
 as String,reference: null == reference ? _self.reference : reference // ignore: cast_nullable_to_non_nullable
@@ -99,7 +102,13 @@ as bool,nights: freezed == nights ? _self.nights : nights // ignore: cast_nullab
 as int?,stayClass: freezed == stayClass ? _self.stayClass : stayClass // ignore: cast_nullable_to_non_nullable
 as String?,spot: freezed == spot ? _self.spot : spot // ignore: cast_nullable_to_non_nullable
 as SpotRefModel?,suggestions: null == suggestions ? _self.suggestions : suggestions // ignore: cast_nullable_to_non_nullable
-as List<SuggestionModel>,
+as List<SuggestionModel>,file: freezed == file ? _self.file : file // ignore: cast_nullable_to_non_nullable
+as FileRefModel?,filePosition: freezed == filePosition ? _self.filePosition : filePosition // ignore: cast_nullable_to_non_nullable
+as int?,position: freezed == position ? _self.position : position // ignore: cast_nullable_to_non_nullable
+as int?,blockedBy: null == blockedBy ? _self.blockedBy : blockedBy // ignore: cast_nullable_to_non_nullable
+as List<FileBlockerModel>,choices: null == choices ? _self.choices : choices // ignore: cast_nullable_to_non_nullable
+as List<FileChoiceModel>,suggested: freezed == suggested ? _self.suggested : suggested // ignore: cast_nullable_to_non_nullable
+as FileChoiceModel?,
   ));
 }
 /// Create a copy of OccupantModel
@@ -113,6 +122,30 @@ $SpotRefModelCopyWith<$Res>? get spot {
 
   return $SpotRefModelCopyWith<$Res>(_self.spot!, (value) {
     return _then(_self.copyWith(spot: value));
+  });
+}/// Create a copy of OccupantModel
+/// with the given fields replaced by the non-null parameter values.
+@override
+@pragma('vm:prefer-inline')
+$FileRefModelCopyWith<$Res>? get file {
+    if (_self.file == null) {
+    return null;
+  }
+
+  return $FileRefModelCopyWith<$Res>(_self.file!, (value) {
+    return _then(_self.copyWith(file: value));
+  });
+}/// Create a copy of OccupantModel
+/// with the given fields replaced by the non-null parameter values.
+@override
+@pragma('vm:prefer-inline')
+$FileChoiceModelCopyWith<$Res>? get suggested {
+    if (_self.suggested == null) {
+    return null;
+  }
+
+  return $FileChoiceModelCopyWith<$Res>(_self.suggested!, (value) {
+    return _then(_self.copyWith(suggested: value));
   });
 }
 }
@@ -196,10 +229,10 @@ return $default(_that);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( String id,  String reference,  String customerName,  String plate,  String status,  String arrivalAt,  String returnAt,  String? returnFlight,  String? spotId,  String? keyHook,  double? carLat,  double? carLng,  int? carAccuracyM,  DateTime? carLocatedAt,  String? carLocatedBy,  String? carNote,  bool onSite,  bool leavesToday,  int? nights,  String? stayClass,  SpotRefModel? spot,  List<SuggestionModel> suggestions)?  $default,{required TResult orElse(),}) {final _that = this;
+@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( String id,  String reference,  String customerName,  String plate,  String status,  String arrivalAt,  String returnAt,  String? returnFlight,  String? spotId,  String? keyHook,  double? carLat,  double? carLng,  int? carAccuracyM,  DateTime? carLocatedAt,  String? carLocatedBy,  String? carNote,  bool onSite,  bool leavesToday,  int? nights,  String? stayClass,  SpotRefModel? spot,  List<SuggestionModel> suggestions,  FileRefModel? file,  int? filePosition,  int? position,  List<FileBlockerModel> blockedBy,  List<FileChoiceModel> choices,  FileChoiceModel? suggested)?  $default,{required TResult orElse(),}) {final _that = this;
 switch (_that) {
 case _OccupantModel() when $default != null:
-return $default(_that.id,_that.reference,_that.customerName,_that.plate,_that.status,_that.arrivalAt,_that.returnAt,_that.returnFlight,_that.spotId,_that.keyHook,_that.carLat,_that.carLng,_that.carAccuracyM,_that.carLocatedAt,_that.carLocatedBy,_that.carNote,_that.onSite,_that.leavesToday,_that.nights,_that.stayClass,_that.spot,_that.suggestions);case _:
+return $default(_that.id,_that.reference,_that.customerName,_that.plate,_that.status,_that.arrivalAt,_that.returnAt,_that.returnFlight,_that.spotId,_that.keyHook,_that.carLat,_that.carLng,_that.carAccuracyM,_that.carLocatedAt,_that.carLocatedBy,_that.carNote,_that.onSite,_that.leavesToday,_that.nights,_that.stayClass,_that.spot,_that.suggestions,_that.file,_that.filePosition,_that.position,_that.blockedBy,_that.choices,_that.suggested);case _:
   return orElse();
 
 }
@@ -217,10 +250,10 @@ return $default(_that.id,_that.reference,_that.customerName,_that.plate,_that.st
 /// }
 /// ```
 
-@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( String id,  String reference,  String customerName,  String plate,  String status,  String arrivalAt,  String returnAt,  String? returnFlight,  String? spotId,  String? keyHook,  double? carLat,  double? carLng,  int? carAccuracyM,  DateTime? carLocatedAt,  String? carLocatedBy,  String? carNote,  bool onSite,  bool leavesToday,  int? nights,  String? stayClass,  SpotRefModel? spot,  List<SuggestionModel> suggestions)  $default,) {final _that = this;
+@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( String id,  String reference,  String customerName,  String plate,  String status,  String arrivalAt,  String returnAt,  String? returnFlight,  String? spotId,  String? keyHook,  double? carLat,  double? carLng,  int? carAccuracyM,  DateTime? carLocatedAt,  String? carLocatedBy,  String? carNote,  bool onSite,  bool leavesToday,  int? nights,  String? stayClass,  SpotRefModel? spot,  List<SuggestionModel> suggestions,  FileRefModel? file,  int? filePosition,  int? position,  List<FileBlockerModel> blockedBy,  List<FileChoiceModel> choices,  FileChoiceModel? suggested)  $default,) {final _that = this;
 switch (_that) {
 case _OccupantModel():
-return $default(_that.id,_that.reference,_that.customerName,_that.plate,_that.status,_that.arrivalAt,_that.returnAt,_that.returnFlight,_that.spotId,_that.keyHook,_that.carLat,_that.carLng,_that.carAccuracyM,_that.carLocatedAt,_that.carLocatedBy,_that.carNote,_that.onSite,_that.leavesToday,_that.nights,_that.stayClass,_that.spot,_that.suggestions);case _:
+return $default(_that.id,_that.reference,_that.customerName,_that.plate,_that.status,_that.arrivalAt,_that.returnAt,_that.returnFlight,_that.spotId,_that.keyHook,_that.carLat,_that.carLng,_that.carAccuracyM,_that.carLocatedAt,_that.carLocatedBy,_that.carNote,_that.onSite,_that.leavesToday,_that.nights,_that.stayClass,_that.spot,_that.suggestions,_that.file,_that.filePosition,_that.position,_that.blockedBy,_that.choices,_that.suggested);case _:
   throw StateError('Unexpected subclass');
 
 }
@@ -237,10 +270,10 @@ return $default(_that.id,_that.reference,_that.customerName,_that.plate,_that.st
 /// }
 /// ```
 
-@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( String id,  String reference,  String customerName,  String plate,  String status,  String arrivalAt,  String returnAt,  String? returnFlight,  String? spotId,  String? keyHook,  double? carLat,  double? carLng,  int? carAccuracyM,  DateTime? carLocatedAt,  String? carLocatedBy,  String? carNote,  bool onSite,  bool leavesToday,  int? nights,  String? stayClass,  SpotRefModel? spot,  List<SuggestionModel> suggestions)?  $default,) {final _that = this;
+@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( String id,  String reference,  String customerName,  String plate,  String status,  String arrivalAt,  String returnAt,  String? returnFlight,  String? spotId,  String? keyHook,  double? carLat,  double? carLng,  int? carAccuracyM,  DateTime? carLocatedAt,  String? carLocatedBy,  String? carNote,  bool onSite,  bool leavesToday,  int? nights,  String? stayClass,  SpotRefModel? spot,  List<SuggestionModel> suggestions,  FileRefModel? file,  int? filePosition,  int? position,  List<FileBlockerModel> blockedBy,  List<FileChoiceModel> choices,  FileChoiceModel? suggested)?  $default,) {final _that = this;
 switch (_that) {
 case _OccupantModel() when $default != null:
-return $default(_that.id,_that.reference,_that.customerName,_that.plate,_that.status,_that.arrivalAt,_that.returnAt,_that.returnFlight,_that.spotId,_that.keyHook,_that.carLat,_that.carLng,_that.carAccuracyM,_that.carLocatedAt,_that.carLocatedBy,_that.carNote,_that.onSite,_that.leavesToday,_that.nights,_that.stayClass,_that.spot,_that.suggestions);case _:
+return $default(_that.id,_that.reference,_that.customerName,_that.plate,_that.status,_that.arrivalAt,_that.returnAt,_that.returnFlight,_that.spotId,_that.keyHook,_that.carLat,_that.carLng,_that.carAccuracyM,_that.carLocatedAt,_that.carLocatedBy,_that.carNote,_that.onSite,_that.leavesToday,_that.nights,_that.stayClass,_that.spot,_that.suggestions,_that.file,_that.filePosition,_that.position,_that.blockedBy,_that.choices,_that.suggested);case _:
   return null;
 
 }
@@ -252,7 +285,7 @@ return $default(_that.id,_that.reference,_that.customerName,_that.plate,_that.st
 @JsonSerializable()
 
 class _OccupantModel implements OccupantModel {
-  const _OccupantModel({required this.id, required this.reference, required this.customerName, required this.plate, required this.status, required this.arrivalAt, required this.returnAt, this.returnFlight, this.spotId, this.keyHook, this.carLat, this.carLng, this.carAccuracyM, this.carLocatedAt, this.carLocatedBy, this.carNote, this.onSite = false, this.leavesToday = false, this.nights, this.stayClass, this.spot,  List<SuggestionModel> suggestions = const []}): _suggestions = suggestions;
+  const _OccupantModel({required this.id, required this.reference, required this.customerName, required this.plate, required this.status, required this.arrivalAt, required this.returnAt, this.returnFlight, this.spotId, this.keyHook, this.carLat, this.carLng, this.carAccuracyM, this.carLocatedAt, this.carLocatedBy, this.carNote, this.onSite = false, this.leavesToday = false, this.nights, this.stayClass, this.spot,  List<SuggestionModel> suggestions = const [], this.file, this.filePosition, this.position,  List<FileBlockerModel> blockedBy = const <FileBlockerModel>[],  List<FileChoiceModel> choices = const <FileChoiceModel>[], this.suggested}): _suggestions = suggestions,_blockedBy = blockedBy,_choices = choices;
   factory _OccupantModel.fromJson(Map<String, dynamic> json) => _$OccupantModelFromJson(json);
 
 @override final  String id;
@@ -288,6 +321,29 @@ class _OccupantModel implements OccupantModel {
   return EqualUnmodifiableListView(_suggestions);
 }
 
+/// S-C (07/10/2026): the file the car stands in and its position from the aisle (1 = first out).
+@override final  FileRefModel? file;
+@override final  int? filePosition;
+@override final  int? position;
+/// Cars in front that leave later: to take out before this one (file board).
+ final  List<FileBlockerModel> _blockedBy;
+/// Cars in front that leave later: to take out before this one (file board).
+@override@JsonKey() List<FileBlockerModel> get blockedBy {
+  if (_blockedBy is EqualUnmodifiableListView) return _blockedBy;
+  // ignore: implicit_dynamic_type
+  return EqualUnmodifiableListView(_blockedBy);
+}
+
+/// Arrivals of the file board: the ranked files and the one the rule picks.
+ final  List<FileChoiceModel> _choices;
+/// Arrivals of the file board: the ranked files and the one the rule picks.
+@override@JsonKey() List<FileChoiceModel> get choices {
+  if (_choices is EqualUnmodifiableListView) return _choices;
+  // ignore: implicit_dynamic_type
+  return EqualUnmodifiableListView(_choices);
+}
+
+@override final  FileChoiceModel? suggested;
 
 /// Create a copy of OccupantModel
 /// with the given fields replaced by the non-null parameter values.
@@ -302,18 +358,18 @@ Map<String, dynamic> toJson() {
 
 @override
 bool operator ==(Object other) {
-    return identical(this, other) || (other.runtimeType == runtimeType&&other is _OccupantModel&&(identical(other.id, id) || other.id == id)&&(identical(other.reference, reference) || other.reference == reference)&&(identical(other.customerName, customerName) || other.customerName == customerName)&&(identical(other.plate, plate) || other.plate == plate)&&(identical(other.status, status) || other.status == status)&&(identical(other.arrivalAt, arrivalAt) || other.arrivalAt == arrivalAt)&&(identical(other.returnAt, returnAt) || other.returnAt == returnAt)&&(identical(other.returnFlight, returnFlight) || other.returnFlight == returnFlight)&&(identical(other.spotId, spotId) || other.spotId == spotId)&&(identical(other.keyHook, keyHook) || other.keyHook == keyHook)&&(identical(other.carLat, carLat) || other.carLat == carLat)&&(identical(other.carLng, carLng) || other.carLng == carLng)&&(identical(other.carAccuracyM, carAccuracyM) || other.carAccuracyM == carAccuracyM)&&(identical(other.carLocatedAt, carLocatedAt) || other.carLocatedAt == carLocatedAt)&&(identical(other.carLocatedBy, carLocatedBy) || other.carLocatedBy == carLocatedBy)&&(identical(other.carNote, carNote) || other.carNote == carNote)&&(identical(other.onSite, onSite) || other.onSite == onSite)&&(identical(other.leavesToday, leavesToday) || other.leavesToday == leavesToday)&&(identical(other.nights, nights) || other.nights == nights)&&(identical(other.stayClass, stayClass) || other.stayClass == stayClass)&&(identical(other.spot, spot) || other.spot == spot)&&const DeepCollectionEquality().equals(other.suggestions, _suggestions));
+    return identical(this, other) || (other.runtimeType == runtimeType&&other is _OccupantModel&&(identical(other.id, id) || other.id == id)&&(identical(other.reference, reference) || other.reference == reference)&&(identical(other.customerName, customerName) || other.customerName == customerName)&&(identical(other.plate, plate) || other.plate == plate)&&(identical(other.status, status) || other.status == status)&&(identical(other.arrivalAt, arrivalAt) || other.arrivalAt == arrivalAt)&&(identical(other.returnAt, returnAt) || other.returnAt == returnAt)&&(identical(other.returnFlight, returnFlight) || other.returnFlight == returnFlight)&&(identical(other.spotId, spotId) || other.spotId == spotId)&&(identical(other.keyHook, keyHook) || other.keyHook == keyHook)&&(identical(other.carLat, carLat) || other.carLat == carLat)&&(identical(other.carLng, carLng) || other.carLng == carLng)&&(identical(other.carAccuracyM, carAccuracyM) || other.carAccuracyM == carAccuracyM)&&(identical(other.carLocatedAt, carLocatedAt) || other.carLocatedAt == carLocatedAt)&&(identical(other.carLocatedBy, carLocatedBy) || other.carLocatedBy == carLocatedBy)&&(identical(other.carNote, carNote) || other.carNote == carNote)&&(identical(other.onSite, onSite) || other.onSite == onSite)&&(identical(other.leavesToday, leavesToday) || other.leavesToday == leavesToday)&&(identical(other.nights, nights) || other.nights == nights)&&(identical(other.stayClass, stayClass) || other.stayClass == stayClass)&&(identical(other.spot, spot) || other.spot == spot)&&const DeepCollectionEquality().equals(other.suggestions, _suggestions)&&(identical(other.file, file) || other.file == file)&&(identical(other.filePosition, filePosition) || other.filePosition == filePosition)&&(identical(other.position, position) || other.position == position)&&const DeepCollectionEquality().equals(other.blockedBy, _blockedBy)&&const DeepCollectionEquality().equals(other.choices, _choices)&&(identical(other.suggested, suggested) || other.suggested == suggested));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
 int get hashCode {
-    return Object.hashAll([runtimeType,id,reference,customerName,plate,status,arrivalAt,returnAt,returnFlight,spotId,keyHook,carLat,carLng,carAccuracyM,carLocatedAt,carLocatedBy,carNote,onSite,leavesToday,nights,stayClass,spot,const DeepCollectionEquality().hash(_suggestions)]);
+    return Object.hashAll([runtimeType,id,reference,customerName,plate,status,arrivalAt,returnAt,returnFlight,spotId,keyHook,carLat,carLng,carAccuracyM,carLocatedAt,carLocatedBy,carNote,onSite,leavesToday,nights,stayClass,spot,const DeepCollectionEquality().hash(_suggestions),file,filePosition,position,const DeepCollectionEquality().hash(_blockedBy),const DeepCollectionEquality().hash(_choices),suggested]);
 }
 
 @override
 String toString() {
-    return 'OccupantModel(id: $id, reference: $reference, customerName: $customerName, plate: $plate, status: $status, arrivalAt: $arrivalAt, returnAt: $returnAt, returnFlight: $returnFlight, spotId: $spotId, keyHook: $keyHook, carLat: $carLat, carLng: $carLng, carAccuracyM: $carAccuracyM, carLocatedAt: $carLocatedAt, carLocatedBy: $carLocatedBy, carNote: $carNote, onSite: $onSite, leavesToday: $leavesToday, nights: $nights, stayClass: $stayClass, spot: $spot, suggestions: $suggestions)';
+    return 'OccupantModel(id: $id, reference: $reference, customerName: $customerName, plate: $plate, status: $status, arrivalAt: $arrivalAt, returnAt: $returnAt, returnFlight: $returnFlight, spotId: $spotId, keyHook: $keyHook, carLat: $carLat, carLng: $carLng, carAccuracyM: $carAccuracyM, carLocatedAt: $carLocatedAt, carLocatedBy: $carLocatedBy, carNote: $carNote, onSite: $onSite, leavesToday: $leavesToday, nights: $nights, stayClass: $stayClass, spot: $spot, suggestions: $suggestions, file: $file, filePosition: $filePosition, position: $position, blockedBy: $blockedBy, choices: $choices, suggested: $suggested)';
 }
 
 
@@ -324,11 +380,11 @@ abstract mixin class _$OccupantModelCopyWith<$Res> implements $OccupantModelCopy
   factory _$OccupantModelCopyWith(_OccupantModel value, $Res Function(_OccupantModel) _then) = __$OccupantModelCopyWithImpl;
 @override @useResult
 $Res call({
- String id, String reference, String customerName, String plate, String status, String arrivalAt, String returnAt, String? returnFlight, String? spotId, String? keyHook, double? carLat, double? carLng, int? carAccuracyM, DateTime? carLocatedAt, String? carLocatedBy, String? carNote, bool onSite, bool leavesToday, int? nights, String? stayClass, SpotRefModel? spot, List<SuggestionModel> suggestions
+ String id, String reference, String customerName, String plate, String status, String arrivalAt, String returnAt, String? returnFlight, String? spotId, String? keyHook, double? carLat, double? carLng, int? carAccuracyM, DateTime? carLocatedAt, String? carLocatedBy, String? carNote, bool onSite, bool leavesToday, int? nights, String? stayClass, SpotRefModel? spot, List<SuggestionModel> suggestions, FileRefModel? file, int? filePosition, int? position, List<FileBlockerModel> blockedBy, List<FileChoiceModel> choices, FileChoiceModel? suggested
 });
 
 
-@override $SpotRefModelCopyWith<$Res>? get spot;
+@override $SpotRefModelCopyWith<$Res>? get spot;@override $FileRefModelCopyWith<$Res>? get file;@override $FileChoiceModelCopyWith<$Res>? get suggested;
 
 }
 /// @nodoc
@@ -341,7 +397,7 @@ class __$OccupantModelCopyWithImpl<$Res>
 
 /// Create a copy of OccupantModel
 /// with the given fields replaced by the non-null parameter values.
-@override @pragma('vm:prefer-inline') $Res call({Object? id = null,Object? reference = null,Object? customerName = null,Object? plate = null,Object? status = null,Object? arrivalAt = null,Object? returnAt = null,Object? returnFlight = freezed,Object? spotId = freezed,Object? keyHook = freezed,Object? carLat = freezed,Object? carLng = freezed,Object? carAccuracyM = freezed,Object? carLocatedAt = freezed,Object? carLocatedBy = freezed,Object? carNote = freezed,Object? onSite = null,Object? leavesToday = null,Object? nights = freezed,Object? stayClass = freezed,Object? spot = freezed,Object? suggestions = null,}) {
+@override @pragma('vm:prefer-inline') $Res call({Object? id = null,Object? reference = null,Object? customerName = null,Object? plate = null,Object? status = null,Object? arrivalAt = null,Object? returnAt = null,Object? returnFlight = freezed,Object? spotId = freezed,Object? keyHook = freezed,Object? carLat = freezed,Object? carLng = freezed,Object? carAccuracyM = freezed,Object? carLocatedAt = freezed,Object? carLocatedBy = freezed,Object? carNote = freezed,Object? onSite = null,Object? leavesToday = null,Object? nights = freezed,Object? stayClass = freezed,Object? spot = freezed,Object? suggestions = null,Object? file = freezed,Object? filePosition = freezed,Object? position = freezed,Object? blockedBy = null,Object? choices = null,Object? suggested = freezed,}) {
   return _then(_OccupantModel(
 id: null == id ? _self.id : id // ignore: cast_nullable_to_non_nullable
 as String,reference: null == reference ? _self.reference : reference // ignore: cast_nullable_to_non_nullable
@@ -365,7 +421,13 @@ as bool,nights: freezed == nights ? _self.nights : nights // ignore: cast_nullab
 as int?,stayClass: freezed == stayClass ? _self.stayClass : stayClass // ignore: cast_nullable_to_non_nullable
 as String?,spot: freezed == spot ? _self.spot : spot // ignore: cast_nullable_to_non_nullable
 as SpotRefModel?,suggestions: null == suggestions ? _self._suggestions : suggestions // ignore: cast_nullable_to_non_nullable
-as List<SuggestionModel>,
+as List<SuggestionModel>,file: freezed == file ? _self.file : file // ignore: cast_nullable_to_non_nullable
+as FileRefModel?,filePosition: freezed == filePosition ? _self.filePosition : filePosition // ignore: cast_nullable_to_non_nullable
+as int?,position: freezed == position ? _self.position : position // ignore: cast_nullable_to_non_nullable
+as int?,blockedBy: null == blockedBy ? _self._blockedBy : blockedBy // ignore: cast_nullable_to_non_nullable
+as List<FileBlockerModel>,choices: null == choices ? _self._choices : choices // ignore: cast_nullable_to_non_nullable
+as List<FileChoiceModel>,suggested: freezed == suggested ? _self.suggested : suggested // ignore: cast_nullable_to_non_nullable
+as FileChoiceModel?,
   ));
 }
 
@@ -380,6 +442,30 @@ $SpotRefModelCopyWith<$Res>? get spot {
 
   return $SpotRefModelCopyWith<$Res>(_self.spot!, (value) {
     return _then(_self.copyWith(spot: value));
+  });
+}/// Create a copy of OccupantModel
+/// with the given fields replaced by the non-null parameter values.
+@override
+@pragma('vm:prefer-inline')
+$FileRefModelCopyWith<$Res>? get file {
+    if (_self.file == null) {
+    return null;
+  }
+
+  return $FileRefModelCopyWith<$Res>(_self.file!, (value) {
+    return _then(_self.copyWith(file: value));
+  });
+}/// Create a copy of OccupantModel
+/// with the given fields replaced by the non-null parameter values.
+@override
+@pragma('vm:prefer-inline')
+$FileChoiceModelCopyWith<$Res>? get suggested {
+    if (_self.suggested == null) {
+    return null;
+  }
+
+  return $FileChoiceModelCopyWith<$Res>(_self.suggested!, (value) {
+    return _then(_self.copyWith(suggested: value));
   });
 }
 }
@@ -2711,6 +2797,2313 @@ as OccupantModel,
 $OccupantModelCopyWith<$Res> get data {
   
   return $OccupantModelCopyWith<$Res>(_self.data, (value) {
+    return _then(_self.copyWith(data: value));
+  });
+}
+}
+
+
+/// @nodoc
+mixin _$FileRefModel {
+
+ String get id; String get code; String? get name;
+/// Create a copy of FileRefModel
+/// with the given fields replaced by the non-null parameter values.
+@JsonKey(includeFromJson: false, includeToJson: false)
+@pragma('vm:prefer-inline')
+$FileRefModelCopyWith<FileRefModel> get copyWith => _$FileRefModelCopyWithImpl<FileRefModel>(this as FileRefModel, _$identity);
+
+  /// Serializes this FileRefModel to a JSON map.
+  Map<String, dynamic> toJson();
+
+
+@override
+bool operator ==(Object other) {
+  final _this = this as FileRefModel;
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is FileRefModel&&(identical(other.id, _this.id) || other.id == _this.id)&&(identical(other.code, _this.code) || other.code == _this.code)&&(identical(other.name, _this.name) || other.name == _this.name));
+}
+
+@JsonKey(includeFromJson: false, includeToJson: false)
+@override
+int get hashCode {
+  final _this = this as FileRefModel;
+  return Object.hash(runtimeType,_this.id,_this.code,_this.name);
+}
+
+@override
+String toString() {
+  final _this = this as FileRefModel;
+  return 'FileRefModel(id: ${_this.id}, code: ${_this.code}, name: ${_this.name})';
+}
+
+
+}
+
+/// @nodoc
+abstract mixin class $FileRefModelCopyWith<$Res>  {
+  factory $FileRefModelCopyWith(FileRefModel value, $Res Function(FileRefModel) _then) = _$FileRefModelCopyWithImpl;
+@useResult
+$Res call({
+ String id, String code, String? name
+});
+
+
+
+
+}
+/// @nodoc
+class _$FileRefModelCopyWithImpl<$Res>
+    implements $FileRefModelCopyWith<$Res> {
+  _$FileRefModelCopyWithImpl(this._self, this._then);
+
+  final FileRefModel _self;
+  final $Res Function(FileRefModel) _then;
+
+/// Create a copy of FileRefModel
+/// with the given fields replaced by the non-null parameter values.
+@pragma('vm:prefer-inline') @override $Res call({Object? id = null,Object? code = null,Object? name = freezed,}) {
+  return _then(FileRefModel(
+id: null == id ? _self.id : id // ignore: cast_nullable_to_non_nullable
+as String,code: null == code ? _self.code : code // ignore: cast_nullable_to_non_nullable
+as String,name: freezed == name ? _self.name : name // ignore: cast_nullable_to_non_nullable
+as String?,
+  ));
+}
+
+}
+
+
+/// Adds pattern-matching-related methods to [FileRefModel].
+extension FileRefModelPatterns on FileRefModel {
+/// A variant of `map` that fallback to returning `orElse`.
+///
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case final Subclass value:
+///     return ...;
+///   case _:
+///     return orElse();
+/// }
+/// ```
+
+@optionalTypeArgs TResult maybeMap<TResult extends Object?>(TResult Function( _FileRefModel value)?  $default,{required TResult orElse(),}){
+final _that = this;
+switch (_that) {
+case _FileRefModel() when $default != null:
+return $default(_that);case _:
+  return orElse();
+
+}
+}
+/// A `switch`-like method, using callbacks.
+///
+/// Callbacks receives the raw object, upcasted.
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case final Subclass value:
+///     return ...;
+///   case final Subclass2 value:
+///     return ...;
+/// }
+/// ```
+
+@optionalTypeArgs TResult map<TResult extends Object?>(TResult Function( _FileRefModel value)  $default,){
+final _that = this;
+switch (_that) {
+case _FileRefModel():
+return $default(_that);case _:
+  throw StateError('Unexpected subclass');
+
+}
+}
+/// A variant of `map` that fallback to returning `null`.
+///
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case final Subclass value:
+///     return ...;
+///   case _:
+///     return null;
+/// }
+/// ```
+
+@optionalTypeArgs TResult? mapOrNull<TResult extends Object?>(TResult? Function( _FileRefModel value)?  $default,){
+final _that = this;
+switch (_that) {
+case _FileRefModel() when $default != null:
+return $default(_that);case _:
+  return null;
+
+}
+}
+/// A variant of `when` that fallback to an `orElse` callback.
+///
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case Subclass(:final field):
+///     return ...;
+///   case _:
+///     return orElse();
+/// }
+/// ```
+
+@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( String id,  String code,  String? name)?  $default,{required TResult orElse(),}) {final _that = this;
+switch (_that) {
+case _FileRefModel() when $default != null:
+return $default(_that.id,_that.code,_that.name);case _:
+  return orElse();
+
+}
+}
+/// A `switch`-like method, using callbacks.
+///
+/// As opposed to `map`, this offers destructuring.
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case Subclass(:final field):
+///     return ...;
+///   case Subclass2(:final field2):
+///     return ...;
+/// }
+/// ```
+
+@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( String id,  String code,  String? name)  $default,) {final _that = this;
+switch (_that) {
+case _FileRefModel():
+return $default(_that.id,_that.code,_that.name);case _:
+  throw StateError('Unexpected subclass');
+
+}
+}
+/// A variant of `when` that fallback to returning `null`
+///
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case Subclass(:final field):
+///     return ...;
+///   case _:
+///     return null;
+/// }
+/// ```
+
+@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( String id,  String code,  String? name)?  $default,) {final _that = this;
+switch (_that) {
+case _FileRefModel() when $default != null:
+return $default(_that.id,_that.code,_that.name);case _:
+  return null;
+
+}
+}
+
+}
+
+/// @nodoc
+@JsonSerializable()
+
+class _FileRefModel implements FileRefModel {
+  const _FileRefModel({required this.id, required this.code, this.name});
+  factory _FileRefModel.fromJson(Map<String, dynamic> json) => _$FileRefModelFromJson(json);
+
+@override final  String id;
+@override final  String code;
+@override final  String? name;
+
+/// Create a copy of FileRefModel
+/// with the given fields replaced by the non-null parameter values.
+@override @JsonKey(includeFromJson: false, includeToJson: false)
+@pragma('vm:prefer-inline')
+_$FileRefModelCopyWith<_FileRefModel> get copyWith => __$FileRefModelCopyWithImpl<_FileRefModel>(this, _$identity);
+
+@override
+Map<String, dynamic> toJson() {
+  return _$FileRefModelToJson(this, );
+}
+
+@override
+bool operator ==(Object other) {
+    return identical(this, other) || (other.runtimeType == runtimeType&&other is _FileRefModel&&(identical(other.id, id) || other.id == id)&&(identical(other.code, code) || other.code == code)&&(identical(other.name, name) || other.name == name));
+}
+
+@JsonKey(includeFromJson: false, includeToJson: false)
+@override
+int get hashCode {
+    return Object.hash(runtimeType,id,code,name);
+}
+
+@override
+String toString() {
+    return 'FileRefModel(id: $id, code: $code, name: $name)';
+}
+
+
+}
+
+/// @nodoc
+abstract mixin class _$FileRefModelCopyWith<$Res> implements $FileRefModelCopyWith<$Res> {
+  factory _$FileRefModelCopyWith(_FileRefModel value, $Res Function(_FileRefModel) _then) = __$FileRefModelCopyWithImpl;
+@override @useResult
+$Res call({
+ String id, String code, String? name
+});
+
+
+
+
+}
+/// @nodoc
+class __$FileRefModelCopyWithImpl<$Res>
+    implements _$FileRefModelCopyWith<$Res> {
+  __$FileRefModelCopyWithImpl(this._self, this._then);
+
+  final _FileRefModel _self;
+  final $Res Function(_FileRefModel) _then;
+
+/// Create a copy of FileRefModel
+/// with the given fields replaced by the non-null parameter values.
+@override @pragma('vm:prefer-inline') $Res call({Object? id = null,Object? code = null,Object? name = freezed,}) {
+  return _then(_FileRefModel(
+id: null == id ? _self.id : id // ignore: cast_nullable_to_non_nullable
+as String,code: null == code ? _self.code : code // ignore: cast_nullable_to_non_nullable
+as String,name: freezed == name ? _self.name : name // ignore: cast_nullable_to_non_nullable
+as String?,
+  ));
+}
+
+
+}
+
+
+/// @nodoc
+mixin _$FileBlockerModel {
+
+ String get reservationId; String get reference; String get plate; String get returnAt;
+/// Create a copy of FileBlockerModel
+/// with the given fields replaced by the non-null parameter values.
+@JsonKey(includeFromJson: false, includeToJson: false)
+@pragma('vm:prefer-inline')
+$FileBlockerModelCopyWith<FileBlockerModel> get copyWith => _$FileBlockerModelCopyWithImpl<FileBlockerModel>(this as FileBlockerModel, _$identity);
+
+  /// Serializes this FileBlockerModel to a JSON map.
+  Map<String, dynamic> toJson();
+
+
+@override
+bool operator ==(Object other) {
+  final _this = this as FileBlockerModel;
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is FileBlockerModel&&(identical(other.reservationId, _this.reservationId) || other.reservationId == _this.reservationId)&&(identical(other.reference, _this.reference) || other.reference == _this.reference)&&(identical(other.plate, _this.plate) || other.plate == _this.plate)&&(identical(other.returnAt, _this.returnAt) || other.returnAt == _this.returnAt));
+}
+
+@JsonKey(includeFromJson: false, includeToJson: false)
+@override
+int get hashCode {
+  final _this = this as FileBlockerModel;
+  return Object.hash(runtimeType,_this.reservationId,_this.reference,_this.plate,_this.returnAt);
+}
+
+@override
+String toString() {
+  final _this = this as FileBlockerModel;
+  return 'FileBlockerModel(reservationId: ${_this.reservationId}, reference: ${_this.reference}, plate: ${_this.plate}, returnAt: ${_this.returnAt})';
+}
+
+
+}
+
+/// @nodoc
+abstract mixin class $FileBlockerModelCopyWith<$Res>  {
+  factory $FileBlockerModelCopyWith(FileBlockerModel value, $Res Function(FileBlockerModel) _then) = _$FileBlockerModelCopyWithImpl;
+@useResult
+$Res call({
+ String reservationId, String reference, String plate, String returnAt
+});
+
+
+
+
+}
+/// @nodoc
+class _$FileBlockerModelCopyWithImpl<$Res>
+    implements $FileBlockerModelCopyWith<$Res> {
+  _$FileBlockerModelCopyWithImpl(this._self, this._then);
+
+  final FileBlockerModel _self;
+  final $Res Function(FileBlockerModel) _then;
+
+/// Create a copy of FileBlockerModel
+/// with the given fields replaced by the non-null parameter values.
+@pragma('vm:prefer-inline') @override $Res call({Object? reservationId = null,Object? reference = null,Object? plate = null,Object? returnAt = null,}) {
+  return _then(FileBlockerModel(
+reservationId: null == reservationId ? _self.reservationId : reservationId // ignore: cast_nullable_to_non_nullable
+as String,reference: null == reference ? _self.reference : reference // ignore: cast_nullable_to_non_nullable
+as String,plate: null == plate ? _self.plate : plate // ignore: cast_nullable_to_non_nullable
+as String,returnAt: null == returnAt ? _self.returnAt : returnAt // ignore: cast_nullable_to_non_nullable
+as String,
+  ));
+}
+
+}
+
+
+/// Adds pattern-matching-related methods to [FileBlockerModel].
+extension FileBlockerModelPatterns on FileBlockerModel {
+/// A variant of `map` that fallback to returning `orElse`.
+///
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case final Subclass value:
+///     return ...;
+///   case _:
+///     return orElse();
+/// }
+/// ```
+
+@optionalTypeArgs TResult maybeMap<TResult extends Object?>(TResult Function( _FileBlockerModel value)?  $default,{required TResult orElse(),}){
+final _that = this;
+switch (_that) {
+case _FileBlockerModel() when $default != null:
+return $default(_that);case _:
+  return orElse();
+
+}
+}
+/// A `switch`-like method, using callbacks.
+///
+/// Callbacks receives the raw object, upcasted.
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case final Subclass value:
+///     return ...;
+///   case final Subclass2 value:
+///     return ...;
+/// }
+/// ```
+
+@optionalTypeArgs TResult map<TResult extends Object?>(TResult Function( _FileBlockerModel value)  $default,){
+final _that = this;
+switch (_that) {
+case _FileBlockerModel():
+return $default(_that);case _:
+  throw StateError('Unexpected subclass');
+
+}
+}
+/// A variant of `map` that fallback to returning `null`.
+///
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case final Subclass value:
+///     return ...;
+///   case _:
+///     return null;
+/// }
+/// ```
+
+@optionalTypeArgs TResult? mapOrNull<TResult extends Object?>(TResult? Function( _FileBlockerModel value)?  $default,){
+final _that = this;
+switch (_that) {
+case _FileBlockerModel() when $default != null:
+return $default(_that);case _:
+  return null;
+
+}
+}
+/// A variant of `when` that fallback to an `orElse` callback.
+///
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case Subclass(:final field):
+///     return ...;
+///   case _:
+///     return orElse();
+/// }
+/// ```
+
+@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( String reservationId,  String reference,  String plate,  String returnAt)?  $default,{required TResult orElse(),}) {final _that = this;
+switch (_that) {
+case _FileBlockerModel() when $default != null:
+return $default(_that.reservationId,_that.reference,_that.plate,_that.returnAt);case _:
+  return orElse();
+
+}
+}
+/// A `switch`-like method, using callbacks.
+///
+/// As opposed to `map`, this offers destructuring.
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case Subclass(:final field):
+///     return ...;
+///   case Subclass2(:final field2):
+///     return ...;
+/// }
+/// ```
+
+@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( String reservationId,  String reference,  String plate,  String returnAt)  $default,) {final _that = this;
+switch (_that) {
+case _FileBlockerModel():
+return $default(_that.reservationId,_that.reference,_that.plate,_that.returnAt);case _:
+  throw StateError('Unexpected subclass');
+
+}
+}
+/// A variant of `when` that fallback to returning `null`
+///
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case Subclass(:final field):
+///     return ...;
+///   case _:
+///     return null;
+/// }
+/// ```
+
+@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( String reservationId,  String reference,  String plate,  String returnAt)?  $default,) {final _that = this;
+switch (_that) {
+case _FileBlockerModel() when $default != null:
+return $default(_that.reservationId,_that.reference,_that.plate,_that.returnAt);case _:
+  return null;
+
+}
+}
+
+}
+
+/// @nodoc
+@JsonSerializable()
+
+class _FileBlockerModel implements FileBlockerModel {
+  const _FileBlockerModel({required this.reservationId, required this.reference, required this.plate, required this.returnAt});
+  factory _FileBlockerModel.fromJson(Map<String, dynamic> json) => _$FileBlockerModelFromJson(json);
+
+@override final  String reservationId;
+@override final  String reference;
+@override final  String plate;
+@override final  String returnAt;
+
+/// Create a copy of FileBlockerModel
+/// with the given fields replaced by the non-null parameter values.
+@override @JsonKey(includeFromJson: false, includeToJson: false)
+@pragma('vm:prefer-inline')
+_$FileBlockerModelCopyWith<_FileBlockerModel> get copyWith => __$FileBlockerModelCopyWithImpl<_FileBlockerModel>(this, _$identity);
+
+@override
+Map<String, dynamic> toJson() {
+  return _$FileBlockerModelToJson(this, );
+}
+
+@override
+bool operator ==(Object other) {
+    return identical(this, other) || (other.runtimeType == runtimeType&&other is _FileBlockerModel&&(identical(other.reservationId, reservationId) || other.reservationId == reservationId)&&(identical(other.reference, reference) || other.reference == reference)&&(identical(other.plate, plate) || other.plate == plate)&&(identical(other.returnAt, returnAt) || other.returnAt == returnAt));
+}
+
+@JsonKey(includeFromJson: false, includeToJson: false)
+@override
+int get hashCode {
+    return Object.hash(runtimeType,reservationId,reference,plate,returnAt);
+}
+
+@override
+String toString() {
+    return 'FileBlockerModel(reservationId: $reservationId, reference: $reference, plate: $plate, returnAt: $returnAt)';
+}
+
+
+}
+
+/// @nodoc
+abstract mixin class _$FileBlockerModelCopyWith<$Res> implements $FileBlockerModelCopyWith<$Res> {
+  factory _$FileBlockerModelCopyWith(_FileBlockerModel value, $Res Function(_FileBlockerModel) _then) = __$FileBlockerModelCopyWithImpl;
+@override @useResult
+$Res call({
+ String reservationId, String reference, String plate, String returnAt
+});
+
+
+
+
+}
+/// @nodoc
+class __$FileBlockerModelCopyWithImpl<$Res>
+    implements _$FileBlockerModelCopyWith<$Res> {
+  __$FileBlockerModelCopyWithImpl(this._self, this._then);
+
+  final _FileBlockerModel _self;
+  final $Res Function(_FileBlockerModel) _then;
+
+/// Create a copy of FileBlockerModel
+/// with the given fields replaced by the non-null parameter values.
+@override @pragma('vm:prefer-inline') $Res call({Object? reservationId = null,Object? reference = null,Object? plate = null,Object? returnAt = null,}) {
+  return _then(_FileBlockerModel(
+reservationId: null == reservationId ? _self.reservationId : reservationId // ignore: cast_nullable_to_non_nullable
+as String,reference: null == reference ? _self.reference : reference // ignore: cast_nullable_to_non_nullable
+as String,plate: null == plate ? _self.plate : plate // ignore: cast_nullable_to_non_nullable
+as String,returnAt: null == returnAt ? _self.returnAt : returnAt // ignore: cast_nullable_to_non_nullable
+as String,
+  ));
+}
+
+
+}
+
+
+/// @nodoc
+mixin _$FileChoiceModel {
+
+ String get fileId; String get code; String get reason; int get moves; int get cars; int get capacity; int? get fitMinutes;
+/// Create a copy of FileChoiceModel
+/// with the given fields replaced by the non-null parameter values.
+@JsonKey(includeFromJson: false, includeToJson: false)
+@pragma('vm:prefer-inline')
+$FileChoiceModelCopyWith<FileChoiceModel> get copyWith => _$FileChoiceModelCopyWithImpl<FileChoiceModel>(this as FileChoiceModel, _$identity);
+
+  /// Serializes this FileChoiceModel to a JSON map.
+  Map<String, dynamic> toJson();
+
+
+@override
+bool operator ==(Object other) {
+  final _this = this as FileChoiceModel;
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is FileChoiceModel&&(identical(other.fileId, _this.fileId) || other.fileId == _this.fileId)&&(identical(other.code, _this.code) || other.code == _this.code)&&(identical(other.reason, _this.reason) || other.reason == _this.reason)&&(identical(other.moves, _this.moves) || other.moves == _this.moves)&&(identical(other.cars, _this.cars) || other.cars == _this.cars)&&(identical(other.capacity, _this.capacity) || other.capacity == _this.capacity)&&(identical(other.fitMinutes, _this.fitMinutes) || other.fitMinutes == _this.fitMinutes));
+}
+
+@JsonKey(includeFromJson: false, includeToJson: false)
+@override
+int get hashCode {
+  final _this = this as FileChoiceModel;
+  return Object.hash(runtimeType,_this.fileId,_this.code,_this.reason,_this.moves,_this.cars,_this.capacity,_this.fitMinutes);
+}
+
+@override
+String toString() {
+  final _this = this as FileChoiceModel;
+  return 'FileChoiceModel(fileId: ${_this.fileId}, code: ${_this.code}, reason: ${_this.reason}, moves: ${_this.moves}, cars: ${_this.cars}, capacity: ${_this.capacity}, fitMinutes: ${_this.fitMinutes})';
+}
+
+
+}
+
+/// @nodoc
+abstract mixin class $FileChoiceModelCopyWith<$Res>  {
+  factory $FileChoiceModelCopyWith(FileChoiceModel value, $Res Function(FileChoiceModel) _then) = _$FileChoiceModelCopyWithImpl;
+@useResult
+$Res call({
+ String fileId, String code, String reason, int moves, int cars, int capacity, int? fitMinutes
+});
+
+
+
+
+}
+/// @nodoc
+class _$FileChoiceModelCopyWithImpl<$Res>
+    implements $FileChoiceModelCopyWith<$Res> {
+  _$FileChoiceModelCopyWithImpl(this._self, this._then);
+
+  final FileChoiceModel _self;
+  final $Res Function(FileChoiceModel) _then;
+
+/// Create a copy of FileChoiceModel
+/// with the given fields replaced by the non-null parameter values.
+@pragma('vm:prefer-inline') @override $Res call({Object? fileId = null,Object? code = null,Object? reason = null,Object? moves = null,Object? cars = null,Object? capacity = null,Object? fitMinutes = freezed,}) {
+  return _then(FileChoiceModel(
+fileId: null == fileId ? _self.fileId : fileId // ignore: cast_nullable_to_non_nullable
+as String,code: null == code ? _self.code : code // ignore: cast_nullable_to_non_nullable
+as String,reason: null == reason ? _self.reason : reason // ignore: cast_nullable_to_non_nullable
+as String,moves: null == moves ? _self.moves : moves // ignore: cast_nullable_to_non_nullable
+as int,cars: null == cars ? _self.cars : cars // ignore: cast_nullable_to_non_nullable
+as int,capacity: null == capacity ? _self.capacity : capacity // ignore: cast_nullable_to_non_nullable
+as int,fitMinutes: freezed == fitMinutes ? _self.fitMinutes : fitMinutes // ignore: cast_nullable_to_non_nullable
+as int?,
+  ));
+}
+
+}
+
+
+/// Adds pattern-matching-related methods to [FileChoiceModel].
+extension FileChoiceModelPatterns on FileChoiceModel {
+/// A variant of `map` that fallback to returning `orElse`.
+///
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case final Subclass value:
+///     return ...;
+///   case _:
+///     return orElse();
+/// }
+/// ```
+
+@optionalTypeArgs TResult maybeMap<TResult extends Object?>(TResult Function( _FileChoiceModel value)?  $default,{required TResult orElse(),}){
+final _that = this;
+switch (_that) {
+case _FileChoiceModel() when $default != null:
+return $default(_that);case _:
+  return orElse();
+
+}
+}
+/// A `switch`-like method, using callbacks.
+///
+/// Callbacks receives the raw object, upcasted.
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case final Subclass value:
+///     return ...;
+///   case final Subclass2 value:
+///     return ...;
+/// }
+/// ```
+
+@optionalTypeArgs TResult map<TResult extends Object?>(TResult Function( _FileChoiceModel value)  $default,){
+final _that = this;
+switch (_that) {
+case _FileChoiceModel():
+return $default(_that);case _:
+  throw StateError('Unexpected subclass');
+
+}
+}
+/// A variant of `map` that fallback to returning `null`.
+///
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case final Subclass value:
+///     return ...;
+///   case _:
+///     return null;
+/// }
+/// ```
+
+@optionalTypeArgs TResult? mapOrNull<TResult extends Object?>(TResult? Function( _FileChoiceModel value)?  $default,){
+final _that = this;
+switch (_that) {
+case _FileChoiceModel() when $default != null:
+return $default(_that);case _:
+  return null;
+
+}
+}
+/// A variant of `when` that fallback to an `orElse` callback.
+///
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case Subclass(:final field):
+///     return ...;
+///   case _:
+///     return orElse();
+/// }
+/// ```
+
+@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( String fileId,  String code,  String reason,  int moves,  int cars,  int capacity,  int? fitMinutes)?  $default,{required TResult orElse(),}) {final _that = this;
+switch (_that) {
+case _FileChoiceModel() when $default != null:
+return $default(_that.fileId,_that.code,_that.reason,_that.moves,_that.cars,_that.capacity,_that.fitMinutes);case _:
+  return orElse();
+
+}
+}
+/// A `switch`-like method, using callbacks.
+///
+/// As opposed to `map`, this offers destructuring.
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case Subclass(:final field):
+///     return ...;
+///   case Subclass2(:final field2):
+///     return ...;
+/// }
+/// ```
+
+@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( String fileId,  String code,  String reason,  int moves,  int cars,  int capacity,  int? fitMinutes)  $default,) {final _that = this;
+switch (_that) {
+case _FileChoiceModel():
+return $default(_that.fileId,_that.code,_that.reason,_that.moves,_that.cars,_that.capacity,_that.fitMinutes);case _:
+  throw StateError('Unexpected subclass');
+
+}
+}
+/// A variant of `when` that fallback to returning `null`
+///
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case Subclass(:final field):
+///     return ...;
+///   case _:
+///     return null;
+/// }
+/// ```
+
+@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( String fileId,  String code,  String reason,  int moves,  int cars,  int capacity,  int? fitMinutes)?  $default,) {final _that = this;
+switch (_that) {
+case _FileChoiceModel() when $default != null:
+return $default(_that.fileId,_that.code,_that.reason,_that.moves,_that.cars,_that.capacity,_that.fitMinutes);case _:
+  return null;
+
+}
+}
+
+}
+
+/// @nodoc
+@JsonSerializable()
+
+class _FileChoiceModel implements FileChoiceModel {
+  const _FileChoiceModel({required this.fileId, required this.code, required this.reason, this.moves = 0, this.cars = 0, this.capacity = 0, this.fitMinutes});
+  factory _FileChoiceModel.fromJson(Map<String, dynamic> json) => _$FileChoiceModelFromJson(json);
+
+@override final  String fileId;
+@override final  String code;
+@override final  String reason;
+@override@JsonKey() final  int moves;
+@override@JsonKey() final  int cars;
+@override@JsonKey() final  int capacity;
+@override final  int? fitMinutes;
+
+/// Create a copy of FileChoiceModel
+/// with the given fields replaced by the non-null parameter values.
+@override @JsonKey(includeFromJson: false, includeToJson: false)
+@pragma('vm:prefer-inline')
+_$FileChoiceModelCopyWith<_FileChoiceModel> get copyWith => __$FileChoiceModelCopyWithImpl<_FileChoiceModel>(this, _$identity);
+
+@override
+Map<String, dynamic> toJson() {
+  return _$FileChoiceModelToJson(this, );
+}
+
+@override
+bool operator ==(Object other) {
+    return identical(this, other) || (other.runtimeType == runtimeType&&other is _FileChoiceModel&&(identical(other.fileId, fileId) || other.fileId == fileId)&&(identical(other.code, code) || other.code == code)&&(identical(other.reason, reason) || other.reason == reason)&&(identical(other.moves, moves) || other.moves == moves)&&(identical(other.cars, cars) || other.cars == cars)&&(identical(other.capacity, capacity) || other.capacity == capacity)&&(identical(other.fitMinutes, fitMinutes) || other.fitMinutes == fitMinutes));
+}
+
+@JsonKey(includeFromJson: false, includeToJson: false)
+@override
+int get hashCode {
+    return Object.hash(runtimeType,fileId,code,reason,moves,cars,capacity,fitMinutes);
+}
+
+@override
+String toString() {
+    return 'FileChoiceModel(fileId: $fileId, code: $code, reason: $reason, moves: $moves, cars: $cars, capacity: $capacity, fitMinutes: $fitMinutes)';
+}
+
+
+}
+
+/// @nodoc
+abstract mixin class _$FileChoiceModelCopyWith<$Res> implements $FileChoiceModelCopyWith<$Res> {
+  factory _$FileChoiceModelCopyWith(_FileChoiceModel value, $Res Function(_FileChoiceModel) _then) = __$FileChoiceModelCopyWithImpl;
+@override @useResult
+$Res call({
+ String fileId, String code, String reason, int moves, int cars, int capacity, int? fitMinutes
+});
+
+
+
+
+}
+/// @nodoc
+class __$FileChoiceModelCopyWithImpl<$Res>
+    implements _$FileChoiceModelCopyWith<$Res> {
+  __$FileChoiceModelCopyWithImpl(this._self, this._then);
+
+  final _FileChoiceModel _self;
+  final $Res Function(_FileChoiceModel) _then;
+
+/// Create a copy of FileChoiceModel
+/// with the given fields replaced by the non-null parameter values.
+@override @pragma('vm:prefer-inline') $Res call({Object? fileId = null,Object? code = null,Object? reason = null,Object? moves = null,Object? cars = null,Object? capacity = null,Object? fitMinutes = freezed,}) {
+  return _then(_FileChoiceModel(
+fileId: null == fileId ? _self.fileId : fileId // ignore: cast_nullable_to_non_nullable
+as String,code: null == code ? _self.code : code // ignore: cast_nullable_to_non_nullable
+as String,reason: null == reason ? _self.reason : reason // ignore: cast_nullable_to_non_nullable
+as String,moves: null == moves ? _self.moves : moves // ignore: cast_nullable_to_non_nullable
+as int,cars: null == cars ? _self.cars : cars // ignore: cast_nullable_to_non_nullable
+as int,capacity: null == capacity ? _self.capacity : capacity // ignore: cast_nullable_to_non_nullable
+as int,fitMinutes: freezed == fitMinutes ? _self.fitMinutes : fitMinutes // ignore: cast_nullable_to_non_nullable
+as int?,
+  ));
+}
+
+
+}
+
+
+/// @nodoc
+mixin _$FileViewModel {
+
+ String get id; String get code; String? get name; int get capacity; int get sortOrder; bool get active; String? get plannedDay; String? get day; List<OccupantModel> get cars; int get movesToday; bool get sound;
+/// Create a copy of FileViewModel
+/// with the given fields replaced by the non-null parameter values.
+@JsonKey(includeFromJson: false, includeToJson: false)
+@pragma('vm:prefer-inline')
+$FileViewModelCopyWith<FileViewModel> get copyWith => _$FileViewModelCopyWithImpl<FileViewModel>(this as FileViewModel, _$identity);
+
+  /// Serializes this FileViewModel to a JSON map.
+  Map<String, dynamic> toJson();
+
+
+@override
+bool operator ==(Object other) {
+  final _this = this as FileViewModel;
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is FileViewModel&&(identical(other.id, _this.id) || other.id == _this.id)&&(identical(other.code, _this.code) || other.code == _this.code)&&(identical(other.name, _this.name) || other.name == _this.name)&&(identical(other.capacity, _this.capacity) || other.capacity == _this.capacity)&&(identical(other.sortOrder, _this.sortOrder) || other.sortOrder == _this.sortOrder)&&(identical(other.active, _this.active) || other.active == _this.active)&&(identical(other.plannedDay, _this.plannedDay) || other.plannedDay == _this.plannedDay)&&(identical(other.day, _this.day) || other.day == _this.day)&&const DeepCollectionEquality().equals(other.cars, _this.cars)&&(identical(other.movesToday, _this.movesToday) || other.movesToday == _this.movesToday)&&(identical(other.sound, _this.sound) || other.sound == _this.sound));
+}
+
+@JsonKey(includeFromJson: false, includeToJson: false)
+@override
+int get hashCode {
+  final _this = this as FileViewModel;
+  return Object.hash(runtimeType,_this.id,_this.code,_this.name,_this.capacity,_this.sortOrder,_this.active,_this.plannedDay,_this.day,const DeepCollectionEquality().hash(_this.cars),_this.movesToday,_this.sound);
+}
+
+@override
+String toString() {
+  final _this = this as FileViewModel;
+  return 'FileViewModel(id: ${_this.id}, code: ${_this.code}, name: ${_this.name}, capacity: ${_this.capacity}, sortOrder: ${_this.sortOrder}, active: ${_this.active}, plannedDay: ${_this.plannedDay}, day: ${_this.day}, cars: ${_this.cars}, movesToday: ${_this.movesToday}, sound: ${_this.sound})';
+}
+
+
+}
+
+/// @nodoc
+abstract mixin class $FileViewModelCopyWith<$Res>  {
+  factory $FileViewModelCopyWith(FileViewModel value, $Res Function(FileViewModel) _then) = _$FileViewModelCopyWithImpl;
+@useResult
+$Res call({
+ String id, String code, String? name, int capacity, int sortOrder, bool active, String? plannedDay, String? day, List<OccupantModel> cars, int movesToday, bool sound
+});
+
+
+
+
+}
+/// @nodoc
+class _$FileViewModelCopyWithImpl<$Res>
+    implements $FileViewModelCopyWith<$Res> {
+  _$FileViewModelCopyWithImpl(this._self, this._then);
+
+  final FileViewModel _self;
+  final $Res Function(FileViewModel) _then;
+
+/// Create a copy of FileViewModel
+/// with the given fields replaced by the non-null parameter values.
+@pragma('vm:prefer-inline') @override $Res call({Object? id = null,Object? code = null,Object? name = freezed,Object? capacity = null,Object? sortOrder = null,Object? active = null,Object? plannedDay = freezed,Object? day = freezed,Object? cars = null,Object? movesToday = null,Object? sound = null,}) {
+  return _then(FileViewModel(
+id: null == id ? _self.id : id // ignore: cast_nullable_to_non_nullable
+as String,code: null == code ? _self.code : code // ignore: cast_nullable_to_non_nullable
+as String,name: freezed == name ? _self.name : name // ignore: cast_nullable_to_non_nullable
+as String?,capacity: null == capacity ? _self.capacity : capacity // ignore: cast_nullable_to_non_nullable
+as int,sortOrder: null == sortOrder ? _self.sortOrder : sortOrder // ignore: cast_nullable_to_non_nullable
+as int,active: null == active ? _self.active : active // ignore: cast_nullable_to_non_nullable
+as bool,plannedDay: freezed == plannedDay ? _self.plannedDay : plannedDay // ignore: cast_nullable_to_non_nullable
+as String?,day: freezed == day ? _self.day : day // ignore: cast_nullable_to_non_nullable
+as String?,cars: null == cars ? _self.cars : cars // ignore: cast_nullable_to_non_nullable
+as List<OccupantModel>,movesToday: null == movesToday ? _self.movesToday : movesToday // ignore: cast_nullable_to_non_nullable
+as int,sound: null == sound ? _self.sound : sound // ignore: cast_nullable_to_non_nullable
+as bool,
+  ));
+}
+
+}
+
+
+/// Adds pattern-matching-related methods to [FileViewModel].
+extension FileViewModelPatterns on FileViewModel {
+/// A variant of `map` that fallback to returning `orElse`.
+///
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case final Subclass value:
+///     return ...;
+///   case _:
+///     return orElse();
+/// }
+/// ```
+
+@optionalTypeArgs TResult maybeMap<TResult extends Object?>(TResult Function( _FileViewModel value)?  $default,{required TResult orElse(),}){
+final _that = this;
+switch (_that) {
+case _FileViewModel() when $default != null:
+return $default(_that);case _:
+  return orElse();
+
+}
+}
+/// A `switch`-like method, using callbacks.
+///
+/// Callbacks receives the raw object, upcasted.
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case final Subclass value:
+///     return ...;
+///   case final Subclass2 value:
+///     return ...;
+/// }
+/// ```
+
+@optionalTypeArgs TResult map<TResult extends Object?>(TResult Function( _FileViewModel value)  $default,){
+final _that = this;
+switch (_that) {
+case _FileViewModel():
+return $default(_that);case _:
+  throw StateError('Unexpected subclass');
+
+}
+}
+/// A variant of `map` that fallback to returning `null`.
+///
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case final Subclass value:
+///     return ...;
+///   case _:
+///     return null;
+/// }
+/// ```
+
+@optionalTypeArgs TResult? mapOrNull<TResult extends Object?>(TResult? Function( _FileViewModel value)?  $default,){
+final _that = this;
+switch (_that) {
+case _FileViewModel() when $default != null:
+return $default(_that);case _:
+  return null;
+
+}
+}
+/// A variant of `when` that fallback to an `orElse` callback.
+///
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case Subclass(:final field):
+///     return ...;
+///   case _:
+///     return orElse();
+/// }
+/// ```
+
+@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( String id,  String code,  String? name,  int capacity,  int sortOrder,  bool active,  String? plannedDay,  String? day,  List<OccupantModel> cars,  int movesToday,  bool sound)?  $default,{required TResult orElse(),}) {final _that = this;
+switch (_that) {
+case _FileViewModel() when $default != null:
+return $default(_that.id,_that.code,_that.name,_that.capacity,_that.sortOrder,_that.active,_that.plannedDay,_that.day,_that.cars,_that.movesToday,_that.sound);case _:
+  return orElse();
+
+}
+}
+/// A `switch`-like method, using callbacks.
+///
+/// As opposed to `map`, this offers destructuring.
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case Subclass(:final field):
+///     return ...;
+///   case Subclass2(:final field2):
+///     return ...;
+/// }
+/// ```
+
+@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( String id,  String code,  String? name,  int capacity,  int sortOrder,  bool active,  String? plannedDay,  String? day,  List<OccupantModel> cars,  int movesToday,  bool sound)  $default,) {final _that = this;
+switch (_that) {
+case _FileViewModel():
+return $default(_that.id,_that.code,_that.name,_that.capacity,_that.sortOrder,_that.active,_that.plannedDay,_that.day,_that.cars,_that.movesToday,_that.sound);case _:
+  throw StateError('Unexpected subclass');
+
+}
+}
+/// A variant of `when` that fallback to returning `null`
+///
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case Subclass(:final field):
+///     return ...;
+///   case _:
+///     return null;
+/// }
+/// ```
+
+@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( String id,  String code,  String? name,  int capacity,  int sortOrder,  bool active,  String? plannedDay,  String? day,  List<OccupantModel> cars,  int movesToday,  bool sound)?  $default,) {final _that = this;
+switch (_that) {
+case _FileViewModel() when $default != null:
+return $default(_that.id,_that.code,_that.name,_that.capacity,_that.sortOrder,_that.active,_that.plannedDay,_that.day,_that.cars,_that.movesToday,_that.sound);case _:
+  return null;
+
+}
+}
+
+}
+
+/// @nodoc
+@JsonSerializable()
+
+class _FileViewModel implements FileViewModel {
+  const _FileViewModel({required this.id, required this.code, this.name, required this.capacity, this.sortOrder = 0, this.active = true, this.plannedDay, this.day,  List<OccupantModel> cars = const <OccupantModel>[], this.movesToday = 0, this.sound = true}): _cars = cars;
+  factory _FileViewModel.fromJson(Map<String, dynamic> json) => _$FileViewModelFromJson(json);
+
+@override final  String id;
+@override final  String code;
+@override final  String? name;
+@override final  int capacity;
+@override@JsonKey() final  int sortOrder;
+@override@JsonKey() final  bool active;
+@override final  String? plannedDay;
+@override final  String? day;
+ final  List<OccupantModel> _cars;
+@override@JsonKey() List<OccupantModel> get cars {
+  if (_cars is EqualUnmodifiableListView) return _cars;
+  // ignore: implicit_dynamic_type
+  return EqualUnmodifiableListView(_cars);
+}
+
+@override@JsonKey() final  int movesToday;
+@override@JsonKey() final  bool sound;
+
+/// Create a copy of FileViewModel
+/// with the given fields replaced by the non-null parameter values.
+@override @JsonKey(includeFromJson: false, includeToJson: false)
+@pragma('vm:prefer-inline')
+_$FileViewModelCopyWith<_FileViewModel> get copyWith => __$FileViewModelCopyWithImpl<_FileViewModel>(this, _$identity);
+
+@override
+Map<String, dynamic> toJson() {
+  return _$FileViewModelToJson(this, );
+}
+
+@override
+bool operator ==(Object other) {
+    return identical(this, other) || (other.runtimeType == runtimeType&&other is _FileViewModel&&(identical(other.id, id) || other.id == id)&&(identical(other.code, code) || other.code == code)&&(identical(other.name, name) || other.name == name)&&(identical(other.capacity, capacity) || other.capacity == capacity)&&(identical(other.sortOrder, sortOrder) || other.sortOrder == sortOrder)&&(identical(other.active, active) || other.active == active)&&(identical(other.plannedDay, plannedDay) || other.plannedDay == plannedDay)&&(identical(other.day, day) || other.day == day)&&const DeepCollectionEquality().equals(other.cars, _cars)&&(identical(other.movesToday, movesToday) || other.movesToday == movesToday)&&(identical(other.sound, sound) || other.sound == sound));
+}
+
+@JsonKey(includeFromJson: false, includeToJson: false)
+@override
+int get hashCode {
+    return Object.hash(runtimeType,id,code,name,capacity,sortOrder,active,plannedDay,day,const DeepCollectionEquality().hash(_cars),movesToday,sound);
+}
+
+@override
+String toString() {
+    return 'FileViewModel(id: $id, code: $code, name: $name, capacity: $capacity, sortOrder: $sortOrder, active: $active, plannedDay: $plannedDay, day: $day, cars: $cars, movesToday: $movesToday, sound: $sound)';
+}
+
+
+}
+
+/// @nodoc
+abstract mixin class _$FileViewModelCopyWith<$Res> implements $FileViewModelCopyWith<$Res> {
+  factory _$FileViewModelCopyWith(_FileViewModel value, $Res Function(_FileViewModel) _then) = __$FileViewModelCopyWithImpl;
+@override @useResult
+$Res call({
+ String id, String code, String? name, int capacity, int sortOrder, bool active, String? plannedDay, String? day, List<OccupantModel> cars, int movesToday, bool sound
+});
+
+
+
+
+}
+/// @nodoc
+class __$FileViewModelCopyWithImpl<$Res>
+    implements _$FileViewModelCopyWith<$Res> {
+  __$FileViewModelCopyWithImpl(this._self, this._then);
+
+  final _FileViewModel _self;
+  final $Res Function(_FileViewModel) _then;
+
+/// Create a copy of FileViewModel
+/// with the given fields replaced by the non-null parameter values.
+@override @pragma('vm:prefer-inline') $Res call({Object? id = null,Object? code = null,Object? name = freezed,Object? capacity = null,Object? sortOrder = null,Object? active = null,Object? plannedDay = freezed,Object? day = freezed,Object? cars = null,Object? movesToday = null,Object? sound = null,}) {
+  return _then(_FileViewModel(
+id: null == id ? _self.id : id // ignore: cast_nullable_to_non_nullable
+as String,code: null == code ? _self.code : code // ignore: cast_nullable_to_non_nullable
+as String,name: freezed == name ? _self.name : name // ignore: cast_nullable_to_non_nullable
+as String?,capacity: null == capacity ? _self.capacity : capacity // ignore: cast_nullable_to_non_nullable
+as int,sortOrder: null == sortOrder ? _self.sortOrder : sortOrder // ignore: cast_nullable_to_non_nullable
+as int,active: null == active ? _self.active : active // ignore: cast_nullable_to_non_nullable
+as bool,plannedDay: freezed == plannedDay ? _self.plannedDay : plannedDay // ignore: cast_nullable_to_non_nullable
+as String?,day: freezed == day ? _self.day : day // ignore: cast_nullable_to_non_nullable
+as String?,cars: null == cars ? _self._cars : cars // ignore: cast_nullable_to_non_nullable
+as List<OccupantModel>,movesToday: null == movesToday ? _self.movesToday : movesToday // ignore: cast_nullable_to_non_nullable
+as int,sound: null == sound ? _self.sound : sound // ignore: cast_nullable_to_non_nullable
+as bool,
+  ));
+}
+
+
+}
+
+
+/// @nodoc
+mixin _$FileStatsModel {
+
+ int get files; int get capacity; int get cars; int get onSite; int get leavingToday; int get movesToday; int get unsound;
+/// Create a copy of FileStatsModel
+/// with the given fields replaced by the non-null parameter values.
+@JsonKey(includeFromJson: false, includeToJson: false)
+@pragma('vm:prefer-inline')
+$FileStatsModelCopyWith<FileStatsModel> get copyWith => _$FileStatsModelCopyWithImpl<FileStatsModel>(this as FileStatsModel, _$identity);
+
+  /// Serializes this FileStatsModel to a JSON map.
+  Map<String, dynamic> toJson();
+
+
+@override
+bool operator ==(Object other) {
+  final _this = this as FileStatsModel;
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is FileStatsModel&&(identical(other.files, _this.files) || other.files == _this.files)&&(identical(other.capacity, _this.capacity) || other.capacity == _this.capacity)&&(identical(other.cars, _this.cars) || other.cars == _this.cars)&&(identical(other.onSite, _this.onSite) || other.onSite == _this.onSite)&&(identical(other.leavingToday, _this.leavingToday) || other.leavingToday == _this.leavingToday)&&(identical(other.movesToday, _this.movesToday) || other.movesToday == _this.movesToday)&&(identical(other.unsound, _this.unsound) || other.unsound == _this.unsound));
+}
+
+@JsonKey(includeFromJson: false, includeToJson: false)
+@override
+int get hashCode {
+  final _this = this as FileStatsModel;
+  return Object.hash(runtimeType,_this.files,_this.capacity,_this.cars,_this.onSite,_this.leavingToday,_this.movesToday,_this.unsound);
+}
+
+@override
+String toString() {
+  final _this = this as FileStatsModel;
+  return 'FileStatsModel(files: ${_this.files}, capacity: ${_this.capacity}, cars: ${_this.cars}, onSite: ${_this.onSite}, leavingToday: ${_this.leavingToday}, movesToday: ${_this.movesToday}, unsound: ${_this.unsound})';
+}
+
+
+}
+
+/// @nodoc
+abstract mixin class $FileStatsModelCopyWith<$Res>  {
+  factory $FileStatsModelCopyWith(FileStatsModel value, $Res Function(FileStatsModel) _then) = _$FileStatsModelCopyWithImpl;
+@useResult
+$Res call({
+ int files, int capacity, int cars, int onSite, int leavingToday, int movesToday, int unsound
+});
+
+
+
+
+}
+/// @nodoc
+class _$FileStatsModelCopyWithImpl<$Res>
+    implements $FileStatsModelCopyWith<$Res> {
+  _$FileStatsModelCopyWithImpl(this._self, this._then);
+
+  final FileStatsModel _self;
+  final $Res Function(FileStatsModel) _then;
+
+/// Create a copy of FileStatsModel
+/// with the given fields replaced by the non-null parameter values.
+@pragma('vm:prefer-inline') @override $Res call({Object? files = null,Object? capacity = null,Object? cars = null,Object? onSite = null,Object? leavingToday = null,Object? movesToday = null,Object? unsound = null,}) {
+  return _then(FileStatsModel(
+files: null == files ? _self.files : files // ignore: cast_nullable_to_non_nullable
+as int,capacity: null == capacity ? _self.capacity : capacity // ignore: cast_nullable_to_non_nullable
+as int,cars: null == cars ? _self.cars : cars // ignore: cast_nullable_to_non_nullable
+as int,onSite: null == onSite ? _self.onSite : onSite // ignore: cast_nullable_to_non_nullable
+as int,leavingToday: null == leavingToday ? _self.leavingToday : leavingToday // ignore: cast_nullable_to_non_nullable
+as int,movesToday: null == movesToday ? _self.movesToday : movesToday // ignore: cast_nullable_to_non_nullable
+as int,unsound: null == unsound ? _self.unsound : unsound // ignore: cast_nullable_to_non_nullable
+as int,
+  ));
+}
+
+}
+
+
+/// Adds pattern-matching-related methods to [FileStatsModel].
+extension FileStatsModelPatterns on FileStatsModel {
+/// A variant of `map` that fallback to returning `orElse`.
+///
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case final Subclass value:
+///     return ...;
+///   case _:
+///     return orElse();
+/// }
+/// ```
+
+@optionalTypeArgs TResult maybeMap<TResult extends Object?>(TResult Function( _FileStatsModel value)?  $default,{required TResult orElse(),}){
+final _that = this;
+switch (_that) {
+case _FileStatsModel() when $default != null:
+return $default(_that);case _:
+  return orElse();
+
+}
+}
+/// A `switch`-like method, using callbacks.
+///
+/// Callbacks receives the raw object, upcasted.
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case final Subclass value:
+///     return ...;
+///   case final Subclass2 value:
+///     return ...;
+/// }
+/// ```
+
+@optionalTypeArgs TResult map<TResult extends Object?>(TResult Function( _FileStatsModel value)  $default,){
+final _that = this;
+switch (_that) {
+case _FileStatsModel():
+return $default(_that);case _:
+  throw StateError('Unexpected subclass');
+
+}
+}
+/// A variant of `map` that fallback to returning `null`.
+///
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case final Subclass value:
+///     return ...;
+///   case _:
+///     return null;
+/// }
+/// ```
+
+@optionalTypeArgs TResult? mapOrNull<TResult extends Object?>(TResult? Function( _FileStatsModel value)?  $default,){
+final _that = this;
+switch (_that) {
+case _FileStatsModel() when $default != null:
+return $default(_that);case _:
+  return null;
+
+}
+}
+/// A variant of `when` that fallback to an `orElse` callback.
+///
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case Subclass(:final field):
+///     return ...;
+///   case _:
+///     return orElse();
+/// }
+/// ```
+
+@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( int files,  int capacity,  int cars,  int onSite,  int leavingToday,  int movesToday,  int unsound)?  $default,{required TResult orElse(),}) {final _that = this;
+switch (_that) {
+case _FileStatsModel() when $default != null:
+return $default(_that.files,_that.capacity,_that.cars,_that.onSite,_that.leavingToday,_that.movesToday,_that.unsound);case _:
+  return orElse();
+
+}
+}
+/// A `switch`-like method, using callbacks.
+///
+/// As opposed to `map`, this offers destructuring.
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case Subclass(:final field):
+///     return ...;
+///   case Subclass2(:final field2):
+///     return ...;
+/// }
+/// ```
+
+@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( int files,  int capacity,  int cars,  int onSite,  int leavingToday,  int movesToday,  int unsound)  $default,) {final _that = this;
+switch (_that) {
+case _FileStatsModel():
+return $default(_that.files,_that.capacity,_that.cars,_that.onSite,_that.leavingToday,_that.movesToday,_that.unsound);case _:
+  throw StateError('Unexpected subclass');
+
+}
+}
+/// A variant of `when` that fallback to returning `null`
+///
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case Subclass(:final field):
+///     return ...;
+///   case _:
+///     return null;
+/// }
+/// ```
+
+@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( int files,  int capacity,  int cars,  int onSite,  int leavingToday,  int movesToday,  int unsound)?  $default,) {final _that = this;
+switch (_that) {
+case _FileStatsModel() when $default != null:
+return $default(_that.files,_that.capacity,_that.cars,_that.onSite,_that.leavingToday,_that.movesToday,_that.unsound);case _:
+  return null;
+
+}
+}
+
+}
+
+/// @nodoc
+@JsonSerializable()
+
+class _FileStatsModel implements FileStatsModel {
+  const _FileStatsModel({this.files = 0, this.capacity = 0, this.cars = 0, this.onSite = 0, this.leavingToday = 0, this.movesToday = 0, this.unsound = 0});
+  factory _FileStatsModel.fromJson(Map<String, dynamic> json) => _$FileStatsModelFromJson(json);
+
+@override@JsonKey() final  int files;
+@override@JsonKey() final  int capacity;
+@override@JsonKey() final  int cars;
+@override@JsonKey() final  int onSite;
+@override@JsonKey() final  int leavingToday;
+@override@JsonKey() final  int movesToday;
+@override@JsonKey() final  int unsound;
+
+/// Create a copy of FileStatsModel
+/// with the given fields replaced by the non-null parameter values.
+@override @JsonKey(includeFromJson: false, includeToJson: false)
+@pragma('vm:prefer-inline')
+_$FileStatsModelCopyWith<_FileStatsModel> get copyWith => __$FileStatsModelCopyWithImpl<_FileStatsModel>(this, _$identity);
+
+@override
+Map<String, dynamic> toJson() {
+  return _$FileStatsModelToJson(this, );
+}
+
+@override
+bool operator ==(Object other) {
+    return identical(this, other) || (other.runtimeType == runtimeType&&other is _FileStatsModel&&(identical(other.files, files) || other.files == files)&&(identical(other.capacity, capacity) || other.capacity == capacity)&&(identical(other.cars, cars) || other.cars == cars)&&(identical(other.onSite, onSite) || other.onSite == onSite)&&(identical(other.leavingToday, leavingToday) || other.leavingToday == leavingToday)&&(identical(other.movesToday, movesToday) || other.movesToday == movesToday)&&(identical(other.unsound, unsound) || other.unsound == unsound));
+}
+
+@JsonKey(includeFromJson: false, includeToJson: false)
+@override
+int get hashCode {
+    return Object.hash(runtimeType,files,capacity,cars,onSite,leavingToday,movesToday,unsound);
+}
+
+@override
+String toString() {
+    return 'FileStatsModel(files: $files, capacity: $capacity, cars: $cars, onSite: $onSite, leavingToday: $leavingToday, movesToday: $movesToday, unsound: $unsound)';
+}
+
+
+}
+
+/// @nodoc
+abstract mixin class _$FileStatsModelCopyWith<$Res> implements $FileStatsModelCopyWith<$Res> {
+  factory _$FileStatsModelCopyWith(_FileStatsModel value, $Res Function(_FileStatsModel) _then) = __$FileStatsModelCopyWithImpl;
+@override @useResult
+$Res call({
+ int files, int capacity, int cars, int onSite, int leavingToday, int movesToday, int unsound
+});
+
+
+
+
+}
+/// @nodoc
+class __$FileStatsModelCopyWithImpl<$Res>
+    implements _$FileStatsModelCopyWith<$Res> {
+  __$FileStatsModelCopyWithImpl(this._self, this._then);
+
+  final _FileStatsModel _self;
+  final $Res Function(_FileStatsModel) _then;
+
+/// Create a copy of FileStatsModel
+/// with the given fields replaced by the non-null parameter values.
+@override @pragma('vm:prefer-inline') $Res call({Object? files = null,Object? capacity = null,Object? cars = null,Object? onSite = null,Object? leavingToday = null,Object? movesToday = null,Object? unsound = null,}) {
+  return _then(_FileStatsModel(
+files: null == files ? _self.files : files // ignore: cast_nullable_to_non_nullable
+as int,capacity: null == capacity ? _self.capacity : capacity // ignore: cast_nullable_to_non_nullable
+as int,cars: null == cars ? _self.cars : cars // ignore: cast_nullable_to_non_nullable
+as int,onSite: null == onSite ? _self.onSite : onSite // ignore: cast_nullable_to_non_nullable
+as int,leavingToday: null == leavingToday ? _self.leavingToday : leavingToday // ignore: cast_nullable_to_non_nullable
+as int,movesToday: null == movesToday ? _self.movesToday : movesToday // ignore: cast_nullable_to_non_nullable
+as int,unsound: null == unsound ? _self.unsound : unsound // ignore: cast_nullable_to_non_nullable
+as int,
+  ));
+}
+
+
+}
+
+
+/// @nodoc
+mixin _$FileBoardModel {
+
+ String get date; List<FileViewModel> get files; List<OccupantModel> get arrivals; FileStatsModel get stats;
+/// Create a copy of FileBoardModel
+/// with the given fields replaced by the non-null parameter values.
+@JsonKey(includeFromJson: false, includeToJson: false)
+@pragma('vm:prefer-inline')
+$FileBoardModelCopyWith<FileBoardModel> get copyWith => _$FileBoardModelCopyWithImpl<FileBoardModel>(this as FileBoardModel, _$identity);
+
+  /// Serializes this FileBoardModel to a JSON map.
+  Map<String, dynamic> toJson();
+
+
+@override
+bool operator ==(Object other) {
+  final _this = this as FileBoardModel;
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is FileBoardModel&&(identical(other.date, _this.date) || other.date == _this.date)&&const DeepCollectionEquality().equals(other.files, _this.files)&&const DeepCollectionEquality().equals(other.arrivals, _this.arrivals)&&(identical(other.stats, _this.stats) || other.stats == _this.stats));
+}
+
+@JsonKey(includeFromJson: false, includeToJson: false)
+@override
+int get hashCode {
+  final _this = this as FileBoardModel;
+  return Object.hash(runtimeType,_this.date,const DeepCollectionEquality().hash(_this.files),const DeepCollectionEquality().hash(_this.arrivals),_this.stats);
+}
+
+@override
+String toString() {
+  final _this = this as FileBoardModel;
+  return 'FileBoardModel(date: ${_this.date}, files: ${_this.files}, arrivals: ${_this.arrivals}, stats: ${_this.stats})';
+}
+
+
+}
+
+/// @nodoc
+abstract mixin class $FileBoardModelCopyWith<$Res>  {
+  factory $FileBoardModelCopyWith(FileBoardModel value, $Res Function(FileBoardModel) _then) = _$FileBoardModelCopyWithImpl;
+@useResult
+$Res call({
+ String date, List<FileViewModel> files, List<OccupantModel> arrivals, FileStatsModel stats
+});
+
+
+$FileStatsModelCopyWith<$Res> get stats;
+
+}
+/// @nodoc
+class _$FileBoardModelCopyWithImpl<$Res>
+    implements $FileBoardModelCopyWith<$Res> {
+  _$FileBoardModelCopyWithImpl(this._self, this._then);
+
+  final FileBoardModel _self;
+  final $Res Function(FileBoardModel) _then;
+
+/// Create a copy of FileBoardModel
+/// with the given fields replaced by the non-null parameter values.
+@pragma('vm:prefer-inline') @override $Res call({Object? date = null,Object? files = null,Object? arrivals = null,Object? stats = null,}) {
+  return _then(FileBoardModel(
+date: null == date ? _self.date : date // ignore: cast_nullable_to_non_nullable
+as String,files: null == files ? _self.files : files // ignore: cast_nullable_to_non_nullable
+as List<FileViewModel>,arrivals: null == arrivals ? _self.arrivals : arrivals // ignore: cast_nullable_to_non_nullable
+as List<OccupantModel>,stats: null == stats ? _self.stats : stats // ignore: cast_nullable_to_non_nullable
+as FileStatsModel,
+  ));
+}
+/// Create a copy of FileBoardModel
+/// with the given fields replaced by the non-null parameter values.
+@override
+@pragma('vm:prefer-inline')
+$FileStatsModelCopyWith<$Res> get stats {
+  
+  return $FileStatsModelCopyWith<$Res>(_self.stats, (value) {
+    return _then(_self.copyWith(stats: value));
+  });
+}
+}
+
+
+/// Adds pattern-matching-related methods to [FileBoardModel].
+extension FileBoardModelPatterns on FileBoardModel {
+/// A variant of `map` that fallback to returning `orElse`.
+///
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case final Subclass value:
+///     return ...;
+///   case _:
+///     return orElse();
+/// }
+/// ```
+
+@optionalTypeArgs TResult maybeMap<TResult extends Object?>(TResult Function( _FileBoardModel value)?  $default,{required TResult orElse(),}){
+final _that = this;
+switch (_that) {
+case _FileBoardModel() when $default != null:
+return $default(_that);case _:
+  return orElse();
+
+}
+}
+/// A `switch`-like method, using callbacks.
+///
+/// Callbacks receives the raw object, upcasted.
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case final Subclass value:
+///     return ...;
+///   case final Subclass2 value:
+///     return ...;
+/// }
+/// ```
+
+@optionalTypeArgs TResult map<TResult extends Object?>(TResult Function( _FileBoardModel value)  $default,){
+final _that = this;
+switch (_that) {
+case _FileBoardModel():
+return $default(_that);case _:
+  throw StateError('Unexpected subclass');
+
+}
+}
+/// A variant of `map` that fallback to returning `null`.
+///
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case final Subclass value:
+///     return ...;
+///   case _:
+///     return null;
+/// }
+/// ```
+
+@optionalTypeArgs TResult? mapOrNull<TResult extends Object?>(TResult? Function( _FileBoardModel value)?  $default,){
+final _that = this;
+switch (_that) {
+case _FileBoardModel() when $default != null:
+return $default(_that);case _:
+  return null;
+
+}
+}
+/// A variant of `when` that fallback to an `orElse` callback.
+///
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case Subclass(:final field):
+///     return ...;
+///   case _:
+///     return orElse();
+/// }
+/// ```
+
+@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( String date,  List<FileViewModel> files,  List<OccupantModel> arrivals,  FileStatsModel stats)?  $default,{required TResult orElse(),}) {final _that = this;
+switch (_that) {
+case _FileBoardModel() when $default != null:
+return $default(_that.date,_that.files,_that.arrivals,_that.stats);case _:
+  return orElse();
+
+}
+}
+/// A `switch`-like method, using callbacks.
+///
+/// As opposed to `map`, this offers destructuring.
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case Subclass(:final field):
+///     return ...;
+///   case Subclass2(:final field2):
+///     return ...;
+/// }
+/// ```
+
+@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( String date,  List<FileViewModel> files,  List<OccupantModel> arrivals,  FileStatsModel stats)  $default,) {final _that = this;
+switch (_that) {
+case _FileBoardModel():
+return $default(_that.date,_that.files,_that.arrivals,_that.stats);case _:
+  throw StateError('Unexpected subclass');
+
+}
+}
+/// A variant of `when` that fallback to returning `null`
+///
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case Subclass(:final field):
+///     return ...;
+///   case _:
+///     return null;
+/// }
+/// ```
+
+@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( String date,  List<FileViewModel> files,  List<OccupantModel> arrivals,  FileStatsModel stats)?  $default,) {final _that = this;
+switch (_that) {
+case _FileBoardModel() when $default != null:
+return $default(_that.date,_that.files,_that.arrivals,_that.stats);case _:
+  return null;
+
+}
+}
+
+}
+
+/// @nodoc
+@JsonSerializable()
+
+class _FileBoardModel implements FileBoardModel {
+  const _FileBoardModel({required this.date,  List<FileViewModel> files = const <FileViewModel>[],  List<OccupantModel> arrivals = const <OccupantModel>[], this.stats = const FileStatsModel()}): _files = files,_arrivals = arrivals;
+  factory _FileBoardModel.fromJson(Map<String, dynamic> json) => _$FileBoardModelFromJson(json);
+
+@override final  String date;
+ final  List<FileViewModel> _files;
+@override@JsonKey() List<FileViewModel> get files {
+  if (_files is EqualUnmodifiableListView) return _files;
+  // ignore: implicit_dynamic_type
+  return EqualUnmodifiableListView(_files);
+}
+
+ final  List<OccupantModel> _arrivals;
+@override@JsonKey() List<OccupantModel> get arrivals {
+  if (_arrivals is EqualUnmodifiableListView) return _arrivals;
+  // ignore: implicit_dynamic_type
+  return EqualUnmodifiableListView(_arrivals);
+}
+
+@override@JsonKey() final  FileStatsModel stats;
+
+/// Create a copy of FileBoardModel
+/// with the given fields replaced by the non-null parameter values.
+@override @JsonKey(includeFromJson: false, includeToJson: false)
+@pragma('vm:prefer-inline')
+_$FileBoardModelCopyWith<_FileBoardModel> get copyWith => __$FileBoardModelCopyWithImpl<_FileBoardModel>(this, _$identity);
+
+@override
+Map<String, dynamic> toJson() {
+  return _$FileBoardModelToJson(this, );
+}
+
+@override
+bool operator ==(Object other) {
+    return identical(this, other) || (other.runtimeType == runtimeType&&other is _FileBoardModel&&(identical(other.date, date) || other.date == date)&&const DeepCollectionEquality().equals(other.files, _files)&&const DeepCollectionEquality().equals(other.arrivals, _arrivals)&&(identical(other.stats, stats) || other.stats == stats));
+}
+
+@JsonKey(includeFromJson: false, includeToJson: false)
+@override
+int get hashCode {
+    return Object.hash(runtimeType,date,const DeepCollectionEquality().hash(_files),const DeepCollectionEquality().hash(_arrivals),stats);
+}
+
+@override
+String toString() {
+    return 'FileBoardModel(date: $date, files: $files, arrivals: $arrivals, stats: $stats)';
+}
+
+
+}
+
+/// @nodoc
+abstract mixin class _$FileBoardModelCopyWith<$Res> implements $FileBoardModelCopyWith<$Res> {
+  factory _$FileBoardModelCopyWith(_FileBoardModel value, $Res Function(_FileBoardModel) _then) = __$FileBoardModelCopyWithImpl;
+@override @useResult
+$Res call({
+ String date, List<FileViewModel> files, List<OccupantModel> arrivals, FileStatsModel stats
+});
+
+
+@override $FileStatsModelCopyWith<$Res> get stats;
+
+}
+/// @nodoc
+class __$FileBoardModelCopyWithImpl<$Res>
+    implements _$FileBoardModelCopyWith<$Res> {
+  __$FileBoardModelCopyWithImpl(this._self, this._then);
+
+  final _FileBoardModel _self;
+  final $Res Function(_FileBoardModel) _then;
+
+/// Create a copy of FileBoardModel
+/// with the given fields replaced by the non-null parameter values.
+@override @pragma('vm:prefer-inline') $Res call({Object? date = null,Object? files = null,Object? arrivals = null,Object? stats = null,}) {
+  return _then(_FileBoardModel(
+date: null == date ? _self.date : date // ignore: cast_nullable_to_non_nullable
+as String,files: null == files ? _self._files : files // ignore: cast_nullable_to_non_nullable
+as List<FileViewModel>,arrivals: null == arrivals ? _self._arrivals : arrivals // ignore: cast_nullable_to_non_nullable
+as List<OccupantModel>,stats: null == stats ? _self.stats : stats // ignore: cast_nullable_to_non_nullable
+as FileStatsModel,
+  ));
+}
+
+/// Create a copy of FileBoardModel
+/// with the given fields replaced by the non-null parameter values.
+@override
+@pragma('vm:prefer-inline')
+$FileStatsModelCopyWith<$Res> get stats {
+  
+  return $FileStatsModelCopyWith<$Res>(_self.stats, (value) {
+    return _then(_self.copyWith(stats: value));
+  });
+}
+}
+
+
+/// @nodoc
+mixin _$FilesPreparedModel {
+
+ int get planned; int get free;
+/// Create a copy of FilesPreparedModel
+/// with the given fields replaced by the non-null parameter values.
+@JsonKey(includeFromJson: false, includeToJson: false)
+@pragma('vm:prefer-inline')
+$FilesPreparedModelCopyWith<FilesPreparedModel> get copyWith => _$FilesPreparedModelCopyWithImpl<FilesPreparedModel>(this as FilesPreparedModel, _$identity);
+
+  /// Serializes this FilesPreparedModel to a JSON map.
+  Map<String, dynamic> toJson();
+
+
+@override
+bool operator ==(Object other) {
+  final _this = this as FilesPreparedModel;
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is FilesPreparedModel&&(identical(other.planned, _this.planned) || other.planned == _this.planned)&&(identical(other.free, _this.free) || other.free == _this.free));
+}
+
+@JsonKey(includeFromJson: false, includeToJson: false)
+@override
+int get hashCode {
+  final _this = this as FilesPreparedModel;
+  return Object.hash(runtimeType,_this.planned,_this.free);
+}
+
+@override
+String toString() {
+  final _this = this as FilesPreparedModel;
+  return 'FilesPreparedModel(planned: ${_this.planned}, free: ${_this.free})';
+}
+
+
+}
+
+/// @nodoc
+abstract mixin class $FilesPreparedModelCopyWith<$Res>  {
+  factory $FilesPreparedModelCopyWith(FilesPreparedModel value, $Res Function(FilesPreparedModel) _then) = _$FilesPreparedModelCopyWithImpl;
+@useResult
+$Res call({
+ int planned, int free
+});
+
+
+
+
+}
+/// @nodoc
+class _$FilesPreparedModelCopyWithImpl<$Res>
+    implements $FilesPreparedModelCopyWith<$Res> {
+  _$FilesPreparedModelCopyWithImpl(this._self, this._then);
+
+  final FilesPreparedModel _self;
+  final $Res Function(FilesPreparedModel) _then;
+
+/// Create a copy of FilesPreparedModel
+/// with the given fields replaced by the non-null parameter values.
+@pragma('vm:prefer-inline') @override $Res call({Object? planned = null,Object? free = null,}) {
+  return _then(FilesPreparedModel(
+planned: null == planned ? _self.planned : planned // ignore: cast_nullable_to_non_nullable
+as int,free: null == free ? _self.free : free // ignore: cast_nullable_to_non_nullable
+as int,
+  ));
+}
+
+}
+
+
+/// Adds pattern-matching-related methods to [FilesPreparedModel].
+extension FilesPreparedModelPatterns on FilesPreparedModel {
+/// A variant of `map` that fallback to returning `orElse`.
+///
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case final Subclass value:
+///     return ...;
+///   case _:
+///     return orElse();
+/// }
+/// ```
+
+@optionalTypeArgs TResult maybeMap<TResult extends Object?>(TResult Function( _FilesPreparedModel value)?  $default,{required TResult orElse(),}){
+final _that = this;
+switch (_that) {
+case _FilesPreparedModel() when $default != null:
+return $default(_that);case _:
+  return orElse();
+
+}
+}
+/// A `switch`-like method, using callbacks.
+///
+/// Callbacks receives the raw object, upcasted.
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case final Subclass value:
+///     return ...;
+///   case final Subclass2 value:
+///     return ...;
+/// }
+/// ```
+
+@optionalTypeArgs TResult map<TResult extends Object?>(TResult Function( _FilesPreparedModel value)  $default,){
+final _that = this;
+switch (_that) {
+case _FilesPreparedModel():
+return $default(_that);case _:
+  throw StateError('Unexpected subclass');
+
+}
+}
+/// A variant of `map` that fallback to returning `null`.
+///
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case final Subclass value:
+///     return ...;
+///   case _:
+///     return null;
+/// }
+/// ```
+
+@optionalTypeArgs TResult? mapOrNull<TResult extends Object?>(TResult? Function( _FilesPreparedModel value)?  $default,){
+final _that = this;
+switch (_that) {
+case _FilesPreparedModel() when $default != null:
+return $default(_that);case _:
+  return null;
+
+}
+}
+/// A variant of `when` that fallback to an `orElse` callback.
+///
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case Subclass(:final field):
+///     return ...;
+///   case _:
+///     return orElse();
+/// }
+/// ```
+
+@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( int planned,  int free)?  $default,{required TResult orElse(),}) {final _that = this;
+switch (_that) {
+case _FilesPreparedModel() when $default != null:
+return $default(_that.planned,_that.free);case _:
+  return orElse();
+
+}
+}
+/// A `switch`-like method, using callbacks.
+///
+/// As opposed to `map`, this offers destructuring.
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case Subclass(:final field):
+///     return ...;
+///   case Subclass2(:final field2):
+///     return ...;
+/// }
+/// ```
+
+@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( int planned,  int free)  $default,) {final _that = this;
+switch (_that) {
+case _FilesPreparedModel():
+return $default(_that.planned,_that.free);case _:
+  throw StateError('Unexpected subclass');
+
+}
+}
+/// A variant of `when` that fallback to returning `null`
+///
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case Subclass(:final field):
+///     return ...;
+///   case _:
+///     return null;
+/// }
+/// ```
+
+@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( int planned,  int free)?  $default,) {final _that = this;
+switch (_that) {
+case _FilesPreparedModel() when $default != null:
+return $default(_that.planned,_that.free);case _:
+  return null;
+
+}
+}
+
+}
+
+/// @nodoc
+@JsonSerializable()
+
+class _FilesPreparedModel implements FilesPreparedModel {
+  const _FilesPreparedModel({this.planned = 0, this.free = 0});
+  factory _FilesPreparedModel.fromJson(Map<String, dynamic> json) => _$FilesPreparedModelFromJson(json);
+
+@override@JsonKey() final  int planned;
+@override@JsonKey() final  int free;
+
+/// Create a copy of FilesPreparedModel
+/// with the given fields replaced by the non-null parameter values.
+@override @JsonKey(includeFromJson: false, includeToJson: false)
+@pragma('vm:prefer-inline')
+_$FilesPreparedModelCopyWith<_FilesPreparedModel> get copyWith => __$FilesPreparedModelCopyWithImpl<_FilesPreparedModel>(this, _$identity);
+
+@override
+Map<String, dynamic> toJson() {
+  return _$FilesPreparedModelToJson(this, );
+}
+
+@override
+bool operator ==(Object other) {
+    return identical(this, other) || (other.runtimeType == runtimeType&&other is _FilesPreparedModel&&(identical(other.planned, planned) || other.planned == planned)&&(identical(other.free, free) || other.free == free));
+}
+
+@JsonKey(includeFromJson: false, includeToJson: false)
+@override
+int get hashCode {
+    return Object.hash(runtimeType,planned,free);
+}
+
+@override
+String toString() {
+    return 'FilesPreparedModel(planned: $planned, free: $free)';
+}
+
+
+}
+
+/// @nodoc
+abstract mixin class _$FilesPreparedModelCopyWith<$Res> implements $FilesPreparedModelCopyWith<$Res> {
+  factory _$FilesPreparedModelCopyWith(_FilesPreparedModel value, $Res Function(_FilesPreparedModel) _then) = __$FilesPreparedModelCopyWithImpl;
+@override @useResult
+$Res call({
+ int planned, int free
+});
+
+
+
+
+}
+/// @nodoc
+class __$FilesPreparedModelCopyWithImpl<$Res>
+    implements _$FilesPreparedModelCopyWith<$Res> {
+  __$FilesPreparedModelCopyWithImpl(this._self, this._then);
+
+  final _FilesPreparedModel _self;
+  final $Res Function(_FilesPreparedModel) _then;
+
+/// Create a copy of FilesPreparedModel
+/// with the given fields replaced by the non-null parameter values.
+@override @pragma('vm:prefer-inline') $Res call({Object? planned = null,Object? free = null,}) {
+  return _then(_FilesPreparedModel(
+planned: null == planned ? _self.planned : planned // ignore: cast_nullable_to_non_nullable
+as int,free: null == free ? _self.free : free // ignore: cast_nullable_to_non_nullable
+as int,
+  ));
+}
+
+
+}
+
+
+/// @nodoc
+mixin _$FilesPreparedResponse {
+
+ FilesPreparedModel get data;
+/// Create a copy of FilesPreparedResponse
+/// with the given fields replaced by the non-null parameter values.
+@JsonKey(includeFromJson: false, includeToJson: false)
+@pragma('vm:prefer-inline')
+$FilesPreparedResponseCopyWith<FilesPreparedResponse> get copyWith => _$FilesPreparedResponseCopyWithImpl<FilesPreparedResponse>(this as FilesPreparedResponse, _$identity);
+
+  /// Serializes this FilesPreparedResponse to a JSON map.
+  Map<String, dynamic> toJson();
+
+
+@override
+bool operator ==(Object other) {
+  final _this = this as FilesPreparedResponse;
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is FilesPreparedResponse&&(identical(other.data, _this.data) || other.data == _this.data));
+}
+
+@JsonKey(includeFromJson: false, includeToJson: false)
+@override
+int get hashCode {
+  final _this = this as FilesPreparedResponse;
+  return Object.hash(runtimeType,_this.data);
+}
+
+@override
+String toString() {
+  final _this = this as FilesPreparedResponse;
+  return 'FilesPreparedResponse(data: ${_this.data})';
+}
+
+
+}
+
+/// @nodoc
+abstract mixin class $FilesPreparedResponseCopyWith<$Res>  {
+  factory $FilesPreparedResponseCopyWith(FilesPreparedResponse value, $Res Function(FilesPreparedResponse) _then) = _$FilesPreparedResponseCopyWithImpl;
+@useResult
+$Res call({
+ FilesPreparedModel data
+});
+
+
+$FilesPreparedModelCopyWith<$Res> get data;
+
+}
+/// @nodoc
+class _$FilesPreparedResponseCopyWithImpl<$Res>
+    implements $FilesPreparedResponseCopyWith<$Res> {
+  _$FilesPreparedResponseCopyWithImpl(this._self, this._then);
+
+  final FilesPreparedResponse _self;
+  final $Res Function(FilesPreparedResponse) _then;
+
+/// Create a copy of FilesPreparedResponse
+/// with the given fields replaced by the non-null parameter values.
+@pragma('vm:prefer-inline') @override $Res call({Object? data = null,}) {
+  return _then(FilesPreparedResponse(
+data: null == data ? _self.data : data // ignore: cast_nullable_to_non_nullable
+as FilesPreparedModel,
+  ));
+}
+/// Create a copy of FilesPreparedResponse
+/// with the given fields replaced by the non-null parameter values.
+@override
+@pragma('vm:prefer-inline')
+$FilesPreparedModelCopyWith<$Res> get data {
+  
+  return $FilesPreparedModelCopyWith<$Res>(_self.data, (value) {
+    return _then(_self.copyWith(data: value));
+  });
+}
+}
+
+
+/// Adds pattern-matching-related methods to [FilesPreparedResponse].
+extension FilesPreparedResponsePatterns on FilesPreparedResponse {
+/// A variant of `map` that fallback to returning `orElse`.
+///
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case final Subclass value:
+///     return ...;
+///   case _:
+///     return orElse();
+/// }
+/// ```
+
+@optionalTypeArgs TResult maybeMap<TResult extends Object?>(TResult Function( _FilesPreparedResponse value)?  $default,{required TResult orElse(),}){
+final _that = this;
+switch (_that) {
+case _FilesPreparedResponse() when $default != null:
+return $default(_that);case _:
+  return orElse();
+
+}
+}
+/// A `switch`-like method, using callbacks.
+///
+/// Callbacks receives the raw object, upcasted.
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case final Subclass value:
+///     return ...;
+///   case final Subclass2 value:
+///     return ...;
+/// }
+/// ```
+
+@optionalTypeArgs TResult map<TResult extends Object?>(TResult Function( _FilesPreparedResponse value)  $default,){
+final _that = this;
+switch (_that) {
+case _FilesPreparedResponse():
+return $default(_that);case _:
+  throw StateError('Unexpected subclass');
+
+}
+}
+/// A variant of `map` that fallback to returning `null`.
+///
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case final Subclass value:
+///     return ...;
+///   case _:
+///     return null;
+/// }
+/// ```
+
+@optionalTypeArgs TResult? mapOrNull<TResult extends Object?>(TResult? Function( _FilesPreparedResponse value)?  $default,){
+final _that = this;
+switch (_that) {
+case _FilesPreparedResponse() when $default != null:
+return $default(_that);case _:
+  return null;
+
+}
+}
+/// A variant of `when` that fallback to an `orElse` callback.
+///
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case Subclass(:final field):
+///     return ...;
+///   case _:
+///     return orElse();
+/// }
+/// ```
+
+@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( FilesPreparedModel data)?  $default,{required TResult orElse(),}) {final _that = this;
+switch (_that) {
+case _FilesPreparedResponse() when $default != null:
+return $default(_that.data);case _:
+  return orElse();
+
+}
+}
+/// A `switch`-like method, using callbacks.
+///
+/// As opposed to `map`, this offers destructuring.
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case Subclass(:final field):
+///     return ...;
+///   case Subclass2(:final field2):
+///     return ...;
+/// }
+/// ```
+
+@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( FilesPreparedModel data)  $default,) {final _that = this;
+switch (_that) {
+case _FilesPreparedResponse():
+return $default(_that.data);case _:
+  throw StateError('Unexpected subclass');
+
+}
+}
+/// A variant of `when` that fallback to returning `null`
+///
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case Subclass(:final field):
+///     return ...;
+///   case _:
+///     return null;
+/// }
+/// ```
+
+@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( FilesPreparedModel data)?  $default,) {final _that = this;
+switch (_that) {
+case _FilesPreparedResponse() when $default != null:
+return $default(_that.data);case _:
+  return null;
+
+}
+}
+
+}
+
+/// @nodoc
+@JsonSerializable()
+
+class _FilesPreparedResponse implements FilesPreparedResponse {
+  const _FilesPreparedResponse({required this.data});
+  factory _FilesPreparedResponse.fromJson(Map<String, dynamic> json) => _$FilesPreparedResponseFromJson(json);
+
+@override final  FilesPreparedModel data;
+
+/// Create a copy of FilesPreparedResponse
+/// with the given fields replaced by the non-null parameter values.
+@override @JsonKey(includeFromJson: false, includeToJson: false)
+@pragma('vm:prefer-inline')
+_$FilesPreparedResponseCopyWith<_FilesPreparedResponse> get copyWith => __$FilesPreparedResponseCopyWithImpl<_FilesPreparedResponse>(this, _$identity);
+
+@override
+Map<String, dynamic> toJson() {
+  return _$FilesPreparedResponseToJson(this, );
+}
+
+@override
+bool operator ==(Object other) {
+    return identical(this, other) || (other.runtimeType == runtimeType&&other is _FilesPreparedResponse&&(identical(other.data, data) || other.data == data));
+}
+
+@JsonKey(includeFromJson: false, includeToJson: false)
+@override
+int get hashCode {
+    return Object.hash(runtimeType,data);
+}
+
+@override
+String toString() {
+    return 'FilesPreparedResponse(data: $data)';
+}
+
+
+}
+
+/// @nodoc
+abstract mixin class _$FilesPreparedResponseCopyWith<$Res> implements $FilesPreparedResponseCopyWith<$Res> {
+  factory _$FilesPreparedResponseCopyWith(_FilesPreparedResponse value, $Res Function(_FilesPreparedResponse) _then) = __$FilesPreparedResponseCopyWithImpl;
+@override @useResult
+$Res call({
+ FilesPreparedModel data
+});
+
+
+@override $FilesPreparedModelCopyWith<$Res> get data;
+
+}
+/// @nodoc
+class __$FilesPreparedResponseCopyWithImpl<$Res>
+    implements _$FilesPreparedResponseCopyWith<$Res> {
+  __$FilesPreparedResponseCopyWithImpl(this._self, this._then);
+
+  final _FilesPreparedResponse _self;
+  final $Res Function(_FilesPreparedResponse) _then;
+
+/// Create a copy of FilesPreparedResponse
+/// with the given fields replaced by the non-null parameter values.
+@override @pragma('vm:prefer-inline') $Res call({Object? data = null,}) {
+  return _then(_FilesPreparedResponse(
+data: null == data ? _self.data : data // ignore: cast_nullable_to_non_nullable
+as FilesPreparedModel,
+  ));
+}
+
+/// Create a copy of FilesPreparedResponse
+/// with the given fields replaced by the non-null parameter values.
+@override
+@pragma('vm:prefer-inline')
+$FilesPreparedModelCopyWith<$Res> get data {
+  
+  return $FilesPreparedModelCopyWith<$Res>(_self.data, (value) {
     return _then(_self.copyWith(data: value));
   });
 }

@@ -2,6 +2,7 @@ import { Router } from 'express';
 import { ParkingController } from '@/controllers/parking.controller';
 import { UpdateParkingDto, UpdateShuttleTrackingDto } from '@/dtos/parking.dto';
 import { AssignSpotDto } from '@/dtos/occupation.dto';
+import { AssignFileDto, ReplaceFilesDto } from '@/dtos/file.dto';
 import { CarLocationDto } from '@/dtos/public-booking.dto';
 import { AddSpotsDto, GenerateSpotsDto, ReplaceSpotsDto, SuggestZonesDto, UpdateParkingPlanDto, UpdateSpotDto } from '@/dtos/parking-plan.dto';
 import { PlatformController } from '@/controllers/platform.controller';
@@ -139,6 +140,23 @@ export class ParkingRoute implements Routes {
     );
     this.router.delete('/internal/reservations/:id/car-location', StaffAuthMiddleware('reservations:status'), this.parking.clearCar);
     // Bloc 2, step "Planning des places": one line per spot over the coming days.
+    // S-C (07/10/2026): files as the unit of storage.
+    this.router.get('/internal/parkings/:id/files', StaffAuthMiddleware('reservations:view'), this.parking.filesBoard);
+    this.router.get('/internal/parkings/:id/files/choices', StaffAuthMiddleware('reservations:view'), this.parking.fileChoices);
+    this.router.put(
+      '/internal/parkings/:id/files',
+      StaffAuthMiddleware('parking:manage'),
+      ValidationMiddleware(ReplaceFilesDto),
+      this.parking.replaceFiles,
+    );
+    this.router.post('/internal/parkings/:id/files/from-plan', StaffAuthMiddleware('parking:manage'), this.parking.filesFromPlan);
+    this.router.post('/internal/parkings/:id/files/prepare', StaffAuthMiddleware('reservations:status'), this.parking.prepareFiles);
+    this.router.post(
+      '/internal/reservations/:id/file',
+      StaffAuthMiddleware('reservations:status'),
+      ValidationMiddleware(AssignFileDto),
+      this.parking.assignFile,
+    );
     this.router.get('/internal/parkings/:id/spot-planning', StaffAuthMiddleware('reservations:view'), this.parking.spotPlanningBoard);
     this.router.post('/internal/parkings/:id/spot-planning/preassign', StaffAuthMiddleware('reservations:status'), this.parking.preassignSpots);
     this.router.get('/internal/geo/parcels', StaffAuthMiddleware('parking:manage'), this.geo.parcels);

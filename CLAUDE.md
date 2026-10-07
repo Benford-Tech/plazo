@@ -156,6 +156,22 @@ Ne construire QUE ce qui règle la douleur n°1 du client.
      hors classe), les places libres montrent leur zone de séjour en pâle, légende adaptée ; la fiche d'une place dit « N nuits ·
      Moyen séjour · place en zone court séjour » ; le serveur ajoute `occupant.nights` et `occupant.stayClass` au tableau
      (`OccupationService.board`, seuils du plan).
+   - **Décision S-C « Des files, pas des places » (07/10/2026, « la modélisation est bancale, le voiturier passe son temps à
+     déplacer les voitures »)** : sur un parking voiturier l'unité de rangement est la **file** (table `parking_files` : code,
+     capacité, trait allée → fond facultatif ; `Reservation.fileId/fileRank`), plus la place. `domain/file-stacks.ts` : une
+     voiture entre devant les autres ; file saine = chaque voiture repart avant celles de derrière (2 h de tolérance) ; à
+     l'arrivée `rankFiles` choisit 1) la file servant déjà ce jour de retour, 2) l'ajustement serré derrière un retour plus
+     tard, 3) une file vide gardée pour ce jour, 4) une file vide libre, 5) une file gardée pour un autre jour, puis celles à
+     déplacements, puis les complètes ; `planEmptyFiles` = préparation de la veille (cron `prepare-files` 02:00 UTC, bouton,
+     et au premier affichage du jour : files vides gardées pour les gros jours de retour des 14 prochains jours, un tiers reste
+     libre). `FileService` (`GET/PUT /internal/parkings/:id/files`, `…/files/choices`, `…/files/from-plan`, `…/files/prepare`,
+     `POST /internal/reservations/:id/file`, 409 `file_full` / `file_occupied`). Dès qu'un parking a des files : Occupation web
+     (`FilesOccupation.tsx` : « À sortir aujourd'hui » en tête, piles, « Ranger en F07 » avec clés, « Autre file… », retrait)
+     et app (`filesMode` du `ProOccupationBloc`, `_FilesSummary`, `_FileArrivalRow`, `_FileCard`, `showFilePicker`), fiches
+     « File F07 · 3e depuis l'allée » (web, fiche opérationnelle, app, `TravellerReturn.file`), tableau de bord (`breakdown.movesToday`,
+     `parking.storedInFiles`, capacité = somme des files, alerte `blocked_return` depuis les files), « Rendu » / annulé / non venu
+     libèrent la file. Éditeur du plan : outil **Files** (un trait = une file, capacité déduite de la longueur, liste modifiable,
+     « Créer les files depuis les places »). Reste à faire : alléger l'éditeur autour des files et le Planning des places.
    - Retrouver un véhicule en quelques secondes (plaque, emplacement, emplacement des clés).
    - Si voiturier : suivi des clés confiées.
 

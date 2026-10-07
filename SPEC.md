@@ -218,6 +218,40 @@ reçoivent les codes `M-01`, `M-02`…, la zone où elles tombent, le type chois
 la capacité. Elles survivent à « Régénérer » (qui ne remplace que les places générées) et se retirent avec l'outil
 « Supprimer » (sur une place générée, ce même outil la désactive). Sur la carte, un bord blanc tireté les distingue.
 
+#### Des files, pas des places (décision S-C du 07/10/2026, mis en œuvre : serveur, web, app ; plan simplifié en cours)
+
+Constat chez le client n°1 : les voituriers rangent **en files par date de retour** et se font « prendre au piège » : une file
+remplie dans l'ordre d'arrivée mélange les retours, la voiture qui repart la première finit au fond, et le voiturier passe
+son temps à déplacer des voitures. Les places numérotées du plan (contour, zones, peigne…) demandaient beaucoup de
+manipulations pour un résultat qui n'était pas le geste du terrain. L'unité de rangement devient donc la **file**
+(`parking_files` : code `F07`, nom facultatif, capacité en voitures, trait de l'allée vers le fond sur la photo IGN,
+facultatif) ; une voiture a `Reservation.fileId` et `fileRank` (ordre d'entrée, 1 = au fond). Les places restent pour les
+plans en libre-service ; dès qu'un parking a des files, l'Occupation, les fiches et le tableau de bord parlent files.
+
+- **La règle (`domain/file-stacks.ts`)** : une voiture entre devant celles déjà là ; la file est saine quand chaque voiture
+  repart avant (ou avec, à 2 h près) celles qui sont derrière elle. À l'arrivée, le logiciel classe les files : 1) une file
+  qui sert déjà ce jour de retour, 2) l'ajustement le plus serré derrière une voiture repartant plus tard, 3) une file vide
+  gardée pour ce jour, 4) une file vide libre, 5) une file vide gardée pour un autre jour ; puis celles qui coûtent des
+  déplacements et les complètes. Zéro déplacement garanti tant qu'une file compatible existe, et le moins de files ouvertes.
+- **Préparation de la veille** (`FileService.prepare`, cron `GET /internal/cron/prepare-files` à 02:00 UTC, bouton « Préparer
+  les files », et au premier affichage du jour) : d'après les réservations des 14 prochains jours, les jours de retour les plus
+  chargés reçoivent des files vides dédiées (`plannedDay`, un jour vaut une file dès une demi-file de voitures à venir), un tiers
+  des files vides reste libre pour l'imprévu ; une file qui reçoit sa première voiture prend son rôle de sa voiture de devant.
+- **Occupation en files** (web `FilesOccupation`, app : vue files de l'onglet Parking) : le chiffre en tête est « À sortir
+  aujourd'hui » (voitures à déplacer pour que les retours du jour sortent ; l'objectif est 0, vert ou rouge), puis
+  « N / M voitures · K files · J à remettre en ordre » ; chaque file est une pile de l'allée vers le fond, voiture bloquée en
+  rouge (« N à sortir avant »), retour du jour en bleu ; les arrivées à placer montrent la file choisie et pourquoi (« F07 ·
+  3/8 · retours du même jour »), « Ranger en F07 » demande le crochet des clés dans le même geste, « Autre file… » liste les
+  autres files avec leur coût ; une voiture se retire de sa file d'un clic ; « Rendu », annulé et non venu libèrent la file.
+- **Fiches** : « File F07 · 3e depuis l'allée » sur la fiche réservation (web, fiche opérationnelle, app) et pour le voyageur
+  (`TravellerReturn.file`). **Tableau de bord** : la tuile « Sur le parking » dit « N voitures à sortir aujourd'hui », l'alerte
+  « Retour du jour bloqué » vient des files, la capacité du plan est la somme des files (`parking.storedInFiles`).
+- **Plan** : outil « Files » de l'éditeur (un trait de l'allée vers le fond = une file, capacité déduite de la longueur à un
+  gabarit voiturier par voiture, code et capacité modifiables, retrait d'une file vide) et « Créer les files depuis les
+  places » pour les plans peigne existants. Routes : `GET/PUT /internal/parkings/:id/files`, `GET …/files/choices?reservationId=`,
+  `POST …/files/from-plan`, `POST …/files/prepare`, `POST /internal/reservations/:id/file` (409 `file_full`, `file_occupied`
+  pour retirer une file pleine). Suite : alléger l'éditeur (le contour et les files suffisent) et le Planning des places.
+
 #### Occupation par durée de séjour (décision D-B du 07/10/2026, mis en œuvre)
 
 En tête de l'Occupation, deux pilules : « Par état » (la vue habituelle) et « Par durée ». Par durée, chaque voiture prend

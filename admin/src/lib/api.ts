@@ -1,4 +1,10 @@
 import type {
+  FileBoard,
+  FileChoice,
+  FileInput,
+  ParkingFile,
+} from "@/lib/plan/parkingFiles";
+import type {
   Airport,
   Dashboard,
   LiveShuttles,
@@ -395,6 +401,44 @@ export const adminApi = {
     ),
 
   // Bloc 2, step "Occupation".
+  // S-C (07/10/2026): files as the unit of storage.
+  getFiles: (parkingId: string) =>
+    apiRequest<FileBoard>(`/internal/parkings/${parkingId}/files`),
+  replaceFiles: (parkingId: string, files: FileInput[]) =>
+    apiRequest<{ data: ParkingFile[] }>(
+      `/internal/parkings/${parkingId}/files`,
+      {
+        method: "PUT",
+        body: json({ files }),
+      },
+    ),
+  filesFromPlan: (parkingId: string) =>
+    apiRequest<{ data: ParkingFile[] }>(
+      `/internal/parkings/${parkingId}/files/from-plan`,
+      { method: "POST" },
+    ),
+  prepareFiles: (parkingId: string) =>
+    apiRequest<{ data: { planned: number; free: number } }>(
+      `/internal/parkings/${parkingId}/files/prepare`,
+      { method: "POST" },
+    ),
+  fileChoices: (parkingId: string, reservationId: string) =>
+    apiRequest<{ choices: FileChoice[] }>(
+      `/internal/parkings/${parkingId}/files/choices?${new URLSearchParams({ reservationId }).toString()}`,
+    ),
+  assignFile: (
+    reservationId: string,
+    patch: { fileId: string | null; keyHook?: string | null },
+  ) =>
+    apiRequest<{
+      data: Reservation & {
+        file: { id: string; code: string; name: string | null } | null;
+        filePosition: number | null;
+      };
+    }>(`/internal/reservations/${reservationId}/file`, {
+      method: "POST",
+      body: json(patch),
+    }),
   getOccupation: (parkingId: string) =>
     apiRequest<OccupationBoard>(`/internal/parkings/${parkingId}/occupation`),
   searchVehicles: (parkingId: string, q: string) =>

@@ -20,6 +20,7 @@ import type {
   ExclusionKind,
   GeoPolygon,
   LayoutKey,
+  LonLat,
   ParcelRef,
   StayClass,
   Zone,
@@ -350,4 +351,83 @@ export function snapTargets(
       v.polygons.flatMap((p) => p.coordinates),
     ),
   ];
+}
+
+/**
+ * S-C (07/10/2026): the files of the parking, drawn from the aisle (dot) to the back; the one being
+ * edited is thicker. Labels carry the code and the capacity.
+ */
+export function fileLayers(
+  files: {
+    id: string;
+    code: string;
+    capacity: number;
+    geometry: LonLat[] | null;
+  }[],
+  selectedId: string | null,
+): MapLayer[] {
+  const drawn = files.filter((f) => f.geometry && f.geometry.length >= 2);
+  if (!drawn.length) return [];
+  const lines = fc(
+    drawn.map((f) =>
+      feature(
+        { type: "LineString", coordinates: f.geometry },
+        { id: f.id, selected: f.id === selectedId ? 1 : 0 },
+      ),
+    ),
+  );
+  const aisleEnds = fc(
+    drawn.map((f) =>
+      feature(
+        { type: "Point", coordinates: (f.geometry as LonLat[])[0] },
+        { id: f.id },
+      ),
+    ),
+  );
+  return [
+    {
+      id: "files-line",
+      type: "line",
+      data: lines,
+      paint: {
+        "line-color": DEEP,
+        "line-width": ["case", ["==", ["get", "selected"], 1], 7, 4],
+        "line-opacity": 0.9,
+      },
+    },
+    {
+      id: "files-aisle",
+      type: "circle",
+      data: aisleEnds,
+      paint: {
+        "circle-radius": 5,
+        "circle-color": "#ffffff",
+        "circle-stroke-color": DEEP,
+        "circle-stroke-width": 2,
+      },
+    },
+  ];
+}
+
+export function fileLabels(
+  files: {
+    id: string;
+    code: string;
+    capacity: number;
+    geometry: LonLat[] | null;
+  }[],
+): MapLabel[] {
+  return files
+    .filter((f) => f.geometry && f.geometry.length >= 2)
+    .map((f) => {
+      const g = f.geometry as LonLat[];
+      const a = g[0];
+      const b = g[g.length - 1];
+      return {
+        id: `file-${f.id}`,
+        lngLat: [(a[0] + b[0]) / 2, (a[1] + b[1]) / 2] as LonLat,
+        text: `${f.code} · ${f.capacity}`,
+        variant: "zone" as const,
+      };
+    });
 }

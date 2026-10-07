@@ -154,6 +154,9 @@ export interface Reservation {
   flightGate?: string | null;
   /** The spot's code, when placed (GET /internal/reservations/:id includes it). */
   spot?: { code: string } | null;
+  /** S-C (07/10/2026): the file the car stands in and its position from the aisle (1 = first out). */
+  file?: { id: string; code: string; name: string | null } | null;
+  filePosition?: number | null;
   /** Bloc 2, Occupation: the spot and the key hook (null until placed). */
   spotId?: string | null;
   keyHook?: string | null;
@@ -935,6 +938,8 @@ export interface Dashboard {
     timezone: string;
     bookableCapacity: number;
     plannedSpots: number;
+    /** S-C (07/10/2026): the parking is stored in files (missing from an older API). */
+    storedInFiles?: boolean;
   };
   counts: {
     onSite: number;
@@ -974,6 +979,8 @@ export interface Dashboard {
   breakdown: {
     onSiteQuiet: number;
     toPlaceToday: number;
+    /** S-C (07/10/2026): cars to take out today so the returns of the day get out (missing from an older API). */
+    movesToday?: number;
     returnsThisWeek: number;
     toTreat: number;
     freeSpots: number | null;

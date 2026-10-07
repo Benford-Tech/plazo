@@ -1,6 +1,8 @@
 import {
   Check,
   Loader2,
+  Rows3,
+  Trash2,
   MapPin,
   Paintbrush,
   Route,
@@ -12,6 +14,14 @@ import {
   X,
 } from "lucide-react";
 import { useEffect, useMemo, useRef, useState } from "react";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { Link } from "react-router-dom";
+import {
+  capacityOf,
+  nextFileCode,
+  type FileInput,
+  type ParkingFile,
+} from "@/lib/plan/parkingFiles";
 import { toast } from "sonner";
 import {
   MapView,
@@ -92,6 +102,8 @@ import {
   SPOT_KIND_COLORS,
   STAY_COLORS,
   zoneAreas,
+  fileLabels,
+  fileLayers,
 } from "./planLayers";
 import { PlanSettings } from "./PlanSettings";
 import { useConfirm } from "@/components/ui/confirm-context";
@@ -115,12 +127,63 @@ const MAX_BBOX_SPAN = 0.02;
 /** A click this close to a point obstacle or a landmark hits it (metres). */
 const HIT_M = 4;
 const newId = () => Math.random().toString(36).slice(2, 10);
+const fileInput = (f: ParkingFile): FileInput => ({
+  id: f.id,
+  code: f.code,
+  name: f.name,
+  capacity: f.capacity,
+  geometry: f.geometry,
+  sortOrder: f.sortOrder,
+  active: f.active,
+});
+function lineLengthTooShort(line: LonLat[], slotLength: number): boolean {
+  let m = 0;
+  for (let i = 1; i < line.length; i++) {
+    const kx = 111_320 * Math.cos((line[i][1] * Math.PI) / 180);
+    m += Math.hypot(
+      (line[i][0] - line[i - 1][0]) * kx,
+      (line[i][1] - line[i - 1][1]) * 110_540,
+    );
+  }
+  return m < slotLength * 0.75;
+}
+/** The file whose line passes within a few metres of the click. */
+function nearestFile(files: ParkingFile[], p: LonLat): ParkingFile | null {
+  let best: ParkingFile | null = null;
+  let bestD = 6;
+  for (const f of files) {
+    const g = f.geometry;
+    if (!g || g.length < 2) continue;
+    for (let i = 1; i < g.length; i++) {
+      const d = segmentDistanceM(p, g[i - 1], g[i]);
+      if (d < bestD) {
+        bestD = d;
+        best = f;
+      }
+    }
+  }
+  return best;
+}
+function segmentDistanceM(p: LonLat, a: LonLat, b: LonLat): number {
+  const kx = 111_320 * Math.cos((p[1] * Math.PI) / 180);
+  const ky = 110_540;
+  const ax = (a[0] - p[0]) * kx,
+    ay = (a[1] - p[1]) * ky;
+  const bx = (b[0] - p[0]) * kx,
+    by = (b[1] - p[1]) * ky;
+  const dx = bx - ax,
+    dy = by - ay;
+  const len2 = dx * dx + dy * dy;
+  const u = len2 ? Math.max(0, Math.min(1, -(ax * dx + ay * dy) / len2)) : 0;
+  return Math.hypot(ax + u * dx, ay + u * dy);
+}
 const TOOL_ICONS: Record<Tool, React.ComponentType<{ className?: string }>> = {
   contour: Square,
   parking: Paintbrush,
   passage: Route,
   obstacle: TreeDeciduous,
   landmark: MapPin,
+  files: Rows3,
   spots: Check,
 };
 
@@ -195,6 +258,41 @@ export function PlanEditor({
   );
   // P-B: a row of spots along a line drawn on the map.
   const [rowArmed, setRowArmed] = useState(false);
+  // S-C (07/10/2026): the files of the parking, one line each.
+  const [fileArmed, setFileArmed] = useState(false);
+  const [selectedFile, setSelectedFile] = useState<string | null>(null);
+  const queryClient = useQueryClient();
+  const filesQuery = useQuery({
+    queryKey: ["files", parkingId],
+    queryFn: () => adminApi.getFiles(parkingId),
+  });
+  const files: ParkingFile[] = useMemo(
+    () => filesQuery.data?.files ?? [],
+    [filesQuery.data],
+  );
+  const filesOccupied = useMemo(
+    () =>
+      new Set(
+        (filesQuery.data?.files ?? [])
+          .filter((f) => f.cars.length)
+          .map((f) => f.id),
+      ),
+    [filesQuery.data],
+  );
+  const saveFiles = useMutation({
+    mutationFn: (list: FileInput[]) => adminApi.replaceFiles(parkingId, list),
+    onSuccess: () =>
+      void queryClient.invalidateQueries({ queryKey: ["files", parkingId] }),
+    onError: (e) => toast.error(describeError(e)),
+  });
+  const filesFromPlan = useMutation({
+    mutationFn: () => adminApi.filesFromPlan(parkingId),
+    onSuccess: ({ data }) => {
+      toast.success(t.files.fromPlanDone(data.length));
+      void queryClient.invalidateQueries({ queryKey: ["files", parkingId] });
+    },
+    onError: (e) => toast.error(describeError(e)),
+  });
   const [spotKind, setSpotKind] = useState<SpotKind>("standard");
   const [layout, setLayout] = useState<LayoutKey>(plan.layout ?? "valetEdge");
   const [suggestion, setSuggestion] = useState<ZoneSuggestion | null>(null);
@@ -619,7 +717,7 @@ export function PlanEditor({
           )[EXCLUSION_DEFAULTS[obstacleKind].geometry]
         : tool === "landmark" && landmarkKind
           ? "point"
-          : tool === "spots" && rowArmed
+          : (tool === "spots" && rowArmed) || (tool === "files" && fileArmed)
             ? "linestring"
             : null;
   const editPolygon: GeoPolygon | null =
@@ -642,6 +740,8 @@ export function PlanEditor({
       if (!parcelBusy) void toggleParcelAt(lngLat);
     } else if (tool === "obstacle" && !obstacleKind) {
       setSelectedExclusion(hitExclusion(lngLat)?.id ?? null);
+    } else if (tool === "files" && !fileArmed) {
+      setSelectedFile(nearestFile(files, lngLat)?.id ?? null);
     } else if (tool === "spots" && !busy && !rowArmed) {
       const hit = spots.find((s) => pointInRing(lngLat, s.geometry));
       if (!hit) return;
@@ -688,7 +788,49 @@ export function PlanEditor({
       setTimeout(() => setLandmarkKind(null), 0);
     } else if (tool === "spots" && rowArmed && geometry.type === "LineString") {
       void addRow(geometry.coordinates);
+    } else if (
+      tool === "files" &&
+      fileArmed &&
+      geometry.type === "LineString"
+    ) {
+      addFile(geometry.coordinates);
     }
+  }
+  // S-C (07/10/2026): a drawn line becomes a file; its capacity follows the length at one car each.
+  function addFile(line: LonLat[]) {
+    setFileArmed(false);
+    const capacity = capacityOf(line, settings.valetSlot.length);
+    if (lineLengthTooShort(line, settings.valetSlot.length)) {
+      toast.error(t.files.tooShort);
+      return;
+    }
+    const code = nextFileCode(files);
+    saveFiles.mutate(
+      [
+        ...files.map(fileInput),
+        { code, capacity, geometry: line, sortOrder: files.length },
+      ],
+      {
+        onSuccess: () => toast.success(t.files.added(code, capacity)),
+      },
+    );
+  }
+  function patchFile(id: string, patch: Partial<FileInput>) {
+    saveFiles.mutate(
+      files.map((f) =>
+        f.id === id ? { ...fileInput(f), ...patch } : fileInput(f),
+      ),
+    );
+  }
+  async function removeFile(f: ParkingFile) {
+    if (filesOccupied.has(f.id)) {
+      toast.error(t.files.occupied);
+      return;
+    }
+    if (!(await confirm(t.files.removeConfirm(f.code), { destructive: true })))
+      return;
+    saveFiles.mutate(files.filter((x) => x.id !== f.id).map(fileInput));
+    if (selectedFile === f.id) setSelectedFile(null);
   }
   // P-B (07/10/2026): the spots of a drawn row are laid at once and kept through regenerations.
   async function addRow(line: LonLat[]) {
@@ -761,8 +903,10 @@ export function PlanEditor({
           tool === "spots" && result ? { estimate: result, layout } : null,
         suggestion,
         focus,
-      }),
+      }).concat(fileLayers(files, tool === "files" ? selectedFile : null)),
     [
+      files,
+      selectedFile,
       plan,
       study.parcels,
       tool,
@@ -776,8 +920,11 @@ export function PlanEditor({
     ],
   );
   const labels = useMemo(
-    () => planLabels(plan, study.scaleFactor, areas, focus),
-    [plan, study.scaleFactor, areas, focus],
+    () => [
+      ...planLabels(plan, study.scaleFactor, areas, focus),
+      ...fileLabels(files),
+    ],
+    [plan, study.scaleFactor, areas, focus, files],
   );
   const snapTo = useMemo(
     () => snapTargets(outline, study.parcels, shapes),
@@ -800,25 +947,34 @@ export function PlanEditor({
 
   // ---- The count on top -----------------------------------------------------------------------
   const estimated = counts?.[layout] ?? null;
-  const headline = spots.length
-    ? t.count(view.activeSpots)
-    : estimated != null
-      ? t.count(estimated)
-      : outline
-        ? computing
-          ? tp.computing
-          : t.count(0)
-        : t.noOutlineYet;
-  const subline = spots.length
-    ? `${t.countGenerated(view.activeSpots, spots.length)} · ${tp.layouts[plan.layout ?? layout]}`
-    : estimated != null
-      ? `${t.countEstimated} · ${tp.layouts[layout]}`
-      : "";
+  const filesCapacity = files.reduce(
+    (n, f) => n + (f.active ? f.capacity : 0),
+    0,
+  );
+  const headline = files.length
+    ? t.files.headline(files.filter((f) => f.active).length, filesCapacity)
+    : spots.length
+      ? t.count(view.activeSpots)
+      : estimated != null
+        ? t.count(estimated)
+        : outline
+          ? computing
+            ? tp.computing
+            : t.count(0)
+          : t.noOutlineYet;
+  const subline = files.length
+    ? t.files.subline
+    : spots.length
+      ? `${t.countGenerated(view.activeSpots, spots.length)} · ${tp.layouts[plan.layout ?? layout]}`
+      : estimated != null
+        ? `${t.countEstimated} · ${tp.layouts[layout]}`
+        : "";
   const inSync =
     view.activeSpots > 0 && view.activeSpots === view.totalCapacity;
 
   const help = (() => {
     if (tool === "spots" && rowArmed) return t.spots.rowHelp;
+    if (tool === "files" && fileArmed) return t.files.drawHelp;
     if (tool === "spots" && spotTool === "delete") return t.spots.removeHelp;
     if (tool === "contour")
       return contourMode === "draw"
@@ -1219,6 +1375,113 @@ export function PlanEditor({
     );
   }
 
+  // S-C (07/10/2026): the files of the parking: draw one, correct its capacity, drop it.
+  function filesCard() {
+    const f = t.files;
+    const drawButton = (
+      <ToolButton
+        className="min-h-9 w-full"
+        active={fileArmed}
+        aria-pressed={fileArmed}
+        disabled={!outline || saveFiles.isPending}
+        onClick={() => setFileArmed((a) => !a)}
+      >
+        {f.draw}
+      </ToolButton>
+    );
+    return (
+      <>
+        {drawButton}
+        {files.length === 0 && (
+          <p className="text-sm text-muted-foreground">{f.none}</p>
+        )}
+        {files.length === 0 && spots.some((sp) => sp.depth != null) && (
+          <ToolButton
+            className="min-h-9 w-full"
+            disabled={filesFromPlan.isPending}
+            onClick={() => filesFromPlan.mutate()}
+            title={f.fromPlanHelp}
+          >
+            {f.fromPlan}
+          </ToolButton>
+        )}
+        {files.length > 0 && (
+          <ul
+            className="flex flex-col divide-y divide-border text-sm"
+            data-testid="file-list"
+          >
+            {files.map((file) => (
+              <li
+                key={file.id}
+                data-testid={`file-${file.code}`}
+                className={cn(
+                  "flex items-center gap-2 py-1.5",
+                  selectedFile === file.id && "bg-primary/20",
+                )}
+                onMouseEnter={() => setSelectedFile(file.id)}
+              >
+                <input
+                  aria-label={f.code}
+                  defaultValue={file.code}
+                  maxLength={8}
+                  className="h-8 w-16 border border-border bg-background px-1 font-mono text-sm font-bold uppercase"
+                  onBlur={(e) => {
+                    const code = e.target.value.trim().toUpperCase();
+                    if (!code || code === file.code) return;
+                    if (
+                      files.some((x) => x.id !== file.id && x.code === code)
+                    ) {
+                      toast.error(f.duplicate);
+                      e.target.value = file.code;
+                      return;
+                    }
+                    patchFile(file.id, { code });
+                  }}
+                />
+                <input
+                  aria-label={f.capacity}
+                  type="number"
+                  min={1}
+                  max={200}
+                  defaultValue={file.capacity}
+                  className="h-8 w-16 border border-border bg-background px-1 font-mono text-sm"
+                  onBlur={(e) => {
+                    const capacity = Math.max(
+                      1,
+                      Math.min(200, Number(e.target.value) || 1),
+                    );
+                    if (capacity !== file.capacity)
+                      patchFile(file.id, { capacity });
+                  }}
+                />
+                <span className="text-xs text-muted-foreground">
+                  {f.capacity}
+                </span>
+                <button
+                  type="button"
+                  aria-label={`${f.remove} ${file.code}`}
+                  className="ml-auto p-1 text-muted-foreground hover:text-destructive disabled:opacity-40"
+                  disabled={filesOccupied.has(file.id)}
+                  title={filesOccupied.has(file.id) ? f.occupied : f.remove}
+                  onClick={() => void removeFile(file)}
+                >
+                  <Trash2 className="h-4 w-4" />
+                </button>
+              </li>
+            ))}
+          </ul>
+        )}
+        {files.length > 0 && (
+          <Link
+            to="/parking/occupation"
+            className="text-sm font-semibold text-lime-deep underline-offset-2 hover:underline"
+          >
+            {f.occupation}
+          </Link>
+        )}
+      </>
+    );
+  }
   function spotsCard() {
     const s = t.spots;
     const manualCount = spots.filter((sp) => sp.manual).length;
@@ -1369,7 +1632,9 @@ export function PlanEditor({
           ? obstacleCard()
           : tool === "landmark"
             ? landmarkCard()
-            : spotsCard();
+            : tool === "files"
+              ? filesCard()
+              : spotsCard();
   const toolEnabled = (k: Tool) => k === "contour" || !!outline;
 
   return (
@@ -1534,7 +1799,8 @@ export function PlanEditor({
                 {(contourMode !== "parcel" ||
                   obstacleKind ||
                   landmarkKind ||
-                  rowArmed) && (
+                  rowArmed ||
+                  fileArmed) && (
                   <button
                     type="button"
                     onClick={() => {
@@ -1542,6 +1808,7 @@ export function PlanEditor({
                       setObstacleKind(null);
                       setLandmarkKind(null);
                       setRowArmed(false);
+                      setFileArmed(false);
                     }}
                     className="text-xs text-muted-foreground underline"
                   >

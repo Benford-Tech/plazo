@@ -213,15 +213,16 @@ model Parking {
   // share it), the team only, or the team and the travellers (then "EN DIRECT" in the search results).
   shuttleTracking ShuttleTracking @default(team)
 
-  operator       Operator        @relation(fields: [operatorId], references: [id], onDelete: Cascade)
-  reservations   Reservation[]
-  pricingTiers   PricingTier[]
-  arrivalSignals ArrivalSignal[]
-  listing        Listing?
-  shuttleTrips   ShuttleTrip[]
-  plan           ParkingPlan?
-  spots          ParkingSpot[]
-  stops          ShuttleStop[]
+  operator         Operator          @relation(fields: [operatorId], references: [id], onDelete: Cascade)
+  reservations     Reservation[]
+  pricingTiers     PricingTier[]
+  arrivalSignals   ArrivalSignal[]
+  listing          Listing?
+  shuttleTrips     ShuttleTrip[]
+  plan             ParkingPlan?
+  spots            ParkingSpot[]
+  files            ParkingFile[]
+  stops            ShuttleStop[]
   reminderSettings ReminderSettings?
   reminderEvenings ReminderEvening[]
 
@@ -314,6 +315,35 @@ model ParkingSpot {
   @@unique([parkingId, code])
   @@index([parkingId, zoneId, row, index])
   @@map("parking_spots")
+}
+
+// S-C (07/10/2026) "Des files, pas des places": on a valet parking the unit of storage is the file (a
+// lane of cars parked nose to tail, entered and left through the aisle). Cars enter in front of the
+// ones already there, so a file stays sound when every car leaves before the ones behind it.
+model ParkingFile {
+  id         String    @id @default(cuid())
+  parkingId  String
+  // What the staff reads and says: "F07".
+  code       String
+  name       String?
+  // Cars the file holds.
+  capacity   Int
+  // LineString from the aisle end to the back end, [[lon, lat], [lon, lat]]; null without a map.
+  geometry   Json?
+  sortOrder  Int       @default(0)
+  active     Boolean   @default(true)
+  // Night preparation: the return day (YYYY-MM-DD) an empty file is kept for; null when free.
+  plannedDay String?
+  plannedAt  DateTime?
+  createdAt  DateTime  @default(now())
+  updatedAt  DateTime  @default(now()) @updatedAt
+
+  parking      Parking       @relation(fields: [parkingId], references: [id], onDelete: Cascade)
+  reservations Reservation[]
+
+  @@unique([parkingId, code])
+  @@index([parkingId, sortOrder])
+  @@map("parking_files")
 }
 
 // M-A (06/10/2026): a confirmation email forwarded to the operator's inbound address, and what became of it.
@@ -453,6 +483,9 @@ model Reservation {
   manageTokenVersion      Int                 @default(0)
   // Bloc 2, Occupation: the spot the vehicle is (or will be) parked on, and where its keys hang.
   spotId                  String?
+  // S-C (07/10/2026): the file the car stands in and its entry rank (1 = deepest, at the back).
+  fileId                  String?
+  fileRank                Int?
   keyHook                 String?
   // Where the shuttle serves this traveller (D-A, 05/10/2026): a stop of the parking (train station…);
   // null: the airport (the return meeting point).
@@ -536,6 +569,7 @@ model Reservation {
   parking        Parking                @relation(fields: [parkingId], references: [id], onDelete: Cascade)
   createdBy      Staff?                 @relation(fields: [createdById], references: [id], onDelete: SetNull)
   spot           ParkingSpot?           @relation(fields: [spotId], references: [id], onDelete: SetNull)
+  file           ParkingFile?           @relation(fields: [fileId], references: [id], onDelete: SetNull)
   stop           ShuttleStop?           @relation(fields: [stopId], references: [id], onDelete: SetNull)
   devices        TravellerDevice[]
   arrivalSignals ArrivalSignal[]
@@ -545,6 +579,7 @@ model Reservation {
 
   @@unique([operatorId, externalReference])
   @@index([spotId])
+  @@index([fileId])
   @@index([parkingId, arrivalAt])
   @@index([parkingId, returnAt])
   @@index([operatorId, plateKey])
@@ -670,7 +705,9 @@ enum ArrivalKind {
   return
 }
 
-/** E (06/10/2026): what a traveller can signal on the return day. */
+/**
+ * E (06/10/2026): what a traveller can signal on the return day.
+ */
 enum ReturnNoticeKind {
   flight_delayed
   luggage

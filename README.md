@@ -400,4 +400,11 @@ Documentation interactive : `/api/docs` (Swagger). Toutes les routes sont sous `
 | POST | `/internal/parkings/:id/plan/suggest-zones` | V-A : Claude lit la photo IGN du terrain et propose les zones (corps `{ allowGrass }`, vrai par défaut ; rien n'est enregistré ; 409 `ai_unavailable` sans `ANTHROPIC_API_KEY`) |
 | POST | `/internal/parkings/:id/plan/spots` | P-B : places posées à la main (rangée tracée sur la carte), gardées à la régénération ; 400 `duplicate_code` |
 | DELETE | `/internal/parkings/:id/plan/spots/:spotId` | P-B : retire une place posée à la main (409 `not_manual` pour une place générée) |
+| GET | `/internal/parkings/:id/files` | S-C : les files du parking avec leur pile (allée → fond), les arrivées à placer avec la file choisie, « à sortir aujourd'hui » |
+| PUT | `/internal/parkings/:id/files` | S-C : enregistre les files du plan (code, capacité, trait) ; 400 `duplicate_code`, 409 `file_occupied` |
+| GET | `/internal/parkings/:id/files/choices?reservationId=` | S-C : les files classées pour une réservation |
+| POST | `/internal/parkings/:id/files/from-plan` | S-C : crée les files depuis les files de places du plan peigne (409 `no_valet_spots`) |
+| POST | `/internal/parkings/:id/files/prepare` | S-C : préparation de la veille à la demande (files vides gardées pour les gros jours de retour) |
+| POST | `/internal/reservations/:id/file` | S-C : range la voiture dans une file (devant les autres) ou l'en retire (`fileId: null`), avec le crochet des clés ; 409 `file_full` |
+| GET | `/internal/cron/prepare-files` | S-C : préparation de la veille de tous les parkings en files (Vercel Cron 02:00 UTC) |
 | GET | `/internal/platform/geo/geocode?q=` | Recherche d'adresse (relais vers le géocodage de la Géoplateforme) |
