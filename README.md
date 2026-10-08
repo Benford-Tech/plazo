@@ -130,7 +130,7 @@ le navigateur de l'espace pro appelle `/api` sur le même domaine (pas de CORS).
    `vercel.json`) ; les fonctions tournent à Paris (`cdg1`). Variables (communes aux trois services) :
    `NODE_ENV=production`, `SECRET_KEY`, `CRON_SECRET`, `SITE_API_KEY`
    (secret partagé entre le site et l'API), `PUBLIC_SITE_URL` (adresse publique du site, pour les liens
-   des mails), pour la proposition des zones par Claude `ANTHROPIC_API_KEY` (et `ZONE_SUGGESTION_MODEL`,
+   des mails), pour la proposition des zones et la lecture des mails par Claude `ANTHROPIC_API_KEY` (et `ZONE_SUGGESTION_MODEL`, `EMAIL_READING_MODEL`,
    facultatif), pour les mails et SMS `BREVO_API_KEY`, `EMAIL_FROM`, `SMS_SENDER`,
    `SMS_GATEWAY_ENCRYPTION_KEY` (clé qui chiffre les mots de passe des téléphones reliés par les loueurs, voir
    « SMS depuis le téléphone du parking » ; `openssl rand -base64 32`), et
@@ -199,9 +199,14 @@ le navigateur de l'espace pro appelle `/api` sur le même domaine (pas de CORS).
    Email Routing** reçoit le domaine (gratuit, adresses illimitées, aucune boîte mail à créer) et passe chaque mail au
    relais [`email-worker/`](email-worker/README.md), qui l'envoie à `POST /api/public/inbound/email` avec l'en-tête
    `X-Inbound-Secret` ; un mail reconnu et complet (Allopark) crée la réservation (canal comparateur, doublon refusé
-   par la référence externe, push « Nouvelle réservation ») ; un mail incomplet ou inconnu attend dans « Mails à
-   vérifier » (`/pro/reservations/a-verifier`, alerte du tableau de bord), où l'équipe le complète dans le formulaire
-   prérempli ou le classe. Texte des mails gardé 30 jours, lignes 90.
+   par la référence externe, push « Nouvelle réservation » à ceux qui le veulent à chaque réservation, sinon le récapitulatif
+   horaire) ; un mail incomplet ou inconnu attend dans la **boîte de réception** « Mails à vérifier » (`/pro/reservations/a-verifier`,
+   alerte du tableau de bord ; M-A du 08/10/2026 : liste et volet de lecture, onglets « À traiter · Traités · Archivés »), où
+   l'équipe le complète dans le formulaire prérempli, le marque comme traité ou l'archive (T-A). **Lecture par Claude (L-A,
+   08/10/2026)** : un mail qu'aucun importateur ne reconnaît est lu par Claude (`ANTHROPIC_API_KEY`, modèle `EMAIL_READING_MODEL`,
+   Claude Opus 5.5 par défaut) : réservation complète et sûre → créée aussitôt (source lue en canal) ; sinon « À traiter »
+   pré-rempli ; annulations et modifications signalées, jamais appliquées seules. Texte des mails gardé 30 jours,
+   lignes 90.
    Mise en place (domaine gardé chez Hostinger, DNS chez Cloudflare, Email Routing sur `plazo.fr` lui-même car Cloudflare
    n'offre le « catch-all » que sur le domaine principal (R-A, 08/10/2026), Worker, règle `reservations@` vers la boîte de
    Plazo, variables Vercel) : voir [`email-worker/README.md`](email-worker/README.md).
@@ -278,6 +283,13 @@ attente du téléphone du parking. Mise en place :
    Settings › Environment Variables), *Timeout* au maximum.
 4. Enregistrer, puis **Test run** : la réponse doit être `200` avec `{"checked":…,"sent":…,"sms":{…}}` ; un `401` signale
    un secret erroné.
+
+**Récapitulatif horaire des réservations (N-A, 08/10/2026)** : la route `/api/internal/cron/booking-digest` envoie, chaque heure
+pile, un push « N réservations reçues » aux membres réglés sur « récapitulatif horaire » (les gérants par défaut), tous canaux
+confondus (hors attentes de paiement et annulées), et rien entre 22 h et 07 h (le récapitulatif de 07 h couvre la nuit). Un second cronjob sur cron-job.org, de la même
+façon : *Title* « Plazo · Récapitulatif horaire », *URL* `https://www.plazo.fr/api/internal/cron/booking-digest`, *Execution
+schedule* **Every hour at minute 0**, même en-tête `Authorization`. Un appel de trop ne renvoie rien en double (un récapitulatif
+de moins de 50 minutes est passé) ; la réponse attendue est `{"operators":…,"sent":…,"skipped":…}`.
 
 Vérifier la configuration sans déployer : `npx vercel build` (avec un `.vercel/project.json` local),
 ou `vercel dev` pour lancer les trois services ensemble.
@@ -363,8 +375,12 @@ Documentation interactive : `/api/docs` (Swagger). Toutes les routes sont sous `
 | POST | `/public/inbound/email?secret=` | Webhook *Inbound parsing* de Brevo (M-A) : `{ items: [...] }` → `{ received, imported, toCheck, ignored }` |
 | GET | `/internal/inbound/settings` | Adresse de réception du loueur, dernier mail, comptages sur 30 jours, mails à vérifier |
 | POST | `/internal/inbound/address` | Gérant : renvoie l'adresse (créée avec le loueur) ; `{ regenerate: true }` : nouvelle adresse |
-| GET | `/internal/inbound/emails?status=` | « Mails à vérifier » : en attente d'abord, puis 30 jours |
-| POST | `/internal/inbound/emails/:id/dismiss` · `/attach` | Classer sans suite · rattacher à la réservation saisie (`{ reservationId }`) |
+| GET | `/internal/inbound/emails?view=todo\|done\|archived&status=` | Boîte de réception (M-A, 08/10/2026) : un onglet (`todo` par défaut : incomplete et unrecognised ; `done` : imported, duplicate, handled sur 30 jours ; `archived` : 90 jours), du plus récent au plus ancien, `{ data, counts: { todo, done, archived } }` ; `?status=` filtre encore (seul, il cherche dans l'onglet de cet état) ; les confirmations de transfert jamais listées |
+| POST | `/internal/inbound/emails/:id/handle` | T-A « Marquer comme traité » → `handled` (imported inchangé ; 409 `archived` ; 404 pour une confirmation de transfert) ; `…/dismiss` : alias déprécié |
+| POST | `/internal/inbound/emails/:id/archive` | T-A « Archiver » → `archived` depuis tout état sauf une confirmation de transfert (409 `forwarding`), texte gardé jusqu'à la purge |
+| POST | `/internal/inbound/emails/:id/attach` | Rattacher à la réservation saisie (`{ reservationId }`) → `imported`, texte effacé |
+| GET / PATCH | `/internal/notifications/preferences` | Ce que chacun reçoit en push : `arrivals`, `returns`, `shuttles`, `platform` (booléens) et `bookings` : `immediate` (push par réservation) \| `hourly` (récapitulatif horaire) \| `never` (N-A, 08/10/2026 ; gérants `hourly` par défaut, autres rôles `immediate`) |
+| GET | `/internal/cron/booking-digest` | Planificateur externe, chaque heure pile : « Récapitulatif horaire » des réservations reçues depuis le dernier (tous canaux) aux membres en `hourly`, rien de 22 h à 07 h (`Operator.bookingDigestAt`) → `{ operators, sent, skipped }` |
 | GET | `/internal/cron/payouts` | Vercel Cron, chaque jour : transferts des parts dues aux loueurs |
 | GET | `/internal/cron/expire-payment-holds` | Vercel Cron (facultatif) : expire les places tenues non payées |
 | GET | `/internal/cron/remind-tomorrow` | Vercel Cron, 16 h UTC : rappel de la veille aux réservations attendues le lendemain (mail, SMS par le canal du loueur, push ; une fois, `reminderSentAt`) |

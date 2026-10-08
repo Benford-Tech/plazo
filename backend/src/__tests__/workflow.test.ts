@@ -156,8 +156,13 @@ describe('un seul geste par étape (A, 06/10/2026)', () => {
     await api().put('/api/internal/notifications/devices').set(auth(op.token)).send({ subscriptionId: 'sub-manager' });
     await api().put('/api/internal/notifications/devices').set(auth(agent.token)).send({ subscriptionId: 'sub-agent' });
     await api().put('/api/internal/notifications/devices').set(auth(driver.token)).send({ subscriptionId: 'sub-driver' });
-    const prefs = await api().patch('/api/internal/notifications/preferences').set(auth(driver.token)).send({ bookings: false });
-    expect(prefs.body).toMatchObject({ bookings: false });
+    // N-A (08/10/2026): a manager starts on the hourly digest, the others on a push per booking; "never" switches it off.
+    expect((await api().get('/api/internal/notifications/preferences').set(auth(op.token))).body).toMatchObject({ bookings: 'hourly' });
+    expect((await api().get('/api/internal/notifications/preferences').set(auth(agent.token))).body).toMatchObject({ bookings: 'immediate' });
+    const prefs = await api().patch('/api/internal/notifications/preferences').set(auth(driver.token)).send({ bookings: 'never' });
+    expect(prefs.body).toMatchObject({ bookings: 'never' });
+    expect((await api().patch('/api/internal/notifications/preferences').set(auth(driver.token)).send({ bookings: true })).status).toBe(400);
+    await api().patch('/api/internal/notifications/preferences').set(auth(op.token)).send({ bookings: 'immediate' });
 
     const created = await api()
       .post('/api/internal/reservations')
@@ -175,7 +180,7 @@ describe('un seul geste par étape (A, 06/10/2026)', () => {
     expect(sent).toHaveLength(1);
     expect(sent[0].headings.fr).toBe('Nouvelle réservation · Allopark');
     expect(sent[0].contents.fr).toBe('C. Martin · AB-123-CD · 2 pass. · arrivée 01/03 06:30 → retour 03/03');
-    // The agent who typed it and the driver who opted out are left out.
+    // The agent who typed it and the driver who opted out are left out; the manager asked for each booking.
     expect(sent[0].include_subscription_ids).toEqual(['sub-manager']);
   });
 });

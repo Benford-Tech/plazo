@@ -371,8 +371,14 @@ export type InboundEmailStatus =
   | "duplicate"
   | "incomplete"
   | "unrecognised"
+  /** @deprecated T-A (08/10/2026): "handled" replaces it; the server moved the old rows. */
   | "dismissed"
+  | "handled"
+  | "archived"
   | "forwarding";
+
+/** M-A « Boîte de réception » (08/10/2026): the three tabs of the inbox. */
+export type InboundEmailView = "todo" | "done" | "archived";
 
 export interface InboundSettings {
   available: boolean;
@@ -417,7 +423,27 @@ export interface InboundEmail {
   missing: string[];
   reservationId: string | null;
   reservationReference: string | null;
+  /** L-A (08/10/2026): what Claude made of a mail no importer knew; null when it was not read. */
+  reading: InboundReading | null;
   receivedAt: string;
+}
+
+export type InboundReadingKind = "booking" | "modification" | "cancellation" | "other";
+
+export interface InboundReading {
+  kind: InboundReadingKind;
+  provider: string | null;
+  /** 0 to 1. */
+  confidence: number;
+  /** One French sentence for the operator. */
+  summary: string;
+  model: string;
+}
+
+/** One tab of the inbox, with the size of all three. */
+export interface InboundEmailList {
+  data: InboundEmail[];
+  counts: Record<InboundEmailView, number>;
 }
 
 export type CancellationPolicy =

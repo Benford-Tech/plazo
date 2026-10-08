@@ -33,11 +33,23 @@ import { RefuseInViewAs, StaffAuthMiddleware } from '@/middlewares/staff-auth.mi
  * /internal/inbound/emails:
  *   get:
  *     tags: [Inbound email]
- *     summary: "« À vérifier »: the emails waiting for the staff first, then the last 30 days (?status=)"
+ *     summary: "The inbox (M-A, 08/10/2026): ?view=todo|done|archived (todo by default; ?status= narrows), newest first, with { data, counts: { todo, done, archived } }"
+ *     description: >
+ *       todo = incomplete and unrecognised (all of them); done = imported, duplicate, handled (and the deprecated
+ *       dismissed) of the last 30 days; archived = the last 90 days. Gmail's forwarding confirmations are never listed.
+ * /internal/inbound/emails/{id}/handle:
+ *   post:
+ *     tags: [Inbound email]
+ *     summary: "T-A « Marquer comme traité »: dealt with, with or without a booking (imported stays imported; 409 `archived`; 404 for a forwarding confirmation)"
  * /internal/inbound/emails/{id}/dismiss:
  *   post:
  *     tags: [Inbound email]
- *     summary: Close an email without a booking
+ *     deprecated: true
+ *     summary: Deprecated alias of /handle
+ * /internal/inbound/emails/{id}/archive:
+ *   post:
+ *     tags: [Inbound email]
+ *     summary: "T-A « Archiver »: out of the inbox, readable in « Archivés » (text kept until the purge); 409 `forwarding`"
  * /internal/inbound/emails/{id}/attach:
  *   post:
  *     tags: [Inbound email]
@@ -56,7 +68,9 @@ export class InboundEmailRoute implements Routes {
     this.router.get('/internal/inbound/settings', StaffAuthMiddleware('reservations:manage'), this.inbound.settings);
     this.router.post('/internal/inbound/address', StaffAuthMiddleware('parking:manage'), RefuseInViewAs(), this.inbound.enableAddress);
     this.router.get('/internal/inbound/emails', StaffAuthMiddleware('reservations:manage'), this.inbound.list);
-    this.router.post('/internal/inbound/emails/:id/dismiss', StaffAuthMiddleware('reservations:manage'), RefuseInViewAs(), this.inbound.dismiss);
+    this.router.post('/internal/inbound/emails/:id/handle', StaffAuthMiddleware('reservations:manage'), RefuseInViewAs(), this.inbound.handle);
+    this.router.post('/internal/inbound/emails/:id/dismiss', StaffAuthMiddleware('reservations:manage'), RefuseInViewAs(), this.inbound.handle);
+    this.router.post('/internal/inbound/emails/:id/archive', StaffAuthMiddleware('reservations:manage'), RefuseInViewAs(), this.inbound.archive);
     this.router.post('/internal/inbound/emails/:id/attach', StaffAuthMiddleware('reservations:manage'), RefuseInViewAs(), this.inbound.attach);
   }
 }

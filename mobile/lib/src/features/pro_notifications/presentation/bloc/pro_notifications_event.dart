@@ -14,7 +14,9 @@ class ProNotificationsToggled extends ProNotificationsEvent {
   final bool? returns;
   final bool? shuttles;
   final bool? platform;
-  final bool? bookings;
+
+  /// 'immediate' | 'hourly' | 'never' (N-A, 08/10/2026).
+  final String? bookings;
 }
 
 class ProNotificationsPushEnabled extends ProNotificationsEvent {

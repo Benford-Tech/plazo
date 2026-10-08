@@ -11,7 +11,8 @@ import type {
   LiveShuttles,
   InboundSettings,
   InboundEmail,
-  InboundEmailStatus,
+  InboundEmailList,
+  InboundEmailView,
   MeetingPoint,
   PickupRow,
   DepartureRow,
@@ -562,13 +563,18 @@ export const adminApi = {
       method: "POST",
       body: json({ regenerate }),
     }),
-  getInboundEmails: (status?: InboundEmailStatus) =>
-    apiRequest<{ data: InboundEmail[] }>(
-      `/internal/inbound/emails${status ? `?status=${status}` : ""}`,
-    ),
-  dismissInboundEmail: (id: string) =>
+  // M-A « Boîte de réception » (08/10/2026): one tab at a time, the counts of all three.
+  getInboundEmails: (view: InboundEmailView = "todo") =>
+    apiRequest<InboundEmailList>(`/internal/inbound/emails?view=${view}`),
+  // T-A « Deux gestes »: handled (with or without a booking) or archived.
+  handleInboundEmail: (id: string) =>
     apiRequest<{ data: InboundEmail }>(
-      `/internal/inbound/emails/${id}/dismiss`,
+      `/internal/inbound/emails/${id}/handle`,
+      { method: "POST" },
+    ),
+  archiveInboundEmail: (id: string) =>
+    apiRequest<{ data: InboundEmail }>(
+      `/internal/inbound/emails/${id}/archive`,
       { method: "POST" },
     ),
   attachInboundEmail: (id: string, reservationId: string) =>

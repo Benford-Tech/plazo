@@ -3,7 +3,7 @@ import httpStatus from 'http-status';
 import { Container, Service } from 'typedi';
 import { BCRYPT_ROUNDS, isPlatformAdmin } from '@/config';
 import prisma, { Staff, StaffRole } from '@/database';
-import { allowedPosts, can, effectivePost } from '@/domain/roles';
+import { allowedPosts, can, defaultBookingNotify, effectivePost } from '@/domain/roles';
 import { localDate } from '@/domain/time';
 import { ChangePasswordDto, CreateStaffDto, UpdateStaffDto } from '@/dtos/staff.dto';
 import { AuthenticatedStaff } from '@/interfaces/auth.interface';
@@ -164,6 +164,7 @@ export class StaffService {
         phone: data.phone?.trim() || null,
         role: data.role,
         password: await hash(data.password, BCRYPT_ROUNDS),
+        bookingNotify: defaultBookingNotify(data.role),
       },
     });
     await this.audit.record(actor, { action: 'staff.created', entityType: 'staff', entityId: staff.id, details: { role: staff.role } });

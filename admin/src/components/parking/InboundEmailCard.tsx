@@ -18,6 +18,8 @@ const SHOWN: InboundEmailStatus[] = [
   "duplicate",
   "incomplete",
   "unrecognised",
+  "handled",
+  "archived",
 ];
 
 /** M-A (06/10/2026): the operator's inbound address, the setup wizard (G-B, 07/10/2026) and what came in. */
@@ -36,13 +38,9 @@ export function InboundEmailCard() {
     onError: (err: Error) => toast.error(describeError(err)),
   });
   const s = settings.data;
-  // Once a booking email came in, the wizard is only there to look the steps up again.
+  // Once a booking email came in (whatever became of it since), the wizard is only there to look the steps up again.
   const connected = s
-    ? s.counts.imported +
-        s.counts.duplicate +
-        s.counts.incomplete +
-        s.counts.unrecognised >
-      0
+    ? SHOWN.reduce((sum, k) => sum + s.counts[k], 0) + s.counts.dismissed > 0
     : false;
   const copy = async (address: string) => {
     try {

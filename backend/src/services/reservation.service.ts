@@ -185,6 +185,13 @@ export class ReservationService {
       if (externalReference) {
         const existing = await tx.reservation.findUnique({ where: { operatorId_externalReference: { operatorId, externalReference } } });
         if (existing) return { reservation: existing, duplicate: true };
+      } else {
+        // L-A (08/10/2026): an email read by Claude may carry no reference; the same car arriving at the same
+        // moment is the same booking (the mail forwarded twice, or by two people).
+        const existing = await tx.reservation.findFirst({
+          where: { operatorId, plateKey: plateKey(parsed.plate!), arrivalAt: stay.arrivalAt, status: { notIn: ['cancelled', 'no_show'] } },
+        });
+        if (existing) return { reservation: existing, duplicate: true };
       }
       const { full } = await this.capacity.fullNights(parking, stay.arrivalAt, stay.returnAt, { client: tx });
       const reference = await this.newUniqueReference(tx);

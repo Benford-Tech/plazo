@@ -2,6 +2,7 @@ import httpStatus from 'http-status';
 import { Container, Service } from 'typedi';
 import { INBOUND_EMAIL_DOMAIN, inboundEmailAvailable } from '@/config';
 import prisma, { InboundEmailStatus, Prisma } from '@/database';
+import { MIN_CONFIDENCE, ReadingMeta, toParsedBooking } from '@/domain/email-reading';
 import { IMPORT_SENDERS, parseConfirmationEmail, ParsedBooking } from '@/domain/importers';
 import {
   forwardingConfirmationOf,
@@ -18,6 +19,7 @@ import { allocateInboundSlug } from './inbound-slug';
 import { AuthenticatedStaff } from '@/interfaces/auth.interface';
 import { logger } from '@/utils/logger';
 import { AuditService } from './audit.service';
+import { EmailReadingService } from './email-reading.service';
 import { ReservationService } from './reservation.service';
 
 /** The email's text is kept this long for "À vérifier", then cleared; the row itself goes after 90 days. */
@@ -71,10 +73,37 @@ export interface InboundEmailView {
   missing: string[];
   reservationId: string | null;
   reservationReference: string | null;
+  /** L-A (08/10/2026): what Claude made of the email; null when it was not read. */
+  reading: ReadingMeta | null;
   receivedAt: string;
 }
 
 const TO_CHECK: InboundEmailStatus[] = ['incomplete', 'unrecognised'];
+
+/**
+ * M-A « Boîte de réception » (08/10/2026): the three tabs of the inbox. `todo` = waiting for the staff (every row);
+ * `done` = imported, duplicate, handled (or the deprecated dismissed) of the last 30 days; `archived` = the last 90 days.
+ * Gmail's forwarding confirmations are never listed.
+ */
+export type InboundView = 'todo' | 'done' | 'archived';
+export const INBOUND_VIEWS: InboundView[] = ['todo', 'done', 'archived'];
+const DONE_STATUSES: InboundEmailStatus[] = ['imported', 'duplicate', 'handled', 'dismissed'];
+/** T-A: « Marquer comme traité » applies to these; `imported` stays imported, `archived` refuses, `forwarding` is unknown. */
+const HANDLEABLE: InboundEmailStatus[] = ['incomplete', 'unrecognised', 'duplicate', 'dismissed'];
+const DONE_WINDOW_DAYS = COUNT_WINDOW_DAYS;
+
+/** The tab a status lives in (forwarding confirmations are in none: the caller gets an empty list). */
+function viewOfStatus(status: InboundEmailStatus): InboundView {
+  if (TO_CHECK.includes(status)) return 'todo';
+  return status === 'archived' ? 'archived' : 'done';
+}
+const ARCHIVED_WINDOW_DAYS = ROW_RETENTION_DAYS;
+const LIST_MAX = 100;
+
+export interface InboundEmailList {
+  data: InboundEmailView[];
+  counts: Record<InboundView, number>;
+}
 
 /**
  * M-A (06/10/2026): the operator's mailbox forwards the comparators' confirmations to
@@ -85,13 +114,14 @@ const TO_CHECK: InboundEmailStatus[] = ['incomplete', 'unrecognised'];
 export class InboundEmailService {
   public reservations = Container.get(ReservationService);
   public audit = Container.get(AuditService);
+  public reader = Container.get(EmailReadingService);
 
   /** The relay's webhook: every item is handled on its own; the answer is always 200 so the relay does not resend it. */
   public async receive(payload: InboundPayload): Promise<{ received: number; imported: number; toCheck: number; ignored: number }> {
     const result = { received: 0, imported: 0, toCheck: 0, ignored: 0 };
     for (const item of payload.items ?? []) {
       result.received += 1;
-      const outcome = await this.handle(item);
+      const outcome = await this.receiveItem(item);
       if (outcome === 'ignored') result.ignored += 1;
       else if (outcome === 'imported') result.imported += 1;
       else if (TO_CHECK.includes(outcome)) result.toCheck += 1;
@@ -99,7 +129,8 @@ export class InboundEmailService {
     return result;
   }
 
-  private async handle(item: InboundItem): Promise<InboundEmailStatus | 'ignored'> {
+  /** One email of the relay's payload: stored with what became of it. */
+  private async receiveItem(item: InboundItem): Promise<InboundEmailStatus | 'ignored'> {
     const slug = inboundSlugOf(recipientsOf(item), INBOUND_EMAIL_DOMAIN);
     if (!slug) return 'ignored';
     const operator = await prisma.operator.findUnique({ where: { inboundSlug: slug }, select: { id: true, status: true } });
@@ -129,24 +160,44 @@ export class InboundEmailService {
       subject: item.Subject?.trim().slice(0, 200) || null,
       textBody: text || null,
     };
-    const parsed = text ? parseConfirmationEmail(text) : null;
+    let parsed = text ? parseConfirmationEmail(text) : null;
+    // L-A (08/10/2026): what no importer knows, Claude reads; its answer is kept on the row for the inbox.
+    let reading: ReadingMeta | null = null;
+    let unsure = false;
+    if (!parsed && text && this.reader.available()) {
+      const timezone = await this.timezoneOf(operator.id);
+      const result = await this.reader.read({ from: fromAddress, fromName: base.fromName, subject: base.subject, text, timezone });
+      if (result) {
+        const { kind, provider, confidence, summary } = result.reading;
+        reading = { kind, provider, confidence, summary, model: result.model };
+        if (kind === 'booking') {
+          parsed = toParsedBooking(result.reading);
+          unsure = confidence < MIN_CONFIDENCE;
+        }
+      }
+    }
+    const withReading = { ...base, ...(reading ? { reading: reading as unknown as Prisma.InputJsonValue } : {}) };
     if (!parsed) {
-      await prisma.inboundEmail.create({ data: { ...base, status: 'unrecognised' } });
+      // A cancellation, a modification or another kind of mail: shown with Claude's summary, nothing done by itself.
+      await prisma.inboundEmail.create({ data: { ...withReading, status: 'unrecognised' } });
       return 'unrecognised';
     }
-    const missing = REQUIRED_FOR_IMPORT.filter(key => !parsed[key]);
-    const parsedJson = parsed as unknown as Prisma.InputJsonValue;
+    const booking = parsed;
+    const missing: string[] = REQUIRED_FOR_IMPORT.filter(key => !booking[key]);
+    // An unsure reading waits for a human eye even when every field is there.
+    if (unsure) missing.push('confidence');
+    const parsedJson = booking as unknown as Prisma.InputJsonValue;
     if (missing.length) {
-      await prisma.inboundEmail.create({ data: { ...base, status: 'incomplete', provider: parsed.provider, parsed: parsedJson, missing } });
+      await prisma.inboundEmail.create({ data: { ...withReading, status: 'incomplete', provider: booking.provider, parsed: parsedJson, missing } });
       return 'incomplete';
     }
     try {
-      const created = await this.reservations.createFromImport(operator.id, parsed);
+      const created = await this.reservations.createFromImport(operator.id, booking);
       await prisma.inboundEmail.create({
         data: {
-          ...base,
+          ...withReading,
           status: created.duplicate ? 'duplicate' : 'imported',
-          provider: parsed.provider,
+          provider: booking.provider,
           parsed: parsedJson,
           reservationId: created.reservation.id,
         },
@@ -157,15 +208,21 @@ export class InboundEmailService {
       logger.warn(`[Inbound] Email for ${operator.id} not imported: ${error instanceof Error ? error.message : String(error)}`);
       await prisma.inboundEmail.create({
         data: {
-          ...base,
+          ...withReading,
           status: 'incomplete',
-          provider: parsed.provider,
+          provider: booking.provider,
           parsed: parsedJson,
           missing: [error instanceof HttpException ? error.code || 'error' : 'error'],
         },
       });
       return 'incomplete';
     }
+  }
+
+  /** The timezone Claude expresses the local times in: the operator's first parking's. */
+  private async timezoneOf(operatorId: string): Promise<string> {
+    const parking = await prisma.parking.findFirst({ where: { operatorId }, orderBy: { createdAt: 'asc' }, select: { timezone: true } });
+    return parking?.timezone ?? 'Europe/Paris';
   }
 
   public async settings(actor: AuthenticatedStaff): Promise<InboundSettings> {
@@ -187,7 +244,7 @@ export class InboundEmailService {
         take: RECENT_SHOWN,
       }),
     ]);
-    const counts: Record<InboundEmailStatus, number> = { imported: 0, duplicate: 0, incomplete: 0, unrecognised: 0, dismissed: 0, forwarding: 0 };
+    const counts = Object.fromEntries(Object.values(InboundEmailStatus).map(status => [status, 0])) as Record<InboundEmailStatus, number>;
     for (const g of grouped) counts[g.status] = g._count._all;
     const available = inboundEmailAvailable();
     return {
@@ -231,51 +288,71 @@ export class InboundEmailService {
     return this.settings(actor);
   }
 
-  /** "À vérifier": the emails waiting for the staff first, then the rest of the last 30 days. */
-  public async list(actor: AuthenticatedStaff, filter: { status?: InboundEmailStatus } = {}): Promise<InboundEmailView[]> {
+  /**
+   * The inbox (M-A, 08/10/2026): one tab (`view`, `todo` by default) newest first, with the three tabs' counts;
+   * `status` narrows the tab's rows to one status (the older filter).
+   */
+  public async list(actor: AuthenticatedStaff, filter: { view?: InboundView; status?: InboundEmailStatus } = {}): Promise<InboundEmailList> {
     this.require(actor, 'reservations:manage');
-    const since = new Date(Date.now() - COUNT_WINDOW_DAYS * 86400000);
-    const rows = await prisma.inboundEmail.findMany({
-      where: {
-        operatorId: actor.operatorId,
-        // Gmail's forwarding confirmations belong to the setup wizard, not to "À vérifier".
-        ...(filter.status
-          ? { status: filter.status }
-          : { status: { not: 'forwarding' }, OR: [{ status: { in: TO_CHECK } }, { receivedAt: { gte: since } }] }),
-      },
-      include: { reservation: { select: { reference: true } } },
-      orderBy: { receivedAt: 'desc' },
-      take: 100,
-    });
-    const rank = (s: InboundEmailStatus) => (TO_CHECK.includes(s) ? 0 : 1);
-    rows.sort((a, b) => rank(a.status) - rank(b.status) || b.receivedAt.getTime() - a.receivedAt.getTime());
-    return rows.map(r => ({
-      id: r.id,
-      status: r.status,
-      fromAddress: r.fromAddress,
-      fromName: r.fromName,
-      subject: r.subject,
-      textBody: r.textBody,
-      provider: r.provider,
-      parsed: (r.parsed as unknown as ParsedBooking | null) ?? null,
-      missing: Array.isArray(r.missing) ? (r.missing as string[]) : [],
-      reservationId: r.reservationId,
-      reservationReference: r.reservation?.reference ?? null,
-      receivedAt: r.receivedAt.toISOString(),
-    }));
+    // A bare ?status= looks in the tab that holds it (an "imported" filter would find nothing in « À traiter »).
+    const view = filter.view ?? (filter.status ? viewOfStatus(filter.status) : 'todo');
+    const now = Date.now();
+    const scope: Record<InboundView, Prisma.InboundEmailWhereInput> = {
+      todo: { status: { in: TO_CHECK } },
+      done: { status: { in: DONE_STATUSES }, receivedAt: { gte: new Date(now - DONE_WINDOW_DAYS * 86400000) } },
+      archived: { status: 'archived', receivedAt: { gte: new Date(now - ARCHIVED_WINDOW_DAYS * 86400000) } },
+    };
+    const where = (v: InboundView): Prisma.InboundEmailWhereInput => ({ operatorId: actor.operatorId, ...scope[v] });
+    // Gmail's forwarding confirmations belong to the setup wizard, never to the inbox.
+    const listed: Prisma.InboundEmailWhereInput | null =
+      filter.status === 'forwarding' ? null : filter.status ? { AND: [where(view), { status: filter.status }] } : where(view);
+    const [rows, todo, done, archived] = await Promise.all([
+      listed
+        ? prisma.inboundEmail.findMany({
+            where: listed,
+            include: { reservation: { select: { reference: true } } },
+            orderBy: { receivedAt: 'desc' },
+            take: LIST_MAX,
+          })
+        : [],
+      prisma.inboundEmail.count({ where: where('todo') }),
+      prisma.inboundEmail.count({ where: where('done') }),
+      prisma.inboundEmail.count({ where: where('archived') }),
+    ]);
+    return { data: rows.map(r => this.view(r)), counts: { todo, done, archived } };
   }
 
-  /** The staff closed an email without a booking (spam, a cancellation, a duplicate they know). */
-  public async dismiss(actor: AuthenticatedStaff, id: string): Promise<InboundEmailView> {
+  /**
+   * T-A « Marquer comme traité »: the email was dealt with, with or without a booking. `imported` stays as it is
+   * (a booking is its proof); an archived email refuses (409 `archived`); the text stays until the purge.
+   */
+  public async handle(actor: AuthenticatedStaff, id: string): Promise<InboundEmailView> {
     this.require(actor, 'reservations:manage');
-    const row = await prisma.inboundEmail.findFirst({ where: { id, operatorId: actor.operatorId } });
-    if (!row) throw new HttpException(httpStatus.NOT_FOUND, 'Email not found', 'not_found');
-    if (TO_CHECK.includes(row.status)) {
-      await prisma.inboundEmail.update({ where: { id }, data: { status: 'dismissed', textBody: null } });
-      await this.audit.record(actor, { action: 'inbound.dismissed', entityType: 'inbound_email', entityId: id });
+    const row = await this.find(actor, id);
+    if (row.status === 'archived') throw new HttpException(httpStatus.CONFLICT, 'This email is archived', 'archived');
+    if (HANDLEABLE.includes(row.status)) {
+      await prisma.inboundEmail.update({ where: { id }, data: { status: 'handled' } });
+      await this.audit.record(actor, { action: 'inbound.handled', entityType: 'inbound_email', entityId: id });
+      return this.view({ ...row, status: 'handled' });
     }
-    const [view] = await this.list(actor, { status: 'dismissed' }).then(list => list.filter(v => v.id === id));
-    return view ?? { ...this.view(row), status: 'dismissed', textBody: null };
+    return this.view(row);
+  }
+
+  /** Deprecated alias of handle() (« Classer sans suite » until the 08/10/2026). */
+  public async dismiss(actor: AuthenticatedStaff, id: string): Promise<InboundEmailView> {
+    return this.handle(actor, id);
+  }
+
+  /** T-A « Archiver »: out of the inbox, still readable in « Archivés » until the purge; not a forwarding confirmation (409). */
+  public async archive(actor: AuthenticatedStaff, id: string): Promise<InboundEmailView> {
+    this.require(actor, 'reservations:manage');
+    const row = await this.find(actor, id, { includeForwarding: true });
+    if (row.status === 'forwarding') throw new HttpException(httpStatus.CONFLICT, 'A forwarding confirmation cannot be archived', 'forwarding');
+    if (row.status !== 'archived') {
+      await prisma.inboundEmail.update({ where: { id }, data: { status: 'archived' } });
+      await this.audit.record(actor, { action: 'inbound.archived', entityType: 'inbound_email', entityId: id });
+    }
+    return this.view({ ...row, status: 'archived' });
   }
 
   /** Links an email to the booking the staff typed from it (the "Compléter" flow). */
@@ -304,19 +381,17 @@ export class InboundEmailService {
     return prisma.inboundEmail.count({ where: { operatorId, status: { in: TO_CHECK } } });
   }
 
-  private view(r: {
-    id: string;
-    status: InboundEmailStatus;
-    fromAddress: string | null;
-    fromName: string | null;
-    subject: string | null;
-    textBody: string | null;
-    provider: string | null;
-    parsed: Prisma.JsonValue | null;
-    missing: Prisma.JsonValue | null;
-    reservationId: string | null;
-    receivedAt: Date;
-  }): InboundEmailView {
+  /** The operator's email with its booking's reference; a forwarding confirmation is unknown to the inbox unless asked for. */
+  private async find(actor: AuthenticatedStaff, id: string, options: { includeForwarding?: boolean } = {}): Promise<InboundRow> {
+    const row = await prisma.inboundEmail.findFirst({
+      where: { id, operatorId: actor.operatorId, ...(options.includeForwarding ? {} : { status: { not: 'forwarding' } }) },
+      include: { reservation: { select: { reference: true } } },
+    });
+    if (!row) throw new HttpException(httpStatus.NOT_FOUND, 'Email not found', 'not_found');
+    return row;
+  }
+
+  private view(r: InboundRow): InboundEmailView {
     return {
       id: r.id,
       status: r.status,
@@ -328,7 +403,8 @@ export class InboundEmailService {
       parsed: (r.parsed as unknown as ParsedBooking | null) ?? null,
       missing: Array.isArray(r.missing) ? (r.missing as string[]) : [],
       reservationId: r.reservationId,
-      reservationReference: null,
+      reservationReference: r.reservation?.reference ?? null,
+      reading: readingOf(r.reading),
       receivedAt: r.receivedAt.toISOString(),
     };
   }
@@ -336,6 +412,36 @@ export class InboundEmailService {
   private require(actor: AuthenticatedStaff, permission: Parameters<typeof can>[1]) {
     if (!can(actor.role, permission)) throw new HttpException(httpStatus.FORBIDDEN, 'You do not have access to this action', 'forbidden');
   }
+}
+
+type InboundRow = {
+  id: string;
+  status: InboundEmailStatus;
+  fromAddress: string | null;
+  fromName: string | null;
+  subject: string | null;
+  textBody: string | null;
+  provider: string | null;
+  parsed: Prisma.JsonValue | null;
+  missing: Prisma.JsonValue | null;
+  reading: Prisma.JsonValue | null;
+  reservationId: string | null;
+  receivedAt: Date;
+  reservation: { reference: string } | null;
+};
+
+/** The reading as stored, or null for a row written before L-A or never read. */
+function readingOf(value: Prisma.JsonValue | null): ReadingMeta | null {
+  if (!value || typeof value !== 'object' || Array.isArray(value)) return null;
+  const v = value as Record<string, unknown>;
+  if (typeof v.kind !== 'string') return null;
+  return {
+    kind: v.kind as ReadingMeta['kind'],
+    provider: typeof v.provider === 'string' ? v.provider : null,
+    confidence: typeof v.confidence === 'number' ? v.confidence : 0,
+    summary: typeof v.summary === 'string' ? v.summary : '',
+    model: typeof v.model === 'string' ? v.model : '',
+  };
 }
 
 function forwardingView(row: { parsed: Prisma.JsonValue | null; receivedAt: Date } | null): InboundSettings['forwarding'] {

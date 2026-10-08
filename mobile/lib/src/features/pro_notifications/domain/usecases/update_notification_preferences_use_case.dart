@@ -17,8 +17,9 @@ class PreferencesPatch extends Equatable {
   /// The platform's messages (E-A).
   final bool? platform;
 
-  /// New bookings from the site or an import (06/10/2026).
-  final bool? bookings;
+  /// New bookings from the site, an import or the counter (06/10/2026); since N-A (08/10/2026) a
+  /// three-way choice: 'immediate', 'hourly' (the digest) or 'never'.
+  final String? bookings;
   @override
   List<Object?> get props => [arrivals, returns, shuttles, platform, bookings];
 }

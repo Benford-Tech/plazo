@@ -21,6 +21,8 @@ const counts = {
   incomplete: 0,
   unrecognised: 0,
   dismissed: 0,
+  handled: 0,
+  archived: 0,
   forwarding: 0,
 };
 const settings = (over: Partial<InboundSettings> = {}): InboundSettings => ({

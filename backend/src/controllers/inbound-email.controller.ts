@@ -6,7 +6,7 @@ import { INBOUND_EMAIL_SECRET, inboundEmailAvailable } from '@/config';
 import { InboundEmailStatus } from '@/database';
 import { InboundPayload } from '@/domain/inbound-email';
 import { RequestWithStaffSession } from '@/middlewares/staff-auth.middleware';
-import { InboundEmailService } from '@/services/inbound-email.service';
+import { INBOUND_VIEWS, InboundEmailService, InboundView } from '@/services/inbound-email.service';
 import catchAsync from '@/utils/catchAsync';
 import { HttpException } from '@/utils/httpException';
 
@@ -36,18 +36,25 @@ export class InboundEmailController {
     res.json(await this.inbound.enableAddress(req.staff, { regenerate: req.body?.regenerate === true }));
   });
 
-  /** GET /internal/inbound/emails?status= */
+  /** GET /internal/inbound/emails?view=todo|done|archived&status= → { data, counts: { todo, done, archived } } */
   public list = catchAsync(async (req: RequestWithStaffSession, res: Response) => {
+    const view =
+      typeof req.query.view === 'string' && (INBOUND_VIEWS as string[]).includes(req.query.view) ? (req.query.view as InboundView) : undefined;
     const status =
       typeof req.query.status === 'string' && (STATUSES as string[]).includes(req.query.status)
         ? (req.query.status as InboundEmailStatus)
         : undefined;
-    res.json({ data: await this.inbound.list(req.staff, { status }) });
+    res.json(await this.inbound.list(req.staff, { view, status }));
   });
 
-  /** POST /internal/inbound/emails/:id/dismiss */
-  public dismiss = catchAsync(async (req: RequestWithStaffSession, res: Response) => {
-    res.json({ data: await this.inbound.dismiss(req.staff, req.params.id as string) });
+  /** POST /internal/inbound/emails/:id/handle (T-A « Marquer comme traité »); /dismiss is its deprecated alias. */
+  public handle = catchAsync(async (req: RequestWithStaffSession, res: Response) => {
+    res.json({ data: await this.inbound.handle(req.staff, req.params.id as string) });
+  });
+
+  /** POST /internal/inbound/emails/:id/archive (T-A « Archiver ») */
+  public archive = catchAsync(async (req: RequestWithStaffSession, res: Response) => {
+    res.json({ data: await this.inbound.archive(req.staff, req.params.id as string) });
   });
 
   /** POST /internal/inbound/emails/:id/attach  { reservationId } */

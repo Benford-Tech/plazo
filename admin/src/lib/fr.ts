@@ -11,6 +11,8 @@ import type {
   StaffRole,
   AlertKind,
   InboundEmailStatus,
+  InboundEmailView,
+  InboundReadingKind,
   ShuttleDirection,
   WaveState,
 } from "./types";
@@ -62,6 +64,9 @@ export const fr = {
       "Un trajet est déjà en cours : terminez-le avant d'en démarrer un autre.",
     inbound_unavailable:
       "La réception des mails n'est pas configurée sur la plateforme.",
+    // T-A (08/10/2026): the two refusals of the inbox.
+    archived: "Ce mail est archivé : il ne peut plus être marqué comme traité.",
+    forwarding: "Une confirmation de transfert ne s'archive pas.",
     trip_not_running: "Ce trajet est terminé.",
     invalid_passengers:
       "Un des clients ne peut pas monter dans cette navette (statut changé ?). Actualisez la liste.",
@@ -2301,6 +2306,8 @@ export const inboundFr = {
     incomplete: "Incomplets",
     unrecognised: "Non reconnus",
     dismissed: "Classés",
+    handled: "Traités",
+    archived: "Archivés",
     forwarding: "Confirmation de transfert",
   } satisfies Record<InboundEmailStatus, string>,
   toCheck: (n: number) =>
@@ -2310,34 +2317,87 @@ export const inboundFr = {
         ? "1 mail à vérifier"
         : `${n} mails à vérifier`,
   openList: "Voir les mails",
+  // M-A « Boîte de réception » + T-A « Deux gestes » (08/10/2026): three tabs, a list and a reading pane.
   list: {
-    title: "Mails à vérifier",
+    title: "Boîte de réception",
     subtitle:
-      "Les mails transférés que Plazo n'a pas pu enregistrer seul, puis ceux des 30 derniers jours.",
-    empty: "Aucun mail à vérifier.",
+      "Les mails transférés à votre adresse Plazo : ceux à traiter, puis les traités et les archivés.",
+    tabs: {
+      todo: "À traiter",
+      done: "Traités",
+      archived: "Archivés",
+    } satisfies Record<InboundEmailView, string>,
+    empty: {
+      todo: "Aucun mail à traiter.",
+      done: "Aucun mail traité ces 30 derniers jours.",
+      archived: "Aucun mail archivé ces 90 derniers jours.",
+    } satisfies Record<InboundEmailView, string>,
     loadError: "Impossible de charger les mails.",
-    from: (name: string | null, address: string | null) =>
-      [name, address].filter(Boolean).join(" · ") || "expéditeur inconnu",
-    received: (at: string) => `reçu le ${at}`,
-    provider: (p: string) => `Reconnu : ${p}`,
-    missing: (fields: string) => `Manque : ${fields}`,
+    /** The badge of one mail (singular; the counts of the Parking block use `status` above). */
+    status: {
+      imported: "Enregistré",
+      duplicate: "Déjà connu",
+      incomplete: "Incomplet",
+      unrecognised: "Non reconnu",
+      dismissed: "Classé",
+      handled: "Traité",
+      archived: "Archivé",
+      forwarding: "Confirmation de transfert",
+    } satisfies Record<InboundEmailStatus, string>,
+    noSubject: "(sans objet)",
+    unknownSender: "expéditeur inconnu",
+    from: "De",
+    /** "Nom <adresse>", or whichever of the two the mail carried. */
+    sender: (name: string | null, address: string | null) =>
+      name && address
+        ? `${name} <${address}>`
+        : (name ?? address ?? "expéditeur inconnu"),
+    received: "Reçu le",
+    recognised: "Reconnu",
+    /** L-A (08/10/2026): what Claude made of a mail no importer knew. */
+    reading: {
+      title: "Lu par Claude",
+      kind: {
+        booking: "Réservation",
+        modification: "Modification",
+        cancellation: "Annulation",
+        other: "Autre mail",
+      } satisfies Record<InboundReadingKind, string>,
+      confidence: (percent: number) => `confiance ${percent} %`,
+      unsure: "lecture incertaine : vérifiez chaque champ",
+      notBooking:
+        "Rien n'est créé de lui-même : lisez le mail et agissez sur la réservation concernée.",
+    },
+    understood: "Ce que Plazo a compris",
+    missingBadge: "manquant",
+    /** The server refused a complete mail at import (codes of `missing` that are not fields). */
+    refused: (reasons: string) => `Réservation refusée à l'import : ${reasons}`,
+    refusal: (code: string) => fr.errors[code as keyof typeof fr.errors] ?? code,
     field: {
       arrivalAt: "date d'arrivée",
       returnAt: "date de retour",
       customerName: "nom du client",
       customerPhone: "téléphone",
+      customerEmail: "e-mail du client",
       plate: "plaque",
+      externalReference: "référence",
+      departureFlight: "vol aller",
+      returnFlight: "vol retour",
+      passengers: "passagers",
+      priceCents: "prix",
     } as Record<string, string>,
     complete: "Compléter et enregistrer",
     typeIt: "Saisir la réservation",
-    openBooking: (ref: string) => `Ouvrir ${ref}`,
-    showText: "Voir le mail",
-    hideText: "Masquer le mail",
+    openBooking: (ref: string) =>
+      ref ? `Ouvrir la réservation ${ref}` : "Ouvrir la réservation",
     textGone: "Texte effacé (30 jours).",
-    dismiss: "Classer sans suite",
-    dismissed: "Mail classé.",
+    handle: "Marquer comme traité",
+    archive: "Archiver",
+    handled: "Mail marqué comme traité.",
+    archived: "Mail archivé.",
     attached: "Mail rattaché à la réservation.",
     back: "Réservations",
+    backToList: "Retour",
   },
 };
 
@@ -2593,6 +2653,8 @@ export const inboundWizardFr = {
       incomplete: "Incomplet",
       unrecognised: "Non reconnu",
       dismissed: "Classé",
+      handled: "Traité",
+      archived: "Archivé",
       forwarding: "Code Gmail",
     } satisfies Record<InboundEmailStatus, string>,
   },

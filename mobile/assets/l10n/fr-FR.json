@@ -372,7 +372,10 @@
     },
     "shuttle": "Navette",
     "notify_bookings": "Nouvelles réservations",
-    "notify_bookings_help": "Une réservation arrive du site Plazo ou d'un import, sans passer par vous."
+    "notify_bookings_help": "Réservations arrivées du site Plazo, d'un import ou du comptoir. « Toutes les heures » envoie un récapitulatif, jamais entre 22 h et 7 h.",
+    "notify_bookings_immediate": "À chaque réservation",
+    "notify_bookings_hourly": "Toutes les heures",
+    "notify_bookings_never": "Jamais"
   },
   "errors": {
     "generic": "Une erreur est survenue. Réessayez.",

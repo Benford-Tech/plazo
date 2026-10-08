@@ -1,4 +1,4 @@
-import { StaffRole } from '@/database';
+import { BookingNotify, StaffRole } from '@/database';
 
 export type Permission =
   | 'dashboard:view'
@@ -40,4 +40,12 @@ export function allowedPosts(role: StaffRole): StaffRole[] {
 /** The post shown in the app: the one chosen, else the role itself. */
 export function effectivePost(staff: { role: StaffRole; post: StaffRole | null }): StaffRole {
   return staff.post && allowedPosts(staff.role).includes(staff.post) ? staff.post : staff.role;
+}
+
+/**
+ * N-A (08/10/2026): how a new staff member hears of the new bookings. A manager gets the hourly digest, the others a
+ * push per booking (the counter and the drivers act on each one).
+ */
+export function defaultBookingNotify(role: StaffRole): BookingNotify {
+  return role === 'manager' ? 'hourly' : 'immediate';
 }

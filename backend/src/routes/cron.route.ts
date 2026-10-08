@@ -23,6 +23,19 @@ import { CronAuthMiddleware } from '@/middlewares/cron-auth.middleware';
  *     responses:
  *       200:
  *         description: "{ checked, sent, sms: { operators, checked, sent, abandoned } }"
+ * /internal/cron/booking-digest:
+ *   get:
+ *     summary: Send the hourly « Récapitulatif horaire » of the new bookings (every full hour, by an external scheduler)
+ *     tags: [Cron]
+ *     description: >
+ *       "Requires Authorization: Bearer <CRON_SECRET>." N-A (08/10/2026): for each active operator, one push to the staff
+ *       whose booking notification is `hourly`, counting the bookings created since the last digest (any channel) and
+ *       the emails waiting in the inbox; nothing when no booking came in. Skipped between 22:00 and 07:00 (local time of
+ *       the operator's first parking) without moving the watermark, so the 07:00 digest covers the night; skipped too
+ *       when the previous digest is less than 50 minutes old.
+ *     responses:
+ *       200:
+ *         description: "{ operators, sent, skipped }"
  * /internal/cron/purge-expired-tokens:
  *   get:
  *     summary: Delete expired staff tokens, end lapsed arrival signals and shuttle trips, retry or abandon waiting SMS, purge the SMS outbox after 30 days, erase car positions and push phones 2 days after the return, anonymise bookings 12 months after it (every night)
@@ -90,5 +103,6 @@ export class CronRoute implements Routes {
     this.router.get('/internal/cron/expire-payment-holds', CronAuthMiddleware(), this.cron.expirePaymentHolds);
     this.router.get('/internal/cron/track-return-flights', CronAuthMiddleware(), this.cron.trackReturnFlights);
     this.router.get('/internal/cron/remind-tomorrow', CronAuthMiddleware(), this.cron.remindTomorrow);
+    this.router.get('/internal/cron/booking-digest', CronAuthMiddleware(), this.cron.bookingDigest);
   }
 }

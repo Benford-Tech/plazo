@@ -48,6 +48,8 @@ model Operator {
   // where their mailbox forwards the comparators' confirmations. Set from the operator's creation (08/10/2026);
   // null only for a row older than the migration inbound_slug_for_all, which filled them all.
   inboundSlug            String?        @unique
+  // N-A (08/10/2026): end of the last hourly booking digest's window (null: never sent; see BookingDigestService).
+  bookingDigestAt        DateTime?
   createdAt              DateTime       @default(now())
   updatedAt              DateTime       @default(now()) @updatedAt
 
@@ -70,6 +72,13 @@ enum StaffRole {
   agent
   driver
   valet
+}
+
+// N-A (08/10/2026): how a staff member hears of the new bookings (see Staff.bookingNotify).
+enum BookingNotify {
+  immediate
+  hourly
+  never
 }
 
 // Operator personnel: manager, front-desk agent, shuttle driver, valet.
@@ -103,9 +112,10 @@ model Staff {
   // Push notifications of the shuttles' departures and returns (N-A, 05/10/2026).
   notifyShuttles  Boolean    @default(true)
   /**
-   * Push "Nouvelle réservation" for bookings made on the site or imported (06/10/2026).
+   * New bookings (N-A, 08/10/2026): a push per booking made on the site or imported (`immediate`, 06/10/2026), the
+   * hourly digest of every channel (`hourly`, managers by default), or nothing (`never`).
    */
-  notifyBookings  Boolean    @default(true)
+  bookingNotify   BookingNotify @default(immediate)
   // Messages from the platform (E-A, 05/10/2026): the super admin's broadcasts to the staff.
   notifyPlatform  Boolean    @default(true)
   createdAt       DateTime   @default(now())
@@ -355,8 +365,10 @@ enum InboundEmailStatus {
   duplicate // the booking already existed (external reference)
   incomplete // recognised, but a required field is missing: staff complete it from "À vérifier"
   unrecognised // no importer knows this email: staff read it and type the booking
-  dismissed // staff closed it without a booking
+  dismissed // deprecated (T-A, 08/10/2026): replaced by `handled`; the migration inbound_statuses_data moved the rows
   forwarding // G-B (07/10/2026): a mail provider's forwarding confirmation (Gmail's code), shown in the setup wizard
+  handled // T-A (08/10/2026): "Marquer comme traité", dealt with, with or without a booking
+  archived // T-A (08/10/2026): out of the inbox, still readable in "Archivés" (90 days)
 }
 
 model InboundEmail {
@@ -371,6 +383,8 @@ model InboundEmail {
   provider      String?
   parsed        Json?
   missing       Json?
+  // L-A (08/10/2026): what Claude made of an email no importer knew: { kind, provider, confidence, summary, model }.
+  reading       Json?
   reservationId String?
   receivedAt    DateTime           @default(now())
   createdAt     DateTime           @default(now())
