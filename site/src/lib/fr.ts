@@ -98,9 +98,9 @@ const frBase = {
     /** Phones: the reassurance strip becomes three chips on the photo. */
     chips: ["Prix total", "Navette gratuite", "Annulation claire"],
     heroLead: "Comparez les parkings privés autour de l’aéroport, voyez le prix total pour vos dates et réservez en ligne.",
-    /** T-A (05/10/2026): the title in two tones, "Votre parking" then the airport. */
-    heroFind: "Votre parking",
-    heroNear: (airport: string) => `à ${airport}`,
+    /** T-A (05/10/2026): the title in two tones, "Votre parking à" then the airport (C-A, 08/10/2026: "l’aéroport de …", the travellers' words). */
+    heroFind: "Votre parking à",
+    heroNear: (airport: string) => `l’aéroport de ${airport}`,
     heroKicker: "Prêt à partir ?",
     mapAvailable: (n: number) => (n === 0 ? "Aucune place à ces dates" : n === 1 ? "1 parking disponible" : `${n} parkings disponibles`),
     mapDistance: (km: string | null, shuttle: number | null) =>
@@ -132,8 +132,8 @@ const frBase = {
     ownerCallout: "Vous gérez un parking près de l’aéroport ?",
     ownerJoin: `Rejoignez ${P}`,
     ownerPitch: "planning, navette et réservations en ligne au même endroit.",
-    faqTitle: "Bon à savoir",
-    faqLead: (airport: string) => `Les réponses aux questions les plus fréquentes sur le stationnement à ${airport}.`,
+    faqTitle: "Questions fréquentes",
+    faqLead: (airport: string) => `Les questions les plus fréquentes sur le parking à l’aéroport de ${airport}.`,
     faq: [
       [
         "Combien de temps avant mon vol dois-je arriver au parking ?",
@@ -149,14 +149,10 @@ const frBase = {
         "Oui, selon les conditions du parking choisi, affichées sur sa fiche et rappelées avant de réserver. Comme rien n’est payé en ligne, il n’y a rien à rembourser.",
       ],
     ] as [string, string][],
-    airportFaq: {
-      "lyon-saint-exupery": [
-        [
-          "Où sont les terminaux de Lyon Saint-Exupéry ?",
-          "Les terminaux 1 et 2 sont reliés ; la navette vous dépose devant celui de votre vol.",
-        ],
-      ],
-    } as Record<string, [string, string][]>,
+  },
+  /** C-A (08/10/2026): the airport's guide (its text is in airport-guides.ts). */
+  guide: {
+    onThisPage: "Sur cette page",
   },
   results: {
     available: (n: number) => (n === 0 ? "Aucun parking disponible" : `${n} parking${n > 1 ? "s" : ""} disponible${n > 1 ? "s" : ""}`),
