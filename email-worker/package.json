@@ -9,9 +9,6 @@
     "typecheck": "tsc --noEmit",
     "deploy": "npx wrangler deploy"
   },
-  "dependencies": {
-    "postal-mime": "^4.0.5"
-  },
   "devDependencies": {
     "@cloudflare/workers-types": "^5.20261008.1",
     "typescript": "^5.9.3",
