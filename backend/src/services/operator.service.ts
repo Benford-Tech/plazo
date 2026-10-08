@@ -7,6 +7,7 @@ import { BCRYPT_ROUNDS } from '@/config';
 import prisma, { Prisma } from '@/database';
 import { HttpException } from '@/utils/httpException';
 import { normalizeEmail } from './auth.service';
+import { allocateInboundSlug } from './inbound-slug';
 
 export interface OperatorSetup {
   operatorName: string;
@@ -46,6 +47,12 @@ async function freeListingSlug(tx: Prisma.TransactionClient, airportId: string, 
   for (let n = 2; ; n += 1) if (!taken.has(`${base}-${n}`)) return `${base}-${n}`;
 }
 
+/** The columns named by a unique-constraint error (P2002), e.g. ['email']. */
+function uniqueTarget(error: Prisma.PrismaClientKnownRequestError): string[] {
+  const target = (error.meta as { target?: unknown } | undefined)?.target;
+  return Array.isArray(target) ? target.map(String) : typeof target === 'string' ? [target] : [];
+}
+
 @Service()
 export class OperatorService {
   /**
@@ -64,11 +71,14 @@ export class OperatorService {
 
     try {
       return await prisma.$transaction(async tx => {
+        const slug = slugTaken ? `${baseSlug}-${slugTaken + 1}` : baseSlug;
         const operator = await tx.operator.create({
           data: {
             name: data.operatorName.trim(),
-            slug: slugTaken ? `${baseSlug}-${slugTaken + 1}` : baseSlug,
+            slug,
             commissionBps: data.commissionBps ?? null,
+            // The inbound address exists from the start (08/10/2026): the operator only sets its forwarding rule.
+            inboundSlug: await allocateInboundSlug(tx, slug),
           },
         });
         const parking = await tx.parking.create({
@@ -100,8 +110,9 @@ export class OperatorService {
         return { operator, parking, manager, listing };
       });
     } catch (error) {
-      // The same email created at the same moment by another request.
-      if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === 'P2002') {
+      // The same email created at the same moment by another request (another unique field, such as the
+      // inbound slug drawn at random, is not the caller's fault: let it surface as a server error).
+      if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === 'P2002' && uniqueTarget(error).includes('email')) {
         throw new HttpException(httpStatus.CONFLICT, 'This email is already used', 'email_taken');
       }
       throw error;

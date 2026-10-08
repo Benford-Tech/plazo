@@ -64,6 +64,8 @@ describe("InboundSetupWizard (G-B : relier la boîte mail)", () => {
     expect(within(wizard).getByRole("heading", { name: "Relier votre boîte mail" })).toBeInTheDocument();
     expect(within(wizard).getByText("Adresse").closest("li")).toHaveAttribute("aria-current", "step");
     expect(within(wizard).getByTestId("wizard-address")).toHaveTextContent(ADDRESS);
+    // The address exists from the start: the wizard never asks the server for one.
+    expect(api.enableInboundAddress).not.toHaveBeenCalled();
 
     // Step 2: nothing chosen yet, nothing to continue with.
     await user.click(screen.getByTestId("wizard-next"));
@@ -130,15 +132,15 @@ describe("InboundSetupWizard (G-B : relier la boîte mail)", () => {
     expect(await screen.findByRole("button", { name: "Revoir les étapes" })).toBeInTheDocument();
   });
 
-  it("sans adresse : l'assistant l'active ; Outlook n'a pas d'autorisation et signale le blocage possible en entreprise ; Échap ferme", async () => {
+  it("loueur d'avant le 08/10/2026 sans adresse : l'assistant la crée seul ; Outlook n'a pas d'autorisation et signale le blocage possible en entreprise ; Échap ferme", async () => {
     const user = userEvent.setup();
-    api.getInboundSettings.mockResolvedValue(settings({ address: null }));
+    api.getInboundSettings.mockResolvedValueOnce(settings({ address: null }));
     renderCard();
     await user.click(await screen.findByTestId("inbound-connect"));
-    expect(screen.getByTestId("wizard-next")).toBeDisabled();
-    await user.click(screen.getByTestId("wizard-enable"));
-    expect(api.enableInboundAddress).toHaveBeenCalledWith(false);
     expect(await screen.findByTestId("wizard-address")).toHaveTextContent(ADDRESS);
+    expect(api.enableInboundAddress).toHaveBeenCalledTimes(1);
+    expect(api.enableInboundAddress).toHaveBeenCalledWith(false);
+    expect(screen.queryByTestId("wizard-preparing")).not.toBeInTheDocument();
     await user.click(screen.getByTestId("wizard-next"));
     await user.click(within(screen.getByTestId("provider-outlook")).getByRole("radio"));
     expect(screen.getByText(/Pas d'autorisation à donner/)).toBeInTheDocument();

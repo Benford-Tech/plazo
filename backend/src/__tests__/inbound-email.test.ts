@@ -1,7 +1,8 @@
 import { readFileSync } from 'fs';
 import { join } from 'path';
 import { Container } from 'typedi';
-import prisma from '@/database';
+import prisma, { Prisma } from '@/database';
+import { allocateInboundSlug } from '@/services/inbound-slug';
 import { forwardingConfirmationOf, inboundSlugOf, newInboundSlug, recipientsOf, stripHtml, textOf } from '@/domain/inbound-email';
 import { NotificationService } from '@/services/notification.service';
 import { ONESIGNAL_NOTIFICATIONS_URL } from '@/services/push.service';
@@ -85,6 +86,37 @@ describe('lecture du webhook (domaine)', () => {
   });
 });
 
+describe('adresse de réception dès le départ (08/10/2026)', () => {
+  it('la migration inbound_slug_for_all donne une adresse unique aux loueurs créés avant, et ne touche pas les autres', async () => {
+    const a = await setupOperator();
+    const b = await setupOperator();
+    const c = await setupOperator();
+    const before = await prisma.operator.findUniqueOrThrow({ where: { id: a.operator.id }, select: { inboundSlug: true, slug: true } });
+    expect(before.inboundSlug).toMatch(/^parking-test-\d+-[0-9a-f]{4}$/);
+    const untouched = (await prisma.operator.findUniqueOrThrow({ where: { id: b.operator.id }, select: { inboundSlug: true } })).inboundSlug;
+    // a: a usual slug; c: a long slug whose 24-character cut ends on a hyphen, which the SQL trims like newInboundSlug().
+    await prisma.operator.update({ where: { id: a.operator.id }, data: { inboundSlug: null } });
+    await prisma.operator.update({ where: { id: c.operator.id }, data: { inboundSlug: null, slug: 'abcdefghijklmnopqrstuvw-xyz-long' } });
+    const sql = readFileSync(join(__dirname, '../prisma/migrations/20261008120000_inbound_slug_for_all/migration.sql'), 'utf8');
+    await prisma.$executeRawUnsafe(sql);
+    const slugOf = async (id: string) => (await prisma.operator.findUniqueOrThrow({ where: { id }, select: { inboundSlug: true } })).inboundSlug;
+    expect(await slugOf(a.operator.id)).toMatch(new RegExp(`^${before.slug}-[0-9a-f]{4}$`));
+    expect(await slugOf(c.operator.id)).toMatch(/^abcdefghijklmnopqrstuvw-[0-9a-f]{4}$/);
+    expect(await slugOf(b.operator.id)).toBe(untouched);
+    expect(await slugOf(a.operator.id)).not.toBe(untouched);
+  });
+});
+
+describe('allocateInboundSlug', () => {
+  it('tire un nouveau suffixe tant que le candidat existe déjà', async () => {
+    const findUnique = jest.fn().mockResolvedValueOnce({ id: 'taken' }).mockResolvedValueOnce({ id: 'taken' }).mockResolvedValueOnce(null);
+    const slug = await allocateInboundSlug({ operator: { findUnique } } as unknown as Prisma.TransactionClient, 'Parking Démo LYS');
+    expect(findUnique).toHaveBeenCalledTimes(3);
+    expect(slug).toMatch(/^parking-demo-lys-[0-9a-f]{4}$/);
+    expect(findUnique.mock.calls.map(([args]) => args.where.inboundSlug)).toContain(slug);
+  });
+});
+
 describe('POST /public/inbound/email', () => {
   it('refuse sans le secret ; ignore un destinataire inconnu ; crée la réservation, prévient l’équipe, refuse le doublon', async () => {
     const op = await setupOperator();
@@ -92,12 +124,13 @@ describe('POST /public/inbound/email', () => {
     expect((await api().post('/api/public/inbound/email').send({ items: [] })).status).toBe(401);
     expect((await api().post('/api/public/inbound/email?secret=wrong').send({ items: [] })).status).toBe(401);
 
-    // Nothing arrives before the manager enables the address.
+    // The address exists from the operator's creation (08/10/2026): no activation step, the route just returns it.
     const before = await api().get('/api/internal/inbound/settings').set(auth(op.token));
-    expect(before.body).toMatchObject({ available: true, address: null, toCheck: 0 });
+    expect(before.body).toMatchObject({ available: true, toCheck: 0 });
+    expect(before.body.address).toMatch(/^parking-test-\d+-[0-9a-f]{4}@in\.plazo\.test$/);
     const enabled = await api().post('/api/internal/inbound/address').set(auth(op.token)).send({});
     expect(enabled.status).toBe(200);
-    expect(enabled.body.address).toMatch(/^parking-test-\d+-[0-9a-f]{4}@in\.plazo\.test$/);
+    expect(enabled.body.address).toBe(before.body.address);
     const address = enabled.body.address as string;
 
     const unknown = await api()

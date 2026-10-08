@@ -50,7 +50,9 @@ Ne construire QUE ce qui règle la douleur n°1 du client.
 1. **Réservations**
    - Saisie manuelle (téléphone, comptoir) + import des réservations des autres canaux
      (06/10/2026 : l'import par copier-coller d'un mail est retiré ; **M-A « synchronisation de la boîte mail »** : adresse de
-     réception `Operator.inboundSlug@INBOUND_EMAIL_DOMAIN` activée dans Réglages, règle de transfert dans la messagerie du loueur,
+     réception `Operator.inboundSlug@INBOUND_EMAIL_DOMAIN` **créée avec le loueur** (08/10/2026, « configurée dès le départ » :
+     `allocateInboundSlug` à la création, migration `inbound_slug_for_all` pour les loueurs existants, plus de bouton « Activer » ;
+     `POST /internal/inbound/address` ne sert plus qu'à « Nouvelle adresse »), règle de transfert dans la messagerie du loueur,
      réception par **Cloudflare Email Routing** et le relais `email-worker/` (08/10/2026, à la place de Brevo, payant ; le relais
      poste chaque mail sur `POST /public/inbound/email` avec l'en-tête `X-Inbound-Secret`), `InboundEmailService` + `domain/inbound-email.ts`,
      table `inbound_emails`, réservation créée seule si complète (`ReservationService.createFromImport`), sinon page
@@ -322,7 +324,10 @@ Plazo reprend la stack et les conventions des dépôts `lovenest-backend`, `love
 - Cartographie : photo aérienne IGN BD ORTHO et Plan IGN (MapLibre + Terra Draw sur le web, `flutter_map` dans l'app) ; Google Maps
   seulement pour les liens d'itinéraire, ses conditions interdisant de tracer ou d'analyser sur son imagerie. SMS et envoi des e-mails :
   Brevo ; réception des e-mails transférés par les loueurs : Cloudflare Email Routing + relais `email-worker/` (08/10/2026 ; le domaine
-  `plazo.fr` reste enregistré chez Hostinger, ses DNS sont chez Cloudflare, adresses `<slug>@in.plazo.fr` illimitées).
+  `plazo.fr` reste enregistré chez Hostinger, ses DNS sont chez Cloudflare, adresses `<slug>@plazo.fr` illimitées ; **R-A du
+  08/10/2026** : sur le domaine principal, pas sur `in.plazo.fr`, car Cloudflare n'offre le « catch-all » que sur le domaine
+  principal ; `reservations@plazo.fr` a sa propre règle vers la boîte de Plazo, et le Worker renvoie à `FALLBACK_ADDRESS` les
+  mails des adresses qui ne sont à aucun parking).
 - Suivi de vols : AeroDataBox par défaut, AirLabs au choix (`FLIGHT_TRACKING_PROVIDER`), derrière une interface
   interchangeable ; un seul fournisseur à la fois, une requête par vol, pas de repli automatique.
 
@@ -362,7 +367,7 @@ Le nom du produit doit rester dans UN seul fichier de configuration (il peut enc
   les voyageurs (appareils enregistrés, deux envois par jour au plus, 429 `daily_limit`).
 - `site/` : site Plazo voyageurs (Next.js), servi à la racine du domaine.
 - `email-worker/` : relais des mails entrants (Cloudflare Email Worker, `postal-mime`) : Email Routing lui passe chaque mail de
-  `in.plazo.fr` (règle « catch-all »), il le poste sur l'API ; déployé par Cloudflare depuis ce dossier ; mise en place dans son README.
+  `plazo.fr` (règle « catch-all » du domaine principal), il le poste sur l'API ; déployé par Cloudflare depuis ce dossier ; mise en place dans son README.
 - `mobile/` : app Flutter (jalon 6 commencé) : un seul projet, deux apps (`AppConstants.flavor`) : « Plazo », onglets
   Rechercher / Mes réservations / Plus pour le voyageur (mêmes chemins que le site : `/:airport/recherche`, `/:airport/:parking`, `/ma-reservation…`), et le
   parcours pro (`/pro…`, comptes du personnel ; `/pro/plan` et `/pro/parking` (Occupation) pour le bloc 2 ; `/pro/reservations…` : liste,

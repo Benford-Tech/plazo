@@ -2,7 +2,7 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 import worker, { type Env } from "../src/index";
 import { alloparkForwarded } from "./samples";
 
-function message(raw: string, to = "parkair-lyon-7f3a@in.plazo.fr") {
+function message(raw: string, to = "parkair-lyon-7f3a@plazo.fr") {
   return {
     from: "bounce@gmail.com",
     to,
@@ -31,7 +31,7 @@ describe("email()", () => {
     expect(init.method).toBe("POST");
     expect((init.headers as Record<string, string>)["x-inbound-secret"]).toBe("s3cret");
     const body = JSON.parse(String(init.body));
-    expect(body.items[0].Recipients).toEqual(["parkair-lyon-7f3a@in.plazo.fr"]);
+    expect(body.items[0].Recipients).toEqual(["parkair-lyon-7f3a@plazo.fr"]);
     expect(body.items[0].From.Address).toBe("info@allopark.com");
     expect(msg.setReject).not.toHaveBeenCalled();
     expect(msg.forward).not.toHaveBeenCalled();
@@ -48,6 +48,19 @@ describe("email()", () => {
     const refused = message(alloparkForwarded);
     await worker.email(refused, env);
     expect(refused.setReject).toHaveBeenCalledTimes(1);
+  });
+
+  it("adresse de plazo.fr qui n'est à aucun parking (réponse à reservations@, contact@…) : part à l'adresse de secours, sinon refusée", async () => {
+    vi.stubGlobal("fetch", vi.fn(async () => new Response(JSON.stringify({ received: 1, imported: 0, toCheck: 0, ignored: 1 }))));
+    const kept = message(alloparkForwarded, "reservations@plazo.fr");
+    await worker.email(kept, { ...env, FALLBACK_ADDRESS: "secours@example.com" });
+    expect(kept.forward).toHaveBeenCalledWith("secours@example.com");
+    expect(kept.setReject).not.toHaveBeenCalled();
+
+    const refused = message(alloparkForwarded, "contact@plazo.fr");
+    await worker.email(refused, env);
+    expect(refused.forward).not.toHaveBeenCalled();
+    expect(refused.setReject).toHaveBeenCalledWith("No mailbox for contact@plazo.fr");
   });
 
   it("sans secret configuré, rien n'est envoyé et le mail est refusé", async () => {

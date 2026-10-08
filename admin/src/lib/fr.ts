@@ -2375,7 +2375,7 @@ export const inboundWizardFr = {
     title: "Votre adresse Plazo",
     intro:
       "Plazo reçoit les mails de réservation à cette adresse. Seuls les mails que votre messagerie y transfère arrivent dans Plazo : vos autres mails restent privés.",
-    enable: "Activer mon adresse",
+    preparing: "Préparation de votre adresse…",
   },
   mail: {
     title: "Sur quelle messagerie recevez-vous les mails d'Allopark ?",

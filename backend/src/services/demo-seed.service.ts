@@ -15,6 +15,7 @@ import {
 import { billableDays, quoteCents } from '@/domain/pricing';
 import { formatFlight, plateKey } from '@/domain/reservation';
 import { addDays, localDate, parseInstant } from '@/domain/time';
+import { allocateInboundSlug } from './inbound-slug';
 import { ParkingLocationService } from './parking-location.service';
 
 export const DEMO_PASSWORD_MIN_LENGTH = 10;
@@ -85,9 +86,21 @@ export class DemoSeedService {
     const grid = demoPricing(demo.pricing);
 
     const parkingId = await prisma.$transaction(async tx => {
+      // Every operator has its inbound address from the start (08/10/2026); older demo operators get theirs here.
       const operator = existing
-        ? await tx.operator.update({ where: { id: existing.id }, data: { name: demo.name, status: 'active', suspendedAt: null, isDemo: true } })
-        : await tx.operator.create({ data: { name: demo.name, slug: demo.slug, isDemo: true } });
+        ? await tx.operator.update({
+            where: { id: existing.id },
+            data: {
+              name: demo.name,
+              status: 'active',
+              suspendedAt: null,
+              isDemo: true,
+              ...(existing.inboundSlug ? {} : { inboundSlug: await allocateInboundSlug(tx, demo.slug) }),
+            },
+          })
+        : await tx.operator.create({
+            data: { name: demo.name, slug: demo.slug, isDemo: true, inboundSlug: await allocateInboundSlug(tx, demo.slug) },
+          });
 
       const parkingData = {
         name: demo.parkingName,

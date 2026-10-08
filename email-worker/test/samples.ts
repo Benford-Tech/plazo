@@ -25,7 +25,7 @@ export const alloparkForwarded = [
 /** Gmail asking the Plazo address to confirm a forwarding (G-B shows the code). */
 export const gmailConfirmation = [
   "From: Gmail Team <forwarding-noreply@google.com>",
-  "To: parkair-lyon-7f3a@in.plazo.fr",
+  "To: parkair-lyon-7f3a@plazo.fr",
   "Subject: (#482913507) Gmail Forwarding Confirmation - Receive Mail from contact.parkair@gmail.com",
   "Content-Type: text/plain; charset=UTF-8",
   "",

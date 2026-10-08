@@ -26,6 +26,8 @@ describe('données de démonstration', () => {
     expect(operators).toHaveLength(5);
     for (const op of operators) {
       expect(op.status).toBe('active');
+      // The inbound address exists from the start (08/10/2026).
+      expect(op.inboundSlug).toMatch(new RegExp(`^${op.slug.slice(0, 24)}-[0-9a-f]{4}$`));
       expect(op.parkings).toHaveLength(1);
       expect(op.parkings[0].listing).toMatchObject({ status: 'published' });
       expect(op.parkings[0].listing!.photos).toHaveLength(2);
@@ -57,8 +59,17 @@ describe('données de démonstration', () => {
     // A second run refreshes everything in place.
     await prisma.listing.updateMany({ data: { status: 'draft', title: 'Modifié' } });
     await prisma.operator.updateMany({ where: { slug: DEMO_OPERATORS[1].slug }, data: { status: 'suspended', suspendedAt: new Date() } });
+    // A demo operator from before 08/10/2026 (no inbound address) gets one on the next apply; the others keep theirs.
+    const inboundSlugs = async () =>
+      new Map((await prisma.operator.findMany({ select: { slug: true, inboundSlug: true } })).map(o => [o.slug, o.inboundSlug]));
+    const slugsBefore = await inboundSlugs();
+    await prisma.operator.updateMany({ where: { slug: DEMO_OPERATORS[0].slug }, data: { inboundSlug: null } });
     const second = await seed().apply('un-autre-mot-de-passe');
     expect(second).toEqual({ operatorsCreated: 0, operatorsUpdated: 5, bookingsCreated: 0, bookingsUpdated: 3 });
+    const slugsAfter = await inboundSlugs();
+    for (const demo of DEMO_OPERATORS.slice(1)) expect(slugsAfter.get(demo.slug)).toBe(slugsBefore.get(demo.slug));
+    expect(slugsAfter.get(DEMO_OPERATORS[0].slug)).toMatch(new RegExp(`^${DEMO_OPERATORS[0].slug.slice(0, 24).replace(/-+$/, '')}-[0-9a-f]{4}$`));
+    expect(slugsAfter.get(DEMO_OPERATORS[0].slug)).not.toBe(slugsBefore.get(DEMO_OPERATORS[0].slug));
     expect(await prisma.operator.count()).toBe(5);
     expect(await prisma.staff.count()).toBe(5);
     expect(await prisma.reservation.count()).toBe(3);
