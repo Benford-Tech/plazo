@@ -258,7 +258,10 @@ plans en libre-service ; dès qu'un parking a des files, l'Occupation, les fiche
     « Me proposer des files » : s'il y a des places de voiturier, les files en sont déduites ; sinon Plazo lance seul la
     passe automatique (bâtiments IGN → zones → places « peigne », toujours en peigne) puis en déduit les files. La première
     ouverture d'un plan vide (R-C) se termine désormais par cette étape « Files de rangement ». « Réinitialiser… › Files
-    seulement » retire les files vides (409 `file_occupied` si l'une contient des voitures).
+    seulement » retire les files vides (409 `file_occupied` si l'une contient des voitures). Correction du 08/10/2026
+    (« je viens de réinitialiser et ces places restent affichées ») : une réinitialisation efface aussi les places posées à
+    la main (qu'une simple régénération garde), « Tout le plan » retire les files vides, et la passe automatique, marquée sur
+    le plan, ne se relance jamais d'elle-même après une réinitialisation (« Me proposer des files » la relance à la demande).
   - *Planning des files* (`/parking/planning` quand le parking a des files ; Plazo Pro : Planning des places en mode files) :
     pour chaque jour de la fenêtre (7 ou 14 jours), les retours attendus (déjà en file / à venir), les files qui servent ce
     jour (leur voiture de devant repart ce jour-là), les files vides gardées pour ce jour, la place disponible et ce qui

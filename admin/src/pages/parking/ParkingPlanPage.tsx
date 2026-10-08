@@ -162,8 +162,13 @@ export default function ParkingPlanPage() {
   );
   // R-C: an empty plan is prepared on its own at its first opening only (not after a reset).
   const autoRun = useRef<boolean | null>(null);
+  // The automatic first pass runs once per plan: an empty plan that never had it (a reset keeps the mark,
+  // so the plan does not refill itself on the next visit; "Me proposer des files" runs it on demand).
   if (view && autoRun.current === null)
-    autoRun.current = !view.plan.outline && !view.spots.length;
+    autoRun.current =
+      !view.plan.outline &&
+      !view.spots.length &&
+      !view.plan.settings.autoSetupAt;
 
   const replaceView = useCallback(
     (next: ParkingPlanView) => {
@@ -225,14 +230,29 @@ export default function ParkingPlanPage() {
         });
       }
       if (view.spots.length) {
+        // A reset drops the spots laid by hand too (a regeneration keeps them).
         const { data } = await adminApi.replaceSpots(
           parkingId,
           view.plan.layout ?? "valet24",
           [],
+          { includeManual: true },
         );
         setView((v) => (v ? { ...v, spots: data.spots, activeSpots: 0 } : v));
       }
       await flush();
+      if (scope === "all") {
+        // The whole plan goes, files included; a file that holds cars stays and says so.
+        try {
+          await adminApi.replaceFiles(parkingId, []);
+        } catch (e) {
+          toast.error(
+            e instanceof ApiError && e.code === "file_occupied"
+              ? fr.planEditor.files.occupied
+              : describeError(e),
+          );
+        }
+        queryClient.invalidateQueries({ queryKey: ["files", parkingId] });
+      }
       toast.success(fr.parkingPlan.resetDone);
     } catch (e) {
       toast.error(describeError(e));

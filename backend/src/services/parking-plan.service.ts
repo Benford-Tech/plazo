@@ -150,11 +150,14 @@ export class ParkingPlanService {
   /** A new generation: every generated spot is replaced; the spots laid by hand stay (P-B). */
   public async replaceSpots(actor: AuthenticatedStaff, parkingId: string, data: ReplaceSpotsDto): Promise<ParkingPlanView> {
     const parking = await this.parkingOf(actor, parkingId);
-    const kept = await prisma.parkingSpot.findMany({ where: { parkingId: parking.id, manual: true }, select: { code: true } });
+    // P-B: a regeneration keeps the spots laid by hand; a reset (includeManual) drops them too.
+    const kept = data.includeManual
+      ? []
+      : await prisma.parkingSpot.findMany({ where: { parkingId: parking.id, manual: true }, select: { code: true } });
     const rows = this.rowsOf(parking.id, data.spots, false, new Set(kept.map(k => k.code)));
     await prisma.$transaction(async tx => {
       await tx.parkingPlan.upsert({ where: { parkingId: parking.id }, create: { parkingId: parking.id }, update: {} });
-      await tx.parkingSpot.deleteMany({ where: { parkingId: parking.id, manual: false } });
+      await tx.parkingSpot.deleteMany({ where: { parkingId: parking.id, ...(data.includeManual ? {} : { manual: false }) } });
       if (rows.length) await tx.parkingSpot.createMany({ data: rows });
       await tx.parkingPlan.update({ where: { parkingId: parking.id }, data: { layout: data.layout, generatedAt: new Date() } });
       await this.audit.record(

@@ -509,6 +509,7 @@ describe("plan du parking (éditeur R-A, 07/10/2026)", () => {
     );
     api.updateParkingPlan.mockResolvedValue({ data: {} });
     api.replaceSpots.mockResolvedValue({ data: view([], 1) });
+    api.replaceFiles.mockResolvedValue({ data: [] });
     const confirm = vi.spyOn(window, "confirm").mockReturnValue(true);
     renderAt("/parking/plan/places");
     fireEvent.click(
@@ -516,8 +517,14 @@ describe("plan du parking (éditeur R-A, 07/10/2026)", () => {
     );
     fireEvent.click(screen.getByRole("menuitem", { name: /Tout le plan/ }));
     expect(confirm).toHaveBeenCalledTimes(1);
+    // The spots laid by hand go too, and so do the files.
     await waitFor(() =>
-      expect(api.replaceSpots).toHaveBeenCalledWith("p1", "valet24", []),
+      expect(api.replaceSpots).toHaveBeenCalledWith("p1", "valet24", [], {
+        includeManual: true,
+      }),
+    );
+    await waitFor(() =>
+      expect(api.replaceFiles).toHaveBeenCalledWith("p1", []),
     );
     // The IGN buildings sync at opening saves first: the reset's patch is the one without outline.
     await waitFor(() =>
@@ -796,5 +803,25 @@ describe("plan du parking (éditeur R-A, 07/10/2026)", () => {
     expect(screen.getByTestId("plan-count").textContent).toBe(
       "1 file · 2 voitures",
     );
+  });
+
+  it("ne relance pas la préparation automatique sur un plan vidé par une réinitialisation", async () => {
+    api.getParkingPlan.mockResolvedValue({
+      ...view([]),
+      plan: {
+        ...view([]).plan,
+        outline: null,
+        zones: [],
+        settings: { autoSetupAt: "2026-10-08T06:00:00.000Z" },
+      },
+    });
+    api.updateParkingPlan.mockResolvedValue({ data: {} });
+    renderAt("/parking/plan");
+    await screen.findByRole("button", { name: "Contour" });
+    await new Promise((r) => setTimeout(r, 50));
+    expect(api.parcelsAt).not.toHaveBeenCalled();
+    expect(api.suggestZones).not.toHaveBeenCalled();
+    expect(api.replaceSpots).not.toHaveBeenCalled();
+    expect(screen.queryByText("Préparation du plan")).not.toBeInTheDocument();
   });
 });

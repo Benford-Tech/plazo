@@ -451,11 +451,17 @@ export function PlanEditor({
       return;
     }
     setAuto({});
+    // The pass is marked on the plan first: it never replays by itself, even after a reset.
+    const marked = {
+      ...current,
+      settings: { ...current.settings, autoSetupAt: new Date().toISOString() },
+    };
+    update({ settings: marked.settings });
     try {
       const r = await autoSetup({
         parkingId,
         position,
-        study: current,
+        study: marked,
         layout: passLayout,
         newId,
         save: async (patch) => {

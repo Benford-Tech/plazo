@@ -93,6 +93,8 @@ export interface CapacitySettings {
   zonesAuto?: boolean;
   /** H-A: false stops Claude's proposal from counting grass as parkable. */
   suggestGrass?: boolean;
+  /** R-C: when the automatic first pass ran (ISO date); it never runs again by itself, even after a reset. */
+  autoSetupAt?: string;
 }
 
 export const DEFAULT_SETTINGS: CapacitySettings = {
@@ -242,8 +244,19 @@ export interface ZoneSuggestionOptions {
 
 export interface ZoneSuggestion {
   zones: Zone[];
-  surfaces: { name: string; label: string; surface: string; confidence: number; area: number }[];
-  image: { width: number; height: number; metresPerPixel: number; zoom: number };
+  surfaces: {
+    name: string;
+    label: string;
+    surface: string;
+    confidence: number;
+    area: number;
+  }[];
+  image: {
+    width: number;
+    height: number;
+    metresPerPixel: number;
+    zoom: number;
+  };
   model: string;
   usage: { inputTokens: number; outputTokens: number };
 }

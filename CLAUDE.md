@@ -173,8 +173,10 @@ Ne construire QUE ce qui règle la douleur n°1 du client.
      libèrent la file. Éditeur du plan : outil **Files** (un trait = une file, capacité déduite de la longueur, liste modifiable).
      **Suite du 08/10/2026** : barre d'outils Contour · Files · Repères, les outils de l'estimateur repliés sous « Avancé »
      (`PRIMARY_TOOLS` / `ADVANCED_TOOLS` dans `plan/types.ts`) ; « Me proposer des files » (files déduites des places de voiturier,
-     sinon passe automatique en peigne puis files ; `AutoStep` `files` à la fin de la passe R-C) ; « Réinitialiser… › Files
-     seulement ». **Planning des files** : `GET /internal/parkings/:id/files/planning?from=&days=` (par jour : retours, en
+     sinon passe automatique en peigne puis files ; `AutoStep` `files` à la fin de la passe R-C, marquée dans
+     `settings.autoSetupAt` pour ne jamais rejouer d'elle-même, même après une réinitialisation) ; « Réinitialiser… › Files
+     seulement » ; une réinitialisation (« Tout le plan », « Places seulement ») efface aussi les places posées à la main
+     (`includeManual` de `PUT …/plan/spots`) et « Tout le plan » retire les files vides (08/10/2026, « ces places restent affichées »). **Planning des files** : `GET /internal/parkings/:id/files/planning?from=&days=` (par jour : retours, en
      file / à venir, `filesServing`, `filesKept`, `room`, `missing` ; alertes `missing_room`, `over_capacity`, `unsound`),
      `PUT /internal/parkings/:id/files/:fileId/keep` `{ day | null }` (`ParkingFile.keptByHand`, migration
      `20261008090000_file_kept_by_hand` ; la préparation respecte une file gardée à la main jusqu'à son jour, `isKeptByHand`) ;

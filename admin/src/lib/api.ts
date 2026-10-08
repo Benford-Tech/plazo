@@ -364,10 +364,23 @@ export const adminApi = {
       `/internal/parkings/${parkingId}/plan`,
       { method: "PATCH", body: json(patch) },
     ),
-  replaceSpots: (parkingId: string, layout: LayoutKey, spots: SpotInput[]) =>
+  /** `includeManual` (a reset) also drops the spots laid by hand, which a regeneration keeps. */
+  replaceSpots: (
+    parkingId: string,
+    layout: LayoutKey,
+    spots: SpotInput[],
+    options: { includeManual?: boolean } = {},
+  ) =>
     apiRequest<{ data: ParkingPlanView }>(
       `/internal/parkings/${parkingId}/plan/spots`,
-      { method: "PUT", body: json({ layout, spots }) },
+      {
+        method: "PUT",
+        body: json({
+          layout,
+          spots,
+          ...(options.includeManual ? { includeManual: true } : {}),
+        }),
+      },
     ),
   /** P-B (07/10/2026): spots laid by hand, kept through regenerations. */
   addSpots: (parkingId: string, spots: SpotInput[]) =>

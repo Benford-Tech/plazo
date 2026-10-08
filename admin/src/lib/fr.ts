@@ -1650,21 +1650,22 @@ export const fr = {
     reset: "Réinitialiser…",
     resetAll: "Tout le plan",
     resetAllHelp:
-      "Contour, zones, parties exclues, repères et places : la carte repart vide, sur l'adresse du parking.",
+      "Contour, zones, parties exclues, repères, places et files vides : la carte repart vide, sur l'adresse du parking.",
     resetZones: "Les zones et parties exclues",
     resetZonesHelp:
       "Le contour reste ; les zones sont redécoupées, les bâtiments IGN gardés.",
     resetSpots: "Les places seulement",
     resetSpotsHelp:
-      "Le tracé reste ; les places sont effacées, la capacité déclarée ne bouge pas.",
+      "Le tracé reste ; toutes les places sont effacées, même celles posées à la main ; la capacité déclarée ne bouge pas.",
     resetFiles: "Files seulement",
     resetFilesHelp:
       "Retire les files vides ; les places et le terrain restent.",
     resetConfirm: {
-      all: "Effacer tout le plan (contour, zones, parties exclues, repères et places) ? La capacité déclarée ne change pas.",
+      all: "Effacer tout le plan (contour, zones, parties exclues, repères, places et files vides) ? La capacité déclarée ne change pas.",
       zones:
         "Effacer les zones et les parties exclues tracées à la main ? Les places générées seront effacées aussi.",
-      spots: "Effacer toutes les places ? La capacité déclarée ne change pas.",
+      spots:
+        "Effacer toutes les places, même celles posées à la main ? La capacité déclarée ne change pas.",
       files:
         "Retirer toutes les files ? Une file qui contient des voitures ne peut pas être retirée.",
     },

@@ -136,6 +136,13 @@ describe('parking plan (bloc 2, step Plan)', () => {
     expect(removed.body.data.spots).toHaveLength(6);
     const logs = await prisma.auditLog.findMany({ where: { action: 'parking.spots_added' } });
     expect(logs).toHaveLength(1);
+    // A reset (08/10/2026) drops the spots laid by hand as well.
+    const reset = await api()
+      .put(`/api/internal/parkings/${parking.id}/plan/spots`)
+      .set(auth(token))
+      .send({ layout: 'valet24', spots: [], includeManual: true });
+    expect(reset.status).toBe(200);
+    expect(reset.body.data.spots).toHaveLength(0);
   });
 
   it('est réservé au gérant pour l’écriture, et jamais au parking d’un autre loueur', async () => {
