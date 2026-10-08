@@ -176,7 +176,10 @@ une décision de Joanny. Cocher au fur et à mesure.
 - [ ] Brevo : authentifier `plazo.fr` (DKIM `mail._domainkey`, DMARC `_dmarc` chez Cloudflare, SPF gardant
   `include:_spf.mx.cloudflare.net`) ; plan Free = 300 mails/jour avec logo Brevo, Starter pour lever les deux.
 - [ ] Neon : vérifier la fenêtre de restauration du plan gratuit ; sauvegarde manuelle avant l'ouverture puis chaque
-  semaine : `pg_dump "$DATABASE_URL_UNPOOLED" --no-owner -Fc -f plazo-$(date +%F).dump`, conservée hors Vercel.
+  semaine : `pg_dump "$DATABASE_URL_UNPOOLED" --no-owner -Fc -f plazo-$(date +%F).dump`, conservée hors Vercel ; surveiller
+  les CU-heures consommées (plan Free : 100 CU-heures de calcul par mois ; le tableau de bord pro interrogé toutes les 12 à
+  60 s et le cron de 15 min empêchent la base de se mettre en veille) et prévoir le plan Launch avant que l'équipe du client
+  n°1 n'utilise l'espace pro tous les jours ; activer les alertes d'usage par e-mail dans la console Neon.
 - [ ] Codemagic : groupe `mobile_secrets` complet (`KEYSTORE_FILE`, `KEY_PROPERTIES_FILE`, `GCLOUD_SERVICE_ACCOUNT_CREDENTIALS`,
   `CERTIFICATE_PRIVATE_KEY`, `ONESIGNAL_APP_ID`, `ONESIGNAL_TRAVELLER_APP_ID`, `API_BASE_URL=https://www.plazo.fr/api`),
   intégration `plazo-asc`, fiches App Store Connect et Play Console, `APP_STORE_APP_ID` ; OneSignal : compte de service
