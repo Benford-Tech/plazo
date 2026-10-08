@@ -42,9 +42,15 @@ const logger = winston.createLogger({
       ],
 });
 
+// On Vercel, errors go to stderr and warnings through console.warn so that the runtime logs carry
+// their level (everything on stdout shows as "info", invisible to the error filters and alerts);
+// no colours either, the ANSI codes would pollute the full-text search of the logs.
+const onVercel = !!process.env.VERCEL;
 logger.add(
   new winston.transports.Console({
-    format: winston.format.combine(winston.format.splat(), winston.format.colorize()),
+    stderrLevels: ['error'],
+    consoleWarnLevels: ['warn'],
+    format: onVercel ? winston.format.splat() : winston.format.combine(winston.format.splat(), winston.format.colorize()),
   }),
 );
 

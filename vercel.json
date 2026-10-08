@@ -12,7 +12,7 @@
       "buildCommand": "npm run vercel-build",
       "functions": {
         "index.js": {
-          "includeFiles": "{backend/lib/product.json,backend/lib/routes/*.js,backend/node_modules/swagger-ui-dist/**}",
+          "includeFiles": "backend/lib/product.json",
           "maxDuration": 60
         }
       },
