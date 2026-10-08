@@ -11,8 +11,8 @@ import '../../../../shared/widgets/brand_header.dart';
 import '../../../../shared/widgets/gradient_button.dart';
 import '../bloc/pro_notifications_bloc.dart';
 
-/// Per-person setting: notified of arrivals (drop-offs), returns, or both; and this phone's
-/// registration for pushes (OneSignal).
+/// Per-person setting: notified of arrivals (drop-offs), returns, or both; new bookings at once,
+/// once an hour (N-A digest, 08/10/2026) or never; and this phone's registration for pushes (OneSignal).
 @RoutePage()
 class ProNotificationsPage extends StatelessWidget implements AutoRouteWrapper {
   const ProNotificationsPage({super.key});
@@ -38,55 +38,65 @@ class ProNotificationsPage extends StatelessWidget implements AutoRouteWrapper {
               if (prefs != null)
                 AppCard(
                   padding: EdgeInsets.zero,
-                  child: Column(
-                    children: [
-                      SwitchListTile(
-                        key: const Key('notify-arrivals'),
-                        value: prefs.arrivals,
-                        title: Text('pro.notify_arrivals'.tr(), style: AppText.strong()),
-                        subtitle: Text('pro.notify_arrivals_help'.tr(), style: AppText.muted()),
-                        onChanged: (v) => bloc.add(ProNotificationsToggled(arrivals: v)),
-                      ),
-                      const Divider(height: 1, color: AppColors.line),
-                      SwitchListTile(
-                        key: const Key('notify-returns'),
-                        value: prefs.returns,
-                        title: Text('pro.notify_returns'.tr(), style: AppText.strong()),
-                        subtitle: Text('pro.notify_returns_help'.tr(), style: AppText.muted()),
-                        onChanged: (v) => bloc.add(ProNotificationsToggled(returns: v)),
-                      ),
-                      const Divider(height: 1, color: AppColors.line),
-                      SwitchListTile(
-                        key: const Key('notify-shuttles'),
-                        value: prefs.shuttles,
-                        title: Text('pro.notify_shuttles'.tr(), style: AppText.strong()),
-                        subtitle: Text('pro.notify_shuttles_help'.tr(), style: AppText.muted()),
-                        onChanged: (v) => bloc.add(ProNotificationsToggled(shuttles: v)),
-                      ),
-                      const Divider(height: 1, color: AppColors.line),
-                      SwitchListTile(
-                        key: const Key('notify-bookings'),
-                        value: prefs.bookings,
-                        title: Text('pro.notify_bookings'.tr(), style: AppText.strong()),
-                        subtitle: Text('pro.notify_bookings_help'.tr(), style: AppText.muted()),
-                        onChanged: (v) => bloc.add(ProNotificationsToggled(bookings: v)),
-                      ),
-                      const Divider(height: 1, color: AppColors.line),
-                      SwitchListTile(
-                        key: const Key('notify-platform'),
-                        value: prefs.platform,
-                        title: Text('pro.notify_platform'.tr(), style: AppText.strong()),
-                        subtitle: Text('pro.notify_platform_help'.tr(), style: AppText.muted()),
-                        onChanged: (v) => bloc.add(ProNotificationsToggled(platform: v)),
-                      ),
-                    ],
+                  // The tiles paint their ink on the nearest Material: one inside the card, or Flutter's
+                  // debug check "ListTile background color or ink splashes may be invisible" fires.
+                  child: Material(
+                    type: MaterialType.transparency,
+                    borderRadius: AppRadius.card,
+                    clipBehavior: Clip.antiAlias,
+                    child: Column(
+                      children: [
+                        SwitchListTile(
+                          key: const Key('notify-arrivals'),
+                          value: prefs.arrivals,
+                          title: Text('pro.notify_arrivals'.tr(), style: AppText.strong()),
+                          subtitle: Text('pro.notify_arrivals_help'.tr(), style: AppText.muted()),
+                          onChanged: (v) => bloc.add(ProNotificationsToggled(arrivals: v)),
+                        ),
+                        const Divider(height: 1, color: AppColors.line),
+                        SwitchListTile(
+                          key: const Key('notify-returns'),
+                          value: prefs.returns,
+                          title: Text('pro.notify_returns'.tr(), style: AppText.strong()),
+                          subtitle: Text('pro.notify_returns_help'.tr(), style: AppText.muted()),
+                          onChanged: (v) => bloc.add(ProNotificationsToggled(returns: v)),
+                        ),
+                        const Divider(height: 1, color: AppColors.line),
+                        SwitchListTile(
+                          key: const Key('notify-shuttles'),
+                          value: prefs.shuttles,
+                          title: Text('pro.notify_shuttles'.tr(), style: AppText.strong()),
+                          subtitle: Text('pro.notify_shuttles_help'.tr(), style: AppText.muted()),
+                          onChanged: (v) => bloc.add(ProNotificationsToggled(shuttles: v)),
+                        ),
+                        const Divider(height: 1, color: AppColors.line),
+                        _BookingsChoice(
+                          value: prefs.bookings,
+                          onChanged: (v) => bloc.add(ProNotificationsToggled(bookings: v)),
+                        ),
+                        const Divider(height: 1, color: AppColors.line),
+                        SwitchListTile(
+                          key: const Key('notify-platform'),
+                          value: prefs.platform,
+                          title: Text('pro.notify_platform'.tr(), style: AppText.strong()),
+                          subtitle: Text('pro.notify_platform_help'.tr(), style: AppText.muted()),
+                          onChanged: (v) => bloc.add(ProNotificationsToggled(platform: v)),
+                        ),
+                      ],
+                    ),
                   ),
                 ),
               const SizedBox(height: 16),
               if (!state.pushSupported)
-                AppCard(color: AppColors.canvas, child: Text('pro.push_unsupported'.tr(), style: AppText.muted()))
+                AppCard(
+                  color: AppColors.canvas,
+                  child: Text('pro.push_unsupported'.tr(), style: AppText.muted()),
+                )
               else if (state.pushState.isSuccess)
-                AppCard(color: AppColors.canvas, child: Text('pro.push_enabled'.tr(), style: AppText.body(size: 14)))
+                AppCard(
+                  color: AppColors.canvas,
+                  child: Text('pro.push_enabled'.tr(), style: AppText.body(size: 14)),
+                )
               else
                 GradientButton(
                   label: 'pro.enable_push'.tr(),
@@ -106,6 +116,59 @@ class ProNotificationsPage extends StatelessWidget implements AutoRouteWrapper {
           );
         },
       ),
+    );
+  }
+}
+
+/// « Nouvelles réservations » (N-A, 08/10/2026): a push for each booking, an hourly digest, or none.
+/// Same optimistic behaviour as the switches: the bloc moves the choice at once and brings it back if
+/// the API refuses.
+class _BookingsChoice extends StatelessWidget {
+  const _BookingsChoice({required this.value, required this.onChanged});
+
+  static const modes = ['immediate', 'hourly', 'never'];
+
+  final String value;
+  final ValueChanged<String> onChanged;
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        Padding(
+          padding: const EdgeInsets.fromLTRB(16, 12, 16, 4),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text('pro.notify_bookings'.tr(), style: AppText.strong()),
+              const SizedBox(height: 2),
+              Text('pro.notify_bookings_help'.tr(), style: AppText.muted()),
+            ],
+          ),
+        ),
+        RadioGroup<String>(
+          groupValue: modes.contains(value) ? value : null,
+          onChanged: (v) {
+            if (v != null && v != value) onChanged(v);
+          },
+          child: Column(
+            children: [
+              for (final mode in modes)
+                RadioListTile<String>(
+                  key: Key('notify-bookings-$mode'),
+                  value: mode,
+                  dense: true,
+                  visualDensity: VisualDensity.compact,
+                  contentPadding: const EdgeInsets.symmetric(horizontal: 12),
+                  activeColor: AppColors.accent,
+                  title: Text('pro.notify_bookings_$mode'.tr(), style: AppText.body(size: 14.5, weight: value == mode ? 600 : 400)),
+                ),
+            ],
+          ),
+        ),
+        const SizedBox(height: 6),
+      ],
     );
   }
 }

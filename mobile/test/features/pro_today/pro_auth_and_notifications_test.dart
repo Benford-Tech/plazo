@@ -93,6 +93,28 @@ void main() {
       expect(bloc.state.preferences!.arrivals, isTrue);
       await bloc.close();
     });
+
+    test('N-A · « Nouvelles réservations » : « Toutes les heures » envoie bookings: hourly ; revient si l’API refuse', () async {
+      final get = MockGetPrefs();
+      final update = MockUpdatePrefs();
+      final enable = MockEnablePush();
+      when(() => enable.supported).thenReturn(false);
+      when(() => get(any())).thenAnswer((_) async => const Right(NotificationPreferencesModel(arrivals: true, returns: true, devices: 1)));
+      when(() => update(any())).thenAnswer((_) async => const Right(NotificationPreferencesModel(arrivals: true, returns: true, bookings: 'hourly', devices: 1)));
+      final bloc = ProNotificationsBloc(get, update, enable)..add(const ProNotificationsLoaded());
+      await settle();
+      expect(bloc.state.preferences!.bookings, 'immediate');
+      bloc.add(const ProNotificationsToggled(bookings: 'hourly'));
+      await settle();
+      expect(bloc.state.preferences!.bookings, 'hourly');
+      verify(() => update(const PreferencesPatch(bookings: 'hourly'))).called(1);
+
+      when(() => update(any())).thenAnswer((_) async => const Left(ServerFailure(message: 'Erreur', code: 'generic')));
+      bloc.add(const ProNotificationsToggled(bookings: 'never'));
+      await settle();
+      expect(bloc.state.preferences!.bookings, 'hourly');
+      await bloc.close();
+    });
   });
 
   test('R-C · poste du jour : enregistré sur le compte, refusé hors du rôle', () async {

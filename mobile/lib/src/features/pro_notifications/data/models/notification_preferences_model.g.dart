@@ -13,7 +13,7 @@ _NotificationPreferencesModel _$NotificationPreferencesModelFromJson(
   returns: json['returns'] as bool,
   shuttles: json['shuttles'] as bool? ?? true,
   platform: json['platform'] as bool? ?? true,
-  bookings: json['bookings'] as bool? ?? true,
+  bookings: json['bookings'] as String? ?? 'immediate',
   devices: (json['devices'] as num?)?.toInt() ?? 0,
 );
 
