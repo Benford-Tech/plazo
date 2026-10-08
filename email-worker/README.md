@@ -51,6 +51,20 @@ exister ailleurs en `@plazo.fr` (Hostinger…) : Email Routing devient le seul r
    - Puis relance un déploiement.
 7. **Essai** : Parking › Réglages › Mails entrants › « Relier ma boîte mail ». L'assistant donne l'adresse du parking et affiche en direct le premier mail reçu.
 
+## Déployer à la main depuis le tableau de bord (sans build Git)
+
+Si le Worker `plazo` n'apparaît pas dans la liste « Send to a Worker » du catch-all (« No deployed Email Workers found »),
+le code déployé n'a pas de gestionnaire `email`. Sans attendre le build Git :
+
+```
+cd email-worker && npm ci && npx wrangler deploy --dry-run --outdir=dist
+```
+
+produit `dist/index.js`, le Worker en un seul fichier (le décodeur `postal-mime` inclus). Workers & Pages › `plazo` ›
+**Edit code** › remplace tout le contenu par ce fichier › **Deploy**. Vérifie ensuite dans Settings › Variables and Secrets :
+`PLAZO_INBOUND_URL` = `https://www.plazo.fr/api/public/inbound/email` (à ajouter à la main dans ce cas, le fichier
+`wrangler.toml` n'ayant pas été lu), le secret `INBOUND_EMAIL_SECRET` et `FALLBACK_ADDRESS`.
+
 ## Commandes
 
 ```
