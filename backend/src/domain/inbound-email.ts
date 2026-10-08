@@ -91,8 +91,10 @@ export const REQUIRED_FOR_IMPORT = ['arrivalAt', 'returnAt', 'customerName', 'cu
 /** G-B (07/10/2026): what a mail provider sends to the Plazo address before it lets the operator forward to it. */
 export interface ForwardingConfirmation {
   provider: 'gmail';
-  /** The code the operator types back in Gmail ("482913507"). */
-  code: string;
+  /** The code the operator types back in Gmail ("482913507"); null when Gmail only sent the link (08/10/2026). */
+  code: string | null;
+  /** The acceptance link of the email (mail-settings.google.com/mail/vf-…): opening it confirms the forwarding. */
+  link: string | null;
   /** The Gmail address asking to forward, when the email says it. */
   requester: string | null;
 }
@@ -100,17 +102,23 @@ export interface ForwardingConfirmation {
 const GMAIL_FORWARDING_SENDER = 'forwarding-noreply@google.com';
 
 /**
- * Gmail's "Forwarding Confirmation" ("Confirmation de transfert Gmail"): the code is in the subject, "(#482913507)"
- * or "(n° 482913507)", and in the body after "Confirmation code:" / "Code de confirmation :".
+ * Gmail's "Forwarding Confirmation" ("Confirmation de transfert Gmail"). Until 2026 the code was in the subject,
+ * "(#482913507)" or "(n° 482913507)", and in the body after "Confirmation code:" / "Code de confirmation :"; the
+ * subject is now "(Gmail) Confirmation de transfert – Recevez les messages de x@gmail.com" without the code
+ * (08/10/2026), so the body is read more freely (the code is the 9-digit number near "code", else the only 9-digit
+ * number) and the acceptance link (mail-settings.google.com/mail/vf-…) is kept too: opening it confirms as well.
  */
 export function forwardingConfirmationOf(email: { from: string | null; subject: string | null; text: string }): ForwardingConfirmation | null {
   if (email.from?.trim().toLowerCase() !== GMAIL_FORWARDING_SENDER) return null;
   const subject = email.subject ?? '';
+  const text = email.text ?? '';
+  const nineDigits = [...text.matchAll(/(?<![\d-])(\d{9})(?![\d-])/g)].map(m => m[1]);
   const code =
     /\((?:#|n°|no|nº)\s*(\d{6,12})\)/i.exec(subject)?.[1] ??
-    /(?:confirmation code|code de confirmation)\s*:?\s*(\d{6,12})/i.exec(email.text)?.[1] ??
-    null;
-  if (!code) return null;
+    /(?:confirmation code|code de confirmation)[^\d]{0,40}(\d{6,12})/i.exec(text)?.[1] ??
+    (nineDigits.length === 1 ? nineDigits[0] : null);
+  const link = /https:\/\/mail-settings\.google\.com\/mail\/vf-[^\s<>"')]+/i.exec(text)?.[0] ?? null;
+  if (!code && !link) return null;
   const requester = /([\w.+-]+@[\w-]+(?:\.[\w-]+)+)\s*$/.exec(subject.trim())?.[1]?.toLowerCase() ?? null;
-  return { provider: 'gmail', code, requester };
+  return { provider: 'gmail', code, link, requester };
 }

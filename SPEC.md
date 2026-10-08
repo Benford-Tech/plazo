@@ -58,7 +58,8 @@ Fonctionnel :
      départ » : plus rien à activer) ;
   2. **Messagerie** : Gmail, Outlook / Microsoft 365, OVH (Roundcube) ou autre. Pour Gmail, autoriser l'adresse de transfert : le
      mail de confirmation que Gmail envoie à Plazo (`forwarding-noreply@google.com`) est reconnu, gardé sans son texte (statut
-     `forwarding`, hors « À vérifier ») et son code s'affiche en direct pendant 7 jours ;
+     `forwarding`, hors « À vérifier ») et son code s'affiche en direct pendant 7 jours, ou son lien d'acceptation
+     (« Confirmer par le lien ») depuis que Gmail ne met plus le code dans l'objet du mail (08/10/2026) ;
   3. **Transfert** : le filtre ou la règle propre à la messagerie, expéditeurs et adresse Plazo à copier, à côté d'un aperçu simplifié
      de l'écran où les champs à remplir sont surlignés ;
   4. **Vérification** : transférer un ancien mail Allopark ; « Ce que Plazo a reçu » en direct (les 5 derniers mails), puis « C'est

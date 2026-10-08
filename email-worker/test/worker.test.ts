@@ -63,6 +63,15 @@ describe("email()", () => {
     expect(refused.setReject).toHaveBeenCalledWith("No mailbox for contact@plazo.fr");
   });
 
+  it("adresse de secours non vérifiée chez Cloudflare : le renvoi échoue, le mail est refusé avec son motif, le Worker ne plante pas", async () => {
+    vi.stubGlobal("fetch", vi.fn(async () => new Response(JSON.stringify({ received: 1, imported: 0, toCheck: 0, ignored: 1 }))));
+    const msg = message(alloparkForwarded, "contact@plazo.fr");
+    msg.forward.mockRejectedValueOnce(new Error("destination address not verified"));
+    await expect(worker.email(msg, { ...env, FALLBACK_ADDRESS: "secours@example.com" })).resolves.toBeUndefined();
+    expect(msg.forward).toHaveBeenCalledWith("secours@example.com");
+    expect(msg.setReject).toHaveBeenCalledWith("No mailbox for contact@plazo.fr");
+  });
+
   it("sans secret configuré, rien n'est envoyé et le mail est refusé", async () => {
     const fetchMock = vi.fn();
     vi.stubGlobal("fetch", fetchMock);

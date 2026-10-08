@@ -39,8 +39,9 @@ exister ailleurs en `@plazo.fr` (Hostinger…) : Email Routing devient le seul r
    pas réussi à le déployer ; GitHub Actions le remplace.
    - Puis Paramètres › Variables et secrets : ajoute le **secret** `INBOUND_EMAIL_SECRET`.
    - Choisis toi-même une longue valeur aléatoire (gestionnaire de mots de passe) et ne la colle nulle part ailleurs que dans Cloudflare et dans Vercel.
-   - Ajoute aussi la variable `FALLBACK_ADDRESS` = la boîte de Plazo (une adresse de destination vérifiée, étape 4) ;
-     `keep_vars` dans `wrangler.toml` la garde d'un déploiement à l'autre.
+   - Ajoute aussi la variable `FALLBACK_ADDRESS` = la boîte de Plazo. **Elle doit être une adresse de destination vérifiée**
+     (étape 4), sinon Cloudflare refuse le renvoi et le Worker refuse le mail avec son motif. `keep_vars` dans
+     `wrangler.toml` la garde d'un déploiement à l'autre.
 4. **Adresse de destination** : Email Routing › Destination Addresses › la boîte de Plazo (Gmail…) › clique le lien de
    vérification reçu.
 5. **Règles** : Email Routing › Routing Rules.

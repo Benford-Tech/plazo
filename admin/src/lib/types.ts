@@ -382,10 +382,11 @@ export interface InboundSettings {
   toCheck: number;
   /** G-B: the comparators' sender addresses, for the forwarding rule. */
   senders: { provider: string; address: string }[];
-  /** G-B: Gmail's latest forwarding confirmation code (7 days). */
+  /** G-B: Gmail's latest forwarding confirmation (7 days): its code, or its acceptance link when Gmail sent no code. */
   forwarding: {
     provider: "gmail";
-    code: string;
+    code: string | null;
+    link: string | null;
     requester: string | null;
     receivedAt: string;
   } | null;

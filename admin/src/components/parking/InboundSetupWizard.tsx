@@ -243,12 +243,29 @@ export function InboundSetupWizard({ onClose }: { onClose: () => void }) {
                 <div className="flex flex-wrap items-center gap-x-4 gap-y-2">
                   <div className="flex flex-col">
                     <span className="text-[13px] text-muted-foreground">{t.mail.gmail.received(timeOf(code.receivedAt))}</span>
-                    <span className="font-mono text-2xl font-semibold tracking-wider">{code.code.replace(/(\d{3})(?=\d)/g, "$1 ")}</span>
+                    {code.code ? (
+                      <span className="font-mono text-2xl font-semibold tracking-wider">{code.code.replace(/(\d{3})(?=\d)/g, "$1 ")}</span>
+                    ) : (
+                      <span className="text-sm">{t.mail.gmail.linkOnly}</span>
+                    )}
                     {code.requester && <span className="text-xs text-muted-foreground">{t.mail.gmail.requester(code.requester)}</span>}
                   </div>
-                  <button type="button" onClick={() => copyText(code.code)} className="h-10 rounded-[10px] border border-panel-line bg-white px-3 text-sm font-medium hover:bg-panel-2">
-                    {t.mail.gmail.copyCode}
-                  </button>
+                  {code.code && (
+                    <button type="button" onClick={() => copyText(code.code!)} className="h-10 rounded-[10px] border border-panel-line bg-white px-3 text-sm font-medium hover:bg-panel-2">
+                      {t.mail.gmail.copyCode}
+                    </button>
+                  )}
+                  {code.link && (
+                    <a
+                      data-testid="gmail-link"
+                      href={code.link}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="inline-flex h-10 items-center rounded-[10px] bg-primary px-3 text-sm font-semibold text-primary-foreground hover:brightness-105"
+                    >
+                      {t.mail.gmail.openLink}
+                    </a>
+                  )}
                 </div>
               ) : (
                 <span className="flex items-center gap-2 text-sm text-muted-foreground">
