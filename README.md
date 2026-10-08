@@ -116,20 +116,27 @@ premier loueur, exploitation, sécurité, app et notifications). Le code est pr�
 une décision de Joanny. Cocher au fur et à mesure.
 
 **Décisions à prendre**
-- [ ] **Paiement en ligne réel ou saisie manuelle au lancement.** `STRIPE_ALLOW_LIVE=true` est posé : une clé `sk_live_`
-  démarre sans garde-fou et le cron `payouts` de 06:00 UTC fait de vrais virements. Avant une clé live : validation
+- [ ] **Paiement en ligne réel ou saisie manuelle au lancement.** Les clés Stripe de production sont des clés de test
+  (`pk_test_` servie par `/api/public/payments/config`) et `STRIPE_ALLOW_LIVE` est repassé à `false` le 08/10/2026 : une clé
+  `sk_live_` est refusée au démarrage tant que la variable n'est pas `true` (à poser dans le même geste que les clés live ;
+  le cron `payouts` de 06:00 UTC fait alors de vrais virements). Avant une clé live : validation
   juriste / expert-comptable (statut, TVA, mandat d'encaissement), compte Stripe de Plazo Aéroports activé, Connect en
   live, webhooks live vers `https://www.plazo.fr/api/public/stripe/webhook` (deux `whsec_` dans `STRIPE_WEBHOOK_SECRET`),
   libellé de relevé « PLAZO ». Vérifier que les trois clés Stripe sont du même mode (`sk_`, `pk_`, `whsec_`). Avec une
   clé de test, aucune vraie carte ne passe et le site ne le dit pas.
 - [ ] **Commission** : 10 % TTC par défaut (`PLATFORM_COMMISSION_BPS=1000`), surcharge par loueur dans Plateforme ›
   Loueurs ; à confirmer avec le client n°1 et l'expert-comptable (HT ou TTC, TVA de Plazo), figée dans chaque paiement.
-- [ ] **Parkings de démonstration** : `DEMO_LISTINGS=true` recrée cinq loueurs fictifs à chaque déploiement, visibles et
-  indexables sur le site à côté du client n°1, et les crons les traitent comme des vrais (rappels vers `.test`, vols
-  fictifs interrogés). Retrait : `DEMO_LISTINGS=remove` puis redéployer (irréversible : supprime aussi toute réservation
-  faite sur une démo), puis supprimer `DEMO_LISTINGS` et `DEMO_SEED_PASSWORD`.
+- [ ] **Parkings de démonstration** : `DEMO_LISTINGS` vaut `false` depuis le 08/10/2026 (plus rafraîchis), mais les quatre
+  loueurs fictifs déjà créés restent en ligne et réservables (`/api/public/search` les renvoie avec `demo: true`), visibles et
+  indexables à côté du client n°1, et les crons les traitent comme des vrais (rappels vers `.test`, vols fictifs interrogés).
+  Retrait : `DEMO_LISTINGS=remove` puis redéployer et vérifier `[seed-demo] Removed` dans le journal du build (irréversible :
+  supprime aussi toute réservation faite sur une démo), puis supprimer `DEMO_LISTINGS` et `DEMO_SEED_PASSWORD`.
 - [ ] **Vercel Pro** : l'offre Hobby est réservée à un usage non commercial, plafonne à 100 déploiements par jour, garde
-  les journaux une heure et n'offre que des crons quotidiens. Pro (~20 $/mois) lève tout cela (Vercel › Settings › Billing).
+  les journaux une heure et n'offre que des crons quotidiens (100 par projet, déclenchés à ± 59 min : les six de
+  `vercel.json` passent). Pro (~20 $/mois) lève tout cela (Vercel › Settings › Billing).
+- [ ] **Dépôt GitHub public** : `Benford-Tech/plazo` est public (code, CLAUDE.md, cette liste, le schéma des adresses de
+  réception ; aucun secret trouvé dans l'historique). Le passer en privé (Settings › General › Change visibility) sauf
+  volonté d'ouvrir le code ; dans les deux cas activer Secret scanning + Push protection (Settings › Code security).
 - [ ] **Suivi des vols** : le plan gratuit AeroDataBox (RapidAPI) tient un ou deux jours ; choisir AeroDataBox payant,
   FlightAware AeroAPI (`FLIGHTAWARE_API_KEY`), ou accepter le suivi dégradé (« J'ai atterri » reste).
 - [ ] **Pages légales** : encore « projet à valider par un juriste », non indexées ; après relecture, retirer le bandeau et
@@ -141,14 +148,31 @@ une décision de Joanny. Cocher au fur et à mesure.
 - [ ] **SMS** : « Plazo envoie pour moi » n'a aucun crédit SMS Brevo ; recommander « Téléphone du parking ».
 
 **À faire par Joanny (tableaux de bord)**
-- [ ] Vercel : supprimer `PLATFORM_BOOTSTRAP_PASSWORD` (compte créé) ; vérifier l'entropie de `SECRET_KEY`, `CRON_SECRET`,
-  `SITE_API_KEY`, `INBOUND_EMAIL_SECRET` (≥ 32 octets aléatoires ; à changer maintenant ou jamais) ; vérifier que les six
-  crons de `vercel.json` sont enregistrés (Settings › Cron Jobs), sinon les ajouter sur cron-job.org une fois par jour.
-- [ ] cron-job.org : notifications « on failure » sur chaque tâche ; ajouter `GET https://www.plazo.fr/api/health` toutes
-  les 5 minutes (sans en-tête) comme moniteur ; ajouter `track-return-flights` toutes les 10 minutes de 05:00 à 23:50
-  (même en-tête `Authorization: Bearer <CRON_SECRET>`) dès que le plan de suivi des vols le permet.
-- [ ] GitHub › Settings › Environments › Production : secret `INBOUND_EMAIL_SECRET`, variable `FALLBACK_ADDRESS`
-  (une boîte Plazo plutôt que personnelle : les mails égarés contiennent des données de voyageurs).
+- [x] Vercel (Claude, 08/10/2026) : `PLATFORM_BOOTSTRAP_PASSWORD` neutralisée (valeur vide, cible `development` ; l'API
+  ne supprime pas une variable : la supprimer dans Settings › Environment Variables) ; `SECRET_KEY`, `CRON_SECRET` et
+  `SITE_API_KEY` sont bien 32 octets aléatoires (64 hex) ; `INBOUND_EMAIL_SECRET` a été saisie à la main (type sensitive,
+  illisible : le relais répond 200, donc elle correspond à celle du Worker) ; les six crons quotidiens sont acceptés par le
+  plan Hobby et `remind-tomorrow` a été vu à 19:02 UTC. Reste : supprimer `FALLBACK_ADDRESS` de Vercel (rien ne la lit là,
+  voir GitHub ci-dessous) et le domaine `web-eight-indol.vercel.app` (Settings › Domains : il sert tout le site sans
+  `noindex`, l'alias `plazo-benford-tech.vercel.app` suffit et est `noindex` d'office).
+- [ ] cron-job.org : le moniteur `/api/health` tourne bien (vu toutes les 5 min), mais **aucun appel de `remind-tomorrow` ni de
+  `booking-digest`** dans les journaux Vercel (08/10/2026, 18:50 → 20:06 UTC : un seul passage de `remind-tomorrow` à 19:02,
+  celui du cron Vercel) : vérifier l'URL exacte `https://www.plazo.fr/api/internal/cron/remind-tomorrow` (pas `plazo.fr` : la
+  redirection 308 n'atteint pas l'API), l'en-tête `Authorization: Bearer <CRON_SECRET>` et l'historique d'exécution ; ajouter le
+  **récapitulatif horaire** `GET https://www.plazo.fr/api/internal/cron/booking-digest` à la minute 0 de chaque heure (même
+  en-tête), sans quoi il ne part jamais ; notifications « on failure » sur chaque tâche ; tant que Vercel reste en Hobby (une
+  heure de journaux, aucune trace le matin), doubler aussi les cinq crons de nuit (`purge-expired-tokens`, `expire-payment-holds`,
+  `prepare-files`, `track-return-flights`, `payouts`, tous idempotents) une fois par jour sur cron-job.org avec « Save responses » ;
+  ajouter `track-return-flights` toutes les 10 minutes de 05:00 à 23:50 dès que le plan de suivi des vols le permet.
+- [ ] GitHub › Settings › Environments › Production : secret `INBOUND_EMAIL_SECRET` (le déploiement du 08/10 à 16:08 a
+  signalé « not set in the Production environment » : le Worker garde celui posé à la main, mais chaque déploiement doit
+  le reposer) et variable `FALLBACK_ADDRESS` (posée sur Vercel par erreur le 08/10 : elle n'y est lue par rien ; une boîte
+  Plazo plutôt que personnelle : les mails égarés contiennent des données de voyageurs), puis relancer le job `deploy` de
+  « Email worker CI » et vérifier que `env.FALLBACK_ADDRESS` apparaît dans sa sortie.
+- [ ] Cloudflare › DNS : `www` et l'apex sont **proxiés** (nuage orange : `server: cloudflare` sur www.plazo.fr) ; passer les
+  deux en « DNS only » (nuage gris) vers les cibles de Vercel (`cname.vercel-dns.com` pour `www`, A `76.76.21.21` pour
+  l'apex). Sinon toutes les limites par adresse IP (connexions, recherches de réservation, réservations) comptent les
+  adresses de Cloudflare, partagées par tous les visiteurs. Email Routing (MX) n'est pas concerné par le proxy.
 - [ ] Brevo : authentifier `plazo.fr` (DKIM `mail._domainkey`, DMARC `_dmarc` chez Cloudflare, SPF gardant
   `include:_spf.mx.cloudflare.net`) ; plan Free = 300 mails/jour avec logo Brevo, Starter pour lever les deux.
 - [ ] Neon : vérifier la fenêtre de restauration du plan gratuit ; sauvegarde manuelle avant l'ouverture puis chaque
@@ -168,10 +192,25 @@ une décision de Joanny. Cocher au fur et à mesure.
 **Fait le 08/10/2026 (code)** : accès Plateforme réservé à un e-mail vérifié ; Swagger coupé en production ; secret du
 relais mail accepté en en-tête seulement ; libellés échappés sur la carte des navettes ; app par défaut sur
 `https://www.plazo.fr/api` ; `ITSAppUsesNonExemptEncryption` dans `Info.plist` ; prévisualisations Vercel coupées pour
-les branches `claude/*`. **Reste côté code, sur décision** : reversement « payé à la main » (sinon double paiement si
+les branches `claude/*`. **Fait le 08/10/2026 (Vercel, soir)** : `main` (`f6e9aee`) en production à 19:51 UTC ; **Ignored
+Build Step « production seulement »** (Settings › Build and Deployment ; à repasser sur « Automatic » pour retrouver des
+prévisualisations) : jusque-là toute branche construisait une prévisualisation qui lançait `prisma migrate deploy` sur la base
+de production avec les secrets de production (variables Neon et clés présentes aussi en `preview`) ; les builds annulés
+comptent quand même dans les 100 déploiements par jour (`git.deploymentEnabled` évite même la création pour `claude/*`) ;
+`vercel-build` compile d'abord puis ne migre et ne lance les scripts qu'en production (`VERCEL_ENV`) ; les 12 Mo de
+Swagger UI ne sont plus embarqués dans la fonction ; `STRIPE_ALLOW_LIVE=false` ; `STRIPE_SUPPRESS_NOTICES=true` (l'avis du SDK
+Stripe n'encombre plus la liste des erreurs) ; les `logger.error` / `warn` arrivent enfin aux niveaux « error » / « warning »
+des journaux Vercel (tout partait en « info » sur stdout). **Reste côté code, sur décision** : reversement « payé à la main » (sinon double paiement si
 Joanny vire puis que le loueur relie Stripe), `GOOGLE_PAY_TEST=false` dans `codemagic.yaml` si Stripe passe en live,
 App Links sur `www.plazo.fr` (empreinte Play et Team ID Apple à fournir), plafond quotidien des lectures Claude par
-loueur et liste d'expéditeurs admis (le slug de l'adresse ne fait que 16 bits d'aléa).
+loueur et liste d'expéditeurs admis (le slug de l'adresse ne fait que 16 bits d'aléa ; 8 hex pour les prochains),
+`maxDuration` à 300 s (Hobby avec Fluid compute) avec un budget de temps dans `runPayouts` et l'envoi des rappels, une
+CSP en « report-only » sur l'espace pro et le site, un magasin partagé pour les limites de débit (aujourd'hui en mémoire
+de chaque instance : acceptable pour un seul loueur), une surveillance de « reading was cut short » dans les journaux
+(lecture des mails par Claude, `max_tokens` 1500), des routes cron qui comptent leurs échecs et répondent 500 quand rien
+n'est parti (aujourd'hui 200 : cron-job.org n'alerte que sur les pannes dures), `GET /api/health?deep=1` qui touche la base
+(503 sinon), et une réservation de ligne avant chaque relance de SMS de passerelle (doublon possible si Vercel et
+cron-job.org appellent `remind-tomorrow` au même instant).
 
 ## Mise en ligne (Supabase + Vercel)
 

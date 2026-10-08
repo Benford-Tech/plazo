@@ -331,7 +331,9 @@ Plazo reprend la stack et les conventions des dépôts `lovenest-backend`, `love
   Conséquences : pas de pg-boss (pas de processus permanent), les tâches planifiées sont des routes
   `/internal/cron/...` appelées par Vercel Cron (`vercel.json` à la racine, protégées par `CRON_SECRET` ; Vercel Hobby
   n'accepte que des crons quotidiens, les lectures rafraîchissent aussi les vols ; `remind-tomorrow` est aussi appelé toutes
-  les 15 minutes par un planificateur externe, cron-job.org) ;
+  les 15 minutes par un planificateur externe, cron-job.org) ; **Ignored Build Step « production seulement » (08/10/2026)** :
+  aucune branche ne construit de prévisualisation (une prévisualisation migrait la base de production avec ses secrets), et
+  `vercel-build` compile d'abord puis ne migre et ne lance les scripts qu'en production (`VERCEL_ENV`) ;
   pas de fichiers de logs (winston écrit dans la console, que Vercel collecte).
 - **Base de données** : PostgreSQL + PostGIS, hébergée sur **Neon** via l'intégration Vercel (base `Plazo-db`,
   02/10/2026, à la place de Supabase). Variables injectées par Vercel : `POSTGRES_PRISMA_URL` (connexion
