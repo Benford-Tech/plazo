@@ -1,7 +1,9 @@
 # Cloudflare Email Worker of Plazo: Email Routing sends it every email addressed to <slug>@plazo.fr
 # (catch-all rule "Send to a Worker" of the apex domain: Cloudflare offers no catch-all on a subdomain, R-A of
 # 08/10/2026); it posts the email to the Plazo API. See README.md.
-name = "plazo-email-worker"
+# The Worker is called "plazo" in the Cloudflare dashboard: Workers Builds refuses to deploy when this name differs
+# from the dashboard's (the deploy fails and the Worker keeps its placeholder code, with no email handler).
+name = "plazo"
 main = "src/index.ts"
 compatibility_date = "2026-10-01"
 workers_dev = false

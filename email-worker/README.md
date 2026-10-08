@@ -31,7 +31,8 @@ exister ailleurs en `@plazo.fr` (Hostinger…) : Email Routing devient le seul r
 2. **Email Routing** : Compute › Email Service › Email Routing › `plazo.fr` › activer. Cloudflare pose les MX et le SPF de
    `plazo.fr` ; Brevo (envoi) n'en a pas besoin, ses signatures DKIM suffisent.
 3. **Worker** : Workers & Pages › Créer › Importer un dépôt.
-   - Choisis `Benford-Tech/plazo`, dossier racine `email-worker`, commande de déploiement `npx wrangler deploy`.
+   - Choisis `Benford-Tech/plazo`, nom du Worker `plazo` (celui de `wrangler.toml`), dossier racine `email-worker`,
+     commande de déploiement `npx wrangler deploy`.
    - Puis Paramètres › Variables et secrets : ajoute le **secret** `INBOUND_EMAIL_SECRET`.
    - Choisis toi-même une longue valeur aléatoire (gestionnaire de mots de passe) et ne la colle nulle part ailleurs que dans Cloudflare et dans Vercel.
    - Ajoute aussi la variable `FALLBACK_ADDRESS` = la boîte de Plazo (une adresse de destination vérifiée, étape 4) ;
@@ -41,8 +42,9 @@ exister ailleurs en `@plazo.fr` (Hostinger…) : Email Routing devient le seul r
 5. **Règles** : Email Routing › Routing Rules.
    - `reservations` @ plazo.fr › « Send to an email » › la boîte de Plazo (les réponses des voyageurs aux mails envoyés par
      Brevo). Une règle précise passe avant le catch-all.
-   - **Catch-all** › « Send to a Worker » › le Worker (il s'appelle `plazo` dans le tableau de bord s'il a été importé sous ce
-     nom, `plazo-email-worker` sinon).
+   - **Catch-all** › « Send to a Worker » › `plazo`, puis mets l'interrupteur de la règle sur **Active** (désactivé par défaut).
+     Si la liste dit « No deployed Email Workers found », le Worker déployé n'a pas de gestionnaire `email` : regarde le
+     dernier build (Workers & Pages › `plazo` › Deployments) ; le nom dans `wrangler.toml` doit être celui du tableau de bord.
 6. **Vercel** (projet `plazo`, Production) :
    - `INBOUND_EMAIL_DOMAIN` = `plazo.fr` ;
    - `INBOUND_EMAIL_SECRET` = le même secret, type Sensitive.
