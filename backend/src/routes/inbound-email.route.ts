@@ -1,4 +1,5 @@
-import { Router } from 'express';
+import express, { Router } from 'express';
+import { RAW_EMAIL_MAX_BYTES, RAW_EMAIL_TYPE } from '@/domain/inbound-mime';
 import { InboundEmailController } from '@/controllers/inbound-email.controller';
 import { Routes } from '@/interfaces/routes.interface';
 import { RefuseInViewAs, StaffAuthMiddleware } from '@/middlewares/staff-auth.middleware';
@@ -16,7 +17,7 @@ import { RefuseInViewAs, StaffAuthMiddleware } from '@/middlewares/staff-auth.mi
  * /public/inbound/email:
  *   post:
  *     tags: [Inbound email]
- *     summary: Inbound email webhook of the Cloudflare relay (header X-Inbound-Secret or query `secret` = INBOUND_EMAIL_SECRET)
+ *     summary: "Inbound email webhook of the Cloudflare relay: the raw message (message/rfc822, envelope in X-Envelope-From / X-Envelope-To, cut at 4 MB) or the former { items } JSON; header X-Inbound-Secret or query `secret` = INBOUND_EMAIL_SECRET"
  *     responses:
  *       200:
  *         description: "{ received, imported, toCheck, ignored }; always 200 once authenticated, so the relay does not resend"
@@ -64,7 +65,8 @@ export class InboundEmailRoute implements Routes {
   }
 
   private initializeRoutes() {
-    this.router.post('/public/inbound/email', this.inbound.receive);
+    // The relay posts the raw message (message/rfc822, up to Vercel's body limit); the former JSON shape still goes through express.json.
+    this.router.post('/public/inbound/email', express.raw({ type: RAW_EMAIL_TYPE, limit: RAW_EMAIL_MAX_BYTES + 64 * 1024 }), this.inbound.receive);
     this.router.get('/internal/inbound/settings', StaffAuthMiddleware('reservations:manage'), this.inbound.settings);
     this.router.post('/internal/inbound/address', StaffAuthMiddleware('parking:manage'), RefuseInViewAs(), this.inbound.enableAddress);
     this.router.get('/internal/inbound/emails', StaffAuthMiddleware('reservations:manage'), this.inbound.list);

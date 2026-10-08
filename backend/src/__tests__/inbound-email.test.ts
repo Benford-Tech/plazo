@@ -1,3 +1,4 @@
+import { randomBytes } from 'crypto';
 import { readFileSync } from 'fs';
 import { join } from 'path';
 import { Container } from 'typedi';
@@ -341,6 +342,91 @@ describe('POST /public/inbound/email', () => {
     expect(res.status).toBe(200);
     expect(res.body).toEqual({ received: 1, imported: 1, toCheck: 0, ignored: 0 });
     expect(await prisma.reservation.count({ where: { operatorId: op.operator.id, externalReference: 'AL-884880719' } })).toBe(1);
+  });
+
+  it('relais Cloudflare (08/10/2026, soir) : le mail brut (message/rfc822) est décodé ici, même coupé par le relais', async () => {
+    const op = await setupOperator();
+    const address = (await api().post('/api/internal/inbound/address').set(auth(op.token)).send({})).body.address as string;
+    const b64 = (value: string | Buffer) =>
+      Buffer.from(value)
+        .toString('base64')
+        .replace(/(.{76})/g, '$1\r\n');
+    const raw = (from: string, subject: string, text: string, attachment: Buffer) =>
+      [
+        `From: ${from}`,
+        'To: Parking Air Lyon <contact@parkair.fr>',
+        `Subject: =?UTF-8?B?${Buffer.from(subject).toString('base64')}?=`,
+        'Date: Tue, 07 Oct 2026 14:32:00 +0200',
+        `Message-ID: <${subject.length}@example.com>`,
+        'MIME-Version: 1.0',
+        'Content-Type: multipart/mixed; boundary="m1"',
+        '',
+        '--m1',
+        'Content-Type: multipart/alternative; boundary="a1"',
+        '',
+        '--a1',
+        'Content-Type: text/plain; charset=UTF-8',
+        'Content-Transfer-Encoding: base64',
+        '',
+        b64(text),
+        '--a1',
+        'Content-Type: text/html; charset=UTF-8',
+        'Content-Transfer-Encoding: base64',
+        '',
+        b64(`<html><body>${text.replace(/\n/g, '<br>')}</body></html>`),
+        '--a1--',
+        '--m1',
+        'Content-Type: image/png; name="plan.png"',
+        'Content-Disposition: attachment; filename="plan.png"',
+        'Content-Transfer-Encoding: base64',
+        '',
+        b64(attachment),
+        '--m1--',
+        '',
+      ].join('\r\n');
+    const relay = (body: string | Buffer, headers: Record<string, string> = {}) =>
+      api()
+        .post('/api/public/inbound/email')
+        .set({
+          'Content-Type': 'message/rfc822',
+          'X-Inbound-Secret': 'inbound-test-secret',
+          'X-Envelope-From': 'bounce@gmail.com',
+          'X-Envelope-To': address,
+          ...headers,
+        })
+        .send(body);
+    // Without the secret: refused before anything is read.
+    expect((await api().post('/api/public/inbound/email').set('Content-Type', 'message/rfc822').send('From: a@b.c\r\n\r\nx')).status).toBe(401);
+    // A real confirmation with a 300 KB attachment: decoded here, the booking created.
+    const whole = raw('ALLOPARK <info@allopark.com>', 'Confirmation de votre réservation AL-884880719', filled, randomBytes(300 * 1024));
+    const res = await relay(whole);
+    expect(res.status).toBe(200);
+    expect(res.body).toEqual({ received: 1, imported: 1, toCheck: 0, ignored: 0 });
+    const stored = await prisma.inboundEmail.findFirstOrThrow({ where: { operatorId: op.operator.id } });
+    expect(stored).toMatchObject({
+      fromAddress: 'info@allopark.com',
+      fromName: 'ALLOPARK',
+      subject: 'Confirmation de votre réservation AL-884880719',
+      status: 'imported',
+    });
+    expect(stored.textBody).toContain('GK-318-PX');
+    expect(await prisma.reservation.count({ where: { operatorId: op.operator.id, externalReference: 'AL-884880719' } })).toBe(1);
+    // The relay cut a bigger message at 4 MB, inside the attachment: the text parts, which come first, are still read.
+    const cut = raw(
+      'Marie Dupont <marie@example.com>',
+      'Question sur ma réservation',
+      'Bonjour, est-ce que la navette passe à 5 h ?',
+      randomBytes(300 * 1024),
+    );
+    const truncated = await relay(cut.slice(0, Math.floor(cut.length * 0.6)), { 'X-Inbound-Truncated': '1' });
+    expect(truncated.body).toEqual({ received: 1, imported: 0, toCheck: 1, ignored: 0 });
+    const question = await prisma.inboundEmail.findFirstOrThrow({ where: { operatorId: op.operator.id, status: 'unrecognised' } });
+    expect(question).toMatchObject({ fromAddress: 'marie@example.com', subject: 'Question sur ma réservation' });
+    expect(question.textBody).toContain('navette passe à 5 h');
+    // Bytes that are no message at all: the envelope is kept, so the parking still sees that something arrived.
+    const garbage = await relay(Buffer.from([0xff, 0xfe, 0x00, 0x01]), { 'X-Envelope-From': 'someone@example.com' });
+    expect(garbage.body.received).toBe(1);
+    expect(await prisma.inboundEmail.count({ where: { operatorId: op.operator.id, fromAddress: 'someone@example.com' } })).toBe(1);
   });
 
   it('une nouvelle adresse remplace l’ancienne ; un gérant seulement', async () => {

@@ -54,7 +54,7 @@ Ne construire QUE ce qui règle la douleur n°1 du client.
      `allocateInboundSlug` à la création, migration `inbound_slug_for_all` pour les loueurs existants, plus de bouton « Activer » ;
      `POST /internal/inbound/address` ne sert plus qu'à « Nouvelle adresse »), règle de transfert dans la messagerie du loueur,
      réception par **Cloudflare Email Routing** et le relais `email-worker/` (08/10/2026, à la place de Brevo, payant ; le relais
-     poste chaque mail sur `POST /public/inbound/email` avec l'en-tête `X-Inbound-Secret`), `InboundEmailService` + `domain/inbound-email.ts`,
+     poste chaque mail **brut** (`message/rfc822`, enveloppe en `X-Envelope-From` / `X-Envelope-To`, coupé à 4 Mo) sur `POST /public/inbound/email` avec l'en-tête `X-Inbound-Secret`, et l'API le décode avec `postal-mime` (`domain/inbound-mime.ts` ; 08/10/2026 : les 10 ms de CPU de l'offre Workers Free ne suffisaient pas à décoder une vraie confirmation, « Worker call failed after 3 attempts »)), `InboundEmailService` + `domain/inbound-email.ts`,
      table `inbound_emails`, réservation créée seule si complète (`ReservationService.createFromImport`), sinon page
      « Mails à vérifier » `/pro/reservations/a-verifier` et alerte `inbound_to_check` ; connecteurs plus tard).
      **G-B (07/10/2026) « Relier votre boîte mail »** : bouton du bloc Mails entrants (Parking › Réglages) ouvrant un assistant

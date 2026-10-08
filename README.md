@@ -197,8 +197,8 @@ le navigateur de l'espace pro appelle `/api` sur le même domaine (pas de CORS).
    `inbound_slug_for_all` pour les loueurs plus anciens ; Parking › Réglages, assistant « Relier ma boîte mail ») et crée
    dans sa messagerie une règle qui lui transfère les mails des comparateurs ; **Cloudflare
    Email Routing** reçoit le domaine (gratuit, adresses illimitées, aucune boîte mail à créer) et passe chaque mail au
-   relais [`email-worker/`](email-worker/README.md), qui l'envoie à `POST /api/public/inbound/email` avec l'en-tête
-   `X-Inbound-Secret` ; un mail reconnu et complet (Allopark) crée la réservation (canal comparateur, doublon refusé
+   relais [`email-worker/`](email-worker/README.md), qui l'envoie tel quel (`message/rfc822`, enveloppe en en-têtes) à
+   `POST /api/public/inbound/email` avec l'en-tête `X-Inbound-Secret`, l'API le décodant elle-même ; un mail reconnu et complet (Allopark) crée la réservation (canal comparateur, doublon refusé
    par la référence externe, push « Nouvelle réservation » à ceux qui le veulent à chaque réservation, sinon le récapitulatif
    horaire) ; un mail incomplet ou inconnu attend dans la **boîte de réception** « Mails à vérifier » (`/pro/reservations/a-verifier`,
    alerte du tableau de bord ; M-A du 08/10/2026 : liste et volet de lecture, onglets « À traiter · Traités · Archivés »), où
@@ -372,7 +372,7 @@ Documentation interactive : `/api/docs` (Swagger). Toutes les routes sont sous `
 | POST | `/internal/sms/test` | Gérant : SMS de test `{ to }` → `{ outcome: sent \| queued }`, 502 avec le code de l'appli en cas de refus |
 | POST | `/internal/sms/disable` | Gérant : plus de SMS, identifiants oubliés |
 | GET | `/internal/sms/status` | Gérant : `{ lastSentAt, month: { sent, failed }, pending, pendingStale, lastError }` (relance la file au passage) |
-| POST | `/public/inbound/email?secret=` | Webhook *Inbound parsing* de Brevo (M-A) : `{ items: [...] }` → `{ received, imported, toCheck, ignored }` |
+| POST | `/public/inbound/email` | Relais Cloudflare (M-A) : le mail brut (`message/rfc822`, `X-Inbound-Secret`, `X-Envelope-From` / `X-Envelope-To`, coupé à 4 Mo) ou l'ancien `{ items: [...] }` → `{ received, imported, toCheck, ignored }` |
 | GET | `/internal/inbound/settings` | Adresse de réception du loueur, dernier mail, comptages sur 30 jours, mails à vérifier |
 | POST | `/internal/inbound/address` | Gérant : renvoie l'adresse (créée avec le loueur) ; `{ regenerate: true }` : nouvelle adresse |
 | GET | `/internal/inbound/emails?view=todo\|done\|archived&status=` | Boîte de réception (M-A, 08/10/2026) : un onglet (`todo` par défaut : incomplete et unrecognised ; `done` : imported, duplicate, handled sur 30 jours ; `archived` : 90 jours), du plus récent au plus ancien, `{ data, counts: { todo, done, archived } }` ; `?status=` filtre encore (seul, il cherche dans l'onglet de cet état) ; les confirmations de transfert jamais listées |

@@ -47,6 +47,7 @@
     "morgan": "^1.12.1",
     "passport": "^0.7.0",
     "passport-jwt": "^4.0.1",
+    "postal-mime": "^4.0.5",
     "proj4": "^2.22.0",
     "reflect-metadata": "^0.2.2",
     "stripe": "23.0.0",
