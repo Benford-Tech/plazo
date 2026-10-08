@@ -13,8 +13,8 @@ import { cn } from "@/lib/utils";
 
 const PROVIDERS: MailProvider[] = ["gmail", "outlook", "ovh", "other"];
 /** Emails that prove the forwarding works (anything but Gmail's code). */
-const BOOKING: InboundEmailStatus[] = ["imported", "duplicate", "incomplete", "unrecognised"];
-const TONE: Record<InboundEmailStatus, BadgeTone> = { imported: "ok", duplicate: "line", incomplete: "warn", unrecognised: "bad", dismissed: "line", forwarding: "info" };
+const BOOKING: InboundEmailStatus[] = ["imported", "duplicate", "incomplete", "unrecognised", "dismissed", "handled", "archived"];
+const TONE: Record<InboundEmailStatus, BadgeTone> = { imported: "ok", duplicate: "line", incomplete: "warn", unrecognised: "bad", dismissed: "line", handled: "ok", archived: "line", forwarding: "info" };
 /** The Gmail code and the first email show up while the wizard is open. */
 const POLL_MS = 5000;
 /** A booking email this recent counts as the check, even if it came just before the wizard was opened. */

@@ -4,6 +4,9 @@ import { Container } from 'typedi';
 import prisma, { Prisma } from '@/database';
 import { allocateInboundSlug } from '@/services/inbound-slug';
 import { forwardingConfirmationOf, inboundSlugOf, newInboundSlug, recipientsOf, stripHtml, textOf } from '@/domain/inbound-email';
+import type { EmailReading } from '@/domain/email-reading';
+import { EmailReadingService, type EmailReadingResult } from '@/services/email-reading.service';
+import { InboundEmailService } from '@/services/inbound-email.service';
 import { NotificationService } from '@/services/notification.service';
 import { ONESIGNAL_NOTIFICATIONS_URL } from '@/services/push.service';
 import { addStaff, api, resetDatabase, setupOperator } from './utils/helpers';
@@ -142,6 +145,8 @@ describe('POST /public/inbound/email', () => {
   it('refuse sans le secret ; ignore un destinataire inconnu ; crée la réservation, prévient l’équipe, refuse le doublon', async () => {
     const op = await setupOperator();
     await api().put('/api/internal/notifications/devices').set(auth(op.token)).send({ subscriptionId: 'sub-manager' });
+    // The manager wants a push per booking (the default of a manager is the hourly digest, N-A 08/10/2026).
+    await api().patch('/api/internal/notifications/preferences').set(auth(op.token)).send({ bookings: 'immediate' });
     expect((await api().post('/api/public/inbound/email').send({ items: [] })).status).toBe(401);
     expect((await api().post('/api/public/inbound/email?secret=wrong').send({ items: [] })).status).toBe(401);
 
@@ -241,18 +246,23 @@ describe('POST /public/inbound/email', () => {
       (await api().post(`/api/internal/inbound/emails/${incomplete.id}/attach`).set(auth(agent.token)).send({ reservationId: created.body.data.id }))
         .status,
     ).toBe(200);
+    // /dismiss is the deprecated alias of /handle (T-A, 08/10/2026): the text stays readable in « Traités ».
     const dismissed = await api().post(`/api/internal/inbound/emails/${unrecognised.id}/dismiss`).set(auth(agent.token));
-    expect(dismissed.body.data).toMatchObject({ status: 'dismissed', textBody: null });
+    expect(dismissed.body.data).toMatchObject({ status: 'handled', textBody: 'Bonjour, pouvez-vous me réserver une place ?' });
     const after = await api().get('/api/internal/inbound/settings').set(auth(agent.token));
     expect(after.body.toCheck).toBe(0);
-    expect(
-      (await api().get('/api/internal/inbound/emails').set(auth(agent.token))).body.data.map((e: { status: string }) => e.status).sort(),
-    ).toEqual(['dismissed', 'imported']);
+    expect(after.body.counts).toMatchObject({ imported: 1, handled: 1, archived: 0, dismissed: 0 });
+    const todo = (await api().get('/api/internal/inbound/emails').set(auth(agent.token))).body;
+    expect(todo).toEqual({ data: [], counts: { todo: 0, done: 2, archived: 0 } });
+    const done = (await api().get('/api/internal/inbound/emails?view=done').set(auth(agent.token))).body;
+    expect(done.data.map((e: { status: string }) => e.status).sort()).toEqual(['handled', 'imported']);
+    expect(done.data.find((e: { status: string }) => e.status === 'imported')).toMatchObject({ reservationReference: created.body.data.reference });
 
     // The nightly purge clears old texts, then old rows.
     await prisma.inboundEmail.updateMany({ data: { receivedAt: new Date(Date.now() - 31 * 86400000) } });
     const purge = await api().get('/api/internal/cron/purge-expired-tokens').set('Authorization', `Bearer ${process.env.CRON_SECRET}`);
-    expect(purge.body.inboundEmails).toEqual({ textsCleared: 0, rowsDeleted: 0 });
+    // The handled email kept its text (T-A), the attached one lost it at once.
+    expect(purge.body.inboundEmails).toEqual({ textsCleared: 1, rowsDeleted: 0 });
     expect((await prisma.inboundEmail.findMany()).every(e => e.textBody === null)).toBe(true);
   });
 
@@ -291,8 +301,19 @@ describe('POST /public/inbound/email', () => {
     expect(after.recent.map((r: { status: string }) => r.status)).toEqual(['imported', 'forwarding']);
     expect(after.recent[0]).toMatchObject({ fromAddress: 'info@allopark.com', reservationReference: expect.any(String) });
     expect(after.recent[0].textBody).toBeUndefined();
-    const list = (await api().get('/api/internal/inbound/emails').set(auth(op.token))).body.data as { status: string }[];
+    const list = (await api().get('/api/internal/inbound/emails?view=done').set(auth(op.token))).body.data as { status: string }[];
     expect(list.map(e => e.status)).toEqual(['imported']);
+    expect((await api().get('/api/internal/inbound/emails?view=done&status=forwarding').set(auth(op.token))).body.data).toEqual([]);
+    expect((await api().get('/api/internal/inbound/emails?status=forwarding').set(auth(op.token))).body.counts).toEqual({
+      todo: 0,
+      done: 1,
+      archived: 0,
+    });
+    // A forwarding confirmation is unknown to the inbox: neither handled nor archived.
+    expect((await api().post(`/api/internal/inbound/emails/${row.id}/handle`).set(auth(op.token))).status).toBe(404);
+    const archive = await api().post(`/api/internal/inbound/emails/${row.id}/archive`).set(auth(op.token));
+    expect(archive.status).toBe(409);
+    expect(archive.body.code).toBe('forwarding');
 
     // After a week the code is no longer shown.
     await prisma.inboundEmail.update({ where: { id: row.id }, data: { receivedAt: new Date(Date.now() - 8 * 86400000) } });
@@ -334,5 +355,268 @@ describe('POST /public/inbound/email', () => {
       .post('/api/public/inbound/email?secret=inbound-test-secret')
       .send({ items: [item(first, filled)] });
     expect(old.body.ignored).toBe(1);
+  });
+});
+
+describe('la boîte de réception (M-A + T-A, 08/10/2026)', () => {
+  const statuses = (body: { data: { status: string }[] }) => body.data.map(e => e.status);
+
+  async function inbox(subjects: Record<string, string>) {
+    const op = await setupOperator();
+    const address = (await api().post('/api/internal/inbound/address').set(auth(op.token)).send({})).body.address as string;
+    const unknown = (subject: string) => item(address, `Bonjour, ${subject}`, { RawTextBody: `Bonjour, ${subject}`, Subject: subject });
+    await api()
+      .post('/api/public/inbound/email?secret=inbound-test-secret')
+      .send({
+        items: [item(address, filled), item(address, filled), item(address, email, { Subject: subjects.incomplete }), unknown(subjects.unknown)],
+      });
+    const rows = await prisma.inboundEmail.findMany({ where: { operatorId: op.operator.id } });
+    const of = (status: string) => rows.find(r => r.status === status)!;
+    return { op, imported: of('imported'), duplicate: of('duplicate'), incomplete: of('incomplete'), unrecognised: of('unrecognised') };
+  }
+
+  it('trois onglets avec leurs comptages, du plus récent au plus ancien, 30 jours pour les traités et 90 pour les archivés', async () => {
+    const { op, imported, duplicate, incomplete, unrecognised } = await inbox({ incomplete: 'Allopark incomplet', unknown: 'Question' });
+    const agent = await addStaff(op.token, 'agent');
+    // Older rows: an incomplete one of 40 days (still to do), an imported one of 40 days (out of « Traités »), an old dismissed one (moved to handled by the migration).
+    const old = (status: 'incomplete' | 'imported' | 'dismissed' | 'archived', days: number, subject: string) =>
+      prisma.inboundEmail.create({ data: { operatorId: op.operator.id, status, subject, receivedAt: new Date(Date.now() - days * 86400000) } });
+    await old('incomplete', 40, 'vieux incomplet');
+    await old('imported', 40, 'vieil import');
+    await old('dismissed', 10, 'classé avant');
+    await old('archived', 100, 'archive trop vieille');
+    await old('archived', 80, 'archive récente');
+    const sql = readFileSync(join(__dirname, '../prisma/migrations/20261008150100_inbound_statuses_data/migration.sql'), 'utf8');
+    // The data migration's first statement (the staff part needs the old column, covered by booking-digest.test.ts).
+    await prisma.$executeRawUnsafe(sql.split('\n\n')[0]);
+    expect(await prisma.inboundEmail.count({ where: { status: 'dismissed' } })).toBe(0);
+
+    const todo = (await api().get('/api/internal/inbound/emails').set(auth(agent.token))).body;
+    expect(todo.counts).toEqual({ todo: 3, done: 3, archived: 1 });
+    expect(todo.data.map((e: { subject: string }) => e.subject)).toEqual(['Question', 'Allopark incomplet', 'vieux incomplet']);
+    expect(statuses(todo)).toEqual(['unrecognised', 'incomplete', 'incomplete']);
+    expect(todo.data[0]).toMatchObject({ id: unrecognised.id, textBody: 'Bonjour, Question', missing: [], parsed: null });
+    expect(todo.data[1]).toMatchObject({ id: incomplete.id, provider: 'Allopark', missing: ['customerPhone', 'plate'] });
+
+    const done = (await api().get('/api/internal/inbound/emails?view=done').set(auth(agent.token))).body;
+    expect(done.counts).toEqual(todo.counts);
+    expect(done.data.map((e: { subject: string }) => e.subject)).toEqual([
+      'Confirmation de votre réservation AL-884880719',
+      'Confirmation de votre réservation AL-884880719',
+      'classé avant',
+    ]);
+    expect(statuses(done)).toEqual(['duplicate', 'imported', 'handled']);
+    expect(done.data.map((e: { id: string }) => e.id).slice(0, 2)).toEqual([duplicate.id, imported.id]);
+    expect(done.data[1].reservationReference).toEqual(expect.any(String));
+    expect(statuses((await api().get('/api/internal/inbound/emails?view=done&status=imported').set(auth(agent.token))).body)).toEqual(['imported']);
+    // The old filter alone keeps the tab: ?status=incomplete lists the two to-do ones, ?status=imported nothing in « À traiter ».
+    expect(statuses((await api().get('/api/internal/inbound/emails?status=incomplete').set(auth(agent.token))).body)).toEqual([
+      'incomplete',
+      'incomplete',
+    ]);
+    expect(statuses((await api().get('/api/internal/inbound/emails?status=imported').set(auth(agent.token))).body)).toEqual([]);
+
+    const archived = (await api().get('/api/internal/inbound/emails?view=archived').set(auth(agent.token))).body;
+    expect(archived.data.map((e: { subject: string }) => e.subject)).toEqual(['archive récente']);
+    expect((await api().get('/api/internal/inbound/emails?view=nimporte').set(auth(agent.token))).body.counts).toEqual(todo.counts);
+    // Another operator sees nothing of it.
+    const other = await setupOperator('Autre');
+    expect((await api().get('/api/internal/inbound/emails').set(auth(other.token))).body).toEqual({
+      data: [],
+      counts: { todo: 0, done: 0, archived: 0 },
+    });
+  });
+
+  it('T-A : « Marquer comme traité » et « Archiver », leurs refus, et la sélection qui avance', async () => {
+    const { op, imported, duplicate, incomplete, unrecognised } = await inbox({ incomplete: 'Allopark incomplet', unknown: 'Question' });
+    const agent = await addStaff(op.token, 'agent');
+    const driver = await addStaff(op.token, 'driver');
+    const post = (id: string, action: string, token = agent.token) => api().post(`/api/internal/inbound/emails/${id}/${action}`).set(auth(token));
+
+    // Handled: incomplete and unrecognised leave « À traiter », the text stays; a duplicate too; imported stays imported.
+    const handled = await post(incomplete.id, 'handle');
+    expect(handled.status).toBe(200);
+    expect(handled.body.data).toMatchObject({ id: incomplete.id, status: 'handled', provider: 'Allopark', missing: ['customerPhone', 'plate'] });
+    expect(handled.body.data.textBody).toContain('ALLOPARK');
+    expect((await post(duplicate.id, 'handle')).body.data).toMatchObject({ status: 'handled', reservationReference: expect.any(String) });
+    expect((await post(imported.id, 'handle')).body.data).toMatchObject({ status: 'imported' });
+    expect((await post(incomplete.id, 'handle')).body.data.status).toBe('handled'); // again: no change
+    let list = (await api().get('/api/internal/inbound/emails').set(auth(agent.token))).body;
+    expect(list.counts).toEqual({ todo: 1, done: 3, archived: 0 });
+    expect(statuses(list)).toEqual(['unrecognised']);
+
+    // Archived: from any status; readable in « Archivés » with its text; handled refuses once archived.
+    const archived = await post(unrecognised.id, 'archive');
+    expect(archived.status).toBe(200);
+    expect(archived.body.data).toMatchObject({ id: unrecognised.id, status: 'archived', textBody: 'Bonjour, Question' });
+    expect((await post(imported.id, 'archive')).body.data.status).toBe('archived');
+    expect((await post(unrecognised.id, 'archive')).body.data.status).toBe('archived'); // again: no change
+    const refused = await post(unrecognised.id, 'handle');
+    expect(refused.status).toBe(409);
+    expect(refused.body.code).toBe('archived');
+    expect((await post(unrecognised.id, 'dismiss')).status).toBe(409);
+    list = (await api().get('/api/internal/inbound/emails?view=archived').set(auth(agent.token))).body;
+    expect(list.counts).toEqual({ todo: 0, done: 2, archived: 2 });
+    expect(list.data.map((e: { id: string }) => e.id).sort()).toEqual([imported.id, unrecognised.id].sort());
+    expect((await api().get('/api/internal/inbound/settings').set(auth(agent.token))).body.counts).toMatchObject({
+      handled: 2,
+      archived: 2,
+      imported: 0,
+    });
+    expect(
+      (await api().get('/api/internal/dashboard').set(auth(op.token))).body.alerts.find((a: { kind: string }) => a.kind === 'inbound_to_check'),
+    ).toBeUndefined();
+
+    // Unknown id, another operator's email, a driver: refused.
+    expect((await post('nope', 'handle')).status).toBe(404);
+    const other = await setupOperator('Autre');
+    expect((await post(duplicate.id, 'archive', other.token)).status).toBe(404);
+    expect((await post(duplicate.id, 'archive', driver.token)).status).toBe(403);
+    expect(
+      (await prisma.auditLog.findMany({ where: { action: { in: ['inbound.handled', 'inbound.archived'] } } })).map(a => a.action).sort(),
+    ).toEqual(['inbound.archived', 'inbound.archived', 'inbound.handled', 'inbound.handled']);
+
+    // The purge still clears the texts after 30 days, archived included, and the rows after 90.
+    await prisma.inboundEmail.updateMany({ data: { receivedAt: new Date(Date.now() - 31 * 86400000) } });
+    await Container.get(InboundEmailService).purge();
+    expect((await prisma.inboundEmail.findMany()).every(e => e.textBody === null)).toBe(true);
+    expect((await api().get('/api/internal/inbound/emails?view=archived').set(auth(agent.token))).body.data).toHaveLength(2);
+    await prisma.inboundEmail.updateMany({ data: { receivedAt: new Date(Date.now() - 91 * 86400000) } });
+    expect((await Container.get(InboundEmailService).purge()).rowsDeleted).toBe(4);
+  });
+});
+
+describe('lecture par Claude des mails inconnus (L-A, 08/10/2026)', () => {
+  const reader = Container.get(EmailReadingService);
+  let read: jest.SpyInstance;
+  const post = (items: unknown[]) => api().post('/api/public/inbound/email?secret=inbound-test-secret').send({ items });
+  const parkos = (to: string, text = 'Bonjour, nouvelle réservation sur Parkos pour Marie Dupont…') =>
+    item(to, text, { From: { Name: 'Parkos', Address: 'noreply@parkos.fr' }, Subject: 'Nouvelle réservation PK-123456' });
+  const answer = (over: Partial<EmailReading> = {}): EmailReadingResult => ({
+    reading: {
+      kind: 'booking',
+      provider: 'Parkos',
+      externalReference: 'PK-123456',
+      arrivalAt: '2026-07-12T06:30',
+      returnAt: '2026-07-19T22:15',
+      customerName: 'Marie Dupont',
+      customerPhone: '+33 6 12 34 56 78',
+      customerEmail: 'marie@example.com',
+      plate: 'ab 123 cd',
+      returnFlight: 'AF1234',
+      departureFlight: null,
+      passengers: 2,
+      priceCents: 18990,
+      confidence: 0.92,
+      summary: 'Réservation Parkos de Marie Dupont du 12 au 19 juillet',
+      ...over,
+    },
+    model: 'claude-test',
+    usage: { inputTokens: 800, outputTokens: 120 },
+  });
+  const connected = async () => {
+    const op = await setupOperator();
+    const settings = await api().get('/api/internal/inbound/settings').set(auth(op.token));
+    return { ...op, address: settings.body.address as string };
+  };
+  beforeEach(() => {
+    process.env.ANTHROPIC_API_KEY = 'sk-ant-test';
+    read = jest.spyOn(reader, 'read');
+  });
+  afterEach(() => {
+    delete process.env.ANTHROPIC_API_KEY;
+    read.mockRestore();
+  });
+
+  it('crée la réservation d’un mail inconnu que Claude lit avec assurance, et refuse le même mail une seconde fois', async () => {
+    const { token, address, operator } = await connected();
+    read.mockResolvedValue(answer());
+    const res = await post([parkos(address)]);
+    expect(res.status).toBe(200);
+    expect(res.body).toEqual({ received: 1, imported: 1, toCheck: 0, ignored: 0 });
+    expect(read).toHaveBeenCalledTimes(1);
+    expect(read.mock.calls[0][0]).toMatchObject({
+      from: 'noreply@parkos.fr',
+      fromName: 'Parkos',
+      subject: 'Nouvelle réservation PK-123456',
+      timezone: 'Europe/Paris',
+    });
+    const row = await prisma.inboundEmail.findFirstOrThrow({ include: { reservation: true } });
+    expect(row.status).toBe('imported');
+    expect(row.provider).toBe('Parkos');
+    expect(row.reading).toEqual({
+      kind: 'booking',
+      provider: 'Parkos',
+      confidence: 0.92,
+      summary: 'Réservation Parkos de Marie Dupont du 12 au 19 juillet',
+      model: 'claude-test',
+    });
+    expect(row.reservation).toMatchObject({
+      operatorId: operator.id,
+      channel: 'aggregator',
+      channelDetail: 'Parkos',
+      externalReference: 'PK-123456',
+      customerName: 'Marie Dupont',
+      customerPhone: '+33612345678',
+      customerEmail: 'marie@example.com',
+      plate: 'AB-123-CD',
+      returnFlight: 'AF 1234',
+      passengers: 2,
+      priceCents: 18990,
+    });
+    // The inbox shows the reading.
+    const list = await api().get('/api/internal/inbound/emails?view=done').set(auth(token));
+    expect(list.body.data[0].reading).toMatchObject({ kind: 'booking', confidence: 0.92 });
+    // The same mail forwarded twice: one booking, by the reference; without a reference, by the car and its arrival.
+    const again = await post([parkos(address)]);
+    expect(again.body).toEqual({ received: 1, imported: 0, toCheck: 0, ignored: 0 });
+    read.mockResolvedValue(answer({ externalReference: null }));
+    const third = await post([parkos(address)]);
+    expect(third.body).toEqual({ received: 1, imported: 0, toCheck: 0, ignored: 0 });
+    expect(await prisma.reservation.count()).toBe(1);
+    expect(await prisma.inboundEmail.count({ where: { status: 'duplicate' } })).toBe(2);
+  });
+
+  it('laisse en « À traiter », pré-rempli, une lecture incomplète ou peu sûre', async () => {
+    const { address } = await connected();
+    read.mockResolvedValueOnce(answer({ customerPhone: null }));
+    expect((await post([parkos(address)])).body.toCheck).toBe(1);
+    read.mockResolvedValueOnce(answer({ confidence: 0.4 }));
+    expect((await post([parkos(address)])).body.toCheck).toBe(1);
+    const rows = await prisma.inboundEmail.findMany({ orderBy: { receivedAt: 'asc' } });
+    expect(rows.map(r => r.status)).toEqual(['incomplete', 'incomplete']);
+    expect(rows[0].missing).toEqual(['customerPhone']);
+    expect(rows[0].parsed).toMatchObject({ provider: 'Parkos', plate: 'AB-123-CD', arrivalAt: '2026-07-12T06:30' });
+    expect(rows[1].missing).toEqual(['confidence']);
+    expect(rows[1].reading).toMatchObject({ confidence: 0.4 });
+    expect(await prisma.reservation.count()).toBe(0);
+  });
+
+  it('signale annulations, modifications et autres mails sans rien créer', async () => {
+    const { address } = await connected();
+    read.mockResolvedValueOnce(answer({ kind: 'cancellation', summary: 'Annulation Parkos de Marie Dupont' }));
+    await post([parkos(address)]);
+    read.mockResolvedValueOnce(answer({ kind: 'other', provider: null, summary: 'Lettre d’information' }));
+    await post([parkos(address)]);
+    const rows = await prisma.inboundEmail.findMany({ orderBy: { receivedAt: 'asc' } });
+    expect(rows.map(r => r.status)).toEqual(['unrecognised', 'unrecognised']);
+    expect(rows.map(r => r.provider)).toEqual([null, null]);
+    expect(rows[0].reading).toMatchObject({ kind: 'cancellation', provider: 'Parkos', summary: 'Annulation Parkos de Marie Dupont' });
+    expect(rows[1].reading).toMatchObject({ kind: 'other', provider: null });
+    expect(await prisma.reservation.count()).toBe(0);
+  });
+
+  it('ne consulte pas Claude pour un mail Allopark reconnu, ni sans clé ; un échec laisse le mail en « À traiter »', async () => {
+    const { address } = await connected();
+    await post([item(address, filled)]);
+    expect(read).not.toHaveBeenCalled();
+    read.mockResolvedValueOnce(null);
+    expect((await post([parkos(address)])).body.toCheck).toBe(1);
+    const failed = await prisma.inboundEmail.findFirstOrThrow({ where: { status: 'unrecognised' } });
+    expect(failed.reading).toBeNull();
+    delete process.env.ANTHROPIC_API_KEY;
+    await post([parkos(address)]);
+    expect(read).toHaveBeenCalledTimes(1);
+    expect(await prisma.inboundEmail.count({ where: { status: 'unrecognised' } })).toBe(2);
   });
 });

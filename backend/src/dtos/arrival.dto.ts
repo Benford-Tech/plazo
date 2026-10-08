@@ -155,10 +155,10 @@ export class NotificationPreferencesDto {
   @IsBoolean({ message: 'invalid' })
   public shuttles?: boolean;
 
-  /** New bookings from the site or an import (06/10/2026). */
+  /** New bookings (N-A, 08/10/2026): a push each (site or import), the hourly digest, or nothing. */
   @IsOptional()
-  @IsBoolean({ message: 'invalid' })
-  public bookings?: boolean;
+  @IsIn(['immediate', 'hourly', 'never'], { message: 'invalid' })
+  public bookings?: 'immediate' | 'hourly' | 'never';
 
   /** The platform's messages (E-A). */
   @IsOptional()

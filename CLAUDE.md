@@ -63,6 +63,39 @@ Ne construire QUE ce qui règle la douleur n°1 du client.
      Gmail (`forwarding-noreply@google.com`) est reconnue (`forwardingConfirmationOf`, statut `forwarding`, hors « À vérifier »,
      sans le texte) et son code affiché en direct 7 jours, ou son lien d'acceptation « Confirmer par le lien » depuis que Gmail
      ne met plus le code dans l'objet (08/10/2026 ; le code est lu dans le corps) ; `InboundSettings.senders/forwarding/recent`, `EmailImporter.senders`.
+     **M-A + T-A + N-A (08/10/2026)** : **« Boîte de réception »** `/pro/reservations/a-verifier` (`InboundEmailsPage`) en deux
+     volets dès `md` (liste ~360 px : expéditeur, objet, heure, état, résumé « Dupont · AB-123-CD · 12 oct. 08:30 · AL-123 » ;
+     volet de lecture : objet ou « (sans objet) », état, « De : », « Reçu le », « Reconnu : Allopark », corps rendu lisible, bloc
+     « Ce que Plazo a compris » avec les champs manquants en pilule « manquant », actions), onglets « À traiter · Traités ·
+     Archivés » avec comptages ; mail choisi dans `?mail=`, le premier sélectionné sur grand écran, la sélection avance après un
+     geste ; sur téléphone la liste puis la fiche plein écran avec « Retour ». API : `GET /internal/inbound/emails?view=todo|done|archived`
+     → `{ data, counts: { todo, done, archived } }` (todo = incomplete et unrecognised, done = imported / duplicate / handled sur
+     30 jours, archived sur 90 jours ; `?status=` filtre encore ; les `forwarding` jamais listés). **Deux gestes (T-A)** :
+     « Marquer comme traité » (`POST …/emails/:id/handle` → `handled` depuis incomplete / unrecognised / duplicate / dismissed,
+     imported inchangé, 409 `archived`, 404 pour un `forwarding` ; `/dismiss` alias déprécié ; `dismissed` déprécié dans l'enum,
+     migré en `handled` ; remplace « Classer sans suite ») et « Archiver » (`POST …/emails/:id/archive` → `archived` depuis tout
+     sauf `forwarding` → 409, texte gardé ; la purge efface toujours les textes à 30 jours et les lignes à 90). **Récapitulatif
+     horaire (N-A)** : `Staff.bookingNotify` (`BookingNotify` immediate · hourly · never, remplace `notifyBookings` ; gérants
+     `hourly`, autres rôles `immediate` : `defaultBookingNotify` dans `domain/roles.ts` ; champ `bookings` de
+     `GET/PATCH /internal/notifications/preferences`), audiences push `bookings` (immediate, push par réservation) et
+     `bookingDigest` (hourly) ; `GET /internal/cron/booking-digest` toutes les heures pile (cron-job.org, `CRON_SECRET`) →
+     `BookingDigestService.run(now)` : par loueur actif, les réservations créées (tous canaux) dans
+     `(Operator.bookingDigestAt ?? now − 1 h, now]`, un push « 3 réservations reçues » · « 2 Plazo, 1 Allopark · 1 mail à vérifier »
+     (« · depuis 21:00 » quand la fenêtre dépasse 70 min ; `domain/booking-digest.ts` ; `data { type: 'booking', event: 'digest' }`,
+     `collapseId digest-<operatorId>`), rien de 22:00 à 07:00 (heure du premier parking, repère inchangé : le récapitulatif de
+     07:00 couvre la nuit), ni quand le dernier date de moins de 50 min ; le repère avance à chaque passage hors heures creuses.
+     **L-A « Lecture par Claude » (08/10/2026, « les mails doivent créer automatiquement les réservations »)** : un mail qu'aucun
+     importateur ne reconnaît est lu par Claude (`EmailReadingService`, `@anthropic-ai/sdk`, sortie structurée JSON,
+     `ANTHROPIC_API_KEY`, `EMAIL_READING_MODEL` ; `domain/email-reading.ts` : consignes avec le fuseau du parking et la date du
+     jour, schéma de réponse, `toParsedBooking` qui écarte sans corriger une date impossible, un retour avant l'arrivée, une
+     plaque ou un téléphone douteux). Claude classe le mail (`kind` : réservation · modification · annulation · autre), en lit les
+     champs et donne une confiance et un résumé. Réservation complète et confiance ≥ 0,7 (`MIN_CONFIDENCE`) → réservation créée
+     par `createFromImport` (canal comparateur, `channelDetail` = source lue : « Parkos », « Site du parking », « Client »… ;
+     doublon par la référence externe, sinon même plaque et même arrivée) ; champ requis absent ou confiance plus basse →
+     `incomplete` pré-rempli (`missing` : les champs, ou `confidence`) ; modification, annulation ou autre → `unrecognised`,
+     rien n'est créé ni modifié. `InboundEmail.reading` `{ kind, provider, confidence, summary, model }` (migration
+     `inbound_reading`), `InboundEmailView.reading` ; boîte de réception : ligne « Lu par Claude : Réservation · confiance 92 % »
+     avec le résumé, pastille du genre dans la liste. Sans clé, échec, refus ou délai (30 s) : le mail attend comme avant.
    - Page de réservation propre à l'opérateur (formulaire simple, confirmation par mail/SMS).
    - Vue planning : arrivées et retours du jour, taux d'occupation, alerte de surréservation
      calculée sur la capacité réelle.
@@ -70,7 +103,7 @@ Ne construire QUE ce qui règle la douleur n°1 du client.
    - **Décision A du 06/10/2026 (« un seul geste par étape », voir SPEC.md bloc 1)** : statut `back_at_parking` « De retour au
      parking » entre « Retour demandé » et « Rendu » ; placer la voiture = arrivée enregistrée ; fin de navette de retour =
      « De retour au parking » ; « Rendu » décroche les clés et accepte une remarque ; alerte `no_show_suspected` (sur les arrivées des 24 dernières heures) ; push
-     « Nouvelle réservation » (`Staff.notifyBookings`) ; `nextStatuses` servi par l'API, listes dans `domain/reservation.ts`.
+     « Nouvelle réservation » (`Staff.bookingNotify`, N-A du 08/10/2026) ; `nextStatuses` servi par l'API, listes dans `domain/reservation.ts`.
      Libellés unifiés web et app : Attendu · Sur place · Parti en navette · Retour demandé · De retour au parking · Rendu ·
      Annulé · Non venu.
    - **Décision S-A + S-B du 06/10/2026 (« SMS de la veille »)** : page `/pro/reservations/sms-veille` (lien depuis Réservations) :

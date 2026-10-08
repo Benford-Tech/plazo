@@ -5,6 +5,7 @@ import httpStatus from 'http-status';
 import { Service } from 'typedi';
 import { BCRYPT_ROUNDS } from '@/config';
 import prisma, { Prisma } from '@/database';
+import { defaultBookingNotify } from '@/domain/roles';
 import { HttpException } from '@/utils/httpException';
 import { normalizeEmail } from './auth.service';
 import { allocateInboundSlug } from './inbound-slug';
@@ -93,6 +94,7 @@ export class OperatorService {
             role: 'manager',
             password,
             emailVerifiedAt: data.emailVerified === false ? null : new Date(),
+            bookingNotify: defaultBookingNotify('manager'),
           },
         });
         const listing = data.airportId

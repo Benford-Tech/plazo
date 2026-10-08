@@ -66,6 +66,27 @@ Fonctionnel :
      relié » ou un renvoi vers « À vérifier ».
   Lien « Envoyer ces étapes à la personne qui gère notre messagerie » (mail prérempli). `InboundSettings.senders/forwarding/recent`,
   expéditeurs déclarés par importateur (`EmailImporter.senders`).
+- **Boîte de réception (M-A, 08/10/2026, mis en œuvre)** : « Mails à vérifier » devient une boîte de réception à deux volets sur
+  grand écran (liste : expéditeur, objet, heure, état et résumé de ce qui a été lu ; volet de lecture : en-tête, corps rendu
+  lisible avec liens cliquables et citations atténuées, bloc « Ce que Plazo a compris » avec les champs manquants signalés, puis
+  les actions), trois onglets « À traiter · Traités · Archivés » avec leurs comptages, mail choisi dans l'adresse (`?mail=`) ; sur
+  téléphone, la liste puis la fiche plein écran. **Deux gestes (T-A)** : « Marquer comme traité » (traité, avec ou sans
+  réservation ; un mail rattaché à une réservation l'est de lui-même ; remplace « Classer sans suite ») et « Archiver » (sort de la
+  vue, reste lisible dans Archivés ; pas pour une confirmation de transfert Gmail). Textes effacés à 30 jours, lignes à 90 jours.
+- **Récapitulatif horaire (N-A, 08/10/2026, mis en œuvre)** : chaque heure pile, s'il y a eu au moins une réservation depuis le
+  dernier récapitulatif (tous canaux : site Plazo, mails importés, comptoir / téléphone), un push aux membres réglés sur
+  « récapitulatif horaire » : « 3 réservations reçues » · « 2 Plazo, 1 Allopark · 1 mail à vérifier » (« depuis 21:00 » quand la
+  fenêtre dépasse 70 min) ; rien de 22:00 à 07:00, le récapitulatif de 07:00 couvre la nuit. Le réglage « Réservations » de chacun
+  devient un choix à trois : à chaque réservation · récapitulatif horaire · jamais (gérants : récapitulatif ; autres rôles : à
+  chaque réservation).
+- **Lecture par Claude (L-A, 08/10/2026, mis en œuvre)** : un mail transféré qu'aucun importateur ne reconnaît (autre
+  comparateur, formulaire du site du parking, client qui écrit) est lu par Claude : il dit s'il s'agit d'une réservation, d'une
+  modification, d'une annulation ou d'autre chose, en extrait les champs (dates et heures dans le fuseau du parking, nom,
+  téléphone, plaque, vols, passagers, prix, source, référence) et donne sa confiance et un résumé en une phrase. Une réservation
+  complète et sûre est créée aussitôt (même règles que l'import Allopark : canal comparateur, source lue, doublon refusé) ;
+  sinon le mail attend dans « À traiter », pré-rempli ; une modification ou une annulation est signalée mais jamais appliquée
+  seule. La boîte de réception montre ce que Claude a lu (« Lu par Claude : Réservation · confiance 92 % », résumé). Sans clé
+  Anthropic ou en cas d'échec, rien ne change : le mail attend comme avant.
 - Vue planning : arrivées et retours du jour, par heure.
 - Fiche opérationnelle (C-A, 06/10/2026) : la même fiche courte (contact, vol, place, clés, desserte, prochaine étape) s'ouvre en tiroir depuis le planning, le tableau de bord, la page Navettes et l'Occupation ; la fiche complète reste un lien plus loin.
 - Tableau de bord (accueil de l'espace pro, 05/10/2026) : chiffres du jour (sur le parking, arrivées, retours, navettes, à traiter), état des services (suivi de vols, SMS, notifications, paiements, import), liste des situations à traiter classées (sur place sans place, vol retardé ou annulé, voyageur au point de rendez-vous, clés non accrochées, SMS en attente, surréservation), véhicules sur le parking avec place et clés, navettes en direct sur la carte.
@@ -76,7 +97,7 @@ Fonctionnel :
   d'une navette de retour les passe « De retour au parking » ; « Véhicule rendu » décroche les clés (`keyHook` effacé) et peut
   porter une remarque (`note`, datée et signée dans les notes : dégât, litige) ; un client attendu depuis 3 h sans voiture placée
   apparaît « Attendu, toujours pas là » dans À traiter (`no_show_suspected`), jamais marqué absent tout seul ; l'équipe reçoit un
-  push « Nouvelle réservation · Plazo / Allopark… » pour toute réservation du site ou d'un import (réglage `Staff.notifyBookings`,
+  push « Nouvelle réservation · Plazo / Allopark… » pour toute réservation du site ou d'un import (réglage `Staff.bookingNotify`, trois choix depuis N-A du 08/10/2026,
   l'auteur d'une saisie n'est pas prévenu) ; la table des transitions vit sur le serveur seulement et `GET /internal/reservations/:id`
   renvoie `nextStatuses` déjà filtré par rôle (web et app l'affichent tel quel). Listes de statuts centralisées dans
   `domain/reservation.ts` (`ON_SITE_STATUSES`, `HOLDING_STATUSES`, `AWAY_STATUSES`).

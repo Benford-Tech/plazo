@@ -10,8 +10,11 @@ export const ONESIGNAL_NOTIFICATIONS_URL = 'https://api.onesignal.com/notificati
 /** OneSignal accepts at most this many subscription ids per call. */
 const MAX_SUBSCRIPTIONS_PER_CALL = 2000;
 
-/** What a staff member subscribed to: travellers' arrivals, returns, the shuttles' trips (N-A), or the platform's messages (E-A). */
-export type PushAudience = 'arrivals' | 'returns' | 'shuttles' | 'platform' | 'bookings';
+/**
+ * What a staff member subscribed to: travellers' arrivals, returns, the shuttles' trips (N-A), the platform's messages
+ * (E-A), a push per new booking (`bookings` = bookingNotify immediate) or the hourly digest (`bookingDigest` = hourly).
+ */
+export type PushAudience = 'arrivals' | 'returns' | 'shuttles' | 'platform' | 'bookings' | 'bookingDigest';
 
 /** Travellers reachable by a platform broadcast: a booking not cancelled, whose return is at most a day past. */
 const currentTravellers = (now: Date): Prisma.TravellerDeviceWhereInput => ({
@@ -38,8 +41,10 @@ const wantsAudience = (audience: PushAudience): Prisma.StaffWhereInput =>
       : audience === 'shuttles'
         ? { notifyShuttles: true }
         : audience === 'bookings'
-          ? { notifyBookings: true }
-          : { notifyPlatform: true };
+          ? { bookingNotify: 'immediate' }
+          : audience === 'bookingDigest'
+            ? { bookingNotify: 'hourly' }
+            : { notifyPlatform: true };
 
 /**
  * Push notifications through the OneSignal REST API: to the staff's phones (StaffDevice), and to
@@ -55,7 +60,10 @@ export class PushService {
     return oneSignalSettings() !== null;
   }
 
-  /** "Nouvelle réservation" to the team (06/10/2026): bookings made on the site or imported, never the one a colleague just typed. */
+  /**
+   * "Nouvelle réservation" to the team members on `immediate` (06/10/2026): bookings made on the site or imported, never
+   * the one a colleague just typed. Those on `hourly` hear of it in the digest (BookingDigestService).
+   */
   public async notifyNewBooking(
     booking: {
       id: string;

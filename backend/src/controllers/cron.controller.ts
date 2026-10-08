@@ -1,6 +1,7 @@
 import { Request, Response } from 'express';
 import { Container } from 'typedi';
 import { ArrivalService } from '@/services/arrival.service';
+import { BookingDigestService } from '@/services/booking-digest.service';
 import { FileService } from '@/services/file.service';
 import { FlightTrackingService } from '@/services/flight-tracking.service';
 import { InboundEmailService } from '@/services/inbound-email.service';
@@ -26,6 +27,7 @@ export class CronController {
   public sms = Container.get(SmsService);
   public retention = Container.get(RetentionService);
   public files = Container.get(FileService);
+  public digest = Container.get(BookingDigestService);
 
   /** GET /internal/cron/expire-arrival-signals */
   public expireArrivalSignals = catchAsync(async (req: Request, res: Response) => {
@@ -76,6 +78,16 @@ export class CronController {
     const sms = await this.sms.refreshAll();
     logger.info(`[Cron] Reminders: ${JSON.stringify(result)}; SMS queue: ${JSON.stringify(sms)}`);
     res.json({ ...result, sms });
+  });
+
+  /**
+   * GET /internal/cron/booking-digest (N-A, 08/10/2026): the hourly « Récapitulatif horaire » of the new bookings to
+   * the staff on `hourly`, per operator, outside the quiet hours. Called at every full hour by an external scheduler.
+   */
+  public bookingDigest = catchAsync(async (req: Request, res: Response) => {
+    const result = await this.digest.run();
+    logger.info(`[Cron] Booking digest: ${JSON.stringify(result)}`);
+    res.json(result);
   });
 
   /** GET /internal/cron/purge-expired-tokens */

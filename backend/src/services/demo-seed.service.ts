@@ -2,6 +2,7 @@ import { hash } from 'bcrypt';
 import { Container, Service } from 'typedi';
 import { BCRYPT_ROUNDS } from '@/config';
 import prisma, { Prisma } from '@/database';
+import { defaultBookingNotify } from '@/domain/roles';
 import {
   DEMO_AIRPORT_CODE,
   DEMO_BOOKINGS,
@@ -149,7 +150,15 @@ export class DemoSeedService {
       const manager = await tx.staff.findUnique({ where: { email } });
       if (!manager) {
         await tx.staff.create({
-          data: { operatorId: operator.id, email, name: DEMO_MANAGER_NAME, role: 'manager', password: hashedPassword, emailVerifiedAt: new Date() },
+          data: {
+            operatorId: operator.id,
+            email,
+            name: DEMO_MANAGER_NAME,
+            role: 'manager',
+            password: hashedPassword,
+            emailVerifiedAt: new Date(),
+            bookingNotify: defaultBookingNotify('manager'),
+          },
         });
       } else if (manager.operatorId !== operator.id) {
         throw new Error(`The account ${email} belongs to another operator`);

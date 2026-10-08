@@ -1,5 +1,5 @@
 import { Container, Service } from 'typedi';
-import prisma from '@/database';
+import prisma, { BookingNotify } from '@/database';
 import { AuthenticatedStaff } from '@/interfaces/auth.interface';
 import { AuditService } from './audit.service';
 
@@ -10,9 +10,9 @@ export interface NotificationPreferences {
   shuttles: boolean;
   /** The platform's messages (E-A). */
   platform: boolean;
+  /** New bookings (N-A, 08/10/2026): a push each (site or import), the hourly digest of every channel, or nothing. */
+  bookings: BookingNotify;
   /** Phones of the person registered for pushes. */
-  /** "Nouvelle réservation" from the site or an import (06/10/2026). */
-  bookings: boolean;
   devices: number;
 }
 
@@ -39,7 +39,7 @@ export class StaffDeviceService {
   public async preferences(actor: AuthenticatedStaff): Promise<NotificationPreferences> {
     const staff = await prisma.staff.findUniqueOrThrow({
       where: { id: actor.id },
-      select: { notifyArrivals: true, notifyReturns: true, notifyShuttles: true, notifyPlatform: true, notifyBookings: true },
+      select: { notifyArrivals: true, notifyReturns: true, notifyShuttles: true, notifyPlatform: true, bookingNotify: true },
     });
     const devices = await prisma.staffDevice.count({ where: { staffId: actor.id } });
     return {
@@ -47,14 +47,14 @@ export class StaffDeviceService {
       returns: staff.notifyReturns,
       shuttles: staff.notifyShuttles,
       platform: staff.notifyPlatform,
-      bookings: staff.notifyBookings,
+      bookings: staff.bookingNotify,
       devices,
     };
   }
 
   public async updatePreferences(
     actor: AuthenticatedStaff,
-    patch: { arrivals?: boolean; returns?: boolean; shuttles?: boolean; platform?: boolean; bookings?: boolean },
+    patch: { arrivals?: boolean; returns?: boolean; shuttles?: boolean; platform?: boolean; bookings?: BookingNotify },
   ): Promise<NotificationPreferences> {
     await prisma.staff.update({
       where: { id: actor.id },
@@ -63,7 +63,7 @@ export class StaffDeviceService {
         ...(patch.returns !== undefined ? { notifyReturns: patch.returns } : {}),
         ...(patch.shuttles !== undefined ? { notifyShuttles: patch.shuttles } : {}),
         ...(patch.platform !== undefined ? { notifyPlatform: patch.platform } : {}),
-        ...(patch.bookings !== undefined ? { notifyBookings: patch.bookings } : {}),
+        ...(patch.bookings !== undefined ? { bookingNotify: patch.bookings } : {}),
       },
     });
     return this.preferences(actor);
