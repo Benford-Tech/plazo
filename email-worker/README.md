@@ -31,8 +31,8 @@ exister ailleurs en `@plazo.fr` (Hostinger…) : Email Routing devient le seul r
 2. **Email Routing** : Compute › Email Service › Email Routing › `plazo.fr` › activer. Cloudflare pose les MX et le SPF de
    `plazo.fr` ; Brevo (envoi) n'en a pas besoin, ses signatures DKIM suffisent.
 3. **Worker** : déployé par GitHub Actions (`.github/workflows/email-worker-ci.yml`, job `deploy`) à chaque fusion sur
-   `main` qui touche `email-worker/`, ou à la main (Actions › « Email worker CI » › Run workflow). Il faut deux secrets du
-   dépôt (GitHub › Settings › Secrets and variables › Actions) :
+   `main` qui touche `email-worker/`, ou à la main (Actions › « Email worker CI » › Run workflow). Il faut deux secrets dans
+   l'environnement **Production** du dépôt (GitHub › Settings › Environments › Production › Environment secrets) :
    - `CLOUDFLARE_API_TOKEN` : Cloudflare › profil › API Tokens › Create Token › modèle « Edit Cloudflare Workers » ;
    - `CLOUDFLARE_ACCOUNT_ID` : Workers & Pages › Overview, colonne de droite.
    Le Worker s'appelle `plazo` (le nom de `wrangler.toml`). L'import du dépôt par Cloudflare lui-même (Workers Builds) n'a
