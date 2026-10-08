@@ -466,3 +466,5 @@ Canevas de référence : https://claude.ai/artifact/6ezoCDyLXFNwhAH5ZWUf4u (rang
 - Livrer par petites étapes utilisables par le client n°1, montrer chaque étape.
 - Ne pas ajouter de fonctionnalité hors périmètre sans demande explicite.
 - Code et commentaires en anglais, interface et documentation utilisateur en français.
+- **Livraison (07/10/2026)** : une fois le travail vérifié (lint, tests, build) et poussé sur la branche, ouvrir
+  automatiquement la PR vers `main` puis la fusionner, sans attendre de demande.
