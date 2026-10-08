@@ -46,7 +46,10 @@ Fonctionnel :
 - Saisie manuelle par le personnel (téléphone, comptoir).
 - Import des réservations d'autres canaux (M-A, 06/10/2026) : la messagerie du loueur transfère les mails de confirmation des
   comparateurs (Allopark aujourd'hui) à son adresse Plazo ; une réservation complète est créée seule, les autres attendent dans
-  « Mails à vérifier » (connecteurs directs aux comparateurs : hors MVP).
+  « Mails à vérifier » (connecteurs directs aux comparateurs : hors MVP). **Réception (08/10/2026, « Brevo n'est pas gratuit »)** :
+  Cloudflare Email Routing (gratuit, adresses illimitées, une par parking, aucune boîte mail à créer) reçoit `in.plazo.fr` et
+  passe chaque mail au relais `email-worker/` (Cloudflare Worker), qui l'envoie aussitôt à l'API ; le domaine reste enregistré
+  chez Hostinger, seuls ses DNS sont chez Cloudflare.
 - **Assistant « Relier votre boîte mail » (G-B, 07/10/2026, mis en œuvre)** : bouton « Relier ma boîte mail » du bloc Mails entrants
   (Parking › Réglages, « Revoir les étapes » une fois relié), quatre étapes avec leur progression :
   1. **Adresse** : activer puis copier l'adresse Plazo ;
@@ -705,7 +708,7 @@ Plazo reprend la stack de LoveNest (décision du 1er octobre 2026) :
 - Base : PostgreSQL + PostGIS hébergée sur Neon via l'intégration Vercel (décision du 02/10/2026, à la place de Supabase).
 - Espace pro et page de réservation : Vite + React + shadcn/ui, React Query.
 - App mobile : Flutter, architecture de LoveNest (bloc, auto_route, get_it, retrofit, freezed, easy_localization), notifications OneSignal, builds Codemagic. Deux apps à terme via les flavors.
-- Email : Brevo. SMS : le téléphone du loueur (*SMS Gateway for Android*, mode Cloud server) ou Brevo, au choix du loueur.
+- Email : Brevo pour l'envoi ; réception des mails transférés par les loueurs : Cloudflare Email Routing (08/10/2026). SMS : le téléphone du loueur (*SMS Gateway for Android*, mode Cloud server) ou Brevo, au choix du loueur.
 - Suivi de vols : AeroDataBox par défaut (RapidAPI ou API.Market), AirLabs au choix (`FLIGHT_TRACKING_PROVIDER`, inscriptions fermées pour l'instant) ; un fournisseur à la fois, une requête par vol suivi (cache de 5 minutes, 24 h avant l'atterrissage), pas de repli automatique. Le code passe par une interface interchangeable. Flightradar24 n'a pas d'offre gratuite et OpenSky est réservé à l'usage non commercial.
 - Le web (TypeScript) et le mobile (Dart) ne partagent pas de code : le contrat est l'API, décrite par Swagger ; toutes les règles métier (capacité, statuts, prix) vivent côté serveur.
 
