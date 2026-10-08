@@ -24,12 +24,13 @@ export class InboundEmailController {
   public inbound = Container.get(InboundEmailService);
 
   /**
-   * POST /public/inbound/email, secret in X-Inbound-Secret or ?secret= (the email-worker/ relay of Cloudflare Email
-   * Routing). Since 08/10/2026 the relay posts the raw message (message/rfc822, the envelope in X-Envelope-From and
-   * X-Envelope-To) and it is parsed here; the former { items } JSON is still read.
+   * POST /public/inbound/email, secret in the X-Inbound-Secret header only (a ?secret= would end up in the access logs;
+   * the email-worker/ relay of Cloudflare Email Routing uses the header). Since 08/10/2026 the relay posts the raw
+   * message (message/rfc822, the envelope in X-Envelope-From and X-Envelope-To) and it is parsed here; the former
+   * { items } JSON is still read.
    */
   public receive = catchAsync(async (req: Request, res: Response) => {
-    const given = Buffer.from(String(req.query.secret ?? req.headers['x-inbound-secret'] ?? ''));
+    const given = Buffer.from(String(req.headers['x-inbound-secret'] ?? ''));
     const expected = Buffer.from(INBOUND_EMAIL_SECRET);
     if (!inboundEmailAvailable() || given.length !== expected.length || !timingSafeEqual(given, expected)) {
       throw new HttpException(httpStatus.UNAUTHORIZED, 'Bad inbound secret', 'unauthorized');

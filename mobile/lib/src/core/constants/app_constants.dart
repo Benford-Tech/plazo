@@ -8,7 +8,7 @@ abstract final class AppConstants {
   static const isPro = flavor == 'pro';
 
   /// The API, with its /api prefix. Production by default.
-  static const baseUrl = String.fromEnvironment('API_BASE_URL', defaultValue: 'https://plazo-benford-tech.vercel.app/api');
+  static const baseUrl = String.fromEnvironment('API_BASE_URL', defaultValue: 'https://www.plazo.fr/api');
 
   /// The traveller site (its legal pages, FAQ): the API's address without /api, unless given.
   static const _siteUrl = String.fromEnvironment('SITE_URL');

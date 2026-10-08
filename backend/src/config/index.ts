@@ -53,7 +53,7 @@ export const emailReadingModel = (): string => (process.env.EMAIL_READING_MODEL 
 export const BREVO_API_KEY = process.env.BREVO_API_KEY || '';
 // M-A (06/10/2026): the domain of the operators' inbound addresses (<slug>@<domain>). Cloudflare Email Routing
 // hands its mail to the email-worker/ relay (08/10/2026, Brevo before), which posts it to POST /public/inbound/email
-// with the header X-Inbound-Secret: <INBOUND_EMAIL_SECRET> (`?secret=` still accepted). Both empty: feature off.
+// with the header X-Inbound-Secret: <INBOUND_EMAIL_SECRET> (header only, 08/10/2026). Both empty: feature off.
 export const INBOUND_EMAIL_DOMAIN = (process.env.INBOUND_EMAIL_DOMAIN || '').trim().toLowerCase();
 export const INBOUND_EMAIL_SECRET = (process.env.INBOUND_EMAIL_SECRET || '').trim();
 export const inboundEmailAvailable = (): boolean => !!INBOUND_EMAIL_DOMAIN && !!INBOUND_EMAIL_SECRET;
@@ -137,6 +137,14 @@ export function platformAdminEmails(): string[] {
 
 export function isPlatformAdmin(email: string | null | undefined): boolean {
   return !!email && platformAdminEmails().includes(email.trim().toLowerCase());
+}
+
+/**
+ * The platform tools open only to a listed email that its owner has verified (08/10/2026): a free signup or a
+ * member created with the owner's email, never verified, must not reach the platform.
+ */
+export function isVerifiedPlatformAdmin(staff: { email: string | null; emailVerifiedAt: Date | null } | null | undefined): boolean {
+  return !!staff && !!staff.emailVerifiedAt && isPlatformAdmin(staff.email);
 }
 
 // OneSignal (push notifications to the staff's phones). Read on every call so that tests can

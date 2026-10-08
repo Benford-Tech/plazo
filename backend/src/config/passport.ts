@@ -1,6 +1,6 @@
 import { Passport } from 'passport';
 import { ExtractJwt, Strategy as JwtStrategy, VerifiedCallback } from 'passport-jwt';
-import { isPlatformAdmin, SECRET_KEY } from '@/config';
+import { SECRET_KEY, isVerifiedPlatformAdmin } from '@/config';
 import prisma, { StaffTokenType } from '@/database';
 import { AuthenticatedStaff, DataStoredInToken } from '@/interfaces/auth.interface';
 
@@ -28,7 +28,7 @@ export const staffJwtStrategy = new JwtStrategy(
       if (actingAs) {
         // View-as: only while the real person is still a platform admin; works on a suspended
         // operator too (the platform must be able to look at it).
-        if (!isPlatformAdmin(staff.email)) return done(null, false);
+        if (!isVerifiedPlatformAdmin(staff)) return done(null, false);
         const target = await prisma.operator.findUnique({ where: { id: actingAs } });
         if (!target) return done(null, false);
         const scoped: AuthenticatedStaff = {

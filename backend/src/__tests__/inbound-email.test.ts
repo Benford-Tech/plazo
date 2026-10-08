@@ -149,7 +149,7 @@ describe('POST /public/inbound/email', () => {
     // The manager wants a push per booking (the default of a manager is the hourly digest, N-A 08/10/2026).
     await api().patch('/api/internal/notifications/preferences').set(auth(op.token)).send({ bookings: 'immediate' });
     expect((await api().post('/api/public/inbound/email').send({ items: [] })).status).toBe(401);
-    expect((await api().post('/api/public/inbound/email?secret=wrong').send({ items: [] })).status).toBe(401);
+    expect((await api().post('/api/public/inbound/email').set('X-Inbound-Secret', 'wrong').send({ items: [] })).status).toBe(401);
 
     // The address exists from the operator's creation (08/10/2026): no activation step, the route just returns it.
     const before = await api().get('/api/internal/inbound/settings').set(auth(op.token));
@@ -161,12 +161,14 @@ describe('POST /public/inbound/email', () => {
     const address = enabled.body.address as string;
 
     const unknown = await api()
-      .post('/api/public/inbound/email?secret=inbound-test-secret')
+      .post('/api/public/inbound/email')
+      .set('X-Inbound-Secret', 'inbound-test-secret')
       .send({ items: [item('someone@in.plazo.test', filled)] });
     expect(unknown.body).toEqual({ received: 1, imported: 0, toCheck: 0, ignored: 1 });
 
     const res = await api()
-      .post('/api/public/inbound/email?secret=inbound-test-secret')
+      .post('/api/public/inbound/email')
+      .set('X-Inbound-Secret', 'inbound-test-secret')
       .send({ items: [item(address, filled)] });
     expect(res.status).toBe(200);
     expect(res.body).toEqual({ received: 1, imported: 1, toCheck: 0, ignored: 0 });
@@ -187,7 +189,8 @@ describe('POST /public/inbound/email', () => {
 
     // The same email forwarded twice: no second booking.
     const again = await api()
-      .post('/api/public/inbound/email?secret=inbound-test-secret')
+      .post('/api/public/inbound/email')
+      .set('X-Inbound-Secret', 'inbound-test-secret')
       .send({ items: [item(address, filled)] });
     expect(again.body).toEqual({ received: 1, imported: 0, toCheck: 0, ignored: 0 });
     expect(await prisma.reservation.count({ where: { operatorId: op.operator.id } })).toBe(1);
@@ -203,7 +206,8 @@ describe('POST /public/inbound/email', () => {
     const driver = await addStaff(op.token, 'driver');
     const { address } = (await api().post('/api/internal/inbound/address').set(auth(op.token)).send({})).body as { address: string };
     const res = await api()
-      .post('/api/public/inbound/email?secret=inbound-test-secret')
+      .post('/api/public/inbound/email')
+      .set('X-Inbound-Secret', 'inbound-test-secret')
       .send({
         items: [
           item(address, email, { Subject: 'Allopark incomplet' }),
@@ -280,7 +284,8 @@ describe('POST /public/inbound/email', () => {
       Subject: '(#482913507) Gmail Forwarding Confirmation - Receive Mail from boss@gmail.com',
     });
     const received = await api()
-      .post('/api/public/inbound/email?secret=inbound-test-secret')
+      .post('/api/public/inbound/email')
+      .set('X-Inbound-Secret', 'inbound-test-secret')
       .send({ items: [confirmation] });
     expect(received.body).toEqual({ received: 1, imported: 0, toCheck: 0, ignored: 0 });
     const row = await prisma.inboundEmail.findFirstOrThrow({ where: { status: 'forwarding' } });
@@ -288,7 +293,8 @@ describe('POST /public/inbound/email', () => {
     expect(row.textBody).toBeNull();
 
     await api()
-      .post('/api/public/inbound/email?secret=inbound-test-secret')
+      .post('/api/public/inbound/email')
+      .set('X-Inbound-Secret', 'inbound-test-secret')
       .send({ items: [item(address, filled)] });
     const after = (await api().get('/api/internal/inbound/settings').set(auth(op.token))).body;
     expect(after.forwarding).toEqual({
@@ -438,7 +444,8 @@ describe('POST /public/inbound/email', () => {
     const second = (await api().post('/api/internal/inbound/address').set(auth(op.token)).send({ regenerate: true })).body.address as string;
     expect(second).not.toBe(first);
     const old = await api()
-      .post('/api/public/inbound/email?secret=inbound-test-secret')
+      .post('/api/public/inbound/email')
+      .set('X-Inbound-Secret', 'inbound-test-secret')
       .send({ items: [item(first, filled)] });
     expect(old.body.ignored).toBe(1);
   });
@@ -452,7 +459,8 @@ describe('la boîte de réception (M-A + T-A, 08/10/2026)', () => {
     const address = (await api().post('/api/internal/inbound/address').set(auth(op.token)).send({})).body.address as string;
     const unknown = (subject: string) => item(address, `Bonjour, ${subject}`, { RawTextBody: `Bonjour, ${subject}`, Subject: subject });
     await api()
-      .post('/api/public/inbound/email?secret=inbound-test-secret')
+      .post('/api/public/inbound/email')
+      .set('X-Inbound-Secret', 'inbound-test-secret')
       .send({
         items: [item(address, filled), item(address, filled), item(address, email, { Subject: subjects.incomplete }), unknown(subjects.unknown)],
       });
@@ -576,7 +584,7 @@ describe('la boîte de réception (M-A + T-A, 08/10/2026)', () => {
 describe('lecture par Claude des mails inconnus (L-A, 08/10/2026)', () => {
   const reader = Container.get(EmailReadingService);
   let read: jest.SpyInstance;
-  const post = (items: unknown[]) => api().post('/api/public/inbound/email?secret=inbound-test-secret').send({ items });
+  const post = (items: unknown[]) => api().post('/api/public/inbound/email').set('X-Inbound-Secret', 'inbound-test-secret').send({ items });
   const parkos = (to: string, text = 'Bonjour, nouvelle réservation sur Parkos pour Marie Dupont…') =>
     item(to, text, { From: { Name: 'Parkos', Address: 'noreply@parkos.fr' }, Subject: 'Nouvelle réservation PK-123456' });
   const answer = (over: Partial<EmailReading> = {}): EmailReadingResult => ({
