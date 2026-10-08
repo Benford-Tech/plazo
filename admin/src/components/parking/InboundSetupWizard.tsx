@@ -165,6 +165,11 @@ export function InboundSetupWizard({ onClose }: { onClose: () => void }) {
 
   const s = settings.data;
   const address = s?.address ?? null;
+  // Every operator has its address from the start (08/10/2026); one created before gets it here, without a button.
+  const { mutate: enableNow, isPending: enabling, isError: enableFailed } = enable;
+  useEffect(() => {
+    if (s?.available && !s.address && !enabling && !enableFailed) enableNow();
+  }, [s?.available, s?.address, enabling, enableFailed, enableNow]);
   const sender = senderFor(provider, (s?.senders ?? []).map(x => x.address));
   const labels = t.steps.map((label, i) => (i === 1 && provider ? t.stepMail(t.mail.providers[provider].label) : label));
   const canNext = step === 0 ? Boolean(address) : step === 1 ? provider !== null : true;
@@ -191,15 +196,9 @@ export function InboundSetupWizard({ onClose }: { onClose: () => void }) {
         {address ? (
           <CopyField value={address} accent testId="wizard-address" />
         ) : (
-          <button
-            type="button"
-            data-testid="wizard-enable"
-            disabled={enable.isPending}
-            onClick={() => enable.mutate()}
-            className="h-11 self-start rounded-[10px] bg-primary px-5 text-sm font-semibold text-primary-foreground hover:brightness-105 disabled:opacity-50"
-          >
-            {t.address.enable}
-          </button>
+          <p data-testid="wizard-preparing" className="m-0 text-sm text-muted-foreground">
+            {t.address.preparing}
+          </p>
         )}
       </div>
     );

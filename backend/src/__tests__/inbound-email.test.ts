@@ -85,6 +85,25 @@ describe('lecture du webhook (domaine)', () => {
   });
 });
 
+describe('adresse de réception dès le départ (08/10/2026)', () => {
+  it('la migration inbound_slug_for_all donne une adresse unique aux loueurs créés avant, et ne touche pas les autres', async () => {
+    const a = await setupOperator();
+    const b = await setupOperator();
+    const before = await prisma.operator.findUniqueOrThrow({ where: { id: a.operator.id }, select: { inboundSlug: true, slug: true } });
+    expect(before.inboundSlug).toMatch(/^parking-test-\d+-[0-9a-f]{4}$/);
+    await prisma.operator.update({ where: { id: a.operator.id }, data: { inboundSlug: null } });
+    const sql = readFileSync(join(__dirname, '../prisma/migrations/20261008120000_inbound_slug_for_all/migration.sql'), 'utf8');
+    await prisma.$executeRawUnsafe(sql);
+    const [after, other] = await Promise.all([
+      prisma.operator.findUniqueOrThrow({ where: { id: a.operator.id }, select: { inboundSlug: true } }),
+      prisma.operator.findUniqueOrThrow({ where: { id: b.operator.id }, select: { inboundSlug: true } }),
+    ]);
+    expect(after.inboundSlug).toMatch(new RegExp(`^${before.slug.slice(0, 24)}-[0-9a-f]{4}$`));
+    expect(other.inboundSlug).toBe((await prisma.operator.findUniqueOrThrow({ where: { id: b.operator.id } })).inboundSlug);
+    expect(after.inboundSlug).not.toBe(other.inboundSlug);
+  });
+});
+
 describe('POST /public/inbound/email', () => {
   it('refuse sans le secret ; ignore un destinataire inconnu ; crée la réservation, prévient l’équipe, refuse le doublon', async () => {
     const op = await setupOperator();
@@ -92,12 +111,13 @@ describe('POST /public/inbound/email', () => {
     expect((await api().post('/api/public/inbound/email').send({ items: [] })).status).toBe(401);
     expect((await api().post('/api/public/inbound/email?secret=wrong').send({ items: [] })).status).toBe(401);
 
-    // Nothing arrives before the manager enables the address.
+    // The address exists from the operator's creation (08/10/2026): no activation step, the route just returns it.
     const before = await api().get('/api/internal/inbound/settings').set(auth(op.token));
-    expect(before.body).toMatchObject({ available: true, address: null, toCheck: 0 });
+    expect(before.body).toMatchObject({ available: true, toCheck: 0 });
+    expect(before.body.address).toMatch(/^parking-test-\d+-[0-9a-f]{4}@in\.plazo\.test$/);
     const enabled = await api().post('/api/internal/inbound/address').set(auth(op.token)).send({});
     expect(enabled.status).toBe(200);
-    expect(enabled.body.address).toMatch(/^parking-test-\d+-[0-9a-f]{4}@in\.plazo\.test$/);
+    expect(enabled.body.address).toBe(before.body.address);
     const address = enabled.body.address as string;
 
     const unknown = await api()

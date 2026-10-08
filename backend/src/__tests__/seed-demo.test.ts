@@ -26,6 +26,8 @@ describe('données de démonstration', () => {
     expect(operators).toHaveLength(5);
     for (const op of operators) {
       expect(op.status).toBe('active');
+      // The inbound address exists from the start (08/10/2026).
+      expect(op.inboundSlug).toMatch(new RegExp(`^${op.slug.slice(0, 24)}-[0-9a-f]{4}$`));
       expect(op.parkings).toHaveLength(1);
       expect(op.parkings[0].listing).toMatchObject({ status: 'published' });
       expect(op.parkings[0].listing!.photos).toHaveLength(2);

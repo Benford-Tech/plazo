@@ -1,4 +1,3 @@
-import { randomBytes } from 'crypto';
 import httpStatus from 'http-status';
 import { Container, Service } from 'typedi';
 import { INBOUND_EMAIL_DOMAIN, inboundEmailAvailable } from '@/config';
@@ -9,13 +8,13 @@ import {
   InboundItem,
   InboundPayload,
   inboundSlugOf,
-  newInboundSlug,
   recipientsOf,
   REQUIRED_FOR_IMPORT,
   textOf,
 } from '@/domain/inbound-email';
 import { can } from '@/domain/roles';
 import { HttpException } from '@/utils/httpException';
+import { allocateInboundSlug } from './inbound-slug';
 import { AuthenticatedStaff } from '@/interfaces/auth.interface';
 import { logger } from '@/utils/logger';
 import { AuditService } from './audit.service';
@@ -212,16 +211,16 @@ export class InboundEmailService {
     };
   }
 
-  /** The manager enables the address (or gets a new one: the old one stops working). */
+  /**
+   * The manager asks for a new address (the old one stops working). Without `regenerate`, the address is simply
+   * returned: every operator has one from its creation (08/10/2026); only an operator created before gets it here.
+   */
   public async enableAddress(actor: AuthenticatedStaff, options: { regenerate?: boolean } = {}): Promise<InboundSettings> {
     this.require(actor, 'parking:manage');
     if (!inboundEmailAvailable()) throw new HttpException(httpStatus.SERVICE_UNAVAILABLE, 'Inbound email is not configured', 'inbound_unavailable');
     const operator = await prisma.operator.findUniqueOrThrow({ where: { id: actor.operatorId }, select: { slug: true, inboundSlug: true } });
     if (!operator.inboundSlug || options.regenerate) {
-      let slug = newInboundSlug(operator.slug, () => randomBytes(3).toString('hex').slice(0, 4));
-      while (await prisma.operator.findUnique({ where: { inboundSlug: slug }, select: { id: true } })) {
-        slug = newInboundSlug(operator.slug, () => randomBytes(3).toString('hex').slice(0, 4));
-      }
+      const slug = await allocateInboundSlug(prisma, operator.slug);
       await prisma.operator.update({ where: { id: actor.operatorId }, data: { inboundSlug: slug } });
       await this.audit.record(actor, {
         action: options.regenerate ? 'inbound.address_regenerated' : 'inbound.address_enabled',

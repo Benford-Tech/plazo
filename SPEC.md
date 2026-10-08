@@ -52,7 +52,8 @@ Fonctionnel :
   chez Hostinger, seuls ses DNS sont chez Cloudflare.
 - **Assistant « Relier votre boîte mail » (G-B, 07/10/2026, mis en œuvre)** : bouton « Relier ma boîte mail » du bloc Mails entrants
   (Parking › Réglages, « Revoir les étapes » une fois relié), quatre étapes avec leur progression :
-  1. **Adresse** : activer puis copier l'adresse Plazo ;
+  1. **Adresse** : copier l'adresse Plazo (depuis le 08/10/2026 elle existe dès la création du loueur, « configurée dès le
+     départ » : plus rien à activer) ;
   2. **Messagerie** : Gmail, Outlook / Microsoft 365, OVH (Roundcube) ou autre. Pour Gmail, autoriser l'adresse de transfert : le
      mail de confirmation que Gmail envoie à Plazo (`forwarding-noreply@google.com`) est reconnu, gardé sans son texte (statut
      `forwarding`, hors « À vérifier ») et son code s'affiche en direct pendant 7 jours ;

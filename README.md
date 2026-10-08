@@ -193,8 +193,9 @@ le navigateur de l'espace pro appelle `/api` sur le même domaine (pas de CORS).
 7. **Synchronisation de la boîte mail (M-A, 06/10/2026 ; réception par Cloudflare depuis le 08/10/2026)** — facultatif :
    sans `INBOUND_EMAIL_DOMAIN` et `INBOUND_EMAIL_SECRET`, le bloc « Mails entrants » des réglages explique que la
    réception n'est pas configurée.
-   Principe : chaque loueur active une adresse `<slug>@<INBOUND_EMAIL_DOMAIN>` (Parking › Réglages, assistant « Relier
-   ma boîte mail ») et crée dans sa messagerie une règle qui lui transfère les mails des comparateurs ; **Cloudflare
+   Principe : chaque loueur a son adresse `<slug>@<INBOUND_EMAIL_DOMAIN>` dès sa création (08/10/2026 ; migration
+   `inbound_slug_for_all` pour les loueurs plus anciens ; Parking › Réglages, assistant « Relier ma boîte mail ») et crée
+   dans sa messagerie une règle qui lui transfère les mails des comparateurs ; **Cloudflare
    Email Routing** reçoit le domaine (gratuit, adresses illimitées, aucune boîte mail à créer) et passe chaque mail au
    relais [`email-worker/`](email-worker/README.md), qui l'envoie à `POST /api/public/inbound/email` avec l'en-tête
    `X-Inbound-Secret` ; un mail reconnu et complet (Allopark) crée la réservation (canal comparateur, doublon refusé
@@ -360,7 +361,7 @@ Documentation interactive : `/api/docs` (Swagger). Toutes les routes sont sous `
 | GET | `/internal/sms/status` | Gérant : `{ lastSentAt, month: { sent, failed }, pending, pendingStale, lastError }` (relance la file au passage) |
 | POST | `/public/inbound/email?secret=` | Webhook *Inbound parsing* de Brevo (M-A) : `{ items: [...] }` → `{ received, imported, toCheck, ignored }` |
 | GET | `/internal/inbound/settings` | Adresse de réception du loueur, dernier mail, comptages sur 30 jours, mails à vérifier |
-| POST | `/internal/inbound/address` | Gérant : active l'adresse (`{ regenerate: true }` : nouvelle adresse) |
+| POST | `/internal/inbound/address` | Gérant : renvoie l'adresse (créée avec le loueur) ; `{ regenerate: true }` : nouvelle adresse |
 | GET | `/internal/inbound/emails?status=` | « Mails à vérifier » : en attente d'abord, puis 30 jours |
 | POST | `/internal/inbound/emails/:id/dismiss` · `/attach` | Classer sans suite · rattacher à la réservation saisie (`{ reservationId }`) |
 | GET | `/internal/cron/payouts` | Vercel Cron, chaque jour : transferts des parts dues aux loueurs |

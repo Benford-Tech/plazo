@@ -7,6 +7,7 @@ import { BCRYPT_ROUNDS } from '@/config';
 import prisma, { Prisma } from '@/database';
 import { HttpException } from '@/utils/httpException';
 import { normalizeEmail } from './auth.service';
+import { allocateInboundSlug } from './inbound-slug';
 
 export interface OperatorSetup {
   operatorName: string;
@@ -64,11 +65,14 @@ export class OperatorService {
 
     try {
       return await prisma.$transaction(async tx => {
+        const slug = slugTaken ? `${baseSlug}-${slugTaken + 1}` : baseSlug;
         const operator = await tx.operator.create({
           data: {
             name: data.operatorName.trim(),
-            slug: slugTaken ? `${baseSlug}-${slugTaken + 1}` : baseSlug,
+            slug,
             commissionBps: data.commissionBps ?? null,
+            // The inbound address exists from the start (08/10/2026): the operator only sets its forwarding rule.
+            inboundSlug: await allocateInboundSlug(tx, slug),
           },
         });
         const parking = await tx.parking.create({

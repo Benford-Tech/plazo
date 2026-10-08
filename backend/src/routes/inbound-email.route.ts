@@ -29,7 +29,7 @@ import { RefuseInViewAs, StaffAuthMiddleware } from '@/middlewares/staff-auth.mi
  * /internal/inbound/address:
  *   post:
  *     tags: [Inbound email]
- *     summary: "Manager: enables the address, or gives a new one with { regenerate: true }"
+ *     summary: "Manager: returns the address (every operator has one from its creation), or gives a new one with { regenerate: true }"
  * /internal/inbound/emails:
  *   get:
  *     tags: [Inbound email]

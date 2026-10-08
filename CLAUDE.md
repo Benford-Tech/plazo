@@ -50,7 +50,9 @@ Ne construire QUE ce qui règle la douleur n°1 du client.
 1. **Réservations**
    - Saisie manuelle (téléphone, comptoir) + import des réservations des autres canaux
      (06/10/2026 : l'import par copier-coller d'un mail est retiré ; **M-A « synchronisation de la boîte mail »** : adresse de
-     réception `Operator.inboundSlug@INBOUND_EMAIL_DOMAIN` activée dans Réglages, règle de transfert dans la messagerie du loueur,
+     réception `Operator.inboundSlug@INBOUND_EMAIL_DOMAIN` **créée avec le loueur** (08/10/2026, « configurée dès le départ » :
+     `allocateInboundSlug` à la création, migration `inbound_slug_for_all` pour les loueurs existants, plus de bouton « Activer » ;
+     `POST /internal/inbound/address` ne sert plus qu'à « Nouvelle adresse »), règle de transfert dans la messagerie du loueur,
      réception par **Cloudflare Email Routing** et le relais `email-worker/` (08/10/2026, à la place de Brevo, payant ; le relais
      poste chaque mail sur `POST /public/inbound/email` avec l'en-tête `X-Inbound-Secret`), `InboundEmailService` + `domain/inbound-email.ts`,
      table `inbound_emails`, réservation créée seule si complète (`ReservationService.createFromImport`), sinon page
