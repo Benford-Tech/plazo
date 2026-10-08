@@ -5,6 +5,7 @@ import { Container } from 'typedi';
 import { INBOUND_EMAIL_SECRET, inboundEmailAvailable } from '@/config';
 import { InboundEmailStatus } from '@/database';
 import { InboundPayload } from '@/domain/inbound-email';
+import { Envelope, parseRawEmail } from '@/domain/inbound-mime';
 import { RequestWithStaffSession } from '@/middlewares/staff-auth.middleware';
 import { INBOUND_VIEWS, InboundEmailService, InboundView } from '@/services/inbound-email.service';
 import catchAsync from '@/utils/catchAsync';
@@ -12,17 +13,30 @@ import { HttpException } from '@/utils/httpException';
 
 const STATUSES = Object.values(InboundEmailStatus);
 
+const header = (req: Request, name: string): string | null => {
+  const value = req.headers[name];
+  return typeof value === 'string' && value.trim() ? value.trim() : null;
+};
+/** The envelope the relay puts in headers: the message's sender and the parking's Plazo address. */
+const envelopeOf = (req: Request): Envelope => ({ from: header(req, 'x-envelope-from'), to: header(req, 'x-envelope-to') });
+
 export class InboundEmailController {
   public inbound = Container.get(InboundEmailService);
 
-  /** POST /public/inbound/email, secret in X-Inbound-Secret or ?secret= (the email-worker/ relay of Cloudflare Email Routing). */
+  /**
+   * POST /public/inbound/email, secret in X-Inbound-Secret or ?secret= (the email-worker/ relay of Cloudflare Email
+   * Routing). Since 08/10/2026 the relay posts the raw message (message/rfc822, the envelope in X-Envelope-From and
+   * X-Envelope-To) and it is parsed here; the former { items } JSON is still read.
+   */
   public receive = catchAsync(async (req: Request, res: Response) => {
     const given = Buffer.from(String(req.query.secret ?? req.headers['x-inbound-secret'] ?? ''));
     const expected = Buffer.from(INBOUND_EMAIL_SECRET);
     if (!inboundEmailAvailable() || given.length !== expected.length || !timingSafeEqual(given, expected)) {
       throw new HttpException(httpStatus.UNAUTHORIZED, 'Bad inbound secret', 'unauthorized');
     }
-    const payload = (req.body ?? {}) as InboundPayload;
+    const payload: InboundPayload = Buffer.isBuffer(req.body)
+      ? { items: [await parseRawEmail(req.body, envelopeOf(req))] }
+      : ((req.body ?? {}) as InboundPayload);
     res.json(await this.inbound.receive(Array.isArray(payload.items) ? payload : { items: [] }));
   });
 
