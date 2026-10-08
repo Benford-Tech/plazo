@@ -2,6 +2,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { HomeHero } from "./HomeHero";
 import { DemoBadge } from "./DemoBadge";
+import { JsonLd } from "./JsonLd";
 import { FactChips } from "./Highlights";
 import { Photo } from "./Photo";
 import { api, ApiError } from "@/lib/api";
@@ -9,7 +10,8 @@ import { defaultStay, todayLocal } from "@/lib/dates";
 import { fr, fromPriceUnit, texts } from "@/lib/fr";
 import { factChips } from "@/lib/highlights";
 import { formatEuros } from "@/lib/money";
-import { PRO_SIGNUP_PATH } from "@/lib/site";
+import { PRO_SIGNUP_PATH, siteUrl } from "@/lib/site";
+import { faqLd, parkingListLd } from "@/lib/structured-data";
 import type { AirportResponse, SearchResponse } from "@/lib/types";
 
 /** The step photos of the home (site/public/images/step-*.{jpg,webp}), in the order of fr.home.how. */
@@ -40,6 +42,7 @@ export async function AirportView({ slug, showBreadcrumb }: { slug: string; show
 
   return (
     <>
+      <JsonLd data={[parkingListLd(siteUrl(), { airport, listings }), faqLd(faq)]} />
       <HomeHero airport={airport} arrivee={stay.arrivee} retour={stay.retour} minDate={todayLocal()} breadcrumb={showBreadcrumb} preview={preview} />
 
       <main className="mx-auto flex w-full max-w-[1280px] flex-col gap-10 px-4 py-8 md:gap-12 md:px-12 md:py-12">

@@ -3,15 +3,17 @@ import { notFound } from "next/navigation";
 import { BookingCard } from "@/components/BookingCard";
 import { Breadcrumb } from "@/components/Breadcrumb";
 import { DemoBadge } from "@/components/DemoBadge";
+import { JsonLd } from "@/components/JsonLd";
 import { TrustBand } from "@/components/Highlights";
 import { Photo } from "@/components/Photo";
 import { api, ApiError } from "@/lib/api";
 import { stayFromParams, stayQuery, todayLocal, validateStay } from "@/lib/dates";
 import { fr, serviceLabel } from "@/lib/fr";
-import { openGraph } from "@/lib/seo";
+import { openGraph, parkingMetaDescription } from "@/lib/seo";
 import { factsLine, trustTiles } from "@/lib/highlights";
 import { directionsUrl, mapsUrl } from "@/lib/listing";
-import { SLUG_RE } from "@/lib/site";
+import { airportPath, siteUrl, SLUG_RE } from "@/lib/site";
+import { breadcrumbLd, parkingLd } from "@/lib/structured-data";
 import type { ParkingResponse } from "@/lib/types";
 
 export const dynamic = "force-dynamic";
@@ -32,12 +34,14 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const { airport, parking } = await params;
   const data = await loadParking(airport, parking);
   const title = fr.meta.parkingTitle(data.parking.title, data.airport.name);
-  const description = data.parking.description?.slice(0, 160) || fr.meta.parkingDescription(data.parking.title, data.airport.name);
+  const description = parkingMetaDescription(data);
   const canonical = `/${data.airport.slug}/${data.parking.slug}`;
   return {
     title,
     description,
     alternates: { canonical },
+    // A demo parking is fictional: shown on the site, never offered to search engines.
+    ...(data.parking.isDemo ? { robots: { index: false, follow: true } } : {}),
     openGraph: openGraph({ title, description, url: canonical, ...(data.parking.photos[0] ? { images: [data.parking.photos[0]] } : {}) }),
   };
 }
@@ -72,9 +76,20 @@ export default async function ParkingPage({ params, searchParams }: Props) {
 
   return (
     <main className="mx-auto flex w-full max-w-[1280px] flex-col gap-5 px-4 pt-4 pb-10 md:gap-[22px] md:px-12 md:pt-[26px] md:pb-12">
+      <JsonLd
+        data={[
+          parkingLd(siteUrl(), data, parkingMetaDescription(data)),
+          parking.isDemo
+            ? null
+            : breadcrumbLd(siteUrl(), [
+                { name: airport.name, path: airportPath(airport.slug) },
+                { name: parking.title, path: `/${airport.slug}/${parking.slug}` },
+              ]),
+        ]}
+      />
       <Breadcrumb
         items={[
-          { label: airport.name, href: `/${airport.slug}` },
+          { label: airport.name, href: airportPath(airport.slug) },
           ...(offer ? [{ label: fr.nav.results, href: `/${airport.slug}/recherche${stayQuery(stay)}` }] : []),
           { label: parking.title },
         ]}

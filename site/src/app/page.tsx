@@ -1,9 +1,11 @@
 import type { Metadata } from "next";
 import { AirportView, loadAirport } from "@/components/AirportView";
+import { JsonLd } from "@/components/JsonLd";
 import { fr, texts } from "@/lib/fr";
 import { PRODUCT_NAME } from "@/lib/product";
 import { openGraph } from "@/lib/seo";
-import { DEFAULT_AIRPORT } from "@/lib/site";
+import { DEFAULT_AIRPORT, siteUrl } from "@/lib/site";
+import { organizationLd, websiteLd } from "@/lib/structured-data";
 
 // The API is reached through a runtime binding: never prerender at build time.
 export const dynamic = "force-dynamic";
@@ -20,5 +22,11 @@ export async function generateMetadata(): Promise<Metadata> {
 }
 
 export default function HomePage() {
-  return <AirportView slug={DEFAULT_AIRPORT} showBreadcrumb={false} />;
+  const base = siteUrl();
+  return (
+    <>
+      <JsonLd data={[organizationLd(base), websiteLd(base)]} />
+      <AirportView slug={DEFAULT_AIRPORT} showBreadcrumb={false} />
+    </>
+  );
 }

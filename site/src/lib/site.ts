@@ -15,6 +15,11 @@ export const PRO_SIGNUP_PATH = "/pro/inscription";
 
 export const SLUG_RE = /^[a-z0-9]+(?:-[a-z0-9]+)*$/;
 
+/** Canonical path of an airport's page: the default airport's page is the home page, "/". */
+export function airportPath(slug: string): string {
+  return slug === DEFAULT_AIRPORT ? "/" : `/${slug}`;
+}
+
 /** Public address of the site, for canonical URLs, the sitemap and Open Graph. */
 export function siteUrl(): string {
   const explicit = process.env.NEXT_PUBLIC_SITE_URL || process.env.PUBLIC_SITE_URL;

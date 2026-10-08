@@ -3,7 +3,7 @@ import { notFound } from "next/navigation";
 import { AirportView, loadAirport } from "@/components/AirportView";
 import { fr, texts } from "@/lib/fr";
 import { openGraph } from "@/lib/seo";
-import { DEFAULT_AIRPORT, SLUG_RE } from "@/lib/site";
+import { airportPath, SLUG_RE } from "@/lib/site";
 
 export const dynamic = "force-dynamic";
 
@@ -14,7 +14,7 @@ export async function generateMetadata({ params }: PageProps<"/[airport]">): Pro
   const title = fr.meta.airportTitle(airport.name);
   const description = texts(payments === "online").meta.airportDescription(airport.name);
   // The default airport's page is also the home page: one canonical address for both, "/".
-  const canonical = airport.slug === DEFAULT_AIRPORT ? "/" : `/${airport.slug}`;
+  const canonical = airportPath(airport.slug);
   return {
     title,
     description,
