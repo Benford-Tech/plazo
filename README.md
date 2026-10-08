@@ -170,8 +170,8 @@ une décision de Joanny. Cocher au fur et à mesure.
   Plazo plutôt que personnelle : les mails égarés contiennent des données de voyageurs), puis relancer le job `deploy` de
   « Email worker CI » et vérifier que `env.FALLBACK_ADDRESS` apparaît dans sa sortie.
 - [ ] Cloudflare › DNS : `www` et l'apex sont **proxiés** (nuage orange : `server: cloudflare` sur www.plazo.fr) ; passer les
-  deux en « DNS only » (nuage gris) vers les cibles de Vercel (`cname.vercel-dns.com` pour `www`, A `76.76.21.21` pour
-  l'apex). Sinon toutes les limites par adresse IP (connexions, recherches de réservation, réservations) comptent les
+  deux en « DNS only » (nuage gris) vers les cibles affichées dans Vercel › Settings › Domains (un CNAME pour `www`, des
+  enregistrements A pour l'apex). Sinon toutes les limites par adresse IP (connexions, recherches de réservation, réservations) comptent les
   adresses de Cloudflare, partagées par tous les visiteurs. Email Routing (MX) n'est pas concerné par le proxy.
 - [ ] Brevo : authentifier `plazo.fr` (DKIM `mail._domainkey`, DMARC `_dmarc` chez Cloudflare, SPF gardant
   `include:_spf.mx.cloudflare.net`) ; plan Free = 300 mails/jour avec logo Brevo, Starter pour lever les deux.
