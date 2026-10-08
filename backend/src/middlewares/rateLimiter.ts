@@ -3,6 +3,7 @@ import { Request } from 'express';
 import rateLimit from 'express-rate-limit';
 import { isIP } from 'net';
 import { NODE_ENV, SITE_API_KEY } from '@/config';
+import { ipv6Groups, visitorIp } from '@/domain/client-ip';
 
 const skip = () => NODE_ENV === 'test';
 
@@ -10,25 +11,6 @@ function sameSecret(received: string, expected: string): boolean {
   const a = Buffer.from(received);
   const b = Buffer.from(expected);
   return a.length === b.length && timingSafeEqual(a, b);
-}
-
-/** The 8 groups of an IPv6 address, or null. */
-function ipv6Groups(ip: string): number[] | null {
-  let address = ip.split('%')[0].toLowerCase();
-  // Embedded IPv4 (e.g. ::ffff:1.2.3.4): turn its last 32 bits into two groups.
-  const v4 = /(\d{1,3})\.(\d{1,3})\.(\d{1,3})\.(\d{1,3})$/.exec(address);
-  if (v4) {
-    const [a, b, c, d] = v4.slice(1).map(Number);
-    address = `${address.slice(0, v4.index)}${((a << 8) | b).toString(16)}:${((c << 8) | d).toString(16)}`;
-  }
-  const halves = address.split('::');
-  if (halves.length > 2) return null;
-  const head = halves[0] ? halves[0].split(':') : [];
-  const tail = halves.length === 2 && halves[1] ? halves[1].split(':') : [];
-  const missing = 8 - head.length - tail.length;
-  if (halves.length === 1 ? missing !== 0 : missing < 1) return null;
-  const groups = [...head, ...Array(halves.length === 2 ? missing : 0).fill('0'), ...tail].map(g => parseInt(g, 16));
-  return groups.length === 8 && groups.every(g => Number.isInteger(g) && g >= 0 && g <= 0xffff) ? groups : null;
 }
 
 /**
@@ -52,13 +34,16 @@ export function ipKey(ip: string): string {
 /**
  * Who a request counts against. The traveller site calls the API from its own server, so every
  * traveller would share the site's IP: when the request carries the site's key, the traveller's IP
- * it forwards (x-plazo-client-ip) is used instead. Anyone else is counted by their own IP.
+ * it forwards (x-plazo-client-ip) is used instead. Anyone else is counted by their own IP, read
+ * behind Cloudflare's proxy when the request came through it (08/10/2026: www.plazo.fr is proxied,
+ * every visitor would otherwise share a handful of Cloudflare addresses).
  */
 export function rateLimitKey(req: Request, siteKey: string = SITE_API_KEY): string {
   const sentKey = req.get('x-plazo-site-key');
   const clientIp = req.get('x-plazo-client-ip')?.trim();
   if (siteKey && sentKey && sameSecret(sentKey, siteKey) && clientIp && isIP(clientIp)) return ipKey(clientIp);
-  return req.ip ? ipKey(req.ip) : 'unknown';
+  const ip = visitorIp(req.ip, req.get('cf-connecting-ip'));
+  return ip ? ipKey(ip) : 'unknown';
 }
 
 const keyGenerator = (req: Request) => rateLimitKey(req);

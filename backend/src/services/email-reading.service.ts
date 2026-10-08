@@ -45,7 +45,7 @@ export class EmailReadingService {
     try {
       response = await this.client.messages.create({
         model,
-        max_tokens: 1500,
+        max_tokens: 4000,
         system: emailReadingPrompt({ timezone: email.timezone, today }),
         output_config: { effort: 'medium', format: { type: 'json_schema', schema: EMAIL_READING_SCHEMA } },
         messages: [{ role: 'user', content: emailReadingInput(email) }],

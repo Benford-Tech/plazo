@@ -334,7 +334,12 @@ Plazo reprend la stack et les conventions des dépôts `lovenest-backend`, `love
   les 15 minutes par un planificateur externe, cron-job.org) ; **Ignored Build Step « production seulement » (08/10/2026)** :
   aucune branche ne construit de prévisualisation (une prévisualisation migrait la base de production avec ses secrets), et
   `vercel-build` compile d'abord puis ne migre et ne lance les scripts qu'en production (`VERCEL_ENV`) ;
-  pas de fichiers de logs (winston écrit dans la console, que Vercel collecte).
+  pas de fichiers de logs (winston écrit dans la console, que Vercel collecte ; erreurs sur stderr, avertissements par
+  `console.warn`, pour que les journaux Vercel portent le niveau). **Exploitation (08/10/2026)** : `GET /api/health` ne touche
+  rien, `GET /api/health?deep=1` interroge la base (503 `degraded`) ; `remind-tomorrow`, `track-return-flights` et `payouts`
+  répondent 500 quand tout ce qui a été tenté a échoué (cron-job.org alerte sur les non-2xx) ; www.plazo.fr est proxié par
+  Cloudflare : l'adresse du visiteur vient de `cf-connecting-ip`, acceptée seulement quand la requête arrive des plages
+  publiées de Cloudflare (`backend/src/domain/client-ip.ts`, `site/src/lib/client-ip.ts`).
 - **Base de données** : PostgreSQL + PostGIS, hébergée sur **Neon** via l'intégration Vercel (base `Plazo-db`,
   02/10/2026, à la place de Supabase). Variables injectées par Vercel : `POSTGRES_PRISMA_URL` (connexion
   mutualisée, utilisée par l'API), `DATABASE_URL_UNPOOLED` (directe, pour les migrations).

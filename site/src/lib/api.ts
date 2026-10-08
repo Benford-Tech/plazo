@@ -10,6 +10,7 @@ import type {
   ParkingResponse,
   PublicBooking,
   SearchResponse, TravellerReturn } from "./types";
+import { visitorIp } from "./client-ip";
 
 /**
  * Server-side client of the backend's public API. The browser never calls the API: pages (server
@@ -58,11 +59,14 @@ export function siteApiKey(env: Record<string, string | undefined> = process.env
   return key;
 }
 
-/** The traveller's IP as seen by the site: first x-forwarded-for entry, else x-real-ip. */
+/**
+ * The traveller's IP as seen by the site: first x-forwarded-for entry, else x-real-ip; behind Cloudflare's proxy
+ * (www.plazo.fr, 08/10/2026) that address is Cloudflare's and the traveller's is in cf-connecting-ip.
+ */
 export function clientIp(h: Pick<Headers, "get">): string | null {
   const forwarded = h.get("x-forwarded-for")?.split(",")[0]?.trim();
-  if (forwarded) return forwarded;
-  return h.get("x-real-ip")?.trim() || null;
+  const seen = forwarded || h.get("x-real-ip")?.trim() || null;
+  return visitorIp(seen, h.get("cf-connecting-ip"));
 }
 
 function fallbackCode(status: number): string {

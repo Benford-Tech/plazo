@@ -128,10 +128,11 @@ export class ReminderService {
   // ---- Sending --------------------------------------------------------------------------------
 
   /** Every reminder due now, once each. Nothing leaves during the quiet hours (22:00-07:00, local). */
-  public async dispatchDue(now = new Date()): Promise<{ checked: number; sent: number }> {
+  public async dispatchDue(now = new Date()): Promise<{ checked: number; sent: number; failed: number }> {
     const parkings = await prisma.parking.findMany({ select: { id: true, timezone: true, reminderSettings: true } });
     let checked = 0;
     let sent = 0;
+    let failed = 0;
     for (const parking of parkings) {
       const usual = parking.reminderSettings ?? USUAL;
       if (!usual.enabled || inQuietHours(now, parking.timezone)) continue;
@@ -152,19 +153,24 @@ export class ReminderService {
         checked += 1;
         const due = reminderDueAt({ ...row, timeZone: parking.timezone, evening: rules.get(eveningOf(row.arrivalAt, parking.timezone))! });
         if (!('at' in due) || now < due.at || missedEvening(due.at, row.arrivalAt, now, parking.timezone)) continue;
-        if (await this.send(row.id, now)) sent += 1;
+        const outcome = await this.send(row.id, now);
+        if (outcome === 'sent') sent += 1;
+        else if (outcome === 'failed') failed += 1;
       }
     }
-    return { checked, sent };
+    return { checked, sent, failed };
   }
 
-  /** One booking's reminder: claimed first, so it never leaves twice. A failure never fails the caller. */
-  private async send(id: string, now: Date): Promise<boolean> {
+  /**
+   * One booking's reminder: claimed first, so it never leaves twice. A failure never fails the caller, but it is
+   * reported ('failed'), so that the cron can answer 500 when nothing left at all (08/10/2026: cron-job.org alerts).
+   */
+  private async send(id: string, now: Date): Promise<'sent' | 'failed' | 'taken'> {
     const { count } = await prisma.reservation.updateMany({
       where: { id, status: 'upcoming', reminderSentAt: null, reminderExcludedAt: null },
       data: { reminderSentAt: now },
     });
-    if (!count) return false;
+    if (!count) return 'taken';
     const record = await prisma.reservation.findUniqueOrThrow({ where: { id }, include: WITH_LISTING });
     const token = SECRET_KEY ? manageToken(record.id, SECRET_KEY, record.manageTokenVersion) : null;
     const firstName = record.customerName.trim().split(/\s+/)[0];
@@ -187,8 +193,9 @@ export class ReminderService {
       );
     } catch (error) {
       logger.warn(`[Reminders] Reminder for ${record.reference} failed: ${error instanceof Error ? error.message : 'unknown error'}`);
+      return 'failed';
     }
-    return true;
+    return 'sent';
   }
 
   /** "Envoyer maintenant": the evening's bookings not reminded yet, whatever its time or pause. */
