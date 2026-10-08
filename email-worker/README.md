@@ -30,9 +30,13 @@ exister ailleurs en `@plazo.fr` (Hostinger…) : Email Routing devient le seul r
    - Aucun enregistrement `in` ne doit rester sur le domaine (un CNAME `in` créé par Brevo s'y est glissé un temps).
 2. **Email Routing** : Compute › Email Service › Email Routing › `plazo.fr` › activer. Cloudflare pose les MX et le SPF de
    `plazo.fr` ; Brevo (envoi) n'en a pas besoin, ses signatures DKIM suffisent.
-3. **Worker** : Workers & Pages › Créer › Importer un dépôt.
-   - Choisis `Benford-Tech/plazo`, nom du Worker `plazo` (celui de `wrangler.toml`), dossier racine `email-worker`,
-     commande de déploiement `npx wrangler deploy`.
+3. **Worker** : déployé par GitHub Actions (`.github/workflows/email-worker-ci.yml`, job `deploy`) à chaque fusion sur
+   `main` qui touche `email-worker/`, ou à la main (Actions › « Email worker CI » › Run workflow). Il faut deux secrets du
+   dépôt (GitHub › Settings › Secrets and variables › Actions) :
+   - `CLOUDFLARE_API_TOKEN` : Cloudflare › profil › API Tokens › Create Token › modèle « Edit Cloudflare Workers » ;
+   - `CLOUDFLARE_ACCOUNT_ID` : Workers & Pages › Overview, colonne de droite.
+   Le Worker s'appelle `plazo` (le nom de `wrangler.toml`). L'import du dépôt par Cloudflare lui-même (Workers Builds) n'a
+   pas réussi à le déployer ; GitHub Actions le remplace.
    - Puis Paramètres › Variables et secrets : ajoute le **secret** `INBOUND_EMAIL_SECRET`.
    - Choisis toi-même une longue valeur aléatoire (gestionnaire de mots de passe) et ne la colle nulle part ailleurs que dans Cloudflare et dans Vercel.
    - Ajoute aussi la variable `FALLBACK_ADDRESS` = la boîte de Plazo (une adresse de destination vérifiée, étape 4) ;

@@ -367,7 +367,8 @@ Le nom du produit doit rester dans UN seul fichier de configuration (il peut enc
   les voyageurs (appareils enregistrés, deux envois par jour au plus, 429 `daily_limit`).
 - `site/` : site Plazo voyageurs (Next.js), servi à la racine du domaine.
 - `email-worker/` : relais des mails entrants (Cloudflare Email Worker, `postal-mime`) : Email Routing lui passe chaque mail de
-  `plazo.fr` (règle « catch-all » du domaine principal), il le poste sur l'API ; déployé par Cloudflare depuis ce dossier ; mise en place dans son README.
+  `plazo.fr` (règle « catch-all » du domaine principal), il le poste sur l'API ; déployé par GitHub Actions (`email-worker-ci.yml`,
+  job `deploy`, secrets `CLOUDFLARE_API_TOKEN` / `CLOUDFLARE_ACCOUNT_ID`, Worker `plazo`) ; mise en place dans son README.
 - `mobile/` : app Flutter (jalon 6 commencé) : un seul projet, deux apps (`AppConstants.flavor`) : « Plazo », onglets
   Rechercher / Mes réservations / Plus pour le voyageur (mêmes chemins que le site : `/:airport/recherche`, `/:airport/:parking`, `/ma-reservation…`), et le
   parcours pro (`/pro…`, comptes du personnel ; `/pro/plan` et `/pro/parking` (Occupation) pour le bloc 2 ; `/pro/reservations…` : liste,
