@@ -8,7 +8,7 @@ import { ParkingTabs } from "@/components/parking/ParkingTabs";
 import { Plate } from "@/components/Plate";
 import { useQuickCard } from "@/components/reservations/ReservationQuickCard";
 import { adminApi, ApiError } from "@/lib/api";
-import { dateTimeShort, shortDay } from "@/lib/datetime";
+import { dateTimeShort } from "@/lib/datetime";
 import { describeError, fr } from "@/lib/fr";
 import type {
   FileArrival,
@@ -18,6 +18,7 @@ import type {
   FileView,
 } from "@/lib/plan/parkingFiles";
 import { cn } from "@/lib/utils";
+import { fileDayLabel } from "./fileLabels";
 
 const t = fr.occupation;
 const tf = fr.occupation.files;
@@ -227,13 +228,6 @@ export function FilesOccupation({
   );
 }
 
-function dayLabel(f: FileView, today: string): string {
-  if (f.cars.length === 0)
-    return f.plannedDay ? tf.keptFor(shortDay(f.plannedDay)) : tf.freeFile;
-  if (!f.day) return "";
-  return tf.returnsOf(f.day === today ? fr.planning.today : shortDay(f.day));
-}
-
 function FileColumn({
   file,
   date,
@@ -266,7 +260,7 @@ function FileColumn({
       <header className="flex items-baseline gap-2 border-b border-border px-3 py-2">
         <b className="font-mono text-lg">{file.code}</b>
         <span className="truncate text-xs text-muted-foreground">
-          {file.name ?? dayLabel(file, date)}
+          {file.name ?? fileDayLabel({ ...file, cars: file.cars.length }, date)}
         </span>
         <span
           className={cn(

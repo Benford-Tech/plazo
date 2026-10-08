@@ -22,6 +22,7 @@ const api = vi.hoisted(() => ({
   getSpotPlanning: vi.fn(),
   preassignSpots: vi.fn(),
   assignSpot: vi.fn(),
+  getFiles: vi.fn(),
 }));
 vi.mock("@/lib/api", async (importOriginal) => {
   const actual = await importOriginal<typeof import("@/lib/api")>();
@@ -136,6 +137,22 @@ beforeEach(() => {
     bookableCapacity: 2,
   });
   api.getSpotPlanning.mockResolvedValue(planning);
+  // S-C: a parking without files plans its spots.
+  api.getFiles.mockResolvedValue({
+    date: today,
+    timezone: "Europe/Paris",
+    files: [],
+    arrivals: [],
+    stats: {
+      files: 0,
+      capacity: 0,
+      cars: 0,
+      onSite: 0,
+      leavingToday: 0,
+      movesToday: 0,
+      unsound: 0,
+    },
+  });
   api.preassignSpots.mockResolvedValue({
     data: {
       assigned: [

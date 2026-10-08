@@ -475,6 +475,9 @@ const frBase = {
     position: "Position",
     carTitle: "Retrouver ma voiture",
     carSpot: (code: string) => `Place ${code}`,
+    /** S-C (07/10/2026): "File F07 · 3e depuis l’allée" (the position is a separate label, shown smaller). */
+    carFile: (code: string) => `File ${code}`,
+    carFilePosition: (position: number) => `${position === 1 ? "1re" : `${position}e`} depuis l’allée`,
     carZone: { short: "zone séjours courts", medium: "zone séjours moyens", long: "zone séjours longs" } as Record<string, string>,
     carKeys: "Les clés vous attendent à l’accueil du parking.",
     carRoute: "Itinéraire à pied jusqu’au parking",

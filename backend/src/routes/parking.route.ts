@@ -2,7 +2,7 @@ import { Router } from 'express';
 import { ParkingController } from '@/controllers/parking.controller';
 import { UpdateParkingDto, UpdateShuttleTrackingDto } from '@/dtos/parking.dto';
 import { AssignSpotDto } from '@/dtos/occupation.dto';
-import { AssignFileDto, ReplaceFilesDto } from '@/dtos/file.dto';
+import { AssignFileDto, KeepFileDto, ReplaceFilesDto } from '@/dtos/file.dto';
 import { CarLocationDto } from '@/dtos/public-booking.dto';
 import { AddSpotsDto, GenerateSpotsDto, ReplaceSpotsDto, SuggestZonesDto, UpdateParkingPlanDto, UpdateSpotDto } from '@/dtos/parking-plan.dto';
 import { PlatformController } from '@/controllers/platform.controller';
@@ -58,6 +58,45 @@ import { ValidationMiddleware } from '@/middlewares/validation.middleware';
  *           schema: { type: object, required: [tracking], properties: { tracking: { type: string, enum: [off, team, everyone] } } }
  *     responses:
  *       200: { description: "{ data: the parking }" }
+ * /internal/parkings/{id}/files/planning:
+ *   get:
+ *     summary: Planning des files (08/10/2026) - the returns to come day by day against the room of the files
+ *     tags: [Parking]
+ *     description: >
+ *       Days are the parking's local days. For each day of the window: the holding bookings returning
+ *       that day (returns, placed in a file, toCome), the bookings overlapping it (onSite), the files
+ *       serving it (front car returning that day) and the empty files kept for it, their free slots
+ *       (room: a closed file still holding cars is listed but offers none) and the cars to come
+ *       without one (missing). Alerts: missing_room (a day short of room),
+ *       over_capacity (more cars on site than the active files hold), unsound (a file whose order is
+ *       broken, count = cars blocked).
+ *     parameters:
+ *       - { in: path, name: id, required: true, schema: { type: string } }
+ *       - { in: query, name: from, schema: { type: string, format: date }, description: "First day (today by default)" }
+ *       - { in: query, name: days, schema: { type: integer, minimum: 1, maximum: 31, default: 7 } }
+ *     responses:
+ *       200: { description: "{ from, days, timezone, capacity, files[], load[], alerts[] }" }
+ *       400: { description: invalid_window }
+ * /internal/parkings/{id}/files/{fileId}/keep:
+ *   put:
+ *     summary: Keep an empty file for a return day by hand, or free it (audited)
+ *     tags: [Parking]
+ *     description: >
+ *       A file kept by hand survives the night preparation until its day has passed; it goes back
+ *       to the automatic pool as soon as a car enters it or when it is freed (day null).
+ *     parameters:
+ *       - { in: path, name: id, required: true, schema: { type: string } }
+ *       - { in: path, name: fileId, required: true, schema: { type: string } }
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema: { type: object, required: [day], properties: { day: { type: string, format: date, nullable: true } } }
+ *     responses:
+ *       200: { description: "{ data: the file }" }
+ *       400: { description: "invalid_day, file_inactive" }
+ *       404: { description: file_not_found }
+ *       409: { description: file_occupied }
  */
 export class ParkingRoute implements Routes {
   public router = Router();
@@ -151,6 +190,14 @@ export class ParkingRoute implements Routes {
     );
     this.router.post('/internal/parkings/:id/files/from-plan', StaffAuthMiddleware('parking:manage'), this.parking.filesFromPlan);
     this.router.post('/internal/parkings/:id/files/prepare', StaffAuthMiddleware('reservations:status'), this.parking.prepareFiles);
+    // Planning des files (08/10/2026): the returns to come against the room of the files, and a day kept by hand.
+    this.router.get('/internal/parkings/:id/files/planning', StaffAuthMiddleware('reservations:view'), this.parking.filesPlanning);
+    this.router.put(
+      '/internal/parkings/:id/files/:fileId/keep',
+      StaffAuthMiddleware('reservations:status'),
+      ValidationMiddleware(KeepFileDto),
+      this.parking.keepFile,
+    );
     this.router.post(
       '/internal/reservations/:id/file',
       StaffAuthMiddleware('reservations:status'),

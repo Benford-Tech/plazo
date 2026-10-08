@@ -27,6 +27,7 @@ import {
   type SpotPlanning,
 } from "@/lib/plan/spotPlanning";
 import { cn } from "@/lib/utils";
+import { FilesPlanningPage } from "./FilesPlanningPage";
 
 const DAY_PX = 96;
 const ROW_PX = 30;
@@ -71,10 +72,19 @@ export default function SpotPlanningPage() {
     queryFn: adminApi.getParking,
   });
   const parkingId = parking?.id;
+  // S-C (07/10/2026): a parking stored in files plans its files, not its spots.
+  const filesBoard = useQuery({
+    queryKey: ["files", parkingId],
+    queryFn: () => adminApi.getFiles(parkingId!),
+    enabled: !!parkingId,
+    refetchInterval: 30_000,
+  });
+  const hasFiles = (filesBoard.data?.files.length ?? 0) > 0;
+  const filesKnown = filesBoard.isSuccess || filesBoard.isError;
   const planning = useQuery({
     queryKey: ["spot-planning", parkingId, from, days],
     queryFn: () => adminApi.getSpotPlanning(parkingId!, from, days),
-    enabled: !!parkingId,
+    enabled: !!parkingId && filesKnown && !hasFiles,
     refetchInterval: 60_000,
     placeholderData: keepPreviousData,
   });
@@ -135,7 +145,8 @@ export default function SpotPlanningPage() {
     return [...byZone.entries()].map(([zoneId, spots]) => ({ zoneId, spots }));
   }, [data]);
 
-  if (!parking || planning.isLoading) {
+  if (parkingId && hasFiles) return <FilesPlanningPage parkingId={parkingId} />;
+  if (!parking || !filesKnown || planning.isLoading) {
     return (
       <>
         <ParkingTabs />
@@ -354,7 +365,7 @@ export default function SpotPlanningPage() {
                         ? t.unplacedAlert(a.count)
                         : a.kind === "blocked"
                           ? t.blockedAlert(a.count)
-                        : t.inactiveUsed(a.spotCode, a.reference)}
+                          : t.inactiveUsed(a.spotCode, a.reference)}
                   </li>
                 ))}
               </ul>
@@ -481,8 +492,14 @@ function StayCard({
           : ""}
       </p>
       {stay.blockedBy && stay.blockedBy.length > 0 && (
-        <p data-testid="stay-blocked" className="text-[13px] font-semibold text-warn-text">
-          {fr.occupation.blockedBy(stay.blockedBy[0].spotCode, dateTimeShort(stay.blockedBy[0].returnAt))}
+        <p
+          data-testid="stay-blocked"
+          className="text-[13px] font-semibold text-warn-text"
+        >
+          {fr.occupation.blockedBy(
+            stay.blockedBy[0].spotCode,
+            dateTimeShort(stay.blockedBy[0].returnAt),
+          )}
           {stay.blockedBy.length > 1 ? ` (+${stay.blockedBy.length - 1})` : ""}
         </p>
       )}

@@ -79,11 +79,12 @@ class ReturnBlock extends StatelessWidget {
         onPressed: () => context.router.push(MeetingPointRouteRoute(reference: data.reference)),
       ),
       // The valet placed the car (bloc 2): where it is, for when the shuttle drops the traveller back.
-      if (data.spot != null)
+      // S-C (07/10/2026): in a file on a valet parking, on a spot otherwise.
+      if (data.file != null || data.spot != null)
         OutlineAction(
           key: const Key('find-car-button'),
           icon: Icons.directions_car_rounded,
-          label: 'find_car.button'.tr(args: [data.spot!.code]),
+          label: data.file != null ? 'find_car.button_file'.tr(args: [data.file!.code]) : 'find_car.button'.tr(args: [data.spot!.code]),
           onPressed: () => context.router.push(FindCarRoute(reference: data.reference)),
         ),
       if (!data.atMeetingPoint) ...[

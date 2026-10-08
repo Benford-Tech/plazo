@@ -406,5 +406,7 @@ Documentation interactive : `/api/docs` (Swagger). Toutes les routes sont sous `
 | POST | `/internal/parkings/:id/files/from-plan` | S-C : crée les files depuis les files de places du plan peigne (409 `no_valet_spots`) |
 | POST | `/internal/parkings/:id/files/prepare` | S-C : préparation de la veille à la demande (files vides gardées pour les gros jours de retour) |
 | POST | `/internal/reservations/:id/file` | S-C : range la voiture dans une file (devant les autres) ou l'en retire (`fileId: null`), avec le crochet des clés ; 409 `file_full` |
+| GET | `/internal/parkings/:id/files/planning?from=&days=` | S-C : planning des files (par jour : retours, en file / à venir, files qui servent, files gardées, place, manque ; alertes `missing_room`, `over_capacity`, `unsound`) |
+| PUT | `/internal/parkings/:id/files/:fileId/keep` | S-C : garde une file vide pour un jour à la main (`{ day }`, `keptByHand`) ou la libère (`{ day: null }`) ; 409 `file_occupied`, 400 `invalid_day` / `file_inactive` |
 | GET | `/internal/cron/prepare-files` | S-C : préparation de la veille de tous les parkings en files (Vercel Cron 02:00 UTC) |
 | GET | `/internal/platform/geo/geocode?q=` | Recherche d'adresse (relais vers le géocodage de la Géoplateforme) |

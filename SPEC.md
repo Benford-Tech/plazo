@@ -250,7 +250,26 @@ plans en libre-service ; dès qu'un parking a des files, l'Occupation, les fiche
   gabarit voiturier par voiture, code et capacité modifiables, retrait d'une file vide) et « Créer les files depuis les
   places » pour les plans peigne existants. Routes : `GET/PUT /internal/parkings/:id/files`, `GET …/files/choices?reservationId=`,
   `POST …/files/from-plan`, `POST …/files/prepare`, `POST /internal/reservations/:id/file` (409 `file_full`, `file_occupied`
-  pour retirer une file pleine). Suite : alléger l'éditeur (le contour et les files suffisent) et le Planning des places.
+  pour retirer une file pleine).
+- **Suite livrée le 08/10/2026 (éditeur allégé, planning des files, voyageur)** :
+  - *Éditeur du plan* : la barre d'outils ne montre que Contour · Files · Repères ; les outils de l'estimateur (Zone de
+    parking, Zone de passage, Obstacle, Places) sont repliés sous « Avancé » (ouverts d'eux-mêmes quand un ancien chemin ou
+    une réinitialisation mène à l'un d'eux). Outil par défaut : Contour sans contour, Files ensuite. Dans la carte Files,
+    « Me proposer des files » : s'il y a des places de voiturier, les files en sont déduites ; sinon Plazo lance seul la
+    passe automatique (bâtiments IGN → zones → places « peigne », toujours en peigne) puis en déduit les files. La première
+    ouverture d'un plan vide (R-C) se termine désormais par cette étape « Files de rangement ». « Réinitialiser… › Files
+    seulement » retire les files vides (409 `file_occupied` si l'une contient des voitures).
+  - *Planning des files* (`/parking/planning` quand le parking a des files ; Plazo Pro : Planning des places en mode files) :
+    pour chaque jour de la fenêtre (7 ou 14 jours), les retours attendus (déjà en file / à venir), les files qui servent ce
+    jour (leur voiture de devant repart ce jour-là), les files vides gardées pour ce jour, la place disponible et ce qui
+    manque (« Jeu. 9 : il manque N places en file », alerte `missing_room`), les nuits où le parking déborde
+    (`over_capacity`) et les files désordonnées (`unsound`, N voitures bloquées derrière une autre). « Réserver une file… »
+    garde une file vide pour un jour **à la main** (`keptByHand`, `PUT /internal/parkings/:id/files/:fileId/keep`
+    `{ day | null }`) : la préparation de la veille ne la touche pas et compte sa capacité comme déjà ouverte pour ce jour ;
+    elle redevient automatique quand une voiture y entre, quand on la libère, ou une fois son jour passé. Route
+    `GET /internal/parkings/:id/files/planning?from=&days=` ; « Préparer les files » depuis la page aussi.
+  - *Voyageur* : « Retrouver ma voiture » (site et app) affiche « File F07 · 3e depuis l'allée » quand le voiturier a rangé
+    la voiture en file (la place numérotée reste affichée pour un plan en libre-service).
 
 #### Occupation par durée de séjour (décision D-B du 07/10/2026, mis en œuvre)
 

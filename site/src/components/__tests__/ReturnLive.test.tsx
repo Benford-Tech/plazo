@@ -16,6 +16,7 @@ const base: TravellerReturn = {
   parking: { name: "Parking Démo LYS", phone: null, shuttleMinutes: 8, address: "12 route de l’Aéroport", location: { lat: 45.7375, lng: 5.0745 } },
   plate: "AB-123-CD",
   spot: null,
+  file: null,
   car: null,
 };
 
@@ -119,6 +120,31 @@ describe("ReturnLive", () => {
     expect(screen.getByTestId("find-car")).toHaveTextContent("Votre voiture");
     expect(screen.getByTestId("car-position")).toHaveTextContent("enregistrée par le parking à 09:15 (± 6 m). Rangée 3.");
     expect(screen.getByRole("link", { name: /jusqu’à ma voiture/ })).toHaveAttribute("href", expect.stringContaining("45.7301%2C5.0502"));
+    vi.unstubAllGlobals();
+  });
+
+  it("S-C : la file du voiturier et sa position depuis l’allée, la place restant affichée sans file", () => {
+    vi.stubGlobal("fetch", vi.fn().mockResolvedValue({ ok: true, json: async () => base }));
+    const show = (state: Partial<TravellerReturn>) => render(<ReturnLive reference="R7KQ2M" token="tok" initial={{ ...base, ...state }} />);
+    let view = show({ file: { code: "F07", position: 3 } });
+    expect(screen.getByTestId("car-place")).toHaveTextContent("File F07 · 3e depuis l’allée");
+    view.unmount();
+    // The file wins over a spot when both are known; the sub line follows the displayed place,
+    // so the spot's zone is not shown and the parking name takes its place.
+    view = show({ file: { code: "F07", position: 1 }, spot: { code: "A-07", stayClass: "short" } });
+    expect(screen.getByTestId("car-place")).toHaveTextContent("File F07 · 1re depuis l’allée");
+    expect(screen.getByTestId("car-place")).not.toHaveTextContent("Place A-07");
+    expect(screen.getByTestId("find-car")).not.toHaveTextContent("zone séjours courts");
+    expect(screen.getByTestId("find-car")).toHaveTextContent("Parking Démo LYS");
+    view.unmount();
+    view = show({ file: { code: "F07", position: null } });
+    expect(screen.getByTestId("car-place")).toHaveTextContent("File F07");
+    expect(screen.getByTestId("car-place")).not.toHaveTextContent("depuis");
+    view.unmount();
+    view = show({ spot: { code: "A-07", stayClass: null } });
+    expect(screen.getByTestId("car-place")).toHaveTextContent("Place A-07");
+    expect(screen.getByTestId("find-car")).toHaveTextContent("Parking Démo LYS");
+    view.unmount();
     vi.unstubAllGlobals();
   });
 });

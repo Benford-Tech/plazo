@@ -335,6 +335,8 @@ model ParkingFile {
   // Night preparation: the return day (YYYY-MM-DD) an empty file is kept for; null when free.
   plannedDay String?
   plannedAt  DateTime?
+  // Planning des files (08/10/2026): the day was chosen by hand and the night preparation leaves it.
+  keptByHand Boolean   @default(false)
   createdAt  DateTime  @default(now())
   updatedAt  DateTime  @default(now()) @updatedAt
 

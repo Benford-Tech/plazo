@@ -1,6 +1,8 @@
 import {
   Check,
+  ChevronDown,
   Loader2,
+  Minus,
   Rows3,
   Trash2,
   MapPin,
@@ -85,6 +87,7 @@ import {
 } from "@/lib/plan/types";
 import { cn } from "@/lib/utils";
 import {
+  AUTO_STEPS,
   autoSetup,
   NoParcelError,
   type AutoProgress,
@@ -108,7 +111,12 @@ import {
 import { PlanSettings } from "./PlanSettings";
 import { useConfirm } from "@/components/ui/confirm-context";
 
-import { TOOLS, type ResetScope, type Tool } from "./types";
+import {
+  ADVANCED_TOOLS,
+  PRIMARY_TOOLS,
+  type ResetScope,
+  type Tool,
+} from "./types";
 type ContourMode = "parcel" | "draw" | "edit" | "cut";
 type SaveState = "idle" | "saving" | "saved" | "error";
 
@@ -120,7 +128,6 @@ const OBSTACLE_KINDS: ExclusionKind[] = [
   "reception",
   "other",
 ];
-const AUTO_STEPS: AutoStep[] = ["parcel", "buildings", "zones", "spots"];
 /** Half-size of the box the map opens on around the parking's position, in degrees (≈ 150 m). */
 const HOME_HALF_SPAN = 0.0015;
 const MAX_BBOX_SPAN = 0.02;
@@ -177,6 +184,13 @@ function segmentDistanceM(p: LonLat, a: LonLat, b: LonLat): number {
   const u = len2 ? Math.max(0, Math.min(1, -(ax * dx + ay * dy) / len2)) : 0;
   return Math.hypot(ax + u * dx, ay + u * dy);
 }
+/** The tool in hand after a reset: where the operator starts again. */
+const RESET_TOOL: Record<ResetScope, Tool> = {
+  all: "contour",
+  files: "files",
+  zones: "parking",
+  spots: "spots",
+};
 const TOOL_ICONS: Record<Tool, React.ComponentType<{ className?: string }>> = {
   contour: Square,
   parking: Paintbrush,
@@ -207,16 +221,18 @@ interface Props {
   onView: (view: ParkingPlanView) => void;
   suggest: SuggestFn;
   initialTool: Tool | null;
-  /** R-C: run the first pass (parcel, buildings, zones, spots) on an empty plan. */
+  /** R-C: run the first pass (parcel, buildings, zones, spots, files) on an empty plan. */
   autoRun: boolean;
   saveState: SaveState;
   onReset: (scope: ResetScope) => Promise<void>;
 }
 
 /**
- * R-A (07/10/2026): the plan editor. One map, one toolbar on the left (contour, parking zone,
- * passage zone, obstacle, landmarks, spots), one floating card for the tool in hand, the count
- * of spots always on top. The numbers the engine uses live in a drawer.
+ * R-A (07/10/2026): the plan editor. One map, one toolbar on the left, one floating card for the
+ * tool in hand, the count on top. Since "the plan is made at once: one line per file and a
+ * capacity" (07/10/2026), the toolbar shows Contour · Files · Repères; the estimator's zone
+ * brushes, obstacles and spots sit behind "Avancé", and "Me proposer des files" runs the
+ * automatic pass for those who want a start. The numbers the engine uses live in a drawer.
  */
 export function PlanEditor({
   parkingId,
@@ -244,8 +260,16 @@ export function PlanEditor({
 
   const confirm = useConfirm();
   const [tool, setToolState] = useState<Tool>(
-    initialTool ?? (!outline ? "contour" : spots.length ? "spots" : "parking"),
+    initialTool ?? (!outline ? "contour" : "files"),
   );
+  // The estimator's tools unfold on demand, or as soon as one of them is in hand.
+  const [advancedOpen, setAdvancedOpen] = useState(() =>
+    ADVANCED_TOOLS.includes(tool),
+  );
+  const advancedShown = advancedOpen || ADVANCED_TOOLS.includes(tool);
+  useEffect(() => {
+    if (ADVANCED_TOOLS.includes(tool)) setAdvancedOpen(true);
+  }, [tool]);
   const [contourMode, setContourMode] = useState<ContourMode>("parcel");
   const [brushWidth, setBrushWidth] = useState<BrushWidth>(6);
   const [obstacleKind, setObstacleKind] = useState<ExclusionKind | null>(null);
@@ -283,14 +307,6 @@ export function PlanEditor({
     mutationFn: (list: FileInput[]) => adminApi.replaceFiles(parkingId, list),
     onSuccess: () =>
       void queryClient.invalidateQueries({ queryKey: ["files", parkingId] }),
-    onError: (e) => toast.error(describeError(e)),
-  });
-  const filesFromPlan = useMutation({
-    mutationFn: () => adminApi.filesFromPlan(parkingId),
-    onSuccess: ({ data }) => {
-      toast.success(t.files.fromPlanDone(data.length));
-      void queryClient.invalidateQueries({ queryKey: ["files", parkingId] });
-    },
     onError: (e) => toast.error(describeError(e)),
   });
   const [spotKind, setSpotKind] = useState<SpotKind>("standard");
@@ -418,54 +434,93 @@ export function PlanEditor({
     }
   }
 
-  // ---- R-C: the first pass on an empty plan ---------------------------------------------------
-  useEffect(() => {
-    if (!autoRun || autoStarted.current) return;
-    autoStarted.current = true;
-    if (parking.lat == null || parking.lng == null) {
+  // ---- The automatic pass: R-C at the first opening, "Me proposer des files" on demand --------
+  // Parcel (unless the plan has an outline), buildings, zones (unless painted by hand), spots in
+  // the chosen layout (or the one given), then the files of those spots. Ends on the files tool
+  // when files came out.
+  async function runAutoPass(layoutOverride?: LayoutKey) {
+    if (auto) return;
+    const passLayout = layoutOverride ?? layout;
+    const current = studyRef.current;
+    const position: LonLat | null =
+      parking.lat != null && parking.lng != null
+        ? [parking.lng, parking.lat]
+        : null;
+    if (!current.outline && !position) {
       toast.message(t.auto.noPosition);
       return;
     }
-    const position: LonLat = [parking.lng, parking.lat];
     setAuto({});
-    void (async () => {
-      try {
-        const r = await autoSetup({
-          position,
-          study: studyRef.current,
-          layout,
-          newId,
-          save: async (patch) => {
-            update(patch);
-            return flush();
-          },
-          suggest,
-          onProgress: (p) => setAuto((a) => ({ ...(a ?? {}), [p.step]: p })),
-          yieldToUi: () => new Promise((resolve) => setTimeout(resolve, 30)),
-        });
-        const { data } = await adminApi.replaceSpots(
-          parkingId,
-          r.layout,
-          r.spots,
-        );
-        onView(data);
-        toast.success(t.auto.done(data.spots.length));
+    try {
+      const r = await autoSetup({
+        parkingId,
+        position,
+        study: current,
+        layout: passLayout,
+        newId,
+        save: async (patch) => {
+          update(patch);
+          return flush();
+        },
+        suggest,
+        onProgress: (p) => setAuto((a) => ({ ...(a ?? {}), [p.step]: p })),
+        yieldToUi: () => new Promise((resolve) => setTimeout(resolve, 30)),
+      });
+      onView(r.view);
+      if (r.files) {
+        void queryClient.invalidateQueries({ queryKey: ["files", parkingId] });
+        toast.success(t.files.proposed(r.files.length));
+        setToolState("files");
+      } else {
+        toast.success(t.auto.done(r.view.spots.length));
         setToolState("spots");
-        const bounds = boundsOf(r.outline.coordinates[0]);
-        if (bounds) mapRef.current?.fitTo(bounds);
-      } catch (e) {
-        toast.error(
-          e instanceof NoParcelError
-            ? t.auto.noParcel
-            : `${t.auto.failed} ${describeError(e)}`,
-          { duration: 10000 },
-        );
-      } finally {
-        setAuto(null);
       }
-    })();
+      const bounds = boundsOf(r.outline.coordinates[0]);
+      if (bounds) mapRef.current?.fitTo(bounds);
+    } catch (e) {
+      toast.error(
+        e instanceof NoParcelError
+          ? t.auto.noParcel
+          : `${t.auto.failed} ${describeError(e)}`,
+        { duration: 10000 },
+      );
+    } finally {
+      setAuto(null);
+    }
+  }
+  useEffect(() => {
+    if (!autoRun || autoStarted.current) return;
+    autoStarted.current = true;
+    void runAutoPass();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [autoRun]);
+
+  // S-C: the files proposed from the plan. Valet spots already there give their files at once;
+  // otherwise the automatic pass draws the comb first ("valetEdge", as the help text promises,
+  // whatever layout the plan stored).
+  async function proposeFiles() {
+    if (busy || auto) return;
+    if (
+      files.length &&
+      !(await confirm(t.files.proposeReplaces, { title: t.files.propose }))
+    )
+      return;
+    if (!spots.some((sp) => sp.active && sp.depth != null)) {
+      setLayout("valetEdge");
+      await runAutoPass("valetEdge");
+      return;
+    }
+    setBusy(true);
+    try {
+      const { data } = await adminApi.filesFromPlan(parkingId);
+      void queryClient.invalidateQueries({ queryKey: ["files", parkingId] });
+      toast.success(t.files.proposed(data.length));
+    } catch (e) {
+      toast.error(describeError(e));
+    } finally {
+      setBusy(false);
+    }
+  }
 
   // ---- Contour: parcels, address, drawing -----------------------------------------------------
   function outlineFrom(list: ParcelRef[]): GeoPolygon | null {
@@ -1389,22 +1444,27 @@ export function PlanEditor({
         {f.draw}
       </ToolButton>
     );
+    const proposing = auto !== null || busy;
     return (
       <>
         {drawButton}
         {files.length === 0 && (
           <p className="text-sm text-muted-foreground">{f.none}</p>
         )}
-        {files.length === 0 && spots.some((sp) => sp.depth != null) && (
+        <div className="flex flex-col gap-1">
           <ToolButton
             className="min-h-9 w-full"
-            disabled={filesFromPlan.isPending}
-            onClick={() => filesFromPlan.mutate()}
-            title={f.fromPlanHelp}
+            disabled={!outline || proposing || filesOccupied.size > 0}
+            onClick={() => void proposeFiles()}
+            title={filesOccupied.size > 0 ? f.occupied : undefined}
           >
-            {f.fromPlan}
+            {proposing && (
+              <Loader2 className="mr-1.5 inline h-4 w-4 animate-spin" />
+            )}
+            {f.propose}
           </ToolButton>
-        )}
+          <p className="text-xs text-muted-foreground">{f.proposeHelp}</p>
+        </div>
         {files.length > 0 && (
           <ul
             className="flex flex-col divide-y divide-border text-sm"
@@ -1636,6 +1696,27 @@ export function PlanEditor({
               ? filesCard()
               : spotsCard();
   const toolEnabled = (k: Tool) => k === "contour" || !!outline;
+  const toolButton = (k: Tool) => {
+    const Icon = TOOL_ICONS[k];
+    return (
+      <button
+        key={k}
+        type="button"
+        aria-pressed={tool === k}
+        disabled={!toolEnabled(k)}
+        onClick={() => setTool(k)}
+        className={cn(
+          "flex min-h-[72px] flex-col items-center justify-center gap-1 px-1 text-center text-[11px] font-semibold uppercase leading-tight tracking-[0.3px] disabled:cursor-not-allowed disabled:opacity-40",
+          tool === k
+            ? "bg-primary text-primary-foreground"
+            : "text-foreground hover:bg-accent",
+        )}
+      >
+        <Icon className="h-5 w-5" />
+        {t.tools[k]}
+      </button>
+    );
+  };
 
   return (
     <div className="-mx-4 flex flex-col border-y border-border sm:-mx-6 lg:h-[calc(100vh-200px)] lg:min-h-[640px]">
@@ -1697,6 +1778,7 @@ export function PlanEditor({
                 {(
                   [
                     ["all", tp.resetAll, tp.resetAllHelp],
+                    ["files", tp.resetFiles, tp.resetFilesHelp],
                     ["zones", tp.resetZones, tp.resetZonesHelp],
                     ["spots", tp.resetSpots, tp.resetSpotsHelp],
                   ] as const
@@ -1708,13 +1790,7 @@ export function PlanEditor({
                     onClick={() => {
                       setResetOpen(false);
                       void onReset(scope).then(() =>
-                        setTool(
-                          scope === "all"
-                            ? "contour"
-                            : scope === "zones"
-                              ? "parking"
-                              : "spots",
-                        ),
+                        setTool(RESET_TOOL[scope]),
                       );
                     }}
                     className="block w-full px-3 py-2 text-left hover:bg-accent"
@@ -1732,32 +1808,41 @@ export function PlanEditor({
       </div>
 
       <div className="relative flex min-h-0 flex-1">
-        {/* The toolbar: six tools, one gesture each. */}
+        {/* The toolbar: the three tools of the plan in files, the estimator's behind "Avancé". */}
         <nav
           aria-label={fr.parkingPlan.title}
           className="flex w-[92px] shrink-0 flex-col border-r border-border bg-card"
         >
-          {TOOLS.map((k) => {
-            const Icon = TOOL_ICONS[k];
-            return (
-              <button
-                key={k}
-                type="button"
-                aria-pressed={tool === k}
-                disabled={!toolEnabled(k)}
-                onClick={() => setTool(k)}
-                className={cn(
-                  "flex min-h-[72px] flex-col items-center justify-center gap-1 px-1 text-center text-[11px] font-semibold uppercase leading-tight tracking-[0.3px] disabled:cursor-not-allowed disabled:opacity-40",
-                  tool === k
-                    ? "bg-primary text-primary-foreground"
-                    : "text-foreground hover:bg-accent",
-                )}
-              >
-                <Icon className="h-5 w-5" />
-                {t.tools[k]}
-              </button>
-            );
-          })}
+          {PRIMARY_TOOLS.map(toolButton)}
+          <button
+            type="button"
+            aria-expanded={advancedShown}
+            aria-controls="plan-advanced-tools"
+            onClick={() => {
+              // Folding with an estimator tool in hand would keep the panel open (the tool
+              // shows it): hand a primary tool over first.
+              if (advancedShown && ADVANCED_TOOLS.includes(tool))
+                setTool(outline ? "files" : "contour");
+              setAdvancedOpen(!advancedShown);
+            }}
+            className="flex min-h-11 flex-col items-center justify-center gap-0.5 border-t border-border px-1 text-center text-[11px] font-semibold uppercase leading-tight tracking-[0.3px] text-muted-foreground hover:bg-accent hover:text-foreground"
+          >
+            <ChevronDown
+              className={cn(
+                "h-4 w-4 transition-transform",
+                advancedShown && "rotate-180",
+              )}
+            />
+            {t.advanced}
+          </button>
+          {advancedShown && (
+            <div
+              id="plan-advanced-tools"
+              className="flex flex-col border-t border-border"
+            >
+              {ADVANCED_TOOLS.map(toolButton)}
+            </div>
+          )}
         </nav>
 
         <div className="relative min-h-[55vh] min-w-0 flex-1 lg:min-h-0">
@@ -1840,6 +1925,8 @@ export function PlanEditor({
                           <Check className="h-4 w-4 text-lime-deep" />
                         ) : p?.state === "running" ? (
                           <Loader2 className="h-4 w-4 animate-spin" />
+                        ) : p?.state === "skipped" ? (
+                          <Minus className="h-4 w-4 text-muted-foreground" />
                         ) : (
                           <span className="h-4 w-4 border border-border" />
                         )}

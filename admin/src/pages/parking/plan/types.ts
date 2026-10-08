@@ -17,4 +17,16 @@ export const TOOLS: Tool[] = [
   "files",
   "spots",
 ];
-export type ResetScope = "all" | "zones" | "spots";
+/**
+ * "The plan is made at once: one line per file and a capacity" (07/10/2026): the toolbar shows the
+ * three tools of that gesture; the zone brushes, obstacles and spots of the estimator sit behind an
+ * "Avancé" toggle.
+ */
+export const PRIMARY_TOOLS: Tool[] = ["contour", "files", "landmark"];
+export const ADVANCED_TOOLS: Tool[] = [
+  "parking",
+  "passage",
+  "obstacle",
+  "spots",
+];
+export type ResetScope = "all" | "zones" | "spots" | "files";

@@ -15,6 +15,8 @@ export interface ParkingFile {
   sortOrder: number;
   active: boolean;
   plannedDay: string | null;
+  /** The planned day was chosen by the staff, not by the night's preparation (older APIs omit it). */
+  keptByHand?: boolean;
 }
 
 export interface FileInput {
@@ -107,6 +109,58 @@ export interface FileBoard {
     movesToday: number;
     unsound: number;
   };
+}
+
+// "Planning des files" (07/10/2026): the coming days read in files.
+export interface FilesPlanningFile {
+  id: string;
+  code: string;
+  name: string | null;
+  capacity: number;
+  active: boolean;
+  plannedDay: string | null;
+  /** The return day the file serves: its front car's local day, else the planned one. */
+  day: string | null;
+  cars: number;
+  sound: boolean;
+  keptByHand?: boolean;
+}
+
+export interface FilesPlanningDay {
+  date: string;
+  /** Holding bookings whose return falls on that local day. */
+  returns: number;
+  /** Of those, already in a file. */
+  placed: number;
+  toCome: number;
+  /** Holding bookings overlapping the day. */
+  onSite: number;
+  /** Codes of the files serving that day and holding cars. */
+  filesServing: string[];
+  /** Codes of the empty files kept for that day. */
+  filesKept: string[];
+  /** Free slots over the serving and kept files. */
+  room: number;
+  /** max(0, toCome - room) */
+  missing: number;
+}
+
+export type FilesPlanningAlert =
+  | { kind: "missing_room"; date: string; count: number }
+  | { kind: "over_capacity"; date: string; count: number }
+  | { kind: "unsound"; fileCode: string; count: number };
+
+export interface FilesPlanning {
+  from: string;
+  days: number;
+  timezone: string;
+  /** The parking's local day as the server reckons it (missing from an older API: fall back to `from`). */
+  today?: string;
+  /** Sum of the active files' capacities. */
+  capacity: number;
+  files: FilesPlanningFile[];
+  load: FilesPlanningDay[];
+  alerts: FilesPlanningAlert[];
 }
 
 /** Metres between two positions, flat-earth (fine within a parking). */

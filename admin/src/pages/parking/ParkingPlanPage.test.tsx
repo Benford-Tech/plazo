@@ -29,6 +29,13 @@ vi.mock("@/contexts/AuthContext", () => ({
   }),
 }));
 
+const toast = vi.hoisted(() => ({
+  success: vi.fn(),
+  error: vi.fn(),
+  message: vi.fn(),
+}));
+vi.mock("sonner", () => ({ toast }));
+
 vi.mock("@/components/capacity/MapView", () => ({
   MapView: (props: {
     onMapClick?: (p: [number, number]) => void;
@@ -230,7 +237,7 @@ describe("plan du parking (éditeur R-A, 07/10/2026)", () => {
     );
   }, 30000);
 
-  it("prépare seul un plan vide : parcelle, bâtiments, zones par Claude et places (R-C)", async () => {
+  it("prépare seul un plan vide : parcelle, bâtiments, zones par Claude, places puis files (R-C, S-C)", async () => {
     api.getParkingPlan.mockResolvedValue({
       ...view([]),
       plan: { ...view([]).plan, outline: null, zones: [], settings: {} },
@@ -275,9 +282,9 @@ describe("plan du parking (éditeur R-A, 07/10/2026)", () => {
               active: true,
               lon: 0,
               lat: 0,
-              depth: null,
-              fileLength: null,
-              stayClass: null,
+              depth: s.depth ?? null,
+              fileLength: s.fileLength ?? null,
+              stayClass: s.stayClass ?? null,
               manual: false,
             })),
           ),
@@ -289,6 +296,20 @@ describe("plan du parking (éditeur R-A, 07/10/2026)", () => {
         },
       }),
     );
+    api.filesFromPlan.mockResolvedValue({
+      data: [
+        {
+          id: "f0",
+          code: "F01",
+          name: null,
+          capacity: 4,
+          geometry: null,
+          sortOrder: 0,
+          active: true,
+          plannedDay: null,
+        },
+      ],
+    });
     renderAt("/parking/plan");
     expect(await screen.findByText("Préparation du plan")).toBeInTheDocument();
     await waitFor(
@@ -316,6 +337,8 @@ describe("plan du parking (éditeur R-A, 07/10/2026)", () => {
         (p) => p.zones?.length === 1 && p.settings?.zonesAuto === false,
       ),
     ).toBe(true);
+    // The comb's valet files become the files of the parking, and the editor opens on them.
+    await waitFor(() => expect(api.filesFromPlan).toHaveBeenCalledWith("p1"));
     await waitFor(
       () =>
         expect(
@@ -323,11 +346,142 @@ describe("plan du parking (éditeur R-A, 07/10/2026)", () => {
         ).not.toBeInTheDocument(),
       { timeout: 10000 },
     );
-    expect(screen.getByRole("button", { name: "Places" })).toHaveAttribute(
+    expect(toast.success).toHaveBeenCalledWith(
+      "1 file proposée : corrigez-la d'un trait si besoin",
+    );
+    expect(screen.getByRole("button", { name: "Files" })).toHaveAttribute(
       "aria-pressed",
       "true",
     );
   }, 40000);
+
+  it("ouvre sur Contour · Files · Repères, les outils de l'estimateur sous « Avancé »", async () => {
+    api.getParkingPlan.mockResolvedValue(view([]));
+    api.updateParkingPlan.mockResolvedValue({ data: {} });
+    renderAt("/parking/plan");
+    // With an outline and no files yet, the editor opens on the files tool.
+    expect(
+      await screen.findByRole("button", { name: "Files" }),
+    ).toHaveAttribute("aria-pressed", "true");
+    expect(screen.getByRole("button", { name: "Contour" })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Repères" })).toBeInTheDocument();
+    for (const name of [
+      "Zone de parking",
+      "Zone de passage",
+      "Obstacle",
+      "Places",
+    ])
+      expect(screen.queryByRole("button", { name })).not.toBeInTheDocument();
+    const advanced = screen.getByRole("button", { name: "Avancé" });
+    expect(advanced).toHaveAttribute("aria-expanded", "false");
+    fireEvent.click(advanced);
+    expect(advanced).toHaveAttribute("aria-expanded", "true");
+    for (const name of [
+      "Zone de parking",
+      "Zone de passage",
+      "Obstacle",
+      "Places",
+    ])
+      expect(screen.getByRole("button", { name })).toBeInTheDocument();
+    fireEvent.click(screen.getByRole("button", { name: "Places" }));
+    expect(screen.getByRole("button", { name: "Places" })).toHaveAttribute(
+      "aria-pressed",
+      "true",
+    );
+    // Folding with an estimator tool in hand hands a primary one over, then folds.
+    fireEvent.click(advanced);
+    expect(advanced).toHaveAttribute("aria-expanded", "false");
+    for (const name of [
+      "Zone de parking",
+      "Zone de passage",
+      "Obstacle",
+      "Places",
+    ])
+      expect(screen.queryByRole("button", { name })).not.toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Files" })).toHaveAttribute(
+      "aria-pressed",
+      "true",
+    );
+  });
+
+  it("« Me proposer des files » crée les files depuis les places voiturier du plan", async () => {
+    api.getParkingPlan.mockResolvedValue(
+      view([
+        {
+          id: "s1",
+          zoneId: "z1",
+          code: "A-01-01",
+          row: 1,
+          index: 1,
+          kind: "standard",
+          active: true,
+          geometry: rect,
+          lon: 5.08,
+          lat: 45.72,
+          depth: 1,
+          fileLength: 4,
+          stayClass: "short",
+          manual: false,
+        },
+      ]),
+    );
+    api.updateParkingPlan.mockResolvedValue({ data: {} });
+    const proposed = (code: string, i: number) => ({
+      id: `f${i}`,
+      code,
+      name: null,
+      capacity: 4,
+      geometry: null,
+      sortOrder: i,
+      active: true,
+      plannedDay: null,
+    });
+    api.filesFromPlan.mockResolvedValue({
+      data: [proposed("F01", 0), proposed("F02", 1)],
+    });
+    renderAt("/parking/plan/files");
+    const propose = await screen.findByRole("button", {
+      name: "Me proposer des files",
+    });
+    expect(
+      screen.getByText(/Plazo découpe le terrain en files de voiturier/),
+    ).toBeInTheDocument();
+    fireEvent.click(propose);
+    await waitFor(() => expect(api.filesFromPlan).toHaveBeenCalledWith("p1"));
+    // The valet spots are there: no automatic pass runs first.
+    expect(api.parcelsAt).not.toHaveBeenCalled();
+    expect(api.replaceSpots).not.toHaveBeenCalled();
+    await waitFor(() =>
+      expect(toast.success).toHaveBeenCalledWith(
+        "2 files proposées : corrigez-les d'un trait si besoin",
+      ),
+    );
+  });
+
+  it("réinitialise les files seulement : les files vides sont retirées, les places restent", async () => {
+    api.getParkingPlan.mockResolvedValue(view([]));
+    api.updateParkingPlan.mockResolvedValue({ data: {} });
+    api.replaceFiles.mockResolvedValue({ data: [] });
+    const confirm = vi.spyOn(window, "confirm").mockReturnValue(true);
+    renderAt("/parking/plan/files");
+    fireEvent.click(
+      await screen.findByRole("button", { name: "Réinitialiser…" }),
+    );
+    fireEvent.click(screen.getByRole("menuitem", { name: /Files seulement/ }));
+    expect(confirm).toHaveBeenCalledTimes(1);
+    await waitFor(() =>
+      expect(api.replaceFiles).toHaveBeenCalledWith("p1", []),
+    );
+    expect(api.replaceSpots).not.toHaveBeenCalled();
+    await waitFor(() =>
+      expect(toast.success).toHaveBeenCalledWith("Files retirées"),
+    );
+    expect(screen.getByRole("button", { name: "Files" })).toHaveAttribute(
+      "aria-pressed",
+      "true",
+    );
+    confirm.mockRestore();
+  });
 
   it("réinitialise tout le plan après confirmation : tracé effacé, places retirées, retour au contour", async () => {
     api.getParkingPlan.mockResolvedValue(

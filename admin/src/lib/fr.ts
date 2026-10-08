@@ -106,6 +106,14 @@ export const fr = {
     pricing_required:
       "Enregistrez d'abord vos tarifs : une fiche sans prix ne peut pas être envoyée en validation.",
     duplicate_days: "Deux forfaits ont la même durée.",
+    // S-C files (07/10/2026).
+    file_occupied: "Cette file contient des voitures : videz-la d'abord.",
+    file_full: "Cette file est complète.",
+    file_not_found: "Cette file n'existe pas (ou plus).",
+    no_valet_spots:
+      "Le plan n'a pas de files de voiturier : générez des places en peigne ou tracez les files d'un trait.",
+    invalid_day: "Jour invalide.",
+    invalid_window: "Fenêtre invalide.",
     unknown: "Une erreur est survenue. Réessayez.",
     gateway: "Le serveur n'a pas répondu à temps. Réessayez dans un instant.",
     geo_unavailable:
@@ -1271,6 +1279,45 @@ export const fr = {
     spotTaken: "Cette place est déjà prise sur ces dates.",
     openBooking: "Ouvrir la réservation",
   },
+  // "Planning des files" (07/10/2026): the coming days read in files, on a parking stored in files.
+  filesPlanning: {
+    title: "Planning des files",
+    intro: `Pour chaque jour : les retours attendus, les files qui les servent, et ce qui manque. ${PRODUCT.name} garde des files vides pour les gros jours ; vous pouvez en réserver une à la main.`,
+    window: (days: number) => `${days} jours`,
+    windowLabel: "Fenêtre",
+    capacity: (n: number) => `${n} place${n > 1 ? "s" : ""} en file`,
+    alerts: "Alertes",
+    noAlert: "Rien à signaler sur la fenêtre.",
+    missingRoom: (date: string, n: number) =>
+      `${date} : il manque ${n} place${n > 1 ? "s" : ""} en file`,
+    overCapacity: (date: string, n: number) =>
+      `${date} : ${n} voiture${n > 1 ? "s" : ""} de trop pour les files`,
+    // The server counts the cars blocked behind one leaving later.
+    unsound: (code: string, n: number) =>
+      `File ${code} : ${n} voiture${n > 1 ? "s" : ""} bloquée${n > 1 ? "s" : ""} derrière une autre`,
+    columns: {
+      day: "Jour",
+      returns: "Retours",
+      serving: "Files qui servent",
+      kept: "Files gardées",
+      room: "Place",
+      missing: "Manque",
+    },
+    returnsCell: (toCome: number, placed: number) =>
+      `${toCome} à venir · ${placed} placée${placed > 1 ? "s" : ""}`,
+    onSite: (n: number) => `${n} sur place`,
+    none: "—",
+    keep: "Réserver une file…",
+    keepFor: (date: string) => `Garder une file vide pour ${date}`,
+    noEmptyFile: "Aucune file vide à réserver.",
+    kept: (code: string, date: string) => `File ${code} gardée pour ${date}`,
+    release: "Libérer",
+    released: (code: string) => `File ${code} libérée`,
+    files: "Files",
+    byHand: "à la main",
+    unsoundBadge: "à remettre en ordre",
+    prepare: "Préparer les files",
+  },
   // Bloc 2, step "Occupation" (P-A, 04/10/2026): who is where, where the arrivals go.
   occupation: {
     title: "Occupation",
@@ -1439,6 +1486,8 @@ export const fr = {
       spots:
         "Choisissez une disposition et générez les places, puis cliquez une place pour la désactiver ou changer son type.",
     },
+    /** The estimator's tools (zones, obstacles, spots), folded under the three of the plan in files. */
+    advanced: "Avancé",
     count: (n: number) => `${n} place${n > 1 ? "s" : ""}`,
     countEstimated: "estimation",
     countGenerated: (active: number, total: number) =>
@@ -1455,9 +1504,14 @@ export const fr = {
         buildings: "Bâtiments IGN",
         zones: "Zones garables",
         spots: "Places",
+        files: "Files de rangement",
       },
       zonesByClaude: "proposées par Claude",
       zonesAuto: "tout le terrain hors bâtiments",
+      // Notes of the steps skipped when the pass runs on a plan already begun.
+      outlineKept: "contour actuel",
+      zonesKept: "zones actuelles conservées",
+      noValetSpots: "aucune file de voiturier",
       noParcel:
         "Aucune parcelle à l'adresse du parking : cliquez votre terrain ou tracez son contour.",
       noPosition:
@@ -1539,12 +1593,15 @@ export const fr = {
       capacity: "voitures",
       code: "Code",
       name: "Nom (facultatif)",
-      none: "Aucune file pour l'instant. Tracez-en une, ou créez-les depuis les places générées.",
-      fromPlan: "Créer les files depuis les places",
-      fromPlanHelp:
-        "Chaque file de places générées devient une file de rangement, avec sa capacité.",
-      fromPlanDone: (n: number) =>
-        `${n} file${n > 1 ? "s" : ""} créée${n > 1 ? "s" : ""} depuis le plan`,
+      none: `Aucune file pour l'instant. Tracez-en une d'un trait, ou laissez ${PRODUCT.name} vous en proposer.`,
+      propose: "Me proposer des files",
+      proposeHelp: `${PRODUCT.name} découpe le terrain en files de voiturier (peigne) et vous les propose ; vous pouvez ensuite les corriger d'un trait.`,
+      proposeReplaces:
+        "Les files actuelles seront remplacées par la proposition.",
+      proposed: (n: number) =>
+        `${n} file${n > 1 ? "s" : ""} proposée${n > 1 ? "s" : ""} : corrigez-l${n > 1 ? "es" : "a"} d'un trait si besoin`,
+      noValetSpots:
+        "Aucune file n'est sortie du terrain : tracez-les d'un trait.",
       remove: "Retirer",
       removeConfirm: (code: string) => `Retirer la file ${code} ?`,
       occupied: "Cette file contient des voitures : videz-la d'abord.",
@@ -1600,13 +1657,19 @@ export const fr = {
     resetSpots: "Les places seulement",
     resetSpotsHelp:
       "Le tracé reste ; les places sont effacées, la capacité déclarée ne bouge pas.",
+    resetFiles: "Files seulement",
+    resetFilesHelp:
+      "Retire les files vides ; les places et le terrain restent.",
     resetConfirm: {
       all: "Effacer tout le plan (contour, zones, parties exclues, repères et places) ? La capacité déclarée ne change pas.",
       zones:
         "Effacer les zones et les parties exclues tracées à la main ? Les places générées seront effacées aussi.",
       spots: "Effacer toutes les places ? La capacité déclarée ne change pas.",
+      files:
+        "Retirer toutes les files ? Une file qui contient des voitures ne peut pas être retirée.",
     },
     resetDone: "Plan réinitialisé",
+    resetFilesDone: "Files retirées",
     layout: "Disposition",
     layouts: {
       selfPark: "Clients garés seuls",

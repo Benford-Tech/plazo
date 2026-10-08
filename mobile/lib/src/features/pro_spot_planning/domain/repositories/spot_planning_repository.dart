@@ -2,11 +2,14 @@ import '../../../../core/error/failure.dart';
 import '../../../../core/extensions/repositories_extensions.dart';
 import '../../../../core/utils/either.dart';
 import '../../data/datasources/spot_planning_data_source.dart';
+import '../../data/models/files_planning_models.dart';
 import '../../data/models/spot_planning_models.dart';
 
 abstract class SpotPlanningRepository {
   Future<Either<Failure, SpotPlanningModel>> get(String parkingId, String from, int days);
   Future<Either<Failure, PreassignResultModel>> preassign(String parkingId, String from, int days);
+  Future<Either<Failure, FilesPlanningModel>> filesPlanning(String parkingId, String from, int days);
+  Future<Either<Failure, KeptFileModel>> keepFile(String parkingId, String fileId, String? day);
 }
 
 class SpotPlanningRepositoryImpl implements SpotPlanningRepository {
@@ -18,4 +21,10 @@ class SpotPlanningRepositoryImpl implements SpotPlanningRepository {
 
   @override
   Future<Either<Failure, PreassignResultModel>> preassign(String parkingId, String from, int days) => _source.preassign(parkingId, from, days).makeRequest();
+
+  @override
+  Future<Either<Failure, FilesPlanningModel>> filesPlanning(String parkingId, String from, int days) => _source.filesPlanning(parkingId, from, days).makeRequest();
+
+  @override
+  Future<Either<Failure, KeptFileModel>> keepFile(String parkingId, String fileId, String? day) => _source.keepFile(parkingId, fileId, day).makeRequest();
 }

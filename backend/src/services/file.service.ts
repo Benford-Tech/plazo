@@ -7,6 +7,7 @@ import {
   type ExpectedReturns,
   type FileChoice,
   frontCar,
+  isKeptByHand,
   movesToday,
   planEmptyFiles,
   positionFromAisle,
@@ -16,7 +17,7 @@ import {
   stackOf,
 } from '@/domain/file-stacks';
 import { buildFiles } from '@/domain/files';
-import { addDays, dayBounds, localDate } from '@/domain/time';
+import { addDays, DATE_RE, dayBounds, localDate, parseInstant } from '@/domain/time';
 import { AssignFileDto, FileInputDto, ReplaceFilesDto } from '@/dtos/file.dto';
 import { AuthenticatedStaff } from '@/interfaces/auth.interface';
 import { HttpException } from '@/utils/httpException';
@@ -29,6 +30,9 @@ const ON_SITE: ReservationStatus[] = ON_SITE_STATUSES;
 const CHECK_IN_AHEAD_HOURS = 6;
 /** The night preparation looks this far ahead. */
 const PLAN_DAYS = 14;
+/** The planning of the files: default and longest window, in days. */
+const PLANNING_DAYS = 7;
+const PLANNING_MAX_DAYS = 31;
 
 const carSelect = {
   id: true,
@@ -65,6 +69,8 @@ export interface FileView {
   sortOrder: number;
   active: boolean;
   plannedDay: string | null;
+  /** The planned day was chosen by hand (Planning des files): the night preparation leaves it. */
+  keptByHand: boolean;
   /** The return day the file serves: its front car's, else the planned one. */
   day: string | null;
   /** Cars from the aisle to the back. */
@@ -72,6 +78,59 @@ export interface FileView {
   /** Cars to take out today because of this file's order. */
   movesToday: number;
   sound: boolean;
+}
+
+/** Planning des files (08/10/2026): one file, as the planning lists it. */
+export interface FilePlanningFile {
+  id: string;
+  code: string;
+  name: string | null;
+  capacity: number;
+  active: boolean;
+  plannedDay: string | null;
+  keptByHand: boolean;
+  /** The return day the file serves: its front car's local day, else the planned one. */
+  day: string | null;
+  cars: number;
+  sound: boolean;
+}
+
+/** One day of the planning window. */
+export interface FilePlanningLoad {
+  date: string;
+  /** Holding bookings whose return falls on that local day. */
+  returns: number;
+  /** Of those, already in a file. */
+  placed: number;
+  toCome: number;
+  /** Holding bookings overlapping the day. */
+  onSite: number;
+  /** Codes of the files serving that day (front car returning that day). */
+  filesServing: string[];
+  /** Codes of the empty active files kept for that day. */
+  filesKept: string[];
+  /** Free slots in the active files serving or kept for the day (a closed file offers none). */
+  room: number;
+  /** Cars to come without a slot in those files. */
+  missing: number;
+}
+
+export type FilePlanningAlert =
+  | { kind: 'missing_room'; date: string; count: number }
+  | { kind: 'over_capacity'; date: string; count: number }
+  | { kind: 'unsound'; fileCode: string; count: number };
+
+export interface FilePlanning {
+  from: string;
+  days: number;
+  timezone: string;
+  /** The parking's local day as the server reckons it, so the clients never trust the device clock. */
+  today: string;
+  /** Sum of the capacities of the active files. */
+  capacity: number;
+  files: FilePlanningFile[];
+  load: FilePlanningLoad[];
+  alerts: FilePlanningAlert[];
 }
 
 /**
@@ -112,6 +171,7 @@ export class FileService {
         sortOrder: f.sortOrder,
         active: f.active,
         plannedDay: f.plannedDay,
+        keptByHand: f.keptByHand,
         day: front ? localDay(front.returnAt) : f.plannedDay,
         cars: stack.map((c, i) => {
           const row = holding.find(h => h.id === c.reservationId) as CarRow;
@@ -330,8 +390,10 @@ export class FileService {
         },
         tx,
       );
-      // A file that gets its first car loses its planned day: its front car says what it serves now.
-      if (file && file.plannedDay) await tx.parkingFile.update({ where: { id: file.id }, data: { plannedDay: null } });
+      // A file that gets its first car loses its planned day (even one chosen by hand): its front
+      // car says what it serves now.
+      if (file && (file.plannedDay || file.keptByHand))
+        await tx.parkingFile.update({ where: { id: file.id }, data: { plannedDay: null, keptByHand: false } });
       return row;
     });
     if (file && !reservation.fileId) await this.messages.carParked(reservation.id);
@@ -347,7 +409,8 @@ export class FileService {
 
   /**
    * Night preparation (also on demand): keeps empty files for the coming days with the most cars
-   * to come, from the bookings of the next two weeks.
+   * to come, from the bookings of the next two weeks. A file kept by hand keeps its day until that
+   * day has passed; it then goes back to the automatic pool.
    */
   public async prepare(parkingId: string, timezone: string, today: string): Promise<{ planned: number; free: number }> {
     const [rows, holding] = await Promise.all([
@@ -355,7 +418,8 @@ export class FileService {
       prisma.reservation.findMany({ where: { parkingId, status: { in: HOLDING } }, select: carSelect }),
     ]);
     if (!rows.length) return { planned: 0, free: 0 };
-    const stacks = this.stacks(rows, holding);
+    const stacks = this.stacks(rows, holding).map(f => ({ ...f, keptByHand: f.keptByHand && !!f.plannedDay && f.plannedDay >= today }));
+    const kept = new Set(stacks.filter(isKeptByHand).map(f => f.id));
     const localDay = (d: Date) => localDate(d, timezone);
     const horizon = addDays(today, PLAN_DAYS);
     const counts = new Map<string, number>();
@@ -370,8 +434,13 @@ export class FileService {
     const now = new Date();
     await prisma.$transaction([
       // Files with cars take their role from their front car; every file is stamped so the board knows the plan is today's.
-      prisma.parkingFile.updateMany({ where: { parkingId, id: { notIn: [...plan.keys()] } }, data: { plannedDay: null, plannedAt: now } }),
-      ...[...plan.entries()].map(([id, day]) => prisma.parkingFile.update({ where: { id }, data: { plannedDay: day, plannedAt: now } })),
+      prisma.parkingFile.updateMany({
+        where: { parkingId, id: { notIn: [...plan.keys()] } },
+        data: { plannedDay: null, keptByHand: false, plannedAt: now },
+      }),
+      ...[...plan.entries()].map(([id, day]) =>
+        prisma.parkingFile.update({ where: { id }, data: { plannedDay: day, keptByHand: kept.has(id), plannedAt: now } }),
+      ),
     ]);
     const planned = [...plan.values()].filter(Boolean).length;
     return { planned, free: plan.size - planned };
@@ -388,6 +457,135 @@ export class FileService {
     let planned = 0;
     for (const p of parkings) planned += (await this.prepare(p.id, p.timezone, localDate(new Date(), p.timezone))).planned;
     return { parkings: parkings.length, planned };
+  }
+
+  /**
+   * Planning des files (08/10/2026): day by day over a window, the returns to come against the
+   * room of the files serving or kept for that day, and the files with their day.
+   */
+  public async planning(actor: AuthenticatedStaff, parkingId: string, query: { from?: unknown; days?: unknown }): Promise<FilePlanning> {
+    const parking = await this.parkingOf(actor, parkingId);
+    const { from, days } = this.parseWindow(query, parking.timezone);
+    const today = localDate(new Date(), parking.timezone);
+    await this.prepareIfStale(parking.id, parking.timezone, today);
+    const { start: windowStart } = dayBounds(from, parking.timezone);
+    const { end: windowEnd } = dayBounds(addDays(from, days - 1), parking.timezone);
+    const [rows, holding] = await Promise.all([
+      prisma.parkingFile.findMany({ where: { parkingId: parking.id }, orderBy: [{ sortOrder: 'asc' }, { code: 'asc' }] }),
+      prisma.reservation.findMany({
+        where: {
+          parkingId: parking.id,
+          status: { in: HOLDING },
+          OR: [{ fileId: { not: null } }, { arrivalAt: { lt: windowEnd }, returnAt: { gt: windowStart } }],
+        },
+        select: carSelect,
+      }),
+    ]);
+    const localDay = (d: Date) => localDate(d, parking.timezone);
+    // Cars blocked in each file (by code): the "unsound" alerts.
+    const blockedIn = new Map<string, number>();
+    const files: FilePlanningFile[] = this.stacks(rows, holding).map(f => {
+      const front = frontCar(f);
+      const blocked = blockersIn(f).size;
+      blockedIn.set(f.code, blocked);
+      return {
+        id: f.id,
+        code: f.code,
+        name: f.name,
+        capacity: f.capacity,
+        active: f.active,
+        plannedDay: f.plannedDay,
+        keptByHand: f.keptByHand,
+        day: front ? localDay(front.returnAt) : f.plannedDay,
+        cars: f.cars.length,
+        sound: blocked === 0,
+      };
+    });
+    const capacity = files.filter(f => f.active).reduce((s, f) => s + f.capacity, 0);
+    const load: FilePlanningLoad[] = [];
+    const alerts: FilePlanningAlert[] = [];
+    for (let i = 0; i < days; i++) {
+      const date = addDays(from, i);
+      const { start, end } = dayBounds(date, parking.timezone);
+      const returns = holding.filter(r => r.returnAt >= start && r.returnAt < end);
+      const placed = returns.filter(r => r.fileId).length;
+      const toCome = returns.length - placed;
+      const onSite = holding.filter(r => r.arrivalAt < end && r.returnAt > start).length;
+      const serving = files.filter(f => f.cars > 0 && f.day === date);
+      const kept = files.filter(f => f.active && f.cars === 0 && f.plannedDay === date);
+      // A closed file that still holds cars is listed (the staff sees where they are) but takes no
+      // new car (assign answers 400 file_inactive, rankFiles skips it): its free slots are no room.
+      const room = [...serving, ...kept].reduce((s, f) => s + (f.active ? Math.max(0, f.capacity - f.cars) : 0), 0);
+      const missing = Math.max(0, toCome - room);
+      load.push({
+        date,
+        returns: returns.length,
+        placed,
+        toCome,
+        onSite,
+        filesServing: serving.map(f => f.code),
+        filesKept: kept.map(f => f.code),
+        room,
+        missing,
+      });
+      if (missing > 0) alerts.push({ kind: 'missing_room', date, count: missing });
+      if (onSite > capacity) alerts.push({ kind: 'over_capacity', date, count: onSite - capacity });
+    }
+    for (const f of files) {
+      const blocked = blockedIn.get(f.code) ?? 0;
+      if (blocked > 0) alerts.push({ kind: 'unsound', fileCode: f.code, count: blocked });
+    }
+    return { from, days, timezone: parking.timezone, today, capacity, files, load, alerts };
+  }
+
+  /**
+   * Keeps an empty file for a return day by hand (`day`), or frees it (`null`): the night
+   * preparation then leaves it alone until its day has passed. Audited.
+   */
+  public async keep(actor: AuthenticatedStaff, parkingId: string, fileId: string, day: string | null): Promise<ParkingFile> {
+    const parking = await this.parkingOf(actor, parkingId);
+    const file = await prisma.parkingFile.findFirst({
+      where: { id: fileId, parkingId: parking.id },
+      include: { _count: { select: { reservations: { where: { status: { in: HOLDING } } } } } },
+    });
+    if (!file) throw new HttpException(httpStatus.NOT_FOUND, 'File not found', 'file_not_found');
+    if (file._count.reservations > 0) throw new HttpException(httpStatus.CONFLICT, `File ${file.code} holds cars`, 'file_occupied');
+    if (day !== null) {
+      if (!DATE_RE.test(day) || !parseInstant(`${day}T00:00`, parking.timezone))
+        throw new HttpException(httpStatus.BAD_REQUEST, 'Invalid day', 'invalid_day');
+      if (day < localDate(new Date(), parking.timezone)) throw new HttpException(httpStatus.BAD_REQUEST, 'The day has passed', 'invalid_day');
+      if (!file.active) throw new HttpException(httpStatus.BAD_REQUEST, 'This file is closed', 'file_inactive');
+    }
+    return prisma.$transaction(async tx => {
+      const updated = await tx.parkingFile.update({ where: { id: file.id }, data: { plannedDay: day, keptByHand: day !== null } });
+      await this.audit.record(
+        actor,
+        {
+          action: 'parking.file_kept',
+          entityType: 'parking',
+          entityId: parking.id,
+          details: { fileId: file.id, code: file.code, from: file.plannedDay, day },
+        },
+        tx,
+      );
+      return updated;
+    });
+  }
+
+  /** The window of the planning: `from` (a local day, today by default) and `days` (1 to 31, 7 by default). */
+  public parseWindow(query: { from?: unknown; days?: unknown }, timezone: string): { from: string; days: number } {
+    const invalid = () => new HttpException(httpStatus.BAD_REQUEST, 'Invalid planning window', 'invalid_window');
+    let from = localDate(new Date(), timezone);
+    if (query.from !== undefined && query.from !== '') {
+      if (typeof query.from !== 'string' || !DATE_RE.test(query.from) || !parseInstant(`${query.from}T00:00`, timezone)) throw invalid();
+      from = query.from;
+    }
+    let days = PLANNING_DAYS;
+    if (query.days !== undefined && query.days !== '') {
+      days = typeof query.days === 'string' && /^\d+$/.test(query.days) ? Number(query.days) : NaN;
+      if (!Number.isInteger(days) || days < 1 || days > PLANNING_MAX_DAYS) throw invalid();
+    }
+    return { from, days };
   }
 
   /** Today's returns that stand behind a car leaving later, for the dashboard. */
@@ -416,7 +614,7 @@ export class FileService {
     if (stale) await this.prepare(parkingId, timezone, today);
   }
 
-  private stacks(rows: ParkingFile[], cars: CarRow[]): (StackFile & { name: string | null; geometry: unknown })[] {
+  private stacks(rows: ParkingFile[], cars: CarRow[]): (StackFile & { name: string | null; geometry: unknown; keptByHand: boolean })[] {
     return rows.map(f => ({
       id: f.id,
       code: f.code,
@@ -426,6 +624,7 @@ export class FileService {
       active: f.active,
       sortOrder: f.sortOrder,
       plannedDay: f.plannedDay,
+      keptByHand: f.keptByHand,
       cars: cars.filter(c => c.fileId === f.id).map(c => this.stackCar(c)),
     }));
   }

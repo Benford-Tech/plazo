@@ -5,7 +5,7 @@ import { useParams } from "react-router-dom";
 import { ParkingTabs } from "@/components/parking/ParkingTabs";
 import { useConfirm } from "@/components/ui/confirm-context";
 import { Skeleton } from "@/components/ui/skeleton";
-import { adminApi } from "@/lib/api";
+import { adminApi, ApiError } from "@/lib/api";
 import type { CapacityStudy, StudyPatch } from "@/lib/capacity/types";
 import { useEstimate } from "@/lib/capacity/useEstimate";
 import { describeError, fr } from "@/lib/fr";
@@ -175,6 +175,7 @@ export default function ParkingPlanPage() {
   );
 
   // R-A (07/10/2026): start again, in whole or in part. The declared capacity never changes.
+  // S-C: "files only" drops the (empty) files and leaves the land and the spots alone.
   const reset = async (scope: ResetScope) => {
     if (!view || !parkingId) return;
     if (
@@ -184,6 +185,20 @@ export default function ParkingPlanPage() {
     )
       return;
     const settings = view.plan.settings;
+    if (scope === "files") {
+      try {
+        await adminApi.replaceFiles(parkingId, []);
+        queryClient.invalidateQueries({ queryKey: ["files", parkingId] });
+        toast.success(fr.parkingPlan.resetFilesDone);
+      } catch (e) {
+        toast.error(
+          e instanceof ApiError && e.code === "file_occupied"
+            ? fr.planEditor.files.occupied
+            : describeError(e),
+        );
+      }
+      return;
+    }
     try {
       if (scope === "all") {
         update({

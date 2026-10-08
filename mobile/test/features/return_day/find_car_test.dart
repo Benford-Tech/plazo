@@ -43,4 +43,44 @@ void main() {
     expect(find.text("Place en cours d'attribution"), findsOneWidget);
     expect(find.byType(IgnMap), findsNothing);
   });
+
+  testWidgets('S-C · en file : la file du voiturier et la position depuis l’allée', (tester) async {
+    await show(
+      tester,
+      travellerReturn().copyWith(
+        file: const ReturnFileModel(code: 'F07', position: 3),
+        parking: const ReturnParkingModel(name: 'Parking Démo LYS', address: '12 route de l’Aéroport', location: ShuttlePositionModel(lat: 45.7375, lng: 5.0745)),
+      ),
+    );
+    expect(find.text('File F07'), findsOneWidget);
+    expect(find.text("3e depuis l'allée"), findsOneWidget);
+    expect(find.text('Place F07'), findsNothing);
+    expect(find.byType(IgnMap), findsOneWidget);
+  });
+
+  testWidgets('S-C · première de la file ; sans position, le nom du parking', (tester) async {
+    await show(tester, travellerReturn().copyWith(file: const ReturnFileModel(code: 'F02', position: 1)));
+    expect(find.text('File F02'), findsOneWidget);
+    expect(find.text("1re depuis l'allée"), findsOneWidget);
+    await show(tester, travellerReturn().copyWith(file: const ReturnFileModel(code: 'F02')));
+    expect(find.text('File F02'), findsOneWidget);
+    expect(find.text('Parking Démo LYS'), findsWidgets);
+  });
+
+  test('S-C · le champ « file » de l’API se lit, ou reste nul', () {
+    Map<String, dynamic> json(Object? file) => {
+      'reference': 'R7KQ2M',
+      'status': 'arrived',
+      'returnAt': '2026-10-03T10:30',
+      'parking': {'name': 'Parking Démo LYS'},
+      'plate': 'AB-123-CD',
+      'spot': null,
+      'file': file,
+    };
+    expect(TravellerReturnModel.fromJson(json(null)).file, isNull);
+    final m = TravellerReturnModel.fromJson(json({'code': 'F07', 'position': 3}));
+    expect(m.file?.code, 'F07');
+    expect(m.file?.position, 3);
+    expect(TravellerReturnModel.fromJson(json({'code': 'F07', 'position': null})).file?.position, isNull);
+  });
 }

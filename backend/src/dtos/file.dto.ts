@@ -78,3 +78,11 @@ export class AssignFileDto {
   @Type(() => CarLocationDto)
   public car?: CarLocationDto | null;
 }
+
+/** Planning des files (08/10/2026): keeps an empty file for a return day by hand, or frees it with `day: null`. */
+export class KeepFileDto {
+  @ValidateIf((_, v) => v !== null)
+  @IsString({ message: 'invalid' })
+  @Matches(/^\d{4}-\d{2}-\d{2}$/, { message: 'invalid_day' })
+  public day: string | null;
+}

@@ -131,6 +131,9 @@ abstract class TravellerReturnModel with _$TravellerReturnModel {
     /// The spot the valet placed the vehicle on (bloc 2), for "Retrouver ma voiture"; null until placed.
     ReturnSpotModel? spot,
 
+    /// S-C (07/10/2026): the file the valet put the car in and its position from the aisle; null until placed.
+    ReturnFileModel? file,
+
     /// Where the car is parked (GPS), recorded by the traveller or the valet; null until then.
     CarLocationModel? car,
 
@@ -149,6 +152,14 @@ abstract class ReturnSpotModel with _$ReturnSpotModel {
   const factory ReturnSpotModel({required String code, String? stayClass}) = _ReturnSpotModel;
 
   factory ReturnSpotModel.fromJson(Map<String, dynamic> json) => _$ReturnSpotModelFromJson(json);
+}
+
+/// The file the car stands in: its code ("F07") and its position from the aisle (1 = first out).
+@freezed
+abstract class ReturnFileModel with _$ReturnFileModel {
+  const factory ReturnFileModel({required String code, int? position}) = _ReturnFileModel;
+
+  factory ReturnFileModel.fromJson(Map<String, dynamic> json) => _$ReturnFileModelFromJson(json);
 }
 
 /// GET /public/bookings/:reference/shuttle.

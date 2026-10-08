@@ -31,6 +31,8 @@ export interface StackFile {
   sortOrder: number;
   /** Return day (YYYY-MM-DD) an empty file is kept for by the night preparation. */
   plannedDay: string | null;
+  /** The planned day was chosen by hand (Planning des files): the night preparation leaves it. */
+  keptByHand?: boolean;
   /** Cars in the file, any order. */
   cars: StackCar[];
 }
@@ -163,18 +165,28 @@ export interface ExpectedReturns {
   cars: number;
 }
 
+/** An empty file whose day was chosen by hand: the preparation neither frees nor reassigns it. */
+export function isKeptByHand(file: Pick<StackFile, 'cars' | 'plannedDay' | 'keptByHand'>): boolean {
+  return !!file.keptByHand && !!file.plannedDay && file.cars.length === 0;
+}
+
 /**
  * Night preparation: keeps empty files for the days with the most cars to come, so a big return
  * day is not scattered across files that other days then block. Returns the planned day of every
- * empty file (null when it stays free). Files with cars keep their role from their front car.
+ * empty file (null when it stays free). Files with cars keep their role from their front car; a
+ * file kept by hand keeps its day and counts as room already open for it.
  */
 export function planEmptyFiles(files: StackFile[], expected: ExpectedReturns[], localDayOf: LocalDay = utcDay): Map<string, string | null> {
   const plan = new Map<string, string | null>();
-  const empty = files.filter(f => f.active && f.cars.length === 0).sort((a, b) => a.sortOrder - b.sortOrder);
+  const idle = files.filter(f => f.active && f.cars.length === 0).sort((a, b) => a.sortOrder - b.sortOrder);
+  const kept = idle.filter(isKeptByHand);
+  const empty = idle.filter(f => !isKeptByHand(f));
+  for (const f of kept) plan.set(f.id, f.plannedDay);
   for (const f of empty) plan.set(f.id, null);
   if (!empty.length) return plan;
   const avgCapacity = Math.max(1, Math.round(empty.reduce((s, f) => s + f.capacity, 0) / empty.length));
-  // Room already open for a day: free slots of the files whose front car returns that day.
+  // Room already open for a day: free slots of the files whose front car returns that day, and the
+  // whole of the files kept for it by hand.
   const openRoom = new Map<string, number>();
   for (const f of files) {
     if (!f.active || !f.cars.length) continue;
@@ -182,6 +194,7 @@ export function planEmptyFiles(files: StackFile[], expected: ExpectedReturns[], 
     const day = localDayOf(front.returnAt);
     openRoom.set(day, (openRoom.get(day) ?? 0) + Math.max(0, f.capacity - f.cars.length));
   }
+  for (const f of kept) openRoom.set(f.plannedDay as string, (openRoom.get(f.plannedDay as string) ?? 0) + f.capacity);
   // A day is worth a file of its own from half a file of cars still to come.
   const worth = Math.ceil(avgCapacity / 2);
   const needs = expected

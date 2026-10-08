@@ -63,6 +63,8 @@ void _initUseCaseLocator() {
     ..registerLazySingleton(() => PreviewCapacityUseCase(locator()))
     ..registerLazySingleton(() => GetSpotPlanningUseCase(locator()))
     ..registerLazySingleton(() => PreassignSpotsUseCase(locator()))
+    ..registerLazySingleton(() => GetFilesPlanningUseCase(locator()))
+    ..registerLazySingleton(() => KeepFileUseCase(locator()))
     ..registerLazySingleton(() => GetTeamUseCase(locator()))
     ..registerLazySingleton(() => CreateStaffUseCase(locator()))
     ..registerLazySingleton(() => UpdateStaffUseCase(locator()))

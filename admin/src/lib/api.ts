@@ -2,6 +2,7 @@ import type {
   FileBoard,
   FileChoice,
   FileInput,
+  FilesPlanning,
   ParkingFile,
 } from "@/lib/plan/parkingFiles";
 import type {
@@ -421,6 +422,20 @@ export const adminApi = {
     apiRequest<{ data: { planned: number; free: number } }>(
       `/internal/parkings/${parkingId}/files/prepare`,
       { method: "POST" },
+    ),
+  // "Planning des files" (07/10/2026): the coming days in files, a file kept by hand for a return day.
+  // Without `from`, the server starts the window on the parking's local day.
+  getFilesPlanning: (parkingId: string, days: number, from?: string) =>
+    apiRequest<FilesPlanning>(
+      `/internal/parkings/${parkingId}/files/planning?${new URLSearchParams({
+        days: String(days),
+        ...(from ? { from } : {}),
+      }).toString()}`,
+    ),
+  keepFile: (parkingId: string, fileId: string, day: string | null) =>
+    apiRequest<{ data: ParkingFile }>(
+      `/internal/parkings/${parkingId}/files/${fileId}/keep`,
+      { method: "PUT", body: json({ day }) },
     ),
   fileChoices: (parkingId: string, reservationId: string) =>
     apiRequest<{ choices: FileChoice[] }>(

@@ -4,16 +4,19 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
 import '../../../../core/enums/view_state.dart';
+import '../../../../core/helpers/formatters.dart';
 import '../../../../core/helpers/roles.dart';
 import '../../../../core/router/app_router.dart';
 import '../../../../core/utils/error_message_handler.dart';
 import '../../../../di/locator.dart';
 import '../../../../shared/theme/theme.dart';
+import '../../../../shared/widgets/app_card.dart';
 import '../../../../shared/widgets/brand_header.dart';
 import '../../../../shared/widgets/french_plate.dart';
 import '../../../../shared/widgets/gradient_button.dart';
 import '../../../pro_auth/presentation/bloc/pro_auth_bloc.dart';
 import '../../../pro_reservations/presentation/widgets/reservation_tile.dart';
+import '../../data/models/files_planning_models.dart';
 import '../../data/models/spot_planning_models.dart';
 import '../bloc/pro_spot_planning_bloc.dart';
 
@@ -33,6 +36,8 @@ double _offsetDays(DateTime instant, DateTime from, int days) {
 
 /// App pro, step 3: one line per spot on 7 or 14 days, the bars of the stays, the need per day
 /// against the spots, the alerts, the bookings without a spot, pre-assignment and moves.
+/// Planning des files (08/10/2026): a parking stored in files shows, day by day, its returns to
+/// come against the room of the files serving or kept for that day, and keeps a file by hand.
 @RoutePage()
 class ProSpotPlanningPage extends StatelessWidget implements AutoRouteWrapper {
   const ProSpotPlanningPage({super.key});
@@ -52,10 +57,9 @@ class ProSpotPlanningPage extends StatelessWidget implements AutoRouteWrapper {
         }
       },
       builder: (context, state) {
-        final p = state.planning;
         return Scaffold(
-          appBar: BrandAppBar(pro: true, title: 'planning.title'.tr()),
-          body: p == null
+          appBar: BrandAppBar(pro: true, title: (state.filesMode ? 'spot_planning.files.title' : 'planning.title').tr()),
+          body: !state.loaded
               ? Center(
                   child: state.viewState.isError
                       ? Padding(
@@ -76,6 +80,9 @@ class ProSpotPlanningPage extends StatelessWidget implements AutoRouteWrapper {
     return switch (parts.first) {
       'planning.preassigned' => 'planning.preassigned'.tr(args: [parts[1], parts[2]]),
       'planning.moved' => 'planning.moved'.tr(args: [parts[1], parts[2]]),
+      'planning.kept' => 'spot_planning.files.kept_notice'.tr(args: [parts[1], localDay('${parts[2]}T00:00')]),
+      'planning.freed' => 'spot_planning.files.freed_notice'.tr(args: [parts[1]]),
+      'occupation.prepared' => 'occupation.prepared'.tr(args: [parts[1], parts[2]]),
       _ => 'planning.released'.tr(args: [parts[1]]),
     };
   }
@@ -96,6 +103,20 @@ class _BodyState extends State<_Body> {
   Widget build(BuildContext context) {
     final state = widget.state;
     final bloc = context.read<ProSpotPlanningBloc>();
+    if (state.filesMode) {
+      return Column(
+        children: [
+          _Toolbar(state: state),
+          Expanded(
+            child: RefreshIndicator(
+              color: AppColors.accent,
+              onRefresh: () async => bloc.add(const ProSpotPlanningRefreshed()),
+              child: _FilesPlanningView(state: state),
+            ),
+          ),
+        ],
+      );
+    }
     final p = state.planning!;
     final busyRows = p.spots.where((s) => s.stays.isNotEmpty).length;
     return Column(
@@ -502,6 +523,347 @@ Future<void> showStaySheet(BuildContext context, ProSpotPlanningState state, Pla
                           onTap: () {
                             Navigator.of(sheet).pop();
                             bloc.add(ProSpotPlanningMoved(stay: stay, spotId: s.id));
+                          },
+                        );
+                      },
+                    ),
+            ),
+          ],
+        ),
+      ),
+    ),
+  );
+}
+
+// ---- Planning des files (08/10/2026) -----------------------------------------------------------
+
+/// "aujourd'hui" or "sam. 4 oct." for a local day of the API.
+String _dayText(String date, String today) => date == today ? 'occupation.files.today'.tr() : localDay('${date}T00:00');
+
+/// What a file is doing: the returns it serves, the day it is kept for, or free.
+String _fileDayLabel(FilesPlanningFileModel f, String today) {
+  if (f.cars == 0) return f.plannedDay != null ? 'occupation.files.kept_for'.tr(args: [_dayText(f.plannedDay!, today)]) : 'occupation.files.free_file'.tr();
+  final day = f.day;
+  return day == null ? '' : 'occupation.files.returns_of'.tr(args: [_dayText(day, today)]);
+}
+
+/// The files planning: the room of the files, the alerts, one card per day with its returns and its
+/// files, then the files with their day.
+class _FilesPlanningView extends StatelessWidget {
+  const _FilesPlanningView({required this.state});
+  final ProSpotPlanningState state;
+
+  @override
+  Widget build(BuildContext context) {
+    final bloc = context.read<ProSpotPlanningBloc>();
+    final p = state.filesPlanning!;
+    final role = context.watch<ProAuthBloc>().state.staff?.role;
+    final canKeep = can(role, 'reservations:status');
+    final busy = state.actionState.isProcessing;
+    // Today is the parking's local day as the planning starts (never the phone's clock).
+    final today = p.today ?? p.from;
+    final active = p.files.where((f) => f.active).length;
+    return ListView(
+      key: const Key('files-planning'),
+      padding: const EdgeInsets.fromLTRB(16, 8, 16, 28),
+      children: [
+        AppCard(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text('spot_planning.files.capacity'.tr(args: ['${p.capacity}', '$active']), key: const Key('files-capacity'), style: AppText.strong(size: 14)),
+              Text('spot_planning.files.intro'.tr(), style: AppText.muted(size: 12)),
+              if (canKeep)
+                TextButton(
+                  key: const Key('files-prepare'),
+                  style: TextButton.styleFrom(padding: EdgeInsets.zero, foregroundColor: AppColors.accentDeep, textStyle: AppText.body(size: 13.5, weight: 700)),
+                  onPressed: busy ? null : () => bloc.add(const ProSpotPlanningFilesPrepared()),
+                  child: Text('occupation.files.prepare'.tr()),
+                ),
+            ],
+          ),
+        ),
+        const SizedBox(height: 14),
+        _FilesAlerts(alerts: p.alerts),
+        const SizedBox(height: 14),
+        for (final d in p.load) _DayCard(day: d, state: state, canKeep: canKeep && d.date.compareTo(today) >= 0, busy: busy, today: today),
+        const SizedBox(height: 6),
+        Text('spot_planning.files.list'.tr(args: ['${p.files.length}']).toUpperCase(), style: AppText.label(size: 11)),
+        const SizedBox(height: 6),
+        for (final f in p.files) _FileRow(file: f, today: today),
+      ],
+    );
+  }
+}
+
+class _FilesAlerts extends StatelessWidget {
+  const _FilesAlerts({required this.alerts});
+  final List<FilesPlanningAlertModel> alerts;
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text('planning.alerts'.tr().toUpperCase(), style: AppText.label(size: 11)),
+        const SizedBox(height: 6),
+        if (alerts.isEmpty) Text('planning.no_alert'.tr(), style: AppText.muted()),
+        for (final a in alerts)
+          Padding(
+            padding: const EdgeInsets.only(bottom: 4),
+            child: Text(
+              switch (a.kind) {
+                'missing_room' => 'spot_planning.files.missing_room'.tr(args: [localDay('${a.date}T00:00'), '${a.count}']),
+                'over_capacity' => 'spot_planning.files.over_capacity'.tr(args: [localDay('${a.date}T00:00'), '${a.count}']),
+                _ => 'spot_planning.files.unsound'.tr(args: [a.fileCode ?? '', '${a.count}']),
+              },
+              key: Key('files-alert-${a.kind}'),
+              style: AppText.body(size: 13.5, color: a.kind == 'unsound' ? AppColors.ink : AppStatus.badText),
+            ),
+          ),
+      ],
+    );
+  }
+}
+
+/// One day: "N retours · M à venir", the files serving it and those kept for it, what is missing,
+/// and "Réserver une file" for the staff allowed to.
+class _DayCard extends StatelessWidget {
+  const _DayCard({required this.day, required this.state, required this.canKeep, required this.busy, required this.today});
+  final FilesPlanningDayModel day;
+  final ProSpotPlanningState state;
+  final bool canKeep;
+  final bool busy;
+  final String today;
+
+  @override
+  Widget build(BuildContext context) {
+    final bloc = context.read<ProSpotPlanningBloc>();
+    final d = day;
+    final isToday = d.date == today;
+    final short = d.missing > 0;
+    return Container(
+      key: Key('day-${d.date}'),
+      margin: const EdgeInsets.only(bottom: 10),
+      padding: const EdgeInsets.fromLTRB(14, 10, 14, 10),
+      decoration: BoxDecoration(
+        color: isToday ? AppColors.tintSoft : AppColors.surface,
+        borderRadius: AppRadius.card,
+        border: Border.all(color: short ? AppStatus.badText : AppColors.line, width: short ? 1.5 : 1),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Expanded(child: Text(planningDay(DateTime.parse(d.date)), style: AppText.label(size: 11, color: isToday ? AppColors.accent : AppColors.muted))),
+              if (short)
+                Text('spot_planning.files.missing'.tr(args: ['${d.missing}']), key: Key('missing-${d.date}'), style: AppText.strong(size: 13, color: AppStatus.badText))
+              else
+                Text('spot_planning.files.room'.tr(args: ['${d.room}']), style: AppText.muted(size: 12)),
+            ],
+          ),
+          const SizedBox(height: 4),
+          Text('spot_planning.files.day_returns'.tr(args: ['${d.returns}', '${d.toCome}']), style: AppText.strong(size: 14)),
+          Text('spot_planning.files.on_site'.tr(args: ['${d.onSite}']), style: AppText.muted(size: 12)),
+          const SizedBox(height: 8),
+          if (d.filesServing.isEmpty && d.filesKept.isEmpty)
+            Text('spot_planning.files.no_file_for_day'.tr(), style: AppText.muted(size: 12.5))
+          else
+            Wrap(
+              spacing: 6,
+              runSpacing: 6,
+              children: [
+                for (final code in d.filesServing) _FileChip(code: code, file: state.fileByCode(code)),
+                for (final code in d.filesKept)
+                  _FileChip(
+                    code: code,
+                    file: state.fileByCode(code),
+                    kept: true,
+                    onFree: canKeep && !busy && (state.fileByCode(code)?.keptByHand ?? false)
+                        ? () => bloc.add(ProSpotPlanningFileKept(fileId: state.fileByCode(code)!.id, day: null))
+                        : null,
+                  ),
+              ],
+            ),
+          if (canKeep && state.keepableFilesFor(d.date).isNotEmpty)
+            Align(
+              alignment: Alignment.centerRight,
+              child: TextButton.icon(
+                key: Key('keep-day-${d.date}'),
+                style: TextButton.styleFrom(foregroundColor: AppColors.accentDeep, textStyle: AppText.body(size: 13, weight: 700)),
+                icon: const Icon(Icons.bookmark_add_outlined, size: 18),
+                label: Text('spot_planning.files.keep'.tr()),
+                onPressed: busy ? null : () => showKeepFileSheet(context, state, d.date),
+              ),
+            ),
+        ],
+      ),
+    );
+  }
+}
+
+/// A file on a day: serving it (tinted), or kept for it (outlined; by hand: lime, with a cross to free it).
+class _FileChip extends StatelessWidget {
+  const _FileChip({required this.code, required this.file, this.kept = false, this.onFree});
+  final String code;
+  final FilesPlanningFileModel? file;
+  final bool kept;
+  final VoidCallback? onFree;
+
+  @override
+  Widget build(BuildContext context) {
+    final byHand = kept && (file?.keptByHand ?? false);
+    final fill = byHand ? AppColors.action : (kept ? AppColors.surface : AppColors.tint);
+    final ink = byHand ? AppColors.onAccent : AppColors.accentDeep;
+    final count = file == null ? '' : '${file!.cars}/${file!.capacity}';
+    return Container(
+      key: Key('chip-$code'),
+      padding: EdgeInsets.fromLTRB(10, 5, onFree == null ? 10 : 4, 5),
+      decoration: BoxDecoration(color: fill, borderRadius: AppRadius.chip, border: Border.all(color: byHand ? AppColors.action : AppColors.line)),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          if (kept) ...[Icon(byHand ? Icons.bookmark_rounded : Icons.bookmark_border_rounded, size: 14, color: ink), const SizedBox(width: 4)],
+          Text(code, style: AppText.tabular(size: 12.5, color: ink)),
+          if (count.isNotEmpty) ...[const SizedBox(width: 6), Text(count, style: AppText.tabular(size: 11, weight: 500, color: ink))],
+          if (onFree != null)
+            InkWell(
+              key: Key('free-$code'),
+              onTap: onFree,
+              borderRadius: AppRadius.chip,
+              child: Tooltip(
+                message: 'spot_planning.files.free'.tr(args: [code]),
+                child: Padding(
+                  padding: const EdgeInsets.all(4),
+                  child: Icon(Icons.close_rounded, size: 16, color: ink),
+                ),
+              ),
+            ),
+        ],
+      ),
+    );
+  }
+}
+
+/// A file of the list: code, its day, cars over capacity, and its badges (by hand, unsound, closed).
+class _FileRow extends StatelessWidget {
+  const _FileRow({required this.file, required this.today});
+  final FilesPlanningFileModel file;
+  final String today;
+
+  @override
+  Widget build(BuildContext context) {
+    final f = file;
+    final full = f.cars >= f.capacity;
+    return Container(
+      key: Key('file-${f.code}'),
+      margin: const EdgeInsets.only(bottom: 8),
+      padding: const EdgeInsets.fromLTRB(14, 10, 14, 10),
+      decoration: BoxDecoration(
+        color: AppColors.surface,
+        borderRadius: AppRadius.card,
+        border: Border.all(color: f.sound ? AppColors.line : AppStatus.badText, width: f.sound ? 1 : 1.5),
+      ),
+      child: Row(
+        children: [
+          Text(f.code, style: AppText.tabular(size: 16, color: f.active ? AppColors.accentDeep : AppColors.muted)),
+          const SizedBox(width: 10),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(f.name ?? _fileDayLabel(f, today), style: AppText.muted(size: 12.5), overflow: TextOverflow.ellipsis),
+                if (f.keptByHand || !f.sound || !f.active)
+                  Padding(
+                    padding: const EdgeInsets.only(top: 4),
+                    child: Wrap(
+                      spacing: 6,
+                      runSpacing: 4,
+                      children: [
+                        if (f.keptByHand) _Badge(key: Key('by-hand-${f.code}'), label: 'spot_planning.files.by_hand'.tr(), fill: AppColors.tint, ink: AppColors.accentDeep),
+                        if (!f.sound) _Badge(key: Key('unsound-${f.code}'), label: 'spot_planning.files.unsound_badge'.tr(), fill: AppStatus.badSoft, ink: AppStatus.badText),
+                        if (!f.active) _Badge(label: 'spot_planning.files.inactive'.tr(), fill: AppColors.canvas, ink: AppColors.muted),
+                      ],
+                    ),
+                  ),
+              ],
+            ),
+          ),
+          Text('${f.cars}/${f.capacity}', style: AppText.tabular(size: 13, color: full ? AppStatus.badText : AppColors.muted)),
+        ],
+      ),
+    );
+  }
+}
+
+class _Badge extends StatelessWidget {
+  const _Badge({super.key, required this.label, required this.fill, required this.ink});
+  final String label;
+  final Color fill;
+  final Color ink;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+      decoration: BoxDecoration(color: fill, borderRadius: AppRadius.pill),
+      child: Text(label, style: AppText.strong(size: 11, color: ink)),
+    );
+  }
+}
+
+/// The empty files to keep for the return [day] by hand: one kept for another day can be moved,
+/// one the night preparation kept for that day can be locked by hand, one already kept by hand
+/// for it is greyed out.
+Future<void> showKeepFileSheet(BuildContext context, ProSpotPlanningState state, String day) {
+  final bloc = context.read<ProSpotPlanningBloc>();
+  final files = state.emptyFiles;
+  // Today is the parking's local day as the planning starts (never the phone's clock).
+  final today = state.filesPlanning!.today ?? state.filesPlanning!.from;
+  return showModalBottomSheet<void>(
+    context: context,
+    showDragHandle: true,
+    isScrollControlled: true,
+    builder: (sheet) => SafeArea(
+      child: SizedBox(
+        height: MediaQuery.sizeOf(sheet).height * 0.6,
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            Padding(
+              padding: const EdgeInsets.fromLTRB(16, 0, 16, 4),
+              child: Text('spot_planning.files.keep_title'.tr(args: [localDay('${day}T00:00')]), style: AppText.title(size: 20)),
+            ),
+            Padding(
+              padding: const EdgeInsets.fromLTRB(16, 0, 16, 8),
+              child: Text('spot_planning.files.keep_help'.tr(), style: AppText.muted(size: 12.5)),
+            ),
+            Expanded(
+              child: files.isEmpty
+                  ? Center(child: Text('spot_planning.files.no_empty_file'.tr(), style: AppText.muted()))
+                  : ListView.builder(
+                      itemCount: files.length,
+                      itemBuilder: (_, i) {
+                        final f = files[i];
+                        final forDay = f.plannedDay == day;
+                        // Kept by hand for this day already: nothing to do. Kept by the preparation: lock it.
+                        final locked = forDay && f.keptByHand;
+                        final what = locked
+                            ? 'spot_planning.files.already_kept'.tr()
+                            : forDay
+                            ? 'spot_planning.files.kept_by_plan'.tr()
+                            : _fileDayLabel(f, today);
+                        return ListTile(
+                          key: Key('keep-${f.code}'),
+                          minTileHeight: 52,
+                          enabled: !locked,
+                          leading: Icon(Icons.view_stream_rounded, color: locked ? AppColors.muted : AppColors.accent),
+                          title: Text(f.code, style: AppText.tabular(size: 16)),
+                          subtitle: Text('${f.capacity} · $what', style: AppText.muted(size: 12)),
+                          onTap: () {
+                            Navigator.of(sheet).pop();
+                            bloc.add(ProSpotPlanningFileKept(fileId: f.id, day: day));
                           },
                         );
                       },

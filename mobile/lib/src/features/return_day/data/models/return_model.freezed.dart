@@ -2133,7 +2133,8 @@ $ShuttlePositionModelCopyWith<$Res>? get location {
 mixin _$TravellerReturnModel {
 
  String get reference; String get status; String get returnAt; bool get returnDay; FlightViewModel get flight; bool get flightTracked; MeetingPointModel? get meetingPoint; DateTime? get atMeetingPointAt; TravellerShuttleModel? get shuttle; ReturnParkingModel get parking; String get plate;/// The spot the valet placed the vehicle on (bloc 2), for "Retrouver ma voiture"; null until placed.
- ReturnSpotModel? get spot;/// Where the car is parked (GPS), recorded by the traveller or the valet; null until then.
+ ReturnSpotModel? get spot;/// S-C (07/10/2026): the file the valet put the car in and its position from the aisle; null until placed.
+ ReturnFileModel? get file;/// Where the car is parked (GPS), recorded by the traveller or the valet; null until then.
  CarLocationModel? get car;/// E (06/10/2026): what the traveller signalled today ("mon vol a du retard", "bagage perdu").
  ReturnNoticeModel? get notice;
 /// Create a copy of TravellerReturnModel
@@ -2149,20 +2150,20 @@ $TravellerReturnModelCopyWith<TravellerReturnModel> get copyWith => _$TravellerR
 @override
 bool operator ==(Object other) {
   final _this = this as TravellerReturnModel;
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is TravellerReturnModel&&(identical(other.reference, _this.reference) || other.reference == _this.reference)&&(identical(other.status, _this.status) || other.status == _this.status)&&(identical(other.returnAt, _this.returnAt) || other.returnAt == _this.returnAt)&&(identical(other.returnDay, _this.returnDay) || other.returnDay == _this.returnDay)&&(identical(other.flight, _this.flight) || other.flight == _this.flight)&&(identical(other.flightTracked, _this.flightTracked) || other.flightTracked == _this.flightTracked)&&(identical(other.meetingPoint, _this.meetingPoint) || other.meetingPoint == _this.meetingPoint)&&(identical(other.atMeetingPointAt, _this.atMeetingPointAt) || other.atMeetingPointAt == _this.atMeetingPointAt)&&(identical(other.shuttle, _this.shuttle) || other.shuttle == _this.shuttle)&&(identical(other.parking, _this.parking) || other.parking == _this.parking)&&(identical(other.plate, _this.plate) || other.plate == _this.plate)&&(identical(other.spot, _this.spot) || other.spot == _this.spot)&&(identical(other.car, _this.car) || other.car == _this.car)&&(identical(other.notice, _this.notice) || other.notice == _this.notice));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is TravellerReturnModel&&(identical(other.reference, _this.reference) || other.reference == _this.reference)&&(identical(other.status, _this.status) || other.status == _this.status)&&(identical(other.returnAt, _this.returnAt) || other.returnAt == _this.returnAt)&&(identical(other.returnDay, _this.returnDay) || other.returnDay == _this.returnDay)&&(identical(other.flight, _this.flight) || other.flight == _this.flight)&&(identical(other.flightTracked, _this.flightTracked) || other.flightTracked == _this.flightTracked)&&(identical(other.meetingPoint, _this.meetingPoint) || other.meetingPoint == _this.meetingPoint)&&(identical(other.atMeetingPointAt, _this.atMeetingPointAt) || other.atMeetingPointAt == _this.atMeetingPointAt)&&(identical(other.shuttle, _this.shuttle) || other.shuttle == _this.shuttle)&&(identical(other.parking, _this.parking) || other.parking == _this.parking)&&(identical(other.plate, _this.plate) || other.plate == _this.plate)&&(identical(other.spot, _this.spot) || other.spot == _this.spot)&&(identical(other.file, _this.file) || other.file == _this.file)&&(identical(other.car, _this.car) || other.car == _this.car)&&(identical(other.notice, _this.notice) || other.notice == _this.notice));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
 int get hashCode {
   final _this = this as TravellerReturnModel;
-  return Object.hash(runtimeType,_this.reference,_this.status,_this.returnAt,_this.returnDay,_this.flight,_this.flightTracked,_this.meetingPoint,_this.atMeetingPointAt,_this.shuttle,_this.parking,_this.plate,_this.spot,_this.car,_this.notice);
+  return Object.hash(runtimeType,_this.reference,_this.status,_this.returnAt,_this.returnDay,_this.flight,_this.flightTracked,_this.meetingPoint,_this.atMeetingPointAt,_this.shuttle,_this.parking,_this.plate,_this.spot,_this.file,_this.car,_this.notice);
 }
 
 @override
 String toString() {
   final _this = this as TravellerReturnModel;
-  return 'TravellerReturnModel(reference: ${_this.reference}, status: ${_this.status}, returnAt: ${_this.returnAt}, returnDay: ${_this.returnDay}, flight: ${_this.flight}, flightTracked: ${_this.flightTracked}, meetingPoint: ${_this.meetingPoint}, atMeetingPointAt: ${_this.atMeetingPointAt}, shuttle: ${_this.shuttle}, parking: ${_this.parking}, plate: ${_this.plate}, spot: ${_this.spot}, car: ${_this.car}, notice: ${_this.notice})';
+  return 'TravellerReturnModel(reference: ${_this.reference}, status: ${_this.status}, returnAt: ${_this.returnAt}, returnDay: ${_this.returnDay}, flight: ${_this.flight}, flightTracked: ${_this.flightTracked}, meetingPoint: ${_this.meetingPoint}, atMeetingPointAt: ${_this.atMeetingPointAt}, shuttle: ${_this.shuttle}, parking: ${_this.parking}, plate: ${_this.plate}, spot: ${_this.spot}, file: ${_this.file}, car: ${_this.car}, notice: ${_this.notice})';
 }
 
 
@@ -2173,11 +2174,11 @@ abstract mixin class $TravellerReturnModelCopyWith<$Res>  {
   factory $TravellerReturnModelCopyWith(TravellerReturnModel value, $Res Function(TravellerReturnModel) _then) = _$TravellerReturnModelCopyWithImpl;
 @useResult
 $Res call({
- String reference, String status, String returnAt, bool returnDay, FlightViewModel flight, bool flightTracked, MeetingPointModel? meetingPoint, DateTime? atMeetingPointAt, TravellerShuttleModel? shuttle, ReturnParkingModel parking, String plate, ReturnSpotModel? spot, CarLocationModel? car, ReturnNoticeModel? notice
+ String reference, String status, String returnAt, bool returnDay, FlightViewModel flight, bool flightTracked, MeetingPointModel? meetingPoint, DateTime? atMeetingPointAt, TravellerShuttleModel? shuttle, ReturnParkingModel parking, String plate, ReturnSpotModel? spot, ReturnFileModel? file, CarLocationModel? car, ReturnNoticeModel? notice
 });
 
 
-$FlightViewModelCopyWith<$Res> get flight;$MeetingPointModelCopyWith<$Res>? get meetingPoint;$TravellerShuttleModelCopyWith<$Res>? get shuttle;$ReturnParkingModelCopyWith<$Res> get parking;$ReturnSpotModelCopyWith<$Res>? get spot;$CarLocationModelCopyWith<$Res>? get car;$ReturnNoticeModelCopyWith<$Res>? get notice;
+$FlightViewModelCopyWith<$Res> get flight;$MeetingPointModelCopyWith<$Res>? get meetingPoint;$TravellerShuttleModelCopyWith<$Res>? get shuttle;$ReturnParkingModelCopyWith<$Res> get parking;$ReturnSpotModelCopyWith<$Res>? get spot;$ReturnFileModelCopyWith<$Res>? get file;$CarLocationModelCopyWith<$Res>? get car;$ReturnNoticeModelCopyWith<$Res>? get notice;
 
 }
 /// @nodoc
@@ -2190,7 +2191,7 @@ class _$TravellerReturnModelCopyWithImpl<$Res>
 
 /// Create a copy of TravellerReturnModel
 /// with the given fields replaced by the non-null parameter values.
-@pragma('vm:prefer-inline') @override $Res call({Object? reference = null,Object? status = null,Object? returnAt = null,Object? returnDay = null,Object? flight = null,Object? flightTracked = null,Object? meetingPoint = freezed,Object? atMeetingPointAt = freezed,Object? shuttle = freezed,Object? parking = null,Object? plate = null,Object? spot = freezed,Object? car = freezed,Object? notice = freezed,}) {
+@pragma('vm:prefer-inline') @override $Res call({Object? reference = null,Object? status = null,Object? returnAt = null,Object? returnDay = null,Object? flight = null,Object? flightTracked = null,Object? meetingPoint = freezed,Object? atMeetingPointAt = freezed,Object? shuttle = freezed,Object? parking = null,Object? plate = null,Object? spot = freezed,Object? file = freezed,Object? car = freezed,Object? notice = freezed,}) {
   return _then(TravellerReturnModel(
 reference: null == reference ? _self.reference : reference // ignore: cast_nullable_to_non_nullable
 as String,status: null == status ? _self.status : status // ignore: cast_nullable_to_non_nullable
@@ -2204,7 +2205,8 @@ as DateTime?,shuttle: freezed == shuttle ? _self.shuttle : shuttle // ignore: ca
 as TravellerShuttleModel?,parking: null == parking ? _self.parking : parking // ignore: cast_nullable_to_non_nullable
 as ReturnParkingModel,plate: null == plate ? _self.plate : plate // ignore: cast_nullable_to_non_nullable
 as String,spot: freezed == spot ? _self.spot : spot // ignore: cast_nullable_to_non_nullable
-as ReturnSpotModel?,car: freezed == car ? _self.car : car // ignore: cast_nullable_to_non_nullable
+as ReturnSpotModel?,file: freezed == file ? _self.file : file // ignore: cast_nullable_to_non_nullable
+as ReturnFileModel?,car: freezed == car ? _self.car : car // ignore: cast_nullable_to_non_nullable
 as CarLocationModel?,notice: freezed == notice ? _self.notice : notice // ignore: cast_nullable_to_non_nullable
 as ReturnNoticeModel?,
   ));
@@ -2262,6 +2264,18 @@ $ReturnSpotModelCopyWith<$Res>? get spot {
 
   return $ReturnSpotModelCopyWith<$Res>(_self.spot!, (value) {
     return _then(_self.copyWith(spot: value));
+  });
+}/// Create a copy of TravellerReturnModel
+/// with the given fields replaced by the non-null parameter values.
+@override
+@pragma('vm:prefer-inline')
+$ReturnFileModelCopyWith<$Res>? get file {
+    if (_self.file == null) {
+    return null;
+  }
+
+  return $ReturnFileModelCopyWith<$Res>(_self.file!, (value) {
+    return _then(_self.copyWith(file: value));
   });
 }/// Create a copy of TravellerReturnModel
 /// with the given fields replaced by the non-null parameter values.
@@ -2369,10 +2383,10 @@ return $default(_that);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( String reference,  String status,  String returnAt,  bool returnDay,  FlightViewModel flight,  bool flightTracked,  MeetingPointModel? meetingPoint,  DateTime? atMeetingPointAt,  TravellerShuttleModel? shuttle,  ReturnParkingModel parking,  String plate,  ReturnSpotModel? spot,  CarLocationModel? car,  ReturnNoticeModel? notice)?  $default,{required TResult orElse(),}) {final _that = this;
+@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( String reference,  String status,  String returnAt,  bool returnDay,  FlightViewModel flight,  bool flightTracked,  MeetingPointModel? meetingPoint,  DateTime? atMeetingPointAt,  TravellerShuttleModel? shuttle,  ReturnParkingModel parking,  String plate,  ReturnSpotModel? spot,  ReturnFileModel? file,  CarLocationModel? car,  ReturnNoticeModel? notice)?  $default,{required TResult orElse(),}) {final _that = this;
 switch (_that) {
 case _TravellerReturnModel() when $default != null:
-return $default(_that.reference,_that.status,_that.returnAt,_that.returnDay,_that.flight,_that.flightTracked,_that.meetingPoint,_that.atMeetingPointAt,_that.shuttle,_that.parking,_that.plate,_that.spot,_that.car,_that.notice);case _:
+return $default(_that.reference,_that.status,_that.returnAt,_that.returnDay,_that.flight,_that.flightTracked,_that.meetingPoint,_that.atMeetingPointAt,_that.shuttle,_that.parking,_that.plate,_that.spot,_that.file,_that.car,_that.notice);case _:
   return orElse();
 
 }
@@ -2390,10 +2404,10 @@ return $default(_that.reference,_that.status,_that.returnAt,_that.returnDay,_tha
 /// }
 /// ```
 
-@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( String reference,  String status,  String returnAt,  bool returnDay,  FlightViewModel flight,  bool flightTracked,  MeetingPointModel? meetingPoint,  DateTime? atMeetingPointAt,  TravellerShuttleModel? shuttle,  ReturnParkingModel parking,  String plate,  ReturnSpotModel? spot,  CarLocationModel? car,  ReturnNoticeModel? notice)  $default,) {final _that = this;
+@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( String reference,  String status,  String returnAt,  bool returnDay,  FlightViewModel flight,  bool flightTracked,  MeetingPointModel? meetingPoint,  DateTime? atMeetingPointAt,  TravellerShuttleModel? shuttle,  ReturnParkingModel parking,  String plate,  ReturnSpotModel? spot,  ReturnFileModel? file,  CarLocationModel? car,  ReturnNoticeModel? notice)  $default,) {final _that = this;
 switch (_that) {
 case _TravellerReturnModel():
-return $default(_that.reference,_that.status,_that.returnAt,_that.returnDay,_that.flight,_that.flightTracked,_that.meetingPoint,_that.atMeetingPointAt,_that.shuttle,_that.parking,_that.plate,_that.spot,_that.car,_that.notice);case _:
+return $default(_that.reference,_that.status,_that.returnAt,_that.returnDay,_that.flight,_that.flightTracked,_that.meetingPoint,_that.atMeetingPointAt,_that.shuttle,_that.parking,_that.plate,_that.spot,_that.file,_that.car,_that.notice);case _:
   throw StateError('Unexpected subclass');
 
 }
@@ -2410,10 +2424,10 @@ return $default(_that.reference,_that.status,_that.returnAt,_that.returnDay,_tha
 /// }
 /// ```
 
-@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( String reference,  String status,  String returnAt,  bool returnDay,  FlightViewModel flight,  bool flightTracked,  MeetingPointModel? meetingPoint,  DateTime? atMeetingPointAt,  TravellerShuttleModel? shuttle,  ReturnParkingModel parking,  String plate,  ReturnSpotModel? spot,  CarLocationModel? car,  ReturnNoticeModel? notice)?  $default,) {final _that = this;
+@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( String reference,  String status,  String returnAt,  bool returnDay,  FlightViewModel flight,  bool flightTracked,  MeetingPointModel? meetingPoint,  DateTime? atMeetingPointAt,  TravellerShuttleModel? shuttle,  ReturnParkingModel parking,  String plate,  ReturnSpotModel? spot,  ReturnFileModel? file,  CarLocationModel? car,  ReturnNoticeModel? notice)?  $default,) {final _that = this;
 switch (_that) {
 case _TravellerReturnModel() when $default != null:
-return $default(_that.reference,_that.status,_that.returnAt,_that.returnDay,_that.flight,_that.flightTracked,_that.meetingPoint,_that.atMeetingPointAt,_that.shuttle,_that.parking,_that.plate,_that.spot,_that.car,_that.notice);case _:
+return $default(_that.reference,_that.status,_that.returnAt,_that.returnDay,_that.flight,_that.flightTracked,_that.meetingPoint,_that.atMeetingPointAt,_that.shuttle,_that.parking,_that.plate,_that.spot,_that.file,_that.car,_that.notice);case _:
   return null;
 
 }
@@ -2425,7 +2439,7 @@ return $default(_that.reference,_that.status,_that.returnAt,_that.returnDay,_tha
 @JsonSerializable()
 
 class _TravellerReturnModel extends TravellerReturnModel {
-  const _TravellerReturnModel({required this.reference, required this.status, required this.returnAt, this.returnDay = false, this.flight = const FlightViewModel(), this.flightTracked = false, this.meetingPoint, this.atMeetingPointAt, this.shuttle, required this.parking, required this.plate, this.spot, this.car, this.notice}): super._();
+  const _TravellerReturnModel({required this.reference, required this.status, required this.returnAt, this.returnDay = false, this.flight = const FlightViewModel(), this.flightTracked = false, this.meetingPoint, this.atMeetingPointAt, this.shuttle, required this.parking, required this.plate, this.spot, this.file, this.car, this.notice}): super._();
   factory _TravellerReturnModel.fromJson(Map<String, dynamic> json) => _$TravellerReturnModelFromJson(json);
 
 @override final  String reference;
@@ -2441,6 +2455,8 @@ class _TravellerReturnModel extends TravellerReturnModel {
 @override final  String plate;
 /// The spot the valet placed the vehicle on (bloc 2), for "Retrouver ma voiture"; null until placed.
 @override final  ReturnSpotModel? spot;
+/// S-C (07/10/2026): the file the valet put the car in and its position from the aisle; null until placed.
+@override final  ReturnFileModel? file;
 /// Where the car is parked (GPS), recorded by the traveller or the valet; null until then.
 @override final  CarLocationModel? car;
 /// E (06/10/2026): what the traveller signalled today ("mon vol a du retard", "bagage perdu").
@@ -2459,18 +2475,18 @@ Map<String, dynamic> toJson() {
 
 @override
 bool operator ==(Object other) {
-    return identical(this, other) || (other.runtimeType == runtimeType&&other is _TravellerReturnModel&&(identical(other.reference, reference) || other.reference == reference)&&(identical(other.status, status) || other.status == status)&&(identical(other.returnAt, returnAt) || other.returnAt == returnAt)&&(identical(other.returnDay, returnDay) || other.returnDay == returnDay)&&(identical(other.flight, flight) || other.flight == flight)&&(identical(other.flightTracked, flightTracked) || other.flightTracked == flightTracked)&&(identical(other.meetingPoint, meetingPoint) || other.meetingPoint == meetingPoint)&&(identical(other.atMeetingPointAt, atMeetingPointAt) || other.atMeetingPointAt == atMeetingPointAt)&&(identical(other.shuttle, shuttle) || other.shuttle == shuttle)&&(identical(other.parking, parking) || other.parking == parking)&&(identical(other.plate, plate) || other.plate == plate)&&(identical(other.spot, spot) || other.spot == spot)&&(identical(other.car, car) || other.car == car)&&(identical(other.notice, notice) || other.notice == notice));
+    return identical(this, other) || (other.runtimeType == runtimeType&&other is _TravellerReturnModel&&(identical(other.reference, reference) || other.reference == reference)&&(identical(other.status, status) || other.status == status)&&(identical(other.returnAt, returnAt) || other.returnAt == returnAt)&&(identical(other.returnDay, returnDay) || other.returnDay == returnDay)&&(identical(other.flight, flight) || other.flight == flight)&&(identical(other.flightTracked, flightTracked) || other.flightTracked == flightTracked)&&(identical(other.meetingPoint, meetingPoint) || other.meetingPoint == meetingPoint)&&(identical(other.atMeetingPointAt, atMeetingPointAt) || other.atMeetingPointAt == atMeetingPointAt)&&(identical(other.shuttle, shuttle) || other.shuttle == shuttle)&&(identical(other.parking, parking) || other.parking == parking)&&(identical(other.plate, plate) || other.plate == plate)&&(identical(other.spot, spot) || other.spot == spot)&&(identical(other.file, file) || other.file == file)&&(identical(other.car, car) || other.car == car)&&(identical(other.notice, notice) || other.notice == notice));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
 int get hashCode {
-    return Object.hash(runtimeType,reference,status,returnAt,returnDay,flight,flightTracked,meetingPoint,atMeetingPointAt,shuttle,parking,plate,spot,car,notice);
+    return Object.hash(runtimeType,reference,status,returnAt,returnDay,flight,flightTracked,meetingPoint,atMeetingPointAt,shuttle,parking,plate,spot,file,car,notice);
 }
 
 @override
 String toString() {
-    return 'TravellerReturnModel(reference: $reference, status: $status, returnAt: $returnAt, returnDay: $returnDay, flight: $flight, flightTracked: $flightTracked, meetingPoint: $meetingPoint, atMeetingPointAt: $atMeetingPointAt, shuttle: $shuttle, parking: $parking, plate: $plate, spot: $spot, car: $car, notice: $notice)';
+    return 'TravellerReturnModel(reference: $reference, status: $status, returnAt: $returnAt, returnDay: $returnDay, flight: $flight, flightTracked: $flightTracked, meetingPoint: $meetingPoint, atMeetingPointAt: $atMeetingPointAt, shuttle: $shuttle, parking: $parking, plate: $plate, spot: $spot, file: $file, car: $car, notice: $notice)';
 }
 
 
@@ -2481,11 +2497,11 @@ abstract mixin class _$TravellerReturnModelCopyWith<$Res> implements $TravellerR
   factory _$TravellerReturnModelCopyWith(_TravellerReturnModel value, $Res Function(_TravellerReturnModel) _then) = __$TravellerReturnModelCopyWithImpl;
 @override @useResult
 $Res call({
- String reference, String status, String returnAt, bool returnDay, FlightViewModel flight, bool flightTracked, MeetingPointModel? meetingPoint, DateTime? atMeetingPointAt, TravellerShuttleModel? shuttle, ReturnParkingModel parking, String plate, ReturnSpotModel? spot, CarLocationModel? car, ReturnNoticeModel? notice
+ String reference, String status, String returnAt, bool returnDay, FlightViewModel flight, bool flightTracked, MeetingPointModel? meetingPoint, DateTime? atMeetingPointAt, TravellerShuttleModel? shuttle, ReturnParkingModel parking, String plate, ReturnSpotModel? spot, ReturnFileModel? file, CarLocationModel? car, ReturnNoticeModel? notice
 });
 
 
-@override $FlightViewModelCopyWith<$Res> get flight;@override $MeetingPointModelCopyWith<$Res>? get meetingPoint;@override $TravellerShuttleModelCopyWith<$Res>? get shuttle;@override $ReturnParkingModelCopyWith<$Res> get parking;@override $ReturnSpotModelCopyWith<$Res>? get spot;@override $CarLocationModelCopyWith<$Res>? get car;@override $ReturnNoticeModelCopyWith<$Res>? get notice;
+@override $FlightViewModelCopyWith<$Res> get flight;@override $MeetingPointModelCopyWith<$Res>? get meetingPoint;@override $TravellerShuttleModelCopyWith<$Res>? get shuttle;@override $ReturnParkingModelCopyWith<$Res> get parking;@override $ReturnSpotModelCopyWith<$Res>? get spot;@override $ReturnFileModelCopyWith<$Res>? get file;@override $CarLocationModelCopyWith<$Res>? get car;@override $ReturnNoticeModelCopyWith<$Res>? get notice;
 
 }
 /// @nodoc
@@ -2498,7 +2514,7 @@ class __$TravellerReturnModelCopyWithImpl<$Res>
 
 /// Create a copy of TravellerReturnModel
 /// with the given fields replaced by the non-null parameter values.
-@override @pragma('vm:prefer-inline') $Res call({Object? reference = null,Object? status = null,Object? returnAt = null,Object? returnDay = null,Object? flight = null,Object? flightTracked = null,Object? meetingPoint = freezed,Object? atMeetingPointAt = freezed,Object? shuttle = freezed,Object? parking = null,Object? plate = null,Object? spot = freezed,Object? car = freezed,Object? notice = freezed,}) {
+@override @pragma('vm:prefer-inline') $Res call({Object? reference = null,Object? status = null,Object? returnAt = null,Object? returnDay = null,Object? flight = null,Object? flightTracked = null,Object? meetingPoint = freezed,Object? atMeetingPointAt = freezed,Object? shuttle = freezed,Object? parking = null,Object? plate = null,Object? spot = freezed,Object? file = freezed,Object? car = freezed,Object? notice = freezed,}) {
   return _then(_TravellerReturnModel(
 reference: null == reference ? _self.reference : reference // ignore: cast_nullable_to_non_nullable
 as String,status: null == status ? _self.status : status // ignore: cast_nullable_to_non_nullable
@@ -2512,7 +2528,8 @@ as DateTime?,shuttle: freezed == shuttle ? _self.shuttle : shuttle // ignore: ca
 as TravellerShuttleModel?,parking: null == parking ? _self.parking : parking // ignore: cast_nullable_to_non_nullable
 as ReturnParkingModel,plate: null == plate ? _self.plate : plate // ignore: cast_nullable_to_non_nullable
 as String,spot: freezed == spot ? _self.spot : spot // ignore: cast_nullable_to_non_nullable
-as ReturnSpotModel?,car: freezed == car ? _self.car : car // ignore: cast_nullable_to_non_nullable
+as ReturnSpotModel?,file: freezed == file ? _self.file : file // ignore: cast_nullable_to_non_nullable
+as ReturnFileModel?,car: freezed == car ? _self.car : car // ignore: cast_nullable_to_non_nullable
 as CarLocationModel?,notice: freezed == notice ? _self.notice : notice // ignore: cast_nullable_to_non_nullable
 as ReturnNoticeModel?,
   ));
@@ -2571,6 +2588,18 @@ $ReturnSpotModelCopyWith<$Res>? get spot {
 
   return $ReturnSpotModelCopyWith<$Res>(_self.spot!, (value) {
     return _then(_self.copyWith(spot: value));
+  });
+}/// Create a copy of TravellerReturnModel
+/// with the given fields replaced by the non-null parameter values.
+@override
+@pragma('vm:prefer-inline')
+$ReturnFileModelCopyWith<$Res>? get file {
+    if (_self.file == null) {
+    return null;
+  }
+
+  return $ReturnFileModelCopyWith<$Res>(_self.file!, (value) {
+    return _then(_self.copyWith(file: value));
   });
 }/// Create a copy of TravellerReturnModel
 /// with the given fields replaced by the non-null parameter values.
@@ -2866,6 +2895,279 @@ class __$ReturnSpotModelCopyWithImpl<$Res>
 code: null == code ? _self.code : code // ignore: cast_nullable_to_non_nullable
 as String,stayClass: freezed == stayClass ? _self.stayClass : stayClass // ignore: cast_nullable_to_non_nullable
 as String?,
+  ));
+}
+
+
+}
+
+
+/// @nodoc
+mixin _$ReturnFileModel {
+
+ String get code; int? get position;
+/// Create a copy of ReturnFileModel
+/// with the given fields replaced by the non-null parameter values.
+@JsonKey(includeFromJson: false, includeToJson: false)
+@pragma('vm:prefer-inline')
+$ReturnFileModelCopyWith<ReturnFileModel> get copyWith => _$ReturnFileModelCopyWithImpl<ReturnFileModel>(this as ReturnFileModel, _$identity);
+
+  /// Serializes this ReturnFileModel to a JSON map.
+  Map<String, dynamic> toJson();
+
+
+@override
+bool operator ==(Object other) {
+  final _this = this as ReturnFileModel;
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is ReturnFileModel&&(identical(other.code, _this.code) || other.code == _this.code)&&(identical(other.position, _this.position) || other.position == _this.position));
+}
+
+@JsonKey(includeFromJson: false, includeToJson: false)
+@override
+int get hashCode {
+  final _this = this as ReturnFileModel;
+  return Object.hash(runtimeType,_this.code,_this.position);
+}
+
+@override
+String toString() {
+  final _this = this as ReturnFileModel;
+  return 'ReturnFileModel(code: ${_this.code}, position: ${_this.position})';
+}
+
+
+}
+
+/// @nodoc
+abstract mixin class $ReturnFileModelCopyWith<$Res>  {
+  factory $ReturnFileModelCopyWith(ReturnFileModel value, $Res Function(ReturnFileModel) _then) = _$ReturnFileModelCopyWithImpl;
+@useResult
+$Res call({
+ String code, int? position
+});
+
+
+
+
+}
+/// @nodoc
+class _$ReturnFileModelCopyWithImpl<$Res>
+    implements $ReturnFileModelCopyWith<$Res> {
+  _$ReturnFileModelCopyWithImpl(this._self, this._then);
+
+  final ReturnFileModel _self;
+  final $Res Function(ReturnFileModel) _then;
+
+/// Create a copy of ReturnFileModel
+/// with the given fields replaced by the non-null parameter values.
+@pragma('vm:prefer-inline') @override $Res call({Object? code = null,Object? position = freezed,}) {
+  return _then(ReturnFileModel(
+code: null == code ? _self.code : code // ignore: cast_nullable_to_non_nullable
+as String,position: freezed == position ? _self.position : position // ignore: cast_nullable_to_non_nullable
+as int?,
+  ));
+}
+
+}
+
+
+/// Adds pattern-matching-related methods to [ReturnFileModel].
+extension ReturnFileModelPatterns on ReturnFileModel {
+/// A variant of `map` that fallback to returning `orElse`.
+///
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case final Subclass value:
+///     return ...;
+///   case _:
+///     return orElse();
+/// }
+/// ```
+
+@optionalTypeArgs TResult maybeMap<TResult extends Object?>(TResult Function( _ReturnFileModel value)?  $default,{required TResult orElse(),}){
+final _that = this;
+switch (_that) {
+case _ReturnFileModel() when $default != null:
+return $default(_that);case _:
+  return orElse();
+
+}
+}
+/// A `switch`-like method, using callbacks.
+///
+/// Callbacks receives the raw object, upcasted.
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case final Subclass value:
+///     return ...;
+///   case final Subclass2 value:
+///     return ...;
+/// }
+/// ```
+
+@optionalTypeArgs TResult map<TResult extends Object?>(TResult Function( _ReturnFileModel value)  $default,){
+final _that = this;
+switch (_that) {
+case _ReturnFileModel():
+return $default(_that);case _:
+  throw StateError('Unexpected subclass');
+
+}
+}
+/// A variant of `map` that fallback to returning `null`.
+///
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case final Subclass value:
+///     return ...;
+///   case _:
+///     return null;
+/// }
+/// ```
+
+@optionalTypeArgs TResult? mapOrNull<TResult extends Object?>(TResult? Function( _ReturnFileModel value)?  $default,){
+final _that = this;
+switch (_that) {
+case _ReturnFileModel() when $default != null:
+return $default(_that);case _:
+  return null;
+
+}
+}
+/// A variant of `when` that fallback to an `orElse` callback.
+///
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case Subclass(:final field):
+///     return ...;
+///   case _:
+///     return orElse();
+/// }
+/// ```
+
+@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( String code,  int? position)?  $default,{required TResult orElse(),}) {final _that = this;
+switch (_that) {
+case _ReturnFileModel() when $default != null:
+return $default(_that.code,_that.position);case _:
+  return orElse();
+
+}
+}
+/// A `switch`-like method, using callbacks.
+///
+/// As opposed to `map`, this offers destructuring.
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case Subclass(:final field):
+///     return ...;
+///   case Subclass2(:final field2):
+///     return ...;
+/// }
+/// ```
+
+@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( String code,  int? position)  $default,) {final _that = this;
+switch (_that) {
+case _ReturnFileModel():
+return $default(_that.code,_that.position);case _:
+  throw StateError('Unexpected subclass');
+
+}
+}
+/// A variant of `when` that fallback to returning `null`
+///
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case Subclass(:final field):
+///     return ...;
+///   case _:
+///     return null;
+/// }
+/// ```
+
+@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( String code,  int? position)?  $default,) {final _that = this;
+switch (_that) {
+case _ReturnFileModel() when $default != null:
+return $default(_that.code,_that.position);case _:
+  return null;
+
+}
+}
+
+}
+
+/// @nodoc
+@JsonSerializable()
+
+class _ReturnFileModel implements ReturnFileModel {
+  const _ReturnFileModel({required this.code, this.position});
+  factory _ReturnFileModel.fromJson(Map<String, dynamic> json) => _$ReturnFileModelFromJson(json);
+
+@override final  String code;
+@override final  int? position;
+
+/// Create a copy of ReturnFileModel
+/// with the given fields replaced by the non-null parameter values.
+@override @JsonKey(includeFromJson: false, includeToJson: false)
+@pragma('vm:prefer-inline')
+_$ReturnFileModelCopyWith<_ReturnFileModel> get copyWith => __$ReturnFileModelCopyWithImpl<_ReturnFileModel>(this, _$identity);
+
+@override
+Map<String, dynamic> toJson() {
+  return _$ReturnFileModelToJson(this, );
+}
+
+@override
+bool operator ==(Object other) {
+    return identical(this, other) || (other.runtimeType == runtimeType&&other is _ReturnFileModel&&(identical(other.code, code) || other.code == code)&&(identical(other.position, position) || other.position == position));
+}
+
+@JsonKey(includeFromJson: false, includeToJson: false)
+@override
+int get hashCode {
+    return Object.hash(runtimeType,code,position);
+}
+
+@override
+String toString() {
+    return 'ReturnFileModel(code: $code, position: $position)';
+}
+
+
+}
+
+/// @nodoc
+abstract mixin class _$ReturnFileModelCopyWith<$Res> implements $ReturnFileModelCopyWith<$Res> {
+  factory _$ReturnFileModelCopyWith(_ReturnFileModel value, $Res Function(_ReturnFileModel) _then) = __$ReturnFileModelCopyWithImpl;
+@override @useResult
+$Res call({
+ String code, int? position
+});
+
+
+
+
+}
+/// @nodoc
+class __$ReturnFileModelCopyWithImpl<$Res>
+    implements _$ReturnFileModelCopyWith<$Res> {
+  __$ReturnFileModelCopyWithImpl(this._self, this._then);
+
+  final _ReturnFileModel _self;
+  final $Res Function(_ReturnFileModel) _then;
+
+/// Create a copy of ReturnFileModel
+/// with the given fields replaced by the non-null parameter values.
+@override @pragma('vm:prefer-inline') $Res call({Object? code = null,Object? position = freezed,}) {
+  return _then(_ReturnFileModel(
+code: null == code ? _self.code : code // ignore: cast_nullable_to_non_nullable
+as String,position: freezed == position ? _self.position : position // ignore: cast_nullable_to_non_nullable
+as int?,
   ));
 }
 

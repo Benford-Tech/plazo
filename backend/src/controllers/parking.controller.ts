@@ -4,7 +4,7 @@ import { UpdateParkingDto, UpdateShuttleTrackingDto } from '@/dtos/parking.dto';
 import { AddSpotsDto, SuggestZonesDto, GenerateSpotsDto, ReplaceSpotsDto, UpdateParkingPlanDto, UpdateSpotDto } from '@/dtos/parking-plan.dto';
 import { RequestWithStaffSession } from '@/middlewares/staff-auth.middleware';
 import { AssignSpotDto } from '@/dtos/occupation.dto';
-import { AssignFileDto, ReplaceFilesDto } from '@/dtos/file.dto';
+import { AssignFileDto, KeepFileDto, ReplaceFilesDto } from '@/dtos/file.dto';
 import { FileService } from '@/services/file.service';
 import { CarLocationDto } from '@/dtos/public-booking.dto';
 import { OccupationService } from '@/services/occupation.service';
@@ -159,6 +159,18 @@ export class ParkingController {
   /** POST /internal/parkings/:id/files/prepare */
   public prepareFiles = catchAsync(async (req: RequestWithStaffSession, res: Response) => {
     res.json({ message: 'Files prepared', data: await this.files.prepareFor(req.staff, req.params.id as string) });
+  });
+
+  /** GET /internal/parkings/:id/files/planning?from=&days= (Planning des files, 08/10/2026) */
+  public filesPlanning = catchAsync(async (req: RequestWithStaffSession, res: Response) => {
+    res.json(await this.files.planning(req.staff, req.params.id as string, req.query));
+  });
+
+  /** PUT /internal/parkings/:id/files/:fileId/keep */
+  public keepFile = catchAsync(async (req: RequestWithStaffSession, res: Response) => {
+    const data: KeepFileDto = req.body;
+    const file = await this.files.keep(req.staff, req.params.id as string, req.params.fileId as string, data.day);
+    res.json({ message: data.day ? 'File kept' : 'File freed', data: file });
   });
 
   /** POST /internal/reservations/:id/file */
