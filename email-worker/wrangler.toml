@@ -1,13 +1,18 @@
-# Cloudflare Email Worker of Plazo: Email Routing sends it every email addressed to <slug>@in.plazo.fr
-# (catch-all rule "Send to a Worker"); it posts the email to the Plazo API. See README.md.
+# Cloudflare Email Worker of Plazo: Email Routing sends it every email addressed to <slug>@plazo.fr
+# (catch-all rule "Send to a Worker" of the apex domain: Cloudflare offers no catch-all on a subdomain, R-A of
+# 08/10/2026); it posts the email to the Plazo API. See README.md.
 name = "plazo-email-worker"
 main = "src/index.ts"
 compatibility_date = "2026-10-01"
 workers_dev = false
+# Variables set in the dashboard (FALLBACK_ADDRESS) survive the deploys.
+keep_vars = true
 
 [vars]
 PLAZO_INBOUND_URL = "https://www.plazo.fr/api/public/inbound/email"
-# Optional: a verified Email Routing destination that keeps the email when Plazo cannot take it.
+# Optional, set in the dashboard (Settings › Variables and Secrets) rather than here: a verified Email Routing
+# destination that receives the emails Plazo cannot take, and those sent to an address no parking has
+# (replies to reservations@plazo.fr, contact@plazo.fr…).
 # FALLBACK_ADDRESS = "contact@example.com"
 
 # Secret, set in the dashboard (Settings › Variables and Secrets) or with `npx wrangler secret put INBOUND_EMAIL_SECRET`:

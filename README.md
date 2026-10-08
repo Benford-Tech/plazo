@@ -202,8 +202,9 @@ le navigateur de l'espace pro appelle `/api` sur le même domaine (pas de CORS).
    par la référence externe, push « Nouvelle réservation ») ; un mail incomplet ou inconnu attend dans « Mails à
    vérifier » (`/pro/reservations/a-verifier`, alerte du tableau de bord), où l'équipe le complète dans le formulaire
    prérempli ou le classe. Texte des mails gardé 30 jours, lignes 90.
-   Mise en place (domaine gardé chez Hostinger, DNS chez Cloudflare, sous-domaine `in.plazo.fr`, Worker, règle
-   « catch-all », variables Vercel) : voir [`email-worker/README.md`](email-worker/README.md).
+   Mise en place (domaine gardé chez Hostinger, DNS chez Cloudflare, Email Routing sur `plazo.fr` lui-même car Cloudflare
+   n'offre le « catch-all » que sur le domaine principal (R-A, 08/10/2026), Worker, règle `reservations@` vers la boîte de
+   Plazo, variables Vercel) : voir [`email-worker/README.md`](email-worker/README.md).
 
 6. **Suivi des vols au retour** — facultatif : sans clé, les vols ne sont pas suivis (le voyageur dit « J'ai atterri »
    dans l'app, et l'heure de retour saisie fait foi). Trois fournisseurs derrière la même interface, choisis par

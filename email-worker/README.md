@@ -1,8 +1,8 @@
 # Relais des mails entrants (Cloudflare Email Worker)
 
-Chaque parking a son adresse Plazo, `<slug>@in.plazo.fr`, activée dans Parking › Réglages › Mails entrants.
+Chaque parking a son adresse Plazo, `<slug>@plazo.fr`, créée avec lui (Parking › Réglages › Mails entrants l'affiche).
 Sa messagerie y transfère les confirmations des comparateurs (Allopark…). **Cloudflare Email Routing** reçoit tout
-le domaine `in.plazo.fr` (gratuit, nombre d'adresses illimité, aucune boîte mail à créer) et passe chaque mail à ce
+le domaine `plazo.fr` (gratuit, nombre d'adresses illimité, aucune boîte mail à créer) et passe chaque mail à ce
 Worker. Le Worker le décode (`postal-mime`) et l'envoie à l'API :
 
 ```
@@ -12,32 +12,42 @@ X-Inbound-Secret: <INBOUND_EMAIL_SECRET>
 ```
 
 `Recipients` porte l'adresse Plazo de l'enveloppe : c'est elle qui désigne le parking, pas l'en-tête `To` du mail
-transféré. Si Plazo ne prend pas le mail (erreur, secret faux), le Worker le renvoie à `FALLBACK_ADDRESS` quand elle
-est définie. Sinon, il le refuse, et la messagerie de l'expéditeur signale l'échec : rien ne se perd en silence.
+transféré. Si Plazo ne prend pas le mail (erreur, secret faux), ou si l'adresse n'est à aucun parking (réponse d'un
+voyageur à `reservations@plazo.fr`, `contact@plazo.fr`…), le Worker le renvoie à `FALLBACK_ADDRESS` quand elle est
+définie. Sinon, il le refuse, et la messagerie de l'expéditeur signale l'échec : rien ne se perd en silence.
+
+**Pourquoi le domaine principal et pas `in.plazo.fr` (R-A, 08/10/2026)** : Cloudflare n'accepte la règle « catch-all »
+(toutes les adresses) que sur le domaine principal ; sur un sous-domaine il faut une règle par adresse, 200 au plus.
 
 ## Mise en place (une fois)
 
-Le domaine `plazo.fr` reste enregistré chez Hostinger. Seuls ses DNS passent chez Cloudflare.
+Le domaine `plazo.fr` reste enregistré chez Hostinger. Seuls ses DNS passent chez Cloudflare. Aucune boîte mail ne doit
+exister ailleurs en `@plazo.fr` (Hostinger…) : Email Routing devient le seul receveur du domaine.
 
 1. **Cloudflare** (offre Free) : « Add a site » › `plazo.fr`.
-   - Vérifie les enregistrements recopiés : ceux de Vercel (`plazo.fr`, `www`) doivent être en « DNS only » (nuage gris), et ceux des boîtes mail Hostinger en `@plazo.fr` éventuelles doivent rester.
+   - Vérifie les enregistrements recopiés : ceux de Vercel (`plazo.fr`, `www`) doivent être en « DNS only » (nuage gris).
    - Dans hPanel (Domaines › plazo.fr › Serveurs de noms), remplace les serveurs de noms par les deux de Cloudflare.
-2. **Email Routing** : Email › Email Routing.
-   - Active le routage puis, dans Paramètres › Sous-domaines, ajoute `in.plazo.fr` ; Cloudflare crée ses enregistrements MX et SPF.
-   - Si tu as des boîtes mail Hostinger en `@plazo.fr`, ne laisse pas Cloudflare remplacer les MX de `plazo.fr` lui-même.
+   - Aucun enregistrement `in` ne doit rester sur le domaine (un CNAME `in` créé par Brevo s'y est glissé un temps).
+2. **Email Routing** : Compute › Email Service › Email Routing › `plazo.fr` › activer. Cloudflare pose les MX et le SPF de
+   `plazo.fr` ; Brevo (envoi) n'en a pas besoin, ses signatures DKIM suffisent.
 3. **Worker** : Workers & Pages › Créer › Importer un dépôt.
    - Choisis `Benford-Tech/plazo`, dossier racine `email-worker`, commande de déploiement `npx wrangler deploy`.
    - Puis Paramètres › Variables et secrets : ajoute le **secret** `INBOUND_EMAIL_SECRET`.
    - Choisis toi-même une longue valeur aléatoire (gestionnaire de mots de passe) et ne la colle nulle part ailleurs que dans Cloudflare et dans Vercel.
-4. **Règle** : Email Routing › Règles de routage › « Catch-all » de `in.plazo.fr`.
-   - Action « Envoyer à un Worker » › `plazo-email-worker`.
-5. **Vercel** (projet `plazo`, Production) :
-   - `INBOUND_EMAIL_DOMAIN` = `in.plazo.fr` ;
+   - Ajoute aussi la variable `FALLBACK_ADDRESS` = la boîte de Plazo (une adresse de destination vérifiée, étape 4) ;
+     `keep_vars` dans `wrangler.toml` la garde d'un déploiement à l'autre.
+4. **Adresse de destination** : Email Routing › Destination Addresses › la boîte de Plazo (Gmail…) › clique le lien de
+   vérification reçu.
+5. **Règles** : Email Routing › Routing Rules.
+   - `reservations` @ plazo.fr › « Send to an email » › la boîte de Plazo (les réponses des voyageurs aux mails envoyés par
+     Brevo). Une règle précise passe avant le catch-all.
+   - **Catch-all** › « Send to a Worker » › le Worker (il s'appelle `plazo` dans le tableau de bord s'il a été importé sous ce
+     nom, `plazo-email-worker` sinon).
+6. **Vercel** (projet `plazo`, Production) :
+   - `INBOUND_EMAIL_DOMAIN` = `plazo.fr` ;
    - `INBOUND_EMAIL_SECRET` = le même secret, type Sensitive.
    - Puis relance un déploiement.
-6. **Essai** : Parking › Réglages › Mails entrants › « Relier ma boîte mail ». L'assistant donne l'adresse du parking et affiche en direct le premier mail reçu.
-
-Facultatif : `FALLBACK_ADDRESS` dans `wrangler.toml`. Ce doit être une adresse de destination vérifiée dans Email Routing ; elle garde les mails que Plazo n'a pas pu prendre.
+7. **Essai** : Parking › Réglages › Mails entrants › « Relier ma boîte mail ». L'assistant donne l'adresse du parking et affiche en direct le premier mail reçu.
 
 ## Commandes
 

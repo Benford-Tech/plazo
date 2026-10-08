@@ -45,7 +45,8 @@ model Operator {
   // on the site and in the platform space, removed as a whole by the seed's --remove.
   isDemo                 Boolean        @default(false)
   // M-A (06/10/2026): the local part of the operator's inbound address (<slug>@<INBOUND_EMAIL_DOMAIN>),
-  // where their mailbox forwards the comparators' confirmations. Null until the manager enables it.
+  // where their mailbox forwards the comparators' confirmations. Set from the operator's creation (08/10/2026);
+  // null only for a row older than the migration inbound_slug_for_all, which filled them all.
   inboundSlug            String?        @unique
   createdAt              DateTime       @default(now())
   updatedAt              DateTime       @default(now()) @updatedAt

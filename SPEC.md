@@ -47,7 +47,9 @@ Fonctionnel :
 - Import des réservations d'autres canaux (M-A, 06/10/2026) : la messagerie du loueur transfère les mails de confirmation des
   comparateurs (Allopark aujourd'hui) à son adresse Plazo ; une réservation complète est créée seule, les autres attendent dans
   « Mails à vérifier » (connecteurs directs aux comparateurs : hors MVP). **Réception (08/10/2026, « Brevo n'est pas gratuit »)** :
-  Cloudflare Email Routing (gratuit, adresses illimitées, une par parking, aucune boîte mail à créer) reçoit `in.plazo.fr` et
+  Cloudflare Email Routing (gratuit, adresses illimitées, une par parking, aucune boîte mail à créer) reçoit `plazo.fr` (le
+  domaine principal : R-A du 08/10/2026, Cloudflare n'offre le « catch-all » que là ; `reservations@plazo.fr` est renvoyée vers
+  la boîte de Plazo, les autres adresses sans parking vers l'adresse de secours du Worker) et
   passe chaque mail au relais `email-worker/` (Cloudflare Worker), qui l'envoie aussitôt à l'API ; le domaine reste enregistré
   chez Hostinger, seuls ses DNS sont chez Cloudflare.
 - **Assistant « Relier votre boîte mail » (G-B, 07/10/2026, mis en œuvre)** : bouton « Relier ma boîte mail » du bloc Mails entrants

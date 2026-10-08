@@ -195,6 +195,10 @@ export function InboundSetupWizard({ onClose }: { onClose: () => void }) {
         <p className="m-0 text-sm leading-relaxed text-muted-foreground">{t.address.intro}</p>
         {address ? (
           <CopyField value={address} accent testId="wizard-address" />
+        ) : enable.isError ? (
+          <p data-testid="wizard-preparing" className="m-0 text-sm text-destructive">
+            {describeError(enable.error)}
+          </p>
         ) : (
           <p data-testid="wizard-preparing" className="m-0 text-sm text-muted-foreground">
             {t.address.preparing}

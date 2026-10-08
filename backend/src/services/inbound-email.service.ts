@@ -34,7 +34,7 @@ const RECENT_SHOWN = 5;
 export interface InboundSettings {
   /** False when the platform has no inbound domain or secret: the block explains it. */
   available: boolean;
-  /** "lys-demo-7f3a@in.plazo.fr", or null until the manager enables it. */
+  /** "lys-demo-7f3a@plazo.fr": every operator has one from its creation (08/10/2026); null only when the platform has no domain. */
   address: string | null;
   lastReceivedAt: string | null;
   counts: Record<InboundEmailStatus, number>;

@@ -2,7 +2,7 @@
   "name": "plazo-email-worker",
   "version": "0.1.0",
   "private": true,
-  "description": "Cloudflare Email Worker: receives the emails sent to <slug>@in.plazo.fr and posts them to the Plazo API",
+  "description": "Cloudflare Email Worker: receives the emails sent to <slug>@plazo.fr and posts them to the Plazo API",
   "type": "module",
   "scripts": {
     "test": "vitest run",
