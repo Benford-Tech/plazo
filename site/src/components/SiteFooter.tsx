@@ -2,7 +2,7 @@ import Link from "next/link";
 import { fr } from "@/lib/fr";
 import { Logo } from "@/components/Logo";
 import { hasSupportEmail, SUPPORT_EMAIL } from "@/lib/product";
-import { AIRPORTS, PRO_SIGNUP_PATH } from "@/lib/site";
+import { AIRPORTS, airportPath, PRO_SIGNUP_PATH } from "@/lib/site";
 
 const linkClass = "inline-flex min-h-11 items-center text-sm text-lilac no-underline hover:text-white hover:underline md:min-h-8";
 
@@ -26,7 +26,7 @@ export function SiteFooter() {
         <Column id="aeroports" title={fr.footer.airports}>
           {AIRPORTS.map(a => (
             <li key={a.slug}>
-              <Link href={`/${a.slug}`} className={linkClass}>
+              <Link href={airportPath(a.slug)} className={linkClass}>
                 {a.name}
               </Link>
             </li>
