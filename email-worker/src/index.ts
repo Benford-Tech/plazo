@@ -27,8 +27,11 @@ export default {
   async email(message: ForwardableEmailMessage, env: Env): Promise<void> {
     let failure: string | null = null;
     let unknown = false;
+    // The secret lives in the dashboard (Settings › Variables and Secrets), not in wrangler.toml: a deploy never sets it,
+    // and without it every email would be refused with a reason the parking cannot act on.
+    const configured = Boolean(env.PLAZO_INBOUND_URL && env.INBOUND_EMAIL_SECRET);
     try {
-      if (!env.PLAZO_INBOUND_URL || !env.INBOUND_EMAIL_SECRET) throw new Error("PLAZO_INBOUND_URL or INBOUND_EMAIL_SECRET missing");
+      if (!configured) throw new Error("PLAZO_INBOUND_URL or INBOUND_EMAIL_SECRET missing");
       const { body, truncated } = await readRaw(message.raw, RAW_MAX_BYTES);
       const response = await fetch(env.PLAZO_INBOUND_URL, {
         method: "POST",
@@ -52,7 +55,11 @@ export default {
     }
     if (!failure && !unknown) return;
     if (failure) console.error(`[plazo-email-worker] ${message.to}: ${failure}`);
-    const reason = unknown ? `No mailbox for ${message.to}` : "Plazo could not take this email right now, please try again later.";
+    const reason = unknown
+      ? `No mailbox for ${message.to}`
+      : !configured
+        ? "The Plazo relay is not configured (INBOUND_EMAIL_SECRET missing on the Worker), please contact Plazo."
+        : "Plazo could not take this email right now, please try again later.";
     if (env.FALLBACK_ADDRESS && (await forwardTo(message, env.FALLBACK_ADDRESS))) return;
     message.setReject(reason);
   },

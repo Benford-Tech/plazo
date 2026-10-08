@@ -7,15 +7,23 @@ name = "plazo"
 main = "src/index.ts"
 compatibility_date = "2026-10-01"
 workers_dev = false
-# Variables set in the dashboard (FALLBACK_ADDRESS) survive the deploys.
+preview_urls = false
+# A deploy overrides what the dashboard holds (08/10/2026: a variable and the logs set there were wiped): everything
+# the Worker needs is declared here or passed by the GitHub Actions deploy, nothing is set in the dashboard.
 keep_vars = true
+
+# Workers Logs (dashboard › plazo › Logs): every invocation, with its console.error lines and the platform's own errors
+# (EXCEEDED_CPU…); declared here so that a deploy keeps it on, as the dashboard asks.
+[observability]
+enabled = true
+head_sampling_rate = 1
 
 [vars]
 PLAZO_INBOUND_URL = "https://www.plazo.fr/api/public/inbound/email"
-# Optional, set in the dashboard (Settings › Variables and Secrets) rather than here: a verified Email Routing
-# destination that receives the emails Plazo cannot take, and those sent to an address no parking has
-# (replies to reservations@plazo.fr, contact@plazo.fr…).
-# FALLBACK_ADDRESS = "contact@example.com"
+# FALLBACK_ADDRESS (optional): a verified Email Routing destination that receives the emails Plazo cannot take, and
+# those sent to an address no parking has (replies to reservations@plazo.fr, contact@plazo.fr…). Not written here
+# (a personal mailbox): the GitHub Actions deploy passes `--var FALLBACK_ADDRESS:…` from the variable of the same
+# name in the repository's Production environment.
 
-# Secret, set in the dashboard (Settings › Variables and Secrets) or with `npx wrangler secret put INBOUND_EMAIL_SECRET`:
-# INBOUND_EMAIL_SECRET — the same value as INBOUND_EMAIL_SECRET on Vercel.
+# INBOUND_EMAIL_SECRET: the same value as INBOUND_EMAIL_SECRET on Vercel. Put on the Worker by the GitHub Actions deploy
+# from the secret of the same name in the Production environment (or by hand: `npx wrangler secret put INBOUND_EMAIL_SECRET`).

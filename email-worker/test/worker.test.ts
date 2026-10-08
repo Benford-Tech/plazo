@@ -101,6 +101,7 @@ describe("email()", () => {
     const msg = message(alloparkForwarded);
     await worker.email(msg, { ...env, INBOUND_EMAIL_SECRET: "" });
     expect(fetchMock).not.toHaveBeenCalled();
-    expect(msg.setReject).toHaveBeenCalledTimes(1);
+    // The bounce names the cause: the secret is set in the dashboard, a deploy never puts it there.
+    expect(msg.setReject).toHaveBeenCalledWith("The Plazo relay is not configured (INBOUND_EMAIL_SECRET missing on the Worker), please contact Plazo.");
   });
 });

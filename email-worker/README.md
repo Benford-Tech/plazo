@@ -45,7 +45,15 @@ exister ailleurs en `@plazo.fr` (Hostinger…) : Email Routing devient le seul r
    - `CLOUDFLARE_ACCOUNT_ID` : Workers & Pages › Overview, colonne de droite.
    Le Worker s'appelle `plazo` (le nom de `wrangler.toml`). L'import du dépôt par Cloudflare lui-même (Workers Builds) n'a
    pas réussi à le déployer ; GitHub Actions le remplace.
-   - Puis Paramètres › Variables et secrets : ajoute le **secret** `INBOUND_EMAIL_SECRET`.
+   - Dans le même environnement **Production**, ajoute le **secret** `INBOUND_EMAIL_SECRET` (même valeur que
+     `INBOUND_EMAIL_SECRET` sur Vercel) et, en **variable**, `FALLBACK_ADDRESS` (facultatif, une adresse de destination
+     vérifiée dans Email Routing). Le déploiement pose le secret sur le Worker et lui passe la variable, puis **échoue si le
+     Worker n'a pas son secret** : tant qu'il manque, le Worker refuse chaque mail avec « The Plazo relay is not configured
+     (INBOUND_EMAIL_SECRET missing on the Worker) » dans le rebond.
+   - **Ne rien régler dans le tableau de bord Cloudflare** : un déploiement écrase ce qui y est posé (08/10/2026 : la
+     variable `FALLBACK_ADDRESS` et l'activation des journaux y ont été effacées par un déploiement, et le secret a
+     disparu). Les journaux du Worker (onglet Logs, `[observability]` dans `wrangler.toml`) montrent chaque appel et ses
+     erreurs.
    - Choisis toi-même une longue valeur aléatoire (gestionnaire de mots de passe) et ne la colle nulle part ailleurs que dans Cloudflare et dans Vercel.
    - Ajoute aussi la variable `FALLBACK_ADDRESS` = la boîte de Plazo. **Elle doit être une adresse de destination vérifiée**
      (étape 4), sinon Cloudflare refuse le renvoi et le Worker refuse le mail avec son motif. `keep_vars` dans
