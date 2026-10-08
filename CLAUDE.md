@@ -51,9 +51,15 @@ Ne construire QUE ce qui règle la douleur n°1 du client.
    - Saisie manuelle (téléphone, comptoir) + import des réservations des autres canaux
      (06/10/2026 : l'import par copier-coller d'un mail est retiré ; **M-A « synchronisation de la boîte mail »** : adresse de
      réception `Operator.inboundSlug@INBOUND_EMAIL_DOMAIN` activée dans Réglages, règle de transfert dans la messagerie du loueur,
-     webhook Brevo `POST /public/inbound/email?secret=INBOUND_EMAIL_SECRET`, `InboundEmailService` + `domain/inbound-email.ts`,
+     réception par **Cloudflare Email Routing** et le relais `email-worker/` (08/10/2026, à la place de Brevo, payant ; le relais
+     poste chaque mail sur `POST /public/inbound/email` avec l'en-tête `X-Inbound-Secret`), `InboundEmailService` + `domain/inbound-email.ts`,
      table `inbound_emails`, réservation créée seule si complète (`ReservationService.createFromImport`), sinon page
      « Mails à vérifier » `/pro/reservations/a-verifier` et alerte `inbound_to_check` ; connecteurs plus tard).
+     **G-B (07/10/2026) « Relier votre boîte mail »** : bouton du bloc Mails entrants (Parking › Réglages) ouvrant un assistant
+     en quatre étapes (Adresse · Messagerie · Transfert · Vérification ; `InboundSetupWizard`, Gmail / Outlook / OVH / autre,
+     aperçu simplifié de l'écran de la messagerie, lien « Envoyer ces étapes… » en mailto) ; la confirmation de transfert de
+     Gmail (`forwarding-noreply@google.com`) est reconnue (`forwardingConfirmationOf`, statut `forwarding`, hors « À vérifier »,
+     sans le texte) et son code affiché en direct 7 jours ; `InboundSettings.senders/forwarding/recent`, `EmailImporter.senders`.
    - Page de réservation propre à l'opérateur (formulaire simple, confirmation par mail/SMS).
    - Vue planning : arrivées et retours du jour, taux d'occupation, alerte de surréservation
      calculée sur la capacité réelle.
@@ -314,7 +320,9 @@ Plazo reprend la stack et les conventions des dépôts `lovenest-backend`, `love
   `/pro/equipe`, `/pro/compte`, `/pro/reglages` avec le canal SMS, feature `pro_settings` ; le point de rendez-vous reste sur le web),
   5 Sur Plazo (fiche, tarifs, Stripe), 6 inscription.
 - Cartographie : photo aérienne IGN BD ORTHO et Plan IGN (MapLibre + Terra Draw sur le web, `flutter_map` dans l'app) ; Google Maps
-  seulement pour les liens d'itinéraire, ses conditions interdisant de tracer ou d'analyser sur son imagerie. SMS et email : Brevo.
+  seulement pour les liens d'itinéraire, ses conditions interdisant de tracer ou d'analyser sur son imagerie. SMS et envoi des e-mails :
+  Brevo ; réception des e-mails transférés par les loueurs : Cloudflare Email Routing + relais `email-worker/` (08/10/2026 ; le domaine
+  `plazo.fr` reste enregistré chez Hostinger, ses DNS sont chez Cloudflare, adresses `<slug>@in.plazo.fr` illimitées).
 - Suivi de vols : AeroDataBox par défaut, AirLabs au choix (`FLIGHT_TRACKING_PROVIDER`), derrière une interface
   interchangeable ; un seul fournisseur à la fois, une requête par vol, pas de repli automatique.
 
@@ -353,6 +361,8 @@ Le nom du produit doit rester dans UN seul fichier de configuration (il peut enc
   `/api/internal/platform/notifications[/audience]` ; envoi push à tous les pros (réglage `Staff.notifyPlatform`) ou à tous
   les voyageurs (appareils enregistrés, deux envois par jour au plus, 429 `daily_limit`).
 - `site/` : site Plazo voyageurs (Next.js), servi à la racine du domaine.
+- `email-worker/` : relais des mails entrants (Cloudflare Email Worker, `postal-mime`) : Email Routing lui passe chaque mail de
+  `in.plazo.fr` (règle « catch-all »), il le poste sur l'API ; déployé par Cloudflare depuis ce dossier ; mise en place dans son README.
 - `mobile/` : app Flutter (jalon 6 commencé) : un seul projet, deux apps (`AppConstants.flavor`) : « Plazo », onglets
   Rechercher / Mes réservations / Plus pour le voyageur (mêmes chemins que le site : `/:airport/recherche`, `/:airport/:parking`, `/ma-reservation…`), et le
   parcours pro (`/pro…`, comptes du personnel ; `/pro/plan` et `/pro/parking` (Occupation) pour le bloc 2 ; `/pro/reservations…` : liste,
@@ -411,6 +421,9 @@ Dans `mobile/` (SDK Flutter stable hors du dépôt) :
 - `flutter analyze`, `flutter test`
 - `flutter run --dart-define=API_BASE_URL=http://localhost:3005/api` (API locale) ; `flutter build web` pour un essai navigateur
 - `dart run tool/sync_product.dart` (après un changement de `product.json` ; `--check` en CI)
+
+Dans `email-worker/` :
+- `npm ci`, `npm test`, `npm run typecheck` ; `npx wrangler deploy` pour un déploiement à la main
 
 Dans `site/` :
 - `npm run dev` (port 3000, `BACKEND_URL` par défaut http://localhost:3005), `npm test`, `npm run lint`,
@@ -527,3 +540,5 @@ Canevas de référence : https://claude.ai/artifact/6ezoCDyLXFNwhAH5ZWUf4u (rang
 - Livrer par petites étapes utilisables par le client n°1, montrer chaque étape.
 - Ne pas ajouter de fonctionnalité hors périmètre sans demande explicite.
 - Code et commentaires en anglais, interface et documentation utilisateur en français.
+- **Livraison (07/10/2026)** : une fois le travail vérifié (lint, tests, build) et poussé sur la branche, ouvrir
+  automatiquement la PR vers `main` puis la fusionner, sans attendre de demande.

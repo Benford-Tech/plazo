@@ -15,7 +15,7 @@ const STATUSES = Object.values(InboundEmailStatus);
 export class InboundEmailController {
   public inbound = Container.get(InboundEmailService);
 
-  /** POST /public/inbound/email?secret=… (Brevo's inbound parsing webhook). */
+  /** POST /public/inbound/email, secret in X-Inbound-Secret or ?secret= (the email-worker/ relay of Cloudflare Email Routing). */
   public receive = catchAsync(async (req: Request, res: Response) => {
     const given = Buffer.from(String(req.query.secret ?? req.headers['x-inbound-secret'] ?? ''));
     const expected = Buffer.from(INBOUND_EMAIL_SECRET);

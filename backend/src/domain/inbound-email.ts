@@ -1,6 +1,7 @@
 /**
  * M-A (06/10/2026): confirmation emails forwarded by the operator's mailbox to their Plazo inbound
- * address, delivered by Brevo's inbound parsing webhook. Pure helpers: payload reading, text.
+ * address, delivered by the Cloudflare Email Routing relay (email-worker/; Brevo's inbound parsing before 08/10/2026,
+ * same payload). Pure helpers: payload reading, text.
  */
 
 export interface InboundAddress {
@@ -8,7 +9,7 @@ export interface InboundAddress {
   Address?: string | null;
 }
 
-/** One email of Brevo's `items` (the fields we read; the rest is ignored). */
+/** One email of the payload's `items` (Brevo's field names, which the relay keeps; the rest is ignored). */
 export interface InboundItem {
   Uuid?: string[] | string;
   MessageId?: string;
@@ -42,7 +43,7 @@ export function inboundSlugOf(recipients: string[], domain: string): string | nu
   return match ? match.slice(0, -suffix.length) : null;
 }
 
-/** A readable text from the email: the plain part, else the markdown Brevo extracted, else the HTML stripped. */
+/** A readable text from the email: the plain part, else an extracted markdown (Brevo's), else the HTML stripped. */
 export function textOf(item: InboundItem): string {
   const plain = item.RawTextBody?.trim();
   if (plain) return plain;

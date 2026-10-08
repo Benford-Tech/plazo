@@ -9,17 +9,17 @@ import { RefuseInViewAs, StaffAuthMiddleware } from '@/middlewares/staff-auth.mi
  *   name: Inbound email
  *   description: >
  *     M-A (06/10/2026) — the operator's mailbox forwards the comparators' confirmation emails to
- *     their Plazo address (<slug>@INBOUND_EMAIL_DOMAIN); Brevo's inbound parsing posts them to the
- *     public webhook; a recognised, complete email becomes a booking at once, the others wait in
+ *     their Plazo address (<slug>@INBOUND_EMAIL_DOMAIN); Cloudflare Email Routing and the email-worker/
+ *     relay post them to the public webhook; a recognised, complete email becomes a booking at once, the others wait in
  *     "À vérifier".
  *
  * /public/inbound/email:
  *   post:
  *     tags: [Inbound email]
- *     summary: Brevo inbound parsing webhook (query `secret` = INBOUND_EMAIL_SECRET)
+ *     summary: Inbound email webhook of the Cloudflare relay (header X-Inbound-Secret or query `secret` = INBOUND_EMAIL_SECRET)
  *     responses:
  *       200:
- *         description: "{ received, imported, toCheck, ignored }; always 200 once authenticated, so Brevo does not retry"
+ *         description: "{ received, imported, toCheck, ignored }; always 200 once authenticated, so the relay does not resend"
  *       401:
  *         description: Bad or missing secret, or the feature is off
  * /internal/inbound/settings:

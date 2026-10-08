@@ -2285,7 +2285,7 @@ export const inboundFr = {
   connect: "Relier ma boîte mail",
   reviewSteps: "Revoir les étapes",
   unavailable:
-    "La réception des mails n'est pas encore configurée sur la plateforme (domaine de réception et secret Brevo).",
+    "La réception des mails n'est pas encore configurée sur la plateforme (domaine de réception et relais Cloudflare).",
   addressLabel: "Votre adresse Plazo",
   regenerate: "Nouvelle adresse",
   regenerateConfirm:

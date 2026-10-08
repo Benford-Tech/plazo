@@ -347,7 +347,8 @@ export function privacyDoc(company: Company = COMPANY, email: string = SUPPORT_E
           [
             `Vercel (hébergement du site et de l’API, fonctions exécutées à Paris) et Neon (base de données, région ${TO_COMPLETE}) ;`,
             "Stripe (paiement et remboursements) ; Stripe traite aussi certaines données en tant que responsable distinct, pour ses obligations de lutte contre la fraude et le blanchiment ;",
-            "Brevo (e-mails, réception des e-mails de confirmation transférés par les parkings et, selon le choix du parking, SMS) ;",
+            "Brevo (e-mails et, selon le choix du parking, SMS) ;",
+            "Cloudflare (réception des e-mails de confirmation que les parkings nous transfèrent, relayés aussitôt vers notre serveur) ;",
             "selon le choix du parking, l’application SMS Gateway for Android, qui envoie les SMS depuis le téléphone du parking : votre numéro et le texte du message passent alors par le serveur de cette application ;",
             "OneSignal (notifications de l’application) ;",
             "un fournisseur de suivi des vols, qui ne reçoit que le numéro et la date du vol, jamais votre nom ;",
@@ -361,7 +362,7 @@ export function privacyDoc(company: Company = COMPANY, email: string = SUPPORT_E
         id: "transferts",
         title: "5. Transferts hors de l’Union européenne",
         blocks: [
-          "Certains prestataires (Vercel, Neon, Stripe, OneSignal) sont des sociétés américaines et peuvent accéder aux données depuis les États-Unis. Ces transferts sont encadrés par la décision d’adéquation de la Commission européenne pour les sociétés adhérant au Data Privacy Framework UE–États-Unis, ou à défaut par les clauses contractuelles types de la Commission européenne.",
+          "Certains prestataires (Vercel, Neon, Stripe, OneSignal, Cloudflare) sont des sociétés américaines et peuvent accéder aux données depuis les États-Unis. Ces transferts sont encadrés par la décision d’adéquation de la Commission européenne pour les sociétés adhérant au Data Privacy Framework UE–États-Unis, ou à défaut par les clauses contractuelles types de la Commission européenne.",
         ],
       },
       {
