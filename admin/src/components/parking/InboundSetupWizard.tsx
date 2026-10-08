@@ -167,8 +167,12 @@ export function InboundSetupWizard({ onClose }: { onClose: () => void }) {
   const address = s?.address ?? null;
   // Every operator has its address from the start (08/10/2026); one created before gets it here, without a button.
   const { mutate: enableNow, isPending: enabling, isError: enableFailed } = enable;
+  const enableAsked = useRef(false);
   useEffect(() => {
-    if (s?.available && !s.address && !enabling && !enableFailed) enableNow();
+    if (s?.available && !s.address && !enabling && !enableFailed && !enableAsked.current) {
+      enableAsked.current = true;
+      enableNow();
+    }
   }, [s?.available, s?.address, enabling, enableFailed, enableNow]);
   const sender = senderFor(provider, (s?.senders ?? []).map(x => x.address));
   const labels = t.steps.map((label, i) => (i === 1 && provider ? t.stepMail(t.mail.providers[provider].label) : label));

@@ -64,6 +64,8 @@ describe("InboundSetupWizard (G-B : relier la boîte mail)", () => {
     expect(within(wizard).getByRole("heading", { name: "Relier votre boîte mail" })).toBeInTheDocument();
     expect(within(wizard).getByText("Adresse").closest("li")).toHaveAttribute("aria-current", "step");
     expect(within(wizard).getByTestId("wizard-address")).toHaveTextContent(ADDRESS);
+    // The address exists from the start: the wizard never asks the server for one.
+    expect(api.enableInboundAddress).not.toHaveBeenCalled();
 
     // Step 2: nothing chosen yet, nothing to continue with.
     await user.click(screen.getByTestId("wizard-next"));
