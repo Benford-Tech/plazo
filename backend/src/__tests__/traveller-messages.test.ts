@@ -156,8 +156,8 @@ describe('le fil de messages du voyageur (B)', () => {
     // Dropped off on 1 March 2027 at 06:30 (Paris, UTC+1): reminded on 28 February from 18:00.
     const reminders = Container.get(ReminderService);
     fetchMock.mockClear();
-    expect(await reminders.dispatchDue(new Date('2027-02-28T16:55:00Z'))).toEqual({ checked: 1, sent: 0 });
-    expect(await reminders.dispatchDue(new Date('2027-02-28T17:05:00Z'))).toEqual({ checked: 1, sent: 1 });
+    expect(await reminders.dispatchDue(new Date('2027-02-28T16:55:00Z'))).toEqual({ checked: 1, sent: 0, failed: 0 });
+    expect(await reminders.dispatchDue(new Date('2027-02-28T17:05:00Z'))).toEqual({ checked: 1, sent: 1, failed: 0 });
     const email = calls(BREVO_EMAIL).find(e => e.tags?.[0] === 'booking_reminder');
     expect(email.subject).toBe('Demain : votre parking Parking LYS, 06:30');
     expect(email.textContent).toContain('Téléphone : 04 72 00 00 00');
@@ -167,12 +167,12 @@ describe('le fil de messages du voyageur (B)', () => {
     expect(sms.content).toContain(`https://site.example/ma-reservation/${reference}?cle=`);
     expect(pushes().map(p => p.headings.fr)).toEqual(['À demain, Camille !']);
     // Already reminded: nothing more.
-    expect(await reminders.dispatchDue(new Date('2027-02-28T17:20:00Z'))).toEqual({ checked: 0, sent: 0 });
+    expect(await reminders.dispatchDue(new Date('2027-02-28T17:20:00Z'))).toEqual({ checked: 0, sent: 0, failed: 0 });
     expect((await prisma.reservation.findUniqueOrThrow({ where: { id: reservation.id } })).reminderSentAt).not.toBeNull();
     // The scheduler's route answers with the SMS queue too.
     const run = await api().get('/api/internal/cron/remind-tomorrow').set('Authorization', `Bearer ${process.env.CRON_SECRET}`);
     expect(run.status).toBe(200);
-    expect(run.body).toEqual({ checked: 0, sent: 0, sms: { operators: 0, checked: 0, sent: 0, abandoned: 0 } });
+    expect(run.body).toEqual({ checked: 0, sent: 0, failed: 0, sms: { operators: 0, checked: 0, sent: 0, abandoned: 0 } });
   });
 
   it('voiture garée, bon voyage, puis bon retour avec le mail de clôture ; chacun une fois', async () => {

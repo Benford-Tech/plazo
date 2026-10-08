@@ -23,6 +23,13 @@ describe("backend URL", () => {
     expect(clientIp(new Headers({ "x-real-ip": "198.51.100.4" }))).toBe("198.51.100.4");
     expect(clientIp(new Headers())).toBeNull();
   });
+
+  it("takes cf-connecting-ip only when the request came through Cloudflare's proxy (08/10/2026)", () => {
+    expect(clientIp(new Headers({ "x-forwarded-for": "172.70.111.26", "cf-connecting-ip": "203.0.113.7" }))).toBe("203.0.113.7");
+    expect(clientIp(new Headers({ "x-real-ip": "2606:4700:3030::1", "cf-connecting-ip": "2001:db8::9" }))).toBe("2001:db8::9");
+    expect(clientIp(new Headers({ "x-forwarded-for": "203.0.113.9", "cf-connecting-ip": "203.0.113.7" }))).toBe("203.0.113.9");
+    expect(clientIp(new Headers({ "x-forwarded-for": "172.70.111.26", "cf-connecting-ip": "garbage" }))).toBe("172.70.111.26");
+  });
 });
 
 describe("site key", () => {

@@ -206,12 +206,12 @@ describe('le SMS de la veille dans l’espace pro', () => {
     await api().put(`/api/internal/reservations/${left.id}/reminder`).set(auth(op.token)).send({ excluded: true });
     const reminders = Container.get(ReminderService);
 
-    expect(await reminders.dispatchDue(at('2027-06-14T18:55'))).toEqual({ checked: 1, sent: 0 });
-    expect(await reminders.dispatchDue(at('2027-06-14T19:05'))).toEqual({ checked: 1, sent: 1 });
+    expect(await reminders.dispatchDue(at('2027-06-14T18:55'))).toEqual({ checked: 1, sent: 0, failed: 0 });
+    expect(await reminders.dispatchDue(at('2027-06-14T19:05'))).toEqual({ checked: 1, sent: 1, failed: 0 });
     expect(smsSent().map(s => [s.tag, s.content])).toEqual([
       ['booking_reminder', `Bonjour Camille, dépôt le 15/06/2027 à 08:30. Plaque AB-123-CD. Réf. ${camille.reference}.`],
     ]);
-    expect(await reminders.dispatchDue(at('2027-06-14T19:20'))).toEqual({ checked: 0, sent: 0 });
+    expect(await reminders.dispatchDue(at('2027-06-14T19:20'))).toEqual({ checked: 0, sent: 0, failed: 0 });
     const board = await api().get(`/api/internal/parkings/${op.parking.id}/reminders?evening=2027-06-14`).set(auth(op.token));
     expect(board.body.evening.rows.map((r: { status: string }) => r.status)).toEqual(['sent', 'excluded']);
     expect(board.body.evening.counts).toMatchObject({ sent: 1, withoutSms: 1 });
@@ -223,10 +223,10 @@ describe('le SMS de la veille dans l’espace pro', () => {
     // A paused evening, then the whole thing switched off.
     await booking(op, '2027-06-16T08:30', { name: 'Karim Benali' });
     await prisma.reminderEvening.create({ data: { parkingId: op.parking.id, date: '2027-06-15', paused: true } });
-    expect(await reminders.dispatchDue(at('2027-06-15T19:05'))).toEqual({ checked: 1, sent: 0 });
+    expect(await reminders.dispatchDue(at('2027-06-15T19:05'))).toEqual({ checked: 1, sent: 0, failed: 0 });
     await prisma.reminderEvening.deleteMany();
     await api().put(`/api/internal/parkings/${op.parking.id}/reminders`).set(auth(op.token)).send({ enabled: false });
-    expect(await reminders.dispatchDue(at('2027-06-15T19:05'))).toEqual({ checked: 0, sent: 0 });
+    expect(await reminders.dispatchDue(at('2027-06-15T19:05'))).toEqual({ checked: 0, sent: 0, failed: 0 });
     await api().put(`/api/internal/parkings/${op.parking.id}/reminders`).set(auth(op.token)).send({ enabled: true });
     expect((await reminders.dispatchDue(at('2027-06-15T19:05'))).sent).toBe(1);
   });
@@ -239,7 +239,7 @@ describe('le SMS de la veille dans l’espace pro', () => {
     const reminders = Container.get(ReminderService);
     expect((await reminders.dispatchDue(at('2027-06-14T23:30'))).sent).toBe(0);
     expect((await reminders.dispatchDue(at('2027-06-15T06:50'))).sent).toBe(0);
-    expect(await reminders.dispatchDue(at('2027-06-15T07:05'))).toEqual({ checked: 2, sent: 1 });
+    expect(await reminders.dispatchDue(at('2027-06-15T07:05'))).toEqual({ checked: 2, sent: 1, failed: 0 });
     expect(smsSent()).toHaveLength(1);
     expect(smsSent()[0].content).toContain('Dépôt le 15/06/2027 à 10:00');
   });
@@ -249,7 +249,7 @@ describe('le SMS de la veille dans l’espace pro', () => {
     await useBrevoSms(op.operator.id);
     await booking(op, '2027-06-15T15:00');
     const reminders = Container.get(ReminderService);
-    expect(await reminders.dispatchDue(at('2027-06-15T07:05'))).toEqual({ checked: 1, sent: 0 });
+    expect(await reminders.dispatchDue(at('2027-06-15T07:05'))).toEqual({ checked: 1, sent: 0, failed: 0 });
     expect(smsSent()).toHaveLength(0);
   });
 

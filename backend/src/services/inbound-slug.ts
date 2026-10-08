@@ -9,7 +9,8 @@ import { newInboundSlug } from '@/domain/inbound-email';
  */
 export async function allocateInboundSlug(db: Prisma.TransactionClient, base: string): Promise<string> {
   for (;;) {
-    const slug = newInboundSlug(base, () => randomBytes(3).toString('hex').slice(0, 4));
+    // 8 hex characters (32 bits of randomness; 4 until 08/10/2026): the operator's slug is public on the site.
+    const slug = newInboundSlug(base, () => randomBytes(4).toString('hex'));
     if (!(await db.operator.findUnique({ where: { inboundSlug: slug }, select: { id: true } }))) return slug;
   }
 }

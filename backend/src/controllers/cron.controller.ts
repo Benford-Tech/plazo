@@ -15,6 +15,12 @@ import { TokenService } from '@/services/token.service';
 import catchAsync from '@/utils/catchAsync';
 import { logger } from '@/utils/logger';
 
+/**
+ * cron-job.org only alerts on a non-2xx answer: a run in which everything that was tried failed answers 500 with the
+ * same JSON (08/10/2026). A run with nothing to do, or with at least one success, stays 200.
+ */
+const statusOf = (tried: number, failed: number): number => (tried > 0 && failed >= tried ? 500 : 200);
+
 export class CronController {
   public tokenService = Container.get(TokenService);
   public payments = Container.get(PaymentService);
@@ -44,7 +50,7 @@ export class CronController {
     const departures = await this.flights.refreshDueDepartures();
     const sms = await this.sms.refreshAll();
     logger.info(`[Cron] Return flights: ${JSON.stringify(result)}; departures: ${departures}; SMS queue: ${JSON.stringify(sms)}`);
-    res.json({ ...result, departures, sms });
+    res.status(statusOf(result.checked, result.errors)).json({ ...result, departures, sms });
   });
 
   /** GET /internal/cron/prepare-files (S-C, 07/10/2026): keeps empty files for the big return days. */
@@ -58,7 +64,7 @@ export class CronController {
   public payouts = catchAsync(async (req: Request, res: Response) => {
     const result = await this.payments.runPayouts();
     logger.info(`[Cron] Payouts: ${JSON.stringify(result)}`);
-    res.json(result);
+    res.status(statusOf(result.transferred + result.failed, result.failed)).json(result);
   });
 
   /** GET /internal/cron/expire-payment-holds */
@@ -77,7 +83,7 @@ export class CronController {
     const result = await this.reminders.dispatchDue();
     const sms = await this.sms.refreshAll();
     logger.info(`[Cron] Reminders: ${JSON.stringify(result)}; SMS queue: ${JSON.stringify(sms)}`);
-    res.json({ ...result, sms });
+    res.status(statusOf(result.sent + result.failed, result.failed)).json({ ...result, sms });
   });
 
   /**

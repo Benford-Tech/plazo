@@ -27,7 +27,7 @@ describe('données de démonstration', () => {
     for (const op of operators) {
       expect(op.status).toBe('active');
       // The inbound address exists from the start (08/10/2026).
-      expect(op.inboundSlug).toMatch(new RegExp(`^${op.slug.slice(0, 24)}-[0-9a-f]{4}$`));
+      expect(op.inboundSlug).toMatch(new RegExp(`^${op.slug.slice(0, 24)}-[0-9a-f]{8}$`));
       expect(op.parkings).toHaveLength(1);
       expect(op.parkings[0].listing).toMatchObject({ status: 'published' });
       expect(op.parkings[0].listing!.photos).toHaveLength(2);
@@ -68,7 +68,7 @@ describe('données de démonstration', () => {
     expect(second).toEqual({ operatorsCreated: 0, operatorsUpdated: 5, bookingsCreated: 0, bookingsUpdated: 3 });
     const slugsAfter = await inboundSlugs();
     for (const demo of DEMO_OPERATORS.slice(1)) expect(slugsAfter.get(demo.slug)).toBe(slugsBefore.get(demo.slug));
-    expect(slugsAfter.get(DEMO_OPERATORS[0].slug)).toMatch(new RegExp(`^${DEMO_OPERATORS[0].slug.slice(0, 24).replace(/-+$/, '')}-[0-9a-f]{4}$`));
+    expect(slugsAfter.get(DEMO_OPERATORS[0].slug)).toMatch(new RegExp(`^${DEMO_OPERATORS[0].slug.slice(0, 24).replace(/-+$/, '')}-[0-9a-f]{8}$`));
     expect(slugsAfter.get(DEMO_OPERATORS[0].slug)).not.toBe(slugsBefore.get(DEMO_OPERATORS[0].slug));
     expect(await prisma.operator.count()).toBe(5);
     expect(await prisma.staff.count()).toBe(5);

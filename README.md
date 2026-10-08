@@ -136,7 +136,8 @@ une décision de Joanny. Cocher au fur et à mesure.
   `vercel.json` passent). Pro (~20 $/mois) lève tout cela (Vercel › Settings › Billing).
 - [ ] **Dépôt GitHub public** : `Benford-Tech/plazo` est public (code, CLAUDE.md, cette liste, le schéma des adresses de
   réception ; aucun secret trouvé dans l'historique). Le passer en privé (Settings › General › Change visibility) sauf
-  volonté d'ouvrir le code ; dans les deux cas activer Secret scanning + Push protection (Settings › Code security).
+  volonté d'ouvrir le code (vérifier d'abord que Codemagic est relié par l'application GitHub, sinon ses pipelines ne
+  pourront plus cloner un dépôt privé) ; dans les deux cas activer Secret scanning + Push protection (Settings › Code security).
 - [ ] **Suivi des vols** : le plan gratuit AeroDataBox (RapidAPI) tient un ou deux jours ; choisir AeroDataBox payant,
   FlightAware AeroAPI (`FLIGHTAWARE_API_KEY`), ou accepter le suivi dégradé (« J'ai atterri » reste).
 - [ ] **Pages légales** : encore « projet à valider par un juriste », non indexées ; après relecture, retirer le bandeau et
@@ -152,9 +153,9 @@ une décision de Joanny. Cocher au fur et à mesure.
   ne supprime pas une variable : la supprimer dans Settings › Environment Variables) ; `SECRET_KEY`, `CRON_SECRET` et
   `SITE_API_KEY` sont bien 32 octets aléatoires (64 hex) ; `INBOUND_EMAIL_SECRET` a été saisie à la main (type sensitive,
   illisible : le relais répond 200, donc elle correspond à celle du Worker) ; les six crons quotidiens sont acceptés par le
-  plan Hobby et `remind-tomorrow` a été vu à 19:02 UTC. Reste : supprimer `FALLBACK_ADDRESS` de Vercel (rien ne la lit là,
-  voir GitHub ci-dessous) et le domaine `web-eight-indol.vercel.app` (Settings › Domains : il sert tout le site sans
-  `noindex`, l'alias `plazo-benford-tech.vercel.app` suffit et est `noindex` d'office).
+  plan Hobby et `remind-tomorrow` a été vu à 19:02 UTC ; `FALLBACK_ADDRESS` déplacée hors production (cible `development`,
+  rien ne la lit sur Vercel : voir GitHub ci-dessous) ; le domaine `web-eight-indol.vercel.app` redirige désormais vers
+  `www.plazo.fr` (`redirects` de `vercel.json`). Reste à supprimer ces deux variables et ce domaine dans le tableau de bord.
 - [ ] cron-job.org : le moniteur `/api/health` tourne bien (vu toutes les 5 min), mais **aucun appel de `remind-tomorrow` ni de
   `booking-digest`** dans les journaux Vercel (08/10/2026, 18:50 → 20:06 UTC : un seul passage de `remind-tomorrow` à 19:02,
   celui du cron Vercel) : vérifier l'URL exacte `https://www.plazo.fr/api/internal/cron/remind-tomorrow` (pas `plazo.fr` : la
@@ -163,16 +164,23 @@ une décision de Joanny. Cocher au fur et à mesure.
   en-tête), sans quoi il ne part jamais ; notifications « on failure » sur chaque tâche ; tant que Vercel reste en Hobby (une
   heure de journaux, aucune trace le matin), doubler aussi les cinq crons de nuit (`purge-expired-tokens`, `expire-payment-holds`,
   `prepare-files`, `track-return-flights`, `payouts`, tous idempotents) une fois par jour sur cron-job.org avec « Save responses » ;
-  ajouter `track-return-flights` toutes les 10 minutes de 05:00 à 23:50 dès que le plan de suivi des vols le permet.
-- [ ] GitHub › Settings › Environments › Production : secret `INBOUND_EMAIL_SECRET` (le déploiement du 08/10 à 16:08 a
+  ajouter `GET https://www.plazo.fr/api/health?deep=1` toutes les 15 minutes (pas plus souvent : la base doit pouvoir se
+  mettre en veille) : il interroge la base et répond 503 « degraded » si elle ne répond pas en 3 s ; ajouter
+  `track-return-flights` toutes les 10 minutes de 05:00 à 23:50 dès que le plan de suivi des vols le permet. Depuis le
+  08/10/2026, `remind-tomorrow`, `track-return-flights` et `payouts` répondent 500 quand tout ce qui a été tenté a échoué
+  (rien n'est parti, aucun vol lu, aucun virement) : l'alerte « on failure » suffit.
+- [ ] GitHub › Settings › Environments › Production (Claude n'y a pas accès : l'API des environnements lui est fermée) :
+  secret `INBOUND_EMAIL_SECRET` (le déploiement du 08/10 à 16:08 a
   signalé « not set in the Production environment » : le Worker garde celui posé à la main, mais chaque déploiement doit
   le reposer) et variable `FALLBACK_ADDRESS` (posée sur Vercel par erreur le 08/10 : elle n'y est lue par rien ; une boîte
   Plazo plutôt que personnelle : les mails égarés contiennent des données de voyageurs), puis relancer le job `deploy` de
   « Email worker CI » et vérifier que `env.FALLBACK_ADDRESS` apparaît dans sa sortie.
 - [ ] Cloudflare › DNS : `www` et l'apex sont **proxiés** (nuage orange : `server: cloudflare` sur www.plazo.fr) ; passer les
   deux en « DNS only » (nuage gris) vers les cibles affichées dans Vercel › Settings › Domains (un CNAME pour `www`, des
-  enregistrements A pour l'apex). Sinon toutes les limites par adresse IP (connexions, recherches de réservation, réservations) comptent les
-  adresses de Cloudflare, partagées par tous les visiteurs. Email Routing (MX) n'est pas concerné par le proxy.
+  enregistrements A pour l'apex), pour que Vercel (pare-feu, journaux) voie les vraies adresses. Depuis le 08/10/2026 l'API
+  et le site lisent eux-mêmes l'adresse du visiteur derrière le proxy (`cf-connecting-ip`, acceptée seulement quand la
+  requête vient des plages publiées de Cloudflare : `backend/src/domain/client-ip.ts`, `site/src/lib/client-ip.ts`), donc
+  les limites de débit ne sont plus faussées ; le changement de DNS n'est plus bloquant. Email Routing (MX) n'est pas concerné.
 - [ ] Brevo : authentifier `plazo.fr` (DKIM `mail._domainkey`, DMARC `_dmarc` chez Cloudflare, SPF gardant
   `include:_spf.mx.cloudflare.net`) ; plan Free = 300 mails/jour avec logo Brevo, Starter pour lever les deux.
 - [ ] Neon : vérifier la fenêtre de restauration du plan gratuit ; sauvegarde manuelle avant l'ouverture puis chaque
@@ -203,17 +211,19 @@ comptent quand même dans les 100 déploiements par jour (`git.deploymentEnabled
 `vercel-build` compile d'abord puis ne migre et ne lance les scripts qu'en production (`VERCEL_ENV`) ; les 12 Mo de
 Swagger UI ne sont plus embarqués dans la fonction ; `STRIPE_ALLOW_LIVE=false` ; `STRIPE_SUPPRESS_NOTICES=true` (l'avis du SDK
 Stripe n'encombre plus la liste des erreurs) ; les `logger.error` / `warn` arrivent enfin aux niveaux « error » / « warning »
-des journaux Vercel (tout partait en « info » sur stdout). **Reste côté code, sur décision** : reversement « payé à la main » (sinon double paiement si
+des journaux Vercel (tout partait en « info » sur stdout). **Fait le 08/10/2026 (code, nuit)** : `GET /api/health?deep=1`
+(base interrogée, 503 « degraded ») ; `remind-tomorrow`, `track-return-flights` et `payouts` répondent 500 quand tout ce qui a
+été tenté a échoué (`failed` / `errors` dans le JSON) ; adresse du visiteur lue derrière le proxy Cloudflare (API et site) ;
+relance d'un SMS de passerelle réservée par ligne (plus de doublon quand Vercel et cron-job.org appellent `remind-tomorrow`
+au même instant) ; nouvelles adresses de réception à 8 caractères aléatoires (les existantes ne changent pas) ; lecture des
+mails par Claude avec 4 000 jetons de réponse ; `web-eight-indol.vercel.app` redirigé vers le site. **Reste côté code, sur
+décision** : reversement « payé à la main » (sinon double paiement si
 Joanny vire puis que le loueur relie Stripe), `GOOGLE_PAY_TEST=false` dans `codemagic.yaml` si Stripe passe en live,
 App Links sur `www.plazo.fr` (empreinte Play et Team ID Apple à fournir), plafond quotidien des lectures Claude par
-loueur et liste d'expéditeurs admis (le slug de l'adresse ne fait que 16 bits d'aléa ; 8 hex pour les prochains),
-`maxDuration` à 300 s (Hobby avec Fluid compute) avec un budget de temps dans `runPayouts` et l'envoi des rappels, une
-CSP en « report-only » sur l'espace pro et le site, un magasin partagé pour les limites de débit (aujourd'hui en mémoire
-de chaque instance : acceptable pour un seul loueur), une surveillance de « reading was cut short » dans les journaux
-(lecture des mails par Claude, `max_tokens` 1500), des routes cron qui comptent leurs échecs et répondent 500 quand rien
-n'est parti (aujourd'hui 200 : cron-job.org n'alerte que sur les pannes dures), `GET /api/health?deep=1` qui touche la base
-(503 sinon), et une réservation de ligne avant chaque relance de SMS de passerelle (doublon possible si Vercel et
-cron-job.org appellent `remind-tomorrow` au même instant).
+loueur et liste d'expéditeurs admis (les adresses créées avant le 08/10/2026 n'ont que 16 bits d'aléa : « Nouvelle adresse »
+en donne une à 32 bits), `maxDuration` à 300 s (Hobby avec Fluid compute) avec un budget de temps dans `runPayouts` et
+l'envoi des rappels, une CSP en « report-only » sur l'espace pro et le site, et un magasin partagé pour les limites de débit
+(aujourd'hui en mémoire de chaque instance : acceptable pour un seul loueur).
 
 ## Mise en ligne (Supabase + Vercel)
 

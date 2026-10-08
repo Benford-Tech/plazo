@@ -209,7 +209,7 @@ export class FlightTrackingService {
   public async refreshBookings(reservationIds: string[]): Promise<number> {
     if (!reservationIds.length || !this.enabled()) return 0;
     const rows = await prisma.reservation.findMany({ where: { id: { in: reservationIds }, returnFlight: { not: null } }, include: WITH_AIRPORT });
-    return this.refreshRows(rows);
+    return (await this.refreshRows(rows)).checked;
   }
 
   /** Refreshes the given bookings' outbound flights when due (the shuttle forecast's lazy path). */
@@ -238,8 +238,8 @@ export class FlightTrackingService {
   }
 
   /** The cron: every active booking whose return flight is due for a lookup. */
-  public async refreshDue(): Promise<{ checked: number; landed: number; skipped: boolean }> {
-    if (!this.enabled()) return { checked: 0, landed: 0, skipped: true };
+  public async refreshDue(): Promise<{ checked: number; landed: number; errors: number; skipped: boolean }> {
+    if (!this.enabled()) return { checked: 0, landed: 0, errors: 0, skipped: true };
     const now = new Date();
     const rows = await prisma.reservation.findMany({
       where: {
@@ -253,9 +253,9 @@ export class FlightTrackingService {
       take: MAX_LOOKUPS_PER_RUN,
     });
     const landedBefore = rows.filter(r => r.flightStatus === 'landed').length;
-    const checked = await this.refreshRows(rows);
+    const { checked, errors } = await this.refreshRows(rows);
     const landedAfter = await prisma.reservation.count({ where: { id: { in: rows.map(r => r.id) }, flightStatus: 'landed' } });
-    return { checked, landed: landedAfter - landedBefore, skipped: false };
+    return { checked, landed: landedAfter - landedBefore, errors, skipped: false };
   }
 
   /** The traveller says "J'ai atterri": the flight is landed from now on, whatever the provider says. */
@@ -275,10 +275,11 @@ export class FlightTrackingService {
 
   // ---------------------------------------------------------------- internals
 
-  private async refreshRows(rows: TrackedBooking[]): Promise<number> {
+  /** Looks up the due rows once each; `errors` counts the lookups the provider failed (down, quota, bad key). */
+  private async refreshRows(rows: TrackedBooking[]): Promise<{ checked: number; errors: number }> {
     const now = new Date();
     const due = rows.filter(r => shouldLookupFlight(r, now));
-    if (!due.length) return 0;
+    if (!due.length) return { checked: 0, errors: 0 };
     // Claim the lookups first (conditional on the cache): two concurrent reads ask the provider once.
     const claimed: TrackedBooking[] = [];
     for (const row of due) {
@@ -289,8 +290,8 @@ export class FlightTrackingService {
       if (count) claimed.push(row);
     }
     const provider = this.provider();
-    await Promise.all(claimed.map(row => this.refreshOne(provider, row, now)));
-    return claimed.length;
+    const outcomes = await Promise.all(claimed.map(row => this.refreshOne(provider, row, now)));
+    return { checked: claimed.length, errors: outcomes.filter(ok => !ok).length };
   }
 
   private async refreshDepartureRows(rows: TrackedBooking[]): Promise<number> {
@@ -324,7 +325,8 @@ export class FlightTrackingService {
     return claimed.length;
   }
 
-  private async refreshOne(provider: FlightTrackingProvider, row: TrackedBooking, now: Date) {
+  /** One lookup and its consequences; false when the provider failed. */
+  private async refreshOne(provider: FlightTrackingProvider, row: TrackedBooking, now: Date): Promise<boolean> {
     const date = localDate(row.flightEstimatedAt ?? row.flightScheduledAt ?? row.returnAt, row.parking.timezone);
     let info: FlightInfo | null;
     try {
@@ -334,7 +336,7 @@ export class FlightTrackingService {
       logger.warn(
         `[Flights] ${provider.name} lookup failed for booking ${row.reference}: ${error instanceof Error ? error.message : 'unknown error'}`,
       );
-      return;
+      return false;
     }
     const data: Prisma.ReservationUpdateManyMutationInput = flightUpdate(info, now);
     const landedNow = data.flightStatus === 'landed';
@@ -352,7 +354,7 @@ export class FlightTrackingService {
       // The traveller already said they landed: keep their word, but take the terminal and gate.
       if (!landedNow)
         await prisma.reservation.updateMany({ where: { id: row.id }, data: { flightTerminal: data.flightTerminal, flightGate: data.flightGate } });
-      return;
+      return true;
     }
     if (landedNow) {
       await this.audit.record(
@@ -361,6 +363,7 @@ export class FlightTrackingService {
       );
       await this.notifyLanded(row.id, 'tracking');
     }
+    return true;
   }
 
   /** The push to the staff (once per booking) and, when the API saw the landing, the SMS to the traveller (once). */

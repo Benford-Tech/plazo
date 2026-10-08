@@ -73,7 +73,7 @@ export function stripHtml(html: string): string {
     .trim();
 }
 
-/** "parking-lys-demo" + 4 random characters: unguessable enough for an address only the operator's mailbox forwards to. */
+/** "parking-lys-demo" + random characters (8 hex since 08/10/2026): the address only the operator's mailbox forwards to. */
 export function newInboundSlug(base: string, random: () => string): string {
   const clean = base
     .toLowerCase()

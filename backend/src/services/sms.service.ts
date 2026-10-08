@@ -166,9 +166,13 @@ export class SmsService {
     }
   }
 
-  /** One POST to the gateway for an outbox row. Updates the row and the operator's counters; returns the outcome. */
-  private async attemptGateway(settings: OperatorSmsSettings, row: SmsOutbox, text: string): Promise<SendOutcome> {
+  /**
+   * One POST to the gateway for an outbox row. Updates the row and the operator's counters; returns the outcome.
+   * `claimed`: the attempt was already counted by the caller's claim (a retry), so it is not counted twice.
+   */
+  private async attemptGateway(settings: OperatorSmsSettings, row: SmsOutbox, text: string, claimed = false): Promise<SendOutcome> {
     const ttl = Math.max(5, Math.floor((row.createdAt.getTime() + SMS_RETRY_WINDOW_MS - Date.now()) / 1000));
+    const attempts = claimed ? undefined : { increment: 1 };
     try {
       const credentials = this.credentials(settings);
       const message = await this.gateway.send(credentials, row.to, text, ttl);
@@ -177,7 +181,7 @@ export class SmsService {
         where: { id: row.id },
         data: {
           providerMessageId: message.id,
-          attempts: { increment: 1 },
+          attempts,
           status: sentNow ? this.statusOf(message.state) : 'queued',
           lastError: null,
         },
@@ -188,7 +192,7 @@ export class SmsService {
       return sentNow ? 'sent' : 'queued';
     } catch (error) {
       const code = error instanceof GatewayError ? error.code : error instanceof HttpException && error.code ? error.code : 'sms_gateway_error';
-      await prisma.smsOutbox.update({ where: { id: row.id }, data: { attempts: { increment: 1 }, status: 'failed', lastError: code } });
+      await prisma.smsOutbox.update({ where: { id: row.id }, data: { attempts, status: 'failed', lastError: code } });
       await prisma.operatorSmsSettings.update({ where: { id: settings.id }, data: { lastError: code, lastErrorAt: new Date() } });
       logger.warn(`[SMS] ${row.kind} failed at the gateway for outbox ${row.id}: ${code}`);
       return 'failed';
@@ -242,6 +246,13 @@ export class SmsService {
         const outcome = await this.pollGateway(settings, row);
         if (outcome === 'sent') result.sent += 1;
       } else if (row.attempts < MAX_ATTEMPTS) {
+        // Claim the retry (the attempt counter is the lock): two overlapping runs, e.g. the Vercel cron and
+        // cron-job.org at 19:00, never hand the same SMS to the gateway twice (08/10/2026).
+        const { count } = await prisma.smsOutbox.updateMany({
+          where: { id: row.id, status: row.status, attempts: row.attempts },
+          data: { attempts: { increment: 1 } },
+        });
+        if (!count) continue;
         const text = await this.renderBody(row);
         if (text === null) {
           await prisma.smsOutbox.update({ where: { id: row.id }, data: { status: 'abandoned', lastError: 'sms_body_unavailable' } });
@@ -249,7 +260,7 @@ export class SmsService {
           result.abandoned += 1;
           continue;
         }
-        if ((await this.attemptGateway(settings, row, text)) === 'sent') result.sent += 1;
+        if ((await this.attemptGateway(settings, row, text, true)) === 'sent') result.sent += 1;
       }
     }
     return result;

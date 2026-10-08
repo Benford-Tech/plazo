@@ -4,6 +4,7 @@ import { formatEuros, formatLocalLong, formatLocalShort, isGsm7 } from '@/domain
 import { cancellableUntil, canCancel, canEditFlight, isValidManageToken, manageLinkExpired, manageToken } from '@/domain/booking';
 import { smsRecipient } from '@/domain/phone';
 import { localDateTime } from '@/domain/time';
+import { inCidr, isCloudflareIp, visitorIp } from '@/domain/client-ip';
 import { ipKey, lookupReferenceKey, rateLimitKey } from '@/middlewares/rateLimiter';
 import { parseSender, smsSenderName } from '@/services/notification.service';
 
@@ -12,6 +13,26 @@ const fakeRequest = (headers: Record<string, string>, ip = '10.0.0.1') =>
 
 describe('clé de limitation de débit', () => {
   const SITE_KEY = 'cle-du-site-123';
+
+  it("compte le visiteur derrière le proxy Cloudflare, jamais l'adresse de Cloudflare (08/10/2026)", () => {
+    expect(isCloudflareIp('172.70.111.26')).toBe(true);
+    expect(isCloudflareIp('::ffff:188.114.96.5')).toBe(true);
+    expect(isCloudflareIp('2606:4700:3030::6815:2059')).toBe(true);
+    expect(isCloudflareIp('203.0.113.7')).toBe(false);
+    expect(isCloudflareIp('2001:db8::1')).toBe(false);
+    expect(inCidr('10.1.2.3', '10.0.0.0/8')).toBe(true);
+    expect(inCidr('11.0.0.1', '10.0.0.0/8')).toBe(false);
+    expect(inCidr('2a06:98c7::1', '2a06:98c0::/29')).toBe(true);
+    expect(inCidr('2a06:98c8::1', '2a06:98c0::/29')).toBe(false);
+    // Through Cloudflare: the header wins. Direct: the header is ignored (it could be forged).
+    expect(visitorIp('172.70.111.26', '203.0.113.7')).toBe('203.0.113.7');
+    expect(visitorIp('203.0.113.9', '203.0.113.7')).toBe('203.0.113.9');
+    expect(visitorIp('172.70.111.26', 'not-an-ip')).toBe('172.70.111.26');
+    expect(visitorIp(undefined, '203.0.113.7')).toBeUndefined();
+    expect(rateLimitKey(fakeRequest({ 'cf-connecting-ip': '203.0.113.7' }, '172.70.111.26'), SITE_KEY)).toBe('203.0.113.7');
+    expect(rateLimitKey(fakeRequest({ 'cf-connecting-ip': '203.0.113.7' }, '10.0.0.1'), SITE_KEY)).toBe('10.0.0.1');
+    expect(rateLimitKey(fakeRequest({ 'cf-connecting-ip': '2001:db8:1:2::9' }, '2606:4700:3030::1'), SITE_KEY)).toBe('2001:db8:1:2::/64');
+  });
 
   it('compte le voyageur quand la requête vient du site (clé correcte)', () => {
     const req = fakeRequest({ 'x-plazo-site-key': SITE_KEY, 'x-plazo-client-ip': ' 203.0.113.7 ' });
