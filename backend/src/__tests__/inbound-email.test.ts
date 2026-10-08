@@ -52,6 +52,8 @@ afterAll(() => prisma.$disconnect());
 describe('lecture du webhook (domaine)', () => {
   it('trouve le destinataire sur le domaine, le texte lisible et une adresse imprévisible', () => {
     const recipients = recipientsOf({ To: [{ Address: 'Boss@Parking.fr' }], Recipients: ['lys-demo-7f3a@in.plazo.test'], Cc: [{ Address: null }] });
+    // Brevo's table documents Recipients as Mailbox objects: both shapes are read.
+    expect(recipientsOf({ Recipients: [{ Address: 'LYS-demo-7f3a@in.plazo.test' }, null] })).toEqual(['lys-demo-7f3a@in.plazo.test']);
     expect(recipients).toEqual(['lys-demo-7f3a@in.plazo.test', 'boss@parking.fr']);
     expect(inboundSlugOf(recipients, 'in.plazo.test')).toBe('lys-demo-7f3a');
     expect(inboundSlugOf(['boss@parking.fr'], 'in.plazo.test')).toBeNull();

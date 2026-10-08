@@ -16,7 +16,8 @@ export interface InboundItem {
   From?: InboundAddress | null;
   To?: InboundAddress[] | null;
   Cc?: InboundAddress[] | null;
-  Recipients?: string[] | null;
+  /** Brevo documents both shapes: plain addresses in the sample, Mailbox objects in the table. */
+  Recipients?: (string | InboundAddress | null)[] | null;
   Subject?: string | null;
   SentAtDate?: string | null;
   RawTextBody?: string | null;
@@ -30,7 +31,8 @@ export interface InboundPayload {
 
 /** Every address the email was sent to, lower-cased. */
 export function recipientsOf(item: InboundItem): string[] {
-  const addresses = [...(item.Recipients ?? []), ...(item.To ?? []).map(a => a?.Address ?? ''), ...(item.Cc ?? []).map(a => a?.Address ?? '')];
+  const addressOf = (a: string | InboundAddress | null | undefined): string => (typeof a === 'string' ? a : (a?.Address ?? ''));
+  const addresses = [...(item.Recipients ?? []), ...(item.To ?? []), ...(item.Cc ?? [])].map(addressOf);
   return [...new Set(addresses.map(a => a.trim().toLowerCase()).filter(Boolean))];
 }
 
