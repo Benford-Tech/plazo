@@ -154,8 +154,8 @@ une décision de Joanny. Cocher au fur et à mesure.
   `SITE_API_KEY` sont bien 32 octets aléatoires (64 hex) ; `INBOUND_EMAIL_SECRET` a été saisie à la main (type sensitive,
   illisible : le relais répond 200, donc elle correspond à celle du Worker) ; les six crons quotidiens sont acceptés par le
   plan Hobby et `remind-tomorrow` a été vu à 19:02 UTC ; `FALLBACK_ADDRESS` déplacée hors production (cible `development`,
-  rien ne la lit sur Vercel : voir GitHub ci-dessous) ; le domaine `web-eight-indol.vercel.app` redirige désormais vers
-  `www.plazo.fr` (`redirects` de `vercel.json`). Reste à supprimer ces deux variables et ce domaine dans le tableau de bord.
+  rien ne la lit sur Vercel : voir GitHub ci-dessous) ; le domaine `web-eight-indol.vercel.app` a été retiré du projet le
+  08/10/2026 au soir. Reste à supprimer les deux variables neutralisées dans le tableau de bord.
 - [ ] cron-job.org : le moniteur `/api/health` tourne bien (vu toutes les 5 min), mais **aucun appel de `remind-tomorrow` ni de
   `booking-digest`** dans les journaux Vercel (08/10/2026, 18:50 → 20:06 UTC : un seul passage de `remind-tomorrow` à 19:02,
   celui du cron Vercel) : vérifier l'URL exacte `https://www.plazo.fr/api/internal/cron/remind-tomorrow` (pas `plazo.fr` : la
@@ -216,7 +216,7 @@ des journaux Vercel (tout partait en « info » sur stdout). **Fait le 08/10/202
 été tenté a échoué (`failed` / `errors` dans le JSON) ; adresse du visiteur lue derrière le proxy Cloudflare (API et site) ;
 relance d'un SMS de passerelle réservée par ligne (plus de doublon quand Vercel et cron-job.org appellent `remind-tomorrow`
 au même instant) ; nouvelles adresses de réception à 8 caractères aléatoires (les existantes ne changent pas) ; lecture des
-mails par Claude avec 4 000 jetons de réponse ; `web-eight-indol.vercel.app` redirigé vers le site. **Reste côté code, sur
+mails par Claude avec 4 000 jetons de réponse. **Reste côté code, sur
 décision** : reversement « payé à la main » (sinon double paiement si
 Joanny vire puis que le loueur relie Stripe), `GOOGLE_PAY_TEST=false` dans `codemagic.yaml` si Stripe passe en live,
 App Links sur `www.plazo.fr` (empreinte Play et Team ID Apple à fournir), plafond quotidien des lectures Claude par

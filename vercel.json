@@ -41,14 +41,6 @@
       "bindings": [{ "type": "service", "service": "backend", "format": "url", "env": "BACKEND_URL" }]
     }
   },
-  "redirects": [
-    {
-      "source": "/:path*",
-      "has": [{ "type": "host", "value": "web-eight-indol.vercel.app" }],
-      "destination": "https://www.plazo.fr/:path*",
-      "permanent": true
-    }
-  ],
   "rewrites": [
     { "source": "/api/:path*", "destination": { "service": "backend" } },
     { "source": "/pro/:path*", "destination": { "service": "admin" } },
