@@ -42,8 +42,8 @@ export interface InboundSettings {
   toCheck: number;
   /** G-B: the comparators' sender addresses, for the forwarding rule. */
   senders: { provider: string; address: string }[];
-  /** G-B: Gmail's latest forwarding confirmation (7 days), its code typed back in Gmail. */
-  forwarding: { provider: 'gmail'; code: string; requester: string | null; receivedAt: string } | null;
+  /** G-B: Gmail's latest forwarding confirmation (7 days): its code typed back in Gmail, or its acceptance link. */
+  forwarding: { provider: 'gmail'; code: string | null; link: string | null; requester: string | null; receivedAt: string } | null;
   /** G-B: the last emails received, newest first, for the wizard's check step. */
   recent: InboundRecent[];
 }
@@ -117,7 +117,7 @@ export class InboundEmailService {
           fromName: item.From?.Name?.trim().slice(0, 120) || null,
           subject: item.Subject?.trim().slice(0, 200) || null,
           provider: confirmation.provider,
-          parsed: { code: confirmation.code, requester: confirmation.requester },
+          parsed: { code: confirmation.code, link: confirmation.link, requester: confirmation.requester },
         },
       });
       return 'forwarding';
@@ -339,12 +339,15 @@ export class InboundEmailService {
 }
 
 function forwardingView(row: { parsed: Prisma.JsonValue | null; receivedAt: Date } | null): InboundSettings['forwarding'] {
-  const parsed = row?.parsed as { code?: unknown; requester?: unknown } | null | undefined;
-  if (!row || typeof parsed?.code !== 'string') return null;
+  const parsed = row?.parsed as { code?: unknown; link?: unknown; requester?: unknown } | null | undefined;
+  const code = typeof parsed?.code === 'string' ? parsed.code : null;
+  const link = typeof parsed?.link === 'string' ? parsed.link : null;
+  if (!row || (!code && !link)) return null;
   return {
     provider: 'gmail',
-    code: parsed.code,
-    requester: typeof parsed.requester === 'string' ? parsed.requester : null,
+    code,
+    link,
+    requester: typeof parsed?.requester === 'string' ? parsed.requester : null,
     receivedAt: row.receivedAt.toISOString(),
   };
 }

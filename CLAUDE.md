@@ -61,7 +61,8 @@ Ne construire QUE ce qui règle la douleur n°1 du client.
      en quatre étapes (Adresse · Messagerie · Transfert · Vérification ; `InboundSetupWizard`, Gmail / Outlook / OVH / autre,
      aperçu simplifié de l'écran de la messagerie, lien « Envoyer ces étapes… » en mailto) ; la confirmation de transfert de
      Gmail (`forwarding-noreply@google.com`) est reconnue (`forwardingConfirmationOf`, statut `forwarding`, hors « À vérifier »,
-     sans le texte) et son code affiché en direct 7 jours ; `InboundSettings.senders/forwarding/recent`, `EmailImporter.senders`.
+     sans le texte) et son code affiché en direct 7 jours, ou son lien d'acceptation « Confirmer par le lien » depuis que Gmail
+     ne met plus le code dans l'objet (08/10/2026 ; le code est lu dans le corps) ; `InboundSettings.senders/forwarding/recent`, `EmailImporter.senders`.
    - Page de réservation propre à l'opérateur (formulaire simple, confirmation par mail/SMS).
    - Vue planning : arrivées et retours du jour, taux d'occupation, alerte de surréservation
      calculée sur la capacité réelle.

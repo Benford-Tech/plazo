@@ -72,17 +72,38 @@ describe('lecture du webhook (domaine)', () => {
         subject: '(#482913507) Gmail Forwarding Confirmation - Receive Mail from Boss.Parking@gmail.com',
         text: 'Confirmation code: 482913507',
       }),
-    ).toEqual({ provider: 'gmail', code: '482913507', requester: 'boss.parking@gmail.com' });
+    ).toEqual({ provider: 'gmail', code: '482913507', link: null, requester: 'boss.parking@gmail.com' });
     expect(
       forwardingConfirmationOf({
         from: 'Forwarding-NoReply@google.com',
         subject: '(n° 123456789) Confirmation de transfert Gmail - Recevoir des messages de contact@parking.fr',
         text: '',
       }),
-    ).toEqual({ provider: 'gmail', code: '123456789', requester: 'contact@parking.fr' });
+    ).toEqual({ provider: 'gmail', code: '123456789', link: null, requester: 'contact@parking.fr' });
     expect(forwardingConfirmationOf({ from: google, subject: 'Gmail', text: 'Code de confirmation : 555666777' })?.code).toBe('555666777');
     expect(forwardingConfirmationOf({ from: 'pirate@example.com', subject: '(#482913507) Gmail Forwarding Confirmation', text: '' })).toBeNull();
     expect(forwardingConfirmationOf({ from: google, subject: 'Autre chose', text: 'rien' })).toBeNull();
+    // 08/10/2026: Gmail's subject no longer carries the code; the body says it, and the acceptance link counts too.
+    const link = 'https://mail-settings.google.com/mail/vf-%5BANGjdJ8abc%5D-xyz_123';
+    expect(
+      forwardingConfirmationOf({
+        from: google,
+        subject: '(Gmail) Confirmation de transfert – Recevez les messages de joanny@gmail.com',
+        text: `joanny@gmail.com a demandé le transfert de ses messages.\nCode de confirmation : 740215896\nCliquez sur le lien ci-dessous :\n${link}\nPour annuler : https://mail-settings.google.com/mail/uf-abc`,
+      }),
+    ).toEqual({ provider: 'gmail', code: '740215896', link, requester: 'joanny@gmail.com' });
+    // Only a 9-digit number in the body, no "code" word: still the code; a link alone is enough too.
+    expect(forwardingConfirmationOf({ from: google, subject: '(Gmail) Confirmation de transfert', text: 'Votre numéro : 740215896.' })?.code).toBe(
+      '740215896',
+    );
+    expect(forwardingConfirmationOf({ from: google, subject: '(Gmail) Confirmation de transfert', text: `Lien : ${link}` })).toEqual({
+      provider: 'gmail',
+      code: null,
+      link,
+      requester: null,
+    });
+    // Two 9-digit numbers and no "code" word: no guess.
+    expect(forwardingConfirmationOf({ from: google, subject: 'Gmail', text: '123456789 987654321' })).toBeNull();
   });
 });
 
@@ -259,7 +280,13 @@ describe('POST /public/inbound/email', () => {
       .post('/api/public/inbound/email?secret=inbound-test-secret')
       .send({ items: [item(address, filled)] });
     const after = (await api().get('/api/internal/inbound/settings').set(auth(op.token))).body;
-    expect(after.forwarding).toEqual({ provider: 'gmail', code: '482913507', requester: 'boss@gmail.com', receivedAt: expect.any(String) });
+    expect(after.forwarding).toEqual({
+      provider: 'gmail',
+      code: '482913507',
+      link: 'https://mail-settings.google.com/mail/vf-xyz',
+      requester: 'boss@gmail.com',
+      receivedAt: expect.any(String),
+    });
     expect(after.toCheck).toBe(0);
     expect(after.recent.map((r: { status: string }) => r.status)).toEqual(['imported', 'forwarding']);
     expect(after.recent[0]).toMatchObject({ fromAddress: 'info@allopark.com', reservationReference: expect.any(String) });

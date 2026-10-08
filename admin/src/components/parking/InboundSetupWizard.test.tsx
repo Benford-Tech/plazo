@@ -80,6 +80,7 @@ describe("InboundSetupWizard (G-B : relier la boîte mail)", () => {
         forwarding: {
           provider: "gmail",
           code: "482913507",
+          link: "https://mail-settings.google.com/mail/vf-xyz",
           requester: "boss@gmail.com",
           receivedAt: "2026-10-07T12:32:00Z",
         },
@@ -87,6 +88,7 @@ describe("InboundSetupWizard (G-B : relier la boîte mail)", () => {
     );
     await refetch();
     expect(await screen.findByText("482 913 507")).toBeInTheDocument();
+    expect(screen.getByTestId("gmail-link")).toHaveAttribute("href", "https://mail-settings.google.com/mail/vf-xyz");
     expect(screen.getByText("Code de confirmation Gmail reçu à 14:32")).toBeInTheDocument();
     expect(screen.getByText("Demandé par boss@gmail.com")).toBeInTheDocument();
 

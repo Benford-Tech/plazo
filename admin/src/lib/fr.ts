@@ -2406,6 +2406,9 @@ export const inboundWizardFr = {
       received: (time: string) => `Code de confirmation Gmail reçu à ${time}`,
       requester: (email: string) => `Demandé par ${email}`,
       copyCode: "Copier le code",
+      // 08/10/2026: Gmail's email no longer puts the code in its subject; its acceptance link confirms as well.
+      openLink: "Confirmer par le lien",
+      linkOnly: "Gmail n'a pas mis de code dans ce mail : confirmez par le lien.",
       keepOff:
         "Laissez « Désactiver le transfert » coché : seul le filtre de l'étape suivante transfère, et uniquement les mails d'Allopark.",
     },
