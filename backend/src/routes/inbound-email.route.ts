@@ -17,7 +17,7 @@ import { RefuseInViewAs, StaffAuthMiddleware } from '@/middlewares/staff-auth.mi
  * /public/inbound/email:
  *   post:
  *     tags: [Inbound email]
- *     summary: "Inbound email webhook of the Cloudflare relay: the raw message (message/rfc822, envelope in X-Envelope-From / X-Envelope-To, cut at 4 MB) or the former { items } JSON; header X-Inbound-Secret or query `secret` = INBOUND_EMAIL_SECRET"
+ *     summary: "Inbound email webhook of the Cloudflare relay: the raw message (message/rfc822, envelope in X-Envelope-From / X-Envelope-To, cut at 4 MB) or the former { items } JSON; header X-Inbound-Secret = INBOUND_EMAIL_SECRET"
  *     responses:
  *       200:
  *         description: "{ received, imported, toCheck, ignored }; always 200 once authenticated, so the relay does not resend"

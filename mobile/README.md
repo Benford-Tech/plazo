@@ -100,7 +100,7 @@ Réglages de construction (`--dart-define`, jamais de secret : ils sont lisibles
 
 | Nom | Défaut | Rôle |
 | --- | --- | --- |
-| `API_BASE_URL` | `https://plazo-benford-tech.vercel.app/api` | l'API |
+| `API_BASE_URL` | `https://www.plazo.fr/api` | l'API |
 | `ONESIGNAL_APP_ID` | vide (push coupées) | app OneSignal du personnel |
 | `SITE_URL` | l'adresse de l'API sans `/api` | le site (conditions, confidentialité, mentions légales, FAQ) |
 | `STRIPE_MERCHANT_ID` | vide (pas d'Apple Pay) | identifiant marchand Apple Pay (`merchant.…`) |

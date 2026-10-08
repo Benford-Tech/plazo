@@ -33,7 +33,8 @@ export class App {
 
     this.initializeMiddlewares();
     this.initializeRoutes(routes);
-    this.initializeSwagger();
+    // The API documentation maps every internal route: development only (08/10/2026).
+    if (this.env !== 'production') this.initializeSwagger();
     this.initializeErrorHandling();
   }
 

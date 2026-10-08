@@ -40,10 +40,15 @@ function el(html: string, style: string): HTMLElement {
   return node;
 }
 
+/** Text typed by people (stop names, vehicle labels, first names) goes into the markup escaped. */
+function esc(value: string | null | undefined): string {
+  return String(value ?? "").replace(/[&<>"']/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[c] as string);
+}
+
 /** The parking "P" and the stops: a small dark square with the label. */
 function squarePin(label: string): HTMLElement {
   return el(
-    `<b>${label}</b>`,
+    `<b>${esc(label)}</b>`,
     `display:grid;place-items:center;min-width:34px;height:34px;padding:0 8px;border-radius:8px;background:${CARD};border:1px solid ${LINE};color:${FG};font:700 12px "JetBrains Mono",monospace;box-shadow:0 8px 20px rgba(0,0,0,.18)`,
   );
 }
@@ -68,12 +73,12 @@ function popupHtml(trip: LiveTrip, index: number): string {
   const m = fr.dashboard.map;
   const where = trip.toStop && trip.stop ? m.toStop(trip.stop.name, trip.toStop.etaMinutes) : trip.toParking ? m.toParking(trip.toParking.etaMinutes) : m.noPosition;
   const vehicle = [trip.vehicle.model, trip.vehicle.colour].filter(Boolean).join(" ") || m.shuttle(index + 1);
-  const badge = `<span style="display:inline-block;margin-bottom:8px;padding:4px 9px;border-radius:999px;background:#E8F7EC;color:${OK};font:600 11px 'JetBrains Mono',monospace">${m.passengers(trip.passengers)} · ${where}</span>`;
+  const badge = `<span style="display:inline-block;margin-bottom:8px;padding:4px 9px;border-radius:999px;background:#E8F7EC;color:${OK};font:600 11px 'JetBrains Mono',monospace">${m.passengers(trip.passengers)} · ${esc(where)}</span>`;
   return (
     `<div style="min-width:190px;color:${FG};font-family:'JetBrains Mono',monospace">${badge}` +
-    `<div style="font:500 16px 'JetBrains Mono',monospace">${vehicle}</div>` +
-    `<div style="font-size:12px;color:${MUTED};padding-bottom:8px;border-bottom:1px dashed ${LINE};margin-bottom:8px">${trip.vehicle.plate ?? ""} ${m.direction[trip.direction]}</div>` +
-    `<div style="font-size:15px">${trip.driverName}</div>` +
+    `<div style="font:500 16px 'JetBrains Mono',monospace">${esc(vehicle)}</div>` +
+    `<div style="font-size:12px;color:${MUTED};padding-bottom:8px;border-bottom:1px dashed ${LINE};margin-bottom:8px">${esc(trip.vehicle.plate)} ${m.direction[trip.direction]}</div>` +
+    `<div style="font-size:15px">${esc(trip.driverName)}</div>` +
     `<div style="font-size:12px;color:${MUTED}">${m.since(new Date(trip.startedAt))}</div></div>`
   );
 }

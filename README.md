@@ -109,6 +109,70 @@ flutter run --dart-define=API_BASE_URL=http://localhost:3005/api
 Tests : `npm test` dans `backend/` (base `DATABASE_URL_TEST`, dont le nom doit finir par `_test` ;
 elle est entièrement vidée à chaque lancement), dans `admin/` et dans `site/`.
 
+## Avant d'ouvrir aux vrais clients (état au 08/10/2026)
+
+Audit de mise en production du 08/10/2026 (six lecteurs : configuration, paiement et juridique, démonstration et
+premier loueur, exploitation, sécurité, app et notifications). Le code est prêt ; ce qui suit est hors code ou demande
+une décision de Joanny. Cocher au fur et à mesure.
+
+**Décisions à prendre**
+- [ ] **Paiement en ligne réel ou saisie manuelle au lancement.** `STRIPE_ALLOW_LIVE=true` est posé : une clé `sk_live_`
+  démarre sans garde-fou et le cron `payouts` de 06:00 UTC fait de vrais virements. Avant une clé live : validation
+  juriste / expert-comptable (statut, TVA, mandat d'encaissement), compte Stripe de Plazo Aéroports activé, Connect en
+  live, webhooks live vers `https://www.plazo.fr/api/public/stripe/webhook` (deux `whsec_` dans `STRIPE_WEBHOOK_SECRET`),
+  libellé de relevé « PLAZO ». Vérifier que les trois clés Stripe sont du même mode (`sk_`, `pk_`, `whsec_`). Avec une
+  clé de test, aucune vraie carte ne passe et le site ne le dit pas.
+- [ ] **Commission** : 10 % TTC par défaut (`PLATFORM_COMMISSION_BPS=1000`), surcharge par loueur dans Plateforme ›
+  Loueurs ; à confirmer avec le client n°1 et l'expert-comptable (HT ou TTC, TVA de Plazo), figée dans chaque paiement.
+- [ ] **Parkings de démonstration** : `DEMO_LISTINGS=true` recrée cinq loueurs fictifs à chaque déploiement, visibles et
+  indexables sur le site à côté du client n°1, et les crons les traitent comme des vrais (rappels vers `.test`, vols
+  fictifs interrogés). Retrait : `DEMO_LISTINGS=remove` puis redéployer (irréversible : supprime aussi toute réservation
+  faite sur une démo), puis supprimer `DEMO_LISTINGS` et `DEMO_SEED_PASSWORD`.
+- [ ] **Vercel Pro** : l'offre Hobby est réservée à un usage non commercial, plafonne à 100 déploiements par jour, garde
+  les journaux une heure et n'offre que des crons quotidiens. Pro (~20 $/mois) lève tout cela (Vercel › Settings › Billing).
+- [ ] **Suivi des vols** : le plan gratuit AeroDataBox (RapidAPI) tient un ou deux jours ; choisir AeroDataBox payant,
+  FlightAware AeroAPI (`FLIGHTAWARE_API_KEY`), ou accepter le suivi dégradé (« J'ai atterri » reste).
+- [ ] **Pages légales** : encore « projet à valider par un juriste », non indexées ; après relecture, retirer le bandeau et
+  le `noindex` (`site/src/lib/legal.ts`, `LEGAL_VERSION`). Désigner un médiateur de la consommation (obligatoire).
+- [ ] **Factures** : Plazo n'émet ni facture ni reçu ; choisir reçu Stripe (Settings › Emails › Paiements réussis) + facture
+  du parking, ou facture Plazo avec mandat de facturation.
+- [ ] **Apps** : identifiants `com.benfordtech.*` définitifs ou non (plus modifiables après le premier envoi) ; publier
+  Plazo Pro seule d'abord (lancer `plazo-pro-release` à la main) ou les deux (tag `mobile-v*`).
+- [ ] **SMS** : « Plazo envoie pour moi » n'a aucun crédit SMS Brevo ; recommander « Téléphone du parking ».
+
+**À faire par Joanny (tableaux de bord)**
+- [ ] Vercel : supprimer `PLATFORM_BOOTSTRAP_PASSWORD` (compte créé) ; vérifier l'entropie de `SECRET_KEY`, `CRON_SECRET`,
+  `SITE_API_KEY`, `INBOUND_EMAIL_SECRET` (≥ 32 octets aléatoires ; à changer maintenant ou jamais) ; vérifier que les six
+  crons de `vercel.json` sont enregistrés (Settings › Cron Jobs), sinon les ajouter sur cron-job.org une fois par jour.
+- [ ] cron-job.org : notifications « on failure » sur chaque tâche ; ajouter `GET https://www.plazo.fr/api/health` toutes
+  les 5 minutes (sans en-tête) comme moniteur ; ajouter `track-return-flights` toutes les 10 minutes de 05:00 à 23:50
+  (même en-tête `Authorization: Bearer <CRON_SECRET>`) dès que le plan de suivi des vols le permet.
+- [ ] GitHub › Settings › Environments › Production : secret `INBOUND_EMAIL_SECRET`, variable `FALLBACK_ADDRESS`
+  (une boîte Plazo plutôt que personnelle : les mails égarés contiennent des données de voyageurs).
+- [ ] Brevo : authentifier `plazo.fr` (DKIM `mail._domainkey`, DMARC `_dmarc` chez Cloudflare, SPF gardant
+  `include:_spf.mx.cloudflare.net`) ; plan Free = 300 mails/jour avec logo Brevo, Starter pour lever les deux.
+- [ ] Neon : vérifier la fenêtre de restauration du plan gratuit ; sauvegarde manuelle avant l'ouverture puis chaque
+  semaine : `pg_dump "$DATABASE_URL_UNPOOLED" --no-owner -Fc -f plazo-$(date +%F).dump`, conservée hors Vercel.
+- [ ] Codemagic : groupe `mobile_secrets` complet (`KEYSTORE_FILE`, `KEY_PROPERTIES_FILE`, `GCLOUD_SERVICE_ACCOUNT_CREDENTIALS`,
+  `CERTIFICATE_PRIVATE_KEY`, `ONESIGNAL_APP_ID`, `ONESIGNAL_TRAVELLER_APP_ID`, `API_BASE_URL=https://www.plazo.fr/api`),
+  intégration `plazo-asc`, fiches App Store Connect et Play Console, `APP_STORE_APP_ID` ; OneSignal : compte de service
+  FCM et clé APNs sur chaque app.
+- [ ] `product.json` › `company` : forme juridique, capital, siège, RCS, TVA, téléphone, directeur de la publication,
+  médiateur, et une adresse support réelle (aujourd'hui `support@example.com`) ; Claude les pose puis
+  `dart run tool/sync_product.dart`.
+- [ ] Client n°1 : inscription libre (`/pro/inscription`) ou invitation (Plateforme › Loueurs), e-mail confirmé, fiche
+  envoyée puis validée (Plateforme › Annonces), canal SMS réglé (Mon compte › SMS aux voyageurs, « Téléphone du parking »),
+  Stripe Express relié avant le premier reversement, pushs activés par chaque membre dans Plazo Pro (Plus › Notifications),
+  mail de transfert de la messagerie (assistant « Relier votre boîte mail », transfert global désactivé).
+
+**Fait le 08/10/2026 (code)** : accès Plateforme réservé à un e-mail vérifié ; Swagger coupé en production ; secret du
+relais mail accepté en en-tête seulement ; libellés échappés sur la carte des navettes ; app par défaut sur
+`https://www.plazo.fr/api` ; `ITSAppUsesNonExemptEncryption` dans `Info.plist` ; prévisualisations Vercel coupées pour
+les branches `claude/*`. **Reste côté code, sur décision** : reversement « payé à la main » (sinon double paiement si
+Joanny vire puis que le loueur relie Stripe), `GOOGLE_PAY_TEST=false` dans `codemagic.yaml` si Stripe passe en live,
+App Links sur `www.plazo.fr` (empreinte Play et Team ID Apple à fournir), plafond quotidien des lectures Claude par
+loueur et liste d'expéditeurs admis (le slug de l'adresse ne fait que 16 bits d'aléa).
+
 ## Mise en ligne (Supabase + Vercel)
 
 Un seul projet Vercel, avec trois « services » déclarés dans [`vercel.json`](vercel.json), sur un même domaine :
@@ -144,8 +208,10 @@ le navigateur de l'espace pro appelle `/api` sur le même domaine (pas de CORS).
    `PLATFORM_BOOTSTRAP_PASSWORD` sur Vercel et redéployer. Le déploiement crée alors l'opérateur
    « Plazo (tests) » dont le gérant est le premier email de `PLATFORM_ADMIN_EMAILS` (rien si le compte
    existe déjà : le mot de passe n'est jamais écrasé). Supprimer la variable ensuite.
-   Les autres opérateurs se créent depuis un poste : `npm run seed:operator` dans `backend/`, avec
-   `DATABASE_URL` pointé sur la base Neon (connexion directe).
+   Les autres opérateurs se créent par l'inscription libre (`/pro/inscription`) ou par une invitation depuis
+   `/pro/plateforme/loueurs` ; depuis un poste, `npm run seed:operator` dans `backend/`, avec `DATABASE_URL` **et**
+   `DIRECT_URL` pointés sur la connexion directe Neon (`DATABASE_URL_UNPOOLED`), crée le loueur, son parking et un gérant
+   déjà vérifié, sans fiche Plazo (le gérant la crée dans `/pro/plazo/fiche`).
    **Données de démonstration** (facultatif) : pour essayer le site et les apps avec des parkings fictifs,
    mettre `DEMO_LISTINGS=true` et `DEMO_SEED_PASSWORD` (10 caractères minimum) sur Vercel et redéployer. Le
    déploiement crée (ou rafraîchit, sans doublon) cinq loueurs fictifs autour de Lyon Saint-Exupéry (Parkair Lyon,
@@ -170,7 +236,7 @@ le navigateur de l'espace pro appelle `/api` sur le même domaine (pas de CORS).
      l'app passe par la page Stripe Checkout.
    - Tableau de bord Stripe (mode test) : activer **Connect** (comptes **Express**, pays France) ; dans *Paramètres →
      Image de marque*, logo et couleurs Plazo (la page de paiement en reprend l'apparence) ; dans *Développeurs →
-     Webhooks*, créer une destination vers **`https://plazo-benford-tech.vercel.app/api/public/stripe/webhook`** pour les
+     Webhooks*, créer une destination vers **`https://www.plazo.fr/api/public/stripe/webhook`** pour les
      évènements **de votre compte** : `checkout.session.completed`, `checkout.session.expired`,
      `checkout.session.async_payment_succeeded`, `checkout.session.async_payment_failed`, et pour l'app
      `payment_intent.succeeded`, `payment_intent.payment_failed` ; et une seconde destination,
