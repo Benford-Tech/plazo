@@ -372,7 +372,8 @@ Le nom du produit doit rester dans UN seul fichier de configuration (il peut enc
 ## Structure du dépôt
 
 - `vercel.json` : le projet Vercel et ses trois services (`backend` sur `/api`, `admin` sur `/pro`,
-  `site` sur le reste), la liaison site → API et le Cron.
+  `site` sur le reste), la liaison site → API et le Cron ; `git.deploymentEnabled` coupe les prévisualisations des branches
+  `claude/*` (08/10/2026 : le plan Hobby plafonne à 100 déploiements par 24 h, chaque push en consommait un).
 - `product.json` : nom du produit et libellés de marque (seul endroit où le nom apparaît ;
   lu par le serveur, l'espace pro et le site), et `company` : la société éditrice (« Plazo Aéroports », forme, siège,
   immatriculation, TVA, directeur de la publication, médiateur ; un champ vide s'affiche « [à compléter] »).
