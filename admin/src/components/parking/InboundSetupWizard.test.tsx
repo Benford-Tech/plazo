@@ -134,7 +134,8 @@ describe("InboundSetupWizard (G-B : relier la boîte mail)", () => {
 
   it("loueur d'avant le 08/10/2026 sans adresse : l'assistant la crée seul ; Outlook n'a pas d'autorisation et signale le blocage possible en entreprise ; Échap ferme", async () => {
     const user = userEvent.setup();
-    api.getInboundSettings.mockResolvedValueOnce(settings({ address: null }));
+    // Every read says « no address »: only the POST can bring it, so the test proves the wizard used it.
+    api.getInboundSettings.mockResolvedValue(settings({ address: null }));
     renderCard();
     await user.click(await screen.findByTestId("inbound-connect"));
     expect(await screen.findByTestId("wizard-address")).toHaveTextContent(ADDRESS);
