@@ -48,8 +48,9 @@ export const zoneSuggestionModel = (): string => (process.env.ZONE_SUGGESTION_MO
 
 // Brevo (transactional email and SMS). Without an API key, nothing is sent.
 export const BREVO_API_KEY = process.env.BREVO_API_KEY || '';
-// M-A (06/10/2026): the domain of the operators' inbound addresses (<slug>@<domain>), whose mail Brevo's
-// inbound parsing posts to POST /public/inbound/email?secret=<INBOUND_EMAIL_SECRET>. Both empty: feature off.
+// M-A (06/10/2026): the domain of the operators' inbound addresses (<slug>@<domain>). Cloudflare Email Routing
+// hands its mail to the email-worker/ relay (08/10/2026, Brevo before), which posts it to POST /public/inbound/email
+// with the header X-Inbound-Secret: <INBOUND_EMAIL_SECRET> (`?secret=` still accepted). Both empty: feature off.
 export const INBOUND_EMAIL_DOMAIN = (process.env.INBOUND_EMAIL_DOMAIN || '').trim().toLowerCase();
 export const INBOUND_EMAIL_SECRET = (process.env.INBOUND_EMAIL_SECRET || '').trim();
 export const inboundEmailAvailable = (): boolean => !!INBOUND_EMAIL_DOMAIN && !!INBOUND_EMAIL_SECRET;

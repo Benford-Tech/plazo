@@ -1,0 +1,61 @@
+import { afterEach, describe, expect, it, vi } from "vitest";
+import worker, { type Env } from "../src/index";
+import { alloparkForwarded } from "./samples";
+
+function message(raw: string, to = "parkair-lyon-7f3a@in.plazo.fr") {
+  return {
+    from: "bounce@gmail.com",
+    to,
+    headers: new Headers(),
+    raw: new Response(raw).body!,
+    rawSize: raw.length,
+    setReject: vi.fn(),
+    forward: vi.fn(async () => undefined),
+    reply: vi.fn(async () => undefined),
+  } as unknown as ForwardableEmailMessage & { setReject: ReturnType<typeof vi.fn>; forward: ReturnType<typeof vi.fn> };
+}
+
+const env: Env = { PLAZO_INBOUND_URL: "https://www.plazo.test/api/public/inbound/email", INBOUND_EMAIL_SECRET: "s3cret" };
+
+afterEach(() => vi.unstubAllGlobals());
+
+describe("email()", () => {
+  it("envoie le mail à Plazo avec le secret dans l'en-tête, pas dans l'adresse", async () => {
+    const fetchMock = vi.fn(async () => new Response(JSON.stringify({ received: 1, imported: 1, toCheck: 0, ignored: 0 })));
+    vi.stubGlobal("fetch", fetchMock);
+    const msg = message(alloparkForwarded);
+    await worker.email(msg, env);
+    expect(fetchMock).toHaveBeenCalledTimes(1);
+    const [url, init] = fetchMock.mock.calls[0] as unknown as [string, RequestInit];
+    expect(url).toBe(env.PLAZO_INBOUND_URL);
+    expect(init.method).toBe("POST");
+    expect((init.headers as Record<string, string>)["x-inbound-secret"]).toBe("s3cret");
+    const body = JSON.parse(String(init.body));
+    expect(body.items[0].Recipients).toEqual(["parkair-lyon-7f3a@in.plazo.fr"]);
+    expect(body.items[0].From.Address).toBe("info@allopark.com");
+    expect(msg.setReject).not.toHaveBeenCalled();
+    expect(msg.forward).not.toHaveBeenCalled();
+  });
+
+  it("Plazo refuse ou ne répond pas : le mail part à l'adresse de secours, sinon il est refusé (l'expéditeur le voit)", async () => {
+    vi.stubGlobal("fetch", vi.fn(async () => new Response("{}", { status: 401 })));
+    const kept = message(alloparkForwarded);
+    await worker.email(kept, { ...env, FALLBACK_ADDRESS: "secours@example.com" });
+    expect(kept.forward).toHaveBeenCalledWith("secours@example.com");
+    expect(kept.setReject).not.toHaveBeenCalled();
+
+    vi.stubGlobal("fetch", vi.fn(async () => Promise.reject(new Error("network down"))));
+    const refused = message(alloparkForwarded);
+    await worker.email(refused, env);
+    expect(refused.setReject).toHaveBeenCalledTimes(1);
+  });
+
+  it("sans secret configuré, rien n'est envoyé et le mail est refusé", async () => {
+    const fetchMock = vi.fn();
+    vi.stubGlobal("fetch", fetchMock);
+    const msg = message(alloparkForwarded);
+    await worker.email(msg, { ...env, INBOUND_EMAIL_SECRET: "" });
+    expect(fetchMock).not.toHaveBeenCalled();
+    expect(msg.setReject).toHaveBeenCalledTimes(1);
+  });
+});

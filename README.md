@@ -190,17 +190,19 @@ le navigateur de l'espace pro appelle `/api` sur le même domaine (pas de CORS).
    (position effacée) à chaque lecture et par la purge nocturne existante ; `/api/internal/cron/expire-arrival-signals`
    existe pour une passe plus fréquente si besoin.
 
-7. **Synchronisation de la boîte mail (M-A, 06/10/2026)** — facultatif : sans `INBOUND_EMAIL_DOMAIN` et
-   `INBOUND_EMAIL_SECRET`, le bloc « Mails entrants » des réglages explique que la réception n'est pas configurée.
-   Principe : chaque loueur active une adresse `<slug>@<INBOUND_EMAIL_DOMAIN>` (Parking › Réglages) et crée dans sa
-   messagerie une règle qui lui transfère les mails des comparateurs ; Brevo (*Inbound parsing*) reçoit le domaine et
-   appelle `POST /api/public/inbound/email?secret=<INBOUND_EMAIL_SECRET>` ; un mail reconnu et complet (Allopark) crée
-   la réservation (canal comparateur, doublon refusé par la référence externe, push « Nouvelle réservation ») ; un
-   mail incomplet ou inconnu attend dans « Mails à vérifier » (`/pro/reservations/a-verifier`, alerte du tableau de
-   bord), où l'équipe le complète dans le formulaire prérempli ou le classe. Texte des mails gardé 30 jours, lignes 90.
-   Mise en place côté Brevo : choisir un sous-domaine (ex. `in.plazo.fr`), y mettre l'enregistrement MX que Brevo
-   indique (Transactional › Inbound parsing › *Add a domain*), puis créer le webhook *inbound* avec ce domaine et
-   l'URL ci-dessus (le secret dans l'URL ; Brevo ne signe pas ses appels).
+7. **Synchronisation de la boîte mail (M-A, 06/10/2026 ; réception par Cloudflare depuis le 08/10/2026)** — facultatif :
+   sans `INBOUND_EMAIL_DOMAIN` et `INBOUND_EMAIL_SECRET`, le bloc « Mails entrants » des réglages explique que la
+   réception n'est pas configurée.
+   Principe : chaque loueur active une adresse `<slug>@<INBOUND_EMAIL_DOMAIN>` (Parking › Réglages, assistant « Relier
+   ma boîte mail ») et crée dans sa messagerie une règle qui lui transfère les mails des comparateurs ; **Cloudflare
+   Email Routing** reçoit le domaine (gratuit, adresses illimitées, aucune boîte mail à créer) et passe chaque mail au
+   relais [`email-worker/`](email-worker/README.md), qui l'envoie à `POST /api/public/inbound/email` avec l'en-tête
+   `X-Inbound-Secret` ; un mail reconnu et complet (Allopark) crée la réservation (canal comparateur, doublon refusé
+   par la référence externe, push « Nouvelle réservation ») ; un mail incomplet ou inconnu attend dans « Mails à
+   vérifier » (`/pro/reservations/a-verifier`, alerte du tableau de bord), où l'équipe le complète dans le formulaire
+   prérempli ou le classe. Texte des mails gardé 30 jours, lignes 90.
+   Mise en place (domaine gardé chez Hostinger, DNS chez Cloudflare, sous-domaine `in.plazo.fr`, Worker, règle
+   « catch-all », variables Vercel) : voir [`email-worker/README.md`](email-worker/README.md).
 
 6. **Suivi des vols au retour** — facultatif : sans clé, les vols ne sont pas suivis (le voyageur dit « J'ai atterri »
    dans l'app, et l'heure de retour saisie fait foi). Trois fournisseurs derrière la même interface, choisis par

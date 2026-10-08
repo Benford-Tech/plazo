@@ -1,0 +1,20 @@
+{
+  "name": "plazo-email-worker",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Cloudflare Email Worker: receives the emails sent to <slug>@in.plazo.fr and posts them to the Plazo API",
+  "type": "module",
+  "scripts": {
+    "test": "vitest run",
+    "typecheck": "tsc --noEmit",
+    "deploy": "npx wrangler deploy"
+  },
+  "dependencies": {
+    "postal-mime": "^4.0.5"
+  },
+  "devDependencies": {
+    "@cloudflare/workers-types": "^4.20251008.0",
+    "typescript": "^5.9.3",
+    "vitest": "^3.2.7"
+  }
+}

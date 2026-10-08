@@ -79,7 +79,7 @@ const TO_CHECK: InboundEmailStatus[] = ['incomplete', 'unrecognised'];
 
 /**
  * M-A (06/10/2026): the operator's mailbox forwards the comparators' confirmations to
- * <slug>@<INBOUND_EMAIL_DOMAIN>; Brevo posts each email here; the importers read it and the booking is
+ * <slug>@<INBOUND_EMAIL_DOMAIN>; the Cloudflare relay (email-worker/) posts each email here; the importers read it and the booking is
  * created at once, or the email waits in "À vérifier" for the staff.
  */
 @Service()
@@ -87,7 +87,7 @@ export class InboundEmailService {
   public reservations = Container.get(ReservationService);
   public audit = Container.get(AuditService);
 
-  /** Brevo's webhook: every item is handled on its own; the answer is always 200 so Brevo does not retry forever. */
+  /** The relay's webhook: every item is handled on its own; the answer is always 200 so the relay does not resend it. */
   public async receive(payload: InboundPayload): Promise<{ received: number; imported: number; toCheck: number; ignored: number }> {
     const result = { received: 0, imported: 0, toCheck: 0, ignored: 0 };
     for (const item of payload.items ?? []) {

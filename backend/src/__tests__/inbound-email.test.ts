@@ -237,6 +237,29 @@ describe('POST /public/inbound/email', () => {
     expect((await api().get('/api/internal/inbound/settings').set(auth(op.token))).body.forwarding).toBeNull();
   });
 
+  it('relais Cloudflare (08/10/2026) : secret en en-tête, adresse Plazo seulement dans l’enveloppe', async () => {
+    const op = await setupOperator();
+    const address = (await api().post('/api/internal/inbound/address').set(auth(op.token)).send({})).body.address as string;
+    const relay = (secret: string, items: unknown[]) => api().post('/api/public/inbound/email').set('X-Inbound-Secret', secret).send({ items });
+    expect((await relay('wrong', [])).status).toBe(401);
+    // What email-worker/ posts for a forwarded Allopark email: still addressed to the parking, the Plazo address in Recipients.
+    const forwarded = {
+      MessageId: '<abc123@allopark.com>',
+      From: { Name: 'ALLOPARK', Address: 'info@allopark.com' },
+      To: [{ Name: 'Parking Air Lyon', Address: 'contact@parkair.fr' }],
+      Cc: [],
+      Recipients: [address],
+      Subject: 'Confirmation de votre réservation AL-884880719',
+      SentAtDate: '2026-10-07T12:32:00.000Z',
+      RawTextBody: filled,
+      RawHtmlBody: null,
+    };
+    const res = await relay('inbound-test-secret', [forwarded]);
+    expect(res.status).toBe(200);
+    expect(res.body).toEqual({ received: 1, imported: 1, toCheck: 0, ignored: 0 });
+    expect(await prisma.reservation.count({ where: { operatorId: op.operator.id, externalReference: 'AL-884880719' } })).toBe(1);
+  });
+
   it('une nouvelle adresse remplace l’ancienne ; un gérant seulement', async () => {
     const op = await setupOperator();
     const agent = await addStaff(op.token, 'agent');
