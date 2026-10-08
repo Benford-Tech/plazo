@@ -14,8 +14,16 @@ import '../../../../shared/widgets/ign_map.dart';
 import '../../../../shared/widgets/live_pill.dart';
 import '../bloc/return_bloc.dart';
 
+/// "3e depuis l'allée" / "1re depuis l'allée" for a car's position in its file; null without one.
+String? filePositionLabel(int? position) => switch (position) {
+  null => null,
+  1 => 'find_car.position_first'.tr(),
+  final p => 'find_car.position'.tr(args: ['$p']),
+};
+
 /// "Retrouver ma voiture" (T-A, 05/10/2026): the mockup's dark screen. The plate, the spot the valet
-/// placed the vehicle on and its zone, the parking on the plan, and the walking directions.
+/// placed the vehicle on and its zone (or its file and position, S-C), the parking on the plan, and
+/// the walking directions.
 @RoutePage()
 class FindCarPage extends StatelessWidget implements AutoRouteWrapper {
   const FindCarPage({super.key, @PathParam('reference') required this.reference});
@@ -48,11 +56,14 @@ class FindCarPage extends StatelessWidget implements AutoRouteWrapper {
             );
           }
           final spot = d.spot;
+          // S-C (07/10/2026): on a valet parking the car stands in a file, not on a spot.
+          final file = d.file;
           final car = d.car;
           final location = d.parking.location;
           // The recorded GPS fix of the car (06/10/2026) is the destination when there is one.
           final target = car != null ? LatLng(car.lat, car.lng) : (location == null ? null : LatLng(location.lat, location.lng));
           final stay = spot?.stayClass == null ? null : 'find_car.zone_${spot!.stayClass}'.tr();
+          final placed = file != null || spot != null;
           return ListView(
             padding: const EdgeInsets.fromLTRB(16, 8, 16, 24),
             children: [
@@ -106,15 +117,19 @@ class FindCarPage extends StatelessWidget implements AutoRouteWrapper {
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           Text(
-                            spot != null
+                            file != null
+                                ? 'find_car.file'.tr(args: [file.code])
+                                : spot != null
                                 ? 'find_car.spot'.tr(args: [spot.code])
                                 : car != null
                                 ? 'find_car.car_title'.tr()
                                 : 'find_car.no_spot'.tr(),
-                            style: AppText.big(size: spot == null && car == null ? 18 : 30, color: Colors.white),
+                            style: AppText.big(size: !placed && car == null ? 18 : 30, color: Colors.white),
                           ),
                           Text(
-                            spot != null
+                            file != null
+                                ? (filePositionLabel(file.position) ?? d.parking.name)
+                                : spot != null
                                 ? (stay ?? d.parking.name)
                                 : car != null
                                 ? 'find_car.car_help'.tr(args: [car.note != null ? ' · ${car.note}' : ''])

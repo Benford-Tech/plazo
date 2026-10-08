@@ -63,6 +63,10 @@ _ReservationModel _$ReservationModelFromJson(Map<String, dynamic> json) =>
       spot: json['spot'] == null
           ? null
           : ReservationSpotModel.fromJson(json['spot'] as Map<String, dynamic>),
+      file: json['file'] == null
+          ? null
+          : ReservationFileModel.fromJson(json['file'] as Map<String, dynamic>),
+      filePosition: (json['filePosition'] as num?)?.toInt(),
     );
 
 Map<String, dynamic> _$ReservationModelToJson(_ReservationModel instance) =>
@@ -106,6 +110,8 @@ Map<String, dynamic> _$ReservationModelToJson(_ReservationModel instance) =>
       'createdAt': instance.createdAt?.toIso8601String(),
       'nextStatuses': instance.nextStatuses,
       'spot': instance.spot,
+      'file': instance.file,
+      'filePosition': instance.filePosition,
     };
 
 _ReservationSpotModel _$ReservationSpotModelFromJson(
@@ -203,3 +209,19 @@ Map<String, dynamic> _$ReservationInputToJson(_ReservationInput instance) =>
       'priceCents': instance.priceCents,
       'force': instance.force,
     };
+
+_ReservationFileModel _$ReservationFileModelFromJson(
+  Map<String, dynamic> json,
+) => _ReservationFileModel(
+  id: json['id'] as String,
+  code: json['code'] as String,
+  name: json['name'] as String?,
+);
+
+Map<String, dynamic> _$ReservationFileModelToJson(
+  _ReservationFileModel instance,
+) => <String, dynamic>{
+  'id': instance.id,
+  'code': instance.code,
+  'name': instance.name,
+};

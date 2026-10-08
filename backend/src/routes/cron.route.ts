@@ -84,6 +84,7 @@ export class CronRoute implements Routes {
 
   constructor() {
     this.router.get('/internal/cron/purge-expired-tokens', CronAuthMiddleware(), this.cron.purgeExpiredTokens);
+    this.router.get('/internal/cron/prepare-files', CronAuthMiddleware(), this.cron.prepareFiles);
     this.router.get('/internal/cron/payouts', CronAuthMiddleware(), this.cron.payouts);
     this.router.get('/internal/cron/expire-arrival-signals', CronAuthMiddleware(), this.cron.expireArrivalSignals);
     this.router.get('/internal/cron/expire-payment-holds', CronAuthMiddleware(), this.cron.expirePaymentHolds);

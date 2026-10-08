@@ -28,7 +28,13 @@ export interface Staff {
   postSetAt?: string | null;
   effectivePost?: StaffRole;
   /** The shuttle taken for the day (V-A), null when none. */
-  vehicle?: { id: string; model: string; colour: string | null; plate: string | null; seats: number | null } | null;
+  vehicle?: {
+    id: string;
+    model: string;
+    colour: string | null;
+    plate: string | null;
+    seats: number | null;
+  } | null;
   createdAt: string;
   operatorName?: string;
   /** Platform owner (PLATFORM_ADMIN_EMAILS): sees the "Plateforme" space. */
@@ -80,8 +86,22 @@ export interface NewStaff {
   password: string;
 }
 
-export type ReservationStatus = "upcoming" | "arrived" | "shuttled_out" | "return_requested" | "back_at_parking" | "returned" | "cancelled" | "no_show";
-export type ReservationChannel = "website" | "phone" | "counter" | "aggregator" | "import" | "plazo";
+export type ReservationStatus =
+  | "upcoming"
+  | "arrived"
+  | "shuttled_out"
+  | "return_requested"
+  | "back_at_parking"
+  | "returned"
+  | "cancelled"
+  | "no_show";
+export type ReservationChannel =
+  | "website"
+  | "phone"
+  | "counter"
+  | "aggregator"
+  | "import"
+  | "plazo";
 
 export interface Reservation {
   id: string;
@@ -134,6 +154,9 @@ export interface Reservation {
   flightGate?: string | null;
   /** The spot's code, when placed (GET /internal/reservations/:id includes it). */
   spot?: { code: string } | null;
+  /** S-C (07/10/2026): the file the car stands in and its position from the aisle (1 = first out). */
+  file?: { id: string; code: string; name: string | null } | null;
+  filePosition?: number | null;
   /** Bloc 2, Occupation: the spot and the key hook (null until placed). */
   spotId?: string | null;
   keyHook?: string | null;
@@ -214,7 +237,10 @@ export interface LiveArrivals {
 /** A planning row: the booking, its traveller's live signal and the shuttle trip picking them up, if any. */
 export type PlanningRow = Reservation & {
   arrivalSignal?: ArrivalSignal | null;
-  shuttleTrip?: Pick<ShuttleTripSummary, "id" | "driverName" | "startedAt"> | null;
+  shuttleTrip?: Pick<
+    ShuttleTripSummary,
+    "id" | "driverName" | "startedAt"
+  > | null;
 };
 
 /** Where the shuttle meets travellers at the airport on their return (Parking page). */
@@ -273,7 +299,12 @@ export interface Planning {
   arrivals: PlanningRow[];
   returns: PlanningRow[];
   nights: NightLoad[];
-  stats: { arrivals: number; arrived: number; returns: number; returnsWithFlight: number };
+  stats: {
+    arrivals: number;
+    arrived: number;
+    returns: number;
+    returnsWithFlight: number;
+  };
   /** A gateway SMS waiting for the operator's phone for more than 10 minutes, else null. */
   smsWarning?: { pending: number } | null;
 }
@@ -335,7 +366,13 @@ export interface ParsedBooking {
 }
 
 /** M-A (06/10/2026): the operator's inbound address and the forwarded confirmation emails. */
-export type InboundEmailStatus = "imported" | "duplicate" | "incomplete" | "unrecognised" | "dismissed" | "forwarding";
+export type InboundEmailStatus =
+  | "imported"
+  | "duplicate"
+  | "incomplete"
+  | "unrecognised"
+  | "dismissed"
+  | "forwarding";
 
 export interface InboundSettings {
   available: boolean;
@@ -346,7 +383,12 @@ export interface InboundSettings {
   /** G-B: the comparators' sender addresses, for the forwarding rule. */
   senders: { provider: string; address: string }[];
   /** G-B: Gmail's latest forwarding confirmation code (7 days). */
-  forwarding: { provider: "gmail"; code: string; requester: string | null; receivedAt: string } | null;
+  forwarding: {
+    provider: "gmail";
+    code: string;
+    requester: string | null;
+    receivedAt: string;
+  } | null;
   /** G-B: the last emails received, newest first. */
   recent: InboundRecent[];
 }
@@ -377,11 +419,26 @@ export interface InboundEmail {
   receivedAt: string;
 }
 
-export type CancellationPolicy = "free_until_arrival" | "free_24h" | "free_48h" | "non_refundable";
-export type ListingService = "shuttle" | "valet" | "covered" | "ev_charging" | "open_24h" | "fenced" | "cctv";
+export type CancellationPolicy =
+  | "free_until_arrival"
+  | "free_24h"
+  | "free_48h"
+  | "non_refundable";
+export type ListingService =
+  | "shuttle"
+  | "valet"
+  | "covered"
+  | "ev_charging"
+  | "open_24h"
+  | "fenced"
+  | "cctv";
 
 /** Review by the platform: draft -> pending_review -> published, or rejected (with a message). */
-export type ListingStatus = "draft" | "pending_review" | "published" | "rejected";
+export type ListingStatus =
+  | "draft"
+  | "pending_review"
+  | "published"
+  | "rejected";
 
 export interface Listing {
   id: string;
@@ -417,7 +474,12 @@ export interface ListingInput {
 
 export interface ListingResponse {
   listing: Listing | null;
-  parking: { id: string; name: string; address: string | null; shuttleTravelMinutes: number };
+  parking: {
+    id: string;
+    name: string;
+    address: string | null;
+    shuttleTravelMinutes: number;
+  };
 }
 
 export interface PricingTier {
@@ -523,7 +585,12 @@ export interface PlatformListing {
   reviewedAt: string | null;
   updatedAt: string;
   airport: { code: string; name: string; slug: string };
-  parking: { id: string; name: string; address: string | null; totalCapacity: number };
+  parking: {
+    id: string;
+    name: string;
+    address: string | null;
+    totalCapacity: number;
+  };
   operator: { id: string; name: string; status: OperatorStatus };
   pricingTiers: PricingTier[];
   fromPriceCents: number | null;
@@ -550,9 +617,15 @@ export interface PlatformReservation {
   parking: { name: string };
 }
 
-export type PlatformReservations = Paginated<PlatformReservation> & { operators: { id: string; name: string }[] };
+export type PlatformReservations = Paginated<PlatformReservation> & {
+  operators: { id: string; name: string }[];
+};
 
-export type PayoutSchedule = "AFTER_STAY" | "AT_DROP_OFF" | "WEEKLY" | "MONTHLY";
+export type PayoutSchedule =
+  | "AFTER_STAY"
+  | "AT_DROP_OFF"
+  | "WEEKLY"
+  | "MONTHLY";
 
 /** The operator's online payment state (GET /internal/payments/status). */
 export interface PaymentStatus {
@@ -603,7 +676,13 @@ export interface PlatformPayments {
     payoutSchedule: PayoutSchedule;
     commissionBps: number | null;
     pending: { count: number; amountCents: number };
-    failed: { reservationId: string; reference: string; amountCents: number | null; arrivalAt: string; returnAt: string }[];
+    failed: {
+      reservationId: string;
+      reference: string;
+      amountCents: number | null;
+      arrivalAt: string;
+      returnAt: string;
+    }[];
   }[];
 }
 
@@ -616,7 +695,12 @@ export interface SmsSettings {
   mode: SmsMode;
   /** "Plazo envoie pour moi" exists only while the platform has Brevo. */
   brevoAvailable: boolean;
-  gateway: { baseUrl: string | null; login: string; senderPhone: string | null; linkedAt: string | null } | null;
+  gateway: {
+    baseUrl: string | null;
+    login: string;
+    senderPhone: string | null;
+    linkedAt: string | null;
+  } | null;
 }
 
 export interface SmsSettingsInput {
@@ -650,7 +734,11 @@ export interface LiveTrip {
   direction: ShuttleDirection;
   driverId: string;
   driverName: string;
-  vehicle: { model: string | null; colour: string | null; plate: string | null };
+  vehicle: {
+    model: string | null;
+    colour: string | null;
+    plate: string | null;
+  };
   stop: ShuttleStop | null;
   passengers: number;
   startedAt: string;
@@ -743,13 +831,24 @@ export interface StaffTrip {
   direction: ShuttleDirection;
   driverId: string;
   driverName: string;
-  vehicle: { model: string | null; colour: string | null; plate: string | null };
+  vehicle: {
+    model: string | null;
+    colour: string | null;
+    plate: string | null;
+  };
   startedAt: string;
   expiresAt: string;
   endedAt: string | null;
   endReason: string | null;
   secondsLeft: number;
-  passengers: { reservationId: string; reference: string; customerName: string; passengers: number; plate: string; terminal: string | null }[];
+  passengers: {
+    reservationId: string;
+    reference: string;
+    customerName: string;
+    passengers: number;
+    plate: string;
+    terminal: string | null;
+  }[];
   positionUpdatedAt: string | null;
   meetingPoint: MeetingPoint | null;
   stop: ShuttleStop | null;
@@ -762,7 +861,11 @@ export interface StartTripInput {
   direction: ShuttleDirection;
   stopId: string | null;
   vehicleId?: string | null;
-  vehicle?: { model: string; colour?: string | null; plate?: string | null } | null;
+  vehicle?: {
+    model: string;
+    colour?: string | null;
+    plate?: string | null;
+  } | null;
 }
 
 export interface LiveShuttles {
@@ -829,7 +932,15 @@ export interface DashboardVehicle {
 export interface Dashboard {
   serverTime: string;
   date: string;
-  parking: { id: string; name: string; timezone: string; bookableCapacity: number; plannedSpots: number };
+  parking: {
+    id: string;
+    name: string;
+    timezone: string;
+    bookableCapacity: number;
+    plannedSpots: number;
+    /** S-C (07/10/2026): the parking is stored in files (missing from an older API). */
+    storedInFiles?: boolean;
+  };
   counts: {
     onSite: number;
     arrivalsToday: number;
@@ -840,16 +951,40 @@ export interface Dashboard {
     toTreat: number;
   };
   services: {
-    flights: { configured: boolean; provider: string | null; lastCheckedAt: string | null };
-    sms: { mode: string; pending: number; stale: boolean; lastSentAt: string | null };
+    flights: {
+      configured: boolean;
+      provider: string | null;
+      lastCheckedAt: string | null;
+    };
+    sms: {
+      mode: string;
+      pending: number;
+      stale: boolean;
+      lastSentAt: string | null;
+    };
     push: { configured: boolean; devices: number };
-    stripe: { connected: boolean; payoutsEnabled: boolean };
+    stripe: { online?: boolean; connected: boolean; payoutsEnabled: boolean };
     lastImportAt: string | null;
   };
   alerts: DashboardAlert[];
   /** The next shuttle wave still to run today (V-A). */
-  nextWave: { leaveAt: string; direction: ShuttleDirection; stopName: string | null; passengers: number; vehiclesNeeded: number | null; flights: string[] } | null;
-  breakdown: { onSiteQuiet: number; toPlaceToday: number; returnsThisWeek: number; toTreat: number; freeSpots: number | null };
+  nextWave: {
+    leaveAt: string;
+    direction: ShuttleDirection;
+    stopName: string | null;
+    passengers: number;
+    vehiclesNeeded: number | null;
+    flights: string[];
+  } | null;
+  breakdown: {
+    onSiteQuiet: number;
+    toPlaceToday: number;
+    /** S-C (07/10/2026): cars to take out today so the returns of the day get out (missing from an older API). */
+    movesToday?: number;
+    returnsThisWeek: number;
+    toTreat: number;
+    freeSpots: number | null;
+  };
   vehicles: DashboardVehicle[];
 }
 
@@ -903,7 +1038,11 @@ export interface ShuttleWave {
 export interface ShuttleForecast {
   serverTime: string;
   date: string;
-  times: { shuttleTravelMinutes: number; terminalLeadMinutes: number; landingDelayMinutes: number };
+  times: {
+    shuttleTravelMinutes: number;
+    terminalLeadMinutes: number;
+    landingDelayMinutes: number;
+  };
   seats: number | null;
   vehiclesInService: number;
   waves: ShuttleWave[];
@@ -957,7 +1096,14 @@ export type ReminderRowStatus =
   | "paused"
   | "same_day"
   | "too_late";
-export type TemplateVariable = "prénom" | "nom" | "date" | "heure" | "plaque" | "référence" | "lien";
+export type TemplateVariable =
+  | "prénom"
+  | "nom"
+  | "date"
+  | "heure"
+  | "plaque"
+  | "référence"
+  | "lien";
 export type TemplateValues = Record<TemplateVariable, string>;
 export interface ReminderRow {
   reservationId: string;
@@ -981,12 +1127,26 @@ export interface ReminderEvening {
   timeChanged: boolean;
   paused: boolean;
   canSendNow: boolean;
-  counts: { departures: number; planned: number; sent: number; waiting: number; failed: number; withoutSms: number };
+  counts: {
+    departures: number;
+    planned: number;
+    sent: number;
+    waiting: number;
+    failed: number;
+    withoutSms: number;
+  };
 }
 export interface ReminderBoard {
   parkingId: string;
   today: string;
-  settings: { enabled: boolean; sendTime: string; template: string; custom: boolean; updatedAt: string | null; updatedBy: string | null };
+  settings: {
+    enabled: boolean;
+    sendTime: string;
+    template: string;
+    custom: boolean;
+    updatedAt: string | null;
+    updatedBy: string | null;
+  };
   defaults: { template: string; short: string };
   sendTimes: string[];
   variables: TemplateVariable[];

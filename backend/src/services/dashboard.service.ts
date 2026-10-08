@@ -5,6 +5,7 @@ import prisma, { ReservationStatus } from '@/database';
 import { ShuttleDirection } from '@/domain/shuttle';
 import { AuthenticatedStaff } from '@/interfaces/auth.interface';
 import { dayBounds, localDate, localDateTime } from '@/domain/time';
+import { FileService } from './file.service';
 import { OccupationService } from './occupation.service';
 import { ArrivalService } from './arrival.service';
 import { FlightTrackingService } from './flight-tracking.service';
@@ -15,6 +16,7 @@ import { ShuttleForecastService } from './shuttle-forecast.service';
 import { InboundEmailService } from './inbound-email.service';
 import { ShuttleService } from './shuttle.service';
 import { SmsService } from './sms.service';
+import { OPERATOR_PAYMENT_FIELDS, PaymentService } from './payment.service';
 
 /** The statuses of a vehicle on the parking. */
 const ON_SITE: ReservationStatus[] = ON_SITE_STATUSES;
@@ -89,7 +91,8 @@ export interface DashboardVehicle {
 export interface Dashboard {
   serverTime: string;
   date: string;
-  parking: { id: string; name: string; timezone: string; bookableCapacity: number; plannedSpots: number };
+  /** `plannedSpots` is the room of the plan: the files' capacity when the parking is stored in files (S-C), else the active spots. */
+  parking: { id: string; name: string; timezone: string; bookableCapacity: number; plannedSpots: number; storedInFiles: boolean };
   counts: {
     onSite: number;
     arrivalsToday: number;
@@ -103,7 +106,8 @@ export interface Dashboard {
     flights: { configured: boolean; provider: string | null; lastCheckedAt: string | null };
     sms: { mode: string; pending: number; stale: boolean; lastSentAt: string | null };
     push: { configured: boolean; devices: number };
-    stripe: { connected: boolean; payoutsEnabled: boolean };
+    /** `online`: travellers can pay on the site (platform keys + commission); the account only moves the payouts. */
+    stripe: { online: boolean; connected: boolean; payoutsEnabled: boolean };
     lastImportAt: string | null;
   };
   alerts: DashboardAlert[];
@@ -116,7 +120,8 @@ export interface Dashboard {
     vehiclesNeeded: number | null;
     flights: string[];
   } | null;
-  breakdown: { onSiteQuiet: number; toPlaceToday: number; returnsThisWeek: number; toTreat: number; freeSpots: number | null };
+  /** S-C (07/10/2026): `movesToday` = cars to take out today so the returns of the day get out (0 is the goal). */
+  breakdown: { onSiteQuiet: number; toPlaceToday: number; movesToday: number; returnsThisWeek: number; toTreat: number; freeSpots: number | null };
   vehicles: DashboardVehicle[];
 }
 
@@ -136,7 +141,9 @@ export class DashboardService {
   public inbound = Container.get(InboundEmailService);
   public forecast = Container.get(ShuttleForecastService);
   public sms = Container.get(SmsService);
+  public payments = Container.get(PaymentService);
   public occupation = Container.get(OccupationService);
+  public files = Container.get(FileService);
 
   public async get(actor: AuthenticatedStaff): Promise<Dashboard> {
     const parking = await this.parkings.getPrimary(actor);
@@ -145,16 +152,17 @@ export class DashboardService {
     const refreshed = await this.flights.refreshBookings(planning.returns.filter(r => r.returnFlight).map(r => r.id));
     if (refreshed) planning = await this.reservations.planning(actor);
 
-    const [onSite, trips, signals, spotsTotal, operator, devices, lastImport, smsStatus, forecast] = await Promise.all([
+    const [onSite, trips, signals, spotsTotal, filesAgg, operator, devices, lastImport, smsStatus, forecast] = await Promise.all([
       prisma.reservation.findMany({
         where: { parkingId: parking.id, status: { in: ON_SITE } },
-        include: { spot: { select: { code: true, stayClass: true } }, stop: { select: { name: true } } },
+        include: { spot: { select: { code: true, stayClass: true } }, file: { select: { code: true } }, stop: { select: { name: true } } },
         orderBy: { returnAt: 'asc' },
       }),
       this.shuttle.running(actor),
       this.arrivals.live(actor).then(l => l.signals),
       prisma.parkingSpot.count({ where: { parkingId: parking.id, active: true } }),
-      prisma.operator.findUniqueOrThrow({ where: { id: actor.operatorId }, select: { stripeAccountId: true, stripePayoutsEnabled: true } }),
+      prisma.parkingFile.aggregate({ where: { parkingId: parking.id, active: true }, _count: { id: true }, _sum: { capacity: true } }),
+      prisma.operator.findUniqueOrThrow({ where: { id: actor.operatorId }, select: OPERATOR_PAYMENT_FIELDS }),
       prisma.staffDevice.count({ where: { staff: { operatorId: actor.operatorId, isActive: true } } }),
       prisma.reservation.findFirst({
         where: { operatorId: actor.operatorId, channel: { in: ['import', 'aggregator'] } },
@@ -166,8 +174,12 @@ export class DashboardService {
     ]);
     const todayIds = new Set(planning.returns.map(r => r.id));
     const tripOf = (id: string) => trips.find(t => t.reservationIds.includes(id)) ?? null;
-    const occupied = onSite.filter(r => r.spotId).length;
-    const freeSpots = spotsTotal ? Math.max(0, spotsTotal - occupied) : null;
+    const placed = (r: { spotId: string | null; fileId: string | null }) => !!r.spotId || !!r.fileId;
+    const occupied = onSite.filter(placed).length;
+    // S-C (07/10/2026): a parking stored in files counts its room in files, not in spots.
+    const filesTotal = filesAgg._count.id;
+    const plannedSpots = filesTotal ? (filesAgg._sum.capacity ?? 0) : spotsTotal;
+    const freeSpots = plannedSpots ? Math.max(0, plannedSpots - occupied) : null;
 
     const alerts: DashboardAlert[] = [];
     const minutesSince = (d: Date) => Math.max(0, Math.round((now.getTime() - d.getTime()) / 60000));
@@ -178,9 +190,9 @@ export class DashboardService {
       plate: r.plate,
     });
 
-    // Arrived, no spot (only when the parking has a plan).
-    if (spotsTotal) {
-      for (const r of onSite.filter(r => !r.spotId && r.status === 'arrived')) {
+    // Arrived, no spot or file (only when the parking has a plan).
+    if (spotsTotal || filesTotal) {
+      for (const r of onSite.filter(r => !placed(r) && r.status === 'arrived')) {
         const since = r.arrivedAt ?? r.arrivalAt;
         alerts.push({
           kind: freeSpots === 0 ? 'no_free_spot' : 'no_spot',
@@ -192,12 +204,12 @@ export class DashboardService {
         });
       }
       // Placed, keys not hung.
-      for (const r of onSite.filter(r => r.spotId && !r.keyHook && r.arrivedAt && minutesSince(r.arrivedAt) >= KEYS_MINUTES)) {
+      for (const r of onSite.filter(r => placed(r) && !r.keyHook && r.arrivedAt && minutesSince(r.arrivedAt) >= KEYS_MINUTES)) {
         alerts.push({
           kind: 'keys_missing',
           severity: 'todo',
           ...row(r),
-          detail: r.spot?.code ?? null,
+          detail: r.spot?.code ?? r.file?.code ?? null,
           since: r.arrivedAt!.toISOString(),
           minutes: minutesSince(r.arrivedAt!),
         });
@@ -308,9 +320,28 @@ export class DashboardService {
         minutes: minutesSince(r.arrivalAt),
       });
     }
+    // S-C (07/10/2026): on a parking stored in files, a return of the day behind a car leaving later.
+    const bounds = dayBounds(localDate(now, parking.timezone), parking.timezone);
+    let movesToday = 0;
+    if (filesTotal) {
+      for (const { car, fileCode, blockers } of await this.files.blockedReturns(parking.id, bounds.start, bounds.end)) {
+        movesToday += blockers.length;
+        const front = blockers[0];
+        alerts.push({
+          kind: 'blocked_return',
+          severity: 'watch',
+          reservationId: car.reservationId,
+          reference: car.reference,
+          customerName: car.customerName,
+          plate: car.plate,
+          detail: `${fileCode} · ${front.plate} retour ${localDateTime(front.returnAt, parking.timezone)}${blockers.length > 1 ? ` (+${blockers.length - 1})` : ''}`,
+          since: null,
+          minutes: null,
+        });
+      }
+    }
     // O-A (06/10/2026): a car returning today behind one that leaves later: take the front one out first.
-    if (spotsTotal) {
-      const bounds = dayBounds(localDate(now, parking.timezone), parking.timezone);
+    if (spotsTotal && !filesTotal) {
       for (const { stay, blockers } of await this.occupation.blockedReturns(parking.id, bounds.start, bounds.end)) {
         const front = blockers[0];
         alerts.push({
@@ -385,7 +416,8 @@ export class DashboardService {
         name: parking.name,
         timezone: parking.timezone,
         bookableCapacity: parking.bookableCapacity,
-        plannedSpots: spotsTotal,
+        plannedSpots,
+        storedInFiles: filesTotal > 0,
       },
       counts: {
         onSite: onSite.length,
@@ -400,7 +432,11 @@ export class DashboardService {
         flights: { configured: !!flights, provider: flights?.provider ?? null, lastCheckedAt: lastChecked?.toISOString() ?? null },
         sms: { mode: smsStatus.mode, pending: smsStatus.pending, stale: smsStatus.pendingStale, lastSentAt: smsStatus.lastSentAt },
         push: { configured: this.push.enabled(), devices },
-        stripe: { connected: !!operator.stripeAccountId, payoutsEnabled: operator.stripePayoutsEnabled },
+        stripe: {
+          online: this.payments.modeFor(operator) === 'online',
+          connected: !!operator.stripeAccountId,
+          payoutsEnabled: operator.stripePayoutsEnabled,
+        },
         lastImportAt: lastImport?.createdAt.toISOString() ?? null,
       },
       alerts,
@@ -418,8 +454,9 @@ export class DashboardService {
           : null;
       })(),
       breakdown: {
-        onSiteQuiet: onSite.filter(r => r.spotId && !alerts.some(a => a.reservationId === r.id) && !todayIds.has(r.id)).length,
-        toPlaceToday: planning.arrivals.filter(a => a.status === 'upcoming' || (a.status === 'arrived' && !a.spotId)).length,
+        onSiteQuiet: onSite.filter(r => placed(r) && !alerts.some(a => a.reservationId === r.id) && !todayIds.has(r.id)).length,
+        toPlaceToday: planning.arrivals.filter(a => a.status === 'upcoming' || (a.status === 'arrived' && !a.spotId && !a.fileId)).length,
+        movesToday,
         returnsThisWeek: onSite.filter(r => r.returnAt <= weekEnd).length,
         toTreat,
         freeSpots,
@@ -433,7 +470,7 @@ export class DashboardService {
         status: r.status,
         arrivalAt: r.arrivalAt.toISOString(),
         returnAt: r.returnAt.toISOString(),
-        spotCode: r.spot?.code ?? null,
+        spotCode: r.spot?.code ?? r.file?.code ?? null,
         stayClass: r.spot?.stayClass ?? null,
         keyHook: r.keyHook,
         returnFlight: r.returnFlight,

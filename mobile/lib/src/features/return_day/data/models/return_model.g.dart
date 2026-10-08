@@ -201,6 +201,9 @@ _TravellerReturnModel _$TravellerReturnModelFromJson(
   spot: json['spot'] == null
       ? null
       : ReturnSpotModel.fromJson(json['spot'] as Map<String, dynamic>),
+  file: json['file'] == null
+      ? null
+      : ReturnFileModel.fromJson(json['file'] as Map<String, dynamic>),
   car: json['car'] == null
       ? null
       : CarLocationModel.fromJson(json['car'] as Map<String, dynamic>),
@@ -224,6 +227,7 @@ Map<String, dynamic> _$TravellerReturnModelToJson(
   'parking': instance.parking,
   'plate': instance.plate,
   'spot': instance.spot,
+  'file': instance.file,
   'car': instance.car,
   'notice': instance.notice,
 };
@@ -236,6 +240,15 @@ _ReturnSpotModel _$ReturnSpotModelFromJson(Map<String, dynamic> json) =>
 
 Map<String, dynamic> _$ReturnSpotModelToJson(_ReturnSpotModel instance) =>
     <String, dynamic>{'code': instance.code, 'stayClass': instance.stayClass};
+
+_ReturnFileModel _$ReturnFileModelFromJson(Map<String, dynamic> json) =>
+    _ReturnFileModel(
+      code: json['code'] as String,
+      position: (json['position'] as num?)?.toInt(),
+    );
+
+Map<String, dynamic> _$ReturnFileModelToJson(_ReturnFileModel instance) =>
+    <String, dynamic>{'code': instance.code, 'position': instance.position};
 
 _ShuttleStatusModel _$ShuttleStatusModelFromJson(Map<String, dynamic> json) =>
     _ShuttleStatusModel(

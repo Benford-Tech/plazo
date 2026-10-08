@@ -22,6 +22,9 @@ export interface Occupant {
   carNote?: string | null;
   onSite: boolean;
   leavesToday: boolean;
+  /** D-B (07/10/2026): nights of the stay and its class (missing from an older API). */
+  nights?: number;
+  stayClass?: StayClass | null;
 }
 
 export interface SpotState {

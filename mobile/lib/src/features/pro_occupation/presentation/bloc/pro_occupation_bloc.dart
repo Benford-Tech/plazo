@@ -16,7 +16,7 @@ part 'pro_occupation_state.dart';
 
 /// Bloc 2, step "Occupation" in the app: find a vehicle, place an arrival, note the key hook.
 class ProOccupationBloc extends Bloc<ProOccupationEvent, ProOccupationState> {
-  ProOccupationBloc(this._getParking, this._getBoard, this._search, this._assign, {LocationService? location})
+  ProOccupationBloc(this._getParking, this._getBoard, this._search, this._assign, this._getFiles, this._assignFile, this._prepareFiles, {LocationService? location})
     : _location = location,
       super(const ProOccupationState()) {
     on<ProOccupationStarted>(_onStarted);
@@ -24,6 +24,8 @@ class ProOccupationBloc extends Bloc<ProOccupationEvent, ProOccupationState> {
     on<ProOccupationSearched>(_onSearched);
     on<ProOccupationVehicleChosen>((e, emit) => emit(state.copyWith(vehicle: e.vehicle, notice: null)));
     on<ProOccupationPlaced>(_onPlaced);
+    on<ProOccupationFiled>(_onFiled);
+    on<ProOccupationFilesPrepared>(_onPrepared);
     on<ProOccupationKeysSaved>(_onKeys);
     on<ProOccupationErrorDismissed>((e, emit) => emit(state.copyWith(errorCode: null, notice: null, actionState: ViewState.idle)));
   }
@@ -32,6 +34,9 @@ class ProOccupationBloc extends Bloc<ProOccupationEvent, ProOccupationState> {
   final GetOccupationUseCase _getBoard;
   final SearchVehiclesUseCase _search;
   final AssignSpotUseCase _assign;
+  final GetFilesUseCase _getFiles;
+  final AssignFileUseCase _assignFile;
+  final PrepareFilesUseCase _prepareFiles;
 
   static String _code(Failure f) => f.code ?? (f.statusCode == null ? 'network' : 'generic');
 
@@ -43,20 +48,56 @@ class ProOccupationBloc extends Bloc<ProOccupationEvent, ProOccupationState> {
       await _load(emit);
       final focus = event.focus;
       if (focus == null) return;
-      // The vehicle asked for: among today's arrivals, else on its spot.
-      final found = state.arrivals.where((a) => a.id == focus).firstOrNull ?? state.spots.map((s) => s.occupant).whereType<OccupantModel>().where((o) => o.id == focus).firstOrNull;
+      // The vehicle asked for: among today's arrivals, else on its spot or in its file.
+      final found =
+          state.arrivals.where((a) => a.id == focus).firstOrNull ??
+          state.spots.map((s) => s.occupant).whereType<OccupantModel>().where((o) => o.id == focus).firstOrNull ??
+          state.files.expand((f) => f.cars).where((c) => c.id == focus).firstOrNull;
       if (found != null) emit(state.copyWith(vehicle: found));
     });
   }
 
+  /// S-C (07/10/2026): the files first; a parking without files reads its spots as before.
   Future<void> _load(Emitter<ProOccupationState> emit) async {
     final parking = state.parking;
     if (parking == null) return;
+    final files = await _getFiles(parking.id);
+    final filed = files.fold((f) => null, (board) => board);
+    if (filed != null && filed.files.isNotEmpty) return emit(state.copyWith(viewState: ViewState.success, fileBoard: filed));
     final result = await _getBoard(parking.id);
     result.fold(
       (f) => emit(state.copyWith(viewState: ViewState.error, errorCode: _code(f))),
-      (board) => emit(state.copyWith(viewState: ViewState.success, board: board)),
+      (board) => emit(state.copyWith(viewState: ViewState.success, board: board, fileBoard: filed)),
     );
+  }
+
+  Future<void> _onFiled(ProOccupationFiled event, Emitter<ProOccupationState> emit) async {
+    emit(state.copyWith(actionState: ViewState.processing, errorCode: null, notice: null));
+    final car = event.fileId == null ? null : await _fix();
+    final result = await _assignFile(AssignFileParams(reservationId: event.reservationId, fileId: event.fileId, keyHook: event.keyHook, car: car));
+    await result.fold((f) async => emit(state.copyWith(actionState: ViewState.error, errorCode: _code(f))), (updated) async {
+      final code = updated.file?.code;
+      emit(
+        state.copyWith(
+          actionState: ViewState.success,
+          vehicle: state.vehicle?.id == updated.id ? updated : state.vehicle,
+          results: state.results.map((r) => r.id == updated.id ? updated : r).toList(),
+          notice: code == null ? 'occupation.released:${updated.plate}' : 'occupation.filed:${updated.plate}:$code',
+        ),
+      );
+      await _load(emit);
+    });
+  }
+
+  Future<void> _onPrepared(ProOccupationFilesPrepared event, Emitter<ProOccupationState> emit) async {
+    final parking = state.parking;
+    if (parking == null) return;
+    emit(state.copyWith(actionState: ViewState.processing, errorCode: null, notice: null));
+    final result = await _prepareFiles(parking.id);
+    await result.fold((f) async => emit(state.copyWith(actionState: ViewState.error, errorCode: _code(f))), (r) async {
+      emit(state.copyWith(actionState: ViewState.success, notice: 'occupation.prepared:${r.planned}:${r.free}'));
+      await _load(emit);
+    });
   }
 
   Future<void> _onSearched(ProOccupationSearched event, Emitter<ProOccupationState> emit) async {
@@ -109,7 +150,10 @@ class ProOccupationBloc extends Bloc<ProOccupationEvent, ProOccupationState> {
   Future<void> _onKeys(ProOccupationKeysSaved event, Emitter<ProOccupationState> emit) async {
     emit(state.copyWith(actionState: ViewState.processing, errorCode: null));
     final current = state.vehicle;
-    final result = await _assign(AssignSpotParams(reservationId: event.reservationId, spotId: current?.spotId, keyHook: event.keyHook, keysOnly: true));
+    // In files mode the keys ride the file assignment (the file stays as it is).
+    final result = state.filesMode
+        ? await _assignFile(AssignFileParams(reservationId: event.reservationId, fileId: current?.file?.id, keyHook: event.keyHook, keysOnly: true))
+        : await _assign(AssignSpotParams(reservationId: event.reservationId, spotId: current?.spotId, keyHook: event.keyHook, keysOnly: true));
     result.fold(
       (f) => emit(state.copyWith(actionState: ViewState.error, errorCode: _code(f))),
       (updated) => emit(

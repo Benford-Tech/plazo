@@ -9,6 +9,9 @@ abstract class ProOccupationState with _$ProOccupationState {
     @Default(ViewState.idle) ViewState actionState,
     ParkingSummaryModel? parking,
     OccupationBoardModel? board,
+
+    /// S-C (07/10/2026): the files of the parking; when it has some, the occupation reads in files.
+    FileBoardModel? fileBoard,
     @Default('') String query,
     @Default([]) List<OccupantModel> results,
     @Default(false) bool searching,
@@ -22,7 +25,15 @@ abstract class ProOccupationState with _$ProOccupationState {
   }) = _ProOccupationState;
 
   List<SpotStateModel> get spots => board?.spots ?? const [];
-  List<OccupantModel> get arrivals => board?.arrivals ?? const [];
+  List<OccupantModel> get arrivals => filesMode ? fileBoard!.arrivals : board?.arrivals ?? const [];
+
+  /// The parking is stored in files: the board, the arrivals and the cards speak files.
+  bool get filesMode => fileBoard != null && fileBoard!.files.isNotEmpty;
+  List<FileViewModel> get files => fileBoard?.files ?? const [];
+  bool get loaded => board != null || fileBoard != null;
+
+  /// The file a car stands in, from the file board.
+  FileViewModel? fileOf(String reservationId) => files.where((f) => f.cars.any((c) => c.id == reservationId)).firstOrNull;
 
   /// Free, active, non-reserved spots (for the picker), suggestions first.
   List<SpotStateModel> freeSpots({List<SuggestionModel> first = const []}) {

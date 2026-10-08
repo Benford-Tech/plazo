@@ -9,6 +9,7 @@ import { arrivalWindows, LatLng } from '@/domain/arrival';
 import { BookingRecord } from '@/domain/booking-view';
 import { localDateTime } from '@/domain/time';
 import { ArrivalService, MeetingPoint } from './arrival.service';
+import { FileService } from './file.service';
 import { FlightTrackingService } from './flight-tracking.service';
 import { ParkingLocationService } from './parking-location.service';
 import { PublicBookingService } from './public-booking.service';
@@ -34,6 +35,8 @@ export interface TravellerReturn {
   plate: string;
   /** The spot the valet placed the vehicle on (bloc 2), for "Retrouver ma voiture"; null until placed. */
   spot: { code: string; stayClass: string | null } | null;
+  /** S-C (07/10/2026): the file the valet put the car in and its position from the aisle (1 = first out). */
+  file: { code: string; position: number | null } | null;
   /** E (06/10/2026): what the traveller signalled on the return day ("mon vol a du retard"); null until then. */
   notice: ReturnNotice | null;
   /** Where the car is parked (GPS), recorded by the traveller or the valet; null until then. */
@@ -46,6 +49,7 @@ export class ReturnService {
   public arrivals = Container.get(ArrivalService);
   public bookings = Container.get(PublicBookingService);
   public flights = Container.get(FlightTrackingService);
+  public filesService = Container.get(FileService);
   public routing = Container.get(RoutingService);
   public shuttle = Container.get(ShuttleService);
   public locations = Container.get(ParkingLocationService);
@@ -164,7 +168,7 @@ export class ReturnService {
   private async view(booking: BookingRecord): Promise<TravellerReturn> {
     const fresh = await prisma.reservation.findUniqueOrThrow({
       where: { id: booking.id },
-      include: { spot: { select: { code: true, stayClass: true } } },
+      include: { spot: { select: { code: true, stayClass: true } }, file: { select: { id: true, code: true } } },
     });
     const location = (await this.locations.locations([booking.parking.id])).get(booking.parking.id) ?? null;
     const now = new Date();
@@ -191,6 +195,7 @@ export class ReturnService {
       },
       plate: fresh.plate,
       spot: onSite && fresh.spot ? { code: fresh.spot.code, stayClass: fresh.spot.stayClass } : null,
+      file: onSite && fresh.file ? { code: fresh.file.code, position: await this.filesService.positionOf(fresh.file.id, fresh.id) } : null,
       notice: returnNoticeView(fresh),
       car: carView(fresh),
     };

@@ -1,6 +1,7 @@
 import { Request, Response } from 'express';
 import { Container } from 'typedi';
 import { ArrivalService } from '@/services/arrival.service';
+import { FileService } from '@/services/file.service';
 import { FlightTrackingService } from '@/services/flight-tracking.service';
 import { InboundEmailService } from '@/services/inbound-email.service';
 import { ReturnService } from '@/services/return.service';
@@ -24,6 +25,7 @@ export class CronController {
   public reminders = Container.get(ReminderService);
   public sms = Container.get(SmsService);
   public retention = Container.get(RetentionService);
+  public files = Container.get(FileService);
 
   /** GET /internal/cron/expire-arrival-signals */
   public expireArrivalSignals = catchAsync(async (req: Request, res: Response) => {
@@ -41,6 +43,13 @@ export class CronController {
     const sms = await this.sms.refreshAll();
     logger.info(`[Cron] Return flights: ${JSON.stringify(result)}; departures: ${departures}; SMS queue: ${JSON.stringify(sms)}`);
     res.json({ ...result, departures, sms });
+  });
+
+  /** GET /internal/cron/prepare-files (S-C, 07/10/2026): keeps empty files for the big return days. */
+  public prepareFiles = catchAsync(async (req: Request, res: Response) => {
+    const result = await this.files.prepareAll();
+    logger.info(`[Cron] Files prepared: ${JSON.stringify(result)}`);
+    res.json(result);
   });
 
   /** GET /internal/cron/payouts */

@@ -18,4 +18,14 @@ abstract class OccupationClient {
 
   @POST('internal/reservations/{id}/spot')
   Future<AssignedModel> assign(@Path('id') String reservationId, @Body() Map<String, dynamic> body);
+
+  // S-C (07/10/2026): files as the unit of storage.
+  @GET('internal/parkings/{id}/files')
+  Future<FileBoardModel> files(@Path('id') String parkingId);
+
+  @POST('internal/reservations/{id}/file')
+  Future<AssignedModel> assignFile(@Path('id') String reservationId, @Body() Map<String, dynamic> body);
+
+  @POST('internal/parkings/{id}/files/prepare')
+  Future<FilesPreparedResponse> prepareFiles(@Path('id') String parkingId);
 }

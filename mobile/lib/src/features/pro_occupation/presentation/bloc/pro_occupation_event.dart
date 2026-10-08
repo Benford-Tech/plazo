@@ -32,6 +32,19 @@ class ProOccupationPlaced extends ProOccupationEvent {
   final String? keyHook;
 }
 
+/// S-C (07/10/2026): puts the booking in a file, in front of the others (null: takes it out).
+class ProOccupationFiled extends ProOccupationEvent {
+  const ProOccupationFiled({required this.reservationId, required this.fileId, this.keyHook});
+  final String reservationId;
+  final String? fileId;
+  final String? keyHook;
+}
+
+/// Night preparation on demand: keeps empty files for the big return days.
+class ProOccupationFilesPrepared extends ProOccupationEvent {
+  const ProOccupationFilesPrepared();
+}
+
 class ProOccupationKeysSaved extends ProOccupationEvent {
   const ProOccupationKeysSaved({required this.reservationId, required this.keyHook});
   final String reservationId;

@@ -28,11 +28,27 @@ abstract class OccupantModel with _$OccupantModel {
     @Default(false) bool onSite,
     @Default(false) bool leavesToday,
 
+    /// D-B (07/10/2026): nights of the stay and its class (short, medium, long), for the plan by stay.
+    int? nights,
+    String? stayClass,
+
     /// Search results carry the spot's code.
     SpotRefModel? spot,
 
     /// Arrivals to place carry their suggestions.
     @Default([]) List<SuggestionModel> suggestions,
+
+    /// S-C (07/10/2026): the file the car stands in and its position from the aisle (1 = first out).
+    FileRefModel? file,
+    int? filePosition,
+    int? position,
+
+    /// Cars in front that leave later: to take out before this one (file board).
+    @Default(<FileBlockerModel>[]) List<FileBlockerModel> blockedBy,
+
+    /// Arrivals of the file board: the ranked files and the one the rule picks.
+    @Default(<FileChoiceModel>[]) List<FileChoiceModel> choices,
+    FileChoiceModel? suggested,
   }) = _OccupantModel;
   factory OccupantModel.fromJson(Map<String, dynamic> json) => _$OccupantModelFromJson(json);
 }
@@ -114,4 +130,90 @@ abstract class VehicleSearchModel with _$VehicleSearchModel {
 abstract class AssignedModel with _$AssignedModel {
   const factory AssignedModel({required OccupantModel data}) = _AssignedModel;
   factory AssignedModel.fromJson(Map<String, dynamic> json) => _$AssignedModelFromJson(json);
+}
+
+// ---- S-C (07/10/2026): files as the unit of storage -------------------------------------------
+
+@freezed
+abstract class FileRefModel with _$FileRefModel {
+  const factory FileRefModel({required String id, required String code, String? name}) = _FileRefModel;
+  factory FileRefModel.fromJson(Map<String, dynamic> json) => _$FileRefModelFromJson(json);
+}
+
+@freezed
+abstract class FileBlockerModel with _$FileBlockerModel {
+  const factory FileBlockerModel({required String reservationId, required String reference, required String plate, required String returnAt}) = _FileBlockerModel;
+  factory FileBlockerModel.fromJson(Map<String, dynamic> json) => _$FileBlockerModelFromJson(json);
+}
+
+/// A file ranked for an arriving car: planned_day, tight_fit, empty, moves or full.
+@freezed
+abstract class FileChoiceModel with _$FileChoiceModel {
+  const factory FileChoiceModel({
+    required String fileId,
+    required String code,
+    required String reason,
+    @Default(0) int moves,
+    @Default(0) int cars,
+    @Default(0) int capacity,
+    int? fitMinutes,
+  }) = _FileChoiceModel;
+  factory FileChoiceModel.fromJson(Map<String, dynamic> json) => _$FileChoiceModelFromJson(json);
+}
+
+/// A file with its stack, from the aisle to the back.
+@freezed
+abstract class FileViewModel with _$FileViewModel {
+  const factory FileViewModel({
+    required String id,
+    required String code,
+    String? name,
+    required int capacity,
+    @Default(0) int sortOrder,
+    @Default(true) bool active,
+    String? plannedDay,
+    String? day,
+    @Default(<OccupantModel>[]) List<OccupantModel> cars,
+    @Default(0) int movesToday,
+    @Default(true) bool sound,
+  }) = _FileViewModel;
+  factory FileViewModel.fromJson(Map<String, dynamic> json) => _$FileViewModelFromJson(json);
+}
+
+@freezed
+abstract class FileStatsModel with _$FileStatsModel {
+  const factory FileStatsModel({
+    @Default(0) int files,
+    @Default(0) int capacity,
+    @Default(0) int cars,
+    @Default(0) int onSite,
+    @Default(0) int leavingToday,
+    @Default(0) int movesToday,
+    @Default(0) int unsound,
+  }) = _FileStatsModel;
+  factory FileStatsModel.fromJson(Map<String, dynamic> json) => _$FileStatsModelFromJson(json);
+}
+
+/// GET /internal/parkings/:id/files
+@freezed
+abstract class FileBoardModel with _$FileBoardModel {
+  const factory FileBoardModel({
+    required String date,
+    @Default(<FileViewModel>[]) List<FileViewModel> files,
+    @Default(<OccupantModel>[]) List<OccupantModel> arrivals,
+    @Default(FileStatsModel()) FileStatsModel stats,
+  }) = _FileBoardModel;
+  factory FileBoardModel.fromJson(Map<String, dynamic> json) => _$FileBoardModelFromJson(json);
+}
+
+@freezed
+abstract class FilesPreparedModel with _$FilesPreparedModel {
+  const factory FilesPreparedModel({@Default(0) int planned, @Default(0) int free}) = _FilesPreparedModel;
+  factory FilesPreparedModel.fromJson(Map<String, dynamic> json) => _$FilesPreparedModelFromJson(json);
+}
+
+@freezed
+abstract class FilesPreparedResponse with _$FilesPreparedResponse {
+  const factory FilesPreparedResponse({required FilesPreparedModel data}) = _FilesPreparedResponse;
+  factory FilesPreparedResponse.fromJson(Map<String, dynamic> json) => _$FilesPreparedResponseFromJson(json);
 }

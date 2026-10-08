@@ -271,6 +271,8 @@ export interface TravellerReturn {
   parking: { name: string; phone: string | null; shuttleMinutes: number | null; address: string | null; location: LatLng | null };
   plate: string;
   spot: { code: string; stayClass: string | null } | null;
+  /** S-C (07/10/2026): the file the valet put the car in and its position from the aisle (1 = first out). */
+  file: { code: string; position: number | null } | null;
   /** E (06/10/2026): what the traveller signalled today ("mon vol a du retard", "bagage perdu"). */
   notice?: ReturnNotice | null;
   /** Where the car is parked (06/10/2026), recorded by the traveller or the valet; null until then. */

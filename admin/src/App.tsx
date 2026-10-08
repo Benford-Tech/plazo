@@ -1,6 +1,7 @@
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Navigate, Route, Routes } from "react-router-dom";
 import { AdminLayout } from "@/components/AdminLayout";
+import { ConfirmProvider } from "@/components/ui/confirm";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { AuthProvider, useAuth } from "@/contexts/AuthContext";
@@ -125,9 +126,11 @@ const App = () => (
             <Route
               element={
                 <ProtectedRoute>
-                  <QuickCardProvider>
-                    <AdminLayout />
-                  </QuickCardProvider>
+                  <ConfirmProvider>
+                    <QuickCardProvider>
+                      <AdminLayout />
+                    </QuickCardProvider>
+                  </ConfirmProvider>
                 </ProtectedRoute>
               }
             >
@@ -151,7 +154,10 @@ const App = () => (
                   </RequirePermission>
                 }
               />
-              <Route path="/reservations/sms-veille" element={<RemindersPage />} />
+              <Route
+                path="/reservations/sms-veille"
+                element={<RemindersPage />}
+              />
               <Route path="/reservations/:id" element={<ReservationPage />} />
               <Route path="/parking" element={<ParkingIndex />} />
               <Route
@@ -164,7 +170,11 @@ const App = () => (
               />
               <Route
                 path="/parking/plan"
-                element={<Navigate to="/parking/plan/terrain" replace />}
+                element={
+                  <RequirePermission permission="parking:manage">
+                    {lazyPage(<ParkingPlanPage />)}
+                  </RequirePermission>
+                }
               />
               <Route
                 path="/parking/plan/:step"

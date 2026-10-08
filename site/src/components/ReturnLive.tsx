@@ -171,6 +171,8 @@ export function ReturnLive({ reference, token, initial }: { reference: string; t
   const shuttle = data.shuttle;
   const vehicle = shuttle ? [shuttle.vehicle.model, shuttle.vehicle.colour].filter(Boolean).join(" ") || null : null;
   const spot = data.spot;
+  // S-C (07/10/2026): on a valet parking the car stands in a file; it beats the spot when both are known.
+  const file = data.file ?? null;
   const car = data.car;
   const parkingDestination = data.parking.location ? `${data.parking.location.lat},${data.parking.location.lng}` : (data.parking.address ?? data.parking.name);
   // The recorded GPS fix of the car (06/10/2026) beats the parking's entrance for the route.
@@ -282,7 +284,7 @@ export function ReturnLive({ reference, token, initial }: { reference: string; t
           <LivePill label={t.position} at={fetchedAt - (shuttle.positionAgeSeconds ?? 0) * 1000} now={now} />
         </div>
       )}
-      {(spot || car) && (
+      {(file || spot || car) && (
         <div data-testid="find-car" className="flex flex-col gap-3 rounded-[18px] bg-dark p-4 text-white">
           <div className="flex items-center justify-between gap-3">
             <span className="text-[13px] font-bold tracking-[.04em] text-white/70 uppercase">{t.carTitle}</span>
@@ -293,8 +295,17 @@ export function ReturnLive({ reference, token, initial }: { reference: string; t
               P
             </span>
             <div>
-              <div className="text-[26px] leading-none font-extrabold">{spot ? t.carSpot(spot.code) : t.carNoSpot}</div>
-              <div className="text-[13px] text-white/75">{(spot?.stayClass && t.carZone[spot.stayClass]) || data.parking.name}</div>
+              <div data-testid="car-place" className="text-[26px] leading-none font-extrabold">
+                {file ? t.carFile(file.code) : spot ? t.carSpot(spot.code) : t.carNoSpot}
+                {file?.position != null && (
+                  <>
+                    {" "}
+                    <span className="text-[15px] leading-none font-semibold whitespace-nowrap text-white/75">· {t.carFilePosition(file.position)}</span>
+                  </>
+                )}
+              </div>
+              {/* The sub line follows the displayed place: the spot's stay zone only when no file is shown. */}
+              <div className="text-[13px] text-white/75">{(!file && spot?.stayClass && t.carZone[spot.stayClass]) || data.parking.name}</div>
             </div>
           </div>
           {car && (

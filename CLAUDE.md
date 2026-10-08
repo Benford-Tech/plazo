@@ -105,7 +105,7 @@ Ne construire QUE ce qui règle la douleur n°1 du client.
      sont les morceaux du terrain hors exclusions (`autoZones`, une orientation par morceau, réglage `zonesAuto`,
      bouton « Zones automatiques », passage en manuel dès qu'une zone est tracée ou modifiée) et le tracé
      s'aimante aux parcelles, parkings, bâtiments et au contour (`snapToRings`, `MapView.snapTo`).
-     **P-A pinceau (07/10/2026)** : à l'étape Zones, « Pinceau » et « Gomme » (largeur 3 / 6 / 12 m) : glisser sur la carte
+     **P-A pinceau (07/10/2026)** : à l'étape Zones, « Zone de parking » (pinceau) et « Zone de passage » (gomme ; libellés métier du 07/10/2026) (largeur 3 / 6 / 12 m) : glisser sur la carte
      peint une surface (`MapView.paint` / `onPaintStroke`, anneau du curseur à la largeur réelle, `metresToPixels`),
      `admin/src/lib/capacity/brush.ts` (`strokeArea`, `paintZones` : les zones touchées et le trait fusionnent,
      `eraseZones` : retrait, coupe en deux ou disparition) ; passe les zones en manuel. **R-A réinitialiser** : menu
@@ -123,6 +123,21 @@ Ne construire QUE ce qui règle la douleur n°1 du client.
      « Herbe autorisée » (réglage `suggestGrass`, vrai par défaut, corps `{ allowGrass }` de la route, `systemPrompt(allowGrass)`,
      sol `grass`) et la proposition **s'ajoute** aux zones déjà tracées (fusion des zones qui se touchent par `paintZones`),
      avant ou après le pinceau ; « Réinitialiser… » pour repartir de zéro.
+     **R-A + R-C « éditeur du plan » (07/10/2026, « la page est inutilisable »)** : plus d'étapes ni de panneau latéral ;
+     `admin/src/pages/parking/plan/PlanEditor.tsx` (barre d'outils, carte flottante de l'outil, compteur de places en
+     direct recalculé 500 ms après chaque trait, tiroir `PlanSettings.tsx` pour allée, recul, files, gabarits, séjours,
+     sources IGN, échelle), `planLayers.ts` (couches et étiquettes), `autoSetup.ts` (**première ouverture d'un plan vide** :
+     parcelle à l'adresse du parking → bâtiments IGN → zones par Claude, sinon tout le terrain hors bâtiments → places
+     « Voiturier · peigne », chaque étape enregistrée ; bandeau « Préparation du plan » ; jamais rejoué après une
+     réinitialisation). L'outil Obstacle regroupe les parties exclues (clic sur un obstacle : marge, suppression) ;
+     l'étape « Places » de l'ancien `SpotsStep.tsx` est fondue dans l'outil Places. Les pages `capacity/TerrainStep` et
+     `ZonesStep` ne servent plus qu'à l'outil capacité de la plateforme.
+     **P-B « Une rangée d'un trait » (07/10/2026, places à la main)** : dans l'outil Places, « + Rangée de places » puis un
+     trait sur la carte : des places au gabarit voiturier se posent côte à côte le long du trait, perpendiculaires et
+     centrées dessus (`admin/src/lib/plan/manualRow.ts`, codes `M-01`, `M-02`…, zone du point milieu) ;
+     `ParkingSpot.manual`, `POST /internal/parkings/:id/plan/spots` (`AddSpotsDto`, 400 `duplicate_code`),
+     `DELETE /internal/parkings/:id/plan/spots/:spotId` (409 `not_manual`) ; une régénération ne remplace que les places
+     générées ; outil « Supprimer » (une place générée se désactive) ; bord blanc tireté sur la carte.
    - Décision **O-A « File triée » (06/10/2026)** : sur une file de voiturier, les retours doivent décroître de l'allée vers le
      fond ; `domain/files.ts` reconstitue les files (profondeur + position) et score chaque place libre par le nombre de
      voitures à déplacer (`blocking` devant partant après, `blocked` derrière partant avant ; même vague = 2 h) ;
@@ -136,6 +151,38 @@ Ne construire QUE ce qui règle la douleur n°1 du client.
      dessus dans chaque place occupée (couleur de l'état), plaque + nom + retour dès le zoom 19, file de l'arrivée survolée
      avec la place proposée cerclée d'orange et les voitures à sortir en ambre, légende « Proposée · À sortir avant un
      retour · Manœuvre ».
+     **D-B « Par durée » (07/10/2026)** : pilules « Par état · Par durée » en tête de l'Occupation ; par durée, chaque voiture
+     prend la couleur de la classe de son séjour (court jaune pâle, moyen citron, long ocre, comme les zones du plan ; gris
+     hors classe), les places libres montrent leur zone de séjour en pâle, légende adaptée ; la fiche d'une place dit « N nuits ·
+     Moyen séjour · place en zone court séjour » ; le serveur ajoute `occupant.nights` et `occupant.stayClass` au tableau
+     (`OccupationService.board`, seuils du plan).
+   - **Décision S-C « Des files, pas des places » (07/10/2026, « la modélisation est bancale, le voiturier passe son temps à
+     déplacer les voitures »)** : sur un parking voiturier l'unité de rangement est la **file** (table `parking_files` : code,
+     capacité, trait allée → fond facultatif ; `Reservation.fileId/fileRank`), plus la place. `domain/file-stacks.ts` : une
+     voiture entre devant les autres ; file saine = chaque voiture repart avant celles de derrière (2 h de tolérance) ; à
+     l'arrivée `rankFiles` choisit 1) la file servant déjà ce jour de retour, 2) l'ajustement serré derrière un retour plus
+     tard, 3) une file vide gardée pour ce jour, 4) une file vide libre, 5) une file gardée pour un autre jour, puis celles à
+     déplacements, puis les complètes ; `planEmptyFiles` = préparation de la veille (cron `prepare-files` 02:00 UTC, bouton,
+     et au premier affichage du jour : files vides gardées pour les gros jours de retour des 14 prochains jours, un tiers reste
+     libre). `FileService` (`GET/PUT /internal/parkings/:id/files`, `…/files/choices`, `…/files/from-plan`, `…/files/prepare`,
+     `POST /internal/reservations/:id/file`, 409 `file_full` / `file_occupied`). Dès qu'un parking a des files : Occupation web
+     (`FilesOccupation.tsx` : « À sortir aujourd'hui » en tête, piles, « Ranger en F07 » avec clés, « Autre file… », retrait)
+     et app (`filesMode` du `ProOccupationBloc`, `_FilesSummary`, `_FileArrivalRow`, `_FileCard`, `showFilePicker`), fiches
+     « File F07 · 3e depuis l'allée » (web, fiche opérationnelle, app, `TravellerReturn.file`), tableau de bord (`breakdown.movesToday`,
+     `parking.storedInFiles`, capacité = somme des files, alerte `blocked_return` depuis les files), « Rendu » / annulé / non venu
+     libèrent la file. Éditeur du plan : outil **Files** (un trait = une file, capacité déduite de la longueur, liste modifiable).
+     **Suite du 08/10/2026** : barre d'outils Contour · Files · Repères, les outils de l'estimateur repliés sous « Avancé »
+     (`PRIMARY_TOOLS` / `ADVANCED_TOOLS` dans `plan/types.ts`) ; « Me proposer des files » (files déduites des places de voiturier,
+     sinon passe automatique en peigne puis files ; `AutoStep` `files` à la fin de la passe R-C, marquée dans
+     `settings.autoSetupAt` pour ne jamais rejouer d'elle-même, même après une réinitialisation) ; « Réinitialiser… › Files
+     seulement » ; une réinitialisation (« Tout le plan », « Places seulement ») efface aussi les places posées à la main
+     (`includeManual` de `PUT …/plan/spots`) et « Tout le plan » retire les files vides (08/10/2026, « ces places restent affichées »). **Planning des files** : `GET /internal/parkings/:id/files/planning?from=&days=` (par jour : retours, en
+     file / à venir, `filesServing`, `filesKept`, `room`, `missing` ; alertes `missing_room`, `over_capacity`, `unsound`),
+     `PUT /internal/parkings/:id/files/:fileId/keep` `{ day | null }` (`ParkingFile.keptByHand`, migration
+     `20261008090000_file_kept_by_hand` ; la préparation respecte une file gardée à la main jusqu'à son jour, `isKeptByHand`) ;
+     web `FilesPlanningPage.tsx` servie par `/parking/planning` dès que le parking a des files, app : mode files du
+     `ProSpotPlanningBloc` (`_FilesPlanningView`). Voyageur : `TravellerReturn.file` affiché dans « Retrouver ma voiture »
+     (site `ReturnLive`, app `find_car_page` / `return_block`).
    - Retrouver un véhicule en quelques secondes (plaque, emplacement, emplacement des clés).
    - Si voiturier : suivi des clés confiées.
 
@@ -255,7 +302,9 @@ Plazo reprend la stack et les conventions des dépôts `lovenest-backend`, `love
   parcours bien séparés, puis deux points d'entrée (flavors). **Décision du 04/10/2026 : app pro complète, équivalente
   à l'espace pro web** (A-B : deux apps « Plazo » et « Plazo Pro » sur un seul projet ; N-A : quatre onglets
   Aujourd'hui · Réservations · Parking · Plus), livrée par étapes : 1 réservations (fait), 2 flavors et onglets (fait : `--flavor pro --dart-define=APP_FLAVOR=pro`,
-  `ProShellPage` à quatre onglets sous `/pro`, icône Pro vert citron (P et avion vert foncé, C-B 05/10/2026) ; iOS : second schéma Xcode à créer),
+  `ProShellPage` à quatre onglets sous `/pro`, icône Pro vert citron (P et avion vert foncé, C-B 05/10/2026) ; iOS : schémas
+  Xcode `traveller` et `pro` avec leurs configurations `-traveller` / `-pro`, bundle id `.pro`, `AppIcon-pro`, `RunnerPro.entitlements`
+  (07/10/2026)),
   **R-C « Poste du jour » (04/10/2026)** : chaque membre choisit son poste (gérant, accueil, chauffeur, voiturier) parmi ceux
   que son rôle couvre (`allowedPosts` dans `domain/roles.ts`, `Staff.post/postSetAt`, `PATCH /internal/staff/me/post`) ; les quatre
   onglets suivent le poste (`core/helpers/posts.dart` : chauffeur Navette · Arrivées · Retours · Plus, voiturier Parking ·
@@ -288,10 +337,12 @@ Le nom du produit doit rester dans UN seul fichier de configuration (il peut enc
 - `backend/` : API REST sous `/api` (`index.js` = point d'entrée Vercel). Les routes du personnel du loueur
   sont sous `/api/internal/...` (`StaffAuthMiddleware`, jetons stockés en base et révocables), comme les
   routes staff de LoveNest ; celles du site voyageurs sous `/api/public/...`.
-- `admin/` : espace pro, servi sous `/pro`. L'onglet « Parking » a quatre volets : `/parking/plan/:step` (bloc 2, étape
-  « Plan » : terrain, zones, places, repères, tracés sur la photo IGN avec le moteur de l'estimateur `src/lib/capacity/*`,
-  places numérotées par `src/lib/plan/numbering.ts`, routes `/api/internal/parkings/:id/plan…`, tables `parking_plans` et
-  `parking_spots`), `/parking/occupation` (étape « Occupation », 04/10/2026 : plan en couleurs, arrivées à placer avec
+- `admin/` : espace pro, servi sous `/pro`. L'onglet « Parking » a quatre volets : `/parking/plan` (bloc 2, étape
+  « Plan », **éditeur R-A du 07/10/2026** : une seule carte IGN, une barre d'outils à gauche Contour · Zone de parking ·
+  Zone de passage · Obstacle · Repères · Places, une carte flottante par outil, le nombre de places en tête ; moteur de
+  l'estimateur `src/lib/capacity/*`, pages `src/pages/parking/plan/*`, places numérotées par `src/lib/plan/numbering.ts`,
+  routes `/api/internal/parkings/:id/plan…`, tables `parking_plans` et `parking_spots` ; les anciens chemins
+  `/parking/plan/terrain|zones|places` ouvrent l'outil correspondant), `/parking/occupation` (étape « Occupation », 04/10/2026 : plan en couleurs, arrivées à placer avec
   place proposée, recherche par plaque / nom / référence, crochet des clés ; routes `/api/internal/parkings/:id/occupation…`
   et `POST /api/internal/reservations/:id/spot` ; champs `Reservation.spotId` et `keyHook`), `/parking/planning` (étape
   « Planning des places ») et `/parking/reglages`.
@@ -312,7 +363,11 @@ Le nom du produit doit rester dans UN seul fichier de configuration (il peut enc
   par `/plan/estimate` et `/plan/generate`) ; paiement par la feuille native Stripe
   (`flutter_stripe`) ; architecture de `lovenest-frontend`
   (`lib/src/features/<x>/{data,domain,presentation}`, `di/`, `core/`), textes dans `assets/l10n/fr-FR.json`,
-  nom du produit recopié depuis `product.json` par `tool/sync_product.dart`, builds par `codemagic.yaml` (racine du dépôt, `working_directory: mobile`).
+  nom du produit recopié depuis `product.json` par `tool/sync_product.dart`, builds par `codemagic.yaml` (racine du dépôt, `working_directory: mobile`). **Pipelines de publication (07/10/2026)** :
+  `mobile-check` (chaque push : vérifications + APK debug), `plazo-release` et `plazo-pro-release` (tag `mobile-v*` ou manuel :
+  AAB signé → Google Play piste interne, IPA signé → TestFlight ; numéro de build = compteur Codemagic + 100, jamais sous le
+  dernier des stores ; secrets dans le groupe Codemagic `mobile_secrets` et l'intégration `plazo-asc`, voir `mobile/README.md`
+  « Publier sur les stores »).
   Voir `mobile/README.md`.
 
 ## Personnel
@@ -333,6 +388,10 @@ Le nom du produit doit rester dans UN seul fichier de configuration (il peut enc
   dans la migration.
 - Espace pro : `src/lib/api.ts` (`adminApi`), `AuthContext`, pages `XxxPage.tsx`, composants shadcn
   dans `components/ui`, textes dans `src/lib/fr.ts`.
+  **Plus d'alerte native (07/10/2026)** : jamais `window.confirm` / `window.alert` ; une question se pose avec
+  `useConfirm()` (`components/ui/confirm-context.ts`, promesse de booléen, options `title`, `confirmLabel`,
+  `destructive`), servie par `ConfirmProvider` (`components/ui/confirm.tsx`) monté dans `App.tsx` autour de l'espace pro ;
+  sans fournisseur (test d'un composant seul), repli sur la boîte native.
 - Tests serveur : Jest + supertest contre une vraie base de test (`DATABASE_URL_TEST`, nom en `_test`
   obligatoire). Tests espace pro : Vitest + Testing Library.
 
@@ -385,7 +444,9 @@ Canevas de référence : https://claude.ai/artifact/6ezoCDyLXFNwhAH5ZWUf4u (rang
   « Tableau de bord » (`/pro/`, `GET /api/internal/dashboard`) : cinq tuiles (Sur le parking, Arrivées, Retours,
   Navettes, À traiter), bandeau d'état des services (vols, SMS, notifications, paiements, import), liste « À traiter
   maintenant » (urgent → à surveiller → à faire), véhicules sur le parking avec place et clés, carte IGN des navettes en
-  direct (`GET /internal/shuttle/live`). Le planning passe à `/pro/planning`. **Fiche opérationnelle (C-A, 06/10/2026)** :
+  direct (`GET /internal/shuttle/live`). **Tuile Paiements (07/10/2026, « les paiements sont centralisés »)** : OK « en ligne, encaissés par Plazo » si
+  `services.stripe.online` (clés Stripe de la plateforme + commission, `PaymentService.modeFor`), sinon Off ; le compte Stripe
+  du loueur n'y apparaît pas (il ne sert qu'aux reversements, page Reversements), web et app. Le planning passe à `/pro/planning`. **Fiche opérationnelle (C-A, 06/10/2026)** :
   `ReservationQuickCard` (tiroir, `QuickCardProvider` dans `App.tsx`, `useQuickCard().open(id)`) ouverte depuis les lignes du
   planning, les alertes et véhicules du tableau de bord, les tuiles de la page Navettes et « Ouvrir la réservation » de
   l'Occupation : appel / SMS, vols et état, place et clés, voiture, desserte, puis `NextStep` (un bouton « Prochaine étape » :

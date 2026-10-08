@@ -172,6 +172,7 @@ Map<String, dynamic> _$DashboardPushModelToJson(_DashboardPushModel instance) =>
 _DashboardStripeModel _$DashboardStripeModelFromJson(
   Map<String, dynamic> json,
 ) => _DashboardStripeModel(
+  online: json['online'] as bool?,
   connected: json['connected'] as bool? ?? false,
   payoutsEnabled: json['payoutsEnabled'] as bool? ?? false,
 );
@@ -179,6 +180,7 @@ _DashboardStripeModel _$DashboardStripeModelFromJson(
 Map<String, dynamic> _$DashboardStripeModelToJson(
   _DashboardStripeModel instance,
 ) => <String, dynamic>{
+  'online': instance.online,
   'connected': instance.connected,
   'payoutsEnabled': instance.payoutsEnabled,
 };

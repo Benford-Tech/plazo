@@ -11,10 +11,19 @@ import { Aside, PanelLabel, ToolButton } from "@/components/capacity/ui";
 import { ParkingTabs } from "@/components/parking/ParkingTabs";
 import { Plate } from "@/components/Plate";
 import { useQuickCard } from "@/components/reservations/ReservationQuickCard";
+import { FilesOccupation } from "./FilesOccupation";
+import { useAuth } from "@/contexts/AuthContext";
+import { can } from "@/lib/roles";
 import { Skeleton } from "@/components/ui/skeleton";
 import { adminApi, ApiError } from "@/lib/api";
 import { boundsOf, fc, feature, positionsOf } from "@/lib/capacity/mapData";
-import { carIcons, filesOf, headingOf, manoeuvreStrip, ringCentroid } from "@/lib/plan/files";
+import {
+  carIcons,
+  filesOf,
+  headingOf,
+  manoeuvreStrip,
+  ringCentroid,
+} from "@/lib/plan/files";
 import type { LonLat } from "@/lib/capacity/projection";
 import { dateTimeShort, timeOf } from "@/lib/datetime";
 import { describeError, fr } from "@/lib/fr";
@@ -37,11 +46,22 @@ const TONE_COLORS = {
   inactive: "#6b6b66",
 } as const;
 const SELECTED = "#ff6600";
+/** D-B (07/10/2026): the stay classes, in the plan's colours (Z-A), plus grey for a spot or a car without one. */
+const STAY_COLORS = {
+  short: "#fff3b0",
+  medium: "#A3E635",
+  long: "#b58900",
+  none: "#9a9a94",
+} as const;
+type StayKey = keyof typeof STAY_COLORS;
+type ViewMode = "state" | "stay";
+const stayKeyOf = (s: SpotState): StayKey =>
+  s.occupant ? (s.occupant.stayClass ?? "none") : (s.stayClass ?? "none");
 /** O-A (06/10/2026): a car to take out before a return. */
 const TO_TAKE_OUT = "#D97706";
 /** The plate, name and return read on a spot from this zoom (a spot is about 5 m long). */
 const SPOT_LABEL_MIN_ZOOM = 19;
-const CAR_ICONS = carIcons(TONE_COLORS);
+const CAR_ICONS = carIcons({ ...TONE_COLORS, ...STAY_COLORS });
 const LANDMARK_COLORS: Record<LandmarkKind, string> = {
   entrance: "#6ec071",
   exit: "#ff8a3d",
@@ -73,6 +93,7 @@ type Choosing = { reservationId: string; plate: string } | null;
  */
 export default function OccupationPage() {
   const t = fr.occupation;
+  const { user } = useAuth();
   const queryClient = useQueryClient();
   const { data: parking } = useQuery({
     queryKey: ["parking"],
@@ -85,10 +106,19 @@ export default function OccupationPage() {
     enabled: !!parkingId,
     refetchInterval: 30_000,
   });
+  // S-C (07/10/2026): a parking stored in files reads its occupation in files.
+  const filesBoard = useQuery({
+    queryKey: ["files", parkingId],
+    queryFn: () => adminApi.getFiles(parkingId!),
+    enabled: !!parkingId,
+    refetchInterval: 30_000,
+  });
   const [selectedSpotId, setSelectedSpotId] = useState<string | null>(null);
   const [selectedReservation, setSelectedReservation] =
     useState<VehicleHit | null>(null);
   const [choosing, setChoosing] = useState<Choosing>(null);
+  // D-B: the plan read by state (default) or by stay length.
+  const [mode, setMode] = useState<ViewMode>("state");
   // O-A (06/10/2026): the arrival whose file is read on the plan (hovered or being placed).
   const [focusArrivalId, setFocusArrivalId] = useState<string | null>(null);
   const [query, setQuery] = useState("");
@@ -111,7 +141,10 @@ export default function OccupationPage() {
     (async () => {
       try {
         const booking = await adminApi.getReservation(focus);
-        const hits = await adminApi.searchVehicles(parkingId, booking.reference);
+        const hits = await adminApi.searchVehicles(
+          parkingId,
+          booking.reference,
+        );
         const hit = hits.results.find((h) => h.id === focus) ?? null;
         if (cancelled) return;
         setQuery(booking.reference);
@@ -209,10 +242,16 @@ export default function OccupationPage() {
   };
 
   const files = useMemo(() => filesOf(spots), [spots]);
-  const fileByKey = useMemo(() => new Map(files.map((f) => [f.key, f])), [files]);
+  const fileByKey = useMemo(
+    () => new Map(files.map((f) => [f.key, f])),
+    [files],
+  );
   // The file marks of the focused arrival: its proposed spot, and the cars to take out.
   const fileFocus = useMemo(() => {
-    const arrival = data?.arrivals.find((a) => a.id === (focusArrivalId ?? choosing?.reservationId)) ?? null;
+    const arrival =
+      data?.arrivals.find(
+        (a) => a.id === (focusArrivalId ?? choosing?.reservationId),
+      ) ?? null;
     const best = arrival?.suggestions[0];
     if (!arrival || !best) return null;
     const spot = spots.find((s) => s.id === best.spotId);
@@ -229,27 +268,49 @@ export default function OccupationPage() {
       feature(
         { type: "Polygon", coordinates: [s.geometry] },
         {
-          color: s.id === selectedSpotId ? SELECTED : TONE_COLORS[spotTone(s)],
+          color:
+            s.id === selectedSpotId
+              ? SELECTED
+              : mode === "stay"
+                ? STAY_COLORS[stayKeyOf(s)]
+                : TONE_COLORS[spotTone(s)],
           free: spotTone(s) === "free",
+          // By stay, a free spot shows its own zone a little stronger than the see-through default.
+          freeOpacity: mode === "stay" && s.stayClass ? 0.3 : 0.12,
           active: s.active,
           selected: s.id === selectedSpotId,
         },
       ),
     );
     // O-A: the manoeuvring strips in front of every file (kept clear), under the spots.
-    const strips = files.map(manoeuvreStrip).filter((r): r is NonNullable<typeof r> => !!r);
+    const strips = files
+      .map(manoeuvreStrip)
+      .filter((r): r is NonNullable<typeof r> => !!r);
     if (strips.length) {
       list.push({
         id: "manoeuvre-fill",
         type: "fill",
-        data: fc(strips.map((ring) => feature({ type: "Polygon", coordinates: [ring] }))),
+        data: fc(
+          strips.map((ring) =>
+            feature({ type: "Polygon", coordinates: [ring] }),
+          ),
+        ),
         paint: { "fill-color": "#FFFFFF", "fill-opacity": 0.18 },
       });
       list.push({
         id: "manoeuvre-line",
         type: "line",
-        data: fc(strips.map((ring) => feature({ type: "Polygon", coordinates: [ring] }))),
-        paint: { "line-color": "#FFFFFF", "line-width": 1.5, "line-dasharray": [2, 2], "line-opacity": 0.9 },
+        data: fc(
+          strips.map((ring) =>
+            feature({ type: "Polygon", coordinates: [ring] }),
+          ),
+        ),
+        paint: {
+          "line-color": "#FFFFFF",
+          "line-width": 1.5,
+          "line-dasharray": [2, 2],
+          "line-opacity": 0.9,
+        },
       });
     }
     // Free spots stay see-through so the photo reads; taken ones are solid.
@@ -264,7 +325,7 @@ export default function OccupationPage() {
           ["get", "selected"],
           0.9,
           ["get", "free"],
-          0.12,
+          ["get", "freeOpacity"],
           ["get", "active"],
           0.7,
           0.08,
@@ -283,17 +344,30 @@ export default function OccupationPage() {
     });
     // O-A: the file of the focused arrival: the proposed spot in orange, the cars to take out in amber.
     if (fileFocus) {
-      const marked = spots.filter((s) => s.id === fileFocus.proposedId || (fileFocus.takeOut.has(s.code) && s.fileKey === fileFocus.fileKey));
+      const marked = spots.filter(
+        (s) =>
+          s.id === fileFocus.proposedId ||
+          (fileFocus.takeOut.has(s.code) && s.fileKey === fileFocus.fileKey),
+      );
       if (marked.length)
         list.push({
           id: "file-marks",
           type: "line",
           data: fc(
             marked.map((s) =>
-              feature({ type: "Polygon", coordinates: [s.geometry] }, { color: s.id === fileFocus.proposedId ? SELECTED : TO_TAKE_OUT, proposed: s.id === fileFocus.proposedId }),
+              feature(
+                { type: "Polygon", coordinates: [s.geometry] },
+                {
+                  color: s.id === fileFocus.proposedId ? SELECTED : TO_TAKE_OUT,
+                  proposed: s.id === fileFocus.proposedId,
+                },
+              ),
             ),
           ),
-          paint: { "line-color": ["get", "color"], "line-width": ["case", ["get", "proposed"], 4, 3] },
+          paint: {
+            "line-color": ["get", "color"],
+            "line-width": ["case", ["get", "proposed"], 4, 3],
+          },
         });
     }
     // The cars, nose towards the aisle, in the colour of their spot.
@@ -304,7 +378,16 @@ export default function OccupationPage() {
         type: "symbol",
         data: fc(
           cars.map((s) =>
-            feature({ type: "Point", coordinates: ringCentroid(s.geometry) }, { icon: `car-${spotTone(s)}`, bearing: headingOf(s, s.fileKey ? fileByKey.get(s.fileKey) : undefined) }),
+            feature(
+              { type: "Point", coordinates: ringCentroid(s.geometry) },
+              {
+                icon: `car-${mode === "stay" ? stayKeyOf(s) : spotTone(s)}`,
+                bearing: headingOf(
+                  s,
+                  s.fileKey ? fileByKey.get(s.fileKey) : undefined,
+                ),
+              },
+            ),
           ),
         ),
         paint: { "icon-opacity": 0.95 },
@@ -314,7 +397,19 @@ export default function OccupationPage() {
           "icon-rotation-alignment": "map",
           "icon-allow-overlap": true,
           "icon-ignore-placement": true,
-          "icon-size": ["interpolate", ["linear"], ["zoom"], 16, 0.12, 18, 0.35, 20, 1.1, 21, 2.1],
+          "icon-size": [
+            "interpolate",
+            ["linear"],
+            ["zoom"],
+            16,
+            0.12,
+            18,
+            0.35,
+            20,
+            1.1,
+            21,
+            2.1,
+          ],
         },
       });
     if (data.plan?.zones?.length)
@@ -353,16 +448,22 @@ export default function OccupationPage() {
       });
     }
     // Where the cars stand (06/10/2026): the GPS fixes recorded by the travellers or the valets.
-    const located = [...data.arrivals, ...spots.map((s) => s.occupant).filter((o): o is NonNullable<typeof o> => !!o)].filter(
-      (o) => o.carLat != null && o.carLng != null,
-    );
+    const located = [
+      ...data.arrivals,
+      ...spots
+        .map((s) => s.occupant)
+        .filter((o): o is NonNullable<typeof o> => !!o),
+    ].filter((o) => o.carLat != null && o.carLng != null);
     if (located.length)
       list.push({
         id: "cars",
         type: "circle",
         data: fc(
           located.map((o) =>
-            feature({ type: "Point", coordinates: [o.carLng!, o.carLat!] }, { color: o.carLocatedBy === "staff" ? "#1E5E2E" : "#FF6600" }),
+            feature(
+              { type: "Point", coordinates: [o.carLng!, o.carLat!] },
+              { color: o.carLocatedBy === "staff" ? "#1E5E2E" : "#FF6600" },
+            ),
           ),
         ),
         paint: {
@@ -373,7 +474,7 @@ export default function OccupationPage() {
         },
       });
     return list;
-  }, [data, spots, selectedSpotId, files, fileByKey, fileFocus]);
+  }, [data, spots, selectedSpotId, mode, files, fileByKey, fileFocus]);
   const labels = useMemo<MapLabel[]>(() => {
     const list: MapLabel[] = (data?.plan?.landmarks ?? []).map((l) => ({
       id: `lm-${l.id}`,
@@ -385,7 +486,8 @@ export default function OccupationPage() {
     for (const s of spots) {
       const o = s.occupant;
       if (!o || !s.active) continue;
-      const inFocus = !!fileFocus && !!fileFocus.fileKey && s.fileKey === fileFocus.fileKey;
+      const inFocus =
+        !!fileFocus && !!fileFocus.fileKey && s.fileKey === fileFocus.fileKey;
       list.push({
         id: `spot-${s.id}`,
         lngLat: ringCentroid(s.geometry),
@@ -426,6 +528,15 @@ export default function OccupationPage() {
     );
   }
 
+  if (parkingId && filesBoard.data && filesBoard.data.files.length > 0)
+    return (
+      <FilesOccupation
+        parkingId={parkingId}
+        board={filesBoard.data}
+        focus={params.get("focus")}
+        canManage={can(user?.role, "parking:manage")}
+      />
+    );
   return (
     <>
       <ParkingTabs />
@@ -453,35 +564,77 @@ export default function OccupationPage() {
                 data.stats.leavingToday,
               )}
             </span>
-            {(Object.keys(TONE_COLORS) as (keyof typeof TONE_COLORS)[]).map(
-              (tone) => (
-                <span
-                  key={tone}
-                  className="flex items-center gap-1.5 text-muted-foreground"
+            <span
+              className="flex items-center gap-1"
+              role="radiogroup"
+              aria-label={t.mode.state + " / " + t.mode.stay}
+            >
+              {(["state", "stay"] as ViewMode[]).map((m) => (
+                <button
+                  key={m}
+                  type="button"
+                  role="radio"
+                  aria-checked={mode === m}
+                  onClick={() => setMode(m)}
+                  className={cn(
+                    "min-h-8 border px-2.5 text-[13px] font-semibold",
+                    mode === m
+                      ? "border-lime-deep bg-primary text-primary-foreground"
+                      : "border-border hover:bg-accent",
+                  )}
                 >
+                  {t.mode[m]}
+                </button>
+              ))}
+            </span>
+            {mode === "state" ? (
+              (Object.keys(TONE_COLORS) as (keyof typeof TONE_COLORS)[]).map(
+                (tone) => (
+                  <span
+                    key={tone}
+                    className="flex items-center gap-1.5 text-muted-foreground"
+                  >
+                    <span
+                      className="h-3 w-3"
+                      style={{
+                        background: TONE_COLORS[tone],
+                        opacity: tone === "free" ? 0.5 : 1,
+                      }}
+                    />
+                    {t.legend[tone]}
+                  </span>
+                ),
+              )
+            ) : (
+              <>
+                {(["short", "medium", "long"] as const).map((c) => (
+                  <span
+                    key={c}
+                    className="flex items-center gap-1.5 text-muted-foreground"
+                  >
+                    <span
+                      className="h-3 w-3"
+                      style={{ background: STAY_COLORS[c] }}
+                    />
+                    {t.stayLegend[c]}
+                  </span>
+                ))}
+                <span className="flex items-center gap-1.5 text-muted-foreground">
                   <span
                     className="h-3 w-3"
-                    style={{
-                      background: TONE_COLORS[tone],
-                      opacity: tone === "free" ? 0.5 : 1,
-                    }}
+                    style={{ background: STAY_COLORS.medium, opacity: 0.35 }}
                   />
-                  {t.legend[tone]}
+                  {t.stayLegend.freeZone}
                 </span>
-              ),
+                <span className="flex items-center gap-1.5 text-muted-foreground">
+                  <span
+                    className="h-3 w-3"
+                    style={{ background: STAY_COLORS.none }}
+                  />
+                  {t.stayLegend.none}
+                </span>
+              </>
             )}
-            <span className="flex items-center gap-1.5 text-muted-foreground">
-              <span className="h-3 w-3 border-2" style={{ borderColor: SELECTED }} />
-              {t.legend.proposed}
-            </span>
-            <span className="flex items-center gap-1.5 text-muted-foreground">
-              <span className="h-3 w-3 border-2" style={{ borderColor: TO_TAKE_OUT, background: TONE_COLORS.occupied }} />
-              {t.legend.toTakeOut}
-            </span>
-            <span className="flex items-center gap-1.5 text-muted-foreground">
-              <span className="h-3 w-3 border border-dashed border-foreground/60 bg-white/40" />
-              {t.legend.manoeuvre}
-            </span>
             {choosing && (
               <span className="ml-auto flex items-center gap-2 text-lime-deep">
                 {t.choosing(choosing.plate)}
@@ -603,7 +756,9 @@ export default function OccupationPage() {
                     key={a.id}
                     arrival={a}
                     busy={assign.isPending}
-                    focused={(focusArrivalId ?? choosing?.reservationId) === a.id}
+                    focused={
+                      (focusArrivalId ?? choosing?.reservationId) === a.id
+                    }
                     onFocus={setFocusArrivalId}
                     onPlace={(s) =>
                       assign.mutate({
@@ -646,7 +801,10 @@ function ArrivalRow({
   const best = arrival.suggestions[0];
   return (
     <li
-      className={cn("flex flex-col gap-1.5 border-b border-border py-2", focused && "-mx-2 border-l-4 border-l-[#ff6600] bg-lime/10 px-2")}
+      className={cn(
+        "flex flex-col gap-1.5 border-b border-border py-2",
+        focused && "-mx-2 border-l-4 border-l-[#ff6600] bg-lime/10 px-2",
+      )}
       data-testid={`arrival-${arrival.reference}`}
       onMouseEnter={() => onFocus(arrival.id)}
       onMouseLeave={() => onFocus(null)}
@@ -672,7 +830,10 @@ function ArrivalRow({
               {best.stayClass ? ` · ${t.stayZone[best.stayClass]}` : ""}
             </span>
             {best.moves !== undefined && (
-              <span data-testid="moves" className={best.moves === 0 ? "text-ok-text" : "text-warn-text"}>
+              <span
+                data-testid="moves"
+                className={best.moves === 0 ? "text-ok-text" : "text-warn-text"}
+              >
                 {movesLabel(best)}
               </span>
             )}
@@ -705,8 +866,16 @@ function movesLabel(s: ArrivalToPlace["suggestions"][number]): string {
   const t = fr.occupation;
   if (!s.moves) return t.noMove;
   const parts: string[] = [];
-  if (s.blocking?.length) parts.push(t.movesOut(s.blocking.length, s.blocking[0].spotCode, dateTimeShort(s.blocking[0].returnAt)));
-  if (s.blocked?.length) parts.push(t.movesBlocked(s.blocked.length, s.blocked[0].spotCode));
+  if (s.blocking?.length)
+    parts.push(
+      t.movesOut(
+        s.blocking.length,
+        s.blocking[0].spotCode,
+        dateTimeShort(s.blocking[0].returnAt),
+      ),
+    );
+  if (s.blocked?.length)
+    parts.push(t.movesBlocked(s.blocked.length, s.blocked[0].spotCode));
   return parts.join(" · ");
 }
 
@@ -746,6 +915,18 @@ function SpotCard({
             {o.returnFlight ? ` · ${t.flight(o.returnFlight)}` : ""}
             {o.keyHook ? ` · ${t.keyHook} ${o.keyHook}` : ""}
           </div>
+          {o.nights != null && o.stayClass && (
+            <div
+              className="text-sm text-muted-foreground"
+              data-testid="spot-stay"
+            >
+              {t.stayLine(
+                o.nights,
+                t.stayLegend[o.stayClass],
+                spot.stayClass ? t.stayZone[spot.stayClass] : null,
+              )}
+            </div>
+          )}
           <div className="flex flex-wrap gap-1.5">
             <ToolButton className="min-h-9" onClick={() => onMove(o)}>
               {t.move}
@@ -810,8 +991,15 @@ function VehicleCard({
         {hit.returnFlight ? ` · ${t.flight(hit.returnFlight)}` : ""}
       </div>
       {hit.carLat != null && hit.carLng != null && hit.carLocatedAt && (
-        <div className="text-sm text-muted-foreground" data-testid="vehicle-car-position">
-          {t.carPosition(hit.carLocatedBy ?? "traveller", dateTimeShort(hit.carLocatedAt), hit.carAccuracyM ?? null)}
+        <div
+          className="text-sm text-muted-foreground"
+          data-testid="vehicle-car-position"
+        >
+          {t.carPosition(
+            hit.carLocatedBy ?? "traveller",
+            dateTimeShort(hit.carLocatedAt),
+            hit.carAccuracyM ?? null,
+          )}
           {hit.carNote ? ` · ${hit.carNote}` : ""}{" "}
           <a
             href={`https://www.google.com/maps/dir/?api=1&destination=${hit.carLat},${hit.carLng}&travelmode=walking`}

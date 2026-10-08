@@ -92,7 +92,7 @@ abstract class DashboardPushModel with _$DashboardPushModel {
 
 @freezed
 abstract class DashboardStripeModel with _$DashboardStripeModel {
-  const factory DashboardStripeModel({@Default(false) bool connected, @Default(false) bool payoutsEnabled}) = _DashboardStripeModel;
+  const factory DashboardStripeModel({bool? online, @Default(false) bool connected, @Default(false) bool payoutsEnabled}) = _DashboardStripeModel;
 
   factory DashboardStripeModel.fromJson(Map<String, dynamic> json) => _$DashboardStripeModelFromJson(json);
 }

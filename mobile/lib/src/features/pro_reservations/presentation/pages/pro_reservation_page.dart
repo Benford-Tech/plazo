@@ -195,7 +195,10 @@ class _Sheet extends StatelessWidget {
           title: 'res.vehicle'.tr(),
           rows: [
             if (r.vehicleModel != null || r.vehicleColour != null) ('res.vehicle_model'.tr(), [r.vehicleModel, r.vehicleColour].whereType<String>().join(' · ')),
-            ('res.spot'.tr(), r.spot?.code ?? (r.spotId == null ? 'occupation.no_spot'.tr() : 'res.spot_placed'.tr())),
+            if (r.file != null)
+              ('res.file'.tr(), r.filePosition == null ? r.file!.code : '${r.file!.code} · ${r.filePosition == 1 ? 'occupation.files.position_first'.tr() : 'occupation.files.position'.tr(args: ['${r.filePosition}'])}')
+            else
+              ('res.spot'.tr(), r.spot?.code ?? (r.spotId == null ? 'occupation.no_spot'.tr() : 'res.spot_placed'.tr())),
             if (r.keyHook != null) ('occupation.key_hook'.tr(), r.keyHook!),
             if (r.carLat != null && r.carLng != null && r.carLocatedAt != null)
               (

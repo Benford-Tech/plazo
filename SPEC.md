@@ -161,9 +161,10 @@ Hors MVP : caméras, lecture de plaque, capteurs de présence sur les places.
 
 #### Pinceau et réinitialisation (décisions P-A, R-A du 07/10/2026, mis en œuvre)
 
-- **Pinceau (P-A)** : à l'étape Zones, un pinceau de 3, 6 ou 12 m (largeur réelle sur la photo, anneau sous le curseur)
-  peint où l'on peut garer : chaque trait s'ajoute, les traits et zones qui se touchent fusionnent, une gomme de même
-  largeur retire ce qu'on a peint en trop (une zone coupée en deux devient deux zones). Les bâtiments et parties exclues
+- **Pinceau (P-A)** : à l'étape Zones, deux pinceaux de 3, 6 ou 12 m (largeur réelle sur la photo, anneau sous le curseur),
+  renommés le 07/10/2026 d'après leur sens métier : **« Zone de parking »** peint où les voitures peuvent se garer (chaque
+  trait s'ajoute, les traits et zones qui se touchent fusionnent) et **« Zone de passage »** peint les allées, accès et
+  endroits où l'on ne peut pas se garer (retire ce qui a été peint en trop ; une zone coupée en deux devient deux zones). Les bâtiments et parties exclues
   restent soustraits ; le résultat est une zone tracée à la main, modifiable par ses sommets.
 - **Réinitialiser (R-A)** : menu « Réinitialiser… » dans la barre des étapes, avec confirmation : tout le plan (la carte
   repart vide, sur l'adresse du parking), les zones et parties exclues (le contour reste, les bâtiments IGN sont gardés)
@@ -183,6 +184,104 @@ Hors MVP : caméras, lecture de plaque, capteurs de présence sur les places.
   demande à Claude de compter aussi l'herbe plate comme garable (haies, arbres et eau restent exclus ; sol « herbe » dans la
   liste). « Ajouter à mes zones » ajoute la proposition aux zones déjà tracées, en fusionnant celles qui se touchent comme le
   pinceau : on peut tracer à la main avant ou après, et redemander une proposition sans perdre ses tracés.
+
+#### Éditeur du plan : une carte, une barre d'outils (décisions R-A + R-C du 07/10/2026, mis en œuvre)
+
+Joanny : « refais la page de définition des plans car c'est inutilisable ». Les trois étapes et leur long panneau
+disparaissent. La page est la photo IGN plein cadre avec, à gauche, six outils à un geste chacun :
+
+- **Contour** : un clic sur le terrain prend sa parcelle cadastrale (les voisines s'ajoutent d'un clic), ou « Tracer à la
+  main », « Corriger les sommets », « Retirer une partie » ; recherche d'adresse dans la carte de l'outil.
+- **Zone de parking** et **Zone de passage** : les deux pinceaux (3, 6, 12 m), « Proposer les zones avec Claude » avec
+  la case « Herbe autorisée », la liste des zones avec leur surface.
+- **Obstacle** : bâtiment, arbre, poteau, voie navette, accueil, autre ; un clic sur un obstacle existant montre sa marge et
+  permet de le supprimer ; les bâtiments IGN arrivent seuls.
+- **Repères** : entrée, sortie, remise des clés, arrêt navette, boîte à clés.
+- **Places** : les quatre dispositions avec leur nombre de places, « Générer N places », puis activer / désactiver et
+  typer les places d'un clic, recalcul de la capacité déclarée.
+
+En tête, en permanence : le nombre de places (estimation de la disposition choisie, puis places générées), l'état de
+l'enregistrement, « Réglages… » (tiroir : largeur d'allée, recul, files, gabarits, orientation, seuils de séjour, sources
+IGN, échelle) et « Réinitialiser… ». Chaque trait recalcule l'estimation après 500 ms de calme.
+
+**Première ouverture (R-C)** : un plan vide sur un parking localisé se prépare seul, étape par étape et enregistré au fur
+et à mesure : parcelle à l'adresse → bâtiments IGN → zones (Claude si la clé est là, sinon le terrain hors bâtiments) →
+places « Voiturier · peigne ». Un bandeau suit la préparation ; sans parcelle ou sans adresse, un message invite à
+cliquer ou tracer le terrain. La préparation ne se rejoue pas après une réinitialisation.
+
+#### Places à la main : une rangée d'un trait (décision P-B du 07/10/2026, mis en œuvre)
+
+Dans l'outil Places, « + Rangée de places » puis un trait sur la carte (plusieurs segments possibles, double-clic pour
+finir) : des places au gabarit voiturier du plan (2,4 × 5 m par défaut) se posent côte à côte le long du trait,
+perpendiculaires et centrées dessus ; le reste du trait trop court pour une place est réparti aux deux bouts. Elles
+reçoivent les codes `M-01`, `M-02`…, la zone où elles tombent, le type choisi ensuite comme les autres, et comptent dans
+la capacité. Elles survivent à « Régénérer » (qui ne remplace que les places générées) et se retirent avec l'outil
+« Supprimer » (sur une place générée, ce même outil la désactive). Sur la carte, un bord blanc tireté les distingue.
+
+#### Des files, pas des places (décision S-C du 07/10/2026, mis en œuvre : serveur, web, app ; plan simplifié en cours)
+
+Constat chez le client n°1 : les voituriers rangent **en files par date de retour** et se font « prendre au piège » : une file
+remplie dans l'ordre d'arrivée mélange les retours, la voiture qui repart la première finit au fond, et le voiturier passe
+son temps à déplacer des voitures. Les places numérotées du plan (contour, zones, peigne…) demandaient beaucoup de
+manipulations pour un résultat qui n'était pas le geste du terrain. L'unité de rangement devient donc la **file**
+(`parking_files` : code `F07`, nom facultatif, capacité en voitures, trait de l'allée vers le fond sur la photo IGN,
+facultatif) ; une voiture a `Reservation.fileId` et `fileRank` (ordre d'entrée, 1 = au fond). Les places restent pour les
+plans en libre-service ; dès qu'un parking a des files, l'Occupation, les fiches et le tableau de bord parlent files.
+
+- **La règle (`domain/file-stacks.ts`)** : une voiture entre devant celles déjà là ; la file est saine quand chaque voiture
+  repart avant (ou avec, à 2 h près) celles qui sont derrière elle. À l'arrivée, le logiciel classe les files : 1) une file
+  qui sert déjà ce jour de retour, 2) l'ajustement le plus serré derrière une voiture repartant plus tard, 3) une file vide
+  gardée pour ce jour, 4) une file vide libre, 5) une file vide gardée pour un autre jour ; puis celles qui coûtent des
+  déplacements et les complètes. Zéro déplacement garanti tant qu'une file compatible existe, et le moins de files ouvertes.
+- **Préparation de la veille** (`FileService.prepare`, cron `GET /internal/cron/prepare-files` à 02:00 UTC, bouton « Préparer
+  les files », et au premier affichage du jour) : d'après les réservations des 14 prochains jours, les jours de retour les plus
+  chargés reçoivent des files vides dédiées (`plannedDay`, un jour vaut une file dès une demi-file de voitures à venir), un tiers
+  des files vides reste libre pour l'imprévu ; une file qui reçoit sa première voiture prend son rôle de sa voiture de devant.
+- **Occupation en files** (web `FilesOccupation`, app : vue files de l'onglet Parking) : le chiffre en tête est « À sortir
+  aujourd'hui » (voitures à déplacer pour que les retours du jour sortent ; l'objectif est 0, vert ou rouge), puis
+  « N / M voitures · K files · J à remettre en ordre » ; chaque file est une pile de l'allée vers le fond, voiture bloquée en
+  rouge (« N à sortir avant »), retour du jour en bleu ; les arrivées à placer montrent la file choisie et pourquoi (« F07 ·
+  3/8 · retours du même jour »), « Ranger en F07 » demande le crochet des clés dans le même geste, « Autre file… » liste les
+  autres files avec leur coût ; une voiture se retire de sa file d'un clic ; « Rendu », annulé et non venu libèrent la file.
+- **Fiches** : « File F07 · 3e depuis l'allée » sur la fiche réservation (web, fiche opérationnelle, app) et pour le voyageur
+  (`TravellerReturn.file`). **Tableau de bord** : la tuile « Sur le parking » dit « N voitures à sortir aujourd'hui », l'alerte
+  « Retour du jour bloqué » vient des files, la capacité du plan est la somme des files (`parking.storedInFiles`).
+- **Plan** : outil « Files » de l'éditeur (un trait de l'allée vers le fond = une file, capacité déduite de la longueur à un
+  gabarit voiturier par voiture, code et capacité modifiables, retrait d'une file vide) et « Créer les files depuis les
+  places » pour les plans peigne existants. Routes : `GET/PUT /internal/parkings/:id/files`, `GET …/files/choices?reservationId=`,
+  `POST …/files/from-plan`, `POST …/files/prepare`, `POST /internal/reservations/:id/file` (409 `file_full`, `file_occupied`
+  pour retirer une file pleine).
+- **Suite livrée le 08/10/2026 (éditeur allégé, planning des files, voyageur)** :
+  - *Éditeur du plan* : la barre d'outils ne montre que Contour · Files · Repères ; les outils de l'estimateur (Zone de
+    parking, Zone de passage, Obstacle, Places) sont repliés sous « Avancé » (ouverts d'eux-mêmes quand un ancien chemin ou
+    une réinitialisation mène à l'un d'eux). Outil par défaut : Contour sans contour, Files ensuite. Dans la carte Files,
+    « Me proposer des files » : s'il y a des places de voiturier, les files en sont déduites ; sinon Plazo lance seul la
+    passe automatique (bâtiments IGN → zones → places « peigne », toujours en peigne) puis en déduit les files. La première
+    ouverture d'un plan vide (R-C) se termine désormais par cette étape « Files de rangement ». « Réinitialiser… › Files
+    seulement » retire les files vides (409 `file_occupied` si l'une contient des voitures). Correction du 08/10/2026
+    (« je viens de réinitialiser et ces places restent affichées ») : une réinitialisation efface aussi les places posées à
+    la main (qu'une simple régénération garde), « Tout le plan » retire les files vides, et la passe automatique, marquée sur
+    le plan, ne se relance jamais d'elle-même après une réinitialisation (« Me proposer des files » la relance à la demande).
+  - *Planning des files* (`/parking/planning` quand le parking a des files ; Plazo Pro : Planning des places en mode files) :
+    pour chaque jour de la fenêtre (7 ou 14 jours), les retours attendus (déjà en file / à venir), les files qui servent ce
+    jour (leur voiture de devant repart ce jour-là), les files vides gardées pour ce jour, la place disponible et ce qui
+    manque (« Jeu. 9 : il manque N places en file », alerte `missing_room`), les nuits où le parking déborde
+    (`over_capacity`) et les files désordonnées (`unsound`, N voitures bloquées derrière une autre). « Réserver une file… »
+    garde une file vide pour un jour **à la main** (`keptByHand`, `PUT /internal/parkings/:id/files/:fileId/keep`
+    `{ day | null }`) : la préparation de la veille ne la touche pas et compte sa capacité comme déjà ouverte pour ce jour ;
+    elle redevient automatique quand une voiture y entre, quand on la libère, ou une fois son jour passé. Route
+    `GET /internal/parkings/:id/files/planning?from=&days=` ; « Préparer les files » depuis la page aussi.
+  - *Voyageur* : « Retrouver ma voiture » (site et app) affiche « File F07 · 3e depuis l'allée » quand le voiturier a rangé
+    la voiture en file (la place numérotée reste affichée pour un plan en libre-service).
+
+#### Occupation par durée de séjour (décision D-B du 07/10/2026, mis en œuvre)
+
+En tête de l'Occupation, deux pilules : « Par état » (la vue habituelle) et « Par durée ». Par durée, chaque voiture prend
+la couleur de la classe de son séjour, calculée avec les seuils du plan (court jusqu'à 3 nuits, moyen jusqu'à 8, long
+au-delà, réglables) : jaune pâle, citron, ocre, les mêmes couleurs que les zones de séjour du plan ; gris quand le plan n'a
+pas de zones de séjour. Les places libres montrent leur zone en pâle. On repère ainsi d'un coup d'œil une voiture de long
+séjour garée dans une zone courte, celle qui bloquera une file. La fiche d'une place occupée indique « N nuits · Moyen
+séjour · place en zone court séjour ».
 
 #### File triée : zéro déplacement (décision O-A du 06/10/2026, mis en œuvre)
 

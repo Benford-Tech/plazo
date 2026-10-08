@@ -11,6 +11,7 @@ import { ValidationException } from '@/middlewares/validation.middleware';
 import { HttpException } from '@/utils/httpException';
 import { logger } from '@/utils/logger';
 import { toPublicBooking, WITH_LISTING } from '@/domain/booking-view';
+import { FileService } from './file.service';
 import { AuditService } from './audit.service';
 import { CapacityService, NightLoad } from './capacity.service';
 import { NotificationService } from './notification.service';
@@ -400,8 +401,10 @@ export class ReservationService {
         arrivedAt: status === 'arrived' && !before.arrivedAt ? now : status === 'upcoming' ? null : undefined,
         returnedAt: status === 'returned' ? now : before.status === 'returned' ? null : undefined,
         cancelledAt: status === 'cancelled' ? now : before.status === 'cancelled' ? null : undefined,
-        // Handed back: the keys left the hook with the car.
+        // Handed back: the keys left the hook with the car, and the file has one car less (S-C).
         keyHook: status === 'returned' ? null : undefined,
+        fileId: ['returned', 'cancelled', 'no_show'].includes(status) ? null : undefined,
+        fileRank: ['returned', 'cancelled', 'no_show'].includes(status) ? null : undefined,
         notes,
         ...refund,
       },
@@ -441,10 +444,15 @@ export class ReservationService {
     this.require(actor, 'reservations:view');
     const reservation = await prisma.reservation.findFirst({
       where: { id, operatorId: actor.operatorId, AND: [STAFF_VISIBLE] },
-      include: { spot: { select: { code: true } }, stop: { select: { id: true, name: true, kind: true } } },
+      include: {
+        spot: { select: { code: true } },
+        file: { select: { id: true, code: true, name: true } },
+        stop: { select: { id: true, name: true, kind: true } },
+      },
     });
     if (!reservation) throw notFound();
-    return { ...reservation, nextStatuses: this.nextStatuses(actor, reservation) };
+    const filePosition = reservation.fileId ? await Container.get(FileService).positionOf(reservation.fileId, reservation.id) : null;
+    return { ...reservation, filePosition, nextStatuses: this.nextStatuses(actor, reservation) };
   }
 
   /**

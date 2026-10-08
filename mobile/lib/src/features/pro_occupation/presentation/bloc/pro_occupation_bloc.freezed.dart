@@ -15,7 +15,8 @@ T _$identity<T>(T value) => value;
 /// @nodoc
 mixin _$ProOccupationState {
 
- ViewState get viewState; ViewState get actionState; ParkingSummaryModel? get parking; OccupationBoardModel? get board; String get query; List<OccupantModel> get results; bool get searching;/// The vehicle whose card is open (from the search or the arrivals).
+ ViewState get viewState; ViewState get actionState; ParkingSummaryModel? get parking; OccupationBoardModel? get board;/// S-C (07/10/2026): the files of the parking; when it has some, the occupation reads in files.
+ FileBoardModel? get fileBoard; String get query; List<OccupantModel> get results; bool get searching;/// The vehicle whose card is open (from the search or the arrivals).
  OccupantModel? get vehicle;/// A placement just happened: "GA-124-RB placé en A-05-10".
  String? get notice; String? get errorCode;
 /// Create a copy of ProOccupationState
@@ -29,20 +30,20 @@ $ProOccupationStateCopyWith<ProOccupationState> get copyWith => _$ProOccupationS
 @override
 bool operator ==(Object other) {
   final _this = this as ProOccupationState;
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is ProOccupationState&&(identical(other.viewState, _this.viewState) || other.viewState == _this.viewState)&&(identical(other.actionState, _this.actionState) || other.actionState == _this.actionState)&&(identical(other.parking, _this.parking) || other.parking == _this.parking)&&(identical(other.board, _this.board) || other.board == _this.board)&&(identical(other.query, _this.query) || other.query == _this.query)&&const DeepCollectionEquality().equals(other.results, _this.results)&&(identical(other.searching, _this.searching) || other.searching == _this.searching)&&(identical(other.vehicle, _this.vehicle) || other.vehicle == _this.vehicle)&&(identical(other.notice, _this.notice) || other.notice == _this.notice)&&(identical(other.errorCode, _this.errorCode) || other.errorCode == _this.errorCode));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is ProOccupationState&&(identical(other.viewState, _this.viewState) || other.viewState == _this.viewState)&&(identical(other.actionState, _this.actionState) || other.actionState == _this.actionState)&&(identical(other.parking, _this.parking) || other.parking == _this.parking)&&(identical(other.board, _this.board) || other.board == _this.board)&&(identical(other.fileBoard, _this.fileBoard) || other.fileBoard == _this.fileBoard)&&(identical(other.query, _this.query) || other.query == _this.query)&&const DeepCollectionEquality().equals(other.results, _this.results)&&(identical(other.searching, _this.searching) || other.searching == _this.searching)&&(identical(other.vehicle, _this.vehicle) || other.vehicle == _this.vehicle)&&(identical(other.notice, _this.notice) || other.notice == _this.notice)&&(identical(other.errorCode, _this.errorCode) || other.errorCode == _this.errorCode));
 }
 
 
 @override
 int get hashCode {
   final _this = this as ProOccupationState;
-  return Object.hash(runtimeType,_this.viewState,_this.actionState,_this.parking,_this.board,_this.query,const DeepCollectionEquality().hash(_this.results),_this.searching,_this.vehicle,_this.notice,_this.errorCode);
+  return Object.hash(runtimeType,_this.viewState,_this.actionState,_this.parking,_this.board,_this.fileBoard,_this.query,const DeepCollectionEquality().hash(_this.results),_this.searching,_this.vehicle,_this.notice,_this.errorCode);
 }
 
 @override
 String toString() {
   final _this = this as ProOccupationState;
-  return 'ProOccupationState(viewState: ${_this.viewState}, actionState: ${_this.actionState}, parking: ${_this.parking}, board: ${_this.board}, query: ${_this.query}, results: ${_this.results}, searching: ${_this.searching}, vehicle: ${_this.vehicle}, notice: ${_this.notice}, errorCode: ${_this.errorCode})';
+  return 'ProOccupationState(viewState: ${_this.viewState}, actionState: ${_this.actionState}, parking: ${_this.parking}, board: ${_this.board}, fileBoard: ${_this.fileBoard}, query: ${_this.query}, results: ${_this.results}, searching: ${_this.searching}, vehicle: ${_this.vehicle}, notice: ${_this.notice}, errorCode: ${_this.errorCode})';
 }
 
 
@@ -53,11 +54,11 @@ abstract mixin class $ProOccupationStateCopyWith<$Res>  {
   factory $ProOccupationStateCopyWith(ProOccupationState value, $Res Function(ProOccupationState) _then) = _$ProOccupationStateCopyWithImpl;
 @useResult
 $Res call({
- ViewState viewState, ViewState actionState, ParkingSummaryModel? parking, OccupationBoardModel? board, String query, List<OccupantModel> results, bool searching, OccupantModel? vehicle, String? notice, String? errorCode
+ ViewState viewState, ViewState actionState, ParkingSummaryModel? parking, OccupationBoardModel? board, FileBoardModel? fileBoard, String query, List<OccupantModel> results, bool searching, OccupantModel? vehicle, String? notice, String? errorCode
 });
 
 
-$ParkingSummaryModelCopyWith<$Res>? get parking;$OccupationBoardModelCopyWith<$Res>? get board;$OccupantModelCopyWith<$Res>? get vehicle;
+$ParkingSummaryModelCopyWith<$Res>? get parking;$OccupationBoardModelCopyWith<$Res>? get board;$FileBoardModelCopyWith<$Res>? get fileBoard;$OccupantModelCopyWith<$Res>? get vehicle;
 
 }
 /// @nodoc
@@ -70,13 +71,14 @@ class _$ProOccupationStateCopyWithImpl<$Res>
 
 /// Create a copy of ProOccupationState
 /// with the given fields replaced by the non-null parameter values.
-@pragma('vm:prefer-inline') @override $Res call({Object? viewState = null,Object? actionState = null,Object? parking = freezed,Object? board = freezed,Object? query = null,Object? results = null,Object? searching = null,Object? vehicle = freezed,Object? notice = freezed,Object? errorCode = freezed,}) {
+@pragma('vm:prefer-inline') @override $Res call({Object? viewState = null,Object? actionState = null,Object? parking = freezed,Object? board = freezed,Object? fileBoard = freezed,Object? query = null,Object? results = null,Object? searching = null,Object? vehicle = freezed,Object? notice = freezed,Object? errorCode = freezed,}) {
   return _then(ProOccupationState(
 viewState: null == viewState ? _self.viewState : viewState // ignore: cast_nullable_to_non_nullable
 as ViewState,actionState: null == actionState ? _self.actionState : actionState // ignore: cast_nullable_to_non_nullable
 as ViewState,parking: freezed == parking ? _self.parking : parking // ignore: cast_nullable_to_non_nullable
 as ParkingSummaryModel?,board: freezed == board ? _self.board : board // ignore: cast_nullable_to_non_nullable
-as OccupationBoardModel?,query: null == query ? _self.query : query // ignore: cast_nullable_to_non_nullable
+as OccupationBoardModel?,fileBoard: freezed == fileBoard ? _self.fileBoard : fileBoard // ignore: cast_nullable_to_non_nullable
+as FileBoardModel?,query: null == query ? _self.query : query // ignore: cast_nullable_to_non_nullable
 as String,results: null == results ? _self.results : results // ignore: cast_nullable_to_non_nullable
 as List<OccupantModel>,searching: null == searching ? _self.searching : searching // ignore: cast_nullable_to_non_nullable
 as bool,vehicle: freezed == vehicle ? _self.vehicle : vehicle // ignore: cast_nullable_to_non_nullable
@@ -108,6 +110,18 @@ $OccupationBoardModelCopyWith<$Res>? get board {
 
   return $OccupationBoardModelCopyWith<$Res>(_self.board!, (value) {
     return _then(_self.copyWith(board: value));
+  });
+}/// Create a copy of ProOccupationState
+/// with the given fields replaced by the non-null parameter values.
+@override
+@pragma('vm:prefer-inline')
+$FileBoardModelCopyWith<$Res>? get fileBoard {
+    if (_self.fileBoard == null) {
+    return null;
+  }
+
+  return $FileBoardModelCopyWith<$Res>(_self.fileBoard!, (value) {
+    return _then(_self.copyWith(fileBoard: value));
   });
 }/// Create a copy of ProOccupationState
 /// with the given fields replaced by the non-null parameter values.
@@ -203,10 +217,10 @@ return $default(_that);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( ViewState viewState,  ViewState actionState,  ParkingSummaryModel? parking,  OccupationBoardModel? board,  String query,  List<OccupantModel> results,  bool searching,  OccupantModel? vehicle,  String? notice,  String? errorCode)?  $default,{required TResult orElse(),}) {final _that = this;
+@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( ViewState viewState,  ViewState actionState,  ParkingSummaryModel? parking,  OccupationBoardModel? board,  FileBoardModel? fileBoard,  String query,  List<OccupantModel> results,  bool searching,  OccupantModel? vehicle,  String? notice,  String? errorCode)?  $default,{required TResult orElse(),}) {final _that = this;
 switch (_that) {
 case _ProOccupationState() when $default != null:
-return $default(_that.viewState,_that.actionState,_that.parking,_that.board,_that.query,_that.results,_that.searching,_that.vehicle,_that.notice,_that.errorCode);case _:
+return $default(_that.viewState,_that.actionState,_that.parking,_that.board,_that.fileBoard,_that.query,_that.results,_that.searching,_that.vehicle,_that.notice,_that.errorCode);case _:
   return orElse();
 
 }
@@ -224,10 +238,10 @@ return $default(_that.viewState,_that.actionState,_that.parking,_that.board,_tha
 /// }
 /// ```
 
-@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( ViewState viewState,  ViewState actionState,  ParkingSummaryModel? parking,  OccupationBoardModel? board,  String query,  List<OccupantModel> results,  bool searching,  OccupantModel? vehicle,  String? notice,  String? errorCode)  $default,) {final _that = this;
+@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( ViewState viewState,  ViewState actionState,  ParkingSummaryModel? parking,  OccupationBoardModel? board,  FileBoardModel? fileBoard,  String query,  List<OccupantModel> results,  bool searching,  OccupantModel? vehicle,  String? notice,  String? errorCode)  $default,) {final _that = this;
 switch (_that) {
 case _ProOccupationState():
-return $default(_that.viewState,_that.actionState,_that.parking,_that.board,_that.query,_that.results,_that.searching,_that.vehicle,_that.notice,_that.errorCode);case _:
+return $default(_that.viewState,_that.actionState,_that.parking,_that.board,_that.fileBoard,_that.query,_that.results,_that.searching,_that.vehicle,_that.notice,_that.errorCode);case _:
   throw StateError('Unexpected subclass');
 
 }
@@ -244,10 +258,10 @@ return $default(_that.viewState,_that.actionState,_that.parking,_that.board,_tha
 /// }
 /// ```
 
-@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( ViewState viewState,  ViewState actionState,  ParkingSummaryModel? parking,  OccupationBoardModel? board,  String query,  List<OccupantModel> results,  bool searching,  OccupantModel? vehicle,  String? notice,  String? errorCode)?  $default,) {final _that = this;
+@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( ViewState viewState,  ViewState actionState,  ParkingSummaryModel? parking,  OccupationBoardModel? board,  FileBoardModel? fileBoard,  String query,  List<OccupantModel> results,  bool searching,  OccupantModel? vehicle,  String? notice,  String? errorCode)?  $default,) {final _that = this;
 switch (_that) {
 case _ProOccupationState() when $default != null:
-return $default(_that.viewState,_that.actionState,_that.parking,_that.board,_that.query,_that.results,_that.searching,_that.vehicle,_that.notice,_that.errorCode);case _:
+return $default(_that.viewState,_that.actionState,_that.parking,_that.board,_that.fileBoard,_that.query,_that.results,_that.searching,_that.vehicle,_that.notice,_that.errorCode);case _:
   return null;
 
 }
@@ -259,13 +273,15 @@ return $default(_that.viewState,_that.actionState,_that.parking,_that.board,_tha
 
 
 class _ProOccupationState extends ProOccupationState {
-  const _ProOccupationState({this.viewState = ViewState.idle, this.actionState = ViewState.idle, this.parking, this.board, this.query = '',  List<OccupantModel> results = const [], this.searching = false, this.vehicle, this.notice, this.errorCode}): _results = results,super._();
+  const _ProOccupationState({this.viewState = ViewState.idle, this.actionState = ViewState.idle, this.parking, this.board, this.fileBoard, this.query = '',  List<OccupantModel> results = const [], this.searching = false, this.vehicle, this.notice, this.errorCode}): _results = results,super._();
   
 
 @override@JsonKey() final  ViewState viewState;
 @override@JsonKey() final  ViewState actionState;
 @override final  ParkingSummaryModel? parking;
 @override final  OccupationBoardModel? board;
+/// S-C (07/10/2026): the files of the parking; when it has some, the occupation reads in files.
+@override final  FileBoardModel? fileBoard;
 @override@JsonKey() final  String query;
  final  List<OccupantModel> _results;
 @override@JsonKey() List<OccupantModel> get results {
@@ -291,18 +307,18 @@ _$ProOccupationStateCopyWith<_ProOccupationState> get copyWith => __$ProOccupati
 
 @override
 bool operator ==(Object other) {
-    return identical(this, other) || (other.runtimeType == runtimeType&&other is _ProOccupationState&&(identical(other.viewState, viewState) || other.viewState == viewState)&&(identical(other.actionState, actionState) || other.actionState == actionState)&&(identical(other.parking, parking) || other.parking == parking)&&(identical(other.board, board) || other.board == board)&&(identical(other.query, query) || other.query == query)&&const DeepCollectionEquality().equals(other.results, _results)&&(identical(other.searching, searching) || other.searching == searching)&&(identical(other.vehicle, vehicle) || other.vehicle == vehicle)&&(identical(other.notice, notice) || other.notice == notice)&&(identical(other.errorCode, errorCode) || other.errorCode == errorCode));
+    return identical(this, other) || (other.runtimeType == runtimeType&&other is _ProOccupationState&&(identical(other.viewState, viewState) || other.viewState == viewState)&&(identical(other.actionState, actionState) || other.actionState == actionState)&&(identical(other.parking, parking) || other.parking == parking)&&(identical(other.board, board) || other.board == board)&&(identical(other.fileBoard, fileBoard) || other.fileBoard == fileBoard)&&(identical(other.query, query) || other.query == query)&&const DeepCollectionEquality().equals(other.results, _results)&&(identical(other.searching, searching) || other.searching == searching)&&(identical(other.vehicle, vehicle) || other.vehicle == vehicle)&&(identical(other.notice, notice) || other.notice == notice)&&(identical(other.errorCode, errorCode) || other.errorCode == errorCode));
 }
 
 
 @override
 int get hashCode {
-    return Object.hash(runtimeType,viewState,actionState,parking,board,query,const DeepCollectionEquality().hash(_results),searching,vehicle,notice,errorCode);
+    return Object.hash(runtimeType,viewState,actionState,parking,board,fileBoard,query,const DeepCollectionEquality().hash(_results),searching,vehicle,notice,errorCode);
 }
 
 @override
 String toString() {
-    return 'ProOccupationState(viewState: $viewState, actionState: $actionState, parking: $parking, board: $board, query: $query, results: $results, searching: $searching, vehicle: $vehicle, notice: $notice, errorCode: $errorCode)';
+    return 'ProOccupationState(viewState: $viewState, actionState: $actionState, parking: $parking, board: $board, fileBoard: $fileBoard, query: $query, results: $results, searching: $searching, vehicle: $vehicle, notice: $notice, errorCode: $errorCode)';
 }
 
 
@@ -313,11 +329,11 @@ abstract mixin class _$ProOccupationStateCopyWith<$Res> implements $ProOccupatio
   factory _$ProOccupationStateCopyWith(_ProOccupationState value, $Res Function(_ProOccupationState) _then) = __$ProOccupationStateCopyWithImpl;
 @override @useResult
 $Res call({
- ViewState viewState, ViewState actionState, ParkingSummaryModel? parking, OccupationBoardModel? board, String query, List<OccupantModel> results, bool searching, OccupantModel? vehicle, String? notice, String? errorCode
+ ViewState viewState, ViewState actionState, ParkingSummaryModel? parking, OccupationBoardModel? board, FileBoardModel? fileBoard, String query, List<OccupantModel> results, bool searching, OccupantModel? vehicle, String? notice, String? errorCode
 });
 
 
-@override $ParkingSummaryModelCopyWith<$Res>? get parking;@override $OccupationBoardModelCopyWith<$Res>? get board;@override $OccupantModelCopyWith<$Res>? get vehicle;
+@override $ParkingSummaryModelCopyWith<$Res>? get parking;@override $OccupationBoardModelCopyWith<$Res>? get board;@override $FileBoardModelCopyWith<$Res>? get fileBoard;@override $OccupantModelCopyWith<$Res>? get vehicle;
 
 }
 /// @nodoc
@@ -330,13 +346,14 @@ class __$ProOccupationStateCopyWithImpl<$Res>
 
 /// Create a copy of ProOccupationState
 /// with the given fields replaced by the non-null parameter values.
-@override @pragma('vm:prefer-inline') $Res call({Object? viewState = null,Object? actionState = null,Object? parking = freezed,Object? board = freezed,Object? query = null,Object? results = null,Object? searching = null,Object? vehicle = freezed,Object? notice = freezed,Object? errorCode = freezed,}) {
+@override @pragma('vm:prefer-inline') $Res call({Object? viewState = null,Object? actionState = null,Object? parking = freezed,Object? board = freezed,Object? fileBoard = freezed,Object? query = null,Object? results = null,Object? searching = null,Object? vehicle = freezed,Object? notice = freezed,Object? errorCode = freezed,}) {
   return _then(_ProOccupationState(
 viewState: null == viewState ? _self.viewState : viewState // ignore: cast_nullable_to_non_nullable
 as ViewState,actionState: null == actionState ? _self.actionState : actionState // ignore: cast_nullable_to_non_nullable
 as ViewState,parking: freezed == parking ? _self.parking : parking // ignore: cast_nullable_to_non_nullable
 as ParkingSummaryModel?,board: freezed == board ? _self.board : board // ignore: cast_nullable_to_non_nullable
-as OccupationBoardModel?,query: null == query ? _self.query : query // ignore: cast_nullable_to_non_nullable
+as OccupationBoardModel?,fileBoard: freezed == fileBoard ? _self.fileBoard : fileBoard // ignore: cast_nullable_to_non_nullable
+as FileBoardModel?,query: null == query ? _self.query : query // ignore: cast_nullable_to_non_nullable
 as String,results: null == results ? _self._results : results // ignore: cast_nullable_to_non_nullable
 as List<OccupantModel>,searching: null == searching ? _self.searching : searching // ignore: cast_nullable_to_non_nullable
 as bool,vehicle: freezed == vehicle ? _self.vehicle : vehicle // ignore: cast_nullable_to_non_nullable
@@ -369,6 +386,18 @@ $OccupationBoardModelCopyWith<$Res>? get board {
 
   return $OccupationBoardModelCopyWith<$Res>(_self.board!, (value) {
     return _then(_self.copyWith(board: value));
+  });
+}/// Create a copy of ProOccupationState
+/// with the given fields replaced by the non-null parameter values.
+@override
+@pragma('vm:prefer-inline')
+$FileBoardModelCopyWith<$Res>? get fileBoard {
+    if (_self.fileBoard == null) {
+    return null;
+  }
+
+  return $FileBoardModelCopyWith<$Res>(_self.fileBoard!, (value) {
+    return _then(_self.copyWith(fileBoard: value));
   });
 }/// Create a copy of ProOccupationState
 /// with the given fields replaced by the non-null parameter values.

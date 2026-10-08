@@ -21,6 +21,7 @@ import { PRODUCT } from "./product";
 export const fr = {
   common: {
     close: "Fermer",
+    confirm: { title: "Confirmer", yes: "Confirmer", no: "Annuler" },
     save: "Enregistrer",
     saved: "Modifications enregistrées",
     never: "Jamais",
@@ -105,6 +106,14 @@ export const fr = {
     pricing_required:
       "Enregistrez d'abord vos tarifs : une fiche sans prix ne peut pas être envoyée en validation.",
     duplicate_days: "Deux forfaits ont la même durée.",
+    // S-C files (07/10/2026).
+    file_occupied: "Cette file contient des voitures : videz-la d'abord.",
+    file_full: "Cette file est complète.",
+    file_not_found: "Cette file n'existe pas (ou plus).",
+    no_valet_spots:
+      "Le plan n'a pas de files de voiturier : générez des places en peigne ou tracez les files d'un trait.",
+    invalid_day: "Jour invalide.",
+    invalid_window: "Fenêtre invalide.",
     unknown: "Une erreur est survenue. Réessayez.",
     gateway: "Le serveur n'a pas répondu à temps. Réessayez dans un instant.",
     geo_unavailable:
@@ -112,7 +121,7 @@ export const fr = {
     ai_unavailable:
       "La proposition par Claude n'est pas disponible : clé API absente ou réponse inexploitable.",
     ai_refused:
-      "Claude n'a pas pu lire cette photo. Tracez les zones au pinceau.",
+      "Claude n'a pas pu lire cette photo. Peignez les zones de parking vous-même.",
     ai_busy: "Claude est saturé pour l'instant. Réessayez dans une minute.",
     ai_failed: "La lecture par Claude a échoué",
     ai_timeout: "Claude a mis trop de temps à lire la photo. Réessayez.",
@@ -149,7 +158,8 @@ export const fr = {
     invalid_date: "Date invalide.",
     invalid_sms_mode: "Choix inconnu.",
     invalid_tracking: "Choix inconnu.",
-    shuttle_tracking_off: "Le suivi des navettes est désactivé pour ce parking.",
+    shuttle_tracking_off:
+      "Le suivi des navettes est désactivé pour ce parking.",
     unknown_variable:
       "Une variable entre accolades est inconnue : utilisez celles proposées.",
     invalid_time: "Heure non proposée.",
@@ -300,6 +310,11 @@ export const fr = {
         free === null
           ? `${planned === 0 ? "plan à dessiner" : ""}`
           : `${free} libre${free > 1 ? "s" : ""} sur ${planned}`,
+      // S-C (07/10/2026): on a parking stored in files, the figure that matters.
+      movesSub: (moves: number) =>
+        moves === 0
+          ? "aucune voiture à sortir aujourd'hui"
+          : `${moves} voiture${moves > 1 ? "s" : ""} à sortir aujourd'hui`,
       arrivals: "Arrivées",
       arrivalsSub: (arrived: number, total: number) =>
         `${arrived} / ${total} sur place`,
@@ -335,9 +350,9 @@ export const fr = {
         `${devices} appareil${devices > 1 ? "s" : ""}`,
       pushOff: "non configurées",
       stripe: "Paiements",
-      stripeOn: "reversements actifs",
-      stripePending: "compte à finaliser",
-      stripeOff: "non connecté",
+      // Payments are centralised: Plazo takes every payment. The tile only says whether travellers can pay online.
+      stripeOn: "en ligne, encaissés par Plazo",
+      stripeOff: "paiement en ligne non activé par Plazo",
       importLabel: "Import",
       importAt: (ago: string) => `dernier ${ago}`,
       importNever: "jamais",
@@ -1089,25 +1104,25 @@ export const fr = {
     zoneSubtitle: "stationnement",
     zoneDetail: "voitures légères",
     // P-A (07/10/2026): the brush of the zones step.
-    brush: "Pinceau",
-    eraser: "Gomme",
+    brush: "Zone de parking",
+    eraser: "Zone de passage",
     brushWidth: "Largeur",
     brushHelp:
-      "Maintenez le clic et peignez où l'on peut garer ; les traits qui se touchent fusionnent.",
+      "Maintenez le clic et peignez où les voitures peuvent se garer ; les traits qui se touchent fusionnent.",
     eraserHelp:
-      "Maintenez le clic et effacez ce qui ne doit pas recevoir de voitures.",
+      "Maintenez le clic et peignez les zones de passage : allées, accès, endroits où l'on ne peut pas se garer.",
     // V-A (07/10/2026): Claude proposes the zones from the photo.
     suggest: "Proposer les zones avec Claude",
     suggesting: "Claude lit la photo…",
     suggestHelp:
-      "Claude lit la photo aérienne du terrain et propose les surfaces où l'on peut garer. Vous gardez la main : la proposition s'ajoute à vos zones, à compléter au pinceau avant ou après.",
+      "Claude lit la photo aérienne du terrain et propose les surfaces où l'on peut garer. Vous gardez la main : la proposition s'ajoute à vos zones, à compléter avec « Zone de parking » et « Zone de passage » avant ou après.",
     suggestGrass: "Herbe autorisée (pelouse, pré)",
     suggestion: {
       title: (n: number) =>
         n === 0
           ? "Aucune surface reconnue"
           : `${n} zone${n > 1 ? "s" : ""} proposée${n > 1 ? "s" : ""}`,
-      none: "Claude n'a reconnu aucune surface garable dans le contour. Tracez les zones au pinceau.",
+      none: "Claude n'a reconnu aucune surface garable dans le contour. Peignez les zones de parking vous-même.",
       surfaces: {
         asphalt: "enrobé",
         gravel: "gravier",
@@ -1119,7 +1134,7 @@ export const fr = {
       apply: "Ajouter à mes zones",
       dismiss: "Ignorer",
       applied: (n: number, total: number) =>
-        `${n} zone${n > 1 ? "s" : ""} ajoutée${n > 1 ? "s" : ""}, ${total} au total : ajustez-les au pinceau si besoin.`,
+        `${n} zone${n > 1 ? "s" : ""} ajoutée${n > 1 ? "s" : ""}, ${total} au total : ajustez-les avec « Zone de parking » et « Zone de passage » si besoin.`,
       cost: (model: string, tokens: number) => `${model} · ${tokens} jetons`,
     },
     // T-A (07/10/2026): the zones follow the land and its exclusions unless drawn by hand.
@@ -1264,6 +1279,45 @@ export const fr = {
     spotTaken: "Cette place est déjà prise sur ces dates.",
     openBooking: "Ouvrir la réservation",
   },
+  // "Planning des files" (07/10/2026): the coming days read in files, on a parking stored in files.
+  filesPlanning: {
+    title: "Planning des files",
+    intro: `Pour chaque jour : les retours attendus, les files qui les servent, et ce qui manque. ${PRODUCT.name} garde des files vides pour les gros jours ; vous pouvez en réserver une à la main.`,
+    window: (days: number) => `${days} jours`,
+    windowLabel: "Fenêtre",
+    capacity: (n: number) => `${n} place${n > 1 ? "s" : ""} en file`,
+    alerts: "Alertes",
+    noAlert: "Rien à signaler sur la fenêtre.",
+    missingRoom: (date: string, n: number) =>
+      `${date} : il manque ${n} place${n > 1 ? "s" : ""} en file`,
+    overCapacity: (date: string, n: number) =>
+      `${date} : ${n} voiture${n > 1 ? "s" : ""} de trop pour les files`,
+    // The server counts the cars blocked behind one leaving later.
+    unsound: (code: string, n: number) =>
+      `File ${code} : ${n} voiture${n > 1 ? "s" : ""} bloquée${n > 1 ? "s" : ""} derrière une autre`,
+    columns: {
+      day: "Jour",
+      returns: "Retours",
+      serving: "Files qui servent",
+      kept: "Files gardées",
+      room: "Place",
+      missing: "Manque",
+    },
+    returnsCell: (toCome: number, placed: number) =>
+      `${toCome} à venir · ${placed} placée${placed > 1 ? "s" : ""}`,
+    onSite: (n: number) => `${n} sur place`,
+    none: "—",
+    keep: "Réserver une file…",
+    keepFor: (date: string) => `Garder une file vide pour ${date}`,
+    noEmptyFile: "Aucune file vide à réserver.",
+    kept: (code: string, date: string) => `File ${code} gardée pour ${date}`,
+    release: "Libérer",
+    released: (code: string) => `File ${code} libérée`,
+    files: "Files",
+    byHand: "à la main",
+    unsoundBadge: "à remettre en ordre",
+    prepare: "Préparer les files",
+  },
   // Bloc 2, step "Occupation" (P-A, 04/10/2026): who is where, where the arrivals go.
   occupation: {
     title: "Occupation",
@@ -1273,6 +1327,17 @@ export const fr = {
     search: "Rechercher un véhicule",
     searchPlaceholder: "Plaque, nom ou référence",
     noResult: "Aucun véhicule ne correspond.",
+    // D-B (07/10/2026): the plan read by stay length, the classes of the plan's stay zones.
+    mode: { state: "Par état", stay: "Par durée" },
+    stayLegend: {
+      short: "Court séjour",
+      medium: "Moyen séjour",
+      long: "Long séjour",
+      freeZone: "Libre : sa zone en pâle",
+      none: "Hors zone de séjour",
+    },
+    stayLine: (nights: number, stay: string, zone: string | null) =>
+      `${nights} nuit${nights > 1 ? "s" : ""} · ${stay}${zone ? ` · place en ${zone}` : ""}`,
     legend: {
       occupied: "Occupée",
       leaving: "Départ aujourd'hui",
@@ -1337,9 +1402,242 @@ export const fr = {
     freeSpot: "Place libre",
     clickSpot: "Cliquez une place sur le plan pour voir qui l'occupe.",
     bookedFor: (plate: string, date: string) => `${plate} attendu le ${date}`,
+    // S-C (07/10/2026): the occupation read in files.
+    files: {
+      intro:
+        "Chaque file se lit de l'allée vers le fond : une voiture ne doit jamais repartir après celle qui est derrière elle. Plazo dit dans quelle file ranger chaque arrivée.",
+      movesToday: "À sortir aujourd'hui",
+      movesHelp:
+        "Voitures à déplacer pour que les retours du jour sortent. L'objectif : 0.",
+      cars: (cars: number, capacity: number) =>
+        `${cars} / ${capacity} voitures`,
+      filesCount: (sound: number, total: number) =>
+        `${total} file${total > 1 ? "s" : ""}${sound < total ? ` · ${total - sound} à remettre en ordre` : ""}`,
+      aisle: "Allée",
+      back: "Fond",
+      empty: "Vide",
+      freeFile: "Libre",
+      keptFor: (day: string) => `Gardée pour ${day}`,
+      returnsOf: (day: string) => `Retours ${day}`,
+      full: "Complète",
+      toTakeOut: (n: number) => `${n} à sortir avant`,
+      blockedBy: (plates: string) => `Bloquée par ${plates}`,
+      takeOut: "Retirer de la file",
+      removed: (plate: string) => `${plate} retirée de sa file`,
+      placed: (plate: string, code: string) => `${plate} rangée en ${code}`,
+      place: "Ranger",
+      placeIn: (code: string) => `Ranger en ${code}`,
+      otherFile: "Autre file…",
+      noFile: "Aucune file ne convient sans déplacement : choisissez-en une.",
+      reason: {
+        planned_day: "retours du même jour",
+        tight_fit: "derrière un retour plus tard",
+        empty: "file vide",
+        moves: (n: number) =>
+          `${n} voiture${n > 1 ? "s" : ""} à sortir plus tard`,
+        full: "complète",
+      },
+      choiceLine: (
+        code: string,
+        cars: number,
+        capacity: number,
+        reason: string,
+      ) => `${code} · ${cars}/${capacity} · ${reason}`,
+      prepare: "Préparer les files",
+      prepared: (planned: number, free: number) =>
+        `${planned} file${planned > 1 ? "s" : ""} gardée${planned > 1 ? "s" : ""} pour les gros retours, ${free} libre${free > 1 ? "s" : ""}`,
+      keysPrompt: "Crochet des clés (facultatif)",
+      confirm: "Confirmer",
+      cancel: "Annuler",
+      noArrival: "Aucune arrivée à placer.",
+      arrivals: (n: number) => `Arrivées à placer · ${n}`,
+      position: (n: number) =>
+        n === 1 ? "1re depuis l'allée" : `${n}e depuis l'allée`,
+      plan: "Modifier les files sur le plan",
+      inFile: (code: string) => `File ${code}`,
+    },
     spotTaken: "Cette place est déjà prise sur ces dates.",
   },
   // Bloc 2, step "Plan" (P-A, 03/10/2026): the operator's own parking plan.
+  // R-A (07/10/2026): the plan editor, one map and one toolbar; see CLAUDE.md, bloc 2.
+  planEditor: {
+    tools: {
+      contour: "Contour",
+      parking: "Zone de parking",
+      passage: "Zone de passage",
+      obstacle: "Obstacle",
+      landmark: "Repères",
+      files: "Files",
+      spots: "Places",
+    },
+    toolHelp: {
+      contour:
+        "Cliquez votre terrain : sa parcelle cadastrale devient le contour. Cliquez les voisines pour les ajouter.",
+      parking:
+        "Maintenez le clic et peignez où les voitures peuvent se garer ; les traits qui se touchent fusionnent.",
+      passage:
+        "Maintenez le clic et peignez les allées, accès et endroits où l'on ne peut pas se garer.",
+      obstacle:
+        "Choisissez un obstacle puis cliquez ou tracez-le sur la carte. Cliquez un obstacle existant pour le modifier.",
+      landmark:
+        "Choisissez un repère puis cliquez son emplacement. Un repère d'un même type remplace le précédent.",
+      files:
+        "Une file = un trait sur la photo, de l'allée vers le fond : les voitures s'y rangent nez à queue, la première entrée au fond. C'est l'unité de rangement d'un parking voiturier.",
+      spots:
+        "Choisissez une disposition et générez les places, puis cliquez une place pour la désactiver ou changer son type.",
+    },
+    /** The estimator's tools (zones, obstacles, spots), folded under the three of the plan in files. */
+    advanced: "Avancé",
+    count: (n: number) => `${n} place${n > 1 ? "s" : ""}`,
+    countEstimated: "estimation",
+    countGenerated: (active: number, total: number) =>
+      active === total ? "générées" : `actives sur ${total}`,
+    noOutlineYet: "Pas encore de contour",
+    settings: "Réglages…",
+    // The first pass (R-C): the parking arrives already filled in, the operator corrects.
+    auto: {
+      title: "Préparation du plan",
+      intro:
+        "Depuis l'adresse du parking : parcelle, bâtiments, zones et places. Vous corrigerez ensuite.",
+      steps: {
+        parcel: "Parcelle cadastrale",
+        buildings: "Bâtiments IGN",
+        zones: "Zones garables",
+        spots: "Places",
+        files: "Files de rangement",
+      },
+      zonesByClaude: "proposées par Claude",
+      zonesAuto: "tout le terrain hors bâtiments",
+      // Notes of the steps skipped when the pass runs on a plan already begun.
+      outlineKept: "contour actuel",
+      zonesKept: "zones actuelles conservées",
+      noValetSpots: "aucune file de voiturier",
+      noParcel:
+        "Aucune parcelle à l'adresse du parking : cliquez votre terrain ou tracez son contour.",
+      noPosition:
+        "Le parking n'a pas d'adresse localisée : cliquez votre terrain ou tracez son contour.",
+      done: (n: number) =>
+        `Plan préparé : ${n} place${n > 1 ? "s" : ""}. Corrigez ce qui ne va pas.`,
+      failed: "La préparation s'est arrêtée : continuez à la main.",
+    },
+    contour: {
+      parcels: (ids: string) => `Parcelles ${ids}`,
+      drawn: "Contour tracé à la main",
+      draw: "Tracer à la main",
+      drawHelp:
+        "Cliquez chaque coin du terrain ; double-cliquez pour terminer.",
+      edit: "Corriger les sommets",
+      editHelp:
+        "Faites glisser un sommet, ou un point milieu pour en ajouter un.",
+      cut: "Retirer une partie",
+      cutHelp:
+        "Tracez la partie à retirer du contour ; double-cliquez pour terminer.",
+      stop: "Terminer",
+      clear: "Effacer le contour",
+      clearConfirm:
+        "Effacer le contour ? Les zones, obstacles et places tracés dessus seront effacés aussi.",
+      area: (m2: string) => `${m2} m²`,
+    },
+    brush: {
+      width: "Largeur",
+      zones: (n: number) =>
+        n === 0 ? "Aucune zone" : `${n} zone${n > 1 ? "s" : ""}`,
+      removeZone: "Retirer",
+      autoHelp: "Sans tracé, les zones suivent le terrain hors obstacles.",
+    },
+    obstacle: {
+      add: "Ajouter",
+      selected: "Obstacle sélectionné",
+      clearance: "Marge (m)",
+      remove: "Supprimer",
+      list: (n: number) =>
+        n === 0 ? "Aucun obstacle" : `${n} obstacle${n > 1 ? "s" : ""}`,
+      ign: "repéré par l'IGN",
+      drawPolygon: "Tracez son contour ; double-cliquez pour terminer.",
+      drawLine: "Tracez l'axe de la voie ; double-cliquez pour terminer.",
+      drawPoint:
+        "Cliquez son emplacement. Cliquez ailleurs pour en placer d'autres.",
+    },
+    landmark: {
+      placed: "Placés",
+      none: "Aucun repère pour l'instant.",
+      remove: "Retirer",
+      placeHelp: (kind: string) => `Cliquez l'emplacement de « ${kind} ».`,
+    },
+    spots: {
+      layout: "Disposition",
+      generate: (n: number) => `Générer ${n} place${n > 1 ? "s" : ""}`,
+      regenerate: (n: number) => `Régénérer (${n} place${n > 1 ? "s" : ""})`,
+      adjust: "Ajuster",
+      needZones: "Peignez d'abord une zone de parking.",
+      // P-B (07/10/2026): a row of spots along a line drawn on the map.
+      row: "+ Rangée de places",
+      rowHelp:
+        "Tracez l'axe de la rangée ; double-cliquez pour terminer. Les places se posent côte à côte le long du trait.",
+      rowAdded: (n: number) =>
+        `${n} place${n > 1 ? "s" : ""} ajoutée${n > 1 ? "s" : ""} à la main`,
+      rowTooShort: "Trait trop court pour une place.",
+      remove: "Supprimer",
+      removeHelp:
+        "Cliquez une place posée à la main pour la supprimer ; une place générée se désactive.",
+      removed: "Place supprimée",
+      manualCount: (n: number) => `${n} à la main`,
+    },
+    // S-C (07/10/2026): files as the unit of storage.
+    files: {
+      draw: "+ Tracer une file",
+      drawHelp:
+        "Cliquez au bord de l'allée puis au fond de la file ; double-cliquez pour terminer. La capacité se déduit de la longueur, corrigez-la si besoin.",
+      count: (n: number) => `${n} file${n > 1 ? "s" : ""}`,
+      cars: (n: number) => `${n} voiture${n > 1 ? "s" : ""}`,
+      capacity: "voitures",
+      code: "Code",
+      name: "Nom (facultatif)",
+      none: `Aucune file pour l'instant. Tracez-en une d'un trait, ou laissez ${PRODUCT.name} vous en proposer.`,
+      propose: "Me proposer des files",
+      proposeHelp: `${PRODUCT.name} découpe le terrain en files de voiturier (peigne) et vous les propose ; vous pouvez ensuite les corriger d'un trait.`,
+      proposeReplaces:
+        "Les files actuelles seront remplacées par la proposition.",
+      proposed: (n: number) =>
+        `${n} file${n > 1 ? "s" : ""} proposée${n > 1 ? "s" : ""} : corrigez-l${n > 1 ? "es" : "a"} d'un trait si besoin`,
+      noValetSpots:
+        "Aucune file n'est sortie du terrain : tracez-les d'un trait.",
+      remove: "Retirer",
+      removeConfirm: (code: string) => `Retirer la file ${code} ?`,
+      occupied: "Cette file contient des voitures : videz-la d'abord.",
+      duplicate: "Ce code est déjà pris.",
+      added: (code: string, n: number) =>
+        `File ${code} tracée : ${n} voiture${n > 1 ? "s" : ""}`,
+      tooShort: "Trait trop court pour une voiture.",
+      headline: (files: number, cars: number) =>
+        `${files} file${files > 1 ? "s" : ""} · ${cars} voiture${cars > 1 ? "s" : ""}`,
+      subline: "Rangement en files (voiturier)",
+      occupation: "Voir l'occupation en files",
+    },
+    drawer: {
+      title: "Réglages du plan",
+      geometry: "Dimensions",
+      aisleWidth: "Largeur d'allée (m)",
+      setback: "Recul au bord des zones (m)",
+      edgeMaxFiles: "Files au plus, de chaque côté d'une allée",
+      valetSlot: "Place voiturier (largeur × longueur, m)",
+      selfParkSlot: "Place client (largeur × longueur, m)",
+      orientation: "Orientation des rangées",
+      orientationAuto: "Automatique",
+      orientationFixed: "Fixe (degrés)",
+      stays: "Zones de séjour",
+      stayShort: "Court séjour jusqu'à (nuits)",
+      stayMedium: "Moyen séjour jusqu'à (nuits)",
+      sources: "Sources IGN",
+      ignBuildings: "Exclure les bâtiments repérés par l'IGN",
+      clipToParking: "Recouper le contour avec le parking BD TOPO",
+      photo: "Photo aérienne",
+      scale: "Échelle de la photo",
+      scaleHelp:
+        "Facteur appliqué aux distances mesurées sur la photo (1 = telle quelle).",
+      close: "Fermer",
+    },
+  },
   parkingPlan: {
     steps: ["Repérer le terrain", "Découper en zones", "Générer les places"],
     title: "Plan du parking",
@@ -1352,20 +1650,27 @@ export const fr = {
     reset: "Réinitialiser…",
     resetAll: "Tout le plan",
     resetAllHelp:
-      "Contour, zones, parties exclues, repères et places : la carte repart vide, sur l'adresse du parking.",
+      "Contour, zones, parties exclues, repères, places et files vides : la carte repart vide, sur l'adresse du parking.",
     resetZones: "Les zones et parties exclues",
     resetZonesHelp:
       "Le contour reste ; les zones sont redécoupées, les bâtiments IGN gardés.",
     resetSpots: "Les places seulement",
     resetSpotsHelp:
-      "Le tracé reste ; les places sont effacées, la capacité déclarée ne bouge pas.",
+      "Le tracé reste ; toutes les places sont effacées, même celles posées à la main ; la capacité déclarée ne bouge pas.",
+    resetFiles: "Files seulement",
+    resetFilesHelp:
+      "Retire les files vides ; les places et le terrain restent.",
     resetConfirm: {
-      all: "Effacer tout le plan (contour, zones, parties exclues, repères et places) ? La capacité déclarée ne change pas.",
+      all: "Effacer tout le plan (contour, zones, parties exclues, repères, places et files vides) ? La capacité déclarée ne change pas.",
       zones:
         "Effacer les zones et les parties exclues tracées à la main ? Les places générées seront effacées aussi.",
-      spots: "Effacer toutes les places ? La capacité déclarée ne change pas.",
+      spots:
+        "Effacer toutes les places, même celles posées à la main ? La capacité déclarée ne change pas.",
+      files:
+        "Retirer toutes les files ? Une file qui contient des voitures ne peut pas être retirée.",
     },
     resetDone: "Plan réinitialisé",
+    resetFilesDone: "Files retirées",
     layout: "Disposition",
     layouts: {
       selfPark: "Clients garés seuls",
@@ -1928,6 +2233,11 @@ export const quickCardFr = {
   gate: (g: string) => `porte ${g}`,
   spot: "Place",
   noSpot: "pas de place",
+  // S-C (07/10/2026): "F07 · 3e depuis l'allée".
+  inFile: (code: string, position: number | null) =>
+    position === null
+      ? code
+      : `${code} · ${position === 1 ? "1re" : `${position}e`} depuis l'allée`,
   keys: "Clés",
   noKeys: "crochet non noté",
   car: "Voiture",
@@ -2076,13 +2386,21 @@ export const inboundWizardFr = {
       ovh: { label: "OVH", hint: "Webmail OVH (Roundcube)" },
       other: { label: "Autre messagerie", hint: "Orange, Free, Ionos…" },
     } satisfies Record<MailProvider, { label: string; hint: string }>,
-    noAuth: "Pas d'autorisation à donner à cette messagerie : la règle de l'étape suivante suffit.",
+    noAuth:
+      "Pas d'autorisation à donner à cette messagerie : la règle de l'étape suivante suffit.",
     gmail: {
       title: "Autorisez Gmail à transférer vers Plazo",
       lines: [
-        { text: "Dans Gmail, ouvrez la roue dentée › **Voir tous les paramètres** › onglet **Transfert et POP/IMAP**." },
-        { text: "Cliquez **Ajouter une adresse de transfert**, collez votre adresse Plazo, puis **Suivant** › **Continuer** :", copy: "address" },
-        { text: "Gmail envoie un code de confirmation à Plazo : il s'affiche ci-dessous. Collez-le dans Gmail et cliquez **Valider**." },
+        {
+          text: "Dans Gmail, ouvrez la roue dentée › **Voir tous les paramètres** › onglet **Transfert et POP/IMAP**.",
+        },
+        {
+          text: "Cliquez **Ajouter une adresse de transfert**, collez votre adresse Plazo, puis **Suivant** › **Continuer** :",
+          copy: "address",
+        },
+        {
+          text: "Gmail envoie un code de confirmation à Plazo : il s'affiche ci-dessous. Collez-le dans Gmail et cliquez **Valider**.",
+        },
       ] satisfies WizardLine[],
       waiting: "En attente du code de Gmail…",
       received: (time: string) => `Code de confirmation Gmail reçu à ${time}`,
@@ -2096,9 +2414,17 @@ export const inboundWizardFr = {
     gmail: {
       title: "Créez le filtre dans Gmail",
       lines: [
-        { text: "Dans la barre de recherche de Gmail, cliquez l'icône des options de recherche, à droite." },
-        { text: "Dans **De**, collez l'expéditeur d'Allopark :", copy: "sender" },
-        { text: "Cliquez **Créer un filtre**, cochez **Transférer à** et choisissez votre adresse Plazo :", copy: "address" },
+        {
+          text: "Dans la barre de recherche de Gmail, cliquez l'icône des options de recherche, à droite.",
+        },
+        {
+          text: "Dans **De**, collez l'expéditeur d'Allopark :",
+          copy: "sender",
+        },
+        {
+          text: "Cliquez **Créer un filtre**, cochez **Transférer à** et choisissez votre adresse Plazo :",
+          copy: "address",
+        },
         { text: "Validez avec **Créer un filtre**." },
       ] satisfies WizardLine[],
       note: "L'adresse n'apparaît pas dans « Transférer à » ? Gmail doit d'abord la valider : revenez à l'étape 2, le code de confirmation y est affiché.",
@@ -2111,7 +2437,13 @@ export const inboundWizardFr = {
         { kind: "field", label: "Contient les mots" },
         { kind: "check", label: "Ignorer la boîte de réception" },
         { kind: "check", label: "Marquer comme lu" },
-        { kind: "check", label: "Transférer à", value: "address", highlight: true, checked: true },
+        {
+          kind: "check",
+          label: "Transférer à",
+          value: "address",
+          highlight: true,
+          checked: true,
+        },
         { kind: "check", label: "Supprimer" },
         { kind: "button", label: "Créer un filtre" },
       ] satisfies PreviewRow[],
@@ -2119,9 +2451,17 @@ export const inboundWizardFr = {
     outlook: {
       title: "Créez la règle dans Outlook",
       lines: [
-        { text: "Dans Outlook sur le web, ouvrez la roue dentée › **Courrier** › **Règles** › **Ajouter une nouvelle règle**." },
-        { text: "Nommez-la « Plazo ». Condition : **De**, puis collez l'expéditeur d'Allopark :", copy: "sender" },
-        { text: "Action : **Transférer à**, puis collez votre adresse Plazo :", copy: "address" },
+        {
+          text: "Dans Outlook sur le web, ouvrez la roue dentée › **Courrier** › **Règles** › **Ajouter une nouvelle règle**.",
+        },
+        {
+          text: "Nommez-la « Plazo ». Condition : **De**, puis collez l'expéditeur d'Allopark :",
+          copy: "sender",
+        },
+        {
+          text: "Action : **Transférer à**, puis collez votre adresse Plazo :",
+          copy: "address",
+        },
         { text: "Cliquez **Enregistrer**." },
       ] satisfies WizardLine[],
       note: "Messagerie d'entreprise (Microsoft 365) : le transfert vers une adresse extérieure peut être bloqué. Si rien n'arrive à l'étape 4, demandez à la personne qui gère la messagerie de l'autoriser.",
@@ -2129,8 +2469,18 @@ export const inboundWizardFr = {
       screen: "Outlook",
       preview: [
         { kind: "field", label: "Nom", value: "Plazo" },
-        { kind: "field", label: "Condition · De", value: "sender", highlight: true },
-        { kind: "field", label: "Action · Transférer à", value: "address", highlight: true },
+        {
+          kind: "field",
+          label: "Condition · De",
+          value: "sender",
+          highlight: true,
+        },
+        {
+          kind: "field",
+          label: "Action · Transférer à",
+          value: "address",
+          highlight: true,
+        },
         { kind: "check", label: "Arrêter le traitement d'autres règles" },
         { kind: "button", label: "Enregistrer" },
       ] satisfies PreviewRow[],
@@ -2138,9 +2488,17 @@ export const inboundWizardFr = {
     ovh: {
       title: "Créez le filtre dans le webmail OVH",
       lines: [
-        { text: "Dans le webmail, ouvrez **Paramètres** › **Filtres**, puis **Créer** (+)." },
-        { text: "Nom du filtre : « Plazo ». Règle : **De** contient, puis collez l'expéditeur d'Allopark :", copy: "sender" },
-        { text: "Action : **Envoyer une copie du message à**, puis collez votre adresse Plazo :", copy: "address" },
+        {
+          text: "Dans le webmail, ouvrez **Paramètres** › **Filtres**, puis **Créer** (+).",
+        },
+        {
+          text: "Nom du filtre : « Plazo ». Règle : **De** contient, puis collez l'expéditeur d'Allopark :",
+          copy: "sender",
+        },
+        {
+          text: "Action : **Envoyer une copie du message à**, puis collez votre adresse Plazo :",
+          copy: "address",
+        },
         { text: "Cliquez **Enregistrer**." },
       ] satisfies WizardLine[],
       note: "Choisissez bien « Envoyer une copie » : avec « Rediriger », le mail quitterait votre boîte.",
@@ -2148,43 +2506,83 @@ export const inboundWizardFr = {
       screen: "webmail OVH",
       preview: [
         { kind: "field", label: "Nom du filtre", value: "Plazo" },
-        { kind: "field", label: "De · contient", value: "sender", highlight: true },
-        { kind: "field", label: "Envoyer une copie du message à", value: "address", highlight: true },
+        {
+          kind: "field",
+          label: "De · contient",
+          value: "sender",
+          highlight: true,
+        },
+        {
+          kind: "field",
+          label: "Envoyer une copie du message à",
+          value: "address",
+          highlight: true,
+        },
         { kind: "button", label: "Enregistrer" },
       ] satisfies PreviewRow[],
     },
     other: {
       title: "Créez la règle de transfert",
       lines: [
-        { text: "Dans les réglages de votre messagerie, cherchez **Règles**, **Filtres** ou **Redirection**." },
+        {
+          text: "Dans les réglages de votre messagerie, cherchez **Règles**, **Filtres** ou **Redirection**.",
+        },
         { text: "Condition : l'expéditeur est", copy: "sender" },
-        { text: "Action : transférer une copie à votre adresse Plazo :", copy: "address" },
+        {
+          text: "Action : transférer une copie à votre adresse Plazo :",
+          copy: "address",
+        },
         { text: "Enregistrez, en gardant le mail dans votre boîte." },
       ] satisfies WizardLine[],
       note: "Vous ne trouvez pas ? Envoyez ces étapes à la personne qui gère votre messagerie, avec le lien en bas de cette fenêtre.",
       done: "J'ai créé la règle",
       screen: "votre messagerie",
       preview: [
-        { kind: "field", label: "Si l'expéditeur est", value: "sender", highlight: true },
-        { kind: "field", label: "Transférer une copie à", value: "address", highlight: true },
+        {
+          kind: "field",
+          label: "Si l'expéditeur est",
+          value: "sender",
+          highlight: true,
+        },
+        {
+          kind: "field",
+          label: "Transférer une copie à",
+          value: "address",
+          highlight: true,
+        },
         { kind: "check", label: "Garder le mail dans la boîte", checked: true },
         { kind: "button", label: "Enregistrer" },
       ] satisfies PreviewRow[],
     },
-  } satisfies Record<MailProvider, { title: string; lines: WizardLine[]; note: string; done: string; screen: string; preview: PreviewRow[] }>,
+  } satisfies Record<
+    MailProvider,
+    {
+      title: string;
+      lines: WizardLine[];
+      note: string;
+      done: string;
+      screen: string;
+      preview: PreviewRow[];
+    }
+  >,
   preview: (screen: string) => `Aperçu simplifié de l'écran ${screen}`,
   check: {
     title: "Vérifiez que tout arrive",
     lines: [
-      { text: "Dans votre messagerie, ouvrez un ancien mail de réservation Allopark et transférez-le à votre adresse Plazo :", copy: "address" },
+      {
+        text: "Dans votre messagerie, ouvrez un ancien mail de réservation Allopark et transférez-le à votre adresse Plazo :",
+        copy: "address",
+      },
       { text: "Il apparaît ci-dessous en quelques secondes." },
     ] satisfies WizardLine[],
     received: "Ce que Plazo a reçu",
     live: "En direct",
     waiting: "En attente du premier mail…",
-    waitingHint: "Il apparaît ici quelques secondes après son arrivée dans votre boîte.",
+    waitingHint:
+      "Il apparaît ici quelques secondes après son arrivée dans votre boîte.",
     ok: "C'est relié. Les prochaines réservations Allopark arriveront toutes seules dans le planning.",
-    toCheck: "Bien reçu. Plazo n'a pas pu le lire en entier : il attend dans « À vérifier », où vous pouvez le compléter.",
+    toCheck:
+      "Bien reçu. Plazo n'a pas pu le lire en entier : il attend dans « À vérifier », où vous pouvez le compléter.",
     openToCheck: "Voir les mails à vérifier",
     status: {
       imported: "Enregistrée",
@@ -2202,8 +2600,10 @@ export const inboundWizardFr = {
       "Bonjour,\n\nPour que nos réservations Allopark arrivent toutes seules dans Plazo, pourrais-tu créer une règle de transfert dans notre messagerie ?",
     sender: (address: string) => `Expéditeur : ${address}`,
     address: (address: string) => `Transférer une copie à : ${address}`,
-    gmailCode: "Gmail envoie alors un code de confirmation à Plazo : je te le transmets dès qu'il s'affiche.",
-    outro: "Seuls ces mails sont transférés ; nos autres mails restent privés. Merci !",
+    gmailCode:
+      "Gmail envoie alors un code de confirmation à Plazo : je te le transmets dès qu'il s'affiche.",
+    outro:
+      "Seuls ces mails sont transférés ; nos autres mails restent privés. Merci !",
   },
 };
 
@@ -2358,8 +2758,14 @@ export const shuttleTrackingFr = {
   legend: "Niveau de suivi",
   recommended: "Recommandé",
   levels: {
-    off: { title: "Pas de suivi", text: "Les chauffeurs ne partagent pas leur position." },
-    team: { title: "Équipe seulement", text: "La position sert à organiser les navettes. Vos clients ne la voient pas." },
+    off: {
+      title: "Pas de suivi",
+      text: "Les chauffeurs ne partagent pas leur position.",
+    },
+    team: {
+      title: "Équipe seulement",
+      text: "La position sert à organiser les navettes. Vos clients ne la voient pas.",
+    },
     everyone: {
       title: "Équipe et clients",
       text: "Vos clients suivent leur navette et reçoivent « Votre navette est là ». Votre parking porte la mention « En direct » dans les résultats.",
@@ -2368,7 +2774,8 @@ export const shuttleTrackingFr = {
   who: { team: "Équipe", clients: "Clients", mention: "Mention" },
   yes: "oui",
   no: "non",
-  always: "Dans tous les cas, « Votre navette est partie » est envoyé au départ de chaque trajet.",
+  always:
+    "Dans tous les cas, « Votre navette est partie » est envoyé au départ de chaque trajet.",
   save: "Enregistrer",
   saved: "Suivi des navettes enregistré.",
 };

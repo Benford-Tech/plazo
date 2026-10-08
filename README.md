@@ -398,4 +398,15 @@ Documentation interactive : `/api/docs` (Swagger). Toutes les routes sont sous `
 | GET | `/internal/platform/geo/parkings?bbox=` | Parkings BD TOPO de la vue (relais vers le WFS de la Géoplateforme) |
 | GET | `/internal/platform/geo/buildings?bbox=` | Bâtiments BD TOPO de la vue (B-A, même relais) |
 | POST | `/internal/parkings/:id/plan/suggest-zones` | V-A : Claude lit la photo IGN du terrain et propose les zones (corps `{ allowGrass }`, vrai par défaut ; rien n'est enregistré ; 409 `ai_unavailable` sans `ANTHROPIC_API_KEY`) |
+| POST | `/internal/parkings/:id/plan/spots` | P-B : places posées à la main (rangée tracée sur la carte), gardées à la régénération ; 400 `duplicate_code` |
+| DELETE | `/internal/parkings/:id/plan/spots/:spotId` | P-B : retire une place posée à la main (409 `not_manual` pour une place générée) |
+| GET | `/internal/parkings/:id/files` | S-C : les files du parking avec leur pile (allée → fond), les arrivées à placer avec la file choisie, « à sortir aujourd'hui » |
+| PUT | `/internal/parkings/:id/files` | S-C : enregistre les files du plan (code, capacité, trait) ; 400 `duplicate_code`, 409 `file_occupied` |
+| GET | `/internal/parkings/:id/files/choices?reservationId=` | S-C : les files classées pour une réservation |
+| POST | `/internal/parkings/:id/files/from-plan` | S-C : crée les files depuis les files de places du plan peigne (409 `no_valet_spots`) |
+| POST | `/internal/parkings/:id/files/prepare` | S-C : préparation de la veille à la demande (files vides gardées pour les gros jours de retour) |
+| POST | `/internal/reservations/:id/file` | S-C : range la voiture dans une file (devant les autres) ou l'en retire (`fileId: null`), avec le crochet des clés ; 409 `file_full` |
+| GET | `/internal/parkings/:id/files/planning?from=&days=` | S-C : planning des files (par jour : retours, en file / à venir, files qui servent, files gardées, place, manque ; alertes `missing_room`, `over_capacity`, `unsound`) |
+| PUT | `/internal/parkings/:id/files/:fileId/keep` | S-C : garde une file vide pour un jour à la main (`{ day }`, `keptByHand`) ou la libère (`{ day: null }`) ; 409 `file_occupied`, 400 `invalid_day` / `file_inactive` |
+| GET | `/internal/cron/prepare-files` | S-C : préparation de la veille de tous les parkings en files (Vercel Cron 02:00 UTC) |
 | GET | `/internal/platform/geo/geocode?q=` | Recherche d'adresse (relais vers le géocodage de la Géoplateforme) |

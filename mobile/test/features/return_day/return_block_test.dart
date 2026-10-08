@@ -87,6 +87,18 @@ void main() {
     expect(find.textContaining('Bagage perdu ou retardé'), findsOneWidget);
   });
 
+  testWidgets('S-C · voiture rangée en file : « Retrouver ma voiture » nomme la file, sinon la place', (tester) async {
+    await show(tester, ReturnState(now: t0, reference: 'R7KQ2M', data: travellerReturn().copyWith(file: const ReturnFileModel(code: 'F07', position: 3))));
+    expect(find.byKey(const Key('find-car-button')), findsOneWidget);
+    expect(find.text('Retrouver ma voiture · file F07'), findsOneWidget);
+    bloc = MockReturnBloc();
+    await show(tester, ReturnState(now: t0, reference: 'R7KQ2M', data: travellerReturn().copyWith(spot: const ReturnSpotModel(code: 'A-07'))));
+    expect(find.text('Retrouver ma voiture · place A-07'), findsOneWidget);
+    bloc = MockReturnBloc();
+    await show(tester, ReturnState(now: t0, reference: 'R7KQ2M', data: travellerReturn()));
+    expect(find.byKey(const Key('find-car-button')), findsNothing);
+  });
+
   testWidgets('R1 · sans suivi de vol : « J’ai atterri »', (tester) async {
     await show(tester, ReturnState(now: t0, reference: 'R7KQ2M', data: travellerReturn(flightTracked: false)));
     expect(find.text('Sans numéro de vol, dites-nous quand vous avez atterri.'), findsOneWidget);

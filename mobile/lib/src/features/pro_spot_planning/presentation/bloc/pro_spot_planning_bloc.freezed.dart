@@ -15,7 +15,9 @@ T _$identity<T>(T value) => value;
 /// @nodoc
 mixin _$ProSpotPlanningState {
 
- ViewState get viewState; ViewState get actionState; ParkingSummaryModel? get parking; String get from; int get days; SpotPlanningModel? get planning;/// "planning.preassigned:3:1", "planning.moved:AB-123-CD:A-01-02", "planning.released:AB-123-CD".
+ ViewState get viewState; ViewState get actionState; ParkingSummaryModel? get parking; String get from; int get days; SpotPlanningModel? get planning;/// Planning des files (08/10/2026): when the parking has files, the page reads in files.
+ FilesPlanningModel? get filesPlanning;/// "planning.preassigned:3:1", "planning.moved:AB-123-CD:A-01-02", "planning.released:AB-123-CD",
+/// "planning.kept:F07:2026-10-12", "planning.freed:F07", "occupation.prepared:2:1".
  String? get notice; String? get errorCode;
 /// Create a copy of ProSpotPlanningState
 /// with the given fields replaced by the non-null parameter values.
@@ -28,20 +30,20 @@ $ProSpotPlanningStateCopyWith<ProSpotPlanningState> get copyWith => _$ProSpotPla
 @override
 bool operator ==(Object other) {
   final _this = this as ProSpotPlanningState;
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is ProSpotPlanningState&&(identical(other.viewState, _this.viewState) || other.viewState == _this.viewState)&&(identical(other.actionState, _this.actionState) || other.actionState == _this.actionState)&&(identical(other.parking, _this.parking) || other.parking == _this.parking)&&(identical(other.from, _this.from) || other.from == _this.from)&&(identical(other.days, _this.days) || other.days == _this.days)&&(identical(other.planning, _this.planning) || other.planning == _this.planning)&&(identical(other.notice, _this.notice) || other.notice == _this.notice)&&(identical(other.errorCode, _this.errorCode) || other.errorCode == _this.errorCode));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is ProSpotPlanningState&&(identical(other.viewState, _this.viewState) || other.viewState == _this.viewState)&&(identical(other.actionState, _this.actionState) || other.actionState == _this.actionState)&&(identical(other.parking, _this.parking) || other.parking == _this.parking)&&(identical(other.from, _this.from) || other.from == _this.from)&&(identical(other.days, _this.days) || other.days == _this.days)&&(identical(other.planning, _this.planning) || other.planning == _this.planning)&&(identical(other.filesPlanning, _this.filesPlanning) || other.filesPlanning == _this.filesPlanning)&&(identical(other.notice, _this.notice) || other.notice == _this.notice)&&(identical(other.errorCode, _this.errorCode) || other.errorCode == _this.errorCode));
 }
 
 
 @override
 int get hashCode {
   final _this = this as ProSpotPlanningState;
-  return Object.hash(runtimeType,_this.viewState,_this.actionState,_this.parking,_this.from,_this.days,_this.planning,_this.notice,_this.errorCode);
+  return Object.hash(runtimeType,_this.viewState,_this.actionState,_this.parking,_this.from,_this.days,_this.planning,_this.filesPlanning,_this.notice,_this.errorCode);
 }
 
 @override
 String toString() {
   final _this = this as ProSpotPlanningState;
-  return 'ProSpotPlanningState(viewState: ${_this.viewState}, actionState: ${_this.actionState}, parking: ${_this.parking}, from: ${_this.from}, days: ${_this.days}, planning: ${_this.planning}, notice: ${_this.notice}, errorCode: ${_this.errorCode})';
+  return 'ProSpotPlanningState(viewState: ${_this.viewState}, actionState: ${_this.actionState}, parking: ${_this.parking}, from: ${_this.from}, days: ${_this.days}, planning: ${_this.planning}, filesPlanning: ${_this.filesPlanning}, notice: ${_this.notice}, errorCode: ${_this.errorCode})';
 }
 
 
@@ -52,11 +54,11 @@ abstract mixin class $ProSpotPlanningStateCopyWith<$Res>  {
   factory $ProSpotPlanningStateCopyWith(ProSpotPlanningState value, $Res Function(ProSpotPlanningState) _then) = _$ProSpotPlanningStateCopyWithImpl;
 @useResult
 $Res call({
- ViewState viewState, ViewState actionState, ParkingSummaryModel? parking, String from, int days, SpotPlanningModel? planning, String? notice, String? errorCode
+ ViewState viewState, ViewState actionState, ParkingSummaryModel? parking, String from, int days, SpotPlanningModel? planning, FilesPlanningModel? filesPlanning, String? notice, String? errorCode
 });
 
 
-$ParkingSummaryModelCopyWith<$Res>? get parking;$SpotPlanningModelCopyWith<$Res>? get planning;
+$ParkingSummaryModelCopyWith<$Res>? get parking;$SpotPlanningModelCopyWith<$Res>? get planning;$FilesPlanningModelCopyWith<$Res>? get filesPlanning;
 
 }
 /// @nodoc
@@ -69,7 +71,7 @@ class _$ProSpotPlanningStateCopyWithImpl<$Res>
 
 /// Create a copy of ProSpotPlanningState
 /// with the given fields replaced by the non-null parameter values.
-@pragma('vm:prefer-inline') @override $Res call({Object? viewState = null,Object? actionState = null,Object? parking = freezed,Object? from = null,Object? days = null,Object? planning = freezed,Object? notice = freezed,Object? errorCode = freezed,}) {
+@pragma('vm:prefer-inline') @override $Res call({Object? viewState = null,Object? actionState = null,Object? parking = freezed,Object? from = null,Object? days = null,Object? planning = freezed,Object? filesPlanning = freezed,Object? notice = freezed,Object? errorCode = freezed,}) {
   return _then(ProSpotPlanningState(
 viewState: null == viewState ? _self.viewState : viewState // ignore: cast_nullable_to_non_nullable
 as ViewState,actionState: null == actionState ? _self.actionState : actionState // ignore: cast_nullable_to_non_nullable
@@ -77,7 +79,8 @@ as ViewState,parking: freezed == parking ? _self.parking : parking // ignore: ca
 as ParkingSummaryModel?,from: null == from ? _self.from : from // ignore: cast_nullable_to_non_nullable
 as String,days: null == days ? _self.days : days // ignore: cast_nullable_to_non_nullable
 as int,planning: freezed == planning ? _self.planning : planning // ignore: cast_nullable_to_non_nullable
-as SpotPlanningModel?,notice: freezed == notice ? _self.notice : notice // ignore: cast_nullable_to_non_nullable
+as SpotPlanningModel?,filesPlanning: freezed == filesPlanning ? _self.filesPlanning : filesPlanning // ignore: cast_nullable_to_non_nullable
+as FilesPlanningModel?,notice: freezed == notice ? _self.notice : notice // ignore: cast_nullable_to_non_nullable
 as String?,errorCode: freezed == errorCode ? _self.errorCode : errorCode // ignore: cast_nullable_to_non_nullable
 as String?,
   ));
@@ -105,6 +108,18 @@ $SpotPlanningModelCopyWith<$Res>? get planning {
 
   return $SpotPlanningModelCopyWith<$Res>(_self.planning!, (value) {
     return _then(_self.copyWith(planning: value));
+  });
+}/// Create a copy of ProSpotPlanningState
+/// with the given fields replaced by the non-null parameter values.
+@override
+@pragma('vm:prefer-inline')
+$FilesPlanningModelCopyWith<$Res>? get filesPlanning {
+    if (_self.filesPlanning == null) {
+    return null;
+  }
+
+  return $FilesPlanningModelCopyWith<$Res>(_self.filesPlanning!, (value) {
+    return _then(_self.copyWith(filesPlanning: value));
   });
 }
 }
@@ -188,10 +203,10 @@ return $default(_that);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( ViewState viewState,  ViewState actionState,  ParkingSummaryModel? parking,  String from,  int days,  SpotPlanningModel? planning,  String? notice,  String? errorCode)?  $default,{required TResult orElse(),}) {final _that = this;
+@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( ViewState viewState,  ViewState actionState,  ParkingSummaryModel? parking,  String from,  int days,  SpotPlanningModel? planning,  FilesPlanningModel? filesPlanning,  String? notice,  String? errorCode)?  $default,{required TResult orElse(),}) {final _that = this;
 switch (_that) {
 case _ProSpotPlanningState() when $default != null:
-return $default(_that.viewState,_that.actionState,_that.parking,_that.from,_that.days,_that.planning,_that.notice,_that.errorCode);case _:
+return $default(_that.viewState,_that.actionState,_that.parking,_that.from,_that.days,_that.planning,_that.filesPlanning,_that.notice,_that.errorCode);case _:
   return orElse();
 
 }
@@ -209,10 +224,10 @@ return $default(_that.viewState,_that.actionState,_that.parking,_that.from,_that
 /// }
 /// ```
 
-@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( ViewState viewState,  ViewState actionState,  ParkingSummaryModel? parking,  String from,  int days,  SpotPlanningModel? planning,  String? notice,  String? errorCode)  $default,) {final _that = this;
+@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( ViewState viewState,  ViewState actionState,  ParkingSummaryModel? parking,  String from,  int days,  SpotPlanningModel? planning,  FilesPlanningModel? filesPlanning,  String? notice,  String? errorCode)  $default,) {final _that = this;
 switch (_that) {
 case _ProSpotPlanningState():
-return $default(_that.viewState,_that.actionState,_that.parking,_that.from,_that.days,_that.planning,_that.notice,_that.errorCode);case _:
+return $default(_that.viewState,_that.actionState,_that.parking,_that.from,_that.days,_that.planning,_that.filesPlanning,_that.notice,_that.errorCode);case _:
   throw StateError('Unexpected subclass');
 
 }
@@ -229,10 +244,10 @@ return $default(_that.viewState,_that.actionState,_that.parking,_that.from,_that
 /// }
 /// ```
 
-@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( ViewState viewState,  ViewState actionState,  ParkingSummaryModel? parking,  String from,  int days,  SpotPlanningModel? planning,  String? notice,  String? errorCode)?  $default,) {final _that = this;
+@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( ViewState viewState,  ViewState actionState,  ParkingSummaryModel? parking,  String from,  int days,  SpotPlanningModel? planning,  FilesPlanningModel? filesPlanning,  String? notice,  String? errorCode)?  $default,) {final _that = this;
 switch (_that) {
 case _ProSpotPlanningState() when $default != null:
-return $default(_that.viewState,_that.actionState,_that.parking,_that.from,_that.days,_that.planning,_that.notice,_that.errorCode);case _:
+return $default(_that.viewState,_that.actionState,_that.parking,_that.from,_that.days,_that.planning,_that.filesPlanning,_that.notice,_that.errorCode);case _:
   return null;
 
 }
@@ -244,7 +259,7 @@ return $default(_that.viewState,_that.actionState,_that.parking,_that.from,_that
 
 
 class _ProSpotPlanningState extends ProSpotPlanningState {
-  const _ProSpotPlanningState({this.viewState = ViewState.idle, this.actionState = ViewState.idle, this.parking, required this.from, this.days = 7, this.planning, this.notice, this.errorCode}): super._();
+  const _ProSpotPlanningState({this.viewState = ViewState.idle, this.actionState = ViewState.idle, this.parking, required this.from, this.days = 7, this.planning, this.filesPlanning, this.notice, this.errorCode}): super._();
   
 
 @override@JsonKey() final  ViewState viewState;
@@ -253,7 +268,10 @@ class _ProSpotPlanningState extends ProSpotPlanningState {
 @override final  String from;
 @override@JsonKey() final  int days;
 @override final  SpotPlanningModel? planning;
-/// "planning.preassigned:3:1", "planning.moved:AB-123-CD:A-01-02", "planning.released:AB-123-CD".
+/// Planning des files (08/10/2026): when the parking has files, the page reads in files.
+@override final  FilesPlanningModel? filesPlanning;
+/// "planning.preassigned:3:1", "planning.moved:AB-123-CD:A-01-02", "planning.released:AB-123-CD",
+/// "planning.kept:F07:2026-10-12", "planning.freed:F07", "occupation.prepared:2:1".
 @override final  String? notice;
 @override final  String? errorCode;
 
@@ -267,18 +285,18 @@ _$ProSpotPlanningStateCopyWith<_ProSpotPlanningState> get copyWith => __$ProSpot
 
 @override
 bool operator ==(Object other) {
-    return identical(this, other) || (other.runtimeType == runtimeType&&other is _ProSpotPlanningState&&(identical(other.viewState, viewState) || other.viewState == viewState)&&(identical(other.actionState, actionState) || other.actionState == actionState)&&(identical(other.parking, parking) || other.parking == parking)&&(identical(other.from, from) || other.from == from)&&(identical(other.days, days) || other.days == days)&&(identical(other.planning, planning) || other.planning == planning)&&(identical(other.notice, notice) || other.notice == notice)&&(identical(other.errorCode, errorCode) || other.errorCode == errorCode));
+    return identical(this, other) || (other.runtimeType == runtimeType&&other is _ProSpotPlanningState&&(identical(other.viewState, viewState) || other.viewState == viewState)&&(identical(other.actionState, actionState) || other.actionState == actionState)&&(identical(other.parking, parking) || other.parking == parking)&&(identical(other.from, from) || other.from == from)&&(identical(other.days, days) || other.days == days)&&(identical(other.planning, planning) || other.planning == planning)&&(identical(other.filesPlanning, filesPlanning) || other.filesPlanning == filesPlanning)&&(identical(other.notice, notice) || other.notice == notice)&&(identical(other.errorCode, errorCode) || other.errorCode == errorCode));
 }
 
 
 @override
 int get hashCode {
-    return Object.hash(runtimeType,viewState,actionState,parking,from,days,planning,notice,errorCode);
+    return Object.hash(runtimeType,viewState,actionState,parking,from,days,planning,filesPlanning,notice,errorCode);
 }
 
 @override
 String toString() {
-    return 'ProSpotPlanningState(viewState: $viewState, actionState: $actionState, parking: $parking, from: $from, days: $days, planning: $planning, notice: $notice, errorCode: $errorCode)';
+    return 'ProSpotPlanningState(viewState: $viewState, actionState: $actionState, parking: $parking, from: $from, days: $days, planning: $planning, filesPlanning: $filesPlanning, notice: $notice, errorCode: $errorCode)';
 }
 
 
@@ -289,11 +307,11 @@ abstract mixin class _$ProSpotPlanningStateCopyWith<$Res> implements $ProSpotPla
   factory _$ProSpotPlanningStateCopyWith(_ProSpotPlanningState value, $Res Function(_ProSpotPlanningState) _then) = __$ProSpotPlanningStateCopyWithImpl;
 @override @useResult
 $Res call({
- ViewState viewState, ViewState actionState, ParkingSummaryModel? parking, String from, int days, SpotPlanningModel? planning, String? notice, String? errorCode
+ ViewState viewState, ViewState actionState, ParkingSummaryModel? parking, String from, int days, SpotPlanningModel? planning, FilesPlanningModel? filesPlanning, String? notice, String? errorCode
 });
 
 
-@override $ParkingSummaryModelCopyWith<$Res>? get parking;@override $SpotPlanningModelCopyWith<$Res>? get planning;
+@override $ParkingSummaryModelCopyWith<$Res>? get parking;@override $SpotPlanningModelCopyWith<$Res>? get planning;@override $FilesPlanningModelCopyWith<$Res>? get filesPlanning;
 
 }
 /// @nodoc
@@ -306,7 +324,7 @@ class __$ProSpotPlanningStateCopyWithImpl<$Res>
 
 /// Create a copy of ProSpotPlanningState
 /// with the given fields replaced by the non-null parameter values.
-@override @pragma('vm:prefer-inline') $Res call({Object? viewState = null,Object? actionState = null,Object? parking = freezed,Object? from = null,Object? days = null,Object? planning = freezed,Object? notice = freezed,Object? errorCode = freezed,}) {
+@override @pragma('vm:prefer-inline') $Res call({Object? viewState = null,Object? actionState = null,Object? parking = freezed,Object? from = null,Object? days = null,Object? planning = freezed,Object? filesPlanning = freezed,Object? notice = freezed,Object? errorCode = freezed,}) {
   return _then(_ProSpotPlanningState(
 viewState: null == viewState ? _self.viewState : viewState // ignore: cast_nullable_to_non_nullable
 as ViewState,actionState: null == actionState ? _self.actionState : actionState // ignore: cast_nullable_to_non_nullable
@@ -314,7 +332,8 @@ as ViewState,parking: freezed == parking ? _self.parking : parking // ignore: ca
 as ParkingSummaryModel?,from: null == from ? _self.from : from // ignore: cast_nullable_to_non_nullable
 as String,days: null == days ? _self.days : days // ignore: cast_nullable_to_non_nullable
 as int,planning: freezed == planning ? _self.planning : planning // ignore: cast_nullable_to_non_nullable
-as SpotPlanningModel?,notice: freezed == notice ? _self.notice : notice // ignore: cast_nullable_to_non_nullable
+as SpotPlanningModel?,filesPlanning: freezed == filesPlanning ? _self.filesPlanning : filesPlanning // ignore: cast_nullable_to_non_nullable
+as FilesPlanningModel?,notice: freezed == notice ? _self.notice : notice // ignore: cast_nullable_to_non_nullable
 as String?,errorCode: freezed == errorCode ? _self.errorCode : errorCode // ignore: cast_nullable_to_non_nullable
 as String?,
   ));
@@ -343,6 +362,18 @@ $SpotPlanningModelCopyWith<$Res>? get planning {
 
   return $SpotPlanningModelCopyWith<$Res>(_self.planning!, (value) {
     return _then(_self.copyWith(planning: value));
+  });
+}/// Create a copy of ProSpotPlanningState
+/// with the given fields replaced by the non-null parameter values.
+@override
+@pragma('vm:prefer-inline')
+$FilesPlanningModelCopyWith<$Res>? get filesPlanning {
+    if (_self.filesPlanning == null) {
+    return null;
+  }
+
+  return $FilesPlanningModelCopyWith<$Res>(_self.filesPlanning!, (value) {
+    return _then(_self.copyWith(filesPlanning: value));
   });
 }
 }

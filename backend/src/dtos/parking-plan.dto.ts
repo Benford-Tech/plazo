@@ -163,6 +163,20 @@ export class ReplaceSpotsDto {
   @ValidateNested({ each: true })
   @Type(() => SpotInputDto)
   public spots: SpotInputDto[];
+
+  /** A reset (08/10/2026): true also drops the spots laid by hand, which a regeneration keeps. */
+  @IsOptional()
+  @IsBoolean({ message: 'invalid' })
+  public includeManual?: boolean;
+}
+
+/** P-B (07/10/2026): spots laid by hand, added to the generated ones. */
+export class AddSpotsDto {
+  @IsArray()
+  @ArrayMaxSize(PLAN_LIMITS.maxSpots, { message: 'too_many_items' })
+  @ValidateNested({ each: true })
+  @Type(() => SpotInputDto)
+  public spots: SpotInputDto[];
 }
 
 export class UpdateSpotDto {

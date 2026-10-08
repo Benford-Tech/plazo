@@ -20,7 +20,8 @@ mixin _$ReservationModel {
  String? get departureFlight; String? get departureStatus; DateTime? get departureScheduledAt; DateTime? get departureEstimatedAt; String? get notes;/// E (06/10/2026): the traveller's message for the parking, their vehicle, and today's return notice.
  String? get customerNote; String? get vehicleModel; String? get vehicleColour; String? get returnNoticeKind; String? get returnNoticeText; DateTime? get returnNoticeAt; String? get externalReference; int? get priceCents; bool get overbooked; String? get spotId; String? get keyHook; double? get carLat; double? get carLng; int? get carAccuracyM; DateTime? get carLocatedAt; String? get carLocatedBy; String? get carNote; String? get paymentStatus; DateTime? get createdAt;/// The statuses this staff member may set next, served by the API (06/10/2026).
  List<String> get nextStatuses;/// The sheet route carries the spot's code (bloc 2).
- ReservationSpotModel? get spot;
+ ReservationSpotModel? get spot;/// S-C (07/10/2026): the file the car stands in and its position from the aisle (1 = first out).
+ ReservationFileModel? get file; int? get filePosition;
 /// Create a copy of ReservationModel
 /// with the given fields replaced by the non-null parameter values.
 @JsonKey(includeFromJson: false, includeToJson: false)
@@ -34,20 +35,20 @@ $ReservationModelCopyWith<ReservationModel> get copyWith => _$ReservationModelCo
 @override
 bool operator ==(Object other) {
   final _this = this as ReservationModel;
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is ReservationModel&&(identical(other.id, _this.id) || other.id == _this.id)&&(identical(other.reference, _this.reference) || other.reference == _this.reference)&&(identical(other.channel, _this.channel) || other.channel == _this.channel)&&(identical(other.channelDetail, _this.channelDetail) || other.channelDetail == _this.channelDetail)&&(identical(other.status, _this.status) || other.status == _this.status)&&(identical(other.arrivalAt, _this.arrivalAt) || other.arrivalAt == _this.arrivalAt)&&(identical(other.returnAt, _this.returnAt) || other.returnAt == _this.returnAt)&&(identical(other.passengers, _this.passengers) || other.passengers == _this.passengers)&&(identical(other.customerName, _this.customerName) || other.customerName == _this.customerName)&&(identical(other.customerPhone, _this.customerPhone) || other.customerPhone == _this.customerPhone)&&(identical(other.customerEmail, _this.customerEmail) || other.customerEmail == _this.customerEmail)&&(identical(other.plate, _this.plate) || other.plate == _this.plate)&&(identical(other.returnFlight, _this.returnFlight) || other.returnFlight == _this.returnFlight)&&(identical(other.departureFlight, _this.departureFlight) || other.departureFlight == _this.departureFlight)&&(identical(other.departureStatus, _this.departureStatus) || other.departureStatus == _this.departureStatus)&&(identical(other.departureScheduledAt, _this.departureScheduledAt) || other.departureScheduledAt == _this.departureScheduledAt)&&(identical(other.departureEstimatedAt, _this.departureEstimatedAt) || other.departureEstimatedAt == _this.departureEstimatedAt)&&(identical(other.notes, _this.notes) || other.notes == _this.notes)&&(identical(other.customerNote, _this.customerNote) || other.customerNote == _this.customerNote)&&(identical(other.vehicleModel, _this.vehicleModel) || other.vehicleModel == _this.vehicleModel)&&(identical(other.vehicleColour, _this.vehicleColour) || other.vehicleColour == _this.vehicleColour)&&(identical(other.returnNoticeKind, _this.returnNoticeKind) || other.returnNoticeKind == _this.returnNoticeKind)&&(identical(other.returnNoticeText, _this.returnNoticeText) || other.returnNoticeText == _this.returnNoticeText)&&(identical(other.returnNoticeAt, _this.returnNoticeAt) || other.returnNoticeAt == _this.returnNoticeAt)&&(identical(other.externalReference, _this.externalReference) || other.externalReference == _this.externalReference)&&(identical(other.priceCents, _this.priceCents) || other.priceCents == _this.priceCents)&&(identical(other.overbooked, _this.overbooked) || other.overbooked == _this.overbooked)&&(identical(other.spotId, _this.spotId) || other.spotId == _this.spotId)&&(identical(other.keyHook, _this.keyHook) || other.keyHook == _this.keyHook)&&(identical(other.carLat, _this.carLat) || other.carLat == _this.carLat)&&(identical(other.carLng, _this.carLng) || other.carLng == _this.carLng)&&(identical(other.carAccuracyM, _this.carAccuracyM) || other.carAccuracyM == _this.carAccuracyM)&&(identical(other.carLocatedAt, _this.carLocatedAt) || other.carLocatedAt == _this.carLocatedAt)&&(identical(other.carLocatedBy, _this.carLocatedBy) || other.carLocatedBy == _this.carLocatedBy)&&(identical(other.carNote, _this.carNote) || other.carNote == _this.carNote)&&(identical(other.paymentStatus, _this.paymentStatus) || other.paymentStatus == _this.paymentStatus)&&(identical(other.createdAt, _this.createdAt) || other.createdAt == _this.createdAt)&&const DeepCollectionEquality().equals(other.nextStatuses, _this.nextStatuses)&&(identical(other.spot, _this.spot) || other.spot == _this.spot));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is ReservationModel&&(identical(other.id, _this.id) || other.id == _this.id)&&(identical(other.reference, _this.reference) || other.reference == _this.reference)&&(identical(other.channel, _this.channel) || other.channel == _this.channel)&&(identical(other.channelDetail, _this.channelDetail) || other.channelDetail == _this.channelDetail)&&(identical(other.status, _this.status) || other.status == _this.status)&&(identical(other.arrivalAt, _this.arrivalAt) || other.arrivalAt == _this.arrivalAt)&&(identical(other.returnAt, _this.returnAt) || other.returnAt == _this.returnAt)&&(identical(other.passengers, _this.passengers) || other.passengers == _this.passengers)&&(identical(other.customerName, _this.customerName) || other.customerName == _this.customerName)&&(identical(other.customerPhone, _this.customerPhone) || other.customerPhone == _this.customerPhone)&&(identical(other.customerEmail, _this.customerEmail) || other.customerEmail == _this.customerEmail)&&(identical(other.plate, _this.plate) || other.plate == _this.plate)&&(identical(other.returnFlight, _this.returnFlight) || other.returnFlight == _this.returnFlight)&&(identical(other.departureFlight, _this.departureFlight) || other.departureFlight == _this.departureFlight)&&(identical(other.departureStatus, _this.departureStatus) || other.departureStatus == _this.departureStatus)&&(identical(other.departureScheduledAt, _this.departureScheduledAt) || other.departureScheduledAt == _this.departureScheduledAt)&&(identical(other.departureEstimatedAt, _this.departureEstimatedAt) || other.departureEstimatedAt == _this.departureEstimatedAt)&&(identical(other.notes, _this.notes) || other.notes == _this.notes)&&(identical(other.customerNote, _this.customerNote) || other.customerNote == _this.customerNote)&&(identical(other.vehicleModel, _this.vehicleModel) || other.vehicleModel == _this.vehicleModel)&&(identical(other.vehicleColour, _this.vehicleColour) || other.vehicleColour == _this.vehicleColour)&&(identical(other.returnNoticeKind, _this.returnNoticeKind) || other.returnNoticeKind == _this.returnNoticeKind)&&(identical(other.returnNoticeText, _this.returnNoticeText) || other.returnNoticeText == _this.returnNoticeText)&&(identical(other.returnNoticeAt, _this.returnNoticeAt) || other.returnNoticeAt == _this.returnNoticeAt)&&(identical(other.externalReference, _this.externalReference) || other.externalReference == _this.externalReference)&&(identical(other.priceCents, _this.priceCents) || other.priceCents == _this.priceCents)&&(identical(other.overbooked, _this.overbooked) || other.overbooked == _this.overbooked)&&(identical(other.spotId, _this.spotId) || other.spotId == _this.spotId)&&(identical(other.keyHook, _this.keyHook) || other.keyHook == _this.keyHook)&&(identical(other.carLat, _this.carLat) || other.carLat == _this.carLat)&&(identical(other.carLng, _this.carLng) || other.carLng == _this.carLng)&&(identical(other.carAccuracyM, _this.carAccuracyM) || other.carAccuracyM == _this.carAccuracyM)&&(identical(other.carLocatedAt, _this.carLocatedAt) || other.carLocatedAt == _this.carLocatedAt)&&(identical(other.carLocatedBy, _this.carLocatedBy) || other.carLocatedBy == _this.carLocatedBy)&&(identical(other.carNote, _this.carNote) || other.carNote == _this.carNote)&&(identical(other.paymentStatus, _this.paymentStatus) || other.paymentStatus == _this.paymentStatus)&&(identical(other.createdAt, _this.createdAt) || other.createdAt == _this.createdAt)&&const DeepCollectionEquality().equals(other.nextStatuses, _this.nextStatuses)&&(identical(other.spot, _this.spot) || other.spot == _this.spot)&&(identical(other.file, _this.file) || other.file == _this.file)&&(identical(other.filePosition, _this.filePosition) || other.filePosition == _this.filePosition));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
 int get hashCode {
   final _this = this as ReservationModel;
-  return Object.hashAll([runtimeType,_this.id,_this.reference,_this.channel,_this.channelDetail,_this.status,_this.arrivalAt,_this.returnAt,_this.passengers,_this.customerName,_this.customerPhone,_this.customerEmail,_this.plate,_this.returnFlight,_this.departureFlight,_this.departureStatus,_this.departureScheduledAt,_this.departureEstimatedAt,_this.notes,_this.customerNote,_this.vehicleModel,_this.vehicleColour,_this.returnNoticeKind,_this.returnNoticeText,_this.returnNoticeAt,_this.externalReference,_this.priceCents,_this.overbooked,_this.spotId,_this.keyHook,_this.carLat,_this.carLng,_this.carAccuracyM,_this.carLocatedAt,_this.carLocatedBy,_this.carNote,_this.paymentStatus,_this.createdAt,const DeepCollectionEquality().hash(_this.nextStatuses),_this.spot]);
+  return Object.hashAll([runtimeType,_this.id,_this.reference,_this.channel,_this.channelDetail,_this.status,_this.arrivalAt,_this.returnAt,_this.passengers,_this.customerName,_this.customerPhone,_this.customerEmail,_this.plate,_this.returnFlight,_this.departureFlight,_this.departureStatus,_this.departureScheduledAt,_this.departureEstimatedAt,_this.notes,_this.customerNote,_this.vehicleModel,_this.vehicleColour,_this.returnNoticeKind,_this.returnNoticeText,_this.returnNoticeAt,_this.externalReference,_this.priceCents,_this.overbooked,_this.spotId,_this.keyHook,_this.carLat,_this.carLng,_this.carAccuracyM,_this.carLocatedAt,_this.carLocatedBy,_this.carNote,_this.paymentStatus,_this.createdAt,const DeepCollectionEquality().hash(_this.nextStatuses),_this.spot,_this.file,_this.filePosition]);
 }
 
 @override
 String toString() {
   final _this = this as ReservationModel;
-  return 'ReservationModel(id: ${_this.id}, reference: ${_this.reference}, channel: ${_this.channel}, channelDetail: ${_this.channelDetail}, status: ${_this.status}, arrivalAt: ${_this.arrivalAt}, returnAt: ${_this.returnAt}, passengers: ${_this.passengers}, customerName: ${_this.customerName}, customerPhone: ${_this.customerPhone}, customerEmail: ${_this.customerEmail}, plate: ${_this.plate}, returnFlight: ${_this.returnFlight}, departureFlight: ${_this.departureFlight}, departureStatus: ${_this.departureStatus}, departureScheduledAt: ${_this.departureScheduledAt}, departureEstimatedAt: ${_this.departureEstimatedAt}, notes: ${_this.notes}, customerNote: ${_this.customerNote}, vehicleModel: ${_this.vehicleModel}, vehicleColour: ${_this.vehicleColour}, returnNoticeKind: ${_this.returnNoticeKind}, returnNoticeText: ${_this.returnNoticeText}, returnNoticeAt: ${_this.returnNoticeAt}, externalReference: ${_this.externalReference}, priceCents: ${_this.priceCents}, overbooked: ${_this.overbooked}, spotId: ${_this.spotId}, keyHook: ${_this.keyHook}, carLat: ${_this.carLat}, carLng: ${_this.carLng}, carAccuracyM: ${_this.carAccuracyM}, carLocatedAt: ${_this.carLocatedAt}, carLocatedBy: ${_this.carLocatedBy}, carNote: ${_this.carNote}, paymentStatus: ${_this.paymentStatus}, createdAt: ${_this.createdAt}, nextStatuses: ${_this.nextStatuses}, spot: ${_this.spot})';
+  return 'ReservationModel(id: ${_this.id}, reference: ${_this.reference}, channel: ${_this.channel}, channelDetail: ${_this.channelDetail}, status: ${_this.status}, arrivalAt: ${_this.arrivalAt}, returnAt: ${_this.returnAt}, passengers: ${_this.passengers}, customerName: ${_this.customerName}, customerPhone: ${_this.customerPhone}, customerEmail: ${_this.customerEmail}, plate: ${_this.plate}, returnFlight: ${_this.returnFlight}, departureFlight: ${_this.departureFlight}, departureStatus: ${_this.departureStatus}, departureScheduledAt: ${_this.departureScheduledAt}, departureEstimatedAt: ${_this.departureEstimatedAt}, notes: ${_this.notes}, customerNote: ${_this.customerNote}, vehicleModel: ${_this.vehicleModel}, vehicleColour: ${_this.vehicleColour}, returnNoticeKind: ${_this.returnNoticeKind}, returnNoticeText: ${_this.returnNoticeText}, returnNoticeAt: ${_this.returnNoticeAt}, externalReference: ${_this.externalReference}, priceCents: ${_this.priceCents}, overbooked: ${_this.overbooked}, spotId: ${_this.spotId}, keyHook: ${_this.keyHook}, carLat: ${_this.carLat}, carLng: ${_this.carLng}, carAccuracyM: ${_this.carAccuracyM}, carLocatedAt: ${_this.carLocatedAt}, carLocatedBy: ${_this.carLocatedBy}, carNote: ${_this.carNote}, paymentStatus: ${_this.paymentStatus}, createdAt: ${_this.createdAt}, nextStatuses: ${_this.nextStatuses}, spot: ${_this.spot}, file: ${_this.file}, filePosition: ${_this.filePosition})';
 }
 
 
@@ -58,11 +59,11 @@ abstract mixin class $ReservationModelCopyWith<$Res>  {
   factory $ReservationModelCopyWith(ReservationModel value, $Res Function(ReservationModel) _then) = _$ReservationModelCopyWithImpl;
 @useResult
 $Res call({
- String id, String reference, String channel, String? channelDetail, String status, DateTime arrivalAt, DateTime returnAt, int passengers, String customerName, String customerPhone, String? customerEmail, String plate, String? returnFlight, String? departureFlight, String? departureStatus, DateTime? departureScheduledAt, DateTime? departureEstimatedAt, String? notes, String? customerNote, String? vehicleModel, String? vehicleColour, String? returnNoticeKind, String? returnNoticeText, DateTime? returnNoticeAt, String? externalReference, int? priceCents, bool overbooked, String? spotId, String? keyHook, double? carLat, double? carLng, int? carAccuracyM, DateTime? carLocatedAt, String? carLocatedBy, String? carNote, String? paymentStatus, DateTime? createdAt, List<String> nextStatuses, ReservationSpotModel? spot
+ String id, String reference, String channel, String? channelDetail, String status, DateTime arrivalAt, DateTime returnAt, int passengers, String customerName, String customerPhone, String? customerEmail, String plate, String? returnFlight, String? departureFlight, String? departureStatus, DateTime? departureScheduledAt, DateTime? departureEstimatedAt, String? notes, String? customerNote, String? vehicleModel, String? vehicleColour, String? returnNoticeKind, String? returnNoticeText, DateTime? returnNoticeAt, String? externalReference, int? priceCents, bool overbooked, String? spotId, String? keyHook, double? carLat, double? carLng, int? carAccuracyM, DateTime? carLocatedAt, String? carLocatedBy, String? carNote, String? paymentStatus, DateTime? createdAt, List<String> nextStatuses, ReservationSpotModel? spot, ReservationFileModel? file, int? filePosition
 });
 
 
-$ReservationSpotModelCopyWith<$Res>? get spot;
+$ReservationSpotModelCopyWith<$Res>? get spot;$ReservationFileModelCopyWith<$Res>? get file;
 
 }
 /// @nodoc
@@ -75,7 +76,7 @@ class _$ReservationModelCopyWithImpl<$Res>
 
 /// Create a copy of ReservationModel
 /// with the given fields replaced by the non-null parameter values.
-@pragma('vm:prefer-inline') @override $Res call({Object? id = null,Object? reference = null,Object? channel = null,Object? channelDetail = freezed,Object? status = null,Object? arrivalAt = null,Object? returnAt = null,Object? passengers = null,Object? customerName = null,Object? customerPhone = null,Object? customerEmail = freezed,Object? plate = null,Object? returnFlight = freezed,Object? departureFlight = freezed,Object? departureStatus = freezed,Object? departureScheduledAt = freezed,Object? departureEstimatedAt = freezed,Object? notes = freezed,Object? customerNote = freezed,Object? vehicleModel = freezed,Object? vehicleColour = freezed,Object? returnNoticeKind = freezed,Object? returnNoticeText = freezed,Object? returnNoticeAt = freezed,Object? externalReference = freezed,Object? priceCents = freezed,Object? overbooked = null,Object? spotId = freezed,Object? keyHook = freezed,Object? carLat = freezed,Object? carLng = freezed,Object? carAccuracyM = freezed,Object? carLocatedAt = freezed,Object? carLocatedBy = freezed,Object? carNote = freezed,Object? paymentStatus = freezed,Object? createdAt = freezed,Object? nextStatuses = null,Object? spot = freezed,}) {
+@pragma('vm:prefer-inline') @override $Res call({Object? id = null,Object? reference = null,Object? channel = null,Object? channelDetail = freezed,Object? status = null,Object? arrivalAt = null,Object? returnAt = null,Object? passengers = null,Object? customerName = null,Object? customerPhone = null,Object? customerEmail = freezed,Object? plate = null,Object? returnFlight = freezed,Object? departureFlight = freezed,Object? departureStatus = freezed,Object? departureScheduledAt = freezed,Object? departureEstimatedAt = freezed,Object? notes = freezed,Object? customerNote = freezed,Object? vehicleModel = freezed,Object? vehicleColour = freezed,Object? returnNoticeKind = freezed,Object? returnNoticeText = freezed,Object? returnNoticeAt = freezed,Object? externalReference = freezed,Object? priceCents = freezed,Object? overbooked = null,Object? spotId = freezed,Object? keyHook = freezed,Object? carLat = freezed,Object? carLng = freezed,Object? carAccuracyM = freezed,Object? carLocatedAt = freezed,Object? carLocatedBy = freezed,Object? carNote = freezed,Object? paymentStatus = freezed,Object? createdAt = freezed,Object? nextStatuses = null,Object? spot = freezed,Object? file = freezed,Object? filePosition = freezed,}) {
   return _then(ReservationModel(
 id: null == id ? _self.id : id // ignore: cast_nullable_to_non_nullable
 as String,reference: null == reference ? _self.reference : reference // ignore: cast_nullable_to_non_nullable
@@ -116,7 +117,9 @@ as String?,paymentStatus: freezed == paymentStatus ? _self.paymentStatus : payme
 as String?,createdAt: freezed == createdAt ? _self.createdAt : createdAt // ignore: cast_nullable_to_non_nullable
 as DateTime?,nextStatuses: null == nextStatuses ? _self.nextStatuses : nextStatuses // ignore: cast_nullable_to_non_nullable
 as List<String>,spot: freezed == spot ? _self.spot : spot // ignore: cast_nullable_to_non_nullable
-as ReservationSpotModel?,
+as ReservationSpotModel?,file: freezed == file ? _self.file : file // ignore: cast_nullable_to_non_nullable
+as ReservationFileModel?,filePosition: freezed == filePosition ? _self.filePosition : filePosition // ignore: cast_nullable_to_non_nullable
+as int?,
   ));
 }
 /// Create a copy of ReservationModel
@@ -130,6 +133,18 @@ $ReservationSpotModelCopyWith<$Res>? get spot {
 
   return $ReservationSpotModelCopyWith<$Res>(_self.spot!, (value) {
     return _then(_self.copyWith(spot: value));
+  });
+}/// Create a copy of ReservationModel
+/// with the given fields replaced by the non-null parameter values.
+@override
+@pragma('vm:prefer-inline')
+$ReservationFileModelCopyWith<$Res>? get file {
+    if (_self.file == null) {
+    return null;
+  }
+
+  return $ReservationFileModelCopyWith<$Res>(_self.file!, (value) {
+    return _then(_self.copyWith(file: value));
   });
 }
 }
@@ -213,10 +228,10 @@ return $default(_that);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( String id,  String reference,  String channel,  String? channelDetail,  String status,  DateTime arrivalAt,  DateTime returnAt,  int passengers,  String customerName,  String customerPhone,  String? customerEmail,  String plate,  String? returnFlight,  String? departureFlight,  String? departureStatus,  DateTime? departureScheduledAt,  DateTime? departureEstimatedAt,  String? notes,  String? customerNote,  String? vehicleModel,  String? vehicleColour,  String? returnNoticeKind,  String? returnNoticeText,  DateTime? returnNoticeAt,  String? externalReference,  int? priceCents,  bool overbooked,  String? spotId,  String? keyHook,  double? carLat,  double? carLng,  int? carAccuracyM,  DateTime? carLocatedAt,  String? carLocatedBy,  String? carNote,  String? paymentStatus,  DateTime? createdAt,  List<String> nextStatuses,  ReservationSpotModel? spot)?  $default,{required TResult orElse(),}) {final _that = this;
+@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( String id,  String reference,  String channel,  String? channelDetail,  String status,  DateTime arrivalAt,  DateTime returnAt,  int passengers,  String customerName,  String customerPhone,  String? customerEmail,  String plate,  String? returnFlight,  String? departureFlight,  String? departureStatus,  DateTime? departureScheduledAt,  DateTime? departureEstimatedAt,  String? notes,  String? customerNote,  String? vehicleModel,  String? vehicleColour,  String? returnNoticeKind,  String? returnNoticeText,  DateTime? returnNoticeAt,  String? externalReference,  int? priceCents,  bool overbooked,  String? spotId,  String? keyHook,  double? carLat,  double? carLng,  int? carAccuracyM,  DateTime? carLocatedAt,  String? carLocatedBy,  String? carNote,  String? paymentStatus,  DateTime? createdAt,  List<String> nextStatuses,  ReservationSpotModel? spot,  ReservationFileModel? file,  int? filePosition)?  $default,{required TResult orElse(),}) {final _that = this;
 switch (_that) {
 case _ReservationModel() when $default != null:
-return $default(_that.id,_that.reference,_that.channel,_that.channelDetail,_that.status,_that.arrivalAt,_that.returnAt,_that.passengers,_that.customerName,_that.customerPhone,_that.customerEmail,_that.plate,_that.returnFlight,_that.departureFlight,_that.departureStatus,_that.departureScheduledAt,_that.departureEstimatedAt,_that.notes,_that.customerNote,_that.vehicleModel,_that.vehicleColour,_that.returnNoticeKind,_that.returnNoticeText,_that.returnNoticeAt,_that.externalReference,_that.priceCents,_that.overbooked,_that.spotId,_that.keyHook,_that.carLat,_that.carLng,_that.carAccuracyM,_that.carLocatedAt,_that.carLocatedBy,_that.carNote,_that.paymentStatus,_that.createdAt,_that.nextStatuses,_that.spot);case _:
+return $default(_that.id,_that.reference,_that.channel,_that.channelDetail,_that.status,_that.arrivalAt,_that.returnAt,_that.passengers,_that.customerName,_that.customerPhone,_that.customerEmail,_that.plate,_that.returnFlight,_that.departureFlight,_that.departureStatus,_that.departureScheduledAt,_that.departureEstimatedAt,_that.notes,_that.customerNote,_that.vehicleModel,_that.vehicleColour,_that.returnNoticeKind,_that.returnNoticeText,_that.returnNoticeAt,_that.externalReference,_that.priceCents,_that.overbooked,_that.spotId,_that.keyHook,_that.carLat,_that.carLng,_that.carAccuracyM,_that.carLocatedAt,_that.carLocatedBy,_that.carNote,_that.paymentStatus,_that.createdAt,_that.nextStatuses,_that.spot,_that.file,_that.filePosition);case _:
   return orElse();
 
 }
@@ -234,10 +249,10 @@ return $default(_that.id,_that.reference,_that.channel,_that.channelDetail,_that
 /// }
 /// ```
 
-@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( String id,  String reference,  String channel,  String? channelDetail,  String status,  DateTime arrivalAt,  DateTime returnAt,  int passengers,  String customerName,  String customerPhone,  String? customerEmail,  String plate,  String? returnFlight,  String? departureFlight,  String? departureStatus,  DateTime? departureScheduledAt,  DateTime? departureEstimatedAt,  String? notes,  String? customerNote,  String? vehicleModel,  String? vehicleColour,  String? returnNoticeKind,  String? returnNoticeText,  DateTime? returnNoticeAt,  String? externalReference,  int? priceCents,  bool overbooked,  String? spotId,  String? keyHook,  double? carLat,  double? carLng,  int? carAccuracyM,  DateTime? carLocatedAt,  String? carLocatedBy,  String? carNote,  String? paymentStatus,  DateTime? createdAt,  List<String> nextStatuses,  ReservationSpotModel? spot)  $default,) {final _that = this;
+@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( String id,  String reference,  String channel,  String? channelDetail,  String status,  DateTime arrivalAt,  DateTime returnAt,  int passengers,  String customerName,  String customerPhone,  String? customerEmail,  String plate,  String? returnFlight,  String? departureFlight,  String? departureStatus,  DateTime? departureScheduledAt,  DateTime? departureEstimatedAt,  String? notes,  String? customerNote,  String? vehicleModel,  String? vehicleColour,  String? returnNoticeKind,  String? returnNoticeText,  DateTime? returnNoticeAt,  String? externalReference,  int? priceCents,  bool overbooked,  String? spotId,  String? keyHook,  double? carLat,  double? carLng,  int? carAccuracyM,  DateTime? carLocatedAt,  String? carLocatedBy,  String? carNote,  String? paymentStatus,  DateTime? createdAt,  List<String> nextStatuses,  ReservationSpotModel? spot,  ReservationFileModel? file,  int? filePosition)  $default,) {final _that = this;
 switch (_that) {
 case _ReservationModel():
-return $default(_that.id,_that.reference,_that.channel,_that.channelDetail,_that.status,_that.arrivalAt,_that.returnAt,_that.passengers,_that.customerName,_that.customerPhone,_that.customerEmail,_that.plate,_that.returnFlight,_that.departureFlight,_that.departureStatus,_that.departureScheduledAt,_that.departureEstimatedAt,_that.notes,_that.customerNote,_that.vehicleModel,_that.vehicleColour,_that.returnNoticeKind,_that.returnNoticeText,_that.returnNoticeAt,_that.externalReference,_that.priceCents,_that.overbooked,_that.spotId,_that.keyHook,_that.carLat,_that.carLng,_that.carAccuracyM,_that.carLocatedAt,_that.carLocatedBy,_that.carNote,_that.paymentStatus,_that.createdAt,_that.nextStatuses,_that.spot);case _:
+return $default(_that.id,_that.reference,_that.channel,_that.channelDetail,_that.status,_that.arrivalAt,_that.returnAt,_that.passengers,_that.customerName,_that.customerPhone,_that.customerEmail,_that.plate,_that.returnFlight,_that.departureFlight,_that.departureStatus,_that.departureScheduledAt,_that.departureEstimatedAt,_that.notes,_that.customerNote,_that.vehicleModel,_that.vehicleColour,_that.returnNoticeKind,_that.returnNoticeText,_that.returnNoticeAt,_that.externalReference,_that.priceCents,_that.overbooked,_that.spotId,_that.keyHook,_that.carLat,_that.carLng,_that.carAccuracyM,_that.carLocatedAt,_that.carLocatedBy,_that.carNote,_that.paymentStatus,_that.createdAt,_that.nextStatuses,_that.spot,_that.file,_that.filePosition);case _:
   throw StateError('Unexpected subclass');
 
 }
@@ -254,10 +269,10 @@ return $default(_that.id,_that.reference,_that.channel,_that.channelDetail,_that
 /// }
 /// ```
 
-@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( String id,  String reference,  String channel,  String? channelDetail,  String status,  DateTime arrivalAt,  DateTime returnAt,  int passengers,  String customerName,  String customerPhone,  String? customerEmail,  String plate,  String? returnFlight,  String? departureFlight,  String? departureStatus,  DateTime? departureScheduledAt,  DateTime? departureEstimatedAt,  String? notes,  String? customerNote,  String? vehicleModel,  String? vehicleColour,  String? returnNoticeKind,  String? returnNoticeText,  DateTime? returnNoticeAt,  String? externalReference,  int? priceCents,  bool overbooked,  String? spotId,  String? keyHook,  double? carLat,  double? carLng,  int? carAccuracyM,  DateTime? carLocatedAt,  String? carLocatedBy,  String? carNote,  String? paymentStatus,  DateTime? createdAt,  List<String> nextStatuses,  ReservationSpotModel? spot)?  $default,) {final _that = this;
+@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( String id,  String reference,  String channel,  String? channelDetail,  String status,  DateTime arrivalAt,  DateTime returnAt,  int passengers,  String customerName,  String customerPhone,  String? customerEmail,  String plate,  String? returnFlight,  String? departureFlight,  String? departureStatus,  DateTime? departureScheduledAt,  DateTime? departureEstimatedAt,  String? notes,  String? customerNote,  String? vehicleModel,  String? vehicleColour,  String? returnNoticeKind,  String? returnNoticeText,  DateTime? returnNoticeAt,  String? externalReference,  int? priceCents,  bool overbooked,  String? spotId,  String? keyHook,  double? carLat,  double? carLng,  int? carAccuracyM,  DateTime? carLocatedAt,  String? carLocatedBy,  String? carNote,  String? paymentStatus,  DateTime? createdAt,  List<String> nextStatuses,  ReservationSpotModel? spot,  ReservationFileModel? file,  int? filePosition)?  $default,) {final _that = this;
 switch (_that) {
 case _ReservationModel() when $default != null:
-return $default(_that.id,_that.reference,_that.channel,_that.channelDetail,_that.status,_that.arrivalAt,_that.returnAt,_that.passengers,_that.customerName,_that.customerPhone,_that.customerEmail,_that.plate,_that.returnFlight,_that.departureFlight,_that.departureStatus,_that.departureScheduledAt,_that.departureEstimatedAt,_that.notes,_that.customerNote,_that.vehicleModel,_that.vehicleColour,_that.returnNoticeKind,_that.returnNoticeText,_that.returnNoticeAt,_that.externalReference,_that.priceCents,_that.overbooked,_that.spotId,_that.keyHook,_that.carLat,_that.carLng,_that.carAccuracyM,_that.carLocatedAt,_that.carLocatedBy,_that.carNote,_that.paymentStatus,_that.createdAt,_that.nextStatuses,_that.spot);case _:
+return $default(_that.id,_that.reference,_that.channel,_that.channelDetail,_that.status,_that.arrivalAt,_that.returnAt,_that.passengers,_that.customerName,_that.customerPhone,_that.customerEmail,_that.plate,_that.returnFlight,_that.departureFlight,_that.departureStatus,_that.departureScheduledAt,_that.departureEstimatedAt,_that.notes,_that.customerNote,_that.vehicleModel,_that.vehicleColour,_that.returnNoticeKind,_that.returnNoticeText,_that.returnNoticeAt,_that.externalReference,_that.priceCents,_that.overbooked,_that.spotId,_that.keyHook,_that.carLat,_that.carLng,_that.carAccuracyM,_that.carLocatedAt,_that.carLocatedBy,_that.carNote,_that.paymentStatus,_that.createdAt,_that.nextStatuses,_that.spot,_that.file,_that.filePosition);case _:
   return null;
 
 }
@@ -269,7 +284,7 @@ return $default(_that.id,_that.reference,_that.channel,_that.channelDetail,_that
 @JsonSerializable()
 
 class _ReservationModel extends ReservationModel {
-  const _ReservationModel({required this.id, required this.reference, required this.channel, this.channelDetail, required this.status, required this.arrivalAt, required this.returnAt, required this.passengers, required this.customerName, required this.customerPhone, this.customerEmail, required this.plate, this.returnFlight, this.departureFlight, this.departureStatus, this.departureScheduledAt, this.departureEstimatedAt, this.notes, this.customerNote, this.vehicleModel, this.vehicleColour, this.returnNoticeKind, this.returnNoticeText, this.returnNoticeAt, this.externalReference, this.priceCents, this.overbooked = false, this.spotId, this.keyHook, this.carLat, this.carLng, this.carAccuracyM, this.carLocatedAt, this.carLocatedBy, this.carNote, this.paymentStatus, this.createdAt,  List<String> nextStatuses = const [], this.spot}): _nextStatuses = nextStatuses,super._();
+  const _ReservationModel({required this.id, required this.reference, required this.channel, this.channelDetail, required this.status, required this.arrivalAt, required this.returnAt, required this.passengers, required this.customerName, required this.customerPhone, this.customerEmail, required this.plate, this.returnFlight, this.departureFlight, this.departureStatus, this.departureScheduledAt, this.departureEstimatedAt, this.notes, this.customerNote, this.vehicleModel, this.vehicleColour, this.returnNoticeKind, this.returnNoticeText, this.returnNoticeAt, this.externalReference, this.priceCents, this.overbooked = false, this.spotId, this.keyHook, this.carLat, this.carLng, this.carAccuracyM, this.carLocatedAt, this.carLocatedBy, this.carNote, this.paymentStatus, this.createdAt,  List<String> nextStatuses = const [], this.spot, this.file, this.filePosition}): _nextStatuses = nextStatuses,super._();
   factory _ReservationModel.fromJson(Map<String, dynamic> json) => _$ReservationModelFromJson(json);
 
 @override final  String id;
@@ -322,6 +337,9 @@ class _ReservationModel extends ReservationModel {
 
 /// The sheet route carries the spot's code (bloc 2).
 @override final  ReservationSpotModel? spot;
+/// S-C (07/10/2026): the file the car stands in and its position from the aisle (1 = first out).
+@override final  ReservationFileModel? file;
+@override final  int? filePosition;
 
 /// Create a copy of ReservationModel
 /// with the given fields replaced by the non-null parameter values.
@@ -336,18 +354,18 @@ Map<String, dynamic> toJson() {
 
 @override
 bool operator ==(Object other) {
-    return identical(this, other) || (other.runtimeType == runtimeType&&other is _ReservationModel&&(identical(other.id, id) || other.id == id)&&(identical(other.reference, reference) || other.reference == reference)&&(identical(other.channel, channel) || other.channel == channel)&&(identical(other.channelDetail, channelDetail) || other.channelDetail == channelDetail)&&(identical(other.status, status) || other.status == status)&&(identical(other.arrivalAt, arrivalAt) || other.arrivalAt == arrivalAt)&&(identical(other.returnAt, returnAt) || other.returnAt == returnAt)&&(identical(other.passengers, passengers) || other.passengers == passengers)&&(identical(other.customerName, customerName) || other.customerName == customerName)&&(identical(other.customerPhone, customerPhone) || other.customerPhone == customerPhone)&&(identical(other.customerEmail, customerEmail) || other.customerEmail == customerEmail)&&(identical(other.plate, plate) || other.plate == plate)&&(identical(other.returnFlight, returnFlight) || other.returnFlight == returnFlight)&&(identical(other.departureFlight, departureFlight) || other.departureFlight == departureFlight)&&(identical(other.departureStatus, departureStatus) || other.departureStatus == departureStatus)&&(identical(other.departureScheduledAt, departureScheduledAt) || other.departureScheduledAt == departureScheduledAt)&&(identical(other.departureEstimatedAt, departureEstimatedAt) || other.departureEstimatedAt == departureEstimatedAt)&&(identical(other.notes, notes) || other.notes == notes)&&(identical(other.customerNote, customerNote) || other.customerNote == customerNote)&&(identical(other.vehicleModel, vehicleModel) || other.vehicleModel == vehicleModel)&&(identical(other.vehicleColour, vehicleColour) || other.vehicleColour == vehicleColour)&&(identical(other.returnNoticeKind, returnNoticeKind) || other.returnNoticeKind == returnNoticeKind)&&(identical(other.returnNoticeText, returnNoticeText) || other.returnNoticeText == returnNoticeText)&&(identical(other.returnNoticeAt, returnNoticeAt) || other.returnNoticeAt == returnNoticeAt)&&(identical(other.externalReference, externalReference) || other.externalReference == externalReference)&&(identical(other.priceCents, priceCents) || other.priceCents == priceCents)&&(identical(other.overbooked, overbooked) || other.overbooked == overbooked)&&(identical(other.spotId, spotId) || other.spotId == spotId)&&(identical(other.keyHook, keyHook) || other.keyHook == keyHook)&&(identical(other.carLat, carLat) || other.carLat == carLat)&&(identical(other.carLng, carLng) || other.carLng == carLng)&&(identical(other.carAccuracyM, carAccuracyM) || other.carAccuracyM == carAccuracyM)&&(identical(other.carLocatedAt, carLocatedAt) || other.carLocatedAt == carLocatedAt)&&(identical(other.carLocatedBy, carLocatedBy) || other.carLocatedBy == carLocatedBy)&&(identical(other.carNote, carNote) || other.carNote == carNote)&&(identical(other.paymentStatus, paymentStatus) || other.paymentStatus == paymentStatus)&&(identical(other.createdAt, createdAt) || other.createdAt == createdAt)&&const DeepCollectionEquality().equals(other.nextStatuses, _nextStatuses)&&(identical(other.spot, spot) || other.spot == spot));
+    return identical(this, other) || (other.runtimeType == runtimeType&&other is _ReservationModel&&(identical(other.id, id) || other.id == id)&&(identical(other.reference, reference) || other.reference == reference)&&(identical(other.channel, channel) || other.channel == channel)&&(identical(other.channelDetail, channelDetail) || other.channelDetail == channelDetail)&&(identical(other.status, status) || other.status == status)&&(identical(other.arrivalAt, arrivalAt) || other.arrivalAt == arrivalAt)&&(identical(other.returnAt, returnAt) || other.returnAt == returnAt)&&(identical(other.passengers, passengers) || other.passengers == passengers)&&(identical(other.customerName, customerName) || other.customerName == customerName)&&(identical(other.customerPhone, customerPhone) || other.customerPhone == customerPhone)&&(identical(other.customerEmail, customerEmail) || other.customerEmail == customerEmail)&&(identical(other.plate, plate) || other.plate == plate)&&(identical(other.returnFlight, returnFlight) || other.returnFlight == returnFlight)&&(identical(other.departureFlight, departureFlight) || other.departureFlight == departureFlight)&&(identical(other.departureStatus, departureStatus) || other.departureStatus == departureStatus)&&(identical(other.departureScheduledAt, departureScheduledAt) || other.departureScheduledAt == departureScheduledAt)&&(identical(other.departureEstimatedAt, departureEstimatedAt) || other.departureEstimatedAt == departureEstimatedAt)&&(identical(other.notes, notes) || other.notes == notes)&&(identical(other.customerNote, customerNote) || other.customerNote == customerNote)&&(identical(other.vehicleModel, vehicleModel) || other.vehicleModel == vehicleModel)&&(identical(other.vehicleColour, vehicleColour) || other.vehicleColour == vehicleColour)&&(identical(other.returnNoticeKind, returnNoticeKind) || other.returnNoticeKind == returnNoticeKind)&&(identical(other.returnNoticeText, returnNoticeText) || other.returnNoticeText == returnNoticeText)&&(identical(other.returnNoticeAt, returnNoticeAt) || other.returnNoticeAt == returnNoticeAt)&&(identical(other.externalReference, externalReference) || other.externalReference == externalReference)&&(identical(other.priceCents, priceCents) || other.priceCents == priceCents)&&(identical(other.overbooked, overbooked) || other.overbooked == overbooked)&&(identical(other.spotId, spotId) || other.spotId == spotId)&&(identical(other.keyHook, keyHook) || other.keyHook == keyHook)&&(identical(other.carLat, carLat) || other.carLat == carLat)&&(identical(other.carLng, carLng) || other.carLng == carLng)&&(identical(other.carAccuracyM, carAccuracyM) || other.carAccuracyM == carAccuracyM)&&(identical(other.carLocatedAt, carLocatedAt) || other.carLocatedAt == carLocatedAt)&&(identical(other.carLocatedBy, carLocatedBy) || other.carLocatedBy == carLocatedBy)&&(identical(other.carNote, carNote) || other.carNote == carNote)&&(identical(other.paymentStatus, paymentStatus) || other.paymentStatus == paymentStatus)&&(identical(other.createdAt, createdAt) || other.createdAt == createdAt)&&const DeepCollectionEquality().equals(other.nextStatuses, _nextStatuses)&&(identical(other.spot, spot) || other.spot == spot)&&(identical(other.file, file) || other.file == file)&&(identical(other.filePosition, filePosition) || other.filePosition == filePosition));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
 int get hashCode {
-    return Object.hashAll([runtimeType,id,reference,channel,channelDetail,status,arrivalAt,returnAt,passengers,customerName,customerPhone,customerEmail,plate,returnFlight,departureFlight,departureStatus,departureScheduledAt,departureEstimatedAt,notes,customerNote,vehicleModel,vehicleColour,returnNoticeKind,returnNoticeText,returnNoticeAt,externalReference,priceCents,overbooked,spotId,keyHook,carLat,carLng,carAccuracyM,carLocatedAt,carLocatedBy,carNote,paymentStatus,createdAt,const DeepCollectionEquality().hash(_nextStatuses),spot]);
+    return Object.hashAll([runtimeType,id,reference,channel,channelDetail,status,arrivalAt,returnAt,passengers,customerName,customerPhone,customerEmail,plate,returnFlight,departureFlight,departureStatus,departureScheduledAt,departureEstimatedAt,notes,customerNote,vehicleModel,vehicleColour,returnNoticeKind,returnNoticeText,returnNoticeAt,externalReference,priceCents,overbooked,spotId,keyHook,carLat,carLng,carAccuracyM,carLocatedAt,carLocatedBy,carNote,paymentStatus,createdAt,const DeepCollectionEquality().hash(_nextStatuses),spot,file,filePosition]);
 }
 
 @override
 String toString() {
-    return 'ReservationModel(id: $id, reference: $reference, channel: $channel, channelDetail: $channelDetail, status: $status, arrivalAt: $arrivalAt, returnAt: $returnAt, passengers: $passengers, customerName: $customerName, customerPhone: $customerPhone, customerEmail: $customerEmail, plate: $plate, returnFlight: $returnFlight, departureFlight: $departureFlight, departureStatus: $departureStatus, departureScheduledAt: $departureScheduledAt, departureEstimatedAt: $departureEstimatedAt, notes: $notes, customerNote: $customerNote, vehicleModel: $vehicleModel, vehicleColour: $vehicleColour, returnNoticeKind: $returnNoticeKind, returnNoticeText: $returnNoticeText, returnNoticeAt: $returnNoticeAt, externalReference: $externalReference, priceCents: $priceCents, overbooked: $overbooked, spotId: $spotId, keyHook: $keyHook, carLat: $carLat, carLng: $carLng, carAccuracyM: $carAccuracyM, carLocatedAt: $carLocatedAt, carLocatedBy: $carLocatedBy, carNote: $carNote, paymentStatus: $paymentStatus, createdAt: $createdAt, nextStatuses: $nextStatuses, spot: $spot)';
+    return 'ReservationModel(id: $id, reference: $reference, channel: $channel, channelDetail: $channelDetail, status: $status, arrivalAt: $arrivalAt, returnAt: $returnAt, passengers: $passengers, customerName: $customerName, customerPhone: $customerPhone, customerEmail: $customerEmail, plate: $plate, returnFlight: $returnFlight, departureFlight: $departureFlight, departureStatus: $departureStatus, departureScheduledAt: $departureScheduledAt, departureEstimatedAt: $departureEstimatedAt, notes: $notes, customerNote: $customerNote, vehicleModel: $vehicleModel, vehicleColour: $vehicleColour, returnNoticeKind: $returnNoticeKind, returnNoticeText: $returnNoticeText, returnNoticeAt: $returnNoticeAt, externalReference: $externalReference, priceCents: $priceCents, overbooked: $overbooked, spotId: $spotId, keyHook: $keyHook, carLat: $carLat, carLng: $carLng, carAccuracyM: $carAccuracyM, carLocatedAt: $carLocatedAt, carLocatedBy: $carLocatedBy, carNote: $carNote, paymentStatus: $paymentStatus, createdAt: $createdAt, nextStatuses: $nextStatuses, spot: $spot, file: $file, filePosition: $filePosition)';
 }
 
 
@@ -358,11 +376,11 @@ abstract mixin class _$ReservationModelCopyWith<$Res> implements $ReservationMod
   factory _$ReservationModelCopyWith(_ReservationModel value, $Res Function(_ReservationModel) _then) = __$ReservationModelCopyWithImpl;
 @override @useResult
 $Res call({
- String id, String reference, String channel, String? channelDetail, String status, DateTime arrivalAt, DateTime returnAt, int passengers, String customerName, String customerPhone, String? customerEmail, String plate, String? returnFlight, String? departureFlight, String? departureStatus, DateTime? departureScheduledAt, DateTime? departureEstimatedAt, String? notes, String? customerNote, String? vehicleModel, String? vehicleColour, String? returnNoticeKind, String? returnNoticeText, DateTime? returnNoticeAt, String? externalReference, int? priceCents, bool overbooked, String? spotId, String? keyHook, double? carLat, double? carLng, int? carAccuracyM, DateTime? carLocatedAt, String? carLocatedBy, String? carNote, String? paymentStatus, DateTime? createdAt, List<String> nextStatuses, ReservationSpotModel? spot
+ String id, String reference, String channel, String? channelDetail, String status, DateTime arrivalAt, DateTime returnAt, int passengers, String customerName, String customerPhone, String? customerEmail, String plate, String? returnFlight, String? departureFlight, String? departureStatus, DateTime? departureScheduledAt, DateTime? departureEstimatedAt, String? notes, String? customerNote, String? vehicleModel, String? vehicleColour, String? returnNoticeKind, String? returnNoticeText, DateTime? returnNoticeAt, String? externalReference, int? priceCents, bool overbooked, String? spotId, String? keyHook, double? carLat, double? carLng, int? carAccuracyM, DateTime? carLocatedAt, String? carLocatedBy, String? carNote, String? paymentStatus, DateTime? createdAt, List<String> nextStatuses, ReservationSpotModel? spot, ReservationFileModel? file, int? filePosition
 });
 
 
-@override $ReservationSpotModelCopyWith<$Res>? get spot;
+@override $ReservationSpotModelCopyWith<$Res>? get spot;@override $ReservationFileModelCopyWith<$Res>? get file;
 
 }
 /// @nodoc
@@ -375,7 +393,7 @@ class __$ReservationModelCopyWithImpl<$Res>
 
 /// Create a copy of ReservationModel
 /// with the given fields replaced by the non-null parameter values.
-@override @pragma('vm:prefer-inline') $Res call({Object? id = null,Object? reference = null,Object? channel = null,Object? channelDetail = freezed,Object? status = null,Object? arrivalAt = null,Object? returnAt = null,Object? passengers = null,Object? customerName = null,Object? customerPhone = null,Object? customerEmail = freezed,Object? plate = null,Object? returnFlight = freezed,Object? departureFlight = freezed,Object? departureStatus = freezed,Object? departureScheduledAt = freezed,Object? departureEstimatedAt = freezed,Object? notes = freezed,Object? customerNote = freezed,Object? vehicleModel = freezed,Object? vehicleColour = freezed,Object? returnNoticeKind = freezed,Object? returnNoticeText = freezed,Object? returnNoticeAt = freezed,Object? externalReference = freezed,Object? priceCents = freezed,Object? overbooked = null,Object? spotId = freezed,Object? keyHook = freezed,Object? carLat = freezed,Object? carLng = freezed,Object? carAccuracyM = freezed,Object? carLocatedAt = freezed,Object? carLocatedBy = freezed,Object? carNote = freezed,Object? paymentStatus = freezed,Object? createdAt = freezed,Object? nextStatuses = null,Object? spot = freezed,}) {
+@override @pragma('vm:prefer-inline') $Res call({Object? id = null,Object? reference = null,Object? channel = null,Object? channelDetail = freezed,Object? status = null,Object? arrivalAt = null,Object? returnAt = null,Object? passengers = null,Object? customerName = null,Object? customerPhone = null,Object? customerEmail = freezed,Object? plate = null,Object? returnFlight = freezed,Object? departureFlight = freezed,Object? departureStatus = freezed,Object? departureScheduledAt = freezed,Object? departureEstimatedAt = freezed,Object? notes = freezed,Object? customerNote = freezed,Object? vehicleModel = freezed,Object? vehicleColour = freezed,Object? returnNoticeKind = freezed,Object? returnNoticeText = freezed,Object? returnNoticeAt = freezed,Object? externalReference = freezed,Object? priceCents = freezed,Object? overbooked = null,Object? spotId = freezed,Object? keyHook = freezed,Object? carLat = freezed,Object? carLng = freezed,Object? carAccuracyM = freezed,Object? carLocatedAt = freezed,Object? carLocatedBy = freezed,Object? carNote = freezed,Object? paymentStatus = freezed,Object? createdAt = freezed,Object? nextStatuses = null,Object? spot = freezed,Object? file = freezed,Object? filePosition = freezed,}) {
   return _then(_ReservationModel(
 id: null == id ? _self.id : id // ignore: cast_nullable_to_non_nullable
 as String,reference: null == reference ? _self.reference : reference // ignore: cast_nullable_to_non_nullable
@@ -416,7 +434,9 @@ as String?,paymentStatus: freezed == paymentStatus ? _self.paymentStatus : payme
 as String?,createdAt: freezed == createdAt ? _self.createdAt : createdAt // ignore: cast_nullable_to_non_nullable
 as DateTime?,nextStatuses: null == nextStatuses ? _self._nextStatuses : nextStatuses // ignore: cast_nullable_to_non_nullable
 as List<String>,spot: freezed == spot ? _self.spot : spot // ignore: cast_nullable_to_non_nullable
-as ReservationSpotModel?,
+as ReservationSpotModel?,file: freezed == file ? _self.file : file // ignore: cast_nullable_to_non_nullable
+as ReservationFileModel?,filePosition: freezed == filePosition ? _self.filePosition : filePosition // ignore: cast_nullable_to_non_nullable
+as int?,
   ));
 }
 
@@ -431,6 +451,18 @@ $ReservationSpotModelCopyWith<$Res>? get spot {
 
   return $ReservationSpotModelCopyWith<$Res>(_self.spot!, (value) {
     return _then(_self.copyWith(spot: value));
+  });
+}/// Create a copy of ReservationModel
+/// with the given fields replaced by the non-null parameter values.
+@override
+@pragma('vm:prefer-inline')
+$ReservationFileModelCopyWith<$Res>? get file {
+    if (_self.file == null) {
+    return null;
+  }
+
+  return $ReservationFileModelCopyWith<$Res>(_self.file!, (value) {
+    return _then(_self.copyWith(file: value));
   });
 }
 }
@@ -1590,6 +1622,282 @@ as String?,externalReference: freezed == externalReference ? _self.externalRefer
 as String?,priceCents: freezed == priceCents ? _self.priceCents : priceCents // ignore: cast_nullable_to_non_nullable
 as int?,force: null == force ? _self.force : force // ignore: cast_nullable_to_non_nullable
 as bool,
+  ));
+}
+
+
+}
+
+
+/// @nodoc
+mixin _$ReservationFileModel {
+
+ String get id; String get code; String? get name;
+/// Create a copy of ReservationFileModel
+/// with the given fields replaced by the non-null parameter values.
+@JsonKey(includeFromJson: false, includeToJson: false)
+@pragma('vm:prefer-inline')
+$ReservationFileModelCopyWith<ReservationFileModel> get copyWith => _$ReservationFileModelCopyWithImpl<ReservationFileModel>(this as ReservationFileModel, _$identity);
+
+  /// Serializes this ReservationFileModel to a JSON map.
+  Map<String, dynamic> toJson();
+
+
+@override
+bool operator ==(Object other) {
+  final _this = this as ReservationFileModel;
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is ReservationFileModel&&(identical(other.id, _this.id) || other.id == _this.id)&&(identical(other.code, _this.code) || other.code == _this.code)&&(identical(other.name, _this.name) || other.name == _this.name));
+}
+
+@JsonKey(includeFromJson: false, includeToJson: false)
+@override
+int get hashCode {
+  final _this = this as ReservationFileModel;
+  return Object.hash(runtimeType,_this.id,_this.code,_this.name);
+}
+
+@override
+String toString() {
+  final _this = this as ReservationFileModel;
+  return 'ReservationFileModel(id: ${_this.id}, code: ${_this.code}, name: ${_this.name})';
+}
+
+
+}
+
+/// @nodoc
+abstract mixin class $ReservationFileModelCopyWith<$Res>  {
+  factory $ReservationFileModelCopyWith(ReservationFileModel value, $Res Function(ReservationFileModel) _then) = _$ReservationFileModelCopyWithImpl;
+@useResult
+$Res call({
+ String id, String code, String? name
+});
+
+
+
+
+}
+/// @nodoc
+class _$ReservationFileModelCopyWithImpl<$Res>
+    implements $ReservationFileModelCopyWith<$Res> {
+  _$ReservationFileModelCopyWithImpl(this._self, this._then);
+
+  final ReservationFileModel _self;
+  final $Res Function(ReservationFileModel) _then;
+
+/// Create a copy of ReservationFileModel
+/// with the given fields replaced by the non-null parameter values.
+@pragma('vm:prefer-inline') @override $Res call({Object? id = null,Object? code = null,Object? name = freezed,}) {
+  return _then(ReservationFileModel(
+id: null == id ? _self.id : id // ignore: cast_nullable_to_non_nullable
+as String,code: null == code ? _self.code : code // ignore: cast_nullable_to_non_nullable
+as String,name: freezed == name ? _self.name : name // ignore: cast_nullable_to_non_nullable
+as String?,
+  ));
+}
+
+}
+
+
+/// Adds pattern-matching-related methods to [ReservationFileModel].
+extension ReservationFileModelPatterns on ReservationFileModel {
+/// A variant of `map` that fallback to returning `orElse`.
+///
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case final Subclass value:
+///     return ...;
+///   case _:
+///     return orElse();
+/// }
+/// ```
+
+@optionalTypeArgs TResult maybeMap<TResult extends Object?>(TResult Function( _ReservationFileModel value)?  $default,{required TResult orElse(),}){
+final _that = this;
+switch (_that) {
+case _ReservationFileModel() when $default != null:
+return $default(_that);case _:
+  return orElse();
+
+}
+}
+/// A `switch`-like method, using callbacks.
+///
+/// Callbacks receives the raw object, upcasted.
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case final Subclass value:
+///     return ...;
+///   case final Subclass2 value:
+///     return ...;
+/// }
+/// ```
+
+@optionalTypeArgs TResult map<TResult extends Object?>(TResult Function( _ReservationFileModel value)  $default,){
+final _that = this;
+switch (_that) {
+case _ReservationFileModel():
+return $default(_that);case _:
+  throw StateError('Unexpected subclass');
+
+}
+}
+/// A variant of `map` that fallback to returning `null`.
+///
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case final Subclass value:
+///     return ...;
+///   case _:
+///     return null;
+/// }
+/// ```
+
+@optionalTypeArgs TResult? mapOrNull<TResult extends Object?>(TResult? Function( _ReservationFileModel value)?  $default,){
+final _that = this;
+switch (_that) {
+case _ReservationFileModel() when $default != null:
+return $default(_that);case _:
+  return null;
+
+}
+}
+/// A variant of `when` that fallback to an `orElse` callback.
+///
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case Subclass(:final field):
+///     return ...;
+///   case _:
+///     return orElse();
+/// }
+/// ```
+
+@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( String id,  String code,  String? name)?  $default,{required TResult orElse(),}) {final _that = this;
+switch (_that) {
+case _ReservationFileModel() when $default != null:
+return $default(_that.id,_that.code,_that.name);case _:
+  return orElse();
+
+}
+}
+/// A `switch`-like method, using callbacks.
+///
+/// As opposed to `map`, this offers destructuring.
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case Subclass(:final field):
+///     return ...;
+///   case Subclass2(:final field2):
+///     return ...;
+/// }
+/// ```
+
+@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( String id,  String code,  String? name)  $default,) {final _that = this;
+switch (_that) {
+case _ReservationFileModel():
+return $default(_that.id,_that.code,_that.name);case _:
+  throw StateError('Unexpected subclass');
+
+}
+}
+/// A variant of `when` that fallback to returning `null`
+///
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case Subclass(:final field):
+///     return ...;
+///   case _:
+///     return null;
+/// }
+/// ```
+
+@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( String id,  String code,  String? name)?  $default,) {final _that = this;
+switch (_that) {
+case _ReservationFileModel() when $default != null:
+return $default(_that.id,_that.code,_that.name);case _:
+  return null;
+
+}
+}
+
+}
+
+/// @nodoc
+@JsonSerializable()
+
+class _ReservationFileModel implements ReservationFileModel {
+  const _ReservationFileModel({required this.id, required this.code, this.name});
+  factory _ReservationFileModel.fromJson(Map<String, dynamic> json) => _$ReservationFileModelFromJson(json);
+
+@override final  String id;
+@override final  String code;
+@override final  String? name;
+
+/// Create a copy of ReservationFileModel
+/// with the given fields replaced by the non-null parameter values.
+@override @JsonKey(includeFromJson: false, includeToJson: false)
+@pragma('vm:prefer-inline')
+_$ReservationFileModelCopyWith<_ReservationFileModel> get copyWith => __$ReservationFileModelCopyWithImpl<_ReservationFileModel>(this, _$identity);
+
+@override
+Map<String, dynamic> toJson() {
+  return _$ReservationFileModelToJson(this, );
+}
+
+@override
+bool operator ==(Object other) {
+    return identical(this, other) || (other.runtimeType == runtimeType&&other is _ReservationFileModel&&(identical(other.id, id) || other.id == id)&&(identical(other.code, code) || other.code == code)&&(identical(other.name, name) || other.name == name));
+}
+
+@JsonKey(includeFromJson: false, includeToJson: false)
+@override
+int get hashCode {
+    return Object.hash(runtimeType,id,code,name);
+}
+
+@override
+String toString() {
+    return 'ReservationFileModel(id: $id, code: $code, name: $name)';
+}
+
+
+}
+
+/// @nodoc
+abstract mixin class _$ReservationFileModelCopyWith<$Res> implements $ReservationFileModelCopyWith<$Res> {
+  factory _$ReservationFileModelCopyWith(_ReservationFileModel value, $Res Function(_ReservationFileModel) _then) = __$ReservationFileModelCopyWithImpl;
+@override @useResult
+$Res call({
+ String id, String code, String? name
+});
+
+
+
+
+}
+/// @nodoc
+class __$ReservationFileModelCopyWithImpl<$Res>
+    implements _$ReservationFileModelCopyWith<$Res> {
+  __$ReservationFileModelCopyWithImpl(this._self, this._then);
+
+  final _ReservationFileModel _self;
+  final $Res Function(_ReservationFileModel) _then;
+
+/// Create a copy of ReservationFileModel
+/// with the given fields replaced by the non-null parameter values.
+@override @pragma('vm:prefer-inline') $Res call({Object? id = null,Object? code = null,Object? name = freezed,}) {
+  return _then(_ReservationFileModel(
+id: null == id ? _self.id : id // ignore: cast_nullable_to_non_nullable
+as String,code: null == code ? _self.code : code // ignore: cast_nullable_to_non_nullable
+as String,name: freezed == name ? _self.name : name // ignore: cast_nullable_to_non_nullable
+as String?,
   ));
 }
 

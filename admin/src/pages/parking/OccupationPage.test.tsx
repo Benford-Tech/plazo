@@ -39,6 +39,9 @@ const api = vi.hoisted(() => ({
   getOccupation: vi.fn(),
   searchVehicles: vi.fn(),
   assignSpot: vi.fn(),
+  getFiles: vi.fn(),
+  assignFile: vi.fn(),
+  prepareFiles: vi.fn(),
 }));
 vi.mock("@/lib/api", async (importOriginal) => {
   const actual = await importOriginal<typeof import("@/lib/api")>();
@@ -65,6 +68,8 @@ const occupant = {
   keyHook: "17",
   onSite: true,
   leavesToday: false,
+  nights: 7,
+  stayClass: "medium" as const,
 };
 const board: OccupationBoard = {
   date: "2026-10-04",
@@ -162,6 +167,21 @@ beforeEach(() => {
     bookableCapacity: 2,
   });
   api.getOccupation.mockResolvedValue(board);
+  api.getFiles.mockResolvedValue({
+    date: "2026-10-07",
+    timezone: "Europe/Paris",
+    files: [],
+    arrivals: [],
+    stats: {
+      files: 0,
+      capacity: 0,
+      cars: 0,
+      onSite: 0,
+      leavingToday: 0,
+      movesToday: 0,
+      unsound: 0,
+    },
+  });
   api.assignSpot.mockImplementation(
     async (
       _id: string,
@@ -203,11 +223,19 @@ describe("occupation (bloc 2, étape 2)", () => {
   it("un clic sur une place montre son occupant ; « Choisir sur le plan » puis un clic place le véhicule", async () => {
     renderPage();
     await screen.findByTestId("occupation-stats");
+    // D-B: the plan reads by state, or by stay length with its own legend.
+    expect(screen.getByText("Départ aujourd'hui")).toBeInTheDocument();
+    fireEvent.click(screen.getByRole("radio", { name: "Par durée" }));
+    expect(screen.getByText("Long séjour")).toBeInTheDocument();
+    expect(screen.queryByText("Départ aujourd'hui")).not.toBeInTheDocument();
     fireEvent.click(screen.getByText("click-spot-1"));
     const card = await screen.findByTestId("spot-card");
     expect(card).toHaveTextContent("A-01-01");
     expect(card).toHaveTextContent("Mme Laurent");
     expect(card).toHaveTextContent("Clés : crochet 17");
+    expect(screen.getByTestId("spot-stay")).toHaveTextContent(
+      "7 nuits · Moyen séjour",
+    );
     fireEvent.click(
       screen.getByRole("button", { name: "Choisir sur le plan" }),
     );
@@ -243,6 +271,164 @@ describe("occupation (bloc 2, étape 2)", () => {
       expect(api.assignSpot).toHaveBeenCalledWith("r1", {
         spotId: "s1",
         keyHook: "B4",
+      }),
+    );
+  });
+
+  it("lit l'occupation en files quand le parking en a : piles, voiture à sortir, arrivée rangée dans la file proposée (S-C)", async () => {
+    const car = (
+      id: string,
+      plate: string,
+      returnAt: string,
+      position: number,
+      blockedBy: {
+        reservationId: string;
+        reference: string;
+        plate: string;
+        returnAt: string;
+      }[] = [],
+    ) => ({
+      id,
+      reference: id.toUpperCase(),
+      customerName: `Client ${id}`,
+      plate,
+      status: "arrived" as const,
+      arrivalAt: "2026-10-05T06:30:00.000Z",
+      returnAt,
+      returnFlight: null,
+      keyHook: null,
+      onSite: true,
+      leavesToday: false,
+      position,
+      blockedBy,
+    });
+    const fileBoard = {
+      date: "2026-10-07",
+      timezone: "Europe/Paris",
+      files: [
+        {
+          id: "f1",
+          code: "F01",
+          name: null,
+          capacity: 3,
+          geometry: null,
+          sortOrder: 0,
+          active: true,
+          plannedDay: null,
+          day: "2026-10-07",
+          cars: [
+            car("a", "AA-111-AA", "2026-10-12T16:00:00.000Z", 1),
+            car("b", "BB-222-BB", "2026-10-07T16:00:00.000Z", 2, [
+              {
+                reservationId: "a",
+                reference: "A",
+                plate: "AA-111-AA",
+                returnAt: "2026-10-12T16:00:00.000Z",
+              },
+            ]),
+          ],
+          movesToday: 1,
+          sound: false,
+        },
+        {
+          id: "f2",
+          code: "F02",
+          name: null,
+          capacity: 2,
+          geometry: null,
+          sortOrder: 1,
+          active: true,
+          plannedDay: "2026-10-09",
+          day: "2026-10-09",
+          cars: [],
+          movesToday: 0,
+          sound: true,
+        },
+      ],
+      arrivals: [
+        {
+          id: "r9",
+          reference: "R9",
+          customerName: "Mme Neuve",
+          plate: "GK-318-PX",
+          status: "upcoming" as const,
+          arrivalAt: "2026-10-07T08:00:00.000Z",
+          returnAt: "2026-10-09T10:00:00.000Z",
+          returnFlight: null,
+          keyHook: null,
+          onSite: false,
+          choices: [
+            {
+              fileId: "f2",
+              code: "F02",
+              reason: "planned_day" as const,
+              moves: 0,
+              cars: 0,
+              capacity: 2,
+              fitMinutes: null,
+            },
+            {
+              fileId: "f1",
+              code: "F01",
+              reason: "moves" as const,
+              moves: 1,
+              cars: 2,
+              capacity: 3,
+              fitMinutes: null,
+            },
+          ],
+          suggested: {
+            fileId: "f2",
+            code: "F02",
+            reason: "planned_day" as const,
+            moves: 0,
+            cars: 0,
+            capacity: 2,
+            fitMinutes: null,
+          },
+        },
+      ],
+      stats: {
+        files: 2,
+        capacity: 5,
+        cars: 2,
+        onSite: 2,
+        leavingToday: 1,
+        movesToday: 1,
+        unsound: 1,
+      },
+    };
+    api.getFiles.mockResolvedValue(fileBoard);
+    api.assignFile.mockResolvedValue({ data: {} });
+    renderPage();
+    expect(await screen.findByTestId("moves-today")).toHaveTextContent("1");
+    expect(screen.getByTestId("files-stats").textContent).toBe(
+      "2 / 5 voitures · 2 files · 1 à remettre en ordre",
+    );
+    // The blocked car says how many to take out; the empty file says what it is kept for.
+    expect(screen.getByText("1 à sortir avant")).toBeInTheDocument();
+    expect(screen.getByText("Gardée pour ven. 9")).toBeInTheDocument();
+    // The arrival gets the planned file: place it with its keys.
+    expect(screen.getByTestId("suggested").textContent).toContain("F02");
+    fireEvent.click(screen.getByRole("button", { name: "Ranger en F02" }));
+    fireEvent.change(screen.getByLabelText("Crochet des clés (facultatif)"), {
+      target: { value: "12" },
+    });
+    fireEvent.click(screen.getByRole("button", { name: /Ranger en F02/ }));
+    await waitFor(() =>
+      expect(api.assignFile).toHaveBeenCalledWith("r9", {
+        fileId: "f2",
+        keyHook: "12",
+      }),
+    );
+    // Taking a car out of its file.
+    fireEvent.click(
+      screen.getByRole("button", { name: "Retirer de la file BB-222-BB" }),
+    );
+    await waitFor(() =>
+      expect(api.assignFile).toHaveBeenCalledWith("b", {
+        fileId: null,
+        keyHook: undefined,
       }),
     );
   });

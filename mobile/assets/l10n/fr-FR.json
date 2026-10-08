@@ -212,7 +212,8 @@
       "flight_delayed": "Mon vol a du retard",
       "luggage": "Bagage perdu ou retardé",
       "other": "Un mot du voyageur"
-    }
+    },
+    "file": "File"
   },
   "occupation": {
     "title": "Places",
@@ -245,6 +246,14 @@
     "legend_occupied": "Occupée",
     "legend_leaving": "Départ aujourd'hui",
     "legend_booked": "Réservée",
+    "mode_state": "Par état",
+    "mode_stay": "Par durée",
+    "stay_legend": {
+      "short": "Court séjour",
+      "medium": "Moyen séjour",
+      "long": "Long séjour",
+      "none": "Hors zone de séjour"
+    },
     "no_plan": "Pas encore de plan : générez les places depuis « Plan du parking ».",
     "stay_zone": {
       "short": "zone court séjour",
@@ -260,7 +269,43 @@
     "no_move": "sans déplacement",
     "moves_out": "{} voiture(s) à sortir ({}, retour {})",
     "moves_blocked": "bloquerait {} voiture(s) ({})",
-    "blocked_by": "Derrière {} · retour {}"
+    "blocked_by": "Derrière {} · retour {}",
+    "filed": "{} rangée en {}",
+    "prepared": "{} file(s) gardée(s) pour les gros retours, {} libre(s)",
+    "files": {
+      "intro": "Chaque file se lit de l'allée vers le fond : une voiture ne repart jamais après celle qui est derrière elle.",
+      "moves_today": "À sortir aujourd'hui",
+      "moves_help": "Voitures à déplacer pour que les retours du jour sortent. L'objectif : 0.",
+      "stats": "{} / {} voitures · {} file(s)",
+      "unsound": "{} file(s) à remettre en ordre",
+      "aisle": "Allée",
+      "back": "Fond",
+      "free_file": "Libre",
+      "kept_for": "Gardée pour {}",
+      "returns_of": "Retours {}",
+      "today": "aujourd'hui",
+      "full": "Complète",
+      "to_take_out": "{} à sortir avant",
+      "place_in": "Ranger en {}",
+      "other_file": "Autre file…",
+      "pick_title": "Une file pour {}",
+      "no_file": "Aucune file ne convient sans déplacement : choisissez-en une.",
+      "reason": {
+        "planned_day": "retours du même jour",
+        "tight_fit": "derrière un retour plus tard",
+        "empty": "file vide",
+        "moves": "{} voiture(s) à sortir plus tard",
+        "full": "complète"
+      },
+      "choice": "{} · {}/{} · {}",
+      "prepare": "Préparer les files",
+      "position": "{}e depuis l'allée",
+      "position_first": "1re depuis l'allée",
+      "take_out": "Retirer de la file",
+      "in_file": "File {}",
+      "no_file_yet": "Pas encore de file",
+      "choose_file": "Choisir une file"
+    }
   },
   "pro": {
     "login_eyebrow": "Espace du personnel",
@@ -331,6 +376,11 @@
   },
   "errors": {
     "generic": "Une erreur est survenue. Réessayez.",
+    "file_occupied": "Cette file contient des voitures : elle ne peut pas être réservée.",
+    "file_not_found": "Cette file n'existe plus.",
+    "file_inactive": "Cette file est fermée.",
+    "invalid_day": "Ce jour n'est pas valable (il est peut-être passé).",
+    "invalid_window": "Période invalide.",
     "no_zones": "Tracez d'abord le terrain.",
     "spot_taken": "Cette place est déjà prise sur ces dates.",
     "spot_inactive": "Cette place est désactivée.",
@@ -1025,9 +1075,8 @@
     "push_on": "{} appareil(s)",
     "push_off": "non configurées",
     "svc_stripe": "Paiements",
-    "stripe_on": "reversements actifs",
-    "stripe_pending": "compte à finaliser",
-    "stripe_off": "non connecté",
+    "stripe_on": "en ligne, encaissés par Plazo",
+    "stripe_off": "paiement en ligne non activé par Plazo",
     "svc_import": "Import",
     "import_at": "dernier à {}",
     "import_never": "jamais",
@@ -1169,7 +1218,11 @@
     "car_title": "Votre voiture",
     "car_help": "Position GPS enregistrée{}",
     "route_car": "Itinéraire à pied jusqu'à ma voiture",
-    "distance": "à {} de vous"
+    "distance": "à {} de vous",
+    "button_file": "Retrouver ma voiture · file {}",
+    "file": "File {}",
+    "position": "{}e depuis l'allée",
+    "position_first": "1re depuis l'allée"
   },
   "stay_shuttles": {
     "title": "Navette",
@@ -1256,6 +1309,34 @@
     "busy_spots": "Avec séjour · {}",
     "no_busy": "Aucune place occupée sur la période. Activez « Toutes » pour voir le plan complet.",
     "blocked_alert": "{} voiture(s) derrière une autre qui repart plus tard"
+  },
+  "spot_planning": {
+    "files": {
+      "title": "Planning des files",
+      "intro": "Jour par jour, les retours à venir face à la place des files qui servent ce jour ou lui sont gardées.",
+      "capacity": "{} places dans {} file(s)",
+      "missing_room": "{} : il manque {} place(s) dans les files",
+      "over_capacity": "{} : {} voiture(s) de trop pour les files",
+      "unsound": "File {} : {} voiture(s) bloquée(s) derrière une autre",
+      "day_returns": "{} retour(s) · {} à venir",
+      "on_site": "{} sur place",
+      "missing": "Manque {}",
+      "room": "{} place(s) libre(s)",
+      "no_file_for_day": "Aucune file pour ce jour.",
+      "keep": "Réserver une file",
+      "keep_title": "Réserver une file pour {}",
+      "keep_help": "Une file vide, gardée pour les retours de ce jour : la préparation de la veille la laisse.",
+      "no_empty_file": "Aucune file vide à réserver.",
+      "already_kept": "déjà gardée pour ce jour",
+      "kept_by_plan": "gardée par la préparation · verrouiller",
+      "free": "Libérer la file {}",
+      "by_hand": "à la main",
+      "unsound_badge": "à remettre en ordre",
+      "inactive": "fermée",
+      "list": "Files · {}",
+      "kept_notice": "{} gardée pour {}",
+      "freed_notice": "{} libérée"
+    }
   },
   "team": {
     "title": "Équipe",
