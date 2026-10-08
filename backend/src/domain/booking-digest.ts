@@ -44,7 +44,7 @@ export function sourceLabel(channel: ReservationChannel, channelDetail: string |
     case 'plazo':
       return 'Plazo';
     case 'website':
-      return 'votre site';
+      return 'site du parking';
     case 'phone':
       return 'téléphone';
     case 'counter':

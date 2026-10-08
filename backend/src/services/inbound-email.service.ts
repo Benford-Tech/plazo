@@ -91,6 +91,12 @@ const DONE_STATUSES: InboundEmailStatus[] = ['imported', 'duplicate', 'handled',
 /** T-A: « Marquer comme traité » applies to these; `imported` stays imported, `archived` refuses, `forwarding` is unknown. */
 const HANDLEABLE: InboundEmailStatus[] = ['incomplete', 'unrecognised', 'duplicate', 'dismissed'];
 const DONE_WINDOW_DAYS = COUNT_WINDOW_DAYS;
+
+/** The tab a status lives in (forwarding confirmations are in none: the caller gets an empty list). */
+function viewOfStatus(status: InboundEmailStatus): InboundView {
+  if (TO_CHECK.includes(status)) return 'todo';
+  return status === 'archived' ? 'archived' : 'done';
+}
 const ARCHIVED_WINDOW_DAYS = ROW_RETENTION_DAYS;
 const LIST_MAX = 100;
 
@@ -288,7 +294,8 @@ export class InboundEmailService {
    */
   public async list(actor: AuthenticatedStaff, filter: { view?: InboundView; status?: InboundEmailStatus } = {}): Promise<InboundEmailList> {
     this.require(actor, 'reservations:manage');
-    const view = filter.view ?? 'todo';
+    // A bare ?status= looks in the tab that holds it (an "imported" filter would find nothing in « À traiter »).
+    const view = filter.view ?? (filter.status ? viewOfStatus(filter.status) : 'todo');
     const now = Date.now();
     const scope: Record<InboundView, Prisma.InboundEmailWhereInput> = {
       todo: { status: { in: TO_CHECK } },

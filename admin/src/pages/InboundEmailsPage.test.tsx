@@ -275,4 +275,45 @@ describe("InboundEmailsPage (M-A « Boîte de réception », T-A « Deux gestes 
     expect(unsure.getByText(/lecture incertaine/)).toBeInTheDocument();
     expect(reading().getByText("Compléter et enregistrer")).toBeInTheDocument();
   });
+  it("relecture : un ?mail= absent de l'onglet n'ouvre pas un autre mail et quitte l'adresse ; un doublon n'a pas « Marquer comme traité »", async () => {
+    lists = {
+      todo: [email({ id: "e1" }), email({ id: "e2", subject: "Deuxième" })],
+      done: [email({ id: "d1", status: "duplicate", subject: "Déjà connu", reservationId: "r1", reservationReference: "RABC12", missing: [] })],
+      archived: [],
+    };
+    renderPage("/reservations/a-verifier?mail=gone");
+    // The list is shown (no detail forced open on a phone), the first mail reads by default, the stale id goes.
+    const rows = await screen.findAllByTestId("inbound-row");
+    expect(screen.getByRole("list")).not.toHaveClass("hidden");
+    expect(within(rows[0]).getByRole("button")).toHaveAttribute("aria-current", "true");
+    await waitFor(() => expect(screen.getByTestId("search")).toHaveTextContent(""));
+    // In « Traités », a duplicate is attached to its booking: open it or archive it, nothing to mark.
+    await userEvent.click(screen.getByRole("tab", { name: /Traités/ }));
+    await screen.findByRole("heading", { level: 2, name: "Déjà connu" });
+    expect(reading().getByText("Ouvrir la réservation RABC12")).toBeInTheDocument();
+    expect(reading().queryByText("Marquer comme traité")).toBeNull();
+    expect(reading().getByText("Archiver")).toBeInTheDocument();
+  });
+
+  it("relecture : un import refusé se lit en une phrase, les onglets répondent aux flèches", async () => {
+    lists = {
+      todo: [email({ id: "e1", missing: ["stay_too_long"] })],
+      done: [],
+      archived: [],
+    };
+    renderPage();
+    await screen.findAllByTestId("inbound-row");
+    expect(screen.getByTestId("inbound-refused")).toHaveTextContent("Réservation refusée à l'import : Séjour de plus de 90 jours.");
+    expect(reading().queryByText("manquant")).toBeNull();
+    const tabs = screen.getAllByRole("tab");
+    expect(tabs.map(tab => tab.getAttribute("tabindex"))).toEqual(["0", "-1", "-1"]);
+    tabs[0].focus();
+    await userEvent.keyboard("{ArrowRight}");
+    expect(screen.getByRole("tab", { name: /Traités/ })).toHaveAttribute("aria-selected", "true");
+    expect(screen.getByRole("tab", { name: /Traités/ })).toHaveFocus();
+    await userEvent.keyboard("{End}");
+    expect(screen.getByRole("tab", { name: /Archivés/ })).toHaveAttribute("aria-selected", "true");
+    await userEvent.keyboard("{ArrowRight}");
+    expect(screen.getByRole("tab", { name: /À traiter/ })).toHaveAttribute("aria-selected", "true");
+  });
 });

@@ -2370,6 +2370,9 @@ export const inboundFr = {
     },
     understood: "Ce que Plazo a compris",
     missingBadge: "manquant",
+    /** The server refused a complete mail at import (codes of `missing` that are not fields). */
+    refused: (reasons: string) => `Réservation refusée à l'import : ${reasons}`,
+    refusal: (code: string) => fr.errors[code as keyof typeof fr.errors] ?? code,
     field: {
       arrivalAt: "date d'arrivée",
       returnAt: "date de retour",

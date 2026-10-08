@@ -1,6 +1,6 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { ChevronLeft, Mail } from "lucide-react";
-import { Fragment, useState, type ReactNode } from "react";
+import { Fragment, useEffect, useState, type KeyboardEvent, type ReactNode } from "react";
 import { Link, useNavigate, useSearchParams } from "react-router-dom";
 import { toast } from "sonner";
 import { Badge, type BadgeTone } from "@/components/dashboard/Badge";
@@ -24,8 +24,8 @@ const TONE: Record<InboundEmailStatus, BadgeTone> = {
 };
 /** Still waiting for a booking: « Compléter » / « Saisir » lead to the form. */
 const TO_CHECK: InboundEmailStatus[] = ["incomplete", "unrecognised"];
-/** T-A: « Marquer comme traité » applies to these; an imported mail is done by itself. */
-const HANDLEABLE: InboundEmailStatus[] = ["incomplete", "unrecognised", "duplicate", "dismissed"];
+/** T-A: « Marquer comme traité » applies to these; a mail attached to a booking (imported, duplicate) is done by itself. */
+const HANDLEABLE: InboundEmailStatus[] = ["incomplete", "unrecognised", "dismissed"];
 /** The parsed fields under « Ce que Plazo a compris », in reading order (the provider sits in the header). */
 const FIELDS: (keyof ParsedBooking)[] = [
   "externalReference",
@@ -182,15 +182,20 @@ function Understood({ email }: { email: InboundEmail }) {
     if (value === null && !missing) return [];
     return [[key as string, missing ? null : value] as const];
   });
-  // Anything else the server flagged (an import error code, say) is shown as it came.
-  const extra = email.missing.filter(key => key !== "confidence" && !FIELDS.includes(key as keyof ParsedBooking)).map(key => [key, null] as const);
+  // Anything else the server flagged is an import refusal (a stay too long, a date it could not read…), not a field.
+  const refusals = email.missing.filter(key => key !== "confidence" && !FIELDS.includes(key as keyof ParsedBooking));
   return (
     <section data-testid="inbound-understood" aria-labelledby="inbound-understood-title" className="mx-5 mb-4 rounded-[10px] border border-panel-line bg-panel-2 px-4 py-3">
       <h3 id="inbound-understood-title" className="text-[13px] font-semibold uppercase tracking-wide text-muted-foreground">
         {l.understood}
       </h3>
+      {refusals.length > 0 && (
+        <p data-testid="inbound-refused" className="mt-2 rounded-[8px] bg-warn-soft px-3 py-2 text-sm font-medium text-warn-text">
+          {l.refused(refusals.map(code => l.refusal(code)).join(" "))}
+        </p>
+      )}
       <dl className="mt-2 grid gap-x-4 gap-y-1.5 text-sm sm:grid-cols-[auto_minmax(0,1fr)]">
-        {[...known, ...extra].map(([key, value]) => (
+        {known.map(([key, value]) => (
           <Fragment key={key}>
             <dt className="text-muted-foreground">{fieldLabel(key)}</dt>
             <dd className={cn(MONO_FIELDS.includes(key as keyof ParsedBooking) && "font-mono")}>
@@ -306,8 +311,11 @@ export default function InboundEmailsPage() {
     null;
   const list = emails.data?.data ?? [];
   const wanted = params.get("mail");
-  const selected = list.find(e => e.id === wanted) ?? list[0] ?? null;
-  const detailOpen = wanted !== null;
+  const found = wanted ? (list.find(e => e.id === wanted) ?? null) : null;
+  const selected = found ?? list[0] ?? null;
+  // The detail opens on the wanted mail only: one that left this tab (handled by a colleague, a stale link) is not
+  // replaced by another; the stale id leaves the address once the tab has loaded.
+  const detailOpen = found !== null;
 
   const select = (id: string | null, replace = false) =>
     setParams(
@@ -322,6 +330,25 @@ export default function InboundEmailsPage() {
   const switchView = (next: InboundEmailView) => {
     setView(next);
     select(null, true);
+  };
+  useEffect(() => {
+    if (emails.data && wanted && !found) select(null, true);
+    // `select` is stable enough: it only wraps setParams.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [emails.data, wanted, found]);
+  /** ARIA tabs: Left / Right (and Home / End) move between the tabs, only the current one sits in the Tab order. */
+  const onTabKey = (event: KeyboardEvent<HTMLButtonElement>) => {
+    const i = VIEWS.indexOf(view);
+    const next =
+      event.key === "ArrowRight" ? VIEWS[(i + 1) % VIEWS.length]
+      : event.key === "ArrowLeft" ? VIEWS[(i - 1 + VIEWS.length) % VIEWS.length]
+      : event.key === "Home" ? VIEWS[0]
+      : event.key === "End" ? VIEWS[VIEWS.length - 1]
+      : null;
+    if (!next) return;
+    event.preventDefault();
+    switchView(next);
+    document.getElementById(`inbox-tab-${next}`)?.focus();
   };
 
   const act = useMutation({
@@ -365,6 +392,8 @@ export default function InboundEmailsPage() {
             id={`inbox-tab-${v}`}
             aria-selected={view === v}
             aria-controls="inbox-panel"
+            tabIndex={view === v ? 0 : -1}
+            onKeyDown={onTabKey}
             onClick={() => switchView(v)}
             className={cn(
               "flex h-10 items-center gap-2 rounded-full border px-4 text-sm font-semibold",

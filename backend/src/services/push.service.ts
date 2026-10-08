@@ -29,6 +29,8 @@ export interface PushOptions {
   url?: string;
   /** Staff: not notified about their own action (the driver who started the trip). */
   excludeStaffId?: string;
+  /** Seconds OneSignal keeps the push for an offline phone (default one hour: an arrival is useless later). */
+  ttl?: number;
 }
 
 type Settings = { appId: string; restApiKey: string };
@@ -199,8 +201,8 @@ export class PushService {
           data: options.data ?? {},
           ...(options.url ? { url: options.url } : {}),
           ...(options.collapseId ? { collapse_id: options.collapseId } : {}),
-          // An arrival or shuttle push is useless an hour later.
-          ttl: 3600,
+          // An arrival or shuttle push is useless an hour later; a digest asks for longer.
+          ttl: options.ttl ?? 3600,
           priority: 10,
         }),
         signal: controller.signal,

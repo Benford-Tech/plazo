@@ -158,8 +158,8 @@ class _BookingsChoice extends StatelessWidget {
                 RadioListTile<String>(
                   key: Key('notify-bookings-$mode'),
                   value: mode,
+                  // Dense one-line rows stay 48 dp tall, the touch-target minimum (no compact density).
                   dense: true,
-                  visualDensity: VisualDensity.compact,
                   contentPadding: const EdgeInsets.symmetric(horizontal: 12),
                   activeColor: AppColors.accent,
                   title: Text('pro.notify_bookings_$mode'.tr(), style: AppText.body(size: 14.5, weight: value == mode ? 600 : 400)),

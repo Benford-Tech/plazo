@@ -409,12 +409,13 @@ describe('la boîte de réception (M-A + T-A, 08/10/2026)', () => {
     expect(done.data.map((e: { id: string }) => e.id).slice(0, 2)).toEqual([duplicate.id, imported.id]);
     expect(done.data[1].reservationReference).toEqual(expect.any(String));
     expect(statuses((await api().get('/api/internal/inbound/emails?view=done&status=imported').set(auth(agent.token))).body)).toEqual(['imported']);
-    // The old filter alone keeps the tab: ?status=incomplete lists the two to-do ones, ?status=imported nothing in « À traiter ».
+    // The old filter alone finds its tab: ?status=incomplete lists the two to-do ones, ?status=imported the imported one in « Traités ».
     expect(statuses((await api().get('/api/internal/inbound/emails?status=incomplete').set(auth(agent.token))).body)).toEqual([
       'incomplete',
       'incomplete',
     ]);
-    expect(statuses((await api().get('/api/internal/inbound/emails?status=imported').set(auth(agent.token))).body)).toEqual([]);
+    // A bare status filter looks in the tab that holds it (review, 08/10/2026).
+    expect(statuses((await api().get('/api/internal/inbound/emails?status=imported').set(auth(agent.token))).body)).toEqual(['imported']);
 
     const archived = (await api().get('/api/internal/inbound/emails?view=archived').set(auth(agent.token))).body;
     expect(archived.data.map((e: { subject: string }) => e.subject)).toEqual(['archive récente']);

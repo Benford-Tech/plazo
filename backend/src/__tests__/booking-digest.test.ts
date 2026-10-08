@@ -93,7 +93,7 @@ describe('les règles du récapitulatif (domaine)', () => {
 
   it('nomme les sources et compose le message, au singulier comme au pluriel', () => {
     expect(sourceLabel('plazo', null)).toBe('Plazo');
-    expect(sourceLabel('website', null)).toBe('votre site');
+    expect(sourceLabel('website', null)).toBe('site du parking');
     expect(sourceLabel('phone', null)).toBe('téléphone');
     expect(sourceLabel('counter', null)).toBe('comptoir');
     expect(sourceLabel('aggregator', ' Allopark ')).toBe('Allopark');
@@ -125,8 +125,8 @@ describe('les règles du récapitulatif (domaine)', () => {
       title: '1 réservation reçue',
       body: '1 comptoir · depuis 21:00',
     });
-    expect(digestMessage({ sources: [{ label: 'votre site', count: 2 }], toCheck: 2, since: '22:00' }).body).toBe(
-      '2 votre site · 2 mails à vérifier · depuis 22:00',
+    expect(digestMessage({ sources: [{ label: 'site du parking', count: 2 }], toCheck: 2, since: '22:00' }).body).toBe(
+      '2 site du parking · 2 mails à vérifier · depuis 22:00',
     );
     expect(defaultBookingNotify('manager')).toBe('hourly');
     expect(defaultBookingNotify('agent')).toBe('immediate');
@@ -164,15 +164,28 @@ describe('GET /internal/cron/booking-digest', () => {
     await prisma.inboundEmail.create({ data: { operatorId: op.operator.id, status: 'unrecognised', subject: 'Question', textBody: 'Bonjour' } });
     await prisma.inboundEmail.create({ data: { operatorId: other.operator.id, status: 'incomplete', subject: 'Ailleurs' } });
 
+    // A Plazo checkout not paid yet and a hold that lapsed are not « reçues »; a booking stamped at the very end of the
+    // window is (and only once, see 11:00).
+    const hold = await booking(op, '2027-06-15T09:45', 'plazo');
+    await prisma.reservation.update({
+      where: { id: hold.id },
+      data: { status: 'pending_payment', paymentStatus: 'pending', holdExpiresAt: at('2027-06-15T10:15') },
+    });
+    const lapsed = await booking(op, '2027-06-15T09:50', 'plazo');
+    await prisma.reservation.update({ where: { id: lapsed.id }, data: { status: 'cancelled', paymentStatus: 'expired' } });
+    await booking(op, '2027-06-15T10:00', 'aggregator', 'Allopark');
+
     // 10:00: the first digest counts the last hour.
     expect(await digest.run(at('2027-06-15T10:00'))).toEqual({ operators: 2, sent: 1, skipped: 0 });
     expect(pushes()).toHaveLength(1);
     expect(pushes()[0]).toMatchObject({
-      headings: { fr: '3 réservations reçues' },
-      contents: { fr: '2 Plazo, 1 Allopark · 1 mail à vérifier' },
+      headings: { fr: '4 réservations reçues' },
+      contents: { fr: '2 Allopark, 2 Plazo · 1 mail à vérifier' },
       include_subscription_ids: ['sub-manager'],
       data: { type: 'booking', event: 'digest' },
       collapse_id: `digest-${op.operator.id}`,
+      // The 07:00 digest covers the night: it waits for a phone switched on later in the morning.
+      ttl: 12 * 3600,
     });
     expect(await digestAt(op.operator.id)).toEqual(at('2027-06-15T10:00'));
     expect(await digestAt(other.operator.id)).toEqual(at('2027-06-15T10:00'));
@@ -183,7 +196,7 @@ describe('GET /internal/cron/booking-digest', () => {
     expect(pushes()).toHaveLength(1);
     expect(await digestAt(op.operator.id)).toEqual(at('2027-06-15T10:00'));
 
-    // 11:00: the booking of 10:05 (after the watermark), the one of 09:40 is not counted twice; the mail was handled meanwhile.
+    // 11:00: the booking of 10:05 (after the watermark); those of 09:40 and 10:00 are not counted twice; the mail was handled meanwhile.
     await prisma.inboundEmail.updateMany({ where: { operatorId: op.operator.id }, data: { status: 'handled' } });
     expect(await digest.run(at('2027-06-15T11:00'))).toEqual({ operators: 2, sent: 1, skipped: 0 });
     expect(pushes()[1]).toMatchObject({ headings: { fr: '1 réservation reçue' }, contents: { fr: '1 comptoir' } });
@@ -215,7 +228,7 @@ describe('GET /internal/cron/booking-digest', () => {
     expect(await digestAt(op.operator.id)).toEqual(at('2027-06-15T21:00'));
 
     expect(await digest.run(at('2027-06-16T07:00'))).toEqual({ operators: 1, sent: 1, skipped: 0 });
-    expect(pushes()[0]).toMatchObject({ headings: { fr: '3 réservations reçues' }, contents: { fr: '2 Plazo, 1 votre site · depuis 21:00' } });
+    expect(pushes()[0]).toMatchObject({ headings: { fr: '3 réservations reçues' }, contents: { fr: '2 Plazo, 1 site du parking · depuis 21:00' } });
     expect(await digestAt(op.operator.id)).toEqual(at('2027-06-16T07:00'));
 
     // A parking on another clock: 07:00 in Paris is still the night in Montréal.

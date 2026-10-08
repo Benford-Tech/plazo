@@ -286,7 +286,7 @@ attente du téléphone du parking. Mise en place :
 
 **Récapitulatif horaire des réservations (N-A, 08/10/2026)** : la route `/api/internal/cron/booking-digest` envoie, chaque heure
 pile, un push « N réservations reçues » aux membres réglés sur « récapitulatif horaire » (les gérants par défaut), tous canaux
-confondus, et rien entre 22 h et 07 h (le récapitulatif de 07 h couvre la nuit). Un second cronjob sur cron-job.org, de la même
+confondus (hors attentes de paiement et annulées), et rien entre 22 h et 07 h (le récapitulatif de 07 h couvre la nuit). Un second cronjob sur cron-job.org, de la même
 façon : *Title* « Plazo · Récapitulatif horaire », *URL* `https://www.plazo.fr/api/internal/cron/booking-digest`, *Execution
 schedule* **Every hour at minute 0**, même en-tête `Authorization`. Un appel de trop ne renvoie rien en double (un récapitulatif
 de moins de 50 minutes est passé) ; la réponse attendue est `{"operators":…,"sent":…,"skipped":…}`.
@@ -375,7 +375,7 @@ Documentation interactive : `/api/docs` (Swagger). Toutes les routes sont sous `
 | POST | `/public/inbound/email?secret=` | Webhook *Inbound parsing* de Brevo (M-A) : `{ items: [...] }` → `{ received, imported, toCheck, ignored }` |
 | GET | `/internal/inbound/settings` | Adresse de réception du loueur, dernier mail, comptages sur 30 jours, mails à vérifier |
 | POST | `/internal/inbound/address` | Gérant : renvoie l'adresse (créée avec le loueur) ; `{ regenerate: true }` : nouvelle adresse |
-| GET | `/internal/inbound/emails?view=todo\|done\|archived&status=` | Boîte de réception (M-A, 08/10/2026) : un onglet (`todo` par défaut : incomplete et unrecognised ; `done` : imported, duplicate, handled sur 30 jours ; `archived` : 90 jours), du plus récent au plus ancien, `{ data, counts: { todo, done, archived } }` ; `?status=` filtre encore ; les confirmations de transfert jamais listées |
+| GET | `/internal/inbound/emails?view=todo\|done\|archived&status=` | Boîte de réception (M-A, 08/10/2026) : un onglet (`todo` par défaut : incomplete et unrecognised ; `done` : imported, duplicate, handled sur 30 jours ; `archived` : 90 jours), du plus récent au plus ancien, `{ data, counts: { todo, done, archived } }` ; `?status=` filtre encore (seul, il cherche dans l'onglet de cet état) ; les confirmations de transfert jamais listées |
 | POST | `/internal/inbound/emails/:id/handle` | T-A « Marquer comme traité » → `handled` (imported inchangé ; 409 `archived` ; 404 pour une confirmation de transfert) ; `…/dismiss` : alias déprécié |
 | POST | `/internal/inbound/emails/:id/archive` | T-A « Archiver » → `archived` depuis tout état sauf une confirmation de transfert (409 `forwarding`), texte gardé jusqu'à la purge |
 | POST | `/internal/inbound/emails/:id/attach` | Rattacher à la réservation saisie (`{ reservationId }`) → `imported`, texte effacé |

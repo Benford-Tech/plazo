@@ -70,8 +70,8 @@ Ne construire QUE ce qui règle la douleur n°1 du client.
      Archivés » avec comptages ; mail choisi dans `?mail=`, le premier sélectionné sur grand écran, la sélection avance après un
      geste ; sur téléphone la liste puis la fiche plein écran avec « Retour ». API : `GET /internal/inbound/emails?view=todo|done|archived`
      → `{ data, counts: { todo, done, archived } }` (todo = incomplete et unrecognised, done = imported / duplicate / handled sur
-     30 jours, archived sur 90 jours ; `?status=` filtre encore ; les `forwarding` jamais listés). **Deux gestes (T-A)** :
-     « Marquer comme traité » (`POST …/emails/:id/handle` → `handled` depuis incomplete / unrecognised / duplicate / dismissed,
+     30 jours, archived sur 90 jours ; `?status=` filtre encore, et seul il cherche dans l'onglet de cet état ; les `forwarding` jamais listés). **Deux gestes (T-A)** :
+     « Marquer comme traité » (`POST …/emails/:id/handle` → `handled` depuis incomplete / unrecognised / duplicate / dismissed ; le web ne le propose pas pour un doublon, déjà rattaché à sa réservation,
      imported inchangé, 409 `archived`, 404 pour un `forwarding` ; `/dismiss` alias déprécié ; `dismissed` déprécié dans l'enum,
      migré en `handled` ; remplace « Classer sans suite ») et « Archiver » (`POST …/emails/:id/archive` → `archived` depuis tout
      sauf `forwarding` → 409, texte gardé ; la purge efface toujours les textes à 30 jours et les lignes à 90). **Récapitulatif
@@ -79,9 +79,9 @@ Ne construire QUE ce qui règle la douleur n°1 du client.
      `hourly`, autres rôles `immediate` : `defaultBookingNotify` dans `domain/roles.ts` ; champ `bookings` de
      `GET/PATCH /internal/notifications/preferences`), audiences push `bookings` (immediate, push par réservation) et
      `bookingDigest` (hourly) ; `GET /internal/cron/booking-digest` toutes les heures pile (cron-job.org, `CRON_SECRET`) →
-     `BookingDigestService.run(now)` : par loueur actif, les réservations créées (tous canaux) dans
+     `BookingDigestService.run(now)` : par loueur actif, les réservations créées (tous canaux, hors attentes de paiement et annulées) dans
      `(Operator.bookingDigestAt ?? now − 1 h, now]`, un push « 3 réservations reçues » · « 2 Plazo, 1 Allopark · 1 mail à vérifier »
-     (« · depuis 21:00 » quand la fenêtre dépasse 70 min ; `domain/booking-digest.ts` ; `data { type: 'booking', event: 'digest' }`,
+     (« · depuis 21:00 » quand la fenêtre dépasse 70 min ; sources « Plazo », « site du parking », « téléphone », « comptoir » ou le nom du comparateur ; `domain/booking-digest.ts` ; `data { type: 'booking', event: 'digest' }`, `ttl` 12 h,
      `collapseId digest-<operatorId>`), rien de 22:00 à 07:00 (heure du premier parking, repère inchangé : le récapitulatif de
      07:00 couvre la nuit), ni quand le dernier date de moins de 50 min ; le repère avance à chaque passage hors heures creuses.
      **L-A « Lecture par Claude » (08/10/2026, « les mails doivent créer automatiquement les réservations »)** : un mail qu'aucun
