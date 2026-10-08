@@ -2470,13 +2470,16 @@ export const inboundWizardFr = {
       openLink: "Confirmer par le lien",
       linkOnly: "Gmail n'a pas mis de code dans ce mail : confirmez par le lien.",
       keepOff:
-        "Laissez « Désactiver le transfert » coché : seul le filtre de l'étape suivante transfère, et uniquement les mails d'Allopark.",
+        "Une fois l'adresse validée, Gmail propose « Transférer une copie des e-mails entrants » : laissez plutôt « Désactiver le transfert » coché, sinon tous vos mails partiraient dans Plazo. Seul le filtre de l'étape suivante transfère, et uniquement les mails d'Allopark.",
     },
   },
   forward: {
     gmail: {
       title: "Créez le filtre dans Gmail",
       lines: [
+        {
+          text: "Dans **Transfert et POP/IMAP**, vérifiez que **Désactiver le transfert** est coché (sinon Gmail transfère tous vos mails à Plazo), puis **Enregistrer les modifications**.",
+        },
         {
           text: "Dans la barre de recherche de Gmail, cliquez l'icône des options de recherche, à droite.",
         },
@@ -2490,7 +2493,7 @@ export const inboundWizardFr = {
         },
         { text: "Validez avec **Créer un filtre**." },
       ] satisfies WizardLine[],
-      note: "L'adresse n'apparaît pas dans « Transférer à » ? Gmail doit d'abord la valider : revenez à l'étape 2, le code de confirmation y est affiché.",
+      note: "L'adresse n'apparaît pas dans « Transférer à » ? Gmail doit d'abord la valider : revenez à l'étape 2, le code de confirmation y est affiché. Tous vos mails arrivent dans Plazo ? Dans Transfert et POP/IMAP, « Transférer une copie des e-mails entrants » est coché à la place de « Désactiver le transfert ».",
       done: "J'ai créé le filtre",
       screen: "Gmail",
       preview: [
@@ -2666,7 +2669,7 @@ export const inboundWizardFr = {
     sender: (address: string) => `Expéditeur : ${address}`,
     address: (address: string) => `Transférer une copie à : ${address}`,
     gmailCode:
-      "Gmail envoie alors un code de confirmation à Plazo : je te le transmets dès qu'il s'affiche.",
+      "Gmail envoie alors un code de confirmation à Plazo : je te le transmets dès qu'il s'affiche. Une fois l'adresse validée, laisse « Désactiver le transfert » coché dans Transfert et POP/IMAP : seul le filtre transfère.",
     outro:
       "Seuls ces mails sont transférés ; nos autres mails restent privés. Merci !",
   },
