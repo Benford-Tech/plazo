@@ -1,10 +1,12 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
+import { AirportGuide } from "./AirportGuide";
 import { HomeHero } from "./HomeHero";
 import { DemoBadge } from "./DemoBadge";
 import { JsonLd } from "./JsonLd";
 import { FactChips } from "./Highlights";
 import { Photo } from "./Photo";
+import { airportGuide, guideFacts } from "@/lib/airport-guides";
 import { api, ApiError } from "@/lib/api";
 import { defaultStay, todayLocal } from "@/lib/dates";
 import { fr, fromPriceUnit, texts } from "@/lib/fr";
@@ -31,7 +33,6 @@ export async function AirportView({ slug, showBreadcrumb }: { slug: string; show
   const { airport, listings, payments } = await loadAirport(slug);
   const t = texts(payments === "online");
   const stay = defaultStay();
-  const faq = [...t.home.faq, ...(t.home.airportFaq[airport.slug] ?? [])];
   // T-A: the hero's map shows the parkings of the default stay and its best offer (the page works without it).
   let preview: SearchResponse | null = null;
   try {
@@ -39,6 +40,9 @@ export async function AirportView({ slug, showBreadcrumb }: { slug: string; show
   } catch {
     preview = null;
   }
+  // C-A: the airport's guide and its questions, in figures only from the real partners' live offers.
+  const guide = airportGuide(airport.slug, guideFacts(listings, preview));
+  const faq = [...t.home.faq, ...(guide?.faq ?? [])];
 
   return (
     <>
@@ -127,6 +131,8 @@ export async function AirportView({ slug, showBreadcrumb }: { slug: string; show
             : {fr.home.ownerPitch}
           </p>
         </section>
+
+        {guide && <AirportGuide guide={guide} />}
 
         <section id="faq" aria-labelledby="faq-title" className="grid scroll-mt-4 gap-6 md:grid-cols-[1fr_1.4fr] md:gap-12">
           <div>
