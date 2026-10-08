@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
-import worker, { type Env } from "../src/index";
+import worker, { RAW_MAX_BYTES, type Env } from "../src/index";
 import { alloparkForwarded } from "./samples";
 
 function message(raw: string, to = "parkair-lyon-7f3a@plazo.fr") {
@@ -30,11 +30,34 @@ describe("email()", () => {
     expect(url).toBe(env.PLAZO_INBOUND_URL);
     expect(init.method).toBe("POST");
     expect((init.headers as Record<string, string>)["x-inbound-secret"]).toBe("s3cret");
-    const body = JSON.parse(String(init.body));
-    expect(body.items[0].Recipients).toEqual(["parkair-lyon-7f3a@plazo.fr"]);
-    expect(body.items[0].From.Address).toBe("info@allopark.com");
+    const headers = init.headers as Record<string, string>;
+    expect(headers["content-type"]).toBe("message/rfc822");
+    expect(headers["x-envelope-from"]).toBe("bounce@gmail.com");
+    expect(headers["x-envelope-to"]).toBe("parkair-lyon-7f3a@plazo.fr");
+    expect(headers["x-inbound-truncated"]).toBeUndefined();
+    // The message goes as received: Plazo decodes it (the Worker's 10 ms of CPU on the Free plan would not).
+    expect(new TextDecoder().decode(init.body as Uint8Array)).toBe(alloparkForwarded);
     expect(msg.setReject).not.toHaveBeenCalled();
     expect(msg.forward).not.toHaveBeenCalled();
+  });
+
+  it("un mail de plus de 4 Mo est coupé à 4 Mo (les textes viennent avant les pièces jointes) et signalé comme tel", async () => {
+    const fetchMock = vi.fn(async () => new Response(JSON.stringify({ received: 1, imported: 0, toCheck: 1, ignored: 0 })));
+    vi.stubGlobal("fetch", fetchMock);
+    const big = alloparkForwarded + "\r\n" + "x".repeat(RAW_MAX_BYTES);
+    const msg = message(big);
+    await worker.email(msg, env);
+    const [, init] = fetchMock.mock.calls[0] as unknown as [string, RequestInit];
+    expect((init.body as Uint8Array).byteLength).toBe(RAW_MAX_BYTES);
+    expect((init.headers as Record<string, string>)["x-inbound-truncated"]).toBe("1");
+    expect(new TextDecoder().decode((init.body as Uint8Array).subarray(0, alloparkForwarded.length))).toBe(alloparkForwarded);
+    expect(msg.setReject).not.toHaveBeenCalled();
+    // Exactly at the limit: whole, not flagged.
+    const exact = message("y".repeat(RAW_MAX_BYTES));
+    await worker.email(exact, env);
+    const [, exactInit] = fetchMock.mock.calls[1] as unknown as [string, RequestInit];
+    expect((exactInit.body as Uint8Array).byteLength).toBe(RAW_MAX_BYTES);
+    expect((exactInit.headers as Record<string, string>)["x-inbound-truncated"]).toBeUndefined();
   });
 
   it("Plazo refuse ou ne répond pas : le mail part à l'adresse de secours, sinon il est refusé (l'expéditeur le voit)", async () => {

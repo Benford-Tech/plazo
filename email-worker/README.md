@@ -3,16 +3,24 @@
 Chaque parking a son adresse Plazo, `<slug>@plazo.fr`, créée avec lui (Parking › Réglages › Mails entrants l'affiche).
 Sa messagerie y transfère les confirmations des comparateurs (Allopark…). **Cloudflare Email Routing** reçoit tout
 le domaine `plazo.fr` (gratuit, nombre d'adresses illimité, aucune boîte mail à créer) et passe chaque mail à ce
-Worker. Le Worker le décode (`postal-mime`) et l'envoie à l'API :
+Worker. Le Worker envoie le mail **tel quel** à l'API, qui le décode (08/10/2026 : l'offre Workers Free n'accorde que
+10 ms de processeur par mail, et décoder une vraie confirmation, HTML et images, les dépassait : l'expéditeur recevait
+« upstream (worker:plazo) temporary error: Worker call failed after 3 attempts ») :
 
 ```
 POST https://www.plazo.fr/api/public/inbound/email
+Content-Type: message/rfc822
 X-Inbound-Secret: <INBOUND_EMAIL_SECRET>
-{ "items": [{ "From", "To", "Cc", "Recipients", "Subject", "RawTextBody", "RawHtmlBody", … }] }
+X-Envelope-From: <expéditeur de l'enveloppe>
+X-Envelope-To: <adresse Plazo du parking>
+X-Inbound-Truncated: 1        (seulement quand le mail dépassait 4 Mo et a été coupé là)
+
+<le mail brut, tel que reçu>
 ```
 
-`Recipients` porte l'adresse Plazo de l'enveloppe : c'est elle qui désigne le parking, pas l'en-tête `To` du mail
-transféré. Si Plazo ne prend pas le mail (erreur, secret faux), ou si l'adresse n'est à aucun parking (réponse d'un
+`X-Envelope-To` porte l'adresse Plazo de l'enveloppe : c'est elle qui désigne le parking, pas l'en-tête `To` du mail
+transféré. Un mail de plus de 4 Mo (limite des requêtes Vercel) est coupé à 4 Mo : ses textes, placés avant les pièces
+jointes, restent lus. Si Plazo ne prend pas le mail (erreur, secret faux), ou si l'adresse n'est à aucun parking (réponse d'un
 voyageur à `reservations@plazo.fr`, `contact@plazo.fr`…), le Worker le renvoie à `FALLBACK_ADDRESS` quand elle est
 définie. Sinon, il le refuse, et la messagerie de l'expéditeur signale l'échec : rien ne se perd en silence.
 
