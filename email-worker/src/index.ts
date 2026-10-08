@@ -44,19 +44,24 @@ export default {
       failure = error instanceof Error ? error.message : String(error);
     }
     if (!failure && !unknown) return;
-    if (unknown) {
-      if (env.FALLBACK_ADDRESS) {
-        await message.forward(env.FALLBACK_ADDRESS);
-        return;
-      }
-      message.setReject(`No mailbox for ${message.to}`);
-      return;
-    }
-    console.error(`[plazo-email-worker] ${message.to}: ${failure}`);
-    if (env.FALLBACK_ADDRESS) {
-      await message.forward(env.FALLBACK_ADDRESS);
-      return;
-    }
-    message.setReject("Plazo could not take this email right now, please try again later.");
+    if (failure) console.error(`[plazo-email-worker] ${message.to}: ${failure}`);
+    const reason = unknown ? `No mailbox for ${message.to}` : "Plazo could not take this email right now, please try again later.";
+    if (env.FALLBACK_ADDRESS && (await forwardTo(message, env.FALLBACK_ADDRESS))) return;
+    message.setReject(reason);
   },
 } satisfies ExportedHandler<Env>;
+
+/**
+ * Forwards to the fallback address and says whether it worked. Email Routing only forwards to a verified destination
+ * address: an unverified one makes forward() throw, which must end in a clear refusal rather than a crashed Worker
+ * ("worker script threw an exception", a temporary error that the sender's mailbox keeps retrying).
+ */
+async function forwardTo(message: ForwardableEmailMessage, address: string): Promise<boolean> {
+  try {
+    await message.forward(address);
+    return true;
+  } catch (error) {
+    console.error(`[plazo-email-worker] forward to the fallback address failed: ${error instanceof Error ? error.message : String(error)}`);
+    return false;
+  }
+}
