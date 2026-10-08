@@ -151,6 +151,9 @@ export function InboundSetupWizard({ onClose }: { onClose: () => void }) {
   const settings = useQuery({ queryKey: ["inbound-settings"], queryFn: adminApi.getInboundSettings, refetchInterval: POLL_MS });
   const enable = useMutation({
     mutationFn: () => adminApi.enableInboundAddress(false),
+    // A settings read still in flight (the wizard's mount refetch, a poll) would land after the POST and put
+    // `address: null` back: drop it, the POST's answer is the fresher one.
+    onMutate: () => queryClient.cancelQueries({ queryKey: ["inbound-settings"] }),
     onSuccess: data => queryClient.setQueryData(["inbound-settings"], data),
     onError: (err: Error) => toast.error(describeError(err)),
   });
