@@ -54,6 +54,11 @@ Ne construire QUE ce qui règle la douleur n°1 du client.
      webhook Brevo `POST /public/inbound/email?secret=INBOUND_EMAIL_SECRET`, `InboundEmailService` + `domain/inbound-email.ts`,
      table `inbound_emails`, réservation créée seule si complète (`ReservationService.createFromImport`), sinon page
      « Mails à vérifier » `/pro/reservations/a-verifier` et alerte `inbound_to_check` ; connecteurs plus tard).
+     **G-B (07/10/2026) « Relier votre boîte mail »** : bouton du bloc Mails entrants (Parking › Réglages) ouvrant un assistant
+     en quatre étapes (Adresse · Messagerie · Transfert · Vérification ; `InboundSetupWizard`, Gmail / Outlook / OVH / autre,
+     aperçu simplifié de l'écran de la messagerie, lien « Envoyer ces étapes… » en mailto) ; la confirmation de transfert de
+     Gmail (`forwarding-noreply@google.com`) est reconnue (`forwardingConfirmationOf`, statut `forwarding`, hors « À vérifier »,
+     sans le texte) et son code affiché en direct 7 jours ; `InboundSettings.senders/forwarding/recent`, `EmailImporter.senders`.
    - Page de réservation propre à l'opérateur (formulaire simple, confirmation par mail/SMS).
    - Vue planning : arrivées et retours du jour, taux d'occupation, alerte de surréservation
      calculée sur la capacité réelle.
@@ -527,3 +532,5 @@ Canevas de référence : https://claude.ai/artifact/6ezoCDyLXFNwhAH5ZWUf4u (rang
 - Livrer par petites étapes utilisables par le client n°1, montrer chaque étape.
 - Ne pas ajouter de fonctionnalité hors périmètre sans demande explicite.
 - Code et commentaires en anglais, interface et documentation utilisateur en français.
+- **Livraison (07/10/2026)** : une fois le travail vérifié (lint, tests, build) et poussé sur la branche, ouvrir
+  automatiquement la PR vers `main` puis la fusionner, sans attendre de demande.
