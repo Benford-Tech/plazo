@@ -198,9 +198,15 @@ le navigateur de l'espace pro appelle `/api` sur le même domaine (pas de CORS).
    la réservation (canal comparateur, doublon refusé par la référence externe, push « Nouvelle réservation ») ; un
    mail incomplet ou inconnu attend dans « Mails à vérifier » (`/pro/reservations/a-verifier`, alerte du tableau de
    bord), où l'équipe le complète dans le formulaire prérempli ou le classe. Texte des mails gardé 30 jours, lignes 90.
-   Mise en place côté Brevo : choisir un sous-domaine (ex. `in.plazo.fr`), y mettre l'enregistrement MX que Brevo
-   indique (Transactional › Inbound parsing › *Add a domain*), puis créer le webhook *inbound* avec ce domaine et
-   l'URL ci-dessus (le secret dans l'URL ; Brevo ne signe pas ses appels).
+   Mise en place côté Brevo (08/10/2026, domaine retenu `in.plazo.fr`) : 1) Vercel : `INBOUND_EMAIL_DOMAIN=in.plazo.fr`
+   (posée) et `INBOUND_EMAIL_SECRET` (clé aléatoire, type Sensitive), puis redéployer ; 2) DNS de plazo.fr, chez le
+   registrar : deux MX sur `in` → `inbound1.sendinblue.com.` priorité 10 et `inbound2.sendinblue.com.` priorité 20 ;
+   3) Brevo › Transactional › Inbound parsing : ajouter le domaine `in.plazo.fr` (le domaine d'envoi `plazo.fr` doit être
+   vérifié), puis créer le webhook *inbound* (`POST /v3/webhooks`, `type: inbound`, `events: ["inboundEmailProcessed"]`,
+   `url` = `https://www.plazo.fr/api/public/inbound/email?secret=<INBOUND_EMAIL_SECRET>`, `domain: in.plazo.fr`) :
+   `backend/scripts/brevo-inbound-setup.sh` le fait depuis votre poste (`BREVO_API_KEY` et `INBOUND_EMAIL_SECRET` en
+   variables d'environnement, jamais dans le dépôt) après avoir vérifié les MX. Brevo ne signe pas ses appels : le secret
+   dans l'URL fait foi. `BREVO_API_KEY` dans Vercel sert à l'envoi (confirmations, rappels), pas à la réception.
 
 6. **Suivi des vols au retour** — facultatif : sans clé, les vols ne sont pas suivis (le voyageur dit « J'ai atterri »
    dans l'app, et l'heure de retour saisie fait foi). Trois fournisseurs derrière la même interface, choisis par
