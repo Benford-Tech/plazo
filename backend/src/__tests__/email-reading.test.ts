@@ -15,6 +15,8 @@ const answer: EmailReading = {
   arrivalAt: '2026-07-12T06:30',
   returnAt: '2026-07-19T22:15',
   customerName: ' Marie  Dupont ',
+  customerFirstName: null,
+  customerLastName: null,
   customerPhone: '+33 6 12 34 56 78',
   customerEmail: 'Marie.Dupont@Example.com',
   plate: 'ab 123 cd',
@@ -60,6 +62,23 @@ describe('lecture d’un mail par Claude (L-A, 08/10/2026) — conversion', () =
     // A return before the arrival is dropped too: the staff fix the dates from the email.
     expect(toParsedBooking({ ...answer, returnAt: '2026-07-10T08:00' }).returnAt).toBeUndefined();
     expect(toParsedBooking({ ...answer, arrivalAt: '2026-02-30T08:00' }).arrivalAt).toBeUndefined();
+  });
+
+  it('garde le prénom et le nom à part quand Claude les distingue, toujours par paire (09/10/2026)', () => {
+    expect(toParsedBooking({ ...answer, customerFirstName: ' Marie ', customerLastName: 'DUPONT' })).toMatchObject({
+      customerName: 'Marie Dupont',
+      customerFirstName: 'Marie',
+      customerLastName: 'DUPONT',
+    });
+    // Without the display name, it is rebuilt from the pair.
+    expect(toParsedBooking({ ...answer, customerName: null, customerFirstName: 'Marie', customerLastName: 'Dupont' }).customerName).toBe(
+      'Marie Dupont',
+    );
+    // One without the other: neither is kept, the display name is split when the booking is created.
+    const half = toParsedBooking({ ...answer, customerFirstName: 'Marie', customerLastName: null });
+    expect(half.customerFirstName).toBeUndefined();
+    expect(half.customerLastName).toBeUndefined();
+    expect(toParsedBooking({ ...answer, customerName: null, customerFirstName: 'Marie' }).customerName).toBeUndefined();
   });
 
   it('nettoie téléphones et plaques', () => {

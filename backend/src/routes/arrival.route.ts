@@ -89,6 +89,8 @@ import { ValidationMiddleware } from '@/middlewares/validation.middleware';
  *         kind: { type: string, enum: [outbound, return] }
  *         state: { type: string, enum: [sharing, announced, at_meeting_point] }
  *         customerName: { type: string }
+ *         customerFirstName: { type: string }
+ *         customerLastName: { type: string }
  *         plate: { type: string }
  *         passengers: { type: integer }
  *         returnFlight: { type: string, nullable: true }

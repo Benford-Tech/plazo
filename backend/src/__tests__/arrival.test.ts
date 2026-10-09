@@ -146,6 +146,9 @@ describe('règles (domaine)', () => {
   it('écrit des notifications courtes, avec le nom abrégé', () => {
     expect(shortName('Camille Martin')).toBe('C. Martin');
     expect(shortName('Jean de La Fontaine')).toBe('J. de La Fontaine');
+    // 09/10/2026: the stored first and last name, a compound first name included.
+    expect(shortName('Marie Claire Dupont', { firstName: 'marie Claire', lastName: 'Dupont' })).toBe('M. Dupont');
+    expect(shortName('Camille Martin', { firstName: '', lastName: '' })).toBe('C. Martin');
     const base = {
       kind: 'outbound' as const,
       customerName: 'Camille Martin',
@@ -158,6 +161,16 @@ describe('règles (domaine)', () => {
     expect(arrivalPush({ ...base, kind: 'return', event: 'at_meeting_point', etaMinutes: 0, meetingLabel: 'Terminal 1' }).body).toBe(
       'Retour : C. Martin est au point de rendez-vous · Terminal 1 · AB-123-CD',
     );
+    expect(
+      arrivalPush({
+        ...base,
+        customerName: 'Marie Claire Dupont',
+        customerFirstName: 'Marie Claire',
+        customerLastName: 'Dupont',
+        event: 'started',
+        etaMinutes: 5,
+      }).body,
+    ).toBe('M. Dupont arrive dans 5 min · AB-123-CD · Parking Démo LYS');
   });
 });
 
@@ -363,7 +376,16 @@ describe('voyageur : sans partage, et retour', () => {
     expect((await signalRows(b))[0]).toMatchObject({ lat: null, lng: null });
 
     const live = await api().get('/api/internal/arrivals/live').set(auth(b.op.token));
-    expect(live.body.signals).toEqual([expect.objectContaining({ kind: 'return', state: 'at_meeting_point', plate: 'AB-123-CD', position: null })]);
+    expect(live.body.signals).toEqual([
+      expect.objectContaining({
+        kind: 'return',
+        state: 'at_meeting_point',
+        plate: 'AB-123-CD',
+        position: null,
+        customerFirstName: 'Camille',
+        customerLastName: 'Martin',
+      }),
+    ]);
   });
 
   it('utilise le point de rendez-vous retour du loueur quand il est défini', async () => {
@@ -413,10 +435,13 @@ describe('personnel : signaux en direct', () => {
     expect((await api().get('/api/internal/arrivals/live').set(auth(other.token))).body.signals).toEqual([]);
     expect((await api().get('/api/internal/arrivals/live')).status).toBe(401);
 
-    const planning = await api().get('/api/internal/planning').set(auth(b.op.token));
+    // The planning of the arrival's own day: late in the evening it falls on tomorrow.
+    const { arrivalAt } = await prisma.reservation.findUniqueOrThrow({ where: { id: b.reservation.id } });
+    const day = localDateTime(arrivalAt, TZ).slice(0, 10);
+    const planning = await api().get(`/api/internal/planning?date=${day}`).set(auth(b.op.token));
     const row = planning.body.arrivals.find((r: { id: string }) => r.id === b.reservation.id);
     expect(row.arrivalSignal).toMatchObject({ state: 'sharing', etaMinutes: 13 });
-    const otherPlanning = await api().get('/api/internal/planning').set(auth(other.token));
+    const otherPlanning = await api().get(`/api/internal/planning?date=${day}`).set(auth(other.token));
     expect(otherPlanning.body.arrivals).toEqual([]);
   });
 });

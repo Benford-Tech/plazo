@@ -7,6 +7,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 
 import '../../../../core/enums/view_state.dart';
 import '../../../../core/helpers/money.dart';
+import '../../../../core/helpers/names.dart';
 import '../../../../core/helpers/plate.dart';
 import '../../../../core/helpers/stay.dart';
 import '../../../../core/router/app_router.dart';
@@ -127,7 +128,7 @@ class MyBookingPage extends StatelessWidget implements AutoRouteWrapper {
                     return ListView(
                       padding: EdgeInsets.zero,
                       children: [
-                        if (confirmed) _ConfirmedHero(booking: b),
+                        if (confirmed) ConfirmedHero(booking: b),
                         Padding(
                           padding: const EdgeInsets.fromLTRB(16, 16, 16, 32),
                           child: Column(
@@ -197,14 +198,15 @@ class MyBookingPage extends StatelessWidget implements AutoRouteWrapper {
 
 /// "C'est réservé, Camille !" with the reference, where the confirmation goes, and the note that
 /// the booking is kept on this phone.
-class _ConfirmedHero extends StatelessWidget {
-  const _ConfirmedHero({required this.booking});
+@visibleForTesting
+class ConfirmedHero extends StatelessWidget {
+  const ConfirmedHero({required this.booking});
   final PublicBookingModel booking;
 
   @override
   Widget build(BuildContext context) {
     final b = booking;
-    final name = firstName(b.customerName);
+    final name = greetingName(b.customerFirstName, b.customerName);
     final phone = isFrenchMobile(b.customerPhone) ? formatPhone(b.customerPhone) : null;
     final email = b.customerEmail;
     final text = email != null && phone != null

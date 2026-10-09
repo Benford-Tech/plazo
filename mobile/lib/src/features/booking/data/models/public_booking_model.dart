@@ -17,6 +17,10 @@ abstract class PublicBookingModel with _$PublicBookingModel {
     required String arrivalAt,
     required String returnAt,
     required String customerName,
+
+    /// 09/10/2026: the first and last name apart ("" from an older server); `customerName` is "Prénom Nom".
+    @Default('') String customerFirstName,
+    @Default('') String customerLastName,
     String? customerEmail,
     @Default('') String customerPhone,
     required String plate,
@@ -137,7 +141,8 @@ class BookingInput {
     required this.parking,
     required this.arrivalAt,
     required this.returnAt,
-    required this.customerName,
+    required this.customerFirstName,
+    required this.customerLastName,
     required this.customerPhone,
     required this.customerEmail,
     required this.plate,
@@ -155,7 +160,10 @@ class BookingInput {
   final String parking;
   final String arrivalAt;
   final String returnAt;
-  final String customerName;
+
+  /// 09/10/2026: first and last name apart, both required by the API (which stores "Prénom Nom" for display).
+  final String customerFirstName;
+  final String customerLastName;
   final String customerPhone;
   final String customerEmail;
   final String plate;
@@ -175,7 +183,8 @@ class BookingInput {
     'parking': parking,
     'arrivalAt': arrivalAt,
     'returnAt': returnAt,
-    'customerName': customerName,
+    'customerFirstName': customerFirstName,
+    'customerLastName': customerLastName,
     'customerPhone': customerPhone,
     'customerEmail': customerEmail,
     'plate': plate,

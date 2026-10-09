@@ -63,7 +63,8 @@ async function publishedParking(options: { slug?: string; policy?: string; capac
 }
 
 const traveller = {
-  customerName: 'Camille Martin',
+  customerFirstName: 'Camille',
+  customerLastName: 'Martin',
   customerPhone: '06 12 34 56 78',
   customerEmail: 'Camille.Martin@Example.com',
   plate: 'gk318px',
@@ -137,6 +138,8 @@ describe('réservation sur le site', () => {
       days: 3,
       priceCents: 3499,
       customerName: 'Camille Martin',
+      customerFirstName: 'Camille',
+      customerLastName: 'Martin',
       customerEmail: 'camille.martin@example.com',
       customerPhone: '06 12 34 56 78',
       plate: 'GK-318-PX',
@@ -184,7 +187,8 @@ describe('réservation sur le site', () => {
       parking: 'required',
       arrivalAt: 'required',
       returnAt: 'required',
-      customerName: 'required',
+      customerFirstName: 'required',
+      customerLastName: 'required',
       customerPhone: 'required',
       customerEmail: 'required',
       plate: 'required',
@@ -247,7 +251,11 @@ describe('réservation sur le site', () => {
 
   it('ne donne la dernière place qu’à une seule de deux réservations simultanées', async () => {
     await publishedParking({ capacity: 1 });
-    const results = await Promise.all([book(), book({ customerName: 'Autre voyageur', plate: 'AA111AA' }), book({ plate: 'BB222BB' })]);
+    const results = await Promise.all([
+      book(),
+      book({ customerFirstName: 'Autre', customerLastName: 'Voyageur', plate: 'AA111AA' }),
+      book({ plate: 'BB222BB' }),
+    ]);
     expect(results.map(r => r.status).sort()).toEqual([201, 409, 409]);
     expect(await prisma.reservation.count()).toBe(1);
   });
@@ -292,25 +300,77 @@ describe('réservation sur le site', () => {
 describe('abus et doublons', () => {
   it('n’accepte qu’un nom de personne (ni lien, ni caractère de contrôle) : il figure dans les emails', async () => {
     await publishedParking();
-    for (const customerName of [
-      'Bonjour, votre compte est suspendu, allez sur http://evil.example',
+    const bad = [
+      'Compte suspendu, allez sur http://evil.example',
       'www.evil.example',
       'evil.com',
       'Camille\u0000Martin',
       'Camille\nMartin',
       '<b>Camille</b>',
       '0612345678',
-    ]) {
-      const res = await book({ customerName });
-      expect(res.status).toBe(400);
-      expect(res.body.fields).toEqual({ customerName: 'invalid_name' });
+    ];
+    for (const value of bad) {
+      expect((await book({ customerFirstName: value })).body.fields).toEqual({ customerFirstName: 'invalid_name' });
+      expect((await book({ customerLastName: value })).body.fields).toEqual({ customerLastName: 'invalid_name' });
     }
-    for (const [i, customerName] of ['Jean-Luc O’Neil', 'J. Dupont', "Zoé  d'Arcy", 'Łukasz Żółć'].entries()) {
-      const res = await book({ customerName, plate: `AA${i}11AA`, customerEmail: `n${i}@example.com`, customerPhone: `060000000${i}` });
+    const names: [string, string][] = [
+      ['Jean-Luc', 'O’Neil'],
+      ['J.', 'Dupont'],
+      ['  Zoé ', " d'Arcy  "],
+      ['Łukasz', 'Żółć'],
+      ['Marie  Claire', 'de  La Tour'],
+    ];
+    for (const [i, [customerFirstName, customerLastName]] of names.entries()) {
+      const res = await book({
+        customerFirstName,
+        customerLastName,
+        plate: `AA${i}11AA`,
+        customerEmail: `n${i}@example.com`,
+        customerPhone: `060000000${i}`,
+      });
       expect(res.status).toBe(201);
     }
-    // Spaces are collapsed.
-    expect(await prisma.reservation.count({ where: { customerName: "Zoé d'Arcy" } })).toBe(1);
+    // Trimmed, spaces collapsed; the display name is rebuilt from the two.
+    expect(await prisma.reservation.findFirstOrThrow({ where: { customerName: "Zoé d'Arcy" } })).toMatchObject({
+      customerFirstName: 'Zoé',
+      customerLastName: "d'Arcy",
+    });
+    expect(await prisma.reservation.findFirstOrThrow({ where: { customerName: 'Marie Claire de La Tour' } })).toMatchObject({
+      customerFirstName: 'Marie Claire',
+      customerLastName: 'de La Tour',
+    });
+  });
+
+  it('09/10/2026 : prénom et nom requis, 60 caractères chacun ; un champ vide ou d’espaces est « required »', async () => {
+    await publishedParking();
+    expect((await book({ customerFirstName: '   ' })).body.fields).toEqual({ customerFirstName: 'required' });
+    expect((await book({ customerLastName: '' })).body.fields).toEqual({ customerLastName: 'required' });
+    expect((await book({ customerLastName: undefined })).body.fields).toEqual({ customerLastName: 'required' });
+    expect((await book({ customerFirstName: 'A'.repeat(61) })).body.fields).toEqual({ customerFirstName: 'too_long' });
+    // A single name sent with one of the two fields is not an older app's body: the other field is still required.
+    expect((await book({ customerLastName: undefined, customerName: 'Camille Martin' })).body.fields).toEqual({ customerLastName: 'required' });
+  });
+
+  it('09/10/2026 : une ancienne version de l’app qui n’envoie que customerName réserve encore (nom coupé au premier espace)', async () => {
+    await publishedParking();
+    const legacy = { customerFirstName: undefined, customerLastName: undefined };
+    const res = await book({ ...legacy, customerName: '  Jean-Luc   Dupont Martin ' });
+    expect(res.status).toBe(201);
+    expect(res.body.booking).toMatchObject({
+      customerName: 'Jean-Luc Dupont Martin',
+      customerFirstName: 'Jean-Luc',
+      customerLastName: 'Dupont Martin',
+    });
+    // Its name keeps the same rules.
+    const evil = await book({
+      ...legacy,
+      customerName: 'www.evil.example',
+      plate: 'ZZ999ZZ',
+      customerEmail: 'z@example.com',
+      customerPhone: '0611111111',
+    });
+    expect(evil.body.fields).toEqual({ customerName: 'invalid_name' });
+    expect((await book({ ...legacy, customerName: '' })).body.fields).toEqual({ customerName: 'required' });
   });
 
   it('refuse un deuxième séjour du même véhicule aux mêmes dates', async () => {
@@ -562,7 +622,7 @@ describe('annulation en ligne', () => {
 
 describe('notifications', () => {
   const personal = [
-    traveller.customerName,
+    'Camille Martin',
     'camille.martin@example.com',
     traveller.customerEmail,
     '06 12 34 56 78',
@@ -621,6 +681,9 @@ describe('notifications', () => {
     expect(email.body.htmlContent).toContain(manageUrl);
     expect(email.body.htmlContent).toContain('34,99 €');
     expect(email.body.textContent).toContain('payé en ligne par carte');
+    // 09/10/2026: greeted by the first name.
+    expect(email.body.textContent).toContain('Bonjour Camille,');
+    expect(email.body.htmlContent).toContain('Bonjour Camille, merci');
     expect(email.body.textContent).toContain(manageUrl);
 
     expect(sms.init.headers).toMatchObject({ 'api-key': 'test-brevo-key' });

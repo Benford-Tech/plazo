@@ -1,9 +1,13 @@
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 import { autoZones, ceilingOf, estimate, subtractFromOutline, summarize, unionPolygons, frameFor, withIgnBuildings } from "./estimate";
 import { studyToGeoJSON } from "./export";
 import { fromL93, polygonAreaM2 } from "./projection";
 import { l93Rect } from "./testUtils";
 import { DEFAULT_SETTINGS, type CapacityStudy, type GeoPolygon } from "./types";
+
+// Each case runs the whole layout engine (comb search over every depth and orientation): about 4 s alone, past the default
+// 5 s once the full suite shares the CPU.
+vi.setConfig({ testTimeout: 30_000 });
 
 const outline: GeoPolygon = { type: "Polygon", coordinates: l93Rect(100, 60) };
 const base: CapacityStudy = {

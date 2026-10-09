@@ -10,7 +10,8 @@ import { Service } from './listing';
 export const DEMO_AIRPORT_CODE = 'LYS';
 /** Domain of every demo account: never a real mailbox. */
 export const DEMO_EMAIL_DOMAIN = 'plazo.test';
-export const DEMO_MANAGER_NAME = 'Gérant démo';
+/** The demo managers' first and last name (09/10/2026: every user has both). */
+export const DEMO_MANAGER = { firstName: 'Gérant', lastName: 'Démo' } as const;
 export const DEMO_SLUG_PREFIX = 'demo-';
 
 const pexels = (id: number) => `https://images.pexels.com/photos/${id}/pexels-photo-${id}.jpeg?auto=compress&cs=tinysrgb&w=1200`;
@@ -231,7 +232,8 @@ export interface DemoBooking {
   arrivalTime: string;
   returnTime: string;
   passengers: number;
-  customerName: string;
+  customerFirstName: string;
+  customerLastName: string;
   customerPhone: string;
   customerEmail: string;
   plate: string;
@@ -247,7 +249,8 @@ export const DEMO_BOOKINGS: DemoBooking[] = [
     arrivalTime: '07:30',
     returnTime: '18:45',
     passengers: 2,
-    customerName: 'Camille Martin',
+    customerFirstName: 'Camille',
+    customerLastName: 'Martin',
     customerPhone: '+33 6 00 00 00 01',
     customerEmail: `voyageur-1@${DEMO_EMAIL_DOMAIN}`,
     plate: 'AB-123-CD',
@@ -260,7 +263,8 @@ export const DEMO_BOOKINGS: DemoBooking[] = [
     arrivalTime: '05:50',
     returnTime: '22:10',
     passengers: 4,
-    customerName: 'Julien Bernard',
+    customerFirstName: 'Julien',
+    customerLastName: 'Bernard',
     customerPhone: '+33 6 00 00 00 02',
     customerEmail: `voyageur-2@${DEMO_EMAIL_DOMAIN}`,
     plate: 'EF-456-GH',
@@ -273,7 +277,8 @@ export const DEMO_BOOKINGS: DemoBooking[] = [
     arrivalTime: '14:15',
     returnTime: '11:30',
     passengers: 1,
-    customerName: 'Inès Rousseau',
+    customerFirstName: 'Inès',
+    customerLastName: 'Rousseau',
     customerPhone: '+33 6 00 00 00 03',
     customerEmail: `voyageur-3@${DEMO_EMAIL_DOMAIN}`,
     plate: 'JK-789-LM',

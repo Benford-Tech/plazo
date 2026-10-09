@@ -62,7 +62,8 @@ class _Form extends StatefulWidget {
 class _FormState extends State<_Form> {
   late final _bloc = context.read<ProReservationFormBloc>();
 
-  late final _name = TextEditingController(text: _bloc.state.input.customerName);
+  late final _firstName = TextEditingController(text: _bloc.state.input.customerFirstName);
+  late final _lastName = TextEditingController(text: _bloc.state.input.customerLastName);
   late final _phone = TextEditingController(text: _bloc.state.input.customerPhone);
   late final _email = TextEditingController(text: _bloc.state.input.customerEmail ?? '');
   late final _plate = TextEditingController(text: _bloc.state.input.plate);
@@ -76,7 +77,7 @@ class _FormState extends State<_Form> {
 
   @override
   void dispose() {
-    for (final c in [_name, _phone, _email, _plate, _flight, _detail, _notes, _vehicleModel, _vehicleColour, _customerNote]) {
+    for (final c in [_firstName, _lastName, _phone, _email, _plate, _flight, _detail, _notes, _vehicleModel, _vehicleColour, _customerNote]) {
       c.dispose();
     }
     super.dispose();
@@ -155,12 +156,32 @@ class _FormState extends State<_Form> {
                 onChanged: (v) => _set((x) => x.copyWith(plate: v)),
               ),
               const SizedBox(height: 12),
-              TextField(
-                key: const Key('f-name'),
-                controller: _name,
-                textCapitalization: TextCapitalization.words,
-                decoration: InputDecoration(labelText: 'res.customer'.tr(), errorText: err('customerName')),
-                onChanged: (v) => _set((x) => x.copyWith(customerName: v)),
+              // 09/10/2026: the traveller's first and last name apart (the server stores "Prénom Nom").
+              Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Expanded(
+                    child: TextField(
+                      key: const Key('f-first-name'),
+                      controller: _firstName,
+                      textCapitalization: TextCapitalization.words,
+                      autofillHints: const [AutofillHints.givenName],
+                      decoration: InputDecoration(labelText: 'res.first_name'.tr(), errorText: err('customerFirstName') ?? err('customerName'), errorMaxLines: 2),
+                      onChanged: (v) => _set((x) => x.copyWith(customerFirstName: v)),
+                    ),
+                  ),
+                  const SizedBox(width: 10),
+                  Expanded(
+                    child: TextField(
+                      key: const Key('f-last-name'),
+                      controller: _lastName,
+                      textCapitalization: TextCapitalization.words,
+                      autofillHints: const [AutofillHints.familyName],
+                      decoration: InputDecoration(labelText: 'res.last_name'.tr(), errorText: err('customerLastName'), errorMaxLines: 2),
+                      onChanged: (v) => _set((x) => x.copyWith(customerLastName: v)),
+                    ),
+                  ),
+                ],
               ),
               const SizedBox(height: 12),
               TextField(

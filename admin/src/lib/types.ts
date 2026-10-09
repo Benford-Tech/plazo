@@ -201,6 +201,9 @@ export interface ArrivalSignal {
   kind: ArrivalKind;
   state: ArrivalState;
   customerName: string;
+  /** 09/10/2026: the first and last name apart, when the server sends them (the banner then matches the push). */
+  customerFirstName?: string | null;
+  customerLastName?: string | null;
   plate: string;
   passengers: number;
   returnFlight: string | null;

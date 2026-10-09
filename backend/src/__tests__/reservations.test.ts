@@ -11,7 +11,8 @@ const booking = (overrides: Record<string, unknown> = {}) => ({
   arrivalAt: '2026-10-04T06:30',
   returnAt: '2026-10-07T15:05',
   passengers: 3,
-  customerName: 'Mme Laurent',
+  customerFirstName: 'Claire',
+  customerLastName: 'Laurent',
   customerPhone: '06 12 34 56 78',
   plate: 'gk318px',
   returnFlight: 'to3627',
@@ -193,7 +194,7 @@ describe('planning et recherche', () => {
     const b = await setupOperator('B');
     const created = (await api().post('/api/internal/reservations').set(auth(a.token)).send(booking())).body.data;
     await api().post('/api/internal/reservations').set(auth(b.token)).send(booking());
-    for (const q of ['gk 318', 'GK-318-PX', 'laurent', created.reference]) {
+    for (const q of ['gk 318', 'GK-318-PX', 'laurent', 'claire laurent', created.reference]) {
       const res = await api()
         .get(`/api/internal/reservations?q=${encodeURIComponent(q)}`)
         .set(auth(a.token));
@@ -201,5 +202,82 @@ describe('planning et recherche', () => {
     }
     expect((await api().get(`/api/internal/reservations/${created.id}`).set(auth(b.token))).status).toBe(404);
     expect((await api().patch(`/api/internal/reservations/${created.id}`).set(auth(b.token)).send({ passengers: 1 })).status).toBe(404);
+  });
+});
+
+describe('prénom et nom du voyageur (09/10/2026)', () => {
+  const create = (token: string, body: Record<string, unknown>) => api().post('/api/internal/reservations').set(auth(token)).send(body);
+
+  it('enregistre le prénom et le nom à part, le nom affiché « Prénom Nom » recalculé par le serveur', async () => {
+    const { token } = await setupOperator();
+    const res = await create(token, booking({ customerFirstName: '  Marie  Claire ', customerLastName: ' de  La Tour ' }));
+    expect(res.status).toBe(201);
+    expect(res.body.data).toMatchObject({
+      customerFirstName: 'Marie Claire',
+      customerLastName: 'de La Tour',
+      customerName: 'Marie Claire de La Tour',
+    });
+    // The sheet, the list and the planning carry the three.
+    const sheet = await api().get(`/api/internal/reservations/${res.body.data.id}`).set(auth(token));
+    expect(sheet.body).toMatchObject({ customerFirstName: 'Marie Claire', customerLastName: 'de La Tour', customerName: 'Marie Claire de La Tour' });
+    const list = await api().get('/api/internal/reservations?q=tour').set(auth(token));
+    expect(list.body.docs[0]).toMatchObject({ customerFirstName: 'Marie Claire', customerLastName: 'de La Tour' });
+    const planning = await api().get('/api/internal/planning?date=2026-10-04').set(auth(token));
+    expect(planning.body.arrivals[0]).toMatchObject({ customerFirstName: 'Marie Claire', customerLastName: 'de La Tour' });
+  });
+
+  it('exige les deux, sans espaces seuls, 60 caractères chacun', async () => {
+    const { token } = await setupOperator();
+    expect((await create(token, booking({ customerFirstName: undefined, customerLastName: undefined }))).body.fields).toMatchObject({
+      customerFirstName: 'required',
+      customerLastName: 'required',
+    });
+    expect((await create(token, booking({ customerFirstName: '   ' }))).body.fields).toEqual({ customerFirstName: 'required' });
+    expect((await create(token, booking({ customerLastName: '' }))).body.fields).toEqual({ customerLastName: 'required' });
+    expect((await create(token, booking({ customerLastName: 'L'.repeat(61) }))).body.fields).toEqual({ customerLastName: 'too_long' });
+    expect(await prisma.reservation.count()).toBe(0);
+  });
+
+  it('accepte encore le seul customerName d’une ancienne version de l’app, coupé au premier espace', async () => {
+    const { token } = await setupOperator();
+    const legacy = booking({ customerFirstName: undefined, customerLastName: undefined, customerName: ' Jean   Dupont Martin ' });
+    const res = await create(token, legacy);
+    expect(res.status).toBe(201);
+    expect(res.body.data).toMatchObject({ customerFirstName: 'Jean', customerLastName: 'Dupont Martin', customerName: 'Jean Dupont Martin' });
+    const blank = await create(token, booking({ customerFirstName: undefined, customerLastName: undefined, customerName: '  ' }));
+    expect(blank.body.fields).toEqual({ customerName: 'required' });
+  });
+
+  it('modifie le prénom ou le nom (fusionné avec l’autre), refuse un vide, découpe un ancien customerName ; tracé', async () => {
+    const { token } = await setupOperator();
+    const id = (await create(token, booking())).body.data.id;
+    const patch = (body: Record<string, unknown>) => api().patch(`/api/internal/reservations/${id}`).set(auth(token)).send(body);
+
+    const first = await patch({ customerFirstName: ' Clara ' });
+    expect(first.status).toBe(200);
+    expect(first.body.data).toMatchObject({ customerFirstName: 'Clara', customerLastName: 'Laurent', customerName: 'Clara Laurent' });
+    const both = await patch({ customerFirstName: 'Anne', customerLastName: 'Martin-Laurent' });
+    expect(both.body.data).toMatchObject({ customerName: 'Anne Martin-Laurent' });
+
+    expect((await patch({ customerLastName: '  ' })).body.fields).toEqual({ customerLastName: 'required' });
+    expect((await patch({ customerFirstName: null })).body.fields).toEqual({ customerFirstName: 'required' });
+    expect((await patch({ customerFirstName: 'A'.repeat(61) })).body.fields).toEqual({ customerFirstName: 'too_long' });
+
+    const legacy = await patch({ customerName: 'Paul  Moreau' });
+    expect(legacy.body.data).toMatchObject({ customerFirstName: 'Paul', customerLastName: 'Moreau', customerName: 'Paul Moreau' });
+    // Other fields leave the name alone.
+    expect((await patch({ passengers: 2 })).body.data).toMatchObject({ customerName: 'Paul Moreau', customerFirstName: 'Paul' });
+    // An older app sends the unchanged display name back with each edit: the stored split stays.
+    await patch({ customerFirstName: 'Marie Claire', customerLastName: 'Dupont' });
+    expect((await patch({ customerName: 'Marie Claire Dupont', passengers: 3 })).body.data).toMatchObject({
+      customerFirstName: 'Marie Claire',
+      customerLastName: 'Dupont',
+    });
+
+    const audits = await prisma.auditLog.findMany({ where: { action: 'reservation.updated', entityId: id }, orderBy: { createdAt: 'asc' } });
+    expect(audits[0].details).toMatchObject({
+      customerFirstName: { from: 'Claire', to: 'Clara' },
+      customerName: { from: 'Claire Laurent', to: 'Clara Laurent' },
+    });
   });
 });

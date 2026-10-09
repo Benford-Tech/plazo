@@ -14,7 +14,7 @@ abstract class SettingsRepository {
     required String role,
     required String password,
   });
-  Future<Either<Failure, TeamMemberModel>> updateStaff(String id, {String? role, bool? isActive});
+  Future<Either<Failure, TeamMemberModel>> updateStaff(String id, {String? role, bool? isActive, String? firstName, String? lastName});
   Future<Either<Failure, void>> resetPassword(String id, String password);
   Future<Either<Failure, void>> changePassword(String currentPassword, String newPassword);
   Future<Either<Failure, ParkingSettingsModel>> parking();
@@ -45,8 +45,8 @@ class SettingsRepositoryImpl implements SettingsRepository {
   }) => _source.createStaff(firstName: firstName, lastName: lastName, email: email, phone: phone, role: role, password: password).makeRequest();
 
   @override
-  Future<Either<Failure, TeamMemberModel>> updateStaff(String id, {String? role, bool? isActive}) =>
-      _source.updateStaff(id, role: role, isActive: isActive).makeRequest();
+  Future<Either<Failure, TeamMemberModel>> updateStaff(String id, {String? role, bool? isActive, String? firstName, String? lastName}) =>
+      _source.updateStaff(id, role: role, isActive: isActive, firstName: firstName, lastName: lastName).makeRequest();
 
   @override
   Future<Either<Failure, void>> resetPassword(String id, String password) => _source.resetPassword(id, password).makeRequest();

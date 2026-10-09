@@ -64,7 +64,7 @@ class BookingFormView extends StatefulWidget {
 }
 
 class _BookingFormViewState extends State<BookingFormView> {
-  late final TextEditingController _name, _phone, _email, _plate, _flight, _outbound, _vehicleModel, _vehicleColour, _note;
+  late final TextEditingController _firstName, _lastName, _phone, _email, _plate, _flight, _outbound, _vehicleModel, _vehicleColour, _note;
   int _passengers = 1;
   bool _terms = false;
 
@@ -76,7 +76,8 @@ class _BookingFormViewState extends State<BookingFormView> {
   void initState() {
     super.initState();
     final d = context.read<BookingFormBloc>().state.draft ?? const BookingDraft();
-    _name = TextEditingController(text: d.customerName);
+    _firstName = TextEditingController(text: d.customerFirstName);
+    _lastName = TextEditingController(text: d.customerLastName);
     _phone = TextEditingController(text: d.customerPhone);
     _email = TextEditingController(text: d.customerEmail);
     _plate = TextEditingController(text: d.plate);
@@ -91,7 +92,7 @@ class _BookingFormViewState extends State<BookingFormView> {
 
   @override
   void dispose() {
-    for (final c in [_name, _phone, _email, _plate, _flight, _outbound, _vehicleModel, _vehicleColour, _note]) {
+    for (final c in [_firstName, _lastName, _phone, _email, _plate, _flight, _outbound, _vehicleModel, _vehicleColour, _note]) {
       c.dispose();
     }
     _scroll.dispose();
@@ -104,7 +105,8 @@ class _BookingFormViewState extends State<BookingFormView> {
     context.read<BookingFormBloc>().add(
       BookingFormSubmitted(
         BookingDraft(
-          customerName: _name.text,
+          customerFirstName: _firstName.text,
+          customerLastName: _lastName.text,
           customerPhone: _phone.text,
           customerEmail: _email.text,
           plate: _plate.text,
@@ -162,14 +164,37 @@ class _BookingFormViewState extends State<BookingFormView> {
                       const SizedBox(height: 16),
                       Semantics(header: true, child: Text('book.your_details'.tr(), style: AppText.title(size: 21))),
                       const SizedBox(height: 12),
-                      _field(
-                        key: const Key('field-name'),
-                        field: 'customerName',
-                        controller: _name,
-                        label: 'book.name'.tr(),
-                        error: err('customerName'),
-                        autofill: AutofillHints.name,
-                        capitalization: TextCapitalization.words,
+                      // 09/10/2026: first and last name apart, side by side as on the site.
+                      Row(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Expanded(
+                            child: _field(
+                              key: const Key('field-first-name'),
+                              field: 'customerFirstName',
+                              controller: _firstName,
+                              label: 'book.first_name'.tr(),
+                              // An older server answers on the single name.
+                              error: err('customerFirstName') ?? (_edited.contains('customerFirstName') ? null : err('customerName')),
+                              autofill: AutofillHints.givenName,
+                              capitalization: TextCapitalization.words,
+                              maxLength: 60,
+                            ),
+                          ),
+                          const SizedBox(width: 10),
+                          Expanded(
+                            child: _field(
+                              key: const Key('field-last-name'),
+                              field: 'customerLastName',
+                              controller: _lastName,
+                              label: 'book.last_name'.tr(),
+                              error: err('customerLastName'),
+                              autofill: AutofillHints.familyName,
+                              capitalization: TextCapitalization.words,
+                              maxLength: 60,
+                            ),
+                          ),
+                        ],
                       ),
                       _field(
                         key: const Key('field-phone'),

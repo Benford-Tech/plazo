@@ -132,6 +132,29 @@ describe("ReservationForm", () => {
     expect(updateReservation.mock.calls[0][1]).not.toHaveProperty("customerName");
   });
 
+  it("modifie une réservation au nom d'un seul mot sans exiger de nom ni renvoyer le nom", async () => {
+    updateReservation.mockResolvedValue({ data: { id: "r9" } });
+    const onSaved = renderForm(vi.fn(), { reservation: booked({ customerFirstName: "Dupont", customerLastName: "", customerName: "Dupont" }) });
+    expect(screen.getByLabelText("Nom")).toHaveValue("");
+    expect(screen.getByLabelText("Nom")).not.toBeRequired();
+    await userEvent.type(screen.getByLabelText("Vol retour"), "TO 3627");
+    await userEvent.click(screen.getByRole("button", { name: "Enregistrer" }));
+    await waitFor(() => expect(onSaved).toHaveBeenCalled());
+    const input = updateReservation.mock.calls[0][1];
+    expect(input).toMatchObject({ returnFlight: "TO 3627" });
+    expect(input).not.toHaveProperty("customerFirstName");
+    expect(input).not.toHaveProperty("customerLastName");
+    expect(input).not.toHaveProperty("customerName");
+  });
+
+  it("exige le prénom et le nom dès que l'un des deux change", async () => {
+    renderForm(vi.fn(), { reservation: booked({ customerFirstName: "Dupont", customerLastName: "", customerName: "Dupont" }) });
+    await userEvent.clear(screen.getByLabelText("Prénom"));
+    await userEvent.type(screen.getByLabelText("Prénom"), "Jean");
+    expect(screen.getByLabelText("Prénom")).toBeRequired();
+    expect(screen.getByLabelText("Nom")).toBeRequired();
+  });
+
   it("coupe le nom affiché d'une ancienne réservation sans prénom ni nom", () => {
     renderForm(vi.fn(), { reservation: booked({ customerName: "Jean de La Tour", customerFirstName: "", customerLastName: "" }) });
     expect(screen.getByLabelText("Prénom")).toHaveValue("Jean");

@@ -9,6 +9,9 @@ export interface ArrivalPushInput {
   event: ArrivalPushEvent;
   kind: ArrivalKind;
   customerName: string;
+  /** 09/10/2026: the stored first and last name, for "C. Martin" (missing: split from customerName). */
+  customerFirstName?: string | null;
+  customerLastName?: string | null;
   plate: string;
   parkingName: string;
   etaMinutes: number | null;
@@ -29,7 +32,7 @@ export function arrivalPush(input: ArrivalPushInput): PushMessage {
 }
 
 function arrivalPushBase(input: ArrivalPushInput): PushMessage {
-  const who = shortName(input.customerName);
+  const who = shortName(input.customerName, { firstName: input.customerFirstName, lastName: input.customerLastName });
   const eta = input.etaMinutes;
   const isReturn = input.kind === 'return';
   const place = input.meetingLabel || (isReturn ? 'point de rendez-vous' : input.parkingName);

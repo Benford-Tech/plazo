@@ -58,17 +58,27 @@ abstract class BookingFormState with _$BookingFormState {
   bool get unavailable => const ['overbooked', 'no_price', 'not_found'].contains(errorCode);
 }
 
+final _personName = RegExp(r"^[\p{L}\p{M}][\p{L}\p{M} .'’-]*$", unicode: true);
+final _domainLike = RegExp(r'\.\p{L}{2,}', unicode: true);
+
+/// A first or a last name (PERSON_NAME_RE and NoDomainLike on the API): letters, spaces, apostrophes, hyphens and
+/// periods, 60 characters at most, never a web address.
+String? _nameError(String value) {
+  final name = value.trim();
+  if (name.isEmpty) return 'required';
+  if (name.length > 60) return 'too_long';
+  if (!_personName.hasMatch(name) || _domainLike.hasMatch(name)) return 'invalid_name';
+  return null;
+}
+
 /// Same checks as the API's (CreatePublicBookingDto), so that obvious mistakes are shown at once;
 /// the API checks everything again and its field codes are shown the same way.
 Map<String, String> validateBookingDraft(BookingDraft d) {
   final errors = <String, String>{};
-  final name = d.customerName.trim();
-  if (name.isEmpty) {
-    errors['customerName'] = 'required';
-  } else if (name.length > 120) {
-    errors['customerName'] = 'too_long';
-  } else if (!RegExp(r"^[\p{L}\p{M}][\p{L}\p{M} .'’-]*$", unicode: true).hasMatch(name) || RegExp(r'\.\p{L}{2,}', unicode: true).hasMatch(name)) {
-    errors['customerName'] = 'invalid_name';
+  // 09/10/2026: first and last name apart, each checked as the API does.
+  for (final (field, value) in [('customerFirstName', d.customerFirstName), ('customerLastName', d.customerLastName)]) {
+    final error = _nameError(value);
+    if (error != null) errors[field] = error;
   }
   final phone = d.customerPhone.trim();
   if (phone.isEmpty) {
@@ -149,7 +159,8 @@ class BookingFormBloc extends Bloc<BookingFormEvent, BookingFormState> {
         parking: state.parking,
         arrivalAt: state.arrivalAt,
         returnAt: state.returnAt,
-        customerName: draft.customerName.trim(),
+        customerFirstName: draft.customerFirstName.trim(),
+        customerLastName: draft.customerLastName.trim(),
         customerPhone: draft.customerPhone.trim(),
         customerEmail: draft.customerEmail.trim(),
         plate: formatPlate(draft.plate),

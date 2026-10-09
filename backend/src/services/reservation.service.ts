@@ -11,6 +11,7 @@ import { ValidationException } from '@/middlewares/validation.middleware';
 import { HttpException } from '@/utils/httpException';
 import { logger } from '@/utils/logger';
 import { toPublicBooking, WITH_LISTING } from '@/domain/booking-view';
+import { cleanNamePart, CustomerNames, customerNamesOf, importedNames } from '@/domain/customer-name';
 import { FileService } from './file.service';
 import { AuditService } from './audit.service';
 import { CapacityService, NightLoad } from './capacity.service';
@@ -130,7 +131,7 @@ export class ReservationService {
             channelDetail: data.channelDetail?.trim() || null,
             ...stay,
             passengers: data.passengers,
-            customerName: data.customerName.trim(),
+            ...customerNamesOf(data),
             customerPhone: data.customerPhone.trim(),
             customerEmail: data.customerEmail?.trim().toLowerCase() || null,
             plate: formatPlate(data.plate),
@@ -204,7 +205,7 @@ export class ReservationService {
           channelDetail: parsed.provider,
           ...stay,
           passengers: parsed.passengers ?? 1,
-          customerName: parsed.customerName!.trim(),
+          ...importedNames(parsed),
           customerPhone: parsed.customerPhone!.trim(),
           customerEmail: parsed.customerEmail?.trim().toLowerCase() || null,
           plate: formatPlate(parsed.plate!),
@@ -304,6 +305,7 @@ export class ReservationService {
         : { arrivalAt: before.arrivalAt, returnAt: before.returnAt };
       const full = datesChanged ? await this.checkCapacity(tx, actor, parking, stay, data.force, id) : [];
       const stopId = data.stopId === undefined ? undefined : await this.checkStop(parking.id, data.stopId);
+      const names = this.namesForUpdate(before, data);
 
       const after = await tx.reservation.update({
         where: { id },
@@ -312,7 +314,7 @@ export class ReservationService {
           channelDetail: data.channelDetail === undefined ? undefined : data.channelDetail?.trim() || null,
           ...stay,
           passengers: data.passengers,
-          customerName: data.customerName?.trim(),
+          ...names,
           customerPhone: data.customerPhone?.trim(),
           customerEmail: data.customerEmail === undefined ? undefined : data.customerEmail?.trim().toLowerCase() || null,
           plate: data.plate === undefined ? undefined : formatPlate(data.plate),
@@ -342,6 +344,30 @@ export class ReservationService {
       await this.audit.record(actor, { action: 'reservation.updated', entityType: 'reservation', entityId: id, details: changes as any }, tx);
       return after;
     });
+  }
+
+  /**
+   * 09/10/2026: a first or a last name (or both) is merged with the stored one and the display name rebuilt; an older
+   * app's single `customerName` is split. A blank one is refused (null gets past the PATCH's validation).
+   */
+  private namesForUpdate(before: Reservation, data: UpdateReservationDto): CustomerNames | Record<string, never> {
+    if (data.customerFirstName !== undefined || data.customerLastName !== undefined) {
+      for (const field of ['customerFirstName', 'customerLastName'] as const) {
+        if (data[field] !== undefined && !cleanNamePart(data[field])) throw fieldError(field, 'required');
+      }
+      return customerNamesOf({
+        customerFirstName: data.customerFirstName ?? before.customerFirstName,
+        customerLastName: data.customerLastName ?? before.customerLastName,
+        customerName: before.customerName,
+      });
+    }
+    if (data.customerName !== undefined) {
+      if (!cleanNamePart(data.customerName)) throw fieldError('customerName', 'required');
+      // An older app sends the whole form back: the same name keeps its stored split ("Marie Claire" / "Dupont").
+      if (cleanNamePart(data.customerName) === cleanNamePart(before.customerName)) return {};
+      return customerNamesOf({ customerName: data.customerName });
+    }
+    return {};
   }
 
   public async changeStatus(actor: AuthenticatedStaff, id: string, data: ChangeStatusDto) {

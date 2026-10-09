@@ -146,6 +146,11 @@ export function ReservationForm({
   const [formError, setFormError] = useState<string | null>(null);
   const [force, setForce] = useState(false);
   const t = fr.reservation;
+  // A one-word name (older row, comparator email) is stored with an empty last name: an edit that leaves the name alone
+  // must not require one, so the names are sent, and required, only on creation or once changed.
+  const initialName = reservation ? nameParts(reservation.customerFirstName, reservation.customerLastName, reservation.customerName) : null;
+  const nameRequired =
+    !initialName || form.customerFirstName.trim() !== initialName.firstName || form.customerLastName.trim() !== initialName.lastName;
 
   const arrivalAt = form.arrivalDate && form.arrivalTime ? `${form.arrivalDate}T${form.arrivalTime}` : "";
   const returnAt = form.returnDate && form.returnTime ? `${form.returnDate}T${form.returnTime}` : "";
@@ -171,14 +176,13 @@ export function ReservationForm({
 
   const save = useMutation({
     mutationFn: () => {
-      const input: ReservationInput = {
+      const names = { customerFirstName: form.customerFirstName.trim(), customerLastName: form.customerLastName.trim() };
+      const input: Omit<ReservationInput, "customerFirstName" | "customerLastName"> = {
         channel: form.channel,
         channelDetail: form.channel === "aggregator" ? form.channelDetail || null : null,
         arrivalAt,
         returnAt,
         passengers: Number(form.passengers),
-        customerFirstName: form.customerFirstName.trim(),
-        customerLastName: form.customerLastName.trim(),
         customerPhone: form.customerPhone,
         customerEmail: form.customerEmail.trim() || null,
         plate: form.plate,
@@ -193,7 +197,9 @@ export function ReservationForm({
         ...(!reservation && prefill?.priceCents !== undefined ? { priceCents: prefill.priceCents } : {}),
         force: force || undefined,
       };
-      return reservation ? adminApi.updateReservation(reservation.id, input) : adminApi.createReservation(input);
+      return reservation
+        ? adminApi.updateReservation(reservation.id, { ...input, ...(nameRequired ? names : {}) })
+        : adminApi.createReservation({ ...input, ...names });
     },
     onSuccess: ({ data }) => onSaved(data),
     onError: (err: Error) => {
@@ -274,7 +280,7 @@ export function ReservationForm({
         <Field id="customerFirstName" label={t.customerFirstName} error={fieldErrors.customerFirstName}>
           <input
             id="customerFirstName"
-            required
+            required={nameRequired}
             maxLength={60}
             autoComplete="off"
             value={form.customerFirstName}
@@ -286,7 +292,7 @@ export function ReservationForm({
         <Field id="customerLastName" label={t.customerLastName} error={fieldErrors.customerLastName}>
           <input
             id="customerLastName"
-            required
+            required={nameRequired}
             maxLength={60}
             autoComplete="off"
             value={form.customerLastName}

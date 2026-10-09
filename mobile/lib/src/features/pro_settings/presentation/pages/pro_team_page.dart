@@ -5,6 +5,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 
 import '../../../../core/enums/view_state.dart';
 import '../../../../core/helpers/formatters.dart';
+import '../../../../core/helpers/names.dart';
 import '../../../../core/helpers/plate.dart';
 import '../../../../core/utils/error_message_handler.dart';
 import '../../../../di/locator.dart';
@@ -79,7 +80,7 @@ class ProTeamPage extends StatelessWidget implements AutoRouteWrapper {
   }
 
   Future<void> _showNewMember(BuildContext context) {
-    final bloc = context.read<ProTeamBloc>();
+    final bloc = context.read<ProTeamBloc>()..add(const ProTeamNoticeShown());
     return showModalBottomSheet<void>(
       context: context,
       isScrollControlled: true,
@@ -116,7 +117,7 @@ class ProTeamPage extends StatelessWidget implements AutoRouteWrapper {
   }
 }
 
-class _MemberTile extends StatelessWidget {
+class _MemberTile extends StatefulWidget {
   const _MemberTile({required this.member, required this.isMe, required this.busy, required this.onRole, required this.onActive, required this.onReset});
   final TeamMemberModel member;
   final bool isMe;
@@ -126,8 +127,18 @@ class _MemberTile extends StatelessWidget {
   final VoidCallback onReset;
 
   @override
+  State<_MemberTile> createState() => _MemberTileState();
+}
+
+class _MemberTileState extends State<_MemberTile> {
+  /// « Modifier le nom » (09/10/2026): the inline form is open.
+  bool _renaming = false;
+
+  @override
   Widget build(BuildContext context) {
-    final m = member;
+    final m = widget.member;
+    final isMe = widget.isMe;
+    final busy = widget.busy;
     return Container(
       key: Key('member-${m.id}'),
       margin: const EdgeInsets.only(bottom: 10),
@@ -172,7 +183,7 @@ class _MemberTile extends StatelessWidget {
                     contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
                   ),
                   items: [for (final r in _roles) DropdownMenuItem(value: r, child: Text('pro_more.role.$r'.tr()))],
-                  onChanged: busy || isMe ? null : (v) => v == null || v == m.role ? null : onRole(v),
+                  onChanged: busy || isMe ? null : (v) => v == null || v == m.role ? null : widget.onRole(v),
                 ),
               ),
               const SizedBox(width: 8),
@@ -180,13 +191,140 @@ class _MemberTile extends StatelessWidget {
                 key: Key('reset-${m.id}'),
                 tooltip: 'team.reset_password'.tr(),
                 icon: const Icon(Icons.key_rounded, color: AppColors.accent),
-                onPressed: busy ? null : onReset,
+                onPressed: busy ? null : widget.onReset,
               ),
-              if (!isMe) Switch(key: Key('active-${m.id}'), value: m.isActive, activeTrackColor: AppColors.accent, onChanged: busy ? null : onActive),
+              if (!isMe) Switch(key: Key('active-${m.id}'), value: m.isActive, activeTrackColor: AppColors.accent, onChanged: busy ? null : widget.onActive),
             ],
           ),
+          if (_renaming)
+            _RenameForm(member: m, onDone: () => setState(() => _renaming = false))
+          else
+            Align(
+              alignment: Alignment.centerLeft,
+              child: TextButton.icon(
+                key: Key('rename-${m.id}'),
+                style: TextButton.styleFrom(foregroundColor: AppColors.accent, padding: const EdgeInsets.symmetric(horizontal: 4)),
+                icon: const Icon(Icons.edit_rounded, size: 18),
+                label: Text('team.rename'.tr()),
+                onPressed: busy ? null : () => setState(() => _renaming = true),
+              ),
+            ),
         ],
       ),
+    );
+  }
+}
+
+/// « Modifier le nom » (09/10/2026): a manager corrects a member's first and last name, inline.
+class _RenameForm extends StatefulWidget {
+  const _RenameForm({required this.member, required this.onDone});
+  final TeamMemberModel member;
+  final VoidCallback onDone;
+
+  @override
+  State<_RenameForm> createState() => _RenameFormState();
+}
+
+class _RenameFormState extends State<_RenameForm> {
+  late final TextEditingController _firstName, _lastName;
+
+  /// The names this form sent, null before: the bloc's field errors are then its own, and it closes once the member
+  /// carries them (another member's update does not close it).
+  NameParts? _sent;
+
+  @override
+  void initState() {
+    super.initState();
+    final m = widget.member;
+    final name = nameParts(m.firstName, m.lastName, m.name);
+    _firstName = TextEditingController(text: name.firstName);
+    _lastName = TextEditingController(text: name.lastName);
+  }
+
+  @override
+  void dispose() {
+    _firstName.dispose();
+    _lastName.dispose();
+    super.dispose();
+  }
+
+  void _cancel() {
+    if (_sent != null) context.read<ProTeamBloc>().add(const ProTeamNoticeShown());
+    widget.onDone();
+  }
+
+  static String _clean(String v) => v.trim().replaceAll(RegExp(r'\s+'), ' ');
+
+  bool _saved(ProTeamState state) {
+    final sent = _sent;
+    final m = state.members.where((x) => x.id == widget.member.id).firstOrNull;
+    return sent != null && m != null && m.firstName == _clean(sent.firstName) && m.lastName == _clean(sent.lastName);
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final id = widget.member.id;
+    return BlocConsumer<ProTeamBloc, ProTeamState>(
+      listenWhen: (a, b) => _sent != null && a.actionState != b.actionState,
+      listener: (context, state) {
+        if (state.actionState.isSuccess && _saved(state)) widget.onDone();
+      },
+      builder: (context, state) {
+        String? err(String f) => _sent == null || state.fieldErrors[f] == null ? null : translateErrorCode(state.fieldErrors[f]);
+        final busy = state.actionState.isProcessing;
+        return Padding(
+          padding: const EdgeInsets.only(top: 10),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              Text('team.rename_title'.tr(args: [widget.member.name]), style: AppText.strong(size: 14)),
+              const SizedBox(height: 8),
+              TextField(
+                key: Key('rename-first-$id'),
+                controller: _firstName,
+                textCapitalization: TextCapitalization.words,
+                maxLength: 60,
+                decoration: InputDecoration(labelText: 'team.first_name'.tr(), errorText: err('firstName'), counterText: '', isDense: true),
+              ),
+              const SizedBox(height: 8),
+              TextField(
+                key: Key('rename-last-$id'),
+                controller: _lastName,
+                textCapitalization: TextCapitalization.words,
+                maxLength: 60,
+                decoration: InputDecoration(labelText: 'team.last_name'.tr(), errorText: err('lastName'), counterText: '', isDense: true),
+              ),
+              const SizedBox(height: 10),
+              Row(
+                children: [
+                  Expanded(
+                    child: GradientButton(
+                      key: Key('rename-save-$id'),
+                      label: 'team.save'.tr(),
+                      busy: busy && _sent != null,
+                      onPressed: busy
+                          ? null
+                          : () {
+                              final names = (firstName: _firstName.text.trim(), lastName: _lastName.text.trim());
+                              setState(() => _sent = names);
+                              context.read<ProTeamBloc>().add(ProTeamMemberUpdated(UpdateStaffParams(id: id, firstName: names.firstName, lastName: names.lastName)));
+                            },
+                    ),
+                  ),
+                  const SizedBox(width: 10),
+                  Expanded(
+                    child: OutlinedButton(
+                      key: Key('rename-cancel-$id'),
+                      onPressed: busy ? null : _cancel,
+                      child: Text('team.cancel'.tr()),
+                    ),
+                  ),
+                ],
+              ),
+            ],
+          ),
+        );
+      },
     );
   }
 }

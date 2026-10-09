@@ -34,7 +34,14 @@ describe('données de démonstration', () => {
       expect(op.parkings[0].pricingTiers).toHaveLength(15);
       expect(op.parkings[0].returnMeetingLabel).toBeTruthy();
       expect(op.staff).toHaveLength(1);
-      expect(op.staff[0]).toMatchObject({ role: 'manager', email: demoManagerEmail(op.slug) });
+      // 09/10/2026: every user has a first and a last name, the demo managers too.
+      expect(op.staff[0]).toMatchObject({
+        role: 'manager',
+        email: demoManagerEmail(op.slug),
+        firstName: 'Gérant',
+        lastName: 'Démo',
+        name: 'Gérant Démo',
+      });
       expect(op.vehicles).toHaveLength(1);
     }
     // Positions written in PostGIS (parking and meeting point).
@@ -50,6 +57,7 @@ describe('données de démonstration', () => {
     expect(bookings.map(b => b.reference)).toEqual(DEMO_BOOKINGS.map(b => b.reference));
     expect(bookings[0]).toMatchObject({ channel: 'plazo', status: 'upcoming', paymentStatus: null, returnFlight: 'TO 3627', plateKey: 'AB123CD' });
     expect(bookings[0].priceCents).toBeGreaterThan(0);
+    expect(bookings[0]).toMatchObject({ customerFirstName: 'Camille', customerLastName: 'Martin', customerName: 'Camille Martin' });
     expect(bookings[2].arrivalAt.getTime()).toBeGreaterThan(Date.now() + 9 * 86400000);
 
     // The manager can log in with the seed password.
@@ -64,6 +72,15 @@ describe('données de démonstration', () => {
       new Map((await prisma.operator.findMany({ select: { slug: true, inboundSlug: true } })).map(o => [o.slug, o.inboundSlug]));
     const slugsBefore = await inboundSlugs();
     await prisma.operator.updateMany({ where: { slug: DEMO_OPERATORS[0].slug }, data: { inboundSlug: null } });
+    // A demo manager created without names (06/10 → 09/10/2026) gets them back; one renamed since keeps its name.
+    await prisma.staff.updateMany({
+      where: { email: demoManagerEmail(DEMO_OPERATORS[0].slug) },
+      data: { firstName: '', lastName: '', name: 'Gérant démo' },
+    });
+    await prisma.staff.updateMany({
+      where: { email: demoManagerEmail(DEMO_OPERATORS[1].slug) },
+      data: { firstName: 'Ana', lastName: 'Lima', name: 'Ana Lima' },
+    });
     const second = await seed().apply('un-autre-mot-de-passe');
     expect(second).toEqual({ operatorsCreated: 0, operatorsUpdated: 5, bookingsCreated: 0, bookingsUpdated: 3 });
     const slugsAfter = await inboundSlugs();
@@ -72,6 +89,12 @@ describe('données de démonstration', () => {
     expect(slugsAfter.get(DEMO_OPERATORS[0].slug)).not.toBe(slugsBefore.get(DEMO_OPERATORS[0].slug));
     expect(await prisma.operator.count()).toBe(5);
     expect(await prisma.staff.count()).toBe(5);
+    expect(await prisma.staff.findUniqueOrThrow({ where: { email: demoManagerEmail(DEMO_OPERATORS[0].slug) } })).toMatchObject({
+      firstName: 'Gérant',
+      lastName: 'Démo',
+      name: 'Gérant Démo',
+    });
+    expect(await prisma.staff.findUniqueOrThrow({ where: { email: demoManagerEmail(DEMO_OPERATORS[1].slug) } })).toMatchObject({ name: 'Ana Lima' });
     expect(await prisma.reservation.count()).toBe(3);
     expect(await prisma.pricingTier.count()).toBe(75);
     expect(await prisma.shuttleVehicle.count()).toBe(5);

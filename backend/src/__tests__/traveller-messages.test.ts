@@ -111,7 +111,8 @@ async function setup() {
       parking: `parking-${op.parking.id}`,
       arrivalAt: '2027-03-01T06:30',
       returnAt: '2027-03-03T15:05',
-      customerName: 'Camille Martin',
+      customerFirstName: 'Camille',
+      customerLastName: 'Martin',
       customerPhone: '06 12 34 56 78',
       customerEmail: `camille${op.parking.id}@example.com`,
       plate: 'ab123cd',
@@ -161,6 +162,9 @@ describe('le fil de messages du voyageur (B)', () => {
     const email = calls(BREVO_EMAIL).find(e => e.tags?.[0] === 'booking_reminder');
     expect(email.subject).toBe('Demain : votre parking Parking LYS, 06:30');
     expect(email.textContent).toContain('Téléphone : 04 72 00 00 00');
+    // 09/10/2026: the stored first name, in the title and the text alike.
+    expect(email.htmlContent).toContain('À demain, Camille</h1>');
+    expect(email.textContent).toMatch(/^Bonjour Camille,/);
     const sms = calls(BREVO_SMS).find(s => s.tag === 'booking_reminder');
     expect(sms.content).toMatch(/^Plazo : à demain ! Dépôt le 01\/03\/2027 à 06:30 à Parking LYS\./);
     expect(sms.content).toContain('Parking : 04 72 00 00 00.');

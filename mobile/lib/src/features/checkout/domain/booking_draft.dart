@@ -3,7 +3,8 @@
 /// site does.
 class BookingDraft {
   const BookingDraft({
-    this.customerName = '',
+    this.customerFirstName = '',
+    this.customerLastName = '',
     this.customerPhone = '',
     this.customerEmail = '',
     this.plate = '',
@@ -16,7 +17,9 @@ class BookingDraft {
     this.customerNote = '',
   });
 
-  final String customerName;
+  /// 09/10/2026: first and last name apart (the server stores "Prénom Nom" for display).
+  final String customerFirstName;
+  final String customerLastName;
   final String customerPhone;
   final String customerEmail;
   final String plate;

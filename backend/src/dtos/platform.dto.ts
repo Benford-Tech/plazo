@@ -4,6 +4,8 @@ import { IsEmail, IsIn, IsInt, IsNotEmpty, IsOptional, IsString, IsUrl, Max, Max
 // Validation messages are codes: the pro space translates them.
 const MAX_COMMISSION_BPS = 5000;
 
+const trim = ({ value }: { value: unknown }) => (typeof value === 'string' ? value.trim() : value);
+
 export class UpdateCommissionDto {
   /** Basis points (1200 = 12 %); null: back to the platform default. */
   @ValidateIf((_, value) => value !== null)
@@ -25,20 +27,18 @@ export class InviteOperatorDto {
   @MaxLength(254, { message: 'too_long' })
   public managerEmail: string;
 
-  @IsOptional()
-  @IsString()
-  @MaxLength(120, { message: 'too_long' })
-  public managerName?: string;
-
-  @IsOptional()
-  @IsString()
+  /** The manager's first and last name (09/10/2026: both required, trimmed; no more falling back on the company name). */
+  @Transform(trim)
   @MaxLength(60, { message: 'too_long' })
-  public managerFirstName?: string;
+  @IsNotEmpty({ message: 'required' })
+  @IsString({ message: 'required' })
+  public managerFirstName: string;
 
-  @IsOptional()
-  @IsString()
+  @Transform(trim)
   @MaxLength(60, { message: 'too_long' })
-  public managerLastName?: string;
+  @IsNotEmpty({ message: 'required' })
+  @IsString({ message: 'required' })
+  public managerLastName: string;
 
   @Type(() => Number)
   @IsInt({ message: 'integer' })
@@ -54,8 +54,6 @@ export class InviteOperatorDto {
   @Max(MAX_COMMISSION_BPS, { message: 'commission_range' })
   public commissionBps?: number | null;
 }
-
-const trim = ({ value }: { value: unknown }) => (typeof value === 'string' ? value.trim() : value);
 
 export class RejectListingDto {
   @Transform(trim)

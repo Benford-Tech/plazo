@@ -3,6 +3,7 @@
  * instructions, the answer's schema, and the conversion of an answer into a `ParsedBooking` the
  * import pipeline already understands. The call itself lives in `EmailReadingService`.
  */
+import { fullName } from './staff-name';
 import type { ParsedBooking } from './importers/types';
 
 export const EMAIL_KINDS = ['booking', 'modification', 'cancellation', 'other'] as const;
@@ -16,6 +17,9 @@ export interface EmailReading {
   arrivalAt: string | null;
   returnAt: string | null;
   customerName: string | null;
+  /** 09/10/2026: the first and the last name apart, when the email tells them apart. */
+  customerFirstName: string | null;
+  customerLastName: string | null;
   customerPhone: string | null;
   customerEmail: string | null;
   plate: string | null;
@@ -55,6 +59,8 @@ export const EMAIL_READING_SCHEMA = {
     'arrivalAt',
     'returnAt',
     'customerName',
+    'customerFirstName',
+    'customerLastName',
     'customerPhone',
     'customerEmail',
     'plate',
@@ -72,6 +78,8 @@ export const EMAIL_READING_SCHEMA = {
     arrivalAt: nullable({ type: 'string' }),
     returnAt: nullable({ type: 'string' }),
     customerName: nullable({ type: 'string' }),
+    customerFirstName: nullable({ type: 'string' }),
+    customerLastName: nullable({ type: 'string' }),
     customerPhone: nullable({ type: 'string' }),
     customerEmail: nullable({ type: 'string' }),
     plate: nullable({ type: 'string' }),
@@ -105,6 +113,8 @@ Then extract the reservation's fields exactly as the email states them. Never in
   "2026-07-12T06:30". Today is ${options.today}; a date without a year is the next occurrence. When the time of day is not given,
   answer null for that field.
 - customerName: first name and last name of the traveller.
+- customerFirstName, customerLastName: the traveller's first name and last name apart, only when the email tells them apart
+  (separate "Prénom" and "Nom" fields, or a last name plainly written in capitals as in "Marie DUPONT"); otherwise null for both.
 - customerPhone: the traveller's phone number as written, with its country code when present.
 - customerEmail: the traveller's email address (not the platform's).
 - plate: the vehicle's registration number as written (for example "AB-123-CD").
@@ -190,7 +200,14 @@ export function toParsedBooking(reading: EmailReading): ParsedBooking {
   set('externalReference', clean(reading.externalReference, 60));
   set('arrivalAt', arrivalAt);
   set('returnAt', returnAt);
-  set('customerName', clean(reading.customerName, 120));
+  // First and last name apart (09/10/2026) only as a pair; the display name is rebuilt from them when Claude left it out.
+  const first = clean(reading.customerFirstName, 60);
+  const last = clean(reading.customerLastName, 60);
+  set('customerName', clean(reading.customerName, 120) ?? (first && last ? fullName(first, last) : undefined));
+  if (first && last) {
+    set('customerFirstName', first);
+    set('customerLastName', last);
+  }
   set('customerPhone', cleanPhone(reading.customerPhone));
   set('customerEmail', email && /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email) ? email : undefined);
   set('plate', cleanPlate(reading.plate));
@@ -216,6 +233,8 @@ export function readingOf(value: unknown): EmailReading | null {
     arrivalAt: str(v.arrivalAt),
     returnAt: str(v.returnAt),
     customerName: str(v.customerName),
+    customerFirstName: str(v.customerFirstName),
+    customerLastName: str(v.customerLastName),
     customerPhone: str(v.customerPhone),
     customerEmail: str(v.customerEmail),
     plate: str(v.plate),

@@ -5,6 +5,7 @@ import { NotificationService } from '@/services/notification.service';
 import { ParkingLocationService } from '@/services/parking-location.service';
 import { ONESIGNAL_NOTIFICATIONS_URL } from '@/services/push.service';
 import {
+  runTodayAt,
   addStaff,
   api,
   disableFakePayments,
@@ -50,6 +51,7 @@ beforeEach(async () => {
   fetchMock = jest.spyOn(global, 'fetch').mockImplementation(async () => new Response(JSON.stringify({ id: 'n1' }), { status: 200 }));
 });
 afterEach(() => {
+  jest.useRealTimers();
   fetchMock.mockRestore();
   disableFakePayments();
 });
@@ -158,6 +160,7 @@ describe('véhicule du jour (V-A)', () => {
 
 describe('dessertes (D-A)', () => {
   it('l’aéroport est la desserte intégrée ; le gérant ajoute une gare ; une réservation et un trajet la prennent', async () => {
+    runTodayAt();
     const { op, reservation, reference, manageToken } = await setup();
     const driver = await addStaff(op.token, 'driver');
     const stops0 = await api().get('/api/internal/shuttle/stops').set(auth(driver.token));

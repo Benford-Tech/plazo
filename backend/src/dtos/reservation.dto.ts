@@ -1,4 +1,4 @@
-import { Type } from 'class-transformer';
+import { Transform, Type } from 'class-transformer';
 import { IsBoolean, IsEmail, IsIn, IsInt, IsNotEmpty, IsOptional, IsString, Matches, Max, MaxLength, Min, ValidateIf } from 'class-validator';
 import { ReservationChannel, ReservationStatus } from '@/database';
 
@@ -9,6 +9,16 @@ export const PLATE_RE = /^[A-Za-z0-9 -]{2,15}$/;
 const STAFF_CHANNELS = Object.values(ReservationChannel).filter(c => c !== 'plazo');
 const CHANNELS = Object.values(ReservationChannel);
 const STATUSES = Object.values(ReservationStatus);
+
+/** Trims a string field before it is checked (a blank name is "required"). */
+export const trimString = ({ value }: { value: unknown }) => (typeof value === 'string' ? value.trim() : value);
+
+/**
+ * 09/10/2026: a body with a single `customerName` and neither `customerFirstName` nor `customerLastName` comes from an older
+ * app version still in the stores: accepted, and split at the first space (first name / the rest).
+ */
+export const isLegacyName = (body: { customerFirstName?: unknown; customerLastName?: unknown; customerName?: unknown }) =>
+  body.customerFirstName == null && body.customerLastName == null && body.customerName != null;
 
 // Dates: "2026-10-04T06:30" (local to the parking) or an ISO instant with offset.
 export class CreateReservationDto {
@@ -32,10 +42,28 @@ export class CreateReservationDto {
   @Max(9, { message: 'passengers_range' })
   public passengers: number;
 
+  /** 09/10/2026: the traveller's first and last name, both required; the server stores "Prénom Nom" as `customerName`. */
+  @ValidateIf(body => !isLegacyName(body))
+  @Transform(trimString)
+  @MaxLength(60, { message: 'too_long' })
+  @IsNotEmpty({ message: 'required' })
+  @IsString({ message: 'required' })
+  public customerFirstName?: string;
+
+  @ValidateIf(body => !isLegacyName(body))
+  @Transform(trimString)
+  @MaxLength(60, { message: 'too_long' })
+  @IsNotEmpty({ message: 'required' })
+  @IsString({ message: 'required' })
+  public customerLastName?: string;
+
+  /** Older app versions: the whole name in one field, split at the first space; ignored when the two fields above are sent. */
+  @ValidateIf(body => isLegacyName(body))
+  @Transform(trimString)
   @IsString()
   @IsNotEmpty({ message: 'required' })
   @MaxLength(120, { message: 'too_long' })
-  public customerName: string;
+  public customerName?: string;
 
   @IsString()
   @Matches(PHONE_RE, { message: 'invalid_phone' })
@@ -138,7 +166,24 @@ export class UpdateReservationDto {
   @Max(9, { message: 'passengers_range' })
   public passengers?: number;
 
+  /** 09/10/2026: either or both, merged with the stored name; a blank one is refused ("required"). */
   @IsOptional()
+  @Transform(trimString)
+  @MaxLength(60, { message: 'too_long' })
+  @IsNotEmpty({ message: 'required' })
+  @IsString({ message: 'required' })
+  public customerFirstName?: string;
+
+  @IsOptional()
+  @Transform(trimString)
+  @MaxLength(60, { message: 'too_long' })
+  @IsNotEmpty({ message: 'required' })
+  @IsString({ message: 'required' })
+  public customerLastName?: string;
+
+  /** Older app versions: the whole name, split at the first space; ignored when a first or last name is sent. */
+  @IsOptional()
+  @Transform(trimString)
   @IsString()
   @IsNotEmpty({ message: 'required' })
   @MaxLength(120, { message: 'too_long' })

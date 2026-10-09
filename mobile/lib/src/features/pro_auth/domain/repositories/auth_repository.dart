@@ -10,6 +10,7 @@ abstract class AuthRepository {
   Future<Either<Failure, void>> logout();
   Future<Either<Failure, StaffModel>> setPost(String post);
   Future<Either<Failure, StaffModel>> setVehicle(String? vehicleId);
+  Future<Either<Failure, StaffModel>> updateName({required String firstName, required String lastName});
 }
 
 class AuthRepositoryImpl implements AuthRepository {
@@ -32,4 +33,8 @@ class AuthRepositoryImpl implements AuthRepository {
 
   @override
   Future<Either<Failure, StaffModel>> setVehicle(String? vehicleId) => _dataSource.setVehicle(vehicleId).makeRequest();
+
+  @override
+  Future<Either<Failure, StaffModel>> updateName({required String firstName, required String lastName}) =>
+      _dataSource.updateName(firstName: firstName, lastName: lastName).makeRequest();
 }

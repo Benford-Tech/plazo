@@ -29,7 +29,9 @@ final booking = ReservationModel(
   arrivalAt: DateTime.utc(2026, 10, 5, 4, 30),
   returnAt: DateTime.utc(2026, 10, 12, 16),
   passengers: 2,
-  customerName: 'Mme Laurent',
+  customerName: 'Camille Laurent',
+  customerFirstName: 'Camille',
+  customerLastName: 'Laurent',
   customerPhone: '06 12 34 56 78',
   plate: 'GK-318-PX',
 );
@@ -104,7 +106,7 @@ void main() {
       await settle();
       expect(b.state.capacity?.nights, 7);
       expect(b.state.full, isTrue);
-      b.add(ProReservationFormChanged(b.state.input.copyWith(customerName: 'Mme Laurent', plate: 'GK-318-PX', customerPhone: '0612345678')));
+      b.add(ProReservationFormChanged(b.state.input.copyWith(customerFirstName: 'Camille', customerLastName: 'Laurent', plate: 'GK-318-PX', customerPhone: '0612345678')));
       await settle();
       verify(() => capacity(any())).called(1); // same stay: no second check
       b.add(ProReservationFormChanged(b.state.input.copyWith(force: true)));
@@ -116,7 +118,63 @@ void main() {
       expect(params.id, isNull);
       expect(params.input.toBody(), containsPair('force', true));
       expect(params.input.toBody().containsKey('customerEmail'), isFalse);
+      // 09/10/2026: first and last name apart; the server builds "Camille Laurent".
+      expect(params.names, isTrue);
+      expect(params.input.toBody(), allOf(containsPair('customerFirstName', 'Camille'), containsPair('customerLastName', 'Laurent')));
+      expect(params.input.toBody().containsKey('customerName'), isFalse);
       expect(b.state.saved?.reference, 'RABC12');
+    });
+
+    test('nouvelle réservation : un prénom ou un nom vide part quand même, pour que le serveur nomme le champ', () {
+      const input = ReservationInput(arrivalAt: '2026-10-05T06:30', returnAt: '2026-10-06T18:00', customerFirstName: 'Camille');
+      expect(input.toBody(), allOf(containsPair('customerFirstName', 'Camille'), containsPair('customerLastName', '')));
+    });
+
+    test('modification : le nom ne part que s’il a changé (un nom d’un seul mot reste enregistrable)', () async {
+      final save = MockSave();
+      final capacity = MockCapacity();
+      when(() => capacity(any())).thenAnswer((_) async => const Right(CapacityPreviewModel(nights: 1)));
+      when(() => save(any())).thenAnswer((_) async => Right(booking));
+      // An imported booking, "Dupont" alone: stored as the first name, the last name empty.
+      const initial = ReservationInput(arrivalAt: '2026-10-05T06:30', returnAt: '2026-10-06T18:00', customerFirstName: 'Dupont', plate: 'GK-318-PX');
+      final b = ProReservationFormBloc(save, capacity, id: 'r1', initial: initial);
+      await settle();
+      b.add(ProReservationFormChanged(b.state.input.copyWith(plate: 'AB-123-CD')));
+      await settle();
+      b.add(const ProReservationFormSubmitted());
+      await settle();
+      var params = verify(() => save(captureAny())).captured.single as SaveReservationParams;
+      expect(params.names, isFalse);
+      final unchanged = params.input.toBody(patch: true, names: params.names);
+      expect(unchanged, containsPair('plate', 'AB-123-CD'));
+      expect(unchanged.keys, isNot(anyOf(contains('customerFirstName'), contains('customerLastName'), contains('customerName'))));
+      // Spaces around do not count as a change.
+      b.add(ProReservationFormChanged(b.state.input.copyWith(customerFirstName: ' Dupont ')));
+      await settle();
+      b.add(const ProReservationFormSubmitted());
+      await settle();
+      params = verify(() => save(captureAny())).captured.single as SaveReservationParams;
+      expect(params.names, isFalse);
+      // Corrected: both are sent.
+      b.add(ProReservationFormChanged(b.state.input.copyWith(customerFirstName: 'Jean', customerLastName: 'Dupont')));
+      await settle();
+      b.add(const ProReservationFormSubmitted());
+      await settle();
+      params = verify(() => save(captureAny())).captured.single as SaveReservationParams;
+      expect(params.names, isTrue);
+      expect(params.input.toBody(patch: true, names: params.names), allOf(containsPair('customerFirstName', 'Jean'), containsPair('customerLastName', 'Dupont')));
+    });
+
+    test('le serveur refuse un nom vide : l’erreur va sous « Nom »', () async {
+      final save = MockSave();
+      final capacity = MockCapacity();
+      when(() => capacity(any())).thenAnswer((_) async => const Right(CapacityPreviewModel(nights: 1)));
+      when(() => save(any())).thenAnswer((_) async => const Left(ServerFailure(statusCode: 400, code: 'validation_failed', fields: {'customerLastName': 'required'})));
+      final b = ProReservationFormBloc(save, capacity, initial: const ReservationInput(arrivalAt: '2026-10-05T06:30', returnAt: '2026-10-06T18:00', customerFirstName: 'Camille'));
+      await settle();
+      b.add(const ProReservationFormSubmitted());
+      await settle();
+      expect(b.state.fieldErrors, {'customerLastName': 'required'});
     });
 
     test('les erreurs de champs du serveur sont attachées au champ', () async {

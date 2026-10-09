@@ -17,7 +17,10 @@ export function anonymizeReturnedBefore(now: Date): Date {
 
 /** What replaces the traveller's data on an anonymised booking (required columns get a neutral value). */
 export const ANONYMIZED_TRAVELLER = {
+  // First and last name apart (09/10/2026); the display form keeps the words staff already know.
   customerName: 'Client anonymisé',
+  customerFirstName: 'Client',
+  customerLastName: 'anonymisé',
   customerPhone: '',
   customerEmail: null,
   plate: '—',

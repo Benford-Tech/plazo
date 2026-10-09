@@ -48,7 +48,7 @@ void main() {
     public = FakePublicDataSource();
     sheet = FakePaymentSheet();
     links = FakeLinks();
-    drafts = BookingDraftStore()..save(const BookingDraft(customerName: 'Camille Martin'));
+    drafts = BookingDraftStore()..save(const BookingDraft(customerFirstName: 'Camille', customerLastName: 'Martin'));
   });
 
   PaymentBloc make() {
@@ -135,7 +135,7 @@ void main() {
     bloc.add(const PaymentEditPressed());
     await bloc.stream.firstWhere((s) => s.status == PaymentStatus.released);
     expect(api.calls, contains('release'));
-    expect(drafts.draft?.customerName, 'Camille Martin');
+    expect((drafts.draft?.customerFirstName, drafts.draft?.customerLastName), ('Camille', 'Martin'));
     await bloc.close();
   });
 

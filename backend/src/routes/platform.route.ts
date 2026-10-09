@@ -153,11 +153,12 @@ import { ValidationMiddleware } from '@/middlewares/validation.middleware';
  *         application/json:
  *           schema:
  *             type: object
- *             required: [operatorName, managerEmail, totalCapacity]
+ *             required: [operatorName, managerFirstName, managerLastName, managerEmail, totalCapacity]
  *             properties:
  *               operatorName: { type: string, maxLength: 80 }
+ *               managerFirstName: { type: string, maxLength: 60, description: "Trimmed; required (09/10/2026)" }
+ *               managerLastName: { type: string, maxLength: 60, description: "Trimmed; required (09/10/2026)" }
  *               managerEmail: { type: string }
- *               managerName: { type: string }
  *               totalCapacity: { type: integer, minimum: 1 }
  *               commissionBps: { type: integer, nullable: true, minimum: 0, maximum: 5000 }
  *     responses:

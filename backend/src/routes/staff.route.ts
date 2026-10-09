@@ -1,6 +1,6 @@
 import { Router } from 'express';
 import { StaffController } from '@/controllers/staff.controller';
-import { ChangePasswordDto, CreateStaffDto, ResetPasswordDto, UpdateStaffDto, SetPostDto, SetVehicleDto } from '@/dtos/staff.dto';
+import { ChangePasswordDto, CreateStaffDto, ResetPasswordDto, UpdateMeDto, UpdateStaffDto, SetPostDto, SetVehicleDto } from '@/dtos/staff.dto';
 import { Routes } from '@/interfaces/routes.interface';
 import { RefuseInViewAs, StaffAuthMiddleware } from '@/middlewares/staff-auth.middleware';
 import { ValidationMiddleware } from '@/middlewares/validation.middleware';
@@ -17,6 +17,15 @@ import { ValidationMiddleware } from '@/middlewares/validation.middleware';
  *   get:
  *     summary: Current staff member, with the operator name, isPlatformAdmin, emailVerified, viewAs ({ operatorId, operatorName } in a platform admin's view-as session, else null), post / postSetAt, effectivePost and allowedPosts
  *     tags: [Staff]
+ *   patch:
+ *     summary: Votre nom (09/10/2026) — one's own first and last name (trimmed, both required; `name` recomputed as "Prénom Nom"; 403 view_as_read_only); answers like GET
+ *     tags: [Staff]
+ *     requestBody:
+ *       required: true
+ *       content: { application/json: { schema: { type: object, required: [firstName, lastName], properties: { firstName: { type: string, maxLength: 60 }, lastName: { type: string, maxLength: 60 } } } } }
+ *     responses:
+ *       200: { description: The session user, with the new name }
+ *       400: { description: "validation_failed: fields.firstName / fields.lastName = required | too_long" }
  * /internal/staff/me/vehicle:
  *   patch:
  *     summary: Mon véhicule aujourd'hui (V-A) — the shuttle taken for the day ({ vehicleId } or null to hand it back; 409 vehicle_taken with holderName, 422 vehicle_out_of_service); the session user then carries `vehicle`
@@ -57,16 +66,17 @@ import { ValidationMiddleware } from '@/middlewares/validation.middleware';
  *         application/json:
  *           schema:
  *             type: object
- *             required: [name, email, role, password]
+ *             required: [firstName, lastName, email, role, password]
  *             properties:
- *               name: { type: string }
+ *               firstName: { type: string, maxLength: 60 }
+ *               lastName: { type: string, maxLength: 60 }
  *               email: { type: string }
  *               phone: { type: string }
  *               role: { type: string, enum: [manager, agent, driver, valet] }
  *               password: { type: string, minLength: 10 }
  * /internal/staff/{id}:
  *   patch:
- *     summary: Change role or activation (manager only; deactivation revokes sessions)
+ *     summary: Change role, activation or first / last name (manager only; deactivation revokes sessions; `name` recomputed)
  *     tags: [Staff]
  *     parameters:
  *       - { in: path, name: id, required: true, schema: { type: string } }
@@ -78,6 +88,8 @@ import { ValidationMiddleware } from '@/middlewares/validation.middleware';
  *             properties:
  *               role: { type: string, enum: [manager, agent, driver, valet] }
  *               isActive: { type: boolean }
+ *               firstName: { type: string, maxLength: 60 }
+ *               lastName: { type: string, maxLength: 60 }
  * /internal/staff/{id}/reset-password:
  *   post:
  *     summary: Set a temporary password (manager only; revokes sessions)
@@ -95,6 +107,7 @@ export class StaffRoute implements Routes {
 
   private initializeRoutes() {
     this.router.get('/internal/staff/me', StaffAuthMiddleware(), this.staff.me);
+    this.router.patch('/internal/staff/me', StaffAuthMiddleware(), RefuseInViewAs(), ValidationMiddleware(UpdateMeDto), this.staff.updateMe);
     this.router.patch('/internal/staff/me/post', StaffAuthMiddleware(), RefuseInViewAs(), ValidationMiddleware(SetPostDto), this.staff.setPost);
     this.router.patch(
       '/internal/staff/me/vehicle',

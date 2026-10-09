@@ -75,6 +75,19 @@ describe("BookingForm", () => {
     expect(screen.getByLabelText("Nom")).toHaveValue("L4urent");
   });
 
+  it("shows an error reported on the full name (`customerName`) under « Prénom », never lost", async () => {
+    const action = vi.fn(
+      async (): Promise<FormState> => ({ values: {}, fields: { customerName: "required" }, error: "validation_failed" }),
+    );
+    renderForm(action);
+    await userEvent.setup().click(screen.getByRole("button", { name: "Continuer vers le paiement" }));
+
+    expect(await screen.findByRole("alert")).toHaveTextContent("Certains champs sont à corriger.");
+    expect(screen.getByLabelText("Prénom")).toHaveAccessibleDescription("Champ obligatoire.");
+    expect(screen.getByLabelText("Prénom")).toHaveAttribute("aria-invalid", "true");
+    expect(screen.getByLabelText("Nom")).not.toHaveAttribute("aria-invalid");
+  });
+
   it("asks for the first name and the last name apart, as the browser fills them", () => {
     renderForm(vi.fn());
     const first = screen.getByLabelText("Prénom");

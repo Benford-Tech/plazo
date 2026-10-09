@@ -43,7 +43,9 @@ abstract class ProReservationFormState with _$ProReservationFormState {
 
 /// New booking, edit, or a booking read from a confirmation email: the form's rules and save.
 class ProReservationFormBloc extends Bloc<ProReservationFormEvent, ProReservationFormState> {
-  ProReservationFormBloc(this._save, this._capacity, {String? id, required ReservationInput initial}) : super(ProReservationFormState(id: id, input: initial)) {
+  ProReservationFormBloc(this._save, this._capacity, {String? id, required ReservationInput initial})
+    : _initial = initial,
+      super(ProReservationFormState(id: id, input: initial)) {
     on<ProReservationFormChanged>(_onChanged);
     on<ProReservationFormSubmitted>(_onSubmitted);
     add(ProReservationFormChanged(initial));
@@ -51,6 +53,9 @@ class ProReservationFormBloc extends Bloc<ProReservationFormEvent, ProReservatio
 
   final SaveReservationUseCase _save;
   final PreviewCapacityUseCase _capacity;
+
+  /// The values the form opened with: an edit sends the name only once changed.
+  final ReservationInput _initial;
   bool _checkedOnce = false;
 
   static String _code(Failure f) => f.code ?? (f.statusCode == null ? 'network' : 'generic');
@@ -73,7 +78,8 @@ class ProReservationFormBloc extends Bloc<ProReservationFormEvent, ProReservatio
 
   Future<void> _onSubmitted(ProReservationFormSubmitted event, Emitter<ProReservationFormState> emit) async {
     emit(state.copyWith(saveState: ViewState.processing, errorCode: null, fieldErrors: const {}));
-    final result = await _save(SaveReservationParams(id: state.id, input: state.input));
+    final names = state.id == null || !state.input.sameNameAs(_initial);
+    final result = await _save(SaveReservationParams(id: state.id, input: state.input, names: names));
     result.fold(
       (f) => emit(state.copyWith(saveState: ViewState.error, errorCode: f.fields?.isNotEmpty == true ? null : _code(f), fieldErrors: f.fields ?? const {})),
       (r) => emit(state.copyWith(saveState: ViewState.success, saved: r)),

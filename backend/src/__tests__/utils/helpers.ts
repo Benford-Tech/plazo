@@ -178,3 +178,32 @@ export async function bookAndPay(body: Record<string, unknown>, sessions: Map<st
   await payBooking(res.body.reference, res.body.manageToken, sessions);
   return res.body as { reference: string; manageToken: string; booking: any };
 }
+
+/**
+ * Day-J tests ("arriving today", "the return day") at any hour (09/10/2026): moves the clock seen by the code to a set
+ * local time of the current day in Paris (default 10:00) and lets it run from there; timers stay real. The database
+ * defaults (createdAt) keep the real time, so use it only where they do not matter. Undo with jest.useRealTimers().
+ */
+export function runTodayAt(time = '10:00') {
+  const day = new Intl.DateTimeFormat('en-CA', { timeZone: 'Europe/Paris' }).format(new Date());
+  const offset = new Intl.DateTimeFormat('en', { timeZone: 'Europe/Paris', timeZoneName: 'longOffset' })
+    .formatToParts(new Date(`${day}T12:00:00Z`))
+    .find(p => p.type === 'timeZoneName')!
+    .value.replace('GMT', '');
+  jest.useFakeTimers({
+    now: new Date(`${day}T${time}:00${offset || 'Z'}`),
+    advanceTimers: true,
+    doNotFake: [
+      'nextTick',
+      'setImmediate',
+      'clearImmediate',
+      'setTimeout',
+      'clearTimeout',
+      'setInterval',
+      'clearInterval',
+      'queueMicrotask',
+      'hrtime',
+      'performance',
+    ],
+  });
+}

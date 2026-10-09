@@ -81,8 +81,8 @@ describe('anonymisation des réservations 12 mois après le retour (politique de
     const patch = await api()
       .patch(`/api/internal/reservations/${old.id}`)
       .set('Authorization', `Bearer ${token}`)
-      .send({ customerName: 'Camille Martin-Durand', customerPhone: '0699999999', passengers: 2 });
-    expect(patch.body).toMatchObject({ data: { customerName: 'Camille Martin-Durand' } });
+      .send({ customerFirstName: 'Camille', customerLastName: 'Martin-Durand', customerPhone: '0699999999', passengers: 2 });
+    expect(patch.body).toMatchObject({ data: { customerName: 'Camille Martin-Durand', customerFirstName: 'Camille' } });
     await prisma.reservation.update({ where: { id: old.id }, data: { status: 'returned' } });
     await prisma.auditLog.create({
       data: {
@@ -134,6 +134,8 @@ describe('anonymisation des réservations 12 mois après le retour (politique de
     const after = await prisma.reservation.findUniqueOrThrow({ where: { id: old.id } });
     expect(after).toMatchObject({
       customerName: 'Client anonymisé',
+      customerFirstName: 'Client',
+      customerLastName: 'anonymisé',
       customerPhone: '',
       customerEmail: null,
       plate: '—',
@@ -163,7 +165,8 @@ describe('anonymisation des réservations 12 mois après le retour (politique de
 
     const entries = await prisma.auditLog.findMany({ where: { entityId: old.id } });
     const text = JSON.stringify(entries.map(e => e.details));
-    for (const value of ['Camille', '0612345678', '0699999999', 'TO 3627']) expect(text).not.toContain(value);
+    // 09/10/2026: the first and the last name go from the audit too.
+    for (const value of ['Camille', 'Martin', '0612345678', '0699999999', 'TO 3627']) expect(text).not.toContain(value);
     const updated = entries.find(e => e.action === 'reservation.updated')!;
     expect(updated.details).toEqual({ passengers: { from: 3, to: 2 }, anonymized: true });
     expect(entries.find(e => e.action === 'return.landed')!.details).toEqual({ source: 'tracking', anonymized: true });

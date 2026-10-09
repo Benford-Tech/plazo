@@ -9,6 +9,7 @@ abstract class AuthDataSource {
   Future<void> logout();
   Future<StaffModel> setPost(String post);
   Future<StaffModel> setVehicle(String? vehicleId);
+  Future<StaffModel> updateName({required String firstName, required String lastName});
 }
 
 class AuthDataSourceImpl implements AuthDataSource {
@@ -40,6 +41,10 @@ class AuthDataSourceImpl implements AuthDataSource {
 
   @override
   Future<StaffModel> setVehicle(String? vehicleId) => client.setVehicle({'vehicleId': vehicleId});
+
+  @override
+  Future<StaffModel> updateName({required String firstName, required String lastName}) =>
+      client.updateMe({'firstName': firstName.trim(), 'lastName': lastName.trim()});
 
   @override
   Future<void> logout() async {

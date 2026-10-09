@@ -1,4 +1,5 @@
 import { isGsm7 } from '@/domain/booking-messages';
+import { CustomerNameFields, namesOfCustomer } from '@/domain/customer-name';
 import { addDays, dayBounds, localDate, localDateTime, parseInstant } from '@/domain/time';
 
 /**
@@ -168,18 +169,21 @@ export function templateContextOf(productName: string, parking: ParkingForTempla
   };
 }
 
-/** "Camille Martin" -> prénom "Camille", nom "Martin"; the date as 07/10/2026 and the time as 06:30, local to the parking. */
+/**
+ * {prénom} and {nom}: the stored first and last name (09/10/2026), else "Camille Martin" split at its first space; the
+ * date as 07/10/2026 and the time as 06:30, local to the parking.
+ */
 export function valuesOf(
-  reservation: { customerName: string; arrivalAt: Date; plate: string; reference: string },
+  reservation: CustomerNameFields & { arrivalAt: Date; plate: string; reference: string },
   timeZone: string,
   link: string | null,
 ): TemplateValues {
-  const [first = '', ...rest] = reservation.customerName.trim().split(/\s+/);
+  const { firstName: first, lastName: last } = namesOfCustomer(reservation);
   const local = localDateTime(reservation.arrivalAt, timeZone);
   const [year, month, day] = local.slice(0, 10).split('-');
   return {
     prénom: first,
-    nom: rest.join(' '),
+    nom: last,
     date: `${day}/${month}/${year}`,
     heure: local.slice(11),
     plaque: reservation.plate,

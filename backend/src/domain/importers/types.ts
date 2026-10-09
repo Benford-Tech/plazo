@@ -4,7 +4,11 @@ export interface ParsedBooking {
   externalReference?: string;
   arrivalAt?: string; // local to the parking, "YYYY-MM-DDTHH:mm"
   returnAt?: string;
+  /** Display form "Prénom Nom" (or the name as the email gives it, when it does not tell first and last name apart). */
   customerName?: string;
+  /** 09/10/2026: when the email tells them apart (Onepark, Allopark, Claude's reading); else customerName is split. */
+  customerFirstName?: string;
+  customerLastName?: string;
   customerPhone?: string;
   customerEmail?: string;
   plate?: string;

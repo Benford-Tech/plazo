@@ -12,6 +12,7 @@ import '../../domain/usecases/logout_use_case.dart';
 import '../../domain/usecases/restore_session_use_case.dart';
 import '../../domain/usecases/set_post_use_case.dart';
 import '../../domain/usecases/set_vehicle_use_case.dart';
+import '../../domain/usecases/update_name_use_case.dart';
 
 part 'pro_auth_bloc.freezed.dart';
 part 'pro_auth_event.dart';
@@ -20,12 +21,14 @@ part 'pro_auth_state.dart';
 /// The staff's session in the pro flow: login with the existing /internal/auth routes, restore at
 /// start-up, logout; a refused refresh (SessionEvents) signs out.
 class ProAuthBloc extends Bloc<ProAuthEvent, ProAuthState> {
-  ProAuthBloc(this._login, this._restore, this._logout, this._setPost, this._setVehicle, SessionEvents session) : super(const ProAuthState()) {
+  ProAuthBloc(this._login, this._restore, this._logout, this._setPost, this._setVehicle, this._updateName, SessionEvents session) : super(const ProAuthState()) {
     on<ProAuthRestoreRequested>(_onRestore);
     on<ProAuthLoginSubmitted>(_onLogin);
     on<ProAuthLogoutRequested>(_onLogout);
     on<ProAuthPostChosen>(_onPostChosen);
     on<ProAuthVehicleChosen>(_onVehicleChosen);
+    on<ProAuthNameSubmitted>(_onNameSubmitted);
+    on<ProAuthNameNoticeShown>((event, emit) => emit(state.copyWith(nameState: ViewState.idle)));
     on<ProAuthSessionExpired>((event, emit) => emit(const ProAuthState(status: ProAuthStatus.signedOut, errorCode: 'session_expired')));
     _expired = session.expired.listen((_) => add(const ProAuthSessionExpired()));
   }
@@ -35,6 +38,7 @@ class ProAuthBloc extends Bloc<ProAuthEvent, ProAuthState> {
   final LogoutUseCase _logout;
   final SetPostUseCase _setPost;
   final SetVehicleUseCase _setVehicle;
+  final UpdateNameUseCase _updateName;
   late final StreamSubscription<void> _expired;
 
   Future<void> _onRestore(ProAuthRestoreRequested event, Emitter<ProAuthState> emit) async {
@@ -69,6 +73,21 @@ class ProAuthBloc extends Bloc<ProAuthEvent, ProAuthState> {
     result.fold(
       (failure) => emit(state.copyWith(vehicleState: ViewState.error, errorCode: failure.code ?? 'generic')),
       (staff) => emit(state.copyWith(vehicleState: ViewState.success, staff: staff)),
+    );
+  }
+
+  Future<void> _onNameSubmitted(ProAuthNameSubmitted event, Emitter<ProAuthState> emit) async {
+    emit(state.copyWith(nameState: ViewState.processing, nameErrors: const {}, errorCode: null));
+    final result = await _updateName(UpdateNameParams(firstName: event.firstName.trim(), lastName: event.lastName.trim()));
+    result.fold(
+      (failure) => emit(
+        state.copyWith(
+          nameState: ViewState.error,
+          nameErrors: failure.fields ?? const {},
+          errorCode: failure.fields?.isNotEmpty == true ? null : (failure.code ?? (failure.statusCode == null ? 'network' : 'generic')),
+        ),
+      ),
+      (staff) => emit(state.copyWith(nameState: ViewState.success, staff: staff)),
     );
   }
 

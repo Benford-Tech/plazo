@@ -1,4 +1,4 @@
-import { Type } from 'class-transformer';
+import { Transform, Type } from 'class-transformer';
 import {
   Equals,
   IsDefined,
@@ -17,7 +17,7 @@ import {
   ValidatorConstraint,
   ValidatorConstraintInterface,
 } from 'class-validator';
-import { DATETIME, PHONE_RE, PLATE_RE } from './reservation.dto';
+import { DATETIME, isLegacyName, PHONE_RE, PLATE_RE, trimString } from './reservation.dto';
 
 /** Letters (any alphabet, accents), spaces, apostrophes, hyphens and periods: "Jean-Luc O’Neil", "J. Dupont". */
 export const PERSON_NAME_RE = /^[\p{L}\p{M}][\p{L}\p{M} .'’-]*$/u;
@@ -57,13 +57,35 @@ export class CreatePublicBookingDto {
   public returnAt: string;
 
   // Shown in the emails sent from the platform's address: a person's name only, no links or
-  // control characters (the form is anonymous, the name must not carry a message).
+  // control characters (the form is anonymous, the name must not carry a message). 09/10/2026: first
+  // and last name apart, both required; the server stores "Prénom Nom" as `customerName`.
+  @ValidateIf(body => !isLegacyName(body))
+  @Matches(PERSON_NAME_RE, { message: 'invalid_name' })
+  @Validate(NoDomainLike, { message: 'invalid_name' })
+  @MaxLength(60, { message: 'too_long' })
+  @IsNotEmpty({ message: 'required' })
+  @IsString({ message: 'required' })
+  @Transform(trimString)
+  public customerFirstName?: string;
+
+  @ValidateIf(body => !isLegacyName(body))
+  @Matches(PERSON_NAME_RE, { message: 'invalid_name' })
+  @Validate(NoDomainLike, { message: 'invalid_name' })
+  @MaxLength(60, { message: 'too_long' })
+  @IsNotEmpty({ message: 'required' })
+  @IsString({ message: 'required' })
+  @Transform(trimString)
+  public customerLastName?: string;
+
+  /** Older app versions: the whole name in one field (see isLegacyName); ignored when the two fields above are sent. */
+  @ValidateIf(body => isLegacyName(body))
+  @Transform(trimString)
   @Matches(PERSON_NAME_RE, { message: 'invalid_name' })
   @Validate(NoDomainLike, { message: 'invalid_name' })
   @MaxLength(120, { message: 'too_long' })
   @IsNotEmpty({ message: 'required' })
   @IsString({ message: 'required' })
-  public customerName: string;
+  public customerName?: string;
 
   @Matches(PHONE_RE, { message: 'invalid_phone' })
   @IsNotEmpty({ message: 'required' })

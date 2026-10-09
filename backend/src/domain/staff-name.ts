@@ -23,3 +23,15 @@ export function namesOf(input: { firstName?: string | null; lastName?: string | 
   const split = splitName(input.name ?? '');
   return { ...split, name: fullName(split.firstName, split.lastName) };
 }
+
+/**
+ * A manager's name given to a script (`seed:operator`, 09/10/2026): --first-name / --last-name, or --name split at its
+ * first space; both parts are required, a one-word name is refused.
+ */
+export function namesFromArgs(input: { firstName?: string; lastName?: string; name?: string }): { firstName: string; lastName: string } {
+  const separate = input.firstName !== undefined || input.lastName !== undefined;
+  const { firstName, lastName } = namesOf(separate ? { firstName: input.firstName, lastName: input.lastName } : { name: input.name });
+  if (!firstName) throw new Error('The manager needs a first name: --first-name "Jean" (or --name "Jean Dupont")');
+  if (!lastName) throw new Error('The manager needs a last name: --last-name "Dupont" (or --name "Jean Dupont")');
+  return { firstName, lastName };
+}

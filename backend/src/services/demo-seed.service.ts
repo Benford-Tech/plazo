@@ -7,7 +7,7 @@ import {
   DEMO_AIRPORT_CODE,
   DEMO_BOOKINGS,
   DEMO_EMAIL_DOMAIN,
-  DEMO_MANAGER_NAME,
+  DEMO_MANAGER,
   DEMO_OPERATORS,
   DemoBooking,
   DemoOperator,
@@ -16,6 +16,8 @@ import {
 import { billableDays, quoteCents } from '@/domain/pricing';
 import { formatFlight, plateKey } from '@/domain/reservation';
 import { addDays, localDate, parseInstant } from '@/domain/time';
+import { customerNamesOf } from '@/domain/customer-name';
+import { namesOf } from '@/domain/staff-name';
 import { allocateInboundSlug } from './inbound-slug';
 import { ParkingLocationService } from './parking-location.service';
 
@@ -160,7 +162,7 @@ export class DemoSeedService {
           data: {
             operatorId: operator.id,
             email,
-            name: DEMO_MANAGER_NAME,
+            ...namesOf(DEMO_MANAGER),
             role: 'manager',
             password: hashedPassword,
             emailVerifiedAt: new Date(),
@@ -170,7 +172,9 @@ export class DemoSeedService {
       } else if (manager.operatorId !== operator.id) {
         throw new Error(`The account ${email} belongs to another operator`);
       } else {
-        await tx.staff.update({ where: { id: manager.id }, data: { isActive: true } });
+        // A demo manager created without names (between 06/10 and 09/10/2026) gets them; a name changed since is kept.
+        const unnamed = !manager.firstName.trim() || !manager.lastName.trim();
+        await tx.staff.update({ where: { id: manager.id }, data: { isActive: true, ...(unnamed ? namesOf(DEMO_MANAGER) : {}) } });
       }
 
       const vehicle = await tx.shuttleVehicle.findFirst({ where: { operatorId: operator.id } });
@@ -196,7 +200,7 @@ export class DemoSeedService {
       arrivalAt,
       returnAt,
       passengers: booking.passengers,
-      customerName: booking.customerName,
+      ...customerNamesOf(booking),
       customerPhone: booking.customerPhone,
       customerEmail: booking.customerEmail,
       plate: booking.plate,
