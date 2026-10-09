@@ -39,6 +39,7 @@ vi.mock("sonner", () => ({ toast }));
 const mapHandle = vi.hoisted(() => ({
   flyTo: vi.fn(),
   fitTo: vi.fn(),
+  rotateTo: vi.fn(),
   project: vi.fn(() => null),
   getBounds: vi.fn(() => null),
 }));
@@ -51,6 +52,7 @@ vi.mock("@/components/capacity/MapView", async () => {
         onDrawn?: (g: { type: string; coordinates: unknown }) => void;
         drawMode?: string | null;
         initialBounds?: unknown;
+        onBearingChange?: (bearing: number) => void;
         labels?: { id: string; lngLat: [number, number]; text: string }[];
         children?: React.ReactNode;
       },
@@ -73,6 +75,9 @@ vi.mock("@/components/capacity/MapView", async () => {
             }
           >
             draw-line
+          </button>
+          <button type="button" onClick={() => props.onBearingChange?.(30)}>
+            turn-30
           </button>
           <ul>
             {(props.labels ?? []).map((l) => (
@@ -1042,5 +1047,68 @@ describe("plan du parking (éditeur R-A, 07/10/2026)", () => {
       ]),
     );
     expect(await screen.findByTestId("file-F01")).toBeInTheDocument();
+  });
+
+  it("replie la palette à la main, et d'elle-même pendant qu'on trace une file (P-B)", async () => {
+    localStorage.removeItem("plazo:plan-palette");
+    api.getParkingPlan.mockResolvedValue(view([]));
+    api.updateParkingPlan.mockResolvedValue({ data: {} });
+    renderAt("/parking/plan/files");
+    const draw = await screen.findByRole("button", {
+      name: "+ Tracer une file",
+    });
+    const card = screen.getByTestId("tool-card");
+    expect(card).toHaveAttribute("data-collapsed", "false");
+
+    // While the line is drawn the palette is a bar: the tool, the help line, « Terminer ».
+    fireEvent.click(draw);
+    expect(card).toHaveAttribute("data-collapsed", "true");
+    expect(
+      screen.queryByRole("button", { name: "+ Tracer une file" }),
+    ).toBeNull();
+    expect(card.textContent).toContain("Terminer");
+    fireEvent.click(screen.getByRole("button", { name: "Terminer" }));
+    expect(card).toHaveAttribute("data-collapsed", "false");
+
+    // By hand, and remembered.
+    fireEvent.click(screen.getByRole("button", { name: "Replier la palette" }));
+    expect(card).toHaveAttribute("data-collapsed", "true");
+    expect(localStorage.getItem("plazo:plan-palette")).toBe("closed");
+    fireEvent.click(screen.getByRole("button", { name: "Déplier la palette" }));
+    expect(card).toHaveAttribute("data-collapsed", "false");
+    expect(
+      screen.getByRole("button", { name: "+ Tracer une file" }),
+    ).toBeInTheDocument();
+    localStorage.removeItem("plazo:plan-palette");
+  });
+
+  it("tourne la carte : « Aligner sur le parking », boussole et nord en haut (R-A)", async () => {
+    localStorage.removeItem("plazo:plan-bearing:p1");
+    api.getParkingPlan.mockResolvedValue(view([]));
+    api.updateParkingPlan.mockResolvedValue({ data: {} });
+    renderAt("/parking/plan");
+    // The 40 × 14 m outline lies east-west in Lambert 93, whose north is ~1.5° off true north at
+    // Lyon: aligned, the map barely turns.
+    fireEvent.click(
+      await screen.findByRole("button", { name: "Aligner sur le parking" }),
+    );
+    expect(mapHandle.rotateTo).toHaveBeenCalledTimes(1);
+    const [aligned, bounds] = mapHandle.rotateTo.mock.calls[0];
+    expect(Math.abs(aligned)).toBeLessThan(3);
+    expect(bounds).not.toBeNull();
+    // No compass while north is up.
+    expect(
+      screen.queryByRole("button", { name: "Remettre le nord en haut" }),
+    ).toBeNull();
+
+    // Turned by hand: the compass appears, the bearing is kept for this parking.
+    fireEvent.click(screen.getByText("turn-30"));
+    const north = await screen.findByRole("button", {
+      name: "Remettre le nord en haut",
+    });
+    expect(localStorage.getItem("plazo:plan-bearing:p1")).toBe("30");
+    fireEvent.click(north);
+    expect(mapHandle.rotateTo).toHaveBeenLastCalledWith(0);
+    localStorage.removeItem("plazo:plan-bearing:p1");
   });
 });

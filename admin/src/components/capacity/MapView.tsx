@@ -36,7 +36,10 @@ export type DrawKind = "polygon" | "linestring" | "point";
 
 export interface MapViewHandle {
   flyTo(center: LonLat, zoom?: number): void;
+  /** Fits the bounds, keeping the map's rotation. */
   fitTo(bounds: [LonLat, LonLat]): void;
+  /** Turns the map so `bearing` (degrees clockwise from north) points up, fitting `bounds` if given. */
+  rotateTo(bearing: number, bounds?: [LonLat, LonLat] | null): void;
   project(p: LonLat): { x: number; y: number } | null;
   getBounds(): [number, number, number, number] | null;
 }
@@ -49,6 +52,14 @@ interface Props {
   showPhoto?: boolean;
   /** Fitted once, when the map is created. */
   initialBounds?: [LonLat, LonLat] | null;
+  /**
+   * R-A (09/10/2026): the map turns (right or Ctrl + drag, two fingers on a phone). Read once,
+   * when the map is created, with the bearing it opens on.
+   */
+  rotatable?: boolean;
+  initialBearing?: number;
+  /** The bearing once a rotation ends. */
+  onBearingChange?: (bearing: number) => void;
   /** Polygon whose vertices can be dragged (Terra Draw select mode), with midpoints when `midpoints`. */
   editPolygon?: GeoPolygon | null;
   midpoints?: boolean;
@@ -60,6 +71,8 @@ interface Props {
   snapTo?: LonLat[][];
   /** P-A: the brush. While set, dragging paints a stroke of `widthM` metres instead of panning. */
   paint?: { widthM: number; mode: "paint" | "erase" } | null;
+  /** A stroke starts (the pointer is down): the palette steps aside meanwhile. */
+  onPaintStart?: () => void;
   /** The points of a finished stroke, in map order. */
   onPaintStroke?: (points: LonLat[]) => void;
   onMapClick?: (lngLat: LonLat, point: { x: number; y: number }) => void;
@@ -120,7 +133,16 @@ export const MapView = forwardRef<MapViewHandle, Props>(function MapView(props, 
 
   useImperativeHandle(ref, () => ({
     flyTo: (center, zoom = 18) => mapRef.current?.flyTo({ center, zoom, duration: 800 }),
-    fitTo: bounds => mapRef.current?.fitBounds(bounds, { padding: 60, maxZoom: 19, duration: 0 }),
+    fitTo: bounds => {
+      const map = mapRef.current;
+      map?.fitBounds(bounds, { padding: 60, maxZoom: 19, duration: 0, bearing: map.getBearing() });
+    },
+    rotateTo: (bearing, bounds) => {
+      const map = mapRef.current;
+      if (!map) return;
+      if (bounds) map.fitBounds(bounds, { padding: 60, maxZoom: 19, bearing, duration: 600 });
+      else map.easeTo({ bearing, duration: 600 });
+    },
     project: p => (mapRef.current ? mapRef.current.project(p) : null),
     getBounds: () => {
       const b = mapRef.current?.getBounds();
@@ -138,17 +160,21 @@ export const MapView = forwardRef<MapViewHandle, Props>(function MapView(props, 
       center: DEFAULT_CENTER,
       zoom: 15,
       maxZoom: 21,
+      bearing: propsRef.current.rotatable ? (propsRef.current.initialBearing ?? 0) : 0,
       attributionControl: false,
-      dragRotate: false,
+      dragRotate: !!propsRef.current.rotatable,
       pitchWithRotate: false,
       // Screenshots of the map (end-to-end checks) need the drawing buffer.
       canvasContextAttributes: { preserveDrawingBuffer: true },
     });
-    map.touchZoomRotate.disableRotation();
+    if (!propsRef.current.rotatable) map.touchZoomRotate.disableRotation();
+    // A map that turns never tilts: two fingers turn it, they do not lean it.
+    else map.touchPitch.disable();
     mapRef.current = map;
     // Development aid for end-to-end checks.
     if (import.meta.env.DEV) (window as unknown as { __capacityMap?: MapLibreMap }).__capacityMap = map;
-    if (propsRef.current.initialBounds) map.fitBounds(propsRef.current.initialBounds, { padding: 60, maxZoom: 19, duration: 0 });
+    if (propsRef.current.initialBounds)
+      map.fitBounds(propsRef.current.initialBounds, { padding: 60, maxZoom: 19, duration: 0, bearing: map.getBearing() });
 
     const emitView = () => {
       const b = map.getBounds();
@@ -245,6 +271,7 @@ export const MapView = forwardRef<MapViewHandle, Props>(function MapView(props, 
     });
 
     map.on("moveend", emitView);
+    map.on("rotateend", () => propsRef.current.onBearingChange?.(map.getBearing()));
     map.on("zoom", () => {
       const zoom = map.getZoom();
       for (const { marker, minZoom } of markersRef.current) marker.getElement().style.display = zoom >= minZoom ? "" : "none";
@@ -269,11 +296,15 @@ export const MapView = forwardRef<MapViewHandle, Props>(function MapView(props, 
         ],
       });
     };
-    const start = (e: { lngLat: { lng: number; lat: number }; preventDefault(): void }) => {
+    const start = (e: { lngLat: { lng: number; lat: number }; preventDefault(): void; originalEvent?: Event }) => {
       if (!propsRef.current.paint) return;
+      // The right button and Ctrl + drag turn the map, even with a brush in hand.
+      const pointer = e.originalEvent as MouseEvent | undefined;
+      if (pointer && "button" in pointer && (pointer.button !== 0 || pointer.ctrlKey)) return;
       e.preventDefault();
       strokeRef.current = [[e.lngLat.lng, e.lngLat.lat]];
       setStrokeData(strokeRef.current, strokeRef.current[0]);
+      propsRef.current.onPaintStart?.();
     };
     const move = (e: { lngLat: { lng: number; lat: number } }) => {
       if (!propsRef.current.paint) return;
@@ -434,6 +465,19 @@ export const MapView = forwardRef<MapViewHandle, Props>(function MapView(props, 
 
   useEffect(syncLayers, [props.layers]);
   useEffect(syncDraw, [props.drawMode, props.editPolygon, props.midpoints]);
+  // The double click that ends a line or a polygon must not zoom the map as well. Terra Draw gives
+  // the double click back as soon as its drawing mode stops, on the line's last click, before the
+  // browser sends the double click: it comes back here a moment later.
+  useEffect(() => {
+    const map = mapRef.current;
+    if (!map) return;
+    map.doubleClickZoom.disable();
+    if (props.drawMode) return;
+    const timer = setTimeout(() => {
+      if (!propsRef.current.drawMode) mapRef.current?.doubleClickZoom.enable();
+    }, 500);
+    return () => clearTimeout(timer);
+  }, [props.drawMode]);
   useEffect(syncPaint, [props.paint?.widthM, props.paint?.mode]);
 
   useEffect(() => {
