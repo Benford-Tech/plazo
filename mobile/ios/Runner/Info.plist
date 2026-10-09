@@ -51,6 +51,9 @@
 	<string>Votre position est partagée avec le parking uniquement pendant votre trajet vers le point de rendez-vous, pour prévenir le voiturier ou le chauffeur de votre arrivée. Le partage s'arrête à votre arrivée ou au bout de 2 h, puis votre position est effacée.</string>
 	<key>NSLocationAlwaysAndWhenInUseUsageDescription</key>
 	<string>Pour que le parking sache quand vous arrivez même si vous quittez l'application pendant le trajet. Le partage s'arrête à votre arrivée ou au bout de 2 h au plus, puis votre position est effacée. Vous pouvez l'arrêter à tout moment.</string>
+	<!-- Stripe's payment sheet can scan a bank card: Apple refuses a build whose SDKs use the camera without this text. -->
+	<key>NSCameraUsageDescription</key>
+	<string>L'appareil photo sert uniquement à scanner votre carte bancaire au moment du paiement, si vous le choisissez.</string>
 	<key>UIBackgroundModes</key>
 	<array>
 		<string>location</string>

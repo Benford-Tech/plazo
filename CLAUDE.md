@@ -450,11 +450,15 @@ Le nom du produit doit rester dans UN seul fichier de configuration (il peut enc
   par `/plan/estimate` et `/plan/generate`) ; paiement par la feuille native Stripe
   (`flutter_stripe`) ; architecture de `lovenest-frontend`
   (`lib/src/features/<x>/{data,domain,presentation}`, `di/`, `core/`), textes dans `assets/l10n/fr-FR.json`,
-  nom du produit recopié depuis `product.json` par `tool/sync_product.dart`, builds par `codemagic.yaml` (racine du dépôt, `working_directory: mobile`). **Pipelines de publication (07/10/2026)** :
-  `mobile-check` (chaque push : vérifications + APK debug), `plazo-release` et `plazo-pro-release` (tag `mobile-v*` ou manuel :
-  AAB signé → Google Play piste interne, IPA signé → TestFlight ; numéro de build = compteur Codemagic + 100, jamais sous le
-  dernier des stores ; secrets dans le groupe Codemagic `mobile_secrets` et l'intégration `plazo-asc`, voir `mobile/README.md`
-  « Publier sur les stores »).
+  nom du produit recopié depuis `product.json` par `tool/sync_product.dart`, builds par `codemagic.yaml` (racine du dépôt, `working_directory: mobile`). **Pipelines de publication (07/10/2026, revus le 09/10/2026 :
+  Codemagic retenu par Joanny)** : `mobile-check` (push sur `main` touchant `mobile/` : vérifications + APK debug) et quatre
+  workflows un par store et par app, `plazo-android-release`, `plazo-ios-release`, `plazo-pro-android-release`,
+  `plazo-pro-ios-release` (tag `mobile-vX.Y.Z` = `version:` de `pubspec.yaml`, sinon arrêt, ou manuel : AAB signé → Google Play
+  tests internes, IPA signé → TestFlight ; Android sans rien d'Apple ; numéro de build = compteur Codemagic + 100, jamais sous
+  le dernier du store ; secrets dans le groupe `mobile_secrets`, dont `GOOGLE_PLAY_SERVICE_ACCOUNT_CREDENTIALS`, et
+  l'intégration Developer Portal `plazo-asc` ; marche à suivre `mobile/publier-sur-les-stores.md`). Le nom iOS vit dans
+  `APP_DISPLAY_NAME` des configurations Xcode (mis à jour par `sync_product.dart`) ; Google Pay suit la clé Stripe servie
+  (`pk_live_` = production).
   Voir `mobile/README.md`.
 
 ## Personnel

@@ -16,9 +16,8 @@ part 'pro_occupation_state.dart';
 
 /// Bloc 2, step "Occupation" in the app: find a vehicle, place an arrival, note the key hook.
 class ProOccupationBloc extends Bloc<ProOccupationEvent, ProOccupationState> {
-  ProOccupationBloc(this._getParking, this._getBoard, this._search, this._assign, this._getFiles, this._assignFile, this._prepareFiles, {LocationService? location})
-    : _location = location,
-      super(const ProOccupationState()) {
+  ProOccupationBloc(this._getParking, this._getBoard, this._search, this._assign, this._getFiles, this._assignFile, this._prepareFiles, {this._location})
+    : super(const ProOccupationState()) {
     on<ProOccupationStarted>(_onStarted);
     on<ProOccupationRefreshed>((e, emit) => _load(emit));
     on<ProOccupationSearched>(_onSearched);
