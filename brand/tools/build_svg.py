@@ -25,6 +25,8 @@ DARK = "#2c1a0e"     # the dark neutral (no purple since 03/10/2026): mono varia
 PEACH = "#f0a36b"
 ORANGE = "#FF6600"  # easyJet-inspired orange: the sign's colour (choice O-D, 03/10/2026)
 WHITE = "#ffffff"
+LIME = "#A3E635"     # the pro space's sign (choice L-A, 05/10/2026): lime panel...
+LIME_INK = "#0F2A14"  # ...with dark green letters
 
 # Geometry (viewBox units). The sign is 100 high, its corners 17 % of the height; the symbol
 # (icons, favicon) is the same sign reduced to its "P", a 100 x 100 square.
@@ -161,6 +163,8 @@ def main():
         "wordmark.svg": svg(wm_w, wm_h, wordmark(DARK, -wb[0] + 1, -wb[1] + 1), NAME),
         "wordmark-dark.svg": svg(wm_w, wm_h, wordmark(WHITE, -wb[0] + 1, -wb[1] + 1), NAME),
         "favicon.svg": svg(S, S, symbol(ORANGE, WHITE), NAME),
+        # The pro space's favicon (09/10/2026): the symbol in the colours of logo-horizontal-pro.svg.
+        "favicon-pro.svg": svg(S, S, symbol(LIME, LIME_INK), f"{NAME} Pro"),
         # Maskable icon: full bleed, the P inside the inner 80 % safe circle.
         "icon-maskable.svg": svg(S, S,
             f'<rect width="{S}" height="{S}" fill="{ORANGE}"/>\n'

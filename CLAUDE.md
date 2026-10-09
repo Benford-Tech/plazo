@@ -518,7 +518,8 @@ Canevas de référence : https://claude.ai/artifact/6ezoCDyLXFNwhAH5ZWUf4u (rang
   « pas assez voyant » en citron sur blanc) ; états en pilules teintées
   (vert `#16A34A`, ambre `#D97706`, rouge `#DC2626`, indigo `#4F46E5` sur fonds pâles) ; Inter pour le texte (Archivo Narrow
   disponible en `font-narrow`), JetBrains Mono pour les heures et les chiffres ; **logo pro = panneau vert citron, lettres
-  vert foncé** (`brand/logo-horizontal-pro.svg`) ; fond de connexion = grille citron sur le fond clair. Les paragraphes
+  vert foncé** (`brand/logo-horizontal-pro.svg`), et favicon de l'espace pro vert aussi (09/10/2026 : `brand/favicon-pro.svg`,
+  servi en `admin/public/favicon-pro.svg` et `apple-touch-icon-pro.png`) ; fond de connexion = grille citron sur le fond clair. Les paragraphes
   suivants décrivent la composition, qui reste celle de la fusion Flotte + Opérations ; leurs mentions de noir et de jaune
   sont caduques.
   Ancienne direction **B « Tableau des vols »** (01/10 → 05/10/2026) — fond noir `#0B0B0C`,
