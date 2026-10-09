@@ -1880,6 +1880,7 @@ export const fr = {
         "Régler sa commission",
         "Ouvrir son espace (bandeau jaune « Vous consultez l'espace de … »), actions tracées dans le journal",
         "Suspendre le compte",
+        "Archiver un loueur suspendu (filtre « Archivés »), le désarchiver",
       ],
     },
     listings: {

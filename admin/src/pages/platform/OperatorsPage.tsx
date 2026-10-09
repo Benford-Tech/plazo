@@ -446,7 +446,12 @@ function RowActions({
           className={cn(ghostButton, "text-muted-foreground")}
           disabled={archiving.isPending}
           onClick={async () => {
-            if (!(await confirm(t.confirmArchive(operator.name)))) return;
+            if (
+              !(await confirm(t.confirmArchive(operator.name), {
+                confirmLabel: t.archive,
+              }))
+            )
+              return;
             archiving.mutate();
           }}
         >

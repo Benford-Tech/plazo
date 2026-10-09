@@ -36,7 +36,8 @@ export default function NotificationsPage() {
   const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
 
   const history = useQuery({ queryKey: ["platform", "notifications"], queryFn: adminApi.getPlatformNotifications });
-  const operators = useQuery({ queryKey: ["platform", "operators"], queryFn: adminApi.getPlatformOperators, enabled: audience === "operator" });
+  // A plain call: React Query would pass its context as the « view » argument.
+  const operators = useQuery({ queryKey: ["platform", "operators"], queryFn: () => adminApi.getPlatformOperators(), enabled: audience === "operator" });
   const target = audience === "operator" ? operatorId || null : null;
   const reach = useQuery({
     queryKey: ["platform", "notifications", "audience", audience, target],

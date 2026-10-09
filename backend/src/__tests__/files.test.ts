@@ -179,6 +179,17 @@ describe('files (S-C, 07/10/2026)', () => {
       .set(auth(token))
       .send(booking('QU-000-ET', addDays(today(), 6), { arrivalAt: `${addDays(today(), 1)}T08:00` }));
 
+    // An archived operator (09/10/2026) is out of the crons: its files are not prepared.
+    const archived = await setupOperator('Archivé');
+    await api()
+      .put(`/api/internal/parkings/${archived.parking.id}/files`)
+      .set(auth(archived.token))
+      .send({ files: [{ code: 'F01', capacity: 2 }] });
+    await prisma.operator.update({
+      where: { id: archived.operator.id },
+      data: { status: 'suspended', suspendedAt: new Date(), archivedAt: new Date() },
+    });
+
     const cron = await api().get('/api/internal/cron/prepare-files').set('Authorization', `Bearer ${process.env.CRON_SECRET}`);
     expect(cron.status).toBe(200);
     expect(cron.body).toEqual({ parkings: 1, planned: 3 });
