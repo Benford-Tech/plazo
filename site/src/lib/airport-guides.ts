@@ -5,6 +5,7 @@
 // fact-checked again on 09/10/2026: Terminal 2 closed since 01/04/2026, P1 run by LPA) and are dated in the text;
 // figures about the partners are read from the live offers of real parkings only, never from the demo ones.
 import { daysLabel } from "./dates";
+import { topicPath } from "./guides/topics";
 import { formatEuros } from "./money";
 import { PRODUCT_NAME } from "./product";
 import type { AirportResponse, SearchResponse } from "./types";
@@ -44,6 +45,8 @@ export interface GuideSection {
   table?: GuideTable;
   list?: string[];
   parts?: GuidePart[];
+  /** A link at the end of the section, to the page that goes further (a topic guide). */
+  more?: { href: string; label: string };
 }
 
 export interface AirportGuide {
@@ -64,16 +67,69 @@ export function guideFacts(listings: AirportResponse["listings"], preview: Searc
   };
 }
 
-function rideText({ min, max }: { min: number; max: number }): string {
+/** Facts of a topic guide (09/10/2026): those of the airport guide, plus the long stay and the valets of the real partners. */
+export interface TopicFacts extends GuideFacts {
+  /** Cheapest bookable real parking for a stay of two weeks (its billable days). */
+  twoWeeks: { priceCents: number; days: number } | null;
+  /** Real partners with a valet: how many there are, and the cheapest week among them. */
+  valet: { count: number; week: { priceCents: number; days: number } | null } | null;
+}
+
+/** A topic guide: one page per search intent (« parking pas cher », « longue durée », « voiturier »). */
+export interface TopicGuide {
+  /** Address segment, under /<airport>/guide/. */
+  slug: string;
+  /** Link label in the other guides and the footer. */
+  short: string;
+  /** <title> without the product name (the page adds it), about 60 characters. */
+  metaTitle: string;
+  /** Meta description, 160 characters at most. */
+  metaDescription: string;
+  /** H1. */
+  title: string;
+  /** Lead paragraph under the H1. */
+  intro: string;
+  /** Day the page was first published and day its facts were last checked, as ISO dates (« 2026-10-09 »). */
+  published: string;
+  updated: string;
+  sections: GuideSection[];
+  faq: [string, string][];
+  /** The partner parkings shown on the page, with the length of the stay they are priced for. */
+  partners: { filter: "all" | "valet"; stayDays: number; title: string; lead: string; empty: string };
+}
+
+type Offer = { priceCents: number; days: number };
+
+function cheapestOffer(preview: SearchResponse | null, keep: (slug: string) => boolean = () => true): Offer | null {
+  const offers = (preview?.results ?? []).filter(r => !r.isDemo && r.available && r.priceCents !== null && keep(r.slug));
+  const best = offers.reduce<(typeof offers)[number] | null>((b, r) => (b === null || r.priceCents! < b.priceCents! ? r : b), null);
+  return best ? { priceCents: best.priceCents!, days: best.days } : null;
+}
+
+export function topicFacts(listings: AirportResponse["listings"], week: SearchResponse | null, twoWeeks: SearchResponse | null): TopicFacts {
+  const valets = new Set(listings.filter(l => !l.isDemo && l.services.includes("valet")).map(l => l.slug));
+  return {
+    ...guideFacts(listings, week),
+    twoWeeks: cheapestOffer(twoWeeks),
+    valet: valets.size ? { count: valets.size, week: cheapestOffer(week, slug => valets.has(slug)) } : null,
+  };
+}
+
+export function rideText({ min, max }: { min: number; max: number }): string {
   return min === max ? `${min} min` : `${min} à ${max} min`;
 }
 
 /** The ride in a sentence: minutes in words, as everywhere else in the prose. */
-function rideMinutes({ min, max }: { min: number; max: number }): string {
+export function rideMinutes({ min, max }: { min: number; max: number }): string {
   return min === max ? `${min} minutes` : `${min} à ${max} minutes`;
 }
 
-const capitalise = (text: string) => `${text[0].toUpperCase()}${text.slice(1)}`;
+export const capitalise = (text: string) => `${text[0].toUpperCase()}${text.slice(1)}`;
+
+/** « dès 56,00 € pour 8 jours facturés » (an offer in a sentence). */
+export function offerText({ priceCents, days }: Offer): string {
+  return `dès ${formatEuros(priceCents)} pour ${daysLabel(days)} facturé${days > 1 ? "s" : ""}`;
+}
 
 /**
  * The airport's own figures, read on lyonaeroports.com (pages « Parkings », « Terminal 2 fermé », « Bornes de recharge » and
@@ -111,8 +167,7 @@ export const LYON_OFFICIAL = {
 } as const;
 
 function lyonSaintExupery(facts: GuideFacts): AirportGuide {
-  const days = facts.week?.days ?? 0;
-  const week = facts.week ? `dès ${formatEuros(facts.week.priceCents)} pour ${daysLabel(days)} facturé${days > 1 ? "s" : ""}` : null;
+  const week = facts.week ? offerText(facts.week) : null;
   const ride = facts.shuttle ? rideText(facts.shuttle) : null;
   const rideWords = facts.shuttle ? rideMinutes(facts.shuttle) : null;
   const o = LYON_OFFICIAL;
@@ -273,6 +328,7 @@ function lyonSaintExupery(facts: GuideFacts): AirportGuide {
       {
         id: "longue-duree",
         short: "Longue durée",
+        more: { href: topicPath("lyon-saint-exupery", "parking-longue-duree"), label: "Le guide du parking longue durée à Lyon Saint-Exupéry" },
         title: "Parking longue durée : deux semaines, un mois et plus",
         paragraphs: [
           `Pour un long séjour, le prix à la journée compte plus que la distance. À l’aéroport, le P5 est fait pour cela : ${o.grid.P5[6]} le mois sans réservation, puis 4 € par jour, là où le P0 atteint ${o.grid["P0 · P1"][6]} et ajoute 21 € par jour. La version robotisée du P5 accepte les séjours de 3 à 30 jours. Les parkings privés sont, eux aussi, conçus pour la longue durée, avec des tarifs dégressifs et parfois des forfaits au mois.`,
@@ -285,6 +341,7 @@ function lyonSaintExupery(facts: GuideFacts): AirportGuide {
       {
         id: "pas-cher",
         short: "Se garer pas cher",
+        more: { href: topicPath("lyon-saint-exupery", "parking-pas-cher"), label: "Le guide du parking pas cher à Lyon Saint-Exupéry" },
         title: "Se garer pas cher à Lyon Saint-Exupéry : les bonnes pratiques",
         paragraphs: ["Le parking le moins cher n’est pas toujours le plus éloigné, et le prix à la journée affiché en gros ne dit rien du prix total. Voici ce qui fait vraiment baisser la facture."],
         list: [
@@ -330,6 +387,7 @@ function lyonSaintExupery(facts: GuideFacts): AirportGuide {
       {
         id: "voiturier",
         short: "Voiturier ou pas",
+        more: { href: topicPath("lyon-saint-exupery", "parking-voiturier"), label: "Le guide du parking avec voiturier à Lyon Saint-Exupéry" },
         title: "Voiturier ou se garer soi-même ?",
         paragraphs: [
           "Avec un voiturier, vous confiez les clés à l’accueil et le parking range la voiture ; vous ne cherchez ni place ni chemin, et au retour la voiture est avancée pour vous. Sans voiturier, vous la garez vous-même à la place indiquée et vous gardez vos clés. Chaque fiche dit ce que propose le parking, et le filtre « Voiturier » des résultats ne garde que les parkings qui en proposent un.",

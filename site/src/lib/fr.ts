@@ -153,6 +153,14 @@ const frBase = {
   /** C-A (08/10/2026): the airport's guide (its text is in airport-guides.ts). */
   guide: {
     onThisPage: "Sur cette page",
+    /** Topic guides (09/10/2026). */
+    updated: (date: string) => `Mis à jour le ${date}`,
+    searchTitle: "Comparez les prix pour vos dates",
+    seeAllResults: "Voir tous les parkings pour ces dates",
+    faqTitle: "Questions fréquentes",
+    otherGuides: "Les autres guides",
+    airportGuide: (airport: string) => `Le guide complet du parking à l’aéroport de ${airport}`,
+    footerLink: (topic: string, airport: string) => `${topic} à ${airport}`,
   },
   results: {
     available: (n: number) => (n === 0 ? "Aucun parking disponible" : `${n} parking${n > 1 ? "s" : ""} disponible${n > 1 ? "s" : ""}`),

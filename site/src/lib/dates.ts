@@ -104,6 +104,14 @@ export function formatDay(date: string): string {
   return `${WEEKDAYS[d.getUTCDay()]} ${d.getUTCDate()} ${MONTHS[d.getUTCMonth()]}`;
 }
 
+const LONG_MONTHS = ["janvier", "février", "mars", "avril", "mai", "juin", "juillet", "août", "septembre", "octobre", "novembre", "décembre"];
+
+/** "2026-10-09" -> "9 octobre 2026" (dates printed in the guides). */
+export function longDate(date: string): string {
+  const d = new Date(`${date}T00:00:00Z`);
+  return `${d.getUTCDate() === 1 ? "1er" : d.getUTCDate()} ${LONG_MONTHS[d.getUTCMonth()]} ${d.getUTCFullYear()}`;
+}
+
 /**
  * Short dates of a stay, for the phone's single "Vos dates" pill: the return drops its month when
  * it is the drop-off's ("sam. 3 oct." → "sam. 10"), and shows its year when that differs.
