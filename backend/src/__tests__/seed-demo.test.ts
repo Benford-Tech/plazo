@@ -127,6 +127,8 @@ describe('données de démonstration', () => {
     for (const op of demos) {
       expect(op.status).toBe('suspended');
       expect(op.suspendedAt!.getTime()).toBeGreaterThanOrEqual(before);
+      // Archived too (09/10/2026): out of the platform's lists and the crons.
+      expect(op.archivedAt!.getTime()).toBeGreaterThanOrEqual(before);
     }
     expect(await prisma.operator.findUniqueOrThrow({ where: { id: real.operator.id } })).toMatchObject({ status: 'active', suspendedAt: null });
     expect(await prisma.operator.count()).toBe(6);
@@ -151,14 +153,18 @@ describe('données de démonstration', () => {
     expect(signIn.status).toBe(403);
     expect(signIn.body.code).toBe('account_suspended');
 
-    // A second archive finds nothing to do.
+    // A second archive finds nothing to do; a demo suspended by hand is archived as it is.
     expect(await seed().archive()).toEqual({ operators: 0 });
+    const first = demos[0];
+    await prisma.operator.update({ where: { id: first.id }, data: { archivedAt: null } });
+    expect(await seed().archive()).toEqual({ operators: 1 });
+    expect((await prisma.operator.findUniqueOrThrow({ where: { id: first.id } })).suspendedAt).toEqual(first.suspendedAt);
     expect(await prisma.operator.count({ where: { isDemo: true, status: 'suspended' } })).toBe(5);
 
     // apply restores them in place: back on the site, the manager signs in again.
     const restored = await seed().apply(PASSWORD);
     expect(restored).toEqual({ operatorsCreated: 0, operatorsUpdated: 5, bookingsCreated: 0, bookingsUpdated: 3 });
-    expect(await prisma.operator.count({ where: { isDemo: true, status: 'active', suspendedAt: null } })).toBe(5);
+    expect(await prisma.operator.count({ where: { isDemo: true, status: 'active', suspendedAt: null, archivedAt: null } })).toBe(5);
     expect(await prisma.operator.count()).toBe(6);
     const again = await api().get('/api/public/airports/lyon-saint-exupery');
     expect(again.body.listings).toHaveLength(6);

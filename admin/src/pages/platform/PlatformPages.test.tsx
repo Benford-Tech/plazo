@@ -25,6 +25,8 @@ const api = vi.hoisted(() => ({
   setCommission: vi.fn(),
   suspendOperator: vi.fn(),
   reactivateOperator: vi.fn(),
+  archiveOperator: vi.fn(),
+  unarchiveOperator: vi.fn(),
   inviteOperator: vi.fn(),
   resendInvitation: vi.fn(),
   getPlatformListings: vi.fn(),
@@ -154,6 +156,37 @@ describe("Loueurs", () => {
 
     await userEvent.click(within(demo).getByRole("button", { name: "Ouvrir son espace ›" }));
     await waitFor(() => expect(auth.startViewAs).toHaveBeenCalledWith("o1"));
+  });
+
+  it("archive un loueur suspendu et le retrouve sous « Archivés » (09/10/2026)", async () => {
+    api.getPlatformOperators.mockImplementation(async (view?: string) =>
+      view === "archived"
+        ? { defaultCommissionBps: 1200, counts: { current: 2, archived: 1 }, operators: [operator({ id: "o9", name: "Ancien Parking", status: "suspended", suspendedAt: "2026-10-05T08:00:00Z", archivedAt: "2026-10-09T08:00:00Z" })] }
+        : { ...operators, counts: { current: 2, archived: 1 }, operators: [operator({}), operator({ id: "o2", name: "Allo Park Lyon", status: "suspended", suspendedAt: "2026-10-08T08:00:00Z" })] },
+    );
+    api.archiveOperator.mockResolvedValue({ data: {} });
+    api.unarchiveOperator.mockResolvedValue({ data: {} });
+    vi.spyOn(window, "confirm").mockReturnValue(true);
+    renderAt("/plateforme/loueurs", <OperatorsPage />);
+
+    // Only a suspended operator offers « Archiver ».
+    const active = (await screen.findByText("Parking Démo LYS")).closest("tr")!;
+    const views = screen.getByRole("group", { name: "Afficher" });
+    expect(within(views).getByRole("button", { name: /Loueurs/ })).toHaveAttribute("aria-pressed", "true");
+    expect(within(views).getByRole("button", { name: /Archivés/ })).toHaveTextContent("Archivés1");
+    expect(within(active).queryByRole("button", { name: "Archiver" })).not.toBeInTheDocument();
+    const suspended = screen.getByText("Allo Park Lyon").closest("tr")!;
+    await userEvent.click(within(suspended).getByRole("button", { name: "Archiver" }));
+    await waitFor(() => expect(api.archiveOperator).toHaveBeenCalledWith("o2"));
+
+    await userEvent.click(within(views).getByRole("button", { name: /Archivés/ }));
+    const archived = (await screen.findByText("Ancien Parking")).closest("tr")!;
+    expect(api.getPlatformOperators).toHaveBeenLastCalledWith("archived");
+    expect(within(archived).getByText("Archivé")).toBeInTheDocument();
+    expect(within(archived).getByText("archivé le 9 oct.")).toBeInTheDocument();
+    expect(within(archived).queryByRole("button", { name: "Réactiver" })).not.toBeInTheDocument();
+    await userEvent.click(within(archived).getByRole("button", { name: "Désarchiver" }));
+    await waitFor(() => expect(api.unarchiveOperator).toHaveBeenCalledWith("o9"));
   });
 
   it("invite un loueur et montre une seule fois le lien quand l'email ne peut pas partir", async () => {

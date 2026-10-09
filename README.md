@@ -129,8 +129,10 @@ une décision de Joanny. Cocher au fur et à mesure.
 - [x] **Parkings de démonstration** : archivés le 09/10/2026 (demande de Joanny, « archive tous les parkings de démo ») :
   `DEMO_LISTINGS=archive` sur Vercel, le build suspend les quatre loueurs fictifs (`[seed-demo] Archived 4 demo operator(s)` dans
   le journal), qui disparaissent du site, de l'app et de `/api/public/search` et dont les comptes sont refusés ; ils restent en
-  base, `true` les rétablit. Seul le récapitulatif horaire ignore un loueur suspendu : les rappels et le suivi des vols
-  traitent encore les trois réservations de démo tant qu'elles sont à venir. Retrait définitif : `DEMO_LISTINGS=remove` puis redéployer et vérifier
+  base, `true` les rétablit. **Archivés le 09/10/2026** (« archive les parkings suspendus ») : `Operator.archivedAt`, posé par
+  la migration `operator_archived` sur tout loueur suspendu à son déploiement et par `DEMO_LISTINGS=archive` ; un loueur archivé
+  quitte Plateforme › Loueurs (filtre « Archivés ») et Annonces, et les tâches automatiques (rappels, suivi des vols, préparation
+  des files ; les reversements continuent) ; « Désarchiver » le ramène suspendu, « Réactiver » actif. Retrait définitif : `DEMO_LISTINGS=remove` puis redéployer et vérifier
   `[seed-demo] Removed` dans le journal du build (irréversible : supprime aussi toute réservation faite sur une démo), puis
   supprimer `DEMO_LISTINGS` et `DEMO_SEED_PASSWORD`.
 - [ ] **Vercel Pro** : l'offre Hobby est réservée à un usage non commercial, plafonne à 100 déploiements par jour, garde

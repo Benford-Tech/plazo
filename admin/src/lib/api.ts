@@ -671,8 +671,10 @@ export const adminApi = {
     }),
 
   // The platform owner's space (super admin).
-  getPlatformOperators: () =>
-    apiRequest<PlatformOperators>("/internal/platform/operators"),
+  getPlatformOperators: (view?: "archived") =>
+    apiRequest<PlatformOperators>(
+      `/internal/platform/operators${view ? `?view=${view}` : ""}`,
+    ),
   setCommission: (id: string, commissionBps: number | null) =>
     apiRequest<{ data: { id: string; commissionBps: number | null } }>(
       `/internal/platform/operators/${id}/commission`,
@@ -689,6 +691,16 @@ export const adminApi = {
   reactivateOperator: (id: string) =>
     apiRequest<{ data: unknown }>(
       `/internal/platform/operators/${id}/reactivate`,
+      { method: "POST" },
+    ),
+  archiveOperator: (id: string) =>
+    apiRequest<{ data: unknown }>(
+      `/internal/platform/operators/${id}/archive`,
+      { method: "POST" },
+    ),
+  unarchiveOperator: (id: string) =>
+    apiRequest<{ data: unknown }>(
+      `/internal/platform/operators/${id}/unarchive`,
       { method: "POST" },
     ),
   startViewAs: (id: string) =>

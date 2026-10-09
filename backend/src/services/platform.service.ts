@@ -157,11 +157,18 @@ export class PlatformService {
 
   // ---- Operators ----------------------------------------------------------------------------------
 
-  public async operators() {
+  /**
+   * The Loueurs tab: the current operators (active and suspended), or the archived ones with view
+   * « archived » (09/10/2026), with the size of both lists.
+   */
+  public async operators(view?: unknown) {
+    if (view !== undefined && view !== 'current' && view !== 'archived') throw new ValidationException({ view: 'invalid_view' });
+    const archived = view === 'archived';
     const since = monthStart();
-    const [operators, monthly] = await Promise.all([
+    const [operators, monthly, archivedCount, currentCount] = await Promise.all([
       prisma.operator.findMany({
-        orderBy: { createdAt: 'desc' },
+        where: { archivedAt: archived ? { not: null } : null },
+        orderBy: archived ? { archivedAt: 'desc' } : { createdAt: 'desc' },
         include: {
           parkings: {
             orderBy: { createdAt: 'asc' },
@@ -180,12 +187,15 @@ export class PlatformService {
         },
       }),
       prisma.reservation.groupBy({ by: ['operatorId'], where: { createdAt: { gte: since }, ...COUNTED_BOOKING }, _count: { _all: true } }),
+      prisma.operator.count({ where: { archivedAt: { not: null } } }),
+      prisma.operator.count({ where: { archivedAt: null } }),
     ]);
     const bookings = new Map(monthly.map(m => [m.operatorId, m._count._all]));
     const now = new Date();
 
     return {
       defaultCommissionBps: PLATFORM_COMMISSION_BPS,
+      counts: { current: currentCount, archived: archivedCount },
       operators: operators.map(o => {
         const manager = o.staff.find(s => s.role === 'manager') ?? null;
         const invitation = manager?.accountTokens[0] ?? null;
@@ -195,6 +205,7 @@ export class PlatformService {
           name: o.name,
           status: o.status,
           suspendedAt: o.suspendedAt,
+          archivedAt: o.archivedAt,
           createdAt: o.createdAt,
           // The platform owner's own operator ("Plazo (tests)"): cannot be suspended.
           isPlatform: o.staff.some(s => isPlatformAdmin(s.email)),
@@ -234,12 +245,38 @@ export class PlatformService {
     return { id: operatorId, status: 'suspended' as const };
   }
 
+  /** Reactivates an operator, archived or not: it is back in the lists, on the site and in the crons. */
   public async reactivate(actor: AuthenticatedStaff, operatorId: string) {
     const operator = await this.operatorOrThrow(operatorId);
     if (operator.status === 'active') return { id: operatorId, status: operator.status };
-    await prisma.operator.update({ where: { id: operatorId }, data: { status: 'active', suspendedAt: null } });
+    await prisma.operator.update({ where: { id: operatorId }, data: { status: 'active', suspendedAt: null, archivedAt: null } });
     await this.record(actor, operatorId, 'operator.reactivated');
     return { id: operatorId, status: 'active' as const };
+  }
+
+  /**
+   * Archives a suspended operator (09/10/2026, « archive les parkings suspendus »): it leaves the Loueurs and
+   * Annonces lists and the crons, and keeps all its data. An active operator is suspended first (409 not_suspended).
+   */
+  public async archive(actor: AuthenticatedStaff, operatorId: string) {
+    const operator = await this.operatorOrThrow(operatorId);
+    if (operator.status !== 'suspended') {
+      throw new HttpException(httpStatus.CONFLICT, 'Only a suspended operator can be archived', 'not_suspended');
+    }
+    if (operator.archivedAt) return { id: operatorId, archivedAt: operator.archivedAt };
+    const archivedAt = new Date();
+    await prisma.operator.update({ where: { id: operatorId }, data: { archivedAt } });
+    await this.record(actor, operatorId, 'operator.archived');
+    return { id: operatorId, archivedAt };
+  }
+
+  /** Takes an operator out of the archive: back in the Loueurs list, still suspended. */
+  public async unarchive(actor: AuthenticatedStaff, operatorId: string) {
+    const operator = await this.operatorOrThrow(operatorId);
+    if (!operator.archivedAt) return { id: operatorId, archivedAt: null };
+    await prisma.operator.update({ where: { id: operatorId }, data: { archivedAt: null } });
+    await this.record(actor, operatorId, 'operator.unarchived');
+    return { id: operatorId, archivedAt: null };
   }
 
   /**
@@ -290,9 +327,11 @@ export class PlatformService {
 
   public async listListings(status?: string) {
     if (status && !LISTING_STATUSES.includes(status as ListingStatus)) throw new ValidationException({ status: 'invalid_status' });
+    // The listings of an archived operator are filed away with it (09/10/2026).
+    const current = { parking: { operator: { archivedAt: null } } } satisfies Prisma.ListingWhereInput;
     const [listings, counts] = await Promise.all([
       prisma.listing.findMany({
-        where: status ? { status: status as ListingStatus } : {},
+        where: status ? { status: status as ListingStatus, ...current } : current,
         // Oldest request first: the queue is handled in order.
         orderBy: [{ submittedAt: 'asc' }, { updatedAt: 'desc' }],
         include: {
@@ -309,7 +348,7 @@ export class PlatformService {
           },
         },
       }),
-      prisma.listing.groupBy({ by: ['status'], _count: { _all: true } }),
+      prisma.listing.groupBy({ by: ['status'], where: current, _count: { _all: true } }),
     ]);
     return {
       counts: Object.fromEntries(LISTING_STATUSES.map(s => [s, counts.find(c => c.status === s)?._count._all ?? 0])),

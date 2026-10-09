@@ -453,7 +453,11 @@ export class FileService {
 
   /** Every parking with files: the nightly cron. */
   public async prepareAll(): Promise<{ parkings: number; planned: number }> {
-    const parkings = await prisma.parking.findMany({ where: { files: { some: {} } }, select: { id: true, timezone: true } });
+    // An archived operator (09/10/2026) is out of the crons.
+    const parkings = await prisma.parking.findMany({
+      where: { files: { some: {} }, operator: { archivedAt: null } },
+      select: { id: true, timezone: true },
+    });
     let planned = 0;
     for (const p of parkings) planned += (await this.prepare(p.id, p.timezone, localDate(new Date(), p.timezone))).planned;
     return { parkings: parkings.length, planned };

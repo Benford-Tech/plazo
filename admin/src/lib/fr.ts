@@ -151,6 +151,7 @@ export const fr = {
       "Confirmez d'abord votre adresse email (lien reçu par email).",
     listing_required: "Enregistrez d'abord votre fiche.",
     commission_range: "Entre 0 et 50 %.",
+    not_suspended: "Suspendez d'abord ce loueur pour pouvoir l'archiver.",
     cannot_suspend_platform:
       "Le compte de la plateforme ne peut pas être suspendu.",
     no_pending_invitation: "Aucune invitation en attente pour ce loueur.",
@@ -1817,6 +1818,7 @@ export const fr = {
       invitationExpired: (date: string) =>
         `invitation expirée (envoyée le ${date})`,
       suspendedOn: (date: string) => `suspendu le ${date}`,
+      archivedOn: (date: string) => `archivé le ${date}`,
       platformAccount: "compte de la plateforme",
       emailToConfirm: "email à confirmer",
       paymentsActive: "Actifs",
@@ -1834,6 +1836,18 @@ export const fr = {
         `Suspendre ${name} ? Son équipe sera déconnectée et ne pourra plus se connecter, et ses fiches seront retirées du site.`,
       suspended: "Loueur suspendu.",
       reactivated: "Loueur réactivé.",
+      // 09/10/2026 (« archive les parkings suspendus »).
+      views: "Afficher",
+      viewCurrent: "Loueurs",
+      viewArchived: "Archivés",
+      archive: "Archiver",
+      unarchive: "Désarchiver",
+      confirmArchive: (name: string) =>
+        `Archiver ${name} ? Il quitte les listes Loueurs et Annonces et les tâches automatiques (rappels, suivi des vols). Ses données sont gardées : « Désarchiver » le ramène, toujours suspendu.`,
+      archived: "Loueur archivé.",
+      unarchived: "Loueur désarchivé, toujours suspendu.",
+      statusArchived: "Archivé",
+      emptyArchived: "Aucun loueur archivé.",
       editCommission: (name: string) => `Modifier la commission de ${name}`,
       commissionLabel: "Commission (%)",
       commissionSaved: "Commission enregistrée.",

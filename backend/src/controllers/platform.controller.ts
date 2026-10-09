@@ -59,8 +59,9 @@ export class PlatformController {
     res.status(httpStatus.CREATED).json({ data: await this.platform.sendNotification(req.staff, data) });
   });
 
+  /** GET /internal/platform/operators[?view=archived] */
   public operators = catchAsync(async (req: Request, res: Response) => {
-    res.json(await this.platform.operators());
+    res.json(await this.platform.operators(req.query.view));
   });
 
   /** PATCH /internal/platform/operators/:id/commission */
@@ -77,6 +78,16 @@ export class PlatformController {
   /** POST /internal/platform/operators/:id/reactivate */
   public reactivate = catchAsync(async (req: RequestWithStaffSession, res: Response) => {
     res.json({ message: 'Operator reactivated', data: await this.platform.reactivate(req.staff, req.params.id as string) });
+  });
+
+  /** POST /internal/platform/operators/:id/archive */
+  public archive = catchAsync(async (req: RequestWithStaffSession, res: Response) => {
+    res.json({ message: 'Operator archived', data: await this.platform.archive(req.staff, req.params.id as string) });
+  });
+
+  /** POST /internal/platform/operators/:id/unarchive */
+  public unarchive = catchAsync(async (req: RequestWithStaffSession, res: Response) => {
+    res.json({ message: 'Operator unarchived', data: await this.platform.unarchive(req.staff, req.params.id as string) });
   });
 
   /** POST /internal/platform/operators/:id/view-as */

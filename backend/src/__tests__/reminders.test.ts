@@ -228,6 +228,10 @@ describe('le SMS de la veille dans l’espace pro', () => {
     await api().put(`/api/internal/parkings/${op.parking.id}/reminders`).set(auth(op.token)).send({ enabled: false });
     expect(await reminders.dispatchDue(at('2027-06-15T19:05'))).toEqual({ checked: 0, sent: 0, failed: 0 });
     await api().put(`/api/internal/parkings/${op.parking.id}/reminders`).set(auth(op.token)).send({ enabled: true });
+    // An archived operator (09/10/2026) is out of the crons: nothing is checked, nothing leaves.
+    await prisma.operator.update({ where: { id: op.operator.id }, data: { status: 'suspended', suspendedAt: new Date(), archivedAt: new Date() } });
+    expect(await reminders.dispatchDue(at('2027-06-15T19:05'))).toEqual({ checked: 0, sent: 0, failed: 0 });
+    await prisma.operator.update({ where: { id: op.operator.id }, data: { status: 'active', suspendedAt: null, archivedAt: null } });
     expect((await reminders.dispatchDue(at('2027-06-15T19:05'))).sent).toBe(1);
   });
 

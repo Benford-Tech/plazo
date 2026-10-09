@@ -406,7 +406,12 @@ Le nom du produit doit rester dans UN seul fichier de configuration (il peut enc
   `PlatformAdminMiddleware`) ; l'inscription libre des loueurs sous `/pro/inscription`. Notifications de la plateforme
   (choix E-A + C-A du 05/10/2026) : `/pro/plateforme/notifications`, table `platform_notifications`, routes
   `/api/internal/platform/notifications[/audience]` ; envoi push à tous les pros (réglage `Staff.notifyPlatform`) ou à tous
-  les voyageurs (appareils enregistrés, deux envois par jour au plus, 429 `daily_limit`).
+  les voyageurs (appareils enregistrés, deux envois par jour au plus, 429 `daily_limit`). **Archivage des loueurs (09/10/2026,
+  « archive les parkings suspendus »)** : `Operator.archivedAt` (CHECK : archivé ⇒ suspendu ; migration `operator_archived`, qui
+  archive tout loueur suspendu à son déploiement), `POST /internal/platform/operators/:id/archive` (409 `not_suspended`) et
+  `…/unarchive`, `GET …/operators?view=archived` (+ `counts`), « Réactiver » désarchive ; Loueurs : pilules « Loueurs · Archivés »
+  (`?vue=archives`), « Archiver » sur un loueur suspendu, « Désarchiver » ; les annonces d'un loueur archivé quittent Annonces ;
+  rappels, suivi des vols et préparation des files l'ignorent (pas les reversements) ; `DemoSeedService.archive` archive aussi.
 - `site/` : site Plazo voyageurs (Next.js), servi à la racine du domaine. **Référencement (08/10/2026)** : données structurées
   schema.org (`src/lib/structured-data.ts`, composant `JsonLd` : Organization et WebSite sur l'accueil, FAQPage et ItemList des
   parkings sur la page aéroport, ParkingFacility + BreadcrumbList sur une fiche) ; un parking de démo (`isDemo`) n'est ni décrit,

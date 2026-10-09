@@ -20,10 +20,17 @@ import { ValidationMiddleware } from '@/middlewares/validation.middleware';
  * /internal/platform/operators:
  *   get:
  *     summary: Every operator with its parkings, manager, listing status, Stripe status, commission, bookings this month and pending invitation
+ *     description: >
+ *       The current operators (active and suspended) by default; the archived ones with view=archived (09/10/2026).
+ *       counts gives the size of both lists.
  *     tags: [Platform]
+ *     parameters:
+ *       - { in: query, name: view, required: false, schema: { type: string, enum: [current, archived] } }
  *     responses:
  *       200:
- *         description: "{ defaultCommissionBps, operators: [...] }"
+ *         description: "{ defaultCommissionBps, counts: { current, archived }, operators: [...] }"
+ *       400:
+ *         description: Unknown view (fields.view invalid_view)
  * /internal/platform/operators/{id}/commission:
  *   patch:
  *     summary: Set the operator's commission on online bookings (basis points; null = platform default)
@@ -46,7 +53,22 @@ import { ValidationMiddleware } from '@/middlewares/validation.middleware';
  *         description: The platform's own operator (code cannot_suspend_platform)
  * /internal/platform/operators/{id}/reactivate:
  *   post:
- *     summary: Reactivate a suspended operator
+ *     summary: Reactivate a suspended operator (an archived one leaves the archive too)
+ *     tags: [Platform]
+ *     parameters:
+ *       - { in: path, name: id, required: true, schema: { type: string } }
+ * /internal/platform/operators/{id}/archive:
+ *   post:
+ *     summary: Archive a suspended operator (out of the Loueurs and Annonces lists and of the crons; its data is kept)
+ *     tags: [Platform]
+ *     parameters:
+ *       - { in: path, name: id, required: true, schema: { type: string } }
+ *     responses:
+ *       409:
+ *         description: The operator is active (code not_suspended)
+ * /internal/platform/operators/{id}/unarchive:
+ *   post:
+ *     summary: Take an operator out of the archive (back in the Loueurs list, still suspended)
  *     tags: [Platform]
  *     parameters:
  *       - { in: path, name: id, required: true, schema: { type: string } }
@@ -295,6 +317,8 @@ export class PlatformRoute implements Routes {
     );
     this.router.post(`${base}/operators/:id/suspend`, PlatformAdminMiddleware(), this.platform.suspend);
     this.router.post(`${base}/operators/:id/reactivate`, PlatformAdminMiddleware(), this.platform.reactivate);
+    this.router.post(`${base}/operators/:id/archive`, PlatformAdminMiddleware(), this.platform.archive);
+    this.router.post(`${base}/operators/:id/unarchive`, PlatformAdminMiddleware(), this.platform.unarchive);
     this.router.post(`${base}/operators/:id/view-as`, PlatformAdminMiddleware(), this.platform.viewAs);
     this.router.post(`${base}/operators/:id/invitation`, PlatformAdminMiddleware(), this.platform.resendInvitation);
     this.router.post(`${base}/invitations`, PlatformAdminMiddleware(), ValidationMiddleware(InviteOperatorDto), this.platform.invite);
