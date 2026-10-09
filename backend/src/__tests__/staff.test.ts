@@ -116,3 +116,74 @@ describe('équipe', () => {
     expect((await api().patch('/api/internal/staff/me/post').set(auth(token)).send({ post: 'driver' })).body.effectivePost).toBe('driver');
   });
 });
+
+describe('prénom et nom du personnel (09/10/2026)', () => {
+  it('« Votre nom » : chacun change son prénom et son nom ; réponse comme GET /me, nom affiché recalculé, tracé', async () => {
+    const { token, manager } = await setupOperator();
+    const driver = await addStaff(token, 'driver');
+    const res = await api().patch('/api/internal/staff/me').set(auth(driver.token)).send({ firstName: '  Jean-Luc ', lastName: ' Dupont  Martin ' });
+    expect(res.status).toBe(200);
+    const me = await api().get('/api/internal/staff/me').set(auth(driver.token));
+    expect(res.body).toEqual(me.body);
+    expect(me.body).toMatchObject({
+      id: driver.id,
+      firstName: 'Jean-Luc',
+      lastName: 'Dupont Martin',
+      name: 'Jean-Luc Dupont Martin',
+      role: 'driver',
+    });
+    expect(me.body).not.toHaveProperty('password');
+    const audit = await prisma.auditLog.findFirstOrThrow({ where: { action: 'staff.renamed', entityId: driver.id } });
+    expect(audit.details).toMatchObject({ name: { from: expect.stringContaining('driver'), to: 'Jean-Luc Dupont Martin' } });
+    // The manager's name is untouched.
+    expect(await prisma.staff.findUniqueOrThrow({ where: { id: manager.id } })).toMatchObject({ name: 'Gérant Test' });
+  });
+
+  it('« Votre nom » : les deux sont requis, sans espaces seuls, 60 caractères chacun', async () => {
+    const { token } = await setupOperator();
+    const me = (body: Record<string, unknown>) => api().patch('/api/internal/staff/me').set(auth(token)).send(body);
+    expect((await me({})).body.fields).toEqual({ firstName: 'required', lastName: 'required' });
+    expect((await me({ firstName: '   ', lastName: 'Dupont' })).body.fields).toEqual({ firstName: 'required' });
+    expect((await me({ firstName: 'Jean', lastName: 'D'.repeat(61) })).body.fields).toEqual({ lastName: 'too_long' });
+    expect((await api().get('/api/internal/staff/me').set(auth(token))).body.name).toBe('Gérant Test');
+  });
+
+  it('« Modifier le nom » : le gérant renomme un membre (l’un, l’autre ou les deux), pas un autre rôle', async () => {
+    const { token } = await setupOperator();
+    const valet = await addStaff(token, 'valet');
+    const agent = await addStaff(token, 'agent');
+    const patch = (who: string, body: Record<string, unknown>, as = token) => api().patch(`/api/internal/staff/${who}`).set(auth(as)).send(body);
+
+    const both = await patch(valet.id, { firstName: ' Sami ', lastName: 'Benali' });
+    expect(both.status).toBe(200);
+    expect(both.body.data).toMatchObject({ firstName: 'Sami', lastName: 'Benali', name: 'Sami Benali', role: 'valet', isActive: true });
+    expect(both.body.data).not.toHaveProperty('password');
+    const last = await patch(valet.id, { lastName: 'Ben Ali' });
+    expect(last.body.data).toMatchObject({ firstName: 'Sami', lastName: 'Ben Ali', name: 'Sami Ben Ali' });
+    // With the role in the same request.
+    expect((await patch(valet.id, { role: 'driver', firstName: 'Samir' })).body.data).toMatchObject({ role: 'driver', name: 'Samir Ben Ali' });
+
+    expect((await patch(valet.id, { firstName: '  ' })).body.fields).toEqual({ firstName: 'required' });
+    expect((await patch(valet.id, { lastName: null })).body.fields).toEqual({ lastName: 'required' });
+    expect((await patch(valet.id, { firstName: 'S'.repeat(61) })).body.fields).toEqual({ firstName: 'too_long' });
+    expect((await patch(valet.id, { firstName: 'Intrus' }, agent.token)).status).toBe(403);
+    expect(await prisma.staff.findUniqueOrThrow({ where: { id: valet.id } })).toMatchObject({ name: 'Samir Ben Ali' });
+
+    const audit = await prisma.auditLog.findFirstOrThrow({ where: { action: 'staff.updated', entityId: valet.id }, orderBy: { createdAt: 'asc' } });
+    expect(audit.details).toMatchObject({ name: { from: expect.stringContaining('valet'), to: 'Sami Benali' } });
+  });
+
+  it('un prénom ou un nom fait d’espaces est « required » à la création', async () => {
+    const { token } = await setupOperator();
+    const res = await api()
+      .post('/api/internal/staff')
+      .set(auth(token))
+      .send({ firstName: '   ', lastName: ' \t ', email: 'blanc@example.com', role: 'agent', password: PASSWORD });
+    expect(res.body.fields).toMatchObject({ firstName: 'required', lastName: 'required' });
+    const trimmed = await api()
+      .post('/api/internal/staff')
+      .set(auth(token))
+      .send({ firstName: ' Inès ', lastName: ' Rousseau ', email: 'ines@example.com', role: 'agent', password: PASSWORD });
+    expect(trimmed.body.data).toMatchObject({ firstName: 'Inès', lastName: 'Rousseau', name: 'Inès Rousseau' });
+  });
+});

@@ -83,6 +83,9 @@ export interface StaffSignal {
   kind: ArrivalKind;
   state: ArrivalState;
   customerName: string;
+  /** 09/10/2026: the stored first and last name (the banner says « C. Martin »). */
+  customerFirstName: string;
+  customerLastName: string;
   plate: string;
   passengers: number;
   returnFlight: string | null;
@@ -106,6 +109,8 @@ type SignalWithReservation = ArrivalSignal & {
   reservation: {
     reference: string;
     customerName: string;
+    customerFirstName: string;
+    customerLastName: string;
     plate: string;
     passengers: number;
     returnFlight: string | null;
@@ -357,6 +362,8 @@ export class ArrivalService {
           select: {
             reference: true,
             customerName: true,
+            customerFirstName: true,
+            customerLastName: true,
             plate: true,
             passengers: true,
             returnFlight: true,
@@ -558,6 +565,8 @@ export class ArrivalService {
       event,
       kind,
       customerName: booking.customerName,
+      customerFirstName: booking.customerFirstName,
+      customerLastName: booking.customerLastName,
       plate: booking.plate,
       parkingName: booking.parking.name,
       etaMinutes,
@@ -657,6 +666,8 @@ export class ArrivalService {
         kind: row.kind,
         state: row.state,
         customerName: row.reservation.customerName,
+        customerFirstName: row.reservation.customerFirstName,
+        customerLastName: row.reservation.customerLastName,
         plate: row.reservation.plate,
         passengers: row.reservation.passengers,
         returnFlight: row.reservation.returnFlight,

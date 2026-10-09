@@ -19,6 +19,8 @@ const booking: PublicBooking = {
   days: 8,
   priceCents: 5500,
   customerName: "Camille Laurent",
+  customerFirstName: "Camille",
+  customerLastName: "Laurent",
   customerEmail: "camille@example.com",
   customerPhone: "0612345678",
   plate: "GK-318-PX",
@@ -42,6 +44,7 @@ describe("calendar file", () => {
     expect(ics).toContain("UID:RAB234-depot@plazo.example");
     expect(ics).toContain("LOCATION:Route de l'aéroport\\, 69125 Colombier-Saugnieu");
     expect(ics).not.toContain("Camille");
+    expect(ics).not.toContain("Laurent");
     expect(ics).not.toContain("GK-318-PX");
     expect(ics.split("\r\n").every(line => new TextEncoder().encode(line).length <= 75)).toBe(true);
   });

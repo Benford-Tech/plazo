@@ -11,6 +11,7 @@ import { ParkingLocationService } from '@/services/parking-location.service';
 import { ONESIGNAL_NOTIFICATIONS_URL } from '@/services/push.service';
 import { IGN_ROUTING_URL, RoutingService } from '@/services/routing.service';
 import {
+  runTodayAt,
   addStaff,
   api,
   disableFakePayments,
@@ -140,6 +141,7 @@ beforeEach(async () => {
   fetchMock = jest.spyOn(global, 'fetch').mockImplementation(async () => json({ ok: true }));
 });
 afterEach(() => {
+  jest.useRealTimers();
   fetchMock.mockRestore();
   disableFakePayments();
 });
@@ -621,10 +623,17 @@ describe('navette (mode chauffeur)', () => {
     expect(live.body.shuttle.etaAt).toBeTruthy();
     expect(live.body.shuttle.positionAgeSeconds).toBeLessThan(5);
     // The planning and the live list say "Navette en route (driver)".
-    const planning = await api().get('/api/internal/planning').set(auth(b.op.token));
-    const row = planning.body.returns.find((r: { id: string }) => r.id === b.reservation.id);
+    // Each on the planning of its own return day: late in the evening, a return 60 or 90 min ahead is tomorrow's.
+    const returnsOf = async (reservation: { returnAt: Date }) =>
+      (
+        await api()
+          .get(`/api/internal/planning?date=${localDateTime(reservation.returnAt, TZ).slice(0, 10)}`)
+          .set(auth(b.op.token))
+      ).body.returns as { id: string; shuttleTrip: unknown }[];
+    const returning = await prisma.reservation.findUniqueOrThrow({ where: { id: b.reservation.id } });
+    const row = (await returnsOf(returning)).find(r => r.id === b.reservation.id)!;
     expect(row.shuttleTrip).toMatchObject({ id: trip.id, driverName: driver.session.user.name });
-    expect(planning.body.returns.find((r: { id: string }) => r.id === secondRow.id).shuttleTrip).toBeNull();
+    expect((await returnsOf(secondRow)).find(r => r.id === secondRow.id)!.shuttleTrip).toBeNull();
     const liveList = await api().get('/api/internal/arrivals/live').set(auth(b.op.token));
     expect(liveList.body.shuttleTrips).toEqual([expect.objectContaining({ id: trip.id, reservationIds: [b.reservation.id] })]);
     expect((await api().get('/api/internal/shuttle/pickups').set(auth(driver.token))).body.rows[0].tripId).toBe(trip.id);
@@ -752,6 +761,7 @@ describe('navette (mode chauffeur)', () => {
   });
 
   it('navette en direct le jour J (S-A) : les navettes du parking, du jour d’arrivée au jour du retour', async () => {
+    runTodayAt();
     const b = await parkingWithReturningBooking();
     const driver = await addStaff(b.op.token, 'driver');
     const shuttles = (reference: string, token: string) => api().get(`/api/public/bookings/${reference}/shuttles`).set(bookingToken(token));

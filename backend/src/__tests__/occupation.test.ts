@@ -1,7 +1,8 @@
 import prisma from '@/database';
 import { localDate } from '@/domain/time';
-import { addStaff, api, resetDatabase, setupOperator } from './utils/helpers';
+import { runTodayAt, addStaff, api, resetDatabase, setupOperator } from './utils/helpers';
 
+afterEach(() => jest.useRealTimers());
 beforeEach(resetDatabase);
 afterAll(() => prisma.$disconnect());
 
@@ -108,6 +109,7 @@ describe('occupation (bloc 2, step 2)', () => {
   });
 
   it('refuse une place inactive, une réservation annulée, et le parking d’un autre loueur ; un agent peut placer', async () => {
+    runTodayAt();
     const { token, parking } = await parkingWithSpots();
     const other = await setupOperator('B');
     const agent = await addStaff(token, 'agent');

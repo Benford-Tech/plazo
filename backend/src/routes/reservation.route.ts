@@ -47,14 +47,16 @@ import { ValidationMiddleware } from '@/middlewares/validation.middleware';
  *         application/json:
  *           schema:
  *             type: object
- *             required: [channel, arrivalAt, returnAt, passengers, customerName, customerPhone, plate]
+ *             required: [channel, arrivalAt, returnAt, passengers, customerFirstName, customerLastName, customerPhone, plate]
  *             properties:
  *               channel: { type: string, enum: [website, phone, counter, aggregator, import] }
  *               channelDetail: { type: string, example: Parkos }
  *               arrivalAt: { type: string }
  *               returnAt: { type: string }
  *               passengers: { type: integer, minimum: 1, maximum: 9 }
- *               customerName: { type: string }
+ *               customerFirstName: { type: string, maxLength: 60, description: "Trimmed; the server stores \"Prénom Nom\" as customerName" }
+ *               customerLastName: { type: string, maxLength: 60 }
+ *               customerName: { type: string, maxLength: 120, description: "Older app versions only: the whole name, sent alone, split at its first space" }
  *               customerPhone: { type: string }
  *               customerEmail: { type: string }
  *               plate: { type: string, example: GK-318-PX }
@@ -70,7 +72,7 @@ import { ValidationMiddleware } from '@/middlewares/validation.middleware';
  *     parameters:
  *       - { in: path, name: id, required: true, schema: { type: string } }
  *   patch:
- *     summary: Edit a reservation (date changes re-check capacity)
+ *     summary: Edit a reservation (date changes re-check capacity; customerFirstName / customerLastName merged with the stored name, customerName recomputed, a blank one refused as required)
  *     tags: [Reservations]
  *     parameters:
  *       - { in: path, name: id, required: true, schema: { type: string } }

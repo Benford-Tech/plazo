@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 import { formatKm, listingFacts } from "../listing";
 import { formatEuros, formatWholeEuros } from "../money";
 import { fr, fromPriceUnit } from "../fr";
-import { firstName, formatPhone, isFrenchMobile } from "../phone";
+import { firstName, formatPhone, greetingName, isFrenchMobile, splitName } from "../phone";
 import { hasSupportEmail } from "../product";
 import { formatPlate, isPlausiblePlate, plateKey } from "../plate";
 
@@ -47,8 +47,29 @@ describe("phones and names", () => {
     expect(fr.manage.confirmedTitle(firstName("M. Dupont"))).toBe("C’est réservé !");
   });
 
-  it("asks for the first name first, as the greeting expects", () => {
-    expect(fr.booking.name).toBe("Prénom et nom");
+  it("asks for the first name and the last name apart", () => {
+    expect(fr.booking.firstName).toBe("Prénom");
+    expect(fr.booking.lastName).toBe("Nom");
+    // Under one field: no « prénom et nom » in the message.
+    expect(fr.errors.invalid_name).toBe("Lettres, espaces, apostrophes et tirets seulement.");
+  });
+
+  it("greets with the first name the traveller typed, else the one guessed from the full name", () => {
+    expect(greetingName({ customerFirstName: "Marie Claire", customerName: "Marie Claire Dupont" })).toBe("Marie Claire");
+    expect(greetingName({ customerFirstName: " Camille ", customerName: "Camille Laurent" })).toBe("Camille");
+    // An older API, or a booking without a first name: guessed as before.
+    expect(greetingName({ customerName: "Camille Laurent" })).toBe("Camille");
+    expect(greetingName({ customerFirstName: "", customerName: "Camille Laurent" })).toBe("Camille");
+    // A title or an initial typed as a first name: no name in the greeting.
+    expect(greetingName({ customerFirstName: "M.", customerName: "M. Dupont" })).toBe("");
+    expect(fr.manage.confirmedTitle(greetingName({ customerFirstName: "Camille", customerName: "Camille Laurent" }))).toBe("C’est réservé, Camille !");
+  });
+
+  it("splits a full name as the API splits an older one (first word, then the rest)", () => {
+    expect(splitName("  Camille   Laurent ")).toEqual({ firstName: "Camille", lastName: "Laurent" });
+    expect(splitName("Jean de La Fontaine")).toEqual({ firstName: "Jean", lastName: "de La Fontaine" });
+    expect(splitName("Camille")).toEqual({ firstName: "Camille", lastName: "" });
+    expect(splitName("")).toEqual({ firstName: "", lastName: "" });
   });
 
   it("knows which numbers get the confirmation SMS (French mobiles)", () => {

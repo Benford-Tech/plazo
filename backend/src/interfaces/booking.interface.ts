@@ -35,7 +35,10 @@ export interface PublicBooking {
   returnAt: string;
   days: number;
   priceCents: number | null;
+  /** Display form "Prénom Nom", recomputed by the server from the two fields below (09/10/2026). */
   customerName: string;
+  customerFirstName: string;
+  customerLastName: string;
   customerEmail: string | null;
   customerPhone: string;
   /** Display form, e.g. AB-123-CD. */

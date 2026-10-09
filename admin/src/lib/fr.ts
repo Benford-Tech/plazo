@@ -231,6 +231,7 @@ export const fr = {
     invalid_coordinate: "Coordonnées invalides.",
     invalid_bbox: "Zone invalide.",
     too_short: "Saisissez au moins 3 caractères.",
+    invalid_name: "Lettres, espaces, apostrophes et tirets seulement.",
   } as Record<string, string>,
   login: {
     title: "Connexion",
@@ -668,9 +669,20 @@ export const fr = {
     resetPassword: "Nouveau mot de passe",
     passwordReset: "Mot de passe réinitialisé. Ses sessions ont été fermées.",
     you: "vous",
+    // 09/10/2026: a manager corrects a member's first and last name.
+    rename: "Modifier le nom",
+    renameTitle: (name: string) => `Nom de ${name}`,
+    save: "Enregistrer",
+    cancel: "Annuler",
   },
   account: {
     title: "Mon compte",
+    // 09/10/2026: one's own first and last name.
+    nameTitle: "Votre nom",
+    firstName: "Prénom",
+    lastName: "Nom",
+    saveName: "Enregistrer",
+    nameSaved: "Nom enregistré.",
     currentPassword: "Mot de passe actuel",
     newPassword: "Nouveau mot de passe",
     submit: "Changer le mot de passe",
@@ -767,7 +779,8 @@ export const fr = {
     return: "Retour",
     date: "Date",
     time: "Heure",
-    customerName: "Client",
+    customerFirstName: "Prénom",
+    customerLastName: "Nom",
     customerPhone: "Téléphone",
     customerEmail: "Email (facultatif)",
     email: "Email",
@@ -1964,6 +1977,8 @@ export const fr = {
       demoHint: "Loueur fictif créé par les données de démonstration",
       inviteTitle: "Inviter un loueur",
       inviteName: "Nom de l'entreprise / du parking",
+      inviteFirstName: "Prénom du gérant",
+      inviteLastName: "Nom du gérant",
       inviteEmail: "Email du gérant",
       inviteCapacity: "Capacité (places)",
       inviteCommission: (pct: string | null) =>

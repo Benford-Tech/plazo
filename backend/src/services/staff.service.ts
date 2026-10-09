@@ -5,10 +5,11 @@ import { BCRYPT_ROUNDS, isPlatformAdmin } from '@/config';
 import prisma, { Staff, StaffRole } from '@/database';
 import { allowedPosts, can, defaultBookingNotify, effectivePost } from '@/domain/roles';
 import { localDate } from '@/domain/time';
-import { ChangePasswordDto, CreateStaffDto, UpdateStaffDto } from '@/dtos/staff.dto';
+import { ChangePasswordDto, CreateStaffDto, UpdateMeDto, UpdateStaffDto } from '@/dtos/staff.dto';
 import { AuthenticatedStaff } from '@/interfaces/auth.interface';
+import { ValidationException } from '@/middlewares/validation.middleware';
 import { HttpException } from '@/utils/httpException';
-import { namesOf } from '@/domain/staff-name';
+import { fullName, namesOf } from '@/domain/staff-name';
 import { AuditService } from './audit.service';
 import { TokenService } from './token.service';
 
@@ -68,6 +69,23 @@ export const vehicleOfTheDay = (v: {
 
 const forbidden = () => new HttpException(httpStatus.FORBIDDEN, 'You do not have access to this action', 'forbidden');
 const notFound = () => new HttpException(httpStatus.NOT_FOUND, 'Staff member not found', 'not_found');
+
+/**
+ * A new first and/or last name merged with the stored ones, `name` rebuilt (09/10/2026). A blank one is refused: the DTOs
+ * trim and check, this also catches a null that got past an optional field. Undefined when neither is given.
+ */
+export function renamed(
+  current: { firstName: string; lastName: string },
+  input: { firstName?: string | null; lastName?: string | null },
+): { firstName: string; lastName: string; name: string } | undefined {
+  if (input.firstName === undefined && input.lastName === undefined) return undefined;
+  for (const field of ['firstName', 'lastName'] as const) {
+    if (input[field] !== undefined && !input[field]?.trim()) throw new ValidationException({ [field]: 'required' });
+  }
+  const firstName = (input.firstName ?? current.firstName).trim().replace(/\s+/g, ' ');
+  const lastName = (input.lastName ?? current.lastName).trim().replace(/\s+/g, ' ');
+  return { firstName, lastName, name: fullName(firstName, lastName) };
+}
 
 @Service()
 export class StaffService {
@@ -184,18 +202,38 @@ export class StaffService {
       if (activeManagers <= 1) throw new HttpException(httpStatus.BAD_REQUEST, 'At least one active manager is required', 'last_manager');
     }
 
+    const names = renamed(target, data);
     const updated = await prisma.staff.update({
       where: { id: staffId },
-      data: { role: data.role ?? target.role, isActive: data.isActive ?? target.isActive },
+      data: { role: data.role ?? target.role, isActive: data.isActive ?? target.isActive, ...names },
     });
     if (!updated.isActive) await this.tokenService.revokeAll(staffId);
     await this.audit.record(actor, {
       action: 'staff.updated',
       entityType: 'staff',
       entityId: staffId,
-      details: { role: { from: target.role, to: updated.role }, isActive: { from: target.isActive, to: updated.isActive } },
+      details: {
+        role: { from: target.role, to: updated.role },
+        isActive: { from: target.isActive, to: updated.isActive },
+        ...(names && names.name !== target.name ? { name: { from: target.name, to: updated.name } } : {}),
+      },
     });
     return toPublicStaff(updated);
+  }
+
+  /** « Votre nom » (09/10/2026): one's own first and last name; answers like GET /internal/staff/me. */
+  public async updateMe(actor: AuthenticatedStaff, data: UpdateMeDto) {
+    const names = renamed(actor, data)!;
+    const staff = await prisma.staff.update({ where: { id: actor.id }, data: names });
+    if (names.name !== actor.name) {
+      await this.audit.record(actor, {
+        action: 'staff.renamed',
+        entityType: 'staff',
+        entityId: actor.id,
+        details: { name: { from: actor.name, to: staff.name } },
+      });
+    }
+    return this.sessionUser({ ...actor, ...staff });
   }
 
   public async resetPassword(actor: AuthenticatedStaff, staffId: string, password: string) {

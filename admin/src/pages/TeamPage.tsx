@@ -12,6 +12,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { useAuth } from "@/contexts/AuthContext";
 import { adminApi, ApiError } from "@/lib/api";
 import { dateTime, describeError, errorMessage, fr } from "@/lib/fr";
+import { nameParts } from "@/lib/names";
 import { STAFF_ROLES } from "@/lib/roles";
 import type { Staff, StaffRole } from "@/lib/types";
 
@@ -32,10 +33,72 @@ function RoleSelect({ id, value, onChange }: { id: string; value: StaffRole; onC
   );
 }
 
+/** 09/10/2026: a manager corrects a member's first and last name, inline. */
+function RenameForm({ member, onDone }: { member: Staff; onDone: () => void }) {
+  const queryClient = useQueryClient();
+  const [names, setNames] = useState(() => nameParts(member.firstName, member.lastName, member.name));
+  const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
+  const t = fr.team;
+
+  const rename = useMutation({
+    mutationFn: () => adminApi.updateStaff(member.id, { firstName: names.firstName.trim(), lastName: names.lastName.trim() }),
+    onSuccess: () => {
+      toast.success(t.updated);
+      queryClient.invalidateQueries({ queryKey: ["team"] });
+      onDone();
+    },
+    onError: (err: Error) => {
+      setFieldErrors(err instanceof ApiError ? (err.fields ?? {}) : {});
+      toast.error(describeError(err));
+    },
+  });
+
+  return (
+    <form
+      className="space-y-2 border border-border p-3"
+      onSubmit={e => {
+        e.preventDefault();
+        rename.mutate();
+      }}
+    >
+      <p className="text-sm font-medium">{t.renameTitle(member.name)}</p>
+      <FormField
+        id={`first-name-${member.id}`}
+        label={t.firstName}
+        autoComplete="off"
+        required
+        maxLength={60}
+        value={names.firstName}
+        onChange={e => setNames({ ...names, firstName: e.target.value })}
+        error={fieldErrors.firstName}
+      />
+      <FormField
+        id={`last-name-${member.id}`}
+        label={t.lastName}
+        autoComplete="off"
+        required
+        maxLength={60}
+        value={names.lastName}
+        onChange={e => setNames({ ...names, lastName: e.target.value })}
+        error={fieldErrors.lastName}
+      />
+      <div className="flex gap-2">
+        <Button type="submit" className="h-11 flex-1" disabled={rename.isPending}>
+          {t.save}
+        </Button>
+        <Button type="button" variant="outline" className="h-11 flex-1" onClick={onDone}>
+          {t.cancel}
+        </Button>
+      </div>
+    </form>
+  );
+}
+
 function MemberActions({ member }: { member: Staff }) {
   const queryClient = useQueryClient();
   const [role, setRole] = useState<StaffRole>(member.role);
   const [password, setPassword] = useState("");
+  const [renaming, setRenaming] = useState(false);
   const t = fr.team;
 
   const update = useMutation({
@@ -72,6 +135,13 @@ function MemberActions({ member }: { member: Staff }) {
       >
         {member.isActive ? t.deactivate : t.reactivate}
       </Button>
+      {renaming ? (
+        <RenameForm member={member} onDone={() => setRenaming(false)} />
+      ) : (
+        <Button variant="outline" className="h-11 w-full" onClick={() => setRenaming(true)}>
+          {t.rename}
+        </Button>
+      )}
       <form
         className="flex gap-2"
         onSubmit={e => {
@@ -100,7 +170,8 @@ function CreateStaffForm() {
   const t = fr.team;
 
   const create = useMutation({
-    mutationFn: () => adminApi.createStaff({ ...form, phone: form.phone.trim() || undefined }),
+    mutationFn: () =>
+      adminApi.createStaff({ ...form, firstName: form.firstName.trim(), lastName: form.lastName.trim(), phone: form.phone.trim() || undefined }),
     onSuccess: () => {
       setForm(emptyMember);
       setFieldErrors({});

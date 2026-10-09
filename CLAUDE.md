@@ -536,6 +536,14 @@ Le nom du produit doit rester dans UN seul fichier de configuration (il peut enc
 - Chaque membre a un **prénom et un nom** (06/10/2026 : `Staff.firstName/lastName`, `name` = « Prénom Nom » calculé par le serveur,
   `domain/staff-name.ts`) : création d'un membre, inscription du gérant et invitation par la plateforme en deux champs ; les pushs
   et la remarque de remise utilisent le prénom.
+- **Tous les utilisateurs ont un prénom et un nom (09/10/2026)** : le voyageur aussi (`Reservation.customerFirstName/LastName`,
+  `customerName` = « Prénom Nom » recalculé par le serveur à chaque écriture, migration `reservation_customer_first_last_name` qui découpe
+  les anciens noms au premier espace ; `domain/customer-name.ts`) : champs « Prénom » et « Nom » sur le site, l'app et la saisie pro
+  (`customerFirstName` / `customerLastName`, 60 caractères ; un ancien `customerName` seul est encore accepté et découpé, et une ancienne
+  app qui renvoie le même nom garde le découpage), importateurs Onepark et Allopark et lecture par Claude séparés, salutations, `{prénom}`
+  `{nom}` du SMS de la veille et « C. Martin » d'après les champs, anonymisation « Client » / « anonymisé ». Personnel : noms nettoyés avant
+  contrôle (un nom fait d'espaces est refusé), invitation qui exige prénom et nom du gérant, `PATCH /internal/staff/me` (« Votre nom » de
+  Mon compte, web et app) et prénom / nom dans `PATCH /internal/staff/:id` (« Modifier le nom » d'Équipe), gérant démo « Gérant Démo ».
 
 ## Conventions (reprises de LoveNest)
 

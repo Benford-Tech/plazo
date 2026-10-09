@@ -5,7 +5,7 @@ import { buildWaves, dropoffTimes, pickupTimes, WaveMember } from '@/domain/shut
 import { localDateTime } from '@/domain/time';
 import { FlightTrackingService } from '@/services/flight-tracking.service';
 import { NotificationService } from '@/services/notification.service';
-import { api, resetDatabase, setupOperator } from './utils/helpers';
+import { runTodayAt, api, resetDatabase, setupOperator } from './utils/helpers';
 
 /** Shuttle waves (V-A "Ligne du jour" + F-A tracked outbound flight, 05/10/2026). */
 
@@ -63,7 +63,10 @@ beforeEach(async () => {
   Container.get(NotificationService).settings.apiKey = '';
   fetchMock = jest.spyOn(global, 'fetch').mockImplementation(async () => json({}));
 });
-afterEach(() => fetchMock.mockRestore());
+afterEach(() => {
+  fetchMock.mockRestore();
+  jest.useRealTimers();
+});
 afterAll(() => prisma.$disconnect());
 
 describe('vagues (domaine)', () => {
@@ -199,6 +202,7 @@ describe('vagues (domaine)', () => {
 
 describe('GET /internal/shuttle/forecast', () => {
   it('suit le vol aller, forme les vagues, signale le dépassement et nourrit le tableau de bord', async () => {
+    runTodayAt();
     const op = await setupOperator();
     const token = op.token;
     await api().patch(`/api/internal/parkings/${op.parking.id}`).set(auth(token)).send({

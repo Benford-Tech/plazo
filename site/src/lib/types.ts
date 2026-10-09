@@ -104,7 +104,9 @@ export interface BookingInput {
   parking: string;
   arrivalAt: string;
   returnAt: string;
-  customerName: string;
+  /** Each is required by the API; it stores "Prénom Nom" as the display name. */
+  customerFirstName: string;
+  customerLastName: string;
   customerPhone: string;
   customerEmail: string;
   plate: string;
@@ -148,7 +150,11 @@ export interface PublicBooking {
   days: number;
   /** Total to pay at the parking, computed by the API (null if the stay could not be priced). */
   priceCents: number | null;
+  /** Display form "Prénom Nom", computed by the API from the two fields below. */
   customerName: string;
+  /** As typed by the traveller (missing from an older API). */
+  customerFirstName?: string;
+  customerLastName?: string;
   customerEmail: string | null;
   customerPhone: string;
   plate: string;

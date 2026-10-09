@@ -99,8 +99,14 @@ export function currentMoment(
   return null;
 }
 
-/** "Camille Martin" -> "C. Martin": enough for staff to recognise them in a push. */
-export function shortName(fullName: string): string {
+/**
+ * "Camille Martin" -> "C. Martin": enough for staff to recognise them in a push. With the stored first and last name
+ * (09/10/2026), the initial of the first name and the whole last name; otherwise the display name is split.
+ */
+export function shortName(fullName: string, names?: { firstName?: string | null; lastName?: string | null }): string {
+  const first = names?.firstName?.trim() ?? '';
+  const last = names?.lastName?.trim().replace(/\s+/g, ' ') ?? '';
+  if (first && last) return `${first[0].toUpperCase()}. ${last}`;
   const parts = fullName.trim().split(/\s+/).filter(Boolean);
   if (parts.length < 2) return parts[0] ?? '';
   return `${parts[0][0].toUpperCase()}. ${parts.slice(1).join(' ')}`;

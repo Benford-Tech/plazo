@@ -18,6 +18,10 @@ abstract class ReservationModel with _$ReservationModel {
     required DateTime returnAt,
     required int passengers,
     required String customerName,
+
+    /// 09/10/2026: the first and last name apart ("" from an older server); `customerName` is "Prénom Nom".
+    @Default('') String customerFirstName,
+    @Default('') String customerLastName,
     required String customerPhone,
     String? customerEmail,
     required String plate,
@@ -107,7 +111,9 @@ abstract class ReservationInput with _$ReservationInput {
     required String arrivalAt,
     required String returnAt,
     @Default(2) int passengers,
-    @Default('') String customerName,
+    /// 09/10/2026: first and last name apart; the server stores "Prénom Nom" as `customerName`.
+    @Default('') String customerFirstName,
+    @Default('') String customerLastName,
     @Default('') String customerPhone,
     String? customerEmail,
     @Default('') String plate,
@@ -124,17 +130,30 @@ abstract class ReservationInput with _$ReservationInput {
 
   factory ReservationInput.fromJson(Map<String, dynamic> json) => _$ReservationInputFromJson(json);
 
-  /// Empty optional strings are dropped (the DTO refuses "" for an email or a flight).
-  Map<String, dynamic> toBody({bool patch = false}) {
+  /// Empty optional strings are dropped (the DTO refuses "" for an email or a flight); an empty required one is sent,
+  /// so that the API names the field. [names] false leaves the first and last name out of an edit: a one-word name
+  /// (an older booking, a comparator's email) is stored with an empty last name, and an edit that does not touch the
+  /// name must not require one (09/10/2026, as the pro space does).
+  Map<String, dynamic> toBody({bool patch = false, bool names = true}) {
     final json = toJson();
-    json.removeWhere((k, v) => v == null || (v is String && v.trim().isEmpty && k != 'customerName' && k != 'customerPhone' && k != 'plate'));
+    json.removeWhere((k, v) => v == null || (v is String && v.trim().isEmpty && !_keptWhenEmpty.contains(k)));
     if (!force) json.remove('force');
     if (patch) {
       json.remove('externalReference');
       json.remove('priceCents');
+      if (!names) {
+        json.remove('customerFirstName');
+        json.remove('customerLastName');
+      }
     }
     return json;
   }
+
+  static const _keptWhenEmpty = {'customerFirstName', 'customerLastName', 'customerPhone', 'plate'};
+
+  /// The name as typed, trimmed: whether an edit changed it.
+  bool sameNameAs(ReservationInput other) =>
+      customerFirstName.trim() == other.customerFirstName.trim() && customerLastName.trim() == other.customerLastName.trim();
 }
 
 @freezed

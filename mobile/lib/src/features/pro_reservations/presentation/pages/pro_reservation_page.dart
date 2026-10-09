@@ -6,6 +6,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import '../../../../core/constants/product.g.dart';
 import '../../../../core/enums/view_state.dart';
 import '../../../../core/helpers/formatters.dart';
+import '../../../../core/helpers/names.dart';
 import '../../../../core/helpers/plate.dart';
 import '../../../../core/helpers/roles.dart';
 import '../../../../core/router/app_router.dart';
@@ -99,23 +100,28 @@ class ProReservationPage extends StatelessWidget implements AutoRouteWrapper {
     );
   }
 
-  static ReservationInput _inputOf(ReservationModel r) => ReservationInput(
-    channel: r.channel,
-    channelDetail: r.channelDetail,
-    arrivalAt: DateFormat("yyyy-MM-dd'T'HH:mm").format(r.arrivalAt.toLocal()),
-    returnAt: DateFormat("yyyy-MM-dd'T'HH:mm").format(r.returnAt.toLocal()),
-    passengers: r.passengers,
-    customerName: r.customerName,
-    customerPhone: r.customerPhone,
-    customerEmail: r.customerEmail,
-    plate: r.plate,
-    returnFlight: r.returnFlight,
-    departureFlight: r.departureFlight,
-    notes: r.notes,
-    customerNote: r.customerNote,
-    vehicleModel: r.vehicleModel,
-    vehicleColour: r.vehicleColour,
-  );
+  static ReservationInput _inputOf(ReservationModel r) {
+    // An older server sends only the display name: split as the server splits older rows.
+    final name = nameParts(r.customerFirstName, r.customerLastName, r.customerName);
+    return ReservationInput(
+      channel: r.channel,
+      channelDetail: r.channelDetail,
+      arrivalAt: DateFormat("yyyy-MM-dd'T'HH:mm").format(r.arrivalAt.toLocal()),
+      returnAt: DateFormat("yyyy-MM-dd'T'HH:mm").format(r.returnAt.toLocal()),
+      passengers: r.passengers,
+      customerFirstName: name.firstName,
+      customerLastName: name.lastName,
+      customerPhone: r.customerPhone,
+      customerEmail: r.customerEmail,
+      plate: r.plate,
+      returnFlight: r.returnFlight,
+      departureFlight: r.departureFlight,
+      notes: r.notes,
+      customerNote: r.customerNote,
+      vehicleModel: r.vehicleModel,
+      vehicleColour: r.vehicleColour,
+    );
+  }
 }
 
 class _Sheet extends StatelessWidget {

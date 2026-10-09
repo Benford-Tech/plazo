@@ -27,6 +27,8 @@ class FakeBookingDataSource implements BookingDataSource {
     arrivalAt: '2026-10-03T08:00',
     returnAt: '2026-10-10T15:05',
     customerName: 'Camille Martin',
+    customerFirstName: 'Camille',
+    customerLastName: 'Martin',
     plate: 'AB-123-CD',
     passengers: 2,
   );

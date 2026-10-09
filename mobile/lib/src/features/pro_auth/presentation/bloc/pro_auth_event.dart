@@ -26,6 +26,18 @@ class ProAuthVehicleChosen extends ProAuthEvent {
   final String? vehicleId;
 }
 
+/// « Votre nom » (09/10/2026): one's own first and last name.
+class ProAuthNameSubmitted extends ProAuthEvent {
+  const ProAuthNameSubmitted({required this.firstName, required this.lastName});
+  final String firstName;
+  final String lastName;
+}
+
+/// The « Nom enregistré. » toast was shown.
+class ProAuthNameNoticeShown extends ProAuthEvent {
+  const ProAuthNameNoticeShown();
+}
+
 class ProAuthLogoutRequested extends ProAuthEvent {
   const ProAuthLogoutRequested();
 }

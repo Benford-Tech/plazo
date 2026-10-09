@@ -1,7 +1,7 @@
 import { Response } from 'express';
 import httpStatus from 'http-status';
 import { Container } from 'typedi';
-import { ChangePasswordDto, CreateStaffDto, ResetPasswordDto, UpdateStaffDto, SetPostDto, SetVehicleDto } from '@/dtos/staff.dto';
+import { ChangePasswordDto, CreateStaffDto, ResetPasswordDto, UpdateMeDto, UpdateStaffDto, SetPostDto, SetVehicleDto } from '@/dtos/staff.dto';
 import { RequestWithStaffSession } from '@/middlewares/staff-auth.middleware';
 import { StaffService } from '@/services/staff.service';
 import catchAsync from '@/utils/catchAsync';
@@ -12,6 +12,12 @@ export class StaffController {
   /** GET /internal/staff/me */
   public me = catchAsync(async (req: RequestWithStaffSession, res: Response) => {
     res.json(await this.staffService.sessionUser(req.staff));
+  });
+
+  /** PATCH /internal/staff/me (09/10/2026: one's own first and last name) */
+  public updateMe = catchAsync(async (req: RequestWithStaffSession, res: Response) => {
+    const data: UpdateMeDto = req.body;
+    res.json(await this.staffService.updateMe(req.staff, data));
   });
 
   /** PATCH /internal/staff/me/post */

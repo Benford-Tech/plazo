@@ -46,7 +46,9 @@ import { ValidationMiddleware } from '@/middlewares/validation.middleware';
  *         returnAt: { type: string, example: "2026-10-11T15:05" }
  *         days: { type: integer, example: 8 }
  *         priceCents: { type: integer, example: 5500 }
- *         customerName: { type: string }
+ *         customerName: { type: string, description: "Display form \"Prénom Nom\", recomputed by the server" }
+ *         customerFirstName: { type: string, example: Camille }
+ *         customerLastName: { type: string, example: Martin }
  *         customerEmail: { type: string }
  *         customerPhone: { type: string }
  *         plate: { type: string, example: AB-123-CD }
@@ -82,13 +84,15 @@ import { ValidationMiddleware } from '@/middlewares/validation.middleware';
  *         application/json:
  *           schema:
  *             type: object
- *             required: [airport, parking, arrivalAt, returnAt, customerName, customerPhone, customerEmail, plate, passengers, acceptTerms]
+ *             required: [airport, parking, arrivalAt, returnAt, customerFirstName, customerLastName, customerPhone, customerEmail, plate, passengers, acceptTerms]
  *             properties:
  *               airport: { type: string, example: lyon-saint-exupery }
  *               parking: { type: string, example: parking-demo-lys }
  *               arrivalAt: { type: string, example: "2026-10-04T06:30" }
  *               returnAt: { type: string, example: "2026-10-11T15:05" }
- *               customerName: { type: string }
+ *               customerFirstName: { type: string, maxLength: 60, example: Camille, description: "Trimmed; letters, spaces, apostrophes, hyphens and periods (invalid_name)" }
+ *               customerLastName: { type: string, maxLength: 60, example: Martin }
+ *               customerName: { type: string, maxLength: 120, description: "Older app versions only: the whole name, sent without the two fields above, split at its first space" }
  *               customerPhone: { type: string, example: "06 12 34 56 78" }
  *               customerEmail: { type: string }
  *               plate: { type: string, example: GK-318-PX }

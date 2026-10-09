@@ -41,7 +41,7 @@ void _initBlocs() {
     ..registerFactory(() => ProDashboardBloc(locator()))
     ..registerFactory(() => ProNotificationsBloc(locator(), locator(), locator()))
     // The staff session lives as long as the app (the router's guard reads it).
-    ..registerLazySingleton(() => ProAuthBloc(locator(), locator(), locator(), locator(), locator(), locator()))
+    ..registerLazySingleton(() => ProAuthBloc(locator(), locator(), locator(), locator(), locator(), locator(), locator()))
     ..registerLazySingleton(() => ProAuthGuard(locator()))
     ..registerLazySingleton(() => AppRouter(proGuard: locator()));
 }

@@ -78,8 +78,8 @@ cp .env.example .env          # adapter les URL de base de données et SECRET_KE
 npm install
 npm run prisma:deploy         # crée les tables
 npm run seed:operator -- --operator "Mon parking" --capacity 250 \
-  --name "Prénom Nom" --email gerant@exemple.fr --password "mot-de-passe-solide"
-# (le prénom est le premier mot, le reste est le nom : chaque membre a un prénom et un nom depuis le 06/10/2026)
+  --first-name "Prénom" --last-name "Nom" --email gerant@exemple.fr --password "mot-de-passe-solide"
+# (--name "Prénom Nom" marche encore : le prénom est le premier mot, le reste est le nom ; un nom vide est refusé)
 npm run dev
 
 # Espace pro (http://localhost:8080/pro/ ; /api est relayé vers le serveur local)
@@ -537,9 +537,10 @@ Documentation interactive : `/api/docs` (Swagger). Toutes les routes sont sous `
 | POST | `/internal/auth/refresh` | `{ refreshToken }` → nouvelle paire (l'ancienne est révoquée) |
 | POST | `/internal/auth/logout` | Révoque la session courante |
 | GET | `/internal/staff/me` | Membre connecté |
+| PATCH | `/internal/staff/me` | Changer son prénom et son nom `{ firstName, lastName }` (refusé en « Ouvrir son espace ») |
 | PATCH | `/internal/staff/me/password` | Changer son mot de passe (déconnecte tous les appareils) |
 | GET / POST | `/internal/staff` | Équipe (gérant) |
-| PATCH | `/internal/staff/:id` | Rôle, activation (gérant) |
+| PATCH | `/internal/staff/:id` | Rôle, activation, prénom et nom (gérant) |
 | POST | `/internal/staff/:id/reset-password` | Mot de passe provisoire (gérant) |
 | GET | `/internal/parking` | Parking et capacité réservable |
 | PATCH | `/internal/parkings/:id` | Réglages du parking (gérant, tracé) |

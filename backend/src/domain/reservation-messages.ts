@@ -5,6 +5,9 @@ import { PushMessage } from './arrival-messages';
 /** Push to the team when a booking arrives without them (site, import; 06/10/2026). */
 export interface NewBookingPushInput {
   customerName: string;
+  /** 09/10/2026: the stored first and last name, for "C. Martin" (missing: split from customerName). */
+  customerFirstName?: string | null;
+  customerLastName?: string | null;
   plate: string;
   passengers: number;
   channel: ReservationChannel;
@@ -28,6 +31,6 @@ export function newBookingPush(input: NewBookingPushInput): PushMessage {
   const source = input.channelDetail?.trim() || CHANNELS[input.channel];
   return {
     title: `Nouvelle réservation · ${source}`,
-    body: `${shortName(input.customerName)} · ${input.plate} · ${input.passengers} pass. · arrivée ${input.arrival} → retour ${input.returnDay}`,
+    body: `${shortName(input.customerName, { firstName: input.customerFirstName, lastName: input.customerLastName })} · ${input.plate} · ${input.passengers} pass. · arrivée ${input.arrival} → retour ${input.returnDay}`,
   };
 }

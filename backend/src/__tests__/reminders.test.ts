@@ -80,6 +80,21 @@ describe('les règles du SMS de la veille', () => {
     expect(
       valuesOf({ customerName: ' Camille  Martin ', arrivalAt: at('2027-06-15T08:30'), plate: 'AB-123-CD', reference: 'R7KQ2M' }, TZ, null),
     ).toEqual(VALUES);
+    // 09/10/2026: the stored first and last name, not a guess from the display name.
+    expect(
+      valuesOf(
+        {
+          customerName: 'Marie Claire de La Tour',
+          customerFirstName: 'Marie Claire',
+          customerLastName: 'de La Tour',
+          arrivalAt: at('2027-06-15T08:30'),
+          plate: 'AB-123-CD',
+          reference: 'R7KQ2M',
+        },
+        TZ,
+        null,
+      ),
+    ).toMatchObject({ prénom: 'Marie Claire', nom: 'de La Tour' });
   });
 
   it('compte les SMS : 160 / 153 caractères en GSM-7, 70 / 67 dès un émoji ou un â', () => {

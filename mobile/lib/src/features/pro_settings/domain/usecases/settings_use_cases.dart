@@ -35,19 +35,24 @@ class CreateStaffUseCase with UseCase<TeamMemberModel, NewStaffParams> {
 }
 
 class UpdateStaffParams extends Equatable {
-  const UpdateStaffParams({required this.id, this.role, this.isActive});
+  const UpdateStaffParams({required this.id, this.role, this.isActive, this.firstName, this.lastName});
   final String id;
   final String? role;
   final bool? isActive;
+
+  /// « Modifier le nom » (09/10/2026): the member's first and last name (the server rebuilds the display name).
+  final String? firstName;
+  final String? lastName;
   @override
-  List<Object?> get props => [id, role, isActive];
+  List<Object?> get props => [id, role, isActive, firstName, lastName];
 }
 
 class UpdateStaffUseCase with UseCase<TeamMemberModel, UpdateStaffParams> {
   UpdateStaffUseCase(this._r);
   final SettingsRepository _r;
   @override
-  Future<Either<Failure, TeamMemberModel>> call(UpdateStaffParams p) => _r.updateStaff(p.id, role: p.role, isActive: p.isActive);
+  Future<Either<Failure, TeamMemberModel>> call(UpdateStaffParams p) =>
+      _r.updateStaff(p.id, role: p.role, isActive: p.isActive, firstName: p.firstName, lastName: p.lastName);
 }
 
 class ResetPasswordParams extends Equatable {

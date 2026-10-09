@@ -15,6 +15,9 @@ describe('confirmations des comparateurs (09/10/2026)', () => {
       provider: 'Onepark',
       externalReference: '5900001',
       customerName: 'JEAN MARTIN',
+      // 09/10/2026: the first and the last name, as Onepark gives them apart.
+      customerFirstName: 'JEAN',
+      customerLastName: 'MARTIN',
       customerPhone: '+33 6 12 34 56 78',
       customerEmail: undefined,
       arrivalAt: '2026-10-10T04:30',
@@ -45,6 +48,8 @@ describe('confirmations des comparateurs (09/10/2026)', () => {
     ].join('\n');
     expect(parseConfirmationEmail(text)).toMatchObject({
       customerName: 'Léa Petit',
+      customerFirstName: 'Léa',
+      customerLastName: 'Petit',
       customerPhone: '06 98 76 54 32',
       arrivalAt: '2026-11-01T06:00',
       returnAt: '2026-11-08T06:00',
@@ -123,5 +128,23 @@ describe('confirmations des comparateurs (09/10/2026)', () => {
       plate: 'GH-789-JK',
     };
     expect(fillGaps(found, read)).toEqual({ ...found, customerName: 'Marc Leroy', customerPhone: '+33 6 00 00 00 01', plate: 'GH-789-JK' });
+  });
+
+  it('09/10/2026 : le nom va d’un bloc ; le prénom et le nom de Claude ne s’ajoutent que s’ils redonnent le nom lu', () => {
+    const claude = { provider: 'ParkMundo', customerName: 'Claire Durand', customerFirstName: 'Claire', customerLastName: 'Durand' };
+    // ParkMundo reads one « Nom » field: Claude's split is kept when it rebuilds it (case aside).
+    expect(fillGaps({ provider: 'ParkMundo', customerName: 'CLAIRE DURAND' }, claude)).toMatchObject({
+      customerName: 'CLAIRE DURAND',
+      customerFirstName: 'Claire',
+      customerLastName: 'Durand',
+    });
+    // Another name: the importer's stays whole, without Claude's parts.
+    const other = fillGaps({ provider: 'ParkMundo', customerName: 'Paul Moreau' }, claude);
+    expect(other).toEqual({ provider: 'ParkMundo', customerName: 'Paul Moreau' });
+    // The importer's own parts are never replaced.
+    const onepark = { provider: 'Onepark', customerName: 'Léa', customerFirstName: 'Léa' };
+    expect(fillGaps(onepark, { provider: 'Onepark', customerName: 'Léa Petit', customerFirstName: 'Léa', customerLastName: 'Petit' })).toEqual(
+      onepark,
+    );
   });
 });

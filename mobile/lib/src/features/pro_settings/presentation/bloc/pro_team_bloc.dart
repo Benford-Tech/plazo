@@ -57,7 +57,8 @@ class ProTeamBloc extends Bloc<ProTeamEvent, ProTeamState> {
     on<ProTeamMemberCreated>(_onCreated);
     on<ProTeamMemberUpdated>(_onUpdated);
     on<ProTeamPasswordReset>(_onReset);
-    on<ProTeamNoticeShown>((e, emit) => emit(state.copyWith(notice: null, errorCode: null, actionState: ViewState.idle)));
+    // Also clears the field errors: a closed form (a cancelled « Modifier le nom ») leaves none behind.
+    on<ProTeamNoticeShown>((e, emit) => emit(state.copyWith(notice: null, errorCode: null, actionState: ViewState.idle, fieldErrors: const {})));
   }
 
   final GetTeamUseCase _get;
@@ -86,10 +87,11 @@ class ProTeamBloc extends Bloc<ProTeamEvent, ProTeamState> {
   }
 
   Future<void> _onUpdated(ProTeamMemberUpdated event, Emitter<ProTeamState> emit) async {
-    emit(state.copyWith(actionState: ViewState.processing, errorCode: null));
+    emit(state.copyWith(actionState: ViewState.processing, errorCode: null, fieldErrors: const {}));
     final result = await _update(event.params);
     result.fold(
-      (f) => emit(state.copyWith(actionState: ViewState.error, errorCode: _code(f))),
+      // A refused name (« Modifier le nom ») is shown under its field.
+      (f) => emit(state.copyWith(actionState: ViewState.error, errorCode: f.fields?.isNotEmpty == true ? null : _code(f), fieldErrors: f.fields ?? const {})),
       (m) => emit(state.copyWith(actionState: ViewState.success, members: state.members.map((x) => x.id == m.id ? m : x).toList(), notice: 'team.updated')),
     );
   }

@@ -44,7 +44,7 @@ describe("online payment actions", () => {
 
   it("a booking held for payment goes to the payment step", async () => {
     createBooking.mockResolvedValue({ reference: "R7KQ2M", manageToken: TOKEN, booking: { status: "pending_payment" } });
-    await expect(bookAction(EMPTY_FORM, form({ customerName: "Camille", acceptTerms: "on" }))).rejects.toThrow("REDIRECT /ma-reservation/R7KQ2M/paiement");
+    await expect(bookAction(EMPTY_FORM, form({ customerFirstName: "Camille", customerLastName: "Martin", acceptTerms: "on" }))).rejects.toThrow("REDIRECT /ma-reservation/R7KQ2M/paiement");
   });
 
   it("« Payer » goes to Stripe's page", async () => {

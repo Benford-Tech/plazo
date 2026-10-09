@@ -9,6 +9,69 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { useAuth } from "@/contexts/AuthContext";
 import { adminApi, ApiError } from "@/lib/api";
 import { describeError, fr } from "@/lib/fr";
+import { nameParts } from "@/lib/names";
+
+/** 09/10/2026: everyone corrects their own first and last name (the server rebuilds the display name). */
+function NameForm() {
+  const { user, refresh } = useAuth();
+  const [names, setNames] = useState(() => nameParts(user?.firstName, user?.lastName, user?.name));
+  const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
+  const t = fr.account;
+
+  const save = useMutation({
+    mutationFn: () => adminApi.updateMe({ firstName: names.firstName.trim(), lastName: names.lastName.trim() }),
+    onSuccess: async () => {
+      setFieldErrors({});
+      toast.success(t.nameSaved);
+      await refresh();
+    },
+    onError: (err: Error) => {
+      setFieldErrors(err instanceof ApiError ? (err.fields ?? {}) : {});
+      toast.error(describeError(err));
+    },
+  });
+
+  return (
+    <Card>
+      <CardHeader>
+        <CardTitle className="text-base font-medium">{t.nameTitle}</CardTitle>
+      </CardHeader>
+      <CardContent>
+        <form
+          className="max-w-sm space-y-4"
+          onSubmit={e => {
+            e.preventDefault();
+            save.mutate();
+          }}
+        >
+          <FormField
+            id="account-first-name"
+            label={t.firstName}
+            autoComplete="given-name"
+            required
+            maxLength={60}
+            value={names.firstName}
+            onChange={e => setNames({ ...names, firstName: e.target.value })}
+            error={fieldErrors.firstName}
+          />
+          <FormField
+            id="account-last-name"
+            label={t.lastName}
+            autoComplete="family-name"
+            required
+            maxLength={60}
+            value={names.lastName}
+            onChange={e => setNames({ ...names, lastName: e.target.value })}
+            error={fieldErrors.lastName}
+          />
+          <Button type="submit" className="h-11 text-base" disabled={save.isPending}>
+            {t.saveName}
+          </Button>
+        </form>
+      </CardContent>
+    </Card>
+  );
+}
 
 export default function AccountPage() {
   const { user, forget } = useAuth();
@@ -46,6 +109,7 @@ export default function AccountPage() {
   return (
     <>
       <h1 className="text-2xl font-semibold">{t.title}</h1>
+      {user && <NameForm key={user.id} />}
       <Card>
         <CardHeader>
           <CardTitle className="text-base font-medium">

@@ -6,6 +6,9 @@ import { PushMessage } from './arrival-messages';
 export interface LandedPushInput {
   flight: string | null;
   customerName: string;
+  /** 09/10/2026: the stored first and last name, for "C. Martin" (missing: split from customerName). */
+  customerFirstName?: string | null;
+  customerLastName?: string | null;
   plate: string;
   /** "tracking": the flight API saw it land; "traveller": the traveller tapped "J'ai atterri". */
   source: 'tracking' | 'traveller';
@@ -13,7 +16,7 @@ export interface LandedPushInput {
 }
 
 export function landedPush(input: LandedPushInput): PushMessage {
-  const who = shortName(input.customerName);
+  const who = shortName(input.customerName, { firstName: input.customerFirstName, lastName: input.customerLastName });
   const flight = input.flight ? `Vol ${input.flight}` : 'Vol';
   return input.source === 'tracking'
     ? { title: `${flight} atterri`, body: `${flight} atterri · ${who} · ${input.plate} · ${input.landedAt}` }
@@ -47,8 +50,15 @@ export const RETURN_NOTICE_LABELS = {
 } as const;
 export type ReturnNoticeKind = keyof typeof RETURN_NOTICE_LABELS;
 
-export function returnNoticePush(input: { customerName: string; plate: string; kind: ReturnNoticeKind; text: string | null }): PushMessage {
-  const who = shortName(input.customerName);
+export function returnNoticePush(input: {
+  customerName: string;
+  customerFirstName?: string | null;
+  customerLastName?: string | null;
+  plate: string;
+  kind: ReturnNoticeKind;
+  text: string | null;
+}): PushMessage {
+  const who = shortName(input.customerName, { firstName: input.customerFirstName, lastName: input.customerLastName });
   const text = input.text?.trim();
   const what =
     input.kind === 'other'

@@ -1,6 +1,6 @@
-import { Type } from 'class-transformer';
+import { Transform, Type } from 'class-transformer';
 import { Equals, IsEmail, IsInt, IsNotEmpty, IsOptional, IsString, Matches, Max, MaxLength, Min, MinLength } from 'class-validator';
-import { PHONE_RE } from './reservation.dto';
+import { PHONE_RE, trimString } from './reservation.dto';
 import { MIN_PASSWORD_LENGTH } from './staff.dto';
 
 export class LoginDto {
@@ -40,14 +40,17 @@ export class SignupDto {
   @Matches(/^[A-Z]{3}$/, { message: 'unknown_airport' })
   public airportCode: string;
 
-  @IsString()
-  @IsNotEmpty({ message: 'required' })
+  // Trimmed first (09/10/2026): a blank name is "required".
+  @Transform(trimString)
   @MaxLength(60, { message: 'too_long' })
+  @IsNotEmpty({ message: 'required' })
+  @IsString({ message: 'required' })
   public firstName: string;
 
-  @IsString()
-  @IsNotEmpty({ message: 'required' })
+  @Transform(trimString)
   @MaxLength(60, { message: 'too_long' })
+  @IsNotEmpty({ message: 'required' })
+  @IsString({ message: 'required' })
   public lastName: string;
 
   @IsEmail({}, { message: 'invalid_email' })

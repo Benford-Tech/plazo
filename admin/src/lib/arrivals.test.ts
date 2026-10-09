@@ -10,6 +10,15 @@ describe("arrivées en direct", () => {
     expect(shortName("Madonna")).toBe("Madonna");
   });
 
+  it("abrège avec le prénom et le nom à part quand le serveur les donne", () => {
+    expect(shortName("Marie Claire Dupont", { firstName: "Marie Claire", lastName: "Dupont" })).toBe("M. Dupont");
+    expect(shortName("Marie Claire Dupont", { firstName: "Marie Claire", lastName: "" })).toBe("M. Claire Dupont");
+    expect(shortName("Camille Martin", { firstName: null, lastName: null })).toBe("C. Martin");
+    expect(bannerText(signal({ customerName: "Marie Claire Dupont", customerFirstName: "Marie Claire", customerLastName: "Dupont" }))).toBe(
+      "M. Dupont arrive dans 12 min — AB-123-CD",
+    );
+  });
+
   it("écrit le bandeau selon le signal", () => {
     expect(bannerText(signal())).toBe("C. Martin arrive dans 12 min — AB-123-CD");
     expect(bannerText(signal({ state: "announced", announcedMinutes: 20 }))).toBe("C. Martin : « J'arrive dans 20 min » — AB-123-CD");

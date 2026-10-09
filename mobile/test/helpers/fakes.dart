@@ -60,6 +60,8 @@ PublicBookingModel booking({
   arrivalAt: arrivalAt,
   returnAt: returnAt,
   customerName: 'Camille Martin',
+  customerFirstName: 'Camille',
+  customerLastName: 'Martin',
   customerEmail: 'camille@exemple.fr',
   customerPhone: '06 12 34 56 78',
   plate: 'AB-123-CD',

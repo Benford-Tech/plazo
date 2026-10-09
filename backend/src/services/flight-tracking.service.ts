@@ -383,7 +383,15 @@ export class FlightTrackingService {
       await this.push.notifyStaff(
         booking.operatorId,
         'returns',
-        landedPush({ flight: booking.returnFlight, customerName: booking.customerName, plate: booking.plate, source, landedAt }),
+        landedPush({
+          flight: booking.returnFlight,
+          customerName: booking.customerName,
+          customerFirstName: booking.customerFirstName,
+          customerLastName: booking.customerLastName,
+          plate: booking.plate,
+          source,
+          landedAt,
+        }),
         { data: { type: 'flight', event: 'landed', reservationId }, collapseId: `flight-${reservationId}` },
       );
     }

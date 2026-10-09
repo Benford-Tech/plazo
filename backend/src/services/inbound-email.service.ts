@@ -13,6 +13,7 @@ import {
   REQUIRED_FOR_IMPORT,
   textOf,
 } from '@/domain/inbound-email';
+import { fullName } from '@/domain/staff-name';
 import { can } from '@/domain/roles';
 import { HttpException } from '@/utils/httpException';
 import { allocateInboundSlug } from './inbound-slug';
@@ -470,12 +471,26 @@ function missingForImport(booking: ParsedBooking): (typeof REQUIRED_FOR_IMPORT)[
   return REQUIRED_FOR_IMPORT.filter(key => !booking[key]);
 }
 
+const NAME_KEYS: readonly ('customerName' | 'customerFirstName' | 'customerLastName')[] = ['customerName', 'customerFirstName', 'customerLastName'];
+
 /** An importer's reading completed by Claude's: every field the importer found stays, Claude's fill the empty ones. */
 export function fillGaps(found: ParsedBooking, read: ParsedBooking): ParsedBooking {
   const filled: ParsedBooking = { ...found };
   for (const [key, value] of Object.entries(read) as [keyof ParsedBooking, ParsedBooking[keyof ParsedBooking]][]) {
-    if (key === 'provider' || value === undefined || value === null || value === '') continue;
+    if (key === 'provider' || (NAME_KEYS as readonly string[]).includes(key) || value === undefined || value === null || value === '') continue;
     if (filled[key] === undefined || filled[key] === null || filled[key] === '') (filled as unknown as Record<string, unknown>)[key] = value;
+  }
+  // The name goes as a whole (09/10/2026): Claude's when the importer read none; Claude's first and last name apart
+  // only when they rebuild the importer's name ("Claire Durand" read as one field by ParkMundo).
+  const importerName = !!(found.customerName || found.customerFirstName || found.customerLastName);
+  if (!importerName) {
+    for (const key of NAME_KEYS) if (read[key]) filled[key] = read[key];
+  } else if (found.customerName && !found.customerFirstName && !found.customerLastName && read.customerFirstName && read.customerLastName) {
+    const same = (a: string) => a.trim().replace(/\s+/g, ' ').toLocaleLowerCase('fr');
+    if (same(fullName(read.customerFirstName, read.customerLastName)) === same(found.customerName)) {
+      filled.customerFirstName = read.customerFirstName;
+      filled.customerLastName = read.customerLastName;
+    }
   }
   return filled;
 }

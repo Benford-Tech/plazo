@@ -3,6 +3,7 @@ import { useEffect, useMemo, useState } from "react";
 import { adminApi, ApiError } from "@/lib/api";
 import { localParts, nightsBetween, shortDay } from "@/lib/datetime";
 import { describeError, errorMessage, fr } from "@/lib/fr";
+import { nameParts } from "@/lib/names";
 import type { ParsedBooking, Reservation, ReservationChannel, ReservationInput } from "@/lib/types";
 import { cn } from "@/lib/utils";
 
@@ -13,7 +14,9 @@ type Form = {
   arrivalTime: string;
   returnDate: string;
   returnTime: string;
-  customerName: string;
+  /** 09/10/2026: first and last name apart; the server builds the display name. */
+  customerFirstName: string;
+  customerLastName: string;
   customerPhone: string;
   customerEmail: string;
   plate: string;
@@ -37,12 +40,14 @@ function initialForm(reservation?: Reservation, defaultDate?: string, prefill?: 
   if (prefill) {
     const a = split(prefill.arrivalAt);
     const r = split(prefill.returnAt);
+    const name = nameParts(prefill.customerFirstName, prefill.customerLastName, prefill.customerName);
     return {
       arrivalDate: a.date,
       arrivalTime: a.time,
       returnDate: r.date,
       returnTime: r.time,
-      customerName: prefill.customerName ?? "",
+      customerFirstName: name.firstName,
+      customerLastName: name.lastName,
       customerPhone: prefill.customerPhone ?? "",
       customerEmail: prefill.customerEmail ?? "",
       plate: prefill.plate ?? "",
@@ -61,12 +66,14 @@ function initialForm(reservation?: Reservation, defaultDate?: string, prefill?: 
   if (reservation) {
     const a = localParts(reservation.arrivalAt);
     const r = localParts(reservation.returnAt);
+    const name = nameParts(reservation.customerFirstName, reservation.customerLastName, reservation.customerName);
     return {
       arrivalDate: a.date,
       arrivalTime: a.time,
       returnDate: r.date,
       returnTime: r.time,
-      customerName: reservation.customerName,
+      customerFirstName: name.firstName,
+      customerLastName: name.lastName,
       customerPhone: reservation.customerPhone,
       customerEmail: reservation.customerEmail ?? "",
       plate: reservation.plate,
@@ -87,7 +94,8 @@ function initialForm(reservation?: Reservation, defaultDate?: string, prefill?: 
     arrivalTime: "",
     returnDate: "",
     returnTime: "",
-    customerName: "",
+    customerFirstName: "",
+    customerLastName: "",
     customerPhone: "",
     customerEmail: "",
     plate: "",
@@ -138,6 +146,11 @@ export function ReservationForm({
   const [formError, setFormError] = useState<string | null>(null);
   const [force, setForce] = useState(false);
   const t = fr.reservation;
+  // A one-word name (older row, comparator email) is stored with an empty last name: an edit that leaves the name alone
+  // must not require one, so the names are sent, and required, only on creation or once changed.
+  const initialName = reservation ? nameParts(reservation.customerFirstName, reservation.customerLastName, reservation.customerName) : null;
+  const nameRequired =
+    !initialName || form.customerFirstName.trim() !== initialName.firstName || form.customerLastName.trim() !== initialName.lastName;
 
   const arrivalAt = form.arrivalDate && form.arrivalTime ? `${form.arrivalDate}T${form.arrivalTime}` : "";
   const returnAt = form.returnDate && form.returnTime ? `${form.returnDate}T${form.returnTime}` : "";
@@ -163,13 +176,13 @@ export function ReservationForm({
 
   const save = useMutation({
     mutationFn: () => {
-      const input: ReservationInput = {
+      const names = { customerFirstName: form.customerFirstName.trim(), customerLastName: form.customerLastName.trim() };
+      const input: Omit<ReservationInput, "customerFirstName" | "customerLastName"> = {
         channel: form.channel,
         channelDetail: form.channel === "aggregator" ? form.channelDetail || null : null,
         arrivalAt,
         returnAt,
         passengers: Number(form.passengers),
-        customerName: form.customerName,
         customerPhone: form.customerPhone,
         customerEmail: form.customerEmail.trim() || null,
         plate: form.plate,
@@ -184,7 +197,9 @@ export function ReservationForm({
         ...(!reservation && prefill?.priceCents !== undefined ? { priceCents: prefill.priceCents } : {}),
         force: force || undefined,
       };
-      return reservation ? adminApi.updateReservation(reservation.id, input) : adminApi.createReservation(input);
+      return reservation
+        ? adminApi.updateReservation(reservation.id, { ...input, ...(nameRequired ? names : {}) })
+        : adminApi.createReservation({ ...input, ...names });
     },
     onSuccess: ({ data }) => onSaved(data),
     onError: (err: Error) => {
@@ -261,9 +276,32 @@ export function ReservationForm({
         minFree !== null && <p className="border border-border px-3 py-2 text-muted-foreground">{t.available(minFree)}</p>
       )}
 
-      <Field id="customerName" label={t.customerName} error={fieldErrors.customerName}>
-        <input id="customerName" required value={form.customerName} onChange={set("customerName")} aria-invalid={!!fieldErrors.customerName} className={inputClass} />
-      </Field>
+      <div className="grid gap-4 sm:grid-cols-2">
+        <Field id="customerFirstName" label={t.customerFirstName} error={fieldErrors.customerFirstName}>
+          <input
+            id="customerFirstName"
+            required={nameRequired}
+            maxLength={60}
+            autoComplete="off"
+            value={form.customerFirstName}
+            onChange={set("customerFirstName")}
+            aria-invalid={!!fieldErrors.customerFirstName}
+            className={inputClass}
+          />
+        </Field>
+        <Field id="customerLastName" label={t.customerLastName} error={fieldErrors.customerLastName}>
+          <input
+            id="customerLastName"
+            required={nameRequired}
+            maxLength={60}
+            autoComplete="off"
+            value={form.customerLastName}
+            onChange={set("customerLastName")}
+            aria-invalid={!!fieldErrors.customerLastName}
+            className={inputClass}
+          />
+        </Field>
+      </div>
       <div className="grid gap-4 sm:grid-cols-2">
         <Field id="customerPhone" label={t.customerPhone} error={fieldErrors.customerPhone}>
           <input

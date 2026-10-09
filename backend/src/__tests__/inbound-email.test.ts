@@ -178,6 +178,9 @@ describe('POST /public/inbound/email', () => {
       channelDetail: 'Allopark',
       externalReference: 'AL-884880719',
       customerName: 'Jean Dupont',
+      // 09/10/2026: Allopark's form gives the first and the last name apart.
+      customerFirstName: 'Jean',
+      customerLastName: 'Dupont',
       customerPhone: '06 12 34 56 78',
       plate: 'GK-318-PX',
       passengers: 3,
@@ -601,6 +604,8 @@ describe('lecture par Claude des mails inconnus (L-A, 08/10/2026)', () => {
       arrivalAt: '2026-07-12T06:30',
       returnAt: '2026-07-19T22:15',
       customerName: 'Marie Dupont',
+      customerFirstName: null,
+      customerLastName: null,
       customerPhone: '+33 6 12 34 56 78',
       customerEmail: 'marie@example.com',
       plate: 'ab 123 cd',
@@ -658,6 +663,9 @@ describe('lecture par Claude des mails inconnus (L-A, 08/10/2026)', () => {
       channelDetail: 'Parkos',
       externalReference: 'PK-123456',
       customerName: 'Marie Dupont',
+      // Claude did not tell them apart: the display name is split at its first space.
+      customerFirstName: 'Marie',
+      customerLastName: 'Dupont',
       customerPhone: '+33612345678',
       customerEmail: 'marie@example.com',
       plate: 'AB-123-CD',
@@ -676,6 +684,19 @@ describe('lecture par Claude des mails inconnus (L-A, 08/10/2026)', () => {
     expect(third.body).toEqual({ received: 1, imported: 0, toCheck: 0, ignored: 0 });
     expect(await prisma.reservation.count()).toBe(1);
     expect(await prisma.inboundEmail.count({ where: { status: 'duplicate' } })).toBe(2);
+  });
+
+  it('09/10/2026 : enregistre le prénom et le nom tels que Claude les distingue', async () => {
+    const { address } = await connected();
+    read.mockResolvedValueOnce(
+      answer({ customerName: 'Marie-Claire DE LA TOUR', customerFirstName: 'Marie-Claire', customerLastName: 'DE LA TOUR' }),
+    );
+    expect((await post([parkos(address)])).body.imported).toBe(1);
+    expect(await prisma.reservation.findFirstOrThrow()).toMatchObject({
+      customerName: 'Marie-Claire DE LA TOUR',
+      customerFirstName: 'Marie-Claire',
+      customerLastName: 'DE LA TOUR',
+    });
   });
 
   it('laisse en « À traiter », pré-rempli, une lecture incomplète ou peu sûre', async () => {
@@ -721,6 +742,8 @@ describe('lecture par Claude des mails inconnus (L-A, 08/10/2026)', () => {
       channelDetail: 'Onepark',
       externalReference: '5900001',
       customerName: 'JEAN MARTIN',
+      customerFirstName: 'JEAN',
+      customerLastName: 'MARTIN',
       plate: 'AB-123-CD',
       priceCents: 4500,
       vehicleModel: 'PEUGEOT 3008',
@@ -740,6 +763,8 @@ describe('lecture par Claude des mails inconnus (L-A, 08/10/2026)', () => {
         externalReference: 'AUTRE',
         arrivalAt: '2026-10-09T20:00',
         customerName: 'Marc Leroy',
+        customerFirstName: 'Marc',
+        customerLastName: 'Leroy',
         customerPhone: '+33 6 00 00 00 01',
         plate: 'gh 789 jk',
         priceCents: 4990,
@@ -755,6 +780,9 @@ describe('lecture par Claude des mails inconnus (L-A, 08/10/2026)', () => {
       channelDetail: 'Parclick',
       externalReference: 'BQXY1234',
       customerName: 'Marc Leroy',
+      // The importer read no name: Claude's comes whole, first and last name apart.
+      customerFirstName: 'Marc',
+      customerLastName: 'Leroy',
       plate: 'GH-789-JK',
       priceCents: 4990,
     });

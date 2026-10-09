@@ -24,6 +24,7 @@ import {
   unknownVariables,
   valuesOf,
 } from '@/domain/day-before-sms';
+import { greetingName } from '@/domain/customer-name';
 import { smsRecipient } from '@/domain/phone';
 import { can } from '@/domain/roles';
 import { addDays, dayBounds, localDate, localDateTime } from '@/domain/time';
@@ -177,7 +178,7 @@ export class ReminderService {
     if (!count) return 'taken';
     const record = await prisma.reservation.findUniqueOrThrow({ where: { id }, include: WITH_LISTING });
     const token = SECRET_KEY ? manageToken(record.id, SECRET_KEY, record.manageTokenVersion) : null;
-    const firstName = record.customerName.trim().split(/\s+/)[0];
+    const firstName = greetingName(record);
     const parkingName = record.parking.listing?.title ?? record.parking.name;
     try {
       if (record.parking.listing) await this.notifications.bookingReminder(toPublicBooking(record, now), token);
@@ -305,6 +306,8 @@ export class ReminderService {
     const exampleRecord = example ? reservations.find(r => r.id === example.reservationId)! : null;
     const sampleSource = exampleRecord ?? {
       customerName: 'Camille Martin',
+      customerFirstName: 'Camille',
+      customerLastName: 'Martin',
       arrivalAt: new Date(`${addDays(selected, 1)}T08:30:00Z`),
       plate: 'AB-123-CD',
       reference: 'R7KQ2M',

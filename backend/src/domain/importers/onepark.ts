@@ -21,6 +21,8 @@ export const oneparkImporter: EmailImporter = {
     const first = new RegExp(String.raw`Pr[ée]nom\s*:?\s*(.+?)\s+${NOM.source}`, 'i').exec(flat)?.[1]?.trim();
     const last = new RegExp(String.raw`${NOM.source}\s*:?\s*(.+?)\s+(?:Portable|T[ée]l[ée]phone|Pays|E-?mail)\b`, 'i').exec(flat)?.[1]?.trim();
     if (first || last) booking.customerName = [first, last].filter(Boolean).join(' ');
+    if (first) booking.customerFirstName = first;
+    if (last) booking.customerLastName = last;
     booking.customerPhone = new RegExp(String.raw`(?:Portable|T[ée]l[ée]phone)\s*:?\s*(${PHONE.source})`, 'i').exec(flat)?.[1]?.trim();
     booking.customerEmail = /E-?mail\s*:?\s*([\w.+-]+@[\w-]+(?:\.[\w-]+)+)/i.exec(flat)?.[1];
 

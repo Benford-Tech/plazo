@@ -479,6 +479,10 @@ model Reservation {
   arrivalAt               DateTime
   returnAt                DateTime
   passengers              Int
+  // The traveller's first and last name (09/10/2026); `customerName` stays the display form "Prénom Nom", recomputed
+  // by the server on every write (search, lists and exports keep using it).
+  customerFirstName       String              @default("")
+  customerLastName        String              @default("")
   customerName            String
   customerPhone           String
   customerEmail           String?

@@ -71,6 +71,8 @@ export class PushService {
       id: string;
       operatorId: string;
       customerName: string;
+      customerFirstName?: string | null;
+      customerLastName?: string | null;
       plate: string;
       passengers: number;
       channel: ReservationChannel;

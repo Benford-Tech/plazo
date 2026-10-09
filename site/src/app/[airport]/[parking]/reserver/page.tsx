@@ -9,7 +9,7 @@ import { Photo } from "@/components/Photo";
 import { api, ApiError } from "@/lib/api";
 import { bookAction } from "@/lib/actions";
 import { cancellableUntil, formatDateTime, formatDateTimeAt, param, stayFromParams, stayQuery, validateStay } from "@/lib/dates";
-import { EMPTY_FORM, type FormState } from "@/lib/forms";
+import { bookingFormValues, EMPTY_FORM, type FormState } from "@/lib/forms";
 import { errorMessage, fr, texts } from "@/lib/fr";
 import { isFreeCancellation } from "@/lib/listing";
 import { formatEuros } from "@/lib/money";
@@ -35,19 +35,7 @@ async function resumedValues(parkingSlug: string): Promise<FormState> {
     return EMPTY_FORM;
   }
   if (booking.parking.slug !== parkingSlug) return EMPTY_FORM;
-  return {
-    values: {
-      customerName: booking.customerName,
-      customerPhone: booking.customerPhone,
-      customerEmail: booking.customerEmail ?? "",
-      plate: booking.plate,
-      returnFlight: booking.returnFlight ?? "",
-      passengers: String(booking.passengers),
-      acceptTerms: "on",
-    },
-    fields: {},
-    error: null,
-  };
+  return { values: bookingFormValues(booking), fields: {}, error: null };
 }
 
 export default async function BookingPage({ params, searchParams }: PageProps<"/[airport]/[parking]/reserver">) {

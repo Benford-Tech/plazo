@@ -53,6 +53,8 @@ export function BookingForm({
     "aria-invalid": f[name] ? true : undefined,
     "aria-describedby": f[name] ? `b-${name}-error` : undefined,
   });
+  // A server that still knows only the full name (`customerName`) reports it there: shown under « Prénom ».
+  const firstNameError = f.customerFirstName ?? f.customerName;
   const hiddenErrors = HIDDEN_FIELDS.filter(name => f[name]);
   const unavailable = state.error !== null && UNAVAILABLE.includes(state.error);
   const sectionClass = "card flex flex-col gap-3.5 p-4 md:p-[22px]";
@@ -102,30 +104,61 @@ export function BookingForm({
         <h2 id="b-infos" className={sectionTitle}>
           {!online && <span className="text-accent">1.</span>} {fr.booking.yourDetails}
         </h2>
-        <div className="grid gap-3.5 md:grid-cols-2 md:gap-3">
-          <div>
-            <label htmlFor="b-customerName" className="label">
-              {fr.booking.name}
-            </label>
-            <input {...field("customerName")} type="text" required maxLength={120} autoComplete="name" defaultValue={v.customerName} className="field" />
-            <FieldError id="b-customerName-error" code={f.customerName} />
-          </div>
-          <div>
-            <label htmlFor="b-customerPhone" className="label">
-              {fr.booking.phone}
+        {/* Two short fields that belong together: side by side, on a phone too. */}
+        <div className="grid grid-cols-2 gap-3">
+          <div className="min-w-0">
+            <label htmlFor="b-customerFirstName" className="label">
+              {fr.booking.firstName}
             </label>
             <input
-              {...field("customerPhone")}
-              type="tel"
+              {...field("customerFirstName")}
+              aria-invalid={firstNameError ? true : undefined}
+              aria-describedby={firstNameError ? "b-customerFirstName-error" : undefined}
+              type="text"
               required
-              maxLength={20}
-              inputMode="tel"
-              autoComplete="tel"
-              defaultValue={v.customerPhone}
-              className="field font-semibold tabular-nums"
+              maxLength={60}
+              autoComplete="given-name"
+              autoCapitalize="words"
+              spellCheck={false}
+              defaultValue={v.customerFirstName}
+              className="field"
             />
-            <FieldError id="b-customerPhone-error" code={f.customerPhone} />
+            <FieldError id="b-customerFirstName-error" code={firstNameError} />
           </div>
+          <div className="min-w-0">
+            <label htmlFor="b-customerLastName" className="label">
+              {fr.booking.lastName}
+            </label>
+            <input
+              {...field("customerLastName")}
+              type="text"
+              required
+              maxLength={60}
+              autoComplete="family-name"
+              autoCapitalize="words"
+              spellCheck={false}
+              defaultValue={v.customerLastName}
+              className="field"
+            />
+            <FieldError id="b-customerLastName-error" code={f.customerLastName} />
+          </div>
+        </div>
+        {/* Phone and email each on their own row: the email keeps the whole width, as before the name split. */}
+        <div>
+          <label htmlFor="b-customerPhone" className="label">
+            {fr.booking.phone}
+          </label>
+          <input
+            {...field("customerPhone")}
+            type="tel"
+            required
+            maxLength={20}
+            inputMode="tel"
+            autoComplete="tel"
+            defaultValue={v.customerPhone}
+            className="field font-semibold tabular-nums"
+          />
+          <FieldError id="b-customerPhone-error" code={f.customerPhone} />
         </div>
         <div>
           <label htmlFor="b-customerEmail" className="label">

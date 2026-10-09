@@ -1,8 +1,14 @@
 import { fr } from "./fr";
 import type { ArrivalKind, ArrivalSignal, PlanningRow, ShuttleTripSummary } from "./types";
 
-/** "Camille Martin" -> "C. Martin" (the banner stays short). */
-export function shortName(fullName: string): string {
+/**
+ * "Camille Martin" -> "C. Martin" (the banner stays short). With the first and last name apart (09/10/2026, sent by a
+ * newer server), the initial of the first name and the whole last name, as in the push; otherwise the display name is split.
+ */
+export function shortName(fullName: string, names?: { firstName?: string | null; lastName?: string | null }): string {
+  const first = names?.firstName?.trim() ?? "";
+  const last = names?.lastName?.trim().replace(/\s+/g, " ") ?? "";
+  if (first && last) return `${first[0].toUpperCase()}. ${last}`;
   const parts = fullName.trim().split(/\s+/).filter(Boolean);
   if (parts.length < 2) return parts[0] ?? "";
   return `${parts[0][0].toUpperCase()}. ${parts.slice(1).join(" ")}`;
@@ -33,7 +39,7 @@ export function eventKey(s: ArrivalSignal): string {
 
 export function bannerText(s: ArrivalSignal): string {
   const t = fr.planning;
-  const who = shortName(s.customerName);
+  const who = shortName(s.customerName, { firstName: s.customerFirstName, lastName: s.customerLastName });
   const note = s.note ? t.toastNote(s.note) : "";
   if (s.state === "announced") return t.toastAnnounced(who, s.announcedMinutes ?? s.etaMinutes ?? 0, s.plate) + note;
   if (s.state === "at_meeting_point") return (s.kind === "return" ? t.toastAtMeetingPoint(who, s.plate) : t.toastAtReception(who, s.plate)) + note;

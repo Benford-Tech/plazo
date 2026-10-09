@@ -166,7 +166,10 @@ describe('inscription libre d’un loueur', () => {
     expect((await signup(form({ acceptTerms: false }))).body.fields).toEqual({ acceptTerms: 'terms_required' });
     expect((await signup(form({ airportCode: 'XXX' }))).body.fields).toEqual({ airportCode: 'unknown_airport' });
     expect((await signup(form({ password: 'court', passwordConfirmation: 'court' }))).body.fields).toEqual({ password: 'password_too_short' });
+    // 09/10/2026: names are trimmed first, a blank one is "required".
+    expect((await signup(form({ firstName: '   ', lastName: ' ' }))).body.fields).toEqual({ firstName: 'required', lastName: 'required' });
     const empty = await signup({});
+    expect(empty.body.fields).toMatchObject({ firstName: 'required', lastName: 'required' });
     expect(Object.keys(empty.body.fields)).toEqual(
       expect.arrayContaining([
         'companyName',

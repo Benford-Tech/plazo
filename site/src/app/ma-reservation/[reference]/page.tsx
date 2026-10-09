@@ -17,7 +17,7 @@ import { directionsUrl } from "@/lib/listing";
 import { formatEuros } from "@/lib/money";
 import { managePath as manageHrefFor, REFERENCE_RE } from "@/lib/manage-access";
 import { manageTokenFor } from "@/lib/manage-session";
-import { firstName, formatPhone, isFrenchMobile } from "@/lib/phone";
+import { formatPhone, greetingName, isFrenchMobile } from "@/lib/phone";
 import type { PublicBooking, TravellerReturn } from "@/lib/types";
 
 export const dynamic = "force-dynamic";
@@ -141,7 +141,7 @@ export default async function ManageBookingPage({ params, searchParams }: PagePr
             <span aria-hidden="true" className="flex size-12 items-center justify-center rounded-full bg-white/20 text-2xl">
               ✓
             </span>
-            <h1 className="font-title text-[32px] leading-tight md:text-[40px]">{fr.manage.confirmedTitle(firstName(b.customerName))}</h1>
+            <h1 className="font-title text-[32px] leading-tight md:text-[40px]">{fr.manage.confirmedTitle(greetingName(b))}</h1>
             <p className="text-[15px] text-lilac">{fr.manage.confirmedText(b.customerEmail, isFrenchMobile(b.customerPhone) ? formatPhone(b.customerPhone) : null)}</p>
             <div className="mt-1.5 flex items-center justify-between rounded-[22px] bg-white px-3.5 py-3 text-ink">
               <span className="text-[13px] text-soft">{fr.manage.reference}</span>

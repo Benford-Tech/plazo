@@ -64,6 +64,8 @@ export function toPublicBooking(reservation: BookingRecord, now = new Date()): P
     days: billableDays(reservation.arrivalAt, reservation.returnAt, tz),
     priceCents: reservation.priceCents,
     customerName: reservation.customerName,
+    customerFirstName: reservation.customerFirstName,
+    customerLastName: reservation.customerLastName,
     customerEmail: reservation.customerEmail,
     customerPhone: reservation.customerPhone,
     plate: reservation.plate,

@@ -270,10 +270,13 @@ describe('suppression d’un loueur (09/10/2026)', () => {
   const suspend = (id: string) => api().post(`${P}/operators/${id}/suspend`).set(auth(admin.token));
 
   it('efface un loueur invité jamais connecté sans le suspendre, et le trace dans le journal de la plateforme', async () => {
-    const invited = await api()
-      .post(`${P}/invitations`)
-      .set(auth(admin.token))
-      .send({ operatorName: 'Invité par erreur', managerEmail: 'erreur@example.com', totalCapacity: 80 });
+    const invited = await api().post(`${P}/invitations`).set(auth(admin.token)).send({
+      operatorName: 'Invité par erreur',
+      managerFirstName: 'Léon',
+      managerLastName: 'Erreur',
+      managerEmail: 'erreur@example.com',
+      totalCapacity: 80,
+    });
     const id = invited.body.operator.id as string;
     expect((await preview(id)).body.data).toMatchObject({
       name: 'Invité par erreur',
@@ -351,7 +354,7 @@ describe('suppression d’un loueur (09/10/2026)', () => {
       api()
         .post(`${P}/invitations`)
         .set(auth(admin.token))
-        .send({ operatorName: `Loueur ${email}`, managerEmail: email, totalCapacity: 50 });
+        .send({ operatorName: `Loueur ${email}`, managerFirstName: 'Jeanne', managerLastName: 'Loueur', managerEmail: email, totalCapacity: 50 });
     const accepted = await invite('accepte@example.com');
     const token = String(accepted.body.inviteUrl).split('#')[1];
     expect((await api().post('/api/internal/auth/invitation/accept').send({ token, password: PASSWORD })).status).toBe(200);
@@ -544,7 +547,12 @@ describe('ouvrir l’espace d’un loueur (view-as)', () => {
     const token = await viewAs();
     expect((await api().get('/api/internal/staff').set(auth(token))).status).toBe(200);
     const attempts = [
-      api().post('/api/internal/staff').set(auth(token)).send({ name: 'Intrus', email: 'intrus@example.com', role: 'manager', password: PASSWORD }),
+      api()
+        .post('/api/internal/staff')
+        .set(auth(token))
+        .send({ firstName: 'Intrus', lastName: 'Inconnu', email: 'intrus@example.com', role: 'manager', password: PASSWORD }),
+      api().patch(`/api/internal/staff/${loueur.manager.id}`).set(auth(token)).send({ firstName: 'Intrus' }),
+      api().patch('/api/internal/staff/me').set(auth(token)).send({ firstName: 'Intrus', lastName: 'Inconnu' }),
       api().patch(`/api/internal/staff/${loueur.manager.id}`).set(auth(token)).send({ isActive: false }),
       api().post(`/api/internal/staff/${loueur.manager.id}/reset-password`).set(auth(token)).send({ password: 'nouveau-mot-de-passe' }),
       api().patch('/api/internal/staff/me/password').set(auth(token)).send({ currentPassword: PASSWORD, newPassword: 'nouveau-mot-de-passe' }),
@@ -688,7 +696,15 @@ describe('invitations', () => {
     api()
       .post(`${P}/invitations`)
       .set(auth(admin.token))
-      .send({ operatorName: 'Parking Invité', managerEmail: 'M.Martin@Example.com', totalCapacity: 120, commissionBps: 1200, ...body });
+      .send({
+        operatorName: 'Parking Invité',
+        managerFirstName: 'Marc',
+        managerLastName: 'Martin',
+        managerEmail: 'M.Martin@Example.com',
+        totalCapacity: 120,
+        commissionBps: 1200,
+        ...body,
+      });
   const tokenOf = (url: string) => url.split('#')[1];
 
   it('crée le loueur, donne le lien quand l’email ne peut pas partir, et le lien sert une fois', async () => {
@@ -704,6 +720,12 @@ describe('invitations', () => {
     const row = (await api().get(`${P}/operators`).set(auth(admin.token))).body.operators.find((o: { id: string }) => o.id === operator.id);
     expect(row.invitation).toMatchObject({ expired: false });
     expect(row.manager).toMatchObject({ email: 'm.martin@example.com', emailVerified: false });
+    // 09/10/2026: the manager is named as typed, never after the company.
+    expect(await prisma.staff.findUniqueOrThrow({ where: { email: 'm.martin@example.com' } })).toMatchObject({
+      firstName: 'Marc',
+      lastName: 'Martin',
+      name: 'Marc Martin',
+    });
 
     const token = tokenOf(res.body.inviteUrl);
     expect((await api().post('/api/internal/auth/invitation').send({ token })).body).toEqual({
@@ -792,6 +814,16 @@ describe('invitations', () => {
       totalCapacity: 'min_1',
       managerEmail: 'invalid_email',
     });
+    // 09/10/2026: the manager's first and last name are required (trimmed), 60 characters each; the company name is no fallback.
+    expect((await invite({ managerFirstName: '   ', managerLastName: undefined, managerName: 'Marc Martin' })).body.fields).toEqual({
+      managerFirstName: 'required',
+      managerLastName: 'required',
+    });
+    expect((await invite({ managerLastName: 'M'.repeat(61) })).body.fields).toEqual({ managerLastName: 'too_long' });
+    expect(await prisma.staff.count({ where: { email: 'm.martin@example.com' } })).toBe(0);
+    const trimmed = await invite({ managerFirstName: '  Marc ', managerLastName: ' Martin  ' });
+    expect(trimmed.status).toBe(201);
+    expect(await prisma.staff.findUniqueOrThrow({ where: { email: 'm.martin@example.com' } })).toMatchObject({ name: 'Marc Martin' });
   });
 });
 

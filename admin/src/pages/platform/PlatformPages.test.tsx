@@ -3,6 +3,7 @@ import { render, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { MemoryRouter, Route, Routes } from "react-router-dom";
 import { AdminLayout } from "@/components/AdminLayout";
+import { ApiError } from "@/lib/api";
 import type { PlatformListing, PlatformOperator, Staff } from "@/lib/types";
 import ListingsPage from "./ListingsPage";
 import OperatorsPage from "./OperatorsPage";
@@ -294,16 +295,44 @@ describe("Loueurs", () => {
 
     await screen.findByText("Parking Démo LYS");
     await userEvent.type(screen.getByLabelText("Nom de l'entreprise / du parking"), "Nouveau");
+    expect(screen.getByLabelText("Prénom du gérant")).toBeRequired();
+    expect(screen.getByLabelText("Nom du gérant")).toBeRequired();
+    await userEvent.type(screen.getByLabelText("Prénom du gérant"), " Lucie ");
+    await userEvent.type(screen.getByLabelText("Nom du gérant"), "Martin");
     await userEvent.type(screen.getByLabelText("Email du gérant"), "nouveau@example.com");
     await userEvent.type(screen.getByLabelText("Capacité (places)"), "150");
     await userEvent.click(screen.getByRole("button", { name: "Envoyer l'invitation" }));
     await waitFor(() =>
-      expect(api.inviteOperator).toHaveBeenCalledWith({ operatorName: "Nouveau", managerEmail: "nouveau@example.com", totalCapacity: 150, commissionBps: null }),
+      expect(api.inviteOperator).toHaveBeenCalledWith({
+        operatorName: "Nouveau",
+        managerFirstName: "Lucie",
+        managerLastName: "Martin",
+        managerEmail: "nouveau@example.com",
+        totalCapacity: 150,
+        commissionBps: null,
+      }),
     );
     expect(await screen.findByDisplayValue("https://plazo.example/pro/invitation#abc")).toBeInTheDocument();
     expect(screen.getByText(/il ne sera plus affiché/)).toBeInTheDocument();
     await userEvent.click(screen.getByRole("button", { name: "Fermer" }));
     expect(screen.queryByDisplayValue("https://plazo.example/pro/invitation#abc")).not.toBeInTheDocument();
+  });
+
+  it("affiche sous le nom du gérant le refus du serveur", async () => {
+    api.getPlatformOperators.mockResolvedValue(operators);
+    api.inviteOperator.mockRejectedValue(new ApiError(400, "Validation failed", "validation_failed", { managerLastName: "invalid_name" }));
+    renderAt("/plateforme/loueurs", <OperatorsPage />);
+
+    await screen.findByText("Parking Démo LYS");
+    await userEvent.type(screen.getByLabelText("Nom de l'entreprise / du parking"), "Nouveau");
+    await userEvent.type(screen.getByLabelText("Prénom du gérant"), "Lucie");
+    await userEvent.type(screen.getByLabelText("Nom du gérant"), "Martin2");
+    await userEvent.type(screen.getByLabelText("Email du gérant"), "nouveau@example.com");
+    await userEvent.type(screen.getByLabelText("Capacité (places)"), "150");
+    await userEvent.click(screen.getByRole("button", { name: "Envoyer l'invitation" }));
+    expect(await screen.findByText("Lettres, espaces, apostrophes et tirets seulement.")).toBeInTheDocument();
+    expect(screen.getByLabelText("Nom du gérant")).toHaveAttribute("aria-invalid", "true");
+    expect(screen.getByLabelText("Prénom du gérant")).toHaveAttribute("aria-invalid", "false");
   });
 
   it("retire le lien d'invitation affiché quand ce loueur est supprimé", async () => {

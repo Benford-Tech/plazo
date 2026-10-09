@@ -92,7 +92,14 @@ export class ReturnService {
     await this.push.notifyStaff(
       booking.operatorId,
       'returns',
-      returnNoticePush({ customerName: booking.customerName, plate: booking.plate, kind, text: clean }),
+      returnNoticePush({
+        customerName: booking.customerName,
+        customerFirstName: booking.customerFirstName,
+        customerLastName: booking.customerLastName,
+        plate: booking.plate,
+        kind,
+        text: clean,
+      }),
       {
         data: { type: 'return_notice', kind, reservationId: booking.id },
         collapseId: `return-notice-${booking.id}`,

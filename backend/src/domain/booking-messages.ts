@@ -1,4 +1,5 @@
 import { PublicBooking } from '@/interfaces/booking.interface';
+import { greetingName } from './customer-name';
 
 /**
  * French copy of the emails and SMS sent to travellers. Pure functions: the product name and the
@@ -171,7 +172,7 @@ export function confirmationEmail(productName: string, booking: PublicBooking, m
     productName,
     subject,
     `<h1 style="margin:0 0 8px;font-family:'Playfair Display',Georgia,serif;font-style:italic;font-weight:500;font-size:26px">Votre place est réservée</h1>
-<p style="margin:0;font-size:15px">Bonjour ${escapeHtml(booking.customerName)}, merci pour votre réservation.</p>
+<p style="margin:0;font-size:15px">Bonjour ${escapeHtml(greetingName(booking))}, merci pour votre réservation.</p>
 ${detailsTable(booking)}
 ${total ? totalHtml(booking, total) : ''}
 ${stepsHtml(booking)}
@@ -180,7 +181,7 @@ ${manage}`,
   );
 
   const text = [
-    `Bonjour ${booking.customerName},`,
+    `Bonjour ${greetingName(booking)},`,
     '',
     `Votre place est réservée : ${booking.parking.title} (${booking.parking.airport.name}).`,
     '',
@@ -209,11 +210,11 @@ export function cancellationEmail(productName: string, booking: PublicBooking): 
     productName,
     subject,
     `<h1 style="margin:0 0 8px;font-family:'Playfair Display',Georgia,serif;font-style:italic;font-weight:500;font-size:26px">Réservation annulée</h1>
-<p style="margin:0;font-size:15px">Bonjour ${escapeHtml(booking.customerName)},</p>
+<p style="margin:0;font-size:15px">Bonjour ${escapeHtml(greetingName(booking))},</p>
 <p style="margin:12px 0 0;font-size:15px">${escapeHtml(summary)}</p>
 <p style="margin:12px 0 0;font-size:14px;color:${COLORS.soft}">${escapeHtml(cancellationMoneySentence(booking))}</p>`,
   );
-  const text = [`Bonjour ${booking.customerName},`, '', summary, cancellationMoneySentence(booking), '', `— ${productName}`].join('\n');
+  const text = [`Bonjour ${greetingName(booking)},`, '', summary, cancellationMoneySentence(booking), '', `— ${productName}`].join('\n');
   return { subject, html, text };
 }
 
@@ -241,14 +242,14 @@ export function reminderEmail(productName: string, booking: PublicBooking, manag
   const html = layout(
     productName,
     subject,
-    `<h1 style="margin:0 0 8px;font-family:'Playfair Display',Georgia,serif;font-style:italic;font-weight:500;font-size:26px">À demain, ${escapeHtml(booking.customerName.split(' ')[0])}</h1>
+    `<h1 style="margin:0 0 8px;font-family:'Playfair Display',Georgia,serif;font-style:italic;font-weight:500;font-size:26px">À demain, ${escapeHtml(greetingName(booking))}</h1>
 <p style="margin:0;font-size:15px">Votre dépôt est prévu <strong>${escapeHtml(formatLocalLong(booking.arrivalAt))}</strong> à ${escapeHtml(booking.parking.title)}.</p>
 ${detailsTable(booking)}
 <ol style="margin:0;padding-left:18px">${steps.map(([t, b], i) => `<li style="margin:0 0 8px;font-size:14px"><strong>${i + 1}. ${escapeHtml(t)}</strong><br>${escapeHtml(b)}</li>`).join('')}</ol>
 ${manageUrl ? `<p style="margin:20px 0 0"><a href="${escapeHtml(manageUrl)}" style="display:inline-block;background:${COLORS.accent};background-image:linear-gradient(96deg,#ff8a3d,#f0a36b);color:#fff;text-decoration:none;font-weight:600;padding:12px 22px;border-radius:999px">Ma réservation</a></p>` : ''}`,
   );
   const text = [
-    `Bonjour ${booking.customerName},`,
+    `Bonjour ${greetingName(booking)},`,
     '',
     `À demain : dépôt prévu ${formatLocalLong(booking.arrivalAt)} à ${booking.parking.title}.`,
     '',
@@ -269,7 +270,7 @@ export function closingEmail(productName: string, booking: PublicBooking, return
   const html = layout(
     productName,
     subject,
-    `<h1 style="margin:0 0 8px;font-family:'Playfair Display',Georgia,serif;font-style:italic;font-weight:500;font-size:26px">Bon retour, ${escapeHtml(booking.customerName.split(' ')[0])}</h1>
+    `<h1 style="margin:0 0 8px;font-family:'Playfair Display',Georgia,serif;font-style:italic;font-weight:500;font-size:26px">Bon retour, ${escapeHtml(greetingName(booking))}</h1>
 <p style="margin:0;font-size:15px">Votre véhicule vous a été rendu le ${escapeHtml(formatLocalLong(returnedAtLocal))} à ${escapeHtml(booking.parking.title)}.</p>
 ${detailsTable(booking)}
 ${total ? `<p style="margin:0;font-size:16px"><strong>Total : ${escapeHtml(total)}</strong>, payé en ligne par carte.</p>` : ''}
@@ -277,7 +278,7 @@ ${total ? `<p style="margin:0;font-size:16px"><strong>Total : ${escapeHtml(total
 <p style="margin:12px 0 0;font-size:14px;color:${COLORS.soft}">Merci d'avoir choisi ${escapeHtml(productName)} : à bientôt pour votre prochain voyage.</p>`,
   );
   const text = [
-    `Bonjour ${booking.customerName},`,
+    `Bonjour ${greetingName(booking)},`,
     '',
     `Votre véhicule vous a été rendu le ${formatLocalLong(returnedAtLocal)} à ${booking.parking.title}.`,
     '',
