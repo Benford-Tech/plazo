@@ -1513,6 +1513,9 @@ export const fr = {
   // Bloc 2, step "Plan" (P-A, 03/10/2026): the operator's own parking plan.
   // R-A (07/10/2026): the plan editor, one map and one toolbar; see CLAUDE.md, bloc 2.
   planEditor: {
+    /** The pin on the parking's address, and the map button that brings it back into view. */
+    addressPin: "Adresse du parking",
+    recenter: "Recentrer sur le parking",
     tools: {
       contour: "Contour",
       parking: "Zone de parking",

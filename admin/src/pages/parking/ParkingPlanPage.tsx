@@ -181,28 +181,30 @@ export default function ParkingPlanPage() {
 
   // R-A (07/10/2026): start again, in whole or in part. The declared capacity never changes.
   // S-C: "files only" drops the (empty) files and leaves the land and the spots alone.
-  const reset = async (scope: ResetScope) => {
-    if (!view || !parkingId) return;
+  /** True once the plan is reset; false when the operator cancels or it fails. */
+  const reset = async (scope: ResetScope): Promise<boolean> => {
+    if (!view || !parkingId) return false;
     if (
       !(await confirm(fr.parkingPlan.resetConfirm[scope], {
         destructive: true,
       }))
     )
-      return;
+      return false;
     const settings = view.plan.settings;
     if (scope === "files") {
       try {
         await adminApi.replaceFiles(parkingId, []);
         queryClient.invalidateQueries({ queryKey: ["files", parkingId] });
         toast.success(fr.parkingPlan.resetFilesDone);
+        return true;
       } catch (e) {
         toast.error(
           e instanceof ApiError && e.code === "file_occupied"
             ? fr.planEditor.files.occupied
             : describeError(e),
         );
+        return false;
       }
-      return;
     }
     try {
       if (scope === "all") {
@@ -254,8 +256,10 @@ export default function ParkingPlanPage() {
         queryClient.invalidateQueries({ queryKey: ["files", parkingId] });
       }
       toast.success(fr.parkingPlan.resetDone);
+      return true;
     } catch (e) {
       toast.error(describeError(e));
+      return false;
     }
   };
 

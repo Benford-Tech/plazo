@@ -36,29 +36,57 @@ const toast = vi.hoisted(() => ({
 }));
 vi.mock("sonner", () => ({ toast }));
 
-vi.mock("@/components/capacity/MapView", () => ({
-  MapView: (props: {
-    onMapClick?: (p: [number, number]) => void;
-    onDrawn?: (g: { type: string; coordinates: unknown }) => void;
-    drawMode?: string | null;
-    children?: React.ReactNode;
-  }) => (
-    <div data-testid="map" data-drawmode={props.drawMode ?? ""}>
-      <button type="button" onClick={() => props.onMapClick?.(spotCentre)}>
-        click-spot
-      </button>
-      <button
-        type="button"
-        onClick={() =>
-          props.onDrawn?.({ type: "LineString", coordinates: drawnLine })
-        }
-      >
-        draw-line
-      </button>
-      {props.children}
-    </div>
-  ),
+const mapHandle = vi.hoisted(() => ({
+  flyTo: vi.fn(),
+  fitTo: vi.fn(),
+  project: vi.fn(() => null),
+  getBounds: vi.fn(() => null),
 }));
+vi.mock("@/components/capacity/MapView", async () => {
+  const { forwardRef, useImperativeHandle } = await import("react");
+  return {
+    MapView: forwardRef(function MapView(
+      props: {
+        onMapClick?: (p: [number, number]) => void;
+        onDrawn?: (g: { type: string; coordinates: unknown }) => void;
+        drawMode?: string | null;
+        initialBounds?: unknown;
+        labels?: { id: string; lngLat: [number, number]; text: string }[];
+        children?: React.ReactNode;
+      },
+      ref,
+    ) {
+      useImperativeHandle(ref, () => mapHandle);
+      return (
+        <div
+          data-testid="map"
+          data-drawmode={props.drawMode ?? ""}
+          data-bounds={JSON.stringify(props.initialBounds ?? null)}
+        >
+          <button type="button" onClick={() => props.onMapClick?.(spotCentre)}>
+            click-spot
+          </button>
+          <button
+            type="button"
+            onClick={() =>
+              props.onDrawn?.({ type: "LineString", coordinates: drawnLine })
+            }
+          >
+            draw-line
+          </button>
+          <ul>
+            {(props.labels ?? []).map((l) => (
+              <li key={l.id} data-testid={`label-${l.id}`}>
+                {l.text} {l.lngLat.join(",")}
+              </li>
+            ))}
+          </ul>
+          {props.children}
+        </div>
+      );
+    }),
+  };
+});
 const api = vi.hoisted(() => ({
   getParking: vi.fn(),
   getParkingPlan: vi.fn(),
@@ -823,5 +851,71 @@ describe("plan du parking (éditeur R-A, 07/10/2026)", () => {
     expect(api.suggestZones).not.toHaveBeenCalled();
     expect(api.replaceSpots).not.toHaveBeenCalled();
     expect(screen.queryByText("Préparation du plan")).not.toBeInTheDocument();
+  });
+
+  it("se cale sur l'adresse du parking : épingle, ouverture sur le contour et l'adresse, « Recentrer sur le parking »", async () => {
+    // The address 550 m north of the outline: the opening view shows both.
+    api.getParking.mockResolvedValue({ ...parking, lat: 45.725, lng: 5.08 });
+    api.getParkingPlan.mockResolvedValue(view([]));
+    api.updateParkingPlan.mockResolvedValue({ data: {} });
+    renderAt("/parking/plan");
+    expect(
+      (await screen.findByTestId("label-parking-address")).textContent,
+    ).toBe("Adresse du parking 5.08,45.725");
+    const [[w, s], [e, n]] = JSON.parse(
+      screen.getByTestId("map").dataset.bounds!,
+    ) as [[number, number], [number, number]];
+    expect(n).toBe(45.725);
+    expect(s).toBeCloseTo(45.72, 4);
+    expect(w).toBeCloseTo(5.08, 4);
+    expect(e).toBeGreaterThan(5.08);
+    fireEvent.click(
+      screen.getByRole("button", { name: "Recentrer sur le parking" }),
+    );
+    expect(mapHandle.fitTo).toHaveBeenCalledWith([
+      [w, s],
+      [e, n],
+    ]);
+  });
+
+  it("revient sur l'adresse après « Réinitialiser… › Tout le plan », pas quand on annule", async () => {
+    api.getParkingPlan.mockResolvedValue(view([]));
+    api.updateParkingPlan.mockResolvedValue({ data: {} });
+    api.replaceFiles.mockResolvedValue({ data: [] });
+    const confirm = vi.spyOn(window, "confirm").mockReturnValue(false);
+    renderAt("/parking/plan");
+    fireEvent.click(
+      await screen.findByRole("button", { name: "Réinitialiser…" }),
+    );
+    fireEvent.click(screen.getByRole("menuitem", { name: /Tout le plan/ }));
+    await waitFor(() => expect(confirm).toHaveBeenCalledTimes(1));
+    expect(mapHandle.fitTo).not.toHaveBeenCalled();
+
+    confirm.mockReturnValue(true);
+    fireEvent.click(screen.getByRole("button", { name: "Réinitialiser…" }));
+    fireEvent.click(screen.getByRole("menuitem", { name: /Tout le plan/ }));
+    // Some 200 m around the address, the outline being gone.
+    await waitFor(() =>
+      expect(mapHandle.fitTo).toHaveBeenCalledWith([
+        [5.08 - 0.0015, 45.72 - 0.0015],
+        [5.08 + 0.0015, 45.72 + 0.0015],
+      ]),
+    );
+    confirm.mockRestore();
+  });
+
+  it("sans adresse placée, ni épingle ni recentrage avant le premier contour", async () => {
+    api.getParking.mockResolvedValue({ ...parking, lat: null, lng: null });
+    api.getParkingPlan.mockResolvedValue({
+      ...view([]),
+      plan: { ...view([]).plan, outline: null, zones: [] },
+    });
+    api.updateParkingPlan.mockResolvedValue({ data: {} });
+    renderAt("/parking/plan");
+    await screen.findByRole("button", { name: "Réinitialiser…" });
+    expect(screen.queryByTestId("label-parking-address")).toBeNull();
+    expect(
+      screen.queryByRole("button", { name: "Recentrer sur le parking" }),
+    ).toBeNull();
   });
 });

@@ -2,6 +2,7 @@ import {
   Check,
   ChevronDown,
   Loader2,
+  LocateFixed,
   Minus,
   Rows3,
   Trash2,
@@ -224,7 +225,8 @@ interface Props {
   /** R-C: run the first pass (parcel, buildings, zones, spots, files) on an empty plan. */
   autoRun: boolean;
   saveState: SaveState;
-  onReset: (scope: ResetScope) => Promise<void>;
+  /** Resolves to true once the plan is reset (false when the operator cancels or it fails). */
+  onReset: (scope: ResetScope) => Promise<boolean>;
 }
 
 /**
@@ -434,6 +436,42 @@ export function PlanEditor({
     }
   }
 
+  // ---- The parking's address: the plan is built around it (09/10/2026) -------------------------
+  /** The address on the map (geocoded by the server), when it could be placed. */
+  const address: LonLat | null =
+    parking.lat != null && parking.lng != null
+      ? [parking.lng, parking.lat]
+      : null;
+  /**
+   * The view the plan opens on and "Recentrer sur le parking" comes back to: the outline drawn and
+   * the address together, or some 200 m around the address before anything is drawn.
+   */
+  function homeBounds(): [LonLat, LonLat] | null {
+    const current = studyRef.current;
+    const drawn = [
+      ...positionsOf(current.outline?.coordinates),
+      ...current.parcels.flatMap((p) => positionsOf(p.geometry?.coordinates)),
+    ];
+    if (drawn.length) return boundsOf(address ? [...drawn, address] : drawn);
+    if (!address) return null;
+    return [
+      [address[0] - HOME_HALF_SPAN, address[1] - HOME_HALF_SPAN],
+      [address[0] + HOME_HALF_SPAN, address[1] + HOME_HALF_SPAN],
+    ];
+  }
+  /** Back to the address once the outline is gone (whole plan reset, outline cleared). */
+  function showAddress() {
+    if (!address) return;
+    mapRef.current?.fitTo([
+      [address[0] - HOME_HALF_SPAN, address[1] - HOME_HALF_SPAN],
+      [address[0] + HOME_HALF_SPAN, address[1] + HOME_HALF_SPAN],
+    ]);
+  }
+  function recenter() {
+    const bounds = homeBounds();
+    if (bounds) mapRef.current?.fitTo(bounds);
+  }
+
   // ---- The automatic pass: R-C at the first opening, "Me proposer des files" on demand --------
   // Parcel (unless the plan has an outline), buildings, zones (unless painted by hand), spots in
   // the chosen layout (or the one given), then the files of those spots. Ends on the files tool
@@ -442,10 +480,7 @@ export function PlanEditor({
     if (auto) return;
     const passLayout = layoutOverride ?? layout;
     const current = studyRef.current;
-    const position: LonLat | null =
-      parking.lat != null && parking.lng != null
-        ? [parking.lng, parking.lat]
-        : null;
+    const position = address;
     if (!current.outline && !position) {
       toast.message(t.auto.noPosition);
       return;
@@ -604,6 +639,7 @@ export function PlanEditor({
         zonesAuto: true,
       },
     });
+    showAddress();
     if (spots.length)
       void adminApi
         .replaceSpots(parkingId, plan.layout ?? layout, [])
@@ -980,31 +1016,33 @@ export function PlanEditor({
       focus,
     ],
   );
+  const addressKey = address?.join(",");
   const labels = useMemo(
     () => [
       ...planLabels(plan, study.scaleFactor, areas, focus),
       ...fileLabels(files),
+      ...(address
+        ? [
+            {
+              id: "parking-address",
+              lngLat: address,
+              text: t.addressPin,
+              variant: "address" as const,
+            },
+          ]
+        : []),
     ],
-    [plan, study.scaleFactor, areas, focus, files],
+    // The address is read through its key: a new array each render is the same point.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [plan, study.scaleFactor, areas, focus, files, addressKey],
   );
   const snapTo = useMemo(
     () => snapTargets(outline, study.parcels, shapes),
     [outline, study.parcels, shapes],
   );
-  const initialBounds = useMemo(() => {
-    const drawn = boundsOf([
-      ...positionsOf(outline?.coordinates),
-      ...study.parcels.flatMap((p) => positionsOf(p.geometry?.coordinates)),
-    ]);
-    if (drawn) return drawn;
-    if (parking.lat == null || parking.lng == null) return null;
-    return [
-      [parking.lng - HOME_HALF_SPAN, parking.lat - HOME_HALF_SPAN],
-      [parking.lng + HOME_HALF_SPAN, parking.lat + HOME_HALF_SPAN],
-    ] as [LonLat, LonLat];
-    // The map is fitted once, on the plan as it was opened.
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  // The map is fitted once, on the plan as it was opened.
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  const initialBounds = useMemo(() => homeBounds(), []);
 
   // ---- The count on top -----------------------------------------------------------------------
   const estimated = counts?.[layout] ?? null;
@@ -1795,9 +1833,10 @@ export function PlanEditor({
                     role="menuitem"
                     onClick={() => {
                       setResetOpen(false);
-                      void onReset(scope).then(() =>
-                        setTool(RESET_TOOL[scope]),
-                      );
+                      void onReset(scope).then((done) => {
+                        setTool(RESET_TOOL[scope]);
+                        if (done && scope === "all") showAddress();
+                      });
                     }}
                     className="block w-full px-3 py-2 text-left hover:bg-accent"
                   >
@@ -1947,6 +1986,16 @@ export function PlanEditor({
                   })}
                 </ul>
               </div>
+            )}
+            {(address || outline) && (
+              <button
+                type="button"
+                onClick={recenter}
+                className="absolute bottom-14 right-3 z-20 inline-flex min-h-10 items-center gap-1.5 border border-border bg-card px-3 text-[13px] font-semibold shadow-lg hover:bg-accent sm:bottom-9"
+              >
+                <LocateFixed className="h-4 w-4 text-lime-deep" />
+                {t.recenter}
+              </button>
             )}
           </MapView>
           {settingsOpen && (
