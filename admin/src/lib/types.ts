@@ -1193,3 +1193,37 @@ export interface ReminderSettingsInput {
   sendTime?: string;
   template?: string | null;
 }
+
+/** CA-B + CA-A (09/10/2026): the revenue of the bookings, managers only. */
+export type RevenueBasis = "arrival" | "booked";
+
+export interface RevenueChannel {
+  channel: ReservationChannel;
+  /** A comparator's name (« Allopark »…); null for the other channels. */
+  detail: string | null;
+  count: number;
+  totalCents: number;
+}
+
+export interface RevenueReport {
+  from: string;
+  to: string;
+  basis: RevenueBasis;
+  timezone: string;
+  totalCents: number;
+  count: number;
+  averageCents: number | null;
+  averageDays: number | null;
+  withoutAmount: number;
+  byChannel: RevenueChannel[];
+  byDay: { date: string; count: number; totalCents: number }[];
+  /** Bookings of the period without an amount (50 at most), to complete. */
+  missing: { id: string; reference: string; customerName: string; arrivalAt: string; channel: ReservationChannel; detail: string | null }[];
+}
+
+export interface RevenueSummary {
+  today: string;
+  month: { from: string; to: string; totalCents: number; count: number; withoutAmount: number };
+  todayCents: number;
+  weekCents: number;
+}

@@ -13,6 +13,7 @@ import { PublicRoute } from './public.route';
 import { ReminderRoute } from './reminder.route';
 import { ReservationRoute } from './reservation.route';
 import { ReturnRoute } from './return.route';
+import { RevenueRoute } from './revenue.route';
 import { SmsRoute } from './sms.route';
 import { StaffRoute } from './staff.route';
 
@@ -23,6 +24,7 @@ const AppRoutes = [
   new ParkingRoute(),
   new ReservationRoute(),
   new DashboardRoute(),
+  new RevenueRoute(),
   new ListingRoute(),
   new PlatformRoute(),
   new PublicRoute(),

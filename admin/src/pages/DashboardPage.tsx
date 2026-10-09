@@ -27,6 +27,7 @@ import {
   type BadgeTone,
 } from "@/components/dashboard/Badge";
 import { Plate } from "@/components/Plate";
+import { RevenueTile } from "@/components/dashboard/RevenueTile";
 import { useQuickCard } from "@/components/reservations/ReservationQuickCard";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useAuth } from "@/contexts/AuthContext";
@@ -614,6 +615,7 @@ export default function DashboardPage() {
           icon={TriangleAlert}
           alert={urgent > 0}
         />
+        <RevenueTile />
       </div>
 
       <ServicesStrip services={d.services} />

@@ -62,6 +62,9 @@ import type {
   StaffRole,
   TokenData,
   Staying,
+  RevenueBasis,
+  RevenueReport,
+  RevenueSummary,
 } from "./types";
 
 import type {
@@ -213,10 +216,8 @@ async function refreshAccessToken(): Promise<string | null> {
   return refreshing;
 }
 
-export async function apiRequest<T = unknown>(
-  endpoint: string,
-  options: RequestInit = {},
-): Promise<T> {
+/** A call with the session's token (refreshed once on a 401); errors become ApiError. */
+async function authorizedFetch(endpoint: string, options: RequestInit = {}): Promise<Response> {
   const send = (token?: string) =>
     fetch(`${API_BASE}${endpoint}`, {
       ...options,
@@ -254,8 +255,23 @@ export async function apiRequest<T = unknown>(
       body.details,
     );
   }
+  return res;
+}
+
+export async function apiRequest<T = unknown>(
+  endpoint: string,
+  options: RequestInit = {},
+): Promise<T> {
+  const res = await authorizedFetch(endpoint, options);
   if (res.status === 204) return {} as T;
   return res.json() as Promise<T>;
+}
+
+/** A file the API sends (a CSV export), with the name it gives it. */
+export async function apiFile(endpoint: string): Promise<{ blob: Blob; filename: string | null }> {
+  const res = await authorizedFetch(endpoint);
+  const filename = /filename="([^"]+)"/.exec(res.headers.get("Content-Disposition") ?? "")?.[1] ?? null;
+  return { blob: await res.blob(), filename };
 }
 
 const json = (body: unknown) => JSON.stringify(body);
@@ -517,6 +533,13 @@ export const adminApi = {
     apiRequest<Planning>(`/internal/planning${date ? `?date=${date}` : ""}`),
   getLiveArrivals: () => apiRequest<LiveArrivals>("/internal/arrivals/live"),
   getDashboard: () => apiRequest<Dashboard>("/internal/dashboard"),
+  // CA-B + CA-A (09/10/2026): the revenue, managers only.
+  getRevenue: (from: string, to: string, basis: RevenueBasis) =>
+    apiRequest<RevenueReport>(`/internal/revenue?${new URLSearchParams({ from, to, basis })}`),
+  getRevenueSummary: () => apiRequest<RevenueSummary>("/internal/revenue/summary"),
+  exportRevenue: (from: string, to: string, basis: RevenueBasis) => apiFile(`/internal/revenue/export?${new URLSearchParams({ from, to, basis })}`),
+  setReservationPrice: (id: string, priceCents: number | null) =>
+    apiRequest<{ id: string; priceCents: number | null }>(`/internal/reservations/${id}/price`, { method: "PUT", body: json({ priceCents }) }),
   getLiveShuttles: () => apiRequest<LiveShuttles>("/internal/shuttle/live"),
   // « SMS de la veille » (S-A + S-B, 06/10/2026): the usual rule, the evenings and each booking's SMS.
   getReminders: (parkingId: string, evening?: string) =>
