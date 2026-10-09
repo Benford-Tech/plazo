@@ -918,4 +918,129 @@ describe("plan du parking (éditeur R-A, 07/10/2026)", () => {
       screen.queryByRole("button", { name: "Recentrer sur le parking" }),
     ).toBeNull();
   });
+
+  it("Ctrl+Z annule le dernier geste sur le dessin, Ctrl+Maj+Z le rétablit, sauf dans un champ", async () => {
+    const entrance = {
+      id: "lm1",
+      kind: "entrance" as const,
+      geometry: {
+        type: "Point" as const,
+        coordinates: [5.08, 45.72] as [number, number],
+      },
+    };
+    api.getParkingPlan.mockResolvedValue({
+      ...view([]),
+      plan: { ...view([]).plan, landmarks: [entrance] },
+    });
+    api.updateParkingPlan.mockResolvedValue({ data: {} });
+    renderAt("/parking/plan/landmark");
+    fireEvent.click(
+      await screen.findByRole("button", { name: "Retirer Entrée" }),
+    );
+    expect(screen.queryByRole("button", { name: "Retirer Entrée" })).toBeNull();
+
+    // In a text field, Ctrl+Z is the field's own.
+    const field = document.body.appendChild(document.createElement("input"));
+    fireEvent.keyDown(field, { key: "z", ctrlKey: true });
+    expect(screen.queryByRole("button", { name: "Retirer Entrée" })).toBeNull();
+    field.remove();
+
+    fireEvent.keyDown(window, { key: "z", ctrlKey: true });
+    expect(
+      await screen.findByRole("button", { name: "Retirer Entrée" }),
+    ).toBeInTheDocument();
+    expect(toast.message).toHaveBeenLastCalledWith("Modification annulée", {
+      id: "plan-history",
+    });
+    fireEvent.keyDown(window, { key: "Z", ctrlKey: true, shiftKey: true });
+    await waitFor(() =>
+      expect(
+        screen.queryByRole("button", { name: "Retirer Entrée" }),
+      ).toBeNull(),
+    );
+    // Saved like any change: the last patch has no landmark.
+    await waitFor(() =>
+      expect(api.updateParkingPlan).toHaveBeenLastCalledWith(
+        "p1",
+        expect.objectContaining({ landmarks: [] }),
+      ),
+    );
+    fireEvent.keyDown(window, { key: "y", metaKey: true });
+    expect(toast.message).toHaveBeenLastCalledWith("Rien à rétablir", {
+      id: "plan-history",
+    });
+  });
+
+  it("Ctrl+Z retire la file qui vient d'être tracée, Ctrl+Y la remet", async () => {
+    // No file yet (an earlier test leaves its own in the mock).
+    api.getFiles.mockResolvedValue({
+      date: "2026-10-07",
+      timezone: "Europe/Paris",
+      files: [],
+      arrivals: [],
+      stats: {
+        files: 0,
+        capacity: 0,
+        cars: 0,
+        onSite: 0,
+        leavingToday: 0,
+        movesToday: 0,
+        unsound: 0,
+      },
+    } as never);
+    api.getParkingPlan.mockResolvedValue(view([]));
+    api.updateParkingPlan.mockResolvedValue({ data: {} });
+    api.replaceFiles.mockImplementation(
+      async (_id: string, files: { code: string; capacity: number }[]) => {
+        api.getFiles.mockResolvedValue({
+          date: "2026-10-07",
+          timezone: "Europe/Paris",
+          files: files.map((f, i) => ({
+            id: `f${i}`,
+            name: null,
+            geometry: null,
+            sortOrder: i,
+            active: true,
+            plannedDay: null,
+            day: null,
+            cars: [],
+            movesToday: 0,
+            sound: true,
+            ...f,
+          })),
+          arrivals: [],
+          stats: {
+            files: files.length,
+            capacity: 0,
+            cars: 0,
+            onSite: 0,
+            leavingToday: 0,
+            movesToday: 0,
+            unsound: 0,
+          },
+        } as never);
+        return { data: files.map((f, i) => ({ id: `f${i}`, ...f })) };
+      },
+    );
+    renderAt("/parking/plan/files");
+    fireEvent.click(
+      await screen.findByRole("button", { name: "+ Tracer une file" }),
+    );
+    fireEvent.click(screen.getByText("draw-line"));
+    expect(await screen.findByTestId("file-F01")).toBeInTheDocument();
+
+    fireEvent.keyDown(window, { key: "z", ctrlKey: true });
+    await waitFor(() =>
+      expect(api.replaceFiles).toHaveBeenLastCalledWith("p1", []),
+    );
+    await waitFor(() => expect(screen.queryByTestId("file-F01")).toBeNull());
+
+    fireEvent.keyDown(window, { key: "y", ctrlKey: true });
+    await waitFor(() =>
+      expect(api.replaceFiles).toHaveBeenLastCalledWith("p1", [
+        expect.objectContaining({ code: "F01", capacity: 2 }),
+      ]),
+    );
+    expect(await screen.findByTestId("file-F01")).toBeInTheDocument();
+  });
 });

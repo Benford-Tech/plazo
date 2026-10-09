@@ -206,6 +206,14 @@ Ne construire QUE ce qui règle la douleur n°1 du client.
      (`homeBounds` dans `PlanEditor.tsx`) ; retour sur l'adresse après « Réinitialiser… › Tout le plan » (`onReset` renvoie
      vrai une fois fait, pas sur « Annuler ») et « Effacer le contour » ; bouton « Recentrer sur le parking » en bas à droite
      de la carte. Web seulement.
+     **Ctrl+Z (09/10/2026, « prends en compte le ctrl+Z »)** : dans l'éditeur du plan, Ctrl+Z (⌘Z) annule le dernier geste,
+     Ctrl+Maj+Z ou Ctrl+Y le rétablit (toast « Modification annulée / rétablie », « Rien à annuler ») ; `plan/history.ts`
+     (`PlanHistory`, 100 étapes, gestes du même genre à moins de 600 ms fusionnés) : une étape garde le dessin entier d'avant le
+     geste (contour, parcelles, zones, parties exclues, repères, réglages : les zones et bâtiments IGN qui suivent le contour
+     reviennent avec lui, les mises à jour automatiques ne sont pas des gestes) et / ou la liste des files (trait, capacité,
+     suppression, « Me proposer des files », remise par `PUT …/files`) ; une réinitialisation s'annule aussi (dessin, et files
+     pour « Tout le plan »), pas les places du serveur ; rien dans un champ texte ni pendant une question ; la passe automatique
+     vide l'historique.
      **P-B « Une rangée d'un trait » (07/10/2026, places à la main)** : dans l'outil Places, « + Rangée de places » puis un
      trait sur la carte : des places au gabarit voiturier se posent côte à côte le long du trait, perpendiculaires et
      centrées dessus (`admin/src/lib/plan/manualRow.ts`, codes `M-01`, `M-02`…, zone du point milieu) ;
