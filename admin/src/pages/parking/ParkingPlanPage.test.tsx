@@ -36,29 +36,62 @@ const toast = vi.hoisted(() => ({
 }));
 vi.mock("sonner", () => ({ toast }));
 
-vi.mock("@/components/capacity/MapView", () => ({
-  MapView: (props: {
-    onMapClick?: (p: [number, number]) => void;
-    onDrawn?: (g: { type: string; coordinates: unknown }) => void;
-    drawMode?: string | null;
-    children?: React.ReactNode;
-  }) => (
-    <div data-testid="map" data-drawmode={props.drawMode ?? ""}>
-      <button type="button" onClick={() => props.onMapClick?.(spotCentre)}>
-        click-spot
-      </button>
-      <button
-        type="button"
-        onClick={() =>
-          props.onDrawn?.({ type: "LineString", coordinates: drawnLine })
-        }
-      >
-        draw-line
-      </button>
-      {props.children}
-    </div>
-  ),
+const mapHandle = vi.hoisted(() => ({
+  flyTo: vi.fn(),
+  fitTo: vi.fn(),
+  rotateTo: vi.fn(),
+  project: vi.fn(() => null),
+  getBounds: vi.fn(() => null),
 }));
+vi.mock("@/components/capacity/MapView", async () => {
+  const { forwardRef, useImperativeHandle } = await import("react");
+  return {
+    MapView: forwardRef(function MapView(
+      props: {
+        onMapClick?: (p: [number, number]) => void;
+        onDrawn?: (g: { type: string; coordinates: unknown }) => void;
+        drawMode?: string | null;
+        initialBounds?: unknown;
+        onBearingChange?: (bearing: number) => void;
+        labels?: { id: string; lngLat: [number, number]; text: string }[];
+        children?: React.ReactNode;
+      },
+      ref,
+    ) {
+      useImperativeHandle(ref, () => mapHandle);
+      return (
+        <div
+          data-testid="map"
+          data-drawmode={props.drawMode ?? ""}
+          data-bounds={JSON.stringify(props.initialBounds ?? null)}
+        >
+          <button type="button" onClick={() => props.onMapClick?.(spotCentre)}>
+            click-spot
+          </button>
+          <button
+            type="button"
+            onClick={() =>
+              props.onDrawn?.({ type: "LineString", coordinates: drawnLine })
+            }
+          >
+            draw-line
+          </button>
+          <button type="button" onClick={() => props.onBearingChange?.(30)}>
+            turn-30
+          </button>
+          <ul>
+            {(props.labels ?? []).map((l) => (
+              <li key={l.id} data-testid={`label-${l.id}`}>
+                {l.text} {l.lngLat.join(",")}
+              </li>
+            ))}
+          </ul>
+          {props.children}
+        </div>
+      );
+    }),
+  };
+});
 const api = vi.hoisted(() => ({
   getParking: vi.fn(),
   getParkingPlan: vi.fn(),
@@ -823,5 +856,259 @@ describe("plan du parking (éditeur R-A, 07/10/2026)", () => {
     expect(api.suggestZones).not.toHaveBeenCalled();
     expect(api.replaceSpots).not.toHaveBeenCalled();
     expect(screen.queryByText("Préparation du plan")).not.toBeInTheDocument();
+  });
+
+  it("se cale sur l'adresse du parking : épingle, ouverture sur le contour et l'adresse, « Recentrer sur le parking »", async () => {
+    // The address 550 m north of the outline: the opening view shows both.
+    api.getParking.mockResolvedValue({ ...parking, lat: 45.725, lng: 5.08 });
+    api.getParkingPlan.mockResolvedValue(view([]));
+    api.updateParkingPlan.mockResolvedValue({ data: {} });
+    renderAt("/parking/plan");
+    expect(
+      (await screen.findByTestId("label-parking-address")).textContent,
+    ).toBe("Adresse du parking 5.08,45.725");
+    const [[w, s], [e, n]] = JSON.parse(
+      screen.getByTestId("map").dataset.bounds!,
+    ) as [[number, number], [number, number]];
+    expect(n).toBe(45.725);
+    expect(s).toBeCloseTo(45.72, 4);
+    expect(w).toBeCloseTo(5.08, 4);
+    expect(e).toBeGreaterThan(5.08);
+    fireEvent.click(
+      screen.getByRole("button", { name: "Recentrer sur le parking" }),
+    );
+    expect(mapHandle.fitTo).toHaveBeenCalledWith([
+      [w, s],
+      [e, n],
+    ]);
+  });
+
+  it("revient sur l'adresse après « Réinitialiser… › Tout le plan », pas quand on annule", async () => {
+    api.getParkingPlan.mockResolvedValue(view([]));
+    api.updateParkingPlan.mockResolvedValue({ data: {} });
+    api.replaceFiles.mockResolvedValue({ data: [] });
+    const confirm = vi.spyOn(window, "confirm").mockReturnValue(false);
+    renderAt("/parking/plan");
+    fireEvent.click(
+      await screen.findByRole("button", { name: "Réinitialiser…" }),
+    );
+    fireEvent.click(screen.getByRole("menuitem", { name: /Tout le plan/ }));
+    await waitFor(() => expect(confirm).toHaveBeenCalledTimes(1));
+    expect(mapHandle.fitTo).not.toHaveBeenCalled();
+
+    confirm.mockReturnValue(true);
+    fireEvent.click(screen.getByRole("button", { name: "Réinitialiser…" }));
+    fireEvent.click(screen.getByRole("menuitem", { name: /Tout le plan/ }));
+    // Some 200 m around the address, the outline being gone.
+    await waitFor(() =>
+      expect(mapHandle.fitTo).toHaveBeenCalledWith([
+        [5.08 - 0.0015, 45.72 - 0.0015],
+        [5.08 + 0.0015, 45.72 + 0.0015],
+      ]),
+    );
+    confirm.mockRestore();
+  });
+
+  it("sans adresse placée, ni épingle ni recentrage avant le premier contour", async () => {
+    api.getParking.mockResolvedValue({ ...parking, lat: null, lng: null });
+    api.getParkingPlan.mockResolvedValue({
+      ...view([]),
+      plan: { ...view([]).plan, outline: null, zones: [] },
+    });
+    api.updateParkingPlan.mockResolvedValue({ data: {} });
+    renderAt("/parking/plan");
+    await screen.findByRole("button", { name: "Réinitialiser…" });
+    expect(screen.queryByTestId("label-parking-address")).toBeNull();
+    expect(
+      screen.queryByRole("button", { name: "Recentrer sur le parking" }),
+    ).toBeNull();
+  });
+
+  it("Ctrl+Z annule le dernier geste sur le dessin, Ctrl+Maj+Z le rétablit, sauf dans un champ", async () => {
+    const entrance = {
+      id: "lm1",
+      kind: "entrance" as const,
+      geometry: {
+        type: "Point" as const,
+        coordinates: [5.08, 45.72] as [number, number],
+      },
+    };
+    api.getParkingPlan.mockResolvedValue({
+      ...view([]),
+      plan: { ...view([]).plan, landmarks: [entrance] },
+    });
+    api.updateParkingPlan.mockResolvedValue({ data: {} });
+    renderAt("/parking/plan/landmark");
+    fireEvent.click(
+      await screen.findByRole("button", { name: "Retirer Entrée" }),
+    );
+    expect(screen.queryByRole("button", { name: "Retirer Entrée" })).toBeNull();
+
+    // In a text field, Ctrl+Z is the field's own.
+    const field = document.body.appendChild(document.createElement("input"));
+    fireEvent.keyDown(field, { key: "z", ctrlKey: true });
+    expect(screen.queryByRole("button", { name: "Retirer Entrée" })).toBeNull();
+    field.remove();
+
+    fireEvent.keyDown(window, { key: "z", ctrlKey: true });
+    expect(
+      await screen.findByRole("button", { name: "Retirer Entrée" }),
+    ).toBeInTheDocument();
+    expect(toast.message).toHaveBeenLastCalledWith("Modification annulée", {
+      id: "plan-history",
+    });
+    fireEvent.keyDown(window, { key: "Z", ctrlKey: true, shiftKey: true });
+    await waitFor(() =>
+      expect(
+        screen.queryByRole("button", { name: "Retirer Entrée" }),
+      ).toBeNull(),
+    );
+    // Saved like any change: the last patch has no landmark.
+    await waitFor(() =>
+      expect(api.updateParkingPlan).toHaveBeenLastCalledWith(
+        "p1",
+        expect.objectContaining({ landmarks: [] }),
+      ),
+    );
+    fireEvent.keyDown(window, { key: "y", metaKey: true });
+    expect(toast.message).toHaveBeenLastCalledWith("Rien à rétablir", {
+      id: "plan-history",
+    });
+  });
+
+  it("Ctrl+Z retire la file qui vient d'être tracée, Ctrl+Y la remet", async () => {
+    // No file yet (an earlier test leaves its own in the mock).
+    api.getFiles.mockResolvedValue({
+      date: "2026-10-07",
+      timezone: "Europe/Paris",
+      files: [],
+      arrivals: [],
+      stats: {
+        files: 0,
+        capacity: 0,
+        cars: 0,
+        onSite: 0,
+        leavingToday: 0,
+        movesToday: 0,
+        unsound: 0,
+      },
+    } as never);
+    api.getParkingPlan.mockResolvedValue(view([]));
+    api.updateParkingPlan.mockResolvedValue({ data: {} });
+    api.replaceFiles.mockImplementation(
+      async (_id: string, files: { code: string; capacity: number }[]) => {
+        api.getFiles.mockResolvedValue({
+          date: "2026-10-07",
+          timezone: "Europe/Paris",
+          files: files.map((f, i) => ({
+            id: `f${i}`,
+            name: null,
+            geometry: null,
+            sortOrder: i,
+            active: true,
+            plannedDay: null,
+            day: null,
+            cars: [],
+            movesToday: 0,
+            sound: true,
+            ...f,
+          })),
+          arrivals: [],
+          stats: {
+            files: files.length,
+            capacity: 0,
+            cars: 0,
+            onSite: 0,
+            leavingToday: 0,
+            movesToday: 0,
+            unsound: 0,
+          },
+        } as never);
+        return { data: files.map((f, i) => ({ id: `f${i}`, ...f })) };
+      },
+    );
+    renderAt("/parking/plan/files");
+    fireEvent.click(
+      await screen.findByRole("button", { name: "+ Tracer une file" }),
+    );
+    fireEvent.click(screen.getByText("draw-line"));
+    expect(await screen.findByTestId("file-F01")).toBeInTheDocument();
+
+    fireEvent.keyDown(window, { key: "z", ctrlKey: true });
+    await waitFor(() =>
+      expect(api.replaceFiles).toHaveBeenLastCalledWith("p1", []),
+    );
+    await waitFor(() => expect(screen.queryByTestId("file-F01")).toBeNull());
+
+    fireEvent.keyDown(window, { key: "y", ctrlKey: true });
+    await waitFor(() =>
+      expect(api.replaceFiles).toHaveBeenLastCalledWith("p1", [
+        expect.objectContaining({ code: "F01", capacity: 2 }),
+      ]),
+    );
+    expect(await screen.findByTestId("file-F01")).toBeInTheDocument();
+  });
+
+  it("replie la palette à la main, et d'elle-même pendant qu'on trace une file (P-B)", async () => {
+    localStorage.removeItem("plazo:plan-palette");
+    api.getParkingPlan.mockResolvedValue(view([]));
+    api.updateParkingPlan.mockResolvedValue({ data: {} });
+    renderAt("/parking/plan/files");
+    const draw = await screen.findByRole("button", {
+      name: "+ Tracer une file",
+    });
+    const card = screen.getByTestId("tool-card");
+    expect(card).toHaveAttribute("data-collapsed", "false");
+
+    // While the line is drawn the palette is a bar: the tool, the help line, « Terminer ».
+    fireEvent.click(draw);
+    expect(card).toHaveAttribute("data-collapsed", "true");
+    expect(
+      screen.queryByRole("button", { name: "+ Tracer une file" }),
+    ).toBeNull();
+    expect(card.textContent).toContain("Terminer");
+    fireEvent.click(screen.getByRole("button", { name: "Terminer" }));
+    expect(card).toHaveAttribute("data-collapsed", "false");
+
+    // By hand, and remembered.
+    fireEvent.click(screen.getByRole("button", { name: "Replier la palette" }));
+    expect(card).toHaveAttribute("data-collapsed", "true");
+    expect(localStorage.getItem("plazo:plan-palette")).toBe("closed");
+    fireEvent.click(screen.getByRole("button", { name: "Déplier la palette" }));
+    expect(card).toHaveAttribute("data-collapsed", "false");
+    expect(
+      screen.getByRole("button", { name: "+ Tracer une file" }),
+    ).toBeInTheDocument();
+    localStorage.removeItem("plazo:plan-palette");
+  });
+
+  it("tourne la carte : « Aligner sur le parking », boussole et nord en haut (R-A)", async () => {
+    localStorage.removeItem("plazo:plan-bearing:p1");
+    api.getParkingPlan.mockResolvedValue(view([]));
+    api.updateParkingPlan.mockResolvedValue({ data: {} });
+    renderAt("/parking/plan");
+    // The 40 × 14 m outline lies east-west in Lambert 93, whose north is ~1.5° off true north at
+    // Lyon: aligned, the map barely turns.
+    fireEvent.click(
+      await screen.findByRole("button", { name: "Aligner sur le parking" }),
+    );
+    expect(mapHandle.rotateTo).toHaveBeenCalledTimes(1);
+    const [aligned, bounds] = mapHandle.rotateTo.mock.calls[0];
+    expect(Math.abs(aligned)).toBeLessThan(3);
+    expect(bounds).not.toBeNull();
+    // No compass while north is up.
+    expect(
+      screen.queryByRole("button", { name: "Remettre le nord en haut" }),
+    ).toBeNull();
+
+    // Turned by hand: the compass appears, the bearing is kept for this parking.
+    fireEvent.click(screen.getByText("turn-30"));
+    const north = await screen.findByRole("button", {
+      name: "Remettre le nord en haut",
+    });
+    expect(localStorage.getItem("plazo:plan-bearing:p1")).toBe("30");
+    fireEvent.click(north);
+    expect(mapHandle.rotateTo).toHaveBeenLastCalledWith(0);
+    localStorage.removeItem("plazo:plan-bearing:p1");
   });
 });

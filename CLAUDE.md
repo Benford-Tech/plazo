@@ -200,6 +200,29 @@ Ne construire QUE ce qui règle la douleur n°1 du client.
      réinitialisation). L'outil Obstacle regroupe les parties exclues (clic sur un obstacle : marge, suppression) ;
      l'étape « Places » de l'ancien `SpotsStep.tsx` est fondue dans l'outil Places. Les pages `capacity/TerrainStep` et
      `ZonesStep` ne servent plus qu'à l'outil capacité de la plateforme.
+     **A « le plan se cale sur l'adresse » (09/10/2026, « le plan doit être focus sur l'adresse de parking »)** : épingle
+     « Adresse du parking » sur la photo (étiquette `address` de `MapView`, ancrée par la pointe, sans capter les clics) à la
+     position géocodée du parking ; ouverture sur le contour et l'adresse ensemble, ou ~200 m autour de l'adresse sans contour
+     (`homeBounds` dans `PlanEditor.tsx`) ; retour sur l'adresse après « Réinitialiser… › Tout le plan » (`onReset` renvoie
+     vrai une fois fait, pas sur « Annuler ») et « Effacer le contour » ; bouton « Recentrer sur le parking » en bas à droite
+     de la carte. Web seulement.
+     **Ctrl+Z (09/10/2026, « prends en compte le ctrl+Z »)** : dans l'éditeur du plan, Ctrl+Z (⌘Z) annule le dernier geste,
+     Ctrl+Maj+Z ou Ctrl+Y le rétablit (toast « Modification annulée / rétablie », « Rien à annuler ») ; `plan/history.ts`
+     (`PlanHistory`, 100 étapes, gestes du même genre à moins de 600 ms fusionnés) : une étape garde le dessin entier d'avant le
+     geste (contour, parcelles, zones, parties exclues, repères, réglages : les zones et bâtiments IGN qui suivent le contour
+     reviennent avec lui, les mises à jour automatiques ne sont pas des gestes) et / ou la liste des files (trait, capacité,
+     suppression, « Me proposer des files », remise par `PUT …/files`) ; une réinitialisation s'annule aussi (dessin, et files
+     pour « Tout le plan »), pas les places du serveur ; rien dans un champ texte ni pendant une question ; la passe automatique
+     vide l'historique.
+     **R-A + P-B (09/10/2026, « faire une rotation du parking, les palettes ne doivent pas occuper le plan »)** : la carte de
+     l'éditeur tourne (`MapView.rotatable` : clic droit + glisser, Ctrl + glisser, deux doigts sur téléphone, jamais
+     d'inclinaison ; le pinceau laisse passer ces gestes) ; boutons en bas à droite « Nord » (boussole, quand la carte est
+     tournée), « Aligner sur le parking » (`lib/plan/alignment.ts` `alignBearing` : rectangle le plus serré autour du contour,
+     grand côté à l'horizontale, au plus près du nord) et « Recentrer sur le parking », qui garde l'angle (`fitTo` passe
+     `bearing`) ; l'angle est gardé par parking dans le navigateur (`plazo:plan-bearing:<id>`). La palette de l'outil se replie en
+     une barre (« Replier / Déplier la palette », gardé dans `plazo:plan-palette`, repliée par défaut sur téléphone) et se
+     replie d'elle-même pendant qu'on trace (mode de dessin armé) ou qu'on peint (`MapView.onPaintStart`), en gardant la ligne
+     d'aide et « Terminer » ; le double-clic qui termine un trait ne zoome plus la carte.
      **P-B « Une rangée d'un trait » (07/10/2026, places à la main)** : dans l'outil Places, « + Rangée de places » puis un
      trait sur la carte : des places au gabarit voiturier se posent côte à côte le long du trait, perpendiculaires et
      centrées dessus (`admin/src/lib/plan/manualRow.ts`, codes `M-01`, `M-02`…, zone du point milieu) ;

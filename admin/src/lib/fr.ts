@@ -1546,6 +1546,28 @@ export const fr = {
   // Bloc 2, step "Plan" (P-A, 03/10/2026): the operator's own parking plan.
   // R-A (07/10/2026): the plan editor, one map and one toolbar; see CLAUDE.md, bloc 2.
   planEditor: {
+    /** The pin on the parking's address, and the map button that brings it back into view. */
+    addressPin: "Adresse du parking",
+    recenter: "Recentrer sur le parking",
+    /** R-A (09/10/2026): the map turns. */
+    rotation: {
+      north: "Nord",
+      northUp: "Remettre le nord en haut",
+      align: "Aligner sur le parking",
+      hint: "Met le grand côté du parking à l'horizontale. Pour tourner la carte à la main : clic droit + glisser, ou Ctrl + glisser (deux doigts sur téléphone).",
+    },
+    /** P-B (09/10/2026): the palette folds. */
+    palette: {
+      collapse: "Replier la palette",
+      expand: "Déplier la palette",
+    },
+    /** Ctrl+Z / Ctrl+Maj+Z (09/10/2026). */
+    history: {
+      undone: "Modification annulée",
+      redone: "Modification rétablie",
+      nothingToUndo: "Rien à annuler",
+      nothingToRedo: "Rien à rétablir",
+    },
     tools: {
       contour: "Contour",
       parking: "Zone de parking",
