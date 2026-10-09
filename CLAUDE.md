@@ -485,12 +485,17 @@ Le nom du produit doit rester dans UN seul fichier de configuration (il peut enc
   (`flutter_stripe`) ; architecture de `lovenest-frontend`
   (`lib/src/features/<x>/{data,domain,presentation}`, `di/`, `core/`), textes dans `assets/l10n/fr-FR.json`,
   nom du produit recopié depuis `product.json` par `tool/sync_product.dart`, builds par `codemagic.yaml` (racine du dépôt, `working_directory: mobile`). **Pipelines de publication (07/10/2026, revus le 09/10/2026 :
-  Codemagic retenu par Joanny)** : `mobile-check` (push sur `main` touchant `mobile/` : vérifications + APK debug) et quatre
-  workflows un par store et par app, `plazo-android-release`, `plazo-ios-release`, `plazo-pro-android-release`,
-  `plazo-pro-ios-release` (tag `mobile-vX.Y.Z` = `version:` de `pubspec.yaml`, sinon arrêt, ou manuel : AAB signé → Google Play
-  tests internes, IPA signé → TestFlight ; Android sans rien d'Apple ; numéro de build = compteur Codemagic + 100, jamais sous
-  le dernier du store ; secrets dans le groupe `mobile_secrets`, dont `GOOGLE_PLAY_SERVICE_ACCOUNT_CREDENTIALS`, et
-  l'intégration Developer Portal `plazo-asc` ; marche à suivre `mobile/publier-sur-les-stores.md`). Le nom iOS vit dans
+  Codemagic retenu par Joanny, avec les comptes de Thempo, LoveNest et Yoon)** : Plazo rejoint **l'équipe Codemagic** qui publie
+  Thempo et signe comme lui (intégration Developer Portal `lovenest-asc` de l'équipe Apple Benford Tech `3BX4795V2Y` ;
+  `ios_signing` avec le certificat Apple Distribution déjà téléversé, Apple n'en acceptant que 3 ; `android_signing` avec la
+  clé d'import propre à Plazo `plazo_upload`, jamais de base64 collé ; compte Google Play Benford Tech et compte de service de
+  Thempo) ; quatre workflows un par store et par app, `plazo-android-release`, `plazo-ios-release`,
+  `plazo-pro-android-release`, `plazo-pro-ios-release` (tag `mobile-vX.Y.Z` = `version:` de `pubspec.yaml`, sinon arrêt, ou
+  manuel : AAB signé → Google Play tests internes, IPA signé → TestFlight testeurs internes ; numéro de build = compteur
+  Codemagic + 100, jamais sous le dernier du store ; App ID OneSignal dans le fichier, `GOOGLE_PLAY_SERVICE_ACCOUNT_CREDENTIALS`
+  seul secret du groupe `mobile_secrets`) ; `mobile-check` à la main seulement, les vérifications de chaque modification
+  tournant sur GitHub Actions (`mobile-ci.yml`, gratuit, les minutes de l'équipe étant payantes) ; marche à suivre
+  `mobile/publier-sur-les-stores.md`. Le nom iOS vit dans
   `APP_DISPLAY_NAME` des configurations Xcode (mis à jour par `sync_product.dart`) ; Google Pay suit la clé Stripe servie
   (`pk_live_` = production).
   Voir `mobile/README.md`.
