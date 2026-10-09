@@ -406,7 +406,12 @@ Le nom du produit doit rester dans UN seul fichier de configuration (il peut enc
   `PlatformAdminMiddleware`) ; l'inscription libre des loueurs sous `/pro/inscription`. Notifications de la plateforme
   (choix E-A + C-A du 05/10/2026) : `/pro/plateforme/notifications`, table `platform_notifications`, routes
   `/api/internal/platform/notifications[/audience]` ; envoi push à tous les pros (réglage `Staff.notifyPlatform`) ou à tous
-  les voyageurs (appareils enregistrés, deux envois par jour au plus, 429 `daily_limit`).
+  les voyageurs (appareils enregistrés, deux envois par jour au plus, 429 `daily_limit`). **Archivage des loueurs (09/10/2026,
+  « archive les parkings suspendus »)** : `Operator.archivedAt` (CHECK : archivé ⇒ suspendu ; migration `operator_archived`, qui
+  archive tout loueur suspendu à son déploiement), `POST /internal/platform/operators/:id/archive` (409 `not_suspended`) et
+  `…/unarchive`, `GET …/operators?view=archived` (+ `counts`), « Réactiver » désarchive ; Loueurs : pilules « Loueurs · Archivés »
+  (`?vue=archives`), « Archiver » sur un loueur suspendu, « Désarchiver » ; les annonces d'un loueur archivé quittent Annonces ;
+  rappels, suivi des vols et préparation des files l'ignorent (pas les reversements) ; `DemoSeedService.archive` archive aussi.
 - `site/` : site Plazo voyageurs (Next.js), servi à la racine du domaine. **Référencement (08/10/2026)** : données structurées
   schema.org (`src/lib/structured-data.ts`, composant `JsonLd` : Organization et WebSite sur l'accueil, FAQPage et ItemList des
   parkings sur la page aéroport, ParkingFacility + BreadcrumbList sur une fiche) ; un parking de démo (`isDemo`) n'est ni décrit,
@@ -423,7 +428,14 @@ Le nom du produit doit rester dans UN seul fichier de configuration (il peut enc
   de lyonaeroports.com relevées le 08/10/2026, revérifiées le 09/10/2026, date citée dans le texte ; **Terminal 2 fermé depuis le
   01/04/2026** : le guide envoie tout le monde au Terminal 1 ; P1 géré par LPA ; les navettes des parkings extérieurs ne déposent
   pas devant l'aérogare (règlement des parcs) ; deux relectures contradictoires, 90 corrections) et ceux des partenaires restent ceux de
-  `guideFacts` ; `guideTexts` / `guideWordCount` servent aux tests (≥ 4 200 mots avec ou sans partenaire). Les parkings de démo
+  `guideFacts` ; `guideTexts` / `guideWordCount` servent aux tests (≥ 4 200 mots avec ou sans partenaire).
+  **Pages guide (09/10/2026, « fais les trois pages guide »)** : route `/[airport]/guide/[topic]` (`TopicGuideView` : fil d'Ariane,
+  H1, date de mise à jour, `SearchForm` prérempli, parkings partenaires réels de la page en `ResultCard`, `GuideToc` +
+  `GuideSections` niveau h2 partagés avec le guide de l'accueil, FAQ, autres guides ; JSON-LD Article + FAQPage + BreadcrumbList),
+  registre `src/lib/guides` (`topics.ts` : slugs `parking-pas-cher`, `parking-longue-duree`, `parking-voiturier` ; `index.ts` :
+  `topicGuide`, `topicLinks` ; contenus `lyon-*.ts` qui renvoient un `TopicGuide`), faits des partenaires `topicFacts` (semaine,
+  deux semaines pour la longue durée, voituriers), liens « → » depuis trois sections du guide de l'accueil (`GuideSection.more`),
+  pied de page et plan du site ; tests ≥ 2 000 mots, ≥ 9 questions, aucun chiffre de partenaire sans partenaire réel. Les parkings de démo
   sont archivés (`DEMO_LISTINGS=archive` : `DemoSeedService.archive` suspend les loueurs `isDemo`, `true` les rétablit).
 - `email-worker/` : relais des mails entrants (Cloudflare Email Worker, `postal-mime`) : Email Routing lui passe chaque mail de
   `plazo.fr` (règle « catch-all » du domaine principal), il le poste sur l'API ; déployé par GitHub Actions (`email-worker-ci.yml`,

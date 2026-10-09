@@ -1,7 +1,7 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { formatEuros } from "../money";
 import { parkingMetaDescription } from "../seo";
-import { breadcrumbLd, faqLd, jsonLdScript, organizationLd, parkingListLd, parkingLd, websiteLd } from "../structured-data";
+import { articleLd, breadcrumbLd, faqLd, jsonLdScript, organizationLd, parkingListLd, parkingLd, websiteLd } from "../structured-data";
 import type { AirportResponse, ParkingResponse } from "../types";
 
 const BASE = "https://www.plazo.test";
@@ -122,15 +122,32 @@ describe("sitemap", () => {
     vi.unstubAllEnvs();
   });
 
-  it("lists the home page and the real parkings, never the demo ones", async () => {
+  const guides = ["parking-pas-cher", "parking-longue-duree", "parking-voiturier"].map(topic => `${BASE}/lyon-saint-exupery/guide/${topic}`);
+
+  it("lists the home page, the topic guides and the real parkings, never the demo ones", async () => {
     airportMock.mockResolvedValue({ airport, listings: [listing({ slug: "demo", isDemo: true }), listing({})] });
     const { default: sitemap } = await import("@/app/sitemap");
-    expect((await sitemap()).map(entry => entry.url)).toEqual([`${BASE}/`, `${BASE}/lyon-saint-exupery/parkair`]);
+    expect((await sitemap()).map(entry => entry.url)).toEqual([`${BASE}/`, ...guides, `${BASE}/lyon-saint-exupery/parkair`]);
   });
 
-  it("still serves the home page when the API does not answer", async () => {
+  it("still serves the home page and the guides when the API does not answer", async () => {
     airportMock.mockRejectedValue(new Error("down"));
     const { default: sitemap } = await import("@/app/sitemap");
-    expect((await sitemap()).map(entry => entry.url)).toEqual([`${BASE}/`]);
+    expect((await sitemap()).map(entry => entry.url)).toEqual([`${BASE}/`, ...guides]);
+  });
+});
+
+describe("article (topic guides, 09/10/2026)", () => {
+  it("describes a guide page with its dates, written and published by the site", () => {
+    const ld = articleLd(BASE, { title: "Parking pas cher", description: "Comment payer moins.", path: "/lyon-saint-exupery/guide/parking-pas-cher", published: "2026-10-09", updated: "2026-10-10" });
+    expect(ld).toMatchObject({
+      "@type": "Article",
+      headline: "Parking pas cher",
+      datePublished: "2026-10-09",
+      dateModified: "2026-10-10",
+      mainEntityOfPage: `${BASE}/lyon-saint-exupery/guide/parking-pas-cher`,
+      author: { "@type": "Organization" },
+      publisher: { "@type": "Organization", logo: { url: `${BASE}/apple-icon.png` } },
+    });
   });
 });

@@ -129,8 +129,10 @@ une décision de Joanny. Cocher au fur et à mesure.
 - [x] **Parkings de démonstration** : archivés le 09/10/2026 (demande de Joanny, « archive tous les parkings de démo ») :
   `DEMO_LISTINGS=archive` sur Vercel, le build suspend les quatre loueurs fictifs (`[seed-demo] Archived 4 demo operator(s)` dans
   le journal), qui disparaissent du site, de l'app et de `/api/public/search` et dont les comptes sont refusés ; ils restent en
-  base, `true` les rétablit. Seul le récapitulatif horaire ignore un loueur suspendu : les rappels et le suivi des vols
-  traitent encore les trois réservations de démo tant qu'elles sont à venir. Retrait définitif : `DEMO_LISTINGS=remove` puis redéployer et vérifier
+  base, `true` les rétablit. **Archivés le 09/10/2026** (« archive les parkings suspendus ») : `Operator.archivedAt`, posé par
+  la migration `operator_archived` sur tout loueur suspendu à son déploiement et par `DEMO_LISTINGS=archive` ; un loueur archivé
+  quitte Plateforme › Loueurs (filtre « Archivés ») et Annonces, et les tâches automatiques (rappels, suivi des vols, préparation
+  des files ; les reversements continuent) ; « Désarchiver » le ramène suspendu, « Réactiver » actif. Retrait définitif : `DEMO_LISTINGS=remove` puis redéployer et vérifier
   `[seed-demo] Removed` dans le journal du build (irréversible : supprime aussi toute réservation faite sur une démo), puis
   supprimer `DEMO_LISTINGS` et `DEMO_SEED_PASSWORD`.
 - [ ] **Vercel Pro** : l'offre Hobby est réservée à un usage non commercial, plafonne à 100 déploiements par jour, garde
@@ -242,7 +244,16 @@ une décision de Joanny. Cocher au fur et à mesure.
   terminal » ; annulation 4 h avant au P7 ; P5 robotisé limité à 2,30 m ; ce que contiennent vraiment la confirmation, le rappel,
   le SMS d'atterrissage et Ma réservation).
   À relire avant toute modification et à chaque nouvelle grille annuelle. Les chiffres des partenaires restent ceux de `guideFacts`
-  (aucun sans parking réel). Les trois pages d'intention `/lyon-saint-exupery/guide/…` restent à faire.
+  (aucun sans parking réel).
+- Fait le 09/10/2026 (« fais les trois pages guide ») : `/lyon-saint-exupery/guide/parking-pas-cher` (~2 900 mots, 11 questions),
+  `…/parking-longue-duree` (~3 050 mots, 9 questions, partenaires chiffrés pour deux semaines) et `…/parking-voiturier` (~3 050
+  mots, 10 questions, partenaires avec voiturier seulement) : H1, recherche préremplie, parkings partenaires réels de la page
+  (aucun tant qu'aucun n'est en ligne), guide avec « Sur cette page », questions fréquentes, autres guides ; JSON-LD Article,
+  FAQPage et BreadcrumbList ; dans le plan du site, le pied de page et le guide de l'accueil. Chaque page a été rédigée puis
+  relue par trois relecteurs (faits, règles de Plazo, français) avec contre-vérification de chaque constat : 27, 35 et 32
+  corrections. Sources datées du 09/10/2026 : grille tarifaire 2026, pages et FAQ de lyonaeroports.com, store.lyonaeroports.com
+  (voiturier Alyse Premium et Ector, P5 robotisé, P7), règlement des parcs 2024, rhonexpress.fr. À relire à chaque nouvelle
+  grille annuelle ou changement de l'aéroport (contenus dans `site/src/lib/guides/lyon-*.ts`).
 - Fait le 09/10/2026 : les segments du site (`recherche`, `guide`, `avis`…) ne peuvent plus être pris comme adresse de fiche
   (`RESERVED_LISTING_SLUGS`, erreur `slug_reserved`).
 

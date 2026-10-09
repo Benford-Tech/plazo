@@ -227,6 +227,8 @@ export class FlightTrackingService {
       where: {
         status: { in: ['upcoming', 'arrived'] },
         departureFlight: { not: null },
+        // An archived operator (09/10/2026) is out of the crons.
+        operator: { archivedAt: null },
         arrivalAt: { gte: new Date(now.getTime() - 12 * 3600000), lte: new Date(now.getTime() + 30 * 3600000) },
         OR: [{ departureStatus: null }, { departureStatus: { notIn: [...FINAL_DEPARTURE_STATUSES] } }],
       },
@@ -245,6 +247,7 @@ export class FlightTrackingService {
       where: {
         status: { in: [...PICKUP_STATUSES] },
         returnFlight: { not: null },
+        operator: { archivedAt: null },
         returnAt: { gte: new Date(now.getTime() - 12 * 3600000), lte: new Date(now.getTime() + 30 * 3600000) },
         OR: [{ flightStatus: null }, { flightStatus: { notIn: [...FINAL_FLIGHT_STATUSES] } }],
       },

@@ -8,8 +8,9 @@ import { DEMO_PASSWORD_MIN_LENGTH, DemoSeedService, NotDemoOperatorError } from 
  * with a published listing each, and a few bookings for the first one (src/domain/demo-data.ts).
  *
  *   npm run seed:demo -- --apply     creates or refreshes them (DEMO_SEED_PASSWORD required, 10+ chars)
- *   npm run seed:demo -- --archive   suspends every operator flagged as demo: hidden from the site and the
- *                                    apps, kept in the database (--apply restores them)
+ *   npm run seed:demo -- --archive   suspends then archives every operator flagged as demo: hidden from the site,
+ *                                    the apps, the platform's lists and the crons, kept in the database (--apply
+ *                                    restores them)
  *   npm run seed:demo -- --remove    deletes every operator flagged as demo, nothing else
  *
  * Run by the Vercel build after bootstrap-platform-admin, driven by DEMO_LISTINGS: "true" applies,
@@ -37,7 +38,7 @@ async function main() {
   if (selected === 'archive') {
     const r = await seed.archive();
     console.log(
-      `[seed-demo] Archived ${r.operators} demo operator(s): suspended, hidden from the site, kept in the database (DEMO_LISTINGS=true restores them)`,
+      `[seed-demo] Archived ${r.operators} demo operator(s): suspended and archived, hidden from the site, kept in the database (DEMO_LISTINGS=true restores them)`,
     );
     return;
   }

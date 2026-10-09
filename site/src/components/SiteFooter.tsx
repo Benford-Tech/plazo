@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { fr } from "@/lib/fr";
 import { Logo } from "@/components/Logo";
+import { topicLinks } from "@/lib/guides";
 import { hasSupportEmail, SUPPORT_EMAIL } from "@/lib/product";
 import { AIRPORTS, airportPath, PRO_SIGNUP_PATH } from "@/lib/site";
 
@@ -44,6 +45,16 @@ export function SiteFooter() {
               {fr.footer.faq}
             </Link>
           </li>
+          {/* The topic guides of each airport (09/10/2026), linked from every page. */}
+          {AIRPORTS.flatMap(a =>
+            topicLinks(a.slug).map(topic => (
+              <li key={topic.href}>
+                <Link href={topic.href} className={linkClass}>
+                  {fr.guide.footerLink(topic.short, a.name)}
+                </Link>
+              </li>
+            )),
+          )}
           {/* Hidden while product.json holds a placeholder address: a dead mailto helps nobody. */}
           {hasSupportEmail() && (
             <li>

@@ -29,7 +29,7 @@ export interface DemoApplyResult {
 }
 
 export interface DemoArchiveResult {
-  /** Demo operators that were active and are now suspended. */
+  /** Demo operators archived by this run (suspended first when they were still active). */
   operators: number;
 }
 
@@ -101,6 +101,7 @@ export class DemoSeedService {
               name: demo.name,
               status: 'active',
               suspendedAt: null,
+              archivedAt: null,
               isDemo: true,
               ...(existing.inboundSlug ? {} : { inboundSlug: await allocateInboundSlug(tx, demo.slug) }),
             },
@@ -227,16 +228,19 @@ export class DemoSeedService {
 
   /**
    * Suspends every active demo operator, exactly as the platform admin suspends an operator
-   * (`status: 'suspended'`, `suspendedAt`): their listings leave the site and the apps, their staff can
-   * no longer sign in, and nothing is deleted, so `apply` brings them back. Idempotent; never touches
-   * an operator that is not a demo.
+   * (`status: 'suspended'`, `suspendedAt`), then archives it (`archivedAt`, 09/10/2026): their listings leave
+   * the site and the apps, their staff can no longer sign in, they leave the platform's lists and the crons,
+   * and nothing is deleted, so `apply` brings them back. Idempotent; never touches an operator that is not a demo.
    */
   public async archive(): Promise<DemoArchiveResult> {
-    const archived = await prisma.operator.updateMany({
-      where: { isDemo: true, status: 'active' },
-      data: { status: 'suspended', suspendedAt: new Date() },
+    const now = new Date();
+    // Suspended first (the CHECK wants an archived operator suspended), then filed away (09/10/2026: out of the
+    // platform's lists and the crons). A demo already archived is left as it is.
+    const result = await prisma.$transaction(async tx => {
+      await tx.operator.updateMany({ where: { isDemo: true, status: 'active' }, data: { status: 'suspended', suspendedAt: now } });
+      return tx.operator.updateMany({ where: { isDemo: true, archivedAt: null }, data: { archivedAt: now } });
     });
-    return { operators: archived.count };
+    return { operators: result.count };
   }
 
   /** Deletes every operator flagged as demo, with everything that hangs from it (cascades). */

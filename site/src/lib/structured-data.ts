@@ -70,6 +70,22 @@ export function parkingListLd(base: string, { airport, listings }: Pick<AirportR
   };
 }
 
+/** A guide page (09/10/2026): an article written by the site, with its dates. */
+export function articleLd(base: string, page: { title: string; description: string; path: string; published: string; updated: string }): JsonLdObject {
+  return {
+    "@context": CONTEXT,
+    "@type": "Article",
+    headline: page.title,
+    description: page.description,
+    inLanguage: "fr-FR",
+    datePublished: page.published,
+    dateModified: page.updated,
+    mainEntityOfPage: absolute(base, page.path),
+    author: { "@type": "Organization", name: PRODUCT_NAME, url: `${base}/` },
+    publisher: { "@type": "Organization", name: PRODUCT_NAME, url: `${base}/`, logo: { "@type": "ImageObject", url: `${base}/apple-icon.png` } },
+  };
+}
+
 export function breadcrumbLd(base: string, items: { name: string; path: string }[]): JsonLdObject {
   return {
     "@context": CONTEXT,

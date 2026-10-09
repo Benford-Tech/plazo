@@ -1,7 +1,7 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useState } from "react";
 import { useConfirm } from "@/components/ui/confirm-context";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import { toast } from "sonner";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useAuth } from "@/contexts/AuthContext";
@@ -324,8 +324,11 @@ function RowActions({
   const { startViewAs } = useAuth();
   const queryClient = useQueryClient();
   const navigate = useNavigate();
-  const refresh = () =>
+  // Both lists of the Loueurs tab, and the Annonces tab (an archived operator's listings leave it).
+  const refresh = () => {
     queryClient.invalidateQueries({ queryKey: ["platform", "operators"] });
+    queryClient.invalidateQueries({ queryKey: ["platform", "listings"] });
+  };
   const open = useMutation({
     mutationFn: () => startViewAs(operator.id),
     onSuccess: () => {
@@ -356,6 +359,41 @@ function RowActions({
     onError: (err: Error) => toast.error(describeError(err)),
   });
 
+  // 09/10/2026 (« archive les parkings suspendus »): a suspended operator can be filed away, and brought back.
+  const archiving = useMutation({
+    mutationFn: () =>
+      operator.archivedAt
+        ? adminApi.unarchiveOperator(operator.id)
+        : adminApi.archiveOperator(operator.id),
+    onSuccess: () => {
+      toast.success(operator.archivedAt ? t.unarchived : t.archived);
+      refresh();
+    },
+    onError: (err: Error) => toast.error(describeError(err)),
+  });
+
+  if (operator.archivedAt) {
+    return (
+      <div className="flex justify-end gap-1.5">
+        <button
+          type="button"
+          className={ghostButton}
+          disabled={open.isPending}
+          onClick={() => open.mutate()}
+        >
+          {t.open}
+        </button>
+        <button
+          type="button"
+          className={cn(ghostButton, "border-lime-deep text-lime-deep")}
+          disabled={archiving.isPending}
+          onClick={() => archiving.mutate()}
+        >
+          {t.unarchive}
+        </button>
+      </div>
+    );
+  }
   if (operator.invitation) {
     return (
       <button
@@ -402,6 +440,24 @@ function RowActions({
           {operator.status === "active" ? t.suspend : t.reactivate}
         </button>
       )}
+      {operator.status === "suspended" && (
+        <button
+          type="button"
+          className={cn(ghostButton, "text-muted-foreground")}
+          disabled={archiving.isPending}
+          onClick={async () => {
+            if (
+              !(await confirm(t.confirmArchive(operator.name), {
+                confirmLabel: t.archive,
+              }))
+            )
+              return;
+            archiving.mutate();
+          }}
+        >
+          {t.archive}
+        </button>
+      )}
     </div>
   );
 }
@@ -411,6 +467,7 @@ function subline(o: PlatformOperator): string {
     return o.invitation.expired
       ? t.invitationExpired(shortDate.format(new Date(o.invitation.sentAt)))
       : t.invitedOn(shortDate.format(new Date(o.invitation.sentAt)));
+  if (o.archivedAt) return t.archivedOn(shortDate.format(new Date(o.archivedAt)));
   if (o.status === "suspended" && o.suspendedAt)
     return t.suspendedOn(shortDate.format(new Date(o.suspendedAt)));
   const base = t.parkingsPlaces(o.parkings, o.places);
@@ -419,10 +476,15 @@ function subline(o: PlatformOperator): string {
 
 /** "Loueurs" tab: every operator, its figures and the actions on it, plus the invitation form. */
 export default function OperatorsPage() {
+  // 09/10/2026: the current operators (active and suspended) or the archived ones (?vue=archives).
+  const [params, setParams] = useSearchParams();
+  const archivedView = params.get("vue") === "archives";
   const operators = useQuery({
-    queryKey: ["platform", "operators"],
-    queryFn: adminApi.getPlatformOperators,
+    queryKey: ["platform", "operators", archivedView ? "archived" : "current"],
+    queryFn: () =>
+      adminApi.getPlatformOperators(archivedView ? "archived" : undefined),
   });
+  const counts = operators.data?.counts;
   const [link, setLink] = useState<InvitationResult | null>(null);
   const defaultBps = operators.data?.defaultCommissionBps ?? null;
   const showLink = (result: InvitationResult) =>
@@ -447,6 +509,36 @@ export default function OperatorsPage() {
       </div>
 
       {link && <InviteLink result={link} onClose={() => setLink(null)} />}
+
+      <div role="group" aria-label={t.views} className="flex flex-wrap gap-1">
+        {(
+          [
+            ["current", t.viewCurrent, counts?.current],
+            ["archived", t.viewArchived, counts?.archived],
+          ] as const
+        ).map(([view, label, count]) => {
+          const pressed = (view === "archived") === archivedView;
+          return (
+            <button
+              key={view}
+              type="button"
+              aria-pressed={pressed}
+              onClick={() => setParams(view === "archived" ? { vue: "archives" } : {})}
+              className={cn(
+                "flex min-h-10 items-center gap-2 px-3 text-base",
+                pressed
+                  ? "bg-primary font-bold text-primary-foreground"
+                  : "border border-border hover:bg-accent",
+              )}
+            >
+              {label}
+              {count !== undefined && (
+                <span className="font-mono text-sm">{count}</span>
+              )}
+            </button>
+          );
+        })}
+      </div>
 
       {operators.isLoading ? (
         <Skeleton className="h-48 w-full" />
@@ -498,10 +590,16 @@ export default function OperatorsPage() {
                         {t.statusDemo}
                       </span>
                     )}
-                    {o.status === "suspended" && (
-                      <span className="ml-2 border border-destructive px-1.5 text-xs font-bold uppercase text-destructive">
-                        {t.statusSuspended}
+                    {o.archivedAt ? (
+                      <span className="ml-2 border border-border px-1.5 text-xs font-bold uppercase text-muted-foreground">
+                        {t.statusArchived}
                       </span>
+                    ) : (
+                      o.status === "suspended" && (
+                        <span className="ml-2 border border-destructive px-1.5 text-xs font-bold uppercase text-destructive">
+                          {t.statusSuspended}
+                        </span>
+                      )
                     )}
                     <br />
                     <span className={labelClass}>{subline(o)}</span>
@@ -534,7 +632,9 @@ export default function OperatorsPage() {
             </tbody>
           </table>
           {operators.data?.operators.length === 0 && (
-            <p className="py-6 text-muted-foreground">{t.empty}</p>
+            <p className="py-6 text-muted-foreground">
+              {archivedView ? t.emptyArchived : t.empty}
+            </p>
           )}
         </div>
       )}

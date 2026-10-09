@@ -129,7 +129,11 @@ export class ReminderService {
 
   /** Every reminder due now, once each. Nothing leaves during the quiet hours (22:00-07:00, local). */
   public async dispatchDue(now = new Date()): Promise<{ checked: number; sent: number; failed: number }> {
-    const parkings = await prisma.parking.findMany({ select: { id: true, timezone: true, reminderSettings: true } });
+    // An archived operator (09/10/2026) is out of the crons: its bookings get no reminder.
+    const parkings = await prisma.parking.findMany({
+      where: { operator: { archivedAt: null } },
+      select: { id: true, timezone: true, reminderSettings: true },
+    });
     let checked = 0;
     let sent = 0;
     let failed = 0;

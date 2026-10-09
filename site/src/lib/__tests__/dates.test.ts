@@ -1,22 +1,5 @@
 import { describe, expect, it } from "vitest";
-import {
-  cancellableUntil,
-  defaultStay,
-  formatDateTime,
-  formatDateTimeAt,
-  formatDay,
-  formatStayDates,
-  fromInstant,
-  isValidDate,
-  joinLocal,
-  parseLocal,
-  stayDays,
-  stayFromParams,
-  stayQuery,
-  toInstant,
-  todayLocal,
-  validateStay,
-} from "../dates";
+import { cancellableUntil, defaultStay, formatDateTime, formatDateTimeAt, formatDay, formatStayDates, fromInstant, isValidDate, joinLocal, longDate, parseLocal, stayDays, stayFromParams, stayQuery, todayLocal, toInstant, validateStay } from "../dates";
 
 const NOW = new Date("2026-10-01T10:00:00Z"); // Thursday 1 Oct 2026, 12:00 in Paris
 
@@ -121,5 +104,12 @@ describe("formatStayDates (the phone's single dates pill)", () => {
   it("adds the year on the return when it differs (same month number too)", () => {
     expect(formatStayDates("2026-12-28", "2027-01-04")).toEqual({ start: "lun. 28 déc.", end: "lun. 4 janv. 2027" });
     expect(formatStayDates("2026-10-03", "2027-10-05")).toEqual({ start: "sam. 3 oct.", end: "mar. 5 oct. 2027" });
+  });
+});
+
+describe("long dates (guides)", () => {
+  it("prints a date in words, with « 1er » on the first of the month", () => {
+    expect(longDate("2026-10-09")).toBe("9 octobre 2026");
+    expect(longDate("2026-04-01")).toBe("1er avril 2026");
   });
 });

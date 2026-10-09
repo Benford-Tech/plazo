@@ -370,6 +370,11 @@ describe('GET /public/bookings/:reference/return', () => {
     // The flight is expected in an hour (relative to today: the lookup window is ±6 h around the landing).
     fetchMock.mockImplementation(async url => (/aerodatabox/.test(String(url)) ? json(adbLanded('Expected', minutesFromNow(60))) : json({})));
     expect((await api().get('/api/internal/cron/track-return-flights')).status).toBe(401);
+    // An archived operator (09/10/2026) is out of the crons: no lookup.
+    await prisma.operator.update({ where: { id: b.op.operator.id }, data: { status: 'suspended', suspendedAt: new Date(), archivedAt: new Date() } });
+    expect((await api().get('/api/internal/cron/track-return-flights').set(auth('test-cron-secret'))).body.checked).toBe(0);
+    expect(calls(/aerodatabox/)).toHaveLength(0);
+    await prisma.operator.update({ where: { id: b.op.operator.id }, data: { status: 'active', suspendedAt: null, archivedAt: null } });
     const run1 = await api().get('/api/internal/cron/track-return-flights').set(auth('test-cron-secret'));
     expect(run1.body).toEqual({
       checked: 1,

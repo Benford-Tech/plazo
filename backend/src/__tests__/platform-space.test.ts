@@ -58,6 +58,8 @@ describe('accès à l’espace Plateforme', () => {
     ['patch', `${P}/operators/x/commission`],
     ['post', `${P}/operators/x/suspend`],
     ['post', `${P}/operators/x/reactivate`],
+    ['post', `${P}/operators/x/archive`],
+    ['post', `${P}/operators/x/unarchive`],
     ['post', `${P}/operators/x/view-as`],
     ['post', `${P}/operators/x/invitation`],
     ['post', `${P}/invitations`],
@@ -175,6 +177,68 @@ describe('suspension d’un loueur', () => {
   it('refuse de suspendre le compte de la plateforme', async () => {
     const res = await api().post(`${P}/operators/${admin.operator.id}/suspend`).set(auth(admin.token));
     expect([res.status, res.body.code]).toEqual([400, 'cannot_suspend_platform']);
+  });
+});
+
+describe('archivage d’un loueur suspendu (09/10/2026)', () => {
+  const listIds = async (view?: string) => {
+    const res = await api()
+      .get(`${P}/operators${view ? `?view=${view}` : ''}`)
+      .set(auth(admin.token));
+    expect(res.status).toBe(200);
+    return { ids: (res.body.operators as { id: string }[]).map(o => o.id).sort(), counts: res.body.counts };
+  };
+
+  it('le range hors des listes Loueurs et Annonces, garde ses données, et le ramène sur demande', async () => {
+    const listing = await submittedListing();
+    await api().post(`${P}/listings/${listing.id}/approve`).set(auth(admin.token));
+
+    // Only a suspended operator can be archived.
+    const active = await api().post(`${P}/operators/${loueur.operator.id}/archive`).set(auth(admin.token));
+    expect([active.status, active.body.code]).toEqual([409, 'not_suspended']);
+    await api().post(`${P}/operators/${loueur.operator.id}/suspend`).set(auth(admin.token));
+    const res = await api().post(`${P}/operators/${loueur.operator.id}/archive`).set(auth(admin.token));
+    expect(res.status).toBe(200);
+    expect(res.body.data.archivedAt).toEqual(expect.any(String));
+    // Twice: nothing changes.
+    expect((await api().post(`${P}/operators/${loueur.operator.id}/archive`).set(auth(admin.token))).body.data.archivedAt).toBe(
+      res.body.data.archivedAt,
+    );
+
+    expect(await listIds()).toEqual({ ids: [admin.operator.id], counts: { current: 1, archived: 1 } });
+    const archived = await api().get(`${P}/operators?view=archived`).set(auth(admin.token));
+    expect(archived.body.operators).toEqual([
+      expect.objectContaining({ id: loueur.operator.id, status: 'suspended', archivedAt: expect.any(String) }),
+    ]);
+    expect((await api().get(`${P}/operators?view=all`).set(auth(admin.token))).status).toBe(400);
+    // Its listing leaves the Annonces tab and its counts.
+    const listings = await api().get(`${P}/listings`).set(auth(admin.token));
+    expect(listings.body.listings).toEqual([]);
+    expect(listings.body.counts.published).toBe(0);
+    // Data kept.
+    expect(await prisma.listing.count({ where: { id: listing.id } })).toBe(1);
+
+    // Back in the list, still suspended.
+    expect((await api().post(`${P}/operators/${loueur.operator.id}/unarchive`).set(auth(admin.token))).status).toBe(200);
+    expect(await listIds()).toEqual({ ids: [admin.operator.id, loueur.operator.id].sort(), counts: { current: 2, archived: 0 } });
+    expect((await prisma.operator.findUniqueOrThrow({ where: { id: loueur.operator.id } })).status).toBe('suspended');
+    expect((await api().get(`${P}/listings?status=published`).set(auth(admin.token))).body.listings).toHaveLength(1);
+
+    // Reactivating an archived operator takes it out of the archive too.
+    await api().post(`${P}/operators/${loueur.operator.id}/archive`).set(auth(admin.token));
+    expect((await api().post(`${P}/operators/${loueur.operator.id}/reactivate`).set(auth(admin.token))).status).toBe(200);
+    expect(await prisma.operator.findUniqueOrThrow({ where: { id: loueur.operator.id } })).toMatchObject({ status: 'active', archivedAt: null });
+    expect((await publicPage()).status).toBe(200);
+
+    expect(
+      await prisma.auditLog.count({
+        where: { operatorId: loueur.operator.id, staffId: admin.manager.id, action: { in: ['operator.archived', 'operator.unarchived'] } },
+      }),
+    ).toBe(3);
+  });
+
+  it('la base refuse un loueur archivé qui ne serait pas suspendu', async () => {
+    await expect(prisma.operator.update({ where: { id: loueur.operator.id }, data: { archivedAt: new Date() } })).rejects.toThrow();
   });
 });
 

@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { Fragment } from "react";
 import { fr } from "@/lib/fr";
 import type { AirportGuide as Guide, GuidePart, GuideSection, GuideTable } from "@/lib/airport-guides";
@@ -61,11 +62,54 @@ function Body({ block }: { block: Pick<GuideSection, "paragraphs" | "table" | "l
   );
 }
 
-function Part({ part }: { part: GuidePart }) {
+/** Heading levels of a guide: its sections under the page's h2 (airport page) or h1 (topic guide). */
+type Level = 2 | 3;
+
+function Part({ part, level }: { part: GuidePart; level: Level }) {
+  const H = level === 2 ? "h3" : "h4";
   return (
     <>
-      <h4 className="mt-2 text-[17px] font-extrabold">{part.title}</h4>
+      <H className="mt-2 text-[17px] font-extrabold">{part.title}</H>
       <Body block={part} />
+    </>
+  );
+}
+
+/** The « Sur cette page » list of a guide. */
+export function GuideToc({ sections, className = "" }: { sections: GuideSection[]; className?: string }) {
+  return (
+    <nav aria-label={fr.guide.onThisPage} className={`flex flex-col gap-0.5 p-[22px] card ${className}`}>
+      <p className="mb-1.5 text-[13px] font-extrabold tracking-[.06em] text-soft uppercase">{fr.guide.onThisPage}</p>
+      {sections.map(section => (
+        <a key={section.id} href={`#${section.id}`} className="flex min-h-11 items-center font-semibold text-ink no-underline hover:underline md:min-h-9">
+          {section.short}
+        </a>
+      ))}
+    </nav>
+  );
+}
+
+/** The sections of a guide, each with its anchor, body, sub-headings and « go further » link. */
+export function GuideSections({ sections, level }: { sections: GuideSection[]; level: Level }) {
+  const H = level === 2 ? "h2" : "h3";
+  return (
+    <>
+      {sections.map(section => (
+        <Fragment key={section.id}>
+          <H id={section.id} className={`mt-3 scroll-mt-4 font-extrabold ${level === 2 ? "text-[22px] md:text-[26px]" : "text-[20px] md:text-[22px]"}`}>
+            {section.title}
+          </H>
+          <Body block={section} />
+          {section.parts?.map(part => <Part key={part.title} part={part} level={level} />)}
+          {section.more && (
+            <p>
+              <Link href={section.more.href} className="font-semibold">
+                {section.more.label} →
+              </Link>
+            </p>
+          )}
+        </Fragment>
+      ))}
     </>
   );
 }
@@ -74,28 +118,13 @@ function Part({ part }: { part: GuidePart }) {
 export function AirportGuide({ guide }: { guide: Guide }) {
   return (
     <section aria-labelledby="guide" className="flex flex-wrap items-start gap-6 md:gap-10">
-      <nav aria-label={fr.guide.onThisPage} className="flex max-w-[340px] flex-[1_1_260px] flex-col gap-0.5 p-[22px] card md:sticky md:top-4">
-        <p className="mb-1.5 text-[13px] font-extrabold tracking-[.06em] text-soft uppercase">{fr.guide.onThisPage}</p>
-        {guide.sections.map(section => (
-          <a key={section.id} href={`#${section.id}`} className="flex min-h-11 items-center font-semibold text-ink no-underline hover:underline md:min-h-9">
-            {section.short}
-          </a>
-        ))}
-      </nav>
+      <GuideToc sections={guide.sections} className="max-w-[340px] flex-[1_1_260px] md:sticky md:top-4" />
       <article className="flex min-w-0 flex-[999_1_560px] flex-col gap-4">
         <h2 id="guide" className="font-title text-[28px] leading-tight md:text-[36px]">
           {guide.title}
         </h2>
         <p className="text-[17px] leading-relaxed">{guide.intro}</p>
-        {guide.sections.map(section => (
-          <Fragment key={section.id}>
-            <h3 id={section.id} className="mt-3 scroll-mt-4 text-[20px] font-extrabold md:text-[22px]">
-              {section.title}
-            </h3>
-            <Body block={section} />
-            {section.parts?.map(part => <Part key={part.title} part={part} />)}
-          </Fragment>
-        ))}
+        <GuideSections sections={guide.sections} level={3} />
       </article>
     </section>
   );

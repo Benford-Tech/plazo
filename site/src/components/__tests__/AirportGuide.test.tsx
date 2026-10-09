@@ -39,4 +39,11 @@ describe("AirportGuide (C-A)", () => {
     expect(screen.getAllByText(/Chiffres relevés le 9 octobre 2026/).length).toBeGreaterThanOrEqual(2);
     for (const part of official.parts!) expect(screen.getByRole("heading", { level: 4, name: part.title })).toBeInTheDocument();
   });
+
+  it("links three of its sections to the topic guides", () => {
+    render(<AirportGuide guide={guide} />);
+    for (const href of ["/lyon-saint-exupery/guide/parking-pas-cher", "/lyon-saint-exupery/guide/parking-longue-duree", "/lyon-saint-exupery/guide/parking-voiturier"]) {
+      expect(screen.getAllByRole("link").some(a => a.getAttribute("href") === href)).toBe(true);
+    }
+  });
 });

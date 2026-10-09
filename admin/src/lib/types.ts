@@ -560,6 +560,8 @@ export interface PlatformOperator {
   name: string;
   status: OperatorStatus;
   suspendedAt: string | null;
+  /** 09/10/2026: a suspended operator filed away (out of the Loueurs and Annonces lists and of the crons). */
+  archivedAt?: string | null;
   createdAt: string;
   isPlatform: boolean;
   /** Fictional operator of the demo seed (backend `npm run seed:demo`). */
@@ -576,6 +578,8 @@ export interface PlatformOperator {
 
 export interface PlatformOperators {
   defaultCommissionBps: number | null;
+  /** Size of the two lists (current: active and suspended; archived). Missing from an older API. */
+  counts?: { current: number; archived: number };
   operators: PlatformOperator[];
 }
 
