@@ -2,7 +2,7 @@ import { Container } from 'typedi';
 import prisma from '@/database';
 import { DEMO_BOOKINGS, DEMO_OPERATORS, demoPricing } from '@/domain/demo-data';
 import { demoManagerEmail, DemoSeedService, NotDemoOperatorError } from '@/services/demo-seed.service';
-import { api, login, resetDatabase, setupOperator } from './utils/helpers';
+import { api, login, publishListing, resetDatabase, setupOperator } from './utils/helpers';
 
 beforeEach(resetDatabase);
 afterAll(() => prisma.$disconnect());
@@ -102,6 +102,74 @@ describe('données de démonstration', () => {
     expect(await prisma.staff.count()).toBe(1);
     // Nothing left: a second removal is a no-op.
     expect(await seed().remove()).toEqual({ operators: 0, parkings: 0, reservations: 0, staff: 0 });
+  });
+
+  it('archive suspend les seuls loueurs de démonstration, qui quittent le site, et apply les rétablit', async () => {
+    // A real operator with a published listing, to show the site keeps it and loses only the demos.
+    const real = await setupOperator('Vrai loueur');
+    await api()
+      .put('/api/internal/pricing')
+      .set('Authorization', `Bearer ${real.token}`)
+      .send({ tiers: [{ days: 1, priceCents: 1500 }], extraDayPriceCents: 600 });
+    await api()
+      .put('/api/internal/listing')
+      .set('Authorization', `Bearer ${real.token}`)
+      .send({ airportCode: 'LYS', slug: 'vrai', title: 'Vrai parking', services: ['shuttle'], cancellationPolicy: 'free_24h', photos: [] });
+    await publishListing(real.parking.id);
+    await seed().apply(PASSWORD);
+    const before = Date.now();
+
+    expect(await seed().archive()).toEqual({ operators: 5 });
+
+    // Suspended like any operator of the platform (same fields), the real one untouched, nothing deleted.
+    const demos = await prisma.operator.findMany({ where: { isDemo: true } });
+    expect(demos).toHaveLength(5);
+    for (const op of demos) {
+      expect(op.status).toBe('suspended');
+      expect(op.suspendedAt!.getTime()).toBeGreaterThanOrEqual(before);
+    }
+    expect(await prisma.operator.findUniqueOrThrow({ where: { id: real.operator.id } })).toMatchObject({ status: 'active', suspendedAt: null });
+    expect(await prisma.operator.count()).toBe(6);
+    expect(await prisma.listing.count({ where: { status: 'published' } })).toBe(6);
+    expect(await prisma.reservation.count()).toBe(3);
+    expect(await prisma.staff.count()).toBe(6);
+
+    // Gone from everything public: airport page, search, listing page; the manager cannot sign in.
+    const page = await api().get('/api/public/airports/lyon-saint-exupery');
+    expect(page.status).toBe(200);
+    expect(page.body.listings.map((l: { slug: string }) => l.slug)).toEqual(['vrai']);
+    const search = await api()
+      .get('/api/public/search')
+      .query({ airport: 'lyon-saint-exupery', arrivalAt: future(3, '08:00'), returnAt: future(6, '18:00') });
+    expect(search.status).toBe(200);
+    expect(search.body.results.map((r: { slug: string }) => r.slug)).toEqual(['vrai']);
+    const parking = await api().get('/api/public/airports/lyon-saint-exupery/parkings/aeroparc-saint-exupery');
+    expect(parking.status).toBe(404);
+    const signIn = await api()
+      .post('/api/internal/auth/login')
+      .send({ email: demoManagerEmail(DEMO_OPERATORS[0].slug), password: PASSWORD });
+    expect(signIn.status).toBe(403);
+    expect(signIn.body.code).toBe('account_suspended');
+
+    // A second archive finds nothing to do.
+    expect(await seed().archive()).toEqual({ operators: 0 });
+    expect(await prisma.operator.count({ where: { isDemo: true, status: 'suspended' } })).toBe(5);
+
+    // apply restores them in place: back on the site, the manager signs in again.
+    const restored = await seed().apply(PASSWORD);
+    expect(restored).toEqual({ operatorsCreated: 0, operatorsUpdated: 5, bookingsCreated: 0, bookingsUpdated: 3 });
+    expect(await prisma.operator.count({ where: { isDemo: true, status: 'active', suspendedAt: null } })).toBe(5);
+    expect(await prisma.operator.count()).toBe(6);
+    const again = await api().get('/api/public/airports/lyon-saint-exupery');
+    expect(again.body.listings).toHaveLength(6);
+    expect(again.body.listings.filter((l: { isDemo: boolean }) => l.isDemo)).toHaveLength(5);
+    await login(demoManagerEmail(DEMO_OPERATORS[0].slug), PASSWORD);
+  });
+
+  it('archive ne touche à rien sans loueur de démonstration', async () => {
+    const real = await setupOperator('Vrai loueur');
+    expect(await seed().archive()).toEqual({ operators: 0 });
+    expect(await prisma.operator.findUniqueOrThrow({ where: { id: real.operator.id } })).toMatchObject({ status: 'active', suspendedAt: null });
   });
 
   it('refuse de réutiliser l’adresse d’un loueur qui n’est pas une démo', async () => {
