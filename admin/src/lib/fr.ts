@@ -1536,6 +1536,18 @@ export const fr = {
     /** The pin on the parking's address, and the map button that brings it back into view. */
     addressPin: "Adresse du parking",
     recenter: "Recentrer sur le parking",
+    /** R-A (09/10/2026): the map turns. */
+    rotation: {
+      north: "Nord",
+      northUp: "Remettre le nord en haut",
+      align: "Aligner sur le parking",
+      hint: "Met le grand côté du parking à l'horizontale. Pour tourner la carte à la main : clic droit + glisser, ou Ctrl + glisser (deux doigts sur téléphone).",
+    },
+    /** P-B (09/10/2026): the palette folds. */
+    palette: {
+      collapse: "Replier la palette",
+      expand: "Déplier la palette",
+    },
     /** Ctrl+Z / Ctrl+Maj+Z (09/10/2026). */
     history: {
       undone: "Modification annulée",

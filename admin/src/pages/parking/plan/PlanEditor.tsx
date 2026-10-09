@@ -1,15 +1,19 @@
 import {
   Check,
   ChevronDown,
+  ChevronLeft,
+  ChevronRight,
   Loader2,
   LocateFixed,
   Minus,
+  Navigation2,
   Rows3,
   Trash2,
   MapPin,
   Paintbrush,
   Route,
   RotateCcw,
+  RotateCw,
   Settings2,
   Sparkles,
   Square,
@@ -27,6 +31,7 @@ import {
 } from "@/lib/plan/parkingFiles";
 import { toast } from "sonner";
 import { PlanHistory, planFields, touchesPlan, type Step } from "./history";
+import { alignBearing } from "@/lib/plan/alignment";
 import {
   MapView,
   type DrawKind,
@@ -203,6 +208,27 @@ const TOOL_ICONS: Record<Tool, React.ComponentType<{ className?: string }>> = {
   spots: Check,
 };
 
+const MAP_BUTTON =
+  "inline-flex min-h-10 items-center gap-1.5 border border-border bg-card px-3 text-[13px] font-semibold shadow-lg hover:bg-accent";
+
+/** The map's rotation and the palette's state stay in the browser (a view, not the plan). */
+const BEARING_KEY = (parkingId: string) => `plazo:plan-bearing:${parkingId}`;
+const PALETTE_KEY = "plazo:plan-palette";
+function readStored(key: string): string | null {
+  try {
+    return localStorage.getItem(key);
+  } catch {
+    return null;
+  }
+}
+function writeStored(key: string, value: string) {
+  try {
+    localStorage.setItem(key, value);
+  } catch {
+    // Private browsing: the setting lasts as long as the page.
+  }
+}
+
 interface Props {
   parkingId: string;
   parking: {
@@ -299,6 +325,17 @@ export function PlanEditor({
   // S-C (07/10/2026): the files of the parking, one line each.
   const [fileArmed, setFileArmed] = useState(false);
   const [selectedFile, setSelectedFile] = useState<string | null>(null);
+  // R-A (09/10/2026): the map turns; its bearing is kept per parking in the browser.
+  const [bearing, setBearing] = useState(
+    () => Number(readStored(BEARING_KEY(parkingId))) || 0,
+  );
+  // P-B (09/10/2026): the palette folds into a bar, by hand or while a line or a stroke is drawn.
+  // Unfolded by default, except on a phone where it would cover the whole map.
+  const [paletteOpen, setPaletteOpen] = useState(() => {
+    const stored = readStored(PALETTE_KEY);
+    return stored ? stored === "open" : window.innerWidth >= 640;
+  });
+  const [painting, setPainting] = useState(false);
   const queryClient = useQueryClient();
   const filesQuery = useQuery({
     queryKey: ["files", parkingId],
@@ -553,6 +590,24 @@ export function PlanEditor({
   function recenter() {
     const bounds = homeBounds();
     if (bounds) mapRef.current?.fitTo(bounds);
+  }
+  function onBearingChange(next: number) {
+    const rounded = Math.round(next * 10) / 10;
+    setBearing(rounded);
+    writeStored(BEARING_KEY(parkingId), String(rounded));
+  }
+  /** The parking laid straight on the screen, its long side horizontal, and fitted. */
+  function alignOnParking() {
+    const ring = studyRef.current.outline?.coordinates[0];
+    const next = ring ? alignBearing(ring) : null;
+    if (next == null) return;
+    mapRef.current?.rotateTo(next, homeBounds());
+  }
+  function togglePalette() {
+    setPaletteOpen((open) => {
+      writeStored(PALETTE_KEY, open ? "closed" : "open");
+      return !open;
+    });
   }
 
   // ---- The automatic pass: R-C at the first opening, "Me proposer des files" on demand --------
@@ -917,6 +972,9 @@ export function PlanEditor({
           mode: tool === "parking" ? ("paint" as const) : ("erase" as const),
         }
       : null;
+  // P-B: a line, a polygon or a point being placed, or a brush stroke under way.
+  const drawing = drawMode != null || painting;
+  const collapsed = drawing || !paletteOpen;
 
   function onMapClick(lngLat: LonLat) {
     if (auto) return;
@@ -2004,6 +2062,9 @@ export function PlanEditor({
             labels={labels}
             showPhoto={showPhoto}
             initialBounds={initialBounds}
+            rotatable
+            initialBearing={bearing}
+            onBearingChange={onBearingChange}
             editPolygon={editPolygon}
             midpoints
             onEditPolygon={onEditPolygon}
@@ -2011,7 +2072,11 @@ export function PlanEditor({
             onDrawn={onDrawn}
             snapTo={snapTo}
             paint={paint}
-            onPaintStroke={onPaintStroke}
+            onPaintStart={() => setPainting(true)}
+            onPaintStroke={(points) => {
+              setPainting(false);
+              onPaintStroke(points);
+            }}
             onMapClick={onMapClick}
             cursor={
               tool === "contour" && contourMode === "parcel"
@@ -2024,37 +2089,75 @@ export function PlanEditor({
             }
             className="h-full w-full"
           >
-            {/* The tool's card: its two or three options, and the help line. */}
+            {/* The tool's card: its two or three options, and the help line. P-B: it folds into a
+                bar by hand, and by itself while a line or a stroke is being drawn. */}
             <div
-              className="absolute left-3 top-3 z-10 flex max-h-[calc(100%-24px)] w-[340px] max-w-[calc(100%-24px)] flex-col gap-2.5 overflow-y-auto bg-card/95 p-3 shadow-lg backdrop-blur-sm"
+              className={cn(
+                "absolute left-3 top-3 z-10 flex max-w-[calc(100%-24px)] flex-col gap-2.5 bg-card/95 shadow-lg backdrop-blur-sm",
+                collapsed
+                  ? "w-auto px-3 py-2"
+                  : "max-h-[calc(100%-24px)] w-[340px] overflow-y-auto p-3",
+              )}
               data-testid="tool-card"
+              data-collapsed={collapsed ? "true" : "false"}
             >
-              <div className="flex items-center justify-between">
-                <b className="text-sm uppercase tracking-[0.5px]">
-                  {t.tools[tool]}
-                </b>
-                {(contourMode !== "parcel" ||
-                  obstacleKind ||
-                  landmarkKind ||
-                  rowArmed ||
-                  fileArmed) && (
+              <div className="flex items-center justify-between gap-3">
+                {collapsed && !drawing ? (
                   <button
                     type="button"
-                    onClick={() => {
-                      setContourMode("parcel");
-                      setObstacleKind(null);
-                      setLandmarkKind(null);
-                      setRowArmed(false);
-                      setFileArmed(false);
-                    }}
-                    className="text-xs text-muted-foreground underline"
+                    onClick={togglePalette}
+                    aria-label={t.palette.expand}
+                    aria-expanded={false}
+                    className="inline-flex items-center gap-1.5 text-sm font-bold uppercase tracking-[0.5px]"
                   >
-                    {t.contour.stop}
+                    {t.tools[tool]}
+                    <ChevronRight className="h-4 w-4" />
                   </button>
+                ) : (
+                  <b className="text-sm uppercase tracking-[0.5px]">
+                    {t.tools[tool]}
+                  </b>
                 )}
+                <span className="flex items-center gap-3">
+                  {(contourMode !== "parcel" ||
+                    obstacleKind ||
+                    landmarkKind ||
+                    rowArmed ||
+                    fileArmed) && (
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setContourMode("parcel");
+                        setObstacleKind(null);
+                        setLandmarkKind(null);
+                        setRowArmed(false);
+                        setFileArmed(false);
+                      }}
+                      className="text-xs text-muted-foreground underline"
+                    >
+                      {t.contour.stop}
+                    </button>
+                  )}
+                  {!collapsed && (
+                    <button
+                      type="button"
+                      onClick={togglePalette}
+                      aria-label={t.palette.collapse}
+                      aria-expanded
+                      title={t.palette.collapse}
+                      className="text-muted-foreground hover:text-foreground"
+                    >
+                      <ChevronLeft className="h-4 w-4" />
+                    </button>
+                  )}
+                </span>
               </div>
-              <p className="text-[13px] text-muted-foreground">{help}</p>
-              {card}
+              {(!collapsed || drawing) && (
+                <p className="max-w-[316px] text-[13px] text-muted-foreground">
+                  {help}
+                </p>
+              )}
+              {!collapsed && card}
             </div>
             {auto && (
               <div
@@ -2094,16 +2197,47 @@ export function PlanEditor({
                 </ul>
               </div>
             )}
-            {(address || outline) && (
-              <button
-                type="button"
-                onClick={recenter}
-                className="absolute bottom-14 right-3 z-20 inline-flex min-h-10 items-center gap-1.5 border border-border bg-card px-3 text-[13px] font-semibold shadow-lg hover:bg-accent sm:bottom-9"
-              >
-                <LocateFixed className="h-4 w-4 text-lime-deep" />
-                {t.recenter}
-              </button>
-            )}
+            <div className="absolute bottom-14 right-3 z-20 flex flex-col items-end gap-2 sm:bottom-9">
+              {Math.abs(bearing) >= 0.5 && (
+                <button
+                  type="button"
+                  onClick={() => mapRef.current?.rotateTo(0)}
+                  aria-label={t.rotation.northUp}
+                  title={t.rotation.northUp}
+                  className={MAP_BUTTON}
+                >
+                  <Navigation2
+                    className="h-4 w-4 text-lime-deep"
+                    style={{ transform: `rotate(${-bearing}deg)` }}
+                  />
+                  <span className="hidden sm:inline">{t.rotation.north}</span>
+                </button>
+              )}
+              {outline && (
+                <button
+                  type="button"
+                  onClick={alignOnParking}
+                  aria-label={t.rotation.align}
+                  title={t.rotation.hint}
+                  className={MAP_BUTTON}
+                >
+                  <RotateCw className="h-4 w-4 text-lime-deep" />
+                  <span className="hidden sm:inline">{t.rotation.align}</span>
+                </button>
+              )}
+              {(address || outline) && (
+                <button
+                  type="button"
+                  onClick={recenter}
+                  aria-label={t.recenter}
+                  title={t.recenter}
+                  className={MAP_BUTTON}
+                >
+                  <LocateFixed className="h-4 w-4 text-lime-deep" />
+                  <span className="hidden sm:inline">{t.recenter}</span>
+                </button>
+              )}
+            </div>
           </MapView>
           {settingsOpen && (
             <PlanSettings

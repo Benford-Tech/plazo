@@ -214,6 +214,15 @@ Ne construire QUE ce qui règle la douleur n°1 du client.
      suppression, « Me proposer des files », remise par `PUT …/files`) ; une réinitialisation s'annule aussi (dessin, et files
      pour « Tout le plan »), pas les places du serveur ; rien dans un champ texte ni pendant une question ; la passe automatique
      vide l'historique.
+     **R-A + P-B (09/10/2026, « faire une rotation du parking, les palettes ne doivent pas occuper le plan »)** : la carte de
+     l'éditeur tourne (`MapView.rotatable` : clic droit + glisser, Ctrl + glisser, deux doigts sur téléphone, jamais
+     d'inclinaison ; le pinceau laisse passer ces gestes) ; boutons en bas à droite « Nord » (boussole, quand la carte est
+     tournée), « Aligner sur le parking » (`lib/plan/alignment.ts` `alignBearing` : rectangle le plus serré autour du contour,
+     grand côté à l'horizontale, au plus près du nord) et « Recentrer sur le parking », qui garde l'angle (`fitTo` passe
+     `bearing`) ; l'angle est gardé par parking dans le navigateur (`plazo:plan-bearing:<id>`). La palette de l'outil se replie en
+     une barre (« Replier / Déplier la palette », gardé dans `plazo:plan-palette`, repliée par défaut sur téléphone) et se
+     replie d'elle-même pendant qu'on trace (mode de dessin armé) ou qu'on peint (`MapView.onPaintStart`), en gardant la ligne
+     d'aide et « Terminer » ; le double-clic qui termine un trait ne zoome plus la carte.
      **P-B « Une rangée d'un trait » (07/10/2026, places à la main)** : dans l'outil Places, « + Rangée de places » puis un
      trait sur la carte : des places au gabarit voiturier se posent côte à côte le long du trait, perpendiculaires et
      centrées dessus (`admin/src/lib/plan/manualRow.ts`, codes `M-01`, `M-02`…, zone du point milieu) ;
