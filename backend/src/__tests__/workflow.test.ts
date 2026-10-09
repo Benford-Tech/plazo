@@ -3,7 +3,7 @@ import prisma from '@/database';
 import { localDate } from '@/domain/time';
 import { NotificationService } from '@/services/notification.service';
 import { ONESIGNAL_NOTIFICATIONS_URL } from '@/services/push.service';
-import { addStaff, api, resetDatabase, setupOperator } from './utils/helpers';
+import { runTodayAt, addStaff, api, resetDatabase, setupOperator } from './utils/helpers';
 
 /**
  * Workflow decision A (06/10/2026): one gesture per step. Placing the car checks the traveller in,
@@ -60,6 +60,7 @@ beforeEach(async () => {
   fetchMock = jest.spyOn(global, 'fetch').mockImplementation(async () => new Response(JSON.stringify({ id: 'n1' }), { status: 200 }));
 });
 afterEach(() => {
+  jest.useRealTimers();
   fetchMock.mockRestore();
   delete process.env.ONESIGNAL_APP_ID;
   delete process.env.ONESIGNAL_REST_API_KEY;
@@ -68,6 +69,7 @@ afterAll(() => prisma.$disconnect());
 
 describe('un seul geste par étape (A, 06/10/2026)', () => {
   it('placer la voiture enregistre l’arrivée ; la navette de retour ramène au parking ; rendre efface les clés et garde la remarque', async () => {
+    runTodayAt();
     const op = await setupOperator();
     const valet = await addStaff(op.token, 'valet');
     const driver = await addStaff(op.token, 'driver');

@@ -1,7 +1,8 @@
 import prisma from '@/database';
 import { localDate, addDays } from '@/domain/time';
-import { api, resetDatabase, setupOperator } from './utils/helpers';
+import { runTodayAt, api, resetDatabase, setupOperator } from './utils/helpers';
 
+afterEach(() => jest.useRealTimers());
 beforeEach(resetDatabase);
 afterAll(() => prisma.$disconnect());
 
@@ -78,6 +79,7 @@ describe('files (S-C, 07/10/2026)', () => {
   });
 
   it('places each arrival in the file whose front car leaves just after it, and counts the moves', async () => {
+    runTodayAt();
     const { token, parking } = await setupOperator();
     const saved = (await api().put(`/api/internal/parkings/${parking.id}/files`).set(auth(token)).send({ files })).body.data;
     const d = (n: number) => addDays(today(), n);
