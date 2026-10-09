@@ -499,6 +499,12 @@ export interface ListingInput {
   photos: string[];
 }
 
+/** 09/10/2026: Claude's proposal for the « Présentation » (nothing saved). */
+export interface DescriptionSuggestion {
+  text: string;
+  model: string;
+}
+
 export interface ListingResponse {
   listing: Listing | null;
   parking: {

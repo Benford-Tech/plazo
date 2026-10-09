@@ -144,6 +144,8 @@ export const fr = {
     ai_busy: "Claude est saturé pour l'instant. Réessayez dans une minute.",
     ai_failed: "La lecture par Claude a échoué",
     ai_timeout: "Claude a mis trop de temps à lire la photo. Réessayez.",
+    ai_unreliable:
+      "La proposition de Claude ne s'appuie pas sur vos données : elle a été écartée. Réessayez.",
     no_outline: "Repérez d'abord le terrain (étape 1).",
     geo_timeout:
       "Le service de l'IGN a mis trop de temps à répondre. Réessayez.",
@@ -1009,6 +1011,35 @@ export const fr = {
     title: "Nom affiché",
     slug: "Adresse de la page",
     description: "Présentation",
+    descriptionHelp:
+      "Les 160 premiers caractères servent de description dans Google.",
+    descriptionCount: (n: number) => `${n} / 2 000`,
+    // 09/10/2026: Claude writes the « Présentation » from the parking's real data (nothing saved).
+    writing: {
+      write: "Rédiger avec Claude",
+      improve: "Améliorer avec Claude",
+      busy: "Claude rédige…",
+      title: "Proposition de Claude",
+      basis:
+        "Rédigée d'après votre fiche enregistrée et les réglages du parking. Relisez-la avant d'enregistrer.",
+      use: "Utiliser ce texte",
+      another: "Proposer une autre version",
+      dismiss: "Ignorer",
+      used: "Texte repris dans la présentation : relisez-le, puis enregistrez la fiche.",
+      unreliable: (figures: string[]) =>
+        figures.length
+          ? `Claude a cité ${figures.length > 1 ? "des chiffres absents" : "un chiffre absent"} de vos données (${figures.map((f) => f.replace(".", ",")).join(", ")}) : sa proposition est écartée. Demandez une autre version.`
+          : "La proposition de Claude ne respecte pas les règles de la fiche : elle est écartée. Demandez une autre version.",
+      // The zones' texts speak of a photo: these say the same for the presentation.
+      errors: {
+        ai_unavailable:
+          "La rédaction par Claude n'est pas disponible : clé ANTHROPIC_API_KEY absente.",
+        ai_refused:
+          "Claude n'a pas voulu rédiger cette présentation. Écrivez-la vous-même.",
+        ai_failed: "La rédaction par Claude a échoué",
+        ai_timeout: "Claude a mis trop de temps à rédiger. Réessayez.",
+      } as Record<string, string>,
+    },
     services: "Services",
     shuttleMinutes: "Navette (min)",
     distanceKm: "Distance (km)",
@@ -2069,8 +2100,14 @@ export function errorMessage(code: string | undefined): string {
   return fr.errors[code] ?? fr.errors.unknown;
 }
 
-/** French message for any error thrown by the API client. */
-export function describeError(error: unknown): string {
+/**
+ * French message for any error thrown by the API client. `texts` overrides the wording of some codes for one screen
+ * (the `ai_*` codes speak of a photo for the zones, of a text for the presentation).
+ */
+export function describeError(
+  error: unknown,
+  texts?: Record<string, string>,
+): string {
   // A gateway answer (the function cut short, the API down) carries no code of ours.
   if (
     error instanceof ApiError &&
@@ -2079,7 +2116,8 @@ export function describeError(error: unknown): string {
     error.status <= 504
   )
     return fr.errors.gateway;
-  if (error instanceof ApiError) return errorMessage(error.code);
+  if (error instanceof ApiError)
+    return (error.code && texts?.[error.code]) || errorMessage(error.code);
   if (error instanceof TypeError) return fr.errors.network;
   return fr.errors.unknown;
 }

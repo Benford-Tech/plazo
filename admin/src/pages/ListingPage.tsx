@@ -1,5 +1,5 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { Check, X } from "lucide-react";
+import { Check, Sparkles, X } from "lucide-react";
 import { useEffect, useState } from "react";
 import { useSearchParams } from "react-router-dom";
 import { toast } from "sonner";
@@ -12,11 +12,13 @@ import { adminApi, ApiError } from "@/lib/api";
 import { describeError, errorMessage, fr } from "@/lib/fr";
 import { slugify } from "@/lib/pricing";
 import { LISTING_TONE } from "@/lib/platform";
-import type { CancellationPolicy, Listing, ListingInput, ListingResponse, ListingService } from "@/lib/types";
+import type { CancellationPolicy, DescriptionSuggestion, Listing, ListingInput, ListingResponse, ListingService } from "@/lib/types";
 import { cn } from "@/lib/utils";
 
 const SERVICES: ListingService[] = ["shuttle", "open_24h", "fenced", "cctv", "valet", "covered", "ev_charging"];
 const POLICIES: CancellationPolicy[] = ["free_24h", "free_48h", "free_until_arrival", "non_refundable"];
+// The listing's own limit (UpdateListingDto.description).
+const DESCRIPTION_MAX = 2000;
 // The traveller site shares the domain (served at /); VITE_SITE_URL points elsewhere in development.
 const SITE_URL = (import.meta.env.VITE_SITE_URL ?? "").replace(/\/$/, "");
 
@@ -76,6 +78,7 @@ export default function ListingPage() {
   const [form, setForm] = useState<Form | null>(null);
   const [photoUrl, setPhotoUrl] = useState("");
   const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
+  const [proposal, setProposal] = useState<DescriptionSuggestion | null>(null);
   const t = fr.plazo;
 
   useEffect(() => {
@@ -117,6 +120,23 @@ export default function ListingPage() {
       toast.success(t.submitted);
     },
     onError,
+  });
+
+  // 09/10/2026: Claude writes the « Présentation » from the saved page and the parking's settings, or improves the
+  // text in the field; nothing is saved until the manager clicks « Enregistrer ».
+  const write = useMutation({
+    mutationFn: () => adminApi.suggestListingDescription(form!.description.trim() || null),
+    onSuccess: data => setProposal(data),
+    onError: (err: Error) => {
+      if (err instanceof ApiError && err.code === "ai_unreliable") {
+        const figures = (err.details as { figures?: string[] } | undefined)?.figures ?? [];
+        toast.error(t.writing.unreliable(figures), { duration: 12000 });
+        return;
+      }
+      const reason = err instanceof ApiError && err.code === "ai_failed" ? (err.details as { reason?: string } | undefined)?.reason : undefined;
+      const message = describeError(err, t.writing.errors);
+      toast.error(reason ? `${message} (${reason})` : message, { duration: 12000 });
+    },
   });
 
   const withdraw = useMutation({
@@ -229,11 +249,75 @@ export default function ListingPage() {
             </div>
           </div>
           <div>
-            <label htmlFor="l-desc" className={labelClass}>
-              {t.description}
-            </label>
-            <textarea id="l-desc" rows={3} value={form.description} onChange={set("description")} className={cn(inputClass, "h-auto py-2 text-base")} />
-            {err("description")}
+            <div className="mb-1 flex flex-wrap items-end justify-between gap-2">
+              <label htmlFor="l-desc" className={cn(labelClass, "mb-0")}>
+                {t.description}
+              </label>
+              <button
+                type="button"
+                onClick={() => write.mutate()}
+                disabled={write.isPending}
+                className="flex min-h-9 items-center gap-1.5 border border-border px-3 text-sm font-semibold hover:bg-accent disabled:opacity-50"
+              >
+                <Sparkles className="h-4 w-4 text-lime-deep" aria-hidden="true" />
+                {write.isPending ? t.writing.busy : form.description.trim() ? t.writing.improve : t.writing.write}
+              </button>
+            </div>
+            <textarea
+              id="l-desc"
+              rows={5}
+              maxLength={DESCRIPTION_MAX}
+              value={form.description}
+              onChange={set("description")}
+              aria-invalid={!!fieldErrors.description}
+              aria-describedby="l-desc-help"
+              className={cn(inputClass, "h-auto py-2 text-base")}
+            />
+            <div className="mt-1 flex items-start justify-between gap-3">
+              {err("description") ?? (
+                <p id="l-desc-help" className="text-sm text-muted-foreground">
+                  {t.descriptionHelp}
+                </p>
+              )}
+              <span className="tabular shrink-0 font-mono text-sm text-muted-foreground" data-testid="description-count">
+                {t.descriptionCount(form.description.length)}
+              </span>
+            </div>
+            {proposal && (
+              <div className="mt-3 border border-lime-deep bg-card p-4" data-testid="description-proposal">
+                <div className="flex items-center gap-1.5 font-bold">
+                  <Sparkles className="h-4 w-4 text-lime-deep" aria-hidden="true" />
+                  {t.writing.title}
+                </div>
+                <p className="mt-1 text-sm text-muted-foreground">{t.writing.basis}</p>
+                <p className="mt-3 whitespace-pre-line text-base">{proposal.text}</p>
+                <p className="tabular mt-2 font-mono text-sm text-muted-foreground">{t.descriptionCount(proposal.text.length)}</p>
+                <div className="mt-3 flex flex-wrap gap-2">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setForm({ ...form, description: proposal.text.slice(0, DESCRIPTION_MAX) });
+                      setProposal(null);
+                      toast.success(t.writing.used);
+                    }}
+                    className="min-h-10 bg-primary px-4 font-bold text-primary-foreground hover:brightness-110"
+                  >
+                    {t.writing.use}
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => write.mutate()}
+                    disabled={write.isPending}
+                    className="min-h-10 border border-border px-4 font-semibold hover:bg-accent disabled:opacity-50"
+                  >
+                    {write.isPending ? t.writing.busy : t.writing.another}
+                  </button>
+                  <button type="button" onClick={() => setProposal(null)} className="min-h-10 px-4 font-semibold text-muted-foreground hover:bg-accent">
+                    {t.writing.dismiss}
+                  </button>
+                </div>
+              </div>
+            )}
           </div>
           <fieldset>
             <legend className={labelClass}>{t.services}</legend>

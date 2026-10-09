@@ -15,6 +15,7 @@ const api = vi.hoisted(() => ({
   getPricing: vi.fn(),
   updatePricing: vi.fn(),
   getPaymentStatus: vi.fn(),
+  suggestListingDescription: vi.fn(),
 }));
 const auth = vi.hoisted(() => ({ user: { role: "manager", emailVerified: true, viewAs: null } as Record<string, unknown> }));
 vi.mock("@/contexts/AuthContext", () => ({ useAuth: () => ({ user: auth.user }) }));
@@ -161,6 +162,75 @@ describe("Ma fiche", () => {
     expect(screen.getByText("Refusée")).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "Envoyer pour validation" })).toBeDisabled();
     auth.user = { emailVerified: true, viewAs: null };
+  });
+
+  it("rédige la présentation avec Claude et la reprend dans le champ sans enregistrer", async () => {
+    api.getListing.mockResolvedValue({ listing: null, parking });
+    api.getPricing.mockResolvedValue(pricing);
+    const text = "Parking Démo LYS, parking clôturé près de Lyon Saint-Exupéry.\n\nNavette en 8 min.";
+    api.suggestListingDescription.mockResolvedValue({ text, model: "claude-opus-5-5" });
+    renderPage(<ListingPage />);
+
+    const field = await screen.findByLabelText("Présentation");
+    expect(field).toHaveAttribute("maxLength", "2000");
+    expect(screen.getByText("Les 160 premiers caractères servent de description dans Google.")).toBeInTheDocument();
+    expect(screen.getByTestId("description-count")).toHaveTextContent("0 / 2 000");
+
+    await userEvent.click(screen.getByRole("button", { name: "Rédiger avec Claude" }));
+    const card = await screen.findByTestId("description-proposal");
+    expect(api.suggestListingDescription).toHaveBeenCalledWith(null);
+    expect(card).toHaveTextContent("Proposition de Claude");
+    expect(card).toHaveTextContent("Navette en 8 min.");
+    expect(card).toHaveTextContent(`${text.length} / 2 000`);
+
+    await userEvent.click(screen.getByRole("button", { name: "Utiliser ce texte" }));
+    expect(field).toHaveValue(text);
+    expect(screen.queryByTestId("description-proposal")).not.toBeInTheDocument();
+    expect(screen.getByTestId("description-count")).toHaveTextContent(`${text.length} / 2 000`);
+    expect(toast.success).toHaveBeenCalledWith("Texte repris dans la présentation : relisez-le, puis enregistrez la fiche.");
+    // Nothing is saved until « Enregistrer ».
+    expect(api.updateListing).not.toHaveBeenCalled();
+  });
+
+  it("améliore le texte en place, propose une autre version et s'ignore", async () => {
+    api.getListing.mockResolvedValue({ listing: { ...savedListing, description: "Parking sûr, navette." }, parking });
+    api.getPricing.mockResolvedValue(pricing);
+    api.suggestListingDescription.mockResolvedValueOnce({ text: "Première version.", model: "m" }).mockResolvedValueOnce({ text: "Deuxième version.", model: "m" });
+    renderPage(<ListingPage />);
+
+    await userEvent.click(await screen.findByRole("button", { name: "Améliorer avec Claude" }));
+    expect(await screen.findByText("Première version.")).toBeInTheDocument();
+    expect(api.suggestListingDescription).toHaveBeenLastCalledWith("Parking sûr, navette.");
+
+    await userEvent.click(screen.getByRole("button", { name: "Proposer une autre version" }));
+    expect(await screen.findByText("Deuxième version.")).toBeInTheDocument();
+    expect(api.suggestListingDescription).toHaveBeenCalledTimes(2);
+    expect(api.suggestListingDescription).toHaveBeenLastCalledWith("Parking sûr, navette.");
+
+    await userEvent.click(screen.getByRole("button", { name: "Ignorer" }));
+    expect(screen.queryByTestId("description-proposal")).not.toBeInTheDocument();
+    expect(screen.getByLabelText("Présentation")).toHaveValue("Parking sûr, navette.");
+  });
+
+  it("explique pourquoi Claude n'a rien proposé, avec les mots de la présentation", async () => {
+    api.getListing.mockResolvedValue({ listing: null, parking });
+    api.getPricing.mockResolvedValue(pricing);
+    api.suggestListingDescription
+      .mockRejectedValueOnce(new ApiError(409, "no key", "ai_unavailable"))
+      .mockRejectedValueOnce(new ApiError(502, "invented", "ai_unreliable", undefined, { reason: "unsupported_figure", figures: ["10", "4.5"] }))
+      .mockRejectedValueOnce(new ApiError(502, "failed", "ai_failed", undefined, { reason: "max_tokens" }));
+    renderPage(<ListingPage />);
+
+    const button = await screen.findByRole("button", { name: "Rédiger avec Claude" });
+    await userEvent.click(button);
+    await waitFor(() =>
+      expect(toast.error).toHaveBeenLastCalledWith("La rédaction par Claude n'est pas disponible : clé ANTHROPIC_API_KEY absente.", { duration: 12000 }),
+    );
+    await userEvent.click(button);
+    await waitFor(() => expect(toast.error).toHaveBeenLastCalledWith(expect.stringContaining("des chiffres absents de vos données (10, 4,5)"), { duration: 12000 }));
+    await userEvent.click(button);
+    await waitFor(() => expect(toast.error).toHaveBeenLastCalledWith("La rédaction par Claude a échoué (max_tokens)", { duration: 12000 }));
+    expect(screen.queryByTestId("description-proposal")).not.toBeInTheDocument();
   });
 
   it("une fiche publiée peut être retirée par le loueur", async () => {
