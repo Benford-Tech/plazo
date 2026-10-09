@@ -317,9 +317,11 @@ function InviteForm({
 function RowActions({
   operator,
   onLink,
+  onDeleted,
 }: {
   operator: PlatformOperator;
   onLink: (result: InvitationResult) => void;
+  onDeleted?: (id: string) => void;
 }) {
   const confirm = useConfirm();
   const { startViewAs } = useAuth();
@@ -373,6 +375,56 @@ function RowActions({
     onError: (err: Error) => toast.error(describeError(err)),
   });
 
+  // 09/10/2026 (« pouvoir supprimer un parking »): the server says first what would go, or why it may not.
+  const removal = useMutation({
+    mutationFn: async () => {
+      const { data: preview } = await adminApi.getOperatorDeletion(operator.id);
+      if (!preview.deletable) {
+        // Online payments keep it: archived already, or to be suspended before it can be.
+        toast.error(
+          preview.reason === "has_payments" && operator.archivedAt
+            ? t.paidKeptArchived
+            : preview.reason === "has_payments" && operator.status !== "suspended"
+              ? t.paidSuspendFirst
+              : errorMessage(preview.reason ?? undefined),
+        );
+        return false;
+      }
+      const ok = await confirm(
+        t.confirmDelete(preview.name, preview.counts, {
+          canArchive: !operator.archivedAt && operator.status === "suspended",
+        }),
+        {
+          title: t.deleteTitle,
+          confirmLabel: t.deleteConfirm,
+          destructive: true,
+        },
+      );
+      if (!ok) return false;
+      await adminApi.deleteOperator(operator.id);
+      return true;
+    },
+    onSuccess: (deleted) => {
+      if (!deleted) return;
+      toast.success(t.deleted(operator.name));
+      onDeleted?.(operator.id);
+      refresh();
+    },
+    onError: (err: Error) => toast.error(describeError(err)),
+  });
+  // An invitation never accepted, or a suspended operator (archived or not); never the platform's own account.
+  const deleteButton =
+    !operator.isPlatform && (operator.invitation || operator.status === "suspended") ? (
+      <button
+        type="button"
+        className={cn(ghostButton, "text-muted-foreground hover:text-destructive")}
+        disabled={removal.isPending}
+        onClick={() => removal.mutate()}
+      >
+        {t.delete}
+      </button>
+    ) : null;
+
   if (operator.archivedAt) {
     return (
       <div className="flex justify-end gap-1.5">
@@ -392,6 +444,7 @@ function RowActions({
         >
           {t.unarchive}
         </button>
+        {deleteButton}
       </div>
     );
   }
@@ -415,6 +468,7 @@ function RowActions({
         >
           {t.resend}
         </button>
+        {deleteButton}
       </div>
     );
   }
@@ -470,6 +524,7 @@ function RowActions({
           {t.archive}
         </button>
       )}
+      {deleteButton}
     </div>
   );
 }
@@ -637,7 +692,14 @@ export default function OperatorsPage() {
                     {o.invitation ? "—" : o.bookingsThisMonth}
                   </td>
                   <td className="whitespace-nowrap px-2 py-3 text-right">
-                    <RowActions operator={o} onLink={showLink} />
+                    <RowActions
+                      operator={o}
+                      onLink={showLink}
+                      // Its invitation link died with it.
+                      onDeleted={(id) =>
+                        setLink((l) => (l?.operator.id === id ? null : l))
+                      }
+                    />
                   </td>
                 </tr>
               ))}

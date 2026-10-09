@@ -25,6 +25,7 @@ import type {
   InviteInput,
   PlatformListings,
   PlatformOperators,
+  OperatorDeletion,
   PaymentStatus,
   PayoutSchedule,
   PlatformPayments,
@@ -725,6 +726,16 @@ export const adminApi = {
     apiRequest<{ data: unknown }>(
       `/internal/platform/operators/${id}/unarchive`,
       { method: "POST" },
+    ),
+  // 09/10/2026 (« pouvoir supprimer un parking »): what would go, then the deletion itself.
+  getOperatorDeletion: (id: string) =>
+    apiRequest<{ data: OperatorDeletion }>(
+      `/internal/platform/operators/${id}/deletion`,
+    ),
+  deleteOperator: (id: string) =>
+    apiRequest<{ data: { id: string; name: string } }>(
+      `/internal/platform/operators/${id}`,
+      { method: "DELETE" },
     ),
   startViewAs: (id: string) =>
     apiRequest<{

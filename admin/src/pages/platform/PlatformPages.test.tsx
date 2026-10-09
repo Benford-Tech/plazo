@@ -27,6 +27,8 @@ const api = vi.hoisted(() => ({
   reactivateOperator: vi.fn(),
   archiveOperator: vi.fn(),
   unarchiveOperator: vi.fn(),
+  getOperatorDeletion: vi.fn(),
+  deleteOperator: vi.fn(),
   inviteOperator: vi.fn(),
   resendInvitation: vi.fn(),
   getPlatformListings: vi.fn(),
@@ -154,6 +156,83 @@ describe("Loueurs", () => {
     await waitFor(() => expect(auth.startViewAs).toHaveBeenCalledWith("o3"));
   });
 
+  it("supprime un loueur invité par erreur après avoir dit ce qui part ; refuse avec la raison du serveur", async () => {
+    api.getPlatformOperators.mockResolvedValue(operators);
+    api.getOperatorDeletion.mockResolvedValue({
+      data: { id: "o3", name: "Parking Invité", deletable: true, reason: null, counts: { parkings: 1, listings: 0, reservations: 2, staff: 1, paidReservations: 0 } },
+    });
+    api.deleteOperator.mockResolvedValue({ data: { id: "o3", name: "Parking Invité" } });
+    const ask = vi.spyOn(window, "confirm").mockReturnValue(false);
+    const { toast } = await import("sonner");
+    renderAt("/plateforme/loueurs", <OperatorsPage />);
+
+    // An active operator in use has no « Supprimer »: suspend it first.
+    const demo = (await screen.findByText("Parking Démo LYS")).closest("tr")!;
+    expect(within(demo).queryByRole("button", { name: "Supprimer" })).not.toBeInTheDocument();
+
+    // Cancelled: nothing goes.
+    const invited = screen.getByText("Parking Invité").closest("tr")!;
+    await userEvent.click(within(invited).getByRole("button", { name: "Supprimer" }));
+    await waitFor(() => expect(ask).toHaveBeenCalledTimes(1));
+    expect(api.getOperatorDeletion).toHaveBeenCalledWith("o3");
+    expect(api.deleteOperator).not.toHaveBeenCalled();
+    // No listing yet, and an invitation cannot be archived: neither is announced.
+    expect(ask.mock.calls[0][0]).toBe(
+      "Parking Invité sera effacé avec son parking, ses 2 réservations et le compte de son gérant. Cette action est définitive.",
+    );
+
+    ask.mockReturnValue(true);
+    const listCalls = api.getPlatformOperators.mock.calls.length;
+    await userEvent.click(within(invited).getByRole("button", { name: "Supprimer" }));
+    await waitFor(() => expect(api.deleteOperator).toHaveBeenCalledWith("o3"));
+    expect(toast.success).toHaveBeenCalledWith("Parking Invité est supprimé.");
+    await waitFor(() => expect(api.getPlatformOperators.mock.calls.length).toBeGreaterThan(listCalls));
+
+    api.deleteOperator.mockClear();
+    api.getOperatorDeletion.mockResolvedValue({
+      data: { id: "o3", name: "Parking Invité", deletable: false, reason: "has_payments", counts: { parkings: 1, reservations: 2, staff: 1, paidReservations: 1 } },
+    });
+    await userEvent.click(within(invited).getByRole("button", { name: "Supprimer" }));
+    await waitFor(() => expect(toast.error).toHaveBeenCalledWith(expect.stringContaining("Suspendez-le puis archivez-le")));
+    expect(api.deleteOperator).not.toHaveBeenCalled();
+  });
+
+  it("propose « Supprimer » sur un loueur suspendu ou archivé, avec le bon conseil (09/10/2026)", async () => {
+    api.getPlatformOperators.mockImplementation(async (view?: string) =>
+      view === "archived"
+        ? { defaultCommissionBps: 1200, counts: { current: 2, archived: 1 }, operators: [operator({ id: "o9", name: "Ancien Parking", status: "suspended", suspendedAt: "2026-10-05T08:00:00Z", archivedAt: "2026-10-09T08:00:00Z" })] }
+        : { ...operators, counts: { current: 2, archived: 1 }, operators: [operator({}), operator({ id: "o2", name: "Allo Park Lyon", status: "suspended", suspendedAt: "2026-10-08T08:00:00Z" })] },
+    );
+    api.getOperatorDeletion.mockResolvedValue({
+      data: { id: "o2", name: "Allo Park Lyon", deletable: true, reason: null, counts: { parkings: 1, listings: 1, reservations: 0, staff: 3, paidReservations: 0 } },
+    });
+    const ask = vi.spyOn(window, "confirm").mockReturnValue(false);
+    const { toast } = await import("sonner");
+    renderAt("/plateforme/loueurs", <OperatorsPage />);
+
+    const suspended = (await screen.findByText("Allo Park Lyon")).closest("tr")!;
+    await userEvent.click(within(suspended).getByRole("button", { name: "Supprimer" }));
+    await waitFor(() =>
+      expect(ask).toHaveBeenCalledWith(
+        "Allo Park Lyon sera effacé avec son parking, sa fiche, ses tarifs et les 3 comptes de son équipe. Cette action est définitive : pour le garder sans qu'il apparaisse, archivez-le.",
+      ),
+    );
+
+    // Already archived, kept for its payments: no advice to archive it again.
+    api.getOperatorDeletion.mockResolvedValue({
+      data: { id: "o9", name: "Ancien Parking", deletable: false, reason: "has_payments", counts: { parkings: 1, listings: 1, reservations: 4, staff: 1, paidReservations: 4 } },
+    });
+    await userEvent.click(within(screen.getByRole("group", { name: "Afficher" })).getByRole("button", { name: /Archivés/ }));
+    const archived = (await screen.findByText("Ancien Parking")).closest("tr")!;
+    await userEvent.click(within(archived).getByRole("button", { name: "Supprimer" }));
+    await waitFor(() =>
+      expect(toast.error).toHaveBeenCalledWith(
+        "Ce loueur a reçu des paiements en ligne : il reste archivé pour la comptabilité et ne peut pas être supprimé.",
+      ),
+    );
+    expect(api.deleteOperator).not.toHaveBeenCalled();
+  });
+
   it("ouvre l'espace d'un loueur, le suspend et règle sa commission", async () => {
     api.getPlatformOperators.mockResolvedValue(operators);
     api.suspendOperator.mockResolvedValue({ data: {} });
@@ -225,6 +304,24 @@ describe("Loueurs", () => {
     expect(screen.getByText(/il ne sera plus affiché/)).toBeInTheDocument();
     await userEvent.click(screen.getByRole("button", { name: "Fermer" }));
     expect(screen.queryByDisplayValue("https://plazo.example/pro/invitation#abc")).not.toBeInTheDocument();
+  });
+
+  it("retire le lien d'invitation affiché quand ce loueur est supprimé", async () => {
+    api.getPlatformOperators.mockResolvedValue(operators);
+    api.resendInvitation.mockResolvedValue({ operator: { id: "o3", name: "Parking Invité" }, emailSent: false, expiresAt: "2026-10-16", inviteUrl: "https://plazo.example/pro/invitation#o3" });
+    api.getOperatorDeletion.mockResolvedValue({
+      data: { id: "o3", name: "Parking Invité", deletable: true, reason: null, counts: { parkings: 1, listings: 0, reservations: 0, staff: 1, paidReservations: 0 } },
+    });
+    api.deleteOperator.mockResolvedValue({ data: { id: "o3", name: "Parking Invité" } });
+    vi.spyOn(window, "confirm").mockReturnValue(true);
+    renderAt("/plateforme/loueurs", <OperatorsPage />);
+
+    const invited = (await screen.findByText("Parking Invité")).closest("tr")!;
+    await userEvent.click(within(invited).getByRole("button", { name: "Renvoyer l'invitation" }));
+    expect(await screen.findByDisplayValue("https://plazo.example/pro/invitation#o3")).toBeInTheDocument();
+    await userEvent.click(within(invited).getByRole("button", { name: "Supprimer" }));
+    await waitFor(() => expect(api.deleteOperator).toHaveBeenCalledWith("o3"));
+    await waitFor(() => expect(screen.queryByDisplayValue("https://plazo.example/pro/invitation#o3")).not.toBeInTheDocument());
   });
 });
 

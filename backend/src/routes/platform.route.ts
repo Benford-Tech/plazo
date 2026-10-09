@@ -72,6 +72,32 @@ import { ValidationMiddleware } from '@/middlewares/validation.middleware';
  *     tags: [Platform]
  *     parameters:
  *       - { in: path, name: id, required: true, schema: { type: string } }
+ * /internal/platform/operators/{id}/deletion:
+ *   get:
+ *     summary: What deleting the operator would erase, and whether it is allowed (09/10/2026)
+ *     tags: [Platform]
+ *     parameters:
+ *       - { in: path, name: id, required: true, schema: { type: string } }
+ *     responses:
+ *       200:
+ *         description: "{ data: { id, name, deletable, reason: null | cannot_delete_platform | not_suspended | has_payments, counts: { parkings, reservations, staff, paidReservations } } }"
+ * /internal/platform/operators/{id}:
+ *   delete:
+ *     summary: Delete an operator with everything that hangs from it (parkings, listing, bookings, team…)
+ *     description: >
+ *       Irreversible. Allowed on a suspended operator, or on an invited one whose invitation was never accepted;
+ *       never on the platform's own account, nor on an operator with online payments (accounting records: archive it).
+ *       Demo operators may be deleted with their test payments. Recorded in the admin's own journal (operator.deleted).
+ *     tags: [Platform]
+ *     parameters:
+ *       - { in: path, name: id, required: true, schema: { type: string } }
+ *     responses:
+ *       200:
+ *         description: "{ data: { id, name, counts } }"
+ *       400:
+ *         description: The platform's own account (code cannot_delete_platform)
+ *       409:
+ *         description: Active and used (code not_suspended), or online payments (code has_payments)
  * /internal/platform/operators/{id}/view-as:
  *   post:
  *     summary: Open the operator's space — a 60-minute access token scoped to it, without refresh
@@ -319,6 +345,8 @@ export class PlatformRoute implements Routes {
     this.router.post(`${base}/operators/:id/reactivate`, PlatformAdminMiddleware(), this.platform.reactivate);
     this.router.post(`${base}/operators/:id/archive`, PlatformAdminMiddleware(), this.platform.archive);
     this.router.post(`${base}/operators/:id/unarchive`, PlatformAdminMiddleware(), this.platform.unarchive);
+    this.router.get(`${base}/operators/:id/deletion`, PlatformAdminMiddleware(), this.platform.deletionPreview);
+    this.router.delete(`${base}/operators/:id`, PlatformAdminMiddleware(), this.platform.deleteOperator);
     this.router.post(`${base}/operators/:id/view-as`, PlatformAdminMiddleware(), this.platform.viewAs);
     this.router.post(`${base}/operators/:id/invitation`, PlatformAdminMiddleware(), this.platform.resendInvitation);
     this.router.post(`${base}/invitations`, PlatformAdminMiddleware(), ValidationMiddleware(InviteOperatorDto), this.platform.invite);

@@ -518,6 +518,14 @@ ou `vercel dev` pour lancer les trois services ensemble.
   Chaque écriture est tracée dans le journal (`audit_logs`, action `view_as.write`) au nom réel du super admin ;
   l'équipe, les mots de passe et le compte du loueur restent en lecture seule.
 - **Suspension** : l'équipe du loueur est déconnectée et ne peut plus se connecter, ses fiches quittent le site.
+- **Suppression** (09/10/2026) : « Supprimer » sur un loueur invité dont l'invitation n'a jamais été acceptée, ou sur un
+  loueur suspendu (archivé ou non). La confirmation dit ce qui part (parkings, fiche et tarifs, réservations, comptes de
+  l'équipe), puis tout est effacé, sans retour possible. Jamais le compte de la plateforme ; jamais un loueur qui a reçu un
+  paiement en ligne (payé, remboursé ou reversé : la comptabilité le garde, il s'archive), sauf un loueur de démo (paiements de
+  test) ; et pas pendant un paiement en cours (« réessayez dans une demi-heure »). Avant d'effacer, Plazo ferme chez Stripe les
+  paiements des attentes échues qui pourraient encore passer (aucun argent ne peut arriver sur une réservation disparue ; un
+  paiement passé entre-temps garde le loueur). La suppression est tracée dans le journal de la plateforme (`operator.deleted`,
+  nom et chiffres du loueur), avec l'effacement lui-même.
 
 ## API
 
@@ -601,6 +609,8 @@ Documentation interactive : `/api/docs` (Swagger). Toutes les routes sont sous `
 | PATCH | `/internal/platform/operators/:id/commission` | `{ commissionBps }` (null : taux par défaut) |
 | POST | `/internal/platform/operators/:id/suspend` / `…/reactivate` | Suspendre / réactiver un loueur |
 | POST | `/internal/platform/operators/:id/view-as` | « Ouvrir son espace » : jeton de 60 min limité au loueur |
+| GET | `/internal/platform/operators/:id/deletion` | Ce que la suppression effacerait (`counts`) et si elle est possible (`deletable`, `reason`) |
+| DELETE | `/internal/platform/operators/:id` | Supprimer un loueur et tout ce qui en dépend (400 `cannot_delete_platform`, 409 `not_suspended` / `has_payments` / `payment_in_progress`) |
 | POST | `/internal/platform/invitations` | Inviter un loueur (lien renvoyé si l'email ne peut pas partir) |
 | POST | `/internal/platform/operators/:id/invitation` | Renvoyer l'invitation (nouveau lien) |
 | GET | `/internal/platform/listings?status=` | Fiches de tous les loueurs, nombre par statut |

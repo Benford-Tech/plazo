@@ -90,6 +90,16 @@ export class PlatformController {
     res.json({ message: 'Operator unarchived', data: await this.platform.unarchive(req.staff, req.params.id as string) });
   });
 
+  /** GET /internal/platform/operators/:id/deletion */
+  public deletionPreview = catchAsync(async (req: RequestWithStaffSession, res: Response) => {
+    res.json({ data: await this.platform.deletionPreview(req.params.id as string) });
+  });
+
+  /** DELETE /internal/platform/operators/:id */
+  public deleteOperator = catchAsync(async (req: RequestWithStaffSession, res: Response) => {
+    res.json({ message: 'Operator deleted', data: await this.platform.deleteOperator(req.staff, req.params.id as string) });
+  });
+
   /** POST /internal/platform/operators/:id/view-as */
   public viewAs = catchAsync(async (req: RequestWithStaffSession, res: Response) => {
     res.status(httpStatus.CREATED).json(await this.platform.viewAs(req.staff, req.params.id as string, { userAgent: req.get('user-agent') ?? null }));

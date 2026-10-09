@@ -355,6 +355,39 @@ export class PaymentService {
     return api.paymentIntents.cancel(id, {}, { idempotencyKey: `plazo-intent-cancel-${id}` });
   }
 
+  /**
+   * Before an operator is deleted (09/10/2026): closes the payments of its ended holds that Stripe could still take (a
+   * payment sheet's intent never expires, a Checkout page may outlive its hold), so that no money lands on a booking
+   * that is gone. One that went through meanwhile is confirmed (the booking turns paid and keeps the operator).
+   * Returns how many are still under way at Stripe (bank processing): the deletion waits for them.
+   */
+  public async closeLingeringPayments(operatorId: string): Promise<number> {
+    if (!this.enabled()) return 0;
+    const rows = await prisma.reservation.findMany({
+      where: { operatorId, paymentStatus: 'expired', OR: [{ stripePaymentIntentId: { not: null } }, { stripeCheckoutSessionId: { not: null } }] },
+      select: { stripePaymentIntentId: true, stripeCheckoutSessionId: true },
+    });
+    const api = this.stripe.api();
+    let underWay = 0;
+    for (const r of rows) {
+      if (r.stripePaymentIntentId) {
+        const intent = await this.closeIntent(r.stripePaymentIntentId);
+        if (intent.status === 'succeeded') await this.confirmIntent(intent, 'return');
+        else if (intent.status === 'processing') underWay += 1;
+      }
+      if (r.stripeCheckoutSessionId) {
+        const session = await api.checkout.sessions.retrieve(r.stripeCheckoutSessionId);
+        if (session.status === 'open') {
+          await api.checkout.sessions.expire(session.id, {}, { idempotencyKey: `plazo-expire-${session.id}` });
+        } else if (session.status === 'complete') {
+          if (session.payment_status === 'paid') await this.confirmPaid(session, 'return');
+          else if (session.payment_status === 'unpaid') underWay += 1;
+        }
+      }
+    }
+    return underWay;
+  }
+
   /** The app's payment sheet: publishable key and how the sheet presents the merchant. */
   public sheetConfig() {
     const enabled = this.enabled();
