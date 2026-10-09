@@ -2,12 +2,14 @@ import httpStatus from 'http-status';
 import { HOLDING_STATUSES, ON_SITE_STATUSES } from '@/domain/reservation';
 import { Container, Service } from 'typedi';
 import prisma, { ParkingSpot, Prisma, ReservationStatus } from '@/database';
+import { activeSpotCount, effectiveCapacity } from '@/domain/capacity';
 import { settingsOf, stayClassDistance, stayClassForNights, type StayClass } from '@/domain/layout/types';
 import { type Blocker, blockersOf, buildFiles, type FileSpot, type FileStay, scoreSpot } from '@/domain/files';
 import { addDays, dayBounds, DATE_RE, localDate, nightsBetween } from '@/domain/time';
 import { AuthenticatedStaff } from '@/interfaces/auth.interface';
 import { HttpException } from '@/utils/httpException';
 import { AuditService } from './audit.service';
+import { loadPlanCapacity } from './capacity.service';
 
 const HOLDING: ReservationStatus[] = HOLDING_STATUSES;
 const ON_SITE: ReservationStatus[] = ON_SITE_STATUSES;
@@ -71,13 +73,14 @@ export class SpotPlanningService {
     const window = this.parseWindow(query, parking.timezone);
     const { start } = dayBounds(window.from, parking.timezone);
     const { end } = dayBounds(addDays(window.from, window.days - 1), parking.timezone);
-    const [spots, holding] = await Promise.all([
+    const [spots, holding, plan] = await Promise.all([
       prisma.parkingSpot.findMany({ where: { parkingId: parking.id }, orderBy: [{ zoneId: 'asc' }, { row: 'asc' }, { index: 'asc' }] }),
       prisma.reservation.findMany({
         where: { parkingId: parking.id, status: { in: HOLDING }, arrivalAt: { lt: end }, returnAt: { gt: start } },
         select: staySelect,
         orderBy: { arrivalAt: 'asc' },
       }),
+      loadPlanCapacity([parking.id]).then(m => m.get(parking.id)!),
     ]);
     const bySpot = new Map<string, Stay[]>();
     const unplaced: Stay[] = [];
@@ -119,7 +122,8 @@ export class SpotPlanningService {
         return { ...r, onSite: ON_SITE.includes(r.status), blockedBy: blockers };
       }),
     }));
-    const capacity = spots.filter(s => s.active).length;
+    // The capacity used everywhere (09/10/2026): the active spots on a parking stored in spots.
+    const capacity = effectiveCapacity({ declared: parking.totalCapacity, ...plan, activeSpots: activeSpotCount(spots) }).total;
     const days: DayLoad[] = [];
     const alerts: PlanningAlert[] = [];
     for (let i = 0; i < window.days; i += 1) {

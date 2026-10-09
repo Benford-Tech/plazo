@@ -20,8 +20,14 @@ import { ValidationMiddleware } from '@/middlewares/validation.middleware';
  * @swagger
  * /internal/parking:
  *   get:
- *     summary: The operator's parking with its bookable capacity (total minus safety margin)
+ *     summary: The operator's parking with its capacity
  *     tags: [Parking]
+ *     description: >
+ *       Capacity used everywhere (09/10/2026): effectiveCapacity is the room of the active valet files
+ *       when there is any, else the number of active spots of the plan, else the declared figure
+ *       (capacitySource files, spots or declared). bookableCapacity is effectiveCapacity minus the
+ *       safety margin; it is what bookings, imports, the site and the planning check. totalCapacity
+ *       and declaredCapacity are the declared figure (older apps read totalCapacity).
  * /internal/parkings/{id}:
  *   patch:
  *     summary: Update parking settings (manager only, audited)
@@ -38,7 +44,7 @@ import { ValidationMiddleware } from '@/middlewares/validation.middleware';
  *             properties:
  *               name: { type: string }
  *               address: { type: string, nullable: true }
- *               totalCapacity: { type: integer, minimum: 1 }
+ *               totalCapacity: { type: integer, minimum: 1, description: "The declared figure, used while the plan has no room" }
  *               safetyMarginPct: { type: integer, minimum: 0, maximum: 50 }
  *               shuttleTravelMinutes: { type: integer, minimum: 1, maximum: 120 }
  * /internal/parkings/{id}/shuttle-tracking:
@@ -146,6 +152,7 @@ export class ParkingRoute implements Routes {
       ValidationMiddleware(UpdateSpotDto),
       this.parking.updateSpot,
     );
+    // Copies the active spots into the declared figure (older apps; the plan's figure counts by itself since 09/10/2026).
     this.router.post('/internal/parkings/:id/plan/apply-capacity', StaffAuthMiddleware('parking:manage'), this.parking.applyCapacity);
     // The app: the layout engine runs on the server.
     this.router.post('/internal/parkings/:id/plan/estimate', StaffAuthMiddleware('parking:manage'), this.parking.estimatePlan);

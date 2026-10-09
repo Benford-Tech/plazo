@@ -235,7 +235,8 @@ interface Props {
     name: string;
     lat?: number | null;
     lng?: number | null;
-    totalCapacity: number;
+    /** The capacity used everywhere, as the server computes it (09/10/2026). */
+    effectiveCapacity?: number;
   };
   view: ParkingPlanView;
   study: CapacityStudy;
@@ -247,6 +248,8 @@ interface Props {
   update: (patch: PlanPatch) => void;
   flush: () => Promise<boolean>;
   onView: (view: ParkingPlanView) => void;
+  /** Spots or files changed on the server: the figures that follow the capacity are reloaded. */
+  onCapacityChange: () => void;
   suggest: SuggestFn;
   initialTool: Tool | null;
   /** R-C: run the first pass (parcel, buildings, zones, spots, files) on an empty plan. */
@@ -272,6 +275,7 @@ export function PlanEditor({
   update: updatePlan,
   flush,
   onView,
+  onCapacityChange,
   suggest,
   initialTool,
   autoRun,
@@ -356,8 +360,10 @@ export function PlanEditor({
   );
   const saveFiles = useMutation({
     mutationFn: (list: FileInput[]) => adminApi.replaceFiles(parkingId, list),
-    onSuccess: () =>
-      void queryClient.invalidateQueries({ queryKey: ["files", parkingId] }),
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: ["files", parkingId] });
+      onCapacityChange();
+    },
     onError: (e) => toast.error(describeError(e)),
   });
   const [spotKind, setSpotKind] = useState<SpotKind>("standard");
@@ -646,6 +652,7 @@ export function PlanEditor({
         yieldToUi: () => new Promise((resolve) => setTimeout(resolve, 30)),
       });
       onView(r.view);
+      onCapacityChange();
       if (r.files) {
         void queryClient.invalidateQueries({ queryKey: ["files", parkingId] });
         toast.success(t.files.proposed(r.files.length));
@@ -697,6 +704,7 @@ export function PlanEditor({
       const { data } = await adminApi.filesFromPlan(parkingId);
       history.current.record({ files: before }, Date.now());
       void queryClient.invalidateQueries({ queryKey: ["files", parkingId] });
+      onCapacityChange();
       toast.success(t.files.proposed(data.length));
     } catch (e) {
       toast.error(describeError(e));
@@ -785,7 +793,10 @@ export function PlanEditor({
     if (spots.length)
       void adminApi
         .replaceSpots(parkingId, plan.layout ?? layout, [])
-        .then(({ data }) => onView(data));
+        .then(({ data }) => {
+          onView(data);
+          onCapacityChange();
+        });
   }
 
   // ---- Brushes --------------------------------------------------------------------------------
@@ -898,6 +909,7 @@ export function PlanEditor({
       await flush();
       const { data } = await adminApi.replaceSpots(parkingId, layout, list);
       onView(data);
+      onCapacityChange();
       toast.success(tp.generated(data.spots.length));
     } catch (e) {
       toast.error(describeError(e));
@@ -918,6 +930,7 @@ export function PlanEditor({
     });
     try {
       await adminApi.updateSpot(parkingId, spot.id, patch);
+      if (patch.active !== undefined) onCapacityChange();
     } catch (e) {
       onView({
         ...view,
@@ -925,18 +938,6 @@ export function PlanEditor({
         activeSpots: before.filter((s) => s.active).length,
       });
       toast.error(describeError(e));
-    }
-  }
-  async function applyCapacity() {
-    setBusy(true);
-    try {
-      const { data } = await adminApi.applyPlanCapacity(parkingId);
-      onView(data);
-      toast.success(tp.capacityApplied(data.totalCapacity));
-    } catch (e) {
-      toast.error(describeError(e));
-    } finally {
-      setBusy(false);
     }
   }
 
@@ -1102,6 +1103,7 @@ export function PlanEditor({
     try {
       const { data } = await adminApi.addSpots(parkingId, list);
       onView(data);
+      onCapacityChange();
       toast.success(t.spots.rowAdded(list.length));
     } catch (e) {
       toast.error(describeError(e));
@@ -1118,6 +1120,7 @@ export function PlanEditor({
     try {
       const { data } = await adminApi.deleteSpot(parkingId, spot.id);
       onView(data);
+      onCapacityChange();
       toast.success(t.spots.removed);
     } catch (e) {
       toast.error(describeError(e));
@@ -1221,8 +1224,9 @@ export function PlanEditor({
       : estimated != null
         ? `${t.countEstimated} · ${tp.layouts[layout]}`
         : "";
-  const inSync =
-    view.activeSpots > 0 && view.activeSpots === view.totalCapacity;
+  // 09/10/2026: the plan's files or spots are the capacity used everywhere (the server's figure,
+  // reloaded after each change; the declared one only counts while the plan has no room).
+  const capacityUsed = parking.effectiveCapacity ?? view.effectiveCapacity;
 
   const help = (() => {
     if (tool === "spots" && rowArmed) return t.spots.rowHelp;
@@ -1853,27 +1857,14 @@ export function PlanEditor({
                 ))}
               </div>
             )}
-            <div className="border-t border-border pt-2 text-[13px]">
-              <div className="flex justify-between">
-                <span>{tp.countDeclared}</span>
-                <span className="font-mono font-bold">
-                  {view.totalCapacity}
-                </span>
-              </div>
-              {inSync ? (
-                <p className="mt-1 text-muted-foreground">
-                  {tp.capacityInSync}
-                </p>
-              ) : (
-                <ToolButton
-                  className="mt-1 min-h-9 w-full"
-                  disabled={busy || view.activeSpots === 0}
-                  onClick={() => void applyCapacity()}
-                >
-                  {tp.applyCapacity(view.activeSpots)}
-                </ToolButton>
-              )}
-            </div>
+            {capacityUsed != null && (
+              <p
+                className="border-t border-border pt-2 text-[13px] font-semibold"
+                data-testid="capacity-used"
+              >
+                {tp.capacityUsed(capacityUsed)}
+              </p>
+            )}
           </>
         )}
       </>

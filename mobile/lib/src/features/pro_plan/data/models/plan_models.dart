@@ -6,8 +6,17 @@ part 'plan_models.g.dart';
 /// GET /internal/parking (the fields the plan needs).
 @freezed
 abstract class ParkingSummaryModel with _$ParkingSummaryModel {
-  const factory ParkingSummaryModel({required String id, required String name, required int totalCapacity, double? lat, double? lng}) =
-      _ParkingSummaryModel;
+  const factory ParkingSummaryModel({
+    required String id,
+    required String name,
+    required int totalCapacity,
+    double? lat,
+    double? lng,
+
+    /// 09/10/2026: the capacity used everywhere and its source ("files", "spots", "declared").
+    @Default(0) int effectiveCapacity,
+    @Default('declared') String capacitySource,
+  }) = _ParkingSummaryModel;
   factory ParkingSummaryModel.fromJson(Map<String, dynamic> json) => _$ParkingSummaryModelFromJson(json);
 }
 
@@ -50,7 +59,14 @@ abstract class ParkingPlanViewModel with _$ParkingPlanViewModel {
     required ParkingPlanModel plan,
     @Default([]) List<SpotModel> spots,
     required int activeSpots,
+
+    /// The declared figure (`applyCapacity` copies the active spots into it).
     required int totalCapacity,
+
+    /// 09/10/2026: the capacity used everywhere (files, else active spots, else declared) and its
+    /// source; the defaults read an older server.
+    @Default(0) int effectiveCapacity,
+    @Default('declared') String capacitySource,
   }) = _ParkingPlanViewModel;
   factory ParkingPlanViewModel.fromJson(Map<String, dynamic> json) => _$ParkingPlanViewModelFromJson(json);
 }

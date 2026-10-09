@@ -1,16 +1,21 @@
 import httpStatus from 'http-status';
 import { Container, Service } from 'typedi';
-import prisma, { Parking, ShuttleTracking } from '@/database';
-import { bookableCapacity } from '@/domain/capacity';
+import prisma, { Parking, Prisma, ShuttleTracking } from '@/database';
 import { can } from '@/domain/roles';
 import { sharesPosition } from '@/domain/shuttle-tracking';
 import { UpdateParkingDto } from '@/dtos/parking.dto';
 import { AuthenticatedStaff } from '@/interfaces/auth.interface';
 import { HttpException } from '@/utils/httpException';
 import { AuditService } from './audit.service';
+import { loadPlanCapacity, parkingCapacity, type ParkingCapacity } from './capacity.service';
 import { ParkingLocationService, READ_GEOCODE_TIMEOUT_MS, SAVE_GEOCODE_TIMEOUT_MS, type LatLng } from './parking-location.service';
 
-export type ParkingSummary = Parking & { bookableCapacity: number };
+/**
+ * The parking with its capacity (09/10/2026): `totalCapacity` stays the declared figure (older apps
+ * read it), `effectiveCapacity` is the one used everywhere (plan's files, else spots, else declared)
+ * and `bookableCapacity` is taken from it.
+ */
+export type ParkingSummary = Parking & ParkingCapacity;
 /** What GET /internal/parking serves: the summary plus the parking's position (its address's when not placed). */
 export type ParkingSummaryWithPosition = ParkingSummary & { lat: number | null; lng: number | null };
 
@@ -24,8 +29,9 @@ const SETTINGS = [
   'landingDelayMinutes',
 ] as const;
 
-function summarize(parking: Parking): ParkingSummary {
-  return { ...parking, bookableCapacity: bookableCapacity(parking.totalCapacity, parking.safetyMarginPct) };
+async function summarize(parking: Parking, client: Prisma.TransactionClient | typeof prisma = prisma): Promise<ParkingSummary> {
+  const plan = (await loadPlanCapacity([parking.id], client)).get(parking.id)!;
+  return { ...parking, ...parkingCapacity(parking, plan) };
 }
 
 @Service()
@@ -33,16 +39,25 @@ export class ParkingService {
   public audit = Container.get(AuditService);
   public locations = Container.get(ParkingLocationService);
 
-  /** MVP: one parking per operator in the UI; the data model already allows several. */
-  public async getPrimary(actor: AuthenticatedStaff): Promise<ParkingSummary> {
+  /**
+   * MVP: one parking per operator in the UI; the data model already allows several. The plain row:
+   * most callers (shuttles polled every 12 s, revenue, listing…) never need the capacity, and the
+   * capacity checks read the plan in their own query (`CapacityService.nights`).
+   */
+  public async getPrimary(actor: AuthenticatedStaff): Promise<Parking> {
     const parking = await prisma.parking.findFirst({ where: { operatorId: actor.operatorId }, orderBy: { createdAt: 'asc' } });
     if (!parking) throw new HttpException(httpStatus.NOT_FOUND, 'Parking not found', 'not_found');
-    return summarize(parking);
+    return parking;
+  }
+
+  /** The parking with the capacity used everywhere (declared, effective, source, bookable): one more query, for the screens that show it. */
+  public async getPrimaryWithCapacity(actor: AuthenticatedStaff): Promise<ParkingSummary> {
+    return summarize(await this.getPrimary(actor));
   }
 
   /** The pro space's and the app's read: the plan opens its map on the parking (07/10/2026), so its position comes along. */
   public async getPrimaryWithPosition(actor: AuthenticatedStaff): Promise<ParkingSummaryWithPosition> {
-    const summary = await this.getPrimary(actor);
+    const summary = await this.getPrimaryWithCapacity(actor);
     const position: LatLng | null = await this.locations.locate(summary, READ_GEOCODE_TIMEOUT_MS);
     return { ...summary, lat: position?.lat ?? null, lng: position?.lng ?? null };
   }
@@ -75,7 +90,7 @@ export class ParkingService {
       await this.audit.record(actor, { action: 'parking.settings_updated', entityType: 'parking', entityId: parkingId, details: changes as any }, tx);
       // A position geocoded from the old address no longer holds.
       if (changes.address) await this.locations.store(parkingId, null, tx);
-      return { summary: summarize(after), addressChanged: !!changes.address };
+      return { summary: await summarize(after, tx), addressChanged: !!changes.address };
     });
     // The new address's position for the site's map (never fails the save).
     if (saved.addressChanged) await this.locations.locate(saved.summary, SAVE_GEOCODE_TIMEOUT_MS);
@@ -110,7 +125,7 @@ export class ParkingService {
           tx,
         );
       }
-      return summarize(after);
+      return summarize(after, tx);
     });
   }
 }

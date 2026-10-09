@@ -319,7 +319,10 @@ as DateTime?,
 mixin _$ParkingSettingsModel {
 
  String get id; String get name; String? get address; String get timezone; int get totalCapacity; int get safetyMarginPct; int get shuttleTravelMinutes; int get terminalLeadMinutes; int get landingDelayMinutes;/// R-B (07/10/2026): who sees the shuttles' position: "off", "team" or "everyone".
- String get shuttleTracking; int get bookableCapacity;
+ String get shuttleTracking; int get bookableCapacity;/// 09/10/2026: the capacity used everywhere (the plan's files, else its active spots, else
+/// `totalCapacity`, the declared figure) and where it comes from: "files", "spots" or
+/// "declared" (the default, for an older server).
+ int get effectiveCapacity; String get capacitySource;
 /// Create a copy of ParkingSettingsModel
 /// with the given fields replaced by the non-null parameter values.
 @JsonKey(includeFromJson: false, includeToJson: false)
@@ -333,20 +336,20 @@ $ParkingSettingsModelCopyWith<ParkingSettingsModel> get copyWith => _$ParkingSet
 @override
 bool operator ==(Object other) {
   final _this = this as ParkingSettingsModel;
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is ParkingSettingsModel&&(identical(other.id, _this.id) || other.id == _this.id)&&(identical(other.name, _this.name) || other.name == _this.name)&&(identical(other.address, _this.address) || other.address == _this.address)&&(identical(other.timezone, _this.timezone) || other.timezone == _this.timezone)&&(identical(other.totalCapacity, _this.totalCapacity) || other.totalCapacity == _this.totalCapacity)&&(identical(other.safetyMarginPct, _this.safetyMarginPct) || other.safetyMarginPct == _this.safetyMarginPct)&&(identical(other.shuttleTravelMinutes, _this.shuttleTravelMinutes) || other.shuttleTravelMinutes == _this.shuttleTravelMinutes)&&(identical(other.terminalLeadMinutes, _this.terminalLeadMinutes) || other.terminalLeadMinutes == _this.terminalLeadMinutes)&&(identical(other.landingDelayMinutes, _this.landingDelayMinutes) || other.landingDelayMinutes == _this.landingDelayMinutes)&&(identical(other.shuttleTracking, _this.shuttleTracking) || other.shuttleTracking == _this.shuttleTracking)&&(identical(other.bookableCapacity, _this.bookableCapacity) || other.bookableCapacity == _this.bookableCapacity));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is ParkingSettingsModel&&(identical(other.id, _this.id) || other.id == _this.id)&&(identical(other.name, _this.name) || other.name == _this.name)&&(identical(other.address, _this.address) || other.address == _this.address)&&(identical(other.timezone, _this.timezone) || other.timezone == _this.timezone)&&(identical(other.totalCapacity, _this.totalCapacity) || other.totalCapacity == _this.totalCapacity)&&(identical(other.safetyMarginPct, _this.safetyMarginPct) || other.safetyMarginPct == _this.safetyMarginPct)&&(identical(other.shuttleTravelMinutes, _this.shuttleTravelMinutes) || other.shuttleTravelMinutes == _this.shuttleTravelMinutes)&&(identical(other.terminalLeadMinutes, _this.terminalLeadMinutes) || other.terminalLeadMinutes == _this.terminalLeadMinutes)&&(identical(other.landingDelayMinutes, _this.landingDelayMinutes) || other.landingDelayMinutes == _this.landingDelayMinutes)&&(identical(other.shuttleTracking, _this.shuttleTracking) || other.shuttleTracking == _this.shuttleTracking)&&(identical(other.bookableCapacity, _this.bookableCapacity) || other.bookableCapacity == _this.bookableCapacity)&&(identical(other.effectiveCapacity, _this.effectiveCapacity) || other.effectiveCapacity == _this.effectiveCapacity)&&(identical(other.capacitySource, _this.capacitySource) || other.capacitySource == _this.capacitySource));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
 int get hashCode {
   final _this = this as ParkingSettingsModel;
-  return Object.hash(runtimeType,_this.id,_this.name,_this.address,_this.timezone,_this.totalCapacity,_this.safetyMarginPct,_this.shuttleTravelMinutes,_this.terminalLeadMinutes,_this.landingDelayMinutes,_this.shuttleTracking,_this.bookableCapacity);
+  return Object.hash(runtimeType,_this.id,_this.name,_this.address,_this.timezone,_this.totalCapacity,_this.safetyMarginPct,_this.shuttleTravelMinutes,_this.terminalLeadMinutes,_this.landingDelayMinutes,_this.shuttleTracking,_this.bookableCapacity,_this.effectiveCapacity,_this.capacitySource);
 }
 
 @override
 String toString() {
   final _this = this as ParkingSettingsModel;
-  return 'ParkingSettingsModel(id: ${_this.id}, name: ${_this.name}, address: ${_this.address}, timezone: ${_this.timezone}, totalCapacity: ${_this.totalCapacity}, safetyMarginPct: ${_this.safetyMarginPct}, shuttleTravelMinutes: ${_this.shuttleTravelMinutes}, terminalLeadMinutes: ${_this.terminalLeadMinutes}, landingDelayMinutes: ${_this.landingDelayMinutes}, shuttleTracking: ${_this.shuttleTracking}, bookableCapacity: ${_this.bookableCapacity})';
+  return 'ParkingSettingsModel(id: ${_this.id}, name: ${_this.name}, address: ${_this.address}, timezone: ${_this.timezone}, totalCapacity: ${_this.totalCapacity}, safetyMarginPct: ${_this.safetyMarginPct}, shuttleTravelMinutes: ${_this.shuttleTravelMinutes}, terminalLeadMinutes: ${_this.terminalLeadMinutes}, landingDelayMinutes: ${_this.landingDelayMinutes}, shuttleTracking: ${_this.shuttleTracking}, bookableCapacity: ${_this.bookableCapacity}, effectiveCapacity: ${_this.effectiveCapacity}, capacitySource: ${_this.capacitySource})';
 }
 
 
@@ -357,7 +360,7 @@ abstract mixin class $ParkingSettingsModelCopyWith<$Res>  {
   factory $ParkingSettingsModelCopyWith(ParkingSettingsModel value, $Res Function(ParkingSettingsModel) _then) = _$ParkingSettingsModelCopyWithImpl;
 @useResult
 $Res call({
- String id, String name, String? address, String timezone, int totalCapacity, int safetyMarginPct, int shuttleTravelMinutes, int terminalLeadMinutes, int landingDelayMinutes, String shuttleTracking, int bookableCapacity
+ String id, String name, String? address, String timezone, int totalCapacity, int safetyMarginPct, int shuttleTravelMinutes, int terminalLeadMinutes, int landingDelayMinutes, String shuttleTracking, int bookableCapacity, int effectiveCapacity, String capacitySource
 });
 
 
@@ -374,7 +377,7 @@ class _$ParkingSettingsModelCopyWithImpl<$Res>
 
 /// Create a copy of ParkingSettingsModel
 /// with the given fields replaced by the non-null parameter values.
-@pragma('vm:prefer-inline') @override $Res call({Object? id = null,Object? name = null,Object? address = freezed,Object? timezone = null,Object? totalCapacity = null,Object? safetyMarginPct = null,Object? shuttleTravelMinutes = null,Object? terminalLeadMinutes = null,Object? landingDelayMinutes = null,Object? shuttleTracking = null,Object? bookableCapacity = null,}) {
+@pragma('vm:prefer-inline') @override $Res call({Object? id = null,Object? name = null,Object? address = freezed,Object? timezone = null,Object? totalCapacity = null,Object? safetyMarginPct = null,Object? shuttleTravelMinutes = null,Object? terminalLeadMinutes = null,Object? landingDelayMinutes = null,Object? shuttleTracking = null,Object? bookableCapacity = null,Object? effectiveCapacity = null,Object? capacitySource = null,}) {
   return _then(ParkingSettingsModel(
 id: null == id ? _self.id : id // ignore: cast_nullable_to_non_nullable
 as String,name: null == name ? _self.name : name // ignore: cast_nullable_to_non_nullable
@@ -387,7 +390,9 @@ as int,terminalLeadMinutes: null == terminalLeadMinutes ? _self.terminalLeadMinu
 as int,landingDelayMinutes: null == landingDelayMinutes ? _self.landingDelayMinutes : landingDelayMinutes // ignore: cast_nullable_to_non_nullable
 as int,shuttleTracking: null == shuttleTracking ? _self.shuttleTracking : shuttleTracking // ignore: cast_nullable_to_non_nullable
 as String,bookableCapacity: null == bookableCapacity ? _self.bookableCapacity : bookableCapacity // ignore: cast_nullable_to_non_nullable
-as int,
+as int,effectiveCapacity: null == effectiveCapacity ? _self.effectiveCapacity : effectiveCapacity // ignore: cast_nullable_to_non_nullable
+as int,capacitySource: null == capacitySource ? _self.capacitySource : capacitySource // ignore: cast_nullable_to_non_nullable
+as String,
   ));
 }
 
@@ -472,10 +477,10 @@ return $default(_that);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( String id,  String name,  String? address,  String timezone,  int totalCapacity,  int safetyMarginPct,  int shuttleTravelMinutes,  int terminalLeadMinutes,  int landingDelayMinutes,  String shuttleTracking,  int bookableCapacity)?  $default,{required TResult orElse(),}) {final _that = this;
+@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( String id,  String name,  String? address,  String timezone,  int totalCapacity,  int safetyMarginPct,  int shuttleTravelMinutes,  int terminalLeadMinutes,  int landingDelayMinutes,  String shuttleTracking,  int bookableCapacity,  int effectiveCapacity,  String capacitySource)?  $default,{required TResult orElse(),}) {final _that = this;
 switch (_that) {
 case _ParkingSettingsModel() when $default != null:
-return $default(_that.id,_that.name,_that.address,_that.timezone,_that.totalCapacity,_that.safetyMarginPct,_that.shuttleTravelMinutes,_that.terminalLeadMinutes,_that.landingDelayMinutes,_that.shuttleTracking,_that.bookableCapacity);case _:
+return $default(_that.id,_that.name,_that.address,_that.timezone,_that.totalCapacity,_that.safetyMarginPct,_that.shuttleTravelMinutes,_that.terminalLeadMinutes,_that.landingDelayMinutes,_that.shuttleTracking,_that.bookableCapacity,_that.effectiveCapacity,_that.capacitySource);case _:
   return orElse();
 
 }
@@ -493,10 +498,10 @@ return $default(_that.id,_that.name,_that.address,_that.timezone,_that.totalCapa
 /// }
 /// ```
 
-@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( String id,  String name,  String? address,  String timezone,  int totalCapacity,  int safetyMarginPct,  int shuttleTravelMinutes,  int terminalLeadMinutes,  int landingDelayMinutes,  String shuttleTracking,  int bookableCapacity)  $default,) {final _that = this;
+@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( String id,  String name,  String? address,  String timezone,  int totalCapacity,  int safetyMarginPct,  int shuttleTravelMinutes,  int terminalLeadMinutes,  int landingDelayMinutes,  String shuttleTracking,  int bookableCapacity,  int effectiveCapacity,  String capacitySource)  $default,) {final _that = this;
 switch (_that) {
 case _ParkingSettingsModel():
-return $default(_that.id,_that.name,_that.address,_that.timezone,_that.totalCapacity,_that.safetyMarginPct,_that.shuttleTravelMinutes,_that.terminalLeadMinutes,_that.landingDelayMinutes,_that.shuttleTracking,_that.bookableCapacity);case _:
+return $default(_that.id,_that.name,_that.address,_that.timezone,_that.totalCapacity,_that.safetyMarginPct,_that.shuttleTravelMinutes,_that.terminalLeadMinutes,_that.landingDelayMinutes,_that.shuttleTracking,_that.bookableCapacity,_that.effectiveCapacity,_that.capacitySource);case _:
   throw StateError('Unexpected subclass');
 
 }
@@ -513,10 +518,10 @@ return $default(_that.id,_that.name,_that.address,_that.timezone,_that.totalCapa
 /// }
 /// ```
 
-@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( String id,  String name,  String? address,  String timezone,  int totalCapacity,  int safetyMarginPct,  int shuttleTravelMinutes,  int terminalLeadMinutes,  int landingDelayMinutes,  String shuttleTracking,  int bookableCapacity)?  $default,) {final _that = this;
+@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( String id,  String name,  String? address,  String timezone,  int totalCapacity,  int safetyMarginPct,  int shuttleTravelMinutes,  int terminalLeadMinutes,  int landingDelayMinutes,  String shuttleTracking,  int bookableCapacity,  int effectiveCapacity,  String capacitySource)?  $default,) {final _that = this;
 switch (_that) {
 case _ParkingSettingsModel() when $default != null:
-return $default(_that.id,_that.name,_that.address,_that.timezone,_that.totalCapacity,_that.safetyMarginPct,_that.shuttleTravelMinutes,_that.terminalLeadMinutes,_that.landingDelayMinutes,_that.shuttleTracking,_that.bookableCapacity);case _:
+return $default(_that.id,_that.name,_that.address,_that.timezone,_that.totalCapacity,_that.safetyMarginPct,_that.shuttleTravelMinutes,_that.terminalLeadMinutes,_that.landingDelayMinutes,_that.shuttleTracking,_that.bookableCapacity,_that.effectiveCapacity,_that.capacitySource);case _:
   return null;
 
 }
@@ -528,7 +533,7 @@ return $default(_that.id,_that.name,_that.address,_that.timezone,_that.totalCapa
 @JsonSerializable()
 
 class _ParkingSettingsModel implements ParkingSettingsModel {
-  const _ParkingSettingsModel({required this.id, required this.name, this.address, this.timezone = 'Europe/Paris', required this.totalCapacity, this.safetyMarginPct = 0, this.shuttleTravelMinutes = 8, this.terminalLeadMinutes = 120, this.landingDelayMinutes = 30, this.shuttleTracking = 'team', this.bookableCapacity = 0});
+  const _ParkingSettingsModel({required this.id, required this.name, this.address, this.timezone = 'Europe/Paris', required this.totalCapacity, this.safetyMarginPct = 0, this.shuttleTravelMinutes = 8, this.terminalLeadMinutes = 120, this.landingDelayMinutes = 30, this.shuttleTracking = 'team', this.bookableCapacity = 0, this.effectiveCapacity = 0, this.capacitySource = 'declared'});
   factory _ParkingSettingsModel.fromJson(Map<String, dynamic> json) => _$ParkingSettingsModelFromJson(json);
 
 @override final  String id;
@@ -543,6 +548,11 @@ class _ParkingSettingsModel implements ParkingSettingsModel {
 /// R-B (07/10/2026): who sees the shuttles' position: "off", "team" or "everyone".
 @override@JsonKey() final  String shuttleTracking;
 @override@JsonKey() final  int bookableCapacity;
+/// 09/10/2026: the capacity used everywhere (the plan's files, else its active spots, else
+/// `totalCapacity`, the declared figure) and where it comes from: "files", "spots" or
+/// "declared" (the default, for an older server).
+@override@JsonKey() final  int effectiveCapacity;
+@override@JsonKey() final  String capacitySource;
 
 /// Create a copy of ParkingSettingsModel
 /// with the given fields replaced by the non-null parameter values.
@@ -557,18 +567,18 @@ Map<String, dynamic> toJson() {
 
 @override
 bool operator ==(Object other) {
-    return identical(this, other) || (other.runtimeType == runtimeType&&other is _ParkingSettingsModel&&(identical(other.id, id) || other.id == id)&&(identical(other.name, name) || other.name == name)&&(identical(other.address, address) || other.address == address)&&(identical(other.timezone, timezone) || other.timezone == timezone)&&(identical(other.totalCapacity, totalCapacity) || other.totalCapacity == totalCapacity)&&(identical(other.safetyMarginPct, safetyMarginPct) || other.safetyMarginPct == safetyMarginPct)&&(identical(other.shuttleTravelMinutes, shuttleTravelMinutes) || other.shuttleTravelMinutes == shuttleTravelMinutes)&&(identical(other.terminalLeadMinutes, terminalLeadMinutes) || other.terminalLeadMinutes == terminalLeadMinutes)&&(identical(other.landingDelayMinutes, landingDelayMinutes) || other.landingDelayMinutes == landingDelayMinutes)&&(identical(other.shuttleTracking, shuttleTracking) || other.shuttleTracking == shuttleTracking)&&(identical(other.bookableCapacity, bookableCapacity) || other.bookableCapacity == bookableCapacity));
+    return identical(this, other) || (other.runtimeType == runtimeType&&other is _ParkingSettingsModel&&(identical(other.id, id) || other.id == id)&&(identical(other.name, name) || other.name == name)&&(identical(other.address, address) || other.address == address)&&(identical(other.timezone, timezone) || other.timezone == timezone)&&(identical(other.totalCapacity, totalCapacity) || other.totalCapacity == totalCapacity)&&(identical(other.safetyMarginPct, safetyMarginPct) || other.safetyMarginPct == safetyMarginPct)&&(identical(other.shuttleTravelMinutes, shuttleTravelMinutes) || other.shuttleTravelMinutes == shuttleTravelMinutes)&&(identical(other.terminalLeadMinutes, terminalLeadMinutes) || other.terminalLeadMinutes == terminalLeadMinutes)&&(identical(other.landingDelayMinutes, landingDelayMinutes) || other.landingDelayMinutes == landingDelayMinutes)&&(identical(other.shuttleTracking, shuttleTracking) || other.shuttleTracking == shuttleTracking)&&(identical(other.bookableCapacity, bookableCapacity) || other.bookableCapacity == bookableCapacity)&&(identical(other.effectiveCapacity, effectiveCapacity) || other.effectiveCapacity == effectiveCapacity)&&(identical(other.capacitySource, capacitySource) || other.capacitySource == capacitySource));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
 int get hashCode {
-    return Object.hash(runtimeType,id,name,address,timezone,totalCapacity,safetyMarginPct,shuttleTravelMinutes,terminalLeadMinutes,landingDelayMinutes,shuttleTracking,bookableCapacity);
+    return Object.hash(runtimeType,id,name,address,timezone,totalCapacity,safetyMarginPct,shuttleTravelMinutes,terminalLeadMinutes,landingDelayMinutes,shuttleTracking,bookableCapacity,effectiveCapacity,capacitySource);
 }
 
 @override
 String toString() {
-    return 'ParkingSettingsModel(id: $id, name: $name, address: $address, timezone: $timezone, totalCapacity: $totalCapacity, safetyMarginPct: $safetyMarginPct, shuttleTravelMinutes: $shuttleTravelMinutes, terminalLeadMinutes: $terminalLeadMinutes, landingDelayMinutes: $landingDelayMinutes, shuttleTracking: $shuttleTracking, bookableCapacity: $bookableCapacity)';
+    return 'ParkingSettingsModel(id: $id, name: $name, address: $address, timezone: $timezone, totalCapacity: $totalCapacity, safetyMarginPct: $safetyMarginPct, shuttleTravelMinutes: $shuttleTravelMinutes, terminalLeadMinutes: $terminalLeadMinutes, landingDelayMinutes: $landingDelayMinutes, shuttleTracking: $shuttleTracking, bookableCapacity: $bookableCapacity, effectiveCapacity: $effectiveCapacity, capacitySource: $capacitySource)';
 }
 
 
@@ -579,7 +589,7 @@ abstract mixin class _$ParkingSettingsModelCopyWith<$Res> implements $ParkingSet
   factory _$ParkingSettingsModelCopyWith(_ParkingSettingsModel value, $Res Function(_ParkingSettingsModel) _then) = __$ParkingSettingsModelCopyWithImpl;
 @override @useResult
 $Res call({
- String id, String name, String? address, String timezone, int totalCapacity, int safetyMarginPct, int shuttleTravelMinutes, int terminalLeadMinutes, int landingDelayMinutes, String shuttleTracking, int bookableCapacity
+ String id, String name, String? address, String timezone, int totalCapacity, int safetyMarginPct, int shuttleTravelMinutes, int terminalLeadMinutes, int landingDelayMinutes, String shuttleTracking, int bookableCapacity, int effectiveCapacity, String capacitySource
 });
 
 
@@ -596,7 +606,7 @@ class __$ParkingSettingsModelCopyWithImpl<$Res>
 
 /// Create a copy of ParkingSettingsModel
 /// with the given fields replaced by the non-null parameter values.
-@override @pragma('vm:prefer-inline') $Res call({Object? id = null,Object? name = null,Object? address = freezed,Object? timezone = null,Object? totalCapacity = null,Object? safetyMarginPct = null,Object? shuttleTravelMinutes = null,Object? terminalLeadMinutes = null,Object? landingDelayMinutes = null,Object? shuttleTracking = null,Object? bookableCapacity = null,}) {
+@override @pragma('vm:prefer-inline') $Res call({Object? id = null,Object? name = null,Object? address = freezed,Object? timezone = null,Object? totalCapacity = null,Object? safetyMarginPct = null,Object? shuttleTravelMinutes = null,Object? terminalLeadMinutes = null,Object? landingDelayMinutes = null,Object? shuttleTracking = null,Object? bookableCapacity = null,Object? effectiveCapacity = null,Object? capacitySource = null,}) {
   return _then(_ParkingSettingsModel(
 id: null == id ? _self.id : id // ignore: cast_nullable_to_non_nullable
 as String,name: null == name ? _self.name : name // ignore: cast_nullable_to_non_nullable
@@ -609,7 +619,9 @@ as int,terminalLeadMinutes: null == terminalLeadMinutes ? _self.terminalLeadMinu
 as int,landingDelayMinutes: null == landingDelayMinutes ? _self.landingDelayMinutes : landingDelayMinutes // ignore: cast_nullable_to_non_nullable
 as int,shuttleTracking: null == shuttleTracking ? _self.shuttleTracking : shuttleTracking // ignore: cast_nullable_to_non_nullable
 as String,bookableCapacity: null == bookableCapacity ? _self.bookableCapacity : bookableCapacity // ignore: cast_nullable_to_non_nullable
-as int,
+as int,effectiveCapacity: null == effectiveCapacity ? _self.effectiveCapacity : effectiveCapacity // ignore: cast_nullable_to_non_nullable
+as int,capacitySource: null == capacitySource ? _self.capacitySource : capacitySource // ignore: cast_nullable_to_non_nullable
+as String,
   ));
 }
 

@@ -35,7 +35,13 @@ et affectation des véhicules, navette au retour.
   l'annulation gratuite (voyageur ou loueur), **Plazo encaisse, puis reverse la part du loueur le lendemain de la fin du
   séjour** (ou selon le calendrier choisi), compte Stripe Express du loueur (routes seulement). Reste : écrans de l'espace
   pro (connexion Stripe, calendrier de reversement), validation juridique avant le paiement réel.
-- [ ] Jalon 4 — Cartographie et affectation
+- [ ] Jalon 4 — Cartographie et affectation. **Capacité = places du plan (09/10/2026)** : dès que le plan a de la
+  place, son nombre compte partout (réservations du personnel, imports, aperçu du formulaire, planning, recherche et
+  réservation du site, paiement tardif, tableau de bord, Plateforme) : la capacité des files actives, sinon les places
+  actives (posées à la main et réservées comprises), sinon le chiffre déclaré (`effectiveCapacity` dans
+  `backend/src/domain/capacity.ts`, lu dans la même requête que la charge des nuits) ; la marge s'applique ensuite.
+  Le chiffre déclaré (`totalCapacity`) reste enregistré et ne sert que sans plan ; Réglages (web et app) l'affichent en
+  lecture seule « Calculé depuis le plan du parking » dès que le plan compte.
 - [ ] **Jalon 5 — Navette au retour** (en cours, maquette validée « Votre retour ») : fait — **suivi automatique du vol
   retour** (AeroDataBox par RapidAPI, AirLabs en secours ; rafraîchi par un cron et à la lecture avec un cache de
   5 min ; à l'atterrissage : push au personnel « Vol TO 3627 atterri · C. Martin » et SMS au voyageur, une seule fois),
@@ -542,8 +548,8 @@ Documentation interactive : `/api/docs` (Swagger). Toutes les routes sont sous `
 | GET / POST | `/internal/staff` | Équipe (gérant) |
 | PATCH | `/internal/staff/:id` | Rôle, activation, prénom et nom (gérant) |
 | POST | `/internal/staff/:id/reset-password` | Mot de passe provisoire (gérant) |
-| GET | `/internal/parking` | Parking et capacité réservable |
-| PATCH | `/internal/parkings/:id` | Réglages du parking (gérant, tracé) |
+| GET | `/internal/parking` | Parking et capacité : `totalCapacity` / `declaredCapacity` (chiffre déclaré), `effectiveCapacity` et `capacitySource` (`files`, `spots` ou `declared`), `bookableCapacity` (capacité retenue moins la marge) |
+| PATCH | `/internal/parkings/:id` | Réglages du parking (gérant, tracé ; `totalCapacity` = chiffre déclaré, utilisé sans plan) |
 | GET | `/internal/planning?date=` | Arrivées, retours et charge des 7 nuits d'une journée |
 | GET | `/internal/capacity?arrivalAt=&returnAt=` | Charge de chaque nuit d'un séjour, nuits complètes |
 | GET / POST | `/internal/reservations` | Recherche (plaque, nom, téléphone, référence) / création |
@@ -626,6 +632,7 @@ Documentation interactive : `/api/docs` (Swagger). Toutes les routes sont sous `
 | GET | `/internal/platform/geo/buildings?bbox=` | Bâtiments BD TOPO de la vue (B-A, même relais) |
 | POST | `/internal/parkings/:id/plan/suggest-zones` | V-A : Claude lit la photo IGN du terrain et propose les zones (corps `{ allowGrass }`, vrai par défaut ; rien n'est enregistré ; 409 `ai_unavailable` sans `ANTHROPIC_API_KEY`) |
 | POST | `/internal/parkings/:id/plan/spots` | P-B : places posées à la main (rangée tracée sur la carte), gardées à la régénération ; 400 `duplicate_code` |
+| POST | `/internal/parkings/:id/plan/apply-capacity` | Copie le nombre de places actives dans le chiffre déclaré (anciennes versions de l'app ; depuis le 09/10/2026 le plan compte de lui-même) |
 | DELETE | `/internal/parkings/:id/plan/spots/:spotId` | P-B : retire une place posée à la main (409 `not_manual` pour une place générée) |
 | GET | `/internal/parkings/:id/files` | S-C : les files du parking avec leur pile (allée → fond), les arrivées à placer avec la file choisie, « à sortir aujourd'hui » |
 | PUT | `/internal/parkings/:id/files` | S-C : enregistre les files du plan (code, capacité, trait) ; 400 `duplicate_code`, 409 `file_occupied` |

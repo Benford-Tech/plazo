@@ -16,7 +16,8 @@ T _$identity<T>(T value) => value;
 /// @nodoc
 mixin _$ParkingSummaryModel {
 
- String get id; String get name; int get totalCapacity; double? get lat; double? get lng;
+ String get id; String get name; int get totalCapacity; double? get lat; double? get lng;/// 09/10/2026: the capacity used everywhere and its source ("files", "spots", "declared").
+ int get effectiveCapacity; String get capacitySource;
 /// Create a copy of ParkingSummaryModel
 /// with the given fields replaced by the non-null parameter values.
 @JsonKey(includeFromJson: false, includeToJson: false)
@@ -30,20 +31,20 @@ $ParkingSummaryModelCopyWith<ParkingSummaryModel> get copyWith => _$ParkingSumma
 @override
 bool operator ==(Object other) {
   final _this = this as ParkingSummaryModel;
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is ParkingSummaryModel&&(identical(other.id, _this.id) || other.id == _this.id)&&(identical(other.name, _this.name) || other.name == _this.name)&&(identical(other.totalCapacity, _this.totalCapacity) || other.totalCapacity == _this.totalCapacity)&&(identical(other.lat, _this.lat) || other.lat == _this.lat)&&(identical(other.lng, _this.lng) || other.lng == _this.lng));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is ParkingSummaryModel&&(identical(other.id, _this.id) || other.id == _this.id)&&(identical(other.name, _this.name) || other.name == _this.name)&&(identical(other.totalCapacity, _this.totalCapacity) || other.totalCapacity == _this.totalCapacity)&&(identical(other.lat, _this.lat) || other.lat == _this.lat)&&(identical(other.lng, _this.lng) || other.lng == _this.lng)&&(identical(other.effectiveCapacity, _this.effectiveCapacity) || other.effectiveCapacity == _this.effectiveCapacity)&&(identical(other.capacitySource, _this.capacitySource) || other.capacitySource == _this.capacitySource));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
 int get hashCode {
   final _this = this as ParkingSummaryModel;
-  return Object.hash(runtimeType,_this.id,_this.name,_this.totalCapacity,_this.lat,_this.lng);
+  return Object.hash(runtimeType,_this.id,_this.name,_this.totalCapacity,_this.lat,_this.lng,_this.effectiveCapacity,_this.capacitySource);
 }
 
 @override
 String toString() {
   final _this = this as ParkingSummaryModel;
-  return 'ParkingSummaryModel(id: ${_this.id}, name: ${_this.name}, totalCapacity: ${_this.totalCapacity}, lat: ${_this.lat}, lng: ${_this.lng})';
+  return 'ParkingSummaryModel(id: ${_this.id}, name: ${_this.name}, totalCapacity: ${_this.totalCapacity}, lat: ${_this.lat}, lng: ${_this.lng}, effectiveCapacity: ${_this.effectiveCapacity}, capacitySource: ${_this.capacitySource})';
 }
 
 
@@ -54,7 +55,7 @@ abstract mixin class $ParkingSummaryModelCopyWith<$Res>  {
   factory $ParkingSummaryModelCopyWith(ParkingSummaryModel value, $Res Function(ParkingSummaryModel) _then) = _$ParkingSummaryModelCopyWithImpl;
 @useResult
 $Res call({
- String id, String name, int totalCapacity, double? lat, double? lng
+ String id, String name, int totalCapacity, double? lat, double? lng, int effectiveCapacity, String capacitySource
 });
 
 
@@ -71,14 +72,16 @@ class _$ParkingSummaryModelCopyWithImpl<$Res>
 
 /// Create a copy of ParkingSummaryModel
 /// with the given fields replaced by the non-null parameter values.
-@pragma('vm:prefer-inline') @override $Res call({Object? id = null,Object? name = null,Object? totalCapacity = null,Object? lat = freezed,Object? lng = freezed,}) {
+@pragma('vm:prefer-inline') @override $Res call({Object? id = null,Object? name = null,Object? totalCapacity = null,Object? lat = freezed,Object? lng = freezed,Object? effectiveCapacity = null,Object? capacitySource = null,}) {
   return _then(ParkingSummaryModel(
 id: null == id ? _self.id : id // ignore: cast_nullable_to_non_nullable
 as String,name: null == name ? _self.name : name // ignore: cast_nullable_to_non_nullable
 as String,totalCapacity: null == totalCapacity ? _self.totalCapacity : totalCapacity // ignore: cast_nullable_to_non_nullable
 as int,lat: freezed == lat ? _self.lat : lat // ignore: cast_nullable_to_non_nullable
 as double?,lng: freezed == lng ? _self.lng : lng // ignore: cast_nullable_to_non_nullable
-as double?,
+as double?,effectiveCapacity: null == effectiveCapacity ? _self.effectiveCapacity : effectiveCapacity // ignore: cast_nullable_to_non_nullable
+as int,capacitySource: null == capacitySource ? _self.capacitySource : capacitySource // ignore: cast_nullable_to_non_nullable
+as String,
   ));
 }
 
@@ -163,10 +166,10 @@ return $default(_that);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( String id,  String name,  int totalCapacity,  double? lat,  double? lng)?  $default,{required TResult orElse(),}) {final _that = this;
+@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( String id,  String name,  int totalCapacity,  double? lat,  double? lng,  int effectiveCapacity,  String capacitySource)?  $default,{required TResult orElse(),}) {final _that = this;
 switch (_that) {
 case _ParkingSummaryModel() when $default != null:
-return $default(_that.id,_that.name,_that.totalCapacity,_that.lat,_that.lng);case _:
+return $default(_that.id,_that.name,_that.totalCapacity,_that.lat,_that.lng,_that.effectiveCapacity,_that.capacitySource);case _:
   return orElse();
 
 }
@@ -184,10 +187,10 @@ return $default(_that.id,_that.name,_that.totalCapacity,_that.lat,_that.lng);cas
 /// }
 /// ```
 
-@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( String id,  String name,  int totalCapacity,  double? lat,  double? lng)  $default,) {final _that = this;
+@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( String id,  String name,  int totalCapacity,  double? lat,  double? lng,  int effectiveCapacity,  String capacitySource)  $default,) {final _that = this;
 switch (_that) {
 case _ParkingSummaryModel():
-return $default(_that.id,_that.name,_that.totalCapacity,_that.lat,_that.lng);case _:
+return $default(_that.id,_that.name,_that.totalCapacity,_that.lat,_that.lng,_that.effectiveCapacity,_that.capacitySource);case _:
   throw StateError('Unexpected subclass');
 
 }
@@ -204,10 +207,10 @@ return $default(_that.id,_that.name,_that.totalCapacity,_that.lat,_that.lng);cas
 /// }
 /// ```
 
-@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( String id,  String name,  int totalCapacity,  double? lat,  double? lng)?  $default,) {final _that = this;
+@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( String id,  String name,  int totalCapacity,  double? lat,  double? lng,  int effectiveCapacity,  String capacitySource)?  $default,) {final _that = this;
 switch (_that) {
 case _ParkingSummaryModel() when $default != null:
-return $default(_that.id,_that.name,_that.totalCapacity,_that.lat,_that.lng);case _:
+return $default(_that.id,_that.name,_that.totalCapacity,_that.lat,_that.lng,_that.effectiveCapacity,_that.capacitySource);case _:
   return null;
 
 }
@@ -219,7 +222,7 @@ return $default(_that.id,_that.name,_that.totalCapacity,_that.lat,_that.lng);cas
 @JsonSerializable()
 
 class _ParkingSummaryModel implements ParkingSummaryModel {
-  const _ParkingSummaryModel({required this.id, required this.name, required this.totalCapacity, this.lat, this.lng});
+  const _ParkingSummaryModel({required this.id, required this.name, required this.totalCapacity, this.lat, this.lng, this.effectiveCapacity = 0, this.capacitySource = 'declared'});
   factory _ParkingSummaryModel.fromJson(Map<String, dynamic> json) => _$ParkingSummaryModelFromJson(json);
 
 @override final  String id;
@@ -227,6 +230,9 @@ class _ParkingSummaryModel implements ParkingSummaryModel {
 @override final  int totalCapacity;
 @override final  double? lat;
 @override final  double? lng;
+/// 09/10/2026: the capacity used everywhere and its source ("files", "spots", "declared").
+@override@JsonKey() final  int effectiveCapacity;
+@override@JsonKey() final  String capacitySource;
 
 /// Create a copy of ParkingSummaryModel
 /// with the given fields replaced by the non-null parameter values.
@@ -241,18 +247,18 @@ Map<String, dynamic> toJson() {
 
 @override
 bool operator ==(Object other) {
-    return identical(this, other) || (other.runtimeType == runtimeType&&other is _ParkingSummaryModel&&(identical(other.id, id) || other.id == id)&&(identical(other.name, name) || other.name == name)&&(identical(other.totalCapacity, totalCapacity) || other.totalCapacity == totalCapacity)&&(identical(other.lat, lat) || other.lat == lat)&&(identical(other.lng, lng) || other.lng == lng));
+    return identical(this, other) || (other.runtimeType == runtimeType&&other is _ParkingSummaryModel&&(identical(other.id, id) || other.id == id)&&(identical(other.name, name) || other.name == name)&&(identical(other.totalCapacity, totalCapacity) || other.totalCapacity == totalCapacity)&&(identical(other.lat, lat) || other.lat == lat)&&(identical(other.lng, lng) || other.lng == lng)&&(identical(other.effectiveCapacity, effectiveCapacity) || other.effectiveCapacity == effectiveCapacity)&&(identical(other.capacitySource, capacitySource) || other.capacitySource == capacitySource));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
 int get hashCode {
-    return Object.hash(runtimeType,id,name,totalCapacity,lat,lng);
+    return Object.hash(runtimeType,id,name,totalCapacity,lat,lng,effectiveCapacity,capacitySource);
 }
 
 @override
 String toString() {
-    return 'ParkingSummaryModel(id: $id, name: $name, totalCapacity: $totalCapacity, lat: $lat, lng: $lng)';
+    return 'ParkingSummaryModel(id: $id, name: $name, totalCapacity: $totalCapacity, lat: $lat, lng: $lng, effectiveCapacity: $effectiveCapacity, capacitySource: $capacitySource)';
 }
 
 
@@ -263,7 +269,7 @@ abstract mixin class _$ParkingSummaryModelCopyWith<$Res> implements $ParkingSumm
   factory _$ParkingSummaryModelCopyWith(_ParkingSummaryModel value, $Res Function(_ParkingSummaryModel) _then) = __$ParkingSummaryModelCopyWithImpl;
 @override @useResult
 $Res call({
- String id, String name, int totalCapacity, double? lat, double? lng
+ String id, String name, int totalCapacity, double? lat, double? lng, int effectiveCapacity, String capacitySource
 });
 
 
@@ -280,14 +286,16 @@ class __$ParkingSummaryModelCopyWithImpl<$Res>
 
 /// Create a copy of ParkingSummaryModel
 /// with the given fields replaced by the non-null parameter values.
-@override @pragma('vm:prefer-inline') $Res call({Object? id = null,Object? name = null,Object? totalCapacity = null,Object? lat = freezed,Object? lng = freezed,}) {
+@override @pragma('vm:prefer-inline') $Res call({Object? id = null,Object? name = null,Object? totalCapacity = null,Object? lat = freezed,Object? lng = freezed,Object? effectiveCapacity = null,Object? capacitySource = null,}) {
   return _then(_ParkingSummaryModel(
 id: null == id ? _self.id : id // ignore: cast_nullable_to_non_nullable
 as String,name: null == name ? _self.name : name // ignore: cast_nullable_to_non_nullable
 as String,totalCapacity: null == totalCapacity ? _self.totalCapacity : totalCapacity // ignore: cast_nullable_to_non_nullable
 as int,lat: freezed == lat ? _self.lat : lat // ignore: cast_nullable_to_non_nullable
 as double?,lng: freezed == lng ? _self.lng : lng // ignore: cast_nullable_to_non_nullable
-as double?,
+as double?,effectiveCapacity: null == effectiveCapacity ? _self.effectiveCapacity : effectiveCapacity // ignore: cast_nullable_to_non_nullable
+as int,capacitySource: null == capacitySource ? _self.capacitySource : capacitySource // ignore: cast_nullable_to_non_nullable
+as String,
   ));
 }
 
@@ -906,7 +914,10 @@ as List<List<double>>,
 /// @nodoc
 mixin _$ParkingPlanViewModel {
 
- ParkingPlanModel get plan; List<SpotModel> get spots; int get activeSpots; int get totalCapacity;
+ ParkingPlanModel get plan; List<SpotModel> get spots; int get activeSpots;/// The declared figure (`applyCapacity` copies the active spots into it).
+ int get totalCapacity;/// 09/10/2026: the capacity used everywhere (files, else active spots, else declared) and its
+/// source; the defaults read an older server.
+ int get effectiveCapacity; String get capacitySource;
 /// Create a copy of ParkingPlanViewModel
 /// with the given fields replaced by the non-null parameter values.
 @JsonKey(includeFromJson: false, includeToJson: false)
@@ -920,20 +931,20 @@ $ParkingPlanViewModelCopyWith<ParkingPlanViewModel> get copyWith => _$ParkingPla
 @override
 bool operator ==(Object other) {
   final _this = this as ParkingPlanViewModel;
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is ParkingPlanViewModel&&(identical(other.plan, _this.plan) || other.plan == _this.plan)&&const DeepCollectionEquality().equals(other.spots, _this.spots)&&(identical(other.activeSpots, _this.activeSpots) || other.activeSpots == _this.activeSpots)&&(identical(other.totalCapacity, _this.totalCapacity) || other.totalCapacity == _this.totalCapacity));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is ParkingPlanViewModel&&(identical(other.plan, _this.plan) || other.plan == _this.plan)&&const DeepCollectionEquality().equals(other.spots, _this.spots)&&(identical(other.activeSpots, _this.activeSpots) || other.activeSpots == _this.activeSpots)&&(identical(other.totalCapacity, _this.totalCapacity) || other.totalCapacity == _this.totalCapacity)&&(identical(other.effectiveCapacity, _this.effectiveCapacity) || other.effectiveCapacity == _this.effectiveCapacity)&&(identical(other.capacitySource, _this.capacitySource) || other.capacitySource == _this.capacitySource));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
 int get hashCode {
   final _this = this as ParkingPlanViewModel;
-  return Object.hash(runtimeType,_this.plan,const DeepCollectionEquality().hash(_this.spots),_this.activeSpots,_this.totalCapacity);
+  return Object.hash(runtimeType,_this.plan,const DeepCollectionEquality().hash(_this.spots),_this.activeSpots,_this.totalCapacity,_this.effectiveCapacity,_this.capacitySource);
 }
 
 @override
 String toString() {
   final _this = this as ParkingPlanViewModel;
-  return 'ParkingPlanViewModel(plan: ${_this.plan}, spots: ${_this.spots}, activeSpots: ${_this.activeSpots}, totalCapacity: ${_this.totalCapacity})';
+  return 'ParkingPlanViewModel(plan: ${_this.plan}, spots: ${_this.spots}, activeSpots: ${_this.activeSpots}, totalCapacity: ${_this.totalCapacity}, effectiveCapacity: ${_this.effectiveCapacity}, capacitySource: ${_this.capacitySource})';
 }
 
 
@@ -944,7 +955,7 @@ abstract mixin class $ParkingPlanViewModelCopyWith<$Res>  {
   factory $ParkingPlanViewModelCopyWith(ParkingPlanViewModel value, $Res Function(ParkingPlanViewModel) _then) = _$ParkingPlanViewModelCopyWithImpl;
 @useResult
 $Res call({
- ParkingPlanModel plan, List<SpotModel> spots, int activeSpots, int totalCapacity
+ ParkingPlanModel plan, List<SpotModel> spots, int activeSpots, int totalCapacity, int effectiveCapacity, String capacitySource
 });
 
 
@@ -961,13 +972,15 @@ class _$ParkingPlanViewModelCopyWithImpl<$Res>
 
 /// Create a copy of ParkingPlanViewModel
 /// with the given fields replaced by the non-null parameter values.
-@pragma('vm:prefer-inline') @override $Res call({Object? plan = null,Object? spots = null,Object? activeSpots = null,Object? totalCapacity = null,}) {
+@pragma('vm:prefer-inline') @override $Res call({Object? plan = null,Object? spots = null,Object? activeSpots = null,Object? totalCapacity = null,Object? effectiveCapacity = null,Object? capacitySource = null,}) {
   return _then(ParkingPlanViewModel(
 plan: null == plan ? _self.plan : plan // ignore: cast_nullable_to_non_nullable
 as ParkingPlanModel,spots: null == spots ? _self.spots : spots // ignore: cast_nullable_to_non_nullable
 as List<SpotModel>,activeSpots: null == activeSpots ? _self.activeSpots : activeSpots // ignore: cast_nullable_to_non_nullable
 as int,totalCapacity: null == totalCapacity ? _self.totalCapacity : totalCapacity // ignore: cast_nullable_to_non_nullable
-as int,
+as int,effectiveCapacity: null == effectiveCapacity ? _self.effectiveCapacity : effectiveCapacity // ignore: cast_nullable_to_non_nullable
+as int,capacitySource: null == capacitySource ? _self.capacitySource : capacitySource // ignore: cast_nullable_to_non_nullable
+as String,
   ));
 }
 /// Create a copy of ParkingPlanViewModel
@@ -1061,10 +1074,10 @@ return $default(_that);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( ParkingPlanModel plan,  List<SpotModel> spots,  int activeSpots,  int totalCapacity)?  $default,{required TResult orElse(),}) {final _that = this;
+@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( ParkingPlanModel plan,  List<SpotModel> spots,  int activeSpots,  int totalCapacity,  int effectiveCapacity,  String capacitySource)?  $default,{required TResult orElse(),}) {final _that = this;
 switch (_that) {
 case _ParkingPlanViewModel() when $default != null:
-return $default(_that.plan,_that.spots,_that.activeSpots,_that.totalCapacity);case _:
+return $default(_that.plan,_that.spots,_that.activeSpots,_that.totalCapacity,_that.effectiveCapacity,_that.capacitySource);case _:
   return orElse();
 
 }
@@ -1082,10 +1095,10 @@ return $default(_that.plan,_that.spots,_that.activeSpots,_that.totalCapacity);ca
 /// }
 /// ```
 
-@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( ParkingPlanModel plan,  List<SpotModel> spots,  int activeSpots,  int totalCapacity)  $default,) {final _that = this;
+@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( ParkingPlanModel plan,  List<SpotModel> spots,  int activeSpots,  int totalCapacity,  int effectiveCapacity,  String capacitySource)  $default,) {final _that = this;
 switch (_that) {
 case _ParkingPlanViewModel():
-return $default(_that.plan,_that.spots,_that.activeSpots,_that.totalCapacity);case _:
+return $default(_that.plan,_that.spots,_that.activeSpots,_that.totalCapacity,_that.effectiveCapacity,_that.capacitySource);case _:
   throw StateError('Unexpected subclass');
 
 }
@@ -1102,10 +1115,10 @@ return $default(_that.plan,_that.spots,_that.activeSpots,_that.totalCapacity);ca
 /// }
 /// ```
 
-@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( ParkingPlanModel plan,  List<SpotModel> spots,  int activeSpots,  int totalCapacity)?  $default,) {final _that = this;
+@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( ParkingPlanModel plan,  List<SpotModel> spots,  int activeSpots,  int totalCapacity,  int effectiveCapacity,  String capacitySource)?  $default,) {final _that = this;
 switch (_that) {
 case _ParkingPlanViewModel() when $default != null:
-return $default(_that.plan,_that.spots,_that.activeSpots,_that.totalCapacity);case _:
+return $default(_that.plan,_that.spots,_that.activeSpots,_that.totalCapacity,_that.effectiveCapacity,_that.capacitySource);case _:
   return null;
 
 }
@@ -1117,7 +1130,7 @@ return $default(_that.plan,_that.spots,_that.activeSpots,_that.totalCapacity);ca
 @JsonSerializable()
 
 class _ParkingPlanViewModel implements ParkingPlanViewModel {
-  const _ParkingPlanViewModel({required this.plan,  List<SpotModel> spots = const [], required this.activeSpots, required this.totalCapacity}): _spots = spots;
+  const _ParkingPlanViewModel({required this.plan,  List<SpotModel> spots = const [], required this.activeSpots, required this.totalCapacity, this.effectiveCapacity = 0, this.capacitySource = 'declared'}): _spots = spots;
   factory _ParkingPlanViewModel.fromJson(Map<String, dynamic> json) => _$ParkingPlanViewModelFromJson(json);
 
 @override final  ParkingPlanModel plan;
@@ -1129,7 +1142,12 @@ class _ParkingPlanViewModel implements ParkingPlanViewModel {
 }
 
 @override final  int activeSpots;
+/// The declared figure (`applyCapacity` copies the active spots into it).
 @override final  int totalCapacity;
+/// 09/10/2026: the capacity used everywhere (files, else active spots, else declared) and its
+/// source; the defaults read an older server.
+@override@JsonKey() final  int effectiveCapacity;
+@override@JsonKey() final  String capacitySource;
 
 /// Create a copy of ParkingPlanViewModel
 /// with the given fields replaced by the non-null parameter values.
@@ -1144,18 +1162,18 @@ Map<String, dynamic> toJson() {
 
 @override
 bool operator ==(Object other) {
-    return identical(this, other) || (other.runtimeType == runtimeType&&other is _ParkingPlanViewModel&&(identical(other.plan, plan) || other.plan == plan)&&const DeepCollectionEquality().equals(other.spots, _spots)&&(identical(other.activeSpots, activeSpots) || other.activeSpots == activeSpots)&&(identical(other.totalCapacity, totalCapacity) || other.totalCapacity == totalCapacity));
+    return identical(this, other) || (other.runtimeType == runtimeType&&other is _ParkingPlanViewModel&&(identical(other.plan, plan) || other.plan == plan)&&const DeepCollectionEquality().equals(other.spots, _spots)&&(identical(other.activeSpots, activeSpots) || other.activeSpots == activeSpots)&&(identical(other.totalCapacity, totalCapacity) || other.totalCapacity == totalCapacity)&&(identical(other.effectiveCapacity, effectiveCapacity) || other.effectiveCapacity == effectiveCapacity)&&(identical(other.capacitySource, capacitySource) || other.capacitySource == capacitySource));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
 int get hashCode {
-    return Object.hash(runtimeType,plan,const DeepCollectionEquality().hash(_spots),activeSpots,totalCapacity);
+    return Object.hash(runtimeType,plan,const DeepCollectionEquality().hash(_spots),activeSpots,totalCapacity,effectiveCapacity,capacitySource);
 }
 
 @override
 String toString() {
-    return 'ParkingPlanViewModel(plan: $plan, spots: $spots, activeSpots: $activeSpots, totalCapacity: $totalCapacity)';
+    return 'ParkingPlanViewModel(plan: $plan, spots: $spots, activeSpots: $activeSpots, totalCapacity: $totalCapacity, effectiveCapacity: $effectiveCapacity, capacitySource: $capacitySource)';
 }
 
 
@@ -1166,7 +1184,7 @@ abstract mixin class _$ParkingPlanViewModelCopyWith<$Res> implements $ParkingPla
   factory _$ParkingPlanViewModelCopyWith(_ParkingPlanViewModel value, $Res Function(_ParkingPlanViewModel) _then) = __$ParkingPlanViewModelCopyWithImpl;
 @override @useResult
 $Res call({
- ParkingPlanModel plan, List<SpotModel> spots, int activeSpots, int totalCapacity
+ ParkingPlanModel plan, List<SpotModel> spots, int activeSpots, int totalCapacity, int effectiveCapacity, String capacitySource
 });
 
 
@@ -1183,13 +1201,15 @@ class __$ParkingPlanViewModelCopyWithImpl<$Res>
 
 /// Create a copy of ParkingPlanViewModel
 /// with the given fields replaced by the non-null parameter values.
-@override @pragma('vm:prefer-inline') $Res call({Object? plan = null,Object? spots = null,Object? activeSpots = null,Object? totalCapacity = null,}) {
+@override @pragma('vm:prefer-inline') $Res call({Object? plan = null,Object? spots = null,Object? activeSpots = null,Object? totalCapacity = null,Object? effectiveCapacity = null,Object? capacitySource = null,}) {
   return _then(_ParkingPlanViewModel(
 plan: null == plan ? _self.plan : plan // ignore: cast_nullable_to_non_nullable
 as ParkingPlanModel,spots: null == spots ? _self._spots : spots // ignore: cast_nullable_to_non_nullable
 as List<SpotModel>,activeSpots: null == activeSpots ? _self.activeSpots : activeSpots // ignore: cast_nullable_to_non_nullable
 as int,totalCapacity: null == totalCapacity ? _self.totalCapacity : totalCapacity // ignore: cast_nullable_to_non_nullable
-as int,
+as int,effectiveCapacity: null == effectiveCapacity ? _self.effectiveCapacity : effectiveCapacity // ignore: cast_nullable_to_non_nullable
+as int,capacitySource: null == capacitySource ? _self.capacitySource : capacitySource // ignore: cast_nullable_to_non_nullable
+as String,
   ));
 }
 

@@ -17,7 +17,7 @@ mixin _$ProPlanState {
 
  ViewState get viewState; ViewState get actionState; PlanStep get step; ParkingSummaryModel? get parking; ParkingPlanViewModel? get view;/// Where the map looks: the address, the phone, or the saved outline.
  LatLng? get center; List<GeocodeResultModel> get results; bool get searching; LocationAccess? get locationProblem;/// The corners being drawn (open ring, in order).
- List<LatLng> get corners; PlanEstimateModel? get estimate; String get layout;/// The last generation applied the capacity.
+ List<LatLng> get corners; PlanEstimateModel? get estimate; String get layout;/// The spots were just generated (their number is the capacity used everywhere).
  bool get generated; String? get errorCode;
 /// Create a copy of ProPlanState
 /// with the given fields replaced by the non-null parameter values.
@@ -294,7 +294,7 @@ class _ProPlanState extends ProPlanState {
 
 @override final  PlanEstimateModel? estimate;
 @override@JsonKey() final  String layout;
-/// The last generation applied the capacity.
+/// The spots were just generated (their number is the capacity used everywhere).
 @override@JsonKey() final  bool generated;
 @override final  String? errorCode;
 

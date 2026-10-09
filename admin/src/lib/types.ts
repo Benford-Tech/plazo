@@ -58,6 +58,14 @@ export interface Parking {
   landingDelayMinutes: number;
   /** R-B (07/10/2026): who sees the position of the shuttles. */
   shuttleTracking: ShuttleTracking;
+  /**
+   * 09/10/2026: `totalCapacity` and `declaredCapacity` are the figure typed by the operator;
+   * `effectiveCapacity` is the one used everywhere (the plan's files, else its active spots, else
+   * the declared figure) and `bookableCapacity` is taken from it.
+   */
+  declaredCapacity: number;
+  effectiveCapacity: number;
+  capacitySource: CapacitySource;
   bookableCapacity: number;
   /** The parking's position (its address's when not placed), null when unknown. */
   lat: number | null;
@@ -66,6 +74,9 @@ export interface Parking {
 
 /** R-B (07/10/2026): nobody (the drivers do not share it), the team only, or the team and the travellers. */
 export type ShuttleTracking = "off" | "team" | "everyone";
+
+/** Where the capacity used everywhere comes from (09/10/2026). */
+export type CapacitySource = "files" | "spots" | "declared";
 
 export interface ParkingSettings {
   name: string;
@@ -578,6 +589,7 @@ export interface PlatformOperator {
   /** Fictional operator of the demo seed (backend `npm run seed:demo`). */
   isDemo?: boolean;
   parkings: number;
+  /** Sum of the parkings' capacity used everywhere (the plan's, else the declared figure; 09/10/2026). */
   places: number;
   manager: { name: string; email: string; emailVerified: boolean } | null;
   listing: { id: string; status: ListingStatus } | null;
@@ -644,7 +656,10 @@ export interface PlatformListing {
     id: string;
     name: string;
     address: string | null;
+    /** The declared figure. */
     totalCapacity: number;
+    /** The capacity used everywhere (09/10/2026; missing from an older API). */
+    effectiveCapacity?: number;
   };
   operator: { id: string; name: string; status: OperatorStatus };
   pricingTiers: PricingTier[];

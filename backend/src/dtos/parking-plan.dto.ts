@@ -206,6 +206,7 @@ export class GenerateSpotsDto {
   @IsIn(LAYOUT_KEYS, { message: 'invalid_layout' })
   public layout: (typeof LAYOUT_KEYS)[number];
 
+  /** Also copies the active spots into the declared figure (older apps; the plan's figure counts by itself since 09/10/2026). */
   @IsOptional()
   @IsBoolean({ message: 'boolean' })
   public applyCapacity?: boolean;

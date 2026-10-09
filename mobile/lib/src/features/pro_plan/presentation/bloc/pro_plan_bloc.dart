@@ -150,7 +150,11 @@ class ProPlanBloc extends Bloc<ProPlanEvent, ProPlanState> {
           actionState: ViewState.success,
           view: view,
           generated: true,
-          parking: parking.copyWith(totalCapacity: view.totalCapacity),
+          parking: parking.copyWith(
+            totalCapacity: view.totalCapacity,
+            effectiveCapacity: view.effectiveCapacity,
+            capacitySource: view.capacitySource,
+          ),
         ),
       ),
     );

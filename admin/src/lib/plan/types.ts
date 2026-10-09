@@ -4,6 +4,7 @@ import type {
   LayoutKey,
   StayClass,
 } from "@/lib/capacity/types";
+import type { CapacitySource } from "@/lib/types";
 
 export type LandmarkKind =
   | "entrance"
@@ -82,7 +83,11 @@ export interface ParkingPlanView {
   plan: ParkingPlan;
   spots: Spot[];
   activeSpots: number;
+  /** The declared figure. */
   totalCapacity: number;
+  /** 09/10/2026: the capacity used everywhere (files, else active spots, else declared). */
+  effectiveCapacity: number;
+  capacitySource: CapacitySource;
 }
 
 export type PlanPatch = Partial<

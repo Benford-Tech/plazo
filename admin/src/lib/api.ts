@@ -432,11 +432,6 @@ export const adminApi = {
       `/internal/parkings/${parkingId}/plan/suggest-zones`,
       { method: "POST", body: json(options) },
     ),
-  applyPlanCapacity: (parkingId: string) =>
-    apiRequest<{ data: ParkingPlanView }>(
-      `/internal/parkings/${parkingId}/plan/apply-capacity`,
-      { method: "POST" },
-    ),
 
   // Bloc 2, step "Occupation".
   // S-C (07/10/2026): files as the unit of storage.

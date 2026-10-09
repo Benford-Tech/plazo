@@ -100,7 +100,6 @@ const api = vi.hoisted(() => ({
   addSpots: vi.fn(),
   deleteSpot: vi.fn(),
   updateSpot: vi.fn(),
-  applyPlanCapacity: vi.fn(),
   buildingsIn: vi.fn(async () => ({ buildings: [] })),
   parcelsAt: vi.fn(
     async (): Promise<{ parcels: unknown[] }> => ({ parcels: [] }),
@@ -155,6 +154,9 @@ const parking = {
   totalCapacity: 200,
   safetyMarginPct: 0,
   shuttleTravelMinutes: 8,
+  declaredCapacity: 200,
+  effectiveCapacity: 200,
+  capacitySource: "declared",
   bookableCapacity: 200,
   lat: 45.72,
   lng: 5.08,
@@ -180,6 +182,8 @@ const view = (
   spots,
   activeSpots: spots.filter((s) => s.active).length,
   totalCapacity,
+  effectiveCapacity: spots.filter((s) => s.active).length || totalCapacity,
+  capacitySource: spots.some((s) => s.active) ? "spots" : "declared",
 });
 
 function renderAt(path: string) {
@@ -204,32 +208,48 @@ beforeEach(() => {
 });
 
 describe("plan du parking (éditeur R-A, 07/10/2026)", () => {
-  it("génère les places numérotées depuis la disposition choisie, puis recalcule la capacité", async () => {
+  it("génère les places numérotées depuis la disposition choisie : elles deviennent la capacité utilisée partout", async () => {
     api.getParkingPlan.mockResolvedValue(view([]));
     api.updateParkingPlan.mockResolvedValue({ data: {} });
     api.replaceSpots.mockImplementation(
-      async (_id: string, layout: string, spots: ParkingPlanView["spots"]) => ({
-        data: view(
-          spots.map((s, i) => ({
-            ...s,
-            id: `s${i}`,
-            kind: "standard",
-            active: true,
-            lon: 0,
-            lat: 0,
-            depth: s.depth ?? null,
-            fileLength: s.fileLength ?? null,
-            stayClass: s.stayClass ?? null,
-            manual: false,
-          })),
-          200,
-        ),
-      }),
+      async (_id: string, layout: string, spots: ParkingPlanView["spots"]) => {
+        // The server now counts the spots: the parking reloaded after the change says so.
+        api.getParking.mockResolvedValue({
+          ...parking,
+          effectiveCapacity: spots.length,
+          capacitySource: "spots",
+          bookableCapacity: spots.length,
+        });
+        return {
+          data: view(
+            spots.map((s, i) => ({
+              ...s,
+              id: `s${i}`,
+              kind: "standard",
+              active: true,
+              lon: 0,
+              lat: 0,
+              depth: s.depth ?? null,
+              fileLength: s.fileLength ?? null,
+              stayClass: s.stayClass ?? null,
+              manual: false,
+            })),
+            200,
+          ),
+        };
+      },
     );
     renderAt("/parking/plan/places");
     expect(
       await screen.findByRole("heading", { name: "Plan du parking" }),
     ).toBeInTheDocument();
+    // The intro no longer speaks of a declared figure recalculated from the spots.
+    expect(
+      screen.getByText(
+        /leur nombre \(ou la capacité des files de voiturier\) est la capacité utilisée partout/,
+      ),
+    ).toBeInTheDocument();
+    expect(screen.queryByText(/capacité déclarée se recalcule/)).toBeNull();
     expect(screen.getByRole("link", { name: "Réglages" })).toHaveAttribute(
       "href",
       "/parking/reglages",
@@ -258,16 +278,16 @@ describe("plan du parking (éditeur R-A, 07/10/2026)", () => {
       spots.length,
     );
 
+    // No more "Recalculer la capacité": the generated spots are the capacity, read back from the server.
     expect(
-      await screen.findByText(`Recalculer la capacité → ${spots.length}`),
+      screen.queryByText(/Recalculer la capacité/),
+    ).not.toBeInTheDocument();
+    expect(
+      await screen.findByText(
+        `Capacité utilisée partout : ${spots.length} places`,
+      ),
     ).toBeInTheDocument();
-    api.applyPlanCapacity.mockResolvedValue({ data: view([], spots.length) });
-    fireEvent.click(
-      screen.getByText(`Recalculer la capacité → ${spots.length}`),
-    );
-    await waitFor(() =>
-      expect(api.applyPlanCapacity).toHaveBeenCalledWith("p1"),
-    );
+    expect(api.getParking).toHaveBeenCalledTimes(2);
   }, 30000);
 
   it("prépare seul un plan vide : parcelle, bâtiments, zones par Claude, places puis files (R-C, S-C)", async () => {
@@ -502,6 +522,12 @@ describe("plan du parking (éditeur R-A, 07/10/2026)", () => {
     );
     fireEvent.click(screen.getByRole("menuitem", { name: /Files seulement/ }));
     expect(confirm).toHaveBeenCalledTimes(1);
+    // The manager is told the capacity used everywhere changes (09/10/2026).
+    expect(confirm).toHaveBeenCalledWith(
+      expect.stringContaining(
+        "Sans files, la capacité utilisée partout redevient le nombre de places du plan",
+      ),
+    );
     await waitFor(() =>
       expect(api.replaceFiles).toHaveBeenCalledWith("p1", []),
     );
@@ -550,6 +576,15 @@ describe("plan du parking (éditeur R-A, 07/10/2026)", () => {
     );
     fireEvent.click(screen.getByRole("menuitem", { name: /Tout le plan/ }));
     expect(confirm).toHaveBeenCalledTimes(1);
+    // The plan is the capacity used everywhere (09/10/2026): emptied, it falls back on the declared figure.
+    expect(confirm).toHaveBeenCalledWith(
+      expect.stringContaining(
+        "La capacité utilisée partout redeviendra le chiffre déclaré dans les réglages",
+      ),
+    );
+    expect(confirm).not.toHaveBeenCalledWith(
+      expect.stringContaining("La capacité déclarée ne change pas"),
+    );
     // The spots laid by hand go too, and so do the files.
     await waitFor(() =>
       expect(api.replaceSpots).toHaveBeenCalledWith("p1", "valet24", [], {
@@ -765,10 +800,19 @@ describe("plan du parking (éditeur R-A, 07/10/2026)", () => {
         1,
       ),
     );
-    api.updateSpot.mockResolvedValue({ data: {} });
+    api.getParking.mockResolvedValue({
+      ...parking,
+      effectiveCapacity: 1,
+      capacitySource: "spots",
+    });
+    api.updateSpot.mockImplementation(async () => {
+      // The plan has no active spot left: the declared figure counts again.
+      api.getParking.mockResolvedValue(parking);
+      return { data: {} };
+    });
     renderAt("/parking/plan/places");
     expect(
-      await screen.findByText("Capacité déclarée à jour"),
+      await screen.findByText("Capacité utilisée partout : 1 place"),
     ).toBeInTheDocument();
     fireEvent.click(screen.getByText("click-spot"));
     await waitFor(() =>
@@ -777,7 +821,7 @@ describe("plan du parking (éditeur R-A, 07/10/2026)", () => {
       }),
     );
     expect(
-      await screen.findByText("Recalculer la capacité → 0"),
+      await screen.findByText("Capacité utilisée partout : 200 places"),
     ).toBeInTheDocument();
   });
 
@@ -836,6 +880,8 @@ describe("plan du parking (éditeur R-A, 07/10/2026)", () => {
     expect(screen.getByTestId("plan-count").textContent).toBe(
       "1 file · 2 voitures",
     );
+    // The files are the capacity used everywhere: the parking's figures are reloaded.
+    await waitFor(() => expect(api.getParking).toHaveBeenCalledTimes(2));
   });
 
   it("ne relance pas la préparation automatique sur un plan vidé par une réinitialisation", async () => {
