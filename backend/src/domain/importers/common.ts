@@ -51,3 +51,45 @@ export function valueAfterLabel(lines: string[], label: RegExp, otherLabels: Reg
   if (!next || otherLabels.some(l => l.test(next))) return undefined;
   return next;
 }
+
+/** Every run of whitespace as one space: a label and its value read alike on one line or two, or in table cells. */
+export function flatten(text: string): string {
+  return text.replace(/[\s\u00a0\u202f]+/g, ' ').trim();
+}
+
+/** "15/10/2026", "12:00" (or "12h00") -> "2026-10-15T12:00" (local wall-clock time). */
+export function numericDateTime(date: string, time: string): string | undefined {
+  const d = /^(\d{1,2})\/(\d{1,2})\/(\d{4})$/.exec(date.trim());
+  const t = /^(\d{1,2})[:h](\d{2})$/.exec(time.trim());
+  if (!d || !t) return undefined;
+  const pad = (n: string) => n.padStart(2, '0');
+  return `${d[3]}-${pad(d[2])}-${pad(d[1])}T${pad(t[1])}:${t[2]}`;
+}
+
+/** Amount printed after a label, "Montant de la réservation : 45,00 €" or "Total € 31,99" -> cents. */
+export function amountAfter(flat: string, label: RegExp): number | undefined {
+  const match = new RegExp(`${label.source}\\s*:?\\s*(?:€\\s*)?(\\d[\\d\\s]*,\\d{2})`, label.flags.replace('g', '')).exec(flat);
+  return match ? euroCents(match[1]) : undefined;
+}
+
+/** A phone number of the traveller: digits in groups, never running into a date that follows ("+33680736807 15/10/2026"). */
+export const PHONE = /\+?\d[\d .]{7,18}\d(?![\d/])/;
+
+/** A plate: the French "AB-123-CD" (dashes or spaces optional), else one token of letters, digits and dashes. */
+export const PLATE = /[A-Z]{2}[- ]?\d{3}[- ]?[A-Z]{2}(?![A-Z0-9])|[A-Z0-9][A-Z0-9-]{2,10}[A-Z0-9](?![A-Z0-9])/;
+
+/** The word "Nom" alone: never the end of "Prénom" (JavaScript's \\b treats "é" as a boundary). */
+export const NOM = /(?<![A-Za-zÀ-ÿ])Nom(?![A-Za-zÀ-ÿ])/;
+
+/** A 2- or 3-character airline code then the flight number: "EJU4315", "SN3587", "U2 4315". */
+export const FLIGHT = /[A-Z][A-Z0-9]{1,2} ?\d{1,5}[A-Z]?/;
+
+/**
+ * A comparator's email about a booking cancelled or changed: never read as a new booking (Claude classifies it, and
+ * nothing is created). The confirmations themselves mention "annulation gratuite", which is not enough.
+ */
+export function isCancellationOrChange(text: string): boolean {
+  return /\b(r[ée]servation (a [ée]t[ée] |est )?(annul[ée]e|modifi[ée]e)|annulation de (votre|la) r[ée]servation|modification de (votre|la) r[ée]servation|booking (has been )?(cancelled|canceled|modified))\b/i.test(
+    text,
+  );
+}

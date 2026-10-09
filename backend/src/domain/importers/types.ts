@@ -11,12 +11,18 @@ export interface ParsedBooking {
   returnFlight?: string;
   departureFlight?: string;
   passengers?: number;
+  /** Amount of the booking in euro cents (the parking's revenue: without the comparator's own booking fee). */
   priceCents?: number;
+  vehicleModel?: string;
+  vehicleColour?: string;
 }
 
 export interface EmailImporter {
   provider: string;
-  /** Addresses its confirmations come from: the setup wizard (G-B) puts them in the operator's forwarding rule. */
+  /**
+   * Who its confirmations come from, for the operator's forwarding rule (setup wizard, G-B): a full address when known
+   * (« info@allopark.com »), else the word of the comparator's domain (« parclick »), which a Gmail filter matches.
+   */
   senders: string[];
   /** True when the text looks like this provider's confirmation. */
   detect(text: string): boolean;

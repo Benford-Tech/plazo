@@ -96,6 +96,19 @@ Ne construire QUE ce qui règle la douleur n°1 du client.
      rien n'est créé ni modifié. `InboundEmail.reading` `{ kind, provider, confidence, summary, model }` (migration
      `inbound_reading`), `InboundEmailView.reading` ; boîte de réception : ligne « Lu par Claude : Réservation · confiance 92 % »
      avec le résumé, pastille du genre dans la liste. Sans clé, échec, refus ou délai (30 s) : le mail attend comme avant.
+     **Comparateurs du client n°1 (09/10/2026, « forme-toi avec ces modèles »)** : importateurs déterministes `onepark.ts`
+     (avis au parking : prénom, nom, portable, début, fin du forfait, montant, modèle, plaque, passagers, vol retour ; le retour
+     est la « récupération prévue » quand elle est donnée, sinon la fin du forfait), `parkmundo.ts` (référence `PM…`, détails
+     du voyage avec vols aller et retour, véhicule et couleur ; montant = « Prix du parking », sans le « Coût de réservation »
+     de ParkMundo) et `parclick.ts` (arrivée, sortie, référence), en plus d'`allopark.ts` (qui lit aussi la confirmation
+     envoyée au voyageur) ; aides `flatten`, `numericDateTime`, `amountAfter`, `PHONE`, `PLATE`, `NOM`, `FLIGHT` dans
+     `importers/common.ts` ; `ParsedBooking.vehicleModel/vehicleColour` enregistrés par `createFromImport` ; une annulation ou
+     une modification n'est jamais lue comme une réservation (`isCancellationOrChange`) ; un mail reconnu mais incomplet est
+     **complété par Claude** (`fillGaps` : les champs de l'importateur restent, Claude remplit les trous ; confiance basse →
+     « À vérifier » seulement si Claude a apporté un champ requis) ; `stripHtml` garde le texte alternatif des images (logos) ;
+     consigne de Claude : le montant est le prix du parking, sans les frais de la plateforme. Expéditeurs pour le filtre de
+     transfert : `info@allopark.com`, puis les mots `onepark`, `parclick`, `parkmundo` (adresses exactes inconnues ; Gmail
+     les reconnaît) ; textes de l'assistant G-B au pluriel (« les expéditeurs des comparateurs »).
    - Page de réservation propre à l'opérateur (formulaire simple, confirmation par mail/SMS).
    - Vue planning : arrivées et retours du jour, taux d'occupation, alerte de surréservation
      calculée sur la capacité réelle.
