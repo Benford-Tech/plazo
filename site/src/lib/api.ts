@@ -107,7 +107,33 @@ export async function apiRequest<T>(path: string, options: RequestOptions = {}):
   } catch {
     throw new ApiError(0, "Backend unreachable", "network");
   }
+  return readResponse<T>(response);
+}
 
+/** How long a shared read (and the pages built on it) stays cached, in seconds. */
+export const SHARED_READ_SECONDS = 300;
+
+/**
+ * A public read every visitor shares (an airport and its parkings, the offers of the default stay): no visitor
+ * IP, no request header read, cached for SHARED_READ_SECONDS. The pages built only on such reads can then be
+ * cached themselves (ISR, C of 09/10/2026) instead of being rendered for each visit. The API counts these few
+ * calls against the site's own address.
+ */
+export async function sharedRead<T>(path: string): Promise<T> {
+  let response: Response;
+  try {
+    response = await fetch(backendUrl(path), {
+      headers: { accept: "application/json", "x-plazo-site-key": siteApiKey() },
+      next: { revalidate: SHARED_READ_SECONDS },
+      signal: AbortSignal.timeout(TIMEOUT_MS),
+    });
+  } catch {
+    throw new ApiError(0, "Backend unreachable", "network");
+  }
+  return readResponse<T>(response);
+}
+
+async function readResponse<T>(response: Response): Promise<T> {
   const text = await response.text();
   let data: unknown = null;
   try {
@@ -131,12 +157,16 @@ function query(params: Record<string, string | null | undefined>): string {
 
 export const api = {
 
-  /** Airport page: published parkings with their lowest package price. Deduplicated per request. */
-  airport: cache((slug: string) => apiRequest<AirportResponse>(`/api/public/airports/${seg(slug)}`)),
+  /** Airport page: published parkings with their lowest package price. Shared by every visitor, deduplicated per request. */
+  airport: cache((slug: string) => sharedRead<AirportResponse>(`/api/public/airports/${seg(slug)}`)),
 
-  /** Parkings for a stay, with availability and total price. */
+  /** Parkings for a traveller's stay, with availability and total price. */
   search: (airport: string, arrivalAt: string, returnAt: string) =>
     apiRequest<SearchResponse>(`/api/public/search${query({ airport, arrivalAt, returnAt })}`),
+
+  /** The same for a stay every visitor sees (the default week of the airport page and the guides): a shared read. */
+  sharedSearch: (airport: string, arrivalAt: string, returnAt: string) =>
+    sharedRead<SearchResponse>(`/api/public/search${query({ airport, arrivalAt, returnAt })}`),
 
   /** A parking's page, with the offer for a stay when dates are given. Deduplicated per request. */
   parking: cache((airport: string, slug: string, arrivalAt?: string | null, returnAt?: string | null) =>

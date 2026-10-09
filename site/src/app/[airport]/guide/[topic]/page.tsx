@@ -13,15 +13,19 @@ import { openGraph } from "@/lib/seo";
 import { SLUG_RE } from "@/lib/site";
 import type { SearchResponse } from "@/lib/types";
 
-// The API is reached through a runtime binding: never prerender at build time.
-export const dynamic = "force-dynamic";
+// C (09/10/2026): built on shared reads only, so cached and rebuilt every few minutes (ISR). Nothing is
+// prerendered at build time: the API is reached through a runtime binding.
+export const revalidate = 300;
+export function generateStaticParams() {
+  return [];
+}
 
 type Props = PageProps<"/[airport]/guide/[topic]">;
 
 /** The guide pages work without the search: the partners' figures are then simply left out. */
 async function searchOrNull(airport: string, arrivee: string, retour: string): Promise<SearchResponse | null> {
   try {
-    return await api.search(airport, arrivee, retour);
+    return await api.sharedSearch(airport, arrivee, retour);
   } catch {
     return null;
   }

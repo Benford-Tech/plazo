@@ -36,7 +36,7 @@ export async function AirportView({ slug, showBreadcrumb }: { slug: string; show
   // T-A: the hero's map shows the parkings of the default stay and its best offer (the page works without it).
   let preview: SearchResponse | null = null;
   try {
-    preview = await api.search(airport.slug, stay.arrivee, stay.retour);
+    preview = await api.sharedSearch(airport.slug, stay.arrivee, stay.retour);
   } catch {
     preview = null;
   }

@@ -421,6 +421,10 @@ Le nom du produit doit rester dans UN seul fichier de configuration (il peut enc
   empilé sur téléphone, prix d'une semaine, navette, voiturier, accès, conseils) et « Questions fréquentes » (4 générales + 5 de Lyon,
   aussi en FAQPage) ; les chiffres (prix d'une semaine, durée de navette) viennent des offres en ligne des seuls parkings réels
   (`guideFacts`), sans parking réel le texte n'en donne aucun ; faits sur l'aéroport relus sur lyonaeroports.com le 08/10/2026.
+  **C « technique et vitesse » (09/10/2026)** : la page aéroport et les guides sont en ISR (`revalidate` 300, `generateStaticParams`
+  vide : rien au build) sur des lectures d'API partagées (`sharedRead`, sans IP visiteur, cache 300 s ; `api.airport`,
+  `api.sharedSearch`) ; plus de `app/page.tsx` : `/` est réécrit vers `/lyon-saint-exupery` et `/lyon-saint-exupery` redirige
+  (308) vers `/` (`next.config.ts`) ; `lastmod` des guides dans le sitemap ; `src/app/favicon.ico`.
   **A « 4 200 mots, FAQ balisée » (09/10/2026)** : le guide Lyon fait ~6 400 mots, 14 sections (`GuideSection.parts` pour des
   sous-titres h4, `GuideTable.columns` à N colonnes avec `note` de source), 3 tableaux (aéroport ou privé ; parkings officiels P0 à
   P7 : emplacement, accès, couvert, hauteur ; grille 2026 sans réservation de 24 h à 1 mois) et 19 questions, toutes dans le FAQPage
@@ -555,7 +559,7 @@ Canevas de référence : https://claude.ai/artifact/6ezoCDyLXFNwhAH5ZWUf4u (rang
   orange ; logo et liens sombres, « Pour les loueurs » en pilule blanche), pied de page brun foncé, Manrope (`--font-manrope`)
   avec Playfair italique sur les titres, orange `#FF6600` réservé à l'action (`btn-primary` plein) et à une carte par écran.
   Accueil : titre en deux tons « Votre parking à … », carte de recherche blanche, carte IGN du séjour par défaut
-  (`api.search` dans `AirportView`, `HomeMapPanel` → `HomeMap` sur `ResultsMap`) avec pilules « N parkings disponibles » et distance, carte
+  (`api.sharedSearch` dans `AirportView`, `HomeMapPanel` → `HomeMap` sur `ResultsMap`) avec pilules « N parkings disponibles » et distance, carte
   orange du moins cher. **K-A « Carte vivante » (06/10/2026, site et app)** : la carte d'accueil est interactive (glisser, zoomer,
   boutons de zoom ; deux doigts sur téléphone), montre tous les parkings du séjour en pastilles (prix, ou « Complet »), les
   navettes en circulation en marqueurs orange animés (`GET /public/airports/:slug/live`, anonyme : position, sens, véhicule ;

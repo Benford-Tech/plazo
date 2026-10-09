@@ -256,6 +256,16 @@ une décision de Joanny. Cocher au fur et à mesure.
   grille annuelle ou changement de l'aéroport (contenus dans `site/src/lib/guides/lyon-*.ts`).
 - Fait le 09/10/2026 : les segments du site (`recherche`, `guide`, `avis`…) ne peuvent plus être pris comme adresse de fiche
   (`RESERVED_LISTING_SLUGS`, erreur `slug_reserved`).
+- Fait le 09/10/2026 (**C**, « technique et vitesse ») : la page d'accueil répondait en 1,7 à 2,1 s (rendue à chaque visite,
+  deux appels à l'API ; Lighthouse mobile 69, « document latency » ~1,6 s). La page aéroport (et `/`, réécrit vers elle) et les
+  trois guides sont désormais en **ISR** (`revalidate` 300 s, plafonné à 60 s par la lecture de `/public/config` du layout ;
+  rien n'est rendu au build, `generateStaticParams` vide) sur des **lectures partagées** (`sharedRead` dans `site/src/lib/api.ts` :
+  sans l'IP du visiteur, cache de 300 s ; `api.airport`, `api.sharedSearch` pour le séjour par défaut ; la recherche du voyageur
+  et la fiche restent rendues à chaque visite). En local : 1,2 s au premier passage, 8 ms ensuite. `/lyon-saint-exupery`
+  redirige (308) vers `/` ; le plan du site donne la date de relecture des guides (`lastmod`) ; `favicon.ico` (16/32/48 px,
+  `site/src/app/favicon.ico`, tiré d'`icon.svg`). Restent : MapLibre (≈ 1,3 s de blocage du fil principal au chargement sur
+  mobile) et une seule redirection pour `http://plazo.fr` (aujourd'hui deux : → `https://plazo.fr` → `https://www.plazo.fr`,
+  règle de redirection Cloudflare à poser).
 
 **Fait le 08/10/2026 (code)** : accès Plateforme réservé à un e-mail vérifié ; Swagger coupé en production ; secret du
 relais mail accepté en en-tête seulement ; libellés échappés sur la carte des navettes ; app par défaut sur

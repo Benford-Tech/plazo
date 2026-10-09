@@ -3,7 +3,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 const incoming = new Headers();
 vi.mock("next/headers", () => ({ headers: async () => incoming }));
 
-import { api, ApiError, apiRequest, backendBase, backendUrl, clientIp, siteApiKey } from "../api";
+import { api, ApiError, apiRequest, backendBase, backendUrl, clientIp, SHARED_READ_SECONDS, sharedRead, siteApiKey } from "../api";
 
 function jsonResponse(status: number, body: unknown) {
   return new Response(JSON.stringify(body), { status, headers: { "content-type": "application/json" } });
@@ -122,5 +122,24 @@ describe("apiRequest", () => {
     fetchMock.mockResolvedValue(jsonResponse(200, {}));
     await apiRequest("/api/public/airports/lyon-saint-exupery");
     expect(fetchMock.mock.calls[0][1].headers).not.toHaveProperty("x-plazo-client-ip");
+  });
+  it("reads what every visitor shares (airport, default stay) without the visitor's IP, cached a few minutes (C, 09/10/2026)", async () => {
+    fetchMock.mockImplementation(async () => jsonResponse(200, { results: [] }));
+    await api.airport("lyon-saint-exupery");
+    await api.sharedSearch("lyon-saint-exupery", "2026-10-10T08:00", "2026-10-17T18:00");
+    for (const [url, init] of fetchMock.mock.calls) {
+      expect(url).toMatch(/^https:\/\/backend\.internal\/api\/public\/(airports|search)/);
+      expect(init.headers).toEqual({ accept: "application/json", "x-plazo-site-key": "site-secret" });
+      expect(init.next).toEqual({ revalidate: SHARED_READ_SECONDS });
+      expect(init.cache).toBeUndefined();
+    }
+    expect(fetchMock.mock.calls[1][0]).toBe("https://backend.internal/api/public/search?airport=lyon-saint-exupery&arrivalAt=2026-10-10T08%3A00&returnAt=2026-10-17T18%3A00");
+  });
+
+  it("maps a shared read's errors like any other", async () => {
+    fetchMock.mockResolvedValueOnce(jsonResponse(404, { message: "Not found", code: "airport_not_found" }));
+    await expect(sharedRead("/api/public/airports/x")).rejects.toMatchObject({ status: 404, code: "airport_not_found" });
+    fetchMock.mockRejectedValueOnce(new TypeError("fetch failed"));
+    await expect(sharedRead("/api/public/airports/x")).rejects.toMatchObject({ status: 0, code: "network" });
   });
 });
