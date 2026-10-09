@@ -131,6 +131,19 @@ Ne construire QUE ce qui règle la douleur n°1 du client.
      `GET /internal/cron/remind-tomorrow` est appelé **toutes les 15 minutes par un planificateur externe** (cron-job.org,
      `Authorization: Bearer <CRON_SECRET>`), le Vercel Cron quotidien de 19:00 UTC restant un filet ; routes
      `/internal/parkings/:id/reminders…` et `PUT /internal/reservations/:id/reminder`. Web seulement pour l'instant.
+   - **Importateurs des comparateurs (09/10/2026, d'après cinq mails de Joanny)** : Allopark, Onepark, Parclick et ParkMundo
+     lus sans Claude (`domain/importers/*`, `detect` / `parse` sur le texte aplati, `common.ts` ; montant = ce que paie le
+     client, hors frais du comparateur ; modèle et couleur du véhicule) ; Claude ne complète que les champs manquants d'un mail
+     reconnu (`fillGaps`) ; un mail d'annulation ou de modification n'est jamais importé (`isCancellationOrChange`).
+   - **CA-B + CA-A « Chiffre d'affaires » (09/10/2026, « additionner le CA des réservations »)** : page `/pro/chiffre-affaires`
+     (gérants, permission `revenue:view` ; `RevenuePage.tsx`) : périodes Aujourd'hui · 7 jours · mois en cours · mois précédent ·
+     Dates…, « Compter par » jour d'arrivée (par défaut) ou jour de réservation, annulées exclues (non venus comptés) ; total,
+     réservations, panier moyen et durée moyenne, « Par canal » (les comparateurs par leur nom), « N sans montant » avec la
+     liste « Les compléter » (saisie du montant, `PUT /internal/reservations/:id/price`, 409 `price_locked` pour une
+     réservation Plazo, `reservation_closed` si annulée ; tracé dans l'historique), « Jour par jour » et « Exporter en CSV »
+     (« ; », UTF-8 avec BOM). Tuile CA-A en bas des tuiles du tableau de bord (`RevenueTile`, gérants : total du mois,
+     aujourd'hui, 7 jours, « N sans montant »). Serveur : `domain/revenue.ts` (calcul pur, jour local du parking),
+     `RevenueService`, `GET /internal/revenue?from=&to=&basis=`, `…/revenue/summary`, `…/revenue/export` (366 jours au plus).
 
 2. **Plan du parking et affectation des véhicules** (direction P-A du 03/10/2026 : trois vues
    Plan · Occupation · Planning des places dans l'onglet « Parking » ; les étapes Plan et Occupation sont livrées)
@@ -319,7 +332,7 @@ Ne construire QUE ce qui règle la douleur n°1 du client.
 
 État des lieux photo, lecture de plaque, tarification dynamique,
 connecteurs agrégateurs (Parkos, ParkMundo, Onepark, Free2move…), multi-parkings,
-statistiques et facturation (hors commission et reversements, qui font partie du MVP).
+statistiques et facturation (hors commission, reversements et chiffre d'affaires CA-B, qui font partie du MVP).
 
 ## Concurrence à connaître avant de coder
 

@@ -7,7 +7,8 @@ export type Permission =
   | 'reservations:view'
   | 'reservations:manage' // create and edit
   | 'reservations:force' // save despite a full night
-  | 'reservations:status'; // record arrival, shuttle, return
+  | 'reservations:status' // record arrival, shuttle, return
+  | 'revenue:view'; // CA-B (09/10/2026): the revenue of the bookings, managers only
 
 const PERMISSIONS: Record<StaffRole, readonly Permission[]> = {
   manager: [
@@ -18,6 +19,7 @@ const PERMISSIONS: Record<StaffRole, readonly Permission[]> = {
     'reservations:manage',
     'reservations:force',
     'reservations:status',
+    'revenue:view',
   ],
   agent: ['dashboard:view', 'reservations:view', 'reservations:manage', 'reservations:force', 'reservations:status'],
   driver: ['dashboard:view', 'reservations:view', 'reservations:status'],

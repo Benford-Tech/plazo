@@ -8,10 +8,11 @@ export type Permission =
   | "reservations:view"
   | "reservations:manage"
   | "reservations:force"
-  | "reservations:status";
+  | "reservations:status"
+  | "revenue:view";
 
 const PERMISSIONS: Record<StaffRole, readonly Permission[]> = {
-  manager: ["dashboard:view", "parking:manage", "team:manage", "reservations:view", "reservations:manage", "reservations:force", "reservations:status"],
+  manager: ["dashboard:view", "parking:manage", "team:manage", "reservations:view", "reservations:manage", "reservations:force", "reservations:status", "revenue:view"],
   agent: ["dashboard:view", "reservations:view", "reservations:manage", "reservations:force", "reservations:status"],
   driver: ["dashboard:view", "reservations:view", "reservations:status"],
   valet: ["dashboard:view", "reservations:view", "reservations:status"],

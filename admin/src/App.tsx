@@ -13,6 +13,7 @@ import ListingPage from "@/pages/ListingPage";
 import NewReservationPage from "@/pages/NewReservationPage";
 import InboundEmailsPage from "@/pages/InboundEmailsPage";
 import RemindersPage from "@/pages/RemindersPage";
+import RevenuePage from "@/pages/RevenuePage";
 import ParkingPage from "@/pages/ParkingPage";
 import DashboardPage from "@/pages/DashboardPage";
 import PlanningPage from "@/pages/PlanningPage";
@@ -189,6 +190,14 @@ const App = () => (
                 element={
                   <RequirePermission permission="parking:manage">
                     <ParkingPage />
+                  </RequirePermission>
+                }
+              />
+              <Route
+                path="/chiffre-affaires"
+                element={
+                  <RequirePermission permission="revenue:view">
+                    <RevenuePage />
                   </RequirePermission>
                 }
               />

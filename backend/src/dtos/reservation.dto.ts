@@ -1,5 +1,5 @@
 import { Type } from 'class-transformer';
-import { IsBoolean, IsEmail, IsIn, IsInt, IsNotEmpty, IsOptional, IsString, Matches, Max, MaxLength, Min } from 'class-validator';
+import { IsBoolean, IsEmail, IsIn, IsInt, IsNotEmpty, IsOptional, IsString, Matches, Max, MaxLength, Min, ValidateIf } from 'class-validator';
 import { ReservationChannel, ReservationStatus } from '@/database';
 
 export const DATETIME = /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}(:\d{2}(\.\d+)?)?(Z|[+-]\d{2}:?\d{2})?$/;
@@ -207,4 +207,14 @@ export class ChangeStatusDto {
   @MaxLength(500, { message: 'too_long' })
   @IsString({ message: 'invalid' })
   public note?: string;
+}
+
+/** CA-B (09/10/2026): the amount of a booking, in euro cents; null clears it. */
+export class SetPriceDto {
+  // Required: an integer, or null to clear it (the decorator listed last reports first: « integer » for a missing value).
+  @ValidateIf((dto: SetPriceDto) => dto.priceCents !== null)
+  @Min(0, { message: 'min_0' })
+  @Max(10000000, { message: 'too_large' })
+  @IsInt({ message: 'integer' })
+  public priceCents!: number | null;
 }

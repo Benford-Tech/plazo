@@ -1,4 +1,4 @@
-import { BusFront, CalendarDays, ClipboardList, Globe, LayoutDashboard, LogOut, ShieldCheck, SquareParking, UserRound, Users } from "lucide-react";
+import { BusFront, CalendarDays, ClipboardList, Euro, Globe, LayoutDashboard, LogOut, ShieldCheck, SquareParking, UserRound, Users } from "lucide-react";
 import type { ComponentType, SVGProps } from "react";
 import { NavLink, Outlet, useNavigate } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
@@ -16,6 +16,8 @@ const NAV: { label: string; to: string; icon: Icon; permission?: Permission }[] 
   { label: fr.nav.planning, to: "/planning", icon: CalendarDays, permission: "reservations:view" },
   { label: fr.nav.shuttles, to: "/navettes", icon: BusFront, permission: "reservations:view" },
   { label: fr.nav.reservations, to: "/reservations", icon: ClipboardList, permission: "reservations:view" },
+  // CA-B (09/10/2026): managers only.
+  { label: fr.nav.revenue, to: "/chiffre-affaires", icon: Euro, permission: "revenue:view" },
   { label: fr.nav.parking, to: "/parking", icon: SquareParking, permission: "reservations:view" },
   { label: fr.nav.plazo, to: "/plazo", icon: Globe, permission: "parking:manage" },
   { label: fr.nav.team, to: "/equipe", icon: Users, permission: "team:manage" },

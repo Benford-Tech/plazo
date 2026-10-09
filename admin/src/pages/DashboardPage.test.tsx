@@ -7,6 +7,7 @@ import DashboardPage from "./DashboardPage";
 const api = vi.hoisted(() => ({
   getDashboard: vi.fn(),
   getLiveShuttles: vi.fn(),
+  getRevenueSummary: vi.fn(),
 }));
 vi.mock("@/contexts/AuthContext", () => ({
   useAuth: () => ({ user: { name: "Joanny Simpore", role: "manager" } }),
@@ -19,6 +20,7 @@ vi.mock("@/lib/api", async (importOriginal) => {
       ...actual.adminApi,
       getDashboard: () => api.getDashboard(),
       getLiveShuttles: () => api.getLiveShuttles(),
+      getRevenueSummary: () => api.getRevenueSummary(),
     },
   };
 });
@@ -186,6 +188,22 @@ describe("DashboardPage", () => {
   beforeEach(() => {
     api.getDashboard.mockResolvedValue(dashboard);
     api.getLiveShuttles.mockResolvedValue(live);
+    api.getRevenueSummary.mockResolvedValue({
+      today: "2026-10-05",
+      month: { from: "2026-10-01", to: "2026-10-31", totalCents: 481250, count: 109, withoutAmount: 3 },
+      todayCents: 34500,
+      weekCents: 198000,
+    });
+  });
+
+  it("CA-A (09/10/2026) : la tuile du chiffre d'affaires du mois mène à la page, avec le jour, les 7 jours et ceux sans montant", async () => {
+    renderPage();
+    const tile = await screen.findByTestId("kpi-revenue");
+    expect(tile).toHaveAttribute("href", "/chiffre-affaires");
+    expect(tile).toHaveTextContent("Chiffre d'affaires · octobre");
+    expect(tile).toHaveTextContent(/4\s812,50\s€/);
+    expect(tile).toHaveTextContent(/Aujourd'hui 345,00\s€ · 7 jours 1\s980,00\s€ · 109 réservations/);
+    expect(tile).toHaveTextContent("3 sans montant");
   });
 
   it("affiche les chiffres du jour, les services, les alertes classées, les véhicules avec badges et les navettes", async () => {
