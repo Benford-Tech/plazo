@@ -416,12 +416,13 @@ Le nom du produit doit rester dans UN seul fichier de configuration (il peut enc
   empilé sur téléphone, prix d'une semaine, navette, voiturier, accès, conseils) et « Questions fréquentes » (4 générales + 5 de Lyon,
   aussi en FAQPage) ; les chiffres (prix d'une semaine, durée de navette) viennent des offres en ligne des seuls parkings réels
   (`guideFacts`), sans parking réel le texte n'en donne aucun ; faits sur l'aéroport relus sur lyonaeroports.com le 08/10/2026.
-  **A « 4 200 mots, FAQ balisée » (09/10/2026)** : le guide Lyon fait ~6 100 mots, 14 sections (`GuideSection.parts` pour des
+  **A « 4 200 mots, FAQ balisée » (09/10/2026)** : le guide Lyon fait ~6 400 mots, 14 sections (`GuideSection.parts` pour des
   sous-titres h4, `GuideTable.columns` à N colonnes avec `note` de source), 3 tableaux (aéroport ou privé ; parkings officiels P0 à
   P7 : emplacement, accès, couvert, hauteur ; grille 2026 sans réservation de 24 h à 1 mois) et 19 questions, toutes dans le FAQPage
   avec les 4 générales ; les chiffres de l'aéroport sont dans la constante `LYON_OFFICIAL` (grille tarifaire PDF 2026 et pages
   de lyonaeroports.com relevées le 08/10/2026, revérifiées le 09/10/2026, date citée dans le texte ; **Terminal 2 fermé depuis le
-  01/04/2026** : le guide envoie tout le monde au Terminal 1 ; P1 géré par LPA) et ceux des partenaires restent ceux de
+  01/04/2026** : le guide envoie tout le monde au Terminal 1 ; P1 géré par LPA ; les navettes des parkings extérieurs ne déposent
+  pas devant l'aérogare (règlement des parcs) ; deux relectures contradictoires, 90 corrections) et ceux des partenaires restent ceux de
   `guideFacts` ; `guideTexts` / `guideWordCount` servent aux tests (≥ 4 200 mots avec ou sans partenaire). Les parkings de démo
   sont archivés (`DEMO_LISTINGS=archive` : `DemoSeedService.archive` suspend les loueurs `isDemo`, `true` les rétablit).
 - `email-worker/` : relais des mails entrants (Cloudflare Email Worker, `postal-mime`) : Email Routing lui passe chaque mail de

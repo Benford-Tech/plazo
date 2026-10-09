@@ -97,7 +97,7 @@ export const LYON_OFFICIAL = {
   week: { p5: "76,90 €", p4: "139,40 €", p3: "156,90 €", p2: "170,90 €", p0: "194,90 €", moto: "97,50 €" },
   twoWeeks: { p5: "103,90 €", p0: "342,90 €", moto: "171,50 €" },
   online: { from: "40 € la semaine", listed: "50 € la semaine" },
-  minute: { free: "10 minutes", then: "2,20 € de la 10e à la 11e minute, puis 0,60 € par minute", cap: "cinq passages par 24 h ; au-delà, un forfait de 80 € s’applique" },
+  minute: { free: "10 minutes", then: "la 11e minute coûte 2,20 €, et chacune des suivantes 0,60 €", cap: "au-delà de cinq passages en 24 h, tous parkings minute confondus, un forfait de 80 € s’applique" },
   /** Free-access chargers (not bookable); P4 Elec and P5 Elec are the bookable, all-electric parks. */
   chargers: { p2: 40, p4: 89, p5: 164, dedicated: "plus de 240" },
   /** Walking time to Terminal 1, from the airport's FAQ. */
@@ -124,7 +124,7 @@ function lyonSaintExupery(facts: GuideFacts): AirportGuide {
     intro:
       "L’aéroport de Lyon Saint-Exupéry est à Colombier-Saugnieu, à environ 25 km à l’est de Lyon, entre l’A42 et l’A43, reliées par l’A432. Pour y laisser sa voiture le temps d’un voyage, deux grandes familles de parkings : ceux de l’aéroport, au pied des terminaux ou reliés par une navette, et les parkings privés des environs, reliés à l’aérogare par une navette gratuite. Ce guide compare les deux, donne les tarifs officiels 2026 de l’aéroport, explique la navette, le voiturier, les options couvertes et électriques, l’accès par la route, les périodes chargées et la façon dont une réservation se passe sur " +
       PRODUCT_NAME +
-      `. ${terminal} Les chiffres de l’aéroport sont datés ; ceux des parkings partenaires viennent de leurs offres du moment.`,
+      `. ${terminal} Les chiffres de l’aéroport ont été relevés le ${LYON_OFFICIAL.readOn} sur son site ; ceux des parkings partenaires viennent de leurs offres du moment.`,
     sections: [
       {
         id: "aeroport-ou-prive",
@@ -132,7 +132,7 @@ function lyonSaintExupery(facts: GuideFacts): AirportGuide {
         title: "Parkings de l’aéroport ou parkings privés avec navette ?",
         paragraphs: [
           "Les parkings de l’aéroport vont du P0, sous les terminaux, aux parkings éloignés comme le P5 et le P7, desservis par une navette interne. Ils sont exploités par l’aéroport, sauf le P1, confié à Lyon Parc Auto (LPA), et se réservent tous sur le site de l’aéroport. Leur atout, c’est la proximité : depuis le P0, le P1 ou le P3, vous rejoignez le Terminal 1 à pied en 7 à 12 minutes, valise à la main, sans attendre personne.",
-          "Les parkings privés sont installés dans les communes voisines, à quelques minutes de route de l’aérogare. Vous y laissez la voiture à l’accueil, le parking vous conduit devant le terminal avec sa navette, et il vient vous rechercher au retour. Ils sont en général nettement moins chers que les parkings couverts de l’aéroport et se situent, pour une semaine, au niveau du parking économique P5 ou en dessous, avec en prime un accueil par une personne et un suivi de votre vol au retour.",
+          "Les parkings privés sont installés dans les communes voisines, à quelques minutes de route de l’aérogare. Vous y laissez la voiture à l’accueil, le parking vous conduit au terminal avec sa navette, et il vient vous rechercher au retour. Ils sont en général nettement moins chers que les parkings couverts de l’aéroport et se situent, pour une semaine, au niveau du parking économique P5 ou en dessous, avec en prime un accueil par une personne et un suivi de votre vol au retour.",
           "Le bon choix dépend de la durée et de ce que vous attendez. Pour une journée ou une nuit, un parking de proximité de l’aéroport est souvent le plus simple. À partir de quelques jours, et plus encore pour une ou deux semaines, un parking privé avec navette fait baisser la note sans compliquer le trajet : la navette prend en charge le dernier kilomètre, et vous n’avez pas à chercher une place.",
         ],
         table: {
@@ -141,9 +141,9 @@ function lyonSaintExupery(facts: GuideFacts): AirportGuide {
           rows: [
             ["Accès aux terminaux", "À pied depuis les plus proches (7 à 15 min jusqu’au Terminal 1), en navette depuis les parkings éloignés (P5, P7)", ride ? `Navette gratuite, ${ride}` : "Navette gratuite jusqu’au terminal"],
             ["Réservation", "Sur le site de l’aéroport", `Sur ${PRODUCT_NAME}, paiement en ligne par carte`],
-            ["Prix", `Selon le parking et la date de réservation (une semaine au P5 : ${o.week.p5} sans réservation, grille 2026)`, week ? `${capitalise(week)} aujourd’hui, frais compris` : "Prix total affiché pour vos dates"],
+            ["Prix", `Selon le parking et la date de réservation (une semaine au P5 : ${o.week.p5} sans réservation, grille 2026)`, week ? `Aujourd’hui, ${week}, frais compris` : "Prix total affiché pour vos dates"],
             ["Au retour", "Vous rejoignez le parking à pied ou en navette", "Le parking suit votre vol et vous prévient par SMS à l’atterrissage"],
-            ["Voiturier", "Non : vous garez la voiture vous-même", "Selon le parking : voiturier ou place indiquée, précisé sur chaque fiche"],
+            ["Voiturier", "En option, sur réservation en ligne : un voiturier partenaire de l’aéroport prend la voiture au dépose-minute du Terminal 1 et vous l’y rend ; sinon, vous la garez vous-même", "Selon le parking : voiturier ou place indiquée, précisé sur chaque fiche"],
           ],
         },
       },
@@ -162,10 +162,10 @@ function lyonSaintExupery(facts: GuideFacts): AirportGuide {
           rows: [
             ["P0", "Souterrain, sous les terminaux", "À pied, environ 12 min", "Oui", "1,90 m", "Le seul parking qui accepte les motos, à moitié prix"],
             ["P1", "Au pied du Terminal 1", "À pied, environ 10 min", "Oui", "1,90 m", "Géré par Lyon Parc Auto (LPA) : exclu de l’annulation gratuite jusqu’à 1 h avant et de la garantie retard"],
-            ["P2", "En plein air, près de la gare TGV", "À pied, environ 15 min", "Non", "2,50 m", `${o.chargers.p2} bornes de recharge en libre service`],
-            ["P3", "Face au Terminal 1", "À pied, environ 7 min", "Oui", "2,10 m", "Bornes de recharge en libre service"],
-            ["P4", "En plein air, face à la gare TGV", "À pied, environ 15 min", "Non", "2,50 m", `${o.chargers.p4} bornes en libre service ; le P4 Elec, 100 % électrique, se réserve en ligne`],
-            ["P5", "Parking économique, éloigné", "Navette gratuite toutes les 7 min (10 min la nuit), environ 40 min de la voiture au terminal", "Non", "2,60 m (2,50 m sur la grille 2026), voie dédiée aux véhicules plus hauts", `${o.chargers.p5} bornes en libre service ; P5 Elec, 100 % électrique, et P5 robotisé (3 à 30 jours), en ligne seulement`],
+            ["P2", "En plein air, près de la gare TGV", "À pied, environ 15 min", "Non", "2,50 m", `${o.chargers.p2} bornes de recharge en libre-service`],
+            ["P3", "Face au Terminal 1", "À pied, environ 7 min", "Oui", "2,10 m", "Bornes de recharge en libre-service"],
+            ["P4", "En plein air, face à la gare TGV", "À pied, environ 15 min", "Non", "2,50 m", `${o.chargers.p4} bornes en libre-service ; le P4 Elec, 100 % électrique, se réserve en ligne`],
+            ["P5", "Parking économique, éloigné", "Navette gratuite toutes les 7 min (10 min la nuit), environ 40 min de la voiture au terminal", "Non", "2,60 m (2,50 m sur la grille 2026), voie dédiée aux véhicules plus hauts", `${o.chargers.p5} bornes en libre-service ; P5 Elec, 100 % électrique, et P5 robotisé (3 à 30 jours, hauteur limitée à 2,30 m), en ligne seulement`],
             ["P7", "Parking économique saisonnier", "Navette gratuite toutes les 20 min, environ 10 min de trajet", "Non", "Aucune limite annoncée, utilitaires et camping-cars compris", "Ouvert en période d’affluence, sur réservation en ligne seulement"],
           ],
           note: source,
@@ -181,20 +181,20 @@ function lyonSaintExupery(facts: GuideFacts): AirportGuide {
           {
             title: "P2, P3 et P4 : les parkings de proximité",
             paragraphs: [
-              `Les parkings de proximité restent accessibles à pied : ${o.walk.p3} du P3 au Terminal 1, ${o.walk.p2} depuis le P2 ou le P4. Le P3, couvert et face au Terminal 1, accepte 2,10 m. Le P2 et le P4 sont en plein air, près de la gare TGV, et acceptent 2,50 m. Tous trois ont des bornes de recharge en libre service, et le P4 Elec, entièrement électrique, se réserve en ligne. Pour une semaine sans réservation, comptez ${o.week.p3} au P3, ${o.week.p2} au P2 et ${o.week.p4} au P4, puis 15 €, 19 € et 7 € par jour supplémentaire au-delà d’un mois.`,
+              `Les parkings de proximité restent accessibles à pied : ${o.walk.p3} du P3 au Terminal 1, ${o.walk.p2} depuis le P2 ou le P4. Le P3, couvert et face au Terminal 1, accepte 2,10 m. Le P2 et le P4 sont en plein air, près de la gare TGV, et acceptent 2,50 m. Tous trois ont des bornes de recharge en libre-service, et le P4 Elec, entièrement électrique, se réserve en ligne. Pour une semaine sans réservation, comptez ${o.week.p3} au P3, ${o.week.p2} au P2 et ${o.week.p4} au P4, puis 15 €, 19 € et 7 € par jour supplémentaire au-delà d’un mois.`,
             ],
           },
           {
             title: "P5, P5 robotisé et P7 : les parkings économiques",
             paragraphs: [
-              `Le P5 est le grand parking économique de l’aéroport, en plein air et éloigné du terminal. Une navette gratuite passe ${o.p5Shuttle.every} ; l’aéroport compte ${o.p5Shuttle.door} de la voiture au Terminal 1, marche et attente comprises. C’est le moins cher des parkings officiels : ${o.week.p5} la semaine et ${o.twoWeeks.p5} les deux semaines sans réservation, 4 € par jour au-delà d’un mois. La hauteur est limitée à ${o.p5Height}, et les véhicules plus hauts ont une voie dédiée à l’entrée. Le P5 a aussi le plus grand nombre de bornes en libre service de l’aéroport, et le P5 Elec, entièrement électrique, se réserve en ligne.`,
-              `Deux autres formules se réservent uniquement en ligne : le P5 robotisé, où un robot range votre voiture, pour des séjours de 3 à 30 jours, et le P7, un parking de débord saisonnier ouvert à la réservation en période d’affluence. La navette du P7 passe ${o.p7Shuttle.every} et met ${o.p7Shuttle.ride} jusqu’au Terminal 1 ; aucune limite de hauteur n’y est annoncée, utilitaires et camping-cars compris.`,
+              `Le P5 est le grand parking économique de l’aéroport, en plein air et éloigné du terminal. Une navette gratuite passe ${o.p5Shuttle.every} ; l’aéroport compte ${o.p5Shuttle.door} de la voiture au Terminal 1, marche et attente comprises. C’est le moins cher de la grille 2026 sans réservation : ${o.week.p5} la semaine et ${o.twoWeeks.p5} les deux semaines, puis 4 € par jour au-delà d’un mois ; l’aéroport présente toutefois le P7, ouvert en période d’affluence et réservable en ligne seulement, comme le moins cher de ses parkings officiels. La hauteur est limitée à ${o.p5Height}, et les véhicules plus hauts ont une voie dédiée à l’entrée. Le P5 a aussi le plus grand nombre de bornes en libre-service de l’aéroport, et le P5 Elec, entièrement électrique, se réserve en ligne.`,
+              `Deux autres formules se réservent uniquement en ligne : le P5 robotisé, où un robot range votre voiture, pour des séjours de 3 à 30 jours et des véhicules de 2,30 m au plus, et le P7, un parking de débord saisonnier ouvert à la réservation en période d’affluence. La navette du P7 passe ${o.p7Shuttle.every} et met ${o.p7Shuttle.ride} jusqu’au Terminal 1 ; aucune limite de hauteur n’y est annoncée, utilitaires et camping-cars compris.`,
             ],
           },
           {
             title: "Déposes-minute et zones d’attente",
             paragraphs: [
-              `Les parkings minute T1A et T1B, au pied du Terminal 1, et celui de la gare TGV sont gratuits pendant ${o.minute.free}, puis facturés ${o.minute.then}. Ils sont limités à ${o.minute.cap}. Celui du Terminal 2 n’est plus accessible depuis la fermeture du terminal. Les zones d’attente, aux entrées de l’aéroport, sont gratuites une heure au maximum, le conducteur devant rester présent : elles servent à patienter avant d’aller chercher quelqu’un, pas à stationner.`,
+              `Les parkings minute T1A et T1B, au pied du Terminal 1, et celui de la gare TGV sont gratuits les 10 premières minutes ; ${o.minute.then}. ${capitalise(o.minute.cap)}. Celui du Terminal 2 n’est plus accessible depuis la fermeture du terminal. Les zones d’attente, aux entrées de l’aéroport, sont gratuites une heure au maximum, le conducteur devant rester présent : elles servent à patienter avant d’aller chercher quelqu’un, pas à stationner.`,
             ],
           },
         ],
@@ -204,11 +204,11 @@ function lyonSaintExupery(facts: GuideFacts): AirportGuide {
         short: "Les parkings privés avec navette",
         title: "Les parkings privés avec navette : comment ça marche",
         paragraphs: [
-          "Autour de Saint-Exupéry, à Saint-Laurent-de-Mure, Saint-Bonnet-de-Mure, Grenay, Pusignan, Janneyrias et dans les communes voisines, des entreprises indépendantes exploitent des parkings réservés aux voyageurs de l’aéroport. Le principe est simple : vous arrivez à l’heure convenue, une personne vous accueille, vous laissez la voiture, et une navette vous dépose devant le terminal. Au retour, la navette vous reprend au point de rendez-vous et vous ramène à votre voiture.",
+          "Autour de Saint-Exupéry, à Saint-Laurent-de-Mure, Saint-Bonnet-de-Mure, Grenay, Pusignan, Janneyrias et dans les communes voisines, des entreprises indépendantes exploitent des parkings réservés aux voyageurs de l’aéroport. Le principe est simple : vous arrivez à l’heure convenue, une personne vous accueille, vous laissez la voiture, et une navette vous conduit au terminal. Au retour, la navette vous reprend au point de rendez-vous et vous ramène à votre voiture.",
           "Ces parkings existent sous plusieurs formes. Les plus courants sont des terrains clôturés et surveillés, en plein air, parfois avec une partie couverte ou des box fermés. Certains proposent un voiturier, qui prend la voiture à l’accueil et la range lui-même ; d’autres vous indiquent une place. Les services annexes varient : lavage, plein, recharge électrique, contrôle technique pendant votre absence.",
           "Avant de choisir, regardez quatre choses : la durée réelle de la navette jusqu’au terminal, les horaires d’ouverture (un vol très matinal ou un retour tard le soir demande un parking ouvert à ces heures), les conditions d’annulation et la façon dont le parking vous récupère au retour. Sur " +
             PRODUCT_NAME +
-            ", chaque fiche donne la durée de la navette, les horaires, les services et les conditions d’annulation, et les filtres des résultats permettent de ne garder que les parkings ouverts 24 h sur 24, avec voiturier, couverts ou annulables gratuitement ; le point de rendez-vous du retour figure dans la confirmation.",
+            ", chaque fiche donne la durée de la navette, les horaires, les services et les conditions d’annulation, et les filtres des résultats permettent de ne garder que les parkings ouverts 24 h sur 24, avec voiturier, couverts ou annulables gratuitement ; quand le parking l’a indiqué, le point de rendez-vous du retour figure dans l’e-mail de confirmation.",
           rideWords
             ? `Chez nos parkings partenaires, la navette met ${rideWords} jusqu’au terminal, et elle est comprise dans le prix.`
             : "Chez nos parkings partenaires, la navette jusqu’au terminal est comprise dans le prix, et chaque fiche indique sa durée.",
@@ -229,7 +229,7 @@ function lyonSaintExupery(facts: GuideFacts): AirportGuide {
           week
             ? `Chez nos parkings partenaires, une semaine coûte aujourd’hui ${week}, frais compris : le jour d’arrivée et le jour de retour comptent chacun pour une journée, et le prix affiché est celui que vous payez, sans frais de dossier ni supplément à l’arrivée.`
             : "Chez nos parkings partenaires, le prix affiché est le prix total pour vos dates, frais compris : le jour d’arrivée et le jour de retour comptent chacun pour une journée, et il n’y a ni frais de dossier ni supplément à l’arrivée.",
-          "Pour vous repérer, voici la grille 2026 des parkings de l’aéroport sans réservation, pour les durées les plus courantes. Indiquez vos dates en haut de la page pour voir, en face, le prix total de chaque parking partenaire.",
+          "Pour vous repérer, voici la grille 2026 des parkings de l’aéroport sans réservation, pour les durées les plus courantes. Indiquez vos dates en haut de la page pour comparer le prix total de chaque parking partenaire.",
         ],
         table: {
           caption: "Tarifs 2026 des parkings de l’aéroport sans réservation, selon la durée",
@@ -254,7 +254,7 @@ function lyonSaintExupery(facts: GuideFacts): AirportGuide {
           {
             title: "Deux ou trois semaines",
             paragraphs: [
-              `Au-delà d’une semaine, l’écart se creuse entre les parkings couverts de proximité et les parkings économiques ou privés : deux semaines coûtent ${o.twoWeeks.p0} au P0 contre ${o.twoWeeks.p5} au P5, et trois semaines ${o.grid["P0 · P1"][5]} contre ${o.grid.P5[5]}. C’est la durée où un parking privé avec navette prend tout son sens, la navette ne coûtant pas plus cher le quinzième jour que le premier.`,
+              `Au-delà d’une semaine, l’écart se creuse entre les parkings couverts de proximité et les parkings économiques ou privés : deux semaines coûtent ${o.twoWeeks.p0} au P0 contre ${o.twoWeeks.p5} au P5, et trois semaines ${o.grid["P0 · P1"][5]} contre ${o.grid.P5[5]}. C’est pour ces durées qu’un parking privé avec navette prend tout son sens : le trajet en navette est le même pour un week-end que pour trois semaines, alors que l’économie, elle, grandit avec la durée du séjour.`,
             ],
           },
           {
@@ -302,10 +302,10 @@ function lyonSaintExupery(facts: GuideFacts): AirportGuide {
         short: "La navette, aller et retour",
         title: "La navette, à l’aller et au retour",
         paragraphs: [
-          "À l’aller, vous laissez la voiture à l’accueil du parking et la navette vous conduit devant le terminal" +
+          "À l’aller, vous laissez la voiture à l’accueil du parking et la navette vous conduit au Terminal 1" +
             (rideWords ? `, en ${rideWords}` : "") +
-            `. Elle vous dépose devant le Terminal 1, au plus près des portes de l’aérogare : tous les vols en partent depuis la fermeture du Terminal 2 pour travaux, le ${o.t2Closed}. Présentez-vous au parking avec un peu de marge : comptez la durée de la navette, le temps de l’accueil et, en période chargée, quelques minutes d’attente pour le départ suivant.`,
-          "Au retour, tout se joue sur le numéro de vol que vous indiquez à la réservation. Le parking suit l’heure d’atterrissage réelle de votre avion : si le vol a du retard, la navette attend ; s’il est en avance, elle est là plus tôt. À l’atterrissage, vous recevez un SMS avec le point de rendez-vous et le délai. Vous récupérez vos bagages, vous rejoignez le point indiqué, et la navette vous ramène au parking, où votre voiture vous attend.",
+            ` : depuis la fermeture du Terminal 2 pour travaux, le ${o.t2Closed}, c’est de là que partent tous les vols. Elle s’arrête là où l’aéroport autorise les navettes des parkings extérieurs, à quelques minutes à pied de l’aérogare ; le parking vous indique l’endroit exact. Présentez-vous au parking avec un peu de marge : comptez la durée de la navette, le temps de l’accueil et, en période chargée, quelques minutes d’attente pour le départ suivant.`,
+          "Au retour, tout se joue sur le numéro de vol que vous indiquez à la réservation. Le parking suit l’heure d’atterrissage réelle de votre avion : si le vol a du retard, la navette attend ; s’il est en avance, elle est là plus tôt. À l’atterrissage, vous recevez un SMS avec le point de rendez-vous de la navette. Vous récupérez vos bagages, vous rejoignez le point indiqué, et la navette vous ramène au parking, où votre voiture vous attend.",
           "Sur " +
             PRODUCT_NAME +
             ", vous pouvez aussi prévenir le parking de votre arrivée depuis votre téléphone (« J’arrive dans 10 min », « Je suis au point de rendez-vous »), signaler un vol en retard, un bagage perdu ou, en quelques mots, tout autre imprévu, et suivre la navette du parking en direct quand il a activé ce suivi. Le jour du dépôt, si vous avez renseigné votre vol aller, la page Ma réservation vous indique l’heure à laquelle la navette vers le terminal est prévue pour vous.",
@@ -322,7 +322,7 @@ function lyonSaintExupery(facts: GuideFacts): AirportGuide {
           {
             title: "Si votre vol a du retard",
             paragraphs: [
-              "Rien à faire de votre côté : le parking suit votre vol et ajuste la navette. Si votre vol change (autre numéro, autre jour), modifiez le numéro de vol depuis Ma réservation jusqu’au retour, ou prévenez le parking par téléphone. Un retour après la date et l’heure réservées prolonge le séjour, et la prolongation est facturée par le parking, à son tarif ; le prix étant compté à la journée, un retour le lendemain ajoute en général une journée.",
+              "Rien à faire de votre côté : le parking suit votre vol et ajuste la navette. Si vous prenez un autre vol le même jour, modifiez le numéro de vol depuis Ma réservation jusqu’au retour ; si votre retour est reporté à un autre jour, prévenez le parking par téléphone, car la date de retour réservée ne se modifie pas en ligne. Un retour après la date et l’heure réservées prolonge le séjour, et la prolongation est facturée par le parking, à son tarif ; le prix étant compté à la journée, un retour le lendemain ajoute en général une journée.",
             ],
           },
         ],
@@ -344,9 +344,9 @@ function lyonSaintExupery(facts: GuideFacts): AirportGuide {
         title: "Parking couvert, voiture électrique, moto et véhicules hauts",
         paragraphs: [
           "Un parking couvert protège de la grêle, du soleil d’été et du givre d’hiver, et évite de retrouver la voiture sous la neige au retour d’un séjour aux sports d’hiver. À l’aéroport, les parkings couverts sont le P0, le P1 et le P3 ; ils sont aussi parmi les plus chers et les plus bas de plafond (1,90 m au P0 et au P1, 2,10 m au P3). Certains parkings privés proposent une partie couverte ou des box : le filtre « Couvert » des résultats les repère.",
-          `Pour une voiture électrique, l’aéroport annonce ${o.chargers.p2} bornes au P2, ${o.chargers.p4} au P4 et ${o.chargers.p5} au P5, en libre service et sans réservation possible, ainsi que deux parkings entièrement électriques réservables en ligne, le P4 Elec et le P5 Elec, avec ${o.chargers.dedicated} bornes dédiées. Chez les parkings privés, la recharge pendant le séjour est un service à part, affiché sur la fiche quand il existe (filtre « Recharge électrique ») : précisez-le à la réservation, et demandez si la voiture sera rechargée au retour ou seulement maintenue.`,
+          `Pour recharger une voiture électrique pendant le voyage, l’aéroport propose deux solutions. Ses parkings P2, P3, P4 et P5 ont des bornes en libre-service (${o.chargers.p2} au P2, ${o.chargers.p4} au P4 et ${o.chargers.p5} au P5), mais elles ne se réservent pas : réserver le parking ne garantit pas d’en trouver une libre. Ses deux parkings 100 % électriques, le P4 Elec et le P5 Elec, se réservent en ligne et comptent ${o.chargers.dedicated} bornes dédiées. Dans les parkings privés, la recharge pendant le séjour est un service à part, signalé sur la fiche quand le parking le propose (filtre « Recharge électrique ») : demandez-la en réservant, et faites préciser si la batterie sera pleine à votre retour ou seulement rechargée en partie.`,
           `Les motos ne sont acceptées qu’au P0, à moitié prix (${o.week.moto} la semaine, ${o.twoWeeks.moto} les deux semaines sans réservation). Dans les parkings privés, demandez avant de réserver : certains acceptent les deux-roues à un tarif particulier.`,
-          `Pour un monospace haut, un utilitaire, un van ou un camping-car, vérifiez la hauteur : 1,90 m au P0 et au P1, 2,10 m au P3, 2,50 m au P2 et au P4, ${o.p5Height} au P5, avec une voie dédiée aux véhicules plus hauts à l’entrée, et aucune limite annoncée au P7, ouvert en période d’affluence. Les parkings privés en plein air n’ont en général pas de limite de hauteur, mais un camping-car occupe plusieurs places : contactez le parking, qui vous dira s’il l’accepte et à quel prix.`,
+          `Pour un monospace haut, un utilitaire, un van ou un camping-car, le tableau des parkings officiels donne la hauteur maximale de chacun : les parkings couverts ne dépassent pas 2,10 m, le P2 et le P4 s’arrêtent à 2,50 m, et au-delà restent le P5, qui réserve une voie aux véhicules plus hauts à son entrée, et le P7, ouvert en période d’affluence, sans limite annoncée. Les parkings privés en plein air n’ont en général pas de limite de hauteur, mais un camping-car occupe plusieurs places : contactez le parking, qui vous dira s’il l’accepte et à quel prix.`,
         ],
       },
       {
@@ -355,8 +355,8 @@ function lyonSaintExupery(facts: GuideFacts): AirportGuide {
         title: "Venir à l’aéroport de Lyon en voiture",
         paragraphs: [
           "L’aéroport est desservi par l’A432, qui relie l’A46 et l’A42 au nord à l’A43 au sud, avec deux sorties signalées vers l’aéroport. Depuis Lyon, prenez l’A43 vers Grenoble puis l’A432, ou la rocade Est (N346) puis l’A43 et l’A432 ; comptez 30 à 40 minutes depuis le centre selon la circulation, davantage aux heures de pointe du matin et du soir. Depuis Chambéry et les vallées alpines, l’A43 puis l’A432 ; depuis Grenoble, l’A48 puis l’A43 et l’A432 ; depuis Genève, Bourg-en-Bresse et l’Ain, l’A42 puis l’A432 ; depuis Saint-Étienne, l’A47 puis l’A46 Sud, l’A43 et l’A432.",
-          `Sur place, tous les vols partent du Terminal 1 (le Terminal 2 est fermé pour travaux depuis le ${o.t2Closed}), et la signalisation distingue les parkings de proximité (P0 à P4), le P5 économique et la gare TGV. Les parkings privés sont dans les communes autour de l’aéroport : chaque fiche donne l’adresse exacte, la distance par la route et un lien d’itinéraire, et la confirmation reprend le téléphone du parking, au cas où vous vous perdriez. Prévoyez d’être au terminal ${o.advice}, comme le conseille l’aéroport, et ajoutez le temps de l’accueil au parking et de la navette.`,
-          "Sans voiture, le Rhônexpress relie la gare de Lyon Part-Dieu à l’aéroport en une trentaine de minutes, et l’on rejoint le terminal à pied depuis la gare TGV Lyon Saint-Exupéry. Pour déposer quelqu’un, les parkings minute sont gratuits 10 minutes.",
+          `Sur place, tous les vols partent du Terminal 1, et une signalisation vous oriente dès votre arrivée ; si vous avez réservé un parking de l’aéroport, son billet électronique donne un plan et les coordonnées GPS de l’entrée. Les parkings privés sont dans les communes autour de l’aéroport : chaque fiche donne l’adresse exacte, la distance par la route et un lien d’itinéraire, et la confirmation reprend le téléphone du parking, au cas où vous vous perdriez. Prévoyez d’être au terminal ${o.advice}, comme le conseille l’aéroport, et ajoutez le temps de l’accueil au parking et de la navette.`,
+          "Si un proche vous conduit à l’aéroport sans s’y garer, il peut vous déposer au parking minute T1A ou T1B, à quelques minutes à pied du Terminal 1 : les 10 premières minutes y sont gratuites.",
         ],
       },
       {
@@ -378,11 +378,11 @@ function lyonSaintExupery(facts: GuideFacts): AirportGuide {
         paragraphs: [
           PRODUCT_NAME +
             " est une plateforme de réservation dédiée aux parkings privés avec navette autour des aéroports. Vous indiquez vos dates et heures de dépôt et de retour, et la liste affiche les parkings disponibles pour tout le séjour, classés du moins cher au plus cher d’après le prix total. Chaque fiche décrit le parking, sa navette, ses services, ses conditions d’annulation et ses horaires.",
-          "La réservation se fait en deux étapes : vos informations (nom, téléphone, plaque, numéros de vol, nombre de passagers) puis le paiement en ligne par carte. La place est garantie dès le paiement, et vous recevez aussitôt une confirmation par e-mail et par SMS, avec l’adresse, le téléphone du parking, le point de rendez-vous du retour et un lien vers Ma réservation. La veille du départ, vous recevez un rappel avec l’heure de dépôt prévue et l’adresse du parking.",
-          "Le jour J, vous retrouvez sur Ma réservation l’heure prévue de votre navette (si vous avez indiqué votre vol aller), un bouton pour prévenir le parking de votre arrivée et, pendant le séjour, l’endroit où la voiture est garée, dès que sa place ou sa position a été enregistrée. Au retour, l’atterrissage est suivi, le SMS vous indique le point de rendez-vous, et la page vous montre un compte à rebours jusqu’à la navette. Après la remise de la voiture, vous recevez un dernier message de clôture.",
+          "La réservation se fait en deux étapes : vos informations (nom, téléphone, plaque, numéros de vol, nombre de passagers) puis le paiement en ligne par carte. La place est garantie dès le paiement, et vous recevez aussitôt un e-mail de confirmation avec l’adresse et le téléphone du parking, le point de rendez-vous du retour quand le parking l’a indiqué, et un lien vers Ma réservation ; si le parking envoie des SMS, un SMS reprend la référence, les dates et ce lien. La veille du dépôt, un rappel vous est en principe envoyé, avec l’heure de dépôt prévue et l’adresse du parking.",
+          "Le jour J, vous retrouvez sur Ma réservation l’heure prévue de votre navette (si vous avez indiqué votre vol aller) et un bouton pour prévenir le parking de votre arrivée. Le jour du retour, la page indique aussi l’endroit où la voiture est garée, dès que sa place ou sa position a été enregistrée (dans l’application, cette position s’affiche pendant tout le séjour). L’atterrissage est suivi, le SMS vous indique le point de rendez-vous, et la page montre un compte à rebours jusqu’à l’atterrissage puis, une fois la navette en route, jusqu’à son arrivée si le parking a activé le suivi en direct. Après la remise de la voiture, vous recevez un dernier message de clôture.",
           "Le prix affiché est celui que vous payez : la commission de " +
             PRODUCT_NAME +
-            " est comprise, et il n’y a pas de frais ajoutés à l’arrivée. Les services que vous n’avez pas réservés en ligne (lavage, plein, recharge) et les jours au-delà de la date de retour réservée sont réglés directement au parking, à son tarif.",
+            " est comprise, et il n’y a pas de frais ajoutés à l’arrivée. Les services annexes (lavage, plein, recharge), qui ne se réservent pas en ligne, et les jours au-delà de la date de retour réservée sont réglés directement au parking, à son tarif.",
         ],
       },
       {
@@ -391,8 +391,8 @@ function lyonSaintExupery(facts: GuideFacts): AirportGuide {
         title: "Annulation, modification, retard : ce qu’il faut savoir",
         paragraphs: [
           "Chaque parking partenaire choisit ses conditions d’annulation parmi quatre formules : annulation gratuite jusqu’à l’heure de dépôt prévue, jusqu’à 24 heures avant, jusqu’à 48 heures avant, ou non annulable. Elles sont affichées sur la fiche, rappelées avant le paiement et dans la confirmation. Dans le délai d’annulation gratuite, vous annulez vous-même depuis Ma réservation et le prix est intégralement remboursé, automatiquement. Après ce délai, le prix reste dû ; vous pouvez vous adresser au parking, libre de consentir un geste commercial.",
-          "Les numéros de vol se modifient en ligne jusqu’au retour. Pour un changement de dates, d’heures ou de véhicule, contactez le parking ; à défaut d’accord, vous pouvez annuler dans les conditions ci-dessus et réserver à nouveau. Un retour anticipé ne donne pas lieu à remboursement ; un retour plus tard que prévu prolonge le séjour, facturé par le parking.",
-          `À titre de comparaison, l’aéroport annonce pour ses parkings réservés en ligne, sauf au P1, géré par Lyon Parc Auto, une annulation gratuite jusqu’à une heure avant le départ et une « garantie retard » : pas de supplément si votre avion atterrit en retard, à condition d’avoir indiqué votre numéro de vol retour (relevé le ${o.readOn}). Dans les parkings privés, le suivi du vol sert d’abord à la navette, qui vous attend ; un retour après la date et l’heure réservées prolonge le séjour, facturé par le parking à son tarif.`,
+          "Les numéros de vol se modifient en ligne jusqu’au retour. Pour un changement de dates, d’heures ou de véhicule, contactez le parking ; à défaut d’accord, vous pouvez annuler dans les conditions ci-dessus et réserver à nouveau. Un retour anticipé ne donne pas lieu à remboursement ; un retour plus tard que prévu prolonge le séjour, et la prolongation est facturée par le parking, à son tarif.",
+          `À titre de comparaison, l’aéroport annonce pour ses parkings réservés en ligne, sauf le P1, géré par Lyon Parc Auto, une annulation gratuite jusqu’à une heure avant l’arrivée prévue au parking (quatre heures au P7) et une « garantie retard » : pas de supplément si votre avion atterrit en retard, à condition d’avoir indiqué votre numéro de vol retour (relevé le ${o.readOn}). Dans les parkings privés, le suivi du vol sert d’abord à la navette, qui vous attend ; il ne vous dispense pas de payer la prolongation, facturée par le parking, si vous rentrez après la date et l’heure réservées.`,
         ],
       },
       {
@@ -404,7 +404,7 @@ function lyonSaintExupery(facts: GuideFacts): AirportGuide {
           "Gardez la confirmation à portée de main : la référence, l’adresse et le téléphone du parking y sont.",
           "Arrivez au parking à l’heure indiquée, avec la marge de la navette et de l’accueil, et prévenez en cas de retard.",
           "Prenez quelques photos de la voiture et notez le kilométrage ; avec un voiturier, laissez seulement la clé du véhicule.",
-          "Retirez les objets de valeur, les papiers et les appareils, et laissez la carte grise si le parking la demande pour le voiturier.",
+          "Retirez les objets de valeur, les papiers (carte grise comprise) et les appareils.",
           "Notez votre place ou votre file, ou enregistrez la position de la voiture dans l’application.",
           "Vérifiez vos numéros de vol aller et retour sur Ma réservation : c’est ce qui permet au parking de suivre votre atterrissage.",
           "Au retour, allumez votre téléphone dès l’atterrissage : le SMS du parking indique le point de rendez-vous de la navette.",
@@ -415,11 +415,11 @@ function lyonSaintExupery(facts: GuideFacts): AirportGuide {
     faq: [
       [
         "Où sont les terminaux de Lyon Saint-Exupéry ?",
-        `L’aéroport a deux terminaux, le Terminal 1 et le Terminal 2, reliés entre eux et voisins de la gare TGV. Depuis le ${o.t2Closed}, le Terminal 2 est fermé pour travaux et tous les vols partent du Terminal 1, devant lequel la navette du parking vous dépose.`,
+        `L’aéroport a deux terminaux, le Terminal 1 et le Terminal 2, reliés entre eux et voisins de la gare TGV. Depuis le ${o.t2Closed}, le Terminal 2 est fermé pour travaux et tous les vols partent du Terminal 1, où la navette du parking vous conduit.`,
       ],
       [
         "Quel est le parking le moins cher à l’aéroport de Lyon ?",
-        `Parmi les parkings de l’aéroport, c’est le P5, le parking économique desservi par navette : ${o.week.p5} la semaine sans réservation sur la grille 2026, moins en ligne à l’avance. Les parkings privés avec navette sont souvent au même niveau ou en dessous : indiquez vos dates en haut de la page, et les partenaires s’affichent du moins cher au plus cher d’après le prix total.`,
+        `Selon l’aéroport, le moins cher de ses parkings officiels est le P7, mais il n’ouvre qu’en période d’affluence et se réserve en ligne seulement. Sur la grille 2026 sans réservation, le moins cher est le P5, le parking économique desservi par navette : ${o.week.p5} la semaine, moins en ligne à l’avance. Les parkings privés avec navette sont souvent au même niveau ou en dessous : indiquez vos dates en haut de la page, et les partenaires s’affichent du moins cher au plus cher d’après le prix total.`,
       ],
       [
         "Combien coûte une semaine de parking à Lyon Saint-Exupéry ?",
@@ -446,7 +446,7 @@ function lyonSaintExupery(facts: GuideFacts): AirportGuide {
       ],
       [
         "Peut-on laisser sa voiture trois semaines ou un mois ?",
-        `Oui. À l’aéroport, le P5 est fait pour la longue durée (${o.grid.P5[5]} pour trois semaines, ${o.grid.P5[6]} pour un mois sans réservation, puis 4 € par jour), et sa version robotisée accepte de 3 à 30 jours. Les parkings privés proposent des tarifs dégressifs et acceptent les séjours longs ; vérifiez la batterie avant de partir et prévenez le parking si vous rentrez plus tard.`,
+        `Oui. À l’aéroport, le P5 est fait pour la longue durée (${o.grid.P5[5]} pour trois semaines, ${o.grid.P5[6]} pour un mois sans réservation, puis 4 € par jour), et sa version robotisée accepte les séjours de 3 à 30 jours. Les parkings privés proposent des tarifs dégressifs et acceptent les séjours longs ; vérifiez la batterie avant de partir et prévenez le parking si vous rentrez plus tard.`,
       ],
       [
         "Combien de temps dure la navette jusqu’au terminal ?",
@@ -456,11 +456,11 @@ function lyonSaintExupery(facts: GuideFacts): AirportGuide {
       ],
       [
         "Que se passe-t-il si mon vol retour a du retard ?",
-        "Le parking suit l’heure d’atterrissage réelle de votre vol et adapte sa navette : vous n’avez rien à faire. À l’atterrissage, vous recevez un SMS avec le point de rendez-vous. Si le retard vous fait rentrer après l’heure réservée, le séjour est prolongé et la prolongation est facturée par le parking, à son tarif.",
+        "Si vous avez indiqué votre numéro de vol retour, le parking suit l’heure d’atterrissage réelle de votre vol et adapte sa navette : vous n’avez rien à faire. À l’atterrissage, vous recevez un SMS avec le point de rendez-vous. Si le retard vous fait rentrer après l’heure réservée, le séjour est prolongé et la prolongation est facturée par le parking, à son tarif.",
       ],
       [
         "Mon vol est annulé ou mes dates changent : que faire ?",
-        "Changez vos numéros de vol vous-même depuis Ma réservation, jusqu’au retour. Pour de nouvelles dates, contactez le parking ; à défaut d’accord, annulez dans le délai d’annulation gratuite de sa fiche (jusqu’à l’heure de dépôt, 24 h ou 48 h avant selon le parking) et réservez à nouveau : le remboursement est automatique.",
+        "Changez vos numéros de vol vous-même depuis Ma réservation, jusqu’au retour. Pour de nouvelles dates, contactez le parking ; à défaut d’accord, vous pouvez annuler dans le délai d’annulation gratuite indiqué dans votre confirmation (jusqu’à l’heure de dépôt, 24 h ou 48 h avant selon le parking) et réserver à nouveau : le remboursement est automatique. Pour une réservation non annulable, ou une fois ce délai passé, le prix reste dû ; vous pouvez vous adresser au parking, libre de consentir un geste commercial.",
       ],
       [
         "Peut-on réserver un parking la veille ou le jour même ?",
@@ -476,7 +476,7 @@ function lyonSaintExupery(facts: GuideFacts): AirportGuide {
       ],
       [
         "Peut-on recharger une voiture électrique pendant le séjour ?",
-        `À l’aéroport, oui : ${o.chargers.p2} bornes au P2, ${o.chargers.p4} au P4 et ${o.chargers.p5} au P5, en libre service et sans réservation, et deux parkings entièrement électriques réservables en ligne, le P4 Elec et le P5 Elec (relevé le ${o.readOn}). Chez les parkings privés, la recharge est un service à part, affiché sur la fiche quand il existe : filtrez sur « Recharge électrique » et précisez-le à la réservation.`,
+        `À l’aéroport, oui : ${o.chargers.p2} bornes au P2, ${o.chargers.p4} au P4 et ${o.chargers.p5} au P5, en libre-service et sans réservation, et deux parkings entièrement électriques réservables en ligne, le P4 Elec et le P5 Elec (relevé le ${o.readOn}). Chez les parkings privés, la recharge est un service à part, affiché sur la fiche quand il existe : filtrez sur « Recharge électrique » et précisez-le à la réservation.`,
       ],
       [
         "Y a-t-il un parking moto à l’aéroport de Lyon ?",
@@ -484,7 +484,7 @@ function lyonSaintExupery(facts: GuideFacts): AirportGuide {
       ],
       [
         "Quelle est la différence entre un parking minute et un parking de proximité ?",
-        `Le parking minute sert à déposer ou à récupérer quelqu’un : gratuit pendant ${o.minute.free}, puis ${o.minute.then}, et limité à ${o.minute.cap}. Un parking de proximité (P0 à P4) sert à stationner le temps d’un voyage, à la journée ou à la semaine.`,
+        `Le parking minute sert à déposer ou à récupérer quelqu’un : les 10 premières minutes sont gratuites, puis ${o.minute.then} ; ${o.minute.cap}. Un parking de proximité (P2, P3 ou P4), comme les parkings couverts P0 et P1, sert à stationner le temps d’un voyage, à la journée ou à la semaine.`,
       ],
       [
         "Comment rejoindre l’aéroport de Lyon sans voiture ?",

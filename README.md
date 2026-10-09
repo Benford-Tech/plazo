@@ -227,7 +227,7 @@ une décision de Joanny. Cocher au fur et à mesure.
   dans le mail de clôture, AggregateRating) et fiche parking plus riche (grille de prix visible, titre « dès X €/semaine ») ;
   **C** technique et vitesse (pages aéroport et fiche en ISR, MapLibre différé, photo LCP, favicon, lastmod) ;
   **D** notoriété (presse travel-tech et lyonnaise, annuaires, pages `/presse` et `/pour-les-loueurs`).
-- Fait le 09/10/2026 (**A**, « 4 200 mots, FAQ balisée ») : le guide de la page Lyon fait ~6 100 mots (14 sections, 3 tableaux,
+- Fait le 09/10/2026 (**A**, « 4 200 mots, FAQ balisée ») : le guide de la page Lyon fait ~6 400 mots (14 sections, 3 tableaux,
   19 questions, toutes dans le FAQPage avec les 4 générales) : parkings officiels P0 à P7 (emplacement, temps de marche jusqu'au
   Terminal 1, hauteur, bornes) et grille 2026 sans réservation (24 h → 1 mois), parkings privés, prix par durée, longue durée, pas
   cher, navette, voiturier, couvert / électrique / moto / véhicules hauts, accès, saisons, fonctionnement de Plazo, annulation,
@@ -236,7 +236,11 @@ une décision de Joanny. Cocher au fur et à mesure.
   (49 corrections confirmées : **Terminal 2 fermé pour travaux depuis le 01/04/2026**, tous les vols au Terminal 1 ; P1 géré par
   Lyon Parc Auto, exclu de l'annulation gratuite et de la garantie retard ; P5 à 2,60 m sur la page des parkings contre 2,50 m sur
   la grille ; P7 saisonnier sans limite de hauteur ; P4 Elec et P5 Elec réservables ; marge conseillée 2 h / 2 h 30 / 3 h ;
-  itinéraires A46, A48, A46 Sud ; aucune promesse au-delà des CGV : un retour tardif est une prolongation facturée par le parking).
+  itinéraires A46, A48, A46 Sud ; aucune promesse au-delà des CGV : un retour tardif est une prolongation facturée par le parking),
+  puis une seconde passe (41 corrections : service voiturier de l'aéroport ; le P7 présenté par l'aéroport comme son parking le
+  moins cher ; navettes des parkings extérieurs arrêtées là où le règlement de l'aéroport les autorise, pas « devant le
+  terminal » ; annulation 4 h avant au P7 ; P5 robotisé limité à 2,30 m ; ce que contiennent vraiment la confirmation, le rappel,
+  le SMS d'atterrissage et Ma réservation).
   À relire avant toute modification et à chaque nouvelle grille annuelle. Les chiffres des partenaires restent ceux de `guideFacts`
   (aucun sans parking réel). Les trois pages d'intention `/lyon-saint-exupery/guide/…` restent à faire.
 - Fait le 09/10/2026 : les segments du site (`recherche`, `guide`, `avis`…) ne peuvent plus être pris comme adresse de fiche
