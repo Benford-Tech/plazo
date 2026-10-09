@@ -1516,6 +1516,13 @@ export const fr = {
     /** The pin on the parking's address, and the map button that brings it back into view. */
     addressPin: "Adresse du parking",
     recenter: "Recentrer sur le parking",
+    /** Ctrl+Z / Ctrl+Maj+Z (09/10/2026). */
+    history: {
+      undone: "Modification annulée",
+      redone: "Modification rétablie",
+      nothingToUndo: "Rien à annuler",
+      nothingToRedo: "Rien à rétablir",
+    },
     tools: {
       contour: "Contour",
       parking: "Zone de parking",

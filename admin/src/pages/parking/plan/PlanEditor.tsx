@@ -26,6 +26,7 @@ import {
   type ParkingFile,
 } from "@/lib/plan/parkingFiles";
 import { toast } from "sonner";
+import { PlanHistory, planFields, touchesPlan, type Step } from "./history";
 import {
   MapView,
   type DrawKind,
@@ -242,7 +243,7 @@ export function PlanEditor({
   view,
   study,
   estimate,
-  update,
+  update: updatePlan,
   flush,
   onView,
   suggest,
@@ -259,6 +260,17 @@ export function PlanEditor({
   const mapRef = useRef<MapViewHandle>(null);
   const studyRef = useRef(study);
   studyRef.current = study;
+  const planRef = useRef(plan);
+  planRef.current = plan;
+
+  // Ctrl+Z (09/10/2026): every gesture keeps the drawing as it was; the automatic follow-ups (zones
+  // that follow the outline, IGN buildings, the first pass) are not gestures of their own.
+  const history = useRef(new PlanHistory());
+  function update(patch: PlanPatch, options?: { auto?: boolean }) {
+    if (!options?.auto && touchesPlan(patch))
+      history.current.record({ plan: planFields(planRef.current) }, Date.now());
+    updatePlan(patch);
+  }
 
   const confirm = useConfirm();
   const [tool, setToolState] = useState<Tool>(
@@ -370,12 +382,15 @@ export function PlanEditor({
     );
     const key = (list: Zone[]) =>
       JSON.stringify(list.map((z) => [z.id, z.geometry.coordinates]));
-    update({
-      ...(key(pieces) !== key(current) ? { zones: pieces } : {}),
-      ...(settings.zonesAuto !== true
-        ? { settings: { ...study.settings, zonesAuto: true } }
-        : {}),
-    });
+    update(
+      {
+        ...(key(pieces) !== key(current) ? { zones: pieces } : {}),
+        ...(settings.zonesAuto !== true
+          ? { settings: { ...study.settings, zonesAuto: true } }
+          : {}),
+      },
+      { auto: true },
+    );
   }
   const exclusionsKey = JSON.stringify(
     exclusions.map((e) => [e.id, e.clearance, e.geometry]),
@@ -407,10 +422,13 @@ export function PlanEditor({
       );
       const key = (list: Exclusion[]) =>
         list.map((x) => `${x.id}:${x.source ?? ""}`).join("|");
-      update({
-        ...(key(next) !== key(latest.exclusions) ? { exclusions: next } : {}),
-        settings: { ...latest.settings, ignBuildingsSynced: true },
-      });
+      update(
+        {
+          ...(key(next) !== key(latest.exclusions) ? { exclusions: next } : {}),
+          settings: { ...latest.settings, ignBuildingsSynced: true },
+        },
+        { auto: true },
+      );
     } catch {
       // The IGN did not answer: the operator adds the buildings by hand.
     }
@@ -435,6 +453,71 @@ export function PlanEditor({
       });
     }
   }
+
+  // ---- Ctrl+Z / Ctrl+Maj+Z (Ctrl+Y) -----------------------------------------------------------
+  /** The parts of a step as they are now, to come back to them. */
+  const currentOf = (step: Step): Step => ({
+    ...(step.plan ? { plan: planFields(planRef.current) } : {}),
+    ...(step.files ? { files: files.map(fileInput) } : {}),
+  });
+  async function applyStep(step: Step): Promise<boolean> {
+    if (step.plan) updatePlan(step.plan);
+    if (step.files) {
+      try {
+        await saveFiles.mutateAsync(step.files);
+      } catch {
+        // The mutation said why (a file that holds cars stays).
+        return false;
+      }
+    }
+    setSelectedExclusion(null);
+    setSelectedFile(null);
+    setSuggestion(null);
+    return true;
+  }
+  async function travel(direction: "undo" | "redo") {
+    if (auto || saveFiles.isPending) return;
+    const h = history.current;
+    const step = direction === "undo" ? h.undo(currentOf) : h.redo(currentOf);
+    if (!step) {
+      toast.message(
+        direction === "undo"
+          ? t.history.nothingToUndo
+          : t.history.nothingToRedo,
+        { id: "plan-history" },
+      );
+      return;
+    }
+    if (!(await applyStep(step))) {
+      h.revert(direction, step);
+      return;
+    }
+    toast.message(direction === "undo" ? t.history.undone : t.history.redone, {
+      id: "plan-history",
+    });
+  }
+  const travelRef = useRef(travel);
+  travelRef.current = travel;
+  useEffect(() => {
+    function onKey(e: KeyboardEvent) {
+      if (!(e.ctrlKey || e.metaKey) || e.altKey) return;
+      const key = e.key.toLowerCase();
+      const redo = (key === "z" && e.shiftKey) || (key === "y" && !e.shiftKey);
+      if (key !== "z" && !redo) return;
+      // A text field keeps its own undo; an open question waits for its answer.
+      const target = e.target as HTMLElement | null;
+      if (
+        target?.isContentEditable ||
+        /^(INPUT|TEXTAREA|SELECT)$/.test(target?.tagName ?? "") ||
+        document.querySelector('[role="alertdialog"]')
+      )
+        return;
+      e.preventDefault();
+      void travelRef.current(redo ? "redo" : "undo");
+    }
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, []);
 
   // ---- The parking's address: the plan is built around it (09/10/2026) -------------------------
   /** The address on the map (geocoded by the server), when it could be placed. */
@@ -491,7 +574,7 @@ export function PlanEditor({
       ...current,
       settings: { ...current.settings, autoSetupAt: new Date().toISOString() },
     };
-    update({ settings: marked.settings });
+    update({ settings: marked.settings }, { auto: true });
     try {
       const r = await autoSetup({
         parkingId,
@@ -500,7 +583,7 @@ export function PlanEditor({
         layout: passLayout,
         newId,
         save: async (patch) => {
-          update(patch);
+          update(patch, { auto: true });
           return flush();
         },
         suggest,
@@ -526,6 +609,8 @@ export function PlanEditor({
         { duration: 10000 },
       );
     } finally {
+      // The pass also laid spots and files: going back past it would undo only half of it.
+      history.current.clear();
       setAuto(null);
     }
   }
@@ -552,8 +637,10 @@ export function PlanEditor({
       return;
     }
     setBusy(true);
+    const before = files.map(fileInput);
     try {
       const { data } = await adminApi.filesFromPlan(parkingId);
+      history.current.record({ files: before }, Date.now());
       void queryClient.invalidateQueries({ queryKey: ["files", parkingId] });
       toast.success(t.files.proposed(data.length));
     } catch (e) {
@@ -902,21 +989,26 @@ export function PlanEditor({
       return;
     }
     const code = nextFileCode(files);
+    const before = files.map(fileInput);
     saveFiles.mutate(
-      [
-        ...files.map(fileInput),
-        { code, capacity, geometry: line, sortOrder: files.length },
-      ],
+      [...before, { code, capacity, geometry: line, sortOrder: files.length }],
       {
-        onSuccess: () => toast.success(t.files.added(code, capacity)),
+        onSuccess: () => {
+          history.current.record({ files: before }, Date.now());
+          toast.success(t.files.added(code, capacity));
+        },
       },
     );
   }
   function patchFile(id: string, patch: Partial<FileInput>) {
+    const before = files.map(fileInput);
     saveFiles.mutate(
       files.map((f) =>
         f.id === id ? { ...fileInput(f), ...patch } : fileInput(f),
       ),
+      {
+        onSuccess: () => history.current.record({ files: before }, Date.now()),
+      },
     );
   }
   async function removeFile(f: ParkingFile) {
@@ -926,7 +1018,10 @@ export function PlanEditor({
     }
     if (!(await confirm(t.files.removeConfirm(f.code), { destructive: true })))
       return;
-    saveFiles.mutate(files.filter((x) => x.id !== f.id).map(fileInput));
+    const before = files.map(fileInput);
+    saveFiles.mutate(files.filter((x) => x.id !== f.id).map(fileInput), {
+      onSuccess: () => history.current.record({ files: before }, Date.now()),
+    });
     if (selectedFile === f.id) setSelectedFile(null);
   }
   // P-B (07/10/2026): the spots of a drawn row are laid at once and kept through regenerations.
@@ -1833,7 +1928,19 @@ export function PlanEditor({
                     role="menuitem"
                     onClick={() => {
                       setResetOpen(false);
+                      const before: Step =
+                        scope === "files"
+                          ? { files: files.map(fileInput) }
+                          : scope === "all"
+                            ? {
+                                plan: planFields(planRef.current),
+                                files: files.map(fileInput),
+                              }
+                            : { plan: planFields(planRef.current) };
                       void onReset(scope).then((done) => {
+                        // "Places seulement" only touches the spots: nothing to undo here.
+                        if (done && scope !== "spots")
+                          history.current.record(before, Date.now());
                         setTool(RESET_TOOL[scope]);
                         if (done && scope === "all") showAddress();
                       });
