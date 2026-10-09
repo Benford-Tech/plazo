@@ -532,6 +532,11 @@ export const fr = {
     name: "Nom du parking",
     address: "Adresse",
     totalCapacity: "Nombre de places au total",
+    // 09/10/2026: once the plan has room, its figure replaces the typed one everywhere.
+    capacityValue: (n: number) => `${n} place${n > 1 ? "s" : ""}`,
+    capacityFromPlan: (source: "files" | "spots") =>
+      `Calculé depuis le plan du parking (${source === "files" ? "files de voiturier" : "places du plan"}) : c'est ce nombre qui compte partout (réservations, site, planning).`,
+    openPlan: "Ouvrir le plan",
     safetyMarginPct: "Marge de sécurité (%)",
     safetyMarginHelp:
       "Part des places jamais proposées à la réservation (imprévus, prolongations).",
@@ -1776,10 +1781,9 @@ export const fr = {
     counts: "Places",
     countGenerated: "Générées",
     countActive: "Actives",
-    countDeclared: "Capacité déclarée",
-    applyCapacity: (n: number) => `Recalculer la capacité → ${n}`,
-    capacityApplied: (n: number) => `Capacité déclarée : ${n} places`,
-    capacityInSync: "Capacité déclarée à jour",
+    // 09/10/2026: the plan's spots or files are the capacity used everywhere.
+    capacityUsed: (n: number) =>
+      `Capacité utilisée partout : ${n} place${n > 1 ? "s" : ""}`,
     adjust: "Ajuster à la main",
     adjustHelp:
       "Cliquez une place pour la désactiver ou la réactiver ; choisissez un type puis cliquez des places pour le leur donner.",

@@ -49,16 +49,18 @@ describe('planning des places (bloc 2, step 3)', () => {
   it('une ligne par place sur la fenêtre, les réservations sans place, et l’alerte des jours trop pleins', async () => {
     const { token, parking } = await parkingWithSpots();
     const d = (n: number) => addDays(today, n);
-    const create = (plate: string, a: number, r: number) =>
+    const create = (plate: string, a: number, r: number, overrides: Record<string, unknown> = {}) =>
       api()
         .post('/api/internal/reservations')
         .set(auth(token))
-        .send(booking(plate, d(a), d(r)));
+        .send(booking(plate, d(a), d(r), overrides));
     const a = (await create('AA-111-AA', 1, 3)).body.data;
     await create('BB-222-BB', 1, 4);
     await create('CC-333-CC', 2, 5);
     await create('DD-444-DD', 2, 6);
-    await create('EE-555-EE', 2, 3); // day 2: five stays for four spots
+    // Day 2: five stays for four spots. The plan's spots are the capacity (09/10/2026): the fifth is forced.
+    expect((await create('EE-555-EE', 2, 3)).body.code).toBe('overbooked');
+    expect((await create('EE-555-EE', 2, 3, { force: true })).status).toBe(201);
     const list = (await api().get(`/api/internal/parkings/${parking.id}/plan`).set(auth(token))).body.spots;
     await api().post(`/api/internal/reservations/${a.id}/spot`).set(auth(token)).send({ spotId: list[0].id });
 
@@ -94,16 +96,16 @@ describe('planning des places (bloc 2, step 3)', () => {
   it('la pré-affectation donne une place libre sur tout le séjour, la plus proche de la remise, et saute ce qui ne rentre pas', async () => {
     const { token, parking } = await parkingWithSpots();
     const d = (n: number) => addDays(today, n);
-    const create = (plate: string, a: number, r: number) =>
+    const create = (plate: string, a: number, r: number, overrides: Record<string, unknown> = {}) =>
       api()
         .post('/api/internal/reservations')
         .set(auth(token))
-        .send(booking(plate, d(a), d(r)));
+        .send(booking(plate, d(a), d(r), overrides));
     await create('AA-111-AA', 0, 3);
     await create('BB-222-BB', 1, 4);
     await create('CC-333-CC', 2, 5);
     await create('DD-444-DD', 2, 6);
-    await create('EE-555-EE', 2, 3);
+    expect((await create('EE-555-EE', 2, 3, { force: true })).status).toBe(201); // over the four spots: forced
     await create('FF-666-FF', 4, 8); // after AA and BB left: a spot frees up
 
     const run = await api().post(`/api/internal/parkings/${parking.id}/spot-planning/preassign?from=${today}&days=14`).set(auth(token));

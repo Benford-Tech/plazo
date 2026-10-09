@@ -3,6 +3,7 @@ import { Container, Service } from 'typedi';
 import { isPlatformAdmin, PLATFORM_COMMISSION_BPS, PRODUCT_NAME } from '@/config';
 import prisma, { ListingStatus, PlatformAudience, Prisma } from '@/database';
 import { listingApprovedEmail, listingRejectedEmail, listingUnpublishedEmail } from '@/domain/account-messages';
+import { effectiveCapacity } from '@/domain/capacity';
 import { DATE_RE, dayBounds, localDate } from '@/domain/time';
 import { InviteOperatorDto, PlatformNotificationDto } from '@/dtos/platform.dto';
 import { AuthenticatedStaff } from '@/interfaces/auth.interface';
@@ -12,6 +13,7 @@ import { logger } from '@/utils/logger';
 import { AccountService } from './account.service';
 import { AuditService } from './audit.service';
 import { normalizeEmail } from './auth.service';
+import { loadPlanCapacity } from './capacity.service';
 import { ListingService } from './listing.service';
 import { NotificationService } from './notification.service';
 import { OperatorService } from './operator.service';
@@ -210,6 +212,9 @@ export class PlatformService {
       prisma.operator.count({ where: { archivedAt: null } }),
     ]);
     const bookings = new Map(monthly.map(m => [m.operatorId, m._count._all]));
+    // « places »: the capacity used everywhere (the plan's, else the declared figure; 09/10/2026).
+    const plans = await loadPlanCapacity(operators.flatMap(o => o.parkings.map(p => p.id)));
+    const capacityOf = (p: { id: string; totalCapacity: number }) => effectiveCapacity({ declared: p.totalCapacity, ...plans.get(p.id)! }).total;
     const now = new Date();
 
     return {
@@ -231,7 +236,7 @@ export class PlatformService {
           // Fictional operator of the demo seed (scripts/seed-demo.ts).
           isDemo: o.isDemo,
           parkings: o.parkings.length,
-          places: o.parkings.reduce((sum, p) => sum + p.totalCapacity, 0),
+          places: o.parkings.reduce((sum, p) => sum + capacityOf(p), 0),
           manager: manager ? { name: manager.name, email: manager.email, emailVerified: !!manager.emailVerifiedAt } : null,
           listing,
           payments: { connected: !!o.stripeAccountId, chargesEnabled: o.stripeChargesEnabled, payoutsEnabled: o.stripePayoutsEnabled },
@@ -470,11 +475,13 @@ export class PlatformService {
       }),
       prisma.listing.groupBy({ by: ['status'], where: current, _count: { _all: true } }),
     ]);
+    const plans = await loadPlanCapacity(listings.map(l => l.parking.id));
     return {
       counts: Object.fromEntries(LISTING_STATUSES.map(s => [s, counts.find(c => c.status === s)?._count._all ?? 0])),
       listings: listings.map(({ parking: { pricingTiers, operator, ...parking }, ...l }) => ({
         ...l,
-        parking,
+        // `totalCapacity` is the declared figure; `effectiveCapacity` the one used everywhere (09/10/2026).
+        parking: { ...parking, effectiveCapacity: effectiveCapacity({ declared: parking.totalCapacity, ...plans.get(parking.id)! }).total },
         operator,
         pricingTiers,
         fromPriceCents: pricingTiers.length ? Math.min(...pricingTiers.map(t => t.priceCents)) : null,

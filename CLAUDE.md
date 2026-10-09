@@ -251,6 +251,16 @@ Ne construire QUE ce qui règle la douleur n°1 du client.
      web `FilesPlanningPage.tsx` servie par `/parking/planning` dès que le parking a des files, app : mode files du
      `ProSpotPlanningBloc` (`_FilesPlanningView`). Voyageur : `TravellerReturn.file` affiché dans « Retrouver ma voiture »
      (site `ReturnLive`, app `find_car_page` / `return_block`).
+   - **Capacité = places du plan (09/10/2026, « le nombre de places généré doit être pris en compte dans toute
+     l'application »)** : `effectiveCapacity` (`domain/capacity.ts`) = capacité des files actives, sinon places actives du
+     plan (à la main et réservées comprises), sinon `Parking.totalCapacity` (le chiffre déclaré, gardé pour l'absence de
+     plan) ; marge par-dessus (`bookableCapacity`). `CapacityService.nights` le lit dans la même requête (CTE) : réservations
+     du personnel, imports, aperçu du formulaire, planning, recherche et réservation du site, paiement tardif ;
+     `loadPlanCapacity` (plusieurs parkings en une requête) pour `GET /internal/parking` (`declaredCapacity`,
+     `effectiveCapacity`, `capacitySource`), le tableau de bord, la vue du plan, les plannings des places et des files et
+     la Plateforme (`places`, annonces). Réglages web et app : chiffre en lecture seule « Calculé depuis le plan du
+     parking » avec « Ouvrir le plan » ; éditeur : « Capacité utilisée partout : N places » à la place de « Recalculer la
+     capacité » ; `apply-capacity` reste pour les anciennes versions de l'app.
    - Retrouver un véhicule en quelques secondes (plaque, emplacement, emplacement des clés).
    - Si voiturier : suivi des clés confiées.
 

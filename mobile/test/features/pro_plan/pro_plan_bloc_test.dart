@@ -98,7 +98,16 @@ void main() {
     when(() => save(any())).thenAnswer((_) async => const Right(emptyPlan));
     when(() => estimate('p1')).thenAnswer((_) async => const Right(PlanEstimateModel(usableArea: 2400, totals: {'selfPark': 72, 'valet24': 112, 'valet5': 118})));
     when(() => generate(any())).thenAnswer(
-      (_) async => Right(ParkingPlanViewModel(plan: const ParkingPlanModel(id: 'pl', parkingId: 'p1', layout: 'valet24'), spots: [spot], activeSpots: 1, totalCapacity: 112)),
+      (_) async => Right(
+        ParkingPlanViewModel(
+          plan: const ParkingPlanModel(id: 'pl', parkingId: 'p1', layout: 'valet24'),
+          spots: [spot],
+          activeSpots: 1,
+          totalCapacity: 112,
+          effectiveCapacity: 1,
+          capacitySource: 'spots',
+        ),
+      ),
     );
     final b = bloc()..add(const ProPlanStarted());
     await settle();
@@ -133,6 +142,9 @@ void main() {
     expect(gen.layout, 'valet5');
     expect(b.state.generated, isTrue);
     expect(b.state.parking!.totalCapacity, 112);
+    // 09/10/2026: the plan's spots are the capacity used everywhere.
+    expect(b.state.parking!.effectiveCapacity, 1);
+    expect(b.state.parking!.capacitySource, 'spots');
     expect(b.state.spots, hasLength(1));
   });
 

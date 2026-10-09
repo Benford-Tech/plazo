@@ -5,6 +5,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 
 import '../../../../core/constants/product.g.dart';
 import '../../../../core/enums/view_state.dart';
+import '../../../../core/router/app_router.dart';
 import '../../../../core/utils/error_message_handler.dart';
 import '../../../../di/locator.dart';
 import '../../../../shared/theme/theme.dart';
@@ -106,8 +107,19 @@ class _ParkingFormState extends State<_ParkingForm> {
     final bloc = context.read<ProSettingsBloc>();
     final state = widget.state;
     String? err(String f) => state.fieldErrors[f] == null ? null : translateErrorCode(state.fieldErrors[f]);
-    final total = int.tryParse(_capacity.text) ?? 0;
+    // 09/10/2026: once the plan has room (valet files or active spots), its figure is the capacity
+    // used everywhere; the declared one is kept and sent back unchanged.
+    final source = widget.parking.capacitySource;
+    final fromPlan = source == 'files' || source == 'spots';
+    final total = fromPlan ? widget.parking.effectiveCapacity : int.tryParse(_capacity.text) ?? 0;
     final margin = int.tryParse(_margin.text) ?? 0;
+    final marginField = TextField(
+      key: const Key('set-margin'),
+      controller: _margin,
+      keyboardType: TextInputType.number,
+      onChanged: (_) => setState(() {}),
+      decoration: InputDecoration(labelText: 'settings.margin'.tr(), errorText: err('safetyMarginPct')),
+    );
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -125,29 +137,26 @@ class _ParkingFormState extends State<_ParkingForm> {
           decoration: InputDecoration(labelText: 'settings.address'.tr(), errorText: err('address')),
         ),
         const SizedBox(height: 10),
-        Row(
-          children: [
-            Expanded(
-              child: TextField(
-                key: const Key('set-capacity'),
-                controller: _capacity,
-                keyboardType: TextInputType.number,
-                onChanged: (_) => setState(() {}),
-                decoration: InputDecoration(labelText: 'settings.total_capacity'.tr(), errorText: err('totalCapacity')),
+        if (fromPlan) ...[
+          _CapacityFromPlan(capacity: total, source: source),
+          const SizedBox(height: 10),
+          marginField,
+        ] else
+          Row(
+            children: [
+              Expanded(
+                child: TextField(
+                  key: const Key('set-capacity'),
+                  controller: _capacity,
+                  keyboardType: TextInputType.number,
+                  onChanged: (_) => setState(() {}),
+                  decoration: InputDecoration(labelText: 'settings.total_capacity'.tr(), errorText: err('totalCapacity')),
+                ),
               ),
-            ),
-            const SizedBox(width: 10),
-            Expanded(
-              child: TextField(
-                key: const Key('set-margin'),
-                controller: _margin,
-                keyboardType: TextInputType.number,
-                onChanged: (_) => setState(() {}),
-                decoration: InputDecoration(labelText: 'settings.margin'.tr(), errorText: err('safetyMarginPct')),
-              ),
-            ),
-          ],
-        ),
+              const SizedBox(width: 10),
+              Expanded(child: marginField),
+            ],
+          ),
         const SizedBox(height: 4),
         Text('settings.margin_help'.tr(), style: AppText.muted(size: 12)),
         Text(
@@ -214,6 +223,43 @@ class _ParkingFormState extends State<_ParkingForm> {
       ],
     );
   }
+}
+
+/// The capacity taken from the plan (09/10/2026): read-only, with where it comes from and a way to the plan.
+class _CapacityFromPlan extends StatelessWidget {
+  const _CapacityFromPlan({required this.capacity, required this.source});
+  final int capacity;
+  final String source;
+
+  @override
+  Widget build(BuildContext context) => Container(
+    key: const Key('set-capacity-plan'),
+    width: double.infinity,
+    padding: const EdgeInsets.all(12),
+    decoration: const BoxDecoration(color: AppColors.tintSoft, borderRadius: AppRadius.chip),
+    child: Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text('settings.total_capacity'.tr(), style: AppText.muted(size: 12)),
+        const SizedBox(height: 2),
+        Text(
+          capacity == 1 ? 'settings.capacity_one'.tr() : 'settings.capacity_many'.tr(args: ['$capacity']),
+          style: AppText.tabular(size: 20, color: AppColors.accent),
+        ),
+        const SizedBox(height: 4),
+        Text('settings.capacity_from_plan'.tr(args: ['settings.capacity_source_$source'.tr()]), style: AppText.muted(size: 12.5)),
+        Align(
+          alignment: Alignment.centerLeft,
+          child: TextButton(
+            key: const Key('set-open-plan'),
+            style: TextButton.styleFrom(padding: EdgeInsets.zero, minimumSize: const Size(0, 36)),
+            onPressed: () => context.router.push(const ProPlanRoute()),
+            child: Text('settings.open_plan'.tr(), style: AppText.strong(size: 13.5, color: AppColors.accent)),
+          ),
+        ),
+      ],
+    ),
+  );
 }
 
 /// R-B (07/10/2026): who sees the shuttles' position — nobody, the team, or the team and the travellers.

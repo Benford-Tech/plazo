@@ -27,7 +27,7 @@ abstract class ProPlanState with _$ProPlanState {
     PlanEstimateModel? estimate,
     @Default('valet24') String layout,
 
-    /// The last generation applied the capacity.
+    /// The spots were just generated (their number is the capacity used everywhere).
     @Default(false) bool generated,
     String? errorCode,
   }) = _ProPlanState;

@@ -54,6 +54,8 @@ _ParkingSettingsModel _$ParkingSettingsModelFromJson(
   landingDelayMinutes: (json['landingDelayMinutes'] as num?)?.toInt() ?? 30,
   shuttleTracking: json['shuttleTracking'] as String? ?? 'team',
   bookableCapacity: (json['bookableCapacity'] as num?)?.toInt() ?? 0,
+  effectiveCapacity: (json['effectiveCapacity'] as num?)?.toInt() ?? 0,
+  capacitySource: json['capacitySource'] as String? ?? 'declared',
 );
 
 Map<String, dynamic> _$ParkingSettingsModelToJson(
@@ -70,6 +72,8 @@ Map<String, dynamic> _$ParkingSettingsModelToJson(
   'landingDelayMinutes': instance.landingDelayMinutes,
   'shuttleTracking': instance.shuttleTracking,
   'bookableCapacity': instance.bookableCapacity,
+  'effectiveCapacity': instance.effectiveCapacity,
+  'capacitySource': instance.capacitySource,
 };
 
 _SmsGatewayModel _$SmsGatewayModelFromJson(Map<String, dynamic> json) =>

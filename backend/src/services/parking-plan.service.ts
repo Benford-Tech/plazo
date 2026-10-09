@@ -4,11 +4,13 @@ import prisma, { ParkingPlan, ParkingSpot, Prisma } from '@/database';
 import { autoZones, estimate, frameFor, withIgnBuildings, type Estimate, type EstimateInput } from '@/domain/layout/estimate';
 import { spotsFromLayout } from '@/domain/layout/numbering';
 import { settingsOf, type CapacityStudy, type LayoutKey } from '@/domain/layout/types';
+import { type CapacitySource } from '@/domain/capacity';
 import { AddSpotsDto, GenerateSpotsDto, ReplaceSpotsDto, SpotInputDto, UpdateParkingPlanDto, UpdateSpotDto } from '@/dtos/parking-plan.dto';
 import { AuthenticatedStaff } from '@/interfaces/auth.interface';
 import { HttpException } from '@/utils/httpException';
 import { logger } from '@/utils/logger';
 import { AuditService } from './audit.service';
+import { loadPlanCapacity, parkingCapacity } from './capacity.service';
 import { GeoService, MAX_BBOX_SPAN } from './geo.service';
 
 /** Names of the exclusions and zones the server makes itself (user-facing, in French like the app's "Zone A"). */
@@ -32,9 +34,13 @@ function bboxOf(ring: [number, number][]): [number, number, number, number] | nu
 export interface ParkingPlanView {
   plan: ParkingPlan;
   spots: ParkingSpot[];
-  /** Active spots, what "Recalculer la capacité" would set. */
+  /** Active spots (laid by hand and reserved ones included). */
   activeSpots: number;
+  /** The declared figure (older apps read it; `applyCapacity` copies the active spots into it). */
   totalCapacity: number;
+  /** The capacity used everywhere (09/10/2026): files, else active spots, else declared. */
+  effectiveCapacity: number;
+  capacitySource: CapacitySource;
 }
 
 const notFound = () => new HttpException(httpStatus.NOT_FOUND, 'Parking not found', 'not_found');
@@ -42,7 +48,8 @@ const notFound = () => new HttpException(httpStatus.NOT_FOUND, 'Parking not foun
 /**
  * The operator's parking plan (bloc 2, step "Plan"). Always scoped to the parking of the actor's
  * operator: the plan is created empty on first read. The geometry work (layouts, numbering) is done
- * by the pro space; the API stores the plan and its spots and keeps the declared capacity in line.
+ * by the pro space; the API stores the plan and its spots, whose number is the parking's capacity
+ * (`effectiveCapacity`) as soon as there are active spots and no files.
  */
 @Service()
 export class ParkingPlanService {
@@ -58,7 +65,15 @@ export class ParkingPlanService {
       where: { parkingId: parking.id },
       orderBy: [{ zoneId: 'asc' }, { row: 'asc' }, { index: 'asc' }],
     });
-    return { plan, spots, activeSpots: spots.filter(s => s.active).length, totalCapacity: parking.totalCapacity };
+    const capacity = parkingCapacity(parking, (await loadPlanCapacity([parking.id])).get(parking.id)!);
+    return {
+      plan,
+      spots,
+      activeSpots: spots.filter(s => s.active).length,
+      totalCapacity: parking.totalCapacity,
+      effectiveCapacity: capacity.effectiveCapacity,
+      capacitySource: capacity.capacitySource,
+    };
   }
 
   public async update(actor: AuthenticatedStaff, parkingId: string, data: UpdateParkingPlanDto): Promise<ParkingPlanView> {
@@ -220,7 +235,11 @@ export class ParkingPlanService {
     });
   }
 
-  /** Sets the declared capacity to the number of active spots. */
+  /**
+   * Copies the number of active spots into the declared capacity. Kept for the app builds already
+   * on the stores (« Générer et appliquer »): since 09/10/2026 the plan's figure counts by itself
+   * (`effectiveCapacity`), so this only changes the fallback used without a plan.
+   */
   public async applyCapacity(actor: AuthenticatedStaff, parkingId: string): Promise<ParkingPlanView> {
     const parking = await this.parkingOf(actor, parkingId);
     const active = await prisma.parkingSpot.count({ where: { parkingId: parking.id, active: true } });
