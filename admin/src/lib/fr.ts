@@ -103,6 +103,7 @@ export const fr = {
     invalid_slug:
       "Lettres minuscules, chiffres et tirets seulement (ex. parking-demo).",
     slug_taken: "Cette adresse est déjà prise par un autre parking.",
+    slug_reserved: "Cette adresse est réservée au site Plazo : choisissez-en une autre.",
     unknown_airport: "Aéroport inconnu.",
     invalid_url: "Adresse web invalide (http:// ou https://).",
     invalid_service: "Service inconnu.",

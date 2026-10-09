@@ -6,6 +6,28 @@ export type Service = (typeof SERVICES)[number];
 export const SLUG_RE = /^[a-z0-9]+(?:-[a-z0-9]+)*$/;
 
 /**
+ * Slugs a listing can never take: the traveller site serves /<airport>/<slug> for a parking page, and these segments
+ * are (or will be) its own routes under an airport (09/10/2026: a listing called "recherche" never resolved).
+ */
+export const RESERVED_LISTING_SLUGS = [
+  'recherche',
+  'guide',
+  'guides',
+  'reserver',
+  'avis',
+  'comparatif',
+  'aide',
+  'faq',
+  'ma-reservation',
+  'api',
+  'pro',
+] as const;
+
+export function isReservedListingSlug(slug: string): boolean {
+  return (RESERVED_LISTING_SLUGS as readonly string[]).includes(slug);
+}
+
+/**
  * Review of a listing by the platform. The operator sends a draft (or a refused listing, once
  * corrected) for validation and can withdraw it; the platform validates or refuses what it was
  * sent, and can take a published listing offline. Edits never change the status: a published

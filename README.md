@@ -200,6 +200,33 @@ une décision de Joanny. Cocher au fur et à mesure.
   Stripe Express relié avant le premier reversement, pushs activés par chaque membre dans Plazo Pro (Plus › Notifications),
   mail de transfert de la messagerie (assistant « Relier votre boîte mail », transfert global désactivé).
 
+**Référencement (audit du 08/10/2026 : on-page, SERP et concurrents, performance, local, contenus ; 39 constats confirmés)**
+- Réalité : domaine de deux jours, une seule URL indexable (`/`, ~1 100 mots), aucun parking réel, aucun avis ; rien n'est
+  encore indexé (`site:plazo.fr` vide sur Google et Bing). La SERP « parking aéroport lyon » appartient à Parkos (4 200 mots,
+  FAQPage, milliers d'avis), Parclick, Onepark (six guides Lyon), Holiday Extras, ParkMundo, Allopark et lyonaeroports.com ;
+  le pack local est aux exploitants. « Tête de liste » sur cette requête n'est pas atteignable en 2026. Objectifs réalistes :
+  3 mois → indexé, 1er sur « plazo parking », page 1 sur « <client n°1> parking » ; 6 mois → page 1 sur deux ou trois requêtes
+  de longue traîne (longue durée, voiturier, prix d'une semaine) ; 12 mois → page 1 sur la requête principale, avec des avis
+  et des liens.
+- [ ] Search Console : l'enregistrement TXT `google-site-verification` est déjà dans le DNS Cloudflare ; ajouter la propriété
+  Domaine `plazo.fr`, soumettre `https://www.plazo.fr/sitemap.xml`, demander l'indexation de `/` ; Bing Webmaster Tools par
+  « Import from Google Search Console ».
+- [ ] Les quatre parkings de démonstration restent la matière de la seule page indexable (« 4 parkings disponibles », carte
+  « dès 36,60 € », noms en H3) : les suspendre (Plateforme › Loueurs) ou les retirer (`DEMO_LISTINGS=remove`) le jour où la
+  fiche du client n°1 est publiée, avant la première demande d'indexation.
+- [ ] Google Business Profile du **client n°1** (Plazo n'y est pas éligible : place de marché) : catégorie « Parking », NAP
+  identique à sa fiche Plazo, lien de réservation `https://www.plazo.fr/lyon-saint-exupery/<slug>`, routine d'avis Google.
+- [ ] `product.json › company` et une adresse support réelle avant tout contact presse ou annuaire (`/mentions-legales`
+  affiche encore « [à compléter] »).
+- Directions à trancher (09/10/2026, voir les propositions de Claude) : **A** guide Lyon étoffé (parkings officiels P0–P5
+  chiffrés et datés, FAQ avec les questions « People also ask ») et trois pages d'intention sous `/lyon-saint-exupery/guide/…`
+  (pas cher et prix d'une semaine, longue durée, voiturier) ; **B** avis après séjour (table `reviews`, « Notez votre séjour »
+  dans le mail de clôture, AggregateRating) et fiche parking plus riche (grille de prix visible, titre « dès X €/semaine ») ;
+  **C** technique et vitesse (pages aéroport et fiche en ISR, MapLibre différé, photo LCP, favicon, lastmod) ;
+  **D** notoriété (presse travel-tech et lyonnaise, annuaires, pages `/presse` et `/pour-les-loueurs`).
+- Fait le 09/10/2026 : les segments du site (`recherche`, `guide`, `avis`…) ne peuvent plus être pris comme adresse de fiche
+  (`RESERVED_LISTING_SLUGS`, erreur `slug_reserved`).
+
 **Fait le 08/10/2026 (code)** : accès Plateforme réservé à un e-mail vérifié ; Swagger coupé en production ; secret du
 relais mail accepté en en-tête seulement ; libellés échappés sur la carte des navettes ; app par défaut sur
 `https://www.plazo.fr/api` ; `ITSAppUsesNonExemptEncryption` dans `Info.plist` ; prévisualisations Vercel coupées pour

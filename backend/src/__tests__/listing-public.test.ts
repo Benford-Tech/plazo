@@ -95,6 +95,15 @@ describe('fiche Plazo du loueur', () => {
     await publishedOperator('A', 'parking-demo');
     const b = await setupOperator('B');
     expect((await api().put('/api/internal/listing').set(auth(b.token)).send(listing())).body.fields).toEqual({ slug: 'slug_taken' });
+    // The site's own segments under an airport (/lyon-saint-exupery/recherche, /…/guide) can never be a parking page.
+    expect(
+      (
+        await api()
+          .put('/api/internal/listing')
+          .set(auth(b.token))
+          .send({ ...listing(), slug: 'recherche' })
+      ).body.fields,
+    ).toEqual({ slug: 'slug_reserved' });
     expect(
       (
         await api()
