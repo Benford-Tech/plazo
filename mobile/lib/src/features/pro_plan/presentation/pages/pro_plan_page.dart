@@ -282,8 +282,10 @@ class _GenerateStep extends StatelessWidget {
     final bloc = context.read<ProPlanBloc>();
     final estimate = state.estimate;
     final spots = state.spots;
-    // 09/10/2026: the plan's spots (or valet files) are the capacity used everywhere.
+    // 09/10/2026: the plan's spots (or valet files) are the capacity used everywhere. With files,
+    // their capacity wins over the spots, so the figure is labelled as theirs.
     final view = state.view;
+    final capacityKey = view?.capacitySource == 'files' ? 'plan.used_everywhere_files' : 'plan.used_everywhere';
     return ListView(
       padding: EdgeInsets.zero,
       children: [
@@ -350,7 +352,7 @@ class _GenerateStep extends StatelessWidget {
                 ),
               if (view != null && view.capacitySource != 'declared' && !state.generated) ...[
                 Text(
-                  'plan.used_everywhere'.tr(args: ['${view.effectiveCapacity}']),
+                  capacityKey.tr(args: ['${view.effectiveCapacity}']),
                   key: const Key('plan-capacity'),
                   style: AppText.strong(size: 13.5, color: AppColors.accent),
                 ),
@@ -367,7 +369,7 @@ class _GenerateStep extends StatelessWidget {
                       const SizedBox(width: 8),
                       Expanded(
                         child: Text(
-                          'plan.used_everywhere'.tr(args: ['${state.view!.effectiveCapacity}']),
+                          capacityKey.tr(args: ['${state.view!.effectiveCapacity}']),
                           key: const Key('plan-applied'),
                           style: AppText.strong(size: 14),
                         ),

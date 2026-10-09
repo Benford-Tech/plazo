@@ -210,6 +210,13 @@ describe("plan du parking (éditeur R-A, 07/10/2026)", () => {
     expect(
       await screen.findByRole("heading", { name: "Plan du parking" }),
     ).toBeInTheDocument();
+    // The intro no longer speaks of a declared figure recalculated from the spots.
+    expect(
+      screen.getByText(
+        /leur nombre \(ou la capacité des files de voiturier\) est la capacité utilisée partout/,
+      ),
+    ).toBeInTheDocument();
+    expect(screen.queryByText(/capacité déclarée se recalcule/)).toBeNull();
     expect(screen.getByRole("link", { name: "Réglages" })).toHaveAttribute(
       "href",
       "/parking/reglages",
@@ -482,6 +489,12 @@ describe("plan du parking (éditeur R-A, 07/10/2026)", () => {
     );
     fireEvent.click(screen.getByRole("menuitem", { name: /Files seulement/ }));
     expect(confirm).toHaveBeenCalledTimes(1);
+    // The manager is told the capacity used everywhere changes (09/10/2026).
+    expect(confirm).toHaveBeenCalledWith(
+      expect.stringContaining(
+        "Sans files, la capacité utilisée partout redevient le nombre de places du plan",
+      ),
+    );
     await waitFor(() =>
       expect(api.replaceFiles).toHaveBeenCalledWith("p1", []),
     );
@@ -530,6 +543,15 @@ describe("plan du parking (éditeur R-A, 07/10/2026)", () => {
     );
     fireEvent.click(screen.getByRole("menuitem", { name: /Tout le plan/ }));
     expect(confirm).toHaveBeenCalledTimes(1);
+    // The plan is the capacity used everywhere (09/10/2026): emptied, it falls back on the declared figure.
+    expect(confirm).toHaveBeenCalledWith(
+      expect.stringContaining(
+        "La capacité utilisée partout redeviendra le chiffre déclaré dans les réglages",
+      ),
+    );
+    expect(confirm).not.toHaveBeenCalledWith(
+      expect.stringContaining("La capacité déclarée ne change pas"),
+    );
     // The spots laid by hand go too, and so do the files.
     await waitFor(() =>
       expect(api.replaceSpots).toHaveBeenCalledWith("p1", "valet24", [], {

@@ -253,7 +253,11 @@ class _CapacityFromPlan extends StatelessWidget {
           child: TextButton(
             key: const Key('set-open-plan'),
             style: TextButton.styleFrom(padding: EdgeInsets.zero, minimumSize: const Size(0, 36)),
-            onPressed: () => context.router.push(const ProPlanRoute()),
+            // The plan may change the figure (spots regenerated, files laid): reload on the way back.
+            onPressed: () async {
+              await context.router.push(const ProPlanRoute());
+              if (context.mounted) context.read<ProSettingsBloc>().add(const ProSettingsStarted());
+            },
             child: Text('settings.open_plan'.tr(), style: AppText.strong(size: 13.5, color: AppColors.accent)),
           ),
         ),

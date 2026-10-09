@@ -8,7 +8,7 @@ import { dayBounds, localDate, localDateTime } from '@/domain/time';
 import { FileService } from './file.service';
 import { OccupationService } from './occupation.service';
 import { ArrivalService } from './arrival.service';
-import { loadPlanCapacity } from './capacity.service';
+import { loadPlanCapacity, parkingCapacity } from './capacity.service';
 import { FlightTrackingService } from './flight-tracking.service';
 import { ParkingService } from './parking.service';
 import { PushService } from './push.service';
@@ -178,10 +178,12 @@ export class DashboardService {
     const occupied = onSite.filter(placed).length;
     // The plan's room, as everywhere (`effectiveCapacity`): the files' when the parking is stored in
     // files (S-C), else its active spots; nothing without a plan (the declared figure is no place).
+    // The plan is read once, above, and the capacity derived from it here.
+    const capacity = parkingCapacity(parking, plan);
     const spotsTotal = plan.activeSpots;
     const filesTotal = plan.activeFilesCapacity;
-    const hasPlan = parking.capacitySource !== 'declared';
-    const plannedSpots = hasPlan ? parking.effectiveCapacity : 0;
+    const hasPlan = capacity.capacitySource !== 'declared';
+    const plannedSpots = hasPlan ? capacity.effectiveCapacity : 0;
     const freeSpots = plannedSpots ? Math.max(0, plannedSpots - occupied) : null;
 
     const alerts: DashboardAlert[] = [];
@@ -418,9 +420,9 @@ export class DashboardService {
         id: parking.id,
         name: parking.name,
         timezone: parking.timezone,
-        bookableCapacity: parking.bookableCapacity,
+        bookableCapacity: capacity.bookableCapacity,
         plannedSpots,
-        storedInFiles: parking.capacitySource === 'files',
+        storedInFiles: capacity.capacitySource === 'files',
       },
       counts: {
         onSite: onSite.length,

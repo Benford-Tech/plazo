@@ -1,5 +1,8 @@
+import { Container } from 'typedi';
 import prisma from '@/database';
 import { addDays, localDate } from '@/domain/time';
+import { AuthenticatedStaff } from '@/interfaces/auth.interface';
+import { ParkingService } from '@/services/parking.service';
 import { api, publishListing, resetDatabase, setupOperator } from './utils/helpers';
 
 beforeEach(resetDatabase);
@@ -148,6 +151,37 @@ describe('capacité = places du plan (09/10/2026)', () => {
       .set(auth(p.token));
     expect(planning.body.parking.bookableCapacity).toBe(1);
     expect(planning.body.nights[0]).toMatchObject({ date: day(10), count: 1, bookable: 1, free: 0 });
+  });
+
+  it('le planning prend la capacité réservable avec ses nuits, marge comprise', async () => {
+    const p = await parking({ declared: 200, spots: 10, margin: 10 });
+    const planning = await api()
+      .get(`/api/internal/planning?date=${day(10)}`)
+      .set(auth(p.token));
+    expect(planning.body.parking.bookableCapacity).toBe(9);
+    expect(planning.body.nights.every((n: { bookable: number }) => n.bookable === 9)).toBe(true);
+  });
+
+  it('getPrimary rend la ligne seule, sans lire le plan ; getPrimaryWithCapacity y ajoute la capacité', async () => {
+    const p = await parking({ declared: 200, spots: 3, margin: 10 });
+    const actor = { ...p.manager, operatorName: 'Test' } as AuthenticatedStaff;
+    const service = Container.get(ParkingService);
+    const raw = jest.spyOn(prisma, '$queryRaw');
+    try {
+      const plain = await service.getPrimary(actor);
+      expect(raw).not.toHaveBeenCalled();
+      expect(plain).toMatchObject({ id: p.parking.id, totalCapacity: 200 });
+      expect(plain).not.toHaveProperty('effectiveCapacity');
+      expect(plain).not.toHaveProperty('bookableCapacity');
+    } finally {
+      raw.mockRestore();
+    }
+    expect(await service.getPrimaryWithCapacity(actor)).toMatchObject({
+      declaredCapacity: 200,
+      effectiveCapacity: 3,
+      capacitySource: 'spots',
+      bookableCapacity: 2,
+    });
   });
 
   it('le tableau de bord lit la capacité partagée', async () => {

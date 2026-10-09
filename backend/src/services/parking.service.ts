@@ -39,16 +39,25 @@ export class ParkingService {
   public audit = Container.get(AuditService);
   public locations = Container.get(ParkingLocationService);
 
-  /** MVP: one parking per operator in the UI; the data model already allows several. */
-  public async getPrimary(actor: AuthenticatedStaff): Promise<ParkingSummary> {
+  /**
+   * MVP: one parking per operator in the UI; the data model already allows several. The plain row:
+   * most callers (shuttles polled every 12 s, revenue, listing…) never need the capacity, and the
+   * capacity checks read the plan in their own query (`CapacityService.nights`).
+   */
+  public async getPrimary(actor: AuthenticatedStaff): Promise<Parking> {
     const parking = await prisma.parking.findFirst({ where: { operatorId: actor.operatorId }, orderBy: { createdAt: 'asc' } });
     if (!parking) throw new HttpException(httpStatus.NOT_FOUND, 'Parking not found', 'not_found');
-    return summarize(parking);
+    return parking;
+  }
+
+  /** The parking with the capacity used everywhere (declared, effective, source, bookable): one more query, for the screens that show it. */
+  public async getPrimaryWithCapacity(actor: AuthenticatedStaff): Promise<ParkingSummary> {
+    return summarize(await this.getPrimary(actor));
   }
 
   /** The pro space's and the app's read: the plan opens its map on the parking (07/10/2026), so its position comes along. */
   public async getPrimaryWithPosition(actor: AuthenticatedStaff): Promise<ParkingSummaryWithPosition> {
-    const summary = await this.getPrimary(actor);
+    const summary = await this.getPrimaryWithCapacity(actor);
     const position: LatLng | null = await this.locations.locate(summary, READ_GEOCODE_TIMEOUT_MS);
     return { ...summary, lat: position?.lat ?? null, lng: position?.lng ?? null };
   }

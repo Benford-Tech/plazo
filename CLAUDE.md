@@ -258,9 +258,13 @@ Ne construire QUE ce qui règle la douleur n°1 du client.
      du personnel, imports, aperçu du formulaire, planning, recherche et réservation du site, paiement tardif ;
      `loadPlanCapacity` (plusieurs parkings en une requête) pour `GET /internal/parking` (`declaredCapacity`,
      `effectiveCapacity`, `capacitySource`), le tableau de bord, la vue du plan, les plannings des places et des files et
-     la Plateforme (`places`, annonces). Réglages web et app : chiffre en lecture seule « Calculé depuis le plan du
-     parking » avec « Ouvrir le plan » ; éditeur : « Capacité utilisée partout : N places » à la place de « Recalculer la
-     capacité » ; `apply-capacity` reste pour les anciennes versions de l'app.
+     la Plateforme (`places`, annonces) ; `ParkingService.getPrimary` rend la ligne seule (navettes, chiffre d'affaires…),
+     `getPrimaryWithCapacity` y ajoute la capacité pour les écrans qui la montrent, et le planning la prend avec ses nuits.
+     Réglages web et app : chiffre en lecture seule « Calculé depuis le plan du parking » avec « Ouvrir le plan » (l'app
+     recharge au retour) ; éditeur : « Capacité utilisée partout : N places » à la place de « Recalculer la capacité »,
+     textes de « Réinitialiser… » qui préviennent du retour au chiffre déclaré (ou aux files) ; plan de l'app : « Files de
+     voiturier : N places · utilisées partout » quand les files comptent ; `apply-capacity` reste pour les anciennes
+     versions de l'app.
    - Retrouver un véhicule en quelques secondes (plaque, emplacement, emplacement des clés).
    - Si voiturier : suivi des clés confiées.
 
