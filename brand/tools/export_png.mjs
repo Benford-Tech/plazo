@@ -32,6 +32,7 @@ const jobs = [
   ['social-card.svg', 'png/social-card-1200x630.png', 1200, 630, false],
   ['favicon.svg', 'favicon-32.png', 32, 32, true],
   ['favicon.svg', 'favicon-180.png', 180, 180, false],
+  ['favicon-pro.svg', 'favicon-pro-180.png', 180, 180, false],
   ['icon-maskable.svg', 'icon-192.png', 192, 192, false],
   ['icon-maskable.svg', 'icon-512.png', 512, 512, false],
   ['icon-maskable.svg', 'png/app-icon-1024.png', 1024, 1024, false],

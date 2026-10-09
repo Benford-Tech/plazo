@@ -20,6 +20,7 @@ Le nom du produit reste dans `product.json` (seul endroit) : si le nom change, r
 | `wordmark.svg` / `wordmark-dark.svg` | Les lettres seules, sans le panneau, brun foncé / blanches (titres de documents). |
 | `app/` | **Le logo de l'app mobile**, qui garde l'option L-B (choix du 03/10/2026) : monogramme « P » Playfair avec l'avion en papier **orange easyJet `#FF6600`** (O-A), mot-symbole Playfair italique ; icône d'app **orange plein, P blanc, avion brun foncé** (O-B) ; en-tête de l'app (orange) : carré blanc, P et avion orange. Générateurs `app/tools/build_svg.py` et `app/tools/export_png.mjs`. |
 | `favicon.svg`, `favicon-32.png`, `favicon-180.png` | Favicon (SVG moderne, 32 px de secours, 180 px pour l'icône Apple « touch »). |
+| `favicon-pro.svg`, `favicon-pro-180.png` | **Favicon de l'espace pro** (09/10/2026) : le symbole aux couleurs du logo pro, carré vert citron `#A3E635`, P vert foncé `#0F2A14` ; copiés dans `admin/public/` sous `favicon-pro.svg` et `apple-touch-icon-pro.png`. |
 | `icon-192.png`, `icon-512.png` (`icon-maskable.svg`) | Icônes de manifeste web **maskable** : fond orange plein-pan, glyphes dans le cercle de sûreté (80 %). |
 | `android-foreground.svg` | Couche avant de l'icône adaptative Android (glyphes dans les 66 % centraux, fond transparent). |
 | `social-card.svg`, `png/social-card-1200x630.png` | Carte de partage (Open Graph / Twitter), le panneau sur brun foncé. |
@@ -29,7 +30,7 @@ Le nom du produit reste dans `product.json` (seul endroit) : si le nom change, r
 | `tools/build_svg.py`, `tools/export_png.mjs` | Générateurs (voir « Régénérer »). |
 
 Copies dans le code : `site/public/brand/`, `site/src/app/icon.svg`, `site/src/app/apple-icon.png`,
-`admin/public/`, `admin/src/assets/` ; pour l'app mobile, depuis `brand/app/` : `mobile/assets/brand/`, `mobile/web/favicon.png`. Les icônes natives
+`admin/public/` (favicons verts de l'espace pro), `admin/src/assets/` ; pour l'app mobile, depuis `brand/app/` : `mobile/assets/brand/`, `mobile/web/favicon.png`. Les icônes natives
 (`mobile/android/.../mipmap-*`, `mobile/ios/Runner/Assets.xcassets/AppIcon.appiconset`) sont générées par
 `dart run flutter_launcher_icons` depuis `mobile/pubspec.yaml`.
 
