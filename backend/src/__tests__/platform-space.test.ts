@@ -60,6 +60,8 @@ describe('accès à l’espace Plateforme', () => {
     ['post', `${P}/operators/x/reactivate`],
     ['post', `${P}/operators/x/archive`],
     ['post', `${P}/operators/x/unarchive`],
+    ['get', `${P}/operators/x/deletion`],
+    ['delete', `${P}/operators/x`],
     ['post', `${P}/operators/x/view-as`],
     ['post', `${P}/operators/x/invitation`],
     ['post', `${P}/invitations`],
@@ -239,6 +241,105 @@ describe('archivage d’un loueur suspendu (09/10/2026)', () => {
 
   it('la base refuse un loueur archivé qui ne serait pas suspendu', async () => {
     await expect(prisma.operator.update({ where: { id: loueur.operator.id }, data: { archivedAt: new Date() } })).rejects.toThrow();
+  });
+});
+
+describe('suppression d’un loueur (09/10/2026)', () => {
+  let refs = 0;
+  const reservationOf = (op: { id: string }, parkingId: string, extra: Record<string, unknown> = {}) =>
+    prisma.reservation.create({
+      data: {
+        reference: `DEL${String(++refs).padStart(4, '0')}`,
+        operatorId: op.id,
+        parkingId,
+        channel: 'phone',
+        arrivalAt: new Date('2026-11-02T08:00:00Z'),
+        returnAt: new Date('2026-11-09T18:00:00Z'),
+        passengers: 1,
+        customerName: 'Client Test',
+        customerPhone: '0612345678',
+        plate: 'AB-123-CD',
+        plateKey: 'AB123CD',
+        ...extra,
+      },
+    });
+  const preview = (id: string) => api().get(`${P}/operators/${id}/deletion`).set(auth(admin.token));
+  const remove = (id: string) => api().delete(`${P}/operators/${id}`).set(auth(admin.token));
+  const suspend = (id: string) => api().post(`${P}/operators/${id}/suspend`).set(auth(admin.token));
+
+  it('efface un loueur invité jamais connecté sans le suspendre, et le trace dans le journal de la plateforme', async () => {
+    const invited = await api()
+      .post(`${P}/invitations`)
+      .set(auth(admin.token))
+      .send({ operatorName: 'Invité par erreur', managerEmail: 'erreur@example.com', totalCapacity: 80 });
+    const id = invited.body.operator.id as string;
+    expect((await preview(id)).body.data).toMatchObject({
+      name: 'Invité par erreur',
+      deletable: true,
+      reason: null,
+      counts: { parkings: 1, reservations: 0, staff: 1, paidReservations: 0 },
+    });
+
+    const res = await remove(id);
+    expect([res.status, res.body.data]).toEqual([
+      200,
+      { id, name: 'Invité par erreur', counts: { parkings: 1, reservations: 0, staff: 1, paidReservations: 0 } },
+    ]);
+    expect(await prisma.operator.count({ where: { id } })).toBe(0);
+    expect(await prisma.parking.count({ where: { operatorId: id } })).toBe(0);
+    expect(await prisma.staff.count({ where: { email: 'erreur@example.com' } })).toBe(0);
+    const entry = await prisma.auditLog.findFirstOrThrow({ where: { action: 'operator.deleted' } });
+    expect(entry).toMatchObject({ operatorId: admin.operator.id, staffId: admin.manager.id, entityId: id });
+    expect(entry.details).toMatchObject({ name: 'Invité par erreur', counts: { parkings: 1 } });
+    expect((await preview(id)).status).toBe(404);
+    expect((await remove(id)).status).toBe(404);
+  });
+
+  it('demande de suspendre un loueur qui a servi ; suspendu, il part avec ses réservations, son équipe et sa fiche', async () => {
+    expect((await preview(loueur.operator.id)).body.data).toMatchObject({ deletable: false, reason: 'not_suspended' });
+    expect([(await remove(loueur.operator.id)).status, (await remove(loueur.operator.id)).body.code]).toEqual([409, 'not_suspended']);
+
+    await submittedListing();
+    await reservationOf(loueur.operator, loueur.parking.id);
+    await addStaff(loueur.token, 'agent');
+    expect((await suspend(loueur.operator.id)).status).toBe(200);
+    expect((await preview(loueur.operator.id)).body.data).toMatchObject({
+      deletable: true,
+      counts: { parkings: 1, reservations: 1, staff: 2, paidReservations: 0 },
+    });
+
+    expect((await remove(loueur.operator.id)).status).toBe(200);
+    expect(await prisma.reservation.count({ where: { operatorId: loueur.operator.id } })).toBe(0);
+    expect(await prisma.listing.count({ where: { parkingId: loueur.parking.id } })).toBe(0);
+    expect(await prisma.staff.count({ where: { operatorId: loueur.operator.id } })).toBe(0);
+    expect((await api().get('/api/internal/staff/me').set(auth(loueur.token))).status).toBe(401);
+    // The platform's own data is untouched.
+    expect((await api().get(`${P}/operators`).set(auth(admin.token))).body.operators.map((o: { id: string }) => o.id)).toEqual([admin.operator.id]);
+  });
+
+  it('garde un loueur qui a des paiements en ligne (à archiver), sauf une démo, payée en test', async () => {
+    await reservationOf(loueur.operator, loueur.parking.id, { channel: 'plazo', paymentStatus: 'paid', paidAt: new Date(), chargedCents: 4500 });
+    await suspend(loueur.operator.id);
+    expect((await preview(loueur.operator.id)).body.data).toMatchObject({
+      deletable: false,
+      reason: 'has_payments',
+      counts: { paidReservations: 1 },
+    });
+    const refused = await remove(loueur.operator.id);
+    expect([refused.status, refused.body.code]).toEqual([409, 'has_payments']);
+    expect(await prisma.operator.count({ where: { id: loueur.operator.id } })).toBe(1);
+
+    await prisma.operator.update({ where: { id: loueur.operator.id }, data: { isDemo: true } });
+    expect((await preview(loueur.operator.id)).body.data).toMatchObject({ deletable: true, reason: null });
+    expect((await remove(loueur.operator.id)).status).toBe(200);
+    expect(await prisma.operator.count({ where: { id: loueur.operator.id } })).toBe(0);
+  });
+
+  it('ne supprime jamais le compte de la plateforme', async () => {
+    expect((await preview(admin.operator.id)).body.data).toMatchObject({ deletable: false, reason: 'cannot_delete_platform' });
+    const res = await remove(admin.operator.id);
+    expect([res.status, res.body.code]).toEqual([400, 'cannot_delete_platform']);
+    expect(await prisma.operator.count({ where: { id: admin.operator.id } })).toBe(1);
   });
 });
 

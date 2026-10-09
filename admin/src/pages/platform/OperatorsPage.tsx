@@ -373,6 +373,43 @@ function RowActions({
     onError: (err: Error) => toast.error(describeError(err)),
   });
 
+  // 09/10/2026 (« pouvoir supprimer un parking »): the server says first what would go, or why it may not.
+  const removal = useMutation({
+    mutationFn: async () => {
+      const { data: preview } = await adminApi.getOperatorDeletion(operator.id);
+      if (!preview.deletable) {
+        toast.error(errorMessage(preview.reason ?? undefined));
+        return false;
+      }
+      const ok = await confirm(t.confirmDelete(preview.name, preview.counts), {
+        title: t.deleteTitle,
+        confirmLabel: t.deleteConfirm,
+        destructive: true,
+      });
+      if (!ok) return false;
+      await adminApi.deleteOperator(operator.id);
+      return true;
+    },
+    onSuccess: (deleted) => {
+      if (!deleted) return;
+      toast.success(t.deleted(operator.name));
+      refresh();
+    },
+    onError: (err: Error) => toast.error(describeError(err)),
+  });
+  // An invitation never accepted, or a suspended operator (archived or not); never the platform's own account.
+  const deleteButton =
+    !operator.isPlatform && (operator.invitation || operator.status === "suspended") ? (
+      <button
+        type="button"
+        className={cn(ghostButton, "text-muted-foreground hover:text-destructive")}
+        disabled={removal.isPending}
+        onClick={() => removal.mutate()}
+      >
+        {t.delete}
+      </button>
+    ) : null;
+
   if (operator.archivedAt) {
     return (
       <div className="flex justify-end gap-1.5">
@@ -392,6 +429,7 @@ function RowActions({
         >
           {t.unarchive}
         </button>
+        {deleteButton}
       </div>
     );
   }
@@ -415,6 +453,7 @@ function RowActions({
         >
           {t.resend}
         </button>
+        {deleteButton}
       </div>
     );
   }
@@ -470,6 +509,7 @@ function RowActions({
           {t.archive}
         </button>
       )}
+      {deleteButton}
     </div>
   );
 }

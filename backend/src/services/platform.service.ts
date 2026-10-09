@@ -34,6 +34,21 @@ const COUNTED_BOOKING: Prisma.ReservationWhereInput = {
   OR: [{ paymentStatus: null }, { paymentStatus: { not: 'expired' } }],
 };
 
+/** A booking paid online (or refunded, or with a transfer): accounting records, never deleted with its operator. */
+const PAID_ONLINE: Prisma.ReservationWhereInput = {
+  OR: [{ paymentStatus: { in: ['paid', 'refunded'] } }, { payoutStatus: { not: null } }, { stripeChargeId: { not: null } }],
+};
+
+export type DeletionBlocker = 'cannot_delete_platform' | 'not_suspended' | 'has_payments';
+
+function deletionRefused(reason: DeletionBlocker): HttpException {
+  if (reason === 'cannot_delete_platform') {
+    return new HttpException(httpStatus.BAD_REQUEST, "The platform's own account cannot be deleted", reason);
+  }
+  if (reason === 'not_suspended') return new HttpException(httpStatus.CONFLICT, 'Suspend the operator before deleting it', reason);
+  return new HttpException(httpStatus.CONFLICT, 'The operator has online payments: archive it instead', reason);
+}
+
 function monthStart(now = new Date()): Date {
   return dayBounds(`${localDate(now, PLATFORM_TZ).slice(0, 7)}-01`, PLATFORM_TZ).start;
 }
@@ -277,6 +292,76 @@ export class PlatformService {
     await prisma.operator.update({ where: { id: operatorId }, data: { archivedAt: null } });
     await this.record(actor, operatorId, 'operator.unarchived');
     return { id: operatorId, archivedAt: null };
+  }
+
+  // ---- Deletion (09/10/2026, « pouvoir supprimer un parking ») -------------------------------------
+
+  /**
+   * Whether an operator can be deleted, and what would go with it. Never the platform's own account; an operator
+   * that was used must be suspended first (only an invitation never accepted goes straight away); and an online
+   * payment keeps it (accounting records: archive it instead), except on a demo operator (test payments only).
+   */
+  private async deletionCheck(operatorId: string) {
+    const operator = await prisma.operator.findUnique({
+      where: { id: operatorId },
+      include: {
+        staff: {
+          select: {
+            email: true,
+            lastLoginAt: true,
+            accountTokens: { where: { type: 'invitation', usedAt: null }, select: { id: true }, take: 1 },
+          },
+        },
+        _count: { select: { parkings: true, reservations: true, staff: true } },
+      },
+    });
+    if (!operator) throw notFound('Operator');
+    const paid = operator.isDemo ? 0 : await prisma.reservation.count({ where: { operatorId, ...PAID_ONLINE } });
+    const neverUsed = operator.staff.every(s => !s.lastLoginAt) && operator.staff.some(s => s.accountTokens.length > 0);
+    const reason: DeletionBlocker | null = operator.staff.some(s => isPlatformAdmin(s.email))
+      ? 'cannot_delete_platform'
+      : operator.status !== 'suspended' && !neverUsed
+        ? 'not_suspended'
+        : paid > 0
+          ? 'has_payments'
+          : null;
+    const { parkings, reservations, staff } = operator._count;
+    return { operator, reason, counts: { parkings, reservations, staff, paidReservations: paid } };
+  }
+
+  /** What « Supprimer » would erase, and whether it is allowed (the confirmation shows it before anything happens). */
+  public async deletionPreview(operatorId: string) {
+    const { operator, reason, counts } = await this.deletionCheck(operatorId);
+    return { id: operator.id, name: operator.name, deletable: reason === null, reason, counts };
+  }
+
+  /**
+   * Deletes an operator with everything that hangs from it (parkings, plan, listing, prices, bookings, team, mails,
+   * shuttles: cascades). The entry of the journal goes to the admin's own operator, the deleted one's going with it.
+   */
+  public async deleteOperator(actor: AuthenticatedStaff, operatorId: string) {
+    const { operator, reason, counts } = await this.deletionCheck(operatorId);
+    if (reason) throw deletionRefused(reason);
+    // The checks are repeated by the delete itself: a payment or a sign-in in between keeps the operator.
+    const deleted = await prisma.operator.deleteMany({
+      where: {
+        id: operatorId,
+        OR: [
+          { status: 'suspended' },
+          { staff: { every: { lastLoginAt: null }, some: { accountTokens: { some: { type: 'invitation', usedAt: null } } } } },
+        ],
+        ...(operator.isDemo ? {} : { reservations: { none: PAID_ONLINE } }),
+      },
+    });
+    if (deleted.count === 0) {
+      const again = await this.deletionCheck(operatorId);
+      throw deletionRefused(again.reason ?? 'not_suspended');
+    }
+    await this.audit.record(
+      { id: actor.id, operatorId: actor.operatorId },
+      { action: 'operator.deleted', entityType: 'operator', entityId: operatorId, details: { name: operator.name, isDemo: operator.isDemo, counts } },
+    );
+    return { id: operatorId, name: operator.name, counts };
   }
 
   /**

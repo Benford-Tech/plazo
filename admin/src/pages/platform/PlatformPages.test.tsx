@@ -27,6 +27,8 @@ const api = vi.hoisted(() => ({
   reactivateOperator: vi.fn(),
   archiveOperator: vi.fn(),
   unarchiveOperator: vi.fn(),
+  getOperatorDeletion: vi.fn(),
+  deleteOperator: vi.fn(),
   inviteOperator: vi.fn(),
   resendInvitation: vi.fn(),
   getPlatformListings: vi.fn(),
@@ -152,6 +154,36 @@ describe("Loueurs", () => {
     expect(within(invited).getByText("Brouillon")).toBeInTheDocument();
     await userEvent.click(within(invited).getByRole("button", { name: "Ouvrir son espace ›" }));
     await waitFor(() => expect(auth.startViewAs).toHaveBeenCalledWith("o3"));
+  });
+
+  it("supprime un loueur invité par erreur après avoir dit ce qui part ; refuse avec la raison du serveur", async () => {
+    api.getPlatformOperators.mockResolvedValue(operators);
+    api.getOperatorDeletion.mockResolvedValue({
+      data: { id: "o3", name: "Parking Invité", deletable: true, reason: null, counts: { parkings: 1, reservations: 2, staff: 1, paidReservations: 0 } },
+    });
+    api.deleteOperator.mockResolvedValue({ data: { id: "o3", name: "Parking Invité" } });
+    const ask = vi.spyOn(window, "confirm").mockReturnValue(true);
+    const { toast } = await import("sonner");
+    renderAt("/plateforme/loueurs", <OperatorsPage />);
+
+    // An active operator in use has no « Supprimer »: suspend it first.
+    const demo = (await screen.findByText("Parking Démo LYS")).closest("tr")!;
+    expect(within(demo).queryByRole("button", { name: "Supprimer" })).not.toBeInTheDocument();
+
+    const invited = screen.getByText("Parking Invité").closest("tr")!;
+    await userEvent.click(within(invited).getByRole("button", { name: "Supprimer" }));
+    await waitFor(() => expect(api.deleteOperator).toHaveBeenCalledWith("o3"));
+    expect(api.getOperatorDeletion).toHaveBeenCalledWith("o3");
+    expect(ask.mock.calls[0][0]).toContain("son parking, sa fiche et ses tarifs, ses 2 réservations et le compte de son gérant");
+    expect(toast.success).toHaveBeenCalledWith("Parking Invité est supprimé.");
+
+    api.deleteOperator.mockClear();
+    api.getOperatorDeletion.mockResolvedValue({
+      data: { id: "o3", name: "Parking Invité", deletable: false, reason: "has_payments", counts: { parkings: 1, reservations: 2, staff: 1, paidReservations: 1 } },
+    });
+    await userEvent.click(within(invited).getByRole("button", { name: "Supprimer" }));
+    await waitFor(() => expect(toast.error).toHaveBeenCalledWith(expect.stringContaining("Archivez-le plutôt")));
+    expect(api.deleteOperator).not.toHaveBeenCalled();
   });
 
   it("ouvre l'espace d'un loueur, le suspend et règle sa commission", async () => {

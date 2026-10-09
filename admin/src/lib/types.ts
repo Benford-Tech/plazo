@@ -576,6 +576,15 @@ export interface PlatformOperator {
   invitation: { sentAt: string; expiresAt: string; expired: boolean } | null;
 }
 
+/** 09/10/2026 (« pouvoir supprimer un parking »): what deleting an operator would erase, and whether it may. */
+export interface OperatorDeletion {
+  id: string;
+  name: string;
+  deletable: boolean;
+  reason: "cannot_delete_platform" | "not_suspended" | "has_payments" | null;
+  counts: { parkings: number; reservations: number; staff: number; paidReservations: number };
+}
+
 export interface PlatformOperators {
   defaultCommissionBps: number | null;
   /** Size of the two lists (current: active and suspended; archived). Missing from an older API. */

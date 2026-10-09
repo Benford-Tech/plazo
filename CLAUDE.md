@@ -441,7 +441,12 @@ Le nom du produit doit rester dans UN seul fichier de configuration (il peut enc
   **« Ouvrir son espace » pendant l'invitation (09/10/2026, « pouvoir commencer à modifier un parking en cours
   d'invitation »)** : le bouton est aussi proposé à côté de « Renvoyer l'invitation » ; la plateforme prépare réglages, plan,
   fiche et tarifs (écritures tracées `view_as.write`), le gérant les retrouve en acceptant ; la colonne Annonce montre la
-  fiche préparée.
+  fiche préparée. **Suppression d'un loueur (09/10/2026, « pouvoir supprimer un parking »)** : « Supprimer » sur une invitation
+  jamais acceptée ou un loueur suspendu (archivé ou non) ; `GET /internal/platform/operators/:id/deletion` (ce qui part :
+  `counts` ; `deletable`, `reason`) puis `DELETE /internal/platform/operators/:id` (cascades de la base : parkings, plan, fiche,
+  tarifs, réservations, équipe, mails, navettes) ; refusé pour le compte de la plateforme (400 `cannot_delete_platform`), un
+  loueur actif qui a servi (409 `not_suspended`) et un loueur avec un paiement en ligne payé, remboursé ou reversé (409
+  `has_payments` : comptabilité, l'archiver), sauf une démo ; tracé `operator.deleted` dans le journal du loueur de la plateforme.
 - `site/` : site Plazo voyageurs (Next.js), servi à la racine du domaine. **Référencement (08/10/2026)** : données structurées
   schema.org (`src/lib/structured-data.ts`, composant `JsonLd` : Organization et WebSite sur l'accueil, FAQPage et ItemList des
   parkings sur la page aéroport, ParkingFacility + BreadcrumbList sur une fiche) ; un parking de démo (`isDemo`) n'est ni décrit,

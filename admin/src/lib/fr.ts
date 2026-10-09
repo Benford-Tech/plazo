@@ -20,6 +20,17 @@ import { ApiError } from "./api";
 import { PRODUCT } from "./product";
 
 // All user-facing strings live here so the interface can be translated later.
+/** What deleting an operator takes with it, in words: « son parking, sa fiche et ses tarifs, ses 3 réservations et … ». */
+function deletionSummary(counts: { parkings: number; reservations: number; staff: number }): string {
+  const parts = [
+    counts.parkings > 1 ? `ses ${counts.parkings} parkings` : "son parking",
+    "sa fiche et ses tarifs",
+    ...(counts.reservations === 0 ? [] : [counts.reservations === 1 ? "sa réservation" : `ses ${counts.reservations} réservations`]),
+    counts.staff > 1 ? `les ${counts.staff} comptes de son équipe` : "le compte de son gérant",
+  ];
+  return `${parts.slice(0, -1).join(", ")} et ${parts[parts.length - 1]}`;
+}
+
 export const fr = {
   common: {
     close: "Fermer",
@@ -151,7 +162,12 @@ export const fr = {
       "Confirmez d'abord votre adresse email (lien reçu par email).",
     listing_required: "Enregistrez d'abord votre fiche.",
     commission_range: "Entre 0 et 50 %.",
-    not_suspended: "Suspendez d'abord ce loueur pour pouvoir l'archiver.",
+    not_suspended:
+      "Suspendez d'abord ce loueur pour pouvoir l'archiver ou le supprimer.",
+    has_payments:
+      "Ce loueur a reçu des paiements en ligne : ils restent dans la comptabilité. Archivez-le plutôt que de le supprimer.",
+    cannot_delete_platform:
+      "Le compte de la plateforme ne peut pas être supprimé.",
     cannot_suspend_platform:
       "Le compte de la plateforme ne peut pas être suspendu.",
     no_pending_invitation: "Aucune invitation en attente pour ce loueur.",
@@ -1893,6 +1909,16 @@ export const fr = {
       unarchived: "Loueur désarchivé, toujours suspendu.",
       statusArchived: "Archivé",
       emptyArchived: "Aucun loueur archivé.",
+      // 09/10/2026 (« pouvoir supprimer un parking »).
+      delete: "Supprimer",
+      deleteTitle: "Supprimer définitivement ce loueur ?",
+      confirmDelete: (
+        name: string,
+        counts: { parkings: number; reservations: number; staff: number },
+      ) =>
+        `${name} sera effacé avec ${deletionSummary(counts)}. Cette action est définitive : pour le garder sans qu'il apparaisse, archivez-le.`,
+      deleteConfirm: "Supprimer définitivement",
+      deleted: (name: string) => `${name} est supprimé.`,
       editCommission: (name: string) => `Modifier la commission de ${name}`,
       commissionLabel: "Commission (%)",
       commissionSaved: "Commission enregistrée.",
@@ -1926,6 +1952,7 @@ export const fr = {
         "Ouvrir son espace (bandeau jaune « Vous consultez l'espace de … »), actions tracées dans le journal",
         "Suspendre le compte",
         "Archiver un loueur suspendu (filtre « Archivés »), le désarchiver",
+        "Supprimer un loueur invité par erreur, ou suspendu sans paiement en ligne (définitif)",
       ],
     },
     listings: {
