@@ -27,7 +27,7 @@ export interface MapLabel {
   lngLat: LonLat;
   /** Lines separated by "\n" (the "spot" variant shows them stacked). */
   text: string;
-  variant: "zone" | "length" | "vertex" | "spot";
+  variant: "zone" | "length" | "vertex" | "spot" | "address";
   /** Hidden below this zoom (the "spot" labels only read once the map is close enough). */
   minZoom?: number;
 }
@@ -70,6 +70,9 @@ interface Props {
 }
 
 const YELLOW = "#A3E635";
+/** A map pin, citron with a dark green outline, its tip at the bottom centre. */
+const ADDRESS_PIN =
+  '<svg width="30" height="40" viewBox="0 0 30 40" aria-hidden="true"><path d="M15 39C15 39 2 23.5 2 14a13 13 0 0 1 26 0c0 9.5-13 25-13 25z" fill="#A3E635" stroke="#0F2A14" stroke-width="2.5" stroke-linejoin="round"/><circle cx="15" cy="14" r="5" fill="#0F2A14"/></svg>';
 const ERASER = "#DC2626";
 /** Metres per pixel at zoom 0 on the equator (Web Mercator, 512 px tiles). */
 const METRES_PER_PIXEL_Z0 = 78271.517;
@@ -456,10 +459,17 @@ export const MapView = forwardRef<MapViewHandle, Props>(function MapView(props, 
           span.textContent = line;
           el.appendChild(span);
         }
+      } else if (label.variant === "address") {
+        const name = document.createElement("span");
+        name.textContent = label.text;
+        el.appendChild(name);
+        el.insertAdjacentHTML("beforeend", ADDRESS_PIN);
       } else el.textContent = label.text;
       const minZoom = label.minZoom ?? 0;
       if (zoom < minZoom) el.style.display = "none";
-      return { marker: new Marker({ element: el, offset: label.variant === "vertex" ? [0, -16] : [0, 0] }).setLngLat(label.lngLat).addTo(map), minZoom };
+      // The address pin stands on its point; the other labels are centred on theirs.
+      const anchor = label.variant === "address" ? "bottom" : "center";
+      return { marker: new Marker({ element: el, anchor, offset: label.variant === "vertex" ? [0, -16] : [0, 0] }).setLngLat(label.lngLat).addTo(map), minZoom };
     });
   }, [props.labels]);
 

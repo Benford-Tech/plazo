@@ -200,6 +200,12 @@ Ne construire QUE ce qui règle la douleur n°1 du client.
      réinitialisation). L'outil Obstacle regroupe les parties exclues (clic sur un obstacle : marge, suppression) ;
      l'étape « Places » de l'ancien `SpotsStep.tsx` est fondue dans l'outil Places. Les pages `capacity/TerrainStep` et
      `ZonesStep` ne servent plus qu'à l'outil capacité de la plateforme.
+     **A « le plan se cale sur l'adresse » (09/10/2026, « le plan doit être focus sur l'adresse de parking »)** : épingle
+     « Adresse du parking » sur la photo (étiquette `address` de `MapView`, ancrée par la pointe, sans capter les clics) à la
+     position géocodée du parking ; ouverture sur le contour et l'adresse ensemble, ou ~200 m autour de l'adresse sans contour
+     (`homeBounds` dans `PlanEditor.tsx`) ; retour sur l'adresse après « Réinitialiser… › Tout le plan » (`onReset` renvoie
+     vrai une fois fait, pas sur « Annuler ») et « Effacer le contour » ; bouton « Recentrer sur le parking » en bas à droite
+     de la carte. Web seulement.
      **P-B « Une rangée d'un trait » (07/10/2026, places à la main)** : dans l'outil Places, « + Rangée de places » puis un
      trait sur la carte : des places au gabarit voiturier se posent côte à côte le long du trait, perpendiculaires et
      centrées dessus (`admin/src/lib/plan/manualRow.ts`, codes `M-01`, `M-02`…, zone du point milieu) ;
