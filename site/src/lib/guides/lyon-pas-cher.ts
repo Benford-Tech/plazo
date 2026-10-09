@@ -30,9 +30,23 @@ const DAY_15 = {
   p5: "107,90 €",
 } as const;
 
-/** « Tarifs de dépassement parking (TTC) », lyonaeroports.com parking FAQ (« Comment prolonger ma réservation déjà commencée ? »). */
-const OVERSTAY: string[][] = [
-  ["P0 et P1", "2,00 € de 1 à 4 h, 4,00 € de 4 à 12 h", "6,00 €", "20,00 €"],
+/** « Tarifs de dépassement parking (TTC) », lyonaeroports.com parking FAQ (« Comment prolonger ma réservation déjà commencée ? »):
+ * park, up to 12 h, from 12 to 24 h, per further 24 h. */
+type OverstayRow = [string, string, string, string];
+const OVERSTAY_P0: OverstayRow = [
+  "P0 et P1",
+  "2,00 € de 1 à 4 h, 4,00 € de 4 à 12 h",
+  "6,00 €",
+  "20,00 €",
+];
+const OVERSTAY_P5: OverstayRow = [
+  "P5 et P7",
+  "2,00 € de 1 à 12 h",
+  "2,50 €",
+  "6,00 €",
+];
+const OVERSTAY: OverstayRow[] = [
+  OVERSTAY_P0,
   [
     "P2 et P2 bis",
     "2,50 € de 1 à 4 h, 7,00 € de 4 à 12 h",
@@ -41,7 +55,7 @@ const OVERSTAY: string[][] = [
   ],
   ["P3", "2,00 € de 1 à 4 h, 5,00 € de 4 à 12 h", "10,00 €", "12,00 €"],
   ["P4", "2,00 € de 1 à 4 h, 4,00 € de 4 à 12 h", "8,00 €", "8,00 €"],
-  ["P5 et P7", "2,00 € de 1 à 12 h", "2,50 €", "6,00 €"],
+  OVERSTAY_P5,
 ];
 
 /** rhonexpress.fr/fr_FR/tarifs, read on 09/10/2026 (online price, then ticket machine price). */
@@ -64,6 +78,11 @@ const euros = (value: number) =>
   `${(value / 100).toFixed(2).replace(".", ",")} €`;
 /** « environ 12 minutes » → « environ 12 min », for table cells. */
 const short = (text: string) => text.replace(" minutes", " min");
+/** « 20,00 € » → « 20 € », for prose. */
+const whole = (price: string) => price.replace(",00 €", " €");
+/** The amounts (« 2,20 € », « 80 € ») or heights (« 2,60 m ») quoted in a LYON_OFFICIAL text, in order. */
+const amounts = (text: string, unit: "€" | "m") =>
+  text.match(new RegExp(`\\d+(?:,\\d+)? ${unit}`, "g")) ?? [];
 
 export function lyonPasCher(facts: TopicFacts): TopicGuide {
   const o = LYON_OFFICIAL;
@@ -78,6 +97,14 @@ export function lyonPasCher(facts: TopicFacts): TopicGuide {
   const secondWeekP0 = euros(cents(o.twoWeeks.p0) - cents(o.week.p0));
   const couple = euros(2 * cents(RHONEXPRESS.return));
   const coupleEarly = euros(2 * cents(RHONEXPRESS.earlyTwoMonths));
+  /** A week at the P5 is « moins de 11 € par jour ». */
+  const p5DayCeiling = Math.ceil(cents(o.week.p5) / 7 / 100);
+  const [p5HeightPage, p5HeightGrid] = amounts(o.p5Height, "m");
+  /** Parking minute: the 11th minute, then each started minute (« chaque minute commencée est due »), and the flat fee. */
+  const [minuteEleventh = "", minuteNext = ""] = amounts(o.minute.then, "€");
+  const [minuteFlat] = amounts(o.minute.cap, "€");
+  const minuteStop = (minutes: number) =>
+    euros(cents(minuteEleventh) + (minutes - 11) * cents(minuteNext));
 
   const partnerPrices = [
     week ? `une semaine revient aujourd’hui ${week}` : null,
@@ -90,7 +117,7 @@ export function lyonPasCher(facts: TopicFacts): TopicGuide {
     : "Chez nos parkings partenaires, le prix total du séjour, navette comprise, s’affiche dès que vous indiquez vos dates en haut de la page.";
   const valetSentence = valet
     ? `${valet.count === 1 ? "Un de nos parkings partenaires propose" : `${valet.count} de nos parkings partenaires proposent`} un voiturier${valet.week ? ` : une semaine ${offerText(valet.week)}, voiturier compris` : ""}.`
-    : "Le filtre « Voiturier » des résultats ne garde que les parkings qui en proposent un.";
+    : "La liste des services de chaque fiche indique si le parking propose un voiturier ; comparez donc les prix totaux à services égaux.";
 
   return {
     slug: "parking-pas-cher",
@@ -121,7 +148,7 @@ export function lyonPasCher(facts: TopicFacts): TopicGuide {
           {
             title: "La grille de l’aéroport : des tranches de 24 heures",
             paragraphs: [
-              `La grille 2026 de l’aéroport, sans réservation, compte en durée : jusqu’à 24 heures, puis « 2e jour », « 3e jour », etc. Le voyage du samedi 6 h au samedi suivant 22 h dure 7 jours et 16 heures : il passe sur la ligne du 8e jour, soit ${DAY_8.p5} au P5 au lieu de ${o.week.p5}. Réservé en ligne sur le site de l’aéroport, le prix dépend des dates et heures choisies, des places restantes et de l’avance avec laquelle vous réservez.`,
+              `La grille 2026 de l’aéroport, sans réservation, compte en durée : jusqu’à 24 heures, puis « 2e jour », « 3e jour », etc. Le voyage du samedi 6 h au samedi suivant 22 h dure 7 jours et 16 heures : il passe sur la ligne du 8e jour, soit ${DAY_8.p5} au P5 au lieu de ${o.week.p5}. Pour une réservation en ligne sur le site de l’aéroport, le prix dépend des dates et heures choisies, des places restantes et de l’avance avec laquelle vous réservez.`,
             ],
           },
         ],
@@ -134,7 +161,7 @@ export function lyonPasCher(facts: TopicFacts): TopicGuide {
           "Le tableau compare les parkings de l’aéroport, au tarif sans réservation de sa grille 2026, et les parkings privés avec navette. Entre parenthèses, le prix dû dès que le séjour dépasse sept ou quatorze fois 24 heures.",
           `Réservés à l’avance sur le site de l’aéroport, ses parkings sont annoncés « à partir de ${o.online.from} » sur la grille et « à partir de ${o.online.listed} » sur la page des parkings : des prix d’appel, « soumis à conditions et disponibilité », que seule une simulation à vos dates confirme.`,
           partnersSentence,
-          `L’écart se creuse avec la durée : au P5, la deuxième semaine coûte ${secondWeekP5} de plus que la première, au P0 et au P1 ${secondWeekP0}.`,
+          `L’écart se creuse avec la durée : au P5, la deuxième semaine n’ajoute que ${secondWeekP5} au prix de la première, contre ${secondWeekP0} au P0 et au P1.`,
         ],
         table: {
           caption: "Une et deux semaines de parking à Lyon Saint-Exupéry",
@@ -203,13 +230,13 @@ export function lyonPasCher(facts: TopicFacts): TopicGuide {
           {
             title: "Le P7, le moins cher selon l’aéroport, mais saisonnier",
             paragraphs: [
-              `Sur sa page des parkings économiques, l’aéroport présente le P7 comme le moins cher de ses parkings officiels. Ce parking de débord en plein air n’ouvre qu’en période de forte affluence, et uniquement sur réservation en ligne. Sa navette gratuite passe ${o.p7Shuttle.every} et rejoint le Terminal 1 en ${o.p7Shuttle.ride} ; aucune hauteur maximale n’est annoncée. Son prix ne figure pas sur la grille : seule une recherche à vos dates le donne. La réservation s’annule jusqu’à 4 heures avant l’arrivée.`,
+              `Sur sa page des parkings économiques, l’aéroport présente le P7 comme le moins cher de ses parkings officiels. Ce parking de débord en plein air n’ouvre qu’en période de forte affluence, et uniquement sur réservation en ligne. Sa navette gratuite passe ${o.p7Shuttle.every} et rejoint le Terminal 1 en ${o.p7Shuttle.ride} ; aucune hauteur maximale n’est annoncée. Son prix ne figure pas sur la grille : seule une recherche à vos dates le donne. Une réservation au P7 peut être annulée gratuitement, avec remboursement intégral, jusqu’à 4 heures avant l’arrivée au parking.`,
             ],
           },
           {
             title: "Le P5, le moins cher de la grille 2026",
             paragraphs: [
-              `Ouvert toute l’année, le P5 est le moins cher de la grille sans réservation : ${o.week.p5} la semaine, ${o.twoWeeks.p5} les deux semaines, puis ${o.grid.P5[7].replace("+ ", "")} au-delà d’un mois. Le prix bas se paie en temps : malgré une navette gratuite ${o.p5Shuttle.every}, l’aéroport compte ${o.p5Shuttle.door} de la voiture au Terminal 1, marche et attente comprises. Hauteur maximale : ${o.p5Height}.`,
+              `Ouvert toute l’année, le P5 est le moins cher de la grille sans réservation : ${o.week.p5} pour sept jours, soit moins de ${p5DayCeiling} € par jour, ${o.twoWeeks.p5} pour quatorze, puis ${o.grid.P5[7].replace("+ ", "")} au-delà de 30 jours. L’économie se paie en temps : la navette est gratuite, mais entre la marche jusqu’à l’arrêt, l’attente et le trajet, l’aéroport annonce ${o.p5Shuttle.door} entre la voiture et le Terminal 1, à ajouter au temps conseillé avant le vol. Hauteur limitée à ${p5HeightPage} d’après la page des parkings, à ${p5HeightGrid} d’après la grille 2026.`,
             ],
           },
           {
@@ -223,7 +250,7 @@ export function lyonPasCher(facts: TopicFacts): TopicGuide {
       {
         id: "parkings-prives",
         short: "Parkings privés avec navette",
-        title: "Parkings privés avec navette : où se fait l’économie",
+        title: "Parkings privés avec navette : ce que couvre le prix total",
         paragraphs: [
           `Les parkings privés des communes voisines accueillent la voiture, la gardent et vous conduisent en navette à l’aérogare, puis vous reprennent au retour. ${ride ? `Chez nos partenaires, la navette met ${ride} jusqu’au Terminal 1.` : "La durée de la navette jusqu’au Terminal 1 figure sur chaque fiche."} Elle s’arrête à l’endroit que l’aéroport réserve aux navettes des parkings extérieurs, à quelques minutes à pied de l’aérogare, et le parking vous indique le point exact.`,
         ],
@@ -259,7 +286,7 @@ export function lyonPasCher(facts: TopicFacts): TopicGuide {
           {
             title: "Les dates où tout se remplit",
             paragraphs: [
-              "Selon sa FAQ, c’est notamment pendant les vacances scolaires que les parkings de l’aéroport saturent : sans réservation, on est alors orienté vers un parking de débord plus éloigné. Pour partir pendant les vacances, réservez dès que vos billets d’avion sont pris.",
+              "Selon la FAQ de l’aéroport, c’est notamment pendant les vacances scolaires que ses parkings saturent : sans réservation, on est alors orienté vers un parking de débord plus éloigné. Pour partir pendant les vacances, réservez dès que vos billets d’avion sont pris.",
             ],
           },
         ],
@@ -275,7 +302,7 @@ export function lyonPasCher(facts: TopicFacts): TopicGuide {
           {
             title: "Dépasser l’heure réservée à l’aéroport",
             paragraphs: [
-              "Une réservation à l’aéroport couvre un créneau précis : entrée au plus tôt 30 minutes avant l’heure prévue, tolérance de 60 minutes après l’heure de sortie, puis frais de dépassement prélevés à la borne. Une seule entrée et une seule sortie : toute sortie est définitive. Un vol retardé n’entraîne aucun frais si vous avez indiqué vos numéros de vol (garantie retard, hors P1, géré par Lyon Parc Auto).",
+              "Une réservation à l’aéroport couvre un créneau précis : entrée au plus tôt 30 minutes avant l’heure prévue, tolérance de 60 minutes après l’heure de sortie, puis frais de dépassement prélevés à la borne. Une seule entrée et une seule sortie : toute sortie est définitive. Un vol retardé n’entraîne pas de frais si vous avez indiqué vos numéros de vol (garantie retard, hors P1, géré par Lyon Parc Auto).",
             ],
             table: {
               caption:
@@ -292,15 +319,15 @@ export function lyonPasCher(facts: TopicFacts): TopicGuide {
             ],
           },
           {
-            title: "Les offres non remboursables",
+            title: "Annuler hors délai",
             paragraphs: [
-              "Chaque parking partenaire choisit une formule d’annulation : gratuite jusqu’à l’heure de dépôt, jusqu’à 24 heures avant, jusqu’à 48 heures avant, ou non remboursable. Dans le délai, le remboursement est automatique ; après, le prix reste dû, sauf geste commercial du parking. À l’aéroport, l’annulation est gratuite jusqu’à 1 heure avant l’entrée (4 heures au P7), sauf au P1.",
+              "Chaque parking partenaire choisit une formule d’annulation : gratuite jusqu’à l’heure de dépôt, jusqu’à 24 heures avant, jusqu’à 48 heures avant, ou non remboursable. Dans le délai, le remboursement est automatique ; après, le prix reste dû, sauf geste commercial du parking. À l’aéroport, l’annulation est gratuite jusqu’à 1 heure avant l’entrée, 2 heures au P1, géré par Lyon Parc Auto, et 4 heures au P7.",
             ],
           },
           {
             title: "Le parking minute au-delà de 10 minutes",
             paragraphs: [
-              `Le parking minute est gratuit 10 minutes ; ensuite, ${o.minute.then}. Vingt minutes d’arrêt dépassent donc 7 €. ${capitalise(o.minute.cap)}.`,
+              `Les 10 premières minutes au parking minute ne coûtent rien, mais la note monte vite ensuite : ${minuteEleventh} pour la 11e minute, puis ${minuteNext} par minute commencée. Vingt minutes d’arrêt coûtent donc ${minuteStop(20)}, et une demi-heure ${minuteStop(30)}. Qui y passe plus de cinq fois en 24 h, tous parkings minute confondus, paie un forfait de ${minuteFlat}.`,
             ],
           },
         ],
@@ -317,7 +344,7 @@ export function lyonPasCher(facts: TopicFacts): TopicGuide {
             title: "Le Rhônexpress depuis Lyon Part-Dieu",
             paragraphs: [
               "Le tram express Rhônexpress relie la gare de Lyon Part-Dieu (sortie Porte Alpes) à la gare Lyon Saint-Exupéry en 30 minutes environ, de 4 h 25 à minuit, toutes les 15 minutes en journée. Comptez ensuite une douzaine de minutes à pied jusqu’au Terminal 1, selon l’aéroport.",
-              `Le ${o.readOn}, l’aller-retour coûtait ${RHONEXPRESS.return} en ligne (${RHONEXPRESS.returnMachine} au distributeur), ${RHONEXPRESS.youthReturn} pour les 12-25 ans, et les moins de 12 ans voyagent gratuitement. Acheté à l’avance, il descend à ${RHONEXPRESS.earlyOneMonth} (utilisable un mois après l’achat) ou ${RHONEXPRESS.earlyTwoMonths} (deux mois après). Pour une semaine, un couple paie ainsi ${couple}, contre ${o.week.p5} au P5 sans réservation${week ? ` et ${week} chez le moins cher de nos partenaires` : ""}, mais il faut rejoindre Part-Dieu avec les bagages.`,
+              `Le ${o.readOn}, l’aller-retour coûtait ${RHONEXPRESS.return} en ligne (${RHONEXPRESS.returnMachine} au distributeur), ${RHONEXPRESS.youthReturn} pour les 12-25 ans, et les moins de 12 ans voyagent gratuitement. Acheté à l’avance, il descend à ${RHONEXPRESS.earlyOneMonth} (utilisable un mois après l’achat) ou ${RHONEXPRESS.earlyTwoMonths} (deux mois après). Pour une semaine, un couple paie ainsi ${couple} en tram, contre ${o.week.p5} au P5 sans réservation, mais il faut rejoindre Part-Dieu avec les bagages.${week ? ` Chez nos partenaires, la même semaine revient ${week}, navette comprise.` : ""}`,
             ],
             table: {
               caption: "Le Rhônexpress aller-retour selon le groupe",
@@ -333,7 +360,7 @@ export function lyonPasCher(facts: TopicFacts): TopicGuide {
                 [
                   "Un jeune de 12 à 25 ans",
                   RHONEXPRESS.youthReturn,
-                  `Tarif 12-25 ans plus bas (${RHONEXPRESS.youthReturn})`,
+                  `${RHONEXPRESS.youthReturn} (pas de tarif anticipé : celui des 12-25 ans reste moins cher)`,
                 ],
               ],
               note: `Tarifs relevés le ${o.readOn} sur rhonexpress.fr ; la FAQ de l’aéroport cite des montants légèrement différents.`,
@@ -348,7 +375,7 @@ export function lyonPasCher(facts: TopicFacts): TopicGuide {
           {
             title: "Se faire déposer, et reprendre",
             paragraphs: [
-              "Un proche qui vous dépose au parking minute du Terminal 1 ne paie rien s’il repart dans les 10 minutes. Au retour, il attend gratuitement en zone d’attente, aux entrées de l’aéroport, une heure au plus et conducteur présent. Pour vous accompagner jusqu’aux contrôles, le « forfait accompagnant », réservé plus de 24 heures avant, coûte 6 € de 1 à 2 heures et 9 € de 2 à 4 heures au P4.",
+              "Un proche qui vous dépose au parking minute du Terminal 1 ne paie rien s’il repart dans les 10 minutes. Au retour, il attend gratuitement en zone d’attente, aux entrées de l’aéroport, une heure au plus et conducteur présent. Pour vous accompagner jusqu’aux contrôles, le « forfait accompagnant », réservé en ligne plus de 24 heures avant sur les parkings P2, P3 ou P4, coûte 6 € de 1 à 2 heures et 9 € de 2 à 4 heures.",
             ],
           },
         ],
@@ -362,8 +389,8 @@ export function lyonPasCher(facts: TopicFacts): TopicGuide {
           "Comparez des prix totaux pour les mêmes heures, jamais des prix par jour.",
           "Réservez jusqu’à l’heure où vous reprendrez vraiment la voiture, bagages et navette compris.",
           "À l’aéroport, réservez en ligne : le tarif Internet ne s’applique pas sur place.",
-          "Lisez la formule d’annulation ; si vos dates peuvent bouger, gardez le filtre « Annulation gratuite ».",
-          "Donnez vos numéros de vol : garantie retard à l’aéroport (hors P1), SMS d’atterrissage chez nos partenaires.",
+          "Lisez la formule d’annulation ; si vos dates peuvent bouger, cochez le filtre « Annulation gratuite » dans les résultats.",
+          "Donnez vos numéros de vol : garantie retard à l’aéroport (hors P1) ; chez nos partenaires, le parking suit votre vol retour et, s’il envoie des SMS, vous prévient à l’atterrissage avec le point de rendez-vous.",
           "Demandez le prix des services annexes et de la prolongation avant d’en avoir besoin.",
           "Seul ou à deux, comparez avec le Rhônexpress ou le bus TCL.",
         ],
@@ -372,7 +399,7 @@ export function lyonPasCher(facts: TopicFacts): TopicGuide {
     faq: [
       [
         "Quel est le parking le moins cher de l’aéroport de Lyon Saint-Exupéry ?",
-        `L’aéroport présente le P7 comme le moins cher de ses parkings officiels, mais il n’ouvre qu’en période d’affluence, sur réservation en ligne. Ouvert toute l’année, le P5 est le moins cher de sa grille 2026 : ${o.week.p5} la semaine sans réservation. ${week ? `Chez les parkings privés partenaires de ${p}, une semaine revient aujourd’hui ${week}.` : `Sur ${p}, les parkings privés avec navette sont classés par prix total.`}`,
+        `L’aéroport présente le P7 comme le moins cher de ses parkings officiels, mais ce parking saisonnier n’ouvre qu’en période d’affluence, et uniquement sur réservation en ligne. Ouvert toute l’année, le P5 est le moins cher de sa grille 2026 : ${o.week.p5} la semaine sans réservation. ${week ? `Chez les parkings privés partenaires de ${p}, une semaine revient aujourd’hui ${week}.` : `Sur ${p}, les parkings privés avec navette sont classés par prix total.`}`,
       ],
       [
         "Combien coûte une semaine de parking à l’aéroport de Lyon ?",
@@ -380,11 +407,11 @@ export function lyonPasCher(facts: TopicFacts): TopicGuide {
       ],
       [
         "Combien coûtent deux semaines de parking à Lyon Saint-Exupéry ?",
-        `Sur la grille 2026 sans réservation, ${o.twoWeeks.p5} au P5 et ${o.twoWeeks.p0} au P0 ou au P1 ; un jour de plus fait passer le P5 à ${DAY_15.p5}. ${twoWeeks ? `Chez les partenaires de ${p}, deux semaines reviennent aujourd’hui ${twoWeeks}.` : `Chez les partenaires de ${p}, le prix total de deux semaines s’affiche pour vos dates.`}`,
+        `Sur la grille 2026 sans réservation, ${o.twoWeeks.p5} au P5 et ${o.twoWeeks.p0} au P0 et au P1 ; dès que le séjour dépasse quatorze fois 24 heures, le P5 passe à ${DAY_15.p5}. ${twoWeeks ? `Chez les partenaires de ${p}, deux semaines reviennent aujourd’hui ${twoWeeks}.` : `Chez les partenaires de ${p}, le prix total de deux semaines s’affiche pour vos dates.`}`,
       ],
       [
         "Réserver son parking en ligne coûte-t-il moins cher ?",
-        `À l’aéroport, oui : ses tarifs en ligne sont en général plus bas que la grille appliquée sur place, et d’autant plus avantageux qu’on réserve tôt. Chez les partenaires de ${p}, le prix dépend du nombre de jours facturés, pas de la date de réservation : réserver tôt garantit surtout la place.`,
+        `À l’aéroport, oui : ses tarifs en ligne sont en général plus bas que la grille appliquée sur place, et d’autant plus avantageux qu’on réserve tôt. Chez les partenaires de ${p}, le prix dépend aujourd’hui du nombre de jours facturés, pas de la date de réservation : réserver tôt garantit surtout la place.`,
       ],
       [
         "Pourquoi une semaine de parking est-elle facturée 8 jours ?",
@@ -392,7 +419,7 @@ export function lyonPasCher(facts: TopicFacts): TopicGuide {
       ],
       [
         "Que se passe-t-il si je reste plus longtemps que prévu au parking ?",
-        `À l’aéroport, après une heure de tolérance, des frais de dépassement sont prélevés à la sortie, par exemple 6 € par 24 heures de plus au P5 et 20 € au P0, sauf vol retardé déclaré avec ses numéros (hors P1). Chez les partenaires de ${p}, un retour après la date et l’heure réservées prolonge le séjour, facturé par le parking à ses tarifs.`,
+        `À l’aéroport, après une heure de tolérance, des frais de dépassement sont prélevés à la sortie : au P5 comme au P7, ${whole(OVERSTAY_P5[2])} au plus pour les premières 24 heures, puis ${whole(OVERSTAY_P5[3])} par 24 heures supplémentaires ; au P0, ${whole(OVERSTAY_P0[2])} au plus, puis ${whole(OVERSTAY_P0[3])}. Ils ne s’appliquent pas si votre vol est retardé et que vous avez indiqué vos numéros de vol (hors P1). Chez les partenaires de ${p}, un retour après la date et l’heure réservées prolonge le séjour, facturé par le parking à ses tarifs.`,
       ],
       [
         "Un retour anticipé est-il remboursé ?",
@@ -404,7 +431,7 @@ export function lyonPasCher(facts: TopicFacts): TopicGuide {
       ],
       [
         "Vaut-il mieux prendre le Rhônexpress ou se garer à l’aéroport ?",
-        `Pour une semaine, deux adultes paient ${couple} l’aller-retour en Rhônexpress, contre ${o.week.p5} au P5 sans réservation. Le tram coûte autant quelle que soit la durée, mais chaque voyageur de 12 ans et plus paie : il l’emporte pour un voyageur seul ou un long séjour, la voiture pour un groupe ou un week-end.`,
+        `Pour une semaine, deux adultes paient ${couple} l’aller-retour en Rhônexpress, contre ${o.week.p5} au P5 sans réservation. Le tram coûte autant quelle que soit la durée, mais chaque voyageur de 12 ans et plus paie : face au P5 sans réservation, il l’emporte au-delà de 24 heures pour un voyageur seul et au-delà de 48 heures pour un couple ; à partir de trois adultes, la voiture reste moins chère pour une semaine.`,
       ],
       [
         "Peut-on déposer quelqu’un gratuitement à l’aéroport de Lyon ?",
@@ -421,7 +448,7 @@ export function lyonPasCher(facts: TopicFacts): TopicGuide {
       title: "Les parkings partenaires les moins chers pour une semaine",
       lead: "La liste ne garde que les parkings partenaires disponibles pour les dates du formulaire, du moins cher au plus cher d’après le prix total du séjour, navette comprise.",
       empty:
-        "Aucun parking partenaire n’est encore réservable en ligne pour ces dates. Revenez bientôt ou essayez d’autres dates ; en attendant, le guide de l’aéroport de Lyon Saint-Exupéry présente ses parkings officiels et leurs tarifs 2026.",
+        "Aucun parking partenaire n’est réservable en ligne pour ces dates. Essayez d’autres dates avec le formulaire ci-dessus ; le guide de l’aéroport de Lyon Saint-Exupéry présente aussi les parkings officiels et leurs tarifs 2026.",
     },
   };
 }

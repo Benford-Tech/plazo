@@ -428,7 +428,14 @@ Le nom du produit doit rester dans UN seul fichier de configuration (il peut enc
   de lyonaeroports.com relevées le 08/10/2026, revérifiées le 09/10/2026, date citée dans le texte ; **Terminal 2 fermé depuis le
   01/04/2026** : le guide envoie tout le monde au Terminal 1 ; P1 géré par LPA ; les navettes des parkings extérieurs ne déposent
   pas devant l'aérogare (règlement des parcs) ; deux relectures contradictoires, 90 corrections) et ceux des partenaires restent ceux de
-  `guideFacts` ; `guideTexts` / `guideWordCount` servent aux tests (≥ 4 200 mots avec ou sans partenaire). Les parkings de démo
+  `guideFacts` ; `guideTexts` / `guideWordCount` servent aux tests (≥ 4 200 mots avec ou sans partenaire).
+  **Pages guide (09/10/2026, « fais les trois pages guide »)** : route `/[airport]/guide/[topic]` (`TopicGuideView` : fil d'Ariane,
+  H1, date de mise à jour, `SearchForm` prérempli, parkings partenaires réels de la page en `ResultCard`, `GuideToc` +
+  `GuideSections` niveau h2 partagés avec le guide de l'accueil, FAQ, autres guides ; JSON-LD Article + FAQPage + BreadcrumbList),
+  registre `src/lib/guides` (`topics.ts` : slugs `parking-pas-cher`, `parking-longue-duree`, `parking-voiturier` ; `index.ts` :
+  `topicGuide`, `topicLinks` ; contenus `lyon-*.ts` qui renvoient un `TopicGuide`), faits des partenaires `topicFacts` (semaine,
+  deux semaines pour la longue durée, voituriers), liens « → » depuis trois sections du guide de l'accueil (`GuideSection.more`),
+  pied de page et plan du site ; tests ≥ 2 000 mots, ≥ 9 questions, aucun chiffre de partenaire sans partenaire réel. Les parkings de démo
   sont archivés (`DEMO_LISTINGS=archive` : `DemoSeedService.archive` suspend les loueurs `isDemo`, `true` les rétablit).
 - `email-worker/` : relais des mails entrants (Cloudflare Email Worker, `postal-mime`) : Email Routing lui passe chaque mail de
   `plazo.fr` (règle « catch-all » du domaine principal), il le poste sur l'API ; déployé par GitHub Actions (`email-worker-ci.yml`,

@@ -1,5 +1,6 @@
 // Topic guide « Parking longue durée » of Lyon Saint-Exupéry (09/10/2026): lyonaeroports.com (parkings, parking FAQ, P5+ page, chargers, T2 closure) and its 2026 tariff sheet, TCS advice on long immobilisation, 2026-2027 school calendar.
 import { capitalise, LYON_OFFICIAL, offerText, rideMinutes, type GuideSection, type TopicFacts, type TopicGuide } from "../airport-guides";
+import { MAX_STAY_DAYS } from "../dates";
 import { PRODUCT_NAME } from "../product";
 
 type Grid = keyof typeof LYON_OFFICIAL.grid;
@@ -45,7 +46,7 @@ export function lyonLongueDuree(facts: TopicFacts): TopicGuide {
       title: "Combien coûte un parking longue durée à Lyon Saint-Exupéry ?",
       paragraphs: [
         `Sur un long séjour, l’écart entre deux parkings se compte en centaines d’euros. Sans réservation, la grille 2026 de l’aéroport fait payer un mois ${g.P5[6]} au P5, soit environ ${perDay(g.P5[6], 30)} par jour, et ${p0[6]} au P0 ou au P1, soit environ ${perDay(p0[6], 30)} par jour. En ligne et à l’avance, l’aéroport annonce des prix « à partir de ${o.online.from} », selon les dates et les places restantes.`,
-        `Attention au décompte : la grille sans réservation de l’aéroport avance par tranches de 24 heures (« 2e jour », « 3e jour »…). Un dépôt un samedi à 8 h et un retour deux samedis plus tard à 20 h dépassent quatorze fois 24 heures : c’est le prix du 15e jour qui s’applique. Chez nos parkings partenaires, ce sont les jours du calendrier qui comptent, arrivée et retour compris : d’un samedi à l’autre, deux semaines font 15 jours facturés.`,
+        `Attention au décompte : la grille sans réservation de l’aéroport avance par tranches de 24 heures (« 2e jour », « 3e jour »…). Un dépôt un samedi à 8 h et un retour deux samedis plus tard à 20 h dépassent quatorze fois 24 heures : c’est le prix du 15e jour qui s’applique. Chez nos parkings partenaires, ce sont les jours du calendrier qui comptent, arrivée et retour compris : pour ce même séjour, du samedi au samedi deux semaines plus tard, 15 jours sont facturés, quelle que soit l’heure de retour.`,
       ],
       table: {
         caption: "Parkings de l’aéroport : tarifs 2026 sans réservation pour un long séjour",
@@ -62,7 +63,7 @@ export function lyonLongueDuree(facts: TopicFacts): TopicGuide {
                 ? `Chez nos parkings partenaires, elles coûtent aujourd’hui ${twoWeeks}, navette et commission de ${P} comprises.`
                 : `Chez nos parkings partenaires, indiquez vos dates en haut de la page pour voir le prix total, navette comprise.`) +
               (facts.week && facts.twoWeeks
-                ? ` Par jour facturé, la semaine la moins chère revient à ${offerPerDay(facts.week)} et les deux semaines les moins chères à ${offerPerDay(facts.twoWeeks)}.`
+                ? ` Rapporté au jour facturé, cela fait ${offerPerDay(facts.week)} par jour pour la semaine la moins chère et ${offerPerDay(facts.twoWeeks)} par jour pour les deux semaines les moins chères.`
                 : ""),
           ],
         },
@@ -81,7 +82,7 @@ export function lyonLongueDuree(facts: TopicFacts): TopicGuide {
       paragraphs: [
         `Réservée en ligne sur le site de l’aéroport, une place couvre de 4 heures à 120 jours : la grille 2026 l’indique (« Durée de stationnement : jusqu’à 120 jours ») et la foire aux questions de l’aéroport le confirme (relevé le ${o.readOn}). Seule exception pour un voyage : le P5 robotisé, limité aux séjours de 3 à 30 jours.`,
         "Une réservation de l’aéroport ne permet qu’une entrée et une sortie : ressortir chercher un objet oublié met fin au stationnement.",
-        `Chez les parkings privés, la durée possible dépend de la grille de chacun. Sur ${P}, un parking n’apparaît comme disponible que s’il a de la place pour chaque nuit du séjour et un prix pour sa durée.`,
+        `Chez les parkings privés, la durée possible dépend de la grille de chacun. Sur ${P}, un séjour dure au plus ${MAX_STAY_DAYS} jours, et un parking n’apparaît comme disponible que s’il a de la place pour chaque nuit du séjour et un prix pour sa durée.`,
       ],
     },
     {
@@ -95,7 +96,7 @@ export function lyonLongueDuree(facts: TopicFacts): TopicGuide {
         {
           title: "Le P5, le parking économique",
           paragraphs: [
-            `Sa navette passe ${o.p5Shuttle.every} ; l’aéroport compte ${o.p5Shuttle.door} de la voiture au Terminal 1, marche et attente comprises. Le parking est découpé en quatre îlots aux noms de villes, comme Agadir ou Berlin, repris par les arrêts de la navette : photographiez le panneau du vôtre avant de partir. Hauteur maximale : ${o.p5Height}.`,
+            `Selon l’aéroport, comptez ${o.p5Shuttle.door} entre votre voiture et le Terminal 1, en incluant la marche jusqu’à l’arrêt et l’attente. La navette du P5 passe ${o.p5Shuttle.every} ; dans le parking, elle dessert d’abord les arrêts Dakar, Calvi et Cancun, puis, après un arrêt aux loueurs de voitures, Berlin et Agadir, avant de revenir au Terminal 1. Le parking est découpé en quatre îlots aux noms de villes, comme Agadir ou Berlin, repris par les arrêts de la navette : photographiez le panneau du vôtre avant de partir. Hauteur maximale : ${o.p5Height}.`,
           ],
         },
         {
@@ -118,17 +119,17 @@ export function lyonLongueDuree(facts: TopicFacts): TopicGuide {
       title: "Parkings privés avec navette : le bon calcul pour un long séjour",
       paragraphs: [
         `Avec un parking privé, la navette ajoute quelques minutes à l’aller et au retour ; sur un mois, elles pèsent peu face à l’écart de prix. Elle vous conduit au Terminal 1, à l’endroit que le parking vous indique${rideWords ? `, en ${rideWords} chez nos partenaires` : ""}, et vient vous reprendre au retour.`,
-        `Sur ${P}, chaque partenaire fixe ses forfaits par durée et, au-delà du plus long, un prix par jour supplémentaire. Le prix affiché est le total pour vos dates, commission comprise, payé en ligne par carte : rien ne s’ajoute à l’arrivée.`,
+        `Sur ${P}, chaque partenaire fixe ses forfaits par durée et peut y ajouter, au-delà du plus long, un prix par jour supplémentaire ; sans ce prix, un séjour plus long que son plus long forfait n’est pas réservable chez lui. Le prix affiché est le total pour vos dates, commission comprise, payé en ligne par carte : rien ne s’ajoute à l’arrivée.`,
         "Avec un voiturier, les clés restent au parking tout le séjour ; dans les parkings rangés en files, la voiture est placée selon sa date de retour, pour éviter qu’elle reste coincée derrière une autre qui part après elle : donnez une date de retour juste. Chaque fiche indique si le terrain est clôturé et sous vidéosurveillance et à quelles heures l’accueil est ouvert.",
       ],
       table: {
         caption: "Un long séjour à l’aéroport ou chez un partenaire",
-        columns: ["Parkings de l’aéroport (en ligne)", `Partenaires de ${P}`],
+        columns: ["Parkings de l’aéroport", `Partenaires de ${P}`],
         rows: [
-          ["Durée possible", "4 heures à 120 jours ; 3 à 30 jours au P5 robotisé", "Selon la grille du parking"],
+          ["Durée possible", "4 heures à 120 jours en ligne ; 3 à 30 jours au P5 robotisé", `Jusqu’à ${MAX_STAY_DAYS} jours, selon la grille du parking`],
           ["Deux semaines", `${o.twoWeeks.p5} au P5, ${o.twoWeeks.p0} au P0 sans réservation`, twoWeeks ? capitalise(twoWeeks) : "Prix total affiché pour vos dates"],
-          ["Jours comptés", "Par tranches de 24 heures", "Jours du calendrier, arrivée et retour compris"],
-          ["Vol retour en retard", "Garantie retard si le vol est renseigné, sauf au P1", "Navette calée sur le vol ; prolongation facturée après l’heure réservée"],
+          ["Jours comptés", "Par tranches de 24 heures sans réservation ; en ligne, selon les dates et heures réservées", "Jours du calendrier, arrivée et retour compris"],
+          ["Vol retour en retard", "Garantie retard si le vol est renseigné, sauf au P1", "Le parking suit l’atterrissage si le vol retour est indiqué ; prolongation facturée après l’heure réservée"],
           ["Retour plus tardif", "Tarif de dépassement à la borne de sortie", "Prolongation facturée par le parking, à son tarif"],
         ],
         note: `Aéroport : grille 2026 et foire aux questions de lyonaeroports.com, relevées le ${o.readOn}.`,
@@ -143,7 +144,7 @@ export function lyonLongueDuree(facts: TopicFacts): TopicGuide {
         {
           title: "La batterie",
           paragraphs: [
-            "Même moteur coupé, la batterie alimente en continu l’alarme et l’électronique : fatiguée, elle peut ne plus démarrer au retour. Faites tester une batterie de plusieurs années avant de partir. Dans un parking avec voiturier, ne la débranchez pas : le personnel doit pouvoir démarrer et déplacer la voiture.",
+            "Même moteur coupé, la batterie alimente en continu l’alarme et l’électronique : si elle est fatiguée, la voiture risque de ne plus démarrer au retour. Faites tester une batterie de plusieurs années avant de partir. Dans un parking avec voiturier, ne la débranchez pas : le personnel doit pouvoir démarrer et déplacer la voiture.",
           ],
         },
         {
@@ -166,7 +167,7 @@ export function lyonLongueDuree(facts: TopicFacts): TopicGuide {
     {
       id: "retour-plus-tard",
       short: "Rentrer plus tard (ou plus tôt)",
-      title: "Rentrer plus tard que prévu : prolongation et frais",
+      title: "Rentrer plus tard ou plus tôt que prévu : prolongation et frais",
       paragraphs: ["Correspondance manquée, vacances prolongées : les règles d’un retour tardif diffèrent selon le parking."],
       parts: [
         {
@@ -189,7 +190,7 @@ export function lyonLongueDuree(facts: TopicFacts): TopicGuide {
         },
         {
           title: "Et si vous rentrez plus tôt ?",
-          paragraphs: [`Un retour anticipé n’est remboursé ni à l’aéroport ni chez les partenaires de ${P}. Prévenez quand même le parking et mettez à jour votre vol retour, pour que la navette soit là au bon moment.`],
+          paragraphs: [`Un retour anticipé n’est remboursé ni à l’aéroport ni chez les partenaires de ${P}. Chez un partenaire de ${P}, prévenez quand même le parking : c’est lui qui peut avancer la date et l’heure de retour de votre réservation et y noter votre nouveau vol, pour que la navette soit là au bon moment.`],
         },
       ],
     },
@@ -198,8 +199,8 @@ export function lyonLongueDuree(facts: TopicFacts): TopicGuide {
       short: "Changer de vol en cours de voyage",
       title: "Changer de vol pendant un long voyage",
       paragraphs: [
-        `Sur ${P}, vous modifiez vous-même vos numéros de vol depuis Ma réservation, jusqu’au retour : le parking suit le nouveau vol, et le SMS d’atterrissage, qui donne le point de rendez-vous de la navette, part pour le bon avion. Sans numéro de vol retour, pas de SMS d’atterrissage. Un changement de date, d’heure ou de véhicule passe par le parking.`,
-        "À l’aéroport, une réservation se modifie jusqu’à 1 heure avant l’arrivée au parking (2 heures au P1), plus ensuite. Si vous rentrez sur un autre vol que celui indiqué et qu’il a du retard, donnez son numéro à l’interphone de la borne de sortie : les agents vérifient le retard.",
+        `Sur ${P}, vous modifiez vous-même vos numéros de vol depuis Ma réservation, jusqu’à l’heure de retour réservée : le parking voit le nouveau vol. Le SMS d’atterrissage, qui donne le point de rendez-vous de la navette, suit le nouveau vol s’il atterrit le jour du retour prévu et si le parking envoie des SMS ; si votre premier vol a été annulé ou si vous rentrez un autre jour, ne comptez pas sur ce SMS et appelez le parking. Sans numéro de vol retour, pas de SMS d’atterrissage. Un changement de date, d’heure ou de véhicule passe par le parking.`,
+        "À l’aéroport, une réservation se modifie jusqu’à 1 heure avant l’arrivée au parking (2 heures au P1) ; passé ce délai, donc pendant tout le voyage, vous ne pouvez plus la modifier vous-même. La garantie retard ne couvre que le vol indiqué dans la réservation : si vous rentrez sur un autre vol et sortez après l’heure réservée, le tarif de dépassement se règle à la borne de sortie, après une heure de tolérance. Si vous n’avez pas pu renseigner votre numéro de vol et que ce vol a du retard, appelez les agents à l’interphone de la borne de sortie en donnant ce numéro ; en cas de retard avéré, l’aéroport n’applique aucun supplément, sauf au P1.",
       ],
     },
     {
@@ -218,8 +219,8 @@ export function lyonLongueDuree(facts: TopicFacts): TopicGuide {
       title: "Été, Noël, ski : réserver un long séjour au bon moment",
       paragraphs: [
         "Les voyages de deux semaines et plus tombent souvent pendant les vacances scolaires : juillet et août, Noël, l’hiver. En 2026-2027, la zone A, dont fait partie l’académie de Lyon, est en vacances du 17 octobre au 2 novembre 2026, du 19 décembre 2026 au 4 janvier 2027, du 13 février au 1er mars 2027 et du 10 au 26 avril 2027 (la seconde date est celle de la reprise des cours).",
-        "Chez nos partenaires, un séjour n’est réservable que s’il reste de la place chaque nuit, du dépôt au retour : plus il est long, plus il risque de croiser une nuit complète. L’aéroport prévient que ses parkings, P5 compris, peuvent afficher complet pendant les vacances scolaires, et ses réservations ouvrent 9 mois à l’avance.",
-        "Réservez dès que les billets d’avion sont pris, avec une formule annulable si vos dates peuvent encore bouger. Si l’aéroport signale une forte saturation, il conseille 1 heure de marge en plus des 2 h 30 recommandées avant le décollage.",
+        "Chez nos partenaires, un séjour n’est réservable que s’il reste de la place chaque nuit, du dépôt au retour : plus il est long, plus il risque de croiser une nuit complète. L’aéroport prévient que ses parkings, P5 compris, peuvent afficher complet pendant les vacances scolaires. Ses réservations ouvrent 9 mois à l’avance, mais 3 mois seulement au P5 robotisé, et le P7 se réserve au plus tard 48 heures avant l’arrivée au parking.",
+        `Réservez dès que les billets d’avion sont pris, avec une formule annulable si vos dates peuvent encore bouger. Si l’aéroport signale une forte saturation de ses parkings, il conseille de prévoir 1 heure de marge en plus du délai recommandé pour être au terminal : ${o.advice}.`,
       ],
     },
     {
@@ -231,7 +232,7 @@ export function lyonLongueDuree(facts: TopicFacts): TopicGuide {
         "Indiquez vos dates et heures : le formulaire de cette page est réglé sur deux semaines.",
         "Comparez le prix total : navette, commission et, quand le parking en a, voiturier ou place couverte sont compris.",
         "Regardez la formule d’annulation du parking : gratuite jusqu’à l’heure de dépôt, 24 h ou 48 h avant, ou non annulable. Dans le délai, le remboursement est automatique ; après, le prix reste dû, sauf geste commercial du parking.",
-        "Payez en ligne par carte : l’e-mail de confirmation, doublé d’un SMS si le parking en envoie, donne le point de rendez-vous du retour quand le parking l’a indiqué.",
+        "Payez en ligne par carte : l’e-mail de confirmation donne le point de rendez-vous du retour quand le parking l’a indiqué ; le SMS de confirmation, si le parking en envoie, reprend l’essentiel (référence, dates, lien vers Ma réservation), sans ce point de rendez-vous.",
         "La veille du dépôt, un rappel vous est en principe envoyé. L’application montre la place de la voiture pendant tout le séjour, dès qu’elle est enregistrée ; le site, le jour du retour.",
         "Au retour, Ma réservation affiche un compte à rebours jusqu’à l’atterrissage, puis jusqu’à l’arrivée de la navette si le parking a activé le suivi en direct.",
       ],
@@ -254,15 +255,15 @@ export function lyonLongueDuree(facts: TopicFacts): TopicGuide {
         (twoWeeks
           ? `Chez les parkings partenaires de ${P}, deux semaines coûtent aujourd’hui ${twoWeeks}, navette comprise. `
           : `Chez les parkings partenaires de ${P}, le prix total de deux semaines s’affiche dès que vous indiquez vos dates. `) +
-          `À l’aéroport de Lyon Saint-Exupéry, la grille 2026 sans réservation affiche ${o.twoWeeks.p5} au P5 et ${o.twoWeeks.p0} au P0 ; réservées en ligne à l’avance, les places coûtent moins.`,
+          `À l’aéroport de Lyon Saint-Exupéry, la grille 2026 sans réservation affiche ${o.twoWeeks.p5} au P5 et ${o.twoWeeks.p0} au P0 ; réservées en ligne à l’avance, les places coûtent en général moins cher.`,
       ],
       [
         "Combien coûte un mois de parking au P5 de Lyon Saint-Exupéry ?",
-        `${g.P5[6]} pour 30 jours sans réservation, selon la grille 2026 de l’aéroport relevée le ${o.readOn}, puis ${extraDay("P5")} par jour ; trois semaines y coûtent ${g.P5[5]}. En ligne et à l’avance, c’est en général moins cher.`,
+        `Au P5 de Lyon Saint-Exupéry, un mois (30 jours) coûte ${g.P5[6]} sans réservation selon la grille 2026 de l’aéroport, relevée le ${o.readOn}, puis ${extraDay("P5")} par jour supplémentaire ; trois semaines y coûtent ${g.P5[5]}. En ligne et à l’avance, c’est en général moins cher.`,
       ],
       [
         "Combien de temps peut-on laisser sa voiture à l’aéroport de Lyon Saint-Exupéry ?",
-        `Jusqu’à 120 jours avec une réservation en ligne sur le site de l’aéroport, sauf au P5 robotisé, limité à 3 à 30 jours (relevé le ${o.readOn}). Chez les parkings privés, la durée dépend de la grille de chacun.`,
+        `Avec une réservation en ligne sur le site de l’aéroport de Lyon Saint-Exupéry, vous pouvez laisser votre voiture de 4 heures à 120 jours ; le P5 robotisé fait exception, avec des séjours de 3 à 30 jours seulement (relevé le ${o.readOn}). Chez les parkings partenaires de ${P}, un séjour peut durer jusqu’à ${MAX_STAY_DAYS} jours, selon la grille de chacun.`,
       ],
       [
         "Quel est le parking le moins cher pour 3 semaines à l’aéroport de Lyon ?",
@@ -274,7 +275,7 @@ export function lyonLongueDuree(facts: TopicFacts): TopicGuide {
       ],
       [
         "Mon vol retour change pendant le voyage : que faire pour le parking ?",
-        `Sur ${P}, modifiez le numéro de vol depuis Ma réservation, jusqu’au retour : le parking suit le nouveau vol et le SMS d’atterrissage donne le point de rendez-vous de la navette. Une nouvelle date ou heure de retour se règle avec le parking, par téléphone.`,
+        `Sur ${P}, modifiez le numéro de vol depuis Ma réservation, jusqu’à l’heure de retour réservée : le parking voit le nouveau vol et, s’il envoie des SMS, le SMS d’atterrissage donne le point de rendez-vous de la navette. Si votre premier vol a été annulé, prévenez aussi le parking. Une nouvelle date ou heure de retour se règle avec le parking, par téléphone.`,
       ],
       [
         "Faut-il débrancher la batterie avant de laisser sa voiture un mois au parking ?",
@@ -282,7 +283,7 @@ export function lyonLongueDuree(facts: TopicFacts): TopicGuide {
       ],
       [
         "Peut-on recharger une voiture électrique pendant un long séjour à l’aéroport de Lyon ?",
-        `Oui : le P4 Elec et le P5 Elec, 100 % électriques, se réservent en ligne et comptent ${o.chargers.dedicated} bornes dédiées. Les autres bornes de l’aéroport sont en libre-service, sans garantie d’en trouver une libre. Chez les parkings privés, la recharge est un service annexe, payé sur place.`,
+        `Oui : le P4 Elec et le P5 Elec, 100 % électriques, se réservent en ligne et comptent ${o.chargers.dedicated} bornes dédiées. Les autres bornes de l’aéroport sont en libre-service, sans garantie d’en trouver une libre. Chez les parkings partenaires de ${P} qui la proposent (filtre « Recharge électrique »), la recharge est un service annexe, non réservable en ligne et payé au parking.`,
       ],
       [
         "Ma voiture est-elle surveillée pendant un mois de parking à l’aéroport de Lyon ?",
@@ -293,7 +294,7 @@ export function lyonLongueDuree(facts: TopicFacts): TopicGuide {
       filter: "all",
       stayDays: 14,
       title: "Les parkings partenaires les moins chers pour deux semaines",
-      lead: "La liste montre les parkings partenaires qui ont de la place pour tout le séjour, du moins cher au plus cher d’après le prix total, aux dates du formulaire ci-dessus : deux semaines par défaut.",
+      lead: "La liste montre les parkings partenaires qui ont de la place pour les deux semaines préremplies dans le formulaire ci-dessus, du moins cher au plus cher d’après le prix total ; pour d’autres dates, indiquez les vôtres et lancez la recherche.",
       empty: "Aucun parking partenaire n’est encore réservable en ligne pour ces dates. Revenez bientôt, et consultez en attendant le guide complet du parking à l’aéroport de Lyon Saint-Exupéry pour comparer les parkings officiels.",
     },
   };

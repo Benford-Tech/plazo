@@ -3,7 +3,7 @@
 // Sources read on 09/10/2026: store.lyonaeroports.com (« Service voiturier », the Alyse Premium and Ector pages, CGV version of
 // 12/02/2026, annexes 5 and 5 bis), the airport's parking rules applicable since 01/01/2024, lyonaeroports.com (« Parkings »,
 // « S’organiser et être à l’heure », « Terminal 2 fermé »); Plazo's own rules from site/src/lib/legal.ts.
-import { capitalise, LYON_OFFICIAL, offerText, rideMinutes, rideText, type TopicFacts, type TopicGuide } from "../airport-guides";
+import { LYON_OFFICIAL, offerText, type TopicFacts, type TopicGuide } from "../airport-guides";
 import { PRODUCT_NAME } from "../product";
 import { topicPath } from "./topics";
 
@@ -23,18 +23,19 @@ export function lyonVoiturier(facts: TopicFacts): TopicGuide {
   const P = PRODUCT_NAME;
   const v = AIRPORT_VALET;
   const valet = facts.valet;
+  // Valet columns and lists never quote facts.shuttle: it spans every partner with a shuttle, valet or not.
   const valetWeek = valet?.week ? offerText(valet.week) : null;
-  const rideWords = facts.shuttle ? rideMinutes(facts.shuttle) : null;
-  const rideCell = facts.shuttle ? rideText(facts.shuttle) : null;
 
   const valetCount = valet
-    ? `${valet.count === 1 ? "Un de nos parkings partenaires propose" : `${valet.count} de nos parkings partenaires proposent`} aujourd’hui un voiturier, et le filtre « Voiturier » des résultats ne garde que les parkings de ce type.`
-    : "Le filtre « Voiturier » des résultats ne garde que les parkings qui proposent ce service, et chaque fiche précise si l’on vous prend les clés ou si vous vous garez vous-même.";
+    ? `${valet.count === 1 ? "Un de nos parkings partenaires propose" : `${valet.count} de nos parkings partenaires proposent`} aujourd’hui un voiturier, et le filtre « Voiturier » des résultats ne garde que les parkings de ce type. Chaque fiche précise si l’on vous prend les clés, si le terrain est clôturé et s’il est sous vidéosurveillance.`
+    : "Le filtre « Voiturier » des résultats ne garde que les parkings qui proposent ce service, et chaque fiche précise si l’on vous prend les clés ou si vous vous garez vous-même. Les fiches indiquent aussi si le terrain est clôturé et s’il est sous vidéosurveillance.";
 
   const cheaperWithout = facts.week && valet?.week && facts.week.priceCents < valet.week.priceCents ? offerText(facts.week) : null;
   const valetPrice = valetWeek
-    ? `Chez nos parkings partenaires avec voiturier, une semaine revient aujourd’hui ${valetWeek}, voiturier et navette compris.` +
-      (cheaperWithout ? ` Sans voiturier, une semaine est proposée ${cheaperWithout} : l’écart donne une idée du prix du service.` : "")
+    ? `Chez nos parkings partenaires avec voiturier, une semaine coûte aujourd’hui ${valetWeek}, voiturier et navette compris.` +
+      (cheaperWithout
+        ? ` Sans voiturier, une semaine est proposée ${cheaperWithout}, chez un autre partenaire : chaque parking fixe librement ses tarifs, et l’écart tient aussi à l’emplacement, à la navette et aux équipements de chacun, pas seulement au voiturier.`
+        : "")
     : "Chez nos parkings partenaires, le voiturier est une caractéristique du parking : il est compris dans le prix total affiché pour vos dates, comme la navette.";
 
   return {
@@ -44,7 +45,7 @@ export function lyonVoiturier(facts: TopicFacts): TopicGuide {
     metaDescription:
       "Voiturier à l’aéroport de Lyon : service de l’aéroport au dépose-minute du Terminal 1, voituriers indépendants, parkings privés. Clés, état des lieux, prix.",
     title: "Parking avec voiturier à l’aéroport de Lyon Saint-Exupéry : les trois formules, pas à pas",
-    intro: `À Lyon Saint-Exupéry, « voiturier » recouvre trois services bien différents : celui que vend l’aéroport, qui prend votre voiture au dépose-minute du Terminal 1, les voituriers indépendants qui vous donnent rendez-vous à l’aérogare, et les parkings privés où un voiturier range la voiture sur place pendant qu’une navette vous emmène. Ce guide explique chacun, le jour du départ et celui du retour, ce qu’il faut laisser ou garder, l’état des lieux, la responsabilité en cas de dommage et la logique des prix. Informations de l’aéroport relevées le ${o.readOn} ; depuis le ${o.t2Closed}, tous les vols partent du Terminal 1.`,
+    intro: `À Lyon Saint-Exupéry, « voiturier » recouvre trois services bien différents : celui que vend l’aéroport, avec un voiturier partenaire qui prend votre voiture au dépose-minute du Terminal 1 ; celui des sociétés indépendantes, qui vous donnent rendez-vous à l’aérogare ; et celui des parkings privés, où un voiturier range la voiture sur place pendant qu’une navette vous emmène. Ce guide présente chacun d’eux, puis détaille le jour du départ et celui du retour, ce qu’il faut laisser ou garder, l’état des lieux, la responsabilité en cas de dommage et la logique des prix. Informations de l’aéroport relevées le ${o.readOn} ; depuis le ${o.t2Closed}, tous les vols partent du Terminal 1.`,
     published: "2026-10-09",
     updated: "2026-10-09",
     sections: [
@@ -53,7 +54,7 @@ export function lyonVoiturier(facts: TopicFacts): TopicGuide {
         short: "Les trois formules",
         title: "Trois façons de confier sa voiture à un voiturier",
         paragraphs: [
-          "Un voiturier conduit et gare votre voiture à votre place. Autour de l’aéroport, le service prend trois formes, qui diffèrent d’abord par l’endroit où vous rendez les clés : à l’aérogare avec le voiturier de l’aéroport ou une société indépendante, sans navette à prendre ; à l’accueil d’un parking privé, dont la navette assure la fin du trajet.",
+          "Un voiturier conduit et gare votre voiture à votre place. Autour de l’aéroport, le service prend trois formes, qui diffèrent d’abord par l’endroit où vous remettez les clés : à l’aérogare avec le voiturier de l’aéroport ou une société indépendante, sans navette à prendre ; à l’accueil d’un parking privé, dont la navette assure la fin du trajet.",
         ],
         table: {
           caption: "Les trois formules de voiturier à Lyon Saint-Exupéry",
@@ -61,9 +62,9 @@ export function lyonVoiturier(facts: TopicFacts): TopicGuide {
           rows: [
             ["Remise des clés", "Au dépose-minute du Terminal 1", "À l’aérogare, au lieu convenu", "À l’accueil du parking"],
             ["Où reste la voiture", "Parking officiel de l’aéroport (ou annexe d’Alyse Premium)", "Terrain de la société, parfois à plusieurs kilomètres", "Terrain du parking, sous la garde de son équipe"],
-            ["Jusqu’au Terminal 1", "À pied, environ 3 min", "À pied depuis le rendez-vous", rideCell ? `Navette, ${rideCell} chez nos partenaires` : "Navette, durée sur chaque fiche"],
+            ["Jusqu’au Terminal 1", "À pied, environ 3 min", "À pied depuis le rendez-vous", "Navette, durée sur chaque fiche"],
             ["Réservation", "En ligne seulement, sur store.lyonaeroports.com", "Site de la société ou comparateur", `Sur ${P}, paiement en ligne par carte`],
-            ["Prix", "Affiché une fois les dates saisies", "Propre à chaque société", valetWeek ? `${capitalise(valetWeek)}, voiturier compris` : "Prix total pour vos dates, voiturier compris"],
+            ["Prix", "Affiché une fois les dates saisies", "Propre à chaque société", valetWeek ? `Une semaine ${valetWeek} chez nos partenaires, voiturier compris` : "Prix total pour vos dates, voiturier compris"],
           ],
           note: `Service de l’aéroport : store.lyonaeroports.com et lyonaeroports.com, relevés le ${o.readOn}. Parkings partenaires : fiches et offres du moment.`,
         },
@@ -83,7 +84,7 @@ export function lyonVoiturier(facts: TopicFacts): TopicGuide {
             list: [
               "Vous réservez avec un compte client : vols, plaque, marque et couleur de la voiture, téléphone portable.",
               "Un coupon (un QR code) arrive par e-mail, puis, la veille ou le matin du départ, un SMS avec le contact de votre voiturier.",
-              "Vous l’appelez en approchant : 20 minutes avant d’arriver chez Alyse Premium, 15 minutes chez Ector.",
+              "Vous l’appelez en approchant du dépose-minute : l’aéroport conseille de le faire 20 minutes avant d’y arriver pour un voiturier Alyse Premium, 15 minutes pour un voiturier Ector.",
               "Au dépose-minute, vous scannez le coupon, faites l’état des lieux avec le voiturier et lui laissez la clé ; il gare la voiture sur un parking officiel de l’aéroport, ou sur un parking annexe chez Alyse Premium.",
               "Au retour, il vous attend au même endroit avec la voiture ; après un nouvel état des lieux, vous sortez en scannant le coupon.",
             ],
@@ -99,7 +100,7 @@ export function lyonVoiturier(facts: TopicFacts): TopicGuide {
               rows: [
                 ["Réserver", "De 9 mois à 12 h avant la prise en charge", "De 9 mois à 30 h avant (31 h selon les CGV)"],
                 ["Annuler", "Non remboursable, sauf « Protection Annulation » : jusqu’à 2 h avant", "Remboursement intégral jusqu’à 24 h avant"],
-                ["Modifier", "En ligne jusqu’à 13 h avant", "En ligne jusqu’à 30 h avant ; nouveau vol ou nouvelles dates : nouvelle réservation"],
+                ["Modifier", "En ligne jusqu’à 13 h avant", "En ligne jusqu’à 30 h avant ; nouveau vol ou nouvelles dates : nouvelle réservation, la précédente étant remboursée"],
                 ["À la remise", "État des lieux avec vous, parfois sous un portique à caméras", "Brève vérification d’identité, puis état des lieux avec vous"],
                 ["En option", "Nettoyage, recharge, place couverte, révision, contrôle technique", "Lavage ou révision"],
               ],
@@ -114,8 +115,8 @@ export function lyonVoiturier(facts: TopicFacts): TopicGuide {
         title: "Les voituriers indépendants qui donnent rendez-vous à l’aérogare",
         paragraphs: [
           "D’autres sociétés, présentes sur les comparateurs, prennent aussi la voiture à l’aérogare, sans passer par la boutique de l’aéroport. Vous réservez sur leur site, vous appelez en approchant, un voiturier vous retrouve au lieu convenu et gare la voiture sur un terrain de la société, parfois à plusieurs kilomètres ; au retour, vous rappelez une fois vos bagages récupérés.",
-          `Ce rendez-vous obéit aux règles de l’aéroport. Son règlement intérieur des parkings, applicable depuis le ${v.rulesSince}, réserve les parkings minute « à l’usage exclusif des particuliers » et interdit dans les parcs les « offres de services non autorisées » par Aéroports de Lyon. Le parking minute est gratuit ${o.minute.free} ; ensuite, ${o.minute.then}. Demandez qui paie l’attente.`,
-          "Faites-vous préciser aussi où la voiture sera gardée, les horaires du service et ce que prévoient ses conditions en cas de dommage.",
+          `Ce rendez-vous est soumis aux règles de l’aéroport. Le règlement intérieur de ses parkings, applicable depuis le ${v.rulesSince}, réserve les parkings minute, c’est-à-dire les déposes-minute, « à l’usage exclusif des particuliers » et interdit dans les parcs les « offres de services non autorisées » par Aéroports de Lyon : demandez à la société où, exactement, son voiturier vous retrouve. Au dépose-minute, le stationnement est gratuit pendant ${o.minute.free} ; ensuite, ${o.minute.then} : demandez aussi qui paie l’attente.`,
+          "Faites-vous préciser enfin où la voiture sera gardée, les horaires du service et ce que prévoient ses conditions en cas de dommage.",
         ],
       },
       {
@@ -123,8 +124,8 @@ export function lyonVoiturier(facts: TopicFacts): TopicGuide {
         short: "Parking privé avec voiturier",
         title: "Parking privé avec voiturier : les clés à l’accueil, la voiture reste sur place",
         paragraphs: [
-          "Dans un parking privé avec voiturier, vous laissez les clés à l’accueil et un voiturier de l’équipe range la voiture sur le terrain, où elle reste jusqu’à votre retour. Vous montez directement dans la navette, qui vous dépose au Terminal 1, dans la zone où l’aéroport fait arrêter les navettes des parkings extérieurs, à quelques minutes à pied de l’aérogare ; le parking vous indique l’endroit exact.",
-          `${valetCount} Les fiches indiquent aussi si le terrain est clôturé et sous vidéosurveillance.`,
+          "Dans un parking privé avec voiturier, vous laissez les clés à l’accueil et un voiturier de l’équipe range la voiture sur le terrain, où elle reste jusqu’à votre retour. Vous prenez ensuite la navette, qui vous dépose au Terminal 1, dans la zone où l’aéroport fait arrêter les navettes des parkings extérieurs, à quelques minutes à pied de l’aérogare ; le parking vous indique l’endroit exact. Chez nos parkings partenaires, si vous avez indiqué votre vol aller, Ma réservation affiche l’heure prévue de votre navette, calculée à partir de l’heure de décollage.",
+          valetCount,
         ],
         parts: [
           {
@@ -136,7 +137,7 @@ export function lyonVoiturier(facts: TopicFacts): TopicGuide {
           {
             title: "La place et les clés, notées par le parking",
             paragraphs: [
-              "Le parking note la place ou la file de la voiture et le crochet de ses clés. Sur le site, Ma réservation montre où la voiture est rangée le jour du retour ; dans l’application, pendant tout le séjour.",
+              `Le parking peut noter sur ${P} la place ou la file de la voiture, ainsi que le crochet de ses clés. Quand la place ou la file est notée, Ma réservation indique où la voiture est rangée : sur le site, le jour du retour ; dans l’application, pendant tout le séjour.`,
             ],
           },
         ],
@@ -148,9 +149,9 @@ export function lyonVoiturier(facts: TopicFacts): TopicGuide {
         more: { href: topicPath("lyon-saint-exupery", "parking-pas-cher"), label: "Le guide du parking pas cher à Lyon Saint-Exupéry" },
         paragraphs: [
           "Il n’existe pas de prix unique : chaque formule fixe le sien, pour vos dates exactes. Le prix du voiturier de l’aéroport s’affiche sur sa boutique en ligne une fois les dates saisies ; les indépendants ont leurs propres tarifs, dont il faut vérifier ce qu’ils comprennent.",
-          `Pour se repérer, une semaine dans les parkings de l’aéroport, sans voiturier et sans réservation, va de ${o.week.p5} au P5, relié par navette, à ${o.week.p0} au P0, couvert et sous les terminaux (grille 2026).`,
+          `Pour se repérer, une semaine dans les parkings de l’aéroport, sans voiturier et sans réservation, va de ${o.week.p5} au P5, relié par navette, à ${o.week.p0} au P0, couvert, à ${o.walk.p0} à pied du Terminal 1 (grille 2026).`,
           valetPrice,
-          `Sur ${P}, le prix affiché est le prix total, commission comprise, payé en ligne par carte, sans frais ajoutés à l’arrivée. Seuls les services en plus (lavage, plein, recharge), qui ne se réservent pas en ligne, et les jours au-delà du retour réservé se règlent au parking, à son tarif.`,
+          `Sur ${P}, le prix total affiché se paie en ligne, par carte, commission comprise : rien ne s’y ajoute pour la remise des clés ni pour la restitution de la voiture. Les jours passés au-delà du retour réservé et les services demandés sur place, comme un lavage ou une recharge pendant que la voiture est confiée au voiturier, se règlent au parking, à son tarif. Pour un utilitaire, un camping-car, un véhicule surélevé ou attelé, vérifiez auprès du parking avant de réserver : il peut le refuser ou appliquer le supplément prévu par ses conditions.`,
         ],
       },
       {
@@ -172,15 +173,13 @@ export function lyonVoiturier(facts: TopicFacts): TopicGuide {
             ],
           },
           {
-            title: "Avec un parking privé avec voiturier",
+            title: `Avec un parking partenaire de ${P}`,
             paragraphs: [],
             list: [
               "Partez avec l’e-mail de confirmation, qui donne l’adresse et le téléphone du parking ; la veille, un rappel vous est en principe envoyé.",
               "Sur la route, prévenez le parking depuis Ma réservation (« J’arrive dans… » ou partage de votre position) : le voiturier vous attend à l’accueil.",
               "Donnez la clé et signalez ce que l’équipe doit savoir : alarme, démarrage particulier, boîte automatique.",
-              rideWords
-                ? `Montez dans la navette : chez nos parkings partenaires, elle met ${rideWords} jusqu’au Terminal 1.`
-                : "Montez dans la navette, qui vous dépose au Terminal 1 ; sa durée figure sur la fiche du parking.",
+              "Montez dans la navette, qui vous dépose au Terminal 1 ; sa durée figure sur la fiche du parking.",
             ],
           },
         ],
@@ -198,7 +197,7 @@ export function lyonVoiturier(facts: TopicFacts): TopicGuide {
             ],
           },
           {
-            title: "Avec un parking privé avec voiturier",
+            title: `Avec un parking partenaire de ${P}`,
             paragraphs: [
               "Si vous avez donné votre numéro de vol retour, le parking suit l’atterrissage et vous envoie un SMS avec le point de rendez-vous de la navette. Sur Ma réservation, vous pouvez signaler un vol en retard, un bagage perdu ou un autre imprévu. En général, l’équipe prépare la voiture pendant que la navette vous ramène ; on vous rend la voiture et les clés, et un dernier message de clôture suit la remise.",
               "Le suivi du vol cale la navette, pas la réservation : un retour après la date et l’heure réservées prolonge le séjour, et la prolongation est facturée par le parking, à son tarif. Un nouveau numéro de vol se saisit sur Ma réservation jusqu’au retour ; pour une autre date, appelez le parking. Un retour anticipé n’est pas remboursé.",
@@ -217,7 +216,7 @@ export function lyonVoiturier(facts: TopicFacts): TopicGuide {
             paragraphs: [],
             list: [
               "Détachez la clé du trousseau : ni clés de la maison, ni badge d’immeuble.",
-              "Gardez la carte grise avec vos papiers plutôt que dans la boîte à gants : en cas de vol de la voiture, elle en faciliterait la revente.",
+              "Pour la carte grise, suivez la consigne du voiturier ou du parking : un voiturier qui conduit la voiture sur la voie publique peut demander qu’elle reste à bord. Sinon, gardez-la avec vos papiers plutôt que dans la boîte à gants : en cas de vol de la voiture, elle en faciliterait la revente.",
               "Retirez objets de valeur, appareils électroniques et badge de télépéage.",
               `Sur ${P}, le champ « Un mot pour le parking » du formulaire prévient l’équipe d’une particularité du véhicule avant votre arrivée.`,
             ],
@@ -226,7 +225,7 @@ export function lyonVoiturier(facts: TopicFacts): TopicGuide {
             title: "L’état des lieux, à l’aller et au retour",
             paragraphs: [
               "Avant de remettre la clé, photographiez les quatre côtés, les jantes, le pare-brise, l’intérieur, puis le compteur et la jauge ; gardez ces photos datées jusqu’après le retour. Les voituriers de l’aéroport font l’état des lieux avec vous, et Alyse Premium peut aussi passer la voiture sous un portique à caméras.",
-              "Au retour, refaites le même tour avant de partir. Un dommage se signale tout de suite au personnel, en le faisant constater (photos, mention écrite) : plus tard, la preuve est plus difficile. Comparez aussi le kilométrage : sur un parking avec voiturier, la voiture ne devrait faire que les manœuvres du terrain.",
+              "Au retour, refaites le même tour avant de partir. Un dommage se signale tout de suite au personnel, en le faisant constater (photos, mention écrite) : plus tard, la preuve est plus difficile. Comparez aussi le kilométrage : la voiture ne devrait avoir fait que les manœuvres sur place, plus, si le voiturier l’a prise à l’aérogare, l’aller-retour jusqu’à son lieu de stationnement.",
             ],
           },
         ],
@@ -284,11 +283,11 @@ export function lyonVoiturier(facts: TopicFacts): TopicGuide {
         "L’aéroport ne publie pas de grille pour son service voiturier : le prix s’affiche une fois vos dates saisies sur sa boutique en ligne. " +
           (valetWeek
             ? `Chez nos parkings partenaires avec voiturier, une semaine coûte aujourd’hui ${valetWeek}, voiturier et navette compris.`
-            : "Dans un parking privé avec voiturier, le service est compris dans le prix total affiché pour vos dates : indiquez-les en haut de la page pour comparer."),
+            : `Chez les parkings partenaires de ${P} qui proposent un voiturier, le service est inclus dans le prix total affiché pour vos dates, navette et commission comprises : saisissez vos dates dans la recherche pour comparer.`),
       ],
       [
         "Où remettre ses clés au voiturier à Lyon Saint-Exupéry ?",
-        `Avec le service de l’aéroport, au dépose-minute du Terminal 1, à ${v.walkFromMinute} à pied de l’aérogare : depuis le ${o.t2Closed}, le Terminal 2 est fermé et tous les vols partent du Terminal 1. Avec un parking privé avec voiturier, à l’accueil du parking, avant de prendre sa navette.`,
+        `Avec le service de l’aéroport, au dépose-minute du Terminal 1, à ${v.walkFromMinute} à pied de l’aérogare : depuis le ${o.t2Closed}, le Terminal 2 est fermé et tous les vols partent du Terminal 1. Dans un parking privé avec voiturier, à l’accueil du parking, avant de prendre sa navette.`,
       ],
       [
         "Peut-on réserver un voiturier à l’aéroport de Lyon au dernier moment ?",
@@ -296,11 +295,11 @@ export function lyonVoiturier(facts: TopicFacts): TopicGuide {
       ],
       [
         "Faut-il laisser la carte grise au voiturier ?",
-        "En général, non : laissez seulement la clé de la voiture et gardez la carte grise avec vos papiers ; oubliée dans la boîte à gants, elle faciliterait la revente de la voiture en cas de vol.",
+        "Posez la question au prestataire. La personne qui conduit une voiture doit pouvoir présenter la carte grise (certificat d’immatriculation) de cette voiture à un contrôle : un voiturier qui roule sur la voie publique, du dépose-minute jusqu’à son parking par exemple, peut donc vous demander de la laisser à bord. S’il ne la demande pas, laissez seulement la clé de la voiture et gardez la carte grise avec vos papiers : oubliée dans la boîte à gants, elle faciliterait la revente de la voiture en cas de vol.",
       ],
       [
         "Que se passe-t-il si mon vol retour a du retard avec un voiturier ?",
-        "Alyse Premium et Ector, les voituriers de l’aéroport, annoncent qu’un retard de vol ou de train ne coûte pas de supplément. Dans un parking privé, le parking suit votre atterrissage et adapte sa navette si vous avez donné votre vol retour, mais un retour après la date et l’heure réservées prolonge le séjour, et la prolongation est facturée par le parking, à son tarif.",
+        `Alyse Premium et Ector, les voituriers de l’aéroport, annoncent qu’un retard de vol ou de train ne coûte pas de supplément. Sur ${P}, si vous avez donné votre numéro de vol retour, le parking partenaire suit votre atterrissage et cale sa navette ; en revanche, un retour après la date et l’heure réservées prolonge le séjour, et la prolongation est facturée par le parking, à son tarif.`,
       ],
       [
         "Qui est responsable si le voiturier abîme ma voiture ?",
@@ -308,11 +307,11 @@ export function lyonVoiturier(facts: TopicFacts): TopicGuide {
       ],
       [
         "Le voiturier peut-il laver ou recharger ma voiture pendant le voyage ?",
-        "Souvent, en option : Alyse Premium propose nettoyage, recharge électrique, révision ou contrôle technique, Ector le lavage ou la révision. Dans un parking privé, ces services ne se réservent pas en ligne : demandez-les au parking, qui les facture à son tarif.",
+        `Souvent, en option : Alyse Premium propose nettoyage, recharge électrique, révision ou contrôle technique, Ector le lavage ou la révision. Sur ${P}, ces services ne se réservent pas en ligne : si le parking les propose, demandez-les-lui ; il les facture à son tarif.`,
       ],
       [
         "Quelle différence entre un voiturier à l’aérogare et un parking avec voiturier ?",
-        "Avec le voiturier de l’aéroport ou une société indépendante, vous laissez et retrouvez la voiture à l’aérogare, sans navette. Avec un parking privé avec voiturier, vous laissez les clés à l’accueil, la voiture reste sur son terrain, et sa navette vous conduit au Terminal 1 puis vous ramène.",
+        "Avec le voiturier de l’aéroport ou une société indépendante, vous laissez et retrouvez la voiture à l’aérogare, sans navette. Dans un parking privé avec voiturier, vous laissez les clés à l’accueil, la voiture reste sur son terrain, et sa navette vous conduit au Terminal 1 puis vous ramène.",
       ],
       [
         "Peut-on annuler une réservation de voiturier ?",
