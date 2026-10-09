@@ -159,18 +159,18 @@ version web, « Payer » ouvre la page Stripe Checkout.
 1. **Identifiants de l'app** (définitifs avant le premier envoi sur les stores) : aujourd'hui des valeurs provisoires,
    `com.benfordtech.parking_app` (Android, `android/app/build.gradle.kts`) et `com.benfordtech.parkingApp`
    (iOS, projet Xcode), à remplacer partout (dont `codemagic.yaml` et `deep_links/`).
-2. **Apple** : compte Apple Developer (entreprise) ; l'app créée dans App Store Connect avec ce bundle id ;
-   l'App ID avec les capacités **Push Notifications** et **Associated Domains** ; une **clé API App Store Connect**
-   (rôle App Manager) enregistrée dans Codemagic sous le nom `plazo-asc` ; une clé privée RSA pour le certificat
-   de distribution (`CERTIFICATE_PRIVATE_KEY`).
-3. **Google Play** : compte Google Play Console (entreprise) ; une **clé d'import** (keystore `.jks`) et son
-   `key.properties` (`storeFile=upload.jks`, `storePassword`, `keyAlias`, `keyPassword`) ; premier envoi de l'AAB
-   à la main ; déclaration de l'usage de la position (premier plan, service « location »).
-4. **OneSignal + Firebase** : deux apps OneSignal, une par app, car les réglages iOS d'une app OneSignal ne tiennent
-   qu'un Bundle ID (Plazo Pro : *App ID* → `ONESIGNAL_APP_ID` dans Codemagic et Vercel, *REST API key* →
-   `ONESIGNAL_REST_API_KEY` dans Vercel seulement ; Plazo : `ONESIGNAL_TRAVELLER_APP_ID` dans Codemagic et Vercel,
-   `ONESIGNAL_TRAVELLER_REST_API_KEY` dans Vercel seulement) ; un projet Firebase pour FCM (clé de compte de
-   service à importer dans OneSignal pour Android) ; une clé APNs `.p8` (Apple) importée dans OneSignal pour iOS.
+2. **Apple** (équipe existante **Benford Tech**, Team ID `3BX4795V2Y`, celle de LoveNest, Thempo et Yoon) : les deux App ID
+   avec **Push Notifications** (+ **Associated Domains** pour Plazo), les deux apps dans App Store Connect, deux profils
+   App Store faits avec le certificat Apple Distribution **déjà présent** (Apple n'en accepte que 3), importés dans
+   Codemagic ; la clé API de l'équipe est l'intégration Codemagic `lovenest-asc`.
+3. **Google Play** (compte existant **Benford Tech**) : les deux apps ; une **clé d'import propre à Plazo** (`.jks`, alias
+   `upload`), téléversée dans Codemagic sous la référence `plazo_upload` ; le compte de service qui publie Thempo, ouvert aux
+   deux apps ; premier envoi de l'AAB à la main ; déclaration de l'usage de la position (premier plan, service
+   « location »).
+4. **OneSignal + Firebase** : les deux apps OneSignal existent (une par app, car les réglages iOS d'une app OneSignal ne
+   tiennent qu'un Bundle ID) ; leurs *App ID* sont dans `codemagic.yaml` et dans Vercel (`ONESIGNAL_APP_ID` Plazo Pro,
+   `ONESIGNAL_TRAVELLER_APP_ID` Plazo), leurs *REST API keys* dans Vercel. Reste, dans chaque app OneSignal : la clé APNs
+   `.p8` de l'équipe Apple (iOS) et la clé d'un compte de service Firebase (Android, projet Firebase à créer).
 5. **Liens de réservation qui ouvrent l'app** : publier sur le domaine de production
    `/.well-known/assetlinks.json` (empreinte SHA-256 de la signature Play) et
    `/.well-known/apple-app-site-association` (Team ID) — modèles dans `deep_links/` ; puis remplacer le domaine
@@ -178,32 +178,36 @@ version web, « Payer » ouvre la page Stripe Checkout.
 6. **Fiches des stores** : nom, sous-titre, description courte et longue, captures (téléphone et tablette), icône,
    politique de confidentialité (URL), coordonnées d'assistance, catégorie, classification, justification de la
    position en arrière-plan (Apple) et formulaire « Sécurité des données » (Google).
-7. **Codemagic** : le dépôt ajouté au **compte personnel** (une équipe n'a pas de minutes gratuites) avec `codemagic.yaml`,
-   le webhook GitHub vérifié, le groupe de variables `mobile_secrets` et l'intégration Developer Portal `plazo-asc` : pas à
-   pas dans [`publier-sur-les-stores.md`](publier-sur-les-stores.md).
+7. **Codemagic** : le dépôt ajouté à **l'équipe existante** (celle de Thempo, qui a déjà `lovenest-asc` et le certificat
+   Apple) avec `codemagic.yaml`, la facturation de l'équipe active, la clé `plazo_upload`, les profils iOS et le groupe
+   `mobile_secrets` (`GOOGLE_PLAY_SERVICE_ACCOUNT_CREDENTIALS`) : pas à pas dans
+   [`publier-sur-les-stores.md`](publier-sur-les-stores.md).
 
 ## Publier sur les stores (pipelines, 07/10/2026, revus le 09/10/2026)
 
-Cinq workflows Codemagic dans `codemagic.yaml` (racine du dépôt, `working_directory: mobile`), un par store et par app :
+Les vérifications de chaque modification tournent sur GitHub Actions (`.github/workflows/mobile-ci.yml` : nom du produit,
+`flutter analyze`, `flutter test`, gratuit) ; Codemagic, dans **l'équipe qui publie déjà Thempo** (minutes payantes),
+construit et publie avec les workflows de `codemagic.yaml` (racine du dépôt, `working_directory: mobile`) :
 
 | Workflow | Quand | Ce qu'il fait |
 | --- | --- | --- |
-| `mobile-check` | push sur `main` qui touche `mobile/` | nom du produit à jour, `flutter analyze`, `flutter test`, APK **debug** des deux apps (à installer pour essayer) |
-| `plazo-android-release` / `plazo-pro-android-release` | tag `mobile-vX.Y.Z` ou à la main | AAB signé → **Google Play, tests internes** (sans rien d'Apple) |
-| `plazo-ios-release` / `plazo-pro-ios-release` | tag `mobile-vX.Y.Z` ou à la main | IPA signé → **TestFlight** (intégration Developer Portal `plazo-asc`) |
+| `mobile-check` | à la main | les vérifications + APK **debug** des deux apps (à installer pour essayer) |
+| `plazo-android-release` / `plazo-pro-android-release` | tag `mobile-vX.Y.Z` ou à la main | AAB signé (clé `plazo_upload`) → **Google Play, tests internes**, sans rien d'Apple |
+| `plazo-ios-release` / `plazo-pro-ios-release` | tag `mobile-vX.Y.Z` ou à la main | IPA signé (certificat de l'équipe, intégration `lovenest-asc`) → **TestFlight**, testeurs internes |
 
 - Version = `version:` de `pubspec.yaml`, que le tag doit reprendre (`mobile-v1.0.0`, sinon arrêt) ; numéro de build =
   compteur Codemagic + 100, jamais sous le dernier build du store du workflow.
 - Les stores reçoivent une version **de test** ; la production se décide dans chaque console. `submit_as_draft: true`
   jusqu'à la première version déployée à la main sur Google Play, puis `false`.
-- **Marche à suivre complète** (compte Codemagic personnel, webhook, groupe `mobile_secrets`, Apple, Google Play, premier
-  envoi, ce qu'il ne faut jamais coller) : [`publier-sur-les-stores.md`](publier-sur-les-stores.md).
+- **Marche à suivre complète** (ce qui existe déjà, Codemagic, Apple, Google Play, premier envoi, ce qu'il ne faut jamais
+  coller) : [`publier-sur-les-stores.md`](publier-sur-les-stores.md).
 - Revue du 09/10/2026, avant le premier build : la vérification du nom du produit échouait toujours (le nom iOS vit
   désormais dans `APP_DISPLAY_NAME` des configurations Xcode, que `tool/sync_product.dart` met à jour) et `flutter analyze`
   sortait en erreur sur deux remarques, ce qui arrêtait tous les workflows ; `NSCameraUsageDescription` ajouté (scan de carte
   de Stripe, sans quoi Apple refuse le build) ; Google Pay suit la clé Stripe servie par l'API (`pk_live_` = production),
-  plus de réglage à la construction ; secrets vérifiés avec un message clair ; `GOOGLE_PLAY_SERVICE_ACCOUNT_CREDENTIALS`
-  (l'ancien nom `GCLOUD_…` est déprécié par Codemagic) ; une app OneSignal par app.
+  plus de réglage à la construction. Puis, d'après Thempo, LoveNest et Yoon : signature comme Thempo (certificat Apple et
+  clé d'import Android dans les Code signing identities de l'équipe, jamais de base64 collé), App ID OneSignal dans le
+  fichier, vérifications sur GitHub Actions.
 
 - `/pro/parking` (onglet Parking) : Occupation (bloc 2, étape 2) — recherche par plaque, place proposée à l'arrivée, crochet des clés.
 - `/pro/equipe` (gérants : membres, rôles, accès, mot de passe provisoire), `/pro/compte` (changement de mot de passe), `/pro/reglages` (gérants : nom, adresse, places, marge, navette, canal SMS avec le téléphone Android du parking).

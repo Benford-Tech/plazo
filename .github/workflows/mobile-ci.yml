@@ -1,0 +1,32 @@
+name: Mobile CI
+
+# The checks of the Flutter app on every change (09/10/2026): free here, while the Codemagic team's minutes
+# are billed. Codemagic only builds and publishes (codemagic.yaml).
+on:
+  pull_request:
+    paths: ['mobile/**', 'product.json', '.github/workflows/mobile-ci.yml']
+  push:
+    branches: [main]
+    paths: ['mobile/**', 'product.json', '.github/workflows/mobile-ci.yml']
+  workflow_dispatch:
+
+defaults:
+  run:
+    working-directory: mobile
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: subosito/flutter-action@v2
+        with:
+          # Same Flutter as codemagic.yaml.
+          flutter-version: 3.47.6
+          channel: stable
+          cache: true
+      - run: flutter pub get
+      # The product name (product.json) is copied into the app: fails when a copy is out of date.
+      - run: dart run tool/sync_product.dart --check
+      - run: flutter analyze
+      - run: flutter test
