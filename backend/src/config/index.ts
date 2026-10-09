@@ -48,6 +48,9 @@ export const zoneSuggestionModel = (): string => (process.env.ZONE_SUGGESTION_MO
 // L-A (08/10/2026): Claude reads the forwarded emails no importer recognises and creates the booking.
 // Same key; without it, those emails simply wait in "À vérifier". The model can be pinned too.
 export const emailReadingModel = (): string => (process.env.EMAIL_READING_MODEL || '').trim() || 'claude-opus-5-5';
+// 09/10/2026: the same key lets Claude write the « Présentation » of the operator's Plazo page (Plazo › Fiche,
+// nothing saved). Without it, the button answers 409 `ai_unavailable`. The model can be pinned too.
+export const listingDescriptionModel = (): string => (process.env.LISTING_DESCRIPTION_MODEL || '').trim() || 'claude-opus-5-5';
 
 // Brevo (transactional email and SMS). Without an API key, nothing is sent.
 export const BREVO_API_KEY = process.env.BREVO_API_KEY || '';

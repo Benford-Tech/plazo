@@ -18,6 +18,11 @@ et affectation des véhicules, navette au retour.
 - [ ] **Jalon 3a — Fiche et tarifs** (fait) : dans l'espace pro, onglet « Sur Plazo » : « Ma fiche » (présentation,
   services, annulation, photos par adresse, aperçu en direct, envoi en validation refusé tant qu'il n'y a pas de tarifs)
   et « Mes tarifs » (forfaits par nombre de jours, prix du jour supplémentaire, simulation du prix payé).
+  **Présentation par Claude (09/10/2026)** : « Rédiger avec Claude » (« Améliorer avec Claude » quand le champ a déjà un
+  texte) propose une présentation écrite d'après les seules données réelles du parking (fiche enregistrée, adresse, aéroport,
+  prix de départ, navettes en service, dessertes, point de rendez-vous, voiturier) ; « Utiliser ce texte » la met dans le
+  champ, le gérant relit puis enregistre ; un texte qui cite un chiffre absent des données est écarté (`ANTHROPIC_API_KEY`,
+  modèle `LISTING_DESCRIPTION_MODEL`, Claude Opus 5.5 par défaut).
   Reste : envoi de photos depuis l'ordinateur.
 - [x] **Espace « Plateforme », inscription libre et validation des annonces** (maquette S-1) : voir « Rôles,
   inscription et validation » ci-dessous.
@@ -323,8 +328,8 @@ le navigateur de l'espace pro appelle `/api` sur le même domaine (pas de CORS).
    `vercel.json`) ; les fonctions tournent à Paris (`cdg1`). Variables (communes aux trois services) :
    `NODE_ENV=production`, `SECRET_KEY`, `CRON_SECRET`, `SITE_API_KEY`
    (secret partagé entre le site et l'API), `PUBLIC_SITE_URL` (adresse publique du site, pour les liens
-   des mails), pour la proposition des zones et la lecture des mails par Claude `ANTHROPIC_API_KEY` (et `ZONE_SUGGESTION_MODEL`, `EMAIL_READING_MODEL`,
-   facultatif), pour les mails et SMS `BREVO_API_KEY`, `EMAIL_FROM`, `SMS_SENDER`,
+   des mails), pour la proposition des zones, la lecture des mails et la rédaction de la présentation par Claude `ANTHROPIC_API_KEY` (et
+   `ZONE_SUGGESTION_MODEL`, `EMAIL_READING_MODEL`, `LISTING_DESCRIPTION_MODEL`, facultatifs), pour les mails et SMS `BREVO_API_KEY`, `EMAIL_FROM`, `SMS_SENDER`,
    `SMS_GATEWAY_ENCRYPTION_KEY` (clé qui chiffre les mots de passe des téléphones reliés par les loueurs, voir
    « SMS depuis le téléphone du parking » ; `openssl rand -base64 32`), et
    `PLATFORM_ADMIN_EMAILS` (emails des administrateurs de la plateforme, séparés par des virgules : eux seuls
@@ -560,6 +565,7 @@ Documentation interactive : `/api/docs` (Swagger). Toutes les routes sont sous `
 | POST | `/internal/auth/verify-email/resend` | Nouveau lien de confirmation pour la personne connectée |
 | POST | `/internal/auth/invitation` / `…/accept` | Invitation : `{ token }` → `{ email, operatorName }` ; `{ token, password }` → session |
 | GET / PUT | `/internal/listing` | Fiche Plazo du loueur (gérant ; l'enregistrement ne change pas son statut) |
+| POST | `/internal/listing/description/suggest` | Claude rédige la « Présentation » de la fiche d'après les vraies données du parking (fiche enregistrée, adresse, aéroport, grille, navettes en service, dessertes, files de voiturier) ; `{ current? }` (≤ 2 000) : améliore ce texte ; rien n'est enregistré → `{ text, model }` ; 409 `ai_unavailable` sans `ANTHROPIC_API_KEY` ou clé refusée, 502 `ai_refused` / `ai_failed`, 503 `ai_busy`, 504 `ai_timeout` (30 s), 502 `ai_unreliable` quand le texte cite un chiffre absent des données, en chiffres ou en lettres devant une unité (`details.figures`), le Terminal 2 ou dépasse 2 000 caractères ; gérant |
 | POST | `/internal/listing/submit` / `…/withdraw` | Envoyer pour validation (tarifs et email confirmé requis) / retirer de Plazo |
 | GET / PUT | `/internal/pricing` | Grille tarifaire : forfaits « jusqu'à N jours » + prix du jour supplémentaire |
 | GET | `/public/airports` | Aéroports desservis (formulaire d'inscription) |

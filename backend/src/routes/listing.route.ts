@@ -1,6 +1,6 @@
 import { Router } from 'express';
 import { ListingController } from '@/controllers/listing.controller';
-import { UpdateListingDto, UpdatePricingDto } from '@/dtos/listing.dto';
+import { SuggestDescriptionDto, UpdateListingDto, UpdatePricingDto } from '@/dtos/listing.dto';
 import { Routes } from '@/interfaces/routes.interface';
 import { StaffAuthMiddleware } from '@/middlewares/staff-auth.middleware';
 import { ValidationMiddleware } from '@/middlewares/validation.middleware';
@@ -39,6 +39,34 @@ import { ValidationMiddleware } from '@/middlewares/validation.middleware';
  *               contactPhone: { type: string, nullable: true, example: "04 72 00 00 00", description: Shown to travellers; unchanged when absent }
  *               cancellationPolicy: { type: string, enum: [free_until_arrival, free_24h, free_48h, non_refundable] }
  *               photos: { type: array, items: { type: string, format: uri } }
+ * /internal/listing/description/suggest:
+ *   post:
+ *     summary: Claude writes the « Présentation » of the page from the parking's real data (manager; nothing is saved)
+ *     description: >
+ *       The facts are the saved page (services, shuttle, distance, hours, cancellation), the parking (name, address,
+ *       return meeting point), its airport, pricing grid, shuttle vehicles in service, stops and valet files. With
+ *       `current`, Claude improves that text instead of starting over. An answer stating a figure absent from the data
+ *       (or from `current`), in digits or in words before a unit, mentioning the closed Terminal 2 or longer than 2 000 characters is rejected (ai_unreliable).
+ *     tags: [Listing]
+ *     requestBody:
+ *       required: false
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               current: { type: string, maxLength: 2000, description: The text in the field, to improve }
+ *     responses:
+ *       200:
+ *         description: "{ text, model }"
+ *       409:
+ *         description: No Anthropic API key, or the key is refused (code ai_unavailable)
+ *       502:
+ *         description: Claude declined (ai_refused), failed (ai_failed, details.reason) or wrote an unsupported figure (ai_unreliable, details.reason and details.figures)
+ *       503:
+ *         description: Claude is busy (ai_busy)
+ *       504:
+ *         description: Claude did not answer within 30 s (ai_timeout)
  * /internal/listing/submit:
  *   post:
  *     summary: Send the page for validation by the platform (draft or refused -> pending_review; manager)
@@ -78,6 +106,12 @@ export class ListingRoute implements Routes {
   constructor() {
     this.router.get('/internal/listing', StaffAuthMiddleware('dashboard:view'), this.listing.getListing);
     this.router.put('/internal/listing', StaffAuthMiddleware('parking:manage'), ValidationMiddleware(UpdateListingDto), this.listing.updateListing);
+    this.router.post(
+      '/internal/listing/description/suggest',
+      StaffAuthMiddleware('parking:manage'),
+      ValidationMiddleware(SuggestDescriptionDto),
+      this.listing.suggestDescription,
+    );
     this.router.post('/internal/listing/submit', StaffAuthMiddleware('parking:manage'), this.listing.submit);
     this.router.post('/internal/listing/withdraw', StaffAuthMiddleware('parking:manage'), this.listing.withdraw);
     this.router.get('/internal/pricing', StaffAuthMiddleware('dashboard:view'), this.listing.getPricing);
