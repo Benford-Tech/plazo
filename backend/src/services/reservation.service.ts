@@ -213,6 +213,8 @@ export class ReservationService {
           departureFlight,
           externalReference,
           priceCents: parsed.priceCents ?? null,
+          vehicleModel: parsed.vehicleModel?.trim().slice(0, 40) || null,
+          vehicleColour: parsed.vehicleColour?.trim().slice(0, 30) || null,
           overbooked: full.length > 0,
         },
       });

@@ -2301,7 +2301,7 @@ export const quickCardFr = {
 export const inboundFr = {
   title: "Mails entrants",
   intro:
-    "Vos réservations Allopark arrivent toutes seules dans le planning : votre messagerie transfère les mails de confirmation à votre adresse Plazo. Les mails incomplets ou inconnus attendent dans « À vérifier ».",
+    "Vos réservations des comparateurs (Allopark, Onepark, Parclick, ParkMundo…) arrivent toutes seules dans le planning : votre messagerie transfère les mails de confirmation à votre adresse Plazo. Les mails incomplets ou inconnus attendent dans « À vérifier ».",
   // G-B (07/10/2026): the step-by-step wizard replaces the "Comment faire" list.
   connect: "Relier ma boîte mail",
   reviewSteps: "Revoir les étapes",
@@ -2454,7 +2454,7 @@ export const inboundWizardFr = {
     preparing: "Préparation de votre adresse…",
   },
   mail: {
-    title: "Sur quelle messagerie recevez-vous les mails d'Allopark ?",
+    title: "Sur quelle messagerie recevez-vous les mails des comparateurs ?",
     legend: "Messagerie",
     providers: {
       gmail: { label: "Gmail", hint: "Gmail ou Google Workspace" },
@@ -2486,7 +2486,7 @@ export const inboundWizardFr = {
       openLink: "Confirmer par le lien",
       linkOnly: "Gmail n'a pas mis de code dans ce mail : confirmez par le lien.",
       keepOff:
-        "Une fois l'adresse validée, Gmail propose « Transférer une copie des e-mails entrants » : laissez plutôt « Désactiver le transfert » coché, sinon tous vos mails partiraient dans Plazo. Seul le filtre de l'étape suivante transfère, et uniquement les mails d'Allopark.",
+        "Une fois l'adresse validée, Gmail propose « Transférer une copie des e-mails entrants » : laissez plutôt « Désactiver le transfert » coché, sinon tous vos mails partiraient dans Plazo. Seul le filtre de l'étape suivante transfère, et uniquement les mails des comparateurs.",
     },
   },
   forward: {
@@ -2500,7 +2500,7 @@ export const inboundWizardFr = {
           text: "Dans la barre de recherche de Gmail, cliquez l'icône des options de recherche, à droite.",
         },
         {
-          text: "Dans **De**, collez l'expéditeur d'Allopark :",
+          text: "Dans **De**, collez les expéditeurs des comparateurs :",
           copy: "sender",
         },
         {
@@ -2537,7 +2537,7 @@ export const inboundWizardFr = {
           text: "Dans Outlook sur le web, ouvrez la roue dentée › **Courrier** › **Règles** › **Ajouter une nouvelle règle**.",
         },
         {
-          text: "Nommez-la « Plazo ». Condition : **De**, puis collez l'expéditeur d'Allopark :",
+          text: "Nommez-la « Plazo ». Condition : **De**, puis collez les expéditeurs des comparateurs (un par condition si Outlook le demande) :",
           copy: "sender",
         },
         {
@@ -2574,7 +2574,7 @@ export const inboundWizardFr = {
           text: "Dans le webmail, ouvrez **Paramètres** › **Filtres**, puis **Créer** (+).",
         },
         {
-          text: "Nom du filtre : « Plazo ». Règle : **De** contient, puis collez l'expéditeur d'Allopark :",
+          text: "Nom du filtre : « Plazo ». Règle : **De** contient, puis collez les expéditeurs des comparateurs (une règle par expéditeur si besoin) :",
           copy: "sender",
         },
         {
@@ -2609,7 +2609,7 @@ export const inboundWizardFr = {
         {
           text: "Dans les réglages de votre messagerie, cherchez **Règles**, **Filtres** ou **Redirection**.",
         },
-        { text: "Condition : l'expéditeur est", copy: "sender" },
+        { text: "Condition : l'expéditeur est l'un des comparateurs", copy: "sender" },
         {
           text: "Action : transférer une copie à votre adresse Plazo :",
           copy: "address",
@@ -2652,7 +2652,7 @@ export const inboundWizardFr = {
     title: "Vérifiez que tout arrive",
     lines: [
       {
-        text: "Dans votre messagerie, ouvrez un ancien mail de réservation Allopark et transférez-le à votre adresse Plazo :",
+        text: "Dans votre messagerie, ouvrez un ancien mail de réservation d'un comparateur et transférez-le à votre adresse Plazo :",
         copy: "address",
       },
       { text: "Il apparaît ci-dessous en quelques secondes." },
@@ -2662,7 +2662,7 @@ export const inboundWizardFr = {
     waiting: "En attente du premier mail…",
     waitingHint:
       "Il apparaît ici quelques secondes après son arrivée dans votre boîte.",
-    ok: "C'est relié. Les prochaines réservations Allopark arriveront toutes seules dans le planning.",
+    ok: "C'est relié. Les prochaines réservations des comparateurs arriveront toutes seules dans le planning.",
     toCheck:
       "Bien reçu. Plazo n'a pas pu le lire en entier : il attend dans « À vérifier », où vous pouvez le compléter.",
     openToCheck: "Voir les mails à vérifier",
@@ -2681,8 +2681,8 @@ export const inboundWizardFr = {
     link: "Envoyer ces étapes à la personne qui gère notre messagerie",
     subject: "Relier notre boîte mail à Plazo",
     intro:
-      "Bonjour,\n\nPour que nos réservations Allopark arrivent toutes seules dans Plazo, pourrais-tu créer une règle de transfert dans notre messagerie ?",
-    sender: (address: string) => `Expéditeur : ${address}`,
+      "Bonjour,\n\nPour que nos réservations des comparateurs (Allopark, Onepark, Parclick, ParkMundo…) arrivent toutes seules dans Plazo, pourrais-tu créer une règle de transfert dans notre messagerie ?",
+    sender: (address: string) => `Expéditeurs : ${address}`,
     address: (address: string) => `Transférer une copie à : ${address}`,
     gmailCode:
       "Gmail envoie alors un code de confirmation à Plazo : je te le transmets dès qu'il s'affiche. Une fois l'adresse validée, laisse « Désactiver le transfert » coché dans Transfert et POP/IMAP : seul le filtre transfère.",

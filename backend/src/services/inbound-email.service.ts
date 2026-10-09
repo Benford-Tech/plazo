@@ -161,18 +161,25 @@ export class InboundEmailService {
       textBody: text || null,
     };
     let parsed = text ? parseConfirmationEmail(text) : null;
-    // L-A (08/10/2026): what no importer knows, Claude reads; its answer is kept on the row for the inbox.
+    // L-A (08/10/2026): what no importer knows, Claude reads; its answer is kept on the row for the inbox. Since
+    // 09/10/2026 Claude also completes a confirmation an importer recognised but could not read in full (a comparator
+    // that changed its layout, a detail in a part of the email the importer does not look at): the importer's fields
+    // stay, Claude only fills the gaps.
     let reading: ReadingMeta | null = null;
     let unsure = false;
-    if (!parsed && text && this.reader.available()) {
+    const gaps = parsed ? missingForImport(parsed) : [];
+    if ((!parsed || gaps.length) && text && this.reader.available()) {
       const timezone = await this.timezoneOf(operator.id);
       const result = await this.reader.read({ from: fromAddress, fromName: base.fromName, subject: base.subject, text, timezone });
       if (result) {
         const { kind, provider, confidence, summary } = result.reading;
         reading = { kind, provider, confidence, summary, model: result.model };
         if (kind === 'booking') {
-          parsed = toParsedBooking(result.reading);
-          unsure = confidence < MIN_CONFIDENCE;
+          const read = toParsedBooking(result.reading);
+          const filled = parsed ? fillGaps(parsed, read) : read;
+          // An unsure reading only matters for what it brought.
+          unsure = confidence < MIN_CONFIDENCE && (!parsed || gaps.some(key => filled[key] !== undefined));
+          parsed = filled;
         }
       }
     }
@@ -183,7 +190,7 @@ export class InboundEmailService {
       return 'unrecognised';
     }
     const booking = parsed;
-    const missing: string[] = REQUIRED_FOR_IMPORT.filter(key => !booking[key]);
+    const missing: string[] = missingForImport(booking);
     // An unsure reading waits for a human eye even when every field is there.
     if (unsure) missing.push('confidence');
     const parsedJson = booking as unknown as Prisma.InputJsonValue;
@@ -456,4 +463,19 @@ function forwardingView(row: { parsed: Prisma.JsonValue | null; receivedAt: Date
     requester: typeof parsed?.requester === 'string' ? parsed.requester : null,
     receivedAt: row.receivedAt.toISOString(),
   };
+}
+
+/** The fields a booking still lacks before it can be created without staff. */
+function missingForImport(booking: ParsedBooking): (typeof REQUIRED_FOR_IMPORT)[number][] {
+  return REQUIRED_FOR_IMPORT.filter(key => !booking[key]);
+}
+
+/** An importer's reading completed by Claude's: every field the importer found stays, Claude's fill the empty ones. */
+export function fillGaps(found: ParsedBooking, read: ParsedBooking): ParsedBooking {
+  const filled: ParsedBooking = { ...found };
+  for (const [key, value] of Object.entries(read) as [keyof ParsedBooking, ParsedBooking[keyof ParsedBooking]][]) {
+    if (key === 'provider' || value === undefined || value === null || value === '') continue;
+    if (filled[key] === undefined || filled[key] === null || filled[key] === '') (filled as unknown as Record<string, unknown>)[key] = value;
+  }
+  return filled;
 }

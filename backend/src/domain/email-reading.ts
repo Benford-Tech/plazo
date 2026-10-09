@@ -110,7 +110,9 @@ Then extract the reservation's fields exactly as the email states them. Never in
 - plate: the vehicle's registration number as written (for example "AB-123-CD").
 - returnFlight, departureFlight: the flight numbers (for example "AF1234"), or null.
 - passengers: the number of people travelling, as an integer.
-- priceCents: the total price in euro cents as an integer (189,90 € becomes 18990), or null.
+- priceCents: the price of the parking stay in euro cents as an integer (189,90 € becomes 18990), or null. When the email
+  shows a booking fee the platform keeps apart from the parking's price ("Coût de réservation", "frais de réservation",
+  "frais de service"), leave that fee out: the parking's price, not the grand total.
 - provider: a short name of the source: the platform's name ("Parkos", "Onepark"…), "Site du parking" for the operator's own
   website form, "Client" for a customer writing directly, or null when unknown.
 - externalReference: the platform's booking reference as written, or null.

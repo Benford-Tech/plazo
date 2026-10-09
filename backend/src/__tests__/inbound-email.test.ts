@@ -277,7 +277,13 @@ describe('POST /public/inbound/email', () => {
     const before = (await api().get('/api/internal/inbound/settings').set(auth(op.token))).body;
     expect(before.forwarding).toBeNull();
     expect(before.recent).toEqual([]);
-    expect(before.senders).toEqual([{ provider: 'Allopark', address: 'info@allopark.com' }]);
+    expect(before.senders).toEqual([
+      { provider: 'Allopark', address: 'info@allopark.com' },
+      // 09/10/2026: the comparators whose sender address is not known yet are filtered on their name (Gmail matches it).
+      { provider: 'Onepark', address: 'onepark' },
+      { provider: 'Parclick', address: 'parclick' },
+      { provider: 'ParkMundo', address: 'parkmundo' },
+    ]);
 
     const confirmation = item(address, 'Confirmation code: 482913507\nhttps://mail-settings.google.com/mail/vf-xyz', {
       From: { Name: 'Gmail Team', Address: 'forwarding-noreply@google.com' },
@@ -699,6 +705,70 @@ describe('lecture par Claude des mails inconnus (L-A, 08/10/2026)', () => {
     expect(rows[0].reading).toMatchObject({ kind: 'cancellation', provider: 'Parkos', summary: 'Annulation Parkos de Marie Dupont' });
     expect(rows[1].reading).toMatchObject({ kind: 'other', provider: null });
     expect(await prisma.reservation.count()).toBe(0);
+  });
+
+  it('09/10/2026 : un mail Onepark entièrement lu crée la réservation avec son montant et la voiture, sans Claude', async () => {
+    const { address } = await connected();
+    const onepark = readFileSync(join(__dirname, 'fixtures/onepark-notification.html'), 'utf8');
+    const res = await post([
+      item(address, '', { RawHtmlBody: onepark, From: { Name: 'Onepark', Address: 'noreply@onepark.co' }, Subject: 'Nouvelle réservation' }),
+    ]);
+    expect(res.body).toEqual({ received: 1, imported: 1, toCheck: 0, ignored: 0 });
+    expect(read).not.toHaveBeenCalled();
+    const r = await prisma.reservation.findFirstOrThrow();
+    expect(r).toMatchObject({
+      channel: 'aggregator',
+      channelDetail: 'Onepark',
+      externalReference: '5900001',
+      customerName: 'JEAN MARTIN',
+      plate: 'AB-123-CD',
+      priceCents: 4500,
+      vehicleModel: 'PEUGEOT 3008',
+      passengers: 2,
+      returnFlight: 'SN 3587',
+    });
+    // Paris time: arrival 10/10 04:30, the car picked up on 18/10 at 14:00.
+    expect([r.arrivalAt.toISOString(), r.returnAt.toISOString()]).toEqual(['2026-10-10T02:30:00.000Z', '2026-10-18T12:00:00.000Z']);
+  });
+
+  it('09/10/2026 : Claude complète un mail reconnu mais incomplet (Parclick), sans écraser ce que le lecteur a lu', async () => {
+    const { address } = await connected();
+    const parclick = readFileSync(join(__dirname, 'fixtures/parclick-confirmation.html'), 'utf8');
+    read.mockResolvedValueOnce(
+      answer({
+        provider: 'Parclick',
+        externalReference: 'AUTRE',
+        arrivalAt: '2026-10-09T20:00',
+        customerName: 'Marc Leroy',
+        customerPhone: '+33 6 00 00 00 01',
+        plate: 'gh 789 jk',
+        priceCents: 4990,
+      }),
+    );
+    const res = await post([
+      item(address, '', { RawHtmlBody: parclick, From: { Name: 'Parclick', Address: 'noreply@parclick.com' }, Subject: 'Voici votre réservation !' }),
+    ]);
+    expect(res.body.imported).toBe(1);
+    expect(read).toHaveBeenCalledTimes(1);
+    const r = await prisma.reservation.findFirstOrThrow();
+    expect(r).toMatchObject({
+      channelDetail: 'Parclick',
+      externalReference: 'BQXY1234',
+      customerName: 'Marc Leroy',
+      plate: 'GH-789-JK',
+      priceCents: 4990,
+    });
+    expect(r.arrivalAt.toISOString()).toBe('2026-10-09T17:45:00.000Z');
+    // Claude unsure: what it brought waits for a human eye.
+    read.mockResolvedValueOnce(
+      answer({ provider: 'Parclick', customerName: 'Marc Leroy', customerPhone: '+33 6 00 00 00 01', plate: 'gh 789 jk', confidence: 0.4 }),
+    );
+    const other = parclick.replace('BQXY1234', 'BQXY5678');
+    expect((await post([item(address, '', { RawHtmlBody: other })])).body.toCheck).toBe(1);
+    expect(await prisma.inboundEmail.findFirstOrThrow({ where: { status: 'incomplete' } })).toMatchObject({
+      provider: 'Parclick',
+      missing: ['confidence'],
+    });
   });
 
   it('ne consulte pas Claude pour un mail Allopark reconnu, ni sans clé ; un échec laisse le mail en « À traiter »', async () => {
