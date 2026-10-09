@@ -131,8 +131,27 @@ describe("Loueurs", () => {
     const invited = screen.getByText("Parking Invité").closest("tr")!;
     expect(within(invited).getByText(/invitation envoyée le 2 oct/)).toBeInTheDocument();
     expect(within(invited).getByRole("button", { name: "Renvoyer l'invitation" })).toBeInTheDocument();
-    expect(within(invited).queryByRole("button", { name: "Ouvrir son espace ›" })).not.toBeInTheDocument();
+    // 09/10/2026: its space can be opened to prepare the parking before the manager accepts.
+    expect(within(invited).getByRole("button", { name: "Ouvrir son espace ›" })).toBeInTheDocument();
     expect(screen.getByPlaceholderText("Commission (par défaut 12 %)")).toBeInTheDocument();
+  });
+
+  it("ouvre l'espace d'un loueur invité pour préparer son parking, et montre la fiche préparée", async () => {
+    const invitedWithDraft = operator({
+      id: "o3",
+      name: "Parking Invité",
+      listing: { id: "l3", status: "draft" },
+      manager: { name: "Parking Invité", email: "m.martin@example.com", emailVerified: false },
+      invitation: { sentAt: "2026-10-02T08:00:00Z", expiresAt: "2026-10-09T08:00:00Z", expired: false },
+    });
+    api.getPlatformOperators.mockResolvedValue({ ...operators, operators: [invitedWithDraft] });
+    auth.startViewAs.mockResolvedValue(undefined);
+    renderAt("/plateforme/loueurs", <OperatorsPage />);
+
+    const invited = (await screen.findByText("Parking Invité")).closest("tr")!;
+    expect(within(invited).getByText("Brouillon")).toBeInTheDocument();
+    await userEvent.click(within(invited).getByRole("button", { name: "Ouvrir son espace ›" }));
+    await waitFor(() => expect(auth.startViewAs).toHaveBeenCalledWith("o3"));
   });
 
   it("ouvre l'espace d'un loueur, le suspend et règle sa commission", async () => {

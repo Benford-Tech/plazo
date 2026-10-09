@@ -460,6 +460,40 @@ describe('invitations', () => {
     expect((await api().post(`${P}/operators/${operator.id}/invitation`).set(auth(admin.token))).body.code).toBe('no_pending_invitation');
   });
 
+  it('la plateforme prépare le parking pendant l’invitation ; le gérant le retrouve en acceptant (09/10/2026)', async () => {
+    const res = await invite();
+    const operatorId = res.body.operator.id as string;
+    const token = await viewAs(operatorId);
+    const parking = await api().get('/api/internal/parking').set(auth(token));
+    expect(parking.status).toBe(200);
+
+    const settings = await api()
+      .patch(`/api/internal/parkings/${parking.body.id}`)
+      .set(auth(token))
+      .send({ name: 'Parking Invité Lyon', address: null, totalCapacity: 150, safetyMarginPct: 5, shuttleTravelMinutes: 8 });
+    expect(settings.status).toBe(200);
+    expect((await api().put('/api/internal/pricing').set(auth(token)).send(grid)).status).toBe(200);
+    expect(
+      (
+        await api()
+          .put('/api/internal/listing')
+          .set(auth(token))
+          .send(listingBody({ slug: 'parking-invite', title: 'Parking Invité' }))
+      ).status,
+    ).toBe(200);
+    const row = (await api().get(`${P}/operators`).set(auth(admin.token))).body.operators.find((o: { id: string }) => o.id === operatorId);
+    expect(row).toMatchObject({ invitation: { expired: false }, listing: { status: 'draft' } });
+    expect(await prisma.auditLog.count({ where: { operatorId, staffId: admin.manager.id, action: 'view_as.write' } })).toBe(3);
+
+    const accepted = await api()
+      .post('/api/internal/auth/invitation/accept')
+      .send({ token: tokenOf(res.body.inviteUrl), password: 'mon-nouveau-mot-de-passe' });
+    expect(accepted.status).toBe(200);
+    const own = auth(accepted.body.tokenData.access.token);
+    expect((await api().get('/api/internal/parking').set(own)).body).toMatchObject({ name: 'Parking Invité Lyon', totalCapacity: 150 });
+    expect((await api().get('/api/internal/listing').set(own)).body.listing).toMatchObject({ slug: 'parking-invite', status: 'draft' });
+  });
+
   it('expire au bout de 7 jours ; « Renvoyer » donne un nouveau lien et invalide l’ancien', async () => {
     const res = await invite();
     const first = tokenOf(res.body.inviteUrl);
