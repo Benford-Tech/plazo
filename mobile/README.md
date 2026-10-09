@@ -102,7 +102,7 @@ Réglages de construction (`--dart-define`, jamais de secret : ils sont lisibles
 | Nom | Défaut | Rôle |
 | --- | --- | --- |
 | `API_BASE_URL` | `https://www.plazo.fr/api` | l'API |
-| `ONESIGNAL_APP_ID` | vide (push coupées) | app OneSignal du personnel |
+| `ONESIGNAL_APP_ID` | vide (push coupées) | app OneSignal de l'app construite (Plazo Pro : `ONESIGNAL_APP_ID` de Codemagic ; Plazo : `ONESIGNAL_TRAVELLER_APP_ID`) |
 | `SITE_URL` | l'adresse de l'API sans `/api` | le site (conditions, confidentialité, mentions légales, FAQ) |
 | `STRIPE_MERCHANT_ID` | vide (pas d'Apple Pay) | identifiant marchand Apple Pay (`merchant.…`) |
 | `PAYMENT_SHEET_DEMO` | vide | essais dans un navigateur seulement : `success` ou `fail` remplace la feuille Stripe par une imitation (avec un faux Stripe côté API) |
@@ -168,8 +168,8 @@ version web, « Payer » ouvre la page Stripe Checkout.
    à la main ; déclaration de l'usage de la position (premier plan, service « location »).
 4. **OneSignal + Firebase** : deux apps OneSignal, une par app, car les réglages iOS d'une app OneSignal ne tiennent
    qu'un Bundle ID (Plazo Pro : *App ID* → `ONESIGNAL_APP_ID` dans Codemagic et Vercel, *REST API key* →
-   `ONESIGNAL_REST_API_KEY` dans Vercel seulement ; Plazo : `ONESIGNAL_TRAVELLER_APP_ID` et
-   `ONESIGNAL_TRAVELLER_REST_API_KEY`) ; un projet Firebase pour FCM (clé de compte de
+   `ONESIGNAL_REST_API_KEY` dans Vercel seulement ; Plazo : `ONESIGNAL_TRAVELLER_APP_ID` dans Codemagic et Vercel,
+   `ONESIGNAL_TRAVELLER_REST_API_KEY` dans Vercel seulement) ; un projet Firebase pour FCM (clé de compte de
    service à importer dans OneSignal pour Android) ; une clé APNs `.p8` (Apple) importée dans OneSignal pour iOS.
 5. **Liens de réservation qui ouvrent l'app** : publier sur le domaine de production
    `/.well-known/assetlinks.json` (empreinte SHA-256 de la signature Play) et

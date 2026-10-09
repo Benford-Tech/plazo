@@ -34,9 +34,13 @@ abstract final class Product {
         .replaceFirstMapped(RegExp(r'create\("pro"\) \{\s*dimension = "app"\s*applicationId = "[^"]*"\s*resValue\("string", "app_name", "[^"]*"\)'), (m) => m[0]!.replaceFirst(RegExp(r'"app_name", "[^"]*"'), '"app_name", "${esc(name)} Pro"')),
     // iOS: Info.plist reads $(APP_DISPLAY_NAME); each Xcode build configuration sets it, "<name> Pro" for the
     // -pro ones (Plazo Pro) and "<name>" for the others.
+    // A right value is kept as written: Xcode quotes only the values that need it.
     'ios/Runner.xcodeproj/project.pbxproj': (s) => s.replaceAllMapped(
         RegExp(r'APP_DISPLAY_NAME = "?([^";\n]*?)"?;'),
-        (m) => 'APP_DISPLAY_NAME = "${pbx(m[1]!.endsWith(' Pro') ? '$name Pro' : name)}";'),
+        (m) {
+          final want = m[1]!.endsWith(' Pro') ? '$name Pro' : name;
+          return m[1] == want ? m[0]! : 'APP_DISPLAY_NAME = "${pbx(want)}";';
+        }),
     'web/index.html': (s) => s
         .replaceFirst(RegExp(r'<title>[^<]*</title>'), '<title>${xml(name)}</title>')
         .replaceFirstMapped(RegExp(r'(name="apple-mobile-web-app-title" content=")[^"]*'), (m) => '${m[1]}${xml(name)}'),

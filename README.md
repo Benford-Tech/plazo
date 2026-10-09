@@ -198,7 +198,8 @@ une décision de Joanny. Cocher au fur et à mesure.
   `CERTIFICATE_PRIVATE_KEY`, `ONESIGNAL_APP_ID`, `ONESIGNAL_TRAVELLER_APP_ID`), intégration Developer Portal `plazo-asc`,
   App ID Apple créés à la main avec leurs capacités, fiches App Store Connect et Play Console, premier AAB envoyé à la main,
   `APP_STORE_APP_ID` ; identifiants des apps définitifs avant tout envoi ; OneSignal : une app par app, compte de service
-  FCM et clé APNs sur chacune.
+  FCM et clé APNs sur chacune, et dans Vercel `ONESIGNAL_TRAVELLER_APP_ID` + `ONESIGNAL_TRAVELLER_REST_API_KEY` (sinon les
+  pushs voyageurs partent par l'app du personnel et se perdent).
 - [ ] `product.json` › `company` : forme juridique, capital, siège, RCS, TVA, téléphone, directeur de la publication,
   médiateur, et une adresse support réelle (aujourd'hui `support@example.com`) ; Claude les pose puis
   `dart run tool/sync_product.dart`.
@@ -365,7 +366,9 @@ le navigateur de l'espace pro appelle `/api` sur le même domaine (pas de CORS).
 5. **Notifications push du personnel (OneSignal)** — facultatif : sans `ONESIGNAL_APP_ID` et `ONESIGNAL_REST_API_KEY`,
    aucune notification n'est envoyée (les arrivées s'affichent quand même dans l'espace pro et l'app). La clé REST
    reste sur Vercel ; l'*App ID* est aussi donné à l'app (`--dart-define=ONESIGNAL_APP_ID=…`, voir
-   [mobile/README.md](mobile/README.md)).
+   [mobile/README.md](mobile/README.md)). L'app voyageur a sa propre app OneSignal (un Bundle ID iOS par app OneSignal) :
+   `ONESIGNAL_TRAVELLER_APP_ID` et `ONESIGNAL_TRAVELLER_REST_API_KEY` sur Vercel, `ONESIGNAL_TRAVELLER_APP_ID` dans Codemagic ;
+   sans elles l'API passe par l'app du personnel, qui ne connaît pas les téléphones des voyageurs.
    « Prévenir de son arrivée » n'a besoin d'aucune nouvelle tâche planifiée : les signaux de plus de 2 h sont terminés
    (position effacée) à chaque lecture et par la purge nocturne existante ; `/api/internal/cron/expire-arrival-signals`
    existe pour une passe plus fréquente si besoin.

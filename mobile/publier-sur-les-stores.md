@@ -85,6 +85,11 @@ Cinq workflows Codemagic, un par store et par app, pour que Google Play n'attend
    | `STRIPE_MERCHANT_ID` | facultatif, plus tard : Merchant ID Apple Pay, une fois Apple Pay ajouté à l'app par Claude | Apple |
 
    Sans app OneSignal, le build passe, mais les notifications de cette version sont coupées (« ATTENTION » dans le journal).
+
+   **Et dans Vercel** (Settings › Environment Variables, Production, puis redéployer), avant d'envoyer une version de Plazo
+   aux testeurs : `ONESIGNAL_TRAVELLER_APP_ID` et `ONESIGNAL_TRAVELLER_REST_API_KEY` de l'app OneSignal Plazo (à côté de
+   `ONESIGNAL_APP_ID` et `ONESIGNAL_REST_API_KEY` de Plazo Pro). Sans elles, l'API envoie les notifications des voyageurs
+   par l'app OneSignal du personnel, qui ne connaît pas leurs téléphones : elles se perdent sans bruit.
 6. [ ] **Relier App Store Connect sous le nom exact `plazo-asc`** (une fois l'étape 2.6 faite).
    - Compte personnel : menu de gauche **Teams › Personal Account › Integrations**.
    - Sur la ligne **Developer Portal**, cliquer sur **Connect** et remplir : **App Store Connect API key name** =
@@ -175,12 +180,15 @@ Cinq workflows Codemagic, un par store et par app, pour que Google Play n'attend
    - **Déclarations** : tout accepter, y compris les conditions de la signature d'application Play, puis **Créer
      l'application**. Le nom de package se fixe au premier envoi de l'AAB.
 3. [ ] **Créer la clé d'import** (alias `upload`, la même pour les deux apps).
-   - `keytool` vient de Java ; sans Java, installer Android Studio et utiliser le sien (Mac :
-     `/Applications/Android Studio.app/Contents/jbr/Contents/Home/bin/keytool` ; Windows :
-     `C:\Program Files\Android\Android Studio\jbr\bin\keytool.exe`).
-   - Mac : `keytool -genkey -v -keystore ~/upload-keystore.jks -keyalg RSA -storetype JKS -keysize 2048 -validity 10000 -alias upload`
-   - Windows (PowerShell) :
-     `keytool -genkey -v -keystore $env:USERPROFILE\upload-keystore.jks -storetype JKS -keyalg RSA -keysize 2048 -validity 10000 -alias upload`
+   - `keytool` vient de Java. Avec Java installé :
+     - Mac : `keytool -genkey -v -keystore ~/upload-keystore.jks -keyalg RSA -storetype JKS -keysize 2048 -validity 10000 -alias upload`
+     - Windows (PowerShell) :
+       `keytool -genkey -v -keystore $env:USERPROFILE\upload-keystore.jks -storetype JKS -keyalg RSA -keysize 2048 -validity 10000 -alias upload`
+   - Sans Java (sur Mac, `keytool` répond alors « Unable to locate a Java Runtime ») : installer Android Studio et utiliser
+     le sien, chemin entre guillemets :
+     - Mac : `"/Applications/Android Studio.app/Contents/jbr/Contents/Home/bin/keytool" -genkey -v -keystore ~/upload-keystore.jks -keyalg RSA -storetype JKS -keysize 2048 -validity 10000 -alias upload`
+     - Windows (PowerShell) :
+       `& "C:\Program Files\Android\Android Studio\jbr\bin\keytool.exe" -genkey -v -keystore $env:USERPROFILE\upload-keystore.jks -storetype JKS -keyalg RSA -keysize 2048 -validity 10000 -alias upload`
    - Mot de passe : **lettres et chiffres seulement**, 20 caractères ou plus (une barre oblique inverse serait mal lue dans
      `key.properties`). Répondre aux questions (nom, société, ville, code pays `FR`) ; au mot de passe de la clé, Entrée
      pour garder le même.
@@ -197,6 +205,12 @@ Cinq workflows Codemagic, un par store et par app, pour que Google Play n'attend
      ```
    - `storeFile` doit être **exactement `upload.jks`** (pas le chemin de votre ordinateur) : le pipeline dépose la clé sous
      ce nom. La ligne de commentaire protège contre l'en-tête invisible de certains éditeurs Windows.
+   - **Enregistrer sous le nom exact `key.properties`, dans le dossier personnel**, à côté de `upload-keystore.jks` :
+     - Mac (TextEdit) : dans la fenêtre d'enregistrement, Cmd+Maj+H pour le dossier de départ ; si TextEdit propose
+       `.txt`, choisir « Utiliser .properties » ;
+     - Windows (Bloc-notes) : dossier `C:\Users\<vous>`, Type « Tous les fichiers (*.*) ».
+     - Vérifier : Mac `cat ~/key.properties`, Windows `Get-Content "$env:USERPROFILE\key.properties"` affichent les cinq
+       lignes.
    - Mac : `cat ~/upload-keystore.jks | base64 | pbcopy` → `KEYSTORE_FILE` ; `cat ~/key.properties | base64 | pbcopy` →
      `KEY_PROPERTIES_FILE`.
    - Windows (PowerShell, chemin complet obligatoire) :
