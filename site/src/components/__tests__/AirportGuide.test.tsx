@@ -8,7 +8,7 @@ describe("AirportGuide (C-A)", () => {
 
   it("titles the guide and each of its sections, and links each one from « Sur cette page »", () => {
     render(<AirportGuide guide={guide} />);
-    expect(screen.getByRole("heading", { level: 2, name: "Se garer à l’aéroport de Lyon Saint-Exupéry" })).toBeInTheDocument();
+    expect(screen.getByRole("heading", { level: 2, name: guide.title })).toBeInTheDocument();
     const nav = screen.getByRole("navigation", { name: "Sur cette page" });
     const links = within(nav).getAllByRole("link");
     expect(links).toHaveLength(guide.sections.length);
@@ -25,6 +25,18 @@ describe("AirportGuide (C-A)", () => {
     const shuttleRow = within(table).getByRole("row", { name: /Accès aux terminaux/ });
     expect(within(shuttleRow).getByRole("rowheader")).toHaveTextContent("Accès aux terminaux");
     expect(shuttleRow).toHaveTextContent("Navette gratuite, 6 à 12 min");
-    expect(screen.getByRole("list")).toHaveTextContent("Réservez dès que vos dates sont connues.");
+    expect(screen.getAllByRole("list").at(-1)).toHaveTextContent("Gardez la confirmation à portée de main");
+  });
+
+  it("renders a wide table with one cell per column, its source under it, and the sub-headings of a section", () => {
+    render(<AirportGuide guide={guide} />);
+    const official = guide.sections.find(s => s.id === "parkings-officiels")!;
+    const table = screen.getByRole("table", { name: official.table!.caption });
+    expect(within(table).getAllByRole("columnheader")).toHaveLength(official.table!.columns.length);
+    const p5 = within(table).getByRole("row", { name: /^P5/ });
+    expect(within(p5).getAllByRole("cell")).toHaveLength(official.table!.columns.length);
+    expect(p5).toHaveTextContent("Navette gratuite toutes les 7 min (10 min la nuit)");
+    expect(screen.getAllByText(/Chiffres relevés le 9 octobre 2026/).length).toBeGreaterThanOrEqual(2);
+    for (const part of official.parts!) expect(screen.getByRole("heading", { level: 4, name: part.title })).toBeInTheDocument();
   });
 });

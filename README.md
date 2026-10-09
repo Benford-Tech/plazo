@@ -126,11 +126,13 @@ une décision de Joanny. Cocher au fur et à mesure.
   clé de test, aucune vraie carte ne passe et le site ne le dit pas.
 - [ ] **Commission** : 10 % TTC par défaut (`PLATFORM_COMMISSION_BPS=1000`), surcharge par loueur dans Plateforme ›
   Loueurs ; à confirmer avec le client n°1 et l'expert-comptable (HT ou TTC, TVA de Plazo), figée dans chaque paiement.
-- [ ] **Parkings de démonstration** : `DEMO_LISTINGS` vaut `false` depuis le 08/10/2026 (plus rafraîchis), mais les quatre
-  loueurs fictifs déjà créés restent en ligne et réservables (`/api/public/search` les renvoie avec `demo: true`), visibles et
-  indexables à côté du client n°1, et les crons les traitent comme des vrais (rappels vers `.test`, vols fictifs interrogés).
-  Retrait : `DEMO_LISTINGS=remove` puis redéployer et vérifier `[seed-demo] Removed` dans le journal du build (irréversible :
-  supprime aussi toute réservation faite sur une démo), puis supprimer `DEMO_LISTINGS` et `DEMO_SEED_PASSWORD`.
+- [x] **Parkings de démonstration** : archivés le 09/10/2026 (demande de Joanny, « archive tous les parkings de démo ») :
+  `DEMO_LISTINGS=archive` sur Vercel, le build suspend les quatre loueurs fictifs (`[seed-demo] Archived 4 demo operator(s)` dans
+  le journal), qui disparaissent du site, de l'app et de `/api/public/search` et dont les comptes sont refusés ; ils restent en
+  base, `true` les rétablit. Seul le récapitulatif horaire ignore un loueur suspendu : les rappels et le suivi des vols
+  traitent encore les trois réservations de démo tant qu'elles sont à venir. Retrait définitif : `DEMO_LISTINGS=remove` puis redéployer et vérifier
+  `[seed-demo] Removed` dans le journal du build (irréversible : supprime aussi toute réservation faite sur une démo), puis
+  supprimer `DEMO_LISTINGS` et `DEMO_SEED_PASSWORD`.
 - [ ] **Vercel Pro** : l'offre Hobby est réservée à un usage non commercial, plafonne à 100 déploiements par jour, garde
   les journaux une heure et n'offre que des crons quotidiens (100 par projet, déclenchés à ± 59 min : les six de
   `vercel.json` passent). Pro (~20 $/mois) lève tout cela (Vercel › Settings › Billing).
@@ -211,9 +213,10 @@ une décision de Joanny. Cocher au fur et à mesure.
 - [ ] Search Console : l'enregistrement TXT `google-site-verification` est déjà dans le DNS Cloudflare ; ajouter la propriété
   Domaine `plazo.fr`, soumettre `https://www.plazo.fr/sitemap.xml`, demander l'indexation de `/` ; Bing Webmaster Tools par
   « Import from Google Search Console ».
-- [ ] Les quatre parkings de démonstration restent la matière de la seule page indexable (« 4 parkings disponibles », carte
-  « dès 36,60 € », noms en H3) : les suspendre (Plateforme › Loueurs) ou les retirer (`DEMO_LISTINGS=remove`) le jour où la
-  fiche du client n°1 est publiée, avant la première demande d'indexation.
+- [x] Parkings de démonstration archivés le 09/10/2026 (« archive tous les parkings de démo ») : `DEMO_LISTINGS=archive` sur
+  Vercel, les quatre loueurs fictifs sont suspendus au build suivant (plus sur le site, dans l'app ni dans `/api/public/search`,
+  comptes de démo refusés) et restent en base ; `true` les rétablit, `remove` les supprime. Tant que la fiche du client n°1
+  n'est pas publiée, la page d'accueil dit « Aucun parking n'est encore en ligne » au-dessus du guide.
 - [ ] Google Business Profile du **client n°1** (Plazo n'y est pas éligible : place de marché) : catégorie « Parking », NAP
   identique à sa fiche Plazo, lien de réservation `https://www.plazo.fr/lyon-saint-exupery/<slug>`, routine d'avis Google.
 - [ ] `product.json › company` et une adresse support réelle avant tout contact presse ou annuaire (`/mentions-legales`
@@ -224,6 +227,22 @@ une décision de Joanny. Cocher au fur et à mesure.
   dans le mail de clôture, AggregateRating) et fiche parking plus riche (grille de prix visible, titre « dès X €/semaine ») ;
   **C** technique et vitesse (pages aéroport et fiche en ISR, MapLibre différé, photo LCP, favicon, lastmod) ;
   **D** notoriété (presse travel-tech et lyonnaise, annuaires, pages `/presse` et `/pour-les-loueurs`).
+- Fait le 09/10/2026 (**A**, « 4 200 mots, FAQ balisée ») : le guide de la page Lyon fait ~6 400 mots (14 sections, 3 tableaux,
+  19 questions, toutes dans le FAQPage avec les 4 générales) : parkings officiels P0 à P7 (emplacement, temps de marche jusqu'au
+  Terminal 1, hauteur, bornes) et grille 2026 sans réservation (24 h → 1 mois), parkings privés, prix par durée, longue durée, pas
+  cher, navette, voiturier, couvert / électrique / moto / véhicules hauts, accès, saisons, fonctionnement de Plazo, annulation,
+  check-list. Faits de l'aéroport dans la constante `LYON_OFFICIAL` (`site/src/lib/airport-guides.ts`), relevés le 08/10/2026 sur
+  la grille tarifaire PDF et les pages de lyonaeroports.com puis vérifiés à nouveau le 09/10/2026 par une relecture contradictoire
+  (49 corrections confirmées : **Terminal 2 fermé pour travaux depuis le 01/04/2026**, tous les vols au Terminal 1 ; P1 géré par
+  Lyon Parc Auto, exclu de l'annulation gratuite et de la garantie retard ; P5 à 2,60 m sur la page des parkings contre 2,50 m sur
+  la grille ; P7 saisonnier sans limite de hauteur ; P4 Elec et P5 Elec réservables ; marge conseillée 2 h / 2 h 30 / 3 h ;
+  itinéraires A46, A48, A46 Sud ; aucune promesse au-delà des CGV : un retour tardif est une prolongation facturée par le parking),
+  puis une seconde passe (41 corrections : service voiturier de l'aéroport ; le P7 présenté par l'aéroport comme son parking le
+  moins cher ; navettes des parkings extérieurs arrêtées là où le règlement de l'aéroport les autorise, pas « devant le
+  terminal » ; annulation 4 h avant au P7 ; P5 robotisé limité à 2,30 m ; ce que contiennent vraiment la confirmation, le rappel,
+  le SMS d'atterrissage et Ma réservation).
+  À relire avant toute modification et à chaque nouvelle grille annuelle. Les chiffres des partenaires restent ceux de `guideFacts`
+  (aucun sans parking réel). Les trois pages d'intention `/lyon-saint-exupery/guide/…` restent à faire.
 - Fait le 09/10/2026 : les segments du site (`recherche`, `guide`, `avis`…) ne peuvent plus être pris comme adresse de fiche
   (`RESERVED_LISTING_SLUGS`, erreur `slug_reserved`).
 
@@ -298,10 +317,12 @@ le navigateur de l'espace pro appelle `/api` sur le même domaine (pas de CORS).
    une fiche publiée, une grille de tarifs de 1 à 15 jours, un point de rendez-vous et une navette, plus trois
    réservations à venir chez Parkair Lyon. Comptes gérants : `demo-<slug>@plazo.test` (par exemple
    `demo-parkair-lyon@plazo.test`), mot de passe `DEMO_SEED_PASSWORD` (jamais modifié pour un compte existant).
-   Ces loueurs portent la marque « Démo » sur le site, dans l'app et dans l'espace Plateforme. Pour les retirer :
-   `DEMO_LISTINGS=remove` et redéployer (supprime uniquement les loueurs marqués démo, avec leurs fiches, comptes
-   et réservations), puis enlever la variable. Depuis un poste : `npm run seed:demo -- --apply` ou `--remove`
-   dans `backend/`. Le script n'échoue jamais le déploiement et ne journalise que des comptages.
+   Ces loueurs portent la marque « Démo » sur le site, dans l'app et dans l'espace Plateforme. Pour les archiver :
+   `DEMO_LISTINGS=archive` et redéployer (suspend les loueurs de démo, qui disparaissent du site et des apps mais restent
+   en base ; `true` les rétablit). Pour les retirer : `DEMO_LISTINGS=remove` et redéployer (supprime uniquement les
+   loueurs marqués démo, avec leurs fiches, comptes et réservations), puis enlever la variable. Depuis un poste :
+   `npm run seed:demo -- --apply`, `--archive` ou `--remove` dans `backend/`. Le script n'échoue jamais le déploiement
+   et ne journalise que des comptages.
 
 4. **Paiement en ligne (Stripe Connect, mode test)** — **obligatoire pour réserver sur le site et l'app** : sans
    `STRIPE_SECRET_KEY`, la réservation en ligne est indisponible (plus de paiement sur place depuis le 06/10/2026 ; la saisie

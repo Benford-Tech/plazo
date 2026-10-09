@@ -28,6 +28,11 @@ export interface DemoApplyResult {
   bookingsUpdated: number;
 }
 
+export interface DemoArchiveResult {
+  /** Demo operators that were active and are now suspended. */
+  operators: number;
+}
+
 export interface DemoRemoveResult {
   operators: number;
   parkings: number;
@@ -47,7 +52,8 @@ export const demoManagerEmail = (slug: string) => `demo-${slug.replace(/^demo-/,
 
 /**
  * Fictional operators, listings and bookings for trying the site and the apps (see
- * src/domain/demo-data.ts). `apply` is idempotent (operators by slug, bookings by reference) and
+ * src/domain/demo-data.ts). `apply` is idempotent (operators by slug, bookings by reference),
+ * `archive` suspends the demo operators (kept in the database, `apply` restores them) and
  * `remove` only ever deletes what carries the `isDemo` flag.
  */
 @Service()
@@ -217,6 +223,20 @@ export class DemoSeedService {
       },
     });
     return true;
+  }
+
+  /**
+   * Suspends every active demo operator, exactly as the platform admin suspends an operator
+   * (`status: 'suspended'`, `suspendedAt`): their listings leave the site and the apps, their staff can
+   * no longer sign in, and nothing is deleted, so `apply` brings them back. Idempotent; never touches
+   * an operator that is not a demo.
+   */
+  public async archive(): Promise<DemoArchiveResult> {
+    const archived = await prisma.operator.updateMany({
+      where: { isDemo: true, status: 'active' },
+      data: { status: 'suspended', suspendedAt: new Date() },
+    });
+    return { operators: archived.count };
   }
 
   /** Deletes every operator flagged as demo, with everything that hangs from it (cascades). */
