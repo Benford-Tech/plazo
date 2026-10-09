@@ -55,9 +55,10 @@ describe("airport guide (C-A, 4 200 words on 09/10/2026)", () => {
   it("gives the real partners' lowest week and shuttle ride", () => {
     const guide = airportGuide("lyon-saint-exupery", { week: { priceCents: 5600, days: 8 }, shuttle: { min: 6, max: 12 } })!;
     const all = guideTexts(guide).join("\n");
-    expect(all).toContain(`une semaine coûte aujourd’hui dès ${formatEuros(5600)} pour 8 jours, frais compris`);
+    expect(all).toContain(`une semaine coûte aujourd’hui dès ${formatEuros(5600)} pour 8 jours facturés, frais compris`);
+    expect(all).toContain("la navette met 6 à 12 minutes jusqu’au terminal");
     expect(all).toContain("Navette gratuite, 6 à 12 min");
-    expect(guide.faq.find(([q]) => q.startsWith("Combien coûte une semaine"))![1]).toMatch(new RegExp(`^Dès ${formatEuros(5600)} pour 8 jours chez nos parkings partenaires, frais compris\\.`));
+    expect(guide.faq.find(([q]) => q.startsWith("Combien coûte une semaine"))![1]).toMatch(new RegExp(`^Aujourd’hui, dès ${formatEuros(5600)} pour 8 jours facturés \\(du jour d’arrivée au jour de retour\\) chez nos parkings partenaires, frais compris\\.`));
     expect(airportGuide("lyon-saint-exupery", { week: null, shuttle: { min: 7, max: 7 } })!.sections[0].table!.rows[0][2]).toBe("Navette gratuite, 7 min");
   });
 
@@ -66,7 +67,7 @@ describe("airport guide (C-A, 4 200 words on 09/10/2026)", () => {
     for (const text of guideTexts(guide)) {
       // A sentence about the partners never carries a price or a ride time of theirs.
       for (const sentence of text.split(/(?<=[.;:!?])\s+/)) {
-        if (/partenaire/i.test(sentence)) expect(sentence).not.toMatch(/\d+(?:,\d+)? ?€|\d+ (?:à \d+ )?min\b/);
+        if (/partenaire/i.test(sentence)) expect(sentence).not.toMatch(/\d+(?:,\d+)? ?€|\d+ (?:à \d+ )?min(?:utes)?\b/);
       }
     }
     const all = guideTexts(guide).join("\n");
@@ -97,6 +98,18 @@ describe("airport guide (C-A, 4 200 words on 09/10/2026)", () => {
     const tables = guide.sections.flatMap(s => [s.table, ...(s.parts ?? []).map(p => p.table)]).filter(t => t !== undefined);
     expect(tables.length).toBeGreaterThanOrEqual(3);
     for (const table of tables) for (const row of table.rows) expect(row).toHaveLength(table.columns.length + 1);
+  });
+
+  it("sends every traveller to Terminal 1: Terminal 2 is closed for works since 1 April 2026", () => {
+    const all = guideTexts(airportGuide("lyon-saint-exupery", { week: null, shuttle: { min: 6, max: 12 } })!).join("\n");
+    expect(all).toContain("le Terminal 2 est fermé pour travaux");
+    expect(all).not.toMatch(/Terminal 1 ou au Terminal 2|devant celui de votre vol|selon votre compagnie/);
+  });
+
+  it("promises nothing the general conditions do not: a late return is an extension billed by the parking", () => {
+    const all = guideTexts(airportGuide("lyon-saint-exupery", { week: { priceCents: 5600, days: 8 }, shuttle: { min: 6, max: 12 } })!).join("\n");
+    expect(all).not.toMatch(/ne change pas le prix|la journée reste comptée|avis des voyageurs|ne jamais bloquer/);
+    expect(all).toContain("un retour après la date et l’heure réservées prolonge le séjour");
   });
 
   it("never says the parking is paid at the parking (every booking is paid online)", () => {

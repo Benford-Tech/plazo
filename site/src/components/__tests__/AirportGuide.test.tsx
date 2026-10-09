@@ -35,8 +35,8 @@ describe("AirportGuide (C-A)", () => {
     expect(within(table).getAllByRole("columnheader")).toHaveLength(official.table!.columns.length);
     const p5 = within(table).getByRole("row", { name: /^P5/ });
     expect(within(p5).getAllByRole("cell")).toHaveLength(official.table!.columns.length);
-    expect(p5).toHaveTextContent("Navette gratuite toutes les 7 à 10 min");
-    expect(screen.getAllByText(/Chiffres relevés le 8 octobre 2026/).length).toBeGreaterThanOrEqual(2);
+    expect(p5).toHaveTextContent("Navette gratuite toutes les 7 min (10 min la nuit)");
+    expect(screen.getAllByText(/Chiffres relevés le 9 octobre 2026/).length).toBeGreaterThanOrEqual(2);
     for (const part of official.parts!) expect(screen.getByRole("heading", { level: 4, name: part.title })).toBeInTheDocument();
   });
 });
