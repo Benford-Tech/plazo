@@ -1,5 +1,6 @@
 import path from "node:path";
 import type { NextConfig } from "next";
+import { DEFAULT_AIRPORT } from "./src/lib/site";
 
 // The product name lives only in the repository's product.json, one level above this app. Turbopack
 // only resolves files under its root, so the root (and the output file tracing root, which must match)
@@ -19,6 +20,14 @@ const nextConfig: NextConfig = {
   poweredByHeader: false,
   // The repository keeps its own agent instructions (CLAUDE.md at the root): no generated copies here.
   agentRules: false,
+  // C (09/10/2026): the home page is the default airport's page, cached like any airport page (ISR); that page
+  // has one address, "/" (a permanent redirect from its own, which the internal rewrite does not go through).
+  async redirects() {
+    return [{ source: `/${DEFAULT_AIRPORT}`, destination: "/", permanent: true }];
+  },
+  async rewrites() {
+    return { beforeFiles: [{ source: "/", destination: `/${DEFAULT_AIRPORT}` }], afterFiles: [], fallback: [] };
+  },
   async headers() {
     return [
       { source: "/:path*", headers: securityHeaders },
