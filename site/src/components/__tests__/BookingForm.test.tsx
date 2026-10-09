@@ -18,7 +18,8 @@ describe("BookingForm", () => {
     const action = vi.fn(async (_state: FormState, _formData: FormData): Promise<FormState> => ({ values: {}, fields: {}, error: null }));
     renderForm(action);
     const user = userEvent.setup();
-    await user.type(screen.getByLabelText("Prénom et nom"), "Camille Laurent");
+    await user.type(screen.getByLabelText("Prénom"), "Camille");
+    await user.type(screen.getByLabelText("Nom"), "Laurent");
     await user.type(screen.getByLabelText(/Téléphone mobile/), "06 12 34 56 78");
     await user.type(screen.getByLabelText(/Email/), "camille@example.com");
     await user.type(screen.getByLabelText("Plaque d’immatriculation"), "gk318px");
@@ -29,7 +30,8 @@ describe("BookingForm", () => {
     const data = action.mock.calls[0][1];
     expect(Object.fromEntries(data.entries())).toMatchObject({
       ...stay,
-      customerName: "Camille Laurent",
+      customerFirstName: "Camille",
+      customerLastName: "Laurent",
       customerPhone: "06 12 34 56 78",
       customerEmail: "camille@example.com",
       plate: "GK-318-PX",
@@ -44,8 +46,14 @@ describe("BookingForm", () => {
   it("shows the API's field errors in French, under each field", async () => {
     const action = vi.fn(
       async (): Promise<FormState> => ({
-        values: { customerName: "Camille", customerEmail: "pas-un-email", plate: "??" },
-        fields: { customerEmail: "invalid_email", plate: "invalid_plate", acceptTerms: "terms_required", customerPhone: "required" },
+        values: { customerFirstName: "Camille", customerLastName: "L4urent", customerEmail: "pas-un-email", plate: "??" },
+        fields: {
+          customerLastName: "invalid_name",
+          customerEmail: "invalid_email",
+          plate: "invalid_plate",
+          acceptTerms: "terms_required",
+          customerPhone: "required",
+        },
         error: "validation_failed",
       }),
     );
@@ -57,9 +65,27 @@ describe("BookingForm", () => {
     expect(screen.getByLabelText(/Email/)).toHaveAttribute("aria-invalid", "true");
     expect(screen.getByLabelText("Plaque d’immatriculation")).toHaveAccessibleDescription("Plaque invalide.");
     expect(screen.getByLabelText(/Téléphone mobile/)).toHaveAccessibleDescription("Champ obligatoire.");
+    // One message per name field.
+    expect(screen.getByLabelText("Nom")).toHaveAccessibleDescription("Lettres, espaces, apostrophes et tirets seulement.");
+    expect(screen.getByLabelText("Nom")).toHaveAttribute("aria-invalid", "true");
+    expect(screen.getByLabelText("Prénom")).not.toHaveAttribute("aria-invalid");
     expect(screen.getByText("Merci d’accepter les conditions pour réserver.")).toBeInTheDocument();
     // The typed values come back (React resets uncontrolled fields after an action).
-    expect(screen.getByLabelText("Prénom et nom")).toHaveValue("Camille");
+    expect(screen.getByLabelText("Prénom")).toHaveValue("Camille");
+    expect(screen.getByLabelText("Nom")).toHaveValue("L4urent");
+  });
+
+  it("asks for the first name and the last name apart, as the browser fills them", () => {
+    renderForm(vi.fn());
+    const first = screen.getByLabelText("Prénom");
+    const last = screen.getByLabelText("Nom");
+    expect(first).toHaveAttribute("autocomplete", "given-name");
+    expect(last).toHaveAttribute("autocomplete", "family-name");
+    for (const input of [first, last]) {
+      expect(input).toBeRequired();
+      expect(input).toHaveAttribute("maxlength", "60");
+    }
+    expect(screen.queryByLabelText("Prénom et nom")).not.toBeInTheDocument();
   });
 
   it("explains an overbooking with the full nights and a way out", async () => {
@@ -84,9 +110,14 @@ describe("BookingForm", () => {
 
   it("refilled with what the traveller typed when coming back from the payment step", () => {
     const action = vi.fn(async (): Promise<FormState> => ({ values: {}, fields: {}, error: null }));
-    const initialState = { values: { customerName: "Camille Martin", plate: "AB-123-CD", passengers: "3", acceptTerms: "on" }, fields: {}, error: null };
+    const initialState = {
+      values: { customerFirstName: "Camille", customerLastName: "Martin", plate: "AB-123-CD", passengers: "3", acceptTerms: "on" },
+      fields: {},
+      error: null,
+    };
     render(<BookingForm action={action} stay={stay} total="55,00 €" links={links} online initialState={initialState} />);
-    expect(screen.getByLabelText("Prénom et nom")).toHaveValue("Camille Martin");
+    expect(screen.getByLabelText("Prénom")).toHaveValue("Camille");
+    expect(screen.getByLabelText("Nom")).toHaveValue("Martin");
     expect(screen.getByLabelText("Passagers")).toHaveValue("3");
     expect(screen.getByRole("checkbox")).toBeChecked();
   });

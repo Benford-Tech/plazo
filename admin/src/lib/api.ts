@@ -289,6 +289,12 @@ export const adminApi = {
     }),
   logout: () => apiRequest<void>("/internal/auth/logout", { method: "POST" }),
   getMe: () => apiRequest<Staff>("/internal/staff/me"),
+  /** 09/10/2026: one's own first and last name; answers like getMe. */
+  updateMe: (names: { firstName: string; lastName: string }) =>
+    apiRequest<Staff>("/internal/staff/me", {
+      method: "PATCH",
+      body: json(names),
+    }),
   signup: (input: SignupInput) =>
     apiRequest<{ message: string; devVerificationUrl?: string }>(
       "/internal/auth/signup",
@@ -519,7 +525,10 @@ export const adminApi = {
       method: "POST",
       body: json(staff),
     }),
-  updateStaff: (id: string, patch: { role?: StaffRole; isActive?: boolean }) =>
+  updateStaff: (
+    id: string,
+    patch: { role?: StaffRole; isActive?: boolean; firstName?: string; lastName?: string },
+  ) =>
     apiRequest<{ data: Staff }>(`/internal/staff/${id}`, {
       method: "PATCH",
       body: json(patch),

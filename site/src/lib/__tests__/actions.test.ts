@@ -38,7 +38,8 @@ const filled = {
   parking: "parking-demo-lys",
   arrivalAt: "2026-10-04T06:30",
   returnAt: "2026-10-11T15:05",
-  customerName: " Camille Laurent ",
+  customerFirstName: " Camille ",
+  customerLastName: " Laurent ",
   customerPhone: "06 12 34 56 78",
   customerEmail: "camille@example.com",
   plate: "gk318px",
@@ -70,7 +71,8 @@ describe("bookAction", () => {
       parking: "parking-demo-lys",
       arrivalAt: "2026-10-04T06:30",
       returnAt: "2026-10-11T15:05",
-      customerName: "Camille Laurent",
+      customerFirstName: "Camille",
+      customerLastName: "Laurent",
       customerPhone: "06 12 34 56 78",
       customerEmail: "camille@example.com",
       plate: "GK-318-PX",
@@ -92,7 +94,7 @@ describe("bookAction", () => {
     createBooking.mockRejectedValue(new ApiError(400, "x", "validation_failed", { acceptTerms: "terms_required" }));
     const state = await bookAction(EMPTY_FORM, form({ ...filled, acceptTerms: "" }));
     expect(createBooking.mock.calls[0][0].acceptTerms).toBe(false);
-    expect(state).toMatchObject({ error: "validation_failed", fields: { acceptTerms: "terms_required" }, values: { customerName: "Camille Laurent", plate: "GK-318-PX" } });
+    expect(state).toMatchObject({ error: "validation_failed", fields: { acceptTerms: "terms_required" }, values: { customerFirstName: "Camille", customerLastName: "Laurent", plate: "GK-318-PX" } });
   });
 
   it("keeps the full nights of an overbooking", async () => {

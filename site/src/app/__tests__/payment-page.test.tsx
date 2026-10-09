@@ -29,6 +29,8 @@ const held: PublicBooking = {
   days: 8,
   priceCents: 5500,
   customerName: "Camille Martin",
+  customerFirstName: "Camille",
+  customerLastName: "Martin",
   customerEmail: "camille@example.com",
   customerPhone: "06 12 34 56 78",
   plate: "AB-123-CD",

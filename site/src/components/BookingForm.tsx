@@ -102,14 +102,44 @@ export function BookingForm({
         <h2 id="b-infos" className={sectionTitle}>
           {!online && <span className="text-accent">1.</span>} {fr.booking.yourDetails}
         </h2>
-        <div className="grid gap-3.5 md:grid-cols-2 md:gap-3">
-          <div>
-            <label htmlFor="b-customerName" className="label">
-              {fr.booking.name}
+        {/* Two short fields that belong together: side by side, on a phone too. */}
+        <div className="grid grid-cols-2 gap-3">
+          <div className="min-w-0">
+            <label htmlFor="b-customerFirstName" className="label">
+              {fr.booking.firstName}
             </label>
-            <input {...field("customerName")} type="text" required maxLength={120} autoComplete="name" defaultValue={v.customerName} className="field" />
-            <FieldError id="b-customerName-error" code={f.customerName} />
+            <input
+              {...field("customerFirstName")}
+              type="text"
+              required
+              maxLength={60}
+              autoComplete="given-name"
+              autoCapitalize="words"
+              spellCheck={false}
+              defaultValue={v.customerFirstName}
+              className="field"
+            />
+            <FieldError id="b-customerFirstName-error" code={f.customerFirstName} />
           </div>
+          <div className="min-w-0">
+            <label htmlFor="b-customerLastName" className="label">
+              {fr.booking.lastName}
+            </label>
+            <input
+              {...field("customerLastName")}
+              type="text"
+              required
+              maxLength={60}
+              autoComplete="family-name"
+              autoCapitalize="words"
+              spellCheck={false}
+              defaultValue={v.customerLastName}
+              className="field"
+            />
+            <FieldError id="b-customerLastName-error" code={f.customerLastName} />
+          </div>
+        </div>
+        <div className="grid gap-3.5 md:grid-cols-2 md:gap-3">
           <div>
             <label htmlFor="b-customerPhone" className="label">
               {fr.booking.phone}
@@ -126,13 +156,13 @@ export function BookingForm({
             />
             <FieldError id="b-customerPhone-error" code={f.customerPhone} />
           </div>
-        </div>
-        <div>
-          <label htmlFor="b-customerEmail" className="label">
-            {fr.booking.email}
-          </label>
-          <input {...field("customerEmail")} type="email" required maxLength={254} autoComplete="email" defaultValue={v.customerEmail} className="field" />
-          <FieldError id="b-customerEmail-error" code={f.customerEmail} />
+          <div>
+            <label htmlFor="b-customerEmail" className="label">
+              {fr.booking.email}
+            </label>
+            <input {...field("customerEmail")} type="email" required maxLength={254} autoComplete="email" defaultValue={v.customerEmail} className="field" />
+            <FieldError id="b-customerEmail-error" code={f.customerEmail} />
+          </div>
         </div>
         <div className="grid gap-3.5 md:grid-cols-[1fr_1fr_120px] md:gap-3">
           <div>

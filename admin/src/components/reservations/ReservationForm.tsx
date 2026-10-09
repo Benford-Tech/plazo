@@ -3,6 +3,7 @@ import { useEffect, useMemo, useState } from "react";
 import { adminApi, ApiError } from "@/lib/api";
 import { localParts, nightsBetween, shortDay } from "@/lib/datetime";
 import { describeError, errorMessage, fr } from "@/lib/fr";
+import { nameParts } from "@/lib/names";
 import type { ParsedBooking, Reservation, ReservationChannel, ReservationInput } from "@/lib/types";
 import { cn } from "@/lib/utils";
 
@@ -13,7 +14,9 @@ type Form = {
   arrivalTime: string;
   returnDate: string;
   returnTime: string;
-  customerName: string;
+  /** 09/10/2026: first and last name apart; the server builds the display name. */
+  customerFirstName: string;
+  customerLastName: string;
   customerPhone: string;
   customerEmail: string;
   plate: string;
@@ -37,12 +40,14 @@ function initialForm(reservation?: Reservation, defaultDate?: string, prefill?: 
   if (prefill) {
     const a = split(prefill.arrivalAt);
     const r = split(prefill.returnAt);
+    const name = nameParts(prefill.customerFirstName, prefill.customerLastName, prefill.customerName);
     return {
       arrivalDate: a.date,
       arrivalTime: a.time,
       returnDate: r.date,
       returnTime: r.time,
-      customerName: prefill.customerName ?? "",
+      customerFirstName: name.firstName,
+      customerLastName: name.lastName,
       customerPhone: prefill.customerPhone ?? "",
       customerEmail: prefill.customerEmail ?? "",
       plate: prefill.plate ?? "",
@@ -61,12 +66,14 @@ function initialForm(reservation?: Reservation, defaultDate?: string, prefill?: 
   if (reservation) {
     const a = localParts(reservation.arrivalAt);
     const r = localParts(reservation.returnAt);
+    const name = nameParts(reservation.customerFirstName, reservation.customerLastName, reservation.customerName);
     return {
       arrivalDate: a.date,
       arrivalTime: a.time,
       returnDate: r.date,
       returnTime: r.time,
-      customerName: reservation.customerName,
+      customerFirstName: name.firstName,
+      customerLastName: name.lastName,
       customerPhone: reservation.customerPhone,
       customerEmail: reservation.customerEmail ?? "",
       plate: reservation.plate,
@@ -87,7 +94,8 @@ function initialForm(reservation?: Reservation, defaultDate?: string, prefill?: 
     arrivalTime: "",
     returnDate: "",
     returnTime: "",
-    customerName: "",
+    customerFirstName: "",
+    customerLastName: "",
     customerPhone: "",
     customerEmail: "",
     plate: "",
@@ -169,7 +177,8 @@ export function ReservationForm({
         arrivalAt,
         returnAt,
         passengers: Number(form.passengers),
-        customerName: form.customerName,
+        customerFirstName: form.customerFirstName.trim(),
+        customerLastName: form.customerLastName.trim(),
         customerPhone: form.customerPhone,
         customerEmail: form.customerEmail.trim() || null,
         plate: form.plate,
@@ -261,9 +270,32 @@ export function ReservationForm({
         minFree !== null && <p className="border border-border px-3 py-2 text-muted-foreground">{t.available(minFree)}</p>
       )}
 
-      <Field id="customerName" label={t.customerName} error={fieldErrors.customerName}>
-        <input id="customerName" required value={form.customerName} onChange={set("customerName")} aria-invalid={!!fieldErrors.customerName} className={inputClass} />
-      </Field>
+      <div className="grid gap-4 sm:grid-cols-2">
+        <Field id="customerFirstName" label={t.customerFirstName} error={fieldErrors.customerFirstName}>
+          <input
+            id="customerFirstName"
+            required
+            maxLength={60}
+            autoComplete="off"
+            value={form.customerFirstName}
+            onChange={set("customerFirstName")}
+            aria-invalid={!!fieldErrors.customerFirstName}
+            className={inputClass}
+          />
+        </Field>
+        <Field id="customerLastName" label={t.customerLastName} error={fieldErrors.customerLastName}>
+          <input
+            id="customerLastName"
+            required
+            maxLength={60}
+            autoComplete="off"
+            value={form.customerLastName}
+            onChange={set("customerLastName")}
+            aria-invalid={!!fieldErrors.customerLastName}
+            className={inputClass}
+          />
+        </Field>
+      </div>
       <div className="grid gap-4 sm:grid-cols-2">
         <Field id="customerPhone" label={t.customerPhone} error={fieldErrors.customerPhone}>
           <input

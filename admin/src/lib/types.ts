@@ -115,7 +115,10 @@ export interface Reservation {
   arrivalAt: string;
   returnAt: string;
   passengers: number;
+  /** The display form "Prénom Nom", recomputed by the server (09/10/2026: first and last name apart; missing from an older API). */
   customerName: string;
+  customerFirstName?: string;
+  customerLastName?: string;
   customerPhone: string;
   customerEmail: string | null;
   plate: string;
@@ -322,7 +325,9 @@ export interface ReservationInput {
   arrivalAt: string;
   returnAt: string;
   passengers: number;
-  customerName: string;
+  /** 09/10/2026: the traveller's first and last name; the server builds `customerName` from them. */
+  customerFirstName: string;
+  customerLastName: string;
   customerPhone: string;
   customerEmail?: string | null;
   plate: string;
@@ -356,6 +361,9 @@ export interface ParsedBooking {
   arrivalAt?: string;
   returnAt?: string;
   customerName?: string;
+  /** When the email tells them apart (Onepark, Allopark, Claude's reading). */
+  customerFirstName?: string;
+  customerLastName?: string;
   customerPhone?: string;
   customerEmail?: string;
   plate?: string;
@@ -595,6 +603,9 @@ export interface PlatformOperators {
 
 export interface InviteInput {
   operatorName: string;
+  /** 09/10/2026: the manager's first and last name, both required. */
+  managerFirstName: string;
+  managerLastName: string;
   managerEmail: string;
   totalCapacity: number;
   commissionBps: number | null;

@@ -15,6 +15,19 @@ export function firstName(fullName: string): string {
   return NOT_A_FIRST_NAME.test(first) ? "" : first;
 }
 
+/** A full name split as the API splits an older one: the first word, then the rest ("" when missing). */
+export function splitName(fullName: string): { firstName: string; lastName: string } {
+  const [first = "", ...rest] = fullName.trim().split(/\s+/);
+  return { firstName: first, lastName: rest.join(" ") };
+}
+
+/** Name of a booking's greeting: the first name the traveller typed, else the one guessed from the full name. */
+export function greetingName(booking: { customerFirstName?: string | null; customerName: string }): string {
+  const given = booking.customerFirstName?.trim();
+  if (!given) return firstName(booking.customerName);
+  return NOT_A_FIRST_NAME.test(given) ? "" : given;
+}
+
 /** Whether the API sends the confirmation SMS to this number (French mobiles 06 / 07 only). */
 export function isFrenchMobile(phone: string): boolean {
   let digits = phone.replace(/\(0\)/g, "").replace(/[\s.()-]/g, "");

@@ -204,6 +204,8 @@ function InviteLink({
 
 const emptyInvite = {
   operatorName: "",
+  managerFirstName: "",
+  managerLastName: "",
   managerEmail: "",
   totalCapacity: "",
   commission: "",
@@ -224,6 +226,8 @@ function InviteForm({
       const commission = form.commission.trim().replace(",", ".");
       return adminApi.inviteOperator({
         operatorName: form.operatorName,
+        managerFirstName: form.managerFirstName.trim(),
+        managerLastName: form.managerLastName.trim(),
         managerEmail: form.managerEmail,
         totalCapacity: Number(form.totalCapacity),
         commissionBps: commission ? Math.round(Number(commission) * 100) : null,
@@ -288,6 +292,18 @@ function InviteForm({
     >
       <h2 className={labelClass}>{t.inviteTitle}</h2>
       {field("operatorName", t.inviteName, { required: true, maxLength: 80 })}
+      <div className="grid gap-2.5 sm:grid-cols-2">
+        {field("managerFirstName", t.inviteFirstName, {
+          required: true,
+          maxLength: 60,
+          autoComplete: "off",
+        })}
+        {field("managerLastName", t.inviteLastName, {
+          required: true,
+          maxLength: 60,
+          autoComplete: "off",
+        })}
+      </div>
       {field("managerEmail", t.inviteEmail, {
         required: true,
         type: "email",
