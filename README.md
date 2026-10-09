@@ -512,6 +512,8 @@ ou `vercel dev` pour lancer les trois services ensemble.
   modifie (chaque modification est tracée) ; le super admin peut la dépublier, le loueur la retirer. Le site ne montre
   que les fiches publiées des loueurs non suspendus.
 - **Ouvrir son espace** : session de 60 minutes limitée à ce loueur, bandeau jaune « Vous consultez l'espace de … ».
+  Possible aussi pendant l'invitation (09/10/2026) : la plateforme prépare le parking (réglages, plan, fiche, tarifs)
+  avant que le gérant accepte, et il retrouve tout en se connectant ; la colonne « Annonce » montre la fiche préparée.
   Chaque écriture est tracée dans le journal (`audit_logs`, action `view_as.write`) au nom réel du super admin ;
   l'équipe, les mots de passe et le compte du loueur restent en lecture seule.
 - **Suspension** : l'équipe du loueur est déconnectée et ne peut plus se connecter, ses fiches quittent le site.

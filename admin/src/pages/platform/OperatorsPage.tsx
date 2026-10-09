@@ -21,7 +21,8 @@ const ghostButton =
   "min-h-10 whitespace-nowrap border border-border px-3 text-base hover:bg-accent disabled:opacity-50";
 
 function ListingCell({ operator }: { operator: PlatformOperator }) {
-  if (operator.invitation || !operator.listing)
+  // A listing prepared by the platform during the invitation shows its status like any other.
+  if (!operator.listing)
     return (
       <span className="text-muted-foreground">
         {operator.invitation ? "—" : t.noListing}
@@ -394,16 +395,27 @@ function RowActions({
       </div>
     );
   }
+  // 09/10/2026: the platform can prepare the parking (settings, plan, listing, prices) before the manager accepts.
   if (operator.invitation) {
     return (
-      <button
-        type="button"
-        className={ghostButton}
-        disabled={resend.isPending}
-        onClick={() => resend.mutate()}
-      >
-        {t.resend}
-      </button>
+      <div className="flex justify-end gap-1.5">
+        <button
+          type="button"
+          className={ghostButton}
+          disabled={open.isPending}
+          onClick={() => open.mutate()}
+        >
+          {t.open}
+        </button>
+        <button
+          type="button"
+          className={ghostButton}
+          disabled={resend.isPending}
+          onClick={() => resend.mutate()}
+        >
+          {t.resend}
+        </button>
+      </div>
     );
   }
   return (
