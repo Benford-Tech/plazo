@@ -102,7 +102,7 @@ Réglages de construction (`--dart-define`, jamais de secret : ils sont lisibles
 | Nom | Défaut | Rôle |
 | --- | --- | --- |
 | `API_BASE_URL` | `https://www.plazo.fr/api` | l'API |
-| `ONESIGNAL_APP_ID` | vide (push coupées) | app OneSignal de l'app construite (Plazo Pro : `ONESIGNAL_APP_ID` de Codemagic ; Plazo : `ONESIGNAL_TRAVELLER_APP_ID`) |
+| `ONESIGNAL_APP_ID` | vide (push coupées) | app OneSignal de l'app construite (pour les stores : `vars: ONESIGNAL_APP_ID` de chaque workflow de `codemagic.yaml`, celle de Plazo Pro pour le flavor pro, celle de Plazo pour le flavor traveller) |
 | `SITE_URL` | l'adresse de l'API sans `/api` | le site (conditions, confidentialité, mentions légales, FAQ) |
 | `STRIPE_MERCHANT_ID` | vide (pas d'Apple Pay) | identifiant marchand Apple Pay (`merchant.…`) |
 | `PAYMENT_SHEET_DEMO` | vide | essais dans un navigateur seulement : `success` ou `fail` remplace la feuille Stripe par une imitation (avec un faux Stripe côté API) |

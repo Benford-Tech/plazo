@@ -105,10 +105,17 @@ clé d'import Android de Plazo, et les réglages push (APNs, FCM) de chaque app 
    les deux profils, les enregistrer.
 5. [ ] **Relever l'Apple ID numérique de chaque app** (app › **App Information** › **Apple ID**) et le donner à Claude, qui
    le pose dans `codemagic.yaml` (`APP_STORE_APP_ID`).
-6. [ ] **Notifications iOS** (OneSignal) : **Certificates, Identifiers & Profiles › Keys**. Une clé **Apple Push
-   Notifications service (APNs)** sert à toute l'équipe : si elle existe, la réutiliser ; sinon **(+)**, cocher APNs,
-   **Register**, télécharger le `.p8` (une seule fois possible). Dans chaque app OneSignal (Plazo, Plazo Pro) ›
-   **Settings › Push & In-App › Apple iOS** : le `.p8`, son Key ID, le Team ID `3BX4795V2Y` et le Bundle ID de l'app.
+6. [ ] **Notifications iOS** (OneSignal) : **Certificates, Identifiers & Profiles › Keys**.
+   - Réutiliser une clé APNs existante seulement si sa fiche (**View Key Details**) indique **Sandbox & Production** et
+     **Team Scoped (All Topics)**, *et* si son fichier `.p8` est dans le gestionnaire de mots de passe (il ne se télécharge
+     qu'une fois).
+   - Sinon **(+)**, Key Name « Plazo APNs », cocher **Apple Push Notifications service (APNs)** › **Configure** :
+     Environment **Sandbox & Production**, Key Restriction **Team Scoped (All Topics)**, **Save** › **Continue** ›
+     **Register**, noter le **Key ID**, **Download** (une seule fois possible).
+   - Si Apple refuse une nouvelle clé (limite atteinte), ne jamais révoquer une clé de Thempo, LoveNest ou Yoon : demander
+     à Claude.
+   - Dans chaque app OneSignal (Plazo, Plazo Pro) › **Settings › Push & In-App › Apple iOS (APNs) Settings › .p8 Auth
+     Key** : le `.p8`, son Key ID, le Team ID `3BX4795V2Y` et le Bundle ID de l'app.
 7. [ ] **Testeurs TestFlight internes** : app › **TestFlight** › (+) à côté de **Internal Testing**, cocher **Enable
    automatic distribution**, puis **Invite Testers** (utilisateurs d'App Store Connect, 100 au plus). Pour le personnel du
    client n°1, qui n'a pas de compte App Store Connect, il faudra un groupe **External Testing** et la relecture bêta
@@ -145,14 +152,18 @@ clé d'import Android de Plazo, et les réglages push (APNs, FCM) de chaque app 
      L'envoi vers Google Play échoue sur ce premier build (« Package not found ») : **c'est attendu**.
    - **Artifacts** du build : télécharger `plazo-pro-v1.0.0-<n°>.aab` (ou `plazo-v1.0.0-<n°>.aab`).
    - Play Console : **Tests internes › Créer une version**, garder la signature d'application Play proposée, **Importer**
-     l'AAB, **Suivant**, **Enregistrer**, **Démarrer le déploiement**.
-7. [ ] **Contenu de l'application** (*App content*), avant ce premier déploiement : sécurité des données, classification,
-   public cible, URL de confidentialité `https://www.plazo.fr/confidentialite`, déclaration du **service de premier plan
-   « location »** (avec un **lien vers une vidéo**), et pour **Plazo Pro** l'**accès à l'application** : un compte du
-   personnel de démonstration (la revue de Thempo a été refusée faute d'identifiants valides).
-8. [ ] **`submit_as_draft` à `false`** quand les deux apps ont une première version déployée : le dire à Claude. D'ici là,
+     l'AAB, **Suivant**, **Enregistrer** : la version reste en brouillon.
+7. [ ] **Contenu de l'application** (*App content*), après cet import (le formulaire du service de premier plan n'apparaît
+   qu'une fois l'AAB importé) et avant le déploiement : sécurité des données, classification, public cible, URL de
+   confidentialité `https://www.plazo.fr/confidentialite`, déclaration du **service de premier plan « location »** (avec un
+   **lien vers une vidéo**), et pour **Plazo Pro** l'**accès à l'application** : un compte du personnel de démonstration (la
+   revue de Thempo a été refusée faute d'identifiants valides). Sans la déclaration, Google refuse tout déploiement, même en
+   tests internes.
+8. [ ] **Démarrer le premier déploiement** : **Tests internes**, la version enregistrée › **Vérifier la version** ›
+   **Démarrer le déploiement**.
+9. [ ] **`submit_as_draft` à `false`** quand les deux apps ont une première version déployée : le dire à Claude. D'ici là,
    chaque build arrive en **brouillon** dans Tests internes : ouvrir la version, **Démarrer le déploiement**.
-9. [ ] **Notifications Android** (OneSignal) : chaque app OneSignal › **Settings › Push & In-App › Google Android (FCM)**
+10. [ ] **Notifications Android** (OneSignal) : chaque app OneSignal › **Settings › Push & In-App › Google Android (FCM)**
    demande la clé JSON d'un compte de service **Firebase**. Plazo n'a pas encore de projet Firebase : en créer un
    (« plazo »), y ajouter les deux apps Android (`com.benfordtech.parking_app` et `.pro`), puis **Paramètres du projet ›
    Comptes de service › Générer une nouvelle clé privée** et la déposer dans les deux apps OneSignal.

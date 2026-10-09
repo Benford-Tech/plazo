@@ -377,7 +377,8 @@ le navigateur de l'espace pro appelle `/api` sur le même domaine (pas de CORS).
    aucune notification n'est envoyée (les arrivées s'affichent quand même dans l'espace pro et l'app). La clé REST
    reste sur Vercel ; l'*App ID* est aussi donné à l'app (`--dart-define=ONESIGNAL_APP_ID=…`, voir
    [mobile/README.md](mobile/README.md)). L'app voyageur a sa propre app OneSignal (un Bundle ID iOS par app OneSignal) :
-   `ONESIGNAL_TRAVELLER_APP_ID` et `ONESIGNAL_TRAVELLER_REST_API_KEY` sur Vercel, `ONESIGNAL_TRAVELLER_APP_ID` dans Codemagic ;
+   `ONESIGNAL_TRAVELLER_APP_ID` et `ONESIGNAL_TRAVELLER_REST_API_KEY` sur Vercel (les deux App ID sont aussi écrits dans
+   `codemagic.yaml`, `vars: ONESIGNAL_APP_ID` de chaque workflow : rien à créer dans Codemagic) ;
    sans elles l'API passe par l'app du personnel, qui ne connaît pas les téléphones des voyageurs.
    « Prévenir de son arrivée » n'a besoin d'aucune nouvelle tâche planifiée : les signaux de plus de 2 h sont terminés
    (position effacée) à chaque lecture et par la purge nocturne existante ; `/api/internal/cron/expire-arrival-signals`
