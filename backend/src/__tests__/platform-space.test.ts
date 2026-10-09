@@ -1,6 +1,7 @@
 import { Container } from 'typedi';
 import prisma from '@/database';
 import { PaymentService } from '@/services/payment.service';
+import { StripeApi, StripeService } from '@/services/stripe.service';
 import { addStaff, api, login, PASSWORD, resetDatabase, setupOperator } from './utils/helpers';
 
 const auth = (token: string) => ({ Authorization: `Bearer ${token}` });
@@ -30,6 +31,7 @@ beforeEach(async () => {
 afterEach(() => {
   delete process.env.PLATFORM_ADMIN_EMAILS;
   delete process.env.STRIPE_SECRET_KEY;
+  Container.get(StripeService).override = null;
   jest.restoreAllMocks();
 });
 afterAll(() => prisma.$disconnect());
@@ -277,13 +279,13 @@ describe('suppression d’un loueur (09/10/2026)', () => {
       name: 'Invité par erreur',
       deletable: true,
       reason: null,
-      counts: { parkings: 1, reservations: 0, staff: 1, paidReservations: 0 },
+      counts: { parkings: 1, listings: 0, reservations: 0, staff: 1, paidReservations: 0 },
     });
 
     const res = await remove(id);
     expect([res.status, res.body.data]).toEqual([
       200,
-      { id, name: 'Invité par erreur', counts: { parkings: 1, reservations: 0, staff: 1, paidReservations: 0 } },
+      { id, name: 'Invité par erreur', counts: { parkings: 1, listings: 0, reservations: 0, staff: 1, paidReservations: 0 } },
     ]);
     expect(await prisma.operator.count({ where: { id } })).toBe(0);
     expect(await prisma.parking.count({ where: { operatorId: id } })).toBe(0);
@@ -305,10 +307,19 @@ describe('suppression d’un loueur (09/10/2026)', () => {
     expect((await suspend(loueur.operator.id)).status).toBe(200);
     expect((await preview(loueur.operator.id)).body.data).toMatchObject({
       deletable: true,
-      counts: { parkings: 1, reservations: 1, staff: 2, paidReservations: 0 },
+      counts: { parkings: 1, listings: 1, reservations: 1, staff: 2, paidReservations: 0 },
     });
+    await reservationOf(admin.operator, admin.parking.id);
+    const platformData = () =>
+      Promise.all([
+        prisma.parking.count({ where: { operatorId: admin.operator.id } }),
+        prisma.staff.count({ where: { operatorId: admin.operator.id } }),
+        prisma.reservation.count({ where: { operatorId: admin.operator.id } }),
+      ]);
+    const before = await platformData();
 
     expect((await remove(loueur.operator.id)).status).toBe(200);
+    expect(await platformData()).toEqual(before);
     expect(await prisma.reservation.count({ where: { operatorId: loueur.operator.id } })).toBe(0);
     expect(await prisma.listing.count({ where: { parkingId: loueur.parking.id } })).toBe(0);
     expect(await prisma.staff.count({ where: { operatorId: loueur.operator.id } })).toBe(0);
@@ -333,6 +344,158 @@ describe('suppression d’un loueur (09/10/2026)', () => {
     expect((await preview(loueur.operator.id)).body.data).toMatchObject({ deletable: true, reason: null });
     expect((await remove(loueur.operator.id)).status).toBe(200);
     expect(await prisma.operator.count({ where: { id: loueur.operator.id } })).toBe(0);
+  });
+
+  it('demande de suspendre un loueur dont l’invitation a été acceptée ; une invitation expirée part directement', async () => {
+    const invite = (email: string) =>
+      api()
+        .post(`${P}/invitations`)
+        .set(auth(admin.token))
+        .send({ operatorName: `Loueur ${email}`, managerEmail: email, totalCapacity: 50 });
+    const accepted = await invite('accepte@example.com');
+    const token = String(accepted.body.inviteUrl).split('#')[1];
+    expect((await api().post('/api/internal/auth/invitation/accept').send({ token, password: PASSWORD })).status).toBe(200);
+    expect((await preview(accepted.body.operator.id)).body.data).toMatchObject({ deletable: false, reason: 'not_suspended' });
+    expect((await remove(accepted.body.operator.id)).body.code).toBe('not_suspended');
+
+    const expired = await invite('expire@example.com');
+    await prisma.accountToken.updateMany({
+      where: { staff: { operatorId: expired.body.operator.id } },
+      data: { expiresAt: new Date(Date.now() - 1000) },
+    });
+    expect((await remove(expired.body.operator.id)).status).toBe(200);
+  });
+
+  it.each([
+    ['remboursée', { paymentStatus: 'refunded' as const }],
+    ['reversement annulé', { payoutStatus: 'cancelled' as const }],
+    ['transfert fait', { stripeChargeId: 'ch_test_1' }],
+  ])('garde un loueur dont une réservation est %s', async (_label, extra) => {
+    await reservationOf(loueur.operator, loueur.parking.id, { channel: 'plazo', ...extra });
+    await suspend(loueur.operator.id);
+    const res = await remove(loueur.operator.id);
+    expect([res.status, res.body.code]).toEqual([409, 'has_payments']);
+  });
+
+  it('attend la fin d’un paiement en cours ; une attente échue ne compte plus', async () => {
+    await suspend(loueur.operator.id);
+    const hold = await reservationOf(loueur.operator, loueur.parking.id, {
+      channel: 'plazo',
+      status: 'pending_payment',
+      paymentStatus: 'pending',
+      holdExpiresAt: new Date(Date.now() + 30 * 60000),
+      priceCents: 4500,
+      chargedCents: 4500,
+    });
+    expect((await preview(loueur.operator.id)).body.data).toMatchObject({ deletable: false, reason: 'payment_in_progress' });
+    const refused = await remove(loueur.operator.id);
+    expect([refused.status, refused.body.code]).toEqual([409, 'payment_in_progress']);
+    expect(await prisma.operator.count({ where: { id: loueur.operator.id } })).toBe(1);
+
+    await prisma.reservation.update({ where: { id: hold.id }, data: { holdExpiresAt: new Date(Date.now() - 1000) } });
+    expect((await preview(loueur.operator.id)).body.data).toMatchObject({ deletable: true, reason: null });
+    expect((await remove(loueur.operator.id)).status).toBe(200);
+  });
+
+  describe('paiements restés ouverts chez Stripe', () => {
+    let intents: Record<
+      string,
+      {
+        id: string;
+        status: string;
+        amount: number;
+        amount_received: number;
+        currency: string;
+        metadata: Record<string, string>;
+        latest_charge: string | null;
+      }
+    >;
+    let sessions: Record<string, { id: string; status: string; payment_status: string }>;
+    let fake: { paymentIntents: { retrieve: jest.Mock; cancel: jest.Mock }; checkout: { sessions: { retrieve: jest.Mock; expire: jest.Mock } } };
+
+    beforeEach(() => {
+      process.env.STRIPE_SECRET_KEY = 'sk_test_fake';
+      intents = {};
+      sessions = {};
+      fake = {
+        paymentIntents: {
+          retrieve: jest.fn(async (id: string) => ({ object: 'payment_intent', ...intents[id] })),
+          cancel: jest.fn(async (id: string) => Object.assign(intents[id], { status: 'canceled' })),
+        },
+        checkout: {
+          sessions: {
+            retrieve: jest.fn(async (id: string) => ({ object: 'checkout.session', ...sessions[id] })),
+            expire: jest.fn(async (id: string) => Object.assign(sessions[id], { status: 'expired' })),
+          },
+        },
+      };
+      Container.get(StripeService).override = fake as unknown as StripeApi;
+    });
+
+    const expiredHold = (extra: Record<string, unknown>) =>
+      reservationOf(loueur.operator, loueur.parking.id, {
+        channel: 'plazo',
+        status: 'cancelled',
+        paymentStatus: 'expired',
+        cancelledAt: new Date(),
+        priceCents: 4500,
+        chargedCents: 4500,
+        ...extra,
+      });
+
+    it('ferme le paiement d’une attente échue avant d’effacer, pour qu’aucun argent n’arrive sur une réservation disparue', async () => {
+      await suspend(loueur.operator.id);
+      await expiredHold({ stripePaymentIntentId: 'pi_open' });
+      await expiredHold({ stripeCheckoutSessionId: 'cs_open' });
+      intents.pi_open = {
+        id: 'pi_open',
+        status: 'requires_payment_method',
+        amount: 4500,
+        amount_received: 0,
+        currency: 'eur',
+        metadata: {},
+        latest_charge: null,
+      };
+      sessions.cs_open = { id: 'cs_open', status: 'open', payment_status: 'unpaid' };
+
+      expect((await remove(loueur.operator.id)).status).toBe(200);
+      expect(fake.paymentIntents.cancel).toHaveBeenCalledWith('pi_open', {}, expect.anything());
+      expect(fake.checkout.sessions.expire).toHaveBeenCalledWith('cs_open', {}, expect.anything());
+    });
+
+    it('garde le loueur quand un paiement est passé entre-temps, ou encore en traitement à la banque', async () => {
+      await suspend(loueur.operator.id);
+      const late = await expiredHold({ stripePaymentIntentId: 'pi_paid' });
+      intents.pi_paid = {
+        id: 'pi_paid',
+        status: 'succeeded',
+        amount: 4500,
+        amount_received: 4500,
+        currency: 'eur',
+        metadata: { reservationId: late.id },
+        latest_charge: 'ch_late',
+      };
+      const paid = await remove(loueur.operator.id);
+      expect([paid.status, paid.body.code]).toEqual([409, 'has_payments']);
+      expect((await prisma.reservation.findUniqueOrThrow({ where: { id: late.id } })).paymentStatus).toBe('paid');
+
+      await prisma.reservation.delete({ where: { id: late.id } });
+      await expiredHold({ stripePaymentIntentId: 'pi_bank' });
+      intents.pi_bank = { id: 'pi_bank', status: 'processing', amount: 4500, amount_received: 0, currency: 'eur', metadata: {}, latest_charge: null };
+      const processing = await remove(loueur.operator.id);
+      expect([processing.status, processing.body.code]).toEqual([409, 'payment_in_progress']);
+      expect(await prisma.operator.count({ where: { id: loueur.operator.id } })).toBe(1);
+    });
+  });
+
+  it('trace la suppression chez la plateforme même depuis une session « ouvrir son espace »', async () => {
+    await suspend(loueur.operator.id);
+    const res = await api()
+      .delete(`${P}/operators/${loueur.operator.id}`)
+      .set(auth(await viewAs()));
+    expect(res.status).toBe(200);
+    const entry = await prisma.auditLog.findFirstOrThrow({ where: { action: 'operator.deleted' } });
+    expect(entry).toMatchObject({ operatorId: admin.operator.id, staffId: admin.manager.id });
   });
 
   it('ne supprime jamais le compte de la plateforme', async () => {

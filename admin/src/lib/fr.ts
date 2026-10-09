@@ -20,14 +20,16 @@ import { ApiError } from "./api";
 import { PRODUCT } from "./product";
 
 // All user-facing strings live here so the interface can be translated later.
-/** What deleting an operator takes with it, in words: « son parking, sa fiche et ses tarifs, ses 3 réservations et … ». */
-function deletionSummary(counts: { parkings: number; reservations: number; staff: number }): string {
+/** What deleting an operator takes with it, in words: « son parking, sa fiche, ses tarifs, ses 3 réservations et … ». */
+function deletionSummary(counts: { parkings: number; listings?: number; reservations: number; staff: number }): string {
+  const listings = counts.listings ?? 0;
   const parts = [
-    counts.parkings > 1 ? `ses ${counts.parkings} parkings` : "son parking",
-    "sa fiche et ses tarifs",
+    ...(counts.parkings === 0 ? [] : [counts.parkings > 1 ? `ses ${counts.parkings} parkings` : "son parking"]),
+    ...(listings === 0 ? [] : listings > 1 ? [`ses ${listings} fiches`, "leurs tarifs"] : ["sa fiche", "ses tarifs"]),
     ...(counts.reservations === 0 ? [] : [counts.reservations === 1 ? "sa réservation" : `ses ${counts.reservations} réservations`]),
-    counts.staff > 1 ? `les ${counts.staff} comptes de son équipe` : "le compte de son gérant",
+    ...(counts.staff === 0 ? [] : [counts.staff > 1 ? `les ${counts.staff} comptes de son équipe` : "le compte de son gérant"]),
   ];
+  if (parts.length < 2) return parts[0] ?? "ses données";
   return `${parts.slice(0, -1).join(", ")} et ${parts[parts.length - 1]}`;
 }
 
@@ -166,6 +168,8 @@ export const fr = {
       "Suspendez d'abord ce loueur pour pouvoir l'archiver ou le supprimer.",
     has_payments:
       "Ce loueur a reçu des paiements en ligne : ils restent dans la comptabilité. Archivez-le plutôt que de le supprimer.",
+    payment_in_progress:
+      "Un paiement en ligne est en cours chez ce loueur : réessayez dans une demi-heure.",
     cannot_delete_platform:
       "Le compte de la plateforme ne peut pas être supprimé.",
     cannot_suspend_platform:
@@ -1914,10 +1918,17 @@ export const fr = {
       deleteTitle: "Supprimer définitivement ce loueur ?",
       confirmDelete: (
         name: string,
-        counts: { parkings: number; reservations: number; staff: number },
+        counts: { parkings: number; listings?: number; reservations: number; staff: number },
+        options: { canArchive: boolean },
       ) =>
-        `${name} sera effacé avec ${deletionSummary(counts)}. Cette action est définitive : pour le garder sans qu'il apparaisse, archivez-le.`,
+        `${name} sera effacé avec ${deletionSummary(counts)}. Cette action est définitive${
+          options.canArchive ? " : pour le garder sans qu'il apparaisse, archivez-le." : "."
+        }`,
       deleteConfirm: "Supprimer définitivement",
+      paidKeptArchived:
+        "Ce loueur a reçu des paiements en ligne : il reste archivé pour la comptabilité et ne peut pas être supprimé.",
+      paidSuspendFirst:
+        "Ce loueur a reçu des paiements en ligne : ils restent dans la comptabilité. Suspendez-le puis archivez-le plutôt que de le supprimer.",
       deleted: (name: string) => `${name} est supprimé.`,
       editCommission: (name: string) => `Modifier la commission de ${name}`,
       commissionLabel: "Commission (%)",

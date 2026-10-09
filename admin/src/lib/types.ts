@@ -581,8 +581,9 @@ export interface OperatorDeletion {
   id: string;
   name: string;
   deletable: boolean;
-  reason: "cannot_delete_platform" | "not_suspended" | "has_payments" | null;
-  counts: { parkings: number; reservations: number; staff: number; paidReservations: number };
+  reason: "cannot_delete_platform" | "not_suspended" | "has_payments" | "payment_in_progress" | null;
+  /** `listings`: missing from an older API. */
+  counts: { parkings: number; listings?: number; reservations: number; staff: number; paidReservations: number };
 }
 
 export interface PlatformOperators {

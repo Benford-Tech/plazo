@@ -446,7 +446,10 @@ Le nom du produit doit rester dans UN seul fichier de configuration (il peut enc
   `counts` ; `deletable`, `reason`) puis `DELETE /internal/platform/operators/:id` (cascades de la base : parkings, plan, fiche,
   tarifs, réservations, équipe, mails, navettes) ; refusé pour le compte de la plateforme (400 `cannot_delete_platform`), un
   loueur actif qui a servi (409 `not_suspended`) et un loueur avec un paiement en ligne payé, remboursé ou reversé (409
-  `has_payments` : comptabilité, l'archiver), sauf une démo ; tracé `operator.deleted` dans le journal du loueur de la plateforme.
+  `has_payments` : comptabilité, l'archiver), sauf une démo ; 409 `payment_in_progress` pendant une attente de paiement, et
+  `PaymentService.closeLingeringPayments` ferme d'abord chez Stripe les paiements des attentes échues (intention annulée, page
+  expirée ; payé entre-temps → confirmé, le loueur reste) ; effacement sous le verrou des paiements et tracé `operator.deleted`
+  dans la même transaction, au journal du loueur de la plateforme (`actingAs.realOperatorId`).
 - `site/` : site Plazo voyageurs (Next.js), servi à la racine du domaine. **Référencement (08/10/2026)** : données structurées
   schema.org (`src/lib/structured-data.ts`, composant `JsonLd` : Organization et WebSite sur l'accueil, FAQPage et ItemList des
   parkings sur la page aéroport, ParkingFacility + BreadcrumbList sur une fiche) ; un parking de démo (`isDemo`) n'est ni décrit,

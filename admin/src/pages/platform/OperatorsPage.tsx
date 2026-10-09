@@ -317,9 +317,11 @@ function InviteForm({
 function RowActions({
   operator,
   onLink,
+  onDeleted,
 }: {
   operator: PlatformOperator;
   onLink: (result: InvitationResult) => void;
+  onDeleted?: (id: string) => void;
 }) {
   const confirm = useConfirm();
   const { startViewAs } = useAuth();
@@ -378,14 +380,26 @@ function RowActions({
     mutationFn: async () => {
       const { data: preview } = await adminApi.getOperatorDeletion(operator.id);
       if (!preview.deletable) {
-        toast.error(errorMessage(preview.reason ?? undefined));
+        // Online payments keep it: archived already, or to be suspended before it can be.
+        toast.error(
+          preview.reason === "has_payments" && operator.archivedAt
+            ? t.paidKeptArchived
+            : preview.reason === "has_payments" && operator.status !== "suspended"
+              ? t.paidSuspendFirst
+              : errorMessage(preview.reason ?? undefined),
+        );
         return false;
       }
-      const ok = await confirm(t.confirmDelete(preview.name, preview.counts), {
-        title: t.deleteTitle,
-        confirmLabel: t.deleteConfirm,
-        destructive: true,
-      });
+      const ok = await confirm(
+        t.confirmDelete(preview.name, preview.counts, {
+          canArchive: !operator.archivedAt && operator.status === "suspended",
+        }),
+        {
+          title: t.deleteTitle,
+          confirmLabel: t.deleteConfirm,
+          destructive: true,
+        },
+      );
       if (!ok) return false;
       await adminApi.deleteOperator(operator.id);
       return true;
@@ -393,6 +407,7 @@ function RowActions({
     onSuccess: (deleted) => {
       if (!deleted) return;
       toast.success(t.deleted(operator.name));
+      onDeleted?.(operator.id);
       refresh();
     },
     onError: (err: Error) => toast.error(describeError(err)),
@@ -677,7 +692,14 @@ export default function OperatorsPage() {
                     {o.invitation ? "—" : o.bookingsThisMonth}
                   </td>
                   <td className="whitespace-nowrap px-2 py-3 text-right">
-                    <RowActions operator={o} onLink={showLink} />
+                    <RowActions
+                      operator={o}
+                      onLink={showLink}
+                      // Its invitation link died with it.
+                      onDeleted={(id) =>
+                        setLink((l) => (l?.operator.id === id ? null : l))
+                      }
+                    />
                   </td>
                 </tr>
               ))}

@@ -39,13 +39,17 @@ const PAID_ONLINE: Prisma.ReservationWhereInput = {
   OR: [{ paymentStatus: { in: ['paid', 'refunded'] } }, { payoutStatus: { not: null } }, { stripeChargeId: { not: null } }],
 };
 
-export type DeletionBlocker = 'cannot_delete_platform' | 'not_suspended' | 'has_payments';
+/** A booking whose online payment is under way: its hold still runs, the traveller may be on the payment page. */
+const PAYMENT_OPEN: Prisma.ReservationWhereInput = { status: 'pending_payment' };
+
+export type DeletionBlocker = 'cannot_delete_platform' | 'not_suspended' | 'has_payments' | 'payment_in_progress';
 
 function deletionRefused(reason: DeletionBlocker): HttpException {
   if (reason === 'cannot_delete_platform') {
     return new HttpException(httpStatus.BAD_REQUEST, "The platform's own account cannot be deleted", reason);
   }
   if (reason === 'not_suspended') return new HttpException(httpStatus.CONFLICT, 'Suspend the operator before deleting it', reason);
+  if (reason === 'payment_in_progress') return new HttpException(httpStatus.CONFLICT, 'An online payment is under way: try again later', reason);
   return new HttpException(httpStatus.CONFLICT, 'The operator has online payments: archive it instead', reason);
 }
 
@@ -298,10 +302,13 @@ export class PlatformService {
 
   /**
    * Whether an operator can be deleted, and what would go with it. Never the platform's own account; an operator
-   * that was used must be suspended first (only an invitation never accepted goes straight away); and an online
-   * payment keeps it (accounting records: archive it instead), except on a demo operator (test payments only).
+   * that was used must be suspended first (only an invitation never accepted goes straight away); an online payment
+   * keeps it (accounting records: archive it instead), and one under way makes it wait; neither counts on a demo
+   * operator (test payments only).
    */
   private async deletionCheck(operatorId: string) {
+    // A hold whose time is over no longer counts as a payment under way.
+    await this.paymentService.expireLapsedHolds();
     const operator = await prisma.operator.findUnique({
       where: { id: operatorId },
       include: {
@@ -312,11 +319,17 @@ export class PlatformService {
             accountTokens: { where: { type: 'invitation', usedAt: null }, select: { id: true }, take: 1 },
           },
         },
+        parkings: { select: { id: true, listing: { select: { id: true } } } },
         _count: { select: { parkings: true, reservations: true, staff: true } },
       },
     });
     if (!operator) throw notFound('Operator');
-    const paid = operator.isDemo ? 0 : await prisma.reservation.count({ where: { operatorId, ...PAID_ONLINE } });
+    const [paid, open] = operator.isDemo
+      ? [0, 0]
+      : await Promise.all([
+          prisma.reservation.count({ where: { operatorId, ...PAID_ONLINE } }),
+          prisma.reservation.count({ where: { operatorId, ...PAYMENT_OPEN } }),
+        ]);
     const neverUsed = operator.staff.every(s => !s.lastLoginAt) && operator.staff.some(s => s.accountTokens.length > 0);
     const reason: DeletionBlocker | null = operator.staff.some(s => isPlatformAdmin(s.email))
       ? 'cannot_delete_platform'
@@ -324,9 +337,12 @@ export class PlatformService {
         ? 'not_suspended'
         : paid > 0
           ? 'has_payments'
-          : null;
+          : open > 0
+            ? 'payment_in_progress'
+            : null;
     const { parkings, reservations, staff } = operator._count;
-    return { operator, reason, counts: { parkings, reservations, staff, paidReservations: paid } };
+    const listings = operator.parkings.filter(p => p.listing).length;
+    return { operator, reason, counts: { parkings, listings, reservations, staff, paidReservations: paid } };
   }
 
   /** What « Supprimer » would erase, and whether it is allowed (the confirmation shows it before anything happens). */
@@ -340,27 +356,46 @@ export class PlatformService {
    * shuttles: cascades). The entry of the journal goes to the admin's own operator, the deleted one's going with it.
    */
   public async deleteOperator(actor: AuthenticatedStaff, operatorId: string) {
+    const first = await this.deletionCheck(operatorId);
+    if (first.reason) throw deletionRefused(first.reason);
+    // No payment may land on a booking that is gone: the ones Stripe could still take are closed first (one that
+    // went through meanwhile turns its booking paid, and the second check keeps the operator).
+    const underWay = first.operator.isDemo ? 0 : await this.paymentService.closeLingeringPayments(operatorId);
+    if (underWay > 0) throw deletionRefused('payment_in_progress');
     const { operator, reason, counts } = await this.deletionCheck(operatorId);
     if (reason) throw deletionRefused(reason);
-    // The checks are repeated by the delete itself: a payment or a sign-in in between keeps the operator.
-    const deleted = await prisma.operator.deleteMany({
-      where: {
-        id: operatorId,
-        OR: [
-          { status: 'suspended' },
-          { staff: { every: { lastLoginAt: null }, some: { accountTokens: { some: { type: 'invitation', usedAt: null } } } } },
-        ],
-        ...(operator.isDemo ? {} : { reservations: { none: PAID_ONLINE } }),
-      },
+
+    const deleted = await prisma.$transaction(async tx => {
+      // The lock of a payment's confirmation: one in flight ends first, and the conditions below see it.
+      for (const parking of operator.parkings) await this.paymentService.capacity.lock(tx, parking.id);
+      // The checks are repeated by the delete itself: a payment or a sign-in in between keeps the operator.
+      const { count } = await tx.operator.deleteMany({
+        where: {
+          id: operatorId,
+          OR: [
+            { status: 'suspended' },
+            { staff: { every: { lastLoginAt: null }, some: { accountTokens: { some: { type: 'invitation', usedAt: null } } } } },
+          ],
+          ...(operator.isDemo ? {} : { reservations: { none: { OR: [PAID_ONLINE, PAYMENT_OPEN] } } }),
+        },
+      });
+      if (count === 0) return false;
+      await this.audit.record(
+        { id: actor.id, operatorId: actor.actingAs?.realOperatorId ?? actor.operatorId },
+        {
+          action: 'operator.deleted',
+          entityType: 'operator',
+          entityId: operatorId,
+          details: { name: operator.name, isDemo: operator.isDemo, counts },
+        },
+        tx,
+      );
+      return true;
     });
-    if (deleted.count === 0) {
+    if (!deleted) {
       const again = await this.deletionCheck(operatorId);
       throw deletionRefused(again.reason ?? 'not_suspended');
     }
-    await this.audit.record(
-      { id: actor.id, operatorId: actor.operatorId },
-      { action: 'operator.deleted', entityType: 'operator', entityId: operatorId, details: { name: operator.name, isDemo: operator.isDemo, counts } },
-    );
     return { id: operatorId, name: operator.name, counts };
   }
 
