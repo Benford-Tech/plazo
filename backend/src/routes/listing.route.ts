@@ -46,7 +46,7 @@ import { ValidationMiddleware } from '@/middlewares/validation.middleware';
  *       The facts are the saved page (services, shuttle, distance, hours, cancellation), the parking (name, address,
  *       return meeting point), its airport, pricing grid, shuttle vehicles in service, stops and valet files. With
  *       `current`, Claude improves that text instead of starting over. An answer stating a figure absent from the data
- *       (or from `current`), mentioning the closed Terminal 2 or longer than 2 000 characters is rejected (ai_unreliable).
+ *       (or from `current`), in digits or in words before a unit, mentioning the closed Terminal 2 or longer than 2 000 characters is rejected (ai_unreliable).
  *     tags: [Listing]
  *     requestBody:
  *       required: false

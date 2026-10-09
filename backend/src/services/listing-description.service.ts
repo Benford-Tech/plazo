@@ -109,10 +109,11 @@ export class ListingDescriptionService {
       if (error instanceof Anthropic.APIConnectionTimeoutError) {
         throw new HttpException(httpStatus.GATEWAY_TIMEOUT, 'Claude did not answer in time', 'ai_timeout');
       }
-      if (error instanceof Anthropic.APIError) {
-        logger.error(`[Listing] Anthropic answered ${error.status}: ${error.message}`);
+      if (error instanceof Anthropic.APIError && error.status) {
+        // The SDK's message already starts with the status (« 500 {…} »).
+        logger.error(`[Listing] Anthropic answered ${error.message}`);
         throw new HttpException(httpStatus.BAD_GATEWAY, `Anthropic answered ${error.status}`, 'ai_failed', {
-          reason: `${error.status ?? '?'} ${error.message}`.slice(0, 300),
+          reason: error.message.slice(0, 300),
         });
       }
       const reason = error instanceof Error ? error.message : 'unknown error';

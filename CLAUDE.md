@@ -25,7 +25,8 @@ deux phases) : la place de marché grand public fait partie du MVP. Deux faces, 
   aéroport et Terminal 1 pour LYS, prix de départ de la grille, navettes en service et places, dessertes, rendez-vous du
   retour, voiturier si service ou files), consignes en français (texte brut, 2 à 4 paragraphes, ≤ 1 200 caractères,
   première phrase autonome en 160 caractères pour Google, ni superlatif, ni Terminal 2, ni paiement sur place), et
-  `checkDescription` qui écarte (502 `ai_unreliable`, `details.figures`) un chiffre absent des faits ou du texte actuel, le
+  `checkDescription` qui écarte (502 `ai_unreliable`, `details.figures`) un chiffre absent des faits ou du texte actuel (en
+  chiffres, ou en lettres devant une unité : « dix minutes », `spelledNumbersIn`), le
   Terminal 2 ou plus de 2 000 caractères ; rien n'est enregistré : carte « Proposition de Claude » (« Utiliser ce texte »,
   « Proposer une autre version », « Ignorer »), puis « Enregistrer » ; champ limité à 2 000 caractères avec compteur ;
   textes d'erreur propres à la rédaction (`describeError(err, fr.plazo.writing.errors)`).

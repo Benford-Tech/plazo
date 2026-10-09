@@ -8,6 +8,7 @@ import {
   listingDescriptionInput,
   listingDescriptionPrompt,
   numbersIn,
+  spelledNumbersIn,
   type DescriptionSource,
 } from '@/domain/listing-description';
 import { ListingDescriptionService } from '@/services/listing-description.service';
@@ -89,6 +90,11 @@ describe('présentation par Claude — faits, consignes et garde-fou', () => {
     expect(prompt).toContain('Terminal 2');
     expect(prompt).toMatch(/jamais que le séjour se paie sur place/);
     expect(prompt).toMatch(/N'invente aucun/);
+    expect(prompt).toContain("N'écris aucun nombre, en chiffres ou en lettres, qui ne figure pas dans les faits");
+    // No figure of its own that Claude could repeat and the guard then reject (the Terminal 2's closing date).
+    expect(prompt).not.toMatch(/2026|avril/);
+    const repeated = checkDescription('Tous les vols partent du Terminal 1, le Terminal 2 étant fermé.', descriptionFacts(source()));
+    expect(repeated).toEqual({ ok: false, reason: 'terminal_2' });
     const facts = descriptionFacts(source());
     expect(listingDescriptionInput(facts)).not.toContain('Présentation actuelle');
     const improve = listingDescriptionInput(facts, '  Parking sécurisé, payé sur place.  ');
@@ -116,6 +122,32 @@ describe('présentation par Claude — faits, consignes et garde-fou', () => {
     expect(checkDescription('a'.repeat(2001), facts)).toEqual({ ok: false, reason: 'too_long' });
     expect(checkDescription('  \n ', facts)).toEqual({ ok: false, reason: 'empty' });
     expect(numbersIn('29,90 € ou 29.9 €, 24h/24')).toEqual(['29.9', '29.9', '24', '24']);
+  });
+
+  it('lit aussi les chiffres écrits en lettres devant une unité', () => {
+    expect(spelledNumbersIn('Navette toutes les dix minutes, ouvert vingt-quatre heures sur vingt-quatre.')).toEqual(['10', '24']);
+    expect(spelledNumbersIn('Deux cents places, mille deux cents emplacements, vingt et un jours, soixante et onze km.')).toEqual([
+      '200',
+      '1200',
+      '21',
+      '71',
+    ]);
+    expect(spelledNumbersIn('Quatre-vingt-dix-neuf euros, quatre-vingts places, DOUZE navettes.')).toEqual(['99', '80', '12']);
+    // Articles and words that are not figures: « une navette », « deux pas », « les deux sens », « parking neuf ».
+    expect(spelledNumbersIn('Une navette relie un parking neuf, à deux pas, dans les deux sens, une vingtaine de places.')).toEqual([]);
+
+    const facts = descriptionFacts(source());
+    expect(checkDescription('Une navette de huit places, en huit minutes, vingt-quatre heures sur vingt-quatre.', facts)).toMatchObject({
+      ok: true,
+    });
+    expect(checkDescription('Navette toutes les dix minutes, 8 min de trajet.', facts)).toEqual({
+      ok: false,
+      reason: 'unsupported_figure',
+      figures: ['10'],
+    });
+    // The manager's own figures, spelled out, stay when Claude improves their text.
+    expect(checkDescription('Parking de 400 places.', facts, 'Parking de quatre cents places')).toMatchObject({ ok: true });
+    expect(checkDescription('Parking de quatre cents places.', facts, 'Parking de 400 places')).toMatchObject({ ok: true });
   });
 });
 
@@ -226,7 +258,7 @@ describe('présentation par Claude — route', () => {
     expect(tooLong.body.fields).toEqual({ current: 'too_long' });
   });
 
-  it('dit pourquoi Claude n’a rien proposé : clé absente, refus, saturé, délai, panne', async () => {
+  it('dit pourquoi Claude n’a rien proposé : clé absente ou refusée, refus, saturé, délai, panne', async () => {
     const { token } = await operatorWithPage();
     const post = () => api().post('/api/internal/listing/description/suggest').set(auth(token)).send({});
 
@@ -237,8 +269,34 @@ describe('présentation par Claude — route', () => {
     expect(create).not.toHaveBeenCalled();
     process.env.ANTHROPIC_API_KEY = 'sk-ant-test';
 
+    create.mockRejectedValueOnce(
+      new Anthropic.AuthenticationError(
+        401,
+        { type: 'error', error: { type: 'authentication_error', message: 'invalid x-api-key' } },
+        'bad key',
+        new Headers(),
+      ),
+    );
+    const refusedKey = await post();
+    expect([refusedKey.status, refusedKey.body.code]).toEqual([409, 'ai_unavailable']);
     create.mockResolvedValueOnce(reply('', { stop_reason: 'refusal', content: [] }));
-    expect((await post()).body).toMatchObject({ code: 'ai_refused' });
+    const refused = await post();
+    expect([refused.status, refused.body.code]).toEqual([502, 'ai_refused']);
+    create.mockRejectedValueOnce(
+      new Anthropic.InternalServerError(
+        529,
+        { type: 'error', error: { type: 'overloaded_error', message: 'Overloaded' } },
+        'Overloaded',
+        new Headers(),
+      ),
+    );
+    const down = await post();
+    expect([down.status, down.body.code]).toEqual([502, 'ai_failed']);
+    // The SDK's message already starts with the status: said once.
+    expect(down.body.details.reason).toMatch(/^529 \{.*overloaded_error/);
+    create.mockRejectedValueOnce(new Anthropic.APIConnectionError({ message: 'Connection error.' }));
+    const offline = await post();
+    expect([offline.status, offline.body.code, offline.body.details.reason]).toEqual([502, 'ai_failed', 'Connection error.']);
     create.mockRejectedValueOnce(new Anthropic.RateLimitError(429, {}, 'rate limited', new Headers()));
     const busy = await post();
     expect([busy.status, busy.body.code]).toEqual([503, 'ai_busy']);

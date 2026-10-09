@@ -270,15 +270,20 @@ export default function ListingPage() {
               value={form.description}
               onChange={set("description")}
               aria-invalid={!!fieldErrors.description}
-              aria-describedby="l-desc-help"
+              aria-describedby={fieldErrors.description ? "l-desc-error l-desc-help" : "l-desc-help"}
               className={cn(inputClass, "h-auto py-2 text-base")}
             />
             <div className="mt-1 flex items-start justify-between gap-3">
-              {err("description") ?? (
+              <div>
                 <p id="l-desc-help" className="text-sm text-muted-foreground">
                   {t.descriptionHelp}
                 </p>
-              )}
+                {fieldErrors.description && (
+                  <p id="l-desc-error" className="mt-1 text-sm text-destructive">
+                    {errorMessage(fieldErrors.description)}
+                  </p>
+                )}
+              </div>
               <span className="tabular shrink-0 font-mono text-sm text-muted-foreground" data-testid="description-count">
                 {t.descriptionCount(form.description.length)}
               </span>

@@ -1013,7 +1013,8 @@ export const fr = {
     description: "Présentation",
     descriptionHelp:
       "Les 160 premiers caractères servent de description dans Google.",
-    descriptionCount: (n: number) => `${n} / 2 000`,
+    // Both numbers formatted alike (« 1 500 / 2 000 », same space).
+    descriptionCount: (n: number) => `${n.toLocaleString("fr-FR")} / ${(2000).toLocaleString("fr-FR")}`,
     // 09/10/2026: Claude writes the « Présentation » from the parking's real data (nothing saved).
     writing: {
       write: "Rédiger avec Claude",
@@ -1028,12 +1029,12 @@ export const fr = {
       used: "Texte repris dans la présentation : relisez-le, puis enregistrez la fiche.",
       unreliable: (figures: string[]) =>
         figures.length
-          ? `Claude a cité ${figures.length > 1 ? "des chiffres absents" : "un chiffre absent"} de vos données (${figures.map((f) => f.replace(".", ",")).join(", ")}) : sa proposition est écartée. Demandez une autre version.`
+          ? `Claude a cité ${figures.length > 1 ? "des chiffres absents" : "un chiffre absent"} de vos données (${figures.map((f) => Number(f).toLocaleString("fr-FR")).join(" ; ")}) : sa proposition est écartée. Demandez une autre version.`
           : "La proposition de Claude ne respecte pas les règles de la fiche : elle est écartée. Demandez une autre version.",
       // The zones' texts speak of a photo: these say the same for the presentation.
       errors: {
         ai_unavailable:
-          "La rédaction par Claude n'est pas disponible : clé ANTHROPIC_API_KEY absente.",
+          "La rédaction par Claude n'est pas disponible : clé ANTHROPIC_API_KEY absente ou refusée.",
         ai_refused:
           "Claude n'a pas voulu rédiger cette présentation. Écrivez-la vous-même.",
         ai_failed: "La rédaction par Claude a échoué",

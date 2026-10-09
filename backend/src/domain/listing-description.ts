@@ -151,9 +151,9 @@ Règles :
 - En français, vouvoiement, ton sobre et concret, phrases courtes.
 - Texte brut : 2 à 4 courts paragraphes séparés par une ligne vide, ${DESCRIPTION_TARGET_CHARS} caractères au plus. Ni markdown (pas de titre, de liste, de gras), ni émoji, ni lien.
 - La première phrase se suffit à elle-même et tient en ${META_DESCRIPTION_CHARS} caractères : elle devient la description de la page dans Google. Elle dit ce qu'est le parking et près de quel aéroport il se trouve.
-- N'utilise que les faits fournis. N'invente aucun service, équipement, horaire, prix, durée, distance, capacité ni chiffre ; un élément absent des faits n'est pas mentionné. Écris en chiffres seulement les nombres qui figurent dans les faits.
+- N'utilise que les faits fournis. N'invente aucun service, équipement, horaire, prix, durée, distance, capacité ni chiffre ; un élément absent des faits n'est pas mentionné. N'écris aucun nombre, en chiffres ou en lettres, qui ne figure pas dans les faits (ou dans la présentation actuelle, quand elle t'est donnée).
 - Aucun superlatif ni promesse (« le meilleur », « le moins cher », « idéal », « garanti », « incontournable »…), aucun point d'exclamation.
-- Ne parle jamais du « Terminal 2 » : il est fermé depuis le 1er avril 2026.
+- Ne parle jamais du « Terminal 2 », ni de sa fermeture.
 - Le paiement se fait toujours en ligne, à la réservation : n'écris jamais que le séjour se paie sur place, au parking ou à l'arrivée.
 
 Réponds en JSON : { "text": "…" }.`;
@@ -179,12 +179,72 @@ export function numbersIn(value: string): string[] {
   return (value.match(/\d+(?:[.,]\d+)?/g) ?? []).map(n => String(Number(n.replace(',', '.'))));
 }
 
+/** The French number words up to « mille »: « zéro » to « seize » by rank, then the tens (« quatre-vingt »: `wordsValue`). */
+const TENS = { vingt: 20, vingts: 20, trente: 30, quarante: 40, cinquante: 50, soixante: 60, cent: 100, cents: 100, mille: 1000 };
+const NUMBER_WORDS: Record<string, number> = {
+  ...Object.fromEntries(
+    'zéro un deux trois quatre cinq six sept huit neuf dix onze douze treize quatorze quinze seize'.split(' ').map((w, i) => [w, i]),
+  ),
+  une: 1,
+  ...TENS,
+};
+/** A number word is a figure of the presentation only before one of these units. */
+const UNITS =
+  'minutes?|min|heures?|h|secondes?|jours?|nuits?|semaines?|mois|ans|années?|places?|emplacements?|km|kilomètres?|mètres?|' +
+  'hectares?|euros?|€|%|navettes?|véhicules?|minibus|voitures?|chauffeurs?|voituriers?|passagers?|personnes?|rotations?|' +
+  'départs?|trajets?|caméras?|bornes?';
+const WORD = `(?:${Object.keys(NUMBER_WORDS)
+  .sort((a, b) => b.length - a.length)
+  .join('|')})(?!\\p{L})`;
+// « vingt-quatre », « deux cents », « vingt et un » (« et » only before un, une or onze), then the unit.
+const SPELLED = new RegExp(
+  `(?<![\\p{L}\\d-])(${WORD}(?:(?:[\\s-]+|\\s+et\\s+(?=(?:un|une|onze)(?!\\p{L})))${WORD})*)\\s*(?:${UNITS})(?![\\p{L}\\d])`,
+  'giu',
+);
+
+function wordsValue(words: string[]): number {
+  let total = 0;
+  let current = 0;
+  let previous = '';
+  for (const word of words) {
+    const value = NUMBER_WORDS[word];
+    if (value === 100) current = (current || 1) * 100;
+    else if (value === 1000) {
+      total += (current || 1) * 1000;
+      current = 0;
+    } else {
+      // « quatre-vingt » is 4 × 20: the « quatre » already counted becomes 80.
+      current += value === 20 && previous === 'quatre' ? 76 : value;
+    }
+    previous = word;
+  }
+  return total + current;
+}
+
+/**
+ * The numbers a text writes in words before a unit (« dix minutes » gives 10, « vingt-quatre heures » 24), so that a
+ * figure spelled out escapes the guard no more than in digits. A lone « un » or « une » is an article, not a figure.
+ */
+export function spelledNumbersIn(value: string): string[] {
+  const found: string[] = [];
+  for (const match of value.matchAll(SPELLED)) {
+    const words = match[1]
+      .toLowerCase()
+      .split(/[\s-]+/)
+      .filter(w => w && w !== 'et');
+    if (words.length === 1 && NUMBER_WORDS[words[0]] === 1) continue;
+    found.push(String(wordsValue(words)));
+  }
+  return found;
+}
+
 export type DescriptionCheck =
   { ok: true; text: string } | { ok: false; reason: 'empty' | 'too_long' | 'terminal_2' | 'unsupported_figure'; figures?: string[] };
 
 /**
  * The guard on Claude's answer: a text with a figure absent from the facts (or from the manager's own text it
- * improves), a mention of the closed Terminal 2, or beyond the listing's limit is rejected rather than offered.
+ * improves), in digits or in words before a unit, a mention of the closed Terminal 2, or beyond the listing's limit is
+ * rejected rather than offered.
  */
 export function checkDescription(answer: string, facts: DescriptionFact[], current?: string | null): DescriptionCheck {
   const cleaned = answer
@@ -197,8 +257,8 @@ export function checkDescription(answer: string, facts: DescriptionFact[], curre
   if (!cleaned) return { ok: false, reason: 'empty' };
   if (cleaned.length > DESCRIPTION_MAX_CHARS) return { ok: false, reason: 'too_long' };
   if (/terminal\s*2\b/i.test(cleaned)) return { ok: false, reason: 'terminal_2' };
-  const known = new Set([...numbersIn(factsText(facts)), ...numbersIn(current ?? '')]);
-  const figures = [...new Set(numbersIn(cleaned).filter(n => !known.has(n)))];
+  const known = new Set([...numbersIn(factsText(facts)), ...numbersIn(current ?? ''), ...spelledNumbersIn(current ?? '')]);
+  const figures = [...new Set([...numbersIn(cleaned), ...spelledNumbersIn(cleaned)].filter(n => !known.has(n)))];
   if (figures.length) return { ok: false, reason: 'unsupported_figure', figures };
   return { ok: true, text: cleaned };
 }

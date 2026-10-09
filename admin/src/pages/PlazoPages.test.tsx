@@ -192,6 +192,26 @@ describe("Ma fiche", () => {
     expect(api.updateListing).not.toHaveBeenCalled();
   });
 
+  it("compte les caractères au format français et relie l'erreur du champ à sa description", async () => {
+    api.getListing.mockResolvedValue({ listing: { ...savedListing, description: "a".repeat(1500) }, parking });
+    api.getPricing.mockResolvedValue(pricing);
+    api.updateListing.mockRejectedValue(new ApiError(400, "invalid", "validation_error", { description: "too_long" }));
+    renderPage(<ListingPage />);
+
+    const field = await screen.findByLabelText("Présentation");
+    // « 1 500 / 2 000 », both numbers with the same space, not « 1500 / 2 000 ».
+    expect(screen.getByTestId("description-count").textContent).toBe(`${(1500).toLocaleString("fr-FR")} / ${(2000).toLocaleString("fr-FR")}`);
+    expect(screen.getByTestId("description-count")).toHaveTextContent("1 500 / 2 000");
+    expect(field).toHaveAttribute("aria-describedby", "l-desc-help");
+
+    await userEvent.click(screen.getByRole("button", { name: "Enregistrer" }));
+    await waitFor(() => expect(field).toHaveAttribute("aria-invalid", "true"));
+    expect(field).toHaveAttribute("aria-describedby", "l-desc-error l-desc-help");
+    expect(document.getElementById("l-desc-error")).toHaveTextContent("Texte trop long.");
+    // The help line stays: every id the field points to exists.
+    expect(document.getElementById("l-desc-help")).toHaveTextContent("Les 160 premiers caractères servent de description dans Google.");
+  });
+
   it("améliore le texte en place, propose une autre version et s'ignore", async () => {
     api.getListing.mockResolvedValue({ listing: { ...savedListing, description: "Parking sûr, navette." }, parking });
     api.getPricing.mockResolvedValue(pricing);
@@ -224,10 +244,12 @@ describe("Ma fiche", () => {
     const button = await screen.findByRole("button", { name: "Rédiger avec Claude" });
     await userEvent.click(button);
     await waitFor(() =>
-      expect(toast.error).toHaveBeenLastCalledWith("La rédaction par Claude n'est pas disponible : clé ANTHROPIC_API_KEY absente.", { duration: 12000 }),
+      expect(toast.error).toHaveBeenLastCalledWith("La rédaction par Claude n'est pas disponible : clé ANTHROPIC_API_KEY absente ou refusée.", {
+        duration: 12000,
+      }),
     );
     await userEvent.click(button);
-    await waitFor(() => expect(toast.error).toHaveBeenLastCalledWith(expect.stringContaining("des chiffres absents de vos données (10, 4,5)"), { duration: 12000 }));
+    await waitFor(() => expect(toast.error).toHaveBeenLastCalledWith(expect.stringContaining("des chiffres absents de vos données (10 ; 4,5)"), { duration: 12000 }));
     await userEvent.click(button);
     await waitFor(() => expect(toast.error).toHaveBeenLastCalledWith("La rédaction par Claude a échoué (max_tokens)", { duration: 12000 }));
     expect(screen.queryByTestId("description-proposal")).not.toBeInTheDocument();
