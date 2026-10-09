@@ -398,7 +398,7 @@ class _HandoverSheetState extends State<_HandoverSheet> {
             value: _keys,
             title: Text('res.handover.keys'.tr(), style: AppText.strong()),
             subtitle: Text(_tried && !_keys ? 'res.handover.keys_required'.tr() : 'res.handover.keys_help'.tr(), style: _tried && !_keys ? AppText.body(size: 13.5, color: AppColors.danger) : AppText.muted()),
-            activeColor: AppColors.accent,
+            activeThumbColor: AppColors.accent,
             onChanged: (v) => setState(() => _keys = v),
           ),
           TextField(

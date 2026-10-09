@@ -59,7 +59,8 @@ class StripePaymentSheetService implements PaymentSheetService {
           googlePay: PaymentSheetGooglePay(
             merchantCountryCode: merchantCountryCode,
             currencyCode: currency.toUpperCase(),
-            testEnv: AppConstants.googlePayTestEnv,
+            // Follows the key the server hands out, so an installed build keeps working when Stripe goes live.
+            testEnv: !publishableKey.startsWith('pk_live_'),
           ),
           // Direction D in the sheet: violet actions, rounded like the app's cards.
           appearance: const PaymentSheetAppearance(

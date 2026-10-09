@@ -149,7 +149,8 @@ une décision de Joanny. Cocher au fur et à mesure.
 - [ ] **Factures** : Plazo n'émet ni facture ni reçu ; choisir reçu Stripe (Settings › Emails › Paiements réussis) + facture
   du parking, ou facture Plazo avec mandat de facturation.
 - [ ] **Apps** : identifiants `com.benfordtech.*` définitifs ou non (plus modifiables après le premier envoi) ; publier
-  Plazo Pro seule d'abord (lancer `plazo-pro-release` à la main) ou les deux (tag `mobile-v*`).
+  Plazo Pro seule d'abord (lancer `plazo-pro-android-release` puis `plazo-pro-ios-release` à la main) ou les deux (tag
+  `mobile-vX.Y.Z`).
 - [ ] **SMS** : « Plazo envoie pour moi » n'a aucun crédit SMS Brevo ; recommander « Téléphone du parking ».
 
 **À faire par Joanny (tableaux de bord)**
@@ -192,10 +193,13 @@ une décision de Joanny. Cocher au fur et à mesure.
   les CU-heures consommées (plan Free : 100 CU-heures de calcul par mois ; le tableau de bord pro interrogé toutes les 12 à
   60 s et le cron de 15 min empêchent la base de se mettre en veille) et prévoir le plan Launch avant que l'équipe du client
   n°1 n'utilise l'espace pro tous les jours ; activer les alertes d'usage par e-mail dans la console Neon.
-- [ ] Codemagic : groupe `mobile_secrets` complet (`KEYSTORE_FILE`, `KEY_PROPERTIES_FILE`, `GCLOUD_SERVICE_ACCOUNT_CREDENTIALS`,
-  `CERTIFICATE_PRIVATE_KEY`, `ONESIGNAL_APP_ID`, `ONESIGNAL_TRAVELLER_APP_ID`, `API_BASE_URL=https://www.plazo.fr/api`),
-  intégration `plazo-asc`, fiches App Store Connect et Play Console, `APP_STORE_APP_ID` ; OneSignal : compte de service
-  FCM et clé APNs sur chaque app.
+- [ ] Codemagic (pas à pas : `mobile/publier-sur-les-stores.md`) : app sur le **compte personnel**, webhook vérifié, groupe
+  `mobile_secrets` complet (`KEYSTORE_FILE`, `KEY_PROPERTIES_FILE`, `GOOGLE_PLAY_SERVICE_ACCOUNT_CREDENTIALS`,
+  `CERTIFICATE_PRIVATE_KEY`, `ONESIGNAL_APP_ID`, `ONESIGNAL_TRAVELLER_APP_ID`), intégration Developer Portal `plazo-asc`,
+  App ID Apple créés à la main avec leurs capacités, fiches App Store Connect et Play Console, premier AAB envoyé à la main,
+  `APP_STORE_APP_ID` ; identifiants des apps définitifs avant tout envoi ; OneSignal : une app par app, compte de service
+  FCM et clé APNs sur chacune, et dans Vercel `ONESIGNAL_TRAVELLER_APP_ID` + `ONESIGNAL_TRAVELLER_REST_API_KEY` (sinon les
+  pushs voyageurs partent par l'app du personnel et se perdent).
 - [ ] `product.json` › `company` : forme juridique, capital, siège, RCS, TVA, téléphone, directeur de la publication,
   médiateur, et une adresse support réelle (aujourd'hui `support@example.com`) ; Claude les pose puis
   `dart run tool/sync_product.dart`.
@@ -285,7 +289,7 @@ relance d'un SMS de passerelle réservée par ligne (plus de doublon quand Verce
 au même instant) ; nouvelles adresses de réception à 8 caractères aléatoires (les existantes ne changent pas) ; lecture des
 mails par Claude avec 4 000 jetons de réponse. **Reste côté code, sur
 décision** : reversement « payé à la main » (sinon double paiement si
-Joanny vire puis que le loueur relie Stripe), `GOOGLE_PAY_TEST=false` dans `codemagic.yaml` si Stripe passe en live,
+Joanny vire puis que le loueur relie Stripe),
 App Links sur `www.plazo.fr` (empreinte Play et Team ID Apple à fournir), plafond quotidien des lectures Claude par
 loueur et liste d'expéditeurs admis (les adresses créées avant le 08/10/2026 n'ont que 16 bits d'aléa : « Nouvelle adresse »
 en donne une à 32 bits), `maxDuration` à 300 s (Hobby avec Fluid compute) avec un budget de temps dans `runPayouts` et
@@ -372,7 +376,9 @@ le navigateur de l'espace pro appelle `/api` sur le même domaine (pas de CORS).
 5. **Notifications push du personnel (OneSignal)** — facultatif : sans `ONESIGNAL_APP_ID` et `ONESIGNAL_REST_API_KEY`,
    aucune notification n'est envoyée (les arrivées s'affichent quand même dans l'espace pro et l'app). La clé REST
    reste sur Vercel ; l'*App ID* est aussi donné à l'app (`--dart-define=ONESIGNAL_APP_ID=…`, voir
-   [mobile/README.md](mobile/README.md)).
+   [mobile/README.md](mobile/README.md)). L'app voyageur a sa propre app OneSignal (un Bundle ID iOS par app OneSignal) :
+   `ONESIGNAL_TRAVELLER_APP_ID` et `ONESIGNAL_TRAVELLER_REST_API_KEY` sur Vercel, `ONESIGNAL_TRAVELLER_APP_ID` dans Codemagic ;
+   sans elles l'API passe par l'app du personnel, qui ne connaît pas les téléphones des voyageurs.
    « Prévenir de son arrivée » n'a besoin d'aucune nouvelle tâche planifiée : les signaux de plus de 2 h sont terminés
    (position effacée) à chaque lecture et par la purge nocturne existante ; `/api/internal/cron/expire-arrival-signals`
    existe pour une passe plus fréquente si besoin.

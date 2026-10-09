@@ -21,9 +21,6 @@ abstract final class AppConstants {
   /// Apple Pay merchant id (merchant.xxx, see README). Empty: no Apple Pay button in the sheet.
   static const appleMerchantId = String.fromEnvironment('STRIPE_MERCHANT_ID');
 
-  /// Google Pay in Stripe's test environment (true until the live keys).
-  static const googlePayTestEnv = bool.fromEnvironment('GOOGLE_PAY_TEST', defaultValue: true);
-
   /// The parkings' time zone: every date exchanged with the API is a wall-clock time there.
   static const parkingTimezone = 'Europe/Paris';
 

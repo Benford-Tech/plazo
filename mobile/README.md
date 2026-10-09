@@ -80,7 +80,8 @@ cartes arrondies, plaques façon plaque française. Cartes : IGN Géoplateforme 
 attribution « © IGN – Plan IGN ».
 
 Le nom du produit vient de `../product.json` (seul endroit) : `dart run tool/sync_product.dart` le recopie
-dans `lib/src/core/constants/product.g.dart`, le libellé Android, le nom iOS et le titre web ;
+dans `lib/src/core/constants/product.g.dart`, le libellé Android, le nom iOS (`APP_DISPLAY_NAME` des configurations
+Xcode, « Plazo » ou « Plazo Pro », que `Info.plist` lit) et le titre web ;
 `--check` échoue s'ils ne sont plus à jour (lancé par Codemagic).
 
 ## Commandes
@@ -101,10 +102,9 @@ Réglages de construction (`--dart-define`, jamais de secret : ils sont lisibles
 | Nom | Défaut | Rôle |
 | --- | --- | --- |
 | `API_BASE_URL` | `https://www.plazo.fr/api` | l'API |
-| `ONESIGNAL_APP_ID` | vide (push coupées) | app OneSignal du personnel |
+| `ONESIGNAL_APP_ID` | vide (push coupées) | app OneSignal de l'app construite (Plazo Pro : `ONESIGNAL_APP_ID` de Codemagic ; Plazo : `ONESIGNAL_TRAVELLER_APP_ID`) |
 | `SITE_URL` | l'adresse de l'API sans `/api` | le site (conditions, confidentialité, mentions légales, FAQ) |
 | `STRIPE_MERCHANT_ID` | vide (pas d'Apple Pay) | identifiant marchand Apple Pay (`merchant.…`) |
-| `GOOGLE_PAY_TEST` | `true` | Google Pay en environnement de test Stripe (`false` avec les clés live) |
 | `PAYMENT_SHEET_DEMO` | vide | essais dans un navigateur seulement : `success` ou `fail` remplace la feuille Stripe par une imitation (avec un faux Stripe côté API) |
 
 En local, l'API doit accepter l'origine de la version web : `CLIENT_URL=http://localhost:<port>` dans `backend/.env`.
@@ -120,14 +120,16 @@ version web, « Payer » ouvre la page Stripe Checkout.
 - **Android** : `MainActivity` hérite de `FlutterFragmentActivity` et le thème est `Theme.MaterialComponents`
   (exigés par la feuille de paiement). **Google Pay** : `com.google.android.gms.wallet.api.enabled` dans le manifeste,
   activé dans le tableau de bord Stripe (*Moyens de paiement*) ;
-  `GOOGLE_PAY_TEST=true` jusqu'aux clés live, puis demande d'accès à la production Google Pay (console Google Pay &
-  Wallet) avec des captures du parcours.
+  Google Pay passe seul en production quand l'API sert une clé `pk_live_` (09/10/2026 : plus de réglage à la construction,
+  une app déjà installée suit la clé) ; avant les clés live, demander l'accès à la production Google Pay (console
+  Google Pay & Wallet) avec des captures du parcours.
 - **iOS — Apple Pay** : créer un *Merchant ID* (`merchant.com.<entreprise>.plazo`) dans le compte Apple Developer,
   le certificat de traitement Apple Pay à générer **depuis Stripe** (*Paramètres → Apple Pay*), ajouter la capacité
   **Apple Pay** à l'App ID et la clé `com.apple.developer.in-app-payments` (tableau avec le Merchant ID) dans
   `ios/Runner/Runner.entitlements` (non ajoutée tant que l'identifiant n'existe pas : le profil de signature la
-  refuserait), puis construire avec `--dart-define=STRIPE_MERCHANT_ID=merchant.…`. Sans lui, la feuille propose la
-  carte seule.
+  refuserait), puis construire avec `--dart-define=STRIPE_MERCHANT_ID=merchant.…` (pour les stores : variable
+  `STRIPE_MERCHANT_ID` du groupe Codemagic `mobile_secrets`). Sans lui, la feuille propose la carte seule. L'appareil
+  photo (`NSCameraUsageDescription`) ne sert qu'au scan de carte de la feuille Stripe ; Apple refuse le build sans ce texte.
 - Webhook Stripe : ajouter `payment_intent.succeeded` et `payment_intent.payment_failed` aux évènements du compte
   (voir README à la racine).
 
@@ -164,8 +166,10 @@ version web, « Payer » ouvre la page Stripe Checkout.
 3. **Google Play** : compte Google Play Console (entreprise) ; une **clé d'import** (keystore `.jks`) et son
    `key.properties` (`storeFile=upload.jks`, `storePassword`, `keyAlias`, `keyPassword`) ; premier envoi de l'AAB
    à la main ; déclaration de l'usage de la position (premier plan, service « location »).
-4. **OneSignal + Firebase** : une app OneSignal (son *App ID* → `ONESIGNAL_APP_ID` dans l'app et dans l'API ; sa
-   *REST API key* → `ONESIGNAL_REST_API_KEY` dans Vercel seulement) ; un projet Firebase pour FCM (clé de compte de
+4. **OneSignal + Firebase** : deux apps OneSignal, une par app, car les réglages iOS d'une app OneSignal ne tiennent
+   qu'un Bundle ID (Plazo Pro : *App ID* → `ONESIGNAL_APP_ID` dans Codemagic et Vercel, *REST API key* →
+   `ONESIGNAL_REST_API_KEY` dans Vercel seulement ; Plazo : `ONESIGNAL_TRAVELLER_APP_ID` dans Codemagic et Vercel,
+   `ONESIGNAL_TRAVELLER_REST_API_KEY` dans Vercel seulement) ; un projet Firebase pour FCM (clé de compte de
    service à importer dans OneSignal pour Android) ; une clé APNs `.p8` (Apple) importée dans OneSignal pour iOS.
 5. **Liens de réservation qui ouvrent l'app** : publier sur le domaine de production
    `/.well-known/assetlinks.json` (empreinte SHA-256 de la signature Play) et
@@ -174,34 +178,32 @@ version web, « Payer » ouvre la page Stripe Checkout.
 6. **Fiches des stores** : nom, sous-titre, description courte et longue, captures (téléphone et tablette), icône,
    politique de confidentialité (URL), coordonnées d'assistance, catégorie, classification, justification de la
    position en arrière-plan (Apple) et formulaire « Sécurité des données » (Google).
-7. **Codemagic** : l'app ajoutée sur le dépôt avec `codemagic.yaml` (à la racine du dépôt), le groupe de variables `mobile_secrets`
-   (voir l'en-tête du fichier) et l'intégration App Store Connect `plazo-asc`.
+7. **Codemagic** : le dépôt ajouté au **compte personnel** (une équipe n'a pas de minutes gratuites) avec `codemagic.yaml`,
+   le webhook GitHub vérifié, le groupe de variables `mobile_secrets` et l'intégration Developer Portal `plazo-asc` : pas à
+   pas dans [`publier-sur-les-stores.md`](publier-sur-les-stores.md).
 
-## Publier sur les stores (pipelines, 07/10/2026)
+## Publier sur les stores (pipelines, 07/10/2026, revus le 09/10/2026)
 
-Trois workflows Codemagic dans `codemagic.yaml` (racine du dépôt, `working_directory: mobile`) :
+Cinq workflows Codemagic dans `codemagic.yaml` (racine du dépôt, `working_directory: mobile`), un par store et par app :
 
 | Workflow | Quand | Ce qu'il fait |
 | --- | --- | --- |
-| `mobile-check` | chaque push qui touche `mobile/` | nom du produit à jour, `flutter analyze`, `flutter test`, APK **debug** des deux apps (à installer pour essayer) |
-| `plazo-release` | tag `mobile-v*` ou lancement manuel | Plazo (voyageurs) : AAB signé → **Google Play, piste interne** ; IPA signé → **TestFlight** |
-| `plazo-pro-release` | tag `mobile-v*` ou lancement manuel | Plazo Pro (personnel) : idem avec le flavor `pro` (id `.pro`, schéma iOS `pro`) |
+| `mobile-check` | push sur `main` qui touche `mobile/` | nom du produit à jour, `flutter analyze`, `flutter test`, APK **debug** des deux apps (à installer pour essayer) |
+| `plazo-android-release` / `plazo-pro-android-release` | tag `mobile-vX.Y.Z` ou à la main | AAB signé → **Google Play, tests internes** (sans rien d'Apple) |
+| `plazo-ios-release` / `plazo-pro-ios-release` | tag `mobile-vX.Y.Z` ou à la main | IPA signé → **TestFlight** (intégration Developer Portal `plazo-asc`) |
 
-- Une version = le `version:` de `pubspec.yaml` (ex. `1.0.0`) + un numéro de build = compteur Codemagic + 100, jamais
-  inférieur au dernier build connu de Google Play ou de TestFlight (lu au moment du build). Pour publier : monter
-  `version:` dans `pubspec.yaml`, pousser, poser le tag `mobile-v1.0.0` (les deux workflows partent), ou lancer un workflow
-  depuis Codemagic.
-- Les deux stores reçoivent une version **de test** (piste interne, TestFlight) : la mise en production se décide dans
-  chaque console. `submit_as_draft: true` tant que l'app n'a pas été publiée une première fois sur Google Play, puis `false`.
-- Le **premier envoi** de chaque app sur Google Play se fait à la main dans la Play Console (la fiche doit exister avant
-  que l'API accepte un bundle) ; sur App Store Connect, l'app doit être créée avec son bundle id avant le premier build.
-- Secrets, dans Codemagic seulement (jamais dans le dépôt ni dans une conversation) : groupe `mobile_secrets` avec
-  `KEYSTORE_FILE`, `KEY_PROPERTIES_FILE`, `GCLOUD_SERVICE_ACCOUNT_CREDENTIALS` (compte de service Google Play, rôle
-  « Release manager » sur les deux apps), `CERTIFICATE_PRIVATE_KEY`, `ONESIGNAL_APP_ID`, `ONESIGNAL_TRAVELLER_APP_ID`,
-  `API_BASE_URL` ; intégration App Store Connect `plazo-asc` (clé API, rôle App Manager). Les capacités de l'App ID :
-  Push Notifications (les deux apps) et Associated Domains (Plazo seulement).
-- À remplacer dans `codemagic.yaml` quand les apps existent dans App Store Connect : `APP_STORE_APP_ID` (Apple ID numérique
-  de chaque app, sert à lire le dernier build TestFlight ; `"0"` = ignoré).
+- Version = `version:` de `pubspec.yaml`, que le tag doit reprendre (`mobile-v1.0.0`, sinon arrêt) ; numéro de build =
+  compteur Codemagic + 100, jamais sous le dernier build du store du workflow.
+- Les stores reçoivent une version **de test** ; la production se décide dans chaque console. `submit_as_draft: true`
+  jusqu'à la première version déployée à la main sur Google Play, puis `false`.
+- **Marche à suivre complète** (compte Codemagic personnel, webhook, groupe `mobile_secrets`, Apple, Google Play, premier
+  envoi, ce qu'il ne faut jamais coller) : [`publier-sur-les-stores.md`](publier-sur-les-stores.md).
+- Revue du 09/10/2026, avant le premier build : la vérification du nom du produit échouait toujours (le nom iOS vit
+  désormais dans `APP_DISPLAY_NAME` des configurations Xcode, que `tool/sync_product.dart` met à jour) et `flutter analyze`
+  sortait en erreur sur deux remarques, ce qui arrêtait tous les workflows ; `NSCameraUsageDescription` ajouté (scan de carte
+  de Stripe, sans quoi Apple refuse le build) ; Google Pay suit la clé Stripe servie par l'API (`pk_live_` = production),
+  plus de réglage à la construction ; secrets vérifiés avec un message clair ; `GOOGLE_PLAY_SERVICE_ACCOUNT_CREDENTIALS`
+  (l'ancien nom `GCLOUD_…` est déprécié par Codemagic) ; une app OneSignal par app.
 
 - `/pro/parking` (onglet Parking) : Occupation (bloc 2, étape 2) — recherche par plaque, place proposée à l'arrivée, crochet des clés.
 - `/pro/equipe` (gérants : membres, rôles, accès, mot de passe provisoire), `/pro/compte` (changement de mot de passe), `/pro/reglages` (gérants : nom, adresse, places, marge, navette, canal SMS avec le téléphone Android du parking).
