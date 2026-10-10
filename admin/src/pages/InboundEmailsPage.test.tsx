@@ -435,6 +435,39 @@ describe("InboundEmailsPage (M-A « Boîte de réception », T-A « Deux gestes 
       expect(reading().getByTestId("inbound-status")).toHaveTextContent("Traité");
     });
 
+    it("10/10/2026 (« Tu n'as pas récupéré le prix pour la modif ») : plusieurs réservations saisies sans référence correspondent, à faire à la main", async () => {
+      lists = {
+        todo: [
+          changed({
+            status: "unrecognised",
+            reservationId: null,
+            reservationReference: null,
+            change: { applied: false, reason: "ambiguous", reservationId: null, reference: null, changes: [], at: "2026-10-10T09:00:00Z" },
+            // The booking page's booking, its price included.
+            parsed: { provider: "Allopark", externalReference: "AL-884880719", plate: "GK-318-PX", passengers: 4, priceCents: 2600 },
+          }),
+        ],
+        done: [],
+        archived: [],
+      };
+      renderPage();
+      await screen.findAllByTestId("inbound-row");
+      const block = within(reading().getByTestId("inbound-change"));
+      expect(block.getByRole("heading", { level: 3 })).toHaveTextContent("Modification à faire à la main");
+      expect(block.getByTestId("inbound-change-reason")).toHaveTextContent("Plusieurs réservations correspondent : à faire à la main.");
+      expect(block.queryByText("Aucun changement : la réservation était déjà à jour.")).toBeNull();
+      expect(block.queryAllByTestId("inbound-change-line")).toHaveLength(0);
+      expect(within(screen.getAllByTestId("inbound-row")[0]).getByTestId("inbound-status")).toHaveTextContent("À faire à la main");
+      // No booking to open, and no « Compléter », which would type a third booking for the same car and stay.
+      expect(reading().queryByTestId("inbound-change-booking")).toBeNull();
+      expect(reading().queryByTestId("inbound-complete")).toBeNull();
+      expect(reading().getByTestId("inbound-handle")).toBeInTheDocument();
+      // What the page gave stays in sight, the price recovered included.
+      const understood = within(reading().getByTestId("inbound-understood"));
+      expect(understood.getByText("GK-318-PX")).toBeInTheDocument();
+      expect(understood.getByText("26,00 €")).toBeInTheDocument();
+    });
+
     it("déjà à jour : le doublon le dit, sans ligne", async () => {
       lists = {
         todo: [],

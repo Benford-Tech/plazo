@@ -13,6 +13,7 @@ import { logger } from '@/utils/logger';
 import { toPublicBooking, WITH_LISTING } from '@/domain/booking-view';
 import { cleanNamePart, CustomerNames, customerNamesOf, importedNames } from '@/domain/customer-name';
 import { ImportChange, ImportChangeReason, importChanges, withoutField } from '@/domain/import-change';
+import { ImportedFlights, importedFlights, notesWithLines, unreadableFlightLines } from '@/domain/imported-flights';
 import { FileService } from './file.service';
 import { AuditService } from './audit.service';
 import { CapacityService, NightLoad, occupiedNights } from './capacity.service';
@@ -192,8 +193,12 @@ export class ReservationService {
     const parking = await prisma.parking.findFirst({ where: { operatorId }, orderBy: { createdAt: 'asc' } });
     if (!parking) throw notFound();
     const stay = this.parseStay(parking, parsed.arrivalAt!, parsed.returnAt!);
-    const returnFlight = this.normalizeFlight(parsed.returnFlight);
-    const departureFlight = this.normalizeFlight(parsed.departureFlight, 'departureFlight');
+    // 10/10/2026 (« Tu n'as pas récupéré le prix pour la modif »): a flight that is no flight number is dropped, kept for
+    // the staff in the notes; it no longer refuses the whole booking.
+    const flights = importedFlights(parsed);
+    logUnreadableFlights(flights, parsed.provider);
+    const { returnFlight, departureFlight } = flights;
+    const notes = notesWithLines(null, unreadableFlightLines(flights, parsed.provider));
     const externalReference = parsed.externalReference?.trim().toUpperCase() || null;
     const system = { id: null, operatorId };
     const created = await prisma.$transaction(async tx => {
@@ -227,6 +232,7 @@ export class ReservationService {
           plateKey: plateKey(parsed.plate!),
           returnFlight,
           departureFlight,
+          notes,
           externalReference,
           priceCents: parsed.priceCents ?? null,
           vehicleModel: parsed.vehicleModel?.trim().slice(0, 40) || null,
@@ -260,7 +266,10 @@ export class ReservationService {
    * with the reason): a Plazo booking (`plazo_booking`), a closed one (`reservation_closed`), a new arrival once the car
    * is there (`already_arrived`: a new return alone is applied), no room (`no_room`), dates that make no stay
    * (`invalid_stay`). The price of a booking paid online is never changed (the rest is). Nothing to change: applied
-   * false and no changes. The team hears of an applied change (« Réservation modifiée · Allopark »).
+   * false and no changes. The team hears of an applied change (« Réservation modifiée · Allopark »). 10/10/2026 (« Tu
+   * n'as pas récupéré le prix pour la modif »): a flight of the comparator that is no flight number is no change; what
+   * was typed joins the notes once (« Vol retour indiqué par Allopark : U2AB3C (numéro non reconnu) »), with the change
+   * or alone when nothing else differs.
    */
   public async applyImportChange(
     operatorId: string,
@@ -271,6 +280,11 @@ export class ReservationService {
     const found = await prisma.reservation.findFirst({ where: { id: reservationId, operatorId }, select: { parkingId: true } });
     if (!found) throw notFound();
     const parking = await prisma.parking.findUniqueOrThrow({ where: { id: found.parkingId } });
+    // 10/10/2026 (« Tu n'as pas récupéré le prix pour la modif »): a flight of the page that is no flight number is never a
+    // change (importChanges ignores it, the booking keeps its flight); what was typed joins the notes, once.
+    const flights = importedFlights(booking);
+    logUnreadableFlights(flights, booking.provider);
+    const flightLines = unreadableFlightLines(flights, booking.provider);
     const result = await prisma.$transaction(async (tx): Promise<ImportChangeResult> => {
       await this.capacity.lock(tx, parking.id);
       const before = await tx.reservation.findFirst({ where: { id: reservationId, operatorId } });
@@ -279,7 +293,33 @@ export class ReservationService {
       // What the traveller paid online stays what they paid.
       if (before.paymentStatus !== null || before.chargedCents !== null) diff = withoutField(diff, 'priceCents');
       const left = (reason: ImportChangeReason): ImportChangeResult => ({ reservation: before, changes: diff.changes, applied: false, reason });
-      if (!diff.changes.length) return { reservation: before, changes: [], applied: false };
+      const notes = notesWithLines(before.notes, flightLines);
+      const notesAdded = notes !== before.notes;
+      const record = (after: Reservation) =>
+        this.audit.record(
+          { id: null, operatorId },
+          {
+            action: 'reservation.updated',
+            entityType: 'reservation',
+            entityId: before.id,
+            details: {
+              ...columnChanges(before, after),
+              by: 'inbound_email',
+              source: origin.source,
+              provider: booking.provider,
+              ...(origin.inboundEmailId ? { inboundEmailId: origin.inboundEmailId } : {}),
+            } as Prisma.InputJsonValue,
+          },
+          tx,
+        );
+      const open = before.channel !== 'plazo' && !CLOSED_FOR_CHANGES.includes(before.status);
+      if (!diff.changes.length) {
+        // Nothing to change but the unreadable flight's line: written quietly (no change listed, nobody told).
+        if (!notesAdded || !open) return { reservation: before, changes: [], applied: false };
+        const after = await tx.reservation.update({ where: { id: before.id }, data: { notes } });
+        await record(after);
+        return { reservation: after, changes: [], applied: false };
+      }
       if (before.channel === 'plazo') return left('plazo_booking');
       if (CLOSED_FOR_CHANGES.includes(before.status)) return left('reservation_closed');
       if (diff.data.arrivalAt && before.status !== 'upcoming') return left('already_arrived');
@@ -307,6 +347,7 @@ export class ReservationService {
         where: { id: before.id },
         data: {
           ...diff.data,
+          ...(notesAdded ? { notes } : {}),
           ...(overbooked === undefined ? {} : { overbooked }),
           // A new flight starts its tracking over (the landing a traveller reported stays theirs).
           ...(diff.data.departureFlight
@@ -325,26 +366,109 @@ export class ReservationService {
             : {}),
         },
       });
-      await this.audit.record(
-        { id: null, operatorId },
-        {
-          action: 'reservation.updated',
-          entityType: 'reservation',
-          entityId: before.id,
-          details: {
-            ...columnChanges(before, after),
-            by: 'inbound_email',
-            source: origin.source,
-            provider: booking.provider,
-            ...(origin.inboundEmailId ? { inboundEmailId: origin.inboundEmailId } : {}),
-          } as Prisma.InputJsonValue,
-        },
-        tx,
-      );
+      await record(after);
       return { reservation: after, changes: diff.changes, applied: true };
     });
     if (result.applied) await this.push.notifyBookingChanged(result.reservation, result.changes);
     return result;
+  }
+
+  /**
+   * 10/10/2026 (« Tu n'as pas récupéré le prix pour la modif »): the operator's bookings a comparator's change may be
+   * about although they lack its reference (typed by hand from the inbox, « Compléter », before the booking page was
+   * read): a comparator's booking (never a Plazo one) without a reference, or with the same digits (« AL 123829327 »),
+   * or with one that names no comparator (no letter: « 123829327 ») when the booking names no other comparator (its
+   * channel's detail blank or this one: a numeric reference may be Onepark's), for the same car (plateKey) and a stay that
+   * overlaps the comparator's or begins the same local day, neither cancelled nor a no-show. Two ids at most: one is
+   * the booking, two make the change ambiguous. None without a plate or a stay. 10/10/2026 (relecture): a booking
+   * without a reference that names another comparator (« Onepark », « Site du parking ») is not this one either
+   * (« Allopark.com » typed by hand still names it), and a closed booking (handed back: its planned stay still overlaps)
+   * never takes the reference, which would then keep the real booking from being created.
+   */
+  public async unreferencedMatches(operatorId: string, booking: ParsedBooking, externalReference: string): Promise<string[]> {
+    const key = booking.plate ? plateKey(booking.plate) : '';
+    if (!key || !booking.arrivalAt || !booking.returnAt) return [];
+    const parking = await prisma.parking.findFirst({ where: { operatorId }, orderBy: { createdAt: 'asc' } });
+    if (!parking) return [];
+    const arrivalAt = parseInstant(booking.arrivalAt, parking.timezone);
+    const returnAt = parseInstant(booking.returnAt, parking.timezone);
+    if (!arrivalAt || !returnAt) return [];
+    const day = dayBounds(localDate(arrivalAt, parking.timezone), parking.timezone);
+    const sameDay: Prisma.ReservationWhereInput = { arrivalAt: { gte: day.start, lt: day.end } };
+    const overlap: Prisma.ReservationWhereInput[] = returnAt > arrivalAt ? [{ arrivalAt: { lt: returnAt }, returnAt: { gt: arrivalAt } }] : [];
+    const rows = await prisma.reservation.findMany({
+      where: {
+        operatorId,
+        channel: 'aggregator',
+        plateKey: key,
+        status: { notIn: CLOSED_FOR_CHANGES },
+        AND: [STAFF_VISIBLE, { OR: [...overlap, sameDay] }],
+      },
+      select: { id: true, externalReference: true, channelDetail: true },
+      orderBy: { arrivalAt: 'asc' },
+      take: 20,
+    });
+    const digits = (text: string) => text.replace(/\D/g, '');
+    const letters = (text: string | null) => (text ?? '').toLowerCase().replace(/[^a-z]/g, '');
+    const own = digits(externalReference);
+    const provider = letters(booking.provider);
+    const sameComparator = (detail: string | null) => !letters(detail) || (!!provider && letters(detail).includes(provider));
+    const unreferenced = (r: { externalReference: string | null; channelDetail: string | null }) =>
+      (!!own && !!r.externalReference && digits(r.externalReference) === own) ||
+      ((!r.externalReference || !/\p{L}/u.test(r.externalReference)) && sameComparator(r.channelDetail));
+    return rows
+      .filter(unreferenced)
+      .map(r => r.id)
+      .slice(0, 2);
+  }
+
+  /**
+   * 10/10/2026: gives a booking typed without it the comparator's reference (unreferencedMatches), by no staff member,
+   * in the history (`reservation.updated`, { externalReference: { from, to } }, `source`, `inboundEmailId`). False when
+   * the booking is gone, closed, changed its reference meanwhile, or another booking of the operator holds this one
+   * already. 10/10/2026 (relecture): under the parking's lock, as createFromImport checks and inserts a reference, so a
+   * confirmation of the same reference imported at the same moment finds this one (a duplicate) instead of failing.
+   */
+  public async linkExternalReference(
+    operatorId: string,
+    reservationId: string,
+    externalReference: string,
+    origin: { source: string; provider: string; inboundEmailId?: string | null },
+  ): Promise<boolean> {
+    const reference = externalReference.trim().toUpperCase();
+    try {
+      return await prisma.$transaction(async tx => {
+        const before = await tx.reservation.findFirst({ where: { id: reservationId, operatorId } });
+        if (!before || before.channel === 'plazo' || CLOSED_FOR_CHANGES.includes(before.status)) return false;
+        if (before.externalReference === reference) return true;
+        await this.capacity.lock(tx, before.parkingId);
+        const { count } = await tx.reservation.updateMany({
+          where: { id: before.id, operatorId, externalReference: before.externalReference },
+          data: { externalReference: reference },
+        });
+        if (!count) return false;
+        await this.audit.record(
+          { id: null, operatorId },
+          {
+            action: 'reservation.updated',
+            entityType: 'reservation',
+            entityId: before.id,
+            details: {
+              externalReference: { from: before.externalReference, to: reference },
+              by: 'inbound_email',
+              source: origin.source,
+              provider: origin.provider,
+              ...(origin.inboundEmailId ? { inboundEmailId: origin.inboundEmailId } : {}),
+            },
+          },
+          tx,
+        );
+        return true;
+      });
+    } catch (error) {
+      if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === 'P2002') return false;
+      throw error;
+    }
   }
 
   /** A booking already imported from its channel is never created twice. */
@@ -687,6 +811,13 @@ export class ReservationService {
         returnsWithFlight: returns.filter(r => r.returnFlight).length,
       },
     };
+  }
+}
+
+/** 10/10/2026: an import's flight that is no flight number, logged by its field only (never what was typed). */
+function logUnreadableFlights(flights: ImportedFlights, provider: string | null | undefined) {
+  for (const { field } of flights.unreadable) {
+    logger.warn(`[Import] ${provider || 'comparator'}: ${field} is no flight number, dropped and kept in the notes`);
   }
 }
 

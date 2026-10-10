@@ -149,12 +149,20 @@ function MailBody({ text }: { text: string }) {
 }
 
 /**
+ * An Allopark change Plazo did not make: changes to make by hand, or (10/10/2026, « Tu n'as pas récupéré le prix pour la
+ * modif ») a reason without them, several bookings matching (`ambiguous`).
+ */
+function leftToStaff(change: InboundChange | null | undefined): boolean {
+  return !!change && !change.applied && (change.changes.length > 0 || change.reason !== null);
+}
+
+/**
  * The state of a mail; 10/10/2026 (relecture): an Allopark change Plazo recognised but left to the staff reads
  * « À faire à la main » (to do), never « Non reconnu ».
  */
 function StatusBadge({ email }: { email: InboundEmail }) {
   const l = t.list;
-  const changeLeft = email.status === "unrecognised" && !!email.change && !email.change.applied && email.change.changes.length > 0;
+  const changeLeft = email.status === "unrecognised" && leftToStaff(email.change);
   return (
     <span data-testid="inbound-status" className="inline-flex">
       <Badge tone={changeLeft ? "warn" : TONE[email.status]}>{changeLeft ? l.changeLeftStatus : l.status[email.status]}</Badge>
@@ -307,7 +315,7 @@ function ChangeBlock({ change }: { change: InboundChange }) {
     ) : (
       change.reference
     );
-  const left = !change.applied && change.changes.length > 0;
+  const left = leftToStaff(change);
   return (
     <section
       data-testid="inbound-change"
@@ -340,7 +348,7 @@ function ChangeBlock({ change }: { change: InboundChange }) {
         </div>
       )}
       {change.changes.length === 0 ? (
-        <p className="mt-2 text-sm text-muted-foreground">{l.none}</p>
+        !left && <p className="mt-2 text-sm text-muted-foreground">{l.none}</p>
       ) : (
         <ul className="mt-2 space-y-1 text-sm">
           {change.changes.map(c => (
@@ -386,6 +394,9 @@ function Reading({
   const canReanalyse = !email.reservationId && email.textBody !== null && email.status !== "forwarding";
   // 10/10/2026 (« C'est une modification »): a change left to the staff is made on its booking, not typed as a new one.
   const changeLeft = email.change && !email.change.applied && email.change.reservationId ? email.change : null;
+  // 10/10/2026 (relecture): nor when its booking is not known (`ambiguous`: several bookings typed by hand match):
+  // « Compléter » would type a third booking for the same car and stay.
+  const canComplete = waiting && !changeLeft && !leftToStaff(email.change);
   return (
     <article data-testid="inbound-reading" aria-labelledby="inbound-subject" className={cn("rounded-[14px] border border-panel-line bg-panel", className)}>
       <button type="button" onClick={onBack} className="flex h-11 items-center gap-1 px-3 text-sm font-semibold text-lime-deep md:hidden">
@@ -400,7 +411,7 @@ function Reading({
                 {l.openBooking(changeLeft.reference ?? "")}
               </Link>
             )}
-            {waiting && !changeLeft && (
+            {canComplete && (
               <button
                 type="button"
                 data-testid="inbound-complete"
@@ -465,7 +476,9 @@ function Reading({
         {email.reading && <ReadingLine reading={email.reading} missing={email.missing} changed={!!email.change} />}
       </header>
       <div className="px-5 py-4">{email.textBody ? <MailBody text={email.textBody} /> : <p className="text-sm text-muted-foreground">{l.textGone}</p>}</div>
-      {email.change ? <ChangeBlock change={email.change} /> : understood && <Understood email={email} />}
+      {email.change && <ChangeBlock change={email.change} />}
+      {/* 10/10/2026 (relecture): a change that names no booking (`ambiguous`) shows what the page gave (dates, price). */}
+      {(!email.change || !email.change.reservationId) && understood && <Understood email={email} />}
     </article>
   );
 }

@@ -2611,6 +2611,8 @@ export const inboundFr = {
         no_room: "Plus de place aux nouvelles dates.",
         plazo_booking: "Réservation faite sur Plazo.",
         invalid_stay: "Les nouvelles dates ne forment pas un séjour valable.",
+        // 10/10/2026 (« Tu n'as pas récupéré le prix pour la modif »): bookings typed without the reference.
+        ambiguous: "Plusieurs réservations correspondent : à faire à la main.",
       } satisfies Record<InboundChangeReason, string>,
       nothingDone: "Plazo n'a rien changé : faites ces changements vous-même si besoin.",
       none: "Aucun changement : la réservation était déjà à jour.",

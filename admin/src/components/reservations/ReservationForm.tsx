@@ -59,8 +59,9 @@ function initialForm(reservation?: Reservation, defaultDate?: string, prefill?: 
       channelDetail: prefill.provider,
       notes: "",
       customerNote: "",
-      vehicleModel: "",
-      vehicleColour: "",
+      // 10/10/2026: the car the comparator gives (the form's limits: 40 and 30 characters).
+      vehicleModel: prefill.vehicleModel?.trim().slice(0, 40) ?? "",
+      vehicleColour: prefill.vehicleColour?.trim().slice(0, 30) ?? "",
     };
   }
   if (reservation) {

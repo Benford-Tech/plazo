@@ -463,7 +463,11 @@ export class InboundEmailService {
    * personal data. 10/10/2026 (relecture): a change only the wording announced (`confirmed` false) is first read by
    * Claude when Plazo has its key: nothing is opened, changed, created or attached unless Claude reads a change (or the
    * booking itself); read as a cancellation or another mail, it waits for the staff, and so it does when Claude does not
-   * answer (« Relancer l'analyse » tries again). Without Claude, the wording alone decides.
+   * answer (« Relancer l'analyse » tries again). Without Claude, the wording alone decides. 10/10/2026 (« Tu n'as pas
+   * récupéré le prix pour la modif »): no booking with the reference, a booking typed without it for the same car and
+   * stay takes the reference and the change (ReservationService.unreferencedMatches); several: left to the staff
+   * (`ambiguous`). A flight of the page that is no flight number no longer stops the booking (created without it, the
+   * text in its notes).
    */
   private async alloparkChange(
     input: AnalysisInput,
@@ -515,11 +519,37 @@ export class InboundEmailService {
     const withLookup = { ...base, pageLookup: tried.lookup };
     const booking: ParsedBooking = { ...tried.page, provider: 'Allopark', externalReference: ref };
     const withPage = { ...withLookup, parsed: booking, reading };
-    const existing = await prisma.reservation.findUnique({
-      where: { operatorId_externalReference: { operatorId, externalReference: ref } },
-      select: { id: true },
-    });
-    let reservationId = existing?.id ?? null;
+    const byReference = () =>
+      prisma.reservation.findUnique({ where: { operatorId_externalReference: { operatorId, externalReference: ref } }, select: { id: true } });
+    let reservationId = (await byReference())?.id ?? null;
+    // 10/10/2026 (« Tu n'as pas récupéré le prix pour la modif »): the booking may have been typed by hand without its
+    // reference (« Compléter », before the page was read): the same car for the same stay is that booking, which takes
+    // the reference and the change; several such bookings are left to the staff, none is guessed.
+    if (!reservationId) {
+      const typed = await this.reservations.unreferencedMatches(operatorId, booking, ref);
+      if (typed.length > 1) {
+        logger.info(`${label}: change of a booking typed without its reference, ${typed.length} bookings match: left to the staff`);
+        const change: InboundChangeView = {
+          applied: false,
+          reason: 'ambiguous',
+          reservationId: null,
+          reference: null,
+          changes: [],
+          at: new Date().toISOString(),
+        };
+        return { ...withPage, change, status: 'unrecognised', missing: [], reservationId: null };
+      }
+      if (typed.length === 1) {
+        const origin = { source: 'allopark_change', provider: 'Allopark', inboundEmailId: input.emailId };
+        if (await this.reservations.linkExternalReference(operatorId, typed[0], ref, origin)) {
+          logger.info(`${label}: change of a booking typed without its reference: the reference is set on it`);
+          reservationId = typed[0];
+        } else {
+          // Another booking took the reference meanwhile (its confirmation received at the same moment).
+          reservationId = (await byReference())?.id ?? null;
+        }
+      }
+    }
     if (!reservationId) {
       const missing = missingForImport(booking);
       if (missing.length) {

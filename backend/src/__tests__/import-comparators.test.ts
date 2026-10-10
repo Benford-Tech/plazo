@@ -21,6 +21,7 @@ import {
 } from '@/domain/importers/allopark-page';
 import { isCancellation, isCancellationOrChange, isChange } from '@/domain/importers/common';
 import { ChangeableBooking, importChanges, phoneKey, withoutField } from '@/domain/import-change';
+import { importedFlights, NOTES_MAX_CHARS, notesWithLines, unreadableFlightLine, unreadableFlightLines } from '@/domain/imported-flights';
 import { bookingChangedPush } from '@/domain/reservation-messages';
 import { forwardedRecipientsOf, stripHtml, textOf } from '@/domain/inbound-email';
 import { fillGaps } from '@/services/inbound-email.service';
@@ -178,7 +179,11 @@ describe('Allopark : la page de la réservation (10/10/2026)', () => {
   it('ouvre le lien « Consulter ma réservation » du mail, reconstruit sur www.allopark.com avec ses seuls paramètres', () => {
     const link =
       '<a href="http://allopark.com/fr-be/confirmation?email=parking@example.com&amp;reference=al-884880719&amp;view=parking&amp;utm_source=mail">Consulter</a>';
-    expect(alloparkPageUrls({ links: alloparkLinks(link), reference: 'AL-884880719', addresses: ['autre@example.com'] })).toEqual([pageUrl]);
+    // 10/10/2026 (« Tu n'as pas récupéré le prix pour la modif »): the link first, then the addresses' pages (the link may
+    // land elsewhere); the same address and view as the link is not opened twice.
+    expect(
+      alloparkPageUrls({ links: alloparkLinks(link), reference: 'AL-884880719', addresses: ['autre@example.com', 'Parking@example.com'] }),
+    ).toEqual([pageUrl, pageUrl.replace('parking%40', 'autre%40')]);
     // Another booking's link, a look-alike site or an address that is not one: the email's addresses instead.
     const others = [
       '<a href="https://www.allopark.com/fr-be/confirmation?email=parking@example.com&amp;reference=AL-111111111">x</a>',
@@ -187,6 +192,33 @@ describe('Allopark : la page de la réservation (10/10/2026)', () => {
     ].join('');
     expect(alloparkPageUrls({ links: alloparkLinks(others), reference: 'AL-884880719', addresses: ['Parking@Example.com'] })).toEqual([
       'https://www.allopark.com/fr-fr/confirmation?email=parking%40example.com&reference=AL-884880719&view=parking',
+    ]);
+  });
+
+  it('10/10/2026 (« Tu n’as pas récupéré le prix pour la modif ») : le lien d’abord, puis les pages des adresses, trois pages au plus', () => {
+    const link =
+      '<a href="https://www.allopark.com/fr-be/confirmation?email=contact@parking-lys.fr&amp;reference=AL-884880719&amp;view=parking">Consulter</a>';
+    const linked = 'https://www.allopark.com/fr-be/confirmation?email=contact%40parking-lys.fr&reference=AL-884880719&view=parking';
+    expect(
+      alloparkPageUrls({
+        links: alloparkLinks(link),
+        reference: 'AL-884880719',
+        addresses: [
+          'lys-7f3a@in.plazo.test',
+          'info@allopark.com',
+          'Contact@Parking-lys.fr',
+          'parking@example.com',
+          'gerant@example.com',
+          'x@example.com',
+        ],
+        excludeDomain: 'in.plazo.test',
+      }),
+    ).toEqual([linked, pageUrl, pageUrl.replace('parking%40', 'gerant%40')]);
+    // The traveller's link (no « view=parking ») does not stand for the parking's page of the same address.
+    const customer = '<a href="https://www.allopark.com/fr-be/confirmation?email=parking@example.com&amp;reference=AL-884880719">Consulter</a>';
+    expect(alloparkPageUrls({ links: alloparkLinks(customer), reference: 'AL-884880719', addresses: ['parking@example.com'] })).toEqual([
+      'https://www.allopark.com/fr-be/confirmation?email=parking%40example.com&reference=AL-884880719',
+      pageUrl,
     ]);
   });
 
@@ -765,6 +797,17 @@ describe('Allopark : une modification de réservation (10/10/2026, « C’est un
     expect(phoneKey('+32 470 12 34 56')).toBe('32470123456');
   });
 
+  it('10/10/2026 (« Tu n’as pas récupéré le prix pour la modif ») : un vol de la page qui n’est pas un numéro de vol ne change jamais rien', () => {
+    const flown = { ...booking, returnFlight: 'TO 3627' };
+    expect(importChanges(flown, { provider: 'Allopark', returnFlight: 'U2AB3C', departureFlight: 'EZ4BXYZ' }, 'Europe/Paris')).toEqual({
+      changes: [],
+      data: {},
+    });
+    expect(importChanges(flown, { provider: 'Allopark', returnFlight: 'U2AB3C', passengers: 4 }, 'Europe/Paris').changes).toEqual([
+      { field: 'passengers', from: 3, to: 4 },
+    ]);
+  });
+
   it('le push à l’équipe : la référence et ce qui change, sans téléphone, e-mail ni vol', () => {
     const diff = importChanges(
       booking,
@@ -783,5 +826,44 @@ describe('Allopark : une modification de réservation (10/10/2026, « C’est un
       title: 'Réservation modifiée · Allopark',
       body: 'AL-884880719 · arrivée 11 déc. 07:15 · retour 15 déc. 18:00 · 1 personne · vol retour · téléphone · prix 29,00 €',
     });
+  });
+});
+
+describe('vols illisibles d’un import (10/10/2026, « Tu n’as pas récupéré le prix pour la modif »)', () => {
+  it('garde les numéros de vol, écarte le reste tel qu’il a été tapé', () => {
+    expect(importedFlights({ departureFlight: ' to3626 ', returnFlight: 'U2AB3C' })).toEqual({
+      departureFlight: 'TO 3626',
+      returnFlight: null,
+      unreadable: [{ field: 'returnFlight', text: 'U2AB3C' }],
+    });
+    expect(importedFlights({ departureFlight: 'EZ4BXYZ', returnFlight: '  ' })).toEqual({
+      departureFlight: null,
+      returnFlight: null,
+      unreadable: [{ field: 'departureFlight', text: 'EZ4BXYZ' }],
+    });
+    expect(importedFlights({})).toEqual({ departureFlight: null, returnFlight: null, unreadable: [] });
+    // What was typed, spaces collapsed, 60 characters at most.
+    expect(importedFlights({ returnFlight: `vol   de\nretour ${'x'.repeat(100)}` }).unreadable[0].text).toHaveLength(60);
+    expect(importedFlights({ returnFlight: 'vol   de\nretour' }).unreadable[0].text).toBe('vol de retour');
+  });
+
+  it('une ligne par vol pour les notes, jamais deux fois, sans dépasser la limite des notes', () => {
+    expect(unreadableFlightLine('returnFlight', 'U2AB3C', 'Allopark')).toBe('Vol retour indiqué par Allopark : U2AB3C (numéro non reconnu)');
+    expect(unreadableFlightLine('departureFlight', 'EZ4BXYZ', null)).toBe('Vol aller indiqué par le comparateur : EZ4BXYZ (numéro non reconnu)');
+    const lines = unreadableFlightLines(importedFlights({ departureFlight: 'EZ4BXYZ', returnFlight: 'U2AB3C' }), 'Allopark');
+    expect(lines).toEqual([
+      'Vol aller indiqué par Allopark : EZ4BXYZ (numéro non reconnu)',
+      'Vol retour indiqué par Allopark : U2AB3C (numéro non reconnu)',
+    ]);
+    expect(notesWithLines(null, [])).toBeNull();
+    expect(notesWithLines(null, lines)).toBe(lines.join('\n'));
+    expect(notesWithLines('Clés au crochet 4', lines.slice(1))).toBe(`Clés au crochet 4\n${lines[1]}`);
+    // A later change never repeats a line; the notes stay as they were when nothing is added.
+    expect(notesWithLines(`Clés au crochet 4\n${lines[1]}`, lines.slice(1))).toBe(`Clés au crochet 4\n${lines[1]}`);
+    expect(notesWithLines('  À rappeler  ', [])).toBe('  À rappeler  ');
+    // A line that would take the notes over the form's limit is left out.
+    const full = 'x'.repeat(NOTES_MAX_CHARS - 10);
+    expect(notesWithLines(full, lines)).toBe(full);
+    expect(NOTES_MAX_CHARS).toBe(1000);
   });
 });

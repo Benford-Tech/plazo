@@ -39,9 +39,11 @@ export interface ImportChange {
 /**
  * Why a change is left to the staff: the booking is closed (handed back, cancelled, no-show), the car is already there
  * and the arrival moves, no room on the new nights, a booking made on Plazo (never changed by a comparator's email), or
- * dates that make no stay (a return before the arrival, more than 90 days).
+ * dates that make no stay (a return before the arrival, more than 90 days). 10/10/2026 (« Tu n'as pas récupéré le prix
+ * pour la modif »): `ambiguous`, several bookings typed without the comparator's reference match the change (same car,
+ * same stay: ReservationService.unreferencedMatches), none is chosen.
  */
-export const IMPORT_CHANGE_REASONS = ['reservation_closed', 'already_arrived', 'no_room', 'plazo_booking', 'invalid_stay'] as const;
+export const IMPORT_CHANGE_REASONS = ['reservation_closed', 'already_arrived', 'no_room', 'plazo_booking', 'invalid_stay', 'ambiguous'] as const;
 export type ImportChangeReason = (typeof IMPORT_CHANGE_REASONS)[number];
 
 /** The booking's columns a change writes. */
