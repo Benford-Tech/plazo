@@ -941,8 +941,10 @@ describe('Allopark : la page de la réservation complète le mail (10/10/2026)',
 describe('relancer l’analyse d’un mail (10/10/2026)', () => {
   const page = readFileSync(join(__dirname, 'fixtures/allopark-page.html'), 'utf8');
   const pageUrl = 'https://www.allopark.com/fr-be/confirmation?email=parking%40example.com&reference=AL-884880719&view=parking';
+  // The link carries an address that is neither a recipient nor the Gmail box: only the link leads to its page.
   const link =
-    '<a href="https://www.allopark.com/fr-be/confirmation?email=parking@example.com&amp;reference=AL-884880719&amp;view=parking">Consulter ma réservation</a>';
+    '<a href="https://www.allopark.com/fr-be/confirmation?email=contact@parking-lys.fr&amp;reference=AL-884880719&amp;view=parking">Consulter ma réservation</a>';
+  const linkPageUrl = 'https://www.allopark.com/fr-be/confirmation?email=contact%40parking-lys.fr&reference=AL-884880719&view=parking';
   const reader = Container.get(EmailReadingService);
   let read: jest.SpyInstance;
   const receive = (items: unknown[]) => api().post('/api/public/inbound/email').set('X-Inbound-Secret', 'inbound-test-secret').send({ items });
@@ -1010,16 +1012,26 @@ describe('relancer l’analyse d’un mail (10/10/2026)', () => {
     expect((await receive([item(op.address, email)])).body).toEqual({ received: 1, imported: 0, toCheck: 1, ignored: 0 });
     expect(allopark()).toHaveLength(0);
     const row = await rowOf(op.operator.id, 'incomplete');
-    // Stored before 10/10/2026: neither links nor recipients.
-    await prisma.inboundEmail.update({ where: { id: row.id }, data: { links: [], recipients: [] } });
+    // Stored before 10/10/2026: neither links nor recipients; Claude had read it then, without finding the phone.
+    await prisma.inboundEmail.update({
+      where: { id: row.id },
+      data: {
+        links: [],
+        recipients: [],
+        reading: { kind: 'booking', provider: 'Allopark', confidence: 0.9, summary: 'Réservation Allopark de Jean Dupont', model: 'claude-old' },
+      },
+    });
     await receive([gmail(op.address, 'Parking@Example.com')]);
 
+    // Claude is there now, but the page says everything: Claude is not asked, and its former reading goes.
+    process.env.ANTHROPIC_API_KEY = 'sk-ant-test';
     answerPage(() => new Response(page, { status: 200, headers: { 'Content-Type': 'text/html; charset=UTF-8' } }));
     const res = await reanalyse(row.id, op.token);
     expect(res.status).toBe(200);
     expect(res.body.outcome).toBe('imported');
     expect(allopark().map(([u]) => String(u))).toEqual([pageUrl]);
     expect(read).not.toHaveBeenCalled();
+    expect(await prisma.inboundEmail.findUniqueOrThrow({ where: { id: row.id } })).toMatchObject({ reading: null, recipients: [], links: [] });
     const booking = await prisma.reservation.findFirstOrThrow({ where: { operatorId: op.operator.id } });
     expect(booking).toMatchObject({
       channelDetail: 'Allopark',
@@ -1234,23 +1246,132 @@ describe('relancer l’analyse d’un mail (10/10/2026)', () => {
     const row = await rowOf(op.operator.id, 'incomplete');
     expect(row.recipients).toEqual(['parking@example.com', 'gerant@example.com']);
     expect(row.links).toEqual([
-      'https://www.allopark.com/fr-be/confirmation?email=parking@example.com&reference=AL-884880719&view=parking',
+      'https://www.allopark.com/fr-be/confirmation?email=contact@parking-lys.fr&reference=AL-884880719&view=parking',
       'https://www.allopark.com/fr-be/parkings-aeroport-lyon-saint-exupery/aeroports-parking-lyon',
       'https://www.allopark.com/fr-be/contactez-nous',
     ]);
+    expect(allopark().map(([u]) => String(u))).toEqual([linkPageUrl]);
     // Gmail's confirmation keeps neither.
     await receive([gmail(op.address, 'parking@example.com')]);
     expect(await rowOf(op.operator.id, 'forwarding')).toMatchObject({ recipients: [], links: [] });
 
-    // The page answers now: the stored link is opened again.
+    // The page answers now: the stored link is opened again (not the page of a recipient or of the Gmail box).
     fetchMock.mockClear();
     answerPage(() => new Response(page, { status: 200 }));
     const res = await reanalyse(row.id, op.token);
     expect(res.body.outcome).toBe('imported');
-    expect(allopark().map(([u]) => String(u))).toEqual([pageUrl]);
+    expect(allopark().map(([u]) => String(u))).toEqual([linkPageUrl]);
+    expect(linkPageUrl).not.toBe(pageUrl);
+    // Of no use once the booking is made: gone at once, the text stays until the purge.
+    expect(await prisma.inboundEmail.findUniqueOrThrow({ where: { id: row.id } })).toMatchObject({
+      status: 'imported',
+      recipients: [],
+      links: [],
+      textBody: expect.any(String),
+    });
 
     await prisma.inboundEmail.updateMany({ data: { receivedAt: new Date(Date.now() - 31 * 86400000) } });
     expect(await Container.get(InboundEmailService).purge()).toEqual({ textsCleared: 1, rowsDeleted: 0 });
     expect(await prisma.inboundEmail.findUniqueOrThrow({ where: { id: row.id } })).toMatchObject({ textBody: null, recipients: [], links: [] });
+  });
+
+  it('un mail importé dès sa réception ne garde ni ses destinataires ni ses liens', async () => {
+    const op = await connected();
+    await receive([
+      item('parking@example.com', filled, {
+        Recipients: [op.address],
+        Cc: [{ Address: 'gerant@example.com' }],
+        RawHtmlBody: `<p>Bonjour Jean Dupont,</p>${link}`,
+      }),
+    ]);
+    expect(await rowOf(op.operator.id, 'imported')).toMatchObject({ recipients: [], links: [], textBody: expect.any(String) });
+  });
+
+  it('une relance pendant une panne de Claude garde ce que Claude avait lu ; une lecture incertaine reste à vérifier', async () => {
+    const op = await connected();
+    process.env.ANTHROPIC_API_KEY = 'sk-ant-test';
+    read.mockResolvedValueOnce(claude({ customerPhone: null }));
+    await receive([parkos(op.address)]);
+    const row = await rowOf(op.operator.id, 'incomplete');
+    const before = { provider: 'Parkos', parsed: row.parsed, missing: ['customerPhone'] };
+    expect(row).toMatchObject({ provider: 'Parkos', missing: ['customerPhone'], reading: { kind: 'booking', confidence: 0.92 } });
+    const again = async () => {
+      await prisma.inboundEmail.update({ where: { id: row.id }, data: { analysedAt: new Date(Date.now() - 31000) } });
+      return reanalyse(row.id, op.token);
+    };
+
+    // Claude times out (or is busy, or refuses): the email stays as it was, « Compléter » still prefilled.
+    read.mockResolvedValueOnce(null);
+    const failed = await again();
+    expect([failed.status, failed.body.outcome]).toEqual([200, 'incomplete']);
+    expect(failed.body.email).toMatchObject({ status: 'incomplete', ...before, reading: { kind: 'booking', confidence: 0.92 } });
+    expect(await prisma.inboundEmail.findUniqueOrThrow({ where: { id: row.id } })).toMatchObject({ status: 'incomplete', ...before });
+    // Without a key at all, the same.
+    delete process.env.ANTHROPIC_API_KEY;
+    expect((await again()).body.email).toMatchObject({ status: 'incomplete', ...before });
+
+    // Claude now reads it as a cancellation: what it read before goes.
+    process.env.ANTHROPIC_API_KEY = 'sk-ant-test';
+    read.mockResolvedValueOnce(claude({ kind: 'cancellation', summary: 'Annulation Parkos de Marie Dupont' }));
+    expect((await again()).body).toMatchObject({
+      outcome: 'unrecognised',
+      email: { status: 'unrecognised', provider: null, parsed: null, missing: [], reading: { kind: 'cancellation' } },
+    });
+
+    // A complete but unsure reading never becomes a booking because Claude is down at the re-analysis.
+    read.mockResolvedValueOnce(claude({ externalReference: 'PK-654321', confidence: 0.4 }));
+    await receive([parkos(op.address)]);
+    const unsure = await prisma.inboundEmail.findFirstOrThrow({ where: { operatorId: op.operator.id, status: 'incomplete' } });
+    expect(unsure.missing).toEqual(['confidence']);
+    read.mockResolvedValueOnce(null);
+    const kept = await reanalyse(unsure.id, op.token);
+    expect([kept.body.outcome, kept.body.email.status, kept.body.email.missing]).toEqual(['incomplete', 'incomplete', ['confidence']]);
+    expect(await prisma.reservation.count()).toBe(0);
+  });
+
+  it('un mail archivé pendant l’analyse reste archivé ; rattaché à la main pendant l’analyse, il garde sa réservation', async () => {
+    const op = await connected();
+    process.env.ANTHROPIC_API_KEY = 'sk-ant-test';
+    read.mockResolvedValueOnce(claude({ customerPhone: null }));
+    await receive([parkos(op.address)]);
+    const row = await rowOf(op.operator.id, 'incomplete');
+
+    // A colleague archives it while Claude thinks (then Claude does not answer).
+    read.mockImplementationOnce(async () => {
+      expect((await api().post(`/api/internal/inbound/emails/${row.id}/archive`).set(auth(op.token))).status).toBe(200);
+      return null;
+    });
+    const res = await reanalyse(row.id, op.token);
+    expect([res.status, res.body.outcome, res.body.email.status]).toEqual([200, 'incomplete', 'archived']);
+    expect((await api().get('/api/internal/inbound/emails').set(auth(op.token))).body.counts).toEqual({ todo: 0, done: 0, archived: 1 });
+    expect((await prisma.auditLog.findFirstOrThrow({ where: { action: 'inbound.reanalysed', entityId: row.id } })).details).toEqual({
+      from: 'archived',
+      to: 'archived',
+      outcome: 'incomplete',
+    });
+
+    // Another one is typed by hand from the email (« Compléter ») while Claude reads it complete: the hand-made link stays.
+    await receive([item(op.address, filled)]);
+    const typed = await rowOf(op.operator.id, 'imported');
+    await receive([parkos(op.address)]);
+    const waiting = await rowOf(op.operator.id, 'unrecognised');
+    read.mockImplementationOnce(async () => {
+      await prisma.inboundEmail.update({ where: { id: waiting.id }, data: { status: 'imported', reservationId: typed.reservationId } });
+      return claude();
+    });
+    const attached = await reanalyse(waiting.id, op.token);
+    expect([attached.status, attached.body.code]).toEqual([409, 'already_imported']);
+    expect(await prisma.inboundEmail.findUniqueOrThrow({ where: { id: waiting.id } })).toMatchObject({
+      status: 'imported',
+      reservationId: typed.reservationId,
+    });
+    // The booking the analysis made meanwhile is traced.
+    const made = await prisma.reservation.findFirstOrThrow({ where: { operatorId: op.operator.id, externalReference: 'PK-123456' } });
+    expect((await prisma.auditLog.findFirstOrThrow({ where: { action: 'inbound.reanalysed', entityId: waiting.id } })).details).toEqual({
+      from: 'imported',
+      to: 'imported',
+      outcome: 'imported',
+      reservationId: made.id,
+    });
   });
 });

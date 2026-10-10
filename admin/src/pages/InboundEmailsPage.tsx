@@ -1,6 +1,6 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { ChevronLeft, Mail, RefreshCw } from "lucide-react";
-import { Fragment, useEffect, useState, type KeyboardEvent, type ReactNode } from "react";
+import { Fragment, useEffect, useRef, useState, type KeyboardEvent, type ReactNode } from "react";
 import { Link, useNavigate, useSearchParams } from "react-router-dom";
 import { toast } from "sonner";
 import { Badge, type BadgeTone } from "@/components/dashboard/Badge";
@@ -371,6 +371,15 @@ export default function InboundEmailsPage() {
     setView(next);
     select(null, true);
   };
+  // A gesture or an analysis (up to ~40 s) may end after the staff left the inbox: the selection then stays put,
+  // since moving it would navigate back here.
+  const mounted = useRef(true);
+  useEffect(() => {
+    mounted.current = true;
+    return () => {
+      mounted.current = false;
+    };
+  }, []);
   useEffect(() => {
     if (emails.data && wanted && !found) select(null, true);
     // `select` is stable enough: it only wraps setParams.
@@ -396,7 +405,7 @@ export default function InboundEmailsPage() {
     onSuccess: (_result, { id, action }) => {
       toast.success(action === "handle" ? l.handled : l.archived);
       // The mail leaves this tab (always when archived, when handled from « À traiter »): move on to its neighbour.
-      if (action === "archive" || view === "todo") {
+      if (mounted.current && (action === "archive" || view === "todo")) {
         const i = list.findIndex(e => e.id === id);
         const next = list[i + 1] ?? list[i - 1] ?? null;
         select(next?.id ?? null, true);
@@ -419,7 +428,7 @@ export default function InboundEmailsPage() {
       queryClient.setQueryData<InboundEmailList>(["inbound-emails", view], old =>
         old && { ...old, data: leaves ? old.data.filter(e => e.id !== id) : old.data.map(e => (e.id === id ? result.email : e)) },
       );
-      if (leaves && selected?.id === id) {
+      if (mounted.current && leaves && selected?.id === id) {
         const i = list.findIndex(e => e.id === id);
         const next = list[i + 1] ?? list[i - 1] ?? null;
         select(next?.id ?? null, true);

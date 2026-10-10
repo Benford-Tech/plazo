@@ -412,7 +412,7 @@ describe("InboundEmailsPage (M-A « Boîte de réception », T-A « Deux gestes 
       await userEvent.click(reading().getByTestId("inbound-reanalyse"));
       expect(api.reanalyseInboundEmail).toHaveBeenCalledWith("e1");
 
-      await waitFor(() => expect(toast.success).toHaveBeenCalledWith("Analyse relancée : il manque encore téléphone."));
+      await waitFor(() => expect(toast.success).toHaveBeenCalledWith("Analyse relancée, champ encore manquant : téléphone."));
       // Still in « À traiter », still selected: the plate is now read, only the phone is missing.
       expect(screen.getAllByTestId("inbound-row")).toHaveLength(2);
       expect(reading().getByRole("heading", { level: 2, name: "Confirmation AL-884880719" })).toBeInTheDocument();
@@ -429,6 +429,94 @@ describe("InboundEmailsPage (M-A « Boîte de réception », T-A « Deux gestes 
       await userEvent.click(reading().getByTestId("inbound-reanalyse"));
       await waitFor(() => expect(toast.error).toHaveBeenCalledWith("Ce mail est déjà rattaché à une réservation."));
       expect(reading().getByTestId("inbound-reanalyse")).toBeEnabled();
+    });
+
+    it.each([
+      ["text_gone", "Le texte de ce mail a été effacé (30 jours) : il ne peut plus être analysé."],
+      ["analysis_running", "Ce mail vient d'être analysé : réessayez dans 30 secondes."],
+    ])("le refus %s se lit dans les mots communs de l'espace pro", async (code, text) => {
+      api.reanalyseInboundEmail.mockRejectedValue(new ApiError(409, "Refused", code));
+      renderPage();
+      await screen.findAllByTestId("inbound-row");
+      await userEvent.click(reading().getByTestId("inbound-reanalyse"));
+      await waitFor(() => expect(toast.error).toHaveBeenCalledWith(text));
+    });
+
+    it.each<[string, InboundReanalysis["outcome"], Partial<InboundEmail>, string]>([
+      ["doublon", "duplicate", { status: "duplicate", missing: [], reservationId: "r1", reservationReference: "RABC12" }, "Cette réservation existait déjà : le mail y est rattaché."],
+      ["non reconnu", "unrecognised", { status: "unrecognised", provider: null, parsed: null, missing: [] }, "Analyse relancée : ce mail n'est toujours pas reconnu comme une réservation."],
+      [
+        "plusieurs champs",
+        "incomplete",
+        { missing: ["plate", "customerPhone", "customerName"] },
+        "Analyse relancée, champs encore manquants : nom du client, téléphone et plaque.",
+      ],
+      ["refus à l'import", "incomplete", { missing: ["stay_too_long"] }, "Analyse relancée. Réservation refusée à l'import : Séjour de plus de 90 jours."],
+      ["lecture incertaine", "incomplete", { missing: ["confidence"] }, "Analyse relancée : la lecture reste incertaine, vérifiez chaque champ."],
+    ])("toast du résultat : %s", async (_name, outcome, over, text) => {
+      api.reanalyseInboundEmail.mockResolvedValue({ email: { ...email(), analysedAt: "2026-10-10T09:15:00Z", ...over }, outcome });
+      renderPage();
+      await screen.findAllByTestId("inbound-row");
+      await userEvent.click(reading().getByTestId("inbound-reanalyse"));
+      await waitFor(() => expect(toast.success).toHaveBeenCalledWith(text));
+    });
+
+    it("un mail traité qui reste incomplet reste ouvert dans « Traités »", async () => {
+      lists = { todo: [], done: [email({ id: "h1", status: "handled", subject: "Traité à la main" }), email({ id: "h2", status: "handled", subject: "Autre" })], archived: [] };
+      api.reanalyseInboundEmail.mockImplementation((id: string) => {
+        const updated = { ...lists.done.find(e => e.id === id)!, missing: ["customerPhone"], analysedAt: "2026-10-10T09:15:00Z" };
+        lists.done = lists.done.map(e => (e.id === id ? updated : e));
+        return Promise.resolve({ email: updated, outcome: "incomplete" });
+      });
+      renderPage();
+      await screen.findByText("Aucun mail à traiter.");
+      await userEvent.click(tab(/Traités/));
+      await screen.findByRole("heading", { level: 2, name: "Traité à la main" });
+      // Set aside but without booking: it can be analysed again.
+      await userEvent.click(reading().getByTestId("inbound-reanalyse"));
+      await waitFor(() => expect(toast.success).toHaveBeenCalledWith("Analyse relancée, champ encore manquant : téléphone."));
+      expect(screen.getAllByTestId("inbound-row")).toHaveLength(2);
+      expect(reading().getByRole("heading", { level: 2, name: "Traité à la main" })).toBeInTheDocument();
+      await waitFor(() => expect(reading().getByTestId("inbound-analysed")).toBeInTheDocument());
+    });
+
+    it("un mail archivé dont la réservation est créée quitte « Archivés » ; la sélection passe à son voisin", async () => {
+      lists = { todo: [], done: [], archived: [email({ id: "a1", status: "archived", subject: "Archivé un" }), email({ id: "a2", status: "archived", subject: "Archivé deux" })] };
+      api.reanalyseInboundEmail.mockImplementation((id: string) => {
+        const row = move(id, "done", "imported");
+        const imported = { ...row, missing: [], reservationId: "r7", reservationReference: "RAB123", analysedAt: "2026-10-10T09:15:00Z" };
+        lists.done[0] = imported;
+        return Promise.resolve({ email: imported, outcome: "imported" });
+      });
+      renderPage();
+      await screen.findByText("Aucun mail à traiter.");
+      await userEvent.click(tab(/Archivés/));
+      await screen.findByRole("heading", { level: 2, name: "Archivé un" });
+      await userEvent.click(within(screen.getAllByTestId("inbound-row")[0]).getByRole("button"));
+      await userEvent.click(reading().getByTestId("inbound-reanalyse"));
+      await waitFor(() => expect(toast.success).toHaveBeenCalledWith("Réservation RAB123 créée depuis ce mail."));
+      await waitFor(() => expect(screen.getAllByTestId("inbound-row")).toHaveLength(1));
+      expect(screen.getByTestId("search")).toHaveTextContent("?mail=a2");
+      expect(reading().getByRole("heading", { level: 2, name: "Archivé deux" })).toBeInTheDocument();
+      await waitFor(() => expect(tab(/Traités/)).toHaveTextContent("1"));
+    });
+
+    it("quitter la boîte de réception pendant l'analyse : le toast arrive, la page ne revient pas", async () => {
+      const pending = deferred<InboundReanalysis>();
+      api.reanalyseInboundEmail.mockImplementation(() => pending.promise);
+      renderPage();
+      await screen.findAllByTestId("inbound-row");
+      await userEvent.click(reading().getByTestId("inbound-reanalyse"));
+      await userEvent.click(screen.getByRole("link", { name: "Réservations" }));
+      expect(screen.getByTestId("where")).toHaveTextContent("/reservations");
+
+      const row = move("e1", "done", "imported");
+      const imported = { ...row, missing: [], reservationId: "r7", reservationReference: "RAB123", analysedAt: "2026-10-10T09:15:00Z" };
+      pending.resolve({ email: imported, outcome: "imported" });
+      await waitFor(() => expect(toast.success).toHaveBeenCalledWith("Réservation RAB123 créée depuis ce mail."));
+      await new Promise(resolve => setTimeout(resolve, 50));
+      expect(screen.getByTestId("where")).toHaveTextContent("/reservations null");
+      expect(screen.queryByRole("tablist")).toBeNull();
     });
   });
 });

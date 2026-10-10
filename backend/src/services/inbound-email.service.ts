@@ -128,6 +128,8 @@ interface AnalysisInput {
   /** The email's allopark.com links (alloparkLinks) and own recipients (ownRecipientsOf). */
   links: string[];
   recipients: string[];
+  /** A re-analysis: what the stored row says, so that the new analysis never knows less than the one before. */
+  previous?: { parsed: ParsedBooking | null; missing: string[]; reading: ReadingMeta | null };
 }
 
 interface Analysis {
@@ -199,14 +201,15 @@ export class InboundEmailService {
       fromName: item.From?.Name?.trim().slice(0, 120) || null,
       subject: item.Subject?.trim().slice(0, 200) || null,
       textBody: text || null,
-      // 10/10/2026: kept for a re-analysis, the raw HTML is not stored.
-      recipients: ownRecipientsOf(item, INBOUND_EMAIL_DOMAIN),
-      links: alloparkLinks(item.RawHtmlBody, item.RawTextBody),
     };
-    const analysis = await this.analyse({ ...base, text });
+    // 10/10/2026: what a re-analysis needs that the text lost (the raw HTML is not stored); kept only while the email
+    // waits for its booking.
+    const forReanalysis = { recipients: ownRecipientsOf(item, INBOUND_EMAIL_DOMAIN), links: alloparkLinks(item.RawHtmlBody, item.RawTextBody) };
+    const analysis = await this.analyse({ ...base, ...forReanalysis, text });
     await prisma.inboundEmail.create({
       data: {
         ...base,
+        ...(analysis.reservationId ? {} : forReanalysis),
         status: analysis.status,
         ...(analysis.reading ? { reading: analysis.reading as unknown as Prisma.InputJsonValue } : {}),
         ...(analysis.provider ? { provider: analysis.provider } : {}),
@@ -252,6 +255,20 @@ export class InboundEmailService {
           parsed = filled;
         }
       }
+    }
+    // A re-analysis never knows less than the analysis before it: when Claude does not answer this time (no key, a
+    // timeout, a refusal) or Allopark's page no longer does, the fields read then fill what is still blank; nothing of
+    // it stays once Claude reads the email as something else than a booking.
+    const before = input.previous?.parsed;
+    if (before && (!reading || reading.kind === 'booking')) {
+      const own = parsed;
+      const merged = own ? fillGaps(own, before) : { ...before };
+      const kept = !own || (Object.keys(merged) as (keyof ParsedBooking)[]).some(key => key !== 'provider' && !isSet(own[key]) && isSet(merged[key]));
+      // The fields of an unsure reading stay unsure.
+      if (input.previous!.missing.includes('confidence') && (!own || missingForImport(own).some(key => isSet(merged[key])))) unsure = true;
+      // Claude's former reading stays with the fields it gave.
+      if (kept && !reading) reading = input.previous!.reading;
+      parsed = merged;
     }
     // A cancellation, a modification or another kind of mail: shown with Claude's summary, nothing done by itself.
     if (!parsed) return { status: 'unrecognised', provider: null, parsed: null, missing: [], reading, reservationId: null };
@@ -457,7 +474,8 @@ export class InboundEmailService {
    * Allopark page was read, or while Claude was unavailable. Refused for an email with a booking (409
    * `already_imported`), without its text (purged after 30 days: 409 `text_gone`) or analysed less than 30 s ago (409
    * `analysis_running`). A handled or archived email keeps its status unless the booking is made: a re-analysis never
-   * moves an email back to « À traiter » by itself.
+   * moves an email back to « À traiter » by itself; nor does it forget a field read before (Claude or Allopark's page
+   * not answering this time).
    */
   public async reanalyse(actor: AuthenticatedStaff, id: string): Promise<Reanalysis> {
     this.require(actor, 'reservations:manage');
@@ -488,6 +506,7 @@ export class InboundEmailService {
         subject: row.subject,
         links: row.links,
         recipients: row.recipients,
+        previous: { parsed: storedParsed(row.parsed), missing: missingOf(row.missing), reading: readingOf(row.reading) },
       });
     } catch (error) {
       // An unexpected failure frees the email for another try at once.
@@ -495,34 +514,41 @@ export class InboundEmailService {
       throw error;
     }
     const linked = analysis.status === 'imported' || analysis.status === 'duplicate';
-    const status: InboundEmailStatus = linked || TO_CHECK.includes(row.status) ? analysis.status : row.status;
     // Claude's new reading when it answered; none for a booking made without it; else the former one stays.
     const reading = analysis.reading ? { reading: analysis.reading as unknown as Prisma.InputJsonValue } : linked ? { reading: Prisma.DbNull } : {};
-    // An email linked by hand to its booking meanwhile (« Compléter ») keeps that link.
-    const written = await prisma.inboundEmail.updateMany({
-      where: { id, reservationId: null },
-      data: {
-        status,
-        provider: analysis.provider,
-        parsed: analysis.parsed ? (analysis.parsed as unknown as Prisma.InputJsonValue) : Prisma.DbNull,
-        missing: analysis.missing.length ? analysis.missing : Prisma.DbNull,
-        reservationId: analysis.reservationId,
-        ...reading,
-      },
+    // The row as it is now, locked until written: a colleague may have handled, archived or attached it (« Compléter »)
+    // while the analysis ran; a handled or archived email keeps that state, an attached one its booking.
+    const written = await prisma.$transaction(async tx => {
+      await tx.$queryRaw`SELECT id FROM inbound_emails WHERE id = ${id} FOR UPDATE`;
+      const current = await tx.inboundEmail.findUnique({ where: { id }, select: { status: true, reservationId: true } });
+      if (!current || current.reservationId) return { current, status: null };
+      const status: InboundEmailStatus = linked || TO_CHECK.includes(current.status) ? analysis.status : current.status;
+      await tx.inboundEmail.update({
+        where: { id },
+        data: {
+          status,
+          provider: analysis.provider,
+          parsed: analysis.parsed ? (analysis.parsed as unknown as Prisma.InputJsonValue) : Prisma.DbNull,
+          missing: analysis.missing.length ? analysis.missing : Prisma.DbNull,
+          reservationId: analysis.reservationId,
+          // Of no use once the email has its booking (RGPD: minimised as in attach()).
+          ...(linked ? { recipients: [], links: [] } : {}),
+          ...reading,
+        },
+      });
+      return { current, status };
     });
-    if (!written.count) throw new HttpException(httpStatus.CONFLICT, 'This email already has its booking', 'already_imported');
+    if (!written.current) throw new HttpException(httpStatus.NOT_FOUND, 'Email not found', 'not_found');
+    const details = {
+      from: written.current.status,
+      to: written.status ?? written.current.status,
+      outcome: analysis.status,
+      ...(analysis.reservationId ? { reservationId: analysis.reservationId } : {}),
+    };
+    // Traced even when refused: the analysis may have made a booking before the email was attached by hand.
+    await this.audit.record(actor, { action: 'inbound.reanalysed', entityType: 'inbound_email', entityId: id, details });
+    if (!written.status) throw new HttpException(httpStatus.CONFLICT, 'This email already has its booking', 'already_imported');
     const updated = await prisma.inboundEmail.findUniqueOrThrow({ where: { id }, include: { reservation: { select: { reference: true } } } });
-    await this.audit.record(actor, {
-      action: 'inbound.reanalysed',
-      entityType: 'inbound_email',
-      entityId: id,
-      details: {
-        from: row.status,
-        to: status,
-        outcome: analysis.status,
-        ...(analysis.reservationId ? { reservationId: analysis.reservationId } : {}),
-      },
-    });
     return { email: this.view(updated), outcome: analysis.status };
   }
 
@@ -607,6 +633,18 @@ type InboundRow = {
   receivedAt: Date;
   reservation: { reference: string } | null;
 };
+
+/** The booking fields as stored (null for an email nothing was read from, or a Gmail confirmation's code). */
+function storedParsed(value: Prisma.JsonValue | null): ParsedBooking | null {
+  if (!value || typeof value !== 'object' || Array.isArray(value)) return null;
+  return typeof (value as Record<string, unknown>).provider === 'string' ? (value as unknown as ParsedBooking) : null;
+}
+
+function missingOf(value: Prisma.JsonValue | null): string[] {
+  return Array.isArray(value) ? value.filter((v): v is string => typeof v === 'string') : [];
+}
+
+const isSet = (value: unknown) => value !== undefined && value !== null && value !== '';
 
 /** The reading as stored, or null for a row written before L-A or never read. */
 function readingOf(value: Prisma.JsonValue | null): ReadingMeta | null {

@@ -83,8 +83,9 @@ export const fr = {
     // « Relancer l'analyse » (10/10/2026); `already_imported` is worded for the inbox in `inboundFr.list.errors`.
     text_gone:
       "Le texte de ce mail a été effacé (30 jours) : il ne peut plus être analysé.",
+    // Refused within 30 s of the last analysis, whether it is still running or already done.
     analysis_running:
-      "L'analyse de ce mail est déjà en cours : réessayez dans un instant.",
+      "Ce mail vient d'être analysé : réessayez dans 30 secondes.",
     trip_not_running: "Ce trajet est terminé.",
     invalid_passengers:
       "Un des clients ne peut pas monter dans cette navette (statut changé ?). Actualisez la liste.",
@@ -2591,9 +2592,9 @@ export const inboundFr = {
           ? `Réservation ${ref} créée depuis ce mail.`
           : "Réservation créée depuis ce mail.",
       duplicate: "Cette réservation existait déjà : le mail y est rattaché.",
-      /** The missing fields, by their labels: « téléphone et plaque ». */
+      /** The missing fields, listed after a colon by their labels: « champs encore manquants : téléphone et plaque ». */
       missing: (labels: string[]) =>
-        `Analyse relancée : il manque encore ${
+        `Analyse relancée, ${labels.length > 1 ? "champs encore manquants" : "champ encore manquant"} : ${
           labels.length > 1
             ? `${labels.slice(0, -1).join(", ")} et ${labels[labels.length - 1]}`
             : labels[0]
