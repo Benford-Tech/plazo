@@ -1,4 +1,5 @@
 import prisma from '@/database';
+import { addDays, localDate } from '@/domain/time';
 import { addStaff, api, resetDatabase, setupOperator } from './utils/helpers';
 
 beforeEach(resetDatabase);
@@ -202,6 +203,53 @@ describe('planning et recherche', () => {
     }
     expect((await api().get(`/api/internal/reservations/${created.id}`).set(auth(b.token))).status).toBe(404);
     expect((await api().patch(`/api/internal/reservations/${created.id}`).set(auth(b.token)).send({ passengers: 1 })).status).toBe(404);
+  });
+});
+
+describe('liste dans l’ordre chronologique (10/10/2026)', () => {
+  const day = (offset: number) => addDays(localDate(new Date(), 'Europe/Paris'), offset);
+  const list = (token: string, query = '') => api().get(`/api/internal/reservations?limit=2${query}`).set(auth(token));
+  const plates = (res: { body: { docs: { plate: string }[] } }) => res.body.docs.map(r => r.plate);
+
+  it('par arrivée, la page 1 commence aujourd’hui, les pages d’avant remontent le temps', async () => {
+    const { token } = await setupOperator();
+    expect((await list(token)).body).toMatchObject({ docs: [], page: 1, pageNumber: 1, totalPages: 1, hasPrevPage: false, hasNextPage: false });
+    // Created out of order; « hier 23:30 » is before today in the parking's day, « aujourd'hui 00:30 » is today.
+    const stays: [string, number, string][] = [
+      ['AA-002-AA', 1, '08:00'],
+      ['AA-000-AA', -5, '10:00'],
+      ['AA-003-AA', 0, '00:30'],
+      ['AA-005-AA', 2, '08:00'],
+      ['AA-001-AA', -3, '10:00'],
+      ['AA-004-AA', -1, '23:30'],
+    ];
+    for (const [plate, offset, time] of stays) {
+      const res = await api()
+        .post('/api/internal/reservations')
+        .set(auth(token))
+        .send(booking({ plate, arrivalAt: `${day(offset)}T${time}`, returnAt: `${day(offset + 3)}T10:00`, returnFlight: '' }));
+      expect(res.status).toBe(201);
+    }
+    const first = await list(token);
+    expect(plates(first)).toEqual(['AA-003-AA', 'AA-002-AA']);
+    expect(first.body).toMatchObject({ totalDocs: 6, page: 1, pageNumber: 3, totalPages: 4, hasPrevPage: true, hasNextPage: true });
+    const next = await list(token, '&page=2');
+    expect(plates(next)).toEqual(['AA-005-AA']);
+    expect(next.body).toMatchObject({ page: 2, pageNumber: 4, hasNextPage: false });
+    const earlier = await list(token, '&page=0');
+    expect(plates(earlier)).toEqual(['AA-001-AA', 'AA-004-AA']);
+    expect(earlier.body).toMatchObject({ page: 0, pageNumber: 2, hasPrevPage: true, hasNextPage: true });
+    const earliest = await list(token, '&page=-1');
+    expect(plates(earliest)).toEqual(['AA-000-AA']);
+    expect(earliest.body).toMatchObject({ page: -1, pageNumber: 1, hasPrevPage: false });
+    // Out of range: the nearest page.
+    expect((await list(token, '&page=-7')).body.page).toBe(-1);
+    expect((await list(token, '&page=9')).body.page).toBe(2);
+    // A search lists every match from the earliest.
+    const search = await list(token, '&q=laurent');
+    expect(plates(search)).toEqual(['AA-000-AA', 'AA-001-AA']);
+    expect(search.body).toMatchObject({ page: 1, pageNumber: 1, totalPages: 3, hasPrevPage: false, hasNextPage: true });
+    expect(plates(await list(token, '&q=laurent&page=3'))).toEqual(['AA-002-AA', 'AA-005-AA']);
   });
 });
 

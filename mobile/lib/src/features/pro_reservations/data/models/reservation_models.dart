@@ -78,7 +78,8 @@ abstract class ReservationSpotModel with _$ReservationSpotModel {
   factory ReservationSpotModel.fromJson(Map<String, dynamic> json) => _$ReservationSpotModelFromJson(json);
 }
 
-/// GET /internal/reservations?q=&page=&limit= (mongoose-style page).
+/// GET /internal/reservations?q=&page=&limit= (mongoose-style page). Chronological since 10/10/2026: by arrival, the
+/// earliest first; without a search page 1 opens on today and pages 0, -1… go back in time (`hasPrevPage`).
 @freezed
 abstract class ReservationPageModel with _$ReservationPageModel {
   const factory ReservationPageModel({
@@ -86,6 +87,7 @@ abstract class ReservationPageModel with _$ReservationPageModel {
     @Default(0) int totalDocs,
     @Default(1) int page,
     @Default(1) int totalPages,
+    @Default(false) bool hasPrevPage,
     @Default(false) bool hasNextPage,
   }) = _ReservationPageModel;
 
@@ -111,6 +113,7 @@ abstract class ReservationInput with _$ReservationInput {
     required String arrivalAt,
     required String returnAt,
     @Default(2) int passengers,
+
     /// 09/10/2026: first and last name apart; the server stores "Prénom Nom" as `customerName`.
     @Default('') String customerFirstName,
     @Default('') String customerLastName,

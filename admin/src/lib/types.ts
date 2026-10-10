@@ -368,6 +368,14 @@ export interface Paginated<T> {
   hasNextPage: boolean;
 }
 
+/**
+ * GET /internal/reservations (10/10/2026): chronological, by arrival. Without a search page 1 opens on today, pages 0
+ * and below go back in time; `pageNumber` is the page's place among all of them, for « Page 3 / 4 ».
+ */
+export interface ReservationPage extends Paginated<Reservation> {
+  pageNumber?: number;
+}
+
 /** What the server read from a pasted confirmation email. Dates are local, "YYYY-MM-DDTHH:mm". */
 export interface ParsedBooking {
   provider: string;
@@ -767,8 +775,10 @@ export interface PlatformReservation {
   parking: { name: string };
 }
 
+/** By arrival, the earliest first; without a date filter page 1 opens on today (10/10/2026, as `ReservationPage`). */
 export type PlatformReservations = Paginated<PlatformReservation> & {
   operators: { id: string; name: string }[];
+  pageNumber?: number;
 };
 
 export type PayoutSchedule =

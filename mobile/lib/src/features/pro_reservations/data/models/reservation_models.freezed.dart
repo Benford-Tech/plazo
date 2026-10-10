@@ -749,7 +749,7 @@ as String,
 /// @nodoc
 mixin _$ReservationPageModel {
 
- List<ReservationModel> get docs; int get totalDocs; int get page; int get totalPages; bool get hasNextPage;
+ List<ReservationModel> get docs; int get totalDocs; int get page; int get totalPages; bool get hasPrevPage; bool get hasNextPage;
 /// Create a copy of ReservationPageModel
 /// with the given fields replaced by the non-null parameter values.
 @JsonKey(includeFromJson: false, includeToJson: false)
@@ -763,20 +763,20 @@ $ReservationPageModelCopyWith<ReservationPageModel> get copyWith => _$Reservatio
 @override
 bool operator ==(Object other) {
   final _this = this as ReservationPageModel;
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is ReservationPageModel&&const DeepCollectionEquality().equals(other.docs, _this.docs)&&(identical(other.totalDocs, _this.totalDocs) || other.totalDocs == _this.totalDocs)&&(identical(other.page, _this.page) || other.page == _this.page)&&(identical(other.totalPages, _this.totalPages) || other.totalPages == _this.totalPages)&&(identical(other.hasNextPage, _this.hasNextPage) || other.hasNextPage == _this.hasNextPage));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is ReservationPageModel&&const DeepCollectionEquality().equals(other.docs, _this.docs)&&(identical(other.totalDocs, _this.totalDocs) || other.totalDocs == _this.totalDocs)&&(identical(other.page, _this.page) || other.page == _this.page)&&(identical(other.totalPages, _this.totalPages) || other.totalPages == _this.totalPages)&&(identical(other.hasPrevPage, _this.hasPrevPage) || other.hasPrevPage == _this.hasPrevPage)&&(identical(other.hasNextPage, _this.hasNextPage) || other.hasNextPage == _this.hasNextPage));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
 int get hashCode {
   final _this = this as ReservationPageModel;
-  return Object.hash(runtimeType,const DeepCollectionEquality().hash(_this.docs),_this.totalDocs,_this.page,_this.totalPages,_this.hasNextPage);
+  return Object.hash(runtimeType,const DeepCollectionEquality().hash(_this.docs),_this.totalDocs,_this.page,_this.totalPages,_this.hasPrevPage,_this.hasNextPage);
 }
 
 @override
 String toString() {
   final _this = this as ReservationPageModel;
-  return 'ReservationPageModel(docs: ${_this.docs}, totalDocs: ${_this.totalDocs}, page: ${_this.page}, totalPages: ${_this.totalPages}, hasNextPage: ${_this.hasNextPage})';
+  return 'ReservationPageModel(docs: ${_this.docs}, totalDocs: ${_this.totalDocs}, page: ${_this.page}, totalPages: ${_this.totalPages}, hasPrevPage: ${_this.hasPrevPage}, hasNextPage: ${_this.hasNextPage})';
 }
 
 
@@ -787,7 +787,7 @@ abstract mixin class $ReservationPageModelCopyWith<$Res>  {
   factory $ReservationPageModelCopyWith(ReservationPageModel value, $Res Function(ReservationPageModel) _then) = _$ReservationPageModelCopyWithImpl;
 @useResult
 $Res call({
- List<ReservationModel> docs, int totalDocs, int page, int totalPages, bool hasNextPage
+ List<ReservationModel> docs, int totalDocs, int page, int totalPages, bool hasPrevPage, bool hasNextPage
 });
 
 
@@ -804,13 +804,14 @@ class _$ReservationPageModelCopyWithImpl<$Res>
 
 /// Create a copy of ReservationPageModel
 /// with the given fields replaced by the non-null parameter values.
-@pragma('vm:prefer-inline') @override $Res call({Object? docs = null,Object? totalDocs = null,Object? page = null,Object? totalPages = null,Object? hasNextPage = null,}) {
+@pragma('vm:prefer-inline') @override $Res call({Object? docs = null,Object? totalDocs = null,Object? page = null,Object? totalPages = null,Object? hasPrevPage = null,Object? hasNextPage = null,}) {
   return _then(ReservationPageModel(
 docs: null == docs ? _self.docs : docs // ignore: cast_nullable_to_non_nullable
 as List<ReservationModel>,totalDocs: null == totalDocs ? _self.totalDocs : totalDocs // ignore: cast_nullable_to_non_nullable
 as int,page: null == page ? _self.page : page // ignore: cast_nullable_to_non_nullable
 as int,totalPages: null == totalPages ? _self.totalPages : totalPages // ignore: cast_nullable_to_non_nullable
-as int,hasNextPage: null == hasNextPage ? _self.hasNextPage : hasNextPage // ignore: cast_nullable_to_non_nullable
+as int,hasPrevPage: null == hasPrevPage ? _self.hasPrevPage : hasPrevPage // ignore: cast_nullable_to_non_nullable
+as bool,hasNextPage: null == hasNextPage ? _self.hasNextPage : hasNextPage // ignore: cast_nullable_to_non_nullable
 as bool,
   ));
 }
@@ -896,10 +897,10 @@ return $default(_that);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( List<ReservationModel> docs,  int totalDocs,  int page,  int totalPages,  bool hasNextPage)?  $default,{required TResult orElse(),}) {final _that = this;
+@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( List<ReservationModel> docs,  int totalDocs,  int page,  int totalPages,  bool hasPrevPage,  bool hasNextPage)?  $default,{required TResult orElse(),}) {final _that = this;
 switch (_that) {
 case _ReservationPageModel() when $default != null:
-return $default(_that.docs,_that.totalDocs,_that.page,_that.totalPages,_that.hasNextPage);case _:
+return $default(_that.docs,_that.totalDocs,_that.page,_that.totalPages,_that.hasPrevPage,_that.hasNextPage);case _:
   return orElse();
 
 }
@@ -917,10 +918,10 @@ return $default(_that.docs,_that.totalDocs,_that.page,_that.totalPages,_that.has
 /// }
 /// ```
 
-@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( List<ReservationModel> docs,  int totalDocs,  int page,  int totalPages,  bool hasNextPage)  $default,) {final _that = this;
+@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( List<ReservationModel> docs,  int totalDocs,  int page,  int totalPages,  bool hasPrevPage,  bool hasNextPage)  $default,) {final _that = this;
 switch (_that) {
 case _ReservationPageModel():
-return $default(_that.docs,_that.totalDocs,_that.page,_that.totalPages,_that.hasNextPage);case _:
+return $default(_that.docs,_that.totalDocs,_that.page,_that.totalPages,_that.hasPrevPage,_that.hasNextPage);case _:
   throw StateError('Unexpected subclass');
 
 }
@@ -937,10 +938,10 @@ return $default(_that.docs,_that.totalDocs,_that.page,_that.totalPages,_that.has
 /// }
 /// ```
 
-@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( List<ReservationModel> docs,  int totalDocs,  int page,  int totalPages,  bool hasNextPage)?  $default,) {final _that = this;
+@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( List<ReservationModel> docs,  int totalDocs,  int page,  int totalPages,  bool hasPrevPage,  bool hasNextPage)?  $default,) {final _that = this;
 switch (_that) {
 case _ReservationPageModel() when $default != null:
-return $default(_that.docs,_that.totalDocs,_that.page,_that.totalPages,_that.hasNextPage);case _:
+return $default(_that.docs,_that.totalDocs,_that.page,_that.totalPages,_that.hasPrevPage,_that.hasNextPage);case _:
   return null;
 
 }
@@ -952,7 +953,7 @@ return $default(_that.docs,_that.totalDocs,_that.page,_that.totalPages,_that.has
 @JsonSerializable()
 
 class _ReservationPageModel implements ReservationPageModel {
-  const _ReservationPageModel({ List<ReservationModel> docs = const [], this.totalDocs = 0, this.page = 1, this.totalPages = 1, this.hasNextPage = false}): _docs = docs;
+  const _ReservationPageModel({ List<ReservationModel> docs = const [], this.totalDocs = 0, this.page = 1, this.totalPages = 1, this.hasPrevPage = false, this.hasNextPage = false}): _docs = docs;
   factory _ReservationPageModel.fromJson(Map<String, dynamic> json) => _$ReservationPageModelFromJson(json);
 
  final  List<ReservationModel> _docs;
@@ -965,6 +966,7 @@ class _ReservationPageModel implements ReservationPageModel {
 @override@JsonKey() final  int totalDocs;
 @override@JsonKey() final  int page;
 @override@JsonKey() final  int totalPages;
+@override@JsonKey() final  bool hasPrevPage;
 @override@JsonKey() final  bool hasNextPage;
 
 /// Create a copy of ReservationPageModel
@@ -980,18 +982,18 @@ Map<String, dynamic> toJson() {
 
 @override
 bool operator ==(Object other) {
-    return identical(this, other) || (other.runtimeType == runtimeType&&other is _ReservationPageModel&&const DeepCollectionEquality().equals(other.docs, _docs)&&(identical(other.totalDocs, totalDocs) || other.totalDocs == totalDocs)&&(identical(other.page, page) || other.page == page)&&(identical(other.totalPages, totalPages) || other.totalPages == totalPages)&&(identical(other.hasNextPage, hasNextPage) || other.hasNextPage == hasNextPage));
+    return identical(this, other) || (other.runtimeType == runtimeType&&other is _ReservationPageModel&&const DeepCollectionEquality().equals(other.docs, _docs)&&(identical(other.totalDocs, totalDocs) || other.totalDocs == totalDocs)&&(identical(other.page, page) || other.page == page)&&(identical(other.totalPages, totalPages) || other.totalPages == totalPages)&&(identical(other.hasPrevPage, hasPrevPage) || other.hasPrevPage == hasPrevPage)&&(identical(other.hasNextPage, hasNextPage) || other.hasNextPage == hasNextPage));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
 int get hashCode {
-    return Object.hash(runtimeType,const DeepCollectionEquality().hash(_docs),totalDocs,page,totalPages,hasNextPage);
+    return Object.hash(runtimeType,const DeepCollectionEquality().hash(_docs),totalDocs,page,totalPages,hasPrevPage,hasNextPage);
 }
 
 @override
 String toString() {
-    return 'ReservationPageModel(docs: $docs, totalDocs: $totalDocs, page: $page, totalPages: $totalPages, hasNextPage: $hasNextPage)';
+    return 'ReservationPageModel(docs: $docs, totalDocs: $totalDocs, page: $page, totalPages: $totalPages, hasPrevPage: $hasPrevPage, hasNextPage: $hasNextPage)';
 }
 
 
@@ -1002,7 +1004,7 @@ abstract mixin class _$ReservationPageModelCopyWith<$Res> implements $Reservatio
   factory _$ReservationPageModelCopyWith(_ReservationPageModel value, $Res Function(_ReservationPageModel) _then) = __$ReservationPageModelCopyWithImpl;
 @override @useResult
 $Res call({
- List<ReservationModel> docs, int totalDocs, int page, int totalPages, bool hasNextPage
+ List<ReservationModel> docs, int totalDocs, int page, int totalPages, bool hasPrevPage, bool hasNextPage
 });
 
 
@@ -1019,13 +1021,14 @@ class __$ReservationPageModelCopyWithImpl<$Res>
 
 /// Create a copy of ReservationPageModel
 /// with the given fields replaced by the non-null parameter values.
-@override @pragma('vm:prefer-inline') $Res call({Object? docs = null,Object? totalDocs = null,Object? page = null,Object? totalPages = null,Object? hasNextPage = null,}) {
+@override @pragma('vm:prefer-inline') $Res call({Object? docs = null,Object? totalDocs = null,Object? page = null,Object? totalPages = null,Object? hasPrevPage = null,Object? hasNextPage = null,}) {
   return _then(_ReservationPageModel(
 docs: null == docs ? _self._docs : docs // ignore: cast_nullable_to_non_nullable
 as List<ReservationModel>,totalDocs: null == totalDocs ? _self.totalDocs : totalDocs // ignore: cast_nullable_to_non_nullable
 as int,page: null == page ? _self.page : page // ignore: cast_nullable_to_non_nullable
 as int,totalPages: null == totalPages ? _self.totalPages : totalPages // ignore: cast_nullable_to_non_nullable
-as int,hasNextPage: null == hasNextPage ? _self.hasNextPage : hasNextPage // ignore: cast_nullable_to_non_nullable
+as int,hasPrevPage: null == hasPrevPage ? _self.hasPrevPage : hasPrevPage // ignore: cast_nullable_to_non_nullable
+as bool,hasNextPage: null == hasNextPage ? _self.hasNextPage : hasNextPage // ignore: cast_nullable_to_non_nullable
 as bool,
   ));
 }

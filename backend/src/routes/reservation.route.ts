@@ -29,11 +29,15 @@ import { ValidationMiddleware } from '@/middlewares/validation.middleware';
  *       - { in: query, name: excludeId, schema: { type: string }, description: "Reservation being edited" }
  * /internal/reservations:
  *   get:
- *     summary: Search reservations (plate, name, phone or reference)
+ *     summary: Search reservations (plate, name, phone or reference), in chronological order
+ *     description: >
+ *       By arrival, the earliest first. Without q, page 1 opens on today's first arrival (the parking's local day) and
+ *       pages 0, -1… go back in time; pageNumber is the page's place among all of them (« Page 3 / 4 »). With q, every
+ *       match from the earliest, pages from 1.
  *     tags: [Reservations]
  *     parameters:
  *       - { in: query, name: q, schema: { type: string } }
- *       - { in: query, name: page, schema: { type: integer } }
+ *       - { in: query, name: page, schema: { type: integer, description: "1 by default; 0 and below: before today (without q)" } }
  *       - { in: query, name: limit, schema: { type: integer } }
  *   post:
  *     summary: Create a reservation

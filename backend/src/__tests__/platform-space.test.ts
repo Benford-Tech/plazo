@@ -935,7 +935,9 @@ describe('réservations et paiements de toute la plateforme', () => {
 
     const all = await api().get(`${P}/reservations`).set(auth(admin.token));
     expect(all.body.totalDocs).toBe(2);
-    expect(all.body.docs[0]).toMatchObject({
+    // By arrival, the earliest first (10/10/2026).
+    expect(all.body.docs.map((d: { operator: { id: string } }) => d.operator.id)).toEqual([loueur.operator.id, admin.operator.id]);
+    expect(all.body.docs[1]).toMatchObject({
       plate: 'AB-123-CD',
       amountCents: 4500,
       channel: 'phone',
@@ -954,6 +956,24 @@ describe('réservations et paiements de toute la plateforme', () => {
       ),
     ).toEqual([admin.operator.id]);
     expect((await api().get(`${P}/reservations?from=12/02/2030`).set(auth(admin.token))).body.fields).toEqual({ from: 'invalid_date' });
+
+    // Without a date filter the list opens on today: a past booking is one page back.
+    await prisma.reservation.updateMany({
+      where: { operatorId: loueur.operator.id },
+      data: { arrivalAt: new Date('2020-01-10T08:00:00Z'), returnAt: new Date('2020-01-12T08:00:00Z') },
+    });
+    const today = await api().get(`${P}/reservations`).set(auth(admin.token));
+    expect(today.body).toMatchObject({ totalDocs: 2, page: 1, pageNumber: 2, totalPages: 2, hasPrevPage: true, hasNextPage: false });
+    expect(today.body.docs.map((d: { operator: { id: string } }) => d.operator.id)).toEqual([admin.operator.id]);
+    const earlier = await api().get(`${P}/reservations?page=0`).set(auth(admin.token));
+    expect(earlier.body).toMatchObject({ page: 0, pageNumber: 1, hasPrevPage: false, hasNextPage: true });
+    expect(earlier.body.docs.map((d: { operator: { id: string } }) => d.operator.id)).toEqual([loueur.operator.id]);
+    // A date filter lists from the earliest match, pages from 1.
+    expect((await api().get(`${P}/reservations?from=2020-01-01`).set(auth(admin.token))).body).toMatchObject({
+      page: 1,
+      pageNumber: 1,
+      totalPages: 1,
+    });
   });
 
   it('montre les reversements et relance un reversement refusé', async () => {

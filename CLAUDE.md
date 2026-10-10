@@ -199,6 +199,14 @@ Ne construire QUE ce qui règle la douleur n°1 du client.
    - Vue planning : arrivées et retours du jour, taux d'occupation, alerte de surréservation
      calculée sur la capacité réelle.
    - Fiche réservation : client, téléphone, plaque, dates/heures, n° de vol retour, nb de passagers, statut.
+   - **Listes chronologiques (10/10/2026, « Les réservations doivent être affichées de manière chronologique »)** : la liste
+     Réservations (web `/pro/reservations`, app Plazo Pro) et Plateforme › Réservations vont par date d'arrivée, la plus
+     ancienne d'abord (puis `id`) ; sans recherche (ni filtre de dates pour la plateforme), la page 1 commence à la première
+     arrivée d'aujourd'hui (jour local du parking, Europe/Paris pour la plateforme) et les pages 0, -1… remontent le temps
+     (`domain/chronological-pages.ts`, `chronologicalPage` ; réponse `page`, `pageNumber` pour « Page 3 / 4 », `totalPages`,
+     `hasPrevPage`) ; une recherche liste tout depuis la plus ancienne. Web : ligne « Par date d'arrivée, à partir
+     d'aujourd'hui » (« avant aujourd'hui » sur les pages d'avant), « Précédent » remonte ; app : bouton « Réservations
+     précédentes » en tête de liste, une réservation créée dans l'app prend sa place par arrivée.
    - **Décision A du 06/10/2026 (« un seul geste par étape », voir SPEC.md bloc 1)** : statut `back_at_parking` « De retour au
      parking » entre « Retour demandé » et « Rendu » ; placer la voiture = arrivée enregistrée ; fin de navette de retour =
      « De retour au parking » ; « Rendu » décroche les clés et accepte une remarque ; alerte `no_show_suspected` (sur les arrivées des 24 dernières heures) ; push
