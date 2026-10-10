@@ -848,3 +848,92 @@ describe('lecture par Claude des mails inconnus (L-A, 08/10/2026)', () => {
     expect(await prisma.inboundEmail.count({ where: { status: 'unrecognised' } })).toBe(2);
   });
 });
+
+describe('Allopark : la page de la réservation complète le mail (10/10/2026)', () => {
+  const page = readFileSync(join(__dirname, 'fixtures/allopark-page.html'), 'utf8');
+  const pageUrl = 'https://www.allopark.com/fr-be/confirmation?email=parking%40example.com&reference=AL-884880719&view=parking';
+  const link =
+    '<a href="https://www.allopark.com/fr-be/confirmation?email=parking@example.com&amp;reference=AL-884880719&amp;view=parking">Consulter ma réservation</a>';
+  const post = (items: unknown[]) => api().post('/api/public/inbound/email').set('X-Inbound-Secret', 'inbound-test-secret').send({ items });
+  const reader = Container.get(EmailReadingService);
+  let read: jest.SpyInstance;
+  const allopark = () => fetchMock.mock.calls.filter(([u]) => String(u).startsWith('https://www.allopark.com/'));
+  const answer = (respond: (url: string) => Response) =>
+    fetchMock.mockImplementation(async url =>
+      String(url).includes('allopark.com') ? respond(String(url)) : new Response(JSON.stringify({ id: 'n1' }), { status: 200 }),
+    );
+  const connected = async () => {
+    const op = await setupOperator();
+    const settings = await api().get('/api/internal/inbound/settings').set(auth(op.token));
+    return { ...op, address: settings.body.address as string };
+  };
+  beforeEach(() => {
+    process.env.ANTHROPIC_API_KEY = 'sk-ant-test';
+    read = jest.spyOn(reader, 'read').mockResolvedValue(null);
+  });
+  afterEach(() => {
+    delete process.env.ANTHROPIC_API_KEY;
+    read.mockRestore();
+  });
+
+  it('ouvre le lien « Consulter ma réservation » et crée la réservation avec ce que la page montre, sans Claude', async () => {
+    const op = await connected();
+    answer(() => new Response(page, { status: 200, headers: { 'Content-Type': 'text/html; charset=UTF-8' } }));
+    // The email as Allopark sends it: « Vos informations » blank, the link in its HTML part.
+    const res = await post([item(op.address, email, { RawHtmlBody: `<p>Bonjour Jean Dupont,</p>${link}` })]);
+    expect(res.body).toEqual({ received: 1, imported: 1, toCheck: 0, ignored: 0 });
+    expect(allopark()).toHaveLength(1);
+    const [url, init] = allopark()[0];
+    expect(String(url)).toBe(pageUrl);
+    expect(init).toMatchObject({ redirect: 'manual' });
+    expect(read).not.toHaveBeenCalled();
+    const booking = await prisma.reservation.findFirstOrThrow({ where: { operatorId: op.operator.id } });
+    expect(booking).toMatchObject({
+      channelDetail: 'Allopark',
+      externalReference: 'AL-884880719',
+      customerName: 'Jean Dupont',
+      customerFirstName: 'Jean',
+      customerLastName: 'Dupont',
+      customerPhone: '+33 6 12 34 56 78',
+      customerEmail: 'jean.dupont@example.com',
+      plate: 'GK-318-PX',
+      passengers: 3,
+      departureFlight: 'TO 3626',
+      returnFlight: 'TO 3627',
+      vehicleModel: 'Peugeot 308',
+      // The email's amount.
+      priceCents: 3499,
+    });
+  });
+
+  it('sans lien, la page de la boîte du parking (destinataire du mail transféré) ; une page en erreur ou qui renvoie ailleurs laisse le mail à vérifier', async () => {
+    const op = await connected();
+    // A forwarded email: still addressed to the parking's mailbox, the Plazo address only in the envelope.
+    const forwarded = (subject: string) =>
+      item('parking@example.com', email, { Recipients: [op.address], Subject: subject, To: [{ Name: 'Parking', Address: 'parking@example.com' }] });
+
+    answer(() => new Response('Service Unavailable', { status: 503 }));
+    expect((await post([forwarded('en erreur')])).body).toEqual({ received: 1, imported: 0, toCheck: 1, ignored: 0 });
+    expect(allopark().map(([u]) => String(u))).toEqual([pageUrl]);
+    // Claude is still asked for what the page did not give.
+    expect(read).toHaveBeenCalledTimes(1);
+
+    fetchMock.mockClear();
+    answer(() => new Response(null, { status: 302, headers: { Location: 'https://example.test/ailleurs' } }));
+    expect((await post([forwarded('ailleurs')])).body.toCheck).toBe(1);
+    expect(fetchMock.mock.calls.map(([u]) => String(u))).not.toContain('https://example.test/ailleurs');
+
+    fetchMock.mockClear();
+    answer(url =>
+      url.includes('/fr-be/confirmation') ? new Response(null, { status: 301, headers: { Location: '/fr/confirmation?x=1' } }) : new Response(page),
+    );
+    expect((await post([forwarded('redirigé')])).body.imported).toBe(1);
+    expect(allopark().map(([u]) => String(u))).toEqual([pageUrl, 'https://www.allopark.com/fr/confirmation?x=1']);
+
+    const waiting = await prisma.inboundEmail.findMany({ where: { operatorId: op.operator.id, status: 'incomplete' }, orderBy: { subject: 'asc' } });
+    expect(waiting.map(e => [e.subject, e.missing])).toEqual([
+      ['ailleurs', ['customerPhone', 'plate']],
+      ['en erreur', ['customerPhone', 'plate']],
+    ]);
+  });
+});
