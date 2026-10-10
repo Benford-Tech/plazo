@@ -80,6 +80,11 @@ export const fr = {
     // T-A (08/10/2026): the two refusals of the inbox.
     archived: "Ce mail est archivé : il ne peut plus être marqué comme traité.",
     forwarding: "Une confirmation de transfert ne s'archive pas.",
+    // « Relancer l'analyse » (10/10/2026); `already_imported` is worded for the inbox in `inboundFr.list.errors`.
+    text_gone:
+      "Le texte de ce mail a été effacé (30 jours) : il ne peut plus être analysé.",
+    analysis_running:
+      "L'analyse de ce mail est déjà en cours : réessayez dans un instant.",
     trip_not_running: "Ce trajet est terminé.",
     invalid_passengers:
       "Un des clients ne peut pas monter dans cette navette (statut changé ?). Actualisez la liste.",
@@ -2575,6 +2580,35 @@ export const inboundFr = {
     handled: "Mail marqué comme traité.",
     archived: "Mail archivé.",
     attached: "Mail rattaché à la réservation.",
+    /** « Relancer l'analyse » (10/10/2026): the reception's pipeline again, for a mail not attached to a booking. */
+    reanalyse: "Relancer l'analyse",
+    reanalysing: "Analyse en cours…",
+    analysedAgain: "Analysé de nouveau le",
+    reanalysed: {
+      imported: (ref: string | null) =>
+        ref
+          ? `Réservation ${ref} créée depuis ce mail.`
+          : "Réservation créée depuis ce mail.",
+      duplicate: "Cette réservation existait déjà : le mail y est rattaché.",
+      /** The missing fields, by their labels: « téléphone et plaque ». */
+      missing: (labels: string[]) =>
+        `Analyse relancée : il manque encore ${
+          labels.length > 1
+            ? `${labels.slice(0, -1).join(", ")} et ${labels[labels.length - 1]}`
+            : labels[0]
+        }.`,
+      refused: (reasons: string) =>
+        `Analyse relancée. Réservation refusée à l'import : ${reasons}`,
+      unsure:
+        "Analyse relancée : la lecture reste incertaine, vérifiez chaque champ.",
+      incomplete: "Analyse relancée : il manque encore des informations.",
+      unrecognised:
+        "Analyse relancée : ce mail n'est toujours pas reconnu comme une réservation.",
+    },
+    /** The refusals of « Relancer l'analyse » worded for this screen (`text_gone`, `analysis_running`: `fr.errors`). */
+    errors: {
+      already_imported: "Ce mail est déjà rattaché à une réservation.",
+    } as Record<string, string>,
     back: "Réservations",
     backToList: "Retour",
   },

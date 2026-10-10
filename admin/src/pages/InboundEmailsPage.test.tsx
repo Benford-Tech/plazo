@@ -2,10 +2,13 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { render, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { MemoryRouter, Route, Routes, useLocation } from "react-router-dom";
-import type { InboundEmail, InboundEmailView } from "@/lib/types";
+import { ApiError } from "@/lib/api";
+import type { InboundEmail, InboundEmailView, InboundReanalysis } from "@/lib/types";
 import InboundEmailsPage from "./InboundEmailsPage";
 
-const api = vi.hoisted(() => ({ getInboundEmails: vi.fn(), handleInboundEmail: vi.fn(), archiveInboundEmail: vi.fn() }));
+const api = vi.hoisted(() => ({ getInboundEmails: vi.fn(), handleInboundEmail: vi.fn(), archiveInboundEmail: vi.fn(), reanalyseInboundEmail: vi.fn() }));
+const toast = vi.hoisted(() => ({ success: vi.fn(), error: vi.fn() }));
+vi.mock("sonner", () => ({ toast }));
 vi.mock("@/lib/api", async importOriginal => {
   const actual = await importOriginal<typeof import("@/lib/api")>();
   return { ...actual, adminApi: { ...actual.adminApi, ...api } };
@@ -35,6 +38,7 @@ const email = (over: Partial<InboundEmail> = {}): InboundEmail => ({
   reservationReference: null,
   reading: null,
   receivedAt: "2026-10-06T08:00:00Z",
+  analysedAt: null,
   ...over,
 });
 
@@ -97,6 +101,9 @@ describe("InboundEmailsPage (M-A « Boîte de réception », T-A « Deux gestes 
     api.getInboundEmails.mockReset().mockImplementation((view: InboundEmailView = "todo") => Promise.resolve({ data: lists[view], counts: counts() }));
     api.handleInboundEmail.mockReset().mockImplementation((id: string) => Promise.resolve({ data: move(id, "done", "handled") }));
     api.archiveInboundEmail.mockReset().mockImplementation((id: string) => Promise.resolve({ data: move(id, "archived", "archived") }));
+    api.reanalyseInboundEmail.mockReset();
+    toast.success.mockReset();
+    toast.error.mockReset();
   });
 
   it("trois onglets avec leurs compteurs, le premier mail ouvert, et le volet de lecture", async () => {
@@ -315,5 +322,109 @@ describe("InboundEmailsPage (M-A « Boîte de réception », T-A « Deux gestes 
     expect(screen.getByRole("tab", { name: /Archivés/ })).toHaveAttribute("aria-selected", "true");
     await userEvent.keyboard("{ArrowRight}");
     expect(screen.getByRole("tab", { name: /À traiter/ })).toHaveAttribute("aria-selected", "true");
+  });
+
+  describe("« Relancer l'analyse » (10/10/2026)", () => {
+    /** A promise the test settles when it wants: the analysis takes its time. */
+    function deferred<T>() {
+      let resolve!: (value: T) => void;
+      let reject!: (error: unknown) => void;
+      const promise = new Promise<T>((res, rej) => {
+        resolve = res;
+        reject = rej;
+      });
+      return { promise, resolve, reject };
+    }
+
+    it("proposé pour un mail en attente, pas pour un mail enregistré ni pour un mail sans texte", async () => {
+      lists = {
+        todo: [email(), email({ id: "e6", subject: "Texte effacé", textBody: null })],
+        done: [email({ id: "e3", status: "imported", subject: "Enregistré", missing: [], reservationId: "r9", reservationReference: "RXYZ99" })],
+        archived: [],
+      };
+      renderPage();
+      await screen.findAllByTestId("inbound-row");
+      expect(reading().getByTestId("inbound-reanalyse")).toHaveTextContent("Relancer l'analyse");
+      expect(reading().queryByTestId("inbound-analysed")).toBeNull();
+
+      await userEvent.click(within(screen.getAllByTestId("inbound-row")[1]).getByRole("button"));
+      expect(reading().getByText("Texte effacé (30 jours).")).toBeInTheDocument();
+      expect(reading().queryByTestId("inbound-reanalyse")).toBeNull();
+
+      await userEvent.click(tab(/Traités/));
+      await screen.findByRole("heading", { level: 2, name: "Enregistré" });
+      expect(reading().queryByTestId("inbound-reanalyse")).toBeNull();
+    });
+
+    it("« Analyse en cours… » pendant l'analyse, puis la réservation créée : toast et mail suivant", async () => {
+      const pending = deferred<InboundReanalysis>();
+      api.reanalyseInboundEmail.mockImplementation(() => pending.promise);
+      renderPage();
+      await screen.findAllByTestId("inbound-row");
+      await userEvent.click(reading().getByTestId("inbound-reanalyse"));
+      expect(api.reanalyseInboundEmail).toHaveBeenCalledWith("e1");
+
+      // Every action of the pane waits for the analysis.
+      await waitFor(() => expect(reading().getByTestId("inbound-reanalyse")).toHaveTextContent("Analyse en cours…"));
+      expect(reading().getByTestId("inbound-reanalyse")).toBeDisabled();
+      expect(reading().getByTestId("inbound-complete")).toBeDisabled();
+      expect(reading().getByTestId("inbound-handle")).toBeDisabled();
+      expect(reading().getByTestId("inbound-archive")).toBeDisabled();
+
+      // The server created the booking: the mail leaves « À traiter » for « Traités ».
+      const row = move("e1", "done", "imported");
+      const imported = { ...row, missing: [], reservationId: "r7", reservationReference: "RAB123", analysedAt: "2026-10-10T09:15:00Z" };
+      lists.done[0] = imported;
+      pending.resolve({ email: imported, outcome: "imported" });
+
+      await waitFor(() => expect(toast.success).toHaveBeenCalledWith("Réservation RAB123 créée depuis ce mail."));
+      await waitFor(() => expect(screen.getAllByTestId("inbound-row")).toHaveLength(1));
+      expect(screen.getByTestId("search")).toHaveTextContent("?mail=e2");
+      expect(reading().getByRole("heading", { level: 2, name: "(sans objet)" })).toBeInTheDocument();
+      expect(reading().getByTestId("inbound-reanalyse")).toHaveTextContent("Relancer l'analyse");
+      expect(reading().getByTestId("inbound-reanalyse")).toBeEnabled();
+      await waitFor(() => expect(tab(/Traités/)).toHaveTextContent("3"));
+
+      await userEvent.click(tab(/Traités/));
+      await waitFor(() => expect(reading().getByRole("link", { name: "Ouvrir la réservation RAB123" })).toBeInTheDocument());
+      expect(reading().queryByTestId("inbound-reanalyse")).toBeNull();
+      expect(reading().getByTestId("inbound-analysed")).toHaveTextContent("Analysé de nouveau le");
+    });
+
+    it("toujours incomplet : le mail reste ouvert avec ce que Plazo a compris, le toast dit ce qui manque", async () => {
+      api.reanalyseInboundEmail.mockImplementation((id: string) => {
+        const updated = {
+          ...lists.todo.find(e => e.id === id)!,
+          parsed: { provider: "Allopark", externalReference: "AL-884880719", customerName: "Jean Dupont", plate: "AB-123-CD", arrivalAt: "2026-10-12T08:30", returnAt: "2026-10-14T17:00", priceCents: 3499 },
+          missing: ["customerPhone"],
+          analysedAt: "2026-10-10T09:15:00Z",
+        };
+        lists.todo = lists.todo.map(e => (e.id === id ? updated : e));
+        return Promise.resolve({ email: updated, outcome: "incomplete" });
+      });
+      renderPage();
+      await screen.findAllByTestId("inbound-row");
+      expect(within(screen.getByTestId("inbound-understood")).getAllByText("manquant")).toHaveLength(2);
+      await userEvent.click(reading().getByTestId("inbound-reanalyse"));
+      expect(api.reanalyseInboundEmail).toHaveBeenCalledWith("e1");
+
+      await waitFor(() => expect(toast.success).toHaveBeenCalledWith("Analyse relancée : il manque encore téléphone."));
+      // Still in « À traiter », still selected: the plate is now read, only the phone is missing.
+      expect(screen.getAllByTestId("inbound-row")).toHaveLength(2);
+      expect(reading().getByRole("heading", { level: 2, name: "Confirmation AL-884880719" })).toBeInTheDocument();
+      await waitFor(() => expect(within(screen.getByTestId("inbound-understood")).getAllByText("manquant")).toHaveLength(1));
+      expect(within(screen.getByTestId("inbound-understood")).getByText("AB-123-CD")).toBeInTheDocument();
+      expect(reading().getByTestId("inbound-analysed")).toHaveTextContent("Analysé de nouveau le :");
+      expect(reading().getByTestId("inbound-reanalyse")).toBeEnabled();
+    });
+
+    it("un refus du serveur se lit dans les mots de la boîte de réception", async () => {
+      api.reanalyseInboundEmail.mockRejectedValue(new ApiError(409, "Already attached", "already_imported"));
+      renderPage();
+      await screen.findAllByTestId("inbound-row");
+      await userEvent.click(reading().getByTestId("inbound-reanalyse"));
+      await waitFor(() => expect(toast.error).toHaveBeenCalledWith("Ce mail est déjà rattaché à une réservation."));
+      expect(reading().getByTestId("inbound-reanalyse")).toBeEnabled();
+    });
   });
 });

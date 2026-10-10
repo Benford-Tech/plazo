@@ -72,6 +72,11 @@ export class InboundEmailController {
     res.json({ data: await this.inbound.archive(req.staff, req.params.id as string) });
   });
 
+  /** POST /internal/inbound/emails/:id/reanalyse → { email, outcome } (10/10/2026, « Relancer l'analyse ») */
+  public reanalyse = catchAsync(async (req: RequestWithStaffSession, res: Response) => {
+    res.status(httpStatus.OK).json(await this.inbound.reanalyse(req.staff, req.params.id as string));
+  });
+
   /** POST /internal/inbound/emails/:id/attach  { reservationId } */
   public attach = catchAsync(async (req: RequestWithStaffSession, res: Response) => {
     const reservationId = typeof req.body?.reservationId === 'string' ? req.body.reservationId : '';

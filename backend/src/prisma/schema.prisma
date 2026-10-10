@@ -389,6 +389,12 @@ model InboundEmail {
   missing       Json?
   // L-A (08/10/2026): what Claude made of an email no importer knew: { kind, provider, confidence, summary, model }.
   reading       Json?
+  // 10/10/2026 (« pouvoir relancer l'analyse d'un mail »): what a re-analysis needs that the text lost: the email's own
+  // recipients (never the Plazo address, 5 at most) and its allopark.com links (10 at most); cleared with the text.
+  recipients    String[]           @default([])
+  links         String[]           @default([])
+  // The last re-analysis asked by the staff (a second one within 30 s is refused).
+  analysedAt    DateTime?
   reservationId String?
   receivedAt    DateTime           @default(now())
   createdAt     DateTime           @default(now())

@@ -36,6 +36,24 @@ export function recipientsOf(item: InboundItem): string[] {
   return [...new Set(addresses.map(a => a.trim().toLowerCase()).filter(Boolean))];
 }
 
+/** At most this many of the email's own recipients are kept, each at most this long. */
+export const MAX_OWN_RECIPIENTS = 5;
+const RECIPIENT_MAX_CHARS = 200;
+const ADDRESS = /^[^\s@<>"']+@[^\s@<>"']+\.[^\s@<>"']+$/;
+
+/**
+ * 10/10/2026 (« pouvoir relancer l'analyse d'un mail »): the addresses the email itself was sent to (its To and Cc,
+ * the parking's mailbox for a forwarded email), never Plazo's own; kept with the email for a re-analysis (Allopark's
+ * booking page is opened with the parking's address).
+ */
+export function ownRecipientsOf(item: InboundItem, excludeDomain: string): string[] {
+  const excluded = `@${excludeDomain.toLowerCase()}`;
+  const addresses = [...(item.To ?? []), ...(item.Cc ?? [])]
+    .map(a => (a?.Address ?? '').trim().toLowerCase())
+    .filter(a => a.length <= RECIPIENT_MAX_CHARS && ADDRESS.test(a) && !a.endsWith(excluded));
+  return [...new Set(addresses)].slice(0, MAX_OWN_RECIPIENTS);
+}
+
 /** The local part of the first recipient on the inbound domain: "lys-demo-7f3a" for "lys-demo-7f3a@in.plazo.fr". */
 export function inboundSlugOf(recipients: string[], domain: string): string | null {
   const suffix = `@${domain.toLowerCase()}`;

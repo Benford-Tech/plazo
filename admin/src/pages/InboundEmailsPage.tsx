@@ -1,5 +1,5 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { ChevronLeft, Mail } from "lucide-react";
+import { ChevronLeft, Mail, RefreshCw } from "lucide-react";
 import { Fragment, useEffect, useState, type KeyboardEvent, type ReactNode } from "react";
 import { Link, useNavigate, useSearchParams } from "react-router-dom";
 import { toast } from "sonner";
@@ -8,7 +8,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { adminApi } from "@/lib/api";
 import { dateTimeShort, localParts, timeOf, todayLocal } from "@/lib/datetime";
 import { describeError, inboundFr as t } from "@/lib/fr";
-import type { InboundEmail, InboundEmailList, InboundEmailStatus, InboundEmailView, ParsedBooking } from "@/lib/types";
+import type { InboundEmail, InboundEmailList, InboundEmailStatus, InboundEmailView, InboundReanalysis, ParsedBooking } from "@/lib/types";
 import { cn } from "@/lib/utils";
 
 const VIEWS: InboundEmailView[] = ["todo", "done", "archived"];
@@ -46,6 +46,9 @@ const PRIMARY = "flex h-10 items-center rounded-full bg-primary px-4 text-sm fon
 const OUTLINE = "flex h-10 items-center rounded-full border border-lime-deep px-4 text-sm font-semibold text-lime-deep hover:bg-accent disabled:opacity-60";
 const QUIET = "flex h-10 items-center px-3 text-sm text-muted-foreground underline-offset-4 hover:underline disabled:opacity-60";
 
+/** The tab a mail of this status sits in (a forwarding confirmation is never listed). */
+const viewOf = (status: InboundEmailStatus): InboundEmailView => (TO_CHECK.includes(status) ? "todo" : status === "archived" ? "archived" : "done");
+
 const cap = (s: string) => s.charAt(0).toUpperCase() + s.slice(1);
 const fieldLabel = (key: string) => cap(t.list.field[key] ?? key);
 
@@ -72,6 +75,19 @@ function summaryOf(parsed: ParsedBooking | null): string | null {
   if (!parsed) return null;
   const line = [parsed.customerName, parsed.plate, parsed.arrivalAt ? localDateTime(parsed.arrivalAt) : null, parsed.externalReference].filter(Boolean).join(" · ");
   return line || null;
+}
+
+/** The toast of « Relancer l'analyse »: the booking it created or found, or what the mail still lacks. */
+function reanalysedMessage({ outcome, email }: InboundReanalysis): string {
+  const r = t.list.reanalysed;
+  if (outcome === "imported") return r.imported(email.reservationReference);
+  if (outcome === "duplicate") return r.duplicate;
+  if (outcome === "unrecognised") return r.unrecognised;
+  const labels = FIELDS.filter(key => email.missing.includes(key)).map(key => t.list.field[key] ?? key);
+  if (labels.length > 0) return r.missing(labels);
+  const refusals = email.missing.filter(key => key !== "confidence" && !FIELDS.includes(key as keyof ParsedBooking));
+  if (refusals.length > 0) return r.refused(refusals.map(code => t.list.refusal(code)).join(" "));
+  return email.missing.includes("confidence") ? r.unsure : r.incomplete;
 }
 
 /** When the mail came in: the hour if today, the short date otherwise. */
@@ -211,15 +227,21 @@ function Understood({ email }: { email: InboundEmail }) {
 function Reading({
   email,
   pending,
+  reanalysing,
   onHandle,
   onArchive,
+  onReanalyse,
   onBack,
   className,
 }: {
   email: InboundEmail;
+  /** A gesture or an analysis is on its way: every action of the pane waits. */
   pending: boolean;
+  /** This very mail is being analysed again. */
+  reanalysing: boolean;
   onHandle: () => void;
   onArchive: () => void;
+  onReanalyse: () => void;
   onBack: () => void;
   className?: string;
 }) {
@@ -229,6 +251,8 @@ function Reading({
   const understood = email.parsed !== null || email.missing.length > 0;
   const canHandle = HANDLEABLE.includes(email.status);
   const canArchive = email.status !== "forwarding" && email.status !== "archived";
+  // The server reads the stored text again: not for a mail already attached to a booking, nor once the text is purged.
+  const canReanalyse = !email.reservationId && email.textBody !== null && email.status !== "forwarding";
   return (
     <article data-testid="inbound-reading" aria-labelledby="inbound-subject" className={cn("rounded-[14px] border border-panel-line bg-panel", className)}>
       <button type="button" onClick={onBack} className="flex h-11 items-center gap-1 px-3 text-sm font-semibold text-lime-deep md:hidden">
@@ -250,6 +274,12 @@ function Reading({
           <span className="text-muted-foreground">{l.received} : </span>
           <span className="font-mono">{dateTimeShort(email.receivedAt)}</span>
         </p>
+        {email.analysedAt && (
+          <p data-testid="inbound-analysed" className="text-sm">
+            <span className="text-muted-foreground">{l.analysedAgain} : </span>
+            <span className="font-mono">{dateTimeShort(email.analysedAt)}</span>
+          </p>
+        )}
         {email.provider && (
           <p className="text-sm">
             <span className="text-muted-foreground">{l.recognised} : </span>
@@ -265,6 +295,7 @@ function Reading({
           <button
             type="button"
             data-testid="inbound-complete"
+            disabled={pending}
             onClick={() => navigate("/reservations/nouvelle", { state: { prefill: email.parsed ?? { provider: email.provider ?? "" }, inboundId: email.id } })}
             className={PRIMARY}
           >
@@ -275,6 +306,12 @@ function Reading({
           <Link to={`/reservations/${email.reservationId}`} className={OUTLINE}>
             {l.openBooking(email.reservationReference ?? "")}
           </Link>
+        )}
+        {canReanalyse && (
+          <button type="button" data-testid="inbound-reanalyse" disabled={pending} aria-busy={reanalysing} onClick={onReanalyse} className={cn(OUTLINE, "gap-2")}>
+            <RefreshCw className={cn("h-4 w-4", reanalysing && "motion-safe:animate-spin")} aria-hidden="true" />
+            {reanalysing ? l.reanalysing : l.reanalyse}
+          </button>
         )}
         {canHandle && (
           <button type="button" data-testid="inbound-handle" disabled={pending} onClick={onHandle} className={waiting ? OUTLINE : PRIMARY}>
@@ -368,6 +405,39 @@ export default function InboundEmailsPage() {
     onError: (err: Error) => toast.error(describeError(err)),
   });
 
+  /** « Relancer l'analyse » (10/10/2026): up to ~40 s (the Allopark page, then Claude). */
+  const reanalyse = useMutation({
+    mutationFn: (id: string) => adminApi.reanalyseInboundEmail(id),
+    onSuccess: (result, id) => {
+      toast.success(reanalysedMessage(result));
+      // A booking found moves the mail to « Traités »: from another tab, the selection moves on to its neighbour like
+      // after a gesture; otherwise the mail stays open with what Plazo understood this time.
+      const leaves = viewOf(result.email.status) !== view;
+      queryClient.setQueryData<InboundEmailList>(["inbound-emails", view], old =>
+        old && { ...old, data: leaves ? old.data.filter(e => e.id !== id) : old.data.map(e => (e.id === id ? result.email : e)) },
+      );
+      if (leaves && selected?.id === id) {
+        const i = list.findIndex(e => e.id === id);
+        const next = list[i + 1] ?? list[i - 1] ?? null;
+        select(next?.id ?? null, true);
+      }
+      void queryClient.invalidateQueries({ queryKey: ["inbound-emails"] });
+      void queryClient.invalidateQueries({ queryKey: ["inbound-settings"] });
+      void queryClient.invalidateQueries({ queryKey: ["dashboard"] });
+      if (result.email.reservationId) {
+        void queryClient.invalidateQueries({ queryKey: ["reservations"] });
+        void queryClient.invalidateQueries({ queryKey: ["planning"] });
+        void queryClient.invalidateQueries({ queryKey: ["revenue"] });
+      }
+    },
+    onError: (err: Error) => {
+      toast.error(describeError(err, l.errors));
+      // The row may have changed meanwhile (attached by a colleague, its text purged).
+      void queryClient.invalidateQueries({ queryKey: ["inbound-emails"] });
+    },
+  });
+  const busy = act.isPending || reanalyse.isPending;
+
   return (
     <div className="mx-auto max-w-6xl space-y-4">
       <div className="flex items-center gap-3 border-b-2 border-lime-deep pb-3">
@@ -423,9 +493,11 @@ export default function InboundEmailsPage() {
             {selected && (
               <Reading
                 email={selected}
-                pending={act.isPending}
+                pending={busy}
+                reanalysing={reanalyse.isPending && reanalyse.variables === selected.id}
                 onHandle={() => act.mutate({ id: selected.id, action: "handle" })}
                 onArchive={() => act.mutate({ id: selected.id, action: "archive" })}
+                onReanalyse={() => reanalyse.mutate(selected.id)}
                 onBack={() => select(null)}
                 className={detailOpen ? "block" : "hidden md:block"}
               />
