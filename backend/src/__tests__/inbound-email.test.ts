@@ -588,6 +588,41 @@ describe('la boîte de réception (M-A + T-A, 08/10/2026)', () => {
     await prisma.inboundEmail.updateMany({ data: { receivedAt: new Date(Date.now() - 91 * 86400000) } });
     expect((await Container.get(InboundEmailService).purge()).rowsDeleted).toBe(4);
   });
+
+  it('10/10/2026 : le super admin archive les mails d’un parking depuis « Ouvrir son espace », les autres gestes restent au loueur', async () => {
+    const { op, imported, unrecognised } = await inbox({ incomplete: 'Allopark incomplet', unknown: 'Question' });
+    const admin = await setupOperator('Plazo (plateforme)');
+    process.env.PLATFORM_ADMIN_EMAILS = admin.manager.email;
+    try {
+      const view = await api().post(`/api/internal/platform/operators/${op.operator.id}/view-as`).set(auth(admin.token));
+      expect(view.status).toBe(201);
+      const token = view.body.access.token as string;
+      const post = (id: string, action: string, body: Record<string, unknown> = {}) =>
+        api().post(`/api/internal/inbound/emails/${id}/${action}`).set(auth(token)).send(body);
+
+      const archived = await post(unrecognised.id, 'archive');
+      expect([archived.status, archived.body.data.status]).toEqual([200, 'archived']);
+      for (const [action, body] of [
+        ['handle', {}],
+        ['dismiss', {}],
+        ['attach', { reservationId: imported.reservationId }],
+      ] as const) {
+        const refused = await post(imported.id, action, body);
+        expect([action, refused.status, refused.body.code]).toEqual([action, 403, 'view_as_read_only']);
+      }
+      // Traced under the admin's real name, in the operator's journal.
+      const entries = await prisma.auditLog.findMany({ where: { operatorId: op.operator.id, staffId: admin.manager.id } });
+      expect(entries.filter(e => e.action === 'inbound.archived').map(e => e.entityId)).toEqual([unrecognised.id]);
+      expect(entries.filter(e => e.action === 'view_as.write').map(e => (e.details as { path: string }).path)).toContain(
+        `/api/internal/inbound/emails/${unrecognised.id}/archive`,
+      );
+      // The operator finds it in « Archivés ».
+      const list = (await api().get('/api/internal/inbound/emails?view=archived').set(auth(op.token))).body;
+      expect(list.data.map((e: { id: string }) => e.id)).toEqual([unrecognised.id]);
+    } finally {
+      delete process.env.PLATFORM_ADMIN_EMAILS;
+    }
+  });
 });
 
 describe('lecture par Claude des mails inconnus (L-A, 08/10/2026)', () => {
