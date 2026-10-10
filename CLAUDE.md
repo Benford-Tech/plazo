@@ -105,7 +105,7 @@ Ne construire QUE ce qui règle la douleur n°1 du client.
      par `createFromImport` (canal comparateur, `channelDetail` = source lue : « Parkos », « Site du parking », « Client »… ;
      doublon par la référence externe, sinon même plaque et même arrivée) ; champ requis absent ou confiance plus basse →
      `incomplete` pré-rempli (`missing` : les champs, ou `confidence`) ; modification, annulation ou autre → `unrecognised`,
-     rien n'est créé ni modifié. `InboundEmail.reading` `{ kind, provider, confidence, summary, model }` (migration
+     rien n'est créé ni modifié (sauf une modification Allopark, appliquée depuis le 10/10/2026, voir plus bas). `InboundEmail.reading` `{ kind, provider, confidence, summary, model }` (migration
      `inbound_reading`), `InboundEmailView.reading` ; boîte de réception : ligne « Lu par Claude : Réservation · confiance 92 % »
      avec le résumé, pastille du genre dans la liste. Sans clé, échec, refus ou délai (30 s) : le mail attend comme avant.
      **Comparateurs du client n°1 (09/10/2026, « forme-toi avec ces modèles »)** : importateurs déterministes `onepark.ts`
@@ -168,6 +168,22 @@ Ne construire QUE ce qui règle la douleur n°1 du client.
      notification) ; les mails entrants (traité, rattaché, nouvelle adresse), le « SMS de la veille », le suivi des navettes,
      les dessertes et la fin d'un trajet sont permis et tracés `view_as.write` ; démarrer un trajet ou partager sa position
      reste refusé avec 403 `view_as_not_driver` (le super admin n'est pas chauffeur du loueur).
+     **Modifications Allopark appliquées par Plazo (10/10/2026, « C'est une modification » → choix « Appliquer seul »)** :
+     un mail Allopark qui annonce une modification faite (objet « Modification… », « modifiée », « changement » ; texte
+     « réservation … modifiée », « Vos nouvelles dates : »… ; ou lu par Claude comme modification ; une annulation l'emporte
+     toujours et reste sans effet) est confirmé par Claude quand la clé existe, puis la page de la réservation (état actuel) est
+     lue : réservation inconnue → créée (`createFromImport`) ; connue → `ReservationService.applyImportChange` compare champ par
+     champ (dates locales du parking, personnes, plaque, vols, téléphone, nom, e-mail, véhicule, prix ; `domain/import-change.ts`)
+     et applique sous le verrou des places (nuits nouvelles seulement, sans forcer), historique `reservation.updated` avec
+     `source: 'allopark_change'`, suivi de vol relancé si un vol change, push « Réservation modifiée · Allopark » (audience
+     `bookingChanges` : réglages « immédiat » et « toutes les heures ») ; rien de différent → `duplicate` ; cas risqués non
+     appliqués, mail « À faire à la main » avec la raison (`plazo_booking`, `reservation_closed`, `already_arrived` pour une
+     arrivée déplacée après l'arrivée — un retour seul est appliqué —, `no_room`, `invalid_stay`) ; page illisible → rien.
+     `InboundEmail.change` `{ applied, reason?, reservationId?, reference?, changes: [{ field, from, to }], at }` (migration
+     `inbound_change`, effacé avec le texte et au rattachement) ; boîte de réception : bloc « Modification appliquée à la
+     réservation … » ou « Modification à faire à la main · réservation … » avec une ligne par changement (« Date de retour :
+     13 déc. 20:30 → 15 déc. 18:00 »), pastille « Modification », « À faire à la main » en ambre ; « Relancer l'analyse » →
+     résultat `changed`. Les annulations ne sont toujours pas appliquées.
    - Page de réservation propre à l'opérateur (formulaire simple, confirmation par mail/SMS).
    - Vue planning : arrivées et retours du jour, taux d'occupation, alerte de surréservation
      calculée sur la capacité réelle.

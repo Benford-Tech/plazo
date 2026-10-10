@@ -89,7 +89,20 @@ export const FLIGHT = /[A-Z][A-Z0-9]{1,2} ?\d{1,5}[A-Z]?/;
  * nothing is created). The confirmations themselves mention "annulation gratuite", which is not enough.
  */
 export function isCancellationOrChange(text: string): boolean {
-  return /\b(r[ée]servation (a [ée]t[ée] |est )?(annul[ée]e|modifi[ée]e)|annulation de (votre|la) r[ée]servation|modification de (votre|la) r[ée]servation|booking (has been )?(cancelled|canceled|modified))\b/i.test(
+  return isCancellation(text) || isChange(text);
+}
+
+/**
+ * 10/10/2026 (« C'est une modification »): the two halves of isCancellationOrChange, apart. A cancellation (« Votre
+ * réservation a été annulée », « Annulation de votre réservation », « booking cancelled »).
+ */
+export function isCancellation(text: string): boolean {
+  return /\b(r[ée]servation (a [ée]t[ée] |est )?annul[ée]e|annulation de (votre|la) r[ée]servation|booking (has been )?(cancelled|canceled))\b/i.test(
     text,
   );
+}
+
+/** 10/10/2026: a change of a booking (« Votre réservation a été modifiée », « Modification de votre réservation », « booking modified »). */
+export function isChange(text: string): boolean {
+  return /\b(r[ée]servation (a [ée]t[ée] |est )?modifi[ée]e|modification de (votre|la) r[ée]servation|booking (has been )?modified)\b/i.test(text);
 }

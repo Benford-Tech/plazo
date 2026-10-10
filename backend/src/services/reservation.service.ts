@@ -12,9 +12,10 @@ import { HttpException } from '@/utils/httpException';
 import { logger } from '@/utils/logger';
 import { toPublicBooking, WITH_LISTING } from '@/domain/booking-view';
 import { cleanNamePart, CustomerNames, customerNamesOf, importedNames } from '@/domain/customer-name';
+import { ImportChange, ImportChangeReason, importChanges, withoutField } from '@/domain/import-change';
 import { FileService } from './file.service';
 import { AuditService } from './audit.service';
-import { CapacityService, NightLoad } from './capacity.service';
+import { CapacityService, NightLoad, occupiedNights } from './capacity.service';
 import { NotificationService } from './notification.service';
 import { PushService } from './push.service';
 import { TravellerMessagesService } from './traveller-messages.service';
@@ -39,6 +40,20 @@ export const STAFF_VISIBLE: Prisma.ReservationWhereInput = {
   status: { not: 'pending_payment' },
   OR: [{ paymentStatus: null }, { paymentStatus: { not: 'expired' } }],
 };
+
+/** 10/10/2026 (« C'est une modification »): what became of a comparator's change of a booking (applyImportChange). */
+export interface ImportChangeResult {
+  /** The booking as it is now (changed or not). */
+  reservation: Reservation;
+  /** What differs between the booking and the comparator's state, as the staff read it; empty: nothing to change. */
+  changes: ImportChange[];
+  applied: boolean;
+  /** Why the changes were left to the staff (applied false with changes). */
+  reason?: ImportChangeReason;
+}
+
+/** A booking the comparator no longer changes: handed back, cancelled, no-show (or a hold that never was one). */
+const CLOSED_FOR_CHANGES: ReservationStatus[] = ['returned', 'cancelled', 'no_show', 'pending_payment'];
 
 @Service()
 export class ReservationService {
@@ -235,6 +250,103 @@ export class ReservationService {
     return created;
   }
 
+  /**
+   * 10/10/2026 (« C'est une modification »: « Plazo relit la page Allopark, met à jour la réservation existante […], le
+   * note dans l'historique et prévient l'équipe »): a comparator's change of a booking, applied without staff, with the
+   * rules of update(): one transaction under the parking's lock, the booking read again, the stay checked (parseStay),
+   * no full night among those the booking did not hold yet (no force: a change never overbooks), the flight tracking
+   * started over for a new flight, the name rebuilt, the history written as `reservation.updated` with { field: { from,
+   * to } } and where it came from (`source`, `inboundEmailId`), by no staff member. Left to the staff (applied false,
+   * with the reason): a Plazo booking (`plazo_booking`), a closed one (`reservation_closed`), a new arrival once the car
+   * is there (`already_arrived`: a new return alone is applied), no room (`no_room`), dates that make no stay
+   * (`invalid_stay`). The price of a booking paid online is never changed (the rest is). Nothing to change: applied
+   * false and no changes. The team hears of an applied change (« Réservation modifiée · Allopark »).
+   */
+  public async applyImportChange(
+    operatorId: string,
+    reservationId: string,
+    booking: ParsedBooking,
+    origin: { source: string; inboundEmailId?: string | null },
+  ): Promise<ImportChangeResult> {
+    const found = await prisma.reservation.findFirst({ where: { id: reservationId, operatorId }, select: { parkingId: true } });
+    if (!found) throw notFound();
+    const parking = await prisma.parking.findUniqueOrThrow({ where: { id: found.parkingId } });
+    const result = await prisma.$transaction(async (tx): Promise<ImportChangeResult> => {
+      await this.capacity.lock(tx, parking.id);
+      const before = await tx.reservation.findFirst({ where: { id: reservationId, operatorId } });
+      if (!before) throw notFound();
+      let diff = importChanges(before, booking, parking.timezone);
+      // What the traveller paid online stays what they paid.
+      if (before.paymentStatus !== null || before.chargedCents !== null) diff = withoutField(diff, 'priceCents');
+      const left = (reason: ImportChangeReason): ImportChangeResult => ({ reservation: before, changes: diff.changes, applied: false, reason });
+      if (!diff.changes.length) return { reservation: before, changes: [], applied: false };
+      if (before.channel === 'plazo') return left('plazo_booking');
+      if (CLOSED_FOR_CHANGES.includes(before.status)) return left('reservation_closed');
+      if (diff.data.arrivalAt && before.status !== 'upcoming') return left('already_arrived');
+
+      let overbooked: boolean | undefined;
+      if (diff.data.arrivalAt || diff.data.returnAt) {
+        let stay: { arrivalAt: Date; returnAt: Date };
+        try {
+          stay = this.parseStay(
+            parking,
+            (diff.data.arrivalAt ?? before.arrivalAt).toISOString(),
+            (diff.data.returnAt ?? before.returnAt).toISOString(),
+          );
+        } catch {
+          return left('invalid_stay');
+        }
+        const { full } = await this.capacity.fullNights(parking, stay.arrivalAt, stay.returnAt, { excludeReservationId: before.id, client: tx });
+        // Nights the booking already held are not taken from anyone: only the new ones need room.
+        const held = new Set(occupiedNights(before.arrivalAt, before.returnAt, parking.timezone));
+        if (full.some(night => !held.has(night.date))) return left('no_room');
+        overbooked = full.length > 0;
+      }
+
+      const after = await tx.reservation.update({
+        where: { id: before.id },
+        data: {
+          ...diff.data,
+          ...(overbooked === undefined ? {} : { overbooked }),
+          // A new flight starts its tracking over (the landing a traveller reported stays theirs).
+          ...(diff.data.departureFlight
+            ? { departureStatus: null, departureScheduledAt: null, departureEstimatedAt: null, departureTerminal: null, departureCheckedAt: null }
+            : {}),
+          ...(diff.data.returnFlight
+            ? {
+                flightStatus: null,
+                flightScheduledAt: null,
+                flightEstimatedAt: null,
+                flightTerminal: null,
+                flightGate: null,
+                flightCheckedAt: null,
+                ...(before.flightLandedSource === 'tracking' ? { flightLandedAt: null, flightLandedSource: null } : {}),
+              }
+            : {}),
+        },
+      });
+      await this.audit.record(
+        { id: null, operatorId },
+        {
+          action: 'reservation.updated',
+          entityType: 'reservation',
+          entityId: before.id,
+          details: {
+            ...columnChanges(before, after),
+            by: 'inbound_email',
+            source: origin.source,
+            provider: booking.provider,
+            ...(origin.inboundEmailId ? { inboundEmailId: origin.inboundEmailId } : {}),
+          } as Prisma.InputJsonValue,
+        },
+        tx,
+      );
+      return { reservation: after, changes: diff.changes, applied: true };
+    });
+    if (result.applied) await this.push.notifyBookingChanged(result.reservation, result.changes);
+    return result;
+  }
+
   /** A booking already imported from its channel is never created twice. */
   private async refuseDuplicate(client: Client, actor: AuthenticatedStaff, externalReference: string) {
     const existing = await client.reservation.findUnique({
@@ -334,14 +446,11 @@ export class ReservationService {
         },
       });
 
-      const changes: Record<string, { from: unknown; to: unknown }> = {};
-      for (const key of Object.keys(after) as (keyof Reservation)[]) {
-        if (key === 'updatedAt') continue;
-        const a = before[key] instanceof Date ? (before[key] as Date).toISOString() : before[key];
-        const b = after[key] instanceof Date ? (after[key] as Date).toISOString() : after[key];
-        if (a !== b) changes[key] = { from: a, to: b };
-      }
-      await this.audit.record(actor, { action: 'reservation.updated', entityType: 'reservation', entityId: id, details: changes as any }, tx);
+      await this.audit.record(
+        actor,
+        { action: 'reservation.updated', entityType: 'reservation', entityId: id, details: columnChanges(before, after) as Prisma.InputJsonValue },
+        tx,
+      );
       return after;
     });
   }
@@ -579,4 +688,16 @@ export class ReservationService {
       },
     };
   }
+}
+
+/** The columns of a booking that changed, { column: { from, to } } (dates as ISO strings): the history of an update. */
+function columnChanges(before: Reservation, after: Reservation): Record<string, { from: unknown; to: unknown }> {
+  const changes: Record<string, { from: unknown; to: unknown }> = {};
+  for (const key of Object.keys(after) as (keyof Reservation)[]) {
+    if (key === 'updatedAt') continue;
+    const a = before[key] instanceof Date ? (before[key] as Date).toISOString() : before[key];
+    const b = after[key] instanceof Date ? (after[key] as Date).toISOString() : after[key];
+    if (a !== b) changes[key] = { from: a, to: b };
+  }
+  return changes;
 }

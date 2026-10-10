@@ -322,6 +322,174 @@ describe("InboundEmailsPage (M-A « Boîte de réception », T-A « Deux gestes 
     expect(line().getByText("lue, champs complétés")).toBeInTheDocument();
     expect(reading().queryByTestId("inbound-allopark-page")).toBeNull();
   });
+  describe("10/10/2026 (« C'est une modification ») : une modification Allopark", () => {
+    const CHANGE_TEXT = "ALLOPARK\nVotre réservation AL-884880719 a été modifiée.";
+    const changes = [
+      { field: "returnAt" as const, from: "2026-12-13T20:30", to: "2026-12-15T18:00" },
+      { field: "passengers" as const, from: 3, to: 4 },
+      { field: "priceCents" as const, from: 2400, to: 2900 },
+      { field: "departureFlight" as const, from: null, to: "TO 3626" },
+    ];
+    const changed = (over: Partial<InboundEmail> = {}) =>
+      email({
+        id: "m1",
+        subject: "Modification de votre réservation AL-884880719",
+        textBody: CHANGE_TEXT,
+        status: "imported",
+        missing: [],
+        reservationId: "r7",
+        reservationReference: "R7KQ2M",
+        change: { applied: true, reason: null, reservationId: "r7", reference: "R7KQ2M", changes, at: "2026-10-10T09:00:00Z" },
+        ...over,
+      });
+
+    it("appliquée : le bloc la dit avec le lien vers la réservation et une ligne par changement, à la place de « Ce que Plazo a compris »", async () => {
+      // Read as a change by Claude: its line no longer says that nothing is done.
+      lists = {
+        todo: [],
+        done: [changed({ reading: { kind: "modification", provider: "Allopark", confidence: 0.9, summary: "Nouvelles dates pour AL-884880719", model: "claude-test" } })],
+        archived: [],
+      };
+      renderPage();
+      await userEvent.click(await screen.findByRole("tab", { name: /Traités/ }));
+      await screen.findByRole("heading", { level: 2, name: "Modification de votre réservation AL-884880719" });
+      const block = within(reading().getByTestId("inbound-change"));
+      expect(block.getByRole("heading", { level: 3 })).toHaveTextContent("Modification appliquée à la réservation R7KQ2M");
+      expect(block.getByRole("link", { name: "R7KQ2M" })).toHaveAttribute("href", "/reservations/r7");
+      expect(block.getAllByTestId("inbound-change-line").map(line => line.textContent)).toEqual([
+        "Date de retour : 13 déc. 20:30 → 15 déc. 18:00",
+        "Passagers : 3 → 4",
+        "Prix : 24,00 € → 29,00 €",
+        "Vol aller : — → TO 3626",
+      ]);
+      expect(block.queryByTestId("inbound-change-reason")).toBeNull();
+      expect(reading().queryByTestId("inbound-understood")).toBeNull();
+      expect(within(reading().getByTestId("inbound-reading-line")).queryByText(/Rien n'est créé de lui-même/)).toBeNull();
+      // The row says it is a change.
+      expect(within(screen.getAllByTestId("inbound-row")[0]).getByTestId("inbound-kind")).toHaveTextContent("Modification");
+    });
+
+    it("à faire à la main : la raison en français, les changements, et la réservation à ouvrir à la place de « Compléter »", async () => {
+      lists = {
+        todo: [
+          changed({
+            status: "unrecognised",
+            reservationId: null,
+            reservationReference: null,
+            change: { applied: false, reason: "already_arrived", reservationId: "r7", reference: "R7KQ2M", changes: changes.slice(0, 2), at: "2026-10-10T09:00:00Z" },
+          }),
+          changed({
+            id: "m2",
+            subject: "Votre réservation AL-884880719 a été modifiée",
+            status: "unrecognised",
+            reservationId: null,
+            reservationReference: null,
+            change: { applied: false, reason: "no_room", reservationId: "r7", reference: "R7KQ2M", changes: changes.slice(0, 1), at: "2026-10-10T09:00:00Z" },
+          }),
+        ],
+        done: [],
+        archived: [],
+      };
+      renderPage();
+      await screen.findAllByTestId("inbound-row");
+      const block = within(reading().getByTestId("inbound-change"));
+      expect(block.getByRole("heading", { level: 3 })).toHaveTextContent("Modification à faire à la main · réservation R7KQ2M");
+      expect(block.getByRole("link", { name: "R7KQ2M" })).toHaveAttribute("href", "/reservations/r7");
+      // 10/10/2026 (relecture): recognised, to do by hand: never « Non reconnu », in the list as in the pane.
+      expect(within(screen.getAllByTestId("inbound-row")[0]).getByTestId("inbound-status")).toHaveTextContent("À faire à la main");
+      expect(reading().getByTestId("inbound-status")).toHaveTextContent("À faire à la main");
+      expect(screen.queryByText("Non reconnu")).toBeNull();
+      expect(block.getByTestId("inbound-change-reason")).toHaveTextContent("La voiture est déjà arrivée : la date d'arrivée n'a pas été changée.");
+      expect(block.getByTestId("inbound-change-reason")).toHaveTextContent("Plazo n'a rien changé");
+      expect(block.getAllByTestId("inbound-change-line")).toHaveLength(2);
+      expect(reading().queryByTestId("inbound-complete")).toBeNull();
+      expect(reading().getByTestId("inbound-change-booking")).toHaveTextContent("Ouvrir la réservation R7KQ2M");
+      expect(reading().getByTestId("inbound-change-booking")).toHaveAttribute("href", "/reservations/r7");
+      // Still to deal with: handled or re-analysed once the booking allows it.
+      expect(reading().getByTestId("inbound-handle")).toBeInTheDocument();
+      expect(reading().getByTestId("inbound-reanalyse")).toBeInTheDocument();
+
+      await userEvent.click(within(screen.getAllByTestId("inbound-row")[1]).getByRole("button"));
+      expect(within(reading().getByTestId("inbound-change")).getByTestId("inbound-change-reason")).toHaveTextContent("Plus de place aux nouvelles dates.");
+    });
+
+    it("10/10/2026 (relecture) : traitée à la main, la modification mène encore à sa réservation", async () => {
+      lists = {
+        todo: [],
+        done: [
+          changed({
+            status: "handled",
+            reservationId: null,
+            reservationReference: null,
+            change: { applied: false, reason: "reservation_closed", reservationId: "r7", reference: "R7KQ2M", changes: changes.slice(0, 1), at: "2026-10-10T09:00:00Z" },
+          }),
+        ],
+        archived: [],
+      };
+      renderPage();
+      await userEvent.click(await screen.findByRole("tab", { name: /Traités/ }));
+      const block = within(await screen.findByTestId("inbound-change"));
+      expect(block.getByRole("heading", { level: 3 })).toHaveTextContent("Modification à faire à la main · réservation R7KQ2M");
+      expect(block.getByRole("link", { name: "R7KQ2M" })).toHaveAttribute("href", "/reservations/r7");
+      expect(reading().queryByTestId("inbound-change-booking")).toBeNull();
+      expect(reading().getByTestId("inbound-status")).toHaveTextContent("Traité");
+    });
+
+    it("déjà à jour : le doublon le dit, sans ligne", async () => {
+      lists = {
+        todo: [],
+        done: [changed({ status: "duplicate", change: { applied: false, reason: null, reservationId: "r7", reference: "R7KQ2M", changes: [], at: "2026-10-10T09:00:00Z" } })],
+        archived: [],
+      };
+      renderPage();
+      await userEvent.click(await screen.findByRole("tab", { name: /Traités/ }));
+      const block = within(await screen.findByTestId("inbound-change"));
+      expect(block.getByRole("heading", { level: 3 })).toHaveTextContent("Modification déjà prise en compte dans la réservation R7KQ2M");
+      expect(block.getByText("Aucun changement : la réservation était déjà à jour.")).toBeInTheDocument();
+      expect(block.queryByTestId("inbound-change-reason")).toBeNull();
+    });
+
+    it("« Relancer l'analyse » qui applique la modification : le toast la dit", async () => {
+      lists = {
+        todo: [
+          changed({
+            status: "unrecognised",
+            reservationId: null,
+            reservationReference: null,
+            change: { applied: false, reason: "no_room", reservationId: "r7", reference: "R7KQ2M", changes: changes.slice(0, 1), at: "2026-10-10T09:00:00Z" },
+          }),
+        ],
+        done: [],
+        archived: [],
+      };
+      api.reanalyseInboundEmail.mockImplementation((id: string) => {
+        const row = move(id, "done", "imported");
+        const applied = { ...changed(), ...row, status: "imported" as const, reservationId: "r7", reservationReference: "R7KQ2M", change: changed().change };
+        lists.done[0] = applied;
+        return Promise.resolve({ email: applied, outcome: "changed" });
+      });
+      renderPage();
+      await screen.findAllByTestId("inbound-row");
+      await userEvent.click(reading().getByTestId("inbound-reanalyse"));
+      await waitFor(() => expect(toast.success).toHaveBeenCalledWith("Modification appliquée à la réservation R7KQ2M."));
+    });
+
+    it("« Relancer l'analyse » qui laisse la modification à la main : le toast le dit", async () => {
+      const left = changed({
+        status: "unrecognised",
+        reservationId: null,
+        reservationReference: null,
+        change: { applied: false, reason: "no_room", reservationId: "r7", reference: "R7KQ2M", changes: changes.slice(0, 1), at: "2026-10-10T09:00:00Z" },
+      });
+      lists = { todo: [left], done: [], archived: [] };
+      api.reanalyseInboundEmail.mockResolvedValue({ email: left, outcome: "unrecognised" });
+      renderPage();
+      await screen.findAllByTestId("inbound-row");
+      await userEvent.click(reading().getByTestId("inbound-reanalyse"));
+      await waitFor(() => expect(toast.success).toHaveBeenCalledWith("Analyse relancée : la modification reste à faire à la main."));
+    });
+  });
+
   it("relecture : un ?mail= absent de l'onglet n'ouvre pas un autre mail et quitte l'adresse ; un doublon n'a pas « Marquer comme traité »", async () => {
     lists = {
       todo: [email({ id: "e1" }), email({ id: "e2", subject: "Deuxième" })],

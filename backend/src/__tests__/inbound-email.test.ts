@@ -1267,87 +1267,169 @@ describe('Allopark : la page sans le lien du mail (10/10/2026, « tu ne vas pas 
     expect(await prisma.reservation.count()).toBe(1);
   });
 
-  it('une annulation ou une modification n’ouvre jamais la page', async () => {
+  it('une annulation n’ouvre jamais la page ; depuis le 10/10/2026 (« C’est une modification »), une modification l’ouvre', async () => {
     const op = await connected();
     answer(pageFor('parking@example.com'));
     const mail = (subject: string, text: string) =>
       item('parking@example.com', text, { Recipients: [op.address], Subject: subject, From: { Name: 'ALLOPARK', Address: 'info@allopark.com' } });
     await post([
       mail('Annulation de votre réservation AL-884880719', 'Allopark\nVotre réservation AL-884880719 chez Aeroports Parking Lyon est annulée.'),
-      mail('Votre réservation AL-884880719', 'Allopark\nModification de votre réservation AL-884880719 : nouvelles dates.'),
       mail('Votre réservation AL-884880719', 'ALLOPARK\nRéservation N° AL-884880719\nVotre réservation a été annulée.'),
     ]);
     expect(allopark()).toEqual([]);
     expect(await prisma.inboundEmail.findMany({ where: { operatorId: op.operator.id }, select: { status: true } })).toEqual([
       { status: 'unrecognised' },
       { status: 'unrecognised' },
-      { status: 'unrecognised' },
     ]);
     expect(await prisma.reservation.count()).toBe(0);
+
+    // A change: the page shows the booking as it is now; Plazo did not have it yet, it is created from the page
+    // (10/10/2026, relecture: once Claude reads it as a change).
+    read.mockResolvedValueOnce(claude({ kind: 'modification', summary: 'Nouvelles dates pour la réservation AL-884880719' }));
+    expect(
+      (await post([mail('Votre réservation AL-884880719', 'Allopark\nModification de votre réservation AL-884880719 : nouvelles dates.')])).body,
+    ).toEqual({
+      received: 1,
+      imported: 1,
+      toCheck: 0,
+      ignored: 0,
+    });
+    expect(allopark()).toEqual([urlOf('parking@example.com')]);
+    expect(await prisma.reservation.findFirstOrThrow({ where: { operatorId: op.operator.id } })).toMatchObject(completed);
   });
 
-  it('10/10/2026 (relecture) : « Votre réservation AL-… a été modifiée », « Réservation AL-… annulée » n’ouvrent pas la page, ne créent rien et restent « À traiter »', async () => {
+  it('10/10/2026 (relecture, puis « C’est une modification ») : « Réservation AL-… annulée » n’ouvre pas la page et reste « À traiter » ; « Votre réservation AL-… a été modifiée » l’ouvre, Claude confirmant la modification', async () => {
     const op = await connected();
     answer(pageFor('parking@example.com'));
     const mail = (subject: string, text: string) =>
       item('parking@example.com', text, { Recipients: [op.address], Subject: subject, From: { Name: 'ALLOPARK', Address: 'info@allopark.com' } });
-    read.mockResolvedValueOnce(claude({ kind: 'modification', summary: 'Modification de la réservation AL-884880719' }));
     read.mockResolvedValueOnce(claude({ kind: 'cancellation', summary: 'Annulation de la réservation AL-884880719' }));
+    await post([mail('Allopark AL-884880719', 'ALLOPARK\nRéservation AL-884880719 annulée.')]);
+    expect(allopark()).toEqual([]);
+    expect(read).toHaveBeenCalledTimes(1);
+    const cancelled = await prisma.inboundEmail.findFirstOrThrow({ where: { operatorId: op.operator.id } });
+    expect([cancelled.status, (cancelled.reading as { kind: string } | null)?.kind, cancelled.change]).toEqual(['incomplete', 'cancellation', null]);
+    expect(await prisma.reservation.count()).toBe(0);
+    expect((await api().get('/api/internal/inbound/emails').set(auth(op.token))).body.counts.todo).toBe(1);
+
+    // The change is read from the page (the booking as it is now), once Claude confirms what the wording announced.
+    read.mockResolvedValueOnce(claude({ kind: 'modification', summary: 'Modification de la réservation AL-884880719' }));
     await post([
       mail(
         'Votre réservation AL-884880719',
         'Allopark\nVotre réservation AL-884880719 a été modifiée : du 2 octobre 2026 - 08:30 au 4 octobre 2026 - 17:00.',
       ),
-      mail('Allopark AL-884880719', 'ALLOPARK\nRéservation AL-884880719 annulée.'),
     ]);
-    expect(allopark()).toEqual([]);
+    expect(allopark()).toEqual([urlOf('parking@example.com')]);
     expect(read).toHaveBeenCalledTimes(2);
-    const rows = await prisma.inboundEmail.findMany({ where: { operatorId: op.operator.id }, orderBy: { subject: 'asc' } });
-    expect(rows.map(r => [r.subject, r.status, (r.reading as { kind: string } | null)?.kind])).toEqual([
-      ['Allopark AL-884880719', 'incomplete', 'cancellation'],
-      ['Votre réservation AL-884880719', 'incomplete', 'modification'],
-    ]);
-    expect(await prisma.reservation.count()).toBe(0);
-    expect((await api().get('/api/internal/inbound/emails').set(auth(op.token))).body.counts.todo).toBe(2);
+    expect(await prisma.reservation.count()).toBe(1);
   });
 
-  it('10/10/2026 (relecture) : une modification que rien ne signale ouvre la page, mais Claude la lit comme telle : ni doublon ni réservation, elle reste « À traiter », même relancée sans Claude', async () => {
+  it('10/10/2026 (relecture) : une modification que seul le texte annonce attend Claude ; lue comme une annulation ou sans réponse, rien n’est ouvert ni changé, le mail reste « À traiter »', async () => {
+    const op = await connected();
+    answer(pageFor('parking@example.com'));
+    // The booking is already there (its confirmation, complete); Allopark's page now shows a later return.
+    expect((await post([item(op.address, filled)])).body.imported).toBe(1);
+    const before = await prisma.reservation.findFirstOrThrow({ where: { operatorId: op.operator.id } });
+    const later = page.replace('name="date_out" value="2026-10-03 17:00:00"', 'name="date_out" value="2026-10-04 17:00:00"');
+    answer(url => (url.includes(`email=${encodeURIComponent('parking@example.com')}`) ? new Response(later, { status: 200 }) : new Response(home)));
+    fetchMock.mockClear();
+    read.mockClear();
+    const change = (text: string) =>
+      item('parking@example.com', `Allopark\n${text}`, { Recipients: [op.address], Subject: 'Modification de votre réservation AL-884880719' });
+
+    // The wording says « modification », Claude reads a cancellation the patterns do not know: nothing is done.
+    read.mockResolvedValueOnce(claude({ kind: 'cancellation', summary: 'Annulation de la réservation AL-884880719' }));
+    expect((await post([change('Suite à votre demande, plus de séjour au parking.')])).body).toEqual({
+      received: 1,
+      imported: 0,
+      toCheck: 1,
+      ignored: 0,
+    });
+    expect(allopark()).toEqual([]);
+    const cancelled = await prisma.inboundEmail.findFirstOrThrow({ where: { operatorId: op.operator.id }, orderBy: { receivedAt: 'desc' } });
+    expect(cancelled).toMatchObject({ status: 'unrecognised', reservationId: null, change: null, reading: { kind: 'cancellation' } });
+
+    // Claude does not answer: the email waits, nothing opened, nothing changed; « Relancer l'analyse » tries again.
+    expect((await post([change('Vos nouvelles dates : du 1er au 4 octobre.')])).body).toEqual({ received: 1, imported: 0, toCheck: 1, ignored: 0 });
+    expect(allopark()).toEqual([]);
+    expect(read).toHaveBeenCalledTimes(2);
+    const waiting = await prisma.inboundEmail.findFirstOrThrow({
+      where: { operatorId: op.operator.id, status: 'unrecognised', reading: { equals: Prisma.DbNull } },
+    });
+    expect(waiting).toMatchObject({ reservationId: null, change: null, pageLookup: null });
+    const now = await prisma.reservation.findUniqueOrThrow({ where: { id: before.id } });
+    expect([now.returnAt, now.updatedAt]).toEqual([before.returnAt, before.updatedAt]);
+    expect(await prisma.auditLog.count({ where: { action: 'reservation.updated', entityId: before.id } })).toBe(0);
+
+    // Claude reads the change at the re-analysis: applied from the page.
+    read.mockResolvedValueOnce(claude({ kind: 'modification', summary: 'Nouvelles dates pour la réservation AL-884880719' }));
+    const res = await api().post(`/api/internal/inbound/emails/${waiting.id}/reanalyse`).set(auth(op.token));
+    expect([res.body.outcome, res.body.email.status, res.body.email.change?.applied]).toEqual(['changed', 'imported', true]);
+    expect((await prisma.reservation.findUniqueOrThrow({ where: { id: before.id } })).returnAt.toISOString()).toBe('2026-10-04T15:00:00.000Z');
+  });
+
+  it('10/10/2026 (relecture) : un mail qui nomme deux réservations (l’objet l’une, le texte l’autre) n’applique jamais la page de l’une à l’autre', async () => {
+    const op = await connected();
+    answer(pageFor('parking@example.com'));
+    // AL-111111 is a booking of the parking, its own dates and traveller.
+    expect((await post([item(op.address, filled)])).body.imported).toBe(1);
+    const theirs = await prisma.reservation.update({
+      where: { operatorId_externalReference: { operatorId: op.operator.id, externalReference: 'AL-884880719' } },
+      data: { externalReference: 'AL-111111' },
+    });
+    // Allopark's page of AL-884880719 shows a later return than AL-111111's.
+    const later = page.replace('name="date_out" value="2026-10-03 17:00:00"', 'name="date_out" value="2026-10-04 17:00:00"');
+    answer(url => (url.includes(`email=${encodeURIComponent('parking@example.com')}`) ? new Response(later, { status: 200 }) : new Response(home)));
+    fetchMock.mockClear();
+    // Its subject names AL-111111, its text quotes AL-884880719 (a thread forwarded by hand); Claude reads a change.
+    read.mockResolvedValue(claude({ kind: 'modification', externalReference: 'AL-111111', summary: 'Modification de la réservation AL-111111' }));
+    const mixed = item('parking@example.com', email, { Recipients: [op.address], Subject: 'Votre réservation AL-111111' });
+    expect((await post([mixed])).body).toEqual({ received: 1, imported: 0, toCheck: 1, ignored: 0 });
+    // The page read for AL-884880719 is not used for AL-111111: AL-111111's page is opened, which Allopark does not show.
+    expect(allopark().some(u => u.includes('reference=AL-111111'))).toBe(true);
+    const after = await prisma.reservation.findUniqueOrThrow({ where: { id: theirs.id } });
+    expect([after.updatedAt, after.externalReference]).toEqual([theirs.updatedAt, 'AL-111111']);
+    expect(await prisma.reservation.count()).toBe(1);
+    expect(await prisma.auditLog.count({ where: { action: 'reservation.updated', entityId: theirs.id } })).toBe(0);
+    const row = await prisma.inboundEmail.findFirstOrThrow({ where: { operatorId: op.operator.id, subject: 'Votre réservation AL-111111' } });
+    expect(row).toMatchObject({ status: 'unrecognised', reservationId: null, change: null });
+  });
+
+  it('10/10/2026 (« C’est une modification ») : une modification que rien ne signale, que Claude lit comme telle, est appliquée depuis la page', async () => {
     const op = await connected();
     answer(pageFor('parking@example.com'));
     // The booking is already there (its confirmation, complete).
     expect((await post([item(op.address, filled)])).body.imported).toBe(1);
+    const before = await prisma.reservation.findFirstOrThrow({ where: { operatorId: op.operator.id } });
+    // Allopark's page now shows a later return.
+    const later = page.replace('name="date_out" value="2026-10-03 17:00:00"', 'name="date_out" value="2026-10-04 17:00:00"');
+    answer(url => (url.includes(`email=${encodeURIComponent('parking@example.com')}`) ? new Response(later, { status: 200 }) : new Response(home)));
     const info = jest.spyOn(logger, 'info');
     try {
       read.mockResolvedValueOnce(claude({ kind: 'modification', summary: 'Nouvelles dates pour la réservation AL-884880719' }));
-      const change = item(
-        'parking@example.com',
-        'Allopark\nNouvelles dates pour votre séjour AL-884880719 : du 2 octobre 2026 - 08:30 au 4 octobre 2026 - 17:00.',
-        {
-          Recipients: [op.address],
-          Subject: 'Votre séjour AL-884880719',
-        },
-      );
-      expect((await post([change])).body).toEqual({ received: 1, imported: 0, toCheck: 1, ignored: 0 });
+      const change = item('parking@example.com', 'Allopark\nVotre séjour AL-884880719 : du 2 octobre 2026 - 08:30 au 4 octobre 2026 - 17:00.', {
+        Recipients: [op.address],
+        Subject: 'Votre séjour AL-884880719',
+      });
+      expect((await post([change])).body).toEqual({ received: 1, imported: 1, toCheck: 0, ignored: 0 });
       expect(allopark()).toEqual([urlOf('parking@example.com')]);
-      expect(info.mock.calls.map(([m]) => String(m))).toContain(
-        '[Allopark] AL-884880719: read as modification by Claude, nothing taken from the booking page',
+      expect(read).toHaveBeenCalledTimes(1);
+      expect(info.mock.calls.map(([m]) => String(m))).toEqual(
+        expect.arrayContaining([expect.stringMatching(/^\[Allopark\] AL-884880719: change applied to the booking \(.*returnAt.*\)$/)]),
       );
     } finally {
       info.mockRestore();
     }
-    const row = await prisma.inboundEmail.findFirstOrThrow({ where: { operatorId: op.operator.id, status: 'incomplete' } });
-    // The email's own fields wait, as they would without the page; Claude's reading says why.
-    expect(row).toMatchObject({ provider: 'Allopark', reservationId: null, reading: { kind: 'modification' } });
-    expect(row.parsed).not.toHaveProperty('plate');
-    expect(row.missing).toEqual(expect.arrayContaining(['customerPhone', 'plate']));
-
-    // Re-analysed while Claude is away: the page answers again, its booking is still not taken.
-    delete process.env.ANTHROPIC_API_KEY;
-    const res = await api().post(`/api/internal/inbound/emails/${row.id}/reanalyse`).set(auth(op.token));
-    expect([res.body.outcome, res.body.email.status, res.body.email.reading.kind]).toEqual(['incomplete', 'incomplete', 'modification']);
-    expect(allopark()).toHaveLength(2);
+    const row = await prisma.inboundEmail.findFirstOrThrow({ where: { operatorId: op.operator.id, subject: 'Votre séjour AL-884880719' } });
+    // Claude's reading stays with the email; the change says what was applied.
+    expect(row).toMatchObject({ status: 'imported', provider: 'Allopark', reservationId: before.id, reading: { kind: 'modification' } });
+    expect((row.change as { applied: boolean; changes: unknown[] }).applied).toBe(true);
+    expect((row.change as { changes: unknown[] }).changes).toEqual(
+      expect.arrayContaining([{ field: 'returnAt', from: '2026-10-03T17:00', to: '2026-10-04T17:00' }]),
+    );
+    expect((await prisma.reservation.findUniqueOrThrow({ where: { id: before.id } })).returnAt.toISOString()).toBe('2026-10-04T15:00:00.000Z');
     expect(await prisma.reservation.count()).toBe(1);
-    expect(await prisma.inboundEmail.count({ where: { operatorId: op.operator.id, status: 'duplicate' } })).toBe(0);
   });
 
   it('trois pages au plus, la boîte du gérant en dernier ; jamais un autre membre, un gérant inactif ni le gérant d’un autre loueur', async () => {
@@ -2051,6 +2133,479 @@ describe('Allopark : prix de la page et vérification anti-robot (10/10/2026, «
     expect(await Container.get(InboundEmailService).purge()).toEqual({ textsCleared: 1, rowsDeleted: 0 });
     expect(await prisma.inboundEmail.findUniqueOrThrow({ where: { id: purged.id } })).toMatchObject({ textBody: null, pageLookup: null });
     // Purged again the next night: nothing left to clear.
+    expect(await Container.get(InboundEmailService).purge()).toEqual({ textsCleared: 0, rowsDeleted: 0 });
+  });
+});
+
+describe('Allopark : une modification appliquée par Plazo (10/10/2026, « C’est une modification »)', () => {
+  const page = readFileSync(join(__dirname, 'fixtures/allopark-page.html'), 'utf8');
+  const pageUrl = 'https://www.allopark.com/fr-be/confirmation?email=parking%40example.com&reference=AL-884880719&view=parking';
+  const link =
+    '<a href="https://www.allopark.com/fr-be/confirmation?email=parking@example.com&amp;reference=AL-884880719&amp;view=parking">Consulter ma réservation</a>';
+  /** The booking page as Allopark shows it after the change (local times, as the page prints them). */
+  const pageWith = (over: { dateIn?: string; dateOut?: string; people?: number; outbound?: string; inbound?: string } = {}) => {
+    let html = page;
+    if (over.dateIn) html = html.replace('name="date_in" value="2026-10-01 08:30:00"', `name="date_in" value="${over.dateIn}:00"`);
+    if (over.dateOut) html = html.replace('name="date_out" value="2026-10-03 17:00:00"', `name="date_out" value="${over.dateOut}:00"`);
+    if (over.people) html = html.replace(/(name="people_navette"[^>]*?value=")3(")/, `$1${over.people}$2`);
+    // The page's « vol aller » is fly_arrival, its « vol retour » fly_departure.
+    if (over.outbound) html = html.replace(/(name="fly_arrival"\s+value=")TO 3626(")/, `$1${over.outbound}$2`);
+    if (over.inbound) html = html.replace(/(name="fly_departure"\s+value=")TO 3627(")/, `$1${over.inbound}$2`);
+    return html;
+  };
+  /** What Allopark answers now. */
+  let shown: () => Response;
+  const show = (html: string) => {
+    shown = () => new Response(html, { status: 200, headers: { 'Content-Type': 'text/html; charset=UTF-8' } });
+  };
+  const post = (items: unknown[]) => api().post('/api/public/inbound/email').set('X-Inbound-Secret', 'inbound-test-secret').send({ items });
+  const reanalyse = (id: string, token: string) => api().post(`/api/internal/inbound/emails/${id}/reanalyse`).set(auth(token));
+  const allopark = () => fetchMock.mock.calls.filter(([u]) => String(u).startsWith('https://www.allopark.com/')).map(([u]) => String(u));
+  /** The pushes sent, as OneSignal reads them. */
+  const sent = () =>
+    pushes().map(([, init]) => JSON.parse(String((init as RequestInit).body)) as { data: Record<string, string>; [key: string]: unknown });
+  const confirmation = (to: string) => item(to, email, { RawHtmlBody: `<p>Bonjour Jean Dupont,</p>${link}` });
+  const modification = (to: string, subject = 'Modification de votre réservation AL-884880719') =>
+    item(
+      to,
+      'ALLOPARK\nVotre réservation AL-884880719 chez Aeroports Parking Lyon a été modifiée.\nConsultez votre réservation pour voir ses nouvelles informations.',
+      { Subject: subject, RawHtmlBody: `<p>Votre réservation a été modifiée.</p>${link}` },
+    );
+  const connected = async () => {
+    const op = await setupOperator();
+    const settings = await api().get('/api/internal/inbound/settings').set(auth(op.token));
+    // The manager hears of every booking at once (a manager's default is the hourly digest).
+    await api()
+      .put('/api/internal/notifications/devices')
+      .set(auth(op.token))
+      .send({ subscriptionId: `sub-${op.operator.id}` });
+    await api().patch('/api/internal/notifications/preferences').set(auth(op.token)).send({ bookings: 'immediate' });
+    return { ...op, address: settings.body.address as string };
+  };
+  /** The booking as its confirmation made it (the email and its page): 1 → 3 October, 3 people. */
+  const booked = async (op: { address: string; operator: { id: string } }) => {
+    expect((await post([confirmation(op.address)])).body.imported).toBe(1);
+    return prisma.reservation.findFirstOrThrow({ where: { operatorId: op.operator.id } });
+  };
+  const changeRow = (operatorId: string, subject = 'Modification de votre réservation AL-884880719') =>
+    prisma.inboundEmail.findFirstOrThrow({ where: { operatorId, subject }, orderBy: { receivedAt: 'desc' } });
+  const unchanged = async (before: { id: string; returnAt: Date; arrivalAt: Date; passengers: number; updatedAt: Date }) => {
+    const now = await prisma.reservation.findUniqueOrThrow({ where: { id: before.id } });
+    expect([now.arrivalAt, now.returnAt, now.passengers, now.updatedAt]).toEqual([
+      before.arrivalAt,
+      before.returnAt,
+      before.passengers,
+      before.updatedAt,
+    ]);
+  };
+
+  beforeEach(() => {
+    delete process.env.ANTHROPIC_API_KEY;
+    show(page);
+    fetchMock.mockImplementation(async url =>
+      String(url).includes('allopark.com') ? shown() : new Response(JSON.stringify({ id: 'n1' }), { status: 200 }),
+    );
+  });
+
+  it('une réservation connue : dates et personnes mises à jour, historique, push « Réservation modifiée », mail rattaché ; le même mail ensuite : doublon, rien ne change', async () => {
+    const op = await connected();
+    const before = await booked(op);
+    expect(before).toMatchObject({ passengers: 3, departureFlight: 'TO 3626', customerEmail: 'jean.dupont@example.com', priceCents: 3499 });
+    expect(sent().map(p => p.data.event)).toEqual(['created']);
+
+    show(pageWith({ dateOut: '2026-10-05 18:00', people: 4 }));
+    expect((await post([modification(op.address)])).body).toEqual({ received: 1, imported: 1, toCheck: 0, ignored: 0 });
+    expect(allopark().slice(-1)).toEqual([pageUrl]);
+    const after = await prisma.reservation.findUniqueOrThrow({ where: { id: before.id } });
+    // 18:00 in Lyon on 5 October is 16:00 UTC.
+    expect([after.returnAt.toISOString(), after.passengers, after.arrivalAt]).toEqual(['2026-10-05T16:00:00.000Z', 4, before.arrivalAt]);
+    const row = await changeRow(op.operator.id);
+    expect(row).toMatchObject({ status: 'imported', provider: 'Allopark', reservationId: before.id, recipients: [], links: [] });
+    const changes = [
+      { field: 'returnAt', from: '2026-10-03T17:00', to: '2026-10-05T18:00' },
+      { field: 'passengers', from: 3, to: 4 },
+    ];
+    expect(row.change).toEqual({ applied: true, reservationId: before.id, reference: before.reference, changes, at: expect.any(String) });
+
+    // The history: the entry of a staff member's change, by no one, with where it came from.
+    const audits = await prisma.auditLog.findMany({ where: { action: 'reservation.updated', entityId: before.id } });
+    expect(audits).toHaveLength(1);
+    expect(audits[0].staffId).toBeNull();
+    expect(audits[0].details).toEqual({
+      returnAt: { from: before.returnAt.toISOString(), to: '2026-10-05T16:00:00.000Z' },
+      passengers: { from: 3, to: 4 },
+      by: 'inbound_email',
+      source: 'allopark_change',
+      provider: 'Allopark',
+      inboundEmailId: row.id,
+    });
+
+    // The team hears of it: the reference and what changed, nothing more of the traveller.
+    const push = sent().find(p => p.data.event === 'changed');
+    expect(push).toMatchObject({
+      include_subscription_ids: [`sub-${op.operator.id}`],
+      headings: { fr: 'Réservation modifiée · Allopark' },
+      contents: { fr: 'AL-884880719 · retour 5 oct. 18:00 · 4 personnes' },
+      data: { type: 'booking', event: 'changed', reservationId: before.id },
+    });
+
+    // The inbox shows it in « Traités », with what was applied.
+    const done = await api().get('/api/internal/inbound/emails?view=done').set(auth(op.token));
+    expect(done.body.data.find((e: { id: string }) => e.id === row.id)).toMatchObject({
+      status: 'imported',
+      reservationReference: before.reference,
+      change: { applied: true, reason: null, reservationId: before.id, reference: before.reference, changes },
+    });
+
+    // The same email again (forwarded twice): the booking is up to date, nothing changes, nobody is told.
+    const updated = await prisma.reservation.findUniqueOrThrow({ where: { id: before.id } });
+    expect((await post([modification(op.address)])).body).toEqual({ received: 1, imported: 0, toCheck: 0, ignored: 0 });
+    const again = await changeRow(op.operator.id);
+    expect(again.id).not.toBe(row.id);
+    expect(again).toMatchObject({ status: 'duplicate', reservationId: before.id });
+    expect(again.change).toEqual({ applied: false, reservationId: before.id, reference: before.reference, changes: [], at: expect.any(String) });
+    await unchanged(updated);
+    expect(await prisma.auditLog.count({ where: { action: 'reservation.updated', entityId: before.id } })).toBe(1);
+    expect(sent().filter(p => p.data.event === 'changed')).toHaveLength(1);
+  });
+
+  it('une réservation que Plazo n’a pas encore : créée depuis la page', async () => {
+    const op = await connected();
+    show(pageWith({ dateOut: '2026-10-05 18:00', people: 4 }));
+    expect((await post([modification(op.address)])).body).toEqual({ received: 1, imported: 1, toCheck: 0, ignored: 0 });
+    const booking = await prisma.reservation.findFirstOrThrow({ where: { operatorId: op.operator.id } });
+    expect(booking).toMatchObject({
+      channel: 'aggregator',
+      channelDetail: 'Allopark',
+      externalReference: 'AL-884880719',
+      customerFirstName: 'Jean',
+      customerLastName: 'Dupont',
+      plate: 'GK-318-PX',
+      passengers: 4,
+      returnFlight: 'TO 3627',
+      priceCents: 3499,
+    });
+    expect(booking.returnAt.toISOString()).toBe('2026-10-05T16:00:00.000Z');
+    expect(await changeRow(op.operator.id)).toMatchObject({ status: 'imported', reservationId: booking.id, change: null });
+    expect(sent().map(p => p.data.event)).toEqual(['created']);
+  });
+
+  it('une réservation rendue : rien n’est appliqué, le mail reste « À traiter » avec les changements (reservation_closed)', async () => {
+    const op = await connected();
+    const booking = await booked(op);
+    const before = await prisma.reservation.update({ where: { id: booking.id }, data: { status: 'returned', returnedAt: new Date() } });
+    show(pageWith({ dateOut: '2026-10-05 18:00', people: 4 }));
+    expect((await post([modification(op.address)])).body).toEqual({ received: 1, imported: 0, toCheck: 1, ignored: 0 });
+    await unchanged(before);
+    const row = await changeRow(op.operator.id);
+    expect(row).toMatchObject({ status: 'unrecognised', provider: 'Allopark', reservationId: null });
+    expect(row.change).toEqual({
+      applied: false,
+      reason: 'reservation_closed',
+      reservationId: before.id,
+      reference: before.reference,
+      changes: [
+        { field: 'returnAt', from: '2026-10-03T17:00', to: '2026-10-05T18:00' },
+        { field: 'passengers', from: 3, to: 4 },
+      ],
+      at: expect.any(String),
+    });
+    expect(sent().filter(p => p.data.event === 'changed')).toEqual([]);
+    const todo = await api().get('/api/internal/inbound/emails').set(auth(op.token));
+    expect(todo.body.counts.todo).toBe(1);
+    expect(todo.body.data[0].change).toMatchObject({ applied: false, reason: 'reservation_closed', reference: before.reference });
+  });
+
+  it('la voiture déjà arrivée : une nouvelle arrivée n’est pas appliquée (already_arrived) ; un nouveau retour seul l’est, à la relance', async () => {
+    const op = await connected();
+    const booking = await booked(op);
+    const before = await prisma.reservation.update({ where: { id: booking.id }, data: { status: 'arrived', arrivedAt: new Date() } });
+    show(pageWith({ dateIn: '2026-10-01 10:00', dateOut: '2026-10-05 18:00' }));
+    expect((await post([modification(op.address)])).body.toCheck).toBe(1);
+    await unchanged(before);
+    const row = await changeRow(op.operator.id);
+    expect(row.status).toBe('unrecognised');
+    expect(row.change).toMatchObject({
+      applied: false,
+      reason: 'already_arrived',
+      changes: [
+        { field: 'arrivalAt', from: '2026-10-01T08:30', to: '2026-10-01T10:00' },
+        { field: 'returnAt', from: '2026-10-03T17:00', to: '2026-10-05T18:00' },
+      ],
+    });
+
+    // Allopark's page keeps the arrival now: only the return moves, which is applied while the car is on the parking.
+    show(pageWith({ dateOut: '2026-10-05 18:00' }));
+    const res = await reanalyse(row.id, op.token);
+    expect(res.status).toBe(200);
+    expect(res.body.outcome).toBe('changed');
+    expect(res.body.email).toMatchObject({
+      status: 'imported',
+      reservationId: before.id,
+      reservationReference: before.reference,
+      change: { applied: true, reason: null, changes: [{ field: 'returnAt', from: '2026-10-03T17:00', to: '2026-10-05T18:00' }] },
+    });
+    const after = await prisma.reservation.findUniqueOrThrow({ where: { id: before.id } });
+    expect([after.status, after.arrivalAt, after.returnAt.toISOString()]).toEqual(['arrived', before.arrivalAt, '2026-10-05T16:00:00.000Z']);
+    // The change itself is by no one, even when a staff member asked for the analysis (traced as inbound.reanalysed).
+    const audit = await prisma.auditLog.findFirstOrThrow({ where: { action: 'reservation.updated', entityId: before.id } });
+    expect(audit).toMatchObject({ staffId: null, details: { source: 'allopark_change', inboundEmailId: row.id } });
+  });
+
+  it('plus de place aux nouvelles dates : rien n’est appliqué (no_room) ; une place libérée, la relance l’applique', async () => {
+    const op = await connected();
+    const before = await booked(op);
+    await prisma.parking.update({ where: { id: op.parking.id }, data: { totalCapacity: 1, safetyMarginPct: 0 } });
+    // Another car takes the only place from the evening of the 3rd.
+    const other = await prisma.reservation.create({
+      data: {
+        reference: 'RTEST22',
+        operatorId: op.operator.id,
+        parkingId: op.parking.id,
+        channel: 'phone',
+        arrivalAt: new Date('2026-10-03T18:00:00Z'),
+        returnAt: new Date('2026-10-06T08:00:00Z'),
+        passengers: 1,
+        customerFirstName: 'Paul',
+        customerLastName: 'Martin',
+        customerName: 'Paul Martin',
+        customerPhone: '06 00 00 00 00',
+        plate: 'AA-111-AA',
+        plateKey: 'AA111AA',
+      },
+    });
+    show(pageWith({ dateOut: '2026-10-05 18:00' }));
+    expect((await post([modification(op.address)])).body.toCheck).toBe(1);
+    await unchanged(before);
+    const row = await changeRow(op.operator.id);
+    expect(row.change).toMatchObject({
+      applied: false,
+      reason: 'no_room',
+      changes: [{ field: 'returnAt', from: '2026-10-03T17:00', to: '2026-10-05T18:00' }],
+    });
+
+    // Re-analysed while Allopark asks for an anti-robot check: nothing changes, the changes found before stay shown.
+    shown = () => new Response('<html><title>Just a moment...</title></html>', { status: 403, headers: { 'cf-mitigated': 'challenge' } });
+    const protectedNow = await reanalyse(row.id, op.token);
+    expect([protectedNow.body.outcome, protectedNow.body.email.status, protectedNow.body.email.pageLookup.outcome]).toEqual([
+      'unrecognised',
+      'unrecognised',
+      'protected',
+    ]);
+    expect(protectedNow.body.email.change).toMatchObject({ applied: false, reason: 'no_room' });
+    await unchanged(before);
+    await prisma.inboundEmail.update({ where: { id: row.id }, data: { analysedAt: null } });
+
+    // The other booking is cancelled: the change goes through at the next analysis.
+    show(pageWith({ dateOut: '2026-10-05 18:00' }));
+    await prisma.reservation.update({ where: { id: other.id }, data: { status: 'cancelled', cancelledAt: new Date() } });
+    const res = await reanalyse(row.id, op.token);
+    expect([res.body.outcome, res.body.email.status, res.body.email.change.applied]).toEqual(['changed', 'imported', true]);
+    expect((await prisma.reservation.findUniqueOrThrow({ where: { id: before.id } })).returnAt.toISOString()).toBe('2026-10-05T16:00:00.000Z');
+  });
+
+  it('une réservation faite sur Plazo n’est jamais changée par un mail de comparateur (plazo_booking)', async () => {
+    const op = await connected();
+    const booking = await booked(op);
+    const before = await prisma.reservation.update({ where: { id: booking.id }, data: { channel: 'plazo', channelDetail: null } });
+    show(pageWith({ people: 4 }));
+    expect((await post([modification(op.address)])).body.toCheck).toBe(1);
+    await unchanged(before);
+    expect((await changeRow(op.operator.id)).change).toMatchObject({
+      applied: false,
+      reason: 'plazo_booking',
+      reservationId: before.id,
+      changes: [{ field: 'passengers', from: 3, to: 4 }],
+    });
+  });
+
+  it('une annulation : rien, comme avant (la page n’est pas ouverte, la réservation reste)', async () => {
+    const op = await connected();
+    const before = await booked(op);
+    fetchMock.mockClear();
+    const res = await post([
+      item(op.address, 'ALLOPARK\nVotre réservation AL-884880719 a été annulée.', {
+        Subject: 'Annulation de votre réservation AL-884880719',
+        RawHtmlBody: `<p>Votre réservation a été annulée.</p>${link}`,
+      }),
+    ]);
+    expect(res.body).toEqual({ received: 1, imported: 0, toCheck: 1, ignored: 0 });
+    expect(allopark()).toEqual([]);
+    await unchanged(before);
+    expect((await prisma.reservation.findUniqueOrThrow({ where: { id: before.id } })).status).toBe('upcoming');
+    expect(await changeRow(op.operator.id, 'Annulation de votre réservation AL-884880719')).toMatchObject({
+      status: 'unrecognised',
+      change: null,
+      reservationId: null,
+    });
+  });
+
+  it('la page protégée par une vérification anti-robot : rien ne change, le mail reste « À traiter » avec la page à ouvrir', async () => {
+    const op = await connected();
+    const before = await booked(op);
+    shown = () => new Response('<html><title>Just a moment...</title></html>', { status: 403, headers: { 'cf-mitigated': 'challenge' } });
+    expect((await post([modification(op.address)])).body).toEqual({ received: 1, imported: 0, toCheck: 1, ignored: 0 });
+    await unchanged(before);
+    const row = await changeRow(op.operator.id);
+    expect(row).toMatchObject({ status: 'unrecognised', provider: 'Allopark', reservationId: null, change: null });
+    expect(row.pageLookup).toEqual({ outcome: 'protected', url: pageUrl, at: expect.any(String) });
+    expect(sent().filter(p => p.data.event === 'changed')).toEqual([]);
+  });
+
+  it('la réservation d’un autre loueur avec la même référence n’est jamais touchée', async () => {
+    const a = await connected();
+    const b = await connected();
+    const theirs = await booked(a);
+    show(pageWith({ people: 4 }));
+    expect((await post([modification(b.address)])).body.imported).toBe(1);
+    await unchanged(theirs);
+    expect(await prisma.auditLog.count({ where: { action: 'reservation.updated', entityId: theirs.id } })).toBe(0);
+    // B did not have it: its own booking is made from the page.
+    expect(await prisma.reservation.findFirstOrThrow({ where: { operatorId: b.operator.id } })).toMatchObject({
+      externalReference: 'AL-884880719',
+      passengers: 4,
+    });
+    expect(sent().filter(p => p.data.event === 'changed')).toEqual([]);
+  });
+
+  it('10/10/2026 (relecture) : un nouveau vol remet son suivi à zéro ; des dates qui ne font pas un séjour restent à faire à la main (invalid_stay)', async () => {
+    const op = await connected();
+    const booking = await booked(op);
+    // Both flights are tracked, the return one already landed by the tracking.
+    const tracked = {
+      flightStatus: 'landed' as const,
+      flightScheduledAt: new Date('2026-10-03T14:00:00Z'),
+      flightEstimatedAt: new Date('2026-10-03T14:05:00Z'),
+      flightLandedAt: new Date('2026-10-03T14:10:00Z'),
+      flightLandedSource: 'tracking' as const,
+      flightTerminal: '1',
+      flightGate: 'B12',
+      flightCheckedAt: new Date(),
+      departureStatus: 'departed' as const,
+      departureScheduledAt: new Date('2026-10-01T09:00:00Z'),
+      departureEstimatedAt: new Date('2026-10-01T09:10:00Z'),
+      departureTerminal: '1',
+      departureCheckedAt: new Date(),
+    };
+    await prisma.reservation.update({ where: { id: booking.id }, data: tracked });
+    show(pageWith({ outbound: 'TO 3630', inbound: 'TO 3631' }));
+    expect((await post([modification(op.address)])).body.imported).toBe(1);
+    expect((await changeRow(op.operator.id)).change).toMatchObject({
+      applied: true,
+      changes: [
+        { field: 'departureFlight', from: 'TO 3626', to: 'TO 3630' },
+        { field: 'returnFlight', from: 'TO 3627', to: 'TO 3631' },
+      ],
+    });
+    const after = await prisma.reservation.findUniqueOrThrow({ where: { id: booking.id } });
+    expect(after).toMatchObject({ departureFlight: 'TO 3630', returnFlight: 'TO 3631' });
+    for (const column of Object.keys(tracked)) expect([column, after[column as keyof typeof after]]).toEqual([column, null]);
+
+    // A landing the traveller reported stays theirs when the return flight changes again.
+    const landed = new Date('2026-10-03T14:20:00Z');
+    await prisma.reservation.update({ where: { id: booking.id }, data: { flightLandedAt: landed, flightLandedSource: 'traveller' } });
+    show(pageWith({ outbound: 'TO 3630', inbound: 'TO 3633' }));
+    await post([modification(op.address)]);
+    expect(await prisma.reservation.findUniqueOrThrow({ where: { id: booking.id } })).toMatchObject({
+      returnFlight: 'TO 3633',
+      flightLandedAt: landed,
+      flightLandedSource: 'traveller',
+    });
+
+    // The page now ends the stay before it begins: nothing applied, the change waits with its reason.
+    const before = await prisma.reservation.findUniqueOrThrow({ where: { id: booking.id } });
+    show(pageWith({ dateOut: '2026-09-30 10:00', outbound: 'TO 3630', inbound: 'TO 3633' }));
+    expect((await post([modification(op.address)])).body.toCheck).toBe(1);
+    await unchanged(before);
+    expect((await changeRow(op.operator.id)).change).toMatchObject({
+      applied: false,
+      reason: 'invalid_stay',
+      changes: [{ field: 'returnAt', from: '2026-10-03T17:00', to: '2026-09-30T10:00' }],
+    });
+  });
+
+  it('10/10/2026 (relecture) : un gérant au récapitulatif horaire (son réglage par défaut) apprend aussi la modification ; « jamais » : rien', async () => {
+    const op = await connected();
+    const before = await booked(op);
+    await api().patch('/api/internal/notifications/preferences').set(auth(op.token)).send({ bookings: 'hourly' });
+    show(pageWith({ people: 4 }));
+    await post([modification(op.address)]);
+    expect(sent().filter(p => p.data.event === 'changed')).toEqual([
+      expect.objectContaining({
+        include_subscription_ids: [`sub-${op.operator.id}`],
+        headings: expect.objectContaining({ fr: 'Réservation modifiée · Allopark' }),
+      }),
+    ]);
+
+    await api().patch('/api/internal/notifications/preferences').set(auth(op.token)).send({ bookings: 'never' });
+    show(pageWith({ people: 5 }));
+    await post([modification(op.address)]);
+    expect((await prisma.reservation.findUniqueOrThrow({ where: { id: before.id } })).passengers).toBe(5);
+    expect(sent().filter(p => p.data.event === 'changed')).toHaveLength(1);
+  });
+
+  it('10/10/2026 (relecture) : relancé quand la page ne répond pas, un mail pré-rempli que le texte dit maintenant une modification garde ses champs', async () => {
+    const op = await connected();
+    shown = () => new Response('<html><title>Just a moment...</title></html>', { status: 403, headers: { 'cf-mitigated': 'challenge' } });
+    const parsed = {
+      provider: 'Allopark',
+      externalReference: 'AL-884880719',
+      arrivalAt: '2026-10-01T08:30',
+      returnAt: '2026-10-03T17:00',
+      customerFirstName: 'Jean',
+      customerLastName: 'Dupont',
+      customerName: 'Jean Dupont',
+      priceCents: 3499,
+    };
+    // Stored « Incomplet » by an earlier analysis (the importer's fields), its text now read as a change.
+    const row = await prisma.inboundEmail.create({
+      data: {
+        operatorId: op.operator.id,
+        status: 'incomplete',
+        fromAddress: 'info@allopark.com',
+        fromName: 'ALLOPARK',
+        subject: 'Votre séjour AL-884880719',
+        textBody: 'ALLOPARK\nRéservation AL-884880719\nVos nouvelles dates : du 1er au 3 octobre.',
+        provider: 'Allopark',
+        parsed,
+        missing: ['customerPhone', 'plate'],
+        recipients: ['parking@example.com'],
+      },
+    });
+    const res = await reanalyse(row.id, op.token);
+    expect(res.status).toBe(200);
+    expect(res.body.outcome).toBe('incomplete');
+    expect(res.body.email).toMatchObject({
+      status: 'incomplete',
+      parsed: expect.objectContaining({ externalReference: 'AL-884880719', priceCents: 3499, returnAt: '2026-10-03T17:00' }),
+      missing: ['customerPhone', 'plate'],
+      pageLookup: { outcome: 'protected' },
+      change: null,
+    });
+    expect(allopark()).toEqual([pageUrl]);
+    expect(await prisma.reservation.count()).toBe(0);
+  });
+
+  it('le rattachement et la purge de nuit effacent les changements (données personnelles)', async () => {
+    const op = await connected();
+    const booking = await booked(op);
+    await prisma.reservation.update({ where: { id: booking.id }, data: { status: 'returned', returnedAt: new Date() } });
+    show(pageWith({ people: 4 }));
+    await post([modification(op.address, 'Votre réservation AL-884880719 a été modifiée'), modification(op.address, 'Modification AL-884880719')]);
+    const attached = await changeRow(op.operator.id, 'Votre réservation AL-884880719 a été modifiée');
+    const purged = await changeRow(op.operator.id, 'Modification AL-884880719');
+    expect([attached.change, purged.change]).toEqual([
+      expect.objectContaining({ reason: 'reservation_closed' }),
+      expect.objectContaining({ reason: 'reservation_closed' }),
+    ]);
+
+    const res = await api().post(`/api/internal/inbound/emails/${attached.id}/attach`).set(auth(op.token)).send({ reservationId: booking.id });
+    expect(res.status).toBe(200);
+    expect((await prisma.inboundEmail.findUniqueOrThrow({ where: { id: attached.id } })).change).toBeNull();
+
+    await prisma.inboundEmail.updateMany({ where: { id: purged.id }, data: { receivedAt: new Date(Date.now() - 31 * 86400000) } });
+    expect(await Container.get(InboundEmailService).purge()).toEqual({ textsCleared: 1, rowsDeleted: 0 });
+    expect(await prisma.inboundEmail.findUniqueOrThrow({ where: { id: purged.id } })).toMatchObject({ textBody: null, change: null });
     expect(await Container.get(InboundEmailService).purge()).toEqual({ textsCleared: 0, rowsDeleted: 0 });
   });
 });

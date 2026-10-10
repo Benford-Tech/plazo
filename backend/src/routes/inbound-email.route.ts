@@ -41,6 +41,11 @@ import { StaffAuthMiddleware } from '@/middlewares/staff-auth.middleware';
  *       10/10/2026 (« Prévent captcha »): each email has `pageLookup` { outcome: read | protected | unavailable |
  *       not_found, url, at } (null when no Allopark page was tried); `url` is the page the staff open by hand, given
  *       for the three failures only (`protected`: Allopark asked for an anti-robot check, which Plazo never passes).
+ *       10/10/2026 (« C'est une modification »): each email has `change` { applied, reason, reservationId, reference,
+ *       changes: [{ field, from, to }], at } (null for any other email): an Allopark change of a booking read against
+ *       its booking page, applied (imported), not needed (duplicate) or left to the staff (unrecognised) with `reason`
+ *       reservation_closed | already_arrived | no_room | plazo_booking | invalid_stay; dates in the parking's local
+ *       time, the price in cents. Cleared with the text and by /attach.
  * /internal/inbound/emails/{id}/handle:
  *   post:
  *     tags: [Inbound email]
@@ -60,8 +65,9 @@ import { StaffAuthMiddleware } from '@/middlewares/staff-auth.middleware';
  *     summary: "10/10/2026 « Relancer l'analyse »: the email is read again as at its reception (importers, Allopark's booking page, Claude, the booking)"
  *     description: >
  *       For an email without booking (incomplete, unrecognised, handled or archived). Answers { email, outcome } with
- *       outcome imported | duplicate | incomplete | unrecognised; a handled or archived email keeps its status unless the
- *       booking is made. 404 `not_found` (unknown, another operator's, a forwarding confirmation); 409 `already_imported`,
+ *       outcome imported (a booking created) | changed (10/10/2026: an Allopark change applied to its booking, the email
+ *       then reads imported) | duplicate | incomplete | unrecognised (a change left to the staff included, see
+ *       `email.change`); a handled or archived email keeps its status unless the booking is made or changed. 404 `not_found` (unknown, another operator's, a forwarding confirmation); 409 `already_imported`,
  *       `text_gone` (text purged after 30 days), `analysis_running` (analysed less than 30 s ago). Open to « Ouvrir son espace ».
  *     responses:
  *       200:
