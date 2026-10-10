@@ -403,7 +403,7 @@ le navigateur de l'espace pro appelle `/api` sur le même domaine (pas de CORS).
    dans sa messagerie une règle qui lui transfère les mails des comparateurs ; **Cloudflare
    Email Routing** reçoit le domaine (gratuit, adresses illimitées, aucune boîte mail à créer) et passe chaque mail au
    relais [`email-worker/`](email-worker/README.md), qui l'envoie tel quel (`message/rfc822`, enveloppe en en-têtes) à
-   `POST /api/public/inbound/email` avec l'en-tête `X-Inbound-Secret`, l'API le décodant elle-même ; un mail reconnu et complet (Allopark) crée la réservation (canal comparateur, doublon refusé
+   `POST /api/public/inbound/email` avec l'en-tête `X-Inbound-Secret`, l'API le décodant elle-même ; un mail reconnu et complet (Allopark, Onepark, Parclick, ParkMundo ; un mail Allopark aux champs vides est complété par la page de la réservation vers laquelle il renvoie, 10/10/2026) crée la réservation (canal comparateur, doublon refusé
    par la référence externe, push « Nouvelle réservation » à ceux qui le veulent à chaque réservation, sinon le récapitulatif
    horaire) ; un mail incomplet ou inconnu attend dans la **boîte de réception** « Mails à vérifier » (`/pro/reservations/a-verifier`,
    alerte du tableau de bord ; M-A du 08/10/2026 : liste et volet de lecture, onglets « À traiter · Traités · Archivés »), où

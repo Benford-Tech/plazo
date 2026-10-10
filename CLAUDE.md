@@ -121,6 +121,16 @@ Ne construire QUE ce qui règle la douleur n°1 du client.
      consigne de Claude : le montant est le prix du parking, sans les frais de la plateforme. Expéditeurs pour le filtre de
      transfert : `info@allopark.com`, puis les mots `onepark`, `parclick`, `parkmundo` (adresses exactes inconnues ; Gmail
      les reconnaît) ; textes de l'assistant G-B au pluriel (« les expéditeurs des comparateurs »).
+     **Page de réservation Allopark (10/10/2026, « il faut naviguer vers [la page] pour récupérer les infos des réservations
+     Allopark »)** : les mails Allopark laissent « Vos informations » vides ; quand il manque un champ requis,
+     `InboundEmailService` ouvre d'abord la page de la réservation (`AlloparkPageService`, `domain/importers/allopark-page.ts`) :
+     le lien « Consulter ma réservation » du mail reconstruit sur `https://www.allopark.com/<langue>/confirmation` avec ses seuls
+     `email`, `reference` et `view`, sinon la page (`view=parking`) de chaque destinataire du mail transféré hors adresse Plazo,
+     deux au plus ; https d'allopark.com seulement, redirections comprises, 8 s, 1,5 Mo, rien du lien dans les journaux ;
+     `parseAlloparkPage` lit le formulaire `edit_reservation` (`date_in` / `date_out`, `people_navette`, plaque, marque + modèle,
+     `fly_arrival` = vol aller, `fly_departure` = vol retour, téléphone, prénom, nom, e-mail) d'une page qui nomme bien la
+     référence ; la page remplit les trous (le montant reste celui du mail, son prénom et son nom remplacent la salutation),
+     puis Claude complète ce qui manque encore.
    - Page de réservation propre à l'opérateur (formulaire simple, confirmation par mail/SMS).
    - Vue planning : arrivées et retours du jour, taux d'occupation, alerte de surréservation
      calculée sur la capacité réelle.

@@ -295,7 +295,7 @@ export function privacyDoc(company: Company = COMPANY, email: string = SUPPORT_E
         blocks: [
           `${c.name}, qui exploite ${p} (siège : ${c.address}), est responsable des traitements liés au site, aux applications et aux réservations faites sur ${p}. Contact pour vos données : ${c.email}.`,
           "Le parking que vous réservez reçoit les informations de votre réservation pour vous accueillir, garer votre véhicule, organiser la navette et vous le rendre. Il en est responsable pour ces usages, comme pour ses propres registres.",
-          `Lorsque vous réservez directement auprès d’un parking (téléphone, comptoir, autre site) et que celui-ci gère ses réservations avec ${p}, y compris en transférant à ${p} les e-mails de confirmation qu’il reçoit, c’est le parking qui est responsable de vos données ; ${p} les traite pour son compte, comme sous-traitant, et vous pouvez exercer vos droits auprès de lui comme auprès de nous.`,
+          `Lorsque vous réservez directement auprès d’un parking (téléphone, comptoir, autre site) et que celui-ci gère ses réservations avec ${p}, y compris en transférant à ${p} les e-mails de confirmation qu’il reçoit (complétés au besoin par la page de réservation du comparateur vers laquelle ils renvoient), c’est le parking qui est responsable de vos données ; ${p} les traite pour son compte, comme sous-traitant, et vous pouvez exercer vos droits auprès de lui comme auprès de nous.`,
         ],
       },
       {

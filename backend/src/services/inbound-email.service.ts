@@ -4,6 +4,7 @@ import { INBOUND_EMAIL_DOMAIN, inboundEmailAvailable } from '@/config';
 import prisma, { InboundEmailStatus, Prisma } from '@/database';
 import { MIN_CONFIDENCE, ReadingMeta, toParsedBooking } from '@/domain/email-reading';
 import { IMPORT_SENDERS, parseConfirmationEmail, ParsedBooking } from '@/domain/importers';
+import { alloparkPageUrls } from '@/domain/importers/allopark-page';
 import {
   forwardingConfirmationOf,
   InboundItem,
@@ -17,6 +18,7 @@ import { fullName } from '@/domain/staff-name';
 import { can } from '@/domain/roles';
 import { HttpException } from '@/utils/httpException';
 import { allocateInboundSlug } from './inbound-slug';
+import { AlloparkPageService } from './allopark-page.service';
 import { AuthenticatedStaff } from '@/interfaces/auth.interface';
 import { logger } from '@/utils/logger';
 import { AuditService } from './audit.service';
@@ -116,6 +118,7 @@ export class InboundEmailService {
   public reservations = Container.get(ReservationService);
   public audit = Container.get(AuditService);
   public reader = Container.get(EmailReadingService);
+  public alloparkPage = Container.get(AlloparkPageService);
 
   /** The relay's webhook: every item is handled on its own; the answer is always 200 so the relay does not resend it. */
   public async receive(payload: InboundPayload): Promise<{ received: number; imported: number; toCheck: number; ignored: number }> {
@@ -162,6 +165,11 @@ export class InboundEmailService {
       textBody: text || null,
     };
     let parsed = text ? parseConfirmationEmail(text) : null;
+    // 10/10/2026: Allopark's emails leave « Vos informations » blank (plate, phone, name…); the booking page they link to
+    // shows them, so it is opened before Claude is asked anything.
+    if (parsed?.provider === 'Allopark' && parsed.externalReference && missingForImport(parsed).length) {
+      parsed = await this.withAlloparkPage(parsed, parsed.externalReference, item);
+    }
     // L-A (08/10/2026): what no importer knows, Claude reads; its answer is kept on the row for the inbox. Since
     // 09/10/2026 Claude also completes a confirmation an importer recognised but could not read in full (a comparator
     // that changed its layout, a detail in a part of the email the importer does not look at): the importer's fields
@@ -225,6 +233,31 @@ export class InboundEmailService {
       });
       return 'incomplete';
     }
+  }
+
+  /**
+   * An Allopark email completed by its booking page: the email's link (else the page of each address it was sent to,
+   * the parking's mailbox), read for the fields the email left blank; the page's form names the customer, where the
+   * email only greets them (« Bonjour Jean Dupont, »). Unchanged when no page answers for this booking.
+   */
+  private async withAlloparkPage(found: ParsedBooking, reference: string, item: InboundItem): Promise<ParsedBooking> {
+    const urls = alloparkPageUrls({
+      html: item.RawHtmlBody,
+      text: item.RawTextBody,
+      reference,
+      addresses: [...(item.To ?? []), ...(item.Cc ?? [])].map(address => address?.Address ?? ''),
+      excludeDomain: INBOUND_EMAIL_DOMAIN,
+    });
+    const page = urls.length ? await this.alloparkPage.booking(urls, reference) : null;
+    if (!page) return found;
+    const completed = fillGaps(found, page);
+    if (page.customerFirstName || page.customerLastName) {
+      for (const key of NAME_KEYS) {
+        if (page[key]) completed[key] = page[key];
+        else delete completed[key];
+      }
+    }
+    return completed;
   }
 
   /** The timezone Claude expresses the local times in: the operator's first parking's. */

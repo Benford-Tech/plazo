@@ -2,17 +2,17 @@ import { euroCents, frenchDateTime, valueAfterLabel } from './common';
 import { EmailImporter, ParsedBooking } from './types';
 
 const LABELS = {
-  passengers: /^Nombre (de )?personnes?\*?$/i,
-  plate: /^Num[ée]ro de plaque du v[ée]hicule\*?$/i,
-  brand: /^Marque du v[ée]hicule\*?$/i,
-  model: /^Mod[èe]le du v[ée]hicule\*?$/i,
-  outboundFlight: /^Num[ée]ro du vol aller\*?$/i,
-  returnFlight: /^Num[ée]ro du vol retour\*?$/i,
-  destination: /^Destination\*?$/i,
-  phone: /^Num[ée]ro de t[ée]l[ée]phone\*?$/i,
-  lastName: /^Nom\*?$/i,
-  firstName: /^Pr[ée]nom\*?$/i,
-  email: /^Adresse e-mail\*?$/i,
+  passengers: /^Nombre (de )?personnes?\s*\*?$/i,
+  plate: /^Num[ée]ro de plaque du v[ée]hicule\s*\*?$/i,
+  brand: /^Marque du v[ée]hicule\s*\*?$/i,
+  model: /^Mod[èe]le du v[ée]hicule\s*\*?$/i,
+  outboundFlight: /^Num[ée]ro du vol aller\s*\*?$/i,
+  returnFlight: /^Num[ée]ro du vol retour\s*\*?$/i,
+  destination: /^Destination\s*\*?$/i,
+  phone: /^Num[ée]ro de t[ée]l[ée]phone\s*\*?$/i,
+  lastName: /^Nom\s*\*?$/i,
+  firstName: /^Pr[ée]nom\s*\*?$/i,
+  email: /^Adresse e-mail\s*\*?$/i,
   section: /^(Vos coordonn[ée]es|Assurance|Remboursement)$/i,
 };
 const ALL_LABELS = Object.values(LABELS);

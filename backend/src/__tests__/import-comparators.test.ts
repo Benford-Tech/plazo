@@ -1,6 +1,7 @@
 import { readFileSync } from 'fs';
 import { join } from 'path';
 import { parseConfirmationEmail } from '@/domain/importers';
+import { alloparkPageUrls, parseAlloparkPage } from '@/domain/importers/allopark-page';
 import { isCancellationOrChange } from '@/domain/importers/common';
 import { stripHtml, textOf } from '@/domain/inbound-email';
 import { fillGaps } from '@/services/inbound-email.service';
@@ -146,5 +147,63 @@ describe('confirmations des comparateurs (09/10/2026)', () => {
     expect(fillGaps(onepark, { provider: 'Onepark', customerName: 'Léa Petit', customerFirstName: 'Léa', customerLastName: 'Petit' })).toEqual(
       onepark,
     );
+  });
+});
+
+describe('Allopark : la page de la réservation (10/10/2026)', () => {
+  const page = html('allopark-page.html');
+  const pageUrl = 'https://www.allopark.com/fr-be/confirmation?email=parking%40example.com&reference=AL-884880719&view=parking';
+
+  it('ouvre le lien « Consulter ma réservation » du mail, reconstruit sur www.allopark.com avec ses seuls paramètres', () => {
+    const link =
+      '<a href="http://allopark.com/fr-be/confirmation?email=parking@example.com&amp;reference=al-884880719&amp;view=parking&amp;utm_source=mail">Consulter</a>';
+    expect(alloparkPageUrls({ html: link, reference: 'AL-884880719', addresses: ['autre@example.com'] })).toEqual([pageUrl]);
+    // Another booking's link, a look-alike site or an address that is not one: the email's addresses instead.
+    const others = [
+      '<a href="https://www.allopark.com/fr-be/confirmation?email=parking@example.com&amp;reference=AL-111111111">x</a>',
+      '<a href="https://www.allopark.com.example.test/fr-be/confirmation?email=parking@example.com&amp;reference=AL-884880719">x</a>',
+      '<a href="https://www.allopark.com/fr-fr/confirmation?email=pas-une-adresse&amp;reference=AL-884880719">x</a>',
+    ].join('');
+    expect(alloparkPageUrls({ html: others, reference: 'AL-884880719', addresses: ['Parking@Example.com'] })).toEqual([
+      'https://www.allopark.com/fr-fr/confirmation?email=parking%40example.com&reference=AL-884880719&view=parking',
+    ]);
+  });
+
+  it('sans lien, la page de chaque adresse destinataire (deux au plus), jamais une adresse Plazo', () => {
+    expect(
+      alloparkPageUrls({
+        text: 'Réservation AL-884880719',
+        reference: 'AL-884880719',
+        addresses: ['lys-7f3a@in.plazo.test', 'parking@example.com', 'PARKING@example.com', 'gerant@example.com', 'compta@example.com'],
+        excludeDomain: 'in.plazo.test',
+      }),
+    ).toEqual([pageUrl, pageUrl.replace('parking%40', 'gerant%40')]);
+    expect(alloparkPageUrls({ reference: 'AL-884880719', addresses: ['lys-7f3a@in.plazo.test'], excludeDomain: 'in.plazo.test' })).toEqual([]);
+    expect(alloparkPageUrls({ reference: '884880719', addresses: ['parking@example.com'] })).toEqual([]);
+  });
+
+  it('lit le formulaire « Vos informations » de la page', () => {
+    expect(parseAlloparkPage(page, 'AL-884880719')).toEqual({
+      provider: 'Allopark',
+      externalReference: 'AL-884880719',
+      arrivalAt: '2026-10-01T08:30',
+      returnAt: '2026-10-03T17:00',
+      passengers: 3,
+      plate: 'GK-318-PX',
+      vehicleModel: 'Peugeot 308',
+      departureFlight: 'TO 3626',
+      returnFlight: 'TO 3627',
+      customerPhone: '+33 6 12 34 56 78',
+      customerFirstName: 'Jean',
+      customerLastName: 'Dupont',
+      customerName: 'Jean Dupont',
+      customerEmail: 'jean.dupont@example.com',
+    });
+    // Blank fields stay out; another booking's page, or Allopark's home page, is not read.
+    const blank = page.replace(/name="(brand|model|fly_arrival|fly_departure)"\s*value="[^"]*"/g, 'name="$1" value=""');
+    expect(parseAlloparkPage(blank, 'AL-884880719')).not.toHaveProperty('vehicleModel');
+    expect(parseAlloparkPage(blank, 'AL-884880719')).not.toHaveProperty('returnFlight');
+    expect(parseAlloparkPage(page, 'AL-222222222')).toBeNull();
+    expect(parseAlloparkPage('<html><body>Comparez et réservez votre parking AL-884880719</body></html>', 'AL-884880719')).toBeNull();
   });
 });

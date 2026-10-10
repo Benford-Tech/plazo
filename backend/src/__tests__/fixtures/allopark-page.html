@@ -1,0 +1,120 @@
+<!doctype html>
+<html lang="fr">
+<head><meta charset="utf-8"><title>Allopark</title></head>
+<body>
+<!-- Allopark booking page (« Consulter ma réservation »), reduced to its booking blocks; every value is made up. -->
+<div class="content-bloc mb-2 number-bloc" style="background: var(--color-yellow);">
+                    <div class="d-lg-flex align-items-center justify-content-between">
+                        <div class="d-flex flex-col">
+                            <h3 class="mb-0 lh-1">Réservation N° <strong>AL-884880719</strong></h3>
+                            <div class="booking-date lh-1 mt-min">
+                                <div class="booking-date-in">Du&nbsp;<img loading="lazy" src="/assets/css/img/parking-arrival-b-2.svg" width="34" height="34" alt=""><strong>1 octobre 2026 - 08:30</strong></div>
+                                <div class="booking-date-out">au&nbsp;<img loading="lazy" src="/assets/css/img/plane_arrival.svg" width="34" height="34" alt=""><strong>3 octobre 2026 - 17:00</strong></div>
+                            </div>
+                        </div>
+                                                <div class="price-payed mt-1 mt-lg-0"><div class="price"><span>€&nbsp;</span>34,99</div>
+                                                        </div>
+                        </div>
+                    </div>
+                    </div>
+<form action="" method="post" name="edit_reservation">
+                                <input type="hidden" name="action" value="update_reservation">
+                                <input type="hidden" name="date_in" value="2026-10-01 08:30:00">
+                                <input type="hidden" name="date_out" value="2026-10-03 17:00:00">
+                                <div class="row">
+                                    <div class="col-12 col-sm-6">
+                                        <label>Nombre personne<span class="no-print">*</span></label><b>:</b>
+                                        <input class="input-base info-paid-field" type="number" name="people_navette" min="1" max="8"
+                                               value="3"
+                                               data-original="3"
+                                                readonly>
+                                    </div>
+                                    <div class="col-12 col-sm-6">
+                                        <label>Numéro de plaque du véhicule<span class="no-print">*</span></label><b>:</b>
+                                        <input class="input-base" type="text" name="plate" value="GK-318-PX">
+                                    </div>
+                                </div>
+                                <div class="row">
+                                    <div class="col-12 col-sm-6">
+                                        <label>Marque du véhicule</label><b>:</b>
+                                        <input class="input-base info-paid-field" type="text" name="brand"
+                                               value="Peugeot"
+                                               data-original="Peugeot">
+                                    </div>
+                                    <div class="col-12 col-sm-6">
+                                        <label>Modèle du véhicule</label><b>:</b>
+                                        <input class="input-base info-paid-field" type="text" name="model"
+                                               value="308"
+                                               data-original="308">
+                                    </div>
+                                </div>
+                                <div class="row">
+                                    <div class="col-12 col-sm-6">
+                                        <label>Numéro du vol aller</label><b>:</b>
+                                        <input class="input-base info-paid-field" type="text" name="fly_arrival"
+                                               value="TO 3626"
+                                               data-original="TO 3626">
+                                    </div>
+                                    <div class="col-12 col-sm-6">
+                                        <label>Numéro du vol retour</label><b>:</b>
+                                        <input class="input-base info-paid-field" type="text" name="fly_departure"
+                                               value="TO 3627"
+                                               data-original="TO 3627">
+                                    </div>
+                                </div>
+                                <div class="row">
+                                    <div class="col-12 col-sm-6">
+                                        <label>Destination<span class="no-print">*</span></label><b>:</b>
+                                        <input class="input-base info-paid-field" type="text" name="destination" id="destination"
+                                               value="Porto"
+                                               data-original="Porto">
+                                    </div>
+                                    <div class="col-12 col-sm-6">
+                                        <label>Numéro de téléphone<span class="no-print">*</span></label><b>:</b>
+                                        <input class="input-base" type="text" id="phone" name="phone" value="+33 6 12 34 56 78">
+                                    </div>
+                                </div>
+                                <h3 class="mt-1">Vos coordonnées</h3>
+                                <div class="row">
+                                    <div class="col-12 col-sm-6">
+                                        <label>Nom<span class="no-print">*</span></label><b>:</b>
+                                        <input class="input-base info-paid-field" type="text" name="lastname"
+                                               value="Dupont"
+                                               data-original="Dupont"
+                                                readonly>
+                                    </div>
+                                    <div class="col-12 col-sm-6">
+                                        <label>Prénom<span class="no-print">*</span></label><b>:</b>
+                                        <input class="input-base info-paid-field" type="text" name="firstname"
+                                               value="Jean"
+                                               data-original="Jean"
+                                                readonly>
+                                    </div>
+                                </div>
+                                <div class="row">
+                                                                            <div class="col-12 col-sm-6">
+                                            <label>Adresse e-mail<span class="no-print">*</span></label><b>:</b>
+                                            <input class="input-base" type="text" name="email_customer" value="jean.dupont@example.com" readonly>
+                                        </div>
+                                                                            <div class="col-12 col-sm-6">
+                                            <label>Assurance</label><b>:</b>
+                                            <input class="input-base" type="text" value="..." readonly>
+                                        </div>
+                                                                    </div>
+                                <div class="d-flex align-items-center justify-content-end gap-1 mt-1 no-print info-save-row">
+                                    <div class="info-fee-notice" id="info-fee-notice" style="display: none;">
+                                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                                            <circle cx="12" cy="12" r="9" stroke="currentColor" stroke-width="1.8"/>
+                                            <path d="M12 8v4M12 16h.01" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+                                        </svg>
+                                        <span>Cette modification est payante : des frais de <strong>2,99 €</strong> s'appliquent.</span>
+                                    </div>
+                                    <button class="btn ml-1">Enregistrer</button>
+                                </div>
+                            </form>
+<form id="date-change-form" action="/payment/date-change.php" method="post">
+                <input type="hidden" name="reference" value="AL-884880719">
+                <input type="hidden" name="email"     value="parking@example.com">
+                </form>
+</body>
+</html>
