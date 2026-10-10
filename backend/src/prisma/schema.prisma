@@ -509,6 +509,9 @@ model Reservation {
   externalReference       String?
   // Price paid, in euro cents, when known (imports; the pricing grid arrives in milestone 3).
   priceCents              Int?
+  // 10/10/2026: the amount the comparator last gave (import, applied change). A comparator's change touches the price
+  // only when its amount differs from this one, so a price the staff corrected stays theirs.
+  importedPriceCents      Int?
   // Saved although at least one night was already full (forced by staff, audited).
   overbooked              Boolean             @default(false)
   // Cancellation terms accepted by the traveller when booking on the site (channel plazo): later

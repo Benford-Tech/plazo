@@ -31,6 +31,14 @@ export function parseEuros(value: string): number | null {
   return Math.round(Number(normalized) * 100);
 }
 
+/**
+ * 10/10/2026: the amount of a booking paid online on Plazo is what the traveller paid: the staff never change it (as
+ * `isPriceLocked` on the server).
+ */
+export function isPriceLocked(booking: { channel: string; paymentStatus?: string | null; chargedCents?: number | null }): boolean {
+  return booking.channel === "plazo" || booking.paymentStatus != null || booking.chargedCents != null;
+}
+
 /** 3499 -> "34,99" for an input field. */
 export function centsToInput(cents: number): string {
   return (cents / 100).toFixed(2).replace(".", ",");

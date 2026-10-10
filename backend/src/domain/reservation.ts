@@ -35,6 +35,14 @@ export function plateKey(plate: string): string {
 }
 
 /** French SIV plates get their dashes (AB-123-CD); anything else (foreign plates) stays as typed, upper-cased. */
+/**
+ * 10/10/2026: the amount of a booking paid online on Plazo is what the traveller paid; the staff never change it (the
+ * booking form, « Modifier le prix », the revenue page's « Les compléter »).
+ */
+export function isPriceLocked(booking: { channel: string; paymentStatus: string | null; chargedCents: number | null }): boolean {
+  return booking.channel === 'plazo' || booking.paymentStatus !== null || booking.chargedCents !== null;
+}
+
 export function formatPlate(plate: string): string {
   const key = plateKey(plate);
   if (/^[A-Z]{2}\d{3}[A-Z]{2}$/.test(key)) return `${key.slice(0, 2)}-${key.slice(2, 5)}-${key.slice(5)}`;

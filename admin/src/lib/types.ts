@@ -150,6 +150,8 @@ export interface Reservation {
   returnNoticeAt?: string | null;
   externalReference: string | null;
   priceCents: number | null;
+  /** What the traveller was charged online (Plazo bookings). */
+  chargedCents?: number | null;
   overbooked: boolean;
   /** Terms accepted by the traveller (bookings made on the public site only). */
   cancellationPolicy: CancellationPolicy | null;
@@ -354,7 +356,10 @@ export interface ReservationInput {
   vehicleModel?: string | null;
   vehicleColour?: string | null;
   externalReference?: string;
-  priceCents?: number;
+  /** 10/10/2026: null clears it on an edit (never a Plazo booking's). */
+  priceCents?: number | null;
+  /** The amount read in the comparator's email (« Compléter »), on creation only. */
+  importedPriceCents?: number;
   force?: boolean;
 }
 

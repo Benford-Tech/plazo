@@ -8,14 +8,15 @@ import { ReservationForm } from "@/components/reservations/ReservationForm";
 import { NextStep } from "@/components/reservations/NextStep";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useAuth } from "@/contexts/AuthContext";
-import { adminApi } from "@/lib/api";
+import { adminApi, ApiError } from "@/lib/api";
 import {
   dateTimeShort,
   localParts,
   nightsBetween,
   timeOf,
 } from "@/lib/datetime";
-import { describeError, fr, quickCardFr } from "@/lib/fr";
+import { describeError, errorMessage, fr, quickCardFr } from "@/lib/fr";
+import { centsToInput, euros, isPriceLocked, parseEuros } from "@/lib/pricing";
 import { can } from "@/lib/roles";
 import type { Reservation, ReservationStatus } from "@/lib/types";
 import { cn } from "@/lib/utils";
@@ -38,6 +39,122 @@ function Info({
       </dt>
       <dd className="mt-0.5 text-lg">{children}</dd>
     </div>
+  );
+}
+
+/**
+ * « Prix payé » (10/10/2026, « Pouvoir modifier le prix après l'intégration du mail »): the amount, with « Modifier le
+ * prix » (« Ajouter le prix » when there is none) for the staff who manage bookings (managers and agents), also once
+ * the stay is over; never a Plazo booking's nor a cancelled one's (PUT /internal/reservations/:id/price, as the revenue
+ * page's « Les compléter »).
+ */
+function PriceLine({
+  reservation: r,
+  canManage,
+}: {
+  reservation: Reservation;
+  canManage: boolean;
+}) {
+  const t = fr.reservation;
+  const queryClient = useQueryClient();
+  const [value, setValue] = useState<string | null>(null);
+  const [error, setError] = useState<string | null>(null);
+  const editable =
+    canManage && !isPriceLocked(r) && r.status !== "cancelled";
+  const save = useMutation({
+    mutationFn: (cents: number | null) =>
+      adminApi.setReservationPrice(r.id, cents),
+    onSuccess: ({ priceCents }) => {
+      queryClient.setQueryData<Reservation>(["reservation", r.id], (old) =>
+        old ? { ...old, priceCents } : old,
+      );
+      void queryClient.invalidateQueries({ queryKey: ["revenue"] });
+      setValue(null);
+      setError(null);
+      toast.success(t.priceSaved);
+    },
+    // The field's own reason (too large, locked) rather than « some fields need fixing ».
+    onError: (err) =>
+      setError(
+        err instanceof ApiError && err.fields?.priceCents
+          ? errorMessage(err.fields.priceCents)
+          : describeError(err),
+      ),
+  });
+  if (r.priceCents === null && !editable) return null;
+
+  return (
+    <Info label={t.pricePaid}>
+      {value === null ? (
+        <span className="flex flex-wrap items-baseline gap-x-3">
+          <span className="tabular font-mono">
+            {r.priceCents === null ? "—" : euros(r.priceCents)}
+          </span>
+          {editable && (
+            <button
+              type="button"
+              onClick={() =>
+                setValue(
+                  r.priceCents === null ? "" : centsToInput(r.priceCents),
+                )
+              }
+              className="text-base text-lime-deep underline-offset-4 hover:underline"
+            >
+              {r.priceCents === null ? t.addPrice : t.editPrice}
+            </button>
+          )}
+        </span>
+      ) : (
+        <form
+          className="flex flex-wrap items-center gap-2"
+          onSubmit={(e) => {
+            e.preventDefault();
+            const cents = value.trim() ? parseEuros(value) : null;
+            if (value.trim() && cents === null) {
+              setError(errorMessage("invalid_amount"));
+              return;
+            }
+            save.mutate(cents);
+          }}
+        >
+          <input
+            aria-label={t.priceInput}
+            inputMode="decimal"
+            autoFocus
+            value={value}
+            onChange={(e) => setValue(e.target.value)}
+            placeholder="0,00"
+            aria-invalid={!!error}
+            className="tabular h-10 w-32 border border-border bg-card px-2.5 text-right font-mono text-lg outline-none focus-visible:border-lime-deep aria-[invalid=true]:border-destructive"
+          />
+          <span aria-hidden="true" className="text-muted-foreground">
+            €
+          </span>
+          <button
+            type="submit"
+            disabled={save.isPending}
+            className="h-10 bg-primary px-4 text-base font-bold uppercase text-primary-foreground hover:brightness-110 disabled:opacity-50"
+          >
+            {t.savePrice}
+          </button>
+          <button
+            type="button"
+            onClick={() => {
+              setValue(null);
+              setError(null);
+            }}
+            className="h-10 border border-border px-3 text-base hover:bg-accent"
+          >
+            {t.cancelPrice}
+          </button>
+          {error && (
+            <p role="alert" className="w-full text-sm text-destructive">
+              {error}
+            </p>
+          )}
+        </form>
+      )}
+    </Info>
   );
 }
 
@@ -227,16 +344,10 @@ export default function ReservationPage() {
                   </span>
                 )}
               </Info>
-              {r.priceCents !== null && (
-                <Info label={fr.reservation.pricePaid}>
-                  <span className="tabular font-mono">
-                    {new Intl.NumberFormat("fr-FR", {
-                      style: "currency",
-                      currency: "EUR",
-                    }).format(r.priceCents / 100)}
-                  </span>
-                </Info>
-              )}
+              <PriceLine
+                reservation={r}
+                canManage={can(user?.role, "reservations:manage")}
+              />
               <Info label={t.created}>{dateTimeShort(r.createdAt)}</Info>
             </dl>
           </div>

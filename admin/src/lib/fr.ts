@@ -117,6 +117,8 @@ export const fr = {
     too_many_passengers: "Plus de passagers que de places dans ce véhicule.",
     overbooked: "Au moins une nuit est complète.",
     reservation_closed: "Cette réservation est close.",
+    invalid_amount: "Montant invalide (ex. 45,50).",
+    price_locked: `Le prix d'une réservation payée sur ${PRODUCT.name} ne se modifie pas.`,
     unrecognised_email:
       "Ce texte ne ressemble à aucun mail de comparateur connu.",
     already_imported: "Cette réservation a déjà été importée.",
@@ -790,6 +792,15 @@ export const fr = {
   },
   reservation: {
     pricePaid: "Prix payé",
+    // 10/10/2026 (« Pouvoir modifier le prix après l'intégration du mail »).
+    priceHelp: "Ce que paie le client, sans les frais du comparateur.",
+    priceLocked: `Payé en ligne sur ${PRODUCT.name} : le prix ne se modifie pas.`,
+    priceInput: "Prix payé en euros",
+    editPrice: "Modifier le prix",
+    addPrice: "Ajouter le prix",
+    savePrice: "Enregistrer",
+    cancelPrice: "Annuler",
+    priceSaved: "Prix enregistré",
     newTitle: "Nouvelle réservation",
     editTitle: "Modifier la réservation",
     arrival: "Arrivée",

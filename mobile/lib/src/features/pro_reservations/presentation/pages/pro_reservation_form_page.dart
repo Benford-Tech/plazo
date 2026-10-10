@@ -74,10 +74,11 @@ class _FormState extends State<_Form> {
   late final _vehicleModel = TextEditingController(text: _bloc.state.input.vehicleModel ?? '');
   late final _vehicleColour = TextEditingController(text: _bloc.state.input.vehicleColour ?? '');
   late final _customerNote = TextEditingController(text: _bloc.state.input.customerNote ?? '');
+  late final _price = TextEditingController(text: _bloc.state.priceText);
 
   @override
   void dispose() {
-    for (final c in [_firstName, _lastName, _phone, _email, _plate, _flight, _detail, _notes, _vehicleModel, _vehicleColour, _customerNote]) {
+    for (final c in [_firstName, _lastName, _phone, _email, _plate, _flight, _outbound, _detail, _notes, _vehicleModel, _vehicleColour, _customerNote, _price]) {
       c.dispose();
     }
     super.dispose();
@@ -114,6 +115,11 @@ class _FormState extends State<_Form> {
         final i = state.input;
         final e = state.fieldErrors;
         String? err(String f) => e[f] == null ? null : translateErrorCode(e[f]);
+        final priceError = switch (e['priceCents']) {
+          'invalid_price' => 'res.price_invalid'.tr(),
+          'price_locked' => 'res.price_locked'.tr(args: [Product.name]),
+          _ => err('priceCents'),
+        };
         return Scaffold(
           appBar: BrandAppBar(pro: true, title: widget.editing ? 'res.edit_title'.tr() : 'res.new_title'.tr()),
           body: ListView(
@@ -253,6 +259,24 @@ class _FormState extends State<_Form> {
                   onChanged: (v) => _set((x) => x.copyWith(channelDetail: v)),
                 ),
               ],
+              const SizedBox(height: 12),
+              // 10/10/2026: the amount, to correct after an email import; a Plazo booking's was paid online.
+              TextField(
+                key: const Key('f-price'),
+                controller: _price,
+                enabled: !state.priceLocked,
+                keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                decoration: InputDecoration(
+                  labelText: 'res.price_paid'.tr(),
+                  hintText: '45,50',
+                  suffixText: '€',
+                  helperText: state.priceLocked ? 'res.price_plazo_help'.tr(args: [Product.name]) : 'res.price_help'.tr(),
+                  helperMaxLines: 2,
+                  errorText: priceError,
+                  errorMaxLines: 2,
+                ),
+                onChanged: (v) => _bloc.add(ProReservationFormPriceChanged(v)),
+              ),
               const SizedBox(height: 12),
               // E (06/10/2026): the traveller's vehicle and message, as given at the counter.
               Row(

@@ -2,6 +2,7 @@ import httpStatus from 'http-status';
 import { Container, Service } from 'typedi';
 import prisma, { Prisma, ReservationChannel } from '@/database';
 import { can } from '@/domain/roles';
+import { isPriceLocked } from '@/domain/reservation';
 import {
   MAX_REVENUE_DAYS,
   REVENUE_BASES,
@@ -180,7 +181,7 @@ export class RevenueService {
     this.require(actor, 'reservations:manage');
     const before = await prisma.reservation.findFirst({ where: { id, operatorId: actor.operatorId, AND: [STAFF_VISIBLE] } });
     if (!before) throw notFound();
-    if (before.channel === 'plazo') throw fieldError('priceCents', 'price_locked');
+    if (isPriceLocked(before)) throw fieldError('priceCents', 'price_locked');
     if (before.status === 'cancelled') throw new HttpException(httpStatus.BAD_REQUEST, 'This reservation is cancelled', 'reservation_closed');
     const after = await prisma.$transaction(async tx => {
       const updated = await tx.reservation.update({ where: { id }, data: { priceCents } });

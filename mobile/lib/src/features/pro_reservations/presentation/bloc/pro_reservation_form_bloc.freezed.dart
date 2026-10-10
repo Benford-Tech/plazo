@@ -16,7 +16,8 @@ T _$identity<T>(T value) => value;
 mixin _$ProReservationFormState {
 
 /// Null for a new booking.
- String? get id; ReservationInput get input; ViewState get saveState; CapacityPreviewModel? get capacity; bool get checkingCapacity; ReservationModel? get saved; String? get errorCode; Map<String, String> get fieldErrors;
+ String? get id; ReservationInput get input;/// The price field as typed (euros); `input.priceCents` takes it on save.
+ String get priceText; ViewState get saveState; CapacityPreviewModel? get capacity; bool get checkingCapacity; ReservationModel? get saved; String? get errorCode; Map<String, String> get fieldErrors;
 /// Create a copy of ProReservationFormState
 /// with the given fields replaced by the non-null parameter values.
 @JsonKey(includeFromJson: false, includeToJson: false)
@@ -28,20 +29,20 @@ $ProReservationFormStateCopyWith<ProReservationFormState> get copyWith => _$ProR
 @override
 bool operator ==(Object other) {
   final _this = this as ProReservationFormState;
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is ProReservationFormState&&(identical(other.id, _this.id) || other.id == _this.id)&&(identical(other.input, _this.input) || other.input == _this.input)&&(identical(other.saveState, _this.saveState) || other.saveState == _this.saveState)&&(identical(other.capacity, _this.capacity) || other.capacity == _this.capacity)&&(identical(other.checkingCapacity, _this.checkingCapacity) || other.checkingCapacity == _this.checkingCapacity)&&(identical(other.saved, _this.saved) || other.saved == _this.saved)&&(identical(other.errorCode, _this.errorCode) || other.errorCode == _this.errorCode)&&const DeepCollectionEquality().equals(other.fieldErrors, _this.fieldErrors));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is ProReservationFormState&&(identical(other.id, _this.id) || other.id == _this.id)&&(identical(other.input, _this.input) || other.input == _this.input)&&(identical(other.priceText, _this.priceText) || other.priceText == _this.priceText)&&(identical(other.saveState, _this.saveState) || other.saveState == _this.saveState)&&(identical(other.capacity, _this.capacity) || other.capacity == _this.capacity)&&(identical(other.checkingCapacity, _this.checkingCapacity) || other.checkingCapacity == _this.checkingCapacity)&&(identical(other.saved, _this.saved) || other.saved == _this.saved)&&(identical(other.errorCode, _this.errorCode) || other.errorCode == _this.errorCode)&&const DeepCollectionEquality().equals(other.fieldErrors, _this.fieldErrors));
 }
 
 
 @override
 int get hashCode {
   final _this = this as ProReservationFormState;
-  return Object.hash(runtimeType,_this.id,_this.input,_this.saveState,_this.capacity,_this.checkingCapacity,_this.saved,_this.errorCode,const DeepCollectionEquality().hash(_this.fieldErrors));
+  return Object.hash(runtimeType,_this.id,_this.input,_this.priceText,_this.saveState,_this.capacity,_this.checkingCapacity,_this.saved,_this.errorCode,const DeepCollectionEquality().hash(_this.fieldErrors));
 }
 
 @override
 String toString() {
   final _this = this as ProReservationFormState;
-  return 'ProReservationFormState(id: ${_this.id}, input: ${_this.input}, saveState: ${_this.saveState}, capacity: ${_this.capacity}, checkingCapacity: ${_this.checkingCapacity}, saved: ${_this.saved}, errorCode: ${_this.errorCode}, fieldErrors: ${_this.fieldErrors})';
+  return 'ProReservationFormState(id: ${_this.id}, input: ${_this.input}, priceText: ${_this.priceText}, saveState: ${_this.saveState}, capacity: ${_this.capacity}, checkingCapacity: ${_this.checkingCapacity}, saved: ${_this.saved}, errorCode: ${_this.errorCode}, fieldErrors: ${_this.fieldErrors})';
 }
 
 
@@ -52,7 +53,7 @@ abstract mixin class $ProReservationFormStateCopyWith<$Res>  {
   factory $ProReservationFormStateCopyWith(ProReservationFormState value, $Res Function(ProReservationFormState) _then) = _$ProReservationFormStateCopyWithImpl;
 @useResult
 $Res call({
- String? id, ReservationInput input, ViewState saveState, CapacityPreviewModel? capacity, bool checkingCapacity, ReservationModel? saved, String? errorCode, Map<String, String> fieldErrors
+ String? id, ReservationInput input, String priceText, ViewState saveState, CapacityPreviewModel? capacity, bool checkingCapacity, ReservationModel? saved, String? errorCode, Map<String, String> fieldErrors
 });
 
 
@@ -69,11 +70,12 @@ class _$ProReservationFormStateCopyWithImpl<$Res>
 
 /// Create a copy of ProReservationFormState
 /// with the given fields replaced by the non-null parameter values.
-@pragma('vm:prefer-inline') @override $Res call({Object? id = freezed,Object? input = null,Object? saveState = null,Object? capacity = freezed,Object? checkingCapacity = null,Object? saved = freezed,Object? errorCode = freezed,Object? fieldErrors = null,}) {
+@pragma('vm:prefer-inline') @override $Res call({Object? id = freezed,Object? input = null,Object? priceText = null,Object? saveState = null,Object? capacity = freezed,Object? checkingCapacity = null,Object? saved = freezed,Object? errorCode = freezed,Object? fieldErrors = null,}) {
   return _then(ProReservationFormState(
 id: freezed == id ? _self.id : id // ignore: cast_nullable_to_non_nullable
 as String?,input: null == input ? _self.input : input // ignore: cast_nullable_to_non_nullable
-as ReservationInput,saveState: null == saveState ? _self.saveState : saveState // ignore: cast_nullable_to_non_nullable
+as ReservationInput,priceText: null == priceText ? _self.priceText : priceText // ignore: cast_nullable_to_non_nullable
+as String,saveState: null == saveState ? _self.saveState : saveState // ignore: cast_nullable_to_non_nullable
 as ViewState,capacity: freezed == capacity ? _self.capacity : capacity // ignore: cast_nullable_to_non_nullable
 as CapacityPreviewModel?,checkingCapacity: null == checkingCapacity ? _self.checkingCapacity : checkingCapacity // ignore: cast_nullable_to_non_nullable
 as bool,saved: freezed == saved ? _self.saved : saved // ignore: cast_nullable_to_non_nullable
@@ -197,10 +199,10 @@ return $default(_that);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( String? id,  ReservationInput input,  ViewState saveState,  CapacityPreviewModel? capacity,  bool checkingCapacity,  ReservationModel? saved,  String? errorCode,  Map<String, String> fieldErrors)?  $default,{required TResult orElse(),}) {final _that = this;
+@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( String? id,  ReservationInput input,  String priceText,  ViewState saveState,  CapacityPreviewModel? capacity,  bool checkingCapacity,  ReservationModel? saved,  String? errorCode,  Map<String, String> fieldErrors)?  $default,{required TResult orElse(),}) {final _that = this;
 switch (_that) {
 case _ProReservationFormState() when $default != null:
-return $default(_that.id,_that.input,_that.saveState,_that.capacity,_that.checkingCapacity,_that.saved,_that.errorCode,_that.fieldErrors);case _:
+return $default(_that.id,_that.input,_that.priceText,_that.saveState,_that.capacity,_that.checkingCapacity,_that.saved,_that.errorCode,_that.fieldErrors);case _:
   return orElse();
 
 }
@@ -218,10 +220,10 @@ return $default(_that.id,_that.input,_that.saveState,_that.capacity,_that.checki
 /// }
 /// ```
 
-@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( String? id,  ReservationInput input,  ViewState saveState,  CapacityPreviewModel? capacity,  bool checkingCapacity,  ReservationModel? saved,  String? errorCode,  Map<String, String> fieldErrors)  $default,) {final _that = this;
+@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( String? id,  ReservationInput input,  String priceText,  ViewState saveState,  CapacityPreviewModel? capacity,  bool checkingCapacity,  ReservationModel? saved,  String? errorCode,  Map<String, String> fieldErrors)  $default,) {final _that = this;
 switch (_that) {
 case _ProReservationFormState():
-return $default(_that.id,_that.input,_that.saveState,_that.capacity,_that.checkingCapacity,_that.saved,_that.errorCode,_that.fieldErrors);case _:
+return $default(_that.id,_that.input,_that.priceText,_that.saveState,_that.capacity,_that.checkingCapacity,_that.saved,_that.errorCode,_that.fieldErrors);case _:
   throw StateError('Unexpected subclass');
 
 }
@@ -238,10 +240,10 @@ return $default(_that.id,_that.input,_that.saveState,_that.capacity,_that.checki
 /// }
 /// ```
 
-@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( String? id,  ReservationInput input,  ViewState saveState,  CapacityPreviewModel? capacity,  bool checkingCapacity,  ReservationModel? saved,  String? errorCode,  Map<String, String> fieldErrors)?  $default,) {final _that = this;
+@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( String? id,  ReservationInput input,  String priceText,  ViewState saveState,  CapacityPreviewModel? capacity,  bool checkingCapacity,  ReservationModel? saved,  String? errorCode,  Map<String, String> fieldErrors)?  $default,) {final _that = this;
 switch (_that) {
 case _ProReservationFormState() when $default != null:
-return $default(_that.id,_that.input,_that.saveState,_that.capacity,_that.checkingCapacity,_that.saved,_that.errorCode,_that.fieldErrors);case _:
+return $default(_that.id,_that.input,_that.priceText,_that.saveState,_that.capacity,_that.checkingCapacity,_that.saved,_that.errorCode,_that.fieldErrors);case _:
   return null;
 
 }
@@ -253,12 +255,14 @@ return $default(_that.id,_that.input,_that.saveState,_that.capacity,_that.checki
 
 
 class _ProReservationFormState extends ProReservationFormState {
-  const _ProReservationFormState({this.id, required this.input, this.saveState = ViewState.idle, this.capacity, this.checkingCapacity = false, this.saved, this.errorCode,  Map<String, String> fieldErrors = const {}}): _fieldErrors = fieldErrors,super._();
+  const _ProReservationFormState({this.id, required this.input, this.priceText = '', this.saveState = ViewState.idle, this.capacity, this.checkingCapacity = false, this.saved, this.errorCode,  Map<String, String> fieldErrors = const {}}): _fieldErrors = fieldErrors,super._();
   
 
 /// Null for a new booking.
 @override final  String? id;
 @override final  ReservationInput input;
+/// The price field as typed (euros); `input.priceCents` takes it on save.
+@override@JsonKey() final  String priceText;
 @override@JsonKey() final  ViewState saveState;
 @override final  CapacityPreviewModel? capacity;
 @override@JsonKey() final  bool checkingCapacity;
@@ -282,18 +286,18 @@ _$ProReservationFormStateCopyWith<_ProReservationFormState> get copyWith => __$P
 
 @override
 bool operator ==(Object other) {
-    return identical(this, other) || (other.runtimeType == runtimeType&&other is _ProReservationFormState&&(identical(other.id, id) || other.id == id)&&(identical(other.input, input) || other.input == input)&&(identical(other.saveState, saveState) || other.saveState == saveState)&&(identical(other.capacity, capacity) || other.capacity == capacity)&&(identical(other.checkingCapacity, checkingCapacity) || other.checkingCapacity == checkingCapacity)&&(identical(other.saved, saved) || other.saved == saved)&&(identical(other.errorCode, errorCode) || other.errorCode == errorCode)&&const DeepCollectionEquality().equals(other.fieldErrors, _fieldErrors));
+    return identical(this, other) || (other.runtimeType == runtimeType&&other is _ProReservationFormState&&(identical(other.id, id) || other.id == id)&&(identical(other.input, input) || other.input == input)&&(identical(other.priceText, priceText) || other.priceText == priceText)&&(identical(other.saveState, saveState) || other.saveState == saveState)&&(identical(other.capacity, capacity) || other.capacity == capacity)&&(identical(other.checkingCapacity, checkingCapacity) || other.checkingCapacity == checkingCapacity)&&(identical(other.saved, saved) || other.saved == saved)&&(identical(other.errorCode, errorCode) || other.errorCode == errorCode)&&const DeepCollectionEquality().equals(other.fieldErrors, _fieldErrors));
 }
 
 
 @override
 int get hashCode {
-    return Object.hash(runtimeType,id,input,saveState,capacity,checkingCapacity,saved,errorCode,const DeepCollectionEquality().hash(_fieldErrors));
+    return Object.hash(runtimeType,id,input,priceText,saveState,capacity,checkingCapacity,saved,errorCode,const DeepCollectionEquality().hash(_fieldErrors));
 }
 
 @override
 String toString() {
-    return 'ProReservationFormState(id: $id, input: $input, saveState: $saveState, capacity: $capacity, checkingCapacity: $checkingCapacity, saved: $saved, errorCode: $errorCode, fieldErrors: $fieldErrors)';
+    return 'ProReservationFormState(id: $id, input: $input, priceText: $priceText, saveState: $saveState, capacity: $capacity, checkingCapacity: $checkingCapacity, saved: $saved, errorCode: $errorCode, fieldErrors: $fieldErrors)';
 }
 
 
@@ -304,7 +308,7 @@ abstract mixin class _$ProReservationFormStateCopyWith<$Res> implements $ProRese
   factory _$ProReservationFormStateCopyWith(_ProReservationFormState value, $Res Function(_ProReservationFormState) _then) = __$ProReservationFormStateCopyWithImpl;
 @override @useResult
 $Res call({
- String? id, ReservationInput input, ViewState saveState, CapacityPreviewModel? capacity, bool checkingCapacity, ReservationModel? saved, String? errorCode, Map<String, String> fieldErrors
+ String? id, ReservationInput input, String priceText, ViewState saveState, CapacityPreviewModel? capacity, bool checkingCapacity, ReservationModel? saved, String? errorCode, Map<String, String> fieldErrors
 });
 
 
@@ -321,11 +325,12 @@ class __$ProReservationFormStateCopyWithImpl<$Res>
 
 /// Create a copy of ProReservationFormState
 /// with the given fields replaced by the non-null parameter values.
-@override @pragma('vm:prefer-inline') $Res call({Object? id = freezed,Object? input = null,Object? saveState = null,Object? capacity = freezed,Object? checkingCapacity = null,Object? saved = freezed,Object? errorCode = freezed,Object? fieldErrors = null,}) {
+@override @pragma('vm:prefer-inline') $Res call({Object? id = freezed,Object? input = null,Object? priceText = null,Object? saveState = null,Object? capacity = freezed,Object? checkingCapacity = null,Object? saved = freezed,Object? errorCode = freezed,Object? fieldErrors = null,}) {
   return _then(_ProReservationFormState(
 id: freezed == id ? _self.id : id // ignore: cast_nullable_to_non_nullable
 as String?,input: null == input ? _self.input : input // ignore: cast_nullable_to_non_nullable
-as ReservationInput,saveState: null == saveState ? _self.saveState : saveState // ignore: cast_nullable_to_non_nullable
+as ReservationInput,priceText: null == priceText ? _self.priceText : priceText // ignore: cast_nullable_to_non_nullable
+as String,saveState: null == saveState ? _self.saveState : saveState // ignore: cast_nullable_to_non_nullable
 as ViewState,capacity: freezed == capacity ? _self.capacity : capacity // ignore: cast_nullable_to_non_nullable
 as CapacityPreviewModel?,checkingCapacity: null == checkingCapacity ? _self.checkingCapacity : checkingCapacity // ignore: cast_nullable_to_non_nullable
 as bool,saved: freezed == saved ? _self.saved : saved // ignore: cast_nullable_to_non_nullable

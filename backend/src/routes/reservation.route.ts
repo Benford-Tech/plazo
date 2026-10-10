@@ -77,6 +77,10 @@ import { ValidationMiddleware } from '@/middlewares/validation.middleware';
  *       - { in: path, name: id, required: true, schema: { type: string } }
  *   patch:
  *     summary: Edit a reservation (date changes re-check capacity; customerFirstName / customerLastName merged with the stored name, customerName recomputed, a blank one refused as required)
+ *     description: >
+ *       priceCents (10/10/2026): the amount in euro cents, null clears it; 400 with fields.priceCents = price_locked when
+ *       it would change on a booking paid online on Plazo. Closed bookings (returned, cancelled, no-show) are refused with
+ *       reservation_closed: their amount is corrected with PUT /internal/reservations/{id}/price.
  *     tags: [Reservations]
  *     parameters:
  *       - { in: path, name: id, required: true, schema: { type: string } }

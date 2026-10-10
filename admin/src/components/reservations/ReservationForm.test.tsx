@@ -199,6 +199,70 @@ describe("ReservationForm", () => {
     });
   });
 
+  it("10/10/2026 : le prix lu dans le mail se corrige avant d'enregistrer", async () => {
+    createReservation.mockResolvedValue({ data: { id: "r1" } });
+    const onSaved = renderForm(vi.fn(), {
+      prefill: {
+        provider: "Allopark",
+        externalReference: "AL-123829327",
+        arrivalAt: "2026-10-04T06:30",
+        returnAt: "2026-10-11T15:05",
+        customerFirstName: "Jean",
+        customerLastName: "Dupont",
+        customerPhone: "06 12 34 56 78",
+        plate: "GK-318-PX",
+        priceCents: 2600,
+      },
+    });
+    const price = screen.getByLabelText("Prix payé");
+    expect(price).toHaveValue("26,00");
+    await userEvent.clear(price);
+    await userEvent.type(price, "31,5");
+    await userEvent.click(screen.getByRole("button", { name: "Enregistrer" }));
+    await waitFor(() => expect(onSaved).toHaveBeenCalled());
+    // The amount read in the email goes along: Allopark's next change email keeps the corrected price.
+    expect(createReservation.mock.calls[0][0]).toMatchObject({ priceCents: 3150, importedPriceCents: 2600 });
+  });
+
+  it("10/10/2026 : à la modification, le prix ne part que s'il a changé, vide = effacé", async () => {
+    updateReservation.mockResolvedValue({ data: { id: "r9" } });
+    const onSaved = renderForm(vi.fn(), { reservation: booked({ channel: "aggregator", channelDetail: "Allopark", priceCents: 2600 }) });
+    const price = screen.getByLabelText("Prix payé");
+    expect(price).toHaveValue("26,00");
+    await userEvent.click(screen.getByRole("button", { name: "Enregistrer" }));
+    await waitFor(() => expect(onSaved).toHaveBeenCalledTimes(1));
+    expect(updateReservation.mock.calls[0][1]).not.toHaveProperty("priceCents");
+    await userEvent.clear(price);
+    await userEvent.type(price, "30");
+    await userEvent.click(screen.getByRole("button", { name: "Enregistrer" }));
+    await waitFor(() => expect(onSaved).toHaveBeenCalledTimes(2));
+    expect(updateReservation.mock.calls[1][1]).toMatchObject({ priceCents: 3000 });
+    await userEvent.clear(price);
+    await userEvent.click(screen.getByRole("button", { name: "Enregistrer" }));
+    await waitFor(() => expect(onSaved).toHaveBeenCalledTimes(3));
+    expect(updateReservation.mock.calls[2][1]).toMatchObject({ priceCents: null });
+  });
+
+  it("10/10/2026 : un montant invalide reste dans le formulaire ; le prix d'une réservation Plazo ne se modifie pas", async () => {
+    renderForm(vi.fn(), { reservation: booked({ priceCents: 2600 }) });
+    const price = screen.getByLabelText("Prix payé");
+    await userEvent.clear(price);
+    await userEvent.type(price, "26,5€x");
+    await userEvent.click(screen.getByRole("button", { name: "Enregistrer" }));
+    expect(await screen.findByText("Montant invalide (ex. 45,50).")).toBeInTheDocument();
+    expect(updateReservation).not.toHaveBeenCalled();
+  });
+
+  it("10/10/2026 : le prix d'une réservation payée sur Plazo est en lecture seule et n'est pas renvoyé", async () => {
+    updateReservation.mockResolvedValue({ data: { id: "r9" } });
+    const onSaved = renderForm(vi.fn(), { reservation: booked({ channel: "plazo", priceCents: 4500, chargedCents: 4500 }) });
+    expect(screen.getByLabelText("Prix payé")).toBeDisabled();
+    expect(screen.getByText(/le prix ne se modifie pas/)).toBeInTheDocument();
+    await userEvent.click(screen.getByRole("button", { name: "Enregistrer" }));
+    await waitFor(() => expect(onSaved).toHaveBeenCalled());
+    expect(updateReservation.mock.calls[0][1]).not.toHaveProperty("priceCents");
+  });
+
   it("préremplit depuis un mail qui ne donne que le nom complet", () => {
     renderForm(vi.fn(), { prefill: { provider: "Allopark", customerName: "Jean Dupont" } });
     expect(screen.getByLabelText("Prénom")).toHaveValue("Jean");
