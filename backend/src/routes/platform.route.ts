@@ -216,7 +216,7 @@ import { ValidationMiddleware } from '@/middlewares/validation.middleware';
  *           schema: { type: object, properties: { message: { type: string, maxLength: 1000 } } }
  * /internal/platform/reservations:
  *   get:
- *     summary: Bookings of every operator (read-only, no contact details), newest arrival first, 50 per page
+ *     summary: Bookings of every operator (read-only, no contact details), by arrival (earliest first), 50 per page; without from/to page 1 opens on today, pages 0, -1… before
  *     tags: [Platform]
  *     parameters:
  *       - { in: query, name: operatorId, schema: { type: string } }

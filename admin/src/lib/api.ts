@@ -46,6 +46,7 @@ import type {
   PricingTier,
   NewStaff,
   Paginated,
+  ReservationPage,
   Parking,
   ParkingSettings,
   PlatformAudience,
@@ -666,7 +667,7 @@ export const adminApi = {
       `/internal/capacity?${new URLSearchParams({ arrivalAt, returnAt, ...(excludeId ? { excludeId } : {}) }).toString()}`,
     ),
   searchReservations: (params: { q?: string; page?: number }) =>
-    apiRequest<Paginated<Reservation>>(
+    apiRequest<ReservationPage>(
       `/internal/reservations?${new URLSearchParams({ ...(params.q ? { q: params.q } : {}), page: String(params.page ?? 1) }).toString()}`,
     ),
   getReservation: (id: string) =>
@@ -802,7 +803,8 @@ export const adminApi = {
     page?: number;
   }) => {
     const query = new URLSearchParams();
-    for (const [k, v] of Object.entries(params)) if (v) query.set(k, String(v));
+    // Page 0 and below are the pages before today (10/10/2026): sent too.
+    for (const [k, v] of Object.entries(params)) if (v !== undefined && v !== "") query.set(k, String(v));
     return apiRequest<PlatformReservations>(
       `/internal/platform/reservations?${query.toString()}`,
     );

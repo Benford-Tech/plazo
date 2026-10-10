@@ -5,6 +5,7 @@ import prisma, { ListingStatus, PlatformAudience, Prisma } from '@/database';
 import { listingApprovedEmail, listingRejectedEmail, listingUnpublishedEmail } from '@/domain/account-messages';
 import { effectiveCapacity } from '@/domain/capacity';
 import { DATE_RE, dayBounds, localDate } from '@/domain/time';
+import { chronologicalPage } from '@/domain/chronological-pages';
 import { InviteOperatorDto, PlatformNotificationDto } from '@/dtos/platform.dto';
 import { AuthenticatedStaff } from '@/interfaces/auth.interface';
 import { ValidationException } from '@/middlewares/validation.middleware';
@@ -529,13 +530,15 @@ export class PlatformService {
 
   // ---- Bookings -----------------------------------------------------------------------------------
 
-  /** Every operator's bookings (no contact details), filtered by operator and arrival dates. */
+  /**
+   * Every operator's bookings (no contact details), filtered by operator and arrival dates; by arrival, the earliest
+   * first (10/10/2026). Without a date filter the pages open on today (Europe/Paris), earlier pages go back in time.
+   */
   public async reservations(query: { operatorId?: string; from?: string; to?: string; page?: number }) {
     const fields: Record<string, string> = {};
     if (query.from && !DATE_RE.test(query.from)) fields.from = 'invalid_date';
     if (query.to && !DATE_RE.test(query.to)) fields.to = 'invalid_date';
     if (Object.keys(fields).length) throw new ValidationException(fields);
-    const page = Math.max(1, Math.floor(query.page ?? 1));
     const arrivalAt: Prisma.DateTimeFilter = {};
     if (query.from) arrivalAt.gte = dayBounds(query.from, PLATFORM_TZ).start;
     if (query.to) arrivalAt.lt = dayBounds(query.to, PLATFORM_TZ).end;
@@ -544,41 +547,40 @@ export class PlatformService {
       ...(query.operatorId ? { operatorId: query.operatorId } : {}),
       ...(query.from || query.to ? { arrivalAt } : {}),
     };
-    const [docs, totalDocs, operators] = await Promise.all([
-      prisma.reservation.findMany({
-        where,
-        orderBy: { arrivalAt: 'desc' },
-        skip: (page - 1) * PAGE_SIZE,
-        take: PAGE_SIZE,
-        select: {
-          id: true,
-          reference: true,
-          status: true,
-          channel: true,
-          channelDetail: true,
-          arrivalAt: true,
-          returnAt: true,
-          createdAt: true,
-          plate: true,
-          priceCents: true,
-          chargedCents: true,
-          paymentStatus: true,
-          operator: { select: { id: true, name: true } },
-          parking: { select: { name: true } },
-        },
-      }),
+    const today = dayBounds(localDate(new Date(), PLATFORM_TZ), PLATFORM_TZ).start;
+    const [totalDocs, before, operators] = await Promise.all([
       prisma.reservation.count({ where }),
+      query.from || query.to ? 0 : prisma.reservation.count({ where: { AND: [where, { arrivalAt: { lt: today } }] } }),
       prisma.operator.findMany({ select: { id: true, name: true }, orderBy: { name: 'asc' } }),
     ]);
-    const totalPages = Math.max(1, Math.ceil(totalDocs / PAGE_SIZE));
+    const { skip, take, ...pages } = chronologicalPage(totalDocs, before, PAGE_SIZE, query.page);
+    const docs = await prisma.reservation.findMany({
+      where,
+      orderBy: [{ arrivalAt: 'asc' }, { id: 'asc' }],
+      skip,
+      take,
+      select: {
+        id: true,
+        reference: true,
+        status: true,
+        channel: true,
+        channelDetail: true,
+        arrivalAt: true,
+        returnAt: true,
+        createdAt: true,
+        plate: true,
+        priceCents: true,
+        chargedCents: true,
+        paymentStatus: true,
+        operator: { select: { id: true, name: true } },
+        parking: { select: { name: true } },
+      },
+    });
     return {
       docs: docs.map(({ chargedCents, priceCents, ...r }) => ({ ...r, amountCents: chargedCents ?? priceCents })),
       totalDocs,
-      page,
       limit: PAGE_SIZE,
-      totalPages,
-      hasPrevPage: page > 1,
-      hasNextPage: page < totalPages,
+      ...pages,
       operators,
     };
   }

@@ -558,7 +558,7 @@ Documentation interactive : `/api/docs` (Swagger). Toutes les routes sont sous `
 | PATCH | `/internal/parkings/:id` | Réglages du parking (gérant, tracé ; `totalCapacity` = chiffre déclaré, utilisé sans plan) |
 | GET | `/internal/planning?date=` | Arrivées, retours et charge des 7 nuits d'une journée |
 | GET | `/internal/capacity?arrivalAt=&returnAt=` | Charge de chaque nuit d'un séjour, nuits complètes |
-| GET / POST | `/internal/reservations` | Recherche (plaque, nom, téléphone, référence) / création |
+| GET / POST | `/internal/reservations` | Recherche (plaque, nom, téléphone, référence), par date d'arrivée de la plus ancienne à la plus récente : sans recherche la page 1 commence aujourd'hui et `page=0`, `-1`… remontent le temps (`pageNumber` = rang de la page, pour « Page 3 / 4 ») / création |
 | GET / PATCH | `/internal/reservations/:id` | Fiche / modification (les dates revérifient la capacité) |
 | POST | `/internal/imports/email` | Lit un mail de comparateur collé (Allopark) : champs trouvés, manquants, doublon, capacité |
 | POST | `/internal/auth/signup` | Inscription libre d'un loueur (publique, limitée par IP, réponse identique si l'email existe) |
@@ -629,7 +629,7 @@ Documentation interactive : `/api/docs` (Swagger). Toutes les routes sont sous `
 | POST | `/internal/platform/operators/:id/invitation` | Renvoyer l'invitation (nouveau lien) |
 | GET | `/internal/platform/listings?status=` | Fiches de tous les loueurs, nombre par statut |
 | POST | `/internal/platform/listings/:id/approve` / `…/reject` / `…/unpublish` | Valider / refuser (`{ message }` obligatoire) / dépublier |
-| GET | `/internal/platform/reservations?operatorId=&from=&to=&page=` | Réservations de tous les loueurs (sans coordonnées) |
+| GET | `/internal/platform/reservations?operatorId=&from=&to=&page=` | Réservations de tous les loueurs (sans coordonnées), par date d'arrivée de la plus ancienne à la plus récente ; sans filtre de dates la page 1 commence aujourd'hui (Europe/Paris), les pages 0, -1… avant |
 | GET | `/internal/platform/payments` | Comptes Stripe, reversements en attente et en échec |
 | POST | `/internal/platform/payouts/:reservationId/retry` | Relancer un reversement refusé par Stripe |
 | GET / POST | `/internal/platform/capacity-studies` | Outil capacité : études de capacité |

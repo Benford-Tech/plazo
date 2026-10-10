@@ -14,6 +14,7 @@ import { toPublicBooking, WITH_LISTING } from '@/domain/booking-view';
 import { cleanNamePart, CustomerNames, customerNamesOf, importedNames } from '@/domain/customer-name';
 import { ImportChange, ImportChangeReason, importChanges, withoutField } from '@/domain/import-change';
 import { ImportedFlights, importedFlights, notesWithLines, unreadableFlightLines } from '@/domain/imported-flights';
+import { chronologicalPage } from '@/domain/chronological-pages';
 import { FileService } from './file.service';
 import { AuditService } from './audit.service';
 import { CapacityService, NightLoad, occupiedNights } from './capacity.service';
@@ -735,10 +736,14 @@ export class ReservationService {
     );
   }
 
-  /** Search by plate, name, phone or reference; most recent arrivals first. */
+  /**
+   * Search by plate, name, phone or reference, in chronological order (10/10/2026, « Les réservations doivent être
+   * affichées de manière chronologique »): by arrival, the earliest first. Without a search, the pages count from today
+   * (the parking's local day), so the list opens on what is coming without hiding the past (`chronologicalPage`). A
+   * search lists every match from the earliest.
+   */
   public async list(actor: AuthenticatedStaff, query: { q?: string; page?: number; limit?: number }) {
     this.require(actor, 'reservations:view');
-    const page = Math.max(1, query.page || 1);
     const limit = Math.min(100, Math.max(1, query.limit || 20));
     const q = query.q?.trim();
     const where: Prisma.ReservationWhereInput = { operatorId: actor.operatorId, AND: [STAFF_VISIBLE] };
@@ -751,12 +756,19 @@ export class ReservationService {
         ...(key.length >= 2 ? [{ plateKey: { contains: key } }] : []),
       ];
     }
-    const [docs, totalDocs] = await Promise.all([
-      prisma.reservation.findMany({ where, orderBy: { arrivalAt: 'desc' }, skip: (page - 1) * limit, take: limit }),
+    // Before the first page: the bookings arriving before today (the parking's day), none for a search.
+    const parking = q
+      ? null
+      : await prisma.parking.findFirst({ where: { operatorId: actor.operatorId }, orderBy: { createdAt: 'asc' }, select: { timezone: true } });
+    const timezone = parking?.timezone ?? 'Europe/Paris';
+    const today = dayBounds(localDate(new Date(), timezone), timezone).start;
+    const [totalDocs, before] = await Promise.all([
       prisma.reservation.count({ where }),
+      q ? 0 : prisma.reservation.count({ where: { AND: [where, { arrivalAt: { lt: today } }] } }),
     ]);
-    const totalPages = Math.max(1, Math.ceil(totalDocs / limit));
-    return { docs, totalDocs, limit, page, totalPages, hasPrevPage: page > 1, hasNextPage: page < totalPages };
+    const { skip, take, ...pages } = chronologicalPage(totalDocs, before, limit, query.page);
+    const docs = await prisma.reservation.findMany({ where, orderBy: [{ arrivalAt: 'asc' }, { id: 'asc' }], skip, take });
+    return { docs, totalDocs, limit, ...pages };
   }
 
   /** Capacity preview for a stay (used by the booking form before saving). */

@@ -63,6 +63,11 @@ export default function PlatformReservationsPage() {
         {data && <p className="pb-2 text-muted-foreground">{t.total(data.totalDocs)}</p>}
       </div>
       <p className="text-sm text-muted-foreground">{t.privacy}</p>
+      {data && (
+        <p className="text-sm text-muted-foreground">
+          {from || to ? fr.reservation.orderSearch : data.page >= 1 ? fr.reservation.orderFromToday : fr.reservation.orderBeforeToday}
+        </p>
+      )}
 
       {query.isLoading ? (
         <Skeleton className="h-48 w-full" />
@@ -99,7 +104,7 @@ export default function PlatformReservationsPage() {
           </table>
         </div>
       ) : (
-        <p className="py-6 text-muted-foreground">{t.empty}</p>
+        <p className="py-6 text-muted-foreground">{!from && !to && data?.hasPrevPage ? fr.reservation.noneFromToday : t.empty}</p>
       )}
 
       {data && data.totalPages > 1 && (
@@ -107,7 +112,7 @@ export default function PlatformReservationsPage() {
           <button type="button" disabled={!data.hasPrevPage} onClick={() => setPage(page - 1)} className="min-h-10 border border-border px-3 hover:bg-accent disabled:opacity-40">
             {fr.reservation.previous}
           </button>
-          <span className="font-mono text-muted-foreground">{fr.reservation.page(data.page, data.totalPages)}</span>
+          <span className="font-mono text-muted-foreground">{fr.reservation.page(data.pageNumber ?? data.page, data.totalPages)}</span>
           <button type="button" disabled={!data.hasNextPage} onClick={() => setPage(page + 1)} className="min-h-10 border border-border px-3 hover:bg-accent disabled:opacity-40">
             {fr.reservation.next}
           </button>

@@ -106,12 +106,36 @@ class _ViewState extends State<_View> {
                           itemCount: state.items.length + 2,
                           itemBuilder: (_, i) {
                             if (i == 0) {
+                              // Chronological (10/10/2026): from today, the earlier bookings on demand.
+                              final fromToday = state.query.trim().isEmpty && state.firstPage >= 1;
                               return Padding(
                                 padding: const EdgeInsets.only(bottom: 4),
-                                child: Text(
-                                  state.items.isEmpty ? 'res.none'.tr() : 'res.count'.tr(args: ['${state.total}']),
-                                  key: const Key('res-count'),
-                                  style: AppText.label(size: 11),
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Text(
+                                      state.items.isEmpty
+                                          ? (state.hasEarlier ? 'res.none_from_today'.tr() : 'res.none'.tr())
+                                          : 'res.count'.tr(args: ['${state.total}']),
+                                      key: const Key('res-count'),
+                                      style: AppText.label(size: 11),
+                                    ),
+                                    Text(
+                                      fromToday ? 'res.order_from_today'.tr() : 'res.order'.tr(),
+                                      key: const Key('res-order'),
+                                      style: AppText.label(size: 11),
+                                    ),
+                                    if (state.hasEarlier)
+                                      TextButton.icon(
+                                        key: const Key('res-earlier'),
+                                        style: TextButton.styleFrom(foregroundColor: AppColors.accent, padding: EdgeInsets.zero),
+                                        onPressed: state.loadingEarlier ? null : () => bloc.add(const ProReservationsEarlierRequested()),
+                                        icon: state.loadingEarlier
+                                            ? const SizedBox(width: 16, height: 16, child: CircularProgressIndicator(strokeWidth: 2, color: AppColors.accent))
+                                            : const Icon(Icons.history_rounded, size: 18),
+                                        label: Text('res.earlier'.tr()),
+                                      ),
+                                  ],
                                 ),
                               );
                             }

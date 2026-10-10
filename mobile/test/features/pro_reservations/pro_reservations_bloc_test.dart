@@ -69,6 +69,33 @@ void main() {
     });
   });
 
+  group('liste chronologique (10/10/2026)', () {
+    test('ouvre sur aujourd’hui, ajoute les réservations précédentes en tête, range une nouvelle par arrivée', () async {
+      final list = MockList();
+      final today = booking.copyWith(id: 'today', arrivalAt: DateTime.utc(2026, 10, 10, 8));
+      final later = booking.copyWith(id: 'later', arrivalAt: DateTime.utc(2026, 10, 14, 8));
+      final before = booking.copyWith(id: 'before', arrivalAt: DateTime.utc(2026, 10, 3, 8));
+      when(() => list(const ListReservationsParams())).thenAnswer((_) async => Right(ReservationPageModel(docs: [today, later], totalDocs: 3, hasPrevPage: true)));
+      when(() => list(const ListReservationsParams(page: 0))).thenAnswer((_) async => Right(ReservationPageModel(docs: [before], totalDocs: 3, page: 0, hasNextPage: true)));
+      final b = ProReservationsBloc(list)..add(const ProReservationsStarted());
+      await settle();
+      expect(b.state.items.map((r) => r.id), ['today', 'later']);
+      expect(b.state.hasEarlier, isTrue);
+      b.add(const ProReservationsEarlierRequested());
+      await settle();
+      expect(b.state.items.map((r) => r.id), ['before', 'today', 'later']);
+      expect(b.state.firstPage, 0);
+      expect(b.state.hasEarlier, isFalse);
+      b.add(const ProReservationsEarlierRequested()); // nothing before: no call
+      await settle();
+      verify(() => list(const ListReservationsParams(page: 0))).called(1);
+      // A booking made in the app takes its place by arrival.
+      b.add(ProReservationsUpdated(booking.copyWith(id: 'new', arrivalAt: DateTime.utc(2026, 10, 12, 8))));
+      await settle();
+      expect(b.state.items.map((r) => r.id), ['before', 'today', 'new', 'later']);
+    });
+  });
+
   group('fiche', () {
     test('changement de statut, et erreur traduite', () async {
       final get = MockGet();

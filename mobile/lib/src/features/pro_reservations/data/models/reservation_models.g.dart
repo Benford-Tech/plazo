@@ -137,6 +137,7 @@ _ReservationPageModel _$ReservationPageModelFromJson(
   totalDocs: (json['totalDocs'] as num?)?.toInt() ?? 0,
   page: (json['page'] as num?)?.toInt() ?? 1,
   totalPages: (json['totalPages'] as num?)?.toInt() ?? 1,
+  hasPrevPage: json['hasPrevPage'] as bool? ?? false,
   hasNextPage: json['hasNextPage'] as bool? ?? false,
 );
 
@@ -147,6 +148,7 @@ Map<String, dynamic> _$ReservationPageModelToJson(
   'totalDocs': instance.totalDocs,
   'page': instance.page,
   'totalPages': instance.totalPages,
+  'hasPrevPage': instance.hasPrevPage,
   'hasNextPage': instance.hasNextPage,
 };
 

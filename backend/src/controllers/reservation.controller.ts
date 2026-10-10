@@ -43,7 +43,8 @@ export class ReservationController {
     res.json(
       await this.reservationService.list(req.staff, {
         q: str(req.query.q),
-        page: Number(req.query.page) || undefined,
+        // 0 and below are the pages before today (10/10/2026).
+        page: Number.isInteger(Number(req.query.page)) && str(req.query.page) ? Number(req.query.page) : undefined,
         limit: Number(req.query.limit) || undefined,
       }),
     );

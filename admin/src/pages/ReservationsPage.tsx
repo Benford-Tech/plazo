@@ -13,7 +13,9 @@ export default function ReservationsPage() {
   const { user } = useAuth();
   const [params, setParams] = useSearchParams();
   const q = params.get("q") ?? "";
-  const page = Number(params.get("page") ?? 1);
+  // Page 1 opens on today, 0 and below go back in time (10/10/2026, « de manière chronologique »).
+  const asked = Number(params.get("page") ?? 1);
+  const page = Number.isInteger(asked) ? asked : 1;
   const [input, setInput] = useState(q);
   const { data, error, isFetching } = useQuery({
     queryKey: ["reservations", q, page],
@@ -64,6 +66,7 @@ export default function ReservationsPage() {
         </button>
       </form>
 
+      {data && <p className="text-sm text-muted-foreground">{q ? t.orderSearch : data.page >= 1 ? t.orderFromToday : t.orderBeforeToday}</p>}
       {error && <p className="text-destructive">{describeError(error)}</p>}
       <ul className={isFetching ? "opacity-70" : ""}>
         {data?.docs.map(r => (
@@ -81,7 +84,7 @@ export default function ReservationsPage() {
           </li>
         ))}
       </ul>
-      {data && data.docs.length === 0 && <p className="text-muted-foreground">{t.noResult}</p>}
+      {data && data.docs.length === 0 && <p className="text-muted-foreground">{!q && data.hasPrevPage ? t.noneFromToday : t.noResult}</p>}
       {data && data.totalPages > 1 && (
         <div className="flex items-center justify-between">
           <button
@@ -91,7 +94,7 @@ export default function ReservationsPage() {
           >
             {t.previous}
           </button>
-          <span className="tabular font-mono text-muted-foreground">{t.page(data.page, data.totalPages)}</span>
+          <span className="tabular font-mono text-muted-foreground">{t.page(data.pageNumber ?? data.page, data.totalPages)}</span>
           <button
             disabled={!data.hasNextPage}
             onClick={() => setParams({ ...(q ? { q } : {}), page: String(page + 1) })}
