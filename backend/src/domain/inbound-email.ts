@@ -23,6 +23,12 @@ export interface InboundItem {
   RawTextBody?: string | null;
   RawHtmlBody?: string | null;
   ExtractedMarkdownMessage?: string | null;
+  /**
+   * 10/10/2026 (« tu ne vas pas chercher dans les liens »): the email's allopark.com links (alloparkLinks), read by
+   * parseRawEmail from the whole bodies: the « Consulter ma réservation » button sits at the end of a long HTML, beyond
+   * the 100 000 characters RawHtmlBody keeps. Absent from the former JSON payload: the links are then read from its bodies.
+   */
+  Links?: string[] | null;
 }
 
 export interface InboundPayload {
@@ -52,6 +58,44 @@ export function ownRecipientsOf(item: InboundItem, excludeDomain: string): strin
     .map(a => (a?.Address ?? '').trim().toLowerCase())
     .filter(a => a.length <= RECIPIENT_MAX_CHARS && ADDRESS.test(a) && !a.endsWith(excluded));
   return [...new Set(addresses)].slice(0, MAX_OWN_RECIPIENTS);
+}
+
+/** At most this many addresses are read from the header of a forwarded message. */
+export const MAX_FORWARDED_RECIPIENTS = 5;
+/** The line a mail client puts above the message it forwards (Gmail, Outlook, Apple Mail; French and English). */
+const FORWARD_MARKER = /forwarded message|message transf[ée]r[ée]|message d'origine|original message|message r[ée]exp[ée]di[ée]|d[ée]but du message/i;
+const HEADER_FROM = /^(?:>\s*)*(?:de|from|exp[ée]diteur)\s*:/i;
+const HEADER_TO = /^(?:>\s*)*(?:[àÀ]|a|to|pour|destinataires?)\s*:(.*)$/i;
+/** The recipients' line is read within this many lines of the « De : » line (Outlook puts « Envoyé : » between them). */
+const HEADER_LINES = 12;
+const ADDRESS_IN_TEXT = /[^\s@<>"'(),;:[\]]+@[^\s@<>"'(),;:[\]]+\.[a-z]{2,}/gi;
+
+/**
+ * 10/10/2026 (« tu ne vas pas chercher dans les liens »): the addresses of a forwarded message's header in the text,
+ * on its « À : », « A : », « To: », « Pour : » or « Destinataire : » line within a few lines of its « De : » / « From: »
+ * line or of the « Message transféré » / « Forwarded message » marker (Gmail, Outlook, Apple Mail): the parking's
+ * mailbox when the parking forwarded the email by hand, the email itself being sent to the Plazo address only.
+ * Lower-cased, deduplicated, at most 5; any other line of the text is ignored.
+ */
+export function forwardedRecipientsOf(text: string): string[] {
+  const found: string[] = [];
+  let header = 0;
+  for (const raw of text.split(/\r?\n/)) {
+    const line = raw.trim();
+    if (FORWARD_MARKER.test(line) || HEADER_FROM.test(line)) {
+      header = HEADER_LINES;
+      continue;
+    }
+    if (header <= 0) continue;
+    header -= 1;
+    const to = HEADER_TO.exec(line);
+    if (!to) continue;
+    for (const match of to[1].matchAll(ADDRESS_IN_TEXT)) {
+      const address = match[0].toLowerCase();
+      if (address.length <= RECIPIENT_MAX_CHARS && ADDRESS.test(address)) found.push(address);
+    }
+  }
+  return [...new Set(found)].slice(0, MAX_FORWARDED_RECIPIENTS);
 }
 
 /** The local part of the first recipient on the inbound domain: "lys-demo-7f3a" for "lys-demo-7f3a@in.plazo.fr". */

@@ -167,6 +167,8 @@ export const fr = {
     account_suspended: `Ce compte est suspendu. Contactez l'équipe ${PRODUCT.name}.`,
     view_as_read_only:
       "En consultation, l'équipe, les mots de passe et les paiements du loueur ne se modifient pas.",
+    view_as_not_driver:
+      "En consultation, vous ne conduisez pas la navette : démarrez le trajet depuis le compte d'un chauffeur.",
     view_as_ended: "La consultation de l'espace du loueur est terminée.",
     email_not_verified:
       "Confirmez d'abord votre adresse email (lien reçu par email).",
@@ -320,7 +322,7 @@ export const fr = {
     note: "Vos modifications sont tracées dans le journal à votre nom.",
     back: "Revenir à la plateforme",
     readOnly:
-      "En consultation, l'équipe, les mots de passe et le compte du loueur sont en lecture seule.",
+      "En consultation, l'équipe, les mots de passe et les paiements du loueur ne se modifient pas.",
   },
   nav: {
     planning: "Planning",

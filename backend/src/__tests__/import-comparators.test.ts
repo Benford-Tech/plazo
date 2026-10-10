@@ -1,9 +1,19 @@
 import { readFileSync } from 'fs';
 import { join } from 'path';
-import { parseConfirmationEmail } from '@/domain/importers';
-import { alloparkLinks, alloparkPageUrls, MAX_LINKS, parseAlloparkPage } from '@/domain/importers/allopark-page';
+import { isComparatorAddress, parseConfirmationEmail } from '@/domain/importers';
+import {
+  alloparkConfirmationPage,
+  alloparkLinks,
+  alloparkPageAddresses,
+  alloparkPageFacts,
+  alloparkPageUrls,
+  alloparkReferenceOf,
+  MAX_LINKS,
+  MAX_PAGES,
+  parseAlloparkPage,
+} from '@/domain/importers/allopark-page';
 import { isCancellationOrChange } from '@/domain/importers/common';
-import { stripHtml, textOf } from '@/domain/inbound-email';
+import { forwardedRecipientsOf, stripHtml, textOf } from '@/domain/inbound-email';
 import { fillGaps } from '@/services/inbound-email.service';
 
 // 09/10/2026: the four comparators of the client's mailbox, from the samples Joanny sent (same layouts, fictional data).
@@ -169,15 +179,24 @@ describe('Allopark : la page de la réservation (10/10/2026)', () => {
     ]);
   });
 
-  it('sans lien, la page de chaque adresse destinataire (deux au plus), jamais une adresse Plazo', () => {
+  it('sans lien, la page de chaque adresse candidate (trois au plus), jamais une adresse Plazo ni celle d’un comparateur', () => {
+    expect(MAX_PAGES).toBe(3);
     expect(
       alloparkPageUrls({
         links: alloparkLinks(null, 'Réservation AL-884880719'),
         reference: 'AL-884880719',
-        addresses: ['lys-7f3a@in.plazo.test', 'parking@example.com', 'PARKING@example.com', 'gerant@example.com', 'compta@example.com'],
+        addresses: [
+          'lys-7f3a@in.plazo.test',
+          'info@allopark.com',
+          'parking@example.com',
+          'PARKING@example.com',
+          'gerant@example.com',
+          'compta@example.com',
+          'quatrieme@example.com',
+        ],
         excludeDomain: 'in.plazo.test',
       }),
-    ).toEqual([pageUrl, pageUrl.replace('parking%40', 'gerant%40')]);
+    ).toEqual([pageUrl, pageUrl.replace('parking%40', 'gerant%40'), pageUrl.replace('parking%40', 'compta%40')]);
     expect(alloparkPageUrls({ links: [], reference: 'AL-884880719', addresses: ['lys-7f3a@in.plazo.test'], excludeDomain: 'in.plazo.test' })).toEqual(
       [],
     );
@@ -229,5 +248,122 @@ describe('Allopark : la page de la réservation (10/10/2026)', () => {
     expect(parseAlloparkPage(blank, 'AL-884880719')).not.toHaveProperty('returnFlight');
     expect(parseAlloparkPage(page, 'AL-222222222')).toBeNull();
     expect(parseAlloparkPage('<html><body>Comparez et réservez votre parking AL-884880719</body></html>', 'AL-884880719')).toBeNull();
+  });
+});
+
+describe('Allopark : trouver la page sans le lien du mail (10/10/2026, « tu ne vas pas chercher dans les liens »)', () => {
+  const pageUrl = 'https://www.allopark.com/fr-be/confirmation?email=parking%40example.com&reference=AL-884880719&view=parking';
+
+  it('lit les destinataires de l’en-tête d’un mail transféré (Gmail, Outlook, Apple Mail), et seulement là', () => {
+    const gmail = [
+      'Voici la réservation.',
+      '',
+      '---------- Forwarded message ---------',
+      'From: ALLOPARK <info@allopark.com>',
+      'Date: Wed, Sep 30, 2026 at 10:31 PM',
+      'Subject: Confirmation de votre réservation AL-884880719',
+      'To: <Parking@Example.com>',
+      '',
+      'Bonjour Jean Dupont,',
+    ].join('\n');
+    expect(forwardedRecipientsOf(gmail)).toEqual(['parking@example.com']);
+    const gmailFr = [
+      '---------- Message transféré ---------',
+      'De : ALLOPARK <info@allopark.com>',
+      'Date : mer. 30 sept. 2026 à 22:31',
+      'Objet : Confirmation de votre réservation AL-884880719',
+      'À : Parking Air Lyon <parking@example.com>, gerant@example.com',
+    ].join('\n');
+    expect(forwardedRecipientsOf(gmailFr)).toEqual(['parking@example.com', 'gerant@example.com']);
+    const outlook = [
+      '________________________________',
+      'De : ALLOPARK <info@allopark.com>',
+      'Envoyé : mercredi 30 septembre 2026 22:31',
+      'À : contact@parking.fr <mailto:contact@parking.fr>; Compta <compta@parking.fr>',
+      'Objet : Confirmation de votre réservation AL-884880719',
+    ].join('\r\n');
+    expect(forwardedRecipientsOf(outlook)).toEqual(['contact@parking.fr', 'compta@parking.fr']);
+    // Apple Mail, quoted lines, a non-breaking space before the colon, « Pour » and « Destinataire ».
+    expect(forwardedRecipientsOf('Début du message réexpédié :\n\n> De: ALLOPARK <info@allopark.com>\n> À\u00a0: parking@example.com')).toEqual([
+      'parking@example.com',
+    ]);
+    expect(forwardedRecipientsOf('De : Allopark\nPour : a@example.com\nDestinataire : b@example.com\nA : c@example.com')).toEqual([
+      'a@example.com',
+      'b@example.com',
+      'c@example.com',
+    ]);
+    // Outside a forwarded header (no « De : » nor marker just above), or « À moi » of Gmail's display: nothing.
+    expect(forwardedRecipientsOf('Bonjour,\nÀ : jean.dupont@example.com\nTo: x@example.com')).toEqual([]);
+    expect(forwardedRecipientsOf('ALLOPARK <info@allopark.com> Se désabonner\nÀ moi')).toEqual([]);
+    const far = ['De : ALLOPARK <info@allopark.com>', ...Array.from({ length: 12 }, (_, i) => `ligne ${i}`), 'À : tard@example.com'].join('\n');
+    expect(forwardedRecipientsOf(far)).toEqual([]);
+    // Five at most.
+    const many = `From: x\nTo: ${Array.from({ length: 8 }, (_, i) => `p${i}@example.com`).join(', ')}`;
+    expect(forwardedRecipientsOf(many)).toHaveLength(5);
+  });
+
+  it('les adresses candidates dans l’ordre : destinataires, en-tête transféré, expéditeur, boîte Gmail, gérants ; ni Plazo ni comparateur', () => {
+    const text = '---------- Message transféré ---------\nDe : ALLOPARK <info@allopark.com>\nÀ : <entete@example.com>, info@allopark.com';
+    expect(
+      alloparkPageAddresses(
+        {
+          recipients: ['dest@example.com', 'lys-7f3a@in.plazo.test'],
+          text,
+          from: 'Expediteur@Example.com',
+          requesters: ['gmail@example.com', 'dest@example.com'],
+          managers: ['gerant@example.com'],
+        },
+        'in.plazo.test',
+      ),
+    ).toEqual(['dest@example.com', 'entete@example.com', 'expediteur@example.com', 'gmail@example.com', 'gerant@example.com']);
+    // A comparator's sender is never a candidate: Allopark's own address, any address of a comparator's domain.
+    expect(alloparkPageAddresses({ recipients: [], text: '', from: 'info@allopark.com', requesters: [], managers: ['gerant@example.com'] })).toEqual([
+      'gerant@example.com',
+    ]);
+    expect(
+      ['info@allopark.com', 'reservations@mail.allopark.com', 'noreply@onepark.co', 'contact@parclick.com', 'x@parkmundo.com'].map(
+        isComparatorAddress,
+      ),
+    ).toEqual([true, true, true, true, true]);
+    expect(isComparatorAddress('parking@example.com')).toBe(false);
+    // Three pages at most, the manager last: dropped when the email gives three addresses before.
+    const urls = alloparkPageUrls({
+      links: [],
+      reference: 'AL-884880719',
+      addresses: alloparkPageAddresses({
+        recipients: ['parking@example.com'],
+        text,
+        from: 'expediteur@example.com',
+        requesters: [],
+        managers: ['gerant@example.com'],
+      }),
+    });
+    expect(urls).toEqual([pageUrl, pageUrl.replace('parking%40', 'entete%40'), pageUrl.replace('parking%40', 'expediteur%40')]);
+  });
+
+  it('la référence à ouvrir : Allopark nommé (texte, objet ou expéditeur), une référence AL-, jamais une annulation ou une modification', () => {
+    const base = { text: 'Votre réservation est confirmée.', subject: 'Confirmation de votre réservation AL-884880719', from: 'info@allopark.com' };
+    expect(alloparkReferenceOf(base)).toBe('AL-884880719');
+    expect(alloparkReferenceOf({ ...base, from: 'parking@example.com', subject: 'TR: Allopark AL-884880719' })).toBe('AL-884880719');
+    expect(alloparkReferenceOf({ text: 'Allopark : réservation N° AL-884880719', subject: null, from: null })).toBe('AL-884880719');
+    // Neither Allopark nor a reference: nothing.
+    expect(alloparkReferenceOf({ ...base, from: 'parking@example.com' })).toBeNull();
+    expect(alloparkReferenceOf({ ...base, subject: 'Confirmation de votre réservation' })).toBeNull();
+    // A cancellation or a change, in the subject or the text.
+    expect(alloparkReferenceOf({ ...base, subject: 'Annulation de votre réservation AL-884880719' })).toBeNull();
+    expect(alloparkReferenceOf({ ...base, text: 'Votre réservation a été modifiée.' })).toBeNull();
+  });
+
+  it('le lien de confirmation du mail, et ce qu’une page montre de la réservation', () => {
+    const links = alloparkLinks('<a href="https://www.allopark.com/fr-fr/confirmation?email=parking@example.com&amp;reference=AL-884880719">x</a>');
+    expect(alloparkConfirmationPage(links, 'al-884880719')).toBe(
+      'https://www.allopark.com/fr-fr/confirmation?email=parking%40example.com&reference=AL-884880719',
+    );
+    expect(alloparkConfirmationPage(links, 'AL-111111111')).toBeNull();
+    expect(alloparkConfirmationPage(['https://www.allopark.com/fr-be/contactez-nous'], 'AL-884880719')).toBeNull();
+    const page = html('allopark-page.html');
+    expect(alloparkPageFacts(page, 'AL-884880719')).toEqual({ form: true, reference: true });
+    expect(alloparkPageFacts(page, 'AL-222222222')).toEqual({ form: true, reference: false });
+    expect(alloparkPageFacts('<html>Comparez et réservez</html>', 'AL-884880719')).toEqual({ form: false, reference: false });
   });
 });

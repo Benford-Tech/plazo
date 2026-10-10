@@ -51,12 +51,15 @@ export const StaffAuthMiddleware = (permission?: Permission) => (request: Reques
 };
 
 /**
- * The operator's team and the accounts' passwords stay theirs: read-only while a platform admin
- * views their space. Goes after StaffAuthMiddleware.
+ * 10/10/2026 (« En consultation, l'équipe, les mots de passe et les paiements du loueur ne se modifient pas »): only
+ * the operator's team, the passwords and credentials (accounts, SMS gateway), the payments and the signed-in person's
+ * own settings (name, post, vehicle, devices, notification preferences) are refused while a platform admin views their space; every other
+ * write goes through, traced as view_as.write. A route can refuse with its own code (the admin is no driver of the
+ * operator: `view_as_not_driver`). Goes after StaffAuthMiddleware.
  */
-export const RefuseInViewAs = () => (request: Request, res: Response, next: NextFunction) => {
-  if ((request as RequestWithStaffSession).staff?.actingAs) {
-    return next(new HttpException(httpStatus.FORBIDDEN, 'Read-only while viewing an operator space', 'view_as_read_only'));
-  }
-  next();
-};
+export const RefuseInViewAs =
+  (code = 'view_as_read_only', message = 'Read-only while viewing an operator space') =>
+  (request: Request, res: Response, next: NextFunction) => {
+    if ((request as RequestWithStaffSession).staff?.actingAs) return next(new HttpException(httpStatus.FORBIDDEN, message, code));
+    next();
+  };

@@ -1,4 +1,5 @@
 import PostalMime, { Address, Email } from 'postal-mime';
+import { alloparkLinks } from './importers/allopark-page';
 import { InboundAddress, InboundItem } from './inbound-email';
 
 /** The content type the Cloudflare relay posts the raw message with. */
@@ -27,7 +28,8 @@ const clip = (value: string | undefined) => (value ? value.slice(0, BODY_MAX_CHA
  * Free plan allows 10 ms of CPU per email, which a real confirmation (HTML, inline images) exceeded while decoding
  * (EXCEEDED_CPU, "Worker call failed after 3 attempts" for the sender). The envelope recipient names the parking,
  * whatever the forwarded email's own headers say; a message that cannot be read keeps its envelope, so the parking
- * still sees that something arrived.
+ * still sees that something arrived. The bodies are clipped to 100 000 characters; the allopark.com links are read
+ * from them whole (`Links`, 10/10/2026).
  */
 export async function parseRawEmail(raw: Uint8Array, envelope: Envelope): Promise<InboundItem> {
   const to = envelope.to?.trim().toLowerCase() || null;
@@ -59,5 +61,8 @@ export async function parseRawEmail(raw: Uint8Array, envelope: Envelope): Promis
     SentAtDate: email.date ?? null,
     RawTextBody: clip(email.text),
     RawHtmlBody: clip(email.html),
+    // 10/10/2026: the links are read from the whole bodies, before the clip: Allopark's « Consulter ma réservation »
+    // button comes after 100 000 characters of HTML (inline styles, tables).
+    Links: alloparkLinks(email.html, email.text),
   };
 }

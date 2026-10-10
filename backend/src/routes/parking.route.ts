@@ -7,7 +7,7 @@ import { CarLocationDto } from '@/dtos/public-booking.dto';
 import { AddSpotsDto, GenerateSpotsDto, ReplaceSpotsDto, SuggestZonesDto, UpdateParkingPlanDto, UpdateSpotDto } from '@/dtos/parking-plan.dto';
 import { PlatformController } from '@/controllers/platform.controller';
 import { Routes } from '@/interfaces/routes.interface';
-import { RefuseInViewAs, StaffAuthMiddleware } from '@/middlewares/staff-auth.middleware';
+import { StaffAuthMiddleware } from '@/middlewares/staff-auth.middleware';
 import { ValidationMiddleware } from '@/middlewares/validation.middleware';
 
 /**
@@ -117,10 +117,10 @@ export class ParkingRoute implements Routes {
   private initializeRoutes() {
     this.router.get('/internal/parking', StaffAuthMiddleware('dashboard:view'), this.parking.getPrimary);
     this.router.patch('/internal/parkings/:id', StaffAuthMiddleware('parking:manage'), ValidationMiddleware(UpdateParkingDto), this.parking.update);
+    // Open to « Ouvrir son espace » since 10/10/2026 (traced as view_as.write).
     this.router.put(
       '/internal/parkings/:id/shuttle-tracking',
       StaffAuthMiddleware('parking:manage'),
-      RefuseInViewAs(),
       ValidationMiddleware(UpdateShuttleTrackingDto),
       this.parking.setShuttleTracking,
     );
