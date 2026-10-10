@@ -238,6 +238,17 @@ export class UpdateReservationDto {
   @MaxLength(30, { message: 'too_long' })
   public vehicleColour?: string | null;
 
+  /**
+   * 10/10/2026 (« Pouvoir modifier le prix après l'intégration du mail »): the amount, in euro cents; null clears it.
+   * Never a Plazo booking's (what the traveller paid online): 400 price_locked when it would change.
+   */
+  @IsOptional()
+  @ValidateIf((dto: UpdateReservationDto) => dto.priceCents !== null)
+  @Min(0, { message: 'min_0' })
+  @Max(10000000, { message: 'too_large' })
+  @IsInt({ message: 'integer' })
+  public priceCents?: number | null;
+
   @IsOptional()
   @IsBoolean()
   public force?: boolean;

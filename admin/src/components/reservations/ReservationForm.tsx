@@ -4,6 +4,7 @@ import { adminApi, ApiError } from "@/lib/api";
 import { localParts, nightsBetween, shortDay } from "@/lib/datetime";
 import { describeError, errorMessage, fr } from "@/lib/fr";
 import { nameParts } from "@/lib/names";
+import { centsToInput, isPriceLocked, parseEuros } from "@/lib/pricing";
 import type { ParsedBooking, Reservation, ReservationChannel, ReservationInput } from "@/lib/types";
 import { cn } from "@/lib/utils";
 
@@ -32,6 +33,8 @@ type Form = {
   customerNote: string;
   vehicleModel: string;
   vehicleColour: string;
+  /** 10/10/2026: the amount in euros as typed ("26,00"), "" for none. */
+  price: string;
 };
 
 const split = (local?: string) => (local ? { date: local.slice(0, 10), time: local.slice(11, 16) } : { date: "", time: "" });
@@ -62,6 +65,8 @@ function initialForm(reservation?: Reservation, defaultDate?: string, prefill?: 
       // 10/10/2026: the car the comparator gives (the form's limits: 40 and 30 characters).
       vehicleModel: prefill.vehicleModel?.trim().slice(0, 40) ?? "",
       vehicleColour: prefill.vehicleColour?.trim().slice(0, 30) ?? "",
+      // 10/10/2026: the amount read in the email, to check or correct before saving.
+      price: prefill.priceCents != null ? centsToInput(prefill.priceCents) : "",
     };
   }
   if (reservation) {
@@ -88,6 +93,7 @@ function initialForm(reservation?: Reservation, defaultDate?: string, prefill?: 
       customerNote: reservation.customerNote ?? "",
       vehicleModel: reservation.vehicleModel ?? "",
       vehicleColour: reservation.vehicleColour ?? "",
+      price: reservation.priceCents != null ? centsToInput(reservation.priceCents) : "",
     };
   }
   return {
@@ -110,6 +116,7 @@ function initialForm(reservation?: Reservation, defaultDate?: string, prefill?: 
     customerNote: "",
     vehicleModel: "",
     vehicleColour: "",
+    price: "",
   };
 }
 
@@ -153,6 +160,12 @@ export function ReservationForm({
   const nameRequired =
     !initialName || form.customerFirstName.trim() !== initialName.firstName || form.customerLastName.trim() !== initialName.lastName;
 
+  // 10/10/2026 (« Pouvoir modifier le prix après l'intégration du mail »): the amount can be set or corrected, never a
+  // Plazo booking's; an edit sends it only when it changed (null when emptied).
+  const priceLocked = !!reservation && isPriceLocked(reservation);
+  const priceCents = form.price.trim() ? parseEuros(form.price) : null;
+  const priceInvalid = !!form.price.trim() && priceCents === null;
+
   const arrivalAt = form.arrivalDate && form.arrivalTime ? `${form.arrivalDate}T${form.arrivalTime}` : "";
   const returnAt = form.returnDate && form.returnTime ? `${form.returnDate}T${form.returnTime}` : "";
   const datesReady = !!arrivalAt && !!returnAt && returnAt > arrivalAt;
@@ -195,7 +208,8 @@ export function ReservationForm({
         vehicleModel: form.vehicleModel.trim() || null,
         vehicleColour: form.vehicleColour.trim() || null,
         ...(!reservation && prefill?.externalReference ? { externalReference: prefill.externalReference } : {}),
-        ...(!reservation && prefill?.priceCents !== undefined ? { priceCents: prefill.priceCents } : {}),
+        ...(!reservation && priceCents !== null ? { priceCents } : {}),
+        ...(reservation && !priceLocked && priceCents !== reservation.priceCents ? { priceCents } : {}),
         force: force || undefined,
       };
       return reservation
@@ -220,6 +234,10 @@ export function ReservationForm({
       onSubmit={e => {
         e.preventDefault();
         setFormError(null);
+        if (priceInvalid) {
+          setFieldErrors({ priceCents: "invalid_amount" });
+          return;
+        }
         save.mutate();
       }}
     >
@@ -418,6 +436,24 @@ export function ReservationForm({
           <input id="channelDetail" value={form.channelDetail} onChange={set("channelDetail")} placeholder="Parkos, Onepark…" className={inputClass} />
         </Field>
       )}
+      <Field id="price" label={t.pricePaid} error={fieldErrors.priceCents} help={priceLocked ? t.priceLocked : t.priceHelp}>
+        <div className="flex items-center gap-2">
+          <input
+            id="price"
+            inputMode="decimal"
+            autoComplete="off"
+            value={form.price}
+            onChange={set("price")}
+            disabled={priceLocked}
+            placeholder="0,00"
+            aria-invalid={!!fieldErrors.priceCents}
+            className={cn(inputClass, "tabular w-40 text-right font-mono disabled:opacity-60")}
+          />
+          <span aria-hidden="true" className="text-lg text-muted-foreground">
+            €
+          </span>
+        </div>
+      </Field>
       <div className="grid gap-3 sm:grid-cols-2">
         <Field id="vehicleModel" label={t.vehicleModel} error={fieldErrors.vehicleModel}>
           <input id="vehicleModel" value={form.vehicleModel} onChange={set("vehicleModel")} maxLength={40} placeholder="Peugeot 308" className={inputClass} />

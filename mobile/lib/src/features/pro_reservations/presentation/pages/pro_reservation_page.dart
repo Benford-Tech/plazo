@@ -120,6 +120,7 @@ class ProReservationPage extends StatelessWidget implements AutoRouteWrapper {
       customerNote: r.customerNote,
       vehicleModel: r.vehicleModel,
       vehicleColour: r.vehicleColour,
+      priceCents: r.priceCents,
     );
   }
 }

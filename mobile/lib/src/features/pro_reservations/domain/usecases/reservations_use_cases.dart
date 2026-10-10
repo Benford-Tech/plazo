@@ -29,7 +29,7 @@ class GetReservationUseCase with UseCase<ReservationModel, String> {
 }
 
 class SaveReservationParams extends Equatable {
-  const SaveReservationParams({this.id, required this.input, this.names = true});
+  const SaveReservationParams({this.id, required this.input, this.names = true, this.price = false});
 
   /// Null: a new booking.
   final String? id;
@@ -37,8 +37,11 @@ class SaveReservationParams extends Equatable {
 
   /// An edit sends the first and last name only once changed (see ReservationInput.toBody).
   final bool names;
+
+  /// An edit sends the price only once changed: the new amount, or null when emptied (10/10/2026).
+  final bool price;
   @override
-  List<Object?> get props => [id, input, names];
+  List<Object?> get props => [id, input, names, price];
 }
 
 class SaveReservationUseCase with UseCase<ReservationModel, SaveReservationParams> {
@@ -46,7 +49,7 @@ class SaveReservationUseCase with UseCase<ReservationModel, SaveReservationParam
   final ReservationsRepository _repository;
   @override
   Future<Either<Failure, ReservationModel>> call(SaveReservationParams params) =>
-      params.id == null ? _repository.create(params.input) : _repository.update(params.id!, params.input, names: params.names);
+      params.id == null ? _repository.create(params.input) : _repository.update(params.id!, params.input, names: params.names, price: params.price);
 }
 
 class ChangeStatusParams extends Equatable {

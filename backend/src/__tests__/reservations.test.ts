@@ -206,6 +206,75 @@ describe('planning et recherche', () => {
   });
 });
 
+describe('prix modifiable après l’import d’un mail (10/10/2026)', () => {
+  const patch = (token: string, id: string, body: Record<string, unknown>) =>
+    api().patch(`/api/internal/reservations/${id}`).set(auth(token)).send(body);
+
+  it('change, efface et trace le prix ; refuse un montant invalide ; un autre champ ne le touche pas', async () => {
+    const { token } = await setupOperator();
+    const created = await api()
+      .post('/api/internal/reservations')
+      .set(auth(token))
+      .send(booking({ channel: 'aggregator', channelDetail: 'Allopark', priceCents: 2600 }));
+    expect(created.body.data.priceCents).toBe(2600);
+    const id = created.body.data.id;
+
+    const changed = await patch(token, id, { priceCents: 3150 });
+    expect(changed.status).toBe(200);
+    expect(changed.body.data.priceCents).toBe(3150);
+    const audit = await prisma.auditLog.findFirstOrThrow({ where: { action: 'reservation.updated', entityId: id }, orderBy: { createdAt: 'desc' } });
+    expect(audit.details).toMatchObject({ priceCents: { from: 2600, to: 3150 } });
+
+    expect((await patch(token, id, { passengers: 2 })).body.data.priceCents).toBe(3150);
+    expect((await patch(token, id, { priceCents: null })).body.data.priceCents).toBeNull();
+    for (const [priceCents, code] of [
+      [-1, 'min_0'],
+      [12.5, 'integer'],
+      ['abc', 'integer'],
+      [10000001, 'too_large'],
+    ] as const) {
+      const bad = await patch(token, id, { priceCents });
+      expect(bad.status).toBe(400);
+      expect(bad.body.fields).toEqual({ priceCents: code });
+    }
+  });
+
+  it('jamais celui d’une réservation payée sur Plazo (un prix inchangé passe)', async () => {
+    const { token } = await setupOperator();
+    const created = (
+      await api()
+        .post('/api/internal/reservations')
+        .set(auth(token))
+        .send(booking({ priceCents: 4500 }))
+    ).body.data;
+    await prisma.reservation.update({ where: { id: created.id }, data: { channel: 'plazo' } });
+    const locked = await patch(token, created.id, { priceCents: 1000 });
+    expect(locked.status).toBe(400);
+    expect(locked.body.fields).toEqual({ priceCents: 'price_locked' });
+    const same = await patch(token, created.id, { priceCents: 4500, passengers: 1 });
+    expect(same.status).toBe(200);
+    expect(same.body.data).toMatchObject({ priceCents: 4500, passengers: 1 });
+    // The revenue page's route says the same.
+    const put = await api().put(`/api/internal/reservations/${created.id}/price`).set(auth(token)).send({ priceCents: 1000 });
+    expect(put.body.fields).toEqual({ priceCents: 'price_locked' });
+  });
+
+  it('après le séjour, le prix se corrige encore par « Modifier le prix » (PUT …/price), pas par la fiche', async () => {
+    const { token } = await setupOperator();
+    const created = (
+      await api()
+        .post('/api/internal/reservations')
+        .set(auth(token))
+        .send(booking({ channel: 'aggregator', priceCents: 2600 }))
+    ).body.data;
+    await prisma.reservation.update({ where: { id: created.id }, data: { status: 'returned' } });
+    expect((await patch(token, created.id, { priceCents: 2900 })).body.code).toBe('reservation_closed');
+    const put = await api().put(`/api/internal/reservations/${created.id}/price`).set(auth(token)).send({ priceCents: 2900 });
+    expect(put.status).toBe(200);
+    expect(put.body).toMatchObject({ priceCents: 2900 });
+  });
+});
+
 describe('liste dans l’ordre chronologique (10/10/2026)', () => {
   const day = (offset: number) => addDays(localDate(new Date(), 'Europe/Paris'), offset);
   const list = (token: string, query = '') => api().get(`/api/internal/reservations?limit=2${query}`).set(auth(token));

@@ -136,14 +136,16 @@ abstract class ReservationInput with _$ReservationInput {
   /// Empty optional strings are dropped (the DTO refuses "" for an email or a flight); an empty required one is sent,
   /// so that the API names the field. [names] false leaves the first and last name out of an edit: a one-word name
   /// (an older booking, a comparator's email) is stored with an empty last name, and an edit that does not touch the
-  /// name must not require one (09/10/2026, as the pro space does).
-  Map<String, dynamic> toBody({bool patch = false, bool names = true}) {
+  /// name must not require one (09/10/2026, as the pro space does). [price] true puts the amount in an edit, null to
+  /// clear it (10/10/2026): only once changed, so that an untouched price is never sent.
+  Map<String, dynamic> toBody({bool patch = false, bool names = true, bool price = false}) {
     final json = toJson();
     json.removeWhere((k, v) => v == null || (v is String && v.trim().isEmpty && !_keptWhenEmpty.contains(k)));
     if (!force) json.remove('force');
     if (patch) {
       json.remove('externalReference');
       json.remove('priceCents');
+      if (price) json['priceCents'] = priceCents;
       if (!names) {
         json.remove('customerFirstName');
         json.remove('customerLastName');

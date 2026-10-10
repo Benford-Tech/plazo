@@ -5,7 +5,7 @@ abstract class ReservationsDataSource {
   Future<ReservationPageModel> list({String? query, int page = 1, int limit = 20});
   Future<ReservationModel> get(String id);
   Future<ReservationModel> create(ReservationInput input);
-  Future<ReservationModel> update(String id, ReservationInput input, {bool names = true});
+  Future<ReservationModel> update(String id, ReservationInput input, {bool names = true, bool price = false});
   Future<ReservationModel> changeStatus(String id, String status, {String? note});
   Future<CapacityPreviewModel> capacity(String arrivalAt, String returnAt, {String? excludeId});
 }
@@ -24,8 +24,8 @@ class ReservationsDataSourceImpl implements ReservationsDataSource {
   Future<ReservationModel> create(ReservationInput input) async => (await _client.create(input.toBody())).data;
 
   @override
-  Future<ReservationModel> update(String id, ReservationInput input, {bool names = true}) async =>
-      (await _client.update(id, input.toBody(patch: true, names: names))).data;
+  Future<ReservationModel> update(String id, ReservationInput input, {bool names = true, bool price = false}) async =>
+      (await _client.update(id, input.toBody(patch: true, names: names, price: price))).data;
 
   @override
   Future<ReservationModel> changeStatus(String id, String status, {String? note}) async =>

@@ -2,6 +2,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:parking_app/src/core/enums/view_state.dart';
 import 'package:parking_app/src/core/error/failure.dart';
+import 'package:parking_app/src/core/helpers/money.dart';
 import 'package:parking_app/src/core/utils/either.dart';
 import 'package:parking_app/src/features/pro_reservations/data/models/reservation_models.dart';
 import 'package:parking_app/src/features/pro_reservations/domain/usecases/reservations_use_cases.dart';
@@ -215,6 +216,139 @@ void main() {
       await settle();
       expect(b.state.fieldErrors, {'plate': 'invalid_plate'});
       expect(b.state.errorCode, isNull);
+    });
+
+    // 10/10/2026 (« Pouvoir modifier le prix après l'intégration du mail »): the price in the form.
+    group('prix', () {
+      late MockSave save;
+      late MockCapacity capacity;
+      setUp(() {
+        save = MockSave();
+        capacity = MockCapacity();
+        when(() => capacity(any())).thenAnswer((_) async => const Right(CapacityPreviewModel(nights: 1)));
+        when(() => save(any())).thenAnswer((_) async => Right(booking));
+      });
+      // An imported booking, its amount read from the comparator's email.
+      const imported = ReservationInput(channel: 'aggregator', channelDetail: 'Allopark', arrivalAt: '2026-10-05T06:30', returnAt: '2026-10-06T18:00', customerFirstName: 'Jean', customerLastName: 'Dupont', plate: 'GK-318-PX', priceCents: 2600);
+
+      Future<SaveReservationParams> submit(ProReservationFormBloc b) async {
+        b.add(const ProReservationFormSubmitted());
+        await settle();
+        return verify(() => save(captureAny())).captured.single as SaveReservationParams;
+      }
+
+      test('nouvelle réservation : le prix saisi part en centimes ; vide, il ne part pas', () async {
+        final b = ProReservationFormBloc(save, capacity, initial: const ReservationInput(arrivalAt: '2026-10-05T06:30', returnAt: '2026-10-06T18:00'));
+        await settle();
+        expect(b.state.priceText, '');
+        var params = await submit(b);
+        expect(params.input.toBody().containsKey('priceCents'), isFalse);
+        b.add(const ProReservationFormPriceChanged('45,50 €'));
+        await settle();
+        params = await submit(b);
+        expect(params.id, isNull);
+        expect(params.input.priceCents, 4550);
+        expect(params.input.toBody(), containsPair('priceCents', 4550));
+      });
+
+      test('ouvert avec un prix (import) : prérempli, et envoyé à la création', () async {
+        final b = ProReservationFormBloc(save, capacity, initial: imported);
+        await settle();
+        expect(b.state.priceText, '26,00');
+        final params = await submit(b);
+        expect(params.input.toBody(), containsPair('priceCents', 2600));
+      });
+
+      test('modification : un prix inchangé ne part pas', () async {
+        final b = ProReservationFormBloc(save, capacity, id: 'r1', initial: imported);
+        await settle();
+        expect(b.state.priceText, '26,00');
+        b.add(ProReservationFormChanged(b.state.input.copyWith(plate: 'AB-123-CD')));
+        b.add(const ProReservationFormPriceChanged('26')); // the same amount, typed differently
+        await settle();
+        final params = await submit(b);
+        expect(params.price, isFalse);
+        final body = params.input.toBody(patch: true, names: params.names, price: params.price);
+        expect(body, containsPair('plate', 'AB-123-CD'));
+        expect(body.containsKey('priceCents'), isFalse);
+      });
+
+      test('modification : un prix changé part, avec un point ou une virgule', () async {
+        final b = ProReservationFormBloc(save, capacity, id: 'r1', initial: imported);
+        await settle();
+        b.add(const ProReservationFormPriceChanged('31.5'));
+        await settle();
+        final params = await submit(b);
+        expect(params.price, isTrue);
+        expect(params.input.toBody(patch: true, names: params.names, price: params.price), containsPair('priceCents', 3150));
+      });
+
+      test('modification : un prix effacé part à null', () async {
+        final b = ProReservationFormBloc(save, capacity, id: 'r1', initial: imported);
+        await settle();
+        b.add(const ProReservationFormPriceChanged('  '));
+        await settle();
+        final params = await submit(b);
+        expect(params.price, isTrue);
+        expect(params.input.priceCents, isNull);
+        expect(params.input.toBody(patch: true, names: params.names, price: params.price), containsPair('priceCents', null));
+      });
+
+      test('un montant invalide bloque l’enregistrement, l’erreur va sous le prix', () async {
+        final b = ProReservationFormBloc(save, capacity, id: 'r1', initial: imported);
+        await settle();
+        for (final text in ['45,505', '-12', 'douze', '12,5,0']) {
+          b.add(ProReservationFormPriceChanged(text));
+          await settle();
+          b.add(const ProReservationFormSubmitted());
+          await settle();
+          expect(b.state.fieldErrors, {'priceCents': 'invalid_price'}, reason: text);
+        }
+        b.add(const ProReservationFormPriceChanged('100000,01'));
+        await settle();
+        b.add(const ProReservationFormSubmitted());
+        await settle();
+        expect(b.state.fieldErrors, {'priceCents': 'too_large'});
+        verifyNever(() => save(any()));
+        // Typing again clears the error.
+        b.add(const ProReservationFormPriceChanged('45'));
+        await settle();
+        expect(b.state.fieldErrors, isEmpty);
+      });
+
+      test('réservation payée sur Plazo : le prix est verrouillé et ne part jamais', () async {
+        final b = ProReservationFormBloc(save, capacity, id: 'r1', initial: imported.copyWith(channel: 'plazo', channelDetail: null));
+        await settle();
+        expect(b.state.priceLocked, isTrue);
+        final params = await submit(b);
+        expect(params.price, isFalse);
+        expect(params.input.toBody(patch: true, names: params.names, price: params.price).containsKey('priceCents'), isFalse);
+      });
+
+      test('le refus du serveur (price_locked) va sous le prix', () async {
+        when(() => save(any())).thenAnswer((_) async => const Left(ServerFailure(statusCode: 400, code: 'validation_failed', fields: {'priceCents': 'price_locked'})));
+        final b = ProReservationFormBloc(save, capacity, id: 'r1', initial: imported);
+        await settle();
+        b.add(const ProReservationFormPriceChanged('30'));
+        await settle();
+        b.add(const ProReservationFormSubmitted());
+        await settle();
+        expect(b.state.fieldErrors, {'priceCents': 'price_locked'});
+        expect(b.state.errorCode, isNull);
+      });
+
+      test('saisie des montants', () {
+        expect(formatEuroInput(2600), '26,00');
+        expect(formatEuroInput(5), '0,05');
+        expect(formatEuroInput(null), '');
+        for (final (text, cents) in [('45,50', 4550), ('45.50', 4550), ('45', 4500), ('45 €', 4500), ('45€', 4500), ('1 200,5', 120050), ('0', 0)]) {
+          expect(parseEuroInput(text), (valid: true, cents: cents), reason: text);
+        }
+        expect(parseEuroInput(''), (valid: true, cents: null));
+        for (final text in ['45,505', '-12', 'abc', '12a', ',50', '45,50,00', '99999999999999999999999']) {
+          expect(parseEuroInput(text).valid, isFalse, reason: text);
+        }
+      });
     });
   });
 

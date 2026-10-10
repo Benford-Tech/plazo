@@ -2,7 +2,16 @@ import httpStatus from 'http-status';
 import { Container, Service } from 'typedi';
 import prisma, { Parking, Prisma, Reservation, ReservationStatus } from '@/database';
 import { can } from '@/domain/roles';
-import { canTransition, formatFlight, formatPlate, newReference, plateKey, RELEASED_STATUSES, STATUS_TRANSITIONS } from '@/domain/reservation';
+import {
+  canTransition,
+  formatFlight,
+  formatPlate,
+  isPriceLocked,
+  newReference,
+  plateKey,
+  RELEASED_STATUSES,
+  STATUS_TRANSITIONS,
+} from '@/domain/reservation';
 import { ParsedBooking, parseConfirmationEmail } from '@/domain/importers';
 import { addDays, DATE_RE, dayBounds, exceedsCalendarDays, localDate, localDateTime, parseInstant } from '@/domain/time';
 import { ChangeStatusDto, CreateReservationDto, UpdateReservationDto } from '@/dtos/reservation.dto';
@@ -292,7 +301,7 @@ export class ReservationService {
       if (!before) throw notFound();
       let diff = importChanges(before, booking, parking.timezone);
       // What the traveller paid online stays what they paid.
-      if (before.paymentStatus !== null || before.chargedCents !== null) diff = withoutField(diff, 'priceCents');
+      if (isPriceLocked(before)) diff = withoutField(diff, 'priceCents');
       const left = (reason: ImportChangeReason): ImportChangeResult => ({ reservation: before, changes: diff.changes, applied: false, reason });
       const notes = notesWithLines(before.notes, flightLines);
       const notesAdded = notes !== before.notes;
@@ -536,6 +545,10 @@ export class ReservationService {
         throw fieldError('channel', 'invalid_channel');
       }
 
+      // 10/10/2026: what the traveller paid on Plazo is not the staff's to change (an unchanged value goes through).
+      const priceChanged = data.priceCents !== undefined && data.priceCents !== before.priceCents;
+      if (priceChanged && isPriceLocked(before)) throw fieldError('priceCents', 'price_locked');
+
       const datesChanged = data.arrivalAt !== undefined || data.returnAt !== undefined;
       const stay = datesChanged
         ? this.parseStay(parking, data.arrivalAt ?? before.arrivalAt.toISOString(), data.returnAt ?? before.returnAt.toISOString())
@@ -567,6 +580,7 @@ export class ReservationService {
           customerNote: data.customerNote === undefined ? undefined : data.customerNote?.trim() || null,
           vehicleModel: data.vehicleModel === undefined ? undefined : data.vehicleModel?.trim() || null,
           vehicleColour: data.vehicleColour === undefined ? undefined : data.vehicleColour?.trim() || null,
+          priceCents: priceChanged ? data.priceCents : undefined,
           overbooked: datesChanged ? full.length > 0 : undefined,
         },
       });

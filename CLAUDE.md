@@ -199,6 +199,15 @@ Ne construire QUE ce qui règle la douleur n°1 du client.
    - Vue planning : arrivées et retours du jour, taux d'occupation, alerte de surréservation
      calculée sur la capacité réelle.
    - Fiche réservation : client, téléphone, plaque, dates/heures, n° de vol retour, nb de passagers, statut.
+   - **Prix modifiable après l'import d'un mail (10/10/2026, « Pouvoir modifier le prix après l'intégration du mail »)** :
+     champ « Prix payé » (euros, « Ce que paie le client, sans les frais du comparateur. ») dans le formulaire de réservation
+     web (création, « Compléter » d'un mail prérempli avec le montant lu, « Modifier ») et dans celui de Plazo Pro ; à la
+     modification il ne part que s'il a changé (`null` s'il est vidé) ; `UpdateReservationDto.priceCents` (centimes, `null`
+     efface, tracé dans `reservation.updated`) ; jamais le prix d'une réservation payée sur Plazo (`isPriceLocked` de
+     `domain/reservation.ts` : canal `plazo`, paiement ou montant encaissé ; 400 `price_locked`, champ en lecture seule « Payé
+     en ligne sur Plazo : le prix ne se modifie pas. ») ; fiche web : « Modifier le prix » / « Ajouter le prix » sur la ligne
+     « Prix payé » (`PriceLine`, `PUT /internal/reservations/:id/price`, aussi après le séjour, pas une réservation annulée) ;
+     montant invalide → « Montant invalide (ex. 45,50). » sans appel.
    - **Listes chronologiques (10/10/2026, « Les réservations doivent être affichées de manière chronologique »)** : la liste
      Réservations (web `/pro/reservations`, app Plazo Pro) et Plateforme › Réservations vont par date d'arrivée, la plus
      ancienne d'abord (puis `id`) ; sans recherche (ni filtre de dates pour la plateforme), la page 1 commence à la première
