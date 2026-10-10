@@ -10,6 +10,7 @@ import type {
   SmsMode,
   StaffRole,
   AlertKind,
+  InboundChangeReason,
   InboundEmailStatus,
   InboundEmailView,
   InboundPageOutcome,
@@ -2532,6 +2533,11 @@ export const inboundFr = {
       archived: "Archivé",
       forwarding: "Confirmation de transfert",
     } satisfies Record<InboundEmailStatus, string>,
+    /**
+     * 10/10/2026 (relecture): the badge of an Allopark change Plazo recognised but left to the staff, in place of
+     * « Non reconnu ».
+     */
+    changeLeftStatus: "À faire à la main",
     noSubject: "(sans objet)",
     unknownSender: "expéditeur inconnu",
     from: "De",
@@ -2587,7 +2593,29 @@ export const inboundFr = {
       returnFlight: "vol retour",
       passengers: "passagers",
       priceCents: "prix",
+      vehicleModel: "véhicule",
     } as Record<string, string>,
+    /**
+     * 10/10/2026 (« C'est une modification »): an Allopark change of a booking, applied by Plazo or left to the staff;
+     * one line per change, « Date de retour : 13 déc. 20:30 → 15 déc. 18:00 ».
+     */
+    change: {
+      applied: "Modification appliquée à la réservation",
+      upToDate: "Modification déjà prise en compte dans la réservation",
+      manual: "Modification à faire à la main",
+      /** 10/10/2026 (relecture): « Modification à faire à la main · réservation R7KQ2M ». */
+      manualOn: "réservation",
+      reason: {
+        reservation_closed: "La réservation est close.",
+        already_arrived: "La voiture est déjà arrivée : la date d'arrivée n'a pas été changée.",
+        no_room: "Plus de place aux nouvelles dates.",
+        plazo_booking: "Réservation faite sur Plazo.",
+        invalid_stay: "Les nouvelles dates ne forment pas un séjour valable.",
+      } satisfies Record<InboundChangeReason, string>,
+      nothingDone: "Plazo n'a rien changé : faites ces changements vous-même si besoin.",
+      none: "Aucun changement : la réservation était déjà à jour.",
+      empty: "—",
+    },
     complete: "Compléter et enregistrer",
     typeIt: "Saisir la réservation",
     openBooking: (ref: string) =>
@@ -2609,6 +2637,13 @@ export const inboundFr = {
           ? `Réservation ${ref} créée depuis ce mail.`
           : "Réservation créée depuis ce mail.",
       duplicate: "Cette réservation existait déjà : le mail y est rattaché.",
+      /** 10/10/2026 (« C'est une modification »). */
+      changed: (ref: string | null) =>
+        ref
+          ? `Modification appliquée à la réservation ${ref}.`
+          : "Modification appliquée à la réservation.",
+      changeLeft:
+        "Analyse relancée : la modification reste à faire à la main.",
       /** The missing fields, listed after a colon by their labels: « champs encore manquants : téléphone et plaque ». */
       missing: (labels: string[]) =>
         `Analyse relancée, ${labels.length > 1 ? "champs encore manquants" : "champ encore manquant"} : ${

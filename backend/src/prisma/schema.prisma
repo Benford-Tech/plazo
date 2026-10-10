@@ -396,6 +396,10 @@ model InboundEmail {
   // 10/10/2026 (« Prévent captcha »): the Allopark booking page at the last analysis: { outcome: read | protected |
   // unavailable | not_found, url (the page to open by hand, failures only), at }; cleared with the text and by attach.
   pageLookup    Json?
+  // 10/10/2026 (« C'est une modification »): what Plazo did of an Allopark change of a booking: { applied, reason?,
+  // reservationId?, reference?, changes: [{ field, from, to }], at }; the values are personal data like the text:
+  // cleared with it after 30 days, and by attach.
+  change        Json?
   // The last re-analysis asked by the staff (a second one within 30 s is refused).
   analysedAt    DateTime?
   reservationId String?

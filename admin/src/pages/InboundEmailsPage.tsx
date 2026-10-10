@@ -8,7 +8,17 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { adminApi } from "@/lib/api";
 import { dateTimeShort, localParts, timeOf, todayLocal } from "@/lib/datetime";
 import { describeError, inboundFr as t } from "@/lib/fr";
-import type { InboundEmail, InboundEmailList, InboundEmailStatus, InboundEmailView, InboundPageLookup, InboundReanalysis, ParsedBooking } from "@/lib/types";
+import type {
+  InboundChange,
+  InboundChangeField,
+  InboundEmail,
+  InboundEmailList,
+  InboundEmailStatus,
+  InboundEmailView,
+  InboundPageLookup,
+  InboundReanalysis,
+  ParsedBooking,
+} from "@/lib/types";
 import { cn } from "@/lib/utils";
 
 const VIEWS: InboundEmailView[] = ["todo", "done", "archived"];
@@ -83,8 +93,10 @@ function summaryOf(parsed: ParsedBooking | null): string | null {
 function reanalysedMessage({ outcome, email }: InboundReanalysis): string {
   const r = t.list.reanalysed;
   if (outcome === "imported") return r.imported(email.reservationReference);
+  // 10/10/2026 (« C'est une modification »): an Allopark change applied to its booking, or still to make by hand.
+  if (outcome === "changed") return r.changed(email.change?.reference ?? email.reservationReference);
   if (outcome === "duplicate") return r.duplicate;
-  if (outcome === "unrecognised") return r.unrecognised;
+  if (outcome === "unrecognised") return email.change && !email.change.applied ? r.changeLeft : r.unrecognised;
   const labels = FIELDS.filter(key => email.missing.includes(key)).map(key => t.list.field[key] ?? key);
   if (labels.length > 0) return r.missing(labels);
   const refusals = email.missing.filter(key => key !== "confidence" && !FIELDS.includes(key as keyof ParsedBooking));
@@ -136,12 +148,30 @@ function MailBody({ text }: { text: string }) {
   );
 }
 
-/** L-A: a mail Claude classed as something else than a booking gets its kind next to its state. */
-function KindBadge({ reading }: { reading: InboundEmail["reading"] }) {
-  if (!reading || reading.kind === "booking") return null;
+/**
+ * The state of a mail; 10/10/2026 (relecture): an Allopark change Plazo recognised but left to the staff reads
+ * « À faire à la main » (to do), never « Non reconnu ».
+ */
+function StatusBadge({ email }: { email: InboundEmail }) {
+  const l = t.list;
+  const changeLeft = email.status === "unrecognised" && !!email.change && !email.change.applied && email.change.changes.length > 0;
+  return (
+    <span data-testid="inbound-status" className="inline-flex">
+      <Badge tone={changeLeft ? "warn" : TONE[email.status]}>{changeLeft ? l.changeLeftStatus : l.status[email.status]}</Badge>
+    </span>
+  );
+}
+
+/**
+ * L-A: a mail Claude classed as something else than a booking gets its kind next to its state; 10/10/2026 (« C'est une
+ * modification »): so does an Allopark change Plazo read against the booking page.
+ */
+function KindBadge({ email }: { email: InboundEmail }) {
+  const kind = email.reading && email.reading.kind !== "booking" ? email.reading.kind : email.change ? "modification" : null;
+  if (!kind) return null;
   return (
     <span data-testid="inbound-kind" className="inline-flex">
-      <Badge tone={reading.kind === "other" ? "info" : "warn"}>{t.list.reading.kind[reading.kind]}</Badge>
+      <Badge tone={kind === "other" ? "info" : "warn"}>{t.list.reading.kind[kind]}</Badge>
     </span>
   );
 }
@@ -163,8 +193,8 @@ function Row({ email, selected, onSelect }: { email: InboundEmail; selected: boo
         </span>
         <span className={cn("block truncate text-sm", !email.subject && "text-muted-foreground")}>{email.subject ?? l.noSubject}</span>
         <span className="flex items-center gap-2">
-          <Badge tone={TONE[email.status]}>{l.status[email.status]}</Badge>
-          <KindBadge reading={email.reading} />
+          <StatusBadge email={email} />
+          <KindBadge email={email} />
           {summary && <span className="min-w-0 flex-1 truncate text-xs text-muted-foreground">{summary}</span>}
         </span>
       </button>
@@ -173,7 +203,7 @@ function Row({ email, selected, onSelect }: { email: InboundEmail; selected: boo
 }
 
 /** L-A (08/10/2026): what Claude made of the mail: kind, source, confidence, one-sentence summary. */
-function ReadingLine({ reading, missing }: { reading: NonNullable<InboundEmail["reading"]>; missing: string[] }) {
+function ReadingLine({ reading, missing, changed }: { reading: NonNullable<InboundEmail["reading"]>; missing: string[]; changed: boolean }) {
   const l = t.list.reading;
   const percent = Math.round(reading.confidence * 100);
   const head = [l.kind[reading.kind], reading.provider, l.confidence(percent)].filter(Boolean).join(" · ");
@@ -186,7 +216,8 @@ function ReadingLine({ reading, missing }: { reading: NonNullable<InboundEmail["
       </p>
       {reading.summary && <p className="text-muted-foreground">{reading.summary}</p>}
       {unsure && <p className="text-warn-text">{l.unsure}</p>}
-      {reading.kind !== "booking" && <p className="text-muted-foreground">{l.notBooking}</p>}
+      {/* 10/10/2026: an Allopark change says itself what Plazo did of it (ChangeBlock). */}
+      {reading.kind !== "booking" && !changed && <p className="text-muted-foreground">{l.notBooking}</p>}
     </div>
   );
 }
@@ -253,6 +284,77 @@ function Understood({ email }: { email: InboundEmail }) {
   );
 }
 
+/** A value of a change as the staff read it: a local date « 15 déc. 18:00 », a price « 29,00 € », « — » for nothing. */
+function changeValue(field: InboundChangeField, value: string | number | null): string {
+  if (value === null || value === "") return t.list.change.empty;
+  if (field === "arrivalAt" || field === "returnAt") return localDateTime(String(value));
+  if (field === "priceCents") return euros(Number(value));
+  return String(value);
+}
+
+/**
+ * 10/10/2026 (« C'est une modification »): what Plazo did of an Allopark change, in place of « Ce que Plazo a compris »:
+ * applied to the booking (its link in the title), already there, or to make by hand with the reason; one line per
+ * change, « Date de retour : 13 déc. 20:30 → 15 déc. 18:00 ».
+ */
+function ChangeBlock({ change }: { change: InboundChange }) {
+  const l = t.list.change;
+  const booking =
+    change.reservationId && change.reference ? (
+      <Link to={`/reservations/${change.reservationId}`} className={TEXT_LINK}>
+        {change.reference}
+      </Link>
+    ) : (
+      change.reference
+    );
+  const left = !change.applied && change.changes.length > 0;
+  return (
+    <section
+      data-testid="inbound-change"
+      data-applied={change.applied ? "true" : "false"}
+      aria-labelledby="inbound-change-title"
+      className="mx-5 mb-4 rounded-[10px] border border-panel-line bg-panel-2 px-4 py-3"
+    >
+      <h3 id="inbound-change-title" className="text-[13px] font-semibold uppercase tracking-wide text-muted-foreground">
+        {/* 10/10/2026 (relecture): the booking concerned stays one click away once the mail is handled or archived. */}
+        {left ? (
+          <>
+            {l.manual}
+            {booking && (
+              <>
+                {" · "}
+                {l.manualOn} {booking}
+              </>
+            )}
+          </>
+        ) : (
+          <>
+            {change.applied ? l.applied : l.upToDate} {booking}
+          </>
+        )}
+      </h3>
+      {left && (
+        <div data-testid="inbound-change-reason" className="mt-2 space-y-0.5 rounded-[8px] bg-warn-soft px-3 py-2 text-sm font-medium text-warn-text">
+          {change.reason && <p>{l.reason[change.reason]}</p>}
+          <p>{l.nothingDone}</p>
+        </div>
+      )}
+      {change.changes.length === 0 ? (
+        <p className="mt-2 text-sm text-muted-foreground">{l.none}</p>
+      ) : (
+        <ul className="mt-2 space-y-1 text-sm">
+          {change.changes.map(c => (
+            <li key={c.field} data-testid="inbound-change-line">
+              <span className="text-muted-foreground">{fieldLabel(c.field)} : </span>
+              {changeValue(c.field, c.from)} → <span className="font-semibold">{changeValue(c.field, c.to)}</span>
+            </li>
+          ))}
+        </ul>
+      )}
+    </section>
+  );
+}
+
 function Reading({
   email,
   pending,
@@ -282,6 +384,8 @@ function Reading({
   const canArchive = email.status !== "forwarding" && email.status !== "archived";
   // The server reads the stored text again: not for a mail already attached to a booking, nor once the text is purged.
   const canReanalyse = !email.reservationId && email.textBody !== null && email.status !== "forwarding";
+  // 10/10/2026 (« C'est une modification »): a change left to the staff is made on its booking, not typed as a new one.
+  const changeLeft = email.change && !email.change.applied && email.change.reservationId ? email.change : null;
   return (
     <article data-testid="inbound-reading" aria-labelledby="inbound-subject" className={cn("rounded-[14px] border border-panel-line bg-panel", className)}>
       <button type="button" onClick={onBack} className="flex h-11 items-center gap-1 px-3 text-sm font-semibold text-lime-deep md:hidden">
@@ -291,7 +395,12 @@ function Reading({
       {/* 10/10/2026 (« mets les boutons d'action en haut du mail »): the gestures sit above the subject. */}
       {(waiting || email.reservationId || canReanalyse || canHandle || canArchive) && (
         <div role="toolbar" aria-label={l.actions} data-testid="inbound-actions" className="flex flex-wrap items-center gap-2 border-b border-panel-line px-5 py-3">
-            {waiting && (
+            {waiting && changeLeft && (
+              <Link to={`/reservations/${changeLeft.reservationId}`} data-testid="inbound-change-booking" className={PRIMARY}>
+                {l.openBooking(changeLeft.reference ?? "")}
+              </Link>
+            )}
+            {waiting && !changeLeft && (
               <button
                 type="button"
                 data-testid="inbound-complete"
@@ -330,7 +439,7 @@ function Reading({
           <h2 id="inbound-subject" className={cn("min-w-0 flex-1 text-xl font-bold leading-tight", !email.subject && "text-muted-foreground")}>
             {email.subject ?? l.noSubject}
           </h2>
-          <Badge tone={TONE[email.status]}>{l.status[email.status]}</Badge>
+          <StatusBadge email={email} />
         </div>
         <p className="break-all text-sm">
           <span className="text-muted-foreground">{l.from} : </span>
@@ -353,10 +462,10 @@ function Reading({
           </p>
         )}
         {email.pageLookup && <PageLookupLine lookup={email.pageLookup} />}
-        {email.reading && <ReadingLine reading={email.reading} missing={email.missing} />}
+        {email.reading && <ReadingLine reading={email.reading} missing={email.missing} changed={!!email.change} />}
       </header>
       <div className="px-5 py-4">{email.textBody ? <MailBody text={email.textBody} /> : <p className="text-sm text-muted-foreground">{l.textGone}</p>}</div>
-      {understood && <Understood email={email} />}
+      {email.change ? <ChangeBlock change={email.change} /> : understood && <Understood email={email} />}
     </article>
   );
 }

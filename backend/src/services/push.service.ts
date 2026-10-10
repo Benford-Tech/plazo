@@ -2,7 +2,8 @@ import { Service } from 'typedi';
 import { oneSignalSettings, oneSignalTravellerSettings } from '@/config';
 import prisma, { Prisma, ReservationChannel } from '@/database';
 import { PushMessage } from '@/domain/arrival-messages';
-import { newBookingPush } from '@/domain/reservation-messages';
+import type { ImportChange } from '@/domain/import-change';
+import { bookingChangedPush, newBookingPush } from '@/domain/reservation-messages';
 import { localDateTime } from '@/domain/time';
 import { logger } from '@/utils/logger';
 
@@ -13,8 +14,10 @@ const MAX_SUBSCRIPTIONS_PER_CALL = 2000;
 /**
  * What a staff member subscribed to: travellers' arrivals, returns, the shuttles' trips (N-A), the platform's messages
  * (E-A), a push per new booking (`bookings` = bookingNotify immediate) or the hourly digest (`bookingDigest` = hourly).
+ * 10/10/2026 (relecture): `bookingChanges` = whoever hears of bookings at all (immediate or hourly), for a booking Plazo
+ * changed by itself.
  */
-export type PushAudience = 'arrivals' | 'returns' | 'shuttles' | 'platform' | 'bookings' | 'bookingDigest';
+export type PushAudience = 'arrivals' | 'returns' | 'shuttles' | 'platform' | 'bookings' | 'bookingDigest' | 'bookingChanges';
 
 /** Travellers reachable by a platform broadcast: a booking not cancelled, whose return is at most a day past. */
 const currentTravellers = (now: Date): Prisma.TravellerDeviceWhereInput => ({
@@ -46,7 +49,9 @@ const wantsAudience = (audience: PushAudience): Prisma.StaffWhereInput =>
           ? { bookingNotify: 'immediate' }
           : audience === 'bookingDigest'
             ? { bookingNotify: 'hourly' }
-            : { notifyPlatform: true };
+            : audience === 'bookingChanges'
+              ? { bookingNotify: { in: ['immediate', 'hourly'] } }
+              : { notifyPlatform: true };
 
 /**
  * Push notifications through the OneSignal REST API: to the staff's phones (StaffDevice), and to
@@ -95,6 +100,36 @@ export class PushService {
         data: { type: 'booking', event: 'created', reservationId: booking.id },
         collapseId: `booking-${booking.id}`,
       },
+    );
+  }
+
+  /**
+   * 10/10/2026 (« C'est une modification »): « Réservation modifiée · Allopark » when Plazo applies a comparator's change
+   * of a booking by itself (the reference and what changed). 10/10/2026 (relecture): to the team members on `immediate`
+   * and on `hourly` alike (a manager's default): the hourly digest only counts the bookings received, and nobody would
+   * hear that Plazo changed one; never to those on `never`.
+   */
+  public async notifyBookingChanged(
+    booking: {
+      id: string;
+      operatorId: string;
+      reference: string;
+      externalReference: string | null;
+      channel: ReservationChannel;
+      channelDetail: string | null;
+    },
+    changes: ImportChange[],
+  ): Promise<number> {
+    return this.notifyStaff(
+      booking.operatorId,
+      'bookingChanges',
+      bookingChangedPush({
+        reference: booking.externalReference ?? booking.reference,
+        channel: booking.channel,
+        channelDetail: booking.channelDetail,
+        changes,
+      }),
+      { data: { type: 'booking', event: 'changed', reservationId: booking.id }, collapseId: `booking-changed-${booking.id}` },
     );
   }
 

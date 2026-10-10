@@ -3,6 +3,7 @@ import { join } from 'path';
 import { isComparatorAddress, parseConfirmationEmail } from '@/domain/importers';
 import {
   alloparkConfirmationPage,
+  alloparkEmailOf,
   alloparkLinks,
   alloparkPageAddresses,
   alloparkPageFacts,
@@ -10,13 +11,17 @@ import {
   alloparkPageUrls,
   alloparkReferenceOf,
   hasAntiRobotCheck,
+  isAlloparkCancellation,
   isAlloparkCancellationOrChange,
+  isAlloparkChange,
   isAlloparkPageProtected,
   MAX_LINKS,
   MAX_PAGES,
   parseAlloparkPage,
 } from '@/domain/importers/allopark-page';
-import { isCancellationOrChange } from '@/domain/importers/common';
+import { isCancellation, isCancellationOrChange, isChange } from '@/domain/importers/common';
+import { ChangeableBooking, importChanges, phoneKey, withoutField } from '@/domain/import-change';
+import { bookingChangedPush } from '@/domain/reservation-messages';
 import { forwardedRecipientsOf, stripHtml, textOf } from '@/domain/inbound-email';
 import { fillGaps } from '@/services/inbound-email.service';
 import { AlloparkPageService } from '@/services/allopark-page.service';
@@ -576,5 +581,207 @@ describe('Allopark : une vérification anti-robot n’est jamais passée (10/10/
     expect(await service.booking(urls.slice(0, 1), 'AL-884880719')).toMatchObject({ outcome: 'unavailable' });
     answer(url => new Response(null, { status: 302, headers: { Location: `${url}&x=1` } }));
     expect(await service.booking(urls.slice(0, 1), 'AL-884880719')).toMatchObject({ outcome: 'unavailable' });
+  });
+});
+
+describe('Allopark : une modification de réservation (10/10/2026, « C’est une modification »)', () => {
+  const base = { text: 'Votre réservation est confirmée.', subject: 'Votre réservation AL-884880719', from: 'info@allopark.com' };
+
+  it('annulation et modification apart ; une annulation l’emporte sur une modification', () => {
+    expect(isCancellation('Votre réservation a été annulée.')).toBe(true);
+    expect(isCancellation('Annulation de votre réservation')).toBe(true);
+    expect(isCancellation('Your booking has been cancelled')).toBe(true);
+    expect(isCancellation('Votre réservation a été modifiée.')).toBe(false);
+    expect(isChange('Votre réservation a été modifiée.')).toBe(true);
+    expect(isChange('Modification de votre réservation')).toBe(true);
+    expect(isChange('Your booking has been modified')).toBe(true);
+    expect(isChange('Votre réservation a été annulée.')).toBe(false);
+    expect(isCancellationOrChange('Modification de votre réservation')).toBe(true);
+
+    for (const [subject, text] of [
+      ['Modification de votre réservation AL-884880719', 'Allopark'],
+      ['Votre réservation AL-884880719 a été modifiée', 'Allopark'],
+      ['Allopark AL-884880719 : changement de dates', 'Bonjour'],
+      ['Votre réservation AL-884880719', 'Allopark\nVotre réservation AL-884880719 a été modifiée : nouvelles dates.'],
+      ['Votre séjour AL-884880719', 'Allopark\nVos nouvelles dates : du 2 au 5 octobre.'],
+      ['Votre réservation AL-884880719', 'Allopark\nLes dates de votre réservation AL-884880719 ont été modifiées.'],
+      ['Votre réservation AL-884880719', 'Allopark\nVotre changement de dates a bien été pris en compte.'],
+      ['Tr : Votre réservation AL-884880719', 'Allopark\nObjet : Modification de votre réservation AL-884880719'],
+      ['Votre réservation AL-884880719', 'Allopark\nModification de réservation AL-884880719'],
+      ['Booking AL-884880719 changed', 'Allopark'],
+      ['Your booking AL-884880719', 'Allopark\nYour booking AL-884880719 has been changed.'],
+      ['Your booking AL-884880719', 'Allopark\nYour new dates are 2 to 5 October.'],
+    ]) {
+      expect([subject, isAlloparkChange(subject, text), isAlloparkCancellation(subject, text)]).toEqual([subject, true, false]);
+      expect([subject, alloparkEmailOf({ ...base, subject, text })]).toEqual([subject, { reference: 'AL-884880719', kind: 'change' }]);
+    }
+    for (const [subject, text] of [
+      ['Annulation de votre réservation AL-884880719', 'Allopark'],
+      ['Votre réservation AL-884880719', 'Allopark\nVotre réservation AL-884880719 a été annulée.'],
+      ['Remboursement AL-884880719', 'Allopark'],
+      ['Booking AL-884880719 cancelled', 'Allopark'],
+      // Both: the safer reading wins, nothing is done.
+      ['Modification de votre réservation AL-884880719', 'Allopark\nVotre réservation AL-884880719 a été annulée.'],
+      ['Votre réservation AL-884880719 : modification et annulation', 'Allopark'],
+      // 10/10/2026 (relecture): in the active voice too, whatever it says of new dates.
+      ['Allopark - AL-884880719', 'Allopark\nNous avons annulé votre réservation AL-884880719 suite à votre demande de changement de dates.'],
+      ['Allopark - AL-884880719', "Allopark\nVotre demande d'annulation a bien été prise en compte. Les nouvelles dates ne s'appliquent plus."],
+      ['Allopark - AL-884880719', 'Allopark\nWe have cancelled your booking AL-884880719 at your request: new dates are not possible.'],
+      ['Allopark - AL-884880719', 'Allopark\nAllopark a remboursé votre réservation.'],
+    ]) {
+      expect([subject, isAlloparkCancellation(subject, text)]).toEqual([subject, true]);
+      expect([subject, alloparkEmailOf({ ...base, subject, text })?.kind]).toEqual([subject, 'cancellation']);
+    }
+    // A confirmation stays a booking, whatever it says of a later change. 10/10/2026 (relecture): its terms and
+    // conditions too (« changement de date gratuit », « nouvelles dates ? », « Pour toute modification… »).
+    for (const text of [
+      'Votre réservation peut être modifiée jusqu’à 24 h avant.',
+      'Your booking can be changed free of charge.',
+      'Allopark\nRéservation AL-884880719\nAnnulation et changement de date gratuits jusqu’à 24 h avant.',
+      'Allopark\nRéservation AL-884880719\nFree cancellation and change of dates up to 24 h before.',
+      'Allopark\nRéservation AL-884880719\nBesoin de nouvelles dates ? Modifiez en ligne.',
+      'Allopark\nRéservation AL-884880719\nKeep your booking details updated.',
+      'Allopark\nRéservation AL-884880719\nPour tout changement de dates, contactez le parking.',
+      'Allopark\nRéservation AL-884880719\nPour toute modification de votre réservation AL-884880719, contactez-nous.',
+      'Allopark\nRéservation AL-884880719\nModification gratuite de votre réservation AL-884880719 jusqu’à 24 h avant.',
+      'Allopark\nRéservation AL-884880719\nYour booking can be changed online. New dates? Change them up to 24 h before.',
+      readFileSync(join(__dirname, 'fixtures/allopark-confirmation.txt'), 'utf8'),
+      textOf({ RawHtmlBody: html('allopark-customer.html') }),
+    ]) {
+      const subject = 'Confirmation de votre réservation AL-884880719 chez Aeroports Parking Lyon';
+      expect([text.slice(0, 60), isAlloparkChange(subject, text), alloparkEmailOf({ ...base, subject, text })?.kind]).toEqual([
+        text.slice(0, 60),
+        false,
+        'booking',
+      ]);
+    }
+    // An invitation to change in the subject (a confirmation, a reminder) is no change either.
+    for (const subject of [
+      'Modifiez votre réservation AL-884880719',
+      'Votre réservation AL-884880719 est modifiable',
+      'Rappel : votre réservation AL-884880719',
+    ]) {
+      const text = 'Allopark\nEn cas de changement de dates, contactez-nous.';
+      expect([subject, alloparkEmailOf({ ...base, subject, text })?.kind]).toEqual([subject, 'booking']);
+    }
+    // Neither Allopark nor a reference: none.
+    expect(alloparkEmailOf({ ...base, from: 'parking@example.com', text: 'Votre réservation a été modifiée.' })).toBeNull();
+    expect(alloparkEmailOf({ ...base, subject: 'Modification de votre réservation' })).toBeNull();
+  });
+
+  const booking: ChangeableBooking = {
+    arrivalAt: new Date('2026-12-10T08:00:00Z'),
+    returnAt: new Date('2026-12-13T19:30:00Z'),
+    passengers: 3,
+    plate: 'GK-318-PX',
+    plateKey: 'GK318PX',
+    departureFlight: 'TO 3626',
+    returnFlight: null,
+    customerPhone: '06 12 34 56 78',
+    customerFirstName: 'Jean',
+    customerLastName: 'Dupont',
+    customerName: 'Jean Dupont',
+    customerEmail: 'jean.dupont@example.com',
+    vehicleModel: 'Peugeot 308',
+    priceCents: 2400,
+  };
+
+  it('ce qui change, comparé comme la réservation l’enregistre ; un champ vide de la page ne change rien', () => {
+    // The same booking, written otherwise: nothing changes.
+    expect(
+      importChanges(
+        booking,
+        {
+          provider: 'Allopark',
+          arrivalAt: '2026-12-10T09:00',
+          returnAt: '2026-12-13T20:30',
+          passengers: 3,
+          plate: 'gk 318 px',
+          departureFlight: 'to3626',
+          customerPhone: '+33 6 12 34 56 78',
+          customerFirstName: 'JEAN',
+          customerLastName: 'dupont',
+          customerEmail: 'Jean.Dupont@Example.com',
+          vehicleModel: 'peugeot 308',
+          priceCents: 2400,
+        },
+        'Europe/Paris',
+      ),
+    ).toEqual({ changes: [], data: {} });
+    expect(importChanges(booking, { provider: 'Allopark' }, 'Europe/Paris')).toEqual({ changes: [], data: {} });
+    // A value that is no flight number, a date that does not exist: ignored.
+    expect(
+      importChanges(booking, { provider: 'Allopark', departureFlight: 'inconnu', returnAt: '2026-02-30T10:00' }, 'Europe/Paris').changes,
+    ).toEqual([]);
+
+    const diff = importChanges(
+      booking,
+      {
+        provider: 'Allopark',
+        returnAt: '2026-12-15T18:00',
+        passengers: 4,
+        plate: 'ab123cd',
+        returnFlight: 'to 3627',
+        customerPhone: '07 11 22 33 44',
+        customerFirstName: 'Jeanne',
+        customerEmail: 'JEANNE@example.com',
+        vehicleModel: 'Renault Clio',
+        priceCents: 2900,
+      },
+      'Europe/Paris',
+    );
+    expect(diff.changes).toEqual([
+      { field: 'returnAt', from: '2026-12-13T20:30', to: '2026-12-15T18:00' },
+      { field: 'passengers', from: 3, to: 4 },
+      { field: 'plate', from: 'GK-318-PX', to: 'AB-123-CD' },
+      { field: 'returnFlight', from: null, to: 'TO 3627' },
+      { field: 'customerPhone', from: '06 12 34 56 78', to: '07 11 22 33 44' },
+      { field: 'customerName', from: 'Jean Dupont', to: 'Jeanne Dupont' },
+      { field: 'customerEmail', from: 'jean.dupont@example.com', to: 'jeanne@example.com' },
+      { field: 'vehicleModel', from: 'Peugeot 308', to: 'Renault Clio' },
+      { field: 'priceCents', from: 2400, to: 2900 },
+    ]);
+    expect(diff.data).toEqual({
+      returnAt: new Date('2026-12-15T17:00:00Z'),
+      passengers: 4,
+      plate: 'AB-123-CD',
+      plateKey: 'AB123CD',
+      returnFlight: 'TO 3627',
+      customerPhone: '07 11 22 33 44',
+      customerFirstName: 'Jeanne',
+      customerLastName: 'Dupont',
+      customerName: 'Jeanne Dupont',
+      customerEmail: 'jeanne@example.com',
+      vehicleModel: 'Renault Clio',
+      priceCents: 2900,
+    });
+    // A locked price: the rest only.
+    const locked = withoutField(diff, 'priceCents');
+    expect(locked.changes.map(c => c.field)).not.toContain('priceCents');
+    expect(locked.data).not.toHaveProperty('priceCents');
+    expect(locked.changes).toHaveLength(8);
+    expect(phoneKey('+33 6 12 34 56 78')).toBe(phoneKey('06.12.34.56.78'));
+    expect(phoneKey('0033612345678')).toBe('0612345678');
+    expect(phoneKey('+32 470 12 34 56')).toBe('32470123456');
+  });
+
+  it('le push à l’équipe : la référence et ce qui change, sans téléphone, e-mail ni vol', () => {
+    const diff = importChanges(
+      booking,
+      {
+        provider: 'Allopark',
+        arrivalAt: '2026-12-11T07:15',
+        returnAt: '2026-12-15T18:00',
+        passengers: 1,
+        customerPhone: '07 11 22 33 44',
+        returnFlight: 'TO 3627',
+        priceCents: 2900,
+      },
+      'Europe/Paris',
+    );
+    expect(bookingChangedPush({ reference: 'AL-884880719', channel: 'aggregator', channelDetail: 'Allopark', changes: diff.changes })).toEqual({
+      title: 'Réservation modifiée · Allopark',
+      body: 'AL-884880719 · arrivée 11 déc. 07:15 · retour 15 déc. 18:00 · 1 personne · vol retour · téléphone · prix 29,00 €',
+    });
   });
 });

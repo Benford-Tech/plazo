@@ -1,5 +1,5 @@
 import { forwardedRecipientsOf } from '../inbound-email';
-import { euroCents, isCancellationOrChange } from './common';
+import { euroCents, isCancellation } from './common';
 import { isComparatorAddress } from './index';
 import { ParsedBooking } from './types';
 
@@ -185,48 +185,113 @@ export function alloparkPageAddresses(input: PageCandidates, excludeDomain?: str
   return [...new Set(all.map(a => a.trim().toLowerCase()))].filter(a => isCandidate(a, excludeDomain));
 }
 
-/** A subject about anything else than a new booking: a cancellation, a refund, a change. */
-const SUBJECT_NOT_BOOKING = /\b(annul|rembours|modifi|cancel|changement)/i;
+/** A subject about a cancellation or a refund. */
+const SUBJECT_CANCELLATION = /\b(annul|rembours|cancel|refund)/i;
+/**
+ * 10/10/2026 (« C'est une modification »): a subject about a change of the booking (« Modification de votre réservation
+ * AL-… », « Votre réservation AL-… a été modifiée », « Changement de dates », « Booking AL-… changed »). 10/10/2026
+ * (relecture): never « Modifiez votre réservation », « modifiable » nor « Modifier » (an invitation, not a change).
+ */
+const SUBJECT_CHANGE = /\b(?:modification\b|modifi[ée]e?s?(?!\w)|changement\b|changed\b|amended\b|amendment\b)/i;
 /**
  * The same in the text, the reference or other words in between (« Votre réservation AL-884880719 a été annulée »,
- * « Annulation AL-… », « Your booking AL-… was cancelled »), which isCancellationOrChange (words side by side) misses;
- * never a confirmation's « votre réservation peut être annulée » or « booking can be cancelled ».
+ * « Annulation AL-… », « Your booking AL-… was cancelled »), which isCancellation (words side by side) misses; never a
+ * confirmation's « votre réservation peut être annulée » or « booking can be cancelled ». 10/10/2026 (relecture): also
+ * in the active voice (« Nous avons annulé votre réservation AL-… suite à votre demande de changement de dates »,
+ * « We have cancelled your booking », « Votre demande d'annulation a bien été prise en compte »), which must never pass
+ * for a change.
  */
-const TEXT_NOT_BOOKING = [
-  /r[ée]servation\b(?:(?!\bpeu[tv]|\bpourr|\bsera)[^\n.]){0,60}?\b(annul[ée]e|modifi[ée]e|rembours[ée]e)\b/i,
-  /\bbooking\b(?:(?!\bcan\b|\bmay\b|\bwill\b)[^\n.]){0,60}?\b(cancell?ed|modified|changed|refunded)\b/i,
-  /\b(annulation|modification|remboursement|cancellation)\b[^\n.]{0,40}?\bAL-\d{6,}/i,
+const TEXT_CANCELLATION = [
+  /r[ée]servation\b(?:(?!\bpeu[tv]|\bpourr|\bsera)[^\n.]){0,60}?\b(annul[ée]e|rembours[ée]e)\b/i,
+  /\bbooking\b(?:(?!\bcan\b|\bmay\b|\bwill\b)[^\n.]){0,60}?\b(cancell?ed|refunded)\b/i,
+  /\b(annulation|remboursement|cancellation|refund)\b[^\n.]{0,40}?\bAL-\d{6,}/i,
+  /\b(?:avons|avez|a|ont)\s+(?:bien\s+)?(?:annul|rembours)[ée]/i,
+  /\b(?:we|you)(?:\s+have|'ve|’ve)?\s+(?:now\s+)?(?:cancell?ed|refunded)\b/i,
+  /\bcancell?ed\s+(?:your|the|this)\s+(?:booking|reservation)\b/i,
+  /\bannulation\b[^\n.]{0,40}?\b(?:a|ont)\s+(?:bien\s+)?été\s+(?:prise?s?\s+en\s+compte|confirm[ée]e?s?|effectu[ée]e?s?|enregistr[ée]e?s?|accept[ée]e?s?)/i,
+  /\bcancellation\b[^\n.]{0,40}?\b(?:has|have)\s+been\s+(?:confirmed|processed|accepted|registered)\b/i,
+];
+/**
+ * 10/10/2026 (« C'est une modification »): a change in the text, said as done (« Votre réservation AL-… a été
+ * modifiée », « Modification de réservation AL-… » as a heading, « Vos nouvelles dates : … », « Les dates de votre
+ * réservation ont été modifiées », « Votre changement de dates a été pris en compte », « Your booking AL-… has been
+ * changed »). 10/10/2026 (relecture): never what a confirmation or a reminder says of a change to come (« votre
+ * réservation peut être modifiée », « Annulation et changement de date gratuits », « Besoin de nouvelles dates ? »,
+ * « Pour toute modification de votre réservation », « Modification gratuite… », « Keep your booking details updated »).
+ */
+const TEXT_CHANGE = [
+  /r[ée]servation\b(?:(?!\bpeu[tv]|\bpourr|\bsera)[^\n.]){0,60}?\bmodifi[ée]e\b/i,
+  /\bbooking\b(?:(?!\bcan\b|\bmay\b|\bwill\b)[^\n.]){0,60}?\b(modified|changed|amended)\b/i,
+  /^[ \t]*(?:(?:objet|subject)\s*:\s*)?(?:modification|changement|amendment)\b(?:(?!\bgratuit|\bpossible|\bfree\b|\bpeu[tv]|\bpourr|\bsera|\bcan\b|\bmay\b|\bwill\b)[^\n.?]){0,40}?\bAL-\d{6,}/im,
+  /\b(?:vos|your)\s+(?:nouvelles\s+dates|new\s+dates)\s*(?::|sont\b|are\b)/i,
+  /\bdates?\b(?:(?!\bpeu[tv]|\bpourr|\bsera|\bsi\b|\bcan\b|\bmay\b|\bwill\b|\bif\b)[^\n.?]){0,40}?\b(?:ont|a|have|has)\s+(?:bien\s+)?(?:été|been)\s+(?:modifi[ée]e?s?|chang[ée]e?s?|changed|modified|updated|amended)/i,
+  /\b(?:changement|modification|change)\s+(?:de|des|of)\s+(?:vos\s+|your\s+)?dates?\b[^\n.?]{0,40}?\b(?:a|est|has|is)\s+(?:bien\s+)?(?:été\s+|been\s+)?(?:pris\s+en\s+compte|confirm[ée]e?|effectu[ée]e?|enregistr[ée]e?|confirmed|applied|processed)/i,
 ];
 
 /**
- * 10/10/2026 (relecture): an Allopark email about a booking cancelled, changed or refunded, whatever the wording: its
- * booking page is never opened (the page still shows the booking), Claude reads it and nothing is created.
+ * 10/10/2026 (« C'est une modification »): an Allopark email about a booking cancelled or refunded, whatever the
+ * wording: nothing is done by itself (its booking page still shows the booking), Claude reads it for the staff.
  */
-export function isAlloparkCancellationOrChange(subject: string | null, text: string): boolean {
+export function isAlloparkCancellation(subject: string | null, text: string): boolean {
   return (
-    SUBJECT_NOT_BOOKING.test(subject ?? '') ||
-    isCancellationOrChange(`${subject ?? ''}\n${text}`) ||
-    TEXT_NOT_BOOKING.some(pattern => pattern.test(text))
+    SUBJECT_CANCELLATION.test(subject ?? '') || isCancellation(`${subject ?? ''}\n${text}`) || TEXT_CANCELLATION.some(pattern => pattern.test(text))
   );
 }
 
 /**
- * 10/10/2026: the Allopark reference whose booking page is worth opening, or null: an email that names Allopark (in
- * its text, subject or sender) and carries an Allopark reference (subject first, then text), that is no cancellation
- * or change (never a booking from the page for those: isAlloparkCancellationOrChange). The importer may not have
- * recognised it (« Allopark » only in the sender, the reference only in the subject); the caller opens the page only
- * when no importer read it in full, and Claude still says whether the email is a booking at all.
+ * 10/10/2026 (« C'est une modification »): an Allopark email announcing a change of a booking (dates, travellers,
+ * car…): Plazo reads the booking page again (its current state) and updates the booking. A cancellation wins over it
+ * (alloparkEmailOf).
  */
-export function alloparkReferenceOf(email: {
+export function isAlloparkChange(subject: string | null, text: string): boolean {
+  // 10/10/2026 (relecture): not isChange on the text, whose « modification de votre réservation » is also a
+  // confirmation's « Pour toute modification de votre réservation, contactez… ».
+  return SUBJECT_CHANGE.test(subject ?? '') || TEXT_CHANGE.some(pattern => pattern.test(text));
+}
+
+/**
+ * 10/10/2026 (relecture): an Allopark email about a booking cancelled, changed or refunded: never read as a new
+ * booking (isAlloparkCancellation or isAlloparkChange).
+ */
+export function isAlloparkCancellationOrChange(subject: string | null, text: string): boolean {
+  return isAlloparkCancellation(subject, text) || isAlloparkChange(subject, text);
+}
+
+/** What an Allopark email is about: a booking (a confirmation), a change of a booking, or its cancellation. */
+export type AlloparkEmailKind = 'booking' | 'change' | 'cancellation';
+
+/**
+ * 10/10/2026 (« C'est une modification »): an email that names Allopark (in its text, subject or sender) and carries
+ * an Allopark reference (subject first, then text), with what it is about; null for any other email. A cancellation
+ * wins over a change (the safer reading: nothing is done for it).
+ */
+export function alloparkEmailOf(email: {
   text: string;
   subject: string | null;
   /** The sender's name and address. */
   from: string | null;
-}): string | null {
+}): { reference: string; kind: AlloparkEmailKind } | null {
   const subject = email.subject ?? '';
   if (!/allopark/i.test(`${subject}\n${email.text}\n${email.from ?? ''}`)) return null;
-  if (isAlloparkCancellationOrChange(subject, email.text)) return null;
-  return REFERENCE_IN_EMAIL.exec(subject)?.[0] ?? REFERENCE_IN_EMAIL.exec(email.text)?.[0] ?? null;
+  const reference = REFERENCE_IN_EMAIL.exec(subject)?.[0] ?? REFERENCE_IN_EMAIL.exec(email.text)?.[0];
+  if (!reference) return null;
+  const kind: AlloparkEmailKind = isAlloparkCancellation(subject, email.text)
+    ? 'cancellation'
+    : isAlloparkChange(subject, email.text)
+      ? 'change'
+      : 'booking';
+  return { reference, kind };
+}
+
+/**
+ * 10/10/2026: the Allopark reference whose booking page is worth opening as a new booking, or null: an Allopark email
+ * (alloparkEmailOf) that is no cancellation or change. The importer may not have recognised it (« Allopark » only in
+ * the sender, the reference only in the subject); the caller opens the page only when no importer read it in full, and
+ * Claude still says whether the email is a booking at all. A change has its own way (alloparkEmailOf, kind `change`).
+ */
+export function alloparkReferenceOf(email: { text: string; subject: string | null; from: string | null }): string | null {
+  const found = alloparkEmailOf(email);
+  return found?.kind === 'booking' ? found.reference : null;
 }
 
 /** The value of a named input of the form, decoded; undefined when the input is missing or blank. */

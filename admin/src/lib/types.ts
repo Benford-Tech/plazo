@@ -455,6 +455,43 @@ export interface InboundEmail {
    * tried. Optional: an older server does not send it.
    */
   pageLookup?: InboundPageLookup | null;
+  /**
+   * 10/10/2026 (« C'est une modification »): what Plazo did of an Allopark change of a booking; null for any other mail.
+   * Optional: an older server does not send it.
+   */
+  change?: InboundChange | null;
+}
+
+/** The fields a comparator's change may update (the server's `ImportChangeField`). */
+export type InboundChangeField =
+  | "arrivalAt"
+  | "returnAt"
+  | "passengers"
+  | "plate"
+  | "departureFlight"
+  | "returnFlight"
+  | "customerPhone"
+  | "customerName"
+  | "customerEmail"
+  | "vehicleModel"
+  | "priceCents";
+
+/** Why a change was left to the staff. */
+export type InboundChangeReason = "reservation_closed" | "already_arrived" | "no_room" | "plazo_booking" | "invalid_stay";
+
+/**
+ * An Allopark change of a booking read against its booking page: applied, not needed (no changes: the mail is a
+ * duplicate) or left to the staff with its reason. Dates are local to the parking (« 2026-12-15T18:00 »), the price in
+ * cents.
+ */
+export interface InboundChange {
+  applied: boolean;
+  reason: InboundChangeReason | null;
+  reservationId: string | null;
+  /** The booking's Plazo reference. */
+  reference: string | null;
+  changes: { field: InboundChangeField; from: string | number | null; to: string | number | null }[];
+  at: string;
 }
 
 /**
@@ -470,8 +507,11 @@ export interface InboundPageLookup {
   at: string;
 }
 
-/** What « Relancer l'analyse » came to: a booking created or found, or the mail still waiting. */
-export type InboundReanalysisOutcome = "imported" | "duplicate" | "incomplete" | "unrecognised";
+/**
+ * What « Relancer l'analyse » came to: a booking created or found, an Allopark change applied (`changed`, 10/10/2026),
+ * or the mail still waiting.
+ */
+export type InboundReanalysisOutcome = "imported" | "changed" | "duplicate" | "incomplete" | "unrecognised";
 
 export interface InboundReanalysis {
   email: InboundEmail;
