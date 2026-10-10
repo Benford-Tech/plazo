@@ -207,7 +207,10 @@ Ne construire QUE ce qui règle la douleur n°1 du client.
      `domain/reservation.ts` : canal `plazo`, paiement ou montant encaissé ; 400 `price_locked`, champ en lecture seule « Payé
      en ligne sur Plazo : le prix ne se modifie pas. ») ; fiche web : « Modifier le prix » / « Ajouter le prix » sur la ligne
      « Prix payé » (`PriceLine`, `PUT /internal/reservations/:id/price`, aussi après le séjour, pas une réservation annulée) ;
-     montant invalide → « Montant invalide (ex. 45,50). » sans appel.
+     montant invalide → « Montant invalide (ex. 45,50). » sans appel. Relecture : `Reservation.importedPriceCents` (migration
+     `reservation_imported_price`, reprise du prix des réservations importées) garde le dernier montant du comparateur
+     (`createFromImport`, `applyImportChange`, et `importedPriceCents` envoyé par « Compléter ») : une modification Allopark ne
+     touche le prix que si le montant d'Allopark a changé (`importChanges`), un prix corrigé par l'équipe reste le sien.
    - **Listes chronologiques (10/10/2026, « Les réservations doivent être affichées de manière chronologique »)** : la liste
      Réservations (web `/pro/reservations`, app Plazo Pro) et Plateforme › Réservations vont par date d'arrivée, la plus
      ancienne d'abord (puis `id`) ; sans recherche (ni filtre de dates pour la plateforme), la page 1 commence à la première

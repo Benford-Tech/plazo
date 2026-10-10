@@ -59,6 +59,8 @@ export interface ImportChangeData extends Partial<CustomerNames> {
   customerEmail?: string;
   vehicleModel?: string;
   priceCents?: number;
+  /** The comparator's new amount, kept with the price it sets (10/10/2026). */
+  importedPriceCents?: number;
 }
 
 /** What the comparison reads of a booking. */
@@ -77,6 +79,8 @@ export interface ChangeableBooking {
   customerEmail: string | null;
   vehicleModel: string | null;
   priceCents: number | null;
+  /** The amount the comparator last gave; null for a booking it never priced (typed by hand, older rows). */
+  importedPriceCents?: number | null;
 }
 
 export interface ImportDiff {
@@ -169,10 +173,15 @@ export function importChanges(current: ChangeableBooking, booking: ParsedBooking
     data.vehicleModel = vehicle;
   }
 
+  // 10/10/2026 (relecture de « Pouvoir modifier le prix après l'intégration du mail »): the price follows the
+  // comparator's own amount. A page that still gives the amount it gave before leaves a price the staff corrected
+  // alone; one it never priced compares with the price itself.
   const price = booking.priceCents;
-  if (typeof price === 'number' && Number.isInteger(price) && price > 0 && price !== current.priceCents) {
+  const known = current.importedPriceCents ?? current.priceCents;
+  if (typeof price === 'number' && Number.isInteger(price) && price > 0 && price !== known && price !== current.priceCents) {
     changes.push({ field: 'priceCents', from: current.priceCents, to: price });
     data.priceCents = price;
+    data.importedPriceCents = price;
   }
 
   return { changes, data };
@@ -183,6 +192,7 @@ export function withoutField(diff: ImportDiff, field: ImportChangeField): Import
   const data = { ...diff.data };
   delete data[field as keyof ImportChangeData];
   if (field === 'plate') delete data.plateKey;
+  if (field === 'priceCents') delete data.importedPriceCents;
   if (field === 'customerName') {
     delete data.customerFirstName;
     delete data.customerLastName;

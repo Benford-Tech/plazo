@@ -8,7 +8,7 @@ import { ReservationForm } from "@/components/reservations/ReservationForm";
 import { NextStep } from "@/components/reservations/NextStep";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useAuth } from "@/contexts/AuthContext";
-import { adminApi } from "@/lib/api";
+import { adminApi, ApiError } from "@/lib/api";
 import {
   dateTimeShort,
   localParts,
@@ -44,8 +44,9 @@ function Info({
 
 /**
  * « Prix payé » (10/10/2026, « Pouvoir modifier le prix après l'intégration du mail »): the amount, with « Modifier le
- * prix » (« Ajouter le prix » when there is none) for the managers, also once the stay is over; never a Plazo booking's
- * nor a cancelled one's (PUT /internal/reservations/:id/price, as the revenue page's « Les compléter »).
+ * prix » (« Ajouter le prix » when there is none) for the staff who manage bookings (managers and agents), also once
+ * the stay is over; never a Plazo booking's nor a cancelled one's (PUT /internal/reservations/:id/price, as the revenue
+ * page's « Les compléter »).
  */
 function PriceLine({
   reservation: r,
@@ -72,7 +73,13 @@ function PriceLine({
       setError(null);
       toast.success(t.priceSaved);
     },
-    onError: (err) => setError(describeError(err)),
+    // The field's own reason (too large, locked) rather than « some fields need fixing ».
+    onError: (err) =>
+      setError(
+        err instanceof ApiError && err.fields?.priceCents
+          ? errorMessage(err.fields.priceCents)
+          : describeError(err),
+      ),
   });
   if (r.priceCents === null && !editable) return null;
 

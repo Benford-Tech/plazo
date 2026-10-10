@@ -209,6 +209,8 @@ export function ReservationForm({
         vehicleColour: form.vehicleColour.trim() || null,
         ...(!reservation && prefill?.externalReference ? { externalReference: prefill.externalReference } : {}),
         ...(!reservation && priceCents !== null ? { priceCents } : {}),
+        // The amount read in the email stays the comparator's, even if corrected here: its next change email keeps ours.
+        ...(!reservation && prefill?.externalReference && prefill.priceCents != null ? { importedPriceCents: prefill.priceCents } : {}),
         ...(reservation && !priceLocked && priceCents !== reservation.priceCents ? { priceCents } : {}),
         force: force || undefined,
       };

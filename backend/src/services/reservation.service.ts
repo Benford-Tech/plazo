@@ -171,6 +171,8 @@ export class ReservationService {
             vehicleColour: data.vehicleColour?.trim() || null,
             externalReference,
             priceCents: data.priceCents ?? null,
+            // 10/10/2026: the amount read in the email (« Compléter »), kept apart from a price the staff corrected.
+            importedPriceCents: externalReference ? (data.importedPriceCents ?? data.priceCents ?? null) : null,
             overbooked: full.length > 0,
             createdById: actor.id,
           },
@@ -245,6 +247,7 @@ export class ReservationService {
           notes,
           externalReference,
           priceCents: parsed.priceCents ?? null,
+          importedPriceCents: parsed.priceCents ?? null,
           vehicleModel: parsed.vehicleModel?.trim().slice(0, 40) || null,
           vehicleColour: parsed.vehicleColour?.trim().slice(0, 30) || null,
           overbooked: full.length > 0,

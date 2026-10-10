@@ -358,6 +358,8 @@ export interface ReservationInput {
   externalReference?: string;
   /** 10/10/2026: null clears it on an edit (never a Plazo booking's). */
   priceCents?: number | null;
+  /** The amount read in the comparator's email (« Compléter »), on creation only. */
+  importedPriceCents?: number;
   force?: boolean;
 }
 

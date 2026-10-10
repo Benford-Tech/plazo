@@ -239,6 +239,22 @@ describe('prix modifiable après l’import d’un mail (10/10/2026)', () => {
     }
   });
 
+  it('« Compléter » garde à part le montant lu dans le mail (référence du comparateur seulement)', async () => {
+    const { token } = await setupOperator();
+    const create = (body: Record<string, unknown>) =>
+      api()
+        .post('/api/internal/reservations')
+        .set(auth(token))
+        .send(booking({ channel: 'aggregator', ...body }));
+    const corrected = await create({ plate: 'AA-001-AA', externalReference: 'al-1', priceCents: 2600, importedPriceCents: 3150 });
+    expect(corrected.body.data).toMatchObject({ externalReference: 'AL-1', priceCents: 2600, importedPriceCents: 3150 });
+    expect((await create({ plate: 'AA-002-AA', externalReference: 'AL-2', priceCents: 2600 })).body.data.importedPriceCents).toBe(2600);
+    expect((await create({ plate: 'AA-003-AA', priceCents: 2600, importedPriceCents: 3150 })).body.data.importedPriceCents).toBeNull();
+    // Staff changes leave the comparator's amount alone.
+    const changed = await api().patch(`/api/internal/reservations/${corrected.body.data.id}`).set(auth(token)).send({ priceCents: 2800 });
+    expect(changed.body.data).toMatchObject({ priceCents: 2800, importedPriceCents: 3150 });
+  });
+
   it('jamais celui d’une réservation payée sur Plazo (un prix inchangé passe)', async () => {
     const { token } = await setupOperator();
     const created = (

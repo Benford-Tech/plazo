@@ -204,6 +204,7 @@ describe("ReservationForm", () => {
     const onSaved = renderForm(vi.fn(), {
       prefill: {
         provider: "Allopark",
+        externalReference: "AL-123829327",
         arrivalAt: "2026-10-04T06:30",
         returnAt: "2026-10-11T15:05",
         customerFirstName: "Jean",
@@ -219,7 +220,8 @@ describe("ReservationForm", () => {
     await userEvent.type(price, "31,5");
     await userEvent.click(screen.getByRole("button", { name: "Enregistrer" }));
     await waitFor(() => expect(onSaved).toHaveBeenCalled());
-    expect(createReservation.mock.calls[0][0]).toMatchObject({ priceCents: 3150 });
+    // The amount read in the email goes along: Allopark's next change email keeps the corrected price.
+    expect(createReservation.mock.calls[0][0]).toMatchObject({ priceCents: 3150, importedPriceCents: 2600 });
   });
 
   it("10/10/2026 : à la modification, le prix ne part que s'il a changé, vide = effacé", async () => {

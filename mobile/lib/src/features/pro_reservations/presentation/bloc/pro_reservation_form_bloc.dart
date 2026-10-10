@@ -101,7 +101,8 @@ class ProReservationFormBloc extends Bloc<ProReservationFormEvent, ProReservatio
     var input = state.input;
     if (!state.priceLocked) {
       final price = parseEuroInput(state.priceText);
-      final error = !price.valid ? 'invalid_price' : ((price.cents ?? 0) > maxPriceCents ? 'too_large' : null);
+      // An untouched price is never sent: only a new one is held to the API's ceiling.
+      final error = !price.valid ? 'invalid_price' : ((price.cents ?? 0) > maxPriceCents && price.cents != _initial.priceCents ? 'too_large' : null);
       if (error != null) {
         emit(state.copyWith(saveState: ViewState.error, errorCode: null, fieldErrors: {'priceCents': error}));
         return;

@@ -2761,6 +2761,37 @@ describe('Allopark : vol illisible, réservation saisie sans référence, page a
     expect(pushed[0].contents).toMatchObject({ fr: 'AL-884880719 · retour 5 oct. 18:00' });
   });
 
+  it('relecture du 10/10/2026 : un prix corrigé par l’équipe reste le sien tant qu’Allopark garde son montant', async () => {
+    const op = await connected();
+    expect((await post([confirmation(op.address)])).body.imported).toBe(1);
+    const booking = await prisma.reservation.findFirstOrThrow({ where: { operatorId: op.operator.id } });
+    expect(booking.priceCents).not.toBeNull();
+    expect(booking.importedPriceCents).toBe(booking.priceCents);
+    const fixed = await api().patch(`/api/internal/reservations/${booking.id}`).set(auth(op.token)).send({ priceCents: 2600 });
+    expect(fixed.body.data).toMatchObject({ priceCents: 2600, importedPriceCents: booking.priceCents });
+
+    // The page still gives Allopark's amount: the other fields change, the staff's price stays.
+    show(pageWith({ people: 4 }));
+    expect((await post([modification(op.address)])).body.imported).toBe(1);
+    let row = await lastRow(op.operator.id);
+    expect(row.change).toMatchObject({ applied: true, changes: [{ field: 'passengers', from: booking.passengers, to: 4 }] });
+    expect(await prisma.reservation.findUniqueOrThrow({ where: { id: booking.id } })).toMatchObject({
+      passengers: 4,
+      priceCents: 2600,
+      importedPriceCents: booking.priceCents,
+    });
+    // The same page again: nothing to change, not a price change.
+    expect((await post([modification(op.address)])).body.imported).toBe(0);
+    expect(await lastRow(op.operator.id)).toMatchObject({ status: 'duplicate' });
+
+    // Allopark's amount changes: it is applied, and becomes the one to compare with.
+    show(pageWith({ people: 4, price: '40,00' }));
+    expect((await post([modification(op.address)])).body.imported).toBe(1);
+    row = await lastRow(op.operator.id);
+    expect(row.change).toMatchObject({ applied: true, changes: [{ field: 'priceCents', from: 2600, to: 4000 }] });
+    expect(await prisma.reservation.findUniqueOrThrow({ where: { id: booking.id } })).toMatchObject({ priceCents: 4000, importedPriceCents: 4000 });
+  });
+
   it('une réservation saisie à la main sans la référence (même plaque, séjour qui chevauche) reçoit la référence et la modification, prix compris', async () => {
     const op = await connected();
     const other = await connected();

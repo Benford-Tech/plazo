@@ -786,12 +786,26 @@ describe('Allopark : une modification de réservation (10/10/2026, « C’est un
       customerEmail: 'jeanne@example.com',
       vehicleModel: 'Renault Clio',
       priceCents: 2900,
+      importedPriceCents: 2900,
     });
     // A locked price: the rest only.
     const locked = withoutField(diff, 'priceCents');
     expect(locked.changes.map(c => c.field)).not.toContain('priceCents');
     expect(locked.data).not.toHaveProperty('priceCents');
+    expect(locked.data).not.toHaveProperty('importedPriceCents');
     expect(locked.changes).toHaveLength(8);
+    // 10/10/2026 (relecture): the price follows the comparator's own amount, not a price the staff corrected.
+    const corrected = { ...booking, priceCents: 2000, importedPriceCents: 2400 };
+    expect(importChanges(corrected, { provider: 'Allopark', priceCents: 2400 }, 'Europe/Paris')).toEqual({ changes: [], data: {} });
+    expect(importChanges(corrected, { provider: 'Allopark', priceCents: 2000 }, 'Europe/Paris')).toEqual({ changes: [], data: {} });
+    expect(importChanges(corrected, { provider: 'Allopark', priceCents: 2600 }, 'Europe/Paris')).toEqual({
+      changes: [{ field: 'priceCents', from: 2000, to: 2600 }],
+      data: { priceCents: 2600, importedPriceCents: 2600 },
+    });
+    // Never priced by the comparator (typed by hand): compared with the price itself.
+    expect(
+      importChanges({ ...booking, priceCents: 2000, importedPriceCents: null }, { provider: 'Allopark', priceCents: 2400 }, 'Europe/Paris').changes,
+    ).toEqual([{ field: 'priceCents', from: 2000, to: 2400 }]);
     expect(phoneKey('+33 6 12 34 56 78')).toBe(phoneKey('06.12.34.56.78'));
     expect(phoneKey('0033612345678')).toBe('0612345678');
     expect(phoneKey('+32 470 12 34 56')).toBe('32470123456');

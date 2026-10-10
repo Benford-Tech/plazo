@@ -679,7 +679,7 @@ export const adminApi = {
     }),
   updateReservation: (
     id: string,
-    input: Partial<Omit<ReservationInput, "externalReference" | "priceCents">>,
+    input: Partial<Omit<ReservationInput, "externalReference" | "importedPriceCents">>,
   ) =>
     apiRequest<{ data: Reservation }>(`/internal/reservations/${id}`, {
       method: "PATCH",

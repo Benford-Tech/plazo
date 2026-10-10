@@ -128,6 +128,17 @@ export class CreateReservationDto {
   @Max(10000000, { message: 'too_large' })
   public priceCents?: number;
 
+  /**
+   * 10/10/2026: the amount read in the comparator's email when the staff create its booking (« Compléter »), with a
+   * reference only: a later change email touches the price only when the comparator's amount changes.
+   */
+  @IsOptional()
+  @Type(() => Number)
+  @IsInt({ message: 'integer' })
+  @Min(0, { message: 'min_0' })
+  @Max(10000000, { message: 'too_large' })
+  public importedPriceCents?: number;
+
   /** Save even if a night is full (staff only, audited). */
   @IsOptional()
   @IsBoolean()

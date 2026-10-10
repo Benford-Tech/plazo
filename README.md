@@ -560,7 +560,7 @@ Documentation interactive : `/api/docs` (Swagger). Toutes les routes sont sous `
 | GET | `/internal/capacity?arrivalAt=&returnAt=` | Charge de chaque nuit d'un séjour, nuits complètes |
 | GET / POST | `/internal/reservations` | Recherche (plaque, nom, téléphone, référence), par date d'arrivée de la plus ancienne à la plus récente : sans recherche la page 1 commence aujourd'hui et `page=0`, `-1`… remontent le temps (`pageNumber` = rang de la page, pour « Page 3 / 4 ») / création |
 | GET / PATCH | `/internal/reservations/:id` | Fiche / modification (les dates revérifient la capacité ; `priceCents` en centimes, `null` l'efface, 400 `price_locked` pour une réservation payée sur Plazo) |
-| PUT | `/internal/reservations/:id/price` | `{ priceCents }` (centimes, `null` l'efface) : « Modifier le prix » de la fiche et « Les compléter » du chiffre d'affaires, aussi après le séjour ; jamais une réservation Plazo (400 `price_locked`) ni annulée (400 `reservation_closed`) ; gérant |
+| PUT | `/internal/reservations/:id/price` | `{ priceCents }` (centimes, `null` l'efface) : « Modifier le prix » de la fiche et « Les compléter » du chiffre d'affaires, aussi après le séjour ; jamais une réservation Plazo (400 `price_locked`) ni annulée (400 `reservation_closed`) ; gérant ou agent d'accueil |
 | POST | `/internal/imports/email` | Lit un mail de comparateur collé (Allopark) : champs trouvés, manquants, doublon, capacité |
 | POST | `/internal/auth/signup` | Inscription libre d'un loueur (publique, limitée par IP, réponse identique si l'email existe) |
 | POST | `/internal/auth/verify-email` | `{ token }` : confirme l'email (lien de 48 h, usage unique) |

@@ -2,6 +2,7 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { MemoryRouter, Route, Routes } from "react-router-dom";
+import { ApiError } from "@/lib/api";
 import ReservationPage from "./ReservationPage";
 
 const api = vi.hoisted(() => ({ getReservation: vi.fn(), setReservationPrice: vi.fn() }));
@@ -86,6 +87,18 @@ describe("ReservationPage · prix payé (10/10/2026)", () => {
     await userEvent.click(screen.getByRole("button", { name: "Enregistrer" }));
     expect(screen.getByRole("alert")).toHaveTextContent("Montant invalide (ex. 45,50).");
     expect(api.setReservationPrice).not.toHaveBeenCalled();
+  });
+
+  it("dit pourquoi le serveur refuse le montant", async () => {
+    api.getReservation.mockResolvedValue(reservation());
+    api.setReservationPrice.mockRejectedValue(new ApiError(400, "Validation failed", "validation_failed", { priceCents: "too_large" }));
+    renderPage();
+    await userEvent.click(await screen.findByRole("button", { name: "Modifier le prix" }));
+    const input = screen.getByLabelText("Prix payé en euros");
+    await userEvent.clear(input);
+    await userEvent.type(input, "150000");
+    await userEvent.click(screen.getByRole("button", { name: "Enregistrer" }));
+    expect(await screen.findByRole("alert")).toHaveTextContent("Valeur trop grande.");
   });
 
   it("ne propose pas de changer le prix d'une réservation payée sur Plazo, ni à qui ne gère pas les réservations", async () => {
