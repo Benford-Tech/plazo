@@ -1,7 +1,7 @@
 import { readFileSync } from 'fs';
 import { join } from 'path';
 import { parseConfirmationEmail } from '@/domain/importers';
-import { alloparkPageUrls, parseAlloparkPage } from '@/domain/importers/allopark-page';
+import { alloparkLinks, alloparkPageUrls, MAX_LINKS, parseAlloparkPage } from '@/domain/importers/allopark-page';
 import { isCancellationOrChange } from '@/domain/importers/common';
 import { stripHtml, textOf } from '@/domain/inbound-email';
 import { fillGaps } from '@/services/inbound-email.service';
@@ -157,14 +157,14 @@ describe('Allopark : la page de la réservation (10/10/2026)', () => {
   it('ouvre le lien « Consulter ma réservation » du mail, reconstruit sur www.allopark.com avec ses seuls paramètres', () => {
     const link =
       '<a href="http://allopark.com/fr-be/confirmation?email=parking@example.com&amp;reference=al-884880719&amp;view=parking&amp;utm_source=mail">Consulter</a>';
-    expect(alloparkPageUrls({ html: link, reference: 'AL-884880719', addresses: ['autre@example.com'] })).toEqual([pageUrl]);
+    expect(alloparkPageUrls({ links: alloparkLinks(link), reference: 'AL-884880719', addresses: ['autre@example.com'] })).toEqual([pageUrl]);
     // Another booking's link, a look-alike site or an address that is not one: the email's addresses instead.
     const others = [
       '<a href="https://www.allopark.com/fr-be/confirmation?email=parking@example.com&amp;reference=AL-111111111">x</a>',
       '<a href="https://www.allopark.com.example.test/fr-be/confirmation?email=parking@example.com&amp;reference=AL-884880719">x</a>',
       '<a href="https://www.allopark.com/fr-fr/confirmation?email=pas-une-adresse&amp;reference=AL-884880719">x</a>',
     ].join('');
-    expect(alloparkPageUrls({ html: others, reference: 'AL-884880719', addresses: ['Parking@Example.com'] })).toEqual([
+    expect(alloparkPageUrls({ links: alloparkLinks(others), reference: 'AL-884880719', addresses: ['Parking@Example.com'] })).toEqual([
       'https://www.allopark.com/fr-fr/confirmation?email=parking%40example.com&reference=AL-884880719&view=parking',
     ]);
   });
@@ -172,14 +172,38 @@ describe('Allopark : la page de la réservation (10/10/2026)', () => {
   it('sans lien, la page de chaque adresse destinataire (deux au plus), jamais une adresse Plazo', () => {
     expect(
       alloparkPageUrls({
-        text: 'Réservation AL-884880719',
+        links: alloparkLinks(null, 'Réservation AL-884880719'),
         reference: 'AL-884880719',
         addresses: ['lys-7f3a@in.plazo.test', 'parking@example.com', 'PARKING@example.com', 'gerant@example.com', 'compta@example.com'],
         excludeDomain: 'in.plazo.test',
       }),
     ).toEqual([pageUrl, pageUrl.replace('parking%40', 'gerant%40')]);
-    expect(alloparkPageUrls({ reference: 'AL-884880719', addresses: ['lys-7f3a@in.plazo.test'], excludeDomain: 'in.plazo.test' })).toEqual([]);
-    expect(alloparkPageUrls({ reference: '884880719', addresses: ['parking@example.com'] })).toEqual([]);
+    expect(alloparkPageUrls({ links: [], reference: 'AL-884880719', addresses: ['lys-7f3a@in.plazo.test'], excludeDomain: 'in.plazo.test' })).toEqual(
+      [],
+    );
+    expect(alloparkPageUrls({ links: [], reference: '884880719', addresses: ['parking@example.com'] })).toEqual([]);
+  });
+
+  it('10/10/2026 : garde les liens allopark.com du mail pour une nouvelle analyse, la page de confirmation d’abord, sans les données des autres', () => {
+    const body = [
+      '<a href="https://www.allopark.com/fr-be/parkings-aeroport-lyon-saint-exupery/aeroports-parking-lyon?utm_source=mail">Parking</a>',
+      '<a href="https://www.allopark.com/fr-be/contactez-nous?name=Dupont%20Jean&amp;email=jean.dupont@example.com&amp;reference=AL-884880719">Contact</a>',
+      '<a href="https://www.allopark.com/fr-be/confirmation?email=parking@example.com&amp;reference=AL-884880719&amp;view=parking">Consulter</a>',
+      '<a href="https://www.allopark.com.example.test/fr-be/confirmation?email=x@example.com">Faux</a>',
+    ].join('');
+    const text = 'Consulter : https://www.allopark.com/fr-be/confirmation?email=parking@example.com&reference=AL-884880719&view=parking';
+    expect(alloparkLinks(body, text)).toEqual([
+      'https://www.allopark.com/fr-be/confirmation?email=parking@example.com&reference=AL-884880719&view=parking',
+      'https://www.allopark.com/fr-be/parkings-aeroport-lyon-saint-exupery/aeroports-parking-lyon',
+      'https://www.allopark.com/fr-be/contactez-nous',
+    ]);
+    // What the stored links give is what the email gave.
+    expect(alloparkPageUrls({ links: alloparkLinks(body, text), reference: 'AL-884880719', addresses: [] })).toEqual([pageUrl]);
+    // Ten links at most, none too long.
+    const many = Array.from({ length: 15 }, (_, i) => `https://www.allopark.com/fr-be/page-${i}`).join(' ');
+    expect(alloparkLinks(null, many)).toHaveLength(MAX_LINKS);
+    expect(alloparkLinks(null, `https://www.allopark.com/fr-be/confirmation?email=${'a'.repeat(600)}@example.com`)).toEqual([]);
+    expect(alloparkLinks(null, 'Aucun lien')).toEqual([]);
   });
 
   it('lit le formulaire « Vos informations » de la page', () => {

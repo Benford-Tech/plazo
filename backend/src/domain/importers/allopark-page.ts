@@ -46,26 +46,49 @@ function pageUrl(locale: string, params: { email: string; reference: string; vie
   return `${ALLOPARK_ORIGIN}/${locale.toLowerCase()}/confirmation?${query.toString()}`;
 }
 
+/** At most this many links are kept per email (stored for a re-analysis), each at most this long. */
+export const MAX_LINKS = 10;
+const LINK_MAX_CHARS = 500;
+const LOCALE_PATH = /^\/([a-z]{2}(?:-[a-z]{2})?)\/(confirmation\/?$)?/i;
+
+/**
+ * The allopark.com links of an email (its HTML and text parts, entities decoded), deduplicated, confirmation pages
+ * first. 10/10/2026 (« pouvoir relancer l'analyse d'un mail »): they are stored with the email so that a re-analysis
+ * still finds its page; a link that is not a confirmation page only gives the site's language, so its query (a
+ * customer's name and address in « Contactez-nous », an unsubscribe token) is dropped.
+ */
+export function alloparkLinks(html?: string | null, text?: string | null): string[] {
+  const content = decodeEntities(`${html ?? ''}\n${text ?? ''}`);
+  const found = [...content.matchAll(/https?:\/\/(?:www\.)?allopark\.com\/[^\s"'<>()\[\]]*/gi)].map(m => m[0]);
+  const confirmations: string[] = [];
+  const others: string[] = [];
+  for (const link of found) {
+    let url: URL;
+    try {
+      url = new URL(link);
+    } catch {
+      continue;
+    }
+    const confirmation = !!LOCALE_PATH.exec(url.pathname)?.[2];
+    const kept = confirmation ? link : `${url.protocol}//${url.host}${url.pathname}`;
+    if (kept.length <= LINK_MAX_CHARS) (confirmation ? confirmations : others).push(kept);
+  }
+  return [...new Set([...confirmations, ...others])].slice(0, MAX_LINKS);
+}
+
 /**
  * The pages to open for this booking, most likely first: the email's link to its confirmation page (rebuilt on
  * www.allopark.com with only its email, reference and view, so nothing else of the link is followed), else the page
- * built from the reference and each address the email was sent to (the parking's own mailbox for a forwarded email:
- * the link Allopark gives the parking carries that address and view=parking). Addresses on `excludeDomain` (Plazo's
- * inbound addresses) are never used.
+ * built from the reference and each candidate address (the parking's own mailbox: the addresses a forwarded email was
+ * sent to, or the Gmail box that forwards to Plazo; the link Allopark gives the parking carries that address and
+ * view=parking). Addresses on `excludeDomain` (Plazo's inbound addresses) are never used. `links` come from
+ * alloparkLinks().
  */
-export function alloparkPageUrls(input: {
-  html?: string | null;
-  text?: string | null;
-  reference: string;
-  addresses: string[];
-  excludeDomain?: string;
-}): string[] {
+export function alloparkPageUrls(input: { links: string[]; reference: string; addresses: string[]; excludeDomain?: string }): string[] {
   const reference = input.reference.trim().toUpperCase();
   if (!REFERENCE.test(reference)) return [];
-  const content = decodeEntities(`${input.html ?? ''}\n${input.text ?? ''}`);
-  const links = [...content.matchAll(/https?:\/\/(?:www\.)?allopark\.com\/[^\s"'<>()\[\]]*/gi)].map(m => m[0]);
   let locale = DEFAULT_LOCALE;
-  for (const link of links) {
+  for (const link of input.links) {
     let url: URL;
     try {
       url = new URL(link.replace(/^http:/i, 'https:'));
@@ -73,7 +96,7 @@ export function alloparkPageUrls(input: {
       continue;
     }
     if (!isAlloparkUrl(url.toString())) continue;
-    const path = /^\/([a-z]{2}(?:-[a-z]{2})?)\/(confirmation\/?$)?/i.exec(url.pathname);
+    const path = LOCALE_PATH.exec(url.pathname);
     if (!path) continue;
     // The email's other links (the parking's page, « Contactez-nous ») give the site's language.
     locale = path[1];

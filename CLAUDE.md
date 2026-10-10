@@ -131,6 +131,20 @@ Ne construire QUE ce qui règle la douleur n°1 du client.
      `fly_arrival` = vol aller, `fly_departure` = vol retour, téléphone, prénom, nom, e-mail) d'une page qui nomme bien la
      référence ; la page remplit les trous (le montant reste celui du mail, son prénom et son nom remplacent la salutation),
      puis Claude complète ce qui manque encore.
+     **« Relancer l'analyse » (10/10/2026, « pouvoir relancer l'analyse d'un mail », aussi pour le super admin en
+     consultation)** : `POST /internal/inbound/emails/:id/reanalyse` (`reservations:manage`, pas de `RefuseInViewAs`, tracé
+     `view_as.write`) rejoue la lecture de la réception (`InboundEmailService.analyse` partagé : importateurs, page Allopark,
+     Claude, `createFromImport`) sur un mail sans réservation et avec son texte → `{ email, outcome }` (`imported` ·
+     `duplicate` · `incomplete` · `unrecognised`) ; 404 `not_found` (autre loueur, confirmation de transfert), 409
+     `already_imported`, `text_gone`, `analysis_running` (une relance par mail toutes les 30 s, réservée par `analysedAt`) ;
+     un mail traité ou archivé garde son état s'il ne s'importe pas ; une panne de Claude ne fait rien perdre de la lecture
+     précédente ; tracé `inbound.reanalysed`. Pour retrouver la page Allopark sans le HTML, `InboundEmail.recipients` (To/Cc
+     du mail hors adresse Plazo) et `InboundEmail.links` (liens allopark.com ; sans paramètres hors page de confirmation)
+     sont gardés et effacés avec le texte à 30 jours (migration `inbound_reanalysis`) ; les adresses essayées sont les
+     destinataires puis l'adresse Gmail qui transfère vers Plazo (`requester` des confirmations de transfert), à la
+     réception comme à la relance. Boîte de réception : bouton « Relancer l'analyse » (« Analyse en cours… », toast selon
+     le résultat, « Analysé de nouveau le … ») ; **les boutons d'action sont en haut du mail**, dans une barre au-dessus de
+     l'objet (« mets les boutons d'action en haut du mail », 10/10/2026).
    - Page de réservation propre à l'opérateur (formulaire simple, confirmation par mail/SMS).
    - Vue planning : arrivées et retours du jour, taux d'occupation, alerte de surréservation
      calculée sur la capacité réelle.

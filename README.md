@@ -407,7 +407,7 @@ le navigateur de l'espace pro appelle `/api` sur le même domaine (pas de CORS).
    par la référence externe, push « Nouvelle réservation » à ceux qui le veulent à chaque réservation, sinon le récapitulatif
    horaire) ; un mail incomplet ou inconnu attend dans la **boîte de réception** « Mails à vérifier » (`/pro/reservations/a-verifier`,
    alerte du tableau de bord ; M-A du 08/10/2026 : liste et volet de lecture, onglets « À traiter · Traités · Archivés »), où
-   l'équipe le complète dans le formulaire prérempli, le marque comme traité ou l'archive (T-A). **Lecture par Claude (L-A,
+   l'équipe le complète dans le formulaire prérempli, le marque comme traité, l'archive (T-A) ou en relance l'analyse (10/10/2026). **Lecture par Claude (L-A,
    08/10/2026)** : un mail qu'aucun importateur ne reconnaît est lu par Claude (`ANTHROPIC_API_KEY`, modèle `EMAIL_READING_MODEL`,
    Claude Opus 5.5 par défaut) : réservation complète et sûre → créée aussitôt (source lue en canal) ; sinon « À traiter »
    pré-rempli ; annulations et modifications signalées, jamais appliquées seules. Texte des mails gardé 30 jours,

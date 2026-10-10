@@ -12,6 +12,7 @@ import type {
   InboundSettings,
   InboundEmail,
   InboundEmailList,
+  InboundReanalysis,
   InboundEmailView,
   MeetingPoint,
   PickupRow,
@@ -606,6 +607,11 @@ export const adminApi = {
       `/internal/inbound/emails/${id}/archive`,
       { method: "POST" },
     ),
+  // « Relancer l'analyse » (10/10/2026): the reception's pipeline again (importers, Allopark page, Claude).
+  reanalyseInboundEmail: (id: string) =>
+    apiRequest<InboundReanalysis>(`/internal/inbound/emails/${id}/reanalyse`, {
+      method: "POST",
+    }),
   attachInboundEmail: (id: string, reservationId: string) =>
     apiRequest<{ message: string }>(`/internal/inbound/emails/${id}/attach`, {
       method: "POST",

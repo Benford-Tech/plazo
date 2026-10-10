@@ -448,6 +448,16 @@ export interface InboundEmail {
   /** L-A (08/10/2026): what Claude made of a mail no importer knew; null when it was not read. */
   reading: InboundReading | null;
   receivedAt: string;
+  /** « Relancer l'analyse » (10/10/2026): when the server last analysed the mail again; null when never. */
+  analysedAt: string | null;
+}
+
+/** What « Relancer l'analyse » came to: a booking created or found, or the mail still waiting. */
+export type InboundReanalysisOutcome = "imported" | "duplicate" | "incomplete" | "unrecognised";
+
+export interface InboundReanalysis {
+  email: InboundEmail;
+  outcome: InboundReanalysisOutcome;
 }
 
 export type InboundReadingKind = "booking" | "modification" | "cancellation" | "other";

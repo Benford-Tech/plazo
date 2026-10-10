@@ -51,6 +51,18 @@ import { RefuseInViewAs, StaffAuthMiddleware } from '@/middlewares/staff-auth.mi
  *   post:
  *     tags: [Inbound email]
  *     summary: "T-A « Archiver »: out of the inbox, readable in « Archivés » (text kept until the purge); 409 `forwarding`"
+ * /internal/inbound/emails/{id}/reanalyse:
+ *   post:
+ *     tags: [Inbound email]
+ *     summary: "10/10/2026 « Relancer l'analyse »: the email is read again as at its reception (importers, Allopark's booking page, Claude, the booking)"
+ *     description: >
+ *       For an email without booking (incomplete, unrecognised, handled or archived). Answers { email, outcome } with
+ *       outcome imported | duplicate | incomplete | unrecognised; a handled or archived email keeps its status unless the
+ *       booking is made. 404 `not_found` (unknown, another operator's, a forwarding confirmation); 409 `already_imported`,
+ *       `text_gone` (text purged after 30 days), `analysis_running` (analysed less than 30 s ago). Open to « Ouvrir son espace ».
+ *     responses:
+ *       200:
+ *         description: "{ email: InboundEmailView (with analysedAt), outcome }"
  * /internal/inbound/emails/{id}/attach:
  *   post:
  *     tags: [Inbound email]
@@ -75,6 +87,8 @@ export class InboundEmailRoute implements Routes {
     // 10/10/2026 (« le superadmin peut archiver les mails des parkings »): archiving is open to « Ouvrir son espace »
     // (traced as view_as.write under the admin's name); the other gestures stay the operator's.
     this.router.post('/internal/inbound/emails/:id/archive', StaffAuthMiddleware('reservations:manage'), this.inbound.archive);
+    // 10/10/2026 (« pouvoir relancer l'analyse d'un mail »): open to « Ouvrir son espace » too (traced as view_as.write).
+    this.router.post('/internal/inbound/emails/:id/reanalyse', StaffAuthMiddleware('reservations:manage'), this.inbound.reanalyse);
     this.router.post('/internal/inbound/emails/:id/attach', StaffAuthMiddleware('reservations:manage'), RefuseInViewAs(), this.inbound.attach);
   }
 }
