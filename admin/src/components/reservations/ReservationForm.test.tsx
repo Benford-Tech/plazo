@@ -167,6 +167,38 @@ describe("ReservationForm", () => {
     expect(screen.getByLabelText("Nom")).toHaveValue("Dupont");
   });
 
+  it("10/10/2026 : préremplit la voiture lue dans le mail et envoie son montant et sa référence", async () => {
+    createReservation.mockResolvedValue({ data: { id: "r1" } });
+    const onSaved = renderForm(vi.fn(), {
+      prefill: {
+        provider: "Allopark",
+        externalReference: "AL-123829327",
+        arrivalAt: "2026-10-04T06:30",
+        returnAt: "2026-10-11T15:05",
+        customerFirstName: "Jean",
+        customerLastName: "Dupont",
+        customerPhone: "06 12 34 56 78",
+        plate: "GK-318-PX",
+        passengers: 2,
+        priceCents: 2600,
+        vehicleModel: "Peugeot 308",
+        vehicleColour: "grise",
+      },
+    });
+    expect(screen.getByLabelText("Modèle du véhicule")).toHaveValue("Peugeot 308");
+    expect(screen.getByLabelText("Couleur")).toHaveValue("grise");
+    await userEvent.click(screen.getByRole("button", { name: "Enregistrer" }));
+    await waitFor(() => expect(onSaved).toHaveBeenCalled());
+    expect(createReservation.mock.calls[0][0]).toMatchObject({
+      channel: "aggregator",
+      channelDetail: "Allopark",
+      externalReference: "AL-123829327",
+      priceCents: 2600,
+      vehicleModel: "Peugeot 308",
+      vehicleColour: "grise",
+    });
+  });
+
   it("préremplit depuis un mail qui ne donne que le nom complet", () => {
     renderForm(vi.fn(), { prefill: { provider: "Allopark", customerName: "Jean Dupont" } });
     expect(screen.getByLabelText("Prénom")).toHaveValue("Jean");

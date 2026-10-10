@@ -184,6 +184,17 @@ Ne construire QUE ce qui règle la douleur n°1 du client.
      réservation … » ou « Modification à faire à la main · réservation … » avec une ligne par changement (« Date de retour :
      13 déc. 20:30 → 15 déc. 18:00 »), pastille « Modification », « À faire à la main » en ambre ; « Relancer l'analyse » →
      résultat `changed`. Les annulations ne sont toujours pas appliquées.
+     **Suite (10/10/2026, « Tu n'as pas récupéré le prix pour la modif »)** : un vol qu'un import ne sait pas lire (le voyageur
+     a tapé « U2AB3C » chez Allopark) ne bloque plus la réservation : `createFromImport` et `applyImportChange` la créent ou
+     la changent sans ce vol (prix compris), le texte part dans les notes (« Vol retour indiqué par Allopark : … (numéro non
+     reconnu) », une seule fois ; `domain/imported-flights.ts`), et un vol illisible ne compte jamais comme un changement ; les
+     formulaires de l'équipe refusent toujours un vol invalide. Une modification retrouve une réservation saisie à la main sans
+     la référence (même loueur, comparateur vide ou Allopark, même plaque, séjour qui se recoupe ou même jour d'arrivée, ni
+     close ni Plazo) : une seule → la référence lui est ajoutée sous le verrou des places puis la modification s'applique ;
+     plusieurs → raison `ambiguous` (« Plusieurs réservations correspondent : à faire à la main », « Ce que Plazo a compris »
+     reste affiché, pas de « Compléter »). `alloparkPageUrls` donne le lien du mail puis les pages des adresses du parking
+     (3 au plus) : un lien qui mène ailleurs (« gérer ma réservation ») n'arrête plus la recherche. « Compléter » préremplit
+     aussi le modèle et la couleur du véhicule.
    - Page de réservation propre à l'opérateur (formulaire simple, confirmation par mail/SMS).
    - Vue planning : arrivées et retours du jour, taux d'occupation, alerte de surréservation
      calculée sur la capacité réelle.

@@ -14,7 +14,7 @@ export const ALLOPARK_ORIGIN = 'https://www.allopark.com';
 const ALLOPARK_HOSTS = ['www.allopark.com', 'allopark.com'];
 const DEFAULT_LOCALE = 'fr-be';
 /**
- * Never more pages than this per email: the email's own link, else one page per candidate address
+ * Never more pages than this per email: the email's own link, then one page per candidate address
  * (alloparkPageAddresses); 10/10/2026: 3 (2 before), within one 8 s budget for every page and redirect.
  */
 export const MAX_PAGES = 3;
@@ -138,19 +138,25 @@ function isCandidate(address: string, excludeDomain?: string): boolean {
 
 /**
  * The pages to open for this booking, most likely first: the email's link to its confirmation page
- * (alloparkConfirmationPage), else the page built from the reference and each candidate address, at most MAX_PAGES
- * (the parking's own mailbox: the link Allopark gives the parking carries that address and view=parking; see
- * alloparkPageAddresses). Addresses on `excludeDomain` (Plazo's inbound addresses) and the comparators' addresses are
- * never used.
+ * (alloparkConfirmationPage), then the page built from the reference and each candidate address, at most MAX_PAGES in
+ * all (the parking's own mailbox: the link Allopark gives the parking carries that address and view=parking; see
+ * alloparkPageAddresses). 10/10/2026 (« Tu n'as pas récupéré le prix pour la modif »): the link no longer comes alone,
+ * as it may land elsewhere (« gérer ma réservation »'s login page); an address page that would be the link again (the
+ * same address and view) is left out. Addresses on `excludeDomain` (Plazo's inbound addresses) and the comparators'
+ * addresses are never used.
  */
 export function alloparkPageUrls(input: { links: string[]; reference: string; addresses: string[]; excludeDomain?: string }): string[] {
   const reference = input.reference.trim().toUpperCase();
   if (!REFERENCE.test(reference)) return [];
   const linked = alloparkConfirmationPage(input.links, reference);
-  if (linked) return [linked];
+  const linkedUrl = linked ? new URL(linked) : null;
+  const linkedKey = linkedUrl ? `${linkedUrl.searchParams.get('email')?.toLowerCase()}|${linkedUrl.searchParams.get('view') ?? ''}` : null;
   const locale = localeOf(input.links);
-  const addresses = [...new Set(input.addresses.map(a => a.trim().toLowerCase()))].filter(a => isCandidate(a, input.excludeDomain));
-  return addresses.slice(0, MAX_PAGES).map(email => pageUrl(locale, { email, reference, view: 'parking' }));
+  const addresses = [...new Set(input.addresses.map(a => a.trim().toLowerCase()))].filter(
+    a => isCandidate(a, input.excludeDomain) && `${a}|parking` !== linkedKey,
+  );
+  const pages = addresses.map(email => pageUrl(locale, { email, reference, view: 'parking' }));
+  return [...(linked ? [linked] : []), ...pages].slice(0, MAX_PAGES);
 }
 
 /** Where the parking's mailbox may be found, for an email without its confirmation link. */

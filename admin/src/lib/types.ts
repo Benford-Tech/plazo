@@ -385,6 +385,9 @@ export interface ParsedBooking {
   departureFlight?: string;
   passengers?: number;
   priceCents?: number;
+  /** 09/10/2026: the car, as the comparator gives it (Onepark, ParkMundo, Allopark's booking page). */
+  vehicleModel?: string;
+  vehicleColour?: string;
 }
 
 /** M-A (06/10/2026): the operator's inbound address and the forwarded confirmation emails. */
@@ -476,8 +479,11 @@ export type InboundChangeField =
   | "vehicleModel"
   | "priceCents";
 
-/** Why a change was left to the staff. */
-export type InboundChangeReason = "reservation_closed" | "already_arrived" | "no_room" | "plazo_booking" | "invalid_stay";
+/**
+ * Why a change was left to the staff; 10/10/2026 (« Tu n'as pas récupéré le prix pour la modif »): `ambiguous`, several
+ * bookings typed without the comparator's reference match it (same car, same stay), none was chosen.
+ */
+export type InboundChangeReason = "reservation_closed" | "already_arrived" | "no_room" | "plazo_booking" | "invalid_stay" | "ambiguous";
 
 /**
  * An Allopark change of a booking read against its booking page: applied, not needed (no changes: the mail is a
