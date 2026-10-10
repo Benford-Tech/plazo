@@ -170,16 +170,23 @@ export default function ParkingPlanPage() {
       !view.spots.length &&
       !view.plan.settings.autoSetupAt;
 
-  const replaceView = useCallback(
-    (next: ParkingPlanView) => {
-      setView(next);
-      if (parking && next.totalCapacity !== parking.totalCapacity)
-        queryClient.invalidateQueries({ queryKey: ["parking"] });
-    },
-    [parking, queryClient],
-  );
+  const replaceView = useCallback((next: ParkingPlanView) => setView(next), []);
+  // 09/10/2026: the plan's files, else its active spots, are the capacity used everywhere: after
+  // each change the parking, the dashboard, the plannings and the booking form's preview reload.
+  const capacityChanged = useCallback(() => {
+    for (const queryKey of [
+      ["parking"],
+      ["dashboard"],
+      ["planning"],
+      ["capacity"],
+      ["spot-planning", parkingId],
+      ["files-planning", parkingId],
+    ])
+      void queryClient.invalidateQueries({ queryKey });
+  }, [parkingId, queryClient]);
 
-  // R-A (07/10/2026): start again, in whole or in part. The declared capacity never changes.
+  // R-A (07/10/2026): start again, in whole or in part. The declared capacity never changes: an
+  // emptied plan falls back on it (09/10/2026).
   // S-C: "files only" drops the (empty) files and leaves the land and the spots alone.
   /** True once the plan is reset; false when the operator cancels or it fails. */
   const reset = async (scope: ResetScope): Promise<boolean> => {
@@ -195,6 +202,7 @@ export default function ParkingPlanPage() {
       try {
         await adminApi.replaceFiles(parkingId, []);
         queryClient.invalidateQueries({ queryKey: ["files", parkingId] });
+        capacityChanged();
         toast.success(fr.parkingPlan.resetFilesDone);
         return true;
       } catch (e) {
@@ -255,6 +263,7 @@ export default function ParkingPlanPage() {
         }
         queryClient.invalidateQueries({ queryKey: ["files", parkingId] });
       }
+      capacityChanged();
       toast.success(fr.parkingPlan.resetDone);
       return true;
     } catch (e) {
@@ -297,6 +306,7 @@ export default function ParkingPlanPage() {
         update={update}
         flush={flush}
         onView={replaceView}
+        onCapacityChange={capacityChanged}
         // V-A: the saved outline is what Claude reads, so pending changes go first.
         suggest={async (options) => {
           await flush();

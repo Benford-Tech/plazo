@@ -13,6 +13,8 @@ _ParkingSummaryModel _$ParkingSummaryModelFromJson(Map<String, dynamic> json) =>
       totalCapacity: (json['totalCapacity'] as num).toInt(),
       lat: (json['lat'] as num?)?.toDouble(),
       lng: (json['lng'] as num?)?.toDouble(),
+      effectiveCapacity: (json['effectiveCapacity'] as num?)?.toInt() ?? 0,
+      capacitySource: json['capacitySource'] as String? ?? 'declared',
     );
 
 Map<String, dynamic> _$ParkingSummaryModelToJson(
@@ -23,6 +25,8 @@ Map<String, dynamic> _$ParkingSummaryModelToJson(
   'totalCapacity': instance.totalCapacity,
   'lat': instance.lat,
   'lng': instance.lng,
+  'effectiveCapacity': instance.effectiveCapacity,
+  'capacitySource': instance.capacitySource,
 };
 
 _ParkingPlanModel _$ParkingPlanModelFromJson(Map<String, dynamic> json) =>
@@ -93,6 +97,8 @@ _ParkingPlanViewModel _$ParkingPlanViewModelFromJson(
       const [],
   activeSpots: (json['activeSpots'] as num).toInt(),
   totalCapacity: (json['totalCapacity'] as num).toInt(),
+  effectiveCapacity: (json['effectiveCapacity'] as num?)?.toInt() ?? 0,
+  capacitySource: json['capacitySource'] as String? ?? 'declared',
 );
 
 Map<String, dynamic> _$ParkingPlanViewModelToJson(
@@ -102,6 +108,8 @@ Map<String, dynamic> _$ParkingPlanViewModelToJson(
   'spots': instance.spots,
   'activeSpots': instance.activeSpots,
   'totalCapacity': instance.totalCapacity,
+  'effectiveCapacity': instance.effectiveCapacity,
+  'capacitySource': instance.capacitySource,
 };
 
 _PlanEstimateModel _$PlanEstimateModelFromJson(Map<String, dynamic> json) =>

@@ -566,7 +566,8 @@ export class ReservationService {
       // { pending } when a gateway SMS has waited more than 10 minutes (phone off or offline), else null.
       smsWarning,
       timezone: parking.timezone,
-      parking: { id: parking.id, name: parking.name, bookableCapacity: parking.bookableCapacity },
+      // Read with the nights, against the plan's room (`CapacityService.nights`): no second read of the plan.
+      parking: { id: parking.id, name: parking.name, bookableCapacity: nights[0].bookable },
       arrivals,
       returns,
       nights,

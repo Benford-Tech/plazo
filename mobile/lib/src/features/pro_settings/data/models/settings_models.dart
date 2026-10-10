@@ -42,6 +42,12 @@ abstract class ParkingSettingsModel with _$ParkingSettingsModel {
     /// R-B (07/10/2026): who sees the shuttles' position: "off", "team" or "everyone".
     @Default('team') String shuttleTracking,
     @Default(0) int bookableCapacity,
+
+    /// 09/10/2026: the capacity used everywhere (the plan's files, else its active spots, else
+    /// `totalCapacity`, the declared figure) and where it comes from: "files", "spots" or
+    /// "declared" (the default, for an older server).
+    @Default(0) int effectiveCapacity,
+    @Default('declared') String capacitySource,
   }) = _ParkingSettingsModel;
 
   factory ParkingSettingsModel.fromJson(Map<String, dynamic> json) => _$ParkingSettingsModelFromJson(json);

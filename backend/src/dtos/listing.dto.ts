@@ -80,6 +80,14 @@ export class UpdateListingDto {
   public photos: string[];
 }
 
+/** 09/10/2026: Claude writes the « Présentation », or improves the manager's `current` text (nothing saved). */
+export class SuggestDescriptionDto {
+  @IsOptional()
+  @IsString({ message: 'invalid' })
+  @MaxLength(2000, { message: 'too_long' })
+  public current?: string | null;
+}
+
 export class PricingTierDto {
   @Type(() => Number)
   @IsInt({ message: 'integer' })

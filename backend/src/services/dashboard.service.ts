@@ -8,6 +8,7 @@ import { dayBounds, localDate, localDateTime } from '@/domain/time';
 import { FileService } from './file.service';
 import { OccupationService } from './occupation.service';
 import { ArrivalService } from './arrival.service';
+import { loadPlanCapacity, parkingCapacity } from './capacity.service';
 import { FlightTrackingService } from './flight-tracking.service';
 import { ParkingService } from './parking.service';
 import { PushService } from './push.service';
@@ -152,7 +153,7 @@ export class DashboardService {
     const refreshed = await this.flights.refreshBookings(planning.returns.filter(r => r.returnFlight).map(r => r.id));
     if (refreshed) planning = await this.reservations.planning(actor);
 
-    const [onSite, trips, signals, spotsTotal, filesAgg, operator, devices, lastImport, smsStatus, forecast] = await Promise.all([
+    const [onSite, trips, signals, plan, operator, devices, lastImport, smsStatus, forecast] = await Promise.all([
       prisma.reservation.findMany({
         where: { parkingId: parking.id, status: { in: ON_SITE } },
         include: { spot: { select: { code: true, stayClass: true } }, file: { select: { code: true } }, stop: { select: { name: true } } },
@@ -160,8 +161,7 @@ export class DashboardService {
       }),
       this.shuttle.running(actor),
       this.arrivals.live(actor).then(l => l.signals),
-      prisma.parkingSpot.count({ where: { parkingId: parking.id, active: true } }),
-      prisma.parkingFile.aggregate({ where: { parkingId: parking.id, active: true }, _count: { id: true }, _sum: { capacity: true } }),
+      loadPlanCapacity([parking.id]).then(m => m.get(parking.id)!),
       prisma.operator.findUniqueOrThrow({ where: { id: actor.operatorId }, select: OPERATOR_PAYMENT_FIELDS }),
       prisma.staffDevice.count({ where: { staff: { operatorId: actor.operatorId, isActive: true } } }),
       prisma.reservation.findFirst({
@@ -176,9 +176,14 @@ export class DashboardService {
     const tripOf = (id: string) => trips.find(t => t.reservationIds.includes(id)) ?? null;
     const placed = (r: { spotId: string | null; fileId: string | null }) => !!r.spotId || !!r.fileId;
     const occupied = onSite.filter(placed).length;
-    // S-C (07/10/2026): a parking stored in files counts its room in files, not in spots.
-    const filesTotal = filesAgg._count.id;
-    const plannedSpots = filesTotal ? (filesAgg._sum.capacity ?? 0) : spotsTotal;
+    // The plan's room, as everywhere (`effectiveCapacity`): the files' when the parking is stored in
+    // files (S-C), else its active spots; nothing without a plan (the declared figure is no place).
+    // The plan is read once, above, and the capacity derived from it here.
+    const capacity = parkingCapacity(parking, plan);
+    const spotsTotal = plan.activeSpots;
+    const filesTotal = plan.activeFilesCapacity;
+    const hasPlan = capacity.capacitySource !== 'declared';
+    const plannedSpots = hasPlan ? capacity.effectiveCapacity : 0;
     const freeSpots = plannedSpots ? Math.max(0, plannedSpots - occupied) : null;
 
     const alerts: DashboardAlert[] = [];
@@ -191,7 +196,7 @@ export class DashboardService {
     });
 
     // Arrived, no spot or file (only when the parking has a plan).
-    if (spotsTotal || filesTotal) {
+    if (hasPlan) {
       for (const r of onSite.filter(r => !placed(r) && r.status === 'arrived')) {
         const since = r.arrivedAt ?? r.arrivalAt;
         alerts.push({
@@ -415,9 +420,9 @@ export class DashboardService {
         id: parking.id,
         name: parking.name,
         timezone: parking.timezone,
-        bookableCapacity: parking.bookableCapacity,
+        bookableCapacity: capacity.bookableCapacity,
         plannedSpots,
-        storedInFiles: filesTotal > 0,
+        storedInFiles: capacity.capacitySource === 'files',
       },
       counts: {
         onSite: onSite.length,

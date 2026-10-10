@@ -134,7 +134,9 @@ describe('planning des files (08/10/2026)', () => {
     await t.place(a.id, t.byCode('F01').id);
     await t.place(b.id, t.byCode('F01').id);
     for (let i = 0; i < 6; i++) await t.book(`CC-00${i}-CC`, d(2));
-    await t.book('II-999-II', d(3));
+    // The ninth car for eight slots: the files are the capacity (09/10/2026), so it is refused unless forced.
+    await expect(t.book('II-999-II', d(3))).rejects.toThrow(/409 .*overbooked/);
+    await t.book('II-999-II', d(3), { force: true });
 
     const res = await t.planning('?days=6');
     expect(res.status).toBe(200);

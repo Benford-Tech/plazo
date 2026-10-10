@@ -18,6 +18,11 @@ et affectation des véhicules, navette au retour.
 - [ ] **Jalon 3a — Fiche et tarifs** (fait) : dans l'espace pro, onglet « Sur Plazo » : « Ma fiche » (présentation,
   services, annulation, photos par adresse, aperçu en direct, envoi en validation refusé tant qu'il n'y a pas de tarifs)
   et « Mes tarifs » (forfaits par nombre de jours, prix du jour supplémentaire, simulation du prix payé).
+  **Présentation par Claude (09/10/2026)** : « Rédiger avec Claude » (« Améliorer avec Claude » quand le champ a déjà un
+  texte) propose une présentation écrite d'après les seules données réelles du parking (fiche enregistrée, adresse, aéroport,
+  prix de départ, navettes en service, dessertes, point de rendez-vous, voiturier) ; « Utiliser ce texte » la met dans le
+  champ, le gérant relit puis enregistre ; un texte qui cite un chiffre absent des données est écarté (`ANTHROPIC_API_KEY`,
+  modèle `LISTING_DESCRIPTION_MODEL`, Claude Opus 5.5 par défaut).
   Reste : envoi de photos depuis l'ordinateur.
 - [x] **Espace « Plateforme », inscription libre et validation des annonces** (maquette S-1) : voir « Rôles,
   inscription et validation » ci-dessous.
@@ -35,7 +40,13 @@ et affectation des véhicules, navette au retour.
   l'annulation gratuite (voyageur ou loueur), **Plazo encaisse, puis reverse la part du loueur le lendemain de la fin du
   séjour** (ou selon le calendrier choisi), compte Stripe Express du loueur (routes seulement). Reste : écrans de l'espace
   pro (connexion Stripe, calendrier de reversement), validation juridique avant le paiement réel.
-- [ ] Jalon 4 — Cartographie et affectation
+- [ ] Jalon 4 — Cartographie et affectation. **Capacité = places du plan (09/10/2026)** : dès que le plan a de la
+  place, son nombre compte partout (réservations du personnel, imports, aperçu du formulaire, planning, recherche et
+  réservation du site, paiement tardif, tableau de bord, Plateforme) : la capacité des files actives, sinon les places
+  actives (posées à la main et réservées comprises), sinon le chiffre déclaré (`effectiveCapacity` dans
+  `backend/src/domain/capacity.ts`, lu dans la même requête que la charge des nuits) ; la marge s'applique ensuite.
+  Le chiffre déclaré (`totalCapacity`) reste enregistré et ne sert que sans plan ; Réglages (web et app) l'affichent en
+  lecture seule « Calculé depuis le plan du parking » dès que le plan compte.
 - [ ] **Jalon 5 — Navette au retour** (en cours, maquette validée « Votre retour ») : fait — **suivi automatique du vol
   retour** (AeroDataBox par RapidAPI, AirLabs en secours ; rafraîchi par un cron et à la lecture avec un cache de
   5 min ; à l'atterrissage : push au personnel « Vol TO 3627 atterri · C. Martin » et SMS au voyageur, une seule fois),
@@ -317,8 +328,8 @@ le navigateur de l'espace pro appelle `/api` sur le même domaine (pas de CORS).
    `vercel.json`) ; les fonctions tournent à Paris (`cdg1`). Variables (communes aux trois services) :
    `NODE_ENV=production`, `SECRET_KEY`, `CRON_SECRET`, `SITE_API_KEY`
    (secret partagé entre le site et l'API), `PUBLIC_SITE_URL` (adresse publique du site, pour les liens
-   des mails), pour la proposition des zones et la lecture des mails par Claude `ANTHROPIC_API_KEY` (et `ZONE_SUGGESTION_MODEL`, `EMAIL_READING_MODEL`,
-   facultatif), pour les mails et SMS `BREVO_API_KEY`, `EMAIL_FROM`, `SMS_SENDER`,
+   des mails), pour la proposition des zones, la lecture des mails et la rédaction de la présentation par Claude `ANTHROPIC_API_KEY` (et
+   `ZONE_SUGGESTION_MODEL`, `EMAIL_READING_MODEL`, `LISTING_DESCRIPTION_MODEL`, facultatifs), pour les mails et SMS `BREVO_API_KEY`, `EMAIL_FROM`, `SMS_SENDER`,
    `SMS_GATEWAY_ENCRYPTION_KEY` (clé qui chiffre les mots de passe des téléphones reliés par les loueurs, voir
    « SMS depuis le téléphone du parking » ; `openssl rand -base64 32`), et
    `PLATFORM_ADMIN_EMAILS` (emails des administrateurs de la plateforme, séparés par des virgules : eux seuls
@@ -542,8 +553,8 @@ Documentation interactive : `/api/docs` (Swagger). Toutes les routes sont sous `
 | GET / POST | `/internal/staff` | Équipe (gérant) |
 | PATCH | `/internal/staff/:id` | Rôle, activation, prénom et nom (gérant) |
 | POST | `/internal/staff/:id/reset-password` | Mot de passe provisoire (gérant) |
-| GET | `/internal/parking` | Parking et capacité réservable |
-| PATCH | `/internal/parkings/:id` | Réglages du parking (gérant, tracé) |
+| GET | `/internal/parking` | Parking et capacité : `totalCapacity` / `declaredCapacity` (chiffre déclaré), `effectiveCapacity` et `capacitySource` (`files`, `spots` ou `declared`), `bookableCapacity` (capacité retenue moins la marge) |
+| PATCH | `/internal/parkings/:id` | Réglages du parking (gérant, tracé ; `totalCapacity` = chiffre déclaré, utilisé sans plan) |
 | GET | `/internal/planning?date=` | Arrivées, retours et charge des 7 nuits d'une journée |
 | GET | `/internal/capacity?arrivalAt=&returnAt=` | Charge de chaque nuit d'un séjour, nuits complètes |
 | GET / POST | `/internal/reservations` | Recherche (plaque, nom, téléphone, référence) / création |
@@ -554,6 +565,7 @@ Documentation interactive : `/api/docs` (Swagger). Toutes les routes sont sous `
 | POST | `/internal/auth/verify-email/resend` | Nouveau lien de confirmation pour la personne connectée |
 | POST | `/internal/auth/invitation` / `…/accept` | Invitation : `{ token }` → `{ email, operatorName }` ; `{ token, password }` → session |
 | GET / PUT | `/internal/listing` | Fiche Plazo du loueur (gérant ; l'enregistrement ne change pas son statut) |
+| POST | `/internal/listing/description/suggest` | Claude rédige la « Présentation » de la fiche d'après les vraies données du parking (fiche enregistrée, adresse, aéroport, grille, navettes en service, dessertes, files de voiturier) ; `{ current? }` (≤ 2 000) : améliore ce texte ; rien n'est enregistré → `{ text, model }` ; 409 `ai_unavailable` sans `ANTHROPIC_API_KEY` ou clé refusée, 502 `ai_refused` / `ai_failed`, 503 `ai_busy`, 504 `ai_timeout` (30 s), 502 `ai_unreliable` quand le texte cite un chiffre absent des données, en chiffres ou en lettres devant une unité (`details.figures`), le Terminal 2 ou dépasse 2 000 caractères ; gérant |
 | POST | `/internal/listing/submit` / `…/withdraw` | Envoyer pour validation (tarifs et email confirmé requis) / retirer de Plazo |
 | GET / PUT | `/internal/pricing` | Grille tarifaire : forfaits « jusqu'à N jours » + prix du jour supplémentaire |
 | GET | `/public/airports` | Aéroports desservis (formulaire d'inscription) |
@@ -626,6 +638,7 @@ Documentation interactive : `/api/docs` (Swagger). Toutes les routes sont sous `
 | GET | `/internal/platform/geo/buildings?bbox=` | Bâtiments BD TOPO de la vue (B-A, même relais) |
 | POST | `/internal/parkings/:id/plan/suggest-zones` | V-A : Claude lit la photo IGN du terrain et propose les zones (corps `{ allowGrass }`, vrai par défaut ; rien n'est enregistré ; 409 `ai_unavailable` sans `ANTHROPIC_API_KEY`) |
 | POST | `/internal/parkings/:id/plan/spots` | P-B : places posées à la main (rangée tracée sur la carte), gardées à la régénération ; 400 `duplicate_code` |
+| POST | `/internal/parkings/:id/plan/apply-capacity` | Copie le nombre de places actives dans le chiffre déclaré (anciennes versions de l'app ; depuis le 09/10/2026 le plan compte de lui-même) |
 | DELETE | `/internal/parkings/:id/plan/spots/:spotId` | P-B : retire une place posée à la main (409 `not_manual` pour une place générée) |
 | GET | `/internal/parkings/:id/files` | S-C : les files du parking avec leur pile (allée → fond), les arrivées à placer avec la file choisie, « à sortir aujourd'hui » |
 | PUT | `/internal/parkings/:id/files` | S-C : enregistre les files du plan (code, capacité, trait) ; 400 `duplicate_code`, 409 `file_occupied` |

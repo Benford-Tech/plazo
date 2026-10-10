@@ -1,5 +1,6 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useEffect, useState } from "react";
+import { Link } from "react-router-dom";
 import { toast } from "sonner";
 import { FormField } from "@/components/FormField";
 import { FlightCheckCard } from "@/components/parking/FlightCheckCard";
@@ -74,7 +75,11 @@ export default function ParkingPage() {
   }
 
   const set = (key: keyof Form) => (e: React.ChangeEvent<HTMLInputElement>) => setForm({ ...form, [key]: e.target.value });
-  const preview = bookableCapacity(Number(form.totalCapacity), Number(form.safetyMarginPct));
+  // 09/10/2026: once the plan has room (files or active spots), its figure is the capacity used
+  // everywhere; the declared one stays stored and is sent back unchanged.
+  const planSource = parking?.capacitySource === "files" || parking?.capacitySource === "spots" ? parking.capacitySource : null;
+  const capacity = planSource ? parking!.effectiveCapacity : Number(form.totalCapacity);
+  const preview = bookableCapacity(capacity, Number(form.safetyMarginPct));
 
   return (
     <>
@@ -92,17 +97,30 @@ export default function ParkingPage() {
             <FormField id="name" label={t.name} required value={form.name} onChange={set("name")} error={fieldErrors.name} />
             <FormField id="address" label={t.address} value={form.address} onChange={set("address")} error={fieldErrors.address} />
             <div className="grid gap-4 sm:grid-cols-3">
-              <FormField
-                id="totalCapacity"
-                label={t.totalCapacity}
-                type="number"
-                inputMode="numeric"
-                min={1}
-                required
-                value={form.totalCapacity}
-                onChange={set("totalCapacity")}
-                error={fieldErrors.totalCapacity}
-              />
+              {planSource ? (
+                <div className="space-y-1.5 sm:col-span-3" data-testid="capacity-from-plan">
+                  <p className="text-sm font-medium leading-none">{t.totalCapacity}</p>
+                  <p className="font-mono text-2xl font-bold text-lime-deep">{t.capacityValue(capacity)}</p>
+                  <p className="text-sm text-muted-foreground">
+                    {t.capacityFromPlan(planSource)}{" "}
+                    <Link to="/parking/plan" className="font-medium text-lime-deep underline">
+                      {t.openPlan}
+                    </Link>
+                  </p>
+                </div>
+              ) : (
+                <FormField
+                  id="totalCapacity"
+                  label={t.totalCapacity}
+                  type="number"
+                  inputMode="numeric"
+                  min={1}
+                  required
+                  value={form.totalCapacity}
+                  onChange={set("totalCapacity")}
+                  error={fieldErrors.totalCapacity}
+                />
+              )}
               <FormField
                 id="safetyMarginPct"
                 label={t.safetyMarginPct}

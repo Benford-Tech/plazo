@@ -39,7 +39,7 @@ function ListingDetails({ listing }: { listing: PlatformListing }) {
       <dl className="grid content-start gap-x-6 gap-y-3 sm:grid-cols-[10rem_1fr]">
         <dt className={labelClass}>{t.address}</dt>
         <dd>
-          {listing.parking.name} · {t.places(listing.parking.totalCapacity)}
+          {listing.parking.name} · {t.places(listing.parking.effectiveCapacity ?? listing.parking.totalCapacity)}
           {listing.parking.address && <span className="block text-muted-foreground">{listing.parking.address}</span>}
         </dd>
         <dt className={labelClass}>{t.description}</dt>

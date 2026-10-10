@@ -372,7 +372,7 @@ const listing: PlatformListing = {
   reviewedAt: null,
   updatedAt: "2026-10-02T09:00:00Z",
   airport: { code: "LYS", name: "Lyon Saint-Exupéry", slug: "lyon-saint-exupery" },
-  parking: { id: "p2", name: "Allo Park", address: "1 rue de l'Aéroport", totalCapacity: 450 },
+  parking: { id: "p2", name: "Allo Park", address: "1 rue de l'Aéroport", totalCapacity: 450, effectiveCapacity: 412 },
   operator: { id: "o2", name: "Allo Park Lyon SARL", status: "active" },
   pricingTiers: [{ days: 3, priceCents: 3499 }],
   fromPriceCents: 3499,
@@ -389,6 +389,8 @@ describe("Annonces", () => {
     expect(screen.getByRole("button", { name: /À valider/ })).toHaveAttribute("aria-pressed", "true");
     expect(screen.getByText("Parking clôturé.")).toBeInTheDocument();
     expect(screen.getByText("dès 34,99 €")).toBeInTheDocument();
+    // The capacity used everywhere (the plan's), not the declared figure (09/10/2026).
+    expect(screen.getByText("Allo Park · 412 places")).toBeInTheDocument();
     await userEvent.click(screen.getByRole("button", { name: "Valider" }));
     await waitFor(() => expect(api.approveListing).toHaveBeenCalledWith("l2"));
   });

@@ -144,6 +144,8 @@ export const fr = {
     ai_busy: "Claude est saturé pour l'instant. Réessayez dans une minute.",
     ai_failed: "La lecture par Claude a échoué",
     ai_timeout: "Claude a mis trop de temps à lire la photo. Réessayez.",
+    ai_unreliable:
+      "La proposition de Claude ne s'appuie pas sur vos données : elle a été écartée. Réessayez.",
     no_outline: "Repérez d'abord le terrain (étape 1).",
     geo_timeout:
       "Le service de l'IGN a mis trop de temps à répondre. Réessayez.",
@@ -533,6 +535,11 @@ export const fr = {
     name: "Nom du parking",
     address: "Adresse",
     totalCapacity: "Nombre de places au total",
+    // 09/10/2026: once the plan has room, its figure replaces the typed one everywhere.
+    capacityValue: (n: number) => `${n} place${n > 1 ? "s" : ""}`,
+    capacityFromPlan: (source: "files" | "spots") =>
+      `Calculé depuis le plan du parking (${source === "files" ? "files de voiturier" : "places du plan"}) : c'est ce nombre qui compte partout (réservations, site, planning).`,
+    openPlan: "Ouvrir le plan",
     safetyMarginPct: "Marge de sécurité (%)",
     safetyMarginHelp:
       "Part des places jamais proposées à la réservation (imprévus, prolongations).",
@@ -1022,6 +1029,36 @@ export const fr = {
     title: "Nom affiché",
     slug: "Adresse de la page",
     description: "Présentation",
+    descriptionHelp:
+      "Les 160 premiers caractères servent de description dans Google.",
+    // Both numbers formatted alike (« 1 500 / 2 000 », same space).
+    descriptionCount: (n: number) => `${n.toLocaleString("fr-FR")} / ${(2000).toLocaleString("fr-FR")}`,
+    // 09/10/2026: Claude writes the « Présentation » from the parking's real data (nothing saved).
+    writing: {
+      write: "Rédiger avec Claude",
+      improve: "Améliorer avec Claude",
+      busy: "Claude rédige…",
+      title: "Proposition de Claude",
+      basis:
+        "Rédigée d'après votre fiche enregistrée et les réglages du parking. Relisez-la avant d'enregistrer.",
+      use: "Utiliser ce texte",
+      another: "Proposer une autre version",
+      dismiss: "Ignorer",
+      used: "Texte repris dans la présentation : relisez-le, puis enregistrez la fiche.",
+      unreliable: (figures: string[]) =>
+        figures.length
+          ? `Claude a cité ${figures.length > 1 ? "des chiffres absents" : "un chiffre absent"} de vos données (${figures.map((f) => Number(f).toLocaleString("fr-FR")).join(" ; ")}) : sa proposition est écartée. Demandez une autre version.`
+          : "La proposition de Claude ne respecte pas les règles de la fiche : elle est écartée. Demandez une autre version.",
+      // The zones' texts speak of a photo: these say the same for the presentation.
+      errors: {
+        ai_unavailable:
+          "La rédaction par Claude n'est pas disponible : clé ANTHROPIC_API_KEY absente ou refusée.",
+        ai_refused:
+          "Claude n'a pas voulu rédiger cette présentation. Écrivez-la vous-même.",
+        ai_failed: "La rédaction par Claude a échoué",
+        ai_timeout: "Claude a mis trop de temps à rédiger. Réessayez.",
+      } as Record<string, string>,
+    },
     services: "Services",
     shuttleMinutes: "Navette (min)",
     distanceKm: "Distance (km)",
@@ -1749,7 +1786,7 @@ export const fr = {
     steps: ["Repérer le terrain", "Découper en zones", "Générer les places"],
     title: "Plan du parking",
     intro:
-      "Tracez votre terrain sur la photo aérienne, découpez-le en zones, puis générez les places : la capacité déclarée se recalcule depuis les places actives.",
+      "Tracez votre terrain sur la photo aérienne, découpez-le en zones, puis générez les places : leur nombre (ou la capacité des files de voiturier) est la capacité utilisée partout (réservations, site, planning).",
     saving: "Enregistrement…",
     saved: "Enregistré",
     saveError: "Non enregistré",
@@ -1763,18 +1800,18 @@ export const fr = {
       "Le contour reste ; les zones sont redécoupées, les bâtiments IGN gardés.",
     resetSpots: "Les places seulement",
     resetSpotsHelp:
-      "Le tracé reste ; toutes les places sont effacées, même celles posées à la main ; la capacité déclarée ne bouge pas.",
+      "Le tracé reste ; toutes les places sont effacées, même celles posées à la main ; sans places, la capacité utilisée partout redevient le chiffre déclaré (ou celle des files).",
     resetFiles: "Files seulement",
     resetFilesHelp:
-      "Retire les files vides ; les places et le terrain restent.",
+      "Retire les files vides ; les places et le terrain restent. Sans files, le nombre de places redevient la capacité utilisée partout.",
     resetConfirm: {
-      all: "Effacer tout le plan (contour, zones, parties exclues, repères, places et files vides) ? La capacité déclarée ne change pas.",
+      all: "Effacer tout le plan (contour, zones, parties exclues, repères, places et files vides) ? La capacité utilisée partout redeviendra le chiffre déclaré dans les réglages (ou la capacité des files qui gardent des voitures).",
       zones:
-        "Effacer les zones et les parties exclues tracées à la main ? Les places générées seront effacées aussi.",
+        "Effacer les zones et les parties exclues tracées à la main ? Toutes les places seront effacées aussi, même celles posées à la main ; sans places, la capacité utilisée partout redevient le chiffre déclaré (ou celle des files).",
       spots:
-        "Effacer toutes les places, même celles posées à la main ? La capacité déclarée ne change pas.",
+        "Effacer toutes les places, même celles posées à la main ? Sans places, la capacité utilisée partout redevient le chiffre déclaré (ou celle des files).",
       files:
-        "Retirer toutes les files ? Une file qui contient des voitures ne peut pas être retirée.",
+        "Retirer toutes les files ? Une file qui contient des voitures ne peut pas être retirée. Sans files, la capacité utilisée partout redevient le nombre de places du plan (ou le chiffre déclaré).",
     },
     resetDone: "Plan réinitialisé",
     resetFilesDone: "Files retirées",
@@ -1811,10 +1848,9 @@ export const fr = {
     counts: "Places",
     countGenerated: "Générées",
     countActive: "Actives",
-    countDeclared: "Capacité déclarée",
-    applyCapacity: (n: number) => `Recalculer la capacité → ${n}`,
-    capacityApplied: (n: number) => `Capacité déclarée : ${n} places`,
-    capacityInSync: "Capacité déclarée à jour",
+    // 09/10/2026: the plan's spots or files are the capacity used everywhere.
+    capacityUsed: (n: number) =>
+      `Capacité utilisée partout : ${n} place${n > 1 ? "s" : ""}`,
     adjust: "Ajuster à la main",
     adjustHelp:
       "Cliquez une place pour la désactiver ou la réactiver ; choisissez un type puis cliquez des places pour le leur donner.",
@@ -2106,8 +2142,14 @@ export function errorMessage(code: string | undefined): string {
   return fr.errors[code] ?? fr.errors.unknown;
 }
 
-/** French message for any error thrown by the API client. */
-export function describeError(error: unknown): string {
+/**
+ * French message for any error thrown by the API client. `texts` overrides the wording of some codes for one screen
+ * (the `ai_*` codes speak of a photo for the zones, of a text for the presentation).
+ */
+export function describeError(
+  error: unknown,
+  texts?: Record<string, string>,
+): string {
   // A gateway answer (the function cut short, the API down) carries no code of ours.
   if (
     error instanceof ApiError &&
@@ -2116,7 +2158,8 @@ export function describeError(error: unknown): string {
     error.status <= 504
   )
     return fr.errors.gateway;
-  if (error instanceof ApiError) return errorMessage(error.code);
+  if (error instanceof ApiError)
+    return (error.code && texts?.[error.code]) || errorMessage(error.code);
   if (error instanceof TypeError) return fr.errors.network;
   return fr.errors.unknown;
 }

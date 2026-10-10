@@ -40,6 +40,7 @@ import type {
   ListingInput,
   ListingResponse,
   Listing,
+  DescriptionSuggestion,
   Pricing,
   PricingTier,
   NewStaff,
@@ -432,11 +433,6 @@ export const adminApi = {
       `/internal/parkings/${parkingId}/plan/suggest-zones`,
       { method: "POST", body: json(options) },
     ),
-  applyPlanCapacity: (parkingId: string) =>
-    apiRequest<{ data: ParkingPlanView }>(
-      `/internal/parkings/${parkingId}/plan/apply-capacity`,
-      { method: "POST" },
-    ),
 
   // Bloc 2, step "Occupation".
   // S-C (07/10/2026): files as the unit of storage.
@@ -687,6 +683,12 @@ export const adminApi = {
     apiRequest<{ data: Listing }>("/internal/listing", {
       method: "PUT",
       body: json(input),
+    }),
+  /** 09/10/2026: Claude writes the « Présentation », or improves `current` (nothing saved). */
+  suggestListingDescription: (current: string | null) =>
+    apiRequest<DescriptionSuggestion>("/internal/listing/description/suggest", {
+      method: "POST",
+      body: json(current ? { current } : {}),
     }),
   submitListing: () =>
     apiRequest<{ data: Listing }>("/internal/listing/submit", {

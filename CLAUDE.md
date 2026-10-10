@@ -18,6 +18,18 @@ deux phases) : la place de marché grand public fait partie du MVP. Deux faces, 
   n'est pas relié (`runPayouts` → `waitingForAccount`) ; les loueurs `isDemo` ne sont réservables qu'avec des clés Stripe de test.
 - **Espace pro pour les loueurs** : planning, plan du parking, navette, import des autres canaux
   (blocs 1 à 3 ci-dessous), plus leur fiche Plazo, leurs tarifs et leurs reversements.
+  **Présentation par Claude (09/10/2026, « pouvoir générer une Présentation pour son parking »)** : sur « Ma fiche »
+  (`ListingPage`), « Rédiger avec Claude » (« Améliorer avec Claude » quand le champ a un texte, envoyé en `current`) →
+  `POST /internal/listing/description/suggest` (`ListingDescriptionService`, `parking:manage`, `LISTING_DESCRIPTION_MODEL`,
+  30 s) ; `domain/listing-description.ts` : `descriptionFacts` (seulement les vraies données : fiche enregistrée, adresse,
+  aéroport et Terminal 1 pour LYS, prix de départ de la grille, navettes en service et places, dessertes, rendez-vous du
+  retour, voiturier si service ou files), consignes en français (texte brut, 2 à 4 paragraphes, ≤ 1 200 caractères,
+  première phrase autonome en 160 caractères pour Google, ni superlatif, ni Terminal 2, ni paiement sur place), et
+  `checkDescription` qui écarte (502 `ai_unreliable`, `details.figures`) un chiffre absent des faits ou du texte actuel (en
+  chiffres, ou en lettres devant une unité : « dix minutes », `spelledNumbersIn`), le
+  Terminal 2 ou plus de 2 000 caractères ; rien n'est enregistré : carte « Proposition de Claude » (« Utiliser ce texte »,
+  « Proposer une autre version », « Ignorer »), puis « Enregistrer » ; champ limité à 2 000 caractères avec compteur ;
+  textes d'erreur propres à la rédaction (`describeError(err, fr.plazo.writing.errors)`).
 - À valider avec un juriste / expert-comptable **avant la mise en ligne du paiement** : statut de la
   plateforme, TVA sur la commission, mandat de facturation, CGU/CGV.
 - Le site doit être utile même avec un seul loueur au lancement (client n°1) : les pages aéroport
@@ -274,6 +286,20 @@ Ne construire QUE ce qui règle la douleur n°1 du client.
      web `FilesPlanningPage.tsx` servie par `/parking/planning` dès que le parking a des files, app : mode files du
      `ProSpotPlanningBloc` (`_FilesPlanningView`). Voyageur : `TravellerReturn.file` affiché dans « Retrouver ma voiture »
      (site `ReturnLive`, app `find_car_page` / `return_block`).
+   - **Capacité = places du plan (09/10/2026, « le nombre de places généré doit être pris en compte dans toute
+     l'application »)** : `effectiveCapacity` (`domain/capacity.ts`) = capacité des files actives, sinon places actives du
+     plan (à la main et réservées comprises), sinon `Parking.totalCapacity` (le chiffre déclaré, gardé pour l'absence de
+     plan) ; marge par-dessus (`bookableCapacity`). `CapacityService.nights` le lit dans la même requête (CTE) : réservations
+     du personnel, imports, aperçu du formulaire, planning, recherche et réservation du site, paiement tardif ;
+     `loadPlanCapacity` (plusieurs parkings en une requête) pour `GET /internal/parking` (`declaredCapacity`,
+     `effectiveCapacity`, `capacitySource`), le tableau de bord, la vue du plan, les plannings des places et des files et
+     la Plateforme (`places`, annonces) ; `ParkingService.getPrimary` rend la ligne seule (navettes, chiffre d'affaires…),
+     `getPrimaryWithCapacity` y ajoute la capacité pour les écrans qui la montrent, et le planning la prend avec ses nuits.
+     Réglages web et app : chiffre en lecture seule « Calculé depuis le plan du parking » avec « Ouvrir le plan » (l'app
+     recharge au retour) ; éditeur : « Capacité utilisée partout : N places » à la place de « Recalculer la capacité »,
+     textes de « Réinitialiser… » qui préviennent du retour au chiffre déclaré (ou aux files) ; plan de l'app : « Files de
+     voiturier : N places · utilisées partout » quand les files comptent ; `apply-capacity` reste pour les anciennes
+     versions de l'app.
    - Retrouver un véhicule en quelques secondes (plaque, emplacement, emplacement des clés).
    - Si voiturier : suivi des clés confiées.
 

@@ -281,9 +281,11 @@ class _GenerateStep extends StatelessWidget {
   Widget build(BuildContext context) {
     final bloc = context.read<ProPlanBloc>();
     final estimate = state.estimate;
-    final chosen = state.countFor(state.layout);
-    final declared = state.parking!.totalCapacity;
     final spots = state.spots;
+    // 09/10/2026: the plan's spots (or valet files) are the capacity used everywhere. With files,
+    // their capacity wins over the spots, so the figure is labelled as theirs.
+    final view = state.view;
+    final capacityKey = view?.capacitySource == 'files' ? 'plan.used_everywhere_files' : 'plan.used_everywhere';
     return ListView(
       padding: EdgeInsets.zero,
       children: [
@@ -348,17 +350,15 @@ class _GenerateStep extends StatelessWidget {
                     ),
                   ),
                 ),
-              Row(
-                children: [
-                  Expanded(child: Text('plan.declared'.tr(), style: AppText.body(size: 13.5))),
-                  Text(
-                    chosen == null || chosen == declared ? '$declared' : '$declared → $chosen',
-                    key: const Key('plan-capacity'),
-                    style: AppText.tabular(size: 14, color: AppColors.accent),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 12),
+              if (view != null && view.capacitySource != 'declared' && !state.generated) ...[
+                Text(
+                  capacityKey.tr(args: ['${view.effectiveCapacity}']),
+                  key: const Key('plan-capacity'),
+                  style: AppText.strong(size: 13.5, color: AppColors.accent),
+                ),
+                const SizedBox(height: 4),
+              ],
+              const SizedBox(height: 8),
               if (state.generated)
                 Container(
                   padding: const EdgeInsets.all(12),
@@ -369,7 +369,7 @@ class _GenerateStep extends StatelessWidget {
                       const SizedBox(width: 8),
                       Expanded(
                         child: Text(
-                          'plan.applied'.tr(args: ['${state.view!.totalCapacity}']),
+                          capacityKey.tr(args: ['${state.view!.effectiveCapacity}']),
                           key: const Key('plan-applied'),
                           style: AppText.strong(size: 14),
                         ),

@@ -16,12 +16,14 @@ import {
   type StackFile,
   stackOf,
 } from '@/domain/file-stacks';
+import { activeFilesCapacity, effectiveCapacity } from '@/domain/capacity';
 import { buildFiles } from '@/domain/files';
 import { addDays, DATE_RE, dayBounds, localDate, parseInstant } from '@/domain/time';
 import { AssignFileDto, FileInputDto, ReplaceFilesDto } from '@/dtos/file.dto';
 import { AuthenticatedStaff } from '@/interfaces/auth.interface';
 import { HttpException } from '@/utils/httpException';
 import { AuditService } from './audit.service';
+import { loadPlanCapacity } from './capacity.service';
 import { TravellerMessagesService } from './traveller-messages.service';
 
 const HOLDING: ReservationStatus[] = HOLDING_STATUSES;
@@ -216,7 +218,7 @@ export class FileService {
       arrivals,
       stats: {
         files: files.filter(f => f.active).length,
-        capacity: files.filter(f => f.active).reduce((s, f) => s + f.capacity, 0),
+        capacity: activeFilesCapacity(files),
         cars,
         onSite: files.reduce((s, f) => s + f.cars.filter(c => c.onSite).length, 0),
         leavingToday: files.reduce((s, f) => s + f.cars.filter(c => c.leavesToday).length, 0),
@@ -474,7 +476,7 @@ export class FileService {
     await this.prepareIfStale(parking.id, parking.timezone, today);
     const { start: windowStart } = dayBounds(from, parking.timezone);
     const { end: windowEnd } = dayBounds(addDays(from, days - 1), parking.timezone);
-    const [rows, holding] = await Promise.all([
+    const [rows, holding, plan] = await Promise.all([
       prisma.parkingFile.findMany({ where: { parkingId: parking.id }, orderBy: [{ sortOrder: 'asc' }, { code: 'asc' }] }),
       prisma.reservation.findMany({
         where: {
@@ -484,6 +486,7 @@ export class FileService {
         },
         select: carSelect,
       }),
+      loadPlanCapacity([parking.id]).then(m => m.get(parking.id)!),
     ]);
     const localDay = (d: Date) => localDate(d, parking.timezone);
     // Cars blocked in each file (by code): the "unsound" alerts.
@@ -505,7 +508,8 @@ export class FileService {
         sound: blocked === 0,
       };
     });
-    const capacity = files.filter(f => f.active).reduce((s, f) => s + f.capacity, 0);
+    // The capacity used everywhere (09/10/2026): the room of the active files on a parking stored in files.
+    const capacity = effectiveCapacity({ declared: parking.totalCapacity, ...plan, activeFilesCapacity: activeFilesCapacity(files) }).total;
     const load: FilePlanningLoad[] = [];
     const alerts: FilePlanningAlert[] = [];
     for (let i = 0; i < days; i++) {
