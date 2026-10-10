@@ -904,7 +904,7 @@ describe('Allopark : la page de la réservation complète le mail (10/10/2026)',
     read.mockRestore();
   });
 
-  it('ouvre le lien « Consulter ma réservation » et crée la réservation avec ce que la page montre, sans Claude', async () => {
+  it('ouvre le lien « Consulter ma réservation » et crée la réservation avec ce que la page montre', async () => {
     const op = await connected();
     answer(() => new Response(page, { status: 200, headers: { 'Content-Type': 'text/html; charset=UTF-8' } }));
     // The email as Allopark sends it: « Vos informations » blank, the link in its HTML part.
@@ -914,7 +914,8 @@ describe('Allopark : la page de la réservation complète le mail (10/10/2026)',
     const [url, init] = allopark()[0];
     expect(String(url)).toBe(pageUrl);
     expect(init).toMatchObject({ redirect: 'manual' });
-    expect(read).not.toHaveBeenCalled();
+    // 10/10/2026 (relecture): Claude is asked whether the email is a booking; without its answer, the importer's word stands.
+    expect(read).toHaveBeenCalledTimes(1);
     const booking = await prisma.reservation.findFirstOrThrow({ where: { operatorId: op.operator.id } });
     expect(booking).toMatchObject({
       channelDetail: 'Allopark',
@@ -1000,6 +1001,31 @@ describe('Allopark : la page sans le lien du mail (10/10/2026, « tu ne vas pas 
     plate: 'GK-318-PX',
     passengers: 3,
   };
+  /** What Claude reads of an Allopark email: the stay, the name and the amount, « Vos informations » blank. */
+  const claude = (over: Partial<EmailReading> = {}): EmailReadingResult => ({
+    reading: {
+      kind: 'booking',
+      provider: 'Allopark',
+      externalReference: 'AL-884880719',
+      arrivalAt: '2026-10-01T08:30',
+      returnAt: '2026-10-03T17:00',
+      customerName: 'Jean Dupont',
+      customerFirstName: 'Jean',
+      customerLastName: 'Dupont',
+      customerPhone: null,
+      customerEmail: null,
+      plate: null,
+      returnFlight: null,
+      departureFlight: null,
+      passengers: null,
+      priceCents: 3499,
+      confidence: 0.9,
+      summary: 'Réservation Allopark AL-884880719 de Jean Dupont',
+      ...over,
+    },
+    model: 'claude-test',
+    usage: { inputTokens: 800, outputTokens: 120 },
+  });
   beforeEach(() => {
     process.env.ANTHROPIC_API_KEY = 'sk-ant-test';
     read = jest.spyOn(reader, 'read').mockResolvedValue(null);
@@ -1020,7 +1046,7 @@ describe('Allopark : la page sans le lien du mail (10/10/2026, « tu ne vas pas 
     ]);
     expect(res.body).toEqual({ received: 1, imported: 1, toCheck: 0, ignored: 0 });
     expect(allopark()).toEqual([urlOf('parking@example.com')]);
-    expect(read).not.toHaveBeenCalled();
+    expect(read).toHaveBeenCalledTimes(1);
     expect(await prisma.reservation.findFirstOrThrow({ where: { operatorId: op.operator.id } })).toMatchObject({ ...completed, priceCents: 3499 });
   });
 
@@ -1109,7 +1135,46 @@ describe('Allopark : la page sans le lien du mail (10/10/2026, « tu ne vas pas 
     expect(await prisma.reservation.findFirstOrThrow({ where: { operatorId: op.operator.id } })).toMatchObject({ ...completed, priceCents: 3499 });
   });
 
-  it('un mail Allopark que l’importeur ne reconnaît pas (« Allopark » dans l’expéditeur ou le texte, la référence dans l’objet) prend la réservation de la page', async () => {
+  it('10/10/2026 (relecture) : une entité HTML sans caractère (« &#99999999; ») n’empêche ni la lecture des liens ni la réception du mail brut', async () => {
+    const op = await connected();
+    const html =
+      '<p>Bonjour &#99999999; &#x110000; Jean Dupont,</p>' +
+      '<a href="https://www.allopark.com/fr-be/confirmation?email=contact@parking-lys.fr&amp;reference=AL-884880719&amp;view=parking">Consulter</a>';
+    const raw = (to: string) =>
+      Buffer.from(
+        [
+          'From: ALLOPARK <info@allopark.com>',
+          `To: ${to}`,
+          'Subject: Confirmation AL-884880719',
+          'MIME-Version: 1.0',
+          'Content-Type: text/html; charset=UTF-8',
+          '',
+          html,
+          '',
+        ].join('\r\n'),
+      );
+    const parsed = await parseRawEmail(raw(op.address), { from: 'info@allopark.com', to: op.address });
+    expect(parsed.Links).toEqual(['https://www.allopark.com/fr-be/confirmation?email=contact@parking-lys.fr&reference=AL-884880719&view=parking']);
+    const send = (to: string) =>
+      api()
+        .post('/api/public/inbound/email')
+        .set({
+          'Content-Type': 'message/rfc822',
+          'X-Inbound-Secret': 'inbound-test-secret',
+          'X-Envelope-From': 'info@allopark.com',
+          'X-Envelope-To': to,
+        })
+        .send(raw(to));
+    answer(() => new Response('Service Unavailable', { status: 503 }));
+    const res = await send(op.address);
+    expect([res.status, res.body.received, res.body.toCheck]).toEqual([200, 1, 1]);
+    expect(allopark()).toEqual([urlOf('contact@parking-lys.fr')]);
+    // For no parking: ignored, as any other.
+    const nobody = await send(`personne-0000@${op.address.split('@')[1]}`);
+    expect([nobody.status, nobody.body.ignored]).toEqual([200, 1]);
+  });
+
+  it('un mail Allopark que l’importeur ne reconnaît pas (« Allopark » dans l’expéditeur ou le texte, la référence dans l’objet) prend la réservation de la page, quand Claude y lit une réservation', async () => {
     const op = await connected();
     answer(pageFor('parking@example.com'));
     const text = [
@@ -1125,12 +1190,14 @@ describe('Allopark : la page sans le lien du mail (10/10/2026, « tu ne vas pas 
         From: { Name: 'Expéditeur', Address: from },
         Subject: 'Confirmation de votre réservation AL-884880719',
       });
+    read.mockResolvedValue(claude());
     expect((await post([forwarded(text, 'info@allopark.com')])).body).toEqual({ received: 1, imported: 1, toCheck: 0, ignored: 0 });
     expect(allopark()).toEqual([urlOf('parking@example.com')]);
-    expect(read).not.toHaveBeenCalled();
+    // 10/10/2026 (relecture): no importer, so Claude says whether the email is a booking at all.
+    expect(read).toHaveBeenCalledTimes(1);
     const booking = await prisma.reservation.findFirstOrThrow({ where: { operatorId: op.operator.id } });
-    // The page gives no amount.
-    expect(booking).toMatchObject({ ...completed, vehicleModel: 'Peugeot 308', returnFlight: 'TO 3627', priceCents: null });
+    // The page's fields; the amount the page does not give, Claude's.
+    expect(booking).toMatchObject({ ...completed, vehicleModel: 'Peugeot 308', returnFlight: 'TO 3627', priceCents: 3499 });
     expect(await prisma.inboundEmail.findFirstOrThrow({ where: { operatorId: op.operator.id } })).toMatchObject({
       status: 'imported',
       provider: 'Allopark',
@@ -1142,9 +1209,62 @@ describe('Allopark : la page sans le lien du mail (10/10/2026, « tu ne vas pas 
     expect(await prisma.inboundEmail.count({ where: { operatorId: op.operator.id, status: 'duplicate' } })).toBe(1);
     // Neither in the text, the subject nor the sender: no page, Claude alone.
     fetchMock.mockClear();
+    read.mockClear();
     await post([item('parking@example.com', text, { Recipients: [op.address], From: { Address: 'parking@example.com' }, Subject: 'AL-884880719' })]);
     expect(allopark()).toEqual([]);
     expect(read).toHaveBeenCalledTimes(1);
+  });
+
+  it('10/10/2026 (relecture) : sans importeur, la page seule ne crée rien ; Claude absent ou peu sûr, la réservation attend, pré-remplie ; lue comme autre chose, rien', async () => {
+    const op = await connected();
+    answer(pageFor('parking@example.com'));
+    const mail = (subject: string, text: string) =>
+      item('parking@example.com', text, { Recipients: [op.address], From: { Name: 'Joanny', Address: 'parking@example.com' }, Subject: subject });
+    // A customer quoting the booking: « Allopark » and the reference, nothing that says a change or a cancellation.
+    const question = mail('Re: Allopark AL-884880719', 'Bonjour, réservé sur Allopark, mon vol a du retard : pouvez-vous m’attendre ?');
+    expect(parseConfirmationEmail(question.RawTextBody)).toBeNull();
+
+    // Claude does not answer: the page's booking waits for a human eye.
+    read.mockResolvedValueOnce(null);
+    expect((await post([question])).body).toEqual({ received: 1, imported: 0, toCheck: 1, ignored: 0 });
+    // Claude reads another mail: nothing created, nothing taken from the page.
+    read.mockResolvedValueOnce(claude({ kind: 'other', provider: null, summary: 'Question d’un client sur son retour' }));
+    expect((await post([{ ...question, Subject: 'Re: Allopark AL-884880719 (2)' }])).body.toCheck).toBe(1);
+    // Claude reads a booking but is unsure of it: waits too.
+    read.mockResolvedValueOnce(claude({ confidence: 0.4 }));
+    expect((await post([{ ...question, Subject: 'Re: Allopark AL-884880719 (3)' }])).body.toCheck).toBe(1);
+    // Without a key at all: the same as no answer.
+    delete process.env.ANTHROPIC_API_KEY;
+    expect((await post([{ ...question, Subject: 'Re: Allopark AL-884880719 (4)' }])).body.toCheck).toBe(1);
+
+    expect(allopark()).toHaveLength(4);
+    expect(read).toHaveBeenCalledTimes(3);
+    expect(await prisma.reservation.count()).toBe(0);
+    const rows = await prisma.inboundEmail.findMany({ where: { operatorId: op.operator.id }, orderBy: { subject: 'asc' } });
+    expect(rows.map(r => [r.status, r.provider, r.missing])).toEqual([
+      ['incomplete', 'Allopark', ['confidence']],
+      ['unrecognised', null, null],
+      ['incomplete', 'Allopark', ['confidence']],
+      ['incomplete', 'Allopark', ['confidence']],
+    ]);
+    // Prefilled from the page for « Compléter »; the other mail keeps nothing of it.
+    expect(rows[0].parsed).toMatchObject({ externalReference: 'AL-884880719', plate: 'GK-318-PX', customerPhone: '+33 6 12 34 56 78' });
+    expect(rows[1]).toMatchObject({ parsed: null, reading: { kind: 'other' } });
+
+    // « Relancer l'analyse » while Claude is still away: the booking still waits.
+    const waiting = await api().post(`/api/internal/inbound/emails/${rows[0].id}/reanalyse`).set(auth(op.token));
+    expect([waiting.body.outcome, waiting.body.email.missing]).toEqual(['incomplete', ['confidence']]);
+    // Claude back, sure it is a booking: created.
+    process.env.ANTHROPIC_API_KEY = 'sk-ant-test';
+    read.mockResolvedValueOnce(claude());
+    await prisma.inboundEmail.update({ where: { id: rows[0].id }, data: { analysedAt: new Date(Date.now() - 31000) } });
+    const made = await api().post(`/api/internal/inbound/emails/${rows[0].id}/reanalyse`).set(auth(op.token));
+    expect(made.body.outcome).toBe('imported');
+    // The mail read as another one stays so, even when Claude does not answer at its re-analysis.
+    read.mockResolvedValueOnce(null);
+    const other = await api().post(`/api/internal/inbound/emails/${rows[1].id}/reanalyse`).set(auth(op.token));
+    expect([other.body.outcome, other.body.email.status, other.body.email.reading.kind]).toEqual(['unrecognised', 'unrecognised', 'other']);
+    expect(await prisma.reservation.count()).toBe(1);
   });
 
   it('une annulation ou une modification n’ouvre jamais la page', async () => {
@@ -1164,6 +1284,70 @@ describe('Allopark : la page sans le lien du mail (10/10/2026, « tu ne vas pas 
       { status: 'unrecognised' },
     ]);
     expect(await prisma.reservation.count()).toBe(0);
+  });
+
+  it('10/10/2026 (relecture) : « Votre réservation AL-… a été modifiée », « Réservation AL-… annulée » n’ouvrent pas la page, ne créent rien et restent « À traiter »', async () => {
+    const op = await connected();
+    answer(pageFor('parking@example.com'));
+    const mail = (subject: string, text: string) =>
+      item('parking@example.com', text, { Recipients: [op.address], Subject: subject, From: { Name: 'ALLOPARK', Address: 'info@allopark.com' } });
+    read.mockResolvedValueOnce(claude({ kind: 'modification', summary: 'Modification de la réservation AL-884880719' }));
+    read.mockResolvedValueOnce(claude({ kind: 'cancellation', summary: 'Annulation de la réservation AL-884880719' }));
+    await post([
+      mail(
+        'Votre réservation AL-884880719',
+        'Allopark\nVotre réservation AL-884880719 a été modifiée : du 2 octobre 2026 - 08:30 au 4 octobre 2026 - 17:00.',
+      ),
+      mail('Allopark AL-884880719', 'ALLOPARK\nRéservation AL-884880719 annulée.'),
+    ]);
+    expect(allopark()).toEqual([]);
+    expect(read).toHaveBeenCalledTimes(2);
+    const rows = await prisma.inboundEmail.findMany({ where: { operatorId: op.operator.id }, orderBy: { subject: 'asc' } });
+    expect(rows.map(r => [r.subject, r.status, (r.reading as { kind: string } | null)?.kind])).toEqual([
+      ['Allopark AL-884880719', 'incomplete', 'cancellation'],
+      ['Votre réservation AL-884880719', 'incomplete', 'modification'],
+    ]);
+    expect(await prisma.reservation.count()).toBe(0);
+    expect((await api().get('/api/internal/inbound/emails').set(auth(op.token))).body.counts.todo).toBe(2);
+  });
+
+  it('10/10/2026 (relecture) : une modification que rien ne signale ouvre la page, mais Claude la lit comme telle : ni doublon ni réservation, elle reste « À traiter », même relancée sans Claude', async () => {
+    const op = await connected();
+    answer(pageFor('parking@example.com'));
+    // The booking is already there (its confirmation, complete).
+    expect((await post([item(op.address, filled)])).body.imported).toBe(1);
+    const info = jest.spyOn(logger, 'info');
+    try {
+      read.mockResolvedValueOnce(claude({ kind: 'modification', summary: 'Nouvelles dates pour la réservation AL-884880719' }));
+      const change = item(
+        'parking@example.com',
+        'Allopark\nNouvelles dates pour votre séjour AL-884880719 : du 2 octobre 2026 - 08:30 au 4 octobre 2026 - 17:00.',
+        {
+          Recipients: [op.address],
+          Subject: 'Votre séjour AL-884880719',
+        },
+      );
+      expect((await post([change])).body).toEqual({ received: 1, imported: 0, toCheck: 1, ignored: 0 });
+      expect(allopark()).toEqual([urlOf('parking@example.com')]);
+      expect(info.mock.calls.map(([m]) => String(m))).toContain(
+        '[Allopark] AL-884880719: read as modification by Claude, nothing taken from the booking page',
+      );
+    } finally {
+      info.mockRestore();
+    }
+    const row = await prisma.inboundEmail.findFirstOrThrow({ where: { operatorId: op.operator.id, status: 'incomplete' } });
+    // The email's own fields wait, as they would without the page; Claude's reading says why.
+    expect(row).toMatchObject({ provider: 'Allopark', reservationId: null, reading: { kind: 'modification' } });
+    expect(row.parsed).not.toHaveProperty('plate');
+    expect(row.missing).toEqual(expect.arrayContaining(['customerPhone', 'plate']));
+
+    // Re-analysed while Claude is away: the page answers again, its booking is still not taken.
+    delete process.env.ANTHROPIC_API_KEY;
+    const res = await api().post(`/api/internal/inbound/emails/${row.id}/reanalyse`).set(auth(op.token));
+    expect([res.body.outcome, res.body.email.status, res.body.email.reading.kind]).toEqual(['incomplete', 'incomplete', 'modification']);
+    expect(allopark()).toHaveLength(2);
+    expect(await prisma.reservation.count()).toBe(1);
+    expect(await prisma.inboundEmail.count({ where: { operatorId: op.operator.id, status: 'duplicate' } })).toBe(0);
   });
 
   it('trois pages au plus, la boîte du gérant en dernier ; jamais un autre membre, un gérant inactif ni le gérant d’un autre loueur', async () => {
@@ -1330,7 +1514,8 @@ describe('relancer l’analyse d’un mail (10/10/2026)', () => {
     });
     await receive([gmail(op.address, 'Parking@Example.com')]);
 
-    // Claude is there now, but the page says everything: Claude is not asked, and its former reading goes.
+    // Claude is there now: asked whether the mail is a booking (10/10/2026, relecture), it does not answer this time; its
+    // former reading said so, the page says everything: the booking is made, the former reading goes.
     process.env.ANTHROPIC_API_KEY = 'sk-ant-test';
     fetchMock.mockClear();
     answerPage(() => new Response(page, { status: 200, headers: { 'Content-Type': 'text/html; charset=UTF-8' } }));
@@ -1338,7 +1523,7 @@ describe('relancer l’analyse d’un mail (10/10/2026)', () => {
     expect(res.status).toBe(200);
     expect(res.body.outcome).toBe('imported');
     expect(allopark().map(([u]) => String(u))).toEqual([pageUrl]);
-    expect(read).not.toHaveBeenCalled();
+    expect(read).toHaveBeenCalledTimes(1);
     expect(await prisma.inboundEmail.findUniqueOrThrow({ where: { id: row.id } })).toMatchObject({ reading: null, recipients: [], links: [] });
     const booking = await prisma.reservation.findFirstOrThrow({ where: { operatorId: op.operator.id } });
     expect(booking).toMatchObject({

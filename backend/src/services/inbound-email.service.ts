@@ -235,26 +235,32 @@ export class InboundEmailService {
    */
   private async analyse(input: AnalysisInput): Promise<Analysis> {
     const { operatorId, text, fromAddress, fromName, subject } = input;
-    // 10/10/2026: a subject that announces a cancellation or a change (« Annulation de votre réservation AL-… ») is no
-    // new booking either, whatever the text says.
-    let parsed = text && !isCancellationOrChange(subject ?? '') ? parseConfirmationEmail(text) : null;
+    // What the importers read of the email itself. 10/10/2026: a subject that announces a cancellation or a change
+    // (« Annulation de votre réservation AL-… ») is no new booking either, whatever the text says.
+    const found = text && !isCancellationOrChange(subject ?? '') ? parseConfirmationEmail(text) : null;
+    let parsed = found;
     // 10/10/2026: Allopark's emails leave « Vos informations » blank (plate, phone, name…); the booking page they link to
     // shows them, so it is opened before Claude is asked anything. Also for an Allopark email the importer did not
     // recognise (« Allopark » only in the sender, the reference only in the subject): the page then gives the booking.
     // Never for a cancellation or a change.
     const sender = [fromName, fromAddress].filter(Boolean).join(' ');
-    const allopark = !parsed || parsed.provider === 'Allopark' ? alloparkReferenceOf({ text, subject, from: sender }) : null;
-    if (allopark && (!parsed || missingForImport(parsed).length)) {
-      parsed = await this.withAlloparkPage(operatorId, parsed, parsed?.externalReference ?? allopark, input);
+    const allopark = !found || found.provider === 'Allopark' ? alloparkReferenceOf({ text, subject, from: sender }) : null;
+    const reference = found?.externalReference ?? allopark;
+    let fromPage = false;
+    if (allopark && reference && (!found || missingForImport(found).length)) {
+      parsed = await this.withAlloparkPage(operatorId, found, reference, input);
+      fromPage = parsed !== found;
     }
     // L-A (08/10/2026): what no importer knows, Claude reads; its answer is kept on the row for the inbox. Since
     // 09/10/2026 Claude also completes a confirmation an importer recognised but could not read in full (a comparator
     // that changed its layout, a detail in a part of the email the importer does not look at): the importer's fields
-    // stay, Claude only fills the gaps.
+    // stay, Claude only fills the gaps. 10/10/2026 (relecture): a booking completed by Allopark's page is read by Claude
+    // too, gaps or not: the page still shows the booking a change or a cancellation is about, only Claude tells them
+    // apart.
     let reading: ReadingMeta | null = null;
     let unsure = false;
     const gaps = parsed ? missingForImport(parsed) : [];
-    if ((!parsed || gaps.length) && text && this.reader.available()) {
+    if ((!parsed || gaps.length || fromPage) && text && this.reader.available()) {
       const timezone = await this.timezoneOf(operatorId);
       const result = await this.reader.read({ from: fromAddress, fromName, subject, text, timezone });
       if (result) {
@@ -263,17 +269,31 @@ export class InboundEmailService {
         if (kind === 'booking') {
           const read = toParsedBooking(result.reading);
           const filled = parsed ? fillGaps(parsed, read) : read;
-          // An unsure reading only matters for what it brought.
-          unsure = confidence < MIN_CONFIDENCE && (!parsed || gaps.some(key => filled[key] !== undefined));
+          // An unsure reading only matters for what it brought, or when nothing but Claude says it is a booking.
+          unsure = confidence < MIN_CONFIDENCE && (!found || gaps.some(key => filled[key] !== undefined));
           parsed = filled;
         }
       }
     }
+    // 10/10/2026 (relecture): the page's booking only when the email is one. Claude reads a change, a cancellation or
+    // another mail (now, or at a former analysis when it does not answer this time): the page's fields go, the email
+    // waits as it would have without the page (the importer's reading in « À traiter », or unrecognised). No importer:
+    // only Claude, sure of itself, makes the page's booking a booking; else it waits for a human eye.
+    const said = reading ?? input.previous?.reading ?? null;
+    const notBooking = fromPage && !!said && said.kind !== 'booking';
+    const unconfirmed = fromPage && !found && !notBooking && (!said || said.confidence < MIN_CONFIDENCE);
+    if (fromPage && reference) {
+      const label = `[Allopark] ${reference.trim().toUpperCase()}`;
+      if (notBooking) logger.info(`${label}: read as ${said?.kind} by Claude, nothing taken from the booking page`);
+      else if (unconfirmed) logger.info(`${label}: no importer and no sure reading by Claude, the booking waits for the staff`);
+    }
+    if (notBooking) parsed = found;
+    if (unconfirmed) unsure = true;
     // A re-analysis never knows less than the analysis before it: when Claude does not answer this time (no key, a
     // timeout, a refusal) or Allopark's page no longer does, the fields read then fill what is still blank; nothing of
     // it stays once Claude reads the email as something else than a booking.
     const before = input.previous?.parsed;
-    if (before && (!reading || reading.kind === 'booking')) {
+    if (before && !notBooking && (!reading || reading.kind === 'booking')) {
       const own = parsed;
       const merged = own ? fillGaps(own, before) : { ...before };
       const kept = !own || (Object.keys(merged) as (keyof ParsedBooking)[]).some(key => key !== 'provider' && !isSet(own[key]) && isSet(merged[key]));
@@ -289,15 +309,15 @@ export class InboundEmailService {
     const missing: string[] = missingForImport(booking);
     // An unsure reading waits for a human eye even when every field is there.
     if (unsure) missing.push('confidence');
-    const found = { provider: booking.provider, parsed: booking, reading };
-    if (missing.length) return { ...found, status: 'incomplete', missing, reservationId: null };
+    const result = { provider: booking.provider, parsed: booking, reading };
+    if (missing.length) return { ...result, status: 'incomplete', missing, reservationId: null };
     try {
       const created = await this.reservations.createFromImport(operatorId, booking);
-      return { ...found, status: created.duplicate ? 'duplicate' : 'imported', missing: [], reservationId: created.reservation.id };
+      return { ...result, status: created.duplicate ? 'duplicate' : 'imported', missing: [], reservationId: created.reservation.id };
     } catch (error) {
       // Dates the importer misread, a stay too long…: the staff read the email themselves.
       logger.warn(`[Inbound] Email for ${operatorId} not imported: ${error instanceof Error ? error.message : String(error)}`);
-      return { ...found, status: 'incomplete', missing: [error instanceof HttpException ? error.code || 'error' : 'error'], reservationId: null };
+      return { ...result, status: 'incomplete', missing: [error instanceof HttpException ? error.code || 'error' : 'error'], reservationId: null };
     }
   }
 
@@ -306,8 +326,9 @@ export class InboundEmailService {
    * own recipients, the forwarded message's header, its sender, the Gmail boxes that forward to Plazo, the managers:
    * alloparkPageAddresses), read for the fields the email left blank; the page's form names the customer, where the
    * email only greets them (« Bonjour Jean Dupont, »). An email no importer recognised (`found` null) takes the page's
-   * booking as it is. Unchanged when no page answers for this booking. Logged without any address, link or name
-   * (10/10/2026): the reference, the link found or not, the pages tried, the fields filled.
+   * booking as it is (Claude then says whether the email is a booking at all: analyse). Unchanged when no page answers
+   * for this booking. Logged without any address, link or name (10/10/2026): the reference, the link found or not, the
+   * pages tried, the fields filled.
    */
   private async withAlloparkPage(
     operatorId: string,

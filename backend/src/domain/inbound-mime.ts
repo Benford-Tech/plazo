@@ -24,6 +24,18 @@ function mailboxes(list: Address[] | undefined): InboundAddress[] {
 const clip = (value: string | undefined) => (value ? value.slice(0, BODY_MAX_CHARS) : null);
 
 /**
+ * The allopark.com links of the whole bodies; undefined when they cannot be read (10/10/2026, relecture: a message
+ * that breaks the reading still keeps its row; the reception then reads the links of the clipped bodies).
+ */
+function linksOf(email: Email): string[] | undefined {
+  try {
+    return alloparkLinks(email.html, email.text);
+  } catch {
+    return undefined;
+  }
+}
+
+/**
  * The message as the relay received it (RFC 822), parsed here rather than in the Worker (08/10/2026): the Workers
  * Free plan allows 10 ms of CPU per email, which a real confirmation (HTML, inline images) exceeded while decoding
  * (EXCEEDED_CPU, "Worker call failed after 3 attempts" for the sender). The envelope recipient names the parking,
@@ -63,6 +75,6 @@ export async function parseRawEmail(raw: Uint8Array, envelope: Envelope): Promis
     RawHtmlBody: clip(email.html),
     // 10/10/2026: the links are read from the whole bodies, before the clip: Allopark's « Consulter ma réservation »
     // button comes after 100 000 characters of HTML (inline styles, tables).
-    Links: alloparkLinks(email.html, email.text),
+    Links: linksOf(email),
   };
 }

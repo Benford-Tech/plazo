@@ -8,6 +8,7 @@ import {
   alloparkPageFacts,
   alloparkPageUrls,
   alloparkReferenceOf,
+  isAlloparkCancellationOrChange,
   MAX_LINKS,
   MAX_PAGES,
   parseAlloparkPage,
@@ -352,6 +353,58 @@ describe('Allopark : trouver la page sans le lien du mail (10/10/2026, « tu ne 
     // A cancellation or a change, in the subject or the text.
     expect(alloparkReferenceOf({ ...base, subject: 'Annulation de votre réservation AL-884880719' })).toBeNull();
     expect(alloparkReferenceOf({ ...base, text: 'Votre réservation a été modifiée.' })).toBeNull();
+  });
+
+  it('10/10/2026 (relecture) : une annulation, une modification ou un remboursement, la référence au milieu, n’ouvre pas la page ; une confirmation, si', () => {
+    const base = { text: 'Votre réservation est confirmée.', subject: 'Votre réservation AL-884880719', from: 'info@allopark.com' };
+    for (const text of [
+      'Votre réservation AL-884880719 a été annulée.',
+      'Réservation AL-884880719 annulée',
+      'Annulation AL-884880719',
+      'Votre réservation AL-884880719 a été modifiée : nouvelles dates.',
+      'Votre réservation N° AL-884880719 est annulée.',
+      'Remboursement de votre réservation AL-884880719',
+      'Modification de réservation AL-884880719',
+      'Your booking AL-884880719 was cancelled.',
+      'Your booking AL-884880719 has been cancelled.',
+    ]) {
+      expect([text, isAlloparkCancellationOrChange(null, text)]).toEqual([text, true]);
+      expect([text, alloparkReferenceOf({ ...base, text: `Allopark\n${text}` })]).toEqual([text, null]);
+    }
+    for (const subject of [
+      'Allopark - Annulation AL-884880719',
+      'Réservation AL-884880719 annulée',
+      'Remboursement AL-884880719',
+      'Booking AL-884880719 cancelled',
+    ]) {
+      expect([subject, alloparkReferenceOf({ ...base, subject })]).toEqual([subject, null]);
+    }
+    // What a confirmation says of a later cancellation does not count; the real confirmations still open their page.
+    for (const text of [
+      'Votre réservation peut être annulée gratuitement jusqu’à 24 h avant.',
+      'Votre réservation sera annulée sans paiement.',
+      'Your booking can be cancelled free of charge.',
+      'Assurance annulation',
+      'Annulation gratuite',
+      readFileSync(join(__dirname, 'fixtures/allopark-confirmation.txt'), 'utf8'),
+      textOf({ RawHtmlBody: html('allopark-customer.html') }),
+    ]) {
+      expect([text.slice(0, 60), isAlloparkCancellationOrChange('Confirmation de votre réservation AL-884880719', text)]).toEqual([
+        text.slice(0, 60),
+        false,
+      ]);
+    }
+    expect(alloparkReferenceOf({ ...base, subject: 'Confirmation de votre réservation AL-884880719 chez Aeroports Parking Lyon' })).toBe(
+      'AL-884880719',
+    );
+  });
+
+  it('10/10/2026 (relecture) : une entité HTML qui ne nomme aucun caractère reste telle quelle', () => {
+    const link = 'https://www.allopark.com/fr-be/confirmation?email=parking@example.com&amp;reference=AL-884880719';
+    expect(alloparkLinks(`&#99999999; &#x110000; &#xFFFFFFFFFFFFFFFFFFFF; <a href="${link}">x</a>`)).toEqual([
+      'https://www.allopark.com/fr-be/confirmation?email=parking@example.com&reference=AL-884880719',
+    ]);
+    expect(alloparkLinks(null, 'https://www.allopark.com/fr-be/page-&#99999999;')).toEqual(['https://www.allopark.com/fr-be/page-&']);
   });
 
   it('le lien de confirmation du mail, et ce qu’une page montre de la réservation', () => {

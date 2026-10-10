@@ -36,10 +36,15 @@ export function isAlloparkUrl(url: string): boolean {
   }
 }
 
+/** A numeric entity's character; the entity as written when it names no code point (10/10/2026: « &#99999999; » threw). */
+function codePoint(entity: string, code: number): string {
+  return Number.isInteger(code) && code >= 0 && code <= 0x10ffff ? String.fromCodePoint(code) : entity;
+}
+
 function decodeEntities(text: string): string {
   return text
-    .replace(/&#(\d+);/g, (_, code: string) => String.fromCodePoint(Number(code)))
-    .replace(/&#x([\da-f]+);/gi, (_, code: string) => String.fromCodePoint(parseInt(code, 16)))
+    .replace(/&#(\d+);/g, (entity: string, code: string) => codePoint(entity, Number(code)))
+    .replace(/&#x([\da-f]+);/gi, (entity: string, code: string) => codePoint(entity, parseInt(code, 16)))
     .replace(/&quot;/gi, '"')
     .replace(/&#39;|&apos;/gi, "'")
     .replace(/&lt;/gi, '<')
@@ -180,11 +185,37 @@ export function alloparkPageAddresses(input: PageCandidates, excludeDomain?: str
   return [...new Set(all.map(a => a.trim().toLowerCase()))].filter(a => isCandidate(a, excludeDomain));
 }
 
+/** A subject about anything else than a new booking: a cancellation, a refund, a change. */
+const SUBJECT_NOT_BOOKING = /\b(annul|rembours|modifi|cancel|changement)/i;
+/**
+ * The same in the text, the reference or other words in between (« Votre réservation AL-884880719 a été annulée »,
+ * « Annulation AL-… », « Your booking AL-… was cancelled »), which isCancellationOrChange (words side by side) misses;
+ * never a confirmation's « votre réservation peut être annulée » or « booking can be cancelled ».
+ */
+const TEXT_NOT_BOOKING = [
+  /r[ée]servation\b(?:(?!\bpeu[tv]|\bpourr|\bsera)[^\n.]){0,60}?\b(annul[ée]e|modifi[ée]e|rembours[ée]e)\b/i,
+  /\bbooking\b(?:(?!\bcan\b|\bmay\b|\bwill\b)[^\n.]){0,60}?\b(cancell?ed|modified|changed|refunded)\b/i,
+  /\b(annulation|modification|remboursement|cancellation)\b[^\n.]{0,40}?\bAL-\d{6,}/i,
+];
+
+/**
+ * 10/10/2026 (relecture): an Allopark email about a booking cancelled, changed or refunded, whatever the wording: its
+ * booking page is never opened (the page still shows the booking), Claude reads it and nothing is created.
+ */
+export function isAlloparkCancellationOrChange(subject: string | null, text: string): boolean {
+  return (
+    SUBJECT_NOT_BOOKING.test(subject ?? '') ||
+    isCancellationOrChange(`${subject ?? ''}\n${text}`) ||
+    TEXT_NOT_BOOKING.some(pattern => pattern.test(text))
+  );
+}
+
 /**
  * 10/10/2026: the Allopark reference whose booking page is worth opening, or null: an email that names Allopark (in
  * its text, subject or sender) and carries an Allopark reference (subject first, then text), that is no cancellation
- * or change (never a booking from the page for those). The importer may not have recognised it (« Allopark » only in
- * the sender, the reference only in the subject); the caller opens the page only when no importer read it in full.
+ * or change (never a booking from the page for those: isAlloparkCancellationOrChange). The importer may not have
+ * recognised it (« Allopark » only in the sender, the reference only in the subject); the caller opens the page only
+ * when no importer read it in full, and Claude still says whether the email is a booking at all.
  */
 export function alloparkReferenceOf(email: {
   text: string;
@@ -194,7 +225,7 @@ export function alloparkReferenceOf(email: {
 }): string | null {
   const subject = email.subject ?? '';
   if (!/allopark/i.test(`${subject}\n${email.text}\n${email.from ?? ''}`)) return null;
-  if (isCancellationOrChange(`${subject}\n${email.text}`)) return null;
+  if (isAlloparkCancellationOrChange(subject, email.text)) return null;
   return REFERENCE_IN_EMAIL.exec(subject)?.[0] ?? REFERENCE_IN_EMAIL.exec(email.text)?.[0] ?? null;
 }
 
