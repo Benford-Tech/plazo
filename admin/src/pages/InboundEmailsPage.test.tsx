@@ -346,6 +346,10 @@ describe("InboundEmailsPage (M-A « Boîte de réception », T-A « Deux gestes 
       await screen.findAllByTestId("inbound-row");
       expect(reading().getByTestId("inbound-reanalyse")).toHaveTextContent("Relancer l'analyse");
       expect(reading().queryByTestId("inbound-analysed")).toBeNull();
+      // 10/10/2026 (« mets les boutons d'action en haut du mail »): the toolbar comes before the subject.
+      const toolbar = reading().getByRole("toolbar", { name: "Actions du mail" });
+      expect(within(toolbar).getByTestId("inbound-reanalyse")).toBeInTheDocument();
+      expect(toolbar.compareDocumentPosition(reading().getByRole("heading", { level: 2 })) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
 
       await userEvent.click(within(screen.getAllByTestId("inbound-row")[1]).getByRole("button"));
       expect(reading().getByText("Texte effacé (30 jours).")).toBeInTheDocument();

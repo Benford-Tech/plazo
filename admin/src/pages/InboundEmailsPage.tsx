@@ -259,6 +259,43 @@ function Reading({
         <ChevronLeft className="h-4 w-4" aria-hidden="true" />
         {l.backToList}
       </button>
+      {/* 10/10/2026 (« mets les boutons d'action en haut du mail »): the gestures sit above the subject. */}
+      {(waiting || email.reservationId || canReanalyse || canHandle || canArchive) && (
+        <div role="toolbar" aria-label={l.actions} data-testid="inbound-actions" className="flex flex-wrap items-center gap-2 border-b border-panel-line px-5 py-3">
+            {waiting && (
+              <button
+                type="button"
+                data-testid="inbound-complete"
+                disabled={pending}
+                onClick={() => navigate("/reservations/nouvelle", { state: { prefill: email.parsed ?? { provider: email.provider ?? "" }, inboundId: email.id } })}
+                className={PRIMARY}
+              >
+                {email.parsed ? l.complete : l.typeIt}
+              </button>
+            )}
+            {email.reservationId && (
+              <Link to={`/reservations/${email.reservationId}`} className={OUTLINE}>
+                {l.openBooking(email.reservationReference ?? "")}
+              </Link>
+            )}
+            {canReanalyse && (
+              <button type="button" data-testid="inbound-reanalyse" disabled={pending} aria-busy={reanalysing} onClick={onReanalyse} className={cn(OUTLINE, "gap-2")}>
+                <RefreshCw className={cn("h-4 w-4", reanalysing && "motion-safe:animate-spin")} aria-hidden="true" />
+                {reanalysing ? l.reanalysing : l.reanalyse}
+              </button>
+            )}
+            {canHandle && (
+              <button type="button" data-testid="inbound-handle" disabled={pending} onClick={onHandle} className={waiting ? OUTLINE : PRIMARY}>
+                {l.handle}
+              </button>
+            )}
+            {canArchive && (
+              <button type="button" data-testid="inbound-archive" disabled={pending} onClick={onArchive} className={QUIET}>
+                {l.archive}
+              </button>
+            )}
+        </div>
+      )}
       <header className="space-y-2 border-b border-panel-line px-5 py-4">
         <div className="flex flex-wrap items-start gap-2">
           <h2 id="inbound-subject" className={cn("min-w-0 flex-1 text-xl font-bold leading-tight", !email.subject && "text-muted-foreground")}>
@@ -290,40 +327,6 @@ function Reading({
       </header>
       <div className="px-5 py-4">{email.textBody ? <MailBody text={email.textBody} /> : <p className="text-sm text-muted-foreground">{l.textGone}</p>}</div>
       {understood && <Understood email={email} />}
-      <footer className="flex flex-wrap items-center gap-2 border-t border-panel-line px-5 py-4">
-        {waiting && (
-          <button
-            type="button"
-            data-testid="inbound-complete"
-            disabled={pending}
-            onClick={() => navigate("/reservations/nouvelle", { state: { prefill: email.parsed ?? { provider: email.provider ?? "" }, inboundId: email.id } })}
-            className={PRIMARY}
-          >
-            {email.parsed ? l.complete : l.typeIt}
-          </button>
-        )}
-        {email.reservationId && (
-          <Link to={`/reservations/${email.reservationId}`} className={OUTLINE}>
-            {l.openBooking(email.reservationReference ?? "")}
-          </Link>
-        )}
-        {canReanalyse && (
-          <button type="button" data-testid="inbound-reanalyse" disabled={pending} aria-busy={reanalysing} onClick={onReanalyse} className={cn(OUTLINE, "gap-2")}>
-            <RefreshCw className={cn("h-4 w-4", reanalysing && "motion-safe:animate-spin")} aria-hidden="true" />
-            {reanalysing ? l.reanalysing : l.reanalyse}
-          </button>
-        )}
-        {canHandle && (
-          <button type="button" data-testid="inbound-handle" disabled={pending} onClick={onHandle} className={waiting ? OUTLINE : PRIMARY}>
-            {l.handle}
-          </button>
-        )}
-        {canArchive && (
-          <button type="button" data-testid="inbound-archive" disabled={pending} onClick={onArchive} className={QUIET}>
-            {l.archive}
-          </button>
-        )}
-      </footer>
     </article>
   );
 }

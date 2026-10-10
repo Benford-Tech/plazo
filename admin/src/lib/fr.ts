@@ -2580,6 +2580,7 @@ export const inboundFr = {
     handled: "Mail marqué comme traité.",
     archived: "Mail archivé.",
     attached: "Mail rattaché à la réservation.",
+    actions: "Actions du mail",
     /** « Relancer l'analyse » (10/10/2026): the reception's pipeline again, for a mail not attached to a booking. */
     reanalyse: "Relancer l'analyse",
     reanalysing: "Analyse en cours…",
