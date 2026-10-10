@@ -302,3 +302,66 @@ describe('le SMS de la veille dans l’espace pro', () => {
     expect(smsSent().filter(s => s.tag === 'booking_reminder')).toHaveLength(1);
   });
 });
+
+describe('en consultation (« Ouvrir son espace », 10/10/2026)', () => {
+  it('le super admin règle le SMS de la veille, une soirée, un départ exclu, fait le test et envoie, tracés à son nom', async () => {
+    const admin = await setupOperator('Plazo (plateforme)');
+    const op = await setupOperator();
+    await useBrevoSms(op.operator.id);
+    process.env.PLATFORM_ADMIN_EMAILS = admin.manager.email;
+    try {
+      const view = await api().post(`/api/internal/platform/operators/${op.operator.id}/view-as`).set(auth(admin.token));
+      expect(view.status).toBe(201);
+      const token = view.body.access.token as string;
+      const url = `/api/internal/parkings/${op.parking.id}/reminders`;
+      const today = localDate(new Date(), TZ);
+
+      const settings = await api().put(url).set(auth(token)).send({ sendTime: '19:30', template: 'Bonjour {prénom}, dépôt demain à {heure}.' });
+      expect([settings.status, settings.body.settings.sendTime, settings.body.settings.custom]).toEqual([200, '19:30', true]);
+      const evening = await api()
+        .put(`${url}/evenings/${addDays(today, 2)}`)
+        .set(auth(token))
+        .send({ paused: true });
+      expect(evening.status).toBe(200);
+      const kept = await booking(op, `${addDays(today, 1)}T12:00`, { name: 'Sophie Martin' });
+      const left = await booking(op, `${addDays(today, 1)}T14:00`, { name: 'Paul Durand' });
+      const excluded = await api().put(`/api/internal/reservations/${left.id}/reminder`).set(auth(token)).send({ excluded: true });
+      expect([excluded.status, excluded.body]).toEqual([200, { excluded: true }]);
+      // « M'envoyer un test »: to the number typed (the admin's own phone otherwise).
+      const test = await api().post(`${url}/test`).set(auth(token)).send({ to: '+33612345678' });
+      expect([test.status, test.body]).toEqual([200, { outcome: 'sent', to: '+33612345678' }]);
+      const now = await api().post(`${url}/evenings/${today}/send`).set(auth(token));
+      expect(now.status).toBe(200);
+      expect(smsSent().map(s => s.tag)).toEqual(['reminder_test', 'booking_reminder']);
+      expect(smsSent()[1].content).toBe('Bonjour Sophie, dépôt demain à 12:00.');
+
+      expect(await prisma.reminderSettings.findUniqueOrThrow({ where: { parkingId: op.parking.id } })).toMatchObject({
+        sendTime: '19:30',
+        updatedById: admin.manager.id,
+      });
+      expect(await prisma.reminderEvening.findFirstOrThrow({ where: { parkingId: op.parking.id } })).toMatchObject({
+        date: addDays(today, 2),
+        paused: true,
+        updatedById: admin.manager.id,
+      });
+      expect(await prisma.reservation.findUniqueOrThrow({ where: { id: left.id } })).toMatchObject({
+        reminderExcludedById: admin.manager.id,
+        reminderSentAt: null,
+      });
+      expect((await prisma.reservation.findUniqueOrThrow({ where: { id: kept.id } })).reminderSentAt).not.toBeNull();
+      const writes = await prisma.auditLog.findMany({
+        where: { operatorId: op.operator.id, staffId: admin.manager.id, action: 'view_as.write' },
+        orderBy: { createdAt: 'asc' },
+      });
+      expect(writes.map(e => (e.details as { path: string }).path)).toEqual([
+        url,
+        `${url}/evenings/${addDays(today, 2)}`,
+        `/api/internal/reservations/${left.id}/reminder`,
+        `${url}/test`,
+        `${url}/evenings/${today}/send`,
+      ]);
+    } finally {
+      delete process.env.PLATFORM_ADMIN_EMAILS;
+    }
+  });
+});

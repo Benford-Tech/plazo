@@ -2,7 +2,10 @@
 <html lang="fr">
 <head><meta charset="utf-8"><title>Allopark</title></head>
 <body>
-<!-- Allopark booking page (« Consulter ma réservation »), reduced to its booking blocks; every value is made up. -->
+<!-- Allopark booking page (« Consulter ma réservation »), reduced to its booking blocks; every value is made up.
+     10/10/2026: with the parking's « Suppléments éventuels » (never the booking's price) and Cloudflare's JS detection
+     script that every normal page carries (no anti-robot check). -->
+<div class="parking-extras"><h4>Suppléments éventuels</h4><p>Voiture électrique : recharge <span>€&nbsp;15,00</span> ; personne supplémentaire <span>5,00&nbsp;€</span></p></div>
 <div class="content-bloc mb-2 number-bloc" style="background: var(--color-yellow);">
                     <div class="d-lg-flex align-items-center justify-content-between">
                         <div class="d-flex flex-col">
@@ -116,5 +119,6 @@
                 <input type="hidden" name="reference" value="AL-884880719">
                 <input type="hidden" name="email"     value="parking@example.com">
                 </form>
+<script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'8c1f2e3d4a5b6c7d',t:'MTcyODU2MDAwMC4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=null,c())}}}})();</script>
 </body>
 </html>

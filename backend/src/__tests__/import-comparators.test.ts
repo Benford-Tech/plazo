@@ -1,10 +1,26 @@
 import { readFileSync } from 'fs';
 import { join } from 'path';
-import { parseConfirmationEmail } from '@/domain/importers';
-import { alloparkLinks, alloparkPageUrls, MAX_LINKS, parseAlloparkPage } from '@/domain/importers/allopark-page';
+import { isComparatorAddress, parseConfirmationEmail } from '@/domain/importers';
+import {
+  alloparkConfirmationPage,
+  alloparkLinks,
+  alloparkPageAddresses,
+  alloparkPageFacts,
+  alloparkPagePrice,
+  alloparkPageUrls,
+  alloparkReferenceOf,
+  hasAntiRobotCheck,
+  isAlloparkCancellationOrChange,
+  isAlloparkPageProtected,
+  MAX_LINKS,
+  MAX_PAGES,
+  parseAlloparkPage,
+} from '@/domain/importers/allopark-page';
 import { isCancellationOrChange } from '@/domain/importers/common';
-import { stripHtml, textOf } from '@/domain/inbound-email';
+import { forwardedRecipientsOf, stripHtml, textOf } from '@/domain/inbound-email';
 import { fillGaps } from '@/services/inbound-email.service';
+import { AlloparkPageService } from '@/services/allopark-page.service';
+import { logger } from '@/utils/logger';
 
 // 09/10/2026: the four comparators of the client's mailbox, from the samples Joanny sent (same layouts, fictional data).
 const html = (name: string) => readFileSync(join(__dirname, 'fixtures', name), 'utf8');
@@ -169,15 +185,24 @@ describe('Allopark : la page de la réservation (10/10/2026)', () => {
     ]);
   });
 
-  it('sans lien, la page de chaque adresse destinataire (deux au plus), jamais une adresse Plazo', () => {
+  it('sans lien, la page de chaque adresse candidate (trois au plus), jamais une adresse Plazo ni celle d’un comparateur', () => {
+    expect(MAX_PAGES).toBe(3);
     expect(
       alloparkPageUrls({
         links: alloparkLinks(null, 'Réservation AL-884880719'),
         reference: 'AL-884880719',
-        addresses: ['lys-7f3a@in.plazo.test', 'parking@example.com', 'PARKING@example.com', 'gerant@example.com', 'compta@example.com'],
+        addresses: [
+          'lys-7f3a@in.plazo.test',
+          'info@allopark.com',
+          'parking@example.com',
+          'PARKING@example.com',
+          'gerant@example.com',
+          'compta@example.com',
+          'quatrieme@example.com',
+        ],
         excludeDomain: 'in.plazo.test',
       }),
-    ).toEqual([pageUrl, pageUrl.replace('parking%40', 'gerant%40')]);
+    ).toEqual([pageUrl, pageUrl.replace('parking%40', 'gerant%40'), pageUrl.replace('parking%40', 'compta%40')]);
     expect(alloparkPageUrls({ links: [], reference: 'AL-884880719', addresses: ['lys-7f3a@in.plazo.test'], excludeDomain: 'in.plazo.test' })).toEqual(
       [],
     );
@@ -222,6 +247,8 @@ describe('Allopark : la page de la réservation (10/10/2026)', () => {
       customerLastName: 'Dupont',
       customerName: 'Jean Dupont',
       customerEmail: 'jean.dupont@example.com',
+      // 10/10/2026: the amount paid of the booking block.
+      priceCents: 3499,
     });
     // Blank fields stay out; another booking's page, or Allopark's home page, is not read.
     const blank = page.replace(/name="(brand|model|fly_arrival|fly_departure)"\s*value="[^"]*"/g, 'name="$1" value=""');
@@ -229,5 +256,325 @@ describe('Allopark : la page de la réservation (10/10/2026)', () => {
     expect(parseAlloparkPage(blank, 'AL-884880719')).not.toHaveProperty('returnFlight');
     expect(parseAlloparkPage(page, 'AL-222222222')).toBeNull();
     expect(parseAlloparkPage('<html><body>Comparez et réservez votre parking AL-884880719</body></html>', 'AL-884880719')).toBeNull();
+  });
+
+  it('10/10/2026 (« récupère aussi le prix ») : le montant payé du bloc de la réservation, jamais les suppléments ni un autre « € » de la page', () => {
+    expect(alloparkPagePrice(page)).toBe(3499);
+    expect(parseAlloparkPage(page.replace('</span>34,99</div>', '</span>24,00</div>'), 'AL-884880719')).toMatchObject({ priceCents: 2400 });
+    expect(alloparkPagePrice('<div class="price-payed"><div class="price"><span>€&nbsp;</span>1 234,50</div></div>')).toBe(123450);
+    expect(alloparkPagePrice("<div class='x price-payed'><div class='big price'>€ 19.9</div></div>")).toBe(1990);
+    // Without the block, the « Suppléments éventuels » (€ 15,00, 5,00 €) and the fee of a change (2,99 €) give nothing.
+    const noBlock = page.replace(/<div class="price-payed[^>]*><div class="price">[\s\S]*?<\/div>/, '');
+    expect(noBlock).toContain('Suppléments éventuels');
+    expect(alloparkPagePrice(noBlock)).toBeUndefined();
+    expect(parseAlloparkPage(noBlock, 'AL-884880719')).not.toHaveProperty('priceCents');
+    // A block that holds no plain amount, or zero, gives nothing either.
+    expect(alloparkPagePrice('<div class="price-payed"><div class="price">Offert</div></div>')).toBeUndefined();
+    expect(alloparkPagePrice('<div class="price-payed"><div class="price">€ 0,00</div></div>')).toBeUndefined();
+  });
+
+  it('10/10/2026 (« Prévent captcha ») : reconnaît une vérification anti-robot, jamais le script de détection de Cloudflare d’une page normale', () => {
+    // The real page carries Cloudflare's JS detection script: it is read, not « protected ».
+    expect(page).toContain('/cdn-cgi/challenge-platform/scripts/jsd/main.js');
+    expect(hasAntiRobotCheck(page)).toBe(false);
+    expect(isAlloparkPageProtected(page)).toBe(false);
+    for (const check of [
+      '<html><head><title>Just a moment...</title></head><body><script>window._cf_chl_opt={cvId: "3"}</script></body></html>',
+      '<form id="challenge-form" action="/fr-be/confirmation?__cf_chl_f_tk=x" method="POST"></form>',
+      '<div class="cf-turnstile" data-sitekey="0x4AAA"></div>',
+      '<div class="g-recaptcha" data-sitekey="6Lc"></div>',
+      '<div class="h-captcha" data-sitekey="10000000"></div>',
+    ]) {
+      expect([check.slice(0, 40), isAlloparkPageProtected(check)]).toEqual([check.slice(0, 40), true]);
+    }
+    // A booking page that happens to embed a captcha elsewhere (a contact form) is still a booking page.
+    expect(isAlloparkPageProtected(page.replace('</body>', '<div class="g-recaptcha"></div></body>'))).toBe(false);
+    // Allopark's home page without any check is no « protected » page.
+    expect(isAlloparkPageProtected('<html><body>Comparez et réservez votre parking</body></html>')).toBe(false);
+  });
+});
+
+describe('Allopark : trouver la page sans le lien du mail (10/10/2026, « tu ne vas pas chercher dans les liens »)', () => {
+  const pageUrl = 'https://www.allopark.com/fr-be/confirmation?email=parking%40example.com&reference=AL-884880719&view=parking';
+
+  it('lit les destinataires de l’en-tête d’un mail transféré (Gmail, Outlook, Apple Mail), et seulement là', () => {
+    const gmail = [
+      'Voici la réservation.',
+      '',
+      '---------- Forwarded message ---------',
+      'From: ALLOPARK <info@allopark.com>',
+      'Date: Wed, Sep 30, 2026 at 10:31 PM',
+      'Subject: Confirmation de votre réservation AL-884880719',
+      'To: <Parking@Example.com>',
+      '',
+      'Bonjour Jean Dupont,',
+    ].join('\n');
+    expect(forwardedRecipientsOf(gmail)).toEqual(['parking@example.com']);
+    const gmailFr = [
+      '---------- Message transféré ---------',
+      'De : ALLOPARK <info@allopark.com>',
+      'Date : mer. 30 sept. 2026 à 22:31',
+      'Objet : Confirmation de votre réservation AL-884880719',
+      'À : Parking Air Lyon <parking@example.com>, gerant@example.com',
+    ].join('\n');
+    expect(forwardedRecipientsOf(gmailFr)).toEqual(['parking@example.com', 'gerant@example.com']);
+    const outlook = [
+      '________________________________',
+      'De : ALLOPARK <info@allopark.com>',
+      'Envoyé : mercredi 30 septembre 2026 22:31',
+      'À : contact@parking.fr <mailto:contact@parking.fr>; Compta <compta@parking.fr>',
+      'Objet : Confirmation de votre réservation AL-884880719',
+    ].join('\r\n');
+    expect(forwardedRecipientsOf(outlook)).toEqual(['contact@parking.fr', 'compta@parking.fr']);
+    // Apple Mail, quoted lines, a non-breaking space before the colon, « Pour » and « Destinataire ».
+    expect(forwardedRecipientsOf('Début du message réexpédié :\n\n> De: ALLOPARK <info@allopark.com>\n> À\u00a0: parking@example.com')).toEqual([
+      'parking@example.com',
+    ]);
+    expect(forwardedRecipientsOf('De : Allopark\nPour : a@example.com\nDestinataire : b@example.com\nA : c@example.com')).toEqual([
+      'a@example.com',
+      'b@example.com',
+      'c@example.com',
+    ]);
+    // Outside a forwarded header (no « De : » nor marker just above), or « À moi » of Gmail's display: nothing.
+    expect(forwardedRecipientsOf('Bonjour,\nÀ : jean.dupont@example.com\nTo: x@example.com')).toEqual([]);
+    expect(forwardedRecipientsOf('ALLOPARK <info@allopark.com> Se désabonner\nÀ moi')).toEqual([]);
+    const far = ['De : ALLOPARK <info@allopark.com>', ...Array.from({ length: 12 }, (_, i) => `ligne ${i}`), 'À : tard@example.com'].join('\n');
+    expect(forwardedRecipientsOf(far)).toEqual([]);
+    // Five at most.
+    const many = `From: x\nTo: ${Array.from({ length: 8 }, (_, i) => `p${i}@example.com`).join(', ')}`;
+    expect(forwardedRecipientsOf(many)).toHaveLength(5);
+  });
+
+  it('les adresses candidates dans l’ordre : destinataires, en-tête transféré, expéditeur, boîte Gmail, gérants ; ni Plazo ni comparateur', () => {
+    const text = '---------- Message transféré ---------\nDe : ALLOPARK <info@allopark.com>\nÀ : <entete@example.com>, info@allopark.com';
+    expect(
+      alloparkPageAddresses(
+        {
+          recipients: ['dest@example.com', 'lys-7f3a@in.plazo.test'],
+          text,
+          from: 'Expediteur@Example.com',
+          requesters: ['gmail@example.com', 'dest@example.com'],
+          managers: ['gerant@example.com'],
+        },
+        'in.plazo.test',
+      ),
+    ).toEqual(['dest@example.com', 'entete@example.com', 'expediteur@example.com', 'gmail@example.com', 'gerant@example.com']);
+    // A comparator's sender is never a candidate: Allopark's own address, any address of a comparator's domain.
+    expect(alloparkPageAddresses({ recipients: [], text: '', from: 'info@allopark.com', requesters: [], managers: ['gerant@example.com'] })).toEqual([
+      'gerant@example.com',
+    ]);
+    expect(
+      ['info@allopark.com', 'reservations@mail.allopark.com', 'noreply@onepark.co', 'contact@parclick.com', 'x@parkmundo.com'].map(
+        isComparatorAddress,
+      ),
+    ).toEqual([true, true, true, true, true]);
+    expect(isComparatorAddress('parking@example.com')).toBe(false);
+    // Three pages at most, the manager last: dropped when the email gives three addresses before.
+    const urls = alloparkPageUrls({
+      links: [],
+      reference: 'AL-884880719',
+      addresses: alloparkPageAddresses({
+        recipients: ['parking@example.com'],
+        text,
+        from: 'expediteur@example.com',
+        requesters: [],
+        managers: ['gerant@example.com'],
+      }),
+    });
+    expect(urls).toEqual([pageUrl, pageUrl.replace('parking%40', 'entete%40'), pageUrl.replace('parking%40', 'expediteur%40')]);
+  });
+
+  it('la référence à ouvrir : Allopark nommé (texte, objet ou expéditeur), une référence AL-, jamais une annulation ou une modification', () => {
+    const base = { text: 'Votre réservation est confirmée.', subject: 'Confirmation de votre réservation AL-884880719', from: 'info@allopark.com' };
+    expect(alloparkReferenceOf(base)).toBe('AL-884880719');
+    expect(alloparkReferenceOf({ ...base, from: 'parking@example.com', subject: 'TR: Allopark AL-884880719' })).toBe('AL-884880719');
+    expect(alloparkReferenceOf({ text: 'Allopark : réservation N° AL-884880719', subject: null, from: null })).toBe('AL-884880719');
+    // Neither Allopark nor a reference: nothing.
+    expect(alloparkReferenceOf({ ...base, from: 'parking@example.com' })).toBeNull();
+    expect(alloparkReferenceOf({ ...base, subject: 'Confirmation de votre réservation' })).toBeNull();
+    // A cancellation or a change, in the subject or the text.
+    expect(alloparkReferenceOf({ ...base, subject: 'Annulation de votre réservation AL-884880719' })).toBeNull();
+    expect(alloparkReferenceOf({ ...base, text: 'Votre réservation a été modifiée.' })).toBeNull();
+  });
+
+  it('10/10/2026 (relecture) : une annulation, une modification ou un remboursement, la référence au milieu, n’ouvre pas la page ; une confirmation, si', () => {
+    const base = { text: 'Votre réservation est confirmée.', subject: 'Votre réservation AL-884880719', from: 'info@allopark.com' };
+    for (const text of [
+      'Votre réservation AL-884880719 a été annulée.',
+      'Réservation AL-884880719 annulée',
+      'Annulation AL-884880719',
+      'Votre réservation AL-884880719 a été modifiée : nouvelles dates.',
+      'Votre réservation N° AL-884880719 est annulée.',
+      'Remboursement de votre réservation AL-884880719',
+      'Modification de réservation AL-884880719',
+      'Your booking AL-884880719 was cancelled.',
+      'Your booking AL-884880719 has been cancelled.',
+    ]) {
+      expect([text, isAlloparkCancellationOrChange(null, text)]).toEqual([text, true]);
+      expect([text, alloparkReferenceOf({ ...base, text: `Allopark\n${text}` })]).toEqual([text, null]);
+    }
+    for (const subject of [
+      'Allopark - Annulation AL-884880719',
+      'Réservation AL-884880719 annulée',
+      'Remboursement AL-884880719',
+      'Booking AL-884880719 cancelled',
+    ]) {
+      expect([subject, alloparkReferenceOf({ ...base, subject })]).toEqual([subject, null]);
+    }
+    // What a confirmation says of a later cancellation does not count; the real confirmations still open their page.
+    for (const text of [
+      'Votre réservation peut être annulée gratuitement jusqu’à 24 h avant.',
+      'Votre réservation sera annulée sans paiement.',
+      'Your booking can be cancelled free of charge.',
+      'Assurance annulation',
+      'Annulation gratuite',
+      readFileSync(join(__dirname, 'fixtures/allopark-confirmation.txt'), 'utf8'),
+      textOf({ RawHtmlBody: html('allopark-customer.html') }),
+    ]) {
+      expect([text.slice(0, 60), isAlloparkCancellationOrChange('Confirmation de votre réservation AL-884880719', text)]).toEqual([
+        text.slice(0, 60),
+        false,
+      ]);
+    }
+    expect(alloparkReferenceOf({ ...base, subject: 'Confirmation de votre réservation AL-884880719 chez Aeroports Parking Lyon' })).toBe(
+      'AL-884880719',
+    );
+  });
+
+  it('10/10/2026 (relecture) : une entité HTML qui ne nomme aucun caractère reste telle quelle', () => {
+    const link = 'https://www.allopark.com/fr-be/confirmation?email=parking@example.com&amp;reference=AL-884880719';
+    expect(alloparkLinks(`&#99999999; &#x110000; &#xFFFFFFFFFFFFFFFFFFFF; <a href="${link}">x</a>`)).toEqual([
+      'https://www.allopark.com/fr-be/confirmation?email=parking@example.com&reference=AL-884880719',
+    ]);
+    expect(alloparkLinks(null, 'https://www.allopark.com/fr-be/page-&#99999999;')).toEqual(['https://www.allopark.com/fr-be/page-&']);
+  });
+
+  it('le lien de confirmation du mail, et ce qu’une page montre de la réservation', () => {
+    const links = alloparkLinks('<a href="https://www.allopark.com/fr-fr/confirmation?email=parking@example.com&amp;reference=AL-884880719">x</a>');
+    expect(alloparkConfirmationPage(links, 'al-884880719')).toBe(
+      'https://www.allopark.com/fr-fr/confirmation?email=parking%40example.com&reference=AL-884880719',
+    );
+    expect(alloparkConfirmationPage(links, 'AL-111111111')).toBeNull();
+    expect(alloparkConfirmationPage(['https://www.allopark.com/fr-be/contactez-nous'], 'AL-884880719')).toBeNull();
+    const page = html('allopark-page.html');
+    expect(alloparkPageFacts(page, 'AL-884880719')).toEqual({ form: true, reference: true });
+    expect(alloparkPageFacts(page, 'AL-222222222')).toEqual({ form: true, reference: false });
+    expect(alloparkPageFacts('<html>Comparez et réservez</html>', 'AL-884880719')).toEqual({ form: false, reference: false });
+  });
+});
+
+describe('Allopark : une vérification anti-robot n’est jamais passée (10/10/2026, « Prévent captcha »)', () => {
+  const page = html('allopark-page.html');
+  const urls = ['parking', 'entete', 'gerant'].map(
+    who => `https://www.allopark.com/fr-be/confirmation?email=${who}%40example.com&reference=AL-884880719&view=parking`,
+  );
+  const challenge =
+    '<!DOCTYPE html><html><head><title>Just a moment...</title></head><body><div id="challenge-stage"></div><script>window._cf_chl_opt={cType: "managed"}</script></body></html>';
+  const service = new AlloparkPageService();
+  let fetchMock: jest.SpyInstance;
+  let warn: jest.SpyInstance;
+  const answer = (respond: (url: string) => Response) => fetchMock.mockImplementation(async url => respond(String(url)));
+  beforeEach(() => {
+    fetchMock = jest.spyOn(global, 'fetch');
+    warn = jest.spyOn(logger, 'warn');
+  });
+  afterEach(() => {
+    fetchMock.mockRestore();
+    warn.mockRestore();
+  });
+
+  it('un 403 « cf-mitigated: challenge » : protégée, une seule page demandée, la première à ouvrir à la main, rien d’adresse au journal', async () => {
+    answer(() => new Response(challenge, { status: 403, headers: { 'cf-mitigated': 'challenge', 'Content-Type': 'text/html' } }));
+    expect(await service.booking(urls, 'AL-884880719')).toEqual({ booking: null, outcome: 'protected', url: urls[0] });
+    expect(fetchMock).toHaveBeenCalledTimes(1);
+    const logged = warn.mock.calls.map(([message]) => String(message));
+    expect(logged).toEqual([
+      '[Allopark] AL-884880719: page protected by an anti-robot check (captcha), left to the staff (page 1/3, HTTP 403 /fr-be/confirmation)',
+    ]);
+    for (const message of logged) expect(message).not.toMatch(/@|%40|email=/);
+  });
+
+  it('sans l’en-tête, la page de Cloudflare (403, 429, 503) ou une page 200 sans formulaire avec Turnstile ou « Just a moment » : protégée', async () => {
+    for (const respond of [
+      () => new Response(challenge, { status: 503 }),
+      () => new Response('<html><body><div class="cf-turnstile" data-sitekey="x"></div></body></html>', { status: 429 }),
+      () => new Response('<html><body><div class="cf-turnstile" data-sitekey="x"></div></body></html>', { status: 200 }),
+      () => new Response('<html><head><title>Just a moment...</title></head><body></body></html>', { status: 200 }),
+    ]) {
+      fetchMock.mockClear();
+      answer(respond);
+      expect(await service.booking(urls, 'AL-884880719')).toMatchObject({ booking: null, outcome: 'protected', url: urls[0] });
+      expect(fetchMock).toHaveBeenCalledTimes(1);
+    }
+  });
+
+  it('une page sans cette réservation puis la vérification : le lien ouvre la page protégée, pas la première (10/10/2026)', async () => {
+    answer(url =>
+      url === urls[0]
+        ? new Response('<html>Comparez et réservez</html>', { status: 200 })
+        : new Response(challenge, { status: 403, headers: { 'cf-mitigated': 'challenge' } }),
+    );
+    expect(await service.booking(urls, 'AL-884880719')).toEqual({ booking: null, outcome: 'protected', url: urls[1] });
+    expect(fetchMock).toHaveBeenCalledTimes(2);
+  });
+
+  it('un 429 sans vérification, ou un blocage de Cloudflare (403, 503) : on s’arrête là, une seule page demandée (10/10/2026)', async () => {
+    const rateLimited =
+      '<html><head><title>Access denied | www.allopark.com used Cloudflare to restrict access</title></head><body>Error 1015 You are being rate limited</body></html>';
+    const blocked = '<html><head><title>Attention Required! | Cloudflare</title></head><body>Error 1020 Access denied</body></html>';
+    for (const respond of [
+      () => new Response(rateLimited, { status: 429 }),
+      () => new Response(rateLimited, { status: 429, headers: { 'cf-ray': '8c1f2a3b4c5d6e7f-CDG', server: 'cloudflare' } }),
+      () => new Response(blocked, { status: 403, headers: { 'cf-ray': '8c1f2a3b4c5d6e7f-CDG' } }),
+      () => new Response(blocked, { status: 503, headers: { server: 'cloudflare' } }),
+    ]) {
+      fetchMock.mockClear();
+      warn.mockClear();
+      answer(respond);
+      expect(await service.booking(urls, 'AL-884880719')).toEqual({ booking: null, outcome: 'unavailable', url: urls[0] });
+      expect(fetchMock).toHaveBeenCalledTimes(1);
+      const logged = warn.mock.calls.map(([message]) => String(message));
+      expect(logged).toEqual([
+        expect.stringMatching(/^\[Allopark\] AL-884880719 page 1\/3: HTTP (429|403|503) \/fr-be\/confirmation, refused by Allopark/),
+      ]);
+      for (const message of logged) expect(message).not.toMatch(/@|%40|email=/);
+    }
+
+    // After a page without this booking, the link is the refused page, not the one ruled out.
+    fetchMock.mockClear();
+    answer(url => (url === urls[0] ? new Response('<html>Comparez et réservez</html>') : new Response(rateLimited, { status: 429 })));
+    expect(await service.booking(urls, 'AL-884880719')).toEqual({ booking: null, outcome: 'unavailable', url: urls[1] });
+    expect(fetchMock).toHaveBeenCalledTimes(2);
+  });
+
+  it('la vraie page (script de détection de Cloudflare compris) est lue ; 500 : indisponible ; une autre réservation : introuvable', async () => {
+    answer(() => new Response(page, { status: 200, headers: { 'Content-Type': 'text/html; charset=UTF-8' } }));
+    expect(await service.booking(urls, 'AL-884880719')).toMatchObject({ outcome: 'read', booking: { plate: 'GK-318-PX', priceCents: 3499 } });
+    expect(fetchMock).toHaveBeenCalledTimes(1);
+
+    // Other errors (a 403 neither challenged nor served by Cloudflare too) are read past: every page is tried.
+    fetchMock.mockClear();
+    answer(url => new Response('Internal Server Error', { status: url === urls[1] ? 403 : 500 }));
+    expect(await service.booking(urls, 'AL-884880719')).toEqual({ booking: null, outcome: 'unavailable', url: urls[0] });
+    expect(fetchMock).toHaveBeenCalledTimes(3);
+
+    fetchMock.mockClear();
+    answer(() => new Response(page, { status: 200 }));
+    expect(await service.booking(urls, 'AL-222222222')).toEqual({ booking: null, outcome: 'not_found', url: urls[0] });
+    expect(fetchMock).toHaveBeenCalledTimes(3);
+
+    // One page down, the others without the booking: it may be on the one that did not answer.
+    fetchMock.mockClear();
+    answer(url => (url === urls[0] ? new Response('Bad Gateway', { status: 502 }) : new Response('<html>Comparez et réservez</html>')));
+    expect(await service.booking(urls, 'AL-884880719')).toMatchObject({ outcome: 'unavailable', url: urls[0] });
+
+    // A network failure, too many redirects.
+    fetchMock.mockClear();
+    answer(() => {
+      throw new TypeError('fetch failed');
+    });
+    expect(await service.booking(urls.slice(0, 1), 'AL-884880719')).toMatchObject({ outcome: 'unavailable' });
+    answer(url => new Response(null, { status: 302, headers: { Location: `${url}&x=1` } }));
+    expect(await service.booking(urls.slice(0, 1), 'AL-884880719')).toMatchObject({ outcome: 'unavailable' });
   });
 });

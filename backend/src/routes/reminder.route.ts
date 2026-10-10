@@ -2,7 +2,7 @@ import { Router } from 'express';
 import { ReminderController } from '@/controllers/reminder.controller';
 import { ExcludeReminderDto, TestReminderDto, UpdateReminderEveningDto, UpdateReminderSettingsDto } from '@/dtos/reminder.dto';
 import { Routes } from '@/interfaces/routes.interface';
-import { RefuseInViewAs, StaffAuthMiddleware } from '@/middlewares/staff-auth.middleware';
+import { StaffAuthMiddleware } from '@/middlewares/staff-auth.middleware';
 import { ValidationMiddleware } from '@/middlewares/validation.middleware';
 
 /**
@@ -106,38 +106,31 @@ export class ReminderRoute implements Routes {
   public reminders = new ReminderController();
 
   constructor() {
+    // 10/10/2026: every route is open to « Ouvrir son espace » (traced as view_as.write); the test SMS goes to the
+    // number typed, else to the admin's own phone.
     this.router.get('/internal/parkings/:id/reminders', StaffAuthMiddleware('reservations:view'), this.reminders.board);
     this.router.put(
       '/internal/parkings/:id/reminders',
       StaffAuthMiddleware('parking:manage'),
-      RefuseInViewAs(),
       ValidationMiddleware(UpdateReminderSettingsDto),
       this.reminders.updateSettings,
     );
     this.router.put(
       '/internal/parkings/:id/reminders/evenings/:date',
       StaffAuthMiddleware('parking:manage'),
-      RefuseInViewAs(),
       ValidationMiddleware(UpdateReminderEveningDto),
       this.reminders.updateEvening,
     );
-    this.router.post(
-      '/internal/parkings/:id/reminders/evenings/:date/send',
-      StaffAuthMiddleware('reservations:manage'),
-      RefuseInViewAs(),
-      this.reminders.sendNow,
-    );
+    this.router.post('/internal/parkings/:id/reminders/evenings/:date/send', StaffAuthMiddleware('reservations:manage'), this.reminders.sendNow);
     this.router.post(
       '/internal/parkings/:id/reminders/test',
       StaffAuthMiddleware('parking:manage'),
-      RefuseInViewAs(),
       ValidationMiddleware(TestReminderDto),
       this.reminders.test,
     );
     this.router.put(
       '/internal/reservations/:id/reminder',
       StaffAuthMiddleware('reservations:manage'),
-      RefuseInViewAs(),
       ValidationMiddleware(ExcludeReminderDto),
       this.reminders.exclude,
     );

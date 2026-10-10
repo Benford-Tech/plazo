@@ -8,7 +8,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { adminApi } from "@/lib/api";
 import { dateTimeShort, localParts, timeOf, todayLocal } from "@/lib/datetime";
 import { describeError, inboundFr as t } from "@/lib/fr";
-import type { InboundEmail, InboundEmailList, InboundEmailStatus, InboundEmailView, InboundReanalysis, ParsedBooking } from "@/lib/types";
+import type { InboundEmail, InboundEmailList, InboundEmailStatus, InboundEmailView, InboundPageLookup, InboundReanalysis, ParsedBooking } from "@/lib/types";
 import { cn } from "@/lib/utils";
 
 const VIEWS: InboundEmailView[] = ["todo", "done", "archived"];
@@ -45,6 +45,8 @@ const URL_RE = /https?:\/\/[^\s<>"']+/g;
 const PRIMARY = "flex h-10 items-center rounded-full bg-primary px-4 text-sm font-bold text-primary-foreground hover:brightness-110 disabled:opacity-60";
 const OUTLINE = "flex h-10 items-center rounded-full border border-lime-deep px-4 text-sm font-semibold text-lime-deep hover:bg-accent disabled:opacity-60";
 const QUIET = "flex h-10 items-center px-3 text-sm text-muted-foreground underline-offset-4 hover:underline disabled:opacity-60";
+/** A link in the text of the pane (the mail's addresses, the Allopark page). */
+const TEXT_LINK = "font-medium text-lime-deep underline underline-offset-4";
 
 /** The tab a mail of this status sits in (a forwarding confirmation is never listed). */
 const viewOf = (status: InboundEmailStatus): InboundEmailView => (TO_CHECK.includes(status) ? "todo" : status === "archived" ? "archived" : "done");
@@ -105,7 +107,7 @@ function linkify(line: string): ReactNode[] {
     const url = match[0].slice(0, match[0].length - trail.length);
     if (start > last) out.push(<Fragment key={`t${start}`}>{line.slice(last, start)}</Fragment>);
     out.push(
-      <a key={`a${start}`} href={url} target="_blank" rel="noopener noreferrer" className="break-all font-medium text-lime-deep underline underline-offset-4">
+      <a key={`a${start}`} href={url} target="_blank" rel="noopener noreferrer" className={cn("break-all", TEXT_LINK)}>
         {url}
       </a>,
     );
@@ -186,6 +188,33 @@ function ReadingLine({ reading, missing }: { reading: NonNullable<InboundEmail["
       {unsure && <p className="text-warn-text">{l.unsure}</p>}
       {reading.kind !== "booking" && <p className="text-muted-foreground">{l.notBooking}</p>}
     </div>
+  );
+}
+
+/** Only Allopark's own https pages are offered as a link (the server sends no other). */
+const ALLOPARK_PAGE = /^https:\/\/(?:www\.)?allopark\.com\//i;
+
+/**
+ * 10/10/2026 (« Prévent captcha »): what became of the Allopark booking page. Plazo never passes an anti-robot check:
+ * for a failure, the staff open the page in their own browser, pass the check themselves, then « Compléter » the
+ * booking or « Relancer l'analyse » later.
+ */
+function PageLookupLine({ lookup }: { lookup: InboundPageLookup }) {
+  const l = t.list.alloparkPage;
+  const failed = lookup.outcome !== "read";
+  return (
+    <p data-testid="inbound-allopark-line" className="text-sm">
+      <span className="text-muted-foreground">{l.label} : </span>
+      <span className={cn("font-semibold", failed && "text-warn-text")}>{l.outcome[lookup.outcome]}</span>
+      {failed && lookup.url && ALLOPARK_PAGE.test(lookup.url) && (
+        <>
+          {" · "}
+          <a data-testid="inbound-allopark-page" href={lookup.url} target="_blank" rel="noopener noreferrer" className={TEXT_LINK}>
+            {l.open}
+          </a>
+        </>
+      )}
+    </p>
   );
 }
 
@@ -323,6 +352,7 @@ function Reading({
             <span className="font-semibold text-lime-deep">{email.provider}</span>
           </p>
         )}
+        {email.pageLookup && <PageLookupLine lookup={email.pageLookup} />}
         {email.reading && <ReadingLine reading={email.reading} missing={email.missing} />}
       </header>
       <div className="px-5 py-4">{email.textBody ? <MailBody text={email.textBody} /> : <p className="text-sm text-muted-foreground">{l.textGone}</p>}</div>

@@ -12,6 +12,7 @@ import type {
   AlertKind,
   InboundEmailStatus,
   InboundEmailView,
+  InboundPageOutcome,
   InboundReadingKind,
   ShuttleDirection,
   WaveState,
@@ -167,6 +168,8 @@ export const fr = {
     account_suspended: `Ce compte est suspendu. Contactez l'équipe ${PRODUCT.name}.`,
     view_as_read_only:
       "En consultation, l'équipe, les mots de passe et les paiements du loueur ne se modifient pas.",
+    view_as_not_driver:
+      "En consultation, vous ne conduisez pas la navette : démarrez le trajet depuis le compte d'un chauffeur.",
     view_as_ended: "La consultation de l'espace du loueur est terminée.",
     email_not_verified:
       "Confirmez d'abord votre adresse email (lien reçu par email).",
@@ -320,7 +323,7 @@ export const fr = {
     note: "Vos modifications sont tracées dans le journal à votre nom.",
     back: "Revenir à la plateforme",
     readOnly:
-      "En consultation, l'équipe, les mots de passe et le compte du loueur sont en lecture seule.",
+      "En consultation, l'équipe, les mots de passe et les paiements du loueur ne se modifient pas.",
   },
   nav: {
     planning: "Planning",
@@ -2539,6 +2542,20 @@ export const inboundFr = {
         : (name ?? address ?? "expéditeur inconnu"),
     received: "Reçu le",
     recognised: "Reconnu",
+    /**
+     * 10/10/2026 (« Prévent captcha »): the Allopark booking page of the mail. Plazo never passes an anti-robot check:
+     * the staff open the page in their own browser, then « Compléter » or « Relancer l'analyse ».
+     */
+    alloparkPage: {
+      label: "Page Allopark",
+      outcome: {
+        read: "lue, champs complétés",
+        protected: "vérification anti-robot demandée",
+        unavailable: "indisponible",
+        not_found: "réservation introuvable sur la page",
+      } satisfies Record<InboundPageOutcome, string>,
+      open: "Ouvrir la page Allopark",
+    },
     /** L-A (08/10/2026): what Claude made of a mail no importer knew. */
     reading: {
       title: "Lu par Claude",

@@ -103,8 +103,11 @@ import { ValidationMiddleware } from '@/middlewares/validation.middleware';
  *     summary: Open the operator's space — a 60-minute access token scoped to it, without refresh
  *     description: >
  *       The token acts as a manager of the operator. Its writes are audited with the admin's own
- *       staff id (action view_as.write); team, password and account changes are refused (403
- *       view_as_read_only). It stops working as soon as the email leaves PLATFORM_ADMIN_EMAILS.
+ *       staff id (action view_as.write). Only the team, the passwords and credentials (SMS gateway),
+ *       the payments and the person's own settings (name, post, vehicle, devices, notification
+ *       preferences) are refused (403 view_as_read_only, 10/10/2026); starting a shuttle trip or sending
+ *       its position too (403 view_as_not_driver: the admin is not one of the operator's drivers).
+ *       It stops working as soon as the email leaves PLATFORM_ADMIN_EMAILS.
  *     tags: [Platform]
  *     parameters:
  *       - { in: path, name: id, required: true, schema: { type: string } }

@@ -543,7 +543,7 @@ describe('ouvrir l’espace d’un loueur (view-as)', () => {
     expect((await api().get('/api/internal/parking').set(auth(admin.token))).body.id).toBe(admin.parking.id);
   });
 
-  it('laisse l’équipe, les mots de passe et le compte du loueur en lecture seule', async () => {
+  it('laisse l’équipe, les mots de passe et les réglages personnels en lecture seule', async () => {
     const token = await viewAs();
     expect((await api().get('/api/internal/staff').set(auth(token))).status).toBe(200);
     const attempts = [
@@ -557,6 +557,12 @@ describe('ouvrir l’espace d’un loueur (view-as)', () => {
       api().post(`/api/internal/staff/${loueur.manager.id}/reset-password`).set(auth(token)).send({ password: 'nouveau-mot-de-passe' }),
       api().patch('/api/internal/staff/me/password').set(auth(token)).send({ currentPassword: PASSWORD, newPassword: 'nouveau-mot-de-passe' }),
       api().post('/api/internal/auth/verify-email/resend').set(auth(token)),
+      // The signed-in person's own settings: post, vehicle, phones and notification preferences.
+      api().patch('/api/internal/staff/me/post').set(auth(token)).send({ post: 'driver' }),
+      api().patch('/api/internal/staff/me/vehicle').set(auth(token)).send({ vehicleId: null }),
+      api().put('/api/internal/notifications/devices').set(auth(token)).send({ subscriptionId: 'sub-admin', platform: 'web' }),
+      api().delete('/api/internal/notifications/devices/sub-admin').set(auth(token)),
+      api().patch('/api/internal/notifications/preferences').set(auth(token)).send({ bookings: 'never' }),
     ];
     for (const res of await Promise.all(attempts)) expect([res.status, res.body.code]).toEqual([403, 'view_as_read_only']);
     expect(await prisma.staff.count({ where: { operatorId: loueur.operator.id } })).toBe(1);
@@ -576,6 +582,89 @@ describe('ouvrir l’espace d’un loueur (view-as)', () => {
     for (const res of await Promise.all(attempts)) expect([res.status, res.body.code]).toEqual([403, 'view_as_read_only']);
     const operator = await prisma.operator.findUniqueOrThrow({ where: { id: loueur.operator.id } });
     expect([operator.stripeAccountId, operator.payoutSchedule]).toEqual([null, 'AFTER_STAY']);
+  });
+
+  it('10/10/2026 : règle le suivi des navettes et les dessertes du loueur, tracés à son nom', async () => {
+    const token = await viewAs();
+    const tracking = await api().put(`/api/internal/parkings/${loueur.parking.id}/shuttle-tracking`).set(auth(token)).send({ tracking: 'off' });
+    expect(tracking.status).toBe(200);
+    expect((await prisma.parking.findUniqueOrThrow({ where: { id: loueur.parking.id } })).shuttleTracking).toBe('off');
+
+    const added = await api()
+      .post('/api/internal/shuttle/stops')
+      .set(auth(token))
+      .send({ kind: 'station', name: 'Gare TGV', lat: 45.72, lng: 5.075 });
+    expect(added.status).toBe(201);
+    const stopId = added.body.data.id as string;
+    const edited = await api().patch(`/api/internal/shuttle/stops/${stopId}`).set(auth(token)).send({ instructions: 'Sortie Est, quai 2' });
+    expect([edited.status, edited.body.data.instructions]).toEqual([200, 'Sortie Est, quai 2']);
+    expect((await api().get('/api/internal/shuttle/stops').set(auth(loueur.token))).body.data).toEqual(
+      expect.arrayContaining([expect.objectContaining({ id: stopId, name: 'Gare TGV', instructions: 'Sortie Est, quai 2' })]),
+    );
+    expect((await api().delete(`/api/internal/shuttle/stops/${stopId}`).set(auth(token))).status).toBe(204);
+
+    const entries = await prisma.auditLog.findMany({
+      where: { operatorId: loueur.operator.id, staffId: admin.manager.id },
+      orderBy: { createdAt: 'asc' },
+    });
+    const own = entries.filter(e => e.action !== 'view_as.write' && e.action !== 'operator.view_as_started');
+    expect(own.map(e => [e.action, (e.details as { viewAs?: boolean }).viewAs])).toEqual([
+      ['parking.settings_updated', true],
+      ['shuttle.stop_added', true],
+      ['shuttle.stop_updated', true],
+      ['shuttle.stop_removed', true],
+    ]);
+    expect(entries.filter(e => e.action === 'view_as.write').map(e => (e.details as { path: string }).path)).toEqual([
+      `/api/internal/parkings/${loueur.parking.id}/shuttle-tracking`,
+      '/api/internal/shuttle/stops',
+      `/api/internal/shuttle/stops/${stopId}`,
+      `/api/internal/shuttle/stops/${stopId}`,
+    ]);
+  });
+
+  it('10/10/2026 : ne conduit pas la navette du loueur (view_as_not_driver), mais termine un trajet resté ouvert', async () => {
+    const driver = await addStaff(loueur.token, 'driver');
+    const created = await api().post('/api/internal/reservations').set(auth(loueur.token)).send({
+      channel: 'phone',
+      arrivalAt: '2030-01-10T08:00',
+      returnAt: '2030-01-12T18:00',
+      passengers: 2,
+      customerFirstName: 'Camille',
+      customerLastName: 'Martin',
+      customerPhone: '0612345678',
+      plate: 'AB-123-CD',
+    });
+    expect(created.status).toBe(201);
+    const id = created.body.data.id as string;
+    await prisma.reservation.update({ where: { id }, data: { status: 'arrived' } });
+    const token = await viewAs();
+
+    const start = (bearer: string) =>
+      api()
+        .post('/api/internal/shuttle/trips')
+        .set(auth(bearer))
+        .send({ reservationIds: [id], direction: 'dropoff' });
+    const refused = await start(token);
+    expect([refused.status, refused.body.code]).toEqual([403, 'view_as_not_driver']);
+    const trip = await start(driver.token);
+    expect(trip.status).toBe(201);
+    const tripId = trip.body.trip.id as string;
+    const position = await api()
+      .post(`/api/internal/shuttle/trips/${tripId}/position`)
+      .set(auth(token))
+      .send({ lat: 45.74, lng: 5.06, accuracy: 8, recordedAt: new Date().toISOString() });
+    expect([position.status, position.body.code]).toEqual([403, 'view_as_not_driver']);
+    expect(await prisma.shuttleTrip.count({ where: { driverId: admin.manager.id } })).toBe(0);
+
+    // A trip left running (the driver's phone off): support ends it, the passengers left for the terminal.
+    const ended = await api().post(`/api/internal/shuttle/trips/${tripId}/end`).set(auth(token));
+    expect([ended.status, ended.body.trip.status]).toEqual([200, 'ended']);
+    expect((await prisma.reservation.findUniqueOrThrow({ where: { id } })).status).toBe('shuttled_out');
+    const entries = await prisma.auditLog.findMany({ where: { operatorId: loueur.operator.id, staffId: admin.manager.id } });
+    expect(entries.find(e => e.action === 'shuttle.trip_ended')).toMatchObject({ entityId: tripId, details: { viewAs: true } });
+    expect(entries.filter(e => e.action === 'view_as.write').map(e => (e.details as { path: string }).path)).toContain(
+      `/api/internal/shuttle/trips/${tripId}/end`,
+    );
   });
 
   it('ne vaut que tant que la personne est super admin', async () => {

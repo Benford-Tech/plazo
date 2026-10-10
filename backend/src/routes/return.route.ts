@@ -15,6 +15,9 @@ import { RefuseInViewAs, StaffAuthMiddleware } from '@/middlewares/staff-auth.mi
 import { ReturnNoticeDto } from '@/dtos/arrival.dto';
 import { ValidationMiddleware } from '@/middlewares/validation.middleware';
 
+const VIEW_AS_NOT_DRIVER = 'view_as_not_driver';
+const NOT_DRIVER_MESSAGE = 'A platform admin viewing an operator space does not drive its shuttle';
+
 /**
  * @swagger
  * tags:
@@ -330,7 +333,8 @@ import { ValidationMiddleware } from '@/middlewares/validation.middleware';
  *       One running trip per driver (409 trip_already_running, details.tripId). Passengers must be
  *       bookings of the operator whose vehicle is on site (422 invalid_passengers) and not already on
  *       a running trip (409 already_on_trip). The vehicle is one of the operator's (vehicleId) or typed
- *       freely (vehicle). The trip ends by itself 90 minutes after the start.
+ *       freely (vehicle). The trip ends by itself 90 minutes after the start. 403 view_as_not_driver in a platform
+ *       admin's view-as session (not one of the operator's drivers).
  *     tags: [Shuttle]
  *     requestBody:
  *       required: true
@@ -352,7 +356,8 @@ import { ValidationMiddleware } from '@/middlewares/validation.middleware';
  *     description: >
  *       Replaces the previous position (never a history). 429 "too_many_positions" (details.retryAfterSeconds)
  *       within 10 s of the previous one; 409 "trip_not_running" once the trip ended; 400 "position_too_old"
- *       (more than 5 min) or "invalid_recorded_at" (in the future).
+ *       (more than 5 min) or "invalid_recorded_at" (in the future); 403 "view_as_not_driver" in a platform admin's
+ *       view-as session.
  *     tags: [Shuttle]
  *     parameters: [{ in: path, name: id, required: true, schema: { type: string } }]
  *     requestBody:
@@ -372,7 +377,7 @@ import { ValidationMiddleware } from '@/middlewares/validation.middleware';
  * /internal/shuttle/trips/{id}/end:
  *   post:
  *     summary: "\"Clients récupérés · retour parking\": the trip ends, the position is erased"
- *     description: The driver, or a manager or agent closing a forgotten trip.
+ *     description: The driver, or a manager or agent closing a forgotten trip (a platform admin in view-as too).
  *     tags: [Shuttle]
  *     parameters: [{ in: path, name: id, required: true, schema: { type: string } }]
  *     responses:
@@ -395,21 +400,15 @@ export class ReturnRoute implements Routes {
     this.router.delete(`${base}/devices/:subscriptionId`, this.returns.unregisterDevice);
 
     this.router.get('/internal/shuttle/stops', StaffAuthMiddleware('reservations:view'), this.shuttle.stops);
-    this.router.post(
-      '/internal/shuttle/stops',
-      StaffAuthMiddleware('parking:manage'),
-      RefuseInViewAs(),
-      ValidationMiddleware(ShuttleStopDto),
-      this.shuttle.addStop,
-    );
+    // The stops are open to « Ouvrir son espace » since 10/10/2026 (traced as view_as.write).
+    this.router.post('/internal/shuttle/stops', StaffAuthMiddleware('parking:manage'), ValidationMiddleware(ShuttleStopDto), this.shuttle.addStop);
     this.router.patch(
       '/internal/shuttle/stops/:id',
       StaffAuthMiddleware('parking:manage'),
-      RefuseInViewAs(),
       ValidationMiddleware(UpdateShuttleStopDto),
       this.shuttle.updateStop,
     );
-    this.router.delete('/internal/shuttle/stops/:id', StaffAuthMiddleware('parking:manage'), RefuseInViewAs(), this.shuttle.removeStop);
+    this.router.delete('/internal/shuttle/stops/:id', StaffAuthMiddleware('parking:manage'), this.shuttle.removeStop);
     this.router.get('/internal/shuttle/live', StaffAuthMiddleware('reservations:view'), this.shuttle.live);
 
     this.router.get('/internal/shuttle/forecast', StaffAuthMiddleware('reservations:view'), this.shuttle.waves);
@@ -432,21 +431,22 @@ export class ReturnRoute implements Routes {
     );
     this.router.delete('/internal/shuttle/vehicles/:id', StaffAuthMiddleware('parking:manage'), this.shuttle.removeVehicle);
     this.router.get('/internal/shuttle/trips/current', StaffAuthMiddleware('reservations:status'), this.shuttle.current);
-    // A platform admin viewing an operator's space never shares a position in its name.
+    // A platform admin viewing an operator's space is not one of its drivers: it never starts a trip nor shares a
+    // position in its name (403 view_as_not_driver, 10/10/2026); it can end a stuck trip (traced as view_as.write).
     this.router.post(
       '/internal/shuttle/trips',
       StaffAuthMiddleware('reservations:status'),
-      RefuseInViewAs(),
+      RefuseInViewAs(VIEW_AS_NOT_DRIVER, NOT_DRIVER_MESSAGE),
       ValidationMiddleware(StartTripDto),
       this.shuttle.start,
     );
     this.router.post(
       '/internal/shuttle/trips/:id/position',
       StaffAuthMiddleware('reservations:status'),
-      RefuseInViewAs(),
+      RefuseInViewAs(VIEW_AS_NOT_DRIVER, NOT_DRIVER_MESSAGE),
       ValidationMiddleware(TripPositionDto),
       this.shuttle.position,
     );
-    this.router.post('/internal/shuttle/trips/:id/end', StaffAuthMiddleware('reservations:status'), RefuseInViewAs(), this.shuttle.end);
+    this.router.post('/internal/shuttle/trips/:id/end', StaffAuthMiddleware('reservations:status'), this.shuttle.end);
   }
 }

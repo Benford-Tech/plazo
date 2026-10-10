@@ -85,7 +85,7 @@ Ne construire QUE ce qui règle la douleur n°1 du client.
      30 jours, archived sur 90 jours ; `?status=` filtre encore, et seul il cherche dans l'onglet de cet état ; les `forwarding` jamais listés). **Deux gestes (T-A)** :
      « Marquer comme traité » (`POST …/emails/:id/handle` → `handled` depuis incomplete / unrecognised / duplicate / dismissed ; le web ne le propose pas pour un doublon, déjà rattaché à sa réservation,
      imported inchangé, 409 `archived`, 404 pour un `forwarding` ; `/dismiss` alias déprécié ; `dismissed` déprécié dans l'enum,
-     migré en `handled` ; remplace « Classer sans suite ») et « Archiver » (`POST …/emails/:id/archive`, aussi permis au super admin depuis « Ouvrir son espace » le 10/10/2026, les autres gestes restant au loueur ; → `archived` depuis tout
+     migré en `handled` ; remplace « Classer sans suite ») et « Archiver » (`POST …/emails/:id/archive`, aussi permis au super admin depuis « Ouvrir son espace » le 10/10/2026, comme tous les gestes de la boîte depuis la règle de consultation du même jour ; → `archived` depuis tout
      sauf `forwarding` → 409, texte gardé ; la purge efface toujours les textes à 30 jours et les lignes à 90). **Récapitulatif
      horaire (N-A)** : `Staff.bookingNotify` (`BookingNotify` immediate · hourly · never, remplace `notifyBookings` ; gérants
      `hourly`, autres rôles `immediate` : `defaultBookingNotify` dans `domain/roles.ts` ; champ `bookings` de
@@ -145,6 +145,29 @@ Ne construire QUE ce qui règle la douleur n°1 du client.
      réception comme à la relance. Boîte de réception : bouton « Relancer l'analyse » (« Analyse en cours… », toast selon
      le résultat, « Analysé de nouveau le … ») ; **les boutons d'action sont en haut du mail**, dans une barre au-dessus de
      l'objet (« mets les boutons d'action en haut du mail », 10/10/2026).
+     **Page Allopark trouvée dans plus de cas (10/10/2026, « tu ne vas pas chercher dans les liens »)** : liens lus dans tout
+     le mail avant la coupe des 100 000 caractères (`InboundItem.Links`, `parseRawEmail`) ; sans lien de confirmation, jusqu'à
+     3 pages (`MAX_PAGES`, un seul budget de 8 s) aux adresses du parking, dans l'ordre : destinataires du mail, ligne « À : »
+     d'un en-tête de transfert, expéditeur d'un transfert à la main, adresse Gmail qui transfère vers Plazo, gérants actifs du
+     loueur (jamais Plazo, allopark.com ni un comparateur, `isComparatorAddress`) ; page essayée aussi quand aucun importateur
+     n'a reconnu un mail qui nomme Allopark et porte une référence `AL-…` (`alloparkReferenceOf`), jamais pour une annulation,
+     une modification ou un remboursement (`isAlloparkCancellationOrChange`, objet compris) ; une réservation complétée par la
+     page est relue par Claude quand la clé existe (une modification ou un autre mail n'en prend rien), et sans importateur
+     elle n'est importée que si Claude la lit comme réservation sûre, sinon « À traiter ». Journaux sans données personnelles
+     (référence, lien ou non, nombre de pages, statut HTTP, chemin sans paramètres, formulaire et référence trouvés).
+     **Captcha et prix (10/10/2026, « Prévent captcha, et récupère aussi le prix de la réservation »)** : le prix payé est lu
+     dans le bloc `price-payed` de la page (`alloparkPagePrice`) et ne remplit qu'un trou ; une vérification anti-robot
+     (Cloudflare `cf-mitigated: challenge`, « Just a moment », Turnstile, reCAPTCHA, hCaptcha ; le script `jsd/main.js` des pages
+     normales n'en est pas une) n'est jamais contournée : Plazo s'arrête (de même sur un 429 ou un refus de Cloudflare),
+     le mail attend et `InboundEmail.pageLookup` `{ outcome: read | protected | unavailable | not_found, url, at }` (migration
+     `inbound_page_lookup`, effacé avec le texte et au rattachement) donne dans la boîte de réception la ligne « Page Allopark :
+     … » et le lien « Ouvrir la page Allopark » pour la passer soi-même, puis « Compléter » ou « Relancer l'analyse ».
+     **Consultation (10/10/2026, « En consultation, l'équipe, les mots de passe et les paiements du loueur ne se modifient
+     pas »)** : `RefuseInViewAs(code?, message?)` ne garde que l'équipe (routes `staff`, renvoi de la confirmation d'e-mail),
+     les mots de passe et identifiants (canal SMS), les paiements et les réglages personnels (appareils et préférences de
+     notification) ; les mails entrants (traité, rattaché, nouvelle adresse), le « SMS de la veille », le suivi des navettes,
+     les dessertes et la fin d'un trajet sont permis et tracés `view_as.write` ; démarrer un trajet ou partager sa position
+     reste refusé avec 403 `view_as_not_driver` (le super admin n'est pas chauffeur du loueur).
    - Page de réservation propre à l'opérateur (formulaire simple, confirmation par mail/SMS).
    - Vue planning : arrivées et retours du jour, taux d'occupation, alerte de surréservation
      calculée sur la capacité réelle.

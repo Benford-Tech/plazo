@@ -2,7 +2,7 @@ import express, { Router } from 'express';
 import { RAW_EMAIL_MAX_BYTES, RAW_EMAIL_TYPE } from '@/domain/inbound-mime';
 import { InboundEmailController } from '@/controllers/inbound-email.controller';
 import { Routes } from '@/interfaces/routes.interface';
-import { RefuseInViewAs, StaffAuthMiddleware } from '@/middlewares/staff-auth.middleware';
+import { StaffAuthMiddleware } from '@/middlewares/staff-auth.middleware';
 
 /**
  * @swagger
@@ -38,6 +38,9 @@ import { RefuseInViewAs, StaffAuthMiddleware } from '@/middlewares/staff-auth.mi
  *     description: >
  *       todo = incomplete and unrecognised (all of them); done = imported, duplicate, handled (and the deprecated
  *       dismissed) of the last 30 days; archived = the last 90 days. Gmail's forwarding confirmations are never listed.
+ *       10/10/2026 (« Prévent captcha »): each email has `pageLookup` { outcome: read | protected | unavailable |
+ *       not_found, url, at } (null when no Allopark page was tried); `url` is the page the staff open by hand, given
+ *       for the three failures only (`protected`: Allopark asked for an anti-robot check, which Plazo never passes).
  * /internal/inbound/emails/{id}/handle:
  *   post:
  *     tags: [Inbound email]
@@ -80,15 +83,14 @@ export class InboundEmailRoute implements Routes {
     // The relay posts the raw message (message/rfc822, up to Vercel's body limit); the former JSON shape still goes through express.json.
     this.router.post('/public/inbound/email', express.raw({ type: RAW_EMAIL_TYPE, limit: RAW_EMAIL_MAX_BYTES + 64 * 1024 }), this.inbound.receive);
     this.router.get('/internal/inbound/settings', StaffAuthMiddleware('reservations:manage'), this.inbound.settings);
-    this.router.post('/internal/inbound/address', StaffAuthMiddleware('parking:manage'), RefuseInViewAs(), this.inbound.enableAddress);
+    // 10/10/2026 (« En consultation, l'équipe, les mots de passe et les paiements du loueur ne se modifient pas »): every
+    // gesture of the inbox and the new address are open to « Ouvrir son espace » (traced as view_as.write under the admin's name).
+    this.router.post('/internal/inbound/address', StaffAuthMiddleware('parking:manage'), this.inbound.enableAddress);
     this.router.get('/internal/inbound/emails', StaffAuthMiddleware('reservations:manage'), this.inbound.list);
-    this.router.post('/internal/inbound/emails/:id/handle', StaffAuthMiddleware('reservations:manage'), RefuseInViewAs(), this.inbound.handle);
-    this.router.post('/internal/inbound/emails/:id/dismiss', StaffAuthMiddleware('reservations:manage'), RefuseInViewAs(), this.inbound.handle);
-    // 10/10/2026 (« le superadmin peut archiver les mails des parkings »): archiving is open to « Ouvrir son espace »
-    // (traced as view_as.write under the admin's name); the other gestures stay the operator's.
+    this.router.post('/internal/inbound/emails/:id/handle', StaffAuthMiddleware('reservations:manage'), this.inbound.handle);
+    this.router.post('/internal/inbound/emails/:id/dismiss', StaffAuthMiddleware('reservations:manage'), this.inbound.handle);
     this.router.post('/internal/inbound/emails/:id/archive', StaffAuthMiddleware('reservations:manage'), this.inbound.archive);
-    // 10/10/2026 (« pouvoir relancer l'analyse d'un mail »): open to « Ouvrir son espace » too (traced as view_as.write).
     this.router.post('/internal/inbound/emails/:id/reanalyse', StaffAuthMiddleware('reservations:manage'), this.inbound.reanalyse);
-    this.router.post('/internal/inbound/emails/:id/attach', StaffAuthMiddleware('reservations:manage'), RefuseInViewAs(), this.inbound.attach);
+    this.router.post('/internal/inbound/emails/:id/attach', StaffAuthMiddleware('reservations:manage'), this.inbound.attach);
   }
 }

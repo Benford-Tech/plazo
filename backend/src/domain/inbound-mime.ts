@@ -1,4 +1,5 @@
 import PostalMime, { Address, Email } from 'postal-mime';
+import { alloparkLinks } from './importers/allopark-page';
 import { InboundAddress, InboundItem } from './inbound-email';
 
 /** The content type the Cloudflare relay posts the raw message with. */
@@ -23,11 +24,24 @@ function mailboxes(list: Address[] | undefined): InboundAddress[] {
 const clip = (value: string | undefined) => (value ? value.slice(0, BODY_MAX_CHARS) : null);
 
 /**
+ * The allopark.com links of the whole bodies; undefined when they cannot be read (10/10/2026, relecture: a message
+ * that breaks the reading still keeps its row; the reception then reads the links of the clipped bodies).
+ */
+function linksOf(email: Email): string[] | undefined {
+  try {
+    return alloparkLinks(email.html, email.text);
+  } catch {
+    return undefined;
+  }
+}
+
+/**
  * The message as the relay received it (RFC 822), parsed here rather than in the Worker (08/10/2026): the Workers
  * Free plan allows 10 ms of CPU per email, which a real confirmation (HTML, inline images) exceeded while decoding
  * (EXCEEDED_CPU, "Worker call failed after 3 attempts" for the sender). The envelope recipient names the parking,
  * whatever the forwarded email's own headers say; a message that cannot be read keeps its envelope, so the parking
- * still sees that something arrived.
+ * still sees that something arrived. The bodies are clipped to 100 000 characters; the allopark.com links are read
+ * from them whole (`Links`, 10/10/2026).
  */
 export async function parseRawEmail(raw: Uint8Array, envelope: Envelope): Promise<InboundItem> {
   const to = envelope.to?.trim().toLowerCase() || null;
@@ -59,5 +73,8 @@ export async function parseRawEmail(raw: Uint8Array, envelope: Envelope): Promis
     SentAtDate: email.date ?? null,
     RawTextBody: clip(email.text),
     RawHtmlBody: clip(email.html),
+    // 10/10/2026: the links are read from the whole bodies, before the clip: Allopark's « Consulter ma réservation »
+    // button comes after 100 000 characters of HTML (inline styles, tables).
+    Links: linksOf(email),
   };
 }
