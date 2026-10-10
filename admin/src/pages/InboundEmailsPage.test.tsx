@@ -39,6 +39,7 @@ const email = (over: Partial<InboundEmail> = {}): InboundEmail => ({
   reading: null,
   receivedAt: "2026-10-06T08:00:00Z",
   analysedAt: null,
+  pageLookup: null,
   ...over,
 });
 
@@ -281,6 +282,45 @@ describe("InboundEmailsPage (M-A « Boîte de réception », T-A « Deux gestes 
     expect(unsure.getByText("Réservation · Parkos · confiance 40 %")).toBeInTheDocument();
     expect(unsure.getByText(/lecture incertaine/)).toBeInTheDocument();
     expect(reading().getByText("Compléter et enregistrer")).toBeInTheDocument();
+  });
+  it("10/10/2026 (« Prévent captcha ») : la page Allopark protégée se lit sous « Reconnu » avec son lien ; lue, sans lien ; jamais essayée, rien", async () => {
+    const page = "https://www.allopark.com/fr-be/confirmation?email=parking%40example.com&reference=AL-884880719&view=parking";
+    lists = {
+      todo: [
+        email({ id: "p1", subject: "Protégée", pageLookup: { outcome: "protected", url: page, at: "2026-10-10T09:00:00Z" } }),
+        email({ id: "p2", subject: "Indisponible", pageLookup: { outcome: "unavailable", url: page, at: "2026-10-10T09:00:00Z" } }),
+        email({ id: "p3", subject: "Introuvable", pageLookup: { outcome: "not_found", url: page, at: "2026-10-10T09:00:00Z" } }),
+        email({ id: "p4", subject: "Sans page" }),
+      ],
+      done: [email({ id: "p5", status: "imported", missing: [], reservationId: "r9", subject: "Lue", pageLookup: { outcome: "read", url: null, at: "2026-10-10T09:00:00Z" } })],
+      archived: [],
+    };
+    renderPage();
+    const rows = await screen.findAllByTestId("inbound-row");
+    const line = () => within(reading().getByTestId("inbound-allopark-line"));
+    expect(line().getByText("Page Allopark :", { exact: false })).toBeInTheDocument();
+    expect(line().getByText("vérification anti-robot demandée")).toBeInTheDocument();
+    const link = reading().getByTestId("inbound-allopark-page");
+    expect(link).toHaveTextContent("Ouvrir la page Allopark");
+    expect(link).toHaveAttribute("href", page);
+    expect(link).toHaveAttribute("target", "_blank");
+    expect(link).toHaveAttribute("rel", "noopener noreferrer");
+    // The staff complete the booking from what they read there.
+    expect(reading().getByText("Compléter et enregistrer")).toBeInTheDocument();
+
+    await userEvent.click(within(rows[1]).getByRole("button"));
+    expect(line().getByText("indisponible")).toBeInTheDocument();
+    expect(reading().getByTestId("inbound-allopark-page")).toHaveAttribute("href", page);
+    await userEvent.click(within(rows[2]).getByRole("button"));
+    expect(line().getByText("réservation introuvable sur la page")).toBeInTheDocument();
+    expect(reading().getByTestId("inbound-allopark-page")).toBeInTheDocument();
+    await userEvent.click(within(rows[3]).getByRole("button"));
+    expect(reading().queryByTestId("inbound-allopark-line")).toBeNull();
+
+    await userEvent.click(tab(/Traités/));
+    await screen.findByRole("heading", { level: 2, name: "Lue" });
+    expect(line().getByText("lue, champs complétés")).toBeInTheDocument();
+    expect(reading().queryByTestId("inbound-allopark-page")).toBeNull();
   });
   it("relecture : un ?mail= absent de l'onglet n'ouvre pas un autre mail et quitte l'adresse ; un doublon n'a pas « Marquer comme traité »", async () => {
     lists = {

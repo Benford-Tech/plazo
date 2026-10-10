@@ -12,6 +12,7 @@ import type {
   AlertKind,
   InboundEmailStatus,
   InboundEmailView,
+  InboundPageOutcome,
   InboundReadingKind,
   ShuttleDirection,
   WaveState,
@@ -2541,6 +2542,20 @@ export const inboundFr = {
         : (name ?? address ?? "expéditeur inconnu"),
     received: "Reçu le",
     recognised: "Reconnu",
+    /**
+     * 10/10/2026 (« Prévent captcha »): the Allopark booking page of the mail. Plazo never passes an anti-robot check:
+     * the staff open the page in their own browser, then « Compléter » or « Relancer l'analyse ».
+     */
+    alloparkPage: {
+      label: "Page Allopark",
+      outcome: {
+        read: "lue, champs complétés",
+        protected: "vérification anti-robot demandée",
+        unavailable: "indisponible",
+        not_found: "réservation introuvable sur la page",
+      } satisfies Record<InboundPageOutcome, string>,
+      open: "Ouvrir la page Allopark",
+    },
     /** L-A (08/10/2026): what Claude made of a mail no importer knew. */
     reading: {
       title: "Lu par Claude",

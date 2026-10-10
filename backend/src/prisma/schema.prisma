@@ -393,6 +393,9 @@ model InboundEmail {
   // recipients (never the Plazo address, 5 at most) and its allopark.com links (10 at most); cleared with the text.
   recipients    String[]           @default([])
   links         String[]           @default([])
+  // 10/10/2026 (« Prévent captcha »): the Allopark booking page at the last analysis: { outcome: read | protected |
+  // unavailable | not_found, url (the page to open by hand, failures only), at }; cleared with the text and by attach.
+  pageLookup    Json?
   // The last re-analysis asked by the staff (a second one within 30 s is refused).
   analysedAt    DateTime?
   reservationId String?

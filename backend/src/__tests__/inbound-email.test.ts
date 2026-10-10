@@ -1868,3 +1868,189 @@ describe('relancer l’analyse d’un mail (10/10/2026)', () => {
     });
   });
 });
+
+describe('Allopark : prix de la page et vérification anti-robot (10/10/2026, « Prévent captcha, et récupère aussi le prix »)', () => {
+  const page = readFileSync(join(__dirname, 'fixtures/allopark-page.html'), 'utf8');
+  const urlOf = (address: string, reference = 'AL-884880719') =>
+    `https://www.allopark.com/fr-be/confirmation?email=${encodeURIComponent(address)}&reference=${reference}&view=parking`;
+  const link =
+    '<a href="https://www.allopark.com/fr-be/confirmation?email=parking@example.com&amp;reference=AL-884880719&amp;view=parking">Consulter ma réservation</a>';
+  const challenge =
+    '<!DOCTYPE html><html><head><title>Just a moment...</title></head><body><div id="challenge-stage"></div><script>window._cf_chl_opt={cType: "managed"}</script></body></html>';
+  const post = (items: unknown[]) => api().post('/api/public/inbound/email').set('X-Inbound-Secret', 'inbound-test-secret').send({ items });
+  const reader = Container.get(EmailReadingService);
+  let read: jest.SpyInstance;
+  const allopark = () => fetchMock.mock.calls.filter(([u]) => String(u).startsWith('https://www.allopark.com/')).map(([u]) => String(u));
+  const answer = (respond: (url: string) => Response) =>
+    fetchMock.mockImplementation(async url =>
+      String(url).includes('allopark.com') ? respond(String(url)) : new Response(JSON.stringify({ id: 'n1' }), { status: 200 }),
+    );
+  const connected = async () => {
+    const op = await setupOperator();
+    const settings = await api().get('/api/internal/inbound/settings').set(auth(op.token));
+    return { ...op, address: settings.body.address as string };
+  };
+  /** A forwarded email: addressed to the parking's mailbox (then the manager's: two pages to try), no link. */
+  const forwarded = (address: string, subject: string, text = email) =>
+    item('parking@example.com', text, { Recipients: [address], Subject: subject, To: [{ Name: 'Parking', Address: 'parking@example.com' }] });
+  const bySubject = async (operatorId: string, subject: string) => prisma.inboundEmail.findFirstOrThrow({ where: { operatorId, subject } });
+  beforeEach(() => {
+    process.env.ANTHROPIC_API_KEY = 'sk-ant-test';
+    read = jest.spyOn(reader, 'read').mockResolvedValue(null);
+  });
+  afterEach(() => {
+    delete process.env.ANTHROPIC_API_KEY;
+    read.mockRestore();
+  });
+
+  it('sans montant dans le mail, la réservation prend le montant payé de la page ; celui du mail reste quand il y est', async () => {
+    const op = await connected();
+    const cheaper = page.replace('</span>34,99</div>', '</span>24,00</div>');
+    answer(() => new Response(cheaper, { status: 200, headers: { 'Content-Type': 'text/html; charset=UTF-8' } }));
+    const noAmount = email.replace('€ 34,99\n', '');
+    expect(parseConfirmationEmail(noAmount)).not.toHaveProperty('priceCents');
+    expect((await post([item(op.address, noAmount, { RawHtmlBody: link })])).body.imported).toBe(1);
+    expect(await prisma.reservation.findFirstOrThrow({ where: { operatorId: op.operator.id } })).toMatchObject({
+      plate: 'GK-318-PX',
+      priceCents: 2400,
+    });
+
+    await prisma.reservation.deleteMany({ where: { operatorId: op.operator.id } });
+    expect((await post([item(op.address, email, { RawHtmlBody: link })])).body.imported).toBe(1);
+    expect(await prisma.reservation.findFirstOrThrow({ where: { operatorId: op.operator.id } })).toMatchObject({ priceCents: 3499 });
+  });
+
+  it('403 « cf-mitigated: challenge » : une seule page demandée, le mail reste « À traiter » avec la page à ouvrir à la main, un journal sans adresse', async () => {
+    const op = await connected();
+    const warn = jest.spyOn(logger, 'warn');
+    try {
+      answer(() => new Response(challenge, { status: 403, headers: { 'cf-mitigated': 'challenge', 'Content-Type': 'text/html' } }));
+      expect((await post([forwarded(op.address, 'protégée')])).body).toEqual({ received: 1, imported: 0, toCheck: 1, ignored: 0 });
+      // Two candidates (the parking's mailbox, the manager's): Allopark is asked once, never again for this email.
+      expect(allopark()).toEqual([urlOf('parking@example.com')]);
+      // Claude is still asked for what the page did not give.
+      expect(read).toHaveBeenCalledTimes(1);
+      const row = await bySubject(op.operator.id, 'protégée');
+      expect(row).toMatchObject({
+        status: 'incomplete',
+        missing: ['customerPhone', 'plate'],
+        pageLookup: { outcome: 'protected', url: urlOf('parking@example.com'), at: expect.any(String) },
+      });
+      const logged = warn.mock.calls.map(([message]) => String(message)).filter(m => m.startsWith('[Allopark]'));
+      expect(logged).toContain(
+        '[Allopark] AL-884880719: page protected by an anti-robot check (captcha), left to the staff (page 1/2, HTTP 403 /fr-be/confirmation)',
+      );
+      for (const message of logged) expect(message).not.toMatch(/@|%40|email=/);
+    } finally {
+      warn.mockRestore();
+    }
+
+    // The inbox shows it, with the page to open.
+    const inbox = (await api().get('/api/internal/inbound/emails').set(auth(op.token))).body.data;
+    expect(inbox[0].pageLookup).toEqual({ outcome: 'protected', url: urlOf('parking@example.com'), at: expect.any(String) });
+
+    // « Relancer l'analyse » once the check is gone: the page is read, the booking made, the link forgotten.
+    fetchMock.mockClear();
+    answer(() => new Response(page, { status: 200 }));
+    const again = await api().post(`/api/internal/inbound/emails/${inbox[0].id}/reanalyse`).set(auth(op.token));
+    expect(again.body).toMatchObject({ outcome: 'imported', email: { pageLookup: { outcome: 'read', url: null } } });
+    expect((await prisma.inboundEmail.findUniqueOrThrow({ where: { id: inbox[0].id } })).pageLookup).toMatchObject({ outcome: 'read', url: null });
+  });
+
+  it('page 200 « Just a moment » ou Turnstile sans formulaire : protégée ; la vraie page (script de Cloudflare compris) : lue ; 500 : indisponible ; une autre réservation : introuvable', async () => {
+    const op = await connected();
+    answer(() => new Response('<html><head><title>Just a moment...</title></head><body></body></html>', { status: 200 }));
+    await post([forwarded(op.address, 'just a moment')]);
+    expect(allopark()).toHaveLength(1);
+    fetchMock.mockClear();
+    answer(() => new Response('<html><body><div class="cf-turnstile" data-sitekey="0x4AAA"></div></body></html>', { status: 200 }));
+    await post([forwarded(op.address, 'turnstile')]);
+    expect(allopark()).toHaveLength(1);
+
+    answer(() => new Response(page, { status: 200, headers: { 'Content-Type': 'text/html; charset=UTF-8' } }));
+    expect((await post([item(op.address, email, { Subject: 'lue', RawHtmlBody: link })])).body.imported).toBe(1);
+
+    fetchMock.mockClear();
+    answer(() => new Response('Internal Server Error', { status: 500 }));
+    await post([forwarded(op.address, 'en panne')]);
+    // An error is read past: both pages are tried.
+    expect(allopark()).toEqual([urlOf('parking@example.com'), urlOf(op.manager.email)]);
+
+    // The page of AL-884880719 for an email about AL-884880720, at both addresses.
+    fetchMock.mockClear();
+    answer(() => new Response(page, { status: 200 }));
+    await post([forwarded(op.address, 'autre réservation', email.replace(/AL-884880719/g, 'AL-884880720'))]);
+    expect(allopark()).toHaveLength(2);
+
+    const lookups = Object.fromEntries(
+      await Promise.all(
+        ['just a moment', 'turnstile', 'lue', 'en panne', 'autre réservation'].map(async subject => [
+          subject,
+          (await bySubject(op.operator.id, subject)).pageLookup,
+        ]),
+      ),
+    );
+    const at = expect.any(String);
+    expect(lookups).toEqual({
+      'just a moment': { outcome: 'protected', url: urlOf('parking@example.com'), at },
+      turnstile: { outcome: 'protected', url: urlOf('parking@example.com'), at },
+      lue: { outcome: 'read', url: null, at },
+      'en panne': { outcome: 'unavailable', url: urlOf('parking@example.com'), at },
+      'autre réservation': { outcome: 'not_found', url: urlOf('parking@example.com', 'AL-884880720'), at },
+    });
+    // The inbox's view: the link for a failure only; an email whose page was never tried has none.
+    const todo = (await api().get('/api/internal/inbound/emails').set(auth(op.token))).body.data as { subject: string; pageLookup: unknown }[];
+    expect(todo.find(e => e.subject === 'en panne')?.pageLookup).toEqual({ outcome: 'unavailable', url: urlOf('parking@example.com'), at });
+    const done = (await api().get('/api/internal/inbound/emails?view=done').set(auth(op.token))).body.data as {
+      subject: string;
+      pageLookup: unknown;
+    }[];
+    expect(done.find(e => e.subject === 'lue')?.pageLookup).toEqual({ outcome: 'read', url: null, at });
+    await post([
+      item(op.address, 'Bonjour, une place pour samedi ?', { From: { Name: 'Client', Address: 'client@example.com' }, Subject: 'question' }),
+    ]);
+    const question = (await api().get('/api/internal/inbound/emails').set(auth(op.token))).body.data.find(
+      (e: { subject: string }) => e.subject === 'question',
+    );
+    expect(question.pageLookup).toBeNull();
+  });
+
+  it('le rattachement et la purge de nuit effacent la page à ouvrir (elle porte une adresse)', async () => {
+    const op = await connected();
+    answer(() => new Response(challenge, { status: 403, headers: { 'cf-mitigated': 'challenge' } }));
+    await post([forwarded(op.address, 'rattaché'), forwarded(op.address, 'purgé')]);
+    const attached = await bySubject(op.operator.id, 'rattaché');
+    const purged = await bySubject(op.operator.id, 'purgé');
+    expect([attached.pageLookup, purged.pageLookup]).toEqual([
+      expect.objectContaining({ outcome: 'protected' }),
+      expect.objectContaining({ outcome: 'protected' }),
+    ]);
+
+    // « Compléter »: the staff typed the booking from the page they opened themselves.
+    const created = await api().post('/api/internal/reservations').set(auth(op.token)).send({
+      channel: 'aggregator',
+      channelDetail: 'Allopark',
+      externalReference: 'AL-884880719',
+      arrivalAt: '2026-10-01T08:30',
+      returnAt: '2026-10-03T17:00',
+      passengers: 3,
+      customerFirstName: 'Jean',
+      customerLastName: 'Dupont',
+      customerPhone: '06 12 34 56 78',
+      plate: 'GK-318-PX',
+    });
+    expect(created.status).toBe(201);
+    const res = await api()
+      .post(`/api/internal/inbound/emails/${attached.id}/attach`)
+      .set(auth(op.token))
+      .send({ reservationId: created.body.data.id });
+    expect(res.status).toBe(200);
+    expect((await prisma.inboundEmail.findUniqueOrThrow({ where: { id: attached.id } })).pageLookup).toBeNull();
+
+    await prisma.inboundEmail.updateMany({ where: { id: purged.id }, data: { receivedAt: new Date(Date.now() - 31 * 86400000) } });
+    expect(await Container.get(InboundEmailService).purge()).toEqual({ textsCleared: 1, rowsDeleted: 0 });
+    expect(await prisma.inboundEmail.findUniqueOrThrow({ where: { id: purged.id } })).toMatchObject({ textBody: null, pageLookup: null });
+    // Purged again the next night: nothing left to clear.
+    expect(await Container.get(InboundEmailService).purge()).toEqual({ textsCleared: 0, rowsDeleted: 0 });
+  });
+});

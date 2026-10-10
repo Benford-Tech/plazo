@@ -6,9 +6,12 @@ import {
   alloparkLinks,
   alloparkPageAddresses,
   alloparkPageFacts,
+  alloparkPagePrice,
   alloparkPageUrls,
   alloparkReferenceOf,
+  hasAntiRobotCheck,
   isAlloparkCancellationOrChange,
+  isAlloparkPageProtected,
   MAX_LINKS,
   MAX_PAGES,
   parseAlloparkPage,
@@ -16,6 +19,8 @@ import {
 import { isCancellationOrChange } from '@/domain/importers/common';
 import { forwardedRecipientsOf, stripHtml, textOf } from '@/domain/inbound-email';
 import { fillGaps } from '@/services/inbound-email.service';
+import { AlloparkPageService } from '@/services/allopark-page.service';
+import { logger } from '@/utils/logger';
 
 // 09/10/2026: the four comparators of the client's mailbox, from the samples Joanny sent (same layouts, fictional data).
 const html = (name: string) => readFileSync(join(__dirname, 'fixtures', name), 'utf8');
@@ -242,6 +247,8 @@ describe('Allopark : la page de la réservation (10/10/2026)', () => {
       customerLastName: 'Dupont',
       customerName: 'Jean Dupont',
       customerEmail: 'jean.dupont@example.com',
+      // 10/10/2026: the amount paid of the booking block.
+      priceCents: 3499,
     });
     // Blank fields stay out; another booking's page, or Allopark's home page, is not read.
     const blank = page.replace(/name="(brand|model|fly_arrival|fly_departure)"\s*value="[^"]*"/g, 'name="$1" value=""');
@@ -249,6 +256,41 @@ describe('Allopark : la page de la réservation (10/10/2026)', () => {
     expect(parseAlloparkPage(blank, 'AL-884880719')).not.toHaveProperty('returnFlight');
     expect(parseAlloparkPage(page, 'AL-222222222')).toBeNull();
     expect(parseAlloparkPage('<html><body>Comparez et réservez votre parking AL-884880719</body></html>', 'AL-884880719')).toBeNull();
+  });
+
+  it('10/10/2026 (« récupère aussi le prix ») : le montant payé du bloc de la réservation, jamais les suppléments ni un autre « € » de la page', () => {
+    expect(alloparkPagePrice(page)).toBe(3499);
+    expect(parseAlloparkPage(page.replace('</span>34,99</div>', '</span>24,00</div>'), 'AL-884880719')).toMatchObject({ priceCents: 2400 });
+    expect(alloparkPagePrice('<div class="price-payed"><div class="price"><span>€&nbsp;</span>1 234,50</div></div>')).toBe(123450);
+    expect(alloparkPagePrice("<div class='x price-payed'><div class='big price'>€ 19.9</div></div>")).toBe(1990);
+    // Without the block, the « Suppléments éventuels » (€ 15,00, 5,00 €) and the fee of a change (2,99 €) give nothing.
+    const noBlock = page.replace(/<div class="price-payed[^>]*><div class="price">[\s\S]*?<\/div>/, '');
+    expect(noBlock).toContain('Suppléments éventuels');
+    expect(alloparkPagePrice(noBlock)).toBeUndefined();
+    expect(parseAlloparkPage(noBlock, 'AL-884880719')).not.toHaveProperty('priceCents');
+    // A block that holds no plain amount, or zero, gives nothing either.
+    expect(alloparkPagePrice('<div class="price-payed"><div class="price">Offert</div></div>')).toBeUndefined();
+    expect(alloparkPagePrice('<div class="price-payed"><div class="price">€ 0,00</div></div>')).toBeUndefined();
+  });
+
+  it('10/10/2026 (« Prévent captcha ») : reconnaît une vérification anti-robot, jamais le script de détection de Cloudflare d’une page normale', () => {
+    // The real page carries Cloudflare's JS detection script: it is read, not « protected ».
+    expect(page).toContain('/cdn-cgi/challenge-platform/scripts/jsd/main.js');
+    expect(hasAntiRobotCheck(page)).toBe(false);
+    expect(isAlloparkPageProtected(page)).toBe(false);
+    for (const check of [
+      '<html><head><title>Just a moment...</title></head><body><script>window._cf_chl_opt={cvId: "3"}</script></body></html>',
+      '<form id="challenge-form" action="/fr-be/confirmation?__cf_chl_f_tk=x" method="POST"></form>',
+      '<div class="cf-turnstile" data-sitekey="0x4AAA"></div>',
+      '<div class="g-recaptcha" data-sitekey="6Lc"></div>',
+      '<div class="h-captcha" data-sitekey="10000000"></div>',
+    ]) {
+      expect([check.slice(0, 40), isAlloparkPageProtected(check)]).toEqual([check.slice(0, 40), true]);
+    }
+    // A booking page that happens to embed a captcha elsewhere (a contact form) is still a booking page.
+    expect(isAlloparkPageProtected(page.replace('</body>', '<div class="g-recaptcha"></div></body>'))).toBe(false);
+    // Allopark's home page without any check is no « protected » page.
+    expect(isAlloparkPageProtected('<html><body>Comparez et réservez votre parking</body></html>')).toBe(false);
   });
 });
 
@@ -418,5 +460,121 @@ describe('Allopark : trouver la page sans le lien du mail (10/10/2026, « tu ne 
     expect(alloparkPageFacts(page, 'AL-884880719')).toEqual({ form: true, reference: true });
     expect(alloparkPageFacts(page, 'AL-222222222')).toEqual({ form: true, reference: false });
     expect(alloparkPageFacts('<html>Comparez et réservez</html>', 'AL-884880719')).toEqual({ form: false, reference: false });
+  });
+});
+
+describe('Allopark : une vérification anti-robot n’est jamais passée (10/10/2026, « Prévent captcha »)', () => {
+  const page = html('allopark-page.html');
+  const urls = ['parking', 'entete', 'gerant'].map(
+    who => `https://www.allopark.com/fr-be/confirmation?email=${who}%40example.com&reference=AL-884880719&view=parking`,
+  );
+  const challenge =
+    '<!DOCTYPE html><html><head><title>Just a moment...</title></head><body><div id="challenge-stage"></div><script>window._cf_chl_opt={cType: "managed"}</script></body></html>';
+  const service = new AlloparkPageService();
+  let fetchMock: jest.SpyInstance;
+  let warn: jest.SpyInstance;
+  const answer = (respond: (url: string) => Response) => fetchMock.mockImplementation(async url => respond(String(url)));
+  beforeEach(() => {
+    fetchMock = jest.spyOn(global, 'fetch');
+    warn = jest.spyOn(logger, 'warn');
+  });
+  afterEach(() => {
+    fetchMock.mockRestore();
+    warn.mockRestore();
+  });
+
+  it('un 403 « cf-mitigated: challenge » : protégée, une seule page demandée, la première à ouvrir à la main, rien d’adresse au journal', async () => {
+    answer(() => new Response(challenge, { status: 403, headers: { 'cf-mitigated': 'challenge', 'Content-Type': 'text/html' } }));
+    expect(await service.booking(urls, 'AL-884880719')).toEqual({ booking: null, outcome: 'protected', url: urls[0] });
+    expect(fetchMock).toHaveBeenCalledTimes(1);
+    const logged = warn.mock.calls.map(([message]) => String(message));
+    expect(logged).toEqual([
+      '[Allopark] AL-884880719: page protected by an anti-robot check (captcha), left to the staff (page 1/3, HTTP 403 /fr-be/confirmation)',
+    ]);
+    for (const message of logged) expect(message).not.toMatch(/@|%40|email=/);
+  });
+
+  it('sans l’en-tête, la page de Cloudflare (403, 429, 503) ou une page 200 sans formulaire avec Turnstile ou « Just a moment » : protégée', async () => {
+    for (const respond of [
+      () => new Response(challenge, { status: 503 }),
+      () => new Response('<html><body><div class="cf-turnstile" data-sitekey="x"></div></body></html>', { status: 429 }),
+      () => new Response('<html><body><div class="cf-turnstile" data-sitekey="x"></div></body></html>', { status: 200 }),
+      () => new Response('<html><head><title>Just a moment...</title></head><body></body></html>', { status: 200 }),
+    ]) {
+      fetchMock.mockClear();
+      answer(respond);
+      expect(await service.booking(urls, 'AL-884880719')).toMatchObject({ booking: null, outcome: 'protected', url: urls[0] });
+      expect(fetchMock).toHaveBeenCalledTimes(1);
+    }
+  });
+
+  it('une page sans cette réservation puis la vérification : le lien ouvre la page protégée, pas la première (10/10/2026)', async () => {
+    answer(url =>
+      url === urls[0]
+        ? new Response('<html>Comparez et réservez</html>', { status: 200 })
+        : new Response(challenge, { status: 403, headers: { 'cf-mitigated': 'challenge' } }),
+    );
+    expect(await service.booking(urls, 'AL-884880719')).toEqual({ booking: null, outcome: 'protected', url: urls[1] });
+    expect(fetchMock).toHaveBeenCalledTimes(2);
+  });
+
+  it('un 429 sans vérification, ou un blocage de Cloudflare (403, 503) : on s’arrête là, une seule page demandée (10/10/2026)', async () => {
+    const rateLimited =
+      '<html><head><title>Access denied | www.allopark.com used Cloudflare to restrict access</title></head><body>Error 1015 You are being rate limited</body></html>';
+    const blocked = '<html><head><title>Attention Required! | Cloudflare</title></head><body>Error 1020 Access denied</body></html>';
+    for (const respond of [
+      () => new Response(rateLimited, { status: 429 }),
+      () => new Response(rateLimited, { status: 429, headers: { 'cf-ray': '8c1f2a3b4c5d6e7f-CDG', server: 'cloudflare' } }),
+      () => new Response(blocked, { status: 403, headers: { 'cf-ray': '8c1f2a3b4c5d6e7f-CDG' } }),
+      () => new Response(blocked, { status: 503, headers: { server: 'cloudflare' } }),
+    ]) {
+      fetchMock.mockClear();
+      warn.mockClear();
+      answer(respond);
+      expect(await service.booking(urls, 'AL-884880719')).toEqual({ booking: null, outcome: 'unavailable', url: urls[0] });
+      expect(fetchMock).toHaveBeenCalledTimes(1);
+      const logged = warn.mock.calls.map(([message]) => String(message));
+      expect(logged).toEqual([
+        expect.stringMatching(/^\[Allopark\] AL-884880719 page 1\/3: HTTP (429|403|503) \/fr-be\/confirmation, refused by Allopark/),
+      ]);
+      for (const message of logged) expect(message).not.toMatch(/@|%40|email=/);
+    }
+
+    // After a page without this booking, the link is the refused page, not the one ruled out.
+    fetchMock.mockClear();
+    answer(url => (url === urls[0] ? new Response('<html>Comparez et réservez</html>') : new Response(rateLimited, { status: 429 })));
+    expect(await service.booking(urls, 'AL-884880719')).toEqual({ booking: null, outcome: 'unavailable', url: urls[1] });
+    expect(fetchMock).toHaveBeenCalledTimes(2);
+  });
+
+  it('la vraie page (script de détection de Cloudflare compris) est lue ; 500 : indisponible ; une autre réservation : introuvable', async () => {
+    answer(() => new Response(page, { status: 200, headers: { 'Content-Type': 'text/html; charset=UTF-8' } }));
+    expect(await service.booking(urls, 'AL-884880719')).toMatchObject({ outcome: 'read', booking: { plate: 'GK-318-PX', priceCents: 3499 } });
+    expect(fetchMock).toHaveBeenCalledTimes(1);
+
+    // Other errors (a 403 neither challenged nor served by Cloudflare too) are read past: every page is tried.
+    fetchMock.mockClear();
+    answer(url => new Response('Internal Server Error', { status: url === urls[1] ? 403 : 500 }));
+    expect(await service.booking(urls, 'AL-884880719')).toEqual({ booking: null, outcome: 'unavailable', url: urls[0] });
+    expect(fetchMock).toHaveBeenCalledTimes(3);
+
+    fetchMock.mockClear();
+    answer(() => new Response(page, { status: 200 }));
+    expect(await service.booking(urls, 'AL-222222222')).toEqual({ booking: null, outcome: 'not_found', url: urls[0] });
+    expect(fetchMock).toHaveBeenCalledTimes(3);
+
+    // One page down, the others without the booking: it may be on the one that did not answer.
+    fetchMock.mockClear();
+    answer(url => (url === urls[0] ? new Response('Bad Gateway', { status: 502 }) : new Response('<html>Comparez et réservez</html>')));
+    expect(await service.booking(urls, 'AL-884880719')).toMatchObject({ outcome: 'unavailable', url: urls[0] });
+
+    // A network failure, too many redirects.
+    fetchMock.mockClear();
+    answer(() => {
+      throw new TypeError('fetch failed');
+    });
+    expect(await service.booking(urls.slice(0, 1), 'AL-884880719')).toMatchObject({ outcome: 'unavailable' });
+    answer(url => new Response(null, { status: 302, headers: { Location: `${url}&x=1` } }));
+    expect(await service.booking(urls.slice(0, 1), 'AL-884880719')).toMatchObject({ outcome: 'unavailable' });
   });
 });

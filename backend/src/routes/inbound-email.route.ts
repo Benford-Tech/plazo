@@ -38,6 +38,9 @@ import { StaffAuthMiddleware } from '@/middlewares/staff-auth.middleware';
  *     description: >
  *       todo = incomplete and unrecognised (all of them); done = imported, duplicate, handled (and the deprecated
  *       dismissed) of the last 30 days; archived = the last 90 days. Gmail's forwarding confirmations are never listed.
+ *       10/10/2026 (« Prévent captcha »): each email has `pageLookup` { outcome: read | protected | unavailable |
+ *       not_found, url, at } (null when no Allopark page was tried); `url` is the page the staff open by hand, given
+ *       for the three failures only (`protected`: Allopark asked for an anti-robot check, which Plazo never passes).
  * /internal/inbound/emails/{id}/handle:
  *   post:
  *     tags: [Inbound email]

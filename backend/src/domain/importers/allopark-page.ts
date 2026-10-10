@@ -1,5 +1,5 @@
 import { forwardedRecipientsOf } from '../inbound-email';
-import { isCancellationOrChange } from './common';
+import { euroCents, isCancellationOrChange } from './common';
 import { isComparatorAddress } from './index';
 import { ParsedBooking } from './types';
 
@@ -249,6 +249,45 @@ function localDateTime(value: string | undefined): string | undefined {
 const EDIT_FORM = /<form\b[^>]*\bname\s*=\s*["']edit_reservation["']/i;
 
 /**
+ * 10/10/2026 (« récupère aussi le prix de la réservation »): the amount paid, as the booking block prints it
+ * (`<div class="price-payed …"><div class="price"><span>€&nbsp;</span>24,00</div>`); never another « € » of the page
+ * (« Suppléments éventuels », the fee of a change).
+ */
+const PRICE_PAID =
+  /<div\b[^>]*\bclass\s*=\s*["'][^"']*\bprice-payed\b[^"']*["'][^>]*>\s*<div\b[^>]*\bclass\s*=\s*["'](?:[^"']*\s)?price(?:\s[^"']*)?["'][^>]*>([\s\S]{0,200}?)<\/div>/i;
+
+/** The amount paid of the booking block, in cents; undefined when the block is missing or holds no plain amount. */
+export function alloparkPagePrice(html: string): number | undefined {
+  const block = PRICE_PAID.exec(html)?.[1];
+  if (block === undefined) return undefined;
+  const amount = decodeEntities(block.replace(/<[^>]*>/g, ' ')).replace(/[€\s\u00a0\u202f]/g, '');
+  if (!/^\d{1,6}(?:[.,]\d{1,2})?$/.test(amount)) return undefined;
+  const cents = euroCents(amount);
+  return cents !== undefined && cents > 0 ? cents : undefined;
+}
+
+/**
+ * 10/10/2026 (« Prévent captcha »): what tells an anti-robot check (Cloudflare's « Just a moment… » challenge,
+ * Turnstile, reCAPTCHA, hCaptcha) from a page. Cloudflare's JS detection script of every normal page
+ * (/cdn-cgi/challenge-platform/scripts/jsd/main.js) is none of them. Plazo never tries to pass such a check: the staff
+ * open the page themselves.
+ */
+const ANTI_ROBOT_MARKERS = [/just a moment/i, /\bchallenge-form\b/i, /_cf_chl_opt/, /\bcf-turnstile\b/i, /\bg-recaptcha\b/i, /\bh-captcha\b/i];
+
+/** True when a page carries an anti-robot check (a captcha or a challenge), whatever else it shows. */
+export function hasAntiRobotCheck(html: string): boolean {
+  return ANTI_ROBOT_MARKERS.some(marker => marker.test(html));
+}
+
+/**
+ * A page that asks for an anti-robot check instead of showing the booking: the check's markers without the booking form
+ * (a booking page that happens to embed a captcha elsewhere is still read).
+ */
+export function isAlloparkPageProtected(html: string): boolean {
+  return !EDIT_FORM.test(html) && hasAntiRobotCheck(html);
+}
+
+/**
  * What a page shows of a booking, for the logs (10/10/2026) and parseAlloparkPage: the booking form (« Vos
  * informations », absent from Allopark's home page, shown for an unknown reference or address) and the reference (the
  * page names its booking: « Réservation N° AL-… », the date change form's hidden reference; another one is not read).
@@ -261,7 +300,8 @@ export function alloparkPageFacts(html: string, reference: string): { form: bool
 /**
  * What the booking page's form says (« Vos informations »), or null when the page is not this booking's (an
  * unknown reference or address shows Allopark's home page, without the form). Fields left blank on the page stay
- * undefined; the amount stays the email's.
+ * undefined. 10/10/2026: with the amount paid of the booking block (alloparkPagePrice), which only fills the email's
+ * gap: an amount the email gives stays.
  */
 export function parseAlloparkPage(html: string, reference: string): ParsedBooking | null {
   const ref = reference.trim().toUpperCase();
@@ -290,6 +330,7 @@ export function parseAlloparkPage(html: string, reference: string): ParsedBookin
   if (first || last) booking.customerName = [first, last].filter(Boolean).join(' ');
   const email = inputValue(form, 'email_customer');
   if (email && EMAIL.test(email)) booking.customerEmail = email;
+  booking.priceCents = alloparkPagePrice(html);
 
   for (const key of Object.keys(booking) as (keyof ParsedBooking)[]) if (booking[key] === undefined) delete booking[key];
   return booking;

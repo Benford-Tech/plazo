@@ -450,6 +450,24 @@ export interface InboundEmail {
   receivedAt: string;
   /** « Relancer l'analyse » (10/10/2026): when the server last analysed the mail again; null when never. */
   analysedAt: string | null;
+  /**
+   * 10/10/2026 (« Prévent captcha »): what became of the Allopark booking page at the last analysis; null when no page was
+   * tried. Optional: an older server does not send it.
+   */
+  pageLookup?: InboundPageLookup | null;
+}
+
+/**
+ * The Allopark booking page of a mail: `read` (its fields completed the mail), `protected` (Allopark asked for an
+ * anti-robot check, which Plazo never passes), `unavailable` (no answer) or `not_found` (no page showed this booking).
+ */
+export type InboundPageOutcome = "read" | "protected" | "unavailable" | "not_found";
+
+export interface InboundPageLookup {
+  outcome: InboundPageOutcome;
+  /** The page to open by hand, for the three failures only. */
+  url: string | null;
+  at: string;
 }
 
 /** What « Relancer l'analyse » came to: a booking created or found, or the mail still waiting. */

@@ -11,6 +11,7 @@ import {
   alloparkPageAddresses,
   alloparkPageUrls,
   alloparkReferenceOf,
+  isAlloparkUrl,
 } from '@/domain/importers/allopark-page';
 import {
   forwardingConfirmationOf,
@@ -26,7 +27,7 @@ import { fullName } from '@/domain/staff-name';
 import { can } from '@/domain/roles';
 import { HttpException } from '@/utils/httpException';
 import { allocateInboundSlug } from './inbound-slug';
-import { AlloparkPageService } from './allopark-page.service';
+import { AlloparkPageOutcome, AlloparkPageService } from './allopark-page.service';
 import { AuthenticatedStaff } from '@/interfaces/auth.interface';
 import { logger } from '@/utils/logger';
 import { AuditService } from './audit.service';
@@ -88,8 +89,23 @@ export interface InboundEmailView {
   reading: ReadingMeta | null;
   /** 10/10/2026: the last re-analysis asked by the staff; null when the email was only analysed at its reception. */
   analysedAt: string | null;
+  /** 10/10/2026 (« Prévent captcha »): what became of the Allopark booking page at the last analysis; null when not tried. */
+  pageLookup: PageLookupView | null;
   receivedAt: string;
 }
+
+/**
+ * 10/10/2026 (« Prévent captcha »): the Allopark booking page of the email at its last analysis: read, protected by an
+ * anti-robot check (captcha), unavailable or without this booking; `url` is the page the staff open by hand, given for
+ * the three failures only (it carries the parking's address: cleared with the text, and once the email has its booking).
+ */
+export interface PageLookupView {
+  outcome: AlloparkPageOutcome;
+  url: string | null;
+  at: string;
+}
+
+const PAGE_OUTCOMES: AlloparkPageOutcome[] = ['read', 'protected', 'unavailable', 'not_found'];
 
 const TO_CHECK: InboundEmailStatus[] = ['incomplete', 'unrecognised'];
 
@@ -146,6 +162,8 @@ interface Analysis {
   missing: string[];
   reading: ReadingMeta | null;
   reservationId: string | null;
+  /** 10/10/2026: the Allopark booking page tried for this email; null when none was. */
+  pageLookup: PageLookupView | null;
 }
 
 export interface InboundEmailList {
@@ -223,6 +241,7 @@ export class InboundEmailService {
         ...(analysis.parsed ? { parsed: analysis.parsed as unknown as Prisma.InputJsonValue } : {}),
         ...(analysis.missing.length ? { missing: analysis.missing } : {}),
         ...(analysis.reservationId ? { reservationId: analysis.reservationId } : {}),
+        ...(analysis.pageLookup ? { pageLookup: storedPageLookup(analysis.pageLookup, !!analysis.reservationId) } : {}),
       },
     });
     return analysis.status;
@@ -247,8 +266,11 @@ export class InboundEmailService {
     const allopark = !found || found.provider === 'Allopark' ? alloparkReferenceOf({ text, subject, from: sender }) : null;
     const reference = found?.externalReference ?? allopark;
     let fromPage = false;
+    let pageLookup: PageLookupView | null = null;
     if (allopark && reference && (!found || missingForImport(found).length)) {
-      parsed = await this.withAlloparkPage(operatorId, found, reference, input);
+      const page = await this.withAlloparkPage(operatorId, found, reference, input);
+      parsed = page.parsed;
+      pageLookup = page.lookup;
       fromPage = parsed !== found;
     }
     // L-A (08/10/2026): what no importer knows, Claude reads; its answer is kept on the row for the inbox. Since
@@ -288,6 +310,8 @@ export class InboundEmailService {
       else if (unconfirmed) logger.info(`${label}: no importer and no sure reading by Claude, the booking waits for the staff`);
     }
     if (notBooking) parsed = found;
+    // Nothing of the page is used: the inbox does not speak of it.
+    if (notBooking) pageLookup = null;
     if (unconfirmed) unsure = true;
     // A re-analysis never knows less than the analysis before it: when Claude does not answer this time (no key, a
     // timeout, a refusal) or Allopark's page no longer does, the fields read then fill what is still blank; nothing of
@@ -304,12 +328,12 @@ export class InboundEmailService {
       parsed = merged;
     }
     // A cancellation, a modification or another kind of mail: shown with Claude's summary, nothing done by itself.
-    if (!parsed) return { status: 'unrecognised', provider: null, parsed: null, missing: [], reading, reservationId: null };
+    if (!parsed) return { status: 'unrecognised', provider: null, parsed: null, missing: [], reading, reservationId: null, pageLookup };
     const booking = parsed;
     const missing: string[] = missingForImport(booking);
     // An unsure reading waits for a human eye even when every field is there.
     if (unsure) missing.push('confidence');
-    const result = { provider: booking.provider, parsed: booking, reading };
+    const result = { provider: booking.provider, parsed: booking, reading, pageLookup };
     if (missing.length) return { ...result, status: 'incomplete', missing, reservationId: null };
     try {
       const created = await this.reservations.createFromImport(operatorId, booking);
@@ -328,14 +352,15 @@ export class InboundEmailService {
    * email only greets them (« Bonjour Jean Dupont, »). An email no importer recognised (`found` null) takes the page's
    * booking as it is (Claude then says whether the email is a booking at all: analyse). Unchanged when no page answers
    * for this booking. Logged without any address, link or name (10/10/2026): the reference, the link found or not, the
-   * pages tried, the fields filled.
+   * pages tried, the fields filled. 10/10/2026 (« Prévent captcha »): with what became of the page (`lookup`, null when
+   * there was no page to open), kept on the email for the inbox.
    */
   private async withAlloparkPage(
     operatorId: string,
     found: ParsedBooking | null,
     reference: string,
     email: AnalysisInput,
-  ): Promise<ParsedBooking | null> {
+  ): Promise<{ parsed: ParsedBooking | null; lookup: PageLookupView | null }> {
     const [requesters, managers] = await Promise.all([this.forwardingRequesters(operatorId), this.managerAddresses(operatorId)]);
     const addresses = alloparkPageAddresses(
       { recipients: email.recipients, text: email.text, from: email.fromAddress, requesters, managers },
@@ -349,12 +374,18 @@ export class InboundEmailService {
     );
     if (!urls.length) {
       logger.warn(`${label}: no booking page to open (no confirmation link, no candidate address)`);
-      return found;
+      return { parsed: found, lookup: null };
     }
-    const page = await this.alloparkPage.booking(urls, reference);
+    const result = await this.alloparkPage.booking(urls, reference);
+    const lookup: PageLookupView = {
+      outcome: result.outcome,
+      url: result.outcome === 'read' ? null : result.url || null,
+      at: new Date().toISOString(),
+    };
+    const page = result.booking;
     if (!page) {
-      logger.warn(`${label}: no booking found on ${urls.length} page(s)`);
-      return found;
+      if (result.outcome !== 'protected') logger.warn(`${label}: no booking found on ${urls.length} page(s)`);
+      return { parsed: found, lookup };
     }
     const completed = found ? fillGaps(found, page) : { ...page };
     if (found && (page.customerFirstName || page.customerLastName)) {
@@ -366,7 +397,7 @@ export class InboundEmailService {
     const filled = (Object.keys(completed) as (keyof ParsedBooking)[]).filter(key => key !== 'provider' && completed[key] !== found?.[key]);
     const still = missingForImport(completed);
     logger.info(`${label}: ${filled.length} field(s) filled from the booking page${still.length ? `, still missing: ${still.join(', ')}` : ''}`);
-    return completed;
+    return { parsed: completed, lookup };
   }
 
   /** 10/10/2026: the addresses of the operator's active managers (the parking's mailbox is often theirs), oldest first. */
@@ -593,6 +624,8 @@ export class InboundEmailService {
           reservationId: analysis.reservationId,
           // Of no use once the email has its booking (RGPD: minimised as in attach()).
           ...(linked ? { recipients: [], links: [] } : {}),
+          // 10/10/2026: what became of the Allopark page this time (none tried: none shown).
+          pageLookup: analysis.pageLookup ? storedPageLookup(analysis.pageLookup, linked) : Prisma.DbNull,
           ...reading,
         },
       });
@@ -618,17 +651,23 @@ export class InboundEmailService {
     const row = await prisma.inboundEmail.findFirst({ where: { id, operatorId: actor.operatorId }, select: { id: true } });
     const booking = await prisma.reservation.findFirst({ where: { id: reservationId, operatorId: actor.operatorId }, select: { id: true } });
     if (!row || !booking) throw new HttpException(httpStatus.NOT_FOUND, 'Not found', 'not_found');
-    await prisma.inboundEmail.update({ where: { id }, data: { status: 'imported', reservationId, textBody: null, recipients: [], links: [] } });
+    await prisma.inboundEmail.update({
+      where: { id },
+      data: { status: 'imported', reservationId, textBody: null, recipients: [], links: [], pageLookup: Prisma.DbNull },
+    });
   }
 
-  /** Nightly: the text (with the recipients and links kept for a re-analysis) after 30 days, the rows after 90. */
+  /**
+   * Nightly: the text (with the recipients and links kept for a re-analysis, and the Allopark page's lookup whose link
+   * carries an address: 10/10/2026) after 30 days, the rows after 90.
+   */
   public async purge(now = new Date()): Promise<{ textsCleared: number; rowsDeleted: number }> {
     const { count: textsCleared } = await prisma.inboundEmail.updateMany({
       where: {
         receivedAt: { lt: new Date(now.getTime() - TEXT_RETENTION_DAYS * 86400000) },
-        OR: [{ textBody: { not: null } }, { recipients: { isEmpty: false } }, { links: { isEmpty: false } }],
+        OR: [{ textBody: { not: null } }, { recipients: { isEmpty: false } }, { links: { isEmpty: false } }, { pageLookup: { not: Prisma.DbNull } }],
       },
-      data: { textBody: null, recipients: [], links: [] },
+      data: { textBody: null, recipients: [], links: [], pageLookup: Prisma.DbNull },
     });
     const { count: rowsDeleted } = await prisma.inboundEmail.deleteMany({
       where: { receivedAt: { lt: new Date(now.getTime() - ROW_RETENTION_DAYS * 86400000) } },
@@ -666,6 +705,7 @@ export class InboundEmailService {
       reservationReference: r.reservation?.reference ?? null,
       reading: readingOf(r.reading),
       analysedAt: r.analysedAt?.toISOString() ?? null,
+      pageLookup: pageLookupOf(r.pageLookup),
       receivedAt: r.receivedAt.toISOString(),
     };
   }
@@ -688,6 +728,7 @@ type InboundRow = {
   reading: Prisma.JsonValue | null;
   recipients: string[];
   links: string[];
+  pageLookup: Prisma.JsonValue | null;
   analysedAt: Date | null;
   reservationId: string | null;
   receivedAt: Date;
@@ -718,6 +759,22 @@ function readingOf(value: Prisma.JsonValue | null): ReadingMeta | null {
     summary: typeof v.summary === 'string' ? v.summary : '',
     model: typeof v.model === 'string' ? v.model : '',
   };
+}
+
+/** The lookup as stored: the page's link only for a failure, and never once the email has its booking. */
+function storedPageLookup(lookup: PageLookupView, linked: boolean): Prisma.InputJsonValue {
+  const url = !linked && lookup.outcome !== 'read' ? lookup.url : null;
+  return { outcome: lookup.outcome, url, at: lookup.at };
+}
+
+/** The Allopark page's lookup as stored, or null (never tried, purged, or a row written before 10/10/2026). */
+function pageLookupOf(value: Prisma.JsonValue | null): PageLookupView | null {
+  if (!value || typeof value !== 'object' || Array.isArray(value)) return null;
+  const v = value as Record<string, unknown>;
+  const outcome = PAGE_OUTCOMES.find(o => o === v.outcome);
+  if (!outcome || typeof v.at !== 'string') return null;
+  const url = outcome !== 'read' && typeof v.url === 'string' && isAlloparkUrl(v.url) ? v.url : null;
+  return { outcome, url, at: v.at };
 }
 
 function forwardingView(row: { parsed: Prisma.JsonValue | null; receivedAt: Date } | null): InboundSettings['forwarding'] {
