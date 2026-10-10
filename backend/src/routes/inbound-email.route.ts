@@ -72,7 +72,9 @@ export class InboundEmailRoute implements Routes {
     this.router.get('/internal/inbound/emails', StaffAuthMiddleware('reservations:manage'), this.inbound.list);
     this.router.post('/internal/inbound/emails/:id/handle', StaffAuthMiddleware('reservations:manage'), RefuseInViewAs(), this.inbound.handle);
     this.router.post('/internal/inbound/emails/:id/dismiss', StaffAuthMiddleware('reservations:manage'), RefuseInViewAs(), this.inbound.handle);
-    this.router.post('/internal/inbound/emails/:id/archive', StaffAuthMiddleware('reservations:manage'), RefuseInViewAs(), this.inbound.archive);
+    // 10/10/2026 (« le superadmin peut archiver les mails des parkings »): archiving is open to « Ouvrir son espace »
+    // (traced as view_as.write under the admin's name); the other gestures stay the operator's.
+    this.router.post('/internal/inbound/emails/:id/archive', StaffAuthMiddleware('reservations:manage'), this.inbound.archive);
     this.router.post('/internal/inbound/emails/:id/attach', StaffAuthMiddleware('reservations:manage'), RefuseInViewAs(), this.inbound.attach);
   }
 }

@@ -85,7 +85,7 @@ Ne construire QUE ce qui règle la douleur n°1 du client.
      30 jours, archived sur 90 jours ; `?status=` filtre encore, et seul il cherche dans l'onglet de cet état ; les `forwarding` jamais listés). **Deux gestes (T-A)** :
      « Marquer comme traité » (`POST …/emails/:id/handle` → `handled` depuis incomplete / unrecognised / duplicate / dismissed ; le web ne le propose pas pour un doublon, déjà rattaché à sa réservation,
      imported inchangé, 409 `archived`, 404 pour un `forwarding` ; `/dismiss` alias déprécié ; `dismissed` déprécié dans l'enum,
-     migré en `handled` ; remplace « Classer sans suite ») et « Archiver » (`POST …/emails/:id/archive` → `archived` depuis tout
+     migré en `handled` ; remplace « Classer sans suite ») et « Archiver » (`POST …/emails/:id/archive`, aussi permis au super admin depuis « Ouvrir son espace » le 10/10/2026, les autres gestes restant au loueur ; → `archived` depuis tout
      sauf `forwarding` → 409, texte gardé ; la purge efface toujours les textes à 30 jours et les lignes à 90). **Récapitulatif
      horaire (N-A)** : `Staff.bookingNotify` (`BookingNotify` immediate · hourly · never, remplace `notifyBookings` ; gérants
      `hourly`, autres rôles `immediate` : `defaultBookingNotify` dans `domain/roles.ts` ; champ `bookings` de
