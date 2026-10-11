@@ -12,8 +12,8 @@ Nothing secret is printed.
 """
 import os
 
-from codemagic_api import (build_url, call, ensure_group, fail, find_app, groups_of, start_build, summary, team_has_app,
-                           teams_of_user, variables_of)
+from codemagic_api import (build_url, call, ensure_group, fail, find_app, groups_of, paginated, start_build, summary,
+                           team_has_app, teams_of_user, variables_of)
 
 ACTION = os.environ.get("ACTION", "status").strip()
 WORKFLOW_ID = os.environ.get("WORKFLOW_ID", "").strip() or "mobile-release-android"
@@ -119,8 +119,17 @@ def team(app):
     others = ", ".join(f"`{t['name']}`" for t in teams if not owner or t["id"] != owner["id"]) or "aucune"
     if not owner:
         lines = [f"App **personnelle** du compte (hors équipe) ; équipes du compte : {others}.",
-                 "- Sans équipe, pas d'abonnement ni de file à lire : les minutes gratuites du compte personnel s'épuisent, "
-                 "et les identités de signature et intégrations de l'équipe (iOS) ne sont pas accessibles."]
+                 "- Compte personnel : 500 minutes gratuites par mois sur Mac mini M2, un seul build à la fois ; un build "
+                 "d'une autre app du compte occupe cette place. Dernier build de chaque app du compte :"]
+        for app_row in paginated("/api/v3/user/apps"):
+            last = app_row.get("last_build_id")
+            if not last:
+                lines.append(f"  - `{app_row.get('name')}` : aucun build")
+                continue
+            code, payload = call("GET", f"/api/v3/builds/{last}")
+            build = payload.get("data") or {}
+            lines.append(f"  - `{app_row.get('name')}` : {build.get('status')} (créé {build.get('created_at')}, "
+                         f"fini {build.get('finished_at') or '—'}, machine `{build.get('instance_type') or '?'}`)")
         print("\n".join(lines))
         summary(lines)
         return
