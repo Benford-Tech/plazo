@@ -11,8 +11,8 @@ Nothing secret is printed.
 """
 import os
 
-from codemagic_api import (build_url, call, ensure_group, fail, find_app, find_team, groups_of, start_build, summary,
-                           variables_of)
+from codemagic_api import (build_url, call, ensure_group, fail, find_app, groups_of, start_build, summary, team_has_app,
+                           teams_of_user, variables_of)
 
 ACTION = os.environ.get("ACTION", "status").strip()
 WORKFLOW_ID = os.environ.get("WORKFLOW_ID", "").strip() or "mobile-release-android"
@@ -93,11 +93,17 @@ RUNNING = ("initializing", "queued", "preparing", "fetching", "testing", "buildi
 
 def team(app):
     """Why a build may wait: the team's subscription and the builds it is running or queuing."""
-    owner = find_team(app["id"])
+    teams = teams_of_user()
+    owner = next((t for t in teams if team_has_app(t["id"], app["id"])), None)
+    others = ", ".join(f"`{t['name']}`" for t in teams if not owner or t["id"] != owner["id"]) or "aucune"
     if not owner:
-        print("App personnelle, hors équipe")
+        lines = [f"App **personnelle** du compte (hors équipe) ; équipes du compte : {others}.",
+                 "- Sans équipe, pas d'abonnement ni de file à lire : les minutes gratuites du compte personnel s'épuisent, "
+                 "et les identités de signature et intégrations de l'équipe (iOS) ne sont pas accessibles."]
+        print("\n".join(lines))
+        summary(lines)
         return
-    lines = [f"Équipe `{owner['name']}` (`{owner['id']}`)"]
+    lines = [f"Équipe `{owner['name']}` (`{owner['id']}`) ; autres équipes du compte : {others}"]
     code, payload = call("GET", f"/api/v3/teams/{owner['id']}/subscriptions")
     for sub in payload.get("data", []):
         lines.append(f"- abonnement {sub.get('category')} : **{sub.get('status')}** ({sub.get('pricing_model')}"
