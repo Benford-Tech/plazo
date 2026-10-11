@@ -3,6 +3,7 @@
 
 Actions (ACTION):
   status        the build BUILD_ID (default: the app's last build): status, workflow, times, artifacts
+  steps         the steps of that build with their status (which one failed)
   start         queue WORKFLOW_ID (default mobile-release-android) on BRANCH (default main)
   groups        the app's variable groups and the NAMES of their variables (never the values)
   ensure-group  create the app variable group GROUP_NAME when it is missing (empty)
@@ -62,6 +63,24 @@ def status(app):
     # GitHub run of this workflow (status) tells which Codemagic step failed, by its artifacts and logs.
     if state in ENDED and state != "finished":
         fail(f"le build Codemagic s'est terminé en {state} : ouvrir {url} pour l'étape en cause")
+
+
+def steps(app):
+    """The steps Codemagic ran for the build and their status: which one failed."""
+    build_id = BUILD_ID or app.get("last_build_id")
+    if not build_id:
+        fail("aucun build : préciser build_id")
+    code, payload = call("GET", f"/api/v3/builds/{build_id}/actions", query={"page_size": 100})
+    actions = payload.get("data", [])
+    lines = [f"Étapes du build {build_id} ({len(actions)}) :"]
+    for action in actions:
+        when = f" {action.get('started_at') or '—'} → {action.get('finished_at') or '—'}"
+        lines.append(f"- {action.get('status') or '?'} · {action.get('type')} · {action.get('name')}{when}")
+    if not actions:
+        lines.append("- aucune étape : le build n'a pas démarré (configuration refusée, machine ou minutes indisponibles : "
+                     f"la raison est sur {build_url(app['id'], build_id)})")
+    print("\n".join(lines))
+    summary(lines)
 
 
 def start(app):
@@ -128,9 +147,9 @@ def team(app):
 def main():
     app = find_app()
     print(f"App Codemagic : {app['id']} ({app['name']})")
-    actions = {"status": status, "start": start, "groups": groups, "ensure-group": ensure, "team": team}
+    actions = {"status": status, "steps": steps, "start": start, "groups": groups, "ensure-group": ensure, "team": team}
     if ACTION not in actions:
-        fail(f"action inconnue : {ACTION} (status, start, groups, ensure-group, team)")
+        fail(f"action inconnue : {ACTION} (status, steps, start, groups, ensure-group, team)")
     actions[ACTION](app)
 
 
