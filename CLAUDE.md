@@ -694,7 +694,8 @@ Le nom du produit doit rester dans UN seul fichier de configuration (il peut enc
   (A : aplat orange ou citron avec le P et l'avion ; B : le fond de l'app, la tuile de l'icône, une pilule), au choix de
   Joanny, et les icônes 512, rendues par `brand/stores/tools/build.mjs` (Chromium, polices de l'app embarquées en data URI)
   et `finish.py` ; **captures téléphone** (11/10/2026, « Captures d'écran pour téléphone ») dans `brand/stores/screenshots/`
-  (sept par app, 1080 × 1920) prises sur les vraies apps construites pour le web par `brand/stores/tools/screenshots/run.sh`
+  (sept par app en 1080 × 1920, et dans `app-store/` en 1320 × 2868 pour l'iPhone 6,9" de l'App Store, `DEVICE=iphone` de
+  `capture.mjs`, 11/10/2026) prises sur les vraies apps construites pour le web par `brand/stores/tools/screenshots/run.sh`
   (base neuve `…_shots` avec les données de démo, API à 14:05 au parking par `fake-clock.cjs`, journée préparée par
   `scenario.mjs` et `stage.sql`, Chromium piloté par `capture.mjs`), ou par le workflow GitHub `store-screenshots.yml`
   (artefact) ; **polices de l'app variables** (11/10/2026 : `Manrope.ttf` était l'instance statique ExtraLight et
