@@ -96,7 +96,8 @@ clé d'import Android de Plazo, et les réglages push (APNs, FCM) de chaque app 
 
 1. [ ] **Créer les deux App ID** : **Certificates, Identifiers & Profiles › Identifiers › (+) › App IDs › App**,
    **Explicit** :
-   - [ ] `com.benfordtech.parkingApp` (description « Plazo ») : **Push Notifications** + **Associated Domains** ;
+   - [ ] `com.benfordtech.parkingApp` (description « Plazo ») : **Push Notifications** + **Associated Domains** (les liens
+     de réservation `https://www.plazo.fr/ma-reservation/…` ouvrent l'app ; le site sert déjà le fichier d'association) ;
    - [ ] `com.benfordtech.parkingApp.pro` (description « Plazo Pro ») : **Push Notifications**.
 2. [ ] **Créer les deux apps** dans App Store Connect : **Apps › (+) › New App**, iOS, nom « Plazo » ou « Plazo Pro »,
    langue Français, le Bundle ID de l'étape 1, SKU `PLAZO-IOS` / `PLAZO-PRO-IOS`.
@@ -187,7 +188,8 @@ clé d'import Android de Plazo, et les réglages push (APNs, FCM) de chaque app 
   `APP_STORE_APP_ID_PLAZO_PRO: "0"`) ;
 - [ ] les identifiants définitifs, s'ils changent, **avant** toute création dans les consoles ;
 - [ ] les empreintes **SHA-256** de la clé de signature Play (Play Console › Protégé avec Play › Signature d'application
-  Play), pour `assetlinks.json` ; le Team ID Apple est connu (`3BX4795V2Y`) ;
+  Play), pour `site/public/.well-known/assetlinks.json` ; le Team ID Apple est connu (`3BX4795V2Y`) et déjà dans
+  `site/public/.well-known/apple-app-site-association` ;
 - [ ] « première version interne déployée sur les deux apps », pour passer `PLAY_SUBMIT_AS_DRAFT` à `"false"` ;
 - [ ] les noms des groupes de testeurs externes TestFlight, le jour où le personnel du client doit recevoir les builds
   (`TESTFLIGHT_BETA_GROUPS`) ;
