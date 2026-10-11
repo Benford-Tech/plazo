@@ -36,7 +36,7 @@ const VARIANTS = {
     <div class="stage" style="background:#FF6600; font-family:'Manrope';">
       <div class="mark" style="left:92px; top:70px; width:360px; height:360px;">${svg('android-foreground.svg').replace('<svg ', '<svg width="360" height="360" ')}</div>
       <div style="position:absolute; left:470px; top:0; height:500px; display:flex; flex-direction:column; justify-content:center; gap:22px; width:500px;">
-        <div style="font-family:'Playfair Display'; font-style:italic; font-weight:500; font-size:64px; line-height:1.05; color:#fff; text-wrap:balance;">Votre parking à l'aéroport de Lyon</div>
+        <div style="font-family:'Playfair Display'; font-style:italic; font-weight:500; font-size:64px; line-height:1.05; color:#fff; text-wrap:balance;">Votre parking à l'aéroport</div>
         <div style="font-weight:600; font-size:24px; color:rgba(255,255,255,0.88); letter-spacing:0.01em;">Prix total affiché, navette, retour en direct.</div>
       </div>
     </div>`,

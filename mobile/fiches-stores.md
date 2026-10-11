@@ -724,7 +724,7 @@ Conseils de capture :
 - Éviter le badge « DÉMO » et tout signe du mode test de Stripe.
 
 Images de présentation (`brand/stores/`, 11/10/2026), deux variantes par app, à choisir par Joanny :
-- **Plazo A** (`plazo-feature-A.png`) : fond orange `#FF6600`, le P et l'avion de l'icône, « Votre parking à l'aéroport de Lyon »
+- **Plazo A** (`plazo-feature-A.png`) : fond orange `#FF6600`, le P et l'avion de l'icône, « Votre parking à l'aéroport »
   en Playfair italique blanc, « Prix total affiché, navette, retour en direct. » en Manrope.
 - **Plazo B** (`plazo-feature-B.png`) : le fond gris clair `#ECECEE` de l'app, la tuile de l'icône, surtitre « Parking aéroport ·
   Lyon Saint-Exupéry », « Votre parking, du dépôt au retour. » en Playfair italique brun, pilule orange « Prix total affiché ».
