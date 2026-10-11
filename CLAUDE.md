@@ -665,7 +665,10 @@ Le nom du produit doit rester dans UN seul fichier de configuration (il peut enc
   de commande (`google-play bundles publish --track $PLAY_TRACK [--draft]` par AAB, `app-store-connect publish` par IPA,
   `TESTFLIGHT_BETA_GROUPS` pour la relecture bêta), chacun tenté (`ignore_failure`), « Bilan de la publication » en erreur si
   l'un a échoué ; plus de bloc `publishing:` (il n'envoie qu'une app et doublerait l'envoi) ; App ID OneSignal dans le fichier,
-  `GOOGLE_PLAY_SERVICE_ACCOUNT_CREDENTIALS` seul secret du groupe `mobile_secrets`) ; `mobile-check` à la main seulement, les vérifications de chaque modification
+  `GOOGLE_PLAY_SERVICE_ACCOUNT_CREDENTIALS` seul secret du groupe `mobile_secrets`) ; **`mobile-release-android` (11/10/2026,
+  « un build Android seul pour le Play Store »)**, à la main : la moitié Android de `mobile-release` (étapes partagées par des
+  ancres YAML de `definitions.scripts`, variables `android_vars`), sans `ios_signing` ni intégration `lovenest-asc`, donc
+  lançable avant les profils Apple (premier envoi Google Play) ; `mobile-check` à la main seulement, les vérifications de chaque modification
   tournant sur GitHub Actions (`mobile-ci.yml`, gratuit, les minutes de l'équipe étant payantes) ; marche à suivre
   `mobile/publier-sur-les-stores.md`. Le nom iOS vit dans
   `APP_DISPLAY_NAME` des configurations Xcode (mis à jour par `sync_product.dart`) ; Google Pay suit la clé Stripe servie
