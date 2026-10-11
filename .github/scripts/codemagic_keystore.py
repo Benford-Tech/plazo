@@ -15,16 +15,10 @@ Environment:
 Nothing secret is printed: only names, ids and URLs.
 """
 import base64
-import json
 import os
-import sys
-import urllib.error
-import urllib.parse
-import urllib.request
 
-API = os.environ.get("CODEMAGIC_API", "https://codemagic.io").rstrip("/")
-TOKEN = os.environ.get("CODEMAGIC_API_TOKEN", "")
-APP_NAME = os.environ.get("APP_NAME", "plazo")
+from codemagic_api import call, ensure_group, fail, find_app, start_build, summary, variables_of
+
 GROUP_NAME = os.environ.get("GROUP_NAME", "plazo_android_signing")
 WORKFLOW_ID = os.environ.get("WORKFLOW_ID", "mobile-release-android")
 BRANCH = os.environ.get("BRANCH", "main")
@@ -33,70 +27,13 @@ KEYSTORE_DIR = os.environ.get("KEYSTORE_DIR", "out")
 REPLACE = os.environ.get("REPLACE", "false").lower() == "true"
 START_BUILD = os.environ.get("START_BUILD", "true").lower() != "false"
 VARIABLE_NAMES = ("CM_KEYSTORE", "CM_KEYSTORE_PASSWORD", "CM_KEY_ALIAS", "CM_KEY_PASSWORD")
-
-
-def fail(message):
-    print(f"ERREUR: {message}", file=sys.stderr)
-    sys.exit(1)
-
-
-def call(method, path, body=None, query=None):
-    url = f"{API}{path}"
-    if query:
-        url += "?" + urllib.parse.urlencode(query)
-    data = json.dumps(body).encode() if body is not None else None
-    request = urllib.request.Request(url, data=data, method=method)
-    request.add_header("x-auth-token", TOKEN)
-    request.add_header("Accept", "application/json")
-    if data is not None:
-        request.add_header("Content-Type", "application/json")
-    try:
-        with urllib.request.urlopen(request, timeout=60) as response:
-            raw = response.read()
-            return response.status, (json.loads(raw) if raw else None)
-    except urllib.error.HTTPError as error:
-        detail = error.read().decode(errors="replace")[:500]
-        # The error body never carries our values: it is safe to show.
-        fail(f"Codemagic a répondu {error.code} sur {method} {path} : {detail}")
-
-
-def paginated(path, query=None):
-    page = 1
-    while True:
-        status, payload = call("GET", path, query={**(query or {}), "page": page, "page_size": 100})
-        yield from payload.get("data", [])
-        if page >= int(payload.get("total_pages") or 1):
-            return
-        page += 1
-
-
-def find_app():
-    """The Codemagic app of this repository: by exact name, in the user's apps then in every team."""
-    candidates = [a for a in paginated("/api/v3/user/apps", {"name": APP_NAME})
-                  if a.get("name", "").lower() == APP_NAME.lower() and not a.get("archived")]
-    if not candidates:
-        for team in paginated("/api/v3/user/teams"):
-            candidates += [a for a in paginated(f"/api/v3/teams/{team['id']}/apps", {"name": APP_NAME})
-                           if a.get("name", "").lower() == APP_NAME.lower() and not a.get("archived")]
-    ids = sorted({a["id"] for a in candidates})
-    if not ids:
-        fail(f"aucune app Codemagic nommée « {APP_NAME} » pour ce jeton : ajouter le dépôt à l'équipe d'abord")
-    if len(ids) > 1:
-        fail(f"plusieurs apps Codemagic s'appellent « {APP_NAME} » ({', '.join(ids)}) : préciser APP_NAME")
-    return ids[0]
-
-
-def find_or_create_group(app_id):
-    for group in paginated(f"/api/v3/apps/{app_id}/variable-groups"):
-        if group.get("name") == GROUP_NAME:
-            return group["id"], False
-    status, payload = call("POST", f"/api/v3/apps/{app_id}/variable-groups", {"name": GROUP_NAME})
-    return payload["data"]["id"], True
+# Every group codemagic.yaml references must exist, or Codemagic refuses the build before it starts
+# (« references to unknown variable group(s) »): the Google Play group is created empty when missing,
+# its credentials being added by hand later (mobile/publier-sur-les-stores.md, step 1.5).
+OTHER_GROUPS = ("mobile_secrets",)
 
 
 def main():
-    if not TOKEN:
-        fail("CODEMAGIC_API_TOKEN est vide")
     with open(os.path.join(KEYSTORE_DIR, "plazo-upload.jks"), "rb") as handle:
         keystore_b64 = base64.b64encode(handle.read()).decode()
     with open(os.path.join(KEYSTORE_DIR, "plazo-upload-password.txt"), encoding="utf-8") as handle:
@@ -104,12 +41,12 @@ def main():
     if len(password) < 20:
         fail("mot de passe trop court")
 
-    app_id = find_app()
+    app_id = find_app()["id"]
     print(f"App Codemagic : {app_id}")
-    group_id, created = find_or_create_group(app_id)
+    group_id, created = ensure_group(app_id, GROUP_NAME)
     print(f"Groupe « {GROUP_NAME} » : {group_id} ({'créé' if created else 'existant'})")
 
-    existing = {v["name"]: v for v in paginated(f"/api/v3/variable-groups/{group_id}/variables")}
+    existing = variables_of(group_id)
     present = [name for name in VARIABLE_NAMES if name in existing]
     if present and not REPLACE:
         fail("le groupe contient déjà une clé (" + ", ".join(present) + "). Une clé déjà envoyée à Google Play "
@@ -126,7 +63,7 @@ def main():
     ]
     call("POST", f"/api/v3/variable-groups/{group_id}/variables", {"secure": True, "variables": variables})
 
-    after = {v["name"]: v for v in paginated(f"/api/v3/variable-groups/{group_id}/variables")}
+    after = variables_of(group_id)
     missing = [name for name in VARIABLE_NAMES if name not in after]
     if missing:
         fail("variables absentes après l'envoi : " + ", ".join(missing))
@@ -134,18 +71,19 @@ def main():
     if not_secure:
         fail("variables envoyées sans le marquage « Secure » : " + ", ".join(not_secure))
     print("Clé envoyée à Codemagic : " + ", ".join(VARIABLE_NAMES) + " (Secure)")
+    lines = [f"- App Codemagic `{app_id}`, groupe `{GROUP_NAME}` (`{group_id}`) : clé envoyée, variables Secure."]
 
-    summary = [f"- App Codemagic `{app_id}`, groupe `{GROUP_NAME}` (`{group_id}`) : clé envoyée, variables Secure."]
+    for name in OTHER_GROUPS:
+        other_id, other_created = ensure_group(app_id, name)
+        if other_created:
+            print(f"Groupe « {name} » créé vide ({other_id}) : ses variables restent à ajouter dans Codemagic")
+            lines.append(f"- Groupe `{name}` créé vide : ajouter ses variables dans Codemagic (guide, étape 1.5).")
+
     if START_BUILD:
-        status, payload = call("POST", f"/api/v3/apps/{app_id}/builds", {"workflow_id": WORKFLOW_ID, "branch": BRANCH})
-        build_id = payload["data"]["id"]
-        build_url = f"https://codemagic.io/app/{app_id}/build/{build_id}"
-        print(f"Build Codemagic lancé : {WORKFLOW_ID} sur {BRANCH} → {build_url}")
-        summary.append(f"- Build `{WORKFLOW_ID}` sur `{BRANCH}` lancé : {build_url}")
-    step_summary = os.environ.get("GITHUB_STEP_SUMMARY")
-    if step_summary:
-        with open(step_summary, "a", encoding="utf-8") as handle:
-            handle.write("\n".join(summary) + "\n")
+        build_id, url = start_build(app_id, WORKFLOW_ID, BRANCH)
+        print(f"Build Codemagic lancé : {WORKFLOW_ID} sur {BRANCH} → {url}")
+        lines.append(f"- Build `{WORKFLOW_ID}` sur `{BRANCH}` lancé : {url}")
+    summary(lines)
 
 
 if __name__ == "__main__":

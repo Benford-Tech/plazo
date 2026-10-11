@@ -91,7 +91,10 @@ la clé d'import Android de Plazo dans Codemagic (créée et envoyée par GitHub
    **Settings › Secrets and variables › Actions › New repository secret**, nom `CODEMAGIC_API_TOKEN`, coller le jeton,
    **Add secret**. Rien à téléverser dans Code signing identities pour Android : la clé vit dans le groupe de variables
    `plazo_android_signing` de l'app (variables Secure `CM_KEYSTORE`, `CM_KEYSTORE_PASSWORD`, `CM_KEY_ALIAS`,
-   `CM_KEY_PASSWORD`, écrites par GitHub ; Codemagic n'a pas d'API pour les Code signing identities).
+   `CM_KEY_PASSWORD`, écrites par GitHub ; Codemagic n'a pas d'API pour les Code signing identities). Avec ce jeton, le
+   workflow GitHub **« Codemagic build (start, status, groups) »** (Actions › Run workflow) lance un build Codemagic,
+   donne l'état et les artefacts d'un build, liste les groupes de variables (noms seulement) ou en crée un vide : Claude
+   suit et relance les builds par là, sans accès à Codemagic.
 5. [ ] **Le groupe de variables `mobile_secrets`** : page de l'app › **Environment variables** › variable
    `GOOGLE_PLAY_SERVICE_ACCOUNT_CREDENTIALS`, groupe `mobile_secrets`, cocher **Secret**, **Add**. La valeur : **tout le
    contenu** d'une clé JSON du compte de service qui publie déjà Thempo (étape 3.4), collé tel quel (pas en base64).
@@ -186,7 +189,8 @@ la clé d'import Android de Plazo dans Codemagic (créée et envoyée par GitHub
    testeurs, publier en production), **Appliquer**, puis enregistrer.
 4. [ ] **Sa clé JSON pour Codemagic** : Google Cloud › **IAM et administration › Comptes de service** › ce compte ›
    **Clés › Ajouter une clé › Créer une clé › JSON**. Ouvrir le fichier, tout copier dans
-   `GOOGLE_PLAY_SERVICE_ACCOUNT_CREDENTIALS` (étape 1.5), puis le supprimer de l'ordinateur.
+   `GOOGLE_PLAY_SERVICE_ACCOUNT_CREDENTIALS` (étape 1.5 ; le groupe `mobile_secrets` existe déjà, créé vide par le
+   workflow de la clé Android : Codemagic refuse un build dont un groupe manque), puis le supprimer de l'ordinateur.
 5. [ ] **Liste des testeurs internes** (pour chaque app) : **Tester et publier › Tests › Tests internes › Testeurs ›
    Créer une liste de diffusion** (comptes Google), **Enregistrer les modifications**.
 6. [ ] **Premier envoi à la main** (l'API refuse une app jamais publiée), une fois la section 1 et les étapes 2 à 4
