@@ -6,11 +6,13 @@ Actions (ACTION):
   start         queue WORKFLOW_ID (default mobile-release-android) on BRANCH (default main)
   groups        the app's variable groups and the NAMES of their variables (never the values)
   ensure-group  create the app variable group GROUP_NAME when it is missing (empty)
+  team          the team's subscription state and its running or queued builds (why a build waits)
 Nothing secret is printed.
 """
 import os
 
-from codemagic_api import build_url, call, ensure_group, fail, find_app, groups_of, start_build, summary, variables_of
+from codemagic_api import (build_url, call, ensure_group, fail, find_app, find_team, groups_of, start_build, summary,
+                           variables_of)
 
 ACTION = os.environ.get("ACTION", "status").strip()
 WORKFLOW_ID = os.environ.get("WORKFLOW_ID", "").strip() or "mobile-release-android"
@@ -86,12 +88,41 @@ def ensure(app):
     summary([line])
 
 
+RUNNING = ("initializing", "queued", "preparing", "fetching", "testing", "building", "publishing", "finishing")
+
+
+def team(app):
+    """Why a build may wait: the team's subscription and the builds it is running or queuing."""
+    owner = find_team(app["id"])
+    if not owner:
+        print("App personnelle, hors équipe")
+        return
+    lines = [f"Équipe `{owner['name']}` (`{owner['id']}`)"]
+    code, payload = call("GET", f"/api/v3/teams/{owner['id']}/subscriptions")
+    for sub in payload.get("data", []):
+        lines.append(f"- abonnement {sub.get('category')} : **{sub.get('status')}** ({sub.get('pricing_model')}"
+                     + (f", essai jusqu'au {sub['trial_end_at']}" if sub.get("trial_end_at") else "") + ")")
+    if not payload.get("data"):
+        lines.append("- aucun abonnement")
+    busy = []
+    for state in RUNNING:
+        code, payload = call("GET", f"/api/v3/teams/{owner['id']}/builds", query={"status": state, "page_size": 20})
+        busy += payload.get("data", [])
+    lines.append(f"- builds en cours ou en attente dans l'équipe : {len(busy)}")
+    for build in sorted(busy, key=lambda b: b.get("created_at") or ""):
+        mine = " (cette app)" if build.get("app_id") == app["id"] else ""
+        lines.append(f"  - {build.get('status')} depuis {build.get('created_at')} : app `{build.get('app_id')}`{mine}, "
+                     f"workflow `{(build.get('workflow') or {}).get('id')}`, build `{build.get('id')}`")
+    print("\n".join(lines))
+    summary(lines)
+
+
 def main():
     app = find_app()
     print(f"App Codemagic : {app['id']} ({app['name']})")
-    actions = {"status": status, "start": start, "groups": groups, "ensure-group": ensure}
+    actions = {"status": status, "start": start, "groups": groups, "ensure-group": ensure, "team": team}
     if ACTION not in actions:
-        fail(f"action inconnue : {ACTION} (status, start, groups, ensure-group)")
+        fail(f"action inconnue : {ACTION} (status, start, groups, ensure-group, team)")
     actions[ACTION](app)
 
 

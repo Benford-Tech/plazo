@@ -69,6 +69,15 @@ def find_app(name=None):
     return next(a for a in candidates if a["id"] == ids[0])
 
 
+def find_team(app_id):
+    """The team that owns the app, or None when it is a personal app."""
+    for team in paginated("/api/v3/user/teams"):
+        status, payload = call("GET", f"/api/v3/teams/{team['id']}/apps", query={"id": app_id, "page_size": 5})
+        if any(a.get("id") == app_id for a in payload.get("data", [])):
+            return team
+    return None
+
+
 def groups_of(app_id):
     return list(paginated(f"/api/v3/apps/{app_id}/variable-groups"))
 
