@@ -689,7 +689,11 @@ Le nom du produit doit rester dans UN seul fichier de configuration (il peut enc
   `mobile/publier-sur-les-stores.md` ; **fiches des stores** `mobile/fiches-stores.md` (11/10/2026, « crée l'app sur les
   stores ») : textes, confidentialité, notes de revue et visuels des quatre fiches, rédigés d'après le code et relus contre
   lui, section 0 = ce qui reste à régler avant la revue (parking en ligne, e-mail de support, compte de revue et suppression
-  de compte dans Plazo Pro, politique de confidentialité, textes iOS par flavor…). Le nom iOS vit dans
+  de compte dans Plazo Pro, politique de confidentialité, textes iOS par flavor…) ; **visuels Google Play** (11/10/2026,
+  « Image de présentation 1 024 × 500, icône 512 × 512 ») dans `brand/stores/` : deux images de présentation par app
+  (A : aplat orange ou citron avec le P et l'avion ; B : le fond de l'app, la tuile de l'icône, une pilule), au choix de
+  Joanny, et les icônes 512, rendues par `brand/stores/tools/build.mjs` (Chromium, polices de l'app embarquées en data URI)
+  et `finish.py`. Le nom iOS vit dans
   `APP_DISPLAY_NAME` des configurations Xcode (mis à jour par `sync_product.dart`) ; Google Pay suit la clé Stripe servie
   (`pk_live_` = production).
   Voir `mobile/README.md`.

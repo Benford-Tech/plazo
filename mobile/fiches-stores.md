@@ -711,8 +711,8 @@ Les icônes App Store sont fournies par le build lui-même (icône 1024 des jeux
 | Apple | iPhone 6,5" | 1284 × 2778 ou 1242 × 2688, seulement si aucune capture 6,9" n'est fournie (sinon Apple réduit les captures 6,9") |
 | Apple | iPad 13" (**obligatoire seulement si l'iPad est gardé**, point 0.15 ; ligne à retirer si les apps passent en iPhone seul) | 2064 × 2752 (simulateur iPad Pro 13 pouces M4) ou 2048 × 2732 |
 | Apple | Aperçu vidéo | facultatif |
-| Google | Icône | 512 × 512, PNG 32 bits (avec canal alpha), 1 Mo au plus, carré plein (Google arrondit lui-même). À tirer de `brand/app/png/app-icon-1024.png` (Plazo) et `brand/app/png/app-icon-pro-1024.png` (Plazo Pro). Ces sources sont en RVB 24 bits, sans canal alpha : sur Mac, `sips -Z 512 <fichier> --out icon-512.png`, puis Aperçu › Fichier › Exporter › PNG avec la case « Alpha » cochée ; ou, avec ImageMagick, `magick <fichier> -resize 512x512 PNG32:icon-512.png`. `brand/icon-512.png` est l'icône du site : ce n'est pas la bonne. |
-| Google | Image de présentation | 1024 × 500, JPEG ou PNG 24 bits sans transparence. **À créer.** Il n'existe que les cartes sociales en 1200 × 630. |
+| Google | Icône | 512 × 512, PNG 32 bits (avec canal alpha), 1 Mo au plus, carré plein (Google arrondit lui-même). **Faites (11/10/2026)** : `brand/stores/play-icon-plazo-512.png` et `brand/stores/play-icon-plazo-pro-512.png`, tirées des icônes 1024 de l'app (`mobile/assets/brand/app-icon.png`, `app-icon-pro.png`), 13 à 15 Ko. `brand/icon-512.png` est l'icône du site : ce n'est pas la bonne. |
+| Google | Image de présentation | 1024 × 500, JPEG ou PNG 24 bits sans transparence. **Faites (11/10/2026), deux variantes par app au choix de Joanny** : `brand/stores/plazo-feature-A.png` / `plazo-feature-B.png` et `brand/stores/plazo-pro-feature-A.png` / `plazo-pro-feature-B.png` (PNG 24 bits, 29 à 52 Ko), voir ci-dessous. |
 | Google | Captures téléphone | 2 à 8 ; JPEG ou PNG 24 bits ; côtés entre 320 et 3840 px, **le grand côté au plus 2 fois le petit**. **1080 × 1920** est conseillé : un écran 1080 × 2400 brut dépasse ce rapport. Au moins 4 captures d'au moins 1080 px pour être mis en avant. |
 | Google | Captures tablette | facultatives |
 
@@ -723,11 +723,19 @@ Conseils de capture :
 - N'utiliser que des données fictives ou des données publiées avec l'accord du parking.
 - Éviter le badge « DÉMO » et tout signe du mode test de Stripe.
 
-Images de présentation à faire valider par Joanny :
-- Plazo : fond orange `#FF6600`, logo de l'app (P et avion), « Votre parking à l'aéroport de Lyon ».
-- Plazo Pro : fond vert citron `#A3E635`, texte vert foncé `#0F2A14`, « L'app des équipes de parking ».
+Images de présentation (`brand/stores/`, 11/10/2026), deux variantes par app, à choisir par Joanny :
+- **Plazo A** (`plazo-feature-A.png`) : fond orange `#FF6600`, le P et l'avion de l'icône, « Votre parking à l'aéroport de Lyon »
+  en Playfair italique blanc, « Prix total affiché, navette, retour en direct. » en Manrope.
+- **Plazo B** (`plazo-feature-B.png`) : le fond gris clair `#ECECEE` de l'app, la tuile de l'icône, surtitre « Parking aéroport ·
+  Lyon Saint-Exupéry », « Votre parking, du dépôt au retour. » en Playfair italique brun, pilule orange « Prix total affiché ».
+- **Plazo Pro A** (`plazo-pro-feature-A.png`) : fond vert citron `#A3E635`, le P et l'avion verts, « L'app des équipes de parking »
+  en Archivo Narrow capitales vert foncé `#0F2A14`, « Réservations · places · clés · navette » en Inter.
+- **Plazo Pro B** (`plazo-pro-feature-B.png`) : le fond `#EEF0EE` de l'espace pro, la tuile de l'icône, surtitre « Plazo Pro ·
+  parkings partenaires », « Arrivées, retours, places et navette » en Archivo Narrow, pilule citron « Le travail du jour, au même endroit ».
 
-Peu de texte, dans les deux cas.
+Peu de texte, dans les quatre cas. Elles sont rendues par Chromium depuis `brand/stores/tools/build.mjs` (polices de l'app
+embarquées, vecteurs de `brand/app/`) puis aplaties par `brand/stores/tools/finish.py`, qui fait aussi les icônes 512 :
+`cd site && node ../brand/stores/tools/build.mjs && python3 ../brand/stores/tools/finish.py`.
 
 ### 5.2 Écrans à capturer
 
