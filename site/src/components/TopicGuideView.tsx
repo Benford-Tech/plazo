@@ -88,10 +88,10 @@ export function TopicGuideView({
                 </li>
               ))}
             </ul>
-            <p>
-              <Link href={`/${airport.slug}/recherche${stayQuery(stay)}`} className="link inline-flex min-h-11 items-center gap-1.5 text-[15px]">
+            <p className="text-[15px] leading-[1.6]">
+              <Link href={`/${airport.slug}/recherche${stayQuery(stay)}`} className="link">
                 {fr.guide.seeAllResults}
-                <ArrowIcon />
+                <ArrowIcon className="ml-1.5 inline-block align-[-3px]" />
               </Link>
             </p>
           </>

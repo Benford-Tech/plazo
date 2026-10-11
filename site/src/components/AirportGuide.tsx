@@ -20,9 +20,9 @@ export const MEASURE = "max-w-[38rem]";
 const PARAGRAPH = `${MEASURE} text-[16px] leading-[1.7] md:text-[17px]`;
 
 /** A stroked arrow at the end of a « go further » link, in place of the "→" glyph. */
-export function ArrowIcon({ size = 16 }: { size?: number }) {
+export function ArrowIcon({ size = 16, className = "flex-none" }: { size?: number; className?: string }) {
   return (
-    <svg aria-hidden="true" viewBox="0 0 24 24" width={size} height={size} className="flex-none" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
+    <svg aria-hidden="true" viewBox="0 0 24 24" width={size} height={size} className={className} fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
       <path d="M5 12h14M13 6l6 6-6 6" />
     </svg>
   );
@@ -32,23 +32,32 @@ export function ArrowIcon({ size = 16 }: { size?: number }) {
  * A cell of a guide table. From sm up, an ordinary cell between hairlines. On phones the table stacks: each row is a
  * block, each cell a line with the name of its column (data-label, small capitals) on the left and its value beside it.
  */
-const cell = [
-  "px-5 py-3.5",
+const stacked = [
   "max-sm:flex max-sm:items-baseline max-sm:gap-3 max-sm:px-0 max-sm:py-1.5",
   "max-sm:before:w-[42%] max-sm:before:flex-none max-sm:before:text-[10.5px] max-sm:before:leading-[1.35]",
   "max-sm:before:font-bold max-sm:before:tracking-[.08em] max-sm:before:text-soft max-sm:before:uppercase max-sm:before:content-[attr(data-label)]",
 ].join(" ");
 
+/** A short value (a price, « Oui », « 1,90 m ») stays on one line from sm up, so that « 32,90 € » never breaks before the euro sign. */
+const SHORT_CELL = 16;
+/** A short column name (« 2 semaines ») stays on one line too. */
+const SHORT_COLUMN = 12;
+
 function Table({ table }: { table: GuideTable }) {
+  // A wide grid (the price grid has eight durations) gets tighter cells so that it fits beside the « Sur cette page » list.
+  const dense = table.columns.length >= 6;
+  const padX = dense ? "px-3.5 first:pl-5 last:pr-5" : "px-5";
   return (
     <div className="card overflow-x-auto">
-      <table className="w-full border-collapse text-[15px] leading-snug tabular-nums max-sm:block">
-        <caption className="font-title px-5 lining-nums pt-5 pb-3 text-left text-[19px] leading-snug text-ink max-sm:block max-sm:px-4 max-sm:pt-4 max-sm:text-[18px]">{table.caption}</caption>
+      <table className={`w-full border-collapse leading-snug tabular-nums max-sm:block ${dense ? "text-[14.5px]" : "text-[15px]"}`}>
+        <caption className="font-title px-5 pt-5 pb-3 text-left text-[19px] leading-snug text-ink lining-nums max-sm:block max-sm:px-4 max-sm:pt-4 max-sm:text-[18px]">
+          {table.caption}
+        </caption>
         <thead className="max-sm:hidden">
           <tr className="eyebrow border-b border-line text-left">
-            <td className="px-5 pt-1 pb-3" />
+            <td className={`${padX} pt-1 pb-3`} />
             {table.columns.map(column => (
-              <th key={column} scope="col" className="px-5 pt-1 pb-3 align-bottom font-bold">
+              <th key={column} scope="col" className={`${padX} pt-1 pb-3 align-bottom font-bold ${column.length <= SHORT_COLUMN ? "whitespace-nowrap" : ""}`}>
                 {column}
               </th>
             ))}
@@ -57,11 +66,11 @@ function Table({ table }: { table: GuideTable }) {
         <tbody className="max-sm:block max-sm:border-t max-sm:border-line">
           {table.rows.map(([label, ...cells]) => (
             <tr key={label} className="border-t border-line-soft align-top first:border-t-0 max-sm:block max-sm:px-4 max-sm:py-3">
-              <th scope="row" className="px-5 py-3.5 text-left font-bold whitespace-nowrap text-ink max-sm:block max-sm:px-0 max-sm:pt-0 max-sm:pb-1.5 max-sm:text-[15.5px] max-sm:whitespace-normal">
+              <th scope="row" className={`${padX} py-3.5 text-left font-bold whitespace-nowrap text-ink max-sm:block max-sm:px-0 max-sm:pt-0 max-sm:pb-1.5 max-sm:text-[15.5px] max-sm:whitespace-normal`}>
                 {label}
               </th>
               {cells.map((text, i) => (
-                <td key={table.columns[i]} data-label={table.columns[i]} className={cell}>
+                <td key={table.columns[i]} data-label={table.columns[i]} className={`${padX} py-3.5 ${stacked} ${text.length <= SHORT_CELL ? "sm:whitespace-nowrap" : ""}`}>
                   {text}
                 </td>
               ))}
@@ -110,14 +119,14 @@ function Part({ part, level }: { part: GuidePart; level: Level }) {
   );
 }
 
-/** The « Sur cette page » list of a guide: numbered, parted by hairlines; two columns on tablets, one beside the text from lg up. */
+/** The « Sur cette page » list of a guide: numbered, parted by hairlines; two columns on tablets (no hairlines then), one beside the text from lg up. */
 export function GuideToc({ sections, className = "" }: { sections: GuideSection[]; className?: string }) {
   return (
     <nav aria-label={fr.guide.onThisPage} className={`card px-5 pt-5 pb-2 md:px-6 ${className}`}>
       <p className="eyebrow mb-1.5">{fr.guide.onThisPage}</p>
       <ol className="sm:columns-2 sm:gap-x-8 lg:columns-1">
         {sections.map((section, i) => (
-          <li key={section.id} className="break-inside-avoid border-t border-line-soft first:border-t-0">
+          <li key={section.id} className="break-inside-avoid border-t border-line-soft first:border-t-0 sm:max-lg:border-t-0">
             <a
               href={`#${section.id}`}
               className="flex min-h-11 items-baseline gap-3 py-2.5 text-[14.5px] leading-snug font-semibold text-ink no-underline hover:text-accent-dark lg:min-h-0 lg:py-2"
@@ -147,10 +156,11 @@ export function GuideSections({ sections, level }: { sections: GuideSection[]; l
           <Body block={section} />
           {section.parts?.map(part => <Part key={part.title} part={part} level={level} />)}
           {section.more && (
-            <p>
-              <Link href={section.more.href} className="link inline-flex min-h-11 items-center gap-1.5 text-[15px] md:min-h-0">
+            <p className="text-[15px] leading-[1.6]">
+              {/* Inline, so that the arrow follows the last word when the label wraps on a phone. */}
+              <Link href={section.more.href} className="link">
                 {section.more.label}
-                <ArrowIcon />
+                <ArrowIcon className="ml-1.5 inline-block align-[-3px]" />
               </Link>
             </p>
           )}

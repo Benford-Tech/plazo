@@ -209,9 +209,10 @@ export function ReturnLive({ reference, token, initial }: { reference: string; t
           ))}
         </ol>
         <div className="relative mx-auto size-[152px] md:size-[168px]">
-          <Ring progress={ring.progress} tone={ring.tone} />
+          {/* A cancelled or diverted flight: the whole ring in rose (there is no countdown to draw). */}
+          <Ring progress={ring.tone === "danger" ? 1 : ring.progress} tone={ring.tone} />
           <div className="absolute inset-0 flex flex-col items-center justify-center gap-0.5 px-5 text-center">
-            <span className="font-title text-[14px] leading-tight text-soft">{ring.kicker}</span>
+            <span className={`font-title text-[14px] leading-tight ${ring.tone === "danger" ? "text-danger" : "text-soft"}`}>{ring.kicker}</span>
             <span
               role="timer"
               className={
