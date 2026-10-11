@@ -537,7 +537,7 @@ Plazo reprend la stack et les conventions des dépôts `lovenest-backend`, `love
   à l'espace pro web** (A-B : deux apps « Plazo » et « Plazo Pro » sur un seul projet ; N-A : quatre onglets
   Aujourd'hui · Réservations · Parking · Plus), livrée par étapes : 1 réservations (fait), 2 flavors et onglets (fait : `--flavor pro --dart-define=APP_FLAVOR=pro`,
   `ProShellPage` à quatre onglets sous `/pro`, icône Pro vert citron (P et avion vert foncé, C-B 05/10/2026) ; iOS : schémas
-  Xcode `traveller` et `pro` avec leurs configurations `-traveller` / `-pro`, bundle id `.pro`, `AppIcon-pro`, `RunnerPro.entitlements`
+  Xcode `traveller` et `pro` avec leurs configurations `-traveller` / `-pro`, identifiants `com.benfordtech.plazo` / `com.benfordtech.plazopro` sur iOS et Android (11/10/2026, Plazo Pro créée sur Google Play), `AppIcon-pro`, `RunnerPro.entitlements`
   (07/10/2026)),
   **R-C « Poste du jour » (04/10/2026)** : chaque membre choisit son poste (gérant, accueil, chauffeur, voiturier) parmi ceux
   que son rôle couvre (`allowedPosts` dans `domain/roles.ts`, `Staff.post/postSetAt`, `PATCH /internal/staff/me/post`) ; les quatre

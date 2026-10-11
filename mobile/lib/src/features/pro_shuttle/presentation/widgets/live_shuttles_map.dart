@@ -88,7 +88,7 @@ class _LiveShuttlesMapState extends State<LiveShuttlesMap> {
                 interactionOptions: const InteractionOptions(flags: InteractiveFlag.none),
               ),
               children: [
-                if (IgnMap.tilesEnabled) TileLayer(urlTemplate: AppConstants.ignPlanTilesUrl, userAgentPackageName: 'com.benfordtech.parking_app', maxNativeZoom: 19),
+                if (IgnMap.tilesEnabled) TileLayer(urlTemplate: AppConstants.ignPlanTilesUrl, userAgentPackageName: 'com.benfordtech.plazo', maxNativeZoom: 19),
                 MarkerLayer(
                   markers: [
                     if (d.parking.lat != null && d.parking.lng != null)

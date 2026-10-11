@@ -156,9 +156,9 @@ version web, « Payer » ouvre la page Stripe Checkout.
 
 0. **Paiement** : la clé publiable de test (`STRIPE_PUBLISHABLE_KEY` dans Vercel), le Merchant ID Apple Pay et son
    certificat (voir « Paiement »), l'accès production Google Pay au moment des clés live.
-1. **Identifiants de l'app** (définitifs avant le premier envoi sur les stores) : aujourd'hui des valeurs provisoires,
-   `com.benfordtech.parking_app` (Android, `android/app/build.gradle.kts`) et `com.benfordtech.parkingApp`
-   (iOS, projet Xcode), à remplacer partout (dont `codemagic.yaml` et `deep_links/`).
+1. **Identifiants de l'app** (décidés le 11/10/2026, les mêmes sur iOS et Android) : `com.benfordtech.plazo` (Plazo) et
+   `com.benfordtech.plazopro` (Plazo Pro), dans `android/app/build.gradle.kts`, le projet Xcode, `codemagic.yaml` et
+   `deep_links/` ; le paquet Dart et le `namespace` Android restent `parking_app` (internes, jamais vus des stores).
 2. **Apple** (équipe existante **Benford Tech**, Team ID `3BX4795V2Y`, celle de LoveNest, Thempo et Yoon) : les deux App ID
    avec **Push Notifications** (+ **Associated Domains** pour Plazo), les deux apps dans App Store Connect, deux profils
    App Store faits avec le certificat Apple Distribution **déjà présent** (Apple n'en accepte que 3), importés dans
@@ -219,8 +219,8 @@ construit et publie avec les workflows de `codemagic.yaml` (racine du dépôt, `
 
 ## Deux apps, un projet (A-B, 04/10/2026)
 
-- **Plazo** (voyageurs) : flavor Android `traveller`, `--dart-define=APP_FLAVOR=traveller` (défaut), id `com.benfordtech.parking_app`.
-- **Plazo Pro** (personnel, direction B de l'espace pro web : noir, jaune, angles vifs, Archivo Narrow + JetBrains Mono ; `AppColors` / `AppRadius` / `AppFonts` suivent le flavor) : flavor Android `pro`, `--dart-define=APP_FLAVOR=pro`, id `com.benfordtech.parking_app.pro`,
+- **Plazo** (voyageurs) : flavor Android `traveller`, `--dart-define=APP_FLAVOR=traveller` (défaut), id `com.benfordtech.plazo`.
+- **Plazo Pro** (personnel, direction B de l'espace pro web : noir, jaune, angles vifs, Archivo Narrow + JetBrains Mono ; `AppColors` / `AppRadius` / `AppFonts` suivent le flavor) : flavor Android `pro`, `--dart-define=APP_FLAVOR=pro`, id `com.benfordtech.plazopro`,
   icône vert citron, P et avion vert foncé (C-B, 05/10/2026 ; `assets/brand/app-icon-pro*.png`, `dart run flutter_launcher_icons -f flutter_launcher_icons-pro.yaml`).
   Elle s'ouvre sur ses quatre onglets (`ProShellPage` : Aujourd'hui · Réservations · Parking · Plus) et n'embarque aucun
   écran voyageur (décision du 04/10/2026 : les routes voyageur et les App Links `/ma-reservation` n'existent que dans le
@@ -228,8 +228,8 @@ construit et publie avec les workflows de `codemagic.yaml` (racine du dépôt, `
 - Exemple : `flutter build apk --release --flavor pro --dart-define=APP_FLAVOR=pro`. Toujours passer le même nom aux deux
   options (le flavor choisit l'id et l'icône, la define choisit le parcours).
 - iOS (07/10/2026) : deux schémas partagés `traveller` et `pro` (`ios/Runner.xcodeproj/xcshareddata/xcschemes/`) et les
-  configurations `Debug-… / Release-… / Profile-…` de chaque flavor dans le projet Xcode : bundle id `com.benfordtech.parkingApp`
-  ou `.pro`, nom affiché (`APP_DISPLAY_NAME` → `CFBundleDisplayName`), jeu d'icônes `AppIcon` ou `AppIcon-pro`
+  configurations `Debug-… / Release-… / Profile-…` de chaque flavor dans le projet Xcode : bundle id `com.benfordtech.plazo`
+  ou `com.benfordtech.plazopro`, nom affiché (`APP_DISPLAY_NAME` → `CFBundleDisplayName`), jeu d'icônes `AppIcon` ou `AppIcon-pro`
   (`Assets.xcassets/AppIcon-pro.appiconset`, généré depuis `assets/brand/app-icon-pro.png`), droits `Runner.entitlements`
   (push + liens universels) ou `RunnerPro.entitlements` (push seul). `flutter build ipa --flavor pro --dart-define=APP_FLAVOR=pro`.
   Le schéma `Runner` d'origine reste l'app voyageur (configurations de base).

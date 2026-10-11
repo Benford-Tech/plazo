@@ -49,16 +49,16 @@ clé d'import Android de Plazo, et les réglages push (APNs, FCM) de chaque app 
 
 ## 0. À décider avant de commencer
 
-- [ ] **Les identifiants des apps.** Aujourd'hui :
+- [x] **Les identifiants des apps** (décidés le 11/10/2026, Plazo Pro déjà créée sur Google Play) : les mêmes sur les deux
+  stores.
 
   | | Android (Play) | iOS (Apple) |
   |---|---|---|
-  | Plazo | `com.benfordtech.parking_app` | `com.benfordtech.parkingApp` |
-  | Plazo Pro | `com.benfordtech.parking_app.pro` | `com.benfordtech.parkingApp.pro` |
+  | Plazo | `com.benfordtech.plazo` | `com.benfordtech.plazo` |
+  | Plazo Pro | `com.benfordtech.plazopro` | `com.benfordtech.plazopro` |
 
-  Ils ne changent plus après la création des fiches. Recommandation : **les garder**, ils sont neutres alors que le nom
-  « Plazo » peut encore changer (les voyageurs ne voient jamais ces identifiants). Pour en changer, le dire à Claude
-  **avant** l'étape 2.
+  Ils ne changent plus après le premier envoi (Google) ou la création de l'App ID (Apple). Le code, `codemagic.yaml` et
+  `deep_links/` les portent déjà.
 - [ ] **Qui publie.** Avec les comptes existants, le vendeur affiché sur les stores est **Benford Tech**. Si c'est une autre
   société (par ex. « Plazo Aéroports »), il faut d'autres comptes Apple et Google à son nom, avec son D-U-N-S.
 
@@ -96,17 +96,17 @@ clé d'import Android de Plazo, et les réglages push (APNs, FCM) de chaque app 
 
 1. [ ] **Créer les deux App ID** : **Certificates, Identifiers & Profiles › Identifiers › (+) › App IDs › App**,
    **Explicit** :
-   - [ ] `com.benfordtech.parkingApp` (description « Plazo ») : **Push Notifications** + **Associated Domains** ;
-   - [ ] `com.benfordtech.parkingApp.pro` (description « Plazo Pro ») : **Push Notifications**.
+   - [ ] `com.benfordtech.plazo` (description « Plazo ») : **Push Notifications** + **Associated Domains** ;
+   - [ ] `com.benfordtech.plazopro` (description « Plazo Pro ») : **Push Notifications**.
 2. [ ] **Créer les deux apps** dans App Store Connect : **Apps › (+) › New App**, iOS, nom « Plazo » ou « Plazo Pro »,
    langue Français, le Bundle ID de l'étape 1, SKU `PLAZO-IOS` / `PLAZO-PRO-IOS`.
 3. [ ] **Créer les deux profils de signature, avec le certificat qui existe déjà** (Apple n'en accepte que 3 par compte :
    **ne pas en créer un nouveau**).
    - Repérer le certificat : Codemagic › Team settings › **Code signing identities › iOS certificates** montre
      `thempo-distribution` et sa date d'expiration.
-   - Apple : **Profiles › (+) › Distribution › App Store Connect › Continue**, l'App ID `com.benfordtech.parkingApp`, puis
+   - Apple : **Profiles › (+) › Distribution › App Store Connect › Continue**, l'App ID `com.benfordtech.plazo`, puis
      le certificat **Apple Distribution** qui expire à cette date, nom « Plazo App Store », **Generate**. Même chose pour
-     `com.benfordtech.parkingApp.pro`, nom « Plazo Pro App Store ».
+     `com.benfordtech.plazopro`, nom « Plazo Pro App Store ».
 4. [ ] **Les importer dans Codemagic** : **Code signing identities › iOS provisioning profiles › Fetch profiles**, cocher
    les deux profils, et leur donner **exactement** les Reference name `plazo_app_store` (Plazo) et `plazo_pro_app_store`
    (Plazo Pro) : `codemagic.yaml` les appelle par ces noms. Vérifier aussi, dans **iOS certificates**, que le certificat
@@ -175,7 +175,7 @@ clé d'import Android de Plazo, et les réglages push (APNs, FCM) de chaque app 
    **Démarrer le déploiement**.
 10. [ ] **Notifications Android** (OneSignal) : chaque app OneSignal › **Settings › Push & In-App › Google Android (FCM)**
    demande la clé JSON d'un compte de service **Firebase**. Plazo n'a pas encore de projet Firebase : en créer un
-   (« plazo »), y ajouter les deux apps Android (`com.benfordtech.parking_app` et `.pro`), puis **Paramètres du projet ›
+   (« plazo »), y ajouter les deux apps Android (`com.benfordtech.plazo` et `com.benfordtech.plazopro`), puis **Paramètres du projet ›
    Comptes de service › Générer une nouvelle clé privée** et la déposer dans les deux apps OneSignal.
 
 ---

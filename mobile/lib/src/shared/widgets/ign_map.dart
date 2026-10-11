@@ -108,7 +108,7 @@ class _IgnMapState extends State<IgnMap> {
               ),
               children: [
                 if (IgnMap.tilesEnabled)
-                  TileLayer(urlTemplate: AppConstants.ignPlanTilesUrl, userAgentPackageName: 'com.benfordtech.parking_app', maxNativeZoom: 19),
+                  TileLayer(urlTemplate: AppConstants.ignPlanTilesUrl, userAgentPackageName: 'com.benfordtech.plazo', maxNativeZoom: 19),
                 if (widget.route != null && widget.route!.length >= 2)
                   PolylineLayer(
                     polylines: [
