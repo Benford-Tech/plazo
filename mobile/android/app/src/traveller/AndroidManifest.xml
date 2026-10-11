@@ -1,14 +1,14 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android">
     <application>
         <activity android:name=".MainActivity">
-            <!-- App Links: the booking links of the confirmation emails and SMS open the app.
-                 PLACEHOLDER domain: the production one; verification needs
-                 https://<domain>/.well-known/assetlinks.json (see mobile/deep_links/). -->
+            <!-- App Links: the booking links of the confirmation emails and SMS open the app. Android
+                 verifies them against https://www.plazo.fr/.well-known/assetlinks.json
+                 (site/public/.well-known/, which still needs the Play App Signing fingerprint). -->
             <intent-filter android:autoVerify="true">
                 <action android:name="android.intent.action.VIEW"/>
                 <category android:name="android.intent.category.DEFAULT"/>
                 <category android:name="android.intent.category.BROWSABLE"/>
-                <data android:scheme="https" android:host="plazo-benford-tech.vercel.app" android:pathPrefix="/ma-reservation"/>
+                <data android:scheme="https" android:host="www.plazo.fr" android:pathPrefix="/ma-reservation"/>
             </intent-filter>
         </activity>
     </application>

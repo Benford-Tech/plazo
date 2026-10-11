@@ -10,3 +10,13 @@ describe("the home page and the default airport's page", () => {
     expect(Array.isArray(rewrites) ? rewrites : rewrites.beforeFiles).toContainEqual({ source: "/", destination: `/${DEFAULT_AIRPORT}` });
   });
 });
+
+// Universal links (11/10/2026): the app's association file is served as JSON, from public/.well-known.
+describe("the Apple app site association", () => {
+  it("is served as JSON", async () => {
+    expect(await nextConfig.headers!()).toContainEqual({
+      source: "/.well-known/apple-app-site-association",
+      headers: [{ key: "Content-Type", value: "application/json" }],
+    });
+  });
+});

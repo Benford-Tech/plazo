@@ -31,6 +31,12 @@ const nextConfig: NextConfig = {
   async headers() {
     return [
       { source: "/:path*", headers: securityHeaders },
+      // Universal links of the Plazo app (11/10/2026): Apple reads this file, served from public/, as JSON
+      // (a file without extension is otherwise served as application/octet-stream).
+      {
+        source: "/.well-known/apple-app-site-association",
+        headers: [{ key: "Content-Type", value: "application/json" }],
+      },
       // Booking pages carry the traveller's manage key in their URL: never send it to another site in
       // a Referer, never index them, never cache them. ("same-origin" rather than "no-referrer": with
       // no-referrer, browsers post forms with "Origin: null", which server actions reject without JavaScript.)

@@ -67,7 +67,7 @@ la clé d'import Android de Plazo dans Codemagic (créée et envoyée par GitHub
   | Plazo Pro | `com.benfordtech.plazopro` | `com.benfordtech.plazopro` |
 
   Ils ne changent plus après le premier envoi (Google) ou la création de l'App ID (Apple). Le code, `codemagic.yaml` et
-  `deep_links/` les portent déjà.
+  `site/public/.well-known/` les portent déjà.
 - [ ] **Qui publie.** Avec les comptes existants, le vendeur affiché sur les stores est **Benford Tech**. Si c'est une autre
   société (par ex. « Plazo Aéroports »), il faut d'autres comptes Apple et Google à son nom, avec son D-U-N-S.
 
@@ -112,7 +112,8 @@ la clé d'import Android de Plazo dans Codemagic (créée et envoyée par GitHub
 
 1. [ ] **Créer les deux App ID** : **Certificates, Identifiers & Profiles › Identifiers › (+) › App IDs › App**,
    **Explicit** :
-   - [ ] `com.benfordtech.plazo` (description « Plazo ») : **Push Notifications** + **Associated Domains** ;
+   - [ ] `com.benfordtech.plazo` (description « Plazo ») : **Push Notifications** + **Associated Domains** (les liens
+     de réservation `https://www.plazo.fr/ma-reservation/…` ouvrent l'app ; le site sert déjà le fichier d'association) ;
    - [ ] `com.benfordtech.plazopro` (description « Plazo Pro ») : **Push Notifications**.
 2. [ ] **Créer les deux apps** dans App Store Connect : **Apps › (+) › New App**, iOS, nom « Plazo » ou « Plazo Pro »,
    langue Français, le Bundle ID de l'étape 1, SKU `PLAZO-IOS` / `PLAZO-PRO-IOS`.
@@ -226,7 +227,8 @@ la clé d'import Android de Plazo dans Codemagic (créée et envoyée par GitHub
   `APP_STORE_APP_ID_PLAZO_PRO: "0"`) ;
 - [ ] les identifiants définitifs, s'ils changent, **avant** toute création dans les consoles ;
 - [ ] les empreintes **SHA-256** de la clé de signature Play (Play Console › Protégé avec Play › Signature d'application
-  Play), pour `assetlinks.json` ; le Team ID Apple est connu (`3BX4795V2Y`) ;
+  Play), pour `site/public/.well-known/assetlinks.json` ; le Team ID Apple est connu (`3BX4795V2Y`) et déjà dans
+  `site/public/.well-known/apple-app-site-association` ;
 - [ ] « première version interne déployée sur les deux apps », pour passer `PLAY_SUBMIT_AS_DRAFT` à `"false"` ;
 - [ ] les noms des groupes de testeurs externes TestFlight, le jour où le personnel du client doit recevoir les builds
   (`TESTFLIGHT_BETA_GROUPS`) ;

@@ -158,7 +158,7 @@ version web, « Payer » ouvre la page Stripe Checkout.
    certificat (voir « Paiement »), l'accès production Google Pay au moment des clés live.
 1. **Identifiants de l'app** (décidés le 11/10/2026, les mêmes sur iOS et Android) : `com.benfordtech.plazo` (Plazo) et
    `com.benfordtech.plazopro` (Plazo Pro), dans `android/app/build.gradle.kts`, le projet Xcode, `codemagic.yaml` et
-   `deep_links/` ; le paquet Dart et le `namespace` Android restent `parking_app` (internes, jamais vus des stores).
+   `site/public/.well-known/` ; le paquet Dart et le `namespace` Android restent `parking_app` (internes, jamais vus des stores).
 2. **Apple** (équipe existante **Benford Tech**, Team ID `3BX4795V2Y`, celle de LoveNest, Thempo et Yoon) : les deux App ID
    avec **Push Notifications** (+ **Associated Domains** pour Plazo), les deux apps dans App Store Connect, deux profils
    App Store faits avec le certificat Apple Distribution **déjà présent** (Apple n'en accepte que 3), importés dans
@@ -175,10 +175,11 @@ version web, « Payer » ouvre la page Stripe Checkout.
    tiennent qu'un Bundle ID) ; leurs *App ID* sont dans `codemagic.yaml` et dans Vercel (`ONESIGNAL_APP_ID` Plazo Pro,
    `ONESIGNAL_TRAVELLER_APP_ID` Plazo), leurs *REST API keys* dans Vercel. Reste, dans chaque app OneSignal : la clé APNs
    `.p8` de l'équipe Apple (iOS) et la clé d'un compte de service Firebase (Android, projet Firebase à créer).
-5. **Liens de réservation qui ouvrent l'app** : publier sur le domaine de production
-   `/.well-known/assetlinks.json` (empreinte SHA-256 de la signature Play) et
-   `/.well-known/apple-app-site-association` (Team ID) — modèles dans `deep_links/` ; puis remplacer le domaine
-   provisoire dans `AndroidManifest.xml` et `ios/Runner/Runner.entitlements`.
+5. **Liens de réservation qui ouvrent l'app** (11/10/2026) : le site sert `/.well-known/apple-app-site-association`
+   (Team ID `3BX4795V2Y`, servi en JSON) et `/.well-known/assetlinks.json` depuis `site/public/.well-known/` ; le domaine
+   `www.plazo.fr` est dans `AndroidManifest.xml` (flavor traveller) et `ios/Runner/Runner.entitlements`. Reste à poser
+   l'**empreinte SHA-256 de la signature d'application Play** dans `assetlinks.json` (Play Console › Signature d'application
+   Play, après la création de la fiche).
 6. **Fiches des stores** : nom, sous-titre, description courte et longue, captures (téléphone et tablette), icône,
    politique de confidentialité (URL), coordonnées d'assistance, catégorie, classification, justification de la
    position en arrière-plan (Apple) et formulaire « Sécurité des données » (Google).
