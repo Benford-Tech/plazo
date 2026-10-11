@@ -1,10 +1,12 @@
 # Publier Plazo et Plazo Pro sur les stores
 
-État au 11/10/2026. Les comptes existent déjà : ceux qui publient Thempo, LoveNest et Yoon. Plazo s'y ajoute, signé et
-publié comme Thempo, qui sort sur les deux stores depuis la même équipe Codemagic. Les pipelines sont dans
-`codemagic.yaml`, à la racine du dépôt ; aucun build de Plazo n'a encore tourné. Depuis le 11/10/2026 (« unifie le
-pipeline »), **un seul workflow de publication** construit les six paquets d'une version (APK, AAB et IPA de Plazo et de
-Plazo Pro) et les envoie aux deux stores.
+État au 11/10/2026 : les deux fiches Google Play existent ; Apple, Codemagic et le premier envoi restent à faire.
+
+Les comptes existent déjà : ceux qui publient Thempo, LoveNest et Yoon. Plazo s'y ajoute, signé et publié comme Thempo,
+qui sort sur les deux stores depuis la même équipe Codemagic. Les pipelines sont dans `codemagic.yaml`, à la racine du
+dépôt ; aucun build de Plazo n'a encore tourné. Depuis le 11/10/2026 (« unifie le pipeline »), **un seul workflow de
+publication** construit les six paquets d'une version (APK, AAB et IPA de Plazo et de Plazo Pro) et les envoie aux deux
+stores.
 
 Codemagic n'existe qu'en anglais : ses libellés restent en anglais ici. Pour Google, les libellés sont en français. Les
 consoles Apple sont citées en anglais.
@@ -133,8 +135,9 @@ clé d'import Android de Plazo, et les réglages push (APNs, FCM) de chaque app 
 
 ## 3. Google Play (compte Benford Tech)
 
-1. [ ] **Créer les deux apps** : **Toutes les applications › Créer une application**, « Plazo » puis « Plazo Pro »,
-   Français, appli, gratuite ; **Déclarations** : tout accepter, y compris la signature d'application Play.
+1. [x] **Créer les deux apps** (fait le 11/10/2026) : **Toutes les applications › Créer une application**, « Plazo » puis
+   « Plazo Pro », Français, appli, gratuite ; **Déclarations** : tout accepter, y compris la signature d'application Play.
+   Leurs identifiants (`com.benfordtech.plazo`, `com.benfordtech.plazopro`) se fixent au premier AAB importé (étape 6).
 2. [ ] **Créer la clé d'import de Plazo**, une pour les deux apps, alias `upload`. **Jamais celle de Thempo, de LoveNest ou
    de Yoon** : le premier envoi fixe la clé d'une app pour toujours (un AAB de Yoon a déjà été refusé pour avoir été signé
    avec la clé de Thempo).
