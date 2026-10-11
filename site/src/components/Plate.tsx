@@ -3,9 +3,9 @@ export function Plate({ plate, size = "md" }: { plate: string; size?: "sm" | "md
   const small = size === "sm";
   return (
     <span
-      className={`inline-flex items-stretch overflow-hidden rounded-[5px] border-[1.5px] border-plate-ink bg-white align-middle ${small ? "h-7" : "h-8"}`}
+      className={`inline-flex shrink-0 items-stretch overflow-hidden rounded-[5px] border-[1.5px] border-plate-ink bg-white align-middle ${small ? "h-7" : "h-8"}`}
     >
-      <span aria-hidden="true" className="flex w-[15px] items-end justify-center bg-plate-blue pb-[3px] text-[8.5px] leading-none font-bold text-white">
+      <span aria-hidden="true" className="flex w-[15px] flex-none items-end justify-center bg-plate-blue pb-[3px] text-[8.5px] leading-none font-bold text-white">
         F
       </span>
       <span

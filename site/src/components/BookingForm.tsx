@@ -104,7 +104,7 @@ export function BookingForm({
 
       <section className={sectionClass} aria-labelledby="b-infos">
         <h2 id="b-infos" className={sectionTitle}>
-          {!online && <span className="text-accent-dark">1.</span>} {fr.booking.yourDetails}
+          {!online && <span className="text-soft">1.</span>} {fr.booking.yourDetails}
         </h2>
         {/* Two short fields that belong together: side by side, on a phone too. */}
         <div className="grid grid-cols-2 gap-3">
@@ -285,7 +285,7 @@ export function BookingForm({
             defaultChecked={v.acceptTerms === "on"}
             aria-invalid={f.acceptTerms ? true : undefined}
             aria-describedby={f.acceptTerms ? "b-acceptTerms-error" : undefined}
-            className="mt-0.5 size-5 flex-none cursor-pointer accent-accent-dark"
+            className="mt-0.5 size-5 flex-none cursor-pointer accent-dark"
           />
           <span>
             {fr.booking.termsBefore}

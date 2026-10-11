@@ -107,7 +107,9 @@ export function StayFields({
     setOpen({ kind: "sheet", side: event.currentTarget.dataset.side === "end" ? "end" : "start" });
   };
 
-  const timeWidth = layout === "bar" ? "w-[136px] xl:w-[150px]" : "w-[136px]";
+  // The booking card is ~300 px inside (a 360 px phone, the 340 px column of a tablet): a narrower time pill and no
+  // chevron on the date pill (as in the mockup) keep « mar. 20 oct. » whole instead of « mar. 20 o… ».
+  const timeWidth = layout === "bar" ? "w-[136px] xl:w-[150px]" : "w-[112px]";
 
   const group = (key: "depot" | "retour", side: Side, legend: string, error: string | undefined) => {
     const errorId = `${idPrefix}-${key}-error`;
@@ -173,7 +175,7 @@ export function StayFields({
             )}
           </span>
           {kind === "dates" ? (
-            <Caret />
+            layout === "bar" && <Caret />
           ) : (
             // Narrow time pills keep their room for the value: caret only in the wide search bar.
             layout === "bar" && (

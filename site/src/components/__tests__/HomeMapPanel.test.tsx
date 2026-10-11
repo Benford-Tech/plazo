@@ -13,7 +13,7 @@ vi.mock("next/dynamic", async () => {
 // The real map needs WebGL: a stub lists the pins and the shuttles it is given.
 vi.mock("../ResultsMap", () => ({
   default: (props: { parkings: MapParking[]; shuttles?: MapShuttle[]; selected?: string | null; onSelect?: (slug: string) => void }) => (
-    <div data-testid="map" data-selected={props.selected ?? ""}>
+    <div data-testid="map" data-selected={props.selected ?? ""} data-best={props.parkings.find(p => p.best)?.slug ?? ""}>
       {props.parkings.map(p => (
         <button key={p.slug} type="button" onClick={() => props.onSelect?.(p.slug)}>
           {p.title} {p.label}
@@ -97,8 +97,10 @@ describe("HomeMapPanel (K-A : carte vivante)", () => {
         days={7}
       />,
     );
+    // Boutique: the cheapest is the orange pin (best), not the espresso selection.
     const map = screen.getByTestId("map");
-    expect(map).toHaveAttribute("data-selected", "soleil");
+    expect(map).toHaveAttribute("data-best", "soleil");
+    expect(map).toHaveAttribute("data-selected", "");
     expect(screen.getByTestId("home-map-count")).toHaveTextContent("2 parkings disponibles");
     expect(screen.getByTestId("home-featured")).toHaveTextContent("Parking soleil");
     expect(screen.getByTestId("home-featured")).toHaveTextContent(/dès 39/);
@@ -115,6 +117,7 @@ describe("HomeMapPanel (K-A : carte vivante)", () => {
 
     fireEvent.click(screen.getByRole("button", { name: /^Parking b 45/ }));
     expect(screen.getByTestId("map")).toHaveAttribute("data-selected", "b");
+    expect(screen.getByTestId("map")).toHaveAttribute("data-best", "soleil");
     expect(screen.getByTestId("home-featured")).toHaveTextContent("Parking b");
     expect(screen.getByTestId("home-featured")).toHaveAttribute("href", "/lyon-saint-exupery/b?arrivee=2026-10-07T08:00&retour=2026-10-14T18:00");
 

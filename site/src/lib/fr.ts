@@ -26,6 +26,8 @@ const frBase = {
     mainNav: "Navigation principale",
     breadcrumb: "Fil d’Ariane",
     photoPlaceholder: "Photos du parking à venir",
+    /** Visible caption of the missing-photo ground (Boutique), short enough for the 96 px photo column. */
+    photoSoon: "Photos à venir",
     photoOf: (title: string, n: number) => `${title}, photo ${n}`,
     opensNewTab: "(nouvel onglet)",
   },
@@ -86,9 +88,6 @@ const frBase = {
     today: "aujourd’hui",
     /** Accessible name of a pill: "Date de dépôt : samedi 10 octobre 2026". */
     pill: (label: string, value: string | null) => `${label} : ${value ?? "à choisir"}`,
-    /** Accessible name of the phone's single dates pill. */
-    summary: (start: string | null, end: string | null) => (start && end ? `Vos dates : du ${start} au ${end}` : "Vos dates : à choisir"),
-    chooseDates: "Choisir vos dates",
   },
   home: {
     heroTitle: (airport: string) => `Parking à l’aéroport de ${airport}, navette comprise`,
@@ -105,10 +104,8 @@ const frBase = {
     mapAvailable: (n: number) => (n === 0 ? "Aucune place à ces dates" : n === 1 ? "1 parking disponible" : `${n} parkings disponibles`),
     mapDistance: (km: string | null, shuttle: number | null) =>
       [km ? `${km} km` : null, shuttle ? `navette ${shuttle} min` : null].filter(Boolean).join(" · "),
-    featuredFrom: (price: string) => `dès ${price}`,
     featuredSub: (valet: boolean, shuttle: number | null) => `${valet ? "Voiturier" : "Vous vous garez"}${shuttle ? ` · navette ${shuttle} min` : ""}`,
     featuredSee: (title: string) => `Voir ${title}`,
-    mapStay: (days: number) => `pour vos dates · ${days} jour${days > 1 ? "s" : ""}`,
     /** K-A (06/10/2026): the shuttles on the road right now, from the live layer. */
     mapShuttles: (n: number) => (n === 1 ? "1 navette en circulation" : `${n} navettes en circulation`),
     mapFull: "Complet à ces dates",
@@ -165,7 +162,6 @@ const frBase = {
   results: {
     available: (n: number) => (n === 0 ? "Aucun parking disponible" : `${n} parking${n > 1 ? "s" : ""} disponible${n > 1 ? "s" : ""}`),
     filters: "Filtres",
-    showFilters: "Filtrer les résultats",
     services: "Services",
     cancellation: "Annulation",
     freeCancellation: "Annulation gratuite",
@@ -238,7 +234,6 @@ const frBase = {
     show: "Afficher la carte",
     hide: "Masquer la carte",
     title: "Carte des parkings",
-    filters: "Filtres",
     terminals: "Terminaux",
     noPosition: "Position non renseignée",
     full: "Complet",
@@ -304,7 +299,7 @@ const frBase = {
     otherParkings: "Voir les autres parkings",
   },
   booking: {
-    back: "‹ Retour au parking",
+    back: "Retour au parking",
     title: "Finaliser la réservation",
     yourDetails: "Vos informations",
     firstName: "Prénom",
@@ -357,7 +352,7 @@ const frBase = {
     days: (n: number) => daysLabel(n),
     /** Server-rendered, then updated every second: "Votre place est réservée pendant 29:41". */
     holdLeft: (time: string) => `Votre place est réservée pendant ${time}`,
-    button: (total: string) => `Payer ${total} ›`,
+    button: (total: string) => `Payer ${total}`,
     redirecting: "Redirection…",
     redirectNote: "Vous allez être redirigé vers la page de paiement sécurisée Stripe.",
     expiredTitle: "Le délai est dépassé",

@@ -84,7 +84,14 @@ export function TopicGuideView({
             <ul className="flex flex-col gap-3 md:gap-4">
               {partners.map((result, i) => (
                 <li key={result.slug}>
-                  <ResultCard result={result} href={`/${airport.slug}/${result.slug}${stayQuery(stay)}`} highlighted={i === 0} headingLevel={3} />
+                  {/* Sorted by total price: the first is the cheapest, with the pill that goes with its orange treatment. */}
+                  <ResultCard
+                    result={result}
+                    href={`/${airport.slug}/${result.slug}${stayQuery(stay)}`}
+                    highlighted={i === 0}
+                    badges={i === 0 ? ["cheapest"] : []}
+                    headingLevel={3}
+                  />
                 </li>
               ))}
             </ul>

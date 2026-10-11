@@ -21,7 +21,7 @@
 @theme static {
   /* Orange. accent = FILLS only (primary button, best-price pin, live dot, the logo); never small text. */
   --color-brand: #ff6600; /* the logo sign; same value as accent */
-  --color-brand-deep: #e65c00; /* hover of an orange fill */
+  --color-brand-deep: #e65c00; /* hover of an orange fill; a large (≥ 18 px bold) orange price: 3.5:1 on white */
   --color-accent: #ff6600;
   --color-accent-dark: #b54900; /* every orange text < 18 px: links, « Le moins cher », eyebrows, map buttons; focus ring */
   --color-accent-bg: #fff0e4; /* crème orangée: ground of the « Le moins cher » pill */
@@ -86,6 +86,19 @@
     border-radius: var(--radius-card);
   }
 
+  /*
+   * A white box that scrolls sideways (a wide guide table): soft shadows appear on the edge that has more to show
+   * and go away at either end (the white `local` covers follow the content, the shadows stay on the box).
+   */
+  .scroll-hint {
+    background:
+      linear-gradient(to right, var(--color-white) 40%, transparent) left center / 28px 100% no-repeat local,
+      linear-gradient(to left, var(--color-white) 40%, transparent) right center / 28px 100% no-repeat local,
+      linear-gradient(to right, color-mix(in srgb, var(--color-ink) 14%, transparent), transparent) left center / 12px 100% no-repeat scroll,
+      linear-gradient(to left, color-mix(in srgb, var(--color-ink) 14%, transparent), transparent) right center / 12px 100% no-repeat scroll,
+      var(--color-white);
+  }
+
   /* A pill floating over a map or a photo (counts, distance, « EN DIRECT »). Not a button. */
   .pill-float {
     display: inline-flex;
@@ -103,12 +116,16 @@
     box-shadow: var(--shadow-pin);
   }
 
-  /* Titles: Playfair Display regular (no italic since Boutique). */
+  /*
+   * Titles: Playfair Display regular (no italic since Boutique). Lining figures: Playfair's default old-style figures
+   * make « P0 » read « Po » and drop the « 5 » of « 5 parkings disponibles » under the baseline.
+   */
   .font-title {
     font-family: var(--font-display);
     font-style: normal;
     font-weight: 400;
     letter-spacing: -0.004em;
+    font-variant-numeric: lining-nums;
   }
 
   /* Hours and countdowns only (08:00, 01:12:09): JetBrains Mono 500, tabular. Prices stay in Manrope. */
@@ -231,6 +248,23 @@
       opacity: 0.55;
       cursor: default;
     }
+  }
+
+  /*
+   * The checkbox / radio inside a `chip-toggle` label (the no-JS filters): invisible, but as large as the chip, so
+   * that the browser scrolls the whole chip into view when it gets the focus (an `sr-only` input is 1 px at the
+   * chip's start, which left the focused chip under the row's fade). The label draws the focus ring.
+   */
+  .chip-input {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    margin: 0;
+    border-radius: inherit;
+    opacity: 0;
+    cursor: pointer;
+    appearance: none;
   }
 
   /* Primary action: orange fill, white bold text, fully rounded, no shadow. One per screen. */
@@ -405,7 +439,7 @@
 
   /*
    * A row that scrolls sideways (filters, sort choices) instead of clipping: no scrollbar, a fade on the right edge,
-   * and room after the last item so that it clears the fade once scrolled.
+   * and room after the last item so that it clears the fade once scrolled. Use it through components/ScrollRow.
    */
   .scroll-row {
     display: flex;
@@ -413,7 +447,10 @@
     overflow-x: auto;
     overscroll-behavior-x: contain;
     scrollbar-width: none;
-    padding-inline-end: 32px;
+    /* Room after the last chip: once scrolled to the end it clears the 32 px fade, focus ring included. */
+    padding-inline-end: 40px;
+    /* A chip reached with Tab scrolls clear of the fade (ScrollRow and `chip-input` scroll the whole chip into view). */
+    scroll-padding-inline: 8px 40px;
     mask-image: linear-gradient(to right, #000 calc(100% - 32px), transparent);
     & > * {
       flex: none;
@@ -551,12 +588,53 @@
   }
 }
 
-/* MapLibre controls (zoom buttons, attribution) in the Boutique look: hairline, 12 px corners, pin shadow. */
+/*
+ * MapLibre controls (zoom buttons, attribution) in the Boutique look: hairline, 12 px corners, pin shadow. No
+ * `overflow: hidden` on the group (it would clip the focus ring): the end buttons get the corners themselves, and
+ * the keyboard focus is the site's own ring instead of MapLibre's blue glow.
+ */
 :root .maplibregl-ctrl.maplibregl-ctrl-group:not(:empty) {
-  overflow: hidden;
   border: 1px solid var(--color-line);
   border-radius: var(--radius-field);
   box-shadow: var(--shadow-pin);
+}
+:root .maplibregl-ctrl.maplibregl-ctrl-group button:first-child {
+  border-radius: calc(var(--radius-field) - 1px) calc(var(--radius-field) - 1px) 0 0;
+}
+:root .maplibregl-ctrl.maplibregl-ctrl-group button:last-child {
+  border-radius: 0 0 calc(var(--radius-field) - 1px) calc(var(--radius-field) - 1px);
+}
+:root .maplibregl-ctrl.maplibregl-ctrl-group button:only-child {
+  border-radius: calc(var(--radius-field) - 1px);
+}
+:root .maplibregl-ctrl.maplibregl-ctrl-group button + button {
+  border-top-color: var(--color-line-soft);
+}
+:root .maplibregl-ctrl.maplibregl-ctrl-group button:focus-visible {
+  position: relative;
+  z-index: 1;
+  outline: 3px solid var(--color-accent-dark);
+  outline-offset: 2px;
+  box-shadow: none;
+}
+
+/*
+ * Touch screens: 44 px targets on the maps too. The zoom buttons grow; a price pin keeps its 28 px look and gets an
+ * invisible 44 px hit area around it.
+ */
+@media (pointer: coarse) {
+  :root .maplibregl-ctrl-group button {
+    width: 44px;
+    height: 44px;
+  }
+  button.map-pin {
+    position: relative;
+    &::after {
+      content: "";
+      position: absolute;
+      inset: -8px -4px;
+    }
+  }
 }
 
 /* The home map (K-A): the zoom buttons sit above the best-price card, under the pills. */
@@ -565,4 +643,15 @@
 }
 [data-home-map] .maplibregl-ctrl-bottom-right .maplibregl-ctrl-attrib {
   margin-bottom: 0;
+}
+
+/*
+ * The parking page's bottom bar on phones (`dock`, hidden from md up): when the browser scrolls a focused field or
+ * button into view (Tab, an error), it keeps it above the bar instead of under it (WCAG 2.4.11). Same room as
+ * `dock-space`.
+ */
+@media (width < 48rem) {
+  html:has(.dock) {
+    scroll-padding-bottom: calc(112px + env(safe-area-inset-bottom));
+  }
 }

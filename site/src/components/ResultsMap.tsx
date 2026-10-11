@@ -11,6 +11,13 @@ import type { LatLng } from "@/lib/types";
 export const PLAN_IGN_TILES =
   "https://data.geopf.fr/wmts?SERVICE=WMTS&REQUEST=GetTile&VERSION=1.0.0&LAYER=GEOGRAPHICALGRIDSYSTEMS.PLANIGNV2&STYLE=normal&TILEMATRIXSET=PM&TILEMATRIX={z}&TILEROW={y}&TILECOL={x}&FORMAT=image/png";
 
+/** The Plan IGN, muted: little colour, softer contrast, a touch of the warm map ground showing through. */
+export const MAP_PAINT = {
+  "raster-saturation": -0.8,
+  "raster-contrast": -0.12,
+  "raster-opacity": 0.82,
+} as const;
+
 export interface MapParking {
   slug: string;
   title: string;
@@ -39,7 +46,7 @@ export interface MapShuttle {
 
 function shuttleElement(shuttle: MapShuttle): HTMLElement {
   const el = document.createElement("div");
-  el.className = "relative flex size-[38px] items-center justify-center";
+  el.className = "relative flex size-[30px] items-center justify-center";
   el.setAttribute("role", "img");
   el.dataset.shuttle = shuttle.id;
   el.dataset.look = `${shuttle.tone}:${shuttle.heading ?? ""}`;
@@ -173,7 +180,10 @@ export default function ResultsMap({
           sources: {
             plan: { type: "raster", tiles: [PLAN_IGN_TILES], tileSize: 256, maxzoom: 19, attribution: fr.map.attribution },
           },
-          layers: [{ id: "plan", type: "raster", source: "plan" }],
+          // Boutique: a quiet, warm ground (the mockup's « fond #EEE8DF »), so that orange only means the best price
+          // and the action. The Plan IGN keeps its drawing but loses most of its colour (orange motorways, blue
+          // water) and lets the container's bg-map ground warm it through.
+          layers: [{ id: "plan", type: "raster", source: "plan", paint: MAP_PAINT }],
         },
         center: [center.lng, center.lat],
         zoom: 12,

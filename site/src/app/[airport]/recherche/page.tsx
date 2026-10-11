@@ -7,6 +7,7 @@ import { PriceRange } from "@/components/PriceRange";
 import { ResultCard } from "@/components/ResultCard";
 import type { MapParking } from "@/components/ResultsMap";
 import { ResultsMapPanel } from "@/components/ResultsMapPanel";
+import { ScrollRow } from "@/components/ScrollRow";
 import { MapIcon } from "@/components/stay/pill";
 import { SearchForm } from "@/components/SearchForm";
 import { api, ApiError } from "@/lib/api";
@@ -185,9 +186,9 @@ export default async function ResultsPage({ params, searchParams }: PageProps<"/
         }`}
       >
         <div className={`group/filters min-w-0 ${map ? "[grid-area:filters]" : "md:row-span-2"}`}>
-          <div className={`scroll-row -my-1.5 -mr-4 -ml-1.5 items-center py-1.5 pl-1.5 md:mr-0 ${map ? "" : "md:hidden"}`}>
+          <ScrollRow className={`-my-1.5 -mr-4 -ml-1.5 items-center py-1.5 pl-1.5 md:mr-0 ${map ? "" : "md:hidden"}`}>
             <label htmlFor="voir-filtres" className="chip-toggle relative">
-              <input type="checkbox" id="voir-filtres" className="sr-only" />
+              <input type="checkbox" id="voir-filtres" className="chip-input" />
               <FiltersIcon />
               {fr.results.filters}
             </label>
@@ -208,19 +209,19 @@ export default async function ResultsPage({ params, searchParams }: PageProps<"/
                 {filters.maxPriceCents !== null && <input type="hidden" name="prix_max" value={Math.round(filters.maxPriceCents / 100)} />}
                 {quickServices.map(s => (
                   <label key={s} htmlFor={`q-${s}`} className="chip-toggle relative">
-                    <input id={`q-${s}`} type="checkbox" name="service" value={SERVICE_SLUGS[s]} defaultChecked={filters.services.includes(s)} className="sr-only" />
+                    <input id={`q-${s}`} type="checkbox" name="service" value={SERVICE_SLUGS[s]} defaultChecked={filters.services.includes(s)} className="chip-input" />
                     {serviceLabel(s)}
                   </label>
                 ))}
                 {quickCancellation && (
                   <label htmlFor="q-annulation" className="chip-toggle relative">
-                    <input id="q-annulation" type="checkbox" name="annulation" value="gratuite" defaultChecked={filters.freeCancellation} className="sr-only" />
+                    <input id="q-annulation" type="checkbox" name="annulation" value="gratuite" defaultChecked={filters.freeCancellation} className="chip-input" />
                     {fr.results.freeCancellation}
                   </label>
                 )}
               </FiltersForm>
             )}
-          </div>
+          </ScrollRow>
           <aside
             aria-label={fr.results.filters}
             className={`card mt-3 hidden p-4 group-has-[#voir-filtres:checked]/filters:block ${map ? "max-w-[440px] md:p-5" : "md:mt-0 md:block md:p-5"}`}
@@ -275,7 +276,7 @@ export default async function ResultsPage({ params, searchParams }: PageProps<"/
                         name="navette"
                         value={limit ?? ""}
                         defaultChecked={filters.maxShuttle === limit}
-                        className="sr-only"
+                        className="chip-input"
                       />
                       {limit ? fr.results.shuttleMax(limit) : fr.results.shuttleAny}
                     </label>

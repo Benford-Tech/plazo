@@ -55,7 +55,15 @@ export function HomeMapPanel({
       data-home-map
     >
       <div className="absolute inset-0">
-        <HomeMap airport={{ name: airport.name, location: airport.location }} results={results} selected={selected?.slug ?? null} onSelect={setPicked} shuttles={shuttles} />
+        {/* The cheapest is the orange pin; another parking the traveller picks turns espresso. */}
+        <HomeMap
+          airport={{ name: airport.name, location: airport.location }}
+          results={results}
+          featured={featured}
+          selected={selected && selected.slug !== featured ? selected.slug : null}
+          onSelect={setPicked}
+          shuttles={shuttles}
+        />
       </div>
       <div className="pointer-events-none absolute top-3 right-3 left-3 flex flex-wrap items-start justify-between gap-2">
         <span className="pill-float" data-testid="home-map-count">
@@ -89,7 +97,7 @@ export function HomeMapPanel({
           {isBookable ? (
             <span className="flex flex-none flex-col items-end self-end text-right whitespace-nowrap">
               <span className="text-[12px] leading-tight font-semibold text-soft">{fr.home.from}</span>{" "}
-              <b className="text-[22px] leading-[1.1] font-extrabold tracking-[-.01em] text-accent tabular-nums">{formatShortEuros(selected.priceCents!)}</b>
+              <b className="text-[22px] leading-[1.1] font-extrabold tracking-[-.01em] text-brand-deep tabular-nums">{formatShortEuros(selected.priceCents!)}</b>
               <span className="text-[12px] leading-tight font-semibold text-soft">{fromPriceUnit(selected.days || days)}</span>
             </span>
           ) : (

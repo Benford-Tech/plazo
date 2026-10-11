@@ -5,7 +5,7 @@ import type { LegalBlock, LegalDoc } from "@/lib/legal";
 const LINK = /\[([^\]]+)\]\((\/[^)]*)\)/g;
 
 /** The reading measure of a legal text: about 65 characters. */
-const MEASURE = "max-w-[38rem]";
+const MEASURE = "max-w-[34rem]";
 
 /** A legal text with its internal links ("[label](/path)") as Next links, underlined so that colour is not their only cue. */
 function Text({ text }: { text: string }) {
@@ -62,7 +62,7 @@ export function LegalDocument({ doc }: { doc: LegalDoc }) {
   return (
     <main className="mx-auto flex w-full max-w-[720px] flex-col gap-6 px-4 pt-8 pb-14 md:gap-8 md:pt-14 md:pb-20">
       <header className="flex flex-col gap-3">
-        <h1 className="font-title text-[32px] leading-[1.1] text-ink lining-nums md:text-[46px]">{doc.title}</h1>
+        <h1 className="font-title text-[30px] leading-[1.1] text-ink lining-nums md:text-[46px]">{doc.title}</h1>
         <p className="text-[13.5px] font-semibold text-soft">{fr.legal.version(doc.version)}</p>
       </header>
       <div role="note" className="flex gap-3 rounded-field bg-warn-bg p-4 text-warn md:p-5">

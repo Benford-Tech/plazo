@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { cancellableUntil, defaultStay, formatDateTime, formatDateTimeAt, formatDay, formatStayDates, fromInstant, isValidDate, joinLocal, longDate, parseLocal, stayDays, stayFromParams, stayQuery, todayLocal, toInstant, validateStay } from "../dates";
+import { cancellableUntil, defaultStay, formatDateTime, formatDateTimeAt, formatDay, fromInstant, isValidDate, joinLocal, longDate, parseLocal, stayDays, stayFromParams, stayQuery, todayLocal, toInstant, validateStay } from "../dates";
 
 const NOW = new Date("2026-10-01T10:00:00Z"); // Thursday 1 Oct 2026, 12:00 in Paris
 
@@ -88,22 +88,6 @@ describe("stay rules", () => {
     expect(stayFromParams({})).toEqual({ arrivee: null, retour: null });
     expect(stayQuery({ arrivee: "2026-10-04T06:30", retour: "2026-10-11T15:05" })).toBe("?arrivee=2026-10-04T06:30&retour=2026-10-11T15:05");
     expect(stayQuery({ arrivee: null, retour: "2026-10-11T15:05" })).toBe("");
-  });
-});
-
-describe("formatStayDates (the phone's single dates pill)", () => {
-  it("drops the month on the return when it is the drop-off's", () => {
-    expect(formatStayDates("2026-10-03", "2026-10-10")).toEqual({ start: "sam. 3 oct.", end: "sam. 10" });
-    expect(formatStayDates("2026-10-03", "2026-10-03")).toEqual({ start: "sam. 3 oct.", end: "sam. 3" });
-  });
-
-  it("keeps the month on the return when it differs", () => {
-    expect(formatStayDates("2026-10-28", "2026-11-04")).toEqual({ start: "mer. 28 oct.", end: "mer. 4 nov." });
-  });
-
-  it("adds the year on the return when it differs (same month number too)", () => {
-    expect(formatStayDates("2026-12-28", "2027-01-04")).toEqual({ start: "lun. 28 déc.", end: "lun. 4 janv. 2027" });
-    expect(formatStayDates("2026-10-03", "2027-10-05")).toEqual({ start: "sam. 3 oct.", end: "mar. 5 oct. 2027" });
   });
 });
 

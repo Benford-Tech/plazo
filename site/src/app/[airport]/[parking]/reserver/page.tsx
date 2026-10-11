@@ -82,7 +82,7 @@ export default async function BookingPage({ params, searchParams }: PageProps<"/
           <svg aria-hidden="true" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round">
             <path d="M15 5l-7 7 7 7" />
           </svg>
-          {fr.booking.back.replace(/^‹\s*/, "")}
+          {fr.booking.back}
         </Link>
       </p>
       {online && bookable && <BookingSteps current={1} />}

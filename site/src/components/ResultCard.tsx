@@ -12,7 +12,7 @@ const BADGE_LABEL: Record<Badge, string> = { cheapest: fr.results.cheapest, fast
 const BADGE_TONE: Record<Badge, string> = { cheapest: "pill-hot", fastestShuttle: "" };
 
 /**
- * One parking of the results (Boutique): a white card with a hairline, the photo on the left, the eyebrow pills,
+ * One parking of the results (Boutique): a white card with a hairline, the photo on the left (« EN DIRECT » on it), the eyebrow pills,
  * the name in Playfair and the fact chips beside it; the price and « Voir et réserver » sit in a stub under them
  * while the card is narrow (phones, the column next to the map: `compact`), in a right-hand column once it is wide. The first result
  * (`highlighted`) floats, with an orange hairline and the only orange button; the others have an outlined button.
@@ -61,21 +61,18 @@ export function ResultCard({
       <div className={`grid grid-cols-[104px_minmax(0,1fr)] @lg:grid-cols-[150px_minmax(0,1fr)] ${wide ? "@2xl:grid-cols-[210px_minmax(0,1fr)_200px]" : ""}`}>
         <div className={`relative min-h-[120px] bg-tint @lg:min-h-[140px] ${wide ? "@2xl:min-h-[176px]" : ""}`}>
           <Photo src={result.photo} alt={result.title} className={`absolute inset-0 h-full w-full ${bookable ? "" : "grayscale"}`} />
+          {result.liveShuttle && <LiveShuttlePill className="absolute top-1.5 left-1.5 @lg:top-2 @lg:left-2" />}
         </div>
 
         <div className={`flex min-w-0 flex-col items-start gap-2 py-3 pr-3 pl-3.5 @lg:py-3.5 @lg:pr-4 @lg:pl-4 ${wide ? "@2xl:py-[18px] @2xl:pl-5" : ""}`}>
-          {(badges.length > 0 || result.liveShuttle) && (
-            <ul className="flex flex-wrap gap-1.5">
+          {badges.length > 0 && (
+            <ul className="flex max-w-full flex-wrap gap-1.5">
               {badges.map(badge => (
-                <li key={badge} data-badge={badge} className={`pill ${BADGE_TONE[badge]}`}>
+                // May wrap on a 320 px screen (« Navette la plus rapide ») instead of running past the card.
+                <li key={badge} data-badge={badge} className={`pill max-w-full whitespace-normal ${BADGE_TONE[badge]}`}>
                   {BADGE_LABEL[badge]}
                 </li>
               ))}
-              {result.liveShuttle && (
-                <li>
-                  <LiveShuttlePill />
-                </li>
-              )}
             </ul>
           )}
           <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
@@ -119,10 +116,17 @@ export function ResultCard({
   );
 }
 
-/** I-C (07/10/2026): « EN DIRECT » among the pills of a parking whose shuttles are followed live (breathing dot). */
-export function LiveShuttlePill() {
+/**
+ * R-B + I-C (07/10/2026): the paper pill « EN DIRECT » on the photo of a parking whose shuttles are followed live,
+ * drawn like the day-J `LivePill` (ink capitals, breathing orange dot, the pins' shadow).
+ */
+export function LiveShuttlePill({ className = "" }: { className?: string }) {
   return (
-    <span data-testid="live-shuttle" title={fr.results.liveTitle} className="pill">
+    <span
+      data-testid="live-shuttle"
+      title={fr.results.liveTitle}
+      className={`pill-float z-[1] min-h-[22px] gap-1.5 px-2 py-[3px] text-[9.5px] font-extrabold tracking-[.12em] uppercase ${className}`}
+    >
       <span aria-hidden="true" className="live-dot" />
       {fr.results.live}
       <span className="sr-only"> : {fr.results.liveTitle}</span>

@@ -14,7 +14,7 @@ import type { AirportGuide as Guide, GuidePart, GuideSection, GuideTable } from 
  */
 
 /** The reading measure of the running text (headings, paragraphs, lists): about 65 characters. */
-export const MEASURE = "max-w-[38rem]";
+export const MEASURE = "max-w-[35rem]";
 
 /** Running text of a guide. */
 const PARAGRAPH = `${MEASURE} text-[16px] leading-[1.7] md:text-[17px]`;
@@ -38,46 +38,78 @@ const stacked = [
   "max-sm:before:font-bold max-sm:before:tracking-[.08em] max-sm:before:text-soft max-sm:before:uppercase max-sm:before:content-[attr(data-label)]",
 ].join(" ");
 
-/** A short value (a price, « Oui », « 1,90 m ») stays on one line from sm up, so that « 32,90 € » never breaks before the euro sign. */
+/**
+ * A number and its unit never part at the end of a line (« 32,90 € », « 1,90 m », « 2 semaines »): a no-break space
+ * between them, so that the cells of an ordinary table may wrap wherever else the column needs and the table fits its
+ * column from sm up, without sideways scrolling.
+ */
+const UNIT = /(\d) (?=€|%|(?:h|min|m|km|jours?|semaines?|mois)(?![\p{L}]))/gu;
+export const glueUnits = (text: string) => text.replace(UNIT, "$1\u00a0");
+
+/** A short row name (« P0 · P1 », « Prix ») stays on one line; a longer one (« Où reste la voiture ») wraps below xl. */
+const SHORT_LABEL = 12;
+/** In the wide price grid, a short value (« 32,90 € », « + 21 € par jour ») and a short column name stay on one line. */
 const SHORT_CELL = 16;
-/** A short column name (« 2 semaines ») stays on one line too. */
 const SHORT_COLUMN = 12;
 
 function Table({ table }: { table: GuideTable }) {
-  // A wide grid (the price grid has eight durations) gets tighter cells so that it fits beside the « Sur cette page » list.
+  // The wide price grid (eight durations) cannot fit a text column below xl: rather than squeezing its columns, it
+  // keeps its values on one line and scrolls sideways in a named region that the keyboard can reach, with a soft
+  // shadow on the edge that has more to show. Every other table wraps its cells and fits.
   const dense = table.columns.length >= 6;
-  const padX = dense ? "px-3.5 first:pl-5 last:pr-5" : "px-5";
+  const nowrap = (text: string, max: number) => (dense && text.length <= max ? "sm:whitespace-nowrap" : "");
+  // From sm up only: on phones the stacked rows set their own padding.
+  const padX = dense ? "sm:px-3 sm:first:pl-5 sm:last:pr-5 xl:px-3.5" : "sm:px-3.5 sm:first:pl-5 sm:last:pr-5 xl:px-5";
+  const captionId = `tableau-${table.caption
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .replace(/[^a-zA-Z0-9]+/g, "-")
+    .replace(/^-|-$/g, "")
+    .toLowerCase()}`;
   return (
-    <div className="card overflow-x-auto">
-      <table className={`w-full border-collapse leading-snug tabular-nums max-sm:block ${dense ? "text-[14.5px]" : "text-[15px]"}`}>
-        <caption className="font-title px-5 pt-5 pb-3 text-left text-[19px] leading-snug text-ink lining-nums max-sm:block max-sm:px-4 max-sm:pt-4 max-sm:text-[18px]">
-          {table.caption}
-        </caption>
-        <thead className="max-sm:hidden">
-          <tr className="eyebrow border-b border-line text-left">
-            <td className={`${padX} pt-1 pb-3`} />
-            {table.columns.map(column => (
-              <th key={column} scope="col" className={`${padX} pt-1 pb-3 align-bottom font-bold ${column.length <= SHORT_COLUMN ? "whitespace-nowrap" : ""}`}>
-                {column}
-              </th>
-            ))}
-          </tr>
-        </thead>
-        <tbody className="max-sm:block max-sm:border-t max-sm:border-line">
-          {table.rows.map(([label, ...cells]) => (
-            <tr key={label} className="border-t border-line-soft align-top first:border-t-0 max-sm:block max-sm:px-4 max-sm:py-3">
-              <th scope="row" className={`${padX} py-3.5 text-left font-bold whitespace-nowrap text-ink max-sm:block max-sm:px-0 max-sm:pt-0 max-sm:pb-1.5 max-sm:text-[15.5px] max-sm:whitespace-normal`}>
-                {label}
-              </th>
-              {cells.map((text, i) => (
-                <td key={table.columns[i]} data-label={table.columns[i]} className={`${padX} py-3.5 ${stacked} ${text.length <= SHORT_CELL ? "sm:whitespace-nowrap" : ""}`}>
-                  {text}
-                </td>
+    <div className="card overflow-hidden">
+      <div
+        className={`overflow-x-auto ${dense ? "scroll-hint rounded-[inherit] focus-visible:outline-offset-[-3px]" : ""}`}
+        {...(dense ? { role: "region", "aria-labelledby": captionId, tabIndex: 0 } : {})}
+      >
+        <table className={`w-full border-collapse leading-snug tabular-nums max-sm:block ${dense ? "text-[14.5px]" : "text-[15px]"}`}>
+          <caption
+            id={captionId}
+            className="font-title px-5 pt-5 pb-3 text-left text-[19px] leading-snug text-ink lining-nums max-sm:block max-sm:px-4 max-sm:pt-4 max-sm:text-[18px]"
+          >
+            {table.caption}
+          </caption>
+          <thead className="max-sm:hidden">
+            <tr className="eyebrow border-b border-line text-left">
+              <td className={`${padX} pt-1 pb-3`} />
+              {table.columns.map(column => (
+                <th key={column} scope="col" className={`${padX} pt-1 pb-3 align-bottom font-bold ${nowrap(column, SHORT_COLUMN)}`}>
+                  {glueUnits(column)}
+                </th>
               ))}
             </tr>
-          ))}
-        </tbody>
-      </table>
+          </thead>
+          <tbody className="max-sm:block max-sm:border-t max-sm:border-line">
+            {table.rows.map(([label, ...cells]) => (
+              <tr key={label} className="border-t border-line-soft align-top first:border-t-0 max-sm:block max-sm:px-4 max-sm:py-3">
+                <th
+                  scope="row"
+                  className={`${padX} py-3.5 text-left font-bold text-ink max-sm:block max-sm:px-0 max-sm:pt-0 max-sm:pb-1.5 max-sm:text-[15.5px] ${
+                    label.length <= SHORT_LABEL ? "sm:whitespace-nowrap" : "xl:whitespace-nowrap"
+                  }`}
+                >
+                  {label}
+                </th>
+                {cells.map((text, i) => (
+                  <td key={table.columns[i]} data-label={table.columns[i]} className={`${padX} py-3.5 ${stacked} ${nowrap(text, SHORT_CELL)}`}>
+                    {glueUnits(text)}
+                  </td>
+                ))}
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
       {table.note && <p className="border-t border-line-soft bg-tint px-5 py-3 text-[13px] leading-normal text-soft max-sm:px-4">{table.note}</p>}
     </div>
   );

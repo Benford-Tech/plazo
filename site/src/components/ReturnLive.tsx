@@ -4,6 +4,7 @@ import { useEffect, useRef, useState } from "react";
 import { Plate } from "./Plate";
 import { bookingRequest } from "@/lib/booking-client";
 import { fr } from "@/lib/fr";
+import { toInstant } from "@/lib/dates";
 import { directionsUrl } from "@/lib/listing";
 import { ShuttleIcon, shuttleTone } from "@/lib/shuttle-icon";
 import type { ReturnNoticeKind, TravellerReturn } from "@/lib/types";
@@ -15,7 +16,13 @@ const WINDOW_S = 3 * 3600;
 const two = (n: number) => String(n).padStart(2, "0");
 export const hms = (s: number) => `${two(Math.floor(s / 3600))}:${two(Math.floor((s % 3600) / 60))}:${two(s % 60)}`;
 export const mmss = (s: number) => `${two(Math.floor(Math.max(0, s) / 60))}:${two(Math.max(0, s) % 60)}`;
-const hhmm = (iso: string) => new Intl.DateTimeFormat("fr-FR", { hour: "2-digit", minute: "2-digit", timeZone: "Europe/Paris" }).format(new Date(iso));
+/**
+ * An instant from the API: flight times are ISO instants, `returnAt` is a wall-clock time at the parking
+ * ("2026-10-11T15:30"), which `new Date` would read in the runtime's own zone (UTC on the server, so the server and
+ * the browser disagreed on « prévu 15:30 »).
+ */
+const instantOf = (value: string) => toInstant(value) ?? new Date(value);
+const hhmm = (iso: string) => new Intl.DateTimeFormat("fr-FR", { hour: "2-digit", minute: "2-digit", timeZone: "Europe/Paris" }).format(instantOf(iso));
 const distance = (m: number) => (m < 1000 ? `${m} m` : `${(m / 1000).toFixed(1).replace(".", ",")} km`);
 
 type Step = "flight" | "meeting" | "shuttle";
@@ -50,7 +57,7 @@ export function ringState(d: TravellerReturn, now: number): { kicker: string; bi
     return { kicker: t.cancelled, big: f.number ?? "", sub: t.cancelledHelp, progress: 0, tone: "danger" };
   }
   const at = f.estimatedAt ?? f.scheduledAt ?? d.returnAt;
-  const left = Math.round((new Date(at).getTime() - now) / 1000);
+  const left = Math.round((instantOf(at).getTime() - now) / 1000);
   const late = f.scheduledAt && f.estimatedAt ? Math.round((new Date(f.estimatedAt).getTime() - new Date(f.scheduledAt).getTime()) / 60000) : 0;
   return {
     kicker: t.landsIn,
@@ -203,7 +210,12 @@ export function ReturnLive({ reference, token, initial }: { reference: string; t
         </div>
         <ol className="flex gap-1.5">
           {steps.map(([key, label]) => (
-            <li key={key} aria-current={step === key ? "step" : undefined} className={`pill min-h-7 flex-1 justify-center px-1.5 ${step === key ? "pill-dark" : ""}`}>
+            // Tighter capitals under 360 px so that « Atterrissage · Rendez-vous · Navette » stay inside the card.
+            <li
+              key={key}
+              aria-current={step === key ? "step" : undefined}
+              className={`pill min-h-7 min-w-0 flex-1 justify-center px-1.5 text-center whitespace-normal max-[359px]:px-1 max-[359px]:text-[10px] max-[359px]:tracking-[.04em] ${step === key ? "pill-dark" : ""}`}
+            >
               {label}
             </li>
           ))}

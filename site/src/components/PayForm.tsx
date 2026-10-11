@@ -6,12 +6,7 @@ import { errorMessage, fr } from "@/lib/fr";
 
 type Action = (state: FormState, formData: FormData) => Promise<FormState>;
 
-/** Boutique: drawn pictograms rather than typographic glyphs, so the « › » of the label becomes a stroked arrow. */
-function withoutGlyph(label: string): string {
-  return label.replace(/\s*›$/, "");
-}
-
-/** "Payer 55,00 €" and an arrow: the server action sends the traveller to Stripe's payment page. */
+/** "Payer 55,00 €" and a drawn arrow (no typographic glyph): the server action sends the traveller to Stripe's payment page. */
 export function PayForm({ action, total }: { action: Action; total: string }) {
   const [state, formAction, pending] = useActionState(action, EMPTY_FORM);
   return (
@@ -26,7 +21,7 @@ export function PayForm({ action, total }: { action: Action; total: string }) {
           fr.pay.redirecting
         ) : (
           <>
-            {withoutGlyph(fr.pay.button(total))}
+            {fr.pay.button(total)}
             <svg aria-hidden="true" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round" className="flex-none">
               <path d="M5 12h13M13 6l6 6-6 6" />
             </svg>

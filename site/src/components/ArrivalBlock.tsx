@@ -269,7 +269,7 @@ export function ArrivalBlock({ reference, token, initial = null }: { reference: 
             </>,
           )}
           {noteField}
-          <button type="button" disabled={busy} onClick={share} className="btn-primary min-h-[52px] px-6 text-base">
+          <button type="button" disabled={busy} onClick={share} className="btn-primary min-h-[52px] px-6 py-2.5 text-center text-base leading-snug">
             {busy ? t.sharing : t.share}
           </button>
           {announceChips(t.announceIn)}
@@ -285,7 +285,7 @@ export function ArrivalBlock({ reference, token, initial = null }: { reference: 
         {announced}
         {explain(t.returnExplainTitle, t.returnExplain(meeting))}
         {noteField}
-        <button type="button" disabled={busy} onClick={atMeetingPoint} className="btn-primary min-h-[52px] px-6 text-base">
+        <button type="button" disabled={busy} onClick={atMeetingPoint} className="btn-primary min-h-[52px] px-6 py-2.5 text-center text-base leading-snug">
           {t.atPoint}
         </button>
         <label className="flex min-h-11 cursor-pointer items-center gap-3 text-sm leading-snug text-soft">

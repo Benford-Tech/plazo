@@ -112,18 +112,6 @@ export function longDate(date: string): string {
   return `${d.getUTCDate() === 1 ? "1er" : d.getUTCDate()} ${LONG_MONTHS[d.getUTCMonth()]} ${d.getUTCFullYear()}`;
 }
 
-/**
- * Short dates of a stay, for the phone's single "Vos dates" pill: the return drops its month when
- * it is the drop-off's ("sam. 3 oct." → "sam. 10"), and shows its year when that differs.
- */
-export function formatStayDates(start: string, end: string): { start: string; end: string } {
-  const a = new Date(`${start}T00:00:00Z`);
-  const b = new Date(`${end}T00:00:00Z`);
-  const sameYear = a.getUTCFullYear() === b.getUTCFullYear();
-  if (sameYear && a.getUTCMonth() === b.getUTCMonth()) return { start: formatDay(start), end: `${WEEKDAYS[b.getUTCDay()]} ${b.getUTCDate()}` };
-  return { start: formatDay(start), end: sameYear ? formatDay(end) : `${formatDay(end)} ${b.getUTCFullYear()}` };
-}
-
 /** "2026-10-04T06:30" -> "dim. 4 oct. · 06:30" */
 export function formatDateTime(local: string): string {
   const parsed = parseLocal(local);

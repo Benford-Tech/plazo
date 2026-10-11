@@ -48,7 +48,8 @@ export function StayShuttles({ reference, token, initial = null }: { reference: 
     <section aria-labelledby="navette-sejour" data-testid="stay-shuttles" className="card flex flex-col gap-3.5 p-4 md:p-6">
       <div className="flex flex-wrap items-center justify-between gap-x-3 gap-y-2">
         <h2 id="navette-sejour" className="flex items-center gap-2 text-base font-extrabold">
-          <ShuttleIcon tone={shuttles.length ? "airport" : "unknown"} size={20} />
+          {/* The heading's bus only illustrates it (ink); the rows below carry each shuttle's direction colour. */}
+          <ShuttleIcon tone="plain" size={20} />
           {shuttles.length ? t.titleLive(shuttles.length) : t.title}
         </h2>
         {shuttles.length > 0 && <LivePill at={fetchedAt} now={now} />}

@@ -28,7 +28,7 @@ function Summary({ start, end }: { start: string | null; end: string | null }) {
       {days && (
         <>
           {" · "}
-          <b className="text-accent-dark">{days}</b>
+          <b className="text-ink">{days}</b>
         </>
       )}
     </span>
@@ -217,7 +217,7 @@ export function StaySheet({
           <h2 id={titleId} className="font-title text-[22px]">
             {fr.picker.yourDates}
           </h2>
-          <span aria-live="polite" className="ml-auto text-[13px] font-bold text-accent-dark">
+          <span aria-live="polite" className="ml-auto text-[13px] font-bold text-ink">
             {days}
           </span>
           <button

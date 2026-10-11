@@ -11,7 +11,13 @@ import type { AirportLive, LatLng, SearchResult } from "@/lib/types";
 // The map's code (MapLibre) loads in the browser only, after the page.
 const ResultsMap = dynamic(() => import("./ResultsMap"), {
   ssr: false,
-  loading: () => <div className="flex h-full items-center justify-center bg-map text-[13.5px] font-semibold text-soft">{fr.map.loading}</div>,
+  // The message sits on a paper pill: warm grey on the map ground itself would be under 4.5:1 (and without JavaScript
+  // this is all the home map shows).
+  loading: () => (
+    <div className="flex h-full items-center justify-center bg-map">
+      <span className="pill-float font-semibold">{fr.map.loading}</span>
+    </div>
+  ),
 });
 
 /** How often the home map asks for the shuttles on the road (K-A). */
@@ -57,8 +63,11 @@ export function useAirportLive(slug: string): AirportLive | null {
   return live;
 }
 
-/** The map's pins for the stay's results: price pills (bookable) or "Complet". */
-export function pinsOf(results: SearchResult[]): MapParking[] {
+/**
+ * The map's pins for the stay's results: price pills (bookable) or "Complet". `best` (the cheapest, shown in the
+ * « Le moins cher » card) is the orange pin.
+ */
+export function pinsOf(results: SearchResult[], best: string | null = null): MapParking[] {
   return results
     .filter(r => r.location)
     .map(r => ({
@@ -68,6 +77,7 @@ export function pinsOf(results: SearchResult[]): MapParking[] {
       bookable: r.available && r.priceCents !== null,
       location: r.location!,
       live: r.liveShuttle === true,
+      best: r.slug === best,
     }));
 }
 
@@ -92,12 +102,15 @@ export function shuttlesOf(live: AirportLive | null, titles: Map<string, string>
 export function HomeMap({
   airport,
   results,
+  featured = null,
   selected,
   onSelect,
   shuttles,
 }: {
   airport: { name: string; location: LatLng | null };
   results: SearchResult[];
+  /** The cheapest bookable parking: its pin is orange (Boutique: orange = the best price, espresso = the selection). */
+  featured?: string | null;
   selected: string | null;
   onSelect: (slug: string) => void;
   shuttles: MapShuttle[];
@@ -105,7 +118,7 @@ export function HomeMap({
   return (
     <ResultsMap
       airport={airport}
-      parkings={pinsOf(results)}
+      parkings={pinsOf(results, featured)}
       controls
       controlsPosition="bottom-right"
       padding={{ top: 90, bottom: 140, left: 50, right: 50 }}

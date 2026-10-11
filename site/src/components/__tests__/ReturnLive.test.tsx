@@ -51,6 +51,14 @@ describe("ReturnLive", () => {
     expect(stepOf(shuttle)).toBe("shuttle");
   });
 
+  it("reads the return time without a flight time as the parking's wall-clock time, whatever the runtime's zone", () => {
+    // 2026-10-05T23:00 in Paris (UTC+2) is 21:00 UTC: one hour before it, the ring counts 01:00:00.
+    const now = Date.UTC(2026, 9, 5, 20, 0, 0);
+    const r = ringState({ ...base, flight: { ...base.flight, status: "scheduled" } }, now);
+    expect(r.sub).toBe("prévu 23:00");
+    expect(r.big).toBe("01:00:00");
+  });
+
   it("renders the block from the server's state, polls the API, and shows the car's spot", async () => {
     const fetchMock = vi.fn().mockResolvedValue({ ok: true, json: async () => ({ ...base, spot: { code: "A-07", stayClass: "short" } }) });
     vi.stubGlobal("fetch", fetchMock);

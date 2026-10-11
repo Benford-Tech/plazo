@@ -1,8 +1,9 @@
 import { fr } from "@/lib/fr";
 
 /**
- * A parking photo, or the placeholder when the operator has not added any yet: a warm cream ground with a small
- * picture outline and the caption in spaced capitals, so that it reads as intended rather than broken.
+ * A parking photo, or the placeholder when the operator has not added any yet: a plain cream ground (the caption's
+ * warm grey stays above 4.5:1 on it) with a small picture outline and the caption in spaced capitals, so that it reads
+ * as intended rather than broken.
  */
 export function Photo({ src, alt, className = "" }: { src: string | null | undefined; alt: string; className?: string }) {
   if (!src) {
@@ -10,7 +11,7 @@ export function Photo({ src, alt, className = "" }: { src: string | null | undef
       <div
         role="img"
         aria-label={fr.a11y.photoPlaceholder}
-        className={`photo-none flex-col items-start justify-end gap-1.5 bg-linear-160 from-tint to-map ${className}`}
+        className={`photo-none flex-col items-start justify-end gap-1.5 ${className}`}
       >
         <svg
           aria-hidden="true"
@@ -29,12 +30,12 @@ export function Photo({ src, alt, className = "" }: { src: string | null | undef
           <path d="m21 16-4.5-4.5L8 19" />
         </svg>
         <span aria-hidden="true" className="max-w-full">
-          {fr.a11y.photoPlaceholder}
+          {fr.a11y.photoSoon}
         </span>
       </div>
     );
   }
   // Operators' photos are plain https URLs on any host: a regular <img> avoids an image proxy allow-list.
   // eslint-disable-next-line @next/next/no-img-element
-  return <img src={src} alt={alt} loading="lazy" decoding="async" className={`object-cover ${className}`} />;
+  return <img src={src} alt={alt} loading="lazy" decoding="async" className={`bg-tint object-cover ${className}`} />;
 }

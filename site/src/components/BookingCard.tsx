@@ -112,7 +112,7 @@ export function BookingCard({
             </div>
           </dl>
           {payment === "unavailable" ? (
-            <p className="rounded-field bg-tint px-3.5 py-3 text-center text-[14.5px] font-bold text-accent-dark">{fr.parking.onlineSoon}</p>
+            <p className="rounded-field bg-tint px-3.5 py-3 text-center text-[14.5px] font-bold text-ink">{fr.parking.onlineSoon}</p>
           ) : (
             <Link href={`/${airportSlug}/${parkingSlug}/reserver${query}`} className="btn-primary min-h-[52px] px-6 text-[17px]">
               {fr.parking.book}

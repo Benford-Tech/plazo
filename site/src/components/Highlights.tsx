@@ -1,5 +1,6 @@
 import { fr } from "@/lib/fr";
-import type { Badge, ChipIcon, FactChip, TileKind, TrustTile } from "@/lib/highlights";
+import type { ChipIcon, FactChip, TileKind, TrustTile } from "@/lib/highlights";
+import { SHUTTLE_PATH } from "@/lib/shuttle-icon";
 
 /**
  * Small pieces of reassurance shared by the home, the results and the parking page: the badges of a
@@ -17,10 +18,10 @@ export function FactIcon({ icon, size = 14 }: { icon: ChipIcon; size?: number })
   const props = { ...svg, width: size, height: size, "aria-hidden": true as const };
   switch (icon) {
     case "shuttle":
+      // The same minibus as the map pins and the live blocks (Material "airport_shuttle", filled), not a second drawing.
       return (
-        <svg {...props}>
-          <rect x="4" y="4" width="16" height="13" rx="2.5" />
-          <path d="M4 10h16M8 20v-3M16 20v-3M8 14h.01M16 14h.01" />
+        <svg width={size} height={size} viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+          <path d={SHUTTLE_PATH} />
         </svg>
       );
     case "fenced":
@@ -80,24 +81,6 @@ export function FactChips({ chips, className = "" }: { chips: FactChip[]; classN
           <FactIcon icon={chip.icon} />
           {chip.label}
           {chip.title && <span className="sr-only"> ({chip.title})</span>}
-        </li>
-      ))}
-    </ul>
-  );
-}
-
-const BADGE_LABEL: Record<Badge, string> = { cheapest: fr.results.cheapest, fastestShuttle: fr.results.fastestShuttle };
-/** Soft pills: « Le moins cher » orange text on cream-orange (pill-hot), « Navette la plus rapide » neutral cream. */
-const BADGE_STYLE: Record<Badge, string> = { cheapest: "pill pill-hot", fastestShuttle: "pill" };
-
-/** Badges of a result, side by side, wrapping when they do not fit. */
-export function ResultBadges({ badges, className = "" }: { badges: Badge[]; className?: string }) {
-  if (badges.length === 0) return null;
-  return (
-    <ul className={`flex flex-wrap items-center gap-1.5 ${className}`}>
-      {badges.map(badge => (
-        <li key={badge} data-badge={badge} className={BADGE_STYLE[badge]}>
-          {BADGE_LABEL[badge]}
         </li>
       ))}
     </ul>

@@ -138,14 +138,17 @@ export default async function ParkingPage({ params, searchParams }: Props) {
         />
       )}
 
-      <div className="grid gap-5 md:grid-cols-[1fr_340px] md:gap-x-10 md:gap-y-7 lg:grid-cols-[1fr_380px] lg:gap-x-12">
-        <section aria-labelledby="essentiel" className="flex flex-col gap-2.5 md:col-start-1">
-          <h2 id="essentiel" className="eyebrow">
-            {fr.highlights.bandLabel}
-          </h2>
+      <div className="grid grid-cols-1 gap-5 md:grid-cols-[minmax(0,1fr)_340px] md:gap-x-10 md:gap-y-7 lg:grid-cols-[minmax(0,1fr)_380px] lg:gap-x-12">
+        {/* « L’essentiel » is a caption, as in the mockup, not a heading: the band's list already carries that name. */}
+        <div className="flex flex-col gap-2.5 md:col-start-1">
+          {tiles.length > 0 && (
+            <p aria-hidden="true" className="eyebrow">
+              {fr.highlights.bandLabel}
+            </p>
+          )}
           <TrustBand tiles={tiles} />
           <p className="text-[13.5px] font-medium text-soft md:text-[15px]">{factsLine(parking)}</p>
-        </section>
+        </div>
 
         {/* On a phone the bar at the bottom carries « Réserver »: the card's own orange button would make two. */}
         <div className={`md:sticky md:top-6 md:col-start-2 md:row-span-6 md:row-start-1 md:self-start ${dock ? "max-md:[&_a.btn-primary]:hidden" : ""}`}>
@@ -160,6 +163,7 @@ export default async function ParkingPage({ params, searchParams }: Props) {
             minDate={todayLocal()}
             errors={errors}
             payment={payment}
+            docked={!!dock}
           />
         </div>
 
@@ -188,11 +192,11 @@ export default async function ParkingPage({ params, searchParams }: Props) {
           </h2>
           <dl className="card divide-y divide-line-soft">
             <div className="grid gap-1 p-4 sm:grid-cols-[96px_1fr] sm:gap-4 md:px-5">
-              <dt className="eyebrow text-accent-dark sm:pt-[5px]">{fr.parking.outbound}</dt>
+              <dt className="eyebrow sm:pt-[5px]">{fr.parking.outbound}</dt>
               <dd className="text-[15px] leading-relaxed">{fr.parking.outboundText(shuttle ? parking.shuttleMinutes : null)}</dd>
             </div>
             <div className="grid gap-1 p-4 sm:grid-cols-[96px_1fr] sm:gap-4 md:px-5">
-              <dt className="eyebrow text-accent-dark sm:pt-[5px]">{fr.parking.inbound}</dt>
+              <dt className="eyebrow sm:pt-[5px]">{fr.parking.inbound}</dt>
               <dd className="text-[15px] leading-relaxed">{fr.parking.inboundText}</dd>
             </div>
           </dl>
@@ -202,15 +206,13 @@ export default async function ParkingPage({ params, searchParams }: Props) {
           <h2 id="acces" className={sectionTitle}>
             {fr.parking.access}
           </h2>
-          {/* No map here: the cream ground of a missing map, the address on a white card. */}
-          <div className="flex min-h-[160px] items-end rounded-card bg-tint p-2.5 md:min-h-[180px] md:p-3">
-            <div className="flex w-full flex-col gap-3 rounded-field border border-line bg-white p-4 sm:flex-row sm:items-center sm:justify-between">
-              <p className="text-[15px] font-medium">{parking.address ?? fr.parking.addressUnknown}</p>
-              <a href={mapsUrl(destination)} target="_blank" rel="noopener noreferrer" className="btn-secondary btn-sm flex-none">
-                {fr.parking.openInMaps}
-                <span className="sr-only"> {fr.a11y.opensNewTab}</span>
-              </a>
-            </div>
+          {/* The address on a white card, like the other sections (no empty map ground above it). */}
+          <div className="card flex flex-col gap-3 p-4 sm:flex-row sm:items-center sm:justify-between md:px-5">
+            <p className="text-[15px] font-medium">{parking.address ?? fr.parking.addressUnknown}</p>
+            <a href={mapsUrl(destination)} target="_blank" rel="noopener noreferrer" className="btn-secondary btn-sm flex-none">
+              {fr.parking.openInMaps}
+              <span className="sr-only"> {fr.a11y.opensNewTab}</span>
+            </a>
           </div>
         </section>
       </div>
@@ -235,10 +237,10 @@ export default async function ParkingPage({ params, searchParams }: Props) {
   );
 }
 
-/** Check mark of a service chip: a small stroked pictogram instead of the « ✓ » glyph. */
+/** Check mark of a service chip: a small stroked pictogram instead of the « ✓ » glyph, warm grey like every chip icon. */
 function CheckIcon() {
   return (
-    <svg aria-hidden="true" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className="text-accent-dark">
+    <svg aria-hidden="true" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
       <path d="M5 12.5l4.5 4.5L19 7" />
     </svg>
   );
