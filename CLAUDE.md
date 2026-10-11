@@ -654,10 +654,14 @@ Le nom du produit doit rester dans UN seul fichier de configuration (il peut enc
   nom du produit recopié depuis `product.json` par `tool/sync_product.dart`, builds par `codemagic.yaml` (racine du dépôt, `working_directory: mobile`). **Pipelines de publication (07/10/2026, revus le 09/10/2026 :
   Codemagic retenu par Joanny, avec les comptes de Thempo, LoveNest et Yoon)** : Plazo rejoint **l'équipe Codemagic** qui publie
   Thempo et signe comme lui (intégration Developer Portal `lovenest-asc` de l'équipe Apple Benford Tech `3BX4795V2Y` ;
-  `ios_signing` avec le certificat Apple Distribution déjà téléversé, Apple n'en acceptant que 3 ; `android_signing` avec la
-  clé d'import propre à Plazo `plazo_upload` (créée par le workflow GitHub `android-keystore.yml`, « Android keystore (Plazo
-  upload key) », 11/10/2026 : mot de passe aléatoire, artefact d'un jour, rien ne passe par une conversation ; Codemagic n'a
-  pas d'API pour les clés, le téléversement reste à la main), jamais de base64 collé ; compte Google Play Benford Tech et compte de service de
+  `ios_signing` avec le certificat Apple Distribution déjà téléversé, Apple n'en acceptant que 3 ; clé d'import
+  propre à Plazo créée par le workflow GitHub `android-keystore.yml` (« Android keystore (Plazo upload key) », 11/10/2026 :
+  mot de passe aléatoire, rien ne passe par une conversation) et envoyée par `.github/scripts/codemagic_keystore.py` avec
+  l'API v3 de Codemagic (jeton en secret GitHub `CODEMAGIC_API_TOKEN` ; pas d'API pour les Code signing identities) dans le
+  groupe de variables Secure `plazo_android_signing` de l'app (`CM_KEYSTORE` en base64, `CM_KEYSTORE_PASSWORD`, `CM_KEY_ALIAS`,
+  `CM_KEY_PASSWORD`, décodées par l'étape `key.properties` ; `android_signing: [plazo_upload]` reste possible si la clé est
+  un jour téléversée à la main), puis build `mobile-release-android` lancé ; artefact d'un jour pour le gestionnaire de mots
+  de passe ; refus de remplacer une clé déjà envoyée sans la case « replace » ; jamais de base64 collé à la main ; compte Google Play Benford Tech et compte de service de
   Thempo) ; **un seul workflow `mobile-release` (11/10/2026, « unifie le pipeline »)** à la place des quatre d'avant (un par
   store et par app) : tag `mobile-vX.Y.Z` (= `version:` de `pubspec.yaml`, sinon arrêt) ou manuel ; vérifications une fois,
   puis pour chaque flavor AAB + APK signés et IPA signé, les quatre paquets sous la même version et le même numéro de build
@@ -672,7 +676,10 @@ Le nom du produit doit rester dans UN seul fichier de configuration (il peut enc
   ancres YAML de `definitions.scripts`, variables `android_vars`), sans `ios_signing` ni intégration `lovenest-asc`, donc
   lançable avant les profils Apple (premier envoi Google Play) ; `mobile-check` à la main seulement, les vérifications de chaque modification
   tournant sur GitHub Actions (`mobile-ci.yml`, gratuit, les minutes de l'équipe étant payantes) ; marche à suivre
-  `mobile/publier-sur-les-stores.md`. Le nom iOS vit dans
+  `mobile/publier-sur-les-stores.md` ; **fiches des stores** `mobile/fiches-stores.md` (11/10/2026, « crée l'app sur les
+  stores ») : textes, confidentialité, notes de revue et visuels des quatre fiches, rédigés d'après le code et relus contre
+  lui, section 0 = ce qui reste à régler avant la revue (parking en ligne, e-mail de support, compte de revue et suppression
+  de compte dans Plazo Pro, politique de confidentialité, textes iOS par flavor…). Le nom iOS vit dans
   `APP_DISPLAY_NAME` des configurations Xcode (mis à jour par `sync_product.dart`) ; Google Pay suit la clé Stripe servie
   (`pk_live_` = production).
   Voir `mobile/README.md`.

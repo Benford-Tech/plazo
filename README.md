@@ -208,8 +208,9 @@ une décision de Joanny. Cocher au fur et à mesure.
   n°1 n'utilise l'espace pro tous les jours ; activer les alertes d'usage par e-mail dans la console Neon.
 - [ ] Stores (pas à pas : `mobile/publier-sur-les-stores.md`) avec les comptes qui publient déjà Thempo, LoveNest et Yoon
   (Apple Benford Tech `3BX4795V2Y`, Google Play Benford Tech, équipe Codemagic avec `lovenest-asc`) : Plazo ajouté à
-  l'équipe Codemagic (facturation active), clé d'import `plazo_upload` dans ses Code signing identities (créée par le
-  workflow GitHub « Android keystore (Plazo upload key) », artefact d'un jour), groupe
+  l'équipe Codemagic (facturation active), clé d'import Android créée et envoyée par le workflow GitHub « Android keystore
+  (Plazo upload key) » (jeton de l'API Codemagic en secret GitHub `CODEMAGIC_API_TOKEN`, groupe de variables Secure
+  `plazo_android_signing`, artefact d'un jour pour le gestionnaire de mots de passe), groupe
   `mobile_secrets` (`GOOGLE_PLAY_SERVICE_ACCOUNT_CREDENTIALS` : le compte de service de Thempo, ouvert aux deux apps Plazo),
   App ID et apps chez Apple, deux profils App Store avec le certificat existant puis « Fetch profiles », deux apps chez
   Google, premier AAB à la main, `APP_STORE_APP_ID` ; identifiants des apps confirmés avant tout envoi ; OneSignal : les deux

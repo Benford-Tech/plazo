@@ -165,8 +165,10 @@ version web, « Payer » ouvre la page Stripe Checkout.
    Codemagic ; la clé API de l'équipe est l'intégration Codemagic `lovenest-asc`.
 3. **Google Play** (compte existant **Benford Tech**) : les deux apps ; une **clé d'import propre à Plazo** (`.jks`, alias
    `upload`, créée par le workflow GitHub « Android keystore (Plazo upload key) », 11/10/2026 : ni la clé ni son mot de
-   passe ne passent par une conversation), téléversée dans Codemagic sous la référence `plazo_upload` ; le compte de
-   service qui publie Thempo, ouvert aux
+   passe ne passent par une conversation), envoyée par ce workflow, avec le jeton de l'API Codemagic gardé en secret
+   GitHub `CODEMAGIC_API_TOKEN`, dans le groupe de variables Secure `plazo_android_signing` de l'app Codemagic
+   (`CM_KEYSTORE` en base64, `CM_KEYSTORE_PASSWORD`, `CM_KEY_ALIAS`, `CM_KEY_PASSWORD`, décodées par `codemagic.yaml`) ;
+   le compte de service qui publie Thempo, ouvert aux
    deux apps ; premier envoi de l'AAB à la main ; déclaration de l'usage de la position (premier plan, service
    « location »).
 4. **OneSignal + Firebase** : les deux apps OneSignal existent (une par app, car les réglages iOS d'une app OneSignal ne
@@ -181,9 +183,11 @@ version web, « Payer » ouvre la page Stripe Checkout.
    politique de confidentialité (URL), coordonnées d'assistance, catégorie, classification, justification de la
    position en arrière-plan (Apple) et formulaire « Sécurité des données » (Google).
 7. **Codemagic** : le dépôt ajouté à **l'équipe existante** (celle de Thempo, qui a déjà `lovenest-asc` et le certificat
-   Apple) avec `codemagic.yaml`, la facturation de l'équipe active, la clé `plazo_upload`, les profils iOS et le groupe
+   Apple) avec `codemagic.yaml`, la facturation de l'équipe active, le groupe `plazo_android_signing` (écrit par GitHub), les profils iOS et le groupe
    `mobile_secrets` (`GOOGLE_PLAY_SERVICE_ACCOUNT_CREDENTIALS`) : pas à pas dans
-   [`publier-sur-les-stores.md`](publier-sur-les-stores.md).
+   [`publier-sur-les-stores.md`](publier-sur-les-stores.md) ; les textes et réponses des quatre fiches dans
+   [`fiches-stores.md`](fiches-stores.md) (11/10/2026, rédigés d'après le code, relus contre lui, avec la liste de ce qui
+   reste à régler avant d'envoyer les apps en revue).
 
 ## Publier sur les stores (pipelines, 07/10/2026, revus le 09/10/2026, unifiés le 11/10/2026)
 
@@ -194,7 +198,7 @@ construit et publie avec les workflows de `codemagic.yaml` (racine du dépôt, `
 | Workflow | Quand | Ce qu'il fait |
 | --- | --- | --- |
 | `mobile-check` | à la main | les vérifications + APK **debug** des deux apps (à installer pour essayer) |
-| `mobile-release` | tag `mobile-vX.Y.Z` ou à la main | les vérifications une fois, puis **Plazo et Plazo Pro** : AAB + APK signés (clé `plazo_upload`) et IPA signé (certificat de l'équipe, intégration `lovenest-asc`), même version et même numéro de build ; chaque AAB → **Google Play, tests internes**, chaque IPA → **TestFlight** ; les six paquets dans Artifacts |
+| `mobile-release` | tag `mobile-vX.Y.Z` ou à la main | les vérifications une fois, puis **Plazo et Plazo Pro** : AAB + APK signés (clé du groupe `plazo_android_signing`) et IPA signé (certificat de l'équipe, intégration `lovenest-asc`), même version et même numéro de build ; chaque AAB → **Google Play, tests internes**, chaque IPA → **TestFlight** ; les six paquets dans Artifacts |
 | `mobile-release-android` | à la main | **Android seul** (11/10/2026) : la moitié Android de `mobile-release`, mêmes étapes (ancres YAML partagées), sans certificat, profil ni intégration Apple : AAB + APK signés des deux apps, chaque AAB → **Google Play, tests internes** ; pour le premier envoi Google Play avant Apple, puis quand seul Google Play doit recevoir une version |
 
 - Version = `version:` de `pubspec.yaml`, que le tag doit reprendre (`mobile-v1.0.0`, sinon arrêt) ; numéro de build =
