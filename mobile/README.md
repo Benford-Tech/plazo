@@ -185,7 +185,9 @@ version web, « Payer » ouvre la page Stripe Checkout.
 7. **Codemagic** : le dépôt ajouté à **l'équipe existante** (celle de Thempo, qui a déjà `lovenest-asc` et le certificat
    Apple) avec `codemagic.yaml`, la facturation de l'équipe active, le groupe `plazo_android_signing` (écrit par GitHub), les profils iOS et le groupe
    `mobile_secrets` (`GOOGLE_PLAY_SERVICE_ACCOUNT_CREDENTIALS`) : pas à pas dans
-   [`publier-sur-les-stores.md`](publier-sur-les-stores.md).
+   [`publier-sur-les-stores.md`](publier-sur-les-stores.md) ; les textes et réponses des quatre fiches dans
+   [`fiches-stores.md`](fiches-stores.md) (11/10/2026, rédigés d'après le code, relus contre lui, avec la liste de ce qui
+   reste à régler avant d'envoyer les apps en revue).
 
 ## Publier sur les stores (pipelines, 07/10/2026, revus le 09/10/2026, unifiés le 11/10/2026)
 

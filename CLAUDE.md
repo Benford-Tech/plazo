@@ -676,7 +676,10 @@ Le nom du produit doit rester dans UN seul fichier de configuration (il peut enc
   ancres YAML de `definitions.scripts`, variables `android_vars`), sans `ios_signing` ni intégration `lovenest-asc`, donc
   lançable avant les profils Apple (premier envoi Google Play) ; `mobile-check` à la main seulement, les vérifications de chaque modification
   tournant sur GitHub Actions (`mobile-ci.yml`, gratuit, les minutes de l'équipe étant payantes) ; marche à suivre
-  `mobile/publier-sur-les-stores.md`. Le nom iOS vit dans
+  `mobile/publier-sur-les-stores.md` ; **fiches des stores** `mobile/fiches-stores.md` (11/10/2026, « crée l'app sur les
+  stores ») : textes, confidentialité, notes de revue et visuels des quatre fiches, rédigés d'après le code et relus contre
+  lui, section 0 = ce qui reste à régler avant la revue (parking en ligne, e-mail de support, compte de revue et suppression
+  de compte dans Plazo Pro, politique de confidentialité, textes iOS par flavor…). Le nom iOS vit dans
   `APP_DISPLAY_NAME` des configurations Xcode (mis à jour par `sync_product.dart`) ; Google Pay suit la clé Stripe servie
   (`pk_live_` = production).
   Voir `mobile/README.md`.

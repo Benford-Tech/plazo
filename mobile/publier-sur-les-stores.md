@@ -8,7 +8,8 @@ dépôt ; aucun build de Plazo n'a encore tourné. Depuis le 11/10/2026 (« unif
 publication** construit les six paquets d'une version (APK, AAB et IPA de Plazo et de Plazo Pro) et les envoie aux deux
 stores ; un second, **Android seul** (`mobile-release-android`), fait la moitié Google Play sans rien demander à Apple : il
 sert au premier envoi sur Google Play sans attendre les profils Apple, puis chaque fois que seul Google Play doit recevoir
-une version.
+une version. Les textes des quatre fiches (noms, descriptions, mots-clés, réponses de confidentialité, notes pour la revue,
+visuels à fournir) sont dans [fiches-stores.md](fiches-stores.md), rédigés d'après le code et relus contre lui.
 
 Codemagic n'existe qu'en anglais : ses libellés restent en anglais ici. Pour Google, les libellés sont en français. Les
 consoles Apple sont citées en anglais.
