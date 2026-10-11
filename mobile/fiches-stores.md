@@ -293,6 +293,76 @@ Tant que la tâche du point 0.17 n'est pas planifiée, remplacer « puis effacé
 
 ---
 
+### 2.5 Notes de version 1.0.0 (les deux apps, les deux stores)
+
+Où elles vont :
+
+- **Google Play** : à la création de chaque version (Tests internes › Créer une version › **Notes de version**), 500 caractères
+  au plus par langue, entre les balises de langue que la console affiche (`<fr-FR>` … `</fr-FR>`). Le texte est public sur la
+  fiche, sous « Nouveautés ». Facultatif, mais à remplir dès la 1.0.0.
+- **App Store Connect** : le champ « Nouveautés de cette version » (*What's New*) n'existe pas pour la première version ; il
+  apparaît à partir de la 1.0.1 (4 000 caractères au plus). Pour la 1.0.0, le texte Apple ci-dessous sert au champ **« Que
+  tester »** (*What to Test*) de TestFlight, puis de base pour les notes de la version suivante.
+- Les textes reprennent les descriptions des sections 2.1 à 2.4 : rien n'y est promis qui ne soit dans l'app. Le compte à
+  rebours « jusqu'à l'atterrissage » suit l'heure annoncée du vol quand le suivi des vols est actif (point 0.19), sinon
+  l'heure de retour réservée : la formulation vaut dans les deux cas. Ni Apple Pay ni Google Pay ne sont nommés.
+
+Plazo, Google Play (≤ 500) :
+
+```text
+Première version de Plazo.
+• Trouvez un parking près de l'aéroport de Lyon Saint-Exupéry : prix total pour vos dates, en liste ou sur la carte, filtres par service.
+• Réservez et payez en ligne, sans créer de compte.
+• Le jour du dépôt, prévenez le parking de votre arrivée.
+• Au retour : compte à rebours jusqu'à l'atterrissage, itinéraire à pied jusqu'à la navette, « Votre navette est là », et retrouvez votre voiture sur le parking.
+```
+(436 caractères)
+
+Plazo, App Store (« Que tester » de TestFlight pour la 1.0.0, « Nouveautés » dès la 1.0.1) :
+
+```text
+Première version de Plazo, pour réserver un parking privé près de l'aéroport de Lyon Saint-Exupéry et être accompagné du dépôt de la voiture jusqu'au retour.
+
+• Choisissez vos dates : la carte et la liste montrent les parkings partenaires avec leur prix total pour le séjour. Triez par prix, durée de navette ou distance ; filtrez par service.
+• Réservez en deux étapes, sans créer de compte, et payez en ligne par carte bancaire. Rien à régler au parking.
+• Le jour du dépôt, prévenez le parking de votre arrivée, avec ou sans partage de position, et notez où vous avez garé la voiture.
+• Au retour, un compte à rebours vous accompagne jusqu'à l'atterrissage, puis l'itinéraire à pied vous mène au point de rendez-vous de la navette. Vous êtes prévenu quand la navette part vous chercher et quand elle est là.
+• Retrouvez votre voiture : place ou file indiquée par le voiturier, et sa position GPS quand elle a été enregistrée.
+
+Lyon Saint-Exupéry est le premier aéroport proposé par Plazo.
+```
+(991 caractères)
+
+Plazo Pro, Google Play (≤ 500) :
+
+```text
+Première version de Plazo Pro, l'application des équipes des parkings partenaires de Plazo.
+• Aujourd'hui : véhicules sur le parking, arrivées, retours, navettes et points à traiter.
+• Réservations de tous les canaux par date d'arrivée, saisie au comptoir, prochaine étape en un bouton.
+• Parking : plan, places, files de voiturier et clés.
+• Navette : ligne du jour, ma tournée, trajets avec position partagée.
+• Notifications réglables. Votre compte est créé par votre gérant.
+```
+(478 caractères)
+
+Plazo Pro, App Store (« Que tester » de TestFlight pour la 1.0.0, « Nouveautés » dès la 1.0.1) :
+
+```text
+Première version de Plazo Pro, l'application des équipes des parkings d'aéroport partenaires de Plazo : gérants, accueil, chauffeurs de navette et voituriers.
+
+• Votre poste du jour : les onglets s'adaptent à votre travail.
+• Aujourd'hui : tableau de bord des véhicules sur le parking, arrivées, retours, navettes et points à traiter ; planning du jour avec l'état des vols.
+• Réservations : toutes les réservations du parking par date d'arrivée, quel que soit le canal ; recherche par plaque, nom ou référence ; saisie d'une réservation prise au téléphone ou au comptoir ; fiche avec la prochaine étape en un seul bouton.
+• Parking et clés : plan en couleurs, place proposée à chaque arrivée, files de voiturier, crochet des clés, planning des places.
+• Navette : ligne du jour calculée d'après les vols, ma tournée, trajets avec véhicule et desserte, messages des voyageurs.
+• Notifications : arrivées, retours, navettes et nouvelles réservations, chacune réglable.
+
+L'application ne propose pas d'inscription : votre gérant crée votre compte.
+```
+(1045 caractères)
+
+---
+
 ## 3. Confidentialité
 
 Les réponses ci-dessous décrivent le code au 11/10/2026.
