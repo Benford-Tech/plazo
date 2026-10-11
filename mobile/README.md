@@ -92,7 +92,8 @@ flutter pub get
 dart run build_runner build          # après un changement de modèle, d'état, de client ou de route
 flutter analyze
 flutter test
-dart run flutter_launcher_icons   # icône d'app (Android adaptative, iOS, web) depuis assets/brand/ (copies de /brand)
+dart run flutter_launcher_icons   # icône d'app (Android adaptative, iOS, web) depuis assets/brand/ (copies de /brand) ;
+                                  # sans SDK Flutter : `python3 brand/app/tools/native_icons.py` écrit les mêmes fichiers
 flutter run --dart-define=API_BASE_URL=http://localhost:3005/api      # API locale (émulateur Android : 10.0.2.2)
 flutter build web --dart-define=API_BASE_URL=http://localhost:3005/api # essai dans un navigateur
 ```
@@ -229,7 +230,9 @@ construit et publie avec les workflows de `codemagic.yaml` (racine du dépôt, `
 
 - **Plazo** (voyageurs) : flavor Android `traveller`, `--dart-define=APP_FLAVOR=traveller` (défaut), id `com.benfordtech.plazo`.
 - **Plazo Pro** (personnel, direction B de l'espace pro web : noir, jaune, angles vifs, Archivo Narrow + JetBrains Mono ; `AppColors` / `AppRadius` / `AppFonts` suivent le flavor) : flavor Android `pro`, `--dart-define=APP_FLAVOR=pro`, id `com.benfordtech.plazopro`,
-  icône vert citron, P et avion vert foncé (C-B, 05/10/2026 ; `assets/brand/app-icon-pro*.png`, `dart run flutter_launcher_icons -f flutter_launcher_icons-pro.yaml`).
+  icône vert citron, lettres et avion vert foncé (C-B, 05/10/2026 ; `assets/brand/app-icon-pro*.png`, `dart run flutter_launcher_icons -f flutter_launcher_icons-pro.yaml`).
+  **L'icône des deux apps écrit « Plazo » à partir du P (choix B du 11/10/2026)** : le P et son avion, « lazo » en italique niché
+  sous la panse du P ; sources dans `brand/app/`, déclinaisons natives écrites par `brand/app/tools/native_icons.py`.
   Elle s'ouvre sur ses quatre onglets (`ProShellPage` : Aujourd'hui · Réservations · Parking · Plus) et n'embarque aucun
   écran voyageur (décision du 04/10/2026 : les routes voyageur et les App Links `/ma-reservation` n'existent que dans le
   flavor `traveller`, `android/app/src/traveller/AndroidManifest.xml`).

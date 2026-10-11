@@ -1,6 +1,10 @@
 #!/usr/bin/env python3
 """Builds the mobile app's logo SVGs (option L-B, kept for the app on 03/10/2026) with the glyphs converted to paths.
 
+The app icon (choice B of 11/10/2026, « écris Plazo en te servant du P ») writes the name from the P: the P and its
+plane as before, « lazo » in the italic of the wordmark nested under the bowl of the P, on the same baseline. The
+in-app header keeps the symbol (the P alone) next to the italic wordmark.
+
 The product name (the wordmark) is read from ../../product.json; the fonts are the app's
 Playfair Display (OFL) in mobile/assets/fonts. Run `python3 brand/app/tools/build_svg.py` from
 the repository root after a change of name or geometry, then `node brand/tools/export_png.mjs`.
@@ -36,6 +40,11 @@ P_CAP = 52          # cap height of the "P" inside the square
 WM_CAP = 58         # cap height of the wordmark
 GAP = 20            # space between the square and the wordmark
 BASELINE = 76       # shared baseline of the "P" and the wordmark (P centred: 24..76)
+# The app icon's lockup (choice B, 11/10/2026): a slightly smaller P, « lazo » under its bowl.
+ICON_P_CAP = 50     # cap height of the P in the icon
+ICON_L_CAP = 16.5   # cap height of « lazo » (its l must stay under the bowl: 1.108 x cap < 0.40 x P cap)
+ICON_BASELINE = 74
+ICON_GAP = 3.5      # between the stem of the P and the l
 
 
 def load(name, weight):
@@ -140,6 +149,23 @@ def main():
         return (f'{g}\n  {rect}\n  <path d="{p_path}" fill="{fg}"/>\n'
                 f'  <path d="{plane_outer} {plane_fold}" fill="{plane}" fill-rule="evenodd"/>\n</g>')
 
+    # The app icon's lockup: the P (and its plane) with « lazo » nested under the bowl, centred in the square.
+    ip_path, ipb = text_path("PlayfairDisplay.ttf", "P", 500, ICON_P_CAP, 0, ICON_BASELINE)
+    il_path, ilb = text_path("PlayfairDisplay-Italic.ttf", "lazo", 500, ICON_L_CAP, 0, ICON_BASELINE)
+    stem_right = (43.0 - 28.74) / P_CAP * ICON_P_CAP   # right edge of the P's stem, measured at P_CAP
+    lockup_w = max(stem_right + ICON_GAP + (ilb[2] - ilb[0]), ipb[2] - ipb[0])
+    ip_x = (S - lockup_w) / 2
+    ip_path, ipb = text_path("PlayfairDisplay.ttf", "P", 500, ICON_P_CAP, ip_x, ICON_BASELINE)
+    il_path, ilb = text_path("PlayfairDisplay-Italic.ttf", "lazo", 500, ICON_L_CAP, ip_x + stem_right + ICON_GAP, ICON_BASELINE)
+    iplane_outer, iplane_fold = plane_path(ipb[2] + 3.5, ipb[1] - 1, 14, -40)
+    assert ilb[1] > ICON_BASELINE - 0.40 * ICON_P_CAP, "the l of « lazo » runs into the bowl of the P"
+
+    def app_icon(bg, fg, plane, x, y, scale):
+        rect = f'<rect width="{S}" height="{S}" fill="{bg}"/>\n' if bg != "none" else ""
+        return (f'{rect}<g transform="translate({x:g} {y:g}) scale({scale:g})">\n'
+                f'  <path d="{ip_path} {il_path}" fill="{fg}"/>\n'
+                f'  <path d="{iplane_outer} {iplane_fold}" fill="{plane}" fill-rule="evenodd"/>\n</g>')
+
     def symbol_mono(colour, x=0, y=0):
         # One colour for print: the square is filled, the P and the plane are cut out of it.
         d = f"{rounded_rect_path(0, 0, S, S, RADIUS)} {p_path} {plane_outer}"
@@ -161,21 +187,16 @@ def main():
         "symbol-mono.svg": svg(S, S, symbol_mono(DARK), NAME),
         "wordmark.svg": svg(round(wb[2] - wm_x + 2), S, wordmark(DARK, -wm_x), NAME),
         "favicon.svg": svg(S, S, symbol(ORANGE, WHITE, DARK), NAME),
-        # Maskable icon (choice O-B): orange full bleed, white P and prune plane inside the inner 80 % safe circle.
-        "icon-maskable.svg": svg(S, S,
-            f'<rect width="{S}" height="{S}" fill="{ORANGE}"/>\n'
-            + symbol("none", WHITE, DARK, x=S * 0.1, y=S * 0.1, rounded=False, scale=0.8), NAME),
-        # Android adaptive foreground: transparent; flutter_launcher_icons insets it by 16 %, so the
+        # App icon (choice O-B, then B of 11/10/2026): orange full bleed, the white lockup « P + lazo » and the
+        # dark-brown plane inside the inner 80 % safe circle.
+        "icon-maskable.svg": svg(S, S, app_icon(ORANGE, WHITE, DARK, S * 0.1, S * 0.1, 0.8), NAME),
+        # Android adaptive foreground: transparent; the adaptive icon XML insets it by 16 %, so the
         # glyphs are drawn at 92 % here to land in the inner ~66 % of the 108 dp layer.
-        "android-foreground.svg": svg(S, S,
-            symbol("none", WHITE, DARK, x=S * 0.04, y=S * 0.04, rounded=False, scale=0.92), NAME),
-        # "Plazo Pro" app icon (C-B, 05/10/2026): the same mark on the pro's lime — dark-green P and
-        # plane — so the two apps tell apart on a home screen (dark brown with white P until then).
-        "icon-maskable-pro.svg": svg(S, S,
-            f'<rect width="{S}" height="{S}" fill="{LIME}"/>\n'
-            + symbol("none", LIME_INK, GREEN, x=S * 0.1, y=S * 0.1, rounded=False, scale=0.8), NAME + " Pro"),
-        "android-foreground-pro.svg": svg(S, S,
-            symbol("none", LIME_INK, GREEN, x=S * 0.04, y=S * 0.04, rounded=False, scale=0.92), NAME + " Pro"),
+        "android-foreground.svg": svg(S, S, app_icon("none", WHITE, DARK, S * 0.04, S * 0.04, 0.92), NAME),
+        # "Plazo Pro" app icon (C-B, 05/10/2026): the same lockup on the pro's lime — dark-green letters
+        # and plane — so the two apps tell apart on a home screen.
+        "icon-maskable-pro.svg": svg(S, S, app_icon(LIME, LIME_INK, GREEN, S * 0.1, S * 0.1, 0.8), NAME + " Pro"),
+        "android-foreground-pro.svg": svg(S, S, app_icon("none", LIME_INK, GREEN, S * 0.04, S * 0.04, 0.92), NAME + " Pro"),
         # Social card 1200 x 630: the dark logo on prune.
         "social-card.svg": svg(1200, 630,
             f'<rect width="1200" height="630" fill="{ORANGE}"/>\n'
@@ -187,6 +208,7 @@ def main():
             f.write(content)
         print("wrote", name)
     print("P bounds", [round(v, 1) for v in pb], "wordmark bounds", [round(v, 1) for v in wb], "width", total_w)
+    print("icon lockup", [round(v, 1) for v in (ipb[0], ipb[1], ilb[2], ICON_BASELINE)])
 
 
 if __name__ == "__main__":
