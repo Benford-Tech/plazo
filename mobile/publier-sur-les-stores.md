@@ -1,8 +1,10 @@
 # Publier Plazo et Plazo Pro sur les stores
 
-État au 09/10/2026. Les comptes existent déjà : ceux qui publient Thempo, LoveNest et Yoon. Plazo s'y ajoute, signé et
+État au 11/10/2026. Les comptes existent déjà : ceux qui publient Thempo, LoveNest et Yoon. Plazo s'y ajoute, signé et
 publié comme Thempo, qui sort sur les deux stores depuis la même équipe Codemagic. Les pipelines sont dans
-`codemagic.yaml`, à la racine du dépôt ; aucun build de Plazo n'a encore tourné.
+`codemagic.yaml`, à la racine du dépôt ; aucun build de Plazo n'a encore tourné. Depuis le 11/10/2026 (« unifie le
+pipeline »), **un seul workflow de publication** construit les six paquets d'une version (APK, AAB et IPA de Plazo et de
+Plazo Pro) et les envoie aux deux stores.
 
 Codemagic n'existe qu'en anglais : ses libellés restent en anglais ici. Pour Google, les libellés sont en français. Les
 consoles Apple sont citées en anglais.
@@ -28,17 +30,22 @@ clé d'import Android de Plazo, et les réglages push (APNs, FCM) de chaque app 
 | --- | --- | --- |
 | GitHub Actions `Mobile CI` | chaque PR et push sur `main` qui touche `mobile/` | nom du produit à jour, `flutter analyze`, `flutter test` (gratuit) |
 | Codemagic `mobile-check` | à la main | les mêmes vérifications + APK **debug** des deux apps, à installer pour essayer |
-| Codemagic `plazo-android-release` / `plazo-pro-android-release` | tag `mobile-vX.Y.Z` ou à la main | AAB signé → **Google Play, tests internes** (sans rien d'Apple) |
-| Codemagic `plazo-ios-release` / `plazo-pro-ios-release` | tag `mobile-vX.Y.Z` ou à la main | IPA signé → **TestFlight**, testeurs internes |
+| Codemagic `mobile-release` | tag `mobile-vX.Y.Z` ou à la main | les vérifications une fois, puis pour **Plazo et Plazo Pro** : AAB + APK signés (clé `plazo_upload`) et IPA signé (certificat de l'équipe), **même version et même numéro de build** pour les quatre paquets ; chaque AAB → **Google Play, tests internes**, chaque IPA → **TestFlight**, testeurs internes ; les six fichiers dans **Artifacts** |
 
 - **Version** = le `version:` de `mobile/pubspec.yaml` (ex. `1.0.0`). Le tag doit la reprendre : `mobile-v1.0.0`, sinon le
   build s'arrête tout de suite (« le tag … ne correspond pas à la version … »).
-- **Numéro de build** = compteur Codemagic + 100, jamais en dessous du dernier build connu du store.
+- **Numéro de build** = compteur Codemagic + 100, jamais en dessous du dernier build connu d'un des quatre stores (les
+  deux fiches Google Play, les deux apps TestFlight) : un seul numéro pour les quatre paquets.
 - Les stores reçoivent une version **de test** ; la mise en production se décide dans chaque console.
-- Tant que les profils Apple n'existent pas, lancer les deux workflows Android **à la main** plutôt que poser un tag.
-- Les minutes d'une équipe Codemagic sont **payantes** (pas de minutes gratuites en équipe) : une publication des quatre
-  workflows prend de l'ordre d'une heure de machine. C'est pourquoi les vérifications de chaque modification tournent sur
-  GitHub Actions, gratuitement.
+- **Les envois sont indépendants** : chaque AAB puis chaque IPA est envoyé même si un autre envoi a échoué ; le dernier
+  pas, « Bilan de la publication », liste les envois et met le build en erreur si l'un a échoué. Les paquets restent
+  dans Artifacts.
+- Le workflow a besoin, **avant son premier lancement**, de la clé d'import Android et des **deux profils Apple** dans
+  les Code signing identities de l'équipe : sans l'un d'eux, Codemagic s'arrête à « Set up code signing », avant de
+  construire quoi que ce soit. Faire les sections 1 à 3 dans l'ordre, puis le premier build.
+- Les minutes d'une équipe Codemagic sont **payantes** (pas de minutes gratuites en équipe) : une publication complète
+  prend de l'ordre d'une heure de machine (deux apps Android, deux apps iOS). C'est pourquoi les vérifications de chaque
+  modification tournent sur GitHub Actions, gratuitement.
 
 ## 0. À décider avant de commencer
 
@@ -64,10 +71,9 @@ clé d'import Android de Plazo, et les réglages push (APNs, FCM) de chaque app 
    - Si `plazo` n'apparaît pas : GitHub › organisation **Benford-Tech** › **Settings › GitHub Apps › Codemagic CI/CD ›
      Configure**, **Repository access** : ajouter `plazo`, **Save**.
    - Type de projet **Flutter App**, configuration **codemagic.yaml** (pas le Workflow Editor), **Finish: Add application**.
-2. [ ] **Vérifier les workflows** : onglet `codemagic.yaml`, branche `main`, **Check for configuration file** : cinq
-   workflows (« Mobile — vérifications + APK de test (debug, à la main) », « Plazo (voyageurs) — Google Play, tests
-   internes », « Plazo (voyageurs) — TestFlight », « Plazo Pro (personnel) — Google Play, tests internes », « Plazo Pro
-   (personnel) — TestFlight »).
+2. [ ] **Vérifier les workflows** : onglet `codemagic.yaml`, branche `main`, **Check for configuration file** : deux
+   workflows (« Mobile — vérifications + APK de test (debug, à la main) » et « Plazo + Plazo Pro — APK, AAB, IPA →
+   Google Play (tests internes) + TestFlight »).
 3. [ ] **Vérifier la facturation de l'équipe** (Team settings › **Billing**) : sans moyen de paiement actif, les builds
    restent en file d'attente.
 4. [ ] **Téléverser la clé d'import Android de Plazo** (créée à l'étape 3.2) : Team settings › **Code signing identities ›
@@ -102,7 +108,9 @@ clé d'import Android de Plazo, et les réglages push (APNs, FCM) de chaque app 
      le certificat **Apple Distribution** qui expire à cette date, nom « Plazo App Store », **Generate**. Même chose pour
      `com.benfordtech.parkingApp.pro`, nom « Plazo Pro App Store ».
 4. [ ] **Les importer dans Codemagic** : **Code signing identities › iOS provisioning profiles › Fetch profiles**, cocher
-   les deux profils, les enregistrer.
+   les deux profils, et leur donner **exactement** les Reference name `plazo_app_store` (Plazo) et `plazo_pro_app_store`
+   (Plazo Pro) : `codemagic.yaml` les appelle par ces noms. Vérifier aussi, dans **iOS certificates**, que le certificat
+   de l'équipe porte le Reference name `thempo-distribution` (sinon le dire à Claude, qui l'adapte dans `codemagic.yaml`).
 5. [ ] **Relever l'Apple ID numérique de chaque app** (app › **App Information** › **Apple ID**) et le donner à Claude, qui
    le pose dans `codemagic.yaml` (`APP_STORE_APP_ID`).
 6. [ ] **Notifications iOS** (OneSignal) : **Certificates, Identifiers & Profiles › Keys**.
@@ -147,10 +155,11 @@ clé d'import Android de Plazo, et les réglages push (APNs, FCM) de chaque app 
    `GOOGLE_PLAY_SERVICE_ACCOUNT_CREDENTIALS` (étape 1.5), puis le supprimer de l'ordinateur.
 5. [ ] **Liste des testeurs internes** (pour chaque app) : **Tester et publier › Tests › Tests internes › Testeurs ›
    Créer une liste de diffusion** (comptes Google), **Enregistrer les modifications**.
-6. [ ] **Premier envoi à la main** (l'API refuse une app jamais publiée) :
-   - Codemagic : **Start new build**, `main`, workflow `plazo-pro-android-release` (puis `plazo-android-release`).
-     L'envoi vers Google Play échoue sur ce premier build (« Package not found ») : **c'est attendu**.
-   - **Artifacts** du build : télécharger `plazo-pro-v1.0.0-<n°>.aab` (ou `plazo-v1.0.0-<n°>.aab`).
+6. [ ] **Premier envoi à la main** (l'API refuse une app jamais publiée), une fois les sections 1 et 2 faites :
+   - Codemagic : **Start new build**, `main`, workflow `mobile-release`. Les deux envois Google Play échouent sur ce
+     premier build (« Package not found ») et le bilan le met en erreur : **c'est attendu** ; les deux IPA sont bien
+     partis vers TestFlight.
+   - **Artifacts** du build : télécharger `plazo-pro-v1.0.0-<n°>.aab` et `plazo-v1.0.0-<n°>.aab`.
    - Play Console : **Tests internes › Créer une version**, garder la signature d'application Play proposée, **Importer**
      l'AAB, **Suivant**, **Enregistrer** : la version reste en brouillon.
 7. [ ] **Contenu de l'application** (*App content*), après cet import (le formulaire du service de premier plan n'apparaît
@@ -161,8 +170,9 @@ clé d'import Android de Plazo, et les réglages push (APNs, FCM) de chaque app 
    tests internes.
 8. [ ] **Démarrer le premier déploiement** : **Tests internes**, la version enregistrée › **Vérifier la version** ›
    **Démarrer le déploiement**.
-9. [ ] **`submit_as_draft` à `false`** quand les deux apps ont une première version déployée : le dire à Claude. D'ici là,
-   chaque build arrive en **brouillon** dans Tests internes : ouvrir la version, **Démarrer le déploiement**.
+9. [ ] **`PLAY_SUBMIT_AS_DRAFT` à `"false"`** (dans `codemagic.yaml`) quand les deux apps ont une première version
+   déployée : le dire à Claude. D'ici là, chaque build arrive en **brouillon** dans Tests internes : ouvrir la version,
+   **Démarrer le déploiement**.
 10. [ ] **Notifications Android** (OneSignal) : chaque app OneSignal › **Settings › Push & In-App › Google Android (FCM)**
    demande la clé JSON d'un compte de service **Firebase**. Plazo n'a pas encore de projet Firebase : en créer un
    (« plazo »), y ajouter les deux apps Android (`com.benfordtech.parking_app` et `.pro`), puis **Paramètres du projet ›
@@ -173,11 +183,14 @@ clé d'import Android de Plazo, et les réglages push (APNs, FCM) de chaque app 
 ## 4. Ce qu'il faut renvoyer à Claude, et ce qu'il ne faut jamais coller
 
 **À envoyer (valeurs non secrètes) :**
-- [ ] l'Apple ID numérique de Plazo et de Plazo Pro (il remplace `APP_STORE_APP_ID: "0"`) ;
+- [ ] l'Apple ID numérique de Plazo et de Plazo Pro (ils remplacent `APP_STORE_APP_ID_PLAZO: "0"` et
+  `APP_STORE_APP_ID_PLAZO_PRO: "0"`) ;
 - [ ] les identifiants définitifs, s'ils changent, **avant** toute création dans les consoles ;
 - [ ] les empreintes **SHA-256** de la clé de signature Play (Play Console › Protégé avec Play › Signature d'application
   Play), pour `assetlinks.json` ; le Team ID Apple est connu (`3BX4795V2Y`) ;
-- [ ] « première version interne déployée sur les deux apps », pour passer `submit_as_draft` à `false` ;
+- [ ] « première version interne déployée sur les deux apps », pour passer `PLAY_SUBMIT_AS_DRAFT` à `"false"` ;
+- [ ] les noms des groupes de testeurs externes TestFlight, le jour où le personnel du client doit recevoir les builds
+  (`TESTFLIGHT_BETA_GROUPS`) ;
 - [ ] si un build échoue : le lien du build Codemagic et le message d'erreur.
 
 **À ne jamais coller dans une conversation ni dans le dépôt :** le fichier `plazo-upload.jks` et ses mots de passe, la clé
@@ -188,9 +201,15 @@ Codemagic (Code signing identities, variables « Secret »), OneSignal, Vercel e
 ## Sources (relues le 09/10/2026)
 
 - Codemagic : https://docs.codemagic.io/yaml-code-signing/signing-ios/ (« Apple limits the number of Apple Distribution
-  certificates to 3 », Fetch profiles) · https://docs.codemagic.io/yaml-code-signing/signing-android/ ·
+  certificates to 3 », Fetch profiles, profils et certificat par Reference name) ·
+  https://docs.codemagic.io/yaml-code-signing/signing-android/ ·
   https://docs.codemagic.io/yaml-publishing/google-play/ · https://docs.codemagic.io/yaml-publishing/app-store-connect/ ·
-  https://docs.codemagic.io/yaml-running-builds/webhooks/ · https://docs.codemagic.io/billing/pricing/
+  https://docs.codemagic.io/yaml-running-builds/webhooks/ · https://docs.codemagic.io/billing/pricing/ ; outils en ligne
+  de commande (11/10/2026, envoi de plusieurs paquets depuis un workflow) :
+  https://github.com/codemagic-ci-cd/cli-tools/blob/master/docs/google-play/bundles/publish.md ·
+  https://github.com/codemagic-ci-cd/cli-tools/blob/master/docs/app-store-connect/publish.md ·
+  https://help.codemagic.io/articles/5483007174-how-do-i-automatically-submit-and-release-production-apps-to-the-app-store-and-google-play-from-my-codemagic-pipeline
+  (« remove the corresponding `publishing:` block »)
 - Modèle qui publie déjà : `Benford-Tech/tempo-app`, `codemagic.yaml` (workflow `release`, version 1.1.3 publiée sur Google
   Play et App Store Connect le 09/10/2026).
 - Apple : https://developer.apple.com/help/account/identifiers/register-an-app-id/ ·
