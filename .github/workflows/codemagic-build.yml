@@ -10,7 +10,7 @@ on:
       action:
         description: "Que faire"
         type: choice
-        options: [status, start, groups, ensure-group, team]
+        options: [status, steps, start, groups, ensure-group, team]
         default: status
       workflow_id:
         description: "start : workflow de codemagic.yaml (mobile-release-android, mobile-release, mobile-check)"
