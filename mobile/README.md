@@ -183,7 +183,7 @@ version web, « Payer » ouvre la page Stripe Checkout.
    `mobile_secrets` (`GOOGLE_PLAY_SERVICE_ACCOUNT_CREDENTIALS`) : pas à pas dans
    [`publier-sur-les-stores.md`](publier-sur-les-stores.md).
 
-## Publier sur les stores (pipelines, 07/10/2026, revus le 09/10/2026)
+## Publier sur les stores (pipelines, 07/10/2026, revus le 09/10/2026, unifiés le 11/10/2026)
 
 Les vérifications de chaque modification tournent sur GitHub Actions (`.github/workflows/mobile-ci.yml` : nom du produit,
 `flutter analyze`, `flutter test`, gratuit) ; Codemagic, dans **l'équipe qui publie déjà Thempo** (minutes payantes),
@@ -192,13 +192,16 @@ construit et publie avec les workflows de `codemagic.yaml` (racine du dépôt, `
 | Workflow | Quand | Ce qu'il fait |
 | --- | --- | --- |
 | `mobile-check` | à la main | les vérifications + APK **debug** des deux apps (à installer pour essayer) |
-| `plazo-android-release` / `plazo-pro-android-release` | tag `mobile-vX.Y.Z` ou à la main | AAB signé (clé `plazo_upload`) → **Google Play, tests internes**, sans rien d'Apple |
-| `plazo-ios-release` / `plazo-pro-ios-release` | tag `mobile-vX.Y.Z` ou à la main | IPA signé (certificat de l'équipe, intégration `lovenest-asc`) → **TestFlight**, testeurs internes |
+| `mobile-release` | tag `mobile-vX.Y.Z` ou à la main | les vérifications une fois, puis **Plazo et Plazo Pro** : AAB + APK signés (clé `plazo_upload`) et IPA signé (certificat de l'équipe, intégration `lovenest-asc`), même version et même numéro de build ; chaque AAB → **Google Play, tests internes**, chaque IPA → **TestFlight** ; les six paquets dans Artifacts |
 
 - Version = `version:` de `pubspec.yaml`, que le tag doit reprendre (`mobile-v1.0.0`, sinon arrêt) ; numéro de build =
-  compteur Codemagic + 100, jamais sous le dernier build du store du workflow.
-- Les stores reçoivent une version **de test** ; la production se décide dans chaque console. `submit_as_draft: true`
-  jusqu'à la première version déployée à la main sur Google Play, puis `false`.
+  compteur Codemagic + 100, jamais sous le dernier build d'un des quatre stores (un seul numéro pour les quatre paquets).
+- Les stores reçoivent une version **de test** ; la production se décide dans chaque console. `PLAY_SUBMIT_AS_DRAFT`
+  à `"true"` jusqu'à la première version déployée à la main sur Google Play, puis `"false"`.
+- Les envois se font par les outils en ligne de commande de Codemagic (`google-play bundles publish`,
+  `app-store-connect publish`), un par paquet, tous tentés ; le dernier pas met le build en erreur si l'un a échoué.
+  Le workflow exige la clé Android et les deux profils Apple (`plazo_app_store`, `plazo_pro_app_store`) avant son
+  premier lancement.
 - **Marche à suivre complète** (ce qui existe déjà, Codemagic, Apple, Google Play, premier envoi, ce qu'il ne faut jamais
   coller) : [`publier-sur-les-stores.md`](publier-sur-les-stores.md).
 - Revue du 09/10/2026, avant le premier build : la vérification du nom du produit échouait toujours (le nom iOS vit

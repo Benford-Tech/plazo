@@ -15,25 +15,30 @@
 # mobile/ (working_directory). The checks of every push run on GitHub Actions (.github/workflows/mobile-ci.yml,
 # free), not here: a team's Codemagic minutes are billed.
 #
-# Workflows (one per store and per app, so that Google Play does not wait for Apple):
-#   mobile-check               → by hand only: checks + DEBUG Android APKs of the two apps, to install.
-#   plazo-android-release      → Plazo (voyageurs): signed AAB → Google Play, internal track.
-#   plazo-ios-release          → Plazo (voyageurs): signed IPA → TestFlight (internal testers).
-#   plazo-pro-android-release  → Plazo Pro (personnel): same as plazo-android-release, flavor `pro`.
-#   plazo-pro-ios-release      → Plazo Pro (personnel): same as plazo-ios-release, flavor `pro`.
-# The four release workflows start on a tag `mobile-vX.Y.Z` whose version is the `version:` of
-# mobile/pubspec.yaml (checked), or by hand from Codemagic (Start new build). Until the Apple profiles exist,
-# start the two Android ones by hand instead of tagging: the iOS ones would fail at signing.
+# 11/10/2026, « unifie le pipeline »: ONE release workflow builds the six packages of a version and sends them
+# to the stores, instead of four workflows (one per store and per app):
+#   mobile-check    → by hand only: checks + DEBUG Android APKs of the two apps, to install and try.
+#   mobile-release  → tag `mobile-vX.Y.Z` (= the `version:` of mobile/pubspec.yaml, checked) or by hand:
+#                     the checks once, then for Plazo AND Plazo Pro: signed AAB + APK (Android) and signed
+#                     IPA (iOS), all four with the SAME version and build number; then every AAB goes to
+#                     Google Play (internal track) and every IPA to App Store Connect (TestFlight), each
+#                     upload attempted even when another failed, the build red if any did (last step).
+# The store uploads are done by the Codemagic CLI tools (google-play, app-store-connect) from scripts, not by a
+# `publishing:` block: a block publishes the artifacts of one app only, and would upload twice if kept.
 #
 # Build number = Codemagic build counter + 100 (the counter only grows), and never below the last build already
-# on the store of the workflow.
+# on any of the four store listings (two Google Play packages, two TestFlight apps).
 #
 # ── To set up once (detail: mobile/publier-sur-les-stores.md) ─────────────────────────────────────
 #   Add the app to the existing team (the one of Thempo), from GitHub, with codemagic.yaml; check that
 #   pushes and tags reach it (app → Webhooks).
-#   Team › Code signing identities: Android keystore « plazo_upload » (Plazo's own); iOS provisioning
-#   profiles of the two bundle ids, made in the Apple portal with the team's existing Apple Distribution
-#   certificate, then « Fetch profiles ».
+#   Team › Code signing identities:
+#     Android keystore « plazo_upload » (Plazo's own, both apps);
+#     iOS certificate of the team (reference « thempo-distribution », as seen on 09/10/2026);
+#     iOS provisioning profiles « plazo_app_store » (com.benfordtech.parkingApp) and « plazo_pro_app_store »
+#     (com.benfordtech.parkingApp.pro), App Store profiles made in the Apple portal with that certificate,
+#     then fetched or uploaded under exactly these reference names. The release workflow needs the three
+#     before its first run: without one of them, Codemagic stops at « Set up code signing » before building.
 #   App › Environment variables, group « mobile_secrets »:
 #     GOOGLE_PLAY_SERVICE_ACCOUNT_CREDENTIALS = JSON key of the Google Cloud service account that already
 #                                               publishes Thempo, given access to both Plazo apps in Play
@@ -41,8 +46,9 @@
 #     API_BASE_URL / SITE_URL                 = optional (https://www.plazo.fr/api is the app's default)
 #     STRIPE_MERCHANT_ID                      = optional, Apple Pay merchant id, only once the Apple Pay
 #                                               entitlement is in ios/Runner/Runner.entitlements
-#   The first upload of each app to Google Play is done by hand in the Play Console, with the .aab of a
-#   first run of its Android workflow (Artifacts); that run ends red at publishing ("Package not found").
+#   The first upload of each app to Google Play is done by hand in the Play Console, with the .aab of the
+#   first run of mobile-release (Artifacts); on that run the Google Play step of that app ends in error
+#   ("Package not found"), the TestFlight uploads still happen, and the build ends red on purpose.
 # ────────────────────────────────────────────────────────────────────────────────────────────────
 
 # ── Shared pieces (YAML anchors) ───────────────────────────────────────────────────────────────
@@ -61,59 +67,7 @@ definitions:
       - $FLUTTER_ROOT/.pub-cache
       - $HOME/Library/Caches/CocoaPods
 
-  triggering_release: &triggering_release
-    events:
-      - tag
-    tag_patterns:
-      - pattern: 'mobile-v*'
-        include: true
-    cancel_previous_builds: true
-
   scripts:
-    - &android_key_properties
-      name: key.properties depuis la clé d'import (Code signing identities)
-      # android_signing exposes CM_KEYSTORE_PATH / CM_KEYSTORE_PASSWORD / CM_KEY_ALIAS / CM_KEY_PASSWORD;
-      # android/app/build.gradle.kts reads this file.
-      script: |
-        set -e
-        [ -n "$CM_KEYSTORE_PATH" ] && [ -s "$CM_KEYSTORE_PATH" ] \
-          || { echo "ERREUR: clé d'import « plazo_upload » absente de Team › Code signing identities › Android"; exit 1; }
-        cat > "$CM_BUILD_DIR/mobile/android/key.properties" <<EOF
-        storeFile=$CM_KEYSTORE_PATH
-        storePassword=$CM_KEYSTORE_PASSWORD
-        keyAlias=$CM_KEY_ALIAS
-        keyPassword=$CM_KEY_PASSWORD
-        EOF
-        echo "Clé d'import prête"
-    - &compute_version
-      name: Calculer la version (jamais en dessous du store)
-      script: |
-        set -e
-        VERSION_NAME=$(grep '^version:' pubspec.yaml | sed 's/version: *//; s/+.*//')
-        # A tag names the version it publishes: mobile-v1.2.0 must match `version: 1.2.0+…` in pubspec.yaml.
-        if [ -n "$CM_TAG" ] && [ "$CM_TAG" != "mobile-v$VERSION_NAME" ]; then
-          echo "ERREUR: le tag $CM_TAG ne correspond pas à la version $VERSION_NAME de pubspec.yaml"; exit 1
-        fi
-        NEXT=$((PROJECT_BUILD_NUMBER + 100))
-        # Never reuse a build number the store already knows (a re-run, a build made elsewhere).
-        PLAY=0
-        [ -n "$ANDROID_APPLICATION_ID" ] && PLAY=$(google-play get-latest-build-number --package-name "$ANDROID_APPLICATION_ID" 2>/dev/null || echo 0)
-        TF=0
-        [ -n "$APP_STORE_APP_ID" ] && [ "$APP_STORE_APP_ID" != "0" ] && TF=$(app-store-connect get-latest-testflight-build-number "$APP_STORE_APP_ID" 2>/dev/null || echo 0)
-        for LAST in "$PLAY" "$TF"; do
-          case "$LAST" in ''|*[!0-9]*) LAST=0 ;; esac
-          [ "$LAST" -ge "$NEXT" ] && NEXT=$((LAST + 1))
-        done
-        echo "Version: $VERSION_NAME ($NEXT) — Google Play $PLAY, TestFlight $TF"
-        echo "NEXT=$NEXT" >> "$CM_ENV"
-        echo "VERSION_NAME=$VERSION_NAME" >> "$CM_ENV"
-        # Build-time settings (never secrets: they ship in the app).
-        [ -n "$ONESIGNAL_APP_ID" ] || echo "ATTENTION: pas d'app OneSignal pour $FLAVOR, les notifications de cette version seront coupées"
-        DEFINES="--dart-define=APP_FLAVOR=$FLAVOR --dart-define=ONESIGNAL_APP_ID=$ONESIGNAL_APP_ID"
-        [ -n "$API_BASE_URL" ] && DEFINES="$DEFINES --dart-define=API_BASE_URL=$API_BASE_URL"
-        [ -n "$SITE_URL" ] && DEFINES="$DEFINES --dart-define=SITE_URL=$SITE_URL"
-        [ -n "$STRIPE_MERCHANT_ID" ] && DEFINES="$DEFINES --dart-define=STRIPE_MERCHANT_ID=$STRIPE_MERCHANT_ID"
-        echo "DEFINES=$DEFINES" >> "$CM_ENV"
     - &flutter_packages
       name: Flutter packages
       script: flutter pub get
@@ -124,67 +78,6 @@ definitions:
         dart run tool/sync_product.dart --check
         flutter analyze
         flutter test
-    - &build_android
-      name: Android — App Bundle (Play) + APK (release, signés, versionnés)
-      script: |
-        set -e
-        flutter build appbundle --release --flavor "$FLAVOR" --build-number="$NEXT" $DEFINES
-        flutter build apk --release --flavor "$FLAVOR" --build-number="$NEXT" $DEFINES
-        mv "build/app/outputs/bundle/${FLAVOR}Release/app-$FLAVOR-release.aab" "build/app/outputs/bundle/${FLAVOR}Release/$APP_SLUG-v$VERSION_NAME-$NEXT.aab"
-        mv "build/app/outputs/flutter-apk/app-$FLAVOR-release.apk" "build/app/outputs/flutter-apk/$APP_SLUG-v$VERSION_NAME-$NEXT.apk"
-    - &ios_profiles
-      name: Profils de signature dans le projet Xcode
-      # ios_signing has put the team's certificate and the App Store profile of the bundle id in the keychain;
-      # the App ID needs Push Notifications (both apps) and Associated Domains (Plazo only).
-      script: xcode-project use-profiles
-    - &build_ios
-      name: iOS — IPA signé (release, versionné)
-      script: |
-        set -e
-        flutter build ipa --release --flavor "$FLAVOR" --build-number="$NEXT" $DEFINES \
-          --export-options-plist=/Users/builder/export_options.plist
-        mv build/ios/ipa/*.ipa "build/ios/ipa/$APP_SLUG-v$VERSION_NAME-$NEXT.ipa"
-
-  android_scripts: &android_scripts
-    - *android_key_properties
-    - *compute_version
-    - *flutter_packages
-    - *checks
-    - *build_android
-
-  ios_scripts: &ios_scripts
-    - *compute_version
-    - *flutter_packages
-    - *checks
-    - *ios_profiles
-    - *build_ios
-
-  android_artifacts: &android_artifacts
-    - build/app/outputs/bundle/*/*.aab
-    - build/app/outputs/flutter-apk/*.apk
-    - build/app/outputs/mapping/*/mapping.txt
-
-  ios_artifacts: &ios_artifacts
-    - build/ios/ipa/*.ipa
-    - $HOME/Library/Developer/Xcode/DerivedData/**/Build/**/*.dSYM
-
-  # Only when every step passed. Each store receives a test version (Google Play internal track, TestFlight);
-  # promotion to production stays a human decision in each console.
-  google_play_publishing: &google_play_publishing
-    google_play:
-      credentials: $GOOGLE_PLAY_SERVICE_ACCOUNT_CREDENTIALS
-      track: internal
-      # true until each app has been published once on Google Play (the API refuses a live release
-      # before that); then false so the internal release goes live to the testers by itself.
-      submit_as_draft: true
-
-  testflight_publishing: &testflight_publishing
-    app_store_connect:
-      auth: integration
-      # Internal testers get every build. No beta review for external testers yet: it needs its own test
-      # information and a reviewer account, and stalled Thempo; turn it on with beta_groups for the client's staff.
-      submit_to_testflight: false
-      submit_to_app_store: false
 
 # ── Workflows ──────────────────────────────────────────────────────────────────────────────────
 workflows:
@@ -208,111 +101,210 @@ workflows:
     artifacts:
       - build/app/outputs/flutter-apk/*.apk
 
-  plazo-android-release:
-    name: Plazo (voyageurs) — Google Play, tests internes
+  mobile-release:
+    name: Plazo + Plazo Pro — APK, AAB, IPA → Google Play (tests internes) + TestFlight
     instance_type: mac_mini_m2
-    max_build_duration: 60
+    # Two Android apps (~12 min each with the cache) and two iOS apps (~20 min each), checks once.
+    max_build_duration: 120
     working_directory: mobile
+    integrations:
+      # Team › Integrations › Developer Portal: the App Store Connect API key of the Apple team (shared with
+      # LoveNest and Thempo). Gives the app-store-connect tool its APP_STORE_CONNECT_* variables.
+      app_store_connect: lovenest-asc
     environment:
       <<: *env_versions
       android_signing:
         # Team › Code signing identities › Android keystores: Plazo's upload key (both apps).
         - plazo_upload
+      ios_signing:
+        # Team › Code signing identities: the team's certificate and the App Store profile of EACH bundle id,
+        # by reference name (an automatic `bundle_identifier` only takes one app per workflow).
+        certificates:
+          - thempo-distribution
+        provisioning_profiles:
+          - plazo_app_store
+          - plazo_pro_app_store
       groups:
         - mobile_secrets
       vars:
-        FLAVOR: traveller
-        APP_SLUG: plazo
-        # Identifier of the traveller app (android/app/build.gradle.kts).
-        ANDROID_APPLICATION_ID: com.benfordtech.parking_app
-        # OneSignal app of Plazo (public, the same as ONESIGNAL_TRAVELLER_APP_ID on Vercel).
-        ONESIGNAL_APP_ID: dd3c2a74-a7b0-4117-ba18-ab5a1edfe0a3
+        # Identifiers of the two apps (android/app/build.gradle.kts, ios/Runner.xcodeproj).
+        ANDROID_APPLICATION_ID_PLAZO: com.benfordtech.parking_app
+        ANDROID_APPLICATION_ID_PLAZO_PRO: com.benfordtech.parking_app.pro
+        IOS_BUNDLE_ID_PLAZO: com.benfordtech.parkingApp
+        IOS_BUNDLE_ID_PLAZO_PRO: com.benfordtech.parkingApp.pro
+        # OneSignal apps (public, the same as ONESIGNAL_TRAVELLER_APP_ID / ONESIGNAL_APP_ID on Vercel).
+        ONESIGNAL_APP_ID_PLAZO: dd3c2a74-a7b0-4117-ba18-ab5a1edfe0a3
+        ONESIGNAL_APP_ID_PLAZO_PRO: 89a1124f-3ba0-481e-b9f1-545d254e435d
+        # PLACEHOLDERS: numeric Apple ID of each app in App Store Connect (App Information → Apple ID),
+        # used only to read the last TestFlight build number ("0" = not read).
+        APP_STORE_APP_ID_PLAZO: "0"
+        APP_STORE_APP_ID_PLAZO_PRO: "0"
+        # Google Play: internal track; "true" until each app has been published once (the API refuses a
+        # live release before that), then "false" so the internal release goes live to the testers by itself.
+        PLAY_TRACK: internal
+        PLAY_SUBMIT_AS_DRAFT: "true"
+        # TestFlight: internal testers get every build. Names of beta groups, separated by commas, to also
+        # submit the builds to Apple's beta review for external testers (needs the test information filled
+        # in; stalled Thempo). Empty = no beta review.
+        TESTFLIGHT_BETA_GROUPS: ""
         # R8 runs out of heap on Codemagic machines (org.gradle.jvmargs is ignored there).
         JAVA_TOOL_OPTIONS: "-Xmx5g"
     cache: *cache
-    triggering: *triggering_release
-    scripts: *android_scripts
-    artifacts: *android_artifacts
-    publishing: *google_play_publishing
-
-  plazo-ios-release:
-    name: Plazo (voyageurs) — TestFlight
-    instance_type: mac_mini_m2
-    max_build_duration: 90
-    working_directory: mobile
-    integrations:
-      # Team › Integrations › Developer Portal: the App Store Connect API key of the Apple team (shared with
-      # LoveNest and Thempo). Signs with the team's certificate and publishes.
-      app_store_connect: lovenest-asc
-    environment:
-      <<: *env_versions
-      ios_signing:
-        distribution_type: app_store
-        bundle_identifier: com.benfordtech.parkingApp
-      groups:
-        - mobile_secrets
-      vars:
-        FLAVOR: traveller
-        APP_SLUG: plazo
-        # OneSignal app of Plazo (public, the same as ONESIGNAL_TRAVELLER_APP_ID on Vercel).
-        ONESIGNAL_APP_ID: dd3c2a74-a7b0-4117-ba18-ab5a1edfe0a3
-        # PLACEHOLDER: numeric Apple ID of the app in App Store Connect (App Information → Apple ID),
-        # used only to read the last TestFlight build number ("0" = not read).
-        APP_STORE_APP_ID: "0"
-    cache: *cache
-    triggering: *triggering_release
-    scripts: *ios_scripts
-    artifacts: *ios_artifacts
-    publishing: *testflight_publishing
-
-  plazo-pro-android-release:
-    name: Plazo Pro (personnel) — Google Play, tests internes
-    instance_type: mac_mini_m2
-    max_build_duration: 60
-    working_directory: mobile
-    environment:
-      <<: *env_versions
-      android_signing:
-        - plazo_upload
-      groups:
-        - mobile_secrets
-      vars:
-        FLAVOR: pro
-        APP_SLUG: plazo-pro
-        # Identifier of the staff app (flavor pro).
-        ANDROID_APPLICATION_ID: com.benfordtech.parking_app.pro
-        # OneSignal app of Plazo Pro (public, the same as ONESIGNAL_APP_ID on Vercel).
-        ONESIGNAL_APP_ID: 89a1124f-3ba0-481e-b9f1-545d254e435d
-        JAVA_TOOL_OPTIONS: "-Xmx5g"
-    cache: *cache
-    triggering: *triggering_release
-    scripts: *android_scripts
-    artifacts: *android_artifacts
-    publishing: *google_play_publishing
-
-  plazo-pro-ios-release:
-    name: Plazo Pro (personnel) — TestFlight
-    instance_type: mac_mini_m2
-    max_build_duration: 90
-    working_directory: mobile
-    integrations:
-      app_store_connect: lovenest-asc
-    environment:
-      <<: *env_versions
-      ios_signing:
-        distribution_type: app_store
-        bundle_identifier: com.benfordtech.parkingApp.pro
-      groups:
-        - mobile_secrets
-      vars:
-        FLAVOR: pro
-        APP_SLUG: plazo-pro
-        # OneSignal app of Plazo Pro (public, the same as ONESIGNAL_APP_ID on Vercel).
-        ONESIGNAL_APP_ID: 89a1124f-3ba0-481e-b9f1-545d254e435d
-        # PLACEHOLDER: numeric Apple ID of Plazo Pro in App Store Connect.
-        APP_STORE_APP_ID: "0"
-    cache: *cache
-    triggering: *triggering_release
-    scripts: *ios_scripts
-    artifacts: *ios_artifacts
-    publishing: *testflight_publishing
+    triggering:
+      events:
+        - tag
+      tag_patterns:
+        - pattern: 'mobile-v*'
+          include: true
+      cancel_previous_builds: true
+    scripts:
+      - name: key.properties depuis la clé d'import (Code signing identities)
+        # android_signing exposes CM_KEYSTORE_PATH / CM_KEYSTORE_PASSWORD / CM_KEY_ALIAS / CM_KEY_PASSWORD;
+        # android/app/build.gradle.kts reads this file.
+        script: |
+          set -e
+          [ -n "$CM_KEYSTORE_PATH" ] && [ -s "$CM_KEYSTORE_PATH" ] \
+            || { echo "ERREUR: clé d'import « plazo_upload » absente de Team › Code signing identities › Android"; exit 1; }
+          cat > "$CM_BUILD_DIR/mobile/android/key.properties" <<EOF
+          storeFile=$CM_KEYSTORE_PATH
+          storePassword=$CM_KEYSTORE_PASSWORD
+          keyAlias=$CM_KEY_ALIAS
+          keyPassword=$CM_KEY_PASSWORD
+          EOF
+          echo "Clé d'import prête"
+      - name: Calculer la version (une pour les quatre paquets, jamais en dessous d'un store)
+        script: |
+          set -e
+          VERSION_NAME=$(grep '^version:' pubspec.yaml | sed 's/version: *//; s/+.*//')
+          # A tag names the version it publishes: mobile-v1.2.0 must match `version: 1.2.0+…` in pubspec.yaml.
+          if [ -n "$CM_TAG" ] && [ "$CM_TAG" != "mobile-v$VERSION_NAME" ]; then
+            echo "ERREUR: le tag $CM_TAG ne correspond pas à la version $VERSION_NAME de pubspec.yaml"; exit 1
+          fi
+          NEXT=$((PROJECT_BUILD_NUMBER + 100))
+          # Never reuse a build number a store already knows (a re-run, a build made elsewhere): the same
+          # number serves the four packages, so it goes above the last build of each of the four listings.
+          number() { case "$1" in ''|*[!0-9]*) echo 0 ;; *) echo "$1" ;; esac; }
+          latest_play() { google-play get-latest-build-number --package-name "$1" 2>/dev/null || echo 0; }
+          latest_testflight() { [ "$1" = "0" ] && echo 0 || app-store-connect get-latest-testflight-build-number "$1" 2>/dev/null || echo 0; }
+          PLAY_PLAZO=$(number "$(latest_play "$ANDROID_APPLICATION_ID_PLAZO")")
+          PLAY_PRO=$(number "$(latest_play "$ANDROID_APPLICATION_ID_PLAZO_PRO")")
+          TF_PLAZO=$(number "$(latest_testflight "$APP_STORE_APP_ID_PLAZO")")
+          TF_PRO=$(number "$(latest_testflight "$APP_STORE_APP_ID_PLAZO_PRO")")
+          for LAST in "$PLAY_PLAZO" "$PLAY_PRO" "$TF_PLAZO" "$TF_PRO"; do
+            [ "$LAST" -ge "$NEXT" ] && NEXT=$((LAST + 1))
+          done
+          echo "Version: $VERSION_NAME ($NEXT) — Google Play $PLAY_PLAZO / $PLAY_PRO, TestFlight $TF_PLAZO / $TF_PRO"
+          echo "NEXT=$NEXT" >> "$CM_ENV"
+          echo "VERSION_NAME=$VERSION_NAME" >> "$CM_ENV"
+          # Build-time settings shared by the two apps (never secrets: they ship in the app).
+          COMMON_DEFINES=""
+          add_define() { COMMON_DEFINES="${COMMON_DEFINES:+$COMMON_DEFINES }--dart-define=$1=$2"; }
+          [ -n "$API_BASE_URL" ] && add_define API_BASE_URL "$API_BASE_URL"
+          [ -n "$SITE_URL" ] && add_define SITE_URL "$SITE_URL"
+          [ -n "$STRIPE_MERCHANT_ID" ] && add_define STRIPE_MERCHANT_ID "$STRIPE_MERCHANT_ID"
+          echo "COMMON_DEFINES=$COMMON_DEFINES" >> "$CM_ENV"
+          : > "$CM_BUILD_DIR/publish-status.txt"
+      - *flutter_packages
+      - *checks
+      - name: Android — AAB (Play) + APK des deux apps (release, signés, versionnés)
+        script: |
+          set -e
+          for FLAVOR in traveller pro; do
+            case "$FLAVOR" in
+              traveller) SLUG=plazo; ONESIGNAL="$ONESIGNAL_APP_ID_PLAZO" ;;
+              pro) SLUG=plazo-pro; ONESIGNAL="$ONESIGNAL_APP_ID_PLAZO_PRO" ;;
+            esac
+            [ -n "$ONESIGNAL" ] || echo "ATTENTION: pas d'app OneSignal pour $FLAVOR, les notifications de cette version seront coupées"
+            DEFINES="--dart-define=APP_FLAVOR=$FLAVOR --dart-define=ONESIGNAL_APP_ID=$ONESIGNAL $COMMON_DEFINES"
+            echo "── $SLUG (Android, $VERSION_NAME+$NEXT)"
+            flutter build appbundle --release --flavor "$FLAVOR" --build-number="$NEXT" $DEFINES
+            flutter build apk --release --flavor "$FLAVOR" --build-number="$NEXT" $DEFINES
+            mv "build/app/outputs/bundle/${FLAVOR}Release/app-$FLAVOR-release.aab" "build/app/outputs/bundle/${FLAVOR}Release/$SLUG-v$VERSION_NAME-$NEXT.aab"
+            mv "build/app/outputs/flutter-apk/app-$FLAVOR-release.apk" "build/app/outputs/flutter-apk/$SLUG-v$VERSION_NAME-$NEXT.apk"
+          done
+          ls -1 build/app/outputs/bundle/*/*.aab build/app/outputs/flutter-apk/*.apk
+      - name: Profils de signature dans le projet Xcode (les deux apps)
+        # ios_signing has put the team's certificate and the two App Store profiles in the keychain; the App
+        # ID of each needs Push Notifications (both apps) and Associated Domains (Plazo only). One export
+        # options plist per app: each keeps only the profile of its own bundle id.
+        script: |
+          set -e
+          xcode-project use-profiles
+          PLIST="$HOME/export_options.plist"
+          for BID in "$IOS_BUNDLE_ID_PLAZO" "$IOS_BUNDLE_ID_PLAZO_PRO"; do
+            /usr/libexec/PlistBuddy -c "Print :provisioningProfiles:$BID" "$PLIST" >/dev/null 2>&1 \
+              || { echo "ERREUR: aucun profil App Store pour $BID dans Team › Code signing identities (plazo_app_store / plazo_pro_app_store)"; exit 1; }
+          done
+          cp "$PLIST" "$HOME/export_options_traveller.plist"
+          /usr/libexec/PlistBuddy -c "Delete :provisioningProfiles:$IOS_BUNDLE_ID_PLAZO_PRO" "$HOME/export_options_traveller.plist"
+          cp "$PLIST" "$HOME/export_options_pro.plist"
+          /usr/libexec/PlistBuddy -c "Delete :provisioningProfiles:$IOS_BUNDLE_ID_PLAZO" "$HOME/export_options_pro.plist"
+      - name: iOS — IPA des deux apps (release, signés, versionnés)
+        script: |
+          set -e
+          mkdir -p build/ios/dsym
+          for FLAVOR in traveller pro; do
+            case "$FLAVOR" in
+              traveller) SLUG=plazo; ONESIGNAL="$ONESIGNAL_APP_ID_PLAZO" ;;
+              pro) SLUG=plazo-pro; ONESIGNAL="$ONESIGNAL_APP_ID_PLAZO_PRO" ;;
+            esac
+            DEFINES="--dart-define=APP_FLAVOR=$FLAVOR --dart-define=ONESIGNAL_APP_ID=$ONESIGNAL $COMMON_DEFINES"
+            echo "── $SLUG (iOS, $VERSION_NAME+$NEXT)"
+            flutter build ipa --release --flavor "$FLAVOR" --build-number="$NEXT" $DEFINES \
+              --export-options-plist="$HOME/export_options_$FLAVOR.plist"
+            # The IPA just exported is the one not yet named after its app.
+            for IPA in build/ios/ipa/*.ipa; do
+              case "$IPA" in *"-v$VERSION_NAME-$NEXT.ipa") ;; *) mv "$IPA" "build/ios/ipa/$SLUG-v$VERSION_NAME-$NEXT.ipa" ;; esac
+            done
+            # The archive's debug symbols, kept per app (the next archive overwrites this one).
+            cp -R build/ios/archive/*.xcarchive/dSYMs "build/ios/dsym/$SLUG-v$VERSION_NAME-$NEXT"
+          done
+          ls -1 build/ios/ipa/*.ipa
+      - name: Google Play — envoi des deux AAB (tests internes)
+        # Every AAB is sent even when one fails; the last step turns the build red if any did.
+        ignore_failure: true
+        script: |
+          DRAFT_FLAG=""
+          [ "$PLAY_SUBMIT_AS_DRAFT" = "true" ] && DRAFT_FLAG="--draft"
+          for AAB in build/app/outputs/bundle/*/*.aab; do
+            NAME=$(basename "$AAB" .aab)
+            if google-play bundles publish --bundle "$AAB" --track "$PLAY_TRACK" --release-name "$VERSION_NAME ($NEXT)" $DRAFT_FLAG; then
+              echo "OK  Google Play  $NAME" >> "$CM_BUILD_DIR/publish-status.txt"
+            else
+              echo "KO  Google Play  $NAME" >> "$CM_BUILD_DIR/publish-status.txt"
+            fi
+          done
+      - name: App Store Connect — envoi des deux IPA (TestFlight)
+        ignore_failure: true
+        script: |
+          FLAGS=""
+          if [ -n "$TESTFLIGHT_BETA_GROUPS" ]; then
+            FLAGS="--testflight"
+            IFS=','; for GROUP in $TESTFLIGHT_BETA_GROUPS; do FLAGS="$FLAGS --beta-group \"$(echo "$GROUP" | sed 's/^ *//; s/ *$//')\""; done; unset IFS
+          else
+            # No beta review: nothing to wait for once Apple has the file.
+            FLAGS="--max-build-processing-wait 0"
+          fi
+          for IPA in build/ios/ipa/*.ipa; do
+            NAME=$(basename "$IPA" .ipa)
+            if eval app-store-connect publish --path "\"$IPA\"" $FLAGS; then
+              echo "OK  TestFlight   $NAME" >> "$CM_BUILD_DIR/publish-status.txt"
+            else
+              echo "KO  TestFlight   $NAME" >> "$CM_BUILD_DIR/publish-status.txt"
+            fi
+          done
+      - name: Bilan de la publication
+        script: |
+          echo "Version $VERSION_NAME ($NEXT)"
+          cat "$CM_BUILD_DIR/publish-status.txt"
+          if grep -q '^KO' "$CM_BUILD_DIR/publish-status.txt"; then
+            echo "ERREUR: un envoi a échoué (voir ci-dessus) ; les paquets restent dans Artifacts"
+            exit 1
+          fi
+          [ -s "$CM_BUILD_DIR/publish-status.txt" ] || { echo "ERREUR: aucun envoi tenté"; exit 1; }
+    artifacts:
+      - build/app/outputs/bundle/*/*.aab
+      - build/app/outputs/flutter-apk/*.apk
+      - build/app/outputs/mapping/*/mapping.txt
+      - build/ios/ipa/*.ipa
+      - build/ios/dsym/*/*.dSYM

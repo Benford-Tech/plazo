@@ -640,11 +640,16 @@ Le nom du produit doit rester dans UN seul fichier de configuration (il peut enc
   Thempo et signe comme lui (intégration Developer Portal `lovenest-asc` de l'équipe Apple Benford Tech `3BX4795V2Y` ;
   `ios_signing` avec le certificat Apple Distribution déjà téléversé, Apple n'en acceptant que 3 ; `android_signing` avec la
   clé d'import propre à Plazo `plazo_upload`, jamais de base64 collé ; compte Google Play Benford Tech et compte de service de
-  Thempo) ; quatre workflows un par store et par app, `plazo-android-release`, `plazo-ios-release`,
-  `plazo-pro-android-release`, `plazo-pro-ios-release` (tag `mobile-vX.Y.Z` = `version:` de `pubspec.yaml`, sinon arrêt, ou
-  manuel : AAB signé → Google Play tests internes, IPA signé → TestFlight testeurs internes ; numéro de build = compteur
-  Codemagic + 100, jamais sous le dernier du store ; App ID OneSignal dans le fichier, `GOOGLE_PLAY_SERVICE_ACCOUNT_CREDENTIALS`
-  seul secret du groupe `mobile_secrets`) ; `mobile-check` à la main seulement, les vérifications de chaque modification
+  Thempo) ; **un seul workflow `mobile-release` (11/10/2026, « unifie le pipeline »)** à la place des quatre d'avant (un par
+  store et par app) : tag `mobile-vX.Y.Z` (= `version:` de `pubspec.yaml`, sinon arrêt) ou manuel ; vérifications une fois,
+  puis pour chaque flavor AAB + APK signés et IPA signé, les quatre paquets sous la même version et le même numéro de build
+  (compteur Codemagic + 100, jamais sous le dernier des quatre stores) ; `ios_signing` par Reference name (certificat
+  `thempo-distribution`, profils `plazo_app_store` et `plazo_pro_app_store`, un `bundle_identifier` automatique ne prenant
+  qu'une app), `xcode-project use-profiles` puis un export options plist par app (PlistBuddy) ; envois par les outils en ligne
+  de commande (`google-play bundles publish --track $PLAY_TRACK [--draft]` par AAB, `app-store-connect publish` par IPA,
+  `TESTFLIGHT_BETA_GROUPS` pour la relecture bêta), chacun tenté (`ignore_failure`), « Bilan de la publication » en erreur si
+  l'un a échoué ; plus de bloc `publishing:` (il n'envoie qu'une app et doublerait l'envoi) ; App ID OneSignal dans le fichier,
+  `GOOGLE_PLAY_SERVICE_ACCOUNT_CREDENTIALS` seul secret du groupe `mobile_secrets`) ; `mobile-check` à la main seulement, les vérifications de chaque modification
   tournant sur GitHub Actions (`mobile-ci.yml`, gratuit, les minutes de l'équipe étant payantes) ; marche à suivre
   `mobile/publier-sur-les-stores.md`. Le nom iOS vit dans
   `APP_DISPLAY_NAME` des configurations Xcode (mis à jour par `sync_product.dart`) ; Google Pay suit la clé Stripe servie
