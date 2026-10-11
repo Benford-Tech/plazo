@@ -12,17 +12,17 @@ export function CancelForm({ action, confirmText = fr.manage.cancelConfirmText }
   return (
     <div className="flex flex-col gap-2">
       {state.error && (
-        <p role="alert" className="text-sm font-semibold text-danger">
+        <p role="alert" className="text-[13.5px] leading-snug font-semibold text-danger">
           {errorMessage(state.error)}
         </p>
       )}
       <details className="group">
-        <summary className="flex h-12 list-none items-center justify-center rounded-full border border-danger bg-white text-[15px] font-bold text-danger [&::-webkit-details-marker]:hidden">
+        <summary className="flex min-h-12 list-none items-center justify-center rounded-full border border-danger-line bg-white px-5 text-[15px] font-bold text-danger hover:border-danger group-open:border-danger group-open:bg-danger-bg [&::-webkit-details-marker]:hidden">
           {fr.manage.cancelButton}
         </summary>
-        <form action={formAction} className="mt-2.5 flex flex-col gap-2.5 rounded-[14px] bg-danger-bg p-3">
-          <p className="text-sm">{confirmText}</p>
-          <button type="submit" disabled={pending} className="h-12 rounded-full bg-danger text-[15px] font-bold text-white disabled:opacity-60">
+        <form action={formAction} className="mt-2.5 flex flex-col gap-3 rounded-field border border-danger-line bg-danger-bg p-3.5">
+          <p className="text-sm leading-relaxed text-ink">{confirmText}</p>
+          <button type="submit" disabled={pending} className="min-h-12 cursor-pointer rounded-full bg-danger px-5 text-[15px] font-bold text-white hover:bg-danger/90 disabled:cursor-progress disabled:opacity-60">
             {pending ? fr.manage.cancelling : fr.manage.cancelConfirm}
           </button>
         </form>

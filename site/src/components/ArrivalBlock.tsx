@@ -160,52 +160,58 @@ export function ArrivalBlock({ reference, token, initial = null }: { reference: 
   const kind = moment.kind;
   const meeting = meetingLabel(data.meetingPoint, kind);
 
-  const notice = (text: string, tone: "plain" | "error" = "plain") => (
-    <p role={tone === "error" ? "alert" : undefined} className={`rounded-[16px] px-3.5 py-3 text-sm ${tone === "error" ? "bg-danger-bg text-danger" : "bg-tint text-ink"}`}>
-      {text}
+  const notice = (text: string, tone: "plain" | "error" | "ok" = "plain") => (
+    <p
+      role={tone === "error" ? "alert" : undefined}
+      className={`flex items-start gap-2 rounded-field px-3.5 py-3 text-sm leading-snug ${tone === "error" ? "border border-danger-line bg-danger-bg text-danger" : "bg-tint text-ink"}`}
+    >
+      {tone === "ok" && <CheckIcon className="mt-0.5 size-4 text-ok" />}
+      <span>{text}</span>
     </p>
   );
   const done = (title: string, text: string) => (
-    <div data-testid="arrival-done" className="flex flex-col gap-1.5 rounded-[18px] border-[1.6px] border-peach bg-white px-4 py-3.5">
-      <b className="flex items-center gap-2 text-base">
-        <span aria-hidden="true" className="text-peach">
-          ✓
-        </span>
-        {title}
-      </b>
-      <p className="text-sm text-soft">{text}</p>
+    <div data-testid="arrival-done" className="flex items-start gap-3 rounded-field bg-ok-bg px-4 py-3.5">
+      <CheckBadge />
+      <div className="min-w-0">
+        <b className="block text-[15px] leading-snug">{title}</b>
+        <p className="mt-0.5 text-sm leading-snug text-ink/75">{text}</p>
+      </div>
     </div>
   );
   const announced = signal?.state === "announced" && (
-    <div data-testid="arrival-announced" className="flex flex-wrap items-center gap-3 rounded-[18px] border-[1.6px] border-peach bg-white px-4 py-3.5 text-[14.5px]">
-      <span aria-hidden="true" className="text-peach">
-        ✓
-      </span>
-      <span className="min-w-0 flex-1">
+    <div data-testid="arrival-announced" className="flex items-start gap-3 rounded-field bg-ok-bg py-3 pr-2 pl-4 text-[14.5px] leading-snug">
+      <CheckBadge />
+      <span className="min-w-0 flex-1 pt-0.5">
         {(kind === "outbound" ? t.announcedText : t.announcedReturnText)(signal.announcedMinutes ?? signal.etaMinutes ?? 0, signal.etaAt ? hhmm(signal.etaAt) : "")}
-        {signal.note && <span className="block text-soft">{t.noteSent(signal.note)}</span>}
+        {signal.note && <span className="mt-0.5 block text-ink/75">{t.noteSent(signal.note)}</span>}
       </span>
-      <button type="button" disabled={busy} onClick={() => stop(kind)} className="text-sm font-semibold text-accent underline-offset-2 hover:underline">
+      <button type="button" disabled={busy} onClick={() => stop(kind)} className="link -my-1.5 inline-flex min-h-11 flex-none items-center px-2 text-sm">
         {t.cancelAnnounce}
       </button>
     </div>
   );
   const noteField = (
-    <label className="flex flex-col gap-1 text-sm text-soft">
+    <label className="flex flex-col gap-1.5 text-[12.5px] font-bold text-soft">
       {t.noteLabel}
-      <input type="text" value={note} onChange={e => setNote(e.target.value)} maxLength={200} placeholder={t.notePlaceholder} className="field h-11" />
+      <input type="text" value={note} onChange={e => setNote(e.target.value)} maxLength={200} placeholder={t.notePlaceholder} className="field font-medium" />
     </label>
   );
   const sentNote = signal?.note ? <p className="text-sm text-soft">{t.noteSent(signal.note)}</p> : null;
+  const explain = (title: string, text: React.ReactNode) => (
+    <div>
+      <b className="block text-[15px] leading-snug">{title}</b>
+      <p className="mt-1 text-sm leading-relaxed text-soft">{text}</p>
+    </div>
+  );
   const announceChips = (label: (m: number) => string) => (
     <>
-      <button type="button" onClick={() => setShowAnnounce(v => !v)} className="btn-secondary h-12 text-[15px]" aria-expanded={showAnnounce}>
+      <button type="button" onClick={() => setShowAnnounce(v => !v)} className="btn-secondary min-h-12 px-5 text-[15px]" aria-expanded={showAnnounce}>
         {t.announceToggle}
       </button>
       {showAnnounce && (
         <div className="flex flex-wrap justify-center gap-2">
           {data.rules.announceMinutes.map(m => (
-            <button key={m} type="button" disabled={busy} onClick={() => announce(kind, m)} className="h-10 rounded-full border border-accent bg-white px-4 text-sm font-semibold text-dark hover:bg-tint">
+            <button key={m} type="button" disabled={busy} onClick={() => announce(kind, m)} className="chip-toggle">
               {label(m)}
             </button>
           ))}
@@ -222,30 +228,27 @@ export function ArrivalBlock({ reference, token, initial = null }: { reference: 
       const left = Math.max(0, Math.round((new Date(signal.expiresAt).getTime() - now) / 1000));
       body = (
         <div data-testid="arrival-sharing" className="flex flex-col gap-3">
-          <p className="flex items-center gap-2 text-base font-extrabold text-accent">
-            <span aria-hidden="true" className="relative flex size-2.5">
-              <span className="absolute inline-flex size-full animate-ping rounded-full bg-accent opacity-60 motion-reduce:hidden" />
-              <span className="relative inline-flex size-2.5 rounded-full bg-accent" />
-            </span>
+          <p className="flex items-center gap-2.5 text-[15px] font-extrabold">
+            <span aria-hidden="true" className="live-dot" />
             {t.live}
           </p>
-          <div className="flex items-center justify-between gap-3 rounded-[18px] bg-white px-4 py-3.5 shadow-[0_10px_24px_-14px_rgba(0,0,0,.3)]">
+          <div className="flex items-center justify-between gap-3 rounded-field border border-line-soft px-4 py-3.5">
             <div>
-              <div className="text-sm">{t.etaLabel}</div>
+              <div className="eyebrow">{t.etaLabel}</div>
               <div data-testid="arrival-eta" className="text-[28px] leading-tight font-extrabold tabular-nums">
                 {signal.etaMinutes === null ? t.etaUnknown : t.etaMinutes(signal.etaMinutes)}
               </div>
             </div>
-            <div className="text-right text-sm text-soft">
+            <div className="text-right text-sm font-medium text-soft tabular-nums">
               {signal.distanceM !== null && <div>{signal.distanceM < 1000 ? `${signal.distanceM} m` : `${(signal.distanceM / 1000).toFixed(1).replace(".", ",")} km`}</div>}
               {signal.etaAt && <div>{t.arrivalAround(hhmm(signal.etaAt))}</div>}
               {signal.etaMinutes === null && <div>{t.waitingPosition}</div>}
             </div>
           </div>
-          {notice(`✓ ${t.notified}`)}
+          {notice(t.notified, "ok")}
           {sentNote}
-          <p className="text-sm text-soft">{t.autoStop(durationLabel(left))}</p>
-          <button type="button" disabled={busy} onClick={() => stop("outbound")} className="btn-secondary h-12 text-[15px]">
+          <p className="text-[13px] text-soft">{t.autoStop(durationLabel(left))}</p>
+          <button type="button" disabled={busy} onClick={() => stop("outbound")} className="btn-secondary min-h-12 px-5 text-[15px]">
             {t.stop}
           </button>
         </div>
@@ -257,20 +260,20 @@ export function ArrivalBlock({ reference, token, initial = null }: { reference: 
         <>
           {announced}
           {signal?.state === "ended" && notice(signal.endReason === "expired" ? t.endedExpired : t.endedStopped)}
-          <div className="rounded-[18px] bg-white px-4 py-3.5 shadow-[0_10px_24px_-14px_rgba(0,0,0,.3)]">
-            <b>{t.explainTitle}</b>
-            <p className="mt-1.5 text-sm text-soft">
+          {explain(
+            t.explainTitle,
+            <>
               {t.explainBefore}
               <b className="text-ink">{t.explainOnly}</b>
               {t.explainAfter}
-            </p>
-          </div>
+            </>,
+          )}
           {noteField}
-          <button type="button" disabled={busy} onClick={share} className="btn-primary h-[52px] text-base">
+          <button type="button" disabled={busy} onClick={share} className="btn-primary min-h-[52px] px-6 text-base">
             {busy ? t.sharing : t.share}
           </button>
           {announceChips(t.announceIn)}
-          <p className="text-sm text-soft">{t.stopAnytime}</p>
+          <p className="text-center text-[13px] text-soft">{t.stopAnytime}</p>
         </>
       );
     }
@@ -280,16 +283,13 @@ export function ArrivalBlock({ reference, token, initial = null }: { reference: 
     body = (
       <>
         {announced}
-        <div className="rounded-[18px] bg-white px-4 py-3.5 shadow-[0_10px_24px_-14px_rgba(0,0,0,.3)]">
-          <b>{t.returnExplainTitle}</b>
-          <p className="mt-1.5 text-sm text-soft">{t.returnExplain(meeting)}</p>
-        </div>
+        {explain(t.returnExplainTitle, t.returnExplain(meeting))}
         {noteField}
-        <button type="button" disabled={busy} onClick={atMeetingPoint} className="btn-primary h-[52px] text-base">
+        <button type="button" disabled={busy} onClick={atMeetingPoint} className="btn-primary min-h-[52px] px-6 text-base">
           {t.atPoint}
         </button>
-        <label className="flex items-start gap-2.5 text-sm text-soft">
-          <input type="checkbox" checked={withPosition} onChange={e => setWithPosition(e.target.checked)} className="mt-0.5 size-4 accent-accent" />
+        <label className="flex min-h-11 cursor-pointer items-center gap-3 text-sm leading-snug text-soft">
+          <input type="checkbox" checked={withPosition} onChange={e => setWithPosition(e.target.checked)} className="size-5 flex-none cursor-pointer accent-dark" />
           {t.withPosition}
         </label>
         {announceChips(t.returnAnnounceIn)}
@@ -298,7 +298,7 @@ export function ArrivalBlock({ reference, token, initial = null }: { reference: 
   }
 
   return (
-    <section aria-labelledby="prevenir" data-testid="arrival-block" className="card flex flex-col gap-3 p-4 md:p-[22px]">
+    <section aria-labelledby="prevenir" data-testid="arrival-block" className="card flex flex-col gap-3.5 p-4 md:p-6">
       <h2 id="prevenir" className="text-base font-extrabold">
         {t.title}
       </h2>
@@ -306,5 +306,23 @@ export function ArrivalBlock({ reference, token, initial = null }: { reference: 
       {problem && notice(problem === "denied" ? t.locationDenied : t.locationUnavailable)}
       {error && notice(error, "error")}
     </section>
+  );
+}
+
+/** Small stroked check mark (replaces the « ✓ » glyph). */
+function CheckIcon({ className = "" }: { className?: string }) {
+  return (
+    <svg aria-hidden="true" viewBox="0 0 24 24" className={`flex-none ${className}`} fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M5 12.5l4.5 4.5L19 7" />
+    </svg>
+  );
+}
+
+/** The check in a sage disc: a done or announced signal (replaces the peach « ✓ »). */
+function CheckBadge() {
+  return (
+    <span aria-hidden="true" className="mt-px flex size-6 flex-none items-center justify-center rounded-full bg-ok text-white">
+      <CheckIcon className="size-3.5" />
+    </span>
   );
 }

@@ -155,9 +155,9 @@ export default async function ResultsPage({ params, searchParams }: PageProps<"/
   return (
     <>
       <details className="group mx-auto w-full max-w-[1280px] px-4 pt-4 md:px-12 md:pt-6">
-        <summary className="card grid list-none grid-cols-[minmax(0,1fr)_auto] items-center gap-x-2 pt-1 pr-2 pb-3 pl-4 transition-colors hover:border-soft md:flex md:items-center md:gap-x-4 md:py-1.5 md:pr-3 md:pl-5 [&::-webkit-details-marker]:hidden">
+        <summary className="card grid list-none grid-cols-[minmax(0,1fr)_auto] items-center gap-x-2 pt-1 pr-2 pb-3 pl-4 transition-colors hover:border-soft md:pr-3 md:pl-5 lg:flex lg:gap-x-4 lg:py-1.5 [&::-webkit-details-marker]:hidden">
           <span className="min-w-0 text-[15px] font-bold md:text-base">{airport.name}</span>
-          <span className="col-span-2 row-start-2 -mt-1 text-[13px] font-semibold text-soft md:mt-0 md:text-sm">
+          <span className="col-span-2 row-start-2 -mt-1 text-[13px] font-semibold text-soft md:text-sm lg:mt-0">
             <span className="whitespace-nowrap">
               <StayMoment local={arrivee} /> →
             </span>{" "}
@@ -165,7 +165,7 @@ export default async function ResultsPage({ params, searchParams }: PageProps<"/
               <StayMoment local={retour} /> · {daysLabel(days)}
             </span>
           </span>
-          <span className="link flex min-h-11 flex-none items-center gap-1.5 px-2 text-[13.5px] group-hover:underline md:ml-auto">
+          <span className="link flex min-h-11 flex-none items-center gap-1.5 px-2 text-[13.5px] group-hover:underline lg:ml-auto">
             {fr.search.modify}
             <svg aria-hidden="true" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="transition-transform group-open:rotate-180 motion-reduce:transition-none">
               <path d="m6 9 6 6 6-6" />
@@ -181,7 +181,7 @@ export default async function ResultsPage({ params, searchParams }: PageProps<"/
         className={`mx-auto grid w-full max-w-[1280px] flex-1 content-start gap-x-6 gap-y-4 px-4 pt-4 pb-8 md:px-12 md:pt-6 md:pb-10 ${
           map
             ? "grid-cols-1 [grid-template-areas:'filters'_'head'_'map'_'list'] lg:grid-cols-[minmax(0,1fr)_minmax(0,1.15fr)] lg:grid-rows-[auto_auto_1fr] lg:gap-x-8 lg:[grid-template-areas:'filters_map'_'head_map'_'list_map']"
-            : "grid-cols-1 md:grid-cols-[264px_minmax(0,1fr)] md:grid-rows-[auto_1fr] md:gap-x-9 md:gap-y-5"
+            : "grid-cols-1 md:grid-cols-[248px_minmax(0,1fr)] md:grid-rows-[auto_1fr] md:gap-x-7 md:gap-y-5 lg:grid-cols-[264px_minmax(0,1fr)] lg:gap-x-9"
         }`}
       >
         <div className={`group/filters min-w-0 ${map ? "[grid-area:filters]" : "md:row-span-2"}`}>
@@ -307,7 +307,7 @@ export default async function ResultsPage({ params, searchParams }: PageProps<"/
           </h1>
           <div className="flex flex-wrap items-center gap-x-3 gap-y-2">
             <nav aria-label={fr.results.sort} className="flex flex-wrap items-center gap-1.5">
-              <span className="eyebrow mr-1 max-sm:sr-only">{fr.results.sort}</span>
+              <span className={`eyebrow mr-1 max-sm:sr-only ${map ? "" : "md:max-lg:sr-only"}`}>{fr.results.sort}</span>
               {SORT_KEYS.map(key => (
                 <Link
                   key={key}

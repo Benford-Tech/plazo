@@ -47,7 +47,7 @@ describe("ReturnLive", () => {
       shuttle: { tripId: "t1", direction: "pickup" as const, mine: true, startedAt: lands, vehicle: { model: "Vito", colour: "blanc", plate: null }, driverFirstName: "Karim", position: null, positionAgeSeconds: 5, distanceM: 2100, etaMinutes: 4, etaAt: new Date(now + 250 * 1000).toISOString() },
     };
     const s = ringState(shuttle, now);
-    expect(s).toMatchObject({ kicker: "navette dans", big: "04:10", sub: "à 2,1 km de vous", tone: "peach" });
+    expect(s).toMatchObject({ kicker: "navette dans", big: "04:10", sub: "à 2,1 km de vous", tone: "ok" });
     expect(stepOf(shuttle)).toBe("shuttle");
   });
 

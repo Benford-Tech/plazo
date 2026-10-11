@@ -10,7 +10,7 @@ import { StayShuttles } from "@/components/StayShuttles";
 import { StatusBadge } from "@/components/StatusBadge";
 import { api, ApiError } from "@/lib/api";
 import { cancelAction, changeFlightAction, lookupAction } from "@/lib/actions";
-import { formatDateTime, formatDateTimeAt, param } from "@/lib/dates";
+import { formatDay, formatDateTimeAt, param, parseLocal } from "@/lib/dates";
 import { paymentHref } from "@/lib/forms";
 import { fr, texts } from "@/lib/fr";
 import { directionsUrl } from "@/lib/listing";
@@ -31,10 +31,45 @@ export const metadata: Metadata = {
 
 function Row({ label, children }: { label: string; children: React.ReactNode }) {
   return (
-    <div className="flex items-center justify-between gap-3 border-b border-line py-2.5 text-[15px]">
+    <div className="flex items-center justify-between gap-3 py-3 text-[15px]">
       <dt className="text-soft">{label}</dt>
       <dd className="text-right font-semibold">{children}</dd>
     </div>
+  );
+}
+
+/** "jeu. 8 oct. · 06:30", the hour in JetBrains Mono (Boutique: hours only). */
+function DateTime({ local }: { local: string }) {
+  const parsed = parseLocal(local);
+  if (!parsed) return <>{local}</>;
+  return (
+    <>
+      {formatDay(parsed.date)} · <span className="font-hour">{parsed.time}</span>
+    </>
+  );
+}
+
+/** Small stroked check mark (replaces the « ✓ » glyph). */
+function CheckIcon({ className = "" }: { className?: string }) {
+  return (
+    <svg aria-hidden="true" viewBox="0 0 24 24" className={`flex-none ${className}`} fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M5 12.5l4.5 4.5L19 7" />
+    </svg>
+  );
+}
+
+/** The lookup form under a title on the ivory ground (lookup page, unknown booking). */
+function LookupShell({ title, lead, reference }: { title: string; lead: string; reference: string }) {
+  return (
+    <main className="mx-auto flex w-full max-w-[560px] flex-col gap-5 px-4 pt-7 pb-12 md:pt-14 md:pb-20">
+      <div className="flex flex-col gap-2">
+        <h1 className="font-title text-[30px] leading-[1.1] md:text-[40px]">{title}</h1>
+        <p className="text-[15px] leading-snug font-medium text-soft">{lead}</p>
+      </div>
+      <div className="card p-4 md:p-6">
+        <LookupForm action={lookupAction} reference={reference} />
+      </div>
+    </main>
   );
 }
 
@@ -53,15 +88,7 @@ export default async function ManageBookingPage({ params, searchParams }: PagePr
   }
 
   if (!booking) {
-    return (
-      <main className="mx-auto flex w-full max-w-[560px] flex-col gap-4 px-4 py-6 md:py-12">
-        <section className="flex flex-col gap-2.5 rounded-[22px] bg-white p-4 md:p-6">
-          <h1 className="font-title text-2xl md:text-[30px]">{fr.manage.notFoundTitle}</h1>
-          <p className="text-sm leading-snug text-soft">{fr.manage.notFoundText}</p>
-          <LookupForm action={lookupAction} reference={reference.toUpperCase()} />
-        </section>
-      </main>
-    );
+    return <LookupShell title={fr.manage.notFoundTitle} lead={fr.manage.notFoundText} reference={reference.toUpperCase()} />;
   }
 
   const b = booking;
@@ -74,13 +101,13 @@ export default async function ManageBookingPage({ params, searchParams }: PagePr
   if (b.status === "pending_payment") {
     // Paid on Stripe, not confirmed yet (the API asks Stripe on every read): check again shortly.
     return (
-      <main className="mx-auto flex w-full max-w-[560px] flex-col gap-4 px-4 py-8 md:py-12">
+      <main className="mx-auto flex w-full max-w-[560px] flex-col gap-4 px-4 pt-7 pb-12 md:pt-14 md:pb-20">
         <meta httpEquiv="refresh" content="3" />
-        <section role="status" className="flex flex-col items-start gap-3 rounded-[22px] bg-white p-5 md:p-6">
-          <span aria-hidden="true" className="size-8 animate-spin rounded-full border-[3px] border-lilac border-t-accent" />
-          <h1 className="font-title text-[26px] md:text-[30px]">{fr.pay.verifyingTitle}</h1>
-          <p className="text-soft">{fr.pay.verifyingText}</p>
-          <a href={`${manageHrefFor(b.reference)}?paiement=retour`} className="btn-secondary h-11 px-5 text-[15px]">
+        <section role="status" className="card flex flex-col items-start gap-3 p-5 md:p-7">
+          <span aria-hidden="true" className="size-8 animate-spin rounded-full border-[3px] border-tint border-t-accent motion-reduce:animate-none" />
+          <h1 className="font-title text-[26px] leading-[1.15] md:text-[32px]">{fr.pay.verifyingTitle}</h1>
+          <p className="text-[15px] leading-snug text-soft">{fr.pay.verifyingText}</p>
+          <a href={`${manageHrefFor(b.reference)}?paiement=retour`} className="btn-secondary min-h-11 px-5 text-[15px]">
             {fr.pay.refresh}
           </a>
         </section>
@@ -136,58 +163,76 @@ export default async function ManageBookingPage({ params, searchParams }: PagePr
   return (
     <>
       {confirmed ? (
-        <section className="on-dark mx-auto w-full max-w-[720px] px-4 pt-6">
-          <div className="flex flex-col gap-2.5 rounded-[22px] bg-hero px-5 pt-5 pb-6 text-white shadow-[0_18px_40px_-18px_rgba(255,102,0,.5)]">
-            <span aria-hidden="true" className="flex size-12 items-center justify-center rounded-full bg-white/20 text-2xl">
-              ✓
+        <section className="on-dark mx-auto w-full max-w-[720px] px-4 pt-6 md:pt-10">
+          {/* Boutique: the confirmation hero is espresso (bg-hero), the check in a sage disc, the reference on white. */}
+          <div className="flex flex-col gap-3 rounded-card bg-hero px-5 pt-5 pb-5 text-white md:px-7 md:pt-7 md:pb-7">
+            <span aria-hidden="true" className="flex size-11 items-center justify-center rounded-full bg-ok text-white">
+              <CheckIcon className="size-6" />
             </span>
-            <h1 className="font-title text-[32px] leading-tight md:text-[40px]">{fr.manage.confirmedTitle(greetingName(b))}</h1>
-            <p className="text-[15px] text-lilac">{fr.manage.confirmedText(b.customerEmail, isFrenchMobile(b.customerPhone) ? formatPhone(b.customerPhone) : null)}</p>
-            <div className="mt-1.5 flex items-center justify-between rounded-[22px] bg-white px-3.5 py-3 text-ink">
-              <span className="text-[13px] text-soft">{fr.manage.reference}</span>
-              <b className="text-2xl tracking-[.08em]">{b.reference}</b>
+            <h1 className="font-title text-[30px] leading-[1.1] md:text-[40px]">{fr.manage.confirmedTitle(greetingName(b))}</h1>
+            <p className="text-[15px] leading-snug text-lilac/80">{fr.manage.confirmedText(b.customerEmail, isFrenchMobile(b.customerPhone) ? formatPhone(b.customerPhone) : null)}</p>
+            <div className="mt-1 flex items-center justify-between gap-3 rounded-field bg-white px-4 py-3 text-ink">
+              <span className="eyebrow">{fr.manage.reference}</span>
+              <b className="text-[22px] font-extrabold tracking-[.1em]">{b.reference}</b>
             </div>
           </div>
         </section>
       ) : (
-        <div className="mx-auto w-full max-w-[720px] px-4 pt-6">
-          <h1 className="font-title text-[28px] md:text-[34px]">{fr.manage.title}</h1>
+        <div className="mx-auto w-full max-w-[720px] px-4 pt-6 md:pt-10">
+          <div className="flex flex-wrap items-center justify-between gap-x-3 gap-y-2">
+            <h1 className="font-title text-[30px] leading-[1.1] md:text-[40px]">{fr.manage.title}</h1>
+            <StatusBadge status={b.status} />
+          </div>
+          <p className="mt-2 text-[13.5px] leading-snug font-semibold text-soft">
+            <span className="text-ink">{b.parking.title}</span> · {fr.manage.reference}{" "}
+            <span className="font-extrabold tracking-[.08em] text-ink">{b.reference}</span>
+            {active && (
+              <>
+                {" "}
+                · {fr.manage.pickUp} {formatDay(b.returnAt.slice(0, 10))}
+              </>
+            )}
+          </p>
         </div>
       )}
 
-      <main className="mx-auto flex w-full max-w-[720px] flex-col gap-[18px] px-4 py-[18px] md:pb-12">
+      <main className="mx-auto flex w-full max-w-[720px] flex-col gap-4 px-4 pt-5 pb-12 md:gap-5 md:pb-20">
         {onSite && <ReturnLive reference={b.reference} token={token} initial={returnState} />}
         {/* D (06/10/2026): the app's day-J gestures on the site — the blocks hide themselves outside their window. */}
         {active && <ArrivalBlock reference={b.reference} token={token} />}
         {active && <StayShuttles reference={b.reference} token={token} />}
         {b.status === "cancelled" && (
-          <p role="status" className="rounded-[22px] bg-danger-bg p-4 font-semibold text-danger">
+          <p role="status" className="rounded-card border border-danger-line bg-danger-bg p-4 leading-snug font-semibold text-danger">
             {justCancelled ? (refunded ? t.manage.cancelledNow : fr.manage.cancelledNow) : refunded ? fr.manage.cancelledRefunded : fr.manage.cancelled}
           </p>
         )}
 
-        <section aria-labelledby="recap" className="card px-4 py-4 md:px-[22px]">
+        <section aria-labelledby="recap" className="card px-4 pt-4 pb-3 md:px-6 md:pt-5">
           <div className="flex items-center justify-between gap-3">
-            <h2 id="recap" className="font-title text-[21px]">
+            <h2 id="recap" className="font-title text-[21px] leading-tight md:text-[23px]">
               {b.parking.title}
             </h2>
-            <StatusBadge status={b.status} />
+            {/* Outside the confirmation, the status sits next to the page title. */}
+            {confirmed && <StatusBadge status={b.status} />}
           </div>
-          <dl className="mt-1.5">
-            {!confirmed && <Row label={fr.manage.reference}>{b.reference}</Row>}
-            <Row label={fr.manage.dropOff}>{formatDateTime(b.arrivalAt)}</Row>
-            <Row label={fr.manage.pickUp}>{formatDateTime(b.returnAt)}</Row>
+          <dl className="mt-1.5 divide-y divide-line-soft">
+            <Row label={fr.manage.dropOff}>
+              <DateTime local={b.arrivalAt} />
+            </Row>
+            <Row label={fr.manage.pickUp}>
+              <DateTime local={b.returnAt} />
+            </Row>
             {b.departureFlight && (
               <Row label={fr.manage.outbound}>
                 {b.departureFlight}
                 {b.outbound?.status && <span className="font-normal text-soft"> · {fr.manage.outboundStatus[b.outbound.status] ?? b.outbound.status}</span>}
-                {b.outbound?.shuttleAt && <span className="block font-normal text-soft">{fr.manage.outboundShuttle(b.outbound.shuttleAt.slice(11, 16))}</span>}
+                {b.outbound?.shuttleAt && <span className="block text-[13.5px] font-normal text-soft">{fr.manage.outboundShuttle(b.outbound.shuttleAt.slice(11, 16))}</span>}
               </Row>
             )}
             <Row label={fr.manage.flight}>{b.returnFlight ?? <span className="font-normal text-soft">{fr.manage.noFlight}</span>}</Row>
             <Row label={fr.manage.vehicle}>
               <Plate plate={b.plate} size="sm" />
-              {(b.vehicle?.model || b.vehicle?.colour) && <span className="block font-normal text-soft">{fr.manage.vehicleDetails(b.vehicle.model, b.vehicle.colour)}</span>}
+              {(b.vehicle?.model || b.vehicle?.colour) && <span className="mt-1 block text-[13.5px] font-normal text-soft">{fr.manage.vehicleDetails(b.vehicle.model, b.vehicle.colour)}</span>}
             </Row>
             {b.customerNote && (
               <Row label={fr.manage.message}>
@@ -197,31 +242,32 @@ export default async function ManageBookingPage({ params, searchParams }: PagePr
             <Row label={fr.manage.passengers}>{b.passengers}</Row>
             {total && (
               <Row label={totalLabel}>
-                {b.status === "cancelled" && !refunded ? <s className="font-normal text-soft">{total}</s> : total}
+                {b.status === "cancelled" && !refunded ? <s className="font-normal text-soft">{total}</s> : <span className="font-extrabold tabular-nums">{total}</span>}
               </Row>
             )}
           </dl>
           {b.status === "upcoming" && (
-            <p className={`mt-2.5 text-[13px] font-semibold ${until ? "text-ok" : "text-soft"}`}>
-              {until ? fr.manage.freeUntil(until) : fr.manage.nonRefundable}
+            <p className={`flex items-start gap-1.5 border-t border-line-soft pt-3 pb-1 text-[13.5px] leading-snug font-semibold ${until ? "text-ok" : "text-danger"}`}>
+              {until && <CheckIcon className="mt-0.5 size-4" />}
+              <span>{until ? fr.manage.freeUntil(until) : fr.manage.nonRefundable}</span>
             </p>
           )}
         </section>
 
         {b.status === "upcoming" && (
-          <section aria-labelledby="jour-j" className="flex flex-col gap-3.5">
-            <h2 id="jour-j" className="font-title text-[21px]">
+          <section aria-labelledby="jour-j" className="flex flex-col gap-3">
+            <h2 id="jour-j" className="font-title text-[22px] leading-tight md:text-[24px]">
               {fr.manage.dayTitle}
             </h2>
-            <ol className="flex flex-col gap-3.5">
+            <ol className="card divide-y divide-line-soft">
               {steps.map(([title, text], i) => (
-                <li key={title} className="grid grid-cols-[30px_1fr] gap-2.5">
-                  <span aria-hidden="true" className="flex size-7 items-center justify-center rounded-full bg-tint font-bold text-accent">
+                <li key={title} className="grid grid-cols-[28px_1fr] gap-3 p-4 md:px-6">
+                  <span aria-hidden="true" className="flex size-7 items-center justify-center rounded-full bg-tint text-[13px] font-extrabold text-ink">
                     {i + 1}
                   </span>
                   <div>
-                    <b>{title}</b>
-                    <p className="mt-0.5 text-sm leading-normal text-soft">{text}</p>
+                    <b className="text-[15px] leading-snug">{title}</b>
+                    <p className="mt-0.5 text-sm leading-relaxed text-soft">{text}</p>
                   </div>
                 </li>
               ))}
@@ -230,17 +276,23 @@ export default async function ManageBookingPage({ params, searchParams }: PagePr
         )}
 
         {active && (
-          <div className="flex flex-col gap-2.5">
-            <a href={directionsUrl(destination)} target="_blank" rel="noopener noreferrer" className="btn-primary h-[52px] text-base">
+          <div className="flex flex-col gap-2.5 md:flex-row">
+            {/* One orange button per screen: on the return day the live blocks carry it, the route to the parking is secondary. */}
+            <a
+              href={directionsUrl(destination)}
+              target="_blank"
+              rel="noopener noreferrer"
+              className={`${onSite ? "btn-secondary" : "btn-primary"} min-h-[52px] px-6 text-center text-base md:min-h-12 md:flex-1 md:text-[15px]`}
+            >
               {fr.manage.itinerary}
               <span className="sr-only"> {fr.a11y.opensNewTab}</span>
             </a>
-            <div className="flex gap-2.5">
-              <a href={calendarHref} className="btn-secondary h-12 flex-1 px-2 text-[15px]">
+            <div className="flex flex-col gap-2.5 sm:flex-row md:contents">
+              <a href={calendarHref} className="btn-secondary min-h-12 flex-1 px-4 text-center text-[15px]">
                 {fr.manage.addToCalendar}
               </a>
               {confirmed && (
-                <a href="#gerer" className="btn-secondary h-12 flex-1 px-2 text-[15px]">
+                <a href="#gerer" className="btn-secondary min-h-12 flex-1 px-4 text-center text-[15px]">
                   {fr.manage.manageLink}
                 </a>
               )}
@@ -248,32 +300,32 @@ export default async function ManageBookingPage({ params, searchParams }: PagePr
           </div>
         )}
 
-        <div id="gerer" className="flex scroll-mt-4 flex-col gap-4">
+        <div id="gerer" className="flex scroll-mt-4 flex-col gap-4 md:gap-5">
           {active && (
-            <section aria-labelledby="vol" className="flex flex-col gap-2.5 card px-4 py-3.5">
-              <h2 id="vol" className="text-base font-bold">
+            <section aria-labelledby="vol" className="card flex flex-col gap-3 p-4 md:p-6">
+              <h2 id="vol" className="text-base font-extrabold">
                 {fr.manage.flightTitle}
               </h2>
               {b.canEditFlight ? (
                 <FlightForm action={changeFlightAction.bind(null, b.reference)} flight={b.returnFlight} outbound={b.departureFlight} />
               ) : (
-                <p className="text-sm text-soft">{fr.manage.flightLocked}</p>
+                <p className="text-sm leading-snug text-soft">{fr.manage.flightLocked}</p>
               )}
             </section>
           )}
 
           {b.status === "upcoming" && (
-            <section aria-labelledby="annuler" className="flex flex-col gap-2 rounded-[22px] border border-danger-line px-4 py-3.5">
-              <h2 id="annuler" className="text-base font-bold">
+            <section aria-labelledby="annuler" className="card flex flex-col gap-2.5 border-danger-line p-4 md:p-6">
+              <h2 id="annuler" className="text-base font-extrabold">
                 {fr.manage.cancelTitle}
               </h2>
               {b.canCancel && until ? (
                 <>
-                  <p className="text-sm leading-normal">{t.manage.cancelText(until)}</p>
+                  <p className="text-sm leading-relaxed">{t.manage.cancelText(until)}</p>
                   <CancelForm action={cancelAction.bind(null, b.reference)} confirmText={t.manage.cancelConfirmText} />
                 </>
               ) : (
-                <p className="text-sm leading-normal">
+                <p className="text-sm leading-relaxed">
                   {until ? fr.manage.cancelClosed(until) : fr.manage.cancelNonRefundable}
                   {contactParking}
                 </p>
@@ -282,10 +334,10 @@ export default async function ManageBookingPage({ params, searchParams }: PagePr
           )}
         </div>
 
-        {b.status === "upcoming" && b.canCancel && until && <p className="text-center text-[13px] text-soft">{fr.manage.changeDates(until)}</p>}
+        {b.status === "upcoming" && b.canCancel && until && <p className="text-center text-[13px] leading-snug text-soft">{fr.manage.changeDates(until)}</p>}
 
         {active && phoneLink && (
-          <p className="text-center text-[13px] text-soft">
+          <p className="text-center text-[13px] leading-snug text-soft">
             {fr.manage.dayQuestion(b.parking.title)} {phoneLink}
           </p>
         )}

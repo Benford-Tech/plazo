@@ -70,7 +70,7 @@ describe("payment step (step 2)", () => {
     expect(screen.getByRole("button", { name: "Modifier" })).toBeInTheDocument();
     // Server-rendered time left: readable without JavaScript.
     expect(screen.getByText(/Votre place est réservée pendant/)).toHaveTextContent("Votre place est réservée pendant 29:45");
-    expect(screen.getByRole("button", { name: /^Payer 55,00\s€ ›$/ })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: /^Payer 55,00\s€$/ })).toBeInTheDocument();
     expect(screen.getByText("Vous allez être redirigé vers la page de paiement sécurisée Stripe.")).toBeInTheDocument();
   });
 

@@ -109,7 +109,7 @@ export function ResultCard({
             </>
           ) : (
             <div className={`flex flex-col items-start gap-1 ${wide ? "@2xl:items-end" : ""}`}>
-              <span className={`pill ${full ? "pill-danger" : ""}`}>{full ? fr.results.full : fr.results.noPrice}</span>
+              {full ? <span className="pill pill-danger">{fr.results.full}</span> : <span className="text-[14px] font-bold">{fr.results.noPrice}</span>}
               <span className="text-[12.5px] font-semibold text-soft">{full ? fr.results.fullHint : fr.results.noPriceHint}</span>
             </div>
           )}

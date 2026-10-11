@@ -1,30 +1,63 @@
 import Link from "next/link";
-import { Fragment } from "react";
 import { fr } from "@/lib/fr";
 import type { AirportGuide as Guide, GuidePart, GuideSection, GuideTable } from "@/lib/airport-guides";
 
-/** On phones a table stacks: each row a block, each cell under the name of its column. */
-const cell = "px-5 py-3 max-sm:block max-sm:py-1 max-sm:before:block max-sm:before:text-[12px] max-sm:before:font-bold max-sm:before:tracking-[.05em] max-sm:before:text-soft max-sm:before:uppercase max-sm:before:content-[attr(data-label)]";
+/*
+ * Boutique (11/10/2026): the long-form pages read like an editorial page. Playfair headings, the text held to a
+ * measure of about 65 characters, sections parted by a warm hairline, tables drawn with hairlines only and their
+ * source in a cream band, a numbered « Sur cette page » beside the text from lg up.
+ */
+
+/*
+ * Playfair Display draws old-style figures by default, which turns « P0 » into « Po »: every Playfair heading of the
+ * guides asks for lining figures (lining-nums).
+ */
+
+/** The reading measure of the running text (headings, paragraphs, lists): about 65 characters. */
+export const MEASURE = "max-w-[38rem]";
+
+/** Running text of a guide. */
+const PARAGRAPH = `${MEASURE} text-[16px] leading-[1.7] md:text-[17px]`;
+
+/** A stroked arrow at the end of a « go further » link, in place of the "→" glyph. */
+export function ArrowIcon({ size = 16 }: { size?: number }) {
+  return (
+    <svg aria-hidden="true" viewBox="0 0 24 24" width={size} height={size} className="flex-none" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
+      <path d="M5 12h14M13 6l6 6-6 6" />
+    </svg>
+  );
+}
+
+/**
+ * A cell of a guide table. From sm up, an ordinary cell between hairlines. On phones the table stacks: each row is a
+ * block, each cell a line with the name of its column (data-label, small capitals) on the left and its value beside it.
+ */
+const cell = [
+  "px-5 py-3.5",
+  "max-sm:flex max-sm:items-baseline max-sm:gap-3 max-sm:px-0 max-sm:py-1.5",
+  "max-sm:before:w-[42%] max-sm:before:flex-none max-sm:before:text-[10.5px] max-sm:before:leading-[1.35]",
+  "max-sm:before:font-bold max-sm:before:tracking-[.08em] max-sm:before:text-soft max-sm:before:uppercase max-sm:before:content-[attr(data-label)]",
+].join(" ");
 
 function Table({ table }: { table: GuideTable }) {
   return (
-    <div className="overflow-x-auto card">
-      <table className="w-full border-collapse text-[15px] max-sm:block">
-        <caption className="px-5 pt-4 pb-1.5 text-left font-extrabold max-sm:block">{table.caption}</caption>
+    <div className="card overflow-x-auto">
+      <table className="w-full border-collapse text-[15px] leading-snug tabular-nums max-sm:block">
+        <caption className="font-title px-5 lining-nums pt-5 pb-3 text-left text-[19px] leading-snug text-ink max-sm:block max-sm:px-4 max-sm:pt-4 max-sm:text-[18px]">{table.caption}</caption>
         <thead className="max-sm:hidden">
-          <tr className="text-left text-[13px] tracking-[.05em] text-soft uppercase">
-            <td className="px-5 py-2.5" />
+          <tr className="eyebrow border-b border-line text-left">
+            <td className="px-5 pt-1 pb-3" />
             {table.columns.map(column => (
-              <th key={column} scope="col" className="px-5 py-2.5 font-bold">
+              <th key={column} scope="col" className="px-5 pt-1 pb-3 align-bottom font-bold">
                 {column}
               </th>
             ))}
           </tr>
         </thead>
-        <tbody className="max-sm:block">
+        <tbody className="max-sm:block max-sm:border-t max-sm:border-line">
           {table.rows.map(([label, ...cells]) => (
-            <tr key={label} className="border-t border-line align-top max-sm:block max-sm:py-2">
-              <th scope="row" className="px-5 py-3 text-left font-bold whitespace-nowrap max-sm:block max-sm:pb-1">
+            <tr key={label} className="border-t border-line-soft align-top first:border-t-0 max-sm:block max-sm:px-4 max-sm:py-3">
+              <th scope="row" className="px-5 py-3.5 text-left font-bold whitespace-nowrap text-ink max-sm:block max-sm:px-0 max-sm:pt-0 max-sm:pb-1.5 max-sm:text-[15.5px] max-sm:whitespace-normal">
                 {label}
               </th>
               {cells.map((text, i) => (
@@ -36,7 +69,7 @@ function Table({ table }: { table: GuideTable }) {
           ))}
         </tbody>
       </table>
-      {table.note && <p className="px-5 pt-2 pb-4 text-[13px] leading-normal text-soft">{table.note}</p>}
+      {table.note && <p className="border-t border-line-soft bg-tint px-5 py-3 text-[13px] leading-normal text-soft max-sm:px-4">{table.note}</p>}
     </div>
   );
 }
@@ -46,15 +79,17 @@ function Body({ block }: { block: Pick<GuideSection, "paragraphs" | "table" | "l
   return (
     <>
       {block.paragraphs.map(text => (
-        <p key={text} className="leading-relaxed">
+        <p key={text} className={PARAGRAPH}>
           {text}
         </p>
       ))}
       {block.table && <Table table={block.table} />}
       {block.list && (
-        <ul className="flex list-disc flex-col gap-1.5 pl-5 leading-relaxed">
+        <ul className={`${PARAGRAPH} flex list-disc flex-col gap-2 pl-5 marker:text-mute`}>
           {block.list.map(item => (
-            <li key={item}>{item}</li>
+            <li key={item} className="pl-1">
+              {item}
+            </li>
           ))}
         </ul>
       )}
@@ -69,62 +104,89 @@ function Part({ part, level }: { part: GuidePart; level: Level }) {
   const H = level === 2 ? "h3" : "h4";
   return (
     <>
-      <H className="mt-2 text-[17px] font-extrabold">{part.title}</H>
+      <H className={`${MEASURE} mt-3 text-[17px] leading-snug font-extrabold text-ink md:text-[18px]`}>{part.title}</H>
       <Body block={part} />
     </>
   );
 }
 
-/** The « Sur cette page » list of a guide. */
+/** The « Sur cette page » list of a guide: numbered, parted by hairlines; two columns on tablets, one beside the text from lg up. */
 export function GuideToc({ sections, className = "" }: { sections: GuideSection[]; className?: string }) {
   return (
-    <nav aria-label={fr.guide.onThisPage} className={`flex flex-col gap-0.5 p-[22px] card ${className}`}>
-      <p className="mb-1.5 text-[13px] font-extrabold tracking-[.06em] text-soft uppercase">{fr.guide.onThisPage}</p>
-      {sections.map(section => (
-        <a key={section.id} href={`#${section.id}`} className="flex min-h-11 items-center font-semibold text-ink no-underline hover:underline md:min-h-9">
-          {section.short}
-        </a>
-      ))}
+    <nav aria-label={fr.guide.onThisPage} className={`card px-5 pt-5 pb-2 md:px-6 ${className}`}>
+      <p className="eyebrow mb-1.5">{fr.guide.onThisPage}</p>
+      <ol className="sm:columns-2 sm:gap-x-8 lg:columns-1">
+        {sections.map((section, i) => (
+          <li key={section.id} className="break-inside-avoid border-t border-line-soft first:border-t-0">
+            <a
+              href={`#${section.id}`}
+              className="flex min-h-11 items-baseline gap-3 py-2.5 text-[14.5px] leading-snug font-semibold text-ink no-underline hover:text-accent-dark lg:min-h-0 lg:py-2"
+            >
+              <span aria-hidden="true" className="w-5 flex-none text-[12px] font-bold text-soft tabular-nums">
+                {i + 1}
+              </span>
+              {section.short}
+            </a>
+          </li>
+        ))}
+      </ol>
     </nav>
   );
 }
 
-/** The sections of a guide, each with its anchor, body, sub-headings and « go further » link. */
+/** The sections of a guide, each with its anchor, body, sub-headings and « go further » link, parted by a hairline. */
 export function GuideSections({ sections, level }: { sections: GuideSection[]; level: Level }) {
   const H = level === 2 ? "h2" : "h3";
   return (
     <>
       {sections.map(section => (
-        <Fragment key={section.id}>
-          <H id={section.id} className={`mt-3 scroll-mt-4 font-extrabold ${level === 2 ? "text-[22px] md:text-[26px]" : "text-[20px] md:text-[22px]"}`}>
+        <div key={section.id} className="flex flex-col gap-4 border-t border-line pt-8 first:border-t-0 first:pt-0 md:pt-10">
+          <H id={section.id} className={`${MEASURE} font-title scroll-mt-6 leading-[1.15] lining-nums text-ink ${level === 2 ? "text-[26px] md:text-[32px]" : "text-[24px] md:text-[28px]"}`}>
             {section.title}
           </H>
           <Body block={section} />
           {section.parts?.map(part => <Part key={part.title} part={part} level={level} />)}
           {section.more && (
             <p>
-              <Link href={section.more.href} className="font-semibold">
-                {section.more.label} →
+              <Link href={section.more.href} className="link inline-flex min-h-11 items-center gap-1.5 text-[15px] md:min-h-0">
+                {section.more.label}
+                <ArrowIcon />
               </Link>
             </p>
           )}
-        </Fragment>
+        </div>
       ))}
     </>
   );
 }
 
-/** C-A (08/10/2026): the airport's guide under its partner parkings, with its "Sur cette page" list beside it. */
+/**
+ * The layout shared by the guides: the « Sur cette page » list, then the sections; from lg up the list stays beside
+ * the text while it scrolls.
+ */
+export function GuideBody({ sections, level }: { sections: GuideSection[]; level: Level }) {
+  return (
+    <div className="flex flex-col gap-8 lg:grid lg:grid-cols-[260px_minmax(0,1fr)] lg:items-start lg:gap-12">
+      <GuideToc sections={sections} className="lg:sticky lg:top-6 lg:max-h-[calc(100dvh-3rem)] lg:overflow-y-auto" />
+      <div className="flex min-w-0 flex-col gap-10 md:gap-12">
+        <GuideSections sections={sections} level={level} />
+      </div>
+    </div>
+  );
+}
+
+/** C-A (08/10/2026): the airport's guide under its partner parkings: its title and lead, then its sections beside « Sur cette page ». */
 export function AirportGuide({ guide }: { guide: Guide }) {
   return (
-    <section aria-labelledby="guide" className="flex flex-wrap items-start gap-6 md:gap-10">
-      <GuideToc sections={guide.sections} className="max-w-[340px] flex-[1_1_260px] md:sticky md:top-4" />
-      <article className="flex min-w-0 flex-[999_1_560px] flex-col gap-4">
-        <h2 id="guide" className="font-title text-[28px] leading-tight md:text-[36px]">
-          {guide.title}
-        </h2>
-        <p className="text-[17px] leading-relaxed">{guide.intro}</p>
-        <GuideSections sections={guide.sections} level={3} />
+    <section aria-labelledby="guide">
+      <article className="flex flex-col gap-8 md:gap-10">
+        <header className="flex flex-col gap-4">
+          <h2 id="guide" className="font-title max-w-[22em] lining-nums text-[28px] leading-[1.12] text-ink md:text-[38px]">
+            {guide.title}
+          </h2>
+          <p className={`${MEASURE} text-[17px] leading-[1.65] md:text-[18.5px]`}>{guide.intro}</p>
+        </header>
+        <GuideBody sections={guide.sections} level={3} />
       </article>
     </section>
   );
