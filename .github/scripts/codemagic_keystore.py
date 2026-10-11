@@ -7,7 +7,8 @@ base64-encoded, into the SECURE variables of the app's group « plazo_android_si
 CM_KEYSTORE_PASSWORD, CM_KEY_ALIAS, CM_KEY_PASSWORD), which codemagic.yaml decodes at build time.
 
 Environment:
-  CODEMAGIC_API_TOKEN  the token of a team member (Codemagic › Team settings › Integrations › Codemagic API)
+  CODEMAGIC_API_TOKEN  the token of the account holding the app (Codemagic › Teams › Personal account › Integrations ›
+                       Codemagic API; 11/10/2026: Joanny's personal account, no team)
   KEYSTORE_DIR         folder holding plazo-upload.jks and plazo-upload-password.txt
   REPLACE              "true" to overwrite a keystore already in the group (default: refuse)
   START_BUILD          "true" to queue WORKFLOW_ID on BRANCH afterwards (default: true)

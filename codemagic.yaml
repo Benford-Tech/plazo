@@ -1,10 +1,14 @@
 # Codemagic CI/CD — mobile apps: Plazo (flavor traveller) and Plazo Pro (flavor pro), one project.
 #
-# 09/10/2026: Plazo joins the Codemagic TEAM that already publishes Thempo, LoveNest and Yoon, and signs the
-# way Thempo does (Benford-Tech/tempo-app, codemagic.yaml, published on both stores from that team):
-#   - Apple: the team's Developer Portal integration « lovenest-asc » (App Store Connect API key of the
+# 09/10/2026: Plazo joins the Codemagic ACCOUNT that already publishes Thempo, LoveNest and Yoon, and signs the
+# way Thempo does (Benford-Tech/tempo-app, codemagic.yaml, published on both stores from that account).
+# 11/10/2026: that account is Joanny's PERSONAL Codemagic account, not a team (the API lists no team; its apps
+# are lovenest-frontend, tempo-app, yoon and plazo): 500 free Mac mini M2 minutes a month, ONE build at a
+# time, Linux and Windows only once billing is enabled (codemagic.io/billing/user), and Codemagic cancels a
+# build queued for 5 hours. Its settings live under Codemagic › Teams › Personal account.
+#   - Apple: the account's Developer Portal integration « lovenest-asc » (App Store Connect API key of the
 #     Apple team 3BX4795V2Y, Benford Tech) and the Apple Distribution certificate already uploaded in the
-#     team's Code signing identities (Apple allows 3 per account: never create one more for Plazo);
+#     account's Code signing identities (Apple allows 3 per account: never create one more for Plazo);
 #   - Android: Plazo's own upload keystore, created by the GitHub workflow « Android keystore (Plazo upload
 #     key) » (.github/workflows/android-keystore.yml, 11/10/2026: the key and its password never go through a
 #     conversation), which sends it through the Codemagic API (there is none for Code signing identities)
@@ -17,7 +21,7 @@
 #
 # The repository is a monorepo: Codemagic reads this file at the repository root and every workflow runs in
 # mobile/ (working_directory). The checks of every push run on GitHub Actions (.github/workflows/mobile-ci.yml,
-# free), not here: a team's Codemagic minutes are billed.
+# free), not here: the account's 500 free Codemagic minutes a month are kept for the store builds.
 #
 # 11/10/2026, « unifie le pipeline »: ONE release workflow builds the six packages of a version and sends them
 # to the stores, instead of four workflows (one per store and per app):
@@ -38,12 +42,12 @@
 # on any of the four store listings (two Google Play packages, two TestFlight apps).
 #
 # ── To set up once (detail: mobile/publier-sur-les-stores.md) ─────────────────────────────────────
-#   Add the app to the existing team (the one of Thempo), from GitHub, with codemagic.yaml; check that
-#   pushes and tags reach it (app → Webhooks).
+#   Add the app to the existing account (Teams › Personal account, the one of Thempo), from GitHub, with
+#   codemagic.yaml; check that pushes and tags reach it (app → Webhooks).
 #   App › Environment variables, group « plazo_android_signing » (written by the GitHub workflow, see above):
 #     CM_KEYSTORE, CM_KEYSTORE_PASSWORD, CM_KEY_ALIAS, CM_KEY_PASSWORD — Plazo's upload key, both apps.
-#   Team › Code signing identities:
-#     iOS certificate of the team (reference « thempo-distribution », as seen on 09/10/2026);
+#   Teams › Personal account › Code signing identities:
+#     iOS certificate of the account (reference « thempo-distribution », as seen on 09/10/2026);
 #     iOS provisioning profiles « plazo_app_store » (com.benfordtech.plazo) and « plazo_pro_app_store »
 #     (com.benfordtech.plazopro), App Store profiles made in the Apple portal with that certificate,
 #     then fetched or uploaded under exactly these reference names. mobile-release needs the certificate and
@@ -237,13 +241,13 @@ workflows:
     max_build_duration: 120
     working_directory: mobile
     integrations:
-      # Team › Integrations › Developer Portal: the App Store Connect API key of the Apple team (shared with
+      # Teams › Personal account › Integrations › Developer Portal: the App Store Connect API key of the Apple team (shared with
       # LoveNest and Thempo). Gives the app-store-connect tool its APP_STORE_CONNECT_* variables.
       app_store_connect: lovenest-asc
     environment:
       <<: *env_versions
       ios_signing:
-        # Team › Code signing identities: the team's certificate and the App Store profile of EACH bundle id,
+        # Teams › Personal account › Code signing identities: the account's certificate and the App Store profile of EACH bundle id,
         # by reference name (an automatic `bundle_identifier` only takes one app per workflow).
         certificates:
           - thempo-distribution
@@ -282,7 +286,7 @@ workflows:
       - *checks
       - *android_build
       - name: Profils de signature dans le projet Xcode (les deux apps)
-        # ios_signing has put the team's certificate and the two App Store profiles in the keychain; the App
+        # ios_signing has put the account's certificate and the two App Store profiles in the keychain; the App
         # ID of each needs Push Notifications (both apps) and Associated Domains (Plazo only). One export
         # options plist per app: each keeps only the profile of its own bundle id.
         script: |
@@ -291,7 +295,7 @@ workflows:
           PLIST="$HOME/export_options.plist"
           for BID in "$IOS_BUNDLE_ID_PLAZO" "$IOS_BUNDLE_ID_PLAZO_PRO"; do
             /usr/libexec/PlistBuddy -c "Print :provisioningProfiles:$BID" "$PLIST" >/dev/null 2>&1 \
-              || { echo "ERREUR: aucun profil App Store pour $BID dans Team › Code signing identities (plazo_app_store / plazo_pro_app_store)"; exit 1; }
+              || { echo "ERREUR: aucun profil App Store pour $BID dans Teams › Personal account › Code signing identities (plazo_app_store / plazo_pro_app_store)"; exit 1; }
           done
           cp "$PLIST" "$HOME/export_options_traveller.plist"
           /usr/libexec/PlistBuddy -c "Delete :provisioningProfiles:$IOS_BUNDLE_ID_PLAZO_PRO" "$HOME/export_options_traveller.plist"
@@ -348,7 +352,8 @@ workflows:
 
   mobile-release-android:
     name: Plazo + Plazo Pro — Android seul (APK, AAB) → Google Play (tests internes)
-    # Same machine as mobile-release: the team's Codemagic minutes and the shared cache already run there.
+    # Same machine as mobile-release: the only one the account's free minutes cover (Linux needs billing), and
+    # the shared cache already runs there.
     instance_type: mac_mini_m2
     # Two Android apps (~12 min each with the cache), checks once.
     max_build_duration: 60

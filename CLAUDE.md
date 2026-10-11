@@ -652,8 +652,10 @@ Le nom du produit doit rester dans UN seul fichier de configuration (il peut enc
   (`flutter_stripe`) ; architecture de `lovenest-frontend`
   (`lib/src/features/<x>/{data,domain,presentation}`, `di/`, `core/`), textes dans `assets/l10n/fr-FR.json`,
   nom du produit recopié depuis `product.json` par `tool/sync_product.dart`, builds par `codemagic.yaml` (racine du dépôt, `working_directory: mobile`). **Pipelines de publication (07/10/2026, revus le 09/10/2026 :
-  Codemagic retenu par Joanny, avec les comptes de Thempo, LoveNest et Yoon)** : Plazo rejoint **l'équipe Codemagic** qui publie
-  Thempo et signe comme lui (intégration Developer Portal `lovenest-asc` de l'équipe Apple Benford Tech `3BX4795V2Y` ;
+  Codemagic retenu par Joanny, avec les comptes de Thempo, LoveNest et Yoon)** : Plazo rejoint **le compte Codemagic** qui publie
+  Thempo (11/10/2026 : le **compte personnel** de Joanny, sans équipe, apps `tempo-app`, `lovenest-frontend`, `yoon` ; 500 minutes
+  gratuites par mois sur Mac mini M2, un seul build à la fois, Linux seulement avec la facturation, compteur et « Enable billing »
+  sur codemagic.io/billing/user ; réglages sous Teams › Personal account) et signe comme lui (intégration Developer Portal `lovenest-asc` de l'équipe Apple Benford Tech `3BX4795V2Y` ;
   `ios_signing` avec le certificat Apple Distribution déjà téléversé, Apple n'en acceptant que 3 ; clé d'import
   propre à Plazo créée par le workflow GitHub `android-keystore.yml` (« Android keystore (Plazo upload key) », 11/10/2026 :
   mot de passe aléatoire, rien ne passe par une conversation) et envoyée par `.github/scripts/codemagic_keystore.py` avec
@@ -664,8 +666,9 @@ Le nom du produit doit rester dans UN seul fichier de configuration (il peut enc
   build dont un groupe n'existe pas ; artefact d'un jour pour le gestionnaire de mots de passe ; refus de remplacer une clé
   déjà envoyée sans la case « replace » ; jamais de base64 collé à la main ; **`codemagic-build.yml` « Codemagic build
   (start, status, groups) »** (`.github/scripts/codemagic_build.py`, client commun `codemagic_api.py`) : `start` d'un
-  workflow sur une branche, `status` d'un build (état, artefacts ; étape rouge si le build a échoué), `groups` (noms des
-  variables seulement), `ensure-group` : c'est par là que Claude suit et relance les builds Codemagic ; compte Google Play Benford Tech et compte de service de
+  workflow sur une branche, `status` d'un build (état, artefacts ; étape rouge si le build a échoué), `steps`, `cancel` (API v1),
+  `groups` (noms des variables seulement), `ensure-group`, `team` (pourquoi un build attend : dernier build de chaque app du
+  compte) : c'est par là que Claude suit et relance les builds Codemagic ; compte Google Play Benford Tech et compte de service de
   Thempo) ; **un seul workflow `mobile-release` (11/10/2026, « unifie le pipeline »)** à la place des quatre d'avant (un par
   store et par app) : tag `mobile-vX.Y.Z` (= `version:` de `pubspec.yaml`, sinon arrêt) ou manuel ; vérifications une fois,
   puis pour chaque flavor AAB + APK signés et IPA signé, les quatre paquets sous la même version et le même numéro de build
@@ -679,7 +682,7 @@ Le nom du produit doit rester dans UN seul fichier de configuration (il peut enc
   « un build Android seul pour le Play Store »)**, à la main : la moitié Android de `mobile-release` (étapes partagées par des
   ancres YAML de `definitions.scripts`, variables `android_vars`), sans `ios_signing` ni intégration `lovenest-asc`, donc
   lançable avant les profils Apple (premier envoi Google Play) ; `mobile-check` à la main seulement, les vérifications de chaque modification
-  tournant sur GitHub Actions (`mobile-ci.yml`, gratuit, les minutes de l'équipe étant payantes) ; marche à suivre
+  tournant sur GitHub Actions (`mobile-ci.yml`, gratuit, les minutes gratuites du compte étant comptées) ; marche à suivre
   `mobile/publier-sur-les-stores.md` ; **fiches des stores** `mobile/fiches-stores.md` (11/10/2026, « crée l'app sur les
   stores ») : textes, confidentialité, notes de revue et visuels des quatre fiches, rédigés d'après le code et relus contre
   lui, section 0 = ce qui reste à régler avant la revue (parking en ligne, e-mail de support, compte de revue et suppression

@@ -1,16 +1,17 @@
 name: Codemagic build (start, status, groups)
 
-# Drives Codemagic from GitHub with the repository secret CODEMAGIC_API_TOKEN (11/10/2026): starts a build of a
-# codemagic.yaml workflow, reads a build's status and artifacts, lists the app's variable groups (names only) or
-# creates an empty one. Lets Claude, who has no Codemagic access, follow and relaunch the store builds through
-# GitHub; Joanny can use it from the phone too. Nothing secret is printed. By hand only.
+# Drives Codemagic from GitHub with the repository secret CODEMAGIC_API_TOKEN (11/10/2026): starts or cancels a
+# build of a codemagic.yaml workflow, reads a build's status, steps and artifacts, lists the app's variable groups
+# (names only) or creates an empty one, and says why a build waits (« team »: the account is Joanny's personal
+# Codemagic account, one free build at a time). Lets Claude, who has no Codemagic access, follow and relaunch the
+# store builds through GitHub; Joanny can use it from the phone too. Nothing secret is printed. By hand only.
 on:
   workflow_dispatch:
     inputs:
       action:
         description: "Que faire"
         type: choice
-        options: [status, steps, start, groups, ensure-group, team]
+        options: [status, steps, start, cancel, groups, ensure-group, team]
         default: status
       workflow_id:
         description: "start : workflow de codemagic.yaml (mobile-release-android, mobile-release, mobile-check)"
@@ -26,7 +27,7 @@ on:
         options: ["", linux_x2, linux_x4, mac_mini_m2, mac_mini_m4, windows_x2]
         default: ""
       build_id:
-        description: "status : id du build Codemagic (vide = le dernier build de l'app)"
+        description: "status, steps, cancel : id du build Codemagic (vide = le dernier build de l'app ; cancel l'exige)"
         type: string
         default: ""
       group_name:

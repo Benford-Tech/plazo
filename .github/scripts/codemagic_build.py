@@ -5,15 +5,17 @@ Actions (ACTION):
   status        the build BUILD_ID (default: the app's last build): status, workflow, times, artifacts
   steps         the steps of that build with their status (which one failed)
   start         queue WORKFLOW_ID (default mobile-release-android) on BRANCH (default main)
+  cancel        cancel the build BUILD_ID (queued or running; v1 API), e.g. one queued for hours
   groups        the app's variable groups and the NAMES of their variables (never the values)
   ensure-group  create the app variable group GROUP_NAME when it is missing (empty)
-  team          the team's subscription state and its running or queued builds (why a build waits)
+  team          why a build waits: on a personal account (Plazo, 11/10/2026) the last build of every app of the
+                account and where the free minutes are counted; in a team its subscription and running builds
 Nothing secret is printed.
 """
 import os
 
-from codemagic_api import (build_url, call, ensure_group, fail, find_app, groups_of, paginated, start_build, summary,
-                           team_has_app, teams_of_user, variables_of)
+from codemagic_api import (build_url, call, cancel_build, ensure_group, fail, find_app, groups_of, paginated,
+                           start_build, summary, team_has_app, teams_of_user, variables_of)
 
 ACTION = os.environ.get("ACTION", "status").strip()
 WORKFLOW_ID = os.environ.get("WORKFLOW_ID", "").strip() or "mobile-release-android"
@@ -91,6 +93,19 @@ def start(app):
     summary([line])
 
 
+def cancel(app):
+    """Cancel a queued or running build: a build queued for hours on the free plan blocks the one slot."""
+    if not BUILD_ID:
+        fail("build_id manquant (le build à annuler)")
+    url = build_url(app["id"], BUILD_ID)
+    if cancel_build(BUILD_ID):
+        line = f"Build `{BUILD_ID}` annulé → {url}"
+    else:
+        line = f"Build `{BUILD_ID}` déjà terminé, rien à annuler → {url}"
+    print(line)
+    summary([line])
+
+
 def groups(app):
     lines = [f"Groupes de variables de l'app `{app['id']}` :"]
     for group in groups_of(app["id"]):
@@ -119,8 +134,11 @@ def team(app):
     others = ", ".join(f"`{t['name']}`" for t in teams if not owner or t["id"] != owner["id"]) or "aucune"
     if not owner:
         lines = [f"App **personnelle** du compte (hors équipe) ; équipes du compte : {others}.",
-                 "- Compte personnel : 500 minutes gratuites par mois sur Mac mini M2, un seul build à la fois ; un build "
-                 "d'une autre app du compte occupe cette place. Dernier build de chaque app du compte :"]
+                 "- Compte personnel : 500 minutes gratuites par mois sur Mac mini M2 (compteur sur "
+                 "https://codemagic.io/billing/user, remis à zéro le 1er ; au-delà, « Enable billing » sur cette page : "
+                 "macOS M2 0,095 $/min, Linux 0,045 $/min et seulement avec la facturation), un seul build à la fois ; un "
+                 "build d'une autre app du compte occupe cette place. Dernier build de chaque app du compte :"]
+        busy = 0
         for app_row in paginated("/api/v3/user/apps"):
             last = app_row.get("last_build_id")
             if not last:
@@ -128,8 +146,13 @@ def team(app):
                 continue
             code, payload = call("GET", f"/api/v3/builds/{last}")
             build = payload.get("data") or {}
+            busy += build.get("status") in RUNNING
             lines.append(f"  - `{app_row.get('name')}` : {build.get('status')} (créé {build.get('created_at')}, "
                          f"fini {build.get('finished_at') or '—'}, machine `{build.get('instance_type') or '?'}`)")
+        if busy:
+            lines.append("- Un build qui reste en attente alors que rien d'autre ne tourne : minutes gratuites du mois "
+                         "épuisées (compteur ci-dessus) ou file d'attente Codemagic (https://status.codemagic.io) ; "
+                         "Codemagic annule de lui-même un build en attente depuis 5 h, l'action `cancel` l'annule avant.")
         print("\n".join(lines))
         summary(lines)
         return
@@ -156,9 +179,10 @@ def team(app):
 def main():
     app = find_app()
     print(f"App Codemagic : {app['id']} ({app['name']})")
-    actions = {"status": status, "steps": steps, "start": start, "groups": groups, "ensure-group": ensure, "team": team}
+    actions = {"status": status, "steps": steps, "start": start, "cancel": cancel, "groups": groups,
+               "ensure-group": ensure, "team": team}
     if ACTION not in actions:
-        fail(f"action inconnue : {ACTION} (status, steps, start, groups, ensure-group, team)")
+        fail(f"action inconnue : {ACTION} (status, steps, start, cancel, groups, ensure-group, team)")
     actions[ACTION](app)
 
 

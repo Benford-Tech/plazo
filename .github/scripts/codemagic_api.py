@@ -1,7 +1,9 @@
 """Small client of the Codemagic REST API v3, shared by the GitHub workflows that drive Codemagic.
 
-Authentication: CODEMAGIC_API_TOKEN (the token of a team member, Codemagic › Team settings › Integrations ›
-Codemagic API), kept as a GitHub repository secret. Nothing here prints a value: only names, ids and URLs.
+Authentication: CODEMAGIC_API_TOKEN, the token of the Codemagic account that holds the app (11/10/2026: Joanny's
+PERSONAL account, which also holds Thempo, LoveNest and Yoon; it has no team: Codemagic › Teams › Personal account ›
+Integrations › Codemagic API), kept as a GitHub repository secret. Nothing here prints a value: only names, ids
+and URLs. The v3 API cannot cancel a build: that one call goes to the v1 API (api.codemagic.io).
 """
 import json
 import os
@@ -11,6 +13,7 @@ import urllib.parse
 import urllib.request
 
 API = os.environ.get("CODEMAGIC_API", "https://codemagic.io").rstrip("/")
+API_V1 = os.environ.get("CODEMAGIC_API_V1", "https://api.codemagic.io").rstrip("/")
 TOKEN = os.environ.get("CODEMAGIC_API_TOKEN", "")
 APP_NAME = os.environ.get("APP_NAME", "plazo")
 
@@ -23,14 +26,14 @@ def fail(message):
 def call(method, path, body=None, query=None):
     if not TOKEN:
         fail("CODEMAGIC_API_TOKEN est vide (secret GitHub absent)")
-    url = f"{API}{path}"
+    url = path if path.startswith("http") else f"{API}{path}"
     if query:
         url += "?" + urllib.parse.urlencode(query)
     data = json.dumps(body).encode() if body is not None else None
     request = urllib.request.Request(url, data=data, method=method)
     request.add_header("x-auth-token", TOKEN)
     request.add_header("Accept", "application/json")
-    if data is not None:
+    if data is not None or method != "GET":
         request.add_header("Content-Type", "application/json")
     try:
         with urllib.request.urlopen(request, timeout=60) as response:
@@ -53,8 +56,9 @@ def paginated(path, query=None):
 
 
 def find_app(name=None):
-    """The Codemagic app of this repository, by exact name: a team's app first (the team has the paid
-    machines and the signing identities), the account's personal app only when no team has it."""
+    """The Codemagic app of this repository, by exact name: a team's app first (a team, when the account joins
+    one, carries its own billing and identities), else the account's personal app (11/10/2026: Plazo is a
+    personal app, the account has no team)."""
     name = name or APP_NAME
 
     def matching(apps):
@@ -69,7 +73,8 @@ def find_app(name=None):
         scope = "personnelle"
     ids = sorted({a["id"] for a in candidates})
     if not ids:
-        fail(f"aucune app Codemagic nommée « {name} » pour ce jeton : ajouter le dépôt à l'équipe d'abord")
+        fail(f"aucune app Codemagic nommée « {name} » pour ce jeton : ajouter le dépôt au compte Codemagic d'abord "
+             "(Applications › Add application)")
     if len(ids) > 1:
         fail(f"plusieurs apps Codemagic {scope} s'appellent « {name} » ({', '.join(ids)}) : préciser APP_NAME")
     return next(a for a in candidates if a["id"] == ids[0])
@@ -119,6 +124,13 @@ def start_build(app_id, workflow_id, branch, instance_type=None):
     status, payload = call("POST", f"/api/v3/apps/{app_id}/builds", body)
     build_id = payload["data"]["id"]
     return build_id, build_url(app_id, build_id)
+
+
+def cancel_build(build_id):
+    """Cancel a queued or running build (v1 API: POST api.codemagic.io/builds/{id}/cancel). Returns True when
+    Codemagic cancelled it now, False when the build had already ended (HTTP 208 Already Reported)."""
+    status, payload = call("POST", f"{API_V1}/builds/{build_id}/cancel")
+    return status != 208
 
 
 def build_url(app_id, build_id):

@@ -183,8 +183,8 @@ version web, « Payer » ouvre la page Stripe Checkout.
 6. **Fiches des stores** : nom, sous-titre, description courte et longue, captures (téléphone et tablette), icône,
    politique de confidentialité (URL), coordonnées d'assistance, catégorie, classification, justification de la
    position en arrière-plan (Apple) et formulaire « Sécurité des données » (Google).
-7. **Codemagic** : le dépôt ajouté à **l'équipe existante** (celle de Thempo, qui a déjà `lovenest-asc` et le certificat
-   Apple) avec `codemagic.yaml`, la facturation de l'équipe active, le groupe `plazo_android_signing` (écrit par GitHub), les profils iOS et le groupe
+7. **Codemagic** : le dépôt ajouté au **compte existant** (le compte personnel de Joanny, celui de Thempo, qui a déjà
+   `lovenest-asc` et le certificat Apple ; 500 minutes gratuites par mois, un build à la fois) avec `codemagic.yaml`, le groupe `plazo_android_signing` (écrit par GitHub), les profils iOS et le groupe
    `mobile_secrets` (`GOOGLE_PLAY_SERVICE_ACCOUNT_CREDENTIALS`) : pas à pas dans
    [`publier-sur-les-stores.md`](publier-sur-les-stores.md) ; les textes et réponses des quatre fiches dans
    [`fiches-stores.md`](fiches-stores.md) (11/10/2026, rédigés d'après le code, relus contre lui, avec la liste de ce qui
@@ -193,7 +193,7 @@ version web, « Payer » ouvre la page Stripe Checkout.
 ## Publier sur les stores (pipelines, 07/10/2026, revus le 09/10/2026, unifiés le 11/10/2026)
 
 Les vérifications de chaque modification tournent sur GitHub Actions (`.github/workflows/mobile-ci.yml` : nom du produit,
-`flutter analyze`, `flutter test`, gratuit) ; Codemagic, dans **l'équipe qui publie déjà Thempo** (minutes payantes),
+`flutter analyze`, `flutter test`, gratuit) ; Codemagic, sur **le compte qui publie déjà Thempo** (compte personnel, 500 minutes gratuites par mois),
 construit et publie avec les workflows de `codemagic.yaml` (racine du dépôt, `working_directory: mobile`) :
 
 | Workflow | Quand | Ce qu'il fait |
@@ -217,7 +217,7 @@ construit et publie avec les workflows de `codemagic.yaml` (racine du dépôt, `
   sortait en erreur sur deux remarques, ce qui arrêtait tous les workflows ; `NSCameraUsageDescription` ajouté (scan de carte
   de Stripe, sans quoi Apple refuse le build) ; Google Pay suit la clé Stripe servie par l'API (`pk_live_` = production),
   plus de réglage à la construction. Puis, d'après Thempo, LoveNest et Yoon : signature comme Thempo (certificat Apple et
-  clé d'import Android dans les Code signing identities de l'équipe, jamais de base64 collé), App ID OneSignal dans le
+  clé d'import Android envoyée par GitHub dans un groupe de variables du compte, jamais de base64 collé), App ID OneSignal dans le
   fichier, vérifications sur GitHub Actions.
 
 - `/pro/parking` (onglet Parking) : Occupation (bloc 2, étape 2) — recherche par plaque, place proposée à l'arrivée, crochet des clés.
