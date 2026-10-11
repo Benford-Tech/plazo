@@ -1,6 +1,7 @@
 import { Breadcrumb } from "./Breadcrumb";
 import { HomeMapPanel } from "./HomeMapPanel";
 import { SearchForm } from "./SearchForm";
+import { CheckIcon } from "./stay/pill";
 import { stayDays } from "@/lib/dates";
 import { fr } from "@/lib/fr";
 import type { SearchResponse, SearchResult } from "@/lib/types";
@@ -10,7 +11,7 @@ function nameKeptWhole(name: string) {
   return <span className="whitespace-nowrap">{name}</span>;
 }
 
-/** The cheapest bookable parking of the stay: the one orange card of the hero. */
+/** The cheapest bookable parking of the stay: the « Le moins cher » card of the hero's map. */
 export function featuredOf(results: SearchResult[]): SearchResult | null {
   const bookable = results.filter(r => r.available && r.priceCents !== null);
   if (!bookable.length) return null;
@@ -18,9 +19,10 @@ export function featuredOf(results: SearchResult[]): SearchResult | null {
 }
 
 /**
- * Hero of the home and airport pages (T-A, 05/10/2026, the mockup's composition): on the grey ground,
- * the airport as a kicker, the two-tone title, the search card; next to it the map of the default
- * stay with its floating pills (how many parkings, how far) and the best offer as the orange card.
+ * Hero of the home and airport pages (Boutique, 11/10/2026): on the ivory ground, the airport as small
+ * spaced capitals, the two-tone Playfair title, the floating search card and three ticks; next to it
+ * (under it on a phone) the map of the default stay with its floating pills and the « Le moins cher »
+ * card.
  */
 export function HomeHero({
   airport,
@@ -41,28 +43,29 @@ export function HomeHero({
   const featured = featuredOf(results);
   const days = stayDays(arrivee, retour);
   return (
-    <section className="mx-auto flex w-full max-w-[1280px] flex-col gap-5 px-4 pt-4 pb-2 md:px-12 md:pt-8 md:pb-4">
+    <section className="mx-auto flex w-full max-w-[1280px] flex-col gap-4 px-4 pt-3 pb-2 md:px-12 md:pt-8 md:pb-4">
       {breadcrumb && <Breadcrumb items={[{ label: fr.nav.home, href: "/" }, { label: airport.name }]} />}
-      <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_minmax(0,1fr)] lg:items-start lg:gap-10">
-        <div className="flex flex-col gap-4 lg:pt-4">
-          <p className="flex items-center gap-1.5 text-[13px] font-bold tracking-[.06em] text-soft uppercase">
-            <span aria-hidden="true">✈</span>
+      <div className="grid gap-5 lg:grid-cols-[minmax(0,1fr)_minmax(0,1fr)] lg:items-stretch lg:gap-10">
+        <div className="flex flex-col gap-3 md:gap-4 lg:pt-6">
+          <p className="eyebrow">
             {airport.name} · {fr.home.heroKicker}
           </p>
-          <h1 className="font-title max-w-[640px] text-[36px] leading-[1.08] text-soft md:text-[52px]">
-            {fr.home.heroFind} <span className="font-semibold text-dark">{fr.home.heroNear("")}{nameKeptWhole(airport.name)}</span>
+          <h1 className="font-title max-w-[640px] text-[30px] leading-[1.14] text-ink md:text-[46px] md:leading-[1.1] xl:text-[52px]">
+            <span className="text-soft">{fr.home.heroFind}</span> <span className="block">{fr.home.heroNear("")}{nameKeptWhole(airport.name)}</span>
           </h1>
-          <p className="max-w-[560px] text-[17px] leading-normal text-soft max-sm:hidden">{fr.home.heroLead}</p>
-          <div className="sm:mt-2">
+          <p className="max-w-[540px] text-[16.5px] leading-relaxed font-medium text-soft max-sm:hidden">{fr.home.heroLead}</p>
+          <div className="mt-1 sm:mt-2">
             <SearchForm floating compactPhone stacked airport={airport} arrivee={arrivee} retour={retour} minDate={minDate} idPrefix="accueil" />
           </div>
-          <ul className="flex flex-wrap gap-x-5 gap-y-1.5 text-[14px] text-soft">
+          <ul className="flex flex-wrap gap-x-4 gap-y-1.5 text-[13px] font-semibold text-soft sm:gap-x-5 sm:text-[14px]">
             {fr.home.trust.map(([title, text]) => (
-              <li key={title}>
-                <span aria-hidden="true" className="font-bold text-accent">
-                  ✓{" "}
+              <li key={title} className="inline-flex items-baseline gap-1.5">
+                <span aria-hidden="true" className="relative top-[2px] flex-none text-accent-dark">
+                  <CheckIcon size={13} />
                 </span>
-                <b className="font-bold text-ink">{title}</b> <span className="max-sm:hidden">· {text}</span>
+                <span>
+                  <span className="sm:text-ink">{title}</span> <span className="font-medium max-sm:hidden">· {text}</span>
+                </span>
               </li>
             ))}
           </ul>

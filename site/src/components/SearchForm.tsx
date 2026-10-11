@@ -1,11 +1,12 @@
 import { StayFields } from "./StayFields";
-import { Caret, IconChip, PlaneIcon, pillBox, pillFocusWithin, pillNative, pillNativeLabel } from "./stay/pill";
+import { Caret, IconChip, PlaneIcon, pillBox, pillFocusWithin, pillIdle, pillNative, pillNativeLabel } from "./stay/pill";
 import { fr } from "@/lib/fr";
 import { AIRPORTS } from "@/lib/site";
 
 /**
- * Search bar (airport, drop-off, return) as a white card of pills. A plain GET form to /recherche,
- * which joins the date and time fields and redirects to the results page: it works without JavaScript.
+ * Search bar (airport, drop-off, return) as a white card of fields (Boutique: the warm hairline, a shadow
+ * only when it floats on the home). A plain GET form to /recherche, which joins the date and time fields
+ * and redirects to the results page: it works without JavaScript.
  */
 export function SearchForm({
   airport,
@@ -25,13 +26,14 @@ export function SearchForm({
   minDate: string;
   errors?: { arrivalAt?: string; returnAt?: string };
   idPrefix?: string;
-  /** White card on the hero photo (home) rather than a bordered panel. */
+  /** The floating search card of the home (shadow-float) rather than a plain card. */
   floating?: boolean;
   /** Results page with the map shown: the new results show it too. */
   keepMap?: boolean;
   /**
-   * Home hero on phones (below 640 px): one "Vos dates" pill instead of the four date and time
-   * pills, and no airport pill while there is a single airport (its value is still sent).
+   * Home hero on phones (below 640 px): one "Vos dates" field in two rows (Dépôt, Retour) instead of
+   * the four date and time pills, and no airport pill while there is a single airport (its value is
+   * still sent).
    */
   compactPhone?: boolean;
   /** Fields under one another at every width (the home's half-width column, T-A). */
@@ -42,12 +44,10 @@ export function SearchForm({
     <form
       action="/recherche"
       method="get"
-      className={`flex flex-col gap-2.5 rounded-[22px] bg-white p-3 text-ink ${stacked ? "" : "xl:flex-row xl:items-start"} ${
-        floating ? "shadow-[0_24px_50px_-20px_rgba(30,20,10,.35)]" : "shadow-[0_18px_40px_-22px_rgba(30,20,10,.35)]"
-      }`}
+      className={`card flex flex-col gap-2 p-2.5 text-ink ${stacked ? "" : "xl:flex-row xl:items-start"} ${floating ? "shadow-float" : ""}`}
     >
       {keepMap && <input type="hidden" name="carte" value="1" />}
-      <div className={`${pillBox} ${pillFocusWithin} w-full ${stacked ? "" : "xl:w-[250px] xl:flex-none"} ${compactPhone && airports.length === 1 ? "max-sm:hidden" : ""}`}>
+      <div className={`${pillBox} ${pillFocusWithin} ${pillIdle} w-full ${stacked ? "" : "xl:w-[250px] xl:flex-none"} ${compactPhone && airports.length === 1 ? "max-sm:hidden" : ""}`}>
         <IconChip>
           <PlaneIcon />
         </IconChip>
@@ -72,7 +72,7 @@ export function SearchForm({
         phoneSummary={compactPhone}
         className={stacked ? "" : "sm:flex-row xl:min-w-0 xl:flex-1"}
       />
-      <button type="submit" className="btn-primary h-14 flex-none px-7 text-[17px]">
+      <button type="submit" className={`btn-primary min-h-12 flex-none px-7 text-base ${stacked ? "" : "xl:min-h-14"}`}>
         {fr.search.submit}
       </button>
     </form>

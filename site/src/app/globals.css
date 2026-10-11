@@ -1,117 +1,480 @@
 @import "tailwindcss";
 
-/* Direction T-A "Parking" (05/10/2026, the same as the traveller app): light grey ground, white cards of 22 px with a soft
-   shadow, no orange header, the easyJet orange kept for the action and one card per screen, Manrope for the text. */
-@theme {
-  --color-brand: #ff6600;
-  --color-brand-deep: #e65c00;
-  --color-dark: #2c1a0e;
-  --color-ground: #ececee;
+/*
+ * Direction « Boutique » (chosen by Joanny on 11/10/2026, replaces T-A "Parking"): a boutique hotel rather than a
+ * comparator. Ivory ground, white cards with a 1 px warm hairline and 16 px corners, a shadow only on floating
+ * elements, Playfair Display regular for the titles, small spaced capitals for the labels, soft state pills,
+ * JetBrains Mono for the hours only. The easyJet orange is kept for the action (filled buttons) and the best price;
+ * every orange TEXT smaller than 18 px uses accent-dark.
+ *
+ * Every colour of the site goes through these tokens (Tailwind classes bg-*, text-*, border-*, divide-*, ring-*,
+ * with an opacity modifier when needed: text-lilac/70, border-white/10). No hex value in the components.
+ *
+ * Contrast (WCAG AA, measured): the mockup's warm grey #7B6F65, sage #3D7A5B, amber #A86B12 and #C24E00 fall just
+ * under 4.5:1 on the ivory / cream grounds or on their own pill grounds, so they are nudged darker here, same hues:
+ * soft #74685F (4.9:1 on ivory, 4.6:1 on cream), ok #3B7658 (4.6:1 on ok-bg), warn #966010 (4.6:1 on warn-bg),
+ * accent-dark #B54900 (4.8:1 on ivory and on accent-bg, 4.6:1 on cream, 5.4:1 on white).
+ *
+ * `static`: every variable below is always emitted on :root, so that an SVG attribute or an inline style can read it
+ * (stroke="var(--color-dark)") even when no Tailwind class uses that colour.
+ */
+@theme static {
+  /* Orange. accent = FILLS only (primary button, best-price pin, live dot, the logo); never small text. */
+  --color-brand: #ff6600; /* the logo sign; same value as accent */
+  --color-brand-deep: #e65c00; /* hover of an orange fill */
   --color-accent: #ff6600;
-  --color-accent-light: #ff8a3d;
-  --color-accent-dark: #c24e00;
+  --color-accent-dark: #b54900; /* every orange text < 18 px: links, « Le moins cher », eyebrows, map buttons; focus ring */
+  --color-accent-bg: #fff0e4; /* crème orangée: ground of the « Le moins cher » pill */
+  --color-accent-line: #ffcfae; /* hairline of the best (first) result card */
+
+  /* Grounds and surfaces. Cards are white (bg-white). */
+  --color-ground: #f7f3ee; /* ivory page ground */
+  --color-paper: #fffdfa; /* floating bars, pills over a map or a photo, the fixed dock */
+  --color-tint: #f3ede5; /* cream: info chips, tracks, neutral pills, icon tiles, no-photo ground */
+  --color-map: #eee8df; /* ground of a map before its tiles load */
+  --color-dark: #2b211b; /* espresso: selected chip, current step, « Retrouver ma voiture », footer, terminals pin */
+
+  /* Hairlines. */
+  --color-line: #e7ddd1; /* 1 px border of cards, fields, chips, buttons */
+  --color-line-soft: #f0e9e0; /* inner hairline: separators inside a card, nested boxes */
+
+  /* Text. */
+  --color-ink: #221b16; /* text */
+  --color-soft: #74685f; /* secondary text, eyebrows, captions */
+  --color-mute: #a99d92; /* DECORATIVE only (chevrons, separators, disabled days): never the only carrier of information */
+  --color-lilac: #efe9e2; /* text on espresso (historical name); use /60 to /80 for secondary text on espresso */
+
+  /* States (soft pills: text colour on its -bg). */
+  --color-ok: #3b7658; /* sage: available, confirmed, landed */
+  --color-ok-bg: #e7f0e9;
+  --color-warn: #966010; /* amber: in progress, to watch, waiting for payment */
+  --color-warn-bg: #faeedb;
+  --color-danger: #a3303b; /* rose: full, cancelled, non-refundable, errors */
+  --color-danger-bg: #f9e7e8;
+  --color-danger-line: #efc6ca;
+
+  /* Deprecated (old direction D "pêche"): do not use in new code; replace by ok / warn / tint. */
   --color-peach: #f0a36b;
-  --color-ink: #1e1e1e;
-  --color-soft: #6f6a66;
-  --color-line: #e3e1de;
-  --color-tint: #f5f5f7;
-  --color-lilac: #efe9e2;
-  --color-ok-bg: #e3f5eb;
-  --color-ok: #0c7440;
-  --color-danger: #8f0f35;
-  --color-danger-line: #f3c6d2;
-  --color-danger-bg: #fdf1f4;
+
+  /* The French number plate. */
   --color-plate-blue: #1f3fa6;
   --color-plate-ink: #0b0b0c;
 
   --font-sans: var(--font-manrope), ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
   --font-display: var(--font-playfair), Georgia, "Times New Roman", serif;
+  --font-mono: var(--font-jetbrains), ui-monospace, "SFMono-Regular", Menlo, Consolas, monospace;
 
-  --radius-card: 22px;
-  --radius-panel: 22px;
-  --shadow-card: 0 18px 40px -22px rgba(30, 20, 10, 0.35);
+  --radius-card: 16px; /* cards, maps, sheets */
+  --radius-field: 12px; /* fields, tiles, boxes inside a card, photos inside a card */
+  --radius-chip: 7px; /* small info chips */
+
+  --shadow-float: 0 16px 34px -24px rgba(60, 40, 20, 0.45); /* floating elements only: search card, best result, live block */
+  --shadow-pin: 0 6px 14px -8px rgba(40, 25, 10, 0.4); /* pins and pills over a map or a photo */
+  --shadow-sheet: 0 30px 70px -30px rgba(40, 25, 10, 0.5); /* dialogs and bottom sheets */
 }
 
-/* A white card on the grey ground (the mockup's), no border. */
-@utility card {
-  background: #ffffff;
-  border-radius: var(--radius-card);
-  box-shadow: var(--shadow-card);
-}
-
-/* A floating pill over the map or a photo. */
-@utility pill-float {
-  display: inline-flex;
-  align-items: center;
-  gap: 7px;
-  border-radius: 9999px;
-  background: #ffffff;
-  padding: 7px 12px;
-  font-size: 13px;
-  font-weight: 800;
-  color: var(--color-ink);
-  white-space: nowrap;
-  box-shadow: 0 10px 24px -10px rgba(0, 0, 0, 0.35);
-}
-
-@utility font-title {
-  font-family: var(--font-display);
-  font-style: italic;
-  font-weight: 500;
-}
-
-@utility bg-hero {
-  background: #ff6600;
-}
-
-/* Primary action: plain easyJet orange, pill shape, orange shadow (T-A). */
-@utility btn-primary {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  gap: 8px;
-  min-height: 44px;
-  border: none;
-  border-radius: 9999px;
-  background: var(--color-accent);
-  color: #ffffff;
-  font-weight: 800;
-  text-decoration: none;
-  box-shadow: 0 12px 26px -10px rgba(255, 102, 0, 0.55);
-  cursor: pointer;
-  &:hover {
-    filter: brightness(1.05);
-    color: #ffffff;
+/*
+ * Component classes. They live in the `components` layer so that any Tailwind utility written next to them wins
+ * (`btn-primary h-12 px-6`, `card p-4 shadow-float`, `eyebrow text-accent-dark`), whatever the order of the classes.
+ * Variants such as `md:card` are not available: write the utilities instead.
+ */
+@layer components {
+  /* A white card: 1 px warm hairline, 16 px corners, no shadow. Add `shadow-float` only when it floats. */
+  .card {
+    background: var(--color-white);
+    border: 1px solid var(--color-line);
+    border-radius: var(--radius-card);
   }
-  &:disabled,
-  &[aria-disabled="true"] {
-    opacity: 0.6;
-    cursor: progress;
-  }
-}
 
-/* Secondary action: outlined pill. */
-@utility btn-secondary {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  min-height: 44px;
-  border: 1px solid var(--color-line);
-  border-radius: 9999px;
-  background: #ffffff;
-  color: var(--color-ink);
-  font-weight: 700;
-  text-decoration: none;
-  cursor: pointer;
-  &:hover {
-    border-color: var(--color-accent);
+  /* A pill floating over a map or a photo (counts, distance, « EN DIRECT »). Not a button. */
+  .pill-float {
+    display: inline-flex;
+    align-items: center;
+    gap: 7px;
+    min-height: 30px;
+    border-radius: 9999px;
+    background: color-mix(in srgb, var(--color-paper) 96%, transparent);
+    padding: 5px 12px;
+    font-size: 12.5px;
+    font-weight: 700;
+    line-height: 1.2;
     color: var(--color-ink);
+    white-space: nowrap;
+    box-shadow: var(--shadow-pin);
+  }
+
+  /* Titles: Playfair Display regular (no italic since Boutique). */
+  .font-title {
+    font-family: var(--font-display);
+    font-style: normal;
+    font-weight: 400;
+    letter-spacing: -0.004em;
+  }
+
+  /* Hours and countdowns only (08:00, 01:12:09): JetBrains Mono 500, tabular. Prices stay in Manrope. */
+  .font-hour {
+    font-family: var(--font-mono);
+    font-weight: 500;
+    font-variant-numeric: tabular-nums;
+    letter-spacing: 0;
+  }
+
+  /* Small spaced capitals above a title or a value (« LE MOINS CHER », « DÉPÔT », « L'ESSENTIEL »). */
+  .eyebrow {
+    font-size: 11px;
+    line-height: 1.3;
+    font-weight: 700;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: var(--color-soft);
+  }
+
+  /* Soft state pill: `pill` + one tone (pill-ok, pill-warn, pill-danger, pill-hot, pill-dark); neutral cream by default. */
+  .pill {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    min-height: 24px;
+    border-radius: 9999px;
+    background: var(--pill-bg, var(--color-tint));
+    padding: 3px 10px;
+    font-size: 10.5px;
+    line-height: 1.2;
+    font-weight: 800;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--pill-fg, var(--color-soft));
+    white-space: nowrap;
+  }
+  .pill-ok {
+    --pill-bg: var(--color-ok-bg);
+    --pill-fg: var(--color-ok);
+  }
+  .pill-warn {
+    --pill-bg: var(--color-warn-bg);
+    --pill-fg: var(--color-warn);
+  }
+  .pill-danger {
+    --pill-bg: var(--color-danger-bg);
+    --pill-fg: var(--color-danger);
+  }
+  .pill-hot {
+    --pill-bg: var(--color-accent-bg);
+    --pill-fg: var(--color-accent-dark);
+  }
+  .pill-dark {
+    --pill-bg: var(--color-dark);
+    --pill-fg: var(--color-white);
+  }
+
+  /* Small info chip (« 12 min », « Voiturier », « Gratuit 24 h »): not interactive, so no 44 px target. */
+  .chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    min-height: 26px;
+    border-radius: var(--radius-chip);
+    background: var(--color-tint);
+    padding: 2px 9px;
+    font-size: 12.5px;
+    line-height: 1.2;
+    font-weight: 600;
+    color: var(--color-ink);
+    & svg {
+      flex: none;
+      color: var(--color-soft);
+    }
+  }
+
+  /*
+   * Interactive chip (filters, sort choices, « Mon vol a du retard »…): 44 px target, white with a hairline,
+   * espresso when selected. Selected = aria-pressed="true", aria-current, aria-checked="true", data-active="true",
+   * or a checked input inside (a <label> around a checkbox / radio keeps the no-JS form).
+   */
+  .chip-toggle {
+    display: inline-flex;
+    flex: none;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    min-height: 44px;
+    border: 1px solid var(--color-line);
+    border-radius: 9999px;
+    background: var(--color-white);
+    padding: 0 16px;
+    font-size: 13.5px;
+    font-weight: 700;
+    color: var(--color-ink);
+    white-space: nowrap;
+    text-decoration: none;
+    cursor: pointer;
+    &:hover {
+      border-color: var(--color-soft);
+      color: var(--color-ink);
+    }
+    &[aria-pressed="true"],
+    &[aria-checked="true"],
+    &[aria-current="true"],
+    &[aria-current="page"],
+    &[data-active="true"],
+    &:has(input:checked) {
+      border-color: var(--color-dark);
+      background: var(--color-dark);
+      color: var(--color-white);
+    }
+    &:has(input:focus-visible) {
+      outline: 3px solid var(--color-accent-dark);
+      outline-offset: 2px;
+    }
+    &:disabled,
+    &[aria-disabled="true"] {
+      opacity: 0.55;
+      cursor: default;
+    }
+  }
+
+  /* Primary action: orange fill, white bold text, fully rounded, no shadow. One per screen. */
+  .btn-primary {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    min-height: 46px;
+    border: none;
+    border-radius: 9999px;
+    background: var(--color-accent);
+    color: var(--color-white);
+    font-weight: 700;
+    letter-spacing: 0.01em;
+    text-decoration: none;
+    cursor: pointer;
+    &:hover {
+      background: var(--color-brand-deep);
+      color: var(--color-white);
+    }
+    &:disabled,
+    &[aria-disabled="true"] {
+      opacity: 0.6;
+      cursor: progress;
+    }
+  }
+
+  /* Secondary action: white with a hairline (« Voir et réserver » of the other results, « Ouvrir dans Google Maps »). */
+  .btn-secondary {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    min-height: 44px;
+    border: 1px solid var(--color-line);
+    border-radius: 9999px;
+    background: var(--color-white);
+    color: var(--color-ink);
+    font-weight: 700;
+    text-decoration: none;
+    cursor: pointer;
+    &:hover {
+      border-color: var(--color-soft);
+      color: var(--color-ink);
+    }
+    &:disabled,
+    &[aria-disabled="true"] {
+      opacity: 0.6;
+      cursor: progress;
+    }
+  }
+
+  /* Espresso action (a selected state that acts, the « Terminaux » marker as a button). */
+  .btn-dark {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    min-height: 44px;
+    border: 1px solid var(--color-dark);
+    border-radius: 9999px;
+    background: var(--color-dark);
+    color: var(--color-white);
+    font-weight: 700;
+    text-decoration: none;
+    cursor: pointer;
+    &:hover {
+      background: color-mix(in srgb, var(--color-dark) 86%, var(--color-white));
+      color: var(--color-white);
+    }
+  }
+
+  /* Action on an espresso surface (« Itinéraire à pied jusqu'au parking » in « Retrouver ma voiture »). */
+  .btn-on-dark {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    min-height: 44px;
+    border: 1px solid color-mix(in srgb, var(--color-white) 22%, transparent);
+    border-radius: 9999px;
+    background: color-mix(in srgb, var(--color-white) 8%, transparent);
+    color: var(--color-white);
+    font-weight: 700;
+    text-decoration: none;
+    cursor: pointer;
+    &:hover {
+      background: color-mix(in srgb, var(--color-white) 14%, transparent);
+      color: var(--color-white);
+    }
+  }
+
+  /* Smaller label for any btn-*: the 44 px target stays. */
+  .btn-sm {
+    padding-inline: 16px;
+    font-size: 13.5px;
+  }
+
+  /* A standalone text action (« Modifier », « Itinéraire », « Mettre à jour »): orange text, bold, underlined on hover. */
+  .link {
+    color: var(--color-accent-dark);
+    font-weight: 700;
+    text-decoration-line: none;
+    text-underline-offset: 3px;
+    cursor: pointer;
+    &:hover {
+      color: var(--color-accent-dark);
+      text-decoration-line: underline;
+    }
+  }
+
+  /* Live dot (« EN DIRECT », navettes en circulation): orange with a soft halo that breathes. */
+  .live-dot {
+    display: inline-block;
+    flex: none;
+    width: 6px;
+    height: 6px;
+    border-radius: 9999px;
+    background: var(--color-accent);
+    box-shadow: 0 0 0 3px color-mix(in srgb, var(--color-accent) 16%, transparent);
+    animation: live-halo 2s ease-in-out infinite;
+    @media (prefers-reduced-motion: reduce) {
+      animation: none;
+    }
+  }
+
+  /* Ground of a missing photo: plain cream with a small caption (« Photos à venir »). Looks intended, not broken. */
+  .photo-none {
+    display: flex;
+    align-items: flex-end;
+    background: var(--color-tint);
+    padding: 10px 12px;
+    font-size: 10.5px;
+    line-height: 1.3;
+    font-weight: 700;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: var(--color-soft);
+  }
+
+  /* Historical name of the missing-photo / missing-map ground: now the same plain cream, no stripes. */
+  .bg-stripes {
+    background: var(--color-tint);
+  }
+
+  /* Historical name of the hero card of « Ma réservation » (was orange): now espresso, white text, text-lilac for the rest. */
+  .bg-hero {
+    background: var(--color-dark);
+  }
+
+  /*
+   * Fixed bottom bar on phones (parking page: « Total à payer en ligne · Réserver »). Pair it with `dock-space` on the
+   * page content so that nothing hides under it, and hide it from md up (`md:hidden`) if the page has a side card.
+   */
+  .dock {
+    position: fixed;
+    inset-inline: 0;
+    bottom: 0;
+    z-index: 40;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    border-top: 1px solid var(--color-line);
+    background: color-mix(in srgb, var(--color-paper) 97%, transparent);
+    padding: 12px 16px calc(12px + env(safe-area-inset-bottom));
+    backdrop-filter: blur(8px);
+  }
+  .dock-space {
+    padding-bottom: calc(112px + env(safe-area-inset-bottom));
+  }
+
+  /*
+   * A row that scrolls sideways (filters, sort choices) instead of clipping: no scrollbar, a fade on the right edge,
+   * and room after the last item so that it clears the fade once scrolled.
+   */
+  .scroll-row {
+    display: flex;
+    gap: 8px;
+    overflow-x: auto;
+    overscroll-behavior-x: contain;
+    scrollbar-width: none;
+    padding-inline-end: 32px;
+    mask-image: linear-gradient(to right, #000 calc(100% - 32px), transparent);
+    & > * {
+      flex: none;
+    }
+    &::-webkit-scrollbar {
+      display: none;
+    }
+  }
+
+  /*
+   * Price pin on a map (results map, home map). White with a hairline; `map-pin-best` = the cheapest (orange fill,
+   * ink text: white on orange is only 2.9:1); `map-pin-off` = full (« Complet », legible grey); `map-pin-term` = the
+   * terminals marker; data-active="true" = the selected pin (espresso).
+   */
+  .map-pin {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    min-height: 28px;
+    border: 1px solid var(--pin-line, var(--color-line));
+    border-radius: 9999px;
+    background: var(--pin-bg, var(--color-white));
+    padding: 2px 10px;
+    font-size: 13px;
+    line-height: 1.2;
+    font-weight: 700;
+    color: var(--pin-fg, var(--color-ink));
+    white-space: nowrap;
+    box-shadow: var(--shadow-pin);
+    & svg {
+      flex: none;
+    }
+    &[data-active="true"] {
+      --pin-bg: var(--color-dark);
+      --pin-fg: var(--color-white);
+      --pin-line: var(--color-dark);
+    }
+  }
+  .map-pin-best {
+    --pin-bg: var(--color-accent);
+    --pin-fg: var(--color-ink);
+    --pin-line: var(--color-accent);
+  }
+  .map-pin-off {
+    --pin-fg: var(--color-soft);
+  }
+  .map-pin-term {
+    --pin-bg: var(--color-dark);
+    --pin-fg: var(--color-white);
+    --pin-line: var(--color-dark);
   }
 }
 
-/* Placeholder for missing photos and maps. */
-@utility bg-stripes {
-  background: repeating-linear-gradient(135deg, var(--color-line) 0 10px, #ffffff 10px 20px);
+@keyframes live-halo {
+  0%,
+  100% {
+    box-shadow: 0 0 0 3px color-mix(in srgb, var(--color-accent) 16%, transparent);
+  }
+  50% {
+    box-shadow: 0 0 0 5px color-mix(in srgb, var(--color-accent) 8%, transparent);
+  }
 }
 
 @layer base {
@@ -124,21 +487,27 @@
     color: var(--color-ink);
   }
 
+  ::selection {
+    background: var(--color-accent-bg);
+    color: var(--color-ink);
+  }
+
+  /* Orange text is always accent-dark (4.8:1 on ivory); #FF6600 is a fill colour. */
   a {
-    color: var(--color-accent);
+    color: var(--color-accent-dark);
   }
   a:hover {
     color: var(--color-accent-dark);
   }
 
   :focus-visible {
-    outline: 3px solid var(--color-accent);
+    outline: 3px solid var(--color-accent-dark);
     outline-offset: 2px;
   }
 
-  /* On dark surfaces (header, hero, footer) the focus ring is white. */
+  /* On dark surfaces (espresso cards, footer) the focus ring is white. */
   .on-dark :focus-visible {
-    outline-color: #ffffff;
+    outline-color: var(--color-white);
   }
 
   /* Field look shared by every text input of the site. */
@@ -147,24 +516,33 @@
     width: 100%;
     min-width: 0;
     border: 1px solid var(--color-line);
-    border-radius: 16px;
-    background: #ffffff;
+    border-radius: var(--radius-field);
+    background: var(--color-white);
     padding: 0 14px;
     font-size: 16px;
     color: var(--color-ink);
+  }
+  .field::placeholder {
+    color: var(--color-soft);
+    opacity: 0.85;
+  }
+  .field:hover {
+    border-color: color-mix(in srgb, var(--color-line) 60%, var(--color-soft));
   }
   .field[aria-invalid="true"] {
     border-color: var(--color-danger);
   }
   .field:focus-visible {
+    border-color: var(--color-accent-dark);
+    outline-width: 2px;
     outline-offset: 0;
   }
 
   .label {
     display: block;
     margin-bottom: 5px;
-    font-size: 12px;
-    font-weight: 600;
+    font-size: 12.5px;
+    font-weight: 700;
     color: var(--color-soft);
   }
 
@@ -173,7 +551,15 @@
   }
 }
 
-/* The home map (K-A): the zoom buttons sit above the orange card, under the pills. */
+/* MapLibre controls (zoom buttons, attribution) in the Boutique look: hairline, 12 px corners, pin shadow. */
+:root .maplibregl-ctrl.maplibregl-ctrl-group:not(:empty) {
+  overflow: hidden;
+  border: 1px solid var(--color-line);
+  border-radius: var(--radius-field);
+  box-shadow: var(--shadow-pin);
+}
+
+/* The home map (K-A): the zoom buttons sit above the best-price card, under the pills. */
 [data-home-map] .maplibregl-ctrl-bottom-right {
   bottom: 112px;
 }

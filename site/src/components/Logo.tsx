@@ -1,7 +1,8 @@
 import { PRODUCT_NAME } from "@/lib/product";
 
-// The brand files live in /brand at the repository root; this copy is the dark variant
-// (orange sign, white letters) for the orange header and footer. 232 x 100 viewBox.
+// The brand files live in /brand at the repository root; this copy is the orange sign with white letters (E-A + O-D,
+// 03/10/2026), kept as is by Boutique on the ivory header and the espresso footer. 232 x 100 viewBox; its 17/100
+// corner radius gives the 5 px corners of the mockup at 30 px high.
 const LOGO_SRC = "/brand/logo-horizontal-dark.svg";
 
 type Props = { height?: number; className?: string };

@@ -2,9 +2,13 @@ import { fr } from "@/lib/fr";
 import type { Badge, ChipIcon, FactChip, TileKind, TrustTile } from "@/lib/highlights";
 
 /**
- * Small pieces of reassurance shared by the results and the parking page: the badges of a result,
- * the fact chips of a card and the trust tiles of a parking page. Icons are inline SVG, in the
+ * Small pieces of reassurance shared by the home, the results and the parking page: the badges of a
+ * result, the fact chips of a card and the trust tiles of a parking page. Icons are inline SVG, in the
  * stroke style of the search pills (components/stay/pill.tsx).
+ *
+ * Boutique (11/10/2026): the facts are cream chips with a warm-grey line icon (`chip`), the badges soft
+ * pills (« Le moins cher » orange on cream, « Navette la plus rapide » neutral), the trust tiles white
+ * hairline cards with the icon on a cream tile.
  */
 
 const svg = { width: 14, height: 14, viewBox: "0 0 24 24", fill: "none", stroke: "currentColor", strokeWidth: 2, strokeLinecap: "round", strokeLinejoin: "round" } as const;
@@ -65,17 +69,14 @@ export function FactIcon({ icon, size = 14 }: { icon: ChipIcon; size?: number })
 
 const TILE_ICON: Record<TileKind, ChipIcon> = { shuttle: "shuttle", security: "fenced", cancellation: "cancel", keys: "valet" };
 
-/** The fact chips of a result card ("8 min", "Clôturé", "Gratuit 24 h"…). */
+/** The fact chips of a result card ("8 min", "Clôturé", "Gratuit 24 h"…): cream, a line icon in warm grey. */
 export function FactChips({ chips, className = "" }: { chips: FactChip[]; className?: string }) {
   if (chips.length === 0) return null;
   return (
     <ul className={`flex flex-wrap gap-1.5 ${className}`}>
       {chips.map(chip => (
-        <li
-          key={chip.icon}
-          title={chip.title}
-          className={`inline-flex h-[26px] items-center gap-1 rounded-[10px] bg-tint px-2 text-[12.5px] ${chip.icon === "warning" ? "text-danger" : "text-ink"}`}
-        >
+        // A warning (non-refundable…) is rose, its icon too: the colour never carries it alone, the label says it.
+        <li key={chip.icon} title={chip.title} className={`chip ${chip.icon === "warning" ? "bg-danger-bg text-danger [&_svg]:text-danger" : ""}`}>
           <FactIcon icon={chip.icon} />
           {chip.label}
           {chip.title && <span className="sr-only"> ({chip.title})</span>}
@@ -86,15 +87,16 @@ export function FactChips({ chips, className = "" }: { chips: FactChip[]; classN
 }
 
 const BADGE_LABEL: Record<Badge, string> = { cheapest: fr.results.cheapest, fastestShuttle: fr.results.fastestShuttle };
-const BADGE_STYLE: Record<Badge, string> = { cheapest: "bg-accent text-white", fastestShuttle: "bg-peach text-white" };
+/** Soft pills: « Le moins cher » orange text on cream-orange (pill-hot), « Navette la plus rapide » neutral cream. */
+const BADGE_STYLE: Record<Badge, string> = { cheapest: "pill pill-hot", fastestShuttle: "pill" };
 
-/** Badges of a result, stacked ("Le moins cher" in orange, "Navette la plus rapide" in peach). */
+/** Badges of a result, side by side, wrapping when they do not fit. */
 export function ResultBadges({ badges, className = "" }: { badges: Badge[]; className?: string }) {
   if (badges.length === 0) return null;
   return (
-    <ul className={`flex flex-col items-start gap-1 ${className}`}>
+    <ul className={`flex flex-wrap items-center gap-1.5 ${className}`}>
       {badges.map(badge => (
-        <li key={badge} data-badge={badge} className={`rounded-xl px-2.5 py-1 text-xs font-bold ${BADGE_STYLE[badge]}`}>
+        <li key={badge} data-badge={badge} className={BADGE_STYLE[badge]}>
           {BADGE_LABEL[badge]}
         </li>
       ))}
@@ -102,19 +104,19 @@ export function ResultBadges({ badges, className = "" }: { badges: Badge[]; clas
   );
 }
 
-/** The trust band of a parking page: up to four tiles, one row on a wide screen. */
+/** The trust band of a parking page (« L'essentiel »): up to four hairline tiles, one row on a wide screen. */
 export function TrustBand({ tiles }: { tiles: TrustTile[] }) {
   if (tiles.length === 0) return null;
   return (
     <ul aria-label={fr.highlights.bandLabel} className="grid grid-cols-2 gap-2 lg:grid-cols-4 lg:gap-2.5">
       {tiles.map(tile => (
-        <li key={tile.kind} data-tile={tile.kind} className="flex items-start gap-2 rounded-[16px] bg-white p-2.5 md:p-3">
-          <span aria-hidden="true" className="flex size-7 flex-none items-center justify-center rounded-full bg-tint text-accent">
-            <FactIcon icon={TILE_ICON[tile.kind]} size={15} />
+        <li key={tile.kind} data-tile={tile.kind} className="card flex items-start gap-2.5 rounded-field p-3">
+          <span aria-hidden="true" className="flex size-8 flex-none items-center justify-center rounded-field bg-tint text-soft">
+            <FactIcon icon={TILE_ICON[tile.kind]} size={16} />
           </span>
-          <span className="min-w-0 text-[13px] leading-snug">
-            <b className="block text-[14px] md:text-[15px]">{tile.title}</b>
-            <span className="text-soft">{tile.text}</span>
+          <span className="min-w-0 text-[12.5px] leading-snug">
+            <b className="block text-[14px] leading-tight font-bold text-ink md:text-[14.5px]">{tile.title}</b>
+            <span className="font-medium text-soft">{tile.text}</span>
           </span>
         </li>
       ))}

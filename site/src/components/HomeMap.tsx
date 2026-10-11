@@ -11,7 +11,7 @@ import type { AirportLive, LatLng, SearchResult } from "@/lib/types";
 // The map's code (MapLibre) loads in the browser only, after the page.
 const ResultsMap = dynamic(() => import("./ResultsMap"), {
   ssr: false,
-  loading: () => <div className="flex h-full items-center justify-center text-soft">{fr.map.loading}</div>,
+  loading: () => <div className="flex h-full items-center justify-center bg-map text-[13.5px] font-semibold text-soft">{fr.map.loading}</div>,
 });
 
 /** How often the home map asks for the shuttles on the road (K-A). */
@@ -57,7 +57,7 @@ export function useAirportLive(slug: string): AirportLive | null {
   return live;
 }
 
-/** The map's pins for the stay's results: price pills (orange = the selected one, bookable) or "Complet". */
+/** The map's pins for the stay's results: price pills (bookable) or "Complet". */
 export function pinsOf(results: SearchResult[]): MapParking[] {
   return results
     .filter(r => r.location)
@@ -85,7 +85,10 @@ export function shuttlesOf(live: AirportLive | null, titles: Map<string, string>
     }));
 }
 
-/** The hero's map (T-A, then K-A): the terminals, the stay's parkings as price pills and the shuttles on the road. */
+/**
+ * The hero's map (T-A, then K-A): the terminals, the stay's parkings as price pills and the shuttles on the
+ * road. The padding keeps the pins clear of the pills at the top and of the « Le moins cher » card at the bottom.
+ */
 export function HomeMap({
   airport,
   results,
@@ -105,7 +108,7 @@ export function HomeMap({
       parkings={pinsOf(results)}
       controls
       controlsPosition="bottom-right"
-      padding={{ top: 120, bottom: 150, left: 50, right: 50 }}
+      padding={{ top: 90, bottom: 140, left: 50, right: 50 }}
       shuttles={shuttles}
       selected={selected}
       onSelect={onSelect}

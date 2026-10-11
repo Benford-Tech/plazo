@@ -12,15 +12,18 @@ import {
   pillFocus,
   pillFocusWithin,
   pillInvalid,
+  pillHour,
+  pillIdle,
   pillLabel,
   pillNative,
+  pillNativeHour,
   pillNativeLabel,
   pillValue,
 } from "./stay/pill";
 import { hasRoomForTwoMonths, isPhone } from "./stay/popup";
 import { DatesPopover, StaySheet, TimePopover, type StayValue } from "./stay/StayPickers";
 import { formatDayLong, validDateOrNull, type Side } from "@/lib/calendar";
-import { formatDay, formatStayDates, parseLocal } from "@/lib/dates";
+import { formatDay, parseLocal } from "@/lib/dates";
 import { fr } from "@/lib/fr";
 
 const subscribe = () => () => {};
@@ -35,8 +38,10 @@ type Open = { kind: "dates" | "time" | "sheet"; side: Side } | null;
  * page is hydrated they become buttons opening the stay pickers (a popover on larger screens, a
  * bottom sheet on phones) and the values travel in hidden inputs with the same names.
  *
- * With `phoneSummary`, a hydrated page shows phones a single "Vos dates" pill (drop-off → return)
- * opening the bottom sheet, instead of the four pills; without JavaScript phones keep the natives.
+ * With `phoneSummary`, a hydrated page shows phones one "Vos dates" field in two rows, Dépôt and
+ * Retour, each with its date and hour (Boutique, 11/10/2026: never one truncated line), each row
+ * opening the bottom sheet on its side, instead of the four pills; without JavaScript phones keep the
+ * natives.
  */
 export function StayFields({
   idPrefix,
@@ -58,7 +63,7 @@ export function StayFields({
   compactLabels?: boolean;
   /** "bar": search bar (wide time pills); "card": narrow booking card. */
   layout?: "bar" | "card";
-  /** Phones (below 640 px), once hydrated: one "Vos dates" pill opening the bottom sheet. */
+  /** Phones (below 640 px), once hydrated: one "Vos dates" field (two rows) opening the bottom sheet. */
   phoneSummary?: boolean;
   className?: string;
 }) {
@@ -96,9 +101,10 @@ export function StayFields({
 
   const summary = phoneSummary && hydrated;
 
-  const openSheet = (el: HTMLElement) => {
-    trigger.current = el;
-    setOpen({ kind: "sheet", side: "start" });
+  /** A row of the phone's field opens the bottom sheet on its side (data-side). */
+  const openSheet = (event: React.MouseEvent<HTMLButtonElement>) => {
+    trigger.current = event.currentTarget;
+    setOpen({ kind: "sheet", side: event.currentTarget.dataset.side === "end" ? "end" : "start" });
   };
 
   const timeWidth = layout === "bar" ? "w-[136px] xl:w-[150px]" : "w-[136px]";
@@ -112,7 +118,7 @@ export function StayFields({
     const dateLabel = side === "start" ? fr.picker.dropOff : fr.picker.pickUp;
     const dateName = side === "start" ? fr.search.dropOffDate : fr.search.pickUpDate;
     const timeName = side === "start" ? fr.search.dropOffTime : fr.search.pickUpTime;
-    const invalid = error ? pillInvalid : "";
+    const border = error ? pillInvalid : pillIdle;
     const isOpen = (kind: "dates" | "time") => !!open && open.side === side && (open.kind === kind || (open.kind === "sheet" && kind === "dates"));
 
     const pill = (kind: "dates" | "time") => {
@@ -123,7 +129,7 @@ export function StayFields({
       if (!hydrated) {
         // Native field: works without JavaScript.
         return (
-          <div className={`${pillBox} ${pillFocusWithin} ${invalid} ${width}`}>
+          <div className={`${pillBox} ${pillFocusWithin} ${border} ${width}`}>
             <IconChip>{icon}</IconChip>
             <label htmlFor={id} className={pillNativeLabel}>
               {label}
@@ -139,7 +145,7 @@ export function StayFields({
               defaultValue={kind === "dates" ? date : time}
               aria-invalid={error ? true : undefined}
               aria-describedby={error ? errorId : undefined}
-              className={pillNative}
+              className={kind === "dates" ? pillNative : pillNativeHour}
             />
           </div>
         );
@@ -155,12 +161,16 @@ export function StayFields({
           aria-label={fr.picker.pill(kind === "dates" ? dateName : timeName, spoken)}
           aria-describedby={error ? errorId : undefined}
           onClick={e => toggle(kind, side, e.currentTarget)}
-          className={`${pillBox} ${pillFocus} ${isOpen(kind) ? pillActive : invalid} ${width} cursor-pointer`}
+          className={`${pillBox} ${pillFocus} ${isOpen(kind) ? pillActive : border} ${width} cursor-pointer`}
         >
           <IconChip>{icon}</IconChip>
           <span className="flex min-w-0 flex-col">
             <span className={pillLabel}>{label}</span>
-            <span className={`${pillValue} ${shown ? "" : "font-semibold text-soft"}`}>{shown ?? fr.picker.choose}</span>
+            {shown ? (
+              <span className={kind === "dates" ? pillValue : `block truncate ${pillHour}`}>{shown}</span>
+            ) : (
+              <span className={`${pillValue} font-semibold text-soft`}>{fr.picker.choose}</span>
+            )}
           </span>
           {kind === "dates" ? (
             <Caret />
@@ -179,7 +189,7 @@ export function StayFields({
     return (
       <fieldset className={`min-w-0 flex-1 ${summary ? "max-sm:hidden" : ""}`}>
         <legend className="sr-only">{legend}</legend>
-        <div className="flex gap-2.5">
+        <div className="flex gap-2">
           {pill("dates")}
           {pill("time")}
         </div>
@@ -190,58 +200,58 @@ export function StayFields({
 
   const timeLabel = open?.side === "end" ? fr.picker.pickUpTime : fr.picker.dropOffTime;
 
-  const summaryPill = () => {
-    const complete = value.arrivalDate && value.returnDate;
-    const dates = complete ? formatStayDates(value.arrivalDate, value.returnDate) : null;
+  /**
+   * Phones: the stay as one field in two rows, Dépôt then Retour, each with its date and hour (never one
+   * truncated line). Each row opens the bottom sheet on its side.
+   */
+  const summaryField = () => {
     const at = (date: string, time: string) => `${formatDayLong(date)}${time ? ` à ${time}` : ""}`;
     const error = errors.arrivalAt ?? errors.returnAt;
     const errorId = `${idPrefix}-dates-error`;
-    return (
-      <div className="sm:hidden">
+    const row = (side: Side) => {
+      const date = side === "start" ? value.arrivalDate : value.returnDate;
+      const time = side === "start" ? value.arrivalTime : value.returnTime;
+      const label = side === "start" ? fr.picker.dropOff : fr.picker.pickUp;
+      return (
         <button
-          id={`${idPrefix}-dates`}
+          id={`${idPrefix}-dates-${side === "start" ? "depot" : "retour"}`}
           type="button"
           aria-haspopup="dialog"
-          aria-expanded={open?.kind === "sheet"}
-          aria-label={fr.picker.summary(
-            complete ? at(value.arrivalDate, value.arrivalTime) : null,
-            complete ? at(value.returnDate, value.returnTime) : null,
-          )}
+          aria-expanded={open?.kind === "sheet" && open.side === side}
+          aria-label={fr.picker.pill(label, date ? at(date, time) : null)}
           aria-describedby={error ? errorId : undefined}
-          onClick={e => openSheet(e.currentTarget)}
-          className={`${pillBox} ${pillFocus} ${open?.kind === "sheet" ? pillActive : error ? pillInvalid : ""} h-auto min-h-[60px] w-full cursor-pointer py-2`}
+          data-side={side}
+          onClick={openSheet}
+          className="flex min-h-12 w-full cursor-pointer items-center gap-3 px-3.5 py-2 text-left text-ink first:rounded-t-field last:rounded-b-field hover:bg-ground/60 focus-visible:outline-2 focus-visible:-outline-offset-2"
         >
-          <IconChip>
+          <span aria-hidden="true" className="flex size-5 flex-none items-center justify-center text-soft">
             <CalendarIcon />
-          </IconChip>
-          <span className="flex min-w-0 flex-col">
-            <span className={pillLabel}>{fr.picker.yourDates}</span>
-            {dates ? (
-              // Wraps at the arrow only when a long stay does not fit (e.g. two months named).
-              <span className="flex flex-wrap gap-x-1 text-[15px] leading-tight font-bold tabular-nums">
-                <span className="whitespace-nowrap">
-                  {dates.start} <span className="font-normal text-soft">{value.arrivalTime}</span>
-                </span>
-                <span className="whitespace-nowrap">
-                  <span aria-hidden="true" className="font-normal text-soft">
-                    →{" "}
-                  </span>
-                  {dates.end} <span className="font-normal text-soft">{value.returnTime}</span>
-                </span>
-              </span>
-            ) : (
-              <span className={`${pillValue} font-semibold text-soft`}>{fr.picker.chooseDates}</span>
-            )}
           </span>
+          <span className={`${pillLabel} w-[54px] flex-none`}>{label}</span>
+          {date ? (
+            <span className="min-w-0 flex-1 truncate text-[15px] leading-tight font-bold">{formatDay(date)}</span>
+          ) : (
+            <span className="min-w-0 flex-1 truncate text-[15px] leading-tight font-semibold text-soft">{fr.picker.choose}</span>
+          )}
+          {date && time && <span className={`${pillHour} flex-none`}>{time}</span>}
         </button>
+      );
+    };
+    return (
+      <fieldset className="min-w-0 sm:hidden">
+        <legend className="sr-only">{fr.picker.yourDates}</legend>
+        <div className={`flex flex-col divide-y divide-line-soft rounded-field border bg-white ${open?.kind === "sheet" ? pillActive : error ? pillInvalid : "border-line"}`}>
+          {row("start")}
+          {row("end")}
+        </div>
         <FieldError id={errorId} code={error} />
-      </div>
+      </fieldset>
     );
   };
 
   return (
-    <div className={`flex flex-col gap-2.5 ${className}`}>
-      {summary && summaryPill()}
+    <div className={`flex flex-col gap-2 ${className}`}>
+      {summary && summaryField()}
       {group("depot", "start", compactLabels ? fr.parking.dropOff : fr.search.dropOff, errors.arrivalAt)}
       {group("retour", "end", compactLabels ? fr.parking.pickUp : fr.search.pickUp, errors.returnAt)}
       {hydrated && (

@@ -40,3 +40,22 @@ describe("« EN DIRECT » dans les résultats (R-B + I-C)", () => {
     ]);
   });
 });
+
+describe("carte de résultat Boutique", () => {
+  it("un parking complet reste lisible : pastille « Complet à ces dates », sans lien ni carte estompée", () => {
+    render(<ResultCard result={result({ available: false })} href="/lyon/rhone" highlighted={false} />);
+    const card = screen.getByRole("article", { name: "Parking du Rhône" });
+    expect(card).toHaveTextContent("Complet à ces dates");
+    expect(card).toHaveTextContent("Essayez d’autres dates");
+    expect(card.className).not.toMatch(/opacity/);
+    expect(screen.queryByRole("link")).not.toBeInTheDocument();
+  });
+
+  it("sans photo, un visuel « Photos du parking à venir » ; « Le moins cher » en pastille", () => {
+    render(<ResultCard result={result()} href="/lyon/rhone" highlighted badges={["cheapest", "fastestShuttle"]} />);
+    expect(screen.getByRole("img", { name: "Photos du parking à venir" })).toBeInTheDocument();
+    expect(screen.getByText("Le moins cher")).toHaveAttribute("data-badge", "cheapest");
+    expect(screen.getByText("Navette la plus rapide")).toHaveAttribute("data-badge", "fastestShuttle");
+    expect(screen.getByRole("link", { name: /^Voir et réserver/ })).toHaveAttribute("href", "/lyon/rhone");
+  });
+});

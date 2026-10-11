@@ -20,6 +20,8 @@ export interface MapParking {
   location: LatLng;
   /** I-C: the parking's shuttles are followed live (a minibus in the pill). */
   live?: boolean;
+  /** The cheapest bookable parking: its pin is filled orange (ink text), the others stay white. */
+  best?: boolean;
 }
 
 /** A shuttle on the road (K-A): where it is, where it goes and whose it is — nothing else. */
@@ -76,9 +78,19 @@ function syncShuttles(map: maplibregl.Map, current: Map<string, maplibregl.Marke
   });
 }
 
-const PILL = "rounded-[14px] border px-2.5 py-[5px] text-sm font-bold whitespace-nowrap shadow-[0_6px_14px_-6px_rgba(0,0,0,.4)] transition-transform";
-const BOOKABLE = "border-accent bg-accent text-white data-[active=true]:border-dark data-[active=true]:bg-dark";
-const UNAVAILABLE = "border-line bg-white text-soft data-[active=true]:border-dark data-[active=true]:text-ink";
+/**
+ * Pins (globals.css `map-pin`, in Manrope rather than the map's Helvetica): white with a hairline and ink text; the
+ * cheapest is filled orange with ink text (white on #FF6600 is only 2.9:1); a full parking keeps a legible grey
+ * label; the hovered or selected pin turns espresso (data-active).
+ */
+function pinClass(p: MapParking): string {
+  const tone = !p.bookable ? "map-pin-off" : p.best ? "map-pin-best" : "";
+  return `map-pin ${tone} cursor-pointer font-sans transition-transform`;
+}
+
+/** The terminals marker: a small plane (Material "flight", as in the mockup) and its label, on espresso. */
+const PLANE_SVG =
+  '<svg viewBox="0 0 24 24" width="14" height="14" fill="currentColor" aria-hidden="true"><path d="M21 16v-2l-8-5V3.5c0-.83-.67-1.5-1.5-1.5S10 2.67 10 3.5V9l-8 5v2l8-2.5V19l-2 1.5V22l3.5-1 3.5 1v-1.5L13 19v-5.5l8 2.5z"/></svg>';
 
 function hasWebGL(): boolean {
   try {
@@ -103,7 +115,7 @@ function highlight(markers: Map<string, HTMLElement>, slug: string | null) {
 }
 
 /**
- * Map of the results (MapLibre GL on the IGN plan): the terminals and each parking as a price pill.
+ * Map of the results (MapLibre GL on the IGN plan): the terminals and each parking as a price pin.
  * Hovering or focusing a card highlights its pill and the other way round; a click on a pill brings
  * its card into view and focuses it. Loaded only when the traveller shows the map.
  */
@@ -191,8 +203,9 @@ export default function ResultsMap({
 
     if (airport.location) {
       const terminals = document.createElement("div");
-      terminals.className = "rounded-2xl bg-dark px-3 py-[7px] text-sm font-bold whitespace-nowrap text-white shadow-[0_6px_14px_-6px_rgba(0,0,0,.4)]";
-      terminals.textContent = `✈ ${fr.map.terminals}`;
+      terminals.className = "map-pin map-pin-term gap-1.5 px-3 font-sans";
+      terminals.innerHTML = PLANE_SVG;
+      terminals.append(document.createTextNode(fr.map.terminals));
       terminals.title = airport.name;
       added.push(new maplibregl.Marker({ element: terminals }).setLngLat([airport.location.lng, airport.location.lat]).addTo(map));
     }
@@ -200,10 +213,10 @@ export default function ResultsMap({
     for (const p of parkings) {
       const pill = document.createElement("button");
       pill.type = "button";
-      pill.className = `${PILL} ${p.bookable ? BOOKABLE : UNAVAILABLE} cursor-pointer focus-visible:outline-3 focus-visible:outline-offset-2 focus-visible:outline-accent`;
+      pill.className = pinClass(p);
       if (p.live) {
         const bus = document.createElement("span");
-        bus.className = "mr-1 inline-flex align-[-2px]";
+        bus.className = "inline-flex";
         bus.innerHTML = shuttleSvg(14);
         pill.append(bus, document.createTextNode(p.label));
       } else pill.textContent = p.label;
@@ -290,7 +303,7 @@ export default function ResultsMap({
   }, [shuttlesKey]);
 
   if (failed) {
-    return <div className="flex h-full items-center justify-center bg-tint p-6 text-center text-soft">{fr.map.failed}</div>;
+    return <div className="flex h-full items-center justify-center bg-tint p-6 text-center font-semibold text-soft">{fr.map.failed}</div>;
   }
-  return <div ref={container} role="region" aria-label={fr.map.title} className="h-full w-full" />;
+  return <div ref={container} role="region" aria-label={fr.map.title} className="h-full w-full bg-map" />;
 }
