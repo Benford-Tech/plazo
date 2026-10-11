@@ -1,8 +1,9 @@
 # Captures d'écran des stores (Plazo et Plazo Pro)
 
-Les captures téléphone de Google Play (1080 × 1920, format 9:16) des deux apps, prises sur les vraies apps
-construites pour le web, avec des données de démonstration. Résultat dans `brand/stores/screenshots/plazo/` et
-`brand/stores/screenshots/plazo-pro/` (sept écrans chacune, numérotés dans l'ordre de la fiche).
+Les captures téléphone de Google Play (1080 × 1920, format 9:16) et celles de l'App Store (iPhone 6,9", 1320 × 2868)
+des deux apps, prises sur les vraies apps construites pour le web, avec des données de démonstration. Résultat dans
+`brand/stores/screenshots/plazo/` et `brand/stores/screenshots/plazo-pro/` (sept écrans chacune, numérotés dans l'ordre
+de la fiche), et dans leur sous-dossier `app-store/` pour la taille iPhone.
 
 ## Ce que fait la prise de vue
 
@@ -17,8 +18,10 @@ construites pour le web, avec des données de démonstration. Résultat dans `br
    SMS par Brevo. Pour la prise de vue, l'API reçoit des clés factices de vols, SMS et notifications (le bandeau
    des services du tableau de bord dit « OK » comme en production) ; les vols pointent vers un port local fermé,
    aucun appel réel n'est fait pour eux.
-5. `capture.mjs` pilote les deux apps avec Chromium (fenêtre 405 × 720 à 8/3 pixels par point, fuseau
-   Europe/Paris, position GPS sur la route de l'aéroport) et enregistre les captures.
+5. `capture.mjs` pilote les deux apps avec Chromium (fuseau Europe/Paris, position GPS sur la route de l'aéroport) et
+   enregistre les captures : d'abord en `DEVICE=phone` (fenêtre 405 × 720 à 8/3 pixels par point, Google Play), puis,
+   la journée remise en place (trajet clos, poste du gérant effacé), en `DEVICE=iphone` (440 × 956 à 3 pixels par
+   point, l'iPhone 16 Pro Max : mêmes écrans, la fenêtre plus haute montre simplement plus de contenu).
 
 ## La lancer
 
@@ -48,5 +51,5 @@ Flutter), `SKIP_BACKEND_BUILD=1`, `SKIP_FLUTTER_BUILD=1` avec `WORK` (réutilise
 | 06 Jour du retour : compte à rebours | 06 Trajet en cours, position partagée |
 | 07 Retrouver ma voiture | 07 « Aujourd'hui, je suis… » |
 
-Google Play en accepte huit par app ; l'App Store demande d'autres tailles (iPhone 6,9", voir
-`mobile/fiches-stores.md`, section 5.1).
+Google Play en accepte huit par app ; l'App Store en accepte dix (les sept de `app-store/` suffisent, 5 ou 6 sont
+conseillées ; les tailles sont dans `mobile/fiches-stores.md`, section 5.1).
