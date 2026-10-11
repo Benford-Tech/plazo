@@ -693,7 +693,15 @@ Le nom du produit doit rester dans UN seul fichier de configuration (il peut enc
   « Image de présentation 1 024 × 500, icône 512 × 512 ») dans `brand/stores/` : deux images de présentation par app
   (A : aplat orange ou citron avec le P et l'avion ; B : le fond de l'app, la tuile de l'icône, une pilule), au choix de
   Joanny, et les icônes 512, rendues par `brand/stores/tools/build.mjs` (Chromium, polices de l'app embarquées en data URI)
-  et `finish.py`. Le nom iOS vit dans
+  et `finish.py` ; **captures téléphone** (11/10/2026, « Captures d'écran pour téléphone ») dans `brand/stores/screenshots/`
+  (sept par app, 1080 × 1920) prises sur les vraies apps construites pour le web par `brand/stores/tools/screenshots/run.sh`
+  (base neuve `…_shots` avec les données de démo, API à 14:05 au parking par `fake-clock.cjs`, journée préparée par
+  `scenario.mjs` et `stage.sql`, Chromium piloté par `capture.mjs`), ou par le workflow GitHub `store-screenshots.yml`
+  (artefact) ; **polices de l'app variables** (11/10/2026 : `Manrope.ttf` était l'instance statique ExtraLight et
+  `ArchivoNarrow.ttf` / `JetBrainsMono.ttf` des Regular statiques, tout le texte de l'app voyageur sortait en très fin et
+  les titres de Plazo Pro sans gras ; remplacées par les polices variables de Google Fonts, `wght` 200–800, 400–700,
+  100–800, que `_font` de `theme.dart` règle déjà) ; carte de l'accueil Rechercher cadrée avec une marge de 108 / 120 px
+  (120 / 170 laissaient 50 px pour les parkings et la carte montrait toute la région). Le nom iOS vit dans
   `APP_DISPLAY_NAME` des configurations Xcode (mis à jour par `sync_product.dart`) ; Google Pay suit la clé Stripe servie
   (`pk_live_` = production).
   Voir `mobile/README.md`.

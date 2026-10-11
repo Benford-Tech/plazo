@@ -242,8 +242,11 @@ class _MapHero extends StatelessWidget {
                     options: MapOptions(
                       initialCenter: center,
                       initialZoom: 12.5,
+                      // The pins stay clear of the two rows of pills on top and of the featured card at the bottom;
+                      // the map is only 340 high, so the padding leaves ~110 px for the parkings (120 + 170 left
+                      // 50 px, and the camera zoomed out to the whole region).
                       initialCameraFit: points.length > 1
-                          ? CameraFit.bounds(bounds: LatLngBounds.fromPoints(points), padding: const EdgeInsets.fromLTRB(50, 120, 50, 170), maxZoom: 14)
+                          ? CameraFit.bounds(bounds: LatLngBounds.fromPoints(points), padding: const EdgeInsets.fromLTRB(36, 108, 36, 120), maxZoom: 14)
                           : null,
                       interactionOptions: const InteractionOptions(flags: InteractiveFlag.all & ~InteractiveFlag.rotate),
                     ),
