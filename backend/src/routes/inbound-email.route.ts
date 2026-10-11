@@ -23,6 +23,15 @@ import { StaffAuthMiddleware } from '@/middlewares/staff-auth.middleware';
  *         description: "{ received, imported, toCheck, ignored }; always 200 once authenticated, so the relay does not resend"
  *       401:
  *         description: Bad or missing secret, or the feature is off
+ * /public/inbound/retry:
+ *   post:
+ *     tags: [Inbound email]
+ *     summary: "Cron of the Cloudflare relay, every 10 minutes (header X-Inbound-Secret): the Allopark emails whose booking page could not be read are analysed again when due (after 10 min, 30 min, 1 h, 3 h, 8 h; two days at most; never a captcha), three per call at most"
+ *     responses:
+ *       200:
+ *         description: "{ due, tried, outcomes: { imported?, changed?, duplicate?, incomplete?, unrecognised? } }"
+ *       401:
+ *         description: Bad or missing secret, or the feature is off
  * /internal/inbound/settings:
  *   get:
  *     tags: [Inbound email]
@@ -88,6 +97,7 @@ export class InboundEmailRoute implements Routes {
   private initializeRoutes() {
     // The relay posts the raw message (message/rfc822, up to Vercel's body limit); the former JSON shape still goes through express.json.
     this.router.post('/public/inbound/email', express.raw({ type: RAW_EMAIL_TYPE, limit: RAW_EMAIL_MAX_BYTES + 64 * 1024 }), this.inbound.receive);
+    this.router.post('/public/inbound/retry', this.inbound.retry);
     this.router.get('/internal/inbound/settings', StaffAuthMiddleware('reservations:manage'), this.inbound.settings);
     // 10/10/2026 (« En consultation, l'équipe, les mots de passe et les paiements du loueur ne se modifient pas »): every
     // gesture of the inbox and the new address are open to « Ouvrir son espace » (traced as view_as.write under the admin's name).

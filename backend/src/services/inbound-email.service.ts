@@ -26,6 +26,7 @@ import {
   textOf,
 } from '@/domain/inbound-email';
 import { fullName } from '@/domain/staff-name';
+import { AUTO_RETRY_MAX, AUTO_RETRY_OUTCOMES, AUTO_RETRY_WINDOW_HOURS, nextAutoRetry } from '@/domain/inbound-retry';
 import { can } from '@/domain/roles';
 import { HttpException } from '@/utils/httpException';
 import { allocateInboundSlug } from './inbound-slug';
@@ -95,7 +96,18 @@ export interface InboundEmailView {
   pageLookup: PageLookupView | null;
   /** 10/10/2026 (« C'est une modification »): what Plazo did of an Allopark change of a booking; null for any other email. */
   change: InboundChangeView | null;
+  /** 11/10/2026: the re-analyses Plazo made by itself, and when it makes the next one (null: none planned). */
+  autoRetries: number;
+  autoRetryAt: string | null;
   receivedAt: string;
+}
+
+/** 11/10/2026 (« Lance l'analyse automatiquement pour allopark »): what one automatic pass did, without personal data. */
+export interface AutoRetryReport {
+  /** Emails due for another try. */
+  due: number;
+  tried: number;
+  outcomes: Partial<Record<ReanalysisOutcome, number>>;
 }
 
 /**
@@ -155,6 +167,12 @@ const LIST_MAX = 100;
  * twice).
  */
 const REANALYSIS_GAP_MS = 30_000;
+/**
+ * 11/10/2026: one automatic pass (every 10 minutes, called by the email relay) analyses three emails at most, and starts
+ * another only within its first 15 s: each may open Allopark's page (8 s) and ask Claude (30 s), within Vercel's 60 s.
+ */
+const AUTO_RETRY_PER_RUN = 3;
+const AUTO_RETRY_START_BUDGET_MS = 15_000;
 /** 10/10/2026 (« C'est une modification »): `changed` = an Allopark change applied to its booking (the email then reads `imported`). */
 export type ReanalysisOutcome = 'imported' | 'changed' | 'duplicate' | 'incomplete' | 'unrecognised';
 export interface Reanalysis {
@@ -189,6 +207,13 @@ interface Analysis {
   pageLookup: PageLookupView | null;
   /** 10/10/2026 (« C'est une modification »): what became of an Allopark change; null for any other email. */
   change: InboundChangeView | null;
+}
+
+/** What one more analysis of a stored email did: the analysis, the row as it was when written, and its new state (null: attached meanwhile). */
+interface Rerun {
+  analysis: Analysis;
+  current: { status: InboundEmailStatus; reservationId: string | null } | null;
+  status: InboundEmailStatus | null;
 }
 
 /** The Allopark booking page tried for an email: its booking as the page shows it, and what became of the page. */
@@ -802,34 +827,107 @@ export class InboundEmailService {
       data: { analysedAt: now },
     });
     if (!claimed.count) throw new HttpException(httpStatus.CONFLICT, 'This email is being analysed', 'analysis_running');
-    let analysis: Analysis;
+    let result: Rerun;
     try {
-      analysis = await this.analyse({
-        operatorId: actor.operatorId,
-        emailId: id,
-        text: row.textBody,
-        fromAddress: row.fromAddress,
-        fromName: row.fromName,
-        subject: row.subject,
-        links: row.links,
-        recipients: row.recipients,
-        previous: {
-          parsed: storedParsed(row.parsed),
-          missing: missingOf(row.missing),
-          reading: readingOf(row.reading),
-          change: changeOf(row.change),
-        },
-      });
+      result = await this.rerun(row, actor.operatorId, actor, false);
     } catch (error) {
       // An unexpected failure frees the email for another try at once.
       await prisma.inboundEmail.updateMany({ where: { id, analysedAt: now }, data: { analysedAt: row.analysedAt } }).catch(() => undefined);
       throw error;
     }
+    if (!result.current) throw new HttpException(httpStatus.NOT_FOUND, 'Email not found', 'not_found');
+    if (!result.status) throw new HttpException(httpStatus.CONFLICT, 'This email already has its booking', 'already_imported');
+    const updated = await prisma.inboundEmail.findUniqueOrThrow({ where: { id }, include: { reservation: { select: { reference: true } } } });
+    return { email: this.view(updated), outcome: result.analysis.status };
+  }
+
+  /**
+   * 11/10/2026 (« Lance l'analyse automatiquement pour allopark »): the Allopark emails whose booking page Plazo could not
+   * read are analysed again by Plazo itself when due (domain/inbound-retry.ts: after 10 min, 30 min, 1 h, 3 h and 8 h, two
+   * days at most; never a page protected by a captcha), oldest first, a few per pass. Each is one « Relancer l'analyse »:
+   * the same claim (never while the staff relaunch it), the same analysis, the booking created or the change applied with
+   * their notifications, traced `inbound.reanalysed` with `auto: true` and no staff member. Called every 10 minutes by the
+   * email relay's cron (POST /public/inbound/retry).
+   */
+  public async retryAllopark(now = new Date()): Promise<AutoRetryReport> {
+    const rows = await prisma.inboundEmail.findMany({
+      where: {
+        status: { in: TO_CHECK },
+        reservationId: null,
+        textBody: { not: null },
+        receivedAt: { gte: new Date(now.getTime() - AUTO_RETRY_WINDOW_HOURS * 3_600_000) },
+        autoRetries: { lt: AUTO_RETRY_MAX },
+        operator: { suspendedAt: null },
+        OR: AUTO_RETRY_OUTCOMES.map(outcome => ({ pageLookup: { path: ['outcome'], equals: outcome } })),
+      },
+      include: { reservation: { select: { reference: true } } },
+      orderBy: { receivedAt: 'asc' },
+      take: 50,
+    });
+    const due = rows.filter(row => {
+      const next = nextAutoRetry(autoRetryCandidate(row));
+      return next !== null && next.getTime() <= now.getTime();
+    });
+    const report: AutoRetryReport = { due: due.length, tried: 0, outcomes: {} };
+    const started = Date.now();
+    for (const row of due.slice(0, AUTO_RETRY_PER_RUN)) {
+      if (report.tried > 0 && Date.now() - started > AUTO_RETRY_START_BUDGET_MS) break;
+      const at = new Date();
+      // Claimed as a staff relaunch is (never twice at once), the try counted even when the analysis fails.
+      const claimed = await prisma.inboundEmail.updateMany({
+        where: {
+          id: row.id,
+          reservationId: null,
+          status: { in: TO_CHECK },
+          autoRetries: row.autoRetries,
+          OR: [{ analysedAt: null }, { analysedAt: { lte: new Date(at.getTime() - REANALYSIS_GAP_MS) } }],
+        },
+        data: { analysedAt: at, autoRetries: { increment: 1 } },
+      });
+      if (!claimed.count) continue;
+      report.tried += 1;
+      try {
+        const result = await this.rerun(row, row.operatorId, { id: null, operatorId: row.operatorId }, true);
+        report.outcomes[result.analysis.status] = (report.outcomes[result.analysis.status] ?? 0) + 1;
+      } catch (error) {
+        logger.warn(`[Inbound] automatic re-analysis of ${row.id} failed: ${error instanceof Error ? error.name : 'error'}`);
+      }
+    }
+    if (report.due) {
+      const outcomes = Object.entries(report.outcomes)
+        .map(([outcome, count]) => `${count} ${outcome}`)
+        .join(', ');
+      logger.info(`[Inbound] automatic re-analysis: ${report.due} due, ${report.tried} tried${outcomes ? ` (${outcomes})` : ''}`);
+    }
+    return report;
+  }
+
+  /**
+   * One more analysis of a stored email (« Relancer l'analyse », or Plazo's own try): the analysis of the reception, then
+   * the row written under its lock (a colleague may have handled, archived or attached it while the analysis ran: a
+   * handled or archived email keeps that state, an attached one its booking) and the history.
+   */
+  private async rerun(row: InboundRow, operatorId: string, auditActor: { id: string | null; operatorId: string }, auto: boolean): Promise<Rerun> {
+    const id = row.id;
+    const analysis = await this.analyse({
+      operatorId,
+      emailId: id,
+      text: row.textBody ?? '',
+      fromAddress: row.fromAddress,
+      fromName: row.fromName,
+      subject: row.subject,
+      links: row.links,
+      recipients: row.recipients,
+      previous: {
+        parsed: storedParsed(row.parsed),
+        missing: missingOf(row.missing),
+        reading: readingOf(row.reading),
+        change: changeOf(row.change),
+      },
+    });
     const linked = analysis.status === 'imported' || analysis.status === 'changed' || analysis.status === 'duplicate';
     // Claude's new reading when it answered; none for a booking made without it; else the former one stays.
     const reading = analysis.reading ? { reading: analysis.reading as unknown as Prisma.InputJsonValue } : linked ? { reading: Prisma.DbNull } : {};
-    // The row as it is now, locked until written: a colleague may have handled, archived or attached it (« Compléter »)
-    // while the analysis ran; a handled or archived email keeps that state, an attached one its booking.
     const written = await prisma.$transaction(async tx => {
       await tx.$queryRaw`SELECT id FROM inbound_emails WHERE id = ${id} FOR UPDATE`;
       const current = await tx.inboundEmail.findUnique({ where: { id }, select: { status: true, reservationId: true } });
@@ -854,18 +952,16 @@ export class InboundEmailService {
       });
       return { current, status };
     });
-    if (!written.current) throw new HttpException(httpStatus.NOT_FOUND, 'Email not found', 'not_found');
     const details = {
-      from: written.current.status,
-      to: written.status ?? written.current.status,
+      from: written.current?.status ?? row.status,
+      to: written.status ?? written.current?.status ?? row.status,
       outcome: analysis.status,
       ...(analysis.reservationId ? { reservationId: analysis.reservationId } : {}),
+      ...(auto ? { auto: true } : {}),
     };
     // Traced even when refused: the analysis may have made a booking before the email was attached by hand.
-    await this.audit.record(actor, { action: 'inbound.reanalysed', entityType: 'inbound_email', entityId: id, details });
-    if (!written.status) throw new HttpException(httpStatus.CONFLICT, 'This email already has its booking', 'already_imported');
-    const updated = await prisma.inboundEmail.findUniqueOrThrow({ where: { id }, include: { reservation: { select: { reference: true } } } });
-    return { email: this.view(updated), outcome: analysis.status };
+    if (written.current) await this.audit.record(auditActor, { action: 'inbound.reanalysed', entityType: 'inbound_email', entityId: id, details });
+    return { analysis, current: written.current, status: written.status };
   }
 
   /** Links an email to the booking the staff typed from it (the "Compléter" flow). */
@@ -936,6 +1032,8 @@ export class InboundEmailService {
       analysedAt: r.analysedAt?.toISOString() ?? null,
       pageLookup: pageLookupOf(r.pageLookup),
       change: changeOf(r.change),
+      autoRetries: r.autoRetries,
+      autoRetryAt: nextAutoRetry(autoRetryCandidate(r))?.toISOString() ?? null,
       receivedAt: r.receivedAt.toISOString(),
     };
   }
@@ -961,10 +1059,24 @@ type InboundRow = {
   pageLookup: Prisma.JsonValue | null;
   change: Prisma.JsonValue | null;
   analysedAt: Date | null;
+  autoRetries: number;
   reservationId: string | null;
   receivedAt: Date;
   reservation: { reference: string } | null;
 };
+
+/** What the schedule of Plazo's own re-analyses reads of a row (domain/inbound-retry.ts). */
+function autoRetryCandidate(r: InboundRow) {
+  return {
+    status: r.status,
+    reservationId: r.reservationId,
+    hasText: !!r.textBody,
+    pageOutcome: pageLookupOf(r.pageLookup)?.outcome ?? null,
+    autoRetries: r.autoRetries,
+    analysedAt: r.analysedAt,
+    receivedAt: r.receivedAt,
+  };
+}
 
 /** The booking fields as stored (null for an email nothing was read from, or a Gmail confirmation's code). */
 function storedParsed(value: Prisma.JsonValue | null): ParsedBooking | null {

@@ -283,6 +283,33 @@ describe("InboundEmailsPage (M-A « Boîte de réception », T-A « Deux gestes 
     expect(unsure.getByText(/lecture incertaine/)).toBeInTheDocument();
     expect(reading().getByText("Compléter et enregistrer")).toBeInTheDocument();
   });
+  it("11/10/2026 : l'essai automatique suivant est annoncé sous la page Allopark ; après cinq essais, le relais à l'équipe", async () => {
+    const page = "https://www.allopark.com/fr-be/confirmation?email=parking%40example.com&reference=AL-884880719&view=parking";
+    const lookup = { outcome: "not_found" as const, url: page, at: "2026-10-11T06:30:00Z" };
+    const later = new Date(Date.now() + 3600_000).toISOString();
+    lists = {
+      todo: [
+        email({ id: "a1", subject: "Bientôt", pageLookup: lookup, autoRetries: 1, autoRetryAt: later }),
+        email({ id: "a2", subject: "Dû", pageLookup: lookup, autoRetries: 0, autoRetryAt: "2026-10-11T06:40:00Z" }),
+        email({ id: "a3", subject: "Fini", pageLookup: lookup, autoRetries: 5, autoRetryAt: null }),
+        email({ id: "a4", subject: "Protégée", pageLookup: { ...lookup, outcome: "protected" }, autoRetries: 0, autoRetryAt: null }),
+      ],
+      done: [],
+      archived: [],
+    };
+    renderPage();
+    const rows = await screen.findAllByTestId("inbound-row");
+    const hour = new Intl.DateTimeFormat("fr-FR", { hour: "2-digit", minute: "2-digit", timeZone: "Europe/Paris" }).format(new Date(later));
+    expect(reading().getByTestId("inbound-auto-retry")).toHaveTextContent(`Nouvel essai automatique vers ${hour} (2 sur 5)`);
+    await userEvent.click(within(rows[1]).getByRole("button"));
+    expect(reading().getByTestId("inbound-auto-retry")).toHaveTextContent("Nouvel essai automatique dans quelques minutes (1 sur 5)");
+    await userEvent.click(within(rows[2]).getByRole("button"));
+    expect(reading().getByTestId("inbound-auto-retry")).toHaveTextContent("Plazo a réessayé 5 fois sans trouver la réservation");
+    // A captcha is left to the staff: no automatic try.
+    await userEvent.click(within(rows[3]).getByRole("button"));
+    expect(reading().queryByTestId("inbound-auto-retry")).toBeNull();
+  });
+
   it("10/10/2026 (« Prévent captcha ») : la page Allopark protégée se lit sous « Reconnu » avec son lien ; lue, sans lien ; jamais essayée, rien", async () => {
     const page = "https://www.allopark.com/fr-be/confirmation?email=parking%40example.com&reference=AL-884880719&view=parking";
     lists = {

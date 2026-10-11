@@ -467,6 +467,12 @@ export interface InboundEmail {
   /** « Relancer l'analyse » (10/10/2026): when the server last analysed the mail again; null when never. */
   analysedAt: string | null;
   /**
+   * 11/10/2026 (« Lance l'analyse automatiquement pour allopark »): the re-analyses Plazo made by itself, and when it makes
+   * the next one (null: none planned). Optional: an older server does not send them.
+   */
+  autoRetries?: number;
+  autoRetryAt?: string | null;
+  /**
    * 10/10/2026 (« Prévent captcha »): what became of the Allopark booking page at the last analysis; null when no page was
    * tried. Optional: an older server does not send it.
    */

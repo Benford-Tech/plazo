@@ -27,6 +27,12 @@ définie. Sinon, il le refuse, et la messagerie de l'expéditeur signale l'éche
 **Pourquoi le domaine principal et pas `in.plazo.fr` (R-A, 08/10/2026)** : Cloudflare n'accepte la règle « catch-all »
 (toutes les adresses) que sur le domaine principal ; sur un sous-domaine il faut une règle par adresse, 200 au plus.
 
+**Essais automatiques des mails Allopark (11/10/2026)** : le Worker a aussi une minuterie (`[triggers] crons` de
+`wrangler.toml`, toutes les 10 minutes) qui appelle `POST https://www.plazo.fr/api/public/inbound/retry` avec le même
+`X-Inbound-Secret`. Plazo y analyse de nouveau les mails Allopark dont la page de réservation n'a pas pu être lue à la
+réception (Allopark la montre souvent quelques minutes après son mail). Le Worker ne fait que frapper à la porte : c'est
+Plazo qui choisit les mails à reprendre. Une erreur est écrite dans les journaux du Worker, jamais levée.
+
 ## Mise en place (une fois)
 
 Le domaine `plazo.fr` reste enregistré chez Hostinger. Seuls ses DNS passent chez Cloudflare. Aucune boîte mail ne doit

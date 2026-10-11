@@ -2143,6 +2143,115 @@ describe('Allopark : prix de la page et vérification anti-robot (10/10/2026, «
   });
 });
 
+describe('Allopark : analyse relancée automatiquement (11/10/2026, « Lance l’analyse automatiquement pour allopark »)', () => {
+  const page = readFileSync(join(__dirname, 'fixtures/allopark-page.html'), 'utf8');
+  /** What Allopark showed at reception: « gérer ma réservation », a search form, no booking. */
+  const manage = '<!DOCTYPE html><html><head><title>Gérer ma réservation</title></head><body><form id="find-reservation"></form></body></html>';
+  const challenge =
+    '<!DOCTYPE html><html><head><title>Just a moment...</title></head><body><div id="challenge-stage"></div><script>window._cf_chl_opt={cType: "managed"}</script></body></html>';
+  const htmlHeaders = { 'Content-Type': 'text/html; charset=UTF-8' };
+  const post = (items: unknown[]) => api().post('/api/public/inbound/email').set('X-Inbound-Secret', 'inbound-test-secret').send({ items });
+  const retry = () => api().post('/api/public/inbound/retry').set('X-Inbound-Secret', 'inbound-test-secret');
+  const reader = Container.get(EmailReadingService);
+  let read: jest.SpyInstance;
+  const answer = (respond: (url: string) => Response) =>
+    fetchMock.mockImplementation(async url =>
+      String(url).includes('allopark.com') ? respond(String(url)) : new Response(JSON.stringify({ id: 'n1' }), { status: 200 }),
+    );
+  const connected = async () => {
+    const op = await setupOperator();
+    const settings = await api().get('/api/internal/inbound/settings').set(auth(op.token));
+    return { ...op, address: settings.body.address as string };
+  };
+  /** A forwarded email: addressed to the parking's mailbox (then the manager's), no link. */
+  const forwarded = (address: string, subject: string) =>
+    item('parking@example.com', email, { Recipients: [address], Subject: subject, To: [{ Name: 'Parking', Address: 'parking@example.com' }] });
+  const bySubject = async (operatorId: string, subject: string) => prisma.inboundEmail.findFirstOrThrow({ where: { operatorId, subject } });
+  const minutesAgo = (minutes: number) => new Date(Date.now() - minutes * 60_000);
+  beforeEach(() => {
+    process.env.ANTHROPIC_API_KEY = 'sk-ant-test';
+    read = jest.spyOn(reader, 'read').mockResolvedValue(null);
+  });
+  afterEach(() => {
+    delete process.env.ANTHROPIC_API_KEY;
+    read.mockRestore();
+  });
+
+  it('la page ne montre pas encore la réservation : Plazo réessaie seul 10 minutes après et la crée', async () => {
+    const op = await connected();
+    answer(() => new Response(manage, { status: 200, headers: htmlHeaders }));
+    expect((await post([forwarded(op.address, 'pas encore')])).body).toEqual({ received: 1, imported: 0, toCheck: 1, ignored: 0 });
+    let row = await bySubject(op.operator.id, 'pas encore');
+    expect(row).toMatchObject({ status: 'incomplete', autoRetries: 0, pageLookup: { outcome: 'not_found' } });
+    // The inbox says when Plazo tries again.
+    const inbox = (await api().get('/api/internal/inbound/emails').set(auth(op.token))).body.data[0];
+    expect(inbox.autoRetries).toBe(0);
+    expect(new Date(inbox.autoRetryAt).getTime()).toBe(row.receivedAt.getTime() + 10 * 60_000);
+
+    // Not due yet; the relay's secret is required.
+    expect((await retry()).body).toEqual({ due: 0, tried: 0, outcomes: {} });
+    expect((await api().post('/api/public/inbound/retry').set('X-Inbound-Secret', 'nope')).status).toBe(401);
+    expect((await api().post('/api/public/inbound/retry')).status).toBe(401);
+
+    // Eleven minutes later, Allopark shows the booking.
+    await prisma.inboundEmail.update({ where: { id: row.id }, data: { receivedAt: minutesAgo(11) } });
+    answer(() => new Response(page, { status: 200, headers: htmlHeaders }));
+    expect((await retry()).body).toEqual({ due: 1, tried: 1, outcomes: { imported: 1 } });
+    row = await bySubject(op.operator.id, 'pas encore');
+    expect(row).toMatchObject({ status: 'imported', autoRetries: 1, reservationId: expect.any(String) });
+    expect(await prisma.reservation.findUniqueOrThrow({ where: { id: row.reservationId! } })).toMatchObject({
+      externalReference: 'AL-884880719',
+      plate: 'GK-318-PX',
+    });
+    // Traced by no staff member.
+    const traced = await prisma.auditLog.findFirstOrThrow({ where: { action: 'inbound.reanalysed', entityId: row.id } });
+    expect(traced.staffId).toBeNull();
+    expect(traced.details).toMatchObject({ auto: true, outcome: 'imported', from: 'incomplete', to: 'imported' });
+    // Nothing left to try.
+    expect((await retry()).body).toEqual({ due: 0, tried: 0, outcomes: {} });
+  });
+
+  it('jamais une page protégée, un mail traité ou de plus de deux jours ; cinq essais au plus, espacés', async () => {
+    const op = await connected();
+    answer(() => new Response(challenge, { status: 403, headers: { 'cf-mitigated': 'challenge', ...htmlHeaders } }));
+    await post([forwarded(op.address, 'protégée')]);
+    answer(() => new Response(manage, { status: 200, headers: htmlHeaders }));
+    await post([forwarded(op.address, 'traité'), forwarded(op.address, 'vieux'), forwarded(op.address, 'cinq')]);
+    await prisma.inboundEmail.updateMany({ where: { operatorId: op.operator.id }, data: { receivedAt: minutesAgo(11) } });
+    const old = await bySubject(op.operator.id, 'vieux');
+    await prisma.inboundEmail.update({ where: { id: old.id }, data: { receivedAt: minutesAgo(49 * 60) } });
+    const handled = await bySubject(op.operator.id, 'traité');
+    expect((await api().post(`/api/internal/inbound/emails/${handled.id}/handle`).set(auth(op.token))).status).toBe(200);
+    const shown = (await api().get('/api/internal/inbound/emails').set(auth(op.token))).body.data as {
+      subject: string;
+      autoRetryAt: string | null;
+    }[];
+    expect(shown.find(e => e.subject === 'protégée')?.autoRetryAt).toBeNull();
+
+    // Only « cinq » is due: the page still shows no booking, the email waits.
+    expect((await retry()).body).toEqual({ due: 1, tried: 1, outcomes: { incomplete: 1 } });
+    let five = await bySubject(op.operator.id, 'cinq');
+    expect(five).toMatchObject({ status: 'incomplete', autoRetries: 1 });
+    // The next try comes 30 minutes after this one.
+    expect((await retry()).body.due).toBe(0);
+    await prisma.inboundEmail.update({ where: { id: five.id }, data: { analysedAt: minutesAgo(31) } });
+    expect((await retry()).body).toMatchObject({ due: 1, tried: 1 });
+    five = await bySubject(op.operator.id, 'cinq');
+    expect(five.autoRetries).toBe(2);
+    // Five tries at most.
+    await prisma.inboundEmail.update({ where: { id: five.id }, data: { autoRetries: 5, analysedAt: minutesAgo(600) } });
+    expect((await retry()).body.due).toBe(0);
+    const inbox = (await api().get('/api/internal/inbound/emails').set(auth(op.token))).body.data as {
+      subject: string;
+      autoRetries: number;
+      autoRetryAt: string | null;
+    }[];
+    expect(inbox.find(e => e.subject === 'cinq')).toMatchObject({ autoRetries: 5, autoRetryAt: null });
+    // The others were never retried.
+    for (const subject of ['protégée', 'traité', 'vieux']) expect((await bySubject(op.operator.id, subject)).autoRetries).toBe(0);
+  });
+});
+
 describe('Allopark : une modification appliquée par Plazo (10/10/2026, « C’est une modification »)', () => {
   const page = readFileSync(join(__dirname, 'fixtures/allopark-page.html'), 'utf8');
   const pageUrl = 'https://www.allopark.com/fr-be/confirmation?email=parking%40example.com&reference=AL-884880719&view=parking';
