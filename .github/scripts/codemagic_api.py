@@ -105,8 +105,12 @@ def variables_of(group_id):
     return {v["name"]: v for v in paginated(f"/api/v3/variable-groups/{group_id}/variables")}
 
 
-def start_build(app_id, workflow_id, branch):
-    status, payload = call("POST", f"/api/v3/apps/{app_id}/builds", {"workflow_id": workflow_id, "branch": branch})
+def start_build(app_id, workflow_id, branch, instance_type=None):
+    body = {"workflow_id": workflow_id, "branch": branch}
+    if instance_type:
+        # Overrides the workflow's machine: an Android-only build runs on Linux as well as on a Mac mini.
+        body["instance_type"] = instance_type
+    status, payload = call("POST", f"/api/v3/apps/{app_id}/builds", body)
     build_id = payload["data"]["id"]
     return build_id, build_url(app_id, build_id)
 

@@ -19,6 +19,7 @@ WORKFLOW_ID = os.environ.get("WORKFLOW_ID", "").strip() or "mobile-release-andro
 BRANCH = os.environ.get("BRANCH", "").strip() or "main"
 BUILD_ID = os.environ.get("BUILD_ID", "").strip()
 GROUP_NAME = os.environ.get("GROUP_NAME", "").strip()
+INSTANCE_TYPE = os.environ.get("INSTANCE_TYPE", "").strip()
 
 ENDED = {"finished", "failed", "canceled", "timeout", "skipped"}
 
@@ -64,8 +65,9 @@ def status(app):
 
 
 def start(app):
-    build_id, url = start_build(app["id"], WORKFLOW_ID, BRANCH)
-    line = f"Build Codemagic lancé : `{WORKFLOW_ID}` sur `{BRANCH}` → {url} (id `{build_id}`)"
+    build_id, url = start_build(app["id"], WORKFLOW_ID, BRANCH, INSTANCE_TYPE or None)
+    machine = f" (machine `{INSTANCE_TYPE}`)" if INSTANCE_TYPE else ""
+    line = f"Build Codemagic lancé : `{WORKFLOW_ID}` sur `{BRANCH}`{machine} → {url} (id `{build_id}`)"
     print(line)
     summary([line])
 
