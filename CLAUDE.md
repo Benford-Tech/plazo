@@ -655,7 +655,10 @@ Le nom du produit doit rester dans UN seul fichier de configuration (il peut enc
   Codemagic retenu par Joanny, avec les comptes de Thempo, LoveNest et Yoon)** : Plazo rejoint **le compte Codemagic** qui publie
   Thempo (11/10/2026 : le **compte personnel** de Joanny, sans équipe, apps `tempo-app`, `lovenest-frontend`, `yoon` ; 500 minutes
   gratuites par mois sur Mac mini M2, un seul build à la fois, Linux seulement avec la facturation, compteur et « Enable billing »
-  sur codemagic.io/billing/user ; réglages sous Teams › Personal account) et signe comme lui (intégration Developer Portal `lovenest-asc` de l'équipe Apple Benford Tech `3BX4795V2Y` ;
+  sur codemagic.io/billing/user ; réglages sous Teams › Personal account ; **`xcode: 26.5` épinglé le 11/10/2026** dans
+  `env_versions_android` : la version d'Xcode choisit le pool de Mac mini M2 même pour Android, et celui de l'image par défaut
+  26.6 était saturé depuis le 08/10/2026, builds en file plus d'une heure sans incident déclaré, discussion codemagic-ci-cd
+  #3570 ; à remettre en `latest` plus tard) et signe comme lui (intégration Developer Portal `lovenest-asc` de l'équipe Apple Benford Tech `3BX4795V2Y` ;
   `ios_signing` avec le certificat Apple Distribution déjà téléversé, Apple n'en acceptant que 3 ; clé d'import
   propre à Plazo créée par le workflow GitHub `android-keystore.yml` (« Android keystore (Plazo upload key) », 11/10/2026 :
   mot de passe aléatoire, rien ne passe par une conversation) et envoyée par `.github/scripts/codemagic_keystore.py` avec

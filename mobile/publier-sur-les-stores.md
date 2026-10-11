@@ -60,9 +60,14 @@ la clé d'import Android de Plazo dans Codemagic (créée et envoyée par GitHub
   quelques publications par mois, partagées avec Thempo, LoveNest et Yoon. C'est pourquoi les vérifications de chaque
   modification tournent sur GitHub Actions, gratuitement.
 - Un build qui reste **Queued** alors que rien d'autre ne tourne sur le compte (workflow GitHub « Codemagic build »,
-  action `team`) : minutes du mois épuisées ou file d'attente Codemagic (<https://status.codemagic.io>) ; Codemagic
-  l'annule de lui-même au bout de 5 h, l'action `cancel` l'annule avant. Premier build Android de Plazo lancé le
-  11/10/2026 à 13:56 UTC, toujours en attente à 15:20 sans autre build sur le compte.
+  action `team`) : minutes du mois épuisées, file d'attente Codemagic (<https://status.codemagic.io>) ou **pool de
+  machines saturé pour l'image Xcode choisie** : la version d'Xcode désigne l'image macOS, donc le pool de Mac mini M2,
+  même pour un build Android. Le 11/10/2026, les deux premiers builds Android de Plazo sont restés en file plus d'une
+  heure (117 minutes sur 500 consommées, aucun autre build) : depuis le 08/10/2026 le pool de l'image par défaut
+  (Xcode 26.6) est surchargé, sans incident déclaré ; Codemagic conseille `xcode: 26.5` ou `26.4`
+  ([discussion codemagic-ci-cd #3570](https://github.com/orgs/codemagic-ci-cd/discussions/3570)), d'où `xcode: 26.5`
+  dans `env_versions_android` de `codemagic.yaml`, à remettre en `latest` plus tard. Codemagic annule de lui-même un
+  build en attente depuis 5 h, l'action `cancel` l'annule avant.
 
 ## 0. À décider avant de commencer
 
