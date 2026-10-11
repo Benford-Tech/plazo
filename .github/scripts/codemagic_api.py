@@ -69,11 +69,20 @@ def find_app(name=None):
     return next(a for a in candidates if a["id"] == ids[0])
 
 
+def teams_of_user():
+    return list(paginated("/api/v3/user/teams"))
+
+
+def team_has_app(team_id, app_id, name=None):
+    """Whether the team lists the app (looked up by name, which the endpoint filters on, then by id)."""
+    apps = paginated(f"/api/v3/teams/{team_id}/apps", {"name": name or APP_NAME})
+    return any(a.get("id") == app_id for a in apps)
+
+
 def find_team(app_id):
     """The team that owns the app, or None when it is a personal app."""
-    for team in paginated("/api/v3/user/teams"):
-        status, payload = call("GET", f"/api/v3/teams/{team['id']}/apps", query={"id": app_id, "page_size": 5})
-        if any(a.get("id") == app_id for a in payload.get("data", [])):
+    for team in teams_of_user():
+        if team_has_app(team["id"], app_id):
             return team
     return None
 
