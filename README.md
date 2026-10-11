@@ -214,7 +214,8 @@ une décision de Joanny. Cocher au fur et à mesure.
   `plazo_android_signing`, artefact d'un jour pour le gestionnaire de mots de passe), groupe
   `mobile_secrets` (`GOOGLE_PLAY_SERVICE_ACCOUNT_CREDENTIALS` : le compte de service de Thempo, ouvert aux deux apps Plazo),
   App ID et apps chez Apple, deux profils App Store avec le certificat existant puis « Fetch profiles », deux apps chez
-  Google, premier AAB à la main, `APP_STORE_APP_ID` ; identifiants des apps confirmés avant tout envoi ; OneSignal : les deux
+  Google, premier build Android abouti le 11/10/2026 (version 1.0.0, build 112, AAB et APK des deux apps dans les Artifacts
+  Codemagic), premier AAB à importer à la main dans la Play Console, `APP_STORE_APP_ID` ; identifiants des apps confirmés avant tout envoi ; OneSignal : les deux
   apps et leurs clés Vercel existent, reste APNs et FCM sur chacune.
 - [ ] `product.json` › `company` : forme juridique, capital, siège, RCS, TVA, téléphone, directeur de la publication,
   médiateur, et une adresse support réelle (aujourd'hui `support@example.com`) ; Claude les pose puis

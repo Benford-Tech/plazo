@@ -1,11 +1,14 @@
 # Publier Plazo et Plazo Pro sur les stores
 
-État au 11/10/2026 : les deux fiches Google Play existent ; Apple, Codemagic et le premier envoi restent à faire.
+État au 11/10/2026 (soir) : les deux fiches Google Play existent ; Codemagic construit (premier build Android abouti, version 1.0.0
+build 112, AAB et APK des deux apps dans les Artifacts du build) ; restent le premier import des AAB dans la Play Console, la clé du
+compte de service Google Play, puis Apple.
 
 Les comptes existent déjà : ceux qui publient Thempo, LoveNest et Yoon. Plazo s'y ajoute, signé et publié comme Thempo,
 qui sort sur les deux stores depuis le même compte Codemagic (le **compte personnel** de Joanny, sans équipe : relevé par
 l'API le 11/10/2026). Les pipelines sont dans `codemagic.yaml`, à la racine du dépôt ; le premier build Android de Plazo a
-été lancé le 11/10/2026 (en attente, voir « Ce qui existe déjà »). Depuis le 11/10/2026 (« unifie le pipeline »), **un seul workflow de
+abouti le 11/10/2026 (build 112 : `plazo-v1.0.0-112.aab`, `plazo-pro-v1.0.0-112.aab`, leurs APK et `mapping.txt` ; seule
+l'étape Google Play en erreur, faute de clé de compte de service, comme prévu). Depuis le 11/10/2026 (« unifie le pipeline »), **un seul workflow de
 publication** construit les six paquets d'une version (APK, AAB et IPA de Plazo et de Plazo Pro) et les envoie aux deux
 stores ; un second, **Android seul** (`mobile-release-android`), fait la moitié Google Play sans rien demander à Apple : il
 sert au premier envoi sur Google Play sans attendre les profils Apple, puis chaque fois que seul Google Play doit recevoir
@@ -214,7 +217,7 @@ la clé d'import Android de Plazo dans Codemagic (créée et envoyée par GitHub
    faites ; **Apple n'est pas nécessaire** :
    - Codemagic : **Start new build**, `main`, workflow **« Plazo + Plazo Pro — Android seul »** (`mobile-release-android`).
      Les deux envois Google Play échouent sur ce premier build (« Package not found ») et le bilan le met en erreur :
-     **c'est attendu**. (Avec `mobile-release`, une fois Apple prêt, c'est pareil, et les deux IPA partent vers TestFlight.)
+     **c'est attendu**. Fait le 11/10/2026 (build `6acbd661546ce6236ced943f`, version 1.0.0, build 112, 24 min). (Avec `mobile-release`, une fois Apple prêt, c'est pareil, et les deux IPA partent vers TestFlight.)
    - **Artifacts** du build : télécharger `plazo-pro-v1.0.0-<n°>.aab` et `plazo-v1.0.0-<n°>.aab`.
    - Play Console : **Tests internes › Créer une version**, garder la signature d'application Play proposée, **Importer**
      l'AAB, **Suivant**, **Enregistrer** : la version reste en brouillon.
