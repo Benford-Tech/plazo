@@ -207,8 +207,9 @@ une décision de Joanny. Cocher au fur et à mesure.
   60 s et le cron de 15 min empêchent la base de se mettre en veille) et prévoir le plan Launch avant que l'équipe du client
   n°1 n'utilise l'espace pro tous les jours ; activer les alertes d'usage par e-mail dans la console Neon.
 - [ ] Stores (pas à pas : `mobile/publier-sur-les-stores.md`) avec les comptes qui publient déjà Thempo, LoveNest et Yoon
-  (Apple Benford Tech `3BX4795V2Y`, Google Play Benford Tech, équipe Codemagic avec `lovenest-asc`) : Plazo ajouté à
-  l'équipe Codemagic (facturation active), clé d'import Android créée et envoyée par le workflow GitHub « Android keystore
+  (Apple Benford Tech `3BX4795V2Y`, Google Play Benford Tech, compte Codemagic personnel de Joanny avec `lovenest-asc`,
+  sans équipe) : Plazo ajouté au compte Codemagic (fait ; 500 minutes gratuites par mois sur Mac mini M2, un build à la
+  fois, facturation à activer sur codemagic.io/billing/user au-delà), clé d'import Android créée et envoyée par le workflow GitHub « Android keystore
   (Plazo upload key) » (jeton de l'API Codemagic en secret GitHub `CODEMAGIC_API_TOKEN`, groupe de variables Secure
   `plazo_android_signing`, artefact d'un jour pour le gestionnaire de mots de passe), groupe
   `mobile_secrets` (`GOOGLE_PLAY_SERVICE_ACCOUNT_CREDENTIALS` : le compte de service de Thempo, ouvert aux deux apps Plazo),

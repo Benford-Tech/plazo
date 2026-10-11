@@ -3,8 +3,9 @@
 État au 11/10/2026 : les deux fiches Google Play existent ; Apple, Codemagic et le premier envoi restent à faire.
 
 Les comptes existent déjà : ceux qui publient Thempo, LoveNest et Yoon. Plazo s'y ajoute, signé et publié comme Thempo,
-qui sort sur les deux stores depuis la même équipe Codemagic. Les pipelines sont dans `codemagic.yaml`, à la racine du
-dépôt ; aucun build de Plazo n'a encore tourné. Depuis le 11/10/2026 (« unifie le pipeline »), **un seul workflow de
+qui sort sur les deux stores depuis le même compte Codemagic (le **compte personnel** de Joanny, sans équipe : relevé par
+l'API le 11/10/2026). Les pipelines sont dans `codemagic.yaml`, à la racine du dépôt ; le premier build Android de Plazo a
+été lancé le 11/10/2026 (en attente, voir « Ce qui existe déjà »). Depuis le 11/10/2026 (« unifie le pipeline »), **un seul workflow de
 publication** construit les six paquets d'une version (APK, AAB et IPA de Plazo et de Plazo Pro) et les envoie aux deux
 stores ; un second, **Android seul** (`mobile-release-android`), fait la moitié Google Play sans rien demander à Apple : il
 sert au premier envoi sur Google Play sans attendre les profils Apple, puis chaque fois que seul Google Play doit recevoir
@@ -22,7 +23,7 @@ Relevé le 09/10/2026 dans les projets Thempo, LoveNest et Yoon (dépôts et ses
 | --- | --- | --- |
 | Apple | Équipe Apple Developer **Benford Tech**, Team ID **3BX4795V2Y** (LoveNest, Thempo, Yoon) | même équipe : pas de nouvelle inscription |
 | Google Play | Compte développeur **Benford Tech** (Thempo publié par l'API, Yoon et LoveNest à la main) | même compte |
-| Codemagic | Une **équipe** (Team) qui construit Thempo, LoveNest et Yoon ; intégration Developer Portal **`lovenest-asc`** (clé API App Store Connect de l'équipe Apple) ; certificat **Apple Distribution** dans Code signing identities (`thempo-distribution`) | Plazo rejoint cette équipe ; `codemagic.yaml` utilise `lovenest-asc` et ce certificat |
+| Codemagic | Le **compte personnel** de Joanny (pas d'équipe ; apps `tempo-app`, `lovenest-frontend`, `yoon`, relevé par l'API le 11/10/2026 ; réglages sous **Teams › Personal account**) ; intégration Developer Portal **`lovenest-asc`** (clé API App Store Connect de l'équipe Apple) ; certificat **Apple Distribution** dans Code signing identities (`thempo-distribution`) | Plazo y est ajouté (app `plazo`) ; `codemagic.yaml` utilise `lovenest-asc` et ce certificat |
 | Google Cloud | Le compte de service qui publie Thempo sur Google Play (clé JSON dans le groupe `google_play` de l'app Thempo) | le même, ouvert aux deux apps Plazo |
 | OneSignal | Les deux apps de Plazo : Plazo Pro `89a1124f-3ba0-481e-b9f1-545d254e435d`, Plazo `dd3c2a74-a7b0-4117-ba18-ab5a1edfe0a3` | App ID déjà dans `codemagic.yaml` et dans Vercel, clés REST dans Vercel : **rien à faire** côté API |
 
@@ -36,7 +37,7 @@ la clé d'import Android de Plazo dans Codemagic (créée et envoyée par GitHub
 | --- | --- | --- |
 | GitHub Actions `Mobile CI` | chaque PR et push sur `main` qui touche `mobile/` | nom du produit à jour, `flutter analyze`, `flutter test` (gratuit) |
 | Codemagic `mobile-check` | à la main | les mêmes vérifications + APK **debug** des deux apps, à installer pour essayer |
-| Codemagic `mobile-release` | tag `mobile-vX.Y.Z` ou à la main | les vérifications une fois, puis pour **Plazo et Plazo Pro** : AAB + APK signés (clé du groupe `plazo_android_signing`) et IPA signé (certificat de l'équipe), **même version et même numéro de build** pour les quatre paquets ; chaque AAB → **Google Play, tests internes**, chaque IPA → **TestFlight**, testeurs internes ; les six fichiers dans **Artifacts** |
+| Codemagic `mobile-release` | tag `mobile-vX.Y.Z` ou à la main | les vérifications une fois, puis pour **Plazo et Plazo Pro** : AAB + APK signés (clé du groupe `plazo_android_signing`) et IPA signé (certificat du compte), **même version et même numéro de build** pour les quatre paquets ; chaque AAB → **Google Play, tests internes**, chaque IPA → **TestFlight**, testeurs internes ; les six fichiers dans **Artifacts** |
 | Codemagic `mobile-release-android` | à la main | **Android seul**, les mêmes étapes que la moitié Android de `mobile-release` : les vérifications, AAB + APK signés des deux apps, chaque AAB → **Google Play, tests internes** ; les quatre fichiers dans **Artifacts**. Ni certificat ni profil Apple |
 
 - **Version** = le `version:` de `mobile/pubspec.yaml` (ex. `1.0.0`). Le tag doit la reprendre : `mobile-v1.0.0`, sinon le
@@ -48,13 +49,20 @@ la clé d'import Android de Plazo dans Codemagic (créée et envoyée par GitHub
   pas, « Bilan de la publication », liste les envois et met le build en erreur si l'un a échoué. Les paquets restent
   dans Artifacts.
 - `mobile-release` a besoin, **avant son premier lancement**, du certificat et des **deux profils Apple** dans les Code
-  signing identities de l'équipe (sans l'un d'eux, Codemagic s'arrête à « Set up code signing », avant de construire quoi
+  signing identities du compte (sans l'un d'eux, Codemagic s'arrête à « Set up code signing », avant de construire quoi
   que ce soit) et du groupe de variables `plazo_android_signing` (la clé d'import Android, écrite par GitHub, étape 3.2).
   `mobile-release-android` n'a besoin que de ce groupe et de la clé du compte de service Google Play : les sections 1 et 3
   suffisent.
-- Les minutes d'une équipe Codemagic sont **payantes** (pas de minutes gratuites en équipe) : une publication complète
-  prend de l'ordre d'une heure de machine (deux apps Android, deux apps iOS), Android seul une demi-heure. C'est pourquoi
-  les vérifications de chaque modification tournent sur GitHub Actions, gratuitement.
+- Le compte personnel a **500 minutes gratuites par mois** sur Mac mini M2 (compteur sur <https://codemagic.io/billing/user>,
+  remis à zéro le 1er du mois), **un seul build à la fois**, et rien sur Linux ni Windows sans facturation ; au-delà,
+  **Enable billing** sur cette page (macOS M2 0,095 $/min, Linux 0,045 $/min). Une publication complète prend de l'ordre
+  d'une heure de machine (deux apps Android, deux apps iOS), Android seul une demi-heure : les minutes gratuites couvrent
+  quelques publications par mois, partagées avec Thempo, LoveNest et Yoon. C'est pourquoi les vérifications de chaque
+  modification tournent sur GitHub Actions, gratuitement.
+- Un build qui reste **Queued** alors que rien d'autre ne tourne sur le compte (workflow GitHub « Codemagic build »,
+  action `team`) : minutes du mois épuisées ou file d'attente Codemagic (<https://status.codemagic.io>) ; Codemagic
+  l'annule de lui-même au bout de 5 h, l'action `cancel` l'annule avant. Premier build Android de Plazo lancé le
+  11/10/2026 à 13:56 UTC, toujours en attente à 15:20 sans autre build sur le compte.
 
 ## 0. À décider avant de commencer
 
@@ -73,10 +81,10 @@ la clé d'import Android de Plazo dans Codemagic (créée et envoyée par GitHub
 
 ---
 
-## 1. Codemagic (dans l'équipe existante)
+## 1. Codemagic (sur le compte existant)
 
-1. [ ] **Ouvrir l'équipe** qui contient Thempo (menu de gauche **Teams**), puis **Applications › Add application ›
-   GitHub**, et choisir `Benford-Tech/plazo`.
+1. [x] **Ouvrir le compte** qui contient Thempo (menu de gauche **Teams › Personal account**), puis **Applications ›
+   Add application › GitHub**, et choisir `Benford-Tech/plazo` (fait : app `plazo`, 11/10/2026).
    - Si `plazo` n'apparaît pas : GitHub › organisation **Benford-Tech** › **Settings › GitHub Apps › Codemagic CI/CD ›
      Configure**, **Repository access** : ajouter `plazo`, **Save**.
    - Type de projet **Flutter App**, configuration **codemagic.yaml** (pas le Workflow Editor), **Finish: Add application**.
@@ -84,17 +92,19 @@ la clé d'import Android de Plazo dans Codemagic (créée et envoyée par GitHub
    workflows (« Mobile — vérifications + APK de test (debug, à la main) », « Plazo + Plazo Pro — APK, AAB, IPA →
    Google Play (tests internes) + TestFlight » et « Plazo + Plazo Pro — Android seul (APK, AAB) → Google Play (tests
    internes) »).
-3. [ ] **Vérifier la facturation de l'équipe** (Team settings › **Billing**) : sans moyen de paiement actif, les builds
+3. [ ] **Vérifier les minutes** sur <https://codemagic.io/billing/user> (minutes gratuites consommées ce mois-ci ; **Enable
+   billing** pour continuer au-delà des 500, ou pour construire sur Linux) : sans minutes ni facturation, les builds
    restent en file d'attente.
 4. [ ] **Le jeton de l'API Codemagic dans GitHub**, pour que GitHub envoie lui-même la clé d'import Android (étape 3.2) :
-   Codemagic › Team settings › **Integrations › Codemagic API › Show** (le jeton de ton compte), puis GitHub › `plazo` ›
+   Codemagic › **Teams › Personal account › Integrations › Codemagic API › Show** (le jeton de ton compte), puis GitHub › `plazo` ›
    **Settings › Secrets and variables › Actions › New repository secret**, nom `CODEMAGIC_API_TOKEN`, coller le jeton,
    **Add secret**. Rien à téléverser dans Code signing identities pour Android : la clé vit dans le groupe de variables
    `plazo_android_signing` de l'app (variables Secure `CM_KEYSTORE`, `CM_KEYSTORE_PASSWORD`, `CM_KEY_ALIAS`,
    `CM_KEY_PASSWORD`, écrites par GitHub ; Codemagic n'a pas d'API pour les Code signing identities). Avec ce jeton, le
    workflow GitHub **« Codemagic build (start, status, groups) »** (Actions › Run workflow) lance un build Codemagic,
-   donne l'état et les artefacts d'un build, liste les groupes de variables (noms seulement) ou en crée un vide : Claude
-   suit et relance les builds par là, sans accès à Codemagic.
+   donne l'état, les étapes et les artefacts d'un build, l'annule (`cancel`), dit pourquoi un build attend (`team`), liste
+   les groupes de variables (noms seulement) ou en crée un vide : Claude suit et relance les builds par là, sans accès à
+   Codemagic.
 5. [ ] **Le groupe de variables `mobile_secrets`** : page de l'app › **Environment variables** › variable
    `GOOGLE_PLAY_SERVICE_ACCOUNT_CREDENTIALS`, groupe `mobile_secrets`, cocher **Secret**, **Add**. La valeur : **tout le
    contenu** d'une clé JSON du compte de service qui publie déjà Thempo (étape 3.4), collé tel quel (pas en base64).
@@ -119,7 +129,7 @@ la clé d'import Android de Plazo dans Codemagic (créée et envoyée par GitHub
    langue Français, le Bundle ID de l'étape 1, SKU `PLAZO-IOS` / `PLAZO-PRO-IOS`.
 3. [ ] **Créer les deux profils de signature, avec le certificat qui existe déjà** (Apple n'en accepte que 3 par compte :
    **ne pas en créer un nouveau**).
-   - Repérer le certificat : Codemagic › Team settings › **Code signing identities › iOS certificates** montre
+   - Repérer le certificat : Codemagic › Teams › Personal account › **Code signing identities › iOS certificates** montre
      `thempo-distribution` et sa date d'expiration.
    - Apple : **Profiles › (+) › Distribution › App Store Connect › Continue**, l'App ID `com.benfordtech.plazo`, puis
      le certificat **Apple Distribution** qui expire à cette date, nom « Plazo App Store », **Generate**. Même chose pour
@@ -127,7 +137,7 @@ la clé d'import Android de Plazo dans Codemagic (créée et envoyée par GitHub
 4. [ ] **Les importer dans Codemagic** : **Code signing identities › iOS provisioning profiles › Fetch profiles**, cocher
    les deux profils, et leur donner **exactement** les Reference name `plazo_app_store` (Plazo) et `plazo_pro_app_store`
    (Plazo Pro) : `codemagic.yaml` les appelle par ces noms. Vérifier aussi, dans **iOS certificates**, que le certificat
-   de l'équipe porte le Reference name `thempo-distribution` (sinon le dire à Claude, qui l'adapte dans `codemagic.yaml`).
+   du compte porte le Reference name `thempo-distribution` (sinon le dire à Claude, qui l'adapte dans `codemagic.yaml`).
 5. [ ] **Relever l'Apple ID numérique de chaque app** (app › **App Information** › **Apple ID**, ou le nombre après `apps/`
    dans l'adresse) et le donner à Claude, qui le pose dans `codemagic.yaml` (`APP_STORE_APP_ID_PLAZO` /
    `APP_STORE_APP_ID_PLAZO_PRO`). Fait le 11/10/2026 : Plazo `6821635235`, Plazo Pro `6821635650`.
@@ -170,8 +180,8 @@ la clé d'import Android de Plazo dans Codemagic (créée et envoyée par GitHub
      L'artefact **disparaît au bout d'un jour** : le télécharger tout de suite, pour le gestionnaire de mots de passe
      (Codemagic ne rend jamais une clé, et Google Play exigera la même pour chaque envoi).
    - Supprimer l'artefact sur la page du run (icône de corbeille à côté de son nom), puis les fichiers téléchargés.
-   - Sans jeton Codemagic dans GitHub, le workflow ne fait que l'artefact : téléverser alors la clé à la main dans Team
-     settings › **Code signing identities › Android keystores › Upload keystore** (alias `upload`, Reference name
+   - Sans jeton Codemagic dans GitHub, le workflow ne fait que l'artefact : téléverser alors la clé à la main dans Teams ›
+     Personal account › **Code signing identities › Android keystores › Upload keystore** (alias `upload`, Reference name
      `plazo_upload`) et demander à Claude de remettre `android_signing: [plazo_upload]` dans `codemagic.yaml`.
    - Si une version signée avec une autre clé avait déjà été importée dans la Play Console, la clé d'import de cette app
      serait fixée : il faudrait alors, pour chaque app, Play Console › **Intégrité de l'application › Signature
