@@ -5,11 +5,10 @@
 #   - Apple: the team's Developer Portal integration « lovenest-asc » (App Store Connect API key of the
 #     Apple team 3BX4795V2Y, Benford Tech) and the Apple Distribution certificate already uploaded in the
 #     team's Code signing identities (Apple allows 3 per account: never create one more for Plazo);
-#   - Android: the upload keystore of Thempo, already a FILE in the team's Code signing identities under the
-#     reference tempo_eleves_upload, signs both Plazo apps too (Joanny's choice of 11/10/2026: Plazo has no
-#     key of its own yet; never base64 pasted by hand: LoveNest's got truncated). To give Plazo its own later:
-#     create it, upload it as plazo_upload, ask Google for an upload key reset of each Plazo app (Play Console
-#     › App integrity), then change android_signing below once Google has accepted the new key;
+#   - Android: Plazo's own upload keystore, created by the GitHub workflow « Android keystore (Plazo upload
+#     key) » (.github/workflows/android-keystore.yml, 11/10/2026: the key and its password never go through a
+#     conversation) and uploaded as a FILE in the team's Code signing identities under the reference
+#     plazo_upload (never base64 pasted by hand: LoveNest's got truncated);
 #   - public build settings (OneSignal app ids, as in Vercel) written here, the one secret of the app's
 #     group « mobile_secrets » being the Google Play service account key.
 # NO SECRET IN THIS FILE. Step by step: mobile/publier-sur-les-stores.md.
@@ -40,7 +39,7 @@
 #   Add the app to the existing team (the one of Thempo), from GitHub, with codemagic.yaml; check that
 #   pushes and tags reach it (app → Webhooks).
 #   Team › Code signing identities:
-#     Android keystore « tempo_eleves_upload » (Thempo's upload key, also used by both Plazo apps);
+#     Android keystore « plazo_upload » (Plazo's own, both apps);
 #     iOS certificate of the team (reference « thempo-distribution », as seen on 09/10/2026);
 #     iOS provisioning profiles « plazo_app_store » (com.benfordtech.plazo) and « plazo_pro_app_store »
 #     (com.benfordtech.plazopro), App Store profiles made in the Apple portal with that certificate,
@@ -111,7 +110,7 @@ definitions:
       script: |
         set -e
         [ -n "$CM_KEYSTORE_PATH" ] && [ -s "$CM_KEYSTORE_PATH" ] \
-          || { echo "ERREUR: clé d'import « tempo_eleves_upload » absente de Team › Code signing identities › Android"; exit 1; }
+          || { echo "ERREUR: clé d'import « plazo_upload » absente de Team › Code signing identities › Android"; exit 1; }
         cat > "$CM_BUILD_DIR/mobile/android/key.properties" <<EOF
         storeFile=$CM_KEYSTORE_PATH
         storePassword=$CM_KEYSTORE_PASSWORD
@@ -232,9 +231,8 @@ workflows:
     environment:
       <<: *env_versions
       android_signing:
-        # Team › Code signing identities › Android keystores: Thempo's upload key, shared by both Plazo apps
-        # since 11/10/2026 (see the header).
-        - tempo_eleves_upload
+        # Team › Code signing identities › Android keystores: Plazo's upload key (both apps).
+        - plazo_upload
       ios_signing:
         # Team › Code signing identities: the team's certificate and the App Store profile of EACH bundle id,
         # by reference name (an automatic `bundle_identifier` only takes one app per workflow).
@@ -347,9 +345,8 @@ workflows:
     environment:
       <<: *env_versions_android
       android_signing:
-        # Team › Code signing identities › Android keystores: Thempo's upload key, shared by both Plazo apps
-        # since 11/10/2026 (see the header).
-        - tempo_eleves_upload
+        # Team › Code signing identities › Android keystores: Plazo's upload key (both apps).
+        - plazo_upload
       groups:
         - mobile_secrets
       vars:
