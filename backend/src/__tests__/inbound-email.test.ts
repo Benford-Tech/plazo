@@ -2211,6 +2211,33 @@ describe('Allopark : analyse relancée automatiquement (11/10/2026, « Lance l�
     expect((await retry()).body).toEqual({ due: 0, tried: 0, outcomes: {} });
   });
 
+  it('relecture : un refus d’Allopark (429, blocage de Cloudflare) n’est jamais réessayé seul, et arrête le passage', async () => {
+    const op = await connected();
+    const refusal = () => new Response('Too Many Requests', { status: 429, headers: { 'cf-ray': '8c1-CDG' } });
+    answer(refusal);
+    await post([forwarded(op.address, 'refusé')]);
+    const refused = await bySubject(op.operator.id, 'refusé');
+    expect(refused.pageLookup).toMatchObject({ outcome: 'unavailable', refused: true });
+    await prisma.inboundEmail.update({ where: { id: refused.id }, data: { receivedAt: minutesAgo(11) } });
+    expect((await retry()).body).toEqual({ due: 0, tried: 0, outcomes: {} });
+    const shown = (await api().get('/api/internal/inbound/emails').set(auth(op.token))).body.data[0];
+    expect(shown).toMatchObject({ autoRetries: 0, autoRetryAt: null, pageLookup: { outcome: 'unavailable' } });
+
+    // Two emails due; Allopark refuses the first try: the second is not opened in this pass.
+    answer(() => new Response(manage, { status: 200, headers: htmlHeaders }));
+    await post([forwarded(op.address, 'premier'), forwarded(op.address, 'second')]);
+    await prisma.inboundEmail.update({ where: { id: (await bySubject(op.operator.id, 'premier')).id }, data: { receivedAt: minutesAgo(12) } });
+    await prisma.inboundEmail.update({ where: { id: (await bySubject(op.operator.id, 'second')).id }, data: { receivedAt: minutesAgo(11) } });
+    answer(refusal);
+    expect((await retry()).body).toEqual({ due: 2, tried: 1, outcomes: { incomplete: 1 }, stopped: 'refused' });
+    expect(await bySubject(op.operator.id, 'premier')).toMatchObject({ autoRetries: 1, pageLookup: { refused: true } });
+    expect((await bySubject(op.operator.id, 'second')).autoRetries).toBe(0);
+    // The refused one is left to the staff from now on; the other is tried at the next pass.
+    answer(() => new Response(page, { status: 200, headers: htmlHeaders }));
+    expect((await retry()).body).toEqual({ due: 1, tried: 1, outcomes: { imported: 1 } });
+    expect(await bySubject(op.operator.id, 'second')).toMatchObject({ status: 'imported', autoRetries: 1 });
+  });
+
   it('jamais une page protégée, un mail traité ou de plus de deux jours ; cinq essais au plus, espacés', async () => {
     const op = await connected();
     answer(() => new Response(challenge, { status: 403, headers: { 'cf-mitigated': 'challenge', ...htmlHeaders } }));

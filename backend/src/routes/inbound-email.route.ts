@@ -26,10 +26,10 @@ import { StaffAuthMiddleware } from '@/middlewares/staff-auth.middleware';
  * /public/inbound/retry:
  *   post:
  *     tags: [Inbound email]
- *     summary: "Cron of the Cloudflare relay, every 10 minutes (header X-Inbound-Secret): the Allopark emails whose booking page could not be read are analysed again when due (after 10 min, 30 min, 1 h, 3 h, 8 h; two days at most; never a captcha), three per call at most"
+ *     summary: "Cron of the Cloudflare relay, every 10 minutes (header X-Inbound-Secret): the Allopark emails whose booking page could not be read are analysed again when due (after 10 min, 30 min, 1 h, 3 h, 8 h; two days at most; never a captcha nor a page Allopark refused), three per call at most, the call ending as soon as Allopark asks for a check or refuses Plazo"
  *     responses:
  *       200:
- *         description: "{ due, tried, outcomes: { imported?, changed?, duplicate?, incomplete?, unrecognised? } }"
+ *         description: "{ due, tried, outcomes: { imported?, changed?, duplicate?, incomplete?, unrecognised? }, stopped?: protected | refused }"
  *       401:
  *         description: Bad or missing secret, or the feature is off
  * /internal/inbound/settings:

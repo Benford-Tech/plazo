@@ -108,6 +108,8 @@ export interface AutoRetryReport {
   due: number;
   tried: number;
   outcomes: Partial<Record<ReanalysisOutcome, number>>;
+  /** The pass ended early: Allopark asked for an anti-robot check or refused Plazo (no other email opened it). */
+  stopped?: 'protected' | 'refused';
 }
 
 /**
@@ -135,6 +137,8 @@ export interface PageLookupView {
   outcome: AlloparkPageOutcome;
   url: string | null;
   at: string;
+  /** 11/10/2026 (relecture): Allopark refused Plazo (429, Cloudflare block): shown as unavailable, never retried by Plazo. */
+  refused?: boolean;
 }
 
 const PAGE_OUTCOMES: AlloparkPageOutcome[] = ['read', 'protected', 'unavailable', 'not_found'];
@@ -169,10 +173,10 @@ const LIST_MAX = 100;
 const REANALYSIS_GAP_MS = 30_000;
 /**
  * 11/10/2026: one automatic pass (every 10 minutes, called by the email relay) analyses three emails at most, and starts
- * another only within its first 15 s: each may open Allopark's page (8 s) and ask Claude (30 s), within Vercel's 60 s.
+ * another only within its first 10 s: each may open Allopark's page (8 s) and ask Claude (30 s), within Vercel's 60 s.
  */
 const AUTO_RETRY_PER_RUN = 3;
-const AUTO_RETRY_START_BUDGET_MS = 15_000;
+const AUTO_RETRY_START_BUDGET_MS = 10_000;
 /** 10/10/2026 (« C'est une modification »): `changed` = an Allopark change applied to its booking (the email then reads `imported`). */
 export type ReanalysisOutcome = 'imported' | 'changed' | 'duplicate' | 'incomplete' | 'unrecognised';
 export interface Reanalysis {
@@ -457,6 +461,7 @@ export class InboundEmailService {
       outcome: result.outcome,
       url: result.outcome === 'read' ? null : result.url || null,
       at: new Date().toISOString(),
+      ...(result.refused ? { refused: true } : {}),
     };
     const page = result.booking;
     if (!page) {
@@ -858,6 +863,7 @@ export class InboundEmailService {
         receivedAt: { gte: new Date(now.getTime() - AUTO_RETRY_WINDOW_HOURS * 3_600_000) },
         autoRetries: { lt: AUTO_RETRY_MAX },
         operator: { suspendedAt: null },
+        // A refusal of Allopark (429, Cloudflare block, `refused` in the lookup) is left out below (nextAutoRetry).
         OR: AUTO_RETRY_OUTCOMES.map(outcome => ({ pageLookup: { path: ['outcome'], equals: outcome } })),
       },
       include: { reservation: { select: { reference: true } } },
@@ -889,6 +895,12 @@ export class InboundEmailService {
       try {
         const result = await this.rerun(row, row.operatorId, { id: null, operatorId: row.operatorId }, true);
         report.outcomes[result.analysis.status] = (report.outcomes[result.analysis.status] ?? 0) + 1;
+        // Allopark asked for a check or refused Plazo: no other email opens it in this pass (never hammered).
+        const lookup = result.analysis.pageLookup;
+        if (lookup && (lookup.outcome === 'protected' || lookup.refused)) {
+          report.stopped = lookup.outcome === 'protected' ? 'protected' : 'refused';
+          break;
+        }
       } catch (error) {
         logger.warn(`[Inbound] automatic re-analysis of ${row.id} failed: ${error instanceof Error ? error.name : 'error'}`);
       }
@@ -897,7 +909,10 @@ export class InboundEmailService {
       const outcomes = Object.entries(report.outcomes)
         .map(([outcome, count]) => `${count} ${outcome}`)
         .join(', ');
-      logger.info(`[Inbound] automatic re-analysis: ${report.due} due, ${report.tried} tried${outcomes ? ` (${outcomes})` : ''}`);
+      const stopped = report.stopped
+        ? `, stopped: Allopark ${report.stopped === 'protected' ? 'asked for an anti-robot check' : 'refused Plazo'}`
+        : '';
+      logger.info(`[Inbound] automatic re-analysis: ${report.due} due, ${report.tried} tried${outcomes ? ` (${outcomes})` : ''}${stopped}`);
     }
     return report;
   }
@@ -1071,7 +1086,8 @@ function autoRetryCandidate(r: InboundRow) {
     status: r.status,
     reservationId: r.reservationId,
     hasText: !!r.textBody,
-    pageOutcome: pageLookupOf(r.pageLookup)?.outcome ?? null,
+    // A refusal of Allopark (429, Cloudflare block) is left to the staff, like a captcha.
+    pageOutcome: pageLookupOf(r.pageLookup)?.refused ? 'refused' : (pageLookupOf(r.pageLookup)?.outcome ?? null),
     autoRetries: r.autoRetries,
     analysedAt: r.analysedAt,
     receivedAt: r.receivedAt,
@@ -1107,7 +1123,7 @@ function readingOf(value: Prisma.JsonValue | null): ReadingMeta | null {
 /** The lookup as stored: the page's link only for a failure, and never once the email has its booking. */
 function storedPageLookup(lookup: PageLookupView, linked: boolean): Prisma.InputJsonValue {
   const url = !linked && lookup.outcome !== 'read' ? lookup.url : null;
-  return { outcome: lookup.outcome, url, at: lookup.at };
+  return { outcome: lookup.outcome, url, at: lookup.at, ...(lookup.refused ? { refused: true } : {}) };
 }
 
 /** The Allopark page's lookup as stored, or null (never tried, purged, or a row written before 10/10/2026). */
@@ -1117,7 +1133,7 @@ function pageLookupOf(value: Prisma.JsonValue | null): PageLookupView | null {
   const outcome = PAGE_OUTCOMES.find(o => o === v.outcome);
   if (!outcome || typeof v.at !== 'string') return null;
   const url = outcome !== 'read' && typeof v.url === 'string' && isAlloparkUrl(v.url) ? v.url : null;
-  return { outcome, url, at: v.at };
+  return { outcome, url, at: v.at, ...(v.refused === true ? { refused: true } : {}) };
 }
 
 /** 10/10/2026 (« C'est une modification »): the change as stored (nulls left out). */

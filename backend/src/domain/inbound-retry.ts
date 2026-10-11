@@ -2,8 +2,9 @@
  * 11/10/2026 (« Lance l'analyse automatiquement pour allopark »): an Allopark email whose booking page Plazo could not
  * read at reception (Allopark showed « gérer ma réservation » instead of the booking, the page did not answer…) is
  * analysed again by Plazo itself, as « Relancer l'analyse » does, a few times over the next hours: the page usually
- * shows the booking a few minutes later. Never a page that asked for an anti-robot check (a captcha is left to the
- * staff, « Prévent captcha »), never an email the staff handled, archived or attached, nor one whose text is gone.
+ * shows the booking a few minutes later. Never a page that asked for an anti-robot check, nor one Allopark refused (a
+ * 429, a Cloudflare block): both are left to the staff (« Prévent captcha »); never an email the staff handled,
+ * archived or attached, nor one whose text is gone.
  */
 
 /** Minutes from the last analysis (or the reception) to the next automatic one: five tries at most. */
@@ -18,7 +19,7 @@ export interface AutoRetryCandidate {
   status: string;
   reservationId: string | null;
   hasText: boolean;
-  /** The outcome of the last Allopark page lookup, null when none was tried. */
+  /** The outcome of the last Allopark page lookup (`refused` for an `unavailable` one Allopark refused), null when none was tried. */
   pageOutcome: string | null;
   autoRetries: number;
   analysedAt: Date | null;

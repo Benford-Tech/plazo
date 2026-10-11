@@ -198,11 +198,13 @@ Ne construire QUE ce qui règle la douleur n°1 du client.
      **Analyse relancée automatiquement (11/10/2026, « Lance l'analyse automatiquement pour allopark »)** : à la réception,
      Allopark montrait parfois « gérer ma réservation » au lieu de la réservation (journaux de production : la même page lue
      18 min plus tard) ; un mail Allopark dont la page n'a pas été lue (`pageLookup` `not_found` ou `unavailable`, jamais
-     `protected`) et qui attend encore (« À traiter », sans réservation, texte gardé, reçu depuis moins de 48 h, loueur non
+     `protected` ni un refus d'Allopark — 429, blocage de Cloudflare, `refused: true` dans `pageLookup` —, laissés à
+     l'équipe comme un captcha) et qui attend encore (« À traiter », sans réservation, texte gardé, reçu depuis moins de 48 h, loueur non
      suspendu) est analysé de nouveau par Plazo lui-même, comme « Relancer l'analyse », 10 min, 30 min, 1 h, 3 h puis 8 h
      après l'essai précédent (`domain/inbound-retry.ts`, `nextAutoRetry`, 5 essais au plus, `InboundEmail.autoRetries`,
      migration `inbound_auto_retries`) : `InboundEmailService.retryAllopark` (même verrou `analysedAt` que la relance,
-     3 mails par passage, un nouveau seulement dans les 15 premières secondes ; réservation créée ou modification appliquée
+     3 mails par passage, un nouveau seulement dans les 10 premières secondes, passage arrêté dès qu'Allopark demande une
+     vérification ou refuse Plazo ; réservation créée ou modification appliquée
      avec leurs notifications ; tracé `inbound.reanalysed` avec `auto: true`, sans membre de l'équipe ; `rerun` partagé avec
      la relance manuelle), appelé par `POST /public/inbound/retry` (même `X-Inbound-Secret` que les mails) que la minuterie
      du relais `email-worker/` appelle toutes les 10 minutes (`[triggers] crons`, `scheduled()`, `PLAZO_RETRY_URL`) : rien à

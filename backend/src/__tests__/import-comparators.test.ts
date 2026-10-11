@@ -568,7 +568,8 @@ describe('Allopark : une vérification anti-robot n’est jamais passée (10/10/
       fetchMock.mockClear();
       warn.mockClear();
       answer(respond);
-      expect(await service.booking(urls, 'AL-884880719')).toEqual({ booking: null, outcome: 'unavailable', url: urls[0] });
+      // 11/10/2026: marked as a refusal, never retried by Plazo itself.
+      expect(await service.booking(urls, 'AL-884880719')).toEqual({ booking: null, outcome: 'unavailable', url: urls[0], refused: true });
       expect(fetchMock).toHaveBeenCalledTimes(1);
       const logged = warn.mock.calls.map(([message]) => String(message));
       expect(logged).toEqual([
@@ -580,7 +581,7 @@ describe('Allopark : une vérification anti-robot n’est jamais passée (10/10/
     // After a page without this booking, the link is the refused page, not the one ruled out.
     fetchMock.mockClear();
     answer(url => (url === urls[0] ? new Response('<html>Comparez et réservez</html>') : new Response(rateLimited, { status: 429 })));
-    expect(await service.booking(urls, 'AL-884880719')).toEqual({ booking: null, outcome: 'unavailable', url: urls[1] });
+    expect(await service.booking(urls, 'AL-884880719')).toEqual({ booking: null, outcome: 'unavailable', url: urls[1], refused: true });
     expect(fetchMock).toHaveBeenCalledTimes(2);
   });
 
