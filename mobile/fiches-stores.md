@@ -713,7 +713,7 @@ Les icônes App Store sont fournies par le build lui-même (icône 1024 des jeux
 | Apple | Aperçu vidéo | facultatif |
 | Google | Icône | 512 × 512, PNG 32 bits (avec canal alpha), 1 Mo au plus, carré plein (Google arrondit lui-même). **Faites (11/10/2026)** : `brand/stores/play-icon-plazo-512.png` et `brand/stores/play-icon-plazo-pro-512.png`, tirées des icônes 1024 de l'app (`mobile/assets/brand/app-icon.png`, `app-icon-pro.png` ; icône « Plazo écrit à partir du P », choix B du 11/10/2026), 23 à 27 Ko. `brand/icon-512.png` est l'icône du site : ce n'est pas la bonne. |
 | Google | Image de présentation | 1024 × 500, JPEG ou PNG 24 bits sans transparence. **Faites (11/10/2026), deux variantes par app au choix de Joanny** : `brand/stores/plazo-feature-A.png` / `plazo-feature-B.png` et `brand/stores/plazo-pro-feature-A.png` / `plazo-pro-feature-B.png` (PNG 24 bits, 29 à 52 Ko), voir ci-dessous. |
-| Google | Captures téléphone | 2 à 8 ; JPEG ou PNG 24 bits ; côtés entre 320 et 3840 px, **le grand côté au plus 2 fois le petit**. **1080 × 1920** est conseillé : un écran 1080 × 2400 brut dépasse ce rapport. Au moins 4 captures d'au moins 1080 px pour être mis en avant. |
+| Google | Captures téléphone | 2 à 8 ; JPEG ou PNG 24 bits ; côtés entre 320 et 3840 px, **le grand côté au plus 2 fois le petit**. **1080 × 1920** est conseillé : un écran 1080 × 2400 brut dépasse ce rapport. Au moins 4 captures d'au moins 1080 px pour être mis en avant. **Faites (11/10/2026)** : `brand/stores/screenshots/plazo/` et `brand/stores/screenshots/plazo-pro/`, sept captures 1080 × 1920 par app, dans l'ordre de 5.2, prises sur les vraies apps avec des données fictives par `brand/stores/tools/screenshots/run.sh` (ou Actions › Store screenshots) ; à importer dans cet ordre. |
 | Google | Captures tablette | facultatives |
 
 Conseils de capture :
@@ -752,8 +752,8 @@ embarquées, vecteurs de `brand/app/`) puis aplaties par `brand/stores/tools/fin
 1. Tableau de bord : tuiles et « À traiter maintenant ».
 2. Planning du jour : arrivées et retours.
 3. Fiche réservation avec « Prochaine étape ».
-4. Occupation : plan en couleurs. Il faut d'abord tracer un plan pour le parking de revue (4.4), ou capturer chez le client n°1 avec son accord.
-5. Navette : « Ma tournée ».
+4. Parking : les files de voiturier (« À sortir aujourd'hui », arrivées à ranger). Un plan en couleurs demande de tracer un plan pour le parking de revue (4.4).
+5. Navette : « Ma tournée » (poste Chauffeur).
 6. Trajet en cours : « En route vers le terminal · position partagée ».
 7. « Aujourd'hui, je suis… » (poste du jour).
 

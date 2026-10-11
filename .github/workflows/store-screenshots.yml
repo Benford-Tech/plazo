@@ -1,0 +1,69 @@
+name: Store screenshots
+
+# Google Play phone screenshots of Plazo and Plazo Pro (11/10/2026), from scratch: throwaway PostGIS database with
+# the demo data, the API with its clock at LOCAL_TIME at the parking, the two apps built for the web, a staged day at
+# the demo parking, then Chromium drives the apps. Run by hand; the PNGs come back as an artifact
+# (brand/stores/tools/screenshots/README.md). Nothing is committed and no secret is used.
+on:
+  workflow_dispatch:
+    inputs:
+      local_time:
+        description: "Heure au parking pendant la prise de vue (HH:MM)"
+        default: "14:05"
+
+permissions:
+  contents: read
+
+jobs:
+  screenshots:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    services:
+      postgres:
+        image: postgis/postgis:16-3.4
+        env:
+          POSTGRES_USER: plazo
+          POSTGRES_PASSWORD: plazo
+          POSTGRES_DB: plazo_shots
+        ports: ["5432:5432"]
+        options: >-
+          --health-cmd "pg_isready -U plazo"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - uses: subosito/flutter-action@v2
+        with:
+          # Same Flutter as codemagic.yaml and mobile-ci.yml.
+          flutter-version: 3.47.6
+          channel: stable
+          cache: true
+      - name: Backend dependencies
+        working-directory: backend
+        run: npm ci
+      - name: App dependencies
+        working-directory: mobile
+        run: flutter pub get
+      - name: Playwright and Chromium
+        run: |
+          npm install --no-save --prefix "$RUNNER_TEMP/pw" playwright@1.56.1
+          "$RUNNER_TEMP/pw/node_modules/.bin/playwright" install --with-deps chromium
+      - name: Screenshots
+        env:
+          SHOTS_DATABASE_URL: postgresql://plazo:plazo@localhost:5432/plazo_shots
+          LOCAL_TIME: ${{ inputs.local_time }}
+          PLAYWRIGHT: ${{ runner.temp }}/pw/node_modules/playwright
+          WORK: ${{ runner.temp }}/shots
+        run: brand/stores/tools/screenshots/run.sh
+      - name: Logs on failure
+        if: failure()
+        run: tail -n 80 "$RUNNER_TEMP"/shots/*.log || true
+      - uses: actions/upload-artifact@v4
+        with:
+          name: store-screenshots
+          path: brand/stores/screenshots
+          retention-days: 7
