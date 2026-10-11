@@ -128,8 +128,9 @@ la clé d'import Android de Plazo dans Codemagic (créée et envoyée par GitHub
    les deux profils, et leur donner **exactement** les Reference name `plazo_app_store` (Plazo) et `plazo_pro_app_store`
    (Plazo Pro) : `codemagic.yaml` les appelle par ces noms. Vérifier aussi, dans **iOS certificates**, que le certificat
    de l'équipe porte le Reference name `thempo-distribution` (sinon le dire à Claude, qui l'adapte dans `codemagic.yaml`).
-5. [ ] **Relever l'Apple ID numérique de chaque app** (app › **App Information** › **Apple ID**) et le donner à Claude, qui
-   le pose dans `codemagic.yaml` (`APP_STORE_APP_ID`).
+5. [ ] **Relever l'Apple ID numérique de chaque app** (app › **App Information** › **Apple ID**, ou le nombre après `apps/`
+   dans l'adresse) et le donner à Claude, qui le pose dans `codemagic.yaml` (`APP_STORE_APP_ID_PLAZO` /
+   `APP_STORE_APP_ID_PLAZO_PRO`). Fait pour Plazo le 11/10/2026 (`6821635235`) ; reste Plazo Pro.
 6. [ ] **Notifications iOS** (OneSignal) : **Certificates, Identifiers & Profiles › Keys**.
    - Réutiliser une clé APNs existante seulement si sa fiche (**View Key Details**) indique **Sandbox & Production** et
      **Team Scoped (All Topics)**, *et* si son fichier `.p8` est dans le gestionnaire de mots de passe (il ne se télécharge
@@ -223,8 +224,8 @@ la clé d'import Android de Plazo dans Codemagic (créée et envoyée par GitHub
 ## 4. Ce qu'il faut renvoyer à Claude, et ce qu'il ne faut jamais coller
 
 **À envoyer (valeurs non secrètes) :**
-- [ ] l'Apple ID numérique de Plazo et de Plazo Pro (ils remplacent `APP_STORE_APP_ID_PLAZO: "0"` et
-  `APP_STORE_APP_ID_PLAZO_PRO: "0"`) ;
+- [x] l'Apple ID numérique de Plazo (`6821635235`, posé le 11/10/2026) ;
+- [ ] l'Apple ID numérique de Plazo Pro (il remplace `APP_STORE_APP_ID_PLAZO_PRO: "0"`) ;
 - [ ] les identifiants définitifs, s'ils changent, **avant** toute création dans les consoles ;
 - [ ] les empreintes **SHA-256** de la clé de signature Play (Play Console › Protégé avec Play › Signature d'application
   Play), pour `site/public/.well-known/assetlinks.json` ; le Team ID Apple est connu (`3BX4795V2Y`) et déjà dans

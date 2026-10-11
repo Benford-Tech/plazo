@@ -261,7 +261,7 @@ workflows:
         IOS_BUNDLE_ID_PLAZO_PRO: com.benfordtech.plazopro
         # PLACEHOLDERS: numeric Apple ID of each app in App Store Connect (App Information → Apple ID),
         # used only to read the last TestFlight build number ("0" = not read).
-        APP_STORE_APP_ID_PLAZO: "0"
+        APP_STORE_APP_ID_PLAZO: "6821635235"
         APP_STORE_APP_ID_PLAZO_PRO: "0"
         # TestFlight: internal testers get every build. To also submit the builds to Apple's beta review for
         # external testers (needs the test information filled in; stalled Thempo), add
