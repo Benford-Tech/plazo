@@ -53,19 +53,25 @@ def paginated(path, query=None):
 
 
 def find_app(name=None):
-    """The Codemagic app of this repository, by exact name: the user's apps first, then every team's."""
+    """The Codemagic app of this repository, by exact name: a team's app first (the team has the paid
+    machines and the signing identities), the account's personal app only when no team has it."""
     name = name or APP_NAME
-    candidates = [a for a in paginated("/api/v3/user/apps", {"name": name})
-                  if a.get("name", "").lower() == name.lower() and not a.get("archived")]
+
+    def matching(apps):
+        return [a for a in apps if a.get("name", "").lower() == name.lower() and not a.get("archived")]
+
+    candidates = []
+    for team in paginated("/api/v3/user/teams"):
+        candidates += matching(paginated(f"/api/v3/teams/{team['id']}/apps", {"name": name}))
+    scope = "d'équipe"
     if not candidates:
-        for team in paginated("/api/v3/user/teams"):
-            candidates += [a for a in paginated(f"/api/v3/teams/{team['id']}/apps", {"name": name})
-                           if a.get("name", "").lower() == name.lower() and not a.get("archived")]
+        candidates = matching(paginated("/api/v3/user/apps", {"name": name}))
+        scope = "personnelle"
     ids = sorted({a["id"] for a in candidates})
     if not ids:
         fail(f"aucune app Codemagic nommée « {name} » pour ce jeton : ajouter le dépôt à l'équipe d'abord")
     if len(ids) > 1:
-        fail(f"plusieurs apps Codemagic s'appellent « {name} » ({', '.join(ids)}) : préciser APP_NAME")
+        fail(f"plusieurs apps Codemagic {scope} s'appellent « {name} » ({', '.join(ids)}) : préciser APP_NAME")
     return next(a for a in candidates if a["id"] == ids[0])
 
 
