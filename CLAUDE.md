@@ -655,7 +655,8 @@ Le nom du produit doit rester dans UN seul fichier de configuration (il peut enc
   Codemagic retenu par Joanny, avec les comptes de Thempo, LoveNest et Yoon)** : Plazo rejoint **l'équipe Codemagic** qui publie
   Thempo et signe comme lui (intégration Developer Portal `lovenest-asc` de l'équipe Apple Benford Tech `3BX4795V2Y` ;
   `ios_signing` avec le certificat Apple Distribution déjà téléversé, Apple n'en acceptant que 3 ; `android_signing` avec la
-  clé d'import propre à Plazo `plazo_upload`, jamais de base64 collé ; compte Google Play Benford Tech et compte de service de
+  clé d'import de Thempo `tempo_eleves_upload` (choix de Joanny du 11/10/2026, faute de clé propre à Plazo ; une clé
+  `plazo_upload` plus tard par une réinitialisation de la clé d'importation dans la Play Console), jamais de base64 collé ; compte Google Play Benford Tech et compte de service de
   Thempo) ; **un seul workflow `mobile-release` (11/10/2026, « unifie le pipeline »)** à la place des quatre d'avant (un par
   store et par app) : tag `mobile-vX.Y.Z` (= `version:` de `pubspec.yaml`, sinon arrêt) ou manuel ; vérifications une fois,
   puis pour chaque flavor AAB + APK signés et IPA signé, les quatre paquets sous la même version et le même numéro de build
