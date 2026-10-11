@@ -18,7 +18,7 @@ Le nom du produit reste dans `product.json` (seul endroit) : si le nom change, r
 | `logo-mono.svg` | Une seule couleur (brun foncé) pour l'impression, la gravure, le fax : les lettres sont évidées. Changer la couleur en remplaçant `#2c1a0e`. |
 | `symbol.svg` / `symbol-dark.svg` / `symbol-mono.svg` | Le symbole seul (carré orange + P blanc) ; `-dark` identique ; `-mono` une couleur. |
 | `wordmark.svg` / `wordmark-dark.svg` | Les lettres seules, sans le panneau, brun foncé / blanches (titres de documents). |
-| `app/` | **Le logo de l'app mobile**, qui garde l'option L-B (choix du 03/10/2026) : monogramme « P » Playfair avec l'avion en papier **orange easyJet `#FF6600`** (O-A), mot-symbole Playfair italique ; icône d'app **orange plein, P blanc, avion brun foncé** (O-B) ; en-tête de l'app (orange) : carré blanc, P et avion orange. Générateurs `app/tools/build_svg.py` et `app/tools/export_png.mjs`. |
+| `app/` | **Le logo de l'app mobile**, qui garde l'option L-B (choix du 03/10/2026) : monogramme « P » Playfair avec l'avion en papier **orange easyJet `#FF6600`** (O-A), mot-symbole Playfair italique ; icône d'app **orange plein, P blanc, avion brun foncé** (O-B), qui **écrit « Plazo » à partir du P depuis le 11/10/2026 (choix B)** : « lazo » en italique niché sous la panse du P, même ligne de base (Plazo Pro : la même composition en vert foncé sur citron) ; en-tête de l'app (orange) : carré blanc, P et avion orange. Générateurs `app/tools/build_svg.py`, `app/tools/export_png.mjs` et `app/tools/native_icons.py`. |
 | `stores/` | **Visuels Google Play** (11/10/2026) : images de présentation 1024 × 500 (`plazo-feature-A/B.png`, `plazo-pro-feature-A/B.png`, deux variantes par app, PNG 24 bits sans transparence) et icônes 512 × 512 (`play-icon-plazo-512.png`, `play-icon-plazo-pro-512.png`, PNG 32 bits) ; générateurs `stores/tools/build.mjs` (Chromium, polices de `mobile/assets/fonts` embarquées, vecteurs de `app/`) et `stores/tools/finish.py` ; détail dans `mobile/fiches-stores.md`, section 5.1. |
 | `favicon.svg`, `favicon-32.png`, `favicon-180.png` | Favicon (SVG moderne, 32 px de secours, 180 px pour l'icône Apple « touch »). |
 | `favicon-pro.svg`, `favicon-pro-180.png` | **Favicon de l'espace pro** (09/10/2026) : le symbole aux couleurs du logo pro, carré vert citron `#A3E635`, P vert foncé `#0F2A14` ; copiés dans `admin/public/` sous `favicon-pro.svg` et `apple-touch-icon-pro.png`. |
@@ -28,6 +28,7 @@ Le nom du produit reste dans `product.json` (seul endroit) : si le nom change, r
 | `png/logo-horizontal-*@1x/2x/4x.png` | Exports du logo (232 × 100, 464 × 200, 928 × 400), fond transparent. |
 | `png/symbol-512.png`, `png/symbol-1024.png`, `png/symbol-dark-512.png` | Exports du symbole. |
 | `png/app-icon-1024.png`, `png/android-foreground-1024.png` | Sources de l'icône d'app (flutter_launcher_icons). |
+| `app/tools/native_icons.py` | Écrit les icônes natives de l'app sans SDK Flutter (mêmes fichiers que `flutter_launcher_icons` : mipmaps et avant-plans adaptatifs Android des flavors `main` et `pro`, jeux iOS `AppIcon` et `AppIcon-pro`, icônes web, copies de `mobile/assets/brand`). |
 | `tools/build_svg.py`, `tools/export_png.mjs` | Générateurs (voir « Régénérer »). |
 
 Copies dans le code : `site/public/brand/`, `site/src/app/icon.svg`, `site/src/app/apple-icon.png`,
@@ -85,6 +86,7 @@ python3 brand/tools/build_svg.py                       # SVG (nom lu dans produc
 node brand/tools/export_png.mjs <playwright> <chromium> # PNG, favicons, carte sociale
 cd site && node ../brand/stores/tools/build.mjs && python3 ../brand/stores/tools/finish.py # visuels Google Play (brand/stores)
 # puis recopier les fichiers dans site/, admin/, mobile/ (liste ci-dessus) et `dart run flutter_launcher_icons`
+python3 brand/app/tools/build_svg.py && node brand/app/tools/export_png.mjs <playwright> <chromium> && python3 brand/app/tools/native_icons.py # icône de l'app, partout
 ```
 
 Police : Inter (SIL Open Font License, `mobile/assets/fonts/OFL-Inter.txt`).

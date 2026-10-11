@@ -857,7 +857,13 @@ Canevas de référence : https://claude.ai/artifact/6ezoCDyLXFNwhAH5ZWUf4u (rang
   garde le logo L-B** (P Playfair + avion en papier, mot-symbole italique) pour son icône et son en-tête
   (`brand/app/`) ; depuis le 03/10/2026 (choix O-A + O-B, puis T-A) l'avion est orange easyJet `#FF6600`,
   l'en-tête de l'app affiche le carré blanc avec P et avion orange, et l'icône d'app est orange plein (P blanc,
-  avion brun foncé). Fichiers et règles dans `brand/README.md`.
+  avion brun foncé). **Choix B du 11/10/2026 (« sur l'icône écris Plazo en te servant du P »)** : l'icône des deux apps
+  écrit le nom à partir du P : le P et son avion gardent leur place, « lazo » en Playfair italique (celui du mot-symbole)
+  se niche sous la panse du P sur la même ligne de base (`build_svg.py` : `ICON_P_CAP` 50, `ICON_L_CAP` 16,5, le l doit
+  rester sous la panse) ; l'en-tête de l'app garde le symbole (P seul) à côté du mot-symbole ; déclinaisons natives
+  (mipmaps et avant-plans adaptatifs Android des deux flavors, jeux `AppIcon` / `AppIcon-pro` iOS, icônes web, copies de
+  `mobile/assets/brand`) écrites sans SDK par `brand/app/tools/native_icons.py`, l'équivalent de `flutter_launcher_icons` ;
+  les visuels Google Play (`brand/stores/`) reprennent la nouvelle icône. Fichiers et règles dans `brand/README.md`.
 
 ## Règles de travail
 
