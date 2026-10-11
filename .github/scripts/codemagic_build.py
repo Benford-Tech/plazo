@@ -151,8 +151,10 @@ def team(app):
                          f"fini {build.get('finished_at') or '—'}, machine `{build.get('instance_type') or '?'}`)")
         if busy:
             lines.append("- Un build qui reste en attente alors que rien d'autre ne tourne : minutes gratuites du mois "
-                         "épuisées (compteur ci-dessus) ou file d'attente Codemagic (https://status.codemagic.io) ; "
-                         "Codemagic annule de lui-même un build en attente depuis 5 h, l'action `cancel` l'annule avant.")
+                         "épuisées (compteur ci-dessus), file d'attente Codemagic (https://status.codemagic.io) ou pool "
+                         "saturé pour l'image Xcode du workflow (même pour Android : épingler `xcode:` sur une autre "
+                         "version dans codemagic.yaml, 11/10/2026) ; Codemagic annule de lui-même un build en attente "
+                         "depuis 5 h, l'action `cancel` l'annule avant.")
         print("\n".join(lines))
         summary(lines)
         return

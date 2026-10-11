@@ -72,9 +72,15 @@ definitions:
     # Same Flutter as the local checks and mobile-ci.yml (stable, October 2026).
     flutter: 3.47.6
     java: 17
+    # The Xcode version picks the macOS image, hence the pool of Mac mini M2 machines, even for an Android
+    # build. Pinned to 26.5 on 11/10/2026: the pool of the default image (26.6, `latest`) is overloaded since
+    # 08/10/2026 and builds stayed queued for hours with nothing else running on the account
+    # (github.com/orgs/codemagic-ci-cd/discussions/3570: Codemagic staff advise 26.5 or 26.4, users confirm
+    # immediate starts, Android builds included; nothing on status.codemagic.io). Back to `latest` once the
+    # queue is normal again.
+    xcode: 26.5
   env_versions: &env_versions
     <<: *env_versions_android
-    xcode: latest
     cocoapods: default
 
   # Billed minutes: keep the Gradle, pub and CocoaPods downloads between builds.
