@@ -660,8 +660,12 @@ Le nom du produit doit rester dans UN seul fichier de configuration (il peut enc
   l'API v3 de Codemagic (jeton en secret GitHub `CODEMAGIC_API_TOKEN` ; pas d'API pour les Code signing identities) dans le
   groupe de variables Secure `plazo_android_signing` de l'app (`CM_KEYSTORE` en base64, `CM_KEYSTORE_PASSWORD`, `CM_KEY_ALIAS`,
   `CM_KEY_PASSWORD`, décodées par l'étape `key.properties` ; `android_signing: [plazo_upload]` reste possible si la clé est
-  un jour téléversée à la main), puis build `mobile-release-android` lancé ; artefact d'un jour pour le gestionnaire de mots
-  de passe ; refus de remplacer une clé déjà envoyée sans la case « replace » ; jamais de base64 collé à la main ; compte Google Play Benford Tech et compte de service de
+  un jour téléversée à la main), puis build `mobile-release-android` lancé ; le groupe `mobile_secrets` est créé vide s'il manque, Codemagic refusant un
+  build dont un groupe n'existe pas ; artefact d'un jour pour le gestionnaire de mots de passe ; refus de remplacer une clé
+  déjà envoyée sans la case « replace » ; jamais de base64 collé à la main ; **`codemagic-build.yml` « Codemagic build
+  (start, status, groups) »** (`.github/scripts/codemagic_build.py`, client commun `codemagic_api.py`) : `start` d'un
+  workflow sur une branche, `status` d'un build (état, artefacts ; étape rouge si le build a échoué), `groups` (noms des
+  variables seulement), `ensure-group` : c'est par là que Claude suit et relance les builds Codemagic ; compte Google Play Benford Tech et compte de service de
   Thempo) ; **un seul workflow `mobile-release` (11/10/2026, « unifie le pipeline »)** à la place des quatre d'avant (un par
   store et par app) : tag `mobile-vX.Y.Z` (= `version:` de `pubspec.yaml`, sinon arrêt) ou manuel ; vérifications une fois,
   puis pour chaque flavor AAB + APK signés et IPA signé, les quatre paquets sous la même version et le même numéro de build
