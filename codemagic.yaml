@@ -250,10 +250,10 @@ workflows:
         # used only to read the last TestFlight build number ("0" = not read).
         APP_STORE_APP_ID_PLAZO: "0"
         APP_STORE_APP_ID_PLAZO_PRO: "0"
-        # TestFlight: internal testers get every build. Names of beta groups, separated by commas, to also
-        # submit the builds to Apple's beta review for external testers (needs the test information filled
-        # in; stalled Thempo). Empty = no beta review.
-        TESTFLIGHT_BETA_GROUPS: ""
+        # TestFlight: internal testers get every build. To also submit the builds to Apple's beta review for
+        # external testers (needs the test information filled in; stalled Thempo), add
+        #   TESTFLIGHT_BETA_GROUPS: "Group A, Group B"
+        # (beta group names, separated by commas). Absent = no beta review: Codemagic refuses an empty value.
     cache: *cache
     triggering:
       events:

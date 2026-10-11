@@ -663,7 +663,7 @@ Le nom du produit doit rester dans UN seul fichier de configuration (il peut enc
   `thempo-distribution`, profils `plazo_app_store` et `plazo_pro_app_store`, un `bundle_identifier` automatique ne prenant
   qu'une app), `xcode-project use-profiles` puis un export options plist par app (PlistBuddy) ; envois par les outils en ligne
   de commande (`google-play bundles publish --track $PLAY_TRACK [--draft]` par AAB, `app-store-connect publish` par IPA,
-  `TESTFLIGHT_BETA_GROUPS` pour la relecture bêta), chacun tenté (`ignore_failure`), « Bilan de la publication » en erreur si
+  `TESTFLIGHT_BETA_GROUPS` pour la relecture bêta, absente par défaut car Codemagic refuse une variable vide), chacun tenté (`ignore_failure`), « Bilan de la publication » en erreur si
   l'un a échoué ; plus de bloc `publishing:` (il n'envoie qu'une app et doublerait l'envoi) ; App ID OneSignal dans le fichier,
   `GOOGLE_PLAY_SERVICE_ACCOUNT_CREDENTIALS` seul secret du groupe `mobile_secrets`) ; **`mobile-release-android` (11/10/2026,
   « un build Android seul pour le Play Store »)**, à la main : la moitié Android de `mobile-release` (étapes partagées par des
