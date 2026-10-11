@@ -25,8 +25,9 @@ Relevé le 09/10/2026 dans les projets Thempo, LoveNest et Yoon (dépôts et ses
 | Google Cloud | Le compte de service qui publie Thempo sur Google Play (clé JSON dans le groupe `google_play` de l'app Thempo) | le même, ouvert aux deux apps Plazo |
 | OneSignal | Les deux apps de Plazo : Plazo Pro `89a1124f-3ba0-481e-b9f1-545d254e435d`, Plazo `dd3c2a74-a7b0-4117-ba18-ab5a1edfe0a3` | App ID déjà dans `codemagic.yaml` et dans Vercel, clés REST dans Vercel : **rien à faire** côté API |
 
-Ce qui manque encore : les quatre fiches d'app (deux chez Apple, deux chez Google), les deux profils de signature Apple, la
-clé d'import Android de Plazo, et les réglages push (APNs, FCM) de chaque app OneSignal.
+Ce qui manque encore : les quatre fiches d'app (deux chez Apple, deux chez Google), les deux profils de signature Apple
+et les réglages push (APNs, FCM) de chaque app OneSignal. La clé d'import Android est celle de Thempo, déjà dans
+Codemagic (choix du 11/10/2026, étape 3.2).
 
 ## Les pipelines
 
@@ -34,7 +35,7 @@ clé d'import Android de Plazo, et les réglages push (APNs, FCM) de chaque app 
 | --- | --- | --- |
 | GitHub Actions `Mobile CI` | chaque PR et push sur `main` qui touche `mobile/` | nom du produit à jour, `flutter analyze`, `flutter test` (gratuit) |
 | Codemagic `mobile-check` | à la main | les mêmes vérifications + APK **debug** des deux apps, à installer pour essayer |
-| Codemagic `mobile-release` | tag `mobile-vX.Y.Z` ou à la main | les vérifications une fois, puis pour **Plazo et Plazo Pro** : AAB + APK signés (clé `plazo_upload`) et IPA signé (certificat de l'équipe), **même version et même numéro de build** pour les quatre paquets ; chaque AAB → **Google Play, tests internes**, chaque IPA → **TestFlight**, testeurs internes ; les six fichiers dans **Artifacts** |
+| Codemagic `mobile-release` | tag `mobile-vX.Y.Z` ou à la main | les vérifications une fois, puis pour **Plazo et Plazo Pro** : AAB + APK signés (clé d'import de Thempo `tempo_eleves_upload`) et IPA signé (certificat de l'équipe), **même version et même numéro de build** pour les quatre paquets ; chaque AAB → **Google Play, tests internes**, chaque IPA → **TestFlight**, testeurs internes ; les six fichiers dans **Artifacts** |
 | Codemagic `mobile-release-android` | à la main | **Android seul**, les mêmes étapes que la moitié Android de `mobile-release` : les vérifications, AAB + APK signés des deux apps, chaque AAB → **Google Play, tests internes** ; les quatre fichiers dans **Artifacts**. Ni certificat ni profil Apple |
 
 - **Version** = le `version:` de `mobile/pubspec.yaml` (ex. `1.0.0`). Le tag doit la reprendre : `mobile-v1.0.0`, sinon le
@@ -83,9 +84,9 @@ clé d'import Android de Plazo, et les réglages push (APNs, FCM) de chaque app 
    internes) »).
 3. [ ] **Vérifier la facturation de l'équipe** (Team settings › **Billing**) : sans moyen de paiement actif, les builds
    restent en file d'attente.
-4. [ ] **Téléverser la clé d'import Android de Plazo** (créée à l'étape 3.2) : Team settings › **Code signing identities ›
-   Android keystores › Upload keystore** : le fichier `.jks`, son mot de passe, l'alias `upload` et le mot de passe de la
-   clé, **Reference name** exactement `plazo_upload`.
+4. [x] **Clé d'import Android : rien à téléverser** (choix du 11/10/2026). Les deux apps Plazo sont signées avec la clé
+   d'import de Thempo, déjà dans Team settings › **Code signing identities › Android keystores** sous la référence
+   `tempo_eleves_upload` (voir l'étape 3.2).
 5. [ ] **Le groupe de variables `mobile_secrets`** : page de l'app › **Environment variables** › variable
    `GOOGLE_PLAY_SERVICE_ACCOUNT_CREDENTIALS`, groupe `mobile_secrets`, cocher **Secret**, **Add**. La valeur : **tout le
    contenu** d'une clé JSON du compte de service qui publie déjà Thempo (étape 3.4), collé tel quel (pas en base64).
@@ -143,9 +144,20 @@ clé d'import Android de Plazo, et les réglages push (APNs, FCM) de chaque app 
 1. [x] **Créer les deux apps** (fait le 11/10/2026) : **Toutes les applications › Créer une application**, « Plazo » puis
    « Plazo Pro », Français, appli, gratuite ; **Déclarations** : tout accepter, y compris la signature d'application Play.
    Leurs identifiants (`com.benfordtech.plazo`, `com.benfordtech.plazopro`) se fixent au premier AAB importé (étape 6).
-2. [ ] **Créer la clé d'import de Plazo**, une pour les deux apps, alias `upload`. **Jamais celle de Thempo, de LoveNest ou
-   de Yoon** : le premier envoi fixe la clé d'une app pour toujours (un AAB de Yoon a déjà été refusé pour avoir été signé
-   avec la clé de Thempo).
+2. [x] **Clé d'import : celle de Thempo** (choix de Joanny du 11/10/2026, faute de pouvoir créer celle de Plazo) :
+   `tempo_eleves_upload`, déjà dans Codemagic. Le premier AAB importé en fait la clé d'import de Plazo et de Plazo Pro.
+   - Ça marche parce que les apps Plazo n'ont encore reçu aucun AAB (l'AAB de Yoon refusé l'avait été parce que Yoon
+     avait déjà sa propre clé).
+   - Conséquence : qui détient cette clé peut signer Thempo **et** Plazo. Si l'import d'un AAB est refusé avec un message
+     du genre « … also used to sign APKs that are delivered to users », c'est que cette clé signe aussi les APK de
+     Thempo : il faut alors la clé propre à Plazo, ci-dessous.
+   - **Donner plus tard sa propre clé à Plazo** : la créer (commandes ci-dessous), la téléverser dans Codemagic sous la
+     référence `plazo_upload`, exporter son certificat
+     (`keytool -export -rfc -keystore plazo-upload.jks -alias upload -file upload_certificate.pem`), puis, pour chaque app,
+     Play Console › **Intégrité de l'application › Signature d'application Play** › **Demander la réinitialisation de la
+     clé d'importation** avec ce fichier. Une fois la nouvelle clé acceptée par Google (quelques jours), demander à Claude
+     de remettre `plazo_upload` dans `codemagic.yaml`.
+   Commandes pour créer la clé propre à Plazo, une pour les deux apps, alias `upload` :
    - Mac : `keytool -genkey -v -keystore ~/plazo-upload.jks -keyalg RSA -storetype JKS -keysize 2048 -validity 10000 -alias upload`
    - Sans Java (Mac : « Unable to locate a Java Runtime »), avec celui d'Android Studio :
      `"/Applications/Android Studio.app/Contents/jbr/Contents/Home/bin/keytool" -genkey -v -keystore ~/plazo-upload.jks -keyalg RSA -storetype JKS -keysize 2048 -validity 10000 -alias upload`
@@ -153,7 +165,8 @@ clé d'import Android de Plazo, et les réglages push (APNs, FCM) de chaque app 
      `& "C:\Program Files\Android\Android Studio\jbr\bin\keytool.exe" -genkey -v -keystore $env:USERPROFILE\plazo-upload.jks -storetype JKS -keyalg RSA -keysize 2048 -validity 10000 -alias upload`
    - Mot de passe : **lettres et chiffres seulement**, 20 caractères ou plus ; même mot de passe pour la clé (Entrée).
    - Garder `plazo-upload.jks` et son mot de passe dans le gestionnaire de mots de passe, puis le téléverser dans
-     Codemagic (étape 1.4).
+     Codemagic : Team settings › **Code signing identities › Android keystores › Upload keystore**, l'alias `upload`,
+     **Reference name** exactement `plazo_upload`.
 3. [ ] **Ouvrir le compte de service aux deux apps** : **Utilisateurs et autorisations**, la ligne du compte de service
    (`…@….iam.gserviceaccount.com`, celui de Thempo) › **Autorisations des applications › Ajouter une application** : Plazo et
    Plazo Pro, cocher la section **Versions** (publier dans les canaux de test, gérer les canaux de test et les listes de
@@ -202,7 +215,7 @@ clé d'import Android de Plazo, et les réglages push (APNs, FCM) de chaque app 
   (`TESTFLIGHT_BETA_GROUPS`) ;
 - [ ] si un build échoue : le lien du build Codemagic et le message d'erreur.
 
-**À ne jamais coller dans une conversation ni dans le dépôt :** le fichier `plazo-upload.jks` et ses mots de passe, la clé
+**À ne jamais coller dans une conversation ni dans le dépôt :** les fichiers de clé Android (`.jks`) et leurs mots de passe, la clé
 JSON du compte de service (elle contient `private_key`), les fichiers `.p8` (API App Store Connect, APNs), les clés
 REST OneSignal, tout jeton Codemagic, les mots de passe et codes de double authentification. Ils vont seulement dans
 Codemagic (Code signing identities, variables « Secret »), OneSignal, Vercel et le gestionnaire de mots de passe.
