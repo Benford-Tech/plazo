@@ -193,6 +193,7 @@ construit et publie avec les workflows de `codemagic.yaml` (racine du dépôt, `
 | --- | --- | --- |
 | `mobile-check` | à la main | les vérifications + APK **debug** des deux apps (à installer pour essayer) |
 | `mobile-release` | tag `mobile-vX.Y.Z` ou à la main | les vérifications une fois, puis **Plazo et Plazo Pro** : AAB + APK signés (clé `plazo_upload`) et IPA signé (certificat de l'équipe, intégration `lovenest-asc`), même version et même numéro de build ; chaque AAB → **Google Play, tests internes**, chaque IPA → **TestFlight** ; les six paquets dans Artifacts |
+| `mobile-release-android` | à la main | **Android seul** (11/10/2026) : la moitié Android de `mobile-release`, mêmes étapes (ancres YAML partagées), sans certificat, profil ni intégration Apple : AAB + APK signés des deux apps, chaque AAB → **Google Play, tests internes** ; pour le premier envoi Google Play avant Apple, puis quand seul Google Play doit recevoir une version |
 
 - Version = `version:` de `pubspec.yaml`, que le tag doit reprendre (`mobile-v1.0.0`, sinon arrêt) ; numéro de build =
   compteur Codemagic + 100, jamais sous le dernier build d'un des quatre stores (un seul numéro pour les quatre paquets).
@@ -200,8 +201,8 @@ construit et publie avec les workflows de `codemagic.yaml` (racine du dépôt, `
   à `"true"` jusqu'à la première version déployée à la main sur Google Play, puis `"false"`.
 - Les envois se font par les outils en ligne de commande de Codemagic (`google-play bundles publish`,
   `app-store-connect publish`), un par paquet, tous tentés ; le dernier pas met le build en erreur si l'un a échoué.
-  Le workflow exige la clé Android et les deux profils Apple (`plazo_app_store`, `plazo_pro_app_store`) avant son
-  premier lancement.
+  `mobile-release` exige la clé Android et les deux profils Apple (`plazo_app_store`, `plazo_pro_app_store`) avant son
+  premier lancement ; `mobile-release-android` seulement la clé Android et le compte de service Google Play.
 - **Marche à suivre complète** (ce qui existe déjà, Codemagic, Apple, Google Play, premier envoi, ce qu'il ne faut jamais
   coller) : [`publier-sur-les-stores.md`](publier-sur-les-stores.md).
 - Revue du 09/10/2026, avant le premier build : la vérification du nom du produit échouait toujours (le nom iOS vit
