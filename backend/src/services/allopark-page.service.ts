@@ -61,6 +61,11 @@ export interface AlloparkPageLookup {
   booking: ParsedBooking | null;
   outcome: AlloparkPageOutcome;
   /**
+   * 11/10/2026 (relecture): `unavailable` because Allopark refused Plazo (a 429, a Cloudflare block), not because a page
+   * failed: like a captcha, never tried again by Plazo itself (domain/inbound-retry.ts).
+   */
+  refused?: boolean;
+  /**
    * The page the staff open by hand (« Ouvrir la page Allopark »): the first one tried, the most likely, unless it
    * answered without this booking (10/10/2026): then the first one not ruled out; for `protected`, the protected page.
    */
@@ -140,7 +145,7 @@ export class AlloparkPageService {
       }
       if (answer.refused) {
         logger.warn(`${label}: ${answer.failure ?? 'refused'}, refused by Allopark: the other pages are not opened`);
-        return lookup('unavailable');
+        return { ...lookup('unavailable'), refused: true };
       }
       if (!answer.html) {
         logger.warn(`${label}: ${answer.failure ?? 'no answer'}`);

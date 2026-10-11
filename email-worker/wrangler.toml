@@ -18,8 +18,14 @@ keep_vars = true
 enabled = true
 head_sampling_rate = 1
 
+# 11/10/2026 (« Lance l'analyse automatiquement pour allopark »): every 10 minutes the Worker asks Plazo to analyse again
+# the Allopark emails whose booking page could not be read at reception (scheduled() in src/index.ts).
+[triggers]
+crons = ["*/10 * * * *"]
+
 [vars]
 PLAZO_INBOUND_URL = "https://www.plazo.fr/api/public/inbound/email"
+PLAZO_RETRY_URL = "https://www.plazo.fr/api/public/inbound/retry"
 # FALLBACK_ADDRESS (optional): a verified Email Routing destination that receives the emails Plazo cannot take, and
 # those sent to an address no parking has (replies to reservations@plazo.fr, contact@plazo.fr…). Not written here
 # (a personal mailbox): the GitHub Actions deploy passes `--var FALLBACK_ADDRESS:…` from the variable of the same

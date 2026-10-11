@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
-import worker, { RAW_MAX_BYTES, type Env } from "../src/index";
+import worker, { RAW_MAX_BYTES, retryAllopark, type Env } from "../src/index";
 import { alloparkForwarded } from "./samples";
 
 function message(raw: string, to = "parkair-lyon-7f3a@plazo.fr") {
@@ -103,5 +103,46 @@ describe("email()", () => {
     expect(fetchMock).not.toHaveBeenCalled();
     // The bounce names the cause: the secret is set in the dashboard, a deploy never puts it there.
     expect(msg.setReject).toHaveBeenCalledWith("The Plazo relay is not configured (INBOUND_EMAIL_SECRET missing on the Worker), please contact Plazo.");
+  });
+});
+
+describe("scheduled() (11/10/2026, « Lance l'analyse automatiquement pour allopark »)", () => {
+  const withRetry: Env = { ...env, PLAZO_RETRY_URL: "https://www.plazo.test/api/public/inbound/retry" };
+
+  it("demande à Plazo de relancer les analyses en attente, avec le secret dans l'en-tête", async () => {
+    const fetchMock = vi.fn(async () => new Response(JSON.stringify({ due: 1, tried: 1, outcomes: { imported: 1 } })));
+    vi.stubGlobal("fetch", fetchMock);
+    const waits: Promise<unknown>[] = [];
+    await worker.scheduled({} as ScheduledController, withRetry, { waitUntil: (p: Promise<unknown>) => waits.push(p) } as unknown as ExecutionContext);
+    await Promise.all(waits);
+    expect(fetchMock).toHaveBeenCalledTimes(1);
+    const [url, init] = fetchMock.mock.calls[0] as unknown as [string, RequestInit];
+    expect(url).toBe(withRetry.PLAZO_RETRY_URL);
+    expect(init.method).toBe("POST");
+    expect((init.headers as Record<string, string>)["x-inbound-secret"]).toBe("s3cret");
+  });
+
+  it("une erreur de Plazo ou du réseau est journalisée, jamais levée ; rien sans adresse ni secret", async () => {
+    const error = vi.spyOn(console, "error").mockImplementation(() => undefined);
+    try {
+      vi.stubGlobal("fetch", vi.fn(async () => new Response("", { status: 500 })));
+      await expect(retryAllopark(withRetry)).resolves.toBeUndefined();
+      vi.stubGlobal("fetch", vi.fn(async () => { throw new Error("network down"); }));
+      await expect(retryAllopark(withRetry)).resolves.toBeUndefined();
+      const fetchMock = vi.fn();
+      vi.stubGlobal("fetch", fetchMock);
+      await retryAllopark(env);
+      await retryAllopark({ ...withRetry, INBOUND_EMAIL_SECRET: "" });
+      expect(fetchMock).not.toHaveBeenCalled();
+      const logged = error.mock.calls.map(([m]) => String(m));
+      expect(logged).toEqual([
+        "[plazo-email-worker] automatic re-analysis: Plazo answered 500",
+        "[plazo-email-worker] automatic re-analysis failed: network down",
+        "[plazo-email-worker] PLAZO_RETRY_URL or INBOUND_EMAIL_SECRET missing: no automatic re-analysis",
+        "[plazo-email-worker] PLAZO_RETRY_URL or INBOUND_EMAIL_SECRET missing: no automatic re-analysis",
+      ]);
+    } finally {
+      error.mockRestore();
+    }
   });
 });

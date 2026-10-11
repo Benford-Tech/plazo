@@ -400,8 +400,11 @@ model InboundEmail {
   // reservationId?, reference?, changes: [{ field, from, to }], at }; the values are personal data like the text:
   // cleared with it after 30 days, and by attach.
   change        Json?
-  // The last re-analysis asked by the staff (a second one within 30 s is refused).
+  // The last re-analysis, asked by the staff or made by Plazo (a second one within 30 s is refused).
   analysedAt    DateTime?
+  // 11/10/2026 (« Lance l'analyse automatiquement pour allopark »): the re-analyses Plazo made by itself of an email
+  // whose Allopark booking page it could not read (domain/inbound-retry.ts: five at most).
+  autoRetries   Int                @default(0)
   reservationId String?
   receivedAt    DateTime           @default(now())
   createdAt     DateTime           @default(now())
