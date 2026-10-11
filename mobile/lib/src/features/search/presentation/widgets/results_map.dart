@@ -40,7 +40,7 @@ class ResultsMap extends StatelessWidget {
           ),
           children: [
             if (IgnMap.tilesEnabled)
-              TileLayer(urlTemplate: AppConstants.ignPlanTilesUrl, userAgentPackageName: 'com.benfordtech.parking_app', maxNativeZoom: 19),
+              TileLayer(urlTemplate: AppConstants.ignPlanTilesUrl, userAgentPackageName: 'com.benfordtech.plazo', maxNativeZoom: 19),
             MarkerLayer(
               markers: [
                 if (terminals != null)

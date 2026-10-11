@@ -159,7 +159,8 @@ une décision de Joanny. Cocher au fur et à mesure.
   le `noindex` (`site/src/lib/legal.ts`, `LEGAL_VERSION`). Désigner un médiateur de la consommation (obligatoire).
 - [ ] **Factures** : Plazo n'émet ni facture ni reçu ; choisir reçu Stripe (Settings › Emails › Paiements réussis) + facture
   du parking, ou facture Plazo avec mandat de facturation.
-- [ ] **Apps** : identifiants `com.benfordtech.*` définitifs ou non (plus modifiables après le premier envoi) ; un seul
+- [ ] **Apps** : identifiants décidés le 11/10/2026, `com.benfordtech.plazo` et `com.benfordtech.plazopro` (iOS et Android ;
+  Plazo Pro créée sur Google Play) ; un seul
   workflow `mobile-release` (tag `mobile-vX.Y.Z` ou à la main) construit et envoie les six paquets des deux apps ; il
   faut la clé d'import Android et les deux profils Apple dans Codemagic avant son premier lancement.
 - [ ] **SMS** : « Plazo envoie pour moi » n'a aucun crédit SMS Brevo ; recommander « Téléphone du parking ».

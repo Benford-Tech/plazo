@@ -35,8 +35,8 @@
 #   Team › Code signing identities:
 #     Android keystore « plazo_upload » (Plazo's own, both apps);
 #     iOS certificate of the team (reference « thempo-distribution », as seen on 09/10/2026);
-#     iOS provisioning profiles « plazo_app_store » (com.benfordtech.parkingApp) and « plazo_pro_app_store »
-#     (com.benfordtech.parkingApp.pro), App Store profiles made in the Apple portal with that certificate,
+#     iOS provisioning profiles « plazo_app_store » (com.benfordtech.plazo) and « plazo_pro_app_store »
+#     (com.benfordtech.plazopro), App Store profiles made in the Apple portal with that certificate,
 #     then fetched or uploaded under exactly these reference names. The release workflow needs the three
 #     before its first run: without one of them, Codemagic stops at « Set up code signing » before building.
 #   App › Environment variables, group « mobile_secrets »:
@@ -128,10 +128,10 @@ workflows:
         - mobile_secrets
       vars:
         # Identifiers of the two apps (android/app/build.gradle.kts, ios/Runner.xcodeproj).
-        ANDROID_APPLICATION_ID_PLAZO: com.benfordtech.parking_app
-        ANDROID_APPLICATION_ID_PLAZO_PRO: com.benfordtech.parking_app.pro
-        IOS_BUNDLE_ID_PLAZO: com.benfordtech.parkingApp
-        IOS_BUNDLE_ID_PLAZO_PRO: com.benfordtech.parkingApp.pro
+        ANDROID_APPLICATION_ID_PLAZO: com.benfordtech.plazo
+        ANDROID_APPLICATION_ID_PLAZO_PRO: com.benfordtech.plazopro
+        IOS_BUNDLE_ID_PLAZO: com.benfordtech.plazo
+        IOS_BUNDLE_ID_PLAZO_PRO: com.benfordtech.plazopro
         # OneSignal apps (public, the same as ONESIGNAL_TRAVELLER_APP_ID / ONESIGNAL_APP_ID on Vercel).
         ONESIGNAL_APP_ID_PLAZO: dd3c2a74-a7b0-4117-ba18-ab5a1edfe0a3
         ONESIGNAL_APP_ID_PLAZO_PRO: 89a1124f-3ba0-481e-b9f1-545d254e435d
