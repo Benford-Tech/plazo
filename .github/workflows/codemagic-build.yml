@@ -20,6 +20,11 @@ on:
         description: "start : branche à construire"
         type: string
         default: main
+      instance_type:
+        description: "start : machine imposée (vide = celle du workflow ; linux_x2 suffit pour Android seul)"
+        type: choice
+        options: ["", linux_x2, linux_x4, mac_mini_m2, mac_mini_m4, windows_x2]
+        default: ""
       build_id:
         description: "status : id du build Codemagic (vide = le dernier build de l'app)"
         type: string
@@ -47,4 +52,5 @@ jobs:
           BRANCH: ${{ inputs.branch }}
           BUILD_ID: ${{ inputs.build_id }}
           GROUP_NAME: ${{ inputs.group_name }}
+          INSTANCE_TYPE: ${{ inputs.instance_type }}
         run: python3 .github/scripts/codemagic_build.py
