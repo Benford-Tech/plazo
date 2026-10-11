@@ -2576,6 +2576,11 @@ export const inboundFr = {
         not_found: "réservation introuvable sur la page",
       } satisfies Record<InboundPageOutcome, string>,
       open: "Ouvrir la page Allopark",
+      // 11/10/2026 (« Lance l'analyse automatiquement pour allopark »): Plazo analyses the mail again by itself.
+      retryAt: (time: string, attempt: number, of: number) => `Nouvel essai automatique vers ${time} (${attempt} sur ${of})`,
+      retrySoon: (attempt: number, of: number) => `Nouvel essai automatique dans quelques minutes (${attempt} sur ${of})`,
+      retriesDone: (count: number) =>
+        `Plazo a réessayé ${count} fois sans trouver la réservation : ouvrez la page Allopark ou relancez l'analyse.`,
     },
     /** L-A (08/10/2026): what Claude made of a mail no importer knew. */
     reading: {

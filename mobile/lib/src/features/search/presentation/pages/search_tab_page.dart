@@ -249,7 +249,7 @@ class _MapHero extends StatelessWidget {
                     ),
                     children: [
                       if (IgnMap.tilesEnabled)
-                        TileLayer(urlTemplate: AppConstants.ignPlanTilesUrl, userAgentPackageName: 'com.benfordtech.parking_app', maxNativeZoom: 19),
+                        TileLayer(urlTemplate: AppConstants.ignPlanTilesUrl, userAgentPackageName: 'com.benfordtech.plazo', maxNativeZoom: 19),
                       if (selectedPoint != null && terminals != null)
                         PolylineLayer(
                           polylines: [

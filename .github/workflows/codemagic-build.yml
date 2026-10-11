@@ -1,0 +1,56 @@
+name: Codemagic build (start, status, groups)
+
+# Drives Codemagic from GitHub with the repository secret CODEMAGIC_API_TOKEN (11/10/2026): starts a build of a
+# codemagic.yaml workflow, reads a build's status and artifacts, lists the app's variable groups (names only) or
+# creates an empty one. Lets Claude, who has no Codemagic access, follow and relaunch the store builds through
+# GitHub; Joanny can use it from the phone too. Nothing secret is printed. By hand only.
+on:
+  workflow_dispatch:
+    inputs:
+      action:
+        description: "Que faire"
+        type: choice
+        options: [status, steps, start, groups, ensure-group, team]
+        default: status
+      workflow_id:
+        description: "start : workflow de codemagic.yaml (mobile-release-android, mobile-release, mobile-check)"
+        type: string
+        default: mobile-release-android
+      branch:
+        description: "start : branche à construire"
+        type: string
+        default: main
+      instance_type:
+        description: "start : machine imposée (vide = celle du workflow ; linux_x2 suffit pour Android seul)"
+        type: choice
+        options: ["", linux_x2, linux_x4, mac_mini_m2, mac_mini_m4, windows_x2]
+        default: ""
+      build_id:
+        description: "status : id du build Codemagic (vide = le dernier build de l'app)"
+        type: string
+        default: ""
+      group_name:
+        description: "ensure-group : nom du groupe de variables à créer s'il manque"
+        type: string
+        default: ""
+
+permissions:
+  contents: read
+
+jobs:
+  codemagic:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          sparse-checkout: .github/scripts
+      - name: Codemagic
+        env:
+          CODEMAGIC_API_TOKEN: ${{ secrets.CODEMAGIC_API_TOKEN }}
+          ACTION: ${{ inputs.action }}
+          WORKFLOW_ID: ${{ inputs.workflow_id }}
+          BRANCH: ${{ inputs.branch }}
+          BUILD_ID: ${{ inputs.build_id }}
+          GROUP_NAME: ${{ inputs.group_name }}
+          INSTANCE_TYPE: ${{ inputs.instance_type }}
+        run: python3 .github/scripts/codemagic_build.py

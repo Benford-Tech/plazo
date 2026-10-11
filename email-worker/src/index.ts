@@ -1,6 +1,11 @@
 export interface Env {
   /** "https://www.plazo.fr/api/public/inbound/email" (wrangler.toml). */
   PLAZO_INBOUND_URL: string;
+  /**
+   * "https://www.plazo.fr/api/public/inbound/retry" (wrangler.toml, 11/10/2026): called every 10 minutes by the cron
+   * trigger, so that Plazo analyses again the Allopark emails whose booking page it could not read yet.
+   */
+  PLAZO_RETRY_URL?: string;
   /** Worker secret, the same value as INBOUND_EMAIL_SECRET on Vercel. */
   INBOUND_EMAIL_SECRET: string;
   /**
@@ -63,7 +68,31 @@ export default {
     if (env.FALLBACK_ADDRESS && (await forwardTo(message, env.FALLBACK_ADDRESS))) return;
     message.setReject(reason);
   },
+
+  /**
+   * 11/10/2026 (« Lance l'analyse automatiquement pour allopark »): the cron trigger of wrangler.toml (every 10 minutes)
+   * asks Plazo to analyse again the Allopark emails whose booking page could not be read at reception (Allopark shows the
+   * booking a few minutes after its email). Plazo decides which emails are due; the Worker only knocks, with the same
+   * secret as the emails, and spends next to no CPU.
+   */
+  async scheduled(_controller: ScheduledController, env: Env, ctx: ExecutionContext): Promise<void> {
+    ctx.waitUntil(retryAllopark(env));
+  },
 } satisfies ExportedHandler<Env>;
+
+/** One call to Plazo's retry route; a failure is logged (Workers Logs), never thrown: the next tick tries again. */
+export async function retryAllopark(env: Env): Promise<void> {
+  if (!env.PLAZO_RETRY_URL || !env.INBOUND_EMAIL_SECRET) {
+    console.error("[plazo-email-worker] PLAZO_RETRY_URL or INBOUND_EMAIL_SECRET missing: no automatic re-analysis");
+    return;
+  }
+  try {
+    const response = await fetch(env.PLAZO_RETRY_URL, { method: "POST", headers: { "x-inbound-secret": env.INBOUND_EMAIL_SECRET } });
+    if (!response.ok) console.error(`[plazo-email-worker] automatic re-analysis: Plazo answered ${response.status}`);
+  } catch (error) {
+    console.error(`[plazo-email-worker] automatic re-analysis failed: ${error instanceof Error ? error.message : String(error)}`);
+  }
+}
 
 /** The first `limit` bytes of the message, copied as they come: no decoding, next to no CPU. */
 export async function readRaw(stream: ReadableStream<Uint8Array>, limit: number): Promise<{ body: Uint8Array; truncated: boolean }> {

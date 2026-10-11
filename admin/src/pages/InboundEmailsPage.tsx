@@ -238,22 +238,45 @@ const ALLOPARK_PAGE = /^https:\/\/(?:www\.)?allopark\.com\//i;
  * for a failure, the staff open the page in their own browser, pass the check themselves, then « Compléter » the
  * booking or « Relancer l'analyse » later.
  */
-function PageLookupLine({ lookup }: { lookup: InboundPageLookup }) {
+/** The five tries Plazo makes by itself (backend domain/inbound-retry.ts). */
+const AUTO_RETRY_MAX = 5;
+
+function PageLookupLine({ lookup, email }: { lookup: InboundPageLookup; email: InboundEmail }) {
   const l = t.list.alloparkPage;
   const failed = lookup.outcome !== "read";
+  const retries = email.autoRetries ?? 0;
+  const waiting = email.status === "incomplete" || email.status === "unrecognised";
   return (
-    <p data-testid="inbound-allopark-line" className="text-sm">
-      <span className="text-muted-foreground">{l.label} : </span>
-      <span className={cn("font-semibold", failed && "text-warn-text")}>{l.outcome[lookup.outcome]}</span>
-      {failed && lookup.url && ALLOPARK_PAGE.test(lookup.url) && (
-        <>
-          {" · "}
-          <a data-testid="inbound-allopark-page" href={lookup.url} target="_blank" rel="noopener noreferrer" className={TEXT_LINK}>
-            {l.open}
-          </a>
-        </>
+    <>
+      <p data-testid="inbound-allopark-line" className="text-sm">
+        <span className="text-muted-foreground">{l.label} : </span>
+        <span className={cn("font-semibold", failed && "text-warn-text")}>{l.outcome[lookup.outcome]}</span>
+        {failed && lookup.url && ALLOPARK_PAGE.test(lookup.url) && (
+          <>
+            {" · "}
+            <a data-testid="inbound-allopark-page" href={lookup.url} target="_blank" rel="noopener noreferrer" className={TEXT_LINK}>
+              {l.open}
+            </a>
+          </>
+        )}
+      </p>
+      {/* 11/10/2026 (« Lance l'analyse automatiquement pour allopark »): when Plazo tries again by itself. */}
+      {failed && waiting && email.autoRetryAt ? (
+        <p data-testid="inbound-auto-retry" className="text-sm text-muted-foreground">
+          {Date.parse(email.autoRetryAt) > Date.now()
+            ? l.retryAt(timeOf(email.autoRetryAt), retries + 1, AUTO_RETRY_MAX)
+            : l.retrySoon(retries + 1, AUTO_RETRY_MAX)}
+        </p>
+      ) : (
+        failed &&
+        waiting &&
+        retries >= AUTO_RETRY_MAX && (
+          <p data-testid="inbound-auto-retry" className="text-sm text-muted-foreground">
+            {l.retriesDone(retries)}
+          </p>
+        )
       )}
-    </p>
+    </>
   );
 }
 
@@ -472,7 +495,7 @@ function Reading({
             <span className="font-semibold text-lime-deep">{email.provider}</span>
           </p>
         )}
-        {email.pageLookup && <PageLookupLine lookup={email.pageLookup} />}
+        {email.pageLookup && <PageLookupLine lookup={email.pageLookup} email={email} />}
         {email.reading && <ReadingLine reading={email.reading} missing={email.missing} changed={!!email.change} />}
       </header>
       <div className="px-5 py-4">{email.textBody ? <MailBody text={email.textBody} /> : <p className="text-sm text-muted-foreground">{l.textGone}</p>}</div>

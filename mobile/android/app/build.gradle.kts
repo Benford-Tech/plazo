@@ -14,6 +14,7 @@ val keystorePropertiesFile = rootProject.file("key.properties")
 if (keystorePropertiesFile.exists()) keystoreProperties.load(FileInputStream(keystorePropertiesFile))
 
 android {
+    // The Kotlin package of MainActivity, not the store id (applicationId below).
     namespace = "com.benfordtech.parking_app"
     compileSdk = flutter.compileSdkVersion
     ndkVersion = flutter.ndkVersion
@@ -24,8 +25,8 @@ android {
     }
 
     defaultConfig {
-        // PLACEHOLDER until the store listing is created: the final id cannot change once published.
-        applicationId = "com.benfordtech.parking_app"
+        // 11/10/2026: the store ids (fixed by the first upload): Plazo com.benfordtech.plazo, Plazo Pro com.benfordtech.plazopro.
+        applicationId = "com.benfordtech.plazo"
         // You can update the following values to match your application needs.
         // For more information, see: https://flutter.dev/to/review-gradle-config.
         minSdk = flutter.minSdkVersion
@@ -56,12 +57,12 @@ android {
     productFlavors {
         create("traveller") {
             dimension = "app"
-            applicationId = "com.benfordtech.parking_app"
+            applicationId = "com.benfordtech.plazo"
             resValue("string", "app_name", "Plazo")
         }
         create("pro") {
             dimension = "app"
-            applicationId = "com.benfordtech.parking_app.pro"
+            applicationId = "com.benfordtech.plazopro"
             resValue("string", "app_name", "Plazo Pro")
         }
     }

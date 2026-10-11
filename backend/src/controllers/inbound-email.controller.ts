@@ -20,6 +20,15 @@ const header = (req: Request, name: string): string | null => {
 /** The envelope the relay puts in headers: the message's sender and the parking's Plazo address. */
 const envelopeOf = (req: Request): Envelope => ({ from: header(req, 'x-envelope-from'), to: header(req, 'x-envelope-to') });
 
+/** The relay's shared secret, compared in constant time; refused when the inbound email is not set up. */
+function checkInboundSecret(req: Request): void {
+  const given = Buffer.from(String(req.headers['x-inbound-secret'] ?? ''));
+  const expected = Buffer.from(INBOUND_EMAIL_SECRET);
+  if (!inboundEmailAvailable() || given.length !== expected.length || !timingSafeEqual(given, expected)) {
+    throw new HttpException(httpStatus.UNAUTHORIZED, 'Bad inbound secret', 'unauthorized');
+  }
+}
+
 export class InboundEmailController {
   public inbound = Container.get(InboundEmailService);
 
@@ -30,15 +39,20 @@ export class InboundEmailController {
    * { items } JSON is still read.
    */
   public receive = catchAsync(async (req: Request, res: Response) => {
-    const given = Buffer.from(String(req.headers['x-inbound-secret'] ?? ''));
-    const expected = Buffer.from(INBOUND_EMAIL_SECRET);
-    if (!inboundEmailAvailable() || given.length !== expected.length || !timingSafeEqual(given, expected)) {
-      throw new HttpException(httpStatus.UNAUTHORIZED, 'Bad inbound secret', 'unauthorized');
-    }
+    checkInboundSecret(req);
     const payload: InboundPayload = Buffer.isBuffer(req.body)
       ? { items: [await parseRawEmail(req.body, envelopeOf(req))] }
       : ((req.body ?? {}) as InboundPayload);
     res.json(await this.inbound.receive(Array.isArray(payload.items) ? payload : { items: [] }));
+  });
+
+  /**
+   * POST /public/inbound/retry (11/10/2026, « Lance l'analyse automatiquement pour allopark »): the email relay's cron,
+   * every 10 minutes, with the same X-Inbound-Secret: the Allopark emails due for another try are analysed again.
+   */
+  public retry = catchAsync(async (req: Request, res: Response) => {
+    checkInboundSecret(req);
+    res.json(await this.inbound.retryAllopark());
   });
 
   /** GET /internal/inbound/settings */

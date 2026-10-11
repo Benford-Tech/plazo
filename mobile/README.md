@@ -156,15 +156,19 @@ version web, « Payer » ouvre la page Stripe Checkout.
 
 0. **Paiement** : la clé publiable de test (`STRIPE_PUBLISHABLE_KEY` dans Vercel), le Merchant ID Apple Pay et son
    certificat (voir « Paiement »), l'accès production Google Pay au moment des clés live.
-1. **Identifiants de l'app** (définitifs avant le premier envoi sur les stores) : aujourd'hui des valeurs provisoires,
-   `com.benfordtech.parking_app` (Android, `android/app/build.gradle.kts`) et `com.benfordtech.parkingApp`
-   (iOS, projet Xcode), à remplacer partout (dont `codemagic.yaml` et `site/public/.well-known/`).
+1. **Identifiants de l'app** (décidés le 11/10/2026, les mêmes sur iOS et Android) : `com.benfordtech.plazo` (Plazo) et
+   `com.benfordtech.plazopro` (Plazo Pro), dans `android/app/build.gradle.kts`, le projet Xcode, `codemagic.yaml` et
+   `site/public/.well-known/` ; le paquet Dart et le `namespace` Android restent `parking_app` (internes, jamais vus des stores).
 2. **Apple** (équipe existante **Benford Tech**, Team ID `3BX4795V2Y`, celle de LoveNest, Thempo et Yoon) : les deux App ID
    avec **Push Notifications** (+ **Associated Domains** pour Plazo), les deux apps dans App Store Connect, deux profils
    App Store faits avec le certificat Apple Distribution **déjà présent** (Apple n'en accepte que 3), importés dans
    Codemagic ; la clé API de l'équipe est l'intégration Codemagic `lovenest-asc`.
 3. **Google Play** (compte existant **Benford Tech**) : les deux apps ; une **clé d'import propre à Plazo** (`.jks`, alias
-   `upload`), téléversée dans Codemagic sous la référence `plazo_upload` ; le compte de service qui publie Thempo, ouvert aux
+   `upload`, créée par le workflow GitHub « Android keystore (Plazo upload key) », 11/10/2026 : ni la clé ni son mot de
+   passe ne passent par une conversation), envoyée par ce workflow, avec le jeton de l'API Codemagic gardé en secret
+   GitHub `CODEMAGIC_API_TOKEN`, dans le groupe de variables Secure `plazo_android_signing` de l'app Codemagic
+   (`CM_KEYSTORE` en base64, `CM_KEYSTORE_PASSWORD`, `CM_KEY_ALIAS`, `CM_KEY_PASSWORD`, décodées par `codemagic.yaml`) ;
+   le compte de service qui publie Thempo, ouvert aux
    deux apps ; premier envoi de l'AAB à la main ; déclaration de l'usage de la position (premier plan, service
    « location »).
 4. **OneSignal + Firebase** : les deux apps OneSignal existent (une par app, car les réglages iOS d'une app OneSignal ne
@@ -180,9 +184,11 @@ version web, « Payer » ouvre la page Stripe Checkout.
    politique de confidentialité (URL), coordonnées d'assistance, catégorie, classification, justification de la
    position en arrière-plan (Apple) et formulaire « Sécurité des données » (Google).
 7. **Codemagic** : le dépôt ajouté à **l'équipe existante** (celle de Thempo, qui a déjà `lovenest-asc` et le certificat
-   Apple) avec `codemagic.yaml`, la facturation de l'équipe active, la clé `plazo_upload`, les profils iOS et le groupe
+   Apple) avec `codemagic.yaml`, la facturation de l'équipe active, le groupe `plazo_android_signing` (écrit par GitHub), les profils iOS et le groupe
    `mobile_secrets` (`GOOGLE_PLAY_SERVICE_ACCOUNT_CREDENTIALS`) : pas à pas dans
-   [`publier-sur-les-stores.md`](publier-sur-les-stores.md).
+   [`publier-sur-les-stores.md`](publier-sur-les-stores.md) ; les textes et réponses des quatre fiches dans
+   [`fiches-stores.md`](fiches-stores.md) (11/10/2026, rédigés d'après le code, relus contre lui, avec la liste de ce qui
+   reste à régler avant d'envoyer les apps en revue).
 
 ## Publier sur les stores (pipelines, 07/10/2026, revus le 09/10/2026, unifiés le 11/10/2026)
 
@@ -193,7 +199,8 @@ construit et publie avec les workflows de `codemagic.yaml` (racine du dépôt, `
 | Workflow | Quand | Ce qu'il fait |
 | --- | --- | --- |
 | `mobile-check` | à la main | les vérifications + APK **debug** des deux apps (à installer pour essayer) |
-| `mobile-release` | tag `mobile-vX.Y.Z` ou à la main | les vérifications une fois, puis **Plazo et Plazo Pro** : AAB + APK signés (clé `plazo_upload`) et IPA signé (certificat de l'équipe, intégration `lovenest-asc`), même version et même numéro de build ; chaque AAB → **Google Play, tests internes**, chaque IPA → **TestFlight** ; les six paquets dans Artifacts |
+| `mobile-release` | tag `mobile-vX.Y.Z` ou à la main | les vérifications une fois, puis **Plazo et Plazo Pro** : AAB + APK signés (clé du groupe `plazo_android_signing`) et IPA signé (certificat de l'équipe, intégration `lovenest-asc`), même version et même numéro de build ; chaque AAB → **Google Play, tests internes**, chaque IPA → **TestFlight** ; les six paquets dans Artifacts |
+| `mobile-release-android` | à la main | **Android seul** (11/10/2026) : la moitié Android de `mobile-release`, mêmes étapes (ancres YAML partagées), sans certificat, profil ni intégration Apple : AAB + APK signés des deux apps, chaque AAB → **Google Play, tests internes** ; pour le premier envoi Google Play avant Apple, puis quand seul Google Play doit recevoir une version |
 
 - Version = `version:` de `pubspec.yaml`, que le tag doit reprendre (`mobile-v1.0.0`, sinon arrêt) ; numéro de build =
   compteur Codemagic + 100, jamais sous le dernier build d'un des quatre stores (un seul numéro pour les quatre paquets).
@@ -201,8 +208,8 @@ construit et publie avec les workflows de `codemagic.yaml` (racine du dépôt, `
   à `"true"` jusqu'à la première version déployée à la main sur Google Play, puis `"false"`.
 - Les envois se font par les outils en ligne de commande de Codemagic (`google-play bundles publish`,
   `app-store-connect publish`), un par paquet, tous tentés ; le dernier pas met le build en erreur si l'un a échoué.
-  Le workflow exige la clé Android et les deux profils Apple (`plazo_app_store`, `plazo_pro_app_store`) avant son
-  premier lancement.
+  `mobile-release` exige la clé Android et les deux profils Apple (`plazo_app_store`, `plazo_pro_app_store`) avant son
+  premier lancement ; `mobile-release-android` seulement la clé Android et le compte de service Google Play.
 - **Marche à suivre complète** (ce qui existe déjà, Codemagic, Apple, Google Play, premier envoi, ce qu'il ne faut jamais
   coller) : [`publier-sur-les-stores.md`](publier-sur-les-stores.md).
 - Revue du 09/10/2026, avant le premier build : la vérification du nom du produit échouait toujours (le nom iOS vit
@@ -220,8 +227,8 @@ construit et publie avec les workflows de `codemagic.yaml` (racine du dépôt, `
 
 ## Deux apps, un projet (A-B, 04/10/2026)
 
-- **Plazo** (voyageurs) : flavor Android `traveller`, `--dart-define=APP_FLAVOR=traveller` (défaut), id `com.benfordtech.parking_app`.
-- **Plazo Pro** (personnel, direction B de l'espace pro web : noir, jaune, angles vifs, Archivo Narrow + JetBrains Mono ; `AppColors` / `AppRadius` / `AppFonts` suivent le flavor) : flavor Android `pro`, `--dart-define=APP_FLAVOR=pro`, id `com.benfordtech.parking_app.pro`,
+- **Plazo** (voyageurs) : flavor Android `traveller`, `--dart-define=APP_FLAVOR=traveller` (défaut), id `com.benfordtech.plazo`.
+- **Plazo Pro** (personnel, direction B de l'espace pro web : noir, jaune, angles vifs, Archivo Narrow + JetBrains Mono ; `AppColors` / `AppRadius` / `AppFonts` suivent le flavor) : flavor Android `pro`, `--dart-define=APP_FLAVOR=pro`, id `com.benfordtech.plazopro`,
   icône vert citron, P et avion vert foncé (C-B, 05/10/2026 ; `assets/brand/app-icon-pro*.png`, `dart run flutter_launcher_icons -f flutter_launcher_icons-pro.yaml`).
   Elle s'ouvre sur ses quatre onglets (`ProShellPage` : Aujourd'hui · Réservations · Parking · Plus) et n'embarque aucun
   écran voyageur (décision du 04/10/2026 : les routes voyageur et les App Links `/ma-reservation` n'existent que dans le
@@ -229,8 +236,8 @@ construit et publie avec les workflows de `codemagic.yaml` (racine du dépôt, `
 - Exemple : `flutter build apk --release --flavor pro --dart-define=APP_FLAVOR=pro`. Toujours passer le même nom aux deux
   options (le flavor choisit l'id et l'icône, la define choisit le parcours).
 - iOS (07/10/2026) : deux schémas partagés `traveller` et `pro` (`ios/Runner.xcodeproj/xcshareddata/xcschemes/`) et les
-  configurations `Debug-… / Release-… / Profile-…` de chaque flavor dans le projet Xcode : bundle id `com.benfordtech.parkingApp`
-  ou `.pro`, nom affiché (`APP_DISPLAY_NAME` → `CFBundleDisplayName`), jeu d'icônes `AppIcon` ou `AppIcon-pro`
+  configurations `Debug-… / Release-… / Profile-…` de chaque flavor dans le projet Xcode : bundle id `com.benfordtech.plazo`
+  ou `com.benfordtech.plazopro`, nom affiché (`APP_DISPLAY_NAME` → `CFBundleDisplayName`), jeu d'icônes `AppIcon` ou `AppIcon-pro`
   (`Assets.xcassets/AppIcon-pro.appiconset`, généré depuis `assets/brand/app-icon-pro.png`), droits `Runner.entitlements`
   (push + liens universels) ou `RunnerPro.entitlements` (push seul). `flutter build ipa --flavor pro --dart-define=APP_FLAVOR=pro`.
   Le schéma `Runner` d'origine reste l'app voyageur (configurations de base).

@@ -81,7 +81,7 @@ class _PlanMapState extends State<PlanMap> {
           ),
           children: [
             if (IgnMap.tilesEnabled)
-              TileLayer(urlTemplate: AppConstants.ignOrthoTilesUrl, userAgentPackageName: 'com.benfordtech.parking_app', maxNativeZoom: 19),
+              TileLayer(urlTemplate: AppConstants.ignOrthoTilesUrl, userAgentPackageName: 'com.benfordtech.plazo', maxNativeZoom: 19),
             if (widget.polygons != null) PolygonLayer(polygons: widget.polygons!),
             if (widget.polygons == null && widget.spots.isNotEmpty)
               PolygonLayer(

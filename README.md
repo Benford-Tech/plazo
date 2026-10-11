@@ -159,9 +159,11 @@ une décision de Joanny. Cocher au fur et à mesure.
   le `noindex` (`site/src/lib/legal.ts`, `LEGAL_VERSION`). Désigner un médiateur de la consommation (obligatoire).
 - [ ] **Factures** : Plazo n'émet ni facture ni reçu ; choisir reçu Stripe (Settings › Emails › Paiements réussis) + facture
   du parking, ou facture Plazo avec mandat de facturation.
-- [ ] **Apps** : identifiants `com.benfordtech.*` définitifs ou non (plus modifiables après le premier envoi) ; un seul
+- [ ] **Apps** : identifiants décidés le 11/10/2026, `com.benfordtech.plazo` et `com.benfordtech.plazopro` (iOS et Android ;
+  Plazo Pro créée sur Google Play) ; un seul
   workflow `mobile-release` (tag `mobile-vX.Y.Z` ou à la main) construit et envoie les six paquets des deux apps ; il
-  faut la clé d'import Android et les deux profils Apple dans Codemagic avant son premier lancement.
+  faut la clé d'import Android et les deux profils Apple dans Codemagic avant son premier lancement. `mobile-release-android`
+  (à la main, 11/10/2026) fait la moitié Google Play seule, sans Apple : il sert au premier envoi sur Google Play.
 - [ ] **SMS** : « Plazo envoie pour moi » n'a aucun crédit SMS Brevo ; recommander « Téléphone du parking ».
 
 **À faire par Joanny (tableaux de bord)**
@@ -206,7 +208,9 @@ une décision de Joanny. Cocher au fur et à mesure.
   n°1 n'utilise l'espace pro tous les jours ; activer les alertes d'usage par e-mail dans la console Neon.
 - [ ] Stores (pas à pas : `mobile/publier-sur-les-stores.md`) avec les comptes qui publient déjà Thempo, LoveNest et Yoon
   (Apple Benford Tech `3BX4795V2Y`, Google Play Benford Tech, équipe Codemagic avec `lovenest-asc`) : Plazo ajouté à
-  l'équipe Codemagic (facturation active), clé d'import `plazo_upload` dans ses Code signing identities, groupe
+  l'équipe Codemagic (facturation active), clé d'import Android créée et envoyée par le workflow GitHub « Android keystore
+  (Plazo upload key) » (jeton de l'API Codemagic en secret GitHub `CODEMAGIC_API_TOKEN`, groupe de variables Secure
+  `plazo_android_signing`, artefact d'un jour pour le gestionnaire de mots de passe), groupe
   `mobile_secrets` (`GOOGLE_PLAY_SERVICE_ACCOUNT_CREDENTIALS` : le compte de service de Thempo, ouvert aux deux apps Plazo),
   App ID et apps chez Apple, deux profils App Store avec le certificat existant puis « Fetch profiles », deux apps chez
   Google, premier AAB à la main, `APP_STORE_APP_ID` ; identifiants des apps confirmés avant tout envoi ; OneSignal : les deux
@@ -407,7 +411,7 @@ le navigateur de l'espace pro appelle `/api` sur le même domaine (pas de CORS).
    par la référence externe, push « Nouvelle réservation » à ceux qui le veulent à chaque réservation, sinon le récapitulatif
    horaire) ; un mail incomplet ou inconnu attend dans la **boîte de réception** « Mails à vérifier » (`/pro/reservations/a-verifier`,
    alerte du tableau de bord ; M-A du 08/10/2026 : liste et volet de lecture, onglets « À traiter · Traités · Archivés »), où
-   l'équipe le complète dans le formulaire prérempli, le marque comme traité, l'archive (T-A) ou en relance l'analyse (10/10/2026 ; la page de réservation Allopark est cherchée dans tout le mail et aux adresses du parking, son prix est lu, et une vérification anti-robot n'est jamais contournée : le mail donne alors le lien « Ouvrir la page Allopark » ; une modification Allopark est appliquée à la réservation depuis la page, sauf cas risqué laissé à l'équipe avec la raison). **Lecture par Claude (L-A,
+   l'équipe le complète dans le formulaire prérempli, le marque comme traité, l'archive (T-A) ou en relance l'analyse (10/10/2026 ; la page de réservation Allopark est cherchée dans tout le mail et aux adresses du parking, son prix est lu, et une vérification anti-robot n'est jamais contournée : le mail donne alors le lien « Ouvrir la page Allopark » ; une modification Allopark est appliquée à la réservation depuis la page, sauf cas risqué laissé à l'équipe avec la raison ; 11/10/2026 : un mail Allopark dont la page n'a pas pu être lue est analysé de nouveau par Plazo lui-même jusqu'à cinq fois en deux jours, la minuterie du relais l'y invitant toutes les 10 minutes). **Lecture par Claude (L-A,
    08/10/2026)** : un mail qu'aucun importateur ne reconnaît est lu par Claude (`ANTHROPIC_API_KEY`, modèle `EMAIL_READING_MODEL`,
    Claude Opus 5.5 par défaut) : réservation complète et sûre → créée aussitôt (source lue en canal) ; sinon « À traiter »
    pré-rempli ; annulations et modifications signalées, jamais appliquées seules. Texte des mails gardé 30 jours,
@@ -592,6 +596,7 @@ Documentation interactive : `/api/docs` (Swagger). Toutes les routes sont sous `
 | POST | `/internal/sms/disable` | Gérant : plus de SMS, identifiants oubliés |
 | GET | `/internal/sms/status` | Gérant : `{ lastSentAt, month: { sent, failed }, pending, pendingStale, lastError }` (relance la file au passage) |
 | POST | `/public/inbound/email` | Relais Cloudflare (M-A) : le mail brut (`message/rfc822`, `X-Inbound-Secret`, `X-Envelope-From` / `X-Envelope-To`, coupé à 4 Mo) ou l'ancien `{ items: [...] }` → `{ received, imported, toCheck, ignored }` |
+| POST | `/public/inbound/retry` | Minuterie du relais Cloudflare, toutes les 10 minutes (`X-Inbound-Secret`) : les mails Allopark dont la page n'a pas pu être lue sont analysés de nouveau quand leur tour vient (10 min, 30 min, 1 h, 3 h, 8 h après l'essai précédent, deux jours au plus, jamais une page protégée par un captcha ni refusée par Allopark — 429, blocage de Cloudflare —), trois par appel au plus, l'appel s'arrêtant dès qu'Allopark demande une vérification ou refuse Plazo → `{ due, tried, outcomes, stopped? }` |
 | GET | `/internal/inbound/settings` | Adresse de réception du loueur, dernier mail, comptages sur 30 jours, mails à vérifier |
 | POST | `/internal/inbound/address` | Gérant : renvoie l'adresse (créée avec le loueur) ; `{ regenerate: true }` : nouvelle adresse |
 | GET | `/internal/inbound/emails?view=todo\|done\|archived&status=` | Boîte de réception (M-A, 08/10/2026) : un onglet (`todo` par défaut : incomplete et unrecognised ; `done` : imported, duplicate, handled sur 30 jours ; `archived` : 90 jours), du plus récent au plus ancien, `{ data, counts: { todo, done, archived } }` ; `?status=` filtre encore (seul, il cherche dans l'onglet de cet état) ; les confirmations de transfert jamais listées |

@@ -195,6 +195,22 @@ Ne construire QUE ce qui règle la douleur n°1 du client.
      reste affiché, pas de « Compléter »). `alloparkPageUrls` donne le lien du mail puis les pages des adresses du parking
      (3 au plus) : un lien qui mène ailleurs (« gérer ma réservation ») n'arrête plus la recherche. « Compléter » préremplit
      aussi le modèle et la couleur du véhicule.
+     **Analyse relancée automatiquement (11/10/2026, « Lance l'analyse automatiquement pour allopark »)** : à la réception,
+     Allopark montrait parfois « gérer ma réservation » au lieu de la réservation (journaux de production : la même page lue
+     18 min plus tard) ; un mail Allopark dont la page n'a pas été lue (`pageLookup` `not_found` ou `unavailable`, jamais
+     `protected` ni un refus d'Allopark — 429, blocage de Cloudflare, `refused: true` dans `pageLookup` —, laissés à
+     l'équipe comme un captcha) et qui attend encore (« À traiter », sans réservation, texte gardé, reçu depuis moins de 48 h, loueur non
+     suspendu) est analysé de nouveau par Plazo lui-même, comme « Relancer l'analyse », 10 min, 30 min, 1 h, 3 h puis 8 h
+     après l'essai précédent (`domain/inbound-retry.ts`, `nextAutoRetry`, 5 essais au plus, `InboundEmail.autoRetries`,
+     migration `inbound_auto_retries`) : `InboundEmailService.retryAllopark` (même verrou `analysedAt` que la relance,
+     3 mails par passage, un nouveau seulement dans les 10 premières secondes, passage arrêté dès qu'Allopark demande une
+     vérification ou refuse Plazo ; réservation créée ou modification appliquée
+     avec leurs notifications ; tracé `inbound.reanalysed` avec `auto: true`, sans membre de l'équipe ; `rerun` partagé avec
+     la relance manuelle), appelé par `POST /public/inbound/retry` (même `X-Inbound-Secret` que les mails) que la minuterie
+     du relais `email-worker/` appelle toutes les 10 minutes (`[triggers] crons`, `scheduled()`, `PLAZO_RETRY_URL`) : rien à
+     régler ailleurs. Boîte de réception : sous « Page Allopark : … », « Nouvel essai automatique vers 07:10 (2 sur 5) »
+     (`autoRetries`, `autoRetryAt` de la vue), puis « Plazo a réessayé 5 fois sans trouver la réservation : ouvrez la page
+     Allopark ou relancez l'analyse. ».
    - Page de réservation propre à l'opérateur (formulaire simple, confirmation par mail/SMS).
    - Vue planning : arrivées et retours du jour, taux d'occupation, alerte de surréservation
      calculée sur la capacité réelle.
@@ -521,7 +537,7 @@ Plazo reprend la stack et les conventions des dépôts `lovenest-backend`, `love
   à l'espace pro web** (A-B : deux apps « Plazo » et « Plazo Pro » sur un seul projet ; N-A : quatre onglets
   Aujourd'hui · Réservations · Parking · Plus), livrée par étapes : 1 réservations (fait), 2 flavors et onglets (fait : `--flavor pro --dart-define=APP_FLAVOR=pro`,
   `ProShellPage` à quatre onglets sous `/pro`, icône Pro vert citron (P et avion vert foncé, C-B 05/10/2026) ; iOS : schémas
-  Xcode `traveller` et `pro` avec leurs configurations `-traveller` / `-pro`, bundle id `.pro`, `AppIcon-pro`, `RunnerPro.entitlements`
+  Xcode `traveller` et `pro` avec leurs configurations `-traveller` / `-pro`, identifiants `com.benfordtech.plazo` / `com.benfordtech.plazopro` sur iOS et Android (11/10/2026, Plazo Pro créée sur Google Play), `AppIcon-pro`, `RunnerPro.entitlements`
   (07/10/2026)),
   **R-C « Poste du jour » (04/10/2026)** : chaque membre choisit son poste (gérant, accueil, chauffeur, voiturier) parmi ceux
   que son rôle couvre (`allowedPosts` dans `domain/roles.ts`, `Staff.post/postSetAt`, `PATCH /internal/staff/me/post`) ; les quatre
@@ -638,8 +654,18 @@ Le nom du produit doit rester dans UN seul fichier de configuration (il peut enc
   nom du produit recopié depuis `product.json` par `tool/sync_product.dart`, builds par `codemagic.yaml` (racine du dépôt, `working_directory: mobile`). **Pipelines de publication (07/10/2026, revus le 09/10/2026 :
   Codemagic retenu par Joanny, avec les comptes de Thempo, LoveNest et Yoon)** : Plazo rejoint **l'équipe Codemagic** qui publie
   Thempo et signe comme lui (intégration Developer Portal `lovenest-asc` de l'équipe Apple Benford Tech `3BX4795V2Y` ;
-  `ios_signing` avec le certificat Apple Distribution déjà téléversé, Apple n'en acceptant que 3 ; `android_signing` avec la
-  clé d'import propre à Plazo `plazo_upload`, jamais de base64 collé ; compte Google Play Benford Tech et compte de service de
+  `ios_signing` avec le certificat Apple Distribution déjà téléversé, Apple n'en acceptant que 3 ; clé d'import
+  propre à Plazo créée par le workflow GitHub `android-keystore.yml` (« Android keystore (Plazo upload key) », 11/10/2026 :
+  mot de passe aléatoire, rien ne passe par une conversation) et envoyée par `.github/scripts/codemagic_keystore.py` avec
+  l'API v3 de Codemagic (jeton en secret GitHub `CODEMAGIC_API_TOKEN` ; pas d'API pour les Code signing identities) dans le
+  groupe de variables Secure `plazo_android_signing` de l'app (`CM_KEYSTORE` en base64, `CM_KEYSTORE_PASSWORD`, `CM_KEY_ALIAS`,
+  `CM_KEY_PASSWORD`, décodées par l'étape `key.properties` ; `android_signing: [plazo_upload]` reste possible si la clé est
+  un jour téléversée à la main), puis build `mobile-release-android` lancé ; le groupe `mobile_secrets` est créé vide s'il manque, Codemagic refusant un
+  build dont un groupe n'existe pas ; artefact d'un jour pour le gestionnaire de mots de passe ; refus de remplacer une clé
+  déjà envoyée sans la case « replace » ; jamais de base64 collé à la main ; **`codemagic-build.yml` « Codemagic build
+  (start, status, groups) »** (`.github/scripts/codemagic_build.py`, client commun `codemagic_api.py`) : `start` d'un
+  workflow sur une branche, `status` d'un build (état, artefacts ; étape rouge si le build a échoué), `groups` (noms des
+  variables seulement), `ensure-group` : c'est par là que Claude suit et relance les builds Codemagic ; compte Google Play Benford Tech et compte de service de
   Thempo) ; **un seul workflow `mobile-release` (11/10/2026, « unifie le pipeline »)** à la place des quatre d'avant (un par
   store et par app) : tag `mobile-vX.Y.Z` (= `version:` de `pubspec.yaml`, sinon arrêt) ou manuel ; vérifications une fois,
   puis pour chaque flavor AAB + APK signés et IPA signé, les quatre paquets sous la même version et le même numéro de build
@@ -647,11 +673,17 @@ Le nom du produit doit rester dans UN seul fichier de configuration (il peut enc
   `thempo-distribution`, profils `plazo_app_store` et `plazo_pro_app_store`, un `bundle_identifier` automatique ne prenant
   qu'une app), `xcode-project use-profiles` puis un export options plist par app (PlistBuddy) ; envois par les outils en ligne
   de commande (`google-play bundles publish --track $PLAY_TRACK [--draft]` par AAB, `app-store-connect publish` par IPA,
-  `TESTFLIGHT_BETA_GROUPS` pour la relecture bêta), chacun tenté (`ignore_failure`), « Bilan de la publication » en erreur si
+  `TESTFLIGHT_BETA_GROUPS` pour la relecture bêta, absente par défaut car Codemagic refuse une variable vide), chacun tenté (`ignore_failure`), « Bilan de la publication » en erreur si
   l'un a échoué ; plus de bloc `publishing:` (il n'envoie qu'une app et doublerait l'envoi) ; App ID OneSignal dans le fichier,
-  `GOOGLE_PLAY_SERVICE_ACCOUNT_CREDENTIALS` seul secret du groupe `mobile_secrets`) ; `mobile-check` à la main seulement, les vérifications de chaque modification
+  `GOOGLE_PLAY_SERVICE_ACCOUNT_CREDENTIALS` seul secret du groupe `mobile_secrets`) ; **`mobile-release-android` (11/10/2026,
+  « un build Android seul pour le Play Store »)**, à la main : la moitié Android de `mobile-release` (étapes partagées par des
+  ancres YAML de `definitions.scripts`, variables `android_vars`), sans `ios_signing` ni intégration `lovenest-asc`, donc
+  lançable avant les profils Apple (premier envoi Google Play) ; `mobile-check` à la main seulement, les vérifications de chaque modification
   tournant sur GitHub Actions (`mobile-ci.yml`, gratuit, les minutes de l'équipe étant payantes) ; marche à suivre
-  `mobile/publier-sur-les-stores.md`. Le nom iOS vit dans
+  `mobile/publier-sur-les-stores.md` ; **fiches des stores** `mobile/fiches-stores.md` (11/10/2026, « crée l'app sur les
+  stores ») : textes, confidentialité, notes de revue et visuels des quatre fiches, rédigés d'après le code et relus contre
+  lui, section 0 = ce qui reste à régler avant la revue (parking en ligne, e-mail de support, compte de revue et suppression
+  de compte dans Plazo Pro, politique de confidentialité, textes iOS par flavor…). Le nom iOS vit dans
   `APP_DISPLAY_NAME` des configurations Xcode (mis à jour par `sync_product.dart`) ; Google Pay suit la clé Stripe servie
   (`pk_live_` = production).
   Voir `mobile/README.md`.

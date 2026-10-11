@@ -2,7 +2,7 @@
   "applinks": {
     "details": [
       {
-        "appIDs": ["3BX4795V2Y.com.benfordtech.parkingApp"],
+        "appIDs": ["3BX4795V2Y.com.benfordtech.plazo"],
         "components": [{ "/": "/ma-reservation/*", "comment": "A booking's manage link opens the Plazo app" }]
       }
     ]
