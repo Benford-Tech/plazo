@@ -13,8 +13,21 @@ const subscribe = () => () => {};
 /**
  * Filters of the results page: a GET form on the results page itself. With JavaScript, every change
  * applies at once (client-side navigation); without it, an "Apply" button submits the form.
+ * The same form serves the filters panel (a column of fieldsets) and the row of quick filter chips
+ * (`className="contents"`, the chips being labels around checkboxes; its "Apply" button is a chip too).
  */
-export function FiltersForm({ action, children }: { action: string; children: React.ReactNode }) {
+export function FiltersForm({
+  action,
+  children,
+  className = "flex flex-col gap-[22px]",
+  applyClassName = "btn-secondary h-11 px-4 text-[15px]",
+}: {
+  action: string;
+  children: React.ReactNode;
+  className?: string;
+  /** Look of the "Apply" button shown before hydration (without JavaScript). */
+  applyClassName?: string;
+}) {
   const hydrated = useSyncExternalStore(
     subscribe,
     () => true,
@@ -37,11 +50,11 @@ export function FiltersForm({ action, children }: { action: string; children: Re
         focusAfterNavigation = target.id || null;
         event.currentTarget.requestSubmit();
       }}
-      className="flex flex-col gap-[22px]"
+      className={className}
     >
       {children}
       {!hydrated && (
-        <button type="submit" className="btn-secondary h-11 px-4 text-[15px]">
+        <button type="submit" className={applyClassName}>
           {fr.results.apply}
         </button>
       )}

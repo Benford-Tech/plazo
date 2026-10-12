@@ -4,14 +4,14 @@ import { useEffect, useId, useRef, useState, type RefObject } from "react";
 import { createPortal } from "react-dom";
 import { CalendarMonths } from "./CalendarMonths";
 import { trapTab, useAnchoredPosition, usePopupBehaviour } from "./popup";
+import { CloseIcon } from "./pill";
 import { TimeList } from "./TimeList";
 import { rangeSummary, type RangeDraft, type Side } from "@/lib/calendar";
 import { formatDay } from "@/lib/dates";
 import { fr } from "@/lib/fr";
 
-const GRADIENT_BTN =
-  "bg-[linear-gradient(96deg,#ff8a3d,#f0a36b)] font-bold text-white shadow-[0_8px_22px_-8px_rgba(255,138,61,.45)] disabled:opacity-50 disabled:shadow-none";
-const panel = "rounded-[22px] bg-white text-ink shadow-[0_30px_70px_-20px_rgba(40,10,50,.45)]";
+/** Boutique: the pickers are sheets (white, hairline, 16 px corners, sheet shadow); their one action is orange. */
+const panel = "rounded-card border border-line bg-white text-ink shadow-sheet";
 
 export interface StayValue {
   arrivalDate: string;
@@ -28,7 +28,7 @@ function Summary({ start, end }: { start: string | null; end: string | null }) {
       {days && (
         <>
           {" · "}
-          <b className="text-accent">{days}</b>
+          <b className="text-ink">{days}</b>
         </>
       )}
     </span>
@@ -79,20 +79,16 @@ export function DatesPopover({
         </span>
       </div>
       <CalendarMonths draft={draft} onChange={setDraft} minDate={minDate} count={months} initialFocus={focus} autoFocus />
-      <div className="flex flex-wrap items-center gap-2.5 border-t border-line pt-3.5">
+      <div className="flex flex-wrap items-center gap-2.5 border-t border-line-soft pt-3.5">
         <span className="text-sm text-soft">{fr.picker.hint}</span>
-        <button
-          type="button"
-          onClick={() => setDraft({ start: null, end: null, picking: "start" })}
-          className="ml-auto h-11 rounded-full border border-line bg-white px-4 text-sm font-semibold hover:border-accent"
-        >
+        <button type="button" onClick={() => setDraft({ start: null, end: null, picking: "start" })} className="btn-secondary btn-sm ml-auto">
           {fr.picker.clear}
         </button>
         <button
           type="button"
           disabled={!draft.start || !draft.end}
           onClick={() => draft.start && draft.end && onApply(draft.start, draft.end)}
-          className={`h-11 rounded-full px-5 text-sm ${GRADIENT_BTN}`}
+          className="btn-primary min-h-11 px-6 text-[14px] disabled:cursor-not-allowed disabled:opacity-45"
         >
           {fr.picker.confirm}
         </button>
@@ -130,7 +126,7 @@ export function TimePopover({
       className={`${panel} absolute z-50 w-[228px] p-4`}
       style={{ top: position?.top ?? -9999, left: position?.left ?? 0 }}
     >
-      <h2 id={titleId} className="mb-2.5 font-bold">
+      <h2 id={titleId} className="eyebrow mb-3">
         {label}
       </h2>
       <TimeList value={value} onPick={onPick} label={label} layout="grid" autoFocus />
@@ -188,38 +184,49 @@ export function StaySheet({
         type="button"
         aria-pressed={active}
         onClick={() => setDraft(d => ({ ...d, picking: s }))}
-        className={`min-w-0 rounded-[14px] border bg-white px-2.5 py-2 text-left ${
-          active ? "border-accent shadow-[inset_0_0_0_1px_#ff8a3d]" : "border-line"
-        }`}
+        className={`min-h-[58px] min-w-0 rounded-field border bg-white px-3 py-2 text-left text-ink ${active ? "border-dark inset-ring inset-ring-dark" : "border-line"}`}
       >
-        <span className="block text-[11px] font-semibold text-soft uppercase">{s === "start" ? fr.picker.dropOff : fr.picker.pickUp}</span>
-        <b className="block truncate text-[15px] tabular-nums">
-          {date ? `${formatDay(date)} · ${s === "start" ? times.start : times.end}` : fr.picker.choose}
-        </b>
+        <span className="block text-[10.5px] leading-tight font-bold tracking-[.12em] text-soft uppercase">{s === "start" ? fr.picker.dropOff : fr.picker.pickUp}</span>
+        {date ? (
+          <span className="mt-0.5 flex items-baseline gap-1.5 truncate text-[15px] leading-tight">
+            <b className="truncate font-bold">{formatDay(date)}</b>
+            <span aria-hidden="true" className="text-mute">
+              ·
+            </span>
+            <span className="font-hour">{s === "start" ? times.start : times.end}</span>
+          </span>
+        ) : (
+          <b className="mt-0.5 block truncate text-[15px] leading-tight font-semibold text-soft">{fr.picker.choose}</b>
+        )}
       </button>
     );
   };
 
   return createPortal(
     <div className="fixed inset-0 z-50 flex flex-col justify-end">
-      <div aria-hidden="true" className="absolute inset-0 bg-[rgba(30,10,40,.45)]" onClick={onClose} />
+      <div aria-hidden="true" className="absolute inset-0 bg-dark/45" onClick={onClose} />
       <div
         ref={box}
         role="dialog"
         aria-modal="true"
         aria-labelledby={titleId}
-        className="relative flex max-h-[94dvh] flex-col gap-3 overflow-y-auto rounded-t-[24px] bg-white px-4 pt-2.5 pb-[max(18px,env(safe-area-inset-bottom))] text-ink shadow-[0_-20px_50px_-20px_rgba(0,0,0,.5)]"
+        className="relative flex max-h-[94dvh] flex-col gap-3 overflow-y-auto rounded-t-card border-t border-line bg-white px-4 pt-2.5 pb-[max(18px,env(safe-area-inset-bottom))] text-ink shadow-sheet"
       >
         <span aria-hidden="true" className="h-[5px] w-11 self-center rounded-full bg-line" />
         <div className="flex items-center gap-2">
           <h2 id={titleId} className="font-title text-[22px]">
             {fr.picker.yourDates}
           </h2>
-          <span aria-live="polite" className="ml-auto text-[13px] font-bold text-accent">
+          <span aria-live="polite" className="ml-auto text-[13px] font-bold text-ink">
             {days}
           </span>
-          <button type="button" onClick={onClose} aria-label={fr.picker.close} className="-mr-2 flex size-11 items-center justify-center text-2xl text-soft">
-            <span aria-hidden="true">×</span>
+          <button
+            type="button"
+            onClick={onClose}
+            aria-label={fr.picker.close}
+            className="-mr-2 flex size-11 items-center justify-center rounded-full text-soft hover:bg-tint hover:text-ink"
+          >
+            <CloseIcon />
           </button>
         </div>
         <div className="grid grid-cols-2 gap-2">
@@ -235,7 +242,7 @@ export function StaySheet({
           autoFocus
         />
         <div>
-          <h3 className="mt-1 mb-2 text-sm font-bold">{side === "start" ? fr.picker.dropOffTime : fr.picker.pickUpTime}</h3>
+          <h3 className="eyebrow mt-1 mb-2">{side === "start" ? fr.picker.dropOffTime : fr.picker.pickUpTime}</h3>
           <TimeList
             key={side}
             value={side === "start" ? times.start : times.end}
@@ -252,7 +259,7 @@ export function StaySheet({
             draft.end &&
             onApply({ arrivalDate: draft.start, arrivalTime: times.start, returnDate: draft.end, returnTime: times.end })
           }
-          className={`h-[52px] flex-none rounded-full text-base ${GRADIENT_BTN}`}
+          className="btn-primary min-h-[52px] flex-none text-base disabled:cursor-not-allowed disabled:opacity-45"
         >
           {fr.picker.confirmDates}
         </button>

@@ -1,9 +1,10 @@
 import Link from "next/link";
-import { GuideSections, GuideToc } from "./AirportGuide";
+import { ArrowIcon, GuideBody, MEASURE } from "./AirportGuide";
 import { Breadcrumb } from "./Breadcrumb";
 import { JsonLd } from "./JsonLd";
 import { ResultCard } from "./ResultCard";
 import { SearchForm } from "./SearchForm";
+import { ChevronIcon } from "./stay/pill";
 import type { TopicGuide } from "@/lib/airport-guides";
 import { longDate, stayQuery, todayLocal } from "@/lib/dates";
 import { fr } from "@/lib/fr";
@@ -41,10 +42,12 @@ export function TopicGuideView({
   const base = siteUrl();
   const partners = guidePartners(guide, preview, listings);
   const others = topicLinks(airport.slug).filter(t => t.href !== path);
-  const sectionTitle = "font-title text-[26px] md:text-[32px]";
+  const sectionTitle = "font-title lining-nums text-[26px] leading-[1.15] text-ink md:text-[32px]";
 
+  // Boutique (11/10/2026): the guide's editorial treatment (Playfair headings, a 65-character measure, hairlines),
+  // around the search card and the partner cards shared with the rest of the site.
   return (
-    <main className="mx-auto flex w-full max-w-[1280px] flex-col gap-8 px-4 pt-4 pb-10 md:gap-10 md:px-12 md:pt-[26px] md:pb-12">
+    <main className="mx-auto flex w-full max-w-[1280px] flex-col gap-12 px-4 pt-4 pb-12 md:gap-16 md:px-12 md:pt-[26px] md:pb-16">
       <JsonLd
         data={[
           breadcrumbLd(base, [
@@ -55,14 +58,14 @@ export function TopicGuideView({
           faqLd(guide.faq),
         ]}
       />
-      <div className="flex flex-col gap-3">
+      <div className="flex flex-col gap-4 md:gap-5">
         <Breadcrumb items={[{ label: airport.name, href: airportPath(airport.slug) }, { label: guide.short }]} />
-        <h1 className="font-title text-[32px] leading-tight md:text-[46px]">{guide.title}</h1>
-        <p className="text-sm text-soft">{fr.guide.updated(longDate(guide.updated))}</p>
-        <p className="max-w-[860px] text-[17px] leading-relaxed md:text-lg">{guide.intro}</p>
+        <h1 className="font-title max-w-[19em] lining-nums text-[30px] leading-[1.12] text-ink md:text-[46px] md:leading-[1.08]">{guide.title}</h1>
+        <p className="text-[13.5px] font-semibold text-soft">{fr.guide.updated(longDate(guide.updated))}</p>
+        <p className={`${MEASURE} border-t border-line pt-5 text-[17px] leading-[1.65] md:text-[18.5px]`}>{guide.intro}</p>
       </div>
 
-      <section aria-labelledby="vos-dates" className="flex flex-col gap-3">
+      <section aria-labelledby="vos-dates" className="flex flex-col gap-4">
         <h2 id="vos-dates" className={sectionTitle}>
           {fr.guide.searchTitle}
         </h2>
@@ -73,65 +76,81 @@ export function TopicGuideView({
         <h2 id="partenaires" className={sectionTitle}>
           {guide.partners.title}
         </h2>
-        <p className="max-w-[860px] leading-relaxed text-soft">{guide.partners.lead}</p>
+        <p className={`${MEASURE} text-[16px] leading-[1.65] text-soft`}>{guide.partners.lead}</p>
         {partners.length === 0 ? (
-          <p className="rounded-[22px] bg-white p-5 text-soft">{guide.partners.empty}</p>
+          <p className="card p-5 text-soft">{guide.partners.empty}</p>
         ) : (
           <>
-            <ul className="flex flex-col gap-4">
+            <ul className="flex flex-col gap-3 md:gap-4">
               {partners.map((result, i) => (
                 <li key={result.slug}>
-                  <ResultCard result={result} href={`/${airport.slug}/${result.slug}${stayQuery(stay)}`} highlighted={i === 0} headingLevel={3} />
+                  {/* Sorted by total price: the first is the cheapest, with the pill that goes with its orange treatment. */}
+                  <ResultCard
+                    result={result}
+                    href={`/${airport.slug}/${result.slug}${stayQuery(stay)}`}
+                    highlighted={i === 0}
+                    badges={i === 0 ? ["cheapest"] : []}
+                    headingLevel={3}
+                  />
                 </li>
               ))}
             </ul>
-            <p>
-              <Link href={`/${airport.slug}/recherche${stayQuery(stay)}`} className="font-semibold">
-                {fr.guide.seeAllResults} →
+            <p className="text-[15px] leading-[1.6]">
+              <Link href={`/${airport.slug}/recherche${stayQuery(stay)}`} className="link">
+                {fr.guide.seeAllResults}
+                <ArrowIcon className="ml-1.5 inline-block align-[-3px]" />
               </Link>
             </p>
           </>
         )}
       </section>
 
-      <div className="flex flex-wrap items-start gap-6 md:gap-10">
-        <GuideToc sections={guide.sections} className="max-w-[340px] flex-[1_1_260px] md:sticky md:top-4" />
-        <article className="flex min-w-0 flex-[999_1_560px] flex-col gap-4">
-          <GuideSections sections={guide.sections} level={2} />
-        </article>
-      </div>
+      <article>
+        <GuideBody sections={guide.sections} level={2} />
+      </article>
 
       {guide.faq.length > 0 && (
         <section id="faq" aria-labelledby="faq-title" className="grid scroll-mt-4 gap-6 md:grid-cols-[1fr_1.4fr] md:gap-12">
           <h2 id="faq-title" className={sectionTitle}>
             {fr.guide.faqTitle}
           </h2>
-          <div>
+          <div className="card divide-y divide-line-soft px-4 md:px-6">
             {guide.faq.map(([question, answer], i) => (
-              <details key={question} open={i === 0} className="border-b border-line">
-                <summary className="py-3 text-base font-semibold">{question}</summary>
-                <p className="pb-3.5 text-[15px] leading-normal text-soft">{answer}</p>
+              <details key={question} open={i === 0} className="group">
+                <summary className="flex min-h-[52px] list-none items-center justify-between gap-4 py-3 text-[15.5px] leading-snug font-bold text-ink [&::-webkit-details-marker]:hidden">
+                  {question}
+                  <span aria-hidden="true" className="flex size-7 flex-none items-center justify-center rounded-full bg-tint text-soft transition-transform group-open:rotate-180">
+                    <ChevronIcon direction="down" size={15} />
+                  </span>
+                </summary>
+                <p className="-mt-1 pr-11 pb-4 text-[15px] leading-relaxed text-soft">{answer}</p>
               </details>
             ))}
           </div>
         </section>
       )}
 
-      <nav aria-labelledby="autres-guides" className="flex flex-col gap-2 p-[22px] card">
-        <h2 id="autres-guides" className="text-[13px] font-extrabold tracking-[.06em] text-soft uppercase">
+      <nav aria-labelledby="autres-guides" className="card px-5 pt-5 pb-2 md:px-6">
+        <h2 id="autres-guides" className="eyebrow mb-1.5">
           {fr.guide.otherGuides}
         </h2>
-        <ul className="flex flex-col">
+        <ul className="divide-y divide-line-soft">
           {others.map(other => (
             <li key={other.slug}>
-              <Link href={other.href} className="flex min-h-11 items-center font-semibold md:min-h-9">
+              <Link href={other.href} className="flex min-h-12 items-center justify-between gap-3 py-2 text-[15px] font-semibold text-ink hover:text-accent-dark">
                 {other.short}
+                <span className="text-mute">
+                  <ChevronIcon direction="right" size={16} />
+                </span>
               </Link>
             </li>
           ))}
           <li>
-            <Link href={`${airportPath(airport.slug)}#guide`} className="flex min-h-11 items-center font-semibold md:min-h-9">
+            <Link href={`${airportPath(airport.slug)}#guide`} className="flex min-h-12 items-center justify-between gap-3 py-2 text-[15px] font-semibold text-ink hover:text-accent-dark">
               {fr.guide.airportGuide(airport.name)}
+              <span className="text-mute">
+                <ChevronIcon direction="right" size={16} />
+              </span>
             </Link>
           </li>
         </ul>

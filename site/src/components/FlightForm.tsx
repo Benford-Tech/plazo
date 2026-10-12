@@ -13,7 +13,7 @@ export function FlightForm({ action, flight, outbound = null }: { action: Action
   const error = state.fields.returnFlight ?? (state.error && state.error !== "validation_failed" ? state.error : null);
   const outboundError = state.fields.departureFlight ?? null;
   return (
-    <form action={formAction} noValidate className="flex flex-col gap-2.5">
+    <form action={formAction} noValidate className="flex flex-col gap-3">
       <div>
         <label htmlFor="m-outbound" className="label">
           {fr.manage.outboundLabel}
@@ -54,18 +54,18 @@ export function FlightForm({ action, flight, outbound = null }: { action: Action
             className="field font-semibold uppercase placeholder:font-normal placeholder:normal-case"
           />
         </div>
-        <button type="submit" disabled={pending} aria-busy={pending || undefined} className="btn-secondary h-12 flex-none px-4 text-[15px]">
+        <button type="submit" disabled={pending} aria-busy={pending || undefined} className="btn-secondary min-h-12 flex-none px-5 text-[15px]">
           {pending ? fr.manage.flightSaving : flight ? fr.manage.flightEdit : fr.manage.flightSave}
         </button>
       </div>
       {error ? (
         <FieldError id="m-flight-error" code={error} />
       ) : (
-        <p id="m-flight-help" className="text-[13px] text-soft">
+        <p id="m-flight-help" className="-mt-1 text-[13px] leading-snug text-soft">
           {fr.manage.flightHelp}
         </p>
       )}
-      <p role="status" className="text-sm font-semibold text-ok empty:hidden">
+      <p role="status" className="text-[13.5px] font-bold text-ok empty:hidden">
         {state.notice === "flight_saved" ? fr.manage.flightSaved : ""}
       </p>
     </form>

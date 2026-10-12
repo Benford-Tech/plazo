@@ -1,15 +1,15 @@
-/** A number plate drawn as a French plate: blue "F" band, white background, dark border. */
+/** A number plate drawn as a French plate: blue "F" band, white background, dark border, 5 px corners. */
 export function Plate({ plate, size = "md" }: { plate: string; size?: "sm" | "md" }) {
   const small = size === "sm";
   return (
     <span
-      className={`inline-flex items-stretch overflow-hidden rounded-md border-[1.5px] border-ink align-middle ${small ? "h-[30px]" : "h-[34px]"}`}
+      className={`inline-flex shrink-0 items-stretch overflow-hidden rounded-[5px] border-[1.5px] border-plate-ink bg-white align-middle ${small ? "h-7" : "h-8"}`}
     >
-      <span aria-hidden="true" className="flex w-4 items-end justify-center bg-plate-blue pb-1 text-[10px] font-bold text-white">
+      <span aria-hidden="true" className="flex w-[15px] flex-none items-end justify-center bg-plate-blue pb-[3px] text-[8.5px] leading-none font-bold text-white">
         F
       </span>
       <span
-        className={`flex items-center bg-white px-2.5 font-extrabold tracking-[.03em] whitespace-nowrap text-plate-ink ${small ? "text-[15px]" : "text-[17px]"}`}
+        className={`flex items-center px-2 font-extrabold tracking-[.06em] whitespace-nowrap text-plate-ink tabular-nums ${small ? "text-[14px]" : "text-[16px]"}`}
       >
         {plate}
       </span>

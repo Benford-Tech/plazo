@@ -3,7 +3,8 @@
 import { useEffect, useRef } from "react";
 import { timeOptions } from "@/lib/calendar";
 
-const GRADIENT = "border-transparent bg-[linear-gradient(96deg,#ff8a3d,#f0a36b)] text-white";
+/** Boutique: the chosen slot is espresso (selection is never orange). */
+const PICKED = "border-dark bg-dark text-white";
 
 /**
  * Half-hour slots as pills (a listbox): a 2-column scrolling grid in the desktop popover, one
@@ -78,9 +79,9 @@ export function TimeList({
             tabIndex={time === current ? 0 : -1}
             onClick={() => onPick(time)}
             onKeyDown={e => move(e, i)}
-            className={`flex h-11 flex-none cursor-pointer snap-start items-center justify-center rounded-full border text-sm font-semibold tabular-nums select-none focus-visible:outline-3 focus-visible:outline-offset-1 focus-visible:outline-accent ${
-              layout === "row" ? "px-4 text-base" : ""
-            } ${selected ? GRADIENT : "border-line bg-white hover:border-accent"}`}
+            className={`font-hour flex h-11 flex-none cursor-pointer snap-start items-center justify-center rounded-full border text-[14px] select-none focus-visible:outline-3 focus-visible:outline-offset-1 focus-visible:outline-accent-dark ${
+              layout === "row" ? "px-4 text-[15px]" : ""
+            } ${selected ? PICKED : "border-line bg-white text-ink hover:border-soft/50"}`}
           >
             {time}
           </div>

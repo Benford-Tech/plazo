@@ -111,26 +111,42 @@ describe("StayFields", () => {
     }
   });
 
-  it("phoneSummary: one « Vos dates » pill (short form) that opens the bottom sheet, same field names", async () => {
+  it("phoneSummary: one « Vos dates » field in two rows (Dépôt, Retour) that open the bottom sheet, same field names", async () => {
     const user = userEvent.setup();
     const { container } = render(<StayFields {...props} retour="2026-10-17T13:00" phoneSummary />);
-    const pill = screen.getByRole("button", { name: "Vos dates : du samedi 10 octobre 2026 à 08:00 au samedi 17 octobre 2026 à 13:00" });
-    expect(pill).toHaveTextContent("Vos datessam. 10 oct. 08:00→ sam. 17 13:00");
-    expect(pill.parentElement).toHaveClass("sm:hidden");
+    // Boutique (11/10/2026): the drop-off and the return each on their own row, date and hour, never one truncated line.
+    const group = screen.getByRole("group", { name: "Vos dates" });
+    expect(group).toHaveClass("sm:hidden");
+    const dropOff = within(group).getByRole("button", { name: "Dépôt : samedi 10 octobre 2026 à 08:00" });
+    const back = within(group).getByRole("button", { name: "Retour : samedi 17 octobre 2026 à 13:00" });
+    expect(dropOff).toHaveTextContent("Dépôtsam. 10 oct.08:00");
+    expect(back).toHaveTextContent("Retoursam. 17 oct.13:00");
     // The four pills stay for tablets and desktops.
     expect(screen.getByRole("button", { name: /Date de dépôt/ }).closest("fieldset")).toHaveClass("max-sm:hidden");
 
-    await user.click(pill);
-    const sheet = screen.getByRole("dialog", { name: "Vos dates" });
+    // The return row opens the sheet on the return.
+    await user.click(back);
+    let sheet = screen.getByRole("dialog", { name: "Vos dates" });
     expect(sheet).toHaveAttribute("aria-modal", "true");
-    expect(pill).toHaveAttribute("aria-expanded", "true");
+    expect(back).toHaveAttribute("aria-expanded", "true");
+    expect(within(sheet).getByRole("button", { name: /^Retour/ })).toHaveAttribute("aria-pressed", "true");
+    await user.click(within(sheet).getByRole("button", { name: "Fermer" }));
+    expect(screen.queryByRole("dialog")).toBeNull();
+    expect(document.activeElement).toBe(back);
+
+    await user.click(dropOff);
+    sheet = screen.getByRole("dialog", { name: "Vos dates" });
+    expect(dropOff).toHaveAttribute("aria-expanded", "true");
+    expect(within(sheet).getByRole("button", { name: /^Dépôt/ })).toHaveAttribute("aria-pressed", "true");
     await user.click(within(sheet).getByRole("gridcell", { name: /lundi 12 octobre 2026/ }));
     await user.click(within(sheet).getByRole("gridcell", { name: /mardi 20 octobre 2026/ }));
     await user.click(within(sheet).getByRole("button", { name: "Valider les dates" }));
     expect(screen.queryByRole("dialog")).toBeNull();
     expect(values(container)).toEqual({ date_depot: "2026-10-12", heure_depot: "08:00", date_retour: "2026-10-20", heure_retour: "13:00" });
-    expect(pill).toHaveTextContent("lun. 12 oct. 08:00→ mar. 20 13:00");
-    expect(document.activeElement).toBe(pill);
+    expect(dropOff).toHaveTextContent("lun. 12 oct.08:00");
+    expect(back).toHaveTextContent("mar. 20 oct.13:00");
+    expect(back).toHaveAccessibleName("Retour : mardi 20 octobre 2026 à 13:00");
+    expect(document.activeElement).toBe(dropOff);
   });
 
   it("phoneSummary without JavaScript: the native date and time inputs, no summary pill", () => {
@@ -141,9 +157,10 @@ describe("StayFields", () => {
     expect(html).not.toContain("max-sm:hidden");
   });
 
-  it("phoneSummary: the validation message moves under the pill", () => {
+  it("phoneSummary: the validation message moves under the two-row field", () => {
     render(<StayFields {...props} phoneSummary errors={{ returnAt: "return_before_arrival" }} />);
-    expect(screen.getByRole("button", { name: /^Vos dates/ })).toHaveAttribute("aria-describedby", "t-dates-error");
+    const group = screen.getByRole("group", { name: "Vos dates" });
+    for (const row of within(group).getAllByRole("button")) expect(row).toHaveAttribute("aria-describedby", "t-dates-error");
     expect(document.getElementById("t-dates-error")?.textContent).toBeTruthy();
   });
 

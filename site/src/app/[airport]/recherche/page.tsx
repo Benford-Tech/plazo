@@ -7,10 +7,11 @@ import { PriceRange } from "@/components/PriceRange";
 import { ResultCard } from "@/components/ResultCard";
 import type { MapParking } from "@/components/ResultsMap";
 import { ResultsMapPanel } from "@/components/ResultsMapPanel";
+import { ScrollRow } from "@/components/ScrollRow";
 import { MapIcon } from "@/components/stay/pill";
 import { SearchForm } from "@/components/SearchForm";
 import { api, ApiError } from "@/lib/api";
-import { daysLabel, formatDateTime, stayDays, stayFromParams, stayQuery, todayLocal, validateStay } from "@/lib/dates";
+import { daysLabel, formatDay, parseLocal, stayDays, stayFromParams, stayQuery, todayLocal, validateStay } from "@/lib/dates";
 import {
   applyFilters,
   type Filters,
@@ -41,7 +42,42 @@ export async function generateMetadata({ params }: PageProps<"/[airport]/recherc
   return { title: fr.meta.resultsTitle(airport.name), robots: { index: false, follow: true } };
 }
 
-const sectionTitle = "mb-1.5 text-[13px] font-bold tracking-[.06em] text-soft uppercase";
+/** Filters panel: eyebrow legends, 44 px rows with espresso check boxes (a selection is never orange). */
+const sectionTitle = "eyebrow mb-1";
+const checkRow = "flex min-h-11 cursor-pointer items-center gap-3 text-[15px] font-semibold md:min-h-10";
+const checkBox = "size-[18px] flex-none cursor-pointer accent-dark";
+const countClass = "ml-auto text-[13px] font-semibold text-soft tabular-nums";
+
+/** "mar. 20 oct. 08:00": the day in Manrope, the hour in JetBrains Mono. */
+function StayMoment({ local }: { local: string }) {
+  const parsed = parseLocal(local);
+  if (!parsed) return <>{local}</>;
+  return (
+    <>
+      {formatDay(parsed.date)} <span className="font-hour">{parsed.time}</span>
+    </>
+  );
+}
+
+function FiltersIcon() {
+  return (
+    <svg aria-hidden="true" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
+      <path d="M4 7h9M17 7h3M4 17h3M11 17h9" />
+      <circle cx="15" cy="7" r="2" />
+      <circle cx="9" cy="17" r="2" />
+    </svg>
+  );
+}
+
+/** « Afficher la carte » / « Masquer la carte »: an outlined chip with orange (accent-dark) text, a plain link. */
+function MapToggle({ href, map, className = "" }: { href: string; map: boolean; className?: string }) {
+  return (
+    <Link href={href} scroll={false} replace className={`chip-toggle px-3.5 text-accent-dark hover:text-accent-dark ${className}`}>
+      <MapIcon />
+      {map ? fr.map.hide : fr.map.show}
+    </Link>
+  );
+}
 
 export default async function ResultsPage({ params, searchParams }: PageProps<"/[airport]/recherche">) {
   const { airport: slug } = await params;
@@ -66,9 +102,9 @@ export default async function ResultsPage({ params, searchParams }: PageProps<"/
   if (!data) {
     const { airport } = await loadAirport(slug);
     return (
-      <main className="mx-auto flex w-full max-w-[1280px] flex-col gap-4 px-4 py-8 md:px-12">
-        <h1 className="font-title text-[28px] md:text-[34px]">{fr.results.datesTitle}</h1>
-        <p className="text-soft">{fr.results.datesText}</p>
+      <main className="mx-auto flex w-full max-w-[1280px] flex-col gap-4 px-4 py-8 md:px-12 md:py-10">
+        <h1 className="font-title text-[30px] leading-[1.12] md:text-[38px]">{fr.results.datesTitle}</h1>
+        <p className="max-w-[640px] font-medium text-soft">{fr.results.datesText}</p>
         <SearchForm airport={airport} arrivee={stay.arrivee} retour={stay.retour} minDate={today} errors={errors} />
       </main>
     );
@@ -101,50 +137,96 @@ export default async function ResultsPage({ params, searchParams }: PageProps<"/
             bookable: r.available && r.priceCents !== null,
             location: r.location,
             live: r.liveShuttle === true,
+            best: badges.get(r.slug)?.includes("cheapest") === true,
           },
         ]
       : [],
   );
   const notDrawn = shown.length - mapParkings.length;
   const visibleServices = FILTER_SERVICES.filter(s => counts[s] > 0 || filters.services.includes(s));
+  const refundableCount = results.filter(r => r.cancellationPolicy !== "non_refundable").length;
+  // Quick filter chips (phones, and beside the map): the filters that actually narrow these results, plus any
+  // one already applied. A service every parking offers ("Navette gratuite" at Plazo) would filter nothing.
+  const narrows = (count: number) => count > 0 && count < results.length;
+  const quickServices = visibleServices.filter(s => narrows(counts[s]) || filters.services.includes(s));
+  const quickCancellation = narrows(refundableCount) || filters.freeCancellation;
+  // Both filter forms remount after each navigation (the field just used gets its focus back).
+  const filtersKey = resultsQuery({ arrivee, retour }, filters, map);
 
   return (
     <>
-      <div className="border-b border-line bg-tint">
-        <details className="group mx-auto max-w-[1280px] px-4 md:px-12">
-          <summary className="flex list-none flex-wrap items-center gap-x-[18px] gap-y-1 py-3 [&::-webkit-details-marker]:hidden">
-            <span className="font-bold">{airport.name}</span>
-            <span className="text-soft">
-              {formatDateTime(arrivee).replace(" · ", " ")} → {formatDateTime(retour).replace(" · ", " ")}
+      <details className="group mx-auto w-full max-w-[1280px] px-4 pt-4 md:px-12 md:pt-6">
+        <summary className="card grid list-none grid-cols-[minmax(0,1fr)_auto] items-center gap-x-2 pt-1 pr-2 pb-3 pl-4 transition-colors hover:border-soft md:pr-3 md:pl-5 lg:flex lg:gap-x-4 lg:py-1.5 [&::-webkit-details-marker]:hidden">
+          <span className="min-w-0 text-[15px] font-bold md:text-base">{airport.name}</span>
+          <span className="col-span-2 row-start-2 -mt-1 text-[13px] font-semibold text-soft md:text-sm lg:mt-0">
+            <span className="whitespace-nowrap">
+              <StayMoment local={arrivee} /> →
+            </span>{" "}
+            <span className="whitespace-nowrap">
+              <StayMoment local={retour} /> · {daysLabel(days)}
             </span>
-            <span className="rounded-[14px] border border-line bg-white px-2.5 py-1 text-sm font-semibold">{daysLabel(days)}</span>
-            <span className="ml-auto flex min-h-11 items-center font-semibold text-accent underline group-open:no-underline">
-              {fr.search.modify}
-            </span>
-          </summary>
-          <div className="pb-4">
-            <SearchForm airport={airport} arrivee={arrivee} retour={retour} minDate={today} idPrefix="modifier" keepMap={map} />
-          </div>
-        </details>
-      </div>
+          </span>
+          <span className="link flex min-h-11 flex-none items-center gap-1.5 px-2 text-[13.5px] group-hover:underline lg:ml-auto">
+            {fr.search.modify}
+            <svg aria-hidden="true" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="transition-transform group-open:rotate-180 motion-reduce:transition-none">
+              <path d="m6 9 6 6 6-6" />
+            </svg>
+          </span>
+        </summary>
+        <div className="pt-3">
+          <SearchForm airport={airport} arrivee={arrivee} retour={retour} minDate={today} idPrefix="modifier" keepMap={map} />
+        </div>
+      </details>
 
       <main
-        className={`mx-auto grid w-full max-w-[1280px] flex-1 gap-6 px-4 py-6 md:px-12 md:py-7 ${
+        className={`mx-auto grid w-full max-w-[1280px] flex-1 content-start gap-x-6 gap-y-4 px-4 pt-4 pb-8 md:px-12 md:pt-6 md:pb-10 ${
           map
             ? "grid-cols-1 [grid-template-areas:'filters'_'head'_'map'_'list'] lg:grid-cols-[minmax(0,1fr)_minmax(0,1.15fr)] lg:grid-rows-[auto_auto_1fr] lg:gap-x-8 lg:[grid-template-areas:'filters_map'_'head_map'_'list_map']"
-            : "md:grid-cols-[250px_1fr] md:grid-rows-[auto_1fr] md:gap-9"
+            : "grid-cols-1 md:grid-cols-[248px_minmax(0,1fr)] md:grid-rows-[auto_1fr] md:gap-x-7 md:gap-y-5 lg:grid-cols-[264px_minmax(0,1fr)] lg:gap-x-9"
         }`}
       >
-        <div className={map ? "[grid-area:filters]" : "md:row-span-2"}>
-          <input type="checkbox" id="voir-filtres" className="peer sr-only" />
-          <label
-            htmlFor="voir-filtres"
-            className={`btn-secondary h-11 px-4 text-[15px] peer-focus-visible:outline-3 peer-focus-visible:outline-accent ${map ? "w-full sm:w-auto" : "w-full md:hidden"}`}
+        <div className={`group/filters min-w-0 ${map ? "[grid-area:filters]" : "md:row-span-2"}`}>
+          <ScrollRow className={`-my-1.5 -mr-4 -ml-1.5 items-center py-1.5 pl-1.5 md:mr-0 ${map ? "" : "md:hidden"}`}>
+            <label htmlFor="voir-filtres" className="chip-toggle relative">
+              <input type="checkbox" id="voir-filtres" className="chip-input" />
+              <FiltersIcon />
+              {fr.results.filters}
+            </label>
+            <MapToggle href={mapToggleHref} map={map} className={map ? "" : "md:hidden"} />
+            {quickServices.length + (quickCancellation ? 1 : 0) > 0 && (
+              <FiltersForm key={`rapides-${filtersKey}`} action={path} className="contents" applyClassName="chip-toggle">
+                <input type="hidden" name="arrivee" value={arrivee} />
+                <input type="hidden" name="retour" value={retour} />
+                {filters.sort !== "prix" && <input type="hidden" name="tri" value={filters.sort} />}
+                {map && <input type="hidden" name="carte" value="1" />}
+                {filters.services
+                  .filter(s => !quickServices.includes(s))
+                  .map(s => (
+                    <input key={s} type="hidden" name="service" value={SERVICE_SLUGS[s]} />
+                  ))}
+                {filters.freeCancellation && !quickCancellation && <input type="hidden" name="annulation" value="gratuite" />}
+                {filters.maxShuttle !== null && <input type="hidden" name="navette" value={filters.maxShuttle} />}
+                {filters.maxPriceCents !== null && <input type="hidden" name="prix_max" value={Math.round(filters.maxPriceCents / 100)} />}
+                {quickServices.map(s => (
+                  <label key={s} htmlFor={`q-${s}`} className="chip-toggle relative">
+                    <input id={`q-${s}`} type="checkbox" name="service" value={SERVICE_SLUGS[s]} defaultChecked={filters.services.includes(s)} className="chip-input" />
+                    {serviceLabel(s)}
+                  </label>
+                ))}
+                {quickCancellation && (
+                  <label htmlFor="q-annulation" className="chip-toggle relative">
+                    <input id="q-annulation" type="checkbox" name="annulation" value="gratuite" defaultChecked={filters.freeCancellation} className="chip-input" />
+                    {fr.results.freeCancellation}
+                  </label>
+                )}
+              </FiltersForm>
+            )}
+          </ScrollRow>
+          <aside
+            aria-label={fr.results.filters}
+            className={`card mt-3 hidden p-4 group-has-[#voir-filtres:checked]/filters:block ${map ? "max-w-[440px] md:p-5" : "md:mt-0 md:block md:p-5"}`}
           >
-            {map ? fr.map.filters : fr.results.showFilters}
-          </label>
-          <aside aria-label={fr.results.filters} className={`mt-4 hidden peer-checked:block ${map ? "max-w-[420px]" : "md:mt-0 md:block"}`}>
-            <FiltersForm key={resultsQuery({ arrivee, retour }, filters, map)} action={path}>
+            <FiltersForm key={filtersKey} action={path}>
               <input type="hidden" name="arrivee" value={arrivee} />
               <input type="hidden" name="retour" value={retour} />
               {filters.sort !== "prix" && <input type="hidden" name="tri" value={filters.sort} />}
@@ -153,52 +235,48 @@ export default async function ResultsPage({ params, searchParams }: PageProps<"/
                 <fieldset>
                   <legend className={sectionTitle}>{fr.results.services}</legend>
                   {visibleServices.map(s => (
-                    <label key={s} htmlFor={`f-${s}`} className="flex min-h-11 items-center gap-2.5 text-[15px] md:min-h-9">
+                    <label key={s} htmlFor={`f-${s}`} className={checkRow}>
                       <input
                         id={`f-${s}`}
                         type="checkbox"
                         name="service"
                         value={SERVICE_SLUGS[s]}
                         defaultChecked={filters.services.includes(s)}
-                        className="size-[18px] accent-accent"
+                        className={checkBox}
                       />
                       {serviceLabel(s)}
-                      <span className="ml-auto text-[13px] text-soft">{counts[s]}</span>
+                      <span className={countClass}>{counts[s]}</span>
                     </label>
                   ))}
                 </fieldset>
               )}
               <fieldset>
                 <legend className={sectionTitle}>{fr.results.cancellation}</legend>
-                <label htmlFor="f-annulation" className="flex min-h-11 items-center gap-2.5 text-[15px] md:min-h-9">
+                <label htmlFor="f-annulation" className={checkRow}>
                   <input
                     id="f-annulation"
                     type="checkbox"
                     name="annulation"
                     value="gratuite"
                     defaultChecked={filters.freeCancellation}
-                    className="size-[18px] accent-accent"
+                    className={checkBox}
                   />
                   {fr.results.freeCancellation}
-                  <span className="ml-auto text-[13px] text-soft">{results.filter(r => r.cancellationPolicy !== "non_refundable").length}</span>
+                  <span className={countClass}>{refundableCount}</span>
                 </label>
               </fieldset>
               <fieldset>
                 <legend className={`${sectionTitle} mb-2.5`}>{fr.results.shuttle}</legend>
                 <div className="flex flex-wrap gap-1.5">
                   {[...SHUTTLE_LIMITS, null].map(limit => (
-                    <label
-                      key={limit ?? "any"}
-                      htmlFor={`f-navette-${limit ?? "any"}`}
-                      className="inline-flex h-11 cursor-pointer items-center rounded-full border border-line bg-white px-3.5 text-sm font-semibold whitespace-nowrap has-checked:border-accent has-checked:bg-accent has-checked:text-white has-focus-visible:outline-3 has-focus-visible:outline-offset-2 has-focus-visible:outline-accent md:h-[38px]"
-                    >
+                    <label key={limit ?? "any"} htmlFor={`f-navette-${limit ?? "any"}`} className="chip-toggle relative px-3.5">
                       <input
                         id={`f-navette-${limit ?? "any"}`}
                         type="radio"
                         name="navette"
                         value={limit ?? ""}
                         defaultChecked={filters.maxShuttle === limit}
-                        className="sr-only"
+                        className="chip-input"
                       />
                       {limit ? fr.results.shuttleMax(limit) : fr.results.shuttleAny}
                     </label>
@@ -207,7 +285,7 @@ export default async function ResultsPage({ params, searchParams }: PageProps<"/
               </fieldset>
               {ceilingCents > 0 && (
                 <fieldset>
-                  <legend className={`${sectionTitle} mb-2.5`}>{fr.results.totalPrice}</legend>
+                  <legend className={`${sectionTitle} mb-1`}>{fr.results.totalPrice}</legend>
                   <PriceRange
                     id="f-prix"
                     max={ceilingCents / 100}
@@ -217,20 +295,20 @@ export default async function ResultsPage({ params, searchParams }: PageProps<"/
               )}
             </FiltersForm>
             {hasActiveFilters(filters) && (
-              <Link href={clearHref} className="mt-3 inline-flex min-h-11 items-center text-[15px] font-semibold">
+              <Link href={clearHref} className="link mt-2 inline-flex min-h-11 items-center text-[14px]">
                 {fr.results.clear}
               </Link>
             )}
           </aside>
         </div>
 
-        <div className={map ? "flex flex-col gap-3 [grid-area:head] lg:flex-row lg:flex-wrap lg:items-center lg:justify-between" : "flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between"}>
-          <h1 id="resultats" className="font-title text-[26px] md:text-[30px]" aria-live="polite">
+        <div className={`flex min-w-0 flex-col items-start gap-3 md:flex-row md:flex-wrap md:items-center md:justify-between md:gap-x-6 ${map ? "[grid-area:head]" : ""}`}>
+          <h1 id="resultats" className="font-title text-[28px] leading-[1.12] md:text-[32px]" aria-live="polite">
             {fr.results.available(availableCount)}
           </h1>
-          <div className="flex flex-wrap items-center gap-1.5">
+          <div className="flex flex-wrap items-center gap-x-3 gap-y-2">
             <nav aria-label={fr.results.sort} className="flex flex-wrap items-center gap-1.5">
-              <span className="mr-1 text-sm text-soft">{fr.results.sort}</span>
+              <span className={`eyebrow mr-1 max-sm:sr-only ${map ? "" : "md:max-lg:sr-only"}`}>{fr.results.sort}</span>
               {SORT_KEYS.map(key => (
                 <Link
                   key={key}
@@ -238,52 +316,40 @@ export default async function ResultsPage({ params, searchParams }: PageProps<"/
                   scroll={false}
                   replace
                   aria-current={filters.sort === key ? "true" : undefined}
-                  className={`inline-flex h-11 items-center rounded-full px-3.5 text-sm font-semibold whitespace-nowrap no-underline md:h-[38px] ${
-                    filters.sort === key ? "bg-accent text-white hover:text-white" : "border border-line bg-white text-ink hover:text-ink"
-                  }`}
+                  className="chip-toggle px-3.5"
                 >
                   {fr.results.sortBy[key]}
                 </Link>
               ))}
             </nav>
-            <Link
-              href={mapToggleHref}
-              scroll={false}
-              replace
-              className="inline-flex h-11 items-center gap-2 rounded-full border border-line bg-white px-3.5 text-sm font-semibold whitespace-nowrap text-accent no-underline hover:border-accent md:h-[38px] lg:ml-2"
-            >
-              <MapIcon />
-              {map ? fr.map.hide : fr.map.show}
-            </Link>
+            {!map && <MapToggle href={mapToggleHref} map={map} className="max-md:hidden" />}
           </div>
         </div>
 
         {map && (
-          <div className="-mx-4 h-[300px] overflow-hidden [grid-area:map] sm:mx-0 sm:h-[380px] sm:rounded-[22px] lg:sticky lg:top-4 lg:h-[calc(100dvh-2rem)] lg:max-h-[860px] lg:self-start">
+          <div className="h-[300px] overflow-hidden rounded-card border border-line [grid-area:map] sm:h-[380px] lg:sticky lg:top-4 lg:h-[calc(100dvh-2rem)] lg:max-h-[860px] lg:self-start">
             <div className="relative h-full">
               <ResultsMapPanel airport={{ name: airport.name, location: airport.location ?? null }} parkings={mapParkings} />
               {notDrawn > 0 && (
-                <p className="pointer-events-none absolute bottom-9 left-2.5 rounded-full bg-white/95 px-3 py-1.5 text-[13px] text-soft shadow-sm">
-                  {fr.map.notDrawn(notDrawn)}
-                </p>
+                <p className="pill-float pointer-events-none absolute bottom-9 left-2.5 font-semibold text-soft">{fr.map.notDrawn(notDrawn)}</p>
               )}
             </div>
           </div>
         )}
 
-        <section aria-labelledby="resultats" className={`flex min-w-0 flex-col gap-4 ${map ? "[grid-area:list]" : "md:col-start-2"}`}>
+        <section aria-labelledby="resultats" className={`flex min-w-0 flex-col gap-3 md:gap-4 ${map ? "[grid-area:list]" : "md:col-start-2"}`}>
           {shown.length === 0 ? (
-            <div className="flex flex-col items-start gap-3 rounded-[22px] bg-white p-6">
-              <h2 className="text-lg font-bold">{results.length === 0 ? fr.results.noneTitle : fr.results.noMatchTitle}</h2>
+            <div className="card flex flex-col items-start gap-3 p-6">
+              <h2 className="font-title text-[22px] leading-tight">{results.length === 0 ? fr.results.noneTitle : fr.results.noMatchTitle}</h2>
               <p className="text-soft">{results.length === 0 ? fr.results.noneText : fr.results.noMatchText}</p>
               {results.length > 0 && (
-                <Link href={clearHref} className="btn-secondary h-11 px-4 text-[15px]">
+                <Link href={clearHref} className="btn-secondary btn-sm">
                   {fr.results.clear}
                 </Link>
               )}
             </div>
           ) : (
-            <ul className="flex flex-col gap-4">
+            <ul className="flex flex-col gap-3 md:gap-4">
               {shown.map((result, i) => (
                 <li key={result.slug}>
                   <ResultCard
@@ -300,7 +366,7 @@ export default async function ResultsPage({ params, searchParams }: PageProps<"/
             </ul>
           )}
           {availableCount === 0 && results.length > 0 && shown.length > 0 && <p className="text-soft">{fr.results.noneText}</p>}
-          <p className="mt-1 text-[13px] text-soft">{texts(data.payments === "online").results.footnote}</p>
+          <p className="mt-1 text-[12.5px] leading-relaxed font-semibold text-soft">{texts(data.payments === "online").results.footnote}</p>
         </section>
       </main>
     </>

@@ -47,8 +47,16 @@ describe("ReturnLive", () => {
       shuttle: { tripId: "t1", direction: "pickup" as const, mine: true, startedAt: lands, vehicle: { model: "Vito", colour: "blanc", plate: null }, driverFirstName: "Karim", position: null, positionAgeSeconds: 5, distanceM: 2100, etaMinutes: 4, etaAt: new Date(now + 250 * 1000).toISOString() },
     };
     const s = ringState(shuttle, now);
-    expect(s).toMatchObject({ kicker: "navette dans", big: "04:10", sub: "à 2,1 km de vous", tone: "peach" });
+    expect(s).toMatchObject({ kicker: "navette dans", big: "04:10", sub: "à 2,1 km de vous", tone: "ok" });
     expect(stepOf(shuttle)).toBe("shuttle");
+  });
+
+  it("reads the return time without a flight time as the parking's wall-clock time, whatever the runtime's zone", () => {
+    // 2026-10-05T23:00 in Paris (UTC+2) is 21:00 UTC: one hour before it, the ring counts 01:00:00.
+    const now = Date.UTC(2026, 9, 5, 20, 0, 0);
+    const r = ringState({ ...base, flight: { ...base.flight, status: "scheduled" } }, now);
+    expect(r.sub).toBe("prévu 23:00");
+    expect(r.big).toBe("01:00:00");
   });
 
   it("renders the block from the server's state, polls the API, and shows the car's spot", async () => {

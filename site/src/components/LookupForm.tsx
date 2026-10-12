@@ -13,9 +13,9 @@ export function LookupForm({ action, reference = "" }: { action: Action; referen
   const v = state.values;
   const f = state.fields;
   return (
-    <form action={formAction} noValidate className="flex flex-col gap-2.5">
+    <form action={formAction} noValidate className="flex flex-col gap-3.5">
       {state.error && state.error !== "validation_failed" && (
-        <p role="alert" className="rounded-xl bg-danger-bg px-3 py-2.5 text-sm font-semibold text-danger">
+        <p role="alert" className="rounded-field border border-danger-line bg-danger-bg px-3.5 py-3 text-sm leading-snug font-semibold text-danger">
           {errorMessage(state.error)}
         </p>
       )}
@@ -56,7 +56,7 @@ export function LookupForm({ action, reference = "" }: { action: Action; referen
         />
         <FieldError id="m-email-error" code={f.email} />
       </div>
-      <button type="submit" disabled={pending} className="btn-primary h-12 text-base">
+      <button type="submit" disabled={pending} className="btn-primary mt-1 min-h-12 px-6 text-base">
         {pending ? fr.manage.finding : fr.manage.find}
       </button>
     </form>

@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import Link from "next/link";
 import { notFound } from "next/navigation";
 import { BookingCard } from "@/components/BookingCard";
 import { Breadcrumb } from "@/components/Breadcrumb";
@@ -8,10 +9,11 @@ import { TrustBand } from "@/components/Highlights";
 import { Photo } from "@/components/Photo";
 import { api, ApiError } from "@/lib/api";
 import { stayFromParams, stayQuery, todayLocal, validateStay } from "@/lib/dates";
-import { fr, serviceLabel } from "@/lib/fr";
+import { fr, serviceLabel, texts } from "@/lib/fr";
 import { openGraph, parkingMetaDescription } from "@/lib/seo";
-import { factsLine, trustTiles } from "@/lib/highlights";
+import { factsLine, perDayLabel, trustTiles } from "@/lib/highlights";
 import { directionsUrl, mapsUrl } from "@/lib/listing";
+import { formatEuros } from "@/lib/money";
 import { airportPath, siteUrl, SLUG_RE } from "@/lib/site";
 import { breadcrumbLd, parkingLd } from "@/lib/structured-data";
 import type { ParkingResponse } from "@/lib/types";
@@ -69,13 +71,22 @@ export default async function ParkingPage({ params, searchParams }: Props) {
   const shuttle = parking.services.includes("shuttle") && parking.shuttleMinutes;
   const destination = parking.address ?? `${parking.title}, ${airport.name}`;
   const photos = parking.photos;
-  const section = "flex flex-col gap-3 border-t border-line pt-[26px]";
-  const sectionTitle = "font-title text-[24px] md:text-[26px]";
+  const payment = parking.payment ?? "on_site";
+  const t = texts(true);
+  // Boutique: on a phone the total and « Réserver » ride in a bar at the bottom of the screen (the side card
+  // carries them from md up). Only when the stay can be booked here: same rule as the booking card's button.
+  const bookable = !!offer && offer.available && offer.priceCents !== null;
+  const dock = bookable && payment !== "unavailable" ? { priceCents: offer.priceCents!, days: offer.days } : null;
+  const section = "flex flex-col gap-3 border-t border-line pt-6 md:pt-[26px]";
+  const sectionTitle = "font-title text-[22px] leading-tight md:text-[26px]";
+  const photoClass = "size-full rounded-field md:rounded-card";
 
   const tiles = trustTiles(parking);
 
   return (
-    <main className="mx-auto flex w-full max-w-[1280px] flex-col gap-5 px-4 pt-4 pb-10 md:gap-[22px] md:px-12 md:pt-[26px] md:pb-12">
+    <main
+      className={`mx-auto flex w-full max-w-[1280px] flex-col gap-4 px-4 pt-3 md:gap-6 md:px-12 md:pt-[26px] md:pb-12 ${dock ? "pb-0" : "pb-10"}`}
+    >
       <JsonLd
         data={[
           parkingLd(siteUrl(), data, parkingMetaDescription(data)),
@@ -94,38 +105,53 @@ export default async function ParkingPage({ params, searchParams }: Props) {
           { label: parking.title },
         ]}
       />
-      <div>
-        <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
-          <h1 className="font-title text-[30px] leading-tight md:text-[44px]">{parking.title}</h1>
-          {parking.isDemo && <DemoBadge />}
-          <span className="inline-flex h-6 items-center rounded-full bg-tint px-2.5 text-[12px] font-semibold text-soft">{fr.highlights.newOnPlatform}</span>
+      <div className="-mt-1 flex flex-col gap-1.5 md:mt-0 md:gap-2">
+        <div className="flex flex-wrap items-center justify-between gap-x-3 gap-y-1.5 md:justify-start md:gap-x-4">
+          <h1 className="font-title text-[28px] leading-[1.1] md:text-[44px]">{parking.title}</h1>
+          <span className="flex flex-wrap items-center gap-1.5">
+            {parking.isDemo && <DemoBadge />}
+            <span className="pill">{fr.highlights.newOnPlatform}</span>
+          </span>
         </div>
-        <p className="mt-1.5 text-[15px] text-soft md:text-base">
+        <p className="text-[14px] leading-snug font-medium text-soft md:text-[15.5px]">
           {parking.address && <>{parking.address} · </>}
-          <a href={directionsUrl(destination)} target="_blank" rel="noopener noreferrer">
+          <a href={directionsUrl(destination)} target="_blank" rel="noopener noreferrer" className="link">
             {fr.parking.itinerary}
             <span className="sr-only"> {fr.a11y.opensNewTab}</span>
           </a>
         </p>
       </div>
 
-      {photos.length >= 3 ? (
-        <div className="grid grid-cols-[2fr_1fr] grid-rows-[120px_120px] gap-2.5 md:grid-rows-[170px_170px]">
-          <Photo src={photos[0]} alt={fr.a11y.photoOf(parking.title, 1)} className="row-span-2 h-full w-full rounded-[22px]" />
-          <Photo src={photos[1]} alt={fr.a11y.photoOf(parking.title, 2)} className="h-full w-full rounded-[22px]" />
-          <Photo src={photos[2]} alt={fr.a11y.photoOf(parking.title, 3)} className="h-full w-full rounded-[22px]" />
+      {/* Mosaic: the main photo and two more beside it (one tall one with two photos); short on a phone so that the
+          essentials and the booking card come up quickly. No photo: the cream « Photos à venir » ground. */}
+      {photos.length >= 2 ? (
+        <div className="grid grid-cols-[2fr_1fr] grid-rows-[78px_78px] gap-1.5 sm:grid-rows-[112px_112px] md:grid-rows-[170px_170px] md:gap-2.5">
+          <Photo src={photos[0]} alt={fr.a11y.photoOf(parking.title, 1)} className={`row-span-2 ${photoClass}`} />
+          <Photo src={photos[1]} alt={fr.a11y.photoOf(parking.title, 2)} className={`${photos.length === 2 ? "row-span-2" : ""} ${photoClass}`} />
+          {photos.length >= 3 && <Photo src={photos[2]} alt={fr.a11y.photoOf(parking.title, 3)} className={photoClass} />}
         </div>
       ) : (
-        <Photo src={photos[0]} alt={fr.a11y.photoOf(parking.title, 1)} className="h-[190px] w-full rounded-[22px] md:h-[300px]" />
+        <Photo
+          src={photos[0]}
+          alt={fr.a11y.photoOf(parking.title, 1)}
+          className={`w-full rounded-field md:rounded-card ${photos[0] ? "h-[162px] sm:h-[230px] md:h-[300px]" : "h-[120px] md:h-[200px]"}`}
+        />
       )}
 
-      <div className="grid gap-6 md:grid-cols-[1fr_340px] md:gap-x-10 lg:grid-cols-[1fr_380px] lg:gap-x-12">
-        <div className="flex flex-col gap-3 md:col-start-1">
+      <div className="grid grid-cols-1 gap-5 md:grid-cols-[minmax(0,1fr)_340px] md:gap-x-10 md:gap-y-7 lg:grid-cols-[minmax(0,1fr)_380px] lg:gap-x-12">
+        {/* « L’essentiel » is a caption, as in the mockup, not a heading: the band's list already carries that name. */}
+        <div className="flex flex-col gap-2.5 md:col-start-1">
+          {tiles.length > 0 && (
+            <p aria-hidden="true" className="eyebrow">
+              {fr.highlights.bandLabel}
+            </p>
+          )}
           <TrustBand tiles={tiles} />
-          <p className="text-[15px] text-soft">{factsLine(parking)}</p>
+          <p className="text-[13.5px] font-medium text-soft md:text-[15px]">{factsLine(parking)}</p>
         </div>
 
-        <div className="md:sticky md:top-6 md:col-start-2 md:row-span-6 md:row-start-1 md:self-start">
+        {/* On a phone the bar at the bottom carries « Réserver »: the card's own orange button would make two. */}
+        <div className={`md:sticky md:top-6 md:col-start-2 md:row-span-6 md:row-start-1 md:self-start ${dock ? "max-md:[&_a.btn-primary]:hidden" : ""}`}>
           <BookingCard
             airportSlug={airport.slug}
             parkingSlug={parking.slug}
@@ -136,7 +162,8 @@ export default async function ParkingPage({ params, searchParams }: Props) {
             policy={parking.cancellationPolicy}
             minDate={todayLocal()}
             errors={errors}
-            payment={parking.payment ?? "on_site"}
+            payment={payment}
+            docked={!!dock}
           />
         </div>
 
@@ -145,12 +172,12 @@ export default async function ParkingPage({ params, searchParams }: Props) {
             <h2 id="presentation" className={sectionTitle}>
               {fr.parking.presentation}
             </h2>
-            {parking.description && <p className="text-base leading-relaxed whitespace-pre-line">{parking.description}</p>}
+            {parking.description && <p className="text-[15.5px] leading-relaxed whitespace-pre-line md:text-base">{parking.description}</p>}
             {parking.services.length > 0 && (
-              <ul className="flex flex-wrap gap-2">
+              <ul className="flex flex-wrap gap-1.5">
                 {parking.services.map(s => (
-                  <li key={s} className="card px-3 py-1.5 text-sm">
-                    <span aria-hidden="true">✓ </span>
+                  <li key={s} className="chip">
+                    <CheckIcon />
                     {serviceLabel(s, true)}
                   </li>
                 ))}
@@ -163,14 +190,14 @@ export default async function ParkingPage({ params, searchParams }: Props) {
           <h2 id="deroulement" className={sectionTitle}>
             {fr.parking.howItGoes}
           </h2>
-          <dl className="flex flex-col gap-3">
-            <div className="grid gap-1 sm:grid-cols-[90px_1fr] sm:gap-3.5">
-              <dt className="font-bold text-accent">{fr.parking.outbound}</dt>
-              <dd className="leading-relaxed">{fr.parking.outboundText(shuttle ? parking.shuttleMinutes : null)}</dd>
+          <dl className="card divide-y divide-line-soft">
+            <div className="grid gap-1 p-4 sm:grid-cols-[96px_1fr] sm:gap-4 md:px-5">
+              <dt className="eyebrow sm:pt-[5px]">{fr.parking.outbound}</dt>
+              <dd className="text-[15px] leading-relaxed">{fr.parking.outboundText(shuttle ? parking.shuttleMinutes : null)}</dd>
             </div>
-            <div className="grid gap-1 sm:grid-cols-[90px_1fr] sm:gap-3.5">
-              <dt className="font-bold text-accent">{fr.parking.inbound}</dt>
-              <dd className="leading-relaxed">{fr.parking.inboundText}</dd>
+            <div className="grid gap-1 p-4 sm:grid-cols-[96px_1fr] sm:gap-4 md:px-5">
+              <dt className="eyebrow sm:pt-[5px]">{fr.parking.inbound}</dt>
+              <dd className="text-[15px] leading-relaxed">{fr.parking.inboundText}</dd>
             </div>
           </dl>
         </section>
@@ -179,17 +206,42 @@ export default async function ParkingPage({ params, searchParams }: Props) {
           <h2 id="acces" className={sectionTitle}>
             {fr.parking.access}
           </h2>
-          <div className="bg-stripes flex min-h-[200px] items-end rounded-[22px] p-3">
-            <div className="flex w-full flex-col gap-3 rounded-[14px] bg-white p-4 shadow-sm sm:flex-row sm:items-center sm:justify-between">
-              <p className="text-[15px]">{parking.address ?? fr.parking.addressUnknown}</p>
-              <a href={mapsUrl(destination)} target="_blank" rel="noopener noreferrer" className="btn-secondary h-11 flex-none px-4 text-[15px]">
-                {fr.parking.openInMaps}
-                <span className="sr-only"> {fr.a11y.opensNewTab}</span>
-              </a>
-            </div>
+          {/* The address on a white card, like the other sections (no empty map ground above it). */}
+          <div className="card flex flex-col gap-3 p-4 sm:flex-row sm:items-center sm:justify-between md:px-5">
+            <p className="text-[15px] font-medium">{parking.address ?? fr.parking.addressUnknown}</p>
+            <a href={mapsUrl(destination)} target="_blank" rel="noopener noreferrer" className="btn-secondary btn-sm flex-none">
+              {fr.parking.openInMaps}
+              <span className="sr-only"> {fr.a11y.opensNewTab}</span>
+            </a>
           </div>
         </section>
       </div>
+
+      {dock && (
+        // Sticky rather than fixed: it rides at the bottom of the screen while the page scrolls, then rests at the
+        // end of the page content, so it never covers the last lines of the page nor the footer.
+        <div className="dock sticky -mx-4 md:hidden">
+          <div className="min-w-0 flex-1">
+            <p className="eyebrow text-[10.5px]">{t.parking.payOnSite}</p>
+            <p className="text-[22px] leading-tight font-extrabold tracking-[-.01em] tabular-nums">{formatEuros(dock.priceCents)}</p>
+            <p className="text-[11.5px] leading-snug font-semibold text-soft">
+              {fr.parking.forStay(dock.days)} · {perDayLabel(dock.priceCents, dock.days)}
+            </p>
+          </div>
+          <Link href={`/${airport.slug}/${parking.slug}/reserver${stayQuery(stay)}`} className="btn-primary h-12 flex-none px-[26px] text-base">
+            {fr.parking.book}
+          </Link>
+        </div>
+      )}
     </main>
+  );
+}
+
+/** Check mark of a service chip: a small stroked pictogram instead of the « ✓ » glyph, warm grey like every chip icon. */
+function CheckIcon() {
+  return (
+    <svg aria-hidden="true" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M5 12.5l4.5 4.5L19 7" />
+    </svg>
   );
 }

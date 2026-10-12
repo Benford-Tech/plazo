@@ -33,10 +33,37 @@ describe("« EN DIRECT » dans les résultats (R-B + I-C)", () => {
     expect(screen.queryByTestId("live-shuttle")).not.toBeInTheDocument();
   });
 
+  it("la pastille est posée sur la photo, pas parmi les badges", () => {
+    render(<ResultCard result={result({ liveShuttle: true })} href="/lyon/rhone" highlighted badges={["cheapest"]} />);
+    const pill = screen.getByTestId("live-shuttle");
+    expect(pill.parentElement).toContainElement(screen.getByRole("img", { name: "Photos du parking à venir" }));
+    expect(pill.closest("ul")).toBeNull();
+    expect(screen.getByText("Le moins cher")).toHaveAttribute("data-badge", "cheapest");
+  });
+
   it("le minibus suit le parking jusqu’à son étiquette sur la carte", () => {
     expect(pinsOf([result({ liveShuttle: true }), result({ slug: "pistes", liveShuttle: false })]).map(p => [p.slug, p.live])).toEqual([
       ["rhone", true],
       ["pistes", false],
     ]);
+  });
+});
+
+describe("carte de résultat Boutique", () => {
+  it("un parking complet reste lisible : pastille « Complet à ces dates », sans lien ni carte estompée", () => {
+    render(<ResultCard result={result({ available: false })} href="/lyon/rhone" highlighted={false} />);
+    const card = screen.getByRole("article", { name: "Parking du Rhône" });
+    expect(card).toHaveTextContent("Complet à ces dates");
+    expect(card).toHaveTextContent("Essayez d’autres dates");
+    expect(card.className).not.toMatch(/opacity/);
+    expect(screen.queryByRole("link")).not.toBeInTheDocument();
+  });
+
+  it("sans photo, un visuel « Photos du parking à venir » ; « Le moins cher » en pastille", () => {
+    render(<ResultCard result={result()} href="/lyon/rhone" highlighted badges={["cheapest", "fastestShuttle"]} />);
+    expect(screen.getByRole("img", { name: "Photos du parking à venir" })).toBeInTheDocument();
+    expect(screen.getByText("Le moins cher")).toHaveAttribute("data-badge", "cheapest");
+    expect(screen.getByText("Navette la plus rapide")).toHaveAttribute("data-badge", "fastestShuttle");
+    expect(screen.getByRole("link", { name: /^Voir et réserver/ })).toHaveAttribute("href", "/lyon/rhone");
   });
 });

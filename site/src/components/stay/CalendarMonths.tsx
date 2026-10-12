@@ -17,12 +17,14 @@ import {
   type RangeDraft,
 } from "@/lib/calendar";
 import { fr } from "@/lib/fr";
+import { ChevronIcon } from "./pill";
 
-const GRADIENT = "bg-[linear-gradient(96deg,#ff8a3d,#f0a36b)] font-bold text-white";
+/** Boutique: the drop-off and return days are espresso (selection is never orange), the days between cream. */
+const PICKED = "bg-dark font-bold text-white";
 
 /**
  * Calendar of a stay: one or two months, Monday first, past days disabled, the range between the
- * drop-off and the return tinted. Keyboard: arrows move the day, Page Up/Down the month, Home/End
+ * drop-off and the return tinted (cream), its two ends espresso, today ringed in warm grey. Keyboard: arrows move the day, Page Up/Down the month, Home/End
  * the week, Enter or Space picks. Swipe left or right changes the month on touch screens.
  */
 export function CalendarMonths({
@@ -93,9 +95,9 @@ export function CalendarMonths({
       onClick={() => showMonth(addMonths(view, dir))}
       disabled={dir < 0 && view <= minMonth}
       aria-label={dir < 0 ? fr.picker.prevMonth : fr.picker.nextMonth}
-      className="flex size-11 flex-none items-center justify-center rounded-full text-2xl leading-none text-soft hover:bg-tint disabled:opacity-30"
+      className="flex size-11 flex-none items-center justify-center rounded-full text-soft hover:bg-tint hover:text-ink disabled:cursor-default disabled:text-mute disabled:opacity-60 disabled:hover:bg-transparent"
     >
-      <span aria-hidden="true">{dir < 0 ? "‹" : "›"}</span>
+      <ChevronIcon direction={dir < 0 ? "left" : "right"} size={18} />
     </button>
   );
 
@@ -119,7 +121,7 @@ export function CalendarMonths({
             <div key={month} className="min-w-0">
               <div className="mb-1.5 flex items-center justify-center gap-1">
                 {count === 1 && navButton(-1)}
-                <h3 id={titleId} aria-live="polite" className="flex-1 text-center text-base font-bold">
+                <h3 id={titleId} aria-live="polite" className="font-title flex-1 text-center text-[18px]">
                   {monthTitle(month)}
                 </h3>
                 {count === 1 && navButton(1)}
@@ -128,7 +130,7 @@ export function CalendarMonths({
                 <thead>
                   <tr>
                     {WEEKDAY_INITIALS.map((d, i) => (
-                      <th key={d} scope="col" abbr={WEEKDAY_NAMES[i]} className="pb-1 text-xs font-semibold text-soft">
+                      <th key={d} scope="col" abbr={WEEKDAY_NAMES[i]} className="pb-1.5 text-[11px] font-bold tracking-[.08em] text-soft uppercase">
                         {d}
                       </th>
                     ))}
@@ -168,13 +170,13 @@ export function CalendarMonths({
                             }}
                             onKeyDown={e => onKeyDown(e, date)}
                             className={`group h-11 p-0 text-center text-sm outline-none select-none ${state === "between" ? "bg-tint" : ""} ${
-                              disabled ? "cursor-default text-[#c9c2cd]" : "cursor-pointer"
+                              disabled ? "cursor-default text-mute" : "cursor-pointer"
                             }`}
                           >
                             <span
-                              className={`mx-auto flex h-11 w-full max-w-11 items-center justify-center rounded-full tabular-nums group-focus-visible:outline-3 group-focus-visible:outline-offset-[-1px] group-focus-visible:outline-accent ${
-                                ends ? GRADIENT : !disabled ? "group-hover:bg-tint" : ""
-                              } ${today && !ends ? "shadow-[inset_0_0_0_1.5px_#ff8a3d]" : ""}`}
+                              className={`mx-auto flex h-11 w-full max-w-11 items-center justify-center rounded-full tabular-nums group-focus-visible:outline-3 group-focus-visible:outline-offset-[-1px] group-focus-visible:outline-accent-dark ${
+                                ends ? PICKED : !disabled ? "font-semibold group-hover:bg-tint" : ""
+                              } ${today && !ends ? "inset-ring-[1.5px] inset-ring-soft" : ""}`}
                             >
                               {Number(date.slice(8, 10))}
                             </span>

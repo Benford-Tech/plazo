@@ -57,8 +57,10 @@ export function BookingForm({
   const firstNameError = f.customerFirstName ?? f.customerName;
   const hiddenErrors = HIDDEN_FIELDS.filter(name => f[name]);
   const unavailable = state.error !== null && UNAVAILABLE.includes(state.error);
-  const sectionClass = "card flex flex-col gap-3.5 p-4 md:p-[22px]";
-  const sectionTitle = "font-title text-[22px] md:text-2xl";
+  const sectionClass = "card flex flex-col gap-4 p-4 md:p-[22px]";
+  const sectionTitle = "font-title text-[22px] leading-tight md:text-2xl";
+  // Groups of fields inside the card are separated by the inner hairline.
+  const group = "border-t border-line-soft pt-4";
   const t = texts(online);
 
   return (
@@ -69,17 +71,17 @@ export function BookingForm({
       {idempotencyKey && <input type="hidden" name="idempotencyKey" value={idempotencyKey} />}
 
       {state.error && (
-        <div ref={alertRef} tabIndex={-1} role="alert" className="flex flex-col gap-2 rounded-[22px] border border-danger-line bg-danger-bg p-4 text-danger">
+        <div ref={alertRef} tabIndex={-1} role="alert" className="flex flex-col gap-2 rounded-card border border-danger-line bg-danger-bg p-4 text-danger md:p-5">
           {unavailable ? (
             <>
               <p className="font-bold">{fr.booking.unavailableTitle}</p>
               <p>{errorMessage(state.error)}</p>
               {state.fullNights && state.fullNights.length > 0 && <p>{fr.booking.fullNights(state.fullNights.map(formatDay).join(", "))}</p>}
               <div className="flex flex-wrap gap-2 pt-1">
-                <Link href={links.results} className="btn-secondary h-11 px-4 text-[15px]">
+                <Link href={links.results} className="btn-secondary px-4 text-[15px]">
                   {fr.booking.seeOtherParkings}
                 </Link>
-                <Link href={links.parking} className="btn-secondary h-11 px-4 text-[15px]">
+                <Link href={links.parking} className="btn-secondary px-4 text-[15px]">
                   {fr.booking.changeDates}
                 </Link>
               </div>
@@ -91,7 +93,7 @@ export function BookingForm({
                 <p key={name}>{errorMessage(f[name])}</p>
               ))}
               {hiddenErrors.length > 0 && (
-                <Link href={links.parking} className="font-semibold">
+                <Link href={links.parking} className="link inline-flex min-h-11 items-center self-start md:min-h-0">
                   {fr.booking.changeDates}
                 </Link>
               )}
@@ -102,7 +104,7 @@ export function BookingForm({
 
       <section className={sectionClass} aria-labelledby="b-infos">
         <h2 id="b-infos" className={sectionTitle}>
-          {!online && <span className="text-accent">1.</span>} {fr.booking.yourDetails}
+          {!online && <span className="text-soft">1.</span>} {fr.booking.yourDetails}
         </h2>
         {/* Two short fields that belong together: side by side, on a phone too. */}
         <div className="grid grid-cols-2 gap-3">
@@ -167,14 +169,30 @@ export function BookingForm({
           <input {...field("customerEmail")} type="email" required maxLength={254} autoComplete="email" defaultValue={v.customerEmail} className="field" />
           <FieldError id="b-customerEmail-error" code={f.customerEmail} />
         </div>
-        <div className="grid gap-3.5 md:grid-cols-[1fr_1fr_120px] md:gap-3">
-          <div>
+        {/* The car and the trip: the plate with the passengers beside it, then the two flights. */}
+        <div className={`grid grid-cols-[minmax(0,1fr)_104px] gap-3 sm:grid-cols-[minmax(0,1fr)_140px] md:grid-cols-[minmax(0,320px)_140px] ${group}`}>
+          <div className="min-w-0">
             <label htmlFor="b-plate" className="label">
               {fr.booking.plate}
             </label>
             <PlateInput id="b-plate" name="plate" defaultValue={v.plate} invalid={!!f.plate} describedBy={f.plate ? "b-plate-error" : undefined} />
             <FieldError id="b-plate-error" code={f.plate} />
           </div>
+          <div className="min-w-0">
+            <label htmlFor="b-passengers" className="label">
+              {fr.booking.passengers}
+            </label>
+            <select {...field("passengers")} defaultValue={v.passengers || "1"} className="field">
+              {Array.from({ length: 9 }, (_, i) => String(i + 1)).map(n => (
+                <option key={n} value={n}>
+                  {n}
+                </option>
+              ))}
+            </select>
+            <FieldError id="b-passengers-error" code={f.passengers} />
+          </div>
+        </div>
+        <div className="grid gap-4 md:grid-cols-2 md:gap-3">
           <div>
             <label htmlFor="b-departureFlight" className="label">
               {fr.booking.outboundFlight}
@@ -223,23 +241,10 @@ export function BookingForm({
               </p>
             )}
           </div>
-          <div>
-            <label htmlFor="b-passengers" className="label">
-              {fr.booking.passengers}
-            </label>
-            <select {...field("passengers")} defaultValue={v.passengers || "1"} className="field">
-              {Array.from({ length: 9 }, (_, i) => String(i + 1)).map(n => (
-                <option key={n} value={n}>
-                  {n}
-                </option>
-              ))}
-            </select>
-            <FieldError id="b-passengers-error" code={f.passengers} />
-          </div>
         </div>
         {/* E (06/10/2026): the vehicle (so the valet spots it) and a word for the parking. */}
-        <p className="pt-1 text-[15px] font-bold">{fr.booking.vehicleTitle}</p>
-        <div className="grid gap-3.5 md:grid-cols-2 md:gap-3">
+        <p className={`text-[15px] font-bold ${group}`}>{fr.booking.vehicleTitle}</p>
+        <div className="-mt-1 grid gap-4 md:grid-cols-2 md:gap-3">
           <div>
             <label htmlFor="b-vehicleModel" className="label">
               {fr.booking.vehicleModel}
@@ -271,7 +276,7 @@ export function BookingForm({
       </section>
 
       <div>
-        <label htmlFor="b-acceptTerms" className="flex min-h-11 items-start gap-2.5 text-sm leading-normal">
+        <label htmlFor="b-acceptTerms" className="flex min-h-11 cursor-pointer items-start gap-3 text-[14.5px] leading-normal">
           <input
             id="b-acceptTerms"
             name="acceptTerms"
@@ -280,7 +285,7 @@ export function BookingForm({
             defaultChecked={v.acceptTerms === "on"}
             aria-invalid={f.acceptTerms ? true : undefined}
             aria-describedby={f.acceptTerms ? "b-acceptTerms-error" : undefined}
-            className="mt-0.5 size-5 flex-none accent-accent"
+            className="mt-0.5 size-5 flex-none cursor-pointer accent-dark"
           />
           <span>
             {fr.booking.termsBefore}
@@ -294,11 +299,19 @@ export function BookingForm({
         <FieldError id="b-acceptTerms-error" code={f.acceptTerms} />
       </div>
 
-      <button type="submit" disabled={pending} aria-disabled={pending} className="btn-primary h-[58px] text-[19px]">
+      <button type="submit" disabled={pending} aria-disabled={pending} className="btn-primary h-[54px] px-6 text-[17px]">
         {pending ? t.booking.submitting : t.booking.submit}
       </button>
-      {online && <p className="-mt-2 text-center text-[13px] text-soft">{fr.booking.paymentNext(total)}</p>}
-      <p className="text-center text-[13px] text-soft">{fr.booking.noAccount}</p>
+      {online && (
+        <p className="-mt-2 text-center text-[13px] font-medium text-soft">
+          <svg aria-hidden="true" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="mr-1.5 inline-block align-[-2px]">
+            <rect x="5" y="11" width="14" height="10" rx="2" />
+            <path d="M8 11V7.5a4 4 0 0 1 8 0V11" />
+          </svg>
+          {fr.booking.paymentNext(total)}
+        </p>
+      )}
+      <p className="text-center text-[13px] font-medium text-soft">{fr.booking.noAccount}</p>
     </form>
   );
 }

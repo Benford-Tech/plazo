@@ -66,6 +66,10 @@ describe("TopicGuideView (09/10/2026)", () => {
     render(<TopicGuideView airport={airport} guide={guide} path={path} stay={stay} preview={data} listings={listings} />);
     expect(screen.queryByText(guide.partners.empty)).not.toBeInTheDocument();
     expect(screen.getByRole("heading", { level: 3, name: "Valet Deux" })).toBeInTheDocument();
+    // Boutique: the first (cheapest) card carries « Le moins cher » with its orange treatment; the others nothing.
+    const cards = screen.getAllByRole("article");
+    expect(within(cards[0]).getByText("Le moins cher")).toBeInTheDocument();
+    expect(within(cards[1]).queryByText("Le moins cher")).not.toBeInTheDocument();
     expect(screen.queryByRole("heading", { name: "Sans voiturier" })).not.toBeInTheDocument();
     expect(screen.queryByRole("heading", { name: "Démo" })).not.toBeInTheDocument();
     expect(screen.getByRole("link", { name: /Voir tous les parkings pour ces dates/ })).toHaveAttribute("href", "/lyon-saint-exupery/recherche?arrivee=2026-10-10T08:00&retour=2026-10-17T18:00");

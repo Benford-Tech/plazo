@@ -49,15 +49,15 @@ export default async function PaymentPage({ params }: PageProps<"/ma-reservation
 
   const total = b.priceCents === null ? "" : formatEuros(b.priceCents);
   const edit = editBookingAction.bind(null, b.reference);
-  const row = "flex justify-between gap-3 text-[15px] text-soft";
+  const row = "flex items-center justify-between gap-3 py-2.5 text-[14.5px] font-medium text-soft";
 
   return (
-    <main className="mx-auto flex w-full max-w-[640px] flex-col gap-4 px-4 pt-5 pb-10 md:gap-5 md:pt-8 md:pb-12">
+    <main className="mx-auto flex w-full max-w-[640px] flex-col gap-4 px-4 pt-4 pb-10 md:gap-5 md:pt-8 md:pb-12">
       <BookingSteps current={2} />
-      <h1 className="font-title text-[30px] md:text-[40px]">{fr.pay.title}</h1>
+      <h1 className="font-title text-[30px] leading-tight md:text-[40px]">{fr.pay.title}</h1>
 
       {expired ? (
-        <section role="alert" aria-labelledby="delai" className="flex flex-col items-start gap-3 rounded-[22px] border border-danger-line bg-danger-bg p-5">
+        <section role="alert" aria-labelledby="delai" className="flex flex-col items-start gap-3 rounded-card border border-danger-line bg-danger-bg p-5">
           <h2 id="delai" className="text-lg font-bold text-danger">
             {fr.pay.expiredTitle}
           </h2>
@@ -66,32 +66,34 @@ export default async function PaymentPage({ params }: PageProps<"/ma-reservation
         </section>
       ) : (
         <>
-          <section aria-labelledby="recap" className="flex flex-col gap-2.5 card p-4 md:p-[22px]">
-            <div className="flex items-baseline justify-between gap-3">
-              <h2 id="recap" className="font-title text-[22px] md:text-2xl">
+          <section aria-labelledby="recap" className="card flex flex-col px-4 pt-2 pb-4 md:px-[22px] md:pb-5">
+            <div className="flex items-center justify-between gap-3">
+              <h2 id="recap" className="font-title text-[20px] leading-tight md:text-[22px]">
                 {fr.pay.recap}
               </h2>
               <EditForm action={edit} label={fr.pay.modify} variant="link" />
             </div>
-            <div className={row}>
-              <span>{b.parking.title}</span>
-              <b className="text-ink">{fr.pay.days(b.days)}</b>
+            <div className="flex flex-col divide-y divide-line-soft border-t border-line-soft">
+              <div className={row}>
+                <span className="font-semibold text-ink">{b.parking.title}</span>
+                <b className="flex-none text-ink">{fr.pay.days(b.days)}</b>
+              </div>
+              <div className={row}>
+                <span className="min-w-0">
+                  {formatDay(b.arrivalAt.slice(0, 10))} <span className="whitespace-nowrap">→ {formatDay(b.returnAt.slice(0, 10))}</span>
+                </span>
+                <span className="flex-none">
+                  <Plate plate={b.plate} size="sm" />
+                </span>
+              </div>
+              <div className={row}>
+                <span className="min-w-0">{b.customerName}</span>
+                <b className="flex-none text-ink tabular-nums">{formatPhone(b.customerPhone)}</b>
+              </div>
             </div>
-            <div className={row}>
-              <span className="min-w-0">
-                {formatDay(b.arrivalAt.slice(0, 10))} <span className="whitespace-nowrap">→ {formatDay(b.returnAt.slice(0, 10))}</span>
-              </span>
-              <span className="flex-none">
-                <Plate plate={b.plate} size="sm" />
-              </span>
-            </div>
-            <div className={row}>
-              <span>{b.customerName}</span>
-              <b className="text-ink tabular-nums">{formatPhone(b.customerPhone)}</b>
-            </div>
-            <div className="mt-1 flex justify-between gap-3 border-t border-line pt-3 text-lg font-bold">
+            <div className="flex justify-between gap-3 border-t border-line pt-3.5 text-[18px] font-extrabold">
               <span>{fr.pay.total}</span>
-              <span>{total}</span>
+              <span className="tabular-nums">{total}</span>
             </div>
           </section>
 

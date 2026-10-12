@@ -5,24 +5,27 @@ import { topicLinks } from "@/lib/guides";
 import { hasSupportEmail, SUPPORT_EMAIL } from "@/lib/product";
 import { AIRPORTS, airportPath, PRO_SIGNUP_PATH } from "@/lib/site";
 
-const linkClass = "inline-flex min-h-11 items-center text-sm text-lilac no-underline hover:text-white hover:underline md:min-h-8";
+// 44 px targets on phones (20 px line + 2 x 12 px), with the same spacing whether a label takes one line or two.
+const linkClass =
+  "block w-fit py-3 text-[14px] leading-5 font-medium text-lilac/85 no-underline underline-offset-4 transition-colors hover:text-white hover:underline md:py-1.5";
 
 function Column({ id, title, children }: { id?: string; title: string; children: React.ReactNode }) {
   return (
-    <div id={id} className="flex flex-col gap-0.5 md:gap-1">
-      <h2 className="mb-1 text-sm font-bold text-white">{title}</h2>
-      <ul className="flex flex-col md:gap-1">{children}</ul>
+    <div id={id} className="flex flex-col gap-1">
+      <h2 className="eyebrow mb-1 text-lilac/60">{title}</h2>
+      <ul className="flex flex-col">{children}</ul>
     </div>
   );
 }
 
+/** Boutique (11/10/2026): an espresso footer with hairlines, the pitch set in Playfair, the column titles in small capitals. */
 export function SiteFooter() {
   return (
     <footer className="on-dark mt-auto bg-dark text-lilac">
-      <div className="mx-auto grid max-w-[1280px] grid-cols-2 gap-x-6 gap-y-8 px-4 py-8 md:grid-cols-[2fr_1fr_1fr_1fr] md:gap-8 md:px-12">
-        <div className="col-span-2 flex flex-col gap-2 md:col-span-1">
-          <Logo height={32} className="self-start" />
-          <p className="max-w-md text-sm leading-normal">{fr.footer.pitch}</p>
+      <div className="mx-auto grid max-w-[1280px] grid-cols-2 gap-x-6 gap-y-8 px-4 pt-10 pb-12 md:grid-cols-[2fr_1fr_1fr_1fr] md:gap-10 md:px-12 md:pt-14 md:pb-16">
+        <div className="col-span-2 flex flex-col gap-4 border-b border-white/10 pb-8 md:col-span-1 md:border-b-0 md:pb-0">
+          <Logo height={30} className="self-start" />
+          <p className="font-title max-w-sm text-[19px] leading-snug text-lilac md:text-[21px]">{fr.footer.pitch}</p>
         </div>
         <Column id="aeroports" title={fr.footer.airports}>
           {AIRPORTS.map(a => (
@@ -32,7 +35,7 @@ export function SiteFooter() {
               </Link>
             </li>
           ))}
-          <li className="flex min-h-11 items-center text-sm md:min-h-8">{fr.footer.moreAirports}</li>
+          <li className="py-3 text-[14px] leading-5 text-lilac/60 md:py-1.5">{fr.footer.moreAirports}</li>
         </Column>
         <Column title={fr.footer.travellers}>
           <li>

@@ -2,7 +2,10 @@
 
 import { formatPlate } from "@/lib/plate";
 
-/** Plate field drawn as a French plate; the dashes of French plates are added when leaving the field. */
+/**
+ * Plate field drawn as a French plate (blue "F" band, dark border, the 5 px corners of <Plate/>); the dashes of
+ * French plates are added when leaving the field.
+ */
 export function PlateInput({
   id,
   name,
@@ -18,7 +21,7 @@ export function PlateInput({
 }) {
   return (
     <span
-      className={`flex h-12 items-stretch overflow-hidden rounded-lg border-[1.5px] bg-white focus-within:outline-3 focus-within:outline-offset-2 focus-within:outline-accent ${invalid ? "border-danger" : "border-ink"}`}
+      className={`flex h-12 items-stretch overflow-hidden rounded-[5px] border-[1.5px] bg-white focus-within:outline-3 focus-within:outline-offset-2 focus-within:outline-accent-dark ${invalid ? "border-danger" : "border-plate-ink"}`}
     >
       <span aria-hidden="true" className="flex w-[18px] flex-none items-end justify-center bg-plate-blue pb-1.5 text-[11px] font-bold text-white">
         F
@@ -39,7 +42,7 @@ export function PlateInput({
         onBlur={e => {
           if (e.currentTarget.value.trim()) e.currentTarget.value = formatPlate(e.currentTarget.value);
         }}
-        className="min-w-0 flex-1 border-none bg-white px-2.5 text-lg font-extrabold tracking-[.03em] text-plate-ink uppercase outline-none placeholder:font-semibold placeholder:text-soft/60"
+        className="min-w-0 flex-1 border-none bg-white px-2.5 text-lg font-extrabold tracking-[.06em] text-plate-ink uppercase outline-none placeholder:font-semibold placeholder:tracking-[.03em] placeholder:text-soft/70"
       />
     </span>
   );
