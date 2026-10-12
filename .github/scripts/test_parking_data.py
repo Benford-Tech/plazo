@@ -175,6 +175,12 @@ def login():
             if "→ 401" not in str(error):
                 raise
     if session is None:
+        # What can be said of the secrets without showing them (MIN_PASSWORD_LENGTH of backend/src/dtos/staff.dto.ts).
+        if len(trimmed) < 10:
+            print("::error::PLAZO_TEST_PASSWORD has fewer than 10 characters: Plazo never accepts such a password for a "
+                  "member, so it cannot be the account's; update the secret with the member's real password")
+        if "@" not in EMAIL:
+            print("::error::PLAZO_TEST_EMAIL is not an email address")
         fail("Sign-in refused (401 invalid_credentials): check that the member exists and is active in « Plazo (tests) » › "
              "Équipe, and that the secrets PLAZO_TEST_EMAIL and PLAZO_TEST_PASSWORD hold exactly its email and password")
     if candidate != PASSWORD:
