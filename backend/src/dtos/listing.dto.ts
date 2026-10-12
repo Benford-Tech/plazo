@@ -1,11 +1,13 @@
 import { Type } from 'class-transformer';
 import {
+  Allow,
   ArrayMaxSize,
   IsArray,
   IsIn,
   IsInt,
   IsNotEmpty,
   IsNumber,
+  IsObject,
   IsOptional,
   IsString,
   IsUrl,
@@ -102,6 +104,28 @@ export class PricingTierDto {
   public priceCents: number;
 }
 
+/** A parking's night window and fees, as edited in « Mes tarifs » (rules in domain/night-fees.ts). */
+export class NightPricingDto {
+  @Allow()
+  public enabled: boolean;
+
+  /** "HH:mm": the window's start, counted as night. */
+  @Allow()
+  public start?: string | null;
+
+  /** "HH:mm": the window's end, not counted as night (it may be before the start: the window crosses midnight). */
+  @Allow()
+  public end?: string | null;
+
+  /** « Dépôt de nuit », in cents. */
+  @Allow()
+  public arrivalFeeCents?: number | null;
+
+  /** « Retour de nuit », in cents. */
+  @Allow()
+  public returnFeeCents?: number | null;
+}
+
 export class UpdatePricingDto {
   @IsArray({ message: 'invalid' })
   @ArrayMaxSize(90, { message: 'too_many_items' })
@@ -115,4 +139,14 @@ export class UpdatePricingDto {
   @Min(0, { message: 'min_0' })
   @Max(100000, { message: 'too_large' })
   public extraDayPriceCents?: number | null;
+
+  /**
+   * Night fees (12/10/2026); absent: unchanged. Checked by `validateNightSettings` (domain/night-fees.ts), whose errors
+   * are keyed "night.start", "night.end", "night.arrivalFeeCents", "night.returnFeeCents".
+   */
+  @IsOptional()
+  @IsObject({ message: 'invalid' })
+  @ValidateNested()
+  @Type(() => NightPricingDto)
+  public night?: NightPricingDto | null;
 }

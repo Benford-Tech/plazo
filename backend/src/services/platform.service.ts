@@ -4,6 +4,7 @@ import { isPlatformAdmin, PLATFORM_COMMISSION_BPS, PRODUCT_NAME } from '@/config
 import prisma, { ListingStatus, PlatformAudience, Prisma } from '@/database';
 import { listingApprovedEmail, listingRejectedEmail, listingUnpublishedEmail } from '@/domain/account-messages';
 import { effectiveCapacity } from '@/domain/capacity';
+import { nightRule, nightSettingsOf } from '@/domain/night-fees';
 import { DATE_RE, dayBounds, localDate } from '@/domain/time';
 import { chronologicalPage } from '@/domain/chronological-pages';
 import { InviteOperatorDto, PlatformNotificationDto } from '@/dtos/platform.dto';
@@ -469,6 +470,12 @@ export class PlatformService {
               totalCapacity: true,
               operator: { select: { id: true, name: true, status: true } },
               pricingTiers: { select: { days: true, priceCents: true }, orderBy: { days: 'asc' } },
+              extraDayPriceCents: true,
+              nightFeeEnabled: true,
+              nightStart: true,
+              nightEnd: true,
+              nightArrivalFeeCents: true,
+              nightReturnFeeCents: true,
             },
           },
         },
@@ -478,14 +485,32 @@ export class PlatformService {
     const plans = await loadPlanCapacity(listings.map(l => l.parking.id));
     return {
       counts: Object.fromEntries(LISTING_STATUSES.map(s => [s, counts.find(c => c.status === s)?._count._all ?? 0])),
-      listings: listings.map(({ parking: { pricingTiers, operator, ...parking }, ...l }) => ({
-        ...l,
-        // `totalCapacity` is the declared figure; `effectiveCapacity` the one used everywhere (09/10/2026).
-        parking: { ...parking, effectiveCapacity: effectiveCapacity({ declared: parking.totalCapacity, ...plans.get(parking.id)! }).total },
-        operator,
-        pricingTiers,
-        fromPriceCents: pricingTiers.length ? Math.min(...pricingTiers.map(t => t.priceCents)) : null,
-      })),
+      listings: listings.map(
+        ({
+          parking: {
+            pricingTiers,
+            operator,
+            extraDayPriceCents,
+            nightFeeEnabled,
+            nightStart,
+            nightEnd,
+            nightArrivalFeeCents,
+            nightReturnFeeCents,
+            ...parking
+          },
+          ...l
+        }) => ({
+          ...l,
+          // `totalCapacity` is the declared figure; `effectiveCapacity` the one used everywhere (09/10/2026).
+          parking: { ...parking, effectiveCapacity: effectiveCapacity({ declared: parking.totalCapacity, ...plans.get(parking.id)! }).total },
+          operator,
+          pricingTiers,
+          fromPriceCents: pricingTiers.length ? Math.min(...pricingTiers.map(t => t.priceCents)) : null,
+          extraDayPriceCents,
+          // The night fees travellers will pay (12/10/2026), as the public page states them; null when none.
+          night: nightRule(nightSettingsOf({ nightFeeEnabled, nightStart, nightEnd, nightArrivalFeeCents, nightReturnFeeCents })),
+        }),
+      ),
     };
   }
 

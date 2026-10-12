@@ -111,7 +111,8 @@ const frBase = {
     mapFull: "Complet à ces dates",
     mapSeeAnyway: "Voir le parking",
     trust: [
-      ["Prix total affiché", "aucun frais ajouté"],
+      // Night fees (12/10/2026) are in the displayed total: nothing is added to it, but « aucun frais » would be untrue.
+      ["Prix total affiché", "frais compris"],
       ["Navette gratuite", "jusqu’aux terminaux"],
       ["Annulation claire", "conditions visibles avant de réserver"],
     ] as [string, string][],
@@ -178,6 +179,8 @@ const frBase = {
     cheapest: "Le moins cher",
     fastestShuttle: "Navette la plus rapide",
     allIn: (days: number) => `${daysLabel(days)}, tout compris`,
+    /** Direction B (12/10/2026): under the heading when a shown result's total includes a night fee. */
+    nightFeesIncluded: "Prix totaux pour vos dates, frais de nuit compris.",
     // R-B + I-C (07/10/2026): the parking shows its shuttles to the travellers.
     live: "En direct",
     liveTitle: "Navette suivie en direct : vous la verrez arriver dans votre réservation.",
@@ -287,6 +290,20 @@ const frBase = {
     fullForDates: "Complet à ces dates",
     noPriceForDates: "Pas de tarif pour cette durée",
     packageLine: (days: number) => `Forfait ${daysLabel(days)}`,
+    /**
+     * Direction B (12/10/2026): the stay's night fee in the price lines, « Frais de nuit · dépôt à 23:30 » (or
+     * « · retour à 05:30 », « · dépôt à 22:30 et retour à 05:30 »; built by lib/night-fees.ts), and the parking's rule
+     * under the lines, the amounts in short euros.
+     */
+    nightFee: "Frais de nuit",
+    nightFeeDropOff: "dépôt à",
+    nightFeeReturn: "retour à",
+    nightFeeAnd: "et",
+    nightRule: (fees: string, start: string, end: string) => `Ce parking ajoute ${fees} entre ${start} et ${end}.`,
+    nightRuleSame: (amount: string) => `${amount} pour un dépôt ou un retour`,
+    nightRuleEach: (dropOff: string, pickUp: string) => `${dropOff} pour un dépôt et ${pickUp} pour un retour`,
+    nightRuleDropOff: (amount: string) => `${amount} pour un dépôt`,
+    nightRuleReturn: (amount: string) => `${amount} pour un retour`,
     serviceFee: "Frais de service",
     total: "Total",
     payOnSite: "À payer sur place",
@@ -403,6 +420,8 @@ const frBase = {
     paid: "Payé",
     refunded: "Remboursé",
     stayPrice: "Prix du séjour",
+    /** Under the paid amount when the booking paid night fees (12/10/2026). */
+    nightFeeIncluded: (amount: string) => `dont ${amount} de frais de nuit`,
     freeUntil: (when: string) => `Annulation gratuite jusqu’au ${when}`,
     nonRefundable: "Non annulable en ligne",
     dayTitle: "Le jour du départ",

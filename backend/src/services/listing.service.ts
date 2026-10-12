@@ -3,6 +3,7 @@ import { Container, Service } from 'typedi';
 import { PLATFORM_COMMISSION_BPS } from '@/config';
 import prisma, { Prisma } from '@/database';
 import { ListingAction, isReservedListingSlug, nextListingStatus } from '@/domain/listing';
+import { nightColumns, nightSettingsOf, validateNightSettings } from '@/domain/night-fees';
 import { can } from '@/domain/roles';
 import { UpdateListingDto, UpdatePricingDto } from '@/dtos/listing.dto';
 import { AuthenticatedStaff } from '@/interfaces/auth.interface';
@@ -132,26 +133,38 @@ export class ListingService {
     ]);
     // Shown to the operator next to the grid; null while no commission is configured.
     const commissionBps = operator?.commissionBps ?? PLATFORM_COMMISSION_BPS;
-    return { tiers, extraDayPriceCents: parking.extraDayPriceCents, commissionBps };
+    // Night fees (12/10/2026): kept while switched off, so that switching them back on restores them.
+    return { tiers, extraDayPriceCents: parking.extraDayPriceCents, commissionBps, night: nightSettingsOf(parking) };
   }
 
-  /** Replaces the whole grid (it is edited as one table). */
+  /**
+   * Replaces the whole grid (it is edited as one table), and the night fees when sent (absent: unchanged, so that a
+   * client that does not know them never clears them).
+   */
   public async updatePricing(actor: AuthenticatedStaff, data: UpdatePricingDto) {
     this.requireManager(actor);
     const parking = await this.parkings.getPrimary(actor);
     const days = data.tiers.map(t => t.days);
-    if (new Set(days).size !== days.length) throw new ValidationException({ tiers: 'duplicate_days' });
+    const errors: Record<string, string> = {};
+    if (new Set(days).size !== days.length) errors.tiers = 'duplicate_days';
+    let night = nightSettingsOf(parking);
+    if (data.night !== undefined && data.night !== null) {
+      const checked = validateNightSettings(data.night);
+      Object.assign(errors, checked.errors);
+      if (checked.settings) night = checked.settings;
+    }
+    if (Object.keys(errors).length) throw new ValidationException(errors);
 
     await prisma.$transaction([
       prisma.pricingTier.deleteMany({ where: { parkingId: parking.id } }),
       prisma.pricingTier.createMany({ data: data.tiers.map(t => ({ parkingId: parking.id, days: t.days, priceCents: t.priceCents })) }),
-      prisma.parking.update({ where: { id: parking.id }, data: { extraDayPriceCents: data.extraDayPriceCents ?? null } }),
+      prisma.parking.update({ where: { id: parking.id }, data: { extraDayPriceCents: data.extraDayPriceCents ?? null, ...nightColumns(night) } }),
     ]);
     await this.audit.record(actor, {
       action: 'pricing.updated',
       entityType: 'parking',
       entityId: parking.id,
-      details: { tiers: data.tiers.length, extraDayPriceCents: data.extraDayPriceCents ?? null },
+      details: { tiers: data.tiers.length, extraDayPriceCents: data.extraDayPriceCents ?? null, night: { ...night } },
     });
     return this.getPricing(actor);
   }

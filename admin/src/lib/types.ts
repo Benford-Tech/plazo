@@ -152,6 +152,12 @@ export interface Reservation {
   priceCents: number | null;
   /** What the traveller was charged online (Plazo bookings). */
   chargedCents?: number | null;
+  /**
+   * Night fees (12/10/2026): the « Dépôt de nuit » and « Retour de nuit » fees a Plazo booking was charged, frozen at
+   * booking and included in `priceCents`; null when none (and always for staff bookings and imports).
+   */
+  nightArrivalFeeCents?: number | null;
+  nightReturnFeeCents?: number | null;
   overbooked: boolean;
   /** Terms accepted by the traveller (bookings made on the public site only). */
   cancellationPolicy: CancellationPolicy | null;
@@ -635,10 +641,40 @@ export interface PricingTier {
   priceCents: number;
 }
 
+/**
+ * Night fees (12/10/2026): one window per parking, the same every day ("HH:mm"; the start counts as night, the end
+ * does not, and it may cross midnight), a « Dépôt de nuit » and a « Retour de nuit » fee. Kept while switched off, so
+ * that switching them back on restores them; times and fees are null while never set.
+ */
+export interface NightSettings {
+  enabled: boolean;
+  start: string | null;
+  end: string | null;
+  arrivalFeeCents: number | null;
+  returnFeeCents: number | null;
+}
+
+/** The night rule travellers are charged (null when none); a side without a fee is null. */
+export interface NightRule {
+  start: string;
+  end: string;
+  arrivalFeeCents: number | null;
+  returnFeeCents: number | null;
+}
+
+/** The night fees of one stay, in cents (0 for an end that pays nothing). */
+export interface NightFee {
+  arrivalCents: number;
+  returnCents: number;
+  totalCents: number;
+}
+
 export interface Pricing {
   tiers: PricingTier[];
   extraDayPriceCents: number | null;
   commissionBps: number | null;
+  /** Missing from an older API. */
+  night?: NightSettings;
 }
 
 // ---- Sign-up and invitations ----------------------------------------------------------------------
@@ -763,6 +799,9 @@ export interface PlatformListing {
   operator: { id: string; name: string; status: OperatorStatus };
   pricingTiers: PricingTier[];
   fromPriceCents: number | null;
+  /** 12/10/2026: everything a traveller can be charged (missing from an older API). */
+  extraDayPriceCents?: number | null;
+  night?: NightRule | null;
 }
 
 export interface PlatformListings {

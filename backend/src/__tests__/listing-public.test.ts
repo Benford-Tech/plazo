@@ -138,7 +138,12 @@ describe('grille tarifaire', () => {
       .put('/api/internal/pricing')
       .set(auth(token))
       .send({ tiers: [{ days: 2, priceCents: 2500 }], extraDayPriceCents: null });
-    expect(res.body.data).toEqual({ tiers: [{ days: 2, priceCents: 2500 }], extraDayPriceCents: null, commissionBps: null });
+    expect(res.body.data).toEqual({
+      tiers: [{ days: 2, priceCents: 2500 }],
+      extraDayPriceCents: null,
+      commissionBps: null,
+      night: { enabled: false, start: null, end: null, arrivalFeeCents: null, returnFeeCents: null },
+    });
   });
 
   it('refuse les doublons et les valeurs absurdes', async () => {
@@ -222,7 +227,8 @@ describe('API publique', () => {
     );
     expect(res.status).toBe(200);
     expect(res.body.parking).toMatchObject({ title: 'Parking A', photos: ['https://example.com/photo-1.jpg'], cancellationPolicy: 'free_24h' });
-    expect(res.body.offer).toEqual({ available: true, days: 16, priceCents: 5900 + 9 * 600 });
+    expect(res.body.offer).toEqual({ available: true, days: 16, priceCents: 5900 + 9 * 600, basePriceCents: 5900 + 9 * 600, nightFee: null });
+    expect(res.body.parking.pricing).toEqual({ tiers: grid.tiers, extraDayPriceCents: 600, night: null });
     expect((await api().get('/api/public/airports/lyon-saint-exupery/parkings/inexistant')).status).toBe(404);
   });
 });

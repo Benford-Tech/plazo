@@ -224,6 +224,16 @@ model Parking {
   // Price per day beyond the longest package of the grid, in cents.
   extraDayPriceCents Int?
 
+  // Night fees (12/10/2026, « frais de nuit », direction B): one local window, the same every day, for drop-offs and
+  // returns alike ("HH:mm"; the start counts as night, the end does not; it may cross midnight), and a fixed fee for a
+  // drop-off and/or a return booked in it, in cents. Plazo bookings only, frozen on the reservation. The values are kept
+  // when the fees are switched off, so that switching them back on restores them (CHECKs in the migration).
+  nightFeeEnabled      Boolean @default(false)
+  nightStart           String?
+  nightEnd             String?
+  nightArrivalFeeCents Int?
+  nightReturnFeeCents  Int?
+
   // Who sees the shuttles' position during the trips (R-B, 07/10/2026): nobody (the drivers do not
   // share it), the team only, or the team and the travellers (then "EN DIRECT" in the search results).
   shuttleTracking ShuttleTracking @default(team)
@@ -510,11 +520,16 @@ model Reservation {
   notes                   String?
   // Booking number on the channel it came from (e.g. AL-884880719 on Allopark), to avoid importing it twice.
   externalReference       String?
-  // Price paid, in euro cents, when known (imports; the pricing grid arrives in milestone 3).
+  // Price paid, in euro cents, when known: the comparator's amount (imports), the staff's, or on Plazo the grid price plus
+  // the night fees (the total « tout compris » the traveller paid).
   priceCents              Int?
   // 10/10/2026: the amount the comparator last gave (import, applied change). A comparator's change touches the price
   // only when its amount differs from this one, so a price the staff corrected stays theirs.
   importedPriceCents      Int?
+  // 12/10/2026: night fees charged at booking on Plazo (drop-off, return), frozen when the place is held and included in
+  // priceCents; null when none (and always for the other channels). A late flight or a staff edit never recomputes them.
+  nightArrivalFeeCents    Int?
+  nightReturnFeeCents     Int?
   // Saved although at least one night was already full (forced by staff, audited).
   overbooked              Boolean             @default(false)
   // Cancellation terms accepted by the traveller when booking on the site (channel plazo): later

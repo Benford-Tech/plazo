@@ -264,6 +264,9 @@ function lyonSaintExupery(facts: GuideFacts): AirportGuide {
           "Avant de choisir, regardez quatre choses : la durée réelle de la navette jusqu’au terminal, les horaires d’ouverture (un vol très matinal ou un retour tard le soir demande un parking ouvert à ces heures), les conditions d’annulation et la façon dont le parking vous récupère au retour. Sur " +
             PRODUCT_NAME +
             ", chaque fiche donne la durée de la navette, les horaires, les services et les conditions d’annulation, et les filtres des résultats permettent de ne garder que les parkings ouverts 24 h sur 24, avec voiturier, couverts ou annulables gratuitement ; quand le parking l’a indiqué, le point de rendez-vous du retour figure dans l’e-mail de confirmation.",
+          "Certains parkings demandent des frais de nuit pour un dépôt ou un retour réservé pendant leurs heures de nuit, tard le soir ou tôt le matin. Sur " +
+            PRODUCT_NAME +
+            ", ces frais sont compris dans le prix total affiché, détaillés sur la fiche du parking dès que vos dates sont choisies et rappelés avant le paiement ; ils sont calculés sur les heures réservées et ne changent plus ensuite.",
           rideWords
             ? `Chez nos parkings partenaires, la navette met ${rideWords} jusqu’au terminal, et elle est comprise dans le prix.`
             : "Chez nos parkings partenaires, la navette jusqu’au terminal est comprise dans le prix, et chaque fiche indique sa durée.",
@@ -282,8 +285,8 @@ function lyonSaintExupery(facts: GuideFacts): AirportGuide {
             o.readOn +
             ". Dans les parkings privés, le prix est en général dégressif : la journée supplémentaire coûte de moins en moins cher à mesure que le séjour s’allonge.",
           week
-            ? `Chez nos parkings partenaires, une semaine coûte aujourd’hui ${week}, frais compris : le jour d’arrivée et le jour de retour comptent chacun pour une journée, et le prix affiché est celui que vous payez, sans frais de dossier ni supplément à l’arrivée.`
-            : "Chez nos parkings partenaires, le prix affiché est le prix total pour vos dates, frais compris : le jour d’arrivée et le jour de retour comptent chacun pour une journée, et il n’y a ni frais de dossier ni supplément à l’arrivée.",
+            ? `Chez nos parkings partenaires, une semaine coûte aujourd’hui ${week}, frais compris : le jour d’arrivée et le jour de retour comptent chacun pour une journée, et le prix affiché est celui que vous payez, sans frais de dossier ni supplément à l’arrivée : les éventuels frais de nuit d’un parking, pour un dépôt ou un retour tard le soir ou tôt le matin, y sont déjà comptés.`
+            : "Chez nos parkings partenaires, le prix affiché est le prix total pour vos dates, frais compris : le jour d’arrivée et le jour de retour comptent chacun pour une journée, et il n’y a ni frais de dossier ni supplément à l’arrivée : les éventuels frais de nuit d’un parking, pour un dépôt ou un retour tard le soir ou tôt le matin, y sont déjà comptés.",
           "Pour vous repérer, voici la grille 2026 des parkings de l’aéroport sans réservation, pour les durées les plus courantes. Indiquez vos dates en haut de la page pour comparer le prix total de chaque parking partenaire.",
         ],
         table: {
@@ -440,7 +443,7 @@ function lyonSaintExupery(facts: GuideFacts): AirportGuide {
           "Le jour J, vous retrouvez sur Ma réservation l’heure prévue de votre navette (si vous avez indiqué votre vol aller) et un bouton pour prévenir le parking de votre arrivée. Le jour du retour, la page indique aussi l’endroit où la voiture est garée, dès que sa place ou sa position a été enregistrée (dans l’application, cette position s’affiche pendant tout le séjour). L’atterrissage est suivi, le SMS vous indique le point de rendez-vous, et la page montre un compte à rebours jusqu’à l’atterrissage puis, une fois la navette en route, jusqu’à son arrivée si le parking a activé le suivi en direct. Après la remise de la voiture, vous recevez un dernier message de clôture.",
           "Le prix affiché est celui que vous payez : la commission de " +
             PRODUCT_NAME +
-            " est comprise, et il n’y a pas de frais ajoutés à l’arrivée. Les services annexes (lavage, plein, recharge), qui ne se réservent pas en ligne, et les jours au-delà de la date de retour réservée sont réglés directement au parking, à son tarif.",
+            " est comprise, comme les éventuels frais de nuit du parking, et il n’y a pas de frais ajoutés à l’arrivée. Les services annexes (lavage, plein, recharge), qui ne se réservent pas en ligne, et les jours au-delà de la date de retour réservée sont réglés directement au parking, à son tarif.",
         ],
       },
       {

@@ -46,7 +46,12 @@ import { Routes } from '@/interfaces/routes.interface';
  * /public/search:
  *   get:
  *     summary: Parkings for a stay — availability and total price, available first then cheapest
- *     description: Same `location` fields as the airport page (airport and each parking), for the site's map.
+ *     description: >-
+ *       Same `location` fields as the airport page (airport and each parking), for the site's map. Each result
+ *       carries its offer: { available, days, priceCents, basePriceCents, nightFee }. `priceCents` is the total
+ *       « tout compris » (grid price `basePriceCents` plus the night fees of the hours given, in the parking's local
+ *       time), the one used to sort; `nightFee` is { arrivalCents, returnCents, totalCents }, or null when the stay
+ *       pays no night fee (12/10/2026).
  *     tags: [Public]
  *     security: []
  *     parameters:
@@ -56,7 +61,11 @@ import { Routes } from '@/interfaces/routes.interface';
  * /public/airports/{airport}/parkings/{slug}:
  *   get:
  *     summary: A parking's page, with the offer for a stay when dates are given
- *     description: The parking's `location` ({ lat, lng } or null) and the airport's `location`.
+ *     description: >-
+ *       The parking's `location` ({ lat, lng } or null) and the airport's `location`. `parking.pricing` is
+ *       { tiers, extraDayPriceCents, night }, `night` being the parking's night rule { start, end, arrivalFeeCents,
+ *       returnFeeCents } ("HH:mm"; the start counts as night, the end does not; a side without a fee is null), or null
+ *       when it charges none. `offer` has the same shape as a search result's offer.
  *     tags: [Public]
  *     security: []
  *     parameters:

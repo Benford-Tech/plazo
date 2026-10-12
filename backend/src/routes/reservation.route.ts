@@ -72,6 +72,10 @@ import { ValidationMiddleware } from '@/middlewares/validation.middleware';
  * /internal/reservations/{id}:
  *   get:
  *     summary: One reservation
+ *     description: >
+ *       The reservation's fields (also those of each item of the list), among them priceCents and, for a booking made
+ *       on Plazo, nightArrivalFeeCents / nightReturnFeeCents: the night fees charged at booking and included in
+ *       priceCents (12/10/2026), frozen; null when none, and always for the other channels.
  *     tags: [Reservations]
  *     parameters:
  *       - { in: path, name: id, required: true, schema: { type: string } }

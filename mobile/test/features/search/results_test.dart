@@ -97,7 +97,7 @@ void main() {
       expect(find.text('3 parkings disponibles'), findsOneWidget);
       expect(find.text('Le moins cher'), findsOneWidget);
       expect(find.text('Navette la plus rapide'), findsOneWidget); // « cher », 5 min (« complet » is full)
-      expect(find.textContaining('4,37'), findsOneWidget); // 34,99 € for 8 days
+      expect(find.textContaining('4,37'), findsOneWidget); // 34,99 € for 8 days
       expect(find.text('Clôturé'), findsNothing);
       expect(find.text('Non remboursable'), findsOneWidget);
       expect(find.text('Parking pas-cher'), findsOneWidget);
@@ -116,6 +116,38 @@ void main() {
       await tester.pumpAndSettle();
       expect(b.state.selectedSlug, 'moyen');
       expect(find.descendant(of: find.byKey(const Key('selected-card')), matching: find.text('Parking moyen')), findsOneWidget);
+    });
+
+    testWidgets('frais de nuit (direction B) : total seul sur les cartes, une ligne sous le titre', (tester) async {
+      final fake = FakePublicDataSource()
+        ..searchResponse = SearchResponseModel(
+          payments: 'online',
+          airport: lys,
+          results: [
+            result('nuit', priceCents: 5160, basePriceCents: 3660, nightFee: dropOffNightFee),
+            result('jour', priceCents: 4650),
+          ],
+        );
+      await pump(tester, fake);
+      expect(find.byKey(const Key('results-night-fees')), findsOneWidget);
+      expect(find.text('Prix totaux pour vos dates, frais de nuit compris.'), findsOneWidget);
+      // The card prints the total « tout compris », with no chip nor detail.
+      expect(find.textContaining('51,60 €'), findsOneWidget);
+      expect(find.textContaining('36,60 €'), findsNothing);
+      expect(find.textContaining('Frais de nuit'), findsNothing);
+    });
+
+    testWidgets('sans frais de nuit parmi les résultats affichés (un complet n’en compte pas) : pas de ligne', (tester) async {
+      await pump(tester, api());
+      expect(find.byKey(const Key('results-night-fees')), findsNothing);
+      final fake = FakePublicDataSource()
+        ..searchResponse = SearchResponseModel(
+          payments: 'online',
+          airport: lys,
+          results: [result('complet', available: false, priceCents: 5160, nightFee: dropOffNightFee), result('jour', priceCents: 4650)],
+        );
+      await pump(tester, fake);
+      expect(find.byKey(const Key('results-night-fees')), findsNothing);
     });
 
     testWidgets('un parking de démonstration porte une étiquette « DÉMO » discrète', (tester) async {

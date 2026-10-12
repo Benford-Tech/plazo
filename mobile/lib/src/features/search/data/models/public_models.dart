@@ -46,7 +46,14 @@ abstract class SearchResultModel with _$SearchResultModel {
     LatLngModel? location,
     @Default(false) bool available,
     @Default(0) int days,
+
+    /// The total « tout compris » for the stay, night fees included (12/10/2026): sorts, filters and the cheapest use it.
     int? priceCents,
+
+    /// The price grid's part of [priceCents], and the night fees included in it (null when the stay pays none; both
+    /// absent from an older API).
+    int? basePriceCents,
+    NightFeeModel? nightFee,
     /// Fictional parking of the demo data: shown like the others, with a small "Démo" tag.
     @Default(false) bool isDemo,
 
@@ -73,9 +80,30 @@ abstract class SearchResponseModel with _$SearchResponseModel {
   factory SearchResponseModel.fromJson(Map<String, dynamic> json) => _$SearchResponseModelFromJson(json);
 }
 
+/// The night fees included in a total (12/10/2026, « Frais de nuit »), in cents: 0 for an end that pays nothing. Served
+/// by the API with an offer (computed from the hours asked) and with a booking (frozen at booking, never recomputed).
+@freezed
+abstract class NightFeeModel with _$NightFeeModel {
+  const factory NightFeeModel({@Default(0) int arrivalCents, @Default(0) int returnCents, @Default(0) int totalCents}) = _NightFeeModel;
+
+  factory NightFeeModel.fromJson(Map<String, dynamic> json) => _$NightFeeModelFromJson(json);
+}
+
+/// A parking's night rule (12/10/2026): one window a day ("22:00" → "06:00", the start counts, the end does not) and the
+/// fee of a drop-off and of a return booked in it (null for a side that pays nothing).
+@freezed
+abstract class NightRuleModel with _$NightRuleModel {
+  const factory NightRuleModel({required String start, required String end, int? arrivalFeeCents, int? returnFeeCents}) = _NightRuleModel;
+
+  factory NightRuleModel.fromJson(Map<String, dynamic> json) => _$NightRuleModelFromJson(json);
+}
+
+/// A stay's offer at one parking. `priceCents` is the total « tout compris » (night fees included), `basePriceCents`
+/// the price grid's part and `nightFee` the night fees (null when none; both absent from an older API).
 @freezed
 abstract class OfferModel with _$OfferModel {
-  const factory OfferModel({required bool available, required int days, int? priceCents}) = _OfferModel;
+  const factory OfferModel({required bool available, required int days, int? priceCents, int? basePriceCents, NightFeeModel? nightFee}) =
+      _OfferModel;
 
   const OfferModel._();
 
@@ -93,7 +121,13 @@ abstract class PricingTierModel with _$PricingTierModel {
 
 @freezed
 abstract class PricingModel with _$PricingModel {
-  const factory PricingModel({@Default(<PricingTierModel>[]) List<PricingTierModel> tiers, int? extraDayPriceCents}) = _PricingModel;
+  const factory PricingModel({
+    @Default(<PricingTierModel>[]) List<PricingTierModel> tiers,
+    int? extraDayPriceCents,
+
+    /// The parking's night rule (12/10/2026), for the sentence of its page; null when it charges none.
+    NightRuleModel? night,
+  }) = _PricingModel;
 
   factory PricingModel.fromJson(Map<String, dynamic> json) => _$PricingModelFromJson(json);
 }

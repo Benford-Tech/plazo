@@ -1,5 +1,7 @@
 import 'package:freezed_annotation/freezed_annotation.dart';
 
+import '../../../search/data/models/public_models.dart';
+
 part 'public_booking_model.freezed.dart';
 part 'public_booking_model.g.dart';
 
@@ -38,7 +40,14 @@ abstract class PublicBookingModel with _$PublicBookingModel {
     CarLocationModel? car,
     required int passengers,
     int? days,
+
+    /// What the traveller pays in total, night fees included.
     int? priceCents,
+
+    /// 12/10/2026: the price grid's part of [priceCents] and the night fees included in it, frozen at booking (null
+    /// when none; both absent from an older API).
+    int? basePriceCents,
+    NightFeeModel? nightFee,
     @Default('non_refundable') String cancellationPolicy,
     /// Local datetime until which the traveller may cancel online; null when non-refundable.
     String? cancellableUntil,

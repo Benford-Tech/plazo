@@ -3,6 +3,7 @@ import { PublicBooking } from '@/interfaces/booking.interface';
 import { cancellableUntil, canCancel, canEditFlight } from './booking';
 import { billableDays } from './pricing';
 import { carView } from './car-location';
+import { nightFeeOf } from './night-fees';
 import { dropoffTimes } from './shuttle-waves';
 import { localDateTime } from './time';
 
@@ -27,6 +28,18 @@ function outboundView(reservation: Reservation, parking: Parking, tz: string): P
     estimatedAt: reservation.departureEstimatedAt ? localDateTime(reservation.departureEstimatedAt, tz) : null,
     terminal: reservation.departureTerminal,
     shuttleAt: noFlight ? null : localDateTime(leaveAt, tz),
+  };
+}
+
+/**
+ * The price's breakdown (12/10/2026): the grid price and the night fees included in the total, read from the snapshot
+ * frozen at booking (never recomputed from the parking's current settings or the booking's current hours).
+ */
+function priceBreakdown(reservation: Reservation): Pick<PublicBooking, 'basePriceCents' | 'nightFee'> {
+  const nightFee = nightFeeOf(reservation);
+  return {
+    basePriceCents: reservation.priceCents === null ? null : reservation.priceCents - (nightFee?.totalCents ?? 0),
+    nightFee,
   };
 }
 
@@ -63,6 +76,7 @@ export function toPublicBooking(reservation: BookingRecord, now = new Date()): P
     returnAt: localDateTime(reservation.returnAt, tz),
     days: billableDays(reservation.arrivalAt, reservation.returnAt, tz),
     priceCents: reservation.priceCents,
+    ...priceBreakdown(reservation),
     customerName: reservation.customerName,
     customerFirstName: reservation.customerFirstName,
     customerLastName: reservation.customerLastName,

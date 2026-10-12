@@ -7,6 +7,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import '../../../../core/constants/product.g.dart';
 import '../../../../core/enums/view_state.dart';
 import '../../../../core/helpers/money.dart';
+import '../../../../core/helpers/night_fees.dart';
 import '../../../../core/helpers/plate.dart';
 import '../../../../core/helpers/stay.dart';
 import '../../../../core/router/app_router.dart';
@@ -22,6 +23,7 @@ import '../../../trips/presentation/bloc/trips_bloc.dart';
 import '../../domain/booking_draft.dart';
 import '../bloc/booking_form_bloc.dart';
 import '../widgets/booking_steps.dart';
+import '../widgets/night_fee_lines.dart';
 
 /// A4, step 1 "Vos informations" (the site's /:airport/:parking/reserver): the same fields and
 /// rules as the site's form; the API makes the booking and computes the price.
@@ -373,6 +375,9 @@ class _Recap extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final p = state.parkingResponse?.parking;
+    final days = state.days ?? stayDays(state.arrivalAt, state.returnAt);
+    final detailed = state.priceCents != null && NightFeeLines.shows(state.nightFee);
+    final nightRule = nightRuleSentence(p?.pricing.night);
     return AppCard(
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -383,13 +388,29 @@ class _Recap extends StatelessWidget {
           Text('${'manage.pick_up'.tr()} : ${formatDateTime(state.returnAt)}', style: AppText.muted()),
           if (total.isNotEmpty) ...[
             const Divider(height: 18, color: AppColors.line),
-            RecapRow(
-              left: Text(
-                '${'book.total'.tr()} · ${daysLabel(state.days ?? stayDays(state.arrivalAt, state.returnAt))}',
-                style: AppText.strong(),
+            // Direction B (12/10/2026): with a night fee, « Forfait 8 jours » and « Frais de nuit · dépôt à 23:30 » come
+            // before the total; without, the total says the days as before.
+            if (detailed) ...[
+              NightFeeLines(
+                days: days,
+                priceCents: state.priceCents!,
+                basePriceCents: state.basePriceCents,
+                nightFee: state.nightFee,
+                arrivalAt: state.arrivalAt,
+                returnAt: state.returnAt,
               ),
+              const Divider(height: 14, color: AppColors.line),
+            ],
+            RecapRow(
+              key: const Key('booking-total'),
+              left: Text(detailed ? 'book.total'.tr() : '${'book.total'.tr()} · ${daysLabel(days)}', style: AppText.strong()),
               right: Text(total, style: AppText.strong(size: 18)),
             ),
+            // Direction B: the parking's night rule sits under the price detail, as on the site's booking page.
+            if (nightRule != null) ...[
+              const SizedBox(height: 6),
+              Text(nightRule, key: const Key('booking-night-rule'), style: AppText.muted(size: 13)),
+            ],
           ],
         ],
       ),

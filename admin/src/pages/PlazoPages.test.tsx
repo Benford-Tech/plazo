@@ -25,7 +25,8 @@ vi.mock("@/lib/api", async importOriginal => {
   return { ...actual, adminApi: { ...actual.adminApi, ...Object.fromEntries(Object.entries(api).map(([k, f]) => [k, (...a: unknown[]) => f(...a)])) } };
 });
 
-const pricing = { tiers: [{ days: 3, priceCents: 3499 }, { days: 8, priceCents: 5500 }], extraDayPriceCents: 600, commissionBps: 1200 };
+const NIGHT_OFF = { enabled: false, start: null, end: null, arrivalFeeCents: null, returnFeeCents: null };
+const pricing = { tiers: [{ days: 3, priceCents: 3499 }, { days: 8, priceCents: 5500 }], extraDayPriceCents: 600, commissionBps: 1200, night: NIGHT_OFF };
 const PAYMENTS_OFF = {
   enabled: false,
   testMode: false,
@@ -99,8 +100,92 @@ describe("Mes tarifs", () => {
           { days: 15, priceCents: 3499 },
         ],
         600,
+        // Night fees off, the window prefilled: kept as sent.
+        { enabled: false, start: "22:00", end: "06:00", arrivalFeeCents: null, returnFeeCents: null },
       ),
     );
+  });
+
+  it("règle les frais de nuit, les simule et les enregistre (12/10/2026)", async () => {
+    api.getPricing.mockResolvedValue(pricing);
+    const saved = { ...pricing, night: { enabled: true, start: "22:00", end: "06:00", arrivalFeeCents: 1500, returnFeeCents: 1500 } };
+    api.updatePricing.mockResolvedValue({ data: saved });
+    renderPage(<PricingPage />);
+
+    const toggle = await screen.findByRole("switch", { name: "Appliquer des frais de nuit" });
+    expect(toggle).toHaveAttribute("aria-checked", "false");
+    expect(screen.queryByText("Avec frais de nuit")).not.toBeInTheDocument();
+    expect(screen.queryByLabelText("Dépôt de nuit")).not.toBeInTheDocument();
+
+    await userEvent.click(toggle);
+    expect(toggle).toHaveAttribute("aria-checked", "true");
+    expect(screen.getByText("Modifié · non enregistré")).toBeInTheDocument();
+    expect(screen.getByLabelText("Début de la nuit")).toHaveValue("22:00");
+    expect(screen.getByLabelText("Fin de la nuit")).toHaveValue("06:00");
+    // On without any amount: a fee is required, nothing is simulated; the card says so calmly until a field is left.
+    const required = screen.getByText("Indiquez au moins un montant : dépôt ou retour de nuit.");
+    expect(required).not.toHaveClass("text-destructive");
+    expect(screen.getByLabelText("Dépôt de nuit")).toHaveAttribute("aria-invalid", "false");
+    expect(screen.getByLabelText("Retour de nuit")).toHaveAttribute("aria-invalid", "false");
+    expect(screen.getByRole("button", { name: "Enregistrer les tarifs" })).toBeDisabled();
+    expect(screen.queryByText("Avec frais de nuit")).not.toBeInTheDocument();
+    fireEvent.blur(screen.getByLabelText("Dépôt de nuit"));
+    expect(screen.getByText("Indiquez au moins un montant : dépôt ou retour de nuit.")).toHaveClass("text-destructive");
+    expect(screen.getByLabelText("Dépôt de nuit")).toHaveAttribute("aria-invalid", "true");
+    expect(screen.getByLabelText("Retour de nuit")).toHaveAttribute("aria-invalid", "true");
+
+    fireEvent.change(screen.getByLabelText("Dépôt de nuit"), { target: { value: "15" } });
+    fireEvent.change(screen.getByLabelText("Retour de nuit"), { target: { value: "15,00" } });
+    expect(screen.getByText(/Un dépôt ou un retour réservé entre 22:00 et 06:00 ajoute ces frais au séjour/)).toBeInTheDocument();
+    expect(screen.getByText("Avec frais de nuit")).toBeInTheDocument();
+    expect(screen.getByTestId("sim-night-arrival")).toHaveTextContent("3 jForfait 3 jours + dépôt à 23:30");
+    expect(screen.getByTestId("sim-night-arrival")).toHaveTextContent("49,99 €");
+    expect(screen.getByTestId("sim-night-return")).toHaveTextContent("Forfait 8 jours + retour à 05:30");
+    expect(screen.getByTestId("sim-night-return")).toHaveTextContent("70,00 €");
+    expect(screen.getByTestId("sim-night-both")).toHaveTextContent("Forfait 8 jours + dépôt à 22:30 et retour à 05:30");
+    expect(screen.getByTestId("sim-night-both")).toHaveTextContent("85,00 €");
+    expect(screen.getByText(/commission \(12 %\), frais de nuit compris/)).toBeInTheDocument();
+
+    // The same hour twice is refused.
+    fireEvent.change(screen.getByLabelText("Fin de la nuit"), { target: { value: "22:00" } });
+    expect(screen.getByText("Choisissez une fin différente du début.")).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Enregistrer les tarifs" })).toBeDisabled();
+    expect(screen.queryByText("Avec frais de nuit")).not.toBeInTheDocument();
+    fireEvent.change(screen.getByLabelText("Fin de la nuit"), { target: { value: "06:00" } });
+
+    fireEvent.change(screen.getByLabelText("Dépôt de nuit"), { target: { value: "abc" } });
+    expect(screen.getByText("Montant invalide (ex. 15,00), 1 000 € au plus.")).toBeInTheDocument();
+    fireEvent.change(screen.getByLabelText("Dépôt de nuit"), { target: { value: "15" } });
+
+    await userEvent.click(screen.getByRole("button", { name: "Enregistrer les tarifs" }));
+    await waitFor(() =>
+      expect(api.updatePricing).toHaveBeenCalledWith(pricing.tiers, 600, { enabled: true, start: "22:00", end: "06:00", arrivalFeeCents: 1500, returnFeeCents: 1500 }),
+    );
+    // Saved: the form matches the server again.
+    await waitFor(() => expect(screen.queryByText("Modifié · non enregistré")).not.toBeInTheDocument());
+    expect(screen.getByLabelText("Dépôt de nuit")).toHaveValue("15,00");
+  });
+
+  it("garde les frais de nuit enregistrés quand on les désactive, et traduit le refus du serveur", async () => {
+    const night = { enabled: true, start: "21:30", end: "05:00", arrivalFeeCents: 1250, returnFeeCents: null };
+    api.getPricing.mockResolvedValue({ ...pricing, night });
+    api.updatePricing.mockRejectedValue(new ApiError(400, "Validation failed", "validation_failed", { "night.end": "same_time" }));
+    renderPage(<PricingPage />);
+
+    expect(await screen.findByLabelText("Début de la nuit")).toHaveValue("21:30");
+    expect(screen.getByLabelText("Dépôt de nuit")).toHaveValue("12,50");
+    // A return fee is not set: no example with a return.
+    expect(screen.getByTestId("sim-night-arrival")).toHaveTextContent("dépôt à 23:00");
+    expect(screen.queryByTestId("sim-night-return")).not.toBeInTheDocument();
+
+    await userEvent.click(screen.getByRole("switch", { name: "Appliquer des frais de nuit" }));
+    expect(screen.queryByLabelText("Dépôt de nuit")).not.toBeInTheDocument();
+    expect(screen.queryByText("Avec frais de nuit")).not.toBeInTheDocument();
+    expect(screen.getByText(/commission \(12 %\) et vous reverse/)).toBeInTheDocument();
+
+    await userEvent.click(screen.getByRole("button", { name: "Enregistrer les tarifs" }));
+    await waitFor(() => expect(api.updatePricing).toHaveBeenCalledWith(pricing.tiers, 600, { ...night, enabled: false }));
+    await waitFor(() => expect(toast.error).toHaveBeenCalledWith("Le début et la fin de la nuit doivent être différents."));
   });
 });
 

@@ -74,6 +74,34 @@ describe("payment step (step 2)", () => {
     expect(screen.getByText("Vous allez être redirigé vers la page de paiement sécurisée Stripe.")).toBeInTheDocument();
   });
 
+  it("shows both booked hours, and no detail lines without a night fee", async () => {
+    booking.mockResolvedValue(held);
+    await renderPage();
+    expect(screen.getByText("08:00", { selector: ".font-hour" })).toBeInTheDocument();
+    expect(screen.getByText("18:00", { selector: ".font-hour" })).toBeInTheDocument();
+    expect(screen.queryByText(/Forfait/)).not.toBeInTheDocument();
+    expect(screen.queryByText(/Frais de nuit/)).not.toBeInTheDocument();
+    expect(screen.getByText("Total").nextElementSibling).toHaveTextContent("55,00 €");
+  });
+
+  it("night fee (direction B): the package, « Frais de nuit · dépôt à 23:30 » and the total, read from the booking", async () => {
+    booking.mockResolvedValue({
+      ...held,
+      arrivalAt: "2026-10-03T23:30",
+      priceCents: 5500,
+      basePriceCents: 4000,
+      nightFee: { arrivalCents: 1500, returnCents: 0, totalCents: 1500 },
+    });
+    await renderPage();
+    // The drop-off tile and the fee line both show the hour.
+    expect(screen.getAllByText("23:30", { selector: ".font-hour" })).toHaveLength(2);
+    expect(screen.getByText("Forfait 8 jours").nextElementSibling).toHaveTextContent("40,00 €");
+    const feeTerm = screen.getByText((_, el) => el?.tagName === "DT" && el.textContent === "Frais de nuit · dépôt à 23:30");
+    expect(feeTerm.nextElementSibling).toHaveTextContent("15,00 €");
+    expect(screen.getByText("Total").nextElementSibling).toHaveTextContent("55,00 €");
+    expect(screen.getByRole("button", { name: /^Payer 55,00\s€$/ })).toBeInTheDocument();
+  });
+
   it("once the hold is over: « Le délai est dépassé » and a button to start again", async () => {
     booking.mockResolvedValue({ ...held, status: "cancelled", payment: { status: "expired", holdExpiresAt: null, holdSecondsLeft: null } });
     await renderPage();

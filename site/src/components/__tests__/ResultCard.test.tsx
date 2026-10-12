@@ -66,4 +66,14 @@ describe("carte de résultat Boutique", () => {
     expect(screen.getByText("Navette la plus rapide")).toHaveAttribute("data-badge", "fastestShuttle");
     expect(screen.getByRole("link", { name: /^Voir et réserver/ })).toHaveAttribute("href", "/lyon/rhone");
   });
+
+  it("frais de nuit (direction B, 12/10/2026) : le total seul, sans pastille ni détail ; la carte aussi", () => {
+    const night = result({ priceCents: 6900, basePriceCents: 5400, nightFee: { arrivalCents: 1500, returnCents: 0, totalCents: 1500 } });
+    render(<ResultCard result={night} href="/lyon/rhone" highlighted={false} />);
+    const card = screen.getByRole("article", { name: "Parking du Rhône" });
+    expect(card).toHaveTextContent("69,00 €");
+    expect(card).toHaveTextContent("6 jours, tout compris");
+    expect(card).not.toHaveTextContent(/nuit|15,00/);
+    expect(pinsOf([night])[0].label).toBe("69\u00a0€");
+  });
 });

@@ -35,6 +35,13 @@ describe("copy (every booking is paid online, 06/10/2026)", () => {
     expect(online.calendar.description("R1", "34,99 €", "https://x")).toContain("34,99 € payés en ligne");
   });
 
+  it("never promises « no fee » next to a total that may include a parking's night fee (12/10/2026)", () => {
+    expect(fr.home.trust[0]).toEqual(["Prix total affiché", "frais compris"]);
+    for (const text of strings(fr)) expect(text).not.toMatch(/aucun frais ajouté|sans frais ajouté/i);
+    expect(fr.results.nightFeesIncluded).toBe("Prix totaux pour vos dates, frais de nuit compris.");
+    expect(fr.manage.nightFeeIncluded("15,00 €")).toBe("dont 15,00 € de frais de nuit");
+  });
+
   it("keeps every other text (and the price breakdown) unchanged", () => {
     const online = texts(true);
     expect(online.parking.serviceFee).toBe(fr.parking.serviceFee);

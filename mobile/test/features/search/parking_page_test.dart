@@ -35,7 +35,7 @@ void main() {
     await tester.pumpAndSettle();
   }
 
-  testWidgets('réservable : faits, sections du site, barre « 45,00 € · 3 → 10 oct. · 8 jours » et « Réserver »', (tester) async {
+  testWidgets('réservable : faits, sections du site, barre « 45,00 € · 3 → 10 oct. · 8 jours » et « Réserver »', (tester) async {
     await pump(tester, parkingResponse());
     // The trust band: shuttle, security, cancellation, keys (self-park: no valet), then the facts line.
     expect(find.text('Navette 8 min'), findsOneWidget);
@@ -46,7 +46,7 @@ void main() {
     expect(find.byKey(const Key('tile-shuttle')), findsOneWidget);
     expect(find.text('À 3,5 km des terminaux · Extérieur'), findsOneWidget);
     expect(find.text('Nouveau sur Plazo'), findsOneWidget);
-    expect(find.byKey(const Key('parking-per-day')), findsOneWidget); // 45,00 € ÷ 8 jours
+    expect(find.byKey(const Key('parking-per-day')), findsOneWidget); // 45,00 € ÷ 8 jours
     for (final chip in ['À l\'aller', 'Au retour', 'Accès']) {
       expect(find.widgetWithText(InkWell, chip), findsWidgets);
     }
@@ -62,6 +62,19 @@ void main() {
     await tester.pumpAndSettle();
     await tester.tap(find.byKey(const Key('parking-itinerary')));
     expect(links.opened.single.toString(), contains('google.com/maps/dir/?api=1&destination=12+route'));
+  });
+
+  testWidgets('frais de nuit (direction B) : la barre montre le total seul, la règle du parking reste au récapitulatif', (tester) async {
+    await pump(
+      tester,
+      parkingResponse(
+        night: nightRule22to6,
+        offer: const OfferModel(available: true, days: 8, priceCents: 5160, basePriceCents: 3660, nightFee: dropOffNightFee),
+      ),
+    );
+    expect(find.text('51,60 €'), findsOneWidget); // the bar: the total only
+    expect(find.text('Ce parking ajoute 15 € pour un dépôt ou un retour entre 22:00 et 06:00.'), findsNothing);
+    expect(find.textContaining('Frais de nuit'), findsNothing);
   });
 
   testWidgets('parking de démonstration : étiquette « DÉMO » à côté du titre', (tester) async {
@@ -85,7 +98,7 @@ void main() {
     expect(find.byKey(const Key('parking-other')), findsOneWidget);
   });
 
-  testWidgets('sans dates : « dès 15,00 € » et « Choisir vos dates »', (tester) async {
+  testWidgets('sans dates : « dès 15,00 € » et « Choisir vos dates »', (tester) async {
     await pump(tester, parkingResponse(offer: null), dates: false);
     expect(find.text('dès 15,00 €'), findsOneWidget);
     expect(find.byKey(const Key('parking-choose-dates')), findsOneWidget);

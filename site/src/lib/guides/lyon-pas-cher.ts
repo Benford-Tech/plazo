@@ -129,7 +129,7 @@ export function lyonPasCher(facts: TopicFacts): TopicGuide {
       "Parking aéroport Lyon pas cher : comment payer vraiment moins à Saint-Exupéry",
     intro: `Le parking le moins cher de Lyon Saint-Exupéry n’est pas celui qui affiche le plus petit prix par jour, mais celui qui coûte le moins pour vos dates exactes, jours facturés, navette et dépassements compris. Ce guide compare une et deux semaines dans les parkings de l’aéroport et chez les parkings privés avec navette, départage le P7 et le P5, liste les frais cachés et chiffre les solutions sans voiture. Tarifs de l’aéroport relevés le ${o.readOn} ; depuis le ${o.t2Closed}, tous les vols partent du Terminal 1.`,
     published: "2026-10-09",
-    updated: "2026-10-09",
+    updated: "2026-10-12",
     sections: [
       {
         id: "prix-total",
@@ -142,7 +142,7 @@ export function lyonPasCher(facts: TopicFacts): TopicGuide {
           {
             title: "Les jours du calendrier : dépôt et retour comptent chacun",
             paragraphs: [
-              `Chez les parkings partenaires de ${p}, chaque jour du calendrier touché par le séjour est facturé, celui du dépôt comme celui du retour. Une voiture déposée un samedi à 6 h et reprise le samedi suivant à 22 h compte ainsi 8 jours facturés. Déposer la voiture la veille au soir d’un vol matinal ajoute donc un jour, la reprendre après minuit aussi. Le prix affiché est le prix total du séjour, commission de ${p} comprise, sans frais ajoutés à l’arrivée, et il se paie en ligne par carte.`,
+              `Chez les parkings partenaires de ${p}, chaque jour du calendrier touché par le séjour est facturé, celui du dépôt comme celui du retour. Une voiture déposée un samedi à 6 h et reprise le samedi suivant à 22 h compte ainsi 8 jours facturés. Déposer la voiture la veille au soir d’un vol matinal ajoute donc un jour, la reprendre après minuit aussi, et chez un parking qui demande des frais de nuit, un dépôt ou un retour pendant ses heures de nuit les ajoute en plus. Le prix affiché est le prix total du séjour, commission de ${p} et éventuels frais de nuit compris, sans frais ajoutés à l’arrivée, et il se paie en ligne par carte.`,
             ],
           },
           {
@@ -296,7 +296,7 @@ export function lyonPasCher(facts: TopicFacts): TopicGuide {
         short: "Les frais cachés",
         title: "Les frais cachés qui font grimper la note",
         paragraphs: [
-          "Un parking bon marché peut coûter cher en fin de séjour. Quatre postes à vérifier avant de payer.",
+          "Un parking bon marché peut coûter cher en fin de séjour. Cinq postes à vérifier avant de payer.",
         ],
         parts: [
           {
@@ -316,6 +316,12 @@ export function lyonPasCher(facts: TopicFacts): TopicGuide {
             title: "Revenir plus tard, ou plus tôt, chez un parking privé",
             paragraphs: [
               "Chez nos parkings partenaires, un retour après la date et l’heure réservées prolonge le séjour, facturé par le parking à ses tarifs : demandez-les avant de partir. Si vos dates changent, contactez le parking ; vos numéros de vol, eux, se corrigent en ligne depuis Ma réservation jusqu’au retour. À l’inverse, un retour anticipé n’est remboursé ni par nos partenaires ni par l’aéroport.",
+            ],
+          },
+          {
+            title: "Déposer ou reprendre la voiture la nuit",
+            paragraphs: [
+              `Certains parkings privés demandent des frais de nuit pour un dépôt ou un retour réservé pendant leurs heures de nuit, par exemple entre 22 h et 6 h. Sur ${p}, ils n’ont rien de caché : ils sont compris dans le prix total affiché, détaillés sur la fiche du parking dès que vos dates sont choisies et rappelés avant le paiement. Ils sont calculés sur les heures réservées : un vol qui atterrit plus tard que prévu ne les ajoute pas après coup. Pour un vol très matinal, comparez donc le prix total d’un dépôt la veille au soir et d’un dépôt au petit matin.`,
             ],
           },
           {

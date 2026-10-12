@@ -137,6 +137,8 @@ describe('réservation sur le site', () => {
       returnAt: inDays(7, '15:05'),
       days: 3,
       priceCents: 3499,
+      basePriceCents: 3499,
+      nightFee: null,
       customerName: 'Camille Martin',
       customerFirstName: 'Camille',
       customerLastName: 'Martin',

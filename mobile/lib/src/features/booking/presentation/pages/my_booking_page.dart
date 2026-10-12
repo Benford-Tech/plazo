@@ -8,6 +8,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import '../../../../core/enums/view_state.dart';
 import '../../../../core/helpers/money.dart';
 import '../../../../core/helpers/names.dart';
+import '../../../../core/helpers/night_fees.dart';
 import '../../../../core/helpers/plate.dart';
 import '../../../../core/helpers/stay.dart';
 import '../../../../core/router/app_router.dart';
@@ -146,7 +147,7 @@ class MyBookingPage extends StatelessWidget implements AutoRouteWrapper {
                               if (b.status == 'cancelled') ...[_CancelledBanner(booking: b), const SizedBox(height: 12)],
                               BookingCard(booking: b, returnDay: kind == ArrivalKind.returnTrip),
                               const SizedBox(height: 10),
-                              _Payment(booking: b),
+                              PaymentSummary(booking: b),
                               if (b.status == 'pending_payment') ...[
                                 const SizedBox(height: 12),
                                 GradientButton(
@@ -262,9 +263,11 @@ class ConfirmedHero extends StatelessWidget {
   }
 }
 
-/// Total, how it is paid, and the cancellation terms (the site's recap).
-class _Payment extends StatelessWidget {
-  const _Payment({required this.booking});
+/// Total, how it is paid, the night fees included in it (« dont 15,00 € de frais de nuit », 12/10/2026, frozen at
+/// booking), and the cancellation terms (the site's recap).
+@visibleForTesting
+class PaymentSummary extends StatelessWidget {
+  const PaymentSummary({super.key, required this.booking});
   final PublicBookingModel booking;
 
   @override
@@ -277,19 +280,24 @@ class _Payment extends StatelessWidget {
         ? (b.online ? 'manage.paid'.tr() : 'manage.to_pay_on_site'.tr())
         : 'manage.stay_price'.tr();
     final until = b.cancellableUntil == null ? null : formatDateTimeAt(b.cancellableUntil!);
+    final struck = b.status == 'cancelled' && !refunded;
+    final showPrice = b.priceCents != null && b.status != 'pending_payment';
+    // Not under a struck amount (nothing was paid).
+    final nightPart = showPrice && !struck ? nightFeePaidPart(b.nightFee) : null;
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        if (b.priceCents != null && b.status != 'pending_payment')
+        if (showPrice)
           Row(
             children: [
               Expanded(child: Text(label, style: AppText.muted(size: 14.5))),
               Text(
                 formatEuros(b.priceCents!),
-                style: AppText.strong(size: 16).copyWith(decoration: b.status == 'cancelled' && !refunded ? TextDecoration.lineThrough : null),
+                style: AppText.strong(size: 16).copyWith(decoration: struck ? TextDecoration.lineThrough : null),
               ),
             ],
           ),
+        if (nightPart != null) Text(nightPart, key: const Key('booking-night-fee'), textAlign: TextAlign.end, style: AppText.muted(size: 13)),
         if (b.status == 'upcoming') ...[
           const SizedBox(height: 4),
           Text(

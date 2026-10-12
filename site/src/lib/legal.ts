@@ -23,7 +23,7 @@ export interface LegalDoc {
   sections: LegalSection[];
 }
 
-export const LEGAL_VERSION = "6 octobre 2026";
+export const LEGAL_VERSION = "12 octobre 2026";
 export const TO_COMPLETE = "[à compléter]";
 
 const filled = (value: string) => value.trim() || TO_COMPLETE;
@@ -82,6 +82,7 @@ export function termsDoc(company: Company = COMPANY, email: string = SUPPORT_EMA
         title: "4. Prix",
         blocks: [
           `Chaque parking fixe librement ses tarifs. Le prix affiché est le prix total du séjour pour les dates et heures choisies, en euros toutes taxes comprises : ${p} n’ajoute aucun frais de service. Le jour de dépôt et le jour de retour comptent chacun pour une journée.`,
+          "Un parking peut fixer des frais de nuit pour un dépôt, pour un retour, ou pour les deux, réservés pendant ses heures de nuit (par exemple entre 22:00 et 06:00) ; lorsque le dépôt et le retour tombent tous deux dans ces heures, les deux frais s’ajoutent. Ces frais sont compris dans le prix total affiché, et la règle du parking ainsi que le montant dû pour le séjour sont détaillés avant le paiement. Ils sont calculés sur les heures de dépôt et de retour réservées et ne changent plus ensuite, même si le dépôt ou le retour a finalement lieu à une autre heure (vol en avance ou en retard, par exemple). Ils sont remboursés avec le séjour lorsque la réservation est remboursée.",
           `La commission de ${p} est comprise dans ce prix : elle est due par le parking, pas par le voyageur.`,
           "Les tarifs peuvent évoluer à tout moment ; le prix dû est celui affiché et confirmé au moment de la réservation.",
           "Les services que le parking proposerait sur place sans qu’ils aient été réservés en ligne (lavage, recharge…) et la prolongation du séjour au-delà de la date de retour réservée sont facturés par le parking, selon ses propres tarifs.",

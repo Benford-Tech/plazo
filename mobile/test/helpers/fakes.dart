@@ -45,6 +45,8 @@ PublicBookingModel booking({
   String? cancellableUntil = '2026-10-09T08:00',
   String cancellationPolicy = 'free_24h',
   int? priceCents = 4500,
+  int? basePriceCents,
+  NightFeeModel? nightFee,
 }) => PublicBookingModel(
   reference: reference,
   status: status,
@@ -69,6 +71,8 @@ PublicBookingModel booking({
   passengers: 2,
   days: 8,
   priceCents: priceCents,
+  basePriceCents: basePriceCents,
+  nightFee: nightFee,
   cancellationPolicy: cancellationPolicy,
   cancellableUntil: cancellableUntil,
   canCancel: canCancel,
@@ -176,6 +180,8 @@ SearchResultModel result(
   String policy = 'free_24h',
   String payment = 'online',
   LatLngModel? location = const LatLngModel(lat: 45.7375, lng: 5.0745),
+  int? basePriceCents,
+  NightFeeModel? nightFee,
 }) => SearchResultModel(
   slug: slug,
   title: 'Parking $slug',
@@ -188,25 +194,40 @@ SearchResultModel result(
   available: available,
   days: 8,
   priceCents: priceCents,
+  basePriceCents: basePriceCents,
+  nightFee: nightFee,
 );
 
-ParkingResponseModel parkingResponse({String payment = 'online', OfferModel? offer = const OfferModel(available: true, days: 8, priceCents: 4500)}) =>
-    ParkingResponseModel(
-      payments: payment == 'online' ? 'online' : 'unavailable',
-      airport: lys,
-      parking: ParkingDetailModel(
-        slug: 'parking-demo-lys',
-        title: 'Parking Démo LYS',
-        services: const ['shuttle', 'fenced', 'cctv'],
-        shuttleMinutes: 8,
-        distanceKm: 3.5,
-        cancellationPolicy: 'free_24h',
-        payment: payment,
-        address: '12 route de l’Aéroport',
-        pricing: const PricingModel(tiers: [PricingTierModel(days: 1, priceCents: 1500), PricingTierModel(days: 8, priceCents: 4500)], extraDayPriceCents: 500),
-      ),
-      offer: offer,
-    );
+/// A parking's night rule (12/10/2026): 22:00 → 06:00, 15 € for a drop-off or a return by default.
+const nightRule22to6 = NightRuleModel(start: '22:00', end: '06:00', arrivalFeeCents: 1500, returnFeeCents: 1500);
+
+/// The fee of a drop-off at night (15 €) in an offer or a booking.
+const dropOffNightFee = NightFeeModel(arrivalCents: 1500, returnCents: 0, totalCents: 1500);
+
+ParkingResponseModel parkingResponse({
+  String payment = 'online',
+  OfferModel? offer = const OfferModel(available: true, days: 8, priceCents: 4500),
+  NightRuleModel? night,
+}) => ParkingResponseModel(
+  payments: payment == 'online' ? 'online' : 'unavailable',
+  airport: lys,
+  parking: ParkingDetailModel(
+    slug: 'parking-demo-lys',
+    title: 'Parking Démo LYS',
+    services: const ['shuttle', 'fenced', 'cctv'],
+    shuttleMinutes: 8,
+    distanceKm: 3.5,
+    cancellationPolicy: 'free_24h',
+    payment: payment,
+    address: '12 route de l’Aéroport',
+    pricing: PricingModel(
+      tiers: const [PricingTierModel(days: 1, priceCents: 1500), PricingTierModel(days: 8, priceCents: 4500)],
+      extraDayPriceCents: 500,
+      night: night,
+    ),
+  ),
+  offer: offer,
+);
 
 class FakePublicDataSource implements PublicDataSource {
   List<AirportModel> airportList = const [lys];

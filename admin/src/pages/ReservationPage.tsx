@@ -16,7 +16,7 @@ import {
   timeOf,
 } from "@/lib/datetime";
 import { describeError, errorMessage, fr, quickCardFr } from "@/lib/fr";
-import { centsToInput, euros, isPriceLocked, parseEuros } from "@/lib/pricing";
+import { centsToInput, euros, isPriceLocked, nightFeeOf, parseEuros } from "@/lib/pricing";
 import { can } from "@/lib/roles";
 import type { Reservation, ReservationStatus } from "@/lib/types";
 import { cn } from "@/lib/utils";
@@ -82,6 +82,8 @@ function PriceLine({
       ),
   });
   if (r.priceCents === null && !editable) return null;
+  // Night fees (12/10/2026): part of a Plazo booking's price, as frozen at booking.
+  const nightFee = nightFeeOf(r);
 
   return (
     <Info label={t.pricePaid}>
@@ -102,6 +104,11 @@ function PriceLine({
             >
               {r.priceCents === null ? t.addPrice : t.editPrice}
             </button>
+          )}
+          {nightFee && r.priceCents !== null && (
+            <span className="w-full text-sm text-muted-foreground">
+              {t.nightFeeIncluded(euros(nightFee.totalCents))}
+            </span>
           )}
         </span>
       ) : (

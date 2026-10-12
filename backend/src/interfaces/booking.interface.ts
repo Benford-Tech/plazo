@@ -34,7 +34,12 @@ export interface PublicBooking {
   arrivalAt: string;
   returnAt: string;
   days: number;
+  /** What the traveller pays in total (« tout compris »), night fees included. */
   priceCents: number | null;
+  /** The grid price: `priceCents` minus the night fees; null when there is no price. */
+  basePriceCents: number | null;
+  /** Night fees included in the total (12/10/2026), frozen at booking (0 for an end that pays nothing); null when none. */
+  nightFee: { arrivalCents: number; returnCents: number; totalCents: number } | null;
   /** Display form "Prénom Nom", recomputed by the server from the two fields below (09/10/2026). */
   customerName: string;
   customerFirstName: string;

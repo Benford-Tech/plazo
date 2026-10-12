@@ -45,7 +45,18 @@ import { ValidationMiddleware } from '@/middlewares/validation.middleware';
  *         arrivalAt: { type: string, example: "2026-10-04T06:30" }
  *         returnAt: { type: string, example: "2026-10-11T15:05" }
  *         days: { type: integer, example: 8 }
- *         priceCents: { type: integer, example: 5500 }
+ *         priceCents: { type: integer, nullable: true, example: 5500, description: "Total « tout compris », night fees included" }
+ *         basePriceCents: { type: integer, nullable: true, example: 4000, description: "Grid price: priceCents minus the night fees" }
+ *         nightFee:
+ *           type: object
+ *           nullable: true
+ *           description: >-
+ *             Night fees included in the total (12/10/2026), frozen when the booking was made (a later flight or hour
+ *             change never recomputes them); 0 for an end that pays nothing; null when none.
+ *           properties:
+ *             arrivalCents: { type: integer, example: 1500 }
+ *             returnCents: { type: integer, example: 0 }
+ *             totalCents: { type: integer, example: 1500 }
  *         customerName: { type: string, description: "Display form \"Prénom Nom\", recomputed by the server" }
  *         customerFirstName: { type: string, example: Camille }
  *         customerLastName: { type: string, example: Martin }
@@ -68,6 +79,9 @@ import { ValidationMiddleware } from '@/middlewares/validation.middleware';
  *       With online payments, the booking holds its place (status pending_payment) and no message is
  *       sent until it is paid; 409 "online_booking_unavailable" when the parking's operator cannot take
  *       online payments yet.
+ *       The price is the grid price plus the parking's night fees for the hours booked (drop-off and/or
+ *       return in its night window, local time of the parking), frozen on the booking; Plazo's
+ *       commission applies to that total.
  *       Availability and price are recomputed under the parking lock, as for staff bookings: 409
  *       "overbooked" (details.fullNights) when a night is full, 409 "no_price" when the grid cannot
  *       price the stay, 404 "not_found" for an unknown or unpublished parking, 409 "duplicate_booking"

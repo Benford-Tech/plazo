@@ -64,10 +64,36 @@ export interface AirportResponse {
   listings: (ListingSummary & { fromPriceCents: number | null; fromDays?: number | null })[];
 }
 
+/**
+ * Night fees of a stay (12/10/2026): what a drop-off and a return booked within the parking's night hours add.
+ * Each end counts on its own (both add up); the amounts are already in the total (`priceCents`).
+ */
+export interface NightFee {
+  arrivalCents: number;
+  returnCents: number;
+  totalCents: number;
+}
+
+/**
+ * A parking's night rule: a drop-off or a return booked from `start` (included) to `end` (excluded), local
+ * "HH:mm", the window possibly crossing midnight ("22:00" → "06:00"), pays the fee of that end (null: none).
+ */
+export interface NightRule {
+  start: string;
+  end: string;
+  arrivalFeeCents: number | null;
+  returnFeeCents: number | null;
+}
+
 export interface Offer {
   available: boolean;
   days: number;
+  /** Total for the stay, night fees included: what the traveller pays. */
   priceCents: number | null;
+  /** The price grid's part of the total (« Forfait N jours »); missing from an older API. */
+  basePriceCents?: number | null;
+  /** The night fees in the total; null when the stay pays none (missing from an older API). */
+  nightFee?: NightFee | null;
 }
 
 export type SearchResult = ListingSummary & Offer;
@@ -94,7 +120,12 @@ export interface ParkingResponse {
     address: string | null;
     /** Phone travellers can call, when the parking gave one. */
     phone?: string | null;
-    pricing: { tiers: PricingTier[]; extraDayPriceCents: number | null };
+    pricing: {
+      tiers: PricingTier[];
+      extraDayPriceCents: number | null;
+      /** The parking's night fees; null when it charges none (missing from an older API). */
+      night?: NightRule | null;
+    };
   };
   offer: Offer | null;
 }
@@ -148,8 +179,14 @@ export interface PublicBooking {
   arrivalAt: string;
   returnAt: string;
   days: number;
-  /** Total to pay at the parking, computed by the API (null if the stay could not be priced). */
+  /** Total of the stay, night fees included, computed by the API (null if the stay could not be priced). */
   priceCents: number | null;
+  /**
+   * The night fees charged at booking, frozen on the reservation (never recomputed), and the rest of the total
+   * (`basePriceCents`, the price grid's part); both missing from an older API.
+   */
+  basePriceCents?: number | null;
+  nightFee?: NightFee | null;
   /** Display form "Prénom Nom", computed by the API from the two fields below. */
   customerName: string;
   /** As typed by the traveller (missing from an older API). */

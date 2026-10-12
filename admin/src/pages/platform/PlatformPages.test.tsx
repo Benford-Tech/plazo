@@ -376,6 +376,8 @@ const listing: PlatformListing = {
   operator: { id: "o2", name: "Allo Park Lyon SARL", status: "active" },
   pricingTiers: [{ days: 3, priceCents: 3499 }],
   fromPriceCents: 3499,
+  extraDayPriceCents: null,
+  night: null,
 };
 
 describe("Annonces", () => {
@@ -391,8 +393,21 @@ describe("Annonces", () => {
     expect(screen.getByText("dès 34,99 €")).toBeInTheDocument();
     // The capacity used everywhere (the plan's), not the declared figure (09/10/2026).
     expect(screen.getByText("Allo Park · 412 places")).toBeInTheDocument();
+    // Everything a traveller can be charged (12/10/2026): no night fees here.
+    expect(screen.getByText("Sans frais de nuit.")).toBeInTheDocument();
     await userEvent.click(screen.getByRole("button", { name: "Valider" }));
     await waitFor(() => expect(api.approveListing).toHaveBeenCalledWith("l2"));
+  });
+
+  it("montre le prix du jour en plus et les frais de nuit dans les tarifs (12/10/2026)", async () => {
+    api.getPlatformListings.mockResolvedValue({
+      counts: { pending_review: 1, published: 0, rejected: 0, draft: 0 },
+      listings: [{ ...listing, extraDayPriceCents: 600, night: { start: "22:00", end: "06:00", arrivalFeeCents: 1500, returnFeeCents: 1000 } }],
+    });
+    renderAt("/plateforme/annonces", <ListingsPage />);
+
+    expect(await screen.findByText("Jour en plus : 6,00 €")).toBeInTheDocument();
+    expect(screen.getByText(/Frais de nuit de 22:00 à 06:00 :/)).toHaveTextContent("Frais de nuit de 22:00 à 06:00 : dépôt 15,00 € · retour 10,00 €");
   });
 
   it("exige un message pour refuser", async () => {

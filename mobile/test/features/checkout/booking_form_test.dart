@@ -8,6 +8,7 @@ import 'package:parking_app/src/features/booking/domain/usecases/booking_actions
 import 'package:parking_app/src/features/checkout/domain/booking_draft.dart';
 import 'package:parking_app/src/features/checkout/presentation/bloc/booking_form_bloc.dart';
 import 'package:parking_app/src/features/checkout/presentation/pages/booking_form_page.dart';
+import 'package:parking_app/src/features/search/data/models/public_models.dart';
 import 'package:parking_app/src/features/search/domain/repositories/public_repository.dart';
 import 'package:parking_app/src/features/search/domain/usecases/public_use_cases.dart';
 import 'package:parking_app/src/services/link_service.dart';
@@ -35,14 +36,14 @@ void main() {
   late FakePublicDataSource public;
   late BookingDraftStore drafts;
 
-  BookingFormBloc makeBloc() => BookingFormBloc(
+  BookingFormBloc makeBloc({String arrivalAt = '2026-10-03T08:00', String returnAt = '2026-10-10T18:00'}) => BookingFormBloc(
     GetParkingUseCase(PublicRepositoryImpl(public)),
     CreateBookingUseCase(BookingRepositoryImpl(api)),
     drafts,
     airport: 'lyon-saint-exupery',
     parking: 'parking-demo-lys',
-    arrivalAt: '2026-10-03T08:00',
-    returnAt: '2026-10-10T18:00',
+    arrivalAt: arrivalAt,
+    returnAt: returnAt,
     idempotencyKey: 'a' * 32,
   );
 
@@ -152,8 +153,8 @@ void main() {
     setUp(() => locator.registerSingleton<LinkService>(FakeLinks()));
     tearDown(locator.reset);
 
-    Future<BookingFormBloc> pump(WidgetTester tester) async {
-      final bloc = makeBloc()..add(const BookingFormStarted());
+    Future<BookingFormBloc> pump(WidgetTester tester, {String arrivalAt = '2026-10-03T08:00'}) async {
+      final bloc = makeBloc(arrivalAt: arrivalAt)..add(const BookingFormStarted());
       addTearDown(bloc.close);
       await pumpLocalized(tester, BlocProvider.value(value: bloc, child: const BookingFormView()), size: const Size(400, 1600));
       await tester.pumpAndSettle();
@@ -177,6 +178,54 @@ void main() {
       expect(find.text('Champ obligatoire.'), findsNWidgets(5));
       expect(find.text('Merci d\'accepter les conditions pour réserver.'), findsOneWidget);
       expect(api.calls, isNot(contains('create')));
+    });
+
+    testWidgets('frais de nuit : « Forfait 8 jours », « Frais de nuit · dépôt à 23:30 », puis le total', (tester) async {
+      public.parking_ = parkingResponse(
+        night: nightRule22to6,
+        offer: const OfferModel(available: true, days: 8, priceCents: 5160, basePriceCents: 3660, nightFee: dropOffNightFee),
+      );
+      await pump(tester, arrivalAt: '2026-10-03T23:30');
+      expect(find.text('Forfait 8 jours'), findsOneWidget);
+      expect(find.text('36,60 €'), findsOneWidget);
+      expect(find.text('Frais de nuit · dépôt à 23:30'), findsOneWidget);
+      expect(find.text('15,00 €'), findsOneWidget);
+      expect(find.descendant(of: find.byKey(const Key('booking-total')), matching: find.text('Total')), findsOneWidget);
+      expect(find.text('51,60 €'), findsOneWidget);
+      // The rows come in this order, above the total.
+      final package = tester.getTopLeft(find.byKey(const Key('price-package'))).dy;
+      final fee = tester.getTopLeft(find.byKey(const Key('price-night-fee'))).dy;
+      final total = tester.getTopLeft(find.byKey(const Key('booking-total'))).dy;
+      expect(package < fee && fee < total, isTrue);
+      // The parking's rule sits under the detail.
+      expect(find.text('Ce parking ajoute 15 € pour un dépôt ou un retour entre 22:00 et 06:00.'), findsOneWidget);
+      expect(tester.getTopLeft(find.byKey(const Key('booking-night-rule'))).dy > total, isTrue);
+      // The button's sentence, at the bottom of the form, says the same total.
+      final payNext = find.text('Paiement sécurisé par carte à l\'étape suivante : 51,60 €.');
+      await tester.scrollUntilVisible(payNext, 300, scrollable: find.byType(Scrollable).first);
+      expect(payNext, findsOneWidget);
+    });
+
+    testWidgets('séjour sans frais chez un parking qui en a : total seul, la règle du parking dessous', (tester) async {
+      public.parking_ = parkingResponse(night: nightRule22to6);
+      await pump(tester);
+      expect(find.text('Total · 8 jours'), findsOneWidget);
+      expect(find.byKey(const Key('price-night-fee')), findsNothing);
+      expect(find.text('Ce parking ajoute 15 € pour un dépôt ou un retour entre 22:00 et 06:00.'), findsOneWidget);
+    });
+
+    testWidgets('sans frais de nuit : « Total · 8 jours » seul, comme avant', (tester) async {
+      await pump(tester);
+      expect(find.text('Total · 8 jours'), findsOneWidget);
+      expect(find.byKey(const Key('price-package')), findsNothing);
+      expect(find.byKey(const Key('price-night-fee')), findsNothing);
+      expect(find.byKey(const Key('booking-night-rule')), findsNothing);
+    });
+
+    testWidgets('règle de nuit sans montant : pas de phrase', (tester) async {
+      public.parking_ = parkingResponse(night: const NightRuleModel(start: '22:00', end: '06:00'));
+      await pump(tester);
+      expect(find.byKey(const Key('booking-night-rule')), findsNothing);
     });
 
     testWidgets('prénom et nom : deux champs remplis automatiquement par le téléphone', (tester) async {

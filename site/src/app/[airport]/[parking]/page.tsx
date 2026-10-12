@@ -164,6 +164,7 @@ export default async function ParkingPage({ params, searchParams }: Props) {
             errors={errors}
             payment={payment}
             docked={!!dock}
+            nightRule={parking.pricing.night}
           />
         </div>
 

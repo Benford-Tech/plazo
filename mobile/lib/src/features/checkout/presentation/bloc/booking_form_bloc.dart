@@ -50,7 +50,13 @@ abstract class BookingFormState with _$BookingFormState {
   /// Paid by card on the next step (otherwise at the parking).
   bool get online => parkingResponse?.parking.payment == 'online';
 
+  /// The total « tout compris » for the dates, night fees included.
   int? get priceCents => parkingResponse?.offer?.priceCents;
+
+  /// 12/10/2026: the price grid's part of the total and the night fees in it (null when none), for the recap's detail.
+  int? get basePriceCents => parkingResponse?.offer?.basePriceCents;
+
+  NightFeeModel? get nightFee => parkingResponse?.offer?.nightFee;
 
   int? get days => parkingResponse?.offer?.days;
 

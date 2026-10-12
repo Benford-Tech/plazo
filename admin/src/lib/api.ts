@@ -42,6 +42,7 @@ import type {
   ListingResponse,
   Listing,
   DescriptionSuggestion,
+  NightSettings,
   Pricing,
   PricingTier,
   NewStaff,
@@ -706,10 +707,11 @@ export const adminApi = {
       method: "POST",
     }),
   getPricing: () => apiRequest<Pricing>("/internal/pricing"),
-  updatePricing: (tiers: PricingTier[], extraDayPriceCents: number | null) =>
+  /** `night` absent: the night fees stay as they are (12/10/2026). */
+  updatePricing: (tiers: PricingTier[], extraDayPriceCents: number | null, night?: NightSettings) =>
     apiRequest<{ data: Pricing }>("/internal/pricing", {
       method: "PUT",
-      body: json({ tiers, extraDayPriceCents }),
+      body: json(night ? { tiers, extraDayPriceCents, night } : { tiers, extraDayPriceCents }),
     }),
 
   // The platform owner's space (super admin).

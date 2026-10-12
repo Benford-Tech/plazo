@@ -15,6 +15,7 @@ import { paymentHref } from "@/lib/forms";
 import { fr, texts } from "@/lib/fr";
 import { directionsUrl } from "@/lib/listing";
 import { formatEuros } from "@/lib/money";
+import { chargedNightFee } from "@/lib/night-fees";
 import { managePath as manageHrefFor, REFERENCE_RE } from "@/lib/manage-access";
 import { manageTokenFor } from "@/lib/manage-session";
 import { formatPhone, greetingName, isFrenchMobile } from "@/lib/phone";
@@ -116,6 +117,8 @@ export default async function ManageBookingPage({ params, searchParams }: PagePr
   }
   const confirmed = (param(query, "confirmee") === "1" || returning) && b.status === "upcoming";
   const total = b.priceCents === null ? null : formatEuros(b.priceCents);
+  // The night fees charged at booking (frozen on the reservation), « dont 15,00 € de frais de nuit » under the amount.
+  const nightFee = chargedNightFee(b.nightFee);
   const until = b.cancellableUntil ? formatDateTimeAt(b.cancellableUntil) : null;
   const destination = b.parking.address ?? `${b.parking.title}, ${b.parking.airport.name}`;
   const calendarHref = `/ma-reservation/${encodeURIComponent(b.reference)}/agenda`;
@@ -242,7 +245,16 @@ export default async function ManageBookingPage({ params, searchParams }: PagePr
             <Row label={fr.manage.passengers}>{b.passengers}</Row>
             {total && (
               <Row label={totalLabel}>
-                {b.status === "cancelled" && !refunded ? <s className="font-normal text-soft">{total}</s> : <span className="font-extrabold tabular-nums">{total}</span>}
+                {b.status === "cancelled" && !refunded ? (
+                  <s className="font-normal text-soft">{total}</s>
+                ) : (
+                  <>
+                    <span className="font-extrabold tabular-nums">{total}</span>
+                    {nightFee && (
+                      <span className="mt-0.5 block text-[13px] font-medium text-soft tabular-nums">{fr.manage.nightFeeIncluded(formatEuros(nightFee.totalCents))}</span>
+                    )}
+                  </>
+                )}
               </Row>
             )}
           </dl>

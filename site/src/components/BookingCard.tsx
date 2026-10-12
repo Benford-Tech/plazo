@@ -4,11 +4,13 @@ import { cancellableUntil, formatDateTimeAt, stayQuery } from "@/lib/dates";
 import { fr, fromPriceUnit, texts } from "@/lib/fr";
 import { perDayLabel } from "@/lib/highlights";
 import { formatEuros } from "@/lib/money";
-import type { CancellationPolicy, Offer, ParkingPayment } from "@/lib/types";
+import type { CancellationPolicy, NightRule, Offer, ParkingPayment } from "@/lib/types";
+import { NightRuleNote, PriceLines } from "./PriceLines";
 
 /**
  * Booking card of a parking page: dates, availability, price lines and the "Book" button. Without
  * dates it asks for them. The date form is a GET form to /recherche (works without JavaScript).
+ * Direction B (12/10/2026): the price lines detail the stay's night fee, with the parking's rule under them.
  */
 export function BookingCard({
   airportSlug,
@@ -22,6 +24,7 @@ export function BookingCard({
   errors,
   payment = "unavailable",
   docked = false,
+  nightRule = null,
 }: {
   airportSlug: string;
   parkingSlug: string;
@@ -40,12 +43,13 @@ export function BookingCard({
    * the card is then hidden under md, since the bar already carries it. The price lines and the total stay.
    */
   docked?: boolean;
+  /** The parking's night fees (« Ce parking ajoute 15 € … »), stated under the price lines. */
+  nightRule?: NightRule | null;
 }) {
   const t = texts(true);
   const bookable = !!offer && offer.available && offer.priceCents !== null;
   const until = bookable && stay.arrivee ? cancellableUntil(policy, stay.arrivee) : null;
   const query = stayQuery(stay);
-  const line = "flex justify-between gap-3";
 
   return (
     <aside aria-labelledby="reserver-titre" className="card flex flex-col gap-4 p-4 md:p-[22px] md:shadow-float">
@@ -97,20 +101,21 @@ export function BookingCard({
 
       {bookable && (
         <>
-          <dl className="flex flex-col gap-2 border-t border-line-soft pt-3.5 text-[14.5px] tabular-nums">
-            <div className={line}>
-              <dt className="text-soft">{fr.parking.packageLine(offer.days)}</dt>
-              <dd>{formatEuros(offer.priceCents!)}</dd>
-            </div>
-            <div className={line}>
-              <dt className="text-soft">{fr.parking.serviceFee}</dt>
-              <dd>{formatEuros(0)}</dd>
-            </div>
-            <div className={`${line} mt-1 border-t border-line-soft pt-3 text-[17px] font-extrabold`}>
-              <dt>{payment === "unavailable" ? fr.parking.total : t.parking.payOnSite}</dt>
-              <dd>{formatEuros(offer.priceCents!)}</dd>
-            </div>
-          </dl>
+          <div className="flex flex-col gap-2">
+            <PriceLines
+              days={offer.days}
+              priceCents={offer.priceCents!}
+              basePriceCents={offer.basePriceCents}
+              nightFee={offer.nightFee}
+              arrivalAt={stay.arrivee ?? ""}
+              returnAt={stay.retour ?? ""}
+              totalLabel={payment === "unavailable" ? fr.parking.total : t.parking.payOnSite}
+              serviceFee
+              className="border-t border-line-soft pt-3.5"
+              totalClassName="text-[17px]"
+            />
+            <NightRuleNote rule={nightRule} />
+          </div>
           {payment === "unavailable" ? (
             <p className="rounded-field bg-tint px-3.5 py-3 text-center text-[14.5px] font-bold text-ink">{fr.parking.onlineSoon}</p>
           ) : (
