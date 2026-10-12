@@ -211,6 +211,8 @@ la clé d'import Android de Plazo dans Codemagic (créée et envoyée par GitHub
    **Clés › Ajouter une clé › Créer une clé › JSON**. Ouvrir le fichier, tout copier dans
    `GOOGLE_PLAY_SERVICE_ACCOUNT_CREDENTIALS` (étape 1.5 ; le groupe `mobile_secrets` existe déjà, créé vide par le
    workflow de la clé Android : Codemagic refuse un build dont un groupe manque), puis le supprimer de l'ordinateur.
+   Encore vide le 12/10/2026 : les deux envois Google Play du build 113 (`mobile-release`) ont échoué pour cette raison,
+   le bilan l'écrit désormais en clair ; les deux IPA sont bien partis vers TestFlight.
 5. [ ] **Liste des testeurs internes** (pour chaque app) : **Tester et publier › Tests › Tests internes › Testeurs ›
    Créer une liste de diffusion** (comptes Google), **Enregistrer les modifications**.
 6. [ ] **Premier envoi à la main** (l'API refuse une app jamais publiée), une fois la section 1 et les étapes 2 à 4
