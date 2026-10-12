@@ -465,8 +465,9 @@ Ne construire QUE ce qui règle la douleur n°1 du client.
      position (409 `shuttle_tracking_off`, `sharePosition` faux sur `pickups`, `departures` et le trajet, ni le web ni l'app ne
      demandent la localisation) ; `team` : l'équipe seule, aucune position, distance ni « Votre navette est là » au voyageur, pas de
      navette sur la carte d'accueil ; `everyone` : comme avant. `liveShuttle` sur les résultats et fiches (navette proposée et
-     `everyone`) : pilule blanche « EN DIRECT » sur la photo (`LiveShuttlePill` site, `LiveShuttleTag` app) et minibus devant le
-     prix sur la pastille de la carte des résultats.
+     `everyone`) : pilule blanche « EN DIRECT » sur la photo (`LiveShuttlePill` site : depuis Boutique, 11/10/2026, pilule papier
+     en coin haut gauche de la photo, capitales encre et point orange qui respire, comme `LivePill` du jour J ; `LiveShuttleTag`
+     app) et minibus devant le prix sur la pastille de la carte des résultats.
    - Décision **E du 06/10/2026 (communication voyageur ↔ parking)** : `Reservation.customerNote` (message à la réservation, ≤ 300),
      `vehicleModel` / `vehicleColour` (site, app, saisie et modification pro, fiche, fiche opérationnelle) ; `ArrivalSignal.note`
      (mot joint à « Je suis en route », « J'arrive dans… », « Je suis au point de rendez-vous », champ sur le site et dans l'app
@@ -807,7 +808,16 @@ Canevas de référence : https://claude.ai/artifact/6ezoCDyLXFNwhAH5ZWUf4u (rang
   (05/10/2026) : onglet Aujourd'hui, barre « Tableau de bord · Planning » (feature `pro_dashboard`, `ProDashboardBloc` toutes
   les 30 s, `DashboardView` avec la carte des navettes `LiveShuttlesCard`) ; les onglets Arrivées / Retours du chauffeur
   restent le planning seul.
-- **Site Plazo voyageurs (web)** : **aligné sur la direction T-A « Parking » de l'app (05/10/2026)** : fond gris clair
+- **Site Plazo voyageurs (web)** : **direction « Boutique » (choix de Joanny du 11/10/2026, « refaire Plazo pour en plus
+  design, plus élégant » ; remplace T-A sur le site seulement)** : un hôtel-boutique plutôt qu'un comparateur. Fond ivoire
+  `#F7F3EE`, cartes blanches à filet chaud 1 px `#E7DDD1` et coins de 16 px, ombre réservée à ce qui flotte, Playfair Display
+  regular (plus d'italique) pour les titres, petites capitales espacées pour les libellés, pilules d'état douces (sauge, ambre,
+  rose), JetBrains Mono pour les heures seulement ; l'orange `#FF6600` ne sert qu'à l'action (boutons pleins, texte blanc gras)
+  et au meilleur prix, tout texte orange de moins de 18 px en `accent-dark` ; la sélection est espresso `#2B211B`. Carte IGN
+  désaturée et réchauffée par le fond `#EEE8DF` (`MAP_PAINT` de `ResultsMap`), pour que l'orange ne désigne que le moins cher.
+  Jetons dans `site/src/app/globals.css` (aucune couleur en dur dans les composants), maquette `boutique.html` du canevas de
+  directions. Ce qui suit (T-A et avant) reste pour mémoire.
+  Avant Boutique : **aligné sur la direction T-A « Parking » de l'app (05/10/2026)** : fond gris clair
   `#ECECEE` (`--color-ground`), cartes blanches 22 px à ombre douce (utilitaire `card`), en-tête sur le fond (plus de bande
   orange ; logo et liens sombres, « Pour les loueurs » en pilule blanche), pied de page brun foncé, Manrope (`--font-manrope`)
   avec Playfair italique sur les titres, orange `#FF6600` réservé à l'action (`btn-primary` plein) et à une carte par écran.
@@ -817,12 +827,18 @@ Canevas de référence : https://claude.ai/artifact/6ezoCDyLXFNwhAH5ZWUf4u (rang
   boutons de zoom ; deux doigts sur téléphone), montre tous les parkings du séjour en pastilles (prix, ou « Complet »), les
   navettes en circulation en marqueurs orange animés (`GET /public/airports/:slug/live`, anonyme : position, sens, véhicule ;
   toutes les 12 s, `useAirportLive` / `SearchLivePolled`) et la pilule « N navettes en circulation » ; toucher une pastille met ce
-  parking dans la carte orange (sombre et « Complet à ces dates » s'il n'a pas de place). **I-C « Icône navette » (06/10/2026,
+  parking dans la carte du bas (sur le site depuis Boutique, 11/10/2026 : carte papier blanche, « Le moins cher » et prix orange
+  pour le moins cher, pilule rose « Complet à ces dates » s'il n'a pas de place ; la pastille du moins cher est orange à texte
+  encre, celle qu'on choisit devient espresso). **I-C « Icône navette » (06/10/2026,
   site, app et pro)** : pictogramme de minibus vu de côté (Material `airport_shuttle`), tourné dans le sens du déplacement (cap
   calculé côté client entre deux positions, `bearing` / `shuttleBearing`), couleur par sens : orange vers le terminal, pêche vers
-  l'aéroport, gris sans position (vert foncé / vert / gris dans l'espace pro) ; `site/src/lib/shuttle-icon.tsx`,
+  l'aéroport, gris sans position (vert foncé / vert / gris dans l'espace pro ; sur le site depuis Boutique : jetons seulement,
+  orange `accent` vers le terminal, sauge `ok` vers l'aéroport, gris chaud `soft` sans position, encre quand le minibus illustre
+  un titre ; marqueur de carte de 30 px à filet de 2 px et ombre `--shadow-pin`) ; `site/src/lib/shuttle-icon.tsx`,
   `admin/src/lib/shuttle-icon.tsx`, `mobile/lib/src/shared/widgets/shuttle_icon.dart` (`ShuttleIcon`, `ShuttlePin`) ; repris sur
-  la carte d'accueil, la pilule « N navettes », le bloc Navette, le retour en direct, la carte et les lignes des navettes pro. Page Ma réservation, véhicule sur place : bloc `ReturnLive` (client, `GET /api/public/bookings/:ref/return`
+  la carte d'accueil, le bloc Navette, le retour en direct, la carte et les lignes des navettes pro, et sur le site dans les
+  puces « 8 min » et la tuile « Navette » de « L'essentiel » (`FactIcon`) ; la pilule « N navettes en circulation » du site
+  porte depuis Boutique le point orange du direct au lieu du minibus. Page Ma réservation, véhicule sur place : bloc `ReturnLive` (client, `GET /api/public/bookings/:ref/return`
   toutes les 10 s avec le jeton en en-tête) : anneau de compte à rebours à la seconde, puces Atterrissage · Rendez-vous ·
   Navette, pilule « En direct · il y a N s », âge de la position de la navette, encart sombre « Retrouver ma voiture »
   avec la place du voiturier. **D (06/10/2026) : le site au niveau de l'app le jour J** : bloc `ArrivalBlock` « Prévenir de mon

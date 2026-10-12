@@ -1,6 +1,6 @@
 import { render, screen, within } from "@testing-library/react";
 import { describe, expect, it } from "vitest";
-import { AirportGuide } from "../AirportGuide";
+import { AirportGuide, glueUnits } from "../AirportGuide";
 import { airportGuide } from "@/lib/airport-guides";
 
 describe("AirportGuide (C-A)", () => {
@@ -16,6 +16,16 @@ describe("AirportGuide (C-A)", () => {
       expect(links[i]).toHaveAttribute("href", `#${section.id}`);
       expect(screen.getByRole("heading", { level: 3, name: section.title })).toHaveAttribute("id", section.id);
     }
+  });
+
+  it("keeps a number with its unit, and lets the keyboard reach the wide price grid that scrolls sideways", () => {
+    expect(glueUnits("32,90 € la semaine, 2 semaines, 1,90 m, 12 min, P0 et P1")).toBe("32,90\u00a0€ la semaine, 2\u00a0semaines, 1,90\u00a0m, 12\u00a0min, P0 et P1");
+    render(<AirportGuide guide={guide} />);
+    const grid = screen.getByRole("region", { name: /^Tarifs 2026 des parkings de l’aéroport/ });
+    expect(grid).toHaveAttribute("tabindex", "0");
+    expect(within(grid).getByRole("table")).toBeInTheDocument();
+    // An ordinary table wraps and fits: no extra tab stop.
+    expect(screen.getByRole("table", { name: "Aéroport ou parking privé : l’essentiel" }).parentElement).not.toHaveAttribute("tabindex");
   });
 
   it("shows the comparison as a real table, and the tips as a list", () => {
