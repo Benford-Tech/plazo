@@ -201,6 +201,10 @@ definitions:
         [ "$PLAY_SUBMIT_AS_DRAFT" = "true" ] && DRAFT_FLAG="--draft"
         for AAB in build/app/outputs/bundle/*/*.aab; do
           NAME=$(basename "$AAB" .aab)
+          if [ -z "$GOOGLE_PLAY_SERVICE_ACCOUNT_CREDENTIALS" ]; then
+            echo "KO  Google Play  $NAME (GOOGLE_PLAY_SERVICE_ACCOUNT_CREDENTIALS absente du groupe mobile_secrets)" >> "$CM_BUILD_DIR/publish-status.txt"
+            continue
+          fi
           if google-play bundles publish --bundle "$AAB" --track "$PLAY_TRACK" --release-name "$VERSION_NAME ($NEXT)" $DRAFT_FLAG; then
             echo "OK  Google Play  $NAME" >> "$CM_BUILD_DIR/publish-status.txt"
           else
