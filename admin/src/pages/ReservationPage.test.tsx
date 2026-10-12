@@ -113,4 +113,18 @@ describe("ReservationPage · prix payé (10/10/2026)", () => {
     expect(await screen.findByText("26,00 €")).toBeInTheDocument();
     expect(screen.queryByRole("button", { name: "Modifier le prix" })).not.toBeInTheDocument();
   });
+
+  it("dit la part des frais de nuit dans le prix d'une réservation Plazo (12/10/2026)", async () => {
+    api.getReservation.mockResolvedValue(
+      reservation({ channel: "plazo", paymentStatus: "paid", chargedCents: 6600, priceCents: 6600, nightArrivalFeeCents: 1500, nightReturnFeeCents: 1000 }),
+    );
+    const { unmount } = renderPage();
+    expect(await screen.findByText("66,00 €")).toBeInTheDocument();
+    expect(screen.getByText("dont 25,00 € de frais de nuit")).toBeInTheDocument();
+    unmount();
+    api.getReservation.mockResolvedValue(reservation({ channel: "plazo", paymentStatus: "paid", chargedCents: 4500, priceCents: 4500, nightArrivalFeeCents: null, nightReturnFeeCents: null }));
+    renderPage();
+    expect(await screen.findByText("45,00 €")).toBeInTheDocument();
+    expect(screen.queryByText(/frais de nuit/)).not.toBeInTheDocument();
+  });
 });

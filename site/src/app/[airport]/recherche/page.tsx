@@ -29,6 +29,7 @@ import {
 import { fr, serviceLabel, texts } from "@/lib/fr";
 import { resultBadges } from "@/lib/highlights";
 import { formatShortEuros } from "@/lib/money";
+import { hasNightFee } from "@/lib/night-fees";
 import { SLUG_RE } from "@/lib/site";
 import type { SearchResponse } from "@/lib/types";
 
@@ -119,6 +120,9 @@ export default async function ResultsPage({ params, searchParams }: PageProps<"/
   const filters = { ...parsed, maxPriceCents: parsed.maxPriceCents !== null && parsed.maxPriceCents >= ceilingCents ? null : parsed.maxPriceCents };
   const shown = applyFilters(results, filters);
   const availableCount = shown.filter(r => r.available && r.priceCents !== null).length;
+  // Direction B (12/10/2026): cards and pins show totals only; one line under the heading says when a total shown
+  // includes a parking's night fee (the detail is on its page).
+  const nightFees = shown.some(hasNightFee);
   const counts = serviceCounts(results);
   const badges = resultBadges(shown);
   const days = results[0]?.days ?? stayDays(arrivee, retour);
@@ -303,9 +307,12 @@ export default async function ResultsPage({ params, searchParams }: PageProps<"/
         </div>
 
         <div className={`flex min-w-0 flex-col items-start gap-3 md:flex-row md:flex-wrap md:items-center md:justify-between md:gap-x-6 ${map ? "[grid-area:head]" : ""}`}>
-          <h1 id="resultats" className="font-title text-[28px] leading-[1.12] md:text-[32px]" aria-live="polite">
-            {fr.results.available(availableCount)}
-          </h1>
+          <div className="flex min-w-0 flex-col gap-1">
+            <h1 id="resultats" className="font-title text-[28px] leading-[1.12] md:text-[32px]" aria-live="polite">
+              {fr.results.available(availableCount)}
+            </h1>
+            {nightFees && <p className="text-[13px] leading-snug font-medium text-soft">{fr.results.nightFeesIncluded}</p>}
+          </div>
           <div className="flex flex-wrap items-center gap-x-3 gap-y-2">
             <nav aria-label={fr.results.sort} className="flex flex-wrap items-center gap-1.5">
               <span className={`eyebrow mr-1 max-sm:sr-only ${map ? "" : "md:max-lg:sr-only"}`}>{fr.results.sort}</span>

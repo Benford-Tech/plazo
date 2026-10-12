@@ -127,10 +127,29 @@ describe.each(GUIDE_TOPICS.map(t => t.slug))("topic guide %s", slug => {
     }
   });
 
+  it("keeps « nothing added » true: a parking's night fees are in the displayed total (12/10/2026)", () => {
+    for (const guide of [bare, full]) {
+      for (const text of texts(guide)) {
+        if (/frais ajoutés à l’arrivée|rien ne s’(?:y )?ajoute/.test(text)) expect(text).toMatch(/frais de nuit/);
+      }
+    }
+  });
+
   it("lists the partners the page is about", () => {
     expect(bare.partners.title.length).toBeGreaterThan(10);
     expect(bare.partners.empty.length).toBeGreaterThan(20);
     expect(bare.partners.filter).toBe(slug === "parking-voiturier" ? "valet" : "all");
     expect(bare.partners.stayDays).toBe(slug === "parking-longue-duree" ? 14 : 7);
+  });
+});
+
+describe("night fees in the cheap-parking guide (12/10/2026)", () => {
+  it("lists them among the hidden costs: in the total, on the booked hours", () => {
+    const guide = topicGuide("lyon-saint-exupery", "parking-pas-cher", NONE)!;
+    const hidden = guide.sections.find(s => s.id === "frais-caches")!;
+    expect(hidden.paragraphs[0]).toContain("Cinq postes");
+    expect(hidden.parts).toHaveLength(5);
+    const night = hidden.parts!.find(p => p.title === "Déposer ou reprendre la voiture la nuit")!;
+    expect(night.paragraphs.join(" ")).toMatch(/compris dans le prix total affiché.*calculés sur les heures réservées/);
   });
 });

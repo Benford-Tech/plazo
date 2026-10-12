@@ -181,6 +181,10 @@ import { ValidationMiddleware } from '@/middlewares/validation.middleware';
  * /internal/platform/listings:
  *   get:
  *     summary: Listings of every operator, by status (oldest request first), with the count per status
+ *     description: >-
+ *       Each listing carries its pricing for the review: pricingTiers, fromPriceCents, extraDayPriceCents and `night`,
+ *       the night fees travellers pay ({ start, end, arrivalFeeCents, returnFeeCents }, as on the public page; null
+ *       when none).
  *     tags: [Platform]
  *     parameters:
  *       - { in: query, name: status, schema: { type: string, enum: [draft, pending_review, published, rejected] } }

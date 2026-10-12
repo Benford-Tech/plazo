@@ -6,6 +6,7 @@ import prisma, { Prisma, ReservationStatus } from '@/database';
 import { cancellableUntil, canCancel, canEditFlight, isValidManageToken, manageLinkExpired, manageToken } from '@/domain/booking';
 import { BookingRecord, bookingPolicy, toPublicBooking, WITH_LISTING } from '@/domain/booking-view';
 import { customerNamesOf } from '@/domain/customer-name';
+import { nightSnapshot } from '@/domain/night-fees';
 import { formatPlate, HOLDING_STATUSES, plateKey, RELEASED_STATUSES } from '@/domain/reservation';
 import { CreatePublicBookingDto, LookupBookingDto, CarLocationDto } from '@/dtos/public-booking.dto';
 import { PublicBooking } from '@/interfaces/booking.interface';
@@ -102,7 +103,7 @@ export class PublicBookingService {
           paymentStatus: 'pending' as const,
           holdExpiresAt: new Date(Date.now() + HOLD_MINUTES * 60000),
           // Amount, Plazo's commission and the operator's share, from the price computed here
-          // (never the client's).
+          // (never the client's): the total, night fees included (12/10/2026).
           ...this.payments.split(operator, quote.priceCents),
         };
 
@@ -125,7 +126,9 @@ export class PublicBookingService {
             customerNote: data.customerNote?.trim() || null,
             vehicleModel: data.vehicleModel?.trim() || null,
             vehicleColour: data.vehicleColour?.trim() || null,
+            // The total « tout compris »: grid price plus the night fees of the hours booked, frozen with it.
             priceCents: quote.priceCents,
+            ...nightSnapshot(quote.nightFee),
             cancellationPolicy: listing.cancellationPolicy,
             idempotencyKey: key,
             createdById: null,
@@ -142,6 +145,13 @@ export class PublicBookingService {
             details: {
               channel: 'plazo',
               ...(operator ? { payment: 'online', commissionCents: created.commissionCents, operatorShareCents: created.operatorShareCents } : {}),
+              ...(quote.nightFee
+                ? {
+                    priceCents: created.priceCents,
+                    nightArrivalFeeCents: created.nightArrivalFeeCents,
+                    nightReturnFeeCents: created.nightReturnFeeCents,
+                  }
+                : {}),
             },
           },
           tx,

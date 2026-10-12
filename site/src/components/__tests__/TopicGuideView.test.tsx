@@ -35,7 +35,7 @@ describe("TopicGuideView (09/10/2026)", () => {
     expect(screen.getByRole("heading", { level: 1, name: guide.title })).toBeInTheDocument();
     const crumbs = screen.getByRole("navigation", { name: "Fil d’Ariane" });
     expect(within(crumbs).getByRole("link", { name: "Lyon Saint-Exupéry" })).toHaveAttribute("href", "/");
-    expect(screen.getByText("Mis à jour le 9 octobre 2026")).toBeInTheDocument();
+    expect(screen.getByText("Mis à jour le 12 octobre 2026")).toBeInTheDocument();
     const toc = screen.getByRole("navigation", { name: "Sur cette page" });
     expect(within(toc).getAllByRole("link")).toHaveLength(guide.sections.length);
     for (const section of guide.sections) expect(screen.getByRole("heading", { level: 2, name: section.title })).toHaveAttribute("id", section.id);

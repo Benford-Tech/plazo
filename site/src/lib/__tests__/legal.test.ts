@@ -59,6 +59,16 @@ describe("legal pages", () => {
     expect(policies.join(" ")).toMatch(/jusqu’à l’heure de dépôt.*24 heures.*48 heures.*non annulable/);
   });
 
+  it("terms state the night fee rule (12/10/2026): in the total, on the booked hours, refunded with the stay", () => {
+    const prices = termsDoc(EMPTY, "contact@plazo.fr", "Plazo").sections.find(s => s.id === "prix")!.blocks.join("\n");
+    expect(prices).toContain("frais de nuit pour un dépôt, pour un retour, ou pour les deux");
+    expect(prices).toContain("les deux frais s’ajoutent");
+    expect(prices).toContain("compris dans le prix total affiché");
+    expect(prices).toContain("calculés sur les heures de dépôt et de retour réservées et ne changent plus ensuite");
+    expect(prices).toContain("remboursés avec le séjour");
+    expect(termsDoc().version).toBe("12 octobre 2026");
+  });
+
   it("section ids are unique (anchors of the contents)", () => {
     for (const doc of [termsDoc(), legalNoticeDoc(), privacyDoc()]) {
       const ids = doc.sections.map(s => s.id);

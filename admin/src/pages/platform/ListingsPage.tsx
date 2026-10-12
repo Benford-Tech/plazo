@@ -8,7 +8,7 @@ import { adminApi } from "@/lib/api";
 import { describeError, fr } from "@/lib/fr";
 import { LISTING_TONE, shortDate } from "@/lib/platform";
 import { euros } from "@/lib/pricing";
-import type { ListingStatus, PlatformListing } from "@/lib/types";
+import type { ListingStatus, NightRule, PlatformListing } from "@/lib/types";
 import { cn } from "@/lib/utils";
 
 const t = fr.platform.listings;
@@ -19,6 +19,20 @@ const FILTERS: (ListingStatus | "all")[] = ["pending_review", "published", "reje
 const labelClass = "text-[11px] uppercase tracking-[0.08em] text-muted-foreground";
 const ghostButton = "min-h-10 whitespace-nowrap border border-border px-3 text-base hover:bg-accent disabled:opacity-50";
 const primaryButton = "min-h-10 whitespace-nowrap bg-primary px-4 text-base font-bold uppercase tracking-wide text-primary-foreground hover:brightness-110 disabled:opacity-50";
+
+/** The night fees travellers pay (12/10/2026): « Frais de nuit de 22:00 à 06:00 : dépôt 15,00 € · retour 10,00 € ». */
+function NightRuleLine({ rule }: { rule: NightRule | null }) {
+  if (!rule) return <span className="text-muted-foreground">{t.noNight}</span>;
+  const parts = [
+    rule.arrivalFeeCents ? t.nightArrival(euros(rule.arrivalFeeCents)) : null,
+    rule.returnFeeCents ? t.nightReturn(euros(rule.returnFeeCents)) : null,
+  ].filter(Boolean);
+  return (
+    <span>
+      {t.night(rule.start, rule.end)} <span className="font-mono">{parts.join(" · ")}</span>
+    </span>
+  );
+}
 
 /** The listing as the platform reviews it: the result card and everything the operator filled in. */
 function ListingDetails({ listing }: { listing: PlatformListing }) {
@@ -49,8 +63,12 @@ function ListingDetails({ listing }: { listing: PlatformListing }) {
         <dt className={labelClass}>{fr.plazo.cancellation}</dt>
         <dd>{fr.cancellationShort[listing.cancellationPolicy]}</dd>
         <dt className={labelClass}>{t.prices}</dt>
-        <dd className="font-mono">
-          {listing.pricingTiers.length ? listing.pricingTiers.map(tier => <span key={tier.days} className="mr-4 inline-block">{t.upTo(tier.days, euros(tier.priceCents))}</span>) : t.noPrices}
+        <dd className="flex flex-col gap-1">
+          <span className="font-mono">
+            {listing.pricingTiers.length ? listing.pricingTiers.map(tier => <span key={tier.days} className="mr-4 inline-block">{t.upTo(tier.days, euros(tier.priceCents))}</span>) : t.noPrices}
+          </span>
+          {listing.extraDayPriceCents != null && <span className="font-mono">{t.extraDay(euros(listing.extraDayPriceCents))}</span>}
+          {listing.night !== undefined && <NightRuleLine rule={listing.night} />}
         </dd>
         <dt className={labelClass}>{t.photos}</dt>
         <dd>

@@ -17,6 +17,7 @@ import '../../../../shared/widgets/gradient_button.dart';
 import '../../../trips/presentation/bloc/trips_bloc.dart';
 import '../bloc/payment_bloc.dart';
 import '../widgets/booking_steps.dart';
+import '../widgets/night_fee_lines.dart';
 
 /// "29:41"
 String formatCountdown(int seconds) {
@@ -183,16 +184,46 @@ class PaymentView extends StatelessWidget {
                   ],
                 ),
                 RecapRow(left: Text(b.parking.title, style: AppText.muted(size: 14.5)), right: Text(daysLabel(b.days ?? 1), style: AppText.strong())),
+                // 12/10/2026: both hours, which the night fee line below refers to.
+                Padding(
+                  padding: const EdgeInsets.symmetric(vertical: 6),
+                  child: Row(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Expanded(child: _StayTile(key: const Key('payment-drop-off'), label: 'manage.drop_off'.tr(), local: b.arrivalAt)),
+                      const SizedBox(width: 8),
+                      Expanded(child: _StayTile(key: const Key('payment-pick-up'), label: 'manage.pick_up'.tr(), local: b.returnAt)),
+                    ],
+                  ),
+                ),
                 RecapRow(
-                  left: Text('${formatDay(b.arrivalAt.substring(0, 10))} → ${formatDay(b.returnAt.substring(0, 10))}', style: AppText.muted(size: 14.5)),
+                  left: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(b.customerName, style: AppText.muted(size: 14.5)),
+                      Text(formatPhone(b.customerPhone), style: AppText.tabular(size: 14)),
+                    ],
+                  ),
                   right: FrenchPlate(b.plate, size: 12),
                 ),
-                RecapRow(
-                  left: Text(b.customerName, style: AppText.muted(size: 14.5)),
-                  right: Text(formatPhone(b.customerPhone), style: AppText.tabular(size: 14)),
-                ),
                 const Divider(height: 18, color: AppColors.line),
-                RecapRow(left: Text('pay.total'.tr(), style: AppText.strong(size: 17)), right: Text(total, style: AppText.strong(size: 17))),
+                // Direction B: « Forfait 8 jours » and « Frais de nuit · dépôt à 23:30 » before the total when the stay pays one.
+                if (b.priceCents != null && NightFeeLines.shows(b.nightFee)) ...[
+                  NightFeeLines(
+                    days: b.days ?? 1,
+                    priceCents: b.priceCents!,
+                    basePriceCents: b.basePriceCents,
+                    nightFee: b.nightFee,
+                    arrivalAt: b.arrivalAt,
+                    returnAt: b.returnAt,
+                  ),
+                  const Divider(height: 14, color: AppColors.line),
+                ],
+                RecapRow(
+                  key: const Key('payment-total'),
+                  left: Text('pay.total'.tr(), style: AppText.strong(size: 17)),
+                  right: Text(total, style: AppText.strong(size: 17)),
+                ),
               ],
             ),
           ),
@@ -242,5 +273,43 @@ class PaymentView extends StatelessWidget {
           Text(sheet ? 'pay.secure'.tr() : 'pay.secure_web'.tr(), textAlign: TextAlign.center, style: AppText.muted(size: 13)),
         ];
     }
+  }
+}
+
+/// « DÉPÔT / sam. 13 oct. 23:30 » in the payment recap (12/10/2026): the hour goes under the day on a narrow phone.
+class _StayTile extends StatelessWidget {
+  const _StayTile({super.key, required this.label, required this.local});
+
+  final String label;
+
+  /// Parking-local date-time "YYYY-MM-DDTHH:mm".
+  final String local;
+
+  @override
+  Widget build(BuildContext context) {
+    final p = parseLocal(local);
+    return MergeSemantics(
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+        decoration: const BoxDecoration(color: AppColors.canvas, borderRadius: AppRadius.field),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(label.toUpperCase(), style: AppText.label(size: 11)),
+            const SizedBox(height: 2),
+            if (p == null)
+              Text(local, style: AppText.strong(size: 14))
+            else
+              Wrap(
+                spacing: 6,
+                children: [
+                  Text(formatDay(p.date), style: AppText.strong(size: 14)),
+                  Text(p.time, style: AppText.tabular(size: 14)),
+                ],
+              ),
+          ],
+        ),
+      ),
+    );
   }
 }

@@ -112,6 +112,16 @@ describe("airport guide (C-A, 4 200 words on 09/10/2026)", () => {
     expect(all).toContain("un retour après la date et l’heure réservées prolonge le séjour");
   });
 
+  it("keeps « nothing added at arrival » true: a parking's night fees are in the displayed total (12/10/2026)", () => {
+    for (const facts of [none, { week: { priceCents: 5600, days: 8 }, shuttle: { min: 6, max: 12 } }]) {
+      const texts = guideTexts(airportGuide("lyon-saint-exupery", facts)!);
+      for (const text of texts) {
+        if (/supplément à l’arrivée|frais ajoutés à l’arrivée|rien ne s’ajoute/.test(text)) expect(text).toMatch(/frais de nuit/);
+      }
+      expect(texts.join("\n")).toContain("calculés sur les heures réservées");
+    }
+  });
+
   it("never says the parking is paid at the parking (every booking is paid online)", () => {
     const guide = airportGuide("lyon-saint-exupery", { week: { priceCents: 5600, days: 8 }, shuttle: null })!;
     for (const text of guideTexts(guide)) expect(text).not.toMatch(/réglez à l’accueil|rien n’est payé en ligne|payez sur place/i);

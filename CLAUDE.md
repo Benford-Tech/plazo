@@ -266,6 +266,36 @@ Ne construire QUE ce qui règle la douleur n°1 du client.
      (« ; », UTF-8 avec BOM). Tuile CA-A en bas des tuiles du tableau de bord (`RevenueTile`, gérants : total du mois,
      aujourd'hui, 7 jours, « N sans montant »). Serveur : `domain/revenue.ts` (calcul pur, jour local du parking),
      `RevenueService`, `GET /internal/revenue?from=&to=&basis=`, `…/revenue/summary`, `…/revenue/export` (366 jours au plus).
+   - **Frais de nuit (12/10/2026, choix B « Dans le détail du prix seulement », « ajoute des frais de nuit pour les arrivées
+     et départs en heure définie par le parking »)** : une plage par parking, la même chaque jour, pour les dépôts comme pour
+     les retours (`Parking.nightFeeEnabled`, `nightStart` / `nightEnd` « HH:mm », `nightArrivalFeeCents` « Dépôt de nuit »,
+     `nightReturnFeeCents` « Retour de nuit » ; migration `night_fees` avec ses CHECK) : le début compte (22:00 paie), la fin
+     non (06:00 ne paie pas), la plage peut passer minuit, début = fin refusé ; les deux frais s'additionnent si les deux bouts
+     du séjour tombent la nuit, et s'ajoutent au jour facturable de plus d'une arrivée tardive. Calculés sur les heures
+     réservées (horloge locale du parking, `domain/night-fees.ts` : `inNightWindow`, `nightFeesForStay`, `nightRule`,
+     `validateNightSettings`) pour les seules réservations faites sur Plazo, **figés** sur la réservation
+     (`Reservation.nightArrivalFeeCents/nightReturnFeeCents`, CHECK : > 0 et canal `plazo` seulement ; un vol en retard, une
+     heure changée par l'équipe ou un vol modifié ne les recalculent jamais) et compris dans le total `priceCents` (grille +
+     frais), payé en ligne, remboursé avec le séjour, commission Plazo sur le tout ; imports et saisies de l'équipe : jamais.
+     `GET/PUT /internal/pricing` : `night { enabled, start, end, arrivalFeeCents, returnFeeCents }` (absent au PUT =
+     inchangé, valeurs gardées quand c'est coupé ; allumé : heures requises et différentes, `same_time`, au moins un montant
+     > 0, `fee_required`, 0 à 1 000 € ; erreurs par champ `night.start`… ; tracé dans `pricing.updated`). Offres publiques
+     (recherche et fiche) : `priceCents` = total (tri, filtre de prix, « Le moins cher », pastilles), `basePriceCents` (grille),
+     `nightFee { arrivalCents, returnCents, totalCents } | null` ; fiche : `pricing.night { start, end, arrivalFeeCents,
+     returnFeeCents } | null` ; `PublicBooking.basePriceCents/nightFee` lus de l'instantané ; les prix « dès » restent la
+     grille. Stripe : une seule ligne, « · dont frais de nuit 15,00 € » ; mails de confirmation et de clôture « Total : 51,60 €
+     (dont 15,00 € de frais de nuit), payé en ligne par carte. », SMS inchangé. Voyageurs (site et app) : cartes et pastilles
+     au total seul, « Prix totaux pour vos dates, frais de nuit compris. » sous le titre des résultats quand un résultat en
+     comprend ; ligne « Frais de nuit · dépôt à 23:30 » (« · retour à 05:30 », « · dépôt à 22:30 et retour à 05:30 ») entre
+     « Forfait N jours » et le total, règle du parking dessous (« Ce parking ajoute 15 € pour un dépôt ou un retour entre
+     22:00 et 06:00. ») : sur le site, carte de réservation de la fiche (`BookingCard`) et récapitulatif `/reserver` ; dans
+     l'app, récapitulatif de « Vos informations » (`_Recap`), la fiche de l'app n'ayant que le total dans sa barre ; au
+     paiement (site et app, tuiles Dépôt / Retour avec les heures) la ligne seule, sans la règle (`PublicBooking` ne la
+     porte pas) ; « Ma réservation » : « dont 15,00 € de frais de nuit ». Espace pro : carte « Frais de nuit » de « Mes
+     tarifs » (interrupteur de 44 px, heures à la demi-heure, 22:00 → 06:00 par défaut, deux montants, erreurs montrées une
+     fois le champ changé ou quitté, simulation « Avec frais de nuit », commission « frais de nuit compris ») ; fiche
+     réservation « dont … de frais de nuit » sous « Prix payé » ; revue des annonces de la plateforme : jour en plus et règle
+     de nuit. Conditions générales (`legal.ts`, « 4. Prix ») et guides mis à jour.
 
 2. **Plan du parking et affectation des véhicules** (direction P-A du 03/10/2026 : trois vues
    Plan · Occupation · Planning des places dans l'onglet « Parking » ; les étapes Plan et Occupation sont livrées)

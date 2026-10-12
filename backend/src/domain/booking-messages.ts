@@ -52,11 +52,17 @@ function cancellationSentence(booking: PublicBooking): string {
   return `Vous pouvez l'annuler en ligne, sans frais, jusqu'au ${formatLocalLong(booking.cancellableUntil)}.${refund}`;
 }
 
+/** " (dont 15,00 € de frais de nuit)" when the total includes night fees (12/10/2026), else "". */
+function nightFeeNote(booking: PublicBooking): string {
+  return booking.nightFee ? ` (dont ${formatEuros(booking.nightFee.totalCents)} de frais de nuit)` : '';
+}
+
 /** The total line of the confirmation, paid by card on the site or to pay at the parking: [bold part, rest, note]. */
 function totalParts(booking: PublicBooking, total: string): [string, string, string] {
+  const night = nightFeeNote(booking);
   return paidOnline(booking)
-    ? [`Total : ${total}`, ', payé en ligne par carte.', 'Rien à régler au parking : présentez simplement votre référence ou votre plaque.']
-    : [`Total : ${total}`, ', à régler sur place, au parking.', "Aucun paiement n'a été demandé en ligne."];
+    ? [`Total : ${total}`, `${night}, payé en ligne par carte.`, 'Rien à régler au parking : présentez simplement votre référence ou votre plaque.']
+    : [`Total : ${total}`, `${night}, à régler sur place, au parking.`, "Aucun paiement n'a été demandé en ligne."];
 }
 
 /** What happens to the money after a cancellation. */
@@ -273,7 +279,7 @@ export function closingEmail(productName: string, booking: PublicBooking, return
     `<h1 style="margin:0 0 8px;font-family:'Playfair Display',Georgia,serif;font-style:italic;font-weight:500;font-size:26px">Bon retour, ${escapeHtml(greetingName(booking))}</h1>
 <p style="margin:0;font-size:15px">Votre véhicule vous a été rendu le ${escapeHtml(formatLocalLong(returnedAtLocal))} à ${escapeHtml(booking.parking.title)}.</p>
 ${detailsTable(booking)}
-${total ? `<p style="margin:0;font-size:16px"><strong>Total : ${escapeHtml(total)}</strong>, payé en ligne par carte.</p>` : ''}
+${total ? `<p style="margin:0;font-size:16px"><strong>Total : ${escapeHtml(total)}</strong>${escapeHtml(nightFeeNote(booking))}, payé en ligne par carte.</p>` : ''}
 <p style="margin:16px 0 0;font-size:14px">Un oubli dans la voiture, une remarque ? Le parking reste joignable${booking.parking.phone ? ` au ${escapeHtml(booking.parking.phone)}` : ''}.</p>
 <p style="margin:12px 0 0;font-size:14px;color:${COLORS.soft}">Merci d'avoir choisi ${escapeHtml(productName)} : à bientôt pour votre prochain voyage.</p>`,
   );
@@ -284,7 +290,7 @@ ${total ? `<p style="margin:0;font-size:16px"><strong>Total : ${escapeHtml(total
     '',
     ...detailRows(booking).map(([label, value]) => `${label} : ${value}`),
     '',
-    ...(total ? [`Total : ${total}, payé en ligne par carte.`, ''] : []),
+    ...(total ? [`Total : ${total}${nightFeeNote(booking)}, payé en ligne par carte.`, ''] : []),
     `Un oubli dans la voiture, une remarque ? Le parking reste joignable${booking.parking.phone ? ` au ${booking.parking.phone}` : ''}.`,
     '',
     `Merci d'avoir choisi ${productName} : à bientôt pour votre prochain voyage.`,

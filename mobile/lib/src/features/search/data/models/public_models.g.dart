@@ -54,6 +54,10 @@ _SearchResultModel _$SearchResultModelFromJson(
   available: json['available'] as bool? ?? false,
   days: (json['days'] as num?)?.toInt() ?? 0,
   priceCents: (json['priceCents'] as num?)?.toInt(),
+  basePriceCents: (json['basePriceCents'] as num?)?.toInt(),
+  nightFee: json['nightFee'] == null
+      ? null
+      : NightFeeModel.fromJson(json['nightFee'] as Map<String, dynamic>),
   isDemo: json['isDemo'] as bool? ?? false,
   liveShuttle: json['liveShuttle'] as bool? ?? false,
 );
@@ -73,6 +77,8 @@ Map<String, dynamic> _$SearchResultModelToJson(_SearchResultModel instance) =>
       'available': instance.available,
       'days': instance.days,
       'priceCents': instance.priceCents,
+      'basePriceCents': instance.basePriceCents,
+      'nightFee': instance.nightFee,
       'isDemo': instance.isDemo,
       'liveShuttle': instance.liveShuttle,
     };
@@ -98,10 +104,44 @@ Map<String, dynamic> _$SearchResponseModelToJson(
   'results': instance.results,
 };
 
+_NightFeeModel _$NightFeeModelFromJson(Map<String, dynamic> json) =>
+    _NightFeeModel(
+      arrivalCents: (json['arrivalCents'] as num?)?.toInt() ?? 0,
+      returnCents: (json['returnCents'] as num?)?.toInt() ?? 0,
+      totalCents: (json['totalCents'] as num?)?.toInt() ?? 0,
+    );
+
+Map<String, dynamic> _$NightFeeModelToJson(_NightFeeModel instance) =>
+    <String, dynamic>{
+      'arrivalCents': instance.arrivalCents,
+      'returnCents': instance.returnCents,
+      'totalCents': instance.totalCents,
+    };
+
+_NightRuleModel _$NightRuleModelFromJson(Map<String, dynamic> json) =>
+    _NightRuleModel(
+      start: json['start'] as String,
+      end: json['end'] as String,
+      arrivalFeeCents: (json['arrivalFeeCents'] as num?)?.toInt(),
+      returnFeeCents: (json['returnFeeCents'] as num?)?.toInt(),
+    );
+
+Map<String, dynamic> _$NightRuleModelToJson(_NightRuleModel instance) =>
+    <String, dynamic>{
+      'start': instance.start,
+      'end': instance.end,
+      'arrivalFeeCents': instance.arrivalFeeCents,
+      'returnFeeCents': instance.returnFeeCents,
+    };
+
 _OfferModel _$OfferModelFromJson(Map<String, dynamic> json) => _OfferModel(
   available: json['available'] as bool,
   days: (json['days'] as num).toInt(),
   priceCents: (json['priceCents'] as num?)?.toInt(),
+  basePriceCents: (json['basePriceCents'] as num?)?.toInt(),
+  nightFee: json['nightFee'] == null
+      ? null
+      : NightFeeModel.fromJson(json['nightFee'] as Map<String, dynamic>),
 );
 
 Map<String, dynamic> _$OfferModelToJson(_OfferModel instance) =>
@@ -109,6 +149,8 @@ Map<String, dynamic> _$OfferModelToJson(_OfferModel instance) =>
       'available': instance.available,
       'days': instance.days,
       'priceCents': instance.priceCents,
+      'basePriceCents': instance.basePriceCents,
+      'nightFee': instance.nightFee,
     };
 
 _PricingTierModel _$PricingTierModelFromJson(Map<String, dynamic> json) =>
@@ -128,12 +170,16 @@ _PricingModel _$PricingModelFromJson(Map<String, dynamic> json) =>
               .toList() ??
           const <PricingTierModel>[],
       extraDayPriceCents: (json['extraDayPriceCents'] as num?)?.toInt(),
+      night: json['night'] == null
+          ? null
+          : NightRuleModel.fromJson(json['night'] as Map<String, dynamic>),
     );
 
 Map<String, dynamic> _$PricingModelToJson(_PricingModel instance) =>
     <String, dynamic>{
       'tiers': instance.tiers,
       'extraDayPriceCents': instance.extraDayPriceCents,
+      'night': instance.night,
     };
 
 _ParkingDetailModel _$ParkingDetailModelFromJson(

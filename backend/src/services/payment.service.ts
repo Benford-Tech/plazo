@@ -16,7 +16,7 @@ import {
 import prisma, { Operator, PayoutSchedule, Prisma, Reservation } from '@/database';
 import { manageToken } from '@/domain/booking';
 import { toPublicBooking, WITH_LISTING } from '@/domain/booking-view';
-import { confirmationSms, formatLocalShort } from '@/domain/booking-messages';
+import { confirmationSms, formatEuros, formatLocalShort } from '@/domain/booking-messages';
 import { splitPayment } from '@/domain/pricing';
 import { payoutDueAt } from '@/domain/payout';
 import { AuthenticatedStaff } from '@/interfaces/auth.interface';
@@ -227,7 +227,10 @@ export class PaymentService {
                 unit_amount: charged,
                 product_data: {
                   name: `${listing.title} · ${booking.days} jour${booking.days > 1 ? 's' : ''}`,
-                  description: `Réservation ${r.reference} : dépôt le ${formatLocalShort(booking.arrivalAt)}, retour le ${formatLocalShort(booking.returnAt)}`,
+                  // One line for the total; the night fees it includes are named (12/10/2026).
+                  description:
+                    `Réservation ${r.reference} : dépôt le ${formatLocalShort(booking.arrivalAt)}, retour le ${formatLocalShort(booking.returnAt)}` +
+                    (booking.nightFee ? ` · dont frais de nuit ${formatEuros(booking.nightFee.totalCents)}` : ''),
                 },
               },
             },

@@ -739,6 +739,21 @@
     "free_until": "Annulation gratuite jusqu'au {}",
     "anchors": "Aller à la section"
   },
+  "night_fees": {
+    "included": "Prix totaux pour vos dates, frais de nuit compris.",
+    "package": "Forfait {}",
+    "title": "Frais de nuit",
+    "line": "Frais de nuit · {}",
+    "drop_off": "dépôt à {}",
+    "return": "retour à {}",
+    "both": "dépôt à {} et retour à {}",
+    "rule": "Ce parking ajoute {} entre {} et {}.",
+    "rule_same": "{} pour un dépôt ou un retour",
+    "rule_each": "{} pour un dépôt et {} pour un retour",
+    "rule_drop_off": "{} pour un dépôt",
+    "rule_return": "{} pour un retour",
+    "paid_part": "dont {} de frais de nuit"
+  },
   "book": {
     "title": "Finaliser la réservation",
     "step_details": "1 · Vos informations",

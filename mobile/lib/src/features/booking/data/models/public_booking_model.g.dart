@@ -41,6 +41,10 @@ _PublicBookingModel _$PublicBookingModelFromJson(
   passengers: (json['passengers'] as num).toInt(),
   days: (json['days'] as num?)?.toInt(),
   priceCents: (json['priceCents'] as num?)?.toInt(),
+  basePriceCents: (json['basePriceCents'] as num?)?.toInt(),
+  nightFee: json['nightFee'] == null
+      ? null
+      : NightFeeModel.fromJson(json['nightFee'] as Map<String, dynamic>),
   cancellationPolicy: json['cancellationPolicy'] as String? ?? 'non_refundable',
   cancellableUntil: json['cancellableUntil'] as String?,
   canCancel: json['canCancel'] as bool? ?? false,
@@ -71,6 +75,8 @@ Map<String, dynamic> _$PublicBookingModelToJson(_PublicBookingModel instance) =>
       'passengers': instance.passengers,
       'days': instance.days,
       'priceCents': instance.priceCents,
+      'basePriceCents': instance.basePriceCents,
+      'nightFee': instance.nightFee,
       'cancellationPolicy': instance.cancellationPolicy,
       'cancellableUntil': instance.cancellableUntil,
       'canCancel': instance.canCancel,

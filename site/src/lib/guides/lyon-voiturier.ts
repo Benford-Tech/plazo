@@ -47,7 +47,7 @@ export function lyonVoiturier(facts: TopicFacts): TopicGuide {
     title: "Parking avec voiturier à l’aéroport de Lyon Saint-Exupéry : les trois formules, pas à pas",
     intro: `À Lyon Saint-Exupéry, « voiturier » recouvre trois services bien différents : celui que vend l’aéroport, avec un voiturier partenaire qui prend votre voiture au dépose-minute du Terminal 1 ; celui des sociétés indépendantes, qui vous donnent rendez-vous à l’aérogare ; et celui des parkings privés, où un voiturier range la voiture sur place pendant qu’une navette vous emmène. Ce guide présente chacun d’eux, puis détaille le jour du départ et celui du retour, ce qu’il faut laisser ou garder, l’état des lieux, la responsabilité en cas de dommage et la logique des prix. Informations de l’aéroport relevées le ${o.readOn} ; depuis le ${o.t2Closed}, tous les vols partent du Terminal 1.`,
     published: "2026-10-09",
-    updated: "2026-10-09",
+    updated: "2026-10-12",
     sections: [
       {
         id: "trois-formules",
@@ -151,7 +151,7 @@ export function lyonVoiturier(facts: TopicFacts): TopicGuide {
           "Il n’existe pas de prix unique : chaque formule fixe le sien, pour vos dates exactes. Le prix du voiturier de l’aéroport s’affiche sur sa boutique en ligne une fois les dates saisies ; les indépendants ont leurs propres tarifs, dont il faut vérifier ce qu’ils comprennent.",
           `Pour se repérer, une semaine dans les parkings de l’aéroport, sans voiturier et sans réservation, va de ${o.week.p5} au P5, relié par navette, à ${o.week.p0} au P0, couvert, à ${o.walk.p0} à pied du Terminal 1 (grille 2026).`,
           valetPrice,
-          `Sur ${P}, le prix total affiché se paie en ligne, par carte, commission comprise : rien ne s’y ajoute pour la remise des clés ni pour la restitution de la voiture. Les jours passés au-delà du retour réservé et les services demandés sur place, comme un lavage ou une recharge pendant que la voiture est confiée au voiturier, se règlent au parking, à son tarif. Pour un utilitaire, un camping-car, un véhicule surélevé ou attelé, vérifiez auprès du parking avant de réserver : il peut le refuser ou appliquer le supplément prévu par ses conditions.`,
+          `Sur ${P}, le prix total affiché se paie en ligne, par carte, commission et éventuels frais de nuit du parking compris : rien ne s’y ajoute pour la remise des clés ni pour la restitution de la voiture. Les jours passés au-delà du retour réservé et les services demandés sur place, comme un lavage ou une recharge pendant que la voiture est confiée au voiturier, se règlent au parking, à son tarif. Pour un utilitaire, un camping-car, un véhicule surélevé ou attelé, vérifiez auprès du parking avant de réserver : il peut le refuser ou appliquer le supplément prévu par ses conditions.`,
         ],
       },
       {

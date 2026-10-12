@@ -119,7 +119,7 @@ export function lyonLongueDuree(facts: TopicFacts): TopicGuide {
       title: "Parkings privés avec navette : le bon calcul pour un long séjour",
       paragraphs: [
         `Avec un parking privé, la navette ajoute quelques minutes à l’aller et au retour ; sur un mois, elles pèsent peu face à l’écart de prix. Elle vous conduit au Terminal 1, à l’endroit que le parking vous indique${rideWords ? `, en ${rideWords} chez nos partenaires` : ""}, et vient vous reprendre au retour.`,
-        `Sur ${P}, chaque partenaire fixe ses forfaits par durée et peut y ajouter, au-delà du plus long, un prix par jour supplémentaire ; sans ce prix, un séjour plus long que son plus long forfait n’est pas réservable chez lui. Le prix affiché est le total pour vos dates, commission comprise, payé en ligne par carte : rien ne s’ajoute à l’arrivée.`,
+        `Sur ${P}, chaque partenaire fixe ses forfaits par durée et peut y ajouter, au-delà du plus long, un prix par jour supplémentaire ; sans ce prix, un séjour plus long que son plus long forfait n’est pas réservable chez lui. Le prix affiché est le total pour vos dates et vos heures, commission et éventuels frais de nuit du parking compris, payé en ligne par carte : rien ne s’ajoute à l’arrivée.`,
         "Avec un voiturier, les clés restent au parking tout le séjour ; dans les parkings rangés en files, la voiture est placée selon sa date de retour, pour éviter qu’elle reste coincée derrière une autre qui part après elle : donnez une date de retour juste. Chaque fiche indique si le terrain est clôturé et sous vidéosurveillance et à quelles heures l’accueil est ouvert.",
       ],
       table: {
@@ -247,7 +247,7 @@ export function lyonLongueDuree(facts: TopicFacts): TopicGuide {
     title: "Parking longue durée à l’aéroport de Lyon Saint-Exupéry : 2 semaines, 3 semaines, 1 mois",
     intro: `Pour deux semaines, trois semaines ou un mois, le prix par jour et ce qui se passe au retour comptent plus que la distance au terminal. Ce guide donne les tarifs 2026 de l’aéroport de Lyon Saint-Exupéry pour ces durées, la durée maximale, le P5 et le P5 robotisé, le coût d’un retour tardif et la préparation de la voiture. Les parkings partenaires ci-dessous sont affichés pour deux semaines. Chiffres de l’aéroport relevés le ${o.readOn} ; depuis le ${o.t2Closed}, tous les vols partent du Terminal 1.`,
     published: "2026-10-09",
-    updated: "2026-10-09",
+    updated: "2026-10-12",
     sections,
     faq: [
       [

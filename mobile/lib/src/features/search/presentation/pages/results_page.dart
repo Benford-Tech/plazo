@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
 import '../../../../core/enums/view_state.dart';
+import '../../../../core/helpers/night_fees.dart';
 import '../../../../core/helpers/stay.dart';
 import '../../../../core/router/app_router.dart';
 import '../../../../core/utils/error_message_handler.dart';
@@ -226,7 +227,7 @@ class _ResultsView extends StatelessWidget {
         separatorBuilder: (_, _) => const SizedBox(height: 12),
         itemBuilder: (context, i) {
           if (i == 0) {
-            return Semantics(
+            final heading = Semantics(
               header: true,
               liveRegion: true,
               child: Text(
@@ -237,6 +238,16 @@ class _ResultsView extends StatelessWidget {
                     : 'results.available_many'.tr(args: ['$count']),
                 style: AppText.title(size: 20),
               ),
+            );
+            // Direction B (12/10/2026): the cards show totals only; one line says they include night fees.
+            if (!shown.any(hasNightFee)) return heading;
+            return Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                heading,
+                const SizedBox(height: 4),
+                Text('night_fees.included'.tr(), key: const Key('results-night-fees'), style: AppText.muted(size: 13)),
+              ],
             );
           }
           if (i == shown.length + 1) {

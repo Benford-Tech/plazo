@@ -20,12 +20,22 @@ import 'package:parking_app/src/services/secure_storage_service.dart';
 import '../../helpers/fakes.dart';
 import '../../helpers/pump_app.dart';
 
-PublicBookingModel held({int seconds = 1785}) => booking(
+PublicBookingModel held({
+  int seconds = 1785,
+  String arrivalAt = '2026-10-10T08:00',
+  int? priceCents = 4500,
+  int? basePriceCents,
+  NightFeeModel? nightFee,
+}) => booking(
   status: 'pending_payment',
   paymentMode: 'online',
   payment: BookingPaymentModel(status: 'pending', holdExpiresAt: '2026-10-02T12:30:00.000Z', holdSecondsLeft: seconds),
   canCancel: false,
   canEditFlight: false,
+  arrivalAt: arrivalAt,
+  priceCents: priceCents,
+  basePriceCents: basePriceCents,
+  nightFee: nightFee,
 );
 
 final paid = booking(paymentMode: 'online', payment: const BookingPaymentModel(status: 'paid'));
@@ -207,7 +217,7 @@ void main() {
     setUp(() => locator.registerSingleton<PaymentSheetService>(sheet));
     tearDown(locator.reset);
 
-    testWidgets('récapitulatif, « Votre place est réservée pendant 29:45 », « Payer 45,00 € »', (tester) async {
+    testWidgets('récapitulatif, « Votre place est réservée pendant 29:45 », « Payer 45,00 € »', (tester) async {
       api.answer('get', held());
       final bloc = make();
       await pumpLocalized(tester, BlocProvider.value(value: bloc, child: const PaymentView()));
@@ -228,6 +238,62 @@ void main() {
       }
       expect(find.text('Paiement annulé : rien n\'a été débité. Votre place reste réservée.'), findsOneWidget);
       // Stops the countdown's timer before the test ends.
+      unawaited(bloc.close());
+      await tester.pump();
+    });
+
+    testWidgets('frais de nuit : les deux heures, « Forfait 8 jours », « Frais de nuit · dépôt à 23:30 », « Payer 51,60 € »', (tester) async {
+      api.answer('get', held(arrivalAt: '2026-10-10T23:30', priceCents: 5160, basePriceCents: 3660, nightFee: dropOffNightFee));
+      final bloc = make();
+      await pumpLocalized(tester, BlocProvider.value(value: bloc, child: const PaymentView()));
+      bloc.add(const PaymentStarted());
+      await tester.pump();
+      await tester.pump();
+      expect(find.descendant(of: find.byKey(const Key('payment-drop-off')), matching: find.text('DÉPÔT')), findsOneWidget);
+      expect(find.descendant(of: find.byKey(const Key('payment-drop-off')), matching: find.text('sam. 10 oct.')), findsOneWidget);
+      expect(find.descendant(of: find.byKey(const Key('payment-drop-off')), matching: find.text('23:30')), findsOneWidget);
+      expect(find.descendant(of: find.byKey(const Key('payment-pick-up')), matching: find.text('RETOUR')), findsOneWidget);
+      expect(find.descendant(of: find.byKey(const Key('payment-pick-up')), matching: find.text('sam. 17 oct.')), findsOneWidget);
+      expect(find.descendant(of: find.byKey(const Key('payment-pick-up')), matching: find.text('18:00')), findsOneWidget);
+      expect(find.text('Forfait 8 jours'), findsOneWidget);
+      expect(find.text('36,60 €'), findsOneWidget);
+      expect(find.text('Frais de nuit · dépôt à 23:30'), findsOneWidget);
+      expect(find.text('15,00 €'), findsOneWidget);
+      expect(find.descendant(of: find.byKey(const Key('payment-total')), matching: find.text('51,60 €')), findsOneWidget);
+      expect(find.text('Payer 51,60 €'), findsOneWidget);
+      unawaited(bloc.close());
+      await tester.pump();
+    });
+
+    testWidgets('dépôt et retour de nuit, téléphone étroit : la ligne passe à la ligne sans déborder', (tester) async {
+      const both = NightFeeModel(arrivalCents: 1500, returnCents: 1000, totalCents: 2500);
+      api.answer(
+        'get',
+        held(arrivalAt: '2026-10-10T22:30', priceCents: 6160, basePriceCents: 3660, nightFee: both).copyWith(returnAt: '2026-10-17T05:30'),
+      );
+      final bloc = make();
+      await pumpLocalized(tester, BlocProvider.value(value: bloc, child: const PaymentView()), size: const Size(320, 900));
+      bloc.add(const PaymentStarted());
+      await tester.pump();
+      await tester.pump();
+      expect(find.text('Frais de nuit · dépôt à 22:30 et retour à 05:30'), findsOneWidget);
+      expect(find.text('25,00 €'), findsOneWidget);
+      expect(tester.takeException(), isNull);
+      unawaited(bloc.close());
+      await tester.pump();
+    });
+
+    testWidgets('sans frais de nuit : les heures, le total seul', (tester) async {
+      api.answer('get', held());
+      final bloc = make();
+      await pumpLocalized(tester, BlocProvider.value(value: bloc, child: const PaymentView()));
+      bloc.add(const PaymentStarted());
+      await tester.pump();
+      await tester.pump();
+      expect(find.descendant(of: find.byKey(const Key('payment-drop-off')), matching: find.text('08:00')), findsOneWidget);
+      expect(find.byKey(const Key('price-night-fee')), findsNothing);
+      expect(find.byKey(const Key('price-package')), findsNothing);
+      expect(find.descendant(of: find.byKey(const Key('payment-total')), matching: find.text('45,00 €')), findsOneWidget);
       unawaited(bloc.close());
       await tester.pump();
     });

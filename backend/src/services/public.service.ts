@@ -1,6 +1,7 @@
 import httpStatus from 'http-status';
 import { Container, Service } from 'typedi';
 import prisma, { Airport, Listing, Operator, Parking, Prisma, ShuttleTracking } from '@/database';
+import { NightFee, nightFeesForStay, nightRule, nightSettingsOf } from '@/domain/night-fees';
 import { billableDays, quoteCents } from '@/domain/pricing';
 import { travellersSeePosition } from '@/domain/shuttle-tracking';
 import { exceedsCalendarDays, parseInstant } from '@/domain/time';
@@ -112,19 +113,31 @@ export class PublicService {
 
   /**
    * Full nights, billable days and total price of a stay at one listing. Bookings call it inside
-   * the transaction holding the parking lock (`client`).
+   * the transaction holding the parking lock (`client`). The total (`priceCents`) is the grid price
+   * (`basePriceCents`) plus the night fees of the hours booked (12/10/2026), tested on the parking's
+   * wall clock like the billable days; null when the grid cannot price the stay.
    */
-  public async quote(listing: ListingWithParking, stay: Stay, client: Client = prisma) {
+  public async quote(
+    listing: ListingWithParking,
+    stay: Stay,
+    client: Client = prisma,
+  ): Promise<{ fullNights: string[]; days: number; priceCents: number | null; basePriceCents: number | null; nightFee: NightFee | null }> {
     const { full } = await this.capacity.fullNights(listing.parking, stay.arrivalAt, stay.returnAt, { client });
-    const days = billableDays(stay.arrivalAt, stay.returnAt, listing.parking.timezone);
-    const priceCents = quoteCents(listing.parking.pricingTiers, listing.parking.extraDayPriceCents, days);
-    return { fullNights: full.map(n => n.date), days, priceCents };
+    const { timezone } = listing.parking;
+    const days = billableDays(stay.arrivalAt, stay.returnAt, timezone);
+    const basePriceCents = quoteCents(listing.parking.pricingTiers, listing.parking.extraDayPriceCents, days);
+    const nightFee = basePriceCents === null ? null : nightFeesForStay(nightSettingsOf(listing.parking), stay.arrivalAt, stay.returnAt, timezone);
+    const priceCents = basePriceCents === null ? null : basePriceCents + (nightFee?.totalCents ?? 0);
+    return { fullNights: full.map(n => n.date), days, priceCents, basePriceCents, nightFee };
   }
 
-  /** Availability and total price of a stay at one listing. */
+  /**
+   * Availability and price of a stay at one listing: the total « tout compris » (`priceCents`, used to sort, filter
+   * and pick the cheapest), the grid price, and the night fees included in it (null when none).
+   */
   private async offer(listing: ListingWithParking, stay: Stay) {
-    const { fullNights, days, priceCents } = await this.quote(listing, stay);
-    return { available: fullNights.length === 0 && priceCents !== null, days, priceCents };
+    const { fullNights, days, priceCents, basePriceCents, nightFee } = await this.quote(listing, stay);
+    return { available: fullNights.length === 0 && priceCents !== null, days, priceCents, basePriceCents, nightFee };
   }
 
   private publishedAt(airportId: string) {
@@ -211,7 +224,7 @@ export class PublicService {
     };
   }
 
-  /** Published parkings at an airport for a stay: available ones first, cheapest first. */
+  /** Published parkings at an airport for a stay: available ones first, cheapest first (total, night fees included). */
   public async search(airportSlug: string, arrival?: string, ret?: string) {
     const airport = await this.airportBySlug(airportSlug);
     const stay = this.parseStay(airport, arrival, ret);
@@ -259,7 +272,12 @@ export class PublicService {
         photos: listing.photos,
         address: listing.parking.address,
         phone: listing.contactPhone,
-        pricing: { tiers: listing.parking.pricingTiers, extraDayPriceCents: listing.parking.extraDayPriceCents },
+        // The night rule (12/10/2026), for the sentence under the price breakdown: null when the parking charges none.
+        pricing: {
+          tiers: listing.parking.pricingTiers,
+          extraDayPriceCents: listing.parking.extraDayPriceCents,
+          night: nightRule(nightSettingsOf(listing.parking)),
+        },
       },
       offer: stay ? await this.offer(listing, stay) : null,
     };

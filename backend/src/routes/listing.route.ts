@@ -83,10 +83,22 @@ import { ValidationMiddleware } from '@/middlewares/validation.middleware';
  *     tags: [Listing]
  * /internal/pricing:
  *   get:
- *     summary: Pricing grid — packages "up to N days" and the price of each extra day
+ *     summary: Pricing grid — packages "up to N days", the price of each extra day, and the night fees
+ *     description: >-
+ *       { tiers, extraDayPriceCents, commissionBps, night: { enabled, start, end, arrivalFeeCents, returnFeeCents } }:
+ *       `start`/`end` are null when never set, the fees null when unset. Night fees (12/10/2026): one local window,
+ *       the same every day, for drop-offs and returns ("HH:mm"; the start counts as night, the end does not; it may
+ *       cross midnight); a drop-off booked in it pays `arrivalFeeCents`, a return `returnFeeCents`, both when both
+ *       ends are at night. Plazo bookings only, included in the total and in Plazo's commission.
  *     tags: [Listing]
  *   put:
- *     summary: Replace the pricing grid (manager)
+ *     summary: Replace the pricing grid, and the night fees when sent (manager)
+ *     description: >-
+ *       `night` absent: unchanged. Switched on, `start` and `end` are required ("HH:mm", 00:00 to 23:59, invalid_time)
+ *       and must differ (same_time), the fees are integers from 0 to 100000 cents (integer, min_0, too_large) and at
+ *       least one is above 0 (fee_required). Switched off, the values sent are kept (formats still checked), so that
+ *       switching back on restores them. 400 validation_failed with fields night.start, night.end,
+ *       night.arrivalFeeCents, night.returnFeeCents (night.enabled: required).
  *     tags: [Listing]
  *     requestBody:
  *       required: true
@@ -98,6 +110,15 @@ import { ValidationMiddleware } from '@/middlewares/validation.middleware';
  *             properties:
  *               tiers: { type: array, items: { type: object, properties: { days: { type: integer }, priceCents: { type: integer } } } }
  *               extraDayPriceCents: { type: integer, nullable: true }
+ *               night:
+ *                 type: object
+ *                 required: [enabled]
+ *                 properties:
+ *                   enabled: { type: boolean }
+ *                   start: { type: string, nullable: true, example: "22:00" }
+ *                   end: { type: string, nullable: true, example: "06:00" }
+ *                   arrivalFeeCents: { type: integer, nullable: true, example: 1500 }
+ *                   returnFeeCents: { type: integer, nullable: true, example: 1000 }
  */
 export class ListingRoute implements Routes {
   public router = Router();

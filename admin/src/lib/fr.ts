@@ -135,6 +135,9 @@ export const fr = {
     pricing_required:
       "Enregistrez d'abord vos tarifs : une fiche sans prix ne peut pas être envoyée en validation.",
     duplicate_days: "Deux forfaits ont la même durée.",
+    // Night fees (12/10/2026).
+    same_time: "Le début et la fin de la nuit doivent être différents.",
+    fee_required: "Indiquez au moins un montant de frais de nuit : dépôt ou retour.",
     // S-C files (07/10/2026).
     file_occupied: "Cette file contient des voitures : videz-la d'abord.",
     file_full: "Cette file est complète.",
@@ -801,6 +804,8 @@ export const fr = {
     savePrice: "Enregistrer",
     cancelPrice: "Annuler",
     priceSaved: "Prix enregistré",
+    // Night fees (12/10/2026): included in the price paid, frozen at booking.
+    nightFeeIncluded: (price: string) => `dont ${price} de frais de nuit`,
     newTitle: "Nouvelle réservation",
     editTitle: "Modifier la réservation",
     arrival: "Arrivée",
@@ -1127,6 +1132,33 @@ export const fr = {
     commission: (pct: string) =>
       `Sur une réservation payée en ligne, ${PRODUCT.name} retient sa commission (${pct} %) et vous reverse le reste. Les réservations au comptoir, par téléphone ou via les comparateurs ne sont pas concernées.`,
     commissionUnset: `Sur une réservation payée en ligne, ${PRODUCT.name} retient une commission (taux à convenir) et vous reverse le reste. Les réservations au comptoir, par téléphone ou via les comparateurs ne sont pas concernées.`,
+    // With night fees on, the commission applies to the whole total (12/10/2026).
+    commissionNight: (pct: string) =>
+      `Sur une réservation payée en ligne, ${PRODUCT.name} retient sa commission (${pct} %), frais de nuit compris, et vous reverse le reste. Les réservations au comptoir, par téléphone ou via les comparateurs ne sont pas concernées.`,
+    commissionUnsetNight: `Sur une réservation payée en ligne, ${PRODUCT.name} retient une commission (taux à convenir), frais de nuit compris, et vous reverse le reste. Les réservations au comptoir, par téléphone ou via les comparateurs ne sont pas concernées.`,
+    // Night fees (12/10/2026, « ajoute des frais de nuit pour les arrivées et départs en heure définie par le parking »).
+    night: "Frais de nuit",
+    nightNew: "Nouveau",
+    nightSwitch: "Appliquer des frais de nuit",
+    nightFrom: "Heures de nuit : de",
+    nightTo: "à",
+    nightStart: "Début de la nuit",
+    nightEnd: "Fin de la nuit",
+    nightArrival: "Dépôt de nuit",
+    nightReturn: "Retour de nuit",
+    nightHelp: (start: string, end: string) =>
+      `Un dépôt ou un retour réservé entre ${start} et ${end} ajoute ces frais au séjour. Le voyageur les voit compris dans le prix total, avec une ligne « Frais de nuit ». ${start} compte comme la nuit, ${end} non.`,
+    nightScope: `Seulement pour les réservations faites sur ${PRODUCT.name} : les réservations des comparateurs et celles saisies par l'équipe gardent leur prix.`,
+    nightOff: "Ajoutez des frais quand un dépôt ou un retour est réservé pendant les heures de nuit du parking.",
+    nightErrors: {
+      same_time: "Choisissez une fin différente du début.",
+      invalid_fee: "Montant invalide (ex. 15,00), 1 000 € au plus.",
+      fee_required: "Indiquez au moins un montant : dépôt ou retour de nuit.",
+    },
+    simNightTitle: "Avec frais de nuit",
+    simNightArrival: "dépôt à",
+    simNightReturn: "retour à",
+    simNightAnd: "et",
     invalidPrice: "Prix invalide (ex. 34,99).",
     invalidDays: "Entre 1 et 90 jours.",
   },
@@ -2099,6 +2131,12 @@ export const fr = {
       prices: "Tarifs",
       noPrices: "Aucun tarif enregistré.",
       upTo: (days: number, price: string) => `Jusqu'à ${days} j : ${price}`,
+      // 12/10/2026: everything a traveller can be charged.
+      extraDay: (price: string) => `Jour en plus : ${price}`,
+      night: (start: string, end: string) => `Frais de nuit de ${start} à ${end} :`,
+      nightArrival: (price: string) => `dépôt ${price}`,
+      nightReturn: (price: string) => `retour ${price}`,
+      noNight: "Sans frais de nuit.",
       photos: "Photos",
       noPhoto: "Aucune photo.",
       lastMessage: "Dernier message envoyé",
