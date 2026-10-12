@@ -66,7 +66,7 @@ class PaymentView extends StatelessWidget {
       listenWhen: (a, b) => a.status != b.status,
       listener: _onState,
       builder: (context, state) => Scaffold(
-        appBar: AppBar(titleSpacing: NavigationToolbar.kMiddleSpacing, title: Text('book.title'.tr(), style: AppText.strong(size: 16, color: Colors.white))),
+        appBar: AppBar(titleSpacing: NavigationToolbar.kMiddleSpacing, title: Text('book.title'.tr(), style: AppText.strong(size: 16, color: AppColors.brownOrInk))),
         body: SafeArea(
           top: false,
           child: ListView(

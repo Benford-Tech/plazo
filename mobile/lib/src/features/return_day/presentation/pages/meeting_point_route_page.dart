@@ -48,13 +48,13 @@ class MeetingPointRoutePage extends StatelessWidget implements AutoRouteWrapper 
         return Scaffold(
           appBar: AppBar(
             titleSpacing: NavigationToolbar.kMiddleSpacing,
-            title: Text('return_day.route_title'.tr(), style: AppText.strong(size: 16, color: Colors.white)),
+            title: Text('return_day.route_title'.tr(), style: AppText.strong(size: 16, color: AppColors.brownOrInk)),
             actions: [
               if (meeting != null)
                 TextButton(
                   key: const Key('open-maps'),
                   onPressed: () => links.open(links.walkingDirections(meeting.lat, meeting.lng, meetingLabel(meeting))),
-                  child: Text('${'return_day.route_open_maps'.tr()} ›', style: AppText.strong(size: 14, color: Colors.white)),
+                  child: Text('${'return_day.route_open_maps'.tr()} ›', style: AppText.strong(size: 14, color: AppColors.accent)),
                 ),
             ],
           ),
