@@ -670,6 +670,8 @@ Travellers waiting at the meeting point and the team would lose sight of the shu
 ```
 Vidéo : le parcours de 4.4 (Plazo Pro), avec les notifications déjà autorisées. On y voit la demande d'autorisation du système, la notification permanente avec l'app en arrière-plan, puis « Clients déposés · retour parking » qui la fait disparaître.
 
+Données du tournage (12/10/2026) : le workflow GitHub « Données fictives du parking de test » (`test-parking-data.yml`, action `fill`) prépare sur le loueur « Plazo (tests) » de la production une journée fictive autour de l'heure du lancement : suivi des navettes sur « Équipe et clients », une navette en service, deux voitures « Sur place » à emmener au terminal, deux arrivées dans la journée, deux retours du jour et deux arrivées le lendemain (plaques `TS-1xx-PZ`, téléphones en 06 39 98, aucun e-mail, SMS de la veille désactivé). Le relancer juste avant de filmer remet la journée à l'heure, sans doublon, et termine un trajet resté en cours. Il demande deux secrets GitHub, `PLAZO_TEST_EMAIL` et `PLAZO_TEST_PASSWORD`, d'un gérant de « Plazo (tests) » : de préférence un compte créé pour cela dans Équipe, pas celui du super admin. Il refuse tout autre loueur.
+
 **Plazo**
 
 Description :
