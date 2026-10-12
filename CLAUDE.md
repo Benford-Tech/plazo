@@ -168,6 +168,10 @@ Ne construire QUE ce qui règle la douleur n°1 du client.
      notification) ; les mails entrants (traité, rattaché, nouvelle adresse), le « SMS de la veille », le suivi des navettes,
      les dessertes et la fin d'un trajet sont permis et tracés `view_as.write` ; démarrer un trajet ou partager sa position
      reste refusé avec 403 `view_as_not_driver` (le super admin n'est pas chauffeur du loueur).
+     **Son propre loueur n'est pas une consultation (12/10/2026, « je veux pouvoir ajouter des comptes sur le parking de test »)** :
+     « Ouvrir son espace » sur le compte de la plateforme (« Plazo (tests) ») donne la session normale du super admin (`config/passport.ts` :
+     pas d'`actingAs` quand le loueur ouvert est le sien), avec son rôle et ses droits : équipe, mots de passe et réglages s'y modifient,
+     sans bandeau ni trace `view_as.write`.
      **Modifications Allopark appliquées par Plazo (10/10/2026, « C'est une modification » → choix « Appliquer seul »)** :
      un mail Allopark qui annonce une modification faite (objet « Modification… », « modifiée », « changement » ; texte
      « réservation … modifiée », « Vos nouvelles dates : »… ; ou lu par Claude comme modification ; une annulation l'emporte

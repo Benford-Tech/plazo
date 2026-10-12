@@ -543,6 +543,23 @@ describe('ouvrir l’espace d’un loueur (view-as)', () => {
     expect((await api().get('/api/internal/parking').set(auth(admin.token))).body.id).toBe(admin.parking.id);
   });
 
+  it('12/10/2026 : ouvrir son propre loueur n’est pas une consultation, son équipe s’y gère', async () => {
+    const token = await viewAs(admin.operator.id);
+    const me = await api().get('/api/internal/staff/me').set(auth(token));
+    expect(me.body).toMatchObject({ id: admin.manager.id, operatorId: admin.operator.id, role: 'manager', viewAs: null });
+
+    const email = 'donnees-de-test@robot.invalid';
+    const created = await api()
+      .post('/api/internal/staff')
+      .set(auth(token))
+      .send({ firstName: 'Données', lastName: 'Test', email, role: 'agent', password: PASSWORD });
+    expect(created.status).toBe(201);
+    expect(created.body.data).toMatchObject({ operatorId: admin.operator.id, role: 'agent' });
+    expect((await api().post('/api/internal/auth/login').send({ email, password: PASSWORD })).status).toBe(200);
+    // Nothing is traced as a consultation.
+    expect(await prisma.auditLog.count({ where: { action: 'view_as.write' } })).toBe(0);
+  });
+
   it('laisse l’équipe, les mots de passe et les réglages personnels en lecture seule', async () => {
     const token = await viewAs();
     expect((await api().get('/api/internal/staff').set(auth(token))).status).toBe(200);

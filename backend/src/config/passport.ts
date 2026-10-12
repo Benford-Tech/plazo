@@ -25,7 +25,9 @@ export const staffJwtStrategy = new JwtStrategy(
       const { operator, ...staff } = token.staff;
       const actingAs = (token.metadata as ViewAsMetadata | null)?.actingAs;
 
-      if (actingAs) {
+      // Opening one's own operator from the platform pages (« Plazo (tests) », the platform's account, 12/10/2026)
+      // is no consultation: the admin's own session, role and rights, so its team can be managed there too.
+      if (actingAs && actingAs !== operator.id) {
         // View-as: only while the real person is still a platform admin; works on a suspended
         // operator too (the platform must be able to look at it).
         if (!isVerifiedPlatformAdmin(staff)) return done(null, false);
