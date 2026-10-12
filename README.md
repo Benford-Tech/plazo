@@ -515,6 +515,7 @@ ou `vercel dev` pour lancer les trois services ensemble.
   avec message obligatoire / Dépublier), **Réservations** (tous les loueurs, lecture seule, sans coordonnées des
   voyageurs), **Paiements** (compte Stripe, calendrier, reversements en attente ou en échec, « Relancer »),
   **Outil capacité**.
+- **Données fictives du parking de test** (12/10/2026) : GitHub › Actions › « Données fictives du parking de test » › Run workflow (`fill`) remplit « Plazo (tests) » d'une journée fictive autour de l'heure du lancement (suivi des navettes « Équipe et clients », une navette, 8 réservations : 2 voitures sur place à emmener au terminal, 2 arrivées du jour, 2 retours du jour, 2 arrivées le lendemain) pour filmer ou montrer Plazo Pro sans données réelles ; le relancer remet la journée à l'heure sans doublon, `clear` clôture les réservations fictives. Secrets GitHub `PLAZO_TEST_EMAIL` / `PLAZO_TEST_PASSWORD` d'un gérant de « Plazo (tests) » (un compte dédié, créé dans Équipe) ; le script (`.github/scripts/test_parking_data.py`) refuse tout autre loueur, n'écrit aucun e-mail et désactive le SMS de la veille de ces réservations.
 - **Loueurs** : le gérant administre son espace et sa fiche, comme avant (rôles gérant, agent, chauffeur, voiturier).
 - **Inscription libre** (`/pro/inscription`, lien « Vous êtes un parking ? » du site) : entreprise, parking, capacité,
   aéroport, gérant, mot de passe, acceptation des conditions. Crée le loueur, son parking et sa fiche en brouillon ; le

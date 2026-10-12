@@ -699,7 +699,13 @@ Le nom du produit doit rester dans UN seul fichier de configuration (il peut enc
   `capture.mjs`, 11/10/2026) prises sur les vraies apps construites pour le web par `brand/stores/tools/screenshots/run.sh`
   (base neuve `…_shots` avec les données de démo, API à 14:05 au parking par `fake-clock.cjs`, journée préparée par
   `scenario.mjs` et `stage.sql`, Chromium piloté par `capture.mjs`), ou par le workflow GitHub `store-screenshots.yml`
-  (artefact) ; **polices de l'app variables** (11/10/2026 : `Manrope.ttf` était l'instance statique ExtraLight et
+  (artefact) ; **données fictives du parking de test** (12/10/2026, « crée des données factices sur le parking de test », pour filmer
+  les vidéos du service de premier plan) : workflow `test-parking-data.yml` (`fill` / `clear`, à la main) et
+  `.github/scripts/test_parking_data.py`, qui se connecte à l'API de production avec les secrets GitHub `PLAZO_TEST_EMAIL` /
+  `PLAZO_TEST_PASSWORD` (un gérant de « Plazo (tests) », refus de tout autre loueur), termine un trajet resté en cours, met le suivi
+  sur « Équipe et clients », ajoute une navette si aucune n'est en service et place 8 réservations fictives autour de l'heure du
+  lancement (plaques `TS-101-PZ` à `TS-108-PZ` retrouvées et remises à l'heure à chaque passage, sans doublon ; 06 39 98, aucun
+  e-mail, SMS de la veille désactivé) ; **polices de l'app variables** (11/10/2026 : `Manrope.ttf` était l'instance statique ExtraLight et
   `ArchivoNarrow.ttf` / `JetBrainsMono.ttf` des Regular statiques, tout le texte de l'app voyageur sortait en très fin et
   les titres de Plazo Pro sans gras ; remplacées par les polices variables de Google Fonts, `wght` 200–800, 400–700,
   100–800, que `_font` de `theme.dart` règle déjà) ; carte de l'accueil Rechercher cadrée avec une marge de 108 / 120 px
