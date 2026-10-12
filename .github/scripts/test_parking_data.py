@@ -18,8 +18,11 @@ the ARCEP), no e-mail address, « Ne pas envoyer » set on the day-before SMS: n
 
 Refuses any operator but the test one (its name ends in « (tests) »): never the client n°1's parking.
 
-Environment: PLAZO_API (default https://www.plazo.fr/api), PLAZO_TEST_EMAIL and PLAZO_TEST_PASSWORD (a manager of
-« Plazo (tests) »: repository secrets, never printed). Standard library only.
+Environment: PLAZO_API (default https://www.plazo.fr/api), PLAZO_TEST_EMAIL and PLAZO_TEST_PASSWORD (repository
+secrets, never printed): an « Accueil » member of « Plazo (tests) », never a manager, since a manager of that operator
+could reset the platform admin's password. An Accueil account does everything but the two manager settings (shuttle
+tracking, adding a vehicle): those are only checked, with a warning when a manager has to set them. Standard library
+only.
 """
 import json
 import os
@@ -51,6 +54,7 @@ MOVES = {
 }
 
 token = None
+role = None
 
 
 def fail(message):
@@ -155,16 +159,35 @@ def find(plate):
 
 
 def login():
-    global token
+    global token, role
     if not EMAIL or not PASSWORD:
         fail("PLAZO_TEST_EMAIL and PLAZO_TEST_PASSWORD are required (repository secrets)")
-    session = call("POST", "/internal/auth/login", {"email": EMAIL, "password": PASSWORD})
+    # A secret pasted with a line break or a space at an end is tried once more without it (2 attempts at most: the API
+    # locks an address after 8 failures in 15 minutes).
+    trimmed = PASSWORD.strip()
+    candidates = [PASSWORD] + ([trimmed] if trimmed and trimmed != PASSWORD else [])
+    session = None
+    for candidate in candidates:
+        try:
+            session = call("POST", "/internal/auth/login", {"email": EMAIL, "password": candidate})
+            break
+        except RuntimeError as error:
+            if "→ 401" not in str(error):
+                raise
+    if session is None:
+        fail("Sign-in refused (401 invalid_credentials): check that the member exists and is active in « Plazo (tests) » › "
+             "Équipe, and that the secrets PLAZO_TEST_EMAIL and PLAZO_TEST_PASSWORD hold exactly its email and password")
+    if candidate != PASSWORD:
+        print("::warning::PLAZO_TEST_PASSWORD has a space or a line break at an end: signed in without it")
     token = session["tokenData"]["access"]["token"]
     operator = (session.get("user") or {}).get("operatorName") or ""
     if not operator.endswith("(tests)"):
         fail(f"Refused: this account belongs to « {operator} », not to the test operator « … (tests) »")
-    if (session.get("user") or {}).get("role") != "manager":
-        fail("Refused: the account must be a manager of the test operator")
+    role = (session.get("user") or {}).get("role")
+    if role not in ("agent", "manager"):
+        fail("Refused: the account must be an « Accueil » member (or a manager) of the test operator")
+    if role == "manager":
+        print("::warning::This account is a manager: an « Accueil » account is enough and cannot reset the platform admin's password")
     print(f"Signed in to « {operator} » ({API})")
 
 
@@ -184,13 +207,22 @@ def fill():
     now = datetime.now(zone).replace(tzinfo=None)
     print(f"Parking « {parking['name']} », {now:%d/%m/%Y %H:%M} at the parking")
 
-    if parking.get("shuttleTracking") != "everyone":
+    tracking = parking.get("shuttleTracking")
+    if tracking != "everyone" and role == "manager":
         call("PUT", f"/internal/parkings/{parking['id']}/shuttle-tracking", {"tracking": "everyone"})
         print("Shuttle tracking: « Équipe et clients »")
+    elif tracking == "off":
+        print("::warning::Shuttle tracking is « Désactivé »: a manager sets it to « Équipe et clients » "
+              "(Parking › Réglages › Suivi des navettes), else no position is shared while filming")
+    elif tracking != "everyone":
+        print("Shuttle tracking: « Équipe seulement » (travellers see no shuttle; a manager can set « Équipe et clients »)")
 
     vehicles = call("GET", "/internal/shuttle/vehicles")
     vehicles = vehicles.get("data", vehicles) if isinstance(vehicles, dict) else vehicles
-    if not any(v.get("inService") for v in vehicles):
+    if not any(v.get("inService") for v in vehicles) and role != "manager":
+        print("::warning::No shuttle vehicle in service: a manager adds one (Parking › Réglages › Véhicules de navette) "
+              "before a trip can start")
+    elif not any(v.get("inService") for v in vehicles):
         test_vehicle = next((v for v in vehicles if v.get("plate") == VEHICLE["plate"]), None)
         if test_vehicle:
             call("PATCH", f"/internal/shuttle/vehicles/{test_vehicle['id']}", {"inService": True})

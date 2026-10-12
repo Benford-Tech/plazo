@@ -702,8 +702,10 @@ Le nom du produit doit rester dans UN seul fichier de configuration (il peut enc
   (artefact) ; **données fictives du parking de test** (12/10/2026, « crée des données factices sur le parking de test », pour filmer
   les vidéos du service de premier plan) : workflow `test-parking-data.yml` (`fill` / `clear`, à la main) et
   `.github/scripts/test_parking_data.py`, qui se connecte à l'API de production avec les secrets GitHub `PLAZO_TEST_EMAIL` /
-  `PLAZO_TEST_PASSWORD` (un gérant de « Plazo (tests) », refus de tout autre loueur), termine un trajet resté en cours, met le suivi
-  sur « Équipe et clients », ajoute une navette si aucune n'est en service et place 8 réservations fictives autour de l'heure du
+  `PLAZO_TEST_PASSWORD` (un membre Accueil de « Plazo (tests) », jamais un gérant, qui pourrait réinitialiser le mot de passe du
+  super admin ; refus de tout autre loueur), termine un trajet resté en cours, met le suivi
+  sur « Équipe et clients » et ajoute une navette si aucune n'est en service (avec un compte gérant ; avec un compte Accueil,
+  avertissement seulement) et place 8 réservations fictives autour de l'heure du
   lancement (plaques `TS-101-PZ` à `TS-108-PZ` retrouvées et remises à l'heure à chaque passage, sans doublon ; 06 39 98, aucun
   e-mail, SMS de la veille désactivé) ; **polices de l'app variables** (11/10/2026 : `Manrope.ttf` était l'instance statique ExtraLight et
   `ArchivoNarrow.ttf` / `JetBrainsMono.ttf` des Regular statiques, tout le texte de l'app voyageur sortait en très fin et

@@ -6,8 +6,10 @@ name: Données fictives du parking de test
 # rules. For filming Plazo Pro (Google Play foreground-service videos), a demo or a check before a store review.
 # Fictional people only, no e-mail, phones in the 06 39 98 range, no day-before SMS. Refuses any other operator.
 # Run again to refresh the day (nothing piles up); « clear » closes the fictional bookings.
-# Secrets (Settings › Secrets and variables › Actions): PLAZO_TEST_EMAIL and PLAZO_TEST_PASSWORD, a manager of
-# « Plazo (tests) ». Nothing secret is printed. By hand only (.github/scripts/test_parking_data.py).
+# Secrets (Settings › Secrets and variables › Actions): PLAZO_TEST_EMAIL and PLAZO_TEST_PASSWORD, an « Accueil » member
+# of « Plazo (tests) », never a manager (a manager of that operator could reset the platform admin's password); the two
+# manager settings (shuttle tracking, a vehicle) are then only checked, with a warning. Nothing secret is printed. By
+# hand only (.github/scripts/test_parking_data.py).
 on:
   workflow_dispatch:
     inputs:
