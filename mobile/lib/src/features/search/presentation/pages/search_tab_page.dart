@@ -326,7 +326,7 @@ class _MapHero extends StatelessWidget {
                             ? 'search.km_shuttle'.tr(args: [_km(selected.distanceKm!), '${selected.shuttleMinutes}'])
                             : selected.distanceKm != null
                             ? 'search.km'.tr(args: [_km(selected.distanceKm!)])
-                            : 'highlights.shuttle_min'.tr(args: ['${selected.shuttleMinutes}']),
+                            : 'parking.shuttle_min'.tr(args: ['${selected.shuttleMinutes}']),
                       ),
                     ),
                   Positioned(

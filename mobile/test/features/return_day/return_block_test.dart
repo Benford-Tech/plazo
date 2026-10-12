@@ -85,6 +85,8 @@ void main() {
     await show(tester, ReturnState(now: t0, reference: 'R7KQ2M', data: travellerReturn().copyWith(notice: ReturnNoticeModel(kind: 'luggage', at: t0))));
     expect(find.byKey(const Key('return-notice-done')), findsOneWidget);
     expect(find.textContaining('Bagage perdu ou retardé'), findsOneWidget);
+    // The hour comes first: « Transmis au parking à 14:20 : Bagage perdu ou retardé. »
+    expect(find.textContaining(RegExp(r'^Transmis au parking à \d{2}:\d{2} : Bagage perdu ou retardé\.$')), findsOneWidget);
   });
 
   testWidgets('S-C · voiture rangée en file : « Retrouver ma voiture » nomme la file, sinon la place', (tester) async {

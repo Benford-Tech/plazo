@@ -159,7 +159,7 @@ class _NoticeChipsState extends State<_NoticeChips> {
                 const SizedBox(width: 6),
                 Expanded(
                   child: Text(
-                    'return_day.noticed'.tr(args: [_label(notice), hhmm(notice.at)]),
+                    'return_day.noticed'.tr(args: [hhmm(notice.at), _label(notice)]),
                     key: const Key('return-notice-done'),
                     style: AppText.body(size: 14),
                   ),

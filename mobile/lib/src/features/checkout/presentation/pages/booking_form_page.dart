@@ -146,7 +146,7 @@ class _BookingFormViewState extends State<BookingFormView> {
             state.fieldErrors[field] == null || _edited.contains(field) ? null : translateErrorCode(state.fieldErrors[field]);
         final total = state.priceCents == null ? '' : formatEuros(state.priceCents!);
         return Scaffold(
-          appBar: AppBar(titleSpacing: NavigationToolbar.kMiddleSpacing, title: Text('book.title'.tr(), style: AppText.strong(size: 16, color: Colors.white))),
+          appBar: AppBar(titleSpacing: NavigationToolbar.kMiddleSpacing, title: Text('book.title'.tr(), style: AppText.strong(size: 16, color: AppColors.brownOrInk))),
           body: state.loadState.isProcessing || state.loadState.isIdle
               ? const Center(child: CircularProgressIndicator(color: AppColors.accent))
               : SafeArea(

@@ -410,6 +410,7 @@
     "invalid_seats": "Entre 1 et 60 places.",
     "invalid_driver": "Ce chauffeur ne fait pas partie de l'équipe.",
     "vehicle_out_of_service": "Ce véhicule est hors service : choisissez-en un autre.",
+    "vehicle_not_on_site": "Ce n'est possible que pendant que votre voiture est au parking.",
     "too_many_passengers": "Plus de passagers que de places dans ce véhicule.",
     "invalid_direction": "Sens du trajet invalide.",
     "position_too_old": "Position trop ancienne : nouvel essai en cours.",
