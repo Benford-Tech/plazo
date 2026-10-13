@@ -106,8 +106,12 @@ def logs(app):
     if actions and not any(a.get("logUrl") for a in actions):
         lines.append(f"- pas de logUrl dans la réponse ; champs d'une étape : {sorted(actions[0].keys())}")
     for action in picked:
-        url = action.get("logUrl")
-        text = fetch_text(url) if url else f"(pas de journal ; champs : {sorted(action.keys())})"
+        # A script step's log is split into its subactions (one per command); the step's own logUrl stays empty.
+        urls = [action.get("logUrl")] + [sub.get("logUrl") for sub in action.get("subactions") or []]
+        urls = [url for url in urls if url]
+        subs = action.get("subactions") or []
+        text = "\n".join(fetch_text(url) for url in urls) if urls else (
+            f"(pas de journal ; {len(subs)} sous-étape(s), champs : {sorted(subs[0].keys()) if subs else '—'})")
         tail = [line.rstrip() for line in text.splitlines() if line.strip()][-LOG_LINES:]
         lines += [f"### {action.get('name')} · {action.get('status')}", "```", *tail, "```"]
     print("\n".join(lines))
