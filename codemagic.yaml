@@ -223,7 +223,18 @@ definitions:
             echo "KO  Google Play  $NAME (clé du compte de service absente du groupe mobile_secrets : GOOGLE_PLAY_SERVICE_ACCOUNT_CREDENTIALS ou GCLOUD_SERVICE_ACCOUNT_CREDENTIALS)" >> "$CM_BUILD_DIR/publish-status.txt"
             continue
           fi
-          if google-play bundles publish --bundle "$AAB" --track "$PLAY_TRACK" --release-name "$VERSION_NAME ($NEXT)" $DRAFT_FLAG; then
+          # Two tries (13/10/2026, build 115): a change made in the Play Console during the upload cancels the API's
+          # edit (« A change was made to the application outside of this Edit »); the bundle of a cancelled edit is not
+          # kept, so the same version code can be sent again.
+          SENT=""
+          for TRY in 1 2; do
+            if google-play bundles publish --bundle "$AAB" --track "$PLAY_TRACK" --release-name "$VERSION_NAME ($NEXT)" $DRAFT_FLAG; then
+              SENT=yes
+              break
+            fi
+            [ "$TRY" = 1 ] && { echo "Nouvel essai de $NAME dans 60 s"; sleep 60; }
+          done
+          if [ -n "$SENT" ]; then
             echo "OK  Google Play  $NAME" >> "$CM_BUILD_DIR/publish-status.txt"
           else
             echo "KO  Google Play  $NAME" >> "$CM_BUILD_DIR/publish-status.txt"
