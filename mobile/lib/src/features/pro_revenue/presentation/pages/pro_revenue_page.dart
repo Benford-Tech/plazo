@@ -38,40 +38,54 @@ class ProRevenueView extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final top = MediaQuery.paddingOf(context).top;
+    // White status bar icons on the green band; the navigation bar keeps the system's colours.
     return AnnotatedRegion<SystemUiOverlayStyle>(
-      value: SystemUiOverlayStyle.light,
+      value: const SystemUiOverlayStyle(statusBarColor: Colors.transparent, statusBarIconBrightness: Brightness.light, statusBarBrightness: Brightness.dark),
       child: Scaffold(
         backgroundColor: AppColors.background,
-        body: BlocBuilder<ProRevenueBloc, ProRevenueState>(
-          builder: (context, state) {
-            final bloc = context.read<ProRevenueBloc>();
-            final report = state.report;
-            return RefreshIndicator(
-              color: AppColors.accent,
-              onRefresh: () async => bloc.add(const ProRevenueRefreshed()),
-              child: ListView(
-                key: const Key('revenue-page'),
-                padding: EdgeInsets.zero,
-                children: [
-                  _Band(state: state),
-                  Padding(
-                    padding: const EdgeInsets.fromLTRB(12, 12, 12, 32),
-                    child: report == null
-                        ? _Waiting(state: state)
-                        : Column(
-                            crossAxisAlignment: CrossAxisAlignment.stretch,
-                            children: [
-                              _DaysCard(report: report, state: state),
-                              if (report.withoutAmount > 0) ...[const SizedBox(height: 12), _MissingRow(report: report)],
-                              const SizedBox(height: 12),
-                              _ChannelsCard(report: report),
-                            ],
+        body: Column(
+          children: [
+            // The status bar keeps the band's green when the page scrolls under it.
+            Container(height: top, color: AppColors.accent),
+            Expanded(
+              child: MediaQuery.removePadding(
+                context: context,
+                removeTop: true,
+                child: BlocBuilder<ProRevenueBloc, ProRevenueState>(
+                  builder: (context, state) {
+                    final bloc = context.read<ProRevenueBloc>();
+                    final report = state.report;
+                    return RefreshIndicator(
+                      color: AppColors.accent,
+                      onRefresh: () async => bloc.add(const ProRevenueRefreshed()),
+                      child: ListView(
+                        key: const Key('revenue-page'),
+                        padding: EdgeInsets.zero,
+                        children: [
+                          _Band(state: state),
+                          Padding(
+                            padding: const EdgeInsets.fromLTRB(12, 12, 12, 32),
+                            child: report == null
+                                ? _Waiting(state: state)
+                                : Column(
+                                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                                    children: [
+                                      _DaysCard(report: report, state: state),
+                                      if (report.withoutAmount > 0) ...[const SizedBox(height: 12), _MissingRow(report: report)],
+                                      const SizedBox(height: 12),
+                                      _ChannelsCard(report: report),
+                                    ],
+                                  ),
                           ),
-                  ),
-                ],
+                        ],
+                      ),
+                    );
+                  },
+                ),
               ),
-            );
-          },
+            ),
+          ],
         ),
       ),
     );
@@ -191,7 +205,7 @@ class _Band extends StatelessWidget {
     return [
       'revenue.bookings_count'.tr(args: ['${r.count}']),
       if (r.averageCents != null) 'revenue.average'.tr(args: [formatEuros(r.averageCents!)]),
-      if (r.averageDays != null) 'revenue.average_days'.tr(args: [revenueDays(r.averageDays!)]),
+      if (r.averageDays != null) ((r.averageDays! * 10).round() < 20 ? 'revenue.average_day' : 'revenue.average_days').tr(args: [revenueDays(r.averageDays!)]),
     ].join(' · ');
   }
 }
@@ -318,7 +332,11 @@ class _DaysCard extends StatelessWidget {
             ],
           ),
           Text(byArrival ? 'revenue.by_arrival_help'.tr() : 'revenue.by_booking_help'.tr(), style: AppText.muted(size: 12.5)),
-          if (report.byDay.length > 1) ...[const SizedBox(height: 12), RevenueChart(days: report.byDay, today: state.today)],
+          if (report.byDay.length > 1) ...[
+            const SizedBox(height: 12),
+            // Pale bars only by arrival: a booking is never taken on a day still to come.
+            RevenueChart(days: report.byDay, today: state.today, futureLegend: byArrival),
+          ],
         ],
       ),
     );
@@ -332,39 +350,44 @@ class _MissingRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Material(
-      color: AppColors.panel,
-      shape: const RoundedRectangleBorder(
-        borderRadius: _radius,
-        side: BorderSide(color: AppColors.panelLine),
-      ),
-      child: InkWell(
-        key: const Key('revenue-missing'),
-        borderRadius: _radius,
-        onTap: () => context.router.push(ProRevenueMissingRoute(bloc: context.read<ProRevenueBloc>())),
-        child: Padding(
-          padding: const EdgeInsets.fromLTRB(16, 14, 12, 14),
-          child: Row(
-            children: [
-              Container(
-                width: 34,
-                height: 34,
-                alignment: Alignment.center,
-                decoration: const BoxDecoration(color: AppStatus.warnSoft, borderRadius: BorderRadius.all(Radius.circular(10))),
-                child: Text('${report.withoutAmount}', style: AppText.tabular(size: 15, weight: 800, color: AppStatus.warnText)),
+    return MergeSemantics(
+      child: Semantics(
+        button: true,
+        child: Material(
+          color: AppColors.panel,
+          shape: const RoundedRectangleBorder(
+            borderRadius: _radius,
+            side: BorderSide(color: AppColors.panelLine),
+          ),
+          child: InkWell(
+            key: const Key('revenue-missing'),
+            borderRadius: _radius,
+            onTap: () => context.router.push(ProRevenueMissingRoute(bloc: context.read<ProRevenueBloc>())),
+            child: Padding(
+              padding: const EdgeInsets.fromLTRB(16, 14, 12, 14),
+              child: Row(
+                children: [
+                  Container(
+                    width: 34,
+                    height: 34,
+                    alignment: Alignment.center,
+                    decoration: const BoxDecoration(color: AppStatus.warnSoft, borderRadius: BorderRadius.all(Radius.circular(10))),
+                    child: Text('${report.withoutAmount}', style: AppText.tabular(size: 15, weight: 800, color: AppStatus.warnText)),
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text('revenue.missing_title'.tr(), style: AppText.strong()),
+                        Text('revenue.missing_sub'.tr(), style: AppText.muted(size: 13)),
+                      ],
+                    ),
+                  ),
+                  const Icon(Icons.chevron_right_rounded, color: AppColors.muted),
+                ],
               ),
-              const SizedBox(width: 12),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text('revenue.missing_title'.tr(), style: AppText.strong()),
-                    Text('revenue.missing_sub'.tr(), style: AppText.muted(size: 13)),
-                  ],
-                ),
-              ),
-              const Icon(Icons.chevron_right_rounded, color: AppColors.muted),
-            ],
+            ),
           ),
         ),
       ),

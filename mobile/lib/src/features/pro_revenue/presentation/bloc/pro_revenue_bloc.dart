@@ -98,39 +98,46 @@ class ProRevenueBloc extends Bloc<ProRevenueEvent, ProRevenueState> {
   final GetRevenueReportUseCase _report;
   final SetReservationPriceUseCase _setPrice;
 
+  /// Numbers the reads: only the latest one started is applied (a quiet read after a save may overtake another).
+  int _readSeq = 0;
+
   Future<void> _onSpan(ProRevenueSpanChanged e, Emitter<ProRevenueState> emit) async {
     if (e.span == state.span) return;
     final anchor = anchorForSpan(from: state.span, anchor: state.anchor, today: state.today);
-    emit(state.copyWith(span: e.span, anchor: anchor, moved: true, report: null));
+    emit(state.copyWith(span: e.span, anchor: anchor, moved: true, report: null, savedName: null, savedCents: null, rowErrors: const {}));
     await _load(emit);
   }
 
   Future<void> _onStepped(ProRevenueStepped e, Emitter<ProRevenueState> emit) async {
-    emit(state.copyWith(anchor: stepAnchor(state.span, state.anchor, e.delta), moved: true, report: null));
+    emit(
+      state.copyWith(anchor: stepAnchor(state.span, state.anchor, e.delta), moved: true, report: null, savedName: null, savedCents: null, rowErrors: const {}),
+    );
     await _load(emit);
   }
 
   Future<void> _onBasis(ProRevenueBasisChanged e, Emitter<ProRevenueState> emit) async {
     if (e.basis == state.basis) return;
-    emit(state.copyWith(basis: e.basis, report: null));
+    emit(state.copyWith(basis: e.basis, report: null, savedName: null, savedCents: null, rowErrors: const {}));
     await _load(emit);
   }
 
   /// Reads the period shown. A quiet read (refresh, after an amount) keeps the figures on screen meanwhile and on
-  /// failure; an answer for a period the manager already left is dropped.
+  /// failure; an answer overtaken by a later read, or for a period the manager already left, is dropped.
   Future<void> _load(Emitter<ProRevenueState> emit, {bool quiet = false}) async {
+    final seq = ++_readSeq;
     final key = (state.span, state.anchor, state.basis);
     final period = state.period;
     if (!quiet || state.report == null) emit(state.copyWith(viewState: ViewState.processing, errorMessage: null));
     final result = await _report(RevenueReportParams(from: period.from, to: period.to, basis: state.basis));
-    if ((state.span, state.anchor, state.basis) != key) return;
+    if (seq != _readSeq || (state.span, state.anchor, state.basis) != key) return;
     await result.fold(
       (failure) async => emit(state.copyWith(viewState: state.report == null ? ViewState.error : ViewState.success, errorMessage: failure.message)),
       (report) async {
         final today = report.today ?? state.today;
         // The phone's date is not the parking's (wrong clock, other time zone): open on the parking's period.
         if (!state.moved && today != state.today && !holds(period, today)) {
-          emit(state.copyWith(today: today, anchor: today));
+          // The figures shown are another period's: away with them, the next read shows its own (or its error).
+          emit(state.copyWith(today: today, anchor: today, report: null));
           return _load(emit);
         }
         emit(state.copyWith(viewState: ViewState.success, report: report, today: today, errorMessage: null));
@@ -147,27 +154,35 @@ class ProRevenueBloc extends Bloc<ProRevenueEvent, ProRevenueState> {
       return;
     }
     final booking = state.report?.missing.where((m) => m.id == e.id).firstOrNull;
-    emit(state.copyWith(saving: {...state.saving, e.id}, rowErrors: {...state.rowErrors}..remove(e.id)));
+    final key = (state.span, state.anchor, state.basis);
+    emit(state.copyWith(saving: {...state.saving, e.id}, rowErrors: {...state.rowErrors}..remove(e.id), savedName: null, savedCents: null));
     final result = await _setPrice(SetReservationPriceParams(id: e.id, priceCents: cents));
     final saving = {...state.saving}..remove(e.id);
+    // The manager left for another period meanwhile: its own read is already under way.
+    final samePeriod = (state.span, state.anchor, state.basis) == key;
     await result.fold(
       (failure) async {
         final code = failure.fields?['priceCents'] ?? failure.code;
         final known = const {'price_locked', 'reservation_closed', 'not_found'}.contains(code);
+        if (!samePeriod) return emit(state.copyWith(saving: saving));
         emit(state.copyWith(saving: saving, rowErrors: {...state.rowErrors, e.id: (code: known ? code! : 'failed', message: failure.message)}));
       },
       (_) async {
         final report = state.report;
+        if (!samePeriod) return emit(state.copyWith(saving: saving));
+        final listed = report?.missing.any((m) => m.id == e.id) ?? false;
         emit(
           state.copyWith(
             saving: saving,
             savedName: booking == null ? null : (booking.customerName.trim().isEmpty ? booking.reference : booking.customerName),
             savedCents: cents,
             // The row leaves the list at once; the figures follow with the next read.
-            report: report?.copyWith(
-              missing: report.missing.where((m) => m.id != e.id).toList(),
-              withoutAmount: report.withoutAmount > 0 ? report.withoutAmount - 1 : 0,
-            ),
+            report: !listed
+                ? report
+                : report!.copyWith(
+                    missing: report.missing.where((m) => m.id != e.id).toList(),
+                    withoutAmount: report.withoutAmount > 0 ? report.withoutAmount - 1 : 0,
+                  ),
           ),
         );
         await _load(emit, quiet: true);

@@ -290,7 +290,8 @@ Ne construire QUE ce qui règle la douleur n°1 du client.
      `price_locked`, `reservation_closed`, montant invalide ; la ligne part et le chiffre est relu) ; « Par canal ». Les dates
      sont celles du parking : `GET /internal/revenue` renvoie aussi `today` (date locale du parking) et `missing[].plate` ; la
      page ouvre sur le mois du téléphone et se recale sur `today` s'il n'y est pas (`domain/revenue_period.dart`,
-     `ProRevenueBloc`). L'export CSV reste sur le web.
+     `ProRevenueBloc` : seule la dernière lecture lancée s'applique, un montant enregistré relit la carte du tableau de bord par
+     `RevenueRepository.changes`, quel que soit le chemin d'ouverture). L'export CSV reste sur le web.
    - **Frais de nuit (12/10/2026, choix B « Dans le détail du prix seulement », « ajoute des frais de nuit pour les arrivées
      et départs en heure définie par le parking »)** : une plage par parking, la même chaque jour, pour les dépôts comme pour
      les retours (`Parking.nightFeeEnabled`, `nightStart` / `nightEnd` « HH:mm », `nightArrivalFeeCents` « Dépôt de nuit »,

@@ -143,4 +143,62 @@ void main() {
     expect(b.state.report!.missing, hasLength(3));
     await b.close();
   });
+
+  test('une relecture plus ancienne qui arrive après une plus récente est ignorée (la ligne enregistrée ne revient pas)', () async {
+    when(() => setPrice(any())).thenAnswer((_) async => const Right(null));
+    final b = bloc()..add(const ProRevenueStarted());
+    await settle(b);
+    final slow = Completer<Either<Failure, RevenueReportModel>>();
+    // The read after A's save is slow and still lists B; the one after B's save is not.
+    when(() => report(any())).thenAnswer((_) => slow.future);
+    b.add(const ProRevenuePriceSubmitted(id: 'r1', text: '10'));
+    await Future<void>.delayed(const Duration(milliseconds: 5));
+    final afterBoth = octoberReport.copyWith(withoutAmount: 1, missing: [octoberReport.missing.last]);
+    when(() => report(any())).thenAnswer((_) async => Right(afterBoth));
+    b.add(const ProRevenuePriceSubmitted(id: 'r2', text: '20'));
+    await Future<void>.delayed(const Duration(milliseconds: 5));
+    expect(b.state.report!.missing.map((m) => m.id), ['r3']);
+    slow.complete(Right(octoberReport.copyWith(withoutAmount: 2, missing: octoberReport.missing.skip(1).toList())));
+    await Future<void>.delayed(const Duration(milliseconds: 5));
+    expect(b.state.report!.missing.map((m) => m.id), ['r3']);
+    expect(b.state.report!.withoutAmount, 1);
+    await b.close();
+  });
+
+  test('passé minuit en fin de mois, la relecture se recale sur le nouveau mois sans garder les chiffres de l’ancien', () async {
+    final b = bloc(now: DateTime(2026, 10, 31, 23))..add(const ProRevenueStarted());
+    await settle(b);
+    final november = Completer<Either<Failure, RevenueReportModel>>();
+    when(() => report(any())).thenAnswer((i) {
+      final p = i.positionalArguments.first as RevenueReportParams;
+      if (p.from == '2026-11-01') return november.future;
+      return Future.value(Right(octoberReport.copyWith(today: '2026-11-01')));
+    });
+    b.add(const ProRevenueRefreshed());
+    await Future<void>.delayed(const Duration(milliseconds: 5));
+    expect(b.state.anchor, '2026-11-01');
+    expect(b.state.report, isNull);
+    november.complete(const Left(ServerFailure(message: 'Hors ligne')));
+    await Future<void>.delayed(const Duration(milliseconds: 5));
+    expect(b.state.viewState, ViewState.error);
+    await b.close();
+  });
+
+  test('changer de période efface « Montant enregistré », et un enregistrement fini ailleurs ne touche pas la nouvelle période', () async {
+    final put = Completer<Either<Failure, void>>();
+    when(() => setPrice(any())).thenAnswer((_) => put.future);
+    final b = bloc()..add(const ProRevenueStarted());
+    await settle(b);
+    b.add(const ProRevenuePriceSubmitted(id: 'r1', text: '10'));
+    await Future<void>.delayed(const Duration(milliseconds: 5));
+    b.add(const ProRevenueStepped(-1));
+    await settle(b);
+    final before = b.state.report!;
+    put.complete(const Right(null));
+    await Future<void>.delayed(const Duration(milliseconds: 5));
+    expect(b.state.savedName, isNull);
+    expect(b.state.saving, isEmpty);
+    expect(b.state.report!.withoutAmount, before.withoutAmount);
+    await b.close();
+  });
 }

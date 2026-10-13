@@ -825,7 +825,7 @@ class ProReturnsRoute extends PageRouteInfo<void> {
 class ProRevenueMissingRoute extends PageRouteInfo<ProRevenueMissingRouteArgs> {
   ProRevenueMissingRoute({
     Key? key,
-    required ProRevenueBloc bloc,
+    ProRevenueBloc? bloc,
     List<PageRouteInfo>? children,
   }) : super(
          ProRevenueMissingRoute.name,
@@ -838,7 +838,9 @@ class ProRevenueMissingRoute extends PageRouteInfo<ProRevenueMissingRouteArgs> {
   static PageInfo page = PageInfo(
     name,
     builder: (data) {
-      final args = data.argsAs<ProRevenueMissingRouteArgs>();
+      final args = data.argsAs<ProRevenueMissingRouteArgs>(
+        orElse: () => const ProRevenueMissingRouteArgs(),
+      );
       return WrappedRoute(
         child: ProRevenueMissingPage(key: args.key, bloc: args.bloc),
       );
@@ -847,11 +849,11 @@ class ProRevenueMissingRoute extends PageRouteInfo<ProRevenueMissingRouteArgs> {
 }
 
 class ProRevenueMissingRouteArgs {
-  const ProRevenueMissingRouteArgs({this.key, required this.bloc});
+  const ProRevenueMissingRouteArgs({this.key, this.bloc});
 
   final Key? key;
 
-  final ProRevenueBloc bloc;
+  final ProRevenueBloc? bloc;
 
   @override
   String toString() {

@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:bloc_test/bloc_test.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -188,5 +190,18 @@ void main() {
     await settle(tester);
     verify(() => setPrice(const SetReservationPriceParams(id: 'r1', priceCents: 6490))).called(1);
     expect(find.text('Montant enregistré : Marc Petit, ${formatEuros(6490)}'), findsOneWidget);
+  });
+
+  test('un montant enregistré depuis la page (même ouverte par Plus) relit la carte du tableau de bord', () async {
+    final summaryUseCase = MockSummary();
+    when(() => summaryUseCase(any())).thenAnswer((_) async => const Right(summary));
+    final changes = StreamController<void>.broadcast();
+    final bloc = RevenueSummaryBloc(summaryUseCase, changes: changes.stream, autoPoll: false)..add(const RevenueSummaryStarted());
+    await bloc.stream.firstWhere((s) => s.data != null);
+    changes.add(null);
+    await Future<void>.delayed(const Duration(milliseconds: 10));
+    verify(() => summaryUseCase(any())).called(2);
+    await bloc.close();
+    await changes.close();
   });
 }

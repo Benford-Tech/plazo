@@ -38,7 +38,7 @@ class RevenueTile extends StatelessWidget {
           padding: const EdgeInsets.only(top: 10),
           child: Semantics(
             button: true,
-            label: 'revenue.tile_semantics'.tr(args: [month, formatEuros(d.month.totalCents)]),
+            hint: 'revenue.tile_hint'.tr(),
             child: Material(
               key: const Key('revenue-tile'),
               color: AppColors.panel,
@@ -78,16 +78,14 @@ class RevenueTile extends StatelessWidget {
                         ),
                       ),
                       const SizedBox(height: 10),
-                      Row(
-                        crossAxisAlignment: CrossAxisAlignment.end,
+                      // Figures at their natural width; the pill drops to its own line when the text is large.
+                      Wrap(
+                        alignment: WrapAlignment.spaceBetween,
+                        crossAxisAlignment: WrapCrossAlignment.end,
+                        spacing: 12,
+                        runSpacing: 8,
                         children: [
-                          Expanded(
-                            child: Wrap(
-                              spacing: 18,
-                              runSpacing: 6,
-                              children: [figure('revenue.today'.tr(), d.todayCents), figure('revenue.week'.tr(), d.weekCents)],
-                            ),
-                          ),
+                          Wrap(spacing: 18, runSpacing: 6, children: [figure('revenue.today'.tr(), d.todayCents), figure('revenue.week'.tr(), d.weekCents)]),
                           if (d.month.withoutAmount > 0)
                             Container(
                               key: const Key('revenue-tile-missing'),
