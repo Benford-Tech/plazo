@@ -733,7 +733,12 @@ Le nom du produit doit rester dans UN seul fichier de configuration (il peut enc
   `capture.mjs`, 11/10/2026, et dans `app-store-6.3/` en 1206 × 2622 pour l'iPhone 6,3", `DEVICE=iphone63`, 13/10/2026) prises sur les vraies apps construites pour le web par `brand/stores/tools/screenshots/run.sh`
   (base neuve `…_shots` avec les données de démo, API à 14:05 au parking par `fake-clock.cjs`, journée préparée par
   `scenario.mjs` et `stage.sql`, Chromium piloté par `capture.mjs`), ou par le workflow GitHub `store-screenshots.yml`
-  (artefact) ; **données fictives du parking de test** (12/10/2026, « crée des données factices sur le parking de test », pour filmer
+  (artefact) ; **images commerciales** (13/10/2026, « il faut plutôt des images d'illustration commerciale », choix A « aplat de
+  marque avec le texte qui ressort mieux ») dans `brand/stores/marketing/A/{plazo,plazo-pro}/{appstore69,appstore63,play}/` : chaque
+  capture 6,9" dans un téléphone dessiné sous un titre Manrope 800 blanc sur l'orange (Archivo Narrow vert foncé sur le citron
+  pour Plazo Pro) et une ligne dans la couleur la plus foncée, par `brand/stores/tools/marketing.mjs` (titres repris des fiches,
+  relus contre le code, deux lignes au plus, signalé sinon) ; **fiches sans Lyon** (13/10/2026, « l'app n'est pas réservée
+  qu'à l'aéroport de Lyon ») : aucun aéroport nommé dans les textes des stores, aucun autre promis ; **données fictives du parking de test** (12/10/2026, « crée des données factices sur le parking de test », pour filmer
   les vidéos du service de premier plan) : workflow `test-parking-data.yml` (`fill` / `clear`, à la main) et
   `.github/scripts/test_parking_data.py`, qui se connecte à l'API de production avec les secrets GitHub `PLAZO_TEST_EMAIL` /
   `PLAZO_TEST_PASSWORD` (un membre Accueil de « Plazo (tests) », jamais un gérant, qui pourrait réinitialiser le mot de passe du

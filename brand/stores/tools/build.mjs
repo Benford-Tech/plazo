@@ -45,7 +45,7 @@ const VARIANTS = {
     <div class="stage" style="background:#ECECEE; font-family:'Manrope';">
       <img class="tile" src="${icon('app-icon.png')}" width="250" height="250" style="position:absolute; left:110px; top:125px;">
       <div style="position:absolute; left:440px; top:0; height:500px; display:flex; flex-direction:column; justify-content:center; gap:20px; width:540px;">
-        <div style="font-weight:800; font-size:17px; letter-spacing:0.14em; text-transform:uppercase; color:#6f6a66;">Parking aéroport · Lyon Saint-Exupéry</div>
+        <div style="font-weight:800; font-size:17px; letter-spacing:0.14em; text-transform:uppercase; color:#6f6a66;">Plazo · parking aéroport</div>
         <div style="font-family:'Playfair Display'; font-style:italic; font-weight:500; font-size:60px; line-height:1.05; color:#2c1a0e; text-wrap:balance;">Votre parking, du dépôt au retour.</div>
         <div style="display:inline-flex; align-self:flex-start; align-items:center; height:50px; padding:0 24px; border-radius:999px; background:#FF6600; color:#fff; font-weight:800; font-size:20px; box-shadow:0 12px 26px -10px rgba(255,102,0,0.55);">Prix total affiché</div>
       </div>

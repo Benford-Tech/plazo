@@ -243,7 +243,7 @@ VOTRE POSTE DU JOUR
 
 AUJOURD'HUI
 • Tableau de bord : véhicules sur le parking, arrivées, retours, navettes et points à traiter, avec la place et les clés de chaque véhicule.
-• Planning des arrivées et des retours du jour, avec l'état des vols et des voyageurs (en approche, au point de rendez-vous).
+• Planning des arrivées et des retours du jour, avec le vol retour et l'état des voyageurs (en approche, au point de rendez-vous).
 • Carte des navettes en circulation.
 
 RÉSERVATIONS
@@ -314,9 +314,9 @@ Première version de Plazo.
 • Trouvez un parking près de votre aéroport : prix total pour vos dates, en liste ou sur la carte, filtres par service.
 • Réservez et payez en ligne, sans créer de compte.
 • Le jour du dépôt, prévenez le parking de votre arrivée.
-• Au retour : compte à rebours jusqu'à l'atterrissage, itinéraire à pied jusqu'à la navette, « Votre navette est là », et retrouvez votre voiture sur le parking.
+• Au retour : compte à rebours jusqu'à l'atterrissage, itinéraire à pied jusqu'à la navette, « Votre navette est là » si le parking partage sa position, et retrouvez votre voiture sur le parking.
 ```
-(418 caractères)
+(452 caractères)
 
 Plazo, App Store (« Que tester » de TestFlight pour la 1.0.0, « Nouveautés » dès la 1.0.1) :
 
@@ -326,12 +326,12 @@ Première version de Plazo, pour réserver un parking privé près de votre aér
 • Choisissez vos dates : la carte et la liste montrent les parkings partenaires avec leur prix total pour le séjour. Triez par prix, durée de navette ou distance ; filtrez par service.
 • Réservez en deux étapes, sans créer de compte, et payez en ligne par carte bancaire. Rien à régler au parking.
 • Le jour du dépôt, prévenez le parking de votre arrivée, avec ou sans partage de position, et notez où vous avez garé la voiture.
-• Au retour, un compte à rebours vous accompagne jusqu'à l'atterrissage, puis l'itinéraire à pied vous mène au point de rendez-vous de la navette. Vous êtes prévenu quand la navette part vous chercher et quand elle est là.
+• Au retour, un compte à rebours vous accompagne jusqu'à l'atterrissage, puis l'itinéraire à pied vous mène au point de rendez-vous de la navette. Vous êtes prévenu quand la navette part vous chercher et, si le parking partage la position de ses navettes, quand elle est là.
 • Retrouvez votre voiture : place ou file indiquée par le voiturier, et sa position GPS quand elle a été enregistrée.
 
 Plazo propose les aéroports où il travaille avec des parkings partenaires.
 ```
-(986 caractères)
+(1038 caractères)
 
 Plazo Pro, Google Play (≤ 500) :
 
@@ -351,15 +351,15 @@ Plazo Pro, App Store (« Que tester » de TestFlight pour la 1.0.0, « Nouveaut�
 Première version de Plazo Pro, l'application des équipes des parkings d'aéroport partenaires de Plazo : gérants, accueil, chauffeurs de navette et voituriers.
 
 • Votre poste du jour : les onglets s'adaptent à votre travail.
-• Aujourd'hui : tableau de bord des véhicules sur le parking, arrivées, retours, navettes et points à traiter ; planning du jour avec l'état des vols.
+• Aujourd'hui : tableau de bord des véhicules sur le parking, arrivées, retours, navettes et points à traiter ; planning du jour avec les voyageurs en approche.
 • Réservations : toutes les réservations du parking par date d'arrivée, quel que soit le canal ; recherche par plaque, nom ou référence ; saisie d'une réservation prise au téléphone ou au comptoir ; fiche avec la prochaine étape en un seul bouton.
 • Parking et clés : plan en couleurs, place proposée à chaque arrivée, files de voiturier, crochet des clés, planning des places.
-• Navette : ligne du jour calculée d'après les vols, ma tournée, trajets avec véhicule et desserte, messages des voyageurs.
+• Navette : ligne du jour calculée d'après les vols, ou l'heure de la réservation quand le vol n'est pas connu, ma tournée, trajets avec véhicule et desserte, messages des voyageurs.
 • Notifications : arrivées, retours, navettes et nouvelles réservations, chacune réglable.
 
 L'application ne propose pas d'inscription : votre gérant crée votre compte.
 ```
-(1045 caractères)
+(1114 caractères)
 
 ---
 
@@ -710,6 +710,7 @@ Les icônes App Store sont fournies par le build lui-même (icône 1024 des jeux
 | Store | Visuel | Taille et format |
 |---|---|---|
 | Apple | iPhone 6,9" (**obligatoire**) | 1320 × 2868 (simulateur iPhone 16 Pro Max) ou 1290 × 2796 ; portrait ; PNG ou JPEG sans transparence ; 1 à 10 captures, 5 ou 6 conseillées. **Faites (11/10/2026)** : `brand/stores/screenshots/plazo/app-store/` et `brand/stores/screenshots/plazo-pro/app-store/`, sept captures 1320 × 2868 par app (mêmes écrans et même ordre que Google Play, viewport 440 × 956 à 3 pixels par point), par le même `run.sh` (`DEVICE=iphone` de `capture.mjs`). |
+| Apple et Google | Images commerciales (à la place des captures brutes, choix A du 13/10/2026) | `brand/stores/marketing/A/plazo/` et `brand/stores/marketing/A/plazo-pro/`, sept par app à chaque taille : `appstore69` (1320 × 2868, iPhone 6,9"), `appstore63` (1206 × 2622, iPhone 6,3"), `play` (1080 × 1920, Google Play). Fond orange (Plazo) ou citron (Plazo Pro), titre et ligne repris de cette fiche, la vraie capture dans un téléphone. Rendues par `cd site && STYLE=A node ../brand/stores/tools/marketing.mjs`. |
 | Apple | iPhone 6,3" (facultatif : sans elles, Apple réduit les captures 6,9") | 1206 × 2622 ou 1179 × 2556, portrait (2622 × 1206 ou 2556 × 1179 en paysage). **Faites (13/10/2026)** : `brand/stores/screenshots/plazo/app-store-6.3/` et `brand/stores/screenshots/plazo-pro/app-store-6.3/`, sept captures 1206 × 2622 par app (mêmes écrans et même ordre, viewport 402 × 874 à 3 pixels par point, l'iPhone 16 Pro), par le même `run.sh` (`DEVICE=iphone63`). Aperçus vidéo de cette taille : 886 × 1920, aucun pour l'instant. |
 | Apple | iPhone 6,5" | 1284 × 2778 ou 1242 × 2688, seulement si aucune capture 6,9" n'est fournie (sinon Apple réduit les captures 6,9") |
 | Apple | iPad 13" (**obligatoire seulement si l'iPad est gardé**, point 0.15 ; ligne à retirer si les apps passent en iPhone seul) | 2064 × 2752 (simulateur iPad Pro 13 pouces M4) ou 2048 × 2732 |
@@ -729,8 +730,7 @@ Conseils de capture :
 Images de présentation (`brand/stores/`, 11/10/2026), deux variantes par app, à choisir par Joanny :
 - **Plazo A** (`plazo-feature-A.png`) : fond orange `#FF6600`, le P et l'avion de l'icône, « Votre parking à l'aéroport »
   en Playfair italique blanc, « Prix total affiché, navette, retour en direct. » en Manrope.
-- **Plazo B** (`plazo-feature-B.png`) : le fond gris clair `#ECECEE` de l'app, la tuile de l'icône, surtitre « Parking aéroport ·
-  Lyon Saint-Exupéry », « Votre parking, du dépôt au retour. » en Playfair italique brun, pilule orange « Prix total affiché ».
+- **Plazo B** (`plazo-feature-B.png`) : le fond gris clair `#ECECEE` de l'app, la tuile de l'icône, surtitre « Plazo · parking aéroport », « Votre parking, du dépôt au retour. » en Playfair italique brun, pilule orange « Prix total affiché ».
 - **Plazo Pro A** (`plazo-pro-feature-A.png`) : fond vert citron `#A3E635`, le P et l'avion verts, « L'app des équipes de parking »
   en Archivo Narrow capitales vert foncé `#0F2A14`, « Réservations · places · clés · navette » en Inter.
 - **Plazo Pro B** (`plazo-pro-feature-B.png`) : le fond `#EEF0EE` de l'espace pro, la tuile de l'icône, surtitre « Plazo Pro ·
