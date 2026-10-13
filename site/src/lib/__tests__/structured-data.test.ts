@@ -124,11 +124,14 @@ describe("sitemap", () => {
 
   const guides = ["parking-pas-cher", "parking-longue-duree", "parking-voiturier"].map(topic => `${BASE}/lyon-saint-exupery/guide/${topic}`);
 
-  it("lists the home page, the topic guides and the real parkings, never the demo ones", async () => {
+  // 13/10/2026: the account deletion page of Plazo Pro, asked by the stores.
+  const deletion = `${BASE}/suppression-compte`;
+
+  it("lists the home page, the account deletion page, the topic guides and the real parkings, never the demo ones", async () => {
     airportMock.mockResolvedValue({ airport, listings: [listing({ slug: "demo", isDemo: true }), listing({})] });
     const { default: sitemap } = await import("@/app/sitemap");
     const entries = await sitemap();
-    expect(entries.map(entry => entry.url)).toEqual([`${BASE}/`, ...guides, `${BASE}/lyon-saint-exupery/parkair`]);
+    expect(entries.map(entry => entry.url)).toEqual([`${BASE}/`, deletion, ...guides, `${BASE}/lyon-saint-exupery/parkair`]);
     // C (09/10/2026): each guide carries the day its facts were last checked.
     for (const entry of entries.filter(e => guides.includes(e.url))) expect(entry.lastModified).toMatch(/^\d{4}-\d{2}-\d{2}$/);
   });
@@ -136,7 +139,7 @@ describe("sitemap", () => {
   it("still serves the home page and the guides when the API does not answer", async () => {
     airportMock.mockRejectedValue(new Error("down"));
     const { default: sitemap } = await import("@/app/sitemap");
-    expect((await sitemap()).map(entry => entry.url)).toEqual([`${BASE}/`, ...guides]);
+    expect((await sitemap()).map(entry => entry.url)).toEqual([`${BASE}/`, deletion, ...guides]);
   });
 });
 

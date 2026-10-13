@@ -198,6 +198,8 @@ export class PlatformService {
             select: { id: true, name: true, totalCapacity: true, listing: { select: { id: true, status: true } } },
           },
           staff: {
+            // Members who left or deleted their account (13/10/2026) are no longer the operator's contact.
+            where: { leftAt: null, deletedAt: null },
             orderBy: { createdAt: 'asc' },
             select: {
               email: true,
@@ -375,6 +377,8 @@ export class PlatformService {
     const deleted = await prisma.$transaction(async tx => {
       // The lock of a payment's confirmation: one in flight ends first, and the conditions below see it.
       for (const parking of operator.parkings) await this.paymentService.capacity.lock(tx, parking.id);
+      // The Apple / Google identities of its members go with them (13/10/2026): the cascade only unlinks them.
+      const identities = await tx.staffIdentity.findMany({ where: { staff: { operatorId } }, select: { id: true } });
       // The checks are repeated by the delete itself: a payment or a sign-in in between keeps the operator.
       const { count } = await tx.operator.deleteMany({
         where: {
@@ -387,6 +391,7 @@ export class PlatformService {
         },
       });
       if (count === 0) return false;
+      await tx.staffIdentity.deleteMany({ where: { id: { in: identities.map(i => i.id) }, staffId: null } });
       await this.audit.record(
         { id: actor.id, operatorId: actor.actingAs?.realOperatorId ?? actor.operatorId },
         {

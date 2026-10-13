@@ -7,7 +7,16 @@ import TeamPage from "./TeamPage";
 
 const auth = vi.hoisted(() => ({ user: null as Staff | null }));
 vi.mock("@/contexts/AuthContext", () => ({ useAuth: () => ({ user: auth.user }) }));
-const api = vi.hoisted(() => ({ getTeam: vi.fn(), updateStaff: vi.fn(), createStaff: vi.fn(), resetStaffPassword: vi.fn() }));
+const api = vi.hoisted(() => ({
+  getTeam: vi.fn(),
+  updateStaff: vi.fn(),
+  createStaff: vi.fn(),
+  resetStaffPassword: vi.fn(),
+  getJoinCode: vi.fn(),
+  getJoinRequests: vi.fn(),
+  acceptJoinRequest: vi.fn(),
+  refuseJoinRequest: vi.fn(),
+}));
 vi.mock("@/lib/api", async importOriginal => {
   const actual = await importOriginal<typeof import("@/lib/api")>();
   return { ...actual, adminApi: { ...actual.adminApi, ...Object.fromEntries(Object.entries(api).map(([k, f]) => [k, (...a: unknown[]) => f(...a)])) } };
@@ -29,6 +38,7 @@ const member = (patch: Partial<Staff>): Staff => ({
   createdAt: "2026-10-01T00:00:00Z",
   ...patch,
 });
+const joinCode = { code: "K7QM2-XP9TD", day: "2026-10-13", validUntil: "2026-10-13T22:00:00Z", operatorName: "Parkair Lyon" };
 const manager = member({});
 const driver = member({ id: "s2", email: "paul@example.com", firstName: "Paul", lastName: "Durand", name: "Paul Durand", role: "driver" });
 const legacy = member({ id: "s3", email: "demo@example.com", firstName: "", lastName: "", name: "Gérant démo", role: "agent" });
@@ -51,6 +61,8 @@ describe("Équipe : modifier le nom", () => {
     Object.values(toast).forEach(f => f.mockReset());
     auth.user = manager;
     api.getTeam.mockResolvedValue([manager, driver, legacy]);
+    api.getJoinCode.mockResolvedValue(joinCode);
+    api.getJoinRequests.mockResolvedValue({ data: [] });
   });
 
   it("corrige le prénom et le nom d'un membre", async () => {

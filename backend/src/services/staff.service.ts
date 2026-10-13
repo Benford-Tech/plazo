@@ -1,8 +1,8 @@
-import { compare, hash } from 'bcrypt';
+import { hash } from 'bcrypt';
 import httpStatus from 'http-status';
 import { Container, Service } from 'typedi';
 import { BCRYPT_ROUNDS, isPlatformAdmin } from '@/config';
-import prisma, { Staff, StaffRole } from '@/database';
+import prisma, { IdentityProvider, Staff, StaffRole } from '@/database';
 import { allowedPosts, can, defaultBookingNotify, effectivePost } from '@/domain/roles';
 import { localDate } from '@/domain/time';
 import { ChangePasswordDto, CreateStaffDto, UpdateMeDto, UpdateStaffDto } from '@/dtos/staff.dto';
@@ -11,6 +11,8 @@ import { ValidationException } from '@/middlewares/validation.middleware';
 import { HttpException } from '@/utils/httpException';
 import { fullName, namesOf } from '@/domain/staff-name';
 import { AuditService } from './audit.service';
+import { operatorTimezone } from './operator-timezone';
+import { checkPasswordAttempt } from './password-attempts';
 import { TokenService } from './token.service';
 
 export type PublicStaff = Omit<Staff, 'password'> & { operatorName?: string };
@@ -39,12 +41,30 @@ export function holdsVehicleToday(staff: { vehicleId: string | null; vehicleSetA
   return !!staff.vehicleId && !!staff.vehicleSetAt && localDate(staff.vehicleSetAt, timezone) === localDate(now, timezone);
 }
 
-export function toSessionUser(staff: AuthenticatedStaff & { vehicle?: VehicleOfTheDay | null }) {
+/** How a member signs in (13/10/2026): their own password, Apple, Google (in that order). */
+export type SignInMethod = 'password' | IdentityProvider;
+
+export function signInMethods(staff: { passwordSetAt: Date | null }, providers: IdentityProvider[]): SignInMethod[] {
+  return [
+    ...(staff.passwordSetAt ? (['password'] as const) : []),
+    ...(['apple', 'google'] as const).filter(provider => providers.includes(provider)),
+  ];
+}
+
+/** The Apple / Google identities linked to a member, as Mon compte shows them. */
+export type LinkedIdentity = { provider: IdentityProvider; email: string | null };
+
+export function toSessionUser(staff: AuthenticatedStaff & { vehicle?: VehicleOfTheDay | null }, identities: LinkedIdentity[] = []) {
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const { actingAs, ...rest } = toPublicStaff(staff);
   return {
     ...rest,
     vehicle: staff.vehicle ?? null,
+    // 13/10/2026: whether the person has a password of their own, and the Apple / Google identities linked to them.
+    hasPassword: !!staff.passwordSetAt,
+    identities: [...identities]
+      .sort((a, b) => a.provider.localeCompare(b.provider))
+      .map(identity => ({ provider: identity.provider, email: identity.email })),
     effectivePost: effectivePost(staff),
     allowedPosts: allowedPosts(staff.role),
     isPlatformAdmin: isPlatformAdmin(staff.email),
@@ -96,39 +116,56 @@ export class StaffService {
     if (!can(actor.role, 'team:manage')) throw forbidden();
   }
 
+  /** A member of the actor's operator; one who left or deleted their account is no longer there (13/10/2026). */
   private async findInOperator(actor: AuthenticatedStaff, staffId: string): Promise<Staff> {
-    const target = await prisma.staff.findFirst({ where: { id: staffId, operatorId: actor.operatorId } });
+    const target = await prisma.staff.findFirst({ where: { id: staffId, operatorId: actor.operatorId, leftAt: null, deletedAt: null } });
     if (!target) throw notFound();
     return target;
   }
 
   public async list(actor: AuthenticatedStaff) {
     this.requireTeamManager(actor);
-    const team = await prisma.staff.findMany({ where: { operatorId: actor.operatorId }, orderBy: { name: 'asc' }, include: { vehicle: true } });
+    // Those who left the parking or deleted their account (13/10/2026) are no longer part of the team.
+    const team = await prisma.staff.findMany({
+      where: { operatorId: actor.operatorId, leftAt: null, deletedAt: null },
+      orderBy: { name: 'asc' },
+      include: { vehicle: true, identities: { select: { provider: true } } },
+    });
     const timezone = await this.timezone(actor);
-    return team.map(({ vehicle, ...s }) => ({
+    return team.map(({ vehicle, identities, ...s }) => ({
       ...toPublicStaff(s),
       effectivePost: effectivePost(s),
       vehicle: vehicle && holdsVehicleToday(s, timezone) ? vehicleOfTheDay(vehicle) : null,
+      signIn: signInMethods(
+        s,
+        identities.map(i => i.provider),
+      ),
     }));
   }
 
   /** The operator's time zone (its first parking's), for "today". */
   private async timezone(actor: AuthenticatedStaff): Promise<string> {
-    const parking = await prisma.parking.findFirst({
-      where: { operatorId: actor.operatorId },
-      orderBy: { createdAt: 'asc' },
-      select: { timezone: true },
-    });
-    return parking?.timezone ?? 'Europe/Paris';
+    return operatorTimezone(actor.operatorId);
   }
 
-  /** The session user with the vehicle taken today (V-A), for GET /me and the login. */
+  /** The session user with the vehicle taken today (V-A) and the sign-in methods, for GET /me and the logins. */
   public async sessionUser(actor: AuthenticatedStaff) {
-    const fresh = await prisma.staff.findUnique({ where: { id: actor.id }, select: { vehicleId: true, vehicleSetAt: true, vehicle: true } });
+    const fresh = await prisma.staff.findUnique({
+      where: { id: actor.id },
+      select: { vehicleId: true, vehicleSetAt: true, vehicle: true, passwordSetAt: true, identities: { select: { provider: true, email: true } } },
+    });
     const timezone = await this.timezone(actor);
     const vehicle = fresh?.vehicle && holdsVehicleToday(fresh, timezone) ? vehicleOfTheDay(fresh.vehicle) : null;
-    return toSessionUser({ ...actor, vehicleId: fresh?.vehicleId ?? null, vehicleSetAt: fresh?.vehicleSetAt ?? null, vehicle });
+    return toSessionUser(
+      {
+        ...actor,
+        vehicleId: fresh?.vehicleId ?? null,
+        vehicleSetAt: fresh?.vehicleSetAt ?? null,
+        passwordSetAt: fresh ? fresh.passwordSetAt : actor.passwordSetAt,
+        vehicle,
+      },
+      fresh?.identities ?? [],
+    );
   }
 
   /**
@@ -182,6 +219,7 @@ export class StaffService {
         phone: data.phone?.trim() || null,
         role: data.role,
         password: await hash(data.password, BCRYPT_ROUNDS),
+        passwordSetAt: new Date(),
         bookingNotify: defaultBookingNotify(data.role),
       },
     });
@@ -239,7 +277,7 @@ export class StaffService {
   public async resetPassword(actor: AuthenticatedStaff, staffId: string, password: string) {
     this.requireTeamManager(actor);
     await this.findInOperator(actor, staffId);
-    await prisma.staff.update({ where: { id: staffId }, data: { password: await hash(password, BCRYPT_ROUNDS) } });
+    await prisma.staff.update({ where: { id: staffId }, data: { password: await hash(password, BCRYPT_ROUNDS), passwordSetAt: new Date() } });
     await this.tokenService.revokeAll(staffId);
     await this.audit.record(actor, { action: 'staff.password_reset', entityType: 'staff', entityId: staffId });
   }
@@ -247,10 +285,14 @@ export class StaffService {
   /** Changing one's password signs out every device, including the current one. */
   public async changeOwnPassword(actor: AuthenticatedStaff, data: ChangePasswordDto) {
     const me = await prisma.staff.findUnique({ where: { id: actor.id } });
-    if (!me || !(await compare(data.currentPassword, me.password))) {
+    // The login's lockout applies: a stolen session cannot be used to guess the password.
+    if (!me || !(await checkPasswordAttempt(me.email, data.currentPassword, me.password))) {
       throw new HttpException(httpStatus.BAD_REQUEST, 'Current password is incorrect', 'wrong_current_password');
     }
-    await prisma.staff.update({ where: { id: actor.id }, data: { password: await hash(data.newPassword, BCRYPT_ROUNDS) } });
+    await prisma.staff.update({
+      where: { id: actor.id },
+      data: { password: await hash(data.newPassword, BCRYPT_ROUNDS), passwordSetAt: new Date() },
+    });
     await this.tokenService.revokeAll(actor.id);
     await this.audit.record(actor, { action: 'staff.password_changed', entityType: 'staff', entityId: actor.id });
   }

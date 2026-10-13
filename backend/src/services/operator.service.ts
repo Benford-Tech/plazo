@@ -93,6 +93,8 @@ export class OperatorService {
             phone: data.managerPhone?.trim() || null,
             role: 'manager',
             password,
+            // An invited manager has no password of their own until the invitation is accepted.
+            passwordSetAt: data.managerPassword ? new Date() : null,
             emailVerifiedAt: data.emailVerified === false ? null : new Date(),
             bookingNotify: defaultBookingNotify('manager'),
           },

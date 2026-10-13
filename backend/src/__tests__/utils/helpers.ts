@@ -13,7 +13,7 @@ export const app = new App(AppRoutes).getServer();
 export const api = () => request(app);
 
 export async function resetDatabase() {
-  await prisma.$executeRawUnsafe('TRUNCATE operators, login_attempts RESTART IDENTITY CASCADE');
+  await prisma.$executeRawUnsafe('TRUNCATE operators, login_attempts, used_identity_tokens RESTART IDENTITY CASCADE');
 }
 
 let counter = 0;

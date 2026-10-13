@@ -4,6 +4,8 @@ import { flightTrackingSettings } from '@/config';
 import prisma, { ReservationStatus } from '@/database';
 import { ShuttleDirection } from '@/domain/shuttle';
 import { AuthenticatedStaff } from '@/interfaces/auth.interface';
+import { can } from '@/domain/roles';
+import { JoinRequestService } from './join-request.service';
 import { dayBounds, localDate, localDateTime } from '@/domain/time';
 import { FileService } from './file.service';
 import { OccupationService } from './occupation.service';
@@ -48,7 +50,10 @@ export type AlertKind =
   // M-A (06/10/2026): forwarded confirmation emails waiting for the staff.
   | 'inbound_to_check'
   // O-A (06/10/2026): a car returning today stands behind one that leaves later.
-  | 'blocked_return';
+  | 'blocked_return'
+  // 13/10/2026: requests to join the team waiting for a manager (managers only). `detail` = how many, `customerName` =
+  // the oldest one's name, `since` / `minutes` = since when it waits.
+  | 'join_request';
 
 export interface DashboardAlert {
   kind: AlertKind;
@@ -145,6 +150,7 @@ export class DashboardService {
   public payments = Container.get(PaymentService);
   public occupation = Container.get(OccupationService);
   public files = Container.get(FileService);
+  public joinRequests = Container.get(JoinRequestService);
 
   public async get(actor: AuthenticatedStaff): Promise<Dashboard> {
     const parking = await this.parkings.getPrimary(actor);
@@ -375,6 +381,22 @@ export class DashboardService {
         since: null,
         minutes: null,
       });
+    }
+    if (can(actor.role, 'team:manage')) {
+      const waiting = await this.joinRequests.pendingSummary(actor.operatorId, now);
+      if (waiting.count > 0 && waiting.oldest) {
+        alerts.push({
+          kind: 'join_request',
+          severity: 'todo',
+          reservationId: null,
+          reference: null,
+          customerName: `${waiting.oldest.firstName} ${waiting.oldest.lastName}`.trim(),
+          plate: null,
+          detail: String(waiting.count),
+          since: waiting.oldest.createdAt.toISOString(),
+          minutes: minutesSince(waiting.oldest.createdAt),
+        });
+      }
     }
     if (planning.smsWarning) {
       alerts.push({

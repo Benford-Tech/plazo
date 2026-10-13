@@ -10,6 +10,8 @@ import type {
   SmsMode,
   StaffRole,
   AlertKind,
+  JoinRole,
+  SignInMethod,
   InboundChangeReason,
   InboundEmailStatus,
   InboundEmailView,
@@ -249,6 +251,24 @@ export const fr = {
     invalid_bbox: "Zone invalide.",
     too_short: "Saisissez au moins 3 caractères.",
     invalid_name: "Lettres, espaces, apostrophes et tirets seulement.",
+    // 13/10/2026: joining a parking with the code of the day, Apple / Google sign-in, leaving and deleting an account.
+    join_request_closed:
+      "Cette demande n'est plus en attente : elle a été annulée, a expiré ou a déjà été traitée.",
+    join_code_invalid:
+      "Ce code ne marche pas. Vérifiez-le, ou demandez celui d'aujourd'hui à votre gérant.",
+    join_request_pending: "Une demande est déjà en attente.",
+    already_member: "Ce compte fait déjà partie d'une équipe.",
+    not_member: "Ce compte ne fait partie d'aucune équipe.",
+    identity_taken: "Cet identifiant est déjà lié à un autre compte.",
+    already_linked: "Cet identifiant est déjà lié à votre compte.",
+    sign_in_required:
+      "C'est votre seule façon de vous connecter : gardez-la, ou définissez d'abord un mot de passe.",
+    reauth_failed: "La confirmation a échoué. Réessayez.",
+    trip_running: "Un trajet de navette est en cours : terminez-le d'abord.",
+    provider_unavailable: "Cette connexion n'est pas disponible pour le moment.",
+    provider_unreachable: "Le service de connexion ne répond pas. Réessayez dans un instant.",
+    identity_invalid: "La connexion n'a pas pu être vérifiée. Réessayez.",
+    account_disabled: "Ce compte est désactivé. Parlez-en à votre gérant.",
   } as Record<string, string>,
   login: {
     title: "Connexion",
@@ -469,7 +489,15 @@ export const fr = {
         no_show_suspected: "Attendu, toujours pas là",
         blocked_return: "Retour du jour bloqué : sortir d'abord",
         inbound_to_check: "Mails à vérifier",
+        join_request: "Demande pour rejoindre l'équipe",
       } satisfies Record<AlertKind, string>,
+      // 13/10/2026: « Julie Martin », « Julie Martin et 2 autres », or the count alone.
+      joinDetail: (count: number, name: string | null) =>
+        name
+          ? count > 1
+            ? `${name} et ${count - 1} autre${count > 2 ? "s" : ""}`
+            : name
+          : `${count} demande${count > 1 ? "s" : ""}`,
       waveDetail: (
         direction: ShuttleDirection,
         time: string,
@@ -696,6 +724,61 @@ export const fr = {
     renameTitle: (name: string) => `Nom de ${name}`,
     save: "Enregistrer",
     cancel: "Annuler",
+    // 13/10/2026: how each member signs in to Plazo Pro.
+    signIn: {
+      password: "E-mail",
+      apple: "Apple",
+      google: "Google",
+    } satisfies Record<SignInMethod, string>,
+    signInPrefix: "Se connecte avec :",
+    // 13/10/2026: the code of the day (changes by itself at the parking's midnight) and the requests it brings.
+    code: {
+      title: "Code du jour",
+      changes: "change à minuit",
+      copyCode: "Copier le code",
+      copyMessage: "Copier un message prêt à envoyer",
+      help: `Une nouvelle recrue télécharge ${PRODUCT.name} Pro, se connecte avec Apple ou Google et tape ce code. Vous validez ensuite sa demande ici ou dans l'app.`,
+      message: (parking: string, code: string) =>
+        `Rejoignez l’équipe de ${parking} sur ${PRODUCT.name} Pro : installez l’app, connectez-vous avec Apple ou Google, puis tapez le code du jour ${code}. Il change à minuit.`,
+      codeCopied: "Code copié.",
+      messageCopied: "Message copié : collez-le dans un SMS ou un mail.",
+      copyFailed: "Copie impossible : sélectionnez le texte et copiez-le.",
+      // The API refuses every code of a demo, suspended or archived operator (`accepting: false`).
+      notAccepting: "Ce parking n'accepte pas de nouvelles demandes (démonstration, suspendu ou archivé).",
+    },
+    requests: {
+      title: "Demandes en attente",
+      count: (n: number) => `${n} demande${n > 1 ? "s" : ""} en attente`,
+      privateEmail: "adresse relais d'Apple",
+      via: (provider: string) => `Connexion avec ${provider}`,
+      refuse: "Refuser",
+      accept: "Accepter…",
+      acceptLabel: (name: string) => `Accepter ${name}`,
+      refuseLabel: (name: string) => `Refuser ${name}`,
+      refuseTitle: "Refuser la demande",
+      refuseConfirm: (name: string) =>
+        `${name} ne rejoindra pas l'équipe. La personne pourra refaire une demande avec le code du jour.`,
+      refused: (name: string) => `Demande de ${name} refusée.`,
+      dialogTitle: (name: string) => `Accepter ${name}`,
+      sentAt: (when: string) => `demande envoyée ${when}`,
+      roleLabel: "Son rôle",
+      roleHelp: "Préréglé sur le poste demandé ; le rôle se change ensuite dans l'équipe.",
+      // `phrase`: the role inside a sentence (« Accepter comme agent d'accueil »).
+      roles: {
+        agent: { label: "Accueil", phrase: "agent d'accueil", help: "Réservations, arrivées, retours" },
+        driver: { label: "Chauffeur", phrase: "chauffeur", help: "La navette, les arrivées et retours" },
+        valet: { label: "Voiturier", phrase: "voiturier", help: "Placer et sortir les voitures, les clés" },
+      } satisfies Record<JoinRole, { label: string; phrase: string; help: string }>,
+      confirm: (phrase: string) => `Accepter comme ${phrase}`,
+      accepted: (name: string, phrase: string) => `${name} a rejoint l'équipe comme ${phrase}.`,
+      cancel: "Annuler",
+      // Worded for this screen (describeError's texts).
+      errors: {
+        // Most often a former member of this team (deactivated): reactivating that account keeps their history.
+        email_taken: `Cette adresse e-mail est déjà celle d'un compte ${PRODUCT.name}, peut-être un ancien compte de votre équipe : réactivez-le dans la liste et donnez-lui au besoin un nouveau mot de passe ; la personne liera ensuite Apple ou Google dans Mon compte de l'app. Sinon, refusez la demande.`,
+        not_found: "Cette demande n'existe plus.",
+      } as Record<string, string>,
+    },
   },
   account: {
     title: "Mon compte",

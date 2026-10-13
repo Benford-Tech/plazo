@@ -15,9 +15,9 @@ const MAX_SUBSCRIPTIONS_PER_CALL = 2000;
  * What a staff member subscribed to: travellers' arrivals, returns, the shuttles' trips (N-A), the platform's messages
  * (E-A), a push per new booking (`bookings` = bookingNotify immediate) or the hourly digest (`bookingDigest` = hourly).
  * 10/10/2026 (relecture): `bookingChanges` = whoever hears of bookings at all (immediate or hourly), for a booking Plazo
- * changed by itself.
+ * changed by itself. 13/10/2026: `team` = the managers, always (a request to join the team waits for one of them).
  */
-export type PushAudience = 'arrivals' | 'returns' | 'shuttles' | 'platform' | 'bookings' | 'bookingDigest' | 'bookingChanges';
+export type PushAudience = 'arrivals' | 'returns' | 'shuttles' | 'platform' | 'bookings' | 'bookingDigest' | 'bookingChanges' | 'team';
 
 /** Travellers reachable by a platform broadcast: a booking not cancelled, whose return is at most a day past. */
 const currentTravellers = (now: Date): Prisma.TravellerDeviceWhereInput => ({
@@ -51,7 +51,9 @@ const wantsAudience = (audience: PushAudience): Prisma.StaffWhereInput =>
             ? { bookingNotify: 'hourly' }
             : audience === 'bookingChanges'
               ? { bookingNotify: { in: ['immediate', 'hourly'] } }
-              : { notifyPlatform: true };
+              : audience === 'team'
+                ? { role: 'manager' }
+                : { notifyPlatform: true };
 
 /**
  * Push notifications through the OneSignal REST API: to the staff's phones (StaffDevice), and to

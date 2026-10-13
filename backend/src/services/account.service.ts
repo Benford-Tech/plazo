@@ -14,7 +14,7 @@ import { AuditService } from './audit.service';
 import { normalizeEmail } from './auth.service';
 import { NotificationService } from './notification.service';
 import { OperatorService } from './operator.service';
-import { toSessionUser } from './staff.service';
+import { StaffService } from './staff.service';
 import { TokenService } from './token.service';
 
 const HOUR_MS = 3600 * 1000;
@@ -180,7 +180,7 @@ export class AccountService {
     const staffId = await prisma.$transaction(async tx => {
       const id = await this.accountTokens.consume(data.token, 'invitation', tx);
       if (!id) return null;
-      await tx.staff.update({ where: { id }, data: { password, emailVerifiedAt: new Date(), lastLoginAt: new Date() } });
+      await tx.staff.update({ where: { id }, data: { password, passwordSetAt: new Date(), emailVerifiedAt: new Date(), lastLoginAt: new Date() } });
       return id;
     });
     if (!staffId) throw invalidLink();
@@ -195,6 +195,9 @@ export class AccountService {
     }
     // eslint-disable-next-line @typescript-eslint/no-unused-vars
     const { operator, ...rest } = staff;
-    return { tokenData: await this.tokens.generateAuthTokens(staff.id, metadata), user: toSessionUser({ ...rest, operatorName: operator.name }) };
+    return {
+      tokenData: await this.tokens.generateAuthTokens(staff.id, metadata),
+      user: await Container.get(StaffService).sessionUser({ ...rest, operatorName: operator.name }),
+    };
   }
 }

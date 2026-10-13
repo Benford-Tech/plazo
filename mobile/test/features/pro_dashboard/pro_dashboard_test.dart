@@ -141,4 +141,18 @@ void main() {
     expect(find.text('Aucun véhicule sur le parking.'), findsOneWidget);
     expect(find.descendant(of: find.byKey(const Key('kpi-to-treat')), matching: find.text("rien d'urgent")), findsOneWidget);
   });
+
+  testWidgets('13/10/2026 · demandes pour rejoindre l’équipe (gérants) : le nom de la plus ancienne et les autres', (tester) async {
+    await show(
+      tester,
+      dashboard.copyWith(
+        alerts: const [
+          DashboardAlertModel(kind: 'join_request', severity: 'todo', customerName: 'Julie Martin', detail: '2', minutes: 130),
+        ],
+      ),
+    );
+    expect(find.text("Demande pour rejoindre l'équipe"), findsOneWidget);
+    expect(find.text('Julie Martin et 1 autre(s) · depuis 2 h'), findsOneWidget);
+    expect(find.text('À faire'), findsOneWidget);
+  });
 }

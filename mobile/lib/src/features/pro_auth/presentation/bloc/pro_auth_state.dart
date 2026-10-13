@@ -1,6 +1,7 @@
 part of 'pro_auth_bloc.dart';
 
-enum ProAuthStatus { unknown, signedIn, signedOut }
+/// `onboarding` (13/10/2026): signed in with Apple or Google, not a member of a parking yet (« Rejoindre un parking »).
+enum ProAuthStatus { unknown, signedIn, signedOut, onboarding }
 
 @freezed
 abstract class ProAuthState with _$ProAuthState {
@@ -20,5 +21,29 @@ abstract class ProAuthState with _$ProAuthState {
     @Default(<String, String>{}) Map<String, String> nameErrors,
     String? errorCode,
     String? errorMessage,
+
+    /// The Apple / Google identity and its latest join request, while [status] is onboarding.
+    OnboardingModel? onboarding,
+
+    /// The sign-ins this phone offers (its build and the API's keys): « Continuer avec Apple / Google », the links
+    /// of Mon compte, the confirmations of « Supprimer mon compte ».
+    @Default(ProvidersModel()) ProvidersModel providers,
+
+    /// What this phone and build offer, known at start without the API: « Supprimer mon compte » confirms with Apple
+    /// or Google even while [providers] has not been read (a restored session never shows the login page).
+    @Default(ProvidersModel()) ProvidersModel deviceProviders,
+
+    /// « Continuer avec … » running, and with which provider (apple, google).
+    @Default(ViewState.idle) ViewState signInState,
+    String? signingInWith,
+
+    /// Mon compte (13/10/2026): linking / unlinking Apple or Google, « Quitter ce parking », « Supprimer mon compte »
+    /// (also from the waiting screen of « Rejoindre un parking »).
+    @Default(ViewState.idle) ViewState linkState,
+    @Default(ViewState.idle) ViewState leaveState,
+    @Default(ViewState.idle) ViewState deleteState,
+
+    /// What Mon compte last did: "account.linked", "account.unlinked".
+    String? accountNotice,
   }) = _ProAuthState;
 }

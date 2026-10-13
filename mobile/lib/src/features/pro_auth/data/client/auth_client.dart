@@ -31,4 +31,24 @@ abstract class AuthClient {
   /// "Mon véhicule aujourd'hui" (V-A): { vehicleId } or { vehicleId: null } to hand it back.
   @PATCH('internal/staff/me/vehicle')
   Future<StaffModel> setVehicle(@Body() Map<String, dynamic> body);
+
+  /// « Lier mon identifiant Apple » (13/10/2026): { identityToken, rawNonce } → { user }.
+  @POST('internal/staff/me/identities/apple')
+  Future<dynamic> linkApple(@Body() Map<String, dynamic> body);
+
+  /// « Lier mon compte Google »: { idToken } → { user }.
+  @POST('internal/staff/me/identities/google')
+  Future<dynamic> linkGoogle(@Body() Map<String, dynamic> body);
+
+  /// Removes the Apple or Google sign-in → { user } (409 sign_in_required when it is the last way in).
+  @DELETE('internal/staff/me/identities/{provider}')
+  Future<dynamic> unlinkIdentity(@Path('provider') String provider);
+
+  /// « Quitter ce parking » → { onboarding: { onboardingToken, expiresAt, identity, request } | null }.
+  @POST('internal/staff/me/leave')
+  Future<dynamic> leave();
+
+  /// « Supprimer mon compte »: { password? , appleAuthorizationCode?, googleIdToken? } → 204.
+  @DELETE('internal/staff/me')
+  Future<void> deleteMe(@Body() Map<String, dynamic> body);
 }

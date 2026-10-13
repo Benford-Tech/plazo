@@ -6,6 +6,7 @@ void _initDataSource() {
     ..registerLazySingleton<PublicDataSource>(() => PublicDataSourceImpl(locator()))
     ..registerLazySingleton<ArrivalDataSource>(() => ArrivalDataSourceImpl(locator(), locator()))
     ..registerLazySingleton<AuthDataSource>(() => AuthDataSourceImpl(locator(), locator()))
+    ..registerLazySingleton<OnboardingDataSource>(() => OnboardingDataSourceImpl(locator(), locator()))
     ..registerLazySingleton<PlanningDataSource>(() => PlanningDataSourceImpl(locator()))
     ..registerLazySingleton<DashboardDataSource>(() => DashboardDataSourceImpl(locator()))
     ..registerLazySingleton<RevenueDataSource>(() => RevenueDataSourceImpl(locator()))

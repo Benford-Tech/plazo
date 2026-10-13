@@ -797,6 +797,36 @@ Le nom du produit doit rester dans UN seul fichier de configuration (il peut enc
   `{nom}` du SMS de la veille et « C. Martin » d'après les champs, anonymisation « Client » / « anonymisé ». Personnel : noms nettoyés avant
   contrôle (un nom fait d'espaces est refusé), invitation qui exige prénom et nom du gérant, `PATCH /internal/staff/me` (« Votre nom » de
   Mon compte, web et app) et prénom / nom dans `PATCH /internal/staff/:id` (« Modifier le nom » d'Équipe), gérant démo « Gérant Démo ».
+- **Rejoindre un parking avec Apple / Google et le code du jour (13/10/2026, « dans plazopro je peux me connecter avec icloud puis je
+  rejoins un parking avec un code à 10 chiffres et lettres lié au parking et qui change tous les jours » ; maquettes validées
+  https://claude.ai/artifact/PehnSk6Tq34iPELj9LDWtB, champ variante A)** : dans Plazo Pro, « Continuer avec Apple » sur iPhone et
+  « Continuer avec Google » sur Android (l'e-mail et le mot de passe restent pour tous ; l'espace pro web garde le mot de passe seul),
+  puis le **code du jour** du loueur : 10 caractères Crockford (`domain/join-code.ts` : HMAC de `SECRET_KEY` sur loueur + jour local du
+  premier parking, affiché `XXXXX-XXXXX`, O lu 0, I et L lus 1, U refusé), **qui change seul à minuit** (ni bouton ni interrupteur) ;
+  le code crée une **demande** que **un gérant accepte** (rôle Accueil, Chauffeur ou Voiturier, préréglé sur le poste demandé, jamais
+  Gérant) ou refuse ; une demande sans réponse expire après 7 jours ; un loueur suspendu, archivé ou de démo refuse tout code
+  (`accepting` faux). Serveur : tables `staff_identities` (Apple / Google, `staffId` nul tant que la personne n'a pas rejoint),
+  `identity_tokens` (session d'accueil, JWT `type: onboarding`, refusée par toutes les routes du personnel), `staff_join_requests`,
+  `join_attempts` (essais comptés par compte et par adresse, jamais le code tapé), `used_identity_tokens` (une preuve Apple ou Google
+  ne sert qu'une fois) ; `Staff.passwordSetAt/leftAt/deletedAt` (migration `staff_identities_join_requests`) ; routes publiques
+  `GET /internal/auth/providers`, `POST /internal/auth/apple|google` (→ `signed_in` ou `onboarding`), `/internal/auth/onboarding*`
+  (état, `join`, `session`, annuler, se déconnecter, supprimer l'identité), gérants `GET /internal/staff/join-code`,
+  `GET /internal/staff/join-requests`, `POST …/join-requests/:id/accept|refuse` (consultation : comme les autres écritures d'équipe),
+  soi-même `POST|DELETE /internal/staff/me/identities/…`, `POST /internal/staff/me/leave` (« Quitter ce parking », 409 `last_manager`)
+  et `DELETE /internal/staff/me` (« Supprimer mon compte » : anonymisation « Compte supprimé », confirmée par le mot de passe, Apple ou
+  Google ; avec Apple, le code d'autorisation est échangé puis **révoqué** chez Apple, règle 5.1.1(v)) ; limites : 5 codes faux en
+  15 min et 20 par jour par compte, 30 par heure par adresse, 3 demandes par jour par compte ; push « Demande pour rejoindre
+  l'équipe » aux gérants (audience `team`), alerte `join_request` du tableau de bord ; purge de nuit (demandes expirées, essais à
+  7 jours, tentatives de connexion à 30 jours, identités jamais liées à 30 jours) ; variables `APPLE_TEAM_ID`, `APPLE_CLIENT_IDS`,
+  `APPLE_SIGNIN_KEY_ID`, `APPLE_SIGNIN_PRIVATE_KEY` (Apple proposé seulement avec la clé), `GOOGLE_CLIENT_IDS`. Web : cartes « Code du
+  jour » (« Copier le code », « Copier un message prêt à envoyer ») et « Demandes en attente » (« Accepter… » avec le rôle, « Refuser »)
+  dans Équipe, pastilles E-mail / Apple / Google des membres, ligne « À traiter » du tableau de bord. App : `/pro/rejoindre` (code,
+  prénom et nom, « Je suis », attente relue toutes les 10 s, refus et expiration), carte du code et demandes dans Équipe, bloc
+  « Connexion » de Mon compte (lier / délier Apple ou Google, quitter, supprimer). Site : page `/suppression-compte` et politique de
+  confidentialité. Build : `--dart-define=GOOGLE_SERVER_CLIENT_ID` (client « Application Web » du projet Google Cloud) pour Plazo Pro
+  Android ; sur iOS, l'étape « Sign in with Apple » de `mobile-release` n'ajoute l'entitlement et `APPLE_SIGN_IN=true` que si le profil
+  `plazo_pro_app_store` porte la capacité (sinon Plazo Pro est construit sans le bouton) ; réglages chez Apple, Google et Vercel dans
+  `mobile/publier-sur-les-stores.md`.
 
 ## Conventions (reprises de LoveNest)
 

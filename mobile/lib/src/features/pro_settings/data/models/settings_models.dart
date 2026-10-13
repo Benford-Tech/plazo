@@ -20,9 +20,66 @@ abstract class TeamMemberModel with _$TeamMemberModel {
     /// The post held today (R-C), when it differs from the role.
     String? post,
     DateTime? postSetAt,
+
+    /// How the member signs in (13/10/2026): password, apple, google.
+    @Default([]) List<String> signIn,
   }) = _TeamMemberModel;
 
   factory TeamMemberModel.fromJson(Map<String, dynamic> json) => _$TeamMemberModelFromJson(json);
+}
+
+/// GET /internal/staff/join-code (13/10/2026, managers): the code du jour of the parking, valid until local midnight.
+@freezed
+abstract class JoinCodeModel with _$JoinCodeModel {
+  const factory JoinCodeModel({
+    /// `K7QM2-XP9TD`
+    required String code,
+    String? day,
+    DateTime? validUntil,
+    @Default('') String operatorName,
+
+    /// False for a demo, suspended or archived operator: the API refuses its code (absent from an older API).
+    @Default(true) bool accepting,
+  }) = _JoinCodeModel;
+
+  factory JoinCodeModel.fromJson(Map<String, dynamic> json) => _$JoinCodeModelFromJson(json);
+}
+
+/// A request to join the team, waiting for a manager (GET /internal/staff/join-requests).
+@freezed
+abstract class PendingJoinRequestModel with _$PendingJoinRequestModel {
+  const PendingJoinRequestModel._();
+
+  const factory PendingJoinRequestModel({
+    required String id,
+    @Default('') String firstName,
+    @Default('') String lastName,
+    String? email,
+    @Default(false) bool isPrivateEmail,
+
+    /// apple, google
+    required String provider,
+
+    /// agent, driver, valet: the post asked for, preset in « Accepter… ».
+    @Default('agent') String wishedRole,
+    required DateTime createdAt,
+    DateTime? expiresAt,
+  }) = _PendingJoinRequestModel;
+
+  factory PendingJoinRequestModel.fromJson(Map<String, dynamic> json) => _$PendingJoinRequestModelFromJson(json);
+
+  String get name => [firstName, lastName].where((s) => s.trim().isNotEmpty).join(' ');
+
+  /// « JM ».
+  String get initials => [firstName, lastName].where((s) => s.trim().isNotEmpty).map((s) => s.trim()[0].toUpperCase()).join();
+}
+
+/// `{ data }` of GET /internal/staff/join-requests.
+@freezed
+abstract class PendingJoinRequestsModel with _$PendingJoinRequestsModel {
+  const factory PendingJoinRequestsModel({@Default([]) List<PendingJoinRequestModel> data}) = _PendingJoinRequestsModel;
+
+  factory PendingJoinRequestsModel.fromJson(Map<String, dynamic> json) => _$PendingJoinRequestsModelFromJson(json);
 }
 
 /// The parking's settings (GET /internal/parking, PATCH /internal/parkings/:id).

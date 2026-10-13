@@ -7,6 +7,7 @@ import '../../features/booking/presentation/pages/my_booking_page.dart';
 import '../../features/checkout/presentation/pages/booking_form_page.dart';
 import '../../features/checkout/presentation/pages/payment_page.dart';
 import '../../features/more/presentation/pages/more_tab_page.dart';
+import '../../features/pro_auth/presentation/pages/pro_join_page.dart';
 import '../../features/pro_auth/presentation/pages/pro_login_page.dart';
 import '../../features/pro_auth/presentation/pages/pro_post_page.dart';
 import '../../features/pro_auth/presentation/pages/pro_vehicle_page.dart';
@@ -46,9 +47,12 @@ part 'app_router.gr.dart';
 /// reads them from the address bar). Order matters: fixed paths before the /:airport ones.
 @AutoRouterConfig(replaceInRouteName: 'Page,Route')
 class AppRouter extends RootStackRouter {
-  AppRouter({required this.proGuard});
+  AppRouter({required this.proGuard, ProJoinGuard? joinGuard}) : joinGuard = joinGuard ?? ProJoinGuard(proGuard.auth);
 
   final ProAuthGuard proGuard;
+
+  /// « Rejoindre un parking » (13/10/2026): the onboarding session only.
+  final ProJoinGuard joinGuard;
 
   @override
   List<AutoRoute> get routes => [
@@ -69,6 +73,8 @@ class AppRouter extends RootStackRouter {
     // traveller app carries no pro space (decision of 04/10/2026).
     if (AppConstants.isPro) ...[
       AutoRoute(page: ProLoginRoute.page, path: '/pro/connexion'),
+      // Signed in with Apple or Google, no parking yet: the code du jour, then the wait for a manager (13/10/2026).
+      AutoRoute(page: ProJoinRoute.page, path: '/pro/rejoindre', guards: [joinGuard]),
       AutoRoute(
         page: ProShellRoute.page,
         path: '/pro',

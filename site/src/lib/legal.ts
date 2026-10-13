@@ -23,12 +23,23 @@ export interface LegalDoc {
   sections: LegalSection[];
 }
 
-export const LEGAL_VERSION = "12 octobre 2026";
+/**
+ * One date per text, shown as « Version du … » at the top of its page: bump only the text that changed. The terms
+ * govern each booking in the version accepted that day, so a date must never move without its text. (Until
+ * 13/10/2026 the three shared one date.)
+ * - Terms: 12/10/2026, night fees.
+ * - Legal notice: unchanged since the shared date of 12/10/2026.
+ * - Privacy: 13/10/2026, Plazo Pro sign-in with Apple / Google, the code of the day, account deletion.
+ */
+export const TERMS_VERSION = "12 octobre 2026";
+export const NOTICE_VERSION = "12 octobre 2026";
+export const PRIVACY_VERSION = "13 octobre 2026";
 export const TO_COMPLETE = "[à compléter]";
 
 const filled = (value: string) => value.trim() || TO_COMPLETE;
 
-function identity(company: Company, email: string) {
+/** The company's details, each one « [à compléter] » while product.json leaves it empty (also /suppression-compte). */
+export function companyIdentity(company: Company, email: string) {
   return {
     name: filled(company.name),
     legalForm: filled(company.legalForm),
@@ -45,10 +56,10 @@ function identity(company: Company, email: string) {
 
 /** Conditions générales d'utilisation et de vente of the traveller site and apps. */
 export function termsDoc(company: Company = COMPANY, email: string = SUPPORT_EMAIL, p: string = PRODUCT_NAME): LegalDoc {
-  const c = identity(company, email);
+  const c = companyIdentity(company, email);
   return {
     title: fr.legal.terms,
-    version: LEGAL_VERSION,
+    version: TERMS_VERSION,
     lead: `Ces conditions s’appliquent à l’utilisation du site et des applications ${p} et à chaque réservation de parking faite par leur intermédiaire. Le voyageur les accepte au moment de réserver ; la version applicable est celle en vigueur ce jour-là.`,
     sections: [
       {
@@ -223,10 +234,10 @@ export function termsDoc(company: Company = COMPANY, email: string = SUPPORT_EMA
 
 /** Mentions légales: publisher, hosting, intellectual property, personal data and cookies. */
 export function legalNoticeDoc(company: Company = COMPANY, email: string = SUPPORT_EMAIL, p: string = PRODUCT_NAME): LegalDoc {
-  const c = identity(company, email);
+  const c = companyIdentity(company, email);
   return {
     title: fr.legal.legalNotice,
-    version: LEGAL_VERSION,
+    version: NOTICE_VERSION,
     lead: `Informations sur l’éditeur et l’hébergeur du site ${p} et des applications ${p} et ${p} Pro.`,
     sections: [
       {
@@ -284,10 +295,10 @@ export function legalNoticeDoc(company: Company = COMPANY, email: string = SUPPO
 
 /** Politique de confidentialité: what the platform does with personal data, as built (06/10/2026). */
 export function privacyDoc(company: Company = COMPANY, email: string = SUPPORT_EMAIL, p: string = PRODUCT_NAME): LegalDoc {
-  const c = identity(company, email);
+  const c = companyIdentity(company, email);
   return {
     title: fr.legal.privacy,
-    version: LEGAL_VERSION,
+    version: PRIVACY_VERSION,
     lead: `Cette politique explique quelles données personnelles ${p} traite quand vous utilisez le site ou les applications ${p} et ${p} Pro, pourquoi, avec qui elles sont partagées, combien de temps elles sont gardées et comment exercer vos droits. Nous ne collectons que ce qui sert à votre séjour.`,
     sections: [
       {
@@ -355,6 +366,7 @@ export function privacyDoc(company: Company = COMPANY, email: string = SUPPORT_E
             "un fournisseur de suivi des vols, qui ne reçoit que le numéro et la date du vol, jamais votre nom ;",
             "l’IGN (Géoplateforme), dont les serveurs fournissent les fonds de carte à votre navigateur ou à l’application.",
           ],
+          `Apple et Google, lorsqu’un membre de l’équipe d’un parking se connecte à ${p} Pro avec eux : ils confirment son identité à ${p}, en responsables distincts de leurs propres services. Lorsqu’un membre confirme la suppression de son compte avec Apple, ${p} demande aussi à Apple de retirer l’accès de l’application.`,
           "Les autorités, uniquement lorsque la loi l’exige.",
           "Pendant un trajet de navette, les passagers concernés voient le prénom du chauffeur, le véhicule et, si le parking a choisi de la montrer, sa position ; les autres voyageurs ne voient jamais vos informations.",
         ],
@@ -379,7 +391,12 @@ export function privacyDoc(company: Company = COMPANY, email: string = SUPPORT_E
             "Téléphones inscrits aux notifications du séjour : supprimés 2 jours après le retour.",
             "File d’envoi des SMS (numéro du destinataire ; le texte n’est pas conservé) : 30 jours.",
             "E-mails de confirmation transférés par un parking : texte effacé après 30 jours, trace de réception supprimée après 90 jours.",
-            "Adresse IP : quelques minutes en mémoire pour limiter les abus ; les journaux techniques de l’hébergeur sont gardés quelques jours au plus.",
+            `Adresse IP : quelques minutes en mémoire pour limiter les abus (7 jours pour les essais du code du jour de ${p} Pro) ; les journaux techniques de l’hébergeur sont gardés quelques jours au plus.`,
+            `Identité Apple ou Google d’un membre de l’équipe d’un parking : supprimée avec son compte ${p} Pro ; si elle n’est liée à aucun parking (jamais rejoint, ou quitté), supprimée avec ses demandes après 30 jours sans connexion ni demande.`,
+            "Demande pour rejoindre l’équipe d’un parking : sans réponse d’un gérant, elle expire au bout de 7 jours.",
+            "Essais du code du jour (compte, adresse IP, réussite ou échec ; le code tapé n’est jamais enregistré) : 7 jours.",
+            `Tentatives de connexion à l’espace pro et à ${p} Pro (adresse e-mail, réussite ou échec) : 30 jours.`,
+            "Preuves de connexion Apple ou Google déjà utilisées : seule une empreinte, d’où l’on ne peut rien retrouver, est gardée jusqu’à leur expiration (une heure au plus), pour qu’une même preuve ne serve qu’une fois.",
             "Sur votre téléphone : les références de vos réservations restent dans l’application jusqu’à ce que vous les retiriez ou que vous la désinstalliez.",
           ],
         ],
@@ -388,7 +405,7 @@ export function privacyDoc(company: Company = COMPANY, email: string = SUPPORT_E
         id: "securite",
         title: "7. Sécurité",
         blocks: [
-          "Les échanges sont chiffrés (HTTPS). Chaque membre d’une équipe a son propre compte, ses droits dépendent de son rôle et il ne voit que les réservations de son parking ; les mots de passe sont stockés sous forme hachée et les modifications des réservations sont tracées.",
+          `Les échanges sont chiffrés (HTTPS). Chaque membre d’une équipe a son propre compte, ses droits dépendent de son rôle et il ne voit que les réservations de son parking ; les mots de passe sont stockés sous forme hachée et les modifications des réservations sont tracées. Pour rejoindre de soi-même l’équipe d’un parking depuis ${p} Pro, il faut le code du jour, qui change chaque nuit, puis l’accord d’un gérant.`,
           "Le lien de votre réservation contient une clé secrète : ne le transférez qu’à des personnes de confiance. En cas de doute, le parking peut le désactiver ; vous retrouvez alors l’accès depuis [Ma réservation](/ma-reservation) avec votre référence et votre e-mail.",
           `Aucune donnée de carte bancaire n’est stockée par ${p}.`,
         ],
@@ -419,7 +436,9 @@ export function privacyDoc(company: Company = COMPANY, email: string = SUPPORT_E
         title: "10. Comptes des professionnels",
         blocks: [
           `Pour les équipes des parkings qui utilisent l’espace pro et l’application ${p} Pro, ${p} traite : prénom et nom, e-mail, téléphone facultatif, rôle, poste et véhicule du jour, préférences de notifications, mot de passe haché, sessions de connexion (30 jours au plus) et historique des actions sur les réservations. Pendant un trajet de navette, si le parking a activé le suivi, seule la dernière position du chauffeur est gardée ; elle est effacée à la fin du trajet. Le parking choisit qui la voit : personne (pas de suivi), son équipe seulement, ou aussi les voyageurs.`,
-          `Ces données servent à fournir l’espace pro au parking, qui décide de son organisation ; elles sont gardées tant que le compte existe, puis le temps des obligations légales. Les informations de l’entreprise et du gérant fournies à l’inscription servent au contrat entre le parking et ${p}. Les droits ci-dessus s’exercent de la même façon.`,
+          `Un membre peut se connecter à ${p} Pro avec Apple (iPhone) ou Google (Android). ${p} reçoit alors d’Apple ou de Google un identifiant de compte (chez Apple, propre à ${p}), l’adresse e-mail du compte (avec Apple, éventuellement une adresse relais qui masque la vraie) et le prénom et le nom que la personne accepte de partager ; jamais son mot de passe Apple ou Google. Pour rejoindre l’équipe de son parking, elle tape le code du jour que lui donne un gérant : sa demande (prénom, nom, e-mail, poste souhaité) est transmise aux gérants de ce parking, qui l’acceptent ou la refusent. Les essais de code sont enregistrés pour bloquer les essais au hasard.`,
+          `Ces données servent à fournir l’espace pro au parking, qui décide de son organisation ; elles sont gardées tant que le compte existe, puis le temps des obligations légales. Quitter un parking retire le membre de son équipe ; son nom reste dans l’historique de ce parking. Les informations de l’entreprise et du gérant fournies à l’inscription servent au contrat entre le parking et ${p}. Les droits ci-dessus s’exercent de la même façon.`,
+          `Chacun peut supprimer son compte ${p} Pro dans l’application (Plus › Mon compte › Supprimer mon compte) ou en nous écrivant : voir [Supprimer un compte ${p} Pro](/suppression-compte). Le compte est alors anonymisé : nom, e-mail, téléphone, mot de passe, sessions, téléphones inscrits aux notifications et identités Apple ou Google sont effacés, et, lorsque la suppression est confirmée avec Apple, ${p} demande aussi à Apple de retirer l’accès de l’application. Les trajets de navette et les actions sur les réservations restent dans l’historique du parking, sous la mention « Compte supprimé » ; les remarques écrites dans les notes d’une réservation, signées du prénom, y restent jusqu’à l’anonymisation de la réservation (12 mois après le retour).`,
         ],
       },
       {

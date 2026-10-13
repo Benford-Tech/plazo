@@ -1,5 +1,6 @@
 import type { MetadataRoute } from "next";
 import { api } from "@/lib/api";
+import { ACCOUNT_DELETION_PATH } from "@/lib/account-deletion";
 import { topicFacts } from "@/lib/airport-guides";
 import { topicGuide, topicLinks } from "@/lib/guides";
 import { AIRPORTS, airportPath, siteUrl } from "@/lib/site";
@@ -10,7 +11,11 @@ export const dynamic = "force-dynamic";
 
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const base = siteUrl();
-  const entries: MetadataRoute.Sitemap = [{ url: `${base}/`, changeFrequency: "weekly", priority: 1 }];
+  const entries: MetadataRoute.Sitemap = [
+    { url: `${base}/`, changeFrequency: "weekly", priority: 1 },
+    // 13/10/2026: how to delete a Plazo Pro account (asked by the stores), found without the app.
+    { url: `${base}${ACCOUNT_DELETION_PATH}`, changeFrequency: "yearly", priority: 0.3 },
+  ];
   for (const { slug } of AIRPORTS) {
     // The default airport's page is the home page ("/" is its canonical address).
     if (airportPath(slug) !== "/") entries.push({ url: `${base}${airportPath(slug)}`, changeFrequency: "weekly", priority: 0.9 });

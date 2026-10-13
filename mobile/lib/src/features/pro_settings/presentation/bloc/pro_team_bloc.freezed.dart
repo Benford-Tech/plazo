@@ -15,8 +15,11 @@ T _$identity<T>(T value) => value;
 /// @nodoc
 mixin _$ProTeamState {
 
- ViewState get viewState; ViewState get actionState; List<TeamMemberModel> get members;/// "team.created", "team.updated", "team.password_reset".
- String? get notice; String? get errorCode; Map<String, String> get fieldErrors;
+ ViewState get viewState; ViewState get actionState; List<TeamMemberModel> get members;/// "team.created", "team.updated", "team.password_reset", "team.join_accepted", "team.join_refused".
+ String? get notice;/// The name in the notice (« Julie Martin a rejoint l'équipe. »).
+ String? get noticeArg; String? get errorCode; Map<String, String> get fieldErrors;/// « Code du jour » (managers, 13/10/2026), null until read.
+ JoinCodeModel? get joinCode;/// The requests to join the team, oldest first, and the one being accepted or refused.
+ List<PendingJoinRequestModel> get joinRequests; String? get joinBusyId;
 /// Create a copy of ProTeamState
 /// with the given fields replaced by the non-null parameter values.
 @JsonKey(includeFromJson: false, includeToJson: false)
@@ -28,20 +31,20 @@ $ProTeamStateCopyWith<ProTeamState> get copyWith => _$ProTeamStateCopyWithImpl<P
 @override
 bool operator ==(Object other) {
   final _this = this as ProTeamState;
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is ProTeamState&&(identical(other.viewState, _this.viewState) || other.viewState == _this.viewState)&&(identical(other.actionState, _this.actionState) || other.actionState == _this.actionState)&&const DeepCollectionEquality().equals(other.members, _this.members)&&(identical(other.notice, _this.notice) || other.notice == _this.notice)&&(identical(other.errorCode, _this.errorCode) || other.errorCode == _this.errorCode)&&const DeepCollectionEquality().equals(other.fieldErrors, _this.fieldErrors));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is ProTeamState&&(identical(other.viewState, _this.viewState) || other.viewState == _this.viewState)&&(identical(other.actionState, _this.actionState) || other.actionState == _this.actionState)&&const DeepCollectionEquality().equals(other.members, _this.members)&&(identical(other.notice, _this.notice) || other.notice == _this.notice)&&(identical(other.noticeArg, _this.noticeArg) || other.noticeArg == _this.noticeArg)&&(identical(other.errorCode, _this.errorCode) || other.errorCode == _this.errorCode)&&const DeepCollectionEquality().equals(other.fieldErrors, _this.fieldErrors)&&(identical(other.joinCode, _this.joinCode) || other.joinCode == _this.joinCode)&&const DeepCollectionEquality().equals(other.joinRequests, _this.joinRequests)&&(identical(other.joinBusyId, _this.joinBusyId) || other.joinBusyId == _this.joinBusyId));
 }
 
 
 @override
 int get hashCode {
   final _this = this as ProTeamState;
-  return Object.hash(runtimeType,_this.viewState,_this.actionState,const DeepCollectionEquality().hash(_this.members),_this.notice,_this.errorCode,const DeepCollectionEquality().hash(_this.fieldErrors));
+  return Object.hash(runtimeType,_this.viewState,_this.actionState,const DeepCollectionEquality().hash(_this.members),_this.notice,_this.noticeArg,_this.errorCode,const DeepCollectionEquality().hash(_this.fieldErrors),_this.joinCode,const DeepCollectionEquality().hash(_this.joinRequests),_this.joinBusyId);
 }
 
 @override
 String toString() {
   final _this = this as ProTeamState;
-  return 'ProTeamState(viewState: ${_this.viewState}, actionState: ${_this.actionState}, members: ${_this.members}, notice: ${_this.notice}, errorCode: ${_this.errorCode}, fieldErrors: ${_this.fieldErrors})';
+  return 'ProTeamState(viewState: ${_this.viewState}, actionState: ${_this.actionState}, members: ${_this.members}, notice: ${_this.notice}, noticeArg: ${_this.noticeArg}, errorCode: ${_this.errorCode}, fieldErrors: ${_this.fieldErrors}, joinCode: ${_this.joinCode}, joinRequests: ${_this.joinRequests}, joinBusyId: ${_this.joinBusyId})';
 }
 
 
@@ -52,11 +55,11 @@ abstract mixin class $ProTeamStateCopyWith<$Res>  {
   factory $ProTeamStateCopyWith(ProTeamState value, $Res Function(ProTeamState) _then) = _$ProTeamStateCopyWithImpl;
 @useResult
 $Res call({
- ViewState viewState, ViewState actionState, List<TeamMemberModel> members, String? notice, String? errorCode, Map<String, String> fieldErrors
+ ViewState viewState, ViewState actionState, List<TeamMemberModel> members, String? notice, String? noticeArg, String? errorCode, Map<String, String> fieldErrors, JoinCodeModel? joinCode, List<PendingJoinRequestModel> joinRequests, String? joinBusyId
 });
 
 
-
+$JoinCodeModelCopyWith<$Res>? get joinCode;
 
 }
 /// @nodoc
@@ -69,18 +72,34 @@ class _$ProTeamStateCopyWithImpl<$Res>
 
 /// Create a copy of ProTeamState
 /// with the given fields replaced by the non-null parameter values.
-@pragma('vm:prefer-inline') @override $Res call({Object? viewState = null,Object? actionState = null,Object? members = null,Object? notice = freezed,Object? errorCode = freezed,Object? fieldErrors = null,}) {
+@pragma('vm:prefer-inline') @override $Res call({Object? viewState = null,Object? actionState = null,Object? members = null,Object? notice = freezed,Object? noticeArg = freezed,Object? errorCode = freezed,Object? fieldErrors = null,Object? joinCode = freezed,Object? joinRequests = null,Object? joinBusyId = freezed,}) {
   return _then(ProTeamState(
 viewState: null == viewState ? _self.viewState : viewState // ignore: cast_nullable_to_non_nullable
 as ViewState,actionState: null == actionState ? _self.actionState : actionState // ignore: cast_nullable_to_non_nullable
 as ViewState,members: null == members ? _self.members : members // ignore: cast_nullable_to_non_nullable
 as List<TeamMemberModel>,notice: freezed == notice ? _self.notice : notice // ignore: cast_nullable_to_non_nullable
+as String?,noticeArg: freezed == noticeArg ? _self.noticeArg : noticeArg // ignore: cast_nullable_to_non_nullable
 as String?,errorCode: freezed == errorCode ? _self.errorCode : errorCode // ignore: cast_nullable_to_non_nullable
 as String?,fieldErrors: null == fieldErrors ? _self.fieldErrors : fieldErrors // ignore: cast_nullable_to_non_nullable
-as Map<String, String>,
+as Map<String, String>,joinCode: freezed == joinCode ? _self.joinCode : joinCode // ignore: cast_nullable_to_non_nullable
+as JoinCodeModel?,joinRequests: null == joinRequests ? _self.joinRequests : joinRequests // ignore: cast_nullable_to_non_nullable
+as List<PendingJoinRequestModel>,joinBusyId: freezed == joinBusyId ? _self.joinBusyId : joinBusyId // ignore: cast_nullable_to_non_nullable
+as String?,
   ));
 }
+/// Create a copy of ProTeamState
+/// with the given fields replaced by the non-null parameter values.
+@override
+@pragma('vm:prefer-inline')
+$JoinCodeModelCopyWith<$Res>? get joinCode {
+    if (_self.joinCode == null) {
+    return null;
+  }
 
+  return $JoinCodeModelCopyWith<$Res>(_self.joinCode!, (value) {
+    return _then(_self.copyWith(joinCode: value));
+  });
+}
 }
 
 
@@ -162,10 +181,10 @@ return $default(_that);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( ViewState viewState,  ViewState actionState,  List<TeamMemberModel> members,  String? notice,  String? errorCode,  Map<String, String> fieldErrors)?  $default,{required TResult orElse(),}) {final _that = this;
+@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( ViewState viewState,  ViewState actionState,  List<TeamMemberModel> members,  String? notice,  String? noticeArg,  String? errorCode,  Map<String, String> fieldErrors,  JoinCodeModel? joinCode,  List<PendingJoinRequestModel> joinRequests,  String? joinBusyId)?  $default,{required TResult orElse(),}) {final _that = this;
 switch (_that) {
 case _ProTeamState() when $default != null:
-return $default(_that.viewState,_that.actionState,_that.members,_that.notice,_that.errorCode,_that.fieldErrors);case _:
+return $default(_that.viewState,_that.actionState,_that.members,_that.notice,_that.noticeArg,_that.errorCode,_that.fieldErrors,_that.joinCode,_that.joinRequests,_that.joinBusyId);case _:
   return orElse();
 
 }
@@ -183,10 +202,10 @@ return $default(_that.viewState,_that.actionState,_that.members,_that.notice,_th
 /// }
 /// ```
 
-@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( ViewState viewState,  ViewState actionState,  List<TeamMemberModel> members,  String? notice,  String? errorCode,  Map<String, String> fieldErrors)  $default,) {final _that = this;
+@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( ViewState viewState,  ViewState actionState,  List<TeamMemberModel> members,  String? notice,  String? noticeArg,  String? errorCode,  Map<String, String> fieldErrors,  JoinCodeModel? joinCode,  List<PendingJoinRequestModel> joinRequests,  String? joinBusyId)  $default,) {final _that = this;
 switch (_that) {
 case _ProTeamState():
-return $default(_that.viewState,_that.actionState,_that.members,_that.notice,_that.errorCode,_that.fieldErrors);case _:
+return $default(_that.viewState,_that.actionState,_that.members,_that.notice,_that.noticeArg,_that.errorCode,_that.fieldErrors,_that.joinCode,_that.joinRequests,_that.joinBusyId);case _:
   throw StateError('Unexpected subclass');
 
 }
@@ -203,10 +222,10 @@ return $default(_that.viewState,_that.actionState,_that.members,_that.notice,_th
 /// }
 /// ```
 
-@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( ViewState viewState,  ViewState actionState,  List<TeamMemberModel> members,  String? notice,  String? errorCode,  Map<String, String> fieldErrors)?  $default,) {final _that = this;
+@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( ViewState viewState,  ViewState actionState,  List<TeamMemberModel> members,  String? notice,  String? noticeArg,  String? errorCode,  Map<String, String> fieldErrors,  JoinCodeModel? joinCode,  List<PendingJoinRequestModel> joinRequests,  String? joinBusyId)?  $default,) {final _that = this;
 switch (_that) {
 case _ProTeamState() when $default != null:
-return $default(_that.viewState,_that.actionState,_that.members,_that.notice,_that.errorCode,_that.fieldErrors);case _:
+return $default(_that.viewState,_that.actionState,_that.members,_that.notice,_that.noticeArg,_that.errorCode,_that.fieldErrors,_that.joinCode,_that.joinRequests,_that.joinBusyId);case _:
   return null;
 
 }
@@ -218,7 +237,7 @@ return $default(_that.viewState,_that.actionState,_that.members,_that.notice,_th
 
 
 class _ProTeamState implements ProTeamState {
-  const _ProTeamState({this.viewState = ViewState.idle, this.actionState = ViewState.idle,  List<TeamMemberModel> members = const [], this.notice, this.errorCode,  Map<String, String> fieldErrors = const {}}): _members = members,_fieldErrors = fieldErrors;
+  const _ProTeamState({this.viewState = ViewState.idle, this.actionState = ViewState.idle,  List<TeamMemberModel> members = const [], this.notice, this.noticeArg, this.errorCode,  Map<String, String> fieldErrors = const {}, this.joinCode,  List<PendingJoinRequestModel> joinRequests = const [], this.joinBusyId}): _members = members,_fieldErrors = fieldErrors,_joinRequests = joinRequests;
   
 
 @override@JsonKey() final  ViewState viewState;
@@ -230,8 +249,10 @@ class _ProTeamState implements ProTeamState {
   return EqualUnmodifiableListView(_members);
 }
 
-/// "team.created", "team.updated", "team.password_reset".
+/// "team.created", "team.updated", "team.password_reset", "team.join_accepted", "team.join_refused".
 @override final  String? notice;
+/// The name in the notice (« Julie Martin a rejoint l'équipe. »).
+@override final  String? noticeArg;
 @override final  String? errorCode;
  final  Map<String, String> _fieldErrors;
 @override@JsonKey() Map<String, String> get fieldErrors {
@@ -240,6 +261,18 @@ class _ProTeamState implements ProTeamState {
   return EqualUnmodifiableMapView(_fieldErrors);
 }
 
+/// « Code du jour » (managers, 13/10/2026), null until read.
+@override final  JoinCodeModel? joinCode;
+/// The requests to join the team, oldest first, and the one being accepted or refused.
+ final  List<PendingJoinRequestModel> _joinRequests;
+/// The requests to join the team, oldest first, and the one being accepted or refused.
+@override@JsonKey() List<PendingJoinRequestModel> get joinRequests {
+  if (_joinRequests is EqualUnmodifiableListView) return _joinRequests;
+  // ignore: implicit_dynamic_type
+  return EqualUnmodifiableListView(_joinRequests);
+}
+
+@override final  String? joinBusyId;
 
 /// Create a copy of ProTeamState
 /// with the given fields replaced by the non-null parameter values.
@@ -251,18 +284,18 @@ _$ProTeamStateCopyWith<_ProTeamState> get copyWith => __$ProTeamStateCopyWithImp
 
 @override
 bool operator ==(Object other) {
-    return identical(this, other) || (other.runtimeType == runtimeType&&other is _ProTeamState&&(identical(other.viewState, viewState) || other.viewState == viewState)&&(identical(other.actionState, actionState) || other.actionState == actionState)&&const DeepCollectionEquality().equals(other.members, _members)&&(identical(other.notice, notice) || other.notice == notice)&&(identical(other.errorCode, errorCode) || other.errorCode == errorCode)&&const DeepCollectionEquality().equals(other.fieldErrors, _fieldErrors));
+    return identical(this, other) || (other.runtimeType == runtimeType&&other is _ProTeamState&&(identical(other.viewState, viewState) || other.viewState == viewState)&&(identical(other.actionState, actionState) || other.actionState == actionState)&&const DeepCollectionEquality().equals(other.members, _members)&&(identical(other.notice, notice) || other.notice == notice)&&(identical(other.noticeArg, noticeArg) || other.noticeArg == noticeArg)&&(identical(other.errorCode, errorCode) || other.errorCode == errorCode)&&const DeepCollectionEquality().equals(other.fieldErrors, _fieldErrors)&&(identical(other.joinCode, joinCode) || other.joinCode == joinCode)&&const DeepCollectionEquality().equals(other.joinRequests, _joinRequests)&&(identical(other.joinBusyId, joinBusyId) || other.joinBusyId == joinBusyId));
 }
 
 
 @override
 int get hashCode {
-    return Object.hash(runtimeType,viewState,actionState,const DeepCollectionEquality().hash(_members),notice,errorCode,const DeepCollectionEquality().hash(_fieldErrors));
+    return Object.hash(runtimeType,viewState,actionState,const DeepCollectionEquality().hash(_members),notice,noticeArg,errorCode,const DeepCollectionEquality().hash(_fieldErrors),joinCode,const DeepCollectionEquality().hash(_joinRequests),joinBusyId);
 }
 
 @override
 String toString() {
-    return 'ProTeamState(viewState: $viewState, actionState: $actionState, members: $members, notice: $notice, errorCode: $errorCode, fieldErrors: $fieldErrors)';
+    return 'ProTeamState(viewState: $viewState, actionState: $actionState, members: $members, notice: $notice, noticeArg: $noticeArg, errorCode: $errorCode, fieldErrors: $fieldErrors, joinCode: $joinCode, joinRequests: $joinRequests, joinBusyId: $joinBusyId)';
 }
 
 
@@ -273,11 +306,11 @@ abstract mixin class _$ProTeamStateCopyWith<$Res> implements $ProTeamStateCopyWi
   factory _$ProTeamStateCopyWith(_ProTeamState value, $Res Function(_ProTeamState) _then) = __$ProTeamStateCopyWithImpl;
 @override @useResult
 $Res call({
- ViewState viewState, ViewState actionState, List<TeamMemberModel> members, String? notice, String? errorCode, Map<String, String> fieldErrors
+ ViewState viewState, ViewState actionState, List<TeamMemberModel> members, String? notice, String? noticeArg, String? errorCode, Map<String, String> fieldErrors, JoinCodeModel? joinCode, List<PendingJoinRequestModel> joinRequests, String? joinBusyId
 });
 
 
-
+@override $JoinCodeModelCopyWith<$Res>? get joinCode;
 
 }
 /// @nodoc
@@ -290,19 +323,35 @@ class __$ProTeamStateCopyWithImpl<$Res>
 
 /// Create a copy of ProTeamState
 /// with the given fields replaced by the non-null parameter values.
-@override @pragma('vm:prefer-inline') $Res call({Object? viewState = null,Object? actionState = null,Object? members = null,Object? notice = freezed,Object? errorCode = freezed,Object? fieldErrors = null,}) {
+@override @pragma('vm:prefer-inline') $Res call({Object? viewState = null,Object? actionState = null,Object? members = null,Object? notice = freezed,Object? noticeArg = freezed,Object? errorCode = freezed,Object? fieldErrors = null,Object? joinCode = freezed,Object? joinRequests = null,Object? joinBusyId = freezed,}) {
   return _then(_ProTeamState(
 viewState: null == viewState ? _self.viewState : viewState // ignore: cast_nullable_to_non_nullable
 as ViewState,actionState: null == actionState ? _self.actionState : actionState // ignore: cast_nullable_to_non_nullable
 as ViewState,members: null == members ? _self._members : members // ignore: cast_nullable_to_non_nullable
 as List<TeamMemberModel>,notice: freezed == notice ? _self.notice : notice // ignore: cast_nullable_to_non_nullable
+as String?,noticeArg: freezed == noticeArg ? _self.noticeArg : noticeArg // ignore: cast_nullable_to_non_nullable
 as String?,errorCode: freezed == errorCode ? _self.errorCode : errorCode // ignore: cast_nullable_to_non_nullable
 as String?,fieldErrors: null == fieldErrors ? _self._fieldErrors : fieldErrors // ignore: cast_nullable_to_non_nullable
-as Map<String, String>,
+as Map<String, String>,joinCode: freezed == joinCode ? _self.joinCode : joinCode // ignore: cast_nullable_to_non_nullable
+as JoinCodeModel?,joinRequests: null == joinRequests ? _self._joinRequests : joinRequests // ignore: cast_nullable_to_non_nullable
+as List<PendingJoinRequestModel>,joinBusyId: freezed == joinBusyId ? _self.joinBusyId : joinBusyId // ignore: cast_nullable_to_non_nullable
+as String?,
   ));
 }
 
+/// Create a copy of ProTeamState
+/// with the given fields replaced by the non-null parameter values.
+@override
+@pragma('vm:prefer-inline')
+$JoinCodeModelCopyWith<$Res>? get joinCode {
+    if (_self.joinCode == null) {
+    return null;
+  }
 
+  return $JoinCodeModelCopyWith<$Res>(_self.joinCode!, (value) {
+    return _then(_self.copyWith(joinCode: value));
+  });
+}
 }
 
 // dart format on

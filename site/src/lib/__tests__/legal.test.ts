@@ -66,7 +66,7 @@ describe("legal pages", () => {
     expect(prices).toContain("compris dans le prix total affiché");
     expect(prices).toContain("calculés sur les heures de dépôt et de retour réservées et ne changent plus ensuite");
     expect(prices).toContain("remboursés avec le séjour");
-    expect(termsDoc().version).toBe("12 octobre 2026");
+    expect(termsDoc().version).toBe("12 octobre 2026"); // night fees (12/10/2026)
   });
 
   it("section ids are unique (anchors of the contents)", () => {
@@ -89,6 +89,40 @@ describe("privacy policy", () => {
     expect(all).toContain("12 mois après la date de retour"); // RESERVATION_RETENTION_MONTHS (backend/src/domain/retention.ts)
     expect(all).toContain("anonymisée automatiquement");
     expect(all).toContain("texte effacé après 30 jours, trace de réception supprimée après 90 jours"); // inbound emails (M-A)
+  });
+
+  it("covers the Plazo Pro sign-in with Apple or Google, the code of the day and account deletion (13/10/2026)", () => {
+    expect(all).toContain("se connecter à Plazo Pro avec Apple (iPhone) ou Google (Android)");
+    expect(all).toContain("jamais son mot de passe Apple ou Google");
+    // JoinRequestService.purge: identities not linked to a member (never joined, or left), idle for 30 days.
+    expect(all).toContain("si elle n’est liée à aucun parking (jamais rejoint, ou quitté), supprimée avec ses demandes après 30 jours sans connexion ni demande");
+    expect(all).toContain("sans réponse d’un gérant, elle expire au bout de 7 jours"); // JOIN_REQUEST_DAYS
+    expect(all).toContain("le code tapé n’est jamais enregistré) : 7 jours."); // join_attempts purge
+    expect(all).toContain("[Supprimer un compte Plazo Pro](/suppression-compte)");
+    expect(all).toContain("« Compte supprimé »");
+    expect(all).toContain("Apple et Google");
+    expect(all).toContain("ils confirment son identité à Plazo");
+    expect(privacyDoc().version).toBe("13 octobre 2026");
+  });
+
+  it("says what really happens: a raw IP kept 7 days for the code, Google's id is not Plazo's own, Apple revoked only with Apple", () => {
+    // join_attempts.ipKey (the IPv4, or the IPv6 /64) is kept in the database with the attempt.
+    expect(all).toContain("Adresse IP : quelques minutes en mémoire pour limiter les abus (7 jours pour les essais du code du jour de Plazo Pro)");
+    // Apple's `sub` is per team; Google's is the account's global id.
+    expect(all).toContain("un identifiant de compte (chez Apple, propre à Plazo)");
+    expect(all).not.toContain("un identifiant propre à Plazo");
+    // The backend revokes at Apple only when an authorisation code comes with the deletion.
+    expect(all).toContain("Lorsqu’un membre confirme la suppression de son compte avec Apple, Plazo demande aussi à Apple de retirer l’accès");
+    expect(all).toContain("lorsque la suppression est confirmée avec Apple, Plazo demande aussi à Apple");
+    expect(all).not.toContain("pour un compte lié à Apple");
+    // Handover remarks signed with the first name (ReservationService.applyStatus) stay in the booking's notes.
+    expect(all).toContain("les remarques écrites dans les notes d’une réservation, signées du prénom, y restent jusqu’à l’anonymisation de la réservation (12 mois après le retour)");
+  });
+
+  it("dates each text on its own: only the privacy policy moved on 13/10/2026", () => {
+    expect(privacyDoc().version).toBe("13 octobre 2026");
+    expect(termsDoc().version).toBe("12 octobre 2026");
+    expect(legalNoticeDoc().version).toBe("12 octobre 2026");
   });
 
   it("names the recipients and the authority, and keeps its promises narrow", () => {

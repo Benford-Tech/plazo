@@ -2,12 +2,17 @@ import { Response } from 'express';
 import httpStatus from 'http-status';
 import { Container } from 'typedi';
 import { ChangePasswordDto, CreateStaffDto, ResetPasswordDto, UpdateMeDto, UpdateStaffDto, SetPostDto, SetVehicleDto } from '@/dtos/staff.dto';
+import { AcceptJoinRequestDto, DeleteAccountDto, GoogleSignInDto, LinkAppleDto } from '@/dtos/identity.dto';
 import { RequestWithStaffSession } from '@/middlewares/staff-auth.middleware';
+import { JoinRequestService } from '@/services/join-request.service';
+import { StaffAccountService } from '@/services/staff-account.service';
 import { StaffService } from '@/services/staff.service';
 import catchAsync from '@/utils/catchAsync';
 
 export class StaffController {
   public staffService = Container.get(StaffService);
+  public joinRequests = Container.get(JoinRequestService);
+  public account = Container.get(StaffAccountService);
 
   /** GET /internal/staff/me */
   public me = catchAsync(async (req: RequestWithStaffSession, res: Response) => {
@@ -63,5 +68,57 @@ export class StaffController {
     const data: ResetPasswordDto = req.body;
     await this.staffService.resetPassword(req.staff, req.params.id as string, data.password);
     res.json({ message: 'Password reset' });
+  });
+
+  // ---------------------------------------------------------------- « Rejoindre un parking » (13/10/2026)
+
+  /** GET /internal/staff/join-code */
+  public joinCode = catchAsync(async (req: RequestWithStaffSession, res: Response) => {
+    res.json(await this.joinRequests.joinCode(req.staff));
+  });
+
+  /** GET /internal/staff/join-requests */
+  public listJoinRequests = catchAsync(async (req: RequestWithStaffSession, res: Response) => {
+    res.json(await this.joinRequests.list(req.staff));
+  });
+
+  /** POST /internal/staff/join-requests/:id/accept */
+  public acceptJoinRequest = catchAsync(async (req: RequestWithStaffSession, res: Response) => {
+    const data: AcceptJoinRequestDto = req.body;
+    res.status(httpStatus.CREATED).json(await this.joinRequests.accept(req.staff, req.params.id as string, data.role));
+  });
+
+  /** POST /internal/staff/join-requests/:id/refuse */
+  public refuseJoinRequest = catchAsync(async (req: RequestWithStaffSession, res: Response) => {
+    res.json(await this.joinRequests.refuse(req.staff, req.params.id as string));
+  });
+
+  /** POST /internal/staff/me/identities/apple */
+  public linkApple = catchAsync(async (req: RequestWithStaffSession, res: Response) => {
+    const data: LinkAppleDto = req.body;
+    res.json(await this.account.linkApple(req.staff, data));
+  });
+
+  /** POST /internal/staff/me/identities/google */
+  public linkGoogle = catchAsync(async (req: RequestWithStaffSession, res: Response) => {
+    const data: GoogleSignInDto = req.body;
+    res.json(await this.account.linkGoogle(req.staff, data.idToken));
+  });
+
+  /** DELETE /internal/staff/me/identities/:provider */
+  public unlinkIdentity = catchAsync(async (req: RequestWithStaffSession, res: Response) => {
+    res.json(await this.account.unlink(req.staff, req.params.provider as string));
+  });
+
+  /** POST /internal/staff/me/leave */
+  public leave = catchAsync(async (req: RequestWithStaffSession, res: Response) => {
+    res.json(await this.account.leave(req.staff));
+  });
+
+  /** DELETE /internal/staff/me */
+  public deleteMe = catchAsync(async (req: RequestWithStaffSession, res: Response) => {
+    const data: DeleteAccountDto = req.body;
+    await this.account.deleteAccount(req.staff, data);
+    res.status(httpStatus.NO_CONTENT).send();
   });
 }

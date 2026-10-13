@@ -1,3 +1,4 @@
+import '../../../../core/error/exceptions.dart';
 import '../client/settings_client.dart';
 import '../models/settings_models.dart';
 
@@ -59,6 +60,12 @@ abstract class SettingsDataSource {
   Future<TeamMemberModel> updateStaff(String id, {String? role, bool? isActive, String? firstName, String? lastName});
   Future<void> resetPassword(String id, String password);
   Future<void> changePassword(String currentPassword, String newPassword);
+
+  /// « Code du jour » and the requests to join the team (13/10/2026, managers).
+  Future<JoinCodeModel> joinCode();
+  Future<List<PendingJoinRequestModel>> joinRequests();
+  Future<TeamMemberModel> acceptJoinRequest(String id, String role);
+  Future<void> refuseJoinRequest(String id);
   Future<ParkingSettingsModel> parking();
   Future<ParkingSettingsModel> updateParking(String id, ParkingSettingsInput input);
   Future<ParkingSettingsModel> setShuttleTracking(String id, String tracking);
@@ -97,6 +104,23 @@ class SettingsDataSourceImpl implements SettingsDataSource {
   @override
   Future<void> changePassword(String currentPassword, String newPassword) =>
       _client.changePassword({'currentPassword': currentPassword, 'newPassword': newPassword});
+
+  @override
+  Future<JoinCodeModel> joinCode() => _client.joinCode();
+
+  @override
+  Future<List<PendingJoinRequestModel>> joinRequests() async => (await _client.joinRequests()).data;
+
+  @override
+  Future<TeamMemberModel> acceptJoinRequest(String id, String role) async {
+    final answer = await _client.acceptJoinRequest(id, {'role': role});
+    final staff = answer is Map<String, dynamic> ? answer['staff'] : null;
+    if (staff is! Map<String, dynamic>) throw const ServerException(code: 'generic');
+    return TeamMemberModel.fromJson(staff);
+  }
+
+  @override
+  Future<void> refuseJoinRequest(String id) => _client.refuseJoinRequest(id);
 
   @override
   Future<ParkingSettingsModel> parking() => _client.parking();

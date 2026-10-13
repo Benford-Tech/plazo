@@ -218,17 +218,28 @@ function AlertRow({ alert }: { alert: DashboardAlert }) {
                 timeOf(alert.since),
                 alert.minutes,
               )
-            : [alert.customerName, alert.detail].filter(Boolean).join(" · ")}
+            : alert.kind === "join_request" && /^\d+$/.test(alert.detail ?? "")
+              ? a.joinDetail(Number(alert.detail), alert.customerName)
+              : [alert.customerName, alert.detail].filter(Boolean).join(" · ")}
         </span>
       </span>
       {alert.minutes !== null &&
-        !["flight_delayed", "departure_delayed", "wave_overflow"].includes(
-          alert.kind,
-        ) && (
+        ![
+          "flight_delayed",
+          "departure_delayed",
+          "wave_overflow",
+          "join_request",
+        ].includes(alert.kind) && (
           <span className="hidden font-mono text-xs text-muted-foreground sm:inline">
             {a.since(alert.minutes)}
           </span>
         )}
+      {/* A request may wait up to 7 days: « il y a 2 j », not « depuis 2880 min ». */}
+      {alert.kind === "join_request" && alert.since && (
+        <span className="hidden text-xs text-muted-foreground sm:inline">
+          {timeAgo(alert.since)}
+        </span>
+      )}
       {alert.plate && (
         <Plate
           value={alert.plate}
@@ -246,6 +257,13 @@ function AlertRow({ alert }: { alert: DashboardAlert }) {
   if (alert.kind === "wave_overflow")
     return (
       <Link to="/navettes" className={cn(className, "hover:bg-panel-2")}>
+        {body}
+      </Link>
+    );
+  // 13/10/2026: someone typed the code of the day; the manager answers in Équipe.
+  if (alert.kind === "join_request")
+    return (
+      <Link to="/equipe" className={cn(className, "hover:bg-panel-2")}>
         {body}
       </Link>
     );

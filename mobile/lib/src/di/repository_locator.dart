@@ -6,6 +6,7 @@ void _initRepositoryLocator() {
     ..registerLazySingleton<PublicRepository>(() => PublicRepositoryImpl(locator()))
     ..registerLazySingleton<ArrivalRepository>(() => ArrivalRepositoryImpl(locator()))
     ..registerLazySingleton<AuthRepository>(() => AuthRepositoryImpl(locator()))
+    ..registerLazySingleton<OnboardingRepository>(() => OnboardingRepositoryImpl(locator()))
     ..registerLazySingleton<PlanningRepository>(() => PlanningRepositoryImpl(locator()))
     ..registerLazySingleton<DashboardRepository>(() => DashboardRepositoryImpl(locator()))
     ..registerLazySingleton<RevenueRepository>(() => RevenueRepositoryImpl(locator()))

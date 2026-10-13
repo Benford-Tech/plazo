@@ -27,6 +27,19 @@ abstract final class AppConstants {
   /// Airport shown first (the site's default).
   static const defaultAirport = 'lyon-saint-exupery';
 
+  /// Plazo Pro sign-in with Apple (13/10/2026): true only when the iOS App Store profile carries the « Sign in with
+  /// Apple » capability (codemagic.yaml then adds the entitlement and --dart-define=APPLE_SIGN_IN=true). Without it,
+  /// no Apple button: Apple would refuse the request at runtime.
+  static const appleSignIn = bool.fromEnvironment('APPLE_SIGN_IN');
+
+  /// Google sign-in on Android (13/10/2026): the « Web application » OAuth client id of the Google Cloud project,
+  /// given to google_sign_in as serverClientId (the API checks the ID token's audience against it; public, not a
+  /// secret). Empty: no Google button.
+  static const googleServerClientId = String.fromEnvironment('GOOGLE_SERVER_CLIENT_ID');
+
+  /// « Rejoindre un parking »: the waiting screen asks the API every 10 s whether a manager answered.
+  static const joinPollInterval = Duration(seconds: 10);
+
   /// OneSignal app id (public, not a secret). Empty: push notifications are off.
   static const oneSignalAppId = String.fromEnvironment('ONESIGNAL_APP_ID');
 

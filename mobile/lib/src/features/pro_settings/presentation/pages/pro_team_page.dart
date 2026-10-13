@@ -1,17 +1,21 @@
 import 'package:auto_route/auto_route.dart';
 import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
+import '../../../../core/constants/product.g.dart';
 import '../../../../core/enums/view_state.dart';
 import '../../../../core/helpers/formatters.dart';
 import '../../../../core/helpers/names.dart';
 import '../../../../core/helpers/plate.dart';
 import '../../../../core/utils/error_message_handler.dart';
 import '../../../../di/locator.dart';
+import '../../../../services/share_service.dart';
 import '../../../../shared/theme/theme.dart';
 import '../../../../shared/widgets/brand_header.dart';
 import '../../../../shared/widgets/gradient_button.dart';
+import '../../../../shared/widgets/sign_in_widgets.dart';
 import '../../../pro_auth/presentation/bloc/pro_auth_bloc.dart';
 import '../../data/models/settings_models.dart';
 import '../../domain/usecases/settings_use_cases.dart';
@@ -19,7 +23,12 @@ import '../bloc/pro_team_bloc.dart';
 
 const _roles = ['manager', 'agent', 'driver', 'valet'];
 
-/// The team (managers): members, their role and access, temporary passwords.
+/// The roles a request can be accepted with (never manager: a manager promotes afterwards).
+const _joinRoles = ['agent', 'driver', 'valet'];
+
+/// The team (managers): members, their role and access, temporary passwords. 13/10/2026 (mockup 4): the « Code du
+/// jour » card on top (Copier, Partager), the requests to join just under it (Refuser, Accepter with a role), and
+/// how each member signs in.
 @RoutePage()
 class ProTeamPage extends StatelessWidget implements AutoRouteWrapper {
   const ProTeamPage({super.key});
@@ -33,7 +42,7 @@ class ProTeamPage extends StatelessWidget implements AutoRouteWrapper {
     return BlocConsumer<ProTeamBloc, ProTeamState>(
       listenWhen: (a, b) => a.errorCode != b.errorCode || a.notice != b.notice,
       listener: (context, state) {
-        final text = state.errorCode != null ? translateErrorCode(state.errorCode) : state.notice?.tr();
+        final text = state.errorCode != null ? translateErrorCode(state.errorCode) : state.notice?.tr(args: [state.noticeArg ?? '']);
         if (text != null) {
           ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(text)));
           context.read<ProTeamBloc>().add(const ProTeamNoticeShown());
@@ -60,23 +69,74 @@ class ProTeamPage extends StatelessWidget implements AutoRouteWrapper {
                     child: Text(translateErrorCode(state.errorCode), textAlign: TextAlign.center),
                   ),
                 )
-              : ListView(
-                  padding: const EdgeInsets.fromLTRB(16, 8, 16, 96),
-                  children: [
-                    for (final m in state.members)
-                      _MemberTile(
-                        member: m,
-                        isMe: m.id == me,
-                        busy: state.actionState.isProcessing,
-                        onRole: (role) => bloc.add(ProTeamMemberUpdated(UpdateStaffParams(id: m.id, role: role))),
-                        onActive: (v) => bloc.add(ProTeamMemberUpdated(UpdateStaffParams(id: m.id, isActive: v))),
-                        onReset: () => _showReset(context, m),
-                      ),
-                  ],
+              : RefreshIndicator(
+                  color: AppColors.accent,
+                  onRefresh: () async {
+                    bloc.add(const ProTeamStarted());
+                    await bloc.stream.firstWhere((s) => !s.viewState.isProcessing).timeout(const Duration(seconds: 20), onTimeout: () => bloc.state);
+                  },
+                  child: ListView(
+                    padding: const EdgeInsets.fromLTRB(16, 8, 16, 96),
+                    children: [
+                      if (state.joinCode != null) ...[_JoinCodeCard(code: state.joinCode!), const SizedBox(height: 10)],
+                      if (state.joinRequests.isNotEmpty) ...[
+                        _JoinRequestsCard(
+                          requests: state.joinRequests,
+                          busyId: state.joinBusyId,
+                          onAccept: (r) => _accept(context, r),
+                          onRefuse: (r) => _refuse(context, r),
+                        ),
+                        const SizedBox(height: 10),
+                      ],
+                      for (final m in state.members)
+                        _MemberTile(
+                          member: m,
+                          isMe: m.id == me,
+                          busy: state.actionState.isProcessing,
+                          onRole: (role) => bloc.add(ProTeamMemberUpdated(UpdateStaffParams(id: m.id, role: role))),
+                          onActive: (v) => bloc.add(ProTeamMemberUpdated(UpdateStaffParams(id: m.id, isActive: v))),
+                          onReset: () => _showReset(context, m),
+                        ),
+                    ],
+                  ),
                 ),
         );
       },
     );
+  }
+
+  /// « Accepter… »: the role sheet, preset to the post asked for.
+  Future<void> _accept(BuildContext context, PendingJoinRequestModel request) async {
+    final bloc = context.read<ProTeamBloc>();
+    final role = await showModalBottomSheet<String>(
+      context: context,
+      isScrollControlled: true,
+      showDragHandle: true,
+      builder: (_) => _AcceptSheet(request: request),
+    );
+    if (role != null) bloc.add(ProTeamJoinAccepted(id: request.id, role: role));
+  }
+
+  /// « Refuser », after a question (the person can ask again with a new code).
+  Future<void> _refuse(BuildContext context, PendingJoinRequestModel request) async {
+    final bloc = context.read<ProTeamBloc>();
+    final ok = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: Text('team.refuse_title'.tr(args: [request.name])),
+        content: Text('team.refuse_text'.tr()),
+        actions: [
+          TextButton(onPressed: () => Navigator.of(ctx).pop(false), child: Text('team.cancel'.tr())),
+          TextButton(
+            key: const Key('join-refuse-confirm'),
+            style: TextButton.styleFrom(foregroundColor: AppColors.danger),
+            onPressed: () => Navigator.of(ctx).pop(true),
+            child: Text('team.refuse'.tr()),
+          ),
+        ],
+      ),
+    );
+    if (ok == true) bloc.add(ProTeamJoinRefused(request.id));
   }
 
   Future<void> _showNewMember(BuildContext context) {
@@ -160,10 +220,19 @@ class _MemberTileState extends State<_MemberTile> {
               ),
               if (!m.isActive) Text('team.inactive'.tr(), style: AppText.label(size: 11, color: AppColors.danger)),
               if (m.isActive && m.post != null && m.post != m.role)
-                Text('team.post_today'.tr(args: ['post.name.${m.post}'.tr()]), key: Key('post-${m.id}'), style: AppText.label(size: 11, color: AppColors.accent)),
+                Text(
+                  'team.post_today'.tr(args: ['post.name.${m.post}'.tr()]),
+                  key: Key('post-${m.id}'),
+                  style: AppText.label(size: 11, color: AppColors.accent),
+                ),
             ],
           ),
           Text([m.email, if (m.phone != null) formatPhone(m.phone!)].join(' · '), style: AppText.muted(size: 12.5)),
+          if (m.signIn.isNotEmpty)
+            Padding(
+              padding: const EdgeInsets.only(top: 4, bottom: 2),
+              child: Wrap(spacing: 4, runSpacing: 4, children: [for (final method in m.signIn) SignInBadge(method)]),
+            ),
           Text(
             m.lastLoginAt == null
                 ? 'team.never_logged'.tr()
@@ -307,17 +376,15 @@ class _RenameFormState extends State<_RenameForm> {
                           : () {
                               final names = (firstName: _firstName.text.trim(), lastName: _lastName.text.trim());
                               setState(() => _sent = names);
-                              context.read<ProTeamBloc>().add(ProTeamMemberUpdated(UpdateStaffParams(id: id, firstName: names.firstName, lastName: names.lastName)));
+                              context.read<ProTeamBloc>().add(
+                                ProTeamMemberUpdated(UpdateStaffParams(id: id, firstName: names.firstName, lastName: names.lastName)),
+                              );
                             },
                     ),
                   ),
                   const SizedBox(width: 10),
                   Expanded(
-                    child: OutlinedButton(
-                      key: Key('rename-cancel-$id'),
-                      onPressed: busy ? null : _cancel,
-                      child: Text('team.cancel'.tr()),
-                    ),
+                    child: OutlinedButton(key: Key('rename-cancel-$id'), onPressed: busy ? null : _cancel, child: Text('team.cancel'.tr())),
                   ),
                 ],
               ),
@@ -419,7 +486,14 @@ class _NewMemberSheetState extends State<_NewMemberSheet> {
                 busy: state.actionState.isProcessing,
                 onPressed: () => bloc.add(
                   ProTeamMemberCreated(
-                    NewStaffParams(firstName: _firstName.text.trim(), lastName: _lastName.text.trim(), email: _email.text.trim(), phone: _phone.text, role: _role, password: _password.text),
+                    NewStaffParams(
+                      firstName: _firstName.text.trim(),
+                      lastName: _lastName.text.trim(),
+                      email: _email.text.trim(),
+                      phone: _phone.text,
+                      role: _role,
+                      password: _password.text,
+                    ),
                   ),
                 ),
               ),
@@ -427,6 +501,311 @@ class _NewMemberSheetState extends State<_NewMemberSheet> {
           ),
         );
       },
+    );
+  }
+}
+
+/// « Code du jour » (13/10/2026, mockup 4): the big code, until midnight, « Copier » and « Partager » (the phone's
+/// share sheet, with the same ready-made message as the web's).
+class _JoinCodeCard extends StatelessWidget {
+  const _JoinCodeCard({required this.code});
+  final JoinCodeModel code;
+
+  String get _message => 'team.join_message'.tr(args: [code.operatorName, Product.proName, code.code]);
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      key: const Key('join-code-card'),
+      padding: const EdgeInsets.fromLTRB(13, 12, 13, 13),
+      decoration: BoxDecoration(
+        color: AppColors.surface,
+        borderRadius: AppRadius.card,
+        border: Border.all(color: AppColors.action, width: 1.5),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Row(
+            children: [
+              Expanded(
+                child: Text(
+                  'team.code_title'.tr().toUpperCase(),
+                  style: AppText.tabular(size: 11.5, weight: 500, color: AppColors.accentDeep).copyWith(letterSpacing: 0.7),
+                ),
+              ),
+              Text('team.code_until'.tr(), style: AppText.muted(size: 12)),
+            ],
+          ),
+          Padding(
+            padding: const EdgeInsets.symmetric(vertical: 8),
+            child: SelectableText(
+              code.code,
+              key: const Key('join-code-value'),
+              textAlign: TextAlign.center,
+              style: AppText.tabular(size: 28).copyWith(letterSpacing: 1.4),
+            ),
+          ),
+          // A demo, suspended or archived operator's code is refused by the API: nothing to hand out (like the web).
+          if (code.accepting)
+            Row(
+              children: [
+                Expanded(
+                  child: OutlinedButton.icon(
+                    key: const Key('join-code-copy'),
+                    style: OutlinedButton.styleFrom(
+                      foregroundColor: AppColors.ink,
+                      side: const BorderSide(color: AppColors.line),
+                      shape: const StadiumBorder(),
+                      minimumSize: const Size.fromHeight(40),
+                    ),
+                    icon: const Icon(Icons.copy_rounded, size: 17),
+                    label: Text('team.code_copy'.tr()),
+                    onPressed: () async {
+                      await Clipboard.setData(ClipboardData(text: code.code));
+                      if (context.mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('team.code_copied'.tr())));
+                    },
+                  ),
+                ),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: FilledButton.icon(
+                    key: const Key('join-code-share'),
+                    style: FilledButton.styleFrom(
+                      backgroundColor: AppColors.action,
+                      foregroundColor: AppColors.onAccent,
+                      shape: const StadiumBorder(),
+                      minimumSize: const Size.fromHeight(40),
+                    ),
+                    icon: const Icon(Icons.ios_share_rounded, size: 17),
+                    label: Text('team.code_share'.tr()),
+                    onPressed: () =>
+                        locator<ShareService>().shareText(_message, subject: 'team.code_share_subject'.tr(args: [code.operatorName, Product.proName])),
+                  ),
+                ),
+              ],
+            ),
+          const SizedBox(height: 8),
+          Text((code.accepting ? 'team.code_help' : 'team.code_not_accepting').tr(), key: const Key('join-code-help'), style: AppText.muted(size: 12.5)),
+        ],
+      ),
+    );
+  }
+}
+
+/// « il y a 3 min », « il y a 2 h », « il y a 3 j ».
+String _ago(DateTime at) {
+  final d = DateTime.now().difference(at);
+  if (d.inMinutes < 1) return 'team.ago_now'.tr();
+  if (d.inMinutes < 60) return 'team.ago_min'.tr(args: ['${d.inMinutes}']);
+  if (d.inHours < 24) return 'team.ago_h'.tr(args: ['${d.inHours}']);
+  return 'team.ago_d'.tr(args: ['${d.inDays}']);
+}
+
+/// « Demandes · N à valider »: who asks, with which post, since when, through Apple or Google; Refuser / Accepter.
+class _JoinRequestsCard extends StatelessWidget {
+  const _JoinRequestsCard({required this.requests, required this.busyId, required this.onAccept, required this.onRefuse});
+  final List<PendingJoinRequestModel> requests;
+  final String? busyId;
+  final ValueChanged<PendingJoinRequestModel> onAccept;
+  final ValueChanged<PendingJoinRequestModel> onRefuse;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      key: const Key('join-requests'),
+      padding: const EdgeInsets.fromLTRB(13, 12, 13, 13),
+      decoration: BoxDecoration(
+        color: AppColors.surface,
+        borderRadius: AppRadius.card,
+        border: Border.all(color: AppColors.line),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Row(
+            children: [
+              Expanded(child: Text('team.requests_title'.tr().toUpperCase(), style: AppText.label(size: 11))),
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                decoration: const BoxDecoration(color: AppStatus.warnSoft, borderRadius: AppRadius.pill),
+                child: Text(
+                  'team.requests_count'.tr(args: ['${requests.length}']),
+                  style: AppText.strong(size: 11.5, color: AppStatus.warnText),
+                ),
+              ),
+            ],
+          ),
+          for (final (i, r) in requests.indexed)
+            Container(
+              key: Key('join-request-${r.id}'),
+              padding: const EdgeInsets.only(top: 10, bottom: 2),
+              decoration: BoxDecoration(
+                border: i == 0 ? null : const Border(top: BorderSide(color: AppColors.line)),
+              ),
+              margin: EdgeInsets.only(top: i == 0 ? 2 : 10),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  Row(
+                    children: [
+                      CircleAvatar(
+                        radius: 16,
+                        backgroundColor: AppColors.tint,
+                        child: Text(r.initials, style: AppText.strong(size: 12, color: AppColors.accent)),
+                      ),
+                      const SizedBox(width: 10),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(r.name, style: AppText.strong(size: 14.5)),
+                            Text(['post.name.${r.wishedRole}'.tr(), _ago(r.createdAt)].join(' · '), style: AppText.muted(size: 12.5)),
+                            if ((r.email ?? '').isNotEmpty) Text(r.email!, style: AppText.muted(size: 12), maxLines: 1, overflow: TextOverflow.ellipsis),
+                          ],
+                        ),
+                      ),
+                      SignInBadge(r.provider),
+                    ],
+                  ),
+                  const SizedBox(height: 8),
+                  Row(
+                    children: [
+                      Expanded(
+                        child: OutlinedButton(
+                          key: Key('join-refuse-${r.id}'),
+                          style: OutlinedButton.styleFrom(
+                            foregroundColor: AppColors.ink,
+                            side: const BorderSide(color: AppColors.line),
+                            shape: const StadiumBorder(),
+                            minimumSize: const Size.fromHeight(38),
+                          ),
+                          onPressed: busyId != null ? null : () => onRefuse(r),
+                          child: Text('team.refuse'.tr()),
+                        ),
+                      ),
+                      const SizedBox(width: 8),
+                      Expanded(
+                        child: FilledButton(
+                          key: Key('join-accept-${r.id}'),
+                          style: FilledButton.styleFrom(
+                            backgroundColor: AppColors.action,
+                            foregroundColor: AppColors.onAccent,
+                            shape: const StadiumBorder(),
+                            minimumSize: const Size.fromHeight(38),
+                          ),
+                          onPressed: busyId != null ? null : () => onAccept(r),
+                          child: busyId == r.id
+                              ? const SizedBox(width: 18, height: 18, child: CircularProgressIndicator(strokeWidth: 2.2, color: AppColors.onAccent))
+                              : Text('team.accept'.tr()),
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+            ),
+        ],
+      ),
+    );
+  }
+}
+
+/// « Accepter Julie Martin »: the role (Accueil, Chauffeur, Voiturier), preset to the post asked for; the role can be
+/// changed afterwards in Équipe, as for anyone.
+class _AcceptSheet extends StatefulWidget {
+  const _AcceptSheet({required this.request});
+  final PendingJoinRequestModel request;
+
+  @override
+  State<_AcceptSheet> createState() => _AcceptSheetState();
+}
+
+class _AcceptSheetState extends State<_AcceptSheet> {
+  late String _role = _joinRoles.contains(widget.request.wishedRole) ? widget.request.wishedRole : 'agent';
+
+  static const _icons = {'agent': Icons.support_agent_rounded, 'driver': Icons.directions_bus_rounded, 'valet': Icons.key_rounded};
+
+  @override
+  Widget build(BuildContext context) {
+    final r = widget.request;
+    final sub = [
+      if ((r.email ?? '').isNotEmpty) r.email!,
+      'team.request_sent_at'.tr(args: [hhmm(r.createdAt)]),
+    ].join(' · ');
+    return Padding(
+      padding: EdgeInsets.fromLTRB(16, 0, 16, MediaQuery.viewInsetsOf(context).bottom + 20),
+      child: ListView(
+        shrinkWrap: true,
+        children: [
+          Semantics(
+            header: true,
+            child: Text('team.accept_title'.tr(args: [r.name]), style: AppText.title(size: 22)),
+          ),
+          Text(sub, style: AppText.muted(size: 12.5)),
+          const SizedBox(height: 12),
+          Text('team.accept_role'.tr().toUpperCase(), style: AppText.label(size: 11)),
+          const SizedBox(height: 8),
+          for (final role in _joinRoles) ...[
+            _RoleOption(role: role, icon: _icons[role]!, selected: _role == role, onTap: () => setState(() => _role = role)),
+            const SizedBox(height: 8),
+          ],
+          const SizedBox(height: 4),
+          GradientButton(
+            key: const Key('join-accept-confirm'),
+            label: 'team.accept_as'.tr(args: ['post.name.$_role'.tr().toLowerCase()]),
+            onPressed: () => Navigator.of(context).pop(_role),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _RoleOption extends StatelessWidget {
+  const _RoleOption({required this.role, required this.icon, required this.selected, required this.onTap});
+  final String role;
+  final IconData icon;
+  final bool selected;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return Material(
+      color: AppColors.surface,
+      shape: RoundedRectangleBorder(
+        borderRadius: AppRadius.field,
+        side: BorderSide(color: selected ? AppColors.accent : AppColors.line, width: selected ? 1.5 : 1),
+      ),
+      clipBehavior: Clip.antiAlias,
+      child: InkWell(
+        key: Key('join-role-$role'),
+        onTap: onTap,
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 9),
+          child: Row(
+            children: [
+              Container(
+                width: 32,
+                height: 32,
+                decoration: BoxDecoration(color: selected ? AppColors.accent : AppColors.tint, borderRadius: AppRadius.small),
+                child: Icon(icon, size: 18, color: selected ? Colors.white : AppColors.accent),
+              ),
+              const SizedBox(width: 10),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text('post.name.$role'.tr(), style: AppText.title(size: 16)),
+                    Text('team.role_text.$role'.tr(), style: AppText.muted(size: 12)),
+                  ],
+                ),
+              ),
+              Icon(selected ? Icons.radio_button_checked_rounded : Icons.radio_button_unchecked_rounded, color: selected ? AppColors.accent : AppColors.line),
+            ],
+          ),
+        ),
+      ),
     );
   }
 }

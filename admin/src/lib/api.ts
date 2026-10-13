@@ -65,6 +65,10 @@ import type {
   ReservationStatus,
   Staff,
   StaffRole,
+  JoinCode,
+  JoinRequest,
+  JoinRequestView,
+  JoinRole,
   TokenData,
   Staying,
   RevenueBasis,
@@ -537,6 +541,20 @@ export const adminApi = {
       method: "POST",
       body: json({ password }),
     }),
+  // 13/10/2026: the code of the day (managers; read-only for the platform in consultation) and the requests it brings.
+  getJoinCode: () => apiRequest<JoinCode>("/internal/staff/join-code"),
+  getJoinRequests: () =>
+    apiRequest<{ data: JoinRequest[] }>("/internal/staff/join-requests"),
+  acceptJoinRequest: (id: string, role: JoinRole) =>
+    apiRequest<{ staff: Staff }>(
+      `/internal/staff/join-requests/${encodeURIComponent(id)}/accept`,
+      { method: "POST", body: json({ role }) },
+    ),
+  refuseJoinRequest: (id: string) =>
+    apiRequest<{ request: JoinRequestView }>(
+      `/internal/staff/join-requests/${encodeURIComponent(id)}/refuse`,
+      { method: "POST" },
+    ),
 
   getPlanning: (date?: string) =>
     apiRequest<Planning>(`/internal/planning${date ? `?date=${date}` : ""}`),

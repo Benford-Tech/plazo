@@ -165,6 +165,7 @@ export class DemoSeedService {
             ...namesOf(DEMO_MANAGER),
             role: 'manager',
             password: hashedPassword,
+            passwordSetAt: new Date(),
             emailVerifiedAt: new Date(),
             bookingNotify: defaultBookingNotify('manager'),
           },

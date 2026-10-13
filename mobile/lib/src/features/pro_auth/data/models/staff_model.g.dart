@@ -27,6 +27,12 @@ _StaffModel _$StaffModelFromJson(Map<String, dynamic> json) => _StaffModel(
   vehicle: json['vehicle'] == null
       ? null
       : TodayVehicleModel.fromJson(json['vehicle'] as Map<String, dynamic>),
+  hasPassword: json['hasPassword'] as bool? ?? true,
+  identities:
+      (json['identities'] as List<dynamic>?)
+          ?.map((e) => StaffIdentityModel.fromJson(e as Map<String, dynamic>))
+          .toList() ??
+      const [],
 );
 
 Map<String, dynamic> _$StaffModelToJson(_StaffModel instance) =>
@@ -43,6 +49,8 @@ Map<String, dynamic> _$StaffModelToJson(_StaffModel instance) =>
       'effectivePost': instance.effectivePost,
       'allowedPosts': instance.allowedPosts,
       'vehicle': instance.vehicle,
+      'hasPassword': instance.hasPassword,
+      'identities': instance.identities,
     };
 
 _TodayVehicleModel _$TodayVehicleModelFromJson(Map<String, dynamic> json) =>
@@ -62,3 +70,12 @@ Map<String, dynamic> _$TodayVehicleModelToJson(_TodayVehicleModel instance) =>
       'plate': instance.plate,
       'seats': instance.seats,
     };
+
+_StaffIdentityModel _$StaffIdentityModelFromJson(Map<String, dynamic> json) =>
+    _StaffIdentityModel(
+      provider: json['provider'] as String,
+      email: json['email'] as String?,
+    );
+
+Map<String, dynamic> _$StaffIdentityModelToJson(_StaffIdentityModel instance) =>
+    <String, dynamic>{'provider': instance.provider, 'email': instance.email};

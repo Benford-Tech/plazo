@@ -30,6 +30,15 @@ export interface DataStoredInToken {
   uuid: string;
 }
 
+/** The JWT of an onboarding session (an identity not linked to a member yet, 13/10/2026). */
+export interface OnboardingTokenPayload {
+  sub: string; // StaffIdentity id
+  iat: number;
+  exp: number;
+  type: 'onboarding';
+  uuid: string;
+}
+
 export interface TokenObj {
   token: string;
   expires: Date;

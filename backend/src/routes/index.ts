@@ -3,6 +3,7 @@ import { AuthRoute } from './auth.route';
 import { CronRoute } from './cron.route';
 import { DashboardRoute } from './dashboard.route';
 import { HealthRoute } from './health.route';
+import { IdentityRoute } from './identity.route';
 import { InboundEmailRoute } from './inbound-email.route';
 import { ListingRoute } from './listing.route';
 import { ParkingRoute } from './parking.route';
@@ -20,6 +21,7 @@ import { StaffRoute } from './staff.route';
 const AppRoutes = [
   new HealthRoute(),
   new AuthRoute(),
+  new IdentityRoute(),
   new StaffRoute(),
   new ParkingRoute(),
   new ReservationRoute(),
