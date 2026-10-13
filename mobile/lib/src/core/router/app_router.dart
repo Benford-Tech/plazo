@@ -17,6 +17,9 @@ import '../../features/pro_reservations/data/models/reservation_models.dart';
 import '../../features/pro_reservations/presentation/pages/pro_reservation_form_page.dart';
 import '../../features/pro_reservations/presentation/pages/pro_reservation_page.dart';
 import '../../features/pro_reservations/presentation/pages/pro_reservations_page.dart';
+import '../../features/pro_revenue/presentation/bloc/pro_revenue_bloc.dart';
+import '../../features/pro_revenue/presentation/pages/pro_revenue_missing_page.dart';
+import '../../features/pro_revenue/presentation/pages/pro_revenue_page.dart';
 import '../../features/pro_settings/presentation/pages/pro_account_page.dart';
 import '../../features/pro_settings/presentation/pages/pro_parking_settings_page.dart';
 import '../../features/pro_settings/presentation/pages/pro_team_page.dart';
@@ -94,6 +97,8 @@ class AppRouter extends RootStackRouter {
       AutoRoute(page: ProTeamRoute.page, path: '/pro/equipe', guards: [proGuard]),
       AutoRoute(page: ProAccountRoute.page, path: '/pro/compte', guards: [proGuard]),
       AutoRoute(page: ProParkingSettingsRoute.page, path: '/pro/reglages', guards: [proGuard]),
+      AutoRoute(page: ProRevenueRoute.page, path: '/pro/chiffre-affaires', guards: [proGuard]),
+      AutoRoute(page: ProRevenueMissingRoute.page, path: '/pro/chiffre-affaires/a-completer', guards: [proGuard]),
       AutoRoute(page: ProReservationFormRoute.page, path: '/pro/reservations/formulaire', guards: [proGuard]),
       AutoRoute(page: ProReservationRoute.page, path: '/pro/reservations/:id', guards: [proGuard]),
     ],

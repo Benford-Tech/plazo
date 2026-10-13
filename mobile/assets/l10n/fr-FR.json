@@ -1548,5 +1548,65 @@
     "always": "Dans tous les cas, « Votre navette est partie » est envoyé au départ de chaque trajet.",
     "save": "Enregistrer",
     "saved": "Suivi des navettes enregistré."
+  },
+  "revenue": {
+    "title": "Chiffre d'affaires",
+    "tile_title": "Chiffre d'affaires · {}",
+    "tile_semantics": "Chiffre d'affaires de {} : {}. Ouvrir le détail.",
+    "today": "Aujourd'hui",
+    "week": "7 jours",
+    "without_amount": "{} sans montant",
+    "span": {
+      "day": "Jour",
+      "week": "Semaine",
+      "month": "Mois"
+    },
+    "period": {
+      "today": "Aujourd'hui",
+      "yesterday": "Hier",
+      "this_week": "Cette semaine",
+      "range": "Du {} au {}"
+    },
+    "previous": {
+      "day": "Jour précédent",
+      "week": "Semaine précédente",
+      "month": "Mois précédent"
+    },
+    "next": {
+      "day": "Jour suivant",
+      "week": "Semaine suivante",
+      "month": "Mois suivant"
+    },
+    "bookings_count": "{} réservation(s)",
+    "average": "panier moyen {}",
+    "average_days": "{} jours",
+    "none": "Aucune réservation avec un montant",
+    "none_period": "Aucune réservation avec un montant sur cette période.",
+    "retry": "Réessayer",
+    "by_arrival": "Par jour d'arrivée",
+    "by_booking": "Par jour de réservation",
+    "by_arrival_help": "Chaque réservation compte le jour où la voiture arrive. Annulées exclues.",
+    "by_booking_help": "Chaque réservation compte le jour où elle a été prise. Annulées exclues.",
+    "switch_to_booking": "Par réservation",
+    "switch_to_arrival": "Par arrivée",
+    "chart_day": "{} · {} · {}",
+    "chart_best": "Meilleur jour : {} · {}",
+    "chart_empty": "Aucun montant sur la période.",
+    "chart_today": "auj. {}",
+    "chart_future": "Barres claires : réservations déjà prises pour les jours à venir.",
+    "by_channel": "Par canal",
+    "missing_title": "À compléter",
+    "missing_sub": "Réservations sans montant, hors du total",
+    "missing_page": "À compléter · {}",
+    "missing_intro": "Ce que paie le client, sans les frais du comparateur. Une fois enregistré, le montant compte dans le chiffre d'affaires.",
+    "missing_done": "Tout est complété : chaque réservation de la période a son montant.",
+    "missing_more": "Les {} plus récentes sont listées : les autres apparaissent une fois celles-ci complétées.",
+    "missing_plazo": "Les réservations payées sur {} ne figurent jamais ici : leur prix est celui payé en ligne.",
+    "arrival": "arrivée {}",
+    "amount_label": "Montant",
+    "save": "Enregistrer",
+    "saved": "Montant enregistré : {}, {}",
+    "closed": "Réservation annulée entre-temps : elle ne compte plus.",
+    "gone": "Réservation introuvable : elle a peut-être été supprimée."
   }
 }

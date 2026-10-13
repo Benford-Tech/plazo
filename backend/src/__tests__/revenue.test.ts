@@ -138,7 +138,10 @@ describe('GET /internal/revenue', () => {
       withoutAmount: 1,
     });
     expect(res.body.byChannel.map((c: any) => c.detail)).toEqual(['Onepark', 'ParkMundo']);
-    expect(res.body.missing).toEqual([expect.objectContaining({ id: missing.id, reference: missing.reference, channel: 'phone', detail: null })]);
+    expect(res.body.today).toMatch(/^\d{4}-\d{2}-\d{2}$/);
+    expect(res.body.missing).toEqual([
+      expect.objectContaining({ id: missing.id, reference: missing.reference, plate: 'AB-123-CD', channel: 'phone', detail: null }),
+    ]);
 
     const csv = await api().get('/api/internal/revenue/export?from=2026-10-01&to=2026-10-31').set(auth(op.token));
     expect(csv.status).toBe(200);

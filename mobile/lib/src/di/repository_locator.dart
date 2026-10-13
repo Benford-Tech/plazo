@@ -8,6 +8,7 @@ void _initRepositoryLocator() {
     ..registerLazySingleton<AuthRepository>(() => AuthRepositoryImpl(locator()))
     ..registerLazySingleton<PlanningRepository>(() => PlanningRepositoryImpl(locator()))
     ..registerLazySingleton<DashboardRepository>(() => DashboardRepositoryImpl(locator()))
+    ..registerLazySingleton<RevenueRepository>(() => RevenueRepositoryImpl(locator()))
     ..registerLazySingleton<NotificationsRepository>(() => NotificationsRepositoryImpl(locator()))
     ..registerLazySingleton<ReturnRepository>(() => ReturnRepositoryImpl(locator()))
     ..registerLazySingleton<ShuttleRepository>(() => ShuttleRepositoryImpl(locator()))

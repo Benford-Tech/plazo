@@ -8,6 +8,8 @@ import '../../../../core/helpers/formatters.dart';
 import '../../../../core/router/app_router.dart';
 import '../../../../shared/theme/theme.dart';
 import '../../../../shared/widgets/french_plate.dart';
+import '../../../pro_revenue/presentation/bloc/revenue_summary_bloc.dart';
+import '../../../pro_revenue/presentation/widgets/revenue_tile.dart';
 import '../../../pro_shuttle/presentation/widgets/live_shuttles_card.dart';
 import '../../data/models/dashboard_model.dart';
 import '../bloc/pro_dashboard_bloc.dart';
@@ -20,7 +22,10 @@ const _pill = BorderRadius.all(Radius.circular(999));
 /// a yellow disc, the services as tinted pills, what to treat first with a severity badge, the vehicles
 /// on the parking with their state badges, the running shuttles.
 class DashboardView extends StatefulWidget {
-  const DashboardView({super.key});
+  const DashboardView({super.key, this.revenue = false});
+
+  /// T-A (13/10/2026): the managers' revenue card under the figures (a [RevenueSummaryBloc] above).
+  final bool revenue;
 
   @override
   State<DashboardView> createState() => _DashboardViewState();
@@ -47,12 +52,16 @@ class _DashboardViewState extends State<DashboardView> {
         final vehicles = _allVehicles ? d.vehicles : d.vehicles.take(6).toList();
         return RefreshIndicator(
           color: AppColors.accent,
-          onRefresh: () async => context.read<ProDashboardBloc>().add(const ProDashboardPolled()),
+          onRefresh: () async {
+            context.read<ProDashboardBloc>().add(const ProDashboardPolled());
+            if (widget.revenue) context.read<RevenueSummaryBloc>().add(const RevenueSummaryRefreshed());
+          },
           child: ListView(
             key: const Key('dashboard'),
             padding: const EdgeInsets.all(12),
             children: [
               _Kpis(d: d),
+              if (widget.revenue) const RevenueTile(),
               const SizedBox(height: 10),
               _Services(s: d.services),
               const SizedBox(height: 10),
