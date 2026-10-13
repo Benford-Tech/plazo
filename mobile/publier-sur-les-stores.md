@@ -212,11 +212,15 @@ la clé d'import Android de Plazo dans Codemagic (créée et envoyée par GitHub
    `GOOGLE_PLAY_SERVICE_ACCOUNT_CREDENTIALS` (étape 1.5 ; le groupe `mobile_secrets` existe déjà, créé vide par le
    workflow de la clé Android : Codemagic refuse un build dont un groupe manque), puis le supprimer de l'ordinateur.
    Encore vide le 12/10/2026 : les deux envois Google Play du build 113 (`mobile-release`) ont échoué pour cette raison,
-   le bilan l'écrit désormais en clair ; les deux IPA sont bien partis vers TestFlight.
+   le bilan l'écrit désormais en clair ; les deux IPA sont bien partis vers TestFlight. Toujours vide le 13/10/2026
+   (workflow GitHub « Codemagic build », action `groups` : `mobile_secrets` vide, `plazo_android_signing` complet), et le
+   build 113 reste le dernier.
 5. [ ] **Liste des testeurs internes** (pour chaque app) : **Tester et publier › Tests › Tests internes › Testeurs ›
    Créer une liste de diffusion** (comptes Google), **Enregistrer les modifications**.
-6. [ ] **Premier envoi à la main** (l'API refuse une app jamais publiée), une fois la section 1 et les étapes 2 à 4
-   faites ; **Apple n'est pas nécessaire** :
+6. [ ] **Premier envoi à la main** (l'API refuse une app jamais publiée), une fois la section 1 et l'étape 2 faites ;
+   **ni Apple ni la clé du compte de service ne sont nécessaires** pour cet import dans la Play Console (les étapes 3 et 4
+   ne servent qu'aux envois automatiques suivants). Les deux AAB signés du build 113 (13/10/2026) sont déjà dans ses
+   **Artifacts** : on peut les importer tout de suite, sans relancer de build :
    - Codemagic : **Start new build**, `main`, workflow **« Plazo + Plazo Pro — Android seul »** (`mobile-release-android`).
      Les deux envois Google Play échouent sur ce premier build (« Package not found ») et le bilan le met en erreur :
      **c'est attendu**. Fait le 11/10/2026 (build `6acbd661546ce6236ced943f`, version 1.0.0, build 112, 24 min). (Avec `mobile-release`, une fois Apple prêt, c'est pareil, et les deux IPA partent vers TestFlight.)
