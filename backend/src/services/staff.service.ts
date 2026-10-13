@@ -49,7 +49,7 @@ export function toSessionUser(staff: AuthenticatedStaff & { vehicle?: VehicleOfT
     allowedPosts: allowedPosts(staff.role),
     isPlatformAdmin: isPlatformAdmin(staff.email),
     emailVerified: !!staff.emailVerifiedAt,
-    viewAs: actingAs ? { operatorId: staff.operatorId, operatorName: staff.operatorName } : null,
+    viewAs: actingAs ? { operatorId: staff.operatorId, operatorName: staff.operatorName, platformAccount: actingAs.platformAccount } : null,
   };
 }
 

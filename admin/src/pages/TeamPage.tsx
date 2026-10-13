@@ -224,7 +224,7 @@ function CreateStaffForm() {
 export default function TeamPage() {
   const { user } = useAuth();
   // A platform admin viewing the operator's space: the team stays the operator's (read-only).
-  const readOnly = !!user?.viewAs;
+  const readOnly = !!user?.viewAs && !user.viewAs.platformAccount;
   const { data: team, isLoading } = useQuery({ queryKey: ["team"], queryFn: adminApi.getTeam });
   const t = fr.team;
 

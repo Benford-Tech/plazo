@@ -57,6 +57,18 @@ export const StaffAuthMiddleware = (permission?: Permission) => (request: Reques
  * write goes through, traced as view_as.write. A route can refuse with its own code (the admin is no driver of the
  * operator: `view_as_not_driver`). Goes after StaffAuthMiddleware.
  */
+/**
+ * Team routes (12/10/2026, « je veux pouvoir ajouter des comptes sur le parking de test »): read-only in consultation,
+ * except in the platform's own account (« Plazo (tests) »), whose team the platform admins manage.
+ */
+export const RefuseInViewAsOutsidePlatformAccount = () => (request: Request, res: Response, next: NextFunction) => {
+  const actingAs = (request as RequestWithStaffSession).staff?.actingAs;
+  if (actingAs && !actingAs.platformAccount) {
+    return next(new HttpException(httpStatus.FORBIDDEN, 'Read-only while viewing an operator space', 'view_as_read_only'));
+  }
+  next();
+};
+
 export const RefuseInViewAs =
   (code = 'view_as_read_only', message = 'Read-only while viewing an operator space') =>
   (request: Request, res: Response, next: NextFunction) => {
