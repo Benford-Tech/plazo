@@ -36,11 +36,11 @@ const APPS = {
   plazo: {
     folder: 'plazo',
     screens: [
-      ['01-rechercher', 'Votre parking à l’aéroport', 'Lyon Saint\u2011Exupéry : les parkings partenaires et leur prix total pour vos dates.'],
+      ['01-rechercher', 'Votre parking à l’aéroport', 'Les parkings partenaires et leur prix total pour vos dates.'],
       ['02-resultats', 'Comparez avant de réserver', 'Prix total, durée de navette, services : triez et filtrez.'],
       ['03-fiche-parking', 'Tout savoir sur le parking', 'Photos, services, navette, accès et annulation.'],
       ['04-reservation-confirmee', 'Réservé en deux étapes', 'Sans compte, payé en ligne. Rien à régler au parking.'],
-      ['05-jour-du-depot', 'Prévenez le parking de votre arrivée', 'Partagez votre position, ou dites « J’arrive dans 10 min ».'],
+      ['05-jour-du-depot', 'Prévenez de votre arrivée', 'Partagez votre position, ou dites « J’arrive dans 10 min ».'],
       ['06-jour-du-retour', 'Votre retour, suivi en direct', 'Compte à rebours jusqu’à l’atterrissage, puis la navette.'],
       ['07-retrouver-ma-voiture', 'Retrouvez votre voiture', 'Sa place ou sa file, et l’itinéraire à pied.'],
     ],
@@ -49,11 +49,11 @@ const APPS = {
     folder: 'plazo-pro',
     screens: [
       ['01-tableau-de-bord', 'Votre journée en un écran', 'Sur le parking, arrivées, retours, navettes et points à traiter.'],
-      ['02-planning', 'Les arrivées et les retours du jour', 'Avec l’état du vol de chaque client.'],
+      ['02-planning', 'Arrivées et retours du jour', 'Avec l’état du vol de chaque client.'],
       ['03-reservation', 'Une étape, un bouton', 'Placer, déposer, récupérer, rendre.'],
-      ['04-occupation', 'Chaque voiture dans la bonne file', 'La file conseillée suit le jour du retour.'],
-      ['05-ma-tournee', 'La navette, réglée sur les vols', 'Ligne du jour, à récupérer, en route, rendus.'],
-      ['06-trajet-en-cours', 'Un trajet, partagé avec l’équipe', 'La position n’est partagée que pendant le trajet.'],
+      ['04-occupation', 'La bonne file, dès l’arrivée', 'La file conseillée suit le jour du retour.'],
+      ['05-ma-tournee', 'Navette réglée sur les vols', 'Ligne du jour, à récupérer, en route, rendus.'],
+      ['06-trajet-en-cours', 'Trajet partagé avec l’équipe', 'La position n’est partagée que pendant le trajet.'],
       ['07-poste-du-jour', 'Chacun son poste', 'Gérant, accueil, chauffeur ou voiturier : les onglets suivent.'],
     ],
   },
@@ -62,11 +62,13 @@ const APPS = {
 // Colours and type of each look, per app (CLAUDE.md, « Direction visuelle »).
 const LOOKS = {
   A: {
-    plazo: { bg: '#FF6600', title: '#FFFFFF', sub: 'rgba(255,255,255,0.9)', titleFont: "'Playfair Display'", titleStyle: 'italic', titleWeight: 600, titleCase: 'none', bodyFont: "'Manrope'", frame: '#1C1210', shadow: 'rgba(90,30,0,0.45)', eyebrow: null },
-    pro: { bg: '#A3E635', title: '#0F2A14', sub: '#1E5E2E', titleFont: "'Archivo Narrow'", titleStyle: 'normal', titleWeight: 700, titleCase: 'uppercase', bodyFont: "'Inter'", frame: '#0F2A14', shadow: 'rgba(15,42,20,0.4)', eyebrow: null },
+    // Chosen by Joanny on 13/10/2026 (« A, aplat de marque avec le texte qui ressort mieux »): heavy titles instead of
+    // the thin italic, the line under them in the darkest brand colour, a soft shadow under white text on orange.
+    plazo: { bg: '#FF6600', title: '#FFFFFF', sub: '#2C1A0E', titleFont: "'Manrope'", titleStyle: 'normal', titleWeight: 800, titleCase: 'none', bodyFont: "'Manrope'", subWeight: 700, titleShadow: '0 4px 18px rgba(110,35,0,0.35)', frame: '#1C1210', shadow: 'rgba(90,30,0,0.45)', eyebrow: null },
+    pro: { bg: '#A3E635', title: '#0F2A14', sub: '#0F2A14', titleFont: "'Archivo Narrow'", titleStyle: 'normal', titleWeight: 700, titleCase: 'uppercase', bodyFont: "'Inter'", subWeight: 700, titleShadow: 'none', frame: '#0F2A14', shadow: 'rgba(15,42,20,0.4)', eyebrow: null },
   },
   B: {
-    plazo: { bg: '#ECECEE', title: '#2C1A0E', sub: '#5E554F', titleFont: "'Playfair Display'", titleStyle: 'italic', titleWeight: 600, titleCase: 'none', bodyFont: "'Manrope'", frame: '#FFFFFF', shadow: 'rgba(44,26,14,0.28)', eyebrow: { bg: '#FF6600', fg: '#FFFFFF', text: 'Plazo · Lyon Saint\u2011Exupéry' } },
+    plazo: { bg: '#ECECEE', title: '#2C1A0E', sub: '#5E554F', titleFont: "'Playfair Display'", titleStyle: 'italic', titleWeight: 600, titleCase: 'none', bodyFont: "'Manrope'", frame: '#FFFFFF', shadow: 'rgba(44,26,14,0.28)', eyebrow: { bg: '#FF6600', fg: '#FFFFFF', text: 'Plazo · parking aéroport' } },
     pro: { bg: '#EEF0EE', title: '#1A1D1A', sub: '#4B5563', titleFont: "'Archivo Narrow'", titleStyle: 'normal', titleWeight: 700, titleCase: 'uppercase', bodyFont: "'Inter'", frame: '#FFFFFF', shadow: 'rgba(26,29,26,0.25)', eyebrow: { bg: '#A3E635', fg: '#0F2A14', text: 'Plazo Pro · équipes de parking' } },
   },
 };
@@ -86,11 +88,11 @@ function pageHtml({ look, title, sub, shot, topColor, size }) {
   // Units: the canvas is 1000 wide and unitH high (unitH = 1000 * height / width).
   const isTall = unitH > 2000; // iPhone (≈ 2173) or Play (≈ 1778)
   const pad = 78;
-  const titleSize = look.titleCase === 'uppercase' ? 92 : 98;
+  const titleSize = look.titleCase === 'uppercase' ? 100 : look.titleWeight >= 800 ? 100 : 98;
   const textTop = isTall ? 150 : 104;
   // The text block keeps one height in a set (eyebrow, two lines of title, up to three lines under it), so every
   // phone of the set sits at the same height.
-  const textH = (look.eyebrow ? 88 : 0) + 2 * titleSize * 1.04 + 30 + 3 * 40 * 1.3;
+  const textH = (look.eyebrow ? 88 : 0) + 2 * titleSize * 1.04 + 30 + 3 * 42 * 1.3;
   // Phone: screenshot (440 x 956 points) under a status bar of 30 points; the frame is a 22-unit bezel.
   const phoneW = isTall ? 800 : 640;
   const bezel = phoneW * 0.032;
@@ -105,8 +107,8 @@ html, body { width: ${size.width}px; height: ${size.height}px; overflow: hidden;
 .stage { position: relative; width: 1000px; height: ${unitH}px; overflow: hidden; transform: scale(${k}); transform-origin: 0 0; display: flex; flex-direction: column; align-items: center; padding-top: ${textTop}px; }
 .text { padding: 0 ${pad}px; height: ${textH}px; flex-shrink: 0; display: flex; flex-direction: column; gap: 30px; align-items: center; text-align: center; }
 .eyebrow { display: inline-flex; align-items: center; height: 58px; padding: 0 28px; border-radius: 999px; font: 800 26px/1 ${look.bodyFont}, sans-serif; letter-spacing: 0.04em; }
-h1 { font-family: ${look.titleFont}, serif; font-style: ${look.titleStyle}; font-weight: ${look.titleWeight}; text-transform: ${look.titleCase}; font-size: ${titleSize}px; line-height: 1.04; letter-spacing: ${look.titleCase === 'uppercase' ? '0.005em' : '-0.01em'}; color: ${look.title}; text-wrap: balance; }
-p { font: 600 40px/1.3 ${look.bodyFont}, sans-serif; color: ${look.sub}; text-wrap: balance; max-width: 780px; }
+h1 { font-family: ${look.titleFont}, serif; font-style: ${look.titleStyle}; font-weight: ${look.titleWeight}; text-transform: ${look.titleCase}; font-size: ${titleSize}px; line-height: 1.04; letter-spacing: ${look.titleCase === 'uppercase' ? '0.005em' : '-0.02em'}; color: ${look.title}; text-shadow: ${look.titleShadow || 'none'}; text-wrap: balance; }
+p { font: ${look.subWeight || 600} 42px/1.3 ${look.bodyFont}, sans-serif; color: ${look.sub}; text-wrap: balance; max-width: 780px; }
 .phone { position: relative; flex-shrink: 0; margin-top: ${isTall ? 96 : 72}px; width: ${phoneW}px; height: ${phoneH}px; border-radius: ${radius}px; background: ${look.frame}; padding: ${bezel}px; box-shadow: 0 60px 110px -40px ${look.shadow}, 0 0 0 2px rgba(0,0,0,0.06); }
 .screen { position: relative; width: 100%; height: 100%; border-radius: ${radius - bezel}px; overflow: hidden; background: ${topColor}; }
 .status { height: ${statusH}px; display: flex; align-items: center; justify-content: space-between; padding: 0 ${screenW * 0.085}px; font: 700 ${statusH * 0.46}px/1 'Inter', sans-serif; color: ${topColor === '#000000' || isDark(topColor) ? '#fff' : '#111'}; }
@@ -168,6 +170,12 @@ for (const style of styles) {
         });
         await page.setContent(pageHtml({ look, title, sub, shot, topColor, size }), { waitUntil: 'load' });
         await page.evaluate(() => document.fonts.ready);
+        // The layout keeps room for two lines of title and three under it: say so when a text runs longer.
+        const lines = await page.evaluate(() => {
+          const count = (el) => Math.round(el.offsetHeight / parseFloat(getComputedStyle(el).lineHeight));
+          return { title: count(document.querySelector('h1')), sub: count(document.querySelector('p')) };
+        });
+        if (lines.title > 2 || lines.sub > 3) console.warn(`too long: ${style}/${app}/${sizeKey}/${file} (title ${lines.title} lines, sub ${lines.sub})`);
         const out = path.join(dir, `${file}.png`);
         await page.screenshot({ path: out });
         count++;

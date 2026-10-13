@@ -1,6 +1,6 @@
 # Fiches des stores : Plazo et Plazo Pro
 
-État au 11/10/2026. Ce document rassemble les textes à copier-coller pour créer les quatre fiches : Plazo et Plazo Pro sur App Store Connect, Plazo et Plazo Pro sur Google Play.
+État au 13/10/2026. Ce document rassemble les textes à copier-coller pour créer les quatre fiches : Plazo et Plazo Pro sur App Store Connect, Plazo et Plazo Pro sur Google Play.
 
 Il complète [publier-sur-les-stores.md](publier-sur-les-stores.md), qui couvre déjà les comptes, les App ID, la signature, Codemagic, OneSignal et le premier envoi. Ces étapes ne sont pas répétées ici.
 
@@ -15,7 +15,7 @@ Règles suivies dans tous les textes :
 - aucun superlatif ;
 - tout se paie en ligne, jamais au parking ;
 - aucune mention d'avis voyageurs ni d'Apple Pay (ni l'un ni l'autre n'est actif) ;
-- Lyon Saint-Exupéry est présenté comme le premier aéroport, sans nommer de terminal fermé ;
+- aucun aéroport n'est nommé : l'app n'est pas réservée à Lyon (décision de Joanny du 13/10/2026). Elle propose les aéroports où Plazo a des parkings partenaires (`GET /public/airports`, choix de l'aéroport dès qu'il y en a deux), et les textes n'en promettent aucun autre ;
 - le texte App Store ne cite aucune autre plateforme mobile (règle 2.3.10 d'Apple).
 
 ---
@@ -86,7 +86,7 @@ Il faut d'abord créer les App ID `com.benfordtech.plazo` et `com.benfordtech.pl
 | User Access | Full Access | Full Access |
 
 - Le nom sous l'icône reste « Plazo » ou « Plazo Pro » (`APP_DISPLAY_NAME`, tiré de `product.json`). Le nom de la fiche peut porter un complément, et il se change à chaque nouvelle version.
-- Un nom de fiche doit être unique sur l'App Store, et « Plazo » seul a de bonnes chances d'être déjà pris. Si le nom est refusé, essayer `Plazo : parking aéroport Lyon` (29) ou `Plazo Pro – Personnel parking` (29).
+- Un nom de fiche doit être unique sur l'App Store, et « Plazo » seul a de bonnes chances d'être déjà pris. Si le nom est refusé, essayer `Plazo : parking d'aéroport` (26) ou `Plazo Pro – Personnel parking` (29).
 
 ### 1.2 Google Play Console › Toutes les applications
 
@@ -111,8 +111,8 @@ Le nom de l'application sur Google Play n'a pas besoin d'être unique. Le namesp
 | Champ | Valeur |
 |---|---|
 | Name | `Plazo – Parking aéroport` (24) |
-| Subtitle (≤ 30) | `Lyon Saint-Exupéry et navette` (29) |
-| Keywords (≤ 100) | `Satolas,LYS,stationnement,voiturier,réservation,garer,voiture,vol,terminal,longue durée,vacances` (96 caractères, 98 octets). Les mots du nom et du sous-titre sont déjà indexés, ils ne sont pas répétés. Satolas est l'ancien nom de l'aéroport, encore recherché. |
+| Subtitle (≤ 30) | `Parkings privés et navette` (26) |
+| Keywords (≤ 100) | `stationnement,voiturier,réservation,garer,voiture,vol,avion,terminal,longue durée,vacances` (90 caractères, 92 octets). Les mots du nom et du sous-titre sont déjà indexés, ils ne sont pas répétés. Aucun nom d'aéroport : l'app n'est pas réservée à Lyon. |
 | Support URL | `https://www.plazo.fr/aide` : **à créer** (point 0.3). En attendant, les Mentions légales une fois complétées, à condition qu'elles donnent un e-mail. |
 | Marketing URL | `https://www.plazo.fr` |
 | Privacy Policy URL | `https://www.plazo.fr/confidentialite` |
@@ -128,21 +128,21 @@ Promotional Text (≤ 170 ; il se change sans nouvelle revue).
 Avec un plan de suivi des vols payant (point 0.19) :
 
 ```text
-Réservez un parking près de l'aéroport de Lyon Saint-Exupéry : prix total pour vos dates, paiement en ligne, vol retour suivi et itinéraire jusqu'à la navette.
+Réservez un parking près de votre aéroport : prix total pour vos dates, paiement en ligne, vol retour suivi et itinéraire jusqu'à la navette.
 ```
-(159)
+(141)
 
 Tant que ce plan n'est pas pris :
 
 ```text
-Réservez un parking près de l'aéroport de Lyon Saint-Exupéry : prix total pour vos dates, paiement en ligne et itinéraire à pied jusqu'à la navette au retour.
+Réservez un parking près de votre aéroport : prix total pour vos dates, paiement en ligne et itinéraire à pied jusqu'à la navette au retour.
 ```
-(158)
+(140)
 
 Description (≤ 4 000) :
 
 ```text
-Plazo vous aide à réserver un parking privé près de l'aéroport de Lyon Saint-Exupéry, puis vous accompagne pendant tout le séjour : du dépôt de la voiture jusqu'à votre retour.
+Plazo vous aide à réserver un parking privé près de votre aéroport, puis vous accompagne pendant tout le séjour : du dépôt de la voiture jusqu'à votre retour.
 
 TROUVER VOTRE PARKING
 • Choisissez vos dates de dépôt et de retour : la carte montre les parkings partenaires avec leur prix total pour votre séjour, ou « Complet ».
@@ -175,11 +175,11 @@ AU RETOUR
 • Appelez le parking en un geste.
 
 À SAVOIR
-• Lyon Saint-Exupéry est le premier aéroport proposé par Plazo.
+• Plazo propose les aéroports où il travaille avec des parkings partenaires.
 • Chaque parking est exploité par un professionnel partenaire de Plazo, qui gère aussi sa navette.
 • Vos informations servent à votre séjour et sont transmises au parking que vous réservez. Politique de confidentialité : https://www.plazo.fr/confidentialite
 ```
-(environ 3 450 caractères)
+(environ 3 440 caractères)
 
 Tant que la tâche du point 0.17 n'est pas planifiée, remplacer « (2 heures au plus, puis elle est effacée dans les 10 minutes) » par « (2 heures au plus ; elle est effacée au plus tard la nuit suivante) ».
 
@@ -188,7 +188,7 @@ Tant que la tâche du point 0.17 n'est pas planifiée, remplacer « (2 heures au
 | Champ | Valeur |
 |---|---|
 | Nom de l'application (≤ 30) | `Plazo – Parking aéroport` |
-| Description courte (≤ 80) | `Réservez un parking près de l'aéroport de Lyon, du dépôt jusqu'à votre retour.` (78) |
+| Description courte (≤ 80) | `Réservez un parking près de votre aéroport, du dépôt jusqu'à votre retour.` (74) |
 | Description complète (≤ 4 000) | le texte de 2.1 avec une seule ligne changée (voir ci-dessous), environ 3 460 caractères |
 | Catégorie | Application › **Voyages et infos locales** |
 | Tags | jusqu'à 5, à choisir dans la liste de la console. Viser ceux qui touchent au voyage, au transport et au stationnement. À confirmer : la liste n'est visible que dans la console. |
@@ -213,7 +213,7 @@ devient, sur Google Play :
 |---|---|
 | Name | `Plazo Pro – Équipes parking` (27) |
 | Subtitle (≤ 30) | `Réservations, places, navette` (29) |
-| Keywords (≤ 100) | `gestion,aéroport,voiturier,chauffeur,planning,occupation,clés,personnel,arrivées,retours,LYS` (92 caractères, 95 octets) |
+| Keywords (≤ 100) | `gestion,aéroport,voiturier,chauffeur,planning,occupation,clés,personnel,arrivées,retours,accueil` (96 caractères, 99 octets) |
 | Support URL | la même page d'aide que Plazo (**à créer**) |
 | Marketing URL | facultatif : `https://www.plazo.fr`, ou rien |
 | Privacy Policy URL | `https://www.plazo.fr/confidentialite` (sa section 10 couvre les comptes des professionnels) |
@@ -311,17 +311,17 @@ Plazo, Google Play (≤ 500) :
 
 ```text
 Première version de Plazo.
-• Trouvez un parking près de l'aéroport de Lyon Saint-Exupéry : prix total pour vos dates, en liste ou sur la carte, filtres par service.
+• Trouvez un parking près de votre aéroport : prix total pour vos dates, en liste ou sur la carte, filtres par service.
 • Réservez et payez en ligne, sans créer de compte.
 • Le jour du dépôt, prévenez le parking de votre arrivée.
 • Au retour : compte à rebours jusqu'à l'atterrissage, itinéraire à pied jusqu'à la navette, « Votre navette est là », et retrouvez votre voiture sur le parking.
 ```
-(436 caractères)
+(418 caractères)
 
 Plazo, App Store (« Que tester » de TestFlight pour la 1.0.0, « Nouveautés » dès la 1.0.1) :
 
 ```text
-Première version de Plazo, pour réserver un parking privé près de l'aéroport de Lyon Saint-Exupéry et être accompagné du dépôt de la voiture jusqu'au retour.
+Première version de Plazo, pour réserver un parking privé près de votre aéroport et être accompagné du dépôt de la voiture jusqu'au retour.
 
 • Choisissez vos dates : la carte et la liste montrent les parkings partenaires avec leur prix total pour le séjour. Triez par prix, durée de navette ou distance ; filtrez par service.
 • Réservez en deux étapes, sans créer de compte, et payez en ligne par carte bancaire. Rien à régler au parking.
@@ -329,9 +329,9 @@ Première version de Plazo, pour réserver un parking privé près de l'aéropor
 • Au retour, un compte à rebours vous accompagne jusqu'à l'atterrissage, puis l'itinéraire à pied vous mène au point de rendez-vous de la navette. Vous êtes prévenu quand la navette part vous chercher et quand elle est là.
 • Retrouvez votre voiture : place ou file indiquée par le voiturier, et sa position GPS quand elle a été enregistrée.
 
-Lyon Saint-Exupéry est le premier aéroport proposé par Plazo.
+Plazo propose les aéroports où il travaille avec des parkings partenaires.
 ```
-(991 caractères)
+(986 caractères)
 
 Plazo Pro, Google Play (≤ 500) :
 
