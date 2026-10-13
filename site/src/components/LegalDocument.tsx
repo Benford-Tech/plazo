@@ -43,20 +43,10 @@ function Block({ block }: { block: LegalBlock }) {
   );
 }
 
-/** A stroked warning sign for the draft notice. */
-function NoticeIcon() {
-  return (
-    <svg aria-hidden="true" viewBox="0 0 24 24" width={20} height={20} className="mt-px flex-none" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
-      <path d="M12 3.5 2.8 19.5h18.4z" />
-      <path d="M12 10v4.5M12 17.2v.1" />
-    </svg>
-  );
-}
-
 /**
- * A legal page (terms, legal notice): title, draft notice, contents, then each section.
+ * A legal page (terms, legal notice, privacy): title, contents, then each section.
  * Boutique (11/10/2026): one calm column held to a 65-character measure, Playfair headings, sections parted by a
- * hairline, the draft notice in a soft amber callout (a point to watch, not an error).
+ * hairline. The « Projet, à valider avec un juriste » callout was taken off on 13/10/2026 (Joanny's ask).
  */
 export function LegalDocument({ doc }: { doc: LegalDoc }) {
   return (
@@ -65,13 +55,6 @@ export function LegalDocument({ doc }: { doc: LegalDoc }) {
         <h1 className="font-title text-[30px] leading-[1.1] text-ink lining-nums md:text-[46px]">{doc.title}</h1>
         <p className="text-[13.5px] font-semibold text-soft">{fr.legal.version(doc.version)}</p>
       </header>
-      <div role="note" className="flex gap-3 rounded-field bg-warn-bg p-4 text-warn md:p-5">
-        <NoticeIcon />
-        <div>
-          <p className="font-bold">{fr.legal.draft}</p>
-          <p className="mt-1 text-[15px] leading-relaxed text-ink">{fr.legal.draftText}</p>
-        </div>
-      </div>
       <p className={`${MEASURE} text-[17px] leading-[1.65] md:text-[18px]`}>{doc.lead}</p>
       {doc.sections.length > 3 && (
         <nav aria-labelledby="legal-contents" className="card px-5 pt-5 pb-2 md:px-6">

@@ -629,8 +629,9 @@ Le nom du produit doit rester dans UN seul fichier de configuration (il peut enc
 - `site/src/lib/legal.ts` : textes des Conditions générales (`/conditions`), des Mentions légales (`/mentions-legales`)
   et de la Politique de confidentialité (`/confidentialite`, durées de conservation reprises du code ; réservations
   anonymisées 12 mois après le retour par le cron de nuit, `backend/src/domain/retention.ts`, `Reservation.anonymizedAt`),
-  rédigés d'après le fonctionnement réel (06/10/2026), **projet à faire valider par un juriste** (bandeau sur la page,
-  pages non indexées) ; à tenir à jour quand une règle change (paiement, annulation, classement, données).
+  rédigés d'après le fonctionnement réel (06/10/2026), **projet à faire valider par un juriste** (pages non indexées ;
+  le bandeau « Projet, à valider avec un juriste » a été retiré le 13/10/2026 à la demande de Joanny, « enlève ») ; à tenir
+  à jour quand une règle change (paiement, annulation, classement, données).
 - `backend/` : API REST sous `/api` (`index.js` = point d'entrée Vercel). Les routes du personnel du loueur
   sont sous `/api/internal/...` (`StaffAuthMiddleware`, jetons stockés en base et révocables), comme les
   routes staff de LoveNest ; celles du site voyageurs sous `/api/public/...`.
