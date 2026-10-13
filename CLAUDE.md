@@ -737,7 +737,10 @@ Le nom du produit doit rester dans UN seul fichier de configuration (il peut enc
   marque avec le texte qui ressort mieux ») dans `brand/stores/marketing/A/{plazo,plazo-pro}/{appstore69,appstore63,play}/` : chaque
   capture 6,9" dans un téléphone dessiné sous un titre Manrope 800 blanc sur l'orange (Archivo Narrow vert foncé sur le citron
   pour Plazo Pro) et une ligne dans la couleur la plus foncée, par `brand/stores/tools/marketing.mjs` (titres repris des fiches,
-  relus contre le code, deux lignes au plus, signalé sinon) ; **fiches sans Lyon** (13/10/2026, « l'app n'est pas réservée
+  relus contre le code, deux lignes au plus, signalé sinon) ; **en-tête et résultats de recherche de l'App Store** (13/10/2026) dans
+  `brand/stores/creative/{plazo,plazo-pro}/` (`header-3840x1646.png` 21:9, `search-3840x2560.png` 3:2, PNG opaques), même style A,
+  icône et titre dans la zone sûre centrée des gabarits d'Apple (1646 × 661 et 2168 × 1030, `SAFE=1` la dessine), deux téléphones
+  aux vraies captures en décor sur les côtés, par `brand/stores/tools/creative.mjs` ; **fiches sans Lyon** (13/10/2026, « l'app n'est pas réservée
   qu'à l'aéroport de Lyon ») : aucun aéroport nommé dans les textes des stores, aucun autre promis ; **données fictives du parking de test** (12/10/2026, « crée des données factices sur le parking de test », pour filmer
   les vidéos du service de premier plan) : workflow `test-parking-data.yml` (`fill` / `clear`, à la main) et
   `.github/scripts/test_parking_data.py`, qui se connecte à l'API de production avec les secrets GitHub `PLAZO_TEST_EMAIL` /
