@@ -1,6 +1,6 @@
 # Fiches des stores : Plazo et Plazo Pro
 
-État au 11/10/2026. Ce document rassemble les textes à copier-coller pour créer les quatre fiches : Plazo et Plazo Pro sur App Store Connect, Plazo et Plazo Pro sur Google Play.
+État au 13/10/2026. Ce document rassemble les textes à copier-coller pour créer les quatre fiches : Plazo et Plazo Pro sur App Store Connect, Plazo et Plazo Pro sur Google Play.
 
 Il complète [publier-sur-les-stores.md](publier-sur-les-stores.md), qui couvre déjà les comptes, les App ID, la signature, Codemagic, OneSignal et le premier envoi. Ces étapes ne sont pas répétées ici.
 
@@ -15,7 +15,7 @@ Règles suivies dans tous les textes :
 - aucun superlatif ;
 - tout se paie en ligne, jamais au parking ;
 - aucune mention d'avis voyageurs ni d'Apple Pay (ni l'un ni l'autre n'est actif) ;
-- Lyon Saint-Exupéry est présenté comme le premier aéroport, sans nommer de terminal fermé ;
+- aucun aéroport n'est nommé : l'app n'est pas réservée à Lyon (décision de Joanny du 13/10/2026). Elle propose les aéroports où Plazo a des parkings partenaires (`GET /public/airports`, choix de l'aéroport dès qu'il y en a deux), et les textes n'en promettent aucun autre ;
 - le texte App Store ne cite aucune autre plateforme mobile (règle 2.3.10 d'Apple).
 
 ---
@@ -86,7 +86,7 @@ Il faut d'abord créer les App ID `com.benfordtech.plazo` et `com.benfordtech.pl
 | User Access | Full Access | Full Access |
 
 - Le nom sous l'icône reste « Plazo » ou « Plazo Pro » (`APP_DISPLAY_NAME`, tiré de `product.json`). Le nom de la fiche peut porter un complément, et il se change à chaque nouvelle version.
-- Un nom de fiche doit être unique sur l'App Store, et « Plazo » seul a de bonnes chances d'être déjà pris. Si le nom est refusé, essayer `Plazo : parking aéroport Lyon` (29) ou `Plazo Pro – Personnel parking` (29).
+- Un nom de fiche doit être unique sur l'App Store, et « Plazo » seul a de bonnes chances d'être déjà pris. Si le nom est refusé, essayer `Plazo : parking d'aéroport` (26) ou `Plazo Pro – Personnel parking` (29).
 
 ### 1.2 Google Play Console › Toutes les applications
 
@@ -111,8 +111,8 @@ Le nom de l'application sur Google Play n'a pas besoin d'être unique. Le namesp
 | Champ | Valeur |
 |---|---|
 | Name | `Plazo – Parking aéroport` (24) |
-| Subtitle (≤ 30) | `Lyon Saint-Exupéry et navette` (29) |
-| Keywords (≤ 100) | `Satolas,LYS,stationnement,voiturier,réservation,garer,voiture,vol,terminal,longue durée,vacances` (96 caractères, 98 octets). Les mots du nom et du sous-titre sont déjà indexés, ils ne sont pas répétés. Satolas est l'ancien nom de l'aéroport, encore recherché. |
+| Subtitle (≤ 30) | `Parkings privés et navette` (26) |
+| Keywords (≤ 100) | `stationnement,voiturier,réservation,garer,voiture,vol,avion,terminal,longue durée,vacances` (90 caractères, 92 octets). Les mots du nom et du sous-titre sont déjà indexés, ils ne sont pas répétés. Aucun nom d'aéroport : l'app n'est pas réservée à Lyon. |
 | Support URL | `https://www.plazo.fr/aide` : **à créer** (point 0.3). En attendant, les Mentions légales une fois complétées, à condition qu'elles donnent un e-mail. |
 | Marketing URL | `https://www.plazo.fr` |
 | Privacy Policy URL | `https://www.plazo.fr/confidentialite` |
@@ -128,21 +128,21 @@ Promotional Text (≤ 170 ; il se change sans nouvelle revue).
 Avec un plan de suivi des vols payant (point 0.19) :
 
 ```text
-Réservez un parking près de l'aéroport de Lyon Saint-Exupéry : prix total pour vos dates, paiement en ligne, vol retour suivi et itinéraire jusqu'à la navette.
+Réservez un parking près de votre aéroport : prix total pour vos dates, paiement en ligne, vol retour suivi et itinéraire jusqu'à la navette.
 ```
-(159)
+(141)
 
 Tant que ce plan n'est pas pris :
 
 ```text
-Réservez un parking près de l'aéroport de Lyon Saint-Exupéry : prix total pour vos dates, paiement en ligne et itinéraire à pied jusqu'à la navette au retour.
+Réservez un parking près de votre aéroport : prix total pour vos dates, paiement en ligne et itinéraire à pied jusqu'à la navette au retour.
 ```
-(158)
+(140)
 
 Description (≤ 4 000) :
 
 ```text
-Plazo vous aide à réserver un parking privé près de l'aéroport de Lyon Saint-Exupéry, puis vous accompagne pendant tout le séjour : du dépôt de la voiture jusqu'à votre retour.
+Plazo vous aide à réserver un parking privé près de votre aéroport, puis vous accompagne pendant tout le séjour : du dépôt de la voiture jusqu'à votre retour.
 
 TROUVER VOTRE PARKING
 • Choisissez vos dates de dépôt et de retour : la carte montre les parkings partenaires avec leur prix total pour votre séjour, ou « Complet ».
@@ -175,11 +175,11 @@ AU RETOUR
 • Appelez le parking en un geste.
 
 À SAVOIR
-• Lyon Saint-Exupéry est le premier aéroport proposé par Plazo.
+• Plazo propose les aéroports où il travaille avec des parkings partenaires.
 • Chaque parking est exploité par un professionnel partenaire de Plazo, qui gère aussi sa navette.
 • Vos informations servent à votre séjour et sont transmises au parking que vous réservez. Politique de confidentialité : https://www.plazo.fr/confidentialite
 ```
-(environ 3 450 caractères)
+(environ 3 440 caractères)
 
 Tant que la tâche du point 0.17 n'est pas planifiée, remplacer « (2 heures au plus, puis elle est effacée dans les 10 minutes) » par « (2 heures au plus ; elle est effacée au plus tard la nuit suivante) ».
 
@@ -188,7 +188,7 @@ Tant que la tâche du point 0.17 n'est pas planifiée, remplacer « (2 heures au
 | Champ | Valeur |
 |---|---|
 | Nom de l'application (≤ 30) | `Plazo – Parking aéroport` |
-| Description courte (≤ 80) | `Réservez un parking près de l'aéroport de Lyon, du dépôt jusqu'à votre retour.` (78) |
+| Description courte (≤ 80) | `Réservez un parking près de votre aéroport, du dépôt jusqu'à votre retour.` (74) |
 | Description complète (≤ 4 000) | le texte de 2.1 avec une seule ligne changée (voir ci-dessous), environ 3 460 caractères |
 | Catégorie | Application › **Voyages et infos locales** |
 | Tags | jusqu'à 5, à choisir dans la liste de la console. Viser ceux qui touchent au voyage, au transport et au stationnement. À confirmer : la liste n'est visible que dans la console. |
@@ -213,7 +213,7 @@ devient, sur Google Play :
 |---|---|
 | Name | `Plazo Pro – Équipes parking` (27) |
 | Subtitle (≤ 30) | `Réservations, places, navette` (29) |
-| Keywords (≤ 100) | `gestion,aéroport,voiturier,chauffeur,planning,occupation,clés,personnel,arrivées,retours,LYS` (92 caractères, 95 octets) |
+| Keywords (≤ 100) | `gestion,aéroport,voiturier,chauffeur,planning,occupation,clés,personnel,arrivées,retours,accueil` (96 caractères, 99 octets) |
 | Support URL | la même page d'aide que Plazo (**à créer**) |
 | Marketing URL | facultatif : `https://www.plazo.fr`, ou rien |
 | Privacy Policy URL | `https://www.plazo.fr/confidentialite` (sa section 10 couvre les comptes des professionnels) |
@@ -243,7 +243,7 @@ VOTRE POSTE DU JOUR
 
 AUJOURD'HUI
 • Tableau de bord : véhicules sur le parking, arrivées, retours, navettes et points à traiter, avec la place et les clés de chaque véhicule.
-• Planning des arrivées et des retours du jour, avec l'état des vols et des voyageurs (en approche, au point de rendez-vous).
+• Planning des arrivées et des retours du jour, avec le vol retour et l'état des voyageurs (en approche, au point de rendez-vous).
 • Carte des navettes en circulation.
 
 RÉSERVATIONS
@@ -311,27 +311,27 @@ Plazo, Google Play (≤ 500) :
 
 ```text
 Première version de Plazo.
-• Trouvez un parking près de l'aéroport de Lyon Saint-Exupéry : prix total pour vos dates, en liste ou sur la carte, filtres par service.
+• Trouvez un parking près de votre aéroport : prix total pour vos dates, en liste ou sur la carte, filtres par service.
 • Réservez et payez en ligne, sans créer de compte.
 • Le jour du dépôt, prévenez le parking de votre arrivée.
-• Au retour : compte à rebours jusqu'à l'atterrissage, itinéraire à pied jusqu'à la navette, « Votre navette est là », et retrouvez votre voiture sur le parking.
+• Au retour : compte à rebours jusqu'à l'atterrissage, itinéraire à pied jusqu'à la navette, « Votre navette est là » si le parking partage sa position, et retrouvez votre voiture sur le parking.
 ```
-(436 caractères)
+(452 caractères)
 
 Plazo, App Store (« Que tester » de TestFlight pour la 1.0.0, « Nouveautés » dès la 1.0.1) :
 
 ```text
-Première version de Plazo, pour réserver un parking privé près de l'aéroport de Lyon Saint-Exupéry et être accompagné du dépôt de la voiture jusqu'au retour.
+Première version de Plazo, pour réserver un parking privé près de votre aéroport et être accompagné du dépôt de la voiture jusqu'au retour.
 
 • Choisissez vos dates : la carte et la liste montrent les parkings partenaires avec leur prix total pour le séjour. Triez par prix, durée de navette ou distance ; filtrez par service.
 • Réservez en deux étapes, sans créer de compte, et payez en ligne par carte bancaire. Rien à régler au parking.
 • Le jour du dépôt, prévenez le parking de votre arrivée, avec ou sans partage de position, et notez où vous avez garé la voiture.
-• Au retour, un compte à rebours vous accompagne jusqu'à l'atterrissage, puis l'itinéraire à pied vous mène au point de rendez-vous de la navette. Vous êtes prévenu quand la navette part vous chercher et quand elle est là.
+• Au retour, un compte à rebours vous accompagne jusqu'à l'atterrissage, puis l'itinéraire à pied vous mène au point de rendez-vous de la navette. Vous êtes prévenu quand la navette part vous chercher et, si le parking partage la position de ses navettes, quand elle est là.
 • Retrouvez votre voiture : place ou file indiquée par le voiturier, et sa position GPS quand elle a été enregistrée.
 
-Lyon Saint-Exupéry est le premier aéroport proposé par Plazo.
+Plazo propose les aéroports où il travaille avec des parkings partenaires.
 ```
-(991 caractères)
+(1038 caractères)
 
 Plazo Pro, Google Play (≤ 500) :
 
@@ -351,15 +351,15 @@ Plazo Pro, App Store (« Que tester » de TestFlight pour la 1.0.0, « Nouveaut�
 Première version de Plazo Pro, l'application des équipes des parkings d'aéroport partenaires de Plazo : gérants, accueil, chauffeurs de navette et voituriers.
 
 • Votre poste du jour : les onglets s'adaptent à votre travail.
-• Aujourd'hui : tableau de bord des véhicules sur le parking, arrivées, retours, navettes et points à traiter ; planning du jour avec l'état des vols.
+• Aujourd'hui : tableau de bord des véhicules sur le parking, arrivées, retours, navettes et points à traiter ; planning du jour avec les voyageurs en approche.
 • Réservations : toutes les réservations du parking par date d'arrivée, quel que soit le canal ; recherche par plaque, nom ou référence ; saisie d'une réservation prise au téléphone ou au comptoir ; fiche avec la prochaine étape en un seul bouton.
 • Parking et clés : plan en couleurs, place proposée à chaque arrivée, files de voiturier, crochet des clés, planning des places.
-• Navette : ligne du jour calculée d'après les vols, ma tournée, trajets avec véhicule et desserte, messages des voyageurs.
+• Navette : ligne du jour calculée d'après les vols, ou l'heure de la réservation quand le vol n'est pas connu, ma tournée, trajets avec véhicule et desserte, messages des voyageurs.
 • Notifications : arrivées, retours, navettes et nouvelles réservations, chacune réglable.
 
 L'application ne propose pas d'inscription : votre gérant crée votre compte.
 ```
-(1045 caractères)
+(1114 caractères)
 
 ---
 
@@ -710,6 +710,7 @@ Les icônes App Store sont fournies par le build lui-même (icône 1024 des jeux
 | Store | Visuel | Taille et format |
 |---|---|---|
 | Apple | iPhone 6,9" (**obligatoire**) | 1320 × 2868 (simulateur iPhone 16 Pro Max) ou 1290 × 2796 ; portrait ; PNG ou JPEG sans transparence ; 1 à 10 captures, 5 ou 6 conseillées. **Faites (11/10/2026)** : `brand/stores/screenshots/plazo/app-store/` et `brand/stores/screenshots/plazo-pro/app-store/`, sept captures 1320 × 2868 par app (mêmes écrans et même ordre que Google Play, viewport 440 × 956 à 3 pixels par point), par le même `run.sh` (`DEVICE=iphone` de `capture.mjs`). |
+| Apple et Google | Images commerciales (à la place des captures brutes, choix A du 13/10/2026) | `brand/stores/marketing/A/plazo/` et `brand/stores/marketing/A/plazo-pro/`, sept par app à chaque taille : `appstore69` (1320 × 2868, iPhone 6,9"), `appstore63` (1206 × 2622, iPhone 6,3"), `play` (1080 × 1920, Google Play). Fond orange (Plazo) ou citron (Plazo Pro), titre et ligne repris de cette fiche, la vraie capture dans un téléphone. Rendues par `cd site && STYLE=A node ../brand/stores/tools/marketing.mjs`. |
 | Apple | iPhone 6,3" (facultatif : sans elles, Apple réduit les captures 6,9") | 1206 × 2622 ou 1179 × 2556, portrait (2622 × 1206 ou 2556 × 1179 en paysage). **Faites (13/10/2026)** : `brand/stores/screenshots/plazo/app-store-6.3/` et `brand/stores/screenshots/plazo-pro/app-store-6.3/`, sept captures 1206 × 2622 par app (mêmes écrans et même ordre, viewport 402 × 874 à 3 pixels par point, l'iPhone 16 Pro), par le même `run.sh` (`DEVICE=iphone63`). Aperçus vidéo de cette taille : 886 × 1920, aucun pour l'instant. |
 | Apple | iPhone 6,5" | 1284 × 2778 ou 1242 × 2688, seulement si aucune capture 6,9" n'est fournie (sinon Apple réduit les captures 6,9") |
 | Apple | iPad 13" (**obligatoire seulement si l'iPad est gardé**, point 0.15 ; ligne à retirer si les apps passent en iPhone seul) | 2064 × 2752 (simulateur iPad Pro 13 pouces M4) ou 2048 × 2732 |
@@ -729,8 +730,7 @@ Conseils de capture :
 Images de présentation (`brand/stores/`, 11/10/2026), deux variantes par app, à choisir par Joanny :
 - **Plazo A** (`plazo-feature-A.png`) : fond orange `#FF6600`, le P et l'avion de l'icône, « Votre parking à l'aéroport »
   en Playfair italique blanc, « Prix total affiché, navette, retour en direct. » en Manrope.
-- **Plazo B** (`plazo-feature-B.png`) : le fond gris clair `#ECECEE` de l'app, la tuile de l'icône, surtitre « Parking aéroport ·
-  Lyon Saint-Exupéry », « Votre parking, du dépôt au retour. » en Playfair italique brun, pilule orange « Prix total affiché ».
+- **Plazo B** (`plazo-feature-B.png`) : le fond gris clair `#ECECEE` de l'app, la tuile de l'icône, surtitre « Plazo · parking aéroport », « Votre parking, du dépôt au retour. » en Playfair italique brun, pilule orange « Prix total affiché ».
 - **Plazo Pro A** (`plazo-pro-feature-A.png`) : fond vert citron `#A3E635`, le P et l'avion verts, « L'app des équipes de parking »
   en Archivo Narrow capitales vert foncé `#0F2A14`, « Réservations · places · clés · navette » en Inter.
 - **Plazo Pro B** (`plazo-pro-feature-B.png`) : le fond `#EEF0EE` de l'espace pro, la tuile de l'icône, surtitre « Plazo Pro ·
