@@ -7,7 +7,8 @@
 //   STYLE=A APPS=plazo SIZES=appstore69 SCREENS=01,04 node ../brand/stores/tools/marketing.mjs
 //
 // Output: brand/stores/marketing/<style>/<app>/<size>/<screen>.png (OUT to change the folder). Sizes: appstore69
-// (1320 x 2868, iPhone 6,9"), appstore63 (1206 x 2622, iPhone 6,3"), play (1080 x 1920, Google Play phone).
+// (1320 x 2868, iPhone 6,9"), appstore63 (1206 x 2622, iPhone 6,3"), play (1080 x 1920, Google Play phone),
+// ipad13 (2064 x 2752, iPad 13", from the iPad captures).
 // Fonts: the app's own files (mobile/assets/fonts), embedded as data URIs. No text here promises what the apps do not
 // do: every line restates mobile/fiches-stores.md.
 import { mkdirSync, readFileSync } from 'node:fs';
@@ -29,6 +30,9 @@ const SIZES = {
   appstore69: { width: 1320, height: 2868 },
   appstore63: { width: 1206, height: 2622 },
   play: { width: 1080, height: 1920 },
+  // iPad 13" (13/10/2026: App Store Connect asks for it while the apps are declared for iPad): the iPad captures
+  // (brand/stores/screenshots/*/app-store-ipad-13, a 1032 x 1376 viewport) in a tablet frame.
+  ipad13: { width: 2064, height: 2752, tablet: true, shots: 'app-store-ipad-13', screen: { width: 1032, height: 1376 } },
 };
 
 // One headline (title) and one line under it (sub) per screen, in the order of the listings (fiches-stores.md 5.2).
@@ -86,21 +90,25 @@ function pageHtml({ look, title, sub, shot, topColor, size }) {
   const k = size.width / 1000;
   const unitH = size.height / k;
   // Units: the canvas is 1000 wide and unitH high (unitH = 1000 * height / width).
-  const isTall = unitH > 2000; // iPhone (≈ 2173) or Play (≈ 1778)
+  const isTall = unitH > 2000; // iPhone (≈ 2173) or Play (≈ 1778); iPad ≈ 1333
+  const tablet = !!size.tablet;
   const pad = 78;
-  const titleSize = look.titleCase === 'uppercase' ? 100 : look.titleWeight >= 800 ? 100 : 98;
-  const textTop = isTall ? 150 : 104;
+  const titleSize = tablet ? 78 : look.titleCase === 'uppercase' ? 100 : look.titleWeight >= 800 ? 100 : 98;
+  const subSize = tablet ? 34 : 42;
+  const textTop = tablet ? 92 : isTall ? 150 : 104;
   // The text block keeps one height in a set (eyebrow, two lines of title, up to three lines under it), so every
   // phone of the set sits at the same height.
-  const textH = (look.eyebrow ? 88 : 0) + 2 * titleSize * 1.04 + 30 + 3 * 42 * 1.3;
-  // Phone: screenshot (440 x 956 points) under a status bar of 30 points; the frame is a 22-unit bezel.
-  const phoneW = isTall ? 800 : 640;
-  const bezel = phoneW * 0.032;
+  const textH = (look.eyebrow ? 88 : 0) + 2 * titleSize * 1.04 + 30 + 3 * subSize * 1.3;
+  // Phone: screenshot (440 x 956 points) under a status bar of 30 points; the frame is a 22-unit bezel. Tablet: the
+  // screenshot (1032 x 1376 points) under a status bar of 24 points, a thinner bezel, no island.
+  const screenPts = size.screen || { width: 440, height: 956 };
+  const phoneW = tablet ? 820 : isTall ? 800 : 640;
+  const bezel = phoneW * (tablet ? 0.024 : 0.032);
   const screenW = phoneW - bezel * 2;
-  const statusH = screenW * (30 / 440);
-  const shotH = screenW * (956 / 440);
+  const statusH = screenW * ((tablet ? 24 : 30) / screenPts.width);
+  const shotH = screenW * (screenPts.height / screenPts.width);
   const phoneH = statusH + shotH + bezel * 2;
-  const radius = phoneW * 0.13;
+  const radius = phoneW * (tablet ? 0.05 : 0.13);
   const time = '14:05';
   return `<!doctype html><html><head><meta charset="utf-8"><style>${fontFaces}
 html, body { width: ${size.width}px; height: ${size.height}px; overflow: hidden; background: ${look.bg}; }
@@ -108,11 +116,11 @@ html, body { width: ${size.width}px; height: ${size.height}px; overflow: hidden;
 .text { padding: 0 ${pad}px; height: ${textH}px; flex-shrink: 0; display: flex; flex-direction: column; gap: 30px; align-items: center; text-align: center; }
 .eyebrow { display: inline-flex; align-items: center; height: 58px; padding: 0 28px; border-radius: 999px; font: 800 26px/1 ${look.bodyFont}, sans-serif; letter-spacing: 0.04em; }
 h1 { font-family: ${look.titleFont}, serif; font-style: ${look.titleStyle}; font-weight: ${look.titleWeight}; text-transform: ${look.titleCase}; font-size: ${titleSize}px; line-height: 1.04; letter-spacing: ${look.titleCase === 'uppercase' ? '0.005em' : '-0.02em'}; color: ${look.title}; text-shadow: ${look.titleShadow || 'none'}; text-wrap: balance; }
-p { font: ${look.subWeight || 600} 42px/1.3 ${look.bodyFont}, sans-serif; color: ${look.sub}; text-wrap: balance; max-width: 780px; }
-.phone { position: relative; flex-shrink: 0; margin-top: ${isTall ? 96 : 72}px; width: ${phoneW}px; height: ${phoneH}px; border-radius: ${radius}px; background: ${look.frame}; padding: ${bezel}px; box-shadow: 0 60px 110px -40px ${look.shadow}, 0 0 0 2px rgba(0,0,0,0.06); }
+p { font: ${look.subWeight || 600} ${subSize}px/1.3 ${look.bodyFont}, sans-serif; color: ${look.sub}; text-wrap: balance; max-width: 780px; }
+.phone { position: relative; flex-shrink: 0; margin-top: ${tablet ? 56 : isTall ? 96 : 72}px; width: ${phoneW}px; height: ${phoneH}px; border-radius: ${radius}px; background: ${look.frame}; padding: ${bezel}px; box-shadow: 0 60px 110px -40px ${look.shadow}, 0 0 0 2px rgba(0,0,0,0.06); }
 .screen { position: relative; width: 100%; height: 100%; border-radius: ${radius - bezel}px; overflow: hidden; background: ${topColor}; }
-.status { height: ${statusH}px; display: flex; align-items: center; justify-content: space-between; padding: 0 ${screenW * 0.085}px; font: 700 ${statusH * 0.46}px/1 'Inter', sans-serif; color: ${topColor === '#000000' || isDark(topColor) ? '#fff' : '#111'}; }
-.island { position: absolute; top: ${statusH * 0.18}px; left: 50%; width: ${screenW * 0.28}px; height: ${statusH * 0.64}px; margin-left: -${screenW * 0.14}px; border-radius: 999px; background: #000; }
+.status { height: ${statusH}px; display: flex; align-items: center; justify-content: space-between; padding: 0 ${screenW * (tablet ? 0.03 : 0.085)}px; font: 700 ${statusH * 0.46}px/1 'Inter', sans-serif; color: ${topColor === '#000000' || isDark(topColor) ? '#fff' : '#111'}; }
+.island { display: ${tablet ? 'none' : 'block'}; position: absolute; top: ${statusH * 0.18}px; left: 50%; width: ${screenW * 0.28}px; height: ${statusH * 0.64}px; margin-left: -${screenW * 0.14}px; border-radius: 999px; background: #000; }
 .icons { display: flex; gap: ${statusH * 0.18}px; align-items: center; }
 .icons i { display: block; background: currentColor; border-radius: 2px; }
 .shot { display: block; width: ${screenW}px; height: ${shotH}px; }
@@ -154,7 +162,7 @@ for (const style of styles) {
       mkdirSync(dir, { recursive: true });
       for (const [file, title, sub] of APPS[app].screens) {
         if (only && !only.some((s) => file.startsWith(s))) continue;
-        const shotFile = path.join(SHOTS, APPS[app].folder, 'app-store', `${file}.png`);
+        const shotFile = path.join(SHOTS, APPS[app].folder, size.shots || 'app-store', `${file}.png`);
         const shot = png(shotFile);
         // The status bar takes the colour of the screenshot's first row, so the phone reads as one screen.
         await page.setContent(`<img id="s" src="${shot}">`);

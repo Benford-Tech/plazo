@@ -1,5 +1,6 @@
 #!/usr/bin/env bash
-# Store screenshots of Plazo and Plazo Pro (Google Play 1080 x 1920, App Store iPhone 6,9" 1320 x 2868 and 6,3" 1206 x 2622), from scratch: a throwaway database with the
+# Store screenshots of Plazo and Plazo Pro (Google Play 1080 x 1920, App Store iPhone 6,9" 1320 x 2868, 6,3" 1206 x 2622
+# and iPad 13" 2064 x 2752), from scratch: a throwaway database with the
 # demo data, the API with its clock set to 14:05 at the parking, the two apps built for the web, a staged day at
 # the demo parking (scenario.mjs, stage.sql), then Chromium drives the apps (capture.mjs). See README.md.
 #
@@ -8,7 +9,7 @@
 #
 # Needs Node 22, Flutter (FLUTTER, default `flutter`), psql, Playwright's Chromium, and network access to the IGN
 # map tiles and the parkings' photos. Output: brand/stores/screenshots/{plazo,plazo-pro}/*.png, …/app-store/*.png and
-# …/app-store-6.3/*.png (OUT_DIR).
+# …/app-store-6.3/*.png and …/app-store-ipad-13/*.png (OUT_DIR); DEVICES to take only some of them.
 set -euo pipefail
 
 HERE=$(cd "$(dirname "$0")" && pwd)
@@ -95,19 +96,29 @@ start_api with_services
 
 echo "== screenshots"
 export SCENARIO="$WORK/scenario.json" TRAVELLER_URL="http://localhost:$TRAVELLER_PORT" PRO_URL="http://localhost:$PRO_PORT"
-# Google Play (1080 x 1920) at the root of each app's folder, the App Store's iPhone 6,9" (1320 x 2868) in app-store/
-# and its iPhone 6,3" (1206 x 2622) in app-store-6.3/. The pro run chooses the manager's post and starts a shuttle trip:
-# the day is put back before each later pass (the trip simply closed, its passengers still on site, so that
-# `scenario.mjs trip` can start it again).
+# Google Play (1080 x 1920) at the root of each app's folder, the App Store's iPhone 6,9" (1320 x 2868) in app-store/,
+# its iPhone 6,3" (1206 x 2622) in app-store-6.3/ and its iPad 13" (2064 x 2752) in app-store-ipad-13/. DEVICES chooses
+# the passes (all by default). The pro run chooses the manager's post and starts a shuttle trip: the day is put back
+# before each later pass (the trip simply closed, its passengers still on site, so that `scenario.mjs trip` can start
+# it again).
 reset_day() {
   psql "$SHOTS_DATABASE_URL" -v ON_ERROR_STOP=1 -q -c "UPDATE shuttle_trips SET status='ended', \"endedAt\"=now(), lat=NULL, lng=NULL, \"accuracyM\"=NULL, \"positionRecordedAt\"=NULL, \"positionReceivedAt\"=NULL WHERE status='running'; UPDATE staff SET post=NULL, \"postSetAt\"=NULL, \"vehicleId\"=NULL;"
 }
-DEVICE=phone OUT="$OUT_DIR/plazo" node "$HERE/capture.mjs" traveller
-DEVICE=phone OUT="$OUT_DIR/plazo-pro" node "$HERE/capture.mjs" pro
-reset_day
-DEVICE=iphone OUT="$OUT_DIR/plazo/app-store" node "$HERE/capture.mjs" traveller
-DEVICE=iphone OUT="$OUT_DIR/plazo-pro/app-store" node "$HERE/capture.mjs" pro
-reset_day
-DEVICE=iphone63 OUT="$OUT_DIR/plazo/app-store-6.3" node "$HERE/capture.mjs" traveller
-DEVICE=iphone63 OUT="$OUT_DIR/plazo-pro/app-store-6.3" node "$HERE/capture.mjs" pro
+folder_of() {
+  case "$1" in
+    phone) echo "" ;;
+    iphone) echo "/app-store" ;;
+    iphone63) echo "/app-store-6.3" ;;
+    ipad13) echo "/app-store-ipad-13" ;;
+    *) echo "Unknown device $1" >&2; exit 1 ;;
+  esac
+}
+FIRST=1
+for device in ${DEVICES:-phone iphone iphone63 ipad13}; do
+  sub=$(folder_of "$device")
+  [ "$FIRST" = 1 ] || reset_day
+  FIRST=0
+  DEVICE=$device OUT="$OUT_DIR/plazo$sub" node "$HERE/capture.mjs" traveller
+  DEVICE=$device OUT="$OUT_DIR/plazo-pro$sub" node "$HERE/capture.mjs" pro
+done
 echo "done: $OUT_DIR"

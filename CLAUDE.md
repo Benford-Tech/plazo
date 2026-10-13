@@ -736,11 +736,12 @@ Le nom du produit doit rester dans UN seul fichier de configuration (il peut enc
   Joanny, et les icônes 512, rendues par `brand/stores/tools/build.mjs` (Chromium, polices de l'app embarquées en data URI)
   et `finish.py` ; **captures téléphone** (11/10/2026, « Captures d'écran pour téléphone ») dans `brand/stores/screenshots/`
   (sept par app en 1080 × 1920, et dans `app-store/` en 1320 × 2868 pour l'iPhone 6,9" de l'App Store, `DEVICE=iphone` de
-  `capture.mjs`, 11/10/2026, et dans `app-store-6.3/` en 1206 × 2622 pour l'iPhone 6,3", `DEVICE=iphone63`, 13/10/2026) prises sur les vraies apps construites pour le web par `brand/stores/tools/screenshots/run.sh`
+  `capture.mjs`, 11/10/2026, et dans `app-store-6.3/` en 1206 × 2622 pour l'iPhone 6,3", `DEVICE=iphone63`, 13/10/2026, et dans `app-store-ipad-13/` en
+  2064 × 2752 pour l'iPad 13", `DEVICE=ipad13`, 13/10/2026, les apps étant déclarées iPad ; `DEVICES` de `run.sh` choisit les passes) prises sur les vraies apps construites pour le web par `brand/stores/tools/screenshots/run.sh`
   (base neuve `…_shots` avec les données de démo, API à 14:05 au parking par `fake-clock.cjs`, journée préparée par
   `scenario.mjs` et `stage.sql`, Chromium piloté par `capture.mjs`), ou par le workflow GitHub `store-screenshots.yml`
   (artefact) ; **images commerciales** (13/10/2026, « il faut plutôt des images d'illustration commerciale », choix A « aplat de
-  marque avec le texte qui ressort mieux ») dans `brand/stores/marketing/A/{plazo,plazo-pro}/{appstore69,appstore63,play}/` : chaque
+  marque avec le texte qui ressort mieux ») dans `brand/stores/marketing/A/{plazo,plazo-pro}/{appstore69,appstore63,play,ipad13}/` (iPad : les captures iPad dans un cadre de tablette) : chaque
   capture 6,9" dans un téléphone dessiné sous un titre Manrope 800 blanc sur l'orange (Archivo Narrow vert foncé sur le citron
   pour Plazo Pro) et une ligne dans la couleur la plus foncée, par `brand/stores/tools/marketing.mjs` (titres repris des fiches,
   relus contre le code, deux lignes au plus, signalé sinon) ; **en-tête et résultats de recherche de l'App Store** (13/10/2026) dans
