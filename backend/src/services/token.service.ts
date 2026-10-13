@@ -2,9 +2,9 @@ import { randomUUID } from 'crypto';
 import dayjs from 'dayjs';
 import jwt from 'jsonwebtoken';
 import { Service } from 'typedi';
-import { ACCESS_TOKEN_TTL_HOURS, REFRESH_TOKEN_TTL_DAYS, SECRET_KEY, VIEW_AS_TTL_MINUTES } from '@/config';
+import { ACCESS_TOKEN_TTL_HOURS, ONBOARDING_TOKEN_TTL_DAYS, REFRESH_TOKEN_TTL_DAYS, SECRET_KEY, VIEW_AS_TTL_MINUTES } from '@/config';
 import prisma, { StaffTokenType } from '@/database';
-import { DataStoredInToken, TokenData } from '@/interfaces/auth.interface';
+import { DataStoredInToken, OnboardingTokenPayload, TokenData } from '@/interfaces/auth.interface';
 
 @Service()
 export class TokenService {
@@ -86,6 +86,47 @@ export class TokenService {
 
   public async deleteExpired(): Promise<number> {
     const { count } = await prisma.staffToken.deleteMany({ where: { expiresAt: { lt: new Date() } } });
+    return count;
+  }
+
+  // ---------------------------------------------------------------- onboarding (13/10/2026)
+
+  /**
+   * The short session of a person signed in with Apple or Google who is not a member yet (« Rejoindre un parking »):
+   * its own type, refused by every staff route; valid while its row exists.
+   */
+  public async generateOnboardingToken(identityId: string): Promise<{ onboardingToken: string; expiresAt: Date }> {
+    const uid = randomUUID();
+    const expires = dayjs().add(ONBOARDING_TOKEN_TTL_DAYS, 'days');
+    await prisma.identityToken.create({ data: { uid, identityId, expiresAt: expires.toDate() } });
+    const payload: OnboardingTokenPayload = { sub: identityId, iat: dayjs().unix(), exp: expires.unix(), type: 'onboarding', uuid: uid };
+    return { onboardingToken: jwt.sign(payload, SECRET_KEY as string), expiresAt: expires.toDate() };
+  }
+
+  /** The stored row of a valid onboarding token, else null (bad signature, other type, revoked or expired). */
+  public async verifyOnboardingToken(token: string) {
+    let payload: OnboardingTokenPayload;
+    try {
+      payload = jwt.verify(token, SECRET_KEY as string) as OnboardingTokenPayload;
+    } catch {
+      return null;
+    }
+    if (payload.type !== 'onboarding' || typeof payload.uuid !== 'string') return null;
+    const stored = await prisma.identityToken.findUnique({ where: { uid: payload.uuid } });
+    if (!stored || stored.identityId !== payload.sub || stored.expiresAt <= new Date()) return null;
+    return stored;
+  }
+
+  public async revokeOnboardingToken(uid: string): Promise<void> {
+    await prisma.identityToken.deleteMany({ where: { uid } });
+  }
+
+  public async revokeOnboardingTokensOf(identityId: string): Promise<void> {
+    await prisma.identityToken.deleteMany({ where: { identityId } });
+  }
+
+  public async deleteExpiredOnboardingTokens(): Promise<number> {
+    const { count } = await prisma.identityToken.deleteMany({ where: { expiresAt: { lt: new Date() } } });
     return count;
   }
 }

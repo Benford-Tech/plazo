@@ -70,6 +70,10 @@ void _initUseCaseLocator() {
     ..registerLazySingleton(() => UpdateStaffUseCase(locator()))
     ..registerLazySingleton(() => ResetStaffPasswordUseCase(locator()))
     ..registerLazySingleton(() => ChangePasswordUseCase(locator()))
+    ..registerLazySingleton(() => GetJoinCodeUseCase(locator()))
+    ..registerLazySingleton(() => GetJoinRequestsUseCase(locator()))
+    ..registerLazySingleton(() => AcceptJoinRequestUseCase(locator()))
+    ..registerLazySingleton(() => RefuseJoinRequestUseCase(locator()))
     ..registerLazySingleton(() => GetParkingSettingsUseCase(locator()))
     ..registerLazySingleton(() => UpdateParkingSettingsUseCase(locator()))
     ..registerLazySingleton(() => SetShuttleTrackingUseCase(locator()))
@@ -93,6 +97,33 @@ void _initUseCaseLocator() {
     ..registerLazySingleton(() => SetPostUseCase(locator()))
     ..registerLazySingleton(() => SetVehicleUseCase(locator()))
     ..registerLazySingleton(() => UpdateNameUseCase(locator()))
+    // Staff: Apple / Google and « Rejoindre un parking » (13/10/2026)
+    ..registerLazySingleton(() => GetProvidersUseCase(locator(), locator()))
+    ..registerLazySingleton(() => ProviderSignInUseCase(locator(), locator()))
+    ..registerLazySingleton(() => RestoreOnboardingUseCase(locator()))
+    ..registerLazySingleton(() => OnboardingLogoutUseCase(locator(), locator()))
+    ..registerLazySingleton(() => DeleteIdentityUseCase(locator(), locator()))
+    ..registerLazySingleton(() => LinkIdentityUseCase(locator(), locator()))
+    ..registerLazySingleton(() => UnlinkIdentityUseCase(locator(), locator()))
+    ..registerLazySingleton(() => LeaveParkingUseCase(locator()))
+    ..registerLazySingleton(() => DeleteAccountUseCase(locator(), locator()))
+    ..registerLazySingleton(
+      () => IdentityUseCases(
+        providers: locator(),
+        signIn: locator(),
+        restoreOnboarding: locator(),
+        logoutOnboarding: locator(),
+        deleteIdentity: locator(),
+        link: locator(),
+        unlink: locator(),
+        leave: locator(),
+        deleteAccount: locator(),
+      ),
+    )
+    ..registerLazySingleton(() => GetOnboardingUseCase(locator()))
+    ..registerLazySingleton(() => JoinParkingUseCase(locator()))
+    ..registerLazySingleton(() => CancelJoinRequestUseCase(locator()))
+    ..registerLazySingleton(() => OpenJoinedSessionUseCase(locator()))
     ..registerLazySingleton(() => GetPlanningUseCase(locator()))
     ..registerLazySingleton(() => GetDashboardUseCase(locator()))
     ..registerLazySingleton(() => GetRevenueSummaryUseCase(locator()))

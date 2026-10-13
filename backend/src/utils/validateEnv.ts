@@ -52,6 +52,12 @@ export const ValidateEnv = () => {
     }),
     AIRLABS_API_KEY: str({ default: '', desc: 'AirLabs API key (optional)' }),
     FLIGHT_TRACKING_PROVIDER: str({ default: '', desc: 'airlabs | aerodatabox (default: the provider whose key is set, aerodatabox when both)' }),
+    // Plazo Pro sign-in with Apple / Google (13/10/2026). Apple is offered only with the key, Google only with a client ID.
+    APPLE_TEAM_ID: str({ default: '3BX4795V2Y', desc: 'Apple Developer team id (issuer of the client secret)' }),
+    APPLE_CLIENT_IDS: str({ default: 'com.benfordtech.plazopro', desc: 'Accepted audiences of Apple identity tokens, comma-separated' }),
+    APPLE_SIGNIN_KEY_ID: str({ default: '', desc: 'Key ID of the « Sign in with Apple » key (.p8)' }),
+    APPLE_SIGNIN_PRIVATE_KEY: str({ default: '', desc: 'PEM content of that .p8 (literal \\n accepted); revokes the tokens at account deletion' }),
+    GOOGLE_CLIENT_IDS: str({ default: '', desc: 'Google OAuth client IDs accepted as the audience of ID tokens (the Web client), comma-separated' }),
   });
   const stripeKey = process.env.STRIPE_SECRET_KEY?.trim() || '';
   if (process.env.NODE_ENV === 'production' && isLiveStripeKey(stripeKey) && process.env.STRIPE_ALLOW_LIVE !== 'true') {

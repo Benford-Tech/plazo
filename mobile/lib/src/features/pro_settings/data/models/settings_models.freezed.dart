@@ -17,7 +17,8 @@ T _$identity<T>(T value) => value;
 mixin _$TeamMemberModel {
 
  String get id; String get email; String get name; String get firstName; String get lastName; String? get phone; String get role; bool get isActive; DateTime? get lastLoginAt;/// The post held today (R-C), when it differs from the role.
- String? get post; DateTime? get postSetAt;
+ String? get post; DateTime? get postSetAt;/// How the member signs in (13/10/2026): password, apple, google.
+ List<String> get signIn;
 /// Create a copy of TeamMemberModel
 /// with the given fields replaced by the non-null parameter values.
 @JsonKey(includeFromJson: false, includeToJson: false)
@@ -31,20 +32,20 @@ $TeamMemberModelCopyWith<TeamMemberModel> get copyWith => _$TeamMemberModelCopyW
 @override
 bool operator ==(Object other) {
   final _this = this as TeamMemberModel;
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is TeamMemberModel&&(identical(other.id, _this.id) || other.id == _this.id)&&(identical(other.email, _this.email) || other.email == _this.email)&&(identical(other.name, _this.name) || other.name == _this.name)&&(identical(other.firstName, _this.firstName) || other.firstName == _this.firstName)&&(identical(other.lastName, _this.lastName) || other.lastName == _this.lastName)&&(identical(other.phone, _this.phone) || other.phone == _this.phone)&&(identical(other.role, _this.role) || other.role == _this.role)&&(identical(other.isActive, _this.isActive) || other.isActive == _this.isActive)&&(identical(other.lastLoginAt, _this.lastLoginAt) || other.lastLoginAt == _this.lastLoginAt)&&(identical(other.post, _this.post) || other.post == _this.post)&&(identical(other.postSetAt, _this.postSetAt) || other.postSetAt == _this.postSetAt));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is TeamMemberModel&&(identical(other.id, _this.id) || other.id == _this.id)&&(identical(other.email, _this.email) || other.email == _this.email)&&(identical(other.name, _this.name) || other.name == _this.name)&&(identical(other.firstName, _this.firstName) || other.firstName == _this.firstName)&&(identical(other.lastName, _this.lastName) || other.lastName == _this.lastName)&&(identical(other.phone, _this.phone) || other.phone == _this.phone)&&(identical(other.role, _this.role) || other.role == _this.role)&&(identical(other.isActive, _this.isActive) || other.isActive == _this.isActive)&&(identical(other.lastLoginAt, _this.lastLoginAt) || other.lastLoginAt == _this.lastLoginAt)&&(identical(other.post, _this.post) || other.post == _this.post)&&(identical(other.postSetAt, _this.postSetAt) || other.postSetAt == _this.postSetAt)&&const DeepCollectionEquality().equals(other.signIn, _this.signIn));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
 int get hashCode {
   final _this = this as TeamMemberModel;
-  return Object.hash(runtimeType,_this.id,_this.email,_this.name,_this.firstName,_this.lastName,_this.phone,_this.role,_this.isActive,_this.lastLoginAt,_this.post,_this.postSetAt);
+  return Object.hash(runtimeType,_this.id,_this.email,_this.name,_this.firstName,_this.lastName,_this.phone,_this.role,_this.isActive,_this.lastLoginAt,_this.post,_this.postSetAt,const DeepCollectionEquality().hash(_this.signIn));
 }
 
 @override
 String toString() {
   final _this = this as TeamMemberModel;
-  return 'TeamMemberModel(id: ${_this.id}, email: ${_this.email}, name: ${_this.name}, firstName: ${_this.firstName}, lastName: ${_this.lastName}, phone: ${_this.phone}, role: ${_this.role}, isActive: ${_this.isActive}, lastLoginAt: ${_this.lastLoginAt}, post: ${_this.post}, postSetAt: ${_this.postSetAt})';
+  return 'TeamMemberModel(id: ${_this.id}, email: ${_this.email}, name: ${_this.name}, firstName: ${_this.firstName}, lastName: ${_this.lastName}, phone: ${_this.phone}, role: ${_this.role}, isActive: ${_this.isActive}, lastLoginAt: ${_this.lastLoginAt}, post: ${_this.post}, postSetAt: ${_this.postSetAt}, signIn: ${_this.signIn})';
 }
 
 
@@ -55,7 +56,7 @@ abstract mixin class $TeamMemberModelCopyWith<$Res>  {
   factory $TeamMemberModelCopyWith(TeamMemberModel value, $Res Function(TeamMemberModel) _then) = _$TeamMemberModelCopyWithImpl;
 @useResult
 $Res call({
- String id, String email, String name, String firstName, String lastName, String? phone, String role, bool isActive, DateTime? lastLoginAt, String? post, DateTime? postSetAt
+ String id, String email, String name, String firstName, String lastName, String? phone, String role, bool isActive, DateTime? lastLoginAt, String? post, DateTime? postSetAt, List<String> signIn
 });
 
 
@@ -72,7 +73,7 @@ class _$TeamMemberModelCopyWithImpl<$Res>
 
 /// Create a copy of TeamMemberModel
 /// with the given fields replaced by the non-null parameter values.
-@pragma('vm:prefer-inline') @override $Res call({Object? id = null,Object? email = null,Object? name = null,Object? firstName = null,Object? lastName = null,Object? phone = freezed,Object? role = null,Object? isActive = null,Object? lastLoginAt = freezed,Object? post = freezed,Object? postSetAt = freezed,}) {
+@pragma('vm:prefer-inline') @override $Res call({Object? id = null,Object? email = null,Object? name = null,Object? firstName = null,Object? lastName = null,Object? phone = freezed,Object? role = null,Object? isActive = null,Object? lastLoginAt = freezed,Object? post = freezed,Object? postSetAt = freezed,Object? signIn = null,}) {
   return _then(TeamMemberModel(
 id: null == id ? _self.id : id // ignore: cast_nullable_to_non_nullable
 as String,email: null == email ? _self.email : email // ignore: cast_nullable_to_non_nullable
@@ -85,7 +86,8 @@ as String,isActive: null == isActive ? _self.isActive : isActive // ignore: cast
 as bool,lastLoginAt: freezed == lastLoginAt ? _self.lastLoginAt : lastLoginAt // ignore: cast_nullable_to_non_nullable
 as DateTime?,post: freezed == post ? _self.post : post // ignore: cast_nullable_to_non_nullable
 as String?,postSetAt: freezed == postSetAt ? _self.postSetAt : postSetAt // ignore: cast_nullable_to_non_nullable
-as DateTime?,
+as DateTime?,signIn: null == signIn ? _self.signIn : signIn // ignore: cast_nullable_to_non_nullable
+as List<String>,
   ));
 }
 
@@ -170,10 +172,10 @@ return $default(_that);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( String id,  String email,  String name,  String firstName,  String lastName,  String? phone,  String role,  bool isActive,  DateTime? lastLoginAt,  String? post,  DateTime? postSetAt)?  $default,{required TResult orElse(),}) {final _that = this;
+@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( String id,  String email,  String name,  String firstName,  String lastName,  String? phone,  String role,  bool isActive,  DateTime? lastLoginAt,  String? post,  DateTime? postSetAt,  List<String> signIn)?  $default,{required TResult orElse(),}) {final _that = this;
 switch (_that) {
 case _TeamMemberModel() when $default != null:
-return $default(_that.id,_that.email,_that.name,_that.firstName,_that.lastName,_that.phone,_that.role,_that.isActive,_that.lastLoginAt,_that.post,_that.postSetAt);case _:
+return $default(_that.id,_that.email,_that.name,_that.firstName,_that.lastName,_that.phone,_that.role,_that.isActive,_that.lastLoginAt,_that.post,_that.postSetAt,_that.signIn);case _:
   return orElse();
 
 }
@@ -191,10 +193,10 @@ return $default(_that.id,_that.email,_that.name,_that.firstName,_that.lastName,_
 /// }
 /// ```
 
-@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( String id,  String email,  String name,  String firstName,  String lastName,  String? phone,  String role,  bool isActive,  DateTime? lastLoginAt,  String? post,  DateTime? postSetAt)  $default,) {final _that = this;
+@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( String id,  String email,  String name,  String firstName,  String lastName,  String? phone,  String role,  bool isActive,  DateTime? lastLoginAt,  String? post,  DateTime? postSetAt,  List<String> signIn)  $default,) {final _that = this;
 switch (_that) {
 case _TeamMemberModel():
-return $default(_that.id,_that.email,_that.name,_that.firstName,_that.lastName,_that.phone,_that.role,_that.isActive,_that.lastLoginAt,_that.post,_that.postSetAt);case _:
+return $default(_that.id,_that.email,_that.name,_that.firstName,_that.lastName,_that.phone,_that.role,_that.isActive,_that.lastLoginAt,_that.post,_that.postSetAt,_that.signIn);case _:
   throw StateError('Unexpected subclass');
 
 }
@@ -211,10 +213,10 @@ return $default(_that.id,_that.email,_that.name,_that.firstName,_that.lastName,_
 /// }
 /// ```
 
-@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( String id,  String email,  String name,  String firstName,  String lastName,  String? phone,  String role,  bool isActive,  DateTime? lastLoginAt,  String? post,  DateTime? postSetAt)?  $default,) {final _that = this;
+@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( String id,  String email,  String name,  String firstName,  String lastName,  String? phone,  String role,  bool isActive,  DateTime? lastLoginAt,  String? post,  DateTime? postSetAt,  List<String> signIn)?  $default,) {final _that = this;
 switch (_that) {
 case _TeamMemberModel() when $default != null:
-return $default(_that.id,_that.email,_that.name,_that.firstName,_that.lastName,_that.phone,_that.role,_that.isActive,_that.lastLoginAt,_that.post,_that.postSetAt);case _:
+return $default(_that.id,_that.email,_that.name,_that.firstName,_that.lastName,_that.phone,_that.role,_that.isActive,_that.lastLoginAt,_that.post,_that.postSetAt,_that.signIn);case _:
   return null;
 
 }
@@ -226,7 +228,7 @@ return $default(_that.id,_that.email,_that.name,_that.firstName,_that.lastName,_
 @JsonSerializable()
 
 class _TeamMemberModel implements TeamMemberModel {
-  const _TeamMemberModel({required this.id, required this.email, required this.name, this.firstName = '', this.lastName = '', this.phone, required this.role, this.isActive = true, this.lastLoginAt, this.post, this.postSetAt});
+  const _TeamMemberModel({required this.id, required this.email, required this.name, this.firstName = '', this.lastName = '', this.phone, required this.role, this.isActive = true, this.lastLoginAt, this.post, this.postSetAt,  List<String> signIn = const []}): _signIn = signIn;
   factory _TeamMemberModel.fromJson(Map<String, dynamic> json) => _$TeamMemberModelFromJson(json);
 
 @override final  String id;
@@ -241,6 +243,15 @@ class _TeamMemberModel implements TeamMemberModel {
 /// The post held today (R-C), when it differs from the role.
 @override final  String? post;
 @override final  DateTime? postSetAt;
+/// How the member signs in (13/10/2026): password, apple, google.
+ final  List<String> _signIn;
+/// How the member signs in (13/10/2026): password, apple, google.
+@override@JsonKey() List<String> get signIn {
+  if (_signIn is EqualUnmodifiableListView) return _signIn;
+  // ignore: implicit_dynamic_type
+  return EqualUnmodifiableListView(_signIn);
+}
+
 
 /// Create a copy of TeamMemberModel
 /// with the given fields replaced by the non-null parameter values.
@@ -255,18 +266,18 @@ Map<String, dynamic> toJson() {
 
 @override
 bool operator ==(Object other) {
-    return identical(this, other) || (other.runtimeType == runtimeType&&other is _TeamMemberModel&&(identical(other.id, id) || other.id == id)&&(identical(other.email, email) || other.email == email)&&(identical(other.name, name) || other.name == name)&&(identical(other.firstName, firstName) || other.firstName == firstName)&&(identical(other.lastName, lastName) || other.lastName == lastName)&&(identical(other.phone, phone) || other.phone == phone)&&(identical(other.role, role) || other.role == role)&&(identical(other.isActive, isActive) || other.isActive == isActive)&&(identical(other.lastLoginAt, lastLoginAt) || other.lastLoginAt == lastLoginAt)&&(identical(other.post, post) || other.post == post)&&(identical(other.postSetAt, postSetAt) || other.postSetAt == postSetAt));
+    return identical(this, other) || (other.runtimeType == runtimeType&&other is _TeamMemberModel&&(identical(other.id, id) || other.id == id)&&(identical(other.email, email) || other.email == email)&&(identical(other.name, name) || other.name == name)&&(identical(other.firstName, firstName) || other.firstName == firstName)&&(identical(other.lastName, lastName) || other.lastName == lastName)&&(identical(other.phone, phone) || other.phone == phone)&&(identical(other.role, role) || other.role == role)&&(identical(other.isActive, isActive) || other.isActive == isActive)&&(identical(other.lastLoginAt, lastLoginAt) || other.lastLoginAt == lastLoginAt)&&(identical(other.post, post) || other.post == post)&&(identical(other.postSetAt, postSetAt) || other.postSetAt == postSetAt)&&const DeepCollectionEquality().equals(other.signIn, _signIn));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
 int get hashCode {
-    return Object.hash(runtimeType,id,email,name,firstName,lastName,phone,role,isActive,lastLoginAt,post,postSetAt);
+    return Object.hash(runtimeType,id,email,name,firstName,lastName,phone,role,isActive,lastLoginAt,post,postSetAt,const DeepCollectionEquality().hash(_signIn));
 }
 
 @override
 String toString() {
-    return 'TeamMemberModel(id: $id, email: $email, name: $name, firstName: $firstName, lastName: $lastName, phone: $phone, role: $role, isActive: $isActive, lastLoginAt: $lastLoginAt, post: $post, postSetAt: $postSetAt)';
+    return 'TeamMemberModel(id: $id, email: $email, name: $name, firstName: $firstName, lastName: $lastName, phone: $phone, role: $role, isActive: $isActive, lastLoginAt: $lastLoginAt, post: $post, postSetAt: $postSetAt, signIn: $signIn)';
 }
 
 
@@ -277,7 +288,7 @@ abstract mixin class _$TeamMemberModelCopyWith<$Res> implements $TeamMemberModel
   factory _$TeamMemberModelCopyWith(_TeamMemberModel value, $Res Function(_TeamMemberModel) _then) = __$TeamMemberModelCopyWithImpl;
 @override @useResult
 $Res call({
- String id, String email, String name, String firstName, String lastName, String? phone, String role, bool isActive, DateTime? lastLoginAt, String? post, DateTime? postSetAt
+ String id, String email, String name, String firstName, String lastName, String? phone, String role, bool isActive, DateTime? lastLoginAt, String? post, DateTime? postSetAt, List<String> signIn
 });
 
 
@@ -294,7 +305,7 @@ class __$TeamMemberModelCopyWithImpl<$Res>
 
 /// Create a copy of TeamMemberModel
 /// with the given fields replaced by the non-null parameter values.
-@override @pragma('vm:prefer-inline') $Res call({Object? id = null,Object? email = null,Object? name = null,Object? firstName = null,Object? lastName = null,Object? phone = freezed,Object? role = null,Object? isActive = null,Object? lastLoginAt = freezed,Object? post = freezed,Object? postSetAt = freezed,}) {
+@override @pragma('vm:prefer-inline') $Res call({Object? id = null,Object? email = null,Object? name = null,Object? firstName = null,Object? lastName = null,Object? phone = freezed,Object? role = null,Object? isActive = null,Object? lastLoginAt = freezed,Object? post = freezed,Object? postSetAt = freezed,Object? signIn = null,}) {
   return _then(_TeamMemberModel(
 id: null == id ? _self.id : id // ignore: cast_nullable_to_non_nullable
 as String,email: null == email ? _self.email : email // ignore: cast_nullable_to_non_nullable
@@ -307,7 +318,863 @@ as String,isActive: null == isActive ? _self.isActive : isActive // ignore: cast
 as bool,lastLoginAt: freezed == lastLoginAt ? _self.lastLoginAt : lastLoginAt // ignore: cast_nullable_to_non_nullable
 as DateTime?,post: freezed == post ? _self.post : post // ignore: cast_nullable_to_non_nullable
 as String?,postSetAt: freezed == postSetAt ? _self.postSetAt : postSetAt // ignore: cast_nullable_to_non_nullable
+as DateTime?,signIn: null == signIn ? _self._signIn : signIn // ignore: cast_nullable_to_non_nullable
+as List<String>,
+  ));
+}
+
+
+}
+
+
+/// @nodoc
+mixin _$JoinCodeModel {
+
+/// `K7QM2-XP9TD`
+ String get code; String? get day; DateTime? get validUntil; String get operatorName;
+/// Create a copy of JoinCodeModel
+/// with the given fields replaced by the non-null parameter values.
+@JsonKey(includeFromJson: false, includeToJson: false)
+@pragma('vm:prefer-inline')
+$JoinCodeModelCopyWith<JoinCodeModel> get copyWith => _$JoinCodeModelCopyWithImpl<JoinCodeModel>(this as JoinCodeModel, _$identity);
+
+  /// Serializes this JoinCodeModel to a JSON map.
+  Map<String, dynamic> toJson();
+
+
+@override
+bool operator ==(Object other) {
+  final _this = this as JoinCodeModel;
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is JoinCodeModel&&(identical(other.code, _this.code) || other.code == _this.code)&&(identical(other.day, _this.day) || other.day == _this.day)&&(identical(other.validUntil, _this.validUntil) || other.validUntil == _this.validUntil)&&(identical(other.operatorName, _this.operatorName) || other.operatorName == _this.operatorName));
+}
+
+@JsonKey(includeFromJson: false, includeToJson: false)
+@override
+int get hashCode {
+  final _this = this as JoinCodeModel;
+  return Object.hash(runtimeType,_this.code,_this.day,_this.validUntil,_this.operatorName);
+}
+
+@override
+String toString() {
+  final _this = this as JoinCodeModel;
+  return 'JoinCodeModel(code: ${_this.code}, day: ${_this.day}, validUntil: ${_this.validUntil}, operatorName: ${_this.operatorName})';
+}
+
+
+}
+
+/// @nodoc
+abstract mixin class $JoinCodeModelCopyWith<$Res>  {
+  factory $JoinCodeModelCopyWith(JoinCodeModel value, $Res Function(JoinCodeModel) _then) = _$JoinCodeModelCopyWithImpl;
+@useResult
+$Res call({
+ String code, String? day, DateTime? validUntil, String operatorName
+});
+
+
+
+
+}
+/// @nodoc
+class _$JoinCodeModelCopyWithImpl<$Res>
+    implements $JoinCodeModelCopyWith<$Res> {
+  _$JoinCodeModelCopyWithImpl(this._self, this._then);
+
+  final JoinCodeModel _self;
+  final $Res Function(JoinCodeModel) _then;
+
+/// Create a copy of JoinCodeModel
+/// with the given fields replaced by the non-null parameter values.
+@pragma('vm:prefer-inline') @override $Res call({Object? code = null,Object? day = freezed,Object? validUntil = freezed,Object? operatorName = null,}) {
+  return _then(JoinCodeModel(
+code: null == code ? _self.code : code // ignore: cast_nullable_to_non_nullable
+as String,day: freezed == day ? _self.day : day // ignore: cast_nullable_to_non_nullable
+as String?,validUntil: freezed == validUntil ? _self.validUntil : validUntil // ignore: cast_nullable_to_non_nullable
+as DateTime?,operatorName: null == operatorName ? _self.operatorName : operatorName // ignore: cast_nullable_to_non_nullable
+as String,
+  ));
+}
+
+}
+
+
+/// Adds pattern-matching-related methods to [JoinCodeModel].
+extension JoinCodeModelPatterns on JoinCodeModel {
+/// A variant of `map` that fallback to returning `orElse`.
+///
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case final Subclass value:
+///     return ...;
+///   case _:
+///     return orElse();
+/// }
+/// ```
+
+@optionalTypeArgs TResult maybeMap<TResult extends Object?>(TResult Function( _JoinCodeModel value)?  $default,{required TResult orElse(),}){
+final _that = this;
+switch (_that) {
+case _JoinCodeModel() when $default != null:
+return $default(_that);case _:
+  return orElse();
+
+}
+}
+/// A `switch`-like method, using callbacks.
+///
+/// Callbacks receives the raw object, upcasted.
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case final Subclass value:
+///     return ...;
+///   case final Subclass2 value:
+///     return ...;
+/// }
+/// ```
+
+@optionalTypeArgs TResult map<TResult extends Object?>(TResult Function( _JoinCodeModel value)  $default,){
+final _that = this;
+switch (_that) {
+case _JoinCodeModel():
+return $default(_that);case _:
+  throw StateError('Unexpected subclass');
+
+}
+}
+/// A variant of `map` that fallback to returning `null`.
+///
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case final Subclass value:
+///     return ...;
+///   case _:
+///     return null;
+/// }
+/// ```
+
+@optionalTypeArgs TResult? mapOrNull<TResult extends Object?>(TResult? Function( _JoinCodeModel value)?  $default,){
+final _that = this;
+switch (_that) {
+case _JoinCodeModel() when $default != null:
+return $default(_that);case _:
+  return null;
+
+}
+}
+/// A variant of `when` that fallback to an `orElse` callback.
+///
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case Subclass(:final field):
+///     return ...;
+///   case _:
+///     return orElse();
+/// }
+/// ```
+
+@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( String code,  String? day,  DateTime? validUntil,  String operatorName)?  $default,{required TResult orElse(),}) {final _that = this;
+switch (_that) {
+case _JoinCodeModel() when $default != null:
+return $default(_that.code,_that.day,_that.validUntil,_that.operatorName);case _:
+  return orElse();
+
+}
+}
+/// A `switch`-like method, using callbacks.
+///
+/// As opposed to `map`, this offers destructuring.
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case Subclass(:final field):
+///     return ...;
+///   case Subclass2(:final field2):
+///     return ...;
+/// }
+/// ```
+
+@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( String code,  String? day,  DateTime? validUntil,  String operatorName)  $default,) {final _that = this;
+switch (_that) {
+case _JoinCodeModel():
+return $default(_that.code,_that.day,_that.validUntil,_that.operatorName);case _:
+  throw StateError('Unexpected subclass');
+
+}
+}
+/// A variant of `when` that fallback to returning `null`
+///
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case Subclass(:final field):
+///     return ...;
+///   case _:
+///     return null;
+/// }
+/// ```
+
+@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( String code,  String? day,  DateTime? validUntil,  String operatorName)?  $default,) {final _that = this;
+switch (_that) {
+case _JoinCodeModel() when $default != null:
+return $default(_that.code,_that.day,_that.validUntil,_that.operatorName);case _:
+  return null;
+
+}
+}
+
+}
+
+/// @nodoc
+@JsonSerializable()
+
+class _JoinCodeModel implements JoinCodeModel {
+  const _JoinCodeModel({required this.code, this.day, this.validUntil, this.operatorName = ''});
+  factory _JoinCodeModel.fromJson(Map<String, dynamic> json) => _$JoinCodeModelFromJson(json);
+
+/// `K7QM2-XP9TD`
+@override final  String code;
+@override final  String? day;
+@override final  DateTime? validUntil;
+@override@JsonKey() final  String operatorName;
+
+/// Create a copy of JoinCodeModel
+/// with the given fields replaced by the non-null parameter values.
+@override @JsonKey(includeFromJson: false, includeToJson: false)
+@pragma('vm:prefer-inline')
+_$JoinCodeModelCopyWith<_JoinCodeModel> get copyWith => __$JoinCodeModelCopyWithImpl<_JoinCodeModel>(this, _$identity);
+
+@override
+Map<String, dynamic> toJson() {
+  return _$JoinCodeModelToJson(this, );
+}
+
+@override
+bool operator ==(Object other) {
+    return identical(this, other) || (other.runtimeType == runtimeType&&other is _JoinCodeModel&&(identical(other.code, code) || other.code == code)&&(identical(other.day, day) || other.day == day)&&(identical(other.validUntil, validUntil) || other.validUntil == validUntil)&&(identical(other.operatorName, operatorName) || other.operatorName == operatorName));
+}
+
+@JsonKey(includeFromJson: false, includeToJson: false)
+@override
+int get hashCode {
+    return Object.hash(runtimeType,code,day,validUntil,operatorName);
+}
+
+@override
+String toString() {
+    return 'JoinCodeModel(code: $code, day: $day, validUntil: $validUntil, operatorName: $operatorName)';
+}
+
+
+}
+
+/// @nodoc
+abstract mixin class _$JoinCodeModelCopyWith<$Res> implements $JoinCodeModelCopyWith<$Res> {
+  factory _$JoinCodeModelCopyWith(_JoinCodeModel value, $Res Function(_JoinCodeModel) _then) = __$JoinCodeModelCopyWithImpl;
+@override @useResult
+$Res call({
+ String code, String? day, DateTime? validUntil, String operatorName
+});
+
+
+
+
+}
+/// @nodoc
+class __$JoinCodeModelCopyWithImpl<$Res>
+    implements _$JoinCodeModelCopyWith<$Res> {
+  __$JoinCodeModelCopyWithImpl(this._self, this._then);
+
+  final _JoinCodeModel _self;
+  final $Res Function(_JoinCodeModel) _then;
+
+/// Create a copy of JoinCodeModel
+/// with the given fields replaced by the non-null parameter values.
+@override @pragma('vm:prefer-inline') $Res call({Object? code = null,Object? day = freezed,Object? validUntil = freezed,Object? operatorName = null,}) {
+  return _then(_JoinCodeModel(
+code: null == code ? _self.code : code // ignore: cast_nullable_to_non_nullable
+as String,day: freezed == day ? _self.day : day // ignore: cast_nullable_to_non_nullable
+as String?,validUntil: freezed == validUntil ? _self.validUntil : validUntil // ignore: cast_nullable_to_non_nullable
+as DateTime?,operatorName: null == operatorName ? _self.operatorName : operatorName // ignore: cast_nullable_to_non_nullable
+as String,
+  ));
+}
+
+
+}
+
+
+/// @nodoc
+mixin _$PendingJoinRequestModel {
+
+ String get id; String get firstName; String get lastName; String? get email; bool get isPrivateEmail;/// apple, google
+ String get provider;/// agent, driver, valet: the post asked for, preset in « Accepter… ».
+ String get wishedRole; DateTime get createdAt; DateTime? get expiresAt;
+/// Create a copy of PendingJoinRequestModel
+/// with the given fields replaced by the non-null parameter values.
+@JsonKey(includeFromJson: false, includeToJson: false)
+@pragma('vm:prefer-inline')
+$PendingJoinRequestModelCopyWith<PendingJoinRequestModel> get copyWith => _$PendingJoinRequestModelCopyWithImpl<PendingJoinRequestModel>(this as PendingJoinRequestModel, _$identity);
+
+  /// Serializes this PendingJoinRequestModel to a JSON map.
+  Map<String, dynamic> toJson();
+
+
+@override
+bool operator ==(Object other) {
+  final _this = this as PendingJoinRequestModel;
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is PendingJoinRequestModel&&(identical(other.id, _this.id) || other.id == _this.id)&&(identical(other.firstName, _this.firstName) || other.firstName == _this.firstName)&&(identical(other.lastName, _this.lastName) || other.lastName == _this.lastName)&&(identical(other.email, _this.email) || other.email == _this.email)&&(identical(other.isPrivateEmail, _this.isPrivateEmail) || other.isPrivateEmail == _this.isPrivateEmail)&&(identical(other.provider, _this.provider) || other.provider == _this.provider)&&(identical(other.wishedRole, _this.wishedRole) || other.wishedRole == _this.wishedRole)&&(identical(other.createdAt, _this.createdAt) || other.createdAt == _this.createdAt)&&(identical(other.expiresAt, _this.expiresAt) || other.expiresAt == _this.expiresAt));
+}
+
+@JsonKey(includeFromJson: false, includeToJson: false)
+@override
+int get hashCode {
+  final _this = this as PendingJoinRequestModel;
+  return Object.hash(runtimeType,_this.id,_this.firstName,_this.lastName,_this.email,_this.isPrivateEmail,_this.provider,_this.wishedRole,_this.createdAt,_this.expiresAt);
+}
+
+@override
+String toString() {
+  final _this = this as PendingJoinRequestModel;
+  return 'PendingJoinRequestModel(id: ${_this.id}, firstName: ${_this.firstName}, lastName: ${_this.lastName}, email: ${_this.email}, isPrivateEmail: ${_this.isPrivateEmail}, provider: ${_this.provider}, wishedRole: ${_this.wishedRole}, createdAt: ${_this.createdAt}, expiresAt: ${_this.expiresAt})';
+}
+
+
+}
+
+/// @nodoc
+abstract mixin class $PendingJoinRequestModelCopyWith<$Res>  {
+  factory $PendingJoinRequestModelCopyWith(PendingJoinRequestModel value, $Res Function(PendingJoinRequestModel) _then) = _$PendingJoinRequestModelCopyWithImpl;
+@useResult
+$Res call({
+ String id, String firstName, String lastName, String? email, bool isPrivateEmail, String provider, String wishedRole, DateTime createdAt, DateTime? expiresAt
+});
+
+
+
+
+}
+/// @nodoc
+class _$PendingJoinRequestModelCopyWithImpl<$Res>
+    implements $PendingJoinRequestModelCopyWith<$Res> {
+  _$PendingJoinRequestModelCopyWithImpl(this._self, this._then);
+
+  final PendingJoinRequestModel _self;
+  final $Res Function(PendingJoinRequestModel) _then;
+
+/// Create a copy of PendingJoinRequestModel
+/// with the given fields replaced by the non-null parameter values.
+@pragma('vm:prefer-inline') @override $Res call({Object? id = null,Object? firstName = null,Object? lastName = null,Object? email = freezed,Object? isPrivateEmail = null,Object? provider = null,Object? wishedRole = null,Object? createdAt = null,Object? expiresAt = freezed,}) {
+  return _then(PendingJoinRequestModel(
+id: null == id ? _self.id : id // ignore: cast_nullable_to_non_nullable
+as String,firstName: null == firstName ? _self.firstName : firstName // ignore: cast_nullable_to_non_nullable
+as String,lastName: null == lastName ? _self.lastName : lastName // ignore: cast_nullable_to_non_nullable
+as String,email: freezed == email ? _self.email : email // ignore: cast_nullable_to_non_nullable
+as String?,isPrivateEmail: null == isPrivateEmail ? _self.isPrivateEmail : isPrivateEmail // ignore: cast_nullable_to_non_nullable
+as bool,provider: null == provider ? _self.provider : provider // ignore: cast_nullable_to_non_nullable
+as String,wishedRole: null == wishedRole ? _self.wishedRole : wishedRole // ignore: cast_nullable_to_non_nullable
+as String,createdAt: null == createdAt ? _self.createdAt : createdAt // ignore: cast_nullable_to_non_nullable
+as DateTime,expiresAt: freezed == expiresAt ? _self.expiresAt : expiresAt // ignore: cast_nullable_to_non_nullable
 as DateTime?,
+  ));
+}
+
+}
+
+
+/// Adds pattern-matching-related methods to [PendingJoinRequestModel].
+extension PendingJoinRequestModelPatterns on PendingJoinRequestModel {
+/// A variant of `map` that fallback to returning `orElse`.
+///
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case final Subclass value:
+///     return ...;
+///   case _:
+///     return orElse();
+/// }
+/// ```
+
+@optionalTypeArgs TResult maybeMap<TResult extends Object?>(TResult Function( _PendingJoinRequestModel value)?  $default,{required TResult orElse(),}){
+final _that = this;
+switch (_that) {
+case _PendingJoinRequestModel() when $default != null:
+return $default(_that);case _:
+  return orElse();
+
+}
+}
+/// A `switch`-like method, using callbacks.
+///
+/// Callbacks receives the raw object, upcasted.
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case final Subclass value:
+///     return ...;
+///   case final Subclass2 value:
+///     return ...;
+/// }
+/// ```
+
+@optionalTypeArgs TResult map<TResult extends Object?>(TResult Function( _PendingJoinRequestModel value)  $default,){
+final _that = this;
+switch (_that) {
+case _PendingJoinRequestModel():
+return $default(_that);case _:
+  throw StateError('Unexpected subclass');
+
+}
+}
+/// A variant of `map` that fallback to returning `null`.
+///
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case final Subclass value:
+///     return ...;
+///   case _:
+///     return null;
+/// }
+/// ```
+
+@optionalTypeArgs TResult? mapOrNull<TResult extends Object?>(TResult? Function( _PendingJoinRequestModel value)?  $default,){
+final _that = this;
+switch (_that) {
+case _PendingJoinRequestModel() when $default != null:
+return $default(_that);case _:
+  return null;
+
+}
+}
+/// A variant of `when` that fallback to an `orElse` callback.
+///
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case Subclass(:final field):
+///     return ...;
+///   case _:
+///     return orElse();
+/// }
+/// ```
+
+@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( String id,  String firstName,  String lastName,  String? email,  bool isPrivateEmail,  String provider,  String wishedRole,  DateTime createdAt,  DateTime? expiresAt)?  $default,{required TResult orElse(),}) {final _that = this;
+switch (_that) {
+case _PendingJoinRequestModel() when $default != null:
+return $default(_that.id,_that.firstName,_that.lastName,_that.email,_that.isPrivateEmail,_that.provider,_that.wishedRole,_that.createdAt,_that.expiresAt);case _:
+  return orElse();
+
+}
+}
+/// A `switch`-like method, using callbacks.
+///
+/// As opposed to `map`, this offers destructuring.
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case Subclass(:final field):
+///     return ...;
+///   case Subclass2(:final field2):
+///     return ...;
+/// }
+/// ```
+
+@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( String id,  String firstName,  String lastName,  String? email,  bool isPrivateEmail,  String provider,  String wishedRole,  DateTime createdAt,  DateTime? expiresAt)  $default,) {final _that = this;
+switch (_that) {
+case _PendingJoinRequestModel():
+return $default(_that.id,_that.firstName,_that.lastName,_that.email,_that.isPrivateEmail,_that.provider,_that.wishedRole,_that.createdAt,_that.expiresAt);case _:
+  throw StateError('Unexpected subclass');
+
+}
+}
+/// A variant of `when` that fallback to returning `null`
+///
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case Subclass(:final field):
+///     return ...;
+///   case _:
+///     return null;
+/// }
+/// ```
+
+@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( String id,  String firstName,  String lastName,  String? email,  bool isPrivateEmail,  String provider,  String wishedRole,  DateTime createdAt,  DateTime? expiresAt)?  $default,) {final _that = this;
+switch (_that) {
+case _PendingJoinRequestModel() when $default != null:
+return $default(_that.id,_that.firstName,_that.lastName,_that.email,_that.isPrivateEmail,_that.provider,_that.wishedRole,_that.createdAt,_that.expiresAt);case _:
+  return null;
+
+}
+}
+
+}
+
+/// @nodoc
+@JsonSerializable()
+
+class _PendingJoinRequestModel extends PendingJoinRequestModel {
+  const _PendingJoinRequestModel({required this.id, this.firstName = '', this.lastName = '', this.email, this.isPrivateEmail = false, required this.provider, this.wishedRole = 'agent', required this.createdAt, this.expiresAt}): super._();
+  factory _PendingJoinRequestModel.fromJson(Map<String, dynamic> json) => _$PendingJoinRequestModelFromJson(json);
+
+@override final  String id;
+@override@JsonKey() final  String firstName;
+@override@JsonKey() final  String lastName;
+@override final  String? email;
+@override@JsonKey() final  bool isPrivateEmail;
+/// apple, google
+@override final  String provider;
+/// agent, driver, valet: the post asked for, preset in « Accepter… ».
+@override@JsonKey() final  String wishedRole;
+@override final  DateTime createdAt;
+@override final  DateTime? expiresAt;
+
+/// Create a copy of PendingJoinRequestModel
+/// with the given fields replaced by the non-null parameter values.
+@override @JsonKey(includeFromJson: false, includeToJson: false)
+@pragma('vm:prefer-inline')
+_$PendingJoinRequestModelCopyWith<_PendingJoinRequestModel> get copyWith => __$PendingJoinRequestModelCopyWithImpl<_PendingJoinRequestModel>(this, _$identity);
+
+@override
+Map<String, dynamic> toJson() {
+  return _$PendingJoinRequestModelToJson(this, );
+}
+
+@override
+bool operator ==(Object other) {
+    return identical(this, other) || (other.runtimeType == runtimeType&&other is _PendingJoinRequestModel&&(identical(other.id, id) || other.id == id)&&(identical(other.firstName, firstName) || other.firstName == firstName)&&(identical(other.lastName, lastName) || other.lastName == lastName)&&(identical(other.email, email) || other.email == email)&&(identical(other.isPrivateEmail, isPrivateEmail) || other.isPrivateEmail == isPrivateEmail)&&(identical(other.provider, provider) || other.provider == provider)&&(identical(other.wishedRole, wishedRole) || other.wishedRole == wishedRole)&&(identical(other.createdAt, createdAt) || other.createdAt == createdAt)&&(identical(other.expiresAt, expiresAt) || other.expiresAt == expiresAt));
+}
+
+@JsonKey(includeFromJson: false, includeToJson: false)
+@override
+int get hashCode {
+    return Object.hash(runtimeType,id,firstName,lastName,email,isPrivateEmail,provider,wishedRole,createdAt,expiresAt);
+}
+
+@override
+String toString() {
+    return 'PendingJoinRequestModel(id: $id, firstName: $firstName, lastName: $lastName, email: $email, isPrivateEmail: $isPrivateEmail, provider: $provider, wishedRole: $wishedRole, createdAt: $createdAt, expiresAt: $expiresAt)';
+}
+
+
+}
+
+/// @nodoc
+abstract mixin class _$PendingJoinRequestModelCopyWith<$Res> implements $PendingJoinRequestModelCopyWith<$Res> {
+  factory _$PendingJoinRequestModelCopyWith(_PendingJoinRequestModel value, $Res Function(_PendingJoinRequestModel) _then) = __$PendingJoinRequestModelCopyWithImpl;
+@override @useResult
+$Res call({
+ String id, String firstName, String lastName, String? email, bool isPrivateEmail, String provider, String wishedRole, DateTime createdAt, DateTime? expiresAt
+});
+
+
+
+
+}
+/// @nodoc
+class __$PendingJoinRequestModelCopyWithImpl<$Res>
+    implements _$PendingJoinRequestModelCopyWith<$Res> {
+  __$PendingJoinRequestModelCopyWithImpl(this._self, this._then);
+
+  final _PendingJoinRequestModel _self;
+  final $Res Function(_PendingJoinRequestModel) _then;
+
+/// Create a copy of PendingJoinRequestModel
+/// with the given fields replaced by the non-null parameter values.
+@override @pragma('vm:prefer-inline') $Res call({Object? id = null,Object? firstName = null,Object? lastName = null,Object? email = freezed,Object? isPrivateEmail = null,Object? provider = null,Object? wishedRole = null,Object? createdAt = null,Object? expiresAt = freezed,}) {
+  return _then(_PendingJoinRequestModel(
+id: null == id ? _self.id : id // ignore: cast_nullable_to_non_nullable
+as String,firstName: null == firstName ? _self.firstName : firstName // ignore: cast_nullable_to_non_nullable
+as String,lastName: null == lastName ? _self.lastName : lastName // ignore: cast_nullable_to_non_nullable
+as String,email: freezed == email ? _self.email : email // ignore: cast_nullable_to_non_nullable
+as String?,isPrivateEmail: null == isPrivateEmail ? _self.isPrivateEmail : isPrivateEmail // ignore: cast_nullable_to_non_nullable
+as bool,provider: null == provider ? _self.provider : provider // ignore: cast_nullable_to_non_nullable
+as String,wishedRole: null == wishedRole ? _self.wishedRole : wishedRole // ignore: cast_nullable_to_non_nullable
+as String,createdAt: null == createdAt ? _self.createdAt : createdAt // ignore: cast_nullable_to_non_nullable
+as DateTime,expiresAt: freezed == expiresAt ? _self.expiresAt : expiresAt // ignore: cast_nullable_to_non_nullable
+as DateTime?,
+  ));
+}
+
+
+}
+
+
+/// @nodoc
+mixin _$PendingJoinRequestsModel {
+
+ List<PendingJoinRequestModel> get data;
+/// Create a copy of PendingJoinRequestsModel
+/// with the given fields replaced by the non-null parameter values.
+@JsonKey(includeFromJson: false, includeToJson: false)
+@pragma('vm:prefer-inline')
+$PendingJoinRequestsModelCopyWith<PendingJoinRequestsModel> get copyWith => _$PendingJoinRequestsModelCopyWithImpl<PendingJoinRequestsModel>(this as PendingJoinRequestsModel, _$identity);
+
+  /// Serializes this PendingJoinRequestsModel to a JSON map.
+  Map<String, dynamic> toJson();
+
+
+@override
+bool operator ==(Object other) {
+  final _this = this as PendingJoinRequestsModel;
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is PendingJoinRequestsModel&&const DeepCollectionEquality().equals(other.data, _this.data));
+}
+
+@JsonKey(includeFromJson: false, includeToJson: false)
+@override
+int get hashCode {
+  final _this = this as PendingJoinRequestsModel;
+  return Object.hash(runtimeType,const DeepCollectionEquality().hash(_this.data));
+}
+
+@override
+String toString() {
+  final _this = this as PendingJoinRequestsModel;
+  return 'PendingJoinRequestsModel(data: ${_this.data})';
+}
+
+
+}
+
+/// @nodoc
+abstract mixin class $PendingJoinRequestsModelCopyWith<$Res>  {
+  factory $PendingJoinRequestsModelCopyWith(PendingJoinRequestsModel value, $Res Function(PendingJoinRequestsModel) _then) = _$PendingJoinRequestsModelCopyWithImpl;
+@useResult
+$Res call({
+ List<PendingJoinRequestModel> data
+});
+
+
+
+
+}
+/// @nodoc
+class _$PendingJoinRequestsModelCopyWithImpl<$Res>
+    implements $PendingJoinRequestsModelCopyWith<$Res> {
+  _$PendingJoinRequestsModelCopyWithImpl(this._self, this._then);
+
+  final PendingJoinRequestsModel _self;
+  final $Res Function(PendingJoinRequestsModel) _then;
+
+/// Create a copy of PendingJoinRequestsModel
+/// with the given fields replaced by the non-null parameter values.
+@pragma('vm:prefer-inline') @override $Res call({Object? data = null,}) {
+  return _then(PendingJoinRequestsModel(
+data: null == data ? _self.data : data // ignore: cast_nullable_to_non_nullable
+as List<PendingJoinRequestModel>,
+  ));
+}
+
+}
+
+
+/// Adds pattern-matching-related methods to [PendingJoinRequestsModel].
+extension PendingJoinRequestsModelPatterns on PendingJoinRequestsModel {
+/// A variant of `map` that fallback to returning `orElse`.
+///
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case final Subclass value:
+///     return ...;
+///   case _:
+///     return orElse();
+/// }
+/// ```
+
+@optionalTypeArgs TResult maybeMap<TResult extends Object?>(TResult Function( _PendingJoinRequestsModel value)?  $default,{required TResult orElse(),}){
+final _that = this;
+switch (_that) {
+case _PendingJoinRequestsModel() when $default != null:
+return $default(_that);case _:
+  return orElse();
+
+}
+}
+/// A `switch`-like method, using callbacks.
+///
+/// Callbacks receives the raw object, upcasted.
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case final Subclass value:
+///     return ...;
+///   case final Subclass2 value:
+///     return ...;
+/// }
+/// ```
+
+@optionalTypeArgs TResult map<TResult extends Object?>(TResult Function( _PendingJoinRequestsModel value)  $default,){
+final _that = this;
+switch (_that) {
+case _PendingJoinRequestsModel():
+return $default(_that);case _:
+  throw StateError('Unexpected subclass');
+
+}
+}
+/// A variant of `map` that fallback to returning `null`.
+///
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case final Subclass value:
+///     return ...;
+///   case _:
+///     return null;
+/// }
+/// ```
+
+@optionalTypeArgs TResult? mapOrNull<TResult extends Object?>(TResult? Function( _PendingJoinRequestsModel value)?  $default,){
+final _that = this;
+switch (_that) {
+case _PendingJoinRequestsModel() when $default != null:
+return $default(_that);case _:
+  return null;
+
+}
+}
+/// A variant of `when` that fallback to an `orElse` callback.
+///
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case Subclass(:final field):
+///     return ...;
+///   case _:
+///     return orElse();
+/// }
+/// ```
+
+@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( List<PendingJoinRequestModel> data)?  $default,{required TResult orElse(),}) {final _that = this;
+switch (_that) {
+case _PendingJoinRequestsModel() when $default != null:
+return $default(_that.data);case _:
+  return orElse();
+
+}
+}
+/// A `switch`-like method, using callbacks.
+///
+/// As opposed to `map`, this offers destructuring.
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case Subclass(:final field):
+///     return ...;
+///   case Subclass2(:final field2):
+///     return ...;
+/// }
+/// ```
+
+@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( List<PendingJoinRequestModel> data)  $default,) {final _that = this;
+switch (_that) {
+case _PendingJoinRequestsModel():
+return $default(_that.data);case _:
+  throw StateError('Unexpected subclass');
+
+}
+}
+/// A variant of `when` that fallback to returning `null`
+///
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case Subclass(:final field):
+///     return ...;
+///   case _:
+///     return null;
+/// }
+/// ```
+
+@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( List<PendingJoinRequestModel> data)?  $default,) {final _that = this;
+switch (_that) {
+case _PendingJoinRequestsModel() when $default != null:
+return $default(_that.data);case _:
+  return null;
+
+}
+}
+
+}
+
+/// @nodoc
+@JsonSerializable()
+
+class _PendingJoinRequestsModel implements PendingJoinRequestsModel {
+  const _PendingJoinRequestsModel({ List<PendingJoinRequestModel> data = const []}): _data = data;
+  factory _PendingJoinRequestsModel.fromJson(Map<String, dynamic> json) => _$PendingJoinRequestsModelFromJson(json);
+
+ final  List<PendingJoinRequestModel> _data;
+@override@JsonKey() List<PendingJoinRequestModel> get data {
+  if (_data is EqualUnmodifiableListView) return _data;
+  // ignore: implicit_dynamic_type
+  return EqualUnmodifiableListView(_data);
+}
+
+
+/// Create a copy of PendingJoinRequestsModel
+/// with the given fields replaced by the non-null parameter values.
+@override @JsonKey(includeFromJson: false, includeToJson: false)
+@pragma('vm:prefer-inline')
+_$PendingJoinRequestsModelCopyWith<_PendingJoinRequestsModel> get copyWith => __$PendingJoinRequestsModelCopyWithImpl<_PendingJoinRequestsModel>(this, _$identity);
+
+@override
+Map<String, dynamic> toJson() {
+  return _$PendingJoinRequestsModelToJson(this, );
+}
+
+@override
+bool operator ==(Object other) {
+    return identical(this, other) || (other.runtimeType == runtimeType&&other is _PendingJoinRequestsModel&&const DeepCollectionEquality().equals(other.data, _data));
+}
+
+@JsonKey(includeFromJson: false, includeToJson: false)
+@override
+int get hashCode {
+    return Object.hash(runtimeType,const DeepCollectionEquality().hash(_data));
+}
+
+@override
+String toString() {
+    return 'PendingJoinRequestsModel(data: $data)';
+}
+
+
+}
+
+/// @nodoc
+abstract mixin class _$PendingJoinRequestsModelCopyWith<$Res> implements $PendingJoinRequestsModelCopyWith<$Res> {
+  factory _$PendingJoinRequestsModelCopyWith(_PendingJoinRequestsModel value, $Res Function(_PendingJoinRequestsModel) _then) = __$PendingJoinRequestsModelCopyWithImpl;
+@override @useResult
+$Res call({
+ List<PendingJoinRequestModel> data
+});
+
+
+
+
+}
+/// @nodoc
+class __$PendingJoinRequestsModelCopyWithImpl<$Res>
+    implements _$PendingJoinRequestsModelCopyWith<$Res> {
+  __$PendingJoinRequestsModelCopyWithImpl(this._self, this._then);
+
+  final _PendingJoinRequestsModel _self;
+  final $Res Function(_PendingJoinRequestsModel) _then;
+
+/// Create a copy of PendingJoinRequestsModel
+/// with the given fields replaced by the non-null parameter values.
+@override @pragma('vm:prefer-inline') $Res call({Object? data = null,}) {
+  return _then(_PendingJoinRequestsModel(
+data: null == data ? _self._data : data // ignore: cast_nullable_to_non_nullable
+as List<PendingJoinRequestModel>,
   ));
 }
 

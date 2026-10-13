@@ -51,7 +51,16 @@ const keyGenerator = (req: Request) => rateLimitKey(req);
 // 429 bodies follow the API's error shape: { message, code }.
 const tooMany = (code: string) => ({ message: 'Too many requests, please try again later', code });
 
-export const authLimiter = rateLimit({ windowMs: 60 * 1000, max: 10, skipSuccessfulRequests: true, skip, message: tooMany('too_many_requests') });
+// Failed sign-ins, codes of the day… per visitor (13/10/2026: counted by rateLimitKey like the others, not by req.ip,
+// which behind Cloudflare is an edge address many visitors share).
+export const authLimiter = rateLimit({
+  windowMs: 60 * 1000,
+  max: 10,
+  skipSuccessfulRequests: true,
+  skip,
+  keyGenerator,
+  message: tooMany('too_many_requests'),
+});
 
 export const appLimiter = rateLimit({
   windowMs: 10 * 1000,

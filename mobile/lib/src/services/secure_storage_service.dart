@@ -25,6 +25,12 @@ abstract class SecureStorageService {
   Future<void> saveStaffTokens(StaffTokens tokens);
   Future<StaffTokens?> staffTokens();
   Future<void> clearStaffTokens();
+
+  /// Plazo Pro « Rejoindre un parking » (13/10/2026): the short session of a person signed in with Apple or Google
+  /// who belongs to no parking yet (/internal/auth/onboarding*), kept apart from the staff's tokens.
+  Future<void> saveOnboardingToken(String token);
+  Future<String?> onboardingToken();
+  Future<void> clearOnboardingToken();
 }
 
 class SecureStorageServiceImpl implements SecureStorageService {
@@ -33,6 +39,7 @@ class SecureStorageServiceImpl implements SecureStorageService {
   final FlutterSecureStorage _storage;
   static const _bookingsKey = 'bookings';
   static const _staffKey = 'staff_tokens';
+  static const _onboardingKey = 'onboarding_token';
   static String _bookingKey(String reference) => 'booking_token_${reference.toUpperCase()}';
 
   @override
@@ -81,12 +88,22 @@ class SecureStorageServiceImpl implements SecureStorageService {
 
   @override
   Future<void> clearStaffTokens() => _storage.delete(key: _staffKey);
+
+  @override
+  Future<void> saveOnboardingToken(String token) => _storage.write(key: _onboardingKey, value: token);
+
+  @override
+  Future<String?> onboardingToken() => _storage.read(key: _onboardingKey);
+
+  @override
+  Future<void> clearOnboardingToken() => _storage.delete(key: _onboardingKey);
 }
 
 /// In memory (tests, and a fallback where the keychain is unavailable).
 class InMemorySecureStorageService implements SecureStorageService {
   final Map<String, String> _bookings = {};
   StaffTokens? _staff;
+  String? _onboarding;
 
   @override
   Future<void> saveBookingToken(String reference, String token) async => _bookings[reference.toUpperCase()] = token;
@@ -102,4 +119,10 @@ class InMemorySecureStorageService implements SecureStorageService {
   Future<StaffTokens?> staffTokens() async => _staff;
   @override
   Future<void> clearStaffTokens() async => _staff = null;
+  @override
+  Future<void> saveOnboardingToken(String token) async => _onboarding = token;
+  @override
+  Future<String?> onboardingToken() async => _onboarding;
+  @override
+  Future<void> clearOnboardingToken() async => _onboarding = null;
 }

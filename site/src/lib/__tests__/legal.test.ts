@@ -66,7 +66,7 @@ describe("legal pages", () => {
     expect(prices).toContain("compris dans le prix total affiché");
     expect(prices).toContain("calculés sur les heures de dépôt et de retour réservées et ne changent plus ensuite");
     expect(prices).toContain("remboursés avec le séjour");
-    expect(termsDoc().version).toBe("12 octobre 2026");
+    expect(termsDoc().version).toBe("13 octobre 2026");
   });
 
   it("section ids are unique (anchors of the contents)", () => {
@@ -89,6 +89,18 @@ describe("privacy policy", () => {
     expect(all).toContain("12 mois après la date de retour"); // RESERVATION_RETENTION_MONTHS (backend/src/domain/retention.ts)
     expect(all).toContain("anonymisée automatiquement");
     expect(all).toContain("texte effacé après 30 jours, trace de réception supprimée après 90 jours"); // inbound emails (M-A)
+  });
+
+  it("covers the Plazo Pro sign-in with Apple or Google, the code of the day and account deletion (13/10/2026)", () => {
+    expect(all).toContain("se connecter à Plazo Pro avec Apple (iPhone) ou Google (Android)");
+    expect(all).toContain("jamais son mot de passe Apple ou Google");
+    expect(all).toContain("si elle n’a rejoint aucun parking, supprimée avec ses demandes après 30 jours sans nouvelle demande"); // purge of never-joined identities
+    expect(all).toContain("sans réponse d’un gérant, elle expire au bout de 7 jours"); // JOIN_REQUEST_DAYS
+    expect(all).toContain("le code tapé n’est jamais enregistré) : 7 jours."); // join_attempts purge
+    expect(all).toContain("[Supprimer un compte Plazo Pro](/suppression-compte)");
+    expect(all).toContain("« Compte supprimé »");
+    expect(all).toContain("Apple et Google");
+    expect(privacyDoc().version).toBe("13 octobre 2026");
   });
 
   it("names the recipients and the authority, and keeps its promises narrow", () => {

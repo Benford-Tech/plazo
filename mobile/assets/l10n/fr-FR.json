@@ -321,7 +321,7 @@
     "login_eyebrow": "Espace du personnel",
     "login_roles": "Gérants, agents, chauffeurs, voituriers",
     "login_title": "Bienvenue",
-    "login_intro": "Connectez-vous avec le compte que votre gérant vous a créé.",
+    "login_intro": "Connectez-vous, puis rejoignez votre parking avec le code du jour.",
     "login_help": "Mot de passe perdu ? Votre gérant peut vous en donner un nouveau.",
     "email": "Adresse email",
     "password": "Mot de passe",
@@ -385,7 +385,10 @@
     "notify_bookings_help": "Réservations arrivées du site Plazo, d'un import ou du comptoir. « Toutes les heures » envoie un récapitulatif, jamais entre 22 h et 7 h.",
     "notify_bookings_immediate": "À chaque réservation",
     "notify_bookings_hourly": "Toutes les heures",
-    "notify_bookings_never": "Jamais"
+    "notify_bookings_never": "Jamais",
+    "continue_apple": "Continuer avec Apple",
+    "continue_google": "Continuer avec Google",
+    "or_email": "ou avec votre e-mail"
   },
   "errors": {
     "generic": "Une erreur est survenue. Réessayez.",
@@ -512,7 +515,27 @@
     "car_location_closed": "La position ne peut plus être enregistrée pour cette réservation.",
     "invalid_position": "Position invalide.",
     "shuttle_tracking_off": "Le suivi des navettes est désactivé pour ce parking.",
-    "invalid_tracking": "Choix inconnu."
+    "invalid_tracking": "Choix inconnu.",
+    "cancelled": "Connexion annulée.",
+    "provider_failed": "La connexion avec Apple ou Google n'a pas abouti. Réessayez.",
+    "provider_unavailable": "Cette connexion n'est pas encore disponible. Utilisez votre e-mail et votre mot de passe.",
+    "identity_invalid": "La connexion n'a pas pu être vérifiée. Réessayez.",
+    "provider_unreachable": "Apple ou Google ne répond pas. Réessayez dans un instant.",
+    "account_disabled": "Ce compte est désactivé. Parlez-en à votre gérant.",
+    "join_code_invalid": "Ce code ne marche pas. Vérifiez-le, ou demandez celui d'aujourd'hui à votre gérant.",
+    "join_request_pending": "Une demande est déjà en attente.",
+    "already_member": "Votre compte fait déjà partie d'un parking.",
+    "not_member": "Votre demande n'a pas encore été acceptée.",
+    "join_request_closed": "Cette demande n'est plus en attente : annulée, expirée ou déjà traitée.",
+    "identity_taken": "Cet identifiant est déjà relié à un autre compte.",
+    "already_linked": "Une connexion de ce type est déjà reliée à votre compte.",
+    "sign_in_required": "C'est votre seul moyen de vous connecter : gardez-le, ou demandez d'abord un mot de passe à votre gérant.",
+    "trip_running": "Terminez d'abord votre trajet en cours.",
+    "reauth_failed": "Confirmation refusée : vérifiez votre mot de passe, ou confirmez à nouveau avec Apple ou Google.",
+    "cannot_delete_platform": "Ce compte administre la plateforme : il ne peut pas être supprimé depuis l'app.",
+    "view_as_forbidden": "Action impossible en consultation.",
+    "wished_role_required": "Choisissez votre poste.",
+    "invalid_wished_role": "Poste invalide."
   },
   "tabs": {
     "search": "Rechercher",
@@ -1133,7 +1156,8 @@
       "wave_overflow": "Vague au-delà d'une navette",
       "no_show_suspected": "Attendu, toujours pas là",
       "inbound_to_check": "Mails à vérifier",
-      "blocked_return": "Retour du jour bloqué : sortir d'abord"
+      "blocked_return": "Retour du jour bloqué : sortir d'abord",
+      "join_request": "Demande pour rejoindre l'équipe"
     },
     "vehicles_title": "Véhicules sur le parking",
     "vehicles_empty": "Aucun véhicule sur le parking.",
@@ -1166,7 +1190,10 @@
     "urgent_count": "{} urgent(s)",
     "refreshed": "Actualisé à {}",
     "kpi_next_wave": "prochaine {} · {} pass.",
-    "kpi_wave_vehicles": "{} navettes"
+    "kpi_wave_vehicles": "{} navettes",
+    "join_request_more": "{} et {} autre(s)",
+    "since_hours": "depuis {} h",
+    "since_days": "depuis {} j"
   },
   "live_shuttles": {
     "title": "Navettes en cours",
@@ -1392,7 +1419,36 @@
     "rename": "Modifier le nom",
     "rename_title": "Nom de {}",
     "save": "Enregistrer",
-    "cancel": "Annuler"
+    "cancel": "Annuler",
+    "code_title": "Code du jour",
+    "code_until": "jusqu'à minuit",
+    "code_copy": "Copier",
+    "code_share": "Partager",
+    "code_copied": "Code copié.",
+    "code_help": "Donnez-le à une nouvelle recrue. Vous validez ensuite sa demande.",
+    "code_share_subject": "Rejoindre l'équipe de {} sur {}",
+    "join_message": "Rejoignez l'équipe de {} sur {} : installez l'app, connectez-vous avec Apple ou Google, puis tapez le code du jour {}. Il change à minuit.",
+    "requests_title": "Demandes",
+    "requests_count": "{} à valider",
+    "accept": "Accepter",
+    "refuse": "Refuser",
+    "refuse_title": "Refuser la demande de {} ?",
+    "refuse_text": "Cette personne ne rejoindra pas l'équipe. Elle pourra refaire une demande avec un nouveau code du jour.",
+    "accept_title": "Accepter {}",
+    "accept_role": "Son rôle",
+    "accept_as": "Accepter comme {}",
+    "request_sent_at": "demande envoyée à {}",
+    "join_accepted": "{} a rejoint l'équipe.",
+    "join_refused": "Demande refusée.",
+    "role_text": {
+      "agent": "Réservations, arrivées, retours",
+      "driver": "La navette, les arrivées et retours",
+      "valet": "Placer et sortir les voitures, les clés"
+    },
+    "ago_now": "à l'instant",
+    "ago_min": "il y a {} min",
+    "ago_h": "il y a {} h",
+    "ago_d": "il y a {} j"
   },
   "account": {
     "title": "Mon compte",
@@ -1407,7 +1463,40 @@
     "password_rule": "Au moins 10 caractères.",
     "relogin": "Après le changement, vous devrez vous reconnecter sur tous vos appareils.",
     "submit": "Changer le mot de passe",
-    "password_changed": "Mot de passe changé. Reconnectez-vous."
+    "password_changed": "Mot de passe changé. Reconnectez-vous.",
+    "sign_in_section": "Connexion",
+    "linked_pill": "Liée",
+    "link_apple": "Lier mon identifiant Apple",
+    "link_google": "Lier mon compte Google",
+    "linked": "Connexion ajoutée : vous pourrez l'utiliser pour vous connecter.",
+    "unlinked": "Connexion retirée.",
+    "unlink": "Retirer",
+    "unlink_title": "Retirer la connexion {} ?",
+    "unlink_text": "Vous ne pourrez plus vous connecter à l'app avec {}. Vous pourrez la lier à nouveau ici.",
+    "password_row": "Mot de passe",
+    "password_set": "défini",
+    "password_none": "aucun",
+    "no_password_help": "Vous vous connectez avec Apple ou Google. Pour l'espace pro sur le web, votre gérant peut vous donner un mot de passe (« Nouveau mot de passe » dans Équipe).",
+    "parking_section": "Parking",
+    "leave": "Quitter ce parking",
+    "leave_title": "Quitter {} ?",
+    "leave_text": "Vous n'aurez plus accès à ce parking dans l'app. Pour rejoindre un parking ensuite, il faudra le code du jour de son gérant.",
+    "leave_confirm": "Quitter",
+    "left": "Vous avez quitté le parking.",
+    "leave_errors": {
+      "last_manager": "Vous êtes le seul gérant de ce parking : nommez d'abord un autre gérant dans Équipe.",
+      "trip_running": "Terminez d'abord votre trajet en cours."
+    },
+    "delete": "Supprimer mon compte",
+    "delete_title": "Supprimer votre compte ?",
+    "delete_text": "Vous ne pourrez plus vous connecter à l'app. Vos trajets et les réservations que vous avez traitées restent dans l'historique du parking, avec la mention « Compte supprimé ».",
+    "delete_text_apple": "Vous ne pourrez plus vous connecter à l'app et votre accès à Apple sera retiré. Vos trajets et les réservations que vous avez traitées restent dans l'historique du parking, avec la mention « Compte supprimé ».",
+    "delete_manager_warning": "Vous êtes gérant : si personne d'autre ne gère ce parking, plus personne ne pourra accepter les nouvelles demandes ni gérer l'équipe.",
+    "delete_password": "Votre mot de passe",
+    "delete_with_apple": "Confirmer avec Apple",
+    "delete_with_google": "Confirmer avec Google",
+    "delete_elsewhere": "Pour confirmer, ouvrez l'app sur le téléphone où vous vous connectez avec {}, ou demandez un mot de passe à votre gérant.",
+    "deleted": "Votre compte a été supprimé."
   },
   "settings": {
     "title": "Réglages du parking",
@@ -1612,5 +1701,53 @@
     "saved": "Montant enregistré : {}, {}",
     "closed": "Réservation annulée entre-temps : elle ne compte plus.",
     "gone": "Réservation introuvable : elle a peut-être été supprimée."
+  },
+  "sign_in": {
+    "password": "E-mail",
+    "apple": "Apple",
+    "google": "Google"
+  },
+  "join": {
+    "title": "Rejoindre un parking",
+    "connected_with": "Connecté avec {}",
+    "code_label": "Code du jour",
+    "code_hint": "XXXXX-XXXXX",
+    "code_help": "Demandez-le à votre gérant. Il change chaque nuit à minuit.",
+    "you": "Vous",
+    "i_am": "Je suis",
+    "submit": "Envoyer ma demande",
+    "other_account": "Utiliser un autre compte",
+    "waiting_title": "Demande envoyée",
+    "waiting_text": "Votre gérant a reçu votre demande pour {}. Vous entrerez dans l'app dès qu'il l'aura acceptée.",
+    "row_name": "Nom",
+    "row_post": "Poste demandé",
+    "row_sent": "Envoyée",
+    "sent_today": "aujourd'hui à {}",
+    "sent_yesterday": "hier à {}",
+    "sent_on": "le {} à {}",
+    "cancel": "Annuler la demande",
+    "closed_title": {
+      "refused": "Demande refusée",
+      "expired": "Demande expirée",
+      "cancelled": "Demande annulée"
+    },
+    "closed_text": {
+      "refused": "Le gérant de {} n'a pas accepté votre demande. Si c'est une erreur, parlez-lui et tapez le code du jour à nouveau.",
+      "expired": "Le gérant de {} n'a pas répondu dans les 7 jours. Demandez-lui le code du jour et tapez-le à nouveau.",
+      "cancelled": "Votre demande pour {} a été annulée. Tapez le code du jour pour en envoyer une nouvelle."
+    },
+    "new_code": "Taper un nouveau code",
+    "accepted_title": "Demande acceptée",
+    "accepted_text": "Bienvenue chez {} ! Ouverture de votre espace…",
+    "delete_text": "Votre demande sera annulée et votre identifiant {} sera oublié. Vous pourrez revenir plus tard avec le code du jour d'un parking.",
+    "deleted": "Votre compte a été supprimé.",
+    "errors": {
+      "join_code_incomplete": "Le code fait 10 caractères, chiffres et lettres (ex. K7QM2-XP9TD).",
+      "join_code_invalid": "Ce code ne marche pas. Vérifiez-le, ou demandez celui d'aujourd'hui à votre gérant.",
+      "too_many_attempts": "Trop de codes essayés. Attendez 15 minutes, puis réessayez avec le code du jour.",
+      "email_taken": "Cette adresse e-mail est déjà celle d'un compte de l'app. Connectez-vous avec cet e-mail et son mot de passe, puis liez Apple ou Google dans Plus › Mon compte. Avec Apple, vous pouvez aussi choisir « Masquer mon adresse e-mail ».",
+      "already_member": "Votre compte fait déjà partie d'un parking. Quittez-le d'abord depuis Plus › Mon compte.",
+      "wished_role_required": "Choisissez votre poste."
+    }
   }
 }

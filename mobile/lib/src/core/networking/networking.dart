@@ -27,11 +27,46 @@ class LoggingInterceptor extends Interceptor {
   }
 }
 
-/// Tells the app the staff session is over (refresh refused): back to the login screen.
+/// Tells the app the staff session is over (refresh refused): back to the login screen. Also tells it the onboarding
+/// session (« Rejoindre un parking », 13/10/2026) was refused.
 class SessionEvents {
   final _expired = StreamController<void>.broadcast();
   Stream<void> get expired => _expired.stream;
   void notifyExpired() => _expired.add(null);
+
+  final _onboardingExpired = StreamController<void>.broadcast();
+  Stream<void> get onboardingExpired => _onboardingExpired.stream;
+  void notifyOnboardingExpired() => _onboardingExpired.add(null);
+}
+
+/// The onboarding routes (/internal/auth/onboarding*, 13/10/2026) carry the onboarding token of a person signed in
+/// with Apple or Google who has not joined a parking yet. They sit under internal/auth/, which StaffTokenInterceptor
+/// leaves alone: a 401 there clears the onboarding token only, never the staff's session.
+class OnboardingTokenInterceptor extends Interceptor {
+  OnboardingTokenInterceptor({required this.storage, required this.session});
+
+  final SecureStorageService storage;
+  final SessionEvents session;
+
+  static bool isOnboardingRoute(RequestOptions o) => o.path.startsWith('internal/auth/onboarding');
+
+  @override
+  Future<void> onRequest(RequestOptions options, RequestInterceptorHandler handler) async {
+    if (isOnboardingRoute(options) && options.headers['Authorization'] == null) {
+      final token = await storage.onboardingToken();
+      if (token != null) options.headers['Authorization'] = 'Bearer $token';
+    }
+    handler.next(options);
+  }
+
+  @override
+  Future<void> onError(DioException err, ErrorInterceptorHandler handler) async {
+    if (err.response?.statusCode == 401 && isOnboardingRoute(err.requestOptions)) {
+      await storage.clearOnboardingToken();
+      session.notifyOnboardingExpired();
+    }
+    handler.next(err);
+  }
 }
 
 /// Staff routes (/internal/...): adds the access token, and on a 401 rotates the pair once with the

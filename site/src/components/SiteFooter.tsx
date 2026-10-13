@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { fr } from "@/lib/fr";
 import { Logo } from "@/components/Logo";
+import { ACCOUNT_DELETION_PATH } from "@/lib/account-deletion";
 import { topicLinks } from "@/lib/guides";
 import { hasSupportEmail, SUPPORT_EMAIL } from "@/lib/product";
 import { AIRPORTS, airportPath, PRO_SIGNUP_PATH } from "@/lib/site";
@@ -86,6 +87,11 @@ export function SiteFooter() {
           <li>
             <Link href="/mentions-legales" className={linkClass}>
               {fr.footer.legal}
+            </Link>
+          </li>
+          <li>
+            <Link href={ACCOUNT_DELETION_PATH} className={linkClass}>
+              {fr.footer.deleteProAccount}
             </Link>
           </li>
         </Column>

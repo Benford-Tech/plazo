@@ -25,6 +25,11 @@ describe('GET /internal/cron/purge-expired-tokens', () => {
       carLocationsPurged: 0,
       inboundEmails: { textsCleared: 0, rowsDeleted: 0 },
       reservationsAnonymized: 0,
+      // « Rejoindre un parking » (13/10/2026).
+      identityTokensDeleted: 0,
+      joinRequestsExpired: 0,
+      joinAttemptsDeleted: 0,
+      identitiesDeleted: 0,
     });
     expect(await prisma.staffToken.count()).toBe(2); // the login's access + refresh pair
   });

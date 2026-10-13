@@ -20,7 +20,9 @@ mixin _$StaffModel {
  String get firstName; String get lastName; String get email;/// manager, agent, driver, valet
  String get role; String? get operatorName;/// The post held today (R-C, 04/10/2026), null until chosen; among [allowedPosts].
  String? get post; DateTime? get postSetAt; String? get effectivePost; List<String> get allowedPosts;/// The shuttle taken for the day (V-A, 05/10/2026), null when none.
- TodayVehicleModel? get vehicle;
+ TodayVehicleModel? get vehicle;/// How the member signs in (13/10/2026): a password of their own (false for an account made with Apple or
+/// Google, or invited and never set; true for an older server), and the Apple / Google identities linked.
+ bool get hasPassword; List<StaffIdentityModel> get identities;
 /// Create a copy of StaffModel
 /// with the given fields replaced by the non-null parameter values.
 @JsonKey(includeFromJson: false, includeToJson: false)
@@ -34,20 +36,20 @@ $StaffModelCopyWith<StaffModel> get copyWith => _$StaffModelCopyWithImpl<StaffMo
 @override
 bool operator ==(Object other) {
   final _this = this as StaffModel;
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is StaffModel&&(identical(other.id, _this.id) || other.id == _this.id)&&(identical(other.name, _this.name) || other.name == _this.name)&&(identical(other.firstName, _this.firstName) || other.firstName == _this.firstName)&&(identical(other.lastName, _this.lastName) || other.lastName == _this.lastName)&&(identical(other.email, _this.email) || other.email == _this.email)&&(identical(other.role, _this.role) || other.role == _this.role)&&(identical(other.operatorName, _this.operatorName) || other.operatorName == _this.operatorName)&&(identical(other.post, _this.post) || other.post == _this.post)&&(identical(other.postSetAt, _this.postSetAt) || other.postSetAt == _this.postSetAt)&&(identical(other.effectivePost, _this.effectivePost) || other.effectivePost == _this.effectivePost)&&const DeepCollectionEquality().equals(other.allowedPosts, _this.allowedPosts)&&(identical(other.vehicle, _this.vehicle) || other.vehicle == _this.vehicle));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is StaffModel&&(identical(other.id, _this.id) || other.id == _this.id)&&(identical(other.name, _this.name) || other.name == _this.name)&&(identical(other.firstName, _this.firstName) || other.firstName == _this.firstName)&&(identical(other.lastName, _this.lastName) || other.lastName == _this.lastName)&&(identical(other.email, _this.email) || other.email == _this.email)&&(identical(other.role, _this.role) || other.role == _this.role)&&(identical(other.operatorName, _this.operatorName) || other.operatorName == _this.operatorName)&&(identical(other.post, _this.post) || other.post == _this.post)&&(identical(other.postSetAt, _this.postSetAt) || other.postSetAt == _this.postSetAt)&&(identical(other.effectivePost, _this.effectivePost) || other.effectivePost == _this.effectivePost)&&const DeepCollectionEquality().equals(other.allowedPosts, _this.allowedPosts)&&(identical(other.vehicle, _this.vehicle) || other.vehicle == _this.vehicle)&&(identical(other.hasPassword, _this.hasPassword) || other.hasPassword == _this.hasPassword)&&const DeepCollectionEquality().equals(other.identities, _this.identities));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
 int get hashCode {
   final _this = this as StaffModel;
-  return Object.hash(runtimeType,_this.id,_this.name,_this.firstName,_this.lastName,_this.email,_this.role,_this.operatorName,_this.post,_this.postSetAt,_this.effectivePost,const DeepCollectionEquality().hash(_this.allowedPosts),_this.vehicle);
+  return Object.hash(runtimeType,_this.id,_this.name,_this.firstName,_this.lastName,_this.email,_this.role,_this.operatorName,_this.post,_this.postSetAt,_this.effectivePost,const DeepCollectionEquality().hash(_this.allowedPosts),_this.vehicle,_this.hasPassword,const DeepCollectionEquality().hash(_this.identities));
 }
 
 @override
 String toString() {
   final _this = this as StaffModel;
-  return 'StaffModel(id: ${_this.id}, name: ${_this.name}, firstName: ${_this.firstName}, lastName: ${_this.lastName}, email: ${_this.email}, role: ${_this.role}, operatorName: ${_this.operatorName}, post: ${_this.post}, postSetAt: ${_this.postSetAt}, effectivePost: ${_this.effectivePost}, allowedPosts: ${_this.allowedPosts}, vehicle: ${_this.vehicle})';
+  return 'StaffModel(id: ${_this.id}, name: ${_this.name}, firstName: ${_this.firstName}, lastName: ${_this.lastName}, email: ${_this.email}, role: ${_this.role}, operatorName: ${_this.operatorName}, post: ${_this.post}, postSetAt: ${_this.postSetAt}, effectivePost: ${_this.effectivePost}, allowedPosts: ${_this.allowedPosts}, vehicle: ${_this.vehicle}, hasPassword: ${_this.hasPassword}, identities: ${_this.identities})';
 }
 
 
@@ -58,7 +60,7 @@ abstract mixin class $StaffModelCopyWith<$Res>  {
   factory $StaffModelCopyWith(StaffModel value, $Res Function(StaffModel) _then) = _$StaffModelCopyWithImpl;
 @useResult
 $Res call({
- String id, String name, String firstName, String lastName, String email, String role, String? operatorName, String? post, DateTime? postSetAt, String? effectivePost, List<String> allowedPosts, TodayVehicleModel? vehicle
+ String id, String name, String firstName, String lastName, String email, String role, String? operatorName, String? post, DateTime? postSetAt, String? effectivePost, List<String> allowedPosts, TodayVehicleModel? vehicle, bool hasPassword, List<StaffIdentityModel> identities
 });
 
 
@@ -75,7 +77,7 @@ class _$StaffModelCopyWithImpl<$Res>
 
 /// Create a copy of StaffModel
 /// with the given fields replaced by the non-null parameter values.
-@pragma('vm:prefer-inline') @override $Res call({Object? id = null,Object? name = null,Object? firstName = null,Object? lastName = null,Object? email = null,Object? role = null,Object? operatorName = freezed,Object? post = freezed,Object? postSetAt = freezed,Object? effectivePost = freezed,Object? allowedPosts = null,Object? vehicle = freezed,}) {
+@pragma('vm:prefer-inline') @override $Res call({Object? id = null,Object? name = null,Object? firstName = null,Object? lastName = null,Object? email = null,Object? role = null,Object? operatorName = freezed,Object? post = freezed,Object? postSetAt = freezed,Object? effectivePost = freezed,Object? allowedPosts = null,Object? vehicle = freezed,Object? hasPassword = null,Object? identities = null,}) {
   return _then(StaffModel(
 id: null == id ? _self.id : id // ignore: cast_nullable_to_non_nullable
 as String,name: null == name ? _self.name : name // ignore: cast_nullable_to_non_nullable
@@ -89,7 +91,9 @@ as String?,postSetAt: freezed == postSetAt ? _self.postSetAt : postSetAt // igno
 as DateTime?,effectivePost: freezed == effectivePost ? _self.effectivePost : effectivePost // ignore: cast_nullable_to_non_nullable
 as String?,allowedPosts: null == allowedPosts ? _self.allowedPosts : allowedPosts // ignore: cast_nullable_to_non_nullable
 as List<String>,vehicle: freezed == vehicle ? _self.vehicle : vehicle // ignore: cast_nullable_to_non_nullable
-as TodayVehicleModel?,
+as TodayVehicleModel?,hasPassword: null == hasPassword ? _self.hasPassword : hasPassword // ignore: cast_nullable_to_non_nullable
+as bool,identities: null == identities ? _self.identities : identities // ignore: cast_nullable_to_non_nullable
+as List<StaffIdentityModel>,
   ));
 }
 /// Create a copy of StaffModel
@@ -186,10 +190,10 @@ return $default(_that);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( String id,  String name,  String firstName,  String lastName,  String email,  String role,  String? operatorName,  String? post,  DateTime? postSetAt,  String? effectivePost,  List<String> allowedPosts,  TodayVehicleModel? vehicle)?  $default,{required TResult orElse(),}) {final _that = this;
+@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( String id,  String name,  String firstName,  String lastName,  String email,  String role,  String? operatorName,  String? post,  DateTime? postSetAt,  String? effectivePost,  List<String> allowedPosts,  TodayVehicleModel? vehicle,  bool hasPassword,  List<StaffIdentityModel> identities)?  $default,{required TResult orElse(),}) {final _that = this;
 switch (_that) {
 case _StaffModel() when $default != null:
-return $default(_that.id,_that.name,_that.firstName,_that.lastName,_that.email,_that.role,_that.operatorName,_that.post,_that.postSetAt,_that.effectivePost,_that.allowedPosts,_that.vehicle);case _:
+return $default(_that.id,_that.name,_that.firstName,_that.lastName,_that.email,_that.role,_that.operatorName,_that.post,_that.postSetAt,_that.effectivePost,_that.allowedPosts,_that.vehicle,_that.hasPassword,_that.identities);case _:
   return orElse();
 
 }
@@ -207,10 +211,10 @@ return $default(_that.id,_that.name,_that.firstName,_that.lastName,_that.email,_
 /// }
 /// ```
 
-@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( String id,  String name,  String firstName,  String lastName,  String email,  String role,  String? operatorName,  String? post,  DateTime? postSetAt,  String? effectivePost,  List<String> allowedPosts,  TodayVehicleModel? vehicle)  $default,) {final _that = this;
+@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( String id,  String name,  String firstName,  String lastName,  String email,  String role,  String? operatorName,  String? post,  DateTime? postSetAt,  String? effectivePost,  List<String> allowedPosts,  TodayVehicleModel? vehicle,  bool hasPassword,  List<StaffIdentityModel> identities)  $default,) {final _that = this;
 switch (_that) {
 case _StaffModel():
-return $default(_that.id,_that.name,_that.firstName,_that.lastName,_that.email,_that.role,_that.operatorName,_that.post,_that.postSetAt,_that.effectivePost,_that.allowedPosts,_that.vehicle);case _:
+return $default(_that.id,_that.name,_that.firstName,_that.lastName,_that.email,_that.role,_that.operatorName,_that.post,_that.postSetAt,_that.effectivePost,_that.allowedPosts,_that.vehicle,_that.hasPassword,_that.identities);case _:
   throw StateError('Unexpected subclass');
 
 }
@@ -227,10 +231,10 @@ return $default(_that.id,_that.name,_that.firstName,_that.lastName,_that.email,_
 /// }
 /// ```
 
-@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( String id,  String name,  String firstName,  String lastName,  String email,  String role,  String? operatorName,  String? post,  DateTime? postSetAt,  String? effectivePost,  List<String> allowedPosts,  TodayVehicleModel? vehicle)?  $default,) {final _that = this;
+@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( String id,  String name,  String firstName,  String lastName,  String email,  String role,  String? operatorName,  String? post,  DateTime? postSetAt,  String? effectivePost,  List<String> allowedPosts,  TodayVehicleModel? vehicle,  bool hasPassword,  List<StaffIdentityModel> identities)?  $default,) {final _that = this;
 switch (_that) {
 case _StaffModel() when $default != null:
-return $default(_that.id,_that.name,_that.firstName,_that.lastName,_that.email,_that.role,_that.operatorName,_that.post,_that.postSetAt,_that.effectivePost,_that.allowedPosts,_that.vehicle);case _:
+return $default(_that.id,_that.name,_that.firstName,_that.lastName,_that.email,_that.role,_that.operatorName,_that.post,_that.postSetAt,_that.effectivePost,_that.allowedPosts,_that.vehicle,_that.hasPassword,_that.identities);case _:
   return null;
 
 }
@@ -242,7 +246,7 @@ return $default(_that.id,_that.name,_that.firstName,_that.lastName,_that.email,_
 @JsonSerializable()
 
 class _StaffModel extends StaffModel {
-  const _StaffModel({required this.id, required this.name, this.firstName = '', this.lastName = '', required this.email, required this.role, this.operatorName, this.post, this.postSetAt, this.effectivePost,  List<String> allowedPosts = const [], this.vehicle}): _allowedPosts = allowedPosts,super._();
+  const _StaffModel({required this.id, required this.name, this.firstName = '', this.lastName = '', required this.email, required this.role, this.operatorName, this.post, this.postSetAt, this.effectivePost,  List<String> allowedPosts = const [], this.vehicle, this.hasPassword = true,  List<StaffIdentityModel> identities = const []}): _allowedPosts = allowedPosts,_identities = identities,super._();
   factory _StaffModel.fromJson(Map<String, dynamic> json) => _$StaffModelFromJson(json);
 
 @override final  String id;
@@ -267,6 +271,16 @@ class _StaffModel extends StaffModel {
 
 /// The shuttle taken for the day (V-A, 05/10/2026), null when none.
 @override final  TodayVehicleModel? vehicle;
+/// How the member signs in (13/10/2026): a password of their own (false for an account made with Apple or
+/// Google, or invited and never set; true for an older server), and the Apple / Google identities linked.
+@override@JsonKey() final  bool hasPassword;
+ final  List<StaffIdentityModel> _identities;
+@override@JsonKey() List<StaffIdentityModel> get identities {
+  if (_identities is EqualUnmodifiableListView) return _identities;
+  // ignore: implicit_dynamic_type
+  return EqualUnmodifiableListView(_identities);
+}
+
 
 /// Create a copy of StaffModel
 /// with the given fields replaced by the non-null parameter values.
@@ -281,18 +295,18 @@ Map<String, dynamic> toJson() {
 
 @override
 bool operator ==(Object other) {
-    return identical(this, other) || (other.runtimeType == runtimeType&&other is _StaffModel&&(identical(other.id, id) || other.id == id)&&(identical(other.name, name) || other.name == name)&&(identical(other.firstName, firstName) || other.firstName == firstName)&&(identical(other.lastName, lastName) || other.lastName == lastName)&&(identical(other.email, email) || other.email == email)&&(identical(other.role, role) || other.role == role)&&(identical(other.operatorName, operatorName) || other.operatorName == operatorName)&&(identical(other.post, post) || other.post == post)&&(identical(other.postSetAt, postSetAt) || other.postSetAt == postSetAt)&&(identical(other.effectivePost, effectivePost) || other.effectivePost == effectivePost)&&const DeepCollectionEquality().equals(other.allowedPosts, _allowedPosts)&&(identical(other.vehicle, vehicle) || other.vehicle == vehicle));
+    return identical(this, other) || (other.runtimeType == runtimeType&&other is _StaffModel&&(identical(other.id, id) || other.id == id)&&(identical(other.name, name) || other.name == name)&&(identical(other.firstName, firstName) || other.firstName == firstName)&&(identical(other.lastName, lastName) || other.lastName == lastName)&&(identical(other.email, email) || other.email == email)&&(identical(other.role, role) || other.role == role)&&(identical(other.operatorName, operatorName) || other.operatorName == operatorName)&&(identical(other.post, post) || other.post == post)&&(identical(other.postSetAt, postSetAt) || other.postSetAt == postSetAt)&&(identical(other.effectivePost, effectivePost) || other.effectivePost == effectivePost)&&const DeepCollectionEquality().equals(other.allowedPosts, _allowedPosts)&&(identical(other.vehicle, vehicle) || other.vehicle == vehicle)&&(identical(other.hasPassword, hasPassword) || other.hasPassword == hasPassword)&&const DeepCollectionEquality().equals(other.identities, _identities));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
 int get hashCode {
-    return Object.hash(runtimeType,id,name,firstName,lastName,email,role,operatorName,post,postSetAt,effectivePost,const DeepCollectionEquality().hash(_allowedPosts),vehicle);
+    return Object.hash(runtimeType,id,name,firstName,lastName,email,role,operatorName,post,postSetAt,effectivePost,const DeepCollectionEquality().hash(_allowedPosts),vehicle,hasPassword,const DeepCollectionEquality().hash(_identities));
 }
 
 @override
 String toString() {
-    return 'StaffModel(id: $id, name: $name, firstName: $firstName, lastName: $lastName, email: $email, role: $role, operatorName: $operatorName, post: $post, postSetAt: $postSetAt, effectivePost: $effectivePost, allowedPosts: $allowedPosts, vehicle: $vehicle)';
+    return 'StaffModel(id: $id, name: $name, firstName: $firstName, lastName: $lastName, email: $email, role: $role, operatorName: $operatorName, post: $post, postSetAt: $postSetAt, effectivePost: $effectivePost, allowedPosts: $allowedPosts, vehicle: $vehicle, hasPassword: $hasPassword, identities: $identities)';
 }
 
 
@@ -303,7 +317,7 @@ abstract mixin class _$StaffModelCopyWith<$Res> implements $StaffModelCopyWith<$
   factory _$StaffModelCopyWith(_StaffModel value, $Res Function(_StaffModel) _then) = __$StaffModelCopyWithImpl;
 @override @useResult
 $Res call({
- String id, String name, String firstName, String lastName, String email, String role, String? operatorName, String? post, DateTime? postSetAt, String? effectivePost, List<String> allowedPosts, TodayVehicleModel? vehicle
+ String id, String name, String firstName, String lastName, String email, String role, String? operatorName, String? post, DateTime? postSetAt, String? effectivePost, List<String> allowedPosts, TodayVehicleModel? vehicle, bool hasPassword, List<StaffIdentityModel> identities
 });
 
 
@@ -320,7 +334,7 @@ class __$StaffModelCopyWithImpl<$Res>
 
 /// Create a copy of StaffModel
 /// with the given fields replaced by the non-null parameter values.
-@override @pragma('vm:prefer-inline') $Res call({Object? id = null,Object? name = null,Object? firstName = null,Object? lastName = null,Object? email = null,Object? role = null,Object? operatorName = freezed,Object? post = freezed,Object? postSetAt = freezed,Object? effectivePost = freezed,Object? allowedPosts = null,Object? vehicle = freezed,}) {
+@override @pragma('vm:prefer-inline') $Res call({Object? id = null,Object? name = null,Object? firstName = null,Object? lastName = null,Object? email = null,Object? role = null,Object? operatorName = freezed,Object? post = freezed,Object? postSetAt = freezed,Object? effectivePost = freezed,Object? allowedPosts = null,Object? vehicle = freezed,Object? hasPassword = null,Object? identities = null,}) {
   return _then(_StaffModel(
 id: null == id ? _self.id : id // ignore: cast_nullable_to_non_nullable
 as String,name: null == name ? _self.name : name // ignore: cast_nullable_to_non_nullable
@@ -334,7 +348,9 @@ as String?,postSetAt: freezed == postSetAt ? _self.postSetAt : postSetAt // igno
 as DateTime?,effectivePost: freezed == effectivePost ? _self.effectivePost : effectivePost // ignore: cast_nullable_to_non_nullable
 as String?,allowedPosts: null == allowedPosts ? _self._allowedPosts : allowedPosts // ignore: cast_nullable_to_non_nullable
 as List<String>,vehicle: freezed == vehicle ? _self.vehicle : vehicle // ignore: cast_nullable_to_non_nullable
-as TodayVehicleModel?,
+as TodayVehicleModel?,hasPassword: null == hasPassword ? _self.hasPassword : hasPassword // ignore: cast_nullable_to_non_nullable
+as bool,identities: null == identities ? _self._identities : identities // ignore: cast_nullable_to_non_nullable
+as List<StaffIdentityModel>,
   ));
 }
 
@@ -629,6 +645,279 @@ as String,colour: freezed == colour ? _self.colour : colour // ignore: cast_null
 as String?,plate: freezed == plate ? _self.plate : plate // ignore: cast_nullable_to_non_nullable
 as String?,seats: freezed == seats ? _self.seats : seats // ignore: cast_nullable_to_non_nullable
 as int?,
+  ));
+}
+
+
+}
+
+
+/// @nodoc
+mixin _$StaffIdentityModel {
+
+ String get provider; String? get email;
+/// Create a copy of StaffIdentityModel
+/// with the given fields replaced by the non-null parameter values.
+@JsonKey(includeFromJson: false, includeToJson: false)
+@pragma('vm:prefer-inline')
+$StaffIdentityModelCopyWith<StaffIdentityModel> get copyWith => _$StaffIdentityModelCopyWithImpl<StaffIdentityModel>(this as StaffIdentityModel, _$identity);
+
+  /// Serializes this StaffIdentityModel to a JSON map.
+  Map<String, dynamic> toJson();
+
+
+@override
+bool operator ==(Object other) {
+  final _this = this as StaffIdentityModel;
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is StaffIdentityModel&&(identical(other.provider, _this.provider) || other.provider == _this.provider)&&(identical(other.email, _this.email) || other.email == _this.email));
+}
+
+@JsonKey(includeFromJson: false, includeToJson: false)
+@override
+int get hashCode {
+  final _this = this as StaffIdentityModel;
+  return Object.hash(runtimeType,_this.provider,_this.email);
+}
+
+@override
+String toString() {
+  final _this = this as StaffIdentityModel;
+  return 'StaffIdentityModel(provider: ${_this.provider}, email: ${_this.email})';
+}
+
+
+}
+
+/// @nodoc
+abstract mixin class $StaffIdentityModelCopyWith<$Res>  {
+  factory $StaffIdentityModelCopyWith(StaffIdentityModel value, $Res Function(StaffIdentityModel) _then) = _$StaffIdentityModelCopyWithImpl;
+@useResult
+$Res call({
+ String provider, String? email
+});
+
+
+
+
+}
+/// @nodoc
+class _$StaffIdentityModelCopyWithImpl<$Res>
+    implements $StaffIdentityModelCopyWith<$Res> {
+  _$StaffIdentityModelCopyWithImpl(this._self, this._then);
+
+  final StaffIdentityModel _self;
+  final $Res Function(StaffIdentityModel) _then;
+
+/// Create a copy of StaffIdentityModel
+/// with the given fields replaced by the non-null parameter values.
+@pragma('vm:prefer-inline') @override $Res call({Object? provider = null,Object? email = freezed,}) {
+  return _then(StaffIdentityModel(
+provider: null == provider ? _self.provider : provider // ignore: cast_nullable_to_non_nullable
+as String,email: freezed == email ? _self.email : email // ignore: cast_nullable_to_non_nullable
+as String?,
+  ));
+}
+
+}
+
+
+/// Adds pattern-matching-related methods to [StaffIdentityModel].
+extension StaffIdentityModelPatterns on StaffIdentityModel {
+/// A variant of `map` that fallback to returning `orElse`.
+///
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case final Subclass value:
+///     return ...;
+///   case _:
+///     return orElse();
+/// }
+/// ```
+
+@optionalTypeArgs TResult maybeMap<TResult extends Object?>(TResult Function( _StaffIdentityModel value)?  $default,{required TResult orElse(),}){
+final _that = this;
+switch (_that) {
+case _StaffIdentityModel() when $default != null:
+return $default(_that);case _:
+  return orElse();
+
+}
+}
+/// A `switch`-like method, using callbacks.
+///
+/// Callbacks receives the raw object, upcasted.
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case final Subclass value:
+///     return ...;
+///   case final Subclass2 value:
+///     return ...;
+/// }
+/// ```
+
+@optionalTypeArgs TResult map<TResult extends Object?>(TResult Function( _StaffIdentityModel value)  $default,){
+final _that = this;
+switch (_that) {
+case _StaffIdentityModel():
+return $default(_that);case _:
+  throw StateError('Unexpected subclass');
+
+}
+}
+/// A variant of `map` that fallback to returning `null`.
+///
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case final Subclass value:
+///     return ...;
+///   case _:
+///     return null;
+/// }
+/// ```
+
+@optionalTypeArgs TResult? mapOrNull<TResult extends Object?>(TResult? Function( _StaffIdentityModel value)?  $default,){
+final _that = this;
+switch (_that) {
+case _StaffIdentityModel() when $default != null:
+return $default(_that);case _:
+  return null;
+
+}
+}
+/// A variant of `when` that fallback to an `orElse` callback.
+///
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case Subclass(:final field):
+///     return ...;
+///   case _:
+///     return orElse();
+/// }
+/// ```
+
+@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( String provider,  String? email)?  $default,{required TResult orElse(),}) {final _that = this;
+switch (_that) {
+case _StaffIdentityModel() when $default != null:
+return $default(_that.provider,_that.email);case _:
+  return orElse();
+
+}
+}
+/// A `switch`-like method, using callbacks.
+///
+/// As opposed to `map`, this offers destructuring.
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case Subclass(:final field):
+///     return ...;
+///   case Subclass2(:final field2):
+///     return ...;
+/// }
+/// ```
+
+@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( String provider,  String? email)  $default,) {final _that = this;
+switch (_that) {
+case _StaffIdentityModel():
+return $default(_that.provider,_that.email);case _:
+  throw StateError('Unexpected subclass');
+
+}
+}
+/// A variant of `when` that fallback to returning `null`
+///
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case Subclass(:final field):
+///     return ...;
+///   case _:
+///     return null;
+/// }
+/// ```
+
+@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( String provider,  String? email)?  $default,) {final _that = this;
+switch (_that) {
+case _StaffIdentityModel() when $default != null:
+return $default(_that.provider,_that.email);case _:
+  return null;
+
+}
+}
+
+}
+
+/// @nodoc
+@JsonSerializable()
+
+class _StaffIdentityModel implements StaffIdentityModel {
+  const _StaffIdentityModel({required this.provider, this.email});
+  factory _StaffIdentityModel.fromJson(Map<String, dynamic> json) => _$StaffIdentityModelFromJson(json);
+
+@override final  String provider;
+@override final  String? email;
+
+/// Create a copy of StaffIdentityModel
+/// with the given fields replaced by the non-null parameter values.
+@override @JsonKey(includeFromJson: false, includeToJson: false)
+@pragma('vm:prefer-inline')
+_$StaffIdentityModelCopyWith<_StaffIdentityModel> get copyWith => __$StaffIdentityModelCopyWithImpl<_StaffIdentityModel>(this, _$identity);
+
+@override
+Map<String, dynamic> toJson() {
+  return _$StaffIdentityModelToJson(this, );
+}
+
+@override
+bool operator ==(Object other) {
+    return identical(this, other) || (other.runtimeType == runtimeType&&other is _StaffIdentityModel&&(identical(other.provider, provider) || other.provider == provider)&&(identical(other.email, email) || other.email == email));
+}
+
+@JsonKey(includeFromJson: false, includeToJson: false)
+@override
+int get hashCode {
+    return Object.hash(runtimeType,provider,email);
+}
+
+@override
+String toString() {
+    return 'StaffIdentityModel(provider: $provider, email: $email)';
+}
+
+
+}
+
+/// @nodoc
+abstract mixin class _$StaffIdentityModelCopyWith<$Res> implements $StaffIdentityModelCopyWith<$Res> {
+  factory _$StaffIdentityModelCopyWith(_StaffIdentityModel value, $Res Function(_StaffIdentityModel) _then) = __$StaffIdentityModelCopyWithImpl;
+@override @useResult
+$Res call({
+ String provider, String? email
+});
+
+
+
+
+}
+/// @nodoc
+class __$StaffIdentityModelCopyWithImpl<$Res>
+    implements _$StaffIdentityModelCopyWith<$Res> {
+  __$StaffIdentityModelCopyWithImpl(this._self, this._then);
+
+  final _StaffIdentityModel _self;
+  final $Res Function(_StaffIdentityModel) _then;
+
+/// Create a copy of StaffIdentityModel
+/// with the given fields replaced by the non-null parameter values.
+@override @pragma('vm:prefer-inline') $Res call({Object? provider = null,Object? email = freezed,}) {
+  return _then(_StaffIdentityModel(
+provider: null == provider ? _self.provider : provider // ignore: cast_nullable_to_non_nullable
+as String,email: freezed == email ? _self.email : email // ignore: cast_nullable_to_non_nullable
+as String?,
   ));
 }
 

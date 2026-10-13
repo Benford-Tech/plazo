@@ -35,7 +35,10 @@ void _initBlocs() {
     ..registerFactory(() => ProReservationsBloc(locator()))
     ..registerFactory(() => ProReservationBloc(locator(), locator()))
     ..registerFactory(() => ProSpotPlanningBloc(locator(), locator(), locator(), locator(), locator(), locator(), locator()))
-    ..registerFactory(() => ProTeamBloc(locator(), locator(), locator(), locator()))
+    ..registerFactory(
+      () => ProTeamBloc(locator(), locator(), locator(), locator(), joinCode: locator(), joinRequests: locator(), accept: locator(), refuse: locator()),
+    )
+    ..registerFactory(() => ProJoinBloc(locator(), locator(), locator(), locator()))
     ..registerFactory(() => ProSettingsBloc(locator(), locator(), locator(), locator(), locator(), locator(), locator(), locator(), locator()))
     ..registerFactory(() => ProTodayBloc(locator(), locator(), pollInterval: AppConstants.livePollInterval))
     ..registerFactory(() => ProDashboardBloc(locator()))
@@ -43,7 +46,7 @@ void _initBlocs() {
     ..registerFactory(() => ProRevenueBloc(locator(), locator()))
     ..registerFactory(() => ProNotificationsBloc(locator(), locator(), locator()))
     // The staff session lives as long as the app (the router's guard reads it).
-    ..registerLazySingleton(() => ProAuthBloc(locator(), locator(), locator(), locator(), locator(), locator(), locator()))
+    ..registerLazySingleton(() => ProAuthBloc(locator(), locator(), locator(), locator(), locator(), locator(), locator(), identity: locator()))
     ..registerLazySingleton(() => ProAuthGuard(locator()))
     ..registerLazySingleton(() => AppRouter(proGuard: locator()));
 }

@@ -2,6 +2,9 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useState } from "react";
 import { toast } from "sonner";
 import { FormField } from "@/components/FormField";
+import { JoinCodeCard } from "@/components/team/JoinCodeCard";
+import { JoinRequestsCard } from "@/components/team/JoinRequestsCard";
+import { SignInBadge } from "@/components/team/SignInBadge";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -232,6 +235,11 @@ export default function TeamPage() {
     <>
       <h1 className="text-2xl font-semibold">{t.title}</h1>
       {readOnly && <p className="border border-lime-deep p-3 text-base">{fr.viewAs.readOnly}</p>}
+      {/* 13/10/2026: the code of the day and the requests it brings, side by side on a wide screen. */}
+      <div className="grid gap-4 lg:grid-cols-[minmax(0,1fr)_minmax(0,1.35fr)] lg:items-start">
+        <JoinCodeCard />
+        <JoinRequestsCard readOnly={readOnly} />
+      </div>
       <Card>
         <CardContent className="pt-2">
           {isLoading && <Skeleton className="my-4 h-24 w-full" />}
@@ -250,6 +258,14 @@ export default function TeamPage() {
                   <div className="flex flex-wrap items-center gap-2 pt-1 text-sm text-muted-foreground">
                     <Badge variant="secondary">{fr.roles[m.role]}</Badge>
                     <Badge variant={m.isActive ? "outline" : "destructive"}>{m.isActive ? t.active : t.inactive}</Badge>
+                    {!!m.signIn?.length && (
+                      <span className="inline-flex flex-wrap items-center gap-1">
+                        <span className="sr-only">{t.signInPrefix}</span>
+                        {m.signIn.map(method => (
+                          <SignInBadge key={method} method={method} />
+                        ))}
+                      </span>
+                    )}
                     {m.post && m.post !== m.role && m.postSetAt && (
                       <Badge variant="default" title={t.postSince(dateTime.format(new Date(m.postSetAt)))}>
                         {t.postToday} : {fr.roles[m.post]}

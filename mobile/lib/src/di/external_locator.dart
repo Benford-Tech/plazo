@@ -17,6 +17,7 @@ void _initExternal() {
       return Dio(_options())
         ..interceptors.addAll([
           StaffTokenInterceptor(storage: locator(), refreshDio: refreshDio, session: locator()),
+          OnboardingTokenInterceptor(storage: locator(), session: locator()),
           LoggingInterceptor(logger: locator()),
         ]);
     });

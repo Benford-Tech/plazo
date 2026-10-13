@@ -62,6 +62,14 @@
 #     API_BASE_URL / SITE_URL                 = optional (https://www.plazo.fr/api is the app's default)
 #     STRIPE_MERCHANT_ID                      = optional, Apple Pay merchant id, only once the Apple Pay
 #                                               entitlement is in ios/Runner/Runner.entitlements
+#     GOOGLE_SERVER_CLIENT_ID                 = optional (13/10/2026), Plazo Pro « Continuer avec Google » on
+#                                               Android: the « Web application » OAuth client ID of the Google
+#                                               Cloud project « Plazo » (public, the same as GOOGLE_CLIENT_IDS on
+#                                               Vercel); absent = Plazo Pro Android without the Google button
+#   Sign in with Apple (Plazo Pro, 13/10/2026): nothing to set here. Once the capability is enabled on the App ID
+#   com.benfordtech.plazopro and the profile « plazo_pro_app_store » regenerated and fetched again under the same
+#   reference name, mobile-release sees it in the profile, adds the entitlement for that build and turns the Apple
+#   button on (step « Sign in with Apple »); before that, Plazo Pro builds without it.
 #   The first upload of each app to Google Play is done by hand in the Play Console, with the .aab of the
 #   first run of mobile-release-android or mobile-release (Artifacts); on that run the Google Play step of
 #   that app ends in error ("Package not found"), the other uploads still happen, and the build ends red on
@@ -183,12 +191,16 @@ definitions:
       script: |
         set -e
         for FLAVOR in traveller pro; do
+          # Plazo Pro on Android (13/10/2026): « Continuer avec Google » needs the Web client ID (empty: no button).
           case "$FLAVOR" in
-            traveller) SLUG=plazo; ONESIGNAL="$ONESIGNAL_APP_ID_PLAZO" ;;
-            pro) SLUG=plazo-pro; ONESIGNAL="$ONESIGNAL_APP_ID_PLAZO_PRO" ;;
+            traveller) SLUG=plazo; ONESIGNAL="$ONESIGNAL_APP_ID_PLAZO"; EXTRA="" ;;
+            pro) SLUG=plazo-pro; ONESIGNAL="$ONESIGNAL_APP_ID_PLAZO_PRO"; EXTRA="--dart-define=GOOGLE_SERVER_CLIENT_ID=${GOOGLE_SERVER_CLIENT_ID:-}" ;;
           esac
           [ -n "$ONESIGNAL" ] || echo "ATTENTION: pas d'app OneSignal pour $FLAVOR, les notifications de cette version seront coupées"
-          DEFINES="--dart-define=APP_FLAVOR=$FLAVOR --dart-define=ONESIGNAL_APP_ID=$ONESIGNAL $COMMON_DEFINES"
+          if [ "$FLAVOR" = "pro" ] && [ -z "${GOOGLE_SERVER_CLIENT_ID:-}" ]; then
+            echo "ATTENTION: GOOGLE_SERVER_CLIENT_ID absent : Plazo Pro Android sans « Continuer avec Google »"
+          fi
+          DEFINES="--dart-define=APP_FLAVOR=$FLAVOR --dart-define=ONESIGNAL_APP_ID=$ONESIGNAL $COMMON_DEFINES $EXTRA"
           echo "── $SLUG (Android, $VERSION_NAME+$NEXT)"
           flutter build appbundle --release --flavor "$FLAVOR" --build-number="$NEXT" $DEFINES
           flutter build apk --release --flavor "$FLAVOR" --build-number="$NEXT" $DEFINES
@@ -301,10 +313,45 @@ workflows:
       - *flutter_packages
       - *checks
       - *android_build
+      - name: Sign in with Apple (Plazo Pro) selon son profil App Store
+        # 13/10/2026: Plazo Pro shows « Continuer avec Apple » only when its App Store profile (plazo_pro_app_store)
+        # carries the « Sign in with Apple » capability. Then the entitlement is added to RunnerPro.entitlements for
+        # this build only (never committed: signing with a profile that lacks it would fail) and the IPA gets
+        # --dart-define=APPLE_SIGN_IN=true. Without it (profile not regenerated yet), a warning, and the build goes
+        # on without the Apple button.
+        script: |
+          set -e
+          ENTITLEMENTS="ios/Runner/RunnerPro.entitlements"
+          FOUND=""
+          # Where ios_signing installs the profiles: the older folder, and the one of Xcode 16 and later.
+          for PROFILE in "$HOME/Library/MobileDevice/Provisioning Profiles/"*.mobileprovision \
+            "$HOME/Library/Developer/Xcode/UserData/Provisioning Profiles/"*.mobileprovision; do
+            [ -f "$PROFILE" ] || continue
+            DECODED="$(mktemp)"
+            if ! security cms -D -i "$PROFILE" > "$DECODED" 2>/dev/null; then rm -f "$DECODED"; continue; fi
+            APP_ID=$(/usr/libexec/PlistBuddy -c "Print :Entitlements:application-identifier" "$DECODED" 2>/dev/null || true)
+            case "$APP_ID" in
+              *".$IOS_BUNDLE_ID_PLAZO_PRO")
+                if /usr/libexec/PlistBuddy -c "Print :Entitlements:com.apple.developer.applesignin" "$DECODED" >/dev/null 2>&1; then
+                  FOUND="$PROFILE"
+                fi
+                ;;
+            esac
+            rm -f "$DECODED"
+          done
+          if [ -n "$FOUND" ]; then
+            /usr/libexec/PlistBuddy -c "Delete :com.apple.developer.applesignin" "$ENTITLEMENTS" >/dev/null 2>&1 || true
+            /usr/libexec/PlistBuddy -c "Add :com.apple.developer.applesignin array" -c "Add :com.apple.developer.applesignin:0 string Default" "$ENTITLEMENTS"
+            echo "APPLE_SIGN_IN_DEFINE=--dart-define=APPLE_SIGN_IN=true" >> "$CM_ENV"
+            echo "Sign in with Apple : capacité présente dans le profil de Plazo Pro, bouton « Continuer avec Apple » activé"
+          else
+            echo "ATTENTION: le profil App Store de Plazo Pro ($IOS_BUNDLE_ID_PLAZO_PRO) n'a pas la capacité « Sign in with Apple » : Plazo Pro est construit sans le bouton Apple (activer la capacité sur l'App ID, régénérer le profil plazo_pro_app_store puis le recharger dans Codemagic sous le même nom)"
+          fi
       - name: Profils de signature dans le projet Xcode (les deux apps)
         # ios_signing has put the account's certificate and the two App Store profiles in the keychain; the App
-        # ID of each needs Push Notifications (both apps) and Associated Domains (Plazo only). One export
-        # options plist per app: each keeps only the profile of its own bundle id.
+        # ID of each needs Push Notifications (both apps) and Associated Domains (Plazo only); Sign in with Apple
+        # on Plazo Pro is optional (previous step). One export options plist per app: each keeps only the profile
+        # of its own bundle id.
         script: |
           set -e
           xcode-project use-profiles
@@ -322,11 +369,12 @@ workflows:
           set -e
           mkdir -p build/ios/dsym
           for FLAVOR in traveller pro; do
+            # Plazo Pro: « Continuer avec Apple » when the previous steps found the capability in its profile.
             case "$FLAVOR" in
-              traveller) SLUG=plazo; ONESIGNAL="$ONESIGNAL_APP_ID_PLAZO" ;;
-              pro) SLUG=plazo-pro; ONESIGNAL="$ONESIGNAL_APP_ID_PLAZO_PRO" ;;
+              traveller) SLUG=plazo; ONESIGNAL="$ONESIGNAL_APP_ID_PLAZO"; EXTRA="" ;;
+              pro) SLUG=plazo-pro; ONESIGNAL="$ONESIGNAL_APP_ID_PLAZO_PRO"; EXTRA="${APPLE_SIGN_IN_DEFINE:-}" ;;
             esac
-            DEFINES="--dart-define=APP_FLAVOR=$FLAVOR --dart-define=ONESIGNAL_APP_ID=$ONESIGNAL $COMMON_DEFINES"
+            DEFINES="--dart-define=APP_FLAVOR=$FLAVOR --dart-define=ONESIGNAL_APP_ID=$ONESIGNAL $COMMON_DEFINES $EXTRA"
             echo "── $SLUG (iOS, $VERSION_NAME+$NEXT)"
             flutter build ipa --release --flavor "$FLAVOR" --build-number="$NEXT" $DEFINES \
               --export-options-plist="$HOME/export_options_$FLAVOR.plist"

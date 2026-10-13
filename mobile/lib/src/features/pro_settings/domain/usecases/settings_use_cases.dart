@@ -85,6 +85,47 @@ class ChangePasswordUseCase with UseCase<void, ChangePasswordParams> {
   Future<Either<Failure, void>> call(ChangePasswordParams p) => _r.changePassword(p.currentPassword, p.newPassword);
 }
 
+/// « Code du jour » (13/10/2026, managers).
+class GetJoinCodeUseCase with UseCase<JoinCodeModel, NoParams> {
+  GetJoinCodeUseCase(this._r);
+  final SettingsRepository _r;
+  @override
+  Future<Either<Failure, JoinCodeModel>> call(NoParams params) => _r.joinCode();
+}
+
+/// The requests to join the team, waiting for a manager.
+class GetJoinRequestsUseCase with UseCase<List<PendingJoinRequestModel>, NoParams> {
+  GetJoinRequestsUseCase(this._r);
+  final SettingsRepository _r;
+  @override
+  Future<Either<Failure, List<PendingJoinRequestModel>>> call(NoParams params) => _r.joinRequests();
+}
+
+class AcceptJoinParams extends Equatable {
+  const AcceptJoinParams({required this.id, required this.role});
+  final String id;
+
+  /// agent, driver, valet (never manager when joining).
+  final String role;
+  @override
+  List<Object?> get props => [id, role];
+}
+
+/// « Accepter comme … »: the person becomes a member with this role.
+class AcceptJoinRequestUseCase with UseCase<TeamMemberModel, AcceptJoinParams> {
+  AcceptJoinRequestUseCase(this._r);
+  final SettingsRepository _r;
+  @override
+  Future<Either<Failure, TeamMemberModel>> call(AcceptJoinParams p) => _r.acceptJoinRequest(p.id, p.role);
+}
+
+class RefuseJoinRequestUseCase with UseCase<void, String> {
+  RefuseJoinRequestUseCase(this._r);
+  final SettingsRepository _r;
+  @override
+  Future<Either<Failure, void>> call(String id) => _r.refuseJoinRequest(id);
+}
+
 class GetParkingSettingsUseCase with UseCase<ParkingSettingsModel, NoParams> {
   GetParkingSettingsUseCase(this._r);
   final SettingsRepository _r;

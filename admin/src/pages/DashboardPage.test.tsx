@@ -271,6 +271,28 @@ describe("DashboardPage", () => {
     expect(map).toHaveTextContent("Aéroport dans 4 min");
   });
 
+  it("13/10/2026 : une demande pour rejoindre l'équipe mène à Équipe, avec le nom et le nombre", async () => {
+    const join = {
+      kind: "join_request" as const,
+      severity: "todo" as const,
+      reservationId: null,
+      reference: null,
+      customerName: "Julie Martin",
+      plate: null,
+      detail: "2",
+      since: null,
+      minutes: null,
+    };
+    api.getDashboard.mockResolvedValue({ ...dashboard, alerts: [join] });
+    renderPage();
+    const row = await screen.findByRole("link", {
+      name: /Demande pour rejoindre l'équipe/,
+    });
+    expect(row).toHaveAttribute("href", "/equipe");
+    expect(row).toHaveTextContent("Julie Martin et 1 autre");
+    expect(row).toHaveTextContent("À faire");
+  });
+
   it("dit quand il n'y a rien à traiter ni aucun véhicule", async () => {
     api.getDashboard.mockResolvedValue({
       ...dashboard,

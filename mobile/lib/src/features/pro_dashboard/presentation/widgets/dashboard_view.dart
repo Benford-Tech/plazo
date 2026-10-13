@@ -442,14 +442,24 @@ class _AlertRow extends StatelessWidget {
       'watch' => _Tone.warn,
       _ => _Tone.line,
     };
-    final who = [alert.customerName, alert.detail].whereType<String>().where((s) => s.isNotEmpty).join(' · ');
-    final since = alert.minutes != null && !const {'flight_delayed', 'departure_delayed', 'wave_overflow'}.contains(alert.kind)
-        ? 'dashboard.since'.tr(args: ['${alert.minutes}'])
-        : null;
+    // 13/10/2026: requests to join the team (managers): « Julie Martin » or « Julie Martin et 2 autres », opens Équipe.
+    final joinRequest = alert.kind == 'join_request';
+    final waiting = joinRequest ? int.tryParse(alert.detail ?? '') ?? 1 : 0;
+    final who = joinRequest
+        ? (waiting > 1 ? 'dashboard.join_request_more'.tr(args: [alert.customerName ?? '', '${waiting - 1}']) : alert.customerName ?? '')
+        : [alert.customerName, alert.detail].whereType<String>().where((s) => s.isNotEmpty).join(' · ');
+    final minutes = alert.minutes;
+    final since = minutes == null || const {'flight_delayed', 'departure_delayed', 'wave_overflow'}.contains(alert.kind)
+        ? null
+        : joinRequest && minutes >= 24 * 60
+        ? 'dashboard.since_days'.tr(args: ['${minutes ~/ (24 * 60)}'])
+        : joinRequest && minutes >= 60
+        ? 'dashboard.since_hours'.tr(args: ['${minutes ~/ 60}'])
+        : 'dashboard.since'.tr(args: ['$minutes']);
     final id = alert.reservationId;
     return InkWell(
       key: Key('alert-${alert.kind}-${id ?? ''}'),
-      onTap: id == null ? null : () => context.router.push(ProReservationRoute(id: id)),
+      onTap: joinRequest ? () => context.router.push(const ProTeamRoute()) : (id == null ? null : () => context.router.push(ProReservationRoute(id: id))),
       child: Container(
         padding: const EdgeInsets.symmetric(vertical: 9),
         decoration: BoxDecoration(

@@ -44,6 +44,58 @@ export interface Staff {
   /** Set while a platform admin views an operator's space ("Ouvrir son espace"). */
   /** platformAccount: the platform's own account (« Plazo (tests) »), whose team can be managed in consultation. */
   viewAs?: { operatorId: string; operatorName: string; platformAccount?: boolean } | null;
+  /** Team list (13/10/2026): how the member signs in to Plazo Pro (missing from an older API). */
+  signIn?: SignInMethod[];
+  /** Session user (13/10/2026): whether a usable password is set, and the linked Apple / Google identities. */
+  hasPassword?: boolean;
+  identities?: { provider: IdentityProvider; email: string | null }[];
+}
+
+/** 13/10/2026: Plazo Pro can be signed in to with Apple (iPhone) or Google (Android). */
+export type IdentityProvider = "apple" | "google";
+export type SignInMethod = "password" | IdentityProvider;
+
+/** The roles a person can be given when a manager accepts their request (never « Gérant »). */
+export type JoinRole = Exclude<StaffRole, "manager">;
+
+/** GET /internal/staff/join-code: today's code of the operator, changing by itself at local midnight. */
+export interface JoinCode {
+  /** « K7QM2-XP9TD » */
+  code: string;
+  /** Local day of the operator's first parking (YYYY-MM-DD). */
+  day: string;
+  validUntil: string;
+  operatorName: string;
+}
+
+/** A pending request to join the team (GET /internal/staff/join-requests). */
+export interface JoinRequest {
+  id: string;
+  firstName: string;
+  lastName: string;
+  email: string;
+  /** An Apple « Masquer mon adresse » relay address. */
+  isPrivateEmail: boolean;
+  provider: IdentityProvider;
+  wishedRole: JoinRole;
+  createdAt: string;
+  expiresAt: string;
+}
+
+export type JoinRequestStatus = "pending" | "accepted" | "refused" | "cancelled" | "expired";
+
+/** A request as its author sees it (answer of the refusal). */
+export interface JoinRequestView {
+  id: string;
+  status: JoinRequestStatus;
+  operatorName: string;
+  firstName: string;
+  lastName: string;
+  wishedRole: JoinRole;
+  role: JoinRole | null;
+  createdAt: string;
+  decidedAt: string | null;
+  expiresAt: string;
 }
 
 export interface Parking {
@@ -1102,7 +1154,9 @@ export type AlertKind =
   | "wave_overflow"
   | "no_show_suspected"
   | "inbound_to_check"
-  | "blocked_return";
+  | "blocked_return"
+  // 13/10/2026: someone asks to join the team with the code of the day (managers; opens Équipe).
+  | "join_request";
 
 /** A row of the home's "À traiter" list (GET /internal/dashboard). */
 export interface DashboardAlert {

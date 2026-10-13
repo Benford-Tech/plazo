@@ -23,6 +23,11 @@ _TeamMemberModel _$TeamMemberModelFromJson(Map<String, dynamic> json) =>
       postSetAt: json['postSetAt'] == null
           ? null
           : DateTime.parse(json['postSetAt'] as String),
+      signIn:
+          (json['signIn'] as List<dynamic>?)
+              ?.map((e) => e as String)
+              .toList() ??
+          const [],
     );
 
 Map<String, dynamic> _$TeamMemberModelToJson(_TeamMemberModel instance) =>
@@ -38,7 +43,72 @@ Map<String, dynamic> _$TeamMemberModelToJson(_TeamMemberModel instance) =>
       'lastLoginAt': instance.lastLoginAt?.toIso8601String(),
       'post': instance.post,
       'postSetAt': instance.postSetAt?.toIso8601String(),
+      'signIn': instance.signIn,
     };
+
+_JoinCodeModel _$JoinCodeModelFromJson(Map<String, dynamic> json) =>
+    _JoinCodeModel(
+      code: json['code'] as String,
+      day: json['day'] as String?,
+      validUntil: json['validUntil'] == null
+          ? null
+          : DateTime.parse(json['validUntil'] as String),
+      operatorName: json['operatorName'] as String? ?? '',
+    );
+
+Map<String, dynamic> _$JoinCodeModelToJson(_JoinCodeModel instance) =>
+    <String, dynamic>{
+      'code': instance.code,
+      'day': instance.day,
+      'validUntil': instance.validUntil?.toIso8601String(),
+      'operatorName': instance.operatorName,
+    };
+
+_PendingJoinRequestModel _$PendingJoinRequestModelFromJson(
+  Map<String, dynamic> json,
+) => _PendingJoinRequestModel(
+  id: json['id'] as String,
+  firstName: json['firstName'] as String? ?? '',
+  lastName: json['lastName'] as String? ?? '',
+  email: json['email'] as String?,
+  isPrivateEmail: json['isPrivateEmail'] as bool? ?? false,
+  provider: json['provider'] as String,
+  wishedRole: json['wishedRole'] as String? ?? 'agent',
+  createdAt: DateTime.parse(json['createdAt'] as String),
+  expiresAt: json['expiresAt'] == null
+      ? null
+      : DateTime.parse(json['expiresAt'] as String),
+);
+
+Map<String, dynamic> _$PendingJoinRequestModelToJson(
+  _PendingJoinRequestModel instance,
+) => <String, dynamic>{
+  'id': instance.id,
+  'firstName': instance.firstName,
+  'lastName': instance.lastName,
+  'email': instance.email,
+  'isPrivateEmail': instance.isPrivateEmail,
+  'provider': instance.provider,
+  'wishedRole': instance.wishedRole,
+  'createdAt': instance.createdAt.toIso8601String(),
+  'expiresAt': instance.expiresAt?.toIso8601String(),
+};
+
+_PendingJoinRequestsModel _$PendingJoinRequestsModelFromJson(
+  Map<String, dynamic> json,
+) => _PendingJoinRequestsModel(
+  data:
+      (json['data'] as List<dynamic>?)
+          ?.map(
+            (e) => PendingJoinRequestModel.fromJson(e as Map<String, dynamic>),
+          )
+          .toList() ??
+      const [],
+);
+
+Map<String, dynamic> _$PendingJoinRequestsModelToJson(
+  _PendingJoinRequestsModel instance,
+) => <String, dynamic>{'data': instance.data};
 
 _ParkingSettingsModel _$ParkingSettingsModelFromJson(
   Map<String, dynamic> json,

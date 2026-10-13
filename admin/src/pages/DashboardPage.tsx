@@ -218,7 +218,9 @@ function AlertRow({ alert }: { alert: DashboardAlert }) {
                 timeOf(alert.since),
                 alert.minutes,
               )
-            : [alert.customerName, alert.detail].filter(Boolean).join(" · ")}
+            : alert.kind === "join_request" && /^\d+$/.test(alert.detail ?? "")
+              ? a.joinDetail(Number(alert.detail), alert.customerName)
+              : [alert.customerName, alert.detail].filter(Boolean).join(" · ")}
         </span>
       </span>
       {alert.minutes !== null &&
@@ -246,6 +248,13 @@ function AlertRow({ alert }: { alert: DashboardAlert }) {
   if (alert.kind === "wave_overflow")
     return (
       <Link to="/navettes" className={cn(className, "hover:bg-panel-2")}>
+        {body}
+      </Link>
+    );
+  // 13/10/2026: someone typed the code of the day; the manager answers in Équipe.
+  if (alert.kind === "join_request")
+    return (
+      <Link to="/equipe" className={cn(className, "hover:bg-panel-2")}>
         {body}
       </Link>
     );

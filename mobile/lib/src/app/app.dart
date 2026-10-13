@@ -26,9 +26,10 @@ class _AppState extends State<App> {
   @override
   void initState() {
     super.initState();
-    // A tapped staff notification opens the day's planning.
+    // A tapped staff notification opens the day's planning; a request to join the team (13/10/2026, managers) Équipe.
     _pushOpened = locator<PushService>().opened.listen((data) {
       if (data['type'] == 'arrival') unawaited(_router.navigate(const ProShellRoute(children: [ProTodayRoute()])));
+      if (data['type'] == 'join_request') unawaited(_router.navigate(const ProTeamRoute()));
     });
   }
 

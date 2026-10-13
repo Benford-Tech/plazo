@@ -54,6 +54,8 @@ const frBase = {
     terms: "Conditions générales",
     privacy: "Confidentialité",
     legal: "Mentions légales",
+    // 13/10/2026: the public page the stores ask for.
+    deleteProAccount: `Supprimer un compte ${P} Pro`,
   },
   search: {
     airport: "Aéroport",

@@ -17,6 +17,10 @@ abstract class SettingsRepository {
   Future<Either<Failure, TeamMemberModel>> updateStaff(String id, {String? role, bool? isActive, String? firstName, String? lastName});
   Future<Either<Failure, void>> resetPassword(String id, String password);
   Future<Either<Failure, void>> changePassword(String currentPassword, String newPassword);
+  Future<Either<Failure, JoinCodeModel>> joinCode();
+  Future<Either<Failure, List<PendingJoinRequestModel>>> joinRequests();
+  Future<Either<Failure, TeamMemberModel>> acceptJoinRequest(String id, String role);
+  Future<Either<Failure, void>> refuseJoinRequest(String id);
   Future<Either<Failure, ParkingSettingsModel>> parking();
   Future<Either<Failure, ParkingSettingsModel>> updateParking(String id, ParkingSettingsInput input);
   Future<Either<Failure, ParkingSettingsModel>> setShuttleTracking(String id, String tracking);
@@ -54,6 +58,18 @@ class SettingsRepositoryImpl implements SettingsRepository {
   @override
   Future<Either<Failure, void>> changePassword(String currentPassword, String newPassword) =>
       _source.changePassword(currentPassword, newPassword).makeRequest();
+
+  @override
+  Future<Either<Failure, JoinCodeModel>> joinCode() => _source.joinCode().makeRequest();
+
+  @override
+  Future<Either<Failure, List<PendingJoinRequestModel>>> joinRequests() => _source.joinRequests().makeRequest();
+
+  @override
+  Future<Either<Failure, TeamMemberModel>> acceptJoinRequest(String id, String role) => _source.acceptJoinRequest(id, role).makeRequest();
+
+  @override
+  Future<Either<Failure, void>> refuseJoinRequest(String id) => _source.refuseJoinRequest(id).makeRequest();
 
   @override
   Future<Either<Failure, ParkingSettingsModel>> parking() => _source.parking().makeRequest();

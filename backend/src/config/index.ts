@@ -1,3 +1,4 @@
+import { createHmac } from 'crypto';
 import { config } from 'dotenv';
 import { existsSync, readFileSync } from 'fs';
 import { resolve } from 'path';
@@ -149,6 +150,60 @@ export function isPlatformAdmin(email: string | null | undefined): boolean {
 export function isVerifiedPlatformAdmin(staff: { email: string | null; emailVerifiedAt: Date | null } | null | undefined): boolean {
   return !!staff && !!staff.emailVerifiedAt && isPlatformAdmin(staff.email);
 }
+
+// Plazo Pro: sign in with Apple (iPhone) or Google (Android), then join a parking with its daily code (13/10/2026).
+// Read on every call so that tests can switch the providers on and off.
+const commaList = (value: string | undefined): string[] =>
+  (value || '')
+    .split(',')
+    .map(item => item.trim())
+    .filter(Boolean);
+
+/** The app's bundle identifiers accepted as the `aud` of an Apple identity token (default: Plazo Pro). */
+export function appleClientIds(): string[] {
+  const ids = commaList(process.env.APPLE_CLIENT_IDS);
+  return ids.length ? ids : ['com.benfordtech.plazopro'];
+}
+
+/**
+ * The « Sign in with Apple » key (a .p8 of the Apple Developer account, with its Key ID): it signs the client secret
+ * that revokes a person's Apple tokens when they delete their account (App Store rule 5.1.1(v)). Apple sign-in is
+ * offered only when both are set. The PEM may come with literal "\n" (one-line environment values).
+ */
+export function appleSignInSettings(): { teamId: string; clientIds: string[]; keyId: string; privateKey: string } | null {
+  const keyId = process.env.APPLE_SIGNIN_KEY_ID?.trim() || '';
+  const privateKey = (process.env.APPLE_SIGNIN_PRIVATE_KEY || '').replace(/\\n/g, '\n').trim();
+  if (!keyId || !privateKey) return null;
+  return { teamId: process.env.APPLE_TEAM_ID?.trim() || '3BX4795V2Y', clientIds: appleClientIds(), keyId, privateKey };
+}
+
+/** The Google OAuth client IDs accepted as the `aud` of a Google ID token (the Web client used as serverClientId). */
+export function googleClientIds(): string[] {
+  return commaList(process.env.GOOGLE_CLIENT_IDS);
+}
+
+/** Which sign-in buttons the app may show. */
+export function identityProviders(): { apple: boolean; google: boolean } {
+  return { apple: appleSignInSettings() !== null, google: googleClientIds().length > 0 };
+}
+
+/** The secret of the daily join codes, derived from SECRET_KEY (no variable of its own). */
+export function joinCodeSecret(): Buffer {
+  return createHmac('sha256', process.env.SECRET_KEY || '')
+    .update('plazo-join-code-v1')
+    .digest();
+}
+
+// An identity not linked to a member yet uses its own short session (« onboarding »), and a join request waits for a
+// manager this long.
+export const ONBOARDING_TOKEN_TTL_DAYS = 7;
+export const JOIN_REQUEST_TTL_DAYS = 7;
+// Wrong codes typed: per identity, 5 in 15 minutes and 20 in 24 hours; per address, 30 in an hour.
+export const JOIN_FAILURE_LIMITS = {
+  identityShort: { max: 5, minutes: 15 },
+  identityDay: { max: 20, minutes: 24 * 60 },
+  ip: { max: 30, minutes: 60 },
+};
 
 // OneSignal (push notifications to the staff's phones). Read on every call so that tests can
 // switch pushes on and off. Without both values, no push is sent (the rest works the same).

@@ -67,6 +67,7 @@ model Operator {
   shuttleTrips          ShuttleTrip[]
   smsSettings           OperatorSmsSettings?
   smsOutbox             SmsOutbox[]
+  joinRequests          StaffJoinRequest[]
 
   @@map("operators")
 }
@@ -87,24 +88,24 @@ enum BookingNotify {
 
 // Operator personnel: manager, front-desk agent, shuttle driver, valet.
 model Staff {
-  id              String     @id @default(cuid())
+  id              String        @id @default(cuid())
   operatorId      String
-  email           String     @unique // always lower-cased
+  email           String        @unique // always lower-cased
   // First and last name (06/10/2026); `name` stays the display form "Prénom Nom", kept in sync by the server.
-  firstName       String     @default("")
-  lastName        String     @default("")
+  firstName       String        @default("")
+  lastName        String        @default("")
   name            String
   phone           String?
   role            StaffRole
   password        String
-  isActive        Boolean    @default(true)
+  isActive        Boolean       @default(true)
   lastLoginAt     DateTime?
   // Set once the person proved they own the email (verification link, or an accepted invitation).
   // Self sign-ups start unverified: they can log in, but cannot submit their listing for review.
   emailVerifiedAt DateTime?
   // Push notifications of travellers' arrivals (see ArrivalSignal): drop-offs, returns, or both.
-  notifyArrivals  Boolean    @default(true)
-  notifyReturns   Boolean    @default(true)
+  notifyArrivals  Boolean       @default(true)
+  notifyReturns   Boolean       @default(true)
   // The post held today (R-C, 04/10/2026): the app puts that post's pages first. Only a post the role
   // covers (see domain/roles.ts allowedPosts); the role, not the post, decides the permissions.
   post            StaffRole?
@@ -114,18 +115,25 @@ model Staff {
   vehicleId       String?
   vehicleSetAt    DateTime?
   // Push notifications of the shuttles' departures and returns (N-A, 05/10/2026).
-  notifyShuttles  Boolean    @default(true)
+  notifyShuttles  Boolean       @default(true)
   /**
    * New bookings (N-A, 08/10/2026): a push per booking made on the site or imported (`immediate`, 06/10/2026), the
    * hourly digest of every channel (`hourly`, managers by default), or nothing (`never`).
    */
   bookingNotify   BookingNotify @default(immediate)
   // Messages from the platform (E-A, 05/10/2026): the super admin's broadcasts to the staff.
-  notifyPlatform  Boolean    @default(true)
-  createdAt       DateTime   @default(now())
-  updatedAt       DateTime   @default(now()) @updatedAt
+  notifyPlatform  Boolean       @default(true)
+  // 13/10/2026 (sign in with Apple / Google): when the person last chose their password. Null: the stored hash is a
+  // random one nobody knows (an invited manager before the invitation, a member who joined with the daily code).
+  passwordSetAt   DateTime?
+  // « Quitter ce parking » (the email is replaced, the names kept: business records) and « Supprimer mon compte »
+  // (anonymised: names, email, phone). CHECKs: neither while active.
+  leftAt          DateTime?
+  deletedAt       DateTime?
+  createdAt       DateTime      @default(now())
+  updatedAt       DateTime      @default(now()) @updatedAt
 
-  operator            Operator         @relation(fields: [operatorId], references: [id], onDelete: Cascade)
+  operator            Operator           @relation(fields: [operatorId], references: [id], onDelete: Cascade)
   tokens              StaffToken[]
   accountTokens       AccountToken[]
   auditLogs           AuditLog[]
@@ -133,8 +141,11 @@ model Staff {
   capacityStudies     CapacityStudy[]
   devices             StaffDevice[]
   shuttleTrips        ShuttleTrip[]
-  shuttleVehicles     ShuttleVehicle[] @relation("UsualDriver")
-  vehicle             ShuttleVehicle?  @relation("VehicleOfTheDay", fields: [vehicleId], references: [id], onDelete: SetNull)
+  shuttleVehicles     ShuttleVehicle[]   @relation("UsualDriver")
+  vehicle             ShuttleVehicle?    @relation("VehicleOfTheDay", fields: [vehicleId], references: [id], onDelete: SetNull)
+  identities          StaffIdentity[]
+  joinRequests        StaffJoinRequest[] @relation("JoinRequestMember")
+  decidedJoinRequests StaffJoinRequest[] @relation("JoinRequestDecider")
 
   @@index([operatorId])
   @@map("staff")
@@ -191,6 +202,108 @@ model LoginAttempt {
 
   @@index([email, createdAt])
   @@map("login_attempts")
+}
+
+// 13/10/2026: Plazo Pro sign-in with Apple (iPhone) or Google (Android).
+enum IdentityProvider {
+  apple
+  google
+}
+
+// A person signed in with Apple or Google (the provider's stable `sub`). Linked to a member once a manager accepted
+// their join request (or once a member links it from « Mon compte »); unlinked when the member leaves. One identity
+// per provider and member (partial unique index in the migration). No provider token is stored.
+model StaffIdentity {
+  id             String           @id @default(cuid())
+  provider       IdentityProvider
+  subject        String
+  email          String?
+  emailVerified  Boolean          @default(false)
+  // Apple's « Masquer mon adresse » (…@privaterelay.appleid.com).
+  isPrivateEmail Boolean          @default(false)
+  // From the provider (Apple: the first authorisation only), else typed on « Rejoindre un parking ».
+  firstName      String           @default("")
+  lastName       String           @default("")
+  staffId        String?
+  createdAt      DateTime         @default(now())
+  lastSignInAt   DateTime?
+
+  staff        Staff?             @relation(fields: [staffId], references: [id], onDelete: SetNull)
+  tokens       IdentityToken[]
+  joinRequests StaffJoinRequest[]
+  joinAttempts JoinAttempt[]
+
+  @@unique([provider, subject])
+  @@index([staffId])
+  @@map("staff_identities")
+}
+
+// The short session (« onboarding ») of an identity not linked to a member yet: JWT { sub: identityId, type:
+// 'onboarding', uuid } valid while its row exists, 7 days. Refused on every staff route (config/passport.ts).
+model IdentityToken {
+  id         String   @id @default(cuid())
+  uid        String   @unique
+  identityId String
+  expiresAt  DateTime
+  createdAt  DateTime @default(now())
+
+  identity StaffIdentity @relation(fields: [identityId], references: [id], onDelete: Cascade)
+
+  @@index([identityId])
+  @@map("identity_tokens")
+}
+
+enum JoinRequestStatus {
+  pending
+  accepted
+  refused
+  cancelled // by the person
+  expired // 7 days without an answer
+}
+
+// A request to join an operator's team, made with its daily code; a manager accepts it (creating the member with the
+// role chosen, never manager) or refuses it. One pending request per identity (partial unique index).
+model StaffJoinRequest {
+  id          String            @id @default(cuid())
+  operatorId  String
+  identityId  String
+  firstName   String
+  lastName    String
+  email       String
+  wishedRole  StaffRole
+  status      JoinRequestStatus @default(pending)
+  role        StaffRole?
+  staffId     String?
+  decidedById String?
+  decidedAt   DateTime?
+  expiresAt   DateTime
+  createdAt   DateTime          @default(now())
+  updatedAt   DateTime          @default(now()) @updatedAt
+
+  operator  Operator      @relation(fields: [operatorId], references: [id], onDelete: Cascade)
+  identity  StaffIdentity @relation(fields: [identityId], references: [id], onDelete: Cascade)
+  staff     Staff?        @relation("JoinRequestMember", fields: [staffId], references: [id], onDelete: SetNull)
+  decidedBy Staff?        @relation("JoinRequestDecider", fields: [decidedById], references: [id], onDelete: SetNull)
+
+  @@index([operatorId, status, createdAt])
+  @@index([identityId, createdAt])
+  @@map("staff_join_requests")
+}
+
+// A daily code typed (13/10/2026): the wrong ones are counted per identity and per address (rate-limit key) to stop
+// guessing. The code typed is never stored. Purged after 7 days.
+model JoinAttempt {
+  id         String   @id @default(cuid())
+  identityId String?
+  ipKey      String
+  success    Boolean
+  createdAt  DateTime @default(now())
+
+  identity StaffIdentity? @relation(fields: [identityId], references: [id], onDelete: SetNull)
+
+  @@index([identityId, createdAt])
+  @@index([ipKey, createdAt])
+  @@map("join_attempts")
 }
 
 model Parking {

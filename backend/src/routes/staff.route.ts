@@ -1,5 +1,6 @@
 import { Router } from 'express';
 import { StaffController } from '@/controllers/staff.controller';
+import { AcceptJoinRequestDto, DeleteAccountDto, GoogleSignInDto, LinkAppleDto } from '@/dtos/identity.dto';
 import { ChangePasswordDto, CreateStaffDto, ResetPasswordDto, UpdateMeDto, UpdateStaffDto, SetPostDto, SetVehicleDto } from '@/dtos/staff.dto';
 import { Routes } from '@/interfaces/routes.interface';
 import { RefuseInViewAs, RefuseInViewAsOutsidePlatformAccount, StaffAuthMiddleware } from '@/middlewares/staff-auth.middleware';
@@ -15,7 +16,7 @@ import { ValidationMiddleware } from '@/middlewares/validation.middleware';
  * @swagger
  * /internal/staff/me:
  *   get:
- *     summary: Current staff member, with the operator name, isPlatformAdmin, emailVerified, viewAs ({ operatorId, operatorName } in a platform admin's view-as session, else null), post / postSetAt, effectivePost and allowedPosts
+ *     summary: Current staff member, with the operator name, isPlatformAdmin, emailVerified, viewAs ({ operatorId, operatorName } in a platform admin's view-as session, else null), post / postSetAt, effectivePost, allowedPosts, hasPassword and identities [{ provider, email }]
  *     tags: [Staff]
  *   patch:
  *     summary: Votre nom (09/10/2026) — one's own first and last name (trimmed, both required; `name` recomputed as "Prénom Nom"; 403 view_as_read_only); answers like GET
@@ -26,6 +27,28 @@ import { ValidationMiddleware } from '@/middlewares/validation.middleware';
  *     responses:
  *       200: { description: The session user, with the new name }
  *       400: { description: "validation_failed: fields.firstName / fields.lastName = required | too_long" }
+ *   delete:
+ *     summary: Supprimer mon compte — anonymises the member (« Compte supprimé »), deletes sessions, links, phones and identities
+ *     description: >
+ *       Confirmed by the password (when the member has one), Apple's fresh authorization code (exchanged then revoked at
+ *       Apple) or a fresh Google ID token of an identity linked to the member. Trips and reservations handled stay in
+ *       the parking's history. The last manager may delete their account (the app warns them).
+ *     tags: [Staff]
+ *     requestBody:
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               password: { type: string }
+ *               appleAuthorizationCode: { type: string }
+ *               googleIdToken: { type: string }
+ *     responses:
+ *       204: { description: Deleted }
+ *       401: { description: The confirmation is wrong or missing (reauth_failed) }
+ *       403: { description: "In consultation (view_as_read_only), a platform owner (cannot_delete_platform)" }
+ *       409: { description: "trip_running, provider_unavailable" }
+ *       503: { description: Apple cannot be reached (provider_unreachable); nothing deleted }
  * /internal/staff/me/vehicle:
  *   patch:
  *     summary: Mon véhicule aujourd'hui (V-A) — the shuttle taken for the day ({ vehicleId } or null to hand it back; 409 vehicle_taken with holderName, 422 vehicle_out_of_service); the session user then carries `vehicle`
@@ -55,7 +78,7 @@ import { ValidationMiddleware } from '@/middlewares/validation.middleware';
  *               newPassword: { type: string, minLength: 10 }
  * /internal/staff:
  *   get:
- *     summary: List the team (manager only)
+ *     summary: List the team (manager only); members who left or deleted their account are not listed, each member has signIn ['password' | 'apple' | 'google']
  *     tags: [Staff]
  *   post:
  *     summary: Create a team member (manager only)
@@ -96,6 +119,85 @@ import { ValidationMiddleware } from '@/middlewares/validation.middleware';
  *     tags: [Staff]
  *     parameters:
  *       - { in: path, name: id, required: true, schema: { type: string } }
+ * /internal/staff/join-code:
+ *   get:
+ *     summary: Code du jour (13/10/2026) — the code a new recruit types in Plazo Pro after signing in with Apple or Google (managers; also in consultation)
+ *     description: >
+ *       Ten characters derived from the operator and its local day (first parking's time zone): it changes by itself at
+ *       local midnight (validUntil). `accepting` is false for a suspended, archived or demo operator (the code is then refused).
+ *     tags: [Staff]
+ *     responses:
+ *       200: { description: "{ code: 'K7QM2-XP9TD', day: 'YYYY-MM-DD', validUntil: ISO, operatorName, accepting }" }
+ * /internal/staff/join-requests:
+ *   get:
+ *     summary: Demandes en attente — the join requests waiting (not expired), oldest first (managers; also in consultation)
+ *     tags: [Staff]
+ *     responses:
+ *       200: { description: "{ data: [{ id, firstName, lastName, email, isPrivateEmail, provider: apple|google, wishedRole, createdAt, expiresAt }] }" }
+ * /internal/staff/join-requests/{id}/accept:
+ *   post:
+ *     summary: Accept a join request — creates the member with the role chosen (never manager) and links their Apple / Google identity
+ *     description: >
+ *       The member gets the request's email and names, no password of their own (signIn ['apple'] or ['google']; a
+ *       manager may give one with « Nouveau mot de passe »), the email verified when the provider verified it (never
+ *       for a platform owner's address). Read-only in consultation outside the platform's own account (view_as_read_only).
+ *     tags: [Staff]
+ *     parameters:
+ *       - { in: path, name: id, required: true, schema: { type: string } }
+ *     requestBody:
+ *       required: true
+ *       content: { application/json: { schema: { type: object, required: [role], properties: { role: { type: string, enum: [agent, driver, valet] } } } } }
+ *     responses:
+ *       201: { description: "{ staff } (like a member of GET /internal/staff, with signIn)" }
+ *       400: { description: "validation_failed: fields.role = invalid_role" }
+ *       404: { description: Not a request of this operator (not_found) }
+ *       409: { description: "join_request_closed (answered, cancelled or expired), email_taken (the email is used by a Plazo account since)" }
+ * /internal/staff/join-requests/{id}/refuse:
+ *   post:
+ *     summary: Refuse a join request (the person may ask again with a new code)
+ *     tags: [Staff]
+ *     parameters:
+ *       - { in: path, name: id, required: true, schema: { type: string } }
+ *     responses:
+ *       200: { description: "{ request: JoinRequestView } (status refused)" }
+ *       404: { description: not_found }
+ *       409: { description: join_request_closed }
+ * /internal/staff/me/identities/apple:
+ *   post:
+ *     summary: Lier mon identifiant Apple (Mon compte) — { identityToken, rawNonce }; answers { user } (identities, hasPassword)
+ *     tags: [Staff]
+ *     responses:
+ *       200: { description: "{ user }" }
+ *       401: { description: identity_invalid }
+ *       403: { description: In consultation (view_as_read_only) }
+ *       409: { description: "identity_taken (linked to another account), already_linked (an Apple identity is already linked), provider_unavailable" }
+ * /internal/staff/me/identities/google:
+ *   post:
+ *     summary: Link one's Google account (Mon compte) — { idToken }; same answers as Apple
+ *     tags: [Staff]
+ *     responses:
+ *       200: { description: "{ user }" }
+ * /internal/staff/me/identities/{provider}:
+ *   delete:
+ *     summary: Unlink Apple or Google; refused when it is the only way left to sign in (no password, no other identity)
+ *     tags: [Staff]
+ *     parameters:
+ *       - { in: path, name: provider, required: true, schema: { type: string, enum: [apple, google] } }
+ *     responses:
+ *       200: { description: "{ user }" }
+ *       404: { description: Not linked (not_found) }
+ *       409: { description: sign_in_required }
+ * /internal/staff/me/leave:
+ *   post:
+ *     summary: Quitter ce parking — the member becomes inactive, their email is freed, sessions, phones and identities are released
+ *     description: >
+ *       When an Apple / Google identity was linked, an onboarding session is returned so that the app goes straight to
+ *       « Rejoindre un parking ». Refused for the last active manager and during a running shuttle trip.
+ *     tags: [Staff]
+ *     responses:
+ *       200: { description: "{ onboarding: { onboardingToken, expiresAt, identity, request: null } | null }" }
+ *       403: { description: "In consultation (view_as_read_only), a platform owner (cannot_delete_platform)" }
+ *       409: { description: "last_manager, trip_running" }
  */
 export class StaffRoute implements Routes {
   public router = Router();
@@ -147,5 +249,42 @@ export class StaffRoute implements Routes {
       ValidationMiddleware(ResetPasswordDto),
       this.staff.resetPassword,
     );
+
+    // « Rejoindre un parking » (13/10/2026). The code and the requests are read in consultation too; accepting and
+    // refusing are team writes (read-only in consultation, except in the platform's own account).
+    this.router.get('/internal/staff/join-code', StaffAuthMiddleware('team:manage'), this.staff.joinCode);
+    this.router.get('/internal/staff/join-requests', StaffAuthMiddleware('team:manage'), this.staff.listJoinRequests);
+    this.router.post(
+      '/internal/staff/join-requests/:id/accept',
+      StaffAuthMiddleware('team:manage'),
+      RefuseInViewAsOutsidePlatformAccount(),
+      ValidationMiddleware(AcceptJoinRequestDto),
+      this.staff.acceptJoinRequest,
+    );
+    this.router.post(
+      '/internal/staff/join-requests/:id/refuse',
+      StaffAuthMiddleware('team:manage'),
+      RefuseInViewAsOutsidePlatformAccount(),
+      this.staff.refuseJoinRequest,
+    );
+
+    // One's own account (Mon compte): never in a platform admin's consultation.
+    this.router.post(
+      '/internal/staff/me/identities/apple',
+      StaffAuthMiddleware(),
+      RefuseInViewAs(),
+      ValidationMiddleware(LinkAppleDto),
+      this.staff.linkApple,
+    );
+    this.router.post(
+      '/internal/staff/me/identities/google',
+      StaffAuthMiddleware(),
+      RefuseInViewAs(),
+      ValidationMiddleware(GoogleSignInDto),
+      this.staff.linkGoogle,
+    );
+    this.router.delete('/internal/staff/me/identities/:provider', StaffAuthMiddleware(), RefuseInViewAs(), this.staff.unlinkIdentity);
+    this.router.post('/internal/staff/me/leave', StaffAuthMiddleware(), RefuseInViewAs(), this.staff.leave);
+    this.router.delete('/internal/staff/me', StaffAuthMiddleware(), RefuseInViewAs(), ValidationMiddleware(DeleteAccountDto), this.staff.deleteMe);
   }
 }
