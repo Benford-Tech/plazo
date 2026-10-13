@@ -19,13 +19,13 @@ export class AppleSignInDto {
   public rawNonce: string;
 
   @IsOptional()
-  @IsString()
   @MaxLength(200, { message: 'too_long' })
+  @IsString({ message: 'invalid' })
   public givenName?: string;
 
   @IsOptional()
-  @IsString()
   @MaxLength(200, { message: 'too_long' })
+  @IsString({ message: 'invalid' })
   public familyName?: string;
 }
 
@@ -77,8 +77,8 @@ export class JoinParkingDto {
 /** Deleting an identity that never joined: Apple's fresh authorization code, to revoke its tokens. */
 export class DeleteIdentityDto {
   @IsOptional()
-  @IsString()
   @MaxLength(2048, { message: 'too_long' })
+  @IsString({ message: 'invalid' })
   public authorizationCode?: string;
 }
 
@@ -88,20 +88,23 @@ export class AcceptJoinRequestDto {
   public role: JoinableRole;
 }
 
-/** « Supprimer mon compte »: one proof that it is really the person (password, Apple code or Google token). */
+/**
+ * « Supprimer mon compte »: a proof that it is really the person. With an Apple identity linked, Apple's fresh
+ * authorization code is required (Plazo must leave the Apple account); otherwise the password or a fresh Google token.
+ */
 export class DeleteAccountDto {
   @IsOptional()
-  @IsString()
   @MaxLength(200, { message: 'too_long' })
+  @IsString({ message: 'invalid' })
   public password?: string;
 
   @IsOptional()
-  @IsString()
   @MaxLength(2048, { message: 'too_long' })
+  @IsString({ message: 'invalid' })
   public appleAuthorizationCode?: string;
 
   @IsOptional()
-  @IsString()
   @MaxLength(8192, { message: 'too_long' })
+  @IsString({ message: 'invalid' })
   public googleIdToken?: string;
 }

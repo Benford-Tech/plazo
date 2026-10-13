@@ -83,8 +83,17 @@ abstract class ProTeamState with _$ProTeamState {
 /// The operator's team: members, roles, access, temporary passwords (managers); since 13/10/2026 the code du jour
 /// and the requests to join the team (accept with a role, refuse).
 class ProTeamBloc extends Bloc<ProTeamEvent, ProTeamState> {
-  ProTeamBloc(this._get, this._create, this._update, this._reset, {this._joinCode, this._joinRequests, this._accept, this._refuse})
-    : super(const ProTeamState()) {
+  ProTeamBloc(
+    this._get,
+    this._create,
+    this._update,
+    this._reset, {
+    this._joinCode,
+    this._joinRequests,
+    this._accept,
+    this._refuse,
+    Stream<Map<String, dynamic>>? pushOpened,
+  }) : super(const ProTeamState()) {
     on<ProTeamStarted>(_onStarted);
     on<ProTeamJoinRefreshed>((e, emit) => _loadJoin(emit));
     on<ProTeamJoinAccepted>(_onAccepted);
@@ -96,7 +105,14 @@ class ProTeamBloc extends Bloc<ProTeamEvent, ProTeamState> {
     on<ProTeamNoticeShown>(
       (e, emit) => emit(state.copyWith(notice: null, noticeArg: null, errorCode: null, actionState: ViewState.idle, fieldErrors: const {})),
     );
+    // A « Demande pour rejoindre l'équipe » notification opened while Équipe is already open: the router keeps this
+    // page, so the requests are read again here.
+    _pushes = pushOpened?.listen((data) {
+      if (data['type'] == 'join_request' && !isClosed) add(const ProTeamJoinRefreshed());
+    });
   }
+
+  StreamSubscription<Map<String, dynamic>>? _pushes;
 
   final GetTeamUseCase _get;
   final CreateStaffUseCase _create;
@@ -204,8 +220,9 @@ class ProTeamBloc extends Bloc<ProTeamEvent, ProTeamState> {
   }
 
   @override
-  Future<void> close() {
+  Future<void> close() async {
     _midnight?.cancel();
+    await _pushes?.cancel();
     return super.close();
   }
 

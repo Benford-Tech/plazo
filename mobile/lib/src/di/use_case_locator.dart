@@ -118,6 +118,7 @@ void _initUseCaseLocator() {
         unlink: locator(),
         leave: locator(),
         deleteAccount: locator(),
+        device: ProvidersModel(apple: locator<IdentitySignInService>().appleSupported, google: locator<IdentitySignInService>().googleSupported),
       ),
     )
     ..registerLazySingleton(() => GetOnboardingUseCase(locator()))

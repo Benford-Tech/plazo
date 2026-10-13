@@ -102,7 +102,12 @@ class NativeIdentitySignInService implements IdentitySignInService {
     }
   }
 
-  Future<void> _google() => _googleReady ??= GoogleSignIn.instance.initialize(serverClientId: _googleServerClientId);
+  /// Google's setup, once per run; a failed one (Play Services busy…) is tried again at the next tap.
+  Future<void> _google() =>
+      _googleReady ??= GoogleSignIn.instance.initialize(serverClientId: _googleServerClientId).catchError((Object error, StackTrace stack) {
+        _googleReady = null;
+        Error.throwWithStackTrace(error, stack);
+      });
 
   @override
   Future<String> googleIdToken() async {

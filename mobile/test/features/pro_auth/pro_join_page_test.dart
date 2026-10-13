@@ -1,9 +1,16 @@
+import 'dart:async';
+
 import 'package:bloc_test/bloc_test.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
+import 'package:parking_app/src/core/error/failure.dart';
+import 'package:parking_app/src/core/utils/either.dart';
+import 'package:parking_app/src/core/utils/use_case.dart';
+import 'package:parking_app/src/di/locator.dart';
 import 'package:parking_app/src/features/pro_auth/data/models/onboarding_models.dart';
+import 'package:parking_app/src/features/pro_auth/domain/usecases/identity_use_cases.dart';
 import 'package:parking_app/src/features/pro_auth/presentation/bloc/pro_auth_bloc.dart';
 import 'package:parking_app/src/features/pro_auth/presentation/bloc/pro_join_bloc.dart';
 import 'package:parking_app/src/features/pro_auth/presentation/pages/pro_join_page.dart';
@@ -14,6 +21,14 @@ import '../../helpers/pump_app.dart';
 class MockAuthBloc extends MockBloc<ProAuthEvent, ProAuthState> implements ProAuthBloc {}
 
 class MockJoinBloc extends MockBloc<ProJoinEvent, ProJoinState> implements ProJoinBloc {}
+
+class MockGet extends Mock implements GetOnboardingUseCase {}
+
+class MockJoin extends Mock implements JoinParkingUseCase {}
+
+class MockCancel extends Mock implements CancelJoinRequestUseCase {}
+
+class MockOpen extends Mock implements OpenJoinedSessionUseCase {}
 
 const identity = IdentityModel(provider: 'apple', email: 'julie.m@icloud.com', firstName: 'Julie', lastName: 'Martin');
 final now = DateTime.now();
@@ -33,6 +48,7 @@ void main() {
     await setUpLocalizedTests();
     registerFallbackValue(const ProJoinRefreshed());
     registerFallbackValue(const ProAuthLogoutRequested());
+    registerFallbackValue(NoParams());
   });
 
   late MockAuthBloc auth;
@@ -88,6 +104,63 @@ void main() {
       verify(() => auth.add(any(that: isA<ProAuthLogoutRequested>()))).called(1);
     });
 
+    group('la vraie route (bloc réel, cas d’usage simulés)', () {
+      late MockGet get;
+      const onboarding = OnboardingModel(identity: identity);
+
+      setUp(() {
+        get = MockGet();
+        // The API answers a little later than the first frame.
+        when(() => get(any())).thenAnswer((_) => Future.delayed(const Duration(milliseconds: 50), () => const Right<Failure, OnboardingModel>(onboarding)));
+        whenListen(
+          auth,
+          const Stream<ProAuthState>.empty(),
+          initialState: const ProAuthState(status: ProAuthStatus.onboarding, onboarding: onboarding),
+        );
+      });
+
+      tearDown(() async {
+        if (locator.isRegistered<ProJoinBloc>()) await locator.unregister<ProJoinBloc>();
+      });
+
+      testWidgets('wrappedRoute : le bloc part de la réponse de la connexion, Prénom et Nom préremplis dès la première image', (tester) async {
+        // The API never answers here: only the sign-in's answer can fill the form.
+        when(() => get(any())).thenAnswer((_) => Completer<Either<Failure, OnboardingModel>>().future);
+        locator.registerFactoryParam<ProJoinBloc, OnboardingModel?, void>(
+          (initial, _) => ProJoinBloc(get, MockJoin(), MockCancel(), MockOpen(), initial: initial),
+        );
+        await pumpLocalized(
+          tester,
+          BlocProvider<ProAuthBloc>.value(
+            value: auth,
+            child: Builder(builder: (context) => const ProJoinPage().wrappedRoute(context)),
+          ),
+        );
+        expect(find.text('Connecté avec Apple · julie.m@icloud.com'), findsOneWidget);
+        expect(tester.widget<TextField>(find.byKey(const Key('join-first-name'))).controller?.text, 'Julie');
+        expect(tester.widget<TextField>(find.byKey(const Key('join-last-name'))).controller?.text, 'Martin');
+      });
+
+      testWidgets('identité arrivée après la première image (bloc non amorcé) : les champs vides se remplissent', (tester) async {
+        final bloc = ProJoinBloc(get, MockJoin(), MockCancel(), MockOpen());
+        addTearDown(bloc.close);
+        await pumpLocalized(
+          tester,
+          MultiBlocProvider(
+            providers: [
+              BlocProvider<ProAuthBloc>.value(value: auth),
+              BlocProvider<ProJoinBloc>.value(value: bloc..add(const ProJoinStarted())),
+            ],
+            child: const ProJoinPage(),
+          ),
+        );
+        await tester.pumpAndSettle(const Duration(milliseconds: 100));
+        expect(find.text('Connecté avec Apple · julie.m@icloud.com'), findsOneWidget);
+        expect(tester.widget<TextField>(find.byKey(const Key('join-first-name'))).controller?.text, 'Julie');
+        expect(tester.widget<TextField>(find.byKey(const Key('join-last-name'))).controller?.text, 'Martin');
+      });
+    });
+
     testWidgets('Apple sans nom (déjà autorisé une fois) : Prénom et Nom à remplir ; code faux : le message de la maquette', (tester) async {
       await pumpJoin(
         tester,
@@ -119,6 +192,18 @@ void main() {
       expect(find.text("aujourd'hui à 09:38"), findsOneWidget);
       await tester.tap(find.byKey(const Key('join-cancel')));
       verify(() => join.add(any(that: isA<ProJoinCancelRequested>()))).called(1);
+    });
+
+    testWidgets('inscription rétablie au démarrage, connexions de l’API pas encore lues : « Confirmer avec Apple » quand même', (tester) async {
+      await pumpJoin(
+        tester,
+        ProJoinState(identity: identity, request: request('pending')),
+        authState: const ProAuthState(status: ProAuthStatus.onboarding, deviceProviders: ProvidersModel(apple: true)),
+      );
+      await tester.tap(find.byKey(const Key('join-delete')));
+      await tester.pumpAndSettle();
+      expect(find.byKey(const Key('delete-confirm-apple')), findsOneWidget);
+      expect(find.text('Confirmer avec Apple'), findsOneWidget);
     });
 
     testWidgets('« Supprimer mon compte » avant d’avoir rejoint : confirmé par Apple sur l’iPhone', (tester) async {

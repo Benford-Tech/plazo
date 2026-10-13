@@ -3,7 +3,7 @@ import httpStatus from 'http-status';
 import jwt, { JwtPayload } from 'jsonwebtoken';
 import { Service } from 'typedi';
 import { appleSignInSettings, googleClientIds } from '@/config';
-import { IdentityProvider } from '@/database';
+import prisma, { IdentityProvider, Prisma } from '@/database';
 import { HttpException } from '@/utils/httpException';
 import { logger } from '@/utils/logger';
 
@@ -36,6 +36,10 @@ type Fetch = (url: string, init?: RequestInit) => Promise<Response>;
 export const unavailable = () => new HttpException(httpStatus.CONFLICT, 'This sign-in method is not available', 'provider_unavailable');
 export const invalidIdentity = () => new HttpException(httpStatus.UNAUTHORIZED, 'The sign-in could not be verified', 'identity_invalid');
 export const unreachable = () => new HttpException(httpStatus.SERVICE_UNAVAILABLE, 'The sign-in provider cannot be reached', 'provider_unreachable');
+export const reauthFailed = () => new HttpException(httpStatus.UNAUTHORIZED, 'The confirmation could not be verified', 'reauth_failed');
+
+/** The clock difference tolerated with a provider, for an issue date (`iat`) slightly in the future. */
+const CLOCK_SKEW_SECONDS = 60;
 
 /** Apple sends booleans as strings in some tokens ("true"). */
 const truthy = (value: unknown) => value === true || value === 'true';
@@ -70,12 +74,21 @@ export class IdentityVerificationService {
     return this.appleIdentity(claims);
   }
 
-  /** A Google ID token from the app (requested with the Web client ID as serverClientId). The email must be verified. */
-  public async verifyGoogle(idToken: string): Promise<VerifiedIdentity> {
+  /**
+   * A Google ID token from the app (requested with the Web client ID as serverClientId). The email must be verified.
+   * `maxAgeSeconds`: a confirmation (account deletion) must have been issued that recently.
+   */
+  public async verifyGoogle(idToken: string, options: { maxAgeSeconds?: number } = {}): Promise<VerifiedIdentity> {
     const audience = googleClientIds();
     if (!audience.length) throw unavailable();
     const claims = await this.verifyJwt(idToken, GOOGLE_KEYS_URL, { issuer: GOOGLE_ISSUERS, audience });
     if (!truthy(claims.email_verified) || typeof claims.email !== 'string') throw invalidIdentity();
+    if (options.maxAgeSeconds !== undefined) {
+      const now = Math.floor(Date.now() / 1000);
+      if (typeof claims.iat !== 'number' || now - claims.iat > options.maxAgeSeconds || claims.iat > now + CLOCK_SKEW_SECONDS) {
+        throw invalidIdentity();
+      }
+    }
     return {
       provider: 'google',
       subject: claims.sub as string,
@@ -85,6 +98,42 @@ export class IdentityVerificationService {
       firstName: typeof claims.given_name === 'string' ? claims.given_name : '',
       lastName: typeof claims.family_name === 'string' ? claims.family_name : '',
     };
+  }
+
+  /** verifyApple, then the token is spent: the same token is refused afterwards (401 identity_invalid). */
+  public async verifyAppleOnce(identityToken: string, rawNonce: string): Promise<VerifiedIdentity> {
+    const verified = await this.verifyApple(identityToken, rawNonce);
+    await this.consume(identityToken);
+    return verified;
+  }
+
+  /** verifyGoogle, then the token is spent. */
+  public async verifyGoogleOnce(idToken: string, options: { maxAgeSeconds?: number } = {}): Promise<VerifiedIdentity> {
+    const verified = await this.verifyGoogle(idToken, options);
+    await this.consume(idToken);
+    return verified;
+  }
+
+  /**
+   * Records a verified identity token as used (its SHA-256, until the token's own expiry): a token captured on its way
+   * cannot sign in, link or confirm a second time. A token seen before → 401 identity_invalid.
+   */
+  public async consume(token: string): Promise<void> {
+    const exp = (jwt.decode(token) as JwtPayload | null)?.exp;
+    // A verified token always has an expiry; an hour otherwise, the longest a provider gives.
+    const expiresAt = new Date((typeof exp === 'number' ? exp : Math.floor(Date.now() / 1000) + 3600) * 1000);
+    try {
+      await prisma.usedIdentityToken.create({ data: { tokenHash: sha256Hex(token), expiresAt } });
+    } catch (error) {
+      if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === 'P2002') throw invalidIdentity();
+      throw error;
+    }
+  }
+
+  /** Nightly purge: a used token past its expiry can no longer be presented anyway. */
+  public async purgeUsedTokens(now = new Date()): Promise<number> {
+    const { count } = await prisma.usedIdentityToken.deleteMany({ where: { expiresAt: { lt: now } } });
+    return count;
   }
 
   private appleIdentity(claims: JwtPayload): VerifiedIdentity {
@@ -183,14 +232,19 @@ export class IdentityVerificationService {
 
   /**
    * Exchanges a fresh authorization code (the app's Apple confirmation) for Apple's tokens, then revokes them, so that
-   * Plazo no longer appears in the person's Apple account. Returns the Apple identity the code belongs to. A code Apple
-   * refuses → 401 `reauth_failed`; Apple unreachable → 503 `provider_unreachable` (the caller then deletes nothing).
+   * Plazo no longer appears in the person's Apple account. The code must belong to `expectedSubject`: whose it is is read
+   * from the id_token Apple returns, before anything is revoked (another Apple ID's grant is left alone).
+   * - a code Apple refuses (`invalid_grant`: expired, used, someone else's), another Apple ID, or an id_token that does
+   *   not verify → 401 `reauth_failed`;
+   * - Apple unreachable, or refusing Plazo itself (`invalid_client`: wrong key, team or client ID; logged) → 503
+   *   `provider_unreachable`. The callers then delete nothing.
    */
-  public async revokeApple(authorizationCode: string): Promise<{ subject: string }> {
+  public async revokeApple(authorizationCode: string, expectedSubject: string): Promise<{ subject: string }> {
+    const settings = appleSignInSettings();
     const { clientId, secret } = this.appleClientSecret();
-    let tokens: { refresh_token?: string; access_token?: string; id_token?: string };
+    let res: Response;
     try {
-      const res = await this.request(APPLE_TOKEN_URL, {
+      res = await this.request(APPLE_TOKEN_URL, {
         method: 'POST',
         headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
         body: new URLSearchParams({
@@ -200,36 +254,80 @@ export class IdentityVerificationService {
           grant_type: 'authorization_code',
         }).toString(),
       });
-      if (res.status === 400 || res.status === 401) {
-        throw new HttpException(httpStatus.UNAUTHORIZED, 'The Apple confirmation could not be verified', 'reauth_failed');
-      }
-      if (!res.ok) throw new Error(`HTTP ${res.status}`);
-      tokens = (await res.json()) as typeof tokens;
     } catch (error) {
-      if (error instanceof HttpException) throw error;
       logger.warn(`[Identity] Apple token exchange failed: ${error instanceof Error ? error.message : 'unknown error'}`);
       throw unreachable();
     }
-    // The id_token comes straight from Apple over TLS; its signature and audience are checked all the same.
-    const claims = await this.verifyJwt(tokens.id_token ?? '', APPLE_KEYS_URL, { issuer: APPLE_ISSUER, audience: appleSignInSettings()!.clientIds });
-    const token = tokens.refresh_token ?? tokens.access_token;
-    if (!token) throw unreachable();
+    if (!res.ok) {
+      const appleError = await this.appleErrorOf(res);
+      // The person's code is not (or no longer) good: they confirm again.
+      if ((res.status === 400 || res.status === 401) && appleError === 'invalid_grant') throw reauthFailed();
+      // Apple refuses Plazo itself (key, team, client ID) or is down: a setup or provider problem, not the person's.
+      logger.error(`[Identity] Apple token exchange refused: HTTP ${res.status}${appleError ? ` (${appleError})` : ''}`);
+      throw unreachable();
+    }
+    let tokens: { refresh_token?: unknown; access_token?: unknown; id_token?: unknown };
     try {
-      const res = await this.request(APPLE_REVOKE_URL, {
+      tokens = (await res.json()) as typeof tokens;
+      if (!tokens || typeof tokens !== 'object') throw new Error('not an object');
+    } catch {
+      logger.error('[Identity] Apple token exchange: unreadable answer');
+      throw unreachable();
+    }
+    const refreshToken = typeof tokens.refresh_token === 'string' ? tokens.refresh_token : null;
+    const accessToken = typeof tokens.access_token === 'string' ? tokens.access_token : null;
+    const grant = refreshToken ? { token: refreshToken, hint: 'refresh_token' } : accessToken ? { token: accessToken, hint: 'access_token' } : null;
+    if (typeof tokens.id_token !== 'string' || !tokens.id_token) {
+      // Apple always sends one: without it, whose grant this is cannot be told. It is revoked all the same (Apple
+      // issued it for this code), then the confirmation fails.
+      logger.error('[Identity] Apple token exchange: no id_token in the answer');
+      if (grant) await this.revokeAppleToken(clientId, secret, grant).catch(() => undefined);
+      throw unreachable();
+    }
+    // The id_token comes straight from Apple over TLS; its signature and audience are checked all the same.
+    let subject: string;
+    try {
+      subject = (await this.verifyJwt(tokens.id_token, APPLE_KEYS_URL, { issuer: APPLE_ISSUER, audience: settings!.clientIds })).sub as string;
+    } catch (error) {
+      if (error instanceof HttpException && error.code === 'identity_invalid') throw reauthFailed();
+      throw error;
+    }
+    if (subject !== expectedSubject) throw reauthFailed();
+    if (!grant) {
+      logger.error('[Identity] Apple token exchange: no token to revoke in the answer');
+      throw unreachable();
+    }
+    await this.revokeAppleToken(clientId, secret, grant);
+    return { subject };
+  }
+
+  /** POST /auth/revoke; any failure → 503 provider_unreachable (logged with Apple's error code, never a secret). */
+  private async revokeAppleToken(clientId: string, secret: string, grant: { token: string; hint: string }): Promise<void> {
+    let res: Response;
+    try {
+      res = await this.request(APPLE_REVOKE_URL, {
         method: 'POST',
         headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-        body: new URLSearchParams({
-          client_id: clientId,
-          client_secret: secret,
-          token,
-          token_type_hint: tokens.refresh_token ? 'refresh_token' : 'access_token',
-        }).toString(),
+        body: new URLSearchParams({ client_id: clientId, client_secret: secret, token: grant.token, token_type_hint: grant.hint }).toString(),
       });
-      if (!res.ok) throw new Error(`HTTP ${res.status}`);
     } catch (error) {
       logger.warn(`[Identity] Apple revocation failed: ${error instanceof Error ? error.message : 'unknown error'}`);
       throw unreachable();
     }
-    return { subject: claims.sub as string };
+    if (!res.ok) {
+      const appleError = await this.appleErrorOf(res);
+      logger.error(`[Identity] Apple revocation refused: HTTP ${res.status}${appleError ? ` (${appleError})` : ''}`);
+      throw unreachable();
+    }
+  }
+
+  /** Apple's error code in a refused answer ({ error: 'invalid_grant' | 'invalid_client' | … }), else null. */
+  private async appleErrorOf(res: Response): Promise<string | null> {
+    try {
+      const body = (await res.json()) as { error?: unknown };
+      return typeof body?.error === 'string' && /^[a-z_]{1,64}$/.test(body.error) ? body.error : null;
+    } catch {
+      return null;
+    }
   }
 }

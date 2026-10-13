@@ -1,5 +1,7 @@
 -- 13/10/2026 (« ok pour la partie rejoindre un parking »): Plazo Pro sign-in with Apple (iPhone) or Google (Android), then
 -- joining a parking with its daily code; a manager accepts the request. Leaving a parking and deleting one's account.
+-- Each Apple / Google identity token works once (used_identity_tokens); the join limits count on the account's subject
+-- hash (join_attempts.subjectKey), which outlives a deleted identity.
 -- CreateEnum
 CREATE TYPE "IdentityProvider" AS ENUM ('apple', 'google');
 
@@ -64,11 +66,22 @@ CREATE TABLE "staff_join_requests" (
 CREATE TABLE "join_attempts" (
     "id" TEXT NOT NULL,
     "identityId" TEXT,
+    "subjectKey" TEXT NOT NULL,
     "ipKey" TEXT NOT NULL,
     "success" BOOLEAN NOT NULL,
     "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
 
     CONSTRAINT "join_attempts_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
+CREATE TABLE "used_identity_tokens" (
+    "id" TEXT NOT NULL,
+    "tokenHash" TEXT NOT NULL,
+    "expiresAt" TIMESTAMP(3) NOT NULL,
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+
+    CONSTRAINT "used_identity_tokens_pkey" PRIMARY KEY ("id")
 );
 
 -- CreateIndex
@@ -93,7 +106,16 @@ CREATE INDEX "staff_join_requests_identityId_createdAt_idx" ON "staff_join_reque
 CREATE INDEX "join_attempts_identityId_createdAt_idx" ON "join_attempts"("identityId", "createdAt");
 
 -- CreateIndex
+CREATE INDEX "join_attempts_subjectKey_createdAt_idx" ON "join_attempts"("subjectKey", "createdAt");
+
+-- CreateIndex
 CREATE INDEX "join_attempts_ipKey_createdAt_idx" ON "join_attempts"("ipKey", "createdAt");
+
+-- CreateIndex
+CREATE UNIQUE INDEX "used_identity_tokens_tokenHash_key" ON "used_identity_tokens"("tokenHash");
+
+-- CreateIndex
+CREATE INDEX "used_identity_tokens_expiresAt_idx" ON "used_identity_tokens"("expiresAt");
 
 -- AddForeignKey
 ALTER TABLE "staff_identities" ADD CONSTRAINT "staff_identities_staffId_fkey" FOREIGN KEY ("staffId") REFERENCES "staff"("id") ON DELETE SET NULL ON UPDATE CASCADE;
@@ -127,6 +149,11 @@ ALTER TABLE "staff_identities" ADD CONSTRAINT "staff_identities_subject_length"
   CHECK (char_length("subject") BETWEEN 1 AND 255);
 ALTER TABLE "identity_tokens" ADD CONSTRAINT "identity_tokens_expiry"
   CHECK ("expiresAt" > "createdAt");
+-- SHA-256 in hex: never the subject of an Apple / Google account, nor a token itself.
+ALTER TABLE "join_attempts" ADD CONSTRAINT "join_attempts_subject_key"
+  CHECK ("subjectKey" ~ '^[0-9a-f]{64}$');
+ALTER TABLE "used_identity_tokens" ADD CONSTRAINT "used_identity_tokens_hash"
+  CHECK ("tokenHash" ~ '^[0-9a-f]{64}$');
 -- A request asks for, and is accepted with, a role below manager (a manager promotes afterwards).
 ALTER TABLE "staff_join_requests" ADD CONSTRAINT "staff_join_requests_wished_role"
   CHECK ("wishedRole" IN ('agent', 'driver', 'valet'));

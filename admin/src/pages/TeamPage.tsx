@@ -235,8 +235,9 @@ export default function TeamPage() {
     <>
       <h1 className="text-2xl font-semibold">{t.title}</h1>
       {readOnly && <p className="border border-lime-deep p-3 text-base">{fr.viewAs.readOnly}</p>}
-      {/* 13/10/2026: the code of the day and the requests it brings, side by side on a wide screen. */}
-      <div className="grid gap-4 lg:grid-cols-[minmax(0,1fr)_minmax(0,1.35fr)] lg:items-start">
+      {/* 13/10/2026: the code of the day and the requests it brings, side by side on a wide screen (the code alone
+          takes the row when nobody waits). */}
+      <div className="grid gap-4 lg:items-start lg:has-[[data-testid=join-requests]]:grid-cols-[minmax(0,1fr)_minmax(0,1.35fr)]">
         <JoinCodeCard />
         <JoinRequestsCard readOnly={readOnly} />
       </div>

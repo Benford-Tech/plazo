@@ -1,5 +1,6 @@
 import jwt from 'jsonwebtoken';
 import { Container } from 'typedi';
+import prisma from '@/database';
 import {
   APPLE_ISSUER,
   APPLE_KEYS_URL,
@@ -9,6 +10,7 @@ import {
   IdentityVerificationService,
 } from '@/services/identity-verification.service';
 import { HttpException } from '@/utils/httpException';
+import { logger } from '@/utils/logger';
 import {
   APPLE_CLIENT_ID,
   APPLE_KEY_ID,
@@ -44,7 +46,9 @@ beforeEach(() => {
 afterEach(() => {
   removeFakeProviders();
   jest.useRealTimers();
+  jest.restoreAllMocks();
 });
+afterAll(() => prisma.$disconnect());
 
 describe('vérification Apple', () => {
   it('accepte un jeton signé par Apple pour Plazo Pro avec le bon nonce', async () => {
@@ -181,6 +185,30 @@ describe('vérification Google', () => {
     process.env.GOOGLE_CLIENT_IDS = ' ';
     expect(await codeOf(service().verifyGoogle(googleIdToken({ sub: 'g' })))).toBe('provider_unavailable');
   });
+
+  it('une confirmation doit être récente (5 minutes)', async () => {
+    const fresh = googleIdToken({ sub: 'g', issuedSecondsAgo: 60 });
+    await expect(service().verifyGoogle(fresh, { maxAgeSeconds: 300 })).resolves.toMatchObject({ subject: 'g' });
+    const old = googleIdToken({ sub: 'g', issuedSecondsAgo: 400 });
+    expect(await codeOf(service().verifyGoogle(old, { maxAgeSeconds: 300 }))).toBe('identity_invalid');
+    // Still a valid sign-in token (no age asked).
+    await expect(service().verifyGoogle(old)).resolves.toMatchObject({ subject: 'g' });
+  });
+});
+
+describe('un jeton ne sert qu’une fois', () => {
+  it('Apple et Google : le même jeton présenté une seconde fois est refusé', async () => {
+    const apple = appleIdentityToken({ sub: 'unique-a', rawNonce: 'n' });
+    await expect(service().verifyAppleOnce(apple, 'n')).resolves.toMatchObject({ subject: 'unique-a' });
+    expect(await codeOf(service().verifyAppleOnce(apple, 'n'))).toBe('identity_invalid');
+    const google = googleIdToken({ sub: 'unique-g' });
+    await expect(service().verifyGoogleOnce(google)).resolves.toMatchObject({ subject: 'unique-g' });
+    expect(await codeOf(service().verifyGoogleOnce(google))).toBe('identity_invalid');
+    // A token that does not verify is not recorded.
+    const bad = appleIdentityToken({ sub: 'unique-b', rawNonce: 'n' });
+    expect(await codeOf(service().verifyAppleOnce(bad, 'autre'))).toBe('identity_invalid');
+    await expect(service().verifyAppleOnce(bad, 'n')).resolves.toMatchObject({ subject: 'unique-b' });
+  });
 });
 
 describe('révocation Apple (suppression du compte)', () => {
@@ -194,7 +222,7 @@ describe('révocation Apple (suppression du compte)', () => {
 
   it('échange le code puis révoque le jeton de renouvellement', async () => {
     fake.appleCodes.set('code-frais', '001234.abcd');
-    await expect(service().revokeApple('code-frais')).resolves.toEqual({ subject: '001234.abcd' });
+    await expect(service().revokeApple('code-frais', '001234.abcd')).resolves.toEqual({ subject: '001234.abcd' });
     expect(fake.callsTo(APPLE_TOKEN_URL)[0].form).toMatchObject({ client_id: APPLE_CLIENT_ID, code: 'code-frais', grant_type: 'authorization_code' });
     expect(fake.callsTo(APPLE_REVOKE_URL)[0].form).toMatchObject({
       client_id: APPLE_CLIENT_ID,
@@ -204,13 +232,49 @@ describe('révocation Apple (suppression du compte)', () => {
   });
 
   it('refuse un code qu’Apple ne connaît pas, et répond 503 si la révocation échoue', async () => {
-    expect(await codeOf(service().revokeApple('code-inconnu'))).toBe('reauth_failed');
+    expect(await codeOf(service().revokeApple('code-inconnu', 'a'))).toBe('reauth_failed');
     expect(fake.callsTo(APPLE_REVOKE_URL)).toHaveLength(0);
     fake.appleCodes.set('code-frais', 'a');
     fake.revokeStatus = 503;
-    expect(await codeOf(service().revokeApple('code-frais'))).toBe('provider_unreachable');
+    expect(await codeOf(service().revokeApple('code-frais', 'a'))).toBe('provider_unreachable');
     fake.down = true;
-    expect(await codeOf(service().revokeApple('autre'))).toBe('provider_unreachable');
+    expect(await codeOf(service().revokeApple('autre', 'a'))).toBe('provider_unreachable');
+  });
+
+  it('le code d’un autre identifiant Apple : rien n’est révoqué', async () => {
+    fake.appleCodes.set('code-autre', 'quelqu-un-d-autre');
+    expect(await codeOf(service().revokeApple('code-autre', '001234.abcd'))).toBe('reauth_failed');
+    expect(fake.callsTo(APPLE_TOKEN_URL)).toHaveLength(1);
+    expect(fake.callsTo(APPLE_REVOKE_URL)).toHaveLength(0);
+  });
+
+  it('Apple refuse la clé de Plazo (invalid_client) : 503 et un journal, pas une faute de la personne', async () => {
+    fake.appleCodes.set('code-frais', 'a');
+    fake.tokenError = { status: 400, error: 'invalid_client' };
+    const logged = jest.spyOn(logger, 'error').mockImplementation(() => logger);
+    expect(await codeOf(service().revokeApple('code-frais', 'a'))).toBe('provider_unreachable');
+    expect(logged.mock.calls.map(([message]) => String(message)).join(' ')).toContain('invalid_client');
+    // Apple's own words for a code expired or used: the person confirms again.
+    fake.tokenError = { status: 400, error: 'invalid_grant' };
+    expect(await codeOf(service().revokeApple('code-frais', 'a'))).toBe('reauth_failed');
+    fake.tokenError = { status: 500, error: 'server_error' };
+    expect(await codeOf(service().revokeApple('code-frais', 'a'))).toBe('provider_unreachable');
+    expect(fake.callsTo(APPLE_REVOKE_URL)).toHaveLength(0);
+  });
+
+  it('sans id_token dans la réponse : les jetons reçus sont révoqués, puis 503', async () => {
+    fake.appleCodes.set('code-frais', 'a');
+    fake.tokenWithoutIdToken = true;
+    jest.spyOn(logger, 'error').mockImplementation(() => logger);
+    expect(await codeOf(service().revokeApple('code-frais', 'a'))).toBe('provider_unreachable');
+    expect(fake.callsTo(APPLE_REVOKE_URL)[0].form).toMatchObject({ token: 'refresh-a', token_type_hint: 'refresh_token' });
+  });
+
+  it('un id_token qui ne se vérifie pas : reauth_failed, rien n’est révoqué', async () => {
+    fake.appleCodes.set('code-frais', 'a');
+    fake.appleKeys = [jwk(otherRsa.publicKey, 'apple-kid-1')];
+    expect(await codeOf(service().revokeApple('code-frais', 'a'))).toBe('reauth_failed');
+    expect(fake.callsTo(APPLE_REVOKE_URL)).toHaveLength(0);
   });
 
   it('accepte une clé PEM écrite sur plusieurs lignes', () => {

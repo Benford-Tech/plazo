@@ -12,6 +12,7 @@ import '../../../../shared/theme/theme.dart';
 import '../../../../shared/widgets/brand_header.dart';
 import '../../../../shared/widgets/gradient_button.dart';
 import '../../../../shared/widgets/sign_in_widgets.dart';
+import '../../../pro_auth/data/models/onboarding_models.dart';
 import '../../../pro_auth/data/models/staff_model.dart';
 import '../../../pro_auth/presentation/bloc/pro_auth_bloc.dart';
 import '../../../pro_auth/presentation/widgets/delete_account_sheet.dart';
@@ -39,7 +40,12 @@ class _ProAccountPageState extends State<ProAccountPage> {
   @override
   void initState() {
     super.initState();
-    final staff = context.read<ProAuthBloc>().state.staff;
+    final auth = context.read<ProAuthBloc>();
+    final staff = auth.state.staff;
+    // The start-up's question went unanswered (offline): asked again, « Lier … » needs the API's answer.
+    if (auth.state.providers == const ProvidersModel() && auth.state.deviceProviders != const ProvidersModel()) {
+      auth.add(const ProAuthProvidersRequested());
+    }
     final name = nameParts(staff?.firstName, staff?.lastName, staff?.name);
     _firstName = TextEditingController(text: name.firstName);
     _lastName = TextEditingController(text: name.lastName);

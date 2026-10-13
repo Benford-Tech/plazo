@@ -2,6 +2,7 @@ import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
+import '../../../../core/constants/product.g.dart';
 import '../../../../shared/theme/theme.dart';
 import '../../../../shared/widgets/gradient_button.dart';
 import '../../../../shared/widgets/sign_in_widgets.dart';
@@ -60,10 +61,13 @@ class _DeleteAccountSheetState extends State<DeleteAccountSheet> {
     final appleLinked = identity == null ? staff?.identity('apple') != null : identity.provider == 'apple';
     final googleLinked = identity == null ? staff?.identity('google') != null : identity.provider == 'google';
     final hasPassword = identity == null && (staff?.hasPassword ?? true);
+    // The phone's own sign-ins count even before the API's answer is read (a restored session skips the login page).
+    final canApple = auth.providers.apple || auth.deviceProviders.apple;
+    final canGoogle = auth.providers.google || auth.deviceProviders.google;
     final List<Widget> confirm;
     if (identity != null) {
       confirm = [
-        if (appleLinked && auth.providers.apple)
+        if (appleLinked && canApple)
           AppleSignInButton(
             key: const Key('delete-confirm-apple'),
             label: 'account.delete_with_apple'.tr(),
@@ -93,7 +97,7 @@ class _DeleteAccountSheetState extends State<DeleteAccountSheet> {
           onPressed: _password.text.isEmpty ? null : () => _confirm(password: _password.text),
         ),
       ];
-    } else if (appleLinked && auth.providers.apple) {
+    } else if (appleLinked && canApple) {
       confirm = [
         AppleSignInButton(
           key: const Key('delete-confirm-apple'),
@@ -102,7 +106,7 @@ class _DeleteAccountSheetState extends State<DeleteAccountSheet> {
           onPressed: () => _confirm(provider: 'apple'),
         ),
       ];
-    } else if (googleLinked && auth.providers.google) {
+    } else if (googleLinked && canGoogle) {
       confirm = [
         GoogleSignInButton(
           key: const Key('delete-confirm-google'),
@@ -123,7 +127,7 @@ class _DeleteAccountSheetState extends State<DeleteAccountSheet> {
     final text = identity != null
         ? 'join.delete_text'.tr(args: ['sign_in.${identity.provider}'.tr()])
         : [
-            appleLinked ? 'account.delete_text_apple'.tr() : 'account.delete_text'.tr(),
+            (appleLinked ? 'account.delete_text_apple' : 'account.delete_text').tr(args: [Product.proName]),
             if (staff?.role == 'manager') 'account.delete_manager_warning'.tr(),
           ].join('\n\n');
     return Padding(

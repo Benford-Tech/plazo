@@ -21,9 +21,23 @@ void main() {
       expect(normalizeJoinCode(''), isNull);
     });
 
-    test('lettres hors alphabet de Crockford (U) ignorées, dix caractères au plus', () {
-      expect(joinCodeChars('UK7QM2XP9TDZZ'), 'K7QM2XP9TD');
+    test('dix caractères au plus ; un U (hors alphabet de Crockford) reste, et le code ne vaut rien', () {
+      expect(joinCodeChars('K7QM2XP9TDZ'), 'K7QM2XP9TD');
       expect(joinCodeChars('k7-qm'), 'K7QM');
+      expect(joinCodeChars('K7QU2-XP9TD'), 'K7QU2XP9TD');
+      expect(normalizeJoinCode('K7QU2-XP9TD'), isNull);
+      expect(hasForeignJoinCodeLetter('K7QU2-XP9TD'), isTrue);
+      expect(hasForeignJoinCodeLetter('K7QM2-XP9TD'), isFalse);
+      expect(hasForeignJoinCodeLetter('K7QU2'), isFalse);
+      expect(joinCodeChars(' K7QM2 - XP9TD '), 'K7QM2XP9TD');
+    });
+
+    test('un long texte : le DERNIER code tiré du message, jamais un mot comme « Rhone-Alpes » ; sans code, rien', () {
+      const message =
+          "Rejoignez l'équipe de Rhone-Alpes Parking sur Plazo Pro : installez l'app, connectez-vous avec Apple ou Google, puis tapez le code du jour K7QM2-XP9TD. Il change à minuit.";
+      expect(joinCodeChars(message), 'K7QM2XP9TD');
+      expect(joinCodeChars('Bonjour, voici le parking Parkair Lyon : à demain !'), '');
+      expect(joinCodeChars('Code : Bonus-Truck puis rien'), '');
     });
 
     test('affichage XXXXX-XXXXX : le tiret apparaît au sixième caractère', () {
@@ -38,6 +52,12 @@ void main() {
       final pasted = _type("Rejoignez l'équipe de Parkair Lyon sur Plazo Pro : installez l'app, puis tapez le code du jour K7QM2-XP9TD. Il change à minuit.");
       expect(pasted.text, 'K7QM2-XP9TD');
       expect(pasted.selection, const TextSelection.collapsed(offset: 11));
+      // A pasted text without a code leaves what was typed.
+      final kept = const JoinCodeFormatter().formatEditUpdate(
+        const TextEditingValue(text: 'K7QM2'),
+        const TextEditingValue(text: 'K7QM2Bonjour, à demain au parking !'),
+      );
+      expect(kept.text, 'K7QM2');
       // Backspace after the dash: one character goes, the dash with it.
       final back = const JoinCodeFormatter().formatEditUpdate(const TextEditingValue(text: 'K7QM2-X'), const TextEditingValue(text: 'K7QM2-'));
       expect(back.text, 'K7QM2');

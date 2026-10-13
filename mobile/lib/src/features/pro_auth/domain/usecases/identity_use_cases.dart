@@ -185,6 +185,7 @@ class IdentityUseCases {
     required this.unlink,
     required this.leave,
     required this.deleteAccount,
+    this.device = const ProvidersModel(),
   });
 
   final GetProvidersUseCase providers;
@@ -196,6 +197,10 @@ class IdentityUseCases {
   final UnlinkIdentityUseCase unlink;
   final LeaveParkingUseCase leave;
   final DeleteAccountUseCase deleteAccount;
+
+  /// What this phone and build offer without asking the API (Apple on an iPhone built with the capability, Google on
+  /// Android with the client id): « Supprimer mon compte » confirms with them even when the API's answer is missing.
+  final ProvidersModel device;
 }
 
 // « Rejoindre un parking » (ProJoinBloc).

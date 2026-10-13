@@ -2,15 +2,16 @@ import { timingSafeEqual } from 'crypto';
 import dayjs from 'dayjs';
 import httpStatus from 'http-status';
 import { Container, Service } from 'typedi';
-import { identityProviders, JOIN_FAILURE_LIMITS, JOIN_REQUEST_TTL_DAYS, joinCodeSecret } from '@/config';
+import { identityProviders, JOIN_FAILURE_LIMITS, JOIN_REQUEST_LIMITS, JOIN_REQUEST_TTL_DAYS, joinCodeSecret } from '@/config';
 import prisma, { Prisma, StaffIdentity, StaffJoinRequest } from '@/database';
 import { joinCodeFor, normalizeJoinCode } from '@/domain/join-code';
-import { cleanNamePart, effectiveStatus, joinRequestPush, mergedNames } from '@/domain/join-request';
+import { cleanNamePart, effectiveStatus, joinRequestPush, mergedNames, subjectKeyOf } from '@/domain/join-request';
 import { localDate } from '@/domain/time';
 import { AppleSignInDto, GoogleSignInDto, JoinParkingDto } from '@/dtos/identity.dto';
 import { HttpException } from '@/utils/httpException';
 import { AuditService } from './audit.service';
 import { IdentityVerificationService, VerifiedIdentity } from './identity-verification.service';
+import { anonymiseMember, formerMembersOf, unusablePassword } from './member-erasure';
 import { DEFAULT_TIMEZONE } from './operator-timezone';
 import { PushService } from './push.service';
 import { StaffService } from './staff.service';
@@ -71,6 +72,8 @@ const conflict = (message: string, code: string) => new HttpException(httpStatus
 const suspended = () => new HttpException(httpStatus.FORBIDDEN, 'This account is suspended', 'account_suspended');
 const disabled = () => new HttpException(httpStatus.FORBIDDEN, 'This account is disabled', 'account_disabled');
 const invalidCode = () => new HttpException(httpStatus.BAD_REQUEST, 'This code does not work', 'join_code_invalid');
+const tooMany = () => new HttpException(httpStatus.TOO_MANY_REQUESTS, 'Too many attempts, try again later', 'too_many_attempts');
+const alreadyMember = () => conflict('This account is a member of a parking: delete it from « Mon compte »', 'already_member');
 
 /** The address a member gets when the provider gave none (rare: Apple always gives one, possibly a relay). */
 export const placeholderEmail = (identity: { id: string; provider: string }) => `${identity.provider}-${identity.id}@plazo.invalid`;
@@ -91,13 +94,14 @@ export class OnboardingService {
     return identityProviders();
   }
 
+  /** Each identity token works once (401 identity_invalid when it comes again). */
   public async signInWithApple(data: AppleSignInDto, metadata: { userAgent: string | null }) {
-    const verified = await this.verification.verifyApple(data.identityToken, data.rawNonce);
+    const verified = await this.verification.verifyAppleOnce(data.identityToken, data.rawNonce);
     return this.signIn(verified, { firstName: data.givenName, lastName: data.familyName }, metadata);
   }
 
   public async signInWithGoogle(data: GoogleSignInDto, metadata: { userAgent: string | null }) {
-    const verified = await this.verification.verifyGoogle(data.idToken);
+    const verified = await this.verification.verifyGoogleOnce(data.idToken);
     return this.signIn(verified, { firstName: verified.firstName, lastName: verified.lastName }, metadata);
   }
 
@@ -123,7 +127,11 @@ export class OnboardingService {
     const identity = await this.upsertIdentity(verified, given);
     if (identity.staffId) {
       const member = await this.openStaffSession(identity, metadata);
-      if (member) return { status: 'signed_in' as const, ...member };
+      if (member) {
+        // A member now: an onboarding session left on another phone must not open staff sessions any more.
+        await this.tokens.revokeOnboardingTokensOf(identity.id);
+        return { status: 'signed_in' as const, ...member };
+      }
     }
     const token = await this.tokens.generateOnboardingToken(identity.id);
     return {
@@ -177,18 +185,34 @@ export class OnboardingService {
     await prisma.staffJoinRequest.updateMany({ where: { identityId, status: 'pending', expiresAt: { lte: now } }, data: { status: 'expired' } });
   }
 
-  /** Too many wrong codes typed lately, by this identity or from this address: 429 (counted in the database). */
-  private async checkAttempts(identityId: string, ipKey: string, now = new Date()) {
+  /**
+   * Records this code typed, then checks the limits with it counted (429 too_many_attempts, and the attempt is then
+   * forgotten): requests sent at the same moment cannot all slip under them. The attempt is a wrong code until the code
+   * matches. Counted per Apple / Google account (`subjectKey`, which outlives a deleted identity) and per address:
+   * - wrong codes: 5 in 15 minutes and 20 in 24 hours per account, 30 in an hour per address;
+   * - requests sent (right codes): 3 in 24 hours per account, 20 per address (each one pushes the managers).
+   */
+  private async claimAttempt(identity: StaffIdentity, ipKey: string, now = new Date()): Promise<string> {
+    const subjectKey = subjectKeyOf(identity);
+    const attempt = await prisma.joinAttempt.create({ data: { identityId: identity.id, subjectKey, ipKey, success: false }, select: { id: true } });
     const since = (minutes: number) => new Date(now.getTime() - minutes * 60_000);
     const { identityShort, identityDay, ip } = JOIN_FAILURE_LIMITS;
-    const [short, day, address] = await Promise.all([
-      prisma.joinAttempt.count({ where: { identityId, success: false, createdAt: { gt: since(identityShort.minutes) } } }),
-      prisma.joinAttempt.count({ where: { identityId, success: false, createdAt: { gt: since(identityDay.minutes) } } }),
+    const requests = JOIN_REQUEST_LIMITS;
+    const [short, day, address, sent, sentHere] = await Promise.all([
+      prisma.joinAttempt.count({ where: { subjectKey, success: false, createdAt: { gt: since(identityShort.minutes) } } }),
+      prisma.joinAttempt.count({ where: { subjectKey, success: false, createdAt: { gt: since(identityDay.minutes) } } }),
       prisma.joinAttempt.count({ where: { ipKey, success: false, createdAt: { gt: since(ip.minutes) } } }),
+      prisma.joinAttempt.count({ where: { subjectKey, success: true, createdAt: { gt: since(requests.identityDay.minutes) } } }),
+      prisma.joinAttempt.count({ where: { ipKey, success: true, createdAt: { gt: since(requests.ipDay.minutes) } } }),
     ]);
-    if (short >= identityShort.max || day >= identityDay.max || address >= ip.max) {
-      throw new HttpException(httpStatus.TOO_MANY_REQUESTS, 'Too many attempts, try again later', 'too_many_attempts');
+    // The wrong-code counts include this attempt: the one after the limit is refused.
+    const overLimit =
+      short > identityShort.max || day > identityDay.max || address > ip.max || sent >= requests.identityDay.max || sentHere >= requests.ipDay.max;
+    if (overLimit) {
+      await prisma.joinAttempt.deleteMany({ where: { id: attempt.id } });
+      throw tooMany();
     }
+    return attempt.id;
   }
 
   /**
@@ -213,7 +237,6 @@ export class OnboardingService {
   /** POST /internal/auth/onboarding/join: « Envoyer ma demande ». */
   public async join(identity: StaffIdentity, data: JoinParkingDto, ipKey: string) {
     const now = new Date();
-    await this.checkAttempts(identity.id, ipKey, now);
     // One parking per account: leave it first (« Quitter ce parking »).
     if (identity.staffId) throw conflict('This account is already a member of a parking', 'already_member');
     await this.expireLapsed(identity.id, now);
@@ -221,11 +244,12 @@ export class OnboardingService {
       throw conflict('A request is already waiting for a manager', 'join_request_pending');
     }
 
+    const attemptId = await this.claimAttempt(identity, ipKey, now);
     const code = normalizeJoinCode(data.code);
     const operator = code ? await this.operatorForCode(code, now) : null;
-    await prisma.joinAttempt.create({ data: { identityId: identity.id, ipKey, success: !!operator } });
-    // The same answer for an unknown, expired, suspended, archived or demo operator's code.
+    // The same answer for an unknown, expired, suspended, archived or demo operator's code (the attempt stays a wrong one).
     if (!operator) throw invalidCode();
+    await prisma.joinAttempt.update({ where: { id: attemptId }, data: { success: true } });
 
     const email = identity.email ?? placeholderEmail(identity);
     if (await prisma.staff.findUnique({ where: { email }, select: { id: true } })) {
@@ -312,16 +336,24 @@ export class OnboardingService {
   }
 
   /**
-   * DELETE /internal/auth/onboarding: « Supprimer mon compte » before joining. The identity, its sessions and requests
-   * are deleted; with Apple's fresh authorization code, Plazo is first removed from the person's Apple account.
+   * DELETE /internal/auth/onboarding: « Supprimer mon compte » while not a member (before joining, or after « Quitter ce
+   * parking »). The identity, its sessions and requests are deleted, and the members the person left behind with it are
+   * anonymised (« Compte supprimé », like a deletion from « Mon compte »). With Apple's fresh authorization code, Plazo is
+   * first removed from the person's Apple account (a code of another Apple ID: 401 reauth_failed, nothing revoked).
    */
   public async deleteIdentity(identity: StaffIdentity, authorizationCode?: string) {
-    if (identity.staffId) throw conflict('This account is a member of a parking: delete it from « Mon compte »', 'already_member');
-    if (identity.provider === 'apple' && authorizationCode) {
-      const { subject } = await this.verification.revokeApple(authorizationCode);
-      if (subject !== identity.subject)
-        throw new HttpException(httpStatus.UNAUTHORIZED, 'The Apple confirmation is for another account', 'reauth_failed');
-    }
-    await prisma.staffIdentity.delete({ where: { id: identity.id } });
+    if (identity.staffId) throw alreadyMember();
+    if (identity.provider === 'apple' && authorizationCode) await this.verification.revokeApple(authorizationCode, identity.subject);
+    const former = await formerMembersOf(prisma, [identity.id]);
+    const password = former.length ? await unusablePassword() : '';
+    await prisma.$transaction(async tx => {
+      // Only while still nobody's: a manager may have accepted its request in the meantime.
+      const deleted = await tx.staffIdentity.deleteMany({ where: { id: identity.id, staffId: null } });
+      if (!deleted.count) {
+        if (await tx.staffIdentity.count({ where: { id: identity.id } })) throw alreadyMember();
+        return; // already deleted (two taps)
+      }
+      for (const left of former) await anonymiseMember(tx, left.member, password, { emails: left.emails });
+    });
   }
 }

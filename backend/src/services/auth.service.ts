@@ -61,7 +61,10 @@ export class AuthService {
     return { tokenData: await this.tokenService.generateAuthTokens(staff.id, { userAgent: metadata.userAgent ?? null }) };
   }
 
+  /** Revokes the session, and the onboarding sessions of the member's Apple / Google identities (they could open a new one). */
   public async logout(accessTokenUid: string): Promise<void> {
+    const stored = await prisma.staffToken.findUnique({ where: { uid: accessTokenUid }, select: { staffId: true } });
     await this.tokenService.revokeSessionOf(accessTokenUid);
+    if (stored) await this.tokenService.revokeOnboardingTokensOfStaff(stored.staffId);
   }
 }

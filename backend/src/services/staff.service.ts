@@ -1,4 +1,4 @@
-import { compare, hash } from 'bcrypt';
+import { hash } from 'bcrypt';
 import httpStatus from 'http-status';
 import { Container, Service } from 'typedi';
 import { BCRYPT_ROUNDS, isPlatformAdmin } from '@/config';
@@ -12,6 +12,7 @@ import { HttpException } from '@/utils/httpException';
 import { fullName, namesOf } from '@/domain/staff-name';
 import { AuditService } from './audit.service';
 import { operatorTimezone } from './operator-timezone';
+import { checkPasswordAttempt } from './password-attempts';
 import { TokenService } from './token.service';
 
 export type PublicStaff = Omit<Staff, 'password'> & { operatorName?: string };
@@ -284,7 +285,8 @@ export class StaffService {
   /** Changing one's password signs out every device, including the current one. */
   public async changeOwnPassword(actor: AuthenticatedStaff, data: ChangePasswordDto) {
     const me = await prisma.staff.findUnique({ where: { id: actor.id } });
-    if (!me || !(await compare(data.currentPassword, me.password))) {
+    // The login's lockout applies: a stolen session cannot be used to guess the password.
+    if (!me || !(await checkPasswordAttempt(me.email, data.currentPassword, me.password))) {
       throw new HttpException(httpStatus.BAD_REQUEST, 'Current password is incorrect', 'wrong_current_password');
     }
     await prisma.staff.update({

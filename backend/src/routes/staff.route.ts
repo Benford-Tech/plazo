@@ -30,9 +30,13 @@ import { ValidationMiddleware } from '@/middlewares/validation.middleware';
  *   delete:
  *     summary: Supprimer mon compte — anonymises the member (« Compte supprimé »), deletes sessions, links, phones and identities
  *     description: >
- *       Confirmed by the password (when the member has one), Apple's fresh authorization code (exchanged then revoked at
- *       Apple) or a fresh Google ID token of an identity linked to the member. Trips and reservations handled stay in
- *       the parking's history. The last manager may delete their account (the app warns them).
+ *       With an Apple identity linked (and Apple sign-in configured), Apple's fresh authorization code is required,
+ *       whatever else is sent: it is exchanged, checked to be that Apple ID's, then revoked at Apple, before anything is
+ *       deleted (409 apple_confirmation_required without it). Otherwise confirmed by the password (when the member has
+ *       one; the login's lockout applies: 429 too_many_attempts) or a Google ID token of the Google identity linked to
+ *       the member, issued less than 5 minutes ago and used once. Trips and reservations handled stay in the parking's
+ *       history; the identities that made the member's join requests and the members the person left behind with them
+ *       are erased too. The last manager may delete their account (the app warns them).
  *     tags: [Staff]
  *     requestBody:
  *       content:
@@ -45,10 +49,12 @@ import { ValidationMiddleware } from '@/middlewares/validation.middleware';
  *               googleIdToken: { type: string }
  *     responses:
  *       204: { description: Deleted }
- *       401: { description: The confirmation is wrong or missing (reauth_failed) }
+ *       400: { description: "validation_failed (fields.password / appleAuthorizationCode / googleIdToken = invalid | too_long)" }
+ *       401: { description: "The confirmation is wrong, missing, too old, already used or another account's (reauth_failed)" }
  *       403: { description: "In consultation (view_as_read_only), a platform owner (cannot_delete_platform)" }
- *       409: { description: "trip_running, provider_unavailable" }
- *       503: { description: Apple cannot be reached (provider_unreachable); nothing deleted }
+ *       409: { description: "apple_confirmation_required (an Apple identity is linked: confirm with Apple), trip_running, provider_unavailable" }
+ *       429: { description: Too many wrong passwords lately (too_many_attempts) }
+ *       503: { description: "Apple cannot be reached or refuses Plazo's key (provider_unreachable); nothing deleted" }
  * /internal/staff/me/vehicle:
  *   patch:
  *     summary: Mon véhicule aujourd'hui (V-A) — the shuttle taken for the day ({ vehicleId } or null to hand it back; 409 vehicle_taken with holderName, 422 vehicle_out_of_service); the session user then carries `vehicle`
@@ -64,7 +70,7 @@ import { ValidationMiddleware } from '@/middlewares/validation.middleware';
  *       200: { description: The session user, with the new post }
  * /internal/staff/me/password:
  *   patch:
- *     summary: Change one's password (signs out every device)
+ *     summary: Change one's password (signs out every device; wrong current passwords count toward the login lockout, 429 too_many_attempts)
  *     tags: [Staff]
  *     requestBody:
  *       required: true
@@ -168,7 +174,7 @@ import { ValidationMiddleware } from '@/middlewares/validation.middleware';
  *     tags: [Staff]
  *     responses:
  *       200: { description: "{ user }" }
- *       401: { description: identity_invalid }
+ *       401: { description: "identity_invalid (also a token already used: each one works once)" }
  *       403: { description: In consultation (view_as_read_only) }
  *       409: { description: "identity_taken (linked to another account), already_linked (an Apple identity is already linked), provider_unavailable" }
  * /internal/staff/me/identities/google:
@@ -189,7 +195,7 @@ import { ValidationMiddleware } from '@/middlewares/validation.middleware';
  *       409: { description: sign_in_required }
  * /internal/staff/me/leave:
  *   post:
- *     summary: Quitter ce parking — the member becomes inactive, their email is freed, sessions, phones and identities are released
+ *     summary: Quitter ce parking — the member becomes inactive, their email is freed and phone removed, sessions, phones and identities are released
  *     description: >
  *       When an Apple / Google identity was linked, an onboarding session is returned so that the app goes straight to
  *       « Rejoindre un parking ». Refused for the last active manager and during a running shuttle trip.

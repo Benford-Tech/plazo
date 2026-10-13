@@ -114,9 +114,10 @@ void main() {
     leave = MockLeave();
     deleteAccount = MockDeleteAccount();
     session = SessionEvents();
+    when(() => providers(any())).thenAnswer((_) async => const Right(ProvidersModel()));
   });
 
-  ProAuthBloc build() => ProAuthBloc(
+  ProAuthBloc build({ProvidersModel device = const ProvidersModel()}) => ProAuthBloc(
     MockLogin(),
     restore,
     logout,
@@ -134,17 +135,27 @@ void main() {
       unlink: unlink,
       leave: leave,
       deleteAccount: deleteAccount,
+      device: device,
     ),
   );
 
   group('démarrage', () {
     blocTest<ProAuthBloc, ProAuthState>(
-      'la session du personnel d’abord : connecté sans regarder l’inscription',
+      'la session du personnel d’abord : connecté sans regarder l’inscription, puis les connexions offertes (sans page de connexion)',
       build: build,
-      setUp: () => when(() => restore(any())).thenAnswer((_) async => const Right(julie)),
+      setUp: () {
+        when(() => restore(any())).thenAnswer((_) async => const Right(julie));
+        when(() => providers(any())).thenAnswer((_) async => const Right(ProvidersModel(apple: true)));
+      },
       act: (b) => b.add(const ProAuthRestoreRequested()),
-      expect: () => [isA<ProAuthState>().having((s) => s.status, 'status', ProAuthStatus.signedIn)],
-      verify: (_) => verifyNever(() => restoreOnboarding(any())),
+      expect: () => [
+        isA<ProAuthState>().having((s) => s.status, 'status', ProAuthStatus.signedIn).having((s) => s.providers.apple, 'apple', isFalse),
+        isA<ProAuthState>().having((s) => s.status, 'status', ProAuthStatus.signedIn).having((s) => s.providers.apple, 'apple', isTrue),
+      ],
+      verify: (_) {
+        verifyNever(() => restoreOnboarding(any()));
+        verify(() => providers(any())).called(1);
+      },
     );
 
     blocTest<ProAuthBloc, ProAuthState>(
@@ -160,6 +171,8 @@ void main() {
             .having((s) => s.status, 'status', ProAuthStatus.onboarding)
             .having((s) => s.onboarding?.request?.operatorName, 'parking', 'Parkair Lyon'),
       ],
+      // The waiting screen's « Supprimer mon compte » needs them too.
+      verify: (_) => verify(() => providers(any())).called(1),
     );
 
     blocTest<ProAuthBloc, ProAuthState>(
@@ -171,6 +184,20 @@ void main() {
       },
       act: (b) => b.add(const ProAuthRestoreRequested()),
       expect: () => [isA<ProAuthState>().having((s) => s.status, 'status', ProAuthStatus.signedOut)],
+      // The login page asks for them itself.
+      verify: (_) => verifyNever(() => providers(any())),
+    );
+
+    blocTest<ProAuthBloc, ProAuthState>(
+      'ce que le téléphone offre est connu dès le départ, sans l’API, et survit à la déconnexion',
+      build: () => build(device: const ProvidersModel(apple: true)),
+      setUp: () => when(() => logout(any())).thenAnswer((_) async => const Right(null)),
+      act: (b) {
+        expect(b.state.deviceProviders, const ProvidersModel(apple: true));
+        expect(b.state.providers, const ProvidersModel());
+        b.add(const ProAuthLogoutRequested());
+      },
+      expect: () => [isA<ProAuthState>().having((s) => s.status, 'status', ProAuthStatus.signedOut).having((s) => s.deviceProviders.apple, 'device', isTrue)],
     );
   });
 
@@ -269,6 +296,25 @@ void main() {
       ),
       act: (b) => session.notifyOnboardingExpired(),
       expect: () => [isA<ProAuthState>().having((s) => s.status, 'status', ProAuthStatus.signedOut).having((s) => s.errorCode, 'error', 'session_expired')],
+    );
+
+    blocTest<ProAuthBloc, ProAuthState>(
+      'un 401 tardif de la session du personnel (après « Quitter ce parking ») ne ferme pas l’inscription',
+      build: build,
+      seed: () => const ProAuthState(
+        status: ProAuthStatus.onboarding,
+        onboarding: OnboardingModel(identity: appleIdentity),
+      ),
+      act: (b) => session.notifyExpired(),
+      expect: () => <ProAuthState>[],
+    );
+
+    blocTest<ProAuthBloc, ProAuthState>(
+      'déjà déconnecté : un 401 tardif ne montre pas « session expirée »',
+      build: build,
+      seed: () => const ProAuthState(status: ProAuthStatus.signedOut),
+      act: (b) => session.notifyExpired(),
+      expect: () => <ProAuthState>[],
     );
 
     blocTest<ProAuthBloc, ProAuthState>(

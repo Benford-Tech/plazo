@@ -100,6 +100,50 @@ void main() {
       expect(await storage.onboardingToken(), isNull);
       expect(await storage.staffTokens(), isNotNull);
     });
+
+    test('une confirmation Apple refusée (401 reauth_failed) garde l’inscription : ni jeton effacé, ni fin signalée', () async {
+      await storage.saveOnboardingToken('onb');
+      var notified = false;
+      final sub = session.onboardingExpired.listen((_) => notified = true);
+      final api = FakeApi({
+        'DELETE internal/auth/onboarding': (401, {'message': 'The Apple confirmation is for another account', 'code': 'reauth_failed'}),
+      });
+      final thrown = await client(api)
+          .delete<dynamic>('internal/auth/onboarding', data: {'authorizationCode': 'code'})
+          .then<Object?>((_) => null, onError: (Object e) => e);
+      expect((thrown as DioException).response?.data, containsPair('code', 'reauth_failed'));
+      await Future<void>.delayed(Duration.zero);
+      expect(notified, isFalse);
+      expect(await storage.onboardingToken(), 'onb');
+      await sub.cancel();
+    });
+  });
+
+  group('jeton du personnel et confirmation refusée', () {
+    test('« Supprimer mon compte » avec un mauvais mot de passe : ni renouvellement, ni nouvel envoi, session gardée', () async {
+      await storage.saveStaffTokens(const StaffTokens(access: 'staff', refresh: 'r'));
+      var expired = false;
+      final sub = session.expired.listen((_) => expired = true);
+      final api = FakeApi({
+        'DELETE internal/staff/me': (401, {'message': 'The confirmation could not be verified', 'code': 'reauth_failed'}),
+        'POST internal/auth/refresh': (
+          200,
+          {
+            'tokenData': {
+              'access': {'token': 'staff2'},
+              'refresh': {'token': 'r2'},
+            },
+          },
+        ),
+      });
+      final thrown = await client(api).delete<dynamic>('internal/staff/me', data: {'password': 'wrong'}).then<Object?>((_) => null, onError: (Object e) => e);
+      expect((thrown as DioException).response?.data, containsPair('code', 'reauth_failed'));
+      await Future<void>.delayed(Duration.zero);
+      expect(api.calls, ['DELETE internal/staff/me Bearer staff']);
+      expect(expired, isFalse);
+      expect((await storage.staffTokens())?.access, 'staff');
+      await sub.cancel();
+    });
   });
 
   group('connexion Apple / Google (source de données)', () {

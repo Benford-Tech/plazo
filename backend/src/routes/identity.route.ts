@@ -52,9 +52,11 @@ import { ValidationMiddleware } from '@/middlewares/validation.middleware';
  *     description: >
  *       Verifies the identity token against Apple's keys (RS256, iss https://appleid.apple.com, aud in APPLE_CLIENT_IDS,
  *       nonce = SHA-256 of rawNonce). givenName / familyName come from the app (Apple sends them on the first
- *       authorisation only; a name already stored is kept). Linked to an active member → `signed_in` with the same
- *       { tokenData, user } as the email login; otherwise `onboarding` with a 7-day onboarding token and the latest
- *       request (pending, or refused / expired / cancelled in the last 7 days, or accepted while linked).
+ *       authorisation only; a name already stored is kept). Each identity token works once (the same token again → 401
+ *       identity_invalid). Linked to an active member → `signed_in` with the same { tokenData, user } as the email
+ *       login (the identity's onboarding sessions are then revoked); otherwise `onboarding` with a 7-day onboarding
+ *       token (5 at most per identity, the oldest go) and the latest request (pending, or refused / expired / cancelled
+ *       in the last 7 days, or accepted while linked).
  *     tags: [Onboarding]
  *     security: []
  *     requestBody:
@@ -74,7 +76,7 @@ import { ValidationMiddleware } from '@/middlewares/validation.middleware';
  *         description: >
  *           "{ status: 'signed_in', tokenData, user }" or "{ status: 'onboarding', onboardingToken, expiresAt, identity:
  *           IdentityView, request: JoinRequestView | null }"
- *       401: { description: The token could not be verified (code identity_invalid) }
+ *       401: { description: "The token could not be verified, or was already used (code identity_invalid)" }
  *       403: { description: "The member's operator is suspended (account_suspended) or the member is disabled (account_disabled)" }
  *       409: { description: Apple sign-in is not configured (code provider_unavailable) }
  *       503: { description: "Apple's keys cannot be fetched (code provider_unreachable)" }
@@ -83,7 +85,7 @@ import { ValidationMiddleware } from '@/middlewares/validation.middleware';
  *     summary: Sign in with Google — same answers as Apple
  *     description: >
  *       Verifies the ID token against Google's keys (RS256, iss accounts.google.com, aud in GOOGLE_CLIENT_IDS,
- *       email_verified true); the names come from given_name / family_name.
+ *       email_verified true); the names come from given_name / family_name. Each ID token works once.
  *     tags: [Onboarding]
  *     security: []
  *     requestBody:
@@ -103,23 +105,29 @@ import { ValidationMiddleware } from '@/middlewares/validation.middleware';
  *       200: { description: "{ identity: IdentityView, request: JoinRequestView | null } (status accepted: open the session)" }
  *       401: { description: Missing, expired or revoked onboarding token (code unauthorized) }
  *   delete:
- *     summary: « Supprimer mon compte » before joining — deletes the identity, its sessions and requests
- *     description: With Apple, the fresh authorizationCode (optional) is exchanged then revoked at Apple first.
+ *     summary: « Supprimer mon compte » while not a member — deletes the identity, its sessions and requests
+ *     description: >
+ *       Before joining, or after « Quitter ce parking »: the members the person left behind with this identity are
+ *       anonymised too (« Compte supprimé », phone and password removed, `staff.deleted` on their operator). With Apple,
+ *       the fresh authorizationCode (optional) is exchanged at Apple first and, when it is this Apple ID's, revoked.
  *     tags: [Onboarding]
  *     requestBody:
  *       content: { application/json: { schema: { type: object, properties: { authorizationCode: { type: string } } } } }
  *     responses:
  *       204: { description: Deleted }
- *       401: { description: "Apple refused the code, or it belongs to another Apple ID (reauth_failed)" }
- *       409: { description: The identity is a member's (already_member) }
- *       503: { description: Apple cannot be reached (provider_unreachable); nothing deleted }
+ *       400: { description: "validation_failed (fields.authorizationCode = invalid | too_long)" }
+ *       401: { description: "Apple refused the code (invalid_grant), or it belongs to another Apple ID: reauth_failed, nothing revoked" }
+ *       409: { description: "The identity is a member's (already_member), also when a manager accepted its request meanwhile" }
+ *       503: { description: "Apple cannot be reached or refuses Plazo's key (provider_unreachable); nothing deleted" }
  * /internal/auth/onboarding/join:
  *   post:
  *     summary: « Envoyer ma demande » — a request to join the operator whose code of the day this is
  *     description: >
- *       The code is read in upper case, without spaces or dashes, O as 0 and I / L as 1. Wrong codes are counted (5 per
- *       15 min and 20 per 24 h per identity, 30 per hour per address); the code typed is never stored. The managers get
- *       a push (« Demande pour rejoindre l’équipe », data { type: join_request, requestId }). Expires after 7 days.
+ *       The code is read in upper case, without spaces or dashes, O as 0 and I / L as 1. Every code typed is counted
+ *       before it is read, per Apple / Google account (a hash of provider and subject, which outlives a deleted identity)
+ *       and per address: wrong codes 5 per 15 min and 20 per 24 h per account, 30 per hour per address; requests sent 3
+ *       per 24 h per account, 20 per address. The code typed is never stored. The managers get a push (« Demande pour
+ *       rejoindre l’équipe », data { type: join_request, requestId }). Expires after 7 days.
  *     tags: [Onboarding]
  *     requestBody:
  *       required: true
@@ -137,7 +145,7 @@ import { ValidationMiddleware } from '@/middlewares/validation.middleware';
  *       201: { description: "{ request: JoinRequestView }" }
  *       400: { description: "validation_failed (fields) or join_code_invalid (unknown, expired, suspended, archived or demo: same answer)" }
  *       409: { description: "join_request_pending, already_member, email_taken (the identity's email is used by a Plazo account)" }
- *       429: { description: Too many wrong codes (too_many_attempts) }
+ *       429: { description: "Too many wrong codes, or requests sent (too_many_attempts)" }
  * /internal/auth/onboarding/session:
  *   post:
  *     summary: The staff session, once a manager accepted the request (the onboarding tokens are then revoked)

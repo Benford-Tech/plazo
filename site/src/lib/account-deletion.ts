@@ -5,7 +5,9 @@ import { COMPANY, hasSupportEmail, PRODUCT_NAME, SUPPORT_EMAIL, type Company } f
  * /suppression-compte (13/10/2026): how a member of a parking's team deletes their Plazo Pro account, asked by Apple
  * (App Review 5.1.1(v)) and Google Play (a web page to request it). Written from what the API does:
  * DELETE /internal/staff/me anonymises the member (« Compte supprimé »), deletes sessions, devices and Apple / Google
- * identities, revokes Apple's token; refused while a shuttle trip runs; the last manager is warned, not blocked.
+ * identities, revokes Apple's token when the deletion is confirmed with Apple (an authorisation code is sent); refused
+ * while a shuttle trip runs; the last manager is warned, not blocked. Handover remarks stay in the booking's notes,
+ * signed with the first name, until the booking is anonymised (ReservationService.applyStatus, domain/retention.ts).
  *
  * Texts: « **bold** » for the words of the app, « [label](/path) » for an internal link.
  */
@@ -32,6 +34,8 @@ export interface AccountDeletionPage {
     title: string;
     intro: string;
     company: string;
+    /** « E-mail », before « [à compléter] » while the address is a placeholder. */
+    emailLabel: string;
     /** The support address, or null while product.json holds a placeholder (shown « [à compléter] »). */
     email: string | null;
     address: string;
@@ -66,7 +70,7 @@ export function accountDeletionPage(company: Company = COMPANY, email: string = 
       items: [
         "votre prénom, votre nom, votre adresse e-mail et votre téléphone ;",
         "votre mot de passe et vos sessions de connexion ;",
-        `le lien avec votre identifiant Apple ou Google ; pour un compte lié à Apple, ${p} demande aussi à Apple de retirer l’accès de l’application ;`,
+        `le lien avec votre identifiant Apple ou Google ; lorsque vous confirmez la suppression avec Apple, ${p} demande aussi à Apple de retirer l’accès de l’application ;`,
         "l’inscription de vos téléphones aux notifications ;",
         "vos demandes pour rejoindre un parking.",
       ],
@@ -75,6 +79,7 @@ export function accountDeletionPage(company: Company = COMPANY, email: string = 
       title: "Ce qui reste",
       items: [
         "les trajets de navette que vous avez conduits et les actions que vous avez faites sur les réservations (arrivée, place, véhicule rendu…) restent dans l’historique du parking, avec la mention « Compte supprimé » à la place de votre nom ;",
+        "les remarques que vous avez écrites dans les notes d’une réservation (à la remise d’un véhicule, par exemple), signées de votre prénom, jusqu’à l’anonymisation de la réservation, 12 mois après la date de retour ;",
         "les réservations elles-mêmes, qui appartiennent au parking et à ses clients.",
       ],
     },
@@ -96,8 +101,9 @@ export function accountDeletionPage(company: Company = COMPANY, email: string = 
     },
     contact: {
       title: "Sans l’application",
-      intro: `Vous ne pouvez plus ouvrir ${pro} ? Écrivez-nous depuis l’adresse e-mail de votre compte, en indiquant le nom de votre parking : nous supprimons le compte de la même façon. En attendant, votre gérant peut désactiver votre accès tout de suite depuis Équipe.`,
+      intro: `Vous ne pouvez plus ouvrir ${pro} ? Écrivez-nous en indiquant l’adresse e-mail de votre compte (même une adresse relais d’Apple) et le nom de votre parking : nous supprimons le compte de la même façon. En attendant, votre gérant peut désactiver votre accès tout de suite depuis Équipe.`,
       company: c.name,
+      emailLabel: "E-mail",
       email: hasSupportEmail(email) ? email : null,
       address: c.address,
       delay: "Nous répondons dans un délai d’un mois au plus.",

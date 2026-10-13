@@ -26,16 +26,17 @@ part 'pro_auth_state.dart';
 /// (Android): a member signs in, anyone else gets an onboarding session (« Rejoindre un parking ») restored after the
 /// staff's at start-up; and Mon compte's links, « Quitter ce parking » and « Supprimer mon compte ».
 class ProAuthBloc extends Bloc<ProAuthEvent, ProAuthState> {
-  ProAuthBloc(this._login, this._restore, this._logout, this._setPost, this._setVehicle, this._updateName, SessionEvents session, {this._identity})
-    : super(const ProAuthState()) {
+  ProAuthBloc(this._login, this._restore, this._logout, this._setPost, this._setVehicle, this._updateName, SessionEvents session, {IdentityUseCases? identity})
+    : _identity = identity,
+      super(ProAuthState(deviceProviders: identity?.device ?? const ProvidersModel())) {
     on<ProAuthRestoreRequested>(_onRestore);
     on<ProAuthProvidersRequested>(_onProviders);
     on<ProAuthProviderSignInRequested>(_onProviderSignIn);
-    on<ProAuthJoined>((event, emit) => emit(ProAuthState(status: ProAuthStatus.signedIn, staff: event.staff, providers: state.providers)));
+    on<ProAuthJoined>((event, emit) => emit(_fresh(ProAuthStatus.signedIn, staff: event.staff)));
+    // Each session ends on its own: a late 401 of the staff's (a poll after « Quitter ce parking ») never ends the
+    // onboarding session, and the reverse.
     on<ProAuthOnboardingExpired>((event, emit) {
-      if (state.status == ProAuthStatus.onboarding) {
-        emit(ProAuthState(status: ProAuthStatus.signedOut, errorCode: 'session_expired', providers: state.providers));
-      }
+      if (state.status == ProAuthStatus.onboarding) emit(_fresh(ProAuthStatus.signedOut, errorCode: 'session_expired'));
     });
     on<ProAuthIdentityLinkRequested>(_onLink);
     on<ProAuthIdentityUnlinkRequested>(_onUnlink);
@@ -51,7 +52,9 @@ class ProAuthBloc extends Bloc<ProAuthEvent, ProAuthState> {
     on<ProAuthVehicleChosen>(_onVehicleChosen);
     on<ProAuthNameSubmitted>(_onNameSubmitted);
     on<ProAuthNameNoticeShown>((event, emit) => emit(state.copyWith(nameState: ViewState.idle)));
-    on<ProAuthSessionExpired>((event, emit) => emit(ProAuthState(status: ProAuthStatus.signedOut, errorCode: 'session_expired', providers: state.providers)));
+    on<ProAuthSessionExpired>((event, emit) {
+      if (state.status == ProAuthStatus.signedIn) emit(_fresh(ProAuthStatus.signedOut, errorCode: 'session_expired'));
+    });
     _expired = session.expired.listen((_) => add(const ProAuthSessionExpired()));
     _onboardingExpired = session.onboardingExpired.listen((_) => add(const ProAuthOnboardingExpired()));
   }
@@ -68,13 +71,39 @@ class ProAuthBloc extends Bloc<ProAuthEvent, ProAuthState> {
 
   static String _code(Failure f) => f.code ?? (f.statusCode == null ? 'network' : 'generic');
 
+  /// A new session state (signed in, signed out, onboarding) that keeps what the phone and the API offer.
+  ProAuthState _fresh(
+    ProAuthStatus status, {
+    StaffModel? staff,
+    OnboardingModel? onboarding,
+    String? errorCode,
+    ViewState leaveState = ViewState.idle,
+    ViewState deleteState = ViewState.idle,
+  }) => ProAuthState(
+    status: status,
+    staff: staff,
+    onboarding: onboarding,
+    errorCode: errorCode,
+    leaveState: leaveState,
+    deleteState: deleteState,
+    providers: state.providers,
+    deviceProviders: state.deviceProviders,
+  );
+
   /// The staff's session first, then (13/10/2026) the onboarding one of « Rejoindre un parking ».
   Future<void> _onRestore(ProAuthRestoreRequested event, Emitter<ProAuthState> emit) async {
     final result = await _restore(NoParams());
     final staff = result.fold((_) => null, (staff) => staff);
-    if (staff != null) return emit(state.copyWith(status: ProAuthStatus.signedIn, staff: staff));
+    if (staff != null) {
+      emit(state.copyWith(status: ProAuthStatus.signedIn, staff: staff));
+      // No login page on the way: Mon compte's links read the sign-ins offered here.
+      return add(const ProAuthProvidersRequested());
+    }
     final onboarding = (await _identity?.restoreOnboarding(NoParams()))?.fold((_) => null, (o) => o);
-    if (onboarding != null) return emit(state.copyWith(status: ProAuthStatus.onboarding, onboarding: onboarding, staff: null));
+    if (onboarding != null) {
+      emit(state.copyWith(status: ProAuthStatus.onboarding, onboarding: onboarding, staff: null));
+      return add(const ProAuthProvidersRequested());
+    }
     emit(state.copyWith(status: ProAuthStatus.signedOut, staff: null));
   }
 
@@ -136,14 +165,8 @@ class ProAuthBloc extends Bloc<ProAuthEvent, ProAuthState> {
     final result = await identity.leave(NoParams());
     result.fold(
       (f) => emit(state.copyWith(leaveState: ViewState.error, errorCode: _code(f))),
-      (onboarding) => emit(
-        ProAuthState(
-          status: onboarding == null ? ProAuthStatus.signedOut : ProAuthStatus.onboarding,
-          onboarding: onboarding,
-          providers: state.providers,
-          leaveState: ViewState.success,
-        ),
-      ),
+      (onboarding) =>
+          emit(_fresh(onboarding == null ? ProAuthStatus.signedOut : ProAuthStatus.onboarding, onboarding: onboarding, leaveState: ViewState.success)),
     );
   }
 
@@ -157,7 +180,7 @@ class ProAuthBloc extends Bloc<ProAuthEvent, ProAuthState> {
         : await identity.deleteAccount(DeleteAccountParams(password: event.password, provider: event.provider));
     result.fold(
       (f) => emit(f.code == signInCancelled ? state.copyWith(deleteState: ViewState.idle) : state.copyWith(deleteState: ViewState.error, errorCode: _code(f))),
-      (_) => emit(ProAuthState(status: ProAuthStatus.signedOut, providers: state.providers, deleteState: ViewState.success)),
+      (_) => emit(_fresh(ProAuthStatus.signedOut, deleteState: ViewState.success)),
     );
   }
 
@@ -211,7 +234,7 @@ class ProAuthBloc extends Bloc<ProAuthEvent, ProAuthState> {
     } else {
       await _logout(NoParams());
     }
-    emit(ProAuthState(status: ProAuthStatus.signedOut, providers: state.providers));
+    emit(_fresh(ProAuthStatus.signedOut));
   }
 
   @override

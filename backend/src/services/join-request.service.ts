@@ -163,7 +163,8 @@ export class JoinRequestService {
 
   /**
    * Nightly purge: pending requests past their 7 days become expired, join attempts go after 7 days, and identities
-   * never linked to a member (or unlinked since) with no request lately go after 30 days of inactivity.
+   * never linked to a member (or unlinked since) with no request lately go after 30 days of inactivity, unless an
+   * onboarding session of theirs is still valid (e.g. just after « Quitter ce parking »).
    */
   public async purge(now = new Date()) {
     const { count: requestsExpired } = await prisma.staffJoinRequest.updateMany({
@@ -179,6 +180,7 @@ export class JoinRequestService {
         staffId: null,
         OR: [{ lastSignInAt: null, createdAt: { lt: idleSince } }, { lastSignInAt: { lt: idleSince } }],
         joinRequests: { none: { OR: [{ status: 'pending' }, { updatedAt: { gte: idleSince } }] } },
+        tokens: { none: { expiresAt: { gt: now } } },
       },
     });
     return { requestsExpired, joinAttemptsDeleted, identitiesDeleted };

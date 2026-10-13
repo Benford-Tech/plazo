@@ -68,6 +68,29 @@ void main() {
     );
 
     blocTest<ProJoinBloc, ProJoinState>(
+      'un U dans le code (jamais dans un code du jour) : dit tout de suite, aucun essai compté',
+      build: build,
+      act: (b) => b.add(const ProJoinSubmitted(code: 'K7QU2-XP9TD', firstName: 'Julie', lastName: 'Martin', wishedRole: 'driver')),
+      expect: () => [isA<ProJoinState>().having((s) => s.codeError, 'code', 'join_code_letter')],
+      verify: (_) => verifyNever(() => join(any())),
+    );
+
+    blocTest<ProJoinBloc, ProJoinState>(
+      'amorcé avec la réponse de la connexion : l’identité et la demande dès le départ',
+      build: () => ProJoinBloc(
+        get,
+        join,
+        cancel,
+        open,
+        initial: OnboardingModel(identity: identity, request: request('pending')),
+      ),
+      verify: (b) {
+        expect(b.state.identity, identity);
+        expect(b.state.view, ProJoinView.waiting);
+      },
+    );
+
+    blocTest<ProJoinBloc, ProJoinState>(
       'code faux ou d’hier : le même message, sous le code',
       build: build,
       setUp: () => when(() => join(any())).thenAnswer((_) async => const Left(ServerFailure(statusCode: 400, code: 'join_code_invalid'))),

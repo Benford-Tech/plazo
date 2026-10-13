@@ -34,6 +34,7 @@ import '../features/pro_auth/data/client/auth_client.dart';
 import '../features/pro_auth/data/client/onboarding_client.dart';
 import '../features/pro_auth/data/datasources/auth_data_source.dart';
 import '../features/pro_auth/data/datasources/onboarding_data_source.dart';
+import '../features/pro_auth/data/models/onboarding_models.dart';
 import '../features/pro_auth/domain/repositories/auth_repository.dart';
 import '../features/pro_auth/domain/repositories/onboarding_repository.dart';
 import '../features/pro_auth/domain/usecases/identity_use_cases.dart';

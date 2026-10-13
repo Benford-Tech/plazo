@@ -290,20 +290,37 @@ model StaffJoinRequest {
   @@map("staff_join_requests")
 }
 
-// A daily code typed (13/10/2026): the wrong ones are counted per identity and per address (rate-limit key) to stop
-// guessing. The code typed is never stored. Purged after 7 days.
+// A daily code typed (13/10/2026): the wrong ones are counted per Apple / Google account and per address (rate-limit
+// key) to stop guessing, the right ones (requests sent) too. The code typed is never stored. Purged after 7 days.
 model JoinAttempt {
   id         String   @id @default(cuid())
   identityId String?
+  // SHA-256 of "provider:subject" (never the raw subject): the limits are counted on it, so that deleting the identity
+  // and signing in again (a new row) does not start them from zero.
+  subjectKey String
   ipKey      String
+  // Recorded as a wrong code before the code is read, then marked a success when it matched (a request was sent).
   success    Boolean
   createdAt  DateTime @default(now())
 
   identity StaffIdentity? @relation(fields: [identityId], references: [id], onDelete: SetNull)
 
   @@index([identityId, createdAt])
+  @@index([subjectKey, createdAt])
   @@index([ipKey, createdAt])
   @@map("join_attempts")
+}
+
+// An Apple or Google identity token already used to sign in, link or confirm (SHA-256 of the token): each one works once.
+// Kept until the token's own expiry, then purged at night.
+model UsedIdentityToken {
+  id        String   @id @default(cuid())
+  tokenHash String   @unique
+  expiresAt DateTime
+  createdAt DateTime @default(now())
+
+  @@index([expiresAt])
+  @@map("used_identity_tokens")
 }
 
 model Parking {

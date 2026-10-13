@@ -30,6 +30,8 @@ describe('GET /internal/cron/purge-expired-tokens', () => {
       joinRequestsExpired: 0,
       joinAttemptsDeleted: 0,
       identitiesDeleted: 0,
+      usedIdentityTokensDeleted: 0,
+      loginAttemptsDeleted: 0,
     });
     expect(await prisma.staffToken.count()).toBe(2); // the login's access + refresh pair
   });

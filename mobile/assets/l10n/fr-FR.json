@@ -1489,8 +1489,8 @@
     },
     "delete": "Supprimer mon compte",
     "delete_title": "Supprimer votre compte ?",
-    "delete_text": "Vous ne pourrez plus vous connecter à l'app. Vos trajets et les réservations que vous avez traitées restent dans l'historique du parking, avec la mention « Compte supprimé ».",
-    "delete_text_apple": "Vous ne pourrez plus vous connecter à l'app et votre accès à Apple sera retiré. Vos trajets et les réservations que vous avez traitées restent dans l'historique du parking, avec la mention « Compte supprimé ».",
+    "delete_text": "Vous ne pourrez plus vous connecter à {}. Vos trajets et les réservations que vous avez traitées restent dans l'historique du parking, avec la mention « Compte supprimé ».",
+    "delete_text_apple": "Vous ne pourrez plus vous connecter à {} et votre accès à Apple sera retiré. Vos trajets et les réservations que vous avez traitées restent dans l'historique du parking, avec la mention « Compte supprimé ».",
     "delete_manager_warning": "Vous êtes gérant : si personne d'autre ne gère ce parking, plus personne ne pourra accepter les nouvelles demandes ni gérer l'équipe.",
     "delete_password": "Votre mot de passe",
     "delete_with_apple": "Confirmer avec Apple",
@@ -1743,6 +1743,7 @@
     "deleted": "Votre compte a été supprimé.",
     "errors": {
       "join_code_incomplete": "Le code fait 10 caractères, chiffres et lettres (ex. K7QM2-XP9TD).",
+      "join_code_letter": "Un code du jour ne contient jamais la lettre U. Vérifiez-le auprès de votre gérant.",
       "join_code_invalid": "Ce code ne marche pas. Vérifiez-le, ou demandez celui d'aujourd'hui à votre gérant.",
       "too_many_attempts": "Trop de codes essayés. Attendez 15 minutes, puis réessayez avec le code du jour.",
       "email_taken": "Cette adresse e-mail est déjà celle d'un compte de l'app. Connectez-vous avec cet e-mail et son mot de passe, puis liez Apple ou Google dans Plus › Mon compte. Avec Apple, vous pouvez aussi choisir « Masquer mon adresse e-mail ».",

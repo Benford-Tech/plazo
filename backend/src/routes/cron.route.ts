@@ -38,12 +38,12 @@ import { CronAuthMiddleware } from '@/middlewares/cron-auth.middleware';
  *         description: "{ operators, sent, skipped }"
  * /internal/cron/purge-expired-tokens:
  *   get:
- *     summary: Delete expired staff tokens, end lapsed arrival signals and shuttle trips, retry or abandon waiting SMS, purge the SMS outbox after 30 days, erase car positions and push phones 2 days after the return, anonymise bookings 12 months after it, expire join requests unanswered for 7 days, delete expired onboarding tokens, join attempts older than 7 days and identities never linked and idle for 30 days (every night)
+ *     summary: Delete expired staff tokens, end lapsed arrival signals and shuttle trips, retry or abandon waiting SMS, purge the SMS outbox after 30 days, erase car positions and push phones 2 days after the return, anonymise bookings 12 months after it, expire join requests unanswered for 7 days, delete expired onboarding tokens, join attempts older than 7 days, identities never linked and idle for 30 days (none with a valid onboarding session), used Apple / Google tokens past their expiry and login attempts older than 30 days (every night)
  *     tags: [Cron]
  *     description: "Requires Authorization: Bearer <CRON_SECRET>."
  *     responses:
  *       200:
- *         description: "{ deleted, arrivalSignalsEnded, shuttleTripsEnded, smsAbandoned, smsPurged, travellerDevicesPurged, carLocationsPurged, inboundEmails, reservationsAnonymized, identityTokensDeleted, joinRequestsExpired, joinAttemptsDeleted, identitiesDeleted }"
+ *         description: "{ deleted, arrivalSignalsEnded, shuttleTripsEnded, smsAbandoned, smsPurged, travellerDevicesPurged, carLocationsPurged, inboundEmails, reservationsAnonymized, identityTokensDeleted, joinRequestsExpired, joinAttemptsDeleted, identitiesDeleted, usedIdentityTokensDeleted, loginAttemptsDeleted }"
  * /internal/cron/payouts:
  *   get:
  *     summary: Transfer the operators' shares that are due (every day)

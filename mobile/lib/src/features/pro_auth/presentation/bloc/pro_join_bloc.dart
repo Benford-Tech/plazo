@@ -106,7 +106,10 @@ abstract class ProJoinState with _$ProJoinState {
 /// « Rejoindre un parking » (13/10/2026): the code du jour, the person's names and post, then the wait for a manager
 /// (asked every 10 s, never in the background), until the request is accepted and the staff session opens.
 class ProJoinBloc extends Bloc<ProJoinEvent, ProJoinState> {
-  ProJoinBloc(this._get, this._join, this._cancel, this._open, {this._pollInterval = AppConstants.joinPollInterval}) : super(const ProJoinState()) {
+  /// [initial]: what the sign-in (or the restore) said, shown from the first frame (the names prefilled by Apple or
+  /// Google); ProJoinStarted then asks the API again.
+  ProJoinBloc(this._get, this._join, this._cancel, this._open, {OnboardingModel? initial, this._pollInterval = AppConstants.joinPollInterval})
+    : super(ProJoinState(identity: initial?.identity, request: initial?.request)) {
     on<ProJoinStarted>(_onStarted);
     on<ProJoinSubmitted>(_onSubmitted);
     on<ProJoinRefreshed>(_onRefreshed);
@@ -188,7 +191,8 @@ class ProJoinBloc extends Bloc<ProJoinEvent, ProJoinState> {
       if (event.wishedRole == null) 'wishedRole': 'wished_role_required',
     };
     if (code == null || fields.isNotEmpty) {
-      return emit(state.copyWith(submitState: ViewState.error, codeError: code == null ? 'join_code_incomplete' : null, fieldErrors: fields, errorCode: null));
+      final codeError = code != null ? null : (hasForeignJoinCodeLetter(event.code) ? 'join_code_letter' : 'join_code_incomplete');
+      return emit(state.copyWith(submitState: ViewState.error, codeError: codeError, fieldErrors: fields, errorCode: null));
     }
     emit(state.copyWith(submitState: ViewState.processing, codeError: null, fieldErrors: const {}, errorCode: null));
     final result = await _join(JoinInput(code: code, firstName: event.firstName, lastName: event.lastName, wishedRole: event.wishedRole!));

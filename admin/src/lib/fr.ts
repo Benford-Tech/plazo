@@ -743,12 +743,14 @@ export const fr = {
       codeCopied: "Code copié.",
       messageCopied: "Message copié : collez-le dans un SMS ou un mail.",
       copyFailed: "Copie impossible : sélectionnez le texte et copiez-le.",
+      // The API refuses every code of a demo, suspended or archived operator (`accepting: false`).
+      notAccepting: "Ce parking n'accepte pas de nouvelles demandes (démonstration, suspendu ou archivé).",
     },
     requests: {
       title: "Demandes en attente",
       count: (n: number) => `${n} demande${n > 1 ? "s" : ""} en attente`,
       privateEmail: "adresse relais d'Apple",
-      via: (provider: string) => `Connecté avec ${provider}`,
+      via: (provider: string) => `Connexion avec ${provider}`,
       refuse: "Refuser",
       accept: "Accepter…",
       acceptLabel: (name: string) => `Accepter ${name}`,
@@ -761,17 +763,19 @@ export const fr = {
       sentAt: (when: string) => `demande envoyée ${when}`,
       roleLabel: "Son rôle",
       roleHelp: "Préréglé sur le poste demandé ; le rôle se change ensuite dans l'équipe.",
+      // `phrase`: the role inside a sentence (« Accepter comme agent d'accueil »).
       roles: {
-        agent: { label: "Accueil", help: "Réservations, arrivées, retours" },
-        driver: { label: "Chauffeur", help: "La navette, les arrivées et retours" },
-        valet: { label: "Voiturier", help: "Placer et sortir les voitures, les clés" },
-      } satisfies Record<JoinRole, { label: string; help: string }>,
-      confirm: (role: string) => `Accepter comme ${role.toLowerCase()}`,
-      accepted: (name: string, role: string) => `${name} a rejoint l'équipe comme ${role.toLowerCase()}.`,
+        agent: { label: "Accueil", phrase: "agent d'accueil", help: "Réservations, arrivées, retours" },
+        driver: { label: "Chauffeur", phrase: "chauffeur", help: "La navette, les arrivées et retours" },
+        valet: { label: "Voiturier", phrase: "voiturier", help: "Placer et sortir les voitures, les clés" },
+      } satisfies Record<JoinRole, { label: string; phrase: string; help: string }>,
+      confirm: (phrase: string) => `Accepter comme ${phrase}`,
+      accepted: (name: string, phrase: string) => `${name} a rejoint l'équipe comme ${phrase}.`,
       cancel: "Annuler",
       // Worded for this screen (describeError's texts).
       errors: {
-        email_taken: `Son adresse e-mail est déjà celle d'un autre compte ${PRODUCT.name} : la demande ne peut pas être acceptée. Refusez-la et proposez à la personne de se connecter avec une autre adresse.`,
+        // Most often a former member of this team (deactivated): reactivating that account keeps their history.
+        email_taken: `Cette adresse e-mail est déjà celle d'un compte ${PRODUCT.name}, peut-être un ancien compte de votre équipe : réactivez-le dans la liste et donnez-lui au besoin un nouveau mot de passe ; la personne liera ensuite Apple ou Google dans Mon compte de l'app. Sinon, refusez la demande.`,
         not_found: "Cette demande n'existe plus.",
       } as Record<string, string>,
     },

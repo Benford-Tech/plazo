@@ -36,9 +36,19 @@ void _initBlocs() {
     ..registerFactory(() => ProReservationBloc(locator(), locator()))
     ..registerFactory(() => ProSpotPlanningBloc(locator(), locator(), locator(), locator(), locator(), locator(), locator()))
     ..registerFactory(
-      () => ProTeamBloc(locator(), locator(), locator(), locator(), joinCode: locator(), joinRequests: locator(), accept: locator(), refuse: locator()),
+      () => ProTeamBloc(
+        locator(),
+        locator(),
+        locator(),
+        locator(),
+        joinCode: locator(),
+        joinRequests: locator(),
+        accept: locator(),
+        refuse: locator(),
+        pushOpened: locator<PushService>().opened,
+      ),
     )
-    ..registerFactory(() => ProJoinBloc(locator(), locator(), locator(), locator()))
+    ..registerFactoryParam<ProJoinBloc, OnboardingModel?, void>((initial, _) => ProJoinBloc(locator(), locator(), locator(), locator(), initial: initial))
     ..registerFactory(() => ProSettingsBloc(locator(), locator(), locator(), locator(), locator(), locator(), locator(), locator(), locator()))
     ..registerFactory(() => ProTodayBloc(locator(), locator(), pollInterval: AppConstants.livePollInterval))
     ..registerFactory(() => ProDashboardBloc(locator()))

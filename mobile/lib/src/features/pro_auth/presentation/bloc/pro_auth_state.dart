@@ -29,6 +29,10 @@ abstract class ProAuthState with _$ProAuthState {
     /// of Mon compte, the confirmations of « Supprimer mon compte ».
     @Default(ProvidersModel()) ProvidersModel providers,
 
+    /// What this phone and build offer, known at start without the API: « Supprimer mon compte » confirms with Apple
+    /// or Google even while [providers] has not been read (a restored session never shows the login page).
+    @Default(ProvidersModel()) ProvidersModel deviceProviders,
+
     /// « Continuer avec … » running, and with which provider (apple, google).
     @Default(ViewState.idle) ViewState signInState,
     String? signingInWith,

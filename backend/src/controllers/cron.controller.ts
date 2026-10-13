@@ -4,8 +4,10 @@ import { ArrivalService } from '@/services/arrival.service';
 import { BookingDigestService } from '@/services/booking-digest.service';
 import { FileService } from '@/services/file.service';
 import { FlightTrackingService } from '@/services/flight-tracking.service';
+import { IdentityVerificationService } from '@/services/identity-verification.service';
 import { InboundEmailService } from '@/services/inbound-email.service';
 import { JoinRequestService } from '@/services/join-request.service';
+import { purgeLoginAttempts } from '@/services/password-attempts';
 import { ReturnService } from '@/services/return.service';
 import { ShuttleService } from '@/services/shuttle.service';
 import { SmsService } from '@/services/sms.service';
@@ -36,6 +38,7 @@ export class CronController {
   public files = Container.get(FileService);
   public digest = Container.get(BookingDigestService);
   public joinRequests = Container.get(JoinRequestService);
+  public identityVerification = Container.get(IdentityVerificationService);
 
   /** GET /internal/cron/expire-arrival-signals */
   public expireArrivalSignals = catchAsync(async (req: Request, res: Response) => {
@@ -118,10 +121,14 @@ export class CronController {
     // (expired), join attempts after 7 days, identities never linked and idle for 30 days.
     const identityTokensDeleted = await this.tokenService.deleteExpiredOnboardingTokens();
     const joins = await this.joinRequests.purge();
+    // Apple / Google tokens already used (single use) past their own expiry, and login attempts after 30 days.
+    const usedIdentityTokensDeleted = await this.identityVerification.purgeUsedTokens();
+    const loginAttemptsDeleted = await purgeLoginAttempts();
     logger.info(
       `[Cron] ${deleted} expired staff tokens deleted, ${arrivalSignalsEnded} arrival signals ended, ${shuttleTripsEnded} shuttle trips ended, ` +
         `SMS queue ${JSON.stringify(sms)}, ${smsPurged} outbox rows purged, ${reservationsAnonymized} bookings anonymised, ` +
-        `${identityTokensDeleted} onboarding tokens deleted, join requests ${JSON.stringify(joins)}`,
+        `${identityTokensDeleted} onboarding tokens deleted, join requests ${JSON.stringify(joins)}, ` +
+        `${usedIdentityTokensDeleted} used identity tokens and ${loginAttemptsDeleted} login attempts deleted`,
     );
     res.json({
       deleted,
@@ -137,6 +144,8 @@ export class CronController {
       joinRequestsExpired: joins.requestsExpired,
       joinAttemptsDeleted: joins.joinAttemptsDeleted,
       identitiesDeleted: joins.identitiesDeleted,
+      usedIdentityTokensDeleted,
+      loginAttemptsDeleted,
     });
   });
 }

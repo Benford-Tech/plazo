@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:bloc_test/bloc_test.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -215,6 +217,28 @@ void main() {
       await team.close();
     });
 
+    test('notification « Demande pour rejoindre l’équipe » ouverte, Équipe déjà affichée : les demandes sont relues', () async {
+      final pushes = StreamController<Map<String, dynamic>>.broadcast();
+      final team = ProTeamBloc(getTeam, MockCreate(), MockUpdate(), MockReset(), joinCode: joinCode, joinRequests: joinRequests, pushOpened: pushes.stream)
+        ..add(const ProTeamStarted());
+      await team.stream.firstWhere((s) => s.joinRequests.isNotEmpty);
+      final second = PendingJoinRequestModel(
+        id: 'jr2',
+        firstName: 'Karim',
+        lastName: 'Benali',
+        provider: 'google',
+        wishedRole: 'valet',
+        createdAt: DateTime.now(),
+      );
+      when(() => joinRequests(any())).thenAnswer((_) async => Right([julieRequest, second]));
+      pushes.add({'type': 'arrival'});
+      pushes.add({'type': 'join_request', 'requestId': 'jr2'});
+      await team.stream.firstWhere((s) => s.joinRequests.length == 2);
+      verify(() => joinRequests(any())).called(2);
+      await team.close();
+      await pushes.close();
+    });
+
     test('demande déjà traitée ailleurs : retirée, avec le message', () async {
       when(() => accept(any())).thenAnswer((_) async => const Left(ServerFailure(statusCode: 409, code: 'join_request_closed')));
       final team = ProTeamBloc(getTeam, MockCreate(), MockUpdate(), MockReset(), joinCode: joinCode, joinRequests: joinRequests, accept: accept, refuse: refuse)
@@ -304,6 +328,18 @@ void main() {
       final event = verify(() => auth.add(captureAny())).captured.whereType<ProAuthDeleteRequested>().single;
       expect(event.provider, 'apple');
       expect(event.password, isNull);
+    });
+
+    testWidgets('session rétablie, connexions de l’API pas encore lues : « Confirmer avec Apple » quand même (Apple 5.1.1(v))', (tester) async {
+      // A restored session never shows the login page: only what the phone offers is known.
+      final auth = await pumpAccount(tester, const ProAuthState(status: ProAuthStatus.signedIn, staff: julie, deviceProviders: ProvidersModel(apple: true)));
+      await tester.tap(find.byKey(const Key('account-delete')));
+      await tester.pumpAndSettle();
+      expect(find.textContaining('Vous ne pourrez plus vous connecter à Plazo Pro et votre accès à Apple sera retiré.'), findsOneWidget);
+      expect(find.byKey(const Key('delete-elsewhere')), findsNothing);
+      await tester.tap(find.byKey(const Key('delete-confirm-apple')));
+      await tester.pumpAndSettle();
+      expect(verify(() => auth.add(captureAny())).captured.whereType<ProAuthDeleteRequested>().single.provider, 'apple');
     });
 
     testWidgets('compte avec mot de passe sur Android : « Lier mon compte Google », suppression confirmée par le mot de passe', (tester) async {

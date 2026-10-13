@@ -271,7 +271,8 @@ describe("DashboardPage", () => {
     expect(map).toHaveTextContent("Aéroport dans 4 min");
   });
 
-  it("13/10/2026 : une demande pour rejoindre l'équipe mène à Équipe, avec le nom et le nombre", async () => {
+  it("13/10/2026 : une demande pour rejoindre l'équipe mène à Équipe, avec le nom, le nombre et son âge", async () => {
+    // The backend's shape: `since` = the oldest request, `minutes` up to 7 days.
     const join = {
       kind: "join_request" as const,
       severity: "todo" as const,
@@ -280,8 +281,8 @@ describe("DashboardPage", () => {
       customerName: "Julie Martin",
       plate: null,
       detail: "2",
-      since: null,
-      minutes: null,
+      since: new Date(Date.now() - 3 * 86_400_000).toISOString(),
+      minutes: 4320,
     };
     api.getDashboard.mockResolvedValue({ ...dashboard, alerts: [join] });
     renderPage();
@@ -290,6 +291,8 @@ describe("DashboardPage", () => {
     });
     expect(row).toHaveAttribute("href", "/equipe");
     expect(row).toHaveTextContent("Julie Martin et 1 autre");
+    expect(row).toHaveTextContent("il y a 3 j");
+    expect(row).not.toHaveTextContent("4320 min");
     expect(row).toHaveTextContent("À faire");
   });
 

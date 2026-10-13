@@ -132,7 +132,9 @@ export function AccountDeletionView({ page }: { page: AccountDeletionPage }) {
               {contact.email}
             </a>
           ) : (
-            <span>E-mail : {TO_COMPLETE}</span>
+            <span>
+              {contact.emailLabel} : {TO_COMPLETE}
+            </span>
           )}
           <span className="text-soft">{contact.address}</span>
         </address>

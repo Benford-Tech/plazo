@@ -2,7 +2,14 @@ import { randomUUID } from 'crypto';
 import dayjs from 'dayjs';
 import jwt from 'jsonwebtoken';
 import { Service } from 'typedi';
-import { ACCESS_TOKEN_TTL_HOURS, ONBOARDING_TOKEN_TTL_DAYS, REFRESH_TOKEN_TTL_DAYS, SECRET_KEY, VIEW_AS_TTL_MINUTES } from '@/config';
+import {
+  ACCESS_TOKEN_TTL_HOURS,
+  MAX_ONBOARDING_TOKENS,
+  ONBOARDING_TOKEN_TTL_DAYS,
+  REFRESH_TOKEN_TTL_DAYS,
+  SECRET_KEY,
+  VIEW_AS_TTL_MINUTES,
+} from '@/config';
 import prisma, { StaffTokenType } from '@/database';
 import { DataStoredInToken, OnboardingTokenPayload, TokenData } from '@/interfaces/auth.interface';
 
@@ -54,9 +61,10 @@ export class TokenService {
     return { token: this.sign(staffId, StaffTokenType.access, uid, expires), expires: expires.toDate() };
   }
 
-  /** Signs out every staff member of an operator (suspension). */
+  /** Signs out every staff member of an operator (suspension), onboarding sessions of their identities included. */
   public async revokeOperator(operatorId: string): Promise<void> {
     await prisma.staffToken.deleteMany({ where: { staff: { operatorId } } });
+    await prisma.identityToken.deleteMany({ where: { identity: { staff: { operatorId } } } });
   }
 
   /** Verifies signature, type and that the token is still stored (not revoked) and not expired. */
@@ -80,8 +88,13 @@ export class TokenService {
     await prisma.staffToken.deleteMany({ where: { staffId: stored.staffId, metadata: { path: ['session'], equals: session } } });
   }
 
+  /**
+   * Signs a member out everywhere (password reset or change, deactivation): their sessions, and the onboarding sessions
+   * of their Apple / Google identities, which could otherwise open a new staff session (/internal/auth/onboarding/session).
+   */
   public async revokeAll(staffId: string): Promise<void> {
     await prisma.staffToken.deleteMany({ where: { staffId } });
+    await this.revokeOnboardingTokensOfStaff(staffId);
   }
 
   public async deleteExpired(): Promise<number> {
@@ -99,6 +112,14 @@ export class TokenService {
     const uid = randomUUID();
     const expires = dayjs().add(ONBOARDING_TOKEN_TTL_DAYS, 'days');
     await prisma.identityToken.create({ data: { uid, identityId, expiresAt: expires.toDate() } });
+    // A handful of sessions per identity at most (several phones): the oldest ones go.
+    const stale = await prisma.identityToken.findMany({
+      where: { identityId },
+      orderBy: [{ createdAt: 'desc' }, { id: 'desc' }],
+      skip: MAX_ONBOARDING_TOKENS,
+      select: { id: true },
+    });
+    if (stale.length) await prisma.identityToken.deleteMany({ where: { id: { in: stale.map(t => t.id) } } });
     const payload: OnboardingTokenPayload = { sub: identityId, iat: dayjs().unix(), exp: expires.unix(), type: 'onboarding', uuid: uid };
     return { onboardingToken: jwt.sign(payload, SECRET_KEY as string), expiresAt: expires.toDate() };
   }
@@ -123,6 +144,11 @@ export class TokenService {
 
   public async revokeOnboardingTokensOf(identityId: string): Promise<void> {
     await prisma.identityToken.deleteMany({ where: { identityId } });
+  }
+
+  /** The onboarding sessions of every Apple / Google identity linked to a member. */
+  public async revokeOnboardingTokensOfStaff(staffId: string): Promise<void> {
+    await prisma.identityToken.deleteMany({ where: { identity: { staffId } } });
   }
 
   public async deleteExpiredOnboardingTokens(): Promise<number> {

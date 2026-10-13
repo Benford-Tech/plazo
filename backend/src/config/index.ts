@@ -198,12 +198,21 @@ export function joinCodeSecret(): Buffer {
 // manager this long.
 export const ONBOARDING_TOKEN_TTL_DAYS = 7;
 export const JOIN_REQUEST_TTL_DAYS = 7;
-// Wrong codes typed: per identity, 5 in 15 minutes and 20 in 24 hours; per address, 30 in an hour.
+// Wrong codes typed: per Apple / Google account, 5 in 15 minutes and 20 in 24 hours; per address, 30 in an hour.
 export const JOIN_FAILURE_LIMITS = {
   identityShort: { max: 5, minutes: 15 },
   identityDay: { max: 20, minutes: 24 * 60 },
   ip: { max: 30, minutes: 60 },
 };
+// Requests sent (right codes): 3 a day per Apple / Google account, 20 a day per address (each one pushes the managers).
+export const JOIN_REQUEST_LIMITS = {
+  identityDay: { max: 3, minutes: 24 * 60 },
+  ipDay: { max: 20, minutes: 24 * 60 },
+};
+// At most this many onboarding sessions per identity (the oldest go first).
+export const MAX_ONBOARDING_TOKENS = 5;
+// A Google ID token confirming an account deletion is at most this old.
+export const REAUTH_MAX_AGE_SECONDS = 5 * 60;
 
 // OneSignal (push notifications to the staff's phones). Read on every call so that tests can
 // switch pushes on and off. Without both values, no push is sent (the rest works the same).

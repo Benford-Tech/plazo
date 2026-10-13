@@ -1,5 +1,5 @@
 import 'reflect-metadata';
-import { createHash, generateKeyPairSync, KeyObject } from 'crypto';
+import { createHash, generateKeyPairSync, KeyObject, randomUUID } from 'crypto';
 import jwt from 'jsonwebtoken';
 import { Container } from 'typedi';
 import {
@@ -44,10 +44,18 @@ interface TokenOptions {
   key?: KeyObject;
   givenName?: string;
   familyName?: string;
+  /** Seconds since the token was issued (Google confirmations must be fresh). */
+  issuedSecondsAgo?: number;
 }
 
+/**
+ * Real providers never issue the same token twice (a new nonce, a new issue time); tokens signed here in the same
+ * second would be identical, and Plazo accepts each token once: a random `jti` keeps them apart.
+ */
+const unique = () => ({ jti: randomUUID() });
+
 export function appleIdentityToken(options: TokenOptions): string {
-  const claims: Record<string, unknown> = { sub: options.sub };
+  const claims: Record<string, unknown> = { sub: options.sub, ...unique() };
   if (options.email !== null) claims.email = options.email ?? `${options.sub}@privaterelay.appleid.com`;
   if (options.email !== null) claims.email_verified = options.emailVerified ?? 'true';
   if (options.isPrivateEmail !== undefined) claims.is_private_email = options.isPrivateEmail;
@@ -68,7 +76,9 @@ export function googleIdToken(options: TokenOptions): string {
     email_verified: options.emailVerified ?? true,
     given_name: options.givenName ?? 'Karim',
     family_name: options.familyName ?? 'Benali',
+    ...unique(),
   };
+  if (options.issuedSecondsAgo !== undefined) claims.iat = Math.floor(Date.now() / 1000) - options.issuedSecondsAgo;
   return jwt.sign(claims, options.key ?? providerRsa.privateKey, {
     algorithm: 'RS256',
     keyid: options.kid ?? 'google-kid-1',
@@ -94,6 +104,9 @@ export class FakeProviders {
   public keysStatus = 200;
   public revokeStatus = 200;
   public down = false;
+  /** Apple's /auth/token answer forced (e.g. 400 invalid_client), and whether it carries an id_token. */
+  public tokenError: { status: number; error: string } | null = null;
+  public tokenWithoutIdToken = false;
 
   public fetch = async (url: string, init?: RequestInit): Promise<Response> => {
     const method = init?.method ?? 'GET';
@@ -104,6 +117,7 @@ export class FakeProviders {
     if (url === APPLE_KEYS_URL) return json({ keys: this.appleKeys }, this.keysStatus);
     if (url === GOOGLE_KEYS_URL) return json({ keys: this.googleKeys }, this.keysStatus);
     if (url === APPLE_TOKEN_URL) {
+      if (this.tokenError) return json({ error: this.tokenError.error }, this.tokenError.status);
       if (!this.validClientSecret(form)) return json({ error: 'invalid_client' }, 400);
       const sub = this.appleCodes.get(form.code);
       if (!sub || form.grant_type !== 'authorization_code') return json({ error: 'invalid_grant' }, 400);
@@ -113,7 +127,7 @@ export class FakeProviders {
         refresh_token: `refresh-${sub}`,
         token_type: 'Bearer',
         expires_in: 3600,
-        id_token: appleIdentityToken({ sub, rawNonce: null }),
+        ...(this.tokenWithoutIdToken ? {} : { id_token: appleIdentityToken({ sub, rawNonce: null }) }),
       });
     }
     if (url === APPLE_REVOKE_URL) {

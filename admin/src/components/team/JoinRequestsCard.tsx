@@ -20,6 +20,8 @@ const JOIN_ROLES: { role: JoinRole; icon: LucideIcon }[] = [
 ];
 /** New requests show up while the page is open. */
 const POLL_MS = 30_000;
+/** « il y a 3 min » moves on between two polls (the same list does not re-render the card). */
+const TICK_MS = 30_000;
 
 const fullName = (r: JoinRequest) => `${r.firstName} ${r.lastName}`.trim();
 
@@ -41,7 +43,7 @@ function AcceptDialog({ request, onClose }: { request: JoinRequest; onClose: () 
   const accept = useMutation({
     mutationFn: () => adminApi.acceptJoinRequest(request.id, role),
     onSuccess: () => {
-      toast.success(t.accepted(name, t.roles[role].label));
+      toast.success(t.accepted(name, t.roles[role].phrase));
       void queryClient.invalidateQueries({ queryKey: ["team"] });
       void queryClient.invalidateQueries({ queryKey: ["join-requests"] });
       void queryClient.invalidateQueries({ queryKey: ["dashboard"] });
@@ -83,15 +85,15 @@ function AcceptDialog({ request, onClose }: { request: JoinRequest; onClose: () 
             <h2 id="join-accept-title" className="font-narrow text-xl font-bold leading-tight">
               {t.dialogTitle(name)}
             </h2>
-            <p id="join-accept-sub" className="break-all text-sm text-muted-foreground">
-              {request.email} · {t.sentAt(sentWhen(request.createdAt))}
+            <p id="join-accept-sub" className="text-sm text-muted-foreground">
+              <span className="break-all">{request.email}</span> · {t.sentAt(sentWhen(request.createdAt))}
             </p>
           </div>
           <button
             type="button"
             aria-label={t.cancel}
             onClick={onClose}
-            className="flex h-10 w-10 flex-none items-center justify-center rounded-[10px] border border-panel-line hover:bg-panel-2"
+            className="flex h-11 w-11 flex-none items-center justify-center rounded-[10px] border border-panel-line hover:bg-panel-2"
           >
             <X className="h-[18px] w-[18px]" aria-hidden="true" />
           </button>
@@ -144,7 +146,7 @@ function AcceptDialog({ request, onClose }: { request: JoinRequest; onClose: () 
           </fieldset>
           <p className="text-xs text-muted-foreground">{t.roleHelp}</p>
           <Button type="submit" className="mt-1 h-11 rounded-full text-[15px] font-semibold" disabled={accept.isPending}>
-            {t.confirm(t.roles[role].label)}
+            {t.confirm(t.roles[role].phrase)}
           </Button>
         </form>
       </div>
@@ -159,8 +161,32 @@ function AcceptDialog({ request, onClose }: { request: JoinRequest; onClose: () 
 export function JoinRequestsCard({ readOnly }: { readOnly: boolean }) {
   const confirm = useConfirm();
   const queryClient = useQueryClient();
-  const [accepting, setAccepting] = useState<JoinRequest | null>(null);
+  const [acceptingId, setAcceptingId] = useState<string | null>(null);
+  const trigger = useRef<HTMLButtonElement | null>(null);
+  const [now, setNow] = useState(() => Date.now());
   const { data } = useQuery({ queryKey: ["join-requests"], queryFn: adminApi.getJoinRequests, refetchInterval: POLL_MS });
+  const requests = data?.data ?? [];
+  // The dialog follows the list: a request cancelled, expired or answered elsewhere closes it, and never reopens it.
+  const open = acceptingId ? (requests.find(r => r.id === acceptingId) ?? null) : null;
+  const gone = !!acceptingId && !!data && !open;
+  useEffect(() => {
+    if (!gone) return;
+    setAcceptingId(null);
+    toast.info(fr.errors.join_request_closed);
+  }, [gone]);
+
+  const waiting = requests.length > 0;
+  useEffect(() => {
+    if (!waiting) return;
+    setNow(Date.now());
+    const timer = setInterval(() => setNow(Date.now()), TICK_MS);
+    return () => clearInterval(timer);
+  }, [waiting]);
+
+  const closeDialog = () => {
+    setAcceptingId(null);
+    trigger.current?.focus();
+  };
 
   const refuse = useMutation({
     mutationFn: (request: JoinRequest) => adminApi.refuseJoinRequest(request.id),
@@ -175,8 +201,7 @@ export function JoinRequestsCard({ readOnly }: { readOnly: boolean }) {
     },
   });
 
-  const requests = data?.data ?? [];
-  if (requests.length === 0) return null;
+  if (!waiting) return null;
 
   const askRefuse = async (request: JoinRequest) => {
     const ok = await confirm(t.refuseConfirm(fullName(request)), { title: t.refuseTitle, confirmLabel: t.refuse, destructive: true });
@@ -210,19 +235,28 @@ export function JoinRequestsCard({ readOnly }: { readOnly: boolean }) {
                 <SignInBadge method={r.provider} />
               </span>
               <span className="text-sm">{t.roles[r.wishedRole].label}</span>
-              <span className="text-sm text-muted-foreground">{timeAgo(r.createdAt)}</span>
+              <span className="text-sm text-muted-foreground">{timeAgo(r.createdAt, now)}</span>
               <div className="ml-auto flex gap-2">
                 <Button
                   type="button"
                   variant="outline"
-                  className="h-10 rounded-full px-4"
+                  className="h-11 rounded-full px-4"
                   aria-label={t.refuseLabel(name)}
                   disabled={readOnly || refuse.isPending}
                   onClick={() => void askRefuse(r)}
                 >
                   {t.refuse}
                 </Button>
-                <Button type="button" className="h-10 rounded-full px-4" aria-label={t.acceptLabel(name)} disabled={readOnly} onClick={() => setAccepting(r)}>
+                <Button
+                  type="button"
+                  className="h-11 rounded-full px-4"
+                  aria-label={t.acceptLabel(name)}
+                  disabled={readOnly}
+                  onClick={e => {
+                    trigger.current = e.currentTarget;
+                    setAcceptingId(r.id);
+                  }}
+                >
                   {t.accept}
                 </Button>
               </div>
@@ -230,7 +264,7 @@ export function JoinRequestsCard({ readOnly }: { readOnly: boolean }) {
           );
         })}
       </ul>
-      {accepting && <AcceptDialog request={accepting} onClose={() => setAccepting(null)} />}
+      {open && <AcceptDialog key={open.id} request={open} onClose={closeDialog} />}
     </section>
   );
 }

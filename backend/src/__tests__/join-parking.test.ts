@@ -2,7 +2,9 @@ import { Container } from 'typedi';
 import { joinCodeSecret } from '@/config';
 import prisma from '@/database';
 import { formatJoinCode, joinCodeFor, joinCodeValidUntil } from '@/domain/join-code';
+import { subjectKeyOf } from '@/domain/join-request';
 import { addDays, localDate } from '@/domain/time';
+import { OnboardingService } from '@/services/onboarding.service';
 import { OperatorService } from '@/services/operator.service';
 import { ONESIGNAL_NOTIFICATIONS_URL } from '@/services/push.service';
 import { APPLE_REVOKE_URL, APPLE_TOKEN_URL } from '@/services/identity-verification.service';
@@ -451,8 +453,10 @@ describe('rejoindre un parking avec le code du jour', () => {
     const blocked = await join(token, await codeOf(op));
     expect(blocked.status).toBe(429);
     expect(blocked.body.code).toBe('too_many_attempts');
-    const identity = await prisma.staffIdentity.findFirstOrThrow({ where: { subject: 'apple-julie' } });
+    const subjectKey = subjectKeyOf({ provider: 'apple', subject: 'apple-julie' });
     const ipKey = (await prisma.joinAttempt.findFirstOrThrow()).ipKey;
+    // Counted on the account's hash, never its raw subject; the refused attempt is not kept.
+    expect(await prisma.joinAttempt.count({ where: { subjectKey } })).toBe(5);
 
     // A quarter of an hour later the short window is clear, but not the day's.
     await prisma.joinAttempt.updateMany({ data: { createdAt: new Date(Date.now() - 20 * 60_000) } });
@@ -460,7 +464,7 @@ describe('rejoindre un parking avec le code du jour', () => {
     await prisma.staffJoinRequest.deleteMany();
     await prisma.joinAttempt.createMany({
       data: Array.from({ length: 15 }, () => ({
-        identityId: identity.id,
+        subjectKey,
         ipKey: 'ailleurs',
         success: false,
         createdAt: new Date(Date.now() - 3 * 3600_000),
@@ -470,7 +474,9 @@ describe('rejoindre un parking avec le code du jour', () => {
 
     // The same address, whatever the account.
     await prisma.joinAttempt.deleteMany();
-    await prisma.joinAttempt.createMany({ data: Array.from({ length: 30 }, () => ({ identityId: null, ipKey, success: false })) });
+    await prisma.joinAttempt.createMany({
+      data: Array.from({ length: 30 }, () => ({ subjectKey: subjectKeyOf({ provider: 'apple', subject: 'x' }), ipKey, success: false })),
+    });
     expect((await join(await onboard('autre', 'autre@icloud.com'), await codeOf(op))).status).toBe(429);
   });
 
@@ -647,6 +653,7 @@ describe('Quitter ce parking', () => {
     const op = await setupOperator();
     const member = await joinedMember(op);
     await prisma.staffDevice.create({ data: { staffId: member.staffId, subscriptionId: 'tel-julie' } });
+    await prisma.staff.update({ where: { id: member.staffId }, data: { phone: '0612345678' } });
     const res = await api().post('/api/internal/staff/me/leave').set(auth(member.staffToken));
     expect(res.status).toBe(200);
     expect(res.body.onboarding).toMatchObject({
@@ -655,7 +662,7 @@ describe('Quitter ce parking', () => {
       request: null,
     });
     const row = await prisma.staff.findUniqueOrThrow({ where: { id: member.staffId } });
-    expect(row).toMatchObject({ isActive: false, email: `left-${member.staffId}@plazo.invalid`, name: 'Julie Martin' });
+    expect(row).toMatchObject({ isActive: false, email: `left-${member.staffId}@plazo.invalid`, name: 'Julie Martin', phone: null });
     expect(row.leftAt).not.toBeNull();
     expect(await prisma.staffDevice.count({ where: { staffId: member.staffId } })).toBe(0);
     expect(await prisma.staffToken.count({ where: { staffId: member.staffId } })).toBe(0);
@@ -788,6 +795,8 @@ describe('Supprimer mon compte', () => {
     fake.appleCodes.set('code-autre', 'autre-apple-id');
     const other = await api().delete('/api/internal/staff/me').set(auth(member.staffToken)).send({ appleAuthorizationCode: 'code-autre' });
     expect(other.body.code).toBe('reauth_failed');
+    // Another Apple ID's grant is left alone.
+    expect(fake.callsTo(APPLE_REVOKE_URL)).toHaveLength(0);
     fake.appleCodes.set('code-frais', member.sub);
     fake.revokeStatus = 503;
     const down = await api().delete('/api/internal/staff/me').set(auth(member.staffToken)).send({ appleAuthorizationCode: 'code-frais' });
@@ -871,20 +880,324 @@ describe('purge de nuit', () => {
     await pendingRequest(op, 'en-attente', 'e@icloud.com');
     const old = new Date(Date.now() - 31 * 86_400_000);
     await prisma.staffIdentity.updateMany({ where: { subject: { in: ['ancienne', 'en-attente'] } }, data: { createdAt: old, lastSignInAt: old } });
+    // Their onboarding sessions have expired too (an identity with a valid one is never purged).
     await prisma.identityToken.updateMany({
-      where: { identity: { subject: 'recente' } },
+      where: { identity: { subject: { in: ['recente', 'ancienne'] } } },
       data: { createdAt: new Date(Date.now() - 8 * 86_400_000), expiresAt: new Date(Date.now() - 86_400_000) },
     });
     await prisma.joinAttempt.createMany({
       data: [
-        { ipKey: 'x', success: false, createdAt: new Date(Date.now() - 8 * 86_400_000) },
-        { ipKey: 'x', success: false },
+        {
+          subjectKey: subjectKeyOf({ provider: 'apple', subject: 'x' }),
+          ipKey: 'x',
+          success: false,
+          createdAt: new Date(Date.now() - 8 * 86_400_000),
+        },
+        { subjectKey: subjectKeyOf({ provider: 'apple', subject: 'x' }), ipKey: 'x', success: false },
       ],
     });
     const res = await api().get('/api/internal/cron/purge-expired-tokens').set('Authorization', `Bearer ${process.env.CRON_SECRET}`);
     expect(res.status).toBe(200);
-    expect(res.body).toMatchObject({ identityTokensDeleted: 1, joinAttemptsDeleted: 1, identitiesDeleted: 1, joinRequestsExpired: 0 });
+    expect(res.body).toMatchObject({ identityTokensDeleted: 2, joinAttemptsDeleted: 1, identitiesDeleted: 1, joinRequestsExpired: 0 });
     // The one with a pending request stays, the recent one too.
     expect((await prisma.staffIdentity.findMany({ orderBy: { subject: 'asc' } })).map(i => i.subject)).toEqual(['en-attente', 'recente']);
+  });
+});
+
+// ---------------------------------------------------------------- review fixes (13/10/2026)
+
+describe('jetons à usage unique et sessions d’accueil', () => {
+  it('le même jeton Apple ne connecte qu’une fois ; 5 sessions d’accueil au plus par identité', async () => {
+    const body = {
+      identityToken: appleIdentityToken({ sub: 'apple-julie', rawNonce: 'n' }),
+      rawNonce: 'n',
+      givenName: 'Julie',
+      familyName: 'Martin',
+    };
+    expect((await api().post('/api/internal/auth/apple').send(body)).status).toBe(200);
+    const replay = await api().post('/api/internal/auth/apple').send(body);
+    expect(replay.status).toBe(401);
+    expect(replay.body.code).toBe('identity_invalid');
+    const idToken = googleIdToken({ sub: 'google-karim' });
+    expect((await api().post('/api/internal/auth/google').send({ idToken })).status).toBe(200);
+    expect((await api().post('/api/internal/auth/google').send({ idToken })).body.code).toBe('identity_invalid');
+
+    const first = (await appleSignIn()).body.onboardingToken;
+    for (let i = 0; i < 5; i += 1) await appleSignIn();
+    const identity = await prisma.staffIdentity.findFirstOrThrow({ where: { subject: 'apple-julie' } });
+    expect(await prisma.identityToken.count({ where: { identityId: identity.id } })).toBe(5);
+    expect((await api().get('/api/internal/auth/onboarding').set(auth(first))).status).toBe(401);
+  });
+
+  it('se connecter comme membre, un nouveau mot de passe ou une déconnexion ferment les sessions d’accueil restées ailleurs', async () => {
+    const op = await setupOperator();
+    // Phone A asked to join; the manager accepts; phone B signs in with Apple: A's onboarding session goes.
+    const { token: phoneA, requestId } = await pendingRequest(op);
+    const accepted = await api().post(`/api/internal/staff/join-requests/${requestId}/accept`).set(auth(op.token)).send({ role: 'driver' });
+    const staffId = accepted.body.staff.id as string;
+    const phoneB = await appleSignIn('apple-julie', { names: false });
+    expect(phoneB.body.status).toBe('signed_in');
+    expect((await api().post('/api/internal/auth/onboarding/session').set(auth(phoneA))).status).toBe(401);
+
+    // An onboarding session alive when the manager resets the password (sign out everywhere): gone too.
+    const identity = await prisma.staffIdentity.findFirstOrThrow({ where: { staffId } });
+    const leftover = await Container.get(OnboardingService).tokens.generateOnboardingToken(identity.id);
+    await api().post(`/api/internal/staff/${staffId}/reset-password`).set(auth(op.token)).send({ password: 'nouveau-mot-de-passe' });
+    expect((await api().post('/api/internal/auth/onboarding/session').set(auth(leftover.onboardingToken))).status).toBe(401);
+
+    // And at a staff logout.
+    const another = await Container.get(OnboardingService).tokens.generateOnboardingToken(identity.id);
+    const session = (await appleSignIn('apple-julie', { names: false })).body.tokenData.access.token;
+    const again = await Container.get(OnboardingService).tokens.generateOnboardingToken(identity.id);
+    expect((await api().post('/api/internal/auth/logout').set(auth(session))).status).toBe(204);
+    expect((await api().get('/api/internal/auth/onboarding').set(auth(again.onboardingToken))).status).toBe(401);
+    expect((await api().get('/api/internal/auth/onboarding').set(auth(another.onboardingToken))).status).toBe(401);
+
+    // Deactivated then reactivated: no old onboarding session opens a staff session.
+    const later = await Container.get(OnboardingService).tokens.generateOnboardingToken(identity.id);
+    await api().patch(`/api/internal/staff/${staffId}`).set(auth(op.token)).send({ isActive: false });
+    await api().patch(`/api/internal/staff/${staffId}`).set(auth(op.token)).send({ isActive: true });
+    expect((await api().post('/api/internal/auth/onboarding/session').set(auth(later.onboardingToken))).status).toBe(401);
+  });
+});
+
+describe('limites de « Rejoindre un parking »', () => {
+  it('supprimer son identité puis se reconnecter ne remet pas les compteurs à zéro', async () => {
+    const op = await setupOperator();
+    const token = await onboard();
+    for (let i = 0; i < 5; i += 1) expect((await join(token, `AAAAA-AAAA${i}`)).status).toBe(400);
+    expect((await api().delete('/api/internal/auth/onboarding').set(auth(token))).status).toBe(204);
+    const fresh = await onboard();
+    const blocked = await join(fresh, await codeOf(op));
+    expect(blocked.status).toBe(429);
+    expect(blocked.body.code).toBe('too_many_attempts');
+  });
+
+  it('des codes faux envoyés en même temps ne passent pas tous sous la limite', async () => {
+    await setupOperator();
+    const token = await onboard();
+    const results = await Promise.all(Array.from({ length: 12 }, (_, i) => join(token, `BBBBB-BBBB${i % 10}`)));
+    const statuses = results.map(r => r.status);
+    expect(statuses.filter(status => status === 400).length).toBeLessThanOrEqual(5);
+    expect(statuses.filter(status => status === 429).length).toBeGreaterThanOrEqual(7);
+    expect(await prisma.joinAttempt.count({ where: { success: false } })).toBeLessThanOrEqual(5);
+  });
+
+  it('3 demandes envoyées par jour et par compte au plus', async () => {
+    const op = await setupOperator();
+    await prisma.staffDevice.create({ data: { staffId: op.manager.id, subscriptionId: 'tel-gerant' } });
+    const token = await onboard();
+    for (let i = 0; i < 3; i += 1) {
+      expect((await join(token, await codeOf(op))).status).toBe(201);
+      expect((await api().delete('/api/internal/auth/onboarding/request').set(auth(token))).status).toBe(200);
+    }
+    const fourth = await join(token, await codeOf(op));
+    expect(fourth.status).toBe(429);
+    expect(fourth.body.code).toBe('too_many_attempts');
+    expect(pushes()).toHaveLength(3);
+  });
+});
+
+describe('écritures concurrentes', () => {
+  it('délier Apple et Google en même temps laisse toujours un moyen de se connecter', async () => {
+    const op = await setupOperator();
+    const member = await joinedMember(op);
+    await api()
+      .post('/api/internal/staff/me/identities/google')
+      .set(auth(member.staffToken))
+      .send({ idToken: googleIdToken({ sub: 'google-julie', email: 'julie@gmail.com' }) });
+    const [apple, google] = await Promise.all([
+      api().delete('/api/internal/staff/me/identities/apple').set(auth(member.staffToken)),
+      api().delete('/api/internal/staff/me/identities/google').set(auth(member.staffToken)),
+    ]);
+    expect([apple.status, google.status].sort()).toEqual([200, 409]);
+    expect(await prisma.staffIdentity.count({ where: { staffId: member.staffId } })).toBe(1);
+  });
+
+  it('deux gérants qui quittent en même temps : un seul part', async () => {
+    const op = await setupOperator();
+    const second = await addStaff(op.token, 'manager');
+    const [a, b] = await Promise.all([
+      api().post('/api/internal/staff/me/leave').set(auth(op.token)),
+      api().post('/api/internal/staff/me/leave').set(auth(second.token)),
+    ]);
+    expect([a.status, b.status].sort()).toEqual([200, 409]);
+    expect(await prisma.staff.count({ where: { operatorId: op.operator.id, role: 'manager', isActive: true } })).toBe(1);
+  });
+
+  it('supprimer une identité qu’un gérant vient de relier : refusé, rien n’est effacé', async () => {
+    const op = await setupOperator();
+    const { requestId } = await pendingRequest(op);
+    const stale = await prisma.staffIdentity.findFirstOrThrow({ where: { subject: 'apple-julie' } });
+    await api().post(`/api/internal/staff/join-requests/${requestId}/accept`).set(auth(op.token)).send({ role: 'driver' });
+    await expect(Container.get(OnboardingService).deleteIdentity(stale)).rejects.toMatchObject({ code: 'already_member' });
+    expect((await prisma.staffIdentity.findUniqueOrThrow({ where: { id: stale.id } })).staffId).not.toBeNull();
+  });
+});
+
+describe('supprimer son compte : Apple et preuves', () => {
+  it('Apple relié : le code Apple est exigé même avec le mot de passe, et Apple est révoqué', async () => {
+    const op = await setupOperator();
+    await api()
+      .post('/api/internal/staff/me/identities/apple')
+      .set(auth(op.token))
+      .send({ identityToken: appleIdentityToken({ sub: 'apple-gerant', email: 'gerant@icloud.com', rawNonce: 'n' }), rawNonce: 'n' });
+    const agent = await addStaff(op.token, 'agent');
+    await api()
+      .post('/api/internal/staff/me/identities/apple')
+      .set(auth(agent.token))
+      .send({ identityToken: appleIdentityToken({ sub: 'apple-agent', email: 'agent@icloud.com', rawNonce: 'n' }), rawNonce: 'n' });
+
+    const refused = await api().delete('/api/internal/staff/me').set(auth(agent.token)).send({ password: PASSWORD });
+    expect(refused.status).toBe(409);
+    expect(refused.body.code).toBe('apple_confirmation_required');
+    expect(fake.callsTo(APPLE_TOKEN_URL)).toHaveLength(0);
+    expect((await prisma.staff.findUniqueOrThrow({ where: { id: agent.id } })).isActive).toBe(true);
+
+    fake.appleCodes.set('code-agent', 'apple-agent');
+    const deleted = await api()
+      .delete('/api/internal/staff/me')
+      .set(auth(agent.token))
+      .send({ password: PASSWORD, appleAuthorizationCode: 'code-agent' });
+    expect(deleted.status).toBe(204);
+    expect(fake.callsTo(APPLE_REVOKE_URL)).toHaveLength(1);
+    expect(fake.callsTo(APPLE_REVOKE_URL)[0].form.token).toBe('refresh-apple-agent');
+  });
+
+  it('Apple refuse la clé de Plazo (invalid_client) : 503, rien n’est supprimé', async () => {
+    const op = await setupOperator();
+    const member = await joinedMember(op);
+    fake.appleCodes.set('code-frais', member.sub);
+    fake.tokenError = { status: 400, error: 'invalid_client' };
+    const res = await api().delete('/api/internal/staff/me').set(auth(member.staffToken)).send({ appleAuthorizationCode: 'code-frais' });
+    expect(res.status).toBe(503);
+    expect(res.body.code).toBe('provider_unreachable');
+    expect((await prisma.staff.findUniqueOrThrow({ where: { id: member.staffId } })).deletedAt).toBeNull();
+    expect(await prisma.staffIdentity.count({ where: { staffId: member.staffId } })).toBe(1);
+  });
+
+  it('le mot de passe compte dans le verrouillage de la connexion', async () => {
+    const op = await setupOperator();
+    const agent = await addStaff(op.token, 'agent');
+    for (let i = 0; i < 8; i += 1) {
+      expect(
+        (
+          await api()
+            .delete('/api/internal/staff/me')
+            .set(auth(agent.token))
+            .send({ password: `mauvais-${i}` })
+        ).body.code,
+      ).toBe('reauth_failed');
+    }
+    const locked = await api().delete('/api/internal/staff/me').set(auth(agent.token)).send({ password: PASSWORD });
+    expect(locked.status).toBe(429);
+    expect(locked.body.code).toBe('too_many_attempts');
+    expect((await api().post('/api/internal/auth/login').send({ email: agent.email, password: PASSWORD })).status).toBe(429);
+    // Changing one's password too.
+    const change = await api()
+      .patch('/api/internal/staff/me/password')
+      .set(auth(agent.token))
+      .send({ currentPassword: PASSWORD, newPassword: 'nouveau-mot-de-passe' });
+    expect(change.status).toBe(429);
+  });
+
+  it('un jeton Google de plus de 5 minutes ne confirme pas ; des types faux sont des codes', async () => {
+    const op = await setupOperator();
+    const token = (await googleSignIn()).body.onboardingToken;
+    const sent = await join(token, await codeOf(op));
+    await api().post(`/api/internal/staff/join-requests/${sent.body.request.id}/accept`).set(auth(op.token)).send({ role: 'agent' });
+    const staffToken = (await api().post('/api/internal/auth/onboarding/session').set(auth(token))).body.tokenData.access.token;
+    const old = await api()
+      .delete('/api/internal/staff/me')
+      .set(auth(staffToken))
+      .send({ googleIdToken: googleIdToken({ sub: 'google-karim', issuedSecondsAgo: 400 }) });
+    expect(old.status).toBe(401);
+    expect(old.body.code).toBe('reauth_failed');
+    const wrongType = await api().delete('/api/internal/staff/me').set(auth(staffToken)).send({ password: 123, googleIdToken: true });
+    expect(wrongType.status).toBe(400);
+    expect(wrongType.body.fields).toEqual({ password: 'invalid', googleIdToken: 'invalid' });
+    const fresh = googleIdToken({ sub: 'google-karim' });
+    expect((await api().delete('/api/internal/staff/me').set(auth(staffToken)).send({ googleIdToken: fresh })).status).toBe(204);
+  });
+});
+
+describe('effacement complet', () => {
+  it('« Supprimer mon compte » efface aussi tentatives de connexion, noms du journal et identités des demandes', async () => {
+    const op = await setupOperator();
+    const member = await joinedMember(op);
+    // Signs in with Google too, then unlinks Apple (the identity that joined stays, unlinked).
+    await api()
+      .post('/api/internal/staff/me/identities/google')
+      .set(auth(member.staffToken))
+      .send({ idToken: googleIdToken({ sub: 'google-julie', email: 'julie@gmail.com' }) });
+    await api().delete('/api/internal/staff/me/identities/apple').set(auth(member.staffToken));
+    await api().patch('/api/internal/staff/me').set(auth(member.staffToken)).send({ firstName: 'Juliette', lastName: 'Martin' });
+    await api().patch(`/api/internal/staff/${member.staffId}`).set(auth(op.token)).send({ firstName: 'Julie', lastName: 'Martin-Durand' });
+    await prisma.loginAttempt.create({ data: { email: 'julie.m@icloud.com', success: false } });
+
+    const res = await api()
+      .delete('/api/internal/staff/me')
+      .set(auth(member.staffToken))
+      .send({ googleIdToken: googleIdToken({ sub: 'google-julie', email: 'julie@gmail.com' }) });
+    expect(res.status).toBe(204);
+    expect(await prisma.loginAttempt.count({ where: { email: 'julie.m@icloud.com' } })).toBe(0);
+    expect(await prisma.staffIdentity.count()).toBe(0);
+    const entries = await prisma.auditLog.findMany({ where: { entityId: member.staffId, action: { in: ['staff.updated', 'staff.renamed'] } } });
+    expect(entries.length).toBe(2);
+    expect(JSON.stringify(entries.map(e => e.details))).not.toMatch(/Julie|Juliette|Martin/);
+  });
+
+  it('« Supprimer mon compte » après « Quitter ce parking » efface aussi l’ancien membre', async () => {
+    const op = await setupOperator();
+    const member = await joinedMember(op);
+    await prisma.staff.update({ where: { id: member.staffId }, data: { phone: '0612345678' } });
+    const left = await api().post('/api/internal/staff/me/leave').set(auth(member.staffToken));
+    const token = left.body.onboarding.onboardingToken as string;
+    expect((await prisma.staff.findUniqueOrThrow({ where: { id: member.staffId } })).phone).toBeNull();
+
+    fake.appleCodes.set('code-frais', member.sub);
+    expect((await api().delete('/api/internal/auth/onboarding').set(auth(token)).send({ authorizationCode: 'code-frais' })).status).toBe(204);
+    const row = await prisma.staff.findUniqueOrThrow({ where: { id: member.staffId } });
+    expect(row).toMatchObject({ firstName: '', lastName: '', name: 'Compte supprimé', phone: null, passwordSetAt: null, isActive: false });
+    expect(row.email).toBe(`deleted-${member.staffId}@plazo.invalid`);
+    expect(row.deletedAt).not.toBeNull();
+    expect(await prisma.auditLog.count({ where: { action: 'staff.deleted', entityId: member.staffId, operatorId: op.operator.id } })).toBe(1);
+    expect(await prisma.staffIdentity.count()).toBe(0);
+  });
+
+  it('après « Quitter ce parking », la purge de nuit garde l’identité qui a une session d’accueil', async () => {
+    const op = await setupOperator();
+    const member = await joinedMember(op);
+    const old = new Date(Date.now() - 40 * 86_400_000);
+    await prisma.staffIdentity.updateMany({ where: { staffId: member.staffId }, data: { lastSignInAt: old, createdAt: old } });
+    await prisma.$executeRaw`UPDATE "staff_join_requests" SET "updatedAt" = ${old} WHERE "staffId" = ${member.staffId}`;
+    const left = await api().post('/api/internal/staff/me/leave').set(auth(member.staffToken));
+    const purge = await api().get('/api/internal/cron/purge-expired-tokens').set('Authorization', `Bearer ${process.env.CRON_SECRET}`);
+    expect(purge.body.identitiesDeleted).toBe(0);
+    expect((await api().get('/api/internal/auth/onboarding').set(auth(left.body.onboarding.onboardingToken))).status).toBe(200);
+
+    // Even with the session expired, the departure counts as the last sign-in.
+    await prisma.identityToken.deleteMany();
+    expect(
+      (await api().get('/api/internal/cron/purge-expired-tokens').set('Authorization', `Bearer ${process.env.CRON_SECRET}`)).body.identitiesDeleted,
+    ).toBe(0);
+  });
+
+  it('la purge de nuit efface les jetons déjà servis expirés et les tentatives de connexion de plus de 30 jours', async () => {
+    await prisma.usedIdentityToken.createMany({
+      data: [
+        { tokenHash: 'a'.repeat(64), expiresAt: new Date(Date.now() - 1000) },
+        { tokenHash: 'b'.repeat(64), expiresAt: new Date(Date.now() + 600_000) },
+      ],
+    });
+    await prisma.loginAttempt.createMany({
+      data: [
+        { email: 'ancien@example.com', success: false, createdAt: new Date(Date.now() - 31 * 86_400_000) },
+        { email: 'recent@example.com', success: false },
+      ],
+    });
+    const res = await api().get('/api/internal/cron/purge-expired-tokens').set('Authorization', `Bearer ${process.env.CRON_SECRET}`);
+    expect(res.body).toMatchObject({ usedIdentityTokensDeleted: 1, loginAttemptsDeleted: 1 });
+    expect(await prisma.loginAttempt.count()).toBe(1);
   });
 });

@@ -27,8 +27,14 @@ class ProJoinPage extends StatefulWidget implements AutoRouteWrapper {
   const ProJoinPage({super.key});
 
   @override
-  Widget wrappedRoute(BuildContext context) =>
-      BlocProvider(create: (_) => locator<ProJoinBloc>()..add(ProJoinStarted(context.read<ProAuthBloc>().state.onboarding)), child: this);
+  Widget wrappedRoute(BuildContext context) {
+    final onboarding = context.read<ProAuthBloc>().state.onboarding;
+    // Seeded with the sign-in's answer: the first frame already has the names Apple or Google gave.
+    return BlocProvider(
+      create: (_) => locator<ProJoinBloc>(param1: onboarding)..add(ProJoinStarted(onboarding)),
+      child: this,
+    );
+  }
 
   @override
   State<ProJoinPage> createState() => _ProJoinPageState();
@@ -147,6 +153,19 @@ class _JoinFormState extends State<_JoinForm> {
     _firstName = TextEditingController(text: (request?.firstName ?? '').isNotEmpty ? request!.firstName : identity?.firstName ?? '');
     _lastName = TextEditingController(text: (request?.lastName ?? '').isNotEmpty ? request!.lastName : identity?.lastName ?? '');
     _post = request?.wishedRole;
+  }
+
+  /// The identity can arrive after the first frame (the API's answer): its names fill the fields still empty.
+  @override
+  void didUpdateWidget(covariant _JoinForm oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    final identity = widget.state.identity;
+    final request = widget.state.request;
+    if (oldWidget.state.identity != null || identity == null) return;
+    String pick(String? fromRequest, String fromIdentity) => (fromRequest ?? '').isNotEmpty ? fromRequest! : fromIdentity;
+    if (_firstName.text.isEmpty) _firstName.text = pick(request?.firstName, identity.firstName);
+    if (_lastName.text.isEmpty) _lastName.text = pick(request?.lastName, identity.lastName);
+    _post ??= request?.wishedRole;
   }
 
   @override

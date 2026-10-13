@@ -66,6 +66,8 @@ export interface JoinCode {
   day: string;
   validUntil: string;
   operatorName: string;
+  /** False for a demo, suspended or archived operator: the API refuses its code (absent from an older API). */
+  accepting?: boolean;
 }
 
 /** A pending request to join the team (GET /internal/staff/join-requests). */

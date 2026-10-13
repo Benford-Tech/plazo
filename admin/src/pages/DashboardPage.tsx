@@ -224,13 +224,22 @@ function AlertRow({ alert }: { alert: DashboardAlert }) {
         </span>
       </span>
       {alert.minutes !== null &&
-        !["flight_delayed", "departure_delayed", "wave_overflow"].includes(
-          alert.kind,
-        ) && (
+        ![
+          "flight_delayed",
+          "departure_delayed",
+          "wave_overflow",
+          "join_request",
+        ].includes(alert.kind) && (
           <span className="hidden font-mono text-xs text-muted-foreground sm:inline">
             {a.since(alert.minutes)}
           </span>
         )}
+      {/* A request may wait up to 7 days: « il y a 2 j », not « depuis 2880 min ». */}
+      {alert.kind === "join_request" && alert.since && (
+        <span className="hidden text-xs text-muted-foreground sm:inline">
+          {timeAgo(alert.since)}
+        </span>
+      )}
       {alert.plate && (
         <Plate
           value={alert.plate}

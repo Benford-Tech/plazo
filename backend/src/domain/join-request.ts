@@ -2,6 +2,7 @@
  * Joining a parking with the daily code (13/10/2026): the person signed in with Apple or Google asks to join, a manager
  * accepts (choosing the role, preset to the post asked for, never « Gérant ») or refuses. Pure helpers.
  */
+import { createHash } from 'crypto';
 import type { JoinRequestStatus, StaffRole } from '@/database';
 import type { PushMessage } from './arrival-messages';
 
@@ -49,6 +50,14 @@ export function joinRequestPush(input: { firstName: string; lastName: string; op
 /** A pending request past its expiry reads as expired, even before the nightly purge marks it. */
 export function effectiveStatus(request: { status: JoinRequestStatus; expiresAt: Date }, now = new Date()): JoinRequestStatus {
   return request.status === 'pending' && request.expiresAt <= now ? 'expired' : request.status;
+}
+
+/**
+ * The key the join attempts are counted on: SHA-256 of "provider:subject" (never the raw subject). It outlives the
+ * identity row, so deleting the identity and signing in again does not reset the limits.
+ */
+export function subjectKeyOf(identity: { provider: string; subject: string }): string {
+  return createHash('sha256').update(`${identity.provider}:${identity.subject}`).digest('hex');
 }
 
 /** The address of a member who left (« Quitter ce parking ») or deleted their account: the real one is freed. */
