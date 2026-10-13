@@ -1,9 +1,10 @@
 # Captures d'écran des stores (Plazo et Plazo Pro)
 
-Les captures téléphone de Google Play (1080 × 1920, format 9:16) et celles de l'App Store (iPhone 6,9", 1320 × 2868)
-des deux apps, prises sur les vraies apps construites pour le web, avec des données de démonstration. Résultat dans
-`brand/stores/screenshots/plazo/` et `brand/stores/screenshots/plazo-pro/` (sept écrans chacune, numérotés dans l'ordre
-de la fiche), et dans leur sous-dossier `app-store/` pour la taille iPhone.
+Les captures téléphone de Google Play (1080 × 1920, format 9:16) et celles de l'App Store (iPhone 6,9", 1320 × 2868,
+et iPhone 6,3", 1206 × 2622) des deux apps, prises sur les vraies apps construites pour le web, avec des données de
+démonstration. Résultat dans `brand/stores/screenshots/plazo/` et `brand/stores/screenshots/plazo-pro/` (sept écrans
+chacune, numérotés dans l'ordre de la fiche), dans leur sous-dossier `app-store/` pour l'iPhone 6,9" et dans
+`app-store-6.3/` pour l'iPhone 6,3".
 
 ## Ce que fait la prise de vue
 
@@ -21,7 +22,8 @@ de la fiche), et dans leur sous-dossier `app-store/` pour la taille iPhone.
 5. `capture.mjs` pilote les deux apps avec Chromium (fuseau Europe/Paris, position GPS sur la route de l'aéroport) et
    enregistre les captures : d'abord en `DEVICE=phone` (fenêtre 405 × 720 à 8/3 pixels par point, Google Play), puis,
    la journée remise en place (trajet clos, poste du gérant effacé), en `DEVICE=iphone` (440 × 956 à 3 pixels par
-   point, l'iPhone 16 Pro Max : mêmes écrans, la fenêtre plus haute montre simplement plus de contenu).
+   point, l'iPhone 16 Pro Max : mêmes écrans, la fenêtre plus haute montre simplement plus de contenu), puis, la
+   journée remise en place une seconde fois, en `DEVICE=iphone63` (402 × 874 à 3 pixels par point, l'iPhone 16 Pro).
 
 ## La lancer
 

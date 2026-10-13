@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Store screenshots of Plazo and Plazo Pro (Google Play 1080 x 1920, App Store iPhone 6,9" 1320 x 2868), from scratch: a throwaway database with the
+# Store screenshots of Plazo and Plazo Pro (Google Play 1080 x 1920, App Store iPhone 6,9" 1320 x 2868 and 6,3" 1206 x 2622), from scratch: a throwaway database with the
 # demo data, the API with its clock set to 14:05 at the parking, the two apps built for the web, a staged day at
 # the demo parking (scenario.mjs, stage.sql), then Chromium drives the apps (capture.mjs). See README.md.
 #
@@ -7,7 +7,8 @@
 #   SHOTS_DATABASE_URL=postgresql://user:pass@localhost:5432/plazo_shots brand/stores/tools/screenshots/run.sh
 #
 # Needs Node 22, Flutter (FLUTTER, default `flutter`), psql, Playwright's Chromium, and network access to the IGN
-# map tiles and the parkings' photos. Output: brand/stores/screenshots/{plazo,plazo-pro}/*.png and …/app-store/*.png (OUT_DIR).
+# map tiles and the parkings' photos. Output: brand/stores/screenshots/{plazo,plazo-pro}/*.png, …/app-store/*.png and
+# …/app-store-6.3/*.png (OUT_DIR).
 set -euo pipefail
 
 HERE=$(cd "$(dirname "$0")" && pwd)
@@ -94,12 +95,19 @@ start_api with_services
 
 echo "== screenshots"
 export SCENARIO="$WORK/scenario.json" TRAVELLER_URL="http://localhost:$TRAVELLER_PORT" PRO_URL="http://localhost:$PRO_PORT"
-# Google Play (1080 x 1920) at the root of each app's folder, the App Store's iPhone 6,9" (1320 x 2868) in app-store/.
-# The pro run chooses the manager's post and starts a shuttle trip: the day is put back before the second pass
-# (the trip simply closed, its passengers still on site, so that `scenario.mjs trip` can start it again).
+# Google Play (1080 x 1920) at the root of each app's folder, the App Store's iPhone 6,9" (1320 x 2868) in app-store/
+# and its iPhone 6,3" (1206 x 2622) in app-store-6.3/. The pro run chooses the manager's post and starts a shuttle trip:
+# the day is put back before each later pass (the trip simply closed, its passengers still on site, so that
+# `scenario.mjs trip` can start it again).
+reset_day() {
+  psql "$SHOTS_DATABASE_URL" -v ON_ERROR_STOP=1 -q -c "UPDATE shuttle_trips SET status='ended', \"endedAt\"=now(), lat=NULL, lng=NULL, \"accuracyM\"=NULL, \"positionRecordedAt\"=NULL, \"positionReceivedAt\"=NULL WHERE status='running'; UPDATE staff SET post=NULL, \"postSetAt\"=NULL, \"vehicleId\"=NULL;"
+}
 DEVICE=phone OUT="$OUT_DIR/plazo" node "$HERE/capture.mjs" traveller
 DEVICE=phone OUT="$OUT_DIR/plazo-pro" node "$HERE/capture.mjs" pro
-psql "$SHOTS_DATABASE_URL" -v ON_ERROR_STOP=1 -q -c "UPDATE shuttle_trips SET status='ended', \"endedAt\"=now(), lat=NULL, lng=NULL, \"accuracyM\"=NULL, \"positionRecordedAt\"=NULL, \"positionReceivedAt\"=NULL WHERE status='running'; UPDATE staff SET post=NULL, \"postSetAt\"=NULL, \"vehicleId\"=NULL;"
+reset_day
 DEVICE=iphone OUT="$OUT_DIR/plazo/app-store" node "$HERE/capture.mjs" traveller
 DEVICE=iphone OUT="$OUT_DIR/plazo-pro/app-store" node "$HERE/capture.mjs" pro
+reset_day
+DEVICE=iphone63 OUT="$OUT_DIR/plazo/app-store-6.3" node "$HERE/capture.mjs" traveller
+DEVICE=iphone63 OUT="$OUT_DIR/plazo-pro/app-store-6.3" node "$HERE/capture.mjs" pro
 echo "done: $OUT_DIR"

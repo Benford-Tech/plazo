@@ -730,7 +730,7 @@ Le nom du produit doit rester dans UN seul fichier de configuration (il peut enc
   Joanny, et les icônes 512, rendues par `brand/stores/tools/build.mjs` (Chromium, polices de l'app embarquées en data URI)
   et `finish.py` ; **captures téléphone** (11/10/2026, « Captures d'écran pour téléphone ») dans `brand/stores/screenshots/`
   (sept par app en 1080 × 1920, et dans `app-store/` en 1320 × 2868 pour l'iPhone 6,9" de l'App Store, `DEVICE=iphone` de
-  `capture.mjs`, 11/10/2026) prises sur les vraies apps construites pour le web par `brand/stores/tools/screenshots/run.sh`
+  `capture.mjs`, 11/10/2026, et dans `app-store-6.3/` en 1206 × 2622 pour l'iPhone 6,3", `DEVICE=iphone63`, 13/10/2026) prises sur les vraies apps construites pour le web par `brand/stores/tools/screenshots/run.sh`
   (base neuve `…_shots` avec les données de démo, API à 14:05 au parking par `fake-clock.cjs`, journée préparée par
   `scenario.mjs` et `stage.sql`, Chromium piloté par `capture.mjs`), ou par le workflow GitHub `store-screenshots.yml`
   (artefact) ; **données fictives du parking de test** (12/10/2026, « crée des données factices sur le parking de test », pour filmer

@@ -710,6 +710,7 @@ Les icônes App Store sont fournies par le build lui-même (icône 1024 des jeux
 | Store | Visuel | Taille et format |
 |---|---|---|
 | Apple | iPhone 6,9" (**obligatoire**) | 1320 × 2868 (simulateur iPhone 16 Pro Max) ou 1290 × 2796 ; portrait ; PNG ou JPEG sans transparence ; 1 à 10 captures, 5 ou 6 conseillées. **Faites (11/10/2026)** : `brand/stores/screenshots/plazo/app-store/` et `brand/stores/screenshots/plazo-pro/app-store/`, sept captures 1320 × 2868 par app (mêmes écrans et même ordre que Google Play, viewport 440 × 956 à 3 pixels par point), par le même `run.sh` (`DEVICE=iphone` de `capture.mjs`). |
+| Apple | iPhone 6,3" (facultatif : sans elles, Apple réduit les captures 6,9") | 1206 × 2622 ou 1179 × 2556, portrait (2622 × 1206 ou 2556 × 1179 en paysage). **Faites (13/10/2026)** : `brand/stores/screenshots/plazo/app-store-6.3/` et `brand/stores/screenshots/plazo-pro/app-store-6.3/`, sept captures 1206 × 2622 par app (mêmes écrans et même ordre, viewport 402 × 874 à 3 pixels par point, l'iPhone 16 Pro), par le même `run.sh` (`DEVICE=iphone63`). Aperçus vidéo de cette taille : 886 × 1920, aucun pour l'instant. |
 | Apple | iPhone 6,5" | 1284 × 2778 ou 1242 × 2688, seulement si aucune capture 6,9" n'est fournie (sinon Apple réduit les captures 6,9") |
 | Apple | iPad 13" (**obligatoire seulement si l'iPad est gardé**, point 0.15 ; ligne à retirer si les apps passent en iPhone seul) | 2064 × 2752 (simulateur iPad Pro 13 pouces M4) ou 2048 × 2732 |
 | Apple | Aperçu vidéo | facultatif |
