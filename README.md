@@ -155,8 +155,9 @@ une décision de Joanny. Cocher au fur et à mesure.
   pourront plus cloner un dépôt privé) ; dans les deux cas activer Secret scanning + Push protection (Settings › Code security).
 - [ ] **Suivi des vols** : le plan gratuit AeroDataBox (RapidAPI) tient un ou deux jours ; choisir AeroDataBox payant,
   FlightAware AeroAPI (`FLIGHTAWARE_API_KEY`), ou accepter le suivi dégradé (« J'ai atterri » reste).
-- [ ] **Pages légales** : encore « projet à valider par un juriste », non indexées ; après relecture, retirer le bandeau et
-  le `noindex` (`site/src/lib/legal.ts`, `LEGAL_VERSION`). Désigner un médiateur de la consommation (obligatoire).
+- [ ] **Pages légales** : encore à faire relire par un juriste, non indexées (le bandeau « Projet, à valider avec un juriste »
+  a été retiré le 13/10/2026) ; après relecture, retirer le `noindex` (`robots` des pages `conditions`, `mentions-legales`,
+  `confidentialite`) et passer `LEGAL_VERSION` (`site/src/lib/legal.ts`). Désigner un médiateur de la consommation (obligatoire).
 - [ ] **Factures** : Plazo n'émet ni facture ni reçu ; choisir reçu Stripe (Settings › Emails › Paiements réussis) + facture
   du parking, ou facture Plazo avec mandat de facturation.
 - [ ] **Apps** : identifiants décidés le 11/10/2026, `com.benfordtech.plazo` et `com.benfordtech.plazopro` (iOS et Android ;

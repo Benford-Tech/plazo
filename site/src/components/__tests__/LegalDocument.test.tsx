@@ -4,11 +4,12 @@ import { LegalDocument } from "../LegalDocument";
 import { termsDoc, legalNoticeDoc } from "@/lib/legal";
 
 describe("LegalDocument", () => {
-  it("shows the draft notice, the contents and every section", () => {
+  it("shows the title, the version, the contents and every section, without the old draft notice", () => {
     const doc = termsDoc();
     render(<LegalDocument doc={doc} />);
     expect(screen.getByRole("heading", { level: 1, name: "Conditions générales" })).toBeInTheDocument();
-    expect(screen.getByText("Projet, à valider avec un juriste")).toBeInTheDocument();
+    expect(screen.queryByText(/valider avec un juriste/)).not.toBeInTheDocument();
+    expect(screen.queryByRole("note")).not.toBeInTheDocument();
     expect(screen.getByText("Version du 12 octobre 2026")).toBeInTheDocument();
     const contents = screen.getByRole("navigation", { name: "Sommaire" });
     expect(contents.querySelectorAll("a")).toHaveLength(doc.sections.length);
