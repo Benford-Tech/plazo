@@ -728,8 +728,10 @@ Le nom du produit doit rester dans UN seul fichier de configuration (il peut enc
   (start, status, groups) »** (`.github/scripts/codemagic_build.py`, client commun `codemagic_api.py`) : `start` d'un
   workflow sur une branche, `status` d'un build (état, artefacts ; étape rouge si le build a échoué), `steps`, `cancel` (API v1),
   `groups` (noms des variables seulement), `ensure-group`, `team` (pourquoi un build attend : dernier build de chaque app du
-  compte) : c'est par là que Claude suit et relance les builds Codemagic ; compte Google Play Benford Tech et compte de service de
-  Thempo) ; **un seul workflow `mobile-release` (11/10/2026, « unifie le pipeline »)** à la place des quatre d'avant (un par
+  compte) : c'est par là que Claude suit et relance les builds Codemagic ; compte Google Play Benford Tech et, depuis le
+  13/10/2026, le compte de service créé pour Yoon (projet Google Cloud `yoon-beige`), dont la clé JSON se colle aussi dans le
+  groupe `mobile_secrets` de l'app `plazo` sous le nom de Yoon, `GCLOUD_SERVICE_ACCOUNT_CREDENTIALS` (lu par `codemagic.yaml`
+  à défaut de `GOOGLE_PLAY_SERVICE_ACCOUNT_CREDENTIALS` ; Codemagic ne copie pas un secret d'une app à l'autre)) ; **un seul workflow `mobile-release` (11/10/2026, « unifie le pipeline »)** à la place des quatre d'avant (un par
   store et par app) : tag `mobile-vX.Y.Z` (= `version:` de `pubspec.yaml`, sinon arrêt) ou manuel ; vérifications une fois,
   puis pour chaque flavor AAB + APK signés et IPA signé, les quatre paquets sous la même version et le même numéro de build
   (compteur Codemagic + 100, jamais sous le dernier des quatre stores) ; `ios_signing` par Reference name (certificat

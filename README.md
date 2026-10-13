@@ -212,7 +212,8 @@ une décision de Joanny. Cocher au fur et à mesure.
   fois, facturation à activer sur codemagic.io/billing/user au-delà), clé d'import Android créée et envoyée par le workflow GitHub « Android keystore
   (Plazo upload key) » (jeton de l'API Codemagic en secret GitHub `CODEMAGIC_API_TOKEN`, groupe de variables Secure
   `plazo_android_signing`, artefact d'un jour pour le gestionnaire de mots de passe), groupe
-  `mobile_secrets` (`GOOGLE_PLAY_SERVICE_ACCOUNT_CREDENTIALS` : le compte de service de Thempo, ouvert aux deux apps Plazo),
+  `mobile_secrets` (`GCLOUD_SERVICE_ACCOUNT_CREDENTIALS` ou `GOOGLE_PLAY_SERVICE_ACCOUNT_CREDENTIALS` : la clé du compte de service
+  créé pour Yoon le 13/10/2026, projet `yoon-beige`, ouvert aux deux apps Plazo ; encore vide le 13/10/2026),
   App ID et apps chez Apple, deux profils App Store avec le certificat existant puis « Fetch profiles », deux apps chez
   Google, premier build Android abouti le 11/10/2026 (version 1.0.0, build 112, AAB et APK des deux apps dans les Artifacts
   Codemagic), premier AAB à importer à la main dans la Play Console (icône 512, images de présentation (variante A ou B à choisir) et sept captures téléphone par app prêtes dans `brand/stores/`), `APP_STORE_APP_ID` ; identifiants des apps confirmés avant tout envoi ; OneSignal : les deux
