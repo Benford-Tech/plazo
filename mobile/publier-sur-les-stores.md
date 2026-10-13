@@ -248,6 +248,57 @@ la clé d'import Android de Plazo dans Codemagic (créée et envoyée par GitHub
 
 ---
 
+## 3 bis. Connexion avec Apple et Google dans Plazo Pro (13/10/2026)
+
+Plazo Pro propose « Continuer avec Apple » sur iPhone et « Continuer avec Google » sur Android ; la personne tape ensuite le
+code du jour de son parking et un gérant accepte sa demande. Le code est livré ; chaque bouton n'apparaît qu'une fois ses
+réglages faits ci-dessous. Tant qu'ils ne le sont pas, les builds marchent comme avant, sans le bouton (l'étape « Sign in with
+Apple » de `mobile-release` le dit dans son journal).
+
+**Apple** (compte Account Holder ou Admin de l'équipe Benford Tech `3BX4795V2Y`) :
+1. [ ] **Capacité** : [developer.apple.com](https://developer.apple.com/account) › Certificates, Identifiers & Profiles ›
+   **Identifiers** › `com.benfordtech.plazopro` › cocher **Sign In with Apple** (« Enable as a primary App ID ») › **Save**.
+   Le profil « Plazo Pro App Store » passe alors à **Invalid**.
+2. [ ] **Profil** : **Profiles** › le profil App Store de Plazo Pro › **Edit**, garder le même certificat (celui de Thempo) ›
+   **Save**.
+3. [ ] **Codemagic** : Teams › Personal account › **Code signing identities** › iOS provisioning profiles : supprimer
+   `plazo_pro_app_store`, **Fetch profiles**, choisir le nouveau profil de Plazo Pro et lui redonner **exactement** le nom de
+   référence `plazo_pro_app_store`. Au build suivant, l'étape « Sign in with Apple » dit « capacité présente ».
+4. [ ] **Clé** : **Keys** › **+** › nom « Plazo Sign in with Apple », cocher **Sign in with Apple** › **Configure** › Primary App
+   ID `com.benfordtech.plazopro` › **Save** › **Continue** › **Register** › **Download** (le fichier `.p8` ne se télécharge
+   qu'une fois) ; noter le **Key ID**. Les clés APNs et App Store Connect existantes ne servent pas ici.
+5. [ ] **Vercel** (Production, type Sensitive) : `APPLE_SIGNIN_KEY_ID` = le Key ID, `APPLE_SIGNIN_PRIVATE_KEY` = tout le
+   contenu du `.p8` (copié du fichier, jamais dans une conversation), puis **Redeploy**. Ranger le `.p8` dans le gestionnaire
+   de mots de passe et le supprimer de l'ordinateur. Sans cette clé, l'API répond qu'Apple n'est pas disponible et le bouton
+   reste caché, car elle sert à **révoquer** l'accès quand quelqu'un supprime son compte (règle 5.1.1(v)).
+   `APPLE_TEAM_ID` (3BX4795V2Y) et `APPLE_CLIENT_IDS` (`com.benfordtech.plazopro`) ont déjà la bonne valeur par défaut.
+6. [ ] **Adresses relais** : Certificates, Identifiers & Profiles › **Services** › « Sign in with Apple for Email
+   Communication » › **Configure** : ajouter le domaine `plazo.fr` et l'adresse d'envoi de Brevo (`EMAIL_FROM`), puis vérifier
+   SPF et DKIM. Sans cela, les e-mails envoyés à une adresse `@privaterelay.appleid.com` (« Masquer mon adresse ») n'arrivent pas.
+
+**Google** (Android) :
+1. [ ] **Projet** : [console.cloud.google.com](https://console.cloud.google.com) › nouveau projet **« Plazo »** (pas celui de
+   Yoon : l'écran de connexion montre le nom et le logo de l'app de ce projet).
+2. [ ] **Google Auth Platform** › **Branding** : nom « Plazo Pro », e-mail d'assistance (le vrai, point 0.3 de
+   `fiches-stores.md`), page d'accueil `https://www.plazo.fr`, confidentialité `https://www.plazo.fr/confidentialite`, domaine
+   autorisé `plazo.fr`. **Audience** : External, puis **Publish app** (seuls openid, email et profile sont demandés : pas de
+   vérification par Google).
+3. [ ] **Clients** › **Create client** › **Web application**, nom « Plazo Pro (serveur) » : son **Client ID** (public, se
+   termine par `.apps.googleusercontent.com`) va dans Vercel `GOOGLE_CLIENT_IDS` **et** dans Codemagic, groupe `mobile_secrets`
+   de l'app `plazo`, sous le nom `GOOGLE_SERVER_CLIENT_ID`.
+4. [ ] **Clients** › **Create client** › **Android**, paquet `com.benfordtech.plazopro`, empreinte **SHA-1 de la clé de
+   signature d'application** (Play Console › Plazo Pro › Tester et publier › **Intégrité de l'application** › Signature
+   d'application › « Certificat de la clé de signature d'application ») ; puis un **second** client Android, même paquet, avec la
+   SHA-1 du « Certificat de la clé d'importation » (même page), pour les APK installés directement depuis Codemagic.
+5. [ ] **Redeploy** Vercel, puis lancer `mobile-release` ou `mobile-release-android` : le journal ne doit plus dire
+   « GOOGLE_SERVER_CLIENT_ID absent ».
+
+**Revue** : les relecteurs ne peuvent pas recevoir un code du jour. Le compte de revue (point 0.5 de `fiches-stores.md`)
+reste un compte e-mail et mot de passe ; les notes de revue peuvent expliquer que le gérant de revue voit le code dans
+Plus › Équipe, qu'un second compte (Apple) peut le taper, puis être accepté.
+
+---
+
 ## 4. Ce qu'il faut renvoyer à Claude, et ce qu'il ne faut jamais coller
 
 **À envoyer (valeurs non secrètes) :**

@@ -533,6 +533,7 @@
     "trip_running": "Terminez d'abord votre trajet en cours.",
     "reauth_failed": "Confirmation refusée : vérifiez votre mot de passe, ou confirmez à nouveau avec Apple ou Google.",
     "cannot_delete_platform": "Ce compte administre la plateforme : il ne peut pas être supprimé depuis l'app.",
+    "apple_confirmation_required": "Ce compte est lié à Apple : confirmez la suppression avec Apple sur l'iPhone où vous vous connectez, ou retirez d'abord la connexion Apple dans Mon compte.",
     "view_as_forbidden": "Action impossible en consultation.",
     "wished_role_required": "Choisissez votre poste.",
     "invalid_wished_role": "Poste invalide."
@@ -1426,6 +1427,7 @@
     "code_share": "Partager",
     "code_copied": "Code copié.",
     "code_help": "Donnez-le à une nouvelle recrue. Vous validez ensuite sa demande.",
+    "code_not_accepting": "Ce parking n'accepte pas de nouvelles demandes (démonstration, suspendu ou archivé).",
     "code_share_subject": "Rejoindre l'équipe de {} sur {}",
     "join_message": "Rejoignez l'équipe de {} sur {} : installez l'app, connectez-vous avec Apple ou Google, puis tapez le code du jour {}. Il change à minuit.",
     "requests_title": "Demandes",
@@ -1745,7 +1747,7 @@
       "join_code_incomplete": "Le code fait 10 caractères, chiffres et lettres (ex. K7QM2-XP9TD).",
       "join_code_letter": "Un code du jour ne contient jamais la lettre U. Vérifiez-le auprès de votre gérant.",
       "join_code_invalid": "Ce code ne marche pas. Vérifiez-le, ou demandez celui d'aujourd'hui à votre gérant.",
-      "too_many_attempts": "Trop de codes essayés. Attendez 15 minutes, puis réessayez avec le code du jour.",
+      "too_many_attempts": "Trop d'essais. Attendez au moins 15 minutes, puis réessayez avec le code du jour.",
       "email_taken": "Cette adresse e-mail est déjà celle d'un compte de l'app. Connectez-vous avec cet e-mail et son mot de passe, puis liez Apple ou Google dans Plus › Mon compte. Avec Apple, vous pouvez aussi choisir « Masquer mon adresse e-mail ».",
       "already_member": "Votre compte fait déjà partie d'un parking. Quittez-le d'abord depuis Plus › Mon compte.",
       "wished_role_required": "Choisissez votre poste."

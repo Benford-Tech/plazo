@@ -221,7 +221,15 @@ une décision de Joanny. Cocher au fur et à mesure.
   apps et leurs clés Vercel existent, reste APNs et FCM sur chacune.
 - [ ] `product.json` › `company` : forme juridique, capital, siège, RCS, TVA, téléphone, directeur de la publication,
   médiateur, et une adresse support réelle (aujourd'hui `support@example.com`) ; Claude les pose puis
-  `dart run tool/sync_product.dart`.
+  `dart run tool/sync_product.dart`. L'adresse support sert aussi à `/suppression-compte` (13/10/2026), l'URL de
+  suppression de compte donnée à Google Play : sans elle, la page affiche « [à compléter] » à qui n'a plus l'app.
+- [ ] Connexion Apple / Google de Plazo Pro et code du jour (livrés le 13/10/2026 ; pas à pas : section 3 bis de
+  `mobile/publier-sur-les-stores.md`) : Apple : capacité « Sign In with Apple » sur l'App ID `com.benfordtech.plazopro`,
+  profil `plazo_pro_app_store` régénéré puis rechargé dans Codemagic sous le même nom, clé « Sign in with Apple » (.p8) dans
+  Vercel (`APPLE_SIGNIN_KEY_ID`, `APPLE_SIGNIN_PRIVATE_KEY`), domaine et adresse d'envoi déclarés pour les adresses relais ;
+  Google : projet Google Cloud « Plazo », écran de consentement publié, client « Application Web » (Vercel
+  `GOOGLE_CLIENT_IDS`, Codemagic `GOOGLE_SERVER_CLIENT_ID`) et deux clients Android (SHA-1 de la clé de signature Play et de
+  la clé d'import). D'ici là, les boutons restent cachés et les comptes e-mail marchent comme avant.
 - [ ] Client n°1 : inscription libre (`/pro/inscription`) ou invitation (Plateforme › Loueurs), e-mail confirmé, fiche
   envoyée puis validée (Plateforme › Annonces), canal SMS réglé (Mon compte › SMS aux voyageurs, « Téléphone du parking »),
   Stripe Express relié avant le premier reversement, pushs activés par chaque membre dans Plazo Pro (Plus › Notifications),

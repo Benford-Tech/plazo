@@ -120,17 +120,18 @@ describe("Équipe : code du jour", () => {
   });
 
   it("ne laisse pas le code d'hier à l'écran après minuit, et montre le nouveau au retour sur l'onglet", async () => {
-    api.getJoinCode.mockResolvedValueOnce({ ...joinCode, validUntil: new Date(Date.now() + 150).toISOString() });
+    // The first code ends 2 s after the test starts: long enough to be read before its end even on a loaded machine.
+    api.getJoinCode.mockResolvedValueOnce({ ...joinCode, validUntil: new Date(Date.now() + 2_000).toISOString() });
     api.getJoinCode.mockResolvedValue({ ...joinCode, code: "B4N8Q-ZT27W", day: "2026-10-14", validUntil: new Date(Date.now() + 86_400_000).toISOString() });
     renderPage();
     expect(await screen.findByTestId("join-code")).toHaveTextContent("K7QM2-XP9TD");
-    expect(await screen.findByTestId("join-code-loading")).toBeInTheDocument();
+    expect(await screen.findByTestId("join-code-loading", {}, { timeout: 6_000 })).toBeInTheDocument();
     expect(screen.queryByTestId("join-code")).not.toBeInTheDocument();
     act(() => {
       document.dispatchEvent(new Event("visibilitychange", { bubbles: true }));
     });
     expect(await screen.findByTestId("join-code")).toHaveTextContent("B4N8Q-ZT27W");
-  });
+  }, 12_000);
 
   it("montre un code lu après son heure de fin (horloge de l'ordinateur en avance)", async () => {
     api.getJoinCode.mockResolvedValue({ ...joinCode, validUntil: new Date(Date.now() - 3_600_000).toISOString() });

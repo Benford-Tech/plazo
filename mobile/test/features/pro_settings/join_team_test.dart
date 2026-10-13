@@ -164,6 +164,15 @@ void main() {
       expect(share.shared.single, contains('connectez-vous avec Apple ou Google'));
     });
 
+    testWidgets('parking qui n’accepte pas de demandes (accepting: false) : le code sans « Copier » ni « Partager »', (tester) async {
+      when(() => joinCode(any())).thenAnswer((_) async => Right(code.copyWith(accepting: false)));
+      await pumpTeam(tester);
+      expect(find.text('K7QM2-XP9TD'), findsOneWidget);
+      expect(find.byKey(const Key('join-code-copy')), findsNothing);
+      expect(find.byKey(const Key('join-code-share')), findsNothing);
+      expect(find.textContaining("n'accepte pas de nouvelles demandes"), findsOneWidget);
+    });
+
     testWidgets('la demande : nom, poste, depuis quand, via Apple ; chaque membre montre comment il se connecte', (tester) async {
       await pumpTeam(tester);
       expect(find.text('DEMANDES'), findsOneWidget);
@@ -340,6 +349,19 @@ void main() {
       await tester.tap(find.byKey(const Key('delete-confirm-apple')));
       await tester.pumpAndSettle();
       expect(verify(() => auth.add(captureAny())).captured.whereType<ProAuthDeleteRequested>().single.provider, 'apple');
+    });
+
+    testWidgets('mot de passe et Apple lié : « Confirmer avec Apple », l’API n’acceptant que le code d’Apple', (tester) async {
+      final both = julie.copyWith(hasPassword: true);
+      final auth = await pumpAccount(tester, ProAuthState(status: ProAuthStatus.signedIn, staff: both, providers: const ProvidersModel(apple: true)));
+      await tester.tap(find.byKey(const Key('account-delete')));
+      await tester.pumpAndSettle();
+      expect(find.byKey(const Key('delete-password')), findsNothing);
+      await tester.tap(find.byKey(const Key('delete-confirm-apple')));
+      await tester.pumpAndSettle();
+      final event = verify(() => auth.add(captureAny())).captured.whereType<ProAuthDeleteRequested>().single;
+      expect(event.provider, 'apple');
+      expect(event.password, isNull);
     });
 
     testWidgets('compte avec mot de passe sur Android : « Lier mon compte Google », suppression confirmée par le mot de passe', (tester) async {

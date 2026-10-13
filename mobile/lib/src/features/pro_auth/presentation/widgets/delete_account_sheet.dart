@@ -10,8 +10,9 @@ import '../../data/models/onboarding_models.dart';
 import '../bloc/pro_auth_bloc.dart';
 
 /// « Supprimer mon compte » (13/10/2026, required by Apple 5.1.1(v) and Google Play): a sheet that says what goes and
-/// what stays, then confirms with the password, or with Apple / Google when the account has no password. Before
-/// joining a parking ([identity] given), only the Apple or Google identity is deleted.
+/// what stays, then confirms with Apple when it is linked (the API requires it), else with the password, or with
+/// Google when the account has no password. Before joining a parking ([identity] given), only the Apple or Google
+/// identity is deleted.
 Future<void> showDeleteAccountSheet(BuildContext context, {IdentityModel? identity}) {
   final auth = context.read<ProAuthBloc>();
   return showModalBottomSheet<void>(
@@ -81,6 +82,17 @@ class _DeleteAccountSheetState extends State<DeleteAccountSheet> {
             onPressed: () => _confirm(provider: identity.provider),
           ),
       ];
+    } else if (appleLinked && canApple) {
+      // Apple linked: the API takes only Apple's fresh code, even from an account with a password (Plazo must leave
+      // the person's Apple account; 409 apple_confirmation_required otherwise).
+      confirm = [
+        AppleSignInButton(
+          key: const Key('delete-confirm-apple'),
+          label: 'account.delete_with_apple'.tr(),
+          color: AppStatus.bad,
+          onPressed: () => _confirm(provider: 'apple'),
+        ),
+      ];
     } else if (hasPassword) {
       confirm = [
         TextField(
@@ -95,15 +107,6 @@ class _DeleteAccountSheetState extends State<DeleteAccountSheet> {
           key: const Key('delete-confirm'),
           label: 'account.delete'.tr(),
           onPressed: _password.text.isEmpty ? null : () => _confirm(password: _password.text),
-        ),
-      ];
-    } else if (appleLinked && canApple) {
-      confirm = [
-        AppleSignInButton(
-          key: const Key('delete-confirm-apple'),
-          label: 'account.delete_with_apple'.tr(),
-          color: AppStatus.bad,
-          onPressed: () => _confirm(provider: 'apple'),
         ),
       ];
     } else if (googleLinked && canGoogle) {

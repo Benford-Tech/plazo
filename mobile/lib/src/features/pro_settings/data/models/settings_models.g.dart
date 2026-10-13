@@ -54,6 +54,7 @@ _JoinCodeModel _$JoinCodeModelFromJson(Map<String, dynamic> json) =>
           ? null
           : DateTime.parse(json['validUntil'] as String),
       operatorName: json['operatorName'] as String? ?? '',
+      accepting: json['accepting'] as bool? ?? true,
     );
 
 Map<String, dynamic> _$JoinCodeModelToJson(_JoinCodeModel instance) =>
@@ -62,6 +63,7 @@ Map<String, dynamic> _$JoinCodeModelToJson(_JoinCodeModel instance) =>
       'day': instance.day,
       'validUntil': instance.validUntil?.toIso8601String(),
       'operatorName': instance.operatorName,
+      'accepting': instance.accepting,
     };
 
 _PendingJoinRequestModel _$PendingJoinRequestModelFromJson(

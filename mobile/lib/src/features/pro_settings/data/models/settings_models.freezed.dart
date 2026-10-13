@@ -331,7 +331,8 @@ as List<String>,
 mixin _$JoinCodeModel {
 
 /// `K7QM2-XP9TD`
- String get code; String? get day; DateTime? get validUntil; String get operatorName;
+ String get code; String? get day; DateTime? get validUntil; String get operatorName;/// False for a demo, suspended or archived operator: the API refuses its code (absent from an older API).
+ bool get accepting;
 /// Create a copy of JoinCodeModel
 /// with the given fields replaced by the non-null parameter values.
 @JsonKey(includeFromJson: false, includeToJson: false)
@@ -345,20 +346,20 @@ $JoinCodeModelCopyWith<JoinCodeModel> get copyWith => _$JoinCodeModelCopyWithImp
 @override
 bool operator ==(Object other) {
   final _this = this as JoinCodeModel;
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is JoinCodeModel&&(identical(other.code, _this.code) || other.code == _this.code)&&(identical(other.day, _this.day) || other.day == _this.day)&&(identical(other.validUntil, _this.validUntil) || other.validUntil == _this.validUntil)&&(identical(other.operatorName, _this.operatorName) || other.operatorName == _this.operatorName));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is JoinCodeModel&&(identical(other.code, _this.code) || other.code == _this.code)&&(identical(other.day, _this.day) || other.day == _this.day)&&(identical(other.validUntil, _this.validUntil) || other.validUntil == _this.validUntil)&&(identical(other.operatorName, _this.operatorName) || other.operatorName == _this.operatorName)&&(identical(other.accepting, _this.accepting) || other.accepting == _this.accepting));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
 int get hashCode {
   final _this = this as JoinCodeModel;
-  return Object.hash(runtimeType,_this.code,_this.day,_this.validUntil,_this.operatorName);
+  return Object.hash(runtimeType,_this.code,_this.day,_this.validUntil,_this.operatorName,_this.accepting);
 }
 
 @override
 String toString() {
   final _this = this as JoinCodeModel;
-  return 'JoinCodeModel(code: ${_this.code}, day: ${_this.day}, validUntil: ${_this.validUntil}, operatorName: ${_this.operatorName})';
+  return 'JoinCodeModel(code: ${_this.code}, day: ${_this.day}, validUntil: ${_this.validUntil}, operatorName: ${_this.operatorName}, accepting: ${_this.accepting})';
 }
 
 
@@ -369,7 +370,7 @@ abstract mixin class $JoinCodeModelCopyWith<$Res>  {
   factory $JoinCodeModelCopyWith(JoinCodeModel value, $Res Function(JoinCodeModel) _then) = _$JoinCodeModelCopyWithImpl;
 @useResult
 $Res call({
- String code, String? day, DateTime? validUntil, String operatorName
+ String code, String? day, DateTime? validUntil, String operatorName, bool accepting
 });
 
 
@@ -386,13 +387,14 @@ class _$JoinCodeModelCopyWithImpl<$Res>
 
 /// Create a copy of JoinCodeModel
 /// with the given fields replaced by the non-null parameter values.
-@pragma('vm:prefer-inline') @override $Res call({Object? code = null,Object? day = freezed,Object? validUntil = freezed,Object? operatorName = null,}) {
+@pragma('vm:prefer-inline') @override $Res call({Object? code = null,Object? day = freezed,Object? validUntil = freezed,Object? operatorName = null,Object? accepting = null,}) {
   return _then(JoinCodeModel(
 code: null == code ? _self.code : code // ignore: cast_nullable_to_non_nullable
 as String,day: freezed == day ? _self.day : day // ignore: cast_nullable_to_non_nullable
 as String?,validUntil: freezed == validUntil ? _self.validUntil : validUntil // ignore: cast_nullable_to_non_nullable
 as DateTime?,operatorName: null == operatorName ? _self.operatorName : operatorName // ignore: cast_nullable_to_non_nullable
-as String,
+as String,accepting: null == accepting ? _self.accepting : accepting // ignore: cast_nullable_to_non_nullable
+as bool,
   ));
 }
 
@@ -477,10 +479,10 @@ return $default(_that);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( String code,  String? day,  DateTime? validUntil,  String operatorName)?  $default,{required TResult orElse(),}) {final _that = this;
+@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( String code,  String? day,  DateTime? validUntil,  String operatorName,  bool accepting)?  $default,{required TResult orElse(),}) {final _that = this;
 switch (_that) {
 case _JoinCodeModel() when $default != null:
-return $default(_that.code,_that.day,_that.validUntil,_that.operatorName);case _:
+return $default(_that.code,_that.day,_that.validUntil,_that.operatorName,_that.accepting);case _:
   return orElse();
 
 }
@@ -498,10 +500,10 @@ return $default(_that.code,_that.day,_that.validUntil,_that.operatorName);case _
 /// }
 /// ```
 
-@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( String code,  String? day,  DateTime? validUntil,  String operatorName)  $default,) {final _that = this;
+@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( String code,  String? day,  DateTime? validUntil,  String operatorName,  bool accepting)  $default,) {final _that = this;
 switch (_that) {
 case _JoinCodeModel():
-return $default(_that.code,_that.day,_that.validUntil,_that.operatorName);case _:
+return $default(_that.code,_that.day,_that.validUntil,_that.operatorName,_that.accepting);case _:
   throw StateError('Unexpected subclass');
 
 }
@@ -518,10 +520,10 @@ return $default(_that.code,_that.day,_that.validUntil,_that.operatorName);case _
 /// }
 /// ```
 
-@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( String code,  String? day,  DateTime? validUntil,  String operatorName)?  $default,) {final _that = this;
+@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( String code,  String? day,  DateTime? validUntil,  String operatorName,  bool accepting)?  $default,) {final _that = this;
 switch (_that) {
 case _JoinCodeModel() when $default != null:
-return $default(_that.code,_that.day,_that.validUntil,_that.operatorName);case _:
+return $default(_that.code,_that.day,_that.validUntil,_that.operatorName,_that.accepting);case _:
   return null;
 
 }
@@ -533,7 +535,7 @@ return $default(_that.code,_that.day,_that.validUntil,_that.operatorName);case _
 @JsonSerializable()
 
 class _JoinCodeModel implements JoinCodeModel {
-  const _JoinCodeModel({required this.code, this.day, this.validUntil, this.operatorName = ''});
+  const _JoinCodeModel({required this.code, this.day, this.validUntil, this.operatorName = '', this.accepting = true});
   factory _JoinCodeModel.fromJson(Map<String, dynamic> json) => _$JoinCodeModelFromJson(json);
 
 /// `K7QM2-XP9TD`
@@ -541,6 +543,8 @@ class _JoinCodeModel implements JoinCodeModel {
 @override final  String? day;
 @override final  DateTime? validUntil;
 @override@JsonKey() final  String operatorName;
+/// False for a demo, suspended or archived operator: the API refuses its code (absent from an older API).
+@override@JsonKey() final  bool accepting;
 
 /// Create a copy of JoinCodeModel
 /// with the given fields replaced by the non-null parameter values.
@@ -555,18 +559,18 @@ Map<String, dynamic> toJson() {
 
 @override
 bool operator ==(Object other) {
-    return identical(this, other) || (other.runtimeType == runtimeType&&other is _JoinCodeModel&&(identical(other.code, code) || other.code == code)&&(identical(other.day, day) || other.day == day)&&(identical(other.validUntil, validUntil) || other.validUntil == validUntil)&&(identical(other.operatorName, operatorName) || other.operatorName == operatorName));
+    return identical(this, other) || (other.runtimeType == runtimeType&&other is _JoinCodeModel&&(identical(other.code, code) || other.code == code)&&(identical(other.day, day) || other.day == day)&&(identical(other.validUntil, validUntil) || other.validUntil == validUntil)&&(identical(other.operatorName, operatorName) || other.operatorName == operatorName)&&(identical(other.accepting, accepting) || other.accepting == accepting));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
 int get hashCode {
-    return Object.hash(runtimeType,code,day,validUntil,operatorName);
+    return Object.hash(runtimeType,code,day,validUntil,operatorName,accepting);
 }
 
 @override
 String toString() {
-    return 'JoinCodeModel(code: $code, day: $day, validUntil: $validUntil, operatorName: $operatorName)';
+    return 'JoinCodeModel(code: $code, day: $day, validUntil: $validUntil, operatorName: $operatorName, accepting: $accepting)';
 }
 
 
@@ -577,7 +581,7 @@ abstract mixin class _$JoinCodeModelCopyWith<$Res> implements $JoinCodeModelCopy
   factory _$JoinCodeModelCopyWith(_JoinCodeModel value, $Res Function(_JoinCodeModel) _then) = __$JoinCodeModelCopyWithImpl;
 @override @useResult
 $Res call({
- String code, String? day, DateTime? validUntil, String operatorName
+ String code, String? day, DateTime? validUntil, String operatorName, bool accepting
 });
 
 
@@ -594,13 +598,14 @@ class __$JoinCodeModelCopyWithImpl<$Res>
 
 /// Create a copy of JoinCodeModel
 /// with the given fields replaced by the non-null parameter values.
-@override @pragma('vm:prefer-inline') $Res call({Object? code = null,Object? day = freezed,Object? validUntil = freezed,Object? operatorName = null,}) {
+@override @pragma('vm:prefer-inline') $Res call({Object? code = null,Object? day = freezed,Object? validUntil = freezed,Object? operatorName = null,Object? accepting = null,}) {
   return _then(_JoinCodeModel(
 code: null == code ? _self.code : code // ignore: cast_nullable_to_non_nullable
 as String,day: freezed == day ? _self.day : day // ignore: cast_nullable_to_non_nullable
 as String?,validUntil: freezed == validUntil ? _self.validUntil : validUntil // ignore: cast_nullable_to_non_nullable
 as DateTime?,operatorName: null == operatorName ? _self.operatorName : operatorName // ignore: cast_nullable_to_non_nullable
-as String,
+as String,accepting: null == accepting ? _self.accepting : accepting // ignore: cast_nullable_to_non_nullable
+as bool,
   ));
 }
 

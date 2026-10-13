@@ -395,6 +395,8 @@ export function privacyDoc(company: Company = COMPANY, email: string = SUPPORT_E
             `Identité Apple ou Google d’un membre de l’équipe d’un parking : supprimée avec son compte ${p} Pro ; si elle n’est liée à aucun parking (jamais rejoint, ou quitté), supprimée avec ses demandes après 30 jours sans connexion ni demande.`,
             "Demande pour rejoindre l’équipe d’un parking : sans réponse d’un gérant, elle expire au bout de 7 jours.",
             "Essais du code du jour (compte, adresse IP, réussite ou échec ; le code tapé n’est jamais enregistré) : 7 jours.",
+            `Tentatives de connexion à l’espace pro et à ${p} Pro (adresse e-mail, réussite ou échec) : 30 jours.`,
+            "Preuves de connexion Apple ou Google déjà utilisées : seule une empreinte, d’où l’on ne peut rien retrouver, est gardée jusqu’à leur expiration (une heure au plus), pour qu’une même preuve ne serve qu’une fois.",
             "Sur votre téléphone : les références de vos réservations restent dans l’application jusqu’à ce que vous les retiriez ou que vous la désinstalliez.",
           ],
         ],

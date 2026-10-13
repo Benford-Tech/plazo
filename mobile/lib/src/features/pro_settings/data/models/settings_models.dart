@@ -37,6 +37,9 @@ abstract class JoinCodeModel with _$JoinCodeModel {
     String? day,
     DateTime? validUntil,
     @Default('') String operatorName,
+
+    /// False for a demo, suspended or archived operator: the API refuses its code (absent from an older API).
+    @Default(true) bool accepting,
   }) = _JoinCodeModel;
 
   factory JoinCodeModel.fromJson(Map<String, dynamic> json) => _$JoinCodeModelFromJson(json);

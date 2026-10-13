@@ -220,7 +220,11 @@ class _MemberTileState extends State<_MemberTile> {
               ),
               if (!m.isActive) Text('team.inactive'.tr(), style: AppText.label(size: 11, color: AppColors.danger)),
               if (m.isActive && m.post != null && m.post != m.role)
-                Text('team.post_today'.tr(args: ['post.name.${m.post}'.tr()]), key: Key('post-${m.id}'), style: AppText.label(size: 11, color: AppColors.accent)),
+                Text(
+                  'team.post_today'.tr(args: ['post.name.${m.post}'.tr()]),
+                  key: Key('post-${m.id}'),
+                  style: AppText.label(size: 11, color: AppColors.accent),
+                ),
             ],
           ),
           Text([m.email, if (m.phone != null) formatPhone(m.phone!)].join(' · '), style: AppText.muted(size: 12.5)),
@@ -372,17 +376,15 @@ class _RenameFormState extends State<_RenameForm> {
                           : () {
                               final names = (firstName: _firstName.text.trim(), lastName: _lastName.text.trim());
                               setState(() => _sent = names);
-                              context.read<ProTeamBloc>().add(ProTeamMemberUpdated(UpdateStaffParams(id: id, firstName: names.firstName, lastName: names.lastName)));
+                              context.read<ProTeamBloc>().add(
+                                ProTeamMemberUpdated(UpdateStaffParams(id: id, firstName: names.firstName, lastName: names.lastName)),
+                              );
                             },
                     ),
                   ),
                   const SizedBox(width: 10),
                   Expanded(
-                    child: OutlinedButton(
-                      key: Key('rename-cancel-$id'),
-                      onPressed: busy ? null : _cancel,
-                      child: Text('team.cancel'.tr()),
-                    ),
+                    child: OutlinedButton(key: Key('rename-cancel-$id'), onPressed: busy ? null : _cancel, child: Text('team.cancel'.tr())),
                   ),
                 ],
               ),
@@ -484,7 +486,14 @@ class _NewMemberSheetState extends State<_NewMemberSheet> {
                 busy: state.actionState.isProcessing,
                 onPressed: () => bloc.add(
                   ProTeamMemberCreated(
-                    NewStaffParams(firstName: _firstName.text.trim(), lastName: _lastName.text.trim(), email: _email.text.trim(), phone: _phone.text, role: _role, password: _password.text),
+                    NewStaffParams(
+                      firstName: _firstName.text.trim(),
+                      lastName: _lastName.text.trim(),
+                      email: _email.text.trim(),
+                      phone: _phone.text,
+                      role: _role,
+                      password: _password.text,
+                    ),
                   ),
                 ),
               ),
@@ -537,45 +546,47 @@ class _JoinCodeCard extends StatelessWidget {
               style: AppText.tabular(size: 28).copyWith(letterSpacing: 1.4),
             ),
           ),
-          Row(
-            children: [
-              Expanded(
-                child: OutlinedButton.icon(
-                  key: const Key('join-code-copy'),
-                  style: OutlinedButton.styleFrom(
-                    foregroundColor: AppColors.ink,
-                    side: const BorderSide(color: AppColors.line),
-                    shape: const StadiumBorder(),
-                    minimumSize: const Size.fromHeight(40),
+          // A demo, suspended or archived operator's code is refused by the API: nothing to hand out (like the web).
+          if (code.accepting)
+            Row(
+              children: [
+                Expanded(
+                  child: OutlinedButton.icon(
+                    key: const Key('join-code-copy'),
+                    style: OutlinedButton.styleFrom(
+                      foregroundColor: AppColors.ink,
+                      side: const BorderSide(color: AppColors.line),
+                      shape: const StadiumBorder(),
+                      minimumSize: const Size.fromHeight(40),
+                    ),
+                    icon: const Icon(Icons.copy_rounded, size: 17),
+                    label: Text('team.code_copy'.tr()),
+                    onPressed: () async {
+                      await Clipboard.setData(ClipboardData(text: code.code));
+                      if (context.mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('team.code_copied'.tr())));
+                    },
                   ),
-                  icon: const Icon(Icons.copy_rounded, size: 17),
-                  label: Text('team.code_copy'.tr()),
-                  onPressed: () async {
-                    await Clipboard.setData(ClipboardData(text: code.code));
-                    if (context.mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('team.code_copied'.tr())));
-                  },
                 ),
-              ),
-              const SizedBox(width: 8),
-              Expanded(
-                child: FilledButton.icon(
-                  key: const Key('join-code-share'),
-                  style: FilledButton.styleFrom(
-                    backgroundColor: AppColors.action,
-                    foregroundColor: AppColors.onAccent,
-                    shape: const StadiumBorder(),
-                    minimumSize: const Size.fromHeight(40),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: FilledButton.icon(
+                    key: const Key('join-code-share'),
+                    style: FilledButton.styleFrom(
+                      backgroundColor: AppColors.action,
+                      foregroundColor: AppColors.onAccent,
+                      shape: const StadiumBorder(),
+                      minimumSize: const Size.fromHeight(40),
+                    ),
+                    icon: const Icon(Icons.ios_share_rounded, size: 17),
+                    label: Text('team.code_share'.tr()),
+                    onPressed: () =>
+                        locator<ShareService>().shareText(_message, subject: 'team.code_share_subject'.tr(args: [code.operatorName, Product.proName])),
                   ),
-                  icon: const Icon(Icons.ios_share_rounded, size: 17),
-                  label: Text('team.code_share'.tr()),
-                  onPressed: () =>
-                      locator<ShareService>().shareText(_message, subject: 'team.code_share_subject'.tr(args: [code.operatorName, Product.proName])),
                 ),
-              ),
-            ],
-          ),
+              ],
+            ),
           const SizedBox(height: 8),
-          Text('team.code_help'.tr(), style: AppText.muted(size: 12.5)),
+          Text((code.accepting ? 'team.code_help' : 'team.code_not_accepting').tr(), key: const Key('join-code-help'), style: AppText.muted(size: 12.5)),
         ],
       ),
     );

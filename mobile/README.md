@@ -60,6 +60,14 @@ n'existent que dans Plazo Pro (`if (AppConstants.isPro)` dans `app_router.dart`)
   `/pro/chiffre-affaires` (Plus › « Chiffre d'affaires ») : Jour · Semaine · Mois, barres par jour, par arrivée ou par
   réservation, « Par canal », écran « À compléter » qui enregistre le montant d'une réservation qui n'en a pas. Feature
   `pro_revenue` (`GET /internal/revenue`, `…/summary`, `PUT /internal/reservations/:id/price`). L'export CSV reste sur le web.
+- **Pro — rejoindre un parking** (13/10/2026) : « Continuer avec Apple » (iPhone) ou « Continuer avec Google » (Android) à la
+  connexion, affichés seulement quand l'API les propose (`GET /internal/auth/providers`) et que le build les permet
+  (`APPLE_SIGN_IN`, `GOOGLE_SERVER_CLIENT_ID`), jamais sur le web ; une personne qui n'est encore dans aucune équipe arrive sur
+  `/pro/rejoindre` (code du jour `XXXXX-XXXXX`, prénom, nom, « Je suis » Accueil · Chauffeur · Voiturier), puis attend que
+  le gérant accepte (relu toutes les 10 s, session d'accueil à part dans `onboarding_token`). Gérants : carte « Code du jour »
+  (Copier, Partager) et demandes (Accepter avec le rôle, Refuser) dans Équipe ; push `join_request` vers Équipe. Mon compte :
+  bloc « Connexion » (lier ou délier Apple ou Google), « Quitter ce parking », « Supprimer mon compte ». Features `pro_auth`
+  et `pro_settings`.
 - **Notifications navette** (N-A du 05/10/2026) : réglage « Navettes » du personnel ; côté voyageur, le téléphone est
   enregistré pendant le séjour (`PUT /public/bookings/:ref/devices`, `EnableShuttlePushesUseCase`) pour « Votre navette est
   partie » / « est là » — l'app voyageur a sa propre app OneSignal (`ONESIGNAL_APP_ID` à la compilation de ce flavor).
@@ -112,6 +120,8 @@ Réglages de construction (`--dart-define`, jamais de secret : ils sont lisibles
 | `SITE_URL` | l'adresse de l'API sans `/api` | le site (conditions, confidentialité, mentions légales, FAQ) |
 | `STRIPE_MERCHANT_ID` | vide (pas d'Apple Pay) | identifiant marchand Apple Pay (`merchant.…`) |
 | `PAYMENT_SHEET_DEMO` | vide | essais dans un navigateur seulement : `success` ou `fail` remplace la feuille Stripe par une imitation (avec un faux Stripe côté API) |
+| `APPLE_SIGN_IN` | vide (pas de bouton Apple) | Plazo Pro sur iPhone : `true` seulement quand l'app est signée avec un profil qui porte « Sign in with Apple » (l'étape « Sign in with Apple » de `mobile-release` le décide et ajoute l'entitlement pour ce build) |
+| `GOOGLE_SERVER_CLIENT_ID` | vide (pas de bouton Google) | Plazo Pro sur Android : l'identifiant du client OAuth « Application Web » du projet Google Cloud « Plazo » (public ; le même que `GOOGLE_CLIENT_IDS` sur Vercel) |
 
 En local, l'API doit accepter l'origine de la version web : `CLIENT_URL=http://localhost:<port>` dans `backend/.env`.
 
