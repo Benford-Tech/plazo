@@ -42,8 +42,18 @@ export interface RevenuePeriod {
 
 export interface RevenuePage extends RevenueReport {
   timezone: string;
+  /** The parking's local date now: the app marks this day on its chart and greys the days after it. */
+  today: string;
   /** Bookings of the period without an amount, to complete (at most 50). */
-  missing: { id: string; reference: string; customerName: string; arrivalAt: string; channel: ReservationChannel; detail: string | null }[];
+  missing: {
+    id: string;
+    reference: string;
+    customerName: string;
+    plate: string;
+    arrivalAt: string;
+    channel: ReservationChannel;
+    detail: string | null;
+  }[];
 }
 
 export interface RevenueSummary {
@@ -113,7 +123,7 @@ export class RevenueService {
     });
   }
 
-  public async report(actor: AuthenticatedStaff, query: RevenueQuery): Promise<RevenuePage> {
+  public async report(actor: AuthenticatedStaff, query: RevenueQuery, now: Date = new Date()): Promise<RevenuePage> {
     this.require(actor, 'revenue:view');
     const period = this.period(query);
     const parking = await this.parkings.getPrimary(actor);
@@ -127,11 +137,12 @@ export class RevenueService {
         id: b.id,
         reference: b.reference,
         customerName: b.customerName,
+        plate: b.plate,
         arrivalAt: b.arrivalAt.toISOString(),
         channel: b.channel,
         detail: b.channel === 'aggregator' || b.channel === 'import' ? b.channelDetail : null,
       }));
-    return { ...report, timezone: parking.timezone, missing };
+    return { ...report, timezone: parking.timezone, today: localDate(now, parking.timezone), missing };
   }
 
   /** The dashboard's tile: this month, today and the last 7 days, by arrival. */

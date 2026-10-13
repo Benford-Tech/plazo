@@ -19,7 +19,7 @@ import { ValidationMiddleware } from '@/middlewares/validation.middleware';
  *       - { in: query, name: to, required: true, schema: { type: string, example: "2026-10-31" } }
  *       - { in: query, name: basis, schema: { type: string, enum: [arrival, booked], default: arrival }, description: "The local day a booking counts on: its arrival, or the day it was booked" }
  *     responses:
- *       200: { description: "{ from, to, basis, timezone, totalCents, count, averageCents, averageDays, withoutAmount, byChannel, byDay, missing }" }
+ *       200: { description: "{ from, to, basis, timezone, today, totalCents, count, averageCents, averageDays, withoutAmount, byChannel, byDay, missing }" }
  *       400: { description: "fields.from / fields.to invalid_date, range_too_long (a year at most), fields.basis invalid_basis" }
  *       403: { description: forbidden (managers only) }
  * /internal/revenue/summary:

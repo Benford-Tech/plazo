@@ -271,11 +271,27 @@ Ne construire QUE ce qui règle la douleur n°1 du client.
      (gérants, permission `revenue:view` ; `RevenuePage.tsx`) : périodes Aujourd'hui · 7 jours · mois en cours · mois précédent ·
      Dates…, « Compter par » jour d'arrivée (par défaut) ou jour de réservation, annulées exclues (non venus comptés) ; total,
      réservations, panier moyen et durée moyenne, « Par canal » (les comparateurs par leur nom), « N sans montant » avec la
-     liste « Les compléter » (saisie du montant, `PUT /internal/reservations/:id/price`, 409 `price_locked` pour une
-     réservation Plazo, `reservation_closed` si annulée ; tracé dans l'historique), « Jour par jour » et « Exporter en CSV »
+     liste « Les compléter » (saisie du montant, `PUT /internal/reservations/:id/price`, 400 `validation_failed` avec
+     `fields.priceCents` = `price_locked` pour une réservation Plazo, 400 `reservation_closed` si annulée ; tracé dans
+     l'historique), « Jour par jour » et « Exporter en CSV »
      (« ; », UTF-8 avec BOM). Tuile CA-A en bas des tuiles du tableau de bord (`RevenueTile`, gérants : total du mois,
      aujourd'hui, 7 jours, « N sans montant »). Serveur : `domain/revenue.ts` (calcul pur, jour local du parking),
      `RevenueService`, `GET /internal/revenue?from=&to=&basis=`, `…/revenue/summary`, `…/revenue/export` (366 jours au plus).
+     **Dans Plazo Pro (13/10/2026, « Dans l'appli le gérant doit avoir le chiffre d'affaire », choix « Tuile T-A + page P-B »)** :
+     feature `pro_revenue`, gérants seulement (`revenue:view` dans `core/helpers/roles.dart`) ; **T-A** carte pleine largeur sous
+     les cinq tuiles du tableau de bord (`RevenueTile`, « CHIFFRE D'AFFAIRES · OCTOBRE », total du mois, Aujourd'hui, 7 jours,
+     pastille ambre « N sans montant » ; `RevenueSummaryBloc` fourni paresseusement par `ProTodayPage`, donc jamais demandé pour
+     un autre rôle, relu toutes les 5 min, au tirer-pour-rafraîchir et au retour de la page ; cachée tant que rien n'est lu) ;
+     **P-B** page `/pro/chiffre-affaires` (aussi Plus › « Chiffre d'affaires ») : bande vert foncé avec Jour · Semaine · Mois
+     (semaine du lundi au dimanche), ‹ période ›, total en citron, « N réservation(s) · panier moyen … · … jours » ; carte « Par
+     jour d'arrivée » / « Par jour de réservation » (bascule, barres à l'échelle : aujourd'hui citron, passé vert foncé, jours à
+     venir pâles, toucher ou glisser pour lire un jour, sinon « Meilleur jour ») ; ligne « À compléter » vers l'écran
+     `/pro/chiffre-affaires/a-completer` (les 50 plus récentes sans montant, plaque, montant en euros, « Enregistrer », erreurs
+     `price_locked`, `reservation_closed`, montant invalide ; la ligne part et le chiffre est relu) ; « Par canal ». Les dates
+     sont celles du parking : `GET /internal/revenue` renvoie aussi `today` (date locale du parking) et `missing[].plate` ; la
+     page ouvre sur le mois du téléphone et se recale sur `today` s'il n'y est pas (`domain/revenue_period.dart`,
+     `ProRevenueBloc` : seule la dernière lecture lancée s'applique, un montant enregistré relit la carte du tableau de bord par
+     `RevenueRepository.changes`, quel que soit le chemin d'ouverture). L'export CSV reste sur le web.
    - **Frais de nuit (12/10/2026, choix B « Dans le détail du prix seulement », « ajoute des frais de nuit pour les arrivées
      et départs en heure définie par le parking »)** : une plage par parking, la même chaque jour, pour les dépôts comme pour
      les retours (`Parking.nightFeeEnabled`, `nightStart` / `nightEnd` « HH:mm », `nightArrivalFeeCents` « Dépôt de nuit »,

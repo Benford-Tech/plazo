@@ -7,12 +7,15 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 
 import '../../../../core/enums/view_state.dart';
 import '../../../../core/helpers/formatters.dart';
+import '../../../../core/helpers/roles.dart';
 import '../../../../core/router/app_router.dart';
 import '../../../../di/locator.dart';
 import '../../../../shared/theme/theme.dart';
 import '../../../../shared/widgets/brand_header.dart';
+import '../../../pro_auth/presentation/bloc/pro_auth_bloc.dart';
 import '../../../pro_dashboard/presentation/bloc/pro_dashboard_bloc.dart';
 import '../../../pro_dashboard/presentation/widgets/dashboard_view.dart';
+import '../../../pro_revenue/presentation/bloc/revenue_summary_bloc.dart';
 import '../../../pro_shuttle/presentation/bloc/live_shuttles_bloc.dart';
 import '../../../pro_shuttle/presentation/widgets/live_shuttles_card.dart';
 import '../bloc/pro_today_bloc.dart';
@@ -38,6 +41,8 @@ Widget _withBlocs(Widget child) => MultiBlocProvider(
     BlocProvider(create: (_) => locator<ProTodayBloc>()..add(const ProTodayStarted())),
     BlocProvider(create: (_) => locator<LiveShuttlesBloc>()..add(const LiveShuttlesStarted())),
     BlocProvider(create: (_) => locator<ProDashboardBloc>()..add(const ProDashboardStarted())),
+    // Lazy: only the managers' revenue card reads it, so nobody else asks the server.
+    BlocProvider(create: (_) => locator<RevenueSummaryBloc>()..add(const RevenueSummaryStarted())),
   ],
   child: child,
 );
@@ -145,7 +150,7 @@ class _ProTodayViewState extends State<ProTodayView> with SingleTickerProviderSt
                 ),
               if (widget.only == null) _ModeBar(mode: _mode, onChanged: (m) => setState(() => _mode = m)),
               if (dashboard)
-                const Expanded(child: DashboardView())
+                Expanded(child: DashboardView(revenue: can(context.watch<ProAuthBloc>().state.staff?.role, 'revenue:view')))
               else ...[
                 Container(
                   color: AppColors.canvas,

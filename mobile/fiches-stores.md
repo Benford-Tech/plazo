@@ -272,9 +272,10 @@ POUR LES GÉRANTS
 • Équipe : comptes, rôles, nouveaux mots de passe.
 • Réglages du parking : marge, temps de navette, suivi des navettes (pas de suivi, équipe seulement, équipe et clients), SMS aux voyageurs.
 • Plan du parking sur la photo aérienne de l'IGN, génération des places, véhicules de navette.
-• Les mails des comparateurs, la fiche Plazo, les tarifs, le chiffre d'affaires et les reversements se gèrent dans l'espace pro web.
+• Chiffre d'affaires : le mois, la semaine ou le jour, par canal, et les réservations sans montant à compléter.
+• Les mails des comparateurs, la fiche Plazo, les tarifs, l'export comptable et les reversements se gèrent dans l'espace pro web.
 ```
-(environ 2 980 caractères)
+(environ 3 090 caractères)
 
 Tant que la tâche du point 0.17 n'est pas planifiée, remplacer « puis effacée dans les 10 minutes » par « puis effacée au plus tard la nuit suivante ».
 

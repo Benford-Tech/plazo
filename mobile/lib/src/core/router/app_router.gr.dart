@@ -821,6 +821,73 @@ class ProReturnsRoute extends PageRouteInfo<void> {
 }
 
 /// generated route for
+/// [ProRevenueMissingPage]
+class ProRevenueMissingRoute extends PageRouteInfo<ProRevenueMissingRouteArgs> {
+  ProRevenueMissingRoute({
+    Key? key,
+    ProRevenueBloc? bloc,
+    List<PageRouteInfo>? children,
+  }) : super(
+         ProRevenueMissingRoute.name,
+         args: ProRevenueMissingRouteArgs(key: key, bloc: bloc),
+         initialChildren: children,
+       );
+
+  static const String name = 'ProRevenueMissingRoute';
+
+  static PageInfo page = PageInfo(
+    name,
+    builder: (data) {
+      final args = data.argsAs<ProRevenueMissingRouteArgs>(
+        orElse: () => const ProRevenueMissingRouteArgs(),
+      );
+      return WrappedRoute(
+        child: ProRevenueMissingPage(key: args.key, bloc: args.bloc),
+      );
+    },
+  );
+}
+
+class ProRevenueMissingRouteArgs {
+  const ProRevenueMissingRouteArgs({this.key, this.bloc});
+
+  final Key? key;
+
+  final ProRevenueBloc? bloc;
+
+  @override
+  String toString() {
+    return 'ProRevenueMissingRouteArgs{key: $key, bloc: $bloc}';
+  }
+
+  @override
+  bool operator ==(Object other) {
+    if (identical(this, other)) return true;
+    if (other is! ProRevenueMissingRouteArgs) return false;
+    return key == other.key && bloc == other.bloc;
+  }
+
+  @override
+  int get hashCode => key.hashCode ^ bloc.hashCode;
+}
+
+/// generated route for
+/// [ProRevenuePage]
+class ProRevenueRoute extends PageRouteInfo<void> {
+  const ProRevenueRoute({List<PageRouteInfo>? children})
+    : super(ProRevenueRoute.name, initialChildren: children);
+
+  static const String name = 'ProRevenueRoute';
+
+  static PageInfo page = PageInfo(
+    name,
+    builder: (data) {
+      return WrappedRoute(child: const ProRevenuePage());
+    },
+  );
+}
+
+/// generated route for
 /// [ProShellPage]
 class ProShellRoute extends PageRouteInfo<void> {
   const ProShellRoute({List<PageRouteInfo>? children})

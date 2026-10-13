@@ -55,6 +55,11 @@ n'existent que dans Plazo Pro (`if (AppConstants.isPro)` dans `app_router.dart`)
   À traiter), état des services (vols, SMS, notifs, paiements, import), « À traiter maintenant » classé, véhicules sur le
   parking avec place et clés, carte des navettes en cours. Feature `pro_dashboard` (`GET /internal/dashboard`,
   `ProDashboardBloc` toutes les 30 s). Les onglets Arrivées / Retours du chauffeur gardent le planning seul.
+- **Pro — chiffre d'affaires** (13/10/2026, choix T-A + P-B, gérants seulement) : carte « Chiffre d'affaires » sous les
+  tuiles du tableau de bord (mois, aujourd'hui, 7 jours, « N sans montant » ; `RevenueSummaryBloc`, toutes les 5 min) et page
+  `/pro/chiffre-affaires` (Plus › « Chiffre d'affaires ») : Jour · Semaine · Mois, barres par jour, par arrivée ou par
+  réservation, « Par canal », écran « À compléter » qui enregistre le montant d'une réservation qui n'en a pas. Feature
+  `pro_revenue` (`GET /internal/revenue`, `…/summary`, `PUT /internal/reservations/:id/price`). L'export CSV reste sur le web.
 - **Notifications navette** (N-A du 05/10/2026) : réglage « Navettes » du personnel ; côté voyageur, le téléphone est
   enregistré pendant le séjour (`PUT /public/bookings/:ref/devices`, `EnableShuttlePushesUseCase`) pour « Votre navette est
   partie » / « est là » — l'app voyageur a sa propre app OneSignal (`ONESIGNAL_APP_ID` à la compilation de ce flavor).
