@@ -1,6 +1,6 @@
 import { Passport } from 'passport';
 import { ExtractJwt, Strategy as JwtStrategy, VerifiedCallback } from 'passport-jwt';
-import { SECRET_KEY, isVerifiedPlatformAdmin } from '@/config';
+import { SECRET_KEY, isVerifiedPlatformAdmin, platformAdminEmails } from '@/config';
 import prisma, { StaffTokenType } from '@/database';
 import { AuthenticatedStaff, DataStoredInToken } from '@/interfaces/auth.interface';
 
@@ -33,12 +33,14 @@ export const staffJwtStrategy = new JwtStrategy(
         if (!isVerifiedPlatformAdmin(staff)) return done(null, false);
         const target = await prisma.operator.findUnique({ where: { id: actingAs } });
         if (!target) return done(null, false);
+        const admins = platformAdminEmails();
+        const platformAccount = admins.length > 0 && (await prisma.staff.count({ where: { operatorId: target.id, email: { in: admins } } })) > 0;
         const scoped: AuthenticatedStaff = {
           ...staff,
           operatorId: target.id,
           operatorName: target.name,
           role: 'manager',
-          actingAs: { realOperatorId: operator.id, realOperatorName: operator.name },
+          actingAs: { realOperatorId: operator.id, realOperatorName: operator.name, platformAccount },
         };
         return done(null, scoped, { tokenUid: token.uid });
       }

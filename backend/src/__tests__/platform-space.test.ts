@@ -560,6 +560,52 @@ describe('ouvrir l’espace d’un loueur (view-as)', () => {
     expect(await prisma.auditLog.count({ where: { action: 'view_as.write' } })).toBe(0);
   });
 
+  it('12/10/2026 : gère l’équipe du compte de la plateforme ouvert par un autre super admin, jamais celle d’un client', async () => {
+    // A second platform admin, whose own operator is not « Plazo (tests) ».
+    const other = await setupOperator('Compte personnel');
+    process.env.PLATFORM_ADMIN_EMAILS = `${other.manager.email},${admin.manager.email}`;
+    const open = async (operatorId: string) => {
+      const res = await api().post(`${P}/operators/${operatorId}/view-as`).set(auth(other.token));
+      expect(res.status).toBe(201);
+      return res.body.access.token as string;
+    };
+
+    const token = await open(admin.operator.id);
+    const me = await api().get('/api/internal/staff/me').set(auth(token));
+    expect(me.body.viewAs).toEqual({ operatorId: admin.operator.id, operatorName: admin.operator.name, platformAccount: true });
+
+    const email = 'chauffeur-test@example.com';
+    const created = await api()
+      .post('/api/internal/staff')
+      .set(auth(token))
+      .send({ firstName: 'Chauffeur', lastName: 'Test', email, role: 'driver', password: PASSWORD });
+    expect(created.status).toBe(201);
+    expect(created.body.data).toMatchObject({ operatorId: admin.operator.id, role: 'driver' });
+    const reset = await api()
+      .post(`/api/internal/staff/${created.body.data.id}/reset-password`)
+      .set(auth(token))
+      .send({ password: 'nouveau-mot-de-passe' });
+    expect(reset.status).toBe(200);
+    expect((await api().post('/api/internal/auth/login').send({ email, password: 'nouveau-mot-de-passe' })).status).toBe(200);
+    // Traced as consultation writes, with the admin's identity.
+    expect(await prisma.auditLog.count({ where: { action: 'view_as.write', staffId: other.manager.id } })).toBe(2);
+    // The admin's own settings stay out of reach there.
+    expect(
+      (await api().patch('/api/internal/staff/me/password').set(auth(token)).send({ currentPassword: PASSWORD, newPassword: 'autre-mot-de-passe' }))
+        .status,
+    ).toBe(403);
+
+    // A client's team stays read-only.
+    const client = await open(loueur.operator.id);
+    expect((await api().get('/api/internal/staff/me').set(auth(client))).body.viewAs.platformAccount).toBe(false);
+    const refused = await api()
+      .post('/api/internal/staff')
+      .set(auth(client))
+      .send({ firstName: 'Intrus', lastName: 'Inconnu', email: 'intrus@example.com', role: 'driver', password: PASSWORD });
+    expect(refused.status).toBe(403);
+    expect(refused.body.code).toBe('view_as_read_only');
+  });
+
   it('laisse l’équipe, les mots de passe et les réglages personnels en lecture seule', async () => {
     const token = await viewAs();
     expect((await api().get('/api/internal/staff').set(auth(token))).status).toBe(200);

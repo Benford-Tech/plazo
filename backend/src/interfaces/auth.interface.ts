@@ -9,6 +9,11 @@ import { Staff, StaffTokenType } from '@/database';
 export interface ActingAs {
   realOperatorId: string;
   realOperatorName: string;
+  /**
+   * The viewed operator is the platform's own account (« Plazo (tests) »: a platform admin is one of its members,
+   * 12/10/2026): its team can be managed in consultation too (RefuseInViewAsOutsidePlatformAccount).
+   */
+  platformAccount: boolean;
 }
 
 export type AuthenticatedStaff = Staff & { operatorName: string; actingAs?: ActingAs };
