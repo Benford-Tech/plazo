@@ -205,25 +205,25 @@ la clé d'import Android de Plazo dans Codemagic (créée et envoyée par GitHub
    - Mot de passe : **lettres et chiffres seulement**, 20 caractères ou plus ; même mot de passe pour la clé (Entrée).
    - Garder `plazo-upload.jks` et son mot de passe dans le gestionnaire de mots de passe, puis le téléverser dans
      Codemagic (Code signing identities, référence `plazo_upload`, et `android_signing` dans `codemagic.yaml`).
-3. [ ] **Ouvrir le compte de service aux deux apps** : **Utilisateurs et autorisations**, la ligne du compte de service
+3. [x] **Ouvrir le compte de service aux deux apps** : **Utilisateurs et autorisations**, la ligne du compte de service
    (`…@yoon-beige.iam.gserviceaccount.com`, celui de Yoon, 13/10/2026) › **Autorisations des applications › Ajouter une application** : Plazo et
    Plazo Pro, cocher la section **Versions** (publier dans les canaux de test, gérer les canaux de test et les listes de
    testeurs, publier en production), **Appliquer**, puis enregistrer.
-4. [ ] **Sa clé JSON pour Codemagic** : le fichier JSON déjà créé pour Yoon s'il est encore sur l'ordinateur, sinon Google
+4. [x] **Sa clé JSON pour Codemagic** : le fichier JSON déjà créé pour Yoon s'il est encore sur l'ordinateur, sinon Google
    Cloud (projet `yoon-beige`) › **IAM et administration › Comptes de service** › ce compte › **Clés › Ajouter une clé ›
    Créer une clé › JSON**. Ouvrir le fichier, tout copier dans `GCLOUD_SERVICE_ACCOUNT_CREDENTIALS` de l'app `plazo`
    (étape 1.5 ; le groupe `mobile_secrets` existe déjà, créé vide par le workflow de la clé Android : Codemagic refuse un
    build dont un groupe manque), puis le supprimer de l'ordinateur. Jamais dans une conversation.
-   Encore vide le 12/10/2026 : les deux envois Google Play du build 113 (`mobile-release`) ont échoué pour cette raison,
-   le bilan l'écrit désormais en clair ; les deux IPA sont bien partis vers TestFlight. Toujours vide le 13/10/2026
-   (workflow GitHub « Codemagic build », action `groups` : `mobile_secrets` vide, `plazo_android_signing` complet), et le
-   build 113 reste le dernier.
+   Vide jusqu'au 13/10/2026 : les deux envois Google Play du build 113 (`mobile-release`) avaient échoué pour cette raison.
+   Fait le 13/10/2026 : clé collée dans `GCLOUD_SERVICE_ACCOUNT_CREDENTIALS`, et le build 114 (`mobile-release`,
+   `6ace256e546ce6236cee23c3`, version 1.0.0, 42 min) a tout envoyé : les deux AAB en **tests internes** (en brouillon,
+   `PLAY_SUBMIT_AS_DRAFT`) et les deux IPA vers **TestFlight**, bilan vert.
 5. [ ] **Liste des testeurs internes** (pour chaque app) : **Tester et publier › Tests › Tests internes › Testeurs ›
    Créer une liste de diffusion** (comptes Google), **Enregistrer les modifications**.
-6. [ ] **Premier envoi à la main** (l'API refuse une app jamais publiée), une fois la section 1 et l'étape 2 faites ;
+6. [x] **Premier envoi à la main** (l'API refuse une app jamais publiée), une fois la section 1 et l'étape 2 faites ;
    **ni Apple ni la clé du compte de service ne sont nécessaires** pour cet import dans la Play Console (les étapes 3 et 4
-   ne servent qu'aux envois automatiques suivants). Les deux AAB signés du build 113 (13/10/2026) sont déjà dans ses
-   **Artifacts** : on peut les importer tout de suite, sans relancer de build :
+   ne servent qu'aux envois automatiques suivants). Fait : l'envoi automatique du build 114 (13/10/2026) a été accepté
+   par Google Play pour les deux apps, ce que l'API refuse à une app jamais importée. Pour mémoire, la marche suivie :
    - Codemagic : **Start new build**, `main`, workflow **« Plazo + Plazo Pro — Android seul »** (`mobile-release-android`).
      Les deux envois Google Play échouent sur ce premier build (« Package not found ») et le bilan le met en erreur :
      **c'est attendu**. Fait le 11/10/2026 (build `6acbd661546ce6236ced943f`, version 1.0.0, build 112, 24 min). (Avec `mobile-release`, une fois Apple prêt, c'est pareil, et les deux IPA partent vers TestFlight.)

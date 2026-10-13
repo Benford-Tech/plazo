@@ -175,7 +175,7 @@ version web, « Payer » ouvre la page Stripe Checkout.
    GitHub `CODEMAGIC_API_TOKEN`, dans le groupe de variables Secure `plazo_android_signing` de l'app Codemagic
    (`CM_KEYSTORE` en base64, `CM_KEYSTORE_PASSWORD`, `CM_KEY_ALIAS`, `CM_KEY_PASSWORD`, décodées par `codemagic.yaml`) ;
    le compte de service créé pour Yoon (projet `yoon-beige`, 13/10/2026), ouvert aux
-   deux apps, sa clé dans `GCLOUD_SERVICE_ACCOUNT_CREDENTIALS` du groupe `mobile_secrets` ; premier envoi de l'AAB à la main ; déclaration de l'usage de la position (premier plan, service
+   deux apps, sa clé dans `GCLOUD_SERVICE_ACCOUNT_CREDENTIALS` du groupe `mobile_secrets` (envois automatiques réussis depuis le build 114, 13/10/2026) ; déclaration de l'usage de la position (premier plan, service
    « location »).
 4. **OneSignal + Firebase** : les deux apps OneSignal existent (une par app, car les réglages iOS d'une app OneSignal ne
    tiennent qu'un Bundle ID) ; leurs *App ID* sont dans `codemagic.yaml` et dans Vercel (`ONESIGNAL_APP_ID` Plazo Pro,
