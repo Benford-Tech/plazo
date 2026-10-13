@@ -27,7 +27,7 @@ Relevé le 09/10/2026 dans les projets Thempo, LoveNest et Yoon (dépôts et ses
 | Apple | Équipe Apple Developer **Benford Tech**, Team ID **3BX4795V2Y** (LoveNest, Thempo, Yoon) | même équipe : pas de nouvelle inscription |
 | Google Play | Compte développeur **Benford Tech** (Thempo publié par l'API, Yoon et LoveNest à la main) | même compte |
 | Codemagic | Le **compte personnel** de Joanny (pas d'équipe ; apps `tempo-app`, `lovenest-frontend`, `yoon`, relevé par l'API le 11/10/2026 ; réglages sous **Teams › Personal account**) ; intégration Developer Portal **`lovenest-asc`** (clé API App Store Connect de l'équipe Apple) ; certificat **Apple Distribution** dans Code signing identities (`thempo-distribution`) | Plazo y est ajouté (app `plazo`) ; `codemagic.yaml` utilise `lovenest-asc` et ce certificat |
-| Google Cloud | Le compte de service qui publie Thempo sur Google Play (clé JSON dans le groupe `google_play` de l'app Thempo) | le même, ouvert aux deux apps Plazo |
+| Google Cloud | Le compte de service créé pour Yoon le 13/10/2026 (projet `yoon-beige`, adresse `…@yoon-beige.iam.gserviceaccount.com`, API Google Play Android Developer activée ; clé JSON dans la variable `GCLOUD_SERVICE_ACCOUNT_CREDENTIALS` du groupe `yoon` de l'app Yoon) | **le même**, ouvert aux deux apps Plazo ; sa clé JSON collée aussi dans l'app `plazo` (Codemagic ne copie pas un secret d'une app à l'autre, et un compte personnel n'a plus de variables globales) |
 | OneSignal | Les deux apps de Plazo : Plazo Pro `89a1124f-3ba0-481e-b9f1-545d254e435d`, Plazo `dd3c2a74-a7b0-4117-ba18-ab5a1edfe0a3` | App ID déjà dans `codemagic.yaml` et dans Vercel, clés REST dans Vercel : **rien à faire** côté API |
 
 Ce qui manque encore : les quatre fiches d'app (deux chez Apple, deux chez Google), les deux profils de signature Apple,
@@ -113,9 +113,11 @@ la clé d'import Android de Plazo dans Codemagic (créée et envoyée par GitHub
    donne l'état, les étapes et les artefacts d'un build, l'annule (`cancel`), dit pourquoi un build attend (`team`), liste
    les groupes de variables (noms seulement) ou en crée un vide : Claude suit et relance les builds par là, sans accès à
    Codemagic.
-5. [ ] **Le groupe de variables `mobile_secrets`** : page de l'app › **Environment variables** › variable
-   `GOOGLE_PLAY_SERVICE_ACCOUNT_CREDENTIALS`, groupe `mobile_secrets`, cocher **Secret**, **Add**. La valeur : **tout le
-   contenu** d'une clé JSON du compte de service qui publie déjà Thempo (étape 3.4), collé tel quel (pas en base64).
+5. [ ] **Le groupe de variables `mobile_secrets`** : page de l'app `plazo` › **Environment variables** › variable
+   `GCLOUD_SERVICE_ACCOUNT_CREDENTIALS` (le nom de Yoon ; `GOOGLE_PLAY_SERVICE_ACCOUNT_CREDENTIALS` marche aussi), groupe
+   `mobile_secrets`, cocher **Secret**, **Add**. La valeur : **tout le contenu** de la clé JSON du compte de service de
+   Yoon (étape 3.4), collé tel quel (pas en base64) : le même fichier que pour Yoon s'il est encore là, sinon une nouvelle
+   clé du même compte.
    - Une variable « Secret » ne se relit plus : pour la changer, la supprimer puis la recréer.
    - Plus tard, facultatif : `STRIPE_MERCHANT_ID` (Apple Pay), quand Claude aura ajouté Apple Pay à l'app.
 6. [ ] **Les déclenchements** : après le prochain tag `mobile-v…`, ouvrir l'onglet **Webhooks** de l'app. Si aucune
@@ -204,13 +206,14 @@ la clé d'import Android de Plazo dans Codemagic (créée et envoyée par GitHub
    - Garder `plazo-upload.jks` et son mot de passe dans le gestionnaire de mots de passe, puis le téléverser dans
      Codemagic (Code signing identities, référence `plazo_upload`, et `android_signing` dans `codemagic.yaml`).
 3. [ ] **Ouvrir le compte de service aux deux apps** : **Utilisateurs et autorisations**, la ligne du compte de service
-   (`…@….iam.gserviceaccount.com`, celui de Thempo) › **Autorisations des applications › Ajouter une application** : Plazo et
+   (`…@yoon-beige.iam.gserviceaccount.com`, celui de Yoon, 13/10/2026) › **Autorisations des applications › Ajouter une application** : Plazo et
    Plazo Pro, cocher la section **Versions** (publier dans les canaux de test, gérer les canaux de test et les listes de
    testeurs, publier en production), **Appliquer**, puis enregistrer.
-4. [ ] **Sa clé JSON pour Codemagic** : Google Cloud › **IAM et administration › Comptes de service** › ce compte ›
-   **Clés › Ajouter une clé › Créer une clé › JSON**. Ouvrir le fichier, tout copier dans
-   `GOOGLE_PLAY_SERVICE_ACCOUNT_CREDENTIALS` (étape 1.5 ; le groupe `mobile_secrets` existe déjà, créé vide par le
-   workflow de la clé Android : Codemagic refuse un build dont un groupe manque), puis le supprimer de l'ordinateur.
+4. [ ] **Sa clé JSON pour Codemagic** : le fichier JSON déjà créé pour Yoon s'il est encore sur l'ordinateur, sinon Google
+   Cloud (projet `yoon-beige`) › **IAM et administration › Comptes de service** › ce compte › **Clés › Ajouter une clé ›
+   Créer une clé › JSON**. Ouvrir le fichier, tout copier dans `GCLOUD_SERVICE_ACCOUNT_CREDENTIALS` de l'app `plazo`
+   (étape 1.5 ; le groupe `mobile_secrets` existe déjà, créé vide par le workflow de la clé Android : Codemagic refuse un
+   build dont un groupe manque), puis le supprimer de l'ordinateur. Jamais dans une conversation.
    Encore vide le 12/10/2026 : les deux envois Google Play du build 113 (`mobile-release`) ont échoué pour cette raison,
    le bilan l'écrit désormais en clair ; les deux IPA sont bien partis vers TestFlight. Toujours vide le 13/10/2026
    (workflow GitHub « Codemagic build », action `groups` : `mobile_secrets` vide, `plazo_android_signing` complet), et le

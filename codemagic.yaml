@@ -54,9 +54,11 @@
 #     the two profiles before its first run: without one of them, Codemagic stops at « Set up code signing »
 #     before building (mobile-release-android only needs the keystore group).
 #   App › Environment variables, group « mobile_secrets »:
-#     GOOGLE_PLAY_SERVICE_ACCOUNT_CREDENTIALS = JSON key of the Google Cloud service account that already
-#                                               publishes Thempo, given access to both Plazo apps in Play
-#                                               Console › Users and permissions (Releases permissions)
+#     GOOGLE_PLAY_SERVICE_ACCOUNT_CREDENTIALS = JSON key of the Google Cloud service account made for Yoon
+#                                               (project yoon-beige, 13/10/2026), given access to both Plazo
+#                                               apps in Play Console › Users and permissions (Releases
+#                                               permissions); the name Yoon's app uses for the same key,
+#                                               GCLOUD_SERVICE_ACCOUNT_CREDENTIALS, is read too
 #     API_BASE_URL / SITE_URL                 = optional (https://www.plazo.fr/api is the app's default)
 #     STRIPE_MERCHANT_ID                      = optional, Apple Pay merchant id, only once the Apple Pay
 #                                               entitlement is in ios/Runner/Runner.entitlements
@@ -149,6 +151,8 @@ definitions:
         if [ -n "$CM_TAG" ] && [ "$CM_TAG" != "mobile-v$VERSION_NAME" ]; then
           echo "ERREUR: le tag $CM_TAG ne correspond pas à la version $VERSION_NAME de pubspec.yaml"; exit 1
         fi
+        # The Play key under its CLI name, or under the name Yoon's app uses (13/10/2026: one service account for both).
+        export GOOGLE_PLAY_SERVICE_ACCOUNT_CREDENTIALS="${GOOGLE_PLAY_SERVICE_ACCOUNT_CREDENTIALS:-${GCLOUD_SERVICE_ACCOUNT_CREDENTIALS:-}}"
         NEXT=$((PROJECT_BUILD_NUMBER + 100))
         # Never reuse a build number a store already knows (a re-run, a build made elsewhere): the same
         # number serves every package, so it goes above the last build of each of the four listings (the
@@ -197,12 +201,14 @@ definitions:
       # Every AAB is sent even when one fails; the last step turns the build red if any did.
       ignore_failure: true
       script: |
+        # The Play key under its CLI name, or under the name Yoon's app uses (13/10/2026: one service account for both).
+        export GOOGLE_PLAY_SERVICE_ACCOUNT_CREDENTIALS="${GOOGLE_PLAY_SERVICE_ACCOUNT_CREDENTIALS:-${GCLOUD_SERVICE_ACCOUNT_CREDENTIALS:-}}"
         DRAFT_FLAG=""
         [ "$PLAY_SUBMIT_AS_DRAFT" = "true" ] && DRAFT_FLAG="--draft"
         for AAB in build/app/outputs/bundle/*/*.aab; do
           NAME=$(basename "$AAB" .aab)
           if [ -z "$GOOGLE_PLAY_SERVICE_ACCOUNT_CREDENTIALS" ]; then
-            echo "KO  Google Play  $NAME (GOOGLE_PLAY_SERVICE_ACCOUNT_CREDENTIALS absente du groupe mobile_secrets)" >> "$CM_BUILD_DIR/publish-status.txt"
+            echo "KO  Google Play  $NAME (clé du compte de service absente du groupe mobile_secrets : GOOGLE_PLAY_SERVICE_ACCOUNT_CREDENTIALS ou GCLOUD_SERVICE_ACCOUNT_CREDENTIALS)" >> "$CM_BUILD_DIR/publish-status.txt"
             continue
           fi
           if google-play bundles publish --bundle "$AAB" --track "$PLAY_TRACK" --release-name "$VERSION_NAME ($NEXT)" $DRAFT_FLAG; then
