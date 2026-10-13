@@ -1,12 +1,12 @@
 // Store screenshots (11/10/2026): drives the Flutter web builds of Plazo and Plazo Pro with Chromium and saves the
 // phone screenshots Google Play asks for (1080 x 1920, 9:16: a 405 x 720 viewport at 8/3 device pixels) and, with
-// DEVICE=iphone, the iPhone 6,9" ones the App Store asks for (1320 x 2868).
+// DEVICE=iphone, the iPhone 6,9" ones the App Store asks for (1320 x 2868), with DEVICE=iphone63 its 6,3" ones (1206 x 2622).
 //
 //   node capture.mjs traveller   (Plazo, 7 screens)
 //   node capture.mjs pro         (Plazo Pro, 7 screens; runs `scenario.mjs trip` before the trip screen)
 //
 // Environment: TRAVELLER_URL (http://localhost:8091), PRO_URL (http://localhost:8092), SCENARIO (the JSON printed by
-// `scenario.mjs prepare`), OUT (output folder), DEVICE (phone | iphone, see below), PLAZO_CLOCK_OFFSET_MS (the API's
+// `scenario.mjs prepare`), OUT (output folder), DEVICE (phone | iphone | iphone63, see below), PLAZO_CLOCK_OFFSET_MS (the API's
 // clock shift, applied to the browser too), MANAGER_EMAIL / MANAGER_PASSWORD (the demo manager), PLAYWRIGHT (module
 // path, default: resolved from site/).
 import { execFileSync } from 'node:child_process';
@@ -20,8 +20,13 @@ const ROOT = path.resolve(HERE, '../../../..');
 const { chromium } = createRequire(path.join(ROOT, 'site', 'package.json'))(process.env.PLAYWRIGHT || 'playwright');
 const flavor = process.argv[2] || 'traveller';
 // DEVICE: `phone` for Google Play (1080 x 1920), `iphone` for the App Store's iPhone 6,9" (1320 x 2868: a 440 x 956
-// viewport, the iPhone 16 Pro Max, at 3 device pixels). The screens are the same, the taller one just shows more.
-const DEVICES = { phone: { width: 405, height: 720, scale: 8 / 3 }, iphone: { width: 440, height: 956, scale: 3 } };
+// viewport, the iPhone 16 Pro Max, at 3 device pixels), `iphone63` for its iPhone 6,3" (1206 x 2622: a 402 x 874
+// viewport, the iPhone 16 Pro, at 3 device pixels). The screens are the same, a taller one just shows more.
+const DEVICES = {
+  phone: { width: 405, height: 720, scale: 8 / 3 },
+  iphone: { width: 440, height: 956, scale: 3 },
+  iphone63: { width: 402, height: 874, scale: 3 },
+};
 const device = DEVICES[process.env.DEVICE || 'phone'];
 if (!device) throw new Error(`DEVICE must be one of ${Object.keys(DEVICES).join(', ')}`);
 const OUT = path.resolve(process.env.OUT || path.join(ROOT, 'brand/stores/screenshots', flavor === 'pro' ? 'plazo-pro' : 'plazo'));

@@ -1,6 +1,6 @@
 name: Store screenshots
 
-# Store screenshots of Plazo and Plazo Pro (11/10/2026; Google Play 1080 x 1920 and App Store iPhone 6,9" 1320 x 2868), from scratch: throwaway PostGIS database with
+# Store screenshots of Plazo and Plazo Pro (11/10/2026; Google Play 1080 x 1920, App Store iPhone 6,9" 1320 x 2868 and, 13/10/2026, 6,3" 1206 x 2622), from scratch: throwaway PostGIS database with
 # the demo data, the API with its clock at LOCAL_TIME at the parking, the two apps built for the web, a staged day at
 # the demo parking, then Chromium drives the apps. Run by hand; the PNGs come back as an artifact
 # (brand/stores/tools/screenshots/README.md). Nothing is committed and no secret is used.
