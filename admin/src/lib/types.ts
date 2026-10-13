@@ -42,7 +42,8 @@ export interface Staff {
   /** False until a self sign-up confirms its email (the listing cannot be sent for review before). */
   emailVerified?: boolean;
   /** Set while a platform admin views an operator's space ("Ouvrir son espace"). */
-  viewAs?: { operatorId: string; operatorName: string } | null;
+  /** platformAccount: the platform's own account (« Plazo (tests) »), whose team can be managed in consultation. */
+  viewAs?: { operatorId: string; operatorName: string; platformAccount?: boolean } | null;
 }
 
 export interface Parking {

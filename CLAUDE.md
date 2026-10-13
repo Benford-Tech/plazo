@@ -172,6 +172,12 @@ Ne construire QUE ce qui règle la douleur n°1 du client.
      « Ouvrir son espace » sur le compte de la plateforme (« Plazo (tests) ») donne la session normale du super admin (`config/passport.ts` :
      pas d'`actingAs` quand le loueur ouvert est le sien), avec son rôle et ses droits : équipe, mots de passe et réglages s'y modifient,
      sans bandeau ni trace `view_as.write`.
+     **Équipe du compte de la plateforme (13/10/2026, « j'arrive toujours pas à me connecter, fais le nécessaire »)** : quand « Plazo (tests) »
+     n'est pas le loueur du super admin connecté (un autre administrateur de `PLATFORM_ADMIN_EMAILS` en est le gérant), la consultation
+     garde l'équipe modifiable : `ActingAs.platformAccount` (un administrateur de la plateforme est membre du loueur ouvert, calculé dans
+     `config/passport.ts`), `RefuseInViewAsOutsidePlatformAccount` sur l'ajout, la modification et le nouveau mot de passe d'un membre,
+     `viewAs.platformAccount` de `/staff/me` pour la page Équipe ; écritures tracées `view_as.write` ; mots de passe et réglages personnels
+     restent refusés, et l'équipe d'un client reste en lecture seule.
      **Modifications Allopark appliquées par Plazo (10/10/2026, « C'est une modification » → choix « Appliquer seul »)** :
      un mail Allopark qui annonce une modification faite (objet « Modification… », « modifiée », « changement » ; texte
      « réservation … modifiée », « Vos nouvelles dates : »… ; ou lu par Claude comme modification ; une annulation l'emporte

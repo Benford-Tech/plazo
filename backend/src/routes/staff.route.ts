@@ -2,7 +2,7 @@ import { Router } from 'express';
 import { StaffController } from '@/controllers/staff.controller';
 import { ChangePasswordDto, CreateStaffDto, ResetPasswordDto, UpdateMeDto, UpdateStaffDto, SetPostDto, SetVehicleDto } from '@/dtos/staff.dto';
 import { Routes } from '@/interfaces/routes.interface';
-import { RefuseInViewAs, StaffAuthMiddleware } from '@/middlewares/staff-auth.middleware';
+import { RefuseInViewAs, RefuseInViewAsOutsidePlatformAccount, StaffAuthMiddleware } from '@/middlewares/staff-auth.middleware';
 import { ValidationMiddleware } from '@/middlewares/validation.middleware';
 
 /**
@@ -116,7 +116,8 @@ export class StaffRoute implements Routes {
       ValidationMiddleware(SetVehicleDto),
       this.staff.setVehicle,
     );
-    // Read-only while a platform admin views the operator's space (RefuseInViewAs: 403 view_as_read_only).
+    // Read-only while a platform admin views the operator's space (RefuseInViewAs: 403 view_as_read_only); the team of
+    // the platform's own account (« Plazo (tests) ») stays manageable (RefuseInViewAsOutsidePlatformAccount, 12/10/2026).
     this.router.patch(
       '/internal/staff/me/password',
       StaffAuthMiddleware(),
@@ -128,21 +129,21 @@ export class StaffRoute implements Routes {
     this.router.post(
       '/internal/staff',
       StaffAuthMiddleware('team:manage'),
-      RefuseInViewAs(),
+      RefuseInViewAsOutsidePlatformAccount(),
       ValidationMiddleware(CreateStaffDto),
       this.staff.create,
     );
     this.router.patch(
       '/internal/staff/:id',
       StaffAuthMiddleware('team:manage'),
-      RefuseInViewAs(),
+      RefuseInViewAsOutsidePlatformAccount(),
       ValidationMiddleware(UpdateStaffDto),
       this.staff.update,
     );
     this.router.post(
       '/internal/staff/:id/reset-password',
       StaffAuthMiddleware('team:manage'),
-      RefuseInViewAs(),
+      RefuseInViewAsOutsidePlatformAccount(),
       ValidationMiddleware(ResetPasswordDto),
       this.staff.resetPassword,
     );
