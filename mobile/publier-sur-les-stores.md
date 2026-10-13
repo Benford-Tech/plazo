@@ -218,6 +218,11 @@ la clé d'import Android de Plazo dans Codemagic (créée et envoyée par GitHub
    Fait le 13/10/2026 : clé collée dans `GCLOUD_SERVICE_ACCOUNT_CREDENTIALS`, et le build 114 (`mobile-release`,
    `6ace256e546ce6236cee23c3`, version 1.0.0, 42 min) a tout envoyé : les deux AAB en **tests internes** (en brouillon,
    `PLAY_SUBMIT_AS_DRAFT`) et les deux IPA vers **TestFlight**, bilan vert.
+   Build 115 (13/10/2026) : envoi de Plazo Pro refusé par Google Play (« A change was made to the application outside of
+   this Edit ») parce que Plazo Pro était modifiée dans la Play Console au même moment ; les trois autres envois sont
+   passés. Depuis, chaque AAB est envoyé une seconde fois 60 s après un échec. Pour voir ce qu'un store a répondu : GitHub ›
+   Actions › « Codemagic build » › action **`logs`** (fin du journal des étapes en échec et des envois aux stores).
+   Conseil : ne pas modifier une app dans la Play Console pendant que le build l'envoie (dernières minutes du build).
 5. [ ] **Liste des testeurs internes** (pour chaque app) : **Tester et publier › Tests › Tests internes › Testeurs ›
    Créer une liste de diffusion** (comptes Google), **Enregistrer les modifications**.
 6. [x] **Premier envoi à la main** (l'API refuse une app jamais publiée), une fois la section 1 et l'étape 2 faites ;

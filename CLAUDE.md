@@ -727,7 +727,8 @@ Le nom du produit doit rester dans UN seul fichier de configuration (il peut enc
   build dont un groupe n'existe pas ; artefact d'un jour pour le gestionnaire de mots de passe ; refus de remplacer une clé
   déjà envoyée sans la case « replace » ; jamais de base64 collé à la main ; **`codemagic-build.yml` « Codemagic build
   (start, status, groups) »** (`.github/scripts/codemagic_build.py`, client commun `codemagic_api.py`) : `start` d'un
-  workflow sur une branche, `status` d'un build (état, artefacts ; étape rouge si le build a échoué), `steps`, `cancel` (API v1),
+  workflow sur une branche, `status` d'un build (état, artefacts ; étape rouge si le build a échoué), `steps`, `logs` (13/10/2026 :
+  fin du journal des étapes en échec et des envois aux stores, lue dans `buildActions[].subactions[].logUrl` de l'API v1), `cancel` (API v1),
   `groups` (noms des variables seulement), `ensure-group`, `team` (pourquoi un build attend : dernier build de chaque app du
   compte) : c'est par là que Claude suit et relance les builds Codemagic ; compte Google Play Benford Tech et, depuis le
   13/10/2026, le compte de service créé pour Yoon (projet Google Cloud `yoon-beige`), dont la clé JSON se colle aussi dans le
@@ -739,7 +740,8 @@ Le nom du produit doit rester dans UN seul fichier de configuration (il peut enc
   `thempo-distribution`, profils `plazo_app_store` et `plazo_pro_app_store`, un `bundle_identifier` automatique ne prenant
   qu'une app), `xcode-project use-profiles` puis un export options plist par app (PlistBuddy) ; envois par les outils en ligne
   de commande (`google-play bundles publish --track $PLAY_TRACK [--draft]` par AAB, `app-store-connect publish` par IPA,
-  `TESTFLIGHT_BETA_GROUPS` pour la relecture bêta, absente par défaut car Codemagic refuse une variable vide), chacun tenté (`ignore_failure`), « Bilan de la publication » en erreur si
+  `TESTFLIGHT_BETA_GROUPS` pour la relecture bêta, absente par défaut car Codemagic refuse une variable vide), chacun tenté (`ignore_failure` ;
+  chaque AAB renvoyé une fois 60 s après un échec, 13/10/2026 : une modification faite dans la Play Console pendant l'envoi l'annule), « Bilan de la publication » en erreur si
   l'un a échoué ; plus de bloc `publishing:` (il n'envoie qu'une app et doublerait l'envoi) ; App ID OneSignal dans le fichier,
   `GOOGLE_PLAY_SERVICE_ACCOUNT_CREDENTIALS` seul secret du groupe `mobile_secrets`) ; **`mobile-release-android` (11/10/2026,
   « un build Android seul pour le Play Store »)**, à la main : la moitié Android de `mobile-release` (étapes partagées par des
