@@ -4,6 +4,9 @@
 Actions (ACTION):
   status        the build BUILD_ID (default: the app's last build): status, workflow, times, artifacts
   steps         the steps of that build with their status (which one failed)
+  logs          the end of the log of each failed step of that build, and of its store uploads (they run with
+                ignore_failure, so a refused upload shows only in the summary step): why Google Play or App Store
+                Connect said no
   start         queue WORKFLOW_ID (default mobile-release-android) on BRANCH (default main)
   cancel        cancel the build BUILD_ID (queued or running; v1 API), e.g. one queued for hours
   groups        the app's variable groups and the NAMES of their variables (never the values)
@@ -14,8 +17,10 @@ Nothing secret is printed.
 """
 import os
 
-from codemagic_api import (build_url, call, cancel_build, ensure_group, fail, find_app, groups_of, paginated,
-                           start_build, summary, team_has_app, teams_of_user, variables_of)
+import re
+
+from codemagic_api import (API_V1, build_url, call, cancel_build, ensure_group, fail, fetch_text, find_app, groups_of,
+                           paginated, start_build, summary, team_has_app, teams_of_user, variables_of)
 
 ACTION = os.environ.get("ACTION", "status").strip()
 WORKFLOW_ID = os.environ.get("WORKFLOW_ID", "").strip() or "mobile-release-android"
@@ -81,6 +86,30 @@ def steps(app):
     if not actions:
         lines.append("- aucune étape : le build n'a pas démarré (configuration refusée, machine ou minutes indisponibles : "
                      f"la raison est sur {build_url(app['id'], build_id)})")
+    print("\n".join(lines))
+    summary(lines)
+
+
+LOG_LINES = 60
+STORE_STEP = re.compile(r"Google Play|App Store|TestFlight|Bilan", re.IGNORECASE)
+
+
+def logs(app):
+    """The last lines of the log of every failed step, and of the store steps (v1 API: build.buildActions[].logUrl)."""
+    build_id = BUILD_ID or app.get("last_build_id")
+    if not build_id:
+        fail("aucun build : préciser build_id")
+    code, payload = call("GET", f"{API_V1}/builds/{build_id}")
+    actions = ((payload or {}).get("build") or {}).get("buildActions") or []
+    picked = [a for a in actions if a.get("status") not in ("success", "skipped") or STORE_STEP.search(a.get("name") or "")]
+    lines = [f"Journaux du build {build_id} ({len(picked)} étape(s) sur {len(actions)}) :"]
+    if actions and not any(a.get("logUrl") for a in actions):
+        lines.append(f"- pas de logUrl dans la réponse ; champs d'une étape : {sorted(actions[0].keys())}")
+    for action in picked:
+        url = action.get("logUrl")
+        text = fetch_text(url) if url else "(pas de journal)"
+        tail = [line.rstrip() for line in text.splitlines() if line.strip()][-LOG_LINES:]
+        lines += [f"### {action.get('name')} · {action.get('status')}", "```", *tail, "```"]
     print("\n".join(lines))
     summary(lines)
 
@@ -181,10 +210,10 @@ def team(app):
 def main():
     app = find_app()
     print(f"App Codemagic : {app['id']} ({app['name']})")
-    actions = {"status": status, "steps": steps, "start": start, "cancel": cancel, "groups": groups,
+    actions = {"status": status, "steps": steps, "logs": logs, "start": start, "cancel": cancel, "groups": groups,
                "ensure-group": ensure, "team": team}
     if ACTION not in actions:
-        fail(f"action inconnue : {ACTION} (status, steps, start, cancel, groups, ensure-group, team)")
+        fail(f"action inconnue : {ACTION} ({', '.join(actions)})")
     actions[ACTION](app)
 
 

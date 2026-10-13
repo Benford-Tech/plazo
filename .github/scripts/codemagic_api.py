@@ -45,6 +45,19 @@ def call(method, path, body=None, query=None):
         fail(f"Codemagic a répondu {error.code} sur {method} {path} : {detail}")
 
 
+def fetch_text(url):
+    """A plain-text resource of Codemagic (a step's log), with the token; never fails the run: says why instead."""
+    request = urllib.request.Request(url)
+    request.add_header("x-auth-token", TOKEN)
+    try:
+        with urllib.request.urlopen(request, timeout=60) as response:
+            return response.read().decode(errors="replace")
+    except urllib.error.HTTPError as error:
+        return f"(journal illisible : HTTP {error.code})"
+    except urllib.error.URLError as error:
+        return f"(journal illisible : {error.reason})"
+
+
 def paginated(path, query=None):
     page = 1
     while True:
