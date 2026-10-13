@@ -107,7 +107,7 @@ def logs(app):
         lines.append(f"- pas de logUrl dans la réponse ; champs d'une étape : {sorted(actions[0].keys())}")
     for action in picked:
         url = action.get("logUrl")
-        text = fetch_text(url) if url else "(pas de journal)"
+        text = fetch_text(url) if url else f"(pas de journal ; champs : {sorted(action.keys())})"
         tail = [line.rstrip() for line in text.splitlines() if line.strip()][-LOG_LINES:]
         lines += [f"### {action.get('name')} · {action.get('status')}", "```", *tail, "```"]
     print("\n".join(lines))
