@@ -47,6 +47,18 @@ void main() {
       expect(lines(tester, status), 1);
     });
 
+    testWidgets('avant la première réponse : un état vide qui garde sa ligne, sans « le jour J »', (tester) async {
+      await pumpIn(tester, const LiveShuttleRail(rail: RailState(), destination: 'Terminal 1 · 5 min'));
+      final known = tester.getSize(find.byKey(const Key('live-rail'))).height;
+      await pumpIn(tester, const LiveShuttleRail(destination: 'Terminal 1 · 5 min'));
+      expect(find.text('Suivie en direct le jour J'), findsNothing);
+      expect(tester.widget<Text>(status).data!.trim(), isEmpty);
+      expect(find.byKey(const Key('rail-shuttle')), findsNothing);
+      // The same height as with a status: nothing jumps when the first answer comes.
+      expect(tester.getSize(find.byKey(const Key('live-rail'))).height, known);
+      expect(lines(tester, title), 1);
+    });
+
     testWidgets('« il y a 8 s » : à droite du titre, sur la même ligne', (tester) async {
       await pumpIn(tester, LiveShuttleRail(rail: const RailState(running: 1, ageSeconds: 8), receivedAt: DateTime.now(), destination: 'Terminal 1'));
       expect(find.text('il y a 8 s'), findsOneWidget);
@@ -109,35 +121,52 @@ void main() {
     await tester.pump();
   });
 
-  testWidgets('sur la carte des résultats : une ligne, « EN DIRECT », trajet et attente, pas de rail', (tester) async {
+  testWidgets('sur la carte des résultats : une ligne, « ● NAVETTE EN DIRECT » comme le rail, trajet et attente, pas de rail', (tester) async {
     await pumpIn(tester, const ShuttleBox(facts: ShuttleFacts(rideMinutes: 5, waitMinutes: 5, live: true), compact: true), width: 300);
     expect(find.text('Navette gratuite'), findsOneWidget);
-    expect(find.text('EN DIRECT'), findsOneWidget);
+    final mark = find.byKey(const Key('shuttle-live'));
+    expect(find.descendant(of: mark, matching: find.text('NAVETTE EN DIRECT')), findsOneWidget);
+    expect(find.text('EN DIRECT'), findsNothing);
+    // The dot before the words.
+    final dot = find.descendant(of: mark, matching: find.byType(LiveDot));
+    expect(tester.getRect(dot).right, lessThanOrEqualTo(tester.getRect(find.text('NAVETTE EN DIRECT')).left));
     expect(find.text('5 min trajet · 5 min attente'), findsOneWidget);
     expect(find.byKey(const Key('live-rail')), findsNothing);
     // Without a declared wait, only the ride.
     await pumpIn(tester, const ShuttleBox(facts: ShuttleFacts(rideMinutes: 7), compact: true), width: 300);
     expect(find.text('7 min trajet'), findsOneWidget);
-    expect(find.text('EN DIRECT'), findsNothing);
+    expect(find.byKey(const Key('shuttle-live')), findsNothing);
   });
 
-  testWidgets('ce que lit le lecteur d’écran : les navettes en route, avec l’article', (tester) async {
+  testWidgets('ce que lit le lecteur d’écran : les phrases du site, avec l’article', (tester) async {
     await pumpIn(tester, const SizedBox());
     const facts = ShuttleFacts(rideMinutes: 5, live: true);
-    // Before the first live answer: nothing about the shuttles on the road.
-    expect(shuttleBoxDescription(facts, destination: railDestinationInText('LYS')), 'Navette gratuite, trajet 5 min');
-    // A running shuttle without a position still counts.
+    const placed = [RailMarker(id: 't1', progress: 0.5)];
+    // Before the first live answer: the route only.
+    expect(railDescription(null, 'LYS'), 'Trajet du parking au Terminal 1');
+    expect(railDescription(null, 'NCE'), "Trajet du parking à l'aéroport");
+    expect(shuttleBoxDescription(facts, airportCode: 'LYS'), 'Navette gratuite, trajet 5 min. Trajet du parking au Terminal 1');
+    // An answer without any shuttle of the parking on the road.
+    expect(railDescription(const RailState(), 'LYS'), 'Trajet du parking au Terminal 1, aucune navette en route en ce moment');
+    expect(railDescription(const RailState(), null), "Trajet du parking à l'aéroport, aucune navette en route en ce moment");
+    // Shuttles on the road, placed on the rail.
+    expect(railDescription(const RailState(running: 1, markers: placed), 'LYS'), '1 navette en route entre le parking et le Terminal 1');
+    expect(railDescription(const RailState(running: 2, markers: placed), 'NCE'), "2 navettes en route entre le parking et l'aéroport");
+    // Running without a position (or the parking's position unknown): counted, not yet on the rail.
     expect(
-      shuttleBoxDescription(facts, rail: const RailState(running: 1), destination: railDestinationInText('LYS')),
-      'Navette gratuite, trajet 5 min, 1 navette en route entre le parking et le Terminal 1',
+      railDescription(const RailState(running: 1), 'LYS'),
+      '1 navette en route entre le parking et le Terminal 1, pas encore placée sur le trajet',
     );
     expect(
-      shuttleBoxDescription(facts, rail: const RailState(running: 2), destination: railDestinationInText('NCE')),
-      "Navette gratuite, trajet 5 min, 2 navettes en route entre le parking et l'aéroport",
+      railDescription(const RailState(running: 3), 'lys'),
+      '3 navettes en route entre le parking et le Terminal 1, pas encore placées sur le trajet',
     );
     expect(
-      shuttleBoxDescription(facts, rail: const RailState()),
-      'Navette gratuite, trajet 5 min, suivie en direct le jour J, aucune navette en route en ce moment',
+      shuttleBoxDescription(const ShuttleFacts(rideMinutes: 5, waitMinutes: 4, live: true), rail: const RailState(running: 2, markers: placed), airportCode: 'LYS'),
+      'Navette gratuite, trajet 5 min, attente moyenne 4 min. 2 navettes en route entre le parking et le Terminal 1',
     );
+    // Not shown live, or the one-line box of the map: no rail, nothing about it.
+    expect(shuttleBoxDescription(const ShuttleFacts(rideMinutes: 5), rail: const RailState(running: 2)), 'Navette gratuite, trajet 5 min');
+    expect(shuttleBoxDescription(facts, withRail: false, rail: const RailState(running: 2)), 'Navette gratuite, trajet 5 min');
   });
 }

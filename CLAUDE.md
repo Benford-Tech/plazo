@@ -722,6 +722,28 @@ Le nom du produit doit rester dans UN seul fichier de configuration (il peut enc
   deux semaines pour la longue durée, voituriers), liens « → » depuis trois sections du guide de l'accueil (`GuideSection.more`),
   pied de page et plan du site ; tests ≥ 2 000 mots, ≥ 9 questions, aucun chiffre de partenaire sans partenaire réel. Les parkings de démo
   sont archivés (`DEMO_LISTINGS=archive` : `DemoSeedService.archive` suspend les loueurs `isDemo`, `true` les rétablit).
+  **Tags des annonces (14/10/2026, « il faut ces tags sur les annonces de parking » d'après Parkos, puis « mets plus en valeur la
+  navette en direct » ; choix « C et L3, avec le filtre, attente déclarée », maquette https://claude.ai/artifact/Jn6SAzsYGLt6VD5GbpxELg)** :
+  sur chaque carte de résultat (site `ResultCard` + `ShuttleBox`, app `result_card.dart` + `shuttle_box.dart`), un **encart navette**
+  « Navette gratuite » avec deux chiffres TRAJET (`shuttleMinutes`) et ATTENTE MOY. (`Listing.shuttleWaitMinutes`, laissé de côté
+  s'il n'est pas déclaré), puis les pastilles « Extérieur » / « Couvert », « Vous devez remettre vos clés » (voiturier) ou « Vous
+  gardez vos clés » (« Clés à remettre » / « Clés gardées » sur carte étroite), « Ouvert 24h/24 » (« 24h/24 ») ou « Ouvert
+  {horaires} », Clôturé, Recharge, annulation (l'ancienne pastille « 8 min » est dans l'encart) ; **L3 « le trajet en direct »**
+  pour un parking `liveShuttle` : dans l'encart, « ● Navette en direct » et « il y a N s », un rail P → avion avec chaque navette
+  en route placée à sa vraie progression (distance parking → navette / parking → aéroport, bornée à 5–95 %, 3 au plus, aucune sans
+  position ; `site/src/lib/shuttle-rail.ts`, `mobile/…/domain/logic/shuttle_rail.dart`), « Parking » / « Terminal 1 · 5 min »
+  (« Terminal 1 » à LYS, sinon « Aéroport »), vide avant la première réponse, « Suivie en direct le jour J » quand rien ne roule ;
+  une seule lecture de `GET /public/airports/:slug/live` toutes les 12 s par page (site `AirportLiveProvider` /
+  `useSharedAirportLive`, qui ne lit que tant qu'un rail est affiché ; app `ResultsBloc`, seulement en liste avec un résultat
+  `liveShuttle` visible ; la carte compacte de l'app garde une ligne « ● Navette en direct » sans rail) ; filtre « Navette en
+  direct » (`?direct=1`, point orange devant, comptage) ; fiche parking « L'essentiel » (`trustTiles(listing, airportCode)`) :
+  tuiles « Navette en direct » ou « Navette gratuite » (trajet, attente, « suivez-la sur la carte le jour J »), « Extérieur » /
+  « Couvert » (sécurité), clés, horaires, annulation, la navette en pleine largeur sur téléphone puis deux par deux, la dernière
+  impaire étirée ; « Vers le Terminal 1 » / « Vers l'aéroport » quand la navette n'a aucun chiffre. Serveur :
+  `Listing.shuttleWaitMinutes` (migration `listing_shuttle_wait`, CHECK `listings_shuttle_wait_range` 0 à 120 ou nul), « Ma fiche »
+  « Attente moyenne de la navette » (minutes, facultatif ; vide ou blanc = non déclaré, `UpdateListingDto` ; absent du PUT =
+  inchangé), relu par la plateforme (« Attente moy. N min »), dans toutes les fiches publiques (`PublicService.summary`) et dans les
+  faits de la « Présentation » par Claude ; aperçu de « Ma fiche » avec les mêmes tags (`admin/src/lib/listing-tags.ts`).
 - `email-worker/` : relais des mails entrants (Cloudflare Email Worker, `postal-mime`) : Email Routing lui passe chaque mail de
   `plazo.fr` (règle « catch-all » du domaine principal), il le poste sur l'API ; déployé par GitHub Actions (`email-worker-ci.yml`,
   job `deploy`, environnement GitHub Production : secrets `CLOUDFLARE_API_TOKEN` / `CLOUDFLARE_ACCOUNT_ID` / `INBOUND_EMAIL_SECRET`, variable `FALLBACK_ADDRESS` ; rien dans le tableau de bord Cloudflare, qu'un déploiement écrase ; Worker `plazo`) ; mise en place dans son README.

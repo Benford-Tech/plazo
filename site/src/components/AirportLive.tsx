@@ -13,20 +13,13 @@ export interface AirportLiveState {
   receivedAt: number;
 }
 
-interface LivePoll {
-  state: AirportLiveState | null;
-  /** The first read has come back, with an answer or without one (the API unreachable). */
-  settled: boolean;
-}
-
 /**
  * K-A (06/10/2026): every 12 s the browser reads the airport's shuttles on the road (anonymous: a position, a
  * direction, a vehicle). `state` is null until the first answer, or while the API is unreachable (the pages work
  * without it). No request while `slug` is null.
  */
-function useLivePoll(slug: string | null): LivePoll {
+function useLivePoll(slug: string | null): { state: AirportLiveState | null } {
   const [state, setState] = useState<AirportLiveState | null>(null);
-  const [settled, setSettled] = useState(false);
   // I-C: the heading of each shuttle comes from its previous position (the API gives none).
   const previous = useRef(new Map<string, { position: LatLng; heading: number | null }>());
   useEffect(() => {
@@ -49,8 +42,6 @@ function useLivePoll(slug: string | null): LivePoll {
         if (!cancelled) setState({ live: data, receivedAt: Date.now() });
       } catch {
         // Offline or the API is down: the last answer stays, the pages still show the parkings.
-      } finally {
-        if (!cancelled) setSettled(true);
       }
     };
     void load();
@@ -60,13 +51,13 @@ function useLivePoll(slug: string | null): LivePoll {
       window.clearInterval(timer);
     };
   }, [slug]);
-  return { state, settled };
+  return { state };
 }
 
 interface Shared {
   slug: string;
   state: AirportLiveState | null;
-  /** No read has come back yet: the page does not know whether a shuttle runs. */
+  /** No answer has come back yet (a failed read is no answer): the page does not know whether a shuttle runs. */
   pending: boolean;
   /** A reader joins the poll; the function it returns leaves it. */
   retain: () => () => void;
@@ -85,8 +76,9 @@ export function AirportLiveProvider({ slug, children }: { slug: string; children
     setReaders(n => n + 1);
     return () => setReaders(n => n - 1);
   }, []);
-  const { state, settled } = useLivePoll(readers > 0 ? slug : null);
-  const pending = state === null && !settled;
+  const { state } = useLivePoll(readers > 0 ? slug : null);
+  // No answer yet, or only failed reads: the rails stay blank rather than saying « le jour J » without knowing.
+  const pending = state === null;
   const value = useMemo(() => ({ slug, state, pending, retain }), [slug, state, pending, retain]);
   return <LiveContext.Provider value={value}>{children}</LiveContext.Provider>;
 }

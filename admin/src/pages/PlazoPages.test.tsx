@@ -1,5 +1,5 @@
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { fireEvent, render, screen, waitFor } from "@testing-library/react";
+import { fireEvent, render, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { MemoryRouter } from "react-router-dom";
 import { toast } from "sonner";
@@ -46,6 +46,20 @@ function renderPage(page: React.ReactNode, path = "/") {
       <MemoryRouter initialEntries={[path]}>{page}</MemoryRouter>
     </QueryClientProvider>,
   );
+}
+
+/** What a sighted traveller reads: the text without the screen-reader-only wording. */
+function seen(el: HTMLElement) {
+  const copy = el.cloneNode(true) as HTMLElement;
+  copy.querySelectorAll(".sr-only").forEach(n => n.remove());
+  return copy.textContent;
+}
+
+/** The chips of the results preview, in order. */
+function previewTags() {
+  return within(screen.getByRole("list", { name: "Tags de l'annonce" }))
+    .getAllByRole("listitem")
+    .map(seen);
 }
 
 const savedListing = {
@@ -205,10 +219,19 @@ describe("Ma fiche", () => {
     expect(await screen.findByLabelText("Nom affiché")).toHaveValue("Parking Démo LYS");
     expect(screen.getByLabelText("Adresse de la page")).toHaveValue("parking-demo-lys");
     expect(await screen.findByText("dès 34,99 €")).toBeInTheDocument();
-    expect(screen.getByText(/Navette 8 min/)).toBeInTheDocument();
+    // The tags travellers see (14/10/2026, direction C): the shuttle line, then the chips in the site's order.
+    expect(seen(screen.getByTestId("preview-shuttle"))).toBe("Navette gratuite · trajet 8 min");
+    expect(previewTags()).toEqual(["Extérieur", "Vous gardez vos clés", "Gratuit 24 h"]);
 
     await userEvent.click(screen.getByRole("button", { name: "Voiturier" }));
-    expect(screen.getByText(/Voiturier/, { selector: "div" })).toBeInTheDocument();
+    await userEvent.click(screen.getByRole("button", { name: "Couvert" }));
+    await userEvent.click(screen.getByRole("button", { name: "Clôturé" }));
+    fireEvent.change(screen.getByLabelText("Horaires"), { target: { value: "Ouvert 5h–23h" } });
+    expect(previewTags()).toEqual(["Couvert", "Vous devez remettre vos clés", "Ouvert 5h–23h", "Clôturé", "Gratuit 24 h"]);
+
+    // Without the shuttle: no shuttle line.
+    await userEvent.click(screen.getByRole("button", { name: "Navette" }));
+    expect(screen.queryByTestId("preview-shuttle")).not.toBeInTheDocument();
   });
 
   it("enregistre puis envoie la fiche pour validation, et explique le refus sans tarifs", async () => {
@@ -354,7 +377,9 @@ describe("Ma fiche", () => {
     expect(field).toHaveAttribute("aria-describedby", "l-wait-help");
     expect(document.getElementById("l-wait-help")).toHaveTextContent("Facultatif. Laissé vide, le tag n'apparaît pas.");
     // Next to the ride in the results preview.
-    expect(screen.getByText(/Navette 8 min · Attente moy\. 5 min/)).toBeInTheDocument();
+    expect(seen(screen.getByTestId("preview-shuttle"))).toBe("Navette gratuite · trajet 8 min · attente moy. 5 min");
+    // Read in full by screen readers.
+    expect(screen.getByTestId("preview-shuttle")).toHaveTextContent(/attente moyenne 5 min$/);
 
     fireEvent.change(field, { target: { value: "12" } });
     await userEvent.click(screen.getByRole("button", { name: "Enregistrer" }));
@@ -363,7 +388,7 @@ describe("Ma fiche", () => {
 
     // Emptied: not declared any more.
     fireEvent.change(field, { target: { value: "" } });
-    expect(screen.queryByText(/Attente moy\./)).not.toBeInTheDocument();
+    expect(seen(screen.getByTestId("preview-shuttle"))).toBe("Navette gratuite · trajet 8 min");
     await userEvent.click(screen.getByRole("button", { name: "Enregistrer" }));
     await waitFor(() => expect(api.updateListing).toHaveBeenCalledTimes(2));
     expect(api.updateListing.mock.calls[1][0]).toMatchObject({ shuttleWaitMinutes: null });

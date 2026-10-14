@@ -143,7 +143,18 @@ describe("trust band of a parking page (« L’essentiel », 14/10/2026)", () =>
     expect(trustTiles({ services: ["shuttle"], shuttleMinutes: null, shuttleWaitMinutes: 4, openingHours: null, cancellationPolicy: "free_48h" })[0].text).toBe(
       "Attente moyenne 4 min",
     );
-    expect(trustTiles({ services: ["shuttle"], shuttleMinutes: null, openingHours: null, cancellationPolicy: "free_48h" })[0].text).toBe("Vers les terminaux");
+  });
+
+  it("a shuttle with no ride, no wait and no live tracking says where it goes: Terminal 1 at Lyon, the airport elsewhere (R4)", () => {
+    const bare = { services: ["shuttle"], shuttleMinutes: null, openingHours: null, cancellationPolicy: "free_48h" as const };
+    expect(trustTiles(bare, "LYS")[0]).toEqual({ kind: "shuttle", title: "Navette gratuite", text: "Vers le Terminal 1" });
+    expect(trustTiles(bare, "lys")[0].text).toBe("Vers le Terminal 1");
+    expect(trustTiles(bare, "NCE")[0].text).toBe("Vers l’aéroport");
+    expect(trustTiles(bare, null)[0].text).toBe("Vers l’aéroport");
+    expect(trustTiles(bare)[0].text).toBe("Vers l’aéroport");
+    // No more « vers les terminaux »; a tile with a figure or the live tracking never falls back.
+    expect(trustTiles({ ...bare, shuttleWaitMinutes: 0 }, "LYS")[0].text).toBe("Attente moyenne 0 min");
+    expect(trustTiles({ ...bare, liveShuttle: true }, "LYS")[0].text).toBe("Gratuite · suivez-la sur la carte le jour J");
   });
 
   it("hides the tiles without data", () => {

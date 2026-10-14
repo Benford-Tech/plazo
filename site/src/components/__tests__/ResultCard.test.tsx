@@ -267,7 +267,7 @@ describe("le trajet en direct (L3, 14/10/2026)", () => {
     expect(screen.getByTestId("live-rail")).toHaveTextContent("ParkingAéroport · 5 min");
   });
 
-  it("si l’API ne répond pas, le rail finit par dire « Suivie en direct le jour J »", async () => {
+  it("si l’API ne répond pas, le rail reste vide : « le jour J » n’est dit qu’après une vraie réponse", async () => {
     vi.stubGlobal("fetch", vi.fn().mockRejectedValue(new Error("offline")));
     render(
       <AirportLiveProvider slug="lyon-saint-exupery">
@@ -276,10 +276,10 @@ describe("le trajet en direct (L3, 14/10/2026)", () => {
     );
     expect(screen.getByTestId("live-rail-status").textContent).toBe("\u00a0");
     await act(async () => {
-      await vi.advanceTimersByTimeAsync(0);
+      await vi.advanceTimersByTimeAsync(30_000);
     });
-    expect(screen.getByTestId("live-rail-status")).toHaveTextContent("Suivie en direct le jour J");
-    expect(screen.getByRole("img", { name: "Trajet du parking au Terminal 1, aucune navette en route en ce moment" })).toBeInTheDocument();
+    expect(screen.getByTestId("live-rail-status").textContent).toBe("\u00a0");
+    expect(screen.getByRole("img", { name: "Trajet du parking au Terminal 1" })).toBeInTheDocument();
   });
 
   it("la lecture s’arrête quand le dernier rail s’en va, et quand la page part", async () => {

@@ -1,6 +1,7 @@
 import { fr } from "./fr";
 import { formatKm } from "./listing";
 import { formatEuros } from "./money";
+import { railPlace } from "./shuttle-rail";
 import type { CancellationPolicy, ListingSummary, SearchResult } from "./types";
 
 /**
@@ -125,10 +126,13 @@ export interface TrustTile {
 
 /**
  * The trust band of a parking page (« L’essentiel », 14/10/2026), in this order: shuttle, outdoor or covered, keys,
- * opening, cancellation. A tile without data (no shuttle, no hours) is left out; up to five.
+ * opening, cancellation. A tile without data (no shuttle, no hours) is left out; up to five. A shuttle tile with no ride,
+ * no wait and no live tracking says where it goes: « Vers le Terminal 1 » at Lyon Saint-Exupéry (`airportCode` LYS,
+ * Terminal 2 closed since 01/04/2026), « Vers l’aéroport » elsewhere.
  */
 export function trustTiles(
   listing: Pick<ListingSummary, "services" | "shuttleMinutes" | "shuttleWaitMinutes" | "liveShuttle" | "openingHours" | "cancellationPolicy">,
+  airportCode?: string | null,
 ): TrustTile[] {
   const t = fr.highlights.tiles;
   const has = (s: string) => listing.services.includes(s);
@@ -141,7 +145,7 @@ export function trustTiles(
       shuttle.waitMinutes !== null ? t.wait(shuttle.waitMinutes) : null,
       shuttle.live ? t.followLive : null,
     ].filter((p): p is string => !!p);
-    const text = parts.length > 0 ? parts.join(" · ") : t.toTerminals;
+    const text = parts.length > 0 ? parts.join(" · ") : railPlace(airportCode) === "terminal1" ? t.toTerminal1 : t.toAirport;
     tiles.push({
       kind: "shuttle",
       title: shuttle.live ? t.shuttleLive : t.shuttleFree,

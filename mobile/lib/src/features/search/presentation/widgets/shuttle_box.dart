@@ -11,33 +11,40 @@ import '../../domain/logic/shuttle_rail.dart';
 String _t(String key, {List<String>? args}) => 'highlights.shuttle_box.$key'.tr(args: args);
 
 /// « Terminal 1 » at Lyon Saint-Exupéry (Terminal 2 closed on 01/04/2026), « Aéroport » elsewhere.
-String railDestination(String? airportCode) => airportCode?.toUpperCase() == 'LYS' ? _t('terminal1') : _t('airport');
+String railDestination(String? airportCode) => servesTerminal1(airportCode) ? _t('terminal1') : _t('airport');
 
 /// The same place inside a sentence read out: « le Terminal 1 », « l'aéroport ».
-String railDestinationInText(String? airportCode) => airportCode?.toUpperCase() == 'LYS' ? _t('terminal1_in_text') : _t('airport_in_text');
+String railDestinationInText(String? airportCode) => servesTerminal1(airportCode) ? _t('terminal1_in_text') : _t('airport_in_text');
 
 /// « Terminal 1 · 5 min », or the place alone without a ride time.
 String railDestinationLabel(String destination, int? rideMinutes) =>
     rideMinutes == null ? destination : _t('destination_min', args: [destination, '$rideMinutes']);
 
-/// What the box says to assistive technology (the card reads it out in its own label). [destination] is the place
-/// inside a sentence ([railDestinationInText]).
-String shuttleBoxDescription(ShuttleFacts facts, {RailState? rail, String? destination}) {
-  final parts = [
+/// The rail's spoken sentence, the site's (fr.highlights.shuttleBox.rail): before the screen's first live answer
+/// ([rail] null) only the route, « Trajet du parking au Terminal 1 »; then the parking's running shuttles, with or
+/// without a position (« 2 navettes en route entre le parking et le Terminal 1 »), « pas encore placées sur le trajet »
+/// when the rail draws none of them, or « aucune navette en route en ce moment ».
+String railDescription(RailState? rail, String? airportCode) {
+  final route = _t(servesTerminal1(airportCode) ? 'rail_route_terminal1' : 'rail_route_airport');
+  if (rail == null) return route;
+  final n = rail.running;
+  if (n == 0) return _t('rail_none', args: [route]);
+  final place = railDestinationInText(airportCode);
+  final road = n == 1 ? _t('rail_one', args: [place]) : _t('rail_many', args: ['$n', place]);
+  if (rail.markers.isNotEmpty) return road;
+  return _t(n == 1 ? 'rail_not_placed_one' : 'rail_not_placed_many', args: [road]);
+}
+
+/// What the box says to assistive technology (the card reads it out in its own label): « Navette gratuite, trajet
+/// 5 min, attente moyenne 5 min », then, for a parking whose shuttles are shown live and a box that draws the rail
+/// ([withRail]: not the one-line box of the map), the rail's sentence ([railDescription]).
+String shuttleBoxDescription(ShuttleFacts facts, {bool withRail = true, RailState? rail, String? airportCode}) {
+  final box = [
     _t('title'),
     if (facts.rideMinutes != null) _t('ride_a11y', args: ['${facts.rideMinutes}']),
     if (facts.waitMinutes != null) _t('wait_a11y', args: ['${facts.waitMinutes}']),
-  ];
-  // Before the screen's first live answer nothing is known yet: the card's own live hint says the rest.
-  if (facts.live && rail != null) parts.add(_railDescription(rail, destination ?? _t('airport_in_text')));
-  return parts.join(', ');
-}
-
-/// Counts the shuttles on the road, with or without a position (a minibus is drawn only for the located ones).
-String _railDescription(RailState rail, String destination) {
-  final n = rail.running;
-  if (n == 0) return _t('rail_none');
-  return n == 1 ? _t('rail_one', args: [destination]) : _t('rail_many', args: ['$n', destination]);
+  ].join(', ');
+  return facts.live && withRail ? '$box. ${railDescription(rail, airportCode)}' : box;
 }
 
 /// Direction C (14/10/2026), the « encart navette » of a result card: the minibus and « Navette gratuite », then the
@@ -121,7 +128,7 @@ class ShuttleBox extends StatelessWidget {
   }
 }
 
-/// « Navette gratuite  ● EN DIRECT  5 min trajet · 5 min attente » on one line (what does not fit goes under).
+/// « Navette gratuite  ● NAVETTE EN DIRECT  5 min trajet · 5 min attente » on one line (what does not fit goes under).
 class _CompactShuttleBox extends StatelessWidget {
   const _CompactShuttleBox({required this.facts});
 
@@ -158,18 +165,8 @@ class _CompactShuttleBox extends StatelessWidget {
               Flexible(child: Text(_t('title'), style: AppText.strong(size: 13.5))),
             ],
           ),
-          if (facts.live)
-            Row(
-              key: const Key('shuttle-live'),
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                LiveDot(size: 6, animate: !still),
-                const SizedBox(width: 2),
-                Flexible(
-                  child: Text('results.live'.tr().toUpperCase(), style: AppText.strong(size: 10, color: AppColors.ink).copyWith(letterSpacing: 1.2)),
-                ),
-              ],
-            ),
+          // The rail's own header (« ● NAVETTE EN DIRECT »): the rail itself would cover the map (R6).
+          if (facts.live) _LiveMark(key: const Key('shuttle-live'), animate: !still),
           if (figures.isNotEmpty)
             Text.rich(
               key: const Key('shuttle-figures'),
@@ -213,11 +210,31 @@ class _Figure extends StatelessWidget {
 const _tile = 20.0;
 const _marker = 28.0;
 
+/// « ● NAVETTE EN DIRECT »: the rail's header, and the live mark of the one-line box on the map (the same words).
+class _LiveMark extends StatelessWidget {
+  const _LiveMark({super.key, required this.animate});
+
+  final bool animate;
+
+  @override
+  Widget build(BuildContext context) => Row(
+    mainAxisSize: MainAxisSize.min,
+    children: [
+      LiveDot(size: 7, animate: animate),
+      const SizedBox(width: 3),
+      Flexible(
+        child: Text(_t('live').toUpperCase(), style: AppText.strong(size: 10, color: AppColors.ink).copyWith(letterSpacing: 1.2)),
+      ),
+    ],
+  );
+}
+
 /// L3 « Le trajet en direct » (14/10/2026): « ● Navette en direct » with the age of the freshest position, then a
 /// dashed rail from the parking (dark P) to the terminal (plane), each running shuttle a white disc with an orange
 /// ring at its real progress (at most three). It reads the screen's shared poll and never asks the API itself: before
-/// the first answer, or while no shuttle runs, the rail has no minibus and says « Suivie en direct le jour J ». The
-/// minibuses glide from one answer to the next; with reduced motion they jump and the dot does not breathe.
+/// the first answer ([rail] null) the status stays blank (it does not know yet); once an answer places none of the
+/// parking's shuttles, the rail has no minibus and says « Suivie en direct le jour J ». The minibuses glide from one
+/// answer to the next; with reduced motion they jump and the dot does not breathe.
 class LiveShuttleRail extends StatefulWidget {
   const LiveShuttleRail({super.key, this.rail, this.receivedAt, required this.destination});
 
@@ -291,18 +308,11 @@ class _LiveShuttleRailState extends State<LiveShuttleRail> {
           spacing: 8,
           runSpacing: 2,
           children: [
-            Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                LiveDot(size: 7, animate: !still),
-                const SizedBox(width: 3),
-                Flexible(
-                  child: Text(_t('live').toUpperCase(), style: AppText.strong(size: 10, color: AppColors.ink).copyWith(letterSpacing: 1.2)),
-                ),
-              ],
-            ),
+            _LiveMark(animate: !still),
+            // Before the screen's first live answer nothing is known yet: a blank that keeps the line (as the site);
+            // « Suivie en direct le jour J » once an answer has no located shuttle of this parking.
             Text(
-              age ?? _t('day_j'),
+              age ?? (widget.rail == null ? '\u00a0' : _t('day_j')),
               key: const Key('live-rail-status'),
               style: AppText.strong(
                 size: 11.5,

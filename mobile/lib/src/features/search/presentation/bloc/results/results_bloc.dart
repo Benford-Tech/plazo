@@ -20,9 +20,9 @@ part 'results_state.dart';
 enum ResultsView { list, map }
 
 /// A2, the results of a search: the API's offers, narrowed and ordered by the same filters and
-/// sorts as the site; list by default, map (IGN plan, price pills) in one tap. L3 (14/10/2026): while the screen is
-/// shown and one of its parkings shows its shuttles live, ONE poll of the airport's live answer every [pollInterval]
-/// feeds every card's rail (never one request per card).
+/// sorts as the site; list by default, map (IGN plan, price pills) in one tap. L3 (14/10/2026): while a live rail can
+/// be seen (the screen shown, the list, and a result kept by the filters whose shuttles are shown live), ONE poll of
+/// the airport's live answer every [pollInterval] feeds every card's rail (never one request per card).
 class ResultsBloc extends Bloc<ResultsEvent, ResultsState> {
   ResultsBloc(
     this._search, {
@@ -36,7 +36,10 @@ class ResultsBloc extends Bloc<ResultsEvent, ResultsState> {
   }) : super(ResultsState(airport: airport, arrivalAt: arrivalAt, returnAt: returnAt)) {
     on<ResultsRequested>(_onRequested);
     on<ResultsStayChanged>(_onStayChanged);
-    on<ResultsFiltersChanged>((event, emit) => emit(state.copyWith(filters: event.filters, selectedSlug: null)));
+    on<ResultsFiltersChanged>((event, emit) {
+      emit(state.copyWith(filters: event.filters, selectedSlug: null));
+      _resync();
+    });
     on<ResultsSortChanged>((event, emit) => emit(state.copyWith(filters: state.filters.copyWith(sort: event.sort))));
     on<ResultsViewChanged>(_onViewChanged);
     on<ResultsSelected>((event, emit) => emit(state.copyWith(selectedSlug: event.slug)));
@@ -63,17 +66,27 @@ class ResultsBloc extends Bloc<ResultsEvent, ResultsState> {
   /// A poll is on its way: the next one waits for it (a slow answer would otherwise land after a newer one).
   bool _polling = false;
 
+  /// The poll was wanted after the last change: a rail coming (back) into view asks at once, the positions it last
+  /// showed being stale.
+  bool _wanted = false;
+
   @override
   Future<void> close() {
     _timer?.cancel();
     return super.close();
   }
 
-  /// Polls only while the screen is shown and one of its parkings shows its shuttles live.
-  bool get _wantsLive => live != null && _shown && state.results.any((r) => r.liveShuttle);
+  /// Polls only while a rail can be seen: the screen shown, the list (the map's one-line card has no rail) and at
+  /// least one result kept by the filters whose shuttles are shown live.
+  bool get _wantsLive => live != null && _shown && state.view == ResultsView.list && state.shown.any((r) => r.liveShuttle);
 
-  void _syncTimer() {
-    if (_wantsLive && autoPoll) {
+  /// After anything that shows or hides a rail (the results, the filters, the view, the screen in view): starts the
+  /// poll (asking at once) or stops it.
+  void _resync() {
+    final wants = _wantsLive;
+    if (wants && !_wanted) add(const ResultsLivePolled());
+    _wanted = wants;
+    if (wants && autoPoll) {
       _timer ??= Timer.periodic(pollInterval, (_) => add(const ResultsLivePolled()));
     } else {
       _timer?.cancel();
@@ -104,9 +117,7 @@ class ResultsBloc extends Bloc<ResultsEvent, ResultsState> {
   void _onShownChanged(ResultsShownChanged event, Emitter<ResultsState> emit) {
     if (event.shown == _shown) return;
     _shown = event.shown;
-    // Back in view: the positions are stale, ask at once.
-    if (_wantsLive) add(const ResultsLivePolled());
-    _syncTimer();
+    _resync();
   }
 
   Future<void> _onRequested(ResultsRequested event, Emitter<ResultsState> emit) async {
@@ -123,8 +134,7 @@ class ResultsBloc extends Bloc<ResultsEvent, ResultsState> {
       ),
       (response) => emit(state.copyWith(loadState: ViewState.success, response: response, selectedSlug: null)),
     );
-    if (_wantsLive && _timer == null) add(const ResultsLivePolled());
-    _syncTimer();
+    _resync();
   }
 
   Future<void> _onStayChanged(ResultsStayChanged event, Emitter<ResultsState> emit) async {
@@ -136,5 +146,6 @@ class ResultsBloc extends Bloc<ResultsEvent, ResultsState> {
     // On the map, a parking is selected at once: the first one available (or the first one).
     final selected = state.selectedSlug ?? (event.view == ResultsView.map ? state.shown.firstOrNull?.slug : null);
     emit(state.copyWith(view: event.view, selectedSlug: selected));
+    _resync();
   }
 }

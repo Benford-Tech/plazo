@@ -699,9 +699,13 @@
       "terminal1_in_text": "le Terminal 1",
       "airport_in_text": "l'aéroport",
       "destination_min": "{} · {} min",
-      "rail_none": "suivie en direct le jour J, aucune navette en route en ce moment",
+      "rail_route_terminal1": "Trajet du parking au Terminal 1",
+      "rail_route_airport": "Trajet du parking à l'aéroport",
+      "rail_none": "{}, aucune navette en route en ce moment",
       "rail_one": "1 navette en route entre le parking et {}",
-      "rail_many": "{} navettes en route entre le parking et {}"
+      "rail_many": "{} navettes en route entre le parking et {}",
+      "rail_not_placed_one": "{}, pas encore placée sur le trajet",
+      "rail_not_placed_many": "{}, pas encore placées sur le trajet"
     },
     "tiles": {
       "shuttle_live": "Navette en direct",
@@ -710,7 +714,8 @@
       "ride": "trajet {} min",
       "wait": "attente moyenne {} min",
       "follow_live": "suivez-la sur la carte le jour J",
-      "to_terminals": "vers les terminaux",
+      "to_terminal1": "vers le Terminal 1",
+      "to_airport": "vers l'aéroport",
       "outdoor": "Extérieur",
       "outdoor_text": "Parking à ciel ouvert",
       "covered": "Couvert",

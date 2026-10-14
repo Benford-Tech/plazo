@@ -612,6 +612,20 @@ Version mobile d'abord (la majorité des réservations se fait sur téléphone),
 6. **Dans l'app mobile**, l'étape 2 ouvre la **feuille de paiement native de Stripe** (carte, Apple Pay, Google Pay) au lieu de quitter l'app : le serveur crée (ou reprend) un *PaymentIntent* pour la réservation tenue (`POST /public/bookings/:ref/payment-intent`, mêmes montants et même commission que Checkout, une seule façon de payer à la fois : la page Checkout ouverte est fermée, et inversement). La confirmation est la même (webhook `payment_intent.succeeded` ou lecture de la réservation, messages envoyés une fois, paiement tardif gardé ou remboursé) ; un refus de carte (`payment_intent.payment_failed`) laisse la place tenue pour réessayer. La version web de l'app garde la page Checkout.
 7. **Sans clé Stripe** (`STRIPE_SECRET_KEY` vide), la réservation en ligne est **indisponible** (décision du 06/10/2026 : plus de paiement sur place) : le site et l'app affichent « Réservation en ligne indisponible pour le moment » et `POST /public/bookings` répond 409 `online_booking_unavailable`. Le loueur garde la saisie manuelle (téléphone, comptoir) dans l'espace pro.
 
+#### Tags des annonces et navette en direct (décision du 14/10/2026, mis en œuvre)
+
+- **Pourquoi** : le voyageur compare d'abord la navette, le type de parking, les clés et les horaires, comme sur Parkos. Maquette
+  validée : https://claude.ai/artifact/Jn6SAzsYGLt6VD5GbpxELg (direction C, trajet en direct L3, filtre, attente déclarée).
+- **Carte d'un résultat** (site et app) : encart « Navette gratuite » avec la durée du trajet et l'attente moyenne déclarée par le
+  loueur, puis les tags Extérieur ou Couvert, « Vous devez remettre vos clés » ou « Vous gardez vos clés », « Ouvert 24h/24 » ou les
+  horaires, clôturé, recharge, annulation. Un tag sans donnée ne s'affiche pas.
+- **Trajet en direct** : pour un parking qui montre ses navettes aux voyageurs, l'encart montre la ligne parking → terminal avec
+  chaque navette en route placée là où elle est, mise à jour toutes les 12 secondes ; « Suivie en direct le jour J » quand aucune
+  ne roule. Filtre « Navette en direct » dans les résultats.
+- **Fiche du parking** : la bande « L'essentiel » reprend ces tags en tuiles.
+- **Temps d'attente moyen** : déclaré par le loueur sur « Ma fiche » (facultatif, 0 à 120 min), relu par la plateforme ; une mesure
+  sur les trajets réels viendra plus tard, quand il y aura assez de données.
+
 ### Règles métier spécifiques
 
 - **Disponibilité en temps réel** : l'offre affichée vient de la capacité réelle de chaque loueur (bloc 1 du MVP). Une réservation payée en ligne tient la place le temps du paiement (30 minutes, voir « Parcours de paiement »).

@@ -1,7 +1,8 @@
-import 'package:flutter/widgets.dart';
+import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:parking_app/src/core/helpers/highlights.dart';
 import 'package:parking_app/src/core/helpers/money.dart';
+import 'package:parking_app/src/shared/widgets/highlights.dart';
 
 import '../helpers/fakes.dart';
 import '../helpers/pump_app.dart';
@@ -139,12 +140,59 @@ void main() {
           const TrustTile(TileKind.cancellation, 'Non remboursable', 'aucun remboursement en cas d\'annulation'),
         ],
       );
-      // A shuttle without a ride time nor a wait: the tile says where it goes; without the service, no tile.
-      List<TrustTile> tiles(List<String> services, int? minutes) =>
-          trustTiles(services: services, shuttleMinutes: minutes, openingHours: null, cancellationPolicy: 'x');
-      expect(tiles(const ['shuttle'], null).first, const TrustTile(TileKind.shuttle, 'Navette gratuite', 'Vers les terminaux'));
+      // A shuttle without a ride time, a wait nor live tracking: the tile says where it goes (Terminal 1 at Lyon,
+      // Terminal 2 being closed); without the service, no tile.
+      List<TrustTile> tiles(List<String> services, int? minutes, {String? airport = 'LYS'}) =>
+          trustTiles(services: services, shuttleMinutes: minutes, openingHours: null, cancellationPolicy: 'x', airportCode: airport);
+      expect(tiles(const ['shuttle'], null).first, const TrustTile(TileKind.shuttle, 'Navette gratuite', 'Vers le Terminal 1'));
+      expect(tiles(const ['shuttle'], null, airport: 'NCE').first, const TrustTile(TileKind.shuttle, 'Navette gratuite', "Vers l'aéroport"));
+      expect(tiles(const ['shuttle'], null, airport: null).first.text, "Vers l'aéroport");
       expect(tiles(const ['covered'], 5).map((t) => t.kind), [TileKind.covered, TileKind.keys]);
       expect(tiles(const ['covered'], null).first.text, 'Parking couvert');
+    });
+
+    testWidgets('« L\'essentiel » sur un téléphone : la navette en travers d\'abord, les autres deux par deux, une dernière seule en travers', (
+      tester,
+    ) async {
+      Future<Map<TileKind, double>> widths(List<TrustTile> tiles) async {
+        await pumpLocalized(
+          tester,
+          Scaffold(
+            body: Padding(padding: const EdgeInsets.all(16), child: TrustBand(tiles: tiles)),
+          ),
+          size: const Size(360, 760),
+        );
+        return {for (final t in tiles) t.kind: tester.getSize(find.byKey(Key('tile-${t.kind.name}'))).width};
+      }
+
+      const band = 360.0 - 32;
+      const half = (band - 8) / 2;
+      const shuttle = TrustTile(TileKind.shuttle, 'Navette gratuite', 'Trajet 5 min');
+      const outdoor = TrustTile(TileKind.outdoor, 'Extérieur', 'Parking à ciel ouvert');
+      const keys = TrustTile(TileKind.keys, 'Vous gardez vos clés', 'Vous vous garez vous-même');
+      const opening = TrustTile(TileKind.opening, 'Ouvert 24h/24', 'Dépôt et retour à toute heure');
+      const cancel = TrustTile(TileKind.cancellation, 'Annulation gratuite', 'jusqu\'à 24 h avant');
+
+      // Five: the shuttle, then two rows of two.
+      expect(await widths(const [shuttle, outdoor, keys, opening, cancel]), {
+        TileKind.shuttle: band,
+        TileKind.outdoor: half,
+        TileKind.keys: half,
+        TileKind.opening: half,
+        TileKind.cancellation: half,
+      });
+      // Four: three under the shuttle, the last one alone takes the row.
+      expect(await widths(const [shuttle, outdoor, keys, cancel]), {
+        TileKind.shuttle: band,
+        TileKind.outdoor: half,
+        TileKind.keys: half,
+        TileKind.cancellation: band,
+      });
+      expect(tester.getRect(find.byKey(const Key('tile-outdoor'))).top, tester.getRect(find.byKey(const Key('tile-keys'))).top);
+      expect(tester.getRect(find.byKey(const Key('tile-cancellation'))).top, greaterThan(tester.getRect(find.byKey(const Key('tile-keys'))).bottom));
+      // Without a shuttle: two by two, an odd last one across.
+      expect(await widths(const [outdoor, keys, cancel]), {TileKind.outdoor: half, TileKind.keys: half, TileKind.cancellation: band});
+      expect(await widths(const [outdoor, keys]), {TileKind.outdoor: half, TileKind.keys: half});
     });
 
     testWidgets('la ligne de faits (extérieur ou couvert est une tuile)', (tester) async {

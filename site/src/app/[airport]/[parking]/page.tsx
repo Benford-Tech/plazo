@@ -82,7 +82,7 @@ export default async function ParkingPage({ params, searchParams }: Props) {
   const photoClass = "size-full rounded-field md:rounded-card";
 
   // « L’essentiel » (14/10/2026): shuttle (live or not, ride, declared wait), outdoor or covered, keys, opening, cancellation.
-  const tiles = trustTiles(parking);
+  const tiles = trustTiles(parking, airport.code);
   const facts = factsLine(parking);
 
   return (

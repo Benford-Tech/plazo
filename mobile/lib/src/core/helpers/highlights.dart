@@ -140,6 +140,10 @@ ShuttleFacts? shuttleBox({
   );
 }
 
+/// The shuttles of Lyon Saint-Exupéry (LYS) all go to Terminal 1 (Terminal 2 closed on 01/04/2026); elsewhere the
+/// texts say « l'aéroport ».
+bool servesTerminal1(String? airportCode) => airportCode?.toUpperCase() == 'LYS';
+
 enum TileKind { shuttle, outdoor, covered, keys, opening, cancellation }
 
 class TrustTile {
@@ -165,7 +169,9 @@ class TrustTile {
 String _capitalised(String text) => text.isEmpty ? text : text[0].toUpperCase() + text.substring(1);
 
 /// The trust band of a parking page (« L'essentiel », 14/10/2026), in this order: shuttle, outdoor or covered, keys,
-/// opening, cancellation. A tile without data (no shuttle, no hours) is left out; up to five.
+/// opening, cancellation. A tile without data (no shuttle, no hours) is left out; up to five. A shuttle tile with no
+/// ride, no wait and no live tracking says where it goes: « Vers le Terminal 1 » at LYS ([airportCode]), « Vers
+/// l'aéroport » elsewhere.
 List<TrustTile> trustTiles({
   required List<String> services,
   required int? shuttleMinutes,
@@ -173,6 +179,7 @@ List<TrustTile> trustTiles({
   bool liveShuttle = false,
   required String? openingHours,
   required String cancellationPolicy,
+  String? airportCode,
 }) {
   bool has(String s) => services.contains(s);
   String t(String key, {List<String>? args}) => 'highlights.tiles.$key'.tr(args: args);
@@ -185,7 +192,7 @@ List<TrustTile> trustTiles({
       if (shuttle.waitMinutes != null) t('wait', args: ['${shuttle.waitMinutes}']),
       if (shuttle.live) t('follow_live'),
     ];
-    final text = parts.isEmpty ? t('to_terminals') : parts.join(' · ');
+    final text = parts.isNotEmpty ? parts.join(' · ') : t(servesTerminal1(airportCode) ? 'to_terminal1' : 'to_airport');
     tiles.add(TrustTile(TileKind.shuttle, shuttle.live ? t('shuttle_live') : t('shuttle_free'), _capitalised(text), live: shuttle.live));
   }
   final security = [if (has('fenced')) t('fenced'), if (has('cctv')) t('cctv')].join(', ');

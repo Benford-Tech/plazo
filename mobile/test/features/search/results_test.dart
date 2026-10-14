@@ -12,6 +12,7 @@ import 'package:parking_app/src/features/search/presentation/bloc/results/result
 import 'package:parking_app/src/features/search/presentation/pages/results_page.dart';
 import 'package:parking_app/src/features/search/presentation/widgets/filters_sheet.dart';
 import 'package:parking_app/src/features/search/presentation/widgets/results_map.dart';
+import 'package:parking_app/src/shared/widgets/live_dot.dart';
 import 'package:parking_app/src/shared/widgets/segmented.dart';
 
 import '../../helpers/fakes.dart';
@@ -359,6 +360,22 @@ void main() {
       expect(inCard('discret', find.byKey(const Key('live-rail'))), findsNothing);
     });
 
+    testWidgets('L3 : avant la première réponse, le rail sans minibus ni état ; le lecteur d’écran dit le trajet seul', (tester) async {
+      final fake = FakePublicDataSource()
+        ..searchResponse = SearchResponseModel(
+          payments: 'online',
+          airport: lys,
+          results: [result('moulin', shuttle: 5, location: parking).copyWith(liveShuttle: true)],
+        );
+      // No live use case: no answer ever comes.
+      await pumpWith(tester, fake, bloc: bloc(fake));
+      expect(inCard('moulin', find.byKey(const Key('live-rail'))), findsOneWidget);
+      expect(inCard('moulin', find.byKey(const Key('rail-shuttle'))), findsNothing);
+      expect(tester.widget<Text>(inCard('moulin', find.byKey(const Key('live-rail-status')))).data!.trim(), isEmpty);
+      expect(find.text('Suivie en direct le jour J'), findsNothing);
+      expect(find.bySemanticsLabel(RegExp(r'Parking moulin.*Navette gratuite, trajet 5 min\. Trajet du parking au Terminal 1\.')), findsOneWidget);
+    });
+
     testWidgets('L3 : les minibus glissent d’une réponse à l’autre, et sautent quand les animations sont réduites', (tester) async {
       final fake = FakePublicDataSource()
         ..searchResponse = SearchResponseModel(
@@ -394,6 +411,11 @@ void main() {
       await tester.pumpAndSettle();
       expect(find.text('Navette en direct'), findsOneWidget);
       expect(find.descendant(of: find.byKey(const Key('filter-live')), matching: find.text('1')), findsOneWidget);
+      // « ● Navette en direct »: the dot before the words, breathing.
+      final dot = find.byKey(const Key('filter-live-dot'));
+      expect(tester.getRect(dot).right, lessThanOrEqualTo(tester.getRect(find.text('Navette en direct')).left));
+      expect((tester.getCenter(dot).dy - tester.getCenter(find.text('Navette en direct')).dy).abs(), lessThan(2));
+      expect(tester.widget<LiveDot>(dot).animate, isTrue);
       await tester.tap(find.byKey(const Key('filter-live')));
       await tester.pump();
       expect(find.text('Voir 1 parking'), findsOneWidget);
@@ -402,6 +424,16 @@ void main() {
       expect(b.state.filters.live, isTrue);
       expect(find.text('Filtres (1)'), findsOneWidget);
       expect(b.state.shown.map((r) => r.slug), ['suivi']);
+
+      // With reduced motion the dot stays still.
+      tester.platformDispatcher.accessibilityFeaturesTestValue = const FakeAccessibilityFeatures(disableAnimations: true);
+      addTearDown(tester.platformDispatcher.clearAccessibilityFeaturesTestValue);
+      await tester.tap(find.byKey(const Key('open-filters')));
+      await tester.pumpAndSettle();
+      expect(tester.widget<LiveDot>(find.byKey(const Key('filter-live-dot'))).animate, isFalse);
+      Navigator.of(tester.element(find.byKey(const Key('filter-live')))).pop();
+      await tester.pumpAndSettle();
+      tester.platformDispatcher.clearAccessibilityFeaturesTestValue();
 
       // No live parking among the results: no such filter.
       final quiet = FakePublicDataSource();
@@ -483,6 +515,79 @@ void main() {
       await pumpEventQueue();
       expect(fake.lives, 2);
       fake.gates.last.complete();
+      await b.close();
+    });
+
+    test('le bloc : pas de relevé sur la carte ni quand les filtres cachent tous les parkings en direct ; au retour d’un rail, tout de suite', () async {
+      final fake = FakePublicDataSource()
+        ..searchResponse = SearchResponseModel(
+          payments: 'online',
+          airport: lys,
+          results: [
+            result('suivi').copyWith(liveShuttle: true),
+            result('couvert', priceCents: 5000, services: ['shuttle', 'covered']),
+          ],
+        );
+      final b = liveBloc(fake)..add(const ResultsRequested());
+      await b.stream.firstWhere((s) => s.live != null);
+      expect(fake.lives, 1);
+
+      // The map: its one-line card has no rail, a tick asks nothing.
+      b
+        ..add(const ResultsViewChanged(ResultsView.map))
+        ..add(const ResultsLivePolled());
+      await pumpEventQueue();
+      expect(fake.lives, 1);
+      // Back to the list: the rails' positions are stale, asked at once.
+      b.add(const ResultsViewChanged(ResultsView.list));
+      await pumpEventQueue();
+      expect(fake.lives, 2);
+
+      // A filter that hides the only live parking: no rail left, no request.
+      b
+        ..add(const ResultsFiltersChanged(Filters(services: ['covered'])))
+        ..add(const ResultsLivePolled());
+      await pumpEventQueue();
+      expect(b.state.shown.map((r) => r.slug), ['couvert']);
+      expect(fake.lives, 2);
+      // The filter cleared: the rail is back, asked at once; a filter that keeps it asks nothing more.
+      b.add(const ResultsFiltersChanged(Filters()));
+      await pumpEventQueue();
+      expect(fake.lives, 3);
+      b.add(const ResultsFiltersChanged(Filters(live: true)));
+      await pumpEventQueue();
+      expect(fake.lives, 3);
+      await b.close();
+    });
+
+    test('le bloc : la minuterie s’arrête sur la carte et derrière les filtres, reprend avec la liste', () async {
+      final fake = FakePublicDataSource()
+        ..searchResponse = SearchResponseModel(
+          payments: 'online',
+          airport: lys,
+          results: [
+            result('suivi').copyWith(liveShuttle: true),
+            result('couvert', priceCents: 5000, services: ['shuttle', 'covered']),
+          ],
+        );
+      final b = liveBloc(fake, autoPoll: true, poll: const Duration(milliseconds: 20))..add(const ResultsRequested());
+      await b.stream.firstWhere((s) => s.live != null);
+      Future<void> expectStill() async {
+        await Future<void>.delayed(const Duration(milliseconds: 30));
+        final paused = fake.lives;
+        await Future<void>.delayed(const Duration(milliseconds: 120));
+        expect(fake.lives, paused);
+      }
+
+      b.add(const ResultsViewChanged(ResultsView.map));
+      await expectStill();
+      final before = fake.lives;
+      b.add(const ResultsViewChanged(ResultsView.list));
+      await Future<void>.delayed(const Duration(milliseconds: 90));
+      expect(fake.lives, greaterThanOrEqualTo(before + 2)); // at once, then every 20 ms
+
+      b.add(const ResultsFiltersChanged(Filters(services: ['covered'])));
+      await expectStill();
       await b.close();
     });
 

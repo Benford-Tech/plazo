@@ -118,18 +118,21 @@ export function FactChips({ chips, short = false, className = "" }: { chips: Fac
 }
 
 /**
- * The trust band of a parking page (« L’essentiel »): up to five hairline tiles that wrap in full rows — two columns on a
- * phone (an odd last tile takes the row), four on a wide screen, or three then two when there are five.
+ * The trust band of a parking page (« L’essentiel »): up to five hairline tiles that wrap in full rows. Under `lg` (two
+ * columns, as the app): the shuttle tile across the band first (its text is the longest), then the others two by two, an
+ * odd last one taking the row. On a wide screen: four on a row, or three then two when there are five.
  */
 export function TrustBand({ tiles }: { tiles: TrustTile[] }) {
   if (tiles.length === 0) return null;
   const five = tiles.length >= 5;
-  const odd = tiles.length % 2 === 1;
+  const shuttleFirst = tiles[0].kind === "shuttle";
+  // The tiles paired under the shuttle's row: an odd count leaves the last one alone on its row.
+  const odd = (tiles.length - (shuttleFirst ? 1 : 0)) % 2 === 1;
   return (
     <ul aria-label={fr.highlights.bandLabel} className={`grid grid-cols-2 gap-2 lg:gap-2.5 ${five ? "lg:grid-cols-6" : "lg:grid-cols-4"}`}>
       {tiles.map((tile, i) => {
-        const last = i === tiles.length - 1;
-        const span = [odd && last ? "col-span-2" : "", five ? (i < 3 ? "lg:col-span-2" : "lg:col-span-3") : odd && last ? "lg:col-span-1" : ""].join(" ");
+        const wide = (shuttleFirst && i === 0) || (odd && i === tiles.length - 1);
+        const span = [wide ? "col-span-2" : "", five ? (i < 3 ? "lg:col-span-2" : "lg:col-span-3") : wide ? "lg:col-span-1" : ""].join(" ");
         return (
           <li key={tile.kind} data-tile={tile.kind} className={`card flex items-start gap-2.5 rounded-field p-3 ${span}`}>
             <span aria-hidden="true" className="flex size-8 flex-none items-center justify-center rounded-field bg-tint text-soft">

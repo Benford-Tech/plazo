@@ -119,6 +119,7 @@ class _ParkingViewState extends State<_ParkingView> {
       liveShuttle: p.liveShuttle,
       openingHours: p.openingHours,
       cancellationPolicy: p.cancellationPolicy,
+      airportCode: response.airport.code,
     );
     final facts = factsLine(services: p.services, distanceKm: p.distanceKm);
     // The price grid is not shown (03/10/2026): the price is computed for the dates in the booking bar.

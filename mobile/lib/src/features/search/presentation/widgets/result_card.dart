@@ -70,7 +70,7 @@ class ResultCard extends StatelessWidget {
       label: [
         result.title,
         for (final b in badges) badgeLabel(b),
-        if (shuttle != null) shuttleBoxDescription(shuttle, rail: compact ? null : rail, destination: railDestinationInText(airportCode)),
+        if (shuttle != null) shuttleBoxDescription(shuttle, withRail: !compact, rail: rail, airportCode: airportCode),
         if (chips.isNotEmpty) chips.map((c) => c.title ?? c.label).join(', '),
         if (price != null) '$price, ${'results.all_in'.tr(args: [daysLabel(result.days)])}, ${perDayLabel(result.priceCents!, result.days)}',
         if (!bookable) result.priceCents == null ? 'results.no_price'.tr() : 'results.full'.tr(),

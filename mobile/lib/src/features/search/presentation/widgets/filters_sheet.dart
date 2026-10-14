@@ -93,11 +93,12 @@ class _FiltersSheetState extends State<FiltersSheet> {
                       activeColor: AppColors.accent,
                       value: _f.live,
                       onChanged: (v) => setState(() => _f = _f.copyWith(live: v ?? false)),
+                      // « ● Navette en direct »: the dot before the words, breathing unless motion is reduced (as the site).
                       title: Row(
                         children: [
+                          LiveDot(key: const Key('filter-live-dot'), size: 6, animate: !(MediaQuery.maybeDisableAnimationsOf(context) ?? false)),
+                          const SizedBox(width: 5),
                           Flexible(child: Text('filters.live'.tr(), style: AppText.body())),
-                          const SizedBox(width: 2),
-                          const LiveDot(size: 6, animate: false),
                         ],
                       ),
                       secondary: Text('$live', style: AppText.muted()),

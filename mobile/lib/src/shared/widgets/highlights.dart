@@ -104,12 +104,20 @@ class ResultBadges extends StatelessWidget {
   }
 }
 
-/// The trust band of a parking page (« L'essentiel », 14/10/2026): up to five tiles, the shuttle across the band
-/// (its text is the longest), the others two per row.
+/// The trust band of a parking page (« L'essentiel », 14/10/2026): up to five tiles, the shuttle across the band first
+/// (its text is the longest), then the others two by two, an odd last one taking the row (as the site on a phone).
 class TrustBand extends StatelessWidget {
   const TrustBand({super.key, required this.tiles});
 
   final List<TrustTile> tiles;
+
+  /// Whether the tile at [index] spans the band: the shuttle first, and the last one when the tiles paired under it
+  /// are odd in number.
+  static bool spansBand(List<TrustTile> tiles, int index) {
+    final shuttleFirst = tiles.first.kind == TileKind.shuttle;
+    final odd = (tiles.length - (shuttleFirst ? 1 : 0)).isOdd;
+    return (shuttleFirst && index == 0) || (odd && index == tiles.length - 1);
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -123,9 +131,9 @@ class TrustBand extends StatelessWidget {
             spacing: 8,
             runSpacing: 8,
             children: [
-              for (final tile in tiles)
+              for (final (i, tile) in tiles.indexed)
                 SizedBox(
-                  width: tile.kind == TileKind.shuttle ? constraints.maxWidth : width,
+                  width: spansBand(tiles, i) ? constraints.maxWidth : width,
                   child: Container(
                     key: Key('tile-${tile.kind.name}'),
                     padding: const EdgeInsets.fromLTRB(10, 9, 10, 9),

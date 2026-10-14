@@ -261,7 +261,9 @@ const frBase = {
       ride: (min: number) => `trajet ${min} min`,
       wait: (min: number) => `attente moyenne ${min} min`,
       followLive: "suivez-la sur la carte le jour J",
-      toTerminals: "vers les terminaux",
+      /** A shuttle tile with no ride, no wait and no live tracking (R4): where it goes, Terminal 1 at Lyon. */
+      toTerminal1: "vers le Terminal 1",
+      toAirport: "vers l’aéroport",
       outdoor: "Extérieur",
       outdoorText: "Parking à ciel ouvert",
       covered: "Couvert",

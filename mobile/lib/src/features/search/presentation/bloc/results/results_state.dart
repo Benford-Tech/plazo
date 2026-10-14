@@ -43,6 +43,7 @@ abstract class ResultsState with _$ResultsState {
 
   bool get online => response?.payments == 'online';
 
-  /// The live rail of a parking (L3); null until the first live answer (the rail then waits for « le jour J »).
+  /// The live rail of a parking (L3); null until the first live answer (the rail's status then stays blank: nothing is
+  /// known yet).
   RailState? railFor(SearchResultModel r) => live == null ? null : railState(live, r.slug, fallbackParking: r.location, headings: headings);
 }
