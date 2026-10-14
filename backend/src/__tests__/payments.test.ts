@@ -162,8 +162,14 @@ function payIntent(id: string) {
   return { ...intent };
 }
 
-function signedEvent(type: string, object: unknown, secret = WEBHOOK_SECRET) {
-  const payload = JSON.stringify({ id: `evt_${Math.random().toString(36).slice(2)}`, object: 'event', type, data: { object } });
+function signedEvent(type: string, object: unknown, secret = WEBHOOK_SECRET, livemode?: boolean) {
+  const payload = JSON.stringify({
+    id: `evt_${Math.random().toString(36).slice(2)}`,
+    object: 'event',
+    type,
+    ...(livemode === undefined ? {} : { livemode }),
+    data: { object },
+  });
   return { payload, signature: stripeService.signatureFor(payload, secret) };
 }
 
@@ -1256,7 +1262,128 @@ describe('réglages de reversement', () => {
     expect((await api().get('/api/internal/cron/payouts')).status).toBe(401);
     const res = await api().get('/api/internal/cron/payouts').set('Authorization', `Bearer ${process.env.CRON_SECRET}`);
     expect(res.status).toBe(200);
-    expect(res.body).toEqual({ transferred: 0, notDue: 0, waitingForAccount: 0, failed: 0, skipped: 0 });
+    expect(res.body).toEqual({ transferred: 0, notDue: 0, waitingForAccount: 0, failed: 0, skipped: 0, testPayments: 0 });
+  });
+});
+
+describe('bascule vers les clés réelles (14/10/2026, « passer stripe en mode prod »)', () => {
+  const DAY = 86400000;
+  const goLive = () => {
+    process.env.STRIPE_SECRET_KEY = 'sk_live_fake';
+  };
+
+  it('un compte de test ne compte plus : non relié, reversement en attente (pas en échec), un compte réel prend sa place', async () => {
+    const op = await publishedParking();
+    goLive();
+    const held = await paidBooking();
+    const r = await prisma.reservation.findUniqueOrThrow({ where: { reference: held.reference } });
+    expect(r).toMatchObject({ paymentStatus: 'paid', stripeLive: true });
+
+    const status = await api().get('/api/internal/payments/status').set(auth(op.token));
+    expect(status.body).toMatchObject({ enabled: true, testMode: false, connected: false, chargesEnabled: false });
+    expect(fake.accounts.retrieve).not.toHaveBeenCalled();
+    const dashboard = await api().post('/api/internal/payments/dashboard-link').set(auth(op.token));
+    expect([dashboard.status, dashboard.body.code]).toEqual([409, 'payments_not_connected']);
+
+    const later = new Date(r.returnAt.getTime() + 3 * DAY);
+    expect(await payments.runPayouts(later)).toMatchObject({ transferred: 0, waitingForAccount: 1, failed: 0 });
+    expect(fake.transfers.create).not.toHaveBeenCalled();
+    expect((await prisma.reservation.findUniqueOrThrow({ where: { id: r.id } })).payoutStatus).toBe('pending');
+
+    const onboarding = await api().post('/api/internal/payments/onboarding').set(auth(op.token));
+    expect(onboarding.status).toBe(200);
+    expect(fake.accounts.create).toHaveBeenCalledTimes(1);
+    expect(fake.accountLinks.create).toHaveBeenCalledWith(expect.objectContaining({ account: 'acct_test_new' }), expect.anything());
+    expect(await prisma.operator.findUniqueOrThrow({ where: { id: op.operator.id } })).toMatchObject({
+      stripeAccountId: 'acct_test_new',
+      stripeAccountLive: true,
+      stripeChargesEnabled: false,
+      stripePayoutsEnabled: false,
+    });
+    const audit = await prisma.auditLog.findFirstOrThrow({ where: { action: 'payments.account_created', entityId: op.operator.id } });
+    expect(audit.details).toEqual({ replacesTestAccount: true });
+
+    // The live account is ready (live event): the share goes to it.
+    const ready = signedEvent(
+      'account.updated',
+      { id: 'acct_test_new', object: 'account', charges_enabled: true, payouts_enabled: true },
+      WEBHOOK_SECRET,
+      true,
+    );
+    expect((await sendWebhook(ready.payload, ready.signature)).status).toBe(200);
+    expect(await payments.runPayouts(later)).toMatchObject({ transferred: 1 });
+    expect(fake.transfers.create).toHaveBeenCalledWith(expect.objectContaining({ destination: 'acct_test_new' }), expect.anything());
+
+    // Keys put back to test: the live account is kept, never replaced by a test one.
+    process.env.STRIPE_SECRET_KEY = 'sk_test_fake';
+    const back = await api().post('/api/internal/payments/onboarding').set(auth(op.token));
+    expect([back.status, back.body.code]).toEqual([503, 'payments_disabled']);
+    expect(fake.accounts.create).toHaveBeenCalledTimes(1);
+    expect((await prisma.operator.findUniqueOrThrow({ where: { id: op.operator.id } })).stripeAccountId).toBe('acct_test_new');
+  });
+
+  it('un paiement fait en test : ni reversé ni remboursé chez Stripe une fois les clés réelles', async () => {
+    const op = await publishedParking();
+    const first = await paidBooking();
+    const second = await paidBooking({ plate: 'AB-123-CD' });
+    goLive();
+
+    const b = await prisma.reservation.findUniqueOrThrow({ where: { reference: second.reference } });
+    const cancel = await api().post(`/api/internal/reservations/${b.id}/status`).set(auth(op.token)).send({ status: 'cancelled' });
+    expect(cancel.status).toBe(200);
+    expect(cancel.body.data).toMatchObject({ status: 'cancelled', paymentStatus: 'refunded' });
+    expect(fake.refunds.create).not.toHaveBeenCalled();
+    expect(await prisma.reservation.findUniqueOrThrow({ where: { id: b.id } })).toMatchObject({ stripeRefundId: null, payoutStatus: 'cancelled' });
+
+    const a = await prisma.reservation.findUniqueOrThrow({ where: { reference: first.reference } });
+    // The operator's live account is ready: still no transfer for a test payment.
+    await prisma.operator.update({ where: { id: op.operator.id }, data: { stripeAccountLive: true } });
+    expect(await payments.runPayouts(new Date(a.returnAt.getTime() + 3 * DAY))).toMatchObject({ transferred: 0, testPayments: 1 });
+    expect(fake.transfers.create).not.toHaveBeenCalled();
+    expect(fake.paymentIntents.retrieve).not.toHaveBeenCalled();
+    expect((await prisma.reservation.findUniqueOrThrow({ where: { id: a.id } })).payoutStatus).toBe('cancelled');
+  });
+
+  it('une place tenue avec une page de test : page oubliée, nouvelle page réelle ; un événement du mode test ne confirme rien', async () => {
+    await publishedParking();
+    const { body } = await book();
+    await checkout(body.reference, body.manageToken);
+    expect(await prisma.reservation.findUniqueOrThrow({ where: { reference: body.reference } })).toMatchObject({
+      stripeCheckoutSessionId: 'cs_test_1',
+      stripeLive: false,
+    });
+    goLive();
+
+    // The traveller is back on the booking page: the test page is not asked about.
+    expect((await getBooking(body.reference, body.manageToken)).body.status).toBe('pending_payment');
+    expect(fake.checkout.sessions.retrieve).not.toHaveBeenCalled();
+
+    const res = await checkout(body.reference, body.manageToken);
+    expect(res.status).toBe(200);
+    expect(fake.checkout.sessions.retrieve).not.toHaveBeenCalled();
+    expect(fake.checkout.sessions.create).toHaveBeenCalledTimes(2);
+    expect(await prisma.reservation.findUniqueOrThrow({ where: { reference: body.reference } })).toMatchObject({
+      stripeCheckoutSessionId: 'cs_test_2',
+      stripeLive: true,
+    });
+
+    // The old test page paid anyway, its test event arrives: ignored.
+    const testEvent = signedEvent(
+      'checkout.session.completed',
+      { ...pay('cs_test_1'), metadata: { reservationId: (await prisma.reservation.findUniqueOrThrow({ where: { reference: body.reference } })).id } },
+      WEBHOOK_SECRET,
+      false,
+    );
+    expect((await sendWebhook(testEvent.payload, testEvent.signature)).status).toBe(200);
+    expect((await prisma.reservation.findUniqueOrThrow({ where: { reference: body.reference } })).status).toBe('pending_payment');
+
+    const liveEvent = signedEvent('checkout.session.completed', pay('cs_test_2'), WEBHOOK_SECRET, true);
+    expect((await sendWebhook(liveEvent.payload, liveEvent.signature)).status).toBe(200);
+    expect(await prisma.reservation.findUniqueOrThrow({ where: { reference: body.reference } })).toMatchObject({
+      status: 'upcoming',
+      paymentStatus: 'paid',
+      stripeLive: true,
+    });
   });
 });
 

@@ -681,7 +681,7 @@ export class ReservationService {
     before: Reservation,
     status: ReservationStatus,
     client: Client,
-    refund?: { paymentStatus: 'refunded'; refundedAt: Date; stripeRefundId: string; payoutStatus: 'cancelled' | 'reversed' },
+    refund?: { paymentStatus: 'refunded'; refundedAt: Date; stripeRefundId: string | null; payoutStatus: 'cancelled' | 'reversed' },
     note?: string,
   ) {
     const now = new Date();
