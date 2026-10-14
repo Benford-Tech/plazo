@@ -113,12 +113,7 @@ class ShuttleBloc extends Bloc<ShuttleEvent, ShuttleState> {
     await _loadPickups(emit, initial: true);
     // Opened from a booking's sheet: that traveller is selected when the list offers them.
     final wanted = event.reservationId;
-    if (wanted != null && !state.running) {
-      final offered = state.direction == 'dropoff'
-          ? (state.departures?.rows ?? const []).where((r) => r.tripId == null).map((r) => r.reservationId)
-          : (state.pickups?.rows ?? const []).where((r) => r.tripId == null).map((r) => r.reservationId);
-      if (offered.contains(wanted)) emit(state.copyWith(selected: {wanted}));
-    }
+    if (wanted != null && !state.running && _boardable().contains(wanted)) emit(state.copyWith(selected: {wanted}));
     // Back in the app while a trip runs: carry on sharing (when the parking shares its shuttles, R-B).
     if (trip != null && trip.running && trip.sharePosition && !state.tracking) await _resumeTracking(emit);
     if (_autoPoll) {
@@ -141,11 +136,15 @@ class ShuttleBloc extends Bloc<ShuttleEvent, ShuttleState> {
     if (state.running) return;
     emit(state.copyWith(direction: event.direction, stopId: event.stopId, selected: const {}, errorCode: null, actionState: ViewState.idle));
     await _loadPickups(emit, initial: !state.loaded);
-    final offered = state.direction == 'dropoff'
-        ? (state.departures?.rows ?? const []).where((r) => r.tripId == null).map((r) => r.reservationId)
-        : (state.pickups?.rows ?? const []).where((r) => r.tripId == null).map((r) => r.reservationId);
-    emit(state.copyWith(selected: event.reservationIds.where(offered.toSet().contains).toSet()));
+    final offered = _boardable();
+    emit(state.copyWith(selected: event.reservationIds.where(offered.contains).toSet()));
   }
+
+  /// The travellers the current list lets board a trip: not on another trip and, to the terminal, already arrived
+  /// (an expected traveller waits; the server refuses the whole trip with `invalid_passengers` otherwise, 14/10/2026).
+  Set<String> _boardable() => state.direction == 'dropoff'
+      ? state.selectableDepartures.map((r) => r.reservationId).toSet()
+      : (state.pickups?.rows ?? const []).where((r) => r.tripId == null).map((r) => r.reservationId).toSet();
 
   /// Loads the list of the current direction: the returns to pick up, or the arrivals to drop off,
   /// and (F-A) the travellers away or back today.
@@ -156,7 +155,8 @@ class ShuttleBloc extends Bloc<ShuttleEvent, ShuttleState> {
     if (direction == 'dropoff') {
       final result = await _departures(NoParams());
       result.fold(
-        (failure) => emit(state.copyWith(viewState: initial ? ViewState.error : state.viewState, errorCode: initial ? _code(failure) : state.errorCode, now: _clock())),
+        (failure) =>
+            emit(state.copyWith(viewState: initial ? ViewState.error : state.viewState, errorCode: initial ? _code(failure) : state.errorCode, now: _clock())),
         (departures) {
           final ids = departures.rows.map((r) => r.reservationId).toSet();
           emit(state.copyWith(viewState: ViewState.success, departures: departures, selected: state.selected.where(ids.contains).toSet(), now: _clock()));
@@ -166,7 +166,8 @@ class ShuttleBloc extends Bloc<ShuttleEvent, ShuttleState> {
     }
     final result = await _pickups(NoParams());
     result.fold(
-      (failure) => emit(state.copyWith(viewState: initial ? ViewState.error : state.viewState, errorCode: initial ? _code(failure) : state.errorCode, now: _clock())),
+      (failure) =>
+          emit(state.copyWith(viewState: initial ? ViewState.error : state.viewState, errorCode: initial ? _code(failure) : state.errorCode, now: _clock())),
       (pickups) {
         // Travellers who left the list (handed back) leave the selection too.
         final ids = pickups.rows.map((r) => r.reservationId).toSet();
@@ -183,7 +184,11 @@ class ShuttleBloc extends Bloc<ShuttleEvent, ShuttleState> {
   }
 
   Future<void> _onStartRequested(ShuttleStartRequested event, Emitter<ShuttleState> emit) async {
-    if (state.selected.isEmpty || (state.trip?.running ?? false)) return;
+    if (state.trip?.running ?? false) return;
+    // Only travellers who can board: one still expected (or taken by another trip since) would make the server refuse all.
+    final boardable = _boardable();
+    if (!state.selected.every(boardable.contains)) emit(state.copyWith(selected: state.selected.where(boardable.contains).toSet()));
+    if (state.selected.isEmpty) return;
     emit(state.copyWith(actionState: ViewState.processing, errorCode: null, locationProblem: null, endedNotice: false));
     // The vehicle on file must seat everyone (the server checks too).
     final chosen = state.vehicle?.vehicleId == null ? null : state.vehicles.where((v) => v.id == state.vehicle!.vehicleId).firstOrNull;
@@ -204,7 +209,12 @@ class ShuttleBloc extends Bloc<ShuttleEvent, ShuttleState> {
       }
     }
     final result = await _start(
-      StartTripParams(reservationIds: state.selected.toList(), vehicle: state.vehicle ?? const TripVehicleChoice(), direction: state.direction, stopId: state.stopId),
+      StartTripParams(
+        reservationIds: state.selected.toList(),
+        vehicle: state.vehicle ?? const TripVehicleChoice(),
+        direction: state.direction,
+        stopId: state.stopId,
+      ),
     );
     await result.fold((failure) async => emit(state.copyWith(actionState: ViewState.error, errorCode: _code(failure))), (trip) async {
       _lastSentAt = null;
