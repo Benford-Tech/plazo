@@ -350,7 +350,8 @@ le navigateur de l'espace pro appelle `/api` sur le même domaine (pas de CORS).
    « SMS depuis le téléphone du parking » ; `openssl rand -base64 32`), et
    `PLATFORM_ADMIN_EMAILS` (emails des administrateurs de la plateforme, séparés par des virgules : eux seuls
    voient l'espace Plateforme).
-   Chaque déploiement applique les migrations (`npm run vercel-build` dans `backend/`) ; la purge
+   Chaque déploiement applique les migrations (`npm run vercel-build` dans `backend/`, avec 5 essais en une minute
+   environ quand la base Neon se réveille : P1001, P1002, P1017) ; la purge
    nocturne (jetons, SMS en attente abandonnés après 2 h, boîte d'envoi des SMS après 30 jours, position de la voiture et
    téléphones du voyageur 2 jours après le retour, anonymisation des réservations 12 mois après le retour) est un Vercel Cron
    (`/api/internal/cron/purge-expired-tokens`).

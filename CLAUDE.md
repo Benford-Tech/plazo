@@ -575,7 +575,9 @@ Plazo reprend la stack et les conventions des dépôts `lovenest-backend`, `love
   n'accepte que des crons quotidiens, les lectures rafraîchissent aussi les vols ; `remind-tomorrow` est aussi appelé toutes
   les 15 minutes par un planificateur externe, cron-job.org) ; **Ignored Build Step « production seulement » (08/10/2026)** :
   aucune branche ne construit de prévisualisation (une prévisualisation migrait la base de production avec ses secrets), et
-  `vercel-build` compile d'abord puis ne migre et ne lance les scripts qu'en production (`VERCEL_ENV`) ;
+  `vercel-build` compile d'abord puis ne migre et ne lance les scripts qu'en production (`VERCEL_ENV`) ; **la migration est
+  retentée quand Neon se réveille (14/10/2026)** : `lib/scripts/migrate-deploy.js` relance `prisma migrate deploy` sur P1001, P1002
+  ou P1017 (5 essais en une minute environ, `domain/migrate-retry.ts`), jamais sur une migration en échec ;
   pas de fichiers de logs (winston écrit dans la console, que Vercel collecte ; erreurs sur stderr, avertissements par
   `console.warn`, pour que les journaux Vercel portent le niveau). **Exploitation (08/10/2026)** : `GET /api/health` ne touche
   rien, `GET /api/health?deep=1` interroge la base (503 `degraded`) ; `remind-tomorrow`, `track-return-flights` et `payouts`
