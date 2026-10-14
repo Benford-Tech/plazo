@@ -472,7 +472,7 @@ export class DashboardService {
         push: { configured: this.push.enabled(), devices },
         stripe: {
           online: this.payments.modeFor(operator) === 'online',
-          connected: !!operator.stripeAccountId,
+          connected: !!this.payments.accountOf(operator),
           payoutsEnabled: operator.stripePayoutsEnabled,
         },
         lastImportAt: lastImport?.createdAt.toISOString() ?? null,

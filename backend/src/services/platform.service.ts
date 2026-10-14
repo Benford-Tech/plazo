@@ -243,7 +243,8 @@ export class PlatformService {
           places: o.parkings.reduce((sum, p) => sum + capacityOf(p), 0),
           manager: manager ? { name: manager.name, email: manager.email, emailVerified: !!manager.emailVerifiedAt } : null,
           listing,
-          payments: { connected: !!o.stripeAccountId, chargesEnabled: o.stripeChargesEnabled, payoutsEnabled: o.stripePayoutsEnabled },
+          // An account of the other mode (a test account, the keys being live) is not connected.
+          payments: { connected: !!this.paymentService.accountOf(o), chargesEnabled: o.stripeChargesEnabled, payoutsEnabled: o.stripePayoutsEnabled },
           commissionBps: o.commissionBps,
           bookingsThisMonth: bookings.get(o.id) ?? 0,
           invitation: invitation ? { sentAt: invitation.createdAt, expiresAt: invitation.expiresAt, expired: invitation.expiresAt <= now } : null,
@@ -641,7 +642,7 @@ export class PlatformService {
           id: o.id,
           name: o.name,
           status: o.status,
-          stripe: { connected: !!o.stripeAccountId, chargesEnabled: o.stripeChargesEnabled, payoutsEnabled: o.stripePayoutsEnabled },
+          stripe: { connected: !!this.paymentService.accountOf(o), chargesEnabled: o.stripeChargesEnabled, payoutsEnabled: o.stripePayoutsEnabled },
           payoutSchedule: o.payoutSchedule,
           commissionBps: o.commissionBps,
           pending: { count: waiting?._count._all ?? 0, amountCents: waiting?._sum.operatorShareCents ?? 0 },
@@ -667,7 +668,8 @@ export class PlatformService {
     if (!reservation) throw notFound('Reservation');
     if (reservation.payoutStatus !== 'failed') throw new HttpException(httpStatus.CONFLICT, 'This payout has not failed', 'payout_not_failed');
     const { operator } = reservation;
-    if (!operator.stripeAccountId || !operator.stripeChargesEnabled) {
+    const account = this.paymentService.accountOf(operator);
+    if (!account || !operator.stripeChargesEnabled) {
       throw new HttpException(httpStatus.CONFLICT, "The operator's Stripe account cannot receive transfers", 'operator_account_not_ready');
     }
     const { count } = await prisma.reservation.updateMany({
@@ -675,7 +677,7 @@ export class PlatformService {
       data: { payoutStatus: 'pending' },
     });
     if (!count) throw new HttpException(httpStatus.CONFLICT, 'This payout has not failed', 'payout_not_failed');
-    const result = await this.paymentService.transferShare(reservationId, operator.stripeAccountId);
+    const result = await this.paymentService.transferShare(reservationId, account);
     await this.audit.record(
       { id: actor.id, operatorId: operator.id },
       { action: 'payments.payout_retried', entityType: 'reservation', entityId: reservationId, details: { result } },

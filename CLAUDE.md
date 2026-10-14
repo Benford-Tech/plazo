@@ -16,6 +16,13 @@ deux phases) : la place de marché grand public fait partie du MVP. Deux faces, 
   **Décision du 06/10/2026 (soir) : le compte Stripe Connect du loueur n'est pas obligatoire** : réservable dès que la
   plateforme a ses clés et une commission (`PaymentService.modeFor`) ; le reversement reste `pending` tant que le compte
   n'est pas relié (`runPayouts` → `waitingForAccount`) ; les loueurs `isDemo` ne sont réservables qu'avec des clés Stripe de test.
+  **Passage aux clés réelles (14/10/2026, « passer stripe en mode prod », validation juridique confirmée)** : le mode du compte
+  Connect (`Operator.stripeAccountLive`) et de chaque paiement (`Reservation.stripeLive`, nul = test) est gardé (migration
+  `stripe_mode`) ; `PaymentService.accountOf` ne rend que le compte du mode des clés (un compte de test = non relié : statut,
+  lien du tableau de bord, reversements en attente, Plateforme, tableau de bord ; l'inscription crée un compte réel à sa place,
+  jamais un compte de test à la place d'un compte réel) ; `testUnderLiveKeys` : un paiement de test sous clés réelles n'est
+  ni reversé (`payoutStatus` `cancelled`, `testPayments` du cron) ni remboursé chez Stripe (`stripeRefundId` nul), sa page ou
+  sa feuille est oubliée (`forgetTestPayment`) ; le webhook ignore un évènement `livemode: false` sous clés réelles.
 - **Espace pro pour les loueurs** : planning, plan du parking, navette, import des autres canaux
   (blocs 1 à 3 ci-dessous), plus leur fiche Plazo, leurs tarifs et leurs reversements.
   **Présentation par Claude (09/10/2026, « pouvoir générer une Présentation pour son parking »)** : sur « Ma fiche »

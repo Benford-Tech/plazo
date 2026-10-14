@@ -16,7 +16,7 @@ const MAX_STAY_DAYS = 90;
 type ListingWithParking = Listing & {
   parking: Parking & {
     pricingTiers: { days: number; priceCents: number }[];
-    operator: Pick<Operator, 'commissionBps' | 'stripeAccountId' | 'stripePayoutsEnabled' | 'isDemo'>;
+    operator: Pick<Operator, 'commissionBps' | 'stripeAccountId' | 'stripeAccountLive' | 'stripePayoutsEnabled' | 'isDemo'>;
   };
 };
 type Client = Prisma.TransactionClient | typeof prisma;

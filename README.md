@@ -134,7 +134,15 @@ une décision de Joanny. Cocher au fur et à mesure.
   juriste / expert-comptable (statut, TVA, mandat d'encaissement), compte Stripe de Plazo Aéroports activé, Connect en
   live, webhooks live vers `https://www.plazo.fr/api/public/stripe/webhook` (deux `whsec_` dans `STRIPE_WEBHOOK_SECRET`),
   libellé de relevé « PLAZO ». Vérifier que les trois clés Stripe sont du même mode (`sk_`, `pk_`, `whsec_`). Avec une
-  clé de test, aucune vraie carte ne passe et le site ne le dit pas.
+  clé de test, aucune vraie carte ne passe et le site ne le dit pas. **14/10/2026 : validation juridique confirmée par
+  Joanny, bascule demandée (« passer stripe en mode prod »)** ; le code la rend sûre (`Operator.stripeAccountLive`,
+  `Reservation.stripeLive`, migration `stripe_mode`) : avec des clés réelles, un compte Stripe de loueur créé en test compte
+  comme non relié (chaque gérant relie de nouveau Stripe, un compte réel prend la place du compte de test ; son reversement
+  attend, jamais « en échec »), un paiement fait en test n'est ni reversé (reversement annulé, `testPayments` du cron) ni
+  remboursé chez Stripe (annulation possible, rien à rembourser), une place tenue avec une page de test repart sur une page
+  réelle, et un évènement du mode test du webhook est ignoré (désactiver les webhooks de test après la bascule). Restent :
+  activation du compte, Connect et moyens de paiement en mode réel, deux webhooks réels, clés réelles dans Vercel,
+  `STRIPE_ALLOW_LIVE=true`, redéploiement, puis `pk_live_` servie par `/api/public/payments/config`.
 - [ ] **Commission** : 10 % TTC par défaut (`PLATFORM_COMMISSION_BPS=1000`), surcharge par loueur dans Plateforme ›
   Loueurs ; à confirmer avec le client n°1 et l'expert-comptable (HT ou TTC, TVA de Plazo), figée dans chaque paiement.
 - [x] **Parkings de démonstration** : archivés le 09/10/2026 (demande de Joanny, « archive tous les parkings de démo ») :

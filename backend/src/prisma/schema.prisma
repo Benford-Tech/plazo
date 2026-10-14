@@ -35,6 +35,10 @@ model Operator {
   commissionBps          Int?
   // Stripe Connect (Express) account receiving the online payments, created by the onboarding.
   stripeAccountId        String?        @unique
+  // 14/10/2026 (« passer Stripe en mode prod »): the account was created with live keys (true) or test keys (false). An
+  // account of the other mode does not exist for the current keys: it counts as no account, and the onboarding creates
+  // one in the current mode in its place.
+  stripeAccountLive      Boolean        @default(false)
   // Mirrors of the account's capabilities (account.updated webhook, refreshed by the status route).
   // A parking is bookable online only while its operator's account has payouts enabled; the
   // operator's share is transferred only while it has charges enabled.
@@ -697,6 +701,10 @@ model Reservation {
   stripePaymentIntentId   String?
   stripeChargeId          String?
   stripeRefundId          String?
+  // 14/10/2026: the payment page or sheet was created with live keys (true) or test keys (false or null: every payment
+  // before this date, live keys being refused in production). A test payment moves no money once the keys are live:
+  // nothing to refund at Stripe, no payout.
+  stripeLive              Boolean?
   // Amounts in cents, computed by the backend when the place is held: what the traveller pays,
   // Plazo's commission, and the operator's share (charged = commission + share).
   chargedCents            Int?
