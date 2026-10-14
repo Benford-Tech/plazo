@@ -30,8 +30,10 @@ import { SmsService } from './sms.service';
 import { StripeService } from './stripe.service';
 
 type Client = Prisma.TransactionClient | typeof prisma;
-type RefundFields = { paymentStatus: 'refunded'; refundedAt: Date; stripeRefundId: string; payoutStatus: 'cancelled' | 'reversed' };
-type PaymentOperator = Pick<Operator, 'commissionBps' | 'stripeAccountId' | 'stripePayoutsEnabled' | 'isDemo'>;
+// stripeRefundId null: a test payment cancelled once the keys are live (nothing to refund at Stripe).
+type RefundFields = { paymentStatus: 'refunded'; refundedAt: Date; stripeRefundId: string | null; payoutStatus: 'cancelled' | 'reversed' };
+type PaymentOperator = Pick<Operator, 'commissionBps' | 'stripeAccountId' | 'stripeAccountLive' | 'stripePayoutsEnabled' | 'isDemo'>;
+type StripeAccount = Pick<Operator, 'stripeAccountId' | 'stripeAccountLive'>;
 
 /** The app's payment sheet: the PaymentIntent to confirm, or the news that the booking is paid. */
 export type PaymentIntentResult =
@@ -66,7 +68,13 @@ export type PaymentStatus = {
   payoutSchedule: PayoutSchedule;
 };
 
-export const OPERATOR_PAYMENT_FIELDS = { commissionBps: true, stripeAccountId: true, stripePayoutsEnabled: true, isDemo: true } as const;
+export const OPERATOR_PAYMENT_FIELDS = {
+  commissionBps: true,
+  stripeAccountId: true,
+  stripeAccountLive: true,
+  stripePayoutsEnabled: true,
+  isDemo: true,
+} as const;
 
 const unavailable = () => new HttpException(httpStatus.CONFLICT, 'This parking cannot be booked online yet', 'online_booking_unavailable');
 const holdExpired = () => new HttpException(httpStatus.CONFLICT, 'The hold on this place has ended', 'hold_expired');
@@ -117,6 +125,41 @@ export class PaymentService {
 
   public enabled(): boolean {
     return paymentsEnabled();
+  }
+
+  /** Live keys (sk_live_, rk_live_): real money. */
+  public live(): boolean {
+    return isLiveStripeKey(stripeSecretKey());
+  }
+
+  /**
+   * The operator's connected account for the current keys (14/10/2026, « passer Stripe en mode prod »): an account
+   * created in the other mode does not exist for them, so it counts as none; the onboarding creates one in its place.
+   */
+  public accountOf(operator: StripeAccount): string | null {
+    return operator.stripeAccountId && operator.stripeAccountLive === this.live() ? operator.stripeAccountId : null;
+  }
+
+  /**
+   * A payment started with test keys while the keys are now live (14/10/2026): Stripe's live mode does not know its
+   * page, sheet or charge, and it moved no money. (Rows from before that date carry no mode: test keys.)
+   */
+  public testUnderLiveKeys(reservation: Pick<Reservation, 'stripeLive'>): boolean {
+    return this.live() && reservation.stripeLive !== true;
+  }
+
+  /**
+   * A held booking whose payment was started with test keys before the switch to live keys: its page and sheet are
+   * forgotten (unknown to Stripe now), and the payment starts again. Updates `r` too.
+   */
+  private async forgetTestPayment(
+    tx: Prisma.TransactionClient,
+    r: Pick<Reservation, 'id' | 'stripeLive' | 'stripeCheckoutSessionId' | 'stripePaymentIntentId'>,
+  ): Promise<void> {
+    if (!this.testUnderLiveKeys(r) || (!r.stripeCheckoutSessionId && !r.stripePaymentIntentId)) return;
+    await tx.reservation.update({ where: { id: r.id }, data: { stripeCheckoutSessionId: null, stripePaymentIntentId: null, stripeLive: null } });
+    logger.info(`[Payments] Reservation ${r.id}: payment started with test keys forgotten (live keys now)`);
+    Object.assign(r, { stripeCheckoutSessionId: null, stripePaymentIntentId: null, stripeLive: null });
   }
 
   /** Plazo's commission for an operator, in basis points (null: none configured, no online payment). */
@@ -182,6 +225,7 @@ export class PaymentService {
       const r = await tx.reservation.findUniqueOrThrow({ where: { id: reservationId }, include: { ...WITH_LISTING, operator: true } });
       if (r.paymentStatus === 'paid') return { paid: true as const };
       if (r.status !== 'pending_payment' || r.paymentStatus !== 'pending' || !r.holdExpiresAt) throw holdExpired();
+      await this.forgetTestPayment(tx, r);
 
       // Started in the app's payment sheet: closed first, so that the booking cannot be paid twice.
       if (r.stripePaymentIntentId) {
@@ -252,6 +296,7 @@ export class PaymentService {
         where: { id: r.id },
         data: {
           stripeCheckoutSessionId: session.id,
+          stripeLive: this.live(),
           holdExpiresAt: new Date(Math.max(r.holdExpiresAt.getTime(), expiresAt * 1000)),
           ...(amounts ?? {}),
         },
@@ -290,6 +335,7 @@ export class PaymentService {
       const r = await tx.reservation.findUniqueOrThrow({ where: { id: reservationId }, include: { operator: true } });
       if (r.paymentStatus === 'paid') return { paid: true as const };
       if (r.status !== 'pending_payment' || r.paymentStatus !== 'pending' || !r.holdExpiresAt) throw holdExpired();
+      await this.forgetTestPayment(tx, r);
       const api = this.stripe.api();
 
       // A Checkout page opened on the site: closed (or confirmed, if it was paid meanwhile). Its
@@ -334,7 +380,7 @@ export class PaymentService {
         },
         { idempotencyKey: `plazo-intent-${r.id}-${r.stripeCheckoutSessionId ?? 'nosession'}-${r.stripePaymentIntentId ?? 'first'}` },
       );
-      await tx.reservation.update({ where: { id: r.id }, data: { stripePaymentIntentId: intent.id, ...(amounts ?? {}) } });
+      await tx.reservation.update({ where: { id: r.id }, data: { stripePaymentIntentId: intent.id, stripeLive: this.live(), ...(amounts ?? {}) } });
       if (!intent.client_secret) throw new HttpException(httpStatus.BAD_GATEWAY, 'No payment intent', 'payment_failed');
       return intentResult(intent);
     }, STRIPE_TX);
@@ -368,11 +414,13 @@ export class PaymentService {
     if (!this.enabled()) return 0;
     const rows = await prisma.reservation.findMany({
       where: { operatorId, paymentStatus: 'expired', OR: [{ stripePaymentIntentId: { not: null } }, { stripeCheckoutSessionId: { not: null } }] },
-      select: { stripePaymentIntentId: true, stripeCheckoutSessionId: true },
+      select: { stripePaymentIntentId: true, stripeCheckoutSessionId: true, stripeLive: true },
     });
     const api = this.stripe.api();
     let underWay = 0;
     for (const r of rows) {
+      // Started with test keys, the keys being live now: no money can come of it.
+      if (this.testUnderLiveKeys(r)) continue;
       if (r.stripePaymentIntentId) {
         const intent = await this.closeIntent(r.stripePaymentIntentId);
         if (intent.status === 'succeeded') await this.confirmIntent(intent, 'return');
@@ -405,10 +453,11 @@ export class PaymentService {
 
   /** On the traveller's return (or a page refresh): confirms the booking if Stripe says it is paid. */
   public async syncFromStripe(
-    reservation: Pick<Reservation, 'id' | 'status' | 'paymentStatus' | 'stripeCheckoutSessionId' | 'stripePaymentIntentId'>,
+    reservation: Pick<Reservation, 'id' | 'status' | 'paymentStatus' | 'stripeCheckoutSessionId' | 'stripePaymentIntentId' | 'stripeLive'>,
   ): Promise<boolean> {
     if (reservation.paymentStatus !== 'pending' || !this.enabled()) return false;
     if (!reservation.stripeCheckoutSessionId && !reservation.stripePaymentIntentId) return false;
+    if (this.testUnderLiveKeys(reservation)) return false;
     try {
       // A payment intent on a pending booking comes from the app's payment sheet.
       if (reservation.stripePaymentIntentId) {
@@ -596,15 +645,17 @@ export class PaymentService {
       throw new HttpException(httpStatus.CONFLICT, 'This booking is already paid', 'already_paid');
     }
     if (before.status !== 'pending_payment') throw holdExpired();
+    // Started with test keys, the keys being live now: Stripe does not know it, nothing to close.
+    const reachable = this.enabled() && !this.testUnderLiveKeys(before);
 
-    if (before.stripePaymentIntentId && this.enabled()) {
+    if (before.stripePaymentIntentId && reachable) {
       const intent = await this.closeIntent(before.stripePaymentIntentId);
       if (intent.status === 'succeeded') {
         await this.confirmIntent(intent, 'return');
         throw new HttpException(httpStatus.CONFLICT, 'This booking is already paid', 'already_paid');
       }
     }
-    if (before.stripeCheckoutSessionId && this.enabled()) {
+    if (before.stripeCheckoutSessionId && reachable) {
       const api = this.stripe.api();
       const session = await api.checkout.sessions.retrieve(before.stripeCheckoutSessionId);
       if (session.status === 'complete') {
@@ -632,9 +683,19 @@ export class PaymentService {
   public async refundPayment(
     reservation: Pick<
       Reservation,
-      'id' | 'stripePaymentIntentId' | 'stripeCheckoutSessionId' | 'payoutStatus' | 'stripeTransferId' | 'operatorShareCents'
+      'id' | 'stripePaymentIntentId' | 'stripeCheckoutSessionId' | 'payoutStatus' | 'stripeTransferId' | 'operatorShareCents' | 'stripeLive'
     >,
   ): Promise<RefundFields> {
+    if (this.testUnderLiveKeys(reservation)) {
+      // A test payment, the keys being live now (14/10/2026): it moved no money, and Stripe's live mode does not know it.
+      logger.info(`[Payments] Reservation ${reservation.id}: test payment, nothing to refund with live keys`);
+      return {
+        paymentStatus: 'refunded',
+        refundedAt: new Date(),
+        stripeRefundId: null,
+        payoutStatus: reservation.payoutStatus === 'transferred' ? 'reversed' : 'cancelled',
+      };
+    }
     const api = this.stripe.api();
     let paymentIntent = reservation.stripePaymentIntentId;
     if (!paymentIntent && reservation.stripeCheckoutSessionId) {
@@ -692,13 +753,21 @@ export class PaymentService {
    * and a per-booking Stripe idempotency key).
    */
   public async runPayouts(now = new Date()) {
-    const result = { transferred: 0, notDue: 0, waitingForAccount: 0, failed: 0, skipped: 0 };
+    const result = { transferred: 0, notDue: 0, waitingForAccount: 0, failed: 0, skipped: 0, testPayments: 0 };
     let cursor: string | undefined;
     for (;;) {
       // Every schedule is due after the arrival at the earliest: the rest cannot be due yet.
       const batch = await prisma.reservation.findMany({
         where: { payoutStatus: 'pending', paymentStatus: 'paid', arrivalAt: { lt: now } },
-        select: { id: true, status: true, arrivalAt: true, returnAt: true, parking: { select: { timezone: true } }, operator: true },
+        select: {
+          id: true,
+          status: true,
+          arrivalAt: true,
+          returnAt: true,
+          stripeLive: true,
+          parking: { select: { timezone: true } },
+          operator: true,
+        },
         orderBy: { id: 'asc' },
         take: 200,
         ...(cursor ? { cursor: { id: cursor }, skip: 1 } : {}),
@@ -710,16 +779,25 @@ export class PaymentService {
           result.skipped += 1;
           continue;
         }
+        if (this.testUnderLiveKeys(c)) {
+          // Paid with test keys, the keys being live now (14/10/2026): no money came in, none goes out.
+          await prisma.reservation.updateMany({ where: { id: c.id, payoutStatus: 'pending' }, data: { payoutStatus: 'cancelled' } });
+          logger.info(`[Payouts] Reservation ${c.id}: test payment, no payout with live keys`);
+          result.testPayments += 1;
+          continue;
+        }
         if (now < payoutDueAt(c.operator.payoutSchedule, c, c.parking.timezone)) {
           result.notDue += 1;
           continue;
         }
-        if (!c.operator.stripeAccountId || !c.operator.stripeChargesEnabled) {
+        // An account of the other mode (a test account, the keys being live) counts as none: the share waits.
+        const account = this.accountOf(c.operator);
+        if (!account || !c.operator.stripeChargesEnabled) {
           logger.info(`[Payouts] Reservation ${c.id}: operator ${c.operator.id} account not ready, payout kept pending`);
           result.waitingForAccount += 1;
           continue;
         }
-        result[await this.transferShare(c.id, c.operator.stripeAccountId)] += 1;
+        result[await this.transferShare(c.id, account)] += 1;
       }
       if (batch.length < 200) break;
     }
@@ -760,6 +838,8 @@ export class PaymentService {
         const r = await tx.reservation.findUniqueOrThrow({ where: { id } });
         // Cancelled, refunded or paid out meanwhile.
         if (r.payoutStatus !== 'pending' || r.paymentStatus !== 'paid' || r.status === 'cancelled') return 'skipped';
+        // A test payment never gives rise to a live transfer (runPayouts cancels its payout first).
+        if (this.testUnderLiveKeys(r)) return 'skipped';
         if (r.operatorShareCents === null || !r.stripePaymentIntentId) throw new Error('Missing amounts or payment');
         const api = this.stripe.api();
         let chargeId = r.stripeChargeId;
@@ -817,6 +897,12 @@ export class PaymentService {
       event = this.stripe.verifyEvent(payload, signature, secrets);
     } catch {
       throw new HttpException(httpStatus.BAD_REQUEST, 'Invalid signature', 'invalid_signature');
+    }
+    // 14/10/2026: with live keys, an event of Stripe's test mode (a test webhook left on, a test page paid after the
+    // switch) moves no money: it confirms no booking and changes no account. Acknowledged, so that Stripe stops sending it.
+    if (event.livemode === false && this.live()) {
+      logger.info(`[Payments] ${event.type} from Stripe's test mode ignored (live keys)`);
+      return { received: true, type: event.type };
     }
 
     switch (event.type) {
@@ -884,8 +970,15 @@ export class PaymentService {
     const site = this.siteUrl();
     const api = this.stripe.api();
     const operator = await prisma.operator.findUniqueOrThrow({ where: { id: actor.operatorId } });
-    let accountId = operator.stripeAccountId;
+    const live = this.live();
+    // A live account is never replaced by a test one (keys put back to test): the operator keeps it for later.
+    if (operator.stripeAccountId && operator.stripeAccountLive && !live) {
+      throw new HttpException(httpStatus.SERVICE_UNAVAILABLE, 'Online payments are in test mode', 'payments_disabled');
+    }
+    let accountId = this.accountOf(operator);
     if (!accountId) {
+      // A test account, the keys being live now (14/10/2026): a live one takes its place.
+      const replacesTest = !!operator.stripeAccountId;
       const account = await api.accounts.create(
         {
           type: 'express',
@@ -897,10 +990,27 @@ export class PaymentService {
         },
         { idempotencyKey: `plazo-account-${operator.id}` },
       );
-      // Two managers at once: the first account saved wins (the key above returns the same one).
-      await prisma.operator.updateMany({ where: { id: operator.id, stripeAccountId: null }, data: { stripeAccountId: account.id } });
-      accountId = (await prisma.operator.findUniqueOrThrow({ where: { id: operator.id }, select: { stripeAccountId: true } })).stripeAccountId!;
-      await this.audit.record(actor, { action: 'payments.account_created', entityType: 'operator', entityId: operator.id, details: {} });
+      // Two managers at once: the first account saved wins (the key above returns the same one). The capabilities of a
+      // replaced test account are not this one's.
+      await prisma.operator.updateMany({
+        where: { id: operator.id, OR: [{ stripeAccountId: null }, { stripeAccountLive: !live }] },
+        data: {
+          stripeAccountId: account.id,
+          stripeAccountLive: live,
+          stripeChargesEnabled: false,
+          stripePayoutsEnabled: false,
+          stripeDetailsSubmitted: false,
+        },
+      });
+      accountId = this.accountOf(
+        await prisma.operator.findUniqueOrThrow({ where: { id: operator.id }, select: { stripeAccountId: true, stripeAccountLive: true } }),
+      )!;
+      await this.audit.record(actor, {
+        action: 'payments.account_created',
+        entityType: 'operator',
+        entityId: operator.id,
+        details: replacesTest ? { replacesTestAccount: true } : {},
+      });
     }
     const link = await api.accountLinks.create(
       {
@@ -926,13 +1036,15 @@ export class PaymentService {
       commissionBps: this.commissionBps(operator),
       payoutSchedule: operator.payoutSchedule,
     };
-    if (!operator.stripeAccountId) {
+    // A test account, the keys being live (14/10/2026): not connected, the manager links a live one.
+    const accountId = this.accountOf(operator);
+    if (!accountId) {
       return { ...base, connected: false, detailsSubmitted: false, chargesEnabled: false, payoutsEnabled: false };
     }
     let { stripeChargesEnabled: chargesEnabled, stripePayoutsEnabled: payoutsEnabled, stripeDetailsSubmitted: detailsSubmitted } = operator;
     if (enabled) {
       try {
-        const account = await this.stripe.api().accounts.retrieve(operator.stripeAccountId);
+        const account = await this.stripe.api().accounts.retrieve(accountId);
         chargesEnabled = !!account.charges_enabled;
         payoutsEnabled = !!account.payouts_enabled;
         detailsSubmitted = !!account.details_submitted;
@@ -958,14 +1070,15 @@ export class PaymentService {
     if (!this.enabled()) throw new HttpException(httpStatus.SERVICE_UNAVAILABLE, 'Online payments are not enabled', 'payments_disabled');
     const operator = await prisma.operator.findUniqueOrThrow({
       where: { id: actor.operatorId },
-      select: { stripeAccountId: true, stripeDetailsSubmitted: true, stripePayoutsEnabled: true },
+      select: { stripeAccountId: true, stripeAccountLive: true, stripeDetailsSubmitted: true, stripePayoutsEnabled: true },
     });
-    // Stripe only opens the dashboard of an account whose onboarding was sent.
-    if (!operator.stripeAccountId || !(operator.stripeDetailsSubmitted || operator.stripePayoutsEnabled)) {
+    // Stripe only opens the dashboard of an account whose onboarding was sent (and in the keys' mode).
+    const accountId = this.accountOf(operator);
+    if (!accountId || !(operator.stripeDetailsSubmitted || operator.stripePayoutsEnabled)) {
       throw new HttpException(httpStatus.CONFLICT, 'The Stripe account is not set up yet', 'payments_not_connected');
     }
     try {
-      const link = await this.stripe.api().accounts.createLoginLink(operator.stripeAccountId);
+      const link = await this.stripe.api().accounts.createLoginLink(accountId);
       return { url: link.url };
     } catch (error) {
       logger.warn(`[Payments] Could not open the Stripe dashboard of operator ${actor.operatorId}: ${stripeErrorName(error)}`);
