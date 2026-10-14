@@ -121,6 +121,72 @@ describe('fiche Plazo du loueur', () => {
     expect(bad.body.fields).toMatchObject({ slug: 'invalid_slug', services: 'invalid_service', photos: 'invalid_url' });
   });
 
+  it('enregistre l’attente moyenne de la navette, la garde si le champ n’est pas envoyé et l’efface avec null', async () => {
+    const { token } = await setupOperator();
+    const saved = await api()
+      .put('/api/internal/listing')
+      .set(auth(token))
+      .send(listing({ shuttleWaitMinutes: 5 }));
+    expect(saved.status).toBe(200);
+    expect(saved.body.data).toMatchObject({ shuttleMinutes: 8, shuttleWaitMinutes: 5 });
+    expect((await api().get('/api/internal/listing').set(auth(token))).body.listing.shuttleWaitMinutes).toBe(5);
+
+    // A form that does not know the field keeps it; 0 is a real answer (no wait), at the limit 120 too.
+    await api()
+      .put('/api/internal/listing')
+      .set(auth(token))
+      .send(listing({ title: 'Nouveau titre' }));
+    expect((await prisma.listing.findFirstOrThrow()).shuttleWaitMinutes).toBe(5);
+    for (const minutes of [0, 120]) {
+      await api()
+        .put('/api/internal/listing')
+        .set(auth(token))
+        .send(listing({ shuttleWaitMinutes: minutes }));
+      expect((await prisma.listing.findFirstOrThrow()).shuttleWaitMinutes).toBe(minutes);
+    }
+
+    for (const [value, error] of [
+      [121, 'too_large'],
+      [-1, 'min_0'],
+      [2.5, 'integer'],
+    ] as const) {
+      const bad = await api()
+        .put('/api/internal/listing')
+        .set(auth(token))
+        .send(listing({ shuttleWaitMinutes: value }));
+      expect(bad.status).toBe(400);
+      expect(bad.body).toMatchObject({ code: 'validation_failed', fields: { shuttleWaitMinutes: error } });
+    }
+    expect((await prisma.listing.findFirstOrThrow()).shuttleWaitMinutes).toBe(120);
+
+    const cleared = await api()
+      .put('/api/internal/listing')
+      .set(auth(token))
+      .send(listing({ shuttleWaitMinutes: null }));
+    expect(cleared.body.data.shuttleWaitMinutes).toBeNull();
+    expect((await api().get('/api/internal/listing').set(auth(token))).body.listing.shuttleWaitMinutes).toBeNull();
+    // A blank field is « not declared », never a declared 0.
+    for (const blank of ['', ' ']) {
+      await api()
+        .put('/api/internal/listing')
+        .set(auth(token))
+        .send(listing({ shuttleWaitMinutes: 7 }));
+      const emptied = await api()
+        .put('/api/internal/listing')
+        .set(auth(token))
+        .send(listing({ shuttleWaitMinutes: blank }));
+      expect(emptied.status).toBe(200);
+      expect(emptied.body.data.shuttleWaitMinutes).toBeNull();
+    }
+    await api()
+      .put('/api/internal/listing')
+      .set(auth(token))
+      .send(listing({ shuttleWaitMinutes: 0 }));
+    expect((await prisma.listing.findFirstOrThrow()).shuttleWaitMinutes).toBe(0);
+    // The database holds the same range.
+    await expect(prisma.listing.updateMany({ data: { shuttleWaitMinutes: 121 } })).rejects.toThrow(/listings_shuttle_wait_range/);
+  });
+
   it('est réservée au gérant', async () => {
     const { token } = await setupOperator();
     const agent = await addStaff(token, 'agent');
@@ -218,6 +284,25 @@ describe('API publique', () => {
     const missing = await api().get('/api/public/search?airport=lyon-saint-exupery');
     expect(missing.status).toBe(400);
     expect((await api().get('/api/public/search?airport=inconnu&arrivalAt=x&returnAt=y')).status).toBe(404);
+  });
+
+  it('montre l’attente moyenne déclarée à côté du trajet en navette, ou null sans déclaration', async () => {
+    const declared = await publishedOperator('Déclarée', 'declaree');
+    await api()
+      .put('/api/internal/listing')
+      .set(auth(declared.token))
+      .send(listing({ slug: 'declaree', title: 'Déclarée', shuttleWaitMinutes: 5 }));
+    await publishedOperator('Muette', 'muette');
+    const waits = (items: { slug: string; shuttleMinutes: number | null; shuttleWaitMinutes: number | null }[]) =>
+      Object.fromEntries(items.map(i => [i.slug, [i.shuttleMinutes, i.shuttleWaitMinutes]]));
+    const expected = { declaree: [8, 5], muette: [8, null] };
+
+    expect(waits((await api().get('/api/public/airports/lyon-saint-exupery')).body.listings)).toEqual(expected);
+    const search = await api().get(`/api/public/search?airport=lyon-saint-exupery&arrivalAt=${future(10, '08:30')}&returnAt=${future(12, '17:00')}`);
+    expect(waits(search.body.results)).toEqual(expected);
+    const page = await api().get('/api/public/airports/lyon-saint-exupery/parkings/declaree');
+    expect(page.body.parking).toMatchObject({ shuttleMinutes: 8, shuttleWaitMinutes: 5 });
+    expect((await api().get('/api/public/airports/lyon-saint-exupery/parkings/muette')).body.parking.shuttleWaitMinutes).toBeNull();
   });
 
   it('donne la fiche d’un parking publié, avec l’offre si on passe des dates', async () => {

@@ -1181,7 +1181,12 @@ export const fr = {
       } as Record<string, string>,
     },
     services: "Services",
-    shuttleMinutes: "Navette (min)",
+    shuttleMinutes: "Trajet en navette (min)",
+    // 14/10/2026 (« attente déclarée »): the shuttle's average wait, shown as a tag on the Plazo results and page.
+    shuttleWaitMinutes: "Attente moyenne de la navette (min)",
+    shuttleWaitHelp: "Facultatif. Laissé vide, le tag n'apparaît pas.",
+    shuttleWaitInvalid: "Nombre entier, entre 0 et 120 minutes.",
+    previewWait: (minutes: number) => `Attente moy. ${minutes} min`,
     distanceKm: "Distance (km)",
     openingHours: "Horaires",
     openingHoursPlaceholder: "24h/24",
@@ -2235,6 +2240,8 @@ export const fr = {
       noNight: "Sans frais de nuit.",
       photos: "Photos",
       noPhoto: "Aucune photo.",
+      // 14/10/2026: the shuttle's average wait declared on « Ma fiche ».
+      shuttleWait: (minutes: number) => `Attente moyenne : ${minutes} min`,
       lastMessage: "Dernier message envoyé",
       places: (n: number) => `${n} places`,
     },

@@ -750,6 +750,12 @@ describe('ouvrir l’espace d’un loueur (view-as)', () => {
 });
 
 describe('validation des annonces', () => {
+  it('montre à la plateforme l’attente moyenne de la navette déclarée par le loueur', async () => {
+    const { id } = await submittedListing(loueur, { shuttleMinutes: 8, shuttleWaitMinutes: 5 });
+    const queue = await api().get(`${P}/listings?status=pending_review`).set(auth(admin.token));
+    expect(queue.body.listings).toEqual([expect.objectContaining({ id, shuttleMinutes: 8, shuttleWaitMinutes: 5 })]);
+  });
+
   it('brouillon → à valider → publiée, visible sur le site', async () => {
     await api().put('/api/internal/pricing').set(auth(loueur.token)).send(grid);
     await api().put('/api/internal/listing').set(auth(loueur.token)).send(listingBody());

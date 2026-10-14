@@ -1,4 +1,4 @@
-import { Type } from 'class-transformer';
+import { Transform, TransformFnParams, Type } from 'class-transformer';
 import {
   Allow,
   ArrayMaxSize,
@@ -21,6 +21,15 @@ import {
 import { CancellationPolicy } from '@/database';
 import { SERVICES, SLUG_RE } from '@/domain/listing';
 import { PHONE_RE } from './reservation.dto';
+
+/**
+ * A blank string is « not declared », not 0. `@Transform` runs after `@Type(() => Number)` has turned "" into 0, so the
+ * raw value is read from the plain object.
+ */
+const blankAsNull = ({ value, obj, key }: TransformFnParams) => {
+  const raw: unknown = obj[key];
+  return typeof raw === 'string' && !raw.trim() ? null : value;
+};
 
 export class UpdateListingDto {
   @IsString()
@@ -53,6 +62,18 @@ export class UpdateListingDto {
   @Min(1, { message: 'min_1' })
   @Max(60, { message: 'too_large' })
   public shuttleMinutes?: number | null;
+
+  /**
+   * « Attente moyenne de la navette » (14/10/2026), in minutes; optional (the tag is not shown without it). Left
+   * unchanged when absent, cleared with null or a blank string (never read as a declared 0).
+   */
+  @IsOptional()
+  @Transform(blankAsNull)
+  @Type(() => Number)
+  @IsInt({ message: 'integer' })
+  @Min(0, { message: 'min_0' })
+  @Max(120, { message: 'too_large' })
+  public shuttleWaitMinutes?: number | null;
 
   @IsOptional()
   @Type(() => Number)

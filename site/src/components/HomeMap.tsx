@@ -1,11 +1,10 @@
 "use client";
 
 import dynamic from "next/dynamic";
-import { useEffect, useRef, useState } from "react";
 import type { MapParking, MapShuttle } from "./ResultsMap";
 import { fr } from "@/lib/fr";
 import { formatShortEuros } from "@/lib/money";
-import { bearing, shuttleTone } from "@/lib/shuttle-icon";
+import { shuttleTone } from "@/lib/shuttle-icon";
 import type { AirportLive, LatLng, SearchResult } from "@/lib/types";
 
 // The map's code (MapLibre) loads in the browser only, after the page.
@@ -19,49 +18,6 @@ const ResultsMap = dynamic(() => import("./ResultsMap"), {
     </div>
   ),
 });
-
-/** How often the home map asks for the shuttles on the road (K-A). */
-export const LIVE_POLL_MS = 12_000;
-
-/**
- * K-A (06/10/2026): the home map's live layer — every 12 s the browser reads the airport's
- * shuttles on the road (anonymous: a position, a direction, a vehicle) and the map moves them.
- * Null until the first answer, or while the API is unreachable (the map works without it).
- */
-export function useAirportLive(slug: string): AirportLive | null {
-  const [live, setLive] = useState<AirportLive | null>(null);
-  // I-C: the heading of each shuttle comes from its previous position (the API gives none).
-  const previous = useRef(new Map<string, { position: LatLng; heading: number | null }>());
-  useEffect(() => {
-    let cancelled = false;
-    const load = async () => {
-      try {
-        const res = await fetch(`/api/public/airports/${encodeURIComponent(slug)}/live`, { cache: "no-store" });
-        if (!res.ok) return;
-        const data = (await res.json()) as AirportLive;
-        const next = new Map<string, { position: LatLng; heading: number | null }>();
-        for (const s of data.shuttles) {
-          if (!s.position) continue;
-          const before = previous.current.get(s.id);
-          const heading = before ? (bearing(before.position, s.position) ?? before.heading) : null;
-          next.set(s.id, { position: s.position, heading });
-          s.heading = heading;
-        }
-        previous.current = next;
-        if (!cancelled) setLive(data);
-      } catch {
-        // Offline or the API is down: the last answer stays, the map still shows the parkings.
-      }
-    };
-    void load();
-    const timer = window.setInterval(() => void load(), LIVE_POLL_MS);
-    return () => {
-      cancelled = true;
-      window.clearInterval(timer);
-    };
-  }, [slug]);
-  return live;
-}
 
 /**
  * The map's pins for the stay's results: price pills (bookable) or "Complet". `best` (the cheapest, shown in the

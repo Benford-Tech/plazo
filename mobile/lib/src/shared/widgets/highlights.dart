@@ -3,32 +3,40 @@ import 'package:flutter/material.dart';
 
 import '../../core/helpers/highlights.dart';
 import '../theme/theme.dart';
+import 'live_dot.dart';
 
 /// Small pieces of reassurance shared by the results and the parking page: the badges of a
 /// result, the fact chips of a card and the trust tiles of a parking page (direction D).
 
 IconData chipIconData(ChipIcon icon) => switch (icon) {
-  ChipIcon.shuttle => Icons.directions_bus_rounded,
-  ChipIcon.fenced => Icons.lock_outline_rounded,
+  ChipIcon.shuttle => Icons.airport_shuttle_rounded,
+  ChipIcon.outdoor => Icons.wb_sunny_outlined,
   ChipIcon.covered => Icons.home_outlined,
+  ChipIcon.keys => Icons.key_rounded,
+  ChipIcon.open24h => Icons.schedule_rounded,
+  ChipIcon.fenced => Icons.lock_outline_rounded,
   ChipIcon.ev => Icons.bolt_rounded,
-  ChipIcon.valet => Icons.key_rounded,
   ChipIcon.cancel => Icons.undo_rounded,
   ChipIcon.warning => Icons.warning_amber_rounded,
 };
 
 const _tileIcon = {
   TileKind.shuttle: ChipIcon.shuttle,
-  TileKind.security: ChipIcon.fenced,
+  TileKind.outdoor: ChipIcon.outdoor,
+  TileKind.covered: ChipIcon.covered,
+  TileKind.keys: ChipIcon.keys,
+  TileKind.opening: ChipIcon.open24h,
   TileKind.cancellation: ChipIcon.cancel,
-  TileKind.keys: ChipIcon.valet,
 };
 
-/// The fact chips of a result card ("8 min", "Clôturé", "Gratuit 24 h"…).
+/// The tags of a result card (« Extérieur », « Clés à remettre », « 24h/24 », « Gratuit 24 h »…).
 class FactChips extends StatelessWidget {
-  const FactChips({super.key, required this.chips});
+  const FactChips({super.key, required this.chips, this.narrow = false});
 
   final List<FactChip> chips;
+
+  /// A phone-width card: the short wording of the long tags (the long one stays for assistive technology).
+  final bool narrow;
 
   @override
   Widget build(BuildContext context) {
@@ -49,7 +57,13 @@ class FactChips extends StatelessWidget {
                 children: [
                   Icon(chipIconData(chip.icon), size: 14, color: chip.icon == ChipIcon.warning ? AppColors.danger : AppColors.accent),
                   const SizedBox(width: 4),
-                  Text(chip.label, style: AppText.body(size: 12, color: chip.icon == ChipIcon.warning ? AppColors.danger : AppColors.ink)),
+                  // A long tag wraps inside the card rather than overflow it.
+                  Flexible(
+                    child: Text(
+                      narrow ? chip.short ?? chip.label : chip.label,
+                      style: AppText.body(size: 12, color: chip.icon == ChipIcon.warning ? AppColors.danger : AppColors.ink),
+                    ),
+                  ),
                 ],
               ),
             ),
@@ -90,7 +104,8 @@ class ResultBadges extends StatelessWidget {
   }
 }
 
-/// The trust band of a parking page: up to four tiles, two per row.
+/// The trust band of a parking page (« L'essentiel », 14/10/2026): up to five tiles, the shuttle across the band
+/// (its text is the longest), the others two per row.
 class TrustBand extends StatelessWidget {
   const TrustBand({super.key, required this.tiles});
 
@@ -110,7 +125,7 @@ class TrustBand extends StatelessWidget {
             children: [
               for (final tile in tiles)
                 SizedBox(
-                  width: width,
+                  width: tile.kind == TileKind.shuttle ? constraints.maxWidth : width,
                   child: Container(
                     key: Key('tile-${tile.kind.name}'),
                     padding: const EdgeInsets.fromLTRB(10, 9, 10, 9),
@@ -132,7 +147,19 @@ class TrustBand extends StatelessWidget {
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
-                              Text(tile.title, style: AppText.strong(size: 13)),
+                              tile.live
+                                  ? Row(
+                                      children: [
+                                        Flexible(child: Text(tile.title, style: AppText.strong(size: 13))),
+                                        const SizedBox(width: 2),
+                                        LiveDot(
+                                          key: const Key('tile-live-dot'),
+                                          size: 7,
+                                          animate: !(MediaQuery.maybeDisableAnimationsOf(context) ?? false),
+                                        ),
+                                      ],
+                                    )
+                                  : Text(tile.title, style: AppText.strong(size: 13)),
                               Text(tile.text, style: AppText.muted(size: 12.5).copyWith(height: 1.3)),
                             ],
                           ),

@@ -37,14 +37,19 @@ void main() {
 
   testWidgets('réservable : faits, sections du site, barre « 45,00 € · 3 → 10 oct. · 8 jours » et « Réserver »', (tester) async {
     await pump(tester, parkingResponse());
-    // The trust band: shuttle, security, cancellation, keys (self-park: no valet), then the facts line.
-    expect(find.text('Navette 8 min'), findsOneWidget);
+    // « L'essentiel »: shuttle, outdoor (with its security), keys (self-park: no valet), cancellation, then the facts line.
+    expect(find.text('Navette gratuite'), findsOneWidget);
+    expect(find.text('Trajet 8 min'), findsOneWidget);
+    expect(find.byKey(const Key('tile-live-dot')), findsNothing);
+    expect(find.text('Extérieur'), findsOneWidget);
     expect(find.text('clôturé, vidéosurveillance'), findsOneWidget);
     expect(find.text('Annulation gratuite'), findsOneWidget);
     expect(find.text('jusqu\'à 24 h avant'), findsOneWidget);
-    expect(find.text('Vous vous garez'), findsOneWidget);
+    expect(find.text('Vous gardez vos clés'), findsOneWidget);
+    expect(find.text('Vous vous garez vous-même'), findsOneWidget);
     expect(find.byKey(const Key('tile-shuttle')), findsOneWidget);
-    expect(find.text('À 3,5 km des terminaux · Extérieur'), findsOneWidget);
+    expect(find.byKey(const Key('tile-opening')), findsNothing); // no hours, not open 24h/24
+    expect(find.text('À 3,5 km des terminaux'), findsOneWidget);
     expect(find.text('Nouveau sur Plazo'), findsOneWidget);
     expect(find.byKey(const Key('parking-per-day')), findsOneWidget); // 45,00 € ÷ 8 jours
     for (final chip in ['À l\'aller', 'Au retour', 'Accès']) {
@@ -75,6 +80,38 @@ void main() {
     expect(find.text('51,60 €'), findsOneWidget); // the bar: the total only
     expect(find.text('Ce parking ajoute 15 € pour un dépôt ou un retour entre 22:00 et 06:00.'), findsNothing);
     expect(find.textContaining('Frais de nuit'), findsNothing);
+  });
+
+  testWidgets('« L\'essentiel » : navette en direct (point orange), attente déclarée, couvert, clés à remettre, ouvert 24h/24', (tester) async {
+    final response = parkingResponse();
+    await pump(
+      tester,
+      response.copyWith(
+        parking: response.parking.copyWith(
+          services: const ['shuttle', 'valet', 'covered', 'open_24h'],
+          shuttleMinutes: 5,
+          shuttleWaitMinutes: 5,
+          liveShuttle: true,
+        ),
+      ),
+    );
+    expect(find.text('Navette en direct'), findsOneWidget);
+    expect(find.byKey(const Key('tile-live-dot')), findsOneWidget);
+    expect(find.text('Gratuite · trajet 5 min · attente moyenne 5 min · suivez-la sur la carte le jour J'), findsOneWidget);
+    expect(find.text('Couvert'), findsOneWidget);
+    expect(find.text('Parking couvert'), findsOneWidget);
+    expect(find.text('Vous devez remettre vos clés'), findsOneWidget);
+    expect(find.text('Un voiturier gare votre voiture'), findsOneWidget);
+    expect(find.text('Ouvert 24h/24'), findsOneWidget);
+    expect(find.text('Dépôt et retour à toute heure'), findsOneWidget);
+    for (final kind in ['shuttle', 'covered', 'keys', 'opening', 'cancellation']) {
+      expect(find.byKey(Key('tile-$kind')), findsOneWidget, reason: kind);
+    }
+    // Five tiles: the shuttle across the band, the others two by two.
+    expect(tester.getSize(find.byKey(const Key('tile-shuttle'))).width, greaterThan(tester.getSize(find.byKey(const Key('tile-keys'))).width * 1.8));
+    // Without the shuttle service: no shuttle tile, whatever the minutes.
+    await pump(tester, response.copyWith(parking: response.parking.copyWith(services: const ['fenced'], shuttleWaitMinutes: 5, liveShuttle: true)));
+    expect(find.byKey(const Key('tile-shuttle')), findsNothing);
   });
 
   testWidgets('parking de démonstration : étiquette « DÉMO » à côté du titre', (tester) async {

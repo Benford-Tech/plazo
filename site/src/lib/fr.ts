@@ -180,6 +180,8 @@ const frBase = {
     sortBy: { prix: "Prix", navette: "Navette la plus courte", distance: "Distance" },
     cheapest: "Le moins cher",
     fastestShuttle: "Navette la plus rapide",
+    /** 14/10/2026: keeps the parkings whose shuttles are shown live (?direct=1). */
+    liveFilter: "Navette en direct",
     allIn: (days: number) => `${daysLabel(days)}, tout compris`,
     /** Direction B (12/10/2026): under the heading when a shown result's total includes a night fee. */
     nightFeesIncluded: "Prix totaux pour vos dates, frais de nuit compris.",
@@ -200,12 +202,11 @@ const frBase = {
     datesTitle: "Indiquez vos dates",
     datesText: "Choisissez vos dates de dépôt et de retour pour voir les parkings disponibles et leur prix total.",
   },
-  /** Trust band of a parking page, fact chips and badges of the results. */
+  /** Trust band of a parking page, fact chips, the shuttle box and badges of the results. */
   highlights: {
     perDay: (price: string) => `${price}/jour`,
     newOnPlatform: `Nouveau sur ${P}`,
     bandLabel: "L’essentiel",
-    shuttleChip: (min: number) => `${min} min`,
     evChip: "Recharge",
     cancelChip: {
       untilArrival: "Gratuit jusqu’à l’arrivée",
@@ -213,14 +214,68 @@ const frBase = {
       h48: "Gratuit 48 h",
       nonRefundable: "Non remboursable",
     },
+    /** Tags of a parking (14/10/2026, direction C): the long wording, and the short one of a narrow card. */
+    chips: {
+      outdoor: "Extérieur",
+      covered: "Couvert",
+      keysValet: "Vous devez remettre vos clés",
+      keysValetShort: "Clés à remettre",
+      keysSelf: "Vous gardez vos clés",
+      keysSelfShort: "Clés gardées",
+      open24h: "Ouvert 24h/24",
+      open24hShort: "24h/24",
+      openHours: (hours: string) => `Ouvert ${hours}`,
+    },
+    /** The shuttle box of a card (« encart navette ») and its live rail (L3, 14/10/2026). */
+    shuttleBox: {
+      title: "Navette gratuite",
+      ride: "Trajet",
+      wait: "Attente moy.",
+      waitShort: "Attente",
+      waitFull: "Attente moyenne",
+      minutes: (min: number) => `${min} min`,
+      live: "Navette en direct",
+      dayJ: "Suivie en direct le jour J",
+      parking: "Parking",
+      terminal1: "Terminal 1",
+      airport: "Aéroport",
+      destination: (place: string, min: number | null) => (min ? `${place} · ${min} min` : place),
+      /**
+       * The rail's spoken name, the place with its article (« au Terminal 1 », « et l’aéroport »): the parking's running
+       * shuttles (null until the page's first live answer, which says nothing yet), and how many of them the rail places.
+       */
+      rail: (place: "terminal1" | "airport", running: number | null, placed: number) => {
+        const to = place === "terminal1" ? "au Terminal 1" : "à l’aéroport";
+        if (running === null) return `Trajet du parking ${to}`;
+        if (running === 0) return `Trajet du parking ${to}, aucune navette en route en ce moment`;
+        const s = running > 1 ? "s" : "";
+        const road = `${running} navette${s} en route entre le parking et ${place === "terminal1" ? "le Terminal 1" : "l’aéroport"}`;
+        return placed === 0 ? `${road}, pas encore placée${s} sur le trajet` : road;
+      },
+    },
     kmFromTerminals: (km: string) => `À ${km} km des terminaux`,
     tiles: {
-      shuttle: (min: number) => `Navette ${min} min`,
-      shuttleFree: "gratuite vers les terminaux",
-      shuttleHours: (hours: string) => `gratuite, ${hours}`,
-      secured: "Sécurisé",
+      shuttleLive: "Navette en direct",
+      shuttleFree: "Navette gratuite",
+      free: "gratuite",
+      ride: (min: number) => `trajet ${min} min`,
+      wait: (min: number) => `attente moyenne ${min} min`,
+      followLive: "suivez-la sur la carte le jour J",
+      toTerminals: "vers les terminaux",
+      outdoor: "Extérieur",
+      outdoorText: "Parking à ciel ouvert",
+      covered: "Couvert",
+      coveredText: "Parking couvert",
       fenced: "clôturé",
       cctv: "vidéosurveillance",
+      keysValet: "Vous devez remettre vos clés",
+      keysValetText: "Un voiturier gare votre voiture",
+      keysSelf: "Vous gardez vos clés",
+      keysSelfText: "Vous vous garez vous-même",
+      open24h: "Ouvert 24h/24",
+      open24hText: "Dépôt et retour à toute heure",
+      openHours: (hours: string) => `Ouvert ${hours}`,
+      openHoursText: "Dépôt et retour pendant ces horaires",
       freeCancellation: "Annulation gratuite",
       cancellationText: {
         free_until_arrival: "jusqu’à l’arrivée",
@@ -229,10 +284,6 @@ const frBase = {
       } as Record<string, string>,
       nonRefundable: "Non remboursable",
       nonRefundableText: "aucun remboursement en cas d’annulation",
-      valet: "Voiturier",
-      valetText: "vous laissez les clés à l’accueil",
-      selfPark: "Vous vous garez",
-      selfParkText: "vous gardez vos clés",
     },
   },
   map: {
@@ -266,11 +317,8 @@ const frBase = {
     itinerary: "Itinéraire",
     kmFromTerminals: (km: string) => `${km} km des terminaux`,
     shuttle: "Navette",
-    shuttleValue: (min: number) => `${min} min, gratuite`,
     hours: "Horaires",
     parkingType: "Stationnement",
-    covered: "Couvert",
-    outdoor: "Extérieur",
     fenced: "clôturé",
     cancellation: "Annulation",
     presentation: "Présentation",

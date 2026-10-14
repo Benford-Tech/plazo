@@ -9,12 +9,15 @@ export function ListingPreview(props: {
   photo?: string;
   services: ListingService[];
   shuttleMinutes: number | null;
+  /** The declared average wait (14/10/2026); left out when not declared. */
+  shuttleWaitMinutes?: number | null;
   openingHours: string;
   cancellationPolicy: CancellationPolicy;
   fromPriceCents: number | null;
 }) {
   const facts = [
     props.services.includes("shuttle") && props.shuttleMinutes ? `Navette ${props.shuttleMinutes} min` : null,
+    props.services.includes("shuttle") && props.shuttleWaitMinutes != null ? fr.plazo.previewWait(props.shuttleWaitMinutes) : null,
     props.openingHours || (props.services.includes("open_24h") ? fr.services.open_24h : null),
     ...props.services.filter(s => !["shuttle", "open_24h"].includes(s)).map(s => fr.services[s]),
     fr.cancellationShort[props.cancellationPolicy],

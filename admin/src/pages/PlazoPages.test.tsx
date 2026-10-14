@@ -59,6 +59,7 @@ const savedListing = {
   description: null,
   services: ["shuttle"],
   shuttleMinutes: 8,
+  shuttleWaitMinutes: null,
   distanceKm: null,
   openingHours: null,
   cancellationPolicy: "free_24h",
@@ -229,6 +230,8 @@ describe("Ma fiche", () => {
       description: null,
       services: ["shuttle"],
       shuttleMinutes: 8,
+      // Left empty: not declared, the tag does not show (14/10/2026).
+      shuttleWaitMinutes: null,
       distanceKm: 3.5,
       openingHours: null,
       cancellationPolicy: "free_24h",
@@ -338,6 +341,64 @@ describe("Ma fiche", () => {
     await userEvent.click(button);
     await waitFor(() => expect(toast.error).toHaveBeenLastCalledWith("La rédaction par Claude a échoué (max_tokens)", { duration: 12000 }));
     expect(screen.queryByTestId("description-proposal")).not.toBeInTheDocument();
+  });
+
+  it("déclare l'attente moyenne de la navette, la vide et refuse un nombre hors limites (14/10/2026)", async () => {
+    api.getListing.mockResolvedValue({ listing: { ...savedListing, shuttleWaitMinutes: 5 }, parking });
+    api.getPricing.mockResolvedValue(pricing);
+    api.updateListing.mockImplementation(async (input: { shuttleWaitMinutes: number | null }) => ({ data: { ...savedListing, shuttleWaitMinutes: input.shuttleWaitMinutes } }));
+    renderPage(<ListingPage />);
+
+    const field = await screen.findByLabelText("Attente moyenne de la navette (min)");
+    expect(field).toHaveValue("5");
+    expect(field).toHaveAttribute("aria-describedby", "l-wait-help");
+    expect(document.getElementById("l-wait-help")).toHaveTextContent("Facultatif. Laissé vide, le tag n'apparaît pas.");
+    // Next to the ride in the results preview.
+    expect(screen.getByText(/Navette 8 min · Attente moy\. 5 min/)).toBeInTheDocument();
+
+    fireEvent.change(field, { target: { value: "12" } });
+    await userEvent.click(screen.getByRole("button", { name: "Enregistrer" }));
+    await waitFor(() => expect(api.updateListing).toHaveBeenCalledTimes(1));
+    expect(api.updateListing.mock.calls[0][0]).toMatchObject({ shuttleMinutes: 8, shuttleWaitMinutes: 12 });
+
+    // Emptied: not declared any more.
+    fireEvent.change(field, { target: { value: "" } });
+    expect(screen.queryByText(/Attente moy\./)).not.toBeInTheDocument();
+    await userEvent.click(screen.getByRole("button", { name: "Enregistrer" }));
+    await waitFor(() => expect(api.updateListing).toHaveBeenCalledTimes(2));
+    expect(api.updateListing.mock.calls[1][0]).toMatchObject({ shuttleWaitMinutes: null });
+
+    // Out of range or not whole minutes: the error shows and nothing is sent.
+    for (const value of ["150", "4,5", "-3"]) {
+      fireEvent.change(field, { target: { value } });
+      expect(field).toHaveAttribute("aria-invalid", "true");
+      expect(field).toHaveAttribute("aria-describedby", "l-wait-error l-wait-help");
+      expect(document.getElementById("l-wait-error")).toHaveTextContent("Nombre entier, entre 0 et 120 minutes.");
+      expect(screen.getByRole("button", { name: "Enregistrer" })).toBeDisabled();
+      expect(screen.getByRole("button", { name: "Envoyer pour validation" })).toBeDisabled();
+    }
+    fireEvent.submit(field.closest("form")!);
+    expect(api.updateListing).toHaveBeenCalledTimes(2);
+
+    fireEvent.change(field, { target: { value: "120" } });
+    expect(field).toHaveAttribute("aria-invalid", "false");
+    expect(screen.queryByText("Nombre entier, entre 0 et 120 minutes.")).not.toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Enregistrer" })).toBeEnabled();
+  });
+
+  it("montre en français le refus du serveur sur l'attente moyenne", async () => {
+    api.getListing.mockResolvedValue({ listing: savedListing, parking });
+    api.getPricing.mockResolvedValue(pricing);
+    api.updateListing.mockRejectedValue(new ApiError(400, "invalid", "validation_failed", { shuttleWaitMinutes: "too_large" }));
+    renderPage(<ListingPage />);
+
+    const field = await screen.findByLabelText("Attente moyenne de la navette (min)");
+    expect(field).toHaveValue("");
+    fireEvent.change(field, { target: { value: "0" } });
+    await userEvent.click(screen.getByRole("button", { name: "Enregistrer" }));
+    await waitFor(() => expect(field).toHaveAttribute("aria-invalid", "true"));
+    expect(api.updateListing.mock.calls[0][0]).toMatchObject({ shuttleWaitMinutes: 0 });
+    expect(document.getElementById("l-wait-error")).toHaveTextContent("Nombre entier, entre 0 et 120 minutes.");
   });
 
   it("une fiche publiée peut être retirée par le loueur", async () => {

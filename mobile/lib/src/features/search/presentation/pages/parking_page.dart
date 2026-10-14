@@ -111,7 +111,16 @@ class _ParkingViewState extends State<_ParkingView> {
     final p = response.parking;
     final shuttle = p.services.contains('shuttle') ? p.shuttleMinutes : null;
     final destination = p.address ?? '${p.title}, ${response.airport.name}';
-    final tiles = trustTiles(services: p.services, shuttleMinutes: shuttle, openingHours: p.openingHours, cancellationPolicy: p.cancellationPolicy);
+    // « L'essentiel » (14/10/2026): shuttle (live or not, ride, declared wait), outdoor or covered, keys, opening, cancellation.
+    final tiles = trustTiles(
+      services: p.services,
+      shuttleMinutes: shuttle,
+      shuttleWaitMinutes: p.shuttleWaitMinutes,
+      liveShuttle: p.liveShuttle,
+      openingHours: p.openingHours,
+      cancellationPolicy: p.cancellationPolicy,
+    );
+    final facts = factsLine(services: p.services, distanceKm: p.distanceKm);
     // The price grid is not shown (03/10/2026): the price is computed for the dates in the booking bar.
     final links = locator<LinkService>();
     return ListView(
@@ -136,11 +145,7 @@ class _ParkingViewState extends State<_ParkingView> {
               ),
               const SizedBox(height: 10),
               TrustBand(tiles: tiles),
-              const SizedBox(height: 8),
-              Text(
-                factsLine(services: p.services, distanceKm: p.distanceKm),
-                style: AppText.muted(),
-              ),
+              if (facts.isNotEmpty) ...[const SizedBox(height: 8), Text(facts, key: const Key('parking-facts'), style: AppText.muted())],
               const SizedBox(height: 12),
               Semantics(
                 label: 'parking.anchors'.tr(),

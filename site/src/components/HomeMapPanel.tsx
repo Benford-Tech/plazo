@@ -2,7 +2,8 @@
 
 import Link from "next/link";
 import { useState } from "react";
-import { HomeMap, shuttlesOf, useAirportLive } from "./HomeMap";
+import { useAirportLive } from "./AirportLive";
+import { HomeMap, shuttlesOf } from "./HomeMap";
 import { ChevronIcon } from "./stay/pill";
 import { daysLabel, stayQuery } from "@/lib/dates";
 import { fr, fromPriceUnit } from "@/lib/fr";
@@ -14,7 +15,8 @@ const km = (value: number) => (value < 10 ? value.toFixed(1).replace(".", ",") :
 /**
  * K-A (06/10/2026), the "carte vivante": the hero's map is interactive (drag, zoom; two fingers on a
  * phone), shows every parking of the stay as a pill and the shuttles on the road as moving markers
- * (polled every 12 s). Tapping a pill puts that parking in the card at the bottom.
+ * (polled every 12 s; the page's shared poll inside an `AirportLiveProvider`). Tapping a pill puts that parking in the
+ * card at the bottom.
  *
  * Boutique (11/10/2026): the map is a card with the warm hairline (no shadow); two floating pills (how many
  * parkings for how many days, the shuttles on the road with the live dot); the bottom card is a white

@@ -34,6 +34,16 @@ import { ValidationMiddleware } from '@/middlewares/validation.middleware';
  *               description: { type: string }
  *               services: { type: array, items: { type: string, enum: [shuttle, valet, covered, ev_charging, open_24h, fenced, cctv] } }
  *               shuttleMinutes: { type: integer }
+ *               shuttleWaitMinutes:
+ *                 type: integer
+ *                 nullable: true
+ *                 minimum: 0
+ *                 maximum: 120
+ *                 example: 5
+ *                 description: >-
+ *                   « Attente moyenne de la navette », in minutes (14/10/2026); optional, no tag on the site without it.
+ *                   Unchanged when absent, cleared with null or a blank string (never 0); 400 validation_failed with
+ *                   fields.shuttleWaitMinutes integer, min_0 or too_large.
  *               distanceKm: { type: number }
  *               openingHours: { type: string, example: "24h/24" }
  *               contactPhone: { type: string, nullable: true, example: "04 72 00 00 00", description: Shown to travellers; unchanged when absent }
@@ -43,10 +53,11 @@ import { ValidationMiddleware } from '@/middlewares/validation.middleware';
  *   post:
  *     summary: Claude writes the « Présentation » of the page from the parking's real data (manager; nothing is saved)
  *     description: >
- *       The facts are the saved page (services, shuttle, distance, hours, cancellation), the parking (name, address,
- *       return meeting point), its airport, pricing grid, shuttle vehicles in service, stops and valet files. With
- *       `current`, Claude improves that text instead of starting over. An answer stating a figure absent from the data
- *       (or from `current`), in digits or in words before a unit, mentioning the closed Terminal 2 or longer than 2 000 characters is rejected (ai_unreliable).
+ *       The facts are the saved page (services, shuttle ride and average wait, distance, hours, cancellation), the
+ *       parking (name, address, return meeting point), its airport, pricing grid, shuttle vehicles in service, stops
+ *       and valet files. With `current`, Claude improves that text instead of starting over. An answer stating a
+ *       figure absent from the data (or from `current`), in digits or in words before a unit, mentioning the closed
+ *       Terminal 2 or longer than 2 000 characters is rejected (ai_unreliable).
  *     tags: [Listing]
  *     requestBody:
  *       required: false

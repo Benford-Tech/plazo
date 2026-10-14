@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { applyFilters, hasActiveFilters, parseFilters, priceCeilingCents, resultsQuery, serviceCounts } from "../filters";
+import { applyFilters, hasActiveFilters, liveCount, parseFilters, priceCeilingCents, resultsQuery, serviceCounts } from "../filters";
 import type { SearchResult } from "../types";
 
 const result = (over: Partial<SearchResult>): SearchResult => ({
@@ -26,6 +26,7 @@ describe("search params -> filters", () => {
   it("reads French params and ignores unknown values", () => {
     expect(parseFilters({ service: ["navette", "couvert", "inconnu", "navette"], annulation: "gratuite", navette: "10", prix_max: "60", tri: "distance" })).toEqual({
       services: ["shuttle", "covered"],
+      live: false,
       freeCancellation: true,
       maxShuttle: 10,
       maxPriceCents: 6000,
@@ -33,6 +34,7 @@ describe("search params -> filters", () => {
     });
     expect(parseFilters({ navette: "7", prix_max: "abc", tri: "nope" })).toEqual({
       services: [],
+      live: false,
       freeCancellation: false,
       maxShuttle: null,
       maxPriceCents: null,
@@ -77,6 +79,29 @@ describe("applying filters", () => {
     expect(serviceCounts(all)).toMatchObject({ shuttle: 4, valet: 1, covered: 1, fenced: 1, cctv: 0 });
     expect(priceCeilingCents(all)).toBe(6000);
     expect(priceCeilingCents([D])).toBe(0);
+  });
+});
+
+describe("« Navette en direct » (14/10/2026)", () => {
+  const live = result({ slug: "live", priceCents: 6000, liveShuttle: true });
+  const all = [A, B, C, D, live];
+  const stay = { arrivee: "2026-10-04T06:30", retour: "2026-10-11T15:05" };
+
+  it("reads ?direct=1 only, and writes it right after the stay", () => {
+    expect(parseFilters({ direct: "1" }).live).toBe(true);
+    expect(parseFilters({ direct: "oui" }).live).toBe(false);
+    expect(hasActiveFilters(parseFilters({ direct: "1" }))).toBe(true);
+    expect(resultsQuery(stay, parseFilters({ direct: "1", service: "couvert", tri: "navette" }))).toBe(
+      "?arrivee=2026-10-04T06:30&retour=2026-10-11T15:05&direct=1&service=couvert&tri=navette",
+    );
+    expect(resultsQuery(stay, parseFilters({}))).not.toContain("direct");
+  });
+
+  it("keeps only the parkings whose shuttles are shown live, and counts them over all results", () => {
+    expect(applyFilters(all, parseFilters({ direct: "1" })).map(r => r.slug)).toEqual(["live"]);
+    expect(applyFilters(all, parseFilters({})).map(r => r.slug)).toContain("live");
+    expect(liveCount(all)).toBe(1);
+    expect(liveCount([A, B])).toBe(0);
   });
 });
 

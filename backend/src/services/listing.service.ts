@@ -47,6 +47,8 @@ export class ListingService {
       description: data.description?.trim() || null,
       services: [...new Set(data.services)],
       shuttleMinutes: data.shuttleMinutes ?? null,
+      // « Attente moyenne de la navette » (14/10/2026): kept when a form that does not know it saves the page.
+      ...(data.shuttleWaitMinutes !== undefined && { shuttleWaitMinutes: data.shuttleWaitMinutes }),
       distanceKm: data.distanceKm ?? null,
       openingHours: data.openingHours?.trim() || null,
       // The pro form does not edit it yet: keep it when the field is not sent.

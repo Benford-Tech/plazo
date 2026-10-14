@@ -12,9 +12,19 @@ const shuttleLimits = [10, 15];
 enum SortKey { price, shuttle, distance }
 
 class Filters {
-  const Filters({this.services = const [], this.freeCancellation = false, this.maxShuttle, this.maxPriceCents, this.sort = SortKey.price});
+  const Filters({
+    this.services = const [],
+    this.live = false,
+    this.freeCancellation = false,
+    this.maxShuttle,
+    this.maxPriceCents,
+    this.sort = SortKey.price,
+  });
 
   final List<String> services;
+
+  /// 14/10/2026: only the parkings whose shuttles are shown live (« Navette en direct », the site's ?direct=1).
+  final bool live;
   final bool freeCancellation;
   final int? maxShuttle;
 
@@ -23,18 +33,26 @@ class Filters {
   final SortKey sort;
 
   /// At least one filter (not the sort) narrows the results.
-  bool get active => services.isNotEmpty || freeCancellation || maxShuttle != null || maxPriceCents != null;
+  bool get active => live || services.isNotEmpty || freeCancellation || maxShuttle != null || maxPriceCents != null;
 
-  int get activeCount => services.length + (freeCancellation ? 1 : 0) + (maxShuttle != null ? 1 : 0) + (maxPriceCents != null ? 1 : 0);
+  int get activeCount =>
+      (live ? 1 : 0) + services.length + (freeCancellation ? 1 : 0) + (maxShuttle != null ? 1 : 0) + (maxPriceCents != null ? 1 : 0);
 
-  Filters copyWith({List<String>? services, bool? freeCancellation, int? Function()? maxShuttle, int? Function()? maxPriceCents, SortKey? sort}) =>
-      Filters(
-        services: services ?? this.services,
-        freeCancellation: freeCancellation ?? this.freeCancellation,
-        maxShuttle: maxShuttle != null ? maxShuttle() : this.maxShuttle,
-        maxPriceCents: maxPriceCents != null ? maxPriceCents() : this.maxPriceCents,
-        sort: sort ?? this.sort,
-      );
+  Filters copyWith({
+    List<String>? services,
+    bool? live,
+    bool? freeCancellation,
+    int? Function()? maxShuttle,
+    int? Function()? maxPriceCents,
+    SortKey? sort,
+  }) => Filters(
+    services: services ?? this.services,
+    live: live ?? this.live,
+    freeCancellation: freeCancellation ?? this.freeCancellation,
+    maxShuttle: maxShuttle != null ? maxShuttle() : this.maxShuttle,
+    maxPriceCents: maxPriceCents != null ? maxPriceCents() : this.maxPriceCents,
+    sort: sort ?? this.sort,
+  );
 
   /// Same sort, no filter.
   Filters cleared() => Filters(sort: sort);
@@ -43,13 +61,14 @@ class Filters {
   bool operator ==(Object other) =>
       other is Filters &&
       other.services.join(',') == services.join(',') &&
+      other.live == live &&
       other.freeCancellation == freeCancellation &&
       other.maxShuttle == maxShuttle &&
       other.maxPriceCents == maxPriceCents &&
       other.sort == sort;
 
   @override
-  int get hashCode => Object.hash(services.join(','), freeCancellation, maxShuttle, maxPriceCents, sort);
+  int get hashCode => Object.hash(services.join(','), live, freeCancellation, maxShuttle, maxPriceCents, sort);
 }
 
 int _byNullable(num? a, num? b) => (a ?? double.infinity).compareTo(b ?? double.infinity);
@@ -57,6 +76,7 @@ int _byNullable(num? a, num? b) => (a ?? double.infinity).compareTo(b ?? double.
 /// Results matching the filters, available first, then in the chosen order.
 List<SearchResultModel> applyFilters(List<SearchResultModel> results, Filters f) {
   final kept = results.where((r) {
+    if (f.live && !r.liveShuttle) return false;
     if (f.services.any((s) => !r.services.contains(s))) return false;
     if (f.freeCancellation && r.cancellationPolicy == 'non_refundable') return false;
     if (f.maxShuttle != null && (r.shuttleMinutes == null || r.shuttleMinutes! > f.maxShuttle!)) return false;
@@ -94,6 +114,9 @@ Map<String, int> serviceCounts(List<SearchResultModel> results) {
   }
   return counts;
 }
+
+/// Number of results whose shuttles are shown live (« Navette en direct »), over all results like the services.
+int liveCount(List<SearchResultModel> results) => results.where((r) => r.liveShuttle).length;
 
 /// Upper bound of the price slider: highest price, rounded up to 10 €.
 int priceCeilingCents(List<SearchResultModel> results) {

@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { ArrowIcon, GuideBody, MEASURE } from "./AirportGuide";
+import { AirportLiveProvider } from "./AirportLive";
 import { Breadcrumb } from "./Breadcrumb";
 import { JsonLd } from "./JsonLd";
 import { ResultCard } from "./ResultCard";
@@ -80,7 +81,7 @@ export function TopicGuideView({
         {partners.length === 0 ? (
           <p className="card p-5 text-soft">{guide.partners.empty}</p>
         ) : (
-          <>
+          <AirportLiveProvider slug={airport.slug}>
             <ul className="flex flex-col gap-3 md:gap-4">
               {partners.map((result, i) => (
                 <li key={result.slug}>
@@ -88,6 +89,7 @@ export function TopicGuideView({
                   <ResultCard
                     result={result}
                     href={`/${airport.slug}/${result.slug}${stayQuery(stay)}`}
+                    airport={airport}
                     highlighted={i === 0}
                     badges={i === 0 ? ["cheapest"] : []}
                     headingLevel={3}
@@ -101,7 +103,7 @@ export function TopicGuideView({
                 <ArrowIcon className="ml-1.5 inline-block align-[-3px]" />
               </Link>
             </p>
-          </>
+          </AirportLiveProvider>
         )}
       </section>
 

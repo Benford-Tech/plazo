@@ -1,5 +1,5 @@
 import { render, screen } from "@testing-library/react";
-import { beforeEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import type { SearchResponse, SearchResult } from "@/lib/types";
 
 const { search } = vi.hoisted(() => ({ search: vi.fn() }));
@@ -38,10 +38,10 @@ const response = (results: SearchResult[]): SearchResponse => ({
   results,
 });
 
-async function renderPage() {
+async function renderPage(extra: Record<string, string> = {}) {
   const ui = await ResultsPage({
     params: Promise.resolve({ airport: "lyon-saint-exupery" }),
-    searchParams: Promise.resolve({ arrivee: "2099-10-13T23:30", retour: "2099-10-20T18:00" }),
+    searchParams: Promise.resolve({ arrivee: "2099-10-13T23:30", retour: "2099-10-20T18:00", ...extra }),
   } as never);
   return render(ui);
 }
@@ -70,5 +70,44 @@ describe("results: night fees (direction B, 12/10/2026)", () => {
     );
     await renderPage();
     expect(screen.queryByText(/frais de nuit compris/)).not.toBeInTheDocument();
+  });
+});
+
+describe("results: « Navette en direct » (14/10/2026)", () => {
+  beforeEach(() => {
+    search.mockReset();
+    vi.stubGlobal("fetch", vi.fn().mockResolvedValue({ ok: false }));
+  });
+  afterEach(() => vi.unstubAllGlobals());
+
+  it("a filter row counted like the services, and a quick chip while it narrows the results", async () => {
+    search.mockResolvedValue(response([result(), result({ slug: "parkair", title: "Parkair Lyon", liveShuttle: true })]));
+    await renderPage();
+    const row = screen.getByLabelText(/^Navette en direct/, { selector: "#f-direct" });
+    expect(row).toHaveAttribute("name", "direct");
+    expect(row).not.toBeChecked();
+    expect(row.closest("label")).toHaveTextContent("Navette en direct1");
+    expect(screen.getByLabelText("Navette en direct", { selector: "#q-direct" })).toBeInTheDocument();
+    // Both parkings listed; the live one carries the rail, fed by one shared poll.
+    expect(screen.getAllByRole("article")).toHaveLength(2);
+    expect(screen.getAllByTestId("live-rail")).toHaveLength(1);
+    expect(screen.getByTestId("live-rail")).toHaveTextContent("Terminal 1 · 5 min");
+  });
+
+  it("?direct=1 keeps the parkings whose shuttles are shown live", async () => {
+    search.mockResolvedValue(response([result(), result({ slug: "parkair", title: "Parkair Lyon", liveShuttle: true })]));
+    await renderPage({ direct: "1" });
+    expect(screen.getAllByRole("article").map(a => a.getAttribute("data-result-slug"))).toEqual(["parkair"]);
+    expect(screen.getByLabelText(/^Navette en direct/, { selector: "#f-direct" })).toBeChecked();
+    expect(screen.getByRole("link", { name: "Effacer les filtres" })).toHaveAttribute(
+      "href",
+      "/lyon-saint-exupery/recherche?arrivee=2099-10-13T23:30&retour=2099-10-20T18:00",
+    );
+  });
+
+  it("no « Navette en direct » row when no parking shows its shuttles", async () => {
+    search.mockResolvedValue(response([result(), result({ slug: "parkair" })]));
+    await renderPage();
+    expect(screen.queryByText("Navette en direct")).not.toBeInTheDocument();
   });
 });

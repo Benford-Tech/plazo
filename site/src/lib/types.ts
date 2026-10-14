@@ -16,6 +16,8 @@ export interface ListingSummary {
   /** Known services, possibly with values this site does not know yet. */
   services: string[];
   shuttleMinutes: number | null;
+  /** Average wait for the shuttle as the operator declares it (14/10/2026, « ATTENTE MOY. »); null or missing: not declared. */
+  shuttleWaitMinutes?: number | null;
   distanceKm: number | null;
   openingHours: string | null;
   cancellationPolicy: CancellationPolicy;
