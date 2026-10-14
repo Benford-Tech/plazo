@@ -15,6 +15,13 @@ abstract class ResultsState with _$ResultsState {
     String? selectedSlug,
     String? errorMessage,
     String? errorCode,
+
+    /// L3: the airport's live answer (shuttles on the road), null until the first one; and when it came.
+    AirportLiveModel? live,
+    DateTime? liveAt,
+
+    /// I-C: the heading of each moving shuttle, from its previous position (trip id → degrees).
+    @Default(<String, double>{}) Map<String, double> headings,
   }) = _ResultsState;
 
   List<SearchResultModel> get results => response?.results ?? const [];
@@ -35,4 +42,8 @@ abstract class ResultsState with _$ResultsState {
   Map<String, List<ResultBadge>> get badges => resultBadges(shown);
 
   bool get online => response?.payments == 'online';
+
+  /// The live rail of a parking (L3); null until the first live answer (the rail's status then stays blank: nothing is
+  /// known yet).
+  RailState? railFor(SearchResultModel r) => live == null ? null : railState(live, r.slug, fallbackParking: r.location, headings: headings);
 }

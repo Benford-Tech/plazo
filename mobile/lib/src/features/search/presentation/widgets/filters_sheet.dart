@@ -5,12 +5,13 @@ import '../../../../core/helpers/listing.dart';
 import '../../../../core/helpers/money.dart';
 import '../../../../shared/theme/theme.dart';
 import '../../../../shared/widgets/gradient_button.dart';
+import '../../../../shared/widgets/live_dot.dart';
 import '../../../../shared/widgets/segmented.dart';
 import '../../data/models/public_models.dart';
 import '../../domain/logic/filters.dart';
 
-/// Opens the filters (the site's filter column): services, free cancellation, shuttle time, maximum
-/// total price. Returns the new filters, or null when closed.
+/// Opens the filters (the site's filter column): « Navette en direct », services, free cancellation, shuttle time,
+/// maximum total price. Returns the new filters, or null when closed.
 Future<Filters?> showFiltersSheet(BuildContext context, {required Filters filters, required List<SearchResultModel> results}) {
   return showModalBottomSheet<Filters>(
     context: context,
@@ -49,6 +50,8 @@ class _FiltersSheetState extends State<FiltersSheet> {
   Widget build(BuildContext context) {
     final counts = serviceCounts(widget.results);
     final visible = filterServices.where((s) => counts[s]! > 0 || _f.services.contains(s)).toList();
+    final live = liveCount(widget.results);
+    final showLive = live > 0 || _f.live;
     final ceiling = _ceiling;
     final price = (_f.maxPriceCents ?? ceiling).clamp(0, ceiling);
     final free = widget.results.where((r) => r.cancellationPolicy != 'non_refundable').length;
@@ -79,8 +82,27 @@ class _FiltersSheetState extends State<FiltersSheet> {
               shrinkWrap: true,
               padding: const EdgeInsets.fromLTRB(16, 4, 16, 8),
               children: [
-                if (visible.isNotEmpty) ...[
+                if (visible.isNotEmpty || showLive) ...[
                   _title('filters.services'.tr()),
+                  // 14/10/2026: the parkings whose shuttles are shown live, first (the site's ?direct=1).
+                  if (showLive)
+                    CheckboxListTile(
+                      key: const Key('filter-live'),
+                      contentPadding: EdgeInsets.zero,
+                      controlAffinity: ListTileControlAffinity.leading,
+                      activeColor: AppColors.accent,
+                      value: _f.live,
+                      onChanged: (v) => setState(() => _f = _f.copyWith(live: v ?? false)),
+                      // « ● Navette en direct »: the dot before the words, breathing unless motion is reduced (as the site).
+                      title: Row(
+                        children: [
+                          LiveDot(key: const Key('filter-live-dot'), size: 6, animate: !(MediaQuery.maybeDisableAnimationsOf(context) ?? false)),
+                          const SizedBox(width: 5),
+                          Flexible(child: Text('filters.live'.tr(), style: AppText.body())),
+                        ],
+                      ),
+                      secondary: Text('$live', style: AppText.muted()),
+                    ),
                   for (final s in visible)
                     CheckboxListTile(
                       key: Key('filter-$s'),

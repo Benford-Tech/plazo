@@ -184,7 +184,7 @@ import { ValidationMiddleware } from '@/middlewares/validation.middleware';
  *     description: >-
  *       Each listing carries its pricing for the review: pricingTiers, fromPriceCents, extraDayPriceCents and `night`,
  *       the night fees travellers pay ({ start, end, arrivalFeeCents, returnFeeCents }, as on the public page; null
- *       when none).
+ *       when none), and every field of the page, `shuttleWaitMinutes` (average wait declared, null when none) included.
  *     tags: [Platform]
  *     parameters:
  *       - { in: query, name: status, schema: { type: string, enum: [draft, pending_review, published, rejected] } }

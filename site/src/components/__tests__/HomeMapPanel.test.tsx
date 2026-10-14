@@ -1,7 +1,9 @@
 import { act, fireEvent, render, screen } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import type { MapParking, MapShuttle } from "../ResultsMap";
+import { AirportLiveProvider } from "../AirportLive";
 import { HomeMapPanel } from "../HomeMapPanel";
+import { ResultCard } from "../ResultCard";
 import type { AirportLive, SearchResult } from "@/lib/types";
 
 // next/dynamic resolves asynchronously (and never under fake timers): the stub map loads at once.
@@ -124,6 +126,35 @@ describe("HomeMapPanel (K-A : carte vivante)", () => {
     fireEvent.click(screen.getByRole("button", { name: "Parking c Complet" }));
     expect(screen.getByTestId("home-featured")).toHaveTextContent("Complet à ces dates");
 
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(12_000);
+    });
+    expect(fetchMock).toHaveBeenCalledTimes(2);
+  });
+
+  it("sur la page de l’aéroport, la carte et les cartes des parkings partagent une seule lecture (14/10/2026)", async () => {
+    const fetchMock = vi.fn().mockResolvedValue({ ok: true, json: async () => live });
+    vi.stubGlobal("fetch", fetchMock);
+    render(
+      <AirportLiveProvider slug="lyon-saint-exupery">
+        <HomeMapPanel
+          airport={{ slug: "lyon-saint-exupery", name: "Lyon Saint-Exupéry", location: { lat: 45.7256, lng: 5.0811 } }}
+          results={[result("soleil")]}
+          featured="soleil"
+          arrivee="2026-10-07T08:00"
+          retour="2026-10-14T18:00"
+          days={7}
+        />
+        <ResultCard result={result("soleil", { liveShuttle: true })} href="/lyon-saint-exupery/soleil" airport={{ slug: "lyon-saint-exupery", code: "LYS" }} highlighted={false} />
+      </AirportLiveProvider>,
+    );
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(0);
+    });
+    expect(fetchMock).toHaveBeenCalledTimes(1);
+    expect(screen.getByTestId("home-map-shuttles")).toHaveTextContent("2 navettes en circulation");
+    expect(screen.getAllByTestId("rail-shuttle")).toHaveLength(1);
+    expect(screen.getByTestId("live-rail-status")).toHaveTextContent("il y a 12 s");
     await act(async () => {
       await vi.advanceTimersByTimeAsync(12_000);
     });

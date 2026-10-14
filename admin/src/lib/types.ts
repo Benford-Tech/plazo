@@ -691,6 +691,8 @@ export interface Listing {
   description: string | null;
   services: ListingService[];
   shuttleMinutes: number | null;
+  /** 14/10/2026: the shuttle's average wait declared by the operator, whole minutes 0–120 (null: not declared). */
+  shuttleWaitMinutes: number | null;
   distanceKm: number | null;
   openingHours: string | null;
   cancellationPolicy: CancellationPolicy;
@@ -705,6 +707,7 @@ export interface ListingInput {
   description: string | null;
   services: ListingService[];
   shuttleMinutes: number | null;
+  shuttleWaitMinutes: number | null;
   distanceKm: number | null;
   openingHours: string | null;
   cancellationPolicy: CancellationPolicy;
@@ -868,6 +871,8 @@ export interface PlatformListing {
   description: string | null;
   services: ListingService[];
   shuttleMinutes: number | null;
+  /** 14/10/2026: the declared average wait of the shuttle (null: not declared). */
+  shuttleWaitMinutes: number | null;
   distanceKm: number | null;
   openingHours: string | null;
   contactPhone: string | null;

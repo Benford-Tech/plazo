@@ -2,8 +2,9 @@ import Link from "next/link";
 import { DemoBadge } from "./DemoBadge";
 import { FactChips } from "./Highlights";
 import { Photo } from "./Photo";
+import { ShuttleBox } from "./ShuttleBox";
 import { fr } from "@/lib/fr";
-import { type Badge, factChips, perDayLabel } from "@/lib/highlights";
+import { type Badge, factChips, perDayLabel, shuttleBox } from "@/lib/highlights";
 import { formatEuros } from "@/lib/money";
 import type { SearchResult } from "@/lib/types";
 
@@ -13,8 +14,9 @@ const BADGE_TONE: Record<Badge, string> = { cheapest: "pill-hot", fastestShuttle
 
 /**
  * One parking of the results (Boutique): a white card with a hairline, the photo on the left (« EN DIRECT » on it), the eyebrow pills,
- * the name in Playfair and the fact chips beside it; the price and « Voir et réserver » sit in a stub under them
- * while the card is narrow (phones, the column next to the map: `compact`), in a right-hand column once it is wide. The first result
+ * the name in Playfair, the shuttle box (direction C, 14/10/2026: ride, declared wait and, for a parking whose shuttles
+ * are shown live, the live rail L3 fed by the page's `AirportLiveProvider`) and the fact chips under it; the price and
+ * « Voir et réserver » sit in a stub under them while the card is narrow (phones, the column next to the map: `compact`), in a right-hand column once it is wide. The first result
  * (`highlighted`) floats, with an orange hairline and the only orange button; the others have an outlined button.
  * A parking without room stays legible: no faded card, a cream stub with a rose « Complet à ces dates » pill.
  * With the map shown it is tied to its pin on the map: id "resultat-<slug>", data-result-slug, and data-map-active
@@ -23,6 +25,7 @@ const BADGE_TONE: Record<Badge, string> = { cheapest: "pill-hot", fastestShuttle
 export function ResultCard({
   result,
   href,
+  airport,
   highlighted,
   badges = [],
   headingLevel = 3,
@@ -31,6 +34,11 @@ export function ResultCard({
 }: {
   result: SearchResult;
   href: string;
+  /**
+   * The airport of the results: its live answer feeds the rail, its code names the terminal (« Terminal 1 » at LYS).
+   * Without it the rail stays still (« Suivie en direct le jour J »).
+   */
+  airport?: { slug: string; code?: string | null };
   highlighted: boolean;
   /** "Le moins cher", "Navette la plus rapide" (computed over the displayed results). */
   badges?: Badge[];
@@ -48,6 +56,7 @@ export function ResultCard({
   // The card lays itself out on its own width (container queries): photo 104 px with the price in a stub under it,
   // photo 150 px from 32rem, and from 42rem (outside the map's column) the price in a right-hand column.
   const wide = !compact;
+  const shuttle = shuttleBox(result);
   return (
     <article
       id={`resultat-${result.slug}`}
@@ -81,7 +90,11 @@ export function ResultCard({
             </Title>
             {result.isDemo && <DemoBadge />}
           </div>
-          <FactChips chips={factChips(result)} />
+          {shuttle && (
+            <ShuttleBox facts={shuttle} slug={result.slug} airportSlug={airport?.slug ?? ""} airportCode={airport?.code} location={result.location ?? null} short={compact} />
+          )}
+          {/* The narrow card's wording (« Clés à remettre », « 24h/24 ») in the column next to the map, whatever its width. */}
+          <FactChips chips={factChips(result)} short={compact} />
           {noPosition && <p className="text-[12.5px] font-semibold text-soft">{fr.map.noPosition}</p>}
         </div>
 

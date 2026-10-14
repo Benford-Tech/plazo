@@ -38,6 +38,9 @@ abstract class SearchResultModel with _$SearchResultModel {
     required String title,
     @Default(<String>[]) List<String> services,
     int? shuttleMinutes,
+
+    /// Average wait for the shuttle as the operator declares it (14/10/2026, « ATTENTE MOY. »); null: not declared.
+    int? shuttleWaitMinutes,
     double? distanceKm,
     String? openingHours,
     @Default('non_refundable') String cancellationPolicy,
@@ -140,6 +143,9 @@ abstract class ParkingDetailModel with _$ParkingDetailModel {
     required String title,
     @Default(<String>[]) List<String> services,
     int? shuttleMinutes,
+
+    /// Average wait for the shuttle as the operator declares it (14/10/2026); null: not declared.
+    int? shuttleWaitMinutes,
     double? distanceKm,
     String? openingHours,
     @Default('non_refundable') String cancellationPolicy,
@@ -152,6 +158,9 @@ abstract class ParkingDetailModel with _$ParkingDetailModel {
     String? phone,
     @Default(PricingModel()) PricingModel pricing,
     @Default(false) bool isDemo,
+
+    /// R-B + I-C: the parking shows its shuttles to the travellers (« Navette en direct » in « L'essentiel »).
+    @Default(false) bool liveShuttle,
   }) = _ParkingDetailModel;
 
   factory ParkingDetailModel.fromJson(Map<String, dynamic> json) => _$ParkingDetailModelFromJson(json);

@@ -43,6 +43,7 @@ _SearchResultModel _$SearchResultModelFromJson(
       (json['services'] as List<dynamic>?)?.map((e) => e as String).toList() ??
       const <String>[],
   shuttleMinutes: (json['shuttleMinutes'] as num?)?.toInt(),
+  shuttleWaitMinutes: (json['shuttleWaitMinutes'] as num?)?.toInt(),
   distanceKm: (json['distanceKm'] as num?)?.toDouble(),
   openingHours: json['openingHours'] as String?,
   cancellationPolicy: json['cancellationPolicy'] as String? ?? 'non_refundable',
@@ -68,6 +69,7 @@ Map<String, dynamic> _$SearchResultModelToJson(_SearchResultModel instance) =>
       'title': instance.title,
       'services': instance.services,
       'shuttleMinutes': instance.shuttleMinutes,
+      'shuttleWaitMinutes': instance.shuttleWaitMinutes,
       'distanceKm': instance.distanceKm,
       'openingHours': instance.openingHours,
       'cancellationPolicy': instance.cancellationPolicy,
@@ -191,6 +193,7 @@ _ParkingDetailModel _$ParkingDetailModelFromJson(
       (json['services'] as List<dynamic>?)?.map((e) => e as String).toList() ??
       const <String>[],
   shuttleMinutes: (json['shuttleMinutes'] as num?)?.toInt(),
+  shuttleWaitMinutes: (json['shuttleWaitMinutes'] as num?)?.toInt(),
   distanceKm: (json['distanceKm'] as num?)?.toDouble(),
   openingHours: json['openingHours'] as String?,
   cancellationPolicy: json['cancellationPolicy'] as String? ?? 'non_refundable',
@@ -209,6 +212,7 @@ _ParkingDetailModel _$ParkingDetailModelFromJson(
       ? const PricingModel()
       : PricingModel.fromJson(json['pricing'] as Map<String, dynamic>),
   isDemo: json['isDemo'] as bool? ?? false,
+  liveShuttle: json['liveShuttle'] as bool? ?? false,
 );
 
 Map<String, dynamic> _$ParkingDetailModelToJson(_ParkingDetailModel instance) =>
@@ -217,6 +221,7 @@ Map<String, dynamic> _$ParkingDetailModelToJson(_ParkingDetailModel instance) =>
       'title': instance.title,
       'services': instance.services,
       'shuttleMinutes': instance.shuttleMinutes,
+      'shuttleWaitMinutes': instance.shuttleWaitMinutes,
       'distanceKm': instance.distanceKm,
       'openingHours': instance.openingHours,
       'cancellationPolicy': instance.cancellationPolicy,
@@ -229,6 +234,7 @@ Map<String, dynamic> _$ParkingDetailModelToJson(_ParkingDetailModel instance) =>
       'phone': instance.phone,
       'pricing': instance.pricing,
       'isDemo': instance.isDemo,
+      'liveShuttle': instance.liveShuttle,
     };
 
 _ParkingResponseModel _$ParkingResponseModelFromJson(

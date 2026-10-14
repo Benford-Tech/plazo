@@ -1,5 +1,6 @@
 import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:intl/date_symbol_data_local.dart';
 import 'package:parking_app/src/shared/theme/theme.dart';
@@ -16,6 +17,23 @@ Future<void> setUpLocalizedTests() async {
   await initializeDateFormatting('fr_FR');
   IgnMap.tilesEnabled = false;
   LiveDot.animationsEnabled = false;
+}
+
+/// The app's own fonts instead of the test font (whose glyphs are all one em wide), for the tests that check whether
+/// a text fits on one line.
+Future<void> loadAppFonts() async {
+  for (final (family, files) in const [
+    ('Manrope', ['assets/fonts/Manrope.ttf']),
+    ('PlayfairDisplay', ['assets/fonts/PlayfairDisplay.ttf', 'assets/fonts/PlayfairDisplay-Italic.ttf']),
+    ('JetBrainsMono', ['assets/fonts/JetBrainsMono.ttf']),
+    ('Inter', ['assets/fonts/Inter.ttf']),
+  ]) {
+    final loader = FontLoader(family);
+    for (final file in files) {
+      loader.addFont(rootBundle.load(file));
+    }
+    await loader.load();
+  }
 }
 
 Future<void> pumpLocalized(WidgetTester tester, Widget child, {Size size = const Size(400, 900)}) async {

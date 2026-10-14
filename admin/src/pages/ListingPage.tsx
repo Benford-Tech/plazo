@@ -19,6 +19,8 @@ const SERVICES: ListingService[] = ["shuttle", "open_24h", "fenced", "cctv", "va
 const POLICIES: CancellationPolicy[] = ["free_24h", "free_48h", "free_until_arrival", "non_refundable"];
 // The listing's own limit (UpdateListingDto.description).
 const DESCRIPTION_MAX = 2000;
+// The shuttle's declared average wait (UpdateListingDto.shuttleWaitMinutes, 14/10/2026).
+const WAIT_MAX = 120;
 // The traveller site shares the domain (served at /); VITE_SITE_URL points elsewhere in development.
 const SITE_URL = (import.meta.env.VITE_SITE_URL ?? "").replace(/\/$/, "");
 
@@ -31,6 +33,7 @@ type Form = {
   description: string;
   services: ListingService[];
   shuttleMinutes: string;
+  shuttleWaitMinutes: string;
   distanceKm: string;
   openingHours: string;
   cancellationPolicy: CancellationPolicy;
@@ -45,11 +48,19 @@ function initialForm(data: ListingResponse): Form {
     description: l?.description ?? "",
     services: l?.services ?? ["shuttle"],
     shuttleMinutes: String(l?.shuttleMinutes ?? data.parking.shuttleTravelMinutes ?? ""),
+    shuttleWaitMinutes: l?.shuttleWaitMinutes != null ? String(l.shuttleWaitMinutes) : "",
     distanceKm: l?.distanceKm !== null && l?.distanceKm !== undefined ? String(l.distanceKm).replace(".", ",") : "",
     openingHours: l?.openingHours ?? "",
     cancellationPolicy: l?.cancellationPolicy ?? "free_24h",
     photos: l?.photos ?? [],
   };
+}
+
+/** The average wait as typed: null when left empty (not declared), undefined when it is not whole minutes from 0 to 120. */
+function waitMinutes(value: string): number | null | undefined {
+  const v = value.trim();
+  if (!v) return null;
+  return /^\d{1,3}$/.test(v) && Number(v) <= WAIT_MAX ? Number(v) : undefined;
 }
 
 function toInput(form: Form, airportCode: string): ListingInput {
@@ -62,6 +73,7 @@ function toInput(form: Form, airportCode: string): ListingInput {
     description: form.description.trim() || null,
     services: form.services,
     shuttleMinutes: minutes,
+    shuttleWaitMinutes: waitMinutes(form.shuttleWaitMinutes) ?? null,
     distanceKm: km,
     openingHours: form.openingHours.trim() || null,
     cancellationPolicy: form.cancellationPolicy,
@@ -166,7 +178,11 @@ export default function ListingPage() {
   const prices = pricing.data?.tiers.map(x => x.priceCents) ?? [];
   const airportName = listing.data?.listing?.airport.name ?? "Lyon Saint-Exupéry";
   const pageUrl = published ? `${SITE_URL}/${current?.airport.slug}/${current?.slug}` : null;
+  const wait = waitMinutes(form.shuttleWaitMinutes);
+  // A wait that is not whole minutes from 0 to 120 is never sent (the server would refuse it too).
+  const waitError = wait === undefined || fieldErrors.shuttleWaitMinutes ? t.shuttleWaitInvalid : null;
   const busy = save.isPending || submit.isPending || withdraw.isPending;
+  const blocked = busy || wait === undefined;
   const err = (k: string) => (fieldErrors[k] ? <p className="mt-1 text-sm text-destructive">{errorMessage(fieldErrors[k])}</p> : null);
 
   return (
@@ -183,7 +199,7 @@ export default function ListingPage() {
               <button
                 type="button"
                 onClick={() => submit.mutate()}
-                disabled={busy || emailPending}
+                disabled={blocked || emailPending}
                 title={emailPending ? t.verifyFirst : undefined}
                 className="min-h-11 bg-primary px-4 font-bold uppercase tracking-wide text-primary-foreground hover:brightness-110 disabled:opacity-50"
               >
@@ -222,7 +238,7 @@ export default function ListingPage() {
           className="flex flex-col gap-4"
           onSubmit={e => {
             e.preventDefault();
-            save.mutate();
+            if (!blocked) save.mutate();
           }}
         >
           <p className="text-muted-foreground">
@@ -347,13 +363,35 @@ export default function ListingPage() {
               })}
             </div>
           </fieldset>
-          <div className="grid gap-4 sm:grid-cols-3">
+          <div className="grid gap-4 sm:grid-cols-2">
             <div>
               <label htmlFor="l-shuttle" className={labelClass}>
                 {t.shuttleMinutes}
               </label>
               <input id="l-shuttle" inputMode="numeric" value={form.shuttleMinutes} onChange={set("shuttleMinutes")} aria-invalid={!!fieldErrors.shuttleMinutes} className={cn(inputClass, "tabular font-mono")} />
               {err("shuttleMinutes")}
+            </div>
+            <div>
+              <label htmlFor="l-wait" className={labelClass}>
+                {t.shuttleWaitMinutes}
+              </label>
+              <input
+                id="l-wait"
+                inputMode="numeric"
+                value={form.shuttleWaitMinutes}
+                onChange={set("shuttleWaitMinutes")}
+                aria-invalid={!!waitError}
+                aria-describedby={waitError ? "l-wait-error l-wait-help" : "l-wait-help"}
+                className={cn(inputClass, "tabular font-mono")}
+              />
+              {waitError && (
+                <p id="l-wait-error" className="mt-1 text-sm text-destructive">
+                  {waitError}
+                </p>
+              )}
+              <p id="l-wait-help" className="mt-1 text-sm text-muted-foreground">
+                {t.shuttleWaitHelp}
+              </p>
             </div>
             <div>
               <label htmlFor="l-km" className={labelClass}>
@@ -424,6 +462,7 @@ export default function ListingPage() {
             photo={form.photos[0]}
             services={form.services}
             shuttleMinutes={form.shuttleMinutes ? Number(form.shuttleMinutes) : null}
+            shuttleWaitMinutes={wait}
             openingHours={form.openingHours}
             cancellationPolicy={form.cancellationPolicy}
             fromPriceCents={prices.length ? Math.min(...prices) : null}
@@ -439,7 +478,7 @@ export default function ListingPage() {
             <button
               type="button"
               onClick={() => save.mutate()}
-              disabled={busy}
+              disabled={blocked}
               className="h-[50px] flex-1 bg-primary text-lg font-bold uppercase tracking-wider text-primary-foreground hover:brightness-110 disabled:opacity-50"
             >
               {t.save}

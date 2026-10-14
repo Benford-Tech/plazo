@@ -50,6 +50,8 @@ export interface DescriptionSource {
     title: string;
     services: string[];
     shuttleMinutes: number | null;
+    /** « Attente moyenne de la navette » declared on « Ma fiche » (14/10/2026); null when not declared. */
+    shuttleWaitMinutes: number | null;
     distanceKm: number | null;
     openingHours: string | null;
     cancellationPolicy: CancellationPolicy;
@@ -104,6 +106,9 @@ export function descriptionFacts(source: DescriptionSource): DescriptionFact[] {
     // As the pro form shows it: the page's figure, else the parking's own setting (Réglages).
     const minutes = listing?.shuttleMinutes ?? parking.shuttleTravelMinutes;
     if (minutes) add("Trajet en navette jusqu'à l'aéroport", `${minutes} min`);
+    // Declared by the operator (14/10/2026); 0 is a real answer (no wait), null is none.
+    const wait = listing?.shuttleWaitMinutes;
+    if (wait !== null && wait !== undefined) add('Attente moyenne de la navette', `${wait} min`);
     if (source.vehicles.length) {
       const seats = source.vehicles.map(v => v.seats).filter((n): n is number => !!n && n > 0);
       const count = source.vehicles.length;

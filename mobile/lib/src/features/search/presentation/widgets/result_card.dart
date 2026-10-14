@@ -11,12 +11,28 @@ import '../../../../shared/widgets/live_dot.dart';
 import '../../../../shared/widgets/shuttle_icon.dart';
 import '../../../../shared/widgets/striped_placeholder.dart';
 import '../../data/models/public_models.dart';
+import '../../domain/logic/shuttle_rail.dart';
+import 'shuttle_box.dart';
 
-/// One parking of the results (mockup F2): photo with its badges, name, fact chips, total price
-/// for the stay with the price per day, and "Voir". Unavailable parkings are dimmed with
-/// "Complet" (or "Pas de tarif").
+/// Under this width a card is narrow (every phone): short tags (« Clés à remettre », « 24h/24 »), « ATTENTE ».
+const narrowCardWidth = 512.0;
+
+/// One parking of the results (mockup F2): photo with its badges, name, the shuttle box (direction C, 14/10/2026:
+/// ride, declared wait and, for a parking whose shuttles are shown live, the live rail L3 fed by the screen's shared
+/// poll), the tags, total price for the stay with the price per day, and "Voir". Unavailable parkings are dimmed
+/// with "Complet" (or "Pas de tarif").
 class ResultCard extends StatelessWidget {
-  const ResultCard({super.key, required this.result, required this.onTap, this.highlighted = false, this.badges = const [], this.compact = false});
+  const ResultCard({
+    super.key,
+    required this.result,
+    required this.onTap,
+    this.highlighted = false,
+    this.badges = const [],
+    this.compact = false,
+    this.rail,
+    this.liveAt,
+    this.airportCode,
+  });
 
   final SearchResultModel result;
   final VoidCallback onTap;
@@ -25,13 +41,28 @@ class ResultCard extends StatelessWidget {
   /// "Le moins cher", "Navette la plus rapide" (computed over the displayed results).
   final List<ResultBadge> badges;
 
-  /// On the map: no photo.
+  /// On the map: no photo, and the shuttle box on one line without the live rail (the card leaves the map in view).
   final bool compact;
+
+  /// L3: this parking's rail from the screen's live answer (null before the first one) and when it came.
+  final RailState? rail;
+  final DateTime? liveAt;
+
+  /// The airport of the results: « Terminal 1 » at the end of the rail at LYS.
+  final String? airportCode;
 
   @override
   Widget build(BuildContext context) {
     final bookable = result.bookable;
-    final chips = factChips(services: result.services, shuttleMinutes: result.shuttleMinutes, cancellationPolicy: result.cancellationPolicy);
+    final chips = factChips(services: result.services, openingHours: result.openingHours, cancellationPolicy: result.cancellationPolicy);
+    final shuttle = shuttleBox(
+      services: result.services,
+      shuttleMinutes: result.shuttleMinutes,
+      shuttleWaitMinutes: result.shuttleWaitMinutes,
+      liveShuttle: result.liveShuttle,
+    );
+    // The cards span the screen less its 12–16 px margins.
+    final narrow = MediaQuery.sizeOf(context).width - 32 < narrowCardWidth;
     final price = bookable ? formatEuros(result.priceCents!) : null;
     return Semantics(
       container: true,
@@ -39,6 +70,7 @@ class ResultCard extends StatelessWidget {
       label: [
         result.title,
         for (final b in badges) badgeLabel(b),
+        if (shuttle != null) shuttleBoxDescription(shuttle, withRail: !compact, rail: rail, airportCode: airportCode),
         if (chips.isNotEmpty) chips.map((c) => c.title ?? c.label).join(', '),
         if (price != null) '$price, ${'results.all_in'.tr(args: [daysLabel(result.days)])}, ${perDayLabel(result.priceCents!, result.days)}',
         if (!bookable) result.priceCents == null ? 'results.no_price'.tr() : 'results.full'.tr(),
@@ -75,7 +107,6 @@ class ResultCard extends StatelessWidget {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       if (compact && badges.isNotEmpty) ...[ResultBadges(badges: badges), const SizedBox(height: 6)],
-                      if (compact && result.liveShuttle) ...[const LiveShuttleTag(), const SizedBox(height: 6)],
                       Row(
                         crossAxisAlignment: CrossAxisAlignment.center,
                         children: [
@@ -83,7 +114,11 @@ class ResultCard extends StatelessWidget {
                           if (result.isDemo) ...[const SizedBox(width: 8), const DemoTag()],
                         ],
                       ),
-                      if (chips.isNotEmpty) ...[const SizedBox(height: 6), FactChips(chips: chips)],
+                      if (shuttle != null) ...[
+                        const SizedBox(height: 8),
+                        ShuttleBox(facts: shuttle, narrow: narrow, compact: compact, rail: rail, receivedAt: liveAt, airportCode: airportCode),
+                      ],
+                      if (chips.isNotEmpty) ...[const SizedBox(height: 8), FactChips(chips: chips, narrow: narrow)],
                       const SizedBox(height: 10),
                       Row(
                         crossAxisAlignment: CrossAxisAlignment.center,

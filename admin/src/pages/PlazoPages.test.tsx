@@ -1,5 +1,5 @@
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { fireEvent, render, screen, waitFor } from "@testing-library/react";
+import { fireEvent, render, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { MemoryRouter } from "react-router-dom";
 import { toast } from "sonner";
@@ -48,6 +48,20 @@ function renderPage(page: React.ReactNode, path = "/") {
   );
 }
 
+/** What a sighted traveller reads: the text without the screen-reader-only wording. */
+function seen(el: HTMLElement) {
+  const copy = el.cloneNode(true) as HTMLElement;
+  copy.querySelectorAll(".sr-only").forEach(n => n.remove());
+  return copy.textContent;
+}
+
+/** The chips of the results preview, in order. */
+function previewTags() {
+  return within(screen.getByRole("list", { name: "Tags de l'annonce" }))
+    .getAllByRole("listitem")
+    .map(seen);
+}
+
 const savedListing = {
   id: "l1",
   slug: "parking-demo-lys",
@@ -59,6 +73,7 @@ const savedListing = {
   description: null,
   services: ["shuttle"],
   shuttleMinutes: 8,
+  shuttleWaitMinutes: null,
   distanceKm: null,
   openingHours: null,
   cancellationPolicy: "free_24h",
@@ -204,10 +219,19 @@ describe("Ma fiche", () => {
     expect(await screen.findByLabelText("Nom affiché")).toHaveValue("Parking Démo LYS");
     expect(screen.getByLabelText("Adresse de la page")).toHaveValue("parking-demo-lys");
     expect(await screen.findByText("dès 34,99 €")).toBeInTheDocument();
-    expect(screen.getByText(/Navette 8 min/)).toBeInTheDocument();
+    // The tags travellers see (14/10/2026, direction C): the shuttle line, then the chips in the site's order.
+    expect(seen(screen.getByTestId("preview-shuttle"))).toBe("Navette gratuite · trajet 8 min");
+    expect(previewTags()).toEqual(["Extérieur", "Vous gardez vos clés", "Gratuit 24 h"]);
 
     await userEvent.click(screen.getByRole("button", { name: "Voiturier" }));
-    expect(screen.getByText(/Voiturier/, { selector: "div" })).toBeInTheDocument();
+    await userEvent.click(screen.getByRole("button", { name: "Couvert" }));
+    await userEvent.click(screen.getByRole("button", { name: "Clôturé" }));
+    fireEvent.change(screen.getByLabelText("Horaires"), { target: { value: "Ouvert 5h–23h" } });
+    expect(previewTags()).toEqual(["Couvert", "Vous devez remettre vos clés", "Ouvert 5h–23h", "Clôturé", "Gratuit 24 h"]);
+
+    // Without the shuttle: no shuttle line.
+    await userEvent.click(screen.getByRole("button", { name: "Navette" }));
+    expect(screen.queryByTestId("preview-shuttle")).not.toBeInTheDocument();
   });
 
   it("enregistre puis envoie la fiche pour validation, et explique le refus sans tarifs", async () => {
@@ -229,6 +253,8 @@ describe("Ma fiche", () => {
       description: null,
       services: ["shuttle"],
       shuttleMinutes: 8,
+      // Left empty: not declared, the tag does not show (14/10/2026).
+      shuttleWaitMinutes: null,
       distanceKm: 3.5,
       openingHours: null,
       cancellationPolicy: "free_24h",
@@ -338,6 +364,66 @@ describe("Ma fiche", () => {
     await userEvent.click(button);
     await waitFor(() => expect(toast.error).toHaveBeenLastCalledWith("La rédaction par Claude a échoué (max_tokens)", { duration: 12000 }));
     expect(screen.queryByTestId("description-proposal")).not.toBeInTheDocument();
+  });
+
+  it("déclare l'attente moyenne de la navette, la vide et refuse un nombre hors limites (14/10/2026)", async () => {
+    api.getListing.mockResolvedValue({ listing: { ...savedListing, shuttleWaitMinutes: 5 }, parking });
+    api.getPricing.mockResolvedValue(pricing);
+    api.updateListing.mockImplementation(async (input: { shuttleWaitMinutes: number | null }) => ({ data: { ...savedListing, shuttleWaitMinutes: input.shuttleWaitMinutes } }));
+    renderPage(<ListingPage />);
+
+    const field = await screen.findByLabelText("Attente moyenne de la navette (min)");
+    expect(field).toHaveValue("5");
+    expect(field).toHaveAttribute("aria-describedby", "l-wait-help");
+    expect(document.getElementById("l-wait-help")).toHaveTextContent("Facultatif. Laissé vide, le tag n'apparaît pas.");
+    // Next to the ride in the results preview.
+    expect(seen(screen.getByTestId("preview-shuttle"))).toBe("Navette gratuite · trajet 8 min · attente moy. 5 min");
+    // Read in full by screen readers.
+    expect(screen.getByTestId("preview-shuttle")).toHaveTextContent(/attente moyenne 5 min$/);
+
+    fireEvent.change(field, { target: { value: "12" } });
+    await userEvent.click(screen.getByRole("button", { name: "Enregistrer" }));
+    await waitFor(() => expect(api.updateListing).toHaveBeenCalledTimes(1));
+    expect(api.updateListing.mock.calls[0][0]).toMatchObject({ shuttleMinutes: 8, shuttleWaitMinutes: 12 });
+
+    // Emptied: not declared any more.
+    fireEvent.change(field, { target: { value: "" } });
+    expect(seen(screen.getByTestId("preview-shuttle"))).toBe("Navette gratuite · trajet 8 min");
+    await userEvent.click(screen.getByRole("button", { name: "Enregistrer" }));
+    await waitFor(() => expect(api.updateListing).toHaveBeenCalledTimes(2));
+    expect(api.updateListing.mock.calls[1][0]).toMatchObject({ shuttleWaitMinutes: null });
+
+    // Out of range or not whole minutes: the error shows and nothing is sent.
+    for (const value of ["150", "4,5", "-3"]) {
+      fireEvent.change(field, { target: { value } });
+      expect(field).toHaveAttribute("aria-invalid", "true");
+      expect(field).toHaveAttribute("aria-describedby", "l-wait-error l-wait-help");
+      expect(document.getElementById("l-wait-error")).toHaveTextContent("Nombre entier, entre 0 et 120 minutes.");
+      expect(screen.getByRole("button", { name: "Enregistrer" })).toBeDisabled();
+      expect(screen.getByRole("button", { name: "Envoyer pour validation" })).toBeDisabled();
+    }
+    fireEvent.submit(field.closest("form")!);
+    expect(api.updateListing).toHaveBeenCalledTimes(2);
+
+    fireEvent.change(field, { target: { value: "120" } });
+    expect(field).toHaveAttribute("aria-invalid", "false");
+    expect(screen.queryByText("Nombre entier, entre 0 et 120 minutes.")).not.toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Enregistrer" })).toBeEnabled();
+  });
+
+  it("montre en français le refus du serveur sur l'attente moyenne", async () => {
+    api.getListing.mockResolvedValue({ listing: savedListing, parking });
+    api.getPricing.mockResolvedValue(pricing);
+    api.updateListing.mockRejectedValue(new ApiError(400, "invalid", "validation_failed", { shuttleWaitMinutes: "too_large" }));
+    renderPage(<ListingPage />);
+
+    const field = await screen.findByLabelText("Attente moyenne de la navette (min)");
+    expect(field).toHaveValue("");
+    fireEvent.change(field, { target: { value: "0" } });
+    await userEvent.click(screen.getByRole("button", { name: "Enregistrer" }));
+    await waitFor(() => expect(field).toHaveAttribute("aria-invalid", "true"));
+    expect(api.updateListing.mock.calls[0][0]).toMatchObject({ shuttleWaitMinutes: 0 });
+    expect(document.getElementById("l-wait-error")).toHaveTextContent("Nombre entier, entre 0 et 120 minutes.");
   });
 
   it("une fiche publiée peut être retirée par le loueur", async () => {

@@ -15,7 +15,9 @@ T _$identity<T>(T value) => value;
 /// @nodoc
 mixin _$ResultsState {
 
- String get airport; String get arrivalAt; String get returnAt; ViewState get loadState; SearchResponseModel? get response; Filters get filters; ResultsView get view; String? get selectedSlug; String? get errorMessage; String? get errorCode;
+ String get airport; String get arrivalAt; String get returnAt; ViewState get loadState; SearchResponseModel? get response; Filters get filters; ResultsView get view; String? get selectedSlug; String? get errorMessage; String? get errorCode;/// L3: the airport's live answer (shuttles on the road), null until the first one; and when it came.
+ AirportLiveModel? get live; DateTime? get liveAt;/// I-C: the heading of each moving shuttle, from its previous position (trip id → degrees).
+ Map<String, double> get headings;
 /// Create a copy of ResultsState
 /// with the given fields replaced by the non-null parameter values.
 @JsonKey(includeFromJson: false, includeToJson: false)
@@ -27,20 +29,20 @@ $ResultsStateCopyWith<ResultsState> get copyWith => _$ResultsStateCopyWithImpl<R
 @override
 bool operator ==(Object other) {
   final _this = this as ResultsState;
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is ResultsState&&(identical(other.airport, _this.airport) || other.airport == _this.airport)&&(identical(other.arrivalAt, _this.arrivalAt) || other.arrivalAt == _this.arrivalAt)&&(identical(other.returnAt, _this.returnAt) || other.returnAt == _this.returnAt)&&(identical(other.loadState, _this.loadState) || other.loadState == _this.loadState)&&(identical(other.response, _this.response) || other.response == _this.response)&&(identical(other.filters, _this.filters) || other.filters == _this.filters)&&(identical(other.view, _this.view) || other.view == _this.view)&&(identical(other.selectedSlug, _this.selectedSlug) || other.selectedSlug == _this.selectedSlug)&&(identical(other.errorMessage, _this.errorMessage) || other.errorMessage == _this.errorMessage)&&(identical(other.errorCode, _this.errorCode) || other.errorCode == _this.errorCode));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is ResultsState&&(identical(other.airport, _this.airport) || other.airport == _this.airport)&&(identical(other.arrivalAt, _this.arrivalAt) || other.arrivalAt == _this.arrivalAt)&&(identical(other.returnAt, _this.returnAt) || other.returnAt == _this.returnAt)&&(identical(other.loadState, _this.loadState) || other.loadState == _this.loadState)&&(identical(other.response, _this.response) || other.response == _this.response)&&(identical(other.filters, _this.filters) || other.filters == _this.filters)&&(identical(other.view, _this.view) || other.view == _this.view)&&(identical(other.selectedSlug, _this.selectedSlug) || other.selectedSlug == _this.selectedSlug)&&(identical(other.errorMessage, _this.errorMessage) || other.errorMessage == _this.errorMessage)&&(identical(other.errorCode, _this.errorCode) || other.errorCode == _this.errorCode)&&(identical(other.live, _this.live) || other.live == _this.live)&&(identical(other.liveAt, _this.liveAt) || other.liveAt == _this.liveAt)&&const DeepCollectionEquality().equals(other.headings, _this.headings));
 }
 
 
 @override
 int get hashCode {
   final _this = this as ResultsState;
-  return Object.hash(runtimeType,_this.airport,_this.arrivalAt,_this.returnAt,_this.loadState,_this.response,_this.filters,_this.view,_this.selectedSlug,_this.errorMessage,_this.errorCode);
+  return Object.hash(runtimeType,_this.airport,_this.arrivalAt,_this.returnAt,_this.loadState,_this.response,_this.filters,_this.view,_this.selectedSlug,_this.errorMessage,_this.errorCode,_this.live,_this.liveAt,const DeepCollectionEquality().hash(_this.headings));
 }
 
 @override
 String toString() {
   final _this = this as ResultsState;
-  return 'ResultsState(airport: ${_this.airport}, arrivalAt: ${_this.arrivalAt}, returnAt: ${_this.returnAt}, loadState: ${_this.loadState}, response: ${_this.response}, filters: ${_this.filters}, view: ${_this.view}, selectedSlug: ${_this.selectedSlug}, errorMessage: ${_this.errorMessage}, errorCode: ${_this.errorCode})';
+  return 'ResultsState(airport: ${_this.airport}, arrivalAt: ${_this.arrivalAt}, returnAt: ${_this.returnAt}, loadState: ${_this.loadState}, response: ${_this.response}, filters: ${_this.filters}, view: ${_this.view}, selectedSlug: ${_this.selectedSlug}, errorMessage: ${_this.errorMessage}, errorCode: ${_this.errorCode}, live: ${_this.live}, liveAt: ${_this.liveAt}, headings: ${_this.headings})';
 }
 
 
@@ -51,11 +53,11 @@ abstract mixin class $ResultsStateCopyWith<$Res>  {
   factory $ResultsStateCopyWith(ResultsState value, $Res Function(ResultsState) _then) = _$ResultsStateCopyWithImpl;
 @useResult
 $Res call({
- String airport, String arrivalAt, String returnAt, ViewState loadState, SearchResponseModel? response, Filters filters, ResultsView view, String? selectedSlug, String? errorMessage, String? errorCode
+ String airport, String arrivalAt, String returnAt, ViewState loadState, SearchResponseModel? response, Filters filters, ResultsView view, String? selectedSlug, String? errorMessage, String? errorCode, AirportLiveModel? live, DateTime? liveAt, Map<String, double> headings
 });
 
 
-$SearchResponseModelCopyWith<$Res>? get response;
+$SearchResponseModelCopyWith<$Res>? get response;$AirportLiveModelCopyWith<$Res>? get live;
 
 }
 /// @nodoc
@@ -68,7 +70,7 @@ class _$ResultsStateCopyWithImpl<$Res>
 
 /// Create a copy of ResultsState
 /// with the given fields replaced by the non-null parameter values.
-@pragma('vm:prefer-inline') @override $Res call({Object? airport = null,Object? arrivalAt = null,Object? returnAt = null,Object? loadState = null,Object? response = freezed,Object? filters = null,Object? view = null,Object? selectedSlug = freezed,Object? errorMessage = freezed,Object? errorCode = freezed,}) {
+@pragma('vm:prefer-inline') @override $Res call({Object? airport = null,Object? arrivalAt = null,Object? returnAt = null,Object? loadState = null,Object? response = freezed,Object? filters = null,Object? view = null,Object? selectedSlug = freezed,Object? errorMessage = freezed,Object? errorCode = freezed,Object? live = freezed,Object? liveAt = freezed,Object? headings = null,}) {
   return _then(ResultsState(
 airport: null == airport ? _self.airport : airport // ignore: cast_nullable_to_non_nullable
 as String,arrivalAt: null == arrivalAt ? _self.arrivalAt : arrivalAt // ignore: cast_nullable_to_non_nullable
@@ -80,7 +82,10 @@ as Filters,view: null == view ? _self.view : view // ignore: cast_nullable_to_no
 as ResultsView,selectedSlug: freezed == selectedSlug ? _self.selectedSlug : selectedSlug // ignore: cast_nullable_to_non_nullable
 as String?,errorMessage: freezed == errorMessage ? _self.errorMessage : errorMessage // ignore: cast_nullable_to_non_nullable
 as String?,errorCode: freezed == errorCode ? _self.errorCode : errorCode // ignore: cast_nullable_to_non_nullable
-as String?,
+as String?,live: freezed == live ? _self.live : live // ignore: cast_nullable_to_non_nullable
+as AirportLiveModel?,liveAt: freezed == liveAt ? _self.liveAt : liveAt // ignore: cast_nullable_to_non_nullable
+as DateTime?,headings: null == headings ? _self.headings : headings // ignore: cast_nullable_to_non_nullable
+as Map<String, double>,
   ));
 }
 /// Create a copy of ResultsState
@@ -94,6 +99,18 @@ $SearchResponseModelCopyWith<$Res>? get response {
 
   return $SearchResponseModelCopyWith<$Res>(_self.response!, (value) {
     return _then(_self.copyWith(response: value));
+  });
+}/// Create a copy of ResultsState
+/// with the given fields replaced by the non-null parameter values.
+@override
+@pragma('vm:prefer-inline')
+$AirportLiveModelCopyWith<$Res>? get live {
+    if (_self.live == null) {
+    return null;
+  }
+
+  return $AirportLiveModelCopyWith<$Res>(_self.live!, (value) {
+    return _then(_self.copyWith(live: value));
   });
 }
 }
@@ -177,10 +194,10 @@ return $default(_that);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( String airport,  String arrivalAt,  String returnAt,  ViewState loadState,  SearchResponseModel? response,  Filters filters,  ResultsView view,  String? selectedSlug,  String? errorMessage,  String? errorCode)?  $default,{required TResult orElse(),}) {final _that = this;
+@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( String airport,  String arrivalAt,  String returnAt,  ViewState loadState,  SearchResponseModel? response,  Filters filters,  ResultsView view,  String? selectedSlug,  String? errorMessage,  String? errorCode,  AirportLiveModel? live,  DateTime? liveAt,  Map<String, double> headings)?  $default,{required TResult orElse(),}) {final _that = this;
 switch (_that) {
 case _ResultsState() when $default != null:
-return $default(_that.airport,_that.arrivalAt,_that.returnAt,_that.loadState,_that.response,_that.filters,_that.view,_that.selectedSlug,_that.errorMessage,_that.errorCode);case _:
+return $default(_that.airport,_that.arrivalAt,_that.returnAt,_that.loadState,_that.response,_that.filters,_that.view,_that.selectedSlug,_that.errorMessage,_that.errorCode,_that.live,_that.liveAt,_that.headings);case _:
   return orElse();
 
 }
@@ -198,10 +215,10 @@ return $default(_that.airport,_that.arrivalAt,_that.returnAt,_that.loadState,_th
 /// }
 /// ```
 
-@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( String airport,  String arrivalAt,  String returnAt,  ViewState loadState,  SearchResponseModel? response,  Filters filters,  ResultsView view,  String? selectedSlug,  String? errorMessage,  String? errorCode)  $default,) {final _that = this;
+@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( String airport,  String arrivalAt,  String returnAt,  ViewState loadState,  SearchResponseModel? response,  Filters filters,  ResultsView view,  String? selectedSlug,  String? errorMessage,  String? errorCode,  AirportLiveModel? live,  DateTime? liveAt,  Map<String, double> headings)  $default,) {final _that = this;
 switch (_that) {
 case _ResultsState():
-return $default(_that.airport,_that.arrivalAt,_that.returnAt,_that.loadState,_that.response,_that.filters,_that.view,_that.selectedSlug,_that.errorMessage,_that.errorCode);case _:
+return $default(_that.airport,_that.arrivalAt,_that.returnAt,_that.loadState,_that.response,_that.filters,_that.view,_that.selectedSlug,_that.errorMessage,_that.errorCode,_that.live,_that.liveAt,_that.headings);case _:
   throw StateError('Unexpected subclass');
 
 }
@@ -218,10 +235,10 @@ return $default(_that.airport,_that.arrivalAt,_that.returnAt,_that.loadState,_th
 /// }
 /// ```
 
-@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( String airport,  String arrivalAt,  String returnAt,  ViewState loadState,  SearchResponseModel? response,  Filters filters,  ResultsView view,  String? selectedSlug,  String? errorMessage,  String? errorCode)?  $default,) {final _that = this;
+@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( String airport,  String arrivalAt,  String returnAt,  ViewState loadState,  SearchResponseModel? response,  Filters filters,  ResultsView view,  String? selectedSlug,  String? errorMessage,  String? errorCode,  AirportLiveModel? live,  DateTime? liveAt,  Map<String, double> headings)?  $default,) {final _that = this;
 switch (_that) {
 case _ResultsState() when $default != null:
-return $default(_that.airport,_that.arrivalAt,_that.returnAt,_that.loadState,_that.response,_that.filters,_that.view,_that.selectedSlug,_that.errorMessage,_that.errorCode);case _:
+return $default(_that.airport,_that.arrivalAt,_that.returnAt,_that.loadState,_that.response,_that.filters,_that.view,_that.selectedSlug,_that.errorMessage,_that.errorCode,_that.live,_that.liveAt,_that.headings);case _:
   return null;
 
 }
@@ -233,7 +250,7 @@ return $default(_that.airport,_that.arrivalAt,_that.returnAt,_that.loadState,_th
 
 
 class _ResultsState extends ResultsState {
-  const _ResultsState({required this.airport, required this.arrivalAt, required this.returnAt, this.loadState = ViewState.idle, this.response, this.filters = const Filters(), this.view = ResultsView.list, this.selectedSlug, this.errorMessage, this.errorCode}): super._();
+  const _ResultsState({required this.airport, required this.arrivalAt, required this.returnAt, this.loadState = ViewState.idle, this.response, this.filters = const Filters(), this.view = ResultsView.list, this.selectedSlug, this.errorMessage, this.errorCode, this.live, this.liveAt,  Map<String, double> headings = const <String, double>{}}): _headings = headings,super._();
   
 
 @override final  String airport;
@@ -246,6 +263,18 @@ class _ResultsState extends ResultsState {
 @override final  String? selectedSlug;
 @override final  String? errorMessage;
 @override final  String? errorCode;
+/// L3: the airport's live answer (shuttles on the road), null until the first one; and when it came.
+@override final  AirportLiveModel? live;
+@override final  DateTime? liveAt;
+/// I-C: the heading of each moving shuttle, from its previous position (trip id → degrees).
+ final  Map<String, double> _headings;
+/// I-C: the heading of each moving shuttle, from its previous position (trip id → degrees).
+@override@JsonKey() Map<String, double> get headings {
+  if (_headings is EqualUnmodifiableMapView) return _headings;
+  // ignore: implicit_dynamic_type
+  return EqualUnmodifiableMapView(_headings);
+}
+
 
 /// Create a copy of ResultsState
 /// with the given fields replaced by the non-null parameter values.
@@ -257,18 +286,18 @@ _$ResultsStateCopyWith<_ResultsState> get copyWith => __$ResultsStateCopyWithImp
 
 @override
 bool operator ==(Object other) {
-    return identical(this, other) || (other.runtimeType == runtimeType&&other is _ResultsState&&(identical(other.airport, airport) || other.airport == airport)&&(identical(other.arrivalAt, arrivalAt) || other.arrivalAt == arrivalAt)&&(identical(other.returnAt, returnAt) || other.returnAt == returnAt)&&(identical(other.loadState, loadState) || other.loadState == loadState)&&(identical(other.response, response) || other.response == response)&&(identical(other.filters, filters) || other.filters == filters)&&(identical(other.view, view) || other.view == view)&&(identical(other.selectedSlug, selectedSlug) || other.selectedSlug == selectedSlug)&&(identical(other.errorMessage, errorMessage) || other.errorMessage == errorMessage)&&(identical(other.errorCode, errorCode) || other.errorCode == errorCode));
+    return identical(this, other) || (other.runtimeType == runtimeType&&other is _ResultsState&&(identical(other.airport, airport) || other.airport == airport)&&(identical(other.arrivalAt, arrivalAt) || other.arrivalAt == arrivalAt)&&(identical(other.returnAt, returnAt) || other.returnAt == returnAt)&&(identical(other.loadState, loadState) || other.loadState == loadState)&&(identical(other.response, response) || other.response == response)&&(identical(other.filters, filters) || other.filters == filters)&&(identical(other.view, view) || other.view == view)&&(identical(other.selectedSlug, selectedSlug) || other.selectedSlug == selectedSlug)&&(identical(other.errorMessage, errorMessage) || other.errorMessage == errorMessage)&&(identical(other.errorCode, errorCode) || other.errorCode == errorCode)&&(identical(other.live, live) || other.live == live)&&(identical(other.liveAt, liveAt) || other.liveAt == liveAt)&&const DeepCollectionEquality().equals(other.headings, _headings));
 }
 
 
 @override
 int get hashCode {
-    return Object.hash(runtimeType,airport,arrivalAt,returnAt,loadState,response,filters,view,selectedSlug,errorMessage,errorCode);
+    return Object.hash(runtimeType,airport,arrivalAt,returnAt,loadState,response,filters,view,selectedSlug,errorMessage,errorCode,live,liveAt,const DeepCollectionEquality().hash(_headings));
 }
 
 @override
 String toString() {
-    return 'ResultsState(airport: $airport, arrivalAt: $arrivalAt, returnAt: $returnAt, loadState: $loadState, response: $response, filters: $filters, view: $view, selectedSlug: $selectedSlug, errorMessage: $errorMessage, errorCode: $errorCode)';
+    return 'ResultsState(airport: $airport, arrivalAt: $arrivalAt, returnAt: $returnAt, loadState: $loadState, response: $response, filters: $filters, view: $view, selectedSlug: $selectedSlug, errorMessage: $errorMessage, errorCode: $errorCode, live: $live, liveAt: $liveAt, headings: $headings)';
 }
 
 
@@ -279,11 +308,11 @@ abstract mixin class _$ResultsStateCopyWith<$Res> implements $ResultsStateCopyWi
   factory _$ResultsStateCopyWith(_ResultsState value, $Res Function(_ResultsState) _then) = __$ResultsStateCopyWithImpl;
 @override @useResult
 $Res call({
- String airport, String arrivalAt, String returnAt, ViewState loadState, SearchResponseModel? response, Filters filters, ResultsView view, String? selectedSlug, String? errorMessage, String? errorCode
+ String airport, String arrivalAt, String returnAt, ViewState loadState, SearchResponseModel? response, Filters filters, ResultsView view, String? selectedSlug, String? errorMessage, String? errorCode, AirportLiveModel? live, DateTime? liveAt, Map<String, double> headings
 });
 
 
-@override $SearchResponseModelCopyWith<$Res>? get response;
+@override $SearchResponseModelCopyWith<$Res>? get response;@override $AirportLiveModelCopyWith<$Res>? get live;
 
 }
 /// @nodoc
@@ -296,7 +325,7 @@ class __$ResultsStateCopyWithImpl<$Res>
 
 /// Create a copy of ResultsState
 /// with the given fields replaced by the non-null parameter values.
-@override @pragma('vm:prefer-inline') $Res call({Object? airport = null,Object? arrivalAt = null,Object? returnAt = null,Object? loadState = null,Object? response = freezed,Object? filters = null,Object? view = null,Object? selectedSlug = freezed,Object? errorMessage = freezed,Object? errorCode = freezed,}) {
+@override @pragma('vm:prefer-inline') $Res call({Object? airport = null,Object? arrivalAt = null,Object? returnAt = null,Object? loadState = null,Object? response = freezed,Object? filters = null,Object? view = null,Object? selectedSlug = freezed,Object? errorMessage = freezed,Object? errorCode = freezed,Object? live = freezed,Object? liveAt = freezed,Object? headings = null,}) {
   return _then(_ResultsState(
 airport: null == airport ? _self.airport : airport // ignore: cast_nullable_to_non_nullable
 as String,arrivalAt: null == arrivalAt ? _self.arrivalAt : arrivalAt // ignore: cast_nullable_to_non_nullable
@@ -308,7 +337,10 @@ as Filters,view: null == view ? _self.view : view // ignore: cast_nullable_to_no
 as ResultsView,selectedSlug: freezed == selectedSlug ? _self.selectedSlug : selectedSlug // ignore: cast_nullable_to_non_nullable
 as String?,errorMessage: freezed == errorMessage ? _self.errorMessage : errorMessage // ignore: cast_nullable_to_non_nullable
 as String?,errorCode: freezed == errorCode ? _self.errorCode : errorCode // ignore: cast_nullable_to_non_nullable
-as String?,
+as String?,live: freezed == live ? _self.live : live // ignore: cast_nullable_to_non_nullable
+as AirportLiveModel?,liveAt: freezed == liveAt ? _self.liveAt : liveAt // ignore: cast_nullable_to_non_nullable
+as DateTime?,headings: null == headings ? _self._headings : headings // ignore: cast_nullable_to_non_nullable
+as Map<String, double>,
   ));
 }
 
@@ -323,6 +355,18 @@ $SearchResponseModelCopyWith<$Res>? get response {
 
   return $SearchResponseModelCopyWith<$Res>(_self.response!, (value) {
     return _then(_self.copyWith(response: value));
+  });
+}/// Create a copy of ResultsState
+/// with the given fields replaced by the non-null parameter values.
+@override
+@pragma('vm:prefer-inline')
+$AirportLiveModelCopyWith<$Res>? get live {
+    if (_self.live == null) {
+    return null;
+  }
+
+  return $AirportLiveModelCopyWith<$Res>(_self.live!, (value) {
+    return _then(_self.copyWith(live: value));
   });
 }
 }

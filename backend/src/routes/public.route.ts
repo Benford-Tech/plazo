@@ -30,7 +30,9 @@ import { Routes } from '@/interfaces/routes.interface';
  *     summary: Airport page — published parkings with their lowest package price
  *     description: >-
  *       The airport has a `location` ({ lat, lng }); each parking has a `location` ({ lat, lng }) or null
- *       when unknown (geocoded from its address the first time it is needed).
+ *       when unknown (geocoded from its address the first time it is needed). Each parking carries `shuttleMinutes`
+ *       (the ride) and `shuttleWaitMinutes` (the average wait the operator declares, 14/10/2026; null when not
+ *       declared), as in the search results and on the parking's page.
  *     tags: [Public]
  *     security: []
  *     parameters:

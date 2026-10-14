@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
+import { AirportLiveProvider } from "@/components/AirportLive";
 import { loadAirport } from "@/components/AirportView";
 import { FiltersForm } from "@/components/FiltersForm";
 import { PriceRange } from "@/components/PriceRange";
@@ -17,6 +18,7 @@ import {
   type Filters,
   FILTER_SERVICES,
   hasActiveFilters,
+  liveCount,
   mapShown,
   parseFilters,
   priceCeilingCents,
@@ -129,7 +131,7 @@ export default async function ResultsPage({ params, searchParams }: PageProps<"/
   const path = `/${airport.slug}/recherche`;
   const map = mapShown(query);
   const withFilters = (f: Partial<Filters>) => `${path}${resultsQuery({ arrivee, retour }, { ...filters, ...f }, map)}`;
-  const clearHref = `${path}${resultsQuery({ arrivee, retour }, { services: [], freeCancellation: false, maxShuttle: null, maxPriceCents: null, sort: filters.sort }, map)}`;
+  const clearHref = `${path}${resultsQuery({ arrivee, retour }, { services: [], live: false, freeCancellation: false, maxShuttle: null, maxPriceCents: null, sort: filters.sort }, map)}`;
   const mapToggleHref = `${path}${resultsQuery({ arrivee, retour }, filters, !map)}`;
   const mapParkings: MapParking[] = shown.flatMap(r =>
     r.location
@@ -148,17 +150,22 @@ export default async function ResultsPage({ params, searchParams }: PageProps<"/
   );
   const notDrawn = shown.length - mapParkings.length;
   const visibleServices = FILTER_SERVICES.filter(s => counts[s] > 0 || filters.services.includes(s));
+  // « Navette en direct » (14/10/2026): first of the services, counted the same way, shown while a parking offers it.
+  const liveTotal = liveCount(results);
+  const showLive = liveTotal > 0 || filters.live;
   const refundableCount = results.filter(r => r.cancellationPolicy !== "non_refundable").length;
   // Quick filter chips (phones, and beside the map): the filters that actually narrow these results, plus any
   // one already applied. A service every parking offers ("Navette gratuite" at Plazo) would filter nothing.
   const narrows = (count: number) => count > 0 && count < results.length;
   const quickServices = visibleServices.filter(s => narrows(counts[s]) || filters.services.includes(s));
   const quickCancellation = narrows(refundableCount) || filters.freeCancellation;
+  const quickLive = narrows(liveTotal) || filters.live;
   // Both filter forms remount after each navigation (the field just used gets its focus back).
   const filtersKey = resultsQuery({ arrivee, retour }, filters, map);
 
   return (
-    <>
+    // One poll of the airport's live shuttles for the whole page, only while a live rail is shown (14/10/2026, L3).
+    <AirportLiveProvider slug={airport.slug}>
       <details className="group mx-auto w-full max-w-[1280px] px-4 pt-4 md:px-12 md:pt-6">
         <summary className="card grid list-none grid-cols-[minmax(0,1fr)_auto] items-center gap-x-2 pt-1 pr-2 pb-3 pl-4 transition-colors hover:border-soft md:pr-3 md:pl-5 lg:flex lg:gap-x-4 lg:py-1.5 [&::-webkit-details-marker]:hidden">
           <span className="min-w-0 text-[15px] font-bold md:text-base">{airport.name}</span>
@@ -197,12 +204,13 @@ export default async function ResultsPage({ params, searchParams }: PageProps<"/
               {fr.results.filters}
             </label>
             <MapToggle href={mapToggleHref} map={map} className={map ? "" : "md:hidden"} />
-            {quickServices.length + (quickCancellation ? 1 : 0) > 0 && (
+            {quickServices.length + (quickCancellation ? 1 : 0) + (quickLive ? 1 : 0) > 0 && (
               <FiltersForm key={`rapides-${filtersKey}`} action={path} className="contents" applyClassName="chip-toggle">
                 <input type="hidden" name="arrivee" value={arrivee} />
                 <input type="hidden" name="retour" value={retour} />
                 {filters.sort !== "prix" && <input type="hidden" name="tri" value={filters.sort} />}
                 {map && <input type="hidden" name="carte" value="1" />}
+                {filters.live && !quickLive && <input type="hidden" name="direct" value="1" />}
                 {filters.services
                   .filter(s => !quickServices.includes(s))
                   .map(s => (
@@ -211,6 +219,13 @@ export default async function ResultsPage({ params, searchParams }: PageProps<"/
                 {filters.freeCancellation && !quickCancellation && <input type="hidden" name="annulation" value="gratuite" />}
                 {filters.maxShuttle !== null && <input type="hidden" name="navette" value={filters.maxShuttle} />}
                 {filters.maxPriceCents !== null && <input type="hidden" name="prix_max" value={Math.round(filters.maxPriceCents / 100)} />}
+                {quickLive && (
+                  <label htmlFor="q-direct" className="chip-toggle relative">
+                    <input id="q-direct" type="checkbox" name="direct" value="1" defaultChecked={filters.live} className="chip-input" />
+                    <span aria-hidden="true" className="live-dot" />
+                    {fr.results.liveFilter}
+                  </label>
+                )}
                 {quickServices.map(s => (
                   <label key={s} htmlFor={`q-${s}`} className="chip-toggle relative">
                     <input id={`q-${s}`} type="checkbox" name="service" value={SERVICE_SLUGS[s]} defaultChecked={filters.services.includes(s)} className="chip-input" />
@@ -235,9 +250,20 @@ export default async function ResultsPage({ params, searchParams }: PageProps<"/
               <input type="hidden" name="retour" value={retour} />
               {filters.sort !== "prix" && <input type="hidden" name="tri" value={filters.sort} />}
               {map && <input type="hidden" name="carte" value="1" />}
-              {visibleServices.length > 0 && (
+              {(visibleServices.length > 0 || showLive) && (
                 <fieldset>
                   <legend className={sectionTitle}>{fr.results.services}</legend>
+                  {showLive && (
+                    <label htmlFor="f-direct" className={checkRow}>
+                      <input id="f-direct" type="checkbox" name="direct" value="1" defaultChecked={filters.live} className={checkBox} />
+                      {/* « ● Navette en direct », like its quick chip. */}
+                      <span className="flex items-center gap-2">
+                        <span aria-hidden="true" className="live-dot" />
+                        {fr.results.liveFilter}
+                      </span>
+                      <span className={countClass}>{liveTotal}</span>
+                    </label>
+                  )}
                   {visibleServices.map(s => (
                     <label key={s} htmlFor={`f-${s}`} className={checkRow}>
                       <input
@@ -362,6 +388,7 @@ export default async function ResultsPage({ params, searchParams }: PageProps<"/
                   <ResultCard
                     result={result}
                     href={`/${airport.slug}/${result.slug}${stayQuery({ arrivee, retour })}`}
+                    airport={airport}
                     highlighted={i === 0 && result.available}
                     badges={badges.get(result.slug) ?? []}
                     headingLevel={2}
@@ -376,6 +403,6 @@ export default async function ResultsPage({ params, searchParams }: PageProps<"/
           <p className="mt-1 text-[12.5px] leading-relaxed font-semibold text-soft">{texts(data.payments === "online").results.footnote}</p>
         </section>
       </main>
-    </>
+    </AirportLiveProvider>
   );
 }

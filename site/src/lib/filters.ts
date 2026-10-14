@@ -26,6 +26,8 @@ export type SortKey = (typeof SORT_KEYS)[number];
 
 export interface Filters {
   services: Service[];
+  /** 14/10/2026: only the parkings whose shuttles are shown live (« Navette en direct », ?direct=1). */
+  live: boolean;
   freeCancellation: boolean;
   maxShuttle: ShuttleLimit | null;
   /** Maximum total price, in cents; null = no limit. */
@@ -41,7 +43,7 @@ function all(params: Params, name: string): string[] {
   return Array.isArray(value) ? value : [value];
 }
 
-/** ?service=navette&service=couvert&annulation=gratuite&navette=10&prix_max=60&tri=navette */
+/** ?direct=1&service=navette&service=couvert&annulation=gratuite&navette=10&prix_max=60&tri=navette */
 export function parseFilters(params: Params): Filters {
   const services = [...new Set(all(params, "service").map(s => SERVICE_BY_SLUG[s]).filter(Boolean))];
   const shuttle = Number(param(params, "navette"));
@@ -51,12 +53,12 @@ export function parseFilters(params: Params): Filters {
   const maxPriceCents = Number.isFinite(price) && price >= 0 ? Math.round(price * 100) : null;
   const sortRaw = param(params, "tri");
   const sort = (SORT_KEYS as readonly string[]).includes(sortRaw ?? "") ? (sortRaw as SortKey) : "prix";
-  return { services, freeCancellation: param(params, "annulation") === "gratuite", maxShuttle, maxPriceCents, sort };
+  return { services, live: param(params, "direct") === "1", freeCancellation: param(params, "annulation") === "gratuite", maxShuttle, maxPriceCents, sort };
 }
 
 /** True when at least one filter (not the sort) narrows the results. */
 export function hasActiveFilters(f: Filters): boolean {
-  return f.services.length > 0 || f.freeCancellation || f.maxShuttle !== null || f.maxPriceCents !== null;
+  return f.live || f.services.length > 0 || f.freeCancellation || f.maxShuttle !== null || f.maxPriceCents !== null;
 }
 
 /** The results page shows the map beside the list (?carte=1): shareable, and a plain link without JavaScript. */
@@ -67,6 +69,7 @@ export function mapShown(params: Params): boolean {
 /** Query string of a results page: stay first, then filters and sort (defaults omitted), then the map. */
 export function resultsQuery(stay: { arrivee: string; retour: string }, f: Filters, map = false): string {
   const parts = [`arrivee=${encodeQueryValue(stay.arrivee)}`, `retour=${encodeQueryValue(stay.retour)}`];
+  if (f.live) parts.push("direct=1");
   for (const s of f.services) parts.push(`service=${encodeURIComponent(SERVICE_SLUGS[s])}`);
   if (f.freeCancellation) parts.push("annulation=gratuite");
   if (f.maxShuttle !== null) parts.push(`navette=${f.maxShuttle}`);
@@ -83,6 +86,7 @@ function byNullable(a: number | null, b: number | null): number {
 /** Results matching the filters, available first, then in the chosen order. */
 export function applyFilters(results: SearchResult[], f: Filters): SearchResult[] {
   const kept = results.filter(r => {
+    if (f.live && r.liveShuttle !== true) return false;
     if (f.services.some(s => !r.services.includes(s))) return false;
     if (f.freeCancellation && r.cancellationPolicy === "non_refundable") return false;
     if (f.maxShuttle !== null && (r.shuttleMinutes === null || r.shuttleMinutes > f.maxShuttle)) return false;
@@ -102,6 +106,11 @@ export function serviceCounts(results: SearchResult[]): Record<Service, number> 
   const counts = Object.fromEntries(FILTER_SERVICES.map(s => [s, 0])) as Record<Service, number>;
   for (const r of results) for (const s of r.services) if (s in counts) counts[s as Service] += 1;
   return counts;
+}
+
+/** Number of results whose shuttles are shown live (« Navette en direct »), over all results like the services. */
+export function liveCount(results: SearchResult[]): number {
+  return results.filter(r => r.liveShuttle === true).length;
 }
 
 /** Upper bound of the price slider: highest price, rounded up to 10 €. */

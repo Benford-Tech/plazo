@@ -91,6 +91,8 @@ export class PublicService {
       title: listing.title,
       services: listing.services,
       shuttleMinutes: listing.shuttleMinutes ?? listing.parking.shuttleTravelMinutes,
+      // Average wait for the shuttle as the operator declares it (14/10/2026, « ATTENTE MOY. »); null: not declared.
+      shuttleWaitMinutes: listing.shuttleWaitMinutes,
       distanceKm: listing.distanceKm,
       openingHours: listing.openingHours,
       cancellationPolicy: listing.cancellationPolicy,

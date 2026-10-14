@@ -1,3 +1,5 @@
+import 'dart:math' as math;
+
 import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_map/flutter_map.dart';
@@ -12,30 +14,81 @@ import '../../data/models/public_models.dart';
 
 /// The results on the IGN plan (as the site's map): the terminals, and each parking as a price pill
 /// ("45 €", "Complet"). Tapping a pill selects its card.
-class ResultsMap extends StatelessWidget {
-  const ResultsMap({super.key, required this.airport, required this.results, required this.selected, required this.onSelect});
+class ResultsMap extends StatefulWidget {
+  const ResultsMap({super.key, required this.airport, required this.results, required this.selected, required this.onSelect, this.covered});
 
   final AirportModel airport;
   final List<SearchResultModel> results;
   final String? selected;
   final ValueChanged<String> onSelect;
 
+  /// Height the selected card covers at the bottom of the map, read once the map is laid out: the first framing keeps
+  /// every pill above it.
+  final ValueGetter<double>? covered;
+
+  @override
+  State<ResultsMap> createState() => _ResultsMapState();
+}
+
+class _ResultsMapState extends State<ResultsMap> {
+  static const _padding = 60.0;
+
+  /// Room the pills keep at least between the paddings, however tall the card.
+  static const _minFramed = 80.0;
+
+  final _controller = MapController();
+
+  /// The pills' points of the last build (the map is framed on them).
+  List<LatLng> _points = const [];
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  /// The pills framed with [_padding] around them, and [extra] more at the bottom.
+  CameraFit? _fit(List<LatLng> points, {double extra = 0}) => points.length > 1
+      ? CameraFit.bounds(
+          bounds: LatLngBounds.fromPoints(points),
+          padding: const EdgeInsets.all(_padding).copyWith(bottom: _padding + extra),
+          maxZoom: 15,
+        )
+      : null;
+
+  /// With a card laid over the map, the first framing waits for the map to be laid out (flutter_map applies an
+  /// initial fit after `onMapReady`, so there is none then): the pills go above the card. Once only, the user's moves
+  /// are never undone.
+  void _fitAboveCard() {
+    if (!mounted) return;
+    final height = _controller.camera.nonRotatedSize.height;
+    final covered = widget.covered?.call() ?? 0;
+    final extra = covered.clamp(0, math.max(0, height - 2 * _padding - _minFramed)).toDouble();
+    final fit = _fit(_points, extra: extra);
+    if (fit != null) _controller.fitCamera(fit);
+  }
+
   @override
   Widget build(BuildContext context) {
+    final results = widget.results;
+    final selected = widget.selected;
+    final onSelect = widget.onSelect;
+    final airport = widget.airport;
     final located = results.where((r) => r.location != null).toList();
     final terminals = airport.location == null ? null : LatLng(airport.location!.lat, airport.location!.lng);
     final points = [?terminals, for (final r in located) LatLng(r.location!.lat, r.location!.lng)];
     final center = points.isEmpty ? const LatLng(45.7256, 5.0811) : points.first;
+    _points = points;
     return Stack(
       children: [
         Positioned.fill(child: Container(color: const Color(0xFFECEFE6))),
         FlutterMap(
+          mapController: _controller,
           options: MapOptions(
             initialCenter: center,
             initialZoom: 13,
-            initialCameraFit: points.length > 1
-                ? CameraFit.bounds(bounds: LatLngBounds.fromPoints(points), padding: const EdgeInsets.fromLTRB(60, 60, 60, 60), maxZoom: 15)
-                : null,
+            initialCameraFit: widget.covered == null ? _fit(points) : null,
+            onMapReady: widget.covered == null ? null : _fitAboveCard,
             interactionOptions: const InteractionOptions(flags: InteractiveFlag.all & ~InteractiveFlag.rotate),
           ),
           children: [

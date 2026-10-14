@@ -853,6 +853,9 @@ model Listing {
   description        String?
   services           String[] // shuttle, valet, covered, ev_charging, open_24h, fenced, cctv
   shuttleMinutes     Int?
+  // Average wait for the shuttle, in minutes, as the operator declares it (14/10/2026, « Temps d'attente moyen »);
+  // null: not declared, the tag is not shown.
+  shuttleWaitMinutes Int?
   distanceKm         Float?
   openingHours       String? // free text, e.g. "24h/24" or "5h – 0h"
   // Phone travellers can call (shown on the page and in their booking), e.g. "04 72 00 00 00".

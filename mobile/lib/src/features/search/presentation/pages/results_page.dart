@@ -154,7 +154,7 @@ class _ResultsView extends StatelessWidget {
                     ],
                   ),
                 ),
-                Expanded(child: _body(context, state)),
+                Expanded(child: _LiveWhileShown(child: _body(context, state))),
               ],
             ),
           ),
@@ -179,32 +179,28 @@ class _ResultsView extends StatelessWidget {
     final shown = state.shown;
     if (state.view == ResultsView.map && state.response != null) {
       final selected = shown.where((r) => r.slug == state.selectedSlug).firstOrNull;
-      return Stack(
-        children: [
-          Positioned.fill(
-            child: ResultsMap(
-              key: const Key('results-map'),
-              airport: state.response!.airport,
-              results: shown,
-              selected: state.selectedSlug,
-              onSelect: (slug) => context.read<ResultsBloc>().add(ResultsSelected(slug)),
-            ),
-          ),
-          if (selected != null)
-            Positioned(
-              left: 12,
-              right: 12,
-              bottom: 12,
-              child: ResultCard(
+      return _CardOverMap(
+        map: (covered) => ResultsMap(
+          key: const Key('results-map'),
+          airport: state.response!.airport,
+          results: shown,
+          selected: state.selectedSlug,
+          onSelect: (slug) => context.read<ResultsBloc>().add(ResultsSelected(slug)),
+          covered: covered,
+        ),
+        card: selected == null
+            ? null
+            : ResultCard(
                 key: const Key('selected-card'),
                 result: selected,
                 compact: true,
                 highlighted: true,
                 badges: state.badges[selected.slug] ?? const [],
+                rail: state.railFor(selected),
+                liveAt: state.liveAt,
+                airportCode: state.response!.airport.code,
                 onTap: () => _open(context, selected),
               ),
-            ),
-        ],
       );
     }
     if (shown.isEmpty) {
@@ -254,11 +250,103 @@ class _ResultsView extends StatelessWidget {
             return Text('results.footnote_online'.tr(), style: AppText.muted(size: 12.5));
           }
           final r = shown[i - 1];
-          return ResultCard(result: r, highlighted: i == 1 && r.available, badges: state.badges[r.slug] ?? const [], onTap: () => _open(context, r));
+          return ResultCard(
+            result: r,
+            highlighted: i == 1 && r.available,
+            badges: state.badges[r.slug] ?? const [],
+            rail: state.railFor(r),
+            liveAt: state.liveAt,
+            airportCode: state.response?.airport.code,
+            onTap: () => _open(context, r),
+          );
         },
       ),
     );
   }
+}
+
+/// The map with the selected parking's card laid over its bottom; the map reads how much the card covers to frame
+/// its pills above it.
+class _CardOverMap extends StatefulWidget {
+  const _CardOverMap({required this.map, this.card});
+
+  final Widget Function(ValueGetter<double> covered) map;
+  final Widget? card;
+
+  @override
+  State<_CardOverMap> createState() => _CardOverMapState();
+}
+
+class _CardOverMapState extends State<_CardOverMap> {
+  static const _margin = 12.0;
+  final _card = GlobalKey();
+
+  /// The card's height and the margin under it; 0 without a card.
+  double _covered() {
+    final box = _card.currentContext?.findRenderObject();
+    return box is RenderBox && box.hasSize ? box.size.height + _margin : 0;
+  }
+
+  @override
+  Widget build(BuildContext context) => Stack(
+    children: [
+      Positioned.fill(child: widget.map(_covered)),
+      if (widget.card != null)
+        Positioned(
+          left: _margin,
+          right: _margin,
+          bottom: _margin,
+          child: KeyedSubtree(key: _card, child: widget.card!),
+        ),
+    ],
+  );
+}
+
+/// L3: tells the bloc whether the screen is in view (not covered by a parking's page, app in the foreground), so the
+/// shared live poll runs only while the rails can be seen.
+class _LiveWhileShown extends StatefulWidget {
+  const _LiveWhileShown({required this.child});
+
+  final Widget child;
+
+  @override
+  State<_LiveWhileShown> createState() => _LiveWhileShownState();
+}
+
+class _LiveWhileShownState extends State<_LiveWhileShown> {
+  late final AppLifecycleListener _lifecycle;
+  bool? _sent;
+
+  @override
+  void initState() {
+    super.initState();
+    _lifecycle = AppLifecycleListener(onStateChange: (_) => _sync());
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    _sync();
+  }
+
+  void _sync() {
+    if (!mounted) return;
+    final app = WidgetsBinding.instance.lifecycleState;
+    // A page pushed on top switches the tickers of this one off.
+    final shown = TickerMode.valuesOf(context).enabled && (app == null || app == AppLifecycleState.resumed || app == AppLifecycleState.inactive);
+    if (shown == _sent) return;
+    _sent = shown;
+    context.read<ResultsBloc>().add(ResultsShownChanged(shown));
+  }
+
+  @override
+  void dispose() {
+    _lifecycle.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) => widget.child;
 }
 
 class _Empty extends StatelessWidget {

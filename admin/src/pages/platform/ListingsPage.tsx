@@ -44,6 +44,7 @@ function ListingDetails({ listing }: { listing: PlatformListing }) {
           photo={listing.photos[0]}
           services={listing.services}
           shuttleMinutes={listing.shuttleMinutes}
+          shuttleWaitMinutes={listing.shuttleWaitMinutes}
           openingHours={listing.openingHours ?? ""}
           cancellationPolicy={listing.cancellationPolicy}
           fromPriceCents={listing.fromPriceCents}
@@ -59,7 +60,10 @@ function ListingDetails({ listing }: { listing: PlatformListing }) {
         <dt className={labelClass}>{t.description}</dt>
         <dd className="whitespace-pre-line">{listing.description || "—"}</dd>
         <dt className={labelClass}>{fr.plazo.services}</dt>
-        <dd>{listing.services.map(s => fr.services[s]).join(" · ") || "—"}</dd>
+        <dd>
+          {listing.services.map(s => fr.services[s]).join(" · ") || "—"}
+          {listing.shuttleWaitMinutes != null && <span className="block">{t.shuttleWait(listing.shuttleWaitMinutes)}</span>}
+        </dd>
         <dt className={labelClass}>{fr.plazo.cancellation}</dt>
         <dd>{fr.cancellationShort[listing.cancellationPolicy]}</dd>
         <dt className={labelClass}>{t.prices}</dt>

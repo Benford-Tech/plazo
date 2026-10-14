@@ -11,7 +11,7 @@ void _initBlocs() {
     ..registerFactory(() => CarLocationBloc(locator(), locator(), locator()))
     // Screens opened with parameters (airport, parking, dates, reference).
     ..registerFactoryParam<ResultsBloc, StayParams, void>(
-      (p, _) => ResultsBloc(locator(), airport: p.airport, arrivalAt: p.arrivalAt!, returnAt: p.returnAt!),
+      (p, _) => ResultsBloc(locator(), airport: p.airport, arrivalAt: p.arrivalAt!, returnAt: p.returnAt!, live: locator()),
     )
     ..registerFactoryParam<ParkingBloc, StayParams, void>(
       (p, _) => ParkingBloc(locator(), airport: p.airport, slug: p.parking!, arrivalAt: p.arrivalAt, returnAt: p.returnAt),

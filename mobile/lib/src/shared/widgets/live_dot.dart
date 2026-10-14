@@ -26,6 +26,20 @@ class _LiveDotState extends State<LiveDot> with SingleTickerProviderStateMixin {
     if (widget.animate && LiveDot.animationsEnabled) _controller.repeat();
   }
 
+  /// Reduced motion switched on (or off) while the dot is shown.
+  @override
+  void didUpdateWidget(LiveDot oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (widget.animate == oldWidget.animate) return;
+    if (widget.animate && LiveDot.animationsEnabled) {
+      _controller.repeat();
+    } else {
+      _controller
+        ..stop()
+        ..value = 0;
+    }
+  }
+
   @override
   void dispose() {
     _controller.dispose();

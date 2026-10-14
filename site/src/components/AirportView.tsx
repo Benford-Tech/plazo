@@ -1,17 +1,19 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { AirportGuide } from "./AirportGuide";
+import { AirportLiveProvider } from "./AirportLive";
 import { HomeHero } from "./HomeHero";
 import { DemoBadge } from "./DemoBadge";
 import { JsonLd } from "./JsonLd";
 import { FactChips } from "./Highlights";
 import { Photo } from "./Photo";
+import { ShuttleBox } from "./ShuttleBox";
 import { ChevronIcon } from "./stay/pill";
 import { airportGuide, guideFacts } from "@/lib/airport-guides";
 import { api, ApiError } from "@/lib/api";
 import { defaultStay, todayLocal } from "@/lib/dates";
 import { fr, fromPriceUnit, texts } from "@/lib/fr";
-import { factChips } from "@/lib/highlights";
+import { factChips, shuttleBox } from "@/lib/highlights";
 import { formatEuros } from "@/lib/money";
 import { PRO_SIGNUP_PATH, siteUrl } from "@/lib/site";
 import { faqLd, parkingListLd } from "@/lib/structured-data";
@@ -49,8 +51,9 @@ export async function AirportView({ slug, showBreadcrumb }: { slug: string; show
   const guide = airportGuide(airport.slug, guideFacts(listings, preview));
   const faq = [...t.home.faq, ...(guide?.faq ?? [])];
 
+  // One poll of the airport's live shuttles for the page (14/10/2026): the hero's map and the partners' live rails share it.
   return (
-    <>
+    <AirportLiveProvider slug={airport.slug}>
       <JsonLd data={[parkingListLd(siteUrl(), { airport, listings }), faqLd(faq)]} />
       <HomeHero airport={airport} arrivee={stay.arrivee} retour={stay.retour} minDate={todayLocal()} breadcrumb={showBreadcrumb} preview={preview} />
 
@@ -103,39 +106,43 @@ export async function AirportView({ slug, showBreadcrumb }: { slug: string; show
             <p className="card p-5 text-soft">{fr.home.noPartners(airport.name)}</p>
           ) : (
             <ul className="flex flex-col gap-3 md:gap-4">
-              {listings.map(listing => (
-                <li key={listing.slug}>
-                  {/* Phones: the photo beside the name and the facts, the price and the button below on the card's whole width. */}
-                  <article className="card grid grid-cols-[96px_minmax(0,1fr)] overflow-hidden md:grid-cols-[260px_minmax(0,1fr)]">
-                    <Photo src={listing.photo} alt={listing.title} className="h-full min-h-[120px] w-full md:row-span-2 md:min-h-[200px]" />
-                    <div className="flex min-w-0 flex-col gap-2 px-3.5 pt-3 pb-3 md:px-6 md:pt-5 md:pb-2">
-                      <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
-                        <h3 className="font-title text-[19px] leading-snug md:text-[24px]">{listing.title}</h3>
-                        {listing.isDemo && <DemoBadge />}
+              {listings.map(listing => {
+                const shuttle = shuttleBox(listing);
+                return (
+                  <li key={listing.slug}>
+                    {/* Phones: the photo beside the name and the facts, the price and the button below on the card's whole width. */}
+                    <article className="card @container grid grid-cols-[96px_minmax(0,1fr)] overflow-hidden md:grid-cols-[260px_minmax(0,1fr)]">
+                      <Photo src={listing.photo} alt={listing.title} className="h-full min-h-[120px] w-full md:row-span-2 md:min-h-[200px]" />
+                      <div className="flex min-w-0 flex-col gap-2 px-3.5 pt-3 pb-3 md:px-6 md:pt-5 md:pb-2">
+                        <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
+                          <h3 className="font-title text-[19px] leading-snug md:text-[24px]">{listing.title}</h3>
+                          {listing.isDemo && <DemoBadge />}
+                        </div>
+                        {/* 14/10/2026 (direction C): the shuttle box, then the tags; the hours are one of them (« Ouvert 6h–23h »). */}
+                        {shuttle && <ShuttleBox facts={shuttle} slug={listing.slug} airportSlug={airport.slug} airportCode={airport.code} location={listing.location ?? null} />}
+                        <FactChips chips={factChips(listing)} />
                       </div>
-                      <FactChips chips={factChips(listing)} />
-                      {listing.openingHours && <p className="text-[13.5px] font-medium text-soft md:text-[14.5px]">Horaires : {listing.openingHours}</p>}
-                    </div>
-                    <div className="col-span-2 flex flex-wrap items-center justify-between gap-x-3 gap-y-2 border-t border-line-soft px-3.5 py-3 md:col-span-1 md:col-start-2 md:mx-6 md:px-0 md:py-4">
-                      {listing.fromPriceCents !== null ? (
-                        <span className="flex flex-col text-[13px] leading-tight font-semibold text-soft md:flex-row md:items-baseline md:gap-1.5">
-                          <span>
-                            {fr.home.from} <b className="text-[22px] font-extrabold tracking-[-.01em] text-ink tabular-nums">{formatEuros(listing.fromPriceCents)}</b>
+                      <div className="col-span-2 flex flex-wrap items-center justify-between gap-x-3 gap-y-2 border-t border-line-soft px-3.5 py-3 md:col-span-1 md:col-start-2 md:mx-6 md:px-0 md:py-4">
+                        {listing.fromPriceCents !== null ? (
+                          <span className="flex flex-col text-[13px] leading-tight font-semibold text-soft md:flex-row md:items-baseline md:gap-1.5">
+                            <span>
+                              {fr.home.from} <b className="text-[22px] font-extrabold tracking-[-.01em] text-ink tabular-nums">{formatEuros(listing.fromPriceCents)}</b>
+                            </span>
+                            {listing.fromDays ? <span> {fromPriceUnit(listing.fromDays)}</span> : null}
                           </span>
-                          {listing.fromDays ? <span> {fromPriceUnit(listing.fromDays)}</span> : null}
-                        </span>
-                      ) : (
-                        <span />
-                      )}
-                      <Link href={`/${airport.slug}/${listing.slug}`} className="btn-secondary btn-sm">
-                        {fr.home.seeParking}
-                        <span className="sr-only"> {listing.title}</span>
-                        <ChevronIcon direction="right" size={15} />
-                      </Link>
-                    </div>
-                  </article>
-                </li>
-              ))}
+                        ) : (
+                          <span />
+                        )}
+                        <Link href={`/${airport.slug}/${listing.slug}`} className="btn-secondary btn-sm">
+                          {fr.home.seeParking}
+                          <span className="sr-only"> {listing.title}</span>
+                          <ChevronIcon direction="right" size={15} />
+                        </Link>
+                      </div>
+                    </article>
+                  </li>
+                );
+              })}
             </ul>
           )}
           <p className="card px-5 py-4 text-[14.5px] leading-relaxed text-soft">
@@ -171,6 +178,6 @@ export async function AirportView({ slug, showBreadcrumb }: { slug: string; show
           </div>
         </section>
       </main>
-    </>
+    </AirportLiveProvider>
   );
 }

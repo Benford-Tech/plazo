@@ -35,3 +35,14 @@ class ResultsSelected extends ResultsEvent {
   const ResultsSelected(this.slug);
   final String? slug;
 }
+
+/// L3 (14/10/2026): the poll of the airport's live answer (every 12 s while the screen is shown).
+class ResultsLivePolled extends ResultsEvent {
+  const ResultsLivePolled();
+}
+
+/// The screen came into view, or left it (another page on top, the app in the background): the poll follows.
+class ResultsShownChanged extends ResultsEvent {
+  const ResultsShownChanged(this.shown);
+  final bool shown;
+}

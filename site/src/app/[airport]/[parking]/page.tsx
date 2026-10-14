@@ -81,7 +81,9 @@ export default async function ParkingPage({ params, searchParams }: Props) {
   const sectionTitle = "font-title text-[22px] leading-tight md:text-[26px]";
   const photoClass = "size-full rounded-field md:rounded-card";
 
-  const tiles = trustTiles(parking);
+  // « L’essentiel » (14/10/2026): shuttle (live or not, ride, declared wait), outdoor or covered, keys, opening, cancellation.
+  const tiles = trustTiles(parking, airport.code);
+  const facts = factsLine(parking);
 
   return (
     <main
@@ -147,7 +149,7 @@ export default async function ParkingPage({ params, searchParams }: Props) {
             </p>
           )}
           <TrustBand tiles={tiles} />
-          <p className="text-[13.5px] font-medium text-soft md:text-[15px]">{factsLine(parking)}</p>
+          {facts && <p className="text-[13.5px] font-medium text-soft md:text-[15px]">{facts}</p>}
         </div>
 
         {/* On a phone the bar at the bottom carries « Réserver »: the card's own orange button would make two. */}

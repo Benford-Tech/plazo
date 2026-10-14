@@ -362,6 +362,7 @@ const listing: PlatformListing = {
   description: "Parking clôturé.",
   services: ["shuttle", "fenced"],
   shuttleMinutes: 7,
+  shuttleWaitMinutes: null,
   distanceKm: 4,
   openingHours: "24h/24",
   contactPhone: null,
@@ -395,6 +396,18 @@ describe("Annonces", () => {
     expect(screen.getByText("Allo Park · 412 places")).toBeInTheDocument();
     // Everything a traveller can be charged (12/10/2026): no night fees here.
     expect(screen.getByText("Sans frais de nuit.")).toBeInTheDocument();
+    // No average wait declared: no line, and the preview's shuttle tag leaves it out (14/10/2026).
+    expect(screen.queryByText(/Attente moyenne/)).not.toBeInTheDocument();
+    expect(screen.getByTestId("preview-shuttle")).toHaveTextContent(/^Navette gratuite · trajet 7 min$/);
+    // The chips travellers see, in the site's order: « 24h/24 » typed as hours reads « Ouvert 24h/24 ».
+    const tags = within(screen.getByRole("list", { name: "Tags de l'annonce" })).getAllByRole("listitem");
+    expect(tags.map(li => li.textContent)).toEqual([
+      "Extérieur",
+      "Vous gardez vos clés",
+      "Ouvert 24h/24",
+      "Clôturé",
+      "Gratuit 24 h (Annulation gratuite jusqu’à 24 h avant)",
+    ]);
     await userEvent.click(screen.getByRole("button", { name: "Valider" }));
     await waitFor(() => expect(api.approveListing).toHaveBeenCalledWith("l2"));
   });
@@ -408,6 +421,17 @@ describe("Annonces", () => {
 
     expect(await screen.findByText("Jour en plus : 6,00 €")).toBeInTheDocument();
     expect(screen.getByText(/Frais de nuit de 22:00 à 06:00 :/)).toHaveTextContent("Frais de nuit de 22:00 à 06:00 : dépôt 15,00 € · retour 10,00 €");
+  });
+
+  it("montre l'attente moyenne déclarée de la navette (14/10/2026)", async () => {
+    api.getPlatformListings.mockResolvedValue({ counts: { pending_review: 1, published: 0, rejected: 0, draft: 0 }, listings: [{ ...listing, shuttleWaitMinutes: 5 }] });
+    renderAt("/plateforme/annonces", <ListingsPage />);
+
+    expect(await screen.findByText("Attente moyenne : 5 min")).toBeInTheDocument();
+    // And in the results preview's shuttle tag, after the ride.
+    const shuttle = screen.getByTestId("preview-shuttle");
+    expect(within(shuttle).getByText("attente moy.")).toHaveAttribute("aria-hidden", "true");
+    expect(shuttle).toHaveTextContent(/^Navette gratuite · trajet 7 min · attente moy\.attente moyenne 5 min$/);
   });
 
   it("exige un message pour refuser", async () => {

@@ -1,7 +1,8 @@
-import 'package:flutter/widgets.dart';
+import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:parking_app/src/core/helpers/highlights.dart';
 import 'package:parking_app/src/core/helpers/money.dart';
+import 'package:parking_app/src/shared/widgets/highlights.dart';
 
 import '../helpers/fakes.dart';
 import '../helpers/pump_app.dart';
@@ -52,49 +53,152 @@ void main() {
     });
   });
 
-  group('pastilles et bande de confiance', () {
-    testWidgets('navette, sécurité, confort, clés, puis l’annulation', (tester) async {
+  group('pastilles (direction C), encart navette et bande « L’essentiel »', () {
+    testWidgets('extérieur ou couvert, clés, ouverture, puis clôturé, recharge et l’annulation ; plus de pastille navette', (tester) async {
       await pumpLocalized(tester, const SizedBox());
       final chips = factChips(
         services: const ['shuttle', 'valet', 'covered', 'ev_charging', 'fenced', 'cctv', 'open_24h'],
-        shuttleMinutes: 8,
+        openingHours: null,
         cancellationPolicy: 'free_24h',
       );
       expect(chips.map((c) => c.toString()), [
-        'ChipIcon.shuttle:8 min',
-        'ChipIcon.fenced:Clôturé',
         'ChipIcon.covered:Couvert',
+        'ChipIcon.keys:Vous devez remettre vos clés|Clés à remettre',
+        'ChipIcon.open24h:Ouvert 24h/24|24h/24',
+        'ChipIcon.fenced:Clôturé',
         'ChipIcon.ev:Recharge',
-        'ChipIcon.valet:Voiturier',
         'ChipIcon.cancel:Gratuit 24 h',
       ]);
-      expect(factChips(services: const ['shuttle'], shuttleMinutes: null, cancellationPolicy: 'non_refundable'), [
+      expect(factChips(services: const ['shuttle'], openingHours: null, cancellationPolicy: 'non_refundable'), [
+        const FactChip(ChipIcon.outdoor, 'Extérieur'),
+        const FactChip(ChipIcon.keys, 'Vous gardez vos clés', short: 'Clés gardées'),
         const FactChip(ChipIcon.warning, 'Non remboursable', title: 'Non annulable'),
       ]);
-      expect(factChips(services: const [], shuttleMinutes: null, cancellationPolicy: 'free_until_arrival').single.label, 'Gratuit jusqu\'à l\'arrivée');
+      expect(factChips(services: const [], openingHours: null, cancellationPolicy: 'free_until_arrival').last.label, 'Gratuit jusqu\'à l\'arrivée');
     });
 
-    testWidgets('quatre tuiles construites depuis la fiche ; sans donnée, pas de tuile', (tester) async {
+    testWidgets('l’ouverture : le service, des horaires qui disent 24h/24, sinon « Ouvert » et les horaires saisis', (tester) async {
       await pumpLocalized(tester, const SizedBox());
-      expect(trustTiles(services: const ['shuttle', 'fenced', 'cctv', 'open_24h'], shuttleMinutes: 8, openingHours: '24h/24', cancellationPolicy: 'free_24h'), [
-        const TrustTile(TileKind.shuttle, 'Navette 8 min', 'gratuite, 24h/24'),
-        const TrustTile(TileKind.security, 'Sécurisé', 'clôturé, vidéosurveillance'),
-        const TrustTile(TileKind.cancellation, 'Annulation gratuite', 'jusqu\'à 24 h avant'),
-        const TrustTile(TileKind.keys, 'Vous vous garez', 'vous gardez vos clés'),
-      ]);
-      final tiles = trustTiles(services: const ['valet'], shuttleMinutes: null, openingHours: null, cancellationPolicy: 'non_refundable');
-      expect(tiles, [
-        const TrustTile(TileKind.cancellation, 'Non remboursable', 'aucun remboursement en cas d\'annulation'),
-        const TrustTile(TileKind.keys, 'Voiturier', 'vous laissez les clés à l\'accueil'),
-      ]);
-      expect(trustTiles(services: const ['shuttle', 'open_24h'], shuttleMinutes: 5, openingHours: null, cancellationPolicy: 'free_48h').first.text, 'gratuite, 24h/24');
-      expect(trustTiles(services: const ['shuttle'], shuttleMinutes: 5, openingHours: null, cancellationPolicy: 'free_48h').first.text, 'gratuite vers les terminaux');
+      String? opening(String? hours, {List<String> services = const []}) =>
+          factChips(services: services, openingHours: hours, cancellationPolicy: 'x').where((c) => c.icon == ChipIcon.open24h).firstOrNull?.label;
+      expect(opening('5h–23h'), 'Ouvert 5h–23h');
+      expect(opening('Ouvert de 5h à 23h'), 'Ouvert de 5h à 23h');
+      expect(opening('24/7'), 'Ouvert 24h/24');
+      expect(opening(' 24h / 24 '), 'Ouvert 24h/24');
+      expect(opening('5h–23h', services: ['open_24h']), 'Ouvert 24h/24');
+      expect(opening('  '), isNull);
+      expect(opening(null), isNull);
     });
 
-    testWidgets('la ligne de faits', (tester) async {
+    test('l’encart navette : seulement avec le service, chiffre absent quand la donnée manque', () {
+      expect(shuttleBox(services: const ['valet'], shuttleMinutes: 5, shuttleWaitMinutes: 5, liveShuttle: true), isNull);
+      expect(
+        shuttleBox(services: const ['shuttle'], shuttleMinutes: 5, shuttleWaitMinutes: 4, liveShuttle: true),
+        const ShuttleFacts(rideMinutes: 5, waitMinutes: 4, live: true),
+      );
+      expect(shuttleBox(services: const ['shuttle'], shuttleMinutes: 0, shuttleWaitMinutes: null, liveShuttle: false), const ShuttleFacts());
+      // An average wait of 0 min is declared, it shows.
+      expect(shuttleBox(services: const ['shuttle'], shuttleMinutes: null, shuttleWaitMinutes: 0, liveShuttle: false)!.waitMinutes, 0);
+    });
+
+    testWidgets('cinq tuiles au plus : navette (en direct ou non), extérieur ou couvert, clés, ouverture, annulation', (tester) async {
       await pumpLocalized(tester, const SizedBox());
-      expect(factsLine(services: const ['shuttle', 'covered', 'ev_charging'], distanceKm: 4.2), 'À 4,2 km des terminaux · Couvert · Recharge électrique');
-      expect(factsLine(services: const ['shuttle'], distanceKm: null), 'Extérieur');
+      expect(
+        trustTiles(
+          services: const ['shuttle', 'valet', 'open_24h'],
+          shuttleMinutes: 5,
+          shuttleWaitMinutes: 5,
+          liveShuttle: true,
+          openingHours: null,
+          cancellationPolicy: 'free_24h',
+        ),
+        [
+          const TrustTile(
+            TileKind.shuttle,
+            'Navette en direct',
+            'Gratuite · trajet 5 min · attente moyenne 5 min · suivez-la sur la carte le jour J',
+            live: true,
+          ),
+          const TrustTile(TileKind.outdoor, 'Extérieur', 'Parking à ciel ouvert'),
+          const TrustTile(TileKind.keys, 'Vous devez remettre vos clés', 'Un voiturier gare votre voiture'),
+          const TrustTile(TileKind.opening, 'Ouvert 24h/24', 'Dépôt et retour à toute heure'),
+          const TrustTile(TileKind.cancellation, 'Annulation gratuite', 'jusqu\'à 24 h avant'),
+        ],
+      );
+      expect(
+        trustTiles(
+          services: const ['shuttle', 'covered', 'fenced', 'cctv'],
+          shuttleMinutes: 8,
+          openingHours: '6h–23h',
+          cancellationPolicy: 'non_refundable',
+        ),
+        [
+          const TrustTile(TileKind.shuttle, 'Navette gratuite', 'Trajet 8 min'),
+          const TrustTile(TileKind.covered, 'Couvert', 'clôturé, vidéosurveillance'),
+          const TrustTile(TileKind.keys, 'Vous gardez vos clés', 'Vous vous garez vous-même'),
+          const TrustTile(TileKind.opening, 'Ouvert 6h–23h', 'Dépôt et retour pendant ces horaires'),
+          const TrustTile(TileKind.cancellation, 'Non remboursable', 'aucun remboursement en cas d\'annulation'),
+        ],
+      );
+      // A shuttle without a ride time, a wait nor live tracking: the tile says where it goes (Terminal 1 at Lyon,
+      // Terminal 2 being closed); without the service, no tile.
+      List<TrustTile> tiles(List<String> services, int? minutes, {String? airport = 'LYS'}) =>
+          trustTiles(services: services, shuttleMinutes: minutes, openingHours: null, cancellationPolicy: 'x', airportCode: airport);
+      expect(tiles(const ['shuttle'], null).first, const TrustTile(TileKind.shuttle, 'Navette gratuite', 'Vers le Terminal 1'));
+      expect(tiles(const ['shuttle'], null, airport: 'NCE').first, const TrustTile(TileKind.shuttle, 'Navette gratuite', "Vers l'aéroport"));
+      expect(tiles(const ['shuttle'], null, airport: null).first.text, "Vers l'aéroport");
+      expect(tiles(const ['covered'], 5).map((t) => t.kind), [TileKind.covered, TileKind.keys]);
+      expect(tiles(const ['covered'], null).first.text, 'Parking couvert');
+    });
+
+    testWidgets('« L\'essentiel » sur un téléphone : la navette en travers d\'abord, les autres deux par deux, une dernière seule en travers', (
+      tester,
+    ) async {
+      Future<Map<TileKind, double>> widths(List<TrustTile> tiles) async {
+        await pumpLocalized(
+          tester,
+          Scaffold(
+            body: Padding(padding: const EdgeInsets.all(16), child: TrustBand(tiles: tiles)),
+          ),
+          size: const Size(360, 760),
+        );
+        return {for (final t in tiles) t.kind: tester.getSize(find.byKey(Key('tile-${t.kind.name}'))).width};
+      }
+
+      const band = 360.0 - 32;
+      const half = (band - 8) / 2;
+      const shuttle = TrustTile(TileKind.shuttle, 'Navette gratuite', 'Trajet 5 min');
+      const outdoor = TrustTile(TileKind.outdoor, 'Extérieur', 'Parking à ciel ouvert');
+      const keys = TrustTile(TileKind.keys, 'Vous gardez vos clés', 'Vous vous garez vous-même');
+      const opening = TrustTile(TileKind.opening, 'Ouvert 24h/24', 'Dépôt et retour à toute heure');
+      const cancel = TrustTile(TileKind.cancellation, 'Annulation gratuite', 'jusqu\'à 24 h avant');
+
+      // Five: the shuttle, then two rows of two.
+      expect(await widths(const [shuttle, outdoor, keys, opening, cancel]), {
+        TileKind.shuttle: band,
+        TileKind.outdoor: half,
+        TileKind.keys: half,
+        TileKind.opening: half,
+        TileKind.cancellation: half,
+      });
+      // Four: three under the shuttle, the last one alone takes the row.
+      expect(await widths(const [shuttle, outdoor, keys, cancel]), {
+        TileKind.shuttle: band,
+        TileKind.outdoor: half,
+        TileKind.keys: half,
+        TileKind.cancellation: band,
+      });
+      expect(tester.getRect(find.byKey(const Key('tile-outdoor'))).top, tester.getRect(find.byKey(const Key('tile-keys'))).top);
+      expect(tester.getRect(find.byKey(const Key('tile-cancellation'))).top, greaterThan(tester.getRect(find.byKey(const Key('tile-keys'))).bottom));
+      // Without a shuttle: two by two, an odd last one across.
+      expect(await widths(const [outdoor, keys, cancel]), {TileKind.outdoor: half, TileKind.keys: half, TileKind.cancellation: band});
+      expect(await widths(const [outdoor, keys]), {TileKind.outdoor: half, TileKind.keys: half});
+    });
+
+    testWidgets('la ligne de faits (extérieur ou couvert est une tuile)', (tester) async {
+      await pumpLocalized(tester, const SizedBox());
+      expect(factsLine(services: const ['shuttle', 'covered', 'ev_charging'], distanceKm: 4.2), 'À 4,2 km des terminaux · Recharge électrique');
+      expect(factsLine(services: const ['shuttle'], distanceKm: null), '');
     });
   });
 }

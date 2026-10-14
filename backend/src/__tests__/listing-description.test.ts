@@ -30,6 +30,7 @@ const source = (over: Partial<DescriptionSource> = {}): DescriptionSource => ({
     title: 'Parking Démo LYS',
     services: ['shuttle', 'open_24h', 'fenced'],
     shuttleMinutes: 8,
+    shuttleWaitMinutes: null,
     distanceKm: 4.5,
     openingHours: '24h/24',
     cancellationPolicy: 'free_24h',
@@ -64,6 +65,24 @@ describe('présentation par Claude — faits, consignes et garde-fou', () => {
     expect(text).not.toMatch(/Voiturier/);
     // Valet files mean a valet parking, even when the service chip is off.
     expect(factsText(descriptionFacts(source({ valetFiles: 12 })))).toMatch(/- Voiturier : oui/);
+  });
+
+  it('donne l’attente moyenne de la navette quand le loueur l’a déclarée, et accepte alors ce chiffre', () => {
+    const page = source().listing!;
+    const declared = descriptionFacts(source({ listing: { ...page, shuttleWaitMinutes: 7 } }));
+    expect(factsText(declared)).toContain("- Trajet en navette jusqu'à l'aéroport : 8 min\n- Attente moyenne de la navette : 7 min");
+    expect(checkDescription('Navette en 8 min, avec une attente moyenne de sept minutes (7 min).', declared)).toMatchObject({ ok: true });
+    // Not declared: no line, and the figure is an invented one.
+    expect(factsText(descriptionFacts(source()))).not.toContain('Attente');
+    expect(checkDescription('Attente moyenne de 7 min.', descriptionFacts(source()))).toEqual({
+      ok: false,
+      reason: 'unsupported_figure',
+      figures: ['7'],
+    });
+    // 0 is a real answer (no wait); a parking without shuttle has no wait to tell.
+    expect(factsText(descriptionFacts(source({ listing: { ...page, shuttleWaitMinutes: 0 } })))).toContain('- Attente moyenne de la navette : 0 min');
+    const noShuttle = descriptionFacts(source({ listing: { ...page, services: ['fenced'], shuttleWaitMinutes: 5 }, vehicles: [] }));
+    expect(factsText(noShuttle)).not.toContain('Attente');
   });
 
   it('ne dit rien de ce qui manque', () => {
@@ -168,6 +187,7 @@ describe('présentation par Claude — route', () => {
     description: 'Ancien texte.',
     services: ['shuttle', 'fenced'],
     shuttleMinutes: 8,
+    shuttleWaitMinutes: 6,
     distanceKm: 4.5,
     openingHours: null,
     cancellationPolicy: 'free_48h',
@@ -218,6 +238,7 @@ describe('présentation par Claude — route', () => {
     const content: string = params.messages[0].content;
     expect(content).toContain('- Nom du parking : Parking Démo LYS');
     expect(content).toContain("- Trajet en navette jusqu'à l'aéroport : 8 min");
+    expect(content).toContain('- Attente moyenne de la navette : 6 min');
     // Only the vehicle in service, the stop, the valet file, the 48 h policy and the grid.
     expect(content).toContain('- Navettes en service : 1 véhicule (8 places passagers)');
     expect(content).toContain('Gare Saint-Exupéry TGV');
