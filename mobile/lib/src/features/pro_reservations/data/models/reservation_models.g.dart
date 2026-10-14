@@ -15,6 +15,9 @@ _ReservationModel _$ReservationModelFromJson(Map<String, dynamic> json) =>
       status: json['status'] as String,
       arrivalAt: DateTime.parse(json['arrivalAt'] as String),
       returnAt: DateTime.parse(json['returnAt'] as String),
+      arrivedAt: json['arrivedAt'] == null
+          ? null
+          : DateTime.parse(json['arrivedAt'] as String),
       passengers: (json['passengers'] as num).toInt(),
       customerName: json['customerName'] as String,
       customerFirstName: json['customerFirstName'] as String? ?? '',
@@ -45,6 +48,7 @@ _ReservationModel _$ReservationModelFromJson(Map<String, dynamic> json) =>
       overbooked: json['overbooked'] as bool? ?? false,
       spotId: json['spotId'] as String?,
       keyHook: json['keyHook'] as String?,
+      stopId: json['stopId'] as String?,
       carLat: (json['carLat'] as num?)?.toDouble(),
       carLng: (json['carLng'] as num?)?.toDouble(),
       carAccuracyM: (json['carAccuracyM'] as num?)?.toInt(),
@@ -69,6 +73,11 @@ _ReservationModel _$ReservationModelFromJson(Map<String, dynamic> json) =>
           ? null
           : ReservationFileModel.fromJson(json['file'] as Map<String, dynamic>),
       filePosition: (json['filePosition'] as num?)?.toInt(),
+      boardingCheckIn: json['boardingCheckIn'] == null
+          ? null
+          : BoardingCheckInModel.fromJson(
+              json['boardingCheckIn'] as Map<String, dynamic>,
+            ),
     );
 
 Map<String, dynamic> _$ReservationModelToJson(_ReservationModel instance) =>
@@ -80,6 +89,7 @@ Map<String, dynamic> _$ReservationModelToJson(_ReservationModel instance) =>
       'status': instance.status,
       'arrivalAt': instance.arrivalAt.toIso8601String(),
       'returnAt': instance.returnAt.toIso8601String(),
+      'arrivedAt': instance.arrivedAt?.toIso8601String(),
       'passengers': instance.passengers,
       'customerName': instance.customerName,
       'customerFirstName': instance.customerFirstName,
@@ -104,6 +114,7 @@ Map<String, dynamic> _$ReservationModelToJson(_ReservationModel instance) =>
       'overbooked': instance.overbooked,
       'spotId': instance.spotId,
       'keyHook': instance.keyHook,
+      'stopId': instance.stopId,
       'carLat': instance.carLat,
       'carLng': instance.carLng,
       'carAccuracyM': instance.carAccuracyM,
@@ -116,7 +127,22 @@ Map<String, dynamic> _$ReservationModelToJson(_ReservationModel instance) =>
       'spot': instance.spot,
       'file': instance.file,
       'filePosition': instance.filePosition,
+      'boardingCheckIn': instance.boardingCheckIn,
     };
+
+_BoardingCheckInModel _$BoardingCheckInModelFromJson(
+  Map<String, dynamic> json,
+) => _BoardingCheckInModel(
+  driverFirstName: json['driverFirstName'] as String?,
+  at: DateTime.parse(json['at'] as String),
+);
+
+Map<String, dynamic> _$BoardingCheckInModelToJson(
+  _BoardingCheckInModel instance,
+) => <String, dynamic>{
+  'driverFirstName': instance.driverFirstName,
+  'at': instance.at.toIso8601String(),
+};
 
 _ReservationSpotModel _$ReservationSpotModelFromJson(
   Map<String, dynamic> json,

@@ -1,4 +1,4 @@
-import type { ReservationStatus } from "@/lib/types";
+import type { BoardingCheckIn, ReservationStatus } from "@/lib/types";
 import type { StayClass } from "@/lib/capacity/types";
 import type { Landmark, SpotKind } from "./types";
 
@@ -25,6 +25,8 @@ export interface Occupant {
   /** D-B (07/10/2026): nights of the stay and its class (missing from an older API). */
   nights?: number;
   stayClass?: StayClass | null;
+  /** « Embarquer en un geste » (14/10/2026): checked in as they boarded a drop-off (missing from an older API). */
+  boardingCheckIn?: BoardingCheckIn | null;
 }
 
 export interface SpotState {

@@ -24,7 +24,13 @@ export const PICKUP_LIST_HOURS_AFTER = 6;
 /** Bookings whose traveller waits at the parking for the shuttle to the terminal. */
 export const DROPOFF_STATUSES: ReservationStatus[] = ['arrived'];
 
-/** Departures listed for the driver: arrivals this long before now… */
+/**
+ * « Embarquer en un geste » (14/10/2026): a traveller not checked in yet ("upcoming") whose booked arrival is within this
+ * many hours of now (before or after) may board a drop-off; they are checked in ("Sur place") when the trip starts.
+ */
+export const BOARDING_CHECK_IN_HOURS = 24;
+
+/** Departures listed for the driver: arrivals this long before now (the expected ones too, late but still boardable)… */
 export const DROPOFF_LIST_HOURS_BEFORE = 6;
 /** …and this long after now (early birds). */
 export const DROPOFF_LIST_HOURS_AFTER = 3;
@@ -43,9 +49,57 @@ export function canDropOff(status: ReservationStatus): boolean {
   return DROPOFF_STATUSES.includes(status);
 }
 
-/** Whether a booking can board a trip of this direction. */
-export function canBoard(direction: ShuttleDirection, status: ReservationStatus): boolean {
-  return direction === 'pickup' ? canPickUp(status) : canDropOff(status);
+/** Whether boarding a trip of this direction checks the traveller in: a drop-off of someone still expected. */
+export function checksInAtBoarding(direction: ShuttleDirection, status: ReservationStatus): boolean {
+  return direction === 'dropoff' && status === 'upcoming';
+}
+
+/**
+ * Whether a booking can board a trip of this direction: a pick-up takes the travellers away (PICKUP_STATUSES); a
+ * drop-off the checked-in ones, and those still expected around now (BOARDING_CHECK_IN_HOURS), checked in at boarding.
+ */
+export function canBoard(direction: ShuttleDirection, booking: { status: ReservationStatus; arrivalAt: Date }, now: Date): boolean {
+  if (direction === 'pickup') return canPickUp(booking.status);
+  if (checksInAtBoarding(direction, booking.status)) {
+    return Math.abs(booking.arrivalAt.getTime() - now.getTime()) <= BOARDING_CHECK_IN_HOURS * 3600000;
+  }
+  return canDropOff(booking.status);
+}
+
+/** « Pointé à l'embarquement par Karim » (14/10/2026): a traveller checked in at the boarding of a drop-off. */
+export interface BoardingCheckIn {
+  /** The trip's driver, null when unknown (an erased account). */
+  driverFirstName: string | null;
+  /** When they were checked in (the booking's arrivedAt, ISO). */
+  at: string;
+}
+
+/** What a booking query selects to tell a check-in at boarding (boardingCheckInOf). */
+export const BOARDING_CHECK_IN_SELECT = {
+  boardingTripId: true,
+  arrivedAt: true,
+  boardingTrip: { select: { driver: { select: { firstName: true } } } },
+} as const;
+
+type BoardingCheckInRow = {
+  boardingTripId: string | null;
+  arrivedAt: Date | null;
+  boardingTrip: { driver: { firstName: string } } | null;
+};
+
+/** The check-in at boarding of a booking read with BOARDING_CHECK_IN_SELECT, null when it was checked in otherwise. */
+export function boardingCheckInOf(row: BoardingCheckInRow): BoardingCheckIn | null {
+  if (!row.boardingTripId || !row.arrivedAt) return null;
+  return { driverFirstName: row.boardingTrip?.driver.firstName.trim() || null, at: row.arrivedAt.toISOString() };
+}
+
+/** The row with its check-in at boarding (`boardingCheckIn`), without the fields read to tell it. */
+export function withBoardingCheckIn<T extends BoardingCheckInRow>(
+  row: T,
+): Omit<T, 'boardingTrip' | 'boardingTripId'> & { boardingCheckIn: BoardingCheckIn | null } {
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  const { boardingTrip, boardingTripId, ...rest } = row;
+  return { ...rest, boardingCheckIn: boardingCheckInOf(row) };
 }
 
 /**

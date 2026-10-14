@@ -11,6 +11,9 @@ import { StaffAuthMiddleware } from '@/middlewares/staff-auth.middleware';
  * /internal/dashboard:
  *   get:
  *     summary: The day's figures, the services' state, the alerts (no spot, delayed or cancelled flight, traveller waiting at the meeting point, keys not hung, SMS pending, overbooking) and the vehicles on the parking
+ *     description: >
+ *       Each vehicle carries boardingCheckIn { driverFirstName, at } when its traveller was checked in as they boarded
+ *       a drop-off (« Embarquer en un geste », 14/10/2026), else null.
  *     tags: [Dashboard]
  *     responses:
  *       200: { description: "{ serverTime, date, parking, counts, services, alerts, breakdown, vehicles }" }

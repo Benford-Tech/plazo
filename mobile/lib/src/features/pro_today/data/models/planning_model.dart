@@ -14,10 +14,16 @@ abstract class PlanningRowModel with _$PlanningRowModel {
     required String status,
     required DateTime arrivalAt,
     required DateTime returnAt,
+
+    /// When the arrival was recorded (status « Sur place »); null while expected.
+    DateTime? arrivedAt,
     required int passengers,
     required String customerName,
     required String plate,
     String? returnFlight,
+
+    /// The stop serving the traveller (D-A); null: the airport.
+    String? stopId,
     StaffSignalModel? arrivalSignal,
   }) = _PlanningRowModel;
 

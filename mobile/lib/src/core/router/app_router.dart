@@ -26,6 +26,7 @@ import '../../features/pro_settings/presentation/pages/pro_parking_settings_page
 import '../../features/pro_settings/presentation/pages/pro_team_page.dart';
 import '../../features/pro_shell/presentation/pages/pro_more_tab_page.dart';
 import '../../features/pro_shell/presentation/pages/pro_shell_page.dart';
+import '../../features/pro_shuttle/presentation/bloc/shuttle_boarding.dart';
 import '../../features/pro_shuttle/presentation/pages/pro_shuttle_page.dart';
 import '../../features/pro_shuttle/presentation/pages/pro_vehicles_page.dart';
 import '../../features/pro_spot_planning/presentation/pages/pro_spot_planning_page.dart';

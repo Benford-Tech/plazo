@@ -9,8 +9,17 @@ abstract class ShuttleState with _$ShuttleState {
     @Default(ViewState.idle) ViewState actionState,
     PickupsModel? pickups,
 
-    /// Arrived travellers waiting for the terminal (drop-off direction).
+    /// Travellers waiting for the terminal, or expected soon (drop-off direction).
     DeparturesModel? departures,
+
+    /// 14/10/2026: travellers added by hand (« Embarquer » / « Récupérer » of the planning, the booking's sheet) that
+    /// the list does not hold (an early traveller): shown and ticked until the trip starts or they are unticked.
+    @Default([]) List<DepartureRowModel> pinnedDepartures,
+    @Default([]) List<PickupRowModel> pinnedPickups,
+
+    /// The travellers added by hand that a refused start took out of the selection (their names, shown under the
+    /// error): nothing reads their booking again, so they were the likely reason.
+    @Default([]) List<String> unpinned,
 
     /// F-A: the travellers away by return day, and those back today (the third band).
     StayingModel? staying,
@@ -31,6 +40,9 @@ abstract class ShuttleState with _$ShuttleState {
     StaffTripModel? trip,
     @Default({}) Set<String> selected,
     TripVehicleChoice? vehicle,
+
+    /// The vehicle of the day the driver holds (V-A), in service: the trip starts in one tap, without the sheet.
+    String? dayVehicleId,
     /// Positions are being watched and sent.
     @Default(false) bool tracking,
     LocationAccess? locationProblem,
@@ -54,17 +66,35 @@ abstract class ShuttleState with _$ShuttleState {
   /// Vehicles a trip can start with (the out-of-service ones stay on the sheet only).
   List<ShuttleVehicleModel> get availableVehicles => vehicles.where((v) => v.inService).toList();
 
+  /// The departures listed: the API's, then the ones pinned from the planning.
+  List<DepartureRowModel> get departureRows => [...?departures?.rows, ...pinnedDepartures];
+
+  /// The returns listed: the API's, then the ones pinned from the planning.
+  List<PickupRowModel> get pickupRows => [...?pickups?.rows, ...pinnedPickups];
+
   /// Passengers (people) in the current selection, for the seats check.
   int get selectedPassengers {
     var total = 0;
-    for (final r in pickups?.rows ?? const <PickupRowModel>[]) {
+    for (final r in pickupRows) {
       if (selected.contains(r.reservationId)) total += r.passengers;
     }
-    for (final r in departures?.rows ?? const <DepartureRowModel>[]) {
+    for (final r in departureRows) {
       if (selected.contains(r.reservationId)) total += r.passengers;
     }
     return total;
   }
+
+  /// « Embarquer et partir » starts at once with the chosen vehicle: the driver holds a vehicle of the day in service.
+  bool get oneTapStart => dayVehicleId != null;
+
+  /// The vehicle the next trip starts with, when it is one of the operator's.
+  ShuttleVehicleModel? get chosenVehicle => vehicle?.vehicleId == null ? null : vehicles.where((v) => v.id == vehicle!.vehicleId).firstOrNull;
+
+  /// Ticked travellers still expected (to the terminal): the server checks them in when the trip starts.
+  List<DepartureRowModel> get selectedNotCheckedIn => dropoff ? departureRows.where((r) => selected.contains(r.reservationId) && r.status == 'upcoming').toList() : const [];
+
+  /// Passengers of the running trip checked in at its boarding: their cars wait for the valet in « À ranger ».
+  int get checkedInAtBoarding => trip?.running ?? false ? trip!.passengers.where((p) => p.checkedInAtBoarding).length : 0;
 
   /// The list of the current direction is loaded.
   bool get loaded => dropoff ? departures != null : pickups != null;
@@ -72,14 +102,15 @@ abstract class ShuttleState with _$ShuttleState {
   /// R-B: the parking shares its shuttles' position (the list says so before a trip, the trip once it runs).
   bool get sharePosition => trip != null && trip!.running ? trip!.sharePosition : (dropoff ? departures?.sharePosition : pickups?.sharePosition) ?? true;
 
-  /// Departure rows that can be put on a trip to the terminal (the expected ones wait).
-  List<DepartureRowModel> get selectableDepartures => (departures?.rows ?? const []).where((r) => r.tripId == null && !r.expected).toList();
+  /// Departure rows that can be put on a trip to the terminal: not on another trip, the expected ones included
+  /// (14/10/2026: checked in at boarding).
+  List<DepartureRowModel> get selectableDepartures => departureRows.where((r) => r.tripId == null).toList();
 
   /// F-A: the rows of the first band grouped by stop, soonest leave time first.
   List<TourGroup> get tourGroups {
     if (dropoff) {
       final map = <String, List<DepartureRowModel>>{};
-      for (final r in departures?.rows ?? const <DepartureRowModel>[]) {
+      for (final r in departureRows) {
         map.putIfAbsent(r.stopName ?? '', () => []).add(r);
       }
       final groups = [
@@ -93,7 +124,7 @@ abstract class ShuttleState with _$ShuttleState {
   }
 
   /// F-A: travellers of the first band (the expected ones included), of the running trip, of the third band.
-  int get bandCount1 => dropoff ? (departures?.rows.length ?? 0) : (pickups?.rows.length ?? 0);
+  int get bandCount1 => dropoff ? departureRows.length : pickupRows.length;
   int get bandCount2 => trip?.running ?? false ? trip!.passengers.length : 0;
   int get bandCount3 => dropoff ? (staying?.days.fold<int>(0, (n, d) => n + d.rows.length) ?? 0) : (staying?.returnedToday.length ?? 0);
 
@@ -101,7 +132,7 @@ abstract class ShuttleState with _$ShuttleState {
 
   /// Rows grouped by terminal (the flight's, else the meeting point's label), in the API's order.
   List<({String? terminal, List<PickupRowModel> rows})> get groups {
-    final rows = pickups?.rows ?? const [];
+    final rows = pickupRows;
     final byTerminal = <String?, List<PickupRowModel>>{};
     for (final r in rows) {
       byTerminal.putIfAbsent(r.terminal, () => []).add(r);
@@ -110,7 +141,7 @@ abstract class ShuttleState with _$ShuttleState {
   }
 
   /// Rows that can be put on a trip (not already on a running one).
-  List<PickupRowModel> get selectable => (pickups?.rows ?? const []).where((r) => r.tripId == null).toList();
+  List<PickupRowModel> get selectable => pickupRows.where((r) => r.tripId == null).toList();
 
   /// Time left before the automatic end of the trip.
   Duration get remaining {

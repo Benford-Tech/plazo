@@ -30,6 +30,7 @@ class StatusBadge extends StatelessWidget {
       BadgeTone.ok => (const Color(0xFFE9F7EE), const Color(0xFF1F7A3F)),
       BadgeTone.peach => AppConstants.isPro ? (const Color(0xFFEEF7DD), AppColors.accentDeep) : (const Color(0xFFFDF0E6), const Color(0xFFB4581D)),
       BadgeTone.danger => (const Color(0xFFFCE8E6), AppColors.danger),
+      BadgeTone.warn => (AppStatus.warnSoft, AppStatus.warnText),
       BadgeTone.tint => (AppColors.tint, AppColors.accentDeep),
       BadgeTone.muted => (AppColors.canvas, AppColors.muted),
     };
@@ -41,4 +42,4 @@ class StatusBadge extends StatelessWidget {
   }
 }
 
-enum BadgeTone { ok, peach, danger, tint, muted }
+enum BadgeTone { ok, peach, danger, tint, muted, warn }

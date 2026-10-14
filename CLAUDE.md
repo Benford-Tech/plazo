@@ -509,11 +509,35 @@ Ne construire QUE ce qui règle la douleur n°1 du client.
      terminal prévue vers HH:MM » (`PublicBooking.outbound`).
    - Décision **F-A du 06/10/2026 (« Ma tournée »)** : l'onglet Navette de Plazo Pro et le mode chauffeur du web en trois
      bandes À emmener · En route · En séjour (retours : À récupérer · En route · Rendus) ; `leaveAt` sur `PickupRow` et
-     `DepartureRow`, `DepartureRow.expected` (attendu, grisé), `GET /internal/shuttle/staying` (`days[]`, `returnedToday`) ;
+     `DepartureRow`, `DepartureRow.expected` (attendu ; grisé jusqu'au 14/10/2026), `GET /internal/shuttle/staying` (`days[]`, `returnedToday`) ;
      `ShuttleState.band`, `_BandBar` ; `ShuttleTripsPanel` onglets `band-0/1/2`.
      **Ligne du jour cohérente avec l'heure (06/10/2026)** : aujourd'hui, seules les vagues à venir sont listées (`ShuttleWavesState.upcoming`,
      une vague est passée si elle est faite ou devait partir il y a plus de 30 min) ; les passées sont repliées sous « N créneaux passés »
      (app `waves-past`, web `waves-past`, heure du serveur) ; le compteur devient « N à venir ».
+   - Décision **« Embarquer en un geste » (14/10/2026, « simplifie le process du chauffeur… Une voiture arrivée est
+     automatiquement marquée garée si son propriétaire a embarqué » ; maquette validée https://claude.ai/artifact/8dAScBE8MCNNQ8uzgKfJ4g)** :
+     le chauffeur coche les clients prévus, « Attendu » compris (`DepartureRow.expected` n'est plus grisé, pilule ambre « Attendu
+     HH:MM »), ou les ajoute à la main : « Embarquer » sur l'onglet Arrivées du chauffeur (aujourd'hui, Attendu ou Sur place),
+     « Récupérer » sur Retours, « Embarquer » dans « Autres actions » d'une réservation attendue, « Déposer au terminal » de la fiche
+     (ligne épinglée quand le client n'est pas dans la liste, retirée et nommée si le départ est refusé : « …, ajouté à la main, a
+     été retiré de la sélection : vérifiez sa réservation. ») ; puis « Embarquer et partir · N clients » : le trajet part avec le
+     véhicule du jour, sans feuille (ligne « Vito blanc · GH-456-JK · 3 pass. sur 8 » et « Changer » dans l'app ; véhicule du jour
+     présélectionné sur le web), et un client encore « Attendu » passe « Sur place » au départ. Serveur : `canBoard(direction,
+     { status, arrivalAt }, now)` accepte en dépose un `upcoming` dont l'arrivée est à ±24 h (`BOARDING_CHECK_IN_HOURS`,
+     `checksInAtBoarding`) ; `ShuttleService.start` crée le trajet et pointe ces arrivées dans une seule transaction (lignes des
+     passagers verrouillées, `trip_already_running` et `already_on_trip` revérifiés, annulation concurrente → 422
+     `invalid_passengers` et rien n'est gardé ; historique `reservation.status_changed` avec `via: 'boarding'`) ;
+     `Reservation.boardingTripId` (migration `boarding_check_in`, remis à nul au retour à « Attendu ») donne
+     `boardingCheckIn { driverFirstName, at }` à la fiche, aux arrivées et voitures de l'Occupation et des files et aux véhicules du
+     tableau de bord : « Pointé à l'embarquement par Karim » dans « Arrivées à placer » (web et app) ; la voiture d'un client pointé
+     à l'embarquement reste « à placer » (alerte `no_spot`, `toPlaceToday`) après la dépose ; passagers du trajet
+     `checkedInAtBoarding` / `arrivedAt` (« Sur place · 09:47 », note « 1 voiture pointée à l'embarquement : le voiturier la
+     retrouve dans « Arrivées à placer », avec ses clés. ») ; les attendus des départs remontent à 6 h (un retardataire reste
+     embarquable) ; `changeStatus` verrouille la réservation et la relit (un client pointé à l'embarquement n'est pas annulé
+     par-dessus son trajet : 400 `invalid_transition`). Web : mêmes règles dans le mode chauffeur de la page Navettes
+     (`ShuttleTripsPanel`, `?sens=dropoff&reservation=` accepte un client attendu et l'épingle, refus « trajet déjà en cours »
+     pendant son propre trajet ; `lib/boarding.ts`), « Embarquer » dans `NextStep` ; app : `ShuttleBoarding` /
+     `ShuttleBoardingRequests` (bascule vers l'onglet Navette), une demande arrivée pendant un départ en cours attend son issue.
    - Décisions **R-B + I-C du 07/10/2026 (« suivi des navettes réglable », règle 1)** : `Parking.shuttleTracking` `off` | `team` |
      `everyone` (`team` par défaut pour un nouveau parking ; les parkings existants et ceux de démonstration à `everyone`),
      `PUT /internal/parkings/:id/shuttle-tracking` (`parking:manage`), `domain/shuttle-tracking.ts` ; bloc « Suivi des navettes »

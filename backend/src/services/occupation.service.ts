@@ -10,6 +10,7 @@ import { dayBounds, localDate, nightsBetween } from '@/domain/time';
 import { AssignSpotDto } from '@/dtos/occupation.dto';
 import { AuthenticatedStaff } from '@/interfaces/auth.interface';
 import { HttpException } from '@/utils/httpException';
+import { BOARDING_CHECK_IN_SELECT, withBoardingCheckIn } from '@/domain/shuttle';
 import { AuditService } from './audit.service';
 import { TravellerMessagesService } from './traveller-messages.service';
 
@@ -99,11 +100,20 @@ export class OccupationService {
     const [spots, plan, holding] = await Promise.all([
       prisma.parkingSpot.findMany({ where: { parkingId: parking.id }, orderBy: [{ zoneId: 'asc' }, { row: 'asc' }, { index: 'asc' }] }),
       prisma.parkingPlan.findUnique({ where: { parkingId: parking.id } }),
-      prisma.reservation.findMany({
-        where: { parkingId: parking.id, status: { in: HOLDING }, OR: [{ spotId: { not: null } }, { arrivalAt: { lt: end } }] },
-        select: occupantSelect,
-        orderBy: { arrivalAt: 'asc' },
-      }),
+      // « Embarquer en un geste »: a car whose traveller was checked in as they boarded waits like any arrival, the line
+      // « Pointé à l'embarquement par Karim » with it (`boardingCheckIn`); every car on site counts, one booked for
+      // tomorrow included (a traveller boarded before midnight).
+      prisma.reservation
+        .findMany({
+          where: {
+            parkingId: parking.id,
+            status: { in: HOLDING },
+            OR: [{ spotId: { not: null } }, { arrivalAt: { lt: end } }, { status: { in: ON_SITE } }],
+          },
+          select: { ...occupantSelect, ...BOARDING_CHECK_IN_SELECT },
+          orderBy: { arrivalAt: 'asc' },
+        })
+        .then(rows => rows.map(withBoardingCheckIn)),
     ]);
     const bySpot = new Map<string, Occupant>();
     for (const r of holding) {

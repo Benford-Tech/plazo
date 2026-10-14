@@ -365,6 +365,7 @@ class _ArrivalRow extends StatelessWidget {
               ),
             ],
           ),
+          if (arrival.boardingCheckIn != null) _BoardingCheckInLine(arrival: arrival),
           const SizedBox(height: 6),
           Text(
             best == null
@@ -663,6 +664,33 @@ class _FilesSummary extends StatelessWidget {
   }
 }
 
+/// « Pointé à l'embarquement par Karim » (14/10/2026): the driver checked this arrival in when the shuttle left; the car
+/// waits for its spot or file like any other.
+class _BoardingCheckInLine extends StatelessWidget {
+  const _BoardingCheckInLine({required this.arrival});
+  final OccupantModel arrival;
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.only(top: 6),
+      child: Row(
+        children: [
+          const Icon(Icons.directions_bus_rounded, size: 15, color: AppColors.accentDeep),
+          const SizedBox(width: 6),
+          Expanded(
+            child: Text(
+              boardingCheckInText(arrival.boardingCheckIn!),
+              key: Key('boarded-${arrival.reference}'),
+              style: AppText.body(size: 12.5, weight: 600, color: AppColors.accentDeep),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
 /// An arrival to place, with the file the rule picks: "Ranger en F07" asks the keys in the same gesture.
 class _FileArrivalRow extends StatelessWidget {
   const _FileArrivalRow({required this.arrival, required this.state});
@@ -691,6 +719,7 @@ class _FileArrivalRow extends StatelessWidget {
               Expanded(child: Text(arrival.customerName, style: AppText.body(size: 14), overflow: TextOverflow.ellipsis)),
             ],
           ),
+          if (arrival.boardingCheckIn != null) _BoardingCheckInLine(arrival: arrival),
           const SizedBox(height: 4),
           Text('occupation.return_on'.tr(args: ['${localDay(arrival.returnAt)} ${localTime(arrival.returnAt)}']), style: AppText.muted(size: 12.5)),
           const SizedBox(height: 6),

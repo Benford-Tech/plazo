@@ -8,6 +8,7 @@ import { dayBounds as localDayBounds, localDate } from '@/domain/time';
 import { dropoffTimes, pickupTimes, WaveTimes } from '@/domain/shuttle-waves';
 import {
   canBoard,
+  checksInAtBoarding,
   DROPOFF_LIST_HOURS_AFTER,
   DROPOFF_LIST_HOURS_BEFORE,
   DROPOFF_STATUSES,
@@ -178,7 +179,10 @@ export interface DepartureRow {
   tripId: string | null;
   /** F-A: when the shuttle should leave for the terminal (before the take-off, else when the traveller came). */
   leaveAt: string;
-  /** F-A: still expected (status upcoming): shown greyed, not selectable. */
+  /**
+   * F-A: still expected (status upcoming). « Embarquer en un geste » (14/10/2026): selectable all the same, checked in
+   * ("Sur place") when the drop-off starts.
+   */
   expected: boolean;
 }
 
@@ -226,7 +230,18 @@ export interface StaffTrip {
   endedAt: string | null;
   endReason: string | null;
   secondsLeft: number;
-  passengers: { reservationId: string; reference: string; customerName: string; passengers: number; plate: string; terminal: string | null }[];
+  passengers: {
+    reservationId: string;
+    reference: string;
+    customerName: string;
+    passengers: number;
+    plate: string;
+    terminal: string | null;
+    /** When the traveller was checked in ("Sur place"). */
+    arrivedAt: string | null;
+    /** « Embarquer en un geste »: checked in when they boarded this trip (« Sur place · 09:47 »). */
+    checkedInAtBoarding: boolean;
+  }[];
   positionUpdatedAt: string | null;
   meetingPoint: MeetingPoint | null;
   /** Where the trip goes (D-A): the chosen stop, else the airport's meeting point. */
@@ -565,7 +580,10 @@ export class ShuttleService {
     return { serverTime: now.toISOString(), meetingPoint, rows: list, sharePosition: sharesPosition(parking.shuttleTracking) };
   }
 
-  /** Today's arrived travellers waiting for the shuttle to the terminal (drop-off), earliest first. */
+  /**
+   * Today's arrived travellers waiting for the shuttle to the terminal (drop-off), earliest first, then those still
+   * expected from 6 hours ago (a late traveller stays boardable) to 3 hours ahead.
+   */
   public async departures(actor: AuthenticatedStaff): Promise<{ serverTime: string; rows: DepartureRow[]; sharePosition: boolean }> {
     await this.sweep({ operatorId: actor.operatorId });
     const parking = await this.parkings.getPrimary(actor);
@@ -589,18 +607,22 @@ export class ShuttleService {
       include: { spot: { select: { code: true } }, stop: { select: { id: true, name: true } } },
       orderBy: [{ arrivedAt: 'asc' }, { arrivalAt: 'asc' }],
     });
-    // F-A: the travellers still expected in the coming hours, greyed on the driver's list.
+    // F-A: the travellers still expected around now; since « Embarquer en un geste » (14/10/2026) they board too and are
+    // checked in when the trip starts, so a late one stays listed as long as an arrived one.
     const expected = await prisma.reservation.findMany({
       where: {
         parkingId: parking.id,
         status: 'upcoming',
-        arrivalAt: { gte: new Date(now.getTime() - 3600000), lte: new Date(now.getTime() + DROPOFF_LIST_HOURS_AFTER * 3600000) },
+        arrivalAt: {
+          gte: new Date(now.getTime() - DROPOFF_LIST_HOURS_BEFORE * 3600000),
+          lte: new Date(now.getTime() + DROPOFF_LIST_HOURS_AFTER * 3600000),
+        },
       },
       include: { spot: { select: { code: true } }, stop: { select: { id: true, name: true } } },
       orderBy: { arrivalAt: 'asc' },
     });
     const trips = await prisma.shuttleTripPassenger.findMany({
-      where: { reservationId: { in: rows.map(r => r.id) }, trip: { status: 'running' } },
+      where: { reservationId: { in: [...rows, ...expected].map(r => r.id) }, trip: { status: 'running' } },
       select: { reservationId: true, tripId: true },
     });
     const times = this.waveTimes(parking);
@@ -684,6 +706,9 @@ export class ShuttleService {
   /**
    * "Démarrer le trajet (N clients)": one running trip per driver. `pickup` (default) goes to the
    * airport for returning travellers; `dropoff` takes arrived travellers to the terminal (T-A).
+   * « Embarquer en un geste » (14/10/2026): a drop-off also takes the travellers still expected around now
+   * (BOARDING_CHECK_IN_HOURS) and checks them in, in the trip's transaction: "Sur place" from the start, their car
+   * waiting for its spot or file like any arrival. A booking cancelled meanwhile undoes it all (422 invalid_passengers).
    */
   public async start(
     actor: AuthenticatedStaff,
@@ -703,18 +728,21 @@ export class ShuttleService {
     // No vehicle given: the one taken for the day (V-A).
     const me = await prisma.staff.findUnique({ where: { id: actor.id }, select: { vehicleId: true, vehicleSetAt: true } });
     const vehicleId = data.vehicleId ?? (!data.vehicle && me && holdsVehicleToday(me, parking.timezone) ? me.vehicleId : null);
+    const tripAlreadyRunning = (tripId: string) =>
+      new HttpException(httpStatus.CONFLICT, 'A trip is already running', 'trip_already_running', { tripId });
+    const alreadyOnTrip = () => new HttpException(httpStatus.CONFLICT, 'A traveller is already on a running trip', 'already_on_trip');
     const running = await prisma.shuttleTrip.findFirst({ where: { driverId: actor.id, status: 'running' } });
-    if (running) throw new HttpException(httpStatus.CONFLICT, 'A trip is already running', 'trip_already_running', { tripId: running.id });
+    if (running) throw tripAlreadyRunning(running.id);
     const ids = [...new Set(data.reservationIds)];
+    const now = new Date();
     const bookings = await prisma.reservation.findMany({
       where: { id: { in: ids }, operatorId: actor.operatorId },
-      select: { id: true, status: true, passengers: true },
+      select: { id: true, status: true, passengers: true, arrivalAt: true },
     });
-    if (bookings.length !== ids.length || bookings.some(b => !canBoard(direction, b.status))) {
-      throw new HttpException(httpStatus.UNPROCESSABLE_ENTITY, 'A booking cannot board this trip', 'invalid_passengers');
-    }
+    const invalidPassengers = () => new HttpException(httpStatus.UNPROCESSABLE_ENTITY, 'A booking cannot board this trip', 'invalid_passengers');
+    if (bookings.length !== ids.length || bookings.some(b => !canBoard(direction, b, now))) throw invalidPassengers();
     const onAnotherTrip = await prisma.shuttleTripPassenger.findFirst({ where: { reservationId: { in: ids }, trip: { status: 'running' } } });
-    if (onAnotherTrip) throw new HttpException(httpStatus.CONFLICT, 'A traveller is already on a running trip', 'already_on_trip');
+    if (onAnotherTrip) throw alreadyOnTrip();
 
     let vehicle: TripVehicle & { id: string | null } = {
       id: null,
@@ -735,31 +763,70 @@ export class ShuttleService {
       }
       vehicle = { id: known.id, model: known.model, colour: known.colour, plate: known.plate };
     }
-    const now = new Date();
-    const trip = await prisma.shuttleTrip.create({
-      data: {
-        operatorId: actor.operatorId,
-        parkingId: parking.id,
-        driverId: actor.id,
-        vehicleId: vehicle.id,
-        vehicleModel: vehicle.model,
-        vehicleColour: vehicle.colour,
-        vehiclePlate: vehicle.plate,
-        direction,
-        stopId: stop?.id ?? null,
-        stopKind: stop?.kind ?? null,
-        stopName: stop?.name ?? null,
-        status: 'running',
-        startedAt: now,
-        expiresAt: new Date(now.getTime() + TRIP_MAX_MINUTES * 60000),
-        passengers: { create: ids.map(reservationId => ({ reservationId })) },
-      },
-    });
-    await this.audit.record(actor, {
-      action: 'shuttle.trip_started',
-      entityType: 'shuttle_trip',
-      entityId: trip.id,
-      details: { direction, passengers: ids.length, reservationIds: ids, vehicle: vehicle.model ?? null, stop: stop?.name ?? null },
+    const toCheckIn = bookings.filter(b => checksInAtBoarding(direction, b.status)).map(b => b.id);
+    const trip = await prisma.$transaction(async tx => {
+      // The passengers' rows locked (in a fixed order), then the checks above made again: two starts taking the same
+      // traveller (two drivers, a double tap) run one after the other, and the second sees the first's trip.
+      await tx.$queryRaw`SELECT id FROM reservations WHERE id IN (${Prisma.join(ids)}) ORDER BY id FOR UPDATE`;
+      const runningNow = await tx.shuttleTrip.findFirst({ where: { driverId: actor.id, status: 'running' }, select: { id: true } });
+      if (runningNow) throw tripAlreadyRunning(runningNow.id);
+      if (await tx.shuttleTripPassenger.count({ where: { reservationId: { in: ids }, trip: { status: 'running' } } })) throw alreadyOnTrip();
+      const created = await tx.shuttleTrip.create({
+        data: {
+          operatorId: actor.operatorId,
+          parkingId: parking.id,
+          driverId: actor.id,
+          vehicleId: vehicle.id,
+          vehicleModel: vehicle.model,
+          vehicleColour: vehicle.colour,
+          vehiclePlate: vehicle.plate,
+          direction,
+          stopId: stop?.id ?? null,
+          stopKind: stop?.kind ?? null,
+          stopName: stop?.name ?? null,
+          status: 'running',
+          startedAt: now,
+          expiresAt: new Date(now.getTime() + TRIP_MAX_MINUTES * 60000),
+          passengers: { create: ids.map(reservationId => ({ reservationId })) },
+        },
+      });
+      // The travellers not checked in yet are, now (each guarded: one checked in meanwhile by the desk is left as it is).
+      const checkedIn: string[] = [];
+      for (const id of toCheckIn) {
+        const { count } = await tx.reservation.updateMany({
+          where: { id, status: 'upcoming' },
+          data: { status: 'arrived', arrivedAt: now, boardingTripId: created.id },
+        });
+        if (count) checkedIn.push(id);
+      }
+      // Every passenger of a drop-off is on site now; one cancelled (or gone) meanwhile undoes the trip.
+      if (direction === 'dropoff') {
+        const onSite = await tx.reservation.count({ where: { id: { in: ids }, status: 'arrived' } });
+        if (onSite !== ids.length) throw invalidPassengers();
+      }
+      for (const id of checkedIn) {
+        await this.audit.record(
+          actor,
+          {
+            action: 'reservation.status_changed',
+            entityType: 'reservation',
+            entityId: id,
+            details: { from: 'upcoming', to: 'arrived', via: 'boarding', tripId: created.id },
+          },
+          tx,
+        );
+      }
+      await this.audit.record(
+        actor,
+        {
+          action: 'shuttle.trip_started',
+          entityType: 'shuttle_trip',
+          entityId: created.id,
+          details: { direction, passengers: ids.length, reservationIds: ids, vehicle: vehicle.model ?? null, stop: stop?.name ?? null },
+        },
+        tx,
+      );
+      return created;
     });
     const view = (await this.staffTrip(trip.id))!;
     await this.notifyStarted(actor, trip, view, ids);
@@ -1155,7 +1222,18 @@ export class ShuttleService {
         stop: true,
         passengers: {
           include: {
-            reservation: { select: { id: true, reference: true, customerName: true, passengers: true, plate: true, flightTerminal: true } },
+            reservation: {
+              select: {
+                id: true,
+                reference: true,
+                customerName: true,
+                passengers: true,
+                plate: true,
+                flightTerminal: true,
+                arrivedAt: true,
+                boardingTripId: true,
+              },
+            },
           },
         },
       },
@@ -1182,6 +1260,8 @@ export class ShuttleService {
         passengers: p.reservation.passengers,
         plate: p.reservation.plate,
         terminal: terminalOf(p.reservation.flightTerminal, meeting),
+        arrivedAt: iso(p.reservation.arrivedAt),
+        checkedInAtBoarding: p.reservation.boardingTripId === trip.id,
       })),
       // The driver's own position is never sent back (the phone has it); only when it was last received.
       positionUpdatedAt: trip.status === 'running' ? iso(trip.positionReceivedAt) : null,

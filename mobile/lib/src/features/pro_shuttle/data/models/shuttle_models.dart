@@ -85,7 +85,7 @@ abstract class ShuttleVehicleModel with _$ShuttleVehicleModel {
   String get title => [model, colour].whereType<String>().join(' · ');
 }
 
-/// An arrived traveller waiting at the parking for the shuttle to the terminal (GET /internal/shuttle/departures).
+/// A traveller waiting at the parking for the shuttle to the terminal, or expected soon (GET /internal/shuttle/departures).
 @freezed
 abstract class DepartureRowModel with _$DepartureRowModel {
   const factory DepartureRowModel({
@@ -104,7 +104,8 @@ abstract class DepartureRowModel with _$DepartureRowModel {
     String? stopName,
     String? tripId,
 
-    /// F-A: when the shuttle should leave for the terminal; `expected`: still to come (greyed).
+    /// F-A: when the shuttle should leave for the terminal; `expected`: still to come (status upcoming), checked in
+    /// when the trip starts (14/10/2026).
     DateTime? leaveAt,
     @Default(false) bool expected,
   }) = _DepartureRowModel;
@@ -128,6 +129,11 @@ abstract class TripPassengerModel with _$TripPassengerModel {
     required int passengers,
     required String plate,
     String? terminal,
+
+    /// 14/10/2026 (« Embarquer en un geste »): checked in by this trip's boarding (still expected when it started),
+    /// and when the arrival was recorded.
+    @Default(false) bool checkedInAtBoarding,
+    DateTime? arrivedAt,
   }) = _TripPassengerModel;
 
   factory TripPassengerModel.fromJson(Map<String, dynamic> json) => _$TripPassengerModelFromJson(json);

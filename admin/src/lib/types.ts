@@ -247,6 +247,19 @@ export interface Reservation {
   /** D-A: the stop serving this traveller (null: the airport). */
   stopId?: string | null;
   stop?: { id: string; name: string; kind: ShuttleStopKind } | null;
+  /** « Embarquer en un geste » (14/10/2026): checked in as they boarded a drop-off (GET /internal/reservations/:id). */
+  boardingCheckIn?: BoardingCheckIn | null;
+}
+
+/**
+ * « Pointé à l'embarquement par Karim » (14/10/2026): a traveller checked in ("Sur place") by the driver as they boarded
+ * the shuttle to the terminal; null when checked in otherwise.
+ */
+export interface BoardingCheckIn {
+  /** The trip's driver, null when unknown. */
+  driverFirstName: string | null;
+  /** When they were checked in (the booking's arrivedAt). */
+  at: string;
 }
 
 export interface NightLoad {
@@ -1062,7 +1075,10 @@ export interface DepartureRow {
   stopId: string | null;
   stopName: string | null;
   tripId: string | null;
-  /** F-A: when the shuttle should leave for the terminal; `expected`: still to come (greyed, not selectable). */
+  /**
+   * F-A: when the shuttle should leave for the terminal; `expected`: still to come (status upcoming), selectable all the
+   * same since « Embarquer en un geste » (14/10/2026): checked in when the trip starts.
+   */
   leaveAt?: string;
   expected?: boolean;
 }
@@ -1113,6 +1129,10 @@ export interface StaffTrip {
     passengers: number;
     plate: string;
     terminal: string | null;
+    /** When the traveller was checked in ("Sur place"); missing from an older API. */
+    arrivedAt?: string | null;
+    /** « Embarquer en un geste » (14/10/2026): checked in as they boarded this trip (« Sur place · 09:47 »). */
+    checkedInAtBoarding?: boolean;
   }[];
   positionUpdatedAt: string | null;
   meetingPoint: MeetingPoint | null;
@@ -1193,6 +1213,8 @@ export interface DashboardVehicle {
   tripDirection: ShuttleDirection | null;
   stopName: string | null;
   returnsToday: boolean;
+  /** « Embarquer en un geste » (14/10/2026): checked in as they boarded a drop-off (missing from an older API). */
+  boardingCheckIn?: BoardingCheckIn | null;
 }
 
 /** The pro space's home (05/10/2026). */

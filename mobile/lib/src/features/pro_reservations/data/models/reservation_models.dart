@@ -16,6 +16,9 @@ abstract class ReservationModel with _$ReservationModel {
     required String status,
     required DateTime arrivalAt,
     required DateTime returnAt,
+
+    /// When the arrival was recorded (status « Sur place »); null while expected.
+    DateTime? arrivedAt,
     required int passengers,
     required String customerName,
 
@@ -46,6 +49,9 @@ abstract class ReservationModel with _$ReservationModel {
     @Default(false) bool overbooked,
     String? spotId,
     String? keyHook,
+
+    /// The stop serving the traveller (D-A); null: the airport.
+    String? stopId,
     double? carLat,
     double? carLng,
     int? carAccuracyM,
@@ -64,11 +70,23 @@ abstract class ReservationModel with _$ReservationModel {
     /// S-C (07/10/2026): the file the car stands in and its position from the aisle (1 = first out).
     ReservationFileModel? file,
     int? filePosition,
+
+    /// 14/10/2026: the arrival recorded by the driver at boarding (null: checked in at the desk, or not yet).
+    BoardingCheckInModel? boardingCheckIn,
   }) = _ReservationModel;
 
   factory ReservationModel.fromJson(Map<String, dynamic> json) => _$ReservationModelFromJson(json);
 
   bool get closed => status == 'returned' || status == 'cancelled' || status == 'no_show';
+}
+
+/// « Embarquer en un geste » (14/10/2026): a traveller still expected when the shuttle left was checked in by its
+/// driver; the valet finds the car among the arrivals to put away.
+@freezed
+abstract class BoardingCheckInModel with _$BoardingCheckInModel {
+  const factory BoardingCheckInModel({String? driverFirstName, required DateTime at}) = _BoardingCheckInModel;
+
+  factory BoardingCheckInModel.fromJson(Map<String, dynamic> json) => _$BoardingCheckInModelFromJson(json);
 }
 
 @freezed

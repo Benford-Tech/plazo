@@ -170,7 +170,8 @@
       "returned": "Véhicule rendu",
       "cancelled": "Annuler la réservation",
       "no_show": "Marquer non venu",
-      "back_at_parking": "Client de retour au parking"
+      "back_at_parking": "Client de retour au parking",
+      "board": "Embarquer"
     },
     "channel": {
       "website": "Site du parking",
@@ -223,7 +224,8 @@
       "luggage": "Bagage perdu ou retardé",
       "other": "Un mot du voyageur"
     },
-    "file": "File"
+    "file": "File",
+    "boarding_check_in": "Pointage"
   },
   "occupation": {
     "title": "Places",
@@ -315,7 +317,9 @@
       "in_file": "File {}",
       "no_file_yet": "Pas encore de file",
       "choose_file": "Choisir une file"
-    }
+    },
+    "boarding_check_in": "Pointé à l'embarquement par {}",
+    "boarding_check_in_anonymous": "Pointé à l'embarquement"
   },
   "pro": {
     "login_eyebrow": "Espace du personnel",
@@ -388,7 +392,9 @@
     "notify_bookings_never": "Jamais",
     "continue_apple": "Continuer avec Apple",
     "continue_google": "Continuer avec Google",
-    "or_email": "ou avec votre e-mail"
+    "or_email": "ou avec votre e-mail",
+    "board": "Embarquer",
+    "fetch": "Récupérer"
   },
   "errors": {
     "generic": "Une erreur est survenue. Réessayez.",
@@ -1005,16 +1011,16 @@
   "shuttle": {
     "title": "Navette",
     "intro": "Vos clients de retour, à récupérer à l'aéroport. Démarrez le trajet : ils suivent votre position.",
-    "intro_dropoff": "Vos clients arrivés au parking, à conduire au terminal. Démarrez le trajet : ils suivent votre position.",
+    "intro_dropoff": "Vos clients du jour, à conduire au terminal, pointés ou non. Embarquez-les : ils suivent votre position.",
     "direction_pickup": "Retours · aéroport",
     "direction_dropoff": "Départs · terminal",
     "to_drop_off": "À conduire au terminal",
-    "empty_dropoff": "Aucun client arrivé n'attend la navette.",
+    "empty_dropoff": "Aucun client n'attend la navette pour le moment.",
     "arrived_at": "Arrivé {}",
     "arrival_planned": "Arrivée prévue {}",
     "spot": "Place {}",
-    "start_dropoff": "Partir au terminal · {} clients",
-    "start_one_dropoff": "Partir au terminal · 1 client",
+    "start_dropoff": "Embarquer et partir · {} clients",
+    "start_one_dropoff": "Embarquer et partir · 1 client",
     "running_dropoff": "En route vers le terminal · position partagée",
     "end_dropoff": "Clients déposés · retour parking",
     "vehicle_seats": "{} places",
@@ -1047,7 +1053,7 @@
     "vehicle_confirm": "Confirmer et démarrer",
     "vehicle_help": "Vos clients verront ce véhicule et votre prénom.",
     "running": "En route vers l'aéroport · position partagée",
-    "running_vehicle": "Véhicule : {} · se coupe à l'arrêt du trajet",
+    "running_left_at": "Parti à {}",
     "running_stop": "Desserte : {}",
     "stop_label": "DESSERTE",
     "stop_airport": "Aéroport",
@@ -1087,7 +1093,18 @@
     "running_no_share": "En route vers l'aéroport · suivi désactivé",
     "running_dropoff_no_share": "En route vers le terminal · suivi désactivé",
     "intro_no_share": "Vos clients de retour, à récupérer à l'aéroport. Le suivi des navettes est désactivé : votre position n'est pas partagée.",
-    "intro_dropoff_no_share": "Vos clients arrivés au parking, à conduire au terminal. Le suivi des navettes est désactivé : votre position n'est pas partagée."
+    "intro_dropoff_no_share": "Vos clients du jour, à conduire au terminal, pointés ou non. Le suivi des navettes est désactivé : votre position n'est pas partagée.",
+    "badge_on_site": "Sur place",
+    "on_site_at": "Sur place · {}",
+    "not_checked_in_one": "{} n'est pas encore pointé : il passera « Sur place » à l'embarquement.",
+    "not_checked_in_many": "{} clients ne sont pas encore pointés : ils passeront « Sur place » à l'embarquement.",
+    "pax_of_seats": "{} pass. sur {}",
+    "vehicle_change": "Changer",
+    "vehicle_choose": "Choisir ce véhicule",
+    "checked_in_note_one": "1 voiture pointée à l'embarquement : le voiturier la retrouve dans « Arrivées à placer », avec ses clés.",
+    "checked_in_note_many": "{} voitures pointées à l'embarquement : le voiturier les retrouve dans « Arrivées à placer », avec leurs clés.",
+    "unpinned_one": "{}, ajouté à la main, a été retiré de la sélection : vérifiez sa réservation.",
+    "unpinned_many": "{}, ajoutés à la main, ont été retirés de la sélection : vérifiez leurs réservations."
   },
   "vehicle_day": {
     "title": "Mon véhicule aujourd'hui",

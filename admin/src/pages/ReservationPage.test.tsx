@@ -114,6 +114,20 @@ describe("ReservationPage · prix payé (10/10/2026)", () => {
     expect(screen.queryByRole("button", { name: "Modifier le prix" })).not.toBeInTheDocument();
   });
 
+  it("dit qui a pointé le client à l'embarquement de la navette (14/10/2026)", async () => {
+    api.getReservation.mockResolvedValue(
+      reservation({ status: "arrived", arrivedAt: "2026-10-30T07:47:00.000Z", boardingCheckIn: { driverFirstName: "Karim", at: "2026-10-30T07:47:00.000Z" } }),
+    );
+    const { unmount } = renderPage();
+    expect(await screen.findByText("Pointé à l'embarquement par Karim · 08:47")).toBeInTheDocument();
+    expect(screen.getByText("Pointage")).toBeInTheDocument();
+    unmount();
+    api.getReservation.mockResolvedValue(reservation({ boardingCheckIn: null }));
+    renderPage();
+    expect(await screen.findByText("Jean Dupont")).toBeInTheDocument();
+    expect(screen.queryByText(/Pointé à l'embarquement/)).not.toBeInTheDocument();
+  });
+
   it("dit la part des frais de nuit dans le prix d'une réservation Plazo (12/10/2026)", async () => {
     api.getReservation.mockResolvedValue(
       reservation({ channel: "plazo", paymentStatus: "paid", chargedCents: 6600, priceCents: 6600, nightArrivalFeeCents: 1500, nightReturnFeeCents: 1000 }),

@@ -220,6 +220,34 @@ describe("occupation (bloc 2, étape 2)", () => {
     );
   });
 
+  it("une arrivée pointée à l'embarquement le dit, avec le prénom du chauffeur", async () => {
+    api.getOccupation.mockResolvedValue({
+      ...board,
+      arrivals: [
+        {
+          ...board.arrivals[0],
+          status: "arrived",
+          boardingCheckIn: {
+            driverFirstName: "Karim",
+            at: "2026-10-04T07:47:00.000Z",
+          },
+        },
+        {
+          ...board.arrivals[0],
+          id: "r3",
+          reference: "RGHI56",
+          plate: "EF-789-GH",
+        },
+      ],
+    });
+    renderPage();
+    const row = await screen.findByTestId("arrival-RDEF34");
+    expect(row).toHaveTextContent("Pointé à l'embarquement par Karim");
+    expect(screen.getByTestId("arrival-RGHI56")).not.toHaveTextContent(
+      "Pointé à l'embarquement",
+    );
+  });
+
   it("un clic sur une place montre son occupant ; « Choisir sur le plan » puis un clic place le véhicule", async () => {
     renderPage();
     await screen.findByTestId("occupation-stats");
@@ -357,6 +385,8 @@ describe("occupation (bloc 2, étape 2)", () => {
           returnFlight: null,
           keyHook: null,
           onSite: false,
+          // « Embarquer en un geste »: checked in by a driver whose name is unknown.
+          boardingCheckIn: { driverFirstName: null, at: "2026-10-07T07:50:00.000Z" },
           choices: [
             {
               fileId: "f2",
@@ -410,6 +440,9 @@ describe("occupation (bloc 2, étape 2)", () => {
     expect(screen.getByText("Gardée pour ven. 9")).toBeInTheDocument();
     // The arrival gets the planned file: place it with its keys.
     expect(screen.getByTestId("suggested").textContent).toContain("F02");
+    expect(screen.getByTestId("boarding-check-in").textContent).toBe(
+      "Pointé à l'embarquement",
+    );
     fireEvent.click(screen.getByRole("button", { name: "Ranger en F02" }));
     fireEvent.change(screen.getByLabelText("Crochet des clés (facultatif)"), {
       target: { value: "12" },

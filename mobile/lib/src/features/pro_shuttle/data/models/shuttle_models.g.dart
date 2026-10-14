@@ -173,6 +173,10 @@ _TripPassengerModel _$TripPassengerModelFromJson(Map<String, dynamic> json) =>
       passengers: (json['passengers'] as num).toInt(),
       plate: json['plate'] as String,
       terminal: json['terminal'] as String?,
+      checkedInAtBoarding: json['checkedInAtBoarding'] as bool? ?? false,
+      arrivedAt: json['arrivedAt'] == null
+          ? null
+          : DateTime.parse(json['arrivedAt'] as String),
     );
 
 Map<String, dynamic> _$TripPassengerModelToJson(_TripPassengerModel instance) =>
@@ -183,6 +187,8 @@ Map<String, dynamic> _$TripPassengerModelToJson(_TripPassengerModel instance) =>
       'passengers': instance.passengers,
       'plate': instance.plate,
       'terminal': instance.terminal,
+      'checkedInAtBoarding': instance.checkedInAtBoarding,
+      'arrivedAt': instance.arrivedAt?.toIso8601String(),
     };
 
 _StaffTripModel _$StaffTripModelFromJson(Map<String, dynamic> json) =>

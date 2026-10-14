@@ -7,12 +7,21 @@ sealed class ShuttleEvent {
 class ShuttleStarted extends ShuttleEvent {
   /// The signed-in driver: the vehicle taken for the day (V-A), else their usual one, is preselected.
   /// `direction` and `reservationId` (C-B, 06/10/2026): opened from a booking's sheet with "Déposer au
-  /// terminal" / "Récupérer à l'aéroport", that side and that traveller are preselected.
-  const ShuttleStarted({this.staffId, this.vehicleId, this.direction, this.reservationId});
+  /// terminal" / "Récupérer à l'aéroport", that side and that traveller are preselected; `boarding` (14/10/2026,
+  /// « Embarquer ») also brings the row that stands in for them when the list does not hold them.
+  const ShuttleStarted({this.staffId, this.vehicleId, this.direction, this.reservationId, this.boarding});
   final String? staffId;
   final String? vehicleId;
   final String? direction;
   final String? reservationId;
+  final ShuttleBoarding? boarding;
+}
+
+/// « Embarquer » / « Récupérer » from the driver's planning (14/10/2026): that side, the first band, and the traveller
+/// added to the selection (the rest kept).
+class ShuttleBoardRequested extends ShuttleEvent {
+  const ShuttleBoardRequested(this.boarding);
+  final ShuttleBoarding boarding;
 }
 
 /// The stop served by the next trip (D-A): a stop's id, or null for the airport.
@@ -51,12 +60,18 @@ class ShuttleWaveChosen extends ShuttleEvent {
   final List<String> reservationIds;
 }
 
+/// The driver took (or gave back) a vehicle for the day while this list was open (Plus › Mon véhicule).
+class ShuttleDayVehicleChanged extends ShuttleEvent {
+  const ShuttleDayVehicleChanged(this.vehicleId);
+  final String? vehicleId;
+}
+
 class ShuttleVehicleChosen extends ShuttleEvent {
   const ShuttleVehicleChosen(this.vehicle);
   final TripVehicleChoice vehicle;
 }
 
-/// "Démarrer le trajet (N clients)", after the vehicle sheet.
+/// "Embarquer et partir · N clients": at once with the vehicle of the day, else after the vehicle sheet.
 class ShuttleStartRequested extends ShuttleEvent {
   const ShuttleStartRequested();
 }

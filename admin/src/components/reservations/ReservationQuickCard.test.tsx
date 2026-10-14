@@ -120,4 +120,37 @@ describe("ReservationQuickCard (C-A : la fiche opérationnelle)", () => {
     await userEvent.click(await screen.findByTestId("next-pick_up"));
     expect(screen.getByTestId("where")).toHaveTextContent("/navettes?sens=pickup&reservation=r1");
   });
+
+  it("un client attendu dans les 24 h : « Embarquer » dans les autres actions ouvre les navettes côté départs", async () => {
+    const soon = new Date(Date.now() + 2 * 3600_000).toISOString();
+    api.getReservation.mockResolvedValue(booking({ status: "upcoming", arrivalAt: soon, spot: null, spotId: null, keyHook: null, nextStatuses: ["arrived", "cancelled", "no_show"] }));
+    renderHost();
+    await userEvent.click(screen.getByText("ouvrir"));
+    const card = await screen.findByTestId("quick-card");
+    // The main step stays « Placer ».
+    expect(within(card).getByTestId("next-place")).toBeInTheDocument();
+    const menu = within(card).getByTestId("more-actions") as HTMLSelectElement;
+    expect([...menu.options].map(o => o.textContent)).toEqual(["Autres actions…", "Embarquer", "Enregistrer l'arrivée", "Annuler la réservation", "Marquer non venu"]);
+    await userEvent.selectOptions(menu, "board");
+    expect(screen.getByTestId("where")).toHaveTextContent("/navettes?sens=dropoff&reservation=r1");
+    expect(screen.queryByTestId("quick-card")).not.toBeInTheDocument();
+    expect(api.changeReservationStatus).not.toHaveBeenCalled();
+  });
+
+  it("pas d'« Embarquer » pour une arrivée dans plus de 24 h ; un client pointé à l'embarquement le dit", async () => {
+    const later = new Date(Date.now() + 30 * 3600_000).toISOString();
+    api.getReservation.mockResolvedValue(booking({ status: "upcoming", arrivalAt: later, spot: null, spotId: null, keyHook: null, nextStatuses: ["arrived", "cancelled", "no_show"] }));
+    renderHost();
+    await userEvent.click(screen.getByText("ouvrir"));
+    let card = await screen.findByTestId("quick-card");
+    const menu = within(card).getByTestId("more-actions") as HTMLSelectElement;
+    expect([...menu.options].map(o => o.textContent)).not.toContain("Embarquer");
+    expect(within(card).queryByTestId("card-boarding")).not.toBeInTheDocument();
+    await userEvent.click(within(card).getByRole("button", { name: "Fermer" }));
+
+    api.getReservation.mockResolvedValue(booking({ status: "arrived", spot: null, spotId: null, keyHook: null, arrivedAt: "2026-10-06T07:47:00Z", boardingCheckIn: { driverFirstName: "Karim", at: "2026-10-06T07:47:00Z" }, nextStatuses: ["shuttled_out", "upcoming"] } as Partial<Reservation>));
+    await userEvent.click(screen.getByText("ouvrir"));
+    card = await screen.findByTestId("quick-card");
+    expect(await within(card).findByTestId("card-boarding")).toHaveTextContent("Pointé à l'embarquement par Karim · 09:47");
+  });
 });

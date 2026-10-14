@@ -926,6 +926,7 @@ class ProShuttleRoute extends PageRouteInfo<ProShuttleRouteArgs> {
     Key? key,
     String? direction,
     String? reservationId,
+    ShuttleBoarding? boarding,
     List<PageRouteInfo>? children,
   }) : super(
          ProShuttleRoute.name,
@@ -933,6 +934,7 @@ class ProShuttleRoute extends PageRouteInfo<ProShuttleRouteArgs> {
            key: key,
            direction: direction,
            reservationId: reservationId,
+           boarding: boarding,
          ),
          rawQueryParams: {'sens': direction, 'reservation': reservationId},
          initialChildren: children,
@@ -955,6 +957,7 @@ class ProShuttleRoute extends PageRouteInfo<ProShuttleRouteArgs> {
           key: args.key,
           direction: args.direction,
           reservationId: args.reservationId,
+          boarding: args.boarding,
         ),
       );
     },
@@ -962,7 +965,12 @@ class ProShuttleRoute extends PageRouteInfo<ProShuttleRouteArgs> {
 }
 
 class ProShuttleRouteArgs {
-  const ProShuttleRouteArgs({this.key, this.direction, this.reservationId});
+  const ProShuttleRouteArgs({
+    this.key,
+    this.direction,
+    this.reservationId,
+    this.boarding,
+  });
 
   final Key? key;
 
@@ -970,9 +978,11 @@ class ProShuttleRouteArgs {
 
   final String? reservationId;
 
+  final ShuttleBoarding? boarding;
+
   @override
   String toString() {
-    return 'ProShuttleRouteArgs{key: $key, direction: $direction, reservationId: $reservationId}';
+    return 'ProShuttleRouteArgs{key: $key, direction: $direction, reservationId: $reservationId, boarding: $boarding}';
   }
 
   @override
@@ -981,12 +991,16 @@ class ProShuttleRouteArgs {
     if (other is! ProShuttleRouteArgs) return false;
     return key == other.key &&
         direction == other.direction &&
-        reservationId == other.reservationId;
+        reservationId == other.reservationId &&
+        boarding == other.boarding;
   }
 
   @override
   int get hashCode =>
-      key.hashCode ^ direction.hashCode ^ reservationId.hashCode;
+      key.hashCode ^
+      direction.hashCode ^
+      reservationId.hashCode ^
+      boarding.hashCode;
 }
 
 /// generated route for

@@ -12,12 +12,15 @@ import { useConfirm } from "@/components/ui/confirm-context";
 import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
 import { adminApi } from "@/lib/api";
+import { boardableUpcoming } from "@/lib/boarding";
 import { describeError, fr, quickCardFr as t } from "@/lib/fr";
 import type { Reservation, ReservationStatus } from "@/lib/types";
 import { cn } from "@/lib/utils";
 
 const CLOSED: ReservationStatus[] = ["returned", "cancelled", "no_show"];
 const DECISIONS: ReservationStatus[] = ["cancelled", "no_show"];
+/** « Autres actions… »: board the shuttle to the terminal, not a status. */
+const BOARD = "board";
 
 /** The journey's next gesture for a booking (C-A, 06/10/2026): one button, the other statuses behind a menu. */
 export function NextStep({
@@ -110,6 +113,12 @@ export function NextStep({
                 run: () => setHandover(true),
               }
             : null;
+  // « Embarquer en un geste » (14/10/2026): an expected traveller boards the shuttle to the terminal and is checked in
+  // as the trip starts (within a day of the arrival; the server decides). The main step stays « Placer ».
+  const board =
+    reservation.status === "upcoming" &&
+    next.includes("arrived") &&
+    boardableUpcoming(reservation.arrivalAt);
   const pick = async (status: ReservationStatus) => {
     if (status === "returned") return setHandover(true);
     if (
@@ -122,7 +131,7 @@ export function NextStep({
       return;
     change.mutate({ status });
   };
-  if (!step && next.length === 0) {
+  if (!step && next.length === 0 && !board) {
     return CLOSED.includes(reservation.status) ? (
       <p className="text-[13px] text-muted-foreground">{n.closed}</p>
     ) : null;
@@ -157,7 +166,7 @@ export function NextStep({
           onConfirm={(note) => change.mutate({ status: "returned", note })}
         />
       )}
-      {next.length > 0 && !handover && (
+      {(next.length > 0 || board) && !handover && (
         <label className="relative mx-auto flex w-fit items-center gap-1 text-[13px] font-semibold text-lime-deep">
           <span>{n.more}</span>
           <ChevronDown className="h-4 w-4" aria-hidden="true" />
@@ -167,11 +176,14 @@ export function NextStep({
             value=""
             disabled={change.isPending}
             onChange={(e) =>
-              e.target.value && pick(e.target.value as ReservationStatus)
+              e.target.value === BOARD
+                ? go(`/navettes?sens=dropoff&reservation=${reservation.id}`)
+                : e.target.value && pick(e.target.value as ReservationStatus)
             }
             className="absolute inset-0 cursor-pointer opacity-0"
           >
             <option value="">{n.more}</option>
+            {board && <option value={BOARD}>{n.board}</option>}
             {next.map((s) => (
               <option key={s} value={s}>
                 {fr.statusAction[s]}

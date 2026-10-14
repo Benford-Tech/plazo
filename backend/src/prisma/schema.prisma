@@ -710,6 +710,9 @@ model Reservation {
   confirmationSentAt      DateTime?
   createdById             String?
   arrivedAt               DateTime?
+  // « Embarquer en un geste » (14/10/2026): the drop-off trip at whose boarding the traveller, not checked in yet, was
+  // checked in (« Pointé à l'embarquement »); null otherwise, and again when the booking goes back to "upcoming".
+  boardingTripId          String?
   returnedAt              DateTime?
   cancelledAt             DateTime?
   // Return flight tracking (see src/domain/flight.ts): refreshed by the cron and lazily when read
@@ -760,6 +763,7 @@ model Reservation {
   spot           ParkingSpot?           @relation(fields: [spotId], references: [id], onDelete: SetNull)
   file           ParkingFile?           @relation(fields: [fileId], references: [id], onDelete: SetNull)
   stop           ShuttleStop?           @relation(fields: [stopId], references: [id], onDelete: SetNull)
+  boardingTrip   ShuttleTrip?           @relation("BoardingCheckIn", fields: [boardingTripId], references: [id], onDelete: SetNull)
   devices        TravellerDevice[]
   arrivalSignals ArrivalSignal[]
   inboundEmails  InboundEmail[]
@@ -769,6 +773,7 @@ model Reservation {
   @@unique([operatorId, externalReference])
   @@index([spotId])
   @@index([fileId])
+  @@index([boardingTripId])
   @@index([parkingId, arrivalAt])
   @@index([parkingId, returnAt])
   @@index([operatorId, plateKey])
@@ -1080,6 +1085,8 @@ model ShuttleTrip {
   vehicle    ShuttleVehicle?        @relation(fields: [vehicleId], references: [id], onDelete: SetNull)
   stop       ShuttleStop?           @relation(fields: [stopId], references: [id], onDelete: SetNull)
   passengers ShuttleTripPassenger[]
+  // The bookings checked in when they boarded this drop-off (« Embarquer en un geste »).
+  checkIns   Reservation[]          @relation("BoardingCheckIn")
 
   @@index([operatorId, status])
   @@index([driverId, status])

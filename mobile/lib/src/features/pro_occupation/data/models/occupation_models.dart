@@ -1,5 +1,7 @@
 import 'package:freezed_annotation/freezed_annotation.dart';
 
+import '../../../pro_reservations/data/models/reservation_models.dart';
+
 part 'occupation_models.freezed.dart';
 part 'occupation_models.g.dart';
 
@@ -49,6 +51,9 @@ abstract class OccupantModel with _$OccupantModel {
     /// Arrivals of the file board: the ranked files and the one the rule picks.
     @Default(<FileChoiceModel>[]) List<FileChoiceModel> choices,
     FileChoiceModel? suggested,
+
+    /// Arrivals to put away (14/10/2026): checked in by the driver at boarding, not at the desk.
+    BoardingCheckInModel? boardingCheckIn,
   }) = _OccupantModel;
   factory OccupantModel.fromJson(Map<String, dynamic> json) => _$OccupantModelFromJson(json);
 }

@@ -9,11 +9,14 @@ import '../../data/models/shuttle_models.dart';
 /// "Votre navette": one of the operator's vehicles in service (with its seats), or typed by hand
 /// (model, colour, plate). [passengers] is the people count of the selection, for the seats warning.
 class VehicleSheet extends StatefulWidget {
-  const VehicleSheet({super.key, required this.vehicles, this.current, this.passengers = 0});
+  const VehicleSheet({super.key, required this.vehicles, this.current, this.passengers = 0, this.confirmLabel});
 
   final List<ShuttleVehicleModel> vehicles;
   final TripVehicleChoice? current;
   final int passengers;
+
+  /// The button's label; « Confirmer et démarrer » by default.
+  final String? confirmLabel;
 
   @override
   State<VehicleSheet> createState() => _VehicleSheetState();
@@ -116,7 +119,7 @@ class _VehicleSheetState extends State<VehicleSheet> {
               ),
             ],
             const SizedBox(height: 14),
-            GradientButton(key: const Key('vehicle-confirm'), label: 'shuttle.vehicle_confirm'.tr(), onPressed: _tooMany ? null : () => Navigator.of(context).pop(_choice)),
+            GradientButton(key: const Key('vehicle-confirm'), label: widget.confirmLabel ?? 'shuttle.vehicle_confirm'.tr(), onPressed: _tooMany ? null : () => Navigator.of(context).pop(_choice)),
           ],
         ),
       ),
