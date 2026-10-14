@@ -13,8 +13,10 @@ import type {
   JoinRole,
   SignInMethod,
   InboundChangeReason,
+  ComparatorArrival,
   InboundEmailStatus,
   InboundEmailView,
+  MailProviderId,
   InboundPageOutcome,
   InboundReadingKind,
   ShuttleDirection,
@@ -2653,8 +2655,50 @@ export const quickCardFr = {
 /** M-A (06/10/2026): the mailbox synchronisation by an inbound address. */
 export const inboundFr = {
   title: "Mails entrants",
+  // C (14/10/2026, « C puis A »): the comparators write to the Plazo address; the mailbox rule is the fallback.
   intro:
-    "Vos réservations des comparateurs (Allopark, Onepark, Parclick, ParkMundo…) arrivent toutes seules dans le planning : votre messagerie transfère les mails de confirmation à votre adresse Plazo. Les mails incomplets ou inconnus attendent dans « À vérifier ».",
+    "Le plus simple : donnez votre adresse Plazo à chaque comparateur, comme adresse de notification des réservations. Les mails arrivent directement dans Plazo, sans règle dans votre messagerie. Gardez votre adresse habituelle à côté si l'espace partenaire le permet.",
+  comparators: {
+    title: "Vos comparateurs",
+    columns: { provider: "Comparateur", last: "Dernier mail reçu par Plazo", arrival: "Arrive" },
+    never: "Aucun mail reçu",
+    last: (ago: string, what: string) => (what ? `${ago} · ${what}` : ago),
+    lastStatus: {
+      imported: "réservation importée",
+      duplicate: "déjà dans Plazo",
+      incomplete: "à compléter",
+      unrecognised: "à lire",
+      dismissed: "traité",
+      handled: "traité",
+      archived: "archivé",
+      forwarding: "",
+      ignored: "",
+    } satisfies Record<InboundEmailStatus, string>,
+    arrival: {
+      direct: "Directement",
+      forwarded: "Par votre messagerie",
+      manual: "Transféré à la main",
+      unknown: "Reçu",
+      none: "À régler",
+    } satisfies Record<ComparatorArrival, string>,
+    howTo: "Comment faire",
+    hide: "Masquer",
+    steps: (provider: string) =>
+      `Dans votre espace partenaire ${provider}, cherchez l'adresse e-mail qui reçoit les réservations (souvent dans « Mon compte », « Notifications » ou « Contact ») et ajoutez votre adresse Plazo. Gardez la vôtre à côté si l'espace le permet.`,
+    ask: (provider: string) => `Vous ne trouvez pas ? Demandez-le à ${provider} avec ce message :`,
+    message: (address: string) =>
+      `Bonjour,\n\nPourriez-vous ajouter l'adresse ${address} aux destinataires des confirmations de réservation de notre parking ? Nous gardons aussi notre adresse habituelle.\n\nMerci !`,
+    copyMessage: "Copier le message",
+    messageCopied: "Message copié",
+    fallback: "Un comparateur ne permet pas de changer l'adresse ? Reliez plutôt votre boîte mail : elle transférera ses mails.",
+  },
+  // A (14/10/2026): a rule that forwards every email brings the parking's own emails; Plazo sets them aside.
+  unexpected: {
+    title: "Plazo reçoit aussi vos autres mails",
+    text: (n: number) =>
+      `${n === 1 ? "1 mail" : `${n} mails`} de ces 7 derniers jours ne ${n === 1 ? "venait" : "venaient"} pas d'un comparateur : votre messagerie semble transférer tous vos mails. Ne gardez que la règle des comparateurs. Plazo écarte ces mails sans les garder.`,
+    action: "Corriger le réglage",
+  },
   // G-B (07/10/2026): the step-by-step wizard replaces the "Comment faire" list.
   connect: "Relier ma boîte mail",
   reviewSteps: "Revoir les étapes",
@@ -2678,6 +2722,7 @@ export const inboundFr = {
     handled: "Traités",
     archived: "Archivés",
     forwarding: "Confirmation de transfert",
+    ignored: "Écartés",
   } satisfies Record<InboundEmailStatus, string>,
   toCheck: (n: number) =>
     n === 0
@@ -2712,6 +2757,7 @@ export const inboundFr = {
       handled: "Traité",
       archived: "Archivé",
       forwarding: "Confirmation de transfert",
+      ignored: "Écarté",
     } satisfies Record<InboundEmailStatus, string>,
     /**
      * 10/10/2026 (relecture): the badge of an Allopark change Plazo recognised but left to the staff, in place of
@@ -2861,115 +2907,90 @@ export interface WizardLine {
   copy?: "sender" | "address";
 }
 
-/** A row of the simplified screen preview (G-B): a labelled field, a checkbox or the screen's button. */
-export interface PreviewRow {
-  kind: "field" | "check" | "button";
-  label: string;
-  /** Shown in the field: the sender, the Plazo address, or a fixed text. */
-  value?: "sender" | "address" | string;
-  highlight?: boolean;
-  checked?: boolean;
-}
+export type MailProvider = MailProviderId;
 
-export type MailProvider = "gmail" | "outlook" | "ovh" | "other";
-
-/** G-B (07/10/2026): « Relier votre boîte mail », the four-step wizard of the inbound mail block. */
+/**
+ * A (14/10/2026, « C puis A »; G-B of the 07/10/2026 before): « Relier votre boîte mail » on one page — the mail service
+ * (detected by the server, or picked), its settings in blocks, each with the page to open, and « Ce que Plazo voit »,
+ * ticked by what reaches the Plazo address.
+ */
 export const inboundWizardFr = {
   title: "Relier votre boîte mail",
   close: "Fermer",
-  progress: "Progression",
-  steps: ["Adresse", "Messagerie", "Transfert", "Vérification"],
-  stepMail: (provider: string) => `Messagerie · ${provider}`,
-  back: "Retour",
-  next: "Continuer",
-  finish: "Terminer",
+  later: "Plus tard",
   copy: "Copier",
   copied: "Copié",
-  address: {
-    title: "Votre adresse Plazo",
-    intro:
-      "Plazo reçoit les mails de réservation à cette adresse. Seuls les mails que votre messagerie y transfère arrivent dans Plazo : vos autres mails restent privés.",
-    preparing: "Préparation de votre adresse…",
-  },
-  mail: {
+  preparing: "Préparation de votre adresse…",
+  addressLabel: "Votre adresse Plazo",
+  detected: (provider: string, email: string) => `${provider}, détecté d'après ${email}`,
+  change: "Changer",
+  choose: {
     title: "Sur quelle messagerie recevez-vous les mails des comparateurs ?",
     legend: "Messagerie",
-    providers: {
-      gmail: { label: "Gmail", hint: "Gmail ou Google Workspace" },
-      outlook: { label: "Outlook", hint: "Outlook.com ou Microsoft 365" },
-      ovh: { label: "OVH", hint: "Webmail OVH (Roundcube)" },
-      other: { label: "Autre messagerie", hint: "Orange, Free, Ionos…" },
-    } satisfies Record<MailProvider, { label: string; hint: string }>,
-    noAuth:
-      "Pas d'autorisation à donner à cette messagerie : la règle de l'étape suivante suffit.",
-    gmail: {
-      title: "Autorisez Gmail à transférer vers Plazo",
+  },
+  providers: {
+    gmail: { label: "Gmail", hint: "Gmail ou Google Workspace" },
+    outlook: { label: "Outlook", hint: "Outlook.com ou Microsoft 365" },
+    ovh: { label: "OVH", hint: "Webmail OVH (Roundcube)" },
+    other: { label: "Autre messagerie", hint: "Orange, Free, Ionos…" },
+  } satisfies Record<MailProvider, { label: string; hint: string }>,
+  lead: {
+    gmail:
+      "Trois réglages dans Gmail, sur un ordinateur : l'application Gmail ne crée pas de filtre. Chaque bouton ouvre Gmail à la bonne page, dans un nouvel onglet. Plazo coche chaque étape dès qu'il la voit.",
+    outlook: "Une règle dans Outlook sur le web, sur un ordinateur. Plazo coche chaque étape dès qu'il la voit.",
+    ovh: "Un filtre dans le webmail OVH, sur un ordinateur. Plazo coche chaque étape dès qu'il la voit.",
+    other: "Une règle dans votre messagerie, sur un ordinateur. Plazo coche chaque étape dès qu'il la voit.",
+  } satisfies Record<MailProvider, string>,
+  state: { done: "Fait", waiting: "En attente" },
+  open: {
+    gmailForwarding: "Ouvrir Gmail · Transfert",
+    gmailFilters: "Ouvrir Gmail · Filtres",
+    outlook: "Ouvrir Outlook",
+    outlookWork: "Ouvrir Outlook (Microsoft 365)",
+  },
+  gmail: {
+    add: {
+      title: "Ajouter l'adresse Plazo dans Gmail",
       lines: [
         {
-          text: "Dans Gmail, ouvrez la roue dentée › **Voir tous les paramètres** › onglet **Transfert et POP/IMAP**.",
-        },
-        {
-          text: "Cliquez **Ajouter une adresse de transfert**, collez votre adresse Plazo, puis **Suivant** › **Continuer** :",
+          text: "Dans **Transfert et POP/IMAP**, cliquez **Ajouter une adresse de transfert** et collez votre adresse Plazo :",
           copy: "address",
         },
         {
-          text: "Gmail envoie un code de confirmation à Plazo : il s'affiche ci-dessous. Collez-le dans Gmail et cliquez **Valider**.",
+          text: "**Suivant** › **Continuer** : Gmail envoie un code à Plazo, qui l'affiche ci-dessous. Collez-le dans Gmail et cliquez **Valider**.",
         },
       ] satisfies WizardLine[],
       waiting: "En attente du code de Gmail…",
-      received: (time: string) => `Code de confirmation Gmail reçu à ${time}`,
+      received: (when: string) => `Code de confirmation Gmail reçu ${when}`,
       requester: (email: string) => `Demandé par ${email}`,
       copyCode: "Copier le code",
       // 08/10/2026: Gmail's email no longer puts the code in its subject; its acceptance link confirms as well.
       openLink: "Confirmer par le lien",
       linkOnly: "Gmail n'a pas mis de code dans ce mail : confirmez par le lien.",
-      keepOff:
-        "Une fois l'adresse validée, Gmail propose « Transférer une copie des e-mails entrants » : laissez plutôt « Désactiver le transfert » coché, sinon tous vos mails partiraient dans Plazo. Seul le filtre de l'étape suivante transfère, et uniquement les mails des comparateurs.",
+      workspace:
+        "Google Workspace : si « Ajouter une adresse de transfert » n'apparaît pas, l'administrateur de votre domaine doit autoriser le transfert.",
     },
-  },
-  forward: {
-    gmail: {
-      title: "Créez le filtre dans Gmail",
+    filter: {
+      title: "Créer le filtre des comparateurs",
       lines: [
         {
-          text: "Dans **Transfert et POP/IMAP**, vérifiez que **Désactiver le transfert** est coché (sinon Gmail transfère tous vos mails à Plazo), puis **Enregistrer les modifications**.",
-        },
-        {
-          text: "Dans la barre de recherche de Gmail, cliquez l'icône des options de recherche, à droite.",
-        },
-        {
-          text: "Dans **De**, collez les expéditeurs des comparateurs :",
+          text: "Dans **Filtres et adresses bloquées**, cliquez **Créer un filtre**. Dans **De**, collez les expéditeurs des comparateurs :",
           copy: "sender",
         },
         {
-          text: "Cliquez **Créer un filtre**, cochez **Transférer à** et choisissez votre adresse Plazo :",
+          text: "**Créer un filtre**, cochez **Transférer à** et choisissez votre adresse Plazo :",
           copy: "address",
         },
         { text: "Validez avec **Créer un filtre**." },
       ] satisfies WizardLine[],
-      note: "L'adresse n'apparaît pas dans « Transférer à » ? Gmail doit d'abord la valider : revenez à l'étape 2, le code de confirmation y est affiché. Tous vos mails arrivent dans Plazo ? Dans Transfert et POP/IMAP, « Transférer une copie des e-mails entrants » est coché à la place de « Désactiver le transfert ».",
-      done: "J'ai créé le filtre",
-      screen: "Gmail",
-      preview: [
-        { kind: "field", label: "De", value: "sender", highlight: true },
-        { kind: "field", label: "À" },
-        { kind: "field", label: "Objet" },
-        { kind: "field", label: "Contient les mots" },
-        { kind: "check", label: "Ignorer la boîte de réception" },
-        { kind: "check", label: "Marquer comme lu" },
-        {
-          kind: "check",
-          label: "Transférer à",
-          value: "address",
-          highlight: true,
-          checked: true,
-        },
-        { kind: "check", label: "Supprimer" },
-        { kind: "button", label: "Créer un filtre" },
-      ] satisfies PreviewRow[],
+      keepOff:
+        "Dans **Transfert et POP/IMAP**, laissez **Désactiver le transfert** coché : sinon Gmail transfère tous vos mails à Plazo. Seul le filtre transfère, et uniquement les mails des comparateurs.",
+      note: "L'adresse n'apparaît pas dans « Transférer à » ? Gmail doit d'abord la valider avec le code de l'étape 1.",
     },
+  },
+  rule: {
     outlook: {
-      title: "Créez la règle dans Outlook",
+      title: "Créer la règle dans Outlook",
       lines: [
         {
           text: "Dans Outlook sur le web, ouvrez la roue dentée › **Courrier** › **Règles** › **Ajouter une nouvelle règle**.",
@@ -2984,29 +3005,10 @@ export const inboundWizardFr = {
         },
         { text: "Cliquez **Enregistrer**." },
       ] satisfies WizardLine[],
-      note: "Messagerie d'entreprise (Microsoft 365) : le transfert vers une adresse extérieure peut être bloqué. Si rien n'arrive à l'étape 4, demandez à la personne qui gère la messagerie de l'autoriser.",
-      done: "J'ai créé la règle",
-      screen: "Outlook",
-      preview: [
-        { kind: "field", label: "Nom", value: "Plazo" },
-        {
-          kind: "field",
-          label: "Condition · De",
-          value: "sender",
-          highlight: true,
-        },
-        {
-          kind: "field",
-          label: "Action · Transférer à",
-          value: "address",
-          highlight: true,
-        },
-        { kind: "check", label: "Arrêter le traitement d'autres règles" },
-        { kind: "button", label: "Enregistrer" },
-      ] satisfies PreviewRow[],
+      note: "Messagerie d'entreprise (Microsoft 365) : le transfert vers une adresse extérieure peut être bloqué. Si rien n'arrive, demandez à la personne qui gère la messagerie de l'autoriser.",
     },
     ovh: {
-      title: "Créez le filtre dans le webmail OVH",
+      title: "Créer le filtre dans le webmail OVH",
       lines: [
         {
           text: "Dans le webmail, ouvrez **Paramètres** › **Filtres**, puis **Créer** (+).",
@@ -3022,32 +3024,14 @@ export const inboundWizardFr = {
         { text: "Cliquez **Enregistrer**." },
       ] satisfies WizardLine[],
       note: "Choisissez bien « Envoyer une copie » : avec « Rediriger », le mail quitterait votre boîte.",
-      done: "J'ai créé le filtre",
-      screen: "webmail OVH",
-      preview: [
-        { kind: "field", label: "Nom du filtre", value: "Plazo" },
-        {
-          kind: "field",
-          label: "De · contient",
-          value: "sender",
-          highlight: true,
-        },
-        {
-          kind: "field",
-          label: "Envoyer une copie du message à",
-          value: "address",
-          highlight: true,
-        },
-        { kind: "button", label: "Enregistrer" },
-      ] satisfies PreviewRow[],
     },
     other: {
-      title: "Créez la règle de transfert",
+      title: "Créer la règle de transfert",
       lines: [
         {
           text: "Dans les réglages de votre messagerie, cherchez **Règles**, **Filtres** ou **Redirection**.",
         },
-        { text: "Condition : l'expéditeur est l'un des comparateurs", copy: "sender" },
+        { text: "Condition : l'expéditeur est l'un des comparateurs :", copy: "sender" },
         {
           text: "Action : transférer une copie à votre adresse Plazo :",
           copy: "address",
@@ -3055,55 +3039,34 @@ export const inboundWizardFr = {
         { text: "Enregistrez, en gardant le mail dans votre boîte." },
       ] satisfies WizardLine[],
       note: "Vous ne trouvez pas ? Envoyez ces étapes à la personne qui gère votre messagerie, avec le lien en bas de cette fenêtre.",
-      done: "J'ai créé la règle",
-      screen: "votre messagerie",
-      preview: [
-        {
-          kind: "field",
-          label: "Si l'expéditeur est",
-          value: "sender",
-          highlight: true,
-        },
-        {
-          kind: "field",
-          label: "Transférer une copie à",
-          value: "address",
-          highlight: true,
-        },
-        { kind: "check", label: "Garder le mail dans la boîte", checked: true },
-        { kind: "button", label: "Enregistrer" },
-      ] satisfies PreviewRow[],
     },
-  } satisfies Record<
-    MailProvider,
-    {
-      title: string;
-      lines: WizardLine[];
-      note: string;
-      done: string;
-      screen: string;
-      preview: PreviewRow[];
-    }
-  >,
-  preview: (screen: string) => `Aperçu simplifié de l'écran ${screen}`,
-  check: {
-    title: "Vérifiez que tout arrive",
+  } satisfies Record<Exclude<MailProvider, "gmail">, { title: string; lines: WizardLine[]; note: string }>,
+  test: {
+    title: "Tester avec un ancien mail",
     lines: [
       {
-        text: "Dans votre messagerie, ouvrez un ancien mail de réservation d'un comparateur et transférez-le à votre adresse Plazo :",
+        text: "Transférez à la main une ancienne confirmation d'un comparateur à votre adresse Plazo :",
         copy: "address",
       },
-      { text: "Il apparaît ci-dessous en quelques secondes." },
+      { text: "Elle doit devenir une réservation en quelques secondes." },
     ] satisfies WizardLine[],
-    received: "Ce que Plazo a reçu",
-    live: "En direct",
-    waiting: "En attente du premier mail…",
-    waitingHint:
-      "Il apparaît ici quelques secondes après son arrivée dans votre boîte.",
     ok: "C'est relié. Les prochaines réservations des comparateurs arriveront toutes seules dans le planning.",
-    toCheck:
-      "Bien reçu. Plazo n'a pas pu le lire en entier : il attend dans « À vérifier », où vous pouvez le compléter.",
+    toCheck: "Bien reçu. Plazo n'a pas pu le lire en entier : il attend dans « À vérifier », où vous pouvez le compléter.",
     openToCheck: "Voir les mails à vérifier",
+  },
+  seen: {
+    title: "Ce que Plazo voit",
+    live: "En direct",
+    confirmation: "Gmail connaît l'adresse Plazo",
+    confirmationAt: (when: string) => `Code de confirmation reçu ${when}`,
+    comparator: "Mail d'un comparateur arrivé seul",
+    comparatorWaiting: "Coché dès qu'un mail d'Allopark, Onepark, Parclick ou ParkMundo arrive sans être transféré à la main.",
+    comparatorAt: (provider: string, when: string) => `${provider} · ${when}`,
+    booking: "Une réservation créée",
+    bookingWaiting: "La preuve que tout fonctionne de bout en bout.",
+    bookingAt: (when: string) => `La dernière ${when}`,
+    recent: "Derniers mails reçus",
+    none: "Aucun mail reçu pour l'instant.",
     status: {
       imported: "Enregistrée",
       duplicate: "Déjà connue",
@@ -3113,8 +3076,19 @@ export const inboundWizardFr = {
       handled: "Traité",
       archived: "Archivé",
       forwarding: "Code Gmail",
+      ignored: "Écarté",
     } satisfies Record<InboundEmailStatus, string>,
   },
+  unexpected: {
+    gmail: "Dans Gmail › Transfert et POP/IMAP, cochez « Désactiver le transfert ».",
+    other: "Dans votre messagerie, ne gardez que la règle des comparateurs.",
+  },
+  done: {
+    gmail: "J'ai créé le filtre",
+    outlook: "J'ai créé la règle",
+    ovh: "J'ai créé le filtre",
+    other: "J'ai créé la règle",
+  } satisfies Record<MailProvider, string>,
   share: {
     link: "Envoyer ces étapes à la personne qui gère notre messagerie",
     subject: "Relier notre boîte mail à Plazo",
@@ -3124,8 +3098,7 @@ export const inboundWizardFr = {
     address: (address: string) => `Transférer une copie à : ${address}`,
     gmailCode:
       "Gmail envoie alors un code de confirmation à Plazo : je te le transmets dès qu'il s'affiche. Une fois l'adresse validée, laisse « Désactiver le transfert » coché dans Transfert et POP/IMAP : seul le filtre transfère.",
-    outro:
-      "Seuls ces mails sont transférés ; nos autres mails restent privés. Merci !",
+    outro: "Seuls ces mails sont transférés ; nos autres mails restent privés. Merci !",
   },
 };
 

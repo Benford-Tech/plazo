@@ -31,6 +31,7 @@ const TONE: Record<InboundEmailStatus, BadgeTone> = {
   handled: "ok",
   archived: "line",
   forwarding: "info",
+  ignored: "line",
 };
 /** Still waiting for a booking: « Compléter » / « Saisir » lead to the form. */
 const TO_CHECK: InboundEmailStatus[] = ["incomplete", "unrecognised"];

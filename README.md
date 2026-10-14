@@ -233,7 +233,9 @@ une décision de Joanny. Cocher au fur et à mesure.
 - [ ] Client n°1 : inscription libre (`/pro/inscription`) ou invitation (Plateforme › Loueurs), e-mail confirmé, fiche
   envoyée puis validée (Plateforme › Annonces), canal SMS réglé (Mon compte › SMS aux voyageurs, « Téléphone du parking »),
   Stripe Express relié avant le premier reversement, pushs activés par chaque membre dans Plazo Pro (Plus › Notifications),
-  mail de transfert de la messagerie (assistant « Relier votre boîte mail », transfert global désactivé).
+  adresse Plazo donnée à chaque comparateur dans son espace partenaire (bloc Mails entrants, 14/10/2026 ; à vérifier comparateur
+  par comparateur avec le client n°1), sinon règle de transfert de la messagerie (assistant « Relier votre boîte mail », transfert global
+  désactivé : l'assistant prévient sinon).
 
 **Référencement (audit du 08/10/2026 : on-page, SERP et concurrents, performance, local, contenus ; 39 constats confirmés)**
 - Réalité : domaine de deux jours, une seule URL indexable (`/`, ~1 100 mots), aucun parking réel, aucun avis ; rien n'est
@@ -611,7 +613,7 @@ Documentation interactive : `/api/docs` (Swagger). Toutes les routes sont sous `
 | GET | `/internal/sms/status` | Gérant : `{ lastSentAt, month: { sent, failed }, pending, pendingStale, lastError }` (relance la file au passage) |
 | POST | `/public/inbound/email` | Relais Cloudflare (M-A) : le mail brut (`message/rfc822`, `X-Inbound-Secret`, `X-Envelope-From` / `X-Envelope-To`, coupé à 4 Mo) ou l'ancien `{ items: [...] }` → `{ received, imported, toCheck, ignored }` |
 | POST | `/public/inbound/retry` | Minuterie du relais Cloudflare, toutes les 10 minutes (`X-Inbound-Secret`) : les mails Allopark dont la page n'a pas pu être lue sont analysés de nouveau quand leur tour vient (10 min, 30 min, 1 h, 3 h, 8 h après l'essai précédent, deux jours au plus, jamais une page protégée par un captcha ni refusée par Allopark — 429, blocage de Cloudflare —), trois par appel au plus, l'appel s'arrêtant dès qu'Allopark demande une vérification ou refuse Plazo → `{ due, tried, outcomes, stopped? }` |
-| GET | `/internal/inbound/settings` | Adresse de réception du loueur, dernier mail, comptages sur 30 jours, mails à vérifier |
+| GET | `/internal/inbound/settings` | Adresse de réception du loueur, dernier mail, comptages sur 30 jours, mails à vérifier ; depuis le 14/10/2026 : une ligne par comparateur (`comparators` : dernier mail, comment il arrive), ce que Plazo a vu du réglage (`progress`), les mails écartés de 7 jours (`unexpected`), la messagerie détectée (`mailProvider`) |
 | POST | `/internal/inbound/address` | Gérant : renvoie l'adresse (créée avec le loueur) ; `{ regenerate: true }` : nouvelle adresse |
 | GET | `/internal/inbound/emails?view=todo\|done\|archived&status=` | Boîte de réception (M-A, 08/10/2026) : un onglet (`todo` par défaut : incomplete et unrecognised ; `done` : imported, duplicate, handled sur 30 jours ; `archived` : 90 jours), du plus récent au plus ancien, `{ data, counts: { todo, done, archived } }` ; `?status=` filtre encore (seul, il cherche dans l'onglet de cet état) ; les confirmations de transfert jamais listées |
 | POST | `/internal/inbound/emails/:id/handle` | T-A « Marquer comme traité » → `handled` (imported inchangé ; 409 `archived` ; 404 pour une confirmation de transfert) ; `…/dismiss` : alias déprécié |

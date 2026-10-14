@@ -513,6 +513,14 @@ enum InboundEmailStatus {
   forwarding // G-B (07/10/2026): a mail provider's forwarding confirmation (Gmail's code), shown in the setup wizard
   handled // T-A (08/10/2026): "Marquer comme traité", dealt with, with or without a booking
   archived // T-A (08/10/2026): out of the inbox, still readable in "Archivés" (90 days)
+  ignored // A (14/10/2026): sent on by a too-wide mailbox rule, not from a comparator, no booking word: kept without sender, subject or text, for the wizard's alert (7 days)
+}
+
+/// C (14/10/2026, « C puis A »): how a booking email reached the Plazo address (domain/inbound-delivery.ts).
+enum InboundDelivery {
+  direct // the comparator wrote to the Plazo address itself
+  forwarded // a rule of the parking's mailbox sent it on
+  manual // someone forwarded it by hand
 }
 
 model InboundEmail {
@@ -545,6 +553,8 @@ model InboundEmail {
   // 11/10/2026 (« Lance l'analyse automatiquement pour allopark »): the re-analyses Plazo made by itself of an email
   // whose Allopark booking page it could not read (domain/inbound-retry.ts: five at most).
   autoRetries   Int                @default(0)
+  // C (14/10/2026): how the email arrived (null: received before Plazo told them apart).
+  delivery      InboundDelivery?
   reservationId String?
   receivedAt    DateTime           @default(now())
   createdAt     DateTime           @default(now())

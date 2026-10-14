@@ -221,6 +221,28 @@ Ne construire QUE ce qui règle la douleur n°1 du client.
      régler ailleurs. Boîte de réception : sous « Page Allopark : … », « Nouvel essai automatique vers 07:10 (2 sur 5) »
      (`autoRetries`, `autoRetryAt` de la vue), puis « Plazo a réessayé 5 fois sans trouver la réservation : ouvrez la page
      Allopark ou relancez l'analyse. ».
+     **C puis A « Relier sa boîte mail » (14/10/2026, « propose un [outil] permettant de configurer sa boîte mail pour y ajouter
+     une redirection vers l'adresse mail du parking » → maquettes https://claude.ai/artifact/6WPQwd9sn5YHUUNCReZzog, choix « C puis
+     A »)** : **C** : le bloc Mails entrants (`InboundEmailCard`) propose d'abord de donner l'adresse Plazo à chaque comparateur
+     (adresse de notification de son espace partenaire), une ligne par comparateur (`InboundSettings.comparators`,
+     `domain/inbound-comparators.ts` : dernier mail reçu, son état, et comment il arrive : « Directement », « Par votre
+     messagerie », « Transféré à la main », « Reçu » (avant le 14/10), « À régler »), « Comment faire » (étapes génériques et
+     message prêt à copier pour le comparateur ; les écrans de chaque espace partenaire restent à vérifier avec le client n°1),
+     puis « Relier ma boîte mail » pour qui ne le peut pas. `InboundEmail.delivery` (`direct` · `forwarded` · `manual`, migration
+     `inbound_delivery`, `domain/inbound-delivery.ts`) : `forwarded` quand une règle de messagerie l'a envoyé (en-têtes
+     `X-Forwarded-To/For` de Gmail, `X-MS-Exchange-Inbox-Rules-Loop`, `Resent-*`, `Auto-Submitted: auto-forwarded` : `InboundItem.AutoForwarded`
+     lu par `parseRawEmail`) ou que l'adresse Plazo n'est que dans l'enveloppe, `direct` quand elle est dans To/Cc et que
+     l'expéditeur est un comparateur, `manual` sinon. **A** : l'assistant (`InboundSetupWizard`) tient sur une page : messagerie
+     détectée (`InboundSettings.mailProvider` : Gmail quand Gmail a demandé à transférer, sinon le domaine ou les MX de l'adresse du
+     membre (`MailProviderService`, cache d'un jour, 1,5 s au plus, jamais un domaine d'exemple ; en consultation, celle des
+     gérants), pastille « Gmail, détecté d'après … » et « Changer »), réglages en blocs cochés par ce que Plazo voit (`progress` :
+     code Gmail, mail d'un comparateur arrivé seul, réservation créée), boutons « Ouvrir Gmail · Transfert / Filtres » vers
+     `#settings/fwdandpop` et `#settings/filters`, « Ouvrir Outlook » (outlook.live.com et/ou outlook.office.com : les règles
+     n'ont pas d'adresse propre), note Google Workspace pour un domaine propre, panneau « Ce que Plazo voit » en direct (5 s) avec
+     les derniers mails ; l'aperçu simplifié des écrans de G-B est retiré. **Mails écartés** : un mail envoyé par une règle, d'un
+     expéditeur qui n'est pas un comparateur et sans mot de réservation (`looksLikeBooking`) n'est ni lu par Claude ni gardé :
+     statut `ignored` sans expéditeur, objet ni texte, jamais listé, effacé à 7 jours ; `unexpected` en compte 7 jours et l'alerte
+     « Plazo reçoit aussi vos autres mails » s'affiche dans le bloc et l'assistant (« Désactiver le transfert » pour Gmail).
    - Page de réservation propre à l'opérateur (formulaire simple, confirmation par mail/SMS).
    - Vue planning : arrivées et retours du jour, taux d'occupation, alerte de surréservation
      calculée sur la capacité réelle.

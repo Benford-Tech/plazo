@@ -29,6 +29,11 @@ export interface InboundItem {
    * the 100 000 characters RawHtmlBody keeps. Absent from the former JSON payload: the links are then read from its bodies.
    */
   Links?: string[] | null;
+  /**
+   * 14/10/2026 (« C puis A »): a rule of a mailbox sent the email on (isAutoForwarded: Gmail's X-Forwarded-To,
+   * Exchange's inbox-rules header, Resent-*); undefined when the headers are unknown (the former JSON payload).
+   */
+  AutoForwarded?: boolean;
 }
 
 export interface InboundPayload {
@@ -40,6 +45,12 @@ export function recipientsOf(item: InboundItem): string[] {
   const addressOf = (a: string | InboundAddress | null | undefined): string => (typeof a === 'string' ? a : (a?.Address ?? ''));
   const addresses = [...(item.Recipients ?? []), ...(item.To ?? []), ...(item.Cc ?? [])].map(addressOf);
   return [...new Set(addresses.map(a => a.trim().toLowerCase()).filter(Boolean))];
+}
+
+/** The email's own To and Cc (its headers, not the envelope), lower-cased. */
+export function headerRecipientsOf(item: InboundItem): string[] {
+  const addresses = [...(item.To ?? []), ...(item.Cc ?? [])].map(a => (a?.Address ?? '').trim().toLowerCase());
+  return [...new Set(addresses.filter(Boolean))];
 }
 
 /** At most this many of the email's own recipients are kept, each at most this long. */
