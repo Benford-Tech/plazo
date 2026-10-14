@@ -15,6 +15,9 @@ _ReservationModel _$ReservationModelFromJson(Map<String, dynamic> json) =>
       status: json['status'] as String,
       arrivalAt: DateTime.parse(json['arrivalAt'] as String),
       returnAt: DateTime.parse(json['returnAt'] as String),
+      arrivedAt: json['arrivedAt'] == null
+          ? null
+          : DateTime.parse(json['arrivedAt'] as String),
       passengers: (json['passengers'] as num).toInt(),
       customerName: json['customerName'] as String,
       customerFirstName: json['customerFirstName'] as String? ?? '',
@@ -86,6 +89,7 @@ Map<String, dynamic> _$ReservationModelToJson(_ReservationModel instance) =>
       'status': instance.status,
       'arrivalAt': instance.arrivalAt.toIso8601String(),
       'returnAt': instance.returnAt.toIso8601String(),
+      'arrivedAt': instance.arrivedAt?.toIso8601String(),
       'passengers': instance.passengers,
       'customerName': instance.customerName,
       'customerFirstName': instance.customerFirstName,

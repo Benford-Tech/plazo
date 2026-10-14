@@ -24,6 +24,12 @@ import { ApiError } from "./api";
 import { PRODUCT } from "./product";
 
 // All user-facing strings live here so the interface can be translated later.
+/** « A », « A et B », « A, B et C ». */
+function frenchList(items: string[]): string {
+  if (items.length < 2) return items[0] ?? "";
+  return `${items.slice(0, -1).join(", ")} et ${items[items.length - 1]}`;
+}
+
 /** What deleting an operator takes with it, in words: « son parking, sa fiche, ses tarifs, ses 3 réservations et … ». */
 function deletionSummary(counts: { parkings: number; listings?: number; reservations: number; staff: number }): string {
   const listings = counts.listings ?? 0;
@@ -2507,8 +2513,16 @@ export const shuttleTripsFr = {
     /** The cars of the running trip checked in at boarding, waiting for the valet. */
     checkedInNote: (n: number) =>
       n === 1
-        ? "1 voiture pointée à l'embarquement : le voiturier la retrouve dans « À ranger », avec ses clés."
-        : `${n} voitures pointées à l'embarquement : le voiturier les retrouve dans « À ranger », avec leurs clés.`,
+        ? "1 voiture pointée à l'embarquement : le voiturier la retrouve dans « Arrivées à placer », avec ses clés."
+        : `${n} voitures pointées à l'embarquement : le voiturier les retrouve dans « Arrivées à placer », avec leurs clés.`,
+    /**
+     * Travellers added by hand (from a booking's « Embarquer ») whom the lists read again after a refused start left out
+     * of the selection: named, « Sarah Cohen » or « Sarah Cohen et Paul Dupont » (the same texts in Plazo Pro).
+     */
+    unpinned: (names: string[]) =>
+      names.length === 1
+        ? `${names[0]}, ajouté à la main, a été retiré de la sélection : vérifiez sa réservation.`
+        : `${frenchList(names)}, ajoutés à la main, ont été retirés de la sélection : vérifiez leurs réservations.`,
     /** Opened from a booking's « Embarquer » for a traveller who cannot board now. */
     cannotBoard:
       "Ce client ne peut pas embarquer maintenant : il est déjà parti, annulé ou attendu un autre jour.",

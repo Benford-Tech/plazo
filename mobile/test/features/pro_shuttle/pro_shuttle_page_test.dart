@@ -199,15 +199,15 @@ void main() {
     expect(find.text('2 clients ne sont pas encore pointés : ils passeront « Sur place » à l\'embarquement.'), findsOneWidget);
   });
 
-  testWidgets('départ refusé (14/10/2026) : le message d\'origine, puis les clients ajoutés depuis le planning retirés de la sélection', (tester) async {
+  testWidgets('départ refusé (14/10/2026) : le message d\'origine, puis les clients ajoutés à la main retirés de la sélection', (tester) async {
     final departures = DeparturesModel(serverTime: t0, rows: [DepartureRowModel(reservationId: 'd1', reference: 'D1', customerName: 'Chloé Moreau', passengers: 2, plate: 'BN-655-RT', status: 'arrived', arrivalAt: t0, arrivedAt: t0)]);
     final refused = ShuttleState(now: t0, direction: 'dropoff', departures: departures, actionState: ViewState.error, errorCode: 'invalid_passengers', unpinned: const ['Vincent Blanc']);
     await show(tester, refused);
     expect(find.text('Un de ces clients ne peut pas monter dans ce trajet (statut de la réservation).'), findsOneWidget);
-    expect(find.text('Vincent Blanc, ajouté depuis le planning, a été retiré de la sélection : vérifiez sa réservation.'), findsOneWidget);
+    expect(find.text('Vincent Blanc, ajouté à la main, a été retiré de la sélection : vérifiez sa réservation.'), findsOneWidget);
     bloc = MockShuttleBloc();
     await show(tester, refused.copyWith(unpinned: const ['Vincent Blanc', 'Sarah Cohen']));
-    expect(find.text('2 clients ajoutés depuis le planning ont été retirés de la sélection : vérifiez leur réservation.'), findsOneWidget);
+    expect(find.text('Vincent Blanc et Sarah Cohen, ajoutés à la main, ont été retirés de la sélection : vérifiez leurs réservations.'), findsOneWidget);
     bloc = MockShuttleBloc();
     await show(tester, refused.copyWith(unpinned: const []));
     expect(find.byKey(const Key('unpinned')), findsNothing);
@@ -280,11 +280,11 @@ void main() {
     await show(tester, ShuttleState(now: t0.add(const Duration(minutes: 5)), direction: 'dropoff', departures: departures, trip: trip, tracking: true, band: 1));
     expect(find.text('Sur place'), findsOneWidget);
     expect(find.text('Sur place · ${hhmm(boarded)}'), findsOneWidget);
-    expect(find.text('1 voiture pointée à l\'embarquement : le voiturier la retrouve dans « À ranger », avec ses clés.'), findsOneWidget);
+    expect(find.text('1 voiture pointée à l\'embarquement : le voiturier la retrouve dans « Arrivées à placer », avec ses clés.'), findsOneWidget);
     bloc = MockShuttleBloc();
     final both = trip.copyWith(passengers: [for (final p in trip.passengers) p.copyWith(checkedInAtBoarding: true, arrivedAt: boarded)]);
     await show(tester, ShuttleState(now: t0.add(const Duration(minutes: 5)), direction: 'dropoff', departures: departures, trip: both, tracking: true, band: 1));
-    expect(find.text('2 voitures pointées à l\'embarquement : le voiturier les retrouve dans « À ranger », avec leurs clés.'), findsOneWidget);
+    expect(find.text('2 voitures pointées à l\'embarquement : le voiturier les retrouve dans « Arrivées à placer », avec leurs clés.'), findsOneWidget);
     // A pick-up trip shows no pill nor note.
     bloc = MockShuttleBloc();
     final pickupTrip = staffTrip(passengers: const [TripPassengerModel(reservationId: 'r1', reference: 'Rr1', customerName: 'Camille Martin', passengers: 2, plate: 'AB-123-CD')]);

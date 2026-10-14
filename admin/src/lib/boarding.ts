@@ -21,7 +21,10 @@ export function canBoardDropoff(
   return r.status === "arrived" || (r.status === "upcoming" && boardableUpcoming(r.arrivalAt, now));
 }
 
-/** A booking as a row of the drop-off list, for a traveller the list does not hold (an early or late one). */
+/**
+ * A booking as a row of the drop-off list, for a traveller the list does not hold (an early or late one). Like the
+ * server's DepartureRow, `spot` is the spot code only (a car stored in a file shows no « Place »).
+ */
 export function departureRowOf(r: Reservation): DepartureRow {
   return {
     reservationId: r.id,
@@ -32,7 +35,7 @@ export function departureRowOf(r: Reservation): DepartureRow {
     status: r.status,
     arrivalAt: r.arrivalAt,
     arrivedAt: r.arrivedAt,
-    spot: r.file?.code ?? r.spot?.code ?? null,
+    spot: r.spot?.code ?? null,
     stopId: r.stopId ?? null,
     stopName: r.stop?.name ?? null,
     tripId: null,

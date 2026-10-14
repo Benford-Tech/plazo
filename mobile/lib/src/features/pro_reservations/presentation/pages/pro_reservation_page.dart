@@ -269,7 +269,8 @@ class _NextStep extends StatelessWidget {
         'res.next.drop_off'.tr(),
         'res.next.drop_off_help'.tr(),
         Icons.flight_takeoff_rounded,
-        () async => openShuttleTab(context, locator<ShuttleBoardingRequests>(), ShuttleBoarding.only(direction: 'dropoff', reservationId: r.id)),
+        // With the booking's row: a traveller the Navette list does not hold (arrived early, or late) still boards.
+        () async => openShuttleTab(context, locator<ShuttleBoardingRequests>(), ShuttleBoarding.dropoff(_departureOf(r))),
       ),
       'shuttled_out' || 'return_requested' when next.contains('back_at_parking') => (
         'pick_up',
@@ -348,7 +349,8 @@ class _NextStep extends StatelessWidget {
     );
   }
 
-  /// The booking as a row of the Navette list, for an early traveller the list does not hold yet.
+  /// The booking as a row of the Navette list, for a traveller the list does not hold (early, or arrived long ago):
+  /// read like the server's rows (the spot's code only, never a file's; when the arrival was recorded).
   static DepartureRowModel _departureOf(ReservationModel r) => DepartureRowModel(
     reservationId: r.id,
     reference: r.reference,
@@ -357,7 +359,8 @@ class _NextStep extends StatelessWidget {
     plate: r.plate,
     status: r.status,
     arrivalAt: r.arrivalAt,
-    spot: r.file?.code ?? r.spot?.code,
+    arrivedAt: r.arrivedAt,
+    spot: r.spot?.code,
     stopId: r.stopId,
     expected: r.status == 'upcoming',
   );

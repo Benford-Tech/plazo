@@ -31,7 +31,12 @@ import { useAuth } from "@/contexts/AuthContext";
 import { adminApi } from "@/lib/api";
 import { canBoardDropoff, departureRowOf } from "@/lib/boarding";
 import { shortDay, timeAgo, timeOf } from "@/lib/datetime";
-import { describeError, fr, shuttleTripsFr as t } from "@/lib/fr";
+import {
+  describeError,
+  errorMessage,
+  fr,
+  shuttleTripsFr as t,
+} from "@/lib/fr";
 import { can } from "@/lib/roles";
 import { shuttleTone } from "@/lib/shuttle-icon";
 import { ShuttleIcon } from "./ShuttleIcon";
@@ -70,9 +75,14 @@ const earliestLeave = (list: { leaveAt?: string }[]) =>
     .filter((x): x is string => !!x)
     .sort()[0] ?? null;
 
-/** The bookings pinned from « Embarquer », as read (undefined until then); stable while none changes. */
-const bookingsOf = (results: UseQueryResult<Reservation>[]) =>
-  results.map((q) => q.data);
+/**
+ * The bookings pinned from « Embarquer », as read (undefined until then), and when each was last read or failed to be
+ * (0 until then); each list stays the same while none of its values changes (react-query shares the combined result).
+ */
+const pinnedOf = (results: UseQueryResult<Reservation>[]) => ({
+  bookings: results.map((q) => q.data),
+  readAt: results.map((q) => Math.max(q.dataUpdatedAt, q.errorUpdatedAt)),
+});
 
 const vehicleLabel = (v: {
   model: string | null;
@@ -721,6 +731,11 @@ export default function ShuttleTripsPanel() {
   const [selected, setSelected] = useState<string[]>([]);
   // Travellers added from a booking's « Embarquer » whom the drop-off list does not hold (an early or late one).
   const [pinnedIds, setPinnedIds] = useState<string[]>([]);
+  // A start just refused: the travellers added by hand who rode along (id → name), named if the lists read again since
+  // drop them.
+  const refusal = useRef<{ at: number; names: Map<string, string> } | null>(
+    null,
+  );
   // The vehicle of the day (V-A) is preselected: « Embarquer et partir » takes it.
   const dayVehicleId = user?.vehicle?.id ?? null;
   const [vehicle, setVehicle] = useState<VehicleChoice | null>(() =>
@@ -790,14 +805,14 @@ export default function ShuttleTripsPanel() {
   }, [running]);
   // The pinned travellers' bookings (the booking card's cache), read again as often as the list: one that can no longer
   // board (cancelled, gone, another day) leaves it.
-  const pinnedBookings = useQueries({
+  const { bookings: pinnedBookings, readAt: pinnedReadAt } = useQueries({
     queries: pinnedIds.map((id) => ({
       queryKey: ["reservation", id],
       queryFn: () => adminApi.getReservation(id),
       enabled: mayDrive && direction === "dropoff" && !running,
       refetchInterval: LIST_POLL_MS,
     })),
-    combine: bookingsOf,
+    combine: pinnedOf,
   });
   // The drop-off list, then the pinned travellers that it does not hold and who may still board.
   const { departureRows, pinnedRowIds } = useMemo(() => {
@@ -854,15 +869,8 @@ export default function ShuttleTripsPanel() {
       !wantedListed,
   });
   useEffect(() => {
-    if (!wanted || running || !mayDrive) return;
-    // Opened on the other side (a booking's card on this very page): that side, the first band, a new selection.
-    if (wantedDirection !== direction) {
-      setDirection(wantedDirection);
-      setSelected([]);
-      setPinnedIds([]);
-      setBand(0);
-      return;
-    }
+    // The driver's own trip decides first: it is read before anything is ticked.
+    if (!wanted || !mayDrive || current.isPending) return;
     const consume = () =>
       setParams(
         (p) => {
@@ -872,6 +880,28 @@ export default function ShuttleTripsPanel() {
         },
         { replace: true },
       );
+    if (running) {
+      // A cached trip may have ended since (in Plazo Pro, by a manager): only a read since the request says it runs.
+      if (since === null) return;
+      if (current.dataUpdatedAt < since && current.errorUpdatedAt < since) {
+        void current.refetch({ cancelRefetch: false });
+        return;
+      }
+      // « Embarquer », « Déposer » or « Récupérer » while the driver's own trip runs: no second trip before it ends
+      // (the server would refuse it), said on « En route » as in Plazo Pro.
+      toast.error(errorMessage("trip_already_running"));
+      setBand(1);
+      consume();
+      return;
+    }
+    // Opened on the other side (a booking's card on this very page): that side, the first band, a new selection.
+    if (wantedDirection !== direction) {
+      setDirection(wantedDirection);
+      setSelected([]);
+      setPinnedIds([]);
+      setBand(0);
+      return;
+    }
     // Ticked in addition to those already ticked, on the first band.
     const pick = () => {
       setSelected((list) => (list.includes(wanted) ? list : [...list, wanted]));
@@ -928,6 +958,9 @@ export default function ShuttleTripsPanel() {
     wanted,
     wantedDirection,
     running,
+    current.isPending,
+    current.dataUpdatedAt,
+    current.errorUpdatedAt,
     mayDrive,
     direction,
     since,
@@ -952,9 +985,36 @@ export default function ShuttleTripsPanel() {
       list.every((id) => ids.has(id))
         ? list
         : list.filter((id) => ids.has(id));
+    // After a refused start, the travellers added by hand that leave the selection are named (as in Plazo Pro).
+    const refused = refusal.current;
+    const gone = refused
+      ? pinnedIds.filter((id) => !ids.has(id) && refused.names.has(id))
+      : [];
+    if (refused && gone.length > 0) {
+      toast.error(t.start.unpinned(gone.map((id) => refused.names.get(id)!)));
+      for (const id of gone) refused.names.delete(id);
+    }
     setSelected(keep);
     setPinnedIds(keep);
-  }, [tickable, wanted, running, listLoaded]);
+  }, [tickable, wanted, running, listLoaded, pinnedIds]);
+  // The refusal is over once the lists and the added travellers' bookings were read again since (or none is left).
+  useEffect(() => {
+    const refused = refusal.current;
+    if (!refused) return;
+    const left = pinnedIds.flatMap((id, i) =>
+      refused.names.has(id) ? [pinnedReadAt[i] ?? 0] : [],
+    );
+    const listRead =
+      Math.max(listQuery.dataUpdatedAt, listQuery.errorUpdatedAt) >=
+      refused.at;
+    if (left.length === 0 || (listRead && left.every((at) => at >= refused.at)))
+      refusal.current = null;
+  }, [
+    pinnedIds,
+    pinnedReadAt,
+    listQuery.dataUpdatedAt,
+    listQuery.errorUpdatedAt,
+  ]);
   useTripPosition(trip, setProblem);
 
   const refresh = (withCurrent = true) => {
@@ -983,6 +1043,9 @@ export default function ShuttleTripsPanel() {
               }
             : null,
       }),
+    onMutate: () => {
+      refusal.current = null;
+    },
     onSuccess: ({ trip }) => {
       // The started trip is the answer itself: no refetch of "current" that could race it.
       queryClient.setQueryData(["shuttle-current"], { trip });
@@ -998,6 +1061,12 @@ export default function ShuttleTripsPanel() {
     },
     onError: (error) => {
       toast.error(describeError(error));
+      const names = new Map<string, string>();
+      pinnedIds.forEach((id, i) => {
+        const b = pinnedBookings[i];
+        if (b && selected.includes(id)) names.set(id, b.customerName);
+      });
+      refusal.current = names.size > 0 ? { at: Date.now(), names } : null;
       // Refused (a traveller cancelled, gone or taken meanwhile): the lists and the pinned bookings are read again, and
       // the ticks follow them.
       refresh(false);

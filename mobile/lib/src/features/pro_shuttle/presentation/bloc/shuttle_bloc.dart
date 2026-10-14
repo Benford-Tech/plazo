@@ -180,6 +180,15 @@ class ShuttleBloc extends Bloc<ShuttleEvent, ShuttleState> {
   /// (the rest kept on the same side), with the planning's row when the list does not hold them. One on another trip
   /// is not added: the server would refuse the whole trip.
   Future<void> _board(ShuttleBoarding boarding, Emitter<ShuttleState> emit) async {
+    // A start (or an end) still in flight: its outcome first, so that it does not wipe this traveller from the selection.
+    if (state.actionState.isProcessing) {
+      try {
+        await stream.firstWhere((s) => !s.actionState.isProcessing);
+      } on StateError {
+        return; // closed meanwhile
+      }
+      if (emit.isDone) return;
+    }
     // The driver's own trip runs: no second one before it ends (the server would refuse it); said on « En route ».
     if (state.running) {
       emit(state.copyWith(band: 1, actionState: ViewState.error, errorCode: 'trip_already_running', unpinned: const []));
@@ -361,8 +370,9 @@ class ShuttleBloc extends Bloc<ShuttleEvent, ShuttleState> {
   }
 
   /// A start refused for one of the travellers: the list read again drops the cancelled ones and marks the ones on
-  /// another trip. When it explains nothing, the rows pinned from the planning, which nothing reads again, are the
-  /// suspects: they leave the selection (named under the error), so that the next tap starts with the others.
+  /// another trip. When it explains nothing, the rows added by hand (planning, booking's sheet), which nothing reads
+  /// again, are the suspects: they leave the selection (named under the error), so that the next tap starts with the
+  /// others.
   Future<void> _dropStalePins(Emitter<ShuttleState> emit) async {
     final before = state.selected;
     await _loadPickups(emit, initial: false);

@@ -12,13 +12,13 @@ abstract class ShuttleState with _$ShuttleState {
     /// Travellers waiting for the terminal, or expected soon (drop-off direction).
     DeparturesModel? departures,
 
-    /// 14/10/2026: travellers added from the planning (« Embarquer » / « Récupérer ») that the list does not hold (an
-    /// early traveller): shown and ticked until the trip starts or they are unticked.
+    /// 14/10/2026: travellers added by hand (« Embarquer » / « Récupérer » of the planning, the booking's sheet) that
+    /// the list does not hold (an early traveller): shown and ticked until the trip starts or they are unticked.
     @Default([]) List<DepartureRowModel> pinnedDepartures,
     @Default([]) List<PickupRowModel> pinnedPickups,
 
-    /// The travellers added from the planning that a refused start took out of the selection (their names, shown
-    /// under the error): nothing reads their booking again, so they were the likely reason.
+    /// The travellers added by hand that a refused start took out of the selection (their names, shown under the
+    /// error): nothing reads their booking again, so they were the likely reason.
     @Default([]) List<String> unpinned,
 
     /// F-A: the travellers away by return day, and those back today (the third band).

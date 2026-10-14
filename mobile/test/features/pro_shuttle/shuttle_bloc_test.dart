@@ -682,6 +682,55 @@ void main() {
       await bloc.close();
     });
 
+    test('deux clients ajoutés à la main (planning, « Déposer au terminal » de la fiche) : tous deux retirés et nommés', () async {
+      final requests = ShuttleBoardingRequests();
+      final bloc = await withPin(requests);
+      // An arrived traveller the list does not hold (arrived more than 6 h ago), added from the booking's sheet: the
+      // row reads like the server's (arrival recorded, the spot's code).
+      final arrivedAt = t0.subtract(const Duration(hours: 8));
+      requests.request(
+        ShuttleBoarding.dropoff(
+          DepartureRowModel(reservationId: 'p2', reference: 'P2', customerName: 'Sarah Cohen', passengers: 2, plate: 'EF-321-GH', status: 'arrived', arrivalAt: arrivedAt, arrivedAt: arrivedAt, spot: 'B04'),
+        ),
+      );
+      await bloc.stream.firstWhere((s) => s.selected.contains('p2'));
+      final added = bloc.state.departureRows.firstWhere((r) => r.reservationId == 'p2');
+      expect(added.arrivedAt, arrivedAt);
+      expect(added.spot, 'B04');
+      expect(added.expected, isFalse);
+
+      when(() => start(any())).thenAnswer((_) async => const Left(ServerFailure(message: 'x', statusCode: 422, code: 'invalid_passengers')));
+      bloc.add(const ShuttleStartRequested());
+      await bloc.stream.firstWhere((s) => s.unpinned.isNotEmpty);
+      expect(bloc.state.unpinned, ['Vincent Blanc', 'Sarah Cohen']);
+      expect(bloc.state.selected, {'a1'});
+      expect(bloc.state.pinnedDepartures, isEmpty);
+      await bloc.close();
+    });
+
+    test('« Embarquer » pendant un départ en cours : attend son issue, puis dit que le trajet est parti', () async {
+      final requests = ShuttleBoardingRequests();
+      final bloc = await withPin(requests);
+      final pending = Completer<Either<Failure, StaffTripModel>>();
+      when(() => start(any())).thenAnswer((_) => pending.future);
+      bloc.add(const ShuttleStartRequested());
+      await bloc.stream.firstWhere((s) => s.actionState.isProcessing);
+      final late = DepartureRowModel(reservationId: 'p3', reference: 'P3', customerName: 'Marc Petit', passengers: 1, plate: 'AZ-902-LC', status: 'upcoming', arrivalAt: t0.add(const Duration(hours: 1)), expected: true);
+      requests.request(ShuttleBoarding.dropoff(late));
+      await settle();
+      // The start keeps its spinner; the traveller waits for its outcome instead of being ticked, then wiped.
+      expect(bloc.state.actionState.isProcessing, isTrue);
+      expect(bloc.state.selected, isNot(contains('p3')));
+
+      pending.complete(Right(staffTrip().copyWith(direction: 'dropoff')));
+      await bloc.stream.firstWhere((s) => s.errorCode == 'trip_already_running');
+      expect(bloc.state.trip, isNotNull);
+      expect(bloc.state.band, 1);
+      final params = verify(() => start(captureAny())).captured.single as StartTripParams;
+      expect(params.reservationIds, isNot(contains('p3')));
+      await bloc.close();
+    });
+
     test('la liste relue explique le refus (un client listé parti sur un autre trajet) : le client épinglé reste coché', () async {
       final bloc = await withPin(ShuttleBoardingRequests());
       when(() => start(any())).thenAnswer((_) async => const Left(ServerFailure(message: 'x', statusCode: 409, code: 'already_on_trip')));

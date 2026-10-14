@@ -16,6 +16,9 @@ abstract class ReservationModel with _$ReservationModel {
     required String status,
     required DateTime arrivalAt,
     required DateTime returnAt,
+
+    /// When the arrival was recorded (status « Sur place »); null while expected.
+    DateTime? arrivedAt,
     required int passengers,
     required String customerName,
 

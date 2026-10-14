@@ -180,6 +180,7 @@ class _ProTodayViewState extends State<ProTodayView> with SingleTickerProviderSt
           plate: b.plate,
           status: b.status,
           arrivalAt: b.arrivalAt,
+          arrivedAt: b.arrivedAt,
           stopId: b.stopId,
           expected: b.status == 'upcoming',
         ),

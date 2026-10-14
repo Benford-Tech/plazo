@@ -28,7 +28,7 @@ void main() {
     parking: const PlanningParkingModel(id: 'p1', name: 'Parking Test'),
     arrivals: [
       row('a1', 'Vincent Blanc', 'DJ-150-MX', now.add(const Duration(minutes: 30))).copyWith(stopId: 's1'),
-      row('a2', 'Chloé Moreau', 'BN-655-RT', now.subtract(const Duration(hours: 1)), status: 'arrived'),
+      row('a2', 'Chloé Moreau', 'BN-655-RT', now.subtract(const Duration(hours: 1)), status: 'arrived').copyWith(arrivedAt: now.subtract(const Duration(minutes: 50))),
       row('a3', 'Nadia Benali', 'CP-114-HM', now.subtract(const Duration(hours: 3)), status: 'shuttled_out'),
       row('a4', 'Sarah Cohen', 'KL-204-BA', now.add(const Duration(hours: 30))),
     ],
@@ -73,6 +73,15 @@ void main() {
     expect(boarding.departure?.expected, isTrue);
     // The stop's id: the Navette list groups the row under it.
     expect(boarding.departure?.stopId, 's1');
+    expect(boarding.departure?.arrivedAt, isNull);
+
+    // On site: the row reads like the server's, with the arrival recorded (no spot: the planning has none).
+    await tester.tap(find.byKey(const Key('board-a2')));
+    final onSite = handed.last.departure!;
+    expect(onSite.reservationId, 'a2');
+    expect(onSite.expected, isFalse);
+    expect(onSite.arrivedAt, now.subtract(const Duration(minutes: 50)));
+    expect(onSite.spot, isNull);
 
     // On a running trip: no button.
     requests.tripsChanged({'a2'});

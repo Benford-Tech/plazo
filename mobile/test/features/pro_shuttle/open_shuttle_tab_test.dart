@@ -170,6 +170,73 @@ void main() {
     expect(boarding.departure?.stopId, 's1');
   });
 
+  testWidgets('« Déposer au terminal » : le client sur place part avec sa ligne, lue comme celle du serveur', (tester) async {
+    const karim = StaffModel(id: 'd1', name: 'Karim Benali', email: 'k@example.com', role: 'driver', post: 'driver', effectivePost: 'driver');
+    // Arrived long ago (the drop-off list keeps 6 h): the Navette list may not hold them.
+    final arrivedAt = now.subtract(const Duration(hours: 8));
+    final booking = ReservationModel.fromJson({
+      'id': 'r1',
+      'reference': 'PLZ-R1',
+      'channel': 'phone',
+      'status': 'arrived',
+      'arrivalAt': arrivedAt.toUtc().toIso8601String(),
+      'arrivedAt': arrivedAt.toUtc().toIso8601String(),
+      'returnAt': now.add(const Duration(days: 3)).toUtc().toIso8601String(),
+      'passengers': 2,
+      'customerName': 'Sarah Cohen',
+      'customerPhone': '0600000000',
+      'plate': 'EF-321-GH',
+      'stopId': 's1',
+      'nextStatuses': ['shuttled_out', 'cancelled'],
+      'spot': {'code': 'B04'},
+      'file': {'id': 'f7', 'code': 'F07'},
+      'filePosition': 2,
+    });
+    expect(booking.arrivedAt, arrivedAt.toUtc());
+    final bloc = MockReservationBloc();
+    whenListen(bloc, const Stream<ProReservationState>.empty(), initialState: ProReservationState(reservation: booking));
+    final auth = MockAuthBloc();
+    whenListen(auth, const Stream<ProAuthState>.empty(), initialState: const ProAuthState(status: ProAuthStatus.signedIn, staff: karim));
+    final router = await pumpRouter(tester, [
+      page(ProShellRoute.name, '/pro', (_, _) => shell([ProShuttleRoute(), const ProArrivalsRoute()]), children: [
+        page(ProShuttleRoute.name, 'navette', (_, _) => label('Navette')),
+        page(ProArrivalsRoute.name, 'arrivees', (_, _) => label('Arrivées')),
+      ]),
+      page(
+        ProReservationRoute.name,
+        '/pro/reservations/:id',
+        (_, _) => MultiBlocProvider(
+          providers: [
+            BlocProvider<ProReservationBloc>.value(value: bloc),
+            BlocProvider<ProAuthBloc>.value(value: auth),
+          ],
+          child: const ProReservationPage(id: 'r1'),
+        ),
+      ),
+    ]);
+    router.innerRouterOf<TabsRouter>(ProShellRoute.name)!.setActiveIndex(1);
+    await tester.pumpAndSettle();
+    final heard = <ShuttleBoarding>[];
+    final listening = requests.stream.listen(heard.add);
+    addTearDown(listening.cancel);
+    unawaitedPush(router, ProReservationRoute(id: 'r1'));
+    await tester.pumpAndSettle();
+
+    await tester.ensureVisible(find.byKey(const Key('next-drop_off')));
+    await tester.tap(find.byKey(const Key('next-drop_off')));
+    await tester.pumpAndSettle();
+    expect(find.byType(ProReservationPage), findsNothing);
+    expect(activeTab(tester), 'onglet 0');
+    final departure = heard.single.departure;
+    expect(heard.single.direction, 'dropoff');
+    expect(departure, isNotNull, reason: 'pinned when the Navette list does not hold the traveller');
+    expect(departure!.reservationId, 'r1');
+    expect(departure.expected, isFalse);
+    expect(departure.arrivedAt, arrivedAt.toUtc());
+    expect(departure.spot, 'B04', reason: 'the spot\'s code only, as the server\'s rows');
+    expect(departure.stopId, 's1');
+  });
+
   testWidgets('sans onglet Navette (autre poste) : l\'écran Navette s\'ouvre au-dessus avec le client', (tester) async {
     await pumpRouter(tester, [
       page(ProShellRoute.name, '/pro', (_, _) => shell(const [ProTodayRoute(), ProReservationsRoute()]), children: [

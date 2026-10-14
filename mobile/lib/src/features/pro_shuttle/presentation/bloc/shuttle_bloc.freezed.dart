@@ -16,10 +16,10 @@ T _$identity<T>(T value) => value;
 mixin _$ShuttleState {
 
  ViewState get viewState; ViewState get actionState; PickupsModel? get pickups;/// Travellers waiting for the terminal, or expected soon (drop-off direction).
- DeparturesModel? get departures;/// 14/10/2026: travellers added from the planning (« Embarquer » / « Récupérer ») that the list does not hold (an
-/// early traveller): shown and ticked until the trip starts or they are unticked.
- List<DepartureRowModel> get pinnedDepartures; List<PickupRowModel> get pinnedPickups;/// The travellers added from the planning that a refused start took out of the selection (their names, shown
-/// under the error): nothing reads their booking again, so they were the likely reason.
+ DeparturesModel? get departures;/// 14/10/2026: travellers added by hand (« Embarquer » / « Récupérer » of the planning, the booking's sheet) that
+/// the list does not hold (an early traveller): shown and ticked until the trip starts or they are unticked.
+ List<DepartureRowModel> get pinnedDepartures; List<PickupRowModel> get pinnedPickups;/// The travellers added by hand that a refused start took out of the selection (their names, shown under the
+/// error): nothing reads their booking again, so they were the likely reason.
  List<String> get unpinned;/// F-A: the travellers away by return day, and those back today (the third band).
  StayingModel? get staying;/// `pickup` (to the airport, default) or `dropoff` (to the terminal).
  String get direction;/// F-A: the band shown; a trip starting opens "En route", its end goes back to the first band.
@@ -305,11 +305,11 @@ class _ShuttleState extends ShuttleState {
 @override final  PickupsModel? pickups;
 /// Travellers waiting for the terminal, or expected soon (drop-off direction).
 @override final  DeparturesModel? departures;
-/// 14/10/2026: travellers added from the planning (« Embarquer » / « Récupérer ») that the list does not hold (an
-/// early traveller): shown and ticked until the trip starts or they are unticked.
+/// 14/10/2026: travellers added by hand (« Embarquer » / « Récupérer » of the planning, the booking's sheet) that
+/// the list does not hold (an early traveller): shown and ticked until the trip starts or they are unticked.
  final  List<DepartureRowModel> _pinnedDepartures;
-/// 14/10/2026: travellers added from the planning (« Embarquer » / « Récupérer ») that the list does not hold (an
-/// early traveller): shown and ticked until the trip starts or they are unticked.
+/// 14/10/2026: travellers added by hand (« Embarquer » / « Récupérer » of the planning, the booking's sheet) that
+/// the list does not hold (an early traveller): shown and ticked until the trip starts or they are unticked.
 @override@JsonKey() List<DepartureRowModel> get pinnedDepartures {
   if (_pinnedDepartures is EqualUnmodifiableListView) return _pinnedDepartures;
   // ignore: implicit_dynamic_type
@@ -323,11 +323,11 @@ class _ShuttleState extends ShuttleState {
   return EqualUnmodifiableListView(_pinnedPickups);
 }
 
-/// The travellers added from the planning that a refused start took out of the selection (their names, shown
-/// under the error): nothing reads their booking again, so they were the likely reason.
+/// The travellers added by hand that a refused start took out of the selection (their names, shown under the
+/// error): nothing reads their booking again, so they were the likely reason.
  final  List<String> _unpinned;
-/// The travellers added from the planning that a refused start took out of the selection (their names, shown
-/// under the error): nothing reads their booking again, so they were the likely reason.
+/// The travellers added by hand that a refused start took out of the selection (their names, shown under the
+/// error): nothing reads their booking again, so they were the likely reason.
 @override@JsonKey() List<String> get unpinned {
   if (_unpinned is EqualUnmodifiableListView) return _unpinned;
   // ignore: implicit_dynamic_type

@@ -1101,10 +1101,10 @@
     "pax_of_seats": "{} pass. sur {}",
     "vehicle_change": "Changer",
     "vehicle_choose": "Choisir ce véhicule",
-    "checked_in_note_one": "1 voiture pointée à l'embarquement : le voiturier la retrouve dans « À ranger », avec ses clés.",
-    "checked_in_note_many": "{} voitures pointées à l'embarquement : le voiturier les retrouve dans « À ranger », avec leurs clés.",
-    "unpinned_one": "{}, ajouté depuis le planning, a été retiré de la sélection : vérifiez sa réservation.",
-    "unpinned_many": "{} clients ajoutés depuis le planning ont été retirés de la sélection : vérifiez leur réservation."
+    "checked_in_note_one": "1 voiture pointée à l'embarquement : le voiturier la retrouve dans « Arrivées à placer », avec ses clés.",
+    "checked_in_note_many": "{} voitures pointées à l'embarquement : le voiturier les retrouve dans « Arrivées à placer », avec leurs clés.",
+    "unpinned_one": "{}, ajouté à la main, a été retiré de la sélection : vérifiez sa réservation.",
+    "unpinned_many": "{}, ajoutés à la main, ont été retirés de la sélection : vérifiez leurs réservations."
   },
   "vehicle_day": {
     "title": "Mon véhicule aujourd'hui",

@@ -403,14 +403,28 @@ Hors MVP : optimisation d'itinéraire.
 
 - L'onglet Navette de Plazo Pro et le mode chauffeur de la page Navettes du web deviennent **« Ma tournée »** : trois bandes
   que les voyageurs traversent à mesure que le chauffeur les coche. Côté départs : **À emmener** (les clients sur place,
-  groupés par desserte avec l'heure de départ conseillée de la vague, les clients encore attendus en gris « Attendu HH:MM »
-  et non cochables ; cocher, véhicule, « Partir au terminal · N clients ») → **En route** (carte des navettes en cours, mon
+  groupés par desserte avec l'heure de départ conseillée de la vague, les clients encore attendus « Attendu HH:MM », cochables
+  depuis le 14/10/2026 ; cocher, « Embarquer et partir · N clients ») → **En route** (carte des navettes en cours, mon
   trajet avec ses passagers, « Clients déposés au terminal ») → **En séjour** (les déposés rangés par jour de retour avec
   place, vol et heure). Côté retours, les mêmes bandes s'appellent **À récupérer** → **En route** → **Rendus** (revenus
   aujourd'hui). Le départ d'un trajet ouvre « En route », sa fin ramène sur la première bande.
 - Serveur : `leaveAt` sur chaque ligne des listes `pickups` et `departures` (calcul des vagues), `expected` sur les
   départs (arrivée prévue dans la fenêtre, pas encore sur place), `GET /internal/shuttle/staying` (`days[]` par jour de
   retour local, `returnedToday`).
+
+#### Embarquer en un geste (décision du 14/10/2026, mis en œuvre)
+
+- **Pourquoi** : le chauffeur faisait cinq gestes pour un départ vers le terminal (l'accueil pointe l'arrivée, il coche les
+  clients « Sur place », « Partir au terminal », confirme le véhicule, « Terminer »), et un client pas encore pointé ne
+  pouvait pas monter. Maquette validée : https://claude.ai/artifact/8dAScBE8MCNNQ8uzgKfJ4g.
+- **Trois gestes** : le chauffeur coche les clients prévus, « Attendu » compris, ou les ajoute depuis le planning (« Embarquer »
+  sur l'onglet Arrivées, « Récupérer » sur Retours, « Embarquer » sur la fiche d'une réservation attendue) ; « Embarquer et
+  partir » part avec le véhicule du jour sans feuille (« Changer » pour un autre) ; « Terminer ce trajet » comme avant.
+- **Pointage à l'embarquement** : un client encore « Attendu » (arrivée prévue à 24 h près) passe « Sur place » au départ du
+  trajet, dans la même transaction que le trajet ; sa voiture attend sa place ou sa file dans « Arrivées à placer » avec la
+  ligne « Pointé à l'embarquement par Karim », et reste à placer après la dépose. Le serveur refuse toujours un client déjà
+  parti, annulé, sur un autre trajet, ou attendu à plus de 24 h.
+- **Web** : le mode chauffeur de la page Navettes suit les mêmes règles ; la fiche d'une réservation propose « Embarquer ».
 
 #### Suivi des navettes réglable et mention « En direct » (décisions R-B + I-C du 07/10/2026, mis en œuvre)
 

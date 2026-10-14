@@ -365,11 +365,11 @@ class ProShuttlePage extends StatelessWidget implements AutoRouteWrapper {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Text(translateErrorCode(state.errorCode), style: AppText.body(size: 14, color: AppColors.danger)),
-              // The travellers added from the planning that the refused start took out of the selection.
+              // The travellers added by hand (planning, booking's sheet) that the refused start took out of the selection.
               if (state.unpinned.isNotEmpty) ...[
                 const SizedBox(height: 4),
                 Text(
-                  state.unpinned.length == 1 ? 'shuttle.unpinned_one'.tr(args: [state.unpinned.single]) : 'shuttle.unpinned_many'.tr(args: ['${state.unpinned.length}']),
+                  state.unpinned.length == 1 ? 'shuttle.unpinned_one'.tr(args: [state.unpinned.single]) : 'shuttle.unpinned_many'.tr(args: [_frenchList(state.unpinned)]),
                   key: const Key('unpinned'),
                   style: AppText.body(size: 13, color: AppColors.danger),
                 ),
@@ -915,3 +915,7 @@ Future<TripVehicleChoice?> showVehicleSheet(
       shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(24))),
       builder: (_) => VehicleSheet(vehicles: vehicles, current: current, passengers: passengers, confirmLabel: confirmLabel),
     );
+
+/// « Sarah Cohen et Paul Dupont », « A, B et C »: the names as the web lists them.
+String _frenchList(List<String> names) =>
+    names.length < 2 ? names.join() : '${names.sublist(0, names.length - 1).join(', ')} et ${names.last}';
