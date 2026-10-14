@@ -292,6 +292,14 @@ export default function ReservationPage() {
                   · {quickCardFr.keys} {r.keyHook ?? quickCardFr.noKeys}
                 </span>
               </Info>
+              {r.boardingCheckIn && (
+                <Info label={t.boardingCheckIn}>
+                  {quickCardFr.boardingCheckIn(
+                    r.boardingCheckIn.driverFirstName,
+                    timeOf(r.boardingCheckIn.at),
+                  )}
+                </Info>
+              )}
               <Info label={t.passengers}>{r.passengers}</Info>
               {(r.vehicleModel || r.vehicleColour) && (
                 <Info label={t.vehicleModel}>

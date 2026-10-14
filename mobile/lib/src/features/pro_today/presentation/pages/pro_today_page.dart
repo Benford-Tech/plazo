@@ -16,8 +16,13 @@ import '../../../pro_auth/presentation/bloc/pro_auth_bloc.dart';
 import '../../../pro_dashboard/presentation/bloc/pro_dashboard_bloc.dart';
 import '../../../pro_dashboard/presentation/widgets/dashboard_view.dart';
 import '../../../pro_revenue/presentation/bloc/revenue_summary_bloc.dart';
+import '../../../pro_shuttle/data/models/shuttle_models.dart';
 import '../../../pro_shuttle/presentation/bloc/live_shuttles_bloc.dart';
+import '../../../pro_shuttle/presentation/bloc/shuttle_boarding.dart';
+import '../../../pro_shuttle/presentation/pages/pro_shuttle_page.dart';
 import '../../../pro_shuttle/presentation/widgets/live_shuttles_card.dart';
+import '../../../return_day/data/models/return_model.dart';
+import '../../data/models/planning_model.dart';
 import '../bloc/pro_today_bloc.dart';
 import '../widgets/date_strip.dart';
 import '../widgets/today_row.dart';
@@ -47,7 +52,7 @@ Widget _withBlocs(Widget child) => MultiBlocProvider(
   child: child,
 );
 
-/// The driver's "Arrivées" tab (R-C): the day's arrivals alone.
+/// The driver's "Arrivées" tab (R-C): the day's arrivals alone, « Embarquer » on the ones not gone yet (14/10/2026).
 @RoutePage()
 class ProArrivalsPage extends StatelessWidget implements AutoRouteWrapper {
   const ProArrivalsPage({super.key});
@@ -56,10 +61,10 @@ class ProArrivalsPage extends StatelessWidget implements AutoRouteWrapper {
   Widget wrappedRoute(BuildContext context) => _withBlocs(this);
 
   @override
-  Widget build(BuildContext context) => const ProTodayView(only: TodaySide.arrivals);
+  Widget build(BuildContext context) => ProTodayView(only: TodaySide.arrivals, boarding: locator<ShuttleBoardingRequests>());
 }
 
-/// The driver's "Retours" tab (R-C): the day's returns alone.
+/// The driver's "Retours" tab (R-C): the day's returns alone, « Récupérer » on the ones away (14/10/2026).
 @RoutePage()
 class ProReturnsPage extends StatelessWidget implements AutoRouteWrapper {
   const ProReturnsPage({super.key});
@@ -68,8 +73,11 @@ class ProReturnsPage extends StatelessWidget implements AutoRouteWrapper {
   Widget wrappedRoute(BuildContext context) => _withBlocs(this);
 
   @override
-  Widget build(BuildContext context) => const ProTodayView(only: TodaySide.returns);
+  Widget build(BuildContext context) => ProTodayView(only: TodaySide.returns, boarding: locator<ShuttleBoardingRequests>());
 }
+
+/// Statuses a return can be fetched from at the airport (the server's PICKUP_STATUSES).
+const _fetchable = {'arrived', 'shuttled_out', 'return_requested'};
 
 enum TodaySide { arrivals, returns }
 
@@ -77,9 +85,15 @@ enum TodayMode { dashboard, planning }
 
 /// The day's planning: both sides (tabs on a phone, two columns on a tablet), or one side only.
 class ProTodayView extends StatefulWidget {
-  const ProTodayView({super.key, this.only});
+  const ProTodayView({super.key, this.only, this.boarding, this.onBoard});
 
   final TodaySide? only;
+
+  /// The driver's tabs (14/10/2026): « Embarquer » / « Récupérer » on today's rows, for the Navette tab.
+  final ShuttleBoardingRequests? boarding;
+
+  /// Hands a traveller over; by default to the shell's Navette tab ([openShuttleTab]).
+  final ValueChanged<ShuttleBoarding>? onBoard;
 
   @override
   State<ProTodayView> createState() => _ProTodayViewState();
@@ -121,6 +135,56 @@ class _ProTodayViewState extends State<ProTodayView> with SingleTickerProviderSt
     if (banner == null) return;
     _tabs.animateTo(banner.kind.name == 'outbound' ? 0 : 1);
     context.read<ProTodayBloc>().add(const ProTodayBannerDismissed());
+  }
+
+  /// Nobody on a trip, for the views that offer no boarding.
+  static final _noTrips = ValueNotifier<Set<String>>(const {});
+  static final _notRunning = ValueNotifier<bool>(false);
+
+  /// Hands a traveller to the Navette tab (14/10/2026); null when this view offers no « Embarquer » / « Récupérer ».
+  ValueChanged<ShuttleBoarding>? get _onBoard {
+    final requests = widget.boarding;
+    if (requests == null) return null;
+    return widget.onBoard ?? (b) => openShuttleTab(context, requests, b);
+  }
+
+  /// Today's travellers not gone yet: expected within a day (checked in at boarding) or on site, not on a running trip;
+  /// for the returns, the ones away or waiting at the airport. None while the driver's own trip runs (no second one).
+  ShuttleBoarding? Function(PlanningRowModel)? _boardAction(ProTodayState state, Set<String> onTrip, bool running, bool isReturn) {
+    if (_onBoard == null || state.date != null || running) return null;
+    return (b) {
+      if (onTrip.contains(b.id)) return null;
+      if (isReturn) {
+        if (!_fetchable.contains(b.status)) return null;
+        return ShuttleBoarding.pickup(
+          PickupRowModel(
+            reservationId: b.id,
+            reference: b.reference,
+            customerName: b.customerName,
+            passengers: b.passengers,
+            plate: b.plate,
+            status: b.status,
+            returnAt: b.returnAt,
+            flight: FlightViewModel(number: b.returnFlight),
+            stopId: b.stopId,
+          ),
+        );
+      }
+      if (b.status != 'arrived' && !(b.status == 'upcoming' && boardableUpcoming(b.arrivalAt, _now))) return null;
+      return ShuttleBoarding.dropoff(
+        DepartureRowModel(
+          reservationId: b.id,
+          reference: b.reference,
+          customerName: b.customerName,
+          passengers: b.passengers,
+          plate: b.plate,
+          status: b.status,
+          arrivalAt: b.arrivalAt,
+          stopId: b.stopId,
+          expected: b.status == 'upcoming',
+        ),
+      );
+    };
   }
 
   @override
@@ -196,9 +260,18 @@ class _ProTodayViewState extends State<ProTodayView> with SingleTickerProviderSt
                   )
                 else if (widget.only != null)
                   Expanded(
-                    child: widget.only == TodaySide.arrivals
-                        ? _Column(title: 'pro.arrivals'.tr(), rows: state.arrivals, isReturn: false, state: state, now: _now)
-                        : _Column(title: 'pro.returns'.tr(), rows: state.returns, isReturn: true, state: state, now: _now),
+                    child: Builder(
+                      builder: (context) {
+                        final onTrip = widget.boarding?.onTrip ?? _noTrips;
+                        final running = widget.boarding?.running ?? _notRunning;
+                        return ListenableBuilder(
+                          listenable: Listenable.merge([onTrip, running]),
+                          builder: (context, _) => widget.only == TodaySide.arrivals
+                              ? _Column(title: 'pro.arrivals'.tr(), rows: state.arrivals, isReturn: false, state: state, now: _now, board: _boardAction(state, onTrip.value, running.value, false), onBoard: _onBoard)
+                              : _Column(title: 'pro.returns'.tr(), rows: state.returns, isReturn: true, state: state, now: _now, board: _boardAction(state, onTrip.value, running.value, true), onBoard: _onBoard),
+                        );
+                      },
+                    ),
                   )
                 else if (wide)
                   Expanded(
@@ -286,12 +359,16 @@ class _ModeBar extends StatelessWidget {
 }
 
 class _Column extends StatelessWidget {
-  const _Column({this.title, required this.rows, required this.isReturn, required this.state, required this.now});
+  const _Column({this.title, required this.rows, required this.isReturn, required this.state, required this.now, this.board, this.onBoard});
   final String? title;
   final List<TodayRow> rows;
   final bool isReturn;
   final ProTodayState state;
   final DateTime now;
+
+  /// The traveller a row can hand to the Navette tab (14/10/2026), null for none.
+  final ShuttleBoarding? Function(PlanningRowModel)? board;
+  final ValueChanged<ShuttleBoarding>? onBoard;
 
   @override
   Widget build(BuildContext context) {
@@ -312,15 +389,22 @@ class _Column extends StatelessWidget {
                 style: AppText.muted(),
               ),
             ),
-          for (final row in rows)
-            TodayRowTile(
-              row: row,
-              isReturn: isReturn,
-              positionAge: row.signal == null ? null : state.positionAge(row.signal!, now),
-              onTap: () => context.router.push(ProReservationRoute(id: row.booking.id)),
-            ),
+          for (final row in rows) _tile(context, row),
         ],
       ),
+    );
+  }
+
+  Widget _tile(BuildContext context, TodayRow row) {
+    final boarding = board?.call(row.booking);
+    final hand = onBoard;
+    return TodayRowTile(
+      row: row,
+      isReturn: isReturn,
+      positionAge: row.signal == null ? null : state.positionAge(row.signal!, now),
+      onTap: () => context.router.push(ProReservationRoute(id: row.booking.id)),
+      actionLabel: boarding == null ? null : (isReturn ? 'pro.fetch' : 'pro.board').tr(),
+      onAction: boarding == null || hand == null ? null : () => hand(boarding),
     );
   }
 }

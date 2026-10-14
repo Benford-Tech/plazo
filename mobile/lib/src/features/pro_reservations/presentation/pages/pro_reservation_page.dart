@@ -18,6 +18,9 @@ import '../../../../shared/widgets/brand_header.dart';
 import '../../../../shared/widgets/french_plate.dart';
 import '../../../../shared/widgets/gradient_button.dart';
 import '../../../pro_auth/presentation/bloc/pro_auth_bloc.dart';
+import '../../../pro_shuttle/data/models/shuttle_models.dart';
+import '../../../pro_shuttle/presentation/bloc/shuttle_boarding.dart';
+import '../../../pro_shuttle/presentation/pages/pro_shuttle_page.dart';
 import '../../data/models/reservation_models.dart';
 import '../bloc/pro_reservation_bloc.dart';
 import '../widgets/reservation_tile.dart';
@@ -207,6 +210,7 @@ class _Sheet extends StatelessWidget {
             else
               ('res.spot'.tr(), r.spot?.code ?? (r.spotId == null ? 'occupation.no_spot'.tr() : 'res.spot_placed'.tr())),
             if (r.keyHook != null) ('occupation.key_hook'.tr(), r.keyHook!),
+            if (r.boardingCheckIn != null) ('res.boarding_check_in'.tr(), '${boardingCheckInText(r.boardingCheckIn!)} · ${hhmm(r.boardingCheckIn!.at)}'),
             if (r.carLat != null && r.carLng != null && r.carLocatedAt != null)
               (
                 'occupation.car_position'.tr(),
@@ -265,14 +269,14 @@ class _NextStep extends StatelessWidget {
         'res.next.drop_off'.tr(),
         'res.next.drop_off_help'.tr(),
         Icons.flight_takeoff_rounded,
-        () => context.router.push(ProShuttleRoute(direction: 'dropoff', reservationId: r.id)),
+        () async => openShuttleTab(context, locator<ShuttleBoardingRequests>(), ShuttleBoarding.only(direction: 'dropoff', reservationId: r.id)),
       ),
       'shuttled_out' || 'return_requested' when next.contains('back_at_parking') => (
         'pick_up',
         'res.next.pick_up'.tr(),
         'res.next.pick_up_help'.tr(),
         Icons.flight_land_rounded,
-        () => context.router.push(ProShuttleRoute(direction: 'pickup', reservationId: r.id)),
+        () async => openShuttleTab(context, locator<ShuttleBoardingRequests>(), ShuttleBoarding.only(direction: 'pickup', reservationId: r.id)),
       ),
       'back_at_parking' when next.contains('returned') => (
         'hand_over',
@@ -286,6 +290,9 @@ class _NextStep extends StatelessWidget {
     // The statuses the menu offers: everything the API allows, the primary gesture's target included
     // (a manual fallback), but "returned" always goes through the handover sheet.
     final others = next;
+    // « Embarquer » (14/10/2026): a traveller still expected boards the shuttle to the terminal and is checked in when
+    // the trip starts (within a day of the arrival; the server decides).
+    final board = r.status == 'upcoming' && next.contains('arrived') && boardableUpcoming(r.arrivalAt, DateTime.now());
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
@@ -295,7 +302,7 @@ class _NextStep extends StatelessWidget {
           Text(step.$3, style: AppText.muted(size: 12.5), textAlign: TextAlign.center),
         ] else if (r.closed)
           Text('res.next.none_closed'.tr(), style: AppText.muted(size: 13), textAlign: TextAlign.center),
-        if (others.isNotEmpty) ...[
+        if (others.isNotEmpty || board) ...[
           const SizedBox(height: 10),
           Align(
             alignment: Alignment.center,
@@ -303,7 +310,10 @@ class _NextStep extends StatelessWidget {
               key: const Key('more-actions'),
               enabled: !busy,
               onSelected: (s) {
-                if (s == 'returned') {
+                if (s == 'board') {
+                  // The driver's Navette tab (this sheet closes), with the traveller ticked next to the others.
+                  openShuttleTab(context, locator<ShuttleBoardingRequests>(), ShuttleBoarding.dropoff(_departureOf(r)));
+                } else if (s == 'returned') {
                   _handOver(context, bloc);
                 } else if (s == 'cancelled' || s == 'no_show') {
                   _confirm(context, s, () => bloc.add(ProReservationStatusChanged(s)));
@@ -312,6 +322,8 @@ class _NextStep extends StatelessWidget {
                 }
               },
               itemBuilder: (_) => [
+                if (board)
+                  PopupMenuItem(key: const Key('status-board'), value: 'board', child: Text('res.action.board'.tr(), style: AppText.body(size: 14))),
                 for (final s in others)
                   PopupMenuItem(
                     key: Key('status-$s'),
@@ -335,6 +347,20 @@ class _NextStep extends StatelessWidget {
       ],
     );
   }
+
+  /// The booking as a row of the Navette list, for an early traveller the list does not hold yet.
+  static DepartureRowModel _departureOf(ReservationModel r) => DepartureRowModel(
+    reservationId: r.id,
+    reference: r.reference,
+    customerName: r.customerName,
+    passengers: r.passengers,
+    plate: r.plate,
+    status: r.status,
+    arrivalAt: r.arrivalAt,
+    spot: r.file?.code ?? r.spot?.code,
+    stopId: r.stopId,
+    expected: r.status == 'upcoming',
+  );
 
   /// The handover checklist: keys given back (required), a remark kept with the booking (optional).
   Future<void> _handOver(BuildContext context, ProReservationBloc bloc) async {

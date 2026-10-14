@@ -2,7 +2,7 @@ import { Container, Service } from 'typedi';
 import { ON_SITE_STATUSES } from '@/domain/reservation';
 import { flightTrackingSettings } from '@/config';
 import prisma, { ReservationStatus } from '@/database';
-import { ShuttleDirection } from '@/domain/shuttle';
+import { BOARDING_CHECK_IN_SELECT, BoardingCheckIn, boardingCheckInOf, ShuttleDirection } from '@/domain/shuttle';
 import { AuthenticatedStaff } from '@/interfaces/auth.interface';
 import { can } from '@/domain/roles';
 import { JoinRequestService } from './join-request.service';
@@ -92,6 +92,8 @@ export interface DashboardVehicle {
   stopName: string | null;
   /** Today's return (local day). */
   returnsToday: boolean;
+  /** « Pointé à l'embarquement par Karim »: checked in as they boarded a drop-off, else null. */
+  boardingCheckIn: BoardingCheckIn | null;
 }
 
 export interface Dashboard {
@@ -162,7 +164,12 @@ export class DashboardService {
     const [onSite, trips, signals, plan, operator, devices, lastImport, smsStatus, forecast] = await Promise.all([
       prisma.reservation.findMany({
         where: { parkingId: parking.id, status: { in: ON_SITE } },
-        include: { spot: { select: { code: true, stayClass: true } }, file: { select: { code: true } }, stop: { select: { name: true } } },
+        include: {
+          spot: { select: { code: true, stayClass: true } },
+          file: { select: { code: true } },
+          stop: { select: { name: true } },
+          boardingTrip: BOARDING_CHECK_IN_SELECT.boardingTrip,
+        },
         orderBy: { returnAt: 'asc' },
       }),
       this.shuttle.running(actor),
@@ -181,6 +188,10 @@ export class DashboardService {
     const todayIds = new Set(planning.returns.map(r => r.id));
     const tripOf = (id: string) => trips.find(t => t.reservationIds.includes(id)) ?? null;
     const placed = (r: { spotId: string | null; fileId: string | null }) => !!r.spotId || !!r.fileId;
+    // A car to put away: checked in, no spot or file; one checked in at boarding (« Embarquer en un geste ») stays so once
+    // the drop-off has ended, its traveller gone to the terminal.
+    const toPutAway = (r: { spotId: string | null; fileId: string | null; status: ReservationStatus; boardingTripId: string | null }) =>
+      !placed(r) && (r.status === 'arrived' || (!!r.boardingTripId && ON_SITE.includes(r.status)));
     const occupied = onSite.filter(placed).length;
     // The plan's room, as everywhere (`effectiveCapacity`): the files' when the parking is stored in
     // files (S-C), else its active spots; nothing without a plan (the declared figure is no place).
@@ -201,9 +212,9 @@ export class DashboardService {
       plate: r.plate,
     });
 
-    // Arrived, no spot or file (only when the parking has a plan).
+    // Arrived (or boarded), no spot or file (only when the parking has a plan).
     if (hasPlan) {
-      for (const r of onSite.filter(r => !placed(r) && r.status === 'arrived')) {
+      for (const r of onSite.filter(toPutAway)) {
         const since = r.arrivedAt ?? r.arrivalAt;
         alerts.push({
           kind: freeSpots === 0 ? 'no_free_spot' : 'no_spot',
@@ -482,7 +493,7 @@ export class DashboardService {
       })(),
       breakdown: {
         onSiteQuiet: onSite.filter(r => placed(r) && !alerts.some(a => a.reservationId === r.id) && !todayIds.has(r.id)).length,
-        toPlaceToday: planning.arrivals.filter(a => a.status === 'upcoming' || (a.status === 'arrived' && !a.spotId && !a.fileId)).length,
+        toPlaceToday: planning.arrivals.filter(a => a.status === 'upcoming' || toPutAway(a)).length,
         movesToday,
         returnsThisWeek: onSite.filter(r => r.returnAt <= weekEnd).length,
         toTreat,
@@ -508,6 +519,7 @@ export class DashboardService {
         tripDirection: tripOf(r.id)?.direction ?? null,
         stopName: r.stop?.name ?? null,
         returnsToday: todayIds.has(r.id),
+        boardingCheckIn: boardingCheckInOf(r),
       })),
     };
   }

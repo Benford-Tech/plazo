@@ -17,6 +17,7 @@ _PlanningRowModel _$PlanningRowModelFromJson(Map<String, dynamic> json) =>
       customerName: json['customerName'] as String,
       plate: json['plate'] as String,
       returnFlight: json['returnFlight'] as String?,
+      stopId: json['stopId'] as String?,
       arrivalSignal: json['arrivalSignal'] == null
           ? null
           : StaffSignalModel.fromJson(
@@ -35,6 +36,7 @@ Map<String, dynamic> _$PlanningRowModelToJson(_PlanningRowModel instance) =>
       'customerName': instance.customerName,
       'plate': instance.plate,
       'returnFlight': instance.returnFlight,
+      'stopId': instance.stopId,
       'arrivalSignal': instance.arrivalSignal,
     };
 

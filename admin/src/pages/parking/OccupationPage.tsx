@@ -819,6 +819,15 @@ function ArrivalRow({
           {arrival.customerName}
         </span>
       </div>
+      {arrival.boardingCheckIn && (
+        // « Embarquer en un geste » (14/10/2026): checked in by the driver as the traveller boarded the shuttle.
+        <p
+          data-testid="boarding-check-in"
+          className="text-xs text-muted-foreground"
+        >
+          {t.boardingCheckIn(arrival.boardingCheckIn.driverFirstName)}
+        </p>
+      )}
       <div className="flex items-center gap-2 text-sm">
         {best ? (
           <>

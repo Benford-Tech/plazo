@@ -93,6 +93,7 @@ import '../features/pro_shuttle/data/datasources/shuttle_data_source.dart';
 import '../features/pro_shuttle/domain/repositories/shuttle_repository.dart';
 import '../features/pro_shuttle/domain/usecases/shuttle_use_cases.dart';
 import '../features/pro_shuttle/presentation/bloc/shuttle_bloc.dart';
+import '../features/pro_shuttle/presentation/bloc/shuttle_boarding.dart';
 import '../features/pro_shuttle/presentation/bloc/live_shuttles_bloc.dart';
 import '../features/pro_shuttle/presentation/bloc/shuttle_waves_bloc.dart';
 import '../features/pro_dashboard/data/client/dashboard_client.dart';

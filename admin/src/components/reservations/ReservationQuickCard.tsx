@@ -253,6 +253,17 @@ export function ReservationQuickCard({
                 </>
               )}
             </dl>
+            {r.boardingCheckIn && (
+              <p
+                data-testid="card-boarding"
+                className="text-[13px] text-muted-foreground"
+              >
+                {t.boardingCheckIn(
+                  r.boardingCheckIn.driverFirstName,
+                  timeOf(r.boardingCheckIn.at),
+                )}
+              </p>
+            )}
             {(r.vehicleModel || r.vehicleColour) && (
               <p
                 data-testid="card-vehicle"

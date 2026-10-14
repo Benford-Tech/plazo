@@ -75,7 +75,9 @@ import { ValidationMiddleware } from '@/middlewares/validation.middleware';
  *     description: >
  *       The reservation's fields (also those of each item of the list), among them priceCents and, for a booking made
  *       on Plazo, nightArrivalFeeCents / nightReturnFeeCents: the night fees charged at booking and included in
- *       priceCents (12/10/2026), frozen; null when none, and always for the other channels.
+ *       priceCents (12/10/2026), frozen; null when none, and always for the other channels. The sheet alone adds
+ *       boardingCheckIn { driverFirstName (null when unknown), at }: the traveller was checked in as they boarded a
+ *       drop-off (« Pointé à l'embarquement par Karim », 14/10/2026); null otherwise, and once back to upcoming.
  *     tags: [Reservations]
  *     parameters:
  *       - { in: path, name: id, required: true, schema: { type: string } }

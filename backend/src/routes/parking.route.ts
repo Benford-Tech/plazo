@@ -64,6 +64,32 @@ import { ValidationMiddleware } from '@/middlewares/validation.middleware';
  *           schema: { type: object, required: [tracking], properties: { tracking: { type: string, enum: [off, team, everyone] } } }
  *     responses:
  *       200: { description: "{ data: the parking }" }
+ * /internal/parkings/{id}/occupation:
+ *   get:
+ *     summary: Occupation (bloc 2) - the spots with their vehicle, the arrivals to place with their suggested spots, the zones
+ *     tags: [Parking]
+ *     description: >
+ *       The arrivals to place are the cars on site without a spot (one booked for a later day included: a traveller
+ *       boarded early), then today's bookings not placed yet.
+ *       Each arrival to place (and each occupant) carries boardingCheckIn { driverFirstName, at } when its traveller was
+ *       checked in as they boarded a drop-off (« Pointé à l'embarquement par Karim », 14/10/2026), else null.
+ *     parameters:
+ *       - { in: path, name: id, required: true, schema: { type: string } }
+ *     responses:
+ *       200: { description: "{ date, timezone, plan, spots[], arrivals[], zones[], stats }" }
+ * /internal/parkings/{id}/files:
+ *   get:
+ *     summary: Files (S-C) - every file with its cars from the aisle, the arrivals to place with their ranked files, today's moves
+ *     tags: [Parking]
+ *     description: >
+ *       The arrivals to place are the cars on site without a file (one booked for a later day included: a traveller
+ *       boarded early), then today's bookings not placed yet.
+ *       Each arrival to place (and each car of a file) carries boardingCheckIn { driverFirstName, at } when its traveller
+ *       was checked in as they boarded a drop-off (« Pointé à l'embarquement par Karim », 14/10/2026), else null.
+ *     parameters:
+ *       - { in: path, name: id, required: true, schema: { type: string } }
+ *     responses:
+ *       200: { description: "{ date, timezone, files[], arrivals[], stats }" }
  * /internal/parkings/{id}/files/planning:
  *   get:
  *     summary: Planning des files (08/10/2026) - the returns to come day by day against the room of the files

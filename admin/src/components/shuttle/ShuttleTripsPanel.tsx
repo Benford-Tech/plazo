@@ -1,4 +1,10 @@
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import {
+  useMutation,
+  useQueries,
+  useQuery,
+  useQueryClient,
+  type UseQueryResult,
+} from "@tanstack/react-query";
 import {
   ArrowDownToLine,
   ArrowUpFromLine,
@@ -23,6 +29,7 @@ import { useQuickCard } from "@/components/reservations/ReservationQuickCard";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useAuth } from "@/contexts/AuthContext";
 import { adminApi } from "@/lib/api";
+import { canBoardDropoff, departureRowOf } from "@/lib/boarding";
 import { shortDay, timeAgo, timeOf } from "@/lib/datetime";
 import { describeError, fr, shuttleTripsFr as t } from "@/lib/fr";
 import { can } from "@/lib/roles";
@@ -33,6 +40,7 @@ import type {
   LiveShuttles,
   LiveTrip,
   PickupRow,
+  Reservation,
   ShuttleDirection,
   ShuttleStop,
   ShuttleVehicle,
@@ -61,6 +69,10 @@ const earliestLeave = (list: { leaveAt?: string }[]) =>
     .map((r) => r.leaveAt)
     .filter((x): x is string => !!x)
     .sort()[0] ?? null;
+
+/** The bookings pinned from « Embarquer », as read (undefined until then); stable while none changes. */
+const bookingsOf = (results: UseQueryResult<Reservation>[]) =>
+  results.map((q) => q.data);
 
 const vehicleLabel = (v: {
   model: string | null;
@@ -260,6 +272,11 @@ function RunningCard({
     Math.round((new Date(trip.expiresAt).getTime() - now) / 60000),
   );
   const vehicle = vehicleLabel(trip.vehicle);
+  const dropoff = trip.direction === "dropoff";
+  // « Embarquer en un geste » (14/10/2026): the cars of the travellers checked in at boarding wait for the valet.
+  const checkedIn = dropoff
+    ? trip.passengers.filter((p) => p.checkedInAtBoarding).length
+    : 0;
   return (
     <section
       data-testid="trip-running"
@@ -279,6 +296,7 @@ function RunningCard({
             : r.pickup}
       </p>
       <p className="mt-1 font-mono text-xs text-muted-foreground">
+        {r.leftAt(timeOf(trip.startedAt))} ·{" "}
         {trip.stop && !trip.stop.builtIn && <>{r.stop(trip.stop.name)} · </>}
         {vehicle && <>{r.vehicle(vehicle)} · </>}
         {r.passengers(trip.passengers.length)} · {r.left(left)}
@@ -313,10 +331,25 @@ function RunningCard({
                 {p.terminal}
               </span>
             )}
+            {dropoff && (
+              <Badge tone="ok">
+                {p.checkedInAtBoarding && p.arrivedAt
+                  ? t.start.onSiteAt(timeOf(p.arrivedAt))
+                  : t.start.onSite}
+              </Badge>
+            )}
             <Plate value={p.plate} size="sm" />
           </li>
         ))}
       </ul>
+      {checkedIn > 0 && (
+        <p
+          data-testid="checked-in-note"
+          className="mt-2 rounded-lg bg-warn-soft px-3 py-2 text-[13px] text-warn-text"
+        >
+          {t.start.checkedInNote(checkedIn)}
+        </p>
+      )}
       <button
         type="button"
         data-testid="end-trip"
@@ -535,12 +568,15 @@ function DepartureTile({
   selected,
   onTrip,
   selectable,
+  pinned,
   onToggle,
 }: {
   row: DepartureRow;
   selected: boolean;
   onTrip: boolean;
   selectable: boolean;
+  /** Added from a booking's « Embarquer »: the list does not hold this traveller (yet). */
+  pinned: boolean;
   onToggle: () => void;
 }) {
   const s = t.start;
@@ -555,11 +591,11 @@ function DepartureTile({
   return (
     <li
       data-testid="departure-row"
+      data-pinned={pinned || undefined}
       aria-selected={selected}
       className={cn(
         "flex items-center gap-1 rounded-xl border bg-panel pr-2",
         selected || onTrip ? "border-2 border-primary" : "border-panel-line",
-        row.expected && "opacity-70",
       )}
     >
       <button
@@ -585,9 +621,12 @@ function DepartureTile({
         </span>
         {onTrip || row.tripId ? (
           <Badge tone="info">{s.badge.onTrip}</Badge>
-        ) : row.expected ? (
-          <Badge tone="line">{s.expectedAt(timeOf(row.arrivalAt))}</Badge>
-        ) : null}
+        ) : row.status === "upcoming" ? (
+          // « Embarquer en un geste » (14/10/2026): still expected, tickable all the same (checked in at boarding).
+          <Badge tone="warn">{s.expectedAt(timeOf(row.arrivalAt))}</Badge>
+        ) : (
+          <Badge tone="ok">{s.onSite}</Badge>
+        )}
         <span className="font-mono text-xs text-muted-foreground">
           {details}
         </span>
@@ -680,8 +719,12 @@ export default function ShuttleTripsPanel() {
   );
   const [stopId, setStopId] = useState<string | null>(null);
   const [selected, setSelected] = useState<string[]>([]);
+  // Travellers added from a booking's « Embarquer » whom the drop-off list does not hold (an early or late one).
+  const [pinnedIds, setPinnedIds] = useState<string[]>([]);
+  // The vehicle of the day (V-A) is preselected: « Embarquer et partir » takes it.
+  const dayVehicleId = user?.vehicle?.id ?? null;
   const [vehicle, setVehicle] = useState<VehicleChoice | null>(() =>
-    user?.vehicle ? { kind: "known", id: user.vehicle.id } : null,
+    dayVehicleId ? { kind: "known", id: dayVehicleId } : null,
   );
   const [endedNotice, setEndedNotice] = useState(false);
   // F-A: the band shown; a trip starting opens "En route", its end goes back to the first band.
@@ -692,6 +735,10 @@ export default function ShuttleTripsPanel() {
     const id = window.setInterval(() => setNow(Date.now()), 10_000);
     return () => window.clearInterval(id);
   }, []);
+  useEffect(() => {
+    if (dayVehicleId)
+      setVehicle((v) => v ?? { kind: "known", id: dayVehicleId });
+  }, [dayVehicleId]);
 
   const live = useQuery({
     queryKey: ["shuttle-live"],
@@ -741,27 +788,173 @@ export default function ShuttleTripsPanel() {
     if (running && !runningRef.current) setBand(1);
     runningRef.current = !!running;
   }, [running]);
-  const offeredIds = (
-    direction === "pickup"
-      ? (pickups.data?.rows ?? [])
-      : (departures.data?.rows ?? [])
-  )
-    .filter((r) => !r.tripId && !("expected" in r && r.expected))
-    .map((r) => r.reservationId);
+  // The pinned travellers' bookings (the booking card's cache), read again as often as the list: one that can no longer
+  // board (cancelled, gone, another day) leaves it.
+  const pinnedBookings = useQueries({
+    queries: pinnedIds.map((id) => ({
+      queryKey: ["reservation", id],
+      queryFn: () => adminApi.getReservation(id),
+      enabled: mayDrive && direction === "dropoff" && !running,
+      refetchInterval: LIST_POLL_MS,
+    })),
+    combine: bookingsOf,
+  });
+  // The drop-off list, then the pinned travellers that it does not hold and who may still board.
+  const { departureRows, pinnedRowIds } = useMemo(() => {
+    const listed = departures.data?.rows ?? [];
+    const ids = new Set(listed.map((r) => r.reservationId));
+    const extra = pinnedBookings
+      .filter(
+        (b): b is Reservation =>
+          !!b && !ids.has(b.id) && canBoardDropoff(b, now),
+      )
+      .map(departureRowOf);
+    return {
+      departureRows: [...listed, ...extra],
+      pinnedRowIds: new Set(extra.map((r) => r.reservationId)),
+    };
+  }, [departures.data, pinnedBookings, now]);
+  const rows: (PickupRow | DepartureRow)[] =
+    direction === "pickup" ? (pickups.data?.rows ?? []) : departureRows;
+  const listQuery = direction === "pickup" ? pickups : departures;
+  const listLoaded = !!listQuery.data;
+  // « Embarquer en un geste » (14/10/2026): the expected travellers board too (checked in when the trip starts).
+  const rowTrips = rows
+    .map((r) => `${r.reservationId}:${r.tripId ?? ""}`)
+    .join(",");
+  // The side asked for with the traveller ("?sens="), else the one shown.
+  const wantedDirection: ShuttleDirection =
+    wantedSide === "pickup" || wantedSide === "dropoff"
+      ? wantedSide
+      : direction;
+  const wantedListed = !!wanted && rows.some((r) => r.reservationId === wanted);
+  // When the request came in: a cached list (or booking) may predate the traveller, so only one read since may turn
+  // them down.
+  const wantedKey = wanted ? `${wantedDirection}:${wanted}` : null;
+  const [wantedSeen, setWantedSeen] = useState<{
+    key: string;
+    at: number;
+  } | null>(null);
   useEffect(() => {
-    if (!wanted || running || !offeredIds.includes(wanted)) return;
-    setSelected((list) => (list.includes(wanted) ? list : [...list, wanted]));
-    setParams(
-      (p) => {
-        p.delete("reservation");
-        p.delete("sens");
-        return p;
-      },
-      { replace: true },
-    );
-    // The offered list is what decides; the params are consumed once.
+    setWantedSeen(wantedKey ? { key: wantedKey, at: Date.now() } : null);
+  }, [wantedKey]);
+  const since = wantedSeen?.key === wantedKey ? wantedSeen.at : null;
+  const listFresh = since !== null && listQuery.dataUpdatedAt >= since;
+  // « Embarquer » from a booking the drop-off list does not hold: the booking itself stands in for the row.
+  const wantedBooking = useQuery({
+    queryKey: ["reservation", wanted],
+    queryFn: () => adminApi.getReservation(wanted!),
+    enabled:
+      !!wanted &&
+      mayDrive &&
+      !running &&
+      direction === "dropoff" &&
+      wantedDirection === "dropoff" &&
+      listFresh &&
+      !wantedListed,
+  });
+  useEffect(() => {
+    if (!wanted || running || !mayDrive) return;
+    // Opened on the other side (a booking's card on this very page): that side, the first band, a new selection.
+    if (wantedDirection !== direction) {
+      setDirection(wantedDirection);
+      setSelected([]);
+      setPinnedIds([]);
+      setBand(0);
+      return;
+    }
+    const consume = () =>
+      setParams(
+        (p) => {
+          p.delete("reservation");
+          p.delete("sens");
+          return p;
+        },
+        { replace: true },
+      );
+    // Ticked in addition to those already ticked, on the first band.
+    const pick = () => {
+      setSelected((list) => (list.includes(wanted) ? list : [...list, wanted]));
+      setBand(0);
+    };
+    const listed = rows.find((r) => r.reservationId === wanted);
+    if (listed && !listed.tripId) {
+      pick();
+      consume();
+      return;
+    }
+    // Turning the traveller down waits for the list read since the request.
+    if (since === null) return;
+    if (listQuery.errorUpdatedAt >= since) {
+      // The list could not be read (its error shows): nothing to tick.
+      consume();
+      return;
+    }
+    if (listQuery.dataUpdatedAt < since) {
+      void listQuery.refetch({ cancelRefetch: false });
+      return;
+    }
+    if (listed) {
+      toast.error(fr.errors.already_on_trip);
+      consume();
+      return;
+    }
+    if (direction === "pickup") {
+      // A return the list does not hold (not back yet, or handed back): nothing to tick.
+      consume();
+      return;
+    }
+    if (wantedBooking.errorUpdatedAt >= since) {
+      toast.error(describeError(wantedBooking.error));
+      consume();
+      return;
+    }
+    const booking = wantedBooking.data;
+    if (!booking || wantedBooking.dataUpdatedAt < since) {
+      void wantedBooking.refetch({ cancelRefetch: false });
+      return;
+    }
+    if (canBoardDropoff(booking)) {
+      setPinnedIds((list) =>
+        list.includes(booking.id) ? list : [...list, booking.id],
+      );
+      pick();
+    } else toast.error(t.start.cannotBoard);
+    consume();
+    // The listed rows (and their trips) and the booking, read since the request, are what decide; the params are
+    // consumed once.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [wanted, running, offeredIds.join(",")]);
+  }, [
+    wanted,
+    wantedDirection,
+    running,
+    mayDrive,
+    direction,
+    since,
+    rowTrips,
+    listQuery.dataUpdatedAt,
+    listQuery.errorUpdatedAt,
+    wantedBooking.data,
+    wantedBooking.dataUpdatedAt,
+    wantedBooking.errorUpdatedAt,
+  ]);
+  // The ticks follow the list: a traveller who left it (cancelled, gone), was taken by another trip or, pinned, may no
+  // longer board loses their tick, else every start would be refused (a pinned one leaves with it).
+  const tickable = [
+    ...rows.filter((r) => !r.tripId).map((r) => r.reservationId),
+    // A pinned booking not read yet stays.
+    ...pinnedIds.filter((_, i) => !pinnedBookings[i]),
+  ].join(",");
+  useEffect(() => {
+    if (wanted || running || !listLoaded) return;
+    const ids = new Set(tickable.split(","));
+    const keep = (list: string[]) =>
+      list.every((id) => ids.has(id))
+        ? list
+        : list.filter((id) => ids.has(id));
+    setSelected(keep);
+    setPinnedIds(keep);
+  }, [tickable, wanted, running, listLoaded]);
   useTripPosition(trip, setProblem);
 
   const refresh = (withCurrent = true) => {
@@ -794,11 +987,23 @@ export default function ShuttleTripsPanel() {
       // The started trip is the answer itself: no refetch of "current" that could race it.
       queryClient.setQueryData(["shuttle-current"], { trip });
       setSelected([]);
+      setPinnedIds([]);
       setEndedNotice(false);
       setBand(1);
       refresh(false);
+      // Travellers checked in at boarding: their cars now wait for a spot or a file.
+      void queryClient.invalidateQueries({ queryKey: ["occupation"] });
+      void queryClient.invalidateQueries({ queryKey: ["files"] });
+      void queryClient.invalidateQueries({ queryKey: ["planning"] });
     },
-    onError: (error) => toast.error(describeError(error)),
+    onError: (error) => {
+      toast.error(describeError(error));
+      // Refused (a traveller cancelled, gone or taken meanwhile): the lists and the pinned bookings are read again, and
+      // the ticks follow them.
+      refresh(false);
+      for (const id of pinnedIds)
+        void queryClient.invalidateQueries({ queryKey: ["reservation", id] });
+    },
   });
   const end = useMutation({
     mutationFn: (tripId: string) => adminApi.endTrip(tripId),
@@ -817,13 +1022,16 @@ export default function ShuttleTripsPanel() {
   const stopList = stops.data?.data ?? [];
   const chosenStop = stopList.find((s) => s.id === stopId) ?? null;
   const vehicleList = vehicles.data?.data ?? [];
-  const rows: (PickupRow | DepartureRow)[] =
-    direction === "pickup"
-      ? (pickups.data?.rows ?? [])
-      : (departures.data?.rows ?? []);
   const selectedPassengers = rows
     .filter((r) => selected.includes(r.reservationId))
     .reduce((sum, r) => sum + r.passengers, 0);
+  // The ticked travellers not checked in yet: « Sur place » when the drop-off starts.
+  const notCheckedIn =
+    direction === "dropoff"
+      ? departureRows.filter(
+          (r) => selected.includes(r.reservationId) && r.status === "upcoming",
+        )
+      : [];
   const groups = useMemo(() => {
     if (direction !== "pickup") return [];
     const map = new Map<string, PickupRow[]>();
@@ -841,7 +1049,7 @@ export default function ShuttleTripsPanel() {
   const dropoffGroups = useMemo(() => {
     if (direction !== "dropoff") return [];
     const map = new Map<string, DepartureRow[]>();
-    for (const row of departures.data?.rows ?? []) {
+    for (const row of departureRows) {
       const key = row.stopName ?? "";
       map.set(key, [...(map.get(key) ?? []), row]);
     }
@@ -852,7 +1060,7 @@ export default function ShuttleTripsPanel() {
         list,
       }))
       .sort((a, b) => (a.leaveAt ?? "9").localeCompare(b.leaveAt ?? "9"));
-  }, [direction, departures.data]);
+  }, [direction, departureRows]);
   const stayingDays = staying.data?.days ?? [];
   const returnedToday = staying.data?.returnedToday ?? [];
   const counts: [number, number, number] = [
@@ -875,10 +1083,14 @@ export default function ShuttleTripsPanel() {
   const listLoading =
     direction === "pickup" ? pickups.isPending : departures.isPending;
 
-  const toggle = (id: string) =>
+  const toggle = (id: string) => {
+    // A traveller pinned from a booking leaves with their tick.
+    if (selected.includes(id))
+      setPinnedIds((list) => list.filter((x) => x !== id));
     setSelected((list) =>
       list.includes(id) ? list.filter((x) => x !== id) : [...list, id],
     );
+  };
   const onEndLive = async (lt: LiveTrip) => {
     if (
       lt.driverId !== user?.id &&
@@ -943,6 +1155,7 @@ export default function ShuttleTripsPanel() {
               onClick={() => {
                 setDirection(d);
                 setSelected([]);
+                setPinnedIds([]);
               }}
               className={cn(
                 "flex items-center gap-1.5 rounded-full border px-3.5 py-1.5 text-[13px] font-semibold disabled:opacity-60",
@@ -1065,7 +1278,8 @@ export default function ShuttleTripsPanel() {
                       (p) => p.reservationId === row.reservationId,
                     )
                   }
-                  selectable={!running && !row.tripId && !row.expected}
+                  selectable={!running && !row.tripId}
+                  pinned={pinnedRowIds.has(row.reservationId)}
                   onToggle={() => toggle(row.reservationId)}
                 />
               ))}
@@ -1081,6 +1295,14 @@ export default function ShuttleTripsPanel() {
           >
             {s.selectedSummary(selected.length, selectedPassengers)}
           </p>
+          {notCheckedIn.length > 0 && (
+            <p
+              data-testid="not-checked-in"
+              className="rounded-xl bg-primary/15 px-3 py-2 text-[13px]"
+            >
+              {s.notCheckedIn(notCheckedIn.map((r) => r.customerName))}
+            </p>
+          )}
           <VehiclePicker
             vehicles={vehicleList}
             choice={vehicle}

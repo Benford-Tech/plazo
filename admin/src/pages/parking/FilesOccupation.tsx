@@ -386,6 +386,15 @@ function ArrivalRow({
           <span className="block font-mono text-xs text-muted-foreground">
             {t.returnOn(dateTimeShort(arrival.returnAt))}
           </span>
+          {arrival.boardingCheckIn && (
+            // « Embarquer en un geste » (14/10/2026): checked in by the driver as the traveller boarded the shuttle.
+            <span
+              data-testid="boarding-check-in"
+              className="block text-xs text-muted-foreground"
+            >
+              {t.boardingCheckIn(arrival.boardingCheckIn.driverFirstName)}
+            </span>
+          )}
         </span>
         {arrival.onSite && (
           <span className="rounded-full bg-ok/15 px-2 py-0.5 text-[11px] font-semibold text-ok">

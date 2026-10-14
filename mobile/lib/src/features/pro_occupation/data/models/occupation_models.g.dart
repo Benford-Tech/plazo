@@ -56,6 +56,11 @@ _OccupantModel _$OccupantModelFromJson(Map<String, dynamic> json) =>
       suggested: json['suggested'] == null
           ? null
           : FileChoiceModel.fromJson(json['suggested'] as Map<String, dynamic>),
+      boardingCheckIn: json['boardingCheckIn'] == null
+          ? null
+          : BoardingCheckInModel.fromJson(
+              json['boardingCheckIn'] as Map<String, dynamic>,
+            ),
     );
 
 Map<String, dynamic> _$OccupantModelToJson(_OccupantModel instance) =>
@@ -88,6 +93,7 @@ Map<String, dynamic> _$OccupantModelToJson(_OccupantModel instance) =>
       'blockedBy': instance.blockedBy,
       'choices': instance.choices,
       'suggested': instance.suggested,
+      'boardingCheckIn': instance.boardingCheckIn,
     };
 
 _SpotRefModel _$SpotRefModelFromJson(Map<String, dynamic> json) =>

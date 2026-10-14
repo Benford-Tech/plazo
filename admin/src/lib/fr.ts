@@ -938,6 +938,8 @@ export const fr = {
       model: string | null | undefined,
       colour: string | null | undefined,
     ) => [model, colour].filter(Boolean).join(" · "),
+    // « Embarquer en un geste » (14/10/2026): the line « Pointé à l'embarquement par Karim · 09:47 ».
+    boardingCheckIn: "Pointage",
     returnNotice: "Signalé au retour",
     returnNoticeKinds: {
       flight_delayed: "Mon vol a du retard",
@@ -1664,6 +1666,11 @@ export const fr = {
     freeSpot: "Place libre",
     clickSpot: "Cliquez une place sur le plan pour voir qui l'occupe.",
     bookedFor: (plate: string, date: string) => `${plate} attendu le ${date}`,
+    // « Embarquer en un geste » (14/10/2026): the traveller was checked in by the driver as they boarded.
+    boardingCheckIn: (driver: string | null) =>
+      driver
+        ? `Pointé à l'embarquement par ${driver}`
+        : "Pointé à l'embarquement",
     // S-C (07/10/2026): the occupation read in files.
     files: {
       intro:
@@ -2436,6 +2443,7 @@ export const shuttleTripsFr = {
     pickupNoShare: "En route vers l'aéroport · suivi désactivé",
     dropoffNoShare: "En route vers le terminal · suivi désactivé",
     stop: (name: string) => `Desserte : ${name}`,
+    leftAt: (time: string) => `Parti à ${time}`,
     vehicle: (v: string) => `Véhicule : ${v}`,
     passengers: (n: number) =>
       `${n} client${n > 1 ? "s" : ""} suivent votre trajet`,
@@ -2454,8 +2462,9 @@ export const shuttleTripsFr = {
     title: "Démarrer un trajet",
     introPickup:
       "Vos clients de retour, à récupérer à l'aéroport. Démarrez le trajet : ils suivent votre position.",
+    // « Embarquer en un geste » (14/10/2026): the expected travellers board too, checked in as the trip starts.
     introDropoff:
-      "Vos clients arrivés au parking, à conduire au terminal. Démarrez le trajet : ils suivent votre position.",
+      "Vos clients du jour, à conduire au terminal, pointés ou non. Embarquez-les : ils suivent votre position.",
     direction: {
       pickup: "Retours · aéroport",
       dropoff: "Départs · terminal",
@@ -2469,7 +2478,7 @@ export const shuttleTripsFr = {
     noTerminal: "Terminal",
     toDropOff: "À conduire au terminal",
     emptyPickup: "Aucun retour à récupérer pour le moment.",
-    emptyDropoff: "Aucun client arrivé n'attend la navette.",
+    emptyDropoff: "Aucun client n'attend la navette pour le moment.",
     pax: (n: number) => `${n} pass.`,
     flight: (n: string) => `vol ${n}`,
     gate: (g: string) => `Porte ${g}`,
@@ -2487,6 +2496,22 @@ export const shuttleTripsFr = {
     leaveAt: (time: string) => `Départ conseillé ${time}`,
     toDropOffStop: (stop: string) => `À conduire · ${stop}`,
     expectedAt: (t: string) => `Attendu ${t}`,
+    onSite: "Sur place",
+    /** Checked in as they boarded this trip (« Embarquer en un geste »). */
+    onSiteAt: (t: string) => `Sur place · ${t}`,
+    /** The ticked travellers not checked in yet: one by name, else how many. */
+    notCheckedIn: (names: string[]) =>
+      names.length === 1
+        ? `${names[0]} n'est pas encore pointé : il passera « Sur place » à l'embarquement.`
+        : `${names.length} clients ne sont pas encore pointés : ils passeront « Sur place » à l'embarquement.`,
+    /** The cars of the running trip checked in at boarding, waiting for the valet. */
+    checkedInNote: (n: number) =>
+      n === 1
+        ? "1 voiture pointée à l'embarquement : le voiturier la retrouve dans « À ranger », avec ses clés."
+        : `${n} voitures pointées à l'embarquement : le voiturier les retrouve dans « À ranger », avec leurs clés.`,
+    /** Opened from a booking's « Embarquer » for a traveller who cannot board now. */
+    cannotBoard:
+      "Ce client ne peut pas embarquer maintenant : il est déjà parti, annulé ou attendu un autre jour.",
     routeNone: (band: string) =>
       `Aucun trajet en cours. Cochez des voyageurs dans « ${band} » puis partez.`,
     routePassengers: "Passagers du trajet",
@@ -2529,8 +2554,8 @@ export const shuttleTripsFr = {
         : `Partir à l'aéroport · ${n} clients`,
     dropoff: (n: number) =>
       n === 1
-        ? "Partir au terminal · 1 client"
-        : `Partir au terminal · ${n} clients`,
+        ? "Embarquer et partir · 1 client"
+        : `Embarquer et partir · ${n} clients`,
     starting: "Démarrage…",
     needsStatus:
       "Seuls les chauffeurs, voituriers, agents et gérants peuvent démarrer un trajet.",
@@ -2578,6 +2603,9 @@ export const quickCardFr = {
   customerNote: "Message du client",
   vehicle: "Véhicule",
   returnNotice: "Signalé au retour",
+  /** « Pointé à l'embarquement par Karim · 09:47 » (14/10/2026). */
+  boardingCheckIn: (driver: string | null, time: string) =>
+    `${fr.occupation.boardingCheckIn(driver)} · ${time}`,
   next: {
     title: "Prochaine étape",
     place: "Placer la voiture",
@@ -2585,6 +2613,8 @@ export const quickCardFr = {
       "Sur le plan, avec le crochet des clés : le client passe « Sur place ».",
     dropOff: "Déposer au terminal",
     dropOffHelp: "Ouvre la navette, côté départs, avec ce client sélectionné.",
+    // « Embarquer en un geste » (14/10/2026): an expected traveller boards the shuttle and is checked in as it starts.
+    board: "Embarquer",
     pickUp: "Récupérer à l'aéroport",
     pickUpHelp: "Ouvre la navette, côté retours, avec ce client sélectionné.",
     handOver: "Rendre le véhicule",

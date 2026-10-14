@@ -18,6 +18,7 @@ import {
 } from '@/domain/file-stacks';
 import { activeFilesCapacity, effectiveCapacity } from '@/domain/capacity';
 import { buildFiles } from '@/domain/files';
+import { BOARDING_CHECK_IN_SELECT, withBoardingCheckIn } from '@/domain/shuttle';
 import { addDays, DATE_RE, dayBounds, localDate, parseInstant } from '@/domain/time';
 import { AssignFileDto, FileInputDto, ReplaceFilesDto } from '@/dtos/file.dto';
 import { AuthenticatedStaff } from '@/interfaces/auth.interface';
@@ -152,11 +153,19 @@ export class FileService {
     await this.prepareIfStale(parking.id, parking.timezone, today);
     const [rows, holding] = await Promise.all([
       prisma.parkingFile.findMany({ where: { parkingId: parking.id }, orderBy: [{ sortOrder: 'asc' }, { code: 'asc' }] }),
-      prisma.reservation.findMany({
-        where: { parkingId: parking.id, status: { in: HOLDING }, OR: [{ fileId: { not: null } }, { arrivalAt: { lt: end } }] },
-        select: carSelect,
-        orderBy: { arrivalAt: 'asc' },
-      }),
+      // « Embarquer en un geste »: an arrival checked in as its traveller boarded says so (`boardingCheckIn`); every car on
+      // site counts, one booked for tomorrow included (a traveller boarded before midnight).
+      prisma.reservation
+        .findMany({
+          where: {
+            parkingId: parking.id,
+            status: { in: HOLDING },
+            OR: [{ fileId: { not: null } }, { arrivalAt: { lt: end } }, { status: { in: ON_SITE } }],
+          },
+          select: { ...carSelect, ...BOARDING_CHECK_IN_SELECT },
+          orderBy: { arrivalAt: 'asc' },
+        })
+        .then(cars => cars.map(withBoardingCheckIn)),
     ]);
     const stacks = this.stacks(rows, holding);
     const localDay = (d: Date) => localDate(d, parking.timezone);

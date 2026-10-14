@@ -1,4 +1,4 @@
-import type { ReservationStatus } from "@/lib/types";
+import type { BoardingCheckIn, ReservationStatus } from "@/lib/types";
 
 /**
  * S-C "Des files, pas des places" (07/10/2026): the files of a valet parking as the API serves them.
@@ -52,6 +52,8 @@ export interface FileCar {
     plate: string;
     returnAt: string;
   }[];
+  /** « Embarquer en un geste » (14/10/2026): checked in as they boarded a drop-off (missing from an older API). */
+  boardingCheckIn?: BoardingCheckIn | null;
 }
 
 export interface FileView extends ParkingFile {
@@ -93,6 +95,8 @@ export interface FileArrival {
   onSite: boolean;
   choices: FileChoice[];
   suggested: FileChoice | null;
+  /** « Pointé à l'embarquement par Karim » (14/10/2026): checked in as they boarded a drop-off (missing from an older API). */
+  boardingCheckIn?: BoardingCheckIn | null;
 }
 
 export interface FileBoard {

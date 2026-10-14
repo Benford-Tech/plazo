@@ -25,7 +25,24 @@ void _initBlocs() {
     ..registerFactory(() => ArrivalBloc(locator(), locator(), locator(), locator(), locator(), locator(), locator()))
     ..registerFactory(() => ReturnBloc(locator(), locator(), locator(), notice: locator()))
     ..registerFactory(() => MeetingRouteBloc(locator(), locator(), locator(), locator()))
-    ..registerFactory(() => ShuttleBloc(locator(), locator(), locator(), locator(), locator(), locator(), locator(), locator(), locator(), staying: locator(), pollInterval: AppConstants.livePollInterval))
+    // The driver's planning hands « Embarquer » / « Récupérer » to the Navette tab's list (14/10/2026).
+    ..registerLazySingleton(ShuttleBoardingRequests.new)
+    ..registerFactory(
+      () => ShuttleBloc(
+        locator(),
+        locator(),
+        locator(),
+        locator(),
+        locator(),
+        locator(),
+        locator(),
+        locator(),
+        locator(),
+        staying: locator(),
+        boarding: locator(),
+        pollInterval: AppConstants.livePollInterval,
+      ),
+    )
     ..registerFactory(() => LiveShuttlesBloc(locator(), pollInterval: AppConstants.livePollInterval))
     ..registerFactory(() => ShuttleWavesBloc(locator()))
     ..registerFactory(() => ProVehiclesBloc(locator(), locator(), locator(), locator()))

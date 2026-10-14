@@ -13,12 +13,16 @@ import '../bloc/pro_today_bloc.dart';
 /// A row of the staff's day. A traveller sharing their position gets the highlighted card (peach
 /// border, ETA, mini map, age of the position) — the app's version of the approved frame 3.
 class TodayRowTile extends StatelessWidget {
-  const TodayRowTile({super.key, required this.row, required this.isReturn, required this.positionAge, this.onTap});
+  const TodayRowTile({super.key, required this.row, required this.isReturn, required this.positionAge, this.onTap, this.actionLabel, this.onAction});
 
   final TodayRow row;
   final bool isReturn;
   final int? positionAge;
   final VoidCallback? onTap;
+
+  /// The driver's « Embarquer » / « Récupérer » (14/10/2026): the traveller goes to the Navette tab's list.
+  final String? actionLabel;
+  final VoidCallback? onAction;
 
   @override
   Widget build(BuildContext context) {
@@ -72,6 +76,20 @@ class TodayRowTile extends StatelessWidget {
                     style: AppText.body(size: 14.5),
                   ),
                 ),
+                if (actionLabel != null && onAction != null) ...[
+                  const SizedBox(width: 8),
+                  FilledButton(
+                    key: Key('board-${b.id}'),
+                    onPressed: onAction,
+                    style: FilledButton.styleFrom(
+                      backgroundColor: AppColors.action,
+                      foregroundColor: AppColors.onAccent,
+                      visualDensity: VisualDensity.compact,
+                      padding: const EdgeInsets.symmetric(horizontal: 14),
+                    ),
+                    child: Text(actionLabel!, style: AppText.strong(size: 13, color: AppColors.onAccent)),
+                  ),
+                ],
               ],
             ),
             if (approaching && s != null) ...[

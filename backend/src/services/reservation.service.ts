@@ -24,6 +24,7 @@ import { cleanNamePart, CustomerNames, customerNamesOf, importedNames } from '@/
 import { ImportChange, ImportChangeReason, importChanges, withoutField } from '@/domain/import-change';
 import { ImportedFlights, importedFlights, notesWithLines, unreadableFlightLines } from '@/domain/imported-flights';
 import { chronologicalPage } from '@/domain/chronological-pages';
+import { BOARDING_CHECK_IN_SELECT, boardingCheckInOf } from '@/domain/shuttle';
 import { FileService } from './file.service';
 import { AuditService } from './audit.service';
 import { CapacityService, NightLoad, occupiedNights } from './capacity.service';
@@ -661,7 +662,15 @@ export class ReservationService {
         return this.applyStatus(actor, before, data.status, tx, undefined, data.note);
       });
     }
-    const after = await this.applyStatus(actor, before, data.status, prisma, undefined, data.note);
+    // The row locked and read again: a traveller checked in meanwhile as they boarded a drop-off (« Embarquer en un
+    // geste ») is not cancelled over their running trip; the same change made meanwhile is done.
+    const after = await prisma.$transaction(async tx => {
+      await tx.$queryRaw`SELECT id FROM reservations WHERE id = ${id} FOR UPDATE`;
+      const current = await tx.reservation.findUniqueOrThrow({ where: { id } });
+      if (current.status === before.status) return this.applyStatus(actor, before, data.status, tx, undefined, data.note);
+      if (current.status === data.status) return current;
+      throw new HttpException(httpStatus.BAD_REQUEST, `Cannot go from ${current.status} to ${data.status}`, 'invalid_transition');
+    });
     // B (06/10/2026): the closing message after the handover.
     if (after.status === 'returned') await this.messages.handedBack(after.id);
     return after;
@@ -685,6 +694,8 @@ export class ReservationService {
       data: {
         status,
         arrivedAt: status === 'arrived' && !before.arrivedAt ? now : status === 'upcoming' ? null : undefined,
+        // Back to "Attendu": no longer checked in at a boarding (« Embarquer en un geste »).
+        boardingTripId: status === 'upcoming' ? null : undefined,
         returnedAt: status === 'returned' ? now : before.status === 'returned' ? null : undefined,
         cancelledAt: status === 'cancelled' ? now : before.status === 'cancelled' ? null : undefined,
         // Handed back: the keys left the hook with the car, and the file has one car less (S-C).
@@ -725,20 +736,30 @@ export class ReservationService {
     });
   }
 
-  /** The sheet, with the code of the spot the vehicle is on (bloc 2) and the stop served (D-A). */
+  /**
+   * The sheet, with the code of the spot the vehicle is on (bloc 2), the stop served (D-A) and, when the traveller was
+   * checked in as they boarded a drop-off, by whom and when (`boardingCheckIn`, « Embarquer en un geste »).
+   */
   public async get(actor: AuthenticatedStaff, id: string) {
     this.require(actor, 'reservations:view');
-    const reservation = await prisma.reservation.findFirst({
+    const found = await prisma.reservation.findFirst({
       where: { id, operatorId: actor.operatorId, AND: [STAFF_VISIBLE] },
       include: {
         spot: { select: { code: true } },
         file: { select: { id: true, code: true, name: true } },
         stop: { select: { id: true, name: true, kind: true } },
+        boardingTrip: BOARDING_CHECK_IN_SELECT.boardingTrip,
       },
     });
-    if (!reservation) throw notFound();
+    if (!found) throw notFound();
+    const { boardingTrip, ...reservation } = found;
     const filePosition = reservation.fileId ? await Container.get(FileService).positionOf(reservation.fileId, reservation.id) : null;
-    return { ...reservation, filePosition, nextStatuses: this.nextStatuses(actor, reservation) };
+    return {
+      ...reservation,
+      filePosition,
+      boardingCheckIn: boardingCheckInOf({ ...reservation, boardingTrip }),
+      nextStatuses: this.nextStatuses(actor, reservation),
+    };
   }
 
   /**

@@ -23,7 +23,8 @@ mixin _$OccupantModel {
  List<SuggestionModel> get suggestions;/// S-C (07/10/2026): the file the car stands in and its position from the aisle (1 = first out).
  FileRefModel? get file; int? get filePosition; int? get position;/// Cars in front that leave later: to take out before this one (file board).
  List<FileBlockerModel> get blockedBy;/// Arrivals of the file board: the ranked files and the one the rule picks.
- List<FileChoiceModel> get choices; FileChoiceModel? get suggested;
+ List<FileChoiceModel> get choices; FileChoiceModel? get suggested;/// Arrivals to put away (14/10/2026): checked in by the driver at boarding, not at the desk.
+ BoardingCheckInModel? get boardingCheckIn;
 /// Create a copy of OccupantModel
 /// with the given fields replaced by the non-null parameter values.
 @JsonKey(includeFromJson: false, includeToJson: false)
@@ -37,20 +38,20 @@ $OccupantModelCopyWith<OccupantModel> get copyWith => _$OccupantModelCopyWithImp
 @override
 bool operator ==(Object other) {
   final _this = this as OccupantModel;
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is OccupantModel&&(identical(other.id, _this.id) || other.id == _this.id)&&(identical(other.reference, _this.reference) || other.reference == _this.reference)&&(identical(other.customerName, _this.customerName) || other.customerName == _this.customerName)&&(identical(other.plate, _this.plate) || other.plate == _this.plate)&&(identical(other.status, _this.status) || other.status == _this.status)&&(identical(other.arrivalAt, _this.arrivalAt) || other.arrivalAt == _this.arrivalAt)&&(identical(other.returnAt, _this.returnAt) || other.returnAt == _this.returnAt)&&(identical(other.returnFlight, _this.returnFlight) || other.returnFlight == _this.returnFlight)&&(identical(other.spotId, _this.spotId) || other.spotId == _this.spotId)&&(identical(other.keyHook, _this.keyHook) || other.keyHook == _this.keyHook)&&(identical(other.carLat, _this.carLat) || other.carLat == _this.carLat)&&(identical(other.carLng, _this.carLng) || other.carLng == _this.carLng)&&(identical(other.carAccuracyM, _this.carAccuracyM) || other.carAccuracyM == _this.carAccuracyM)&&(identical(other.carLocatedAt, _this.carLocatedAt) || other.carLocatedAt == _this.carLocatedAt)&&(identical(other.carLocatedBy, _this.carLocatedBy) || other.carLocatedBy == _this.carLocatedBy)&&(identical(other.carNote, _this.carNote) || other.carNote == _this.carNote)&&(identical(other.onSite, _this.onSite) || other.onSite == _this.onSite)&&(identical(other.leavesToday, _this.leavesToday) || other.leavesToday == _this.leavesToday)&&(identical(other.nights, _this.nights) || other.nights == _this.nights)&&(identical(other.stayClass, _this.stayClass) || other.stayClass == _this.stayClass)&&(identical(other.spot, _this.spot) || other.spot == _this.spot)&&const DeepCollectionEquality().equals(other.suggestions, _this.suggestions)&&(identical(other.file, _this.file) || other.file == _this.file)&&(identical(other.filePosition, _this.filePosition) || other.filePosition == _this.filePosition)&&(identical(other.position, _this.position) || other.position == _this.position)&&const DeepCollectionEquality().equals(other.blockedBy, _this.blockedBy)&&const DeepCollectionEquality().equals(other.choices, _this.choices)&&(identical(other.suggested, _this.suggested) || other.suggested == _this.suggested));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is OccupantModel&&(identical(other.id, _this.id) || other.id == _this.id)&&(identical(other.reference, _this.reference) || other.reference == _this.reference)&&(identical(other.customerName, _this.customerName) || other.customerName == _this.customerName)&&(identical(other.plate, _this.plate) || other.plate == _this.plate)&&(identical(other.status, _this.status) || other.status == _this.status)&&(identical(other.arrivalAt, _this.arrivalAt) || other.arrivalAt == _this.arrivalAt)&&(identical(other.returnAt, _this.returnAt) || other.returnAt == _this.returnAt)&&(identical(other.returnFlight, _this.returnFlight) || other.returnFlight == _this.returnFlight)&&(identical(other.spotId, _this.spotId) || other.spotId == _this.spotId)&&(identical(other.keyHook, _this.keyHook) || other.keyHook == _this.keyHook)&&(identical(other.carLat, _this.carLat) || other.carLat == _this.carLat)&&(identical(other.carLng, _this.carLng) || other.carLng == _this.carLng)&&(identical(other.carAccuracyM, _this.carAccuracyM) || other.carAccuracyM == _this.carAccuracyM)&&(identical(other.carLocatedAt, _this.carLocatedAt) || other.carLocatedAt == _this.carLocatedAt)&&(identical(other.carLocatedBy, _this.carLocatedBy) || other.carLocatedBy == _this.carLocatedBy)&&(identical(other.carNote, _this.carNote) || other.carNote == _this.carNote)&&(identical(other.onSite, _this.onSite) || other.onSite == _this.onSite)&&(identical(other.leavesToday, _this.leavesToday) || other.leavesToday == _this.leavesToday)&&(identical(other.nights, _this.nights) || other.nights == _this.nights)&&(identical(other.stayClass, _this.stayClass) || other.stayClass == _this.stayClass)&&(identical(other.spot, _this.spot) || other.spot == _this.spot)&&const DeepCollectionEquality().equals(other.suggestions, _this.suggestions)&&(identical(other.file, _this.file) || other.file == _this.file)&&(identical(other.filePosition, _this.filePosition) || other.filePosition == _this.filePosition)&&(identical(other.position, _this.position) || other.position == _this.position)&&const DeepCollectionEquality().equals(other.blockedBy, _this.blockedBy)&&const DeepCollectionEquality().equals(other.choices, _this.choices)&&(identical(other.suggested, _this.suggested) || other.suggested == _this.suggested)&&(identical(other.boardingCheckIn, _this.boardingCheckIn) || other.boardingCheckIn == _this.boardingCheckIn));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
 int get hashCode {
   final _this = this as OccupantModel;
-  return Object.hashAll([runtimeType,_this.id,_this.reference,_this.customerName,_this.plate,_this.status,_this.arrivalAt,_this.returnAt,_this.returnFlight,_this.spotId,_this.keyHook,_this.carLat,_this.carLng,_this.carAccuracyM,_this.carLocatedAt,_this.carLocatedBy,_this.carNote,_this.onSite,_this.leavesToday,_this.nights,_this.stayClass,_this.spot,const DeepCollectionEquality().hash(_this.suggestions),_this.file,_this.filePosition,_this.position,const DeepCollectionEquality().hash(_this.blockedBy),const DeepCollectionEquality().hash(_this.choices),_this.suggested]);
+  return Object.hashAll([runtimeType,_this.id,_this.reference,_this.customerName,_this.plate,_this.status,_this.arrivalAt,_this.returnAt,_this.returnFlight,_this.spotId,_this.keyHook,_this.carLat,_this.carLng,_this.carAccuracyM,_this.carLocatedAt,_this.carLocatedBy,_this.carNote,_this.onSite,_this.leavesToday,_this.nights,_this.stayClass,_this.spot,const DeepCollectionEquality().hash(_this.suggestions),_this.file,_this.filePosition,_this.position,const DeepCollectionEquality().hash(_this.blockedBy),const DeepCollectionEquality().hash(_this.choices),_this.suggested,_this.boardingCheckIn]);
 }
 
 @override
 String toString() {
   final _this = this as OccupantModel;
-  return 'OccupantModel(id: ${_this.id}, reference: ${_this.reference}, customerName: ${_this.customerName}, plate: ${_this.plate}, status: ${_this.status}, arrivalAt: ${_this.arrivalAt}, returnAt: ${_this.returnAt}, returnFlight: ${_this.returnFlight}, spotId: ${_this.spotId}, keyHook: ${_this.keyHook}, carLat: ${_this.carLat}, carLng: ${_this.carLng}, carAccuracyM: ${_this.carAccuracyM}, carLocatedAt: ${_this.carLocatedAt}, carLocatedBy: ${_this.carLocatedBy}, carNote: ${_this.carNote}, onSite: ${_this.onSite}, leavesToday: ${_this.leavesToday}, nights: ${_this.nights}, stayClass: ${_this.stayClass}, spot: ${_this.spot}, suggestions: ${_this.suggestions}, file: ${_this.file}, filePosition: ${_this.filePosition}, position: ${_this.position}, blockedBy: ${_this.blockedBy}, choices: ${_this.choices}, suggested: ${_this.suggested})';
+  return 'OccupantModel(id: ${_this.id}, reference: ${_this.reference}, customerName: ${_this.customerName}, plate: ${_this.plate}, status: ${_this.status}, arrivalAt: ${_this.arrivalAt}, returnAt: ${_this.returnAt}, returnFlight: ${_this.returnFlight}, spotId: ${_this.spotId}, keyHook: ${_this.keyHook}, carLat: ${_this.carLat}, carLng: ${_this.carLng}, carAccuracyM: ${_this.carAccuracyM}, carLocatedAt: ${_this.carLocatedAt}, carLocatedBy: ${_this.carLocatedBy}, carNote: ${_this.carNote}, onSite: ${_this.onSite}, leavesToday: ${_this.leavesToday}, nights: ${_this.nights}, stayClass: ${_this.stayClass}, spot: ${_this.spot}, suggestions: ${_this.suggestions}, file: ${_this.file}, filePosition: ${_this.filePosition}, position: ${_this.position}, blockedBy: ${_this.blockedBy}, choices: ${_this.choices}, suggested: ${_this.suggested}, boardingCheckIn: ${_this.boardingCheckIn})';
 }
 
 
@@ -61,11 +62,11 @@ abstract mixin class $OccupantModelCopyWith<$Res>  {
   factory $OccupantModelCopyWith(OccupantModel value, $Res Function(OccupantModel) _then) = _$OccupantModelCopyWithImpl;
 @useResult
 $Res call({
- String id, String reference, String customerName, String plate, String status, String arrivalAt, String returnAt, String? returnFlight, String? spotId, String? keyHook, double? carLat, double? carLng, int? carAccuracyM, DateTime? carLocatedAt, String? carLocatedBy, String? carNote, bool onSite, bool leavesToday, int? nights, String? stayClass, SpotRefModel? spot, List<SuggestionModel> suggestions, FileRefModel? file, int? filePosition, int? position, List<FileBlockerModel> blockedBy, List<FileChoiceModel> choices, FileChoiceModel? suggested
+ String id, String reference, String customerName, String plate, String status, String arrivalAt, String returnAt, String? returnFlight, String? spotId, String? keyHook, double? carLat, double? carLng, int? carAccuracyM, DateTime? carLocatedAt, String? carLocatedBy, String? carNote, bool onSite, bool leavesToday, int? nights, String? stayClass, SpotRefModel? spot, List<SuggestionModel> suggestions, FileRefModel? file, int? filePosition, int? position, List<FileBlockerModel> blockedBy, List<FileChoiceModel> choices, FileChoiceModel? suggested, BoardingCheckInModel? boardingCheckIn
 });
 
 
-$SpotRefModelCopyWith<$Res>? get spot;$FileRefModelCopyWith<$Res>? get file;$FileChoiceModelCopyWith<$Res>? get suggested;
+$SpotRefModelCopyWith<$Res>? get spot;$FileRefModelCopyWith<$Res>? get file;$FileChoiceModelCopyWith<$Res>? get suggested;$BoardingCheckInModelCopyWith<$Res>? get boardingCheckIn;
 
 }
 /// @nodoc
@@ -78,7 +79,7 @@ class _$OccupantModelCopyWithImpl<$Res>
 
 /// Create a copy of OccupantModel
 /// with the given fields replaced by the non-null parameter values.
-@pragma('vm:prefer-inline') @override $Res call({Object? id = null,Object? reference = null,Object? customerName = null,Object? plate = null,Object? status = null,Object? arrivalAt = null,Object? returnAt = null,Object? returnFlight = freezed,Object? spotId = freezed,Object? keyHook = freezed,Object? carLat = freezed,Object? carLng = freezed,Object? carAccuracyM = freezed,Object? carLocatedAt = freezed,Object? carLocatedBy = freezed,Object? carNote = freezed,Object? onSite = null,Object? leavesToday = null,Object? nights = freezed,Object? stayClass = freezed,Object? spot = freezed,Object? suggestions = null,Object? file = freezed,Object? filePosition = freezed,Object? position = freezed,Object? blockedBy = null,Object? choices = null,Object? suggested = freezed,}) {
+@pragma('vm:prefer-inline') @override $Res call({Object? id = null,Object? reference = null,Object? customerName = null,Object? plate = null,Object? status = null,Object? arrivalAt = null,Object? returnAt = null,Object? returnFlight = freezed,Object? spotId = freezed,Object? keyHook = freezed,Object? carLat = freezed,Object? carLng = freezed,Object? carAccuracyM = freezed,Object? carLocatedAt = freezed,Object? carLocatedBy = freezed,Object? carNote = freezed,Object? onSite = null,Object? leavesToday = null,Object? nights = freezed,Object? stayClass = freezed,Object? spot = freezed,Object? suggestions = null,Object? file = freezed,Object? filePosition = freezed,Object? position = freezed,Object? blockedBy = null,Object? choices = null,Object? suggested = freezed,Object? boardingCheckIn = freezed,}) {
   return _then(OccupantModel(
 id: null == id ? _self.id : id // ignore: cast_nullable_to_non_nullable
 as String,reference: null == reference ? _self.reference : reference // ignore: cast_nullable_to_non_nullable
@@ -108,7 +109,8 @@ as int?,position: freezed == position ? _self.position : position // ignore: cas
 as int?,blockedBy: null == blockedBy ? _self.blockedBy : blockedBy // ignore: cast_nullable_to_non_nullable
 as List<FileBlockerModel>,choices: null == choices ? _self.choices : choices // ignore: cast_nullable_to_non_nullable
 as List<FileChoiceModel>,suggested: freezed == suggested ? _self.suggested : suggested // ignore: cast_nullable_to_non_nullable
-as FileChoiceModel?,
+as FileChoiceModel?,boardingCheckIn: freezed == boardingCheckIn ? _self.boardingCheckIn : boardingCheckIn // ignore: cast_nullable_to_non_nullable
+as BoardingCheckInModel?,
   ));
 }
 /// Create a copy of OccupantModel
@@ -146,6 +148,18 @@ $FileChoiceModelCopyWith<$Res>? get suggested {
 
   return $FileChoiceModelCopyWith<$Res>(_self.suggested!, (value) {
     return _then(_self.copyWith(suggested: value));
+  });
+}/// Create a copy of OccupantModel
+/// with the given fields replaced by the non-null parameter values.
+@override
+@pragma('vm:prefer-inline')
+$BoardingCheckInModelCopyWith<$Res>? get boardingCheckIn {
+    if (_self.boardingCheckIn == null) {
+    return null;
+  }
+
+  return $BoardingCheckInModelCopyWith<$Res>(_self.boardingCheckIn!, (value) {
+    return _then(_self.copyWith(boardingCheckIn: value));
   });
 }
 }
@@ -229,10 +243,10 @@ return $default(_that);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( String id,  String reference,  String customerName,  String plate,  String status,  String arrivalAt,  String returnAt,  String? returnFlight,  String? spotId,  String? keyHook,  double? carLat,  double? carLng,  int? carAccuracyM,  DateTime? carLocatedAt,  String? carLocatedBy,  String? carNote,  bool onSite,  bool leavesToday,  int? nights,  String? stayClass,  SpotRefModel? spot,  List<SuggestionModel> suggestions,  FileRefModel? file,  int? filePosition,  int? position,  List<FileBlockerModel> blockedBy,  List<FileChoiceModel> choices,  FileChoiceModel? suggested)?  $default,{required TResult orElse(),}) {final _that = this;
+@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( String id,  String reference,  String customerName,  String plate,  String status,  String arrivalAt,  String returnAt,  String? returnFlight,  String? spotId,  String? keyHook,  double? carLat,  double? carLng,  int? carAccuracyM,  DateTime? carLocatedAt,  String? carLocatedBy,  String? carNote,  bool onSite,  bool leavesToday,  int? nights,  String? stayClass,  SpotRefModel? spot,  List<SuggestionModel> suggestions,  FileRefModel? file,  int? filePosition,  int? position,  List<FileBlockerModel> blockedBy,  List<FileChoiceModel> choices,  FileChoiceModel? suggested,  BoardingCheckInModel? boardingCheckIn)?  $default,{required TResult orElse(),}) {final _that = this;
 switch (_that) {
 case _OccupantModel() when $default != null:
-return $default(_that.id,_that.reference,_that.customerName,_that.plate,_that.status,_that.arrivalAt,_that.returnAt,_that.returnFlight,_that.spotId,_that.keyHook,_that.carLat,_that.carLng,_that.carAccuracyM,_that.carLocatedAt,_that.carLocatedBy,_that.carNote,_that.onSite,_that.leavesToday,_that.nights,_that.stayClass,_that.spot,_that.suggestions,_that.file,_that.filePosition,_that.position,_that.blockedBy,_that.choices,_that.suggested);case _:
+return $default(_that.id,_that.reference,_that.customerName,_that.plate,_that.status,_that.arrivalAt,_that.returnAt,_that.returnFlight,_that.spotId,_that.keyHook,_that.carLat,_that.carLng,_that.carAccuracyM,_that.carLocatedAt,_that.carLocatedBy,_that.carNote,_that.onSite,_that.leavesToday,_that.nights,_that.stayClass,_that.spot,_that.suggestions,_that.file,_that.filePosition,_that.position,_that.blockedBy,_that.choices,_that.suggested,_that.boardingCheckIn);case _:
   return orElse();
 
 }
@@ -250,10 +264,10 @@ return $default(_that.id,_that.reference,_that.customerName,_that.plate,_that.st
 /// }
 /// ```
 
-@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( String id,  String reference,  String customerName,  String plate,  String status,  String arrivalAt,  String returnAt,  String? returnFlight,  String? spotId,  String? keyHook,  double? carLat,  double? carLng,  int? carAccuracyM,  DateTime? carLocatedAt,  String? carLocatedBy,  String? carNote,  bool onSite,  bool leavesToday,  int? nights,  String? stayClass,  SpotRefModel? spot,  List<SuggestionModel> suggestions,  FileRefModel? file,  int? filePosition,  int? position,  List<FileBlockerModel> blockedBy,  List<FileChoiceModel> choices,  FileChoiceModel? suggested)  $default,) {final _that = this;
+@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( String id,  String reference,  String customerName,  String plate,  String status,  String arrivalAt,  String returnAt,  String? returnFlight,  String? spotId,  String? keyHook,  double? carLat,  double? carLng,  int? carAccuracyM,  DateTime? carLocatedAt,  String? carLocatedBy,  String? carNote,  bool onSite,  bool leavesToday,  int? nights,  String? stayClass,  SpotRefModel? spot,  List<SuggestionModel> suggestions,  FileRefModel? file,  int? filePosition,  int? position,  List<FileBlockerModel> blockedBy,  List<FileChoiceModel> choices,  FileChoiceModel? suggested,  BoardingCheckInModel? boardingCheckIn)  $default,) {final _that = this;
 switch (_that) {
 case _OccupantModel():
-return $default(_that.id,_that.reference,_that.customerName,_that.plate,_that.status,_that.arrivalAt,_that.returnAt,_that.returnFlight,_that.spotId,_that.keyHook,_that.carLat,_that.carLng,_that.carAccuracyM,_that.carLocatedAt,_that.carLocatedBy,_that.carNote,_that.onSite,_that.leavesToday,_that.nights,_that.stayClass,_that.spot,_that.suggestions,_that.file,_that.filePosition,_that.position,_that.blockedBy,_that.choices,_that.suggested);case _:
+return $default(_that.id,_that.reference,_that.customerName,_that.plate,_that.status,_that.arrivalAt,_that.returnAt,_that.returnFlight,_that.spotId,_that.keyHook,_that.carLat,_that.carLng,_that.carAccuracyM,_that.carLocatedAt,_that.carLocatedBy,_that.carNote,_that.onSite,_that.leavesToday,_that.nights,_that.stayClass,_that.spot,_that.suggestions,_that.file,_that.filePosition,_that.position,_that.blockedBy,_that.choices,_that.suggested,_that.boardingCheckIn);case _:
   throw StateError('Unexpected subclass');
 
 }
@@ -270,10 +284,10 @@ return $default(_that.id,_that.reference,_that.customerName,_that.plate,_that.st
 /// }
 /// ```
 
-@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( String id,  String reference,  String customerName,  String plate,  String status,  String arrivalAt,  String returnAt,  String? returnFlight,  String? spotId,  String? keyHook,  double? carLat,  double? carLng,  int? carAccuracyM,  DateTime? carLocatedAt,  String? carLocatedBy,  String? carNote,  bool onSite,  bool leavesToday,  int? nights,  String? stayClass,  SpotRefModel? spot,  List<SuggestionModel> suggestions,  FileRefModel? file,  int? filePosition,  int? position,  List<FileBlockerModel> blockedBy,  List<FileChoiceModel> choices,  FileChoiceModel? suggested)?  $default,) {final _that = this;
+@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( String id,  String reference,  String customerName,  String plate,  String status,  String arrivalAt,  String returnAt,  String? returnFlight,  String? spotId,  String? keyHook,  double? carLat,  double? carLng,  int? carAccuracyM,  DateTime? carLocatedAt,  String? carLocatedBy,  String? carNote,  bool onSite,  bool leavesToday,  int? nights,  String? stayClass,  SpotRefModel? spot,  List<SuggestionModel> suggestions,  FileRefModel? file,  int? filePosition,  int? position,  List<FileBlockerModel> blockedBy,  List<FileChoiceModel> choices,  FileChoiceModel? suggested,  BoardingCheckInModel? boardingCheckIn)?  $default,) {final _that = this;
 switch (_that) {
 case _OccupantModel() when $default != null:
-return $default(_that.id,_that.reference,_that.customerName,_that.plate,_that.status,_that.arrivalAt,_that.returnAt,_that.returnFlight,_that.spotId,_that.keyHook,_that.carLat,_that.carLng,_that.carAccuracyM,_that.carLocatedAt,_that.carLocatedBy,_that.carNote,_that.onSite,_that.leavesToday,_that.nights,_that.stayClass,_that.spot,_that.suggestions,_that.file,_that.filePosition,_that.position,_that.blockedBy,_that.choices,_that.suggested);case _:
+return $default(_that.id,_that.reference,_that.customerName,_that.plate,_that.status,_that.arrivalAt,_that.returnAt,_that.returnFlight,_that.spotId,_that.keyHook,_that.carLat,_that.carLng,_that.carAccuracyM,_that.carLocatedAt,_that.carLocatedBy,_that.carNote,_that.onSite,_that.leavesToday,_that.nights,_that.stayClass,_that.spot,_that.suggestions,_that.file,_that.filePosition,_that.position,_that.blockedBy,_that.choices,_that.suggested,_that.boardingCheckIn);case _:
   return null;
 
 }
@@ -285,7 +299,7 @@ return $default(_that.id,_that.reference,_that.customerName,_that.plate,_that.st
 @JsonSerializable()
 
 class _OccupantModel implements OccupantModel {
-  const _OccupantModel({required this.id, required this.reference, required this.customerName, required this.plate, required this.status, required this.arrivalAt, required this.returnAt, this.returnFlight, this.spotId, this.keyHook, this.carLat, this.carLng, this.carAccuracyM, this.carLocatedAt, this.carLocatedBy, this.carNote, this.onSite = false, this.leavesToday = false, this.nights, this.stayClass, this.spot,  List<SuggestionModel> suggestions = const [], this.file, this.filePosition, this.position,  List<FileBlockerModel> blockedBy = const <FileBlockerModel>[],  List<FileChoiceModel> choices = const <FileChoiceModel>[], this.suggested}): _suggestions = suggestions,_blockedBy = blockedBy,_choices = choices;
+  const _OccupantModel({required this.id, required this.reference, required this.customerName, required this.plate, required this.status, required this.arrivalAt, required this.returnAt, this.returnFlight, this.spotId, this.keyHook, this.carLat, this.carLng, this.carAccuracyM, this.carLocatedAt, this.carLocatedBy, this.carNote, this.onSite = false, this.leavesToday = false, this.nights, this.stayClass, this.spot,  List<SuggestionModel> suggestions = const [], this.file, this.filePosition, this.position,  List<FileBlockerModel> blockedBy = const <FileBlockerModel>[],  List<FileChoiceModel> choices = const <FileChoiceModel>[], this.suggested, this.boardingCheckIn}): _suggestions = suggestions,_blockedBy = blockedBy,_choices = choices;
   factory _OccupantModel.fromJson(Map<String, dynamic> json) => _$OccupantModelFromJson(json);
 
 @override final  String id;
@@ -344,6 +358,8 @@ class _OccupantModel implements OccupantModel {
 }
 
 @override final  FileChoiceModel? suggested;
+/// Arrivals to put away (14/10/2026): checked in by the driver at boarding, not at the desk.
+@override final  BoardingCheckInModel? boardingCheckIn;
 
 /// Create a copy of OccupantModel
 /// with the given fields replaced by the non-null parameter values.
@@ -358,18 +374,18 @@ Map<String, dynamic> toJson() {
 
 @override
 bool operator ==(Object other) {
-    return identical(this, other) || (other.runtimeType == runtimeType&&other is _OccupantModel&&(identical(other.id, id) || other.id == id)&&(identical(other.reference, reference) || other.reference == reference)&&(identical(other.customerName, customerName) || other.customerName == customerName)&&(identical(other.plate, plate) || other.plate == plate)&&(identical(other.status, status) || other.status == status)&&(identical(other.arrivalAt, arrivalAt) || other.arrivalAt == arrivalAt)&&(identical(other.returnAt, returnAt) || other.returnAt == returnAt)&&(identical(other.returnFlight, returnFlight) || other.returnFlight == returnFlight)&&(identical(other.spotId, spotId) || other.spotId == spotId)&&(identical(other.keyHook, keyHook) || other.keyHook == keyHook)&&(identical(other.carLat, carLat) || other.carLat == carLat)&&(identical(other.carLng, carLng) || other.carLng == carLng)&&(identical(other.carAccuracyM, carAccuracyM) || other.carAccuracyM == carAccuracyM)&&(identical(other.carLocatedAt, carLocatedAt) || other.carLocatedAt == carLocatedAt)&&(identical(other.carLocatedBy, carLocatedBy) || other.carLocatedBy == carLocatedBy)&&(identical(other.carNote, carNote) || other.carNote == carNote)&&(identical(other.onSite, onSite) || other.onSite == onSite)&&(identical(other.leavesToday, leavesToday) || other.leavesToday == leavesToday)&&(identical(other.nights, nights) || other.nights == nights)&&(identical(other.stayClass, stayClass) || other.stayClass == stayClass)&&(identical(other.spot, spot) || other.spot == spot)&&const DeepCollectionEquality().equals(other.suggestions, _suggestions)&&(identical(other.file, file) || other.file == file)&&(identical(other.filePosition, filePosition) || other.filePosition == filePosition)&&(identical(other.position, position) || other.position == position)&&const DeepCollectionEquality().equals(other.blockedBy, _blockedBy)&&const DeepCollectionEquality().equals(other.choices, _choices)&&(identical(other.suggested, suggested) || other.suggested == suggested));
+    return identical(this, other) || (other.runtimeType == runtimeType&&other is _OccupantModel&&(identical(other.id, id) || other.id == id)&&(identical(other.reference, reference) || other.reference == reference)&&(identical(other.customerName, customerName) || other.customerName == customerName)&&(identical(other.plate, plate) || other.plate == plate)&&(identical(other.status, status) || other.status == status)&&(identical(other.arrivalAt, arrivalAt) || other.arrivalAt == arrivalAt)&&(identical(other.returnAt, returnAt) || other.returnAt == returnAt)&&(identical(other.returnFlight, returnFlight) || other.returnFlight == returnFlight)&&(identical(other.spotId, spotId) || other.spotId == spotId)&&(identical(other.keyHook, keyHook) || other.keyHook == keyHook)&&(identical(other.carLat, carLat) || other.carLat == carLat)&&(identical(other.carLng, carLng) || other.carLng == carLng)&&(identical(other.carAccuracyM, carAccuracyM) || other.carAccuracyM == carAccuracyM)&&(identical(other.carLocatedAt, carLocatedAt) || other.carLocatedAt == carLocatedAt)&&(identical(other.carLocatedBy, carLocatedBy) || other.carLocatedBy == carLocatedBy)&&(identical(other.carNote, carNote) || other.carNote == carNote)&&(identical(other.onSite, onSite) || other.onSite == onSite)&&(identical(other.leavesToday, leavesToday) || other.leavesToday == leavesToday)&&(identical(other.nights, nights) || other.nights == nights)&&(identical(other.stayClass, stayClass) || other.stayClass == stayClass)&&(identical(other.spot, spot) || other.spot == spot)&&const DeepCollectionEquality().equals(other.suggestions, _suggestions)&&(identical(other.file, file) || other.file == file)&&(identical(other.filePosition, filePosition) || other.filePosition == filePosition)&&(identical(other.position, position) || other.position == position)&&const DeepCollectionEquality().equals(other.blockedBy, _blockedBy)&&const DeepCollectionEquality().equals(other.choices, _choices)&&(identical(other.suggested, suggested) || other.suggested == suggested)&&(identical(other.boardingCheckIn, boardingCheckIn) || other.boardingCheckIn == boardingCheckIn));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
 int get hashCode {
-    return Object.hashAll([runtimeType,id,reference,customerName,plate,status,arrivalAt,returnAt,returnFlight,spotId,keyHook,carLat,carLng,carAccuracyM,carLocatedAt,carLocatedBy,carNote,onSite,leavesToday,nights,stayClass,spot,const DeepCollectionEquality().hash(_suggestions),file,filePosition,position,const DeepCollectionEquality().hash(_blockedBy),const DeepCollectionEquality().hash(_choices),suggested]);
+    return Object.hashAll([runtimeType,id,reference,customerName,plate,status,arrivalAt,returnAt,returnFlight,spotId,keyHook,carLat,carLng,carAccuracyM,carLocatedAt,carLocatedBy,carNote,onSite,leavesToday,nights,stayClass,spot,const DeepCollectionEquality().hash(_suggestions),file,filePosition,position,const DeepCollectionEquality().hash(_blockedBy),const DeepCollectionEquality().hash(_choices),suggested,boardingCheckIn]);
 }
 
 @override
 String toString() {
-    return 'OccupantModel(id: $id, reference: $reference, customerName: $customerName, plate: $plate, status: $status, arrivalAt: $arrivalAt, returnAt: $returnAt, returnFlight: $returnFlight, spotId: $spotId, keyHook: $keyHook, carLat: $carLat, carLng: $carLng, carAccuracyM: $carAccuracyM, carLocatedAt: $carLocatedAt, carLocatedBy: $carLocatedBy, carNote: $carNote, onSite: $onSite, leavesToday: $leavesToday, nights: $nights, stayClass: $stayClass, spot: $spot, suggestions: $suggestions, file: $file, filePosition: $filePosition, position: $position, blockedBy: $blockedBy, choices: $choices, suggested: $suggested)';
+    return 'OccupantModel(id: $id, reference: $reference, customerName: $customerName, plate: $plate, status: $status, arrivalAt: $arrivalAt, returnAt: $returnAt, returnFlight: $returnFlight, spotId: $spotId, keyHook: $keyHook, carLat: $carLat, carLng: $carLng, carAccuracyM: $carAccuracyM, carLocatedAt: $carLocatedAt, carLocatedBy: $carLocatedBy, carNote: $carNote, onSite: $onSite, leavesToday: $leavesToday, nights: $nights, stayClass: $stayClass, spot: $spot, suggestions: $suggestions, file: $file, filePosition: $filePosition, position: $position, blockedBy: $blockedBy, choices: $choices, suggested: $suggested, boardingCheckIn: $boardingCheckIn)';
 }
 
 
@@ -380,11 +396,11 @@ abstract mixin class _$OccupantModelCopyWith<$Res> implements $OccupantModelCopy
   factory _$OccupantModelCopyWith(_OccupantModel value, $Res Function(_OccupantModel) _then) = __$OccupantModelCopyWithImpl;
 @override @useResult
 $Res call({
- String id, String reference, String customerName, String plate, String status, String arrivalAt, String returnAt, String? returnFlight, String? spotId, String? keyHook, double? carLat, double? carLng, int? carAccuracyM, DateTime? carLocatedAt, String? carLocatedBy, String? carNote, bool onSite, bool leavesToday, int? nights, String? stayClass, SpotRefModel? spot, List<SuggestionModel> suggestions, FileRefModel? file, int? filePosition, int? position, List<FileBlockerModel> blockedBy, List<FileChoiceModel> choices, FileChoiceModel? suggested
+ String id, String reference, String customerName, String plate, String status, String arrivalAt, String returnAt, String? returnFlight, String? spotId, String? keyHook, double? carLat, double? carLng, int? carAccuracyM, DateTime? carLocatedAt, String? carLocatedBy, String? carNote, bool onSite, bool leavesToday, int? nights, String? stayClass, SpotRefModel? spot, List<SuggestionModel> suggestions, FileRefModel? file, int? filePosition, int? position, List<FileBlockerModel> blockedBy, List<FileChoiceModel> choices, FileChoiceModel? suggested, BoardingCheckInModel? boardingCheckIn
 });
 
 
-@override $SpotRefModelCopyWith<$Res>? get spot;@override $FileRefModelCopyWith<$Res>? get file;@override $FileChoiceModelCopyWith<$Res>? get suggested;
+@override $SpotRefModelCopyWith<$Res>? get spot;@override $FileRefModelCopyWith<$Res>? get file;@override $FileChoiceModelCopyWith<$Res>? get suggested;@override $BoardingCheckInModelCopyWith<$Res>? get boardingCheckIn;
 
 }
 /// @nodoc
@@ -397,7 +413,7 @@ class __$OccupantModelCopyWithImpl<$Res>
 
 /// Create a copy of OccupantModel
 /// with the given fields replaced by the non-null parameter values.
-@override @pragma('vm:prefer-inline') $Res call({Object? id = null,Object? reference = null,Object? customerName = null,Object? plate = null,Object? status = null,Object? arrivalAt = null,Object? returnAt = null,Object? returnFlight = freezed,Object? spotId = freezed,Object? keyHook = freezed,Object? carLat = freezed,Object? carLng = freezed,Object? carAccuracyM = freezed,Object? carLocatedAt = freezed,Object? carLocatedBy = freezed,Object? carNote = freezed,Object? onSite = null,Object? leavesToday = null,Object? nights = freezed,Object? stayClass = freezed,Object? spot = freezed,Object? suggestions = null,Object? file = freezed,Object? filePosition = freezed,Object? position = freezed,Object? blockedBy = null,Object? choices = null,Object? suggested = freezed,}) {
+@override @pragma('vm:prefer-inline') $Res call({Object? id = null,Object? reference = null,Object? customerName = null,Object? plate = null,Object? status = null,Object? arrivalAt = null,Object? returnAt = null,Object? returnFlight = freezed,Object? spotId = freezed,Object? keyHook = freezed,Object? carLat = freezed,Object? carLng = freezed,Object? carAccuracyM = freezed,Object? carLocatedAt = freezed,Object? carLocatedBy = freezed,Object? carNote = freezed,Object? onSite = null,Object? leavesToday = null,Object? nights = freezed,Object? stayClass = freezed,Object? spot = freezed,Object? suggestions = null,Object? file = freezed,Object? filePosition = freezed,Object? position = freezed,Object? blockedBy = null,Object? choices = null,Object? suggested = freezed,Object? boardingCheckIn = freezed,}) {
   return _then(_OccupantModel(
 id: null == id ? _self.id : id // ignore: cast_nullable_to_non_nullable
 as String,reference: null == reference ? _self.reference : reference // ignore: cast_nullable_to_non_nullable
@@ -427,7 +443,8 @@ as int?,position: freezed == position ? _self.position : position // ignore: cas
 as int?,blockedBy: null == blockedBy ? _self._blockedBy : blockedBy // ignore: cast_nullable_to_non_nullable
 as List<FileBlockerModel>,choices: null == choices ? _self._choices : choices // ignore: cast_nullable_to_non_nullable
 as List<FileChoiceModel>,suggested: freezed == suggested ? _self.suggested : suggested // ignore: cast_nullable_to_non_nullable
-as FileChoiceModel?,
+as FileChoiceModel?,boardingCheckIn: freezed == boardingCheckIn ? _self.boardingCheckIn : boardingCheckIn // ignore: cast_nullable_to_non_nullable
+as BoardingCheckInModel?,
   ));
 }
 
@@ -466,6 +483,18 @@ $FileChoiceModelCopyWith<$Res>? get suggested {
 
   return $FileChoiceModelCopyWith<$Res>(_self.suggested!, (value) {
     return _then(_self.copyWith(suggested: value));
+  });
+}/// Create a copy of OccupantModel
+/// with the given fields replaced by the non-null parameter values.
+@override
+@pragma('vm:prefer-inline')
+$BoardingCheckInModelCopyWith<$Res>? get boardingCheckIn {
+    if (_self.boardingCheckIn == null) {
+    return null;
+  }
+
+  return $BoardingCheckInModelCopyWith<$Res>(_self.boardingCheckIn!, (value) {
+    return _then(_self.copyWith(boardingCheckIn: value));
   });
 }
 }

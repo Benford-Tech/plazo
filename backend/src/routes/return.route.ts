@@ -112,7 +112,11 @@ const NOT_DRIVER_MESSAGE = 'A platform admin viewing an operator space does not 
  *         arrivalAt: { type: string, format: date-time }
  *         arrivedAt: { type: string, format: date-time, nullable: true }
  *         spot: { type: string, nullable: true }
+ *         stopId: { type: string, nullable: true }
+ *         stopName: { type: string, nullable: true }
  *         tripId: { type: string, nullable: true }
+ *         leaveAt: { type: string, format: date-time, description: "F-A: when the shuttle should leave for the terminal" }
+ *         expected: { type: boolean, description: "Still expected (status upcoming): selectable too, checked in at boarding (« Embarquer en un geste », 14/10/2026)" }
  *     StaffTrip:
  *       type: object
  *       properties:
@@ -127,7 +131,19 @@ const NOT_DRIVER_MESSAGE = 'A platform admin viewing an operator space does not 
  *         endedAt: { type: string, format: date-time, nullable: true }
  *         endReason: { type: string, nullable: true, enum: [completed, expired] }
  *         secondsLeft: { type: integer }
- *         passengers: { type: array, items: { type: object, properties: { reservationId: { type: string }, reference: { type: string }, customerName: { type: string }, passengers: { type: integer }, plate: { type: string }, terminal: { type: string, nullable: true } } } }
+ *         passengers:
+ *           type: array
+ *           items:
+ *             type: object
+ *             properties:
+ *               reservationId: { type: string }
+ *               reference: { type: string }
+ *               customerName: { type: string }
+ *               passengers: { type: integer }
+ *               plate: { type: string }
+ *               terminal: { type: string, nullable: true }
+ *               arrivedAt: { type: string, format: date-time, nullable: true, description: When the traveller was checked in }
+ *               checkedInAtBoarding: { type: boolean, description: "Checked in when they boarded this trip (« Sur place · 09:47 »)" }
  *         positionUpdatedAt: { type: string, format: date-time, nullable: true, description: The driver's own position is never sent back }
  *         meetingPoint: { $ref: '#/components/schemas/MeetingPoint' }
  *     PickupRow:
@@ -208,6 +224,10 @@ const NOT_DRIVER_MESSAGE = 'A platform admin viewing an operator space does not 
  * /internal/shuttle/departures:
  *   get:
  *     summary: Today's arrived travellers waiting for the shuttle to the terminal (driver, drop-off)
+ *     description: >
+ *       The checked-in travellers (arrived in the last 6 hours, or due around now), then those still expected
+ *       (expected true, status upcoming) whose arrival is between 6 hours ago and 3 hours ahead: they board a drop-off
+ *       too and are checked in when it starts (« Embarquer en un geste », 14/10/2026).
  *     tags: [Shuttle]
  *     responses:
  *       200:
@@ -332,9 +352,14 @@ const NOT_DRIVER_MESSAGE = 'A platform admin viewing an operator space does not 
  *     description: >
  *       One running trip per driver (409 trip_already_running, details.tripId). Passengers must be
  *       bookings of the operator whose vehicle is on site (422 invalid_passengers) and not already on
- *       a running trip (409 already_on_trip). The vehicle is one of the operator's (vehicleId) or typed
- *       freely (vehicle). The trip ends by itself 90 minutes after the start. 403 view_as_not_driver in a platform
- *       admin's view-as session (not one of the operator's drivers).
+ *       a running trip (409 already_on_trip); both are checked again under a lock of the passengers' rows, so two
+ *       starts with the same traveller (two drivers, a double tap) run one after the other. The vehicle is one of
+ *       the operator's (vehicleId) or typed freely (vehicle); neither: the driver's vehicle of the day. The trip ends by itself 90 minutes after the start.
+ *       « Embarquer en un geste » (14/10/2026): a drop-off also takes travellers still expected (upcoming) whose arrival
+ *       is within 24 hours of now; they are checked in in the same transaction (status arrived, arrivedAt now, recorded
+ *       as reservation.status_changed with via boarding), and nothing is kept when one of the passengers is no longer
+ *       there (cancelled meanwhile: 422 invalid_passengers). A booking gone, cancelled or arriving later is refused.
+ *       403 view_as_not_driver in a platform admin's view-as session (not one of the operator's drivers).
  *     tags: [Shuttle]
  *     requestBody:
  *       required: true
@@ -347,7 +372,7 @@ const NOT_DRIVER_MESSAGE = 'A platform admin viewing an operator space does not 
  *               reservationIds: { type: array, items: { type: string }, minItems: 1, maxItems: 30 }
  *               vehicleId: { type: string, nullable: true }
  *               vehicle: { type: object, nullable: true, properties: { model: { type: string, nullable: true }, colour: { type: string, nullable: true }, plate: { type: string, nullable: true } } }
- *               direction: { type: string, enum: [pickup, dropoff], default: pickup, description: "dropoff: arrived travellers to the terminal (422 invalid_passengers otherwise); a vehicle with fewer seats than passengers is refused (422 too_many_passengers), an out-of-service one too (422 vehicle_out_of_service)" }
+ *               direction: { type: string, enum: [pickup, dropoff], default: pickup, description: "dropoff: arrived travellers, and expected ones arriving within 24 hours (checked in at boarding), to the terminal (422 invalid_passengers otherwise); a vehicle with fewer seats than passengers is refused (422 too_many_passengers), an out-of-service one too (422 vehicle_out_of_service)" }
  *     responses:
  *       201: { description: "{ trip }", content: { application/json: { schema: { type: object, properties: { trip: { $ref: '#/components/schemas/StaffTrip' } } } } } }
  * /internal/shuttle/trips/{id}/position:

@@ -18,6 +18,9 @@ abstract class PlanningRowModel with _$PlanningRowModel {
     required String customerName,
     required String plate,
     String? returnFlight,
+
+    /// The stop serving the traveller (D-A); null: the airport.
+    String? stopId,
     StaffSignalModel? arrivalSignal,
   }) = _PlanningRowModel;
 

@@ -12,6 +12,12 @@ String dayTime(DateTime instant) => DateFormat('EEE d MMM HH:mm', 'fr_FR').forma
 /// "sam. 4 oct." from an instant.
 String dayOf(DateTime instant) => DateFormat('EEE d MMM', 'fr_FR').format(instant.toLocal());
 
+/// « Pointé à l'embarquement par Karim » (14/10/2026): the driver checked the traveller in when the shuttle left.
+String boardingCheckInText(BoardingCheckInModel checkIn) {
+  final name = checkIn.driverFirstName?.trim();
+  return name == null || name.isEmpty ? 'occupation.boarding_check_in_anonymous'.tr() : 'occupation.boarding_check_in'.tr(args: [name]);
+}
+
 /// A booking's status badge for the staff (tones of the pro space).
 StatusBadge proStatusBadge(String status, {Key? key}) {
   final tone = switch (status) {
