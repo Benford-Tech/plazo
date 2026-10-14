@@ -1,5 +1,6 @@
 import PostalMime, { Address, Email } from 'postal-mime';
 import { alloparkLinks } from './importers/allopark-page';
+import { isAutoForwarded } from './inbound-delivery';
 import { InboundAddress, InboundItem } from './inbound-email';
 
 /** The content type the Cloudflare relay posts the raw message with. */
@@ -76,5 +77,7 @@ export async function parseRawEmail(raw: Uint8Array, envelope: Envelope): Promis
     // 10/10/2026: the links are read from the whole bodies, before the clip: Allopark's « Consulter ma réservation »
     // button comes after 100 000 characters of HTML (inline styles, tables).
     Links: linksOf(email),
+    // 14/10/2026 (« C puis A »): a mailbox rule's headers tell a forwarded email from one the comparator sent itself.
+    AutoForwarded: isAutoForwarded(email.headers ?? []),
   };
 }

@@ -4,7 +4,7 @@ import { Container, Service } from 'typedi';
 import { INBOUND_EMAIL_DOMAIN, inboundEmailAvailable } from '@/config';
 import prisma, { InboundEmailStatus, Prisma } from '@/database';
 import { MIN_CONFIDENCE, ReadingMeta, toParsedBooking } from '@/domain/email-reading';
-import { IMPORT_SENDERS, parseConfirmationEmail, ParsedBooking } from '@/domain/importers';
+import { EMAIL_IMPORTERS, IMPORT_SENDERS, isComparatorAddress, parseConfirmationEmail, ParsedBooking } from '@/domain/importers';
 import { isCancellationOrChange } from '@/domain/importers/common';
 import {
   alloparkConfirmationPage,
@@ -15,8 +15,11 @@ import {
   isAlloparkUrl,
 } from '@/domain/importers/allopark-page';
 import { IMPORT_CHANGE_FIELDS, IMPORT_CHANGE_REASONS, ImportChange, ImportChangeField, ImportChangeReason } from '@/domain/import-change';
+import { ComparatorState, comparatorStates, latestAutomatic } from '@/domain/inbound-comparators';
+import { deliveryOf, looksLikeBooking } from '@/domain/inbound-delivery';
 import {
   forwardingConfirmationOf,
+  headerRecipientsOf,
   InboundItem,
   InboundPayload,
   inboundSlugOf,
@@ -35,6 +38,8 @@ import { AuthenticatedStaff } from '@/interfaces/auth.interface';
 import { logger } from '@/utils/logger';
 import { AuditService } from './audit.service';
 import { EmailReadingService } from './email-reading.service';
+import { MailProviderService } from './mail-provider.service';
+import { MailProviderId } from '@/domain/mail-provider';
 import { ImportChangeResult, ReservationService } from './reservation.service';
 
 /** The email's text is kept this long for "À vérifier", then cleared; the row itself goes after 90 days. */
@@ -47,6 +52,12 @@ const TEXT_MAX_CHARS = 20000;
 const FORWARDING_SHOWN_DAYS = 7;
 /** "Ce que Plazo a reçu" in the wizard's last step. */
 const RECENT_SHOWN = 5;
+/** A (14/10/2026): the emails a too-wide rule sent on, counted for the wizard's alert, then deleted. */
+const UNEXPECTED_DAYS = 7;
+/** C (14/10/2026): the emails read for the comparators' table (newest first; enough for a busy parking's 90 days). */
+const COMPARATOR_ROWS = 500;
+/** Statuses of an email that came in (not Gmail's confirmation, not an email set aside). */
+const RECEIVED: InboundEmailStatus[] = ['imported', 'duplicate', 'incomplete', 'unrecognised', 'dismissed', 'handled', 'archived'];
 
 export interface InboundSettings {
   /** False when the platform has no inbound domain or secret: the block explains it. */
@@ -63,6 +74,17 @@ export interface InboundSettings {
   forwarding: { provider: 'gmail'; code: string | null; link: string | null; requester: string | null; receivedAt: string } | null;
   /** G-B: the last emails received, newest first, for the wizard's check step. */
   recent: InboundRecent[];
+  /** C (14/10/2026): one line per comparator: its last email and how its emails arrive (domain/inbound-comparators.ts). */
+  comparators: ComparatorState[];
+  /**
+   * A (14/10/2026): what Plazo saw of the setup, latest first: Gmail's confirmation, an email of a comparator that came
+   * by itself (never one forwarded by hand), a booking made from an email.
+   */
+  progress: { confirmationAt: string | null; comparatorMailAt: string | null; comparator: string | null; bookingAt: string | null };
+  /** A: the emails a too-wide rule of the mailbox sent on these 7 days, set aside without sender, subject or text. */
+  unexpected: { count: number; lastAt: string | null };
+  /** A: the mail service the wizard opens on, and the address it was read from (null: the manager picks it). */
+  mailProvider: { id: MailProviderId; business: boolean; email: string; source: 'forwarding' | 'account' } | null;
 }
 
 export interface InboundRecent {
@@ -251,6 +273,7 @@ export class InboundEmailService {
   public audit = Container.get(AuditService);
   public reader = Container.get(EmailReadingService);
   public alloparkPage = Container.get(AlloparkPageService);
+  public mailProviders = Container.get(MailProviderService);
 
   /** The relay's webhook: every item is handled on its own; the answer is always 200 so the relay does not resend it. */
   public async receive(payload: InboundPayload): Promise<{ received: number; imported: number; toCheck: number; ignored: number }> {
@@ -273,6 +296,13 @@ export class InboundEmailService {
     if (!operator || operator.status !== 'active') return 'ignored';
     const text = textOf(item).slice(0, TEXT_MAX_CHARS);
     const fromAddress = item.From?.Address?.trim().toLowerCase().slice(0, 200) || null;
+    const fromIsComparator = !!fromAddress && isComparatorAddress(fromAddress);
+    const delivery = deliveryOf({
+      autoForwarded: item.AutoForwarded,
+      headerRecipients: headerRecipientsOf(item),
+      inboundDomain: INBOUND_EMAIL_DOMAIN,
+      fromIsComparator,
+    });
     // G-B: Gmail asks the Plazo address to confirm the forwarding; the code is shown in the setup wizard.
     const confirmation = forwardingConfirmationOf({ from: fromAddress, subject: item.Subject ?? null, text });
     if (confirmation) {
@@ -288,6 +318,13 @@ export class InboundEmailService {
         },
       });
       return 'forwarding';
+    }
+    // A (14/10/2026): a rule that sends every email on (« transférer une copie de tous les e-mails ») brings the
+    // parking's own emails: one that a rule forwarded, not from a comparator, without a booking word, is set aside
+    // unread (no Claude) and kept without sender, subject or text, only to warn the manager in the setup wizard.
+    if (item.AutoForwarded && !fromIsComparator && !looksLikeBooking(item.Subject ?? null, text)) {
+      await prisma.inboundEmail.create({ data: { operatorId: operator.id, status: 'ignored', delivery } });
+      return 'ignored';
     }
     const base = {
       operatorId: operator.id,
@@ -309,6 +346,7 @@ export class InboundEmailService {
         ...base,
         ...(analysis.reservationId ? {} : forReanalysis),
         status,
+        delivery,
         ...(analysis.reading ? { reading: analysis.reading as unknown as Prisma.InputJsonValue } : {}),
         ...(analysis.provider ? { provider: analysis.provider } : {}),
         ...(analysis.parsed ? { parsed: analysis.parsed as unknown as Prisma.InputJsonValue } : {}),
@@ -676,8 +714,9 @@ export class InboundEmailService {
 
   public async settings(actor: AuthenticatedStaff): Promise<InboundSettings> {
     const operator = await prisma.operator.findUniqueOrThrow({ where: { id: actor.operatorId }, select: { inboundSlug: true } });
-    const since = new Date(Date.now() - COUNT_WINDOW_DAYS * 86400000);
-    const [grouped, last, toCheck, forwarding, recent] = await Promise.all([
+    const now = new Date();
+    const since = new Date(now.getTime() - COUNT_WINDOW_DAYS * 86400000);
+    const [grouped, last, toCheck, forwarding, recent, received, unexpected, booked, confirmation] = await Promise.all([
       prisma.inboundEmail.groupBy({ by: ['status'], where: { operatorId: actor.operatorId, receivedAt: { gte: since } }, _count: { _all: true } }),
       prisma.inboundEmail.findFirst({ where: { operatorId: actor.operatorId }, orderBy: { receivedAt: 'desc' }, select: { receivedAt: true } }),
       prisma.inboundEmail.count({ where: { operatorId: actor.operatorId, status: { in: TO_CHECK } } }),
@@ -687,12 +726,35 @@ export class InboundEmailService {
         select: { parsed: true, receivedAt: true },
       }),
       prisma.inboundEmail.findMany({
-        where: { operatorId: actor.operatorId },
+        where: { operatorId: actor.operatorId, status: { not: 'ignored' } },
         include: { reservation: { select: { reference: true } } },
         orderBy: { receivedAt: 'desc' },
         take: RECENT_SHOWN,
       }),
+      prisma.inboundEmail.findMany({
+        where: { operatorId: actor.operatorId, status: { in: RECEIVED } },
+        select: { provider: true, fromAddress: true, status: true, delivery: true, receivedAt: true },
+        orderBy: { receivedAt: 'desc' },
+        take: COMPARATOR_ROWS,
+      }),
+      prisma.inboundEmail.aggregate({
+        where: { operatorId: actor.operatorId, status: 'ignored', receivedAt: { gte: new Date(now.getTime() - UNEXPECTED_DAYS * 86400000) } },
+        _count: { _all: true },
+        _max: { receivedAt: true },
+      }),
+      prisma.inboundEmail.findFirst({
+        where: { operatorId: actor.operatorId, status: { in: ['imported', 'duplicate'] }, reservationId: { not: null } },
+        orderBy: { receivedAt: 'desc' },
+        select: { receivedAt: true },
+      }),
+      prisma.inboundEmail.findFirst({
+        where: { operatorId: actor.operatorId, status: 'forwarding' },
+        orderBy: { receivedAt: 'desc' },
+        select: { parsed: true, receivedAt: true },
+      }),
     ]);
+    const providers = EMAIL_IMPORTERS.map(i => i.provider);
+    const automatic = latestAutomatic(received, providers);
     const counts = Object.fromEntries(Object.values(InboundEmailStatus).map(status => [status, 0])) as Record<InboundEmailStatus, number>;
     for (const g of grouped) counts[g.status] = g._count._all;
     const available = inboundEmailAvailable();
@@ -714,7 +776,33 @@ export class InboundEmailService {
         reservationReference: r.reservation?.reference ?? null,
         receivedAt: r.receivedAt.toISOString(),
       })),
+      comparators: comparatorStates(received, providers, now),
+      progress: {
+        confirmationAt: confirmation?.receivedAt.toISOString() ?? null,
+        comparatorMailAt: automatic?.at ?? null,
+        comparator: automatic?.provider ?? null,
+        bookingAt: booked?.receivedAt.toISOString() ?? null,
+      },
+      unexpected: { count: unexpected._count._all, lastAt: unexpected._max.receivedAt?.toISOString() ?? null },
+      mailProvider: await this.mailProviderOf(actor, forwardingView(confirmation)?.requester ?? null),
     };
+  }
+
+  /**
+   * A (14/10/2026): the mail service the wizard opens on: Gmail when Gmail asked to forward to Plazo, else the service
+   * of the member's own address (never a platform admin's in consultation: the operator's managers'), domain or MX.
+   */
+  private async mailProviderOf(actor: AuthenticatedStaff, requester: string | null): Promise<InboundSettings['mailProvider']> {
+    if (requester) {
+      const guess = await this.mailProviders.guess(requester);
+      return { id: 'gmail', business: guess?.business ?? false, email: requester, source: 'forwarding' };
+    }
+    const candidates = actor.actingAs ? (await this.managerAddresses(actor.operatorId)).slice(0, 2) : [actor.email];
+    for (const email of candidates) {
+      const guess = await this.mailProviders.guess(email);
+      if (guess) return { ...guess, email, source: 'account' };
+    }
+    return null;
   }
 
   /**
@@ -754,7 +842,11 @@ export class InboundEmailService {
     const where = (v: InboundView): Prisma.InboundEmailWhereInput => ({ operatorId: actor.operatorId, ...scope[v] });
     // Gmail's forwarding confirmations belong to the setup wizard, never to the inbox.
     const listed: Prisma.InboundEmailWhereInput | null =
-      filter.status === 'forwarding' ? null : filter.status ? { AND: [where(view), { status: filter.status }] } : where(view);
+      filter.status === 'forwarding' || filter.status === 'ignored'
+        ? null
+        : filter.status
+          ? { AND: [where(view), { status: filter.status }] }
+          : where(view);
     const [rows, todo, done, archived] = await Promise.all([
       listed
         ? prisma.inboundEmail.findMany({
@@ -1010,7 +1102,13 @@ export class InboundEmailService {
       data: { textBody: null, recipients: [], links: [], pageLookup: Prisma.DbNull, change: Prisma.DbNull },
     });
     const { count: rowsDeleted } = await prisma.inboundEmail.deleteMany({
-      where: { receivedAt: { lt: new Date(now.getTime() - ROW_RETENTION_DAYS * 86400000) } },
+      where: {
+        OR: [
+          { receivedAt: { lt: new Date(now.getTime() - ROW_RETENTION_DAYS * 86400000) } },
+          // A (14/10/2026): an email set aside only counts for the wizard's alert, 7 days.
+          { status: 'ignored', receivedAt: { lt: new Date(now.getTime() - UNEXPECTED_DAYS * 86400000) } },
+        ],
+      },
     });
     return { textsCleared, rowsDeleted };
   }
@@ -1023,7 +1121,11 @@ export class InboundEmailService {
   /** The operator's email with its booking's reference; a forwarding confirmation is unknown to the inbox unless asked for. */
   private async find(actor: AuthenticatedStaff, id: string, options: { includeForwarding?: boolean } = {}): Promise<InboundRow> {
     const row = await prisma.inboundEmail.findFirst({
-      where: { id, operatorId: actor.operatorId, ...(options.includeForwarding ? {} : { status: { not: 'forwarding' } }) },
+      where: {
+        id,
+        operatorId: actor.operatorId,
+        status: options.includeForwarding ? { not: 'ignored' } : { notIn: ['forwarding', 'ignored'] },
+      },
       include: { reservation: { select: { reference: true } } },
     });
     if (!row) throw new HttpException(httpStatus.NOT_FOUND, 'Email not found', 'not_found');

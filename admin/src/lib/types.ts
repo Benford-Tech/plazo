@@ -487,7 +487,22 @@ export type InboundEmailStatus =
   | "dismissed"
   | "handled"
   | "archived"
-  | "forwarding";
+  | "forwarding"
+  /** A (14/10/2026): sent on by a too-wide mailbox rule, set aside without its content; never listed, only counted. */
+  | "ignored";
+
+/** C (14/10/2026): how a comparator's emails reach Plazo (domain/inbound-comparators.ts on the server). */
+export type ComparatorArrival = "direct" | "forwarded" | "manual" | "unknown" | "none";
+
+export interface InboundComparator {
+  provider: string;
+  lastReceivedAt: string | null;
+  lastStatus: InboundEmailStatus | null;
+  arrival: ComparatorArrival;
+}
+
+/** A (14/10/2026): the mail services the setup wizard knows. */
+export type MailProviderId = "gmail" | "outlook" | "ovh" | "other";
 
 /** M-A « Boîte de réception » (08/10/2026): the three tabs of the inbox. */
 export type InboundEmailView = "todo" | "done" | "archived";
@@ -510,6 +525,14 @@ export interface InboundSettings {
   } | null;
   /** G-B: the last emails received, newest first. */
   recent: InboundRecent[];
+  /** C (14/10/2026): one line per comparator (missing from an older API). */
+  comparators?: InboundComparator[];
+  /** A (14/10/2026): what Plazo saw of the setup, latest first. */
+  progress?: { confirmationAt: string | null; comparatorMailAt: string | null; comparator: string | null; bookingAt: string | null };
+  /** A: the emails a too-wide rule sent on these 7 days, set aside without their content. */
+  unexpected?: { count: number; lastAt: string | null };
+  /** A: the mail service the wizard opens on, and the address it was read from. */
+  mailProvider?: { id: MailProviderId; business: boolean; email: string; source: "forwarding" | "account" } | null;
 }
 
 export interface InboundRecent {
