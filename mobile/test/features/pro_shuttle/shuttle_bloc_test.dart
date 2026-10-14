@@ -57,7 +57,8 @@ void main() {
     departures = MockDepartures();
     vehicles = MockVehicles();
     stops = MockStops();
-    when(() => stops(any())).thenAnswer((_) async => const Right([ShuttleStopModel(kind: 'airport', name: 'Terminal 1 · Porte 12', lat: 45.7205, lng: 5.0817, builtIn: true)]));
+    when(() => stops(any()))
+        .thenAnswer((_) async => const Right([ShuttleStopModel(kind: 'airport', name: 'Terminal 1 · Porte 12', lat: 45.7205, lng: 5.0817, builtIn: true)]));
     current = MockCurrent();
     start = MockStart();
     send = MockSend();
@@ -83,8 +84,27 @@ void main() {
         DeparturesModel(
           serverTime: now,
           rows: [
-            DepartureRowModel(reservationId: 'a1', reference: 'A1', customerName: 'Léa Durand', passengers: 3, plate: 'GH-456-JK', status: 'arrived', arrivalAt: t0, arrivedAt: t0, spot: 'A12'),
-            DepartureRowModel(reservationId: 'a2', reference: 'A2', customerName: 'Noa Petit', passengers: 1, plate: 'AB-123-CD', status: 'arrived', arrivalAt: t0, tripId: 'other'),
+            DepartureRowModel(
+              reservationId: 'a1',
+              reference: 'A1',
+              customerName: 'Léa Durand',
+              passengers: 3,
+              plate: 'GH-456-JK',
+              status: 'arrived',
+              arrivalAt: t0,
+              arrivedAt: t0,
+              spot: 'A12',
+            ),
+            DepartureRowModel(
+              reservationId: 'a2',
+              reference: 'A2',
+              customerName: 'Noa Petit',
+              passengers: 1,
+              plate: 'AB-123-CD',
+              status: 'arrived',
+              arrivalAt: t0,
+              tripId: 'other',
+            ),
           ],
         ),
       ),
@@ -97,7 +117,12 @@ void main() {
     );
     when(() => current(any())).thenAnswer((_) async => const Right(null));
     when(() => location.requestAccess()).thenAnswer((_) async => LocationAccess.granted);
-    when(() => location.positions(background: any(named: 'background'), notice: any(named: 'notice'))).thenAnswer((_) => positions.stream);
+    when(
+      () => location.positions(
+        background: any(named: 'background'),
+        notice: any(named: 'notice'),
+      ),
+    ).thenAnswer((_) => positions.stream);
   });
 
   tearDown(() => positions.close());
@@ -127,9 +152,18 @@ void main() {
 
   test('suivi désactivé par le parking (R-B) : le trajet part sans demander ni partager la position', () async {
     when(() => pickups(any())).thenAnswer(
-      (_) async => Right(PickupsModel(serverTime: now, meetingPoint: meetingT1, sharePosition: false, rows: [pickup('r1', 'Camille Martin', flight: landedFlight())])),
+      (_) async => Right(
+        PickupsModel(
+          serverTime: now,
+          meetingPoint: meetingT1,
+          sharePosition: false,
+          rows: [pickup('r1', 'Camille Martin', flight: landedFlight())],
+        ),
+      ),
     );
-    final trip = staffTrip(passengers: const [TripPassengerModel(reservationId: 'r1', reference: 'Rr1', customerName: 'Camille Martin', passengers: 2, plate: 'AB-123-CD')]).copyWith(sharePosition: false);
+    final trip = staffTrip(
+      passengers: const [TripPassengerModel(reservationId: 'r1', reference: 'Rr1', customerName: 'Camille Martin', passengers: 2, plate: 'AB-123-CD')],
+    ).copyWith(sharePosition: false);
     when(() => start(any())).thenAnswer((_) async => Right(trip));
     final bloc = await opened();
     expect(bloc.state.sharePosition, isFalse);
@@ -141,7 +175,12 @@ void main() {
     expect(bloc.state.tracking, isFalse);
     expect(bloc.state.sharePosition, isFalse);
     verifyNever(() => location.requestAccess());
-    verifyNever(() => location.positions(background: any(named: 'background'), notice: any(named: 'notice')));
+    verifyNever(
+      () => location.positions(
+        background: any(named: 'background'),
+        notice: any(named: 'notice'),
+      ),
+    );
     verifyNever(() => send(any()));
     await bloc.close();
   });
@@ -158,7 +197,9 @@ void main() {
   });
 
   test('sélection, véhicule, démarrage : position partagée avec la notification chauffeur, au plus une fois par 10 s', () async {
-    final trip = staffTrip(passengers: const [TripPassengerModel(reservationId: 'r1', reference: 'Rr1', customerName: 'Camille Martin', passengers: 2, plate: 'AB-123-CD')]);
+    final trip = staffTrip(
+      passengers: const [TripPassengerModel(reservationId: 'r1', reference: 'Rr1', customerName: 'Camille Martin', passengers: 2, plate: 'AB-123-CD')],
+    );
     when(() => start(any())).thenAnswer((_) async => Right(trip));
     when(() => send(any())).thenAnswer((_) async => Right(trip.copyWith(positionUpdatedAt: now)));
     final bloc = await opened();
@@ -298,6 +339,63 @@ void main() {
     bloc.add(const ShuttleStopChanged(null));
     await settle();
     expect(bloc.state.stopId, 's1');
+    verify(() => start(any())).called(1);
+    await bloc.close();
+  });
+
+  test('Ligne du jour vers le terminal : un client encore attendu n\'est ni présélectionné ni envoyé (14/10/2026)', () async {
+    when(() => departures(any())).thenAnswer(
+      (_) async => Right(
+        DeparturesModel(
+          serverTime: now,
+          rows: [
+            DepartureRowModel(
+              reservationId: 'a1',
+              reference: 'A1',
+              customerName: 'Léa Durand',
+              passengers: 1,
+              plate: 'GH-456-JK',
+              status: 'arrived',
+              arrivalAt: t0,
+              arrivedAt: t0,
+              spot: 'A12',
+            ),
+            DepartureRowModel(
+              reservationId: 'a3',
+              reference: 'A3',
+              customerName: 'Nadia Roux',
+              passengers: 1,
+              plate: 'NR-321-ZZ',
+              status: 'upcoming',
+              arrivalAt: t0,
+              expected: true,
+            ),
+          ],
+        ),
+      ),
+    );
+    final bloc = build()..add(const ShuttleStarted());
+    await bloc.stream.firstWhere((s) => s.pickups != null);
+    // « Démarrer ce trajet » on a wave that holds an arrived traveller and one still expected.
+    bloc.add(const ShuttleWaveChosen(direction: 'dropoff', reservationIds: ['a1', 'a3']));
+    await bloc.stream.firstWhere((s) => s.departures != null && s.selected.isNotEmpty);
+    expect(bloc.state.selected, {'a1'});
+
+    // Opened from the expected traveller's sheet: nothing is selected.
+    final other = build()..add(const ShuttleStarted(direction: 'dropoff', reservationId: 'a3'));
+    await other.stream.firstWhere((s) => s.departures != null);
+    await settle();
+    expect(other.state.selected, isEmpty);
+    await other.close();
+
+    when(() => start(any())).thenAnswer((invocation) async {
+      final params = invocation.positionalArguments.single as StartTripParams;
+      expect(params.reservationIds, ['a1']);
+      return Right(staffTrip().copyWith(direction: 'dropoff'));
+    });
+    bloc.add(const ShuttleVehicleChosen(TripVehicleChoice(model: 'Vito')));
+    bloc.add(const ShuttleStartRequested());
+    await bloc.stream.firstWhere((s) => s.trip != null);
     verify(() => start(any())).called(1);
     await bloc.close();
   });
