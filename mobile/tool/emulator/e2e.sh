@@ -66,12 +66,15 @@ fi
 
 # The apps call the runner's demo API on 127.0.0.1 (loopback: plain http is always allowed by Flutter).
 adb reverse "tcp:$API_PORT" "tcp:$API_PORT" > /dev/null || error "adb reverse impossible : les apps ne joignent pas l'API de démonstration"
-# Read whole, then matched (a `grep -q` closing the pipe early would fail it under pipefail).
-HEALTH=$(adb shell "printf 'GET /api/health HTTP/1.0\r\n\r\n' | nc -w 5 127.0.0.1 $API_PORT" 2> /dev/null | tr -d '\r')
-case "$HEALTH" in
-  'HTTP/1.'?' 200'*) ;;
-  *) warn "l'API de démonstration ne répond pas depuis l'émulateur : écrans hors ligne" ;;
-esac
+# Checked from the runner: the device's shell has no reliable HTTP client (toybox nc closes on end of input, before the
+# answer: a false « ne répond pas » on 15/10/2026 while the apps showed the demo data). Read whole, then matched (a
+# `grep -q` closing the pipe early would fail it under pipefail).
+REVERSED=$(adb reverse --list 2> /dev/null)
+if ! curl -sf -m 10 "http://127.0.0.1:$API_PORT/api/health" > /dev/null; then
+  warn "l'API de démonstration ne répond pas sur le runner : écrans hors ligne"
+elif [[ "$REVERSED" != *"tcp:$API_PORT"* ]]; then
+  warn "port $API_PORT non renvoyé vers l'émulateur (adb reverse) : écrans hors ligne"
+fi
 
 # Portrait, fixed; status bar in demo mode (clock, full battery, no notification icons): stable screenshots.
 adb shell settings put system accelerometer_rotation 0
@@ -136,6 +139,17 @@ save_logs() { # name
   # Dart errors, caught by main.dart's zone or not: a MissingPluginException is a plugin class R8 removed.
   dart=$(grep -cE ' flutter *: .*(Uncaught zone error|Unhandled Exception|MissingPluginException)' "$OUT/logcat-$1.txt")
   [ "$dart" = 0 ] || warn "$dart erreur(s) Dart dans logcat-$1.txt"
+  # Cold starts of 5 s or more (« Displayed … +11s946ms »): the main thread is busy, which ends in an ANR. With the
+  # Android stack traces (/data/anr, readable with the root taken at setup), they say what blocks it.
+  slow=$(grep -oE 'Displayed com\.benfordtech\.[a-z]+/[^ ]+ for user 0: \+[0-9]+s[0-9]+ms' "$OUT/logcat-$1.txt" \
+    | sed -E 's|Displayed com\.benfordtech\.([a-z]+)/.*\+([0-9]+)s([0-9]+)ms|\1 \2 \3|' \
+    | awk '$2 >= 5 { printf "%s %s,%s s ; ", $1, $2, substr($3, 1, 1) }')
+  [ -z "$slow" ] || warn "démarrage lent ($1) : $slow"
+  if grep -q 'ANR in com\.benfordtech\.' "$OUT/logcat-$1.txt"; then
+    warn "une app n'a pas répondu (ANR, logcat-$1.txt ; traces dans anr-$1/ quand l'émulateur les donne)"
+    mkdir -p "$OUT/anr-$1"
+    adb pull /data/anr "$OUT/anr-$1" > /dev/null 2>&1 || warn "traces d'ANR illisibles (pas de root)"
+  fi
   adb logcat -c
 }
 
