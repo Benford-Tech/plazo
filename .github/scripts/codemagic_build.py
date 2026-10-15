@@ -13,6 +13,9 @@ Actions (ACTION):
   ensure-group  create the app variable group GROUP_NAME when it is missing (empty)
   team          why a build waits: on a personal account (Plazo, 11/10/2026) the last build of every app of the
                 account and where the free minutes are counted; in a team its subscription and running builds
+  mapping       where the classes Google Play names in its warnings come from (15/10/2026): reads the R8 mapping.txt
+                artifacts of the build BUILD_ID (default: the app's last build) and prints, for each of NAMES
+                (obfuscated « Class.method » or « Class », e.g. « u41.Q go3.e »), the original class and method
 Nothing secret is printed.
 """
 import os
@@ -28,6 +31,7 @@ BRANCH = os.environ.get("BRANCH", "").strip() or "main"
 BUILD_ID = os.environ.get("BUILD_ID", "").strip()
 GROUP_NAME = os.environ.get("GROUP_NAME", "").strip()
 INSTANCE_TYPE = os.environ.get("INSTANCE_TYPE", "").strip()
+NAMES = os.environ.get("NAMES", "").replace(",", " ").split()
 
 ENDED = {"finished", "failed", "canceled", "timeout", "skipped"}
 
@@ -157,6 +161,67 @@ def ensure(app):
     summary([line])
 
 
+MEMBER = re.compile(r"^\s+(?:\d+:\d+:)?(.+?)(?::\d+(?::\d+)?)? -> (\S+)$")
+
+
+def mapping(app):
+    """The original names behind the obfuscated ones Google Play quotes (« Décodées dans go3.e »), from the R8
+    mapping.txt of each flavor kept as a build artifact (codemagic.yaml, mobile-release and mobile-release-android)."""
+    if not NAMES:
+        fail("names manquant (ex. « u41.Q go3.e »)")
+    build_id = BUILD_ID or app.get("last_build_id")
+    if not build_id:
+        fail("aucun build : préciser build_id")
+    code, payload = call("GET", f"/api/v3/builds/{build_id}")
+    build = payload["data"]
+    artifacts = [a for a in build.get("artifacts") or [] if "mapping" in (a.get("name") or "")]
+    versions = sorted({f"{a.get('version_name')} ({a.get('version_code')})" for a in build.get("artifacts") or []
+                       if a.get("version_name")})
+    lines = [f"Correspondances R8 du build {build_id} ({', '.join(versions) or 'version inconnue'}) :"]
+    if not artifacts:
+        lines.append("- aucun mapping.txt dans les artefacts ; artefacts : "
+                     + ", ".join(f"`{a.get('name')}`" for a in build.get("artifacts") or []))
+    wanted = {}
+    for name in NAMES:
+        cls, _, member = name.rpartition(".") if "." in name else (name, "", "")
+        wanted.setdefault(cls or name, set()).add(member)
+    for artifact in artifacts:
+        url = artifact.get("url")
+        if not url:
+            lines.append(f"- `{artifact.get('name')}` sans url ; champs : {sorted(artifact.keys())}")
+            continue
+        text = fetch_text(url)
+        found, current = {}, None
+        for line in text.splitlines():
+            if not line or line.startswith("#"):
+                continue
+            if not line[0].isspace():
+                left, _, right = line.rstrip(":").partition(" -> ")
+                current = right if right in wanted else None
+                if current:
+                    found[current] = (left, {})
+            elif current:
+                match = MEMBER.match(line)
+                if match and match.group(2) in wanted[current]:
+                    found[current][1].setdefault(match.group(2), []).append(match.group(1))
+        lines.append(f"### `{artifact.get('name')}` ({human_size(len(text))}, {text.count(chr(10))} lignes)")
+        if len(text) < 2000:
+            lines.append(f"- contenu inattendu : {text[:300]}")
+        for cls, members in sorted(wanted.items()):
+            if cls not in found:
+                lines.append(f"- `{cls}` : absent de ce fichier")
+                continue
+            original, seen = found[cls]
+            lines.append(f"- `{cls}` = `{original}`")
+            for member in sorted(m for m in members if m):
+                signatures = list(dict.fromkeys(seen.get(member, [])))
+                shown = "; ".join(f"`{s}`" for s in signatures[:4]) or "aucun membre de ce nom"
+                more = f" (+{len(signatures) - 4})" if len(signatures) > 4 else ""
+                lines.append(f"  - `{cls}.{member}` = {shown}{more}")
+    print("\n".join(lines))
+    summary(lines)
+
+
 RUNNING = ("initializing", "queued", "preparing", "fetching", "testing", "building", "publishing", "finishing")
 
 
@@ -215,7 +280,7 @@ def main():
     app = find_app()
     print(f"App Codemagic : {app['id']} ({app['name']})")
     actions = {"status": status, "steps": steps, "logs": logs, "start": start, "cancel": cancel, "groups": groups,
-               "ensure-group": ensure, "team": team}
+               "ensure-group": ensure, "team": team, "mapping": mapping}
     if ACTION not in actions:
         fail(f"action inconnue : {ACTION} ({', '.join(actions)})")
     actions[ACTION](app)

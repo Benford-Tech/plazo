@@ -3,7 +3,8 @@ name: Codemagic build (start, status, groups)
 # Drives Codemagic from GitHub with the repository secret CODEMAGIC_API_TOKEN (11/10/2026): starts or cancels a
 # build of a codemagic.yaml workflow, reads a build's status, steps, artifacts and the end of its failed or store
 # steps' logs (« logs », 13/10/2026: why a store refused an upload), lists the app's variable groups
-# (names only) or creates an empty one, and says why a build waits (« team »: the account is Joanny's personal
+# (names only) or creates an empty one, says where an obfuscated class of a Google Play warning comes from
+# (« mapping », 15/10/2026: the build's R8 mapping.txt), and says why a build waits (« team »: the account is Joanny's personal
 # Codemagic account, one free build at a time). Lets Claude, who has no Codemagic access, follow and relaunch the
 # store builds through GitHub; Joanny can use it from the phone too. Nothing secret is printed. By hand only.
 on:
@@ -12,7 +13,7 @@ on:
       action:
         description: "Que faire"
         type: choice
-        options: [status, steps, logs, start, cancel, groups, ensure-group, team]
+        options: [status, steps, logs, start, cancel, groups, ensure-group, team, mapping]
         default: status
       workflow_id:
         description: "start : workflow de codemagic.yaml (mobile-release-android, mobile-release, mobile-check)"
@@ -35,6 +36,10 @@ on:
         description: "ensure-group : nom du groupe de variables à créer s'il manque"
         type: string
         default: ""
+      names:
+        description: "mapping : noms masqués cités par Google Play (ex. « u41.Q go3.e »)"
+        type: string
+        default: ""
 
 permissions:
   contents: read
@@ -55,4 +60,5 @@ jobs:
           BUILD_ID: ${{ inputs.build_id }}
           GROUP_NAME: ${{ inputs.group_name }}
           INSTANCE_TYPE: ${{ inputs.instance_type }}
+          NAMES: ${{ inputs.names }}
         run: python3 .github/scripts/codemagic_build.py
