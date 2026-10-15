@@ -80,10 +80,9 @@ fi
 adb shell settings put system accelerometer_rotation 0
 adb shell settings put system user_rotation 0
 adb shell settings put global sysui_demo_allowed 1
-# No « isn't responding » dialog: the emulator's software GPU can hold Flutter's surface creation for ~10 s on a cold
-# start (ANR traces of 15/10/2026: main thread in FlutterJNI.nativeSurfaceCreated), and the dialog then covered the
-# screenshots and swallowed a BACK meant for the Stripe sheet. The ANRs stay in the logs and are still reported.
-adb shell settings put global hide_error_dialogs 1
+# The emulator's software GPU can hold Flutter's surface creation for ~10 s on a cold start (ANR traces of 15/10/2026:
+# main thread in FlutterJNI.nativeSurfaceCreated). The « isn't responding » dialog is left on: hiding it makes Android
+# kill the app instead of waiting; the Stripe step stops Plazo Pro first and repeats its BACK.
 demo() { adb shell am broadcast -a com.android.systemui.demo -e command "$@" > /dev/null; }
 status_bar_demo() { # sent again after each change of navigation mode or cutout, which may redraw SystemUI's bars
   demo enter
