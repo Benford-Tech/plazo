@@ -131,7 +131,7 @@ une décision de Joanny. Cocher au fur et à mesure.
   (`pk_test_` servie par `/api/public/payments/config`) et `STRIPE_ALLOW_LIVE` est repassé à `false` le 08/10/2026 : une clé
   `sk_live_` est refusée au démarrage tant que la variable n'est pas `true` (à poser dans le même geste que les clés live ;
   le cron `payouts` de 06:00 UTC fait alors de vrais virements). Avant une clé live : validation
-  juriste / expert-comptable (statut, TVA, mandat d'encaissement), compte Stripe de Plazo Aéroports activé, Connect en
+  juriste / expert-comptable (statut, TVA, mandat d'encaissement), compte Stripe de Benford Tech activé, Connect en
   live, webhooks live vers `https://www.plazo.fr/api/public/stripe/webhook` (deux `whsec_` dans `STRIPE_WEBHOOK_SECRET`),
   libellé de relevé « PLAZO ». Vérifier que les trois clés Stripe sont du même mode (`sk_`, `pk_`, `whsec_`). Avec une
   clé de test, aucune vraie carte ne passe et le site ne le dit pas. **14/10/2026 : validation juridique confirmée par
@@ -227,10 +227,16 @@ une décision de Joanny. Cocher au fur et à mesure.
   Google, premier build Android abouti le 11/10/2026 (version 1.0.0, build 112, AAB et APK des deux apps dans les Artifacts
   Codemagic), build 114 du 13/10/2026 (`mobile-release`) : les deux AAB envoyés en tests internes (brouillon) et les deux IPA vers TestFlight, reste « Contenu de l'application » et le premier déploiement dans la Play Console (icône 512, images de présentation (variante A ou B à choisir) et sept captures téléphone par app prêtes dans `brand/stores/`), `APP_STORE_APP_ID` ; identifiants des apps confirmés avant tout envoi ; OneSignal : les deux
   apps et leurs clés Vercel existent, reste APNs et FCM sur chacune.
-- [ ] `product.json` › `company` : forme juridique, capital, siège, RCS, TVA, téléphone, directeur de la publication,
-  médiateur, et une adresse support réelle (aujourd'hui `support@example.com`) ; Claude les pose puis
-  `dart run tool/sync_product.dart`. L'adresse support sert aussi à `/suppression-compte` (13/10/2026), l'URL de
-  suppression de compte donnée à Google Play : sans elle, la page affiche « [à compléter] » à qui n'a plus l'app.
+- [ ] `product.json` › `company` : **posé le 15/10/2026 d'après les registres publics** (Sirene, BODACC, VIES ; Pappers
+  refuse les lectures automatiques) : Benford Tech, société par actions simplifiée, siège 29 chemin des Collines,
+  38080 L'Isle-d'Abeau, 910 729 102 RCS Vienne, TVA FR55910729102, directeur de la publication Joanny Simpore ; les trois
+  textes légaux passent en version du 15/10/2026. **Restent, à donner par Joanny** : le capital social (Kbis ou statuts),
+  un téléphone de l'éditeur (obligatoire dans les mentions légales ; publié, donc plutôt une ligne de la société qu'un
+  portable personnel), le médiateur de la consommation (adhésion obligatoire, nom, adresse et site), l'orthographe du nom
+  si c'est « Simporé » (les registres écrivent SIMPORE), et une adresse support réelle (aujourd'hui `support@example.com`).
+  Claude les pose ; seule l'adresse support demande ensuite `dart run tool/sync_product.dart`. L'adresse support sert
+  aussi à `/suppression-compte` (13/10/2026), l'URL de suppression de compte donnée à Google Play : sans elle, la page
+  affiche « [à compléter] » à qui n'a plus l'app.
 - [ ] Connexion Apple / Google de Plazo Pro et code du jour (livrés le 13/10/2026 ; pas à pas : section 3 bis de
   `mobile/publier-sur-les-stores.md`) : Apple : capacité « Sign In with Apple » sur l'App ID `com.benfordtech.plazopro`,
   profil `plazo_pro_app_store` régénéré puis rechargé dans Codemagic sous le même nom, clé « Sign in with Apple » (.p8) dans
@@ -262,8 +268,9 @@ une décision de Joanny. Cocher au fur et à mesure.
   n'est pas publiée, la page d'accueil dit « Aucun parking n'est encore en ligne » au-dessus du guide.
 - [ ] Google Business Profile du **client n°1** (Plazo n'y est pas éligible : place de marché) : catégorie « Parking », NAP
   identique à sa fiche Plazo, lien de réservation `https://www.plazo.fr/lyon-saint-exupery/<slug>`, routine d'avis Google.
-- [ ] `product.json › company` et une adresse support réelle avant tout contact presse ou annuaire (`/mentions-legales`
-  affiche encore « [à compléter] »).
+- [ ] `product.json › company` (complété le 15/10/2026 sauf capital, téléphone et médiateur) et une adresse support réelle
+  avant tout contact presse ou annuaire (`/mentions-legales` affiche encore « [à compléter] » pour le capital, le
+  téléphone et l'e-mail, les conditions générales aussi pour le médiateur).
 - Directions à trancher (09/10/2026, voir les propositions de Claude) : **A** guide Lyon étoffé (parkings officiels P0–P5
   chiffrés et datés, FAQ avec les questions « People also ask ») et trois pages d'intention sous `/lyon-saint-exupery/guide/…`
   (pas cher et prix d'une semaine, longue durée, voiturier) ; **B** avis après séjour (table `reviews`, « Notez votre séjour »

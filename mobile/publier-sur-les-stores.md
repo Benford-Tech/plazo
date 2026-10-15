@@ -84,8 +84,8 @@ la clé d'import Android de Plazo dans Codemagic (créée et envoyée par GitHub
 
   Ils ne changent plus après le premier envoi (Google) ou la création de l'App ID (Apple). Le code, `codemagic.yaml` et
   `site/public/.well-known/` les portent déjà.
-- [ ] **Qui publie.** Avec les comptes existants, le vendeur affiché sur les stores est **Benford Tech**. Si c'est une autre
-  société (par ex. « Plazo Aéroports »), il faut d'autres comptes Apple et Google à son nom, avec son D-U-N-S.
+- [x] **Qui publie** (15/10/2026) : **Benford Tech**, la société éditrice de Plazo, que nomment aussi les pages légales
+  (`product.json` › `company`). Les comptes Apple et Google existants, à son nom, conviennent.
 
 ---
 

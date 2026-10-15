@@ -679,8 +679,13 @@ Le nom du produit doit rester dans UN seul fichier de configuration (il peut enc
   `site` sur le reste), la liaison site → API et le Cron ; `git.deploymentEnabled` coupe les prévisualisations des branches
   `claude/*` (08/10/2026 : le plan Hobby plafonne à 100 déploiements par 24 h, chaque push en consommait un).
 - `product.json` : nom du produit et libellés de marque (seul endroit où le nom apparaît ;
-  lu par le serveur, l'espace pro et le site), et `company` : la société éditrice (« Plazo Aéroports », forme, siège,
-  immatriculation, TVA, directeur de la publication, médiateur ; un champ vide s'affiche « [à compléter] »).
+  lu par le serveur, l'espace pro et le site), et `company` : la société éditrice, lue par le site seul (pages légales et
+  `/suppression-compte`) ; un champ vide s'affiche « [à compléter] ». **Benford Tech** (15/10/2026, d'après les registres
+  publics : Sirene, BODACC et VIES ; Pappers refuse les lectures automatiques) : société par actions simplifiée, siège
+  29 chemin des Collines, 38080 L'Isle-d'Abeau, 910 729 102 RCS Vienne, TVA FR55910729102, directeur de la publication
+  Joanny Simpore ; Plazo est sa marque, et les conditions générales disent que « Plazo » désigne aussi cette société.
+  Restent à fournir par Joanny : capital social, téléphone de l'éditeur, médiateur de la consommation. Changer `company`
+  change les trois textes légaux : leurs dates de version bougent avec (`legal.ts`).
 - `site/src/lib/legal.ts` : textes des Conditions générales (`/conditions`), des Mentions légales (`/mentions-legales`)
   et de la Politique de confidentialité (`/confidentialite`, durées de conservation reprises du code ; réservations
   anonymisées 12 mois après le retour par le cron de nuit, `backend/src/domain/retention.ts`, `Reservation.anonymizedAt`),
