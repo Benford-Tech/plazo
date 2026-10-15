@@ -124,7 +124,9 @@ class _FlightSheetState extends State<FlightSheet> {
         }
       },
       builder: (context, state) => Padding(
-        padding: EdgeInsets.fromLTRB(16, 0, 16, 16 + MediaQuery.viewInsetsOf(context).bottom),
+        // Edge-to-edge: useSafeArea only clears the top and sides. The bottom padding is 0 while the keyboard is up,
+        // so « Enregistrer » sits above the navigation bar, or above the keyboard, never both.
+        padding: EdgeInsets.fromLTRB(16, 0, 16, 16 + MediaQuery.paddingOf(context).bottom + MediaQuery.viewInsetsOf(context).bottom),
         child: Column(
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -184,7 +186,8 @@ class CancelSheet extends StatelessWidget {
         }
       },
       builder: (context, state) => Padding(
-        padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
+        // Edge-to-edge: useSafeArea only clears the top and sides; the last button stays above the navigation bar.
+        padding: EdgeInsets.fromLTRB(16, 0, 16, 16 + MediaQuery.paddingOf(context).bottom),
         child: Column(
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.stretch,

@@ -46,6 +46,8 @@ class SearchTabPage extends StatelessWidget implements AutoRouteWrapper {
         listener: (context, s) => context.router.push(ResultsRoute(airport: s.airportSlug, arrivee: s.arrivalAt, retour: s.returnAt)),
         child: RefreshIndicator(
           color: AppColors.accent,
+          // Edge-to-edge: no app bar here, so the spinner starts below the status bar, not under it.
+          edgeOffset: MediaQuery.paddingOf(context).top,
           onRefresh: () async {
             context.read<TripsBloc>().add(const TripsLoaded(quiet: true));
             context.read<SearchBloc>().add(const SearchPreviewRequested());

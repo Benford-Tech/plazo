@@ -87,42 +87,47 @@ class ProShuttlePage extends StatelessWidget implements AutoRouteWrapper {
   Widget _page(BuildContext context) {
     return Scaffold(
       appBar: BrandAppBar(pro: true, title: '${Product.proName} · ${'shuttle.tour_title'.tr()}'),
-      body: BlocBuilder<ShuttleBloc, ShuttleState>(
-        builder: (context, state) {
-          final bloc = context.read<ShuttleBloc>();
-          if (!state.loaded) {
-            return Center(
-              child: state.viewState.isError
-                  ? Padding(padding: const EdgeInsets.all(24), child: Text(translateErrorCode(state.errorCode), textAlign: TextAlign.center))
-                  : const CircularProgressIndicator(color: AppColors.accent),
-            );
-          }
-          return Column(
-            children: [
-              // F-A: three bands that the travellers move through as the driver ticks them.
-              _BandBar(state: state, onChanged: (b) => bloc.add(ShuttleBandChanged(b))),
-              Expanded(
-                child: RefreshIndicator(
-                  color: AppColors.accent,
-                  onRefresh: () async {
-                    bloc.add(const ShuttlePolled());
-                    context.read<LiveShuttlesBloc>().add(const LiveShuttlesPolled());
-                    context.read<ShuttleWavesBloc>().add(const ShuttleWavesPolled());
-                  },
-                  child: ListView(
-                    key: ValueKey('band-list-${state.band}'),
-                    padding: const EdgeInsets.fromLTRB(16, 14, 16, 28),
-                    children: switch (state.band) {
-                      1 => _routeBand(context, state),
-                      2 => _stayBand(state),
-                      _ => _tourBand(context, state),
+      // Edge-to-edge (Android 15+): pushed above the shell (Plus › Navette, the Navettes tile), the lists end above the
+      // navigation bar; in landscape they keep clear of a side bar or cutout. In the driver's tab the shell did both.
+      body: SafeArea(
+        top: false,
+        child: BlocBuilder<ShuttleBloc, ShuttleState>(
+          builder: (context, state) {
+            final bloc = context.read<ShuttleBloc>();
+            if (!state.loaded) {
+              return Center(
+                child: state.viewState.isError
+                    ? Padding(padding: const EdgeInsets.all(24), child: Text(translateErrorCode(state.errorCode), textAlign: TextAlign.center))
+                    : const CircularProgressIndicator(color: AppColors.accent),
+              );
+            }
+            return Column(
+              children: [
+                // F-A: three bands that the travellers move through as the driver ticks them.
+                _BandBar(state: state, onChanged: (b) => bloc.add(ShuttleBandChanged(b))),
+                Expanded(
+                  child: RefreshIndicator(
+                    color: AppColors.accent,
+                    onRefresh: () async {
+                      bloc.add(const ShuttlePolled());
+                      context.read<LiveShuttlesBloc>().add(const LiveShuttlesPolled());
+                      context.read<ShuttleWavesBloc>().add(const ShuttleWavesPolled());
                     },
+                    child: ListView(
+                      key: ValueKey('band-list-${state.band}'),
+                      padding: const EdgeInsets.fromLTRB(16, 14, 16, 28),
+                      children: switch (state.band) {
+                        1 => _routeBand(context, state),
+                        2 => _stayBand(state),
+                        _ => _tourBand(context, state),
+                      },
+                    ),
                   ),
                 ),
-              ),
-            ],
-          );
-        },
+              ],
+            );
+          },
+        ),
       ),
     );
   }

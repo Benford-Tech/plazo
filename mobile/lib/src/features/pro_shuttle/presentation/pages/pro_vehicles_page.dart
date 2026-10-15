@@ -49,31 +49,37 @@ class ProVehiclesPage extends StatelessWidget implements AutoRouteWrapper {
             label: Text('vehicles.add'.tr()),
             onPressed: () => showVehicleSheetEditor(context),
           ),
-          body: state.viewState.isProcessing && state.vehicles.isEmpty
-              ? const Center(child: CircularProgressIndicator(color: AppColors.accent))
-              : state.viewState.isError && state.vehicles.isEmpty
-              ? Center(
-                  child: Padding(
-                    padding: const EdgeInsets.all(24),
-                    child: Text(translateErrorCode(state.errorCode), textAlign: TextAlign.center),
+          // Edge-to-edge (Android 15+): in landscape the list keeps clear of a side bar or cutout. The bottom is unchanged: the
+          // list already ends 96 dp up, clear of the navigation bar (the add button keeps above it by itself).
+          body: SafeArea(
+            top: false,
+            bottom: false,
+            child: state.viewState.isProcessing && state.vehicles.isEmpty
+                ? const Center(child: CircularProgressIndicator(color: AppColors.accent))
+                : state.viewState.isError && state.vehicles.isEmpty
+                ? Center(
+                    child: Padding(
+                      padding: const EdgeInsets.all(24),
+                      child: Text(translateErrorCode(state.errorCode), textAlign: TextAlign.center),
+                    ),
+                  )
+                : ListView(
+                    padding: const EdgeInsets.fromLTRB(16, 8, 16, 96),
+                    children: [
+                      Text('vehicles.intro'.tr(), style: AppText.muted()),
+                      const SizedBox(height: 12),
+                      if (state.vehicles.isEmpty) Text('vehicles.empty'.tr(), key: const Key('vehicles-empty'), style: AppText.body(size: 14)),
+                      for (final v in state.vehicles)
+                        _VehicleTile(
+                          vehicle: v,
+                          busy: state.actionState.isProcessing,
+                          onEdit: () => showVehicleSheetEditor(context, vehicle: v),
+                          onToggle: () => bloc.add(ProVehicleServiceToggled(v.id)),
+                          onRemove: () => _confirmRemove(context, v),
+                        ),
+                    ],
                   ),
-                )
-              : ListView(
-                  padding: const EdgeInsets.fromLTRB(16, 8, 16, 96),
-                  children: [
-                    Text('vehicles.intro'.tr(), style: AppText.muted()),
-                    const SizedBox(height: 12),
-                    if (state.vehicles.isEmpty) Text('vehicles.empty'.tr(), key: const Key('vehicles-empty'), style: AppText.body(size: 14)),
-                    for (final v in state.vehicles)
-                      _VehicleTile(
-                        vehicle: v,
-                        busy: state.actionState.isProcessing,
-                        onEdit: () => showVehicleSheetEditor(context, vehicle: v),
-                        onToggle: () => bloc.add(ProVehicleServiceToggled(v.id)),
-                        onRemove: () => _confirmRemove(context, v),
-                      ),
-                  ],
-                ),
+          ),
         );
       },
     );

@@ -87,16 +87,21 @@ class ProReservationPage extends StatelessWidget implements AutoRouteWrapper {
                   ),
               ],
             ),
-            body: r == null
-                ? Center(
-                    child: state.viewState.isError
-                        ? Padding(
-                            padding: const EdgeInsets.all(24),
-                            child: Text(translateErrorCode(state.errorCode), textAlign: TextAlign.center),
-                          )
-                        : const CircularProgressIndicator(color: AppColors.accent),
-                  )
-                : _Sheet(reservation: r, role: role, busy: state.actionState.isProcessing),
+            // Edge-to-edge (Android 15+): pushed above the shell, the sheet ends above the navigation bar and, in landscape,
+            // clear of a side bar or cutout.
+            body: SafeArea(
+              top: false,
+              child: r == null
+                  ? Center(
+                      child: state.viewState.isError
+                          ? Padding(
+                              padding: const EdgeInsets.all(24),
+                              child: Text(translateErrorCode(state.errorCode), textAlign: TextAlign.center),
+                            )
+                          : const CircularProgressIndicator(color: AppColors.accent),
+                    )
+                  : _Sheet(reservation: r, role: role, busy: state.actionState.isProcessing),
+            ),
           ),
         );
       },
@@ -419,7 +424,9 @@ class _HandoverSheetState extends State<_HandoverSheet> {
   Widget build(BuildContext context) {
     final r = widget.reservation;
     return Padding(
-      padding: EdgeInsets.fromLTRB(20, 4, 20, 20 + MediaQuery.of(context).viewInsets.bottom),
+      // Edge-to-edge (Android 15+): the sheet runs under the navigation bar; its height is added below « Rendre » (it is 0
+      // while the keyboard is open, which the insets then cover).
+      padding: EdgeInsets.fromLTRB(20, 4, 20, 20 + MediaQuery.viewInsetsOf(context).bottom + MediaQuery.paddingOf(context).bottom),
       child: Column(
         mainAxisSize: MainAxisSize.min,
         crossAxisAlignment: CrossAxisAlignment.start,

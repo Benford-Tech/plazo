@@ -60,6 +60,8 @@ class _ShuttleWavesCardState extends State<ShuttleWavesCard> {
               height: 34,
               child: ListView(
                 scrollDirection: Axis.horizontal,
+                // Edge-to-edge (Android 15+): no side inset of its own, the page already keeps clear of a side bar.
+                padding: EdgeInsets.zero,
                 children: [
                   for (final (i, label) in ['waves.today'.tr(), 'waves.tomorrow'.tr(), planningDay(state.now.add(const Duration(days: 2)))].indexed) ...[
                     _DayChip(key: Key('waves-day-$i'), label: label, selected: state.dayOffset == i, onTap: () => bloc.add(ShuttleWavesDayChanged(i))),
