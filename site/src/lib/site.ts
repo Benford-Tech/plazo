@@ -13,6 +13,15 @@ export const TIMEZONE = "Europe/Paris";
  */
 export const PRO_SIGNUP_PATH = "/pro/inscription";
 
+/** « Se connecter à l'espace loueur » (footer A, 15/10/2026): the pro space's login page (admin route /login under /pro). */
+export const PRO_LOGIN_PATH = "/pro/login";
+
+/** The contact form (footer A, 15/10/2026). */
+export const CONTACT_PATH = "/contact";
+
+/** Where Brevo sends a reader who confirmed « La lettre » (redirectionUrl of the API's double opt-in). */
+export const LETTER_CONFIRMED_PATH = "/lettre/confirmee";
+
 export const SLUG_RE = /^[a-z0-9]+(?:-[a-z0-9]+)*$/;
 
 /** Canonical path of an airport's page: the default airport's page is the home page, "/". */

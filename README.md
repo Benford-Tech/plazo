@@ -237,6 +237,35 @@ une décision de Joanny. Cocher au fur et à mesure.
   Claude les pose ; seule l'adresse support demande ensuite `dart run tool/sync_product.dart`. L'adresse support sert
   aussi à `/suppression-compte` (13/10/2026), l'URL de suppression de compte donnée à Google Play : sans elle, la page
   affiche « [à compléter] » à qui n'a plus l'app.
+- [ ] **Pied de page A (15/10/2026) : téléphone et horaires du service client.** Rien n'est inventé : la tuile « Par téléphone »
+  de la carte « Besoin d'aide ? » reste cachée tant que `product.json` › `support.phone` est vide. Le remplir avec la ligne du
+  service client (publiée sur chaque page : une ligne de la société plutôt qu'un portable personnel), par ex. `"04 78 00 00 00"`,
+  et `support.hours` avec une phrase qui se lit seule sous le numéro et après « Notre équipe vous répond », par ex. `"Du lundi au
+  vendredi, de 9 h à 18 h"` (sans point final). Seul le site les lit ; le numéro passe aussi dans les données structurées.
+- [ ] **Adresse du service client réelle** (`product.json` › `supportEmail`, aujourd'hui `support@example.com`) : elle ouvre la
+  tuile « Par écrit », le lien « Nous contacter » et le formulaire `/contact`, dont l'API envoie chaque message à cette adresse
+  par Brevo, avec le visiteur en adresse de réponse (la boîte doit exister et être lue). Ensuite `dart run tool/sync_product.dart`
+  dans `mobile/`, et avancer les trois dates de version de `site/src/lib/legal.ts` (l'adresse figure dans les trois textes, et
+  les conditions générales nomment alors le formulaire). Ajouter `support.responseTime` (par ex. `"48 h"`) pour « Réponse par
+  e-mail sous 48 h. » ; sans lui, « Réponse par e-mail. ». Tant que l'adresse est celle d'exemple ou que `BREVO_API_KEY` ou
+  `EMAIL_FROM` manque, l'API répond 409 `contact_unavailable`. La politique de confidentialité promet que les messages ne
+  restent dans cette boîte que le temps de traiter la demande : y faire le ménage.
+- [ ] **Réseaux sociaux** : créer les comptes, puis `product.json` › `social.instagram`, `social.facebook`, `social.linkedin`
+  (adresses complètes en `https://`) ; seuls les comptes remplis s'affichent (« Suivez-nous » est caché sans aucun) et ils
+  s'ajoutent aux données structurées (`sameAs`).
+- [ ] **La lettre Plazo (Brevo, double confirmation)** : 1) Brevo › Contacts › Listes : créer la liste « La lettre Plazo » et
+  noter son identifiant ; 2) Brevo › Modèles d'e-mails : créer le modèle de confirmation d'inscription (double opt-in), avec le
+  lien de confirmation `{{ doubleoptin }}` sur son bouton et l'étiquette `optin` que Brevo demande pour ce flux (aide Brevo
+  « double opt-in »), le laisser **actif** (sinon Brevo répond « An active DOI template does not exist » et l'inscription échoue,
+  502 `newsletter_failed`), et noter son identifiant (dans l'adresse de la page du modèle) ; 3) Vercel › Settings › Environment Variables (Production) : `BREVO_NEWSLETTER_LIST_ID` et
+  `BREVO_NEWSLETTER_DOI_TEMPLATE_ID`, puis redéployer (sans elles l'API répond 409 `newsletter_unavailable`) ; 4) `product.json` ›
+  `newsletter: true` : le bloc « La lettre Plazo » apparaît dans le pied de page ; 5) essai avec une adresse à soi : le mail de
+  confirmation arrive, son lien ouvre `https://www.plazo.fr/lettre/confirmee` (`PUBLIC_SITE_URL` + `/lettre/confirmee`) et
+  l'adresse entre dans la liste (les autres refus de Brevo pour une adresse sont répondus comme un succès, pour ne rien dire
+  d'elle : seul ce journal les montre, « newsletter_doi double opt-in failed … HTTP 400 »). Chaque lettre envoyée depuis Brevo
+  garde son lien de désinscription : le pied de page et la politique de confidentialité promettent la désinscription en un
+  clic. Avant la première lettre : la politique ne parle pas de la mesure des ouvertures et des clics que Brevo fait sur ses
+  campagnes ; la couper dans le suivi de la campagne, ou compléter la politique (articles 2 et 3) et la phrase d'inscription.
 - [ ] Connexion Apple / Google de Plazo Pro et code du jour (livrés le 13/10/2026 ; pas à pas : section 3 bis de
   `mobile/publier-sur-les-stores.md`) : Apple : capacité « Sign In with Apple » sur l'App ID `com.benfordtech.plazopro`,
   profil `plazo_pro_app_store` régénéré puis rechargé dans Codemagic sous le même nom, clé « Sign in with Apple » (.p8) dans

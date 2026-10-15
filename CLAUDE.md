@@ -703,7 +703,9 @@ Le nom du produit doit rester dans UN seul fichier de configuration (il peut enc
   `claude/*` (08/10/2026 : le plan Hobby plafonne à 100 déploiements par 24 h, chaque push en consommait un).
 - `product.json` : nom du produit et libellés de marque (seul endroit où le nom apparaît ;
   lu par le serveur, l'espace pro et le site), et `company` : la société éditrice, lue par le site seul (pages légales et
-  `/suppression-compte`) ; un champ vide s'affiche « [à compléter] ». **Benford Tech** (15/10/2026, d'après les registres
+  `/suppression-compte`) ; un champ vide s'affiche « [à compléter] » (sauf dans le pied de page, qui l'omet) ; `support`
+  (`phone`, `hours`, `responseTime`), `social` (`instagram`, `facebook`, `linkedin`) et `newsletter` (booléen) : pied de page A
+  du 15/10/2026, lus par le site, chaque bloc caché tant que sa valeur est vide. **Benford Tech** (15/10/2026, d'après les registres
   publics : Sirene, BODACC et VIES ; Pappers refuse les lectures automatiques) : société par actions simplifiée, siège
   29 chemin des Collines, 38080 L'Isle-d'Abeau, 910 729 102 RCS Vienne, TVA FR55910729102, directeur de la publication
   Joanny Simpore ; Plazo est sa marque, et les conditions générales disent que « Plazo » désigne aussi cette société.
@@ -801,6 +803,37 @@ Le nom du produit doit rester dans UN seul fichier de configuration (il peut enc
   « Attente moyenne de la navette » (minutes, facultatif ; vide ou blanc = non déclaré, `UpdateListingDto` ; absent du PUT =
   inchangé), relu par la plateforme (« Attente moy. N min »), dans toutes les fiches publiques (`PublicService.summary`) et dans les
   faits de la « Présentation » par Claude ; aperçu de « Ma fiche » avec les mêmes tags (`admin/src/lib/listing-tags.ts`).
+  **Pied de page A (15/10/2026, « ajoute ça pour plazo » d'après le pied de page d'Allopark ; maquettes « A · Bande d'aide » de
+  https://claude.ai/artifact/85y2fNCrSbe86BcvZXJ2Gf)** : sur le fond ivoire, au-dessus du pied de page espresso, la carte blanche
+  « Besoin d'aide ? » (`HelpCard` : « Une question sur votre réservation ? », note crème « Le jour du départ, appelez directement le
+  parking… », tuile « Par téléphone » avec « Appeler » en `tel:`, tuile « Par écrit » avec « Nous écrire » vers `/contact` ; trois
+  colonnes dès `lg`, une ligne par moyen sur téléphone et la note en dernier ; pas reprise sous le formulaire de `/contact`,
+  `HiddenOn`) ; puis le pied de page (`SiteFooter`) : logo et accroche, colonnes Aéroports · Voyageurs · Plazo (« Se connecter à
+  l'espace loueur » vers `/pro/login`, `PRO_LOGIN_PATH` ; sur téléphone la colonne Plazo sur toute la largeur, liens deux par
+  deux), rangée « Paiement sécurisé » (pastilles CB · Visa · Mastercard · Apple Pay · Google Pay, jeton `--color-visa`, « Payé en
+  ligne à la réservation, par Stripe. Rien à régler au parking. »), « Suivez-nous » (boutons ronds de 44 px), « La lettre Plazo »
+  (`NewsletterForm` : e-mail et « S'inscrire » ; la phrase « En vous inscrivant, vous acceptez de recevoir la lettre Plazo par
+  e-mail ; votre adresse ne sert qu'à cela. » fait de l'envoi l'accord, `consent: true`, que Brevo fait confirmer par e-mail),
+  ligne légale « © <année> Benford Tech · Tous droits réservés » avec forme sociale, RCS et TVA de `product.json` › `company`
+  (`legalLine`, champ vide omis, année à l'heure de Paris). **Ce qui dépend de faits pas encore donnés vient de `product.json` et
+  reste caché tant que c'est vide** (`lib/footer.ts`, `footerConfig`) : `support.phone` (tuile téléphone, 6 chiffres au moins),
+  `support.hours` (sous le numéro et après « Notre équipe vous répond » : l'écrire « Du lundi au vendredi, de 9 h à 18 h »),
+  `support.responseTime` (« Réponse par e-mail sous 48 h. », sinon « Réponse par e-mail. »), une vraie `supportEmail`
+  (`hasSupportEmail` : tuile écrite, lien « Nous contacter », formulaire), `social.*` (adresses https seulement, `socialUrl`) et
+  `newsletter: true` ; sans téléphone ni adresse, la carte garde son titre, un texte court, la note et deux liens discrets
+  « Retrouver ma réservation » et « Questions fréquentes ». `/contact` (`ContactView`, `ContactForm`, non indexée) : prénom et nom,
+  e-mail, référence facultative, message de 10 à 2 000 caractères, champ piège `website`, confirmation qui prend le focus ; sans
+  vraie adresse, « Le formulaire de contact arrive bientôt » avec « Ma réservation » et la FAQ. `/lettre/confirmee` : retour du
+  lien de confirmation de Brevo (non indexée). Les deux formulaires passent par des actions serveur (`lib/contact-actions.ts` →
+  `api.contact` / `api.newsletter`, `POST /public/contact` et `/public/newsletter`) qui portent la clé du site et l'adresse du
+  visiteur jusqu'aux limites de l'API ; rien de ce qui est tapé n'est journalisé. `organizationLd` ajoute `sameAs` et
+  `contactPoint` une fois configurés. Relecture : la destination est fixe (`supportEmail`), le visiteur n'est qu'en Reply-To, nom
+  nettoyé des caractères qui font une liste d'adresses (`replyToName`) ; la lettre répond 202 même au-delà de 3 demandes par jour
+  pour une boîte (`newsletterAddressKey` : sous-adresses `+…` et points de Gmail ramenés à la même boîte), et un refus de Brevo qui
+  nomme le modèle ou la redirection (modèle inactif) répond 502 `newsletter_failed` au lieu d'un faux succès. Politique de confidentialité (formulaire envoyé par e-mail au service client, pas gardé
+  au-delà ; lettre chez Brevo, double confirmation, gardée jusqu'à la désinscription en un clic, puis marquée désinscrite chez
+  Brevo) et conditions générales (le
+  formulaire à côté de l'adresse du service client, dès qu'elle est réelle) mises à jour.
 - `email-worker/` : relais des mails entrants (Cloudflare Email Worker, `postal-mime`) : Email Routing lui passe chaque mail de
   `plazo.fr` (règle « catch-all » du domaine principal), il le poste sur l'API ; déployé par GitHub Actions (`email-worker-ci.yml`,
   job `deploy`, environnement GitHub Production : secrets `CLOUDFLARE_API_TOKEN` / `CLOUDFLARE_ACCOUNT_ID` / `INBOUND_EMAIL_SECRET`, variable `FALLBACK_ADDRESS` ; rien dans le tableau de bord Cloudflare, qu'un déploiement écrase ; Worker `plazo`) ; mise en place dans son README. **Le lien Git de Cloudflare (Workers Builds) est encore branché (15/10/2026)** : à chaque fusion sur `main` il déploie un Worker sans gestionnaire de mails (« Destination worker not found », mails refusés du 14/10 19:02 au 15/10 08:02 UTC) ; `email-worker-ci.yml` redéploie donc le relais après chaque push sur `main` (3 min après) et vérifie toutes les heures que le Worker en ligne a ses gestionnaires `email` et `scheduled` (`.github/scripts/worker_health.py`), sinon il le redéploie ; le remède est de débrancher le lien dans Cloudflare (Workers & Pages › `plazo` › Settings › Build).

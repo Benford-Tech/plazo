@@ -1,5 +1,6 @@
 // schema.org data (JSON-LD) for search engines: it only restates what the page shows.
 import { fromPriceUnit, serviceLabel } from "./fr";
+import { type FooterConfig, footerConfig } from "./footer";
 import { formatEuros } from "./money";
 import { hasSupportEmail, PRODUCT_NAME, SUPPORT_EMAIL } from "./product";
 import type { AirportResponse, ParkingResponse } from "./types";
@@ -13,8 +14,11 @@ function absolute(base: string, path: string): string {
   return path.startsWith("http") ? path : `${base}${path.startsWith("/") ? "" : "/"}${path}`;
 }
 
-/** The publisher of the site (home page only). */
-export function organizationLd(base: string): JsonLdObject {
+/**
+ * The publisher of the site (home page only). The social accounts and the service client's line of the footer (A,
+ * 15/10/2026) are added once product.json gives them.
+ */
+export function organizationLd(base: string, footer: FooterConfig = footerConfig()): JsonLdObject {
   return {
     "@context": CONTEXT,
     "@type": "Organization",
@@ -23,6 +27,10 @@ export function organizationLd(base: string): JsonLdObject {
     url: `${base}/`,
     logo: `${base}/apple-icon.png`,
     ...(hasSupportEmail() ? { email: SUPPORT_EMAIL } : {}),
+    ...(footer.social.length ? { sameAs: footer.social.map(s => s.url) } : {}),
+    ...(footer.phone
+      ? { contactPoint: { "@type": "ContactPoint", contactType: "customer service", telephone: footer.phone.href.slice("tel:".length), availableLanguage: "fr" } }
+      : {}),
   };
 }
 

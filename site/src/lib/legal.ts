@@ -28,10 +28,11 @@ export interface LegalDoc {
  * govern each booking in the version accepted that day, so a date must never move without its text. (Until
  * 13/10/2026 the three shared one date.) The company details of product.json are part of all three texts: changing
  * them moves the three dates.
- * - Terms: 15/10/2026, the publisher's details (Benford Tech) and « Plazo » naming that company too; 12/10/2026, night fees.
+ * - Terms: 15/10/2026, the publisher's details (Benford Tech) and « Plazo » naming that company too, the contact form next
+ *   to the service client's address once there is a real one (footer A); 12/10/2026, night fees.
  * - Legal notice: 15/10/2026, the publisher's details.
- * - Privacy: 15/10/2026, the controller's details; 13/10/2026, Plazo Pro sign-in with Apple / Google, the code of the
- *   day, account deletion.
+ * - Privacy: 15/10/2026, the controller's details, the contact form and « La lettre » (footer A); 13/10/2026, Plazo Pro
+ *   sign-in with Apple / Google, the code of the day, account deletion.
  */
 export const TERMS_VERSION = "15 octobre 2026";
 export const NOTICE_VERSION = "15 octobre 2026";
@@ -69,7 +70,7 @@ export function termsDoc(company: Company = COMPANY, email: string = SUPPORT_EMA
         title: `1. Qui est ${p}`,
         blocks: [
           `${p} est une marque exploitée par ${c.name}, ${c.legalForm} au capital de ${c.shareCapital}, dont le siège est situé ${c.address}, immatriculée sous le numéro ${c.registration}, numéro de TVA intracommunautaire ${c.vatNumber}. Dans ces conditions générales, « ${p} » désigne aussi cette société.`,
-          `Service client : ${c.email} · ${c.phone}. Les autres informations sur l’éditeur figurent dans les [mentions légales](/mentions-legales).`,
+          `Service client : ${c.email} · ${c.phone}${hasSupportEmail(email) ? ", ou par le [formulaire de contact](/contact)" : ""}. Les autres informations sur l’éditeur figurent dans les [mentions légales](/mentions-legales).`,
         ],
       },
       {
@@ -334,7 +335,8 @@ export function privacyDoc(company: Company = COMPANY, email: string = SUPPORT_E
           ],
           "Dans l’application : l’identifiant d’abonnement aux notifications de votre téléphone, si vous les autorisez, et, sur le téléphone lui-même, les références et clés d’accès de vos réservations.",
           "Quand vous naviguez : votre adresse IP, utilisée un court instant pour limiter les abus, et les cookies nécessaires au fonctionnement du site (voir l’article 9).",
-          "Quand vous nous écrivez : votre message et nos échanges.",
+          "Quand vous nous écrivez, par e-mail ou par le formulaire de contact du site : vos prénom et nom, votre adresse e-mail, la référence de votre réservation si vous l’indiquez, votre message et nos échanges.",
+          `Si vous vous inscrivez à la lettre ${p} : votre adresse e-mail, et la confirmation de votre inscription que vous donnez par le lien reçu par e-mail.`,
         ],
       },
       {
@@ -347,9 +349,11 @@ export function privacyDoc(company: Company = COMPANY, email: string = SUPPORT_E
             "Suivre vos vols pour caler la navette : exécution du contrat.",
             "Partager votre position à l’arrivée, enregistrer vous-même la position de votre voiture, recevoir des notifications sur votre téléphone : votre consentement, que vous retirez à tout moment (arrêt du partage, effacement de la position, réglages du téléphone).",
             `Sécuriser le service, prévenir la fraude et les abus, garder la trace des modifications des réservations, traiter vos réclamations et défendre nos droits : intérêt légitime de ${p} et du parking.`,
+            `Répondre aux messages envoyés par le formulaire de contact : exécution du contrat quand ils portent sur une réservation, sinon intérêt légitime de ${p} à répondre à qui l’interroge.`,
+            `Vous envoyer la lettre ${p} (nouveaux aéroports, nouveaux parkings et offres de saison) : votre consentement, donné en vous inscrivant puis en confirmant par le lien reçu par e-mail ; vous le retirez à tout moment par le lien de désinscription de chaque lettre.`,
             "Tenir la comptabilité et répondre aux autorités : obligation légale.",
           ],
-          `${p} ne vend pas vos données, ne fait pas de publicité ciblée et ne vous envoie pas de prospection commerciale sans votre accord. Les notifications envoyées par ${p} pendant un séjour ne portent que sur le service (par exemple une perturbation à l’aéroport).`,
+          `${p} ne vend pas vos données, ne fait pas de publicité ciblée et ne vous envoie pas de prospection commerciale sans votre accord : la lettre ${p} ne part qu’aux adresses inscrites et confirmées. Les notifications envoyées par ${p} pendant un séjour ne portent que sur le service (par exemple une perturbation à l’aéroport).`,
         ],
       },
       {
@@ -361,7 +365,7 @@ export function privacyDoc(company: Company = COMPANY, email: string = SUPPORT_E
           [
             `Vercel (hébergement du site et de l’API, fonctions exécutées à Paris) et Neon (base de données, région ${TO_COMPLETE}) ;`,
             "Stripe (paiement et remboursements) ; Stripe traite aussi certaines données en tant que responsable distinct, pour ses obligations de lutte contre la fraude et le blanchiment ;",
-            "Brevo (e-mails et, selon le choix du parking, SMS) ;",
+            `Brevo (e-mails, dont les messages du formulaire de contact et la lettre ${p} avec la liste de ses inscrits, et, selon le choix du parking, SMS) ;`,
             "Cloudflare (réception des e-mails de confirmation que les parkings nous transfèrent, relayés aussitôt vers notre serveur) ;",
             "selon le choix du parking, l’application SMS Gateway for Android, qui envoie les SMS depuis le téléphone du parking : votre numéro et le texte du message passent alors par le serveur de cette application ;",
             "OneSignal (notifications de l’application) ;",
@@ -393,7 +397,9 @@ export function privacyDoc(company: Company = COMPANY, email: string = SUPPORT_E
             "Téléphones inscrits aux notifications du séjour : supprimés 2 jours après le retour.",
             "File d’envoi des SMS (numéro du destinataire ; le texte n’est pas conservé) : 30 jours.",
             "E-mails de confirmation transférés par un parking : texte effacé après 30 jours, trace de réception supprimée après 90 jours.",
-            `Adresse IP : quelques minutes en mémoire pour limiter les abus (7 jours pour les essais du code du jour de ${p} Pro) ; les journaux techniques de l’hébergeur sont gardés quelques jours au plus.`,
+            `Message envoyé par le formulaire de contact : transmis par e-mail au service client de ${p}, il n’est pas gardé par le site ni par ses serveurs au-delà de cet envoi ; l’échange reste ensuite dans la messagerie du service client, le temps de traiter votre demande.`,
+            `Lettre ${p} : votre adresse reste inscrite chez Brevo jusqu’à votre désinscription, en un clic depuis chaque lettre ; une inscription que vous ne confirmez pas n’est ajoutée à aucune liste. Après une désinscription, Brevo garde l’adresse marquée comme désinscrite, seulement pour ne plus vous écrire ; vous pouvez en demander l’effacement (article 8). Pour limiter les e-mails de confirmation envoyés à une même adresse, son empreinte reste en mémoire 48 heures au plus.`,
+            `Adresse IP : en mémoire pour limiter les abus, deux heures au plus (7 jours pour les essais du code du jour de ${p} Pro) ; les journaux techniques de l’hébergeur sont gardés quelques jours au plus.`,
             `Identité Apple ou Google d’un membre de l’équipe d’un parking : supprimée avec son compte ${p} Pro ; si elle n’est liée à aucun parking (jamais rejoint, ou quitté), supprimée avec ses demandes après 30 jours sans connexion ni demande.`,
             "Demande pour rejoindre l’équipe d’un parking : sans réponse d’un gérant, elle expire au bout de 7 jours.",
             "Essais du code du jour (compte, adresse IP, réussite ou échec ; le code tapé n’est jamais enregistré) : 7 jours.",
@@ -416,7 +422,7 @@ export function privacyDoc(company: Company = COMPANY, email: string = SUPPORT_E
         id: "droits",
         title: "8. Vos droits",
         blocks: [
-          "Vous pouvez demander l’accès à vos données, leur rectification, leur effacement, la limitation de leur traitement ou leur portabilité, et vous opposer à un traitement fondé sur l’intérêt légitime. Vous pouvez retirer votre consentement à tout moment, sans effet sur ce qui a été fait avant. Vous pouvez aussi définir des directives sur le sort de vos données après votre décès.",
+          "Vous pouvez demander l’accès à vos données, leur rectification, leur effacement, la limitation de leur traitement ou leur portabilité, et vous opposer à un traitement fondé sur l’intérêt légitime. Vous pouvez retirer votre consentement à tout moment, sans effet sur ce qui a été fait avant ; pour la lettre, le lien de désinscription de chaque lettre suffit. Vous pouvez aussi définir des directives sur le sort de vos données après votre décès.",
           `Écrivez à ${c.email} ou à ${c.name}, ${c.address}, en indiquant si possible la référence de votre réservation. Nous répondons dans un délai d’un mois. Certaines données peuvent être gardées malgré une demande d’effacement lorsque la loi l’impose (comptabilité) ou pendant un séjour en cours.`,
           "Si vous estimez que vos droits ne sont pas respectés, vous pouvez adresser une réclamation à la CNIL (cnil.fr, 3 place de Fontenoy, TSA 80715, 75334 Paris Cedex 07).",
         ],

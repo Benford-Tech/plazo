@@ -20,6 +20,12 @@ export const ValidateEnv = () => {
     SMS_SENDER: str({ default: '' }),
     PUBLIC_SITE_URL: str({ default: '' }),
     SMS_DAILY_LIMIT: str({ default: '' }),
+    // « La lettre Plazo » (15/10/2026): without both, POST /public/newsletter answers 409 newsletter_unavailable.
+    BREVO_NEWSLETTER_LIST_ID: str({ default: '', desc: 'Id of the Brevo list the newsletter subscribers join (a positive integer)' }),
+    BREVO_NEWSLETTER_DOI_TEMPLATE_ID: str({
+      default: '',
+      desc: 'Id of the Brevo double opt-in template (it holds the {{ doubleoptin }} link; a positive integer)',
+    }),
     // Per-operator SMS through their own Android phone: needed as soon as one operator links a phone.
     SMS_GATEWAY_ENCRYPTION_KEY: str({
       default: '',
