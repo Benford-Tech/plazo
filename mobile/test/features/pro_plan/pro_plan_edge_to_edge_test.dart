@@ -27,12 +27,15 @@ void main() {
     await pumpLocalized(tester, BlocProvider<ProPlanBloc>.value(value: bloc, child: const ProPlanPage()), size: size);
   }
 
-  /// Scrolls the step's list to its end.
+  /// Scrolls the step's list (not the address field's own scrollable) to its very end: the list builds lazily, so its
+  /// extent grows as it goes.
   Future<void> scrollToEnd(WidgetTester tester) async {
-    final position = tester.state<ScrollableState>(find.byType(Scrollable).first).position;
+    final position = tester.state<ScrollableState>(find.descendant(of: find.byType(ListView).first, matching: find.byType(Scrollable)).first).position;
     expect(position.maxScrollExtent, greaterThan(0));
-    position.jumpTo(position.maxScrollExtent);
-    await tester.pump();
+    for (var i = 0; i < 10 && position.pixels < position.maxScrollExtent; i++) {
+      position.jumpTo(position.maxScrollExtent);
+      await tester.pump();
+    }
   }
 
   testWidgets('« Tracer le contour » : Annuler, Rectangle et « Valider le contour » restent au-dessus de la barre de navigation', (tester) async {

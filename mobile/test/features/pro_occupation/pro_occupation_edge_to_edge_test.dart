@@ -71,10 +71,11 @@ void main() {
     }
   }
 
-  testWidgets('ouverte au-dessus des onglets : « Placer » de la dernière arrivée reste au-dessus de la barre de navigation', (tester) async {
+  testWidgets('ouverte au-dessus des onglets : la dernière arrivée et son « Placer » restent au-dessus de la barre de navigation', (tester) async {
     setSystemBars(tester);
     await show(tester);
     await scrollToEnd(tester);
+    expectClearOfSystemBars(tester, find.byKey(const Key('arrival-PLZ-R6')));
     expectClearOfSystemBars(tester, find.byKey(const Key('place-PLZ-R6')));
   });
 

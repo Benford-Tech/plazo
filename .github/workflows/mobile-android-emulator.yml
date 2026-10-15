@@ -1,0 +1,209 @@
+name: Android emulator (edge-to-edge)
+
+# Plazo and Plazo Pro on real Android 15 (API 35) and 16 (API 36) emulators (15/10/2026, Play Console: « l'affichage de
+# bord à bord … Android 15 », apps targeting SDK 36 since Flutter 3.47): the RELEASE APKs (R8 on, debug key: no
+# key.properties here) are built once, then each emulator installs them, starts them (a crash = R8 or window setup),
+# and screenshots the first screens in gesture navigation, then in 3-button navigation with a tall display cutout,
+# portrait; Plazo Pro signs in to the demo parking; Stripe's payment sheet is opened by a test-only entrypoint
+# (lib/stripe_smoke_main.dart, a deferred intent that can never charge anything). The apps call a throwaway demo API
+# on the runner (brand/stores/tools/screenshots/run.sh API_ONLY=1, through `adb reverse`), never www.plazo.fr. PNGs,
+# logcat and the R8 report come back as artifacts and in the run's summary.
+# No secret is used: the Stripe key is a public TEST key, the demo manager's password a random one for this run.
+on:
+  workflow_dispatch:
+    inputs:
+      api_levels:
+        description: "Niveaux d'API Android (JSON)"
+        default: '[35, 36]'
+      local_time:
+        description: "Heure au parking de démonstration (HH:MM)"
+        default: '14:05'
+      stripe_smoke:
+        description: "Ouvrir aussi la feuille de paiement Stripe (clé de test)"
+        type: boolean
+        default: true
+  # Not on every Dart change (about 40 minutes): the Android project, the dependencies and this test's own files.
+  pull_request:
+    paths:
+      - 'mobile/android/**'
+      - 'mobile/pubspec.*'
+      - 'mobile/lib/stripe_smoke_main.dart'
+      - 'mobile/tool/emulator/**'
+      - '.github/workflows/mobile-android-emulator.yml'
+
+permissions:
+  contents: read
+
+concurrency:
+  group: android-emulator-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  # The demo API's port on the runner, the same in the apps (API_BASE_URL) and in `adb reverse`.
+  API_PORT: 3006
+
+jobs:
+  build:
+    name: APK release (R8) des deux apps
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    defaults:
+      run:
+        working-directory: mobile
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          # Same Java as codemagic.yaml (android/app/build.gradle.kts compiles for 17).
+          distribution: temurin
+          java-version: '17'
+          cache: gradle
+          cache-dependency-path: |
+            mobile/android/*.gradle*
+            mobile/android/app/*.gradle*
+            mobile/android/gradle/wrapper/gradle-wrapper.properties
+      - uses: subosito/flutter-action@v2
+        with:
+          # Same Flutter as codemagic.yaml and mobile-ci.yml.
+          flutter-version: 3.47.6
+          channel: stable
+          cache: true
+      - name: Dépendances de l'app
+        run: flutter pub get
+      - name: APK release de Plazo et Plazo Pro (R8, clé de debug)
+        run: |
+          set -euo pipefail
+          OUT="$RUNNER_TEMP/apks"
+          mkdir -p "$OUT"
+          # The store builds give ONESIGNAL_APP_ID: left out here, so that no emulator registers in Plazo's OneSignal
+          # apps; GOOGLE_SERVER_CLIENT_ID left out too (Plazo Pro without the Google button, as on a build without it).
+          # x86_64 only (the emulators'): R8 and the Android side are the same for every ABI, one Dart AOT build not three.
+          COMMON=(--target-platform android-x64 --dart-define=API_BASE_URL="http://127.0.0.1:$API_PORT/api"
+            --dart-define=SITE_URL=https://www.plazo.fr)
+          for FLAVOR in traveller pro; do
+            case "$FLAVOR" in traveller) SLUG=plazo ;; pro) SLUG=plazo-pro ;; esac
+            flutter build apk --release --flavor "$FLAVOR" --dart-define=APP_FLAVOR="$FLAVOR" "${COMMON[@]}"
+            cp "build/app/outputs/flutter-apk/app-$FLAVOR-release.apk" "$OUT/$SLUG.apk"
+            # R8's mapping, for the report below (the next build of the same flavor overwrites it).
+            mkdir -p "$OUT/mapping/$SLUG"
+            cp build/app/outputs/mapping/"$FLAVOR"Release/*.txt "$OUT/mapping/$SLUG/" \
+              || echo "::warning::pas de mapping R8 pour $SLUG (build/app/outputs/mapping/${FLAVOR}Release)"
+          done
+      - name: APK de la feuille Stripe (lib/stripe_smoke_main.dart)
+        if: ${{ github.event_name != 'workflow_dispatch' || inputs.stripe_smoke }}
+        env:
+          # A Stripe TEST publishable key (public, not a secret): Plazo's own when the repository variable
+          # STRIPE_TEST_PUBLISHABLE_KEY is set (Settings › Secrets and variables › Actions › Variables), else the one of
+          # Stripe's documentation. Never the live key the API serves; the entrypoint refuses anything but pk_test_ too.
+          STRIPE_SMOKE_KEY: ${{ vars.STRIPE_TEST_PUBLISHABLE_KEY || 'pk_test_TYooMQauvdEDq54NiTphI7jx' }}
+        run: |
+          set -euo pipefail
+          case "$STRIPE_SMOKE_KEY" in pk_test_*) ;; *) echo "::error::STRIPE_TEST_PUBLISHABLE_KEY doit être une clé pk_test_"; exit 1 ;; esac
+          # Same flavor, plugins and R8 run as Plazo: only the Dart entrypoint differs.
+          flutter build apk --release --flavor traveller -t lib/stripe_smoke_main.dart --target-platform android-x64 \
+            --dart-define=APP_FLAVOR=traveller --dart-define=STRIPE_SMOKE_KEY="$STRIPE_SMOKE_KEY"
+          cp build/app/outputs/flutter-apk/app-traveller-release.apk "$RUNNER_TEMP/apks/stripe-smoke.apk"
+      - name: Rapport R8 (part de chaque paquet dans le DEX)
+        # Informative only: never fails the build (no mapping, no python3...). It shows how much of the DEX keeps its
+        # names, Stripe's SDK above all (flutter_stripe's consumer rule keeps com.stripe.** whole).
+        continue-on-error: true
+        run: python3 tool/emulator/r8_stats.py "$RUNNER_TEMP/apks" >> "$GITHUB_STEP_SUMMARY"
+      - uses: actions/upload-artifact@v4
+        with:
+          name: android-release-apks
+          path: ${{ runner.temp }}/apks
+          retention-days: 7
+
+  emulator:
+    name: Android API ${{ matrix.api-level }}
+    needs: build
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    strategy:
+      fail-fast: false
+      matrix:
+        api-level: ${{ fromJSON(inputs.api_levels || '[35, 36]') }}
+    services:
+      postgres:
+        image: postgis/postgis:16-3.4
+        env:
+          POSTGRES_USER: plazo
+          POSTGRES_PASSWORD: plazo
+          POSTGRES_DB: plazo_shots
+        ports: ["5432:5432"]
+        options: >-
+          --health-cmd "pg_isready -U plazo -d plazo_shots"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Dépendances du serveur
+        working-directory: backend
+        run: npm ci
+      - uses: actions/download-artifact@v4
+        with:
+          name: android-release-apks
+          path: ${{ runner.temp }}/apks
+      - name: API de démonstration (journée préparée, en arrière-plan)
+        env:
+          SHOTS_DATABASE_URL: postgresql://plazo:plazo@localhost:5432/plazo_shots
+          LOCAL_TIME: ${{ inputs.local_time || '14:05' }}
+        run: |
+          set -euo pipefail
+          WORK="$RUNNER_TEMP/demo"
+          mkdir -p "$WORK"
+          # The demo manager's password, for this run's throwaway database only.
+          MANAGER_PASSWORD=$(openssl rand -hex 16)
+          echo "::add-mask::$MANAGER_PASSWORD"
+          echo "MANAGER_PASSWORD=$MANAGER_PASSWORD" >> "$GITHUB_ENV"
+          # Left running for the next steps (the runner stops it at the end of the job).
+          API_ONLY=1 WORK="$WORK" MANAGER_PASSWORD="$MANAGER_PASSWORD" \
+            nohup brand/stores/tools/screenshots/run.sh > "$WORK/run.log" 2>&1 &
+          RUN_PID=$!
+          for _ in $(seq 1 300); do
+            [ -f "$WORK/api.ready" ] && break
+            kill -0 "$RUN_PID" 2>/dev/null || { tail -n 80 "$WORK/run.log"; exit 1; }
+            sleep 2
+          done
+          [ -f "$WORK/api.ready" ] || { echo "::error::l'API de démonstration n'a pas démarré"; tail -n 80 "$WORK/run.log"; exit 1; }
+          curl -sf "http://localhost:$API_PORT/api/health"
+      - name: Activer KVM
+        # reactivecircus/android-emulator-runner README: hardware acceleration on the Ubuntu runners.
+        run: |
+          echo 'KERNEL=="kvm", GROUP="kvm", MODE="0666", OPTIONS+="static_node=kvm"' | sudo tee /etc/udev/rules.d/99-kvm4all.rules
+          sudo udevadm control --reload-rules
+          sudo udevadm trigger --name-match=kvm
+      - name: Émulateur Android ${{ matrix.api-level }} · Plazo, Plazo Pro, feuille Stripe
+        uses: reactivecircus/android-emulator-runner@a421e43855164a8197daf9d8d40fe71c6996bb0d # v2.38.0
+        env:
+          OUT: ${{ github.workspace }}/emulator-shots/api-${{ matrix.api-level }}
+          APK_DIR: ${{ runner.temp }}/apks
+          SCENARIO: ${{ runner.temp }}/demo/scenario.json
+          LOCAL_TIME: ${{ inputs.local_time || '14:05' }}
+        with:
+          api-level: ${{ matrix.api-level }}
+          # google_apis, not google_apis_playstore: `adb root` works (device clock set to the demo day's).
+          target: google_apis
+          arch: x86_64
+          # 1080 x 2400 at 420 dpi, like most phones (`avdmanager list device`; the action's README uses pixel_7_pro).
+          profile: pixel_7
+          cores: 3
+          ram-size: 4096M
+          emulator-boot-timeout: 900
+          emulator-options: -no-window -gpu swiftshader_indirect -no-snapshot -noaudio -no-boot-anim -camera-back none -timezone Europe/Paris
+          disable-animations: true
+          # ONE line: the action runs every line in its own `sh -c`.
+          script: bash mobile/tool/emulator/e2e.sh
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: android-api-${{ matrix.api-level }}
+          path: emulator-shots/api-${{ matrix.api-level }}
+          retention-days: 7
+      - name: Journal de l'API en cas d'échec
+        if: failure()
+        run: tail -n 80 "$RUNNER_TEMP"/demo/*.log || true
