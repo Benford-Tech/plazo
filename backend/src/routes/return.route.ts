@@ -228,11 +228,21 @@ const NOT_DRIVER_MESSAGE = 'A platform admin viewing an operator space does not 
  *       The checked-in travellers (arrived in the last 6 hours, or due around now), then those still expected
  *       (expected true, status upcoming) whose arrival is between 6 hours ago and 3 hours ahead: they board a drop-off
  *       too and are checked in when it starts (« Embarquer en un geste », 14/10/2026).
+ *       On the platform's test operator, the read first tops up the fictional travellers (TestFeedService).
  *     tags: [Shuttle]
  *     responses:
  *       200:
  *         description: "{ serverTime, rows }"
  *         content: { application/json: { schema: { type: object, properties: { serverTime: { type: string }, rows: { type: array, items: { $ref: '#/components/schemas/DepartureRow' } } } } } }
+ * /internal/shuttle/forecast:
+ *   get:
+ *     summary: "V-A « Ligne du jour »: the day's shuttle waves, drop-offs and pick-ups grouped against the seats"
+ *     description: On the platform's test operator, the read first tops up the fictional travellers (TestFeedService).
+ *     tags: [Shuttle]
+ *     parameters:
+ *       - { in: query, name: date, schema: { type: string, example: "2026-10-15" }, description: "Local date (default: today)" }
+ *     responses:
+ *       200: { description: "{ serverTime, date, times, seats, vehiclesInService, waves }" }
  * /internal/shuttle/staying:
  *   get:
  *     summary: "F-A: the travellers away (dropped at the terminal) by return day, and those back today"
@@ -243,7 +253,9 @@ const NOT_DRIVER_MESSAGE = 'A platform admin viewing an operator space does not 
  * /internal/shuttle/pickups:
  *   get:
  *     summary: Today's returns to pick up at the airport (driver), flights refreshed when due
- *     description: Sorted at the meeting point first, then landed, then by expected landing. Group by `terminal` in the app.
+ *     description: >
+ *       Sorted at the meeting point first, then landed, then by expected landing. Group by `terminal` in the app.
+ *       On the platform's test operator, the read first tops up the fictional travellers (TestFeedService).
  *     tags: [Shuttle]
  *     responses:
  *       200:

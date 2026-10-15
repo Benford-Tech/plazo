@@ -3,29 +3,40 @@
 
 Fills the test parking with a believable day around the moment of the run, through the API (the same rules as the
 pro space), so that Plazo Pro can be filmed or shown without anyone's real data: the shuttle videos of the Google Play
-foreground-service declaration, a demo, a check before a store review.
+foreground-service declaration, a demo, a check before a store review. Since 15/10/2026 the server also keeps a
+continuous feed of fictional travellers on that operator (TS-201-PZ to TS-240-PZ, topped up at each read of the
+driver's lists so that a driver always has someone to take to the terminal and to fetch); the feed-* actions look at
+it and switch it.
 
 Actions (ACTION):
-  fill    (default) shuttle tracking on « Équipe et clients », one shuttle vehicle in service, and 8 fictional
-          bookings placed relative to now: 2 cars « Sur place » waiting for the shuttle to the terminal, 2 arrivals
-          later today, 2 travellers coming back today (car parked, « À récupérer »), 2 arrivals tomorrow
-  clear   closes the fictional bookings: « Attendu » ones are cancelled, the others handed back
+  fill        (default) shuttle tracking on « Équipe et clients », one shuttle vehicle in service, and 8 fictional
+              bookings placed relative to now: 2 cars « Sur place » waiting for the shuttle to the terminal, 2 arrivals
+              later today, 2 travellers coming back today (car parked, « À récupérer »), 2 arrivals tomorrow
+  clear       closes the fictional bookings TS-1xx: « Attendu » ones are cancelled, the others handed back
+  feed-status the continuous feed: on or off, its last run (lists, moves), its 40 bookings
+  feed-on     switches the continuous feed on (it runs at once)
+  feed-off    switches it off: its open bookings are closed, except those on a running trip or being changed (listed:
+              run it again later)
+  feed-run    a run of the feed now
 
-Idempotent: a shuttle trip left running is ended first, then every booking is found again by its plate (TS-1xx-PZ, a
-range kept for these tests), moved back to « Attendu », given its new dates, then moved forward to its state of the
-day, so running it again (after a filming, the next day) refreshes the day without piling up bookings. Fictional people only: names, plates, phones in the 06 39 98 range (kept for fiction by
-the ARCEP), no e-mail address, « Ne pas envoyer » set on the day-before SMS: no message ever reaches anyone.
+Idempotent: a shuttle trip left running with a TS-1xx booking is ended first (a driver on a trip of the continuous feed
+is never interrupted: those trips are left alone), then every booking is found again by its plate (TS-1xx-PZ, a range
+kept for these tests), moved back to « Attendu », given its new dates, then moved forward to its state of the day, so
+running it again (after a filming, the next day) refreshes the day without piling up bookings. Fictional people only:
+names, plates, phones in the 06 39 98 range (kept for fiction by the ARCEP, and refused by Plazo's SMS sending), no
+e-mail address, « Ne pas envoyer » set on the day-before SMS: no message ever reaches anyone.
 
 Refuses any operator but the test one (its name ends in « (tests) »): never the client n°1's parking.
 
 Environment: PLAZO_API (default https://www.plazo.fr/api), PLAZO_TEST_EMAIL and PLAZO_TEST_PASSWORD (repository
 secrets, never printed): an « Accueil » member of « Plazo (tests) », never a manager, since a manager of that operator
 could reset the platform admin's password. An Accueil account does everything but the two manager settings (shuttle
-tracking, adding a vehicle): those are only checked, with a warning when a manager has to set them. Standard library
-only.
+tracking, adding a vehicle): those are only checked, with a warning when a manager has to set them. The session is
+closed at the end of every run. Standard library only.
 """
 import json
 import os
+import re
 import sys
 import urllib.error
 import urllib.request
@@ -197,16 +208,29 @@ def login():
     print(f"Signed in to « {operator} » ({API})")
 
 
-def end_running_trips():
-    """A shuttle trip left running by the last filming would move the refreshed cars when it ends: end it first."""
+MANUAL_PLATE = re.compile(r"^TS-1\d\d-PZ$")
+
+
+def end_test_trips():
+    """A shuttle trip left running with one of the TS-1xx bookings would move the refreshed cars when it ends: end it
+    first. Only those: a driver on a trip of the continuous feed (TS-2xx) or of real travellers is never interrupted."""
+    trips = {}
+    for path in ("/internal/shuttle/departures", "/internal/shuttle/pickups"):
+        listed = call("GET", path) or {}
+        for row in listed.get("rows") or []:
+            if row.get("tripId") and MANUAL_PLATE.match(row.get("plate") or ""):
+                trips.setdefault(row["tripId"], []).append(row["plate"])
+    for trip_id, plates in trips.items():
+        call("POST", f"/internal/shuttle/trips/{trip_id}/end", {})
+        print(f"Shuttle trip left running with {', '.join(sorted(plates))}: ended")
     live = call("GET", "/internal/shuttle/live") or {}
-    for trip in live.get("trips") or []:
-        call("POST", f"/internal/shuttle/trips/{trip['id']}/end", {})
-        print(f"Shuttle trip left running: ended ({trip.get('vehicleModel') or 'navette'})")
+    others = [t for t in live.get("trips") or [] if t.get("id") not in trips]
+    if others:
+        print(f"{len(others)} other shuttle trip(s) running: left alone (a driver may be on one)")
 
 
 def fill():
-    end_running_trips()
+    end_test_trips()
     parking = call("GET", "/internal/parking")
     parking = parking.get("data", parking)
     zone = ZoneInfo(parking.get("timezone") or "Europe/Paris")
@@ -271,7 +295,7 @@ def fill():
 
 
 def clear():
-    end_running_trips()
+    end_test_trips()
     for plate in [f"TS-1{n:02d}-PZ" for n in range(1, 9)]:
         existing = find(plate)
         if not existing:
@@ -279,18 +303,101 @@ def clear():
         goal = "cancelled" if existing["status"] in ("upcoming", "cancelled", "no_show") else "returned"
         reservation = move(existing, goal) if existing["status"] != goal else existing
         print(f"{plate}: {reservation['status']}")
+    try:
+        feed = feed_view()
+    except RuntimeError as error:
+        print(f"(continuous feed not read: {error})")
+        return
+    if feed.get("enabled"):
+        print("::warning::le flux continu est allumé : feed-off pour le couper (TS-201-PZ à TS-240-PZ)")
+
+
+# ---------------------------------------------------------------- the continuous feed (TS-2xx, 15/10/2026)
+
+
+def feed_view(data=None):
+    """GET /internal/test-feed (or the view a PUT / POST returned), with the warnings it calls for."""
+    view = data if data is not None else call("GET", "/internal/test-feed")
+    view = (view or {}).get("data", view) or {}
+    if view.get("listingPublished"):
+        print("::warning::The test parking's listing is published: its fictional bookings take from its public "
+              "capacity and its trips show on the site's live map")
+    if not view.get("available", True):
+        reason = ("TEST_FEED=off on the server" if view.get("killSwitch")
+                  else "the operator is suspended, archived or a demo, or no longer the test operator")
+        print(f"::warning::The continuous feed cannot run: {reason}")
+    if view.get("lastError"):
+        print(f"::warning::Last error of the continuous feed: {view['lastError']}")
+    return view
+
+
+def print_feed(view):
+    print(f"Continuous feed: {'on' if view.get('enabled') else 'off'} · last run {view.get('ranAt') or 'never'} · "
+          f"at most {view.get('cap')} fictional bookings")
+    report = view.get("report") or {}
+    counts = report.get("counts") or {}
+    if counts:
+        print(f"  À emmener {counts.get('toTake')} ({counts.get('onSiteWaiting')} sur place, {counts.get('expected')} "
+              f"attendus) · À récupérer {counts.get('toPickUp')} ({counts.get('soonReturns')} dans les 2 h) · "
+              f"En séjour {counts.get('staying')} · Rendus {counts.get('back')} · en route {counts.get('onTrip')}")
+    for m in (report.get("moves") or [])[-10:]:
+        print(f"  {m['plate']}: {m['from']} → {m['to']} ({m['rule']})")
+    for r in (report.get("rebooks") or [])[-10:]:
+        print(f"  {r['plate']}: {r['target']}, {r['status']}, {r['arrivalAt'][:16]} → {r['returnAt'][:16]} (UTC)")
+    for row in view.get("pool") or []:
+        trip = " · en route" if row.get("onTrip") else ""
+        print(f"  {row['plate']} {row['reference']} {row['status']:<16} {row['arrivalAt'][:16]} → {row['returnAt'][:16]}{trip}")
+
+
+def feed_status():
+    print_feed(feed_view())
+
+
+def feed_on():
+    view = feed_view(call("PUT", "/internal/test-feed", {"enabled": True}))
+    print_feed(view)
+
+
+def feed_off():
+    view = feed_view(call("PUT", "/internal/test-feed", {"enabled": False}))
+    print_feed(view)
+    for row in view.get("left") or []:
+        why = "on a running trip" if row.get("reason") == "on_trip" else "being changed, or just off a trip"
+        print(f"::warning::{row['plate']} left open ({why}): run feed-off again later to close it")
+
+
+def feed_run():
+    print_feed(feed_view(call("POST", "/internal/test-feed/run")))
+
+
+ACTIONS = {"fill": fill, "clear": clear, "feed-status": feed_status, "feed-on": feed_on, "feed-off": feed_off,
+           "feed-run": feed_run}
+
+
+def logout():
+    """Closes the session (its two tokens): a run leaves nothing behind."""
+    global token
+    if not token:
+        return
+    try:
+        call("POST", "/internal/auth/logout")
+    except RuntimeError as error:
+        print(f"(sign-out failed: {error})")
+    token = None
 
 
 def main():
     if "plazo.fr" not in API and not API.startswith("http://localhost"):
         print(f"API: {API}")
-    login()
-    if ACTION == "fill":
-        fill()
-    elif ACTION == "clear":
-        clear()
-    else:
-        fail(f"Unknown ACTION « {ACTION} » (fill, clear)")
+    action = ACTIONS.get(ACTION)
+    if not action:
+        fail(f"Unknown ACTION « {ACTION} » ({', '.join(ACTIONS)})")
+    try:
+        # Inside: a sign-in refused afterwards (another operator, a driver's account) closes its session too.
+        login()
+        action()
+    finally:
+        logout()
     print("Done.")
 
 

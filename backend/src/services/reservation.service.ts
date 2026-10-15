@@ -13,6 +13,7 @@ import {
   plateKey,
   RELEASED_STATUSES,
   STATUS_TRANSITIONS,
+  statusSideEffects,
 } from '@/domain/reservation';
 import { ParsedBooking, parseConfirmationEmail } from '@/domain/importers';
 import { addDays, DATE_RE, dayBounds, exceedsCalendarDays, localDate, localDateTime, parseInstant } from '@/domain/time';
@@ -37,6 +38,7 @@ import { TravellerMessagesService } from './traveller-messages.service';
 import { ParkingService } from './parking.service';
 import { PaymentService } from './payment.service';
 import { SmsService } from './sms.service';
+import { TestFeedService } from './test-feed.service';
 
 const MAX_STAY_DAYS = 90;
 const PLANNING_NIGHTS = 7;
@@ -80,6 +82,7 @@ export class ReservationService {
   public notifications = Container.get(NotificationService);
   public push = Container.get(PushService);
   public messages = Container.get(TravellerMessagesService);
+  public testFeed = Container.get(TestFeedService);
 
   private require(actor: AuthenticatedStaff, permission: Parameters<typeof can>[1]) {
     if (!can(actor.role, permission)) throw forbidden();
@@ -769,15 +772,9 @@ export class ReservationService {
       where: { id: before.id },
       data: {
         status,
-        arrivedAt: status === 'arrived' && !before.arrivedAt ? now : status === 'upcoming' ? null : undefined,
-        // Back to "Attendu": no longer checked in at a boarding (« Embarquer en un geste »).
-        boardingTripId: status === 'upcoming' ? null : undefined,
-        returnedAt: status === 'returned' ? now : before.status === 'returned' ? null : undefined,
-        cancelledAt: status === 'cancelled' ? now : before.status === 'cancelled' ? null : undefined,
-        // Handed back: the keys left the hook with the car, and the file has one car less (S-C).
-        keyHook: status === 'returned' ? null : undefined,
-        fileId: ['returned', 'cancelled', 'no_show'].includes(status) ? null : undefined,
-        fileRank: ['returned', 'cancelled', 'no_show'].includes(status) ? null : undefined,
+        // Checked in once; back to "Attendu", no longer checked in at a boarding (« Embarquer en un geste »); handed back,
+        // the keys left the hook with the car, and the file has one car less (S-C).
+        ...statusSideEffects(before, status, now),
         notes,
         ...refund,
       },
@@ -898,6 +895,8 @@ export class ReservationService {
   public async planning(actor: AuthenticatedStaff, date?: string) {
     this.require(actor, 'reservations:view');
     const parking = await this.parkings.getPrimary(actor);
+    // The platform's test operator: its fictional travellers topped up first (nothing for any other operator).
+    await this.testFeed.maybeRun(actor, parking);
     const day = date && DATE_RE.test(date) ? date : localDate(new Date(), parking.timezone);
     const { start, end } = dayBounds(day, parking.timezone);
     const active = { notIn: ['cancelled', 'no_show'] as ReservationStatus[] };

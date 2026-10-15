@@ -134,6 +134,14 @@ describe('numéro pour les SMS', () => {
     expect(smsRecipient('0033612345678')).toBe('+33612345678');
   });
 
+  it('n’envoie jamais de SMS à la tranche 06 39 98 réservée à la fiction (voyageurs fictifs du parking de test)', () => {
+    expect(smsRecipient('06 39 98 12 34')).toBeNull();
+    expect(smsRecipient('+33 6 39 98 02 07')).toBeNull();
+    expect(smsRecipient('0033639980001')).toBeNull();
+    expect(smsRecipient('06 39 97 12 34')).toBe('+33639971234');
+    expect(smsRecipient('06 12 34 56 78')).toBe('+33612345678');
+  });
+
   it('n’envoie de SMS qu’aux mobiles français (ni fixes, ni numéros étrangers : pas de SMS pumping)', () => {
     expect(smsRecipient('04 72 22 72 21')).toBeNull();
     expect(smsRecipient('+33 4 72 22 72 21')).toBeNull();

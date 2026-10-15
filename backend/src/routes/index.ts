@@ -17,6 +17,7 @@ import { ReturnRoute } from './return.route';
 import { RevenueRoute } from './revenue.route';
 import { SmsRoute } from './sms.route';
 import { StaffRoute } from './staff.route';
+import { TestFeedRoute } from './test-feed.route';
 
 const AppRoutes = [
   new HealthRoute(),
@@ -37,6 +38,7 @@ const AppRoutes = [
   new SmsRoute(),
   new InboundEmailRoute(),
   new ReminderRoute(),
+  new TestFeedRoute(),
   new CronRoute(),
 ];
 

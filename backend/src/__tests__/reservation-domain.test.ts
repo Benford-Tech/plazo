@@ -1,5 +1,5 @@
 import { ANONYMIZED_TRAVELLER, anonymizeReturnedBefore, PERSONAL_AUDIT_KEYS } from '@/domain/retention';
-import { canTransition, formatFlight, formatPlate, importedPlate, newReference, plateKey } from '@/domain/reservation';
+import { canTransition, formatFlight, formatPlate, importedPlate, newReference, plateKey, statusSideEffects } from '@/domain/reservation';
 import { addDays, dayBounds, exceedsCalendarDays, localDate, parseInstant } from '@/domain/time';
 import { occupiedNights } from '@/services/capacity.service';
 
@@ -126,5 +126,48 @@ describe('retention (privacy policy)', () => {
   it('scrubs from the audit details every field it clears, plus the landed flight', () => {
     expect(PERSONAL_AUDIT_KEYS).toEqual(expect.arrayContaining([...Object.keys(ANONYMIZED_TRAVELLER), 'flight']));
     expect(PERSONAL_AUDIT_KEYS).not.toContain('reference');
+  });
+});
+
+describe('ce qu’un changement d’état fait au reste de la réservation', () => {
+  const now = new Date('2026-10-15T10:00:00Z');
+  const earlier = new Date('2026-10-15T08:00:00Z');
+
+  it('pointe une seule fois, et « Attendu » efface le pointage et l’embarquement', () => {
+    expect(statusSideEffects({ status: 'upcoming', arrivedAt: null }, 'arrived', now).arrivedAt).toEqual(now);
+    expect(statusSideEffects({ status: 'shuttled_out', arrivedAt: earlier }, 'arrived', now).arrivedAt).toBeUndefined();
+    expect(statusSideEffects({ status: 'arrived', arrivedAt: earlier }, 'upcoming', now)).toMatchObject({ arrivedAt: null, boardingTripId: null });
+    expect(statusSideEffects({ status: 'upcoming', arrivedAt: null }, 'arrived', now).boardingTripId).toBeUndefined();
+  });
+
+  it('« Rendu » décroche les clés et libère la file ; annulé ou non venu libère la file', () => {
+    expect(statusSideEffects({ status: 'back_at_parking', arrivedAt: earlier }, 'returned', now)).toEqual({
+      arrivedAt: undefined,
+      boardingTripId: undefined,
+      returnedAt: now,
+      cancelledAt: undefined,
+      keyHook: null,
+      fileId: null,
+      fileRank: null,
+    });
+    for (const status of ['cancelled', 'no_show'] as const) {
+      const effects = statusSideEffects({ status: 'upcoming', arrivedAt: null }, status, now);
+      expect(effects).toMatchObject({ fileId: null, fileRank: null, keyHook: undefined });
+      expect(effects.cancelledAt).toEqual(status === 'cancelled' ? now : undefined);
+    }
+  });
+
+  it('rouvrir une réservation rendue ou annulée efface sa date de fin', () => {
+    expect(statusSideEffects({ status: 'returned', arrivedAt: earlier }, 'back_at_parking', now).returnedAt).toBeNull();
+    expect(statusSideEffects({ status: 'cancelled', arrivedAt: null }, 'upcoming', now).cancelledAt).toBeNull();
+    expect(statusSideEffects({ status: 'arrived', arrivedAt: earlier }, 'shuttled_out', now)).toEqual({
+      arrivedAt: undefined,
+      boardingTripId: undefined,
+      returnedAt: undefined,
+      cancelledAt: undefined,
+      keyHook: undefined,
+      fileId: undefined,
+      fileRank: undefined,
+    });
   });
 });

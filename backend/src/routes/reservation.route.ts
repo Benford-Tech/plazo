@@ -16,6 +16,7 @@ import { ValidationMiddleware } from '@/middlewares/validation.middleware';
  * /internal/planning:
  *   get:
  *     summary: Day sheet — arrivals, returns and the load of the next 7 nights
+ *     description: On the platform's test operator, the read first tops up the fictional travellers (TestFeedService).
  *     tags: [Reservations]
  *     parameters:
  *       - { in: query, name: date, schema: { type: string, example: "2026-10-04" }, description: "Local date (default: today)" }

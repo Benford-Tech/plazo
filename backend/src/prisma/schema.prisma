@@ -72,8 +72,35 @@ model Operator {
   smsSettings           OperatorSmsSettings?
   smsOutbox             SmsOutbox[]
   joinRequests          StaffJoinRequest[]
+  testFeed              TestFeed?
 
   @@map("operators")
+}
+
+// 15/10/2026 (« ajoute en continu des données de tests pour le chauffeur pour qu'il ait toujours des personnes à
+// emmener »): the continuous fictional travellers of the platform's own test operator (« Plazo (tests) » only; see
+// TestFeedService and domain/test-feed.ts). One row per operator, created switched on at the first read of the driver's
+// lists; `ranAt` claims a run (at most one every 3 minutes, whatever the number of server instances).
+model TestFeed {
+  id          String    @id @default(cuid())
+  operatorId  String    @unique
+  enabled     Boolean   @default(true)
+  // Claim of the last run.
+  ranAt       DateTime?
+  // { writes: { reservationId: updatedAtISO }, rebooks: [ISO…] }: the feed's own last write of each row (a row written
+  // by anyone else since is left alone for 10 minutes) and the arrivals it rebooked in the last hour (8 at most, one more
+  // when nobody is left to take).
+  state       Json      @default("{}")
+  lastReport  Json?
+  lastError   String?
+  // The member who last switched it on or off.
+  changedById String?
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @default(now()) @updatedAt
+
+  operator Operator @relation(fields: [operatorId], references: [id], onDelete: Cascade)
+
+  @@map("test_feeds")
 }
 
 enum StaffRole {

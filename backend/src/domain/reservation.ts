@@ -39,6 +39,40 @@ export function canTransition(from: ReservationStatus, to: ReservationStatus): b
   return STATUS_TRANSITIONS[from].includes(to);
 }
 
+/** The fields a status change sets besides the status (undefined: left as it is). */
+export interface StatusSideEffects {
+  arrivedAt: Date | null | undefined;
+  boardingTripId: null | undefined;
+  returnedAt: Date | null | undefined;
+  cancelledAt: Date | null | undefined;
+  keyHook: null | undefined;
+  fileId: null | undefined;
+  fileRank: null | undefined;
+}
+
+/**
+ * What a status change does to the booking's other fields (ReservationService.applyStatus, and the test operator's
+ * fictional travellers, TestFeedService): checked in once (arrivedAt kept), back to "Attendu" no longer checked in nor
+ * pointed at a boarding (« Embarquer en un geste »), handed back with the keys off their hook, and a car leaving its
+ * file (S-C) when the booking closes.
+ */
+export function statusSideEffects(
+  before: { status: ReservationStatus; arrivedAt: Date | null },
+  status: ReservationStatus,
+  now: Date,
+): StatusSideEffects {
+  const closes = (['returned', 'cancelled', 'no_show'] as ReservationStatus[]).includes(status);
+  return {
+    arrivedAt: status === 'arrived' && !before.arrivedAt ? now : status === 'upcoming' ? null : undefined,
+    boardingTripId: status === 'upcoming' ? null : undefined,
+    returnedAt: status === 'returned' ? now : before.status === 'returned' ? null : undefined,
+    cancelledAt: status === 'cancelled' ? now : before.status === 'cancelled' ? null : undefined,
+    keyHook: status === 'returned' ? null : undefined,
+    fileId: closes ? null : undefined,
+    fileRank: closes ? null : undefined,
+  };
+}
+
 /** Letters and digits only, upper-case: "ab 123 cd" -> "AB123CD". */
 export function plateKey(plate: string): string {
   return plate.toUpperCase().replace(/[^A-Z0-9]/g, '');
