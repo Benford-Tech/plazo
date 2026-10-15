@@ -8,8 +8,9 @@ import io.flutter.embedding.android.FlutterFragmentActivity
 class MainActivity : FlutterFragmentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        // Edge-to-edge on every Android version, the way Android 15+ imposes it on apps targeting SDK 35+ (Play
-        // Console, 15/10/2026), so that Android 7-14 look and lay out like Android 15. After super.onCreate:
+        // Edge-to-edge the way Android 15+ imposes it on apps targeting SDK 35+ (Play Console, 15/10/2026), so that
+        // Android 10-14 look and lay out like Android 15 (on 7-9, Flutter puts its own window flags back on resume:
+        // the app then stops drawing behind the navigation bar, which is harmless). After super.onCreate:
         // FlutterFragmentActivity.onCreate sets its own status bar colour and layout flags, which would undo it.
         // The Dart side keeps it on resume (SystemUiMode.edgeToEdge in bootstrap.dart) and pads the system bars.
         enableEdgeToEdge()

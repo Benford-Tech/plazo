@@ -87,7 +87,7 @@ void main() {
     final list = find.descendant(of: find.byType(ListView).first, matching: find.byType(Scrollable)).first;
     final position = tester.state<ScrollableState>(list).position;
     expect(position.maxScrollExtent, greaterThan(0));
-    for (var i = 0; i < 10 && position.pixels < position.maxScrollExtent; i++) {
+    for (var i = 0; i < 10 && position.pixels != position.maxScrollExtent; i++) {
       position.jumpTo(position.maxScrollExtent);
       await tester.pump();
     }

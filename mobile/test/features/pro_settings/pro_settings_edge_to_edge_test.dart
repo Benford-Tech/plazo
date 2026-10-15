@@ -49,7 +49,7 @@ void main() {
   Future<void> scrollToEnd(WidgetTester tester) async {
     final position = tester.state<ScrollableState>(find.descendant(of: find.byType(ListView).first, matching: find.byType(Scrollable)).first).position;
     expect(position.maxScrollExtent, greaterThan(0));
-    for (var i = 0; i < 10 && position.pixels < position.maxScrollExtent; i++) {
+    for (var i = 0; i < 10 && position.pixels != position.maxScrollExtent; i++) {
       position.jumpTo(position.maxScrollExtent);
       await tester.pump();
     }
@@ -89,7 +89,6 @@ void main() {
       size: const Size(400, 800),
     );
     await scrollToEnd(tester);
-    debugPrint('FOOT ${tester.getRect(find.textContaining('Tant que rien'))} ${tester.state<ScrollableState>(find.descendant(of: find.byType(ListView).first, matching: find.byType(Scrollable)).first).position}');
     expectClearOfSystemBars(tester, find.textContaining('Tant que rien n\'est configuré'));
   });
 

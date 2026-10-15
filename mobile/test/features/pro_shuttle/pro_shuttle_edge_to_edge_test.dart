@@ -25,7 +25,8 @@ class MockVehiclesBloc extends MockBloc<ProVehiclesEvent, ProVehiclesState> impl
 
 /// Android 15+ draws Plazo Pro edge-to-edge (15/10/2026): the Navette screen pushed above the shell (Plus › Navette, a
 /// tile) and its « Votre navette » sheet keep their buttons clear of the navigation bar; the day chips of « Ligne du
-/// jour » add no side inset of their own; « Véhicules de navette » keeps clear of a side bar in landscape.
+/// jour » add no side inset of their own; « Véhicules de navette » ends its list above « Ajouter » and keeps clear of a
+/// side bar in landscape.
 void main() {
   setUpAll(setUpLocalizedTests);
 
@@ -97,6 +98,25 @@ void main() {
     await pumpLocalized(tester, BlocProvider<ProVehiclesBloc>.value(value: bloc, child: const ProVehiclesPage()), size: const Size(800, 400));
     expectClearOfSystemBars(tester, find.byKey(const Key('vehicle-v1')));
     expectClearOfSystemBars(tester, find.byKey(const Key('remove-v1')));
+  });
+
+  testWidgets('« Véhicules de navette » en fin de liste : le dernier véhicule reste au-dessus de « Ajouter », lui-même au-dessus de la barre', (tester) async {
+    setSystemBars(tester);
+    final bloc = MockVehiclesBloc();
+    whenListen(
+      bloc,
+      const Stream<ProVehiclesState>.empty(),
+      initialState: ProVehiclesState(vehicles: [for (var i = 1; i <= 6; i++) ShuttleVehicleModel(id: 'v$i', model: 'Mercedes Vito', colour: 'blanc', seats: 8)]),
+    );
+    await pumpLocalized(tester, BlocProvider<ProVehiclesBloc>.value(value: bloc, child: const ProVehiclesPage()), size: const Size(400, 640));
+    final position = tester.state<ScrollableState>(find.descendant(of: find.byType(ListView), matching: find.byType(Scrollable)).first).position;
+    expect(position.maxScrollExtent, greaterThan(0));
+    position.jumpTo(position.maxScrollExtent);
+    await tester.pumpAndSettle();
+    final fab = find.byKey(const Key('vehicle-add'));
+    expectClearOfSystemBars(tester, fab);
+    // The tile's own rect counts its 10 dp bottom margin.
+    expect(tester.getRect(find.byKey(const Key('vehicle-v6'))).bottom - 10, lessThanOrEqualTo(tester.getRect(fab).top));
   });
 
   testWidgets('paysage : les jours de « Ligne du jour » ne s\'écartent pas une seconde fois du bord', (tester) async {

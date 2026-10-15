@@ -49,11 +49,10 @@ class ProVehiclesPage extends StatelessWidget implements AutoRouteWrapper {
             label: Text('vehicles.add'.tr()),
             onPressed: () => showVehicleSheetEditor(context),
           ),
-          // Edge-to-edge (Android 15+): in landscape the list keeps clear of a side bar or cutout. The bottom is unchanged: the
-          // list already ends 96 dp up, clear of the navigation bar (the add button keeps above it by itself).
+          // Edge-to-edge (Android 15+): the list ends above the navigation bar, so its 96 dp still clear « Ajouter », which
+          // rises above the bar by itself; in landscape the list keeps clear of a side bar or cutout.
           body: SafeArea(
             top: false,
-            bottom: false,
             child: state.viewState.isProcessing && state.vehicles.isEmpty
                 ? const Center(child: CircularProgressIndicator(color: AppColors.accent))
                 : state.viewState.isError && state.vehicles.isEmpty

@@ -65,7 +65,7 @@ void main() {
   Future<void> scrollToEnd(WidgetTester tester) async {
     final position = tester.state<ScrollableState>(find.descendant(of: find.byType(ListView).first, matching: find.byType(Scrollable)).first).position;
     expect(position.maxScrollExtent, greaterThan(0));
-    for (var i = 0; i < 10 && position.pixels < position.maxScrollExtent; i++) {
+    for (var i = 0; i < 10 && position.pixels != position.maxScrollExtent; i++) {
       position.jumpTo(position.maxScrollExtent);
       await tester.pump();
     }
