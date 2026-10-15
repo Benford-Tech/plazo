@@ -123,96 +123,101 @@ class _ProAccountPageState extends State<ProAccountPage> {
           String? err(String f) => state.fieldErrors[f] == null ? null : translateErrorCode(state.fieldErrors[f]);
           return Scaffold(
             appBar: BrandAppBar(pro: true, title: 'account.title'.tr()),
-            body: ListView(
-              padding: const EdgeInsets.fromLTRB(16, 14, 16, 28),
-              children: [
-                Text(staff?.name ?? '', key: const Key('account-name'), style: AppText.strong(size: 17)),
-                Text(
-                  [
-                    staff?.email ?? '',
-                    if (staff?.role != null) 'pro_more.role.${staff!.role}'.tr(),
-                    if (staff?.operatorName != null) staff!.operatorName!,
-                  ].join(' · '),
-                  style: AppText.muted(),
-                ),
-                const SizedBox(height: 18),
-                if (staff != null) _SignInCard(staff: staff, auth: auth),
-                const SizedBox(height: 22),
-                Text('account.name_section'.tr().toUpperCase(), style: AppText.label(size: 11)),
-                const SizedBox(height: 8),
-                TextField(
-                  key: const Key('account-first-name'),
-                  controller: _firstName,
-                  textCapitalization: TextCapitalization.words,
-                  autofillHints: const [AutofillHints.givenName],
-                  maxLength: 60,
-                  decoration: InputDecoration(labelText: 'account.first_name'.tr(), errorText: nameErr('firstName'), counterText: ''),
-                ),
-                const SizedBox(height: 10),
-                TextField(
-                  key: const Key('account-last-name'),
-                  controller: _lastName,
-                  textCapitalization: TextCapitalization.words,
-                  autofillHints: const [AutofillHints.familyName],
-                  maxLength: 60,
-                  decoration: InputDecoration(labelText: 'account.last_name'.tr(), errorText: nameErr('lastName'), counterText: ''),
-                ),
-                const SizedBox(height: 14),
-                GradientButton(
-                  key: const Key('account-name-submit'),
-                  label: 'account.save_name'.tr(),
-                  busy: auth.nameState.isProcessing,
-                  onPressed: () => context.read<ProAuthBloc>().add(ProAuthNameSubmitted(firstName: _firstName.text, lastName: _lastName.text)),
-                ),
-                // The password form only when the member has one (an Apple or Google account has none).
-                if (staff?.hasPassword ?? true) ...[
-                  const SizedBox(height: 26),
-                  Text('account.password_section'.tr().toUpperCase(), style: AppText.label(size: 11)),
+            // Edge-to-edge (Android 15+): « Supprimer mon compte », at the end of the list, stays above the navigation bar; in
+            // landscape the page keeps clear of a side bar or cutout.
+            body: SafeArea(
+              top: false,
+              child: ListView(
+                padding: const EdgeInsets.fromLTRB(16, 14, 16, 28),
+                children: [
+                  Text(staff?.name ?? '', key: const Key('account-name'), style: AppText.strong(size: 17)),
+                  Text(
+                    [
+                      staff?.email ?? '',
+                      if (staff?.role != null) 'pro_more.role.${staff!.role}'.tr(),
+                      if (staff?.operatorName != null) staff!.operatorName!,
+                    ].join(' · '),
+                    style: AppText.muted(),
+                  ),
+                  const SizedBox(height: 18),
+                  if (staff != null) _SignInCard(staff: staff, auth: auth),
+                  const SizedBox(height: 22),
+                  Text('account.name_section'.tr().toUpperCase(), style: AppText.label(size: 11)),
                   const SizedBox(height: 8),
                   TextField(
-                    key: const Key('account-current'),
-                    controller: _current,
-                    obscureText: true,
-                    decoration: InputDecoration(labelText: 'account.current_password'.tr(), errorText: err('currentPassword')),
+                    key: const Key('account-first-name'),
+                    controller: _firstName,
+                    textCapitalization: TextCapitalization.words,
+                    autofillHints: const [AutofillHints.givenName],
+                    maxLength: 60,
+                    decoration: InputDecoration(labelText: 'account.first_name'.tr(), errorText: nameErr('firstName'), counterText: ''),
                   ),
                   const SizedBox(height: 10),
                   TextField(
-                    key: const Key('account-new'),
-                    controller: _next,
-                    obscureText: true,
-                    decoration: InputDecoration(
-                      labelText: 'account.new_password'.tr(),
-                      helperText: 'account.password_rule'.tr(),
-                      errorText: err('newPassword'),
-                    ),
+                    key: const Key('account-last-name'),
+                    controller: _lastName,
+                    textCapitalization: TextCapitalization.words,
+                    autofillHints: const [AutofillHints.familyName],
+                    maxLength: 60,
+                    decoration: InputDecoration(labelText: 'account.last_name'.tr(), errorText: nameErr('lastName'), counterText: ''),
                   ),
-                  const SizedBox(height: 6),
-                  Text('account.relogin'.tr(), style: AppText.muted(size: 12.5)),
                   const SizedBox(height: 14),
                   GradientButton(
-                    key: const Key('account-submit'),
-                    label: 'account.submit'.tr(),
-                    busy: state.actionState.isProcessing,
-                    onPressed: () => bloc.add(ProSettingsPasswordChanged(currentPassword: _current.text, newPassword: _next.text)),
+                    key: const Key('account-name-submit'),
+                    label: 'account.save_name'.tr(),
+                    busy: auth.nameState.isProcessing,
+                    onPressed: () => context.read<ProAuthBloc>().add(ProAuthNameSubmitted(firstName: _firstName.text, lastName: _lastName.text)),
+                  ),
+                  // The password form only when the member has one (an Apple or Google account has none).
+                  if (staff?.hasPassword ?? true) ...[
+                    const SizedBox(height: 26),
+                    Text('account.password_section'.tr().toUpperCase(), style: AppText.label(size: 11)),
+                    const SizedBox(height: 8),
+                    TextField(
+                      key: const Key('account-current'),
+                      controller: _current,
+                      obscureText: true,
+                      decoration: InputDecoration(labelText: 'account.current_password'.tr(), errorText: err('currentPassword')),
+                    ),
+                    const SizedBox(height: 10),
+                    TextField(
+                      key: const Key('account-new'),
+                      controller: _next,
+                      obscureText: true,
+                      decoration: InputDecoration(
+                        labelText: 'account.new_password'.tr(),
+                        helperText: 'account.password_rule'.tr(),
+                        errorText: err('newPassword'),
+                      ),
+                    ),
+                    const SizedBox(height: 6),
+                    Text('account.relogin'.tr(), style: AppText.muted(size: 12.5)),
+                    const SizedBox(height: 14),
+                    GradientButton(
+                      key: const Key('account-submit'),
+                      label: 'account.submit'.tr(),
+                      busy: state.actionState.isProcessing,
+                      onPressed: () => bloc.add(ProSettingsPasswordChanged(currentPassword: _current.text, newPassword: _next.text)),
+                    ),
+                  ],
+                  const SizedBox(height: 26),
+                  if (staff != null) _ParkingCard(staff: staff, busy: auth.leaveState.isProcessing),
+                  const SizedBox(height: 14),
+                  OutlinedButton(
+                    key: const Key('account-delete'),
+                    style: OutlinedButton.styleFrom(
+                      foregroundColor: AppStatus.bad,
+                      side: const BorderSide(color: Color(0xFFF3C4C4)),
+                      shape: const StadiumBorder(),
+                      minimumSize: const Size.fromHeight(44),
+                    ),
+                    onPressed: auth.deleteState.isProcessing ? null : () => showDeleteAccountSheet(context),
+                    child: auth.deleteState.isProcessing
+                        ? const SizedBox(width: 18, height: 18, child: CircularProgressIndicator(strokeWidth: 2.2, color: AppStatus.bad))
+                        : Text('account.delete'.tr(), style: AppText.strong(size: 14.5, color: AppStatus.bad)),
                   ),
                 ],
-                const SizedBox(height: 26),
-                if (staff != null) _ParkingCard(staff: staff, busy: auth.leaveState.isProcessing),
-                const SizedBox(height: 14),
-                OutlinedButton(
-                  key: const Key('account-delete'),
-                  style: OutlinedButton.styleFrom(
-                    foregroundColor: AppStatus.bad,
-                    side: const BorderSide(color: Color(0xFFF3C4C4)),
-                    shape: const StadiumBorder(),
-                    minimumSize: const Size.fromHeight(44),
-                  ),
-                  onPressed: auth.deleteState.isProcessing ? null : () => showDeleteAccountSheet(context),
-                  child: auth.deleteState.isProcessing
-                      ? const SizedBox(width: 18, height: 18, child: CircularProgressIndicator(strokeWidth: 2.2, color: AppStatus.bad))
-                      : Text('account.delete'.tr(), style: AppText.strong(size: 14.5, color: AppStatus.bad)),
-                ),
-              ],
+              ),
             ),
           );
         },

@@ -51,7 +51,9 @@ class _AddBookingFormState extends State<AddBookingForm> {
       listenWhen: (a, b) => a.lookupState != b.lookupState && b.lookupState.isSuccess,
       listener: (context, state) => Navigator.of(context).pop(state.reference),
       builder: (context, state) => Padding(
-        padding: EdgeInsets.fromLTRB(16, 0, 16, 16 + MediaQuery.viewInsetsOf(context).bottom),
+        // Edge-to-edge: useSafeArea only clears the top and sides. The bottom padding is 0 while the keyboard is up,
+        // so the button sits above the navigation bar, or above the keyboard, never both.
+        padding: EdgeInsets.fromLTRB(16, 0, 16, 16 + MediaQuery.paddingOf(context).bottom + MediaQuery.viewInsetsOf(context).bottom),
         child: Form(
           key: _form,
           child: Column(

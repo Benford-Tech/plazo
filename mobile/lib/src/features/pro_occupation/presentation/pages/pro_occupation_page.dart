@@ -90,40 +90,45 @@ class ProOccupationPage extends StatelessWidget implements AutoRouteWrapper {
                 ),
             ],
           ),
-          body: !state.loaded
-              ? Center(
-                  child: state.viewState.isError
-                      ? Padding(
-                          padding: const EdgeInsets.all(24),
-                          child: Text(translateErrorCode(state.errorCode), textAlign: TextAlign.center),
-                        )
-                      : const CircularProgressIndicator(color: AppColors.accent),
-                )
-              : RefreshIndicator(
-                  color: AppColors.accent,
-                  onRefresh: () async => bloc.add(const ProOccupationRefreshed()),
-                  child: ListView(
-                    padding: const EdgeInsets.fromLTRB(16, 12, 16, 28),
-                    children: [
-                      _SearchField(state: state),
-                      if (state.vehicle != null) ...[const SizedBox(height: 10), _VehicleCard(vehicle: state.vehicle!, state: state)],
-                      if (state.vehicle == null && state.query.trim().length >= 2) ...[const SizedBox(height: 6), _Results(state: state)],
-                      const SizedBox(height: 14),
-                      // S-C (07/10/2026): a parking stored in files reads its occupation in files.
-                      if (state.filesMode) _FilesSummary(state: state) else _MiniMap(state: state),
-                      const SizedBox(height: 14),
-                      Text('occupation.arrivals'.tr(args: ['${state.arrivals.length}']).toUpperCase(), style: AppText.label(size: 11)),
-                      const SizedBox(height: 6),
-                      if (state.arrivals.isEmpty) Text('occupation.no_arrival'.tr(), style: AppText.muted()),
-                      for (final a in state.arrivals)
-                        if (state.filesMode) _FileArrivalRow(arrival: a, state: state) else _ArrivalRow(arrival: a, state: state),
-                      if (state.filesMode) ...[
+          // Edge-to-edge (Android 15+): opened above the shell (« Placer » on a reservation), the list ends above the navigation bar
+          // and, in landscape, keeps clear of a side bar or cutout. In the « Parking » tab the shell did both.
+          body: SafeArea(
+            top: false,
+            child: !state.loaded
+                ? Center(
+                    child: state.viewState.isError
+                        ? Padding(
+                            padding: const EdgeInsets.all(24),
+                            child: Text(translateErrorCode(state.errorCode), textAlign: TextAlign.center),
+                          )
+                        : const CircularProgressIndicator(color: AppColors.accent),
+                  )
+                : RefreshIndicator(
+                    color: AppColors.accent,
+                    onRefresh: () async => bloc.add(const ProOccupationRefreshed()),
+                    child: ListView(
+                      padding: const EdgeInsets.fromLTRB(16, 12, 16, 28),
+                      children: [
+                        _SearchField(state: state),
+                        if (state.vehicle != null) ...[const SizedBox(height: 10), _VehicleCard(vehicle: state.vehicle!, state: state)],
+                        if (state.vehicle == null && state.query.trim().length >= 2) ...[const SizedBox(height: 6), _Results(state: state)],
                         const SizedBox(height: 14),
-                        for (final f in state.files) _FileCard(file: f, state: state),
+                        // S-C (07/10/2026): a parking stored in files reads its occupation in files.
+                        if (state.filesMode) _FilesSummary(state: state) else _MiniMap(state: state),
+                        const SizedBox(height: 14),
+                        Text('occupation.arrivals'.tr(args: ['${state.arrivals.length}']).toUpperCase(), style: AppText.label(size: 11)),
+                        const SizedBox(height: 6),
+                        if (state.arrivals.isEmpty) Text('occupation.no_arrival'.tr(), style: AppText.muted()),
+                        for (final a in state.arrivals)
+                          if (state.filesMode) _FileArrivalRow(arrival: a, state: state) else _ArrivalRow(arrival: a, state: state),
+                        if (state.filesMode) ...[
+                          const SizedBox(height: 14),
+                          for (final f in state.files) _FileCard(file: f, state: state),
+                        ],
                       ],
-                    ],
+                    ),
                   ),
-                ),
+          ),
         );
       },
     );
@@ -433,7 +438,9 @@ Future<String?> showKeysSheet(BuildContext context, OccupantModel vehicle, Strin
     backgroundColor: AppColors.surface,
     shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(24))),
     builder: (ctx) => Padding(
-      padding: EdgeInsets.fromLTRB(20, 4, 20, 20 + MediaQuery.of(ctx).viewInsets.bottom),
+      // Edge-to-edge (Android 15+): the sheet runs under the navigation bar; its height is added below « Placer » (it is 0
+      // while the keyboard is open, which the insets then cover).
+      padding: EdgeInsets.fromLTRB(20, 4, 20, 20 + MediaQuery.viewInsetsOf(ctx).bottom + MediaQuery.paddingOf(ctx).bottom),
       child: Column(
         mainAxisSize: MainAxisSize.min,
         crossAxisAlignment: CrossAxisAlignment.start,

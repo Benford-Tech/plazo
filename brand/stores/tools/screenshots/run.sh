@@ -10,6 +10,10 @@
 # Needs Node 22, Flutter (FLUTTER, default `flutter`), psql, Playwright's Chromium, and network access to the IGN
 # map tiles and the parkings' photos. Output: brand/stores/screenshots/{plazo,plazo-pro}/*.png, …/app-store/*.png and
 # …/app-store-6.3/*.png and …/app-store-ipad-13/*.png (OUT_DIR); DEVICES to take only some of them.
+#
+# API_ONLY=1 (Android emulator workflow, mobile-android-emulator.yml): no web build and no screenshot; once the day is
+# staged, touches $WORK/api.ready and keeps the API running (the native apps call it), $WORK/scenario.json giving
+# the traveller links and the booking shown in Plazo Pro. MANAGER_PASSWORD, when set, is the demo manager's password.
 set -euo pipefail
 
 HERE=$(cd "$(dirname "$0")" && pwd)
@@ -34,6 +38,7 @@ PIDS=()
 cleanup() { for pid in "${PIDS[@]:-}"; do [ -n "$pid" ] && kill "$pid" 2>/dev/null || true; done; }
 trap cleanup EXIT
 mkdir -p "$WORK"
+rm -f "$WORK/api.ready"
 echo "work folder: $WORK"
 
 # The API's clock: the parking (Europe/Paris) reads LOCAL_TIME today, whatever the hour of the run.
@@ -44,7 +49,7 @@ OFFSET=$(node -e '
   const nowMin = Number(p.hour) * 60 + Number(p.minute) + Number(p.second) / 60;
   console.log(Math.round((h * 60 + m - nowMin) * 60000));
 ' "$LOCAL_TIME")
-PASSWORD=$(node -e 'console.log(require("crypto").randomBytes(18).toString("base64url"))')
+PASSWORD=${MANAGER_PASSWORD:-$(node -e 'console.log(require("crypto").randomBytes(18).toString("base64url"))')}
 SECRET=$(node -e 'console.log(require("crypto").randomBytes(24).toString("hex"))')
 
 api_env() {
@@ -76,14 +81,16 @@ echo "== backend: build, database, demo data"
 mapfile -t ENV < <(api_env)
 (cd "$ROOT/backend" && env -i PATH="$PATH" HOME="$HOME" "${ENV[@]}" DEMO_SEED_PASSWORD="$PASSWORD" node -r "$HERE/fake-clock.cjs" lib/scripts/seed-demo.js --apply)
 
-echo "== the apps for the web"
-for flavor in traveller pro; do
-  if [ "${SKIP_FLUTTER_BUILD:-}" = 1 ] && [ -f "$WORK/web-$flavor/index.html" ]; then continue; fi
-  (cd "$ROOT/mobile" && "$FLUTTER" build web --release --no-web-resources-cdn --dart-define=APP_FLAVOR=$flavor \
-    --dart-define=API_BASE_URL="http://localhost:$API_PORT/api" -o "$WORK/web-$flavor" > "$WORK/flutter-$flavor.log" 2>&1)
-done
-node "$HERE/serve.mjs" "$WORK/web-traveller" "$TRAVELLER_PORT" > "$WORK/serve-traveller.log" 2>&1 & PIDS+=("$!")
-node "$HERE/serve.mjs" "$WORK/web-pro" "$PRO_PORT" > "$WORK/serve-pro.log" 2>&1 & PIDS+=("$!")
+if [ -z "${API_ONLY:-}" ]; then
+  echo "== the apps for the web"
+  for flavor in traveller pro; do
+    if [ "${SKIP_FLUTTER_BUILD:-}" = 1 ] && [ -f "$WORK/web-$flavor/index.html" ]; then continue; fi
+    (cd "$ROOT/mobile" && "$FLUTTER" build web --release --no-web-resources-cdn --dart-define=APP_FLAVOR=$flavor \
+      --dart-define=API_BASE_URL="http://localhost:$API_PORT/api" -o "$WORK/web-$flavor" > "$WORK/flutter-$flavor.log" 2>&1)
+  done
+  node "$HERE/serve.mjs" "$WORK/web-traveller" "$TRAVELLER_PORT" > "$WORK/serve-traveller.log" 2>&1 & PIDS+=("$!")
+  node "$HERE/serve.mjs" "$WORK/web-pro" "$PRO_PORT" > "$WORK/serve-pro.log" 2>&1 & PIDS+=("$!")
+fi
 
 echo "== a day at the demo parking"
 start_api
@@ -93,6 +100,12 @@ psql "$SHOTS_DATABASE_URL" -v ON_ERROR_STOP=1 -q -f "$HERE/stage.sql"
 kill "$API_PID"; wait "$API_PID" 2>/dev/null || true
 if curl -sf "http://localhost:$API_PORT/api/health" > /dev/null; then echo "Port $API_PORT is still taken" >&2; exit 1; fi
 start_api with_services
+if [ -n "${API_ONLY:-}" ]; then
+  touch "$WORK/api.ready"
+  echo "API ready: http://localhost:$API_PORT/api (scenario: $WORK/scenario.json)"
+  wait "$API_PID"
+  exit 0
+fi
 
 echo "== screenshots"
 export SCENARIO="$WORK/scenario.json" TRAVELLER_URL="http://localhost:$TRAVELLER_PORT" PRO_URL="http://localhost:$PRO_PORT"

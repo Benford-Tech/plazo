@@ -241,6 +241,37 @@ construit et publie avec les workflows de `codemagic.yaml` (racine du dépôt, `
 - `/pro/planning-places` : planning des places (une ligne par place sur 7 ou 14 jours, besoin par jour, alertes, sans place, pré-affectation, déplacement d'un séjour) ; **planning des files** (S-C, 08/10/2026) dès que le parking a des files : par jour, retours attendus, files qui servent, files gardées, manque, « Réserver une file » à la main, « Préparer les files ».
 - `/pro/reservations`, `/pro/reservations/:id`, `/pro/reservations/formulaire` : réservations du personnel (liste et recherche, fiche avec **une seule « Prochaine étape »** (C-B, 06/10/2026 : Placer la voiture → Occupation avec la carte du véhicule ouverte, `/pro/occupation?focus=` ; Déposer au terminal / Récupérer à l'aéroport → Navette avec le côté et le client présélectionnés, `/pro/navette?sens=&reservation=` ; Rendre le véhicule → feuille clés rendues + remarque, envoyée avec le statut), les autres statuts derrière « Autres actions », saisie, modification). Dans Occupation, « Placer » demande le crochet des clés dans le même geste. Les statuts suivants viennent de l'API (`nextStatuses`), le serveur reste l'autorité.
 
+## Android 15 : de bord à bord (15/10/2026)
+
+Android 15 et suivants dessinent l'app sous la barre d'état, l'encoche et la barre de navigation (gestes ou trois boutons,
+jusqu'à 48 dp), et l'app vise Android 16 (SDK 36, Flutter 3.47) : il n'y a plus de moyen d'y échapper. Le reste des
+versions fait pareil : `MainActivity.kt` appelle `enableEdgeToEdge()` après `super.onCreate`, et `bootstrap.dart` met
+Flutter en `SystemUiMode.edgeToEdge` pour qu'il ne remette pas ses propres réglages à chaque reprise.
+
+Règles pour un nouvel écran :
+- Les barres sont transparentes, icônes foncées, pour toute l'app (`appSystemUiStyle` dans `theme.dart`, posé dans
+  `app.dart`). Une page sur fond foncé qui touche le bas de l'écran pose son propre
+  `AnnotatedRegion<SystemUiOverlayStyle>` aux icônes claires (luminosité seulement, jamais de couleur), comme
+  `find_car_page.dart`.
+- Haut : une `AppBar` se protège seule ; sans AppBar, `SafeArea` ou `MediaQuery.paddingOf(context).top`.
+- Bas : une page poussée hors des onglets garde ses derniers boutons au-dessus de la barre de navigation
+  (`SafeArea(top: false, …)`), une feuille (`showModalBottomSheet`, même avec `useSafeArea: true`, qui ne protège que le
+  haut) ajoute `MediaQuery.paddingOf(context).bottom` sous son dernier bouton, en plus de `viewInsetsOf(context).bottom`
+  pour le clavier (Flutter met la barre à 0 pendant que le clavier est ouvert : ils ne s'additionnent pas).
+- Côtés (paysage, grand écran) : les coquilles des deux apps enveloppent leurs onglets dans
+  `SafeArea(top: false, bottom: false, …)` ; une liste horizontale reçoit un `padding` explicite.
+- Tests : `test/helpers/system_bars.dart` (`setSystemBars`, `expectClearOfSystemBars`) simule une barre d'état de 24 dp et
+  une barre à trois boutons de 48 dp ; les tests `*_edge_to_edge_test.dart` s'en servent.
+- Sur un vrai Android : workflow GitHub **« Android emulator (edge-to-edge) »** (`.github/workflows/mobile-android-emulator.yml`,
+  à la main ou sur une PR qui touche `android/`) : APK release (R8) des deux apps, émulateurs Android 15 et 16, captures en
+  navigation par gestes puis à trois boutons avec encoche, Plazo Pro connecté à un parking de démonstration
+  (`brand/stores/tools/screenshots/run.sh` en `API_ONLY=1`, base jetable du runner, jamais la production), feuille de
+  paiement Stripe ouverte par `lib/stripe_smoke_main.dart` (clé de test `pk_test_` seulement, aucun paiement possible) et
+  rapport R8 par paquet ; captures et journaux en artefacts (`android-api-35`, `android-api-36`). Scripts dans
+  `tool/emulator/`. Un démarrage de 5 s ou plus et une ANR sont signalés (traces `anr-*/` dans l'artefact) ; sur ces
+  émulateurs sans carte graphique, le premier démarrage de Plazo Pro attend 9 à 12 s la création de la surface de dessin
+  de Flutter (`FlutterJNI.nativeSurfaceCreated`, 15/10/2026) : c'est le GPU logiciel, pas le code de l'app.
+
 ## Deux apps, un projet (A-B, 04/10/2026)
 
 - **Plazo** (voyageurs) : flavor Android `traveller`, `--dart-define=APP_FLAVOR=traveller` (défaut), id `com.benfordtech.plazo`.

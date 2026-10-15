@@ -100,7 +100,8 @@ class _ParkingViewState extends State<_ParkingView> {
                         )
                       : const CircularProgressIndicator(color: AppColors.accent),
                 )
-              : _content(context, response),
+              // Edge-to-edge: in landscape the page keeps clear of a side navigation bar or a cutout.
+              : SafeArea(top: false, bottom: false, child: _content(context, response)),
           bottomNavigationBar: response == null ? null : _BookingBar(state: state, onChangeDates: () => _changeDates(context, state)),
         );
       },

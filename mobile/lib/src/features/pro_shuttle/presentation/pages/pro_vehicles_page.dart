@@ -49,31 +49,36 @@ class ProVehiclesPage extends StatelessWidget implements AutoRouteWrapper {
             label: Text('vehicles.add'.tr()),
             onPressed: () => showVehicleSheetEditor(context),
           ),
-          body: state.viewState.isProcessing && state.vehicles.isEmpty
-              ? const Center(child: CircularProgressIndicator(color: AppColors.accent))
-              : state.viewState.isError && state.vehicles.isEmpty
-              ? Center(
-                  child: Padding(
-                    padding: const EdgeInsets.all(24),
-                    child: Text(translateErrorCode(state.errorCode), textAlign: TextAlign.center),
+          // Edge-to-edge (Android 15+): the list ends above the navigation bar, so its 96 dp still clear « Ajouter », which
+          // rises above the bar by itself; in landscape the list keeps clear of a side bar or cutout.
+          body: SafeArea(
+            top: false,
+            child: state.viewState.isProcessing && state.vehicles.isEmpty
+                ? const Center(child: CircularProgressIndicator(color: AppColors.accent))
+                : state.viewState.isError && state.vehicles.isEmpty
+                ? Center(
+                    child: Padding(
+                      padding: const EdgeInsets.all(24),
+                      child: Text(translateErrorCode(state.errorCode), textAlign: TextAlign.center),
+                    ),
+                  )
+                : ListView(
+                    padding: const EdgeInsets.fromLTRB(16, 8, 16, 96),
+                    children: [
+                      Text('vehicles.intro'.tr(), style: AppText.muted()),
+                      const SizedBox(height: 12),
+                      if (state.vehicles.isEmpty) Text('vehicles.empty'.tr(), key: const Key('vehicles-empty'), style: AppText.body(size: 14)),
+                      for (final v in state.vehicles)
+                        _VehicleTile(
+                          vehicle: v,
+                          busy: state.actionState.isProcessing,
+                          onEdit: () => showVehicleSheetEditor(context, vehicle: v),
+                          onToggle: () => bloc.add(ProVehicleServiceToggled(v.id)),
+                          onRemove: () => _confirmRemove(context, v),
+                        ),
+                    ],
                   ),
-                )
-              : ListView(
-                  padding: const EdgeInsets.fromLTRB(16, 8, 16, 96),
-                  children: [
-                    Text('vehicles.intro'.tr(), style: AppText.muted()),
-                    const SizedBox(height: 12),
-                    if (state.vehicles.isEmpty) Text('vehicles.empty'.tr(), key: const Key('vehicles-empty'), style: AppText.body(size: 14)),
-                    for (final v in state.vehicles)
-                      _VehicleTile(
-                        vehicle: v,
-                        busy: state.actionState.isProcessing,
-                        onEdit: () => showVehicleSheetEditor(context, vehicle: v),
-                        onToggle: () => bloc.add(ProVehicleServiceToggled(v.id)),
-                        onRemove: () => _confirmRemove(context, v),
-                      ),
-                  ],
-                ),
+          ),
         );
       },
     );

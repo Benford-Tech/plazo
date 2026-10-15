@@ -53,7 +53,9 @@ class _VehicleSheetState extends State<VehicleSheet> {
   @override
   Widget build(BuildContext context) {
     return Padding(
-      padding: EdgeInsets.fromLTRB(16, 0, 16, 16 + MediaQuery.viewInsetsOf(context).bottom),
+      // Edge-to-edge (Android 15+): useSafeArea leaves the bottom to the sheet, which runs under the navigation bar; its
+      // height goes below the button (it is 0 while the keyboard is open, which the insets then cover).
+      padding: EdgeInsets.fromLTRB(16, 0, 16, 16 + MediaQuery.viewInsetsOf(context).bottom + MediaQuery.paddingOf(context).bottom),
       child: SingleChildScrollView(
         child: Column(
           mainAxisSize: MainAxisSize.min,

@@ -60,20 +60,25 @@ class ProPlanPage extends StatelessWidget implements AutoRouteWrapper {
               },
             ),
           ),
-          body: switch (state.viewState) {
-            ViewState.error when state.parking == null => Center(
-              child: Padding(
-                padding: const EdgeInsets.all(24),
-                child: Text(translateErrorCode(state.errorCode), textAlign: TextAlign.center),
+          // Edge-to-edge (Android 15+): the steps end above the navigation bar (the draw step's buttons, the end of the lists) and,
+          // in landscape, keep clear of a side bar or cutout.
+          body: SafeArea(
+            top: false,
+            child: switch (state.viewState) {
+              ViewState.error when state.parking == null => Center(
+                child: Padding(
+                  padding: const EdgeInsets.all(24),
+                  child: Text(translateErrorCode(state.errorCode), textAlign: TextAlign.center),
+                ),
               ),
-            ),
-            _ when state.parking == null => const Center(child: CircularProgressIndicator(color: AppColors.accent)),
-            _ => switch (state.step) {
-              PlanStep.locate => _LocateStep(state: state),
-              PlanStep.draw => _DrawStep(state: state),
-              PlanStep.generate => _GenerateStep(state: state),
+              _ when state.parking == null => const Center(child: CircularProgressIndicator(color: AppColors.accent)),
+              _ => switch (state.step) {
+                PlanStep.locate => _LocateStep(state: state),
+                PlanStep.draw => _DrawStep(state: state),
+                PlanStep.generate => _GenerateStep(state: state),
+              },
             },
-          },
+          ),
         );
       },
     );

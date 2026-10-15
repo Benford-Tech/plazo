@@ -807,7 +807,8 @@ Le nom du produit doit rester dans UN seul fichier de configuration (il peut enc
   workflow sur une branche, `status` d'un build (état, artefacts ; étape rouge si le build a échoué), `steps`, `logs` (13/10/2026 :
   fin du journal des étapes en échec et des envois aux stores, lue dans `buildActions[].subactions[].logUrl` de l'API v1), `cancel` (API v1),
   `groups` (noms des variables seulement), `ensure-group`, `team` (pourquoi un build attend : dernier build de chaque app du
-  compte) : c'est par là que Claude suit et relance les builds Codemagic ; compte Google Play Benford Tech et, depuis le
+  compte), `mapping` (15/10/2026 : les noms masqués d'un avertissement Google Play, « u41.Q go3.e », retrouvés dans le
+  `mapping.txt` des builds récents) : c'est par là que Claude suit et relance les builds Codemagic ; compte Google Play Benford Tech et, depuis le
   13/10/2026, le compte de service créé pour Yoon (projet Google Cloud `yoon-beige`), dont la clé JSON se colle aussi dans le
   groupe `mobile_secrets` de l'app `plazo` sous le nom de Yoon, `GCLOUD_SERVICE_ACCOUNT_CREDENTIALS` (lu par `codemagic.yaml`
   à défaut de `GOOGLE_PLAY_SERVICE_ACCOUNT_CREDENTIALS` ; Codemagic ne copie pas un secret d'une app à l'autre)) ; **un seul workflow `mobile-release` (11/10/2026, « unifie le pipeline »)** à la place des quatre d'avant (un par
@@ -861,6 +862,16 @@ Le nom du produit doit rester dans UN seul fichier de configuration (il peut enc
   (120 / 170 laissaient 50 px pour les parkings et la carte montrait toute la région). Le nom iOS vit dans
   `APP_DISPLAY_NAME` des configurations Xcode (mis à jour par `sync_product.dart`) ; Google Pay suit la clé Stripe servie
   (`pk_live_` = production).
+  **Android 15 de bord à bord (15/10/2026, avertissements de la Play Console sur le build 114)** : `MainActivity.kt` appelle
+  `enableEdgeToEdge()` après `super.onCreate`, `bootstrap.dart` met `SystemUiMode.edgeToEdge` (Android seulement), `app.dart`
+  pose `appSystemUiStyle` (barres transparentes, icônes foncées ; `find_car_page` en icônes claires) ; les feuilles ajoutent
+  `MediaQuery.paddingOf(context).bottom` sous leur dernier bouton, les pages poussées et les coquilles des deux apps sont en
+  `SafeArea(top: false…)` ; tests `*_edge_to_edge_test.dart` avec `test/helpers/system_bars.dart` ; workflow
+  `mobile-android-emulator.yml` (APK release R8, émulateurs API 35 et 36, gestes puis trois boutons avec encoche, captures,
+  feuille Stripe par `lib/stripe_smoke_main.dart` en clé de test, rapport R8 ; `tool/emulator/`). Les API obsolètes citées
+  sont dans AndroidX, Flutter et Stripe, le décodage d'images dans OneSignal (images de notification, jamais envoyées), et
+  le faible taux R8 vient de la règle `-keep class com.stripe.** { *; }` de flutter_stripe, gardée exprès (3D Secure) ;
+  détail dans `mobile/publier-sur-les-stores.md`.
   Voir `mobile/README.md`.
 
 ## Personnel

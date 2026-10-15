@@ -122,208 +122,213 @@ class _FormState extends State<_Form> {
         };
         return Scaffold(
           appBar: BrandAppBar(pro: true, title: widget.editing ? 'res.edit_title'.tr() : 'res.new_title'.tr()),
-          body: ListView(
-            padding: const EdgeInsets.fromLTRB(16, 14, 16, 28),
-            children: [
-              Row(
-                children: [
-                  Expanded(
-                    child: _DateTile(
-                      key: const Key('f-arrival'),
-                      label: 'res.arrival'.tr(),
-                      value: i.arrivalAt,
-                      error: err('arrivalAt'),
-                      onTap: () => _pick(i.arrivalAt, (v) => _set((x) => x.copyWith(arrivalAt: v))),
+          // Edge-to-edge (Android 15+): pushed above the shell, the form ends above the navigation bar (« Enregistrer »
+          // included) and, in landscape, clear of a side bar or cutout.
+          body: SafeArea(
+            top: false,
+            child: ListView(
+              padding: const EdgeInsets.fromLTRB(16, 14, 16, 28),
+              children: [
+                Row(
+                  children: [
+                    Expanded(
+                      child: _DateTile(
+                        key: const Key('f-arrival'),
+                        label: 'res.arrival'.tr(),
+                        value: i.arrivalAt,
+                        error: err('arrivalAt'),
+                        onTap: () => _pick(i.arrivalAt, (v) => _set((x) => x.copyWith(arrivalAt: v))),
+                      ),
                     ),
-                  ),
-                  const SizedBox(width: 10),
-                  Expanded(
-                    child: _DateTile(
-                      key: const Key('f-return'),
-                      label: 'res.return'.tr(),
-                      value: i.returnAt,
-                      error: err('returnAt'),
-                      onTap: () => _pick(i.returnAt, (v) => _set((x) => x.copyWith(returnAt: v))),
+                    const SizedBox(width: 10),
+                    Expanded(
+                      child: _DateTile(
+                        key: const Key('f-return'),
+                        label: 'res.return'.tr(),
+                        value: i.returnAt,
+                        error: err('returnAt'),
+                        onTap: () => _pick(i.returnAt, (v) => _set((x) => x.copyWith(returnAt: v))),
+                      ),
                     ),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 8),
-              // One slot whatever the capacity says: the fields below keep their place (and focus).
-              _CapacityLine(
-                state: state,
-                onForce: (v) => _set((x) => x.copyWith(force: v)),
-              ),
-              const SizedBox(height: 14),
-              PlateField(
-                controller: _plate,
-                label: 'res.plate'.tr(),
-                errorText: err('plate'),
-                onChanged: (v) => _set((x) => x.copyWith(plate: v)),
-              ),
-              const SizedBox(height: 12),
-              // 09/10/2026: the traveller's first and last name apart (the server stores "Prénom Nom").
-              Row(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Expanded(
-                    child: TextField(
-                      key: const Key('f-first-name'),
-                      controller: _firstName,
-                      textCapitalization: TextCapitalization.words,
-                      autofillHints: const [AutofillHints.givenName],
-                      decoration: InputDecoration(labelText: 'res.first_name'.tr(), errorText: err('customerFirstName') ?? err('customerName'), errorMaxLines: 2),
-                      onChanged: (v) => _set((x) => x.copyWith(customerFirstName: v)),
-                    ),
-                  ),
-                  const SizedBox(width: 10),
-                  Expanded(
-                    child: TextField(
-                      key: const Key('f-last-name'),
-                      controller: _lastName,
-                      textCapitalization: TextCapitalization.words,
-                      autofillHints: const [AutofillHints.familyName],
-                      decoration: InputDecoration(labelText: 'res.last_name'.tr(), errorText: err('customerLastName'), errorMaxLines: 2),
-                      onChanged: (v) => _set((x) => x.copyWith(customerLastName: v)),
-                    ),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 12),
-              TextField(
-                key: const Key('f-phone'),
-                controller: _phone,
-                keyboardType: TextInputType.phone,
-                decoration: InputDecoration(labelText: 'res.phone'.tr(), errorText: err('customerPhone')),
-                onChanged: (v) => _set((x) => x.copyWith(customerPhone: v)),
-              ),
-              const SizedBox(height: 12),
-              TextField(
-                key: const Key('f-email'),
-                controller: _email,
-                keyboardType: TextInputType.emailAddress,
-                decoration: InputDecoration(labelText: 'res.email_optional'.tr(), errorText: err('customerEmail')),
-                onChanged: (v) => _set((x) => x.copyWith(customerEmail: v)),
-              ),
-              const SizedBox(height: 12),
-              TextField(
-                key: const Key('f-outbound'),
-                controller: _outbound,
-                textCapitalization: TextCapitalization.characters,
-                decoration: InputDecoration(
-                  labelText: 'res.departure_flight'.tr(),
-                  hintText: 'AF 7641',
-                  helperText: 'res.departure_flight_help'.tr(),
-                  errorText: err('departureFlight'),
+                  ],
                 ),
-                onChanged: (v) => _set((x) => x.copyWith(departureFlight: v.toUpperCase())),
-              ),
-              const SizedBox(height: 12),
-              Row(
-                children: [
-                  Expanded(
-                    child: TextField(
-                      key: const Key('f-flight'),
-                      controller: _flight,
-                      decoration: InputDecoration(labelText: 'res.return_flight'.tr(), hintText: 'TO 3627', errorText: err('returnFlight')),
-                      onChanged: (v) => _set((x) => x.copyWith(returnFlight: v.toUpperCase())),
+                const SizedBox(height: 8),
+                // One slot whatever the capacity says: the fields below keep their place (and focus).
+                _CapacityLine(
+                  state: state,
+                  onForce: (v) => _set((x) => x.copyWith(force: v)),
+                ),
+                const SizedBox(height: 14),
+                PlateField(
+                  controller: _plate,
+                  label: 'res.plate'.tr(),
+                  errorText: err('plate'),
+                  onChanged: (v) => _set((x) => x.copyWith(plate: v)),
+                ),
+                const SizedBox(height: 12),
+                // 09/10/2026: the traveller's first and last name apart (the server stores "Prénom Nom").
+                Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Expanded(
+                      child: TextField(
+                        key: const Key('f-first-name'),
+                        controller: _firstName,
+                        textCapitalization: TextCapitalization.words,
+                        autofillHints: const [AutofillHints.givenName],
+                        decoration: InputDecoration(labelText: 'res.first_name'.tr(), errorText: err('customerFirstName') ?? err('customerName'), errorMaxLines: 2),
+                        onChanged: (v) => _set((x) => x.copyWith(customerFirstName: v)),
+                      ),
                     ),
-                  ),
-                  const SizedBox(width: 10),
-                  SizedBox(
-                    width: 130,
-                    child: DropdownButtonFormField<int>(
-                      key: const Key('f-passengers'),
-                      initialValue: i.passengers,
-                      decoration: InputDecoration(labelText: 'res.passengers'.tr()),
-                      items: [for (var n = 1; n <= 9; n++) DropdownMenuItem(value: n, child: Text('$n'))],
-                      onChanged: (v) => _set((x) => x.copyWith(passengers: v ?? 2)),
+                    const SizedBox(width: 10),
+                    Expanded(
+                      child: TextField(
+                        key: const Key('f-last-name'),
+                        controller: _lastName,
+                        textCapitalization: TextCapitalization.words,
+                        autofillHints: const [AutofillHints.familyName],
+                        decoration: InputDecoration(labelText: 'res.last_name'.tr(), errorText: err('customerLastName'), errorMaxLines: 2),
+                        onChanged: (v) => _set((x) => x.copyWith(customerLastName: v)),
+                      ),
                     ),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 12),
-              DropdownButtonFormField<String>(
-                key: const Key('f-channel'),
-                initialValue: _channels.contains(i.channel) ? i.channel : 'phone',
-                decoration: InputDecoration(labelText: 'res.channel_label'.tr()),
-                items: [for (final c in _channels) DropdownMenuItem(value: c, child: Text('res.channel.$c'.tr(args: [Product.name])))],
-                onChanged: i.channel == 'plazo' ? null : (v) => _set((x) => x.copyWith(channel: v ?? 'phone')),
-              ),
-              if (i.channel == 'aggregator') ...[
+                  ],
+                ),
                 const SizedBox(height: 12),
                 TextField(
-                  key: const Key('f-detail'),
-                  controller: _detail,
-                  decoration: InputDecoration(labelText: 'res.channel_detail'.tr(), hintText: 'Parkos, Onepark…'),
-                  onChanged: (v) => _set((x) => x.copyWith(channelDetail: v)),
+                  key: const Key('f-phone'),
+                  controller: _phone,
+                  keyboardType: TextInputType.phone,
+                  decoration: InputDecoration(labelText: 'res.phone'.tr(), errorText: err('customerPhone')),
+                  onChanged: (v) => _set((x) => x.copyWith(customerPhone: v)),
                 ),
-              ],
-              const SizedBox(height: 12),
-              // 10/10/2026: the amount, to correct after an email import; a Plazo booking's was paid online.
-              TextField(
-                key: const Key('f-price'),
-                controller: _price,
-                enabled: !state.priceLocked,
-                keyboardType: const TextInputType.numberWithOptions(decimal: true),
-                decoration: InputDecoration(
-                  labelText: 'res.price_paid'.tr(),
-                  hintText: '45,50',
-                  suffixText: '€',
-                  helperText: state.priceLocked ? 'res.price_plazo_help'.tr(args: [Product.name]) : 'res.price_help'.tr(),
-                  helperMaxLines: 2,
-                  errorText: priceError,
-                  errorMaxLines: 2,
+                const SizedBox(height: 12),
+                TextField(
+                  key: const Key('f-email'),
+                  controller: _email,
+                  keyboardType: TextInputType.emailAddress,
+                  decoration: InputDecoration(labelText: 'res.email_optional'.tr(), errorText: err('customerEmail')),
+                  onChanged: (v) => _set((x) => x.copyWith(customerEmail: v)),
                 ),
-                onChanged: (v) => _bloc.add(ProReservationFormPriceChanged(v)),
-              ),
-              const SizedBox(height: 12),
-              // E (06/10/2026): the traveller's vehicle and message, as given at the counter.
-              Row(
-                children: [
-                  Expanded(
-                    child: TextField(
-                      key: const Key('f-vehicle-model'),
-                      controller: _vehicleModel,
-                      decoration: InputDecoration(labelText: 'res.vehicle_model'.tr(), hintText: 'Peugeot 308', errorText: err('vehicleModel')),
-                      onChanged: (v) => _set((x) => x.copyWith(vehicleModel: v)),
-                    ),
+                const SizedBox(height: 12),
+                TextField(
+                  key: const Key('f-outbound'),
+                  controller: _outbound,
+                  textCapitalization: TextCapitalization.characters,
+                  decoration: InputDecoration(
+                    labelText: 'res.departure_flight'.tr(),
+                    hintText: 'AF 7641',
+                    helperText: 'res.departure_flight_help'.tr(),
+                    errorText: err('departureFlight'),
                   ),
-                  const SizedBox(width: 10),
-                  Expanded(
-                    child: TextField(
-                      key: const Key('f-vehicle-colour'),
-                      controller: _vehicleColour,
-                      decoration: InputDecoration(labelText: 'res.vehicle_colour'.tr(), hintText: 'grise', errorText: err('vehicleColour')),
-                      onChanged: (v) => _set((x) => x.copyWith(vehicleColour: v)),
+                  onChanged: (v) => _set((x) => x.copyWith(departureFlight: v.toUpperCase())),
+                ),
+                const SizedBox(height: 12),
+                Row(
+                  children: [
+                    Expanded(
+                      child: TextField(
+                        key: const Key('f-flight'),
+                        controller: _flight,
+                        decoration: InputDecoration(labelText: 'res.return_flight'.tr(), hintText: 'TO 3627', errorText: err('returnFlight')),
+                        onChanged: (v) => _set((x) => x.copyWith(returnFlight: v.toUpperCase())),
+                      ),
                     ),
+                    const SizedBox(width: 10),
+                    SizedBox(
+                      width: 130,
+                      child: DropdownButtonFormField<int>(
+                        key: const Key('f-passengers'),
+                        initialValue: i.passengers,
+                        decoration: InputDecoration(labelText: 'res.passengers'.tr()),
+                        items: [for (var n = 1; n <= 9; n++) DropdownMenuItem(value: n, child: Text('$n'))],
+                        onChanged: (v) => _set((x) => x.copyWith(passengers: v ?? 2)),
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 12),
+                DropdownButtonFormField<String>(
+                  key: const Key('f-channel'),
+                  initialValue: _channels.contains(i.channel) ? i.channel : 'phone',
+                  decoration: InputDecoration(labelText: 'res.channel_label'.tr()),
+                  items: [for (final c in _channels) DropdownMenuItem(value: c, child: Text('res.channel.$c'.tr(args: [Product.name])))],
+                  onChanged: i.channel == 'plazo' ? null : (v) => _set((x) => x.copyWith(channel: v ?? 'phone')),
+                ),
+                if (i.channel == 'aggregator') ...[
+                  const SizedBox(height: 12),
+                  TextField(
+                    key: const Key('f-detail'),
+                    controller: _detail,
+                    decoration: InputDecoration(labelText: 'res.channel_detail'.tr(), hintText: 'Parkos, Onepark…'),
+                    onChanged: (v) => _set((x) => x.copyWith(channelDetail: v)),
                   ),
                 ],
-              ),
-              const SizedBox(height: 12),
-              TextField(
-                key: const Key('f-customer-note'),
-                controller: _customerNote,
-                maxLines: 2,
-                decoration: InputDecoration(labelText: 'res.customer_note'.tr(), alignLabelWithHint: true, errorText: err('customerNote')),
-                onChanged: (v) => _set((x) => x.copyWith(customerNote: v)),
-              ),
-              const SizedBox(height: 12),
-              TextField(
-                key: const Key('f-notes'),
-                controller: _notes,
-                maxLines: 3,
-                decoration: InputDecoration(labelText: 'res.notes'.tr(), alignLabelWithHint: true),
-                onChanged: (v) => _set((x) => x.copyWith(notes: v)),
-              ),
-              const SizedBox(height: 20),
-              GradientButton(
-                key: const Key('f-save'),
-                label: 'res.save'.tr(),
-                busy: state.saveState.isProcessing,
-                onPressed: state.full && !i.force ? null : () => _bloc.add(const ProReservationFormSubmitted()),
-              ),
-            ],
+                const SizedBox(height: 12),
+                // 10/10/2026: the amount, to correct after an email import; a Plazo booking's was paid online.
+                TextField(
+                  key: const Key('f-price'),
+                  controller: _price,
+                  enabled: !state.priceLocked,
+                  keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                  decoration: InputDecoration(
+                    labelText: 'res.price_paid'.tr(),
+                    hintText: '45,50',
+                    suffixText: '€',
+                    helperText: state.priceLocked ? 'res.price_plazo_help'.tr(args: [Product.name]) : 'res.price_help'.tr(),
+                    helperMaxLines: 2,
+                    errorText: priceError,
+                    errorMaxLines: 2,
+                  ),
+                  onChanged: (v) => _bloc.add(ProReservationFormPriceChanged(v)),
+                ),
+                const SizedBox(height: 12),
+                // E (06/10/2026): the traveller's vehicle and message, as given at the counter.
+                Row(
+                  children: [
+                    Expanded(
+                      child: TextField(
+                        key: const Key('f-vehicle-model'),
+                        controller: _vehicleModel,
+                        decoration: InputDecoration(labelText: 'res.vehicle_model'.tr(), hintText: 'Peugeot 308', errorText: err('vehicleModel')),
+                        onChanged: (v) => _set((x) => x.copyWith(vehicleModel: v)),
+                      ),
+                    ),
+                    const SizedBox(width: 10),
+                    Expanded(
+                      child: TextField(
+                        key: const Key('f-vehicle-colour'),
+                        controller: _vehicleColour,
+                        decoration: InputDecoration(labelText: 'res.vehicle_colour'.tr(), hintText: 'grise', errorText: err('vehicleColour')),
+                        onChanged: (v) => _set((x) => x.copyWith(vehicleColour: v)),
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 12),
+                TextField(
+                  key: const Key('f-customer-note'),
+                  controller: _customerNote,
+                  maxLines: 2,
+                  decoration: InputDecoration(labelText: 'res.customer_note'.tr(), alignLabelWithHint: true, errorText: err('customerNote')),
+                  onChanged: (v) => _set((x) => x.copyWith(customerNote: v)),
+                ),
+                const SizedBox(height: 12),
+                TextField(
+                  key: const Key('f-notes'),
+                  controller: _notes,
+                  maxLines: 3,
+                  decoration: InputDecoration(labelText: 'res.notes'.tr(), alignLabelWithHint: true),
+                  onChanged: (v) => _set((x) => x.copyWith(notes: v)),
+                ),
+                const SizedBox(height: 20),
+                GradientButton(
+                  key: const Key('f-save'),
+                  label: 'res.save'.tr(),
+                  busy: state.saveState.isProcessing,
+                  onPressed: state.full && !i.force ? null : () => _bloc.add(const ProReservationFormSubmitted()),
+                ),
+              ],
+            ),
           ),
         );
       },

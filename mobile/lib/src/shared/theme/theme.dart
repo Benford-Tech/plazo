@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 
 import '../../core/constants/app_constants.dart';
 
@@ -193,3 +194,15 @@ ThemeData appTheme() {
     ),
   );
 }
+
+/// The system bars over the apps' light grounds (15/10/2026, Android 15+ draws every app edge-to-edge): transparent,
+/// with dark icons, set once around the whole app (app.dart). A deeper region wins where it lies: an AppBar sets the
+/// status bar from its own colour, a dark page (pro_revenue_page, find_car_page) sets light icons. The colours only
+/// act below Android 15; never SystemUiOverlayStyle.dark/.light, which paint the navigation bar black there.
+const appSystemUiStyle = SystemUiOverlayStyle(
+  statusBarColor: Colors.transparent,
+  statusBarIconBrightness: Brightness.dark,
+  statusBarBrightness: Brightness.light,
+  systemNavigationBarColor: Colors.transparent,
+  systemNavigationBarIconBrightness: Brightness.dark,
+);

@@ -39,9 +39,10 @@ class ProRevenueView extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final top = MediaQuery.paddingOf(context).top;
-    // White status bar icons on the green band; the navigation bar keeps the system's colours.
+    // White status bar icons on the green band. This region covers the whole screen, the navigation bar included, so it
+    // keeps the app's style there (dark icons on the light page) instead of leaving those fields unset.
     return AnnotatedRegion<SystemUiOverlayStyle>(
-      value: const SystemUiOverlayStyle(statusBarColor: Colors.transparent, statusBarIconBrightness: Brightness.light, statusBarBrightness: Brightness.dark),
+      value: appSystemUiStyle.copyWith(statusBarIconBrightness: Brightness.light, statusBarBrightness: Brightness.dark),
       child: Scaffold(
         backgroundColor: AppColors.background,
         body: Column(
@@ -64,19 +65,24 @@ class ProRevenueView extends StatelessWidget {
                         padding: EdgeInsets.zero,
                         children: [
                           _Band(state: state),
-                          Padding(
-                            padding: const EdgeInsets.fromLTRB(12, 12, 12, 32),
-                            child: report == null
-                                ? _Waiting(state: state)
-                                : Column(
-                                    crossAxisAlignment: CrossAxisAlignment.stretch,
-                                    children: [
-                                      _DaysCard(report: report, state: state),
-                                      if (report.withoutAmount > 0) ...[const SizedBox(height: 12), _MissingRow(report: report)],
-                                      const SizedBox(height: 12),
-                                      _ChannelsCard(report: report),
-                                    ],
-                                  ),
+                          // Edge-to-edge (Android 15+): the cards end above the navigation bar and, in landscape, keep clear of a
+                          // side bar or cutout (the band, full width, pads its own content).
+                          SafeArea(
+                            top: false,
+                            child: Padding(
+                              padding: const EdgeInsets.fromLTRB(12, 12, 12, 32),
+                              child: report == null
+                                  ? _Waiting(state: state)
+                                  : Column(
+                                      crossAxisAlignment: CrossAxisAlignment.stretch,
+                                      children: [
+                                        _DaysCard(report: report, state: state),
+                                        if (report.withoutAmount > 0) ...[const SizedBox(height: 12), _MissingRow(report: report)],
+                                        const SizedBox(height: 12),
+                                        _ChannelsCard(report: report),
+                                      ],
+                                    ),
+                            ),
                           ),
                         ],
                       ),

@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
 import '../core/constants/app_constants.dart';
@@ -51,6 +52,8 @@ class _AppState extends State<App> {
         supportedLocales: context.supportedLocales,
         localizationsDelegates: context.localizationDelegates,
         debugShowCheckedModeBanner: false,
+        // Edge-to-edge (Android 15+, 15/10/2026): transparent system bars with dark icons by default.
+        builder: (context, child) => AnnotatedRegion<SystemUiOverlayStyle>(value: appSystemUiStyle, child: child!),
       ),
     );
   }

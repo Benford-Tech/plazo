@@ -60,46 +60,51 @@ class ProTeamPage extends StatelessWidget implements AutoRouteWrapper {
             label: Text('team.add'.tr()),
             onPressed: () => _showNewMember(context),
           ),
-          body: state.viewState.isProcessing && state.members.isEmpty
-              ? const Center(child: CircularProgressIndicator(color: AppColors.accent))
-              : state.viewState.isError && state.members.isEmpty
-              ? Center(
-                  child: Padding(
-                    padding: const EdgeInsets.all(24),
-                    child: Text(translateErrorCode(state.errorCode), textAlign: TextAlign.center),
-                  ),
-                )
-              : RefreshIndicator(
-                  color: AppColors.accent,
-                  onRefresh: () async {
-                    bloc.add(const ProTeamStarted());
-                    await bloc.stream.firstWhere((s) => !s.viewState.isProcessing).timeout(const Duration(seconds: 20), onTimeout: () => bloc.state);
-                  },
-                  child: ListView(
-                    padding: const EdgeInsets.fromLTRB(16, 8, 16, 96),
-                    children: [
-                      if (state.joinCode != null) ...[_JoinCodeCard(code: state.joinCode!), const SizedBox(height: 10)],
-                      if (state.joinRequests.isNotEmpty) ...[
-                        _JoinRequestsCard(
-                          requests: state.joinRequests,
-                          busyId: state.joinBusyId,
-                          onAccept: (r) => _accept(context, r),
-                          onRefuse: (r) => _refuse(context, r),
-                        ),
-                        const SizedBox(height: 10),
+          // Edge-to-edge (Android 15+): the list ends above the navigation bar, so its last member clears « Ajouter » (which keeps
+          // above the bar by itself); in landscape the members keep clear of a side bar or cutout.
+          body: SafeArea(
+            top: false,
+            child: state.viewState.isProcessing && state.members.isEmpty
+                ? const Center(child: CircularProgressIndicator(color: AppColors.accent))
+                : state.viewState.isError && state.members.isEmpty
+                ? Center(
+                    child: Padding(
+                      padding: const EdgeInsets.all(24),
+                      child: Text(translateErrorCode(state.errorCode), textAlign: TextAlign.center),
+                    ),
+                  )
+                : RefreshIndicator(
+                    color: AppColors.accent,
+                    onRefresh: () async {
+                      bloc.add(const ProTeamStarted());
+                      await bloc.stream.firstWhere((s) => !s.viewState.isProcessing).timeout(const Duration(seconds: 20), onTimeout: () => bloc.state);
+                    },
+                    child: ListView(
+                      padding: const EdgeInsets.fromLTRB(16, 8, 16, 96),
+                      children: [
+                        if (state.joinCode != null) ...[_JoinCodeCard(code: state.joinCode!), const SizedBox(height: 10)],
+                        if (state.joinRequests.isNotEmpty) ...[
+                          _JoinRequestsCard(
+                            requests: state.joinRequests,
+                            busyId: state.joinBusyId,
+                            onAccept: (r) => _accept(context, r),
+                            onRefuse: (r) => _refuse(context, r),
+                          ),
+                          const SizedBox(height: 10),
+                        ],
+                        for (final m in state.members)
+                          _MemberTile(
+                            member: m,
+                            isMe: m.id == me,
+                            busy: state.actionState.isProcessing,
+                            onRole: (role) => bloc.add(ProTeamMemberUpdated(UpdateStaffParams(id: m.id, role: role))),
+                            onActive: (v) => bloc.add(ProTeamMemberUpdated(UpdateStaffParams(id: m.id, isActive: v))),
+                            onReset: () => _showReset(context, m),
+                          ),
                       ],
-                      for (final m in state.members)
-                        _MemberTile(
-                          member: m,
-                          isMe: m.id == me,
-                          busy: state.actionState.isProcessing,
-                          onRole: (role) => bloc.add(ProTeamMemberUpdated(UpdateStaffParams(id: m.id, role: role))),
-                          onActive: (v) => bloc.add(ProTeamMemberUpdated(UpdateStaffParams(id: m.id, isActive: v))),
-                          onReset: () => _showReset(context, m),
-                        ),
-                    ],
+                    ),
                   ),
-                ),
+          ),
         );
       },
     );
@@ -144,6 +149,8 @@ class ProTeamPage extends StatelessWidget implements AutoRouteWrapper {
     return showModalBottomSheet<void>(
       context: context,
       isScrollControlled: true,
+      // Edge-to-edge: the form is tall, and with the keyboard up the sheet can fill the screen; it stops below the status bar.
+      useSafeArea: true,
       showDragHandle: true,
       builder: (sheet) => BlocProvider.value(value: bloc, child: const _NewMemberSheet()),
     );

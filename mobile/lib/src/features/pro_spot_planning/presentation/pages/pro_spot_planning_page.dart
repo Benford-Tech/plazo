@@ -59,16 +59,21 @@ class ProSpotPlanningPage extends StatelessWidget implements AutoRouteWrapper {
       builder: (context, state) {
         return Scaffold(
           appBar: BrandAppBar(pro: true, title: (state.filesMode ? 'spot_planning.files.title' : 'planning.title').tr()),
-          body: !state.loaded
-              ? Center(
-                  child: state.viewState.isError
-                      ? Padding(
-                          padding: const EdgeInsets.all(24),
-                          child: Text(translateErrorCode(state.errorCode), textAlign: TextAlign.center),
-                        )
-                      : const CircularProgressIndicator(color: AppColors.accent),
-                )
-              : _Body(state: state),
+          // Edge-to-edge (Android 15+): opened above the shell (Plus, the Occupation's app bar), the grid ends above the navigation
+          // bar and, in landscape, the toolbar and the grid keep clear of a side bar or cutout. In the « Places » tab the shell did both.
+          body: SafeArea(
+            top: false,
+            child: !state.loaded
+                ? Center(
+                    child: state.viewState.isError
+                        ? Padding(
+                            padding: const EdgeInsets.all(24),
+                            child: Text(translateErrorCode(state.errorCode), textAlign: TextAlign.center),
+                          )
+                        : const CircularProgressIndicator(color: AppColors.accent),
+                  )
+                : _Body(state: state),
+          ),
         );
       },
     );

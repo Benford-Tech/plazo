@@ -37,50 +37,55 @@ class ProRevenueMissingPage extends StatelessWidget implements AutoRouteWrapper 
         final count = report?.withoutAmount ?? 0;
         return Scaffold(
           appBar: BrandAppBar(title: 'revenue.missing_page'.tr(args: ['$count'])),
-          body: ListView(
-            key: const Key('revenue-missing-list'),
-            padding: const EdgeInsets.fromLTRB(12, 12, 12, 32),
-            children: [
-              Text('revenue.missing_intro'.tr(), style: AppText.muted()),
-              const SizedBox(height: 10),
-              if (missing.isEmpty)
-                AppCard(
-                  child: Text('revenue.missing_done'.tr(), key: const Key('revenue-missing-done'), style: AppText.body()),
-                )
-              else
-                for (final m in missing) ...[
-                  _MissingCard(key: ValueKey('revenue-row-${m.id}'), booking: m, saving: state.saving.contains(m.id), error: state.rowErrors[m.id]),
-                  const SizedBox(height: 10),
-                ],
-              if (state.savedName != null && state.savedCents != null) ...[
-                Semantics(
-                  liveRegion: true,
-                  child: Container(
-                    key: const Key('revenue-saved'),
-                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-                    decoration: const BoxDecoration(color: AppStatus.okSoft, borderRadius: BorderRadius.all(Radius.circular(12))),
-                    child: Row(
-                      children: [
-                        const Icon(Icons.check_rounded, size: 18, color: AppStatus.okText),
-                        const SizedBox(width: 10),
-                        Expanded(
-                          child: Text(
-                            'revenue.saved'.tr(args: [state.savedName!, formatEuros(state.savedCents!)]),
-                            style: AppText.body(size: 13.5, weight: 600, color: AppStatus.okText),
+          // Edge-to-edge (Android 15+): the end of the list stays above the navigation bar and, in landscape, the amounts keep
+          // clear of a side bar or cutout.
+          body: SafeArea(
+            top: false,
+            child: ListView(
+              key: const Key('revenue-missing-list'),
+              padding: const EdgeInsets.fromLTRB(12, 12, 12, 32),
+              children: [
+                Text('revenue.missing_intro'.tr(), style: AppText.muted()),
+                const SizedBox(height: 10),
+                if (missing.isEmpty)
+                  AppCard(
+                    child: Text('revenue.missing_done'.tr(), key: const Key('revenue-missing-done'), style: AppText.body()),
+                  )
+                else
+                  for (final m in missing) ...[
+                    _MissingCard(key: ValueKey('revenue-row-${m.id}'), booking: m, saving: state.saving.contains(m.id), error: state.rowErrors[m.id]),
+                    const SizedBox(height: 10),
+                  ],
+                if (state.savedName != null && state.savedCents != null) ...[
+                  Semantics(
+                    liveRegion: true,
+                    child: Container(
+                      key: const Key('revenue-saved'),
+                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+                      decoration: const BoxDecoration(color: AppStatus.okSoft, borderRadius: BorderRadius.all(Radius.circular(12))),
+                      child: Row(
+                        children: [
+                          const Icon(Icons.check_rounded, size: 18, color: AppStatus.okText),
+                          const SizedBox(width: 10),
+                          Expanded(
+                            child: Text(
+                              'revenue.saved'.tr(args: [state.savedName!, formatEuros(state.savedCents!)]),
+                              style: AppText.body(size: 13.5, weight: 600, color: AppStatus.okText),
+                            ),
                           ),
-                        ),
-                      ],
+                        ],
+                      ),
                     ),
                   ),
-                ),
-                const SizedBox(height: 10),
+                  const SizedBox(height: 10),
+                ],
+                if (count > missing.length && missing.isNotEmpty) ...[
+                  Text('revenue.missing_more'.tr(args: ['${missing.length}']), style: AppText.muted(size: 12.5)),
+                  const SizedBox(height: 6),
+                ],
+                Text('revenue.missing_plazo'.tr(args: [Product.name]), style: AppText.muted(size: 12.5)),
               ],
-              if (count > missing.length && missing.isNotEmpty) ...[
-                Text('revenue.missing_more'.tr(args: ['${missing.length}']), style: AppText.muted(size: 12.5)),
-                const SizedBox(height: 6),
-              ],
-              Text('revenue.missing_plazo'.tr(args: [Product.name]), style: AppText.muted(size: 12.5)),
-            ],
+            ),
           ),
         );
       },

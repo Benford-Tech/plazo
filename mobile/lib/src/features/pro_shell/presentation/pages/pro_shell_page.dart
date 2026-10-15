@@ -26,7 +26,9 @@ class ProShellPage extends StatelessWidget {
       builder: (context, child) {
         final router = context.tabsRouter;
         return Scaffold(
-          body: child,
+          // Edge-to-edge (Android 15+): in landscape the 3-button bar or the cutout sits on a side; the tab bodies keep
+          // clear of it (the app bars and the NavigationBar pad themselves).
+          body: SafeArea(top: false, bottom: false, child: child),
           bottomNavigationBar: NavigationBarTheme(
             data: NavigationBarThemeData(
               backgroundColor: AppColors.surface,

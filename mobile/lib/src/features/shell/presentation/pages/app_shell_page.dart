@@ -25,7 +25,9 @@ class AppShellPage extends StatelessWidget {
         builder: (context, child) {
           final tabs = context.tabsRouter;
           return Scaffold(
-            body: child,
+            // Edge-to-edge: in landscape the tabs keep clear of a side navigation bar or a cutout (their bars and the
+            // tab bar handle the top and the bottom).
+            body: SafeArea(top: false, bottom: false, child: child),
             bottomNavigationBar: NavigationBarTheme(
               data: NavigationBarThemeData(
                 backgroundColor: AppColors.surface,
