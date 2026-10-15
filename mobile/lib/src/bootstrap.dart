@@ -3,6 +3,7 @@ import 'dart:developer';
 
 import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_web_plugins/url_strategy.dart';
 import 'package:intl/date_symbol_data_local.dart';
@@ -26,6 +27,9 @@ Future<void> bootstrap(FutureOr<Widget> Function() builder) async {
   // Web: real paths (/ma-reservation/REF?cle=...), the same as the site's links, not #/ ones.
   usePathUrlStrategy();
   WidgetsFlutterBinding.ensureInitialized();
+  // Edge-to-edge on Android 10+ (MainActivity.kt turns it on natively): without this mode, Flutter puts its default
+  // window flags back on every resume and the app stops drawing behind the navigation bar.
+  unawaited(SystemChrome.setEnabledSystemUIMode(SystemUiMode.edgeToEdge));
   FlutterError.onError = (details) => log(details.exceptionAsString(), stackTrace: details.stack);
   Bloc.observer = const AppBlocObserver();
 
