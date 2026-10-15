@@ -60,13 +60,21 @@ void main() {
     );
   }
 
+  /// Scrolls the page's list (the search field has a scrollable of its own) to its very end: the list builds lazily, so its
+  /// extent grows as it goes.
+  Future<void> scrollToEnd(WidgetTester tester) async {
+    final position = tester.state<ScrollableState>(find.descendant(of: find.byType(ListView).first, matching: find.byType(Scrollable)).first).position;
+    expect(position.maxScrollExtent, greaterThan(0));
+    for (var i = 0; i < 10 && position.pixels < position.maxScrollExtent; i++) {
+      position.jumpTo(position.maxScrollExtent);
+      await tester.pump();
+    }
+  }
+
   testWidgets('ouverte au-dessus des onglets : « Placer » de la dernière arrivée reste au-dessus de la barre de navigation', (tester) async {
     setSystemBars(tester);
     await show(tester);
-    final position = tester.state<ScrollableState>(find.byType(Scrollable).first).position;
-    expect(position.maxScrollExtent, greaterThan(0));
-    position.jumpTo(position.maxScrollExtent);
-    await tester.pump();
+    await scrollToEnd(tester);
     expectClearOfSystemBars(tester, find.byKey(const Key('place-PLZ-R6')));
   });
 
@@ -86,9 +94,7 @@ void main() {
     setSystemBars(tester, bottom: 0, left: 32, right: 48);
     await show(tester, size: const Size(800, 400));
     expectClearOfSystemBars(tester, find.byKey(const Key('occupation-search')));
-    final position = tester.state<ScrollableState>(find.byType(Scrollable).first).position;
-    position.jumpTo(position.maxScrollExtent);
-    await tester.pump();
+    await scrollToEnd(tester);
     expectClearOfSystemBars(tester, find.byKey(const Key('arrival-PLZ-R6')));
   });
 }
