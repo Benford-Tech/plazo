@@ -80,6 +80,10 @@ fi
 adb shell settings put system accelerometer_rotation 0
 adb shell settings put system user_rotation 0
 adb shell settings put global sysui_demo_allowed 1
+# No « isn't responding » dialog: the emulator's software GPU can hold Flutter's surface creation for ~10 s on a cold
+# start (ANR traces of 15/10/2026: main thread in FlutterJNI.nativeSurfaceCreated), and the dialog then covered the
+# screenshots and swallowed a BACK meant for the Stripe sheet. The ANRs stay in the logs and are still reported.
+adb shell settings put global hide_error_dialogs 1
 demo() { adb shell am broadcast -a com.android.systemui.demo -e command "$@" > /dev/null; }
 status_bar_demo() { # sent again after each change of navigation mode or cutout, which may redraw SystemUI's bars
   demo enter
@@ -244,6 +248,7 @@ pro() {
 # ── Stripe payment sheet (lib/stripe_smoke_main.dart: same Android code and R8 run as Plazo) ─────────────
 stripe_sheet() {
   local top="" log=""
+  adb shell am force-stop "$PRO"   # nothing of Plazo Pro's run left over the sheet
   launch "$TRAVELLER" "" 3 || return
   for _ in $(seq 1 40); do
     top=$(adb shell dumpsys activity activities | tr -d '\r' | grep -m1 'ResumedActivity')
@@ -256,7 +261,10 @@ stripe_sheet() {
     *com.stripe.android*)
       shot stripe-01-feuille-de-paiement 6   # the sheet loads its payment methods from Stripe's API first
       adb shell input keyevent KEYCODE_BACK
-      sleep 4 ;;
+      sleep 4
+      # A BACK taken by something else (a system dialog, the keyboard): once more, while the sheet is still up.
+      top=$(adb shell dumpsys activity activities | tr -d '\r' | grep -m1 'ResumedActivity')
+      case "$top" in *com.stripe.android*) adb shell input keyevent KEYCODE_BACK; sleep 4 ;; esac ;;
   esac
   alive "$TRAVELLER" || return
   shot stripe-02-retour 1

@@ -268,7 +268,9 @@ Règles pour un nouvel écran :
   (`brand/stores/tools/screenshots/run.sh` en `API_ONLY=1`, base jetable du runner, jamais la production), feuille de
   paiement Stripe ouverte par `lib/stripe_smoke_main.dart` (clé de test `pk_test_` seulement, aucun paiement possible) et
   rapport R8 par paquet ; captures et journaux en artefacts (`android-api-35`, `android-api-36`). Scripts dans
-  `tool/emulator/`.
+  `tool/emulator/`. Un démarrage de 5 s ou plus et une ANR sont signalés (traces `anr-*/` dans l'artefact) ; sur ces
+  émulateurs sans carte graphique, le premier démarrage de Plazo Pro attend 9 à 12 s la création de la surface de dessin
+  de Flutter (`FlutterJNI.nativeSurfaceCreated`, 15/10/2026) : c'est le GPU logiciel, pas le code de l'app.
 
 ## Deux apps, un projet (A-B, 04/10/2026)
 
