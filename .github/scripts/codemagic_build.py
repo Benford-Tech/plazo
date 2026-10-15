@@ -164,52 +164,77 @@ def ensure(app):
 MEMBER = re.compile(r"^\s+(?:\d+:\d+:)?(.+?)(?::\d+(?::\d+)?)? -> (\S+)$")
 
 
+def resolve_names(text, wanted):
+    """{obfuscated class: (original class, {obfuscated member: [original signatures]})} for the wanted names."""
+    found, current = {}, None
+    for line in text.splitlines():
+        if not line or line.startswith("#"):
+            continue
+        if not line[0].isspace():
+            left, _, right = line.rstrip(":").partition(" -> ")
+            current = right if right in wanted else None
+            if current:
+                found[current] = (left, {})
+        elif current:
+            match = MEMBER.match(line)
+            if match and match.group(2) in wanted[current]:
+                found[current][1].setdefault(match.group(2), []).append(match.group(1))
+    return found
+
+
+def recent_builds(app):
+    """The app's recent builds, newest first (v3, else the v1 list)."""
+    try:
+        code, payload = call("GET", f"/api/v3/apps/{app['id']}/builds", query={"page_size": 30})
+        return [b["id"] for b in payload.get("data", [])]
+    except SystemExit:
+        code, payload = call("GET", f"{API_V1}/builds", query={"appId": app["id"]})
+        return [b["_id"] for b in (payload or {}).get("builds", [])][:30]
+
+
 def mapping(app):
     """The original names behind the obfuscated ones Google Play quotes (« Décodées dans go3.e »), from the R8
-    mapping.txt of each flavor kept as a build artifact (codemagic.yaml, mobile-release and mobile-release-android)."""
+    mapping.txt of each flavor kept as a build artifact (codemagic.yaml, mobile-release and mobile-release-android).
+    Without BUILD_ID, every recent build with a mapping is tried and the one where every name has its member wins:
+    Play's warnings name the build it reviewed, not always the last one."""
     if not NAMES:
         fail("names manquant (ex. « u41.Q go3.e »)")
-    build_id = BUILD_ID or app.get("last_build_id")
-    if not build_id:
-        fail("aucun build : préciser build_id")
-    code, payload = call("GET", f"/api/v3/builds/{build_id}")
-    build = payload["data"]
-    artifacts = [a for a in build.get("artifacts") or [] if "mapping" in (a.get("name") or "")]
-    versions = sorted({f"{a.get('version_name')} ({a.get('version_code')})" for a in build.get("artifacts") or []
-                       if a.get("version_name")})
-    lines = [f"Correspondances R8 du build {build_id} ({', '.join(versions) or 'version inconnue'}) :"]
-    if not artifacts:
-        lines.append("- aucun mapping.txt dans les artefacts ; artefacts : "
-                     + ", ".join(f"`{a.get('name')}`" for a in build.get("artifacts") or []))
     wanted = {}
     for name in NAMES:
         cls, _, member = name.rpartition(".") if "." in name else (name, "", "")
         wanted.setdefault(cls or name, set()).add(member)
-    for index, artifact in enumerate(artifacts, 1):
-        url = artifact.get("url") or artifact.get("short_lived_download_url")
-        if not url:
-            lines.append(f"- `{artifact.get('name')}` sans url ; champs : {sorted(artifact.keys())}")
+    builds = [BUILD_ID] if BUILD_ID else recent_builds(app)
+    lines = [f"Correspondances R8 ({len(builds)} build(s) examiné(s)) :"]
+    best = None
+    for build_id in builds:
+        code, payload = call("GET", f"/api/v3/builds/{build_id}")
+        build = payload["data"]
+        artifacts = [a for a in build.get("artifacts") or [] if "mapping" in (a.get("name") or "")]
+        versions = sorted({f"{a.get('version_name')} ({a.get('version_code')})" for a in build.get("artifacts") or []
+                           if a.get("version_name")})
+        label = f"build `{build_id}` {', '.join(versions) or ''} ({(build.get('workflow') or {}).get('id')}, {build.get('created_at')})"
+        if not artifacts:
+            lines.append(f"- {label} : pas de mapping.txt")
             continue
-        text = fetch_text(url)
-        found, current = {}, None
-        for line in text.splitlines():
-            if not line or line.startswith("#"):
+        for index, artifact in enumerate(artifacts, 1):
+            url = artifact.get("url") or artifact.get("short_lived_download_url")
+            if not url:
+                lines.append(f"- {label} n° {index} : pas de lien ; champs : {sorted(artifact.keys())}")
                 continue
-            if not line[0].isspace():
-                left, _, right = line.rstrip(":").partition(" -> ")
-                current = right if right in wanted else None
-                if current:
-                    found[current] = (left, {})
-            elif current:
-                match = MEMBER.match(line)
-                if match and match.group(2) in wanted[current]:
-                    found[current][1].setdefault(match.group(2), []).append(match.group(1))
-        lines.append(f"### `{artifact.get('name')}` n° {index} ({human_size(len(text))}, {text.count(chr(10))} lignes)")
-        if len(text) < 2000:
-            lines.append(f"- contenu inattendu : {text[:300]}")
+            text = fetch_text(url)
+            found = resolve_names(text, wanted)
+            hits = sum(1 for cls, members in wanted.items() for m in members
+                       if cls in found and (not m or found[cls][1].get(m)))
+            total = sum(len(members) for members in wanted.values())
+            lines.append(f"- {label} mapping n° {index} ({human_size(len(text))}) : {hits}/{total} noms retrouvés avec leur membre")
+            if best is None or hits > best[0]:
+                best = (hits, label, index, found)
+    if best:
+        hits, label, index, found = best
+        lines.append(f"### Meilleure correspondance : {label} mapping n° {index} ({hits} nom(s))")
         for cls, members in sorted(wanted.items()):
             if cls not in found:
-                lines.append(f"- `{cls}` : absent de ce fichier")
+                lines.append(f"- `{cls}` : absent")
                 continue
             original, seen = found[cls]
             lines.append(f"- `{cls}` = `{original}`")
