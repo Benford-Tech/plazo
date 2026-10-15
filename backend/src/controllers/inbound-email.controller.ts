@@ -49,10 +49,15 @@ export class InboundEmailController {
   /**
    * POST /public/inbound/retry (11/10/2026, « Lance l'analyse automatiquement pour allopark »): the email relay's cron,
    * every 10 minutes, with the same X-Inbound-Secret: the Allopark emails due for another try are analysed again.
+   * 15/10/2026: then, unless Allopark stopped the pass, the emails that waited only for their plate (`plateOnly`, given
+   * when some were due).
    */
   public retry = catchAsync(async (req: Request, res: Response) => {
     checkInboundSecret(req);
-    res.json(await this.inbound.retryAllopark());
+    const startedAt = Date.now();
+    const report = await this.inbound.retryAllopark();
+    const plateOnly = report.stopped ? null : await this.inbound.importWaitingForPlate(new Date(), startedAt);
+    res.json({ ...report, ...(plateOnly?.due ? { plateOnly } : {}) });
   });
 
   /** GET /internal/inbound/settings */

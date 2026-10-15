@@ -1,6 +1,6 @@
 import { cleanNamePart, CustomerNames, customerNamesOf } from './customer-name';
 import type { ParsedBooking } from './importers/types';
-import { formatFlight, formatPlate, plateKey } from './reservation';
+import { formatFlight, importedPlate, plateKey } from './reservation';
 import { localDateTime, parseInstant } from './time';
 
 /**
@@ -100,14 +100,45 @@ export function phoneKey(phone: string): string {
   return digits;
 }
 
+/** Words of a name, without accents, lower-case, two letters or more: « Jean DUPONT » → ['jean', 'dupont']. */
+export function nameWords(name: string): string[] {
+  return name
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .toLowerCase()
+    .split(/[^a-z]+/)
+    .filter(w => w.length >= 2);
+}
+
+/** What sameTraveller reads of a booking. */
+export interface TravellerKeys {
+  plateKey: string;
+  customerPhone: string;
+  customerName: string;
+}
+
+/**
+ * 15/10/2026 (« ne pas planter à l'import quand la plaque est manquante »): the same traveller's booking — the same plate
+ * when both have one, else the same phone (6 digits at least) and a word of the name in common (« DUPONT Jean » is « Jean
+ * Dupont »). An anonymised booking (phone '') never matches.
+ */
+export function sameTraveller(a: TravellerKeys, b: TravellerKeys): boolean {
+  if (a.plateKey && b.plateKey) return a.plateKey === b.plateKey;
+  const phone = phoneKey(a.customerPhone);
+  if (phone.length < 6 || phone !== phoneKey(b.customerPhone)) return false;
+  const words = nameWords(b.customerName);
+  return nameWords(a.customerName).some(w => words.includes(w));
+}
+
 const same = (a: string | null | undefined, b: string | null | undefined) =>
   cleanNamePart(a).toLocaleLowerCase('fr') === cleanNamePart(b).toLocaleLowerCase('fr');
 
 /**
  * The changes from `current` to the comparator's `booking`, field by field, only for what the booking gives (a field
  * left blank on the page changes nothing): local times of the parking made instants as the booking form does
- * (parseInstant), plates by their letters and digits (plateKey), flights as formatFlight writes them (a value that is
- * no flight number is ignored), phones by their digits (phoneKey), names, e-mails and car models without case.
+ * (parseInstant), plates by their letters and digits (plateKey; 15/10/2026: what is no plate is ignored, importedPlate),
+ * flights as formatFlight writes them (a value that is no flight number is ignored), phones by their digits (phoneKey),
+ * names, e-mails and car models without case.
  */
 export function importChanges(current: ChangeableBooking, booking: ParsedBooking, timeZone: string): ImportDiff {
   const changes: ImportChange[] = [];
@@ -129,10 +160,11 @@ export function importChanges(current: ChangeableBooking, booking: ParsedBooking
     data.passengers = passengers;
   }
 
-  const plate = booking.plate?.trim();
-  if (plate && plateKey(plate) && plateKey(plate) !== current.plateKey) {
-    changes.push({ field: 'plate', from: current.plate, to: formatPlate(plate) });
-    data.plate = formatPlate(plate);
+  // 15/10/2026: a blank or junk plate never erases one; a booking imported without a plate ('') takes the page's.
+  const plate = importedPlate(booking.plate);
+  if (plate && plateKey(plate) !== current.plateKey) {
+    changes.push({ field: 'plate', from: current.plate, to: plate });
+    data.plate = plate;
     data.plateKey = plateKey(plate);
   }
 

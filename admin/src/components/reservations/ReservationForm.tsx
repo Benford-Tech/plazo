@@ -352,7 +352,10 @@ export function ReservationForm({
             </span>
             <input
               id="plate"
-              required
+              // 15/10/2026: a comparator's booking may come without its plate (« Compléter »: read on arrival); a plate,
+              // once typed, is never erased (the server refuses it), nor does a booking without one move to the phone or the
+              // counter without it.
+              required={!!reservation?.plate.trim() || (form.channel !== "aggregator" && form.channel !== reservation?.channel)}
               autoCapitalize="characters"
               value={form.plate}
               onChange={set("plate")}

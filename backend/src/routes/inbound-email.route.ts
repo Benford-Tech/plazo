@@ -27,9 +27,15 @@ import { StaffAuthMiddleware } from '@/middlewares/staff-auth.middleware';
  *   post:
  *     tags: [Inbound email]
  *     summary: "Cron of the Cloudflare relay, every 10 minutes (header X-Inbound-Secret): the Allopark emails whose booking page could not be read are analysed again when due (after 10 min, 30 min, 1 h, 3 h, 8 h; two days at most; never a captcha nor a page Allopark refused), three per call at most, the call ending as soon as Allopark asks for a check or refuses Plazo"
+ *     description: >
+ *       15/10/2026 (« ne pas planter à l'import quand la plaque est manquante »): then, unless Allopark stopped the pass,
+ *       the emails of the last 7 days that waited only for their plate (no longer required) are analysed again and
+ *       imported, three per call at most, none started after the call's first 10 s; `plateOnly` reports them when some
+ *       were due. Neither pass analyses an email whose booking the staff made by hand while it waited (counted in
+ *       `typedByHand`): no second booking of the same car.
  *     responses:
  *       200:
- *         description: "{ due, tried, outcomes: { imported?, changed?, duplicate?, incomplete?, unrecognised? }, stopped?: protected | refused }"
+ *         description: "{ due, tried, outcomes: { imported?, changed?, duplicate?, incomplete?, unrecognised? }, stopped?: protected | refused, typedByHand?, plateOnly?: { due, tried, outcomes, stopped?, typedByHand? } }"
  *       401:
  *         description: Bad or missing secret, or the feature is off
  * /internal/inbound/settings:

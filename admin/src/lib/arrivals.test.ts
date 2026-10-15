@@ -26,6 +26,14 @@ describe("arrivées en direct", () => {
     expect(bannerText(signal({ state: "announced", announcedMinutes: 10, note: "2 enfants, poussette" }))).toBe("C. Martin : « J'arrive dans 10 min » — AB-123-CD · « 2 enfants, poussette »");
   });
 
+  it("15/10/2026 : sans plaque (réservation importée), le bandeau n'en dit rien", () => {
+    expect(bannerText(signal({ plate: "" }))).toBe("C. Martin arrive dans 12 min");
+    expect(bannerText(signal({ plate: "", state: "at_meeting_point" }))).toBe("C. Martin est à l'accueil");
+    expect(bannerText(signal({ plate: "", state: "announced", announcedMinutes: 10, note: "Coffre plein" }))).toBe(
+      "C. Martin : « J'arrive dans 10 min » · « Coffre plein »",
+    );
+  });
+
   it("met en tête les voyageurs en approche, triés par ETA", () => {
     const rows = [row("a"), row("b", signal({ id: "sb", reservationId: "b", etaMinutes: 20 })), row("c", signal({ id: "sc", reservationId: "c", etaMinutes: 5 }))];
     expect(liveFirst(rows).map(r => r.id)).toEqual(["c", "b", "a"]);

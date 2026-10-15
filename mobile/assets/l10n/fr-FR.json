@@ -556,7 +556,11 @@
     "modify": "Modifier",
     "loading": "Chargement…",
     "opens_outside": "s'ouvre en dehors de l'application",
-    "confirm": "Confirmer"
+    "confirm": "Confirmer",
+    "plate_missing": "À saisir",
+    "vehicle": "Véhicule",
+    "the_vehicle": "Le véhicule",
+    "car": "Voiture"
   },
   "search": {
     "kicker": "Lyon Saint-Exupéry",

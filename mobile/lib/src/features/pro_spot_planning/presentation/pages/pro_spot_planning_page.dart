@@ -82,13 +82,15 @@ class ProSpotPlanningPage extends StatelessWidget implements AutoRouteWrapper {
   static String? _noticeText(String? notice) {
     if (notice == null) return null;
     final parts = notice.split(':');
+    // 15/10/2026: a car imported without its plate (read on arrival) is « Véhicule », as on the web.
+    String plate(String fallback) => parts.length > 1 && parts[1].isEmpty ? fallback.tr() : (parts.length > 1 ? parts[1] : '');
     return switch (parts.first) {
       'planning.preassigned' => 'planning.preassigned'.tr(args: [parts[1], parts[2]]),
-      'planning.moved' => 'planning.moved'.tr(args: [parts[1], parts[2]]),
+      'planning.moved' => 'planning.moved'.tr(args: [plate('common.vehicle'), parts[2]]),
       'planning.kept' => 'spot_planning.files.kept_notice'.tr(args: [parts[1], localDay('${parts[2]}T00:00')]),
       'planning.freed' => 'spot_planning.files.freed_notice'.tr(args: [parts[1]]),
       'occupation.prepared' => 'occupation.prepared'.tr(args: [parts[1], parts[2]]),
-      _ => 'planning.released'.tr(args: [parts[1]]),
+      _ => 'planning.released'.tr(args: [plate('common.the_vehicle')]),
     };
   }
 }
@@ -352,7 +354,8 @@ class _Bar extends StatelessWidget {
           padding: const EdgeInsets.symmetric(horizontal: 4),
           decoration: BoxDecoration(color: color, borderRadius: AppRadius.small),
           child: Text(
-            stay.plate,
+            // 15/10/2026: a car imported without its plate is named by its customer.
+            stay.plate.isEmpty ? stay.customerName : stay.plate,
             maxLines: 1,
             overflow: TextOverflow.clip,
             softWrap: false,

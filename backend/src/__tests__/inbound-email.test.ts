@@ -232,7 +232,7 @@ describe('POST /public/inbound/email', () => {
     expect(list.status).toBe(200);
     expect(list.body.data).toHaveLength(2);
     const incomplete = list.body.data.find((e: { status: string }) => e.status === 'incomplete');
-    expect(incomplete).toMatchObject({ provider: 'Allopark', subject: 'Allopark incomplet', missing: ['customerPhone', 'plate'] });
+    expect(incomplete).toMatchObject({ provider: 'Allopark', subject: 'Allopark incomplet', missing: ['customerPhone'] });
     expect(incomplete.parsed).toMatchObject({ externalReference: 'AL-884880719', customerName: 'Jean Dupont' });
     const unrecognised = list.body.data.find((e: { status: string }) => e.status === 'unrecognised');
     expect(unrecognised.textBody).toBe('Bonjour, pouvez-vous me réserver une place ?');
@@ -504,7 +504,7 @@ describe('la boîte de réception (M-A + T-A, 08/10/2026)', () => {
     expect(todo.data.map((e: { subject: string }) => e.subject)).toEqual(['Question', 'Allopark incomplet', 'vieux incomplet']);
     expect(statuses(todo)).toEqual(['unrecognised', 'incomplete', 'incomplete']);
     expect(todo.data[0]).toMatchObject({ id: unrecognised.id, textBody: 'Bonjour, Question', missing: [], parsed: null });
-    expect(todo.data[1]).toMatchObject({ id: incomplete.id, provider: 'Allopark', missing: ['customerPhone', 'plate'] });
+    expect(todo.data[1]).toMatchObject({ id: incomplete.id, provider: 'Allopark', missing: ['customerPhone'] });
 
     const done = (await api().get('/api/internal/inbound/emails?view=done').set(auth(agent.token))).body;
     expect(done.counts).toEqual(todo.counts);
@@ -545,7 +545,7 @@ describe('la boîte de réception (M-A + T-A, 08/10/2026)', () => {
     // Handled: incomplete and unrecognised leave « À traiter », the text stays; a duplicate too; imported stays imported.
     const handled = await post(incomplete.id, 'handle');
     expect(handled.status).toBe(200);
-    expect(handled.body.data).toMatchObject({ id: incomplete.id, status: 'handled', provider: 'Allopark', missing: ['customerPhone', 'plate'] });
+    expect(handled.body.data).toMatchObject({ id: incomplete.id, status: 'handled', provider: 'Allopark', missing: ['customerPhone'] });
     expect(handled.body.data.textBody).toContain('ALLOPARK');
     expect((await post(duplicate.id, 'handle')).body.data).toMatchObject({ status: 'handled', reservationReference: expect.any(String) });
     expect((await post(imported.id, 'handle')).body.data).toMatchObject({ status: 'imported' });
@@ -964,8 +964,8 @@ describe('Allopark : la page de la réservation complète le mail (10/10/2026)',
 
     const waiting = await prisma.inboundEmail.findMany({ where: { operatorId: op.operator.id, status: 'incomplete' }, orderBy: { subject: 'asc' } });
     expect(waiting.map(e => [e.subject, e.missing])).toEqual([
-      ['ailleurs', ['customerPhone', 'plate']],
-      ['en erreur', ['customerPhone', 'plate']],
+      ['ailleurs', ['customerPhone']],
+      ['en erreur', ['customerPhone']],
     ]);
   });
 });
@@ -1685,7 +1685,7 @@ describe('relancer l’analyse d’un mail (10/10/2026)', () => {
     const op = await connected();
     await receive([item(op.address, email)]);
     const row = await rowOf(op.operator.id, 'incomplete');
-    expect(row.missing).toEqual(['customerPhone', 'plate']);
+    expect(row.missing).toEqual(['customerPhone']);
 
     // Claude now finds the plate, still not the phone.
     process.env.ANTHROPIC_API_KEY = 'sk-ant-test';
@@ -1739,11 +1739,7 @@ describe('relancer l’analyse d’un mail (10/10/2026)', () => {
     await api().post(`/api/internal/inbound/emails/${incomplete.id}/handle`).set(auth(op.token));
     await prisma.inboundEmail.update({ where: { id: incomplete.id }, data: { missing: ['plate'] } });
     const handled = await reanalyse(incomplete.id, op.token);
-    expect([handled.body.outcome, handled.body.email.status, handled.body.email.missing]).toEqual([
-      'incomplete',
-      'handled',
-      ['customerPhone', 'plate'],
-    ]);
+    expect([handled.body.outcome, handled.body.email.status, handled.body.email.missing]).toEqual(['incomplete', 'handled', ['customerPhone']]);
   });
 
   it('refuse un mail déjà importé, sans texte, une confirmation de Gmail, le mail d’un autre parking, une seconde analyse immédiate et un chauffeur', async () => {
@@ -2021,7 +2017,7 @@ describe('Allopark : prix de la page et vérification anti-robot (10/10/2026, «
       const row = await bySubject(op.operator.id, 'protégée');
       expect(row).toMatchObject({
         status: 'incomplete',
-        missing: ['customerPhone', 'plate'],
+        missing: ['customerPhone'],
         pageLookup: { outcome: 'protected', url: urlOf('parking@example.com'), at: expect.any(String) },
       });
       const logged = warn.mock.calls.map(([message]) => String(message)).filter(m => m.startsWith('[Allopark]'));
@@ -2209,6 +2205,31 @@ describe('Allopark : analyse relancée automatiquement (11/10/2026, « Lance l�
     expect(traced.details).toMatchObject({ auto: true, outcome: 'imported', from: 'incomplete', to: 'imported' });
     // Nothing left to try.
     expect((await retry()).body).toEqual({ due: 0, tried: 0, outcomes: {} });
+  });
+
+  it('15/10/2026 (relecture) : une réservation saisie à la main pendant l’attente, même annulée depuis, laisse le mail à l’équipe', async () => {
+    const op = await connected();
+    answer(() => new Response(manage, { status: 200, headers: htmlHeaders }));
+    await post([forwarded(op.address, 'pas encore')]);
+    const row = await bySubject(op.operator.id, 'pas encore');
+    await prisma.inboundEmail.update({ where: { id: row.id }, data: { receivedAt: minutesAgo(11) } });
+    // Typed at the counter (no reference), then cancelled: never brought back by the email.
+    const typed = await api().post('/api/internal/reservations').set(auth(op.token)).send({
+      channel: 'counter',
+      arrivalAt: '2026-10-01T08:30',
+      returnAt: '2026-10-03T17:00',
+      passengers: 3,
+      customerFirstName: 'Jean',
+      customerLastName: 'Dupont',
+      customerPhone: '06 99 99 99 99',
+      plate: 'GH-789-JK',
+    });
+    expect(typed.status).toBe(201);
+    await prisma.reservation.update({ where: { id: typed.body.data.id }, data: { status: 'cancelled' } });
+    answer(() => new Response(page, { status: 200, headers: htmlHeaders }));
+    expect((await retry()).body).toEqual({ due: 1, tried: 0, outcomes: {}, typedByHand: 1 });
+    expect(await bySubject(op.operator.id, 'pas encore')).toMatchObject({ status: 'incomplete', autoRetries: 0, reservationId: null });
+    expect(await prisma.reservation.count({ where: { operatorId: op.operator.id } })).toBe(1);
   });
 
   it('relecture : un refus d’Allopark (429, blocage de Cloudflare) n’est jamais réessayé seul, et arrête le passage', async () => {
@@ -2710,7 +2731,7 @@ describe('Allopark : une modification appliquée par Plazo (10/10/2026, « C’e
         textBody: 'ALLOPARK\nRéservation AL-884880719\nVos nouvelles dates : du 1er au 3 octobre.',
         provider: 'Allopark',
         parsed,
-        missing: ['customerPhone', 'plate'],
+        missing: ['customerPhone'],
         recipients: ['parking@example.com'],
       },
     });
@@ -2720,7 +2741,7 @@ describe('Allopark : une modification appliquée par Plazo (10/10/2026, « C’e
     expect(res.body.email).toMatchObject({
       status: 'incomplete',
       parsed: expect.objectContaining({ externalReference: 'AL-884880719', priceCents: 3499, returnAt: '2026-10-03T17:00' }),
-      missing: ['customerPhone', 'plate'],
+      missing: ['customerPhone'],
       pageLookup: { outcome: 'protected' },
       change: null,
     });
@@ -3088,5 +3109,445 @@ describe('Allopark : vol illisible, réservation saisie sans référence, page a
       plate: 'GK-318-PX',
       customerPhone: '+33 6 12 34 56 78',
     });
+  });
+});
+
+describe('import sans plaque (15/10/2026, « ne pas planter à l’import quand la plaque est manquante »)', () => {
+  const page = readFileSync(join(__dirname, 'fixtures/allopark-page.html'), 'utf8');
+  const blankPage = page.replace('name="plate" value="GK-318-PX"', 'name="plate" value=""');
+  const link =
+    '<a href="https://www.allopark.com/fr-be/confirmation?email=parking@example.com&amp;reference=AL-884880719&amp;view=parking">Consulter ma réservation</a>';
+  const onepark = readFileSync(join(__dirname, 'fixtures/onepark-notification.html'), 'utf8');
+  const parkmundo = readFileSync(join(__dirname, 'fixtures/parkmundo-confirmation.html'), 'utf8');
+  const challenge = '<!DOCTYPE html><html><head><title>Just a moment...</title></head><body><div id="challenge-stage"></div></body></html>';
+  const manage = '<!DOCTYPE html><html><head><title>Gérer ma réservation</title></head><body><form id="find-reservation"></form></body></html>';
+  const htmlHeaders = { 'Content-Type': 'text/html; charset=UTF-8' };
+  const post = (items: unknown[]) => api().post('/api/public/inbound/email').set('X-Inbound-Secret', 'inbound-test-secret').send({ items });
+  const retry = () => api().post('/api/public/inbound/retry').set('X-Inbound-Secret', 'inbound-test-secret');
+  const reanalyse = (id: string, token: string) => api().post(`/api/internal/inbound/emails/${id}/reanalyse`).set(auth(token));
+  const reader = Container.get(EmailReadingService);
+  let read: jest.SpyInstance;
+  let shown: (url: string) => Response;
+  const show = (html: string, status = 200, headers: Record<string, string> = htmlHeaders) => {
+    shown = () => new Response(html, { status, headers });
+  };
+  /** The pushes sent, as OneSignal reads them. */
+  const sent = () => pushes().map(([, init]) => JSON.parse(String((init as RequestInit).body)) as { contents: { fr?: string; en?: string } });
+  const oneparkMail = (to: string, html = onepark) =>
+    item(to, '', { RawHtmlBody: html, From: { Name: 'Onepark', Address: 'noreply@onepark.co' }, Subject: 'Nouvelle réservation Onepark' });
+  const oneparkWithoutPlate = onepark.replace('<td>AB123CD</td>', '<td></td>');
+  const parclickText = (plate: string) =>
+    `Parclick Voici votre réservation ! Arrivée au parking 09/10/2026 19:45 Sortie du parking 11/10/2026 19:45 Référence de la réservation: BQXY1234 Nom : Jean Martin Téléphone : 06 12 34 56 78 Immatriculation : ${plate} Prix total : 52,90 €`;
+  const parkos = (to: string, subject = 'Nouvelle réservation sur Parkos') =>
+    item(to, 'Bonjour, nouvelle réservation sur Parkos pour Marie Dupont…', {
+      From: { Name: 'Parkos', Address: 'noreply@parkos.fr' },
+      Subject: subject,
+    });
+  const claude = (over: Partial<EmailReading> = {}): EmailReadingResult => ({
+    reading: {
+      kind: 'booking',
+      provider: 'Parkos',
+      externalReference: null,
+      arrivalAt: '2026-11-12T06:30',
+      returnAt: '2026-11-19T22:15',
+      customerName: 'Marie Dupont',
+      customerFirstName: null,
+      customerLastName: null,
+      customerPhone: '+33 6 12 34 56 78',
+      customerEmail: null,
+      plate: null,
+      returnFlight: null,
+      departureFlight: null,
+      passengers: 2,
+      priceCents: 18990,
+      confidence: 0.9,
+      summary: 'Réservation Parkos de Marie Dupont du 12 au 19 novembre',
+      ...over,
+    },
+    model: 'claude-test',
+    usage: { inputTokens: 800, outputTokens: 120 },
+  });
+  const connected = async () => {
+    const op = await setupOperator();
+    const settings = await api().get('/api/internal/inbound/settings').set(auth(op.token));
+    await api()
+      .put('/api/internal/notifications/devices')
+      .set(auth(op.token))
+      .send({ subscriptionId: `sub-${op.operator.id}` });
+    await api().patch('/api/internal/notifications/preferences').set(auth(op.token)).send({ bookings: 'immediate' });
+    return { ...op, address: settings.body.address as string };
+  };
+  const lastRow = (operatorId: string) => prisma.inboundEmail.findFirstOrThrow({ where: { operatorId }, orderBy: { receivedAt: 'desc' } });
+  /** A row stored before the 15/10/2026: complete but for the plate, waiting in « À traiter ». */
+  const waitingForPlate = async (operatorId: string, receivedAt = new Date(Date.now() - 3_600_000)) => {
+    const text = textOf({ RawHtmlBody: oneparkWithoutPlate });
+    return prisma.inboundEmail.create({
+      data: {
+        operatorId,
+        status: 'incomplete',
+        fromAddress: 'noreply@onepark.co',
+        fromName: 'Onepark',
+        subject: 'Nouvelle réservation Onepark',
+        textBody: text,
+        provider: 'Onepark',
+        parsed: JSON.parse(JSON.stringify(parseConfirmationEmail(text))),
+        missing: ['plate'],
+        receivedAt,
+      },
+    });
+  };
+
+  beforeEach(() => {
+    // Claude is off unless a test gives it a key.
+    delete process.env.ANTHROPIC_API_KEY;
+    read = jest.spyOn(reader, 'read').mockResolvedValue(null);
+    show(page);
+    fetchMock.mockImplementation(async url =>
+      String(url).includes('allopark.com') ? shown(String(url)) : new Response(JSON.stringify({ id: 'n1' }), { status: 200 }),
+    );
+  });
+  afterEach(() => {
+    delete process.env.ANTHROPIC_API_KEY;
+    read.mockRestore();
+  });
+
+  it('Onepark, ParkMundo et Parclick sans plaque : la réservation est créée, plaque vide (jamais « ENTR », « MARQUE » ni « PRIX »), l’équipe prévenue', async () => {
+    const op = await connected();
+    const mails = [
+      oneparkMail(op.address, oneparkWithoutPlate),
+      item(op.address, '', {
+        RawHtmlBody: parkmundo.replace('<div>FG456HJ</div>', '<div></div>'),
+        From: { Name: 'ParkMundo', Address: 'noreply@parkmundo.com' },
+        Subject: 'Confirmation de réservation',
+      }),
+      item(op.address, parclickText(''), { From: { Name: 'Parclick', Address: 'noreply@parclick.com' }, Subject: 'Voici votre réservation !' }),
+    ];
+    expect((await post(mails)).body).toEqual({ received: 3, imported: 3, toCheck: 0, ignored: 0 });
+    const bookings = await prisma.reservation.findMany({ where: { operatorId: op.operator.id }, orderBy: { channelDetail: 'asc' } });
+    expect(bookings.map(b => [b.channelDetail, b.plate, b.plateKey])).toEqual([
+      ['Onepark', '', ''],
+      ['Parclick', '', ''],
+      ['ParkMundo', '', ''],
+    ]);
+    expect(bookings.map(b => b.customerName)).toEqual(['JEAN MARTIN', 'Jean Martin', 'Claire Durand']);
+    const rows = await prisma.inboundEmail.findMany({ where: { operatorId: op.operator.id } });
+    expect(rows.map(r => [r.status, r.missing])).toEqual([
+      ['imported', null],
+      ['imported', null],
+      ['imported', null],
+    ]);
+    // « Nouvelle réservation » for each, without an empty plate.
+    const bodies = sent().map(p => p.contents.fr ?? p.contents.en ?? '');
+    expect(bodies).toHaveLength(3);
+    for (const body of bodies) expect(body).not.toMatch(/·\s*·/);
+    // The plate read on arrival: the staff type it on the booking.
+    const patched = await api().patch(`/api/internal/reservations/${bookings[0].id}`).set(auth(op.token)).send({ plate: 'ab123cd' });
+    expect(patched.status).toBe(200);
+    expect(patched.body.data).toMatchObject({ plate: 'AB-123-CD' });
+  });
+
+  it('un mail Allopark dont la page n’a pas de plaque : importé sans plaque ; une page avec la plaque la donne', async () => {
+    const op = await connected();
+    show(blankPage);
+    const mail = () => item(op.address, email, { RawHtmlBody: `<p>Bonjour Jean Dupont,</p>${link}` });
+    expect((await post([mail()])).body).toEqual({ received: 1, imported: 1, toCheck: 0, ignored: 0 });
+    expect(await prisma.reservation.findFirstOrThrow({ where: { operatorId: op.operator.id } })).toMatchObject({
+      externalReference: 'AL-884880719',
+      customerPhone: '+33 6 12 34 56 78',
+      plate: '',
+      plateKey: '',
+    });
+    await prisma.inboundEmail.deleteMany({ where: { operatorId: op.operator.id } });
+    await prisma.reservation.deleteMany({ where: { operatorId: op.operator.id } });
+    show(page);
+    expect((await post([mail()])).body.imported).toBe(1);
+    expect(await prisma.reservation.findFirstOrThrow({ where: { operatorId: op.operator.id } })).toMatchObject({
+      plate: 'GK-318-PX',
+      plateKey: 'GK318PX',
+    });
+  });
+
+  it('Claude seul, sans plaque, sûr de lui : importé', async () => {
+    const op = await connected();
+    process.env.ANTHROPIC_API_KEY = 'sk-ant-test';
+    read.mockResolvedValue(claude({ externalReference: 'PK-777' }));
+    expect((await post([parkos(op.address)])).body).toEqual({ received: 1, imported: 1, toCheck: 0, ignored: 0 });
+    expect(await prisma.reservation.findFirstOrThrow({ where: { operatorId: op.operator.id } })).toMatchObject({
+      channelDetail: 'Parkos',
+      plate: '',
+      plateKey: '',
+    });
+  });
+
+  it('une plaque que Claude apporte sans assurance est écartée (la réservation est créée) ; avec assurance, gardée ; un téléphone peu sûr fait attendre, plaque gardée', async () => {
+    const op = await connected();
+    process.env.ANTHROPIC_API_KEY = 'sk-ant-test';
+    // The importer read everything but the plate; Claude unsure (0.5) brings only the plate.
+    read.mockResolvedValueOnce(claude({ provider: 'Onepark', plate: 'ab 123 cd', confidence: 0.5 }));
+    expect((await post([oneparkMail(op.address, oneparkWithoutPlate)])).body.imported).toBe(1);
+    expect(read).toHaveBeenCalledTimes(1);
+    let row = await lastRow(op.operator.id);
+    expect(row).toMatchObject({ status: 'imported', missing: null });
+    expect(await prisma.reservation.findUniqueOrThrow({ where: { id: row.reservationId! } })).toMatchObject({ plate: '', plateKey: '' });
+
+    // Sure of itself (0.9): the plate is kept.
+    await prisma.reservation.deleteMany({ where: { operatorId: op.operator.id } });
+    read.mockResolvedValueOnce(claude({ provider: 'Onepark', plate: 'ab 123 cd', confidence: 0.9 }));
+    expect((await post([oneparkMail(op.address, oneparkWithoutPlate)])).body.imported).toBe(1);
+    row = await lastRow(op.operator.id);
+    expect(await prisma.reservation.findUniqueOrThrow({ where: { id: row.reservationId! } })).toMatchObject({ plate: 'AB-123-CD' });
+
+    // Unsure of a phone it brought too: the email waits, the plate kept for « Compléter ».
+    await prisma.reservation.deleteMany({ where: { operatorId: op.operator.id } });
+    const noPhone = oneparkWithoutPlate.replace('<td>+33 6 12 34 56 78</td>', '<td></td>');
+    read.mockResolvedValueOnce(claude({ provider: 'Onepark', customerPhone: '+33 6 00 00 00 01', plate: 'ab 123 cd', confidence: 0.5 }));
+    expect((await post([oneparkMail(op.address, noPhone)])).body.toCheck).toBe(1);
+    row = await lastRow(op.operator.id);
+    expect(row).toMatchObject({ status: 'incomplete', missing: ['confidence'], parsed: expect.objectContaining({ plate: 'AB-123-CD' }) });
+    expect(await prisma.reservation.count({ where: { operatorId: op.operator.id } })).toBe(0);
+  });
+
+  it('doublons sans référence ni plaque : le même téléphone et un mot du nom en commun, à la même arrivée', async () => {
+    const op = await connected();
+    process.env.ANTHROPIC_API_KEY = 'sk-ant-test';
+    // Two travellers arriving at the same moment: two bookings.
+    read.mockResolvedValueOnce(claude());
+    read.mockResolvedValueOnce(claude({ customerName: 'Paul Martin', customerPhone: '+33 7 00 00 00 02' }));
+    expect((await post([parkos(op.address, 'Réservation 1'), parkos(op.address, 'Réservation 2')])).body.imported).toBe(2);
+    expect(await prisma.reservation.count({ where: { operatorId: op.operator.id } })).toBe(2);
+    // The same email again: a duplicate.
+    read.mockResolvedValueOnce(claude());
+    expect((await post([parkos(op.address, 'Réservation 1 bis')])).body).toEqual({ received: 1, imported: 0, toCheck: 0, ignored: 0 });
+    // The same phone written otherwise, the name the other way round: the same booking.
+    read.mockResolvedValueOnce(claude({ customerName: 'DUPONT Marie', customerPhone: '06 12 34 56 78' }));
+    expect((await post([parkos(op.address, 'Réservation 1 ter')])).body.imported).toBe(0);
+    expect(await prisma.reservation.count({ where: { operatorId: op.operator.id } })).toBe(2);
+    expect(await prisma.inboundEmail.count({ where: { operatorId: op.operator.id, status: 'duplicate' } })).toBe(2);
+  });
+
+  it('une modification Allopark d’une réservation inconnue, page sans plaque : créée sans plaque', async () => {
+    const op = await connected();
+    show(blankPage);
+    const modification = item(
+      op.address,
+      'ALLOPARK\nVotre réservation AL-884880719 chez Aeroports Parking Lyon a été modifiée.\nConsultez votre réservation pour voir ses nouvelles informations.',
+      { Subject: 'Modification de votre réservation AL-884880719', RawHtmlBody: `<p>Votre réservation a été modifiée.</p>${link}` },
+    );
+    expect((await post([modification])).body).toEqual({ received: 1, imported: 1, toCheck: 0, ignored: 0 });
+    expect(await prisma.reservation.findFirstOrThrow({ where: { operatorId: op.operator.id } })).toMatchObject({
+      externalReference: 'AL-884880719',
+      plate: '',
+    });
+  });
+
+  it('une modification Allopark d’une réservation saisie sans référence ni plaque : retrouvée par le téléphone, la plaque de la page posée, aucune seconde réservation', async () => {
+    const op = await connected();
+    const typed = await api().post('/api/internal/reservations').set(auth(op.token)).send({
+      channel: 'aggregator',
+      channelDetail: 'Allopark',
+      arrivalAt: '2026-10-01T08:30',
+      returnAt: '2026-10-03T17:00',
+      passengers: 3,
+      customerFirstName: 'Jean',
+      customerLastName: 'Dupont',
+      customerPhone: '06 12 34 56 78',
+      plate: '',
+    });
+    expect(typed.status).toBe(201);
+    show(page.replace('name="date_out" value="2026-10-03 17:00:00"', 'name="date_out" value="2026-10-05 18:00:00"'));
+    const modification = item(
+      op.address,
+      'ALLOPARK\nVotre réservation AL-884880719 chez Aeroports Parking Lyon a été modifiée.\nConsultez votre réservation pour voir ses nouvelles informations.',
+      { Subject: 'Modification de votre réservation AL-884880719', RawHtmlBody: `<p>Votre réservation a été modifiée.</p>${link}` },
+    );
+    expect((await post([modification])).body).toEqual({ received: 1, imported: 1, toCheck: 0, ignored: 0 });
+    expect(await prisma.reservation.count({ where: { operatorId: op.operator.id } })).toBe(1);
+    const after = await prisma.reservation.findUniqueOrThrow({ where: { id: typed.body.data.id } });
+    expect(after).toMatchObject({ externalReference: 'AL-884880719', plate: 'GK-318-PX', plateKey: 'GK318PX' });
+    expect(after.returnAt.toISOString()).toBe('2026-10-05T16:00:00.000Z');
+    const row = await lastRow(op.operator.id);
+    expect((row.change as { changes: { field: string; from: unknown; to: unknown }[] }).changes).toEqual(
+      expect.arrayContaining([{ field: 'plate', from: '', to: 'GK-318-PX' }]),
+    );
+  });
+
+  it('la plaque lue par l’équipe sur une voiture arrivée n’est jamais remplacée par celle d’Allopark ; le nouveau retour s’applique', async () => {
+    const op = await connected();
+    const typed = await api().post('/api/internal/reservations').set(auth(op.token)).send({
+      channel: 'aggregator',
+      channelDetail: 'Allopark',
+      externalReference: 'AL-884880719',
+      arrivalAt: '2026-10-01T08:30',
+      returnAt: '2026-10-03T17:00',
+      passengers: 3,
+      customerFirstName: 'Jean',
+      customerLastName: 'Dupont',
+      customerPhone: '06 12 34 56 78',
+      plate: '',
+    });
+    expect(typed.status).toBe(201);
+    // On arrival, the team reads the plate on the car.
+    await api().patch(`/api/internal/reservations/${typed.body.data.id}`).set(auth(op.token)).send({ plate: 'ab123cd' }).expect(200);
+    await prisma.reservation.update({ where: { id: typed.body.data.id }, data: { status: 'arrived', arrivedAt: new Date() } });
+    // Allopark's page gives another plate (the one the traveller declared) and a new return.
+    show(page.replace('name="date_out" value="2026-10-03 17:00:00"', 'name="date_out" value="2026-10-05 18:00:00"'));
+    const modification = item(
+      op.address,
+      'ALLOPARK\nVotre réservation AL-884880719 chez Aeroports Parking Lyon a été modifiée.\nConsultez votre réservation pour voir ses nouvelles informations.',
+      { Subject: 'Modification de votre réservation AL-884880719', RawHtmlBody: `<p>Votre réservation a été modifiée.</p>${link}` },
+    );
+    await post([modification]);
+    const after = await prisma.reservation.findUniqueOrThrow({ where: { id: typed.body.data.id } });
+    expect(after).toMatchObject({ plate: 'AB-123-CD', plateKey: 'AB123CD' });
+    expect(after.returnAt.toISOString()).toBe('2026-10-05T16:00:00.000Z');
+    const row = await lastRow(op.operator.id);
+    const changes = (row.change as { changes: { field: string }[] }).changes;
+    expect(changes.map(c => c.field)).toContain('returnAt');
+    expect(changes.map(c => c.field)).not.toContain('plate');
+  });
+
+  it('une modification Allopark ne se pose jamais sur la réservation d’un autre voyageur qui partage le téléphone', async () => {
+    const op = await connected();
+    const typed = await api().post('/api/internal/reservations').set(auth(op.token)).send({
+      channel: 'aggregator',
+      channelDetail: 'Allopark',
+      arrivalAt: '2026-10-01T08:30',
+      returnAt: '2026-10-03T17:00',
+      passengers: 1,
+      customerFirstName: 'Paul',
+      customerLastName: 'Martin',
+      customerPhone: '06 12 34 56 78',
+      plate: '',
+    });
+    expect(typed.status).toBe(201);
+    show(page.replace('name="date_out" value="2026-10-03 17:00:00"', 'name="date_out" value="2026-10-05 18:00:00"'));
+    const modification = item(
+      op.address,
+      'ALLOPARK\nVotre réservation AL-884880719 chez Aeroports Parking Lyon a été modifiée.\nConsultez votre réservation pour voir ses nouvelles informations.',
+      { Subject: 'Modification de votre réservation AL-884880719', RawHtmlBody: `<p>Votre réservation a été modifiée.</p>${link}` },
+    );
+    await post([modification]);
+    // Paul Martin's booking is untouched: no reference, no new date, no other name.
+    const paul = await prisma.reservation.findUniqueOrThrow({ where: { id: typed.body.data.id } });
+    expect(paul).toMatchObject({ externalReference: null, customerName: 'Paul Martin', plate: '' });
+    expect(paul.returnAt.toISOString()).toBe('2026-10-03T15:00:00.000Z');
+    expect(await prisma.reservation.count({ where: { operatorId: op.operator.id, externalReference: 'AL-884880719' } })).toBe(1);
+  });
+
+  it('un ancien mail qui n’attendait que sa plaque : plus de « manquant », « Relancer l’analyse » l’importe', async () => {
+    const op = await connected();
+    const row = await waitingForPlate(op.operator.id);
+    const inbox = (await api().get('/api/internal/inbound/emails').set(auth(op.token))).body.data;
+    expect(inbox).toHaveLength(1);
+    expect(inbox[0]).toMatchObject({ id: row.id, status: 'incomplete', missing: [] });
+    const res = await reanalyse(row.id, op.token);
+    expect([res.status, res.body.outcome]).toEqual([200, 'imported']);
+    expect(await prisma.reservation.findFirstOrThrow({ where: { operatorId: op.operator.id } })).toMatchObject({
+      channelDetail: 'Onepark',
+      externalReference: '5900001',
+      plate: '',
+    });
+  });
+
+  it('le relais rattrape les mails des 7 derniers jours qui n’attendaient que leur plaque, une fois, tracés sans membre de l’équipe', async () => {
+    const op = await connected();
+    const old = await waitingForPlate(op.operator.id, new Date(Date.now() - 8 * 86_400_000));
+    const row = await waitingForPlate(op.operator.id);
+    expect((await retry()).body).toEqual({ due: 0, tried: 0, outcomes: {}, plateOnly: { due: 1, tried: 1, outcomes: { imported: 1 } } });
+    expect(await prisma.inboundEmail.findUniqueOrThrow({ where: { id: row.id } })).toMatchObject({
+      status: 'imported',
+      autoRetries: 1,
+      reservationId: expect.any(String),
+    });
+    const traced = await prisma.auditLog.findFirstOrThrow({ where: { action: 'inbound.reanalysed', entityId: row.id } });
+    expect(traced.staffId).toBeNull();
+    expect(traced.details).toMatchObject({ auto: true, outcome: 'imported', from: 'incomplete', to: 'imported' });
+    // Nothing left: the older one (8 days) is left to the staff.
+    expect((await retry()).body).toEqual({ due: 0, tried: 0, outcomes: {} });
+    expect(await prisma.inboundEmail.findUniqueOrThrow({ where: { id: old.id } })).toMatchObject({ status: 'incomplete', autoRetries: 0 });
+  });
+
+  it('le rattrapage laisse à l’équipe un mail dont elle a saisi la réservation à la main pendant qu’il attendait (jamais deux réservations)', async () => {
+    const op = await connected();
+    const row = await waitingForPlate(op.operator.id);
+    const parsed = row.parsed as { arrivalAt: string; returnAt: string };
+    // Typed at the counter on arrival, the same phone written otherwise, with the plate read on the car.
+    const typed = await api().post('/api/internal/reservations').set(auth(op.token)).send({
+      channel: 'counter',
+      arrivalAt: parsed.arrivalAt,
+      returnAt: parsed.returnAt,
+      passengers: 1,
+      customerFirstName: 'J.',
+      customerLastName: 'M.',
+      customerPhone: '06.12.34.56.78',
+      plate: 'GH-789-JK',
+    });
+    expect(typed.status).toBe(201);
+    expect((await retry()).body).toEqual({ due: 0, tried: 0, outcomes: {}, plateOnly: { due: 1, tried: 0, outcomes: {}, typedByHand: 1 } });
+    expect(await prisma.reservation.count({ where: { operatorId: op.operator.id } })).toBe(1);
+    expect(await prisma.inboundEmail.findUniqueOrThrow({ where: { id: row.id } })).toMatchObject({
+      status: 'incomplete',
+      autoRetries: 0,
+      reservationId: null,
+    });
+    // That booking cancelled since (the traveller called it off): still the staff's, the email never brings it back.
+    await prisma.reservation.update({ where: { id: typed.body.data.id }, data: { status: 'cancelled' } });
+    expect((await retry()).body).toEqual({ due: 0, tried: 0, outcomes: {}, plateOnly: { due: 1, tried: 0, outcomes: {}, typedByHand: 1 } });
+    expect(await prisma.reservation.count({ where: { operatorId: op.operator.id } })).toBe(1);
+  });
+
+  it('le rattrapage attend le passage suivant quand Allopark refuse Plazo', async () => {
+    const op = await connected();
+    // An Allopark email whose page did not show the booking yet, due for another try.
+    show(manage);
+    const forwarded = item('parking@example.com', email, {
+      Recipients: [op.address],
+      Subject: 'pas encore',
+      To: [{ Name: 'Parking', Address: 'parking@example.com' }],
+    });
+    await post([forwarded]);
+    const allopark = await prisma.inboundEmail.findFirstOrThrow({ where: { operatorId: op.operator.id, subject: 'pas encore' } });
+    await prisma.inboundEmail.update({ where: { id: allopark.id }, data: { receivedAt: new Date(Date.now() - 11 * 60_000) } });
+    const row = await waitingForPlate(op.operator.id);
+    show('Too Many Requests', 429, { 'cf-ray': '8c1-CDG' });
+    expect((await retry()).body).toEqual({ due: 1, tried: 1, outcomes: { incomplete: 1 }, stopped: 'refused' });
+    expect(await prisma.inboundEmail.findUniqueOrThrow({ where: { id: row.id } })).toMatchObject({ status: 'incomplete', autoRetries: 0 });
+    expect((await retry()).body).toEqual({ due: 0, tried: 0, outcomes: {}, plateOnly: { due: 1, tried: 1, outcomes: { imported: 1 } } });
+  });
+
+  it('une modification Allopark qui attend sa page (protégée) : une plaque manquante d’avant ne la laisse pas « Incomplet »', async () => {
+    const op = await connected();
+    show(challenge, 403, { 'cf-mitigated': 'challenge', ...htmlHeaders });
+    const row = await prisma.inboundEmail.create({
+      data: {
+        operatorId: op.operator.id,
+        status: 'incomplete',
+        fromAddress: 'info@allopark.com',
+        fromName: 'ALLOPARK',
+        subject: 'Votre séjour AL-884880719',
+        textBody: 'ALLOPARK\nRéservation AL-884880719\nVos nouvelles dates : du 1er au 3 octobre.',
+        provider: 'Allopark',
+        parsed: {
+          provider: 'Allopark',
+          externalReference: 'AL-884880719',
+          arrivalAt: '2026-10-01T08:30',
+          returnAt: '2026-10-03T17:00',
+          customerName: 'Jean Dupont',
+          customerPhone: '06 12 34 56 78',
+        },
+        missing: ['plate'],
+        recipients: ['parking@example.com'],
+      },
+    });
+    const res = await reanalyse(row.id, op.token);
+    expect(res.status).toBe(200);
+    expect(res.body.outcome).toBe('unrecognised');
+    expect(res.body.email).toMatchObject({
+      status: 'unrecognised',
+      missing: [],
+      parsed: expect.objectContaining({ externalReference: 'AL-884880719' }),
+      pageLookup: { outcome: 'protected' },
+    });
+    expect(await prisma.reservation.count()).toBe(0);
   });
 });

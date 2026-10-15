@@ -2,6 +2,7 @@ import { ReservationChannel } from '@/database';
 import { shortName } from './arrival';
 import { PushMessage } from './arrival-messages';
 import type { ImportChange } from './import-change';
+import { plateSegment } from './reservation';
 
 /** Push to the team when a booking arrives without them (site, import; 06/10/2026). */
 export interface NewBookingPushInput {
@@ -30,9 +31,11 @@ const CHANNELS: Record<ReservationChannel, string> = {
 
 export function newBookingPush(input: NewBookingPushInput): PushMessage {
   const source = input.channelDetail?.trim() || CHANNELS[input.channel];
+  const who = shortName(input.customerName, { firstName: input.customerFirstName, lastName: input.customerLastName });
   return {
     title: `Nouvelle réservation · ${source}`,
-    body: `${shortName(input.customerName, { firstName: input.customerFirstName, lastName: input.customerLastName })} · ${input.plate} · ${input.passengers} pass. · arrivée ${input.arrival} → retour ${input.returnDay}`,
+    // 15/10/2026: a booking imported without its plate says nothing of it (read on arrival).
+    body: `${who}${plateSegment(input.plate)} · ${input.passengers} pass. · arrivée ${input.arrival} → retour ${input.returnDay}`,
   };
 }
 

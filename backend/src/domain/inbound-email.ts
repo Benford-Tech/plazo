@@ -162,8 +162,13 @@ export function newInboundSlug(base: string, random: () => string): string {
   return `${clean || 'parking'}-${random()}`;
 }
 
-/** Required to create a booking without staff; anything else is completed later. */
-export const REQUIRED_FOR_IMPORT = ['arrivalAt', 'returnAt', 'customerName', 'customerPhone', 'plate'] as const;
+/**
+ * Required to create a booking without staff; anything else is completed later (15/10/2026, « ne pas planter à l'import
+ * quand la plaque est manquante »: no longer the plate, which comparators often leave out and the team reads on arrival).
+ */
+export const REQUIRED_FOR_IMPORT = ['arrivalAt', 'returnAt', 'customerName', 'customerPhone'] as const;
+/** What Plazo still looks for before importing (Allopark's booking page, Claude), without making the email wait. */
+export const SOUGHT_FOR_IMPORT = [...REQUIRED_FOR_IMPORT, 'plate'] as const;
 
 /** G-B (07/10/2026): what a mail provider sends to the Plazo address before it lets the operator forward to it. */
 export interface ForwardingConfirmation {

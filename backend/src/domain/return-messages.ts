@@ -1,5 +1,6 @@
 import { shortName } from './arrival';
 import { PushMessage } from './arrival-messages';
+import { plateSegment } from './reservation';
 
 /** Messages of the return day: the push to the staff and the SMS to the traveller when the flight lands. */
 
@@ -18,9 +19,11 @@ export interface LandedPushInput {
 export function landedPush(input: LandedPushInput): PushMessage {
   const who = shortName(input.customerName, { firstName: input.customerFirstName, lastName: input.customerLastName });
   const flight = input.flight ? `Vol ${input.flight}` : 'Vol';
+  // 15/10/2026: a booking imported without its plate (read on arrival) leaves it out.
+  const plate = plateSegment(input.plate);
   return input.source === 'tracking'
-    ? { title: `${flight} atterri`, body: `${flight} atterri · ${who} · ${input.plate} · ${input.landedAt}` }
-    : { title: 'Client atterri', body: `${who} a atterri (${input.flight ?? 'vol'}) · ${input.plate} · ${input.landedAt}` };
+    ? { title: `${flight} atterri`, body: `${flight} atterri · ${who}${plate} · ${input.landedAt}` }
+    : { title: 'Client atterri', body: `${who} a atterri (${input.flight ?? 'vol'})${plate} · ${input.landedAt}` };
 }
 
 export interface LandedSmsInput {
@@ -66,7 +69,7 @@ export function returnNoticePush(input: {
         ? `« ${text} »`
         : RETURN_NOTICE_LABELS.other
       : `${RETURN_NOTICE_LABELS[input.kind].toLowerCase()}${text ? ` · « ${text} »` : ''}`;
-  return { title: `Retour : ${RETURN_NOTICE_LABELS[input.kind]}`, body: `${who} : ${what} · ${input.plate}` };
+  return { title: `Retour : ${RETURN_NOTICE_LABELS[input.kind]}`, body: `${who} : ${what}${plateSegment(input.plate)}` };
 }
 
 /** The notice as the traveller, the driver's list and the operational card read it. */

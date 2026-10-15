@@ -56,7 +56,7 @@ describe('POST /internal/imports/email', () => {
     const res = await api().post('/api/internal/imports/email').set(auth(token)).send({ text: email });
     expect(res.status).toBe(200);
     expect(res.body.parsed.externalReference).toBe('AL-884880719');
-    expect(res.body.missing).toEqual(['customerPhone', 'plate']);
+    expect(res.body.missing).toEqual(['customerPhone']);
     expect(res.body.duplicate).toBeNull();
     expect(res.body.capacity.nights.map((n: any) => n.date)).toEqual(['2026-10-01', '2026-10-02']);
     expect(await prisma.reservation.count()).toBe(0);

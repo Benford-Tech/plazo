@@ -433,7 +433,15 @@ class _HandoverSheetState extends State<_HandoverSheet> {
         children: [
           Text('res.handover.title'.tr(), style: AppText.title(size: 20)),
           const SizedBox(height: 4),
-          Text('${r.customerName} · ${r.plate}${r.spot != null ? ' · ${'res.spot'.tr()} ${r.spot!.code}' : ''}${r.keyHook != null ? ' · ${'occupation.key_hook'.tr()} ${r.keyHook}' : ''}', style: AppText.muted()),
+          Text(
+            [
+              r.customerName,
+              r.plate,
+              if (r.spot != null) '${'res.spot'.tr()} ${r.spot!.code}',
+              if (r.keyHook != null) '${'occupation.key_hook'.tr()} ${r.keyHook}',
+            ].where((s) => s.trim().isNotEmpty).join(' · '),
+            style: AppText.muted(),
+          ),
           const SizedBox(height: 10),
           SwitchListTile(
             key: const Key('handover-keys'),

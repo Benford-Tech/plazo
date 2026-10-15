@@ -1,10 +1,12 @@
 import { Transform, Type } from 'class-transformer';
 import { IsBoolean, IsEmail, IsIn, IsInt, IsNotEmpty, IsOptional, IsString, Matches, Max, MaxLength, Min, ValidateIf } from 'class-validator';
 import { ReservationChannel, ReservationStatus } from '@/database';
+import { PLATE_OPTIONAL_CHANNELS, PLATE_RE } from '@/domain/reservation';
+
+export { PLATE_RE };
 
 export const DATETIME = /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}(:\d{2}(\.\d+)?)?(Z|[+-]\d{2}:?\d{2})?$/;
 export const PHONE_RE = /^\+?[0-9 .()-]{6,20}$/;
-export const PLATE_RE = /^[A-Za-z0-9 -]{2,15}$/;
 // "plazo" bookings are made by travellers on the site only.
 const STAFF_CHANNELS = Object.values(ReservationChannel).filter(c => c !== 'plazo');
 const CHANNELS = Object.values(ReservationChannel);
@@ -73,9 +75,16 @@ export class CreateReservationDto {
   @IsEmail({}, { message: 'invalid_email' })
   public customerEmail?: string;
 
+  /**
+   * 15/10/2026 (« ne pas planter à l'import quand la plaque est manquante »): optional for a comparator's booking (« Compléter »
+   * an email without the plate: it is read on arrival); absent, null or blank, it is stored ''. Required for the other channels.
+   */
+  @ValidateIf(
+    body => !PLATE_OPTIONAL_CHANNELS.includes(body.channel) || !(body.plate == null || (typeof body.plate === 'string' && body.plate.trim() === '')),
+  )
   @IsString()
   @Matches(PLATE_RE, { message: 'invalid_plate' })
-  public plate: string;
+  public plate?: string | null;
 
   @IsOptional()
   @IsString()
@@ -209,10 +218,15 @@ export class UpdateReservationDto {
   @IsEmail({}, { message: 'invalid_email' })
   public customerEmail?: string | null;
 
+  /**
+   * 15/10/2026: blank or null leaves a booking without a plate as it is (Plazo Pro in the stores sends the whole form back);
+   * on a booking with a plate the service refuses it (`required`): a plate is never erased.
+   */
   @IsOptional()
+  @ValidateIf(body => !(typeof body.plate === 'string' && body.plate.trim() === ''))
   @IsString()
   @Matches(PLATE_RE, { message: 'invalid_plate' })
-  public plate?: string;
+  public plate?: string | null;
 
   @IsOptional()
   @IsString()

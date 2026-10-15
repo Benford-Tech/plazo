@@ -1,6 +1,6 @@
 import { Container } from 'typedi';
 import prisma from '@/database';
-import { closingEmail, confirmationEmail, departureDaySteps } from '@/domain/booking-messages';
+import { closingEmail, confirmationEmail, departureDaySteps, reminderEmail } from '@/domain/booking-messages';
 import { toPublicBooking, WITH_LISTING } from '@/domain/booking-view';
 import { landedSms } from '@/domain/return-messages';
 import { ArrivalService } from '@/services/arrival.service';
@@ -146,6 +146,23 @@ describe('le fil de messages du voyageur (B)', () => {
       'Au retour, on suit votre vol',
     ]);
     expect(confirmationEmail('Plazo', toPublicBooking(record), null).text).toContain('Retrouvez votre réservation sur le site');
+  });
+
+  it('15/10/2026 : une réservation sans plaque n’a pas de ligne « Véhicule » (confirmation, rappel, clôture)', async () => {
+    const { reference } = await setup();
+    const record = await prisma.reservation.findUniqueOrThrow({ where: { reference }, include: WITH_LISTING });
+    const booking = toPublicBooking(record);
+    expect(confirmationEmail('Plazo', booking, null).text).toContain('AB-123-CD');
+    const plateless = { ...booking, plate: '' };
+    for (const message of [
+      confirmationEmail('Plazo', plateless, null),
+      reminderEmail('Plazo', plateless, null),
+      closingEmail('Plazo', plateless, '2027-03-03T15:30'),
+    ]) {
+      expect(message.text).not.toContain('Véhicule');
+      expect(message.html).not.toContain('Véhicule');
+      expect(message.text).toContain('Passagers');
+    }
   });
 
   it('la veille : rappel par email, SMS et push à 18:00, une seule fois', async () => {

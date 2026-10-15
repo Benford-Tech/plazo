@@ -1,8 +1,10 @@
+import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
 
 import '../theme/theme.dart';
 
-/// A plate drawn like a French one: blue EU band with "F", black on white.
+/// A plate drawn like a French one: blue EU band with "F", black on white. 15/10/2026 (« ne pas planter à l'import
+/// quand la plaque est manquante »): a booking imported without its plate shows « À saisir » in the plate.
 class FrenchPlate extends StatelessWidget {
   const FrenchPlate(this.value, {super.key, this.size = 14});
 
@@ -11,8 +13,9 @@ class FrenchPlate extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final missing = value.trim().isEmpty;
     return Semantics(
-      label: 'Plaque $value',
+      label: missing ? 'Plaque à saisir' : 'Plaque $value',
       excludeSemantics: true,
       child: Container(
         height: size * 1.75,
@@ -37,10 +40,15 @@ class FrenchPlate extends StatelessWidget {
             ),
             Padding(
               padding: EdgeInsets.symmetric(horizontal: size * 0.45),
-              child: Text(
-                value,
-                style: AppText.tabular(size: size, color: const Color(0xFF111111)),
-              ),
+              child: missing
+                  ? Text(
+                      'common.plate_missing'.tr(),
+                      style: AppText.tabular(size: size, weight: 400, color: AppColors.muted),
+                    )
+                  : Text(
+                      value,
+                      style: AppText.tabular(size: size, color: const Color(0xFF111111)),
+                    ),
             ),
           ],
         ),

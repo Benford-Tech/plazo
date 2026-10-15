@@ -81,7 +81,8 @@ function detailRows(booking: PublicBooking): [string, string][] {
     ['Arrivée', formatLocalLong(booking.arrivalAt)],
     ['Retour', formatLocalLong(booking.returnAt)],
     ['Durée', `${booking.days} jour${booking.days > 1 ? 's' : ''}`],
-    ['Véhicule', booking.plate],
+    // 15/10/2026: a booking imported without its plate has no « Véhicule » row.
+    ...(booking.plate.trim() ? [['Véhicule', booking.plate] as [string, string]] : []),
     ['Passagers', String(booking.passengers)],
   ];
   if (booking.departureFlight) rows.push(['Vol aller', booking.departureFlight]);

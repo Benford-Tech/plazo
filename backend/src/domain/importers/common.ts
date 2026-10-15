@@ -75,8 +75,12 @@ export function amountAfter(flat: string, label: RegExp): number | undefined {
 /** A phone number of the traveller: digits in groups, never running into a date that follows ("+33680736807 15/10/2026"). */
 export const PHONE = /\+?\d[\d .]{7,18}\d(?![\d/])/;
 
-/** A plate: the French "AB-123-CD" (dashes or spaces optional), else one token of letters, digits and dashes. */
-export const PLATE = /[A-Z]{2}[- ]?\d{3}[- ]?[A-Z]{2}(?![A-Z0-9])|[A-Z0-9][A-Z0-9-]{2,10}[A-Z0-9](?![A-Z0-9])/;
+/**
+ * A plate: the French "AB-123-CD" (dashes or spaces optional), else one token of letters, digits and dashes with at least
+ * one digit (15/10/2026: a plate cell left blank let the next label be read as the plate, « ENTR », « MARQUE », « PRIX »;
+ * a placeholder such as « Inconnue » or « XX-XXX-XX » is no plate either).
+ */
+export const PLATE = /[A-Z]{2}[- ]?\d{3}[- ]?[A-Z]{2}(?![A-Z0-9])|(?=[A-Z0-9-]*\d)[A-Z0-9][A-Z0-9-]{2,10}[A-Z0-9](?![A-Z0-9])/;
 
 /** The word "Nom" alone: never the end of "Prénom" (JavaScript's \\b treats "é" as a boundary). */
 export const NOM = /(?<![A-Za-zÀ-ÿ])Nom(?![A-Za-zÀ-ÿ])/;

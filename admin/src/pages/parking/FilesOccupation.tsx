@@ -312,7 +312,7 @@ function FileColumn({
             </button>
             <button
               type="button"
-              aria-label={`${tf.takeOut} ${c.plate}`}
+              aria-label={`${tf.takeOut} ${c.plate || c.customerName}`}
               className="p-1 text-muted-foreground opacity-0 hover:text-destructive group-hover:opacity-100"
               onClick={(e) => {
                 e.stopPropagation();

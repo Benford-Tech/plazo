@@ -1,3 +1,4 @@
+import { importedPlate } from '../reservation';
 import { alloparkImporter } from './allopark';
 import { isCancellationOrChange } from './common';
 import { oneparkImporter } from './onepark';
@@ -33,7 +34,11 @@ export function isComparatorAddress(address: string): boolean {
 export function parseConfirmationEmail(text: string): ParsedBooking | null {
   if (isCancellationOrChange(text)) return null;
   const importer = EMAIL_IMPORTERS.find(i => i.detect(text));
-  return importer ? importer.parse(text) : null;
+  if (!importer) return null;
+  const booking = importer.parse(text);
+  // 15/10/2026: what is no plate (a label read in a blank cell, « Inconnue ») is a gap that Allopark's page or Claude may fill.
+  if (booking?.plate && !importedPlate(booking.plate)) delete booking.plate;
+  return booking;
 }
 
 export type { ParsedBooking } from './types';

@@ -1,3 +1,4 @@
+import { importedPlate } from '../reservation';
 import { forwardedRecipientsOf } from '../inbound-email';
 import { euroCents, isCancellation } from './common';
 import { isComparatorAddress } from './index';
@@ -387,7 +388,8 @@ export function parseAlloparkPage(html: string, reference: string): ParsedBookin
   booking.returnAt = localDateTime(inputValue(form, 'date_out'));
   const passengers = Number(inputValue(form, 'people_navette'));
   if (Number.isInteger(passengers) && passengers > 0 && passengers <= 20) booking.passengers = passengers;
-  booking.plate = inputValue(form, 'plate');
+  // 15/10/2026: a blank or placeholder plate (« Inconnue ») stays undefined: the booking is made without it.
+  booking.plate = importedPlate(inputValue(form, 'plate'));
   const vehicle = [inputValue(form, 'brand'), inputValue(form, 'model')].filter(Boolean).join(' ');
   if (vehicle) booking.vehicleModel = vehicle;
   // The page's « vol aller » is fly_arrival, its « vol retour » fly_departure (labels checked on the page, 10/10/2026).

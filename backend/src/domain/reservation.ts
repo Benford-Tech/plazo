@@ -1,5 +1,15 @@
 import { randomInt } from 'crypto';
-import { ReservationStatus } from '@/database';
+import { ReservationChannel, ReservationStatus } from '@/database';
+
+/** What a plate may be when typed (the staff's forms, the site): letters, digits, spaces and dashes. */
+export const PLATE_RE = /^[A-Za-z0-9 -]{2,15}$/;
+
+/**
+ * 15/10/2026 (« ne pas planter à l'import quand la plaque est manquante »): the channels whose bookings may come without
+ * a plate (comparators often leave it out; it is read on arrival), stored as '' (never null: the apps in the stores read
+ * a string).
+ */
+export const PLATE_OPTIONAL_CHANNELS: readonly ReservationChannel[] = ['aggregator', 'import'];
 
 /** Statuses that no longer hold a spot. */
 export const RELEASED_STATUSES: ReservationStatus[] = ['cancelled', 'no_show'];
@@ -34,7 +44,6 @@ export function plateKey(plate: string): string {
   return plate.toUpperCase().replace(/[^A-Z0-9]/g, '');
 }
 
-/** French SIV plates get their dashes (AB-123-CD); anything else (foreign plates) stays as typed, upper-cased. */
 /**
  * 10/10/2026: the amount of a booking paid online on Plazo is what the traveller paid; the staff never change it (the
  * booking form, « Modifier le prix », the revenue page's « Les compléter »).
@@ -43,10 +52,34 @@ export function isPriceLocked(booking: { channel: string; paymentStatus: string 
   return booking.channel === 'plazo' || booking.paymentStatus !== null || booking.chargedCents !== null;
 }
 
+/** French SIV plates get their dashes (AB-123-CD); anything else (foreign plates) stays as typed, upper-cased. */
 export function formatPlate(plate: string): string {
   const key = plateKey(plate);
   if (/^[A-Z]{2}\d{3}[A-Z]{2}$/.test(key)) return `${key.slice(0, 2)}-${key.slice(2, 5)}-${key.slice(5)}`;
   return plate.trim().toUpperCase().replace(/\s+/g, ' ');
+}
+
+/** 15/10/2026: « · AB-123-CD » in a staff push, nothing for a booking imported without its plate (read on arrival). */
+export function plateSegment(plate: string): string {
+  return plate.trim() ? ` · ${plate}` : '';
+}
+
+/**
+ * 15/10/2026: a plate read in a comparator's email, its booking page or by Claude, formatted; undefined when it is none
+ * (blank, a label such as « Entrée », a placeholder such as « Inconnue » or « XX-XXX-XX »: a plate has a digit). A French
+ * plate within a longer text (« AB-123-CD (Peugeot 208) ») is taken alone.
+ */
+export function importedPlate(raw: string | null | undefined): string | undefined {
+  if (typeof raw !== 'string') return undefined;
+  const upper = raw.toUpperCase();
+  const siv = /(?<![A-Z0-9])([A-Z]{2})[- .]?(\d{3})[- .]?([A-Z]{2})(?![A-Z0-9])/.exec(upper);
+  if (siv) return `${siv[1]}-${siv[2]}-${siv[3]}`;
+  const text = upper
+    .replace(/[^A-Z0-9 -]+/g, ' ')
+    .replace(/\s+/g, ' ')
+    .trim();
+  if (!/\d/.test(text) || !PLATE_RE.test(text) || plateKey(text).length < 2) return undefined;
+  return formatPlate(text);
 }
 
 /** "to3627" -> "TO 3627"; returns null when it does not look like a flight number. */

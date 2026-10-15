@@ -2,6 +2,7 @@ import { cleanNamePart, customerNamesOf, greetingName, importedNames, namesOfCus
 import { ANONYMIZED_TRAVELLER, PERSONAL_AUDIT_KEYS } from '@/domain/retention';
 import { namesFromArgs } from '@/domain/staff-name';
 import { confirmationEmail, cancellationEmail, closingEmail, reminderEmail } from '@/domain/booking-messages';
+import { arrivalPush } from '@/domain/arrival-messages';
 import { newBookingPush } from '@/domain/reservation-messages';
 import { landedPush, returnNoticePush } from '@/domain/return-messages';
 import { PublicBooking } from '@/interfaces/booking.interface';
@@ -80,6 +81,40 @@ describe('prénom et nom du voyageur — règles', () => {
     expect(returnNoticePush({ ...names, plate: 'AB-123-CD', kind: 'luggage', text: null }).body).toBe(
       'M. Dupont : bagage perdu ou retardé · AB-123-CD',
     );
+  });
+
+  it('15/10/2026 : une réservation importée sans plaque n’en dit rien dans les pushes', () => {
+    const names = { customerName: 'Marie Claire Dupont', customerFirstName: 'Marie Claire', customerLastName: 'Dupont' };
+    const booking = newBookingPush({
+      ...names,
+      plate: '',
+      passengers: 2,
+      channel: 'aggregator',
+      channelDetail: 'Allopark',
+      arrival: '11/10 06:30',
+      returnDay: '13/10',
+    });
+    expect(booking).toEqual({ title: 'Nouvelle réservation · Allopark', body: 'M. Dupont · 2 pass. · arrivée 11/10 06:30 → retour 13/10' });
+    expect(landedPush({ ...names, flight: 'TO 3627', plate: '', source: 'tracking', landedAt: '10:02' }).body).toBe(
+      'Vol TO 3627 atterri · M. Dupont · 10:02',
+    );
+    expect(landedPush({ ...names, flight: null, plate: ' ', source: 'traveller', landedAt: '10:02' }).body).toBe('M. Dupont a atterri (vol) · 10:02');
+    // Nor the traveller's arrival signals and return notices.
+    expect(returnNoticePush({ ...names, plate: '', kind: 'luggage', text: null }).body).toBe('M. Dupont : bagage perdu ou retardé');
+    const arrival = { ...names, plate: '', parkingName: 'Parkair', etaMinutes: 10, meetingLabel: 'Porte 2' };
+    expect(arrivalPush({ ...arrival, event: 'at_meeting_point', kind: 'outbound' }).body).toBe("M. Dupont est à l'accueil · Parkair");
+    expect(arrivalPush({ ...arrival, event: 'announced', kind: 'return' }).body).toBe("Retour : M. Dupont : « J'arrive dans 10 min »");
+    const bodies = [
+      booking.body,
+      landedPush({ ...names, flight: 'TO 3627', plate: '', source: 'traveller', landedAt: '10:02' }).body,
+      ...(['started', 'announced', 'soon', 'at_meeting_point'] as const).flatMap(event =>
+        (['outbound', 'return'] as const).map(kind => arrivalPush({ ...arrival, event, kind, note: 'Coffre plein' }).body),
+      ),
+    ];
+    for (const body of bodies) {
+      expect(body).not.toMatch(/·\s*·/);
+      expect(body).not.toMatch(/·\s*$/);
+    }
   });
 });
 

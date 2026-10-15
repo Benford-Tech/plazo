@@ -87,6 +87,15 @@ Fonctionnel :
   sinon le mail attend dans « À traiter », pré-rempli ; une modification ou une annulation est signalée mais jamais appliquée
   seule. La boîte de réception montre ce que Claude a lu (« Lu par Claude : Réservation · confiance 92 % », résumé). Sans clé
   Anthropic ou en cas d'échec, rien ne change : le mail attend comme avant.
+- **Import sans plaque (15/10/2026, « ne pas planter à l'import quand la plaque est manquante »)** : les comparateurs donnent
+  souvent la réservation sans la plaque. Une réservation importée (mail, page Allopark, lecture par Claude, modification
+  Allopark, « Relancer l'analyse ») n'attend plus sa plaque : elle est créée sans, la plaque s'affiche « À saisir » et l'équipe
+  la tape à l'arrivée du client. Une plaque dont Claude doute est laissée de côté ; une plaque lue a toujours un chiffre (un
+  libellé ou « Inconnue » n'en est pas une) ; une plaque enregistrée ne s'efface jamais, et celle d'une voiture déjà arrivée
+  (lue sur la voiture) n'est jamais remplacée par celle d'une modification du comparateur. Sans plaque ni référence, un doublon se
+  reconnaît au même téléphone, à un mot du nom en commun et à la même arrivée. Plazo ne réimporte jamais de lui-même un mail
+  dont l'équipe a saisi la réservation à la main pendant qu'il attendait (même téléphone ou même nom, séjour qui se recoupe),
+  même si elle l'a annulée depuis : il reste « À traiter ».
 - Vue planning : arrivées et retours du jour, par heure.
 - Fiche opérationnelle (C-A, 06/10/2026) : la même fiche courte (contact, vol, place, clés, desserte, prochaine étape) s'ouvre en tiroir depuis le planning, le tableau de bord, la page Navettes et l'Occupation ; la fiche complète reste un lien plus loin.
 - Tableau de bord (accueil de l'espace pro, 05/10/2026) : chiffres du jour (sur le parking, arrivées, retours, navettes, à traiter), état des services (suivi de vols, SMS, notifications, paiements, import), liste des situations à traiter classées (sur place sans place, vol retardé ou annulé, voyageur au point de rendez-vous, clés non accrochées, SMS en attente, surréservation), véhicules sur le parking avec place et clés, navettes en direct sur la carte.

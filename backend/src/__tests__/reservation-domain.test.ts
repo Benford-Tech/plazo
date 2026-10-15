@@ -1,5 +1,5 @@
 import { ANONYMIZED_TRAVELLER, anonymizeReturnedBefore, PERSONAL_AUDIT_KEYS } from '@/domain/retention';
-import { canTransition, formatFlight, formatPlate, newReference, plateKey } from '@/domain/reservation';
+import { canTransition, formatFlight, formatPlate, importedPlate, newReference, plateKey } from '@/domain/reservation';
 import { addDays, dayBounds, exceedsCalendarDays, localDate, parseInstant } from '@/domain/time';
 import { occupiedNights } from '@/services/capacity.service';
 
@@ -71,6 +71,31 @@ describe('plaques, vols, statuts', () => {
     expect(formatPlate('gk 318 px')).toBe('GK-318-PX');
     expect(formatPlate('b-ab 1234')).toBe('B-AB 1234');
     expect(plateKey('GK-318-PX')).toBe('GK318PX');
+    // 15/10/2026: « pas de plaque » is stored ''.
+    expect(formatPlate('')).toBe('');
+    expect(plateKey('')).toBe('');
+  });
+
+  it.each([
+    ['ab 123 cd', 'AB-123-CD'],
+    ['AB.123.CD', 'AB-123-CD'],
+    ['AB-123-CD (Peugeot 208)', 'AB-123-CD'],
+    ['GB 12ABC (UK)', 'GB 12ABC UK'],
+    ['M-AB 1234', 'M-AB 1234'],
+    ['gk-318-px', 'GK-318-PX'],
+    ['', undefined],
+    ['   ', undefined],
+    ['Inconnue', undefined],
+    ['NC', undefined],
+    ['XX-XXX-XX', undefined],
+    ['Entr', undefined],
+    ['—', undefined],
+    ['1', undefined],
+    ['Non renseignée', undefined],
+    [null, undefined],
+    [undefined, undefined],
+  ])('15/10/2026 : une plaque lue dans un import, ou rien (%j → %j)', (raw, expected) => {
+    expect(importedPlate(raw)).toBe(expected);
   });
 
   it('met en forme les numéros de vol', () => {
