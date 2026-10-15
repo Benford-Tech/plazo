@@ -42,25 +42,30 @@ class ProParkingSettingsPage extends StatelessWidget implements AutoRouteWrapper
         final p = state.parking;
         return Scaffold(
           appBar: BrandAppBar(pro: true, title: 'settings.title'.tr()),
-          body: p == null
-              ? Center(
-                  child: state.viewState.isError
-                      ? Padding(
-                          padding: const EdgeInsets.all(24),
-                          child: Text(translateErrorCode(state.errorCode), textAlign: TextAlign.center),
-                        )
-                      : const CircularProgressIndicator(color: AppColors.accent),
-                )
-              : ListView(
-                  padding: const EdgeInsets.fromLTRB(16, 14, 16, 28),
-                  children: [
-                    _ParkingForm(parking: p, state: state),
-                    const SizedBox(height: 24),
-                    _TrackingSection(state: state),
-                    const SizedBox(height: 24),
-                    _SmsSection(state: state),
-                  ],
-                ),
+          // Edge-to-edge (Android 15+): the end of the page stays above the navigation bar and, in landscape, clear of a side bar
+          // or cutout.
+          body: SafeArea(
+            top: false,
+            child: p == null
+                ? Center(
+                    child: state.viewState.isError
+                        ? Padding(
+                            padding: const EdgeInsets.all(24),
+                            child: Text(translateErrorCode(state.errorCode), textAlign: TextAlign.center),
+                          )
+                        : const CircularProgressIndicator(color: AppColors.accent),
+                  )
+                : ListView(
+                    padding: const EdgeInsets.fromLTRB(16, 14, 16, 28),
+                    children: [
+                      _ParkingForm(parking: p, state: state),
+                      const SizedBox(height: 24),
+                      _TrackingSection(state: state),
+                      const SizedBox(height: 24),
+                      _SmsSection(state: state),
+                    ],
+                  ),
+          ),
         );
       },
     );

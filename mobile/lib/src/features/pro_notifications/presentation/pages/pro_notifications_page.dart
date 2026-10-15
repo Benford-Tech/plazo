@@ -25,96 +25,101 @@ class ProNotificationsPage extends StatelessWidget implements AutoRouteWrapper {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: BrandAppBar(title: 'pro.notifications'.tr()),
-      body: BlocBuilder<ProNotificationsBloc, ProNotificationsState>(
-        builder: (context, state) {
-          final prefs = state.preferences;
-          final bloc = context.read<ProNotificationsBloc>();
-          return ListView(
-            padding: const EdgeInsets.all(16),
-            children: [
-              Text('pro.notifications_intro'.tr(), style: AppText.muted()),
-              const SizedBox(height: 14),
-              if (prefs == null && state.viewState.isProcessing) const Center(child: CircularProgressIndicator(color: AppColors.accent)),
-              if (prefs != null)
-                AppCard(
-                  padding: EdgeInsets.zero,
-                  // The tiles paint their ink on the nearest Material: one inside the card, or Flutter's
-                  // debug check "ListTile background color or ink splashes may be invisible" fires.
-                  child: Material(
-                    type: MaterialType.transparency,
-                    borderRadius: AppRadius.card,
-                    clipBehavior: Clip.antiAlias,
-                    child: Column(
-                      children: [
-                        SwitchListTile(
-                          key: const Key('notify-arrivals'),
-                          value: prefs.arrivals,
-                          title: Text('pro.notify_arrivals'.tr(), style: AppText.strong()),
-                          subtitle: Text('pro.notify_arrivals_help'.tr(), style: AppText.muted()),
-                          onChanged: (v) => bloc.add(ProNotificationsToggled(arrivals: v)),
-                        ),
-                        const Divider(height: 1, color: AppColors.line),
-                        SwitchListTile(
-                          key: const Key('notify-returns'),
-                          value: prefs.returns,
-                          title: Text('pro.notify_returns'.tr(), style: AppText.strong()),
-                          subtitle: Text('pro.notify_returns_help'.tr(), style: AppText.muted()),
-                          onChanged: (v) => bloc.add(ProNotificationsToggled(returns: v)),
-                        ),
-                        const Divider(height: 1, color: AppColors.line),
-                        SwitchListTile(
-                          key: const Key('notify-shuttles'),
-                          value: prefs.shuttles,
-                          title: Text('pro.notify_shuttles'.tr(), style: AppText.strong()),
-                          subtitle: Text('pro.notify_shuttles_help'.tr(), style: AppText.muted()),
-                          onChanged: (v) => bloc.add(ProNotificationsToggled(shuttles: v)),
-                        ),
-                        const Divider(height: 1, color: AppColors.line),
-                        _BookingsChoice(
-                          value: prefs.bookings,
-                          onChanged: (v) => bloc.add(ProNotificationsToggled(bookings: v)),
-                        ),
-                        const Divider(height: 1, color: AppColors.line),
-                        SwitchListTile(
-                          key: const Key('notify-platform'),
-                          value: prefs.platform,
-                          title: Text('pro.notify_platform'.tr(), style: AppText.strong()),
-                          subtitle: Text('pro.notify_platform_help'.tr(), style: AppText.muted()),
-                          onChanged: (v) => bloc.add(ProNotificationsToggled(platform: v)),
-                        ),
-                      ],
+      // Edge-to-edge (Android 15+): the end of the page stays above the navigation bar and, in landscape, clear of a side bar
+      // or cutout.
+      body: SafeArea(
+        top: false,
+        child: BlocBuilder<ProNotificationsBloc, ProNotificationsState>(
+          builder: (context, state) {
+            final prefs = state.preferences;
+            final bloc = context.read<ProNotificationsBloc>();
+            return ListView(
+              padding: const EdgeInsets.all(16),
+              children: [
+                Text('pro.notifications_intro'.tr(), style: AppText.muted()),
+                const SizedBox(height: 14),
+                if (prefs == null && state.viewState.isProcessing) const Center(child: CircularProgressIndicator(color: AppColors.accent)),
+                if (prefs != null)
+                  AppCard(
+                    padding: EdgeInsets.zero,
+                    // The tiles paint their ink on the nearest Material: one inside the card, or Flutter's
+                    // debug check "ListTile background color or ink splashes may be invisible" fires.
+                    child: Material(
+                      type: MaterialType.transparency,
+                      borderRadius: AppRadius.card,
+                      clipBehavior: Clip.antiAlias,
+                      child: Column(
+                        children: [
+                          SwitchListTile(
+                            key: const Key('notify-arrivals'),
+                            value: prefs.arrivals,
+                            title: Text('pro.notify_arrivals'.tr(), style: AppText.strong()),
+                            subtitle: Text('pro.notify_arrivals_help'.tr(), style: AppText.muted()),
+                            onChanged: (v) => bloc.add(ProNotificationsToggled(arrivals: v)),
+                          ),
+                          const Divider(height: 1, color: AppColors.line),
+                          SwitchListTile(
+                            key: const Key('notify-returns'),
+                            value: prefs.returns,
+                            title: Text('pro.notify_returns'.tr(), style: AppText.strong()),
+                            subtitle: Text('pro.notify_returns_help'.tr(), style: AppText.muted()),
+                            onChanged: (v) => bloc.add(ProNotificationsToggled(returns: v)),
+                          ),
+                          const Divider(height: 1, color: AppColors.line),
+                          SwitchListTile(
+                            key: const Key('notify-shuttles'),
+                            value: prefs.shuttles,
+                            title: Text('pro.notify_shuttles'.tr(), style: AppText.strong()),
+                            subtitle: Text('pro.notify_shuttles_help'.tr(), style: AppText.muted()),
+                            onChanged: (v) => bloc.add(ProNotificationsToggled(shuttles: v)),
+                          ),
+                          const Divider(height: 1, color: AppColors.line),
+                          _BookingsChoice(
+                            value: prefs.bookings,
+                            onChanged: (v) => bloc.add(ProNotificationsToggled(bookings: v)),
+                          ),
+                          const Divider(height: 1, color: AppColors.line),
+                          SwitchListTile(
+                            key: const Key('notify-platform'),
+                            value: prefs.platform,
+                            title: Text('pro.notify_platform'.tr(), style: AppText.strong()),
+                            subtitle: Text('pro.notify_platform_help'.tr(), style: AppText.muted()),
+                            onChanged: (v) => bloc.add(ProNotificationsToggled(platform: v)),
+                          ),
+                        ],
+                      ),
                     ),
                   ),
-                ),
-              const SizedBox(height: 16),
-              if (!state.pushSupported)
-                AppCard(
-                  color: AppColors.canvas,
-                  child: Text('pro.push_unsupported'.tr(), style: AppText.muted()),
-                )
-              else if (state.pushState.isSuccess)
-                AppCard(
-                  color: AppColors.canvas,
-                  child: Text('pro.push_enabled'.tr(), style: AppText.body(size: 14)),
-                )
-              else
-                GradientButton(
-                  label: 'pro.enable_push'.tr(),
-                  icon: Icons.notifications_active_rounded,
-                  busy: state.pushState.isProcessing,
-                  onPressed: () => bloc.add(const ProNotificationsPushEnabled()),
-                ),
-              if (prefs != null) ...[
-                const SizedBox(height: 10),
-                Text('pro.devices'.tr(args: ['${prefs.devices}']), style: AppText.muted(size: 12.5)),
+                const SizedBox(height: 16),
+                if (!state.pushSupported)
+                  AppCard(
+                    color: AppColors.canvas,
+                    child: Text('pro.push_unsupported'.tr(), style: AppText.muted()),
+                  )
+                else if (state.pushState.isSuccess)
+                  AppCard(
+                    color: AppColors.canvas,
+                    child: Text('pro.push_enabled'.tr(), style: AppText.body(size: 14)),
+                  )
+                else
+                  GradientButton(
+                    label: 'pro.enable_push'.tr(),
+                    icon: Icons.notifications_active_rounded,
+                    busy: state.pushState.isProcessing,
+                    onPressed: () => bloc.add(const ProNotificationsPushEnabled()),
+                  ),
+                if (prefs != null) ...[
+                  const SizedBox(height: 10),
+                  Text('pro.devices'.tr(args: ['${prefs.devices}']), style: AppText.muted(size: 12.5)),
+                ],
+                if (state.errorMessage != null) ...[
+                  const SizedBox(height: 10),
+                  Text(state.errorMessage!, style: AppText.body(size: 14, color: AppColors.danger)),
+                ],
               ],
-              if (state.errorMessage != null) ...[
-                const SizedBox(height: 10),
-                Text(state.errorMessage!, style: AppText.body(size: 14, color: AppColors.danger)),
-              ],
-            ],
-          );
-        },
+            );
+          },
+        ),
       ),
     );
   }
