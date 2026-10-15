@@ -3,14 +3,14 @@
   "tagline": "Gestion de parkings d'aéroport",
   "supportEmail": "support@example.com",
   "company": {
-    "name": "Plazo Aéroports",
-    "legalForm": "",
+    "name": "Benford Tech",
+    "legalForm": "société par actions simplifiée",
     "shareCapital": "",
-    "address": "",
-    "registration": "",
-    "vatNumber": "",
+    "address": "29 chemin des Collines, 38080 L’Isle-d’Abeau",
+    "registration": "910 729 102 RCS Vienne",
+    "vatNumber": "FR55910729102",
     "phone": "",
-    "publicationDirector": "",
+    "publicationDirector": "Joanny Simpore",
     "mediator": ""
   }
 }

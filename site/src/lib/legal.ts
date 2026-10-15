@@ -26,14 +26,16 @@ export interface LegalDoc {
 /**
  * One date per text, shown as « Version du … » at the top of its page: bump only the text that changed. The terms
  * govern each booking in the version accepted that day, so a date must never move without its text. (Until
- * 13/10/2026 the three shared one date.)
- * - Terms: 12/10/2026, night fees.
- * - Legal notice: unchanged since the shared date of 12/10/2026.
- * - Privacy: 13/10/2026, Plazo Pro sign-in with Apple / Google, the code of the day, account deletion.
+ * 13/10/2026 the three shared one date.) The company details of product.json are part of all three texts: changing
+ * them moves the three dates.
+ * - Terms: 15/10/2026, the publisher's details (Benford Tech) and « Plazo » naming that company too; 12/10/2026, night fees.
+ * - Legal notice: 15/10/2026, the publisher's details.
+ * - Privacy: 15/10/2026, the controller's details; 13/10/2026, Plazo Pro sign-in with Apple / Google, the code of the
+ *   day, account deletion.
  */
-export const TERMS_VERSION = "12 octobre 2026";
-export const NOTICE_VERSION = "12 octobre 2026";
-export const PRIVACY_VERSION = "13 octobre 2026";
+export const TERMS_VERSION = "15 octobre 2026";
+export const NOTICE_VERSION = "15 octobre 2026";
+export const PRIVACY_VERSION = "15 octobre 2026";
 export const TO_COMPLETE = "[à compléter]";
 
 const filled = (value: string) => value.trim() || TO_COMPLETE;
@@ -66,7 +68,7 @@ export function termsDoc(company: Company = COMPANY, email: string = SUPPORT_EMA
         id: "editeur",
         title: `1. Qui est ${p}`,
         blocks: [
-          `${p} est une marque exploitée par ${c.name}, ${c.legalForm} au capital de ${c.shareCapital}, dont le siège est situé ${c.address}, immatriculée sous le numéro ${c.registration}, numéro de TVA intracommunautaire ${c.vatNumber}.`,
+          `${p} est une marque exploitée par ${c.name}, ${c.legalForm} au capital de ${c.shareCapital}, dont le siège est situé ${c.address}, immatriculée sous le numéro ${c.registration}, numéro de TVA intracommunautaire ${c.vatNumber}. Dans ces conditions générales, « ${p} » désigne aussi cette société.`,
           `Service client : ${c.email} · ${c.phone}. Les autres informations sur l’éditeur figurent dans les [mentions légales](/mentions-legales).`,
         ],
       },

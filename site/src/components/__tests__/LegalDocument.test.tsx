@@ -10,7 +10,7 @@ describe("LegalDocument", () => {
     expect(screen.getByRole("heading", { level: 1, name: "Conditions générales" })).toBeInTheDocument();
     expect(screen.queryByText(/valider avec un juriste/)).not.toBeInTheDocument();
     expect(screen.queryByRole("note")).not.toBeInTheDocument();
-    expect(screen.getByText("Version du 12 octobre 2026")).toBeInTheDocument();
+    expect(screen.getByText("Version du 15 octobre 2026")).toBeInTheDocument();
     const contents = screen.getByRole("navigation", { name: "Sommaire" });
     expect(contents.querySelectorAll("a")).toHaveLength(doc.sections.length);
     for (const s of doc.sections) expect(screen.getByRole("heading", { level: 2, name: s.title })).toBeInTheDocument();

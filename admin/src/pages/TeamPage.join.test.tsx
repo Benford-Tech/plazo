@@ -120,8 +120,9 @@ describe("Équipe : code du jour", () => {
   });
 
   it("ne laisse pas le code d'hier à l'écran après minuit, et montre le nouveau au retour sur l'onglet", async () => {
-    // The first code ends 2 s after the test starts: long enough to be read before its end even on a loaded machine.
-    api.getJoinCode.mockResolvedValueOnce({ ...joinCode, validUntil: new Date(Date.now() + 2_000).toISOString() });
+    // The first code ends 2 s after it is read (not after the test starts: a first render slower than 2 s on a loaded
+    // machine would read it after its end, and a code read after its end rightly stays on screen).
+    api.getJoinCode.mockImplementationOnce(async () => ({ ...joinCode, validUntil: new Date(Date.now() + 2_000).toISOString() }));
     api.getJoinCode.mockResolvedValue({ ...joinCode, code: "B4N8Q-ZT27W", day: "2026-10-14", validUntil: new Date(Date.now() + 86_400_000).toISOString() });
     renderPage();
     expect(await screen.findByTestId("join-code")).toHaveTextContent("K7QM2-XP9TD");

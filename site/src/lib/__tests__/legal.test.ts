@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { legalNoticeDoc, privacyDoc, termsDoc, TO_COMPLETE, type LegalDoc } from "../legal";
-import type { Company } from "../product";
+import { COMPANY, type Company } from "../product";
 
 const EMPTY: Company = {
   name: "Plazo Aéroports",
@@ -36,6 +36,16 @@ describe("legal pages", () => {
       expect(all).not.toMatch(/allopark|gr4|luxembourg/i);
     }
     expect(text(termsDoc(EMPTY, "x@plazo.fr", "Nouveau nom"))).toContain("Nouveau nom est une plateforme de réservation");
+    // The brand acts in the terms (collects, refunds, answers): it names the company too (15/10/2026).
+    expect(text(termsDoc(FILLED, "x@plazo.fr", "Plazo"))).toContain("Dans ces conditions générales, « Plazo » désigne aussi cette société.");
+  });
+
+  it("the company of product.json has a VAT number that matches its SIREN (FR + key + SIREN)", () => {
+    const siren = COMPANY.registration.replace(/\D/g, "");
+    if (!siren || !COMPANY.vatNumber) return;
+    expect(siren).toHaveLength(9);
+    const key = (12 + 3 * (Number(siren) % 97)) % 97;
+    expect(COMPANY.vatNumber).toBe(`FR${String(key).padStart(2, "0")}${siren}`);
   });
 
   it("show what is still to provide, and nothing once the company details are filled in", () => {
@@ -66,7 +76,7 @@ describe("legal pages", () => {
     expect(prices).toContain("compris dans le prix total affiché");
     expect(prices).toContain("calculés sur les heures de dépôt et de retour réservées et ne changent plus ensuite");
     expect(prices).toContain("remboursés avec le séjour");
-    expect(termsDoc().version).toBe("12 octobre 2026"); // night fees (12/10/2026)
+    expect(termsDoc().version).toBe("15 octobre 2026"); // night fees (12/10/2026), then the publisher's details (15/10/2026)
   });
 
   it("section ids are unique (anchors of the contents)", () => {
@@ -102,7 +112,7 @@ describe("privacy policy", () => {
     expect(all).toContain("« Compte supprimé »");
     expect(all).toContain("Apple et Google");
     expect(all).toContain("ils confirment son identité à Plazo");
-    expect(privacyDoc().version).toBe("13 octobre 2026");
+    expect(privacyDoc().version).toBe("15 octobre 2026"); // 13/10/2026, then the controller's details (15/10/2026)
   });
 
   it("says what really happens: a raw IP kept 7 days for the code, Google's id is not Plazo's own, Apple revoked only with Apple", () => {
@@ -119,10 +129,10 @@ describe("privacy policy", () => {
     expect(all).toContain("les remarques écrites dans les notes d’une réservation, signées du prénom, y restent jusqu’à l’anonymisation de la réservation (12 mois après le retour)");
   });
 
-  it("dates each text on its own: only the privacy policy moved on 13/10/2026", () => {
-    expect(privacyDoc().version).toBe("13 octobre 2026");
-    expect(termsDoc().version).toBe("12 octobre 2026");
-    expect(legalNoticeDoc().version).toBe("12 octobre 2026");
+  it("dates each text on its own: the three moved on 15/10/2026 with the company details of product.json", () => {
+    expect(privacyDoc().version).toBe("15 octobre 2026");
+    expect(termsDoc().version).toBe("15 octobre 2026");
+    expect(legalNoticeDoc().version).toBe("15 octobre 2026");
   });
 
   it("names the recipients and the authority, and keeps its promises narrow", () => {
