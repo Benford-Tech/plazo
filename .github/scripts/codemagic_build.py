@@ -185,8 +185,8 @@ def mapping(app):
     for name in NAMES:
         cls, _, member = name.rpartition(".") if "." in name else (name, "", "")
         wanted.setdefault(cls or name, set()).add(member)
-    for artifact in artifacts:
-        url = artifact.get("url")
+    for index, artifact in enumerate(artifacts, 1):
+        url = artifact.get("url") or artifact.get("short_lived_download_url")
         if not url:
             lines.append(f"- `{artifact.get('name')}` sans url ; champs : {sorted(artifact.keys())}")
             continue
@@ -204,7 +204,7 @@ def mapping(app):
                 match = MEMBER.match(line)
                 if match and match.group(2) in wanted[current]:
                     found[current][1].setdefault(match.group(2), []).append(match.group(1))
-        lines.append(f"### `{artifact.get('name')}` ({human_size(len(text))}, {text.count(chr(10))} lignes)")
+        lines.append(f"### `{artifact.get('name')}` n° {index} ({human_size(len(text))}, {text.count(chr(10))} lignes)")
         if len(text) < 2000:
             lines.append(f"- contenu inattendu : {text[:300]}")
         for cls, members in sorted(wanted.items()):
