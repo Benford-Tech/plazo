@@ -3,9 +3,13 @@ name: Email worker CI
 on:
   pull_request:
     paths: ['email-worker/**', '.github/workflows/email-worker-ci.yml']
+  # Every push to main, whatever it touches: Cloudflare's own Git build (Workers Builds, still linked) deploys a Worker
+  # without the email handler on each of them, and the deploy below puts the relay back (15/10/2026).
   push:
     branches: [main]
-    paths: ['email-worker/**', '.github/workflows/email-worker-ci.yml']
+  # Every hour: the relay is redeployed only if the Worker online is no longer it (.github/scripts/worker_health.py).
+  schedule:
+    - cron: '23 * * * *'
   workflow_dispatch:
 
 defaults:
@@ -36,7 +40,7 @@ jobs:
   # up without its secret, since every email would then be refused.
   deploy:
     needs: test
-    if: github.event_name == 'push' || github.event_name == 'workflow_dispatch'
+    if: github.event_name == 'push' || github.event_name == 'workflow_dispatch' || github.event_name == 'schedule'
     runs-on: ubuntu-latest
     # The two secrets live in the repository's "Production" environment (GitHub › Settings › Environments).
     environment: Production
@@ -62,8 +66,19 @@ jobs:
           cache-dependency-path: email-worker/package-lock.json
       - run: npm ci
         if: steps.secrets.outputs.ready == 'true'
+      - name: Is the Worker online still the relay?
+        id: health
+        if: steps.secrets.outputs.ready == 'true' && github.event_name == 'schedule'
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+        run: python3 ../.github/scripts/worker_health.py
+      - name: Let Cloudflare's own build of this push finish first
+        # Workers Builds starts on the same push and overwrote the relay after our deploy on 14/10/2026 (19:02 UTC).
+        if: steps.secrets.outputs.ready == 'true' && github.event_name == 'push'
+        run: sleep 180
       - name: Deploy to Cloudflare
-        if: steps.secrets.outputs.ready == 'true'
+        if: steps.secrets.outputs.ready == 'true' && steps.health.outputs.healthy != 'true'
         env:
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
@@ -75,7 +90,7 @@ jobs:
             npx wrangler deploy
           fi
       - name: Put the inbound secret on the Worker
-        if: steps.secrets.outputs.ready == 'true'
+        if: steps.secrets.outputs.ready == 'true' && steps.health.outputs.healthy != 'true'
         env:
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
@@ -87,7 +102,7 @@ jobs:
             echo "::notice::INBOUND_EMAIL_SECRET is not set in the Production environment: the Worker keeps the secret it has, if any."
           fi
       - name: Check that the Worker has its secret
-        if: steps.secrets.outputs.ready == 'true'
+        if: steps.secrets.outputs.ready == 'true' && steps.health.outputs.healthy != 'true'
         env:
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}

@@ -50,7 +50,13 @@ exister ailleurs en `@plazo.fr` (Hostinger…) : Email Routing devient le seul r
    - `CLOUDFLARE_API_TOKEN` : Cloudflare › profil › API Tokens › Create Token › modèle « Edit Cloudflare Workers » ;
    - `CLOUDFLARE_ACCOUNT_ID` : Workers & Pages › Overview, colonne de droite.
    Le Worker s'appelle `plazo` (le nom de `wrangler.toml`). L'import du dépôt par Cloudflare lui-même (Workers Builds) n'a
-   pas réussi à le déployer ; GitHub Actions le remplace.
+   pas réussi à le déployer ; GitHub Actions le remplace. **Ce lien Git est encore branché** et, à chaque fusion sur `main`,
+   Cloudflare déploie un Worker sans gestionnaire de mails : Email Routing affiche « Destination worker not found » et
+   refuse chaque mail (14/10/2026, 19:02 UTC, après #106 : mails refusés jusqu'au lendemain 08:02). Depuis le 15/10/2026,
+   le workflow redéploie donc le relais après **chaque** fusion sur `main` (après 3 minutes, le temps que le build de
+   Cloudflare passe) et vérifie **toutes les heures** que le Worker en ligne a bien ses gestionnaires `email` et
+   `scheduled` (`.github/scripts/worker_health.py`), sinon il le redéploie. Le vrai remède reste de **débrancher ce lien** :
+   Workers & Pages › `plazo` › Settings › Build › dépôt Git › Disconnect (le déploiement par GitHub Actions continue).
    - Dans le même environnement **Production**, ajoute le **secret** `INBOUND_EMAIL_SECRET` (même valeur que
      `INBOUND_EMAIL_SECRET` sur Vercel) et, en **variable**, `FALLBACK_ADDRESS` (facultatif, une adresse de destination
      vérifiée dans Email Routing). Le déploiement pose le secret sur le Worker et lui passe la variable, puis **échoue si le
