@@ -251,6 +251,30 @@ la clé d'import Android de Plazo dans Codemagic (créée et envoyée par GitHub
    (« plazo »), y ajouter les deux apps Android (`com.benfordtech.plazo` et `com.benfordtech.plazopro`), puis **Paramètres du projet ›
    Comptes de service › Générer une nouvelle clé privée** et la déposer dans les deux apps OneSignal.
 
+
+### Avertissements de la Play Console sur le build 114 (15/10/2026)
+
+La Play Console a signalé quatre points sur le build 1.0.0 (114). Les noms masqués qu'elle cite (« u41.Q », « go3.e »…)
+se retrouvent avec l'action **`mapping`** du workflow GitHub « Codemagic build » : y coller les noms, elle lit le
+`mapping.txt` de chaque build récent et donne la classe d'origine.
+
+- **Affichage de bord à bord (Android 15)** : traité. L'app (qui vise Android 16, SDK 36) s'affiche sous la barre d'état
+  et la barre de navigation sur tous les Android : `MainActivity.kt` appelle `enableEdgeToEdge()`, et chaque écran garde
+  ses boutons hors des barres. Le workflow GitHub « Android emulator (edge-to-edge) » le vérifie sur Android 15 et 16 avec
+  des captures. L'avertissement peut rester affiché : il se fonde sur la présence des API ci-dessous.
+- **API obsolètes** (`setStatusBarColor`, `setNavigationBarColor`, `LAYOUT_IN_DISPLAY_CUTOUT_MODE_SHORT_EDGES`) : aucune
+  n'est dans le code de Plazo. Elles sont dans **AndroidX** (`EdgeToEdgeApi23/26/29/35`, c'est-à-dire
+  `enableEdgeToEdge()` lui-même : u41, v41, x41, z41), dans le **moteur Flutter** (l1) et dans **Stripe**
+  (`ElementsBottomSheetLayout`, thème de Financial Connections, encore présents dans la dernière version de Stripe). Rien à
+  faire de notre côté : elles disparaîtront avec les mises à jour de ces bibliothèques, et Android 15 les ignore.
+- **Images téléchargées et décodées à la main** (go3.e, io3.a) : c'est **OneSignal**, pour l'image d'une notification
+  (`NotificationDisplayBuilder.getBitmapFromURL`, `NotificationDisplayer.addBackgroundImage`). Plazo n'envoie jamais
+  d'image dans ses notifications : ce code ne tourne pas. Rien à faire.
+- **Optimisation R8 faible (36-37 %)** : la règle `-keep class com.stripe.** { *; }` que **flutter_stripe** impose à
+  toute app (elle évite un plantage pendant la validation 3D Secure) garde tout le SDK de Stripe sans le réduire. Une app
+  ne peut pas retirer la règle d'une bibliothèque ; la contourner ferait courir le risque de casser le paiement. Choix du
+  15/10/2026 : on la garde. Le rapport R8 du workflow de l'émulateur montre la part de Stripe dans l'app.
+
 ---
 
 ## 3 bis. Connexion avec Apple et Google dans Plazo Pro (13/10/2026)
