@@ -90,6 +90,17 @@ describe('lecture d’un mail par Claude (L-A, 08/10/2026) — conversion', () =
     expect(cleanPlate(null)).toBeUndefined();
   });
 
+  it('15/10/2026 : une plaque absente est normale ; ce qui n’est pas une plaque est écarté', () => {
+    const prompt = emailReadingPrompt({ timezone: 'Europe/Paris', today: '2026-10-15' });
+    expect(prompt).toContain('a missing plate is normal');
+    expect(prompt).toContain('a plate the email gives is ambiguous');
+    expect(toParsedBooking({ ...answer, plate: 'INCONNUE' })).not.toHaveProperty('plate');
+    expect(toParsedBooking({ ...answer, plate: 'XX-XXX-XX' })).not.toHaveProperty('plate');
+    expect(toParsedBooking({ ...answer, plate: null })).not.toHaveProperty('plate');
+    expect(toParsedBooking({ ...answer, plate: 'AB-123-CD' }).plate).toBe('AB-123-CD');
+    expect(toParsedBooking({ ...answer, plate: '1234 abc 69' }).plate).toBe('1234ABC69');
+  });
+
   it('vérifie la forme de la réponse', () => {
     expect(readingOf(null)).toBeNull();
     expect(readingOf({ kind: 'invoice' })).toBeNull();

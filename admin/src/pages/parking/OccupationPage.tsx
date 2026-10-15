@@ -491,7 +491,8 @@ export default function OccupationPage() {
       list.push({
         id: `spot-${s.id}`,
         lngLat: ringCentroid(s.geometry),
-        text: `${o.plate}\n${o.customerName}\n${t.returnOn(dateTimeShort(o.returnAt))}`,
+        // 15/10/2026: a car imported without its plate is labelled by its customer.
+        text: [o.plate, o.customerName, t.returnOn(dateTimeShort(o.returnAt))].filter(Boolean).join("\n"),
         variant: "spot",
         minZoom: inFocus ? 0 : SPOT_LABEL_MIN_ZOOM,
       });

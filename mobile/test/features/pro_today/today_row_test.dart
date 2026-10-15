@@ -58,4 +58,13 @@ void main() {
       "L. Durand : « J'arrive dans 20 min » — GH-456-JK",
     );
   });
+
+  testWidgets('bandeau : sans plaque (réservation importée, 15/10/2026), rien après le nom', (tester) async {
+    await show(tester, ArrivalBanner(signal: staffSignal('r1', plate: ''), onSee: () {}, onClose: () {}));
+    expect(find.text('C. Martin arrive dans 12 min'), findsOneWidget);
+    expect(
+      ArrivalBanner.text(staffSignal('r2', state: ArrivalSignalState.announced, announcedMinutes: 20, name: 'Léa Durand', plate: '')),
+      "L. Durand : « J'arrive dans 20 min »",
+    );
+  });
 }

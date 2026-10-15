@@ -283,4 +283,48 @@ describe("ReservationForm", () => {
     expect(await screen.findByText("Disponible : au moins 4 places libres chaque nuit.")).toBeInTheDocument();
     expect(screen.getByText("7 nuits")).toBeInTheDocument();
   });
+
+  describe("15/10/2026 : plaque facultative pour un comparateur (« ne pas planter à l'import quand la plaque est manquante »)", () => {
+    it("pas requise pour une nouvelle réservation de comparateur, requise par téléphone", async () => {
+      renderForm();
+      expect(screen.getByLabelText("Plaque")).toBeRequired();
+      await userEvent.click(screen.getByRole("button", { name: "Comparateur" }));
+      expect(screen.getByLabelText("Plaque")).not.toBeRequired();
+      await userEvent.click(screen.getByRole("button", { name: "Téléphone" }));
+      expect(screen.getByLabelText("Plaque")).toBeRequired();
+    });
+
+    it("« Compléter » un mail sans plaque : la plaque n'est pas requise et part vide", async () => {
+      createReservation.mockResolvedValue({ data: { id: "r1" } });
+      const onSaved = renderForm(vi.fn(), {
+        prefill: {
+          provider: "Onepark",
+          externalReference: "5900001",
+          arrivalAt: "2026-10-04T06:30",
+          returnAt: "2026-10-11T15:05",
+          customerFirstName: "Jean",
+          customerLastName: "Martin",
+          customerPhone: "06 12 34 56 78",
+          passengers: 2,
+        },
+      });
+      expect(screen.getByLabelText("Plaque")).not.toBeRequired();
+      expect(screen.getByLabelText("Plaque")).toHaveValue("");
+      await userEvent.click(screen.getByRole("button", { name: "Enregistrer" }));
+      await waitFor(() => expect(onSaved).toHaveBeenCalled());
+      expect(createReservation.mock.calls[0][0]).toMatchObject({ channel: "aggregator", channelDetail: "Onepark", plate: "" });
+    });
+
+    it("à la modification : pas requise tant que la réservation n'a pas de plaque, requise pour passer au téléphone", async () => {
+      renderForm(vi.fn(), { reservation: booked({ channel: "aggregator", channelDetail: "Allopark", plate: "" }) });
+      expect(screen.getByLabelText("Plaque")).not.toBeRequired();
+      await userEvent.click(screen.getByRole("button", { name: "Téléphone" }));
+      expect(screen.getByLabelText("Plaque")).toBeRequired();
+    });
+
+    it("à la modification d'une réservation avec plaque : requise", () => {
+      renderForm(vi.fn(), { reservation: booked({ channel: "aggregator", channelDetail: "Allopark" }) });
+      expect(screen.getByLabelText("Plaque")).toBeRequired();
+    });
+  });
 });

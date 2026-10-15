@@ -312,7 +312,7 @@ export default function SpotPlanningPage() {
                               <button
                                 key={st.id}
                                 type="button"
-                                title={`${st.plate} · ${st.customerName} · ${dateTimeShort(st.arrivalAt)} → ${dateTimeShort(st.returnAt)}`}
+                                title={[st.plate, st.customerName, `${dateTimeShort(st.arrivalAt)} → ${dateTimeShort(st.returnAt)}`].filter(Boolean).join(" · ")}
                                 onClick={() => setSelectedId(st.id)}
                                 className={cn(
                                   "absolute top-1 flex h-[22px] items-center overflow-hidden whitespace-nowrap px-1.5 font-mono text-[11px] font-bold text-black",
@@ -325,7 +325,7 @@ export default function SpotPlanningPage() {
                                 }}
                                 data-testid={`bar-${st.reference}`}
                               >
-                                {st.plate}
+                                {st.plate || st.customerName}
                               </button>
                             );
                           })}

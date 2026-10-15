@@ -53,6 +53,8 @@ export const fr = {
     saved: "Modifications enregistrées",
     never: "Jamais",
     loading: "Chargement…",
+    /** 15/10/2026: in the plate of a booking imported without one (read on arrival). */
+    plateMissing: "À saisir",
   },
   roles: {
     manager: "Gérant",
@@ -864,18 +866,19 @@ export const fr = {
     miniMap: (name: string) =>
       `Position de ${name} par rapport au point de rendez-vous`,
     meetingPointMark: "P",
+    // 15/10/2026: a booking imported without its plate (read on arrival) leaves the « — plate » out.
     toastApproaching: (who: string, eta: number | null, plate: string) =>
       eta === null
-        ? `${who} est en route — ${plate}`
-        : `${who} arrive dans ${eta} min — ${plate}`,
+        ? `${who} est en route${plate.trim() ? ` — ${plate}` : ""}`
+        : `${who} arrive dans ${eta} min${plate.trim() ? ` — ${plate}` : ""}`,
     toastAnnounced: (who: string, minutes: number, plate: string) =>
-      `${who} : « J'arrive dans ${minutes} min » — ${plate}`,
+      `${who} : « J'arrive dans ${minutes} min »${plate.trim() ? ` — ${plate}` : ""}`,
     /** E: the traveller's word, after the banner. */
     toastNote: (note: string) => ` · « ${note} »`,
     toastAtReception: (who: string, plate: string) =>
-      `${who} est à l'accueil — ${plate}`,
+      `${who} est à l'accueil${plate.trim() ? ` — ${plate}` : ""}`,
     toastAtMeetingPoint: (who: string, plate: string) =>
-      `Retour : ${who} est au point de rendez-vous — ${plate}`,
+      `Retour : ${who} est au point de rendez-vous${plate.trim() ? ` — ${plate}` : ""}`,
     toastSee: "Voir ›",
     toastClose: "Fermer l'alerte",
     // The driver's trip picking this traveller up (position shared with them).
@@ -1581,8 +1584,8 @@ export const fr = {
     noFree: "Aucune place libre sur ce séjour.",
     release: "Libérer la place",
     clickBar: "Cliquez un séjour pour le déplacer.",
-    moved: (plate: string, code: string) => `${plate} placé en ${code}`,
-    released: (plate: string) => `${plate} n'a plus de place`,
+    moved: (plate: string, code: string) => `${plate || "Véhicule"} placé en ${code}`,
+    released: (plate: string) => (plate ? `${plate} n'a plus de place` : "Le véhicule n'a plus de place"),
     spotTaken: "Cette place est déjà prise sur ces dates.",
     openBooking: "Ouvrir la réservation",
   },
@@ -1682,7 +1685,7 @@ export const fr = {
     place: "Placer",
     chooseOnMap: "Choisir sur le plan",
     choosing: (plate: string) =>
-      `Cliquez une place libre pour y mettre ${plate}.`,
+      `Cliquez une place libre pour y mettre ${plate || "le véhicule"}.`,
     cancelChoice: "Annuler",
     spot: "Place",
     noSpot: "Pas de place",
@@ -1702,13 +1705,13 @@ export const fr = {
     flight: (flight: string) => `vol ${flight}`,
     move: "Déplacer",
     release: "Libérer la place",
-    placed: (plate: string, code: string) => `${plate} placé en ${code}`,
-    released: (plate: string) => `${plate} n'a plus de place`,
+    placed: (plate: string, code: string) => `${plate || "Véhicule"} placé en ${code}`,
+    released: (plate: string) => (plate ? `${plate} n'a plus de place` : "Le véhicule n'a plus de place"),
     keysSaved: "Crochet enregistré",
     openBooking: "Ouvrir la réservation",
     freeSpot: "Place libre",
     clickSpot: "Cliquez une place sur le plan pour voir qui l'occupe.",
-    bookedFor: (plate: string, date: string) => `${plate} attendu le ${date}`,
+    bookedFor: (plate: string, date: string) => `${plate || "Véhicule"} attendu le ${date}`,
     // « Embarquer en un geste » (14/10/2026): the traveller was checked in by the driver as they boarded.
     boardingCheckIn: (driver: string | null) =>
       driver
@@ -1735,8 +1738,8 @@ export const fr = {
       toTakeOut: (n: number) => `${n} à sortir avant`,
       blockedBy: (plates: string) => `Bloquée par ${plates}`,
       takeOut: "Retirer de la file",
-      removed: (plate: string) => `${plate} retirée de sa file`,
-      placed: (plate: string, code: string) => `${plate} rangée en ${code}`,
+      removed: (plate: string) => `${plate || "Voiture"} retirée de sa file`,
+      placed: (plate: string, code: string) => `${plate || "Voiture"} rangée en ${code}`,
       place: "Ranger",
       placeIn: (code: string) => `Ranger en ${code}`,
       otherFile: "Autre file…",

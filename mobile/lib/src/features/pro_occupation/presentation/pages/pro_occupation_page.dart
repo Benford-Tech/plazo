@@ -137,11 +137,13 @@ class ProOccupationPage extends StatelessWidget implements AutoRouteWrapper {
   static String? _noticeText(String? notice) {
     if (notice == null) return null;
     final parts = notice.split(':');
+    // 15/10/2026: a car imported without its plate (read on arrival) is « Véhicule » (« Voiture » in a file), as on the web.
+    String plate(String fallback) => parts[1].isEmpty ? fallback.tr() : parts[1];
     return switch (parts.first) {
-      'occupation.placed' => 'occupation.placed'.tr(args: [parts[1], parts[2]]),
-      'occupation.filed' => 'occupation.filed'.tr(args: [parts[1], parts[2]]),
+      'occupation.placed' => 'occupation.placed'.tr(args: [plate('common.vehicle'), parts[2]]),
+      'occupation.filed' => 'occupation.filed'.tr(args: [plate('common.car'), parts[2]]),
       'occupation.prepared' => 'occupation.prepared'.tr(args: [parts[1], parts[2]]),
-      'occupation.released' => 'occupation.released'.tr(args: [parts[1]]),
+      'occupation.released' => 'occupation.released'.tr(args: [plate('common.the_vehicle')]),
       _ => 'occupation.keys_saved'.tr(),
     };
   }
@@ -447,7 +449,7 @@ Future<String?> showKeysSheet(BuildContext context, OccupantModel vehicle, Strin
         children: [
           Text('occupation.place_in'.tr(args: [spotCode]), style: AppText.title(size: 20)),
           const SizedBox(height: 4),
-          Text('${vehicle.customerName} · ${vehicle.plate}', style: AppText.muted()),
+          Text([vehicle.customerName, vehicle.plate].where((s) => s.trim().isNotEmpty).join(' · '), style: AppText.muted()),
           const SizedBox(height: 14),
           TextField(
             key: const Key('place-keys'),
@@ -482,7 +484,10 @@ Future<void> showSpotPicker(BuildContext context, ProOccupationState state, Occu
           children: [
             Padding(
               padding: const EdgeInsets.fromLTRB(16, 0, 16, 8),
-              child: Text('occupation.pick_title'.tr(args: [vehicle.plate]), style: AppText.title(size: 20)),
+              child: Text(
+                'occupation.pick_title'.tr(args: [[vehicle.plate, vehicle.customerName].firstWhere((s) => s.trim().isNotEmpty, orElse: () => '')]),
+                style: AppText.title(size: 20),
+              ),
             ),
             Expanded(
               child: free.isEmpty
@@ -874,7 +879,10 @@ Future<void> showFilePicker(BuildContext context, ProOccupationState state, Occu
           children: [
             Padding(
               padding: const EdgeInsets.fromLTRB(16, 0, 16, 8),
-              child: Text('occupation.files.pick_title'.tr(args: [vehicle.plate]), style: AppText.title(size: 20)),
+              child: Text(
+                'occupation.files.pick_title'.tr(args: [[vehicle.plate, vehicle.customerName].firstWhere((s) => s.trim().isNotEmpty, orElse: () => '')]),
+                style: AppText.title(size: 20),
+              ),
             ),
             Expanded(
               child: choices.isEmpty

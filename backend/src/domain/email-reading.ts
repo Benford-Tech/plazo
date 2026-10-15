@@ -3,6 +3,7 @@
  * instructions, the answer's schema, and the conversion of an answer into a `ParsedBooking` the
  * import pipeline already understands. The call itself lives in `EmailReadingService`.
  */
+import { importedPlate } from './reservation';
 import { fullName } from './staff-name';
 import type { ParsedBooking } from './importers/types';
 
@@ -117,7 +118,9 @@ Then extract the reservation's fields exactly as the email states them. Never in
   (separate "Prénom" and "Nom" fields, or a last name plainly written in capitals as in "Marie DUPONT"); otherwise null for both.
 - customerPhone: the traveller's phone number as written, with its country code when present.
 - customerEmail: the traveller's email address (not the platform's).
-- plate: the vehicle's registration number as written (for example "AB-123-CD").
+- plate: the vehicle's registration number as written (for example "AB-123-CD"), or null.
+  Comparators often leave it out: a missing plate is normal and never lowers the confidence.
+  A label, a placeholder ("Inconnue", "NC", "XX-XXX-XX") or a car model is no plate: null.
 - returnFlight, departureFlight: the flight numbers (for example "AF1234"), or null.
 - passengers: the number of people travelling, as an integer.
 - priceCents: the price of the parking stay in euro cents as an integer (189,90 € becomes 18990), or null. When the email
@@ -127,7 +130,7 @@ Then extract the reservation's fields exactly as the email states them. Never in
   website form, "Client" for a customer writing directly, or null when unknown.
 - externalReference: the platform's booking reference as written, or null.
 - confidence: between 0 and 1, how sure you are of the kind and of the fields above; lower it when a date, a name, a phone or
-  a plate is ambiguous or guessed from context.
+  a plate the email gives is ambiguous or guessed from context.
 - summary: one short sentence in French for the operator, for example "Réservation Parkos de Marie Dupont du 12 au 19 juillet".`;
 }
 
@@ -210,7 +213,9 @@ export function toParsedBooking(reading: EmailReading): ParsedBooking {
   }
   set('customerPhone', cleanPhone(reading.customerPhone));
   set('customerEmail', email && /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email) ? email : undefined);
-  set('plate', cleanPlate(reading.plate));
+  // 15/10/2026: what is no plate (« Inconnue », a car model) is dropped: the booking is made without it, read on arrival.
+  const plate = cleanPlate(reading.plate);
+  set('plate', plate && importedPlate(plate) ? plate : undefined);
   set('returnFlight', flight(reading.returnFlight));
   set('departureFlight', flight(reading.departureFlight));
   set('passengers', passengers);

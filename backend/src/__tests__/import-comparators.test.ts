@@ -19,8 +19,8 @@ import {
   MAX_PAGES,
   parseAlloparkPage,
 } from '@/domain/importers/allopark-page';
-import { isCancellation, isCancellationOrChange, isChange } from '@/domain/importers/common';
-import { ChangeableBooking, importChanges, phoneKey, withoutField } from '@/domain/import-change';
+import { isCancellation, isCancellationOrChange, isChange, PLATE } from '@/domain/importers/common';
+import { ChangeableBooking, importChanges, nameWords, phoneKey, sameTraveller, withoutField } from '@/domain/import-change';
 import { importedFlights, NOTES_MAX_CHARS, notesWithLines, unreadableFlightLine, unreadableFlightLines } from '@/domain/imported-flights';
 import { bookingChangedPush } from '@/domain/reservation-messages';
 import { forwardedRecipientsOf, stripHtml, textOf } from '@/domain/inbound-email';
@@ -880,5 +880,113 @@ describe('vols illisibles d’un import (10/10/2026, « Tu n’as pas récupér�
     const full = 'x'.repeat(NOTES_MAX_CHARS - 10);
     expect(notesWithLines(full, lines)).toBe(full);
     expect(NOTES_MAX_CHARS).toBe(1000);
+  });
+});
+
+describe('import sans plaque (15/10/2026, « ne pas planter à l’import quand la plaque est manquante »)', () => {
+  const plateIn = (text: string) => new RegExp(String.raw`Immatriculation\s*:?\s*(${PLATE.source})`, 'i').exec(text)?.[1];
+
+  it('une plaque a un chiffre : un libellé ou un exemple qui suit une case vide n’est pas lu comme la plaque', () => {
+    expect(plateIn("Plaque d'immatriculation Entrée(s)/Sortie(s) : UNIQUE")).toBeUndefined();
+    expect(plateIn("Numéro d'immatriculation Marque et modèle DACIA DUSTER")).toBeUndefined();
+    expect(plateIn('Immatriculation : Prix total : 52,90 €')).toBeUndefined();
+    expect(plateIn('Immatriculation : Inconnue Email')).toBeUndefined();
+    expect(plateIn('Immatriculation : XX-XXX-XX Prix')).toBeUndefined();
+    for (const plate of ['AB-123-CD', 'ab123cd', 'GB12ABC', 'M-AB1234', '1234ABC', 'GE123456']) {
+      expect(plateIn(`Immatriculation : ${plate} Prix`)).toBe(plate);
+    }
+  });
+
+  it('Onepark, ParkMundo et Parclick sans plaque : le reste est lu comme avant', () => {
+    const onepark = textOf({ RawHtmlBody: html('onepark-notification.html').replace('<td>AB123CD</td>', '<td></td>') });
+    const { plate: oneparkPlate, ...oneparkRest } = read('onepark-notification.html')!;
+    expect(oneparkPlate).toBe('AB123CD');
+    expect(parseConfirmationEmail(onepark)).toEqual({ ...oneparkRest, plate: undefined });
+
+    const parkmundo = textOf({ RawHtmlBody: html('parkmundo-confirmation.html').replace('<div>FG456HJ</div>', '<div></div>') });
+    const { plate: parkmundoPlate, ...parkmundoRest } = read('parkmundo-confirmation.html')!;
+    expect(parkmundoPlate).toBe('FG456HJ');
+    expect(parseConfirmationEmail(parkmundo)).toEqual({ ...parkmundoRest, plate: undefined });
+
+    const parclick = (plate: string) =>
+      `Parclick Voici votre réservation ! Arrivée au parking 09/10/2026 19:45 Sortie du parking 11/10/2026 19:45 Référence de la réservation: BQXY1234 Nom : Jean Martin Téléphone : 06 12 34 56 78 Immatriculation : ${plate} Prix total : 52,90 €`;
+    expect(parseConfirmationEmail(parclick('AB-123-CD'))).toMatchObject({ customerName: 'Jean Martin', plate: 'AB-123-CD', priceCents: 5290 });
+    const blank = parseConfirmationEmail(parclick(''));
+    expect(blank).toMatchObject({
+      provider: 'Parclick',
+      externalReference: 'BQXY1234',
+      arrivalAt: '2026-10-09T19:45',
+      returnAt: '2026-10-11T19:45',
+      customerName: 'Jean Martin',
+      customerPhone: '06 12 34 56 78',
+      priceCents: 5290,
+    });
+    expect(blank?.plate).toBeUndefined();
+  });
+
+  it('ce que l’importateur lit sans être une plaque (« Inconnue ») devient un trou ; une vraie plaque reste telle quelle', () => {
+    const allopark = readFileSync(join(__dirname, 'fixtures/allopark-confirmation.txt'), 'utf8');
+    const withPlate = (plate: string) => allopark.replace('Numéro de plaque du véhicule*\n', `Numéro de plaque du véhicule*\n${plate}\n`);
+    expect(parseConfirmationEmail(withPlate('Inconnue'))).not.toHaveProperty('plate');
+    expect(parseConfirmationEmail(withPlate('gk 318 px'))).toMatchObject({ plate: 'gk 318 px' });
+  });
+
+  it('la page Allopark sans plaque, ou « Inconnue » : aucune plaque', () => {
+    const page = html('allopark-page.html');
+    const blank = parseAlloparkPage(page.replace('name="plate" value="GK-318-PX"', 'name="plate" value=""'), 'AL-884880719');
+    expect(blank).toMatchObject({ customerPhone: '+33 6 12 34 56 78', customerName: 'Jean Dupont' });
+    expect(blank?.plate).toBeUndefined();
+    expect(parseAlloparkPage(page.replace('name="plate" value="GK-318-PX"', 'name="plate" value="Inconnue"'), 'AL-884880719')?.plate).toBeUndefined();
+    expect(parseAlloparkPage(page.replace('name="plate" value="GK-318-PX"', 'name="plate" value="gk318px"'), 'AL-884880719')?.plate).toBe(
+      'GK-318-PX',
+    );
+  });
+
+  it('une réservation sans plaque prend celle de la page ; une plaque vide ou fausse n’efface jamais la sienne', () => {
+    const current: ChangeableBooking = {
+      arrivalAt: new Date('2026-12-10T08:00:00Z'),
+      returnAt: new Date('2026-12-13T19:30:00Z'),
+      passengers: 3,
+      plate: '',
+      plateKey: '',
+      departureFlight: null,
+      returnFlight: null,
+      customerPhone: '06 12 34 56 78',
+      customerFirstName: 'Jean',
+      customerLastName: 'Dupont',
+      customerName: 'Jean Dupont',
+      customerEmail: null,
+      vehicleModel: null,
+      priceCents: 2400,
+    };
+    expect(importChanges(current, { provider: 'Allopark', plate: 'ab 123 cd' }, 'Europe/Paris')).toEqual({
+      changes: [{ field: 'plate', from: '', to: 'AB-123-CD' }],
+      data: { plate: 'AB-123-CD', plateKey: 'AB123CD' },
+    });
+    expect(importChanges(current, { provider: 'Allopark', plate: 'Inconnue' }, 'Europe/Paris')).toEqual({ changes: [], data: {} });
+    const plated = { ...current, plate: 'GK-318-PX', plateKey: 'GK318PX' };
+    for (const plate of ['', '   ', 'Inconnue', 'XX-XXX-XX']) {
+      expect(importChanges(plated, { provider: 'Allopark', plate }, 'Europe/Paris')).toEqual({ changes: [], data: {} });
+    }
+  });
+
+  it('le même voyageur : la même plaque quand les deux en ont une, sinon le même téléphone et un mot du nom en commun', () => {
+    expect(nameWords('Jean DUPONT')).toEqual(['jean', 'dupont']);
+    expect(nameWords('Hélène  Le Gall-Durand')).toEqual(['helene', 'le', 'gall', 'durand']);
+    expect(nameWords('J. B')).toEqual([]);
+    const jean = { plateKey: '', customerPhone: '+33 6 12 34 56 78', customerName: 'Jean Dupont' };
+    expect(sameTraveller(jean, { plateKey: '', customerPhone: '06 12 34 56 78', customerName: 'DUPONT Jean' })).toBe(true);
+    expect(sameTraveller(jean, { plateKey: 'AB123CD', customerPhone: '06.12.34.56.78', customerName: 'M. Dupont' })).toBe(true);
+    // The same phone for someone else (a family's number): not the same booking.
+    expect(sameTraveller(jean, { plateKey: '', customerPhone: '06 12 34 56 78', customerName: 'Marie Martin' })).toBe(false);
+    expect(sameTraveller(jean, { plateKey: '', customerPhone: '07 00 00 00 00', customerName: 'Jean Dupont' })).toBe(false);
+    // Both plates known: they decide.
+    expect(
+      sameTraveller({ ...jean, plateKey: 'AB123CD' }, { plateKey: 'GK318PX', customerPhone: '06 12 34 56 78', customerName: 'Jean Dupont' }),
+    ).toBe(false);
+    expect(sameTraveller({ ...jean, plateKey: 'AB123CD' }, { plateKey: 'AB123CD', customerPhone: '', customerName: 'Client' })).toBe(true);
+    // An anonymised booking (phone '') never matches without a plate.
+    expect(sameTraveller(jean, { plateKey: '', customerPhone: '', customerName: 'Jean Dupont' })).toBe(false);
+    expect(sameTraveller({ ...jean, customerPhone: '' }, { plateKey: '', customerPhone: '', customerName: 'Jean Dupont' })).toBe(false);
   });
 });

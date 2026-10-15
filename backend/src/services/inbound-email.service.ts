@@ -26,6 +26,7 @@ import {
   ownRecipientsOf,
   recipientsOf,
   REQUIRED_FOR_IMPORT,
+  SOUGHT_FOR_IMPORT,
   textOf,
 } from '@/domain/inbound-email';
 import { fullName } from '@/domain/staff-name';
@@ -132,6 +133,11 @@ export interface AutoRetryReport {
   outcomes: Partial<Record<ReanalysisOutcome, number>>;
   /** The pass ended early: Allopark asked for an anti-robot check or refused Plazo (no other email opened it). */
   stopped?: 'protected' | 'refused';
+  /**
+   * 15/10/2026 (relecture): emails left to the staff, not analysed again, because the staff made the traveller's booking
+   * themselves while it waited (ReservationService.typedSince); given only when some were.
+   */
+  typedByHand?: number;
 }
 
 /**
@@ -199,6 +205,11 @@ const REANALYSIS_GAP_MS = 30_000;
  */
 const AUTO_RETRY_PER_RUN = 3;
 const AUTO_RETRY_START_BUDGET_MS = 10_000;
+/**
+ * 15/10/2026 (« ne pas planter à l'import quand la plaque est manquante »): the emails that waited only for their plate
+ * before it stopped being required are imported by the relay's cron, those of the last 7 days.
+ */
+const PLATE_CATCH_UP_DAYS = 7;
 /** 10/10/2026 (« C'est une modification »): `changed` = an Allopark change applied to its booking (the email then reads `imported`). */
 export type ReanalysisOutcome = 'imported' | 'changed' | 'duplicate' | 'incomplete' | 'unrecognised';
 export interface Reanalysis {
@@ -386,7 +397,8 @@ export class InboundEmailService {
     let fromPage = false;
     let pageLookup: PageLookupView | null = null;
     let tried: PageResult | null = null;
-    if (allopark && reference && (!found || missingForImport(found).length)) {
+    // 15/10/2026: the page is opened for a missing plate too (soughtForImport), which no longer makes the email wait.
+    if (allopark && reference && (!found || soughtForImport(found).length)) {
       tried = await this.withAlloparkPage(operatorId, found, reference, input);
       parsed = tried.parsed;
       pageLookup = tried.lookup;
@@ -400,7 +412,7 @@ export class InboundEmailService {
     // apart.
     let reading: ReadingMeta | null = null;
     let unsure = false;
-    const gaps = parsed ? missingForImport(parsed) : [];
+    const gaps = parsed ? soughtForImport(parsed) : [];
     if ((!parsed || gaps.length || fromPage) && text && this.reader.available()) {
       const timezone = await this.timezoneOf(operatorId);
       const result = await this.reader.read({ from: fromAddress, fromName, subject, text, timezone });
@@ -411,7 +423,12 @@ export class InboundEmailService {
           const read = toParsedBooking(result.reading);
           const filled = parsed ? fillGaps(parsed, read) : read;
           // An unsure reading only matters for what it brought, or when nothing but Claude says it is a booking.
-          unsure = confidence < MIN_CONFIDENCE && (!found || gaps.some(key => filled[key] !== undefined));
+          const low = confidence < MIN_CONFIDENCE;
+          const brought = gaps.filter(key => filled[key] !== undefined);
+          unsure = low && (!found || brought.some(key => key !== 'plate'));
+          // 15/10/2026: a plate Claude is unsure of never holds the booking back: left out, read on arrival (an email that
+          // waits anyway keeps it, for « Compléter »).
+          if (low && !unsure && brought.includes('plate')) delete filled.plate;
           parsed = filled;
         }
       }
@@ -445,6 +462,8 @@ export class InboundEmailService {
       const kept = !own || (Object.keys(merged) as (keyof ParsedBooking)[]).some(key => key !== 'provider' && !isSet(own[key]) && isSet(merged[key]));
       // The fields of an unsure reading stay unsure.
       if (input.previous!.missing.includes('confidence') && (!own || missingForImport(own).some(key => isSet(merged[key])))) unsure = true;
+      // 15/10/2026: a plate only a former unsure reading gave is not imported.
+      if (!unsure && input.previous!.missing.includes('confidence') && !isSet(own?.plate)) delete merged.plate;
       // Claude's former reading stays with the fields it gave.
       if (kept && !reading) reading = input.previous!.reading;
       parsed = merged;
@@ -514,7 +533,7 @@ export class InboundEmailService {
       }
     }
     const filled = (Object.keys(completed) as (keyof ParsedBooking)[]).filter(key => key !== 'provider' && completed[key] !== found?.[key]);
-    const still = missingForImport(completed);
+    const still = soughtForImport(completed);
     logger.info(`${label}: ${filled.length} field(s) filled from the booking page${still.length ? `, still missing: ${still.join(', ')}` : ''}`);
     return { reference: ref, parsed: completed, page, lookup };
   }
@@ -552,11 +571,13 @@ export class InboundEmailService {
     const waits = (said: ReadingMeta | null, lookup: PageLookupView | null): Analysis => {
       const previous = input.previous;
       const kept = previous?.parsed || previous?.change;
+      // 15/10/2026: the plate no longer makes an email wait (a row written before still lists it).
+      const missing = (previous?.missing ?? []).filter(key => key !== 'plate');
       return {
         ...base,
-        status: kept && previous!.missing.length ? 'incomplete' : 'unrecognised',
+        status: kept && missing.length ? 'incomplete' : 'unrecognised',
         parsed: kept ? previous!.parsed : null,
-        missing: kept ? previous!.missing : [],
+        missing: kept ? missing : [],
         change: kept ? (previous!.change ?? null) : null,
         reading: said,
         reservationId: null,
@@ -968,8 +989,14 @@ export class InboundEmailService {
     });
     const report: AutoRetryReport = { due: due.length, tried: 0, outcomes: {} };
     const started = Date.now();
-    for (const row of due.slice(0, AUTO_RETRY_PER_RUN)) {
+    for (const row of due) {
+      if (report.tried >= AUTO_RETRY_PER_RUN) break;
       if (report.tried > 0 && Date.now() - started > AUTO_RETRY_START_BUDGET_MS) break;
+      // 15/10/2026 (relecture): the staff made the booking themselves while the email waited: never a second one.
+      if (await this.typedByHand(row)) {
+        report.typedByHand = (report.typedByHand ?? 0) + 1;
+        continue;
+      }
       const at = new Date();
       // Claimed as a staff relaunch is (never twice at once), the try counted even when the analysis fails.
       const claimed = await prisma.inboundEmail.updateMany({
@@ -1007,6 +1034,91 @@ export class InboundEmailService {
       logger.info(`[Inbound] automatic re-analysis: ${report.due} due, ${report.tried} tried${outcomes ? ` (${outcomes})` : ''}${stopped}`);
     }
     return report;
+  }
+
+  /**
+   * 15/10/2026 (« ne pas planter à l'import quand la plaque est manquante »): the emails that waited only for their plate
+   * (incomplete, `missing` ['plate'], received these 7 days, without booking, text kept, operator not suspended) are
+   * analysed again now that the plate is no longer required, oldest first, a few per pass, as retryAllopark does (the
+   * same claim and count, the same rerun traced `auto: true`, the pass stopped when Allopark asks for a check or refuses
+   * Plazo). It ends by itself: an analysis never writes ['plate'] again. Called after retryAllopark by POST
+   * /public/inbound/retry; `startedAt` is when that call began, so that no analysis starts after its first 10 s (within
+   * Vercel's 60 s).
+   */
+  public async importWaitingForPlate(now = new Date(), startedAt = Date.now()): Promise<AutoRetryReport> {
+    const rows = await prisma.inboundEmail.findMany({
+      where: {
+        status: 'incomplete',
+        reservationId: null,
+        textBody: { not: null },
+        missing: { equals: ['plate'] },
+        receivedAt: { gte: new Date(now.getTime() - PLATE_CATCH_UP_DAYS * 86_400_000) },
+        autoRetries: { lt: AUTO_RETRY_MAX },
+        operator: { suspendedAt: null },
+      },
+      include: { reservation: { select: { reference: true } } },
+      orderBy: { receivedAt: 'asc' },
+      take: 50,
+    });
+    const report: AutoRetryReport = { due: rows.length, tried: 0, outcomes: {} };
+    for (const row of rows) {
+      if (report.tried >= AUTO_RETRY_PER_RUN) break;
+      if (Date.now() - startedAt > AUTO_RETRY_START_BUDGET_MS) break;
+      // The staff made the booking themselves while the email waited (typed at the counter…): never a second one.
+      if (await this.typedByHand(row)) {
+        report.typedByHand = (report.typedByHand ?? 0) + 1;
+        continue;
+      }
+      const at = new Date();
+      const claimed = await prisma.inboundEmail.updateMany({
+        where: {
+          id: row.id,
+          reservationId: null,
+          status: 'incomplete',
+          autoRetries: row.autoRetries,
+          missing: { equals: ['plate'] },
+          OR: [{ analysedAt: null }, { analysedAt: { lte: new Date(at.getTime() - REANALYSIS_GAP_MS) } }],
+        },
+        data: { analysedAt: at, autoRetries: { increment: 1 } },
+      });
+      if (!claimed.count) continue;
+      report.tried += 1;
+      try {
+        const result = await this.rerun(row, row.operatorId, { id: null, operatorId: row.operatorId }, true);
+        report.outcomes[result.analysis.status] = (report.outcomes[result.analysis.status] ?? 0) + 1;
+        const lookup = result.analysis.pageLookup;
+        if (lookup && (lookup.outcome === 'protected' || lookup.refused)) {
+          report.stopped = lookup.outcome === 'protected' ? 'protected' : 'refused';
+          break;
+        }
+      } catch (error) {
+        logger.warn(`[Inbound] plate catch-up of ${row.id} failed: ${error instanceof Error ? error.name : 'error'}`);
+      }
+    }
+    if (report.due) {
+      const outcomes = Object.entries(report.outcomes)
+        .map(([outcome, count]) => `${count} ${outcome}`)
+        .join(', ');
+      logger.info(
+        `[Inbound] plate catch-up: ${report.due} due, ${report.tried} tried${outcomes ? ` (${outcomes})` : ''}${report.stopped ? `, stopped: ${report.stopped}` : ''}`,
+      );
+    }
+    return report;
+  }
+
+  /**
+   * 15/10/2026 (relecture de « ne pas planter à l'import quand la plaque est manquante »): whether the staff made the
+   * booking of a waiting email themselves since it arrived (ReservationService.typedSince, read from what the email said
+   * so far). Plazo's own re-analyses (retryAllopark, importWaitingForPlate) then leave it to the staff: importing it
+   * would make a second booking of the same car. Never for an Allopark change, which finds a booking typed without its
+   * reference itself (unreferencedMatches) and applies to it.
+   */
+  private async typedByHand(row: InboundRow & { operatorId: string }): Promise<boolean> {
+    const parsed = storedParsed(row.parsed);
+    if (!parsed || row.change || readingOf(row.reading)?.kind === 'modification') return false;
+    const sender = [row.fromName, row.fromAddress].filter(Boolean).join(' ');
+    if (alloparkEmailOf({ text: row.textBody ?? '', subject: row.subject, from: sender })?.kind === 'change') return false;
+    return this.reservations.typedSince(row.operatorId, parsed, row.receivedAt);
   }
 
   /**
@@ -1142,7 +1254,8 @@ export class InboundEmailService {
       textBody: r.textBody,
       provider: r.provider,
       parsed: (r.parsed as unknown as ParsedBooking | null) ?? null,
-      missing: Array.isArray(r.missing) ? (r.missing as string[]) : [],
+      // 15/10/2026: the plate is no longer missing (a row written before still lists it, until its catch-up).
+      missing: missingOf(r.missing).filter(key => key !== 'plate'),
       reservationId: r.reservationId,
       reservationReference: r.reservation?.reference ?? null,
       reading: readingOf(r.reading),
@@ -1306,6 +1419,11 @@ function linksOf(item: InboundItem): string[] {
 /** The fields a booking still lacks before it can be created without staff. */
 function missingForImport(booking: ParsedBooking): (typeof REQUIRED_FOR_IMPORT)[number][] {
   return REQUIRED_FOR_IMPORT.filter(key => !booking[key]);
+}
+
+/** 15/10/2026: the fields Plazo still looks for (Allopark's page, Claude): the required ones and the plate. */
+function soughtForImport(booking: ParsedBooking): (typeof SOUGHT_FOR_IMPORT)[number][] {
+  return SOUGHT_FOR_IMPORT.filter(key => !booking[key]);
 }
 
 const NAME_KEYS: readonly ('customerName' | 'customerFirstName' | 'customerLastName')[] = ['customerName', 'customerFirstName', 'customerLastName'];

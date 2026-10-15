@@ -300,7 +300,8 @@ class _Timeline extends StatelessWidget {
         const _Link(),
         _Step(
           title: 'return_day.step_car'.tr(),
-          subtitle: 'return_day.step_car_help'.tr(args: [formatPlate(d.plate)]),
+          // 15/10/2026: a booking imported without its plate reads « clés à l'accueil » alone.
+          subtitle: 'return_day.step_car_help'.tr(args: [formatPlate(d.plate)]).replaceFirst(RegExp(r'\s*·\s*$'), ''),
           dot: _Dot.todo,
           bold: false,
         ),

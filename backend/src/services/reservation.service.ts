@@ -6,8 +6,10 @@ import {
   canTransition,
   formatFlight,
   formatPlate,
+  importedPlate,
   isPriceLocked,
   newReference,
+  PLATE_OPTIONAL_CHANNELS,
   plateKey,
   RELEASED_STATUSES,
   STATUS_TRANSITIONS,
@@ -21,7 +23,8 @@ import { HttpException } from '@/utils/httpException';
 import { logger } from '@/utils/logger';
 import { toPublicBooking, WITH_LISTING } from '@/domain/booking-view';
 import { cleanNamePart, CustomerNames, customerNamesOf, importedNames } from '@/domain/customer-name';
-import { ImportChange, ImportChangeReason, importChanges, withoutField } from '@/domain/import-change';
+import { ImportChange, ImportChangeReason, importChanges, nameWords, phoneKey, sameTraveller, withoutField } from '@/domain/import-change';
+import { REQUIRED_FOR_IMPORT } from '@/domain/inbound-email';
 import { ImportedFlights, importedFlights, notesWithLines, unreadableFlightLines } from '@/domain/imported-flights';
 import { chronologicalPage } from '@/domain/chronological-pages';
 import { BOARDING_CHECK_IN_SELECT, boardingCheckInOf } from '@/domain/shuttle';
@@ -141,6 +144,10 @@ export class ReservationService {
     const stopId = await this.checkStop(parking.id, data.stopId);
 
     const externalReference = data.externalReference?.trim().toUpperCase() || null;
+    // 15/10/2026: a comparator's booking may come without its plate (« Compléter » an email without it): stored ''.
+    // A plate without a letter or a digit (« -- ») is none: '' stands for « no plate » (plateKey '').
+    const plate = typeof data.plate === 'string' && plateKey(data.plate) ? formatPlate(data.plate) : '';
+    if (!plate && !PLATE_OPTIONAL_CHANNELS.includes(data.channel)) throw fieldError('plate', 'invalid_plate');
 
     return prisma
       .$transaction(async tx => {
@@ -161,8 +168,8 @@ export class ReservationService {
             ...customerNamesOf(data),
             customerPhone: data.customerPhone.trim(),
             customerEmail: data.customerEmail?.trim().toLowerCase() || null,
-            plate: formatPlate(data.plate),
-            plateKey: plateKey(data.plate),
+            plate,
+            plateKey: plateKey(plate),
             returnFlight,
             departureFlight,
             stopId,
@@ -200,7 +207,9 @@ export class ReservationService {
   /**
    * M-A (06/10/2026): a booking read from a forwarded confirmation email, created without staff.
    * The external reference stops a second import (the existing booking is returned instead); a full
-   * night does not stop it (the comparator already sold the place: overbooked and flagged).
+   * night does not stop it (the comparator already sold the place: overbooked and flagged). 15/10/2026 (« ne pas planter
+   * à l'import quand la plaque est manquante »): without a plate (or what is no plate: importedPlate) the booking is
+   * created with '' (read on arrival).
    */
   public async createFromImport(operatorId: string, parsed: ParsedBooking): Promise<{ reservation: Reservation; duplicate: boolean }> {
     const parking = await prisma.parking.findFirst({ where: { operatorId }, orderBy: { createdAt: 'asc' } });
@@ -213,6 +222,9 @@ export class ReservationService {
     const { returnFlight, departureFlight } = flights;
     const notes = notesWithLines(null, unreadableFlightLines(flights, parsed.provider));
     const externalReference = parsed.externalReference?.trim().toUpperCase() || null;
+    const plate = importedPlate(parsed.plate) ?? '';
+    const key = plateKey(plate);
+    const names = importedNames(parsed);
     const system = { id: null, operatorId };
     const created = await prisma.$transaction(async tx => {
       await this.capacity.lock(tx, parking.id);
@@ -220,11 +232,21 @@ export class ReservationService {
         const existing = await tx.reservation.findUnique({ where: { operatorId_externalReference: { operatorId, externalReference } } });
         if (existing) return { reservation: existing, duplicate: true };
       } else {
-        // L-A (08/10/2026): an email read by Claude may carry no reference; the same car arriving at the same
-        // moment is the same booking (the mail forwarded twice, or by two people).
-        const existing = await tx.reservation.findFirst({
-          where: { operatorId, plateKey: plateKey(parsed.plate!), arrivalAt: stay.arrivalAt, status: { notIn: ['cancelled', 'no_show'] } },
+        // L-A (08/10/2026): an email read by Claude may carry no reference; the same traveller arriving at the same
+        // moment is the same booking (the mail forwarded twice, or by two people): the same plate, or, without a plate
+        // (15/10/2026), the same phone and a word of the name in common (sameTraveller).
+        const incoming = { plateKey: key, customerPhone: parsed.customerPhone!, customerName: names.customerName };
+        const rows = await tx.reservation.findMany({
+          where: {
+            operatorId,
+            arrivalAt: stay.arrivalAt,
+            status: { notIn: ['cancelled', 'no_show'] },
+            ...(key ? { plateKey: { in: [key, ''] } } : {}),
+          },
+          orderBy: { createdAt: 'asc' },
+          take: 50,
         });
+        const existing = rows.find(r => sameTraveller(r, incoming));
         if (existing) return { reservation: existing, duplicate: true };
       }
       const { full } = await this.capacity.fullNights(parking, stay.arrivalAt, stay.returnAt, { client: tx });
@@ -238,11 +260,11 @@ export class ReservationService {
           channelDetail: parsed.provider,
           ...stay,
           passengers: parsed.passengers ?? 1,
-          ...importedNames(parsed),
+          ...names,
           customerPhone: parsed.customerPhone!.trim(),
           customerEmail: parsed.customerEmail?.trim().toLowerCase() || null,
-          plate: formatPlate(parsed.plate!),
-          plateKey: plateKey(parsed.plate!),
+          plate,
+          plateKey: key,
           returnFlight,
           departureFlight,
           notes,
@@ -306,6 +328,10 @@ export class ReservationService {
       let diff = importChanges(before, booking, parking.timezone);
       // What the traveller paid online stays what they paid.
       if (isPriceLocked(before)) diff = withoutField(diff, 'priceCents');
+      // 15/10/2026 (relecture de « ne pas planter à l'import quand la plaque est manquante »): the plate of a car already
+      // on the parking is the one the team read on it (often typed on arrival, the comparator having none): a comparator's
+      // never replaces it. A booking still without a plate takes the comparator's.
+      if (before.plateKey && before.status !== 'upcoming') diff = withoutField(diff, 'plate');
       const left = (reason: ImportChangeReason): ImportChangeResult => ({ reservation: before, changes: diff.changes, applied: false, reason });
       const notes = notesWithLines(before.notes, flightLines);
       const notesAdded = notes !== before.notes;
@@ -394,14 +420,19 @@ export class ReservationService {
    * or with one that names no comparator (no letter: « 123829327 ») when the booking names no other comparator (its
    * channel's detail blank or this one: a numeric reference may be Onepark's), for the same car (plateKey) and a stay that
    * overlaps the comparator's or begins the same local day, neither cancelled nor a no-show. Two ids at most: one is
-   * the booking, two make the change ambiguous. None without a plate or a stay. 10/10/2026 (relecture): a booking
-   * without a reference that names another comparator (« Onepark », « Site du parking ») is not this one either
-   * (« Allopark.com » typed by hand still names it), and a closed booking (handed back: its planned stay still overlaps)
-   * never takes the reference, which would then keep the real booking from being created.
+   * the booking, two make the change ambiguous. 15/10/2026: when the comparator or the booking has no plate, the same
+   * traveller stands for the car (sameTraveller: the same phone, 6 digits at least, and a word of the name in common, so
+   * that a change never lands on another traveller sharing a phone); none without a plate and a phone, or without a stay.
+   * Every candidate is read (no cut-off that could hide the booking and make a second one). 10/10/2026
+   * (relecture): a booking without a reference that names another comparator (« Onepark », « Site du parking ») is not
+   * this one either (« Allopark.com » typed by hand still names it), and a closed booking (handed back: its planned stay
+   * still overlaps) never takes the reference, which would then keep the real booking from being created.
    */
   public async unreferencedMatches(operatorId: string, booking: ParsedBooking, externalReference: string): Promise<string[]> {
-    const key = booking.plate ? plateKey(booking.plate) : '';
-    if (!key || !booking.arrivalAt || !booking.returnAt) return [];
+    const key = plateKey(importedPlate(booking.plate) ?? '');
+    const phone = booking.customerPhone ? phoneKey(booking.customerPhone) : '';
+    if ((!key && phone.length < 6) || !booking.arrivalAt || !booking.returnAt) return [];
+    const incoming = { plateKey: key, customerPhone: booking.customerPhone ?? '', customerName: importedNames(booking).customerName };
     const parking = await prisma.parking.findFirst({ where: { operatorId }, orderBy: { createdAt: 'asc' } });
     if (!parking) return [];
     const arrivalAt = parseInstant(booking.arrivalAt, parking.timezone);
@@ -414,13 +445,12 @@ export class ReservationService {
       where: {
         operatorId,
         channel: 'aggregator',
-        plateKey: key,
+        ...(key ? { plateKey: { in: [key, ''] } } : {}),
         status: { notIn: CLOSED_FOR_CHANGES },
         AND: [STAFF_VISIBLE, { OR: [...overlap, sameDay] }],
       },
-      select: { id: true, externalReference: true, channelDetail: true },
+      select: { id: true, externalReference: true, channelDetail: true, plateKey: true, customerPhone: true, customerName: true },
       orderBy: { arrivalAt: 'asc' },
-      take: 20,
     });
     const digits = (text: string) => text.replace(/\D/g, '');
     const letters = (text: string | null) => (text ?? '').toLowerCase().replace(/[^a-z]/g, '');
@@ -431,9 +461,47 @@ export class ReservationService {
       (!!own && !!r.externalReference && digits(r.externalReference) === own) ||
       ((!r.externalReference || !/\p{L}/u.test(r.externalReference)) && sameComparator(r.channelDetail));
     return rows
+      .filter(r => sameTraveller(r, incoming))
       .filter(unreferenced)
       .map(r => r.id)
       .slice(0, 2);
+  }
+
+  /**
+   * 15/10/2026 (relecture de « ne pas planter à l'import quand la plaque est manquante »): whether the staff made this
+   * traveller's booking themselves while the email waited in « À traiter » (typed at the counter, by phone…): a booking of
+   * the operator created after `since`, whatever its status (one the staff cancelled or marked a no-show since is theirs
+   * too: the email never brings it back), whose stay overlaps the email's or begins the same local day, for the same phone
+   * (6 digits at least) or the same name (the words of one within the other's), other than one with the email's own
+   * reference (that one, createFromImport finds as a duplicate). Plazo's automatic re-analyses then leave the email to the
+   * staff rather than make a second booking of the same car. Wider than sameTraveller on purpose: a match here only
+   * leaves the email in « À traiter », as it was.
+   */
+  public async typedSince(operatorId: string, booking: ParsedBooking, since: Date): Promise<boolean> {
+    if (!booking.arrivalAt || !booking.returnAt) return false;
+    const phone = booking.customerPhone ? phoneKey(booking.customerPhone) : '';
+    const words = nameWords(importedNames(booking).customerName);
+    if (phone.length < 6 && !words.length) return false;
+    const parking = await prisma.parking.findFirst({ where: { operatorId }, orderBy: { createdAt: 'asc' } });
+    if (!parking) return false;
+    const arrivalAt = parseInstant(booking.arrivalAt, parking.timezone);
+    const returnAt = parseInstant(booking.returnAt, parking.timezone);
+    if (!arrivalAt || !returnAt) return false;
+    const day = dayBounds(localDate(arrivalAt, parking.timezone), parking.timezone);
+    const sameDay: Prisma.ReservationWhereInput = { arrivalAt: { gte: day.start, lt: day.end } };
+    const overlap: Prisma.ReservationWhereInput[] = returnAt > arrivalAt ? [{ arrivalAt: { lt: returnAt }, returnAt: { gt: arrivalAt } }] : [];
+    const rows = await prisma.reservation.findMany({
+      where: { operatorId, createdAt: { gt: since }, AND: [STAFF_VISIBLE, { OR: [...overlap, sameDay] }] },
+      select: { externalReference: true, customerPhone: true, customerName: true },
+    });
+    const reference = booking.externalReference?.trim().toUpperCase() || null;
+    const within = (a: string[], b: string[]) => a.length > 0 && a.every(w => b.includes(w));
+    return rows.some(r => {
+      if (reference && r.externalReference === reference) return false;
+      if (phone.length >= 6 && phoneKey(r.customerPhone) === phone) return true;
+      const theirs = nameWords(r.customerName);
+      return within(words, theirs) || within(theirs, words);
+    });
   }
 
   /**
@@ -505,8 +573,7 @@ export class ReservationService {
     const parsed = parseConfirmationEmail(text);
     if (!parsed) throw new HttpException(httpStatus.UNPROCESSABLE_ENTITY, 'Unrecognised email', 'unrecognised_email');
 
-    const required = ['arrivalAt', 'returnAt', 'customerName', 'customerPhone', 'plate'] as const;
-    const missing = required.filter(key => !parsed[key]);
+    const missing = REQUIRED_FOR_IMPORT.filter(key => !parsed[key]);
 
     const duplicate = parsed.externalReference
       ? await prisma.reservation.findUnique({
@@ -560,6 +627,15 @@ export class ReservationService {
       const full = datesChanged ? await this.checkCapacity(tx, actor, parking, stay, data.force, id) : [];
       const stopId = data.stopId === undefined ? undefined : await this.checkStop(parking.id, data.stopId);
       const names = this.namesForUpdate(before, data);
+      // 15/10/2026: a blank or null plate (Plazo Pro in the stores always sends the field) leaves a booking without a
+      // plate as it is; a plate is never erased.
+      const plate = typeof data.plate === 'string' && plateKey(data.plate) ? formatPlate(data.plate) : undefined;
+      if (plate === undefined && data.plate !== undefined && before.plateKey) throw fieldError('plate', 'required');
+      // Nor does a booking without a plate move to a channel that needs one (the phone, the counter) unless it is typed.
+      const channel = data.channel ?? before.channel;
+      if (channel !== before.channel && !PLATE_OPTIONAL_CHANNELS.includes(channel) && !plateKey(plate ?? before.plate)) {
+        throw fieldError('plate', 'required');
+      }
 
       const after = await tx.reservation.update({
         where: { id },
@@ -571,8 +647,8 @@ export class ReservationService {
           ...names,
           customerPhone: data.customerPhone?.trim(),
           customerEmail: data.customerEmail === undefined ? undefined : data.customerEmail?.trim().toLowerCase() || null,
-          plate: data.plate === undefined ? undefined : formatPlate(data.plate),
-          plateKey: data.plate === undefined ? undefined : plateKey(data.plate),
+          plate,
+          plateKey: plate === undefined ? undefined : plateKey(plate),
           returnFlight: data.returnFlight === undefined ? undefined : this.normalizeFlight(data.returnFlight),
           departureFlight: data.departureFlight === undefined ? undefined : this.normalizeFlight(data.departureFlight, 'departureFlight'),
           // A new outbound flight starts its tracking over.

@@ -414,3 +414,79 @@ describe('prénom et nom du voyageur (09/10/2026)', () => {
     });
   });
 });
+
+describe('réservation sans plaque (15/10/2026, « ne pas planter à l’import quand la plaque est manquante »)', () => {
+  const post = (token: string, body: Record<string, unknown>) => api().post('/api/internal/reservations').set(auth(token)).send(body);
+  const patch = (token: string, id: string, body: Record<string, unknown>) =>
+    api().patch(`/api/internal/reservations/${id}`).set(auth(token)).send(body);
+
+  it('« Compléter » un mail de comparateur sans plaque : créée avec une plaque vide ; un autre canal l’exige toujours', async () => {
+    const { token } = await setupOperator();
+    const blank = await post(token, booking({ channel: 'aggregator', channelDetail: 'Allopark', plate: '' }));
+    expect(blank.status).toBe(201);
+    expect(blank.body.data).toMatchObject({ plate: '', plateKey: '' });
+    const { plate: _omitted, ...withoutPlate } = booking({ channel: 'aggregator', channelDetail: 'Onepark', arrivalAt: '2026-10-05T06:30' });
+    void _omitted;
+    const absent = await post(token, withoutPlate);
+    expect(absent.status).toBe(201);
+    expect(absent.body.data.plate).toBe('');
+    // A comparator's plate is still checked when given.
+    expect((await post(token, booking({ channel: 'aggregator', plate: 'é!' }))).body.fields).toMatchObject({ plate: 'invalid_plate' });
+    for (const plate of ['', '   ', null, '--']) {
+      const refused = await post(token, booking({ channel: 'phone', plate }));
+      expect(refused.status).toBe(400);
+      expect(refused.body.fields).toMatchObject({ plate: 'invalid_plate' });
+    }
+  });
+
+  it('PATCH : une plaque vide ou nulle laisse une réservation sans plaque telle quelle, n’efface jamais une plaque ; la plaque se saisit ensuite', async () => {
+    const { token } = await setupOperator();
+    const plateless = (await post(token, booking({ channel: 'aggregator', channelDetail: 'Allopark', plate: '' }))).body.data;
+    // Plazo Pro in the stores sends the whole form back, the plate field included.
+    for (const plate of ['', null]) {
+      const res = await patch(token, plateless.id, { plate, passengers: 2 });
+      expect(res.status).toBe(200);
+      expect(res.body.data).toMatchObject({ plate: '', plateKey: '', passengers: 2 });
+    }
+    const logs = await prisma.auditLog.findMany({ where: { entityId: plateless.id, action: 'reservation.updated' } });
+    expect(logs.length).toBeGreaterThan(0);
+    for (const log of logs) expect(log.details).not.toHaveProperty('plate');
+
+    const plated = (await post(token, booking({ arrivalAt: '2026-10-05T06:30' }))).body.data;
+    for (const plate of ['', '  ', null, '--']) {
+      const res = await patch(token, plated.id, { plate });
+      expect([res.status, res.body.fields]).toEqual([400, { plate: 'required' }]);
+    }
+    expect(await prisma.reservation.findUniqueOrThrow({ where: { id: plated.id } })).toMatchObject({ plate: 'GK-318-PX' });
+
+    // A booking without a plate does not become a phone or counter booking without one.
+    for (const channel of ['phone', 'counter']) {
+      const res = await patch(token, plateless.id, { channel, plate: '' });
+      expect([res.status, res.body.fields]).toEqual([400, { plate: 'required' }]);
+    }
+    expect(await prisma.reservation.findUniqueOrThrow({ where: { id: plateless.id } })).toMatchObject({ channel: 'aggregator' });
+    const moved = await patch(token, plateless.id, { channel: 'phone', plate: 'ef 456 gh' });
+    expect([moved.status, moved.body.data.channel, moved.body.data.plate]).toEqual([200, 'phone', 'EF-456-GH']);
+    await patch(token, plateless.id, { channel: 'aggregator' });
+
+    const typed = await patch(token, plateless.id, { plate: 'ab123cd' });
+    expect(typed.status).toBe(200);
+    expect(typed.body.data).toMatchObject({ plate: 'AB-123-CD', plateKey: 'AB123CD' });
+  });
+
+  it('une réservation sans plaque se retrouve par le nom ou la référence, jamais par une plaque vide', async () => {
+    const { token } = await setupOperator();
+    const plateless = (await post(token, booking({ channel: 'aggregator', plate: '', customerLastName: 'Moreau' }))).body.data;
+    await post(token, booking({ arrivalAt: '2026-10-05T06:30' }));
+    for (const q of ['moreau', plateless.reference]) {
+      const res = await api()
+        .get(`/api/internal/reservations?q=${encodeURIComponent(q)}`)
+        .set(auth(token));
+      expect(res.body.docs.map((r: { id: string }) => r.id)).toEqual([plateless.id]);
+    }
+    const byPlate = await api()
+      .get(`/api/internal/reservations?q=${encodeURIComponent('gk 318')}`)
+      .set(auth(token));
+    expect(byPlate.body.docs.map((r: { id: string }) => r.id)).not.toContain(plateless.id);
+  });
+});

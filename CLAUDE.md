@@ -74,7 +74,7 @@ Ne construire QUE ce qui règle la douleur n°1 du client.
      `POST /internal/inbound/address` ne sert plus qu'à « Nouvelle adresse »), règle de transfert dans la messagerie du loueur,
      réception par **Cloudflare Email Routing** et le relais `email-worker/` (08/10/2026, à la place de Brevo, payant ; le relais
      poste chaque mail **brut** (`message/rfc822`, enveloppe en `X-Envelope-From` / `X-Envelope-To`, coupé à 4 Mo) sur `POST /public/inbound/email` avec l'en-tête `X-Inbound-Secret`, et l'API le décode avec `postal-mime` (`domain/inbound-mime.ts` ; 08/10/2026 : les 10 ms de CPU de l'offre Workers Free ne suffisaient pas à décoder une vraie confirmation, « Worker call failed after 3 attempts »)), `InboundEmailService` + `domain/inbound-email.ts`,
-     table `inbound_emails`, réservation créée seule si complète (`ReservationService.createFromImport`), sinon page
+     table `inbound_emails`, réservation créée seule si complète (`ReservationService.createFromImport` ; la plaque n'est plus requise, 15/10/2026), sinon page
      « Mails à vérifier » `/pro/reservations/a-verifier` et alerte `inbound_to_check` ; connecteurs plus tard).
      **G-B (07/10/2026) « Relier votre boîte mail »** : bouton du bloc Mails entrants (Parking › Réglages) ouvrant un assistant
      en quatre étapes (Adresse · Messagerie · Transfert · Vérification ; `InboundSetupWizard`, Gmail / Outlook / OVH / autre,
@@ -110,7 +110,7 @@ Ne construire QUE ce qui règle la douleur n°1 du client.
      plaque ou un téléphone douteux). Claude classe le mail (`kind` : réservation · modification · annulation · autre), en lit les
      champs et donne une confiance et un résumé. Réservation complète et confiance ≥ 0,7 (`MIN_CONFIDENCE`) → réservation créée
      par `createFromImport` (canal comparateur, `channelDetail` = source lue : « Parkos », « Site du parking », « Client »… ;
-     doublon par la référence externe, sinon même plaque et même arrivée) ; champ requis absent ou confiance plus basse →
+     doublon par la référence externe, sinon même plaque, ou sans plaque même téléphone et même nom, et même arrivée) ; champ requis absent ou confiance plus basse →
      `incomplete` pré-rempli (`missing` : les champs, ou `confidence`) ; modification, annulation ou autre → `unrecognised`,
      rien n'est créé ni modifié (sauf une modification Allopark, appliquée depuis le 10/10/2026, voir plus bas). `InboundEmail.reading` `{ kind, provider, confidence, summary, model }` (migration
      `inbound_reading`), `InboundEmailView.reading` ; boîte de réception : ligne « Lu par Claude : Réservation · confiance 92 % »
@@ -124,7 +124,7 @@ Ne construire QUE ce qui règle la douleur n°1 du client.
      `importers/common.ts` ; `ParsedBooking.vehicleModel/vehicleColour` enregistrés par `createFromImport` ; une annulation ou
      une modification n'est jamais lue comme une réservation (`isCancellationOrChange`) ; un mail reconnu mais incomplet est
      **complété par Claude** (`fillGaps` : les champs de l'importateur restent, Claude remplit les trous ; confiance basse →
-     « À vérifier » seulement si Claude a apporté un champ requis) ; `stripHtml` garde le texte alternatif des images (logos) ;
+     « À vérifier » seulement si Claude a apporté un champ requis ; une plaque incertaine seule est écartée) ; `stripHtml` garde le texte alternatif des images (logos) ;
      consigne de Claude : le montant est le prix du parking, sans les frais de la plateforme. Expéditeurs pour le filtre de
      transfert : `info@allopark.com`, puis les mots `onepark`, `parclick`, `parkmundo` (adresses exactes inconnues ; Gmail
      les reconnaît) ; textes de l'assistant G-B au pluriel (« les expéditeurs des comparateurs »).
@@ -206,12 +206,35 @@ Ne construire QUE ce qui règle la douleur n°1 du client.
      la changent sans ce vol (prix compris), le texte part dans les notes (« Vol retour indiqué par Allopark : … (numéro non
      reconnu) », une seule fois ; `domain/imported-flights.ts`), et un vol illisible ne compte jamais comme un changement ; les
      formulaires de l'équipe refusent toujours un vol invalide. Une modification retrouve une réservation saisie à la main sans
-     la référence (même loueur, comparateur vide ou Allopark, même plaque, séjour qui se recoupe ou même jour d'arrivée, ni
+     la référence (même loueur, comparateur vide ou Allopark, même plaque, ou sans plaque même téléphone et un mot du nom en commun, séjour qui se recoupe ou même jour d'arrivée, ni
      close ni Plazo) : une seule → la référence lui est ajoutée sous le verrou des places puis la modification s'applique ;
      plusieurs → raison `ambiguous` (« Plusieurs réservations correspondent : à faire à la main », « Ce que Plazo a compris »
      reste affiché, pas de « Compléter »). `alloparkPageUrls` donne le lien du mail puis les pages des adresses du parking
      (3 au plus) : un lien qui mène ailleurs (« gérer ma réservation ») n'arrête plus la recherche. « Compléter » préremplit
      aussi le modèle et la couleur du véhicule.
+     **Import sans plaque (15/10/2026, « ne pas planter à l'import quand la plaque est manquante »)** : la plaque n'est plus
+     requise pour créer une réservation depuis un mail (`REQUIRED_FOR_IMPORT` sans `plate`) ; Plazo la cherche encore
+     (`SOUGHT_FOR_IMPORT` : page Allopark, Claude) sans faire attendre le mail ; une plaque dont Claude doute est écartée (lue à
+     l'arrivée) ; « pas de plaque » est enregistré `''` (jamais `null` : apps des stores), affiché « À saisir » dans la plaque
+     (`Plate`, `FrenchPlate`) ; une plaque lue doit contenir un chiffre (`importedPlate`, `PLATE` des importateurs : plus de
+     « ENTR » ni « MARQUE ») ; doublon sans référence : même plaque, sinon même téléphone et un mot du nom en commun, même
+     arrivée (`sameTraveller`) ; une modification Allopark retrouve aussi une réservation sans plaque par le téléphone et un
+     mot du nom (`sameTraveller` : jamais la réservation d'un autre voyageur au même téléphone), et la plaque d'une voiture
+     déjà arrivée (lue sur la voiture par l'équipe) n'est jamais remplacée par celle du comparateur (`applyImportChange`) ;
+     création par l'équipe sans plaque pour le canal comparateur (« Compléter ») ; PATCH `plate` vide ou `null` : inchangé sur
+     une réservation sans plaque, 400 `required` sinon (une plaque n'est jamais effacée), et pour faire passer une réservation
+     sans plaque au téléphone ou au comptoir (« -- » n'est pas une plaque) ; sans plaque, le planning des places, le plan de
+     l'Occupation et l'alerte `blocked_return` nomment le client, les messages disent « Véhicule » / « Le véhicule » (« Voiture »
+     dans les files ; web et Plazo Pro), les pushs et les bandeaux d'arrivée de l'équipe et les mails au voyageur n'en disent
+     rien (`plateSegment`, pas de ligne « Véhicule ») ; les mails qui n'attendaient que leur
+     plaque (7 derniers jours) sont importés par `POST /public/inbound/retry` (`importWaitingForPlate`, `plateOnly`, aucune
+     analyse lancée après les 10 premières secondes de l'appel) ; relecture : ce rattrapage et la relance automatique
+     Allopark laissent à l'équipe un mail dont elle a saisi la réservation à la main pendant qu'il attendait
+     (`ReservationService.typedSince` : réservation créée depuis la réception du mail, même annulée ou non venue depuis, séjour
+     qui se recoupe ou même jour d'arrivée, même téléphone ou même nom, autre référence ; plus large que `sameTraveller` exprès,
+     puisqu'elle ne fait que laisser le mail « À traiter » ; `typedByHand` dans le compte rendu ; jamais
+     pour une modification Allopark, qui retrouve elle-même la réservation saisie), pour ne jamais faire deux réservations de
+     la même voiture.
      **Analyse relancée automatiquement (11/10/2026, « Lance l'analyse automatiquement pour allopark »)** : à la réception,
      Allopark montrait parfois « gérer ma réservation » au lieu de la réservation (journaux de production : la même page lue
      18 min plus tard) ; un mail Allopark dont la page n'a pas été lue (`pageLookup` `not_found` ou `unavailable`, jamais
@@ -294,7 +317,7 @@ Ne construire QUE ce qui règle la douleur n°1 du client.
      `/internal/parkings/:id/reminders…` et `PUT /internal/reservations/:id/reminder`. Web seulement pour l'instant.
    - **Importateurs des comparateurs (09/10/2026, d'après cinq mails de Joanny)** : Allopark, Onepark, Parclick et ParkMundo
      lus sans Claude (`domain/importers/*`, `detect` / `parse` sur le texte aplati, `common.ts` ; montant = ce que paie le
-     client, hors frais du comparateur ; modèle et couleur du véhicule) ; Claude ne complète que les champs manquants d'un mail
+     client, hors frais du comparateur ; modèle et couleur du véhicule ; une plaque doit contenir un chiffre, 15/10/2026) ; Claude ne complète que les champs manquants d'un mail
      reconnu (`fillGaps`) ; un mail d'annulation ou de modification n'est jamais importé (`isCancellationOrChange`).
    - **CA-B + CA-A « Chiffre d'affaires » (09/10/2026, « additionner le CA des réservations »)** : page `/pro/chiffre-affaires`
      (gérants, permission `revenue:view` ; `RevenuePage.tsx`) : périodes Aujourd'hui · 7 jours · mois en cours · mois précédent ·

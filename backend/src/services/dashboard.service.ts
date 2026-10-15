@@ -1,5 +1,6 @@
 import { Container, Service } from 'typedi';
 import { ON_SITE_STATUSES } from '@/domain/reservation';
+import { shortName } from '@/domain/arrival';
 import { flightTrackingSettings } from '@/config';
 import prisma, { ReservationStatus } from '@/database';
 import { BOARDING_CHECK_IN_SELECT, BoardingCheckIn, boardingCheckInOf, ShuttleDirection } from '@/domain/shuttle';
@@ -356,7 +357,8 @@ export class DashboardService {
           reference: car.reference,
           customerName: car.customerName,
           plate: car.plate,
-          detail: `${fileCode} · ${front.plate} retour ${localDateTime(front.returnAt, parking.timezone)}${blockers.length > 1 ? ` (+${blockers.length - 1})` : ''}`,
+          // 15/10/2026: a car imported without its plate is named.
+          detail: `${fileCode} · ${front.plate || shortName(front.customerName)} retour ${localDateTime(front.returnAt, parking.timezone)}${blockers.length > 1 ? ` (+${blockers.length - 1})` : ''}`,
           since: null,
           minutes: null,
         });

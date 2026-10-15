@@ -1,5 +1,5 @@
 import prisma from '@/database';
-import { localDate } from '@/domain/time';
+import { addDays, localDate } from '@/domain/time';
 import { addStaff, api, resetDatabase, setupOperator } from './utils/helpers';
 
 /** The pro space's home (05/10/2026): figures, services, alerts, vehicles. */
@@ -102,5 +102,29 @@ describe('GET /internal/dashboard', () => {
       flightStatus: 'delayed',
     });
     expect(res.body.breakdown).toMatchObject({ toTreat: 2, freeSpots: 1, returnsThisWeek: 3 });
+  });
+
+  it('15/10/2026 : un retour bloqué derrière une voiture sans plaque nomme son client', async () => {
+    const op = await setupOperator();
+    const files = await api()
+      .put(`/api/internal/parkings/${op.parking.id}/files`)
+      .set(auth(op.token))
+      .send({ files: [{ code: 'F01', capacity: 3 }] });
+    expect(files.status).toBe(200);
+    const fileId = files.body.data[0].id as string;
+    const back = (await api().post('/api/internal/reservations').set(auth(op.token)).send(booking('AB-123-CD', 'Marie Martin'))).body.data;
+    const front = await api()
+      .post('/api/internal/reservations')
+      .set(auth(op.token))
+      .send(booking('', 'Jean Dupont', { channel: 'aggregator', channelDetail: 'Allopark', returnAt: `${addDays(today(), 1)}T18:00` }));
+    expect(front.status).toBe(201);
+    expect(front.body.data.plate).toBe('');
+    for (const id of [back.id, front.body.data.id]) {
+      expect((await api().post(`/api/internal/reservations/${id}/file`).set(auth(op.token)).send({ fileId })).status).toBe(200);
+    }
+    const res = await api().get('/api/internal/dashboard').set(auth(op.token));
+    const alert = res.body.alerts.find((a: { kind: string }) => a.kind === 'blocked_return');
+    expect(alert).toMatchObject({ reservationId: back.id, plate: 'AB-123-CD' });
+    expect(alert.detail).toMatch(/^F01 · J\. Dupont retour /);
   });
 });

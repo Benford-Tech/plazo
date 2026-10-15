@@ -1,5 +1,6 @@
 import { ArrivalKind } from '@/database';
 import { shortName } from './arrival';
+import { plateSegment } from './reservation';
 
 /** Push notifications sent to the staff about a traveller's arrival (French, short). */
 
@@ -36,22 +37,24 @@ function arrivalPushBase(input: ArrivalPushInput): PushMessage {
   const eta = input.etaMinutes;
   const isReturn = input.kind === 'return';
   const place = input.meetingLabel || (isReturn ? 'point de rendez-vous' : input.parkingName);
+  // 15/10/2026: a booking imported without its plate (read on arrival) leaves it out.
+  const plate = plateSegment(input.plate);
   switch (input.event) {
     case 'announced':
       return {
         title: isReturn ? 'Retour annoncé' : 'Arrivée annoncée',
-        body: `${isReturn ? 'Retour : ' : ''}${who} : « J'arrive dans ${eta} min » · ${input.plate}`,
+        body: `${isReturn ? 'Retour : ' : ''}${who} : « J'arrive dans ${eta} min »${plate}`,
       };
     case 'at_meeting_point':
       return isReturn
-        ? { title: 'Client au point de rendez-vous', body: `Retour : ${who} est au point de rendez-vous · ${place} · ${input.plate}` }
-        : { title: 'Client arrivé', body: `${who} est à l'accueil · ${input.plate} · ${input.parkingName}` };
+        ? { title: 'Client au point de rendez-vous', body: `Retour : ${who} est au point de rendez-vous · ${place}${plate}` }
+        : { title: 'Client arrivé', body: `${who} est à l'accueil${plate} · ${input.parkingName}` };
     case 'started':
     case 'soon': {
       const when = eta === null ? 'est en route' : `arrive dans ${eta} min`;
       return isReturn
-        ? { title: 'Retour en approche', body: `Retour : ${who} ${when} au point de rendez-vous · ${input.plate}` }
-        : { title: 'Arrivée en approche', body: `${who} ${when} · ${input.plate} · ${input.parkingName}` };
+        ? { title: 'Retour en approche', body: `Retour : ${who} ${when} au point de rendez-vous${plate}` }
+        : { title: 'Arrivée en approche', body: `${who} ${when}${plate} · ${input.parkingName}` };
     }
   }
 }

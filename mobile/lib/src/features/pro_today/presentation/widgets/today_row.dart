@@ -166,7 +166,12 @@ class ArrivalBanner extends StatelessWidget {
   }
 
   static String _base(StaffSignalModel s) {
-    final who = shortName(s.customerName);
+    final text = _withPlate(s, shortName(s.customerName));
+    // 15/10/2026: a booking imported without its plate (read on arrival) leaves the « — plate » out, as on the web.
+    return s.plate.trim().isEmpty ? text.replaceFirst(RegExp(r'\s*—\s*$'), '') : text;
+  }
+
+  static String _withPlate(StaffSignalModel s, String who) {
     return switch (s.state) {
       ArrivalSignalState.announced => 'pro.banner_announced'.tr(args: [who, '${s.announcedMinutes ?? s.etaMinutes ?? 0}', s.plate]),
       ArrivalSignalState.atMeetingPoint =>
