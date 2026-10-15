@@ -14,6 +14,7 @@ import {
   DROPOFF_STATUSES,
   firstName,
   PICKUP_LIST_HOURS_AFTER,
+  PICKUP_LIST_HOURS_AHEAD,
   PICKUP_LIST_HOURS_BEFORE,
   PICKUP_STATUSES,
   ShuttleDirection,
@@ -34,6 +35,7 @@ import { ReturnNotice, returnNoticeView } from '@/domain/return-messages';
 import { ParkingLocationService } from './parking-location.service';
 import { ParkingService } from './parking.service';
 import { PushService } from './push.service';
+import { TestFeedService } from './test-feed.service';
 import { TravellerMessagesService } from './traveller-messages.service';
 import { holdsVehicleToday } from './staff.service';
 
@@ -46,7 +48,11 @@ export const STOP_INSTRUCTIONS_MAX = 500;
 const ERASED_POSITION = { lat: null, lng: null, accuracyM: null, positionRecordedAt: null };
 const dayBounds = (now: Date, tz: string) => {
   const day = localDate(now, tz);
-  return { day, start: new Date(now.getTime() - PICKUP_LIST_HOURS_BEFORE * 3600000), end: new Date(now.getTime() + 18 * 3600000) };
+  return {
+    day,
+    start: new Date(now.getTime() - PICKUP_LIST_HOURS_BEFORE * 3600000),
+    end: new Date(now.getTime() + PICKUP_LIST_HOURS_AHEAD * 3600000),
+  };
 };
 const iso = (d: Date | null | undefined) => (d ? d.toISOString() : null);
 
@@ -357,6 +363,7 @@ export class ShuttleService {
   public locations = Container.get(ParkingLocationService);
   public push = Container.get(PushService);
   public messages = Container.get(TravellerMessagesService);
+  public testFeed = Container.get(TestFeedService);
   public estimator: ArrivalEstimator = straightLineEstimate;
 
   // ---------------------------------------------------------------- vehicles
@@ -525,6 +532,8 @@ export class ShuttleService {
   ): Promise<{ serverTime: string; meetingPoint: MeetingPoint | null; rows: PickupRow[]; sharePosition: boolean }> {
     await this.sweep({ operatorId: actor.operatorId });
     const parking = await this.parkings.getPrimary(actor);
+    // The platform's test operator: its fictional travellers topped up first (nothing for any other operator).
+    await this.testFeed.maybeRun(actor, parking);
     const now = new Date();
     const { start, end } = dayBounds(now, parking.timezone);
     const where: Prisma.ReservationWhereInput = {
@@ -587,6 +596,7 @@ export class ShuttleService {
   public async departures(actor: AuthenticatedStaff): Promise<{ serverTime: string; rows: DepartureRow[]; sharePosition: boolean }> {
     await this.sweep({ operatorId: actor.operatorId });
     const parking = await this.parkings.getPrimary(actor);
+    await this.testFeed.maybeRun(actor, parking);
     const now = new Date();
     const rows = await prisma.reservation.findMany({
       where: {

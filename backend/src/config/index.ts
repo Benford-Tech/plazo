@@ -144,6 +144,14 @@ export function isPlatformAdmin(email: string | null | undefined): boolean {
 }
 
 /**
+ * TEST_FEED=off stops the continuous fictional travellers of the platform's test operator (TestFeedService, 15/10/2026).
+ * Read on every call, like the platform's emails.
+ */
+export function testFeedOff(): boolean {
+  return (process.env.TEST_FEED || '').trim().toLowerCase() === 'off';
+}
+
+/**
  * The platform tools open only to a listed email that its owner has verified (08/10/2026): a free signup or a
  * member created with the owner's email, never verified, must not reach the platform.
  */

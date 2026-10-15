@@ -1,22 +1,28 @@
 name: Données fictives du parking de test
 
 # Fills the platform's own test operator « Plazo (tests) » in production with a fictional day around the moment of
-# the run (12/10/2026): shuttle tracking on « Équipe et clients », a shuttle vehicle, 8 bookings (2 cars on site for
-# the shuttle to the terminal, 2 arrivals later today, 2 returns today, 2 arrivals tomorrow), through the API and its
-# rules. For filming Plazo Pro (Google Play foreground-service videos), a demo or a check before a store review.
-# Fictional people only, no e-mail, phones in the 06 39 98 range, no day-before SMS. Refuses any other operator.
-# Run again to refresh the day (nothing piles up); « clear » closes the fictional bookings.
+# the run (12/10/2026): shuttle tracking on « Équipe et clients », a shuttle vehicle, 8 bookings TS-101-PZ to TS-108-PZ
+# (2 cars on site for the shuttle to the terminal, 2 arrivals later today, 2 returns today, 2 arrivals tomorrow),
+# through the API and its rules. For filming Plazo Pro (Google Play foreground-service videos), a demo or a check
+# before a store review. Fictional people only, no e-mail, phones in the 06 39 98 range, no day-before SMS. Refuses any
+# other operator. Run again to refresh the day (nothing piles up); « clear » closes the bookings TS-1xx. A trip left
+# running is ended only when it carries one of the TS-1xx bookings: a driver on another trip is never interrupted.
+# Since 15/10/2026 the server also keeps a continuous feed of fictional travellers on that operator (TS-201-PZ to
+# TS-240-PZ, topped up whenever the driver's lists are read, so that a driver always has someone to take to the
+# terminal and to fetch): « feed-status » shows it, « feed-on » / « feed-off » switch it (off closes its bookings,
+# except those on a running trip or being changed), « feed-run » runs it now. Nothing to schedule: the server runs it
+# by itself.
 # Secrets (Settings › Secrets and variables › Actions): PLAZO_TEST_EMAIL and PLAZO_TEST_PASSWORD, an « Accueil » member
 # of « Plazo (tests) », never a manager (a manager of that operator could reset the platform admin's password); the two
-# manager settings (shuttle tracking, a vehicle) are then only checked, with a warning. Nothing secret is printed. By
-# hand only (.github/scripts/test_parking_data.py).
+# manager settings (shuttle tracking, a vehicle) are then only checked, with a warning. Nothing secret is printed; the
+# session is closed at the end of every run. By hand only (.github/scripts/test_parking_data.py).
 on:
   workflow_dispatch:
     inputs:
       action:
-        description: "fill : préparer la journée fictive (ou la remettre à l'heure) · clear : clôturer les réservations fictives"
+        description: "fill : préparer la journée fictive (ou la remettre à l'heure) · clear : clôturer les réservations fictives · feed-status / feed-on / feed-off / feed-run : le flux continu de voyageurs fictifs"
         type: choice
-        options: [fill, clear]
+        options: [fill, clear, feed-status, feed-on, feed-off, feed-run]
         default: fill
 
 permissions:

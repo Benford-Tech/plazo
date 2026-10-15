@@ -16,9 +16,14 @@ export const POSITION_INTERVAL_TOLERANCE_MS = 2000;
 export const TRIP_POSITION_MAX_AGE_SECONDS = 300;
 /** Bookings whose traveller can be picked up at the airport. */
 export const PICKUP_STATUSES: ReservationStatus[] = AWAY_STATUSES;
-/** Returns listed for the driver: this long before the first return of the day… */
+/**
+ * Returns listed for the driver (« À récupérer »): a rolling window around now, not the calendar day. A return (or a
+ * flight's estimated landing) from this long before now…
+ */
 export const PICKUP_LIST_HOURS_BEFORE = 3;
-/** …and this long after a return time, for late flights. */
+/** …to this long after now… */
+export const PICKUP_LIST_HOURS_AHEAD = 18;
+/** …and still listed this long after its landing (else its estimate, else its return time), for late flights. */
 export const PICKUP_LIST_HOURS_AFTER = 6;
 
 /** Bookings whose traveller waits at the parking for the shuttle to the terminal. */

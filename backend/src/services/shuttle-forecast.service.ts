@@ -7,6 +7,7 @@ import { AuthenticatedStaff } from '@/interfaces/auth.interface';
 import { FlightTrackingService } from './flight-tracking.service';
 import { ParkingService } from './parking.service';
 import { ShuttleService } from './shuttle.service';
+import { TestFeedService } from './test-feed.service';
 
 export interface ShuttleForecast {
   serverTime: string;
@@ -39,9 +40,12 @@ export class ShuttleForecastService {
   public flights = Container.get(FlightTrackingService);
   public parkings = Container.get(ParkingService);
   public shuttle = Container.get(ShuttleService);
+  public testFeed = Container.get(TestFeedService);
 
   public async day(actor: AuthenticatedStaff, date?: string): Promise<ShuttleForecast> {
     const parking = await this.parkings.getPrimary(actor);
+    // The platform's test operator: its fictional travellers topped up first (nothing for any other operator).
+    await this.testFeed.maybeRun(actor, parking);
     const now = new Date();
     const day = date && DATE_RE.test(date) ? date : localDate(now, parking.timezone);
     const { start, end } = dayBounds(day, parking.timezone);
