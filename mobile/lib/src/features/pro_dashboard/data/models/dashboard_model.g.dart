@@ -185,6 +185,38 @@ Map<String, dynamic> _$DashboardStripeModelToJson(
   'payoutsEnabled': instance.payoutsEnabled,
 };
 
+_DashboardReadingOutageModel _$DashboardReadingOutageModelFromJson(
+  Map<String, dynamic> json,
+) => _DashboardReadingOutageModel(
+  cause: json['cause'] as String? ?? 'other',
+  at: json['at'] == null ? null : DateTime.parse(json['at'] as String),
+);
+
+Map<String, dynamic> _$DashboardReadingOutageModelToJson(
+  _DashboardReadingOutageModel instance,
+) => <String, dynamic>{
+  'cause': instance.cause,
+  'at': instance.at?.toIso8601String(),
+};
+
+_DashboardReadingModel _$DashboardReadingModelFromJson(
+  Map<String, dynamic> json,
+) => _DashboardReadingModel(
+  configured: json['configured'] as bool? ?? false,
+  outage: json['outage'] == null
+      ? null
+      : DashboardReadingOutageModel.fromJson(
+          json['outage'] as Map<String, dynamic>,
+        ),
+);
+
+Map<String, dynamic> _$DashboardReadingModelToJson(
+  _DashboardReadingModel instance,
+) => <String, dynamic>{
+  'configured': instance.configured,
+  'outage': instance.outage,
+};
+
 _DashboardServicesModel _$DashboardServicesModelFromJson(
   Map<String, dynamic> json,
 ) => _DashboardServicesModel(
@@ -203,6 +235,9 @@ _DashboardServicesModel _$DashboardServicesModelFromJson(
   lastImportAt: json['lastImportAt'] == null
       ? null
       : DateTime.parse(json['lastImportAt'] as String),
+  reading: json['reading'] == null
+      ? null
+      : DashboardReadingModel.fromJson(json['reading'] as Map<String, dynamic>),
 );
 
 Map<String, dynamic> _$DashboardServicesModelToJson(
@@ -213,6 +248,7 @@ Map<String, dynamic> _$DashboardServicesModelToJson(
   'push': instance.push,
   'stripe': instance.stripe,
   'lastImportAt': instance.lastImportAt?.toIso8601String(),
+  'reading': instance.reading,
 };
 
 _DashboardAlertModel _$DashboardAlertModelFromJson(Map<String, dynamic> json) =>

@@ -283,6 +283,53 @@ describe("InboundEmailsPage (M-A « Boîte de réception », T-A « Deux gestes 
     expect(unsure.getByText(/lecture incertaine/)).toBeInTheDocument();
     expect(reading().getByText("Compléter et enregistrer")).toBeInTheDocument();
   });
+  it("16/10/2026 : « Reconnu par Plazo » pour un mail lu par les règles (sans confiance) ; une panne de Claude est dite avec sa cause, jusque dans le toast", async () => {
+    lists = {
+      todo: [
+        email({
+          id: "r1",
+          subject: "Annulation de votre réservation AL-500000001",
+          provider: null,
+          parsed: null,
+          missing: [],
+          reading: {
+            kind: "cancellation",
+            provider: "Allopark",
+            confidence: 1,
+            summary: "Annulation Allopark de la réservation AL-500000001",
+            model: "",
+            source: "rules",
+            rule: "allopark.cancellation",
+          },
+        }),
+        email({ id: "o1", subject: "Nouvelle réservation PK-123456", provider: null, parsed: null, missing: [], reading: null, readingOutage: { cause: "credit", at: "2026-10-16T07:12:00Z" } }),
+      ],
+      done: [],
+      archived: [],
+    };
+    renderPage();
+    const rows = await screen.findAllByTestId("inbound-row");
+    expect(within(rows[0]).getByTestId("inbound-kind")).toHaveTextContent("Annulation");
+    const line = within(reading().getByTestId("inbound-reading-line"));
+    expect(line.getByText("Reconnu par Plazo :", { exact: false })).toBeInTheDocument();
+    expect(line.getByText("Annulation · Allopark")).toBeInTheDocument();
+    expect(line.queryByText(/confiance/)).toBeNull();
+    expect(line.queryByText(/Lu par Claude/)).toBeNull();
+    expect(reading().queryByTestId("inbound-reading-outage")).toBeNull();
+
+    await userEvent.click(within(rows[1]).getByRole("button"));
+    expect(reading().getByTestId("inbound-reading-outage")).toHaveTextContent(
+      "Claude n'a pas pu lire ce mail (crédit Anthropic épuisé) : Plazo le relira dès que la lecture fonctionne de nouveau.",
+    );
+    api.reanalyseInboundEmail.mockResolvedValue({ email: lists.todo[1], outcome: "unrecognised" });
+    await userEvent.click(reading().getByTestId("inbound-reanalyse"));
+    await waitFor(() =>
+      expect(toast.success).toHaveBeenCalledWith(
+        "Analyse relancée, mais Claude n'a pas pu lire ce mail (crédit Anthropic épuisé) : Plazo le relira dès que la lecture fonctionne de nouveau.",
+      ),
+    );
+    expect(toast.success).not.toHaveBeenCalledWith(expect.stringContaining("n'est toujours pas reconnu"));
+  });
   it("11/10/2026 : l'essai automatique suivant est annoncé sous la page Allopark ; après cinq essais, le relais à l'équipe", async () => {
     const page = "https://www.allopark.com/fr-be/confirmation?email=parking%40example.com&reference=AL-884880719&view=parking";
     const lookup = { outcome: "not_found" as const, url: page, at: "2026-10-11T06:30:00Z" };
@@ -713,6 +760,30 @@ describe("InboundEmailsPage (M-A « Boîte de réception », T-A « Deux gestes 
     it.each<[string, InboundReanalysis["outcome"], Partial<InboundEmail>, string]>([
       ["doublon", "duplicate", { status: "duplicate", missing: [], reservationId: "r1", reservationReference: "RABC12" }, "Cette réservation existait déjà : le mail y est rattaché."],
       ["non reconnu", "unrecognised", { status: "unrecognised", provider: null, parsed: null, missing: [] }, "Analyse relancée : ce mail n'est toujours pas reconnu comme une réservation."],
+      [
+        "16/10/2026 : annulation reconnue par Plazo",
+        "unrecognised",
+        {
+          status: "unrecognised",
+          provider: null,
+          parsed: null,
+          missing: [],
+          reading: { kind: "cancellation", provider: "Allopark", confidence: 1, summary: "Annulation Allopark de la réservation AL-884880719", model: "", source: "rules" },
+        },
+        "Analyse relancée : mail reconnu (Annulation), rien n'est créé de lui-même.",
+      ],
+      [
+        "16/10/2026 : modification Allopark dont la page n'a pas été lue",
+        "unrecognised",
+        {
+          status: "unrecognised",
+          parsed: null,
+          missing: [],
+          reading: { kind: "modification", provider: "Allopark", confidence: 1, summary: "Modification Allopark de la réservation AL-884880719", model: "", source: "rules" },
+          pageLookup: { outcome: "not_found", url: null, at: "2026-10-16T07:12:00Z" },
+        },
+        "Analyse relancée : modification Allopark reconnue, mais la page de la réservation n'a pas pu être lue : rien n'a changé.",
+      ],
       [
         "plusieurs champs",
         "incomplete",

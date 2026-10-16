@@ -1,7 +1,19 @@
 import 'reflect-metadata';
+import Anthropic from '@anthropic-ai/sdk';
 import { Container } from 'typedi';
-import { cleanPhone, cleanPlate, emailReadingInput, emailReadingPrompt, readingOf, toParsedBooking, type EmailReading } from '@/domain/email-reading';
+import {
+  cleanPhone,
+  cleanPlate,
+  emailReadingInput,
+  emailReadingPrompt,
+  outageCauseOf,
+  readingOf,
+  readingOutageOf,
+  toParsedBooking,
+  type EmailReading,
+} from '@/domain/email-reading';
 import { EmailReadingService } from '@/services/email-reading.service';
+import { logger } from '@/utils/logger';
 
 /**
  * L-A (08/10/2026): Claude reads the forwarded emails no importer knows. The pure side (answer →
@@ -141,7 +153,7 @@ describe('lecture d’un mail par Claude — service', () => {
   it('ne fait rien sans clé', async () => {
     delete process.env.ANTHROPIC_API_KEY;
     expect(service.available()).toBe(false);
-    expect(await service.read(email)).toBeNull();
+    expect(await service.read(email)).toEqual({ outcome: 'unavailable' });
     expect(create).not.toHaveBeenCalled();
   });
 
@@ -149,6 +161,7 @@ describe('lecture d’un mail par Claude — service', () => {
     create.mockResolvedValue(message());
     const result = await service.read(email);
     expect(result).toMatchObject({
+      outcome: 'answered',
       reading: { kind: 'booking', provider: 'Parkos', confidence: 0.92 },
       usage: { inputTokens: 800, outputTokens: 120 },
     });
@@ -159,16 +172,93 @@ describe('lecture d’un mail par Claude — service', () => {
     expect(params.messages[0].content).toContain('noreply@parkos.fr');
   });
 
-  it('répond null quand Claude refuse, est coupé, ne répond pas en JSON ou échoue', async () => {
+  it('16/10/2026 : dit pourquoi il n’y a pas de lecture : refus, réponse coupée ou mal formée (« declined »), panne (« outage »)', async () => {
     create.mockResolvedValueOnce(message({ stop_reason: 'refusal', content: [] }));
-    expect(await service.read(email)).toBeNull();
+    expect(await service.read(email)).toEqual({ outcome: 'declined', reason: 'refusal' });
     create.mockResolvedValueOnce(message({ stop_reason: 'max_tokens' }));
-    expect(await service.read(email)).toBeNull();
+    expect(await service.read(email)).toEqual({ outcome: 'declined', reason: 'max_tokens' });
     create.mockResolvedValueOnce(message({ content: [{ type: 'text', text: '{oops' }] }));
-    expect(await service.read(email)).toBeNull();
+    expect(await service.read(email)).toEqual({ outcome: 'declined', reason: 'malformed' });
     create.mockResolvedValueOnce(message({ content: [{ type: 'text', text: JSON.stringify({ kind: 'facture' }) }] }));
-    expect(await service.read(email)).toBeNull();
+    expect(await service.read(email)).toEqual({ outcome: 'declined', reason: 'malformed' });
     create.mockRejectedValueOnce(new Error('ECONNRESET'));
-    expect(await service.read(email)).toBeNull();
+    expect(await service.read(email)).toEqual({ outcome: 'outage', cause: 'other', status: null });
+  });
+
+  /** An error as the SDK throws it for an HTTP answer of Anthropic. */
+  const apiError = (status: number, type: string, text: string) =>
+    Anthropic.APIError.generate(status, { type: 'error', error: { type, message: text }, request_id: 'req_test' }, undefined, new Headers());
+  const CREDIT = 'Your credit balance is too low to access the Anthropic API. Please go to Plans & Billing to upgrade or purchase credits.';
+
+  it('16/10/2026 : reconnaît la cause d’une panne (crédit épuisé en 400, clé, charge, délai, réseau)', async () => {
+    const cases: [unknown, string, number | null][] = [
+      [apiError(400, 'invalid_request_error', CREDIT), 'credit', 400],
+      [apiError(402, 'billing_error', 'Billing issue'), 'credit', 402],
+      [apiError(401, 'authentication_error', 'invalid x-api-key'), 'auth', 401],
+      [apiError(403, 'permission_error', 'Your API key does not have permission'), 'auth', 403],
+      [apiError(429, 'rate_limit_error', 'Number of request tokens has exceeded your per-minute rate limit'), 'rate_limit', 429],
+      [apiError(529, 'overloaded_error', 'Overloaded'), 'overloaded', 529],
+      [apiError(500, 'api_error', 'Internal server error'), 'overloaded', 500],
+      [apiError(400, 'invalid_request_error', 'max_tokens: must be positive'), 'other', 400],
+      [new Anthropic.APIConnectionTimeoutError(), 'timeout', null],
+      [new Anthropic.APIConnectionError({ message: 'Connection error.' }), 'network', null],
+    ];
+    for (const [error, cause, status] of cases) {
+      create.mockRejectedValueOnce(error);
+      expect([cause, await service.read(email)]).toEqual([cause, { outcome: 'outage', cause, status }]);
+      expect(service.lastCall?.outage?.cause).toBe(cause);
+    }
+    // An answer since: the instance remembers it.
+    create.mockResolvedValueOnce(message());
+    expect((await service.read(email)).outcome).toBe('answered');
+    expect(service.lastCall?.outage).toBeNull();
+  });
+
+  it('16/10/2026 : journalise une panne une fois en erreur puis en avertissement, sans le mail ni « undefined »', async () => {
+    const error = jest.spyOn(logger, 'error');
+    const warn = jest.spyOn(logger, 'warn');
+    try {
+      create.mockRejectedValueOnce(apiError(400, 'invalid_request_error', CREDIT));
+      create.mockRejectedValueOnce(apiError(400, 'invalid_request_error', CREDIT));
+      create.mockRejectedValueOnce(new Anthropic.APIConnectionError({ message: 'Connection error.' }));
+      await service.read({ ...email, text: 'Bonjour Marie Dupont, AB-123-CD' });
+      await service.read({ ...email, text: 'Bonjour Marie Dupont, AB-123-CD' });
+      await service.read({ ...email, text: 'Bonjour Marie Dupont, AB-123-CD' });
+      const errors = error.mock.calls.map(([m]) => String(m));
+      const warnings = warn.mock.calls.map(([m]) => String(m));
+      expect(errors).toEqual([
+        expect.stringMatching(/^\[Inbound\] Claude unavailable \(credit: HTTP 400, invalid_request_error, Your credit balance is too low/),
+        // Another cause: an error again; a failed connection has no HTTP status to tell.
+        '[Inbound] Claude unavailable (network): the email waits and is read again once Claude answers',
+      ]);
+      expect(warnings).toEqual([expect.stringMatching(/^\[Inbound\] Claude unavailable \(credit: HTTP 400/)]);
+      for (const line of [...errors, ...warnings]) {
+        expect(line).not.toMatch(/undefined|Dupont|AB-123-CD|noreply/);
+      }
+    } finally {
+      error.mockRestore();
+      warn.mockRestore();
+    }
+  });
+});
+
+describe('panne de Claude (16/10/2026) — domaine', () => {
+  it('outageCauseOf : le crédit d’abord (par son message sur un 400), puis la clé, la charge, le délai, le réseau', () => {
+    expect(
+      outageCauseOf({ status: 400, type: 'invalid_request_error', message: 'Your credit balance is too low to access the Anthropic API.' }),
+    ).toBe('credit');
+    expect(outageCauseOf({ status: 403, type: 'billing_error' })).toBe('credit');
+    expect(outageCauseOf({ status: 403, type: 'permission_error' })).toBe('auth');
+    expect(outageCauseOf({ status: 503 })).toBe('overloaded');
+    expect(outageCauseOf({ timeout: true, status: 500 })).toBe('timeout');
+    expect(outageCauseOf({ connection: true })).toBe('network');
+    expect(outageCauseOf({})).toBe('other');
+  });
+
+  it('readingOutageOf : seulement une cause connue et une date', () => {
+    expect(readingOutageOf({ cause: 'credit', at: '2026-10-16T07:00:00.000Z' })).toEqual({ cause: 'credit', at: '2026-10-16T07:00:00.000Z' });
+    expect(readingOutageOf({ cause: 'panne', at: '2026-10-16T07:00:00.000Z' })).toBeNull();
+    expect(readingOutageOf({ cause: 'credit' })).toBeNull();
+    expect(readingOutageOf(null)).toBeNull();
   });
 });

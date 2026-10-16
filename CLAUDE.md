@@ -273,6 +273,59 @@ Ne construire QUE ce qui règle la douleur n°1 du client.
      expéditeur qui n'est pas un comparateur et sans mot de réservation (`looksLikeBooking`) n'est ni lu par Claude ni gardé :
      statut `ignored` sans expéditeur, objet ni texte, jamais listé, effacé à 7 jours ; `unexpected` en compte 7 jours et l'alerte
      « Plazo reçoit aussi vos autres mails » s'affiche dans le bloc et l'assistant (« Désactiver le transfert » pour Gmail).
+     **« Analyser sans passer par Claude » (16/10/2026, « trouve un moyen d'analyser sans passer par claude. faire du scrapping par
+     type de mail par exemple » ; le matin même le crédit Anthropic était épuisé, « Your credit balance is too low », et chaque
+     modification Allopark attendait Claude)** : chaque mail est d'abord classé par des règles fixes par comparateur et type de
+     mail (`domain/inbound-kind.ts`, `classifyMail` → `{ provider, kind: booking · change · cancellation · other · unknown,
+     reference, rule, sure }`, `rule` dans les journaux), sur le seul message du comparateur (`comparatorMessageOf` : sous l'en-tête
+     d'un transfert à la main, « Message transféré » / « De : … Objet : » / « Début du message réexpédié », le mot de celui qui
+     transfère à part ; une réponse coupée à sa citation « Le … a écrit : ») ; une annulation l'emporte sur une modification, une
+     modification sur une réservation, et le mot de celui qui transfère ne peut que rendre la lecture plus prudente (relecture :
+     une demande écrite au-dessus, « je souhaite annuler », « merci de décaler le retour », ou l'objet d'un message qui en
+     transfère un autre, « Annulation… » au-dessus de la confirmation, en fait un autre mail `….note` laissé « À traiter »). Table :
+     Allopark (référence `AL-…`) : annulation ou remboursement (`isAlloparkCancellation`) ; **modification sûre** = objet ou titre
+     « Modification de votre réservation AL-… » et corps du modèle d'Allopark (ligne « AL-… | Parking », « … est confirmée »,
+     coupon, « Réservation N° AL-… » ou lien « Consulter ma réservation » de cette référence : le corps d'une modification est mot
+     pour mot celui d'une confirmation) ; modification par ses seuls mots (`allopark.change-wording`) ; **réservation sûre** =
+     « Confirmation de votre réservation AL-… » et le même corps ; un autre mail Allopark avec référence = réservation à confirmer
+     (`allopark.reference`, comme avant) ; Onepark, Parclick, ParkMundo : annulations et modifications par les mêmes mots
+     (`TEXT_CANCELLATION`, `TEXT_CHANGE`, `cancellationIn`, `changeIn`, `SUBJECT_CANCELLATION_STRICT` dans `importers/common.ts` ;
+     jamais appliquées : une annulation Onepark qui garde son tableau n'est plus importée), réservation = mise en page de leur
+     lecteur ; une réponse (« Re: », « RE : », « AW: », « SV: ») à propos d'un comparateur = autre mail ; le reste (autre
+     comparateur, site du parking, client) = inconnu. Traitement (`InboundEmailService.analyse`) : annulation, autre mail,
+     modification hors Allopark → « À traiter » avec leur genre, sans Claude ni page ; modification Allopark sûre → page de la
+     réservation puis `applyImportChange` / `createFromImport` sans confirmation de Claude ; modification par ses seuls mots →
+     Claude la confirme s'il répond, sinon les règles décident avec deux garde-fous (aucune réservation créée pour une référence
+     inconnue : « À traiter » pré-rempli, `missing: ['confidence']` ; une page sans différence reste « À traiter », jamais un
+     doublon muet) ; réservation sûre → lecteur (même sans le mot « Allopark » dans le texte, `parseBookingEmail`) puis page,
+     importée sans relecture de Claude (la page est celle de la référence que nomme le modèle et `parseAlloparkPage` refuse
+     une page qui ne la nomme pas) ; Claude ne complète plus que les champs manquants d'une réservation connue d'Onepark,
+     Parclick ou ParkMundo (jamais d'Allopark : son mail n'en dit pas plus que sa page) et lit seul les mails inconnus. La
+     lecture des règles est gardée comme celle de Claude (`InboundEmail.reading` avec `source: 'rules'`, `rule`, résumé sans
+     donnée personnelle « Modification Allopark de la réservation AL-… » ; sans migration) ; boîte de réception : « Reconnu par
+     Plazo : Modification · Allopark » (sans confiance) au lieu de « Lu par Claude », pastille du genre inchangée. **Panne de
+     Claude** : `EmailReadingService.read` rend `answered` · `declined` (refus, réponse coupée ou mal formée) · `outage` (cause
+     `credit` : 400 « credit balance », 402, `billing_error` ; `auth` : 401, 403 ; `rate_limit` : 429 ; `overloaded` : 529, 5xx ;
+     `timeout`, `network`, `other` ; `outageCauseOf` dans `domain/email-reading.ts`) · `unavailable` (sans clé) ; une ligne de
+     journal sans le mail (erreur la première fois, puis avertissement ; plus de « Anthropic answered undefined »), dernier appel
+     gardé par instance (`lastCall`). Un mail qui n'attend que Claude garde `reading.outage { cause, at }` (vue `readingOutage` :
+     « Claude n'a pas pu lire ce mail (crédit Anthropic épuisé) : Plazo le relira dès que la lecture fonctionne de nouveau. »,
+     seulement tant que Plazo le relira : « À traiter » et reçu depuis moins de 7 jours ; toast de « Relancer l'analyse » avec
+     la cause, jamais « n'est toujours pas reconnu », ni pour un mail reconnu d'un autre genre : « mail reconnu (Annulation),
+     rien n'est créé de lui-même », « modification Allopark reconnue, mais la page de la réservation n'a pas pu être lue : rien
+     n'a changé ») ; `POST /public/inbound/retry` le relit dès que Claude répond (`retryReading` : reçu depuis moins de 7 jours,
+     pour un crédit épuisé tout un week-end, 5 min après son dernier essai, le moins récemment essayé d'abord, 3 par passage,
+     verrou `analysedAt`, jamais un mail rattaché ni un mail dont l'équipe a saisi la réservation entre-temps (`typedByHand`,
+     et pour toute relecture automatique, d'après ce qu'elle vient de lire : `AnalysisInput.typedSince` → « À traiter »),
+     passage arrêté au premier mail que Claude ne lit toujours pas, rien sans clé) ; tableau de bord (web et Plazo Pro) :
+     service « Import » « À voir » « Lecture par Claude en panne : crédit Anthropic épuisé » quand un mail qui avait besoin de
+     Claude n'a pu être lu dans l'heure (`services.reading { configured, outage }`). Rattrapage : les mails
+     restés « À traiter » avant les règles (non reconnus ou lecture incertaine, sans lecture, changement ni page non lue, 7 jours)
+     que les règles connaissent sont relus par le même relais (`analyseWaitingForRules`, compté dans `autoRetries`, réponse
+     `rules`). Tests : `inbound-kind.test.ts` (table des règles, chaque type de mail, transferts Gmail / Apple Mail / Outlook,
+     réponses), `inbound-rules.test.ts` (Claude absent, crédit épuisé ou répondant : mêmes résultats sans l'appeler pour les mails
+     connus ; panne, relecture, rattrapage). Restent inconnus : les vrais modèles d'annulation d'Allopark et de modification ou
+     d'annulation d'Onepark, Parclick et ParkMundo (lus par leurs mots, jamais appliqués), Allopark en néerlandais ou en anglais.
    - Page de réservation propre à l'opérateur (formulaire simple, confirmation par mail/SMS).
    - Vue planning : arrivées et retours du jour, taux d'occupation, alerte de surréservation
      calculée sur la capacité réelle.

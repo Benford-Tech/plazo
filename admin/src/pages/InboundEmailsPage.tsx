@@ -97,7 +97,17 @@ function reanalysedMessage({ outcome, email }: InboundReanalysis): string {
   // 10/10/2026 (« C'est une modification »): an Allopark change applied to its booking, or still to make by hand.
   if (outcome === "changed") return r.changed(email.change?.reference ?? email.reservationReference);
   if (outcome === "duplicate") return r.duplicate;
-  if (outcome === "unrecognised") return email.change && !email.change.applied ? r.changeLeft : r.unrecognised;
+  // 16/10/2026: Claude could not read it (credit, key, load…): its real cause, never « pas reconnu ».
+  if (email.readingOutage) return r.outage(email.readingOutage.cause);
+  if (outcome === "unrecognised") {
+    if (email.change && !email.change.applied) return r.changeLeft;
+    // 16/10/2026: a mail recognised as another kind than a booking (by Plazo's rules or Claude) is said to be so, as the
+    // inbox does, never « pas reconnu »: an Allopark modification whose booking page was not read, a cancellation, a reply.
+    const kind = email.reading && email.reading.kind !== "booking" ? email.reading.kind : null;
+    if (kind === "modification" && email.pageLookup?.outcome !== "read" && /allopark/i.test(email.reading?.provider ?? "")) return r.pageNotRead;
+    if (kind) return r.notBooking(t.list.reading.kind[kind]);
+    return r.unrecognised;
+  }
   const labels = FIELDS.filter(key => email.missing.includes(key)).map(key => t.list.field[key] ?? key);
   if (labels.length > 0) return r.missing(labels);
   const refusals = email.missing.filter(key => key !== "confidence" && !FIELDS.includes(key as keyof ParsedBooking));
@@ -211,16 +221,20 @@ function Row({ email, selected, onSelect }: { email: InboundEmail; selected: boo
   );
 }
 
-/** L-A (08/10/2026): what Claude made of the mail: kind, source, confidence, one-sentence summary. */
+/**
+ * L-A (08/10/2026): what Claude made of the mail: kind, source, confidence, one-sentence summary. 16/10/2026 (« analyser
+ * sans passer par Claude »): « Reconnu par Plazo » for what Plazo's rules per mail type made of it (no confidence).
+ */
 function ReadingLine({ reading, missing, changed }: { reading: NonNullable<InboundEmail["reading"]>; missing: string[]; changed: boolean }) {
   const l = t.list.reading;
+  const rules = reading.source === "rules";
   const percent = Math.round(reading.confidence * 100);
-  const head = [l.kind[reading.kind], reading.provider, l.confidence(percent)].filter(Boolean).join(" · ");
+  const head = [l.kind[reading.kind], reading.provider, rules ? null : l.confidence(percent)].filter(Boolean).join(" · ");
   const unsure = reading.kind === "booking" && missing.includes("confidence");
   return (
-    <div data-testid="inbound-reading-line" className="space-y-0.5 text-sm">
+    <div data-testid="inbound-reading-line" data-source={rules ? "rules" : "claude"} className="space-y-0.5 text-sm">
       <p>
-        <span className="text-muted-foreground">{l.title} : </span>
+        <span className="text-muted-foreground">{rules ? l.rulesTitle : l.title} : </span>
         <span className="font-semibold">{head}</span>
       </p>
       {reading.summary && <p className="text-muted-foreground">{reading.summary}</p>}
@@ -498,6 +512,12 @@ function Reading({
         )}
         {email.pageLookup && <PageLookupLine lookup={email.pageLookup} email={email} />}
         {email.reading && <ReadingLine reading={email.reading} missing={email.missing} changed={!!email.change} />}
+        {/* 16/10/2026: Claude could not read the mail, which waits for it (Plazo reads it again by itself). */}
+        {email.readingOutage && (
+          <p data-testid="inbound-reading-outage" role="status" className="text-sm font-medium text-warn-text">
+            {t.list.reading.outage(email.readingOutage.cause)}
+          </p>
+        )}
       </header>
       <div className="px-5 py-4">{email.textBody ? <MailBody text={email.textBody} /> : <p className="text-sm text-muted-foreground">{l.textGone}</p>}</div>
       {email.change && <ChangeBlock change={email.change} />}

@@ -50,14 +50,19 @@ export class InboundEmailController {
    * POST /public/inbound/retry (11/10/2026, « Lance l'analyse automatiquement pour allopark »): the email relay's cron,
    * every 10 minutes, with the same X-Inbound-Secret: the Allopark emails due for another try are analysed again.
    * 15/10/2026: then, unless Allopark stopped the pass, the emails that waited only for their plate (`plateOnly`, given
-   * when some were due).
+   * when some were due). 16/10/2026 (« analyser sans passer par Claude »): then the emails stored before the rules per
+   * mail type that those rules now know (`rules`), and the emails that wait because Claude could not read them, once it
+   * answers again (`reading`); each given when some were due.
    */
   public retry = catchAsync(async (req: Request, res: Response) => {
     checkInboundSecret(req);
     const startedAt = Date.now();
     const report = await this.inbound.retryAllopark();
-    const plateOnly = report.stopped ? null : await this.inbound.importWaitingForPlate(new Date(), startedAt);
-    res.json({ ...report, ...(plateOnly?.due ? { plateOnly } : {}) });
+    const blocked = (r: { stopped?: string } | null) => r?.stopped === 'protected' || r?.stopped === 'refused';
+    const plateOnly = blocked(report) ? null : await this.inbound.importWaitingForPlate(new Date(), startedAt);
+    const rules = blocked(report) || blocked(plateOnly) ? null : await this.inbound.analyseWaitingForRules(new Date(), startedAt);
+    const reading = blocked(report) || blocked(plateOnly) || blocked(rules) ? null : await this.inbound.retryReading(new Date(), startedAt);
+    res.json({ ...report, ...(plateOnly?.due ? { plateOnly } : {}), ...(rules?.due ? { rules } : {}), ...(reading?.due ? { reading } : {}) });
   });
 
   /** GET /internal/inbound/settings */

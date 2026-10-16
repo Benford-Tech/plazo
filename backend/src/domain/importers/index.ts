@@ -34,7 +34,21 @@ export function isComparatorAddress(address: string): boolean {
 export function parseConfirmationEmail(text: string): ParsedBooking | null {
   if (isCancellationOrChange(text)) return null;
   const importer = EMAIL_IMPORTERS.find(i => i.detect(text));
-  if (!importer) return null;
+  return importer ? parsedBy(importer, text) : null;
+}
+
+/**
+ * 16/10/2026 (« analyser sans passer par Claude »): the booking of an email the mail-type rules already read as this
+ * comparator's booking (domain/inbound-kind.ts, which tells cancellations and changes apart first): its own importer,
+ * when it recognises the layout, or whatever the layout when the rules matched the comparator's template (`template`:
+ * Allopark's brand may be only in the sender); null otherwise (the booking page or Claude may then give it).
+ */
+export function parseBookingEmail(text: string, provider: string, template = false): ParsedBooking | null {
+  const importer = EMAIL_IMPORTERS.find(i => i.provider === provider);
+  return importer && (template || importer.detect(text)) ? parsedBy(importer, text) : null;
+}
+
+function parsedBy(importer: EmailImporter, text: string): ParsedBooking {
   const booking = importer.parse(text);
   // 15/10/2026: what is no plate (a label read in a blank cell, « Inconnue ») is a gap that Allopark's page or Claude may fill.
   if (booking?.plate && !importedPlate(booking.plate)) delete booking.plate;

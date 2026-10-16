@@ -74,8 +74,9 @@ export function ownRecipientsOf(item: InboundItem, excludeDomain: string): strin
 /** At most this many addresses are read from the header of a forwarded message. */
 export const MAX_FORWARDED_RECIPIENTS = 5;
 /** The line a mail client puts above the message it forwards (Gmail, Outlook, Apple Mail; French and English). */
-const FORWARD_MARKER = /forwarded message|message transf[ée]r[ée]|message d'origine|original message|message r[ée]exp[ée]di[ée]|d[ée]but du message/i;
-const HEADER_FROM = /^(?:>\s*)*(?:de|from|exp[ée]diteur)\s*:/i;
+export const FORWARD_MARKER =
+  /forwarded message|message transf[ée]r[ée]|message d'origine|original message|message r[ée]exp[ée]di[ée]|d[ée]but du message/i;
+export const HEADER_FROM = /^(?:>\s*)*(?:de|from|exp[ée]diteur)\s*:/i;
 const HEADER_TO = /^(?:>\s*)*(?:[àÀ]|a|to|pour|destinataires?)\s*:(.*)$/i;
 /** The recipients' line is read within this many lines of the « De : » line (Outlook puts « Envoyé : » between them). */
 const HEADER_LINES = 12;

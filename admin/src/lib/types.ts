@@ -558,8 +558,16 @@ export interface InboundEmail {
   missing: string[];
   reservationId: string | null;
   reservationReference: string | null;
-  /** L-A (08/10/2026): what Claude made of a mail no importer knew; null when it was not read. */
+  /**
+   * L-A (08/10/2026): what Claude made of a mail no importer knew; null when it was not read. 16/10/2026: or what
+   * Plazo's rules per mail type made of it (`source: "rules"`).
+   */
   reading: InboundReading | null;
+  /**
+   * 16/10/2026: Claude could not read the mail (credit, key, load…), which waits for it: Plazo reads it again once Claude
+   * answers. Optional: an older server does not send it.
+   */
+  readingOutage?: InboundReadingOutage | null;
   receivedAt: string;
   /** « Relancer l'analyse » (10/10/2026): when the server last analysed the mail again; null when never. */
   analysedAt: string | null;
@@ -650,6 +658,20 @@ export interface InboundReading {
   /** One French sentence for the operator. */
   summary: string;
   model: string;
+  /**
+   * 16/10/2026 (« analyser sans passer par Claude »): who read the mail: Claude (also when absent), or Plazo's rules per
+   * comparator and mail type (`rule`: the template that matched).
+   */
+  source?: "claude" | "rules";
+  rule?: string;
+}
+
+/** 16/10/2026: why Claude could not read a mail (the server's `ReadingOutageCause`). */
+export type InboundReadingOutageCause = "credit" | "auth" | "rate_limit" | "overloaded" | "timeout" | "network" | "other";
+
+export interface InboundReadingOutage {
+  cause: InboundReadingOutageCause;
+  at: string;
 }
 
 /** One tab of the inbox, with the size of all three. */
@@ -1282,6 +1304,11 @@ export interface Dashboard {
     push: { configured: boolean; devices: number };
     stripe: { online?: boolean; connected: boolean; payoutsEnabled: boolean };
     lastImportAt: string | null;
+    /**
+     * 16/10/2026: Claude's reading of the mails no rule knows; `outage` when a mail that needed Claude could not be read
+     * within the hour. Optional: an older server does not send it.
+     */
+    reading?: { configured: boolean; outage: InboundReadingOutage | null };
   };
   alerts: DashboardAlert[];
   /** The next shuttle wave still to run today (V-A). */

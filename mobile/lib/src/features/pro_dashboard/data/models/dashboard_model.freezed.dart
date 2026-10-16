@@ -2381,9 +2381,579 @@ as bool,
 
 
 /// @nodoc
+mixin _$DashboardReadingOutageModel {
+
+ String get cause; DateTime? get at;
+/// Create a copy of DashboardReadingOutageModel
+/// with the given fields replaced by the non-null parameter values.
+@JsonKey(includeFromJson: false, includeToJson: false)
+@pragma('vm:prefer-inline')
+$DashboardReadingOutageModelCopyWith<DashboardReadingOutageModel> get copyWith => _$DashboardReadingOutageModelCopyWithImpl<DashboardReadingOutageModel>(this as DashboardReadingOutageModel, _$identity);
+
+  /// Serializes this DashboardReadingOutageModel to a JSON map.
+  Map<String, dynamic> toJson();
+
+
+@override
+bool operator ==(Object other) {
+  final _this = this as DashboardReadingOutageModel;
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is DashboardReadingOutageModel&&(identical(other.cause, _this.cause) || other.cause == _this.cause)&&(identical(other.at, _this.at) || other.at == _this.at));
+}
+
+@JsonKey(includeFromJson: false, includeToJson: false)
+@override
+int get hashCode {
+  final _this = this as DashboardReadingOutageModel;
+  return Object.hash(runtimeType,_this.cause,_this.at);
+}
+
+@override
+String toString() {
+  final _this = this as DashboardReadingOutageModel;
+  return 'DashboardReadingOutageModel(cause: ${_this.cause}, at: ${_this.at})';
+}
+
+
+}
+
+/// @nodoc
+abstract mixin class $DashboardReadingOutageModelCopyWith<$Res>  {
+  factory $DashboardReadingOutageModelCopyWith(DashboardReadingOutageModel value, $Res Function(DashboardReadingOutageModel) _then) = _$DashboardReadingOutageModelCopyWithImpl;
+@useResult
+$Res call({
+ String cause, DateTime? at
+});
+
+
+
+
+}
+/// @nodoc
+class _$DashboardReadingOutageModelCopyWithImpl<$Res>
+    implements $DashboardReadingOutageModelCopyWith<$Res> {
+  _$DashboardReadingOutageModelCopyWithImpl(this._self, this._then);
+
+  final DashboardReadingOutageModel _self;
+  final $Res Function(DashboardReadingOutageModel) _then;
+
+/// Create a copy of DashboardReadingOutageModel
+/// with the given fields replaced by the non-null parameter values.
+@pragma('vm:prefer-inline') @override $Res call({Object? cause = null,Object? at = freezed,}) {
+  return _then(DashboardReadingOutageModel(
+cause: null == cause ? _self.cause : cause // ignore: cast_nullable_to_non_nullable
+as String,at: freezed == at ? _self.at : at // ignore: cast_nullable_to_non_nullable
+as DateTime?,
+  ));
+}
+
+}
+
+
+/// Adds pattern-matching-related methods to [DashboardReadingOutageModel].
+extension DashboardReadingOutageModelPatterns on DashboardReadingOutageModel {
+/// A variant of `map` that fallback to returning `orElse`.
+///
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case final Subclass value:
+///     return ...;
+///   case _:
+///     return orElse();
+/// }
+/// ```
+
+@optionalTypeArgs TResult maybeMap<TResult extends Object?>(TResult Function( _DashboardReadingOutageModel value)?  $default,{required TResult orElse(),}){
+final _that = this;
+switch (_that) {
+case _DashboardReadingOutageModel() when $default != null:
+return $default(_that);case _:
+  return orElse();
+
+}
+}
+/// A `switch`-like method, using callbacks.
+///
+/// Callbacks receives the raw object, upcasted.
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case final Subclass value:
+///     return ...;
+///   case final Subclass2 value:
+///     return ...;
+/// }
+/// ```
+
+@optionalTypeArgs TResult map<TResult extends Object?>(TResult Function( _DashboardReadingOutageModel value)  $default,){
+final _that = this;
+switch (_that) {
+case _DashboardReadingOutageModel():
+return $default(_that);case _:
+  throw StateError('Unexpected subclass');
+
+}
+}
+/// A variant of `map` that fallback to returning `null`.
+///
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case final Subclass value:
+///     return ...;
+///   case _:
+///     return null;
+/// }
+/// ```
+
+@optionalTypeArgs TResult? mapOrNull<TResult extends Object?>(TResult? Function( _DashboardReadingOutageModel value)?  $default,){
+final _that = this;
+switch (_that) {
+case _DashboardReadingOutageModel() when $default != null:
+return $default(_that);case _:
+  return null;
+
+}
+}
+/// A variant of `when` that fallback to an `orElse` callback.
+///
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case Subclass(:final field):
+///     return ...;
+///   case _:
+///     return orElse();
+/// }
+/// ```
+
+@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( String cause,  DateTime? at)?  $default,{required TResult orElse(),}) {final _that = this;
+switch (_that) {
+case _DashboardReadingOutageModel() when $default != null:
+return $default(_that.cause,_that.at);case _:
+  return orElse();
+
+}
+}
+/// A `switch`-like method, using callbacks.
+///
+/// As opposed to `map`, this offers destructuring.
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case Subclass(:final field):
+///     return ...;
+///   case Subclass2(:final field2):
+///     return ...;
+/// }
+/// ```
+
+@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( String cause,  DateTime? at)  $default,) {final _that = this;
+switch (_that) {
+case _DashboardReadingOutageModel():
+return $default(_that.cause,_that.at);case _:
+  throw StateError('Unexpected subclass');
+
+}
+}
+/// A variant of `when` that fallback to returning `null`
+///
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case Subclass(:final field):
+///     return ...;
+///   case _:
+///     return null;
+/// }
+/// ```
+
+@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( String cause,  DateTime? at)?  $default,) {final _that = this;
+switch (_that) {
+case _DashboardReadingOutageModel() when $default != null:
+return $default(_that.cause,_that.at);case _:
+  return null;
+
+}
+}
+
+}
+
+/// @nodoc
+@JsonSerializable()
+
+class _DashboardReadingOutageModel implements DashboardReadingOutageModel {
+  const _DashboardReadingOutageModel({this.cause = 'other', this.at});
+  factory _DashboardReadingOutageModel.fromJson(Map<String, dynamic> json) => _$DashboardReadingOutageModelFromJson(json);
+
+@override@JsonKey() final  String cause;
+@override final  DateTime? at;
+
+/// Create a copy of DashboardReadingOutageModel
+/// with the given fields replaced by the non-null parameter values.
+@override @JsonKey(includeFromJson: false, includeToJson: false)
+@pragma('vm:prefer-inline')
+_$DashboardReadingOutageModelCopyWith<_DashboardReadingOutageModel> get copyWith => __$DashboardReadingOutageModelCopyWithImpl<_DashboardReadingOutageModel>(this, _$identity);
+
+@override
+Map<String, dynamic> toJson() {
+  return _$DashboardReadingOutageModelToJson(this, );
+}
+
+@override
+bool operator ==(Object other) {
+    return identical(this, other) || (other.runtimeType == runtimeType&&other is _DashboardReadingOutageModel&&(identical(other.cause, cause) || other.cause == cause)&&(identical(other.at, at) || other.at == at));
+}
+
+@JsonKey(includeFromJson: false, includeToJson: false)
+@override
+int get hashCode {
+    return Object.hash(runtimeType,cause,at);
+}
+
+@override
+String toString() {
+    return 'DashboardReadingOutageModel(cause: $cause, at: $at)';
+}
+
+
+}
+
+/// @nodoc
+abstract mixin class _$DashboardReadingOutageModelCopyWith<$Res> implements $DashboardReadingOutageModelCopyWith<$Res> {
+  factory _$DashboardReadingOutageModelCopyWith(_DashboardReadingOutageModel value, $Res Function(_DashboardReadingOutageModel) _then) = __$DashboardReadingOutageModelCopyWithImpl;
+@override @useResult
+$Res call({
+ String cause, DateTime? at
+});
+
+
+
+
+}
+/// @nodoc
+class __$DashboardReadingOutageModelCopyWithImpl<$Res>
+    implements _$DashboardReadingOutageModelCopyWith<$Res> {
+  __$DashboardReadingOutageModelCopyWithImpl(this._self, this._then);
+
+  final _DashboardReadingOutageModel _self;
+  final $Res Function(_DashboardReadingOutageModel) _then;
+
+/// Create a copy of DashboardReadingOutageModel
+/// with the given fields replaced by the non-null parameter values.
+@override @pragma('vm:prefer-inline') $Res call({Object? cause = null,Object? at = freezed,}) {
+  return _then(_DashboardReadingOutageModel(
+cause: null == cause ? _self.cause : cause // ignore: cast_nullable_to_non_nullable
+as String,at: freezed == at ? _self.at : at // ignore: cast_nullable_to_non_nullable
+as DateTime?,
+  ));
+}
+
+
+}
+
+
+/// @nodoc
+mixin _$DashboardReadingModel {
+
+ bool get configured; DashboardReadingOutageModel? get outage;
+/// Create a copy of DashboardReadingModel
+/// with the given fields replaced by the non-null parameter values.
+@JsonKey(includeFromJson: false, includeToJson: false)
+@pragma('vm:prefer-inline')
+$DashboardReadingModelCopyWith<DashboardReadingModel> get copyWith => _$DashboardReadingModelCopyWithImpl<DashboardReadingModel>(this as DashboardReadingModel, _$identity);
+
+  /// Serializes this DashboardReadingModel to a JSON map.
+  Map<String, dynamic> toJson();
+
+
+@override
+bool operator ==(Object other) {
+  final _this = this as DashboardReadingModel;
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is DashboardReadingModel&&(identical(other.configured, _this.configured) || other.configured == _this.configured)&&(identical(other.outage, _this.outage) || other.outage == _this.outage));
+}
+
+@JsonKey(includeFromJson: false, includeToJson: false)
+@override
+int get hashCode {
+  final _this = this as DashboardReadingModel;
+  return Object.hash(runtimeType,_this.configured,_this.outage);
+}
+
+@override
+String toString() {
+  final _this = this as DashboardReadingModel;
+  return 'DashboardReadingModel(configured: ${_this.configured}, outage: ${_this.outage})';
+}
+
+
+}
+
+/// @nodoc
+abstract mixin class $DashboardReadingModelCopyWith<$Res>  {
+  factory $DashboardReadingModelCopyWith(DashboardReadingModel value, $Res Function(DashboardReadingModel) _then) = _$DashboardReadingModelCopyWithImpl;
+@useResult
+$Res call({
+ bool configured, DashboardReadingOutageModel? outage
+});
+
+
+$DashboardReadingOutageModelCopyWith<$Res>? get outage;
+
+}
+/// @nodoc
+class _$DashboardReadingModelCopyWithImpl<$Res>
+    implements $DashboardReadingModelCopyWith<$Res> {
+  _$DashboardReadingModelCopyWithImpl(this._self, this._then);
+
+  final DashboardReadingModel _self;
+  final $Res Function(DashboardReadingModel) _then;
+
+/// Create a copy of DashboardReadingModel
+/// with the given fields replaced by the non-null parameter values.
+@pragma('vm:prefer-inline') @override $Res call({Object? configured = null,Object? outage = freezed,}) {
+  return _then(DashboardReadingModel(
+configured: null == configured ? _self.configured : configured // ignore: cast_nullable_to_non_nullable
+as bool,outage: freezed == outage ? _self.outage : outage // ignore: cast_nullable_to_non_nullable
+as DashboardReadingOutageModel?,
+  ));
+}
+/// Create a copy of DashboardReadingModel
+/// with the given fields replaced by the non-null parameter values.
+@override
+@pragma('vm:prefer-inline')
+$DashboardReadingOutageModelCopyWith<$Res>? get outage {
+    if (_self.outage == null) {
+    return null;
+  }
+
+  return $DashboardReadingOutageModelCopyWith<$Res>(_self.outage!, (value) {
+    return _then(_self.copyWith(outage: value));
+  });
+}
+}
+
+
+/// Adds pattern-matching-related methods to [DashboardReadingModel].
+extension DashboardReadingModelPatterns on DashboardReadingModel {
+/// A variant of `map` that fallback to returning `orElse`.
+///
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case final Subclass value:
+///     return ...;
+///   case _:
+///     return orElse();
+/// }
+/// ```
+
+@optionalTypeArgs TResult maybeMap<TResult extends Object?>(TResult Function( _DashboardReadingModel value)?  $default,{required TResult orElse(),}){
+final _that = this;
+switch (_that) {
+case _DashboardReadingModel() when $default != null:
+return $default(_that);case _:
+  return orElse();
+
+}
+}
+/// A `switch`-like method, using callbacks.
+///
+/// Callbacks receives the raw object, upcasted.
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case final Subclass value:
+///     return ...;
+///   case final Subclass2 value:
+///     return ...;
+/// }
+/// ```
+
+@optionalTypeArgs TResult map<TResult extends Object?>(TResult Function( _DashboardReadingModel value)  $default,){
+final _that = this;
+switch (_that) {
+case _DashboardReadingModel():
+return $default(_that);case _:
+  throw StateError('Unexpected subclass');
+
+}
+}
+/// A variant of `map` that fallback to returning `null`.
+///
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case final Subclass value:
+///     return ...;
+///   case _:
+///     return null;
+/// }
+/// ```
+
+@optionalTypeArgs TResult? mapOrNull<TResult extends Object?>(TResult? Function( _DashboardReadingModel value)?  $default,){
+final _that = this;
+switch (_that) {
+case _DashboardReadingModel() when $default != null:
+return $default(_that);case _:
+  return null;
+
+}
+}
+/// A variant of `when` that fallback to an `orElse` callback.
+///
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case Subclass(:final field):
+///     return ...;
+///   case _:
+///     return orElse();
+/// }
+/// ```
+
+@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( bool configured,  DashboardReadingOutageModel? outage)?  $default,{required TResult orElse(),}) {final _that = this;
+switch (_that) {
+case _DashboardReadingModel() when $default != null:
+return $default(_that.configured,_that.outage);case _:
+  return orElse();
+
+}
+}
+/// A `switch`-like method, using callbacks.
+///
+/// As opposed to `map`, this offers destructuring.
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case Subclass(:final field):
+///     return ...;
+///   case Subclass2(:final field2):
+///     return ...;
+/// }
+/// ```
+
+@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( bool configured,  DashboardReadingOutageModel? outage)  $default,) {final _that = this;
+switch (_that) {
+case _DashboardReadingModel():
+return $default(_that.configured,_that.outage);case _:
+  throw StateError('Unexpected subclass');
+
+}
+}
+/// A variant of `when` that fallback to returning `null`
+///
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case Subclass(:final field):
+///     return ...;
+///   case _:
+///     return null;
+/// }
+/// ```
+
+@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( bool configured,  DashboardReadingOutageModel? outage)?  $default,) {final _that = this;
+switch (_that) {
+case _DashboardReadingModel() when $default != null:
+return $default(_that.configured,_that.outage);case _:
+  return null;
+
+}
+}
+
+}
+
+/// @nodoc
+@JsonSerializable()
+
+class _DashboardReadingModel implements DashboardReadingModel {
+  const _DashboardReadingModel({this.configured = false, this.outage});
+  factory _DashboardReadingModel.fromJson(Map<String, dynamic> json) => _$DashboardReadingModelFromJson(json);
+
+@override@JsonKey() final  bool configured;
+@override final  DashboardReadingOutageModel? outage;
+
+/// Create a copy of DashboardReadingModel
+/// with the given fields replaced by the non-null parameter values.
+@override @JsonKey(includeFromJson: false, includeToJson: false)
+@pragma('vm:prefer-inline')
+_$DashboardReadingModelCopyWith<_DashboardReadingModel> get copyWith => __$DashboardReadingModelCopyWithImpl<_DashboardReadingModel>(this, _$identity);
+
+@override
+Map<String, dynamic> toJson() {
+  return _$DashboardReadingModelToJson(this, );
+}
+
+@override
+bool operator ==(Object other) {
+    return identical(this, other) || (other.runtimeType == runtimeType&&other is _DashboardReadingModel&&(identical(other.configured, configured) || other.configured == configured)&&(identical(other.outage, outage) || other.outage == outage));
+}
+
+@JsonKey(includeFromJson: false, includeToJson: false)
+@override
+int get hashCode {
+    return Object.hash(runtimeType,configured,outage);
+}
+
+@override
+String toString() {
+    return 'DashboardReadingModel(configured: $configured, outage: $outage)';
+}
+
+
+}
+
+/// @nodoc
+abstract mixin class _$DashboardReadingModelCopyWith<$Res> implements $DashboardReadingModelCopyWith<$Res> {
+  factory _$DashboardReadingModelCopyWith(_DashboardReadingModel value, $Res Function(_DashboardReadingModel) _then) = __$DashboardReadingModelCopyWithImpl;
+@override @useResult
+$Res call({
+ bool configured, DashboardReadingOutageModel? outage
+});
+
+
+@override $DashboardReadingOutageModelCopyWith<$Res>? get outage;
+
+}
+/// @nodoc
+class __$DashboardReadingModelCopyWithImpl<$Res>
+    implements _$DashboardReadingModelCopyWith<$Res> {
+  __$DashboardReadingModelCopyWithImpl(this._self, this._then);
+
+  final _DashboardReadingModel _self;
+  final $Res Function(_DashboardReadingModel) _then;
+
+/// Create a copy of DashboardReadingModel
+/// with the given fields replaced by the non-null parameter values.
+@override @pragma('vm:prefer-inline') $Res call({Object? configured = null,Object? outage = freezed,}) {
+  return _then(_DashboardReadingModel(
+configured: null == configured ? _self.configured : configured // ignore: cast_nullable_to_non_nullable
+as bool,outage: freezed == outage ? _self.outage : outage // ignore: cast_nullable_to_non_nullable
+as DashboardReadingOutageModel?,
+  ));
+}
+
+/// Create a copy of DashboardReadingModel
+/// with the given fields replaced by the non-null parameter values.
+@override
+@pragma('vm:prefer-inline')
+$DashboardReadingOutageModelCopyWith<$Res>? get outage {
+    if (_self.outage == null) {
+    return null;
+  }
+
+  return $DashboardReadingOutageModelCopyWith<$Res>(_self.outage!, (value) {
+    return _then(_self.copyWith(outage: value));
+  });
+}
+}
+
+
+/// @nodoc
 mixin _$DashboardServicesModel {
 
- DashboardFlightsModel get flights; DashboardSmsModel get sms; DashboardPushModel get push; DashboardStripeModel get stripe; DateTime? get lastImportAt;
+ DashboardFlightsModel get flights; DashboardSmsModel get sms; DashboardPushModel get push; DashboardStripeModel get stripe; DateTime? get lastImportAt; DashboardReadingModel? get reading;
 /// Create a copy of DashboardServicesModel
 /// with the given fields replaced by the non-null parameter values.
 @JsonKey(includeFromJson: false, includeToJson: false)
@@ -2397,20 +2967,20 @@ $DashboardServicesModelCopyWith<DashboardServicesModel> get copyWith => _$Dashbo
 @override
 bool operator ==(Object other) {
   final _this = this as DashboardServicesModel;
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is DashboardServicesModel&&(identical(other.flights, _this.flights) || other.flights == _this.flights)&&(identical(other.sms, _this.sms) || other.sms == _this.sms)&&(identical(other.push, _this.push) || other.push == _this.push)&&(identical(other.stripe, _this.stripe) || other.stripe == _this.stripe)&&(identical(other.lastImportAt, _this.lastImportAt) || other.lastImportAt == _this.lastImportAt));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is DashboardServicesModel&&(identical(other.flights, _this.flights) || other.flights == _this.flights)&&(identical(other.sms, _this.sms) || other.sms == _this.sms)&&(identical(other.push, _this.push) || other.push == _this.push)&&(identical(other.stripe, _this.stripe) || other.stripe == _this.stripe)&&(identical(other.lastImportAt, _this.lastImportAt) || other.lastImportAt == _this.lastImportAt)&&(identical(other.reading, _this.reading) || other.reading == _this.reading));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
 int get hashCode {
   final _this = this as DashboardServicesModel;
-  return Object.hash(runtimeType,_this.flights,_this.sms,_this.push,_this.stripe,_this.lastImportAt);
+  return Object.hash(runtimeType,_this.flights,_this.sms,_this.push,_this.stripe,_this.lastImportAt,_this.reading);
 }
 
 @override
 String toString() {
   final _this = this as DashboardServicesModel;
-  return 'DashboardServicesModel(flights: ${_this.flights}, sms: ${_this.sms}, push: ${_this.push}, stripe: ${_this.stripe}, lastImportAt: ${_this.lastImportAt})';
+  return 'DashboardServicesModel(flights: ${_this.flights}, sms: ${_this.sms}, push: ${_this.push}, stripe: ${_this.stripe}, lastImportAt: ${_this.lastImportAt}, reading: ${_this.reading})';
 }
 
 
@@ -2421,11 +2991,11 @@ abstract mixin class $DashboardServicesModelCopyWith<$Res>  {
   factory $DashboardServicesModelCopyWith(DashboardServicesModel value, $Res Function(DashboardServicesModel) _then) = _$DashboardServicesModelCopyWithImpl;
 @useResult
 $Res call({
- DashboardFlightsModel flights, DashboardSmsModel sms, DashboardPushModel push, DashboardStripeModel stripe, DateTime? lastImportAt
+ DashboardFlightsModel flights, DashboardSmsModel sms, DashboardPushModel push, DashboardStripeModel stripe, DateTime? lastImportAt, DashboardReadingModel? reading
 });
 
 
-$DashboardFlightsModelCopyWith<$Res> get flights;$DashboardSmsModelCopyWith<$Res> get sms;$DashboardPushModelCopyWith<$Res> get push;$DashboardStripeModelCopyWith<$Res> get stripe;
+$DashboardFlightsModelCopyWith<$Res> get flights;$DashboardSmsModelCopyWith<$Res> get sms;$DashboardPushModelCopyWith<$Res> get push;$DashboardStripeModelCopyWith<$Res> get stripe;$DashboardReadingModelCopyWith<$Res>? get reading;
 
 }
 /// @nodoc
@@ -2438,14 +3008,15 @@ class _$DashboardServicesModelCopyWithImpl<$Res>
 
 /// Create a copy of DashboardServicesModel
 /// with the given fields replaced by the non-null parameter values.
-@pragma('vm:prefer-inline') @override $Res call({Object? flights = null,Object? sms = null,Object? push = null,Object? stripe = null,Object? lastImportAt = freezed,}) {
+@pragma('vm:prefer-inline') @override $Res call({Object? flights = null,Object? sms = null,Object? push = null,Object? stripe = null,Object? lastImportAt = freezed,Object? reading = freezed,}) {
   return _then(DashboardServicesModel(
 flights: null == flights ? _self.flights : flights // ignore: cast_nullable_to_non_nullable
 as DashboardFlightsModel,sms: null == sms ? _self.sms : sms // ignore: cast_nullable_to_non_nullable
 as DashboardSmsModel,push: null == push ? _self.push : push // ignore: cast_nullable_to_non_nullable
 as DashboardPushModel,stripe: null == stripe ? _self.stripe : stripe // ignore: cast_nullable_to_non_nullable
 as DashboardStripeModel,lastImportAt: freezed == lastImportAt ? _self.lastImportAt : lastImportAt // ignore: cast_nullable_to_non_nullable
-as DateTime?,
+as DateTime?,reading: freezed == reading ? _self.reading : reading // ignore: cast_nullable_to_non_nullable
+as DashboardReadingModel?,
   ));
 }
 /// Create a copy of DashboardServicesModel
@@ -2483,6 +3054,18 @@ $DashboardStripeModelCopyWith<$Res> get stripe {
   
   return $DashboardStripeModelCopyWith<$Res>(_self.stripe, (value) {
     return _then(_self.copyWith(stripe: value));
+  });
+}/// Create a copy of DashboardServicesModel
+/// with the given fields replaced by the non-null parameter values.
+@override
+@pragma('vm:prefer-inline')
+$DashboardReadingModelCopyWith<$Res>? get reading {
+    if (_self.reading == null) {
+    return null;
+  }
+
+  return $DashboardReadingModelCopyWith<$Res>(_self.reading!, (value) {
+    return _then(_self.copyWith(reading: value));
   });
 }
 }
@@ -2566,10 +3149,10 @@ return $default(_that);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( DashboardFlightsModel flights,  DashboardSmsModel sms,  DashboardPushModel push,  DashboardStripeModel stripe,  DateTime? lastImportAt)?  $default,{required TResult orElse(),}) {final _that = this;
+@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( DashboardFlightsModel flights,  DashboardSmsModel sms,  DashboardPushModel push,  DashboardStripeModel stripe,  DateTime? lastImportAt,  DashboardReadingModel? reading)?  $default,{required TResult orElse(),}) {final _that = this;
 switch (_that) {
 case _DashboardServicesModel() when $default != null:
-return $default(_that.flights,_that.sms,_that.push,_that.stripe,_that.lastImportAt);case _:
+return $default(_that.flights,_that.sms,_that.push,_that.stripe,_that.lastImportAt,_that.reading);case _:
   return orElse();
 
 }
@@ -2587,10 +3170,10 @@ return $default(_that.flights,_that.sms,_that.push,_that.stripe,_that.lastImport
 /// }
 /// ```
 
-@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( DashboardFlightsModel flights,  DashboardSmsModel sms,  DashboardPushModel push,  DashboardStripeModel stripe,  DateTime? lastImportAt)  $default,) {final _that = this;
+@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( DashboardFlightsModel flights,  DashboardSmsModel sms,  DashboardPushModel push,  DashboardStripeModel stripe,  DateTime? lastImportAt,  DashboardReadingModel? reading)  $default,) {final _that = this;
 switch (_that) {
 case _DashboardServicesModel():
-return $default(_that.flights,_that.sms,_that.push,_that.stripe,_that.lastImportAt);case _:
+return $default(_that.flights,_that.sms,_that.push,_that.stripe,_that.lastImportAt,_that.reading);case _:
   throw StateError('Unexpected subclass');
 
 }
@@ -2607,10 +3190,10 @@ return $default(_that.flights,_that.sms,_that.push,_that.stripe,_that.lastImport
 /// }
 /// ```
 
-@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( DashboardFlightsModel flights,  DashboardSmsModel sms,  DashboardPushModel push,  DashboardStripeModel stripe,  DateTime? lastImportAt)?  $default,) {final _that = this;
+@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( DashboardFlightsModel flights,  DashboardSmsModel sms,  DashboardPushModel push,  DashboardStripeModel stripe,  DateTime? lastImportAt,  DashboardReadingModel? reading)?  $default,) {final _that = this;
 switch (_that) {
 case _DashboardServicesModel() when $default != null:
-return $default(_that.flights,_that.sms,_that.push,_that.stripe,_that.lastImportAt);case _:
+return $default(_that.flights,_that.sms,_that.push,_that.stripe,_that.lastImportAt,_that.reading);case _:
   return null;
 
 }
@@ -2622,7 +3205,7 @@ return $default(_that.flights,_that.sms,_that.push,_that.stripe,_that.lastImport
 @JsonSerializable()
 
 class _DashboardServicesModel implements DashboardServicesModel {
-  const _DashboardServicesModel({this.flights = const DashboardFlightsModel(), this.sms = const DashboardSmsModel(), this.push = const DashboardPushModel(), this.stripe = const DashboardStripeModel(), this.lastImportAt});
+  const _DashboardServicesModel({this.flights = const DashboardFlightsModel(), this.sms = const DashboardSmsModel(), this.push = const DashboardPushModel(), this.stripe = const DashboardStripeModel(), this.lastImportAt, this.reading});
   factory _DashboardServicesModel.fromJson(Map<String, dynamic> json) => _$DashboardServicesModelFromJson(json);
 
 @override@JsonKey() final  DashboardFlightsModel flights;
@@ -2630,6 +3213,7 @@ class _DashboardServicesModel implements DashboardServicesModel {
 @override@JsonKey() final  DashboardPushModel push;
 @override@JsonKey() final  DashboardStripeModel stripe;
 @override final  DateTime? lastImportAt;
+@override final  DashboardReadingModel? reading;
 
 /// Create a copy of DashboardServicesModel
 /// with the given fields replaced by the non-null parameter values.
@@ -2644,18 +3228,18 @@ Map<String, dynamic> toJson() {
 
 @override
 bool operator ==(Object other) {
-    return identical(this, other) || (other.runtimeType == runtimeType&&other is _DashboardServicesModel&&(identical(other.flights, flights) || other.flights == flights)&&(identical(other.sms, sms) || other.sms == sms)&&(identical(other.push, push) || other.push == push)&&(identical(other.stripe, stripe) || other.stripe == stripe)&&(identical(other.lastImportAt, lastImportAt) || other.lastImportAt == lastImportAt));
+    return identical(this, other) || (other.runtimeType == runtimeType&&other is _DashboardServicesModel&&(identical(other.flights, flights) || other.flights == flights)&&(identical(other.sms, sms) || other.sms == sms)&&(identical(other.push, push) || other.push == push)&&(identical(other.stripe, stripe) || other.stripe == stripe)&&(identical(other.lastImportAt, lastImportAt) || other.lastImportAt == lastImportAt)&&(identical(other.reading, reading) || other.reading == reading));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
 int get hashCode {
-    return Object.hash(runtimeType,flights,sms,push,stripe,lastImportAt);
+    return Object.hash(runtimeType,flights,sms,push,stripe,lastImportAt,reading);
 }
 
 @override
 String toString() {
-    return 'DashboardServicesModel(flights: $flights, sms: $sms, push: $push, stripe: $stripe, lastImportAt: $lastImportAt)';
+    return 'DashboardServicesModel(flights: $flights, sms: $sms, push: $push, stripe: $stripe, lastImportAt: $lastImportAt, reading: $reading)';
 }
 
 
@@ -2666,11 +3250,11 @@ abstract mixin class _$DashboardServicesModelCopyWith<$Res> implements $Dashboar
   factory _$DashboardServicesModelCopyWith(_DashboardServicesModel value, $Res Function(_DashboardServicesModel) _then) = __$DashboardServicesModelCopyWithImpl;
 @override @useResult
 $Res call({
- DashboardFlightsModel flights, DashboardSmsModel sms, DashboardPushModel push, DashboardStripeModel stripe, DateTime? lastImportAt
+ DashboardFlightsModel flights, DashboardSmsModel sms, DashboardPushModel push, DashboardStripeModel stripe, DateTime? lastImportAt, DashboardReadingModel? reading
 });
 
 
-@override $DashboardFlightsModelCopyWith<$Res> get flights;@override $DashboardSmsModelCopyWith<$Res> get sms;@override $DashboardPushModelCopyWith<$Res> get push;@override $DashboardStripeModelCopyWith<$Res> get stripe;
+@override $DashboardFlightsModelCopyWith<$Res> get flights;@override $DashboardSmsModelCopyWith<$Res> get sms;@override $DashboardPushModelCopyWith<$Res> get push;@override $DashboardStripeModelCopyWith<$Res> get stripe;@override $DashboardReadingModelCopyWith<$Res>? get reading;
 
 }
 /// @nodoc
@@ -2683,14 +3267,15 @@ class __$DashboardServicesModelCopyWithImpl<$Res>
 
 /// Create a copy of DashboardServicesModel
 /// with the given fields replaced by the non-null parameter values.
-@override @pragma('vm:prefer-inline') $Res call({Object? flights = null,Object? sms = null,Object? push = null,Object? stripe = null,Object? lastImportAt = freezed,}) {
+@override @pragma('vm:prefer-inline') $Res call({Object? flights = null,Object? sms = null,Object? push = null,Object? stripe = null,Object? lastImportAt = freezed,Object? reading = freezed,}) {
   return _then(_DashboardServicesModel(
 flights: null == flights ? _self.flights : flights // ignore: cast_nullable_to_non_nullable
 as DashboardFlightsModel,sms: null == sms ? _self.sms : sms // ignore: cast_nullable_to_non_nullable
 as DashboardSmsModel,push: null == push ? _self.push : push // ignore: cast_nullable_to_non_nullable
 as DashboardPushModel,stripe: null == stripe ? _self.stripe : stripe // ignore: cast_nullable_to_non_nullable
 as DashboardStripeModel,lastImportAt: freezed == lastImportAt ? _self.lastImportAt : lastImportAt // ignore: cast_nullable_to_non_nullable
-as DateTime?,
+as DateTime?,reading: freezed == reading ? _self.reading : reading // ignore: cast_nullable_to_non_nullable
+as DashboardReadingModel?,
   ));
 }
 
@@ -2729,6 +3314,18 @@ $DashboardStripeModelCopyWith<$Res> get stripe {
   
   return $DashboardStripeModelCopyWith<$Res>(_self.stripe, (value) {
     return _then(_self.copyWith(stripe: value));
+  });
+}/// Create a copy of DashboardServicesModel
+/// with the given fields replaced by the non-null parameter values.
+@override
+@pragma('vm:prefer-inline')
+$DashboardReadingModelCopyWith<$Res>? get reading {
+    if (_self.reading == null) {
+    return null;
+  }
+
+  return $DashboardReadingModelCopyWith<$Res>(_self.reading!, (value) {
+    return _then(_self.copyWith(reading: value));
   });
 }
 }

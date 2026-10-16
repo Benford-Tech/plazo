@@ -31,11 +31,14 @@ import { StaffAuthMiddleware } from '@/middlewares/staff-auth.middleware';
  *       15/10/2026 (« ne pas planter à l'import quand la plaque est manquante »): then, unless Allopark stopped the pass,
  *       the emails of the last 7 days that waited only for their plate (no longer required) are analysed again and
  *       imported, three per call at most, none started after the call's first 10 s; `plateOnly` reports them when some
- *       were due. Neither pass analyses an email whose booking the staff made by hand while it waited (counted in
- *       `typedByHand`): no second booking of the same car.
+ *       were due. 16/10/2026 (« analyser sans passer par Claude »): then the emails of the last 7 days stored before the
+ *       rules per mail type that these rules now know (`rules`), then the emails of the last 7 days that wait because
+ *       Claude could not read them (`reading.outage`), once Claude answers (`reading`, the pass stopping at the first email
+ *       Claude still cannot read: `stopped: reading`). No pass analyses an email whose booking the staff made by hand
+ *       while it waited (counted in `typedByHand`): no second booking of the same car.
  *     responses:
  *       200:
- *         description: "{ due, tried, outcomes: { imported?, changed?, duplicate?, incomplete?, unrecognised? }, stopped?: protected | refused, typedByHand?, plateOnly?: { due, tried, outcomes, stopped?, typedByHand? } }"
+ *         description: "{ due, tried, outcomes: { imported?, changed?, duplicate?, incomplete?, unrecognised? }, stopped?: protected | refused, typedByHand?, plateOnly?: { due, tried, outcomes, stopped?, typedByHand? }, rules?: { … }, reading?: { …, stopped?: protected | refused | reading } }"
  *       401:
  *         description: Bad or missing secret, or the feature is off
  * /internal/inbound/settings:
@@ -60,7 +63,12 @@ import { StaffAuthMiddleware } from '@/middlewares/staff-auth.middleware';
  *       changes: [{ field, from, to }], at } (null for any other email): an Allopark change of a booking read against
  *       its booking page, applied (imported), not needed (duplicate) or left to the staff (unrecognised) with `reason`
  *       reservation_closed | already_arrived | no_room | plazo_booking | invalid_stay; dates in the parking's local
- *       time, the price in cents. Cleared with the text and by /attach.
+ *       time, the price in cents. Cleared with the text and by /attach. 16/10/2026 (« analyser sans passer par
+ *       Claude »): `reading` { kind, provider, confidence, summary, model, source?: rules, rule? } is Claude's reading or,
+ *       with `source: rules`, the one of Plazo's rules per comparator and mail type; `readingOutage` { cause: credit |
+ *       auth | rate_limit | overloaded | timeout | network | other, at } when Claude could not read an email that waits
+ *       for it (« À traiter », received these 7 days: read again by POST /public/inbound/retry once Claude answers), else
+ *       null.
  * /internal/inbound/emails/{id}/handle:
  *   post:
  *     tags: [Inbound email]
