@@ -1,6 +1,6 @@
 import { importedPlate } from '../reservation';
 import { forwardedRecipientsOf } from '../inbound-email';
-import { euroCents, isCancellation, SUBJECT_CANCELLATION, SUBJECT_CHANGE, TEXT_CANCELLATION, TEXT_CHANGE } from './common';
+import { cancellationIn, changeIn, euroCents, SUBJECT_CANCELLATION, SUBJECT_CHANGE } from './common';
 import { isComparatorAddress } from './index';
 import { ParsedBooking } from './types';
 
@@ -197,9 +197,8 @@ export function alloparkPageAddresses(input: PageCandidates, excludeDomain?: str
  * wording: nothing is done by itself (its booking page still shows the booking), Claude reads it for the staff.
  */
 export function isAlloparkCancellation(subject: string | null, text: string): boolean {
-  return (
-    SUBJECT_CANCELLATION.test(subject ?? '') || isCancellation(`${subject ?? ''}\n${text}`) || TEXT_CANCELLATION.some(pattern => pattern.test(text))
-  );
+  // 16/10/2026: the wording only as news, never the conditions of a confirmation (common.ts, saidIn).
+  return SUBJECT_CANCELLATION.test(subject ?? '') || cancellationIn(`${subject ?? ''}\n${text}`);
 }
 
 /**
@@ -210,7 +209,7 @@ export function isAlloparkCancellation(subject: string | null, text: string): bo
 export function isAlloparkChange(subject: string | null, text: string): boolean {
   // 10/10/2026 (relecture): not isChange on the text, whose « modification de votre réservation » is also a
   // confirmation's « Pour toute modification de votre réservation, contactez… ».
-  return SUBJECT_CHANGE.test(subject ?? '') || TEXT_CHANGE.some(pattern => pattern.test(text));
+  return SUBJECT_CHANGE.test(subject ?? '') || changeIn(text);
 }
 
 /**

@@ -486,7 +486,11 @@ le navigateur de l'espace pro appelle `/api` sur le même domaine (pas de CORS).
    `backend/src/domain/inbound-kind.ts`) : les mails connus d'Allopark, Onepark, Parclick et ParkMundo sont traités sans
    Claude (réservation créée, modification Allopark appliquée depuis la page, annulation et réponse montrées avec leur genre,
    « Reconnu par Plazo » dans la boîte), Claude ne lisant que les autres ; quand Claude ne répond pas (crédit, clé, charge),
-   le mail attend avec la cause et le relais le fait relire dès que Claude répond. Texte des mails gardé 30 jours,
+   le mail attend avec la cause et le relais le fait relire dès que Claude répond. **Relecture des mails déjà traités
+   (16/10/2026)** : le relais relit aussi une fois avec ces règles les mails des 30 derniers jours restés sans réservation
+   (« À traiter » ou marqués comme traités) : la réservation est créée ou le mail rattaché à celle qui existe, une
+   modification Allopark appliquée ; jamais un séjour déjà terminé n'est créé, ni une réservation que l'équipe a saisie
+   elle-même (avant ou après la réception du mail). Texte des mails gardé 30 jours,
    lignes 90.
    Mise en place (domaine gardé chez Hostinger, DNS chez Cloudflare, Email Routing sur `plazo.fr` lui-même car Cloudflare
    n'offre le « catch-all » que sur le domaine principal (R-A, 08/10/2026), Worker, règle `reservations@` vers la boîte de
@@ -669,7 +673,7 @@ Documentation interactive : `/api/docs` (Swagger). Toutes les routes sont sous `
 | POST | `/internal/sms/disable` | Gérant : plus de SMS, identifiants oubliés |
 | GET | `/internal/sms/status` | Gérant : `{ lastSentAt, month: { sent, failed }, pending, pendingStale, lastError }` (relance la file au passage) |
 | POST | `/public/inbound/email` | Relais Cloudflare (M-A) : le mail brut (`message/rfc822`, `X-Inbound-Secret`, `X-Envelope-From` / `X-Envelope-To`, coupé à 4 Mo) ou l'ancien `{ items: [...] }` → `{ received, imported, toCheck, ignored }` |
-| POST | `/public/inbound/retry` | Minuterie du relais Cloudflare, toutes les 10 minutes (`X-Inbound-Secret`) : les mails Allopark dont la page n'a pas pu être lue sont analysés de nouveau quand leur tour vient (10 min, 30 min, 1 h, 3 h, 8 h après l'essai précédent, deux jours au plus, jamais une page protégée par un captcha ni refusée par Allopark — 429, blocage de Cloudflare —), trois par appel au plus, l'appel s'arrêtant dès qu'Allopark demande une vérification ou refuse Plazo → `{ due, tried, outcomes, stopped? }` |
+| POST | `/public/inbound/retry` | Minuterie du relais Cloudflare, toutes les 10 minutes (`X-Inbound-Secret`) : les mails Allopark dont la page n'a pas pu être lue sont analysés de nouveau quand leur tour vient (10 min, 30 min, 1 h, 3 h, 8 h après l'essai précédent, deux jours au plus, jamais une page protégée par un captcha ni refusée par Allopark — 429, blocage de Cloudflare —), trois par appel au plus, l'appel s'arrêtant dès qu'Allopark demande une vérification ou refuse Plazo → `{ due, tried, outcomes, stopped? }` ; puis les mails qui n'attendaient que leur plaque (`plateOnly`), le rattrapage des règles (`rules`), les mails qui attendent Claude (`reading`) et, une fois par mail, la relecture des mails déjà traités des 30 derniers jours (`reread`, 16/10/2026) |
 | GET | `/internal/inbound/settings` | Adresse de réception du loueur, dernier mail, comptages sur 30 jours, mails à vérifier ; depuis le 14/10/2026 : une ligne par comparateur (`comparators` : dernier mail, comment il arrive), ce que Plazo a vu du réglage (`progress`), les mails écartés de 7 jours (`unexpected`), la messagerie détectée (`mailProvider`) |
 | POST | `/internal/inbound/address` | Gérant : renvoie l'adresse (créée avec le loueur) ; `{ regenerate: true }` : nouvelle adresse |
 | GET | `/internal/inbound/emails?view=todo\|done\|archived&status=` | Boîte de réception (M-A, 08/10/2026) : un onglet (`todo` par défaut : incomplete et unrecognised ; `done` : imported, duplicate, handled sur 30 jours ; `archived` : 90 jours), du plus récent au plus ancien, `{ data, counts: { todo, done, archived } }` ; `?status=` filtre encore (seul, il cherche dans l'onglet de cet état) ; les confirmations de transfert jamais listées |

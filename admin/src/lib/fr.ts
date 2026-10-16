@@ -129,6 +129,8 @@ export const fr = {
     invalid_datetime: "Date ou heure invalide.",
     return_before_arrival: "Le retour doit être après l'arrivée.",
     stay_too_long: "Séjour de plus de 90 jours.",
+    // 16/10/2026 (« relie les mail deja traité »): a mail read again after its stay; Plazo only links it to its booking.
+    stay_over: "Séjour déjà terminé, Plazo ne la crée pas de lui-même.",
     passengers_range: "Entre 1 et 9 passagers.",
     invalid_phone: "Numéro de téléphone invalide.",
     invalid_plate: "Plaque invalide.",

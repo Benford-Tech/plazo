@@ -3531,7 +3531,15 @@ describe('import sans plaque (15/10/2026, « ne pas planter à l’import quand 
     const op = await connected();
     const old = await waitingForPlate(op.operator.id, new Date(Date.now() - 8 * 86_400_000));
     const row = await waitingForPlate(op.operator.id);
-    expect((await retry()).body).toEqual({ due: 0, tried: 0, outcomes: {}, plateOnly: { due: 1, tried: 1, outcomes: { imported: 1 } } });
+    // 16/10/2026 (« relie les mail deja traité »): the older one (8 days) is not the plate catch-up's; the re-reading of the
+    // mails already received reads it once with the rules: the same booking, so it is linked to it (a duplicate).
+    expect((await retry()).body).toEqual({
+      due: 0,
+      tried: 0,
+      outcomes: {},
+      plateOnly: { due: 1, tried: 1, outcomes: { imported: 1 } },
+      reread: { due: 1, tried: 1, outcomes: { duplicate: 1 } },
+    });
     expect(await prisma.inboundEmail.findUniqueOrThrow({ where: { id: row.id } })).toMatchObject({
       status: 'imported',
       autoRetries: 1,
@@ -3540,9 +3548,15 @@ describe('import sans plaque (15/10/2026, « ne pas planter à l’import quand 
     const traced = await prisma.auditLog.findFirstOrThrow({ where: { action: 'inbound.reanalysed', entityId: row.id } });
     expect(traced.staffId).toBeNull();
     expect(traced.details).toMatchObject({ auto: true, outcome: 'imported', from: 'incomplete', to: 'imported' });
-    // Nothing left: the older one (8 days) is left to the staff.
+    // Nothing left: the older one was never the plate catch-up's (no try counted), it is linked to the booking.
     expect((await retry()).body).toEqual({ due: 0, tried: 0, outcomes: {} });
-    expect(await prisma.inboundEmail.findUniqueOrThrow({ where: { id: old.id } })).toMatchObject({ status: 'incomplete', autoRetries: 0 });
+    const imported = await prisma.inboundEmail.findUniqueOrThrow({ where: { id: row.id } });
+    expect(await prisma.inboundEmail.findUniqueOrThrow({ where: { id: old.id } })).toMatchObject({
+      status: 'duplicate',
+      autoRetries: 0,
+      reservationId: imported.reservationId,
+    });
+    expect(await prisma.reservation.count({ where: { operatorId: op.operator.id } })).toBe(1);
   });
 
   it('le rattrapage laisse à l’équipe un mail dont elle a saisi la réservation à la main pendant qu’il attendait (jamais deux réservations)', async () => {

@@ -97,18 +97,78 @@ export function isCancellationOrChange(text: string): boolean {
 }
 
 /**
- * 10/10/2026 (« C'est une modification »): the two halves of isCancellationOrChange, apart. A cancellation (« Votre
- * réservation a été annulée », « Annulation de votre réservation », « booking cancelled »).
+ * 16/10/2026 (« relie les mail deja traité »): what makes a sentence a condition or a policy of the booking rather than
+ * news of it, said before the words that matter (in the same sentence): « Pour toute annulation de votre
+ * réservation… », « Toute réservation annulée… ne sera pas remboursée », « Si vous avez annulé… », « En cas
+ * d'annulation… », « conditions d'annulation », « politique d'annulation », « Free cancellation up to… », « If your
+ * booking is cancelled… », « Any booking modified… ». A confirmation says these; they never make it a cancellation or a
+ * change (its booking was not imported).
  */
-export function isCancellation(text: string): boolean {
-  return /\b(r[ée]servation (a [ée]t[ée] |est )?annul[ée]e|annulation de (votre|la) r[ée]servation|booking (has been )?(cancelled|canceled))\b/i.test(
-    text,
-  );
+const POLICY_BEFORE =
+  /(?<![\p{L}\p{N}])(?:si|s['’]il|toute?s?|tous|en\s+cas|conditions?|politique|aucune?|frais|possibilit[ée]s?|sauf|if|any|in\s+case|policy|terms|free|until|up\s+to|once|whether|unless)(?![\p{L}\p{N}])|(?<![\p{L}\p{N}])jusqu['’]/iu;
+/** « Pour l'annulation de votre réservation… », « Pour modification de la réservation… »: an instruction. */
+const POLICY_FOR = /(?<![\p{L}\p{N}])pour\s+(?:l['’]\s*|une?\s+|la\s+|le\s+|les\s+)?$/iu;
+/** « Annulation de votre réservation gratuite jusqu'à… », « La modification de votre réservation est possible… ». */
+const POLICY_AFTER = /^[^,;:]{0,30}?(?<![\p{L}\p{N}])(?:gratuite?s?|possibles?)(?![\p{L}\p{N}])/iu;
+/** Where a sentence ends (a line too: a heading, a table cell). */
+const SENTENCE_END = /[.!?\n]/;
+/**
+ * Where a clause starts: « Conformément à nos conditions, votre réservation a été annulée » is news of its booking, and so
+ * is « Aucune action n'est requise : votre réservation a été annulée » (review: a colon starts the news too).
+ */
+const CLAUSE_START = /[.!?\n,;:]/;
+/**
+ * Review (16/10/2026): only the last words before the matched ones can make them a condition (« Pour toute annulation… »,
+ * « Si vous avez annulé… », « Si vous souhaitez annuler ou modifier… »); a word further back in the clause (« Tous nos
+ * regrets… », « Pas de frais… ») never hides a real cancellation.
+ */
+const POLICY_WORDS_BEFORE = 6;
+
+/**
+ * 16/10/2026: whether the words matched at `index` are said as a condition, a policy or a question (« Besoin de
+ * modifier votre réservation ? ») rather than as news: POLICY_BEFORE or POLICY_FOR before them in their clause,
+ * POLICY_AFTER right after them, or a question mark ending their sentence.
+ */
+function asPolicy(text: string, index: number, length: number): boolean {
+  let from = index;
+  while (from > 0 && index - from < 160 && !CLAUSE_START.test(text[from - 1])) from -= 1;
+  let to = index + length;
+  while (to < text.length && to - index < 400 && !SENTENCE_END.test(text[to])) to += 1;
+  const clause = text.slice(from, index);
+  const before = clause.match(new RegExp(String.raw`(?:\S+\s+){0,${POLICY_WORDS_BEFORE}}\S*$`, 'u'))?.[0] ?? clause;
+  return text[to] === '?' || POLICY_BEFORE.test(before) || POLICY_FOR.test(before) || POLICY_AFTER.test(text.slice(index + length, to));
 }
 
-/** 10/10/2026: a change of a booking (« Votre réservation a été modifiée », « Modification de votre réservation », « booking modified »). */
+/**
+ * 16/10/2026: whether a text says these words as news (asPolicy: never a condition, a policy or a question of a
+ * confirmation), at any of their places.
+ */
+export function saidIn(text: string, pattern: RegExp): boolean {
+  const all = new RegExp(pattern.source, pattern.flags.includes('g') ? pattern.flags : `${pattern.flags}g`);
+  for (const match of text.matchAll(all)) if (!asPolicy(text, match.index ?? 0, match[0].length)) return true;
+  return false;
+}
+
+const CANCELLATION_WORDS =
+  /\b(r[ée]servation (a [ée]t[ée] |est )?annul[ée]e|annulation de (votre|la) r[ée]servation|booking (has been )?(cancelled|canceled))\b/i;
+const CHANGE_WORDS = /\b(r[ée]servation (a [ée]t[ée] |est )?modifi[ée]e|modification de (votre|la) r[ée]servation|booking (has been )?modified)\b/i;
+
+/**
+ * 10/10/2026 (« C'est une modification »): the two halves of isCancellationOrChange, apart. A cancellation (« Votre
+ * réservation a été annulée », « Annulation de votre réservation », « booking cancelled »). 16/10/2026: never the
+ * conditions of a confirmation (« Pour toute annulation de votre réservation… », « Toute réservation annulée… »: saidIn).
+ */
+export function isCancellation(text: string): boolean {
+  return saidIn(text, CANCELLATION_WORDS);
+}
+
+/**
+ * 10/10/2026: a change of a booking (« Votre réservation a été modifiée », « Modification de votre réservation »,
+ * « booking modified »). 16/10/2026: never the conditions of a confirmation (« Pour toute modification de votre
+ * réservation… »: saidIn).
+ */
 export function isChange(text: string): boolean {
-  return /\b(r[ée]servation (a [ée]t[ée] |est )?modifi[ée]e|modification de (votre|la) r[ée]servation|booking (has been )?modified)\b/i.test(text);
+  return saidIn(text, CHANGE_WORDS);
 }
 
 /**
@@ -144,7 +204,12 @@ const NAMED_REFERENCE = String.raw`(?:AL-\d{6,}|PM\d{6,})`;
 export const TEXT_CANCELLATION = [
   /r[ée]servation\b(?:(?!\bpeu[tv]|\bpourr|\bsera|\bsi\b)[^\n.]){0,60}?\b(annul[ée]e|rembours[ée]e)\b/i,
   /\bbooking\b(?:(?!\bcan\b|\bmay\b|\bwill\b|\bif\b)[^\n.]){0,60}?\b(cancell?ed|refunded)\b/i,
-  new RegExp(String.raw`\b(annulation|remboursement|cancellation|refund)\b[^\n.]{0,40}?\b${NAMED_REFERENCE}`, 'i'),
+  new RegExp(
+    String.raw`\b(annulation|remboursement|cancellation|refund)\b(?:(?!\bgratuit|\bfree\b|\bpossible|\bpolicy\b|\bconditions?\b)[^\n.]){0,40}?\b${NAMED_REFERENCE}`,
+    'i',
+  ),
+  // 16/10/2026: « Le remboursement de votre réservation a été effectué » (« Conditions de remboursement… »: saidIn).
+  /\bremboursement\s+(?:de|pour)\s+(?:votre|la|cette)\s+r[ée]servation\b/i,
   /\b(?:avons|avez|a|ont)\s+(?:bien\s+)?(?:annul|rembours)[ée]/i,
   /\b(?:we|you)(?:\s+have|'ve|’ve)?\s+(?:now\s+)?(?:cancell?ed|refunded)\b/i,
   /\bcancell?ed\s+(?:your|the|this)\s+(?:booking|reservation)\b/i,
@@ -172,15 +237,19 @@ export const TEXT_CHANGE = [
   /\b(?:changement|modification|change)\s+(?:de|des|of)\s+(?:vos\s+|your\s+)?dates?\b[^\n.?]{0,40}?\b(?:a|est|has|is)\s+(?:bien\s+)?(?:été\s+|been\s+)?(?:pris\s+en\s+compte|confirm[ée]e?|effectu[ée]e?|enregistr[ée]e?|confirmed|applied|processed)/i,
 ];
 
-/** 16/10/2026: a cancellation or a refund said in a text, side by side (isCancellation) or with words in between. */
+/**
+ * 16/10/2026: a cancellation or a refund said in a text, side by side (isCancellation) or with words in between; never a
+ * confirmation's conditions (« Si vous avez annulé… », « Toute réservation annulée ne sera pas remboursée »: saidIn).
+ */
 export function cancellationIn(text: string): boolean {
-  return isCancellation(text) || TEXT_CANCELLATION.some(pattern => pattern.test(text));
+  return isCancellation(text) || TEXT_CANCELLATION.some(pattern => saidIn(text, pattern));
 }
 
 /**
  * 16/10/2026: a change said as done in a text (TEXT_CHANGE); never isChange's words side by side, which are also a
- * confirmation's « Pour toute modification de votre réservation, contactez… ».
+ * confirmation's « Pour toute modification de votre réservation, contactez… », nor a condition (« Si votre réservation
+ * est modifiée… »: saidIn).
  */
 export function changeIn(text: string): boolean {
-  return TEXT_CHANGE.some(pattern => pattern.test(text));
+  return TEXT_CHANGE.some(pattern => saidIn(text, pattern));
 }
