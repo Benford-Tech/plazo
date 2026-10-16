@@ -19,6 +19,7 @@ import type {
   MailProviderId,
   InboundPageOutcome,
   InboundReadingKind,
+  InboundReadingOutageCause,
   ShuttleDirection,
   WaveState,
 } from "./types";
@@ -44,6 +45,20 @@ function deletionSummary(counts: { parkings: number; listings?: number; reservat
   if (parts.length < 2) return parts[0] ?? "ses données";
   return `${parts.slice(0, -1).join(", ")} et ${parts[parts.length - 1]}`;
 }
+
+/**
+ * 16/10/2026 (the Anthropic account ran out of credit that morning): why Claude could not read a mail, in the inbox and
+ * the dashboard's « Import » service.
+ */
+export const readingOutageCause: Record<InboundReadingOutageCause, string> = {
+  credit: "crédit Anthropic épuisé",
+  auth: "clé Anthropic refusée",
+  rate_limit: "trop de demandes à Anthropic",
+  overloaded: "Anthropic surchargé ou indisponible",
+  timeout: "Claude n'a pas répondu à temps",
+  network: "Anthropic injoignable",
+  other: "erreur d'Anthropic",
+};
 
 export const fr = {
   common: {
@@ -476,6 +491,8 @@ export const fr = {
       importLabel: "Import",
       importAt: (ago: string) => `dernier ${ago}`,
       importNever: "jamais",
+      // 16/10/2026: a mail that needed Claude could not be read within the hour.
+      importReadingOutage: (cause: InboundReadingOutageCause) => `Lecture par Claude en panne : ${readingOutageCause[cause]}`,
     },
     alerts: {
       title: "À traiter maintenant",
@@ -2836,6 +2853,11 @@ export const inboundFr = {
     /** L-A (08/10/2026): what Claude made of a mail no importer knew. */
     reading: {
       title: "Lu par Claude",
+      /** 16/10/2026 (« analyser sans passer par Claude »): what Plazo's rules per mail type made of it. */
+      rulesTitle: "Reconnu par Plazo",
+      /** 16/10/2026: Claude could not read the mail, which waits for it. */
+      outage: (cause: InboundReadingOutageCause) =>
+        `Claude n'a pas pu lire ce mail (${readingOutageCause[cause]}) : Plazo le relira dès que la lecture fonctionne de nouveau.`,
       kind: {
         booking: "Réservation",
         modification: "Modification",
@@ -2931,6 +2953,15 @@ export const inboundFr = {
       incomplete: "Analyse relancée : il manque encore des informations.",
       unrecognised:
         "Analyse relancée : ce mail n'est toujours pas reconnu comme une réservation.",
+      /** 16/10/2026: recognised as another kind than a booking (« Annulation », « Autre mail »…), as the inbox says it. */
+      notBooking: (kind: string) =>
+        `Analyse relancée : mail reconnu (${kind}), rien n'est créé de lui-même.`,
+      /** 16/10/2026: an Allopark modification recognised, its booking page still not read (the incident's mail). */
+      pageNotRead:
+        "Analyse relancée : modification Allopark reconnue, mais la page de la réservation n'a pas pu être lue : rien n'a changé.",
+      /** 16/10/2026: Claude could not read it: the real cause, never « pas reconnu ». */
+      outage: (cause: InboundReadingOutageCause) =>
+        `Analyse relancée, mais Claude n'a pas pu lire ce mail (${readingOutageCause[cause]}) : Plazo le relira dès que la lecture fonctionne de nouveau.`,
     },
     /** The refusals of « Relancer l'analyse » worded for this screen (`text_gone`, `analysis_running`: `fr.errors`). */
     errors: {

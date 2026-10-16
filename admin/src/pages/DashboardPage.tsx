@@ -180,14 +180,23 @@ function ServicesStrip({ services }: { services: Dashboard["services"] }) {
         state={stripe.state}
         detail={stripe.detail}
       />
+      {/* 16/10/2026: « À voir » while Claude cannot read the mails that need it (credit, key, load…). */}
       <Service
         icon={FileInput}
         label={s.importLabel}
-        state={services.lastImportAt ? "ok" : "off"}
+        state={
+          services.reading?.outage
+            ? "warn"
+            : services.lastImportAt
+              ? "ok"
+              : "off"
+        }
         detail={
-          services.lastImportAt
-            ? s.importAt(timeAgo(services.lastImportAt))
-            : s.importNever
+          services.reading?.outage
+            ? s.importReadingOutage(services.reading.outage.cause)
+            : services.lastImportAt
+              ? s.importAt(timeAgo(services.lastImportAt))
+              : s.importNever
         }
       />
     </div>

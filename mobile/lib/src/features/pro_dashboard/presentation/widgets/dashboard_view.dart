@@ -303,6 +303,10 @@ class _StatusPill extends StatelessWidget {
   }
 }
 
+/// 16/10/2026: why Claude could not read a mail, as the server says it (an unknown cause reads as « erreur d'Anthropic »).
+const _outageCauses = {'credit', 'auth', 'rate_limit', 'overloaded', 'timeout', 'network', 'other'};
+String _outageCause(String cause) => 'dashboard.reading_outage.${_outageCauses.contains(cause) ? cause : 'other'}'.tr();
+
 /// The state of the services on one strip: icon, name, a tinted pill and a word.
 class _Services extends StatelessWidget {
   const _Services({required this.s});
@@ -321,6 +325,12 @@ class _Services extends StatelessWidget {
     final online = s.stripe.online ?? s.stripe.connected;
     // Payments are centralised (Plazo takes every payment): the tile only says whether online payment is on.
     final stripe = online ? (_Tone.ok, 'dashboard.stripe_on'.tr()) : (_Tone.off, 'dashboard.stripe_off'.tr());
+    final outage = s.reading?.outage;
+    final imports = outage != null
+        ? (_Tone.warn, 'dashboard.import_reading_outage'.tr(args: [_outageCause(outage.cause)]))
+        : s.lastImportAt == null
+        ? (_Tone.off, 'dashboard.import_never'.tr())
+        : (_Tone.ok, 'dashboard.import_at'.tr(args: [hhmm(s.lastImportAt!)]));
     final items = [
       (
         Icons.flight_rounded,
@@ -336,12 +346,8 @@ class _Services extends StatelessWidget {
         s.push.configured ? 'dashboard.push_on'.tr(args: ['${s.push.devices}']) : 'dashboard.push_off'.tr(),
       ),
       (Icons.credit_card_rounded, 'dashboard.svc_stripe'.tr(), stripe.$1, stripe.$2),
-      (
-        Icons.file_download_rounded,
-        'dashboard.svc_import'.tr(),
-        s.lastImportAt == null ? _Tone.off : _Tone.ok,
-        s.lastImportAt == null ? 'dashboard.import_never'.tr() : 'dashboard.import_at'.tr(args: [hhmm(s.lastImportAt!)]),
-      ),
+      // 16/10/2026: « À voir » while Claude cannot read the mails that need it (credit, key, load…).
+      (Icons.file_download_rounded, 'dashboard.svc_import'.tr(), imports.$1, imports.$2),
     ];
     String word(_Tone t) => switch (t) {
       _Tone.ok => 'dashboard.svc_ok'.tr(),

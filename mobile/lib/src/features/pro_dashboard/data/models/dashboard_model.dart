@@ -97,6 +97,23 @@ abstract class DashboardStripeModel with _$DashboardStripeModel {
   factory DashboardStripeModel.fromJson(Map<String, dynamic> json) => _$DashboardStripeModelFromJson(json);
 }
 
+/// 16/10/2026: Claude could not read a mail that needed it (`cause`: credit, auth, rate_limit, overloaded, timeout,
+/// network, other).
+@freezed
+abstract class DashboardReadingOutageModel with _$DashboardReadingOutageModel {
+  const factory DashboardReadingOutageModel({@Default('other') String cause, DateTime? at}) = _DashboardReadingOutageModel;
+
+  factory DashboardReadingOutageModel.fromJson(Map<String, dynamic> json) => _$DashboardReadingOutageModelFromJson(json);
+}
+
+/// 16/10/2026: Claude's reading of the mails no rule knows; `outage` within the hour makes « Import » « À voir ».
+@freezed
+abstract class DashboardReadingModel with _$DashboardReadingModel {
+  const factory DashboardReadingModel({@Default(false) bool configured, DashboardReadingOutageModel? outage}) = _DashboardReadingModel;
+
+  factory DashboardReadingModel.fromJson(Map<String, dynamic> json) => _$DashboardReadingModelFromJson(json);
+}
+
 @freezed
 abstract class DashboardServicesModel with _$DashboardServicesModel {
   const factory DashboardServicesModel({
@@ -105,6 +122,8 @@ abstract class DashboardServicesModel with _$DashboardServicesModel {
     @Default(DashboardPushModel()) DashboardPushModel push,
     @Default(DashboardStripeModel()) DashboardStripeModel stripe,
     DateTime? lastImportAt,
+    // 16/10/2026: absent from an older server.
+    DashboardReadingModel? reading,
   }) = _DashboardServicesModel;
 
   factory DashboardServicesModel.fromJson(Map<String, dynamic> json) => _$DashboardServicesModelFromJson(json);

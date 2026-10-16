@@ -3,17 +3,10 @@ import httpStatus from 'http-status';
 import { Container, Service } from 'typedi';
 import { INBOUND_EMAIL_DOMAIN, inboundEmailAvailable } from '@/config';
 import prisma, { InboundEmailStatus, Prisma } from '@/database';
-import { MIN_CONFIDENCE, ReadingMeta, toParsedBooking } from '@/domain/email-reading';
-import { EMAIL_IMPORTERS, IMPORT_SENDERS, isComparatorAddress, parseConfirmationEmail, ParsedBooking } from '@/domain/importers';
-import { isCancellationOrChange } from '@/domain/importers/common';
-import {
-  alloparkConfirmationPage,
-  alloparkLinks,
-  alloparkPageAddresses,
-  alloparkEmailOf,
-  alloparkPageUrls,
-  isAlloparkUrl,
-} from '@/domain/importers/allopark-page';
+import { MIN_CONFIDENCE, READING_OUTAGE_CAUSES, ReadingMeta, ReadingOutage, readingOutageOf, toParsedBooking } from '@/domain/email-reading';
+import { EMAIL_IMPORTERS, IMPORT_SENDERS, isComparatorAddress, parseBookingEmail, ParsedBooking } from '@/domain/importers';
+import { alloparkConfirmationPage, alloparkLinks, alloparkPageAddresses, alloparkPageUrls, isAlloparkUrl } from '@/domain/importers/allopark-page';
+import { classifyMail, ruleReading } from '@/domain/inbound-kind';
 import { IMPORT_CHANGE_FIELDS, IMPORT_CHANGE_REASONS, ImportChange, ImportChangeField, ImportChangeReason } from '@/domain/import-change';
 import { ComparatorState, comparatorStates, latestAutomatic } from '@/domain/inbound-comparators';
 import { deliveryOf, looksLikeBooking } from '@/domain/inbound-delivery';
@@ -38,7 +31,7 @@ import { AlloparkPageOutcome, AlloparkPageService } from './allopark-page.servic
 import { AuthenticatedStaff } from '@/interfaces/auth.interface';
 import { logger } from '@/utils/logger';
 import { AuditService } from './audit.service';
-import { EmailReadingService } from './email-reading.service';
+import { EmailReadingService, ReadingAttempt } from './email-reading.service';
 import { MailProviderService } from './mail-provider.service';
 import { MailProviderId } from '@/domain/mail-provider';
 import { ImportChangeResult, ReservationService } from './reservation.service';
@@ -111,8 +104,17 @@ export interface InboundEmailView {
   missing: string[];
   reservationId: string | null;
   reservationReference: string | null;
-  /** L-A (08/10/2026): what Claude made of the email; null when it was not read. */
+  /**
+   * L-A (08/10/2026): what Claude made of the email; null when it was not read. 16/10/2026: or what Plazo's rules per
+   * mail type made of it (`source: 'rules'`, domain/inbound-kind.ts).
+   */
   reading: ReadingMeta | null;
+  /**
+   * 16/10/2026: Claude could not read the email (its cause: credit, key, load…), which waits for it: Plazo reads it again
+   * once Claude answers (POST /public/inbound/retry); null otherwise (also once the email is handled or archived, or
+   * older than the 7 days of that re-reading).
+   */
+  readingOutage: ReadingOutage | null;
   /** 10/10/2026: the last re-analysis asked by the staff; null when the email was only analysed at its reception. */
   analysedAt: string | null;
   /** 10/10/2026 (« Prévent captcha »): what became of the Allopark booking page at the last analysis; null when not tried. */
@@ -131,8 +133,11 @@ export interface AutoRetryReport {
   due: number;
   tried: number;
   outcomes: Partial<Record<ReanalysisOutcome, number>>;
-  /** The pass ended early: Allopark asked for an anti-robot check or refused Plazo (no other email opened it). */
-  stopped?: 'protected' | 'refused';
+  /**
+   * The pass ended early: Allopark asked for an anti-robot check or refused Plazo (no other email opened it), or
+   * (16/10/2026, `reading`) Claude still could not read.
+   */
+  stopped?: 'protected' | 'refused' | 'reading';
   /**
    * 15/10/2026 (relecture): emails left to the staff, not analysed again, because the staff made the traveller's booking
    * themselves while it waited (ReservationService.typedSince); given only when some were.
@@ -210,6 +215,15 @@ const AUTO_RETRY_START_BUDGET_MS = 10_000;
  * before it stopped being required are imported by the relay's cron, those of the last 7 days.
  */
 const PLATE_CATCH_UP_DAYS = 7;
+/**
+ * 16/10/2026: an email that waits for Claude (an outage) is read again once Claude answers, within 7 days of its reception
+ * (a credit run out on a Friday evening and topped up on the Monday; an older one waits for the staff), at least 5 minutes
+ * after its last try.
+ */
+const READING_RETRY_WINDOW_MS = 7 * 86_400_000;
+const READING_RETRY_GAP_MS = 5 * 60_000;
+/** 16/10/2026 (« analyser sans passer par Claude »): the emails stored before the rules per mail type, these 7 days. */
+const RULES_CATCH_UP_DAYS = 7;
 /** 10/10/2026 (« C'est une modification »): `changed` = an Allopark change applied to its booking (the email then reads `imported`). */
 export type ReanalysisOutcome = 'imported' | 'changed' | 'duplicate' | 'incomplete' | 'unrecognised';
 export interface Reanalysis {
@@ -231,6 +245,12 @@ interface AnalysisInput {
   recipients: string[];
   /** A re-analysis: what the stored row says, so that the new analysis never knows less than the one before. */
   previous?: { parsed: ParsedBooking | null; missing: string[]; reading: ReadingMeta | null; change?: InboundChangeView | null };
+  /**
+   * 16/10/2026 (relecture): Plazo's own re-analysis (retryReading, the rules' catch-up…): when the email was received. A
+   * booking the staff typed since then for the same traveller leaves the email to them (ReservationService.typedSince,
+   * from what this analysis read: an email Claude could not read had nothing to check before, typedByHand).
+   */
+  typedSince?: Date;
 }
 
 interface Analysis {
@@ -244,6 +264,13 @@ interface Analysis {
   pageLookup: PageLookupView | null;
   /** 10/10/2026 (« C'est une modification »): what became of an Allopark change; null for any other email. */
   change: InboundChangeView | null;
+  /** 16/10/2026: Claude could not read an email that waits for it (only for an email left « À traiter »). */
+  outage?: ReadingOutage | null;
+}
+
+/** 16/10/2026: what the calls to Claude of one analysis came to (an outage while the email needed Claude). */
+interface ClaudeCalls {
+  outage: ReadingOutage | null;
 }
 
 /** What one more analysis of a stored email did: the analysis, the row as it was when written, and its new state (null: attached meanwhile). */
@@ -358,7 +385,7 @@ export class InboundEmailService {
         ...(analysis.reservationId ? {} : forReanalysis),
         status,
         delivery,
-        ...(analysis.reading ? { reading: analysis.reading as unknown as Prisma.InputJsonValue } : {}),
+        ...(analysis.reading || analysis.outage ? { reading: storedReading(analysis.reading, analysis.outage) } : {}),
         ...(analysis.provider ? { provider: analysis.provider } : {}),
         ...(analysis.parsed ? { parsed: analysis.parsed as unknown as Prisma.InputJsonValue } : {}),
         ...(analysis.missing.length ? { missing: analysis.missing } : {}),
@@ -375,24 +402,55 @@ export class InboundEmailService {
    * Claude for what is still missing, then createFromImport. Shared by the reception and the re-analysis
    * (10/10/2026, « pouvoir relancer l'analyse d'un mail »); nothing is stored here but the booking. 10/10/2026 (« C'est
    * une modification »): an Allopark change of a booking is applied to it from the booking page (alloparkChange).
+   * 16/10/2026 (« trouve un moyen d'analyser sans passer par Claude »): the rules per comparator and mail type
+   * (domain/inbound-kind.ts) say first what the email is; a known one is handled without Claude (its booking imported,
+   * its change applied, a cancellation or another mail shown with its kind), and Claude only reads an email of an
+   * unknown format, or completes a field the rules could not read; when Claude cannot answer (`outage`), the email waits
+   * with the cause and is read again once Claude answers.
    */
   private async analyse(input: AnalysisInput): Promise<Analysis> {
+    const claude: ClaudeCalls = { outage: null };
+    const analysis = await this.analyseWith(input, claude);
+    // Marked only when the email waits: one Claude did not read but that was handled anyway needs nothing more of it.
+    const waits = TO_CHECK.includes(storedStatus(analysis.status));
+    return { ...analysis, outage: waits ? claude.outage : null };
+  }
+
+  private async analyseWith(input: AnalysisInput, claude: ClaudeCalls): Promise<Analysis> {
     const { operatorId, text, fromAddress, fromName, subject } = input;
     const sender = [fromName, fromAddress].filter(Boolean).join(' ');
+    const type = classifyMail({ subject, text, from: sender, links: input.links });
+    const rules = ruleReading(type);
+    const label = type.provider ? `[${type.provider}]${type.reference ? ` ${type.reference}` : ''}` : '[Inbound]';
+    logger.info(`${label}: mail type ${type.rule}`);
+    // A cancellation, a reply or another mail of a comparator, a change of Onepark, Parclick or ParkMundo (no page to read
+    // it from): shown with its kind, nothing done by itself (cancellations are never applied), no Claude.
+    if (type.kind === 'cancellation' || type.kind === 'other' || (type.kind === 'change' && (type.provider !== 'Allopark' || !type.reference))) {
+      return {
+        status: 'unrecognised',
+        provider: null,
+        parsed: null,
+        missing: [],
+        reading: rules,
+        reservationId: null,
+        pageLookup: null,
+        change: null,
+      };
+    }
     // 10/10/2026 (« C'est une modification »): an Allopark email that announces a change of a booking (« Modification
     // de votre réservation AL-… », « nouvelles dates ») is no new booking: Plazo reads the booking page again and updates
-    // the booking. A cancellation is still left to the staff (below: Claude reads it, nothing is done).
-    const alloparkMail = alloparkEmailOf({ text, subject, from: sender });
-    if (alloparkMail?.kind === 'change') return this.alloparkChange(input, alloparkMail.reference, null, null);
-    // What the importers read of the email itself. 10/10/2026: a subject that announces a cancellation or a change
-    // (« Annulation de votre réservation AL-… ») is no new booking either, whatever the text says.
-    const found = text && !isCancellationOrChange(subject ?? '') ? parseConfirmationEmail(text) : null;
+    // the booking. 16/10/2026: Allopark's own modification template is applied without Claude's confirmation.
+    if (type.kind === 'change') return this.alloparkChange(input, type.reference!, null, rules, type.sure ? 'rules' : 'wording', claude);
+    // 16/10/2026: a catalogued booking template (Allopark's confirmation, Onepark's notice, Parclick's or ParkMundo's
+    // confirmation) is a booking: no one confirms it, Claude only fills what the importer and the page left blank.
+    const known = type.kind === 'booking' && type.sure;
+    // What the importers read of the email itself.
+    const found = type.kind === 'booking' && type.provider && text ? parseBookingEmail(text, type.provider, known) : null;
     let parsed = found;
     // 10/10/2026: Allopark's emails leave « Vos informations » blank (plate, phone, name…); the booking page they link to
     // shows them, so it is opened before Claude is asked anything. Also for an Allopark email the importer did not
     // recognise (« Allopark » only in the sender, the reference only in the subject): the page then gives the booking.
-    // Never for a cancellation.
-    const allopark = (!found || found.provider === 'Allopark') && alloparkMail?.kind === 'booking' ? alloparkMail.reference : null;
+    const allopark = type.provider === 'Allopark' && type.kind === 'booking' && (!found || found.provider === 'Allopark') ? type.reference : null;
     const reference = found?.externalReference ?? allopark;
     let fromPage = false;
     let pageLookup: PageLookupView | null = null;
@@ -404,23 +462,28 @@ export class InboundEmailService {
       pageLookup = tried.lookup;
       fromPage = parsed !== found;
     }
-    // L-A (08/10/2026): what no importer knows, Claude reads; its answer is kept on the row for the inbox. Since
-    // 09/10/2026 Claude also completes a confirmation an importer recognised but could not read in full (a comparator
-    // that changed its layout, a detail in a part of the email the importer does not look at): the importer's fields
-    // stay, Claude only fills the gaps. 10/10/2026 (relecture): a booking completed by Allopark's page is read by Claude
-    // too, gaps or not: the page still shows the booking a change or a cancellation is about, only Claude tells them
-    // apart.
+    // 16/10/2026: the template vouches for the page's booking: the page was opened for the very reference the template
+    // names, and shows that booking's form (parseAlloparkPage refuses a page that does not name it); Claude's reading would
+    // only add the email's kind, which the template already gives. An email that names two bookings is read as before.
+    const decided = known && (!fromPage || tried?.reference === type.reference);
+    // L-A (08/10/2026): what no rule knows, Claude reads; its answer is kept on the row for the inbox. Since 09/10/2026
+    // Claude also completes a confirmation an importer recognised but could not read in full (a comparator that changed
+    // its layout, a detail in a part of the email the importer does not look at): the importer's fields stay, Claude only
+    // fills the gaps. 10/10/2026 (relecture): a booking completed by Allopark's page without a known template is read by
+    // Claude too, gaps or not: the page still shows the booking a change or a cancellation is about. 16/10/2026: never for
+    // a known Allopark email, whose booking page says all its email could.
     let reading: ReadingMeta | null = null;
     let unsure = false;
     const gaps = parsed ? soughtForImport(parsed) : [];
-    if ((!parsed || gaps.length || fromPage) && text && this.reader.available()) {
-      const timezone = await this.timezoneOf(operatorId);
-      const result = await this.reader.read({ from: fromAddress, fromName, subject, text, timezone });
-      if (result) {
-        const { kind, provider, confidence, summary } = result.reading;
-        reading = { kind, provider, confidence, summary, model: result.model };
+    const ask = decided ? gaps.length > 0 && type.provider !== 'Allopark' : !parsed || gaps.length > 0 || fromPage;
+    if (ask && text && this.reader.available()) {
+      const attempt = await this.readEmail(input, claude);
+      if (attempt.outcome === 'answered') {
+        const { kind, confidence } = attempt.reading;
+        // A known booking stays one whatever Claude says of its kind: only its fields are taken.
+        if (kind === 'booking' || !decided) reading = readingMetaOf(attempt);
         if (kind === 'booking') {
-          const read = toParsedBooking(result.reading);
+          const read = toParsedBooking(attempt.reading);
           const filled = parsed ? fillGaps(parsed, read) : read;
           // An unsure reading only matters for what it brought, or when nothing but Claude says it is a booking.
           const low = confidence < MIN_CONFIDENCE;
@@ -436,17 +499,18 @@ export class InboundEmailService {
     // 10/10/2026 (relecture): the page's booking only when the email is one. Claude reads a change, a cancellation or
     // another mail (now, or at a former analysis when it does not answer this time): the page's fields go, the email
     // waits as it would have without the page (the importer's reading in « À traiter », or unrecognised). No importer:
-    // only Claude, sure of itself, makes the page's booking a booking; else it waits for a human eye.
-    const said = reading ?? input.previous?.reading ?? null;
+    // only Claude, sure of itself, makes the page's booking a booking; else it waits for a human eye. 16/10/2026: not for
+    // a known template, which says itself what the email is.
+    const said = reading ?? claudeReading(input.previous?.reading ?? null);
     // 10/10/2026 (« C'est une modification »): Claude reads a change of the Allopark booking the email names, which its
     // text did not announce: applied from the booking page as well (the page just read, else opened now).
-    if (allopark && said?.kind === 'modification') return this.alloparkChange(input, allopark, tried, reading, true);
-    const notBooking = fromPage && !!said && said.kind !== 'booking';
-    const unconfirmed = fromPage && !found && !notBooking && (!said || said.confidence < MIN_CONFIDENCE);
+    if (!decided && allopark && said?.kind === 'modification') return this.alloparkChange(input, allopark, tried, reading, 'claude', claude);
+    const notBooking = !decided && fromPage && !!said && said.kind !== 'booking';
+    const unconfirmed = !decided && fromPage && !found && !notBooking && (!said || said.confidence < MIN_CONFIDENCE);
     if (fromPage && reference) {
-      const label = `[Allopark] ${reference.trim().toUpperCase()}`;
-      if (notBooking) logger.info(`${label}: read as ${said?.kind} by Claude, nothing taken from the booking page`);
-      else if (unconfirmed) logger.info(`${label}: no importer and no sure reading by Claude, the booking waits for the staff`);
+      const pageLabel = `[Allopark] ${reference.trim().toUpperCase()}`;
+      if (notBooking) logger.info(`${pageLabel}: read as ${said?.kind} by Claude, nothing taken from the booking page`);
+      else if (unconfirmed) logger.info(`${pageLabel}: no importer and no sure reading by Claude, the booking waits for the staff`);
     }
     if (notBooking) parsed = found;
     // Nothing of the page is used: the inbox does not speak of it.
@@ -465,10 +529,13 @@ export class InboundEmailService {
       // 15/10/2026: a plate only a former unsure reading gave is not imported.
       if (!unsure && input.previous!.missing.includes('confidence') && !isSet(own?.plate)) delete merged.plate;
       // Claude's former reading stays with the fields it gave.
-      if (kept && !reading) reading = input.previous!.reading;
+      if (kept && !reading) reading = claudeReading(input.previous!.reading);
       parsed = merged;
     }
-    // A cancellation, a modification or another kind of mail: shown with Claude's summary, nothing done by itself.
+    // Claude's former reading when it decided (another mail, not read this time), else what the rules tell when Claude did
+    // not read the email (or read it as something else than a known template is).
+    reading ??= (decided ? null : said) ?? rules;
+    // A mail no rule knows that Claude did not read as a booking: shown with Claude's summary, nothing done by itself.
     if (!parsed) return { status: 'unrecognised', provider: null, parsed: null, missing: [], reading, reservationId: null, pageLookup, change: null };
     const booking = parsed;
     const missing: string[] = missingForImport(booking);
@@ -476,6 +543,11 @@ export class InboundEmailService {
     if (unsure) missing.push('confidence');
     const result = { provider: booking.provider, parsed: booking, reading, pageLookup, change: null };
     if (missing.length) return { ...result, status: 'incomplete', missing, reservationId: null };
+    // 16/10/2026 (relecture): never a second booking of the same car when the staff typed it while the email waited.
+    if (input.typedSince && (await this.reservations.typedSince(operatorId, booking, input.typedSince))) {
+      logger.info(`${label}: the staff typed this booking while the email waited: left to the staff`);
+      return { ...result, status: 'incomplete', missing: ['confidence'], reservationId: null };
+    }
     try {
       const created = await this.reservations.createFromImport(operatorId, booking);
       return { ...result, status: created.duplicate ? 'duplicate' : 'imported', missing: [], reservationId: created.reservation.id };
@@ -547,10 +619,13 @@ export class InboundEmailService {
    * open by hand. Read: the operator's booking with this reference is updated (ReservationService.applyImportChange:
    * `changed`), already up to date (`duplicate`), or left to the staff with the reason (unrecognised, with the changes);
    * none: the page's booking is created (`imported`), or waits when the page lacks a required field. Logged without
-   * personal data. 10/10/2026 (relecture): a change only the wording announced (`confirmed` false) is first read by
-   * Claude when Plazo has its key: nothing is opened, changed, created or attached unless Claude reads a change (or the
-   * booking itself); read as a cancellation or another mail, it waits for the staff, and so it does when Claude does not
-   * answer (« Relancer l'analyse » tries again). Without Claude, the wording alone decides. 10/10/2026 (« Tu n'as pas
+   * personal data. 10/10/2026 (relecture): a change only the wording announced (`confirmedBy` « wording ») is first read
+   * by Claude when Plazo has its key: nothing is opened, changed, created or attached when Claude reads a cancellation or
+   * another mail (it waits for the staff). 16/10/2026 (« analyser sans passer par Claude »): Allopark's own modification
+   * template (`confirmedBy` « rules ») needs no one's confirmation; a change only its wording announces that Claude does
+   * not confirm (no key, an outage, no reading) is decided by the rules with two safeguards: no booking is created for a
+   * reference Plazo does not have (it waits, prefilled from the page), and a page that changes nothing leaves the email
+   * « À traiter » rather than a silent duplicate (a cancellation worded in a way the rules do not know). 10/10/2026 (« Tu n'as pas
    * récupéré le prix pour la modif »): no booking with the reference, a booking typed without it for the same car and
    * stay takes the reference and the change (ReservationService.unreferencedMatches); several: left to the staff
    * (`ambiguous`). A flight of the page that is no flight number no longer stops the booking (created without it, the
@@ -561,7 +636,8 @@ export class InboundEmailService {
     reference: string,
     prior: PageResult | null,
     reading: ReadingMeta | null,
-    confirmed = false,
+    confirmedBy: 'rules' | 'claude' | 'wording',
+    claude: ClaudeCalls,
   ): Promise<Analysis> {
     const { operatorId } = input;
     const ref = reference.trim().toUpperCase();
@@ -584,16 +660,28 @@ export class InboundEmailService {
         pageLookup: lookup,
       };
     };
-    if (!confirmed && input.text && this.reader.available()) {
-      reading = await this.readForStaff(input);
-      const said = reading ?? input.previous?.reading ?? null;
-      if (!said) {
-        logger.info(`${label}: change announced, Claude did not answer: nothing changed, the email waits`);
-        return waits(null, null);
-      }
-      if (said.kind === 'cancellation' || said.kind === 'other') {
+    // Only the wording said it: Claude confirms it when it can, never waited for.
+    let guarded = false;
+    if (confirmedBy === 'wording') {
+      const attempt: ReadingAttempt = input.text && this.reader.available() ? await this.readEmail(input, claude) : { outcome: 'unavailable' };
+      const answered = attempt.outcome === 'answered' ? readingMetaOf(attempt) : null;
+      const said = answered ?? claudeReading(input.previous?.reading ?? null);
+      if (said && (said.kind === 'cancellation' || said.kind === 'other')) {
         logger.info(`${label}: change announced, read as ${said.kind} by Claude: nothing changed`);
-        return { ...base, provider: null, status: 'unrecognised', parsed: null, missing: [], reading, reservationId: null };
+        // Decided by a former reading: the email no longer waits for Claude.
+        claude.outage = null;
+        return { ...base, provider: null, status: 'unrecognised', parsed: null, missing: [], reading: said, reservationId: null };
+      }
+      if (answered) reading = answered;
+      if (!said) {
+        guarded = true;
+        const why =
+          attempt.outcome === 'outage'
+            ? `Claude unavailable (${attempt.cause})`
+            : attempt.outcome === 'declined'
+              ? 'no reading by Claude'
+              : 'no Claude';
+        logger.info(`${label}: change announced by its wording only, ${why}: the rules decide (no booking created, no silent duplicate)`);
       }
     }
     // 10/10/2026 (relecture): only a page opened for this very reference is applied to its booking (an email that names
@@ -643,7 +731,13 @@ export class InboundEmailService {
       const missing = missingForImport(booking);
       if (missing.length) {
         logger.info(`${label}: change of a booking Plazo does not have, the page lacks ${missing.join(', ')}: waits for the staff`);
-        return { ...withPage, status: 'incomplete', missing, reservationId: null };
+        return { ...withPage, status: 'incomplete', missing: guarded ? [...missing, 'confidence'] : missing, reservationId: null };
+      }
+      // 16/10/2026: a change only the wording announced never creates a booking by itself (a cancellation the rules do not
+      // know would make one): it waits, prefilled from the page, for « Compléter ».
+      if (guarded) {
+        logger.info(`${label}: change of a booking Plazo does not have, announced by its wording only: waits for the staff`);
+        return { ...withPage, status: 'incomplete', missing: ['confidence'], reservationId: null };
       }
       try {
         const created = await this.reservations.createFromImport(operatorId, booking);
@@ -683,6 +777,11 @@ export class InboundEmailService {
     };
     const fields = result.changes.map(c => c.field).join(', ');
     if (!result.changes.length) {
+      // 16/10/2026: announced by its wording only, nothing to change: the staff read it (never a silent duplicate).
+      if (guarded) {
+        logger.info(`${label}: change announced by its wording only, the booking is already up to date: left to the staff`);
+        return { ...withPage, change, status: 'unrecognised', missing: [], reservationId: null };
+      }
       logger.info(`${label}: change announced, the booking is already up to date`);
       return { ...withPage, change, status: 'duplicate', missing: [], reservationId };
     }
@@ -694,14 +793,12 @@ export class InboundEmailService {
     return { ...withPage, change, status: 'unrecognised', missing: [], reservationId: null };
   }
 
-  /** Claude's reading of an email for the staff only (its kind and summary); null without Claude or its answer. */
-  private async readForStaff(input: AnalysisInput): Promise<ReadingMeta | null> {
-    if (!input.text || !this.reader.available()) return null;
+  /** One reading of the email by Claude; an outage is noted for the analysis (the email then waits for Claude). */
+  private async readEmail(input: AnalysisInput, claude: ClaudeCalls): Promise<ReadingAttempt> {
     const timezone = await this.timezoneOf(input.operatorId);
-    const result = await this.reader.read({ from: input.fromAddress, fromName: input.fromName, subject: input.subject, text: input.text, timezone });
-    if (!result) return null;
-    const { kind, provider, confidence, summary } = result.reading;
-    return { kind, provider, confidence, summary, model: result.model };
+    const attempt = await this.reader.read({ from: input.fromAddress, fromName: input.fromName, subject: input.subject, text: input.text, timezone });
+    claude.outage = attempt.outcome === 'outage' ? { cause: attempt.cause, at: new Date().toISOString() } : null;
+    return attempt;
   }
 
   /** 10/10/2026: the addresses of the operator's active managers (the parking's mailbox is often theirs), oldest first. */
@@ -1107,6 +1204,130 @@ export class InboundEmailService {
   }
 
   /**
+   * 16/10/2026 (the Anthropic account out of credit that morning): the emails that wait only because Claude could not
+   * read them (`reading.outage`, received these 7 days, « À traiter », without booking, text kept, operator not suspended)
+   * are analysed again once Claude answers: the least recently tried first, three per pass at most (none started after
+   * the call's first 10 s), each claimed as a staff relaunch is (never twice at once) and traced `auto: true`; the pass
+   * stops at the first email Claude still cannot read (one call per pass while it is down), or when Allopark asks for a
+   * check or refuses Plazo. Never when Plazo has no Anthropic key, never a mail whose booking the staff typed themselves
+   * meanwhile (typedByHand). Called after the other passes by POST /public/inbound/retry (every 10 minutes).
+   */
+  public async retryReading(now = new Date(), startedAt = Date.now()): Promise<AutoRetryReport> {
+    if (!this.reader.available()) return { due: 0, tried: 0, outcomes: {} };
+    const rows = await prisma.inboundEmail.findMany({
+      where: {
+        status: { in: TO_CHECK },
+        reservationId: null,
+        textBody: { not: null },
+        receivedAt: { gte: new Date(now.getTime() - READING_RETRY_WINDOW_MS) },
+        operator: { suspendedAt: null },
+        OR: READING_OUTAGE_CAUSES.map(cause => ({ reading: { path: ['outage', 'cause'], equals: cause } })),
+      },
+      include: { reservation: { select: { reference: true } } },
+      orderBy: { receivedAt: 'asc' },
+      take: 50,
+    });
+    const triedAt = (row: InboundRow) => new Date(outageOf(row.reading)?.at ?? row.receivedAt.toISOString()).getTime();
+    const due = rows.filter(row => triedAt(row) <= now.getTime() - READING_RETRY_GAP_MS).sort((a, b) => triedAt(a) - triedAt(b));
+    return this.autoPass('reading retry', due, startedAt, { status: { in: TO_CHECK } }, { count: false, stopOnOutage: true });
+  }
+
+  /**
+   * 16/10/2026 (« analyser sans passer par Claude »): the emails stored before the rules per mail type, that waited for
+   * Claude's reading (the Allopark modifications of the morning: « change announced, Claude did not answer »): « À
+   * traiter », without booking, reading, change nor an unread booking page, received these 7 days, text kept, operator
+   * not suspended, that the rules now know (domain/inbound-kind.ts: a booking template, a change, a cancellation or
+   * another mail of a comparator) are analysed again, as the plate catch-up does (the same claim and count, traced
+   * `auto: true`). It ends by itself: an analysis writes the rules' reading.
+   */
+  public async analyseWaitingForRules(now = new Date(), startedAt = Date.now()): Promise<AutoRetryReport> {
+    const rows = await prisma.inboundEmail.findMany({
+      where: {
+        reservationId: null,
+        textBody: { not: null },
+        reading: { equals: Prisma.DbNull },
+        change: { equals: Prisma.DbNull },
+        OR: [{ pageLookup: { equals: Prisma.DbNull } }, { pageLookup: { path: ['outcome'], equals: 'read' } }],
+        // What Claude was waited for: an email left unread (a change « Claude did not answer »), or a booking unsure.
+        AND: [{ OR: [{ status: 'unrecognised' }, { status: 'incomplete', missing: { array_contains: ['confidence'] } }] }],
+        receivedAt: { gte: new Date(now.getTime() - RULES_CATCH_UP_DAYS * 86_400_000) },
+        autoRetries: { lt: AUTO_RETRY_MAX },
+        operator: { suspendedAt: null },
+      },
+      include: { reservation: { select: { reference: true } } },
+      orderBy: { receivedAt: 'asc' },
+      take: 50,
+    });
+    const known = rows.filter(row => {
+      const sender = [row.fromName, row.fromAddress].filter(Boolean).join(' ');
+      const type = classifyMail({ subject: row.subject, text: row.textBody ?? '', from: sender, links: row.links });
+      return type.kind !== 'unknown' && (type.kind !== 'booking' || type.sure);
+    });
+    return this.autoPass('rules catch-up', known, startedAt, { status: { in: TO_CHECK }, reading: { equals: Prisma.DbNull } }, { count: true });
+  }
+
+  /**
+   * One automatic pass (retryReading, analyseWaitingForRules): each row claimed as a staff relaunch is (never twice at
+   * once; `count`: the try counted in `autoRetries`, even when the analysis fails), analysed again and traced `auto:
+   * true`; three per pass, none started after the call's first 10 s; the pass stops when Allopark asks for a check or
+   * refuses Plazo, and (`stopOnOutage`) when Claude still cannot read. Logged without personal data.
+   */
+  private async autoPass(
+    name: string,
+    rows: (InboundRow & { operatorId: string })[],
+    startedAt: number,
+    still: Prisma.InboundEmailWhereInput,
+    options: { count: boolean; stopOnOutage?: boolean },
+  ): Promise<AutoRetryReport> {
+    const report: AutoRetryReport = { due: rows.length, tried: 0, outcomes: {} };
+    for (const row of rows) {
+      if (report.tried >= AUTO_RETRY_PER_RUN) break;
+      if (Date.now() - startedAt > AUTO_RETRY_START_BUDGET_MS) break;
+      if (await this.typedByHand(row)) {
+        report.typedByHand = (report.typedByHand ?? 0) + 1;
+        continue;
+      }
+      const at = new Date();
+      const claimed = await prisma.inboundEmail.updateMany({
+        where: {
+          id: row.id,
+          reservationId: null,
+          ...still,
+          ...(options.count ? { autoRetries: row.autoRetries } : {}),
+          OR: [{ analysedAt: null }, { analysedAt: { lte: new Date(at.getTime() - REANALYSIS_GAP_MS) } }],
+        },
+        data: { analysedAt: at, ...(options.count ? { autoRetries: { increment: 1 } } : {}) },
+      });
+      if (!claimed.count) continue;
+      report.tried += 1;
+      try {
+        const result = await this.rerun(row, row.operatorId, { id: null, operatorId: row.operatorId }, true);
+        report.outcomes[result.analysis.status] = (report.outcomes[result.analysis.status] ?? 0) + 1;
+        const lookup = result.analysis.pageLookup;
+        if (lookup && (lookup.outcome === 'protected' || lookup.refused)) {
+          report.stopped = lookup.outcome === 'protected' ? 'protected' : 'refused';
+          break;
+        }
+        if (options.stopOnOutage && result.analysis.outage) {
+          report.stopped = 'reading';
+          break;
+        }
+      } catch (error) {
+        logger.warn(`[Inbound] ${name} of ${row.id} failed: ${error instanceof Error ? error.name : 'error'}`);
+      }
+    }
+    if (report.due) {
+      const outcomes = Object.entries(report.outcomes)
+        .map(([outcome, count]) => `${count} ${outcome}`)
+        .join(', ');
+      logger.info(
+        `[Inbound] ${name}: ${report.due} due, ${report.tried} tried${outcomes ? ` (${outcomes})` : ''}${report.stopped ? `, stopped: ${report.stopped}` : ''}`,
+      );
+    }
+    return report;
+  }
+
+  /**
    * 15/10/2026 (relecture de « ne pas planter à l'import quand la plaque est manquante »): whether the staff made the
    * booking of a waiting email themselves since it arrived (ReservationService.typedSince, read from what the email said
    * so far). Plazo's own re-analyses (retryAllopark, importWaitingForPlate) then leave it to the staff: importing it
@@ -1117,7 +1338,7 @@ export class InboundEmailService {
     const parsed = storedParsed(row.parsed);
     if (!parsed || row.change || readingOf(row.reading)?.kind === 'modification') return false;
     const sender = [row.fromName, row.fromAddress].filter(Boolean).join(' ');
-    if (alloparkEmailOf({ text: row.textBody ?? '', subject: row.subject, from: sender })?.kind === 'change') return false;
+    if (classifyMail({ text: row.textBody ?? '', subject: row.subject, from: sender, links: row.links }).kind === 'change') return false;
     return this.reservations.typedSince(row.operatorId, parsed, row.receivedAt);
   }
 
@@ -1143,10 +1364,22 @@ export class InboundEmailService {
         reading: readingOf(row.reading),
         change: changeOf(row.change),
       },
+      ...(auto ? { typedSince: row.receivedAt } : {}),
     });
     const linked = analysis.status === 'imported' || analysis.status === 'changed' || analysis.status === 'duplicate';
-    // Claude's new reading when it answered; none for a booking made without it; else the former one stays.
-    const reading = analysis.reading ? { reading: analysis.reading as unknown as Prisma.InputJsonValue } : linked ? { reading: Prisma.DbNull } : {};
+    // The new reading (Claude's when it answered, else the rules'); none for a booking made without either; else the
+    // former one stays. 16/10/2026: with the outage when Claude could not read an email that waits for it; a former
+    // outage goes once the email no longer waits for Claude.
+    const former = readingOf(row.reading);
+    const reading = analysis.reading
+      ? { reading: storedReading(analysis.reading, analysis.outage) }
+      : linked
+        ? { reading: Prisma.DbNull }
+        : analysis.outage
+          ? { reading: storedReading(former, analysis.outage) }
+          : outageOf(row.reading)
+            ? { reading: former ? storedReading(former, null) : Prisma.DbNull }
+            : {};
     const written = await prisma.$transaction(async tx => {
       await tx.$queryRaw`SELECT id FROM inbound_emails WHERE id = ${id} FOR UPDATE`;
       const current = await tx.inboundEmail.findUnique({ where: { id }, select: { status: true, reservationId: true } });
@@ -1225,6 +1458,33 @@ export class InboundEmailService {
     return { textsCleared, rowsDeleted };
   }
 
+  /**
+   * 16/10/2026: Claude's outage for the dashboard (« Import » À voir, « Lecture par Claude en panne : crédit Anthropic
+   * épuisé »): the latest one of the operator's emails that wait for Claude, tried within the hour; none without an
+   * Anthropic key (the emails then wait for the staff, as always), nor once this instance's Claude answered since.
+   */
+  public async readingOutage(operatorId: string, now = new Date()): Promise<ReadingOutage | null> {
+    if (!this.reader.available()) return null;
+    const rows = await prisma.inboundEmail.findMany({
+      where: {
+        operatorId,
+        status: { in: TO_CHECK },
+        OR: READING_OUTAGE_CAUSES.map(cause => ({ reading: { path: ['outage', 'cause'], equals: cause } })),
+      },
+      select: { reading: true },
+      orderBy: { receivedAt: 'desc' },
+      take: 20,
+    });
+    const since = now.getTime() - 3_600_000;
+    const latest = rows
+      .map(row => outageOf(row.reading))
+      .filter((outage): outage is ReadingOutage => !!outage && Date.parse(outage.at) >= since)
+      .sort((a, b) => Date.parse(b.at) - Date.parse(a.at))[0];
+    if (!latest) return null;
+    const last = this.reader.lastCall;
+    return last && !last.outage && last.at.getTime() > Date.parse(latest.at) ? null : latest;
+  }
+
   /** Emails waiting for the staff, for the dashboard. */
   public async toCheckCount(operatorId: string): Promise<number> {
     return prisma.inboundEmail.count({ where: { operatorId, status: { in: TO_CHECK } } });
@@ -1259,6 +1519,8 @@ export class InboundEmailService {
       reservationId: r.reservationId,
       reservationReference: r.reservation?.reference ?? null,
       reading: readingOf(r.reading),
+      // Only while Plazo reads it again by itself (retryReading): never on a mail handled or archived meanwhile, nor older.
+      readingOutage: TO_CHECK.includes(r.status) && Date.now() - r.receivedAt.getTime() <= READING_RETRY_WINDOW_MS ? outageOf(r.reading) : null,
       analysedAt: r.analysedAt?.toISOString() ?? null,
       pageLookup: pageLookupOf(r.pageLookup),
       change: changeOf(r.change),
@@ -1321,7 +1583,7 @@ function missingOf(value: Prisma.JsonValue | null): string[] {
 
 const isSet = (value: unknown) => value !== undefined && value !== null && value !== '';
 
-/** The reading as stored, or null for a row written before L-A or never read. */
+/** The reading as stored, or null for a row written before L-A or never read (an outage alone included). */
 function readingOf(value: Prisma.JsonValue | null): ReadingMeta | null {
   if (!value || typeof value !== 'object' || Array.isArray(value)) return null;
   const v = value as Record<string, unknown>;
@@ -1332,7 +1594,30 @@ function readingOf(value: Prisma.JsonValue | null): ReadingMeta | null {
     confidence: typeof v.confidence === 'number' ? v.confidence : 0,
     summary: typeof v.summary === 'string' ? v.summary : '',
     model: typeof v.model === 'string' ? v.model : '',
+    ...(v.source === 'rules' ? { source: 'rules' as const, ...(typeof v.rule === 'string' ? { rule: v.rule } : {}) } : {}),
   };
+}
+
+/** 16/10/2026: the outage stored with the reading (`reading.outage`): Claude could not read the email, which waits for it. */
+function outageOf(value: Prisma.JsonValue | null): ReadingOutage | null {
+  if (!value || typeof value !== 'object' || Array.isArray(value)) return null;
+  return readingOutageOf((value as Record<string, unknown>).outage);
+}
+
+/** The reading as written on the row: Claude's or the rules', with the outage of an email that waits for Claude. */
+function storedReading(reading: ReadingMeta | null, outage: ReadingOutage | null | undefined): Prisma.InputJsonValue {
+  return { ...(reading ?? {}), ...(outage ? { outage: { cause: outage.cause, at: outage.at } } : {}) } as unknown as Prisma.InputJsonValue;
+}
+
+/** Claude's reading only (a reading of the rules says nothing of what Claude made of the email), or null. */
+function claudeReading(reading: ReadingMeta | null): ReadingMeta | null {
+  return reading && reading.source !== 'rules' ? reading : null;
+}
+
+/** Claude's answer as kept on the row. */
+function readingMetaOf(attempt: Extract<ReadingAttempt, { outcome: 'answered' }>): ReadingMeta {
+  const { kind, provider, confidence, summary } = attempt.reading;
+  return { kind, provider, confidence, summary, model: attempt.model };
 }
 
 /** The lookup as stored: the page's link only for a failure, and never once the email has its booking. */

@@ -135,6 +135,32 @@ void main() {
     expect(find.text('Clés ?'), findsOneWidget);
   });
 
+  testWidgets('16/10/2026 · « Import » À voir quand Claude n’a pas pu lire un mail dans l’heure, avec la cause', (tester) async {
+    await show(
+      tester,
+      dashboard.copyWith(
+        services: dashboard.services.copyWith(
+          sms: const DashboardSmsModel(mode: 'brevo'),
+          lastImportAt: t0,
+          reading: DashboardReadingModel(configured: true, outage: DashboardReadingOutageModel(cause: 'credit', at: t0)),
+        ),
+      ),
+    );
+    final services = find.byKey(const Key('dashboard-services'));
+    expect(find.descendant(of: services, matching: find.text('Lecture par Claude en panne : crédit Anthropic épuisé')), findsOneWidget);
+    expect(find.descendant(of: services, matching: find.text('À voir')), findsOneWidget);
+  });
+
+  testWidgets('16/10/2026 · une cause inconnue (serveur plus récent) se lit « erreur d’Anthropic »', (tester) async {
+    await show(
+      tester,
+      dashboard.copyWith(
+        services: dashboard.services.copyWith(reading: const DashboardReadingModel(configured: true, outage: DashboardReadingOutageModel(cause: 'quota'))),
+      ),
+    );
+    expect(find.text("Lecture par Claude en panne : erreur d'Anthropic"), findsOneWidget);
+  });
+
   testWidgets('rien à traiter, aucun véhicule', (tester) async {
     await show(tester, dashboard.copyWith(alerts: const [], vehicles: const [], counts: const DashboardCountsModel()));
     expect(find.text('Rien à traiter : tout est en ordre.'), findsOneWidget);

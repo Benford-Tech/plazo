@@ -1,5 +1,6 @@
 import { Container, Service } from 'typedi';
 import { ON_SITE_STATUSES } from '@/domain/reservation';
+import type { ReadingOutage } from '@/domain/email-reading';
 import { shortName } from '@/domain/arrival';
 import { flightTrackingSettings } from '@/config';
 import prisma, { ReservationStatus } from '@/database';
@@ -118,6 +119,11 @@ export interface Dashboard {
     /** `online`: travellers can pay on the site (platform keys + commission); the account only moves the payouts. */
     stripe: { online: boolean; connected: boolean; payoutsEnabled: boolean };
     lastImportAt: string | null;
+    /**
+     * 16/10/2026: Claude's reading of the emails no rule knows: `configured` with an Anthropic key; `outage` when an
+     * email that needed Claude could not be read within the hour (its cause: credit, key, load…), shown « À voir ».
+     */
+    reading: { configured: boolean; outage: ReadingOutage | null };
   };
   alerts: DashboardAlert[];
   /** The next shuttle wave still to run today (V-A), for the "Navettes" tile. */
@@ -381,7 +387,10 @@ export class DashboardService {
         });
       }
     }
-    const inboundToCheck = await this.inbound.toCheckCount(actor.operatorId);
+    const [inboundToCheck, readingOutage] = await Promise.all([
+      this.inbound.toCheckCount(actor.operatorId),
+      this.inbound.readingOutage(actor.operatorId, now),
+    ]);
     if (inboundToCheck > 0) {
       alerts.push({
         kind: 'inbound_to_check',
@@ -478,6 +487,7 @@ export class DashboardService {
           payoutsEnabled: operator.stripePayoutsEnabled,
         },
         lastImportAt: lastImport?.createdAt.toISOString() ?? null,
+        reading: { configured: this.inbound.reader.available(), outage: readingOutage },
       },
       alerts,
       nextWave: (() => {

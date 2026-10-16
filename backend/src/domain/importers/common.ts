@@ -110,3 +110,77 @@ export function isCancellation(text: string): boolean {
 export function isChange(text: string): boolean {
   return /\b(r[ée]servation (a [ée]t[ée] |est )?modifi[ée]e|modification de (votre|la) r[ée]servation|booking (has been )?modified)\b/i.test(text);
 }
+
+/**
+ * A subject about a cancellation or a refund, whatever its wording: Allopark's subjects only (they are known; a subject
+ * of another comparator is read by SUBJECT_CANCELLATION_STRICT, which never takes « annulation gratuite » for one).
+ */
+export const SUBJECT_CANCELLATION = /\b(annul|rembours|cancel|refund)/i;
+/**
+ * 16/10/2026 (« analyser sans passer par Claude »): another comparator's subject about a cancellation or a refund
+ * (« Annulation de réservation 5900001 », « Réservation PM… annulée », « Booking cancelled »); never a confirmation's
+ * « Annulation gratuite ».
+ */
+export const SUBJECT_CANCELLATION_STRICT =
+  /^\s*(?:annulation|remboursement|cancellation|refund)\b(?!\s+gratuite?s?\b|\s+free\b)|\b(?:annul[ée]e?s?|rembours[ée]e?s?|cancell?ed|refunded)\b/i;
+/**
+ * 10/10/2026 (« C'est une modification »): a subject about a change of the booking (« Modification de votre réservation
+ * AL-… », « Votre réservation AL-… a été modifiée », « Changement de dates », « Booking AL-… changed »). 10/10/2026
+ * (relecture): never « Modifiez votre réservation », « modifiable » nor « Modifier » (an invitation, not a change).
+ */
+export const SUBJECT_CHANGE = /\b(?:modification\b|modifi[ée]e?s?(?!\w)|changement\b|changed\b|amended\b|amendment\b)/i;
+/** A comparator's booking reference that a heading or a cancellation names (Allopark's « AL-… », ParkMundo's « PM… »). */
+const NAMED_REFERENCE = String.raw`(?:AL-\d{6,}|PM\d{6,})`;
+/**
+ * A cancellation in the text, the reference or other words in between (« Votre réservation AL-884880719 a été annulée »,
+ * « Annulation AL-… », « Your booking AL-… was cancelled »), which isCancellation (words side by side) misses; never a
+ * confirmation's « votre réservation peut être annulée », « booking can be cancelled » or (16/10/2026) « non
+ * remboursable si annulée ». 10/10/2026 (relecture): also in the active voice (« Nous avons annulé votre réservation
+ * AL-… suite à votre demande de changement de dates », « We have cancelled your booking », « Votre demande d'annulation
+ * a bien été prise en compte »), which must never pass for a change. 16/10/2026: moved here from Allopark's page, for
+ * every comparator (a Onepark « Une réservation Onepark a été annulée » or a ParkMundo « Votre réservation PM… a été
+ * annulée » that keep the booking's table were read as new bookings).
+ */
+export const TEXT_CANCELLATION = [
+  /r[ée]servation\b(?:(?!\bpeu[tv]|\bpourr|\bsera|\bsi\b)[^\n.]){0,60}?\b(annul[ée]e|rembours[ée]e)\b/i,
+  /\bbooking\b(?:(?!\bcan\b|\bmay\b|\bwill\b|\bif\b)[^\n.]){0,60}?\b(cancell?ed|refunded)\b/i,
+  new RegExp(String.raw`\b(annulation|remboursement|cancellation|refund)\b[^\n.]{0,40}?\b${NAMED_REFERENCE}`, 'i'),
+  /\b(?:avons|avez|a|ont)\s+(?:bien\s+)?(?:annul|rembours)[ée]/i,
+  /\b(?:we|you)(?:\s+have|'ve|’ve)?\s+(?:now\s+)?(?:cancell?ed|refunded)\b/i,
+  /\bcancell?ed\s+(?:your|the|this)\s+(?:booking|reservation)\b/i,
+  /\bannulation\b[^\n.]{0,40}?\b(?:a|ont)\s+(?:bien\s+)?été\s+(?:prise?s?\s+en\s+compte|confirm[ée]e?s?|effectu[ée]e?s?|enregistr[ée]e?s?|accept[ée]e?s?)/i,
+  /\bcancellation\b[^\n.]{0,40}?\b(?:has|have)\s+been\s+(?:confirmed|processed|accepted|registered)\b/i,
+];
+/**
+ * 10/10/2026 (« C'est une modification »): a change in the text, said as done (« Votre réservation AL-… a été
+ * modifiée », « Modification de réservation AL-… » as a heading, « Vos nouvelles dates : … », « Les dates de votre
+ * réservation ont été modifiées », « Votre changement de dates a été pris en compte », « Your booking AL-… has been
+ * changed »). 10/10/2026 (relecture): never what a confirmation or a reminder says of a change to come (« votre
+ * réservation peut être modifiée », « Annulation et changement de date gratuits », « Besoin de nouvelles dates ? »,
+ * « Pour toute modification de votre réservation », « Modification gratuite… », « Keep your booking details updated »).
+ * 16/10/2026: moved here from Allopark's page, for every comparator.
+ */
+export const TEXT_CHANGE = [
+  /r[ée]servation\b(?:(?!\bpeu[tv]|\bpourr|\bsera)[^\n.]){0,60}?\bmodifi[ée]e\b/i,
+  /\bbooking\b(?:(?!\bcan\b|\bmay\b|\bwill\b)[^\n.]){0,60}?\b(modified|changed|amended)\b/i,
+  new RegExp(
+    String.raw`^[ \t]*(?:(?:objet|subject)\s*:\s*)?(?:modification|changement|amendment)\b(?:(?!\bgratuit|\bpossible|\bfree\b|\bpeu[tv]|\bpourr|\bsera|\bcan\b|\bmay\b|\bwill\b)[^\n.?]){0,40}?\b${NAMED_REFERENCE}`,
+    'im',
+  ),
+  /\b(?:vos|your)\s+(?:nouvelles\s+dates|new\s+dates)\s*(?::|sont\b|are\b)/i,
+  /\bdates?\b(?:(?!\bpeu[tv]|\bpourr|\bsera|\bsi\b|\bcan\b|\bmay\b|\bwill\b|\bif\b)[^\n.?]){0,40}?\b(?:ont|a|have|has)\s+(?:bien\s+)?(?:été|been)\s+(?:modifi[ée]e?s?|chang[ée]e?s?|changed|modified|updated|amended)/i,
+  /\b(?:changement|modification|change)\s+(?:de|des|of)\s+(?:vos\s+|your\s+)?dates?\b[^\n.?]{0,40}?\b(?:a|est|has|is)\s+(?:bien\s+)?(?:été\s+|been\s+)?(?:pris\s+en\s+compte|confirm[ée]e?|effectu[ée]e?|enregistr[ée]e?|confirmed|applied|processed)/i,
+];
+
+/** 16/10/2026: a cancellation or a refund said in a text, side by side (isCancellation) or with words in between. */
+export function cancellationIn(text: string): boolean {
+  return isCancellation(text) || TEXT_CANCELLATION.some(pattern => pattern.test(text));
+}
+
+/**
+ * 16/10/2026: a change said as done in a text (TEXT_CHANGE); never isChange's words side by side, which are also a
+ * confirmation's « Pour toute modification de votre réservation, contactez… ».
+ */
+export function changeIn(text: string): boolean {
+  return TEXT_CHANGE.some(pattern => pattern.test(text));
+}

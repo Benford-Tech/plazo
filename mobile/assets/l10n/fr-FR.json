@@ -1201,6 +1201,16 @@
     "svc_import": "Import",
     "import_at": "dernier à {}",
     "import_never": "jamais",
+    "import_reading_outage": "Lecture par Claude en panne : {}",
+    "reading_outage": {
+      "credit": "crédit Anthropic épuisé",
+      "auth": "clé Anthropic refusée",
+      "rate_limit": "trop de demandes à Anthropic",
+      "overloaded": "Anthropic surchargé ou indisponible",
+      "timeout": "Claude n'a pas répondu à temps",
+      "network": "Anthropic injoignable",
+      "other": "erreur d'Anthropic"
+    },
     "alerts_title": "À traiter maintenant",
     "alerts_empty": "Rien à traiter : tout est en ordre.",
     "since": "depuis {} min",

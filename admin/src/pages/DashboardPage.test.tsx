@@ -296,6 +296,20 @@ describe("DashboardPage", () => {
     expect(row).toHaveTextContent("À faire");
   });
 
+  it("16/10/2026 : « Import » À voir quand Claude n'a pas pu lire un mail dans l'heure, avec la cause", async () => {
+    api.getDashboard.mockResolvedValue({
+      ...dashboard,
+      services: {
+        ...dashboard.services,
+        lastImportAt: new Date().toISOString(),
+        reading: { configured: true, outage: { cause: "credit", at: new Date().toISOString() } },
+      },
+    });
+    renderPage();
+    const services = await screen.findByLabelText("Services");
+    expect(services).toHaveTextContent("ImportÀ voirLecture par Claude en panne : crédit Anthropic épuisé");
+  });
+
   it("dit quand il n'y a rien à traiter ni aucun véhicule", async () => {
     api.getDashboard.mockResolvedValue({
       ...dashboard,

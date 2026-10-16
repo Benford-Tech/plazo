@@ -174,6 +174,14 @@ une décision de Joanny. Cocher au fur et à mesure.
   faut la clé d'import Android et les deux profils Apple dans Codemagic avant son premier lancement. `mobile-release-android`
   (à la main, 11/10/2026) fait la moitié Google Play seule, sans Apple : il sert au premier envoi sur Google Play.
 - [ ] **SMS** : « Plazo envoie pour moi » n'a aucun crédit SMS Brevo ; recommander « Téléphone du parking ».
+- [ ] **Anthropic (lecture des mails par Claude)** : le 16/10/2026 au matin le crédit du compte était épuisé (« Your credit
+  balance is too low to access the Anthropic API », 400) et chaque modification Allopark attendait Claude. Depuis le même
+  jour Claude est **facultatif** pour les mails connus des comparateurs (Allopark, Onepark, Parclick, ParkMundo : règles par
+  type de mail, `backend/src/domain/inbound-kind.ts`) ; il ne lit plus que les mails d'un format inconnu (autre comparateur,
+  site du parking, client) et complète les champs qu'une confirmation Onepark, Parclick ou ParkMundo ne donne pas. Activer la
+  **recharge automatique** du crédit (console.anthropic.com › Settings › Billing) avec une alerte de dépense ; une panne se
+  voit désormais au tableau de bord (service « Import » « À voir » : « Lecture par Claude en panne : crédit Anthropic
+  épuisé ») et dans la boîte de réception, et les mails qui l'attendaient sont relus seuls dès que Claude répond.
 
 **À faire par Joanny (tableaux de bord)**
 - [x] Vercel (Claude, 08/10/2026) : `PLATFORM_BOOTSTRAP_PASSWORD` neutralisée (valeur vide, cible `development` ; l'API
@@ -473,7 +481,12 @@ le navigateur de l'espace pro appelle `/api` sur le même domaine (pas de CORS).
    l'équipe le complète dans le formulaire prérempli, le marque comme traité, l'archive (T-A) ou en relance l'analyse (10/10/2026 ; la page de réservation Allopark est cherchée dans tout le mail et aux adresses du parking, son prix est lu, et une vérification anti-robot n'est jamais contournée : le mail donne alors le lien « Ouvrir la page Allopark » ; une modification Allopark est appliquée à la réservation depuis la page, sauf cas risqué laissé à l'équipe avec la raison ; 11/10/2026 : un mail Allopark dont la page n'a pas pu être lue est analysé de nouveau par Plazo lui-même jusqu'à cinq fois en deux jours, la minuterie du relais l'y invitant toutes les 10 minutes). **Lecture par Claude (L-A,
    08/10/2026)** : un mail qu'aucun importateur ne reconnaît est lu par Claude (`ANTHROPIC_API_KEY`, modèle `EMAIL_READING_MODEL`,
    Claude Opus 5.5 par défaut) : réservation complète et sûre → créée aussitôt (source lue en canal) ; sinon « À traiter »
-   pré-rempli ; annulations et modifications signalées, jamais appliquées seules. Texte des mails gardé 30 jours,
+   pré-rempli ; annulations et modifications signalées, jamais appliquées seules. **Sans Claude (16/10/2026)** : chaque mail
+   est d'abord classé par des règles fixes par comparateur et type de mail (confirmation, modification, annulation, réponse ;
+   `backend/src/domain/inbound-kind.ts`) : les mails connus d'Allopark, Onepark, Parclick et ParkMundo sont traités sans
+   Claude (réservation créée, modification Allopark appliquée depuis la page, annulation et réponse montrées avec leur genre,
+   « Reconnu par Plazo » dans la boîte), Claude ne lisant que les autres ; quand Claude ne répond pas (crédit, clé, charge),
+   le mail attend avec la cause et le relais le fait relire dès que Claude répond. Texte des mails gardé 30 jours,
    lignes 90.
    Mise en place (domaine gardé chez Hostinger, DNS chez Cloudflare, Email Routing sur `plazo.fr` lui-même car Cloudflare
    n'offre le « catch-all » que sur le domaine principal (R-A, 08/10/2026), Worker, règle `reservations@` vers la boîte de

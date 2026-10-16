@@ -39,6 +39,64 @@ export interface ReadingMeta {
   confidence: number;
   summary: string;
   model: string;
+  /**
+   * 16/10/2026 (« analyser sans passer par Claude »): who read the email: Claude (also when absent, on the rows written
+   * before), or Plazo's own rules per mail type (domain/inbound-kind.ts), then with the `rule` that matched.
+   */
+  source?: 'claude' | 'rules';
+  rule?: string;
+}
+
+/**
+ * 16/10/2026 (the Anthropic account ran out of credit that morning: « Your credit balance is too low to access the
+ * Anthropic API », 400): why Claude could not read an email: the account's credit or billing, its key refused (401,
+ * 403), too many requests (429), Anthropic overloaded or down (529, 5xx), no answer in time, no connection, anything
+ * else. The email then waits with this cause shown, and is read again once Claude answers.
+ */
+export const READING_OUTAGE_CAUSES = ['credit', 'auth', 'rate_limit', 'overloaded', 'timeout', 'network', 'other'] as const;
+export type ReadingOutageCause = (typeof READING_OUTAGE_CAUSES)[number];
+
+/** A reading Claude could not make: its cause and when (kept on the inbound row while the email waits). */
+export interface ReadingOutage {
+  cause: ReadingOutageCause;
+  at: string;
+}
+
+/** What a failed call to Anthropic tells of itself (the SDK's error, read by EmailReadingService). */
+export interface ReadingFailureFacts {
+  /** The HTTP status; none for a timeout or a connection that failed. */
+  status?: number | null;
+  /** The API error's type (« invalid_request_error », « billing_error », « overloaded_error »…). */
+  type?: string | null;
+  message?: string | null;
+  timeout?: boolean;
+  connection?: boolean;
+}
+
+/**
+ * The cause of a failed call. The credit case is only told by its message on a 400 (« Your credit balance is too low to
+ * access the Anthropic API. Please go to Plans & Billing to upgrade or purchase credits. »), or by a 402 or a
+ * `billing_error`.
+ */
+export function outageCauseOf(failure: ReadingFailureFacts): ReadingOutageCause {
+  if (failure.timeout) return 'timeout';
+  if (failure.connection) return 'network';
+  const status = failure.status ?? null;
+  const type = (failure.type ?? '').toLowerCase();
+  const message = failure.message ?? '';
+  if (status === 402 || type === 'billing_error' || /credit balance|purchase credits|plans\s*(?:&|and)\s*billing/i.test(message)) return 'credit';
+  if (status === 401 || status === 403 || type === 'authentication_error' || type === 'permission_error') return 'auth';
+  if (status === 429 || type === 'rate_limit_error') return 'rate_limit';
+  if (status === 529 || type === 'overloaded_error' || (status !== null && status >= 500)) return 'overloaded';
+  return 'other';
+}
+
+/** The outage as stored on the inbound row (`reading.outage`), or null. */
+export function readingOutageOf(value: unknown): ReadingOutage | null {
+  if (!value || typeof value !== 'object' || Array.isArray(value)) return null;
+  const v = value as Record<string, unknown>;
+  const cause = READING_OUTAGE_CAUSES.find(c => c === v.cause);
+  return cause && typeof v.at === 'string' ? { cause, at: v.at } : null;
 }
 
 /** Below this confidence a booking is not created by itself: it waits in "À vérifier", prefilled. */
