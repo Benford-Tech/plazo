@@ -1,7 +1,7 @@
 import { Container } from 'typedi';
 import prisma from '@/database';
 import { manageToken } from '@/domain/booking';
-import { localDateTime, parseInstant } from '@/domain/time';
+import { addDays, localDate, localDateTime, parseInstant } from '@/domain/time';
 import { NotificationService } from '@/services/notification.service';
 import { logger } from '@/utils/logger';
 import {
@@ -23,7 +23,11 @@ const defaultSettings = { ...notifications.settings };
 
 // Local parking time, relative to now: tests do not depend on today's date.
 const inHours = (hours: number) => localDateTime(new Date(Date.now() + hours * 3600000), TZ);
-const inDays = (days: number, time: string) => `${inHours(days * 24).slice(0, 10)}T${time}`;
+// N calendar days after today on the parking's clock, never now + N × 24 h: across a clock change those steps land an
+// hour off on the wall clock. Run between 00:00 and 01:00 in Paris on 19, 20 or 21/10/2026, two consecutive « in N
+// days » were the same date (the 3-day stay lost a day, the full night moved, a return came before its arrival);
+// between 23:00 and 24:00 on 21 or 22/03/2027, a date was skipped (the stay gained a day, and its price).
+const inDays = (days: number, time: string) => `${addDays(localDate(new Date(), TZ), days)}T${time}`;
 const shift = (local: string, hours: number) => localDateTime(new Date(parseInstant(local, TZ)!.getTime() + hours * 3600000), TZ);
 
 const grid = {

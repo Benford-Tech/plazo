@@ -1,6 +1,6 @@
 import { Container } from 'typedi';
 import prisma from '@/database';
-import { localDateTime } from '@/domain/time';
+import { addDays, parseInstant } from '@/domain/time';
 import { NotificationService } from '@/services/notification.service';
 import { ReservationService } from '@/services/reservation.service';
 import {
@@ -28,8 +28,37 @@ const bookingToken = (token: string) => ({ 'x-booking-token': token });
 const notifications = Container.get(NotificationService);
 const defaultSettings = { ...notifications.settings };
 
-// Local parking time, relative to now: the tests do not depend on today's date.
-const inDays = (days: number, time: string) => `${localDateTime(new Date(Date.now() + days * 86400000), TZ).slice(0, 10)}T${time}`;
+/**
+ * The clock seen by the code is fixed (15/10/2026). The stays used to be built from Date.now() + N × 24 h, which lands an
+ * hour off on the wall clock once a clock change lies in between: run between 00:00 and 01:00 in Paris during the twelve
+ * days before 25/10/2026, « in 9 days » and « in 10 days » were the same local date and the late drop-off lost its extra
+ * day. Monday 11 January 2027, 10:00 in Paris: the stays below sit weeks away from any clock change, except the ones that
+ * cross one on purpose (28/03/2027 and 31/10/2027). Only Date is faked: timers stay real, and the database's own
+ * defaults (createdAt) keep the real time, which nothing here compares with the code's clock.
+ */
+const TODAY = '2027-01-11';
+const NOW = parseInstant(`${TODAY}T10:00`, TZ)!;
+function freezeClock() {
+  jest.useFakeTimers({
+    now: NOW,
+    advanceTimers: true,
+    doNotFake: [
+      'nextTick',
+      'setImmediate',
+      'clearImmediate',
+      'setTimeout',
+      'clearTimeout',
+      'setInterval',
+      'clearInterval',
+      'queueMicrotask',
+      'hrtime',
+      'performance',
+    ],
+  });
+}
+
+// Local parking time, N calendar days after TODAY.
+const inDays = (days: number, time: string) => `${addDays(TODAY, days)}T${time}`;
 
 const grid = {
   tiers: [
@@ -84,12 +113,14 @@ const traveller = {
 let fetchMock: jest.SpyInstance;
 let stripe: ReturnType<typeof enableFakePayments>;
 beforeEach(async () => {
+  freezeClock();
   await resetDatabase();
   Object.assign(notifications.settings, defaultSettings, { apiKey: '' });
   stripe = enableFakePayments();
   fetchMock = jest.spyOn(global, 'fetch').mockImplementation(async () => new Response(JSON.stringify({ messageId: 'm1' }), { status: 201 }));
 });
 afterEach(() => {
+  jest.useRealTimers();
   fetchMock.mockRestore();
   disableFakePayments();
   delete process.env.PLATFORM_ADMIN_EMAILS;
@@ -211,6 +242,40 @@ describe('offre publique', () => {
     expect(both.body.results.find((r: any) => r.slug === 'nuit').nightFee).toEqual({ arrivalCents: 1500, returnCents: 1000, totalCents: 2500 });
     const edges = await api().get(`/api/public/search?airport=lyon-saint-exupery&arrivalAt=${inDays(10, '06:00')}&returnAt=${inDays(12, '21:59')}`);
     expect(edges.body.results.find((r: any) => r.slug === 'nuit').nightFee).toBeNull();
+  });
+
+  it('passe le changement d’heure : jours et frais comptés sur l’horloge du parking', async () => {
+    await publishedParking({ slug: 'nuit', title: 'Nuit' });
+    const offer = async (arrivalAt: string, returnAt: string) => {
+      const res = await api().get(`/api/public/search?airport=lyon-saint-exupery&arrivalAt=${arrivalAt}&returnAt=${returnAt}`);
+      expect(res.status).toBe(200);
+      const { days, basePriceCents, priceCents, nightFee } = res.body.results.find((r: any) => r.slug === 'nuit');
+      return { days, basePriceCents, priceCents, nightFee };
+    };
+
+    // Heure d'hiver (31/10/2027, 03:00 → 02:00): an hour longer than 23:30 → 17:00 usually is, the same 4 days touched.
+    expect(await offer('2027-10-30T23:30', '2027-11-02T17:00')).toEqual({
+      days: 4,
+      basePriceCents: 5900,
+      priceCents: 5900 + 1500,
+      nightFee: { arrivalCents: 1500, returnCents: 0, totalCents: 1500 },
+    });
+    // The hour that happens twice is still night.
+    expect(await offer('2027-10-29T08:00', '2027-10-31T02:30')).toEqual({
+      days: 3,
+      basePriceCents: 3499,
+      priceCents: 3499 + 1000,
+      nightFee: { arrivalCents: 0, returnCents: 1000, totalCents: 1000 },
+    });
+    // Heure d'été (28/03/2027, 02:00 → 03:00): an hour shorter, the same 4 days; 05:30 is still night, 06:30 is day
+    // (04:30 UTC, 05:30 on the winter clock of the drop-off).
+    expect(await offer('2027-03-27T23:30', '2027-03-30T05:30')).toEqual({
+      days: 4,
+      basePriceCents: 5900,
+      priceCents: 5900 + 2500,
+      nightFee: { arrivalCents: 1500, returnCents: 1000, totalCents: 2500 },
+    });
+    expect((await offer('2027-03-27T23:30', '2027-03-30T06:30')).nightFee).toEqual({ arrivalCents: 1500, returnCents: 0, totalCents: 1500 });
   });
 
   it('fiche : la règle de nuit et l’offre d’un retour de nuit', async () => {

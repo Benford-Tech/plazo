@@ -1,6 +1,7 @@
 import { Container } from 'typedi';
 import prisma, { Parking } from '@/database';
 import { inDepartureList, inPickupList, TEST_FEED_REFERENCE_PREFIX } from '@/domain/test-feed';
+import { addDays, localDate, parseInstant } from '@/domain/time';
 import { AuthenticatedStaff } from '@/interfaces/auth.interface';
 import { BookingDigestService } from '@/services/booking-digest.service';
 import { PushService } from '@/services/push.service';
@@ -55,6 +56,22 @@ function clockAt(at: Date) {
       'performance',
     ],
   });
+}
+
+/**
+ * The tests that count what a run stocks start at 11:29 on the parking's clock, two days ahead of the real date (the
+ * database's own clock stays behind it), never at the hour the suite happens to run. At night (22:00 to 06:00) the
+ * flow waits 90 to 150 minutes between groups, so its first group may fall beyond the 2 h 55 ahead, and « take now »
+ * places 2 groups a run at most: two single bookings leave 2 to take until the next run, which the feed's rules allow
+ * (« take: 2 groups a run » in test-feed-driver-day.test.ts, 3 on 95 % of the reads in the domain's simulation). By
+ * day the flow's first group always lands within the 2 h 55: 3 at least, whatever the draws (seeded by the operator's
+ * random id). A minute before a 5-minute mark: switched on again 4 minutes after the first run, whose first arrival
+ * (the passenger on his trip) keeps the new ones 20 minutes away, the second « take now » group still finds its slot
+ * within the hour ahead (from 11:30 it may not: « take: no slot »).
+ */
+function atDaytime() {
+  const tz = 'Europe/Paris';
+  clockAt(parseInstant(`${addDays(localDate(new Date(), tz), 2)}T11:29`, tz)!);
 }
 
 /**
@@ -147,6 +164,7 @@ describe('les vrais loueurs ne sont jamais touchés', () => {
 
 describe('le chauffeur trouve toujours du monde', () => {
   it('dès sa première lecture : au moins 3 voyageurs à emmener et 2 retours dans les 2 h, sans message ni vol', async () => {
+    atDaytime();
     const op = await testOperator();
     fetchMock.mockClear();
     const before = Date.now();
@@ -317,6 +335,7 @@ describe('un chauffeur n’est jamais interrompu', () => {
 
 describe('allumer, éteindre', () => {
   it('éteint : ferme les réservations fictives sauf celles d’un trajet en cours ; rallumé : réapprovisionne', async () => {
+    atDaytime();
     const op = await testOperator();
     const take = await departures(op.driver.token);
     const passenger = feedRowsIn(take.body.rows)[0] as { reservationId: string; plate: string };
@@ -359,6 +378,7 @@ describe('allumer, éteindre', () => {
   });
 
   it('rallumé juste après l’avoir éteint, toutes ses plaques en jeu : du monde à emmener tout de suite', async () => {
+    atDaytime();
     const op = await testOperator();
     await departures(op.driver.token);
     // As after a few hours of driving: the 40 plates in play (away for days, written long ago), none closed and free.
