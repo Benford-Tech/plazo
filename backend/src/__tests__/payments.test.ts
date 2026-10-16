@@ -4,7 +4,7 @@ import request from 'supertest';
 import { Container } from 'typedi';
 import prisma, { PayoutSchedule } from '@/database';
 import { payoutDueAt, payoutDueDate } from '@/domain/payout';
-import { localDateTime } from '@/domain/time';
+import { addDays, localDate, localDateTime } from '@/domain/time';
 import { NotificationService } from '@/services/notification.service';
 import { PaymentService } from '@/services/payment.service';
 import { StripeApi, StripeService } from '@/services/stripe.service';
@@ -17,7 +17,9 @@ const TZ = 'Europe/Paris';
 const WEBHOOK_SECRET = 'whsec_test_secret';
 const auth = (value: string) => ({ Authorization: `Bearer ${value}` });
 const bookingToken = (value: string) => ({ 'x-booking-token': value });
-const inDays = (days: number, time: string) => `${localDateTime(new Date(Date.now() + days * 86400000), TZ).slice(0, 10)}T${time}`;
+// N calendar days after today on the parking's clock, never now + N × 24 h: run between 23:00 and 24:00 in Paris on
+// 21 or 22/03/2027, those steps skip the 28th (clock change) and the 3-day stay was billed 4 days (40,99 € for 34,99 €).
+const inDays = (days: number, time: string) => `${addDays(localDate(new Date(), TZ), days)}T${time}`;
 
 const stripeService = Container.get(StripeService);
 const payments = Container.get(PaymentService);

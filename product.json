@@ -12,5 +12,16 @@
     "phone": "",
     "publicationDirector": "Joanny Simpore",
     "mediator": ""
-  }
+  },
+  "support": {
+    "phone": "",
+    "hours": "",
+    "responseTime": ""
+  },
+  "social": {
+    "instagram": "",
+    "facebook": "",
+    "linkedin": ""
+  },
+  "newsletter": false
 }

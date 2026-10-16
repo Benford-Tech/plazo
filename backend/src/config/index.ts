@@ -75,6 +75,19 @@ export const PUBLIC_SITE_URL = (
   process.env.PUBLIC_SITE_URL || (process.env.VERCEL_PROJECT_PRODUCTION_URL ? `https://${process.env.VERCEL_PROJECT_PRODUCTION_URL}` : '')
 ).replace(/\/+$/, '');
 
+// « La lettre Plazo » (footer A, 15/10/2026): the Brevo list the travellers join and the template of Brevo's double opt-in
+// email (it must hold Brevo's {{ doubleoptin }} link). Read on every call so that tests can set them. Without both (positive
+// integers, as Brevo numbers them) and BREVO_API_KEY, POST /public/newsletter answers 409 `newsletter_unavailable`.
+export function brevoNewsletterSettings(): { listId: number; templateId: number } | null {
+  const id = (name: string): number | null => {
+    const raw = process.env[name]?.trim() || '';
+    return /^[1-9]\d{0,9}$/.test(raw) ? Number(raw) : null;
+  };
+  const listId = id('BREVO_NEWSLETTER_LIST_ID');
+  const templateId = id('BREVO_NEWSLETTER_DOI_TEMPLATE_ID');
+  return listId && templateId ? { listId, templateId } : null;
+}
+
 // Per-operator SMS through the operator's own Android phone ("SMS Gateway for Android"). The
 // app's password is encrypted at rest with this key (32 bytes, base64: `openssl rand -base64 32`).
 // Read on every call so that tests can set it. Without it, the gateway mode cannot be enabled.
@@ -272,6 +285,9 @@ export function flightTrackingSettings(): { provider: FlightProviderName; apiKey
 // read from the repository root.
 const productPath = [resolve(__dirname, '../product.json'), resolve(__dirname, '../../../product.json')].find(existsSync);
 if (!productPath) throw new Error('product.json not found');
-const product = JSON.parse(readFileSync(productPath, 'utf8')) as { name: string; tagline: string };
+const product = JSON.parse(readFileSync(productPath, 'utf8')) as { name: string; tagline: string; supportEmail?: string };
 export const PRODUCT_NAME = product.name;
 export const PRODUCT_TAGLINE = product.tagline;
+// Where the site's contact form sends its messages (footer A, 15/10/2026). product.json holds a placeholder until the real
+// address is known (isRealSupportEmail): the form then answers 409 `contact_unavailable`.
+export const SUPPORT_EMAIL = (product.supportEmail || '').trim();

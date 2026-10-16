@@ -1,5 +1,6 @@
 import { ArrivalRoute } from './arrival.route';
 import { AuthRoute } from './auth.route';
+import { ContactRoute } from './contact.route';
 import { CronRoute } from './cron.route';
 import { DashboardRoute } from './dashboard.route';
 import { HealthRoute } from './health.route';
@@ -32,6 +33,7 @@ const AppRoutes = [
   new PlatformRoute(),
   new PublicRoute(),
   new PublicBookingRoute(),
+  new ContactRoute(),
   new ArrivalRoute(),
   new ReturnRoute(),
   new PaymentRoute(),

@@ -2,6 +2,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { formatEuros } from "../money";
 import { parkingMetaDescription } from "../seo";
 import { articleLd, breadcrumbLd, faqLd, jsonLdScript, organizationLd, parkingListLd, parkingLd, websiteLd } from "../structured-data";
+import { COMPANY } from "../product";
 import type { AirportResponse, ParkingResponse } from "../types";
 
 const BASE = "https://www.plazo.test";
@@ -40,6 +41,21 @@ describe("structured data (schema.org)", () => {
   it("describes the publisher and the site on the home page", () => {
     expect(organizationLd(BASE)).toMatchObject({ "@type": "Organization", "@id": `${BASE}/#organization`, url: `${BASE}/`, logo: `${BASE}/apple-icon.png` });
     expect(websiteLd(BASE)).toMatchObject({ "@type": "WebSite", url: `${BASE}/`, inLanguage: "fr-FR", publisher: { "@id": `${BASE}/#organization` } });
+  });
+
+  it("adds the footer's social accounts and service line once product.json gives them (A, 15/10/2026)", () => {
+    const none = { phone: null, contactForm: null, social: [], newsletter: false, company: COMPANY };
+    expect(organizationLd(BASE, none)).not.toHaveProperty("sameAs");
+    expect(organizationLd(BASE, none)).not.toHaveProperty("contactPoint");
+    const given = {
+      ...none,
+      phone: { display: "04 78 00 00 00", href: "tel:0478000000", hours: null },
+      social: [{ network: "instagram" as const, label: "Instagram", url: "https://www.instagram.com/plazo" }],
+    };
+    expect(organizationLd(BASE, given)).toMatchObject({
+      sameAs: ["https://www.instagram.com/plazo"],
+      contactPoint: { "@type": "ContactPoint", contactType: "customer service", telephone: "0478000000", availableLanguage: "fr" },
+    });
   });
 
   it("restates the questions shown on the page", () => {

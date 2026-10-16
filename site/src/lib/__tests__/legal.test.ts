@@ -79,6 +79,12 @@ describe("legal pages", () => {
     expect(termsDoc().version).toBe("15 octobre 2026"); // night fees (12/10/2026), then the publisher's details (15/10/2026)
   });
 
+  it("points to the contact form only once the service client has a real address (footer A, 15/10/2026)", () => {
+    const service = (email: string) => termsDoc(FILLED, email, "Plazo").sections.find(s => s.id === "editeur")!.blocks.join("\n");
+    expect(service("contact@plazo.fr")).toContain("Service client : contact@plazo.fr · 04 00 00 00 00, ou par le [formulaire de contact](/contact).");
+    expect(service("support@example.com")).not.toContain("formulaire de contact");
+  });
+
   it("section ids are unique (anchors of the contents)", () => {
     for (const doc of [termsDoc(), legalNoticeDoc(), privacyDoc()]) {
       const ids = doc.sections.map(s => s.id);
@@ -117,7 +123,8 @@ describe("privacy policy", () => {
 
   it("says what really happens: a raw IP kept 7 days for the code, Google's id is not Plazo's own, Apple revoked only with Apple", () => {
     // join_attempts.ipKey (the IPv4, or the IPv6 /64) is kept in the database with the attempt.
-    expect(all).toContain("Adresse IP : quelques minutes en mémoire pour limiter les abus (7 jours pour les essais du code du jour de Plazo Pro)");
+    // The API's limits keep a visitor's key up to two windows (express-rate-limit's memory store), the longest window being an hour.
+    expect(all).toContain("Adresse IP : en mémoire pour limiter les abus, deux heures au plus (7 jours pour les essais du code du jour de Plazo Pro)");
     // Apple's `sub` is per team; Google's is the account's global id.
     expect(all).toContain("un identifiant de compte (chez Apple, propre à Plazo)");
     expect(all).not.toContain("un identifiant propre à Plazo");
@@ -133,6 +140,23 @@ describe("privacy policy", () => {
     expect(privacyDoc().version).toBe("15 octobre 2026");
     expect(termsDoc().version).toBe("15 octobre 2026");
     expect(legalNoticeDoc().version).toBe("15 octobre 2026");
+  });
+
+  it("covers the contact form and « La lettre » of footer A (15/10/2026)", () => {
+    expect(all).toContain("par e-mail ou par le formulaire de contact du site : vos prénom et nom, votre adresse e-mail, la référence de votre réservation si vous l’indiquez, votre message");
+    // The API sends the message by e-mail (Brevo) and keeps nothing (POST /public/contact).
+    expect(all).toContain("transmis par e-mail au service client de Plazo, il n’est pas gardé par le site ni par ses serveurs au-delà de cet envoi");
+    // Brevo double opt-in: consent, confirmation by e-mail, one-click unsubscribe, kept until then.
+    expect(all).toContain("Vous envoyer la lettre Plazo (nouveaux aéroports, nouveaux parkings et offres de saison) : votre consentement");
+    expect(all).toContain("en confirmant par le lien reçu par e-mail");
+    expect(all).toContain("votre adresse reste inscrite chez Brevo jusqu’à votre désinscription, en un clic depuis chaque lettre");
+    expect(all).toContain("une inscription que vous ne confirmez pas n’est ajoutée à aucune liste");
+    // Brevo keeps an unsubscribed address, blocklisted, so as not to write to it again: the policy says so.
+    expect(all).toContain("Après une désinscription, Brevo garde l’adresse marquée comme désinscrite, seulement pour ne plus vous écrire");
+    // newsletterAddressLimiter: a hash of the address, a 24 h window, so 48 h at most in memory.
+    expect(all).toContain("son empreinte reste en mémoire 48 heures au plus");
+    expect(all).toContain("la lettre Plazo ne part qu’aux adresses inscrites et confirmées");
+    expect(all).toContain("pour la lettre, le lien de désinscription de chaque lettre suffit");
   });
 
   it("names the recipients and the authority, and keeps its promises narrow", () => {

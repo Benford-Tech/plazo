@@ -56,6 +56,9 @@
   /* Deprecated (old direction D "pêche"): do not use in new code; replace by ok / warn / tint. */
   --color-peach: #f0a36b;
 
+  /* Payment marks of the footer (A, 15/10/2026): the Visa chip's blue, the mark's own colour. */
+  --color-visa: #1a1f71;
+
   /* The French number plate. */
   --color-plate-blue: #1f3fa6;
   --color-plate-ink: #0b0b0c;

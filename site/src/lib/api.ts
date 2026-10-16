@@ -150,6 +150,23 @@ async function readResponse<T>(response: Response): Promise<T> {
 
 const seg = encodeURIComponent;
 
+/** POST /public/contact: sent by e-mail to the service client (reply-to the visitor), never stored. */
+export interface ContactInput {
+  name: string;
+  email: string;
+  reference?: string;
+  message: string;
+  /** Honeypot: empty for people; the API answers 202 and sends nothing when it is filled. */
+  website: string;
+}
+
+/** POST /public/newsletter: Brevo double opt-in; the API answers 202 whatever the address' state. */
+export interface NewsletterInput {
+  email: string;
+  consent: true;
+  website: string;
+}
+
 function query(params: Record<string, string | null | undefined>): string {
   const entries = Object.entries(params).filter((e): e is [string, string] => !!e[1]);
   return entries.length ? `?${new URLSearchParams(entries)}` : "";
@@ -200,6 +217,12 @@ export const api = {
   /** Ends the hold of a booking not paid yet (the traveller goes back to edit the form). */
   releaseBooking: (reference: string, token: string) =>
     apiRequest<PublicBooking>(`/api/public/bookings/${seg(reference)}/release`, { method: "POST", body: {}, bookingToken: token }),
+
+  /** The contact form (footer A, 15/10/2026): 202 once handed to the mail sender. */
+  contact: (input: ContactInput) => apiRequest<{ ok: true }>("/api/public/contact", { method: "POST", body: input }),
+
+  /** « La lettre Plazo »: 202 once Brevo has the double opt-in request. */
+  newsletter: (input: NewsletterInput) => apiRequest<{ ok: true }>("/api/public/newsletter", { method: "POST", body: input }),
 
   cancelBooking: (reference: string, token: string) =>
     apiRequest<PublicBooking>(`/api/public/bookings/${seg(reference)}/cancel`, {

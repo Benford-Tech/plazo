@@ -1,4 +1,4 @@
-import { timingSafeEqual } from 'crypto';
+import { createHash, timingSafeEqual } from 'crypto';
 import { Request } from 'express';
 import rateLimit from 'express-rate-limit';
 import { isIP } from 'net';
@@ -113,4 +113,57 @@ export const signupLimiter = rateLimit({
   skip: () => skip() && !process.env.TEST_RATE_LIMITS,
   keyGenerator,
   message: tooMany('too_many_requests'),
+});
+
+// Footer A (15/10/2026): the site's contact form (each message is an email to the support) and « La lettre Plazo » (each
+// subscription makes Brevo email a confirmation). Per visitor, only accepted requests count (a visitor fixing a too-short
+// message is not penalised); tests switch them on with TEST_RATE_LIMITS.
+export const contactLimiter = rateLimit({
+  windowMs: 60 * 60 * 1000,
+  max: 5,
+  skip: () => skip() && !process.env.TEST_RATE_LIMITS,
+  skipFailedRequests: true,
+  keyGenerator,
+  message: tooMany('too_many_requests'),
+});
+
+export const newsletterLimiter = rateLimit({
+  windowMs: 60 * 60 * 1000,
+  max: 5,
+  skip: () => skip() && !process.env.TEST_RATE_LIMITS,
+  skipFailedRequests: true,
+  keyGenerator,
+  message: tooMany('too_many_requests'),
+});
+
+/**
+ * The mailbox a subscription is for, hashed (no address kept in memory): confirmation emails to one mailbox are limited
+ * whatever the number of visitors asking for them, and however it is spelt (« camille+1@… » and « camille+2@… » reach the
+ * same inbox, as « c.amille@gmail.com » and « camille@gmail.com »).
+ */
+export function newsletterAddressKey(req: Request): string {
+  let email = typeof req.body?.email === 'string' ? req.body.email.trim().toLowerCase().slice(0, 254) : '';
+  const at = email.lastIndexOf('@');
+  if (at > 0) {
+    let local = email.slice(0, at).replace(/\+.*$/, '');
+    let domain = email.slice(at + 1);
+    if (domain === 'googlemail.com') domain = 'gmail.com';
+    if (domain === 'gmail.com') local = local.replace(/\./g, '');
+    email = `${local}@${domain}`;
+  }
+  return `newsletter:${createHash('sha256').update(email).digest('hex').slice(0, 32)}`;
+}
+
+// Beyond 3 a day for one mailbox, nothing more is sent but the answer is the usual 202: a 429 would tell anyone that this
+// address was asked for already (the form says nothing about an address).
+export const newsletterAddressLimiter = rateLimit({
+  windowMs: 24 * 60 * 60 * 1000,
+  max: 3,
+  skip: () => skip() && !process.env.TEST_RATE_LIMITS,
+  skipFailedRequests: true,
+  keyGenerator: newsletterAddressKey,
+  handler: (_req, res) => {
+    res.set('Cache-Control', 'no-store');
+    res.status(202).json({ ok: true });
+  },
 });
