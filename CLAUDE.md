@@ -326,6 +326,18 @@ Ne construire QUE ce qui règle la douleur n°1 du client.
      réponses), `inbound-rules.test.ts` (Claude absent, crédit épuisé ou répondant : mêmes résultats sans l'appeler pour les mails
      connus ; panne, relecture, rattrapage). Restent inconnus : les vrais modèles d'annulation d'Allopark et de modification ou
      d'annulation d'Onepark, Parclick et ParkMundo (lus par leurs mots, jamais appliqués), Allopark en néerlandais ou en anglais.
+     **Relecture des mails déjà traités (16/10/2026, « relie les mail deja traité »)** : en dernier, le relais (`POST
+     /public/inbound/retry`, `reread`, `InboundEmailService.rereadWithRules`) relit une fois avec les règles les mails de 30
+     jours, sans réservation, « À traiter » ou traités (jamais archivés), d'un loueur actif, que `classifyMail` lit comme une
+     réservation d'un modèle connu ou une modification Allopark (jamais une annulation, même lue par Claude, ni un mail dont un autre mail du loueur annule la référence `AL-…` / `PM…` sur 90 jours, `cancelledReferences`) ; repère sans
+     migration : lecture qui n'est pas celle des règles et pas encore de trace `inbound.reread` (écrite à la prise, une fois
+     par mail ; pas une date, pour reprendre aussi un mail que l'équipe a relancé avec l'ancien code avant le déploiement) ; les mails d'une autre relecture lui restent ; réservation créée ou mail rattaché à la réservation
+     existante, modification appliquée ou « À faire à la main », un mail traité qui ne s'importe pas garde son état ; jamais
+     une réservation du même voyageur saisie à la main, avant la réception du mail comme après (`typedSince` depuis toujours) ni un séjour terminé créé (`linkOnlyIfOverAt` : rattaché, sinon
+     `missing` `stay_over`) ; trois par passage, les plus récents d'abord. Formules resserrées (`importers/common.ts`, `saidIn` :
+     mots de condition avant, « gratuite » / « possible » après, question) : « Pour toute annulation de votre réservation… »,
+     « Toute réservation annulée… », « Si vous avez annulé », « Free cancellation… » (mots de condition dans les six mots avant, un deux-points ouvrant la nouvelle : « Aucune action n'est requise : votre réservation a été annulée » reste une annulation) ne font plus d'une confirmation une
+     annulation ou une modification ; tests `inbound-reread.test.ts`, `inbound-kind.test.ts` (`confirmation-conditions.txt`).
    - Page de réservation propre à l'opérateur (formulaire simple, confirmation par mail/SMS).
    - Vue planning : arrivées et retours du jour, taux d'occupation, alerte de surréservation
      calculée sur la capacité réelle.

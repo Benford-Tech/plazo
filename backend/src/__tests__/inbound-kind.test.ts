@@ -1,6 +1,8 @@
 import { readFileSync } from 'fs';
 import { join } from 'path';
-import { alloparkLinks } from '@/domain/importers/allopark-page';
+import { parseConfirmationEmail } from '@/domain/importers';
+import { alloparkLinks, isAlloparkCancellation, isAlloparkChange } from '@/domain/importers/allopark-page';
+import { cancellationIn, changeIn, isCancellationOrChange, isChange } from '@/domain/importers/common';
 import { classifyMail, comparatorMessageOf, ruleReading, type MailToClassify } from '@/domain/inbound-kind';
 import { textOf } from '@/domain/inbound-email';
 
@@ -299,6 +301,120 @@ describe('Onepark, Parclick et ParkMundo (16/10/2026)', () => {
     expect(kindOf({ ...parkmundo(), text: `${parkmundo().text}\nTarif non remboursable si annulée moins de 24 heures avant.` })).toMatchObject({
       kind: 'booking',
     });
+  });
+});
+
+describe('relecture des formules : les conditions d’une confirmation ne sont ni une annulation ni une modification (16/10/2026)', () => {
+  /** Conditions written as the comparators write them in their confirmations (fictional), the booking's reference in one. */
+  const conditions = (ref: string) => fixture('confirmation-conditions.txt').replace(/\{REF\}/g, ref);
+  const confirmations: [string, () => MailToClassify, string][] = [
+    [
+      'Allopark (avis au parking)',
+      () => ({
+        subject: 'Confirmation de votre réservation AL-884880719 chez Aeroports Parking Lyon',
+        from: ALLOPARK,
+        text: fixture('allopark-confirmation.txt'),
+      }),
+      'AL-884880719',
+    ],
+    [
+      'Allopark (copie du voyageur)',
+      () => htmlMail('allopark-customer.html', 'Confirmation de votre réservation AL-012345678 chez Aeroports Parking Lyon', ALLOPARK),
+      'AL-012345678',
+    ],
+    ['Onepark', () => htmlMail('onepark-notification.html', 'Nouvelle réservation', 'Onepark noreply@onepark.co'), '5900001'],
+    ['Parclick', () => htmlMail('parclick-confirmation.html', 'Voici votre réservation !', 'Parclick noreply@parclick.com'), 'BQXY1234'],
+    [
+      'ParkMundo',
+      () => htmlMail('parkmundo-confirmation.html', 'Confirmation de votre réservation PM1500000001', 'ParkMundo noreply@parkmundo.com'),
+      'PM1500000001',
+    ],
+  ];
+
+  it.each(confirmations)('%s : la confirmation et ses conditions restent une réservation sûre, lue par son lecteur', (_name, mail, ref) => {
+    const before = kindOf(mail());
+    expect(before).toMatchObject({ kind: 'booking', sure: true, reference: ref });
+    const withConditions = { ...mail(), text: `${mail().text}\n${conditions(ref)}` };
+    expect(kindOf(withConditions)).toEqual(before);
+    // Each sentence on its own, too: none turns the confirmation into a cancellation or a change.
+    for (const sentence of conditions(ref).split('\n').filter(Boolean)) {
+      expect([sentence, kindOf({ ...mail(), text: `${mail().text}\n${sentence}` }).kind]).toEqual([sentence, 'booking']);
+    }
+    expect(parseConfirmationEmail(withConditions.text)).not.toBeNull();
+  });
+
+  it('chaque phrase des conditions, seule : ni annulation ni modification', () => {
+    for (const sentence of conditions('AL-500000001').split('\n').filter(Boolean)) {
+      expect([sentence, cancellationIn(sentence), changeIn(sentence), isCancellationOrChange(sentence)]).toEqual([sentence, false, false, false]);
+      expect([sentence, isAlloparkCancellation('Confirmation de votre réservation AL-500000001', sentence)]).toEqual([sentence, false]);
+      expect([sentence, isAlloparkChange('Confirmation de votre réservation AL-500000001', sentence)]).toEqual([sentence, false]);
+    }
+  });
+
+  it.each(confirmations)('%s : une vraie annulation ou une vraie modification est toujours reconnue, conditions comprises', (name, mail, ref) => {
+    const provider = mail().from?.split(' ')[0] === 'ALLOPARK' ? 'Allopark' : name;
+    const withConditions = (text: string) => `${text}\n${mail().text}\n${conditions(ref)}`;
+    const cancellations: [string | null, string][] = [
+      [`Annulation de votre réservation ${ref}`, mail().text],
+      [mail().subject, withConditions(`Votre réservation ${ref} a été annulée.`)],
+      [mail().subject, withConditions(`Nous avons annulé votre réservation ${ref} à votre demande.`)],
+      [mail().subject, withConditions('Le remboursement de votre réservation a été effectué.')],
+      [mail().subject, withConditions(`Your booking ${ref} has been cancelled.`)],
+    ];
+    for (const [subject, text] of cancellations) {
+      expect([subject, text.split('\n')[0], kindOf({ ...mail(), subject, text })]).toEqual([
+        subject,
+        text.split('\n')[0],
+        expect.objectContaining({ kind: 'cancellation', provider }),
+      ]);
+    }
+    const changes: [string | null, string][] = [
+      [`Modification de votre réservation ${ref}`, mail().text],
+      [mail().subject, withConditions(`Votre réservation ${ref} a été modifiée.`)],
+      [mail().subject, withConditions('Vos nouvelles dates : du 2 au 5 novembre 2026.')],
+    ];
+    for (const [subject, text] of changes) {
+      expect([subject, text.split('\n')[0], kindOf({ ...mail(), subject, text })]).toEqual([
+        subject,
+        text.split('\n')[0],
+        expect.objectContaining({ kind: 'change', provider }),
+      ]);
+    }
+  });
+
+  it('la modification Allopark et ses conditions reste une modification sûre de sa réservation', () => {
+    const mail = htmlMail('allopark-modification.html', 'Modification de votre réservation AL-500000001 chez Aeroports Parking Lyon', ALLOPARK);
+    const before = kindOf(mail);
+    expect(before).toMatchObject({ kind: 'change', sure: true, reference: 'AL-500000001' });
+    expect(kindOf({ ...mail, text: `${mail.text}\n${conditions('AL-500000001')}` })).toEqual(before);
+  });
+
+  it('les formules des vrais mails, seules : toujours une annulation ou une modification', () => {
+    for (const sentence of [
+      'Votre réservation AL-500000001 a été annulée.',
+      'Annulation de votre réservation AL-500000001 chez Aeroports Parking Lyon',
+      'Nous avons annulé votre réservation suite à votre demande.',
+      'Le remboursement de votre réservation a été effectué.',
+      'Your booking AL-500000001 has been cancelled.',
+      'We have cancelled your booking.',
+      'Votre demande d’annulation a bien été prise en compte.',
+      // A condition in another clause of the sentence does not make it one.
+      'Conformément à nos conditions, votre réservation AL-500000001 a été annulée.',
+      'Si vous avez des questions, sachez que votre réservation a été annulée.',
+      // Review: a colon starts the news, and a word far back in the clause never makes it a condition.
+      "Aucune action n'est requise de votre part : votre réservation AL-500000001 a été annulée.",
+      'Pas de frais : votre réservation a été annulée.',
+      'Free of charge: your booking has been cancelled.',
+      'Tous nos regrets pour ce désagrément du jour mais votre réservation a été annulée par le parking.',
+    ])
+      expect([sentence, cancellationIn(sentence)]).toEqual([sentence, true]);
+    for (const sentence of [
+      'Votre réservation AL-500000001 a été modifiée.',
+      'Modification de votre réservation AL-500000001',
+      'Vos nouvelles dates : du 2 au 5 novembre.',
+      'Your booking AL-500000001 has been changed.',
+    ])
+      expect([sentence, changeIn(sentence) || isChange(sentence)]).toEqual([sentence, true]);
   });
 });
 

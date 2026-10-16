@@ -35,10 +35,15 @@ import { StaffAuthMiddleware } from '@/middlewares/staff-auth.middleware';
  *       rules per mail type that these rules now know (`rules`), then the emails of the last 7 days that wait because
  *       Claude could not read them (`reading.outage`), once Claude answers (`reading`, the pass stopping at the first email
  *       Claude still cannot read: `stopped: reading`). No pass analyses an email whose booking the staff made by hand
- *       while it waited (counted in `typedByHand`): no second booking of the same car.
+ *       while it waited (counted in `typedByHand`): no second booking of the same car. 16/10/2026 (« relie les mail deja
+ *       traité »): last, once per email, the emails of the last 30 days received and dealt with before the rules
+ *       (« À traiter » or handled, without booking, never archived) that these rules read as a known booking or an
+ *       Allopark change (`reread`): the booking created or the email linked to the booking Plazo has, the change applied;
+ *       a stay that is over is only linked, never created (`stay_over` in the email's `missing` otherwise), and a booking
+ *       of the same traveller the staff typed (before the email came or since) leaves the email to them.
  *     responses:
  *       200:
- *         description: "{ due, tried, outcomes: { imported?, changed?, duplicate?, incomplete?, unrecognised? }, stopped?: protected | refused, typedByHand?, plateOnly?: { due, tried, outcomes, stopped?, typedByHand? }, rules?: { … }, reading?: { …, stopped?: protected | refused | reading } }"
+ *         description: "{ due, tried, outcomes: { imported?, changed?, duplicate?, incomplete?, unrecognised? }, stopped?: protected | refused, typedByHand?, plateOnly?: { due, tried, outcomes, stopped?, typedByHand? }, rules?: { … }, reading?: { …, stopped?: protected | refused | reading }, reread?: { due, tried, outcomes, stopped? } }"
  *       401:
  *         description: Bad or missing secret, or the feature is off
  * /internal/inbound/settings:

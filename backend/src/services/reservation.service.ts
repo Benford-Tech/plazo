@@ -231,27 +231,8 @@ export class ReservationService {
     const system = { id: null, operatorId };
     const created = await prisma.$transaction(async tx => {
       await this.capacity.lock(tx, parking.id);
-      if (externalReference) {
-        const existing = await tx.reservation.findUnique({ where: { operatorId_externalReference: { operatorId, externalReference } } });
-        if (existing) return { reservation: existing, duplicate: true };
-      } else {
-        // L-A (08/10/2026): an email read by Claude may carry no reference; the same traveller arriving at the same
-        // moment is the same booking (the mail forwarded twice, or by two people): the same plate, or, without a plate
-        // (15/10/2026), the same phone and a word of the name in common (sameTraveller).
-        const incoming = { plateKey: key, customerPhone: parsed.customerPhone!, customerName: names.customerName };
-        const rows = await tx.reservation.findMany({
-          where: {
-            operatorId,
-            arrivalAt: stay.arrivalAt,
-            status: { notIn: ['cancelled', 'no_show'] },
-            ...(key ? { plateKey: { in: [key, ''] } } : {}),
-          },
-          orderBy: { createdAt: 'asc' },
-          take: 50,
-        });
-        const existing = rows.find(r => sameTraveller(r, incoming));
-        if (existing) return { reservation: existing, duplicate: true };
-      }
+      const existing = await this.importDuplicate(tx, operatorId, parsed, stay.arrivalAt);
+      if (existing) return { reservation: existing, duplicate: true };
       const { full } = await this.capacity.fullNights(parking, stay.arrivalAt, stay.returnAt, { client: tx });
       const reference = await this.newUniqueReference(tx);
       const reservation = await tx.reservation.create({
@@ -293,6 +274,44 @@ export class ReservationService {
     });
     if (!created.duplicate) await this.push.notifyNewBooking(created.reservation, parking.timezone);
     return created;
+  }
+
+  /**
+   * The booking of the operator an import is a duplicate of (createFromImport): the one with its external reference;
+   * without a reference (L-A, 08/10/2026: an email read by Claude may carry none), the same traveller arriving at the same
+   * moment (the mail forwarded twice, or by two people): the same plate, or, without a plate (15/10/2026), the same phone
+   * and a word of the name in common (sameTraveller).
+   */
+  private async importDuplicate(client: Client, operatorId: string, parsed: ParsedBooking, arrivalAt: Date): Promise<Reservation | null> {
+    const externalReference = parsed.externalReference?.trim().toUpperCase() || null;
+    if (externalReference) return client.reservation.findUnique({ where: { operatorId_externalReference: { operatorId, externalReference } } });
+    const key = plateKey(importedPlate(parsed.plate) ?? '');
+    const incoming = { plateKey: key, customerPhone: parsed.customerPhone ?? '', customerName: importedNames(parsed).customerName };
+    const rows = await client.reservation.findMany({
+      where: {
+        operatorId,
+        arrivalAt,
+        status: { notIn: ['cancelled', 'no_show'] },
+        ...(key ? { plateKey: { in: [key, ''] } } : {}),
+      },
+      orderBy: { createdAt: 'asc' },
+      take: 50,
+    });
+    return rows.find(r => sameTraveller(r, incoming)) ?? null;
+  }
+
+  /**
+   * 16/10/2026 (« relie les mail deja traité »): an imported booking whose stay is over at `now` (its return passed, read in
+   * the parking's time zone), with the booking createFromImport would find for it (importDuplicate, nothing created; null
+   * when there is none); null when the stay is not over or its dates cannot be read. The re-reading of the mails already
+   * received only links such a stay to the booking Plazo has of it, never creates one.
+   */
+  public async overStay(operatorId: string, parsed: ParsedBooking, now: Date): Promise<{ existing: Reservation | null } | null> {
+    const parking = await prisma.parking.findFirst({ where: { operatorId }, orderBy: { createdAt: 'asc' } });
+    const arrivalAt = parking && parsed.arrivalAt ? parseInstant(parsed.arrivalAt, parking.timezone) : null;
+    const returnAt = parking && parsed.returnAt ? parseInstant(parsed.returnAt, parking.timezone) : null;
+    if (!arrivalAt || !returnAt || returnAt.getTime() > now.getTime()) return null;
+    return { existing: await this.importDuplicate(prisma, operatorId, parsed, arrivalAt) };
   }
 
   /**

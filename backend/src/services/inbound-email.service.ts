@@ -7,6 +7,7 @@ import { MIN_CONFIDENCE, READING_OUTAGE_CAUSES, ReadingMeta, ReadingOutage, read
 import { EMAIL_IMPORTERS, IMPORT_SENDERS, isComparatorAddress, parseBookingEmail, ParsedBooking } from '@/domain/importers';
 import { alloparkConfirmationPage, alloparkLinks, alloparkPageAddresses, alloparkPageUrls, isAlloparkUrl } from '@/domain/importers/allopark-page';
 import { classifyMail, ruleReading } from '@/domain/inbound-kind';
+import { SUBJECT_CANCELLATION } from '@/domain/importers/common';
 import { IMPORT_CHANGE_FIELDS, IMPORT_CHANGE_REASONS, ImportChange, ImportChangeField, ImportChangeReason } from '@/domain/import-change';
 import { ComparatorState, comparatorStates, latestAutomatic } from '@/domain/inbound-comparators';
 import { deliveryOf, looksLikeBooking } from '@/domain/inbound-delivery';
@@ -224,6 +225,26 @@ const READING_RETRY_WINDOW_MS = 7 * 86_400_000;
 const READING_RETRY_GAP_MS = 5 * 60_000;
 /** 16/10/2026 (« analyser sans passer par Claude »): the emails stored before the rules per mail type, these 7 days. */
 const RULES_CATCH_UP_DAYS = 7;
+/**
+ * 16/10/2026 (« relie les mail deja traité »): the audit action that marks an email rereadWithRules claimed (no staff
+ * member, `auto: true`): an email that has it is never picked again, so each is read once. A mark rather than a date
+ * (`analysedAt`): the former code ran until the deployment, and an email the staff relaunched with it while Claude had
+ * no credit was read by no rule. An email whose reading is the rules' (`reading.source`: received or analysed again
+ * since the deployment) is not picked either.
+ */
+const REREAD_MARK = 'inbound.reread';
+/** 16/10/2026: the statuses of the emails re-read: « À traiter » and those marked as handled without their booking. */
+const REREAD_STATUSES: InboundEmailStatus[] = ['incomplete', 'unrecognised', 'handled', 'dismissed'];
+/**
+ * 16/10/2026: what may name a comparator the rules know (classifyMail's providerOf: its name, or ParkMundo's « PM… »
+ * reference), a necessary condition read in SQL, so that the other emails of the 30 days are never loaded; the rules
+ * decide on what is loaded.
+ */
+const COMPARATOR_WORDS = 'allopark|onepark|parclick|parkmundo|pm[0-9]{6}';
+/** Review (16/10/2026): the comparators' booking references an email names (Allopark « AL-… », ParkMundo « PM… »). */
+const namedReferencesIn = (text: string): string[] => [...new Set([...text.matchAll(/\b(?:AL-\d{6,}|PM\d{6,})\b/gi)].map(m => m[0].toUpperCase()))];
+/** 16/10/2026: the emails rereadWithRules loads per pass (newest first; the rules then keep the known ones). */
+const REREAD_SCAN = 200;
 /** 10/10/2026 (« C'est une modification »): `changed` = an Allopark change applied to its booking (the email then reads `imported`). */
 export type ReanalysisOutcome = 'imported' | 'changed' | 'duplicate' | 'incomplete' | 'unrecognised';
 export interface Reanalysis {
@@ -251,6 +272,12 @@ interface AnalysisInput {
    * from what this analysis read: an email Claude could not read had nothing to check before, typedByHand).
    */
   typedSince?: Date;
+  /**
+   * 16/10/2026 (« relie les mail deja traité »): the re-reading of the emails already received (rereadWithRules): a booking
+   * whose stay is over at this instant is only linked to the booking Plazo has of it (createFromImport's duplicate
+   * rules), never created (missing `stay_over` otherwise).
+   */
+  linkOnlyIfOverAt?: Date;
 }
 
 interface Analysis {
@@ -421,8 +448,9 @@ export class InboundEmailService {
     const sender = [fromName, fromAddress].filter(Boolean).join(' ');
     const type = classifyMail({ subject, text, from: sender, links: input.links });
     const rules = ruleReading(type);
-    const label = type.provider ? `[${type.provider}]${type.reference ? ` ${type.reference}` : ''}` : '[Inbound]';
-    logger.info(`${label}: mail type ${type.rule}`);
+    // « [Allopark] AL-…: mail type allopark.change », « [Inbound] mail type unknown ».
+    const label = type.provider ? `[${type.provider}]${type.reference ? ` ${type.reference}` : ''}:` : '[Inbound]';
+    logger.info(`${label} mail type ${type.rule}`);
     // A cancellation, a reply or another mail of a comparator, a change of Onepark, Parclick or ParkMundo (no page to read
     // it from): shown with its kind, nothing done by itself (cancellations are never applied), no Claude.
     if (type.kind === 'cancellation' || type.kind === 'other' || (type.kind === 'change' && (type.provider !== 'Allopark' || !type.reference))) {
@@ -545,10 +573,13 @@ export class InboundEmailService {
     if (missing.length) return { ...result, status: 'incomplete', missing, reservationId: null };
     // 16/10/2026 (relecture): never a second booking of the same car when the staff typed it while the email waited.
     if (input.typedSince && (await this.reservations.typedSince(operatorId, booking, input.typedSince))) {
-      logger.info(`${label}: the staff typed this booking while the email waited: left to the staff`);
+      logger.info(`${label} the staff typed this booking by hand: left to the staff`);
       return { ...result, status: 'incomplete', missing: ['confidence'], reservationId: null };
     }
     try {
+      // 16/10/2026 (« relie les mail deja traité »): a stay that is over is only linked, never created, by the re-reading.
+      const over = await this.overStay(input, booking, label);
+      if (over) return { ...result, ...over };
       const created = await this.reservations.createFromImport(operatorId, booking);
       return { ...result, status: created.duplicate ? 'duplicate' : 'imported', missing: [], reservationId: created.reservation.id };
     } catch (error) {
@@ -740,6 +771,9 @@ export class InboundEmailService {
         return { ...withPage, status: 'incomplete', missing: ['confidence'], reservationId: null };
       }
       try {
+        // 16/10/2026 (« relie les mail deja traité »): a stay that is over is never created by the re-reading.
+        const over = await this.overStay(input, booking, `${label}:`);
+        if (over) return { ...withPage, ...over };
         const created = await this.reservations.createFromImport(operatorId, booking);
         if (!created.duplicate) {
           logger.info(`${label}: change of a booking Plazo did not have: created from the booking page`);
@@ -791,6 +825,28 @@ export class InboundEmailService {
     }
     logger.info(`${label}: change left to the staff (${result.reason}: ${fields})`);
     return { ...withPage, change, status: 'unrecognised', missing: [], reservationId: null };
+  }
+
+  /**
+   * 16/10/2026 (« relie les mail deja traité »): for the re-reading of the emails already received (`linkOnlyIfOverAt`),
+   * a booking whose stay is over: linked to the booking Plazo has of it (`duplicate`), else left without a booking
+   * (missing `stay_over`: the staff type it if they want it); null when the stay is not over (the analysis goes on).
+   * `label` starts the log line (« [Allopark] AL-…: »).
+   */
+  private async overStay(
+    input: AnalysisInput,
+    booking: ParsedBooking,
+    label: string,
+  ): Promise<{ status: 'duplicate' | 'incomplete'; missing: string[]; reservationId: string | null } | null> {
+    if (!input.linkOnlyIfOverAt) return null;
+    const over = await this.reservations.overStay(input.operatorId, booking, input.linkOnlyIfOverAt);
+    if (!over) return null;
+    if (over.existing) {
+      logger.info(`${label} stay already over: linked to the booking Plazo has`);
+      return { status: 'duplicate', missing: [], reservationId: over.existing.id };
+    }
+    logger.info(`${label} stay already over and no booking of it: nothing created`);
+    return { status: 'incomplete', missing: ['stay_over'], reservationId: null };
   }
 
   /** One reading of the email by Claude; an outage is noted for the analysis (the email then waits for Claude). */
@@ -1267,23 +1323,153 @@ export class InboundEmailService {
   }
 
   /**
-   * One automatic pass (retryReading, analyseWaitingForRules): each row claimed as a staff relaunch is (never twice at
-   * once; `count`: the try counted in `autoRetries`, even when the analysis fails), analysed again and traced `auto:
-   * true`; three per pass, none started after the call's first 10 s; the pass stops when Allopark asks for a check or
-   * refuses Plazo, and (`stopOnOutage`) when Claude still cannot read. Logged without personal data.
+   * 16/10/2026 (« relie les mail deja traité »): the emails received and dealt with before the rules per mail type are
+   * read once more with them, so that those Plazo can now read get their booking. Candidates: of an active operator (not
+   * suspended, not archived), received within the 30 days their text is kept, without booking, « À traiter » or marked
+   * as handled (never archived, ignored, a forwarding confirmation, imported or a duplicate), whatever their reading
+   * (Claude's, none, an outage) but the rules' and never re-read before (REREAD_MARK, whenever the staff relaunched it), that the rules read
+   * as a known booking (a comparator's template) or an Allopark change of a named booking; never a cancellation, a reply
+   * or another mail, nor one Claude read as a cancellation (nothing to do of them without Claude). Each is one « Relancer
+   * l'analyse » by Plazo (rerun traced `auto: true`): the booking created as at the reception, or the email linked to the
+   * booking Plazo has (its reference, or createFromImport's duplicate rules), an Allopark change applied from its page or
+   * left « À faire à la main » with its reason; a handled email that neither imports nor links keeps its status. Two
+   * guards: a booking of the same traveller the staff typed, before the email came or while it waited, leaves it to them
+   * (typedSince, from any date), and a stay that is over is
+   * only linked, never created (`linkOnlyIfOverAt`). Newest first (the stays to come), three per pass, none started after
+   * the call's first 10 s; the pass stops when Allopark asks for a check or refuses Plazo. It ends by itself: its claim
+   * leaves REREAD_MARK. An email another pass reads again (an Allopark page not read yet, a plate
+   * catch-up, the rules' catch-up, a reading waiting for Claude) is left to it. Called last by POST /public/inbound/retry.
+   */
+  public async rereadWithRules(now = new Date(), startedAt = Date.now()): Promise<AutoRetryReport> {
+    // Review: the call's 10 s are spent already: no scan (no analysis could start), the next call reads them.
+    if (Date.now() - startedAt > AUTO_RETRY_START_BUDGET_MS) return { due: 0, tried: 0, outcomes: {} };
+    const since = (days: number) => new Date(now.getTime() - days * 86_400_000);
+    const toCheck = Prisma.join(TO_CHECK);
+    // The emails another pass of the relay reads again (now or at its next try) are left to it: never two passes on one.
+    const found = await prisma.$queryRaw<{ id: string }[]>`
+      SELECT e.id FROM inbound_emails e
+      JOIN operators o ON o.id = e."operatorId"
+      WHERE e."reservationId" IS NULL
+        AND e."textBody" IS NOT NULL
+        AND e.status::text IN (${Prisma.join(REREAD_STATUSES)})
+        AND e."receivedAt" >= ${since(TEXT_RETENTION_DAYS)}
+        AND NOT EXISTS (SELECT 1 FROM audit_logs a WHERE a."operatorId" = e."operatorId" AND a.action = ${REREAD_MARK} AND a."entityId" = e.id)
+        AND (e.reading IS NULL OR e.reading->>'source' IS DISTINCT FROM 'rules')
+        AND (e.reading IS NULL OR e.reading->>'kind' IS DISTINCT FROM 'cancellation')
+        AND o.status = 'active' AND o."suspendedAt" IS NULL AND o."archivedAt" IS NULL
+        AND concat_ws(' ', e.subject, e."fromAddress", e."fromName", e."textBody") ~* ${COMPARATOR_WORDS}
+        -- retryAllopark: an Allopark booking page not read, tried again within two days.
+        AND NOT COALESCE(e.status::text IN (${toCheck})
+          AND e."pageLookup"->>'outcome' IN (${Prisma.join([...AUTO_RETRY_OUTCOMES])})
+          AND (e."pageLookup"->>'refused') IS DISTINCT FROM 'true'
+          AND e."autoRetries" < ${AUTO_RETRY_MAX}
+          AND e."receivedAt" >= ${new Date(now.getTime() - AUTO_RETRY_WINDOW_HOURS * 3_600_000)}, false)
+        -- importWaitingForPlate: an email that waited only for its plate, these 7 days.
+        AND NOT COALESCE(e.status::text = 'incomplete' AND e.missing = '["plate"]'::jsonb
+          AND e."autoRetries" < ${AUTO_RETRY_MAX} AND e."receivedAt" >= ${since(PLATE_CATCH_UP_DAYS)}, false)
+        -- analyseWaitingForRules: « À traiter » without any reading, these 7 days.
+        AND NOT COALESCE(e.reading IS NULL AND e.change IS NULL
+          AND (e."pageLookup" IS NULL OR e."pageLookup"->>'outcome' = 'read')
+          AND (e.status::text = 'unrecognised' OR (e.status::text = 'incomplete' AND e.missing @> '["confidence"]'::jsonb))
+          AND e."autoRetries" < ${AUTO_RETRY_MAX} AND e."receivedAt" >= ${since(RULES_CATCH_UP_DAYS)}, false)
+        -- retryReading (with an Anthropic key): « À traiter » waiting for Claude, these 7 days.
+        AND NOT COALESCE(${this.reader.available()} AND e.status::text IN (${toCheck}) AND e.reading->'outage' IS NOT NULL
+          AND e."receivedAt" >= ${new Date(now.getTime() - READING_RETRY_WINDOW_MS)}, false)
+      ORDER BY e."receivedAt" DESC
+      LIMIT ${REREAD_SCAN}`;
+    const ids = found.map(row => row.id);
+    const rows = ids.length
+      ? await prisma.inboundEmail.findMany({ where: { id: { in: ids } }, include: { reservation: { select: { reference: true } } } })
+      : [];
+    const order = new Map(ids.map((id, index) => [id, index]));
+    const known = rows
+      .filter(row => {
+        const sender = [row.fromName, row.fromAddress].filter(Boolean).join(' ');
+        const type = classifyMail({ subject: row.subject, text: row.textBody ?? '', from: sender, links: row.links });
+        return (type.kind === 'booking' && type.sure) || (type.kind === 'change' && type.provider === 'Allopark' && !!type.reference);
+      })
+      .sort((a, b) => order.get(a.id)! - order.get(b.id)!);
+    // Review (16/10/2026): never a booking whose reference another email of the operator cancelled (the confirmation
+    // left « À traiter » or handled because the traveller cancelled it): no phantom booking of a cancelled stay.
+    const cancelled = await this.cancelledReferences(
+      known.map(row => row.operatorId),
+      now,
+    );
+    const notCancelled = known.filter(row => {
+      const refs = cancelled.get(row.operatorId);
+      return !refs || !namedReferencesIn(`${row.subject ?? ''}\n${row.textBody ?? ''}`).some(ref => refs.has(ref));
+    });
+    if (notCancelled.length < known.length)
+      logger.info(`[Inbound] reading of the mails already received: ${known.length - notCancelled.length} cancelled elsewhere, left to the staff`);
+    known.splice(0, known.length, ...notCancelled);
+    const still: Prisma.InboundEmailWhereInput = { status: { in: REREAD_STATUSES } };
+    return this.autoPass('reading of the mails already received', known, startedAt, still, { count: false, linkOnlyIfOver: true });
+  }
+
+  /**
+   * Review (16/10/2026): the comparators' references (AL-…, PM…) that an email of these operators, these 90 days, cancels
+   * or refunds: read by Claude or by the rules as a cancellation, or with a cancellation subject once its text is gone.
+   */
+  private async cancelledReferences(operatorIds: string[], now: Date): Promise<Map<string, Set<string>>> {
+    const result = new Map<string, Set<string>>();
+    const ids = [...new Set(operatorIds)];
+    if (!ids.length) return result;
+    const rows = await prisma.inboundEmail.findMany({
+      where: {
+        operatorId: { in: ids },
+        receivedAt: { gte: new Date(now.getTime() - 90 * 86_400_000) },
+        status: { notIn: ['ignored', 'forwarding'] },
+        OR: [
+          { reading: { path: ['kind'], equals: 'cancellation' } },
+          { subject: { contains: 'annul', mode: 'insensitive' } },
+          { subject: { contains: 'rembours', mode: 'insensitive' } },
+          { subject: { contains: 'cancel', mode: 'insensitive' } },
+          { subject: { contains: 'refund', mode: 'insensitive' } },
+          { textBody: { contains: 'annul', mode: 'insensitive' } },
+          { textBody: { contains: 'rembours', mode: 'insensitive' } },
+          { textBody: { contains: 'cancel', mode: 'insensitive' } },
+          { textBody: { contains: 'refund', mode: 'insensitive' } },
+        ],
+      },
+      select: { operatorId: true, subject: true, textBody: true, fromName: true, fromAddress: true, links: true, reading: true },
+    });
+    for (const row of rows) {
+      const sender = [row.fromName, row.fromAddress].filter(Boolean).join(' ');
+      const cancels =
+        readingOf(row.reading)?.kind === 'cancellation' ||
+        (row.textBody !== null
+          ? classifyMail({ subject: row.subject, text: row.textBody, from: sender, links: row.links }).kind === 'cancellation'
+          : SUBJECT_CANCELLATION.test(row.subject ?? ''));
+      if (!cancels) continue;
+      const refs = namedReferencesIn(`${row.subject ?? ''}\n${row.textBody ?? ''}`);
+      if (!refs.length) continue;
+      const set = result.get(row.operatorId) ?? new Set<string>();
+      refs.forEach(ref => set.add(ref));
+      result.set(row.operatorId, set);
+    }
+    return result;
+  }
+
+  /**
+   * One automatic pass (retryReading, analyseWaitingForRules, rereadWithRules): each row claimed as a staff relaunch is
+   * (never twice at once; `count`: the try counted in `autoRetries`, even when the analysis fails), analysed again and
+   * traced `auto: true`; three per pass, none started after the call's first 10 s; the pass stops when Allopark asks for
+   * a check or refuses Plazo, and (`stopOnOutage`) when Claude still cannot read. `linkOnlyIfOver` (rereadWithRules): a
+   * stay that is over is only linked, and the booking typed by the staff is found by the analysis (typedSince) rather
+   * than before the claim, so that each email is read once. Logged without personal data.
    */
   private async autoPass(
     name: string,
     rows: (InboundRow & { operatorId: string })[],
     startedAt: number,
     still: Prisma.InboundEmailWhereInput,
-    options: { count: boolean; stopOnOutage?: boolean },
+    options: { count: boolean; stopOnOutage?: boolean; linkOnlyIfOver?: boolean },
   ): Promise<AutoRetryReport> {
     const report: AutoRetryReport = { due: rows.length, tried: 0, outcomes: {} };
     for (const row of rows) {
       if (report.tried >= AUTO_RETRY_PER_RUN) break;
       if (Date.now() - startedAt > AUTO_RETRY_START_BUDGET_MS) break;
-      if (await this.typedByHand(row)) {
+      if (!options.linkOnlyIfOver && (await this.typedByHand(row))) {
         report.typedByHand = (report.typedByHand ?? 0) + 1;
         continue;
       }
@@ -1301,7 +1487,23 @@ export class InboundEmailService {
       if (!claimed.count) continue;
       report.tried += 1;
       try {
-        const result = await this.rerun(row, row.operatorId, { id: null, operatorId: row.operatorId }, true);
+        // rereadWithRules: once per email, whatever this analysis becomes (an error included).
+        if (options.linkOnlyIfOver) {
+          await this.audit.record(
+            { id: null, operatorId: row.operatorId },
+            {
+              action: REREAD_MARK,
+              entityType: 'inbound_email',
+              entityId: row.id,
+              details: { auto: true },
+            },
+          );
+        }
+        // The re-reading of emails already dealt with: a booking of the same traveller typed by the staff at any time,
+        // before the email came too (typed from the comparator's extranet or by phone), leaves it to them (typedSince).
+        const result = await this.rerun(row, row.operatorId, { id: null, operatorId: row.operatorId }, true, {
+          ...(options.linkOnlyIfOver ? { linkOnlyIfOverAt: at, typedSince: new Date(0) } : {}),
+        });
         report.outcomes[result.analysis.status] = (report.outcomes[result.analysis.status] ?? 0) + 1;
         const lookup = result.analysis.pageLookup;
         if (lookup && (lookup.outcome === 'protected' || lookup.refused)) {
@@ -1321,7 +1523,7 @@ export class InboundEmailService {
         .map(([outcome, count]) => `${count} ${outcome}`)
         .join(', ');
       logger.info(
-        `[Inbound] ${name}: ${report.due} due, ${report.tried} tried${outcomes ? ` (${outcomes})` : ''}${report.stopped ? `, stopped: ${report.stopped}` : ''}`,
+        `[Inbound] ${name}: ${report.due} due, ${report.tried} tried${outcomes ? ` (${outcomes})` : ''}${report.typedByHand ? `, ${report.typedByHand} typed by hand` : ''}${report.stopped ? `, stopped: ${report.stopped}` : ''}`,
       );
     }
     return report;
@@ -1347,9 +1549,17 @@ export class InboundEmailService {
    * the row written under its lock (a colleague may have handled, archived or attached it while the analysis ran: a
    * handled or archived email keeps that state, an attached one its booking) and the history.
    */
-  private async rerun(row: InboundRow, operatorId: string, auditActor: { id: string | null; operatorId: string }, auto: boolean): Promise<Rerun> {
+  private async rerun(
+    row: InboundRow,
+    operatorId: string,
+    auditActor: { id: string | null; operatorId: string },
+    auto: boolean,
+    options: Pick<AnalysisInput, 'linkOnlyIfOverAt' | 'typedSince'> = {},
+  ): Promise<Rerun> {
     const id = row.id;
+    const { typedSince, ...rest } = options;
     const analysis = await this.analyse({
+      ...rest,
       operatorId,
       emailId: id,
       text: row.textBody ?? '',
@@ -1364,7 +1574,7 @@ export class InboundEmailService {
         reading: readingOf(row.reading),
         change: changeOf(row.change),
       },
-      ...(auto ? { typedSince: row.receivedAt } : {}),
+      ...(auto ? { typedSince: typedSince ?? row.receivedAt } : {}),
     });
     const linked = analysis.status === 'imported' || analysis.status === 'changed' || analysis.status === 'duplicate';
     // The new reading (Claude's when it answered, else the rules'); none for a booking made without either; else the

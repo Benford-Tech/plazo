@@ -52,17 +52,25 @@ export class InboundEmailController {
    * 15/10/2026: then, unless Allopark stopped the pass, the emails that waited only for their plate (`plateOnly`, given
    * when some were due). 16/10/2026 (« analyser sans passer par Claude »): then the emails stored before the rules per
    * mail type that those rules now know (`rules`), and the emails that wait because Claude could not read them, once it
-   * answers again (`reading`); each given when some were due.
+   * answers again (`reading`); each given when some were due. 16/10/2026 (« relie les mail deja traité »): last, the
+   * emails received and dealt with before the rules, read once more with them (`reread`).
    */
   public retry = catchAsync(async (req: Request, res: Response) => {
     checkInboundSecret(req);
     const startedAt = Date.now();
     const report = await this.inbound.retryAllopark();
-    const blocked = (r: { stopped?: string } | null) => r?.stopped === 'protected' || r?.stopped === 'refused';
+    const blocked = (...reports: ({ stopped?: string } | null)[]) => reports.some(r => r?.stopped === 'protected' || r?.stopped === 'refused');
     const plateOnly = blocked(report) ? null : await this.inbound.importWaitingForPlate(new Date(), startedAt);
-    const rules = blocked(report) || blocked(plateOnly) ? null : await this.inbound.analyseWaitingForRules(new Date(), startedAt);
-    const reading = blocked(report) || blocked(plateOnly) || blocked(rules) ? null : await this.inbound.retryReading(new Date(), startedAt);
-    res.json({ ...report, ...(plateOnly?.due ? { plateOnly } : {}), ...(rules?.due ? { rules } : {}), ...(reading?.due ? { reading } : {}) });
+    const rules = blocked(report, plateOnly) ? null : await this.inbound.analyseWaitingForRules(new Date(), startedAt);
+    const reading = blocked(report, plateOnly, rules) ? null : await this.inbound.retryReading(new Date(), startedAt);
+    const reread = blocked(report, plateOnly, rules, reading) ? null : await this.inbound.rereadWithRules(new Date(), startedAt);
+    res.json({
+      ...report,
+      ...(plateOnly?.due ? { plateOnly } : {}),
+      ...(rules?.due ? { rules } : {}),
+      ...(reading?.due ? { reading } : {}),
+      ...(reread?.due ? { reread } : {}),
+    });
   });
 
   /** GET /internal/inbound/settings */
