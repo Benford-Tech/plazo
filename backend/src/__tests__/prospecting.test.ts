@@ -169,13 +169,15 @@ describe('Plateforme › Prospection : envoi et relances', () => {
     const first = sent.find(e => e.to[0].email === 'contact1@parking-fictif.example')!;
     expect(first.sender).toEqual({ name: 'Plazo', email: 'bonjour@plazo.test' });
     expect(first.replyTo).toEqual({ email: admin.manager.email });
-    expect(first.subject).toBe('Camille, vos réservations des comparateurs au même endroit');
+    expect(first.subject).toBe('Parking Fictif 1 : vos réservations des comparateurs dans un seul planning');
     expect(first.headers['List-Unsubscribe-Post']).toBe('List-Unsubscribe=One-Click');
     expect(first.headers['List-Unsubscribe']).toMatch(/^<https:\/\/site\.example\/api\/public\/prospecting\/unsubscribe\/[^>]+>, <mailto:/);
     expect(first.textContent).toContain('Benford Tech');
     expect(first.htmlContent).toContain('Ne plus recevoir de messages de Plazo');
-    // Without a first name, the subject still reads well.
-    expect(sent.find(e => e.to[0].email === 'contact2@parking-fictif.example')!.subject).toBe('Vos réservations des comparateurs au même endroit');
+    // Without a first name, the subject still names the parking.
+    expect(sent.find(e => e.to[0].email === 'contact2@parking-fictif.example')!.subject).toBe(
+      'Parking Fictif 2 : vos réservations des comparateurs dans un seul planning',
+    );
 
     const row = await prisma.prospect.findUniqueOrThrow({ where: { id: a.id } });
     expect(row).toMatchObject({ status: 'contacted', step: 1, sendingAt: null, enrolledById: admin.manager.id });
@@ -266,7 +268,7 @@ describe('Plateforme › Prospection : envoi et relances', () => {
     const [one, two] = await Promise.all([service.runDue(due), service.runDue(due)]);
     expect(one.sent + two.sent).toBe(1);
     expect(emails()).toHaveLength(3);
-    expect(emails()[2]).toMatchObject({ subject: 'Re : vos réservations au même endroit', to: [{ email: 'contact1@parking-fictif.example' }] });
+    expect(emails()[2]).toMatchObject({ subject: 'Une question sur vos retours de navette', to: [{ email: 'contact1@parking-fictif.example' }] });
     const afterTwo = await prisma.prospect.findUniqueOrThrow({ where: { id: a.id } });
     expect(afterTwo.step).toBe(2);
     expect(await service.runDue(due)).toMatchObject({ sent: 0 });
@@ -275,7 +277,7 @@ describe('Plateforme › Prospection : envoi et relances', () => {
     expect(await service.runDue(afterTwo.nextSendAt!)).toMatchObject({ sent: 1 });
     const done = await prisma.prospect.findUniqueOrThrow({ where: { id: a.id } });
     expect(done).toMatchObject({ step: 3, nextSendAt: null, status: 'contacted' });
-    expect(emails()[3].subject).toBe('Une démonstration de 15 minutes ?');
+    expect(emails()[3].subject).toBe('Je ne vous dérange plus');
     expect(await prisma.prospectMessage.count({ where: { prospectId: a.id, status: 'sent' } })).toBe(3);
     expect(await prisma.prospectMessage.count({ where: { prospectId: b.id } })).toBe(1);
   });
@@ -301,7 +303,7 @@ describe('Plateforme › Prospection : envoi et relances', () => {
     const after = await prisma.prospect.findUniqueOrThrow({ where: { id: a.id } });
     expect(after.nextSendAt!.getTime()).toBeGreaterThan(before.getTime() + 10 * 86400000);
     await service.runDue(after.nextSendAt!);
-    expect(emails().at(-1)!.subject).toBe('Une démonstration de 15 minutes ?');
+    expect(emails().at(-1)!.subject).toBe('Je ne vous dérange plus');
     expect((await prisma.prospect.findUniqueOrThrow({ where: { id: a.id } })).step).toBe(3);
   });
 
