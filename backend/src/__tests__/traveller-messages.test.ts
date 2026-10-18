@@ -193,7 +193,14 @@ describe('le fil de messages du voyageur (B)', () => {
     // The scheduler's route answers with the SMS queue too.
     const run = await api().get('/api/internal/cron/remind-tomorrow').set('Authorization', `Bearer ${process.env.CRON_SECRET}`);
     expect(run.status).toBe(200);
-    expect(run.body).toEqual({ checked: 0, sent: 0, failed: 0, sms: { operators: 0, checked: 0, sent: 0, abandoned: 0 } });
+    // The prospecting pass rides on this call (18/10/2026): its outcome is reported, never counted in this route's status.
+    expect(run.body).toEqual({
+      checked: 0,
+      sent: 0,
+      failed: 0,
+      sms: { operators: 0, checked: 0, sent: 0, abandoned: 0 },
+      prospecting: expect.any(Object),
+    });
   });
 
   it('voiture garée, bon voyage, puis bon retour avec le mail de clôture ; chacun une fois', async () => {

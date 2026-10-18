@@ -118,7 +118,7 @@ describe("privacy policy", () => {
     expect(all).toContain("« Compte supprimé »");
     expect(all).toContain("Apple et Google");
     expect(all).toContain("ils confirment son identité à Plazo");
-    expect(privacyDoc().version).toBe("15 octobre 2026"); // 13/10/2026, then the controller's details (15/10/2026)
+    expect(privacyDoc().version).toBe("18 octobre 2026"); // 13/10/2026, the controller's details (15/10/2026), prospecting (18/10/2026)
   });
 
   it("says what really happens: a raw IP kept 7 days for the code, Google's id is not Plazo's own, Apple revoked only with Apple", () => {
@@ -136,10 +136,20 @@ describe("privacy policy", () => {
     expect(all).toContain("les remarques écrites dans les notes d’une réservation, signées du prénom, y restent jusqu’à l’anonymisation de la réservation (12 mois après le retour)");
   });
 
-  it("dates each text on its own: the three moved on 15/10/2026 with the company details of product.json", () => {
-    expect(privacyDoc().version).toBe("15 octobre 2026");
+  it("dates each text on its own: the three moved on 15/10/2026 with the company details of product.json, the privacy policy again on 18/10/2026", () => {
+    expect(privacyDoc().version).toBe("18 octobre 2026");
     expect(termsDoc().version).toBe("15 octobre 2026");
     expect(legalNoticeDoc().version).toBe("15 octobre 2026");
+  });
+
+  it("covers the prospecting of airport parkings (Plateforme › Prospection, 18/10/2026)", () => {
+    // ProspectingService: source manual | csv, 3 steps stopped by a reply, the opt-out link, suppressions kept hashed,
+    // the nightly purge 3 years after the last contact (RETENTION_YEARS).
+    expect(all).toContain("saisies à la main par l’équipe de Plazo ou importées d’un fichier qu’elle fournit");
+    expect(all).toContain("Trois messages au plus (un premier contact et deux relances), qui s’arrêtent dès que le parking répond");
+    expect(all).toContain("« Ne plus recevoir de messages »");
+    expect(all).toContain("gardée sous forme d’empreinte");
+    expect(all).toContain("supprimées 3 ans après le dernier contact");
   });
 
   it("covers the contact form and « La lettre » of footer A (15/10/2026)", () => {

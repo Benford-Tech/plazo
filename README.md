@@ -274,6 +274,25 @@ une décision de Joanny. Cocher au fur et à mesure.
   garde son lien de désinscription : le pied de page et la politique de confidentialité promettent la désinscription en un
   clic. Avant la première lettre : la politique ne parle pas de la mesure des ouvertures et des clics que Brevo fait sur ses
   campagnes ; la couper dans le suivi de la campagne, ou compléter la politique (articles 2 et 3) et la phrase d'inscription.
+- [ ] **Prospection (Plateforme › Prospection, 18/10/2026)** : avant le premier envoi aux parkings :
+  1) **domaine d'envoi authentifié dans Brevo** (Brevo › Senders, Domains & Dedicated IPs › Domains) pour le domaine de
+  l'expéditeur : enregistrements **SPF** (`include:spf.brevo.com` dans le TXT du domaine), **DKIM** (le TXT `mail._domainkey`
+  que Brevo donne) et **DMARC** (TXT `_dmarc`, au moins `v=DMARC1; p=none; rua=mailto:…` puis `p=quarantine` une fois les
+  rapports propres) chez Cloudflare, qui tient les DNS de `plazo.fr` ; un domaine non authentifié finit en indésirables ou
+  est refusé par Gmail et Yahoo ; 2) Vercel (Production) : `PROSPECTING_SENDER_EMAIL` et `PROSPECTING_SENDER_NAME` (par ex.
+  `joanny@plazo.fr`, « Joanny de Plazo » ; adresse vérifiée dans Brevo ; sans elles, l'expéditeur d'`EMAIL_FROM`), et
+  `PROSPECTING_REPLY_TO` (boîte lue où arrivent les réponses ; sans elle, l'adresse de l'administrateur qui a envoyé) ;
+  `BREVO_API_KEY`, `PUBLIC_SITE_URL` (le lien de désinscription) et `SECRET_KEY` (qui le signe) sont déjà là ; sans l'un
+  d'eux, la page le dit et l'API répond 409 `prospecting_unavailable` ; 3) **relecture juridique** (CNIL, prospection B2B
+  par e-mail : adresses professionnelles seulement, message en rapport avec l'activité du parking, identité de l'éditeur et
+  lien d'opposition dans chaque mail, ce que le code fait ; vérifier les textes des trois mails dans « Modifier les mails »,
+  et la section 11 de la politique de confidentialité) ; 4) les mails partent du lundi au vendredi, de 9 h à 18 h (heure de
+  Paris), 50 par jour au plus (réglable de 1 à 300), par le passage de 15 minutes de `remind-tomorrow` (cron-job.org,
+  ci-dessous) ; une tâche dédiée peut appeler `GET /api/internal/cron/prospecting` avec le même en-tête ; 5) une réponse
+  arrive dans la boîte de réponse, pas dans Plazo : la marquer « A répondu » (ou « Intéressé », « Pas intéressé ») arrête les
+  relances ; une demande « ne plus me contacter » par réponse ou par le lien `mailto:` de l'en-tête `List-Unsubscribe` se
+  traite avec « Désinscrire ». Prospects supprimés 3 ans après le dernier contact par la purge de nuit ; adresses désinscrites
+  gardées en empreinte. Pas de prospects pris sur les comparateurs : saisie à la main ou CSV fourni par l'administrateur.
 - [ ] Connexion Apple / Google de Plazo Pro et code du jour (livrés le 13/10/2026 ; pas à pas : section 3 bis de
   `mobile/publier-sur-les-stores.md`) : Apple : capacité « Sign In with Apple » sur l'App ID `com.benfordtech.plazopro`,
   profil `plazo_pro_app_store` régénéré puis rechargé dans Codemagic sous le même nom, clé « Sign in with Apple » (.p8) dans
@@ -566,8 +585,9 @@ attente du téléphone du parking. Mise en place :
    schedule* **Every 15 minutes**.
 3. Onglet *Advanced* : méthode **GET**, en-tête **`Authorization`** = `Bearer ` suivi de la valeur de `CRON_SECRET` (Vercel ›
    Settings › Environment Variables), *Timeout* au maximum.
-4. Enregistrer, puis **Test run** : la réponse doit être `200` avec `{"checked":…,"sent":…,"sms":{…}}` ; un `401` signale
-   un secret erroné.
+4. Enregistrer, puis **Test run** : la réponse doit être `200` avec `{"checked":…,"sent":…,"sms":{…},"prospecting":{…}}` ; un
+   `401` signale un secret erroné. Ce même appel envoie les mails de prospection dus (Plateforme › Prospection, 18/10/2026 :
+   du lundi au vendredi, 9 h à 18 h) ; leur résultat n'en change jamais le statut.
 
 **Récapitulatif horaire des réservations (N-A, 08/10/2026)** : la route `/api/internal/cron/booking-digest` envoie, chaque heure
 pile, un push « N réservations reçues » aux membres réglés sur « récapitulatif horaire » (les gérants par défaut), tous canaux

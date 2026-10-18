@@ -10,6 +10,7 @@ import { ListingRoute } from './listing.route';
 import { ParkingRoute } from './parking.route';
 import { PaymentRoute } from './payment.route';
 import { PlatformRoute } from './platform.route';
+import { ProspectingRoute } from './prospecting.route';
 import { PublicBookingRoute } from './public-booking.route';
 import { PublicRoute } from './public.route';
 import { ReminderRoute } from './reminder.route';
@@ -31,6 +32,7 @@ const AppRoutes = [
   new RevenueRoute(),
   new ListingRoute(),
   new PlatformRoute(),
+  new ProspectingRoute(),
   new PublicRoute(),
   new PublicBookingRoute(),
   new ContactRoute(),

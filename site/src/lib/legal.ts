@@ -31,12 +31,12 @@ export interface LegalDoc {
  * - Terms: 15/10/2026, the publisher's details (Benford Tech) and « Plazo » naming that company too, the contact form next
  *   to the service client's address once there is a real one (footer A); 12/10/2026, night fees.
  * - Legal notice: 15/10/2026, the publisher's details.
- * - Privacy: 15/10/2026, the controller's details, the contact form and « La lettre » (footer A); 13/10/2026, Plazo Pro
+ * - Privacy: 18/10/2026, the prospecting emails to airport parkings (Plateforme › Prospection); 15/10/2026, the controller's details, the contact form and « La lettre » (footer A); 13/10/2026, Plazo Pro
  *   sign-in with Apple / Google, the code of the day, account deletion.
  */
 export const TERMS_VERSION = "15 octobre 2026";
 export const NOTICE_VERSION = "15 octobre 2026";
-export const PRIVACY_VERSION = "15 octobre 2026";
+export const PRIVACY_VERSION = "18 octobre 2026";
 export const TO_COMPLETE = "[à compléter]";
 
 const filled = (value: string) => value.trim() || TO_COMPLETE;
@@ -450,8 +450,18 @@ export function privacyDoc(company: Company = COMPANY, email: string = SUPPORT_E
         ],
       },
       {
+        id: "prospection",
+        title: "11. Prospection des parkings",
+        blocks: [
+          `Pour proposer ${p} aux parkings proches des aéroports, ${c.name} écrit par e-mail à des professionnels : le nom du parking, sa ville et son aéroport, l’adresse e-mail professionnelle du contact, et, s’ils sont connus, son prénom, son nom, son téléphone professionnel et nos notes d’échange. Ces coordonnées professionnelles sont saisies à la main par l’équipe de ${p} ou importées d’un fichier qu’elle fournit ; elles ne viennent jamais des réservations des voyageurs.`,
+          `Base : l’intérêt légitime de ${p} à faire connaître son service à des professionnels, pour une offre en rapport avec leur activité. Trois messages au plus (un premier contact et deux relances), qui s’arrêtent dès que le parking répond.`,
+          "Chaque message dit qui écrit et porte un lien « Ne plus recevoir de messages » : un clic suffit pour s’opposer à toute nouvelle sollicitation, comme une simple réponse le demandant. L’adresse est alors gardée sous forme d’empreinte, d’où on ne peut pas la retrouver, uniquement pour ne plus jamais l’écrire, même si elle était de nouveau importée.",
+          "Durée : ces données sont supprimées 3 ans après le dernier contact (ou après leur saisie, si le parking n’a jamais été contacté). Les e-mails partent par Brevo (voir l’article 4). Les droits de l’article 8 s’exercent de la même façon.",
+        ],
+      },
+      {
         id: "modifications",
-        title: "11. Modifications",
+        title: "12. Modifications",
         blocks: [
           `${p} peut mettre à jour cette politique, notamment quand le service évolue. La date de version figure en haut de la page.`,
         ],

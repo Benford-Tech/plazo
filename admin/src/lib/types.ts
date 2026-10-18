@@ -1540,3 +1540,87 @@ export interface RevenueSummary {
   todayCents: number;
   weekCents: number;
 }
+
+// ---- Prospection (Plateforme › Prospection, 18/10/2026) ----------------------------------------------------------------
+
+export type ProspectStatus = "to_contact" | "contacted" | "replied" | "interested" | "not_interested" | "unsubscribed";
+
+export interface Prospect {
+  id: string;
+  email: string;
+  companyName: string;
+  contactFirstName: string | null;
+  contactLastName: string | null;
+  town: string | null;
+  airportCode: string | null;
+  airportName: string | null;
+  phone: string | null;
+  notes: string | null;
+  source: "manual" | "csv";
+  status: ProspectStatus;
+  /** Last step sent (0: none). */
+  step: number;
+  nextStep: number | null;
+  nextSendAt: string | null;
+  firstContactedAt: string | null;
+  lastContactedAt: string | null;
+  stoppedAt: string | null;
+  failedAttempts: number;
+  lastError: string | null;
+  createdAt: string;
+}
+
+export interface ProspectInput {
+  companyName: string;
+  contactFirstName: string | null;
+  contactLastName: string | null;
+  email: string;
+  town: string | null;
+  airportCode: string | null;
+  phone: string | null;
+  notes: string | null;
+}
+
+export interface ProspectList {
+  data: Prospect[];
+  counts: Record<ProspectStatus | "all", number>;
+  airports: { code: string; name: string | null; count: number }[];
+  today: { sent: number; cap: number; remaining: number };
+  window: { open: boolean; nextOpening: string };
+  configured: boolean;
+}
+
+export interface ProspectingStep {
+  step: 1 | 2 | 3;
+  enabled: boolean;
+  delayDays: number;
+  subject: string;
+  body: string;
+}
+
+export interface ProspectingSettings {
+  steps: ProspectingStep[];
+  dailyCap: number;
+  updatedAt: string | null;
+  sender: { name: string; email: string } | null;
+  replyTo: string | null;
+  configured: boolean;
+}
+
+export type ProspectImportOutcome = "new" | "duplicate" | "suppressed" | "invalid";
+
+export interface ProspectImportReport {
+  dryRun: boolean;
+  results: { row: number; outcome: ProspectImportOutcome; email?: string; fields?: Record<string, string> }[];
+  counts: Record<ProspectImportOutcome, number>;
+  created: number;
+}
+
+export interface ProspectSendResult {
+  enrolled: number;
+  sent: number;
+  failed: number;
+  queued: number;
+  skipped: number;
+  nextOpening: string | null;
+}

@@ -12,6 +12,7 @@ import { ReturnService } from '@/services/return.service';
 import { ShuttleService } from '@/services/shuttle.service';
 import { SmsService } from '@/services/sms.service';
 import { PaymentService } from '@/services/payment.service';
+import { ProspectingService } from '@/services/prospecting.service';
 import { ReminderService } from '@/services/reminder.service';
 import { RetentionService } from '@/services/retention.service';
 import { TokenService } from '@/services/token.service';
@@ -39,6 +40,20 @@ export class CronController {
   public digest = Container.get(BookingDigestService);
   public joinRequests = Container.get(JoinRequestService);
   public identityVerification = Container.get(IdentityVerificationService);
+  public prospecting = Container.get(ProspectingService);
+
+  /**
+   * The prospecting emails due now (Plateforme › Prospection, 18/10/2026). Never throws: a failure here must not change
+   * the answer of the route that carries it (remind-tomorrow).
+   */
+  private async prospectingPass(): Promise<Awaited<ReturnType<ProspectingService['runDue']>> | { error: true }> {
+    try {
+      return await this.prospecting.runDue();
+    } catch (error) {
+      logger.error(`[Cron] Prospecting pass failed: ${error instanceof Error ? error.name : 'unknown error'}`);
+      return { error: true };
+    }
+  }
 
   /** GET /internal/cron/expire-arrival-signals */
   public expireArrivalSignals = catchAsync(async (req: Request, res: Response) => {
@@ -87,8 +102,18 @@ export class CronController {
   public remindTomorrow = catchAsync(async (req: Request, res: Response) => {
     const result = await this.reminders.dispatchDue();
     const sms = await this.sms.refreshAll();
-    logger.info(`[Cron] Reminders: ${JSON.stringify(result)}; SMS queue: ${JSON.stringify(sms)}`);
-    res.status(statusOf(result.sent + result.failed, result.failed)).json({ ...result, sms });
+    // The prospecting emails ride on this 15-minute call (Vercel Hobby has daily crons only); their outcome never changes
+    // this route's status.
+    const prospecting = await this.prospectingPass();
+    logger.info(`[Cron] Reminders: ${JSON.stringify(result)}; SMS queue: ${JSON.stringify(sms)}; prospecting: ${JSON.stringify(prospecting)}`);
+    res.status(statusOf(result.sent + result.failed, result.failed)).json({ ...result, sms, prospecting });
+  });
+
+  /** GET /internal/cron/prospecting: the prospecting emails due now, for a dedicated job (also run by remind-tomorrow). */
+  public prospectingDue = catchAsync(async (req: Request, res: Response) => {
+    const result = await this.prospecting.runDue();
+    logger.info(`[Cron] Prospecting: ${JSON.stringify(result)}`);
+    res.status(statusOf(result.sent + result.failed, result.failed)).json(result);
   });
 
   /**
@@ -124,11 +149,13 @@ export class CronController {
     // Apple / Google tokens already used (single use) past their own expiry, and login attempts after 30 days.
     const usedIdentityTokensDeleted = await this.identityVerification.purgeUsedTokens();
     const loginAttemptsDeleted = await purgeLoginAttempts();
+    // Prospects 3 years after the last contact (or their creation); the opt-out list stays.
+    const prospectsDeleted = await this.prospecting.purge();
     logger.info(
       `[Cron] ${deleted} expired staff tokens deleted, ${arrivalSignalsEnded} arrival signals ended, ${shuttleTripsEnded} shuttle trips ended, ` +
         `SMS queue ${JSON.stringify(sms)}, ${smsPurged} outbox rows purged, ${reservationsAnonymized} bookings anonymised, ` +
         `${identityTokensDeleted} onboarding tokens deleted, join requests ${JSON.stringify(joins)}, ` +
-        `${usedIdentityTokensDeleted} used identity tokens and ${loginAttemptsDeleted} login attempts deleted`,
+        `${usedIdentityTokensDeleted} used identity tokens, ${loginAttemptsDeleted} login attempts and ${prospectsDeleted} prospects deleted`,
     );
     res.json({
       deleted,
@@ -146,6 +173,7 @@ export class CronController {
       identitiesDeleted: joins.identitiesDeleted,
       usedIdentityTokensDeleted,
       loginAttemptsDeleted,
+      prospectsDeleted,
     });
   });
 }

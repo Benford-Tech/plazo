@@ -26,6 +26,10 @@ export const ValidateEnv = () => {
       default: '',
       desc: 'Id of the Brevo double opt-in template (it holds the {{ doubleoptin }} link; a positive integer)',
     }),
+    // Prospection (Plateforme › Prospection, 18/10/2026): empty = EMAIL_FROM, and replies to the admin who sent.
+    PROSPECTING_SENDER_EMAIL: str({ default: '', desc: 'Sender address of the prospecting emails (verified in Brevo)' }),
+    PROSPECTING_SENDER_NAME: str({ default: '', desc: 'Sender name of the prospecting emails' }),
+    PROSPECTING_REPLY_TO: str({ default: '', desc: 'Reply-To of the prospecting emails' }),
     // Per-operator SMS through their own Android phone: needed as soon as one operator links a phone.
     SMS_GATEWAY_ENCRYPTION_KEY: str({
       default: '',
