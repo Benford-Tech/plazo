@@ -817,6 +817,41 @@ Le nom du produit doit rester dans UN seul fichier de configuration (il peut enc
   `PaymentService.closeLingeringPayments` ferme d'abord chez Stripe les paiements des attentes échues (intention annulée, page
   expirée ; payé entre-temps → confirmé, le loueur reste) ; effacement sous le verrou des paiements et tracé `operator.deleted`
   dans la même transaction, au journal du loueur de la plateforme (`actingAs.realOperatorId`).
+  **Prospection (18/10/2026, « ajoute un outil d'envoi d'email de prospection pour la gestion de la plateforme », choix « A avec
+  les relances de B » des maquettes https://claude.ai/artifact/HqTwh9jmTKSJKB5oUNYtpq)** : onglet Plateforme › Prospection
+  `/pro/plateforme/prospection` (`ProspectingPage.tsx`, dialogues dans `pages/platform/prospecting/`, `lib/prospecting.ts`) :
+  « Importer un CSV » (lu dans le navigateur, colonnes parking, prénom, nom, e-mail, ville, aéroport, téléphone, notes, séparateur
+  ; ou , ; aperçu par l'API en `dryRun` : à ajouter, déjà dans la liste, désinscrit, erreur, puis « Importer N prospects »),
+  « + Ajouter un prospect », pilules Tous · À contacter · Contactés · Ont répondu · Intéressés · Pas intéressés · Désinscrits
+  avec comptages et filtre d'aéroport, tableau (parking et ville, contact et e-mail, aéroport, état, prochain envoi « Relance ·
+  21 oct. »), menu par prospect (A répondu, Intéressé, Pas intéressé, Arrêter les relances, Inviter sur Plazo → formulaire
+  d'invitation de Loueurs prérempli par `?inviter=1&parking=&prenom=&nom=&email=`, Modifier, Désinscrire, Supprimer ; questions
+  par `useConfirm`) ; panneau « Envoyer à N prospects » : la séquence de B (1 Premier contact J0, 2 Relance J+4, 3 Dernier
+  message J+10 par défaut, variables `{prénom} {nom} {parking} {aéroport} {ville}`), aperçu pour le premier choisi, « 12 / 50
+  aujourd'hui », « M'envoyer un test », « Envoyer à N prospects » (confirmé) ; « Modifier les mails » (objet, message, délai,
+  relance éteinte, plafond du jour). Serveur : migration `prospecting`, tables `prospects` (adresse en minuscules unique,
+  `source` manual | csv, `status` to_contact | contacted | replied | interested | not_interested | unsubscribed, `step` dernier
+  mail envoyé, `nextSendAt`, `firstContactedAt` = J0, `stoppedAt`, `sendingAt` (réservation d'un passage), `failedAttempts`,
+  `enrolledById` ; CHECK : rien de prévu pour un prospect fermé), `prospect_messages` (objet, id Brevo, sent | failed, code
+  d'erreur ; pas le texte), `prospecting_settings` (ligne unique `default` : étapes JSON, `dailyCap` 50, 1 à 300) et
+  `prospect_suppressions` (sha256 de l'adresse, gardé après la suppression du prospect : ni réimport ni envoi) ;
+  `domain/prospecting.ts` (variables, échappement HTML, mail avec l'éditeur de `product.json` › `company` et le lien de
+  désinscription, fenêtre du lundi au vendredi 09:00–18:00 Europe/Paris, relance N jours après J0 à la même heure remise dans la
+  fenêtre, plafond, validation d'un prospect et de la séquence) ; `ProspectingService` + routes
+  `/api/internal/platform/prospects…` (`PlatformAdminMiddleware`, écritures tracées `prospect.*` / `prospecting.*` sans adresse
+  ni nom) : `sendNow` inscrit les prospects « À contacter » jamais écrits et envoie le mail 1 tout de suite dans la limite du
+  plafond du jour (les autres partent à la prochaine ouverture), `runDue` envoie dans la fenêtre et sous le plafond, chaque
+  prospect réservé d'abord (`FOR UPDATE SKIP LOCKED` sur `sendingAt`) : deux passages n'envoient jamais deux fois ; une réponse,
+  un intérêt, un refus ou une désinscription arrêtent tout ; un refus de Brevo est retenté une heure plus tard, 3 refus
+  arrêtent ; mails par Brevo (`NotificationService.emailProspect`) avec `List-Unsubscribe` (https et mailto de la réponse) et
+  `List-Unsubscribe-Post: List-Unsubscribe=One-Click`. Lien public `GET /api/public/prospecting/unsubscribe/:token` (petite page
+  avec un bouton, ne désinscrit pas d'elle-même) et `POST` (bouton et désinscription en un clic, RFC 8058) ; jeton = id + HMAC de
+  `SECRET_KEY`, comparé à temps constant. Envoi par le passage de 15 minutes de `remind-tomorrow` (dans son propre try/catch, sans
+  changer son statut) et `GET /internal/cron/prospecting` ; purge de nuit 3 ans après le dernier contact (ou la saisie).
+  **Réglages par défaut, à confirmer par Joanny** : expéditeur `PROSPECTING_SENDER_EMAIL` / `PROSPECTING_SENDER_NAME` (sinon
+  `EMAIL_FROM`), réponses à `PROSPECTING_REPLY_TO` (sinon l'administrateur qui a envoyé), prospects saisis à la main ou importés
+  d'un CSV fourni (aucune collecte sur les comparateurs), textes des trois mails modifiables. Politique de confidentialité :
+  section 11 « Prospection des parkings ».
 - `site/` : site Plazo voyageurs (Next.js), servi à la racine du domaine. **Référencement (08/10/2026)** : données structurées
   schema.org (`src/lib/structured-data.ts`, composant `JsonLd` : Organization et WebSite sur l'accueil, FAQPage et ItemList des
   parkings sur la page aéroport, ParkingFacility + BreadcrumbList sur une fiche) ; un parking de démo (`isDemo`) n'est ni décrit,

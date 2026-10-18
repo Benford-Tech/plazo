@@ -285,9 +285,32 @@ export function flightTrackingSettings(): { provider: FlightProviderName; apiKey
 // read from the repository root.
 const productPath = [resolve(__dirname, '../product.json'), resolve(__dirname, '../../../product.json')].find(existsSync);
 if (!productPath) throw new Error('product.json not found');
-const product = JSON.parse(readFileSync(productPath, 'utf8')) as { name: string; tagline: string; supportEmail?: string };
+const product = JSON.parse(readFileSync(productPath, 'utf8')) as {
+  name: string;
+  tagline: string;
+  supportEmail?: string;
+  company?: { name?: string; legalForm?: string; address?: string; registration?: string };
+};
 export const PRODUCT_NAME = product.name;
 export const PRODUCT_TAGLINE = product.tagline;
 // Where the site's contact form sends its messages (footer A, 15/10/2026). product.json holds a placeholder until the real
 // address is known (isRealSupportEmail): the form then answers 409 `contact_unavailable`.
 export const SUPPORT_EMAIL = (product.supportEmail || '').trim();
+
+// The publisher (product.json › company): named at the foot of the prospecting emails (18/10/2026). Empty fields are left out.
+export const PRODUCT_COMPANY = {
+  name: (product.company?.name || '').trim(),
+  legalForm: (product.company?.legalForm || '').trim(),
+  address: (product.company?.address || '').trim(),
+  registration: (product.company?.registration || '').trim(),
+};
+
+// Prospection (Plateforme › Prospection, 18/10/2026). Read on every call so that tests can set them. The sender defaults to
+// EMAIL_FROM (the one of every other email); the replies go to PROSPECTING_REPLY_TO, else to the platform admin who sent.
+export function prospectingSettings(): { senderEmail: string; senderName: string; replyTo: string } {
+  return {
+    senderEmail: (process.env.PROSPECTING_SENDER_EMAIL || '').trim(),
+    senderName: (process.env.PROSPECTING_SENDER_NAME || '').trim(),
+    replyTo: (process.env.PROSPECTING_REPLY_TO || '').trim().toLowerCase(),
+  };
+}

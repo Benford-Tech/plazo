@@ -1,5 +1,5 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useConfirm } from "@/components/ui/confirm-context";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { toast } from "sonner";
@@ -214,12 +214,23 @@ const emptyInvite = {
 function InviteForm({
   defaultBps,
   onInvited,
+  prefill,
 }: {
   defaultBps: number | null;
   onInvited: (result: InvitationResult) => void;
+  /** « Inviter sur Plazo » of the Prospection tab (18/10/2026): the prospect's parking, name and address. */
+  prefill?: Partial<typeof emptyInvite>;
 }) {
   const queryClient = useQueryClient();
-  const [form, setForm] = useState(emptyInvite);
+  const [form, setForm] = useState(() => ({ ...emptyInvite, ...prefill }));
+  useEffect(() => {
+    if (!prefill) return;
+    const input = document.getElementById("invite-operatorName");
+    input?.scrollIntoView?.({ block: "center" });
+    input?.focus();
+    // Only once, when the page opens from the Prospection tab.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
   const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
   const invite = useMutation({
     mutationFn: () => {
@@ -562,6 +573,17 @@ export default function OperatorsPage() {
   // 09/10/2026: the current operators (active and suspended) or the archived ones (?vue=archives).
   const [params, setParams] = useSearchParams();
   const archivedView = params.get("vue") === "archives";
+  // ?inviter=1&parking=&prenom=&nom=&email= (« Inviter sur Plazo » of the Prospection tab, 18/10/2026).
+  const [prefill] = useState(() =>
+    params.get("inviter") === "1"
+      ? {
+          operatorName: params.get("parking") ?? "",
+          managerFirstName: params.get("prenom") ?? "",
+          managerLastName: params.get("nom") ?? "",
+          managerEmail: params.get("email") ?? "",
+        }
+      : undefined,
+  );
   const operators = useQuery({
     queryKey: ["platform", "operators", archivedView ? "archived" : "current"],
     queryFn: () =>
@@ -730,7 +752,7 @@ export default function OperatorsPage() {
       )}
 
       <div className="grid gap-4 lg:grid-cols-[1.4fr_1fr]">
-        <InviteForm defaultBps={defaultBps} onInvited={showLink} />
+        <InviteForm defaultBps={defaultBps} onInvited={showLink} prefill={prefill} />
         <div className="flex flex-col gap-2.5 border border-border p-4">
           <h2 className={labelClass}>{t.canDoTitle}</h2>
           <ul className="space-y-1 text-base leading-relaxed">

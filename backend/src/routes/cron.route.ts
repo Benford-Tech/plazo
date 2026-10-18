@@ -20,9 +20,22 @@ import { CronAuthMiddleware } from '@/middlewares/cron-auth.middleware';
  *       S-A + S-B, 06/10/2026), so an external scheduler calls this every 15 minutes; Vercel Hobby only
  *       runs it once a day, as a fallback. Nothing leaves between 22:00 and 07:00 (local), and a reminder
  *       never leaves twice, however often this is called.
+ *       Also sends the prospecting emails due (Plateforme › Prospection, 18/10/2026) in its own try/catch: their outcome
+ *       (`prospecting`) never changes this route's status.
  *     responses:
  *       200:
- *         description: "{ checked, sent, sms: { operators, checked, sent, abandoned } }"
+ *         description: "{ checked, sent, sms: { operators, checked, sent, abandoned }, prospecting: { configured, window, sent, failed, finished, remaining } | { error: true } }"
+ * /internal/cron/prospecting:
+ *   get:
+ *     summary: Send the prospecting emails due now (Monday to Friday 09:00-18:00 Europe/Paris, within the daily cap)
+ *     tags: [Cron]
+ *     description: >
+ *       "Requires Authorization: Bearer <CRON_SECRET>." The same pass as the one remind-tomorrow runs every 15 minutes, for
+ *       a dedicated job. Each prospect is claimed before its email leaves: two passes never send the same email twice.
+ *       500 when every email tried failed.
+ *     responses:
+ *       200:
+ *         description: "{ configured, window, sent, failed, finished, remaining }"
  * /internal/cron/booking-digest:
  *   get:
  *     summary: Send the hourly « Récapitulatif horaire » of the new bookings (every full hour, by an external scheduler)
@@ -38,12 +51,12 @@ import { CronAuthMiddleware } from '@/middlewares/cron-auth.middleware';
  *         description: "{ operators, sent, skipped }"
  * /internal/cron/purge-expired-tokens:
  *   get:
- *     summary: Delete expired staff tokens, end lapsed arrival signals and shuttle trips, retry or abandon waiting SMS, purge the SMS outbox after 30 days, erase car positions and push phones 2 days after the return, anonymise bookings 12 months after it, expire join requests unanswered for 7 days, delete expired onboarding tokens, join attempts older than 7 days, identities never linked and idle for 30 days (none with a valid onboarding session), used Apple / Google tokens past their expiry and login attempts older than 30 days (every night)
+ *     summary: Delete expired staff tokens, end lapsed arrival signals and shuttle trips, retry or abandon waiting SMS, purge the SMS outbox after 30 days, erase car positions and push phones 2 days after the return, anonymise bookings 12 months after it, expire join requests unanswered for 7 days, delete expired onboarding tokens, join attempts older than 7 days, identities never linked and idle for 30 days (none with a valid onboarding session), used Apple / Google tokens past their expiry, login attempts older than 30 days and prospects 3 years after their last contact (every night)
  *     tags: [Cron]
  *     description: "Requires Authorization: Bearer <CRON_SECRET>."
  *     responses:
  *       200:
- *         description: "{ deleted, arrivalSignalsEnded, shuttleTripsEnded, smsAbandoned, smsPurged, travellerDevicesPurged, carLocationsPurged, inboundEmails, reservationsAnonymized, identityTokensDeleted, joinRequestsExpired, joinAttemptsDeleted, identitiesDeleted, usedIdentityTokensDeleted, loginAttemptsDeleted }"
+ *         description: "{ deleted, arrivalSignalsEnded, shuttleTripsEnded, smsAbandoned, smsPurged, travellerDevicesPurged, carLocationsPurged, inboundEmails, reservationsAnonymized, identityTokensDeleted, joinRequestsExpired, joinAttemptsDeleted, identitiesDeleted, usedIdentityTokensDeleted, loginAttemptsDeleted, prospectsDeleted }"
  * /internal/cron/payouts:
  *   get:
  *     summary: Transfer the operators' shares that are due (every day)
@@ -104,5 +117,6 @@ export class CronRoute implements Routes {
     this.router.get('/internal/cron/track-return-flights', CronAuthMiddleware(), this.cron.trackReturnFlights);
     this.router.get('/internal/cron/remind-tomorrow', CronAuthMiddleware(), this.cron.remindTomorrow);
     this.router.get('/internal/cron/booking-digest', CronAuthMiddleware(), this.cron.bookingDigest);
+    this.router.get('/internal/cron/prospecting', CronAuthMiddleware(), this.cron.prospectingDue);
   }
 }

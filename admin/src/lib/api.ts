@@ -53,6 +53,14 @@ import type {
   PlatformAudience,
   PlatformNotification,
   PlatformNotificationInput,
+  Prospect,
+  ProspectImportReport,
+  ProspectInput,
+  ProspectingSettings,
+  ProspectingStep,
+  ProspectList,
+  ProspectSendResult,
+  ProspectStatus,
   ReturnMeetingPoint,
   ShuttleStop,
   ShuttleStopInput,
@@ -881,6 +889,33 @@ export const adminApi = {
     apiRequest<{ devices: number; configured: boolean }>(
       `/internal/platform/notifications/audience?${new URLSearchParams({ audience, ...(operatorId ? { operatorId } : {}) })}`,
     ),
+  // Prospection (18/10/2026).
+  getProspects: (filters: { status?: ProspectStatus | null; airport?: string | null } = {}) =>
+    apiRequest<ProspectList>(
+      `/internal/platform/prospects?${new URLSearchParams({
+        ...(filters.status ? { status: filters.status } : {}),
+        ...(filters.airport ? { airport: filters.airport } : {}),
+      })}`,
+    ),
+  createProspect: (input: ProspectInput) =>
+    apiRequest<{ data: Prospect }>("/internal/platform/prospects", { method: "POST", body: json(input) }),
+  updateProspect: (id: string, input: Partial<ProspectInput>) =>
+    apiRequest<{ data: Prospect }>(`/internal/platform/prospects/${encodeURIComponent(id)}`, { method: "PATCH", body: json(input) }),
+  deleteProspect: (id: string) =>
+    apiRequest<{ data: { id: string } }>(`/internal/platform/prospects/${encodeURIComponent(id)}`, { method: "DELETE" }),
+  importProspects: (rows: Partial<ProspectInput>[], dryRun: boolean) =>
+    apiRequest<ProspectImportReport>("/internal/platform/prospects/import", { method: "POST", body: json({ rows, dryRun }) }),
+  setProspectStatus: (id: string, status: "replied" | "interested" | "not_interested" | "unsubscribed") =>
+    apiRequest<{ data: Prospect }>(`/internal/platform/prospects/${encodeURIComponent(id)}/status`, { method: "POST", body: json({ status }) }),
+  stopProspect: (id: string) =>
+    apiRequest<{ data: Prospect }>(`/internal/platform/prospects/${encodeURIComponent(id)}/stop`, { method: "POST" }),
+  sendProspects: (ids: string[]) =>
+    apiRequest<ProspectSendResult>("/internal/platform/prospects/send", { method: "POST", body: json({ ids }) }),
+  sendProspectTest: (input: { step: number; prospectId?: string | null; subject?: string; body?: string }) =>
+    apiRequest<{ sentTo: string }>("/internal/platform/prospects/test", { method: "POST", body: json(input) }),
+  getProspectingSettings: () => apiRequest<{ data: ProspectingSettings }>("/internal/platform/prospects/settings"),
+  updateProspectingSettings: (input: { steps: ProspectingStep[]; dailyCap: number }) =>
+    apiRequest<{ data: ProspectingSettings }>("/internal/platform/prospects/settings", { method: "PUT", body: json(input) }),
   sendPlatformNotification: (input: PlatformNotificationInput) =>
     apiRequest<{ data: PlatformNotification }>(
       "/internal/platform/notifications",

@@ -213,6 +213,36 @@ export class NotificationService {
     });
   }
 
+  // ---- Prospection (Plateforme › Prospection, 18/10/2026) -----------------------------------------------------------------
+
+  /**
+   * A prospecting email, with its own sender, Reply-To and headers (List-Unsubscribe…). Returns Brevo's message id when it
+   * accepted the email, and its HTTP status otherwise (null: no answer, or Brevo not configured). Logs only the tag and
+   * `about` (an id), never the address.
+   */
+  public async emailProspect(
+    to: { email: string; name?: string },
+    message: EmailMessage,
+    options: { sender: { name: string; email: string }; replyTo: string | null; headers: Record<string, string>; tag: string; about: string },
+  ): Promise<{ ok: boolean; status: number | null; messageId: string | null }> {
+    if (!this.settings.apiKey) {
+      logger.info(`[Notifications] BREVO_API_KEY not set: ${options.tag} not sent for ${options.about}`);
+      return { ok: false, status: null, messageId: null };
+    }
+    const result = await this.request('email', options.tag, options.about, '/smtp/email', {
+      sender: options.sender,
+      to: [{ email: to.email, ...(to.name ? { name: to.name } : {}) }],
+      ...(options.replyTo ? { replyTo: { email: options.replyTo } } : {}),
+      subject: message.subject,
+      htmlContent: message.html,
+      textContent: message.text,
+      headers: options.headers,
+      tags: [options.tag],
+    });
+    const id = (result.data as { messageId?: unknown } | null | undefined)?.messageId;
+    return { ok: result.ok, status: result.status, messageId: typeof id === 'string' ? id.slice(0, 200) : null };
+  }
+
   private async post(kind: string, tag: string, about: string, path: string, body: unknown): Promise<boolean> {
     return (await this.request(kind, tag, about, path, body)).ok;
   }
@@ -228,7 +258,7 @@ export class NotificationService {
     about: string,
     path: string,
     body: unknown,
-  ): Promise<{ ok: boolean; status: number | null; setup?: boolean }> {
+  ): Promise<{ ok: boolean; status: number | null; setup?: boolean; data?: unknown }> {
     try {
       const res = await fetch(`${BREVO_URL}${path}`, {
         method: 'POST',
@@ -238,7 +268,8 @@ export class NotificationService {
       });
       if (res.ok) {
         logger.info(`[Notifications] ${tag} ${kind} sent for ${about}`);
-        return { ok: true, status: res.status };
+        const data: unknown = await res.json().catch(() => null);
+        return { ok: true, status: res.status, data };
       }
       // Brevo's error message may quote the recipient: keep only its machine code. The message is only read (addresses
       // taken out) to tell a refusal of Plazo's settings from one of the address; it is never logged.

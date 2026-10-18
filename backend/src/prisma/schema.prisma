@@ -1338,3 +1338,105 @@ model ReminderEvening {
   @@unique([parkingId, date])
   @@map("reminder_evenings")
 }
+
+// ---- Prospection (18/10/2026, « ajoute un outil d'envoi d'email de prospection », choix « A avec les relances de B ») ----
+// Airport parkings the platform owner emails to bring them to Plazo (Plateforme › Prospection). Professionals only,
+// entered by hand or from a CSV the admin provides; deleted 3 years after the last contact (nightly purge).
+
+/// Where a prospect stands. replied, interested, not_interested and unsubscribed stop the follow-ups for good.
+enum ProspectStatus {
+  to_contact
+  contacted
+  replied
+  interested
+  not_interested
+  unsubscribed
+}
+
+enum ProspectSource {
+  manual
+  csv
+}
+
+enum ProspectMessageStatus {
+  sent
+  failed
+}
+
+model Prospect {
+  id               String         @id @default(cuid())
+  // Lower-cased.
+  email            String         @unique
+  companyName      String
+  contactFirstName String?
+  contactLastName  String?
+  town             String?
+  // IATA code, e.g. LYS.
+  airportCode      String?
+  phone            String?
+  notes            String?
+  source           ProspectSource @default(manual)
+  status           ProspectStatus @default(to_contact)
+  // Last step of the sequence sent (0: none yet).
+  step             Int            @default(0)
+  // When the next step is due (null: not enrolled, finished or stopped).
+  nextSendAt       DateTime?
+  // J0 of the sequence: when the first message actually left.
+  firstContactedAt DateTime?
+  lastContactedAt  DateTime?
+  // The follow-ups were stopped (by hand, or by a reply / interest / unsubscription).
+  stoppedAt        DateTime?
+  // Claimed by a sending pass (never two passes on the same prospect).
+  sendingAt        DateTime?
+  // Brevo refusals in a row on the current step (3: stopped).
+  failedAttempts   Int            @default(0)
+  // The platform admin who enrolled the prospect: the replies go to them unless PROSPECTING_REPLY_TO is set.
+  enrolledById     String?
+  createdAt        DateTime       @default(now())
+  updatedAt        DateTime       @default(now()) @updatedAt
+
+  messages ProspectMessage[]
+
+  @@index([status])
+  @@index([nextSendAt])
+  @@map("prospects")
+}
+
+// One email sent to a prospect (its subject only; the body is the step's template at the time).
+model ProspectMessage {
+  id                String                @id @default(cuid())
+  prospectId        String
+  step              Int
+  subject           String
+  sentAt            DateTime              @default(now())
+  providerMessageId String?
+  status            ProspectMessageStatus
+  // Machine code of the failure (no personal data).
+  error             String?
+
+  prospect Prospect @relation(fields: [prospectId], references: [id], onDelete: Cascade)
+
+  @@index([prospectId])
+  @@index([sentAt])
+  @@map("prospect_messages")
+}
+
+// The sequence (3 steps: subject, body, delay, on/off) and the daily cap. One row (id "default"); none: Plazo's texts.
+model ProspectingSettings {
+  id          String   @id @default("default")
+  steps       Json
+  dailyCap    Int      @default(50)
+  updatedById String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @default(now()) @updatedAt
+
+  @@map("prospecting_settings")
+}
+
+// An address that asked never to be contacted again: sha256 of the lower-cased email, kept when the prospect is deleted.
+model ProspectSuppression {
+  emailHash String   @id
+  createdAt DateTime @default(now())
+
+  @@map("prospect_suppressions")
+}
