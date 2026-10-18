@@ -49,37 +49,41 @@ export function defaultSteps(productName: string): SequenceStep[] {
       step: 1,
       enabled: true,
       delayDays: 0,
-      subject: '{prénom}, vos réservations des comparateurs au même endroit',
+      subject: '{parking} : vos réservations des comparateurs dans un seul planning',
       body:
         'Bonjour {prénom},\n\n' +
-        `Je vous écris au sujet de {parking}, près de l'aéroport {aéroport}. ${productName} réunit dans un seul outil les réservations ` +
-        'de vos comparateurs (lues dans leurs mails de confirmation), le plan de votre parking et la navette du retour, ' +
-        'avec le suivi des vols.\n\n' +
+        `Je développe ${productName}, un logiciel pensé pour les parkings avec navette autour des aéroports, comme {parking}.\n\n` +
+        'Concrètement :\n' +
+        "- les mails de confirmation d'Allopark, Onepark, Parclick ou ParkMundo deviennent des réservations, sans rien recopier ;\n" +
+        '- le voiturier sait dans quelle file ranger chaque voiture pour ne jamais en bloquer une au départ ;\n' +
+        "- le chauffeur voit les retours dans l'ordre d'atterrissage, avec le suivi des vols.\n\n" +
         `Vos clients peuvent aussi réserver et payer en ligne sur ${productName}.\n\n` +
-        'Auriez-vous quinze minutes cette semaine pour que je vous le montre ?\n\n' +
+        'Auriez-vous 15 minutes cette semaine pour que je vous le montre sur votre propre parking ?\n\n' +
         'Bien à vous,',
     },
     {
       step: 2,
       enabled: true,
       delayDays: 4,
-      subject: 'Re : vos réservations au même endroit',
+      subject: 'Une question sur vos retours de navette',
       body:
         'Bonjour {prénom},\n\n' +
-        `Je me permets de revenir vers vous : ${productName} aide les parkings comme {parking} à ne plus recopier ` +
-        "les réservations des comparateurs et à savoir à l'avance quand partir chercher chaque client au retour.\n\n" +
-        'Un court échange vous conviendrait-il ?\n\n' +
+        "Aujourd'hui, comment savez-vous quand partir chercher un client au retour ? Bien souvent, on attend son appel à " +
+        "l'atterrissage.\n\n" +
+        `Avec ${productName}, le vol est suivi : le chauffeur sait à l'avance qui récupérer et à quelle heure, et le client ` +
+        'reçoit un SMS avec le point de rendez-vous.\n\n' +
+        'Je peux vous le montrer en 15 minutes, au téléphone ou sur place. Quel moment vous arrangerait ?\n\n' +
         'Bien à vous,',
     },
     {
       step: 3,
       enabled: true,
       delayDays: 10,
-      subject: 'Une démonstration de 15 minutes ?',
+      subject: 'Je ne vous dérange plus',
       body:
         'Bonjour {prénom},\n\n' +
-        'Ce sera mon dernier message. Si le sujet vous intéresse un jour, il suffit de répondre à ce mail : je vous montrerai ' +
-        `${productName} sur l'exemple de {parking}.\n\n` +
+        "C'est mon dernier message, je ne veux pas encombrer votre boîte. Si un jour vous voulez voir " +
+        `${productName} sur l'exemple de {parking}, il suffit de répondre à ce mail.\n\n` +
         'Bonne continuation,',
     },
   ];
