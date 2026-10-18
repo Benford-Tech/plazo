@@ -175,7 +175,9 @@ describe('Plateforme › Prospection : envoi et relances', () => {
     expect(first.textContent).toContain('Benford Tech');
     expect(first.htmlContent).toContain('Ne plus recevoir de messages de Plazo');
     // Without a first name, the subject still names the parking.
-    expect(sent.find(e => e.to[0].email === 'contact2@parking-fictif.example')!.subject).toBe('Parking Fictif 2 : vos réservations des comparateurs dans un seul planning');
+    expect(sent.find(e => e.to[0].email === 'contact2@parking-fictif.example')!.subject).toBe(
+      'Parking Fictif 2 : vos réservations des comparateurs dans un seul planning',
+    );
 
     const row = await prisma.prospect.findUniqueOrThrow({ where: { id: a.id } });
     expect(row).toMatchObject({ status: 'contacted', step: 1, sendingAt: null, enrolledById: admin.manager.id });
