@@ -9,6 +9,7 @@ const api = vi.hoisted(() => ({
   getRevenue: vi.fn(),
   exportRevenue: vi.fn(),
   setReservationPrice: vi.fn(),
+  setComparatorCommission: vi.fn(),
 }));
 vi.mock("@/lib/api", async importOriginal => {
   const actual = await importOriginal<typeof import("@/lib/api")>();
@@ -19,7 +20,7 @@ const days = (from: string, n: number) =>
   Array.from({ length: n }, (_, i) => {
     const d = new Date(`${from}T00:00:00Z`);
     d.setUTCDate(d.getUTCDate() + i);
-    return { date: d.toISOString().slice(0, 10), count: 0, totalCents: 0 };
+    return { date: d.toISOString().slice(0, 10), count: 0, totalCents: 0, netCents: 0 };
   });
 
 const report = (over: Partial<RevenueReport> = {}): RevenueReport => ({
@@ -28,15 +29,26 @@ const report = (over: Partial<RevenueReport> = {}): RevenueReport => ({
   basis: "arrival",
   timezone: "Europe/Paris",
   totalCents: 481250,
+  commissionCents: 29520,
+  netCents: 451730,
   count: 109,
   averageCents: 4415,
   averageDays: 5.2,
   withoutAmount: 2,
   byChannel: [
-    { channel: "aggregator", detail: "Allopark", count: 41, totalCents: 164000 },
-    { channel: "plazo", detail: null, count: 9, totalCents: 51350 },
+    {
+      channel: "aggregator",
+      detail: "Allopark",
+      count: 41,
+      totalCents: 164000,
+      commissionCents: 29520,
+      netCents: 134480,
+      comparatorKey: "allopark",
+      rate: { comparatorKey: "allopark", label: "Allopark", rateBp: 1800, fixedCents: 0, effectiveFrom: "2026-10-01" },
+    },
+    { channel: "plazo", detail: null, count: 9, totalCents: 51350, commissionCents: 0, netCents: 51350, comparatorKey: null, rate: null },
   ],
-  byDay: days("2026-10-01", 31).map(d => (d.date === "2026-10-09" ? { ...d, count: 3, totalCents: 12300 } : d)),
+  byDay: days("2026-10-01", 31).map(d => (d.date === "2026-10-09" ? { ...d, count: 3, totalCents: 12300, netCents: 11000 } : d)),
   missing: [
     { id: "r1", reference: "R7KQ2M", customerName: "Léa Petit", arrivalAt: "2026-10-09T17:45:00Z", channel: "phone", detail: null },
     { id: "r2", reference: "R8ZZ9A", customerName: "Marc Leroy", arrivalAt: "2026-10-08T06:00:00Z", channel: "counter", detail: null },
@@ -131,5 +143,21 @@ describe("RevenuePage (CA-B, 09/10/2026)", () => {
     renderPage();
     expect(await screen.findByText("Aucune réservation avec un montant sur cette période.")).toBeInTheDocument();
     expect(screen.queryByRole("button", { name: "Les compléter" })).not.toBeInTheDocument();
+  });
+
+  it("montre ce que le parking garde et change le taux d'un comparateur dans « Par canal » (19/10/2026)", async () => {
+    api.getRevenue.mockResolvedValue(report());
+    api.setComparatorCommission.mockResolvedValue({ comparatorKey: "allopark", label: "Allopark", rateBp: 2000, fixedCents: 0, effectiveFrom: "2026-10-01" });
+    renderPage();
+    expect(await screen.findByText("dont 295,20 € de commissions des comparateurs")).toBeInTheDocument();
+    await userEvent.click(screen.getByRole("button", { name: "Net de commissions" }));
+    expect(screen.getByTestId("revenue-total")).toHaveTextContent("4 517,30 €");
+    const input = screen.getByLabelText("Taux de commission de Allopark en %");
+    expect(input).toHaveValue("18");
+    await userEvent.clear(input);
+    await userEvent.type(input, "20{Enter}");
+    await waitFor(() =>
+      expect(api.setComparatorCommission).toHaveBeenCalledWith({ label: "Allopark", rateBp: 2000, fixedCents: 0, effectiveFrom: "2026-10-01" }),
+    );
   });
 });

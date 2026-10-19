@@ -79,6 +79,9 @@ import type {
   JoinRole,
   TokenData,
   Staying,
+  ComparatorCommission,
+  CommissionRate,
+  ReservationCommission,
   RevenueBasis,
   RevenueReport,
   RevenueSummary,
@@ -573,6 +576,17 @@ export const adminApi = {
     apiRequest<RevenueReport>(`/internal/revenue?${new URLSearchParams({ from, to, basis })}`),
   getRevenueSummary: () => apiRequest<RevenueSummary>("/internal/revenue/summary"),
   exportRevenue: (from: string, to: string, basis: RevenueBasis) => apiFile(`/internal/revenue/export?${new URLSearchParams({ from, to, basis })}`),
+  // 19/10/2026: what each comparator takes, from a day on, and a booking's own exception.
+  getComparatorCommissions: () => apiRequest<{ today: string; comparators: ComparatorCommission[] }>("/internal/comparators/commissions"),
+  setComparatorCommission: (body: { label: string; rateBp: number; fixedCents: number; effectiveFrom: string }) =>
+    apiRequest<CommissionRate>("/internal/comparators/commissions", { method: "PUT", body: JSON.stringify(body) }),
+  removeComparatorCommission: (key: string, effectiveFrom: string) =>
+    apiRequest<void>(`/internal/comparators/commissions/${encodeURIComponent(key)}/${effectiveFrom}`, { method: "DELETE" }),
+  setReservationCommission: (id: string, body: { rateBp: number | null; amountCents: number | null }) =>
+    apiRequest<{ id: string; commission: ReservationCommission | null }>(`/internal/reservations/${id}/commission`, {
+      method: "PUT",
+      body: JSON.stringify(body),
+    }),
   setReservationPrice: (id: string, priceCents: number | null) =>
     apiRequest<{ id: string; priceCents: number | null }>(`/internal/reservations/${id}/price`, { method: "PUT", body: json({ priceCents }) }),
   getLiveShuttles: () => apiRequest<LiveShuttles>("/internal/shuttle/live"),

@@ -3,6 +3,7 @@ import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { toast } from "sonner";
 import { FormField } from "@/components/FormField";
+import { ComparatorCommissionCard } from "@/components/parking/ComparatorCommissionCard";
 import { FlightCheckCard } from "@/components/parking/FlightCheckCard";
 import { InboundEmailCard } from "@/components/parking/InboundEmailCard";
 import { ParkingTabs } from "@/components/parking/ParkingTabs";
@@ -186,6 +187,7 @@ export default function ParkingPage() {
         </CardContent>
       </Card>
       <InboundEmailCard />
+      <ComparatorCommissionCard />
       <ReturnMeetingPointForm />
       {parking && <ShuttleTrackingCard parking={parking} />}
       <ShuttleStops />

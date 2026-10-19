@@ -7,6 +7,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { adminApi } from "@/lib/api";
 import { dateTimeShort } from "@/lib/datetime";
 import { describeError, fr, inboundFr, remindersFr } from "@/lib/fr";
+import { euros } from "@/lib/pricing";
 import { can } from "@/lib/roles";
 
 export default function ReservationsPage() {
@@ -79,6 +80,13 @@ export default function ReservationsPage() {
                   <span className="font-mono">{r.reference}</span> · {dateTimeShort(r.arrivalAt)} → {dateTimeShort(r.returnAt)}
                 </span>
               </span>
+              {/* 19/10/2026: for the managers, the price and, for a comparator's booking, what they keep. */}
+              {r.commission && r.priceCents !== null && (
+                <span className="tabular text-right font-mono text-sm" data-testid="list-net">
+                  <span className="block">{euros(r.priceCents)}</span>
+                  <span className="block text-lime-deep">{fr.commission.keeps(euros(r.commission.netCents ?? r.priceCents))}</span>
+                </span>
+              )}
               <span className="border border-border px-2 py-1 text-sm font-bold uppercase text-muted-foreground">{fr.status[r.status]}</span>
             </Link>
           </li>

@@ -1,6 +1,7 @@
 import httpStatus from 'http-status';
 import { Container, Service } from 'typedi';
 import prisma, { Prisma, ReservationChannel } from '@/database';
+import { CommissionRate, comparatorKey, rateOn } from '@/domain/comparator-commission';
 import { can } from '@/domain/roles';
 import { isPriceLocked } from '@/domain/reservation';
 import {
@@ -18,6 +19,7 @@ import { AuthenticatedStaff } from '@/interfaces/auth.interface';
 import { ValidationException } from '@/middlewares/validation.middleware';
 import { HttpException } from '@/utils/httpException';
 import { AuditService } from './audit.service';
+import { CommissionService } from './commission.service';
 import { ParkingService } from './parking.service';
 import { STAFF_VISIBLE } from './reservation.service';
 
@@ -40,7 +42,8 @@ export interface RevenuePeriod {
   basis: RevenueBasis;
 }
 
-export interface RevenuePage extends RevenueReport {
+export interface RevenuePage extends Omit<RevenueReport, 'byChannel'> {
+  byChannel: (RevenueReport['byChannel'][number] & { comparatorKey: string | null; rate: CommissionRate | null })[];
   timezone: string;
   /** The parking's local date now: the app marks this day on its chart and greys the days after it. */
   today: string;
@@ -59,7 +62,7 @@ export interface RevenuePage extends RevenueReport {
 export interface RevenueSummary {
   /** Local date the figures stop at. */
   today: string;
-  month: { from: string; to: string; totalCents: number; count: number; withoutAmount: number };
+  month: { from: string; to: string; totalCents: number; netCents: number; count: number; withoutAmount: number };
   todayCents: number;
   weekCents: number;
 }
@@ -85,6 +88,10 @@ const SELECT = {
   channel: true,
   channelDetail: true,
   priceCents: true,
+  commissionOverrideBp: true,
+  commissionOverrideCents: true,
+  // A Plazo booking's commission is the platform's, frozen at payment.
+  commissionCents: true,
 } satisfies Prisma.ReservationSelect;
 
 /**
@@ -95,6 +102,7 @@ const SELECT = {
 export class RevenueService {
   public parkings = Container.get(ParkingService);
   public audit = Container.get(AuditService);
+  public commissions = Container.get(CommissionService);
 
   private require(actor: AuthenticatedStaff, permission: Parameters<typeof can>[1]) {
     if (!can(actor.role, permission)) throw forbidden();
@@ -117,10 +125,16 @@ export class RevenueService {
     const start = dayBounds(period.from, timeZone).start;
     const end = dayBounds(period.to, timeZone).end;
     const field = period.basis === 'arrival' ? 'arrivalAt' : 'createdAt';
-    return prisma.reservation.findMany({
+    const bookings = await prisma.reservation.findMany({
       where: { operatorId: actor.operatorId, AND: [STAFF_VISIBLE], status: { not: 'cancelled' }, [field]: { gte: start, lt: end } },
       select: SELECT,
     });
+    // What each comparator took (19/10/2026): its rate of the day the booking was made, or the booking's exception.
+    const commissions = await this.commissions.of(actor.operatorId, timeZone, bookings);
+    return bookings.map((b, i) => ({
+      ...b,
+      commissionCents: b.channel === 'plazo' ? (b.commissionCents ?? 0) : (commissions[i]?.amountCents ?? 0),
+    }));
   }
 
   public async report(actor: AuthenticatedStaff, query: RevenueQuery, now: Date = new Date()): Promise<RevenuePage> {
@@ -129,6 +143,13 @@ export class RevenueService {
     const parking = await this.parkings.getPrimary(actor);
     const bookings = await this.bookings(actor, period, parking.timezone);
     const report = revenueReport(bookings as RevenueBooking[], { ...period, timeZone: parking.timezone });
+    // « Par canal » edits a comparator's rate in place: its key and the rate in force today.
+    const today = localDate(now, parking.timezone);
+    const rates = await this.commissions.rates(actor.operatorId);
+    const byChannel = report.byChannel.map(line => {
+      const key = line.channel === 'aggregator' || line.channel === 'import' ? comparatorKey(line.detail) : null;
+      return { ...line, comparatorKey: key, rate: key ? rateOn(rates, key, today) : null };
+    });
     const missing = bookings
       .filter(b => b.priceCents === null)
       .sort((a, b) => b.arrivalAt.getTime() - a.arrivalAt.getTime())
@@ -142,7 +163,7 @@ export class RevenueService {
         channel: b.channel,
         detail: b.channel === 'aggregator' || b.channel === 'import' ? b.channelDetail : null,
       }));
-    return { ...report, timezone: parking.timezone, today: localDate(now, parking.timezone), missing };
+    return { ...report, byChannel, timezone: parking.timezone, today, missing };
   }
 
   /** The dashboard's tile: this month, today and the last 7 days, by arrival. */
@@ -164,7 +185,14 @@ export class RevenueService {
       }, 0);
     return {
       today,
-      month: { from: monthStart, to: monthEnd, totalCents: month.totalCents, count: month.count, withoutAmount: month.withoutAmount },
+      month: {
+        from: monthStart,
+        to: monthEnd,
+        totalCents: month.totalCents,
+        netCents: month.netCents,
+        count: month.count,
+        withoutAmount: month.withoutAmount,
+      },
       todayCents: sumOf(today, today),
       weekCents: sumOf(weekStart, today),
     };

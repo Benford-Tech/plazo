@@ -31,6 +31,7 @@ import { chronologicalPage } from '@/domain/chronological-pages';
 import { BOARDING_CHECK_IN_SELECT, boardingCheckInOf } from '@/domain/shuttle';
 import { FileService } from './file.service';
 import { AuditService } from './audit.service';
+import { CommissionService } from './commission.service';
 import { CapacityService, NightLoad, occupiedNights } from './capacity.service';
 import { NotificationService } from './notification.service';
 import { PushService } from './push.service';
@@ -848,10 +849,20 @@ export class ReservationService {
     const filePosition = reservation.fileId ? await Container.get(FileService).positionOf(reservation.fileId, reservation.id) : null;
     return {
       ...reservation,
+      // What the comparator takes and what the operator keeps (19/10/2026), for the managers only.
+      commission: await this.commissionFor(actor, reservation),
       filePosition,
       boardingCheckIn: boardingCheckInOf({ ...reservation, boardingTrip }),
       nextStatuses: this.nextStatuses(actor, reservation),
     };
+  }
+
+  /** A booking's comparator commission, for the managers (null for the others and for a booking not a comparator's). */
+  private async commissionFor(actor: AuthenticatedStaff, booking: Reservation) {
+    if (!can(actor.role, 'revenue:view')) return null;
+    const parking = await prisma.parking.findUnique({ where: { id: booking.parkingId }, select: { timezone: true } });
+    const [commission] = await Container.get(CommissionService).of(actor.operatorId, parking?.timezone ?? 'Europe/Paris', [booking]);
+    return commission;
   }
 
   /**
@@ -887,9 +898,11 @@ export class ReservationService {
       ];
     }
     // Before the first page: the bookings arriving before today (the parking's day), none for a search.
-    const parking = q
-      ? null
-      : await prisma.parking.findFirst({ where: { operatorId: actor.operatorId }, orderBy: { createdAt: 'asc' }, select: { timezone: true } });
+    const parking = await prisma.parking.findFirst({
+      where: { operatorId: actor.operatorId },
+      orderBy: { createdAt: 'asc' },
+      select: { timezone: true },
+    });
     const timezone = parking?.timezone ?? 'Europe/Paris';
     const today = dayBounds(localDate(new Date(), timezone), timezone).start;
     const [totalDocs, before] = await Promise.all([
@@ -897,7 +910,10 @@ export class ReservationService {
       q ? 0 : prisma.reservation.count({ where: { AND: [where, { arrivalAt: { lt: today } }] } }),
     ]);
     const { skip, take, ...pages } = chronologicalPage(totalDocs, before, limit, query.page);
-    const docs = await prisma.reservation.findMany({ where, orderBy: [{ arrivalAt: 'asc' }, { id: 'asc' }], skip, take });
+    const rows = await prisma.reservation.findMany({ where, orderBy: [{ arrivalAt: 'asc' }, { id: 'asc' }], skip, take });
+    // What each comparator takes (19/10/2026): the managers see what they keep under each price.
+    const commissions = can(actor.role, 'revenue:view') ? await Container.get(CommissionService).of(actor.operatorId, timezone, rows) : [];
+    const docs = rows.map((r, i) => ({ ...r, commission: commissions[i] ?? null }));
     return { docs, totalDocs, limit, ...pages };
   }
 

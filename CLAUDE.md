@@ -409,6 +409,26 @@ Ne construire QUE ce qui règle la douleur n°1 du client.
      page ouvre sur le mois du téléphone et se recale sur `today` s'il n'y est pas (`domain/revenue_period.dart`,
      `ProRevenueBloc` : seule la dernière lecture lancée s'applique, un montant enregistré relit la carte du tableau de bord par
      `RevenueRepository.changes`, quel que soit le chemin d'ouverture). L'export CSV reste sur le web.
+   - **Commission des comparateurs (19/10/2026, « pouvoir paramétrer le taux de commission de chaque comparateur », choix « les 3 »
+     des maquettes https://claude.ai/artifact/KSy3XYBvdx9aHTquZXqd6J)** : table `comparator_commissions` (migration
+     `comparator_commission` : par loueur et comparateur, `comparatorKey` = nom en minuscules comme `channelDetail`, `label`,
+     `rateBp` 0 à 10 000, `fixedCents` 0 à 1 000 €, `effectiveFrom` jour local « AAAA-MM-JJ », unique par jour) et l'exception d'une
+     réservation `Reservation.commissionOverrideBp` / `commissionOverrideCents` (l'un ou l'autre, comparateur seulement, CHECK) ;
+     `domain/comparator-commission.ts` (`commissionOf` : l'exception, sinon le taux en vigueur le jour où la réservation a été faite,
+     arrondi au centime + frais fixes, jamais plus que le prix ; un taux posé plus tard ne bouge jamais les réservations d'avant ;
+     sans taux, rien de retenu), `CommissionService`. Routes (gérants, `revenue:view`) : `GET/PUT /internal/comparators/commissions`
+     (les quatre comparateurs connus, chaque nom des réservations et chaque taux posé ; en vigueur, à venir, historique, réservations
+     du mois), `DELETE …/commissions/:key/:effectiveFrom`, `PUT /internal/reservations/:id/commission` `{ rateBp | amountCents | rien }`
+     (400 `not_comparator`, `rate_or_amount`) ; écritures tracées. **B** : bloc « Ce que chaque comparateur vous prend » de Parking ›
+     Réglages (`ComparatorCommissionCard` : pourcentage, frais par réservation, « À partir du », « Retirer » un taux à venir,
+     exemple de calcul). **A** : « Chiffre d'affaires » : bascule « Brut · Net de commissions », colonnes Commission (taux modifiable
+     sur la ligne du comparateur, posé à partir du premier jour affiché) et Net ; `GET /internal/revenue` rend `commissionCents`,
+     `netCents` (total, canaux, jours), `byChannel[].comparatorKey/rate` ; la ligne Plazo déduit la commission de la plateforme
+     (`Reservation.commissionCents`) ; CSV avec « Commission (€) » et « Net (€) » ; `summary.month.netCents`. **C** : fiche réservation
+     « Commission Allopark − 9,72 € · 18 % · Vous gardez 44,28 € », « Changer pour cette réservation » (taux ou montant), « Revenir au
+     taux du comparateur » ; liste des réservations : prix et « garde … » sous chaque réservation de comparateur. `commission` est
+     servi aux gérants seulement (null pour les autres rôles) sur `GET /internal/reservations/:id` et la liste. Plazo Pro ne montre
+     pas encore le net.
    - **Frais de nuit (12/10/2026, choix B « Dans le détail du prix seulement », « ajoute des frais de nuit pour les arrivées
      et départs en heure définie par le parking »)** : une plage par parking, la même chaque jour, pour les dépôts comme pour
      les retours (`Parking.nightFeeEnabled`, `nightStart` / `nightEnd` « HH:mm », `nightArrivalFeeCents` « Dépôt de nuit »,
@@ -714,7 +734,7 @@ Ne construire QUE ce qui règle la douleur n°1 du client.
    `GET /internal/reservations/:id/paperwork`, `POST …/contract/code|sign`, `POST|PATCH …/inspections/:kind`,
    `POST …/inspections/:kind/photos?slot=`, `GET|DELETE …/photos/:photoId`, `POST …/complete|answer` ; voyageur
    `GET /public/bookings/:ref/paperwork`, `POST …/contract/code|sign`, `POST …/inspections/:kind/answer`, `GET …/photos/:photoId`
-   (`x-booking-token`) ; migration `contract_inspection`. Apps : feature `paperwork` ; Plazo Pro : carte « Contrat et état des
+   (`x-booking-token`) ; migration `contract_inspection` (20261019130000). Apps : feature `paperwork` ; Plazo Pro : carte « Contrat et état des
    lieux » de la fiche réservation, `/pro/reservations/:id/contrat` (code par SMS ou signature à la main),
    `/pro/reservations/:id/etat-des-lieux/:kind` ; Plazo : blocs « Contrat de stationnement » et « État des lieux » de Ma réservation,
    `/ma-reservation/:ref/contrat`, `/ma-reservation/:ref/etat-des-lieux/:kind`. Conditions générales (articles 9 et 11) et
