@@ -19,6 +19,7 @@ import 'package:parking_app/src/shared/theme/theme.dart';
 
 import '../../helpers/fakes.dart';
 import '../../helpers/pump_app.dart';
+import '../../helpers/paperwork.dart';
 
 class MockReservationBloc extends MockBloc<ProReservationEvent, ProReservationState> implements ProReservationBloc {}
 
@@ -31,6 +32,7 @@ void main() {
 
   late ShuttleBoardingRequests requests;
   setUp(() {
+    registerQuietPaperwork();
     requests = ShuttleBoardingRequests();
     locator
       ..registerSingleton<LinkService>(FakeLinks())

@@ -115,6 +115,30 @@ export class SmsService {
     }
   }
 
+  /**
+   * A one-time signature code (19/10/2026): always through Plazo's Brevo account, whatever the parking's SMS channel (a
+   * security code is Plazo's, and must leave at once). The outbox keeps the recipient and the text's hash, never the code
+   * in clear. Returns whether Brevo accepted it.
+   */
+  public async sendSignatureCode(operatorId: string, reservationId: string, recipient: string, text: string): Promise<boolean> {
+    const about = `reservation ${reservationId}`;
+    const ok = await this.notifications.smsViaBrevo(recipient, 'signature_code', about, text);
+    await prisma.smsOutbox.create({
+      data: {
+        operatorId,
+        reservationId,
+        kind: 'signature_code',
+        to: recipient,
+        bodyHash: hash(text),
+        provider: 'brevo',
+        status: ok ? 'sent' : 'failed',
+        attempts: 1,
+        lastError: ok ? null : 'brevo_failed',
+      },
+    });
+    return ok;
+  }
+
   private async sendViaBrevo(operatorId: string, sms: TravellerSms, recipient: string, about: string): Promise<SendOutcome> {
     if ((sms.kind === 'booking_confirmed' || sms.kind === 'booking_reminder') && !(await this.brevoBudgetLeft(about))) return 'skipped';
     const ok = await this.notifications.smsViaBrevo(recipient, sms.kind, about, sms.text);

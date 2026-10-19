@@ -58,6 +58,11 @@ import '../features/pro_occupation/data/datasources/occupation_data_source.dart'
 import '../features/pro_occupation/domain/repositories/occupation_repository.dart';
 import '../features/pro_occupation/domain/usecases/occupation_use_cases.dart';
 import '../features/pro_occupation/presentation/bloc/pro_occupation_bloc.dart';
+import '../features/paperwork/data/client/paperwork_client.dart';
+import '../features/paperwork/data/datasources/paperwork_data_source.dart';
+import '../features/paperwork/domain/repositories/paperwork_repository.dart';
+import '../features/paperwork/domain/usecases/paperwork_use_cases.dart';
+import '../features/paperwork/presentation/bloc/paperwork_bloc.dart';
 import '../features/pro_plan/data/client/plan_client.dart';
 import '../features/pro_reservations/data/client/reservations_client.dart';
 import '../features/pro_revenue/data/client/revenue_client.dart';

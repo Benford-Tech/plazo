@@ -13,6 +13,7 @@ import 'package:parking_app/src/services/link_service.dart';
 
 import '../../helpers/fakes.dart';
 import '../../helpers/pump_app.dart';
+import '../../helpers/paperwork.dart';
 
 class MockReservationBloc extends MockBloc<ProReservationEvent, ProReservationState> implements ProReservationBloc {}
 
@@ -21,7 +22,10 @@ class MockAuthBloc extends MockBloc<ProAuthEvent, ProAuthState> implements ProAu
 /// « Embarquer » in the booking's « Autres actions » (14/10/2026), and the check-in done at boarding.
 void main() {
   setUpAll(setUpLocalizedTests);
-  setUp(() => locator.registerSingleton<LinkService>(FakeLinks()));
+  setUp(() {
+    locator.registerSingleton<LinkService>(FakeLinks());
+    registerQuietPaperwork();
+  });
   tearDown(locator.reset);
 
   const karim = StaffModel(id: 'd1', name: 'Karim Benali', email: 'k@example.com', role: 'driver', post: 'driver', effectivePost: 'driver');

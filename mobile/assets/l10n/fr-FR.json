@@ -495,7 +495,7 @@
     "invalid_lat": "Latitude invalide.",
     "invalid_lng": "Longitude invalide.",
     "invalid_accuracy": "Précision invalide.",
-    "too_many": "Trop d'éléments (30 clients par trajet au plus).",
+    "too_many": "Trop de photos de dégâts pour cet état des lieux.",
     "invalid_status": "Statut invalide.",
     "min_0": "Doit être positif ou nul.",
     "invalid_geometry": "Tracé invalide.",
@@ -509,7 +509,7 @@
     "margin_range": "Marge entre 0 et 50 %.",
     "shuttle_range": "Entre 1 et 120 minutes.",
     "min_1": "Au moins 1.",
-    "too_large": "Valeur trop grande.",
+    "too_large": "Cette photo est trop lourde.",
     "sms_not_configured": "Les SMS ne sont pas configurés.",
     "sms_gateway_unauthorized": "Le téléphone refuse l'identifiant ou le mot de passe.",
     "sms_gateway_unreachable": "Le serveur de l'appli est injoignable.",
@@ -542,7 +542,25 @@
     "apple_confirmation_required": "Ce compte est lié à Apple : confirmez la suppression avec Apple sur l'iPhone où vous vous connectez, ou retirez d'abord la connexion Apple dans Mon compte.",
     "view_as_forbidden": "Action impossible en consultation.",
     "wished_role_required": "Choisissez votre poste.",
-    "invalid_wished_role": "Poste invalide."
+    "invalid_wished_role": "Poste invalide.",
+    "already_signed": "Le contrat est déjà signé.",
+    "contract_closed": "Le contrat ne peut plus être signé à ce stade.",
+    "no_mobile": "Aucun numéro de portable pour envoyer le code : faites signer à la main.",
+    "sms_unavailable": "Les SMS ne sont pas configurés : faites signer à la main.",
+    "sms_failed": "Le SMS n'a pas pu partir. Réessayez dans un instant.",
+    "too_many_codes": "Trop de codes envoyés : réessayez dans une heure.",
+    "code_recently_sent": "Un code vient de partir : attendez une minute avant d'en demander un autre.",
+    "code_expired": "Ce code a expiré : demandez-en un nouveau.",
+    "code_locked": "Trop de codes faux : demandez-en un nouveau.",
+    "wrong_code": "Ce code n'est pas le bon.",
+    "inspection_closed": "Cet état des lieux ne peut pas être fait à ce stade de la réservation.",
+    "inspection_completed": "Cet état des lieux est terminé : il ne se modifie plus.",
+    "inspection_not_found": "Cet état des lieux n'existe pas encore.",
+    "answer_closed": "Cet état des lieux ne peut plus recevoir de réponse.",
+    "photos_unavailable": "Les photos ne sont pas encore activées sur le serveur.",
+    "photo_upload_failed": "La photo n'a pas pu être enregistrée. Réessayez.",
+    "photo_not_found": "Cette photo n'existe plus.",
+    "not_an_image": "Ce fichier n'est pas une photo."
   },
   "tabs": {
     "search": "Rechercher",
@@ -1828,6 +1846,158 @@
       "email_taken": "Cette adresse e-mail est déjà celle d'un compte de l'app. Connectez-vous avec cet e-mail et son mot de passe, puis liez Apple ou Google dans Plus › Mon compte. Avec Apple, vous pouvez aussi choisir « Masquer mon adresse e-mail ».",
       "already_member": "Votre compte fait déjà partie d'un parking. Quittez-le d'abord depuis Plus › Mon compte.",
       "wished_role_required": "Choisissez votre poste."
+    }
+  },
+  "paperwork": {
+    "card_title": "Contrat et état des lieux",
+    "contract": "Contrat de stationnement",
+    "contract_title": "Contrat de stationnement",
+    "contract_clauses": "Ce que vous signez",
+    "contract_signed_short": "Signé le {}",
+    "contract_to_sign": "À faire signer",
+    "contract_unsigned": "Non signé",
+    "contract_sign_now": "À signer avant le dépôt : un code vous est envoyé par SMS",
+    "contract_at_counter_short": "À signer au comptoir le jour du dépôt",
+    "contract_at_counter": "Votre contrat se signe au comptoir du parking, le jour du dépôt.",
+    "contract_closed": "Le contrat ne peut plus être signé.",
+    "contract_accept": "J'ai lu et j'accepte le contrat et les conditions du parking.",
+    "contract_accept_staff": "Le client a lu le contrat et l'accepte.",
+    "have_contract_signed": "Faire signer",
+    "method_code": "Code par SMS",
+    "method_hand": "Signature à la main",
+    "send_code": "Envoyer le code au {}",
+    "code_sent": "Code envoyé par SMS au {}. Il est valable 10 minutes.",
+    "code_label": "Code reçu par SMS",
+    "resend_code": "Renvoyer le code",
+    "sign_contract": "Signer le contrat",
+    "signature_note": "Signature électronique horodatée : une copie signée est envoyée par e-mail.",
+    "signed_on": "Signé par {} le {}",
+    "signed_by_code": "Avec le code reçu par SMS au {}",
+    "signed_by_hand": "Signature à la main sur le téléphone du parking",
+    "proof": "Version {} · empreinte {}…",
+    "signature_label": "Signature du client, au doigt",
+    "signature_clear": "Effacer",
+    "report_title": {
+      "dropoff": "État des lieux · dépôt",
+      "return": "État des lieux · retour"
+    },
+    "report_short": {
+      "dropoff": "État des lieux du dépôt",
+      "return": "État des lieux du retour"
+    },
+    "kind_short": {
+      "dropoff": "Dépôt",
+      "return": "Retour"
+    },
+    "to_do": "À faire",
+    "start": "Commencer",
+    "resume": "Reprendre",
+    "see": "Voir",
+    "photos": "Photos",
+    "photos_count": "{} / {} photos",
+    "photos_unavailable": "Les photos ne sont pas encore activées sur le serveur de Plazo : le stockage des photos doit être relié au projet.",
+    "photos_erased": "Les photos ont été effacées (durée de conservation dépassée).",
+    "take": "Prendre la photo : {}",
+    "retake": "Reprendre la photo : {}",
+    "camera_denied": "L'appareil photo n'est pas autorisé : autorisez-le dans les réglages du téléphone.",
+    "slot": {
+      "front": "Avant",
+      "right": "Droite",
+      "back": "Arrière",
+      "left": "Gauche",
+      "dashboard": "Compteur",
+      "interior": "Intérieur",
+      "damage": "Dégât"
+    },
+    "damages": "Dégâts déjà présents",
+    "damages_help": "Touchez la voiture à l'endroit d'un dégât pour le marquer.",
+    "no_damage": "Aucun dégât relevé.",
+    "outline_label": "Silhouette de la voiture vue de dessus, {} dégât(s) marqué(s)",
+    "front": "Avant",
+    "rear": "Arrière",
+    "damage_title": "Quel dégât ?",
+    "damage_hint": "Ex. rayure, aile avant droite",
+    "damage_save": "Ajouter",
+    "damage_kind": {
+      "scratch": "Rayure",
+      "dent": "Bosse",
+      "chip": "Éclat",
+      "broken": "Cassé"
+    },
+    "add_damage_photo": "Photographier ce dégât",
+    "see_photo": "Voir la photo",
+    "remove_damage": "Retirer ce dégât",
+    "mileage": "Kilométrage",
+    "fuel": "Carburant",
+    "fuel_empty": "Vide",
+    "fuel_value": {
+      "0": "Vide",
+      "1": "1/4",
+      "2": "1/2",
+      "3": "3/4",
+      "4": "Plein"
+    },
+    "notes": "Remarques (facultatif)",
+    "missing": "Il manque : {}",
+    "field": {
+      "mileageKm": "le kilométrage",
+      "fuelQuarters": "le carburant"
+    },
+    "complete": "Terminer l'état des lieux",
+    "done_by": "Fait par {} le {}",
+    "decision": {
+      "draft": "En cours",
+      "pending": "En attente du client",
+      "accepted": "Validé le {}",
+      "accepted_by_default": "Validé sans réponse au départ",
+      "reserved": "Réserve du client le {}"
+    },
+    "have_signed": "Faire signer le client",
+    "answer_later": "Le client validera depuis son lien",
+    "answer_later_help": "Sans réponse avant son départ en navette, l'état des lieux est validé tel quel.",
+    "answer_title": {
+      "dropoff": "Le client valide l'état des lieux",
+      "return": "Le client valide la restitution"
+    },
+    "answer_help": {
+      "dropoff": "Montrez-lui les photos et les dégâts relevés, puis faites-le signer.",
+      "return": "Montrez-lui les photos du dépôt et du retour, puis faites-le signer."
+    },
+    "new_damages_count": "{} dégât(s) nouveau(x) relevé(s) au retour.",
+    "reserve_toggle": "Le client émet une réserve",
+    "reserve_label": "Sa réserve, avec ses mots",
+    "sign_accepted": "Conforme, le client signe",
+    "sign_reserved": "Signer avec la réserve",
+    "new_damage": "Nouveau",
+    "already_there": "Déjà au dépôt",
+    "traveller_kicker": {
+      "dropoff": "Dépôt du {}",
+      "return": "Retour du {}"
+    },
+    "traveller_title": {
+      "dropoff": "L'état de votre voiture au dépôt",
+      "return": "L'état de votre voiture au retour"
+    },
+    "traveller_intro": "{} a pris {} photos et noté {} marque(s). Vérifiez-les : c'est ce qui sera comparé à votre retour.",
+    "the_parking": "Le parking",
+    "traveller_accept": "C'est conforme, je valide",
+    "traveller_reserve": {
+      "dropoff": "Je signale un oubli",
+      "return": "Je signale un dégât"
+    },
+    "traveller_reserve_hint": {
+      "dropoff": "Ex. la rayure sur la portière arrière gauche n'est pas notée.",
+      "return": "Ex. une rayure sur le pare-chocs avant qui n'était pas là au dépôt."
+    },
+    "traveller_default": "Sans réponse avant votre départ en navette, l'état des lieux est validé tel quel.",
+    "traveller_check": "À vérifier : photos et dégâts relevés",
+    "not_ready": "L'état des lieux n'est pas encore prêt.",
+    "send": "Envoyer",
+    "cancel": "Annuler",
+    "notice": {
+      "signed": "Contrat signé. Une copie part par e-mail.",
+      "answered": "Réponse enregistrée.",
+      "completed": "État des lieux terminé."
     }
   }
 }

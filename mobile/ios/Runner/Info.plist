@@ -51,9 +51,12 @@
 	<string>Votre position est partagée avec le parking uniquement pendant votre trajet vers le point de rendez-vous, pour prévenir le voiturier ou le chauffeur de votre arrivée. Le partage s'arrête à votre arrivée ou au bout de 2 h, puis votre position est effacée.</string>
 	<key>NSLocationAlwaysAndWhenInUseUsageDescription</key>
 	<string>Pour que le parking sache quand vous arrivez même si vous quittez l'application pendant le trajet. Le partage s'arrête à votre arrivée ou au bout de 2 h au plus, puis votre position est effacée. Vous pouvez l'arrêter à tout moment.</string>
-	<!-- Stripe's payment sheet can scan a bank card: Apple refuses a build whose SDKs use the camera without this text. -->
+	<!-- Stripe's payment sheet can scan a bank card, and Plazo Pro photographs the vehicles for the condition reports
+	     (19/10/2026): Apple refuses a build whose SDKs use the camera without this text. -->
 	<key>NSCameraUsageDescription</key>
-	<string>L'appareil photo sert uniquement à scanner votre carte bancaire au moment du paiement, si vous le choisissez.</string>
+	<string>L'appareil photo sert à photographier le véhicule pour l'état des lieux (dans l'application du parking) et à scanner votre carte bancaire au paiement, si vous le choisissez.</string>
+	<key>NSPhotoLibraryUsageDescription</key>
+	<string>Vos photos servent uniquement à joindre une photo du véhicule à l'état des lieux, si vous la choisissez dans votre galerie.</string>
 	<key>UIBackgroundModes</key>
 	<array>
 		<string>location</string>

@@ -530,6 +530,122 @@ class ProArrivalsRoute extends PageRouteInfo<void> {
 }
 
 /// generated route for
+/// [ProContractPage]
+class ProContractRoute extends PageRouteInfo<ProContractRouteArgs> {
+  ProContractRoute({
+    Key? key,
+    required String id,
+    List<PageRouteInfo>? children,
+  }) : super(
+         ProContractRoute.name,
+         args: ProContractRouteArgs(key: key, id: id),
+         rawPathParams: {'id': id},
+         initialChildren: children,
+       );
+
+  static const String name = 'ProContractRoute';
+
+  static PageInfo page = PageInfo(
+    name,
+    builder: (data) {
+      final pathParams = data.inheritedPathParams;
+      final args = data.argsAs<ProContractRouteArgs>(
+        orElse: () => ProContractRouteArgs(id: pathParams.getString('id')),
+      );
+      return WrappedRoute(
+        child: ProContractPage(key: args.key, id: args.id),
+      );
+    },
+  );
+}
+
+class ProContractRouteArgs {
+  const ProContractRouteArgs({this.key, required this.id});
+
+  final Key? key;
+
+  final String id;
+
+  @override
+  String toString() {
+    return 'ProContractRouteArgs{key: $key, id: $id}';
+  }
+
+  @override
+  bool operator ==(Object other) {
+    if (identical(this, other)) return true;
+    if (other is! ProContractRouteArgs) return false;
+    return key == other.key && id == other.id;
+  }
+
+  @override
+  int get hashCode => key.hashCode ^ id.hashCode;
+}
+
+/// generated route for
+/// [ProInspectionPage]
+class ProInspectionRoute extends PageRouteInfo<ProInspectionRouteArgs> {
+  ProInspectionRoute({
+    Key? key,
+    required String id,
+    required String kind,
+    List<PageRouteInfo>? children,
+  }) : super(
+         ProInspectionRoute.name,
+         args: ProInspectionRouteArgs(key: key, id: id, kind: kind),
+         rawPathParams: {'id': id, 'kind': kind},
+         initialChildren: children,
+       );
+
+  static const String name = 'ProInspectionRoute';
+
+  static PageInfo page = PageInfo(
+    name,
+    builder: (data) {
+      final pathParams = data.inheritedPathParams;
+      final args = data.argsAs<ProInspectionRouteArgs>(
+        orElse: () => ProInspectionRouteArgs(
+          id: pathParams.getString('id'),
+          kind: pathParams.getString('kind'),
+        ),
+      );
+      return WrappedRoute(
+        child: ProInspectionPage(key: args.key, id: args.id, kind: args.kind),
+      );
+    },
+  );
+}
+
+class ProInspectionRouteArgs {
+  const ProInspectionRouteArgs({
+    this.key,
+    required this.id,
+    required this.kind,
+  });
+
+  final Key? key;
+
+  final String id;
+
+  final String kind;
+
+  @override
+  String toString() {
+    return 'ProInspectionRouteArgs{key: $key, id: $id, kind: $kind}';
+  }
+
+  @override
+  bool operator ==(Object other) {
+    if (identical(this, other)) return true;
+    if (other is! ProInspectionRouteArgs) return false;
+    return key == other.key && id == other.id && kind == other.kind;
+  }
+
+  @override
+  int get hashCode => key.hashCode ^ id.hashCode ^ kind.hashCode;
+}
+
+/// generated route for
 /// [ProJoinPage]
 class ProJoinRoute extends PageRouteInfo<void> {
   const ProJoinRoute({List<PageRouteInfo>? children})
@@ -1181,6 +1297,135 @@ class SearchTabRoute extends PageRouteInfo<void> {
       return WrappedRoute(child: const SearchTabPage());
     },
   );
+}
+
+/// generated route for
+/// [TravellerContractPage]
+class TravellerContractRoute extends PageRouteInfo<TravellerContractRouteArgs> {
+  TravellerContractRoute({
+    Key? key,
+    required String reference,
+    List<PageRouteInfo>? children,
+  }) : super(
+         TravellerContractRoute.name,
+         args: TravellerContractRouteArgs(key: key, reference: reference),
+         rawPathParams: {'reference': reference},
+         initialChildren: children,
+       );
+
+  static const String name = 'TravellerContractRoute';
+
+  static PageInfo page = PageInfo(
+    name,
+    builder: (data) {
+      final pathParams = data.inheritedPathParams;
+      final args = data.argsAs<TravellerContractRouteArgs>(
+        orElse: () => TravellerContractRouteArgs(
+          reference: pathParams.getString('reference'),
+        ),
+      );
+      return WrappedRoute(
+        child: TravellerContractPage(key: args.key, reference: args.reference),
+      );
+    },
+  );
+}
+
+class TravellerContractRouteArgs {
+  const TravellerContractRouteArgs({this.key, required this.reference});
+
+  final Key? key;
+
+  final String reference;
+
+  @override
+  String toString() {
+    return 'TravellerContractRouteArgs{key: $key, reference: $reference}';
+  }
+
+  @override
+  bool operator ==(Object other) {
+    if (identical(this, other)) return true;
+    if (other is! TravellerContractRouteArgs) return false;
+    return key == other.key && reference == other.reference;
+  }
+
+  @override
+  int get hashCode => key.hashCode ^ reference.hashCode;
+}
+
+/// generated route for
+/// [TravellerInspectionPage]
+class TravellerInspectionRoute
+    extends PageRouteInfo<TravellerInspectionRouteArgs> {
+  TravellerInspectionRoute({
+    Key? key,
+    required String reference,
+    required String kind,
+    List<PageRouteInfo>? children,
+  }) : super(
+         TravellerInspectionRoute.name,
+         args: TravellerInspectionRouteArgs(
+           key: key,
+           reference: reference,
+           kind: kind,
+         ),
+         rawPathParams: {'reference': reference, 'kind': kind},
+         initialChildren: children,
+       );
+
+  static const String name = 'TravellerInspectionRoute';
+
+  static PageInfo page = PageInfo(
+    name,
+    builder: (data) {
+      final pathParams = data.inheritedPathParams;
+      final args = data.argsAs<TravellerInspectionRouteArgs>(
+        orElse: () => TravellerInspectionRouteArgs(
+          reference: pathParams.getString('reference'),
+          kind: pathParams.getString('kind'),
+        ),
+      );
+      return WrappedRoute(
+        child: TravellerInspectionPage(
+          key: args.key,
+          reference: args.reference,
+          kind: args.kind,
+        ),
+      );
+    },
+  );
+}
+
+class TravellerInspectionRouteArgs {
+  const TravellerInspectionRouteArgs({
+    this.key,
+    required this.reference,
+    required this.kind,
+  });
+
+  final Key? key;
+
+  final String reference;
+
+  final String kind;
+
+  @override
+  String toString() {
+    return 'TravellerInspectionRouteArgs{key: $key, reference: $reference, kind: $kind}';
+  }
+
+  @override
+  bool operator ==(Object other) {
+    if (identical(this, other)) return true;
+    if (other is! TravellerInspectionRouteArgs) return false;
+    return key == other.key &&
+        reference == other.reference &&
+        kind == other.kind;
+  }
+
+  @override
+  int get hashCode => key.hashCode ^ reference.hashCode ^ kind.hashCode;
 }
 
 /// generated route for

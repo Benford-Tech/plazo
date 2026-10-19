@@ -17,6 +17,7 @@ import '../../../../shared/theme/theme.dart';
 import '../../../../shared/widgets/brand_header.dart';
 import '../../../../shared/widgets/french_plate.dart';
 import '../../../../shared/widgets/gradient_button.dart';
+import '../../../paperwork/presentation/widgets/paperwork_cards.dart';
 import '../../../pro_auth/presentation/bloc/pro_auth_bloc.dart';
 import '../../../pro_shuttle/data/models/shuttle_models.dart';
 import '../../../pro_shuttle/presentation/bloc/shuttle_boarding.dart';
@@ -229,6 +230,9 @@ class _Sheet extends StatelessWidget {
             child: Text('occupation.title'.tr(), style: AppText.strong(size: 14, color: AppColors.accentDeep)),
           ),
         ),
+        // « Contrat signé et état des lieux » (19/10/2026): the contract and both condition reports.
+        if (r.status != 'cancelled' && r.status != 'no_show')
+          PaperworkCard(key: ValueKey('paperwork-${r.id}-${r.status}'), reservationId: r.id, status: r.status, canAct: can(role, 'reservations:status')),
         if (r.returnNoticeKind != null && r.returnNoticeAt != null)
           _Section(
             title: 'res.return_notice'.tr(),

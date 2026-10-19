@@ -20,6 +20,7 @@ import '../../../../shared/widgets/status_badge.dart';
 import '../../../arrival/data/models/arrival_model.dart';
 import '../../../arrival/presentation/bloc/arrival_bloc.dart';
 import '../../../arrival/presentation/widgets/arrival_block.dart';
+import '../../../paperwork/presentation/widgets/paperwork_cards.dart';
 import '../../../return_day/presentation/bloc/return_bloc.dart';
 import '../../../return_day/presentation/bloc/stay_shuttles_bloc.dart';
 import '../../../return_day/presentation/widgets/return_block.dart';
@@ -164,6 +165,9 @@ class MyBookingPage extends StatelessWidget implements AutoRouteWrapper {
                                 const SizedBox(height: 12),
                                 CarLocationCard(booking: b, onChanged: (_) => context.read<BookingBloc>().add(const BookingRefreshed())),
                               ],
+                              // « Contrat signé et état des lieux » (19/10/2026): the contract to sign, the reports to check.
+                              if (travellerPaperworkRelevant(b.status))
+                                TravellerPaperworkBlock(key: ValueKey('paperwork-${b.reference}-${b.status}'), reference: b.reference),
                               // The parking's shuttles during the stay, unless the return block already follows the traveller's own.
                               BlocBuilder<ReturnBloc, ReturnState>(
                                 buildWhen: (a, b) => a.data?.shuttle != b.data?.shuttle,

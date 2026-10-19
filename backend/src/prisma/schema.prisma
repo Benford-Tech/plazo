@@ -814,6 +814,9 @@ model Reservation {
   inboundEmails  InboundEmail[]
   shuttleTrips   ShuttleTripPassenger[]
   smsOutbox      SmsOutbox[]
+  contract       ReservationContract?
+  inspections    VehicleInspection[]
+  signatureCodes SignatureCode[]
 
   @@unique([operatorId, externalReference])
   @@index([spotId])
@@ -1441,4 +1444,141 @@ model ProspectSuppression {
   createdAt DateTime @default(now())
 
   @@map("prospect_suppressions")
+}
+
+// ---- Contrat signé et état des lieux (19/10/2026, « A, tout dans les applis ») --------------------------------------------
+
+/// How a contract or a condition report was signed: a code sent by SMS to the traveller's phone (in the traveller app or
+/// typed on the staff's phone), or a handwritten signature drawn on the staff's phone.
+enum SignatureMethod {
+  sms_code
+  handwritten
+  // The traveller answered in the app, signed in by their booking's link (a condition report only).
+  booking_link
+}
+
+/// Where the signature was made.
+enum SignatureDevice {
+  traveller_app
+  staff_device
+}
+
+/// The parking contract of a booking, signed once (simple electronic signature, eIDAS art. 25): the exact text signed, its
+/// SHA-256 and the proof (method, when, device, the masked phone). The text is a snapshot: a later change of the booking
+/// or of Plazo's template never changes what was signed.
+model ReservationContract {
+  id              String          @id @default(cuid())
+  reservationId   String          @unique
+  // Version of Plazo's contract template, e.g. "2026-10-19".
+  version         String
+  // The whole text signed (title and clauses, one per line) and its SHA-256 (hex).
+  text            String
+  textSha256      String
+  signerName      String
+  method          SignatureMethod
+  device          SignatureDevice
+  // "06 •• •• •• 42": the phone the code went to (sms_code), never the whole number.
+  phoneMasked     String?
+  // Handwritten: the strokes as drawn ([[[x, y], …], …], 0-1 of the pad), and their SHA-256.
+  strokes         Json?
+  // Staff member whose phone was used (staff_device).
+  witnessedById   String?
+  signedAt        DateTime        @default(now())
+  // Proof: SHA-256 of "text + signer + method + signedAt", shown in the emailed copy.
+  proofSha256     String
+  emailedAt       DateTime?
+
+  reservation Reservation @relation(fields: [reservationId], references: [id], onDelete: Cascade)
+
+  @@map("reservation_contracts")
+}
+
+/// A one-time code sent by SMS to sign (purpose "contract"). Only its HMAC is kept.
+model SignatureCode {
+  id            String    @id @default(cuid())
+  reservationId String
+  purpose       String
+  codeHash      String
+  phoneMasked   String
+  expiresAt     DateTime
+  attempts      Int       @default(0)
+  consumedAt    DateTime?
+  createdAt     DateTime  @default(now())
+
+  reservation Reservation @relation(fields: [reservationId], references: [id], onDelete: Cascade)
+
+  @@index([reservationId, createdAt])
+  @@map("signature_codes")
+}
+
+enum InspectionKind {
+  dropoff
+  return
+}
+
+/// The traveller's answer to a condition report.
+enum InspectionDecision {
+  pending
+  accepted
+  // Not answered before the drop-off shuttle left (drop-off) : the report stands as made.
+  accepted_by_default
+  // The traveller disagrees (an omission at the drop-off, a new damage at the return): a dispute for the operator.
+  reserved
+}
+
+/// The condition report of a vehicle at the drop-off or at the return, made by the staff in Plazo Pro: six guided photos,
+/// the damages marked on the car's outline, mileage and fuel; then the traveller's answer (signed on the staff's phone,
+/// or in the traveller app). Photos are erased 90 days after the return (365 with a reservation), the row with the booking's
+/// anonymisation.
+model VehicleInspection {
+  id              String              @id @default(cuid())
+  reservationId   String
+  kind            InspectionKind
+  // [{ "n": 1, "x": 0.8, "y": 0.2, "label": "Rayure, aile avant droite", "photoId": "…" }]: x, y from 0 to 1 on the outline.
+  damages         Json                @default("[]")
+  mileageKm       Int?
+  // 0 to 4 quarters of a tank (4: full).
+  fuelQuarters    Int?
+  notes           String?
+  performedById   String?
+  startedAt       DateTime            @default(now())
+  // Null while the staff is still taking it (a draft).
+  completedAt     DateTime?
+  decision        InspectionDecision  @default(pending)
+  decidedAt       DateTime?
+  decisionMethod  SignatureMethod?
+  decisionDevice  SignatureDevice?
+  // Handwritten signature on the staff's phone.
+  strokes         Json?
+  // The traveller's words with a reservation.
+  reserveText     String?
+  // SHA-256 of the report as answered (photos' hashes, damages, mileage, fuel, decision, when).
+  proofSha256     String?
+  photosErasedAt  DateTime?
+  createdAt       DateTime            @default(now())
+  updatedAt       DateTime            @default(now()) @updatedAt
+
+  reservation Reservation       @relation(fields: [reservationId], references: [id], onDelete: Cascade)
+  photos      InspectionPhoto[]
+
+  @@unique([reservationId, kind])
+  @@map("vehicle_inspections")
+}
+
+/// One photo of a condition report, kept in private Vercel Blob storage (never a public link: the API streams it).
+model InspectionPhoto {
+  id           String   @id @default(cuid())
+  inspectionId String
+  // front, right, back, left, dashboard, interior, or damage (a close-up, any number).
+  slot         String
+  storageKey   String
+  contentType  String
+  bytes        Int
+  sha256       String
+  takenAt      DateTime @default(now())
+
+  inspection VehicleInspection @relation(fields: [inspectionId], references: [id], onDelete: Cascade)
+
+  @@index([inspectionId])
+  @@map("inspection_photos")
 }
