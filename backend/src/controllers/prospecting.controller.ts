@@ -35,7 +35,7 @@ export class ProspectingController {
 
   /** GET /internal/platform/prospects */
   public list = catchAsync(async (req: Request, res: Response) => {
-    res.json(await this.prospecting.list({ status: req.query.status, airport: req.query.airport }));
+    res.json(await this.prospecting.list({ status: req.query.status, airport: req.query.airport, region: req.query.region }));
   });
 
   /** POST /internal/platform/prospects */

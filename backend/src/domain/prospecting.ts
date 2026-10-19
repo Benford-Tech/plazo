@@ -1,5 +1,6 @@
 import { createHash } from 'crypto';
 import { EmailMessage } from './booking-messages';
+import { parseRegion, RegionKey } from './prospect-regions';
 import { addDays, localDate, localDateTime, parseInstant } from './time';
 
 /**
@@ -216,6 +217,8 @@ export interface ProspectInput {
   email?: unknown;
   town?: unknown;
   airportCode?: unknown;
+  /** A region key or name (« Auvergne-Rhône-Alpes »); null or empty: the airport's region. */
+  region?: unknown;
   phone?: unknown;
   notes?: unknown;
 }
@@ -227,11 +230,13 @@ export interface ProspectFields {
   email: string;
   town: string | null;
   airportCode: string | null;
+  region: RegionKey | null;
   phone: string | null;
   notes: string | null;
 }
 
-const LIMITS: Record<keyof ProspectFields, number> = {
+type TextField = Exclude<keyof ProspectFields, 'region'>;
+const LIMITS: Record<TextField, number> = {
   companyName: 120,
   contactFirstName: 60,
   contactLastName: 60,
@@ -251,7 +256,8 @@ export function suppressionHash(email: string): string {
 
 /**
  * Checks one prospect, typed or from a CSV row (shared by the form, the import and its preview). `partial`: an update,
- * where an absent field stays as it is. Field codes: required, too_long, invalid_email, invalid_airport, invalid.
+ * where an absent field stays as it is. Field codes: required, too_long, invalid_email, invalid_airport, invalid_region,
+ * invalid.
  */
 export function validateProspect(
   input: ProspectInput,
@@ -259,7 +265,7 @@ export function validateProspect(
 ): { ok: true; value: Partial<ProspectFields> } | { ok: false; fields: Record<string, string> } {
   const fields: Record<string, string> = {};
   const value: Partial<ProspectFields> = {};
-  const text = (key: keyof ProspectFields, required: boolean) => {
+  const text = (key: TextField, required: boolean) => {
     const raw = input[key];
     if (raw === undefined && partial) return;
     if (raw !== undefined && raw !== null && typeof raw !== 'string') {
@@ -287,6 +293,17 @@ export function validateProspect(
   text('airportCode', false);
   text('phone', false);
   text('notes', false);
+  // The region chosen by hand: a key or a name, whatever the case and accents; empty gives the airport's region.
+  const region = input.region;
+  if (!(region === undefined && partial)) {
+    if (region === undefined || region === null || (typeof region === 'string' && !region.trim())) value.region = null;
+    else if (typeof region !== 'string') fields.region = 'invalid';
+    else {
+      const key = parseRegion(region);
+      if (key) value.region = key;
+      else fields.region = 'invalid_region';
+    }
+  }
   if (typeof value.email === 'string') {
     value.email = normalizeProspectEmail(value.email);
     if (!EMAIL_RE.test(value.email)) fields.email = 'invalid_email';

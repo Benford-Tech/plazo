@@ -890,11 +890,12 @@ export const adminApi = {
       `/internal/platform/notifications/audience?${new URLSearchParams({ audience, ...(operatorId ? { operatorId } : {}) })}`,
     ),
   // Prospection (18/10/2026).
-  getProspects: (filters: { status?: ProspectStatus | null; airport?: string | null } = {}) =>
+  getProspects: (filters: { status?: ProspectStatus | null; airport?: string | null; region?: string | null } = {}) =>
     apiRequest<ProspectList>(
       `/internal/platform/prospects?${new URLSearchParams({
         ...(filters.status ? { status: filters.status } : {}),
         ...(filters.airport ? { airport: filters.airport } : {}),
+        ...(filters.region ? { region: filters.region } : {}),
       })}`,
     ),
   createProspect: (input: ProspectInput) =>

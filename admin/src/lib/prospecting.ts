@@ -1,3 +1,4 @@
+import { fr } from "./fr";
 import type { Prospect, ProspectInput, ProspectingStep } from "./types";
 
 /**
@@ -33,6 +34,7 @@ const HEADERS: Record<string, Column> = {
   aeroport: "airportCode",
   airport: "airportCode",
   codeaeroport: "airportCode",
+  region: "region",
   telephone: "phone",
   tel: "phone",
   phone: "phone",
@@ -168,4 +170,38 @@ export function unknownVariables(text: string): string[] {
 export function stepFor(prospect: Pick<Prospect, "step" | "nextStep">, steps: ProspectingStep[]): ProspectingStep {
   const wanted = prospect.nextStep ?? (prospect.step === 0 ? 1 : null);
   return steps.find(s => s.step === wanted) ?? steps[0];
+}
+
+// ---- Classement par région (19/10/2026, « Groupés par région » + « De l'aéroport ») ---------------------------------------
+
+/** The filter value (and block key) of the prospects without a region. */
+export const NO_REGION = "none";
+
+export interface RegionGroup {
+  key: string;
+  label: string;
+  prospects: Prospect[];
+}
+
+/**
+ * The prospects in blocks, one per region: regions in the given (alphabetical) order, « Sans région » last, each block in
+ * the list's order. A region with no prospect under the filters has no block.
+ */
+export function groupByRegion(rows: Prospect[], regions: { key: string; label: string }[]): RegionGroup[] {
+  const byKey = new Map<string, Prospect[]>();
+  for (const p of rows) {
+    const key = p.region?.key ?? NO_REGION;
+    const block = byKey.get(key);
+    if (block) block.push(p);
+    else byKey.set(key, [p]);
+  }
+  const known = new Set(regions.map(r => r.key));
+  // A region the page does not list yet (never expected): after the others, under its own label.
+  const extra = rows.flatMap(p => (p.region && !known.has(p.region.key) ? [{ key: p.region.key, label: p.region.label }] : []));
+  const seen = new Set<string>();
+  const ordered = [...regions, ...extra]
+    .filter(r => byKey.has(r.key) && !seen.has(r.key) && seen.add(r.key))
+    .map(r => ({ key: r.key, label: r.label, prospects: byKey.get(r.key)! }));
+  const none = byKey.get(NO_REGION);
+  return none ? [...ordered, { key: NO_REGION, label: fr.platform.prospecting.regionNone, prospects: none }] : ordered;
 }

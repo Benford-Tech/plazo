@@ -1554,6 +1554,10 @@ export interface Prospect {
   town: string | null;
   airportCode: string | null;
   airportName: string | null;
+  /** The region it is filed under: chosen by hand (`manual`), else its airport's; null: « Sans région » (19/10/2026). */
+  region: ProspectRegion | null;
+  /** The region chosen by hand (a key), null: automatic. */
+  regionOverride: string | null;
   phone: string | null;
   notes: string | null;
   source: "manual" | "csv";
@@ -1577,14 +1581,26 @@ export interface ProspectInput {
   email: string;
   town: string | null;
   airportCode: string | null;
+  /** A region key (form) or name (CSV column « région »); null: automatic (the airport's). */
+  region?: string | null;
   phone: string | null;
   notes: string | null;
+}
+
+export interface ProspectRegion {
+  key: string;
+  label: string;
+  manual: boolean;
 }
 
 export interface ProspectList {
   data: Prospect[];
   counts: Record<ProspectStatus | "all", number>;
   airports: { code: string; name: string | null; count: number }[];
+  /** Every region, alphabetical. */
+  regions: { key: string; label: string }[];
+  /** Prospects per region key (and `none`), under the airport filter. */
+  regionCounts: Record<string, number>;
   today: { sent: number; cap: number; remaining: number };
   window: { open: boolean; nextOpening: string };
   configured: boolean;

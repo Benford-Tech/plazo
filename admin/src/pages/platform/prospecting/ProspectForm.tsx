@@ -10,20 +10,33 @@ import type { Prospect, ProspectInput } from "@/lib/types";
 import { Modal } from "./Modal";
 
 const t = fr.platform.prospecting;
-type Form = Record<keyof ProspectInput, string>;
-const KEYS: (keyof ProspectInput)[] = ["companyName", "contactFirstName", "contactLastName", "email", "town", "airportCode", "phone", "notes"];
+type Key = Exclude<keyof ProspectInput, "region">;
+type Form = Record<Key, string>;
+const KEYS: Key[] = ["companyName", "contactFirstName", "contactLastName", "email", "town", "airportCode", "phone", "notes"];
 
 const formOf = (p: Prospect | null): Form =>
   Object.fromEntries(KEYS.map(k => [k, (p?.[k] as string | null) ?? ""])) as Form;
 
-/** « + Ajouter un prospect » and « Modifier »: the same form. */
-export function ProspectForm({ prospect, onClose }: { prospect: Prospect | null; onClose: () => void }) {
+/**
+ * « + Ajouter un prospect » and « Modifier »: the same form. The region is automatic (the airport's) unless one is chosen
+ * (19/10/2026).
+ */
+export function ProspectForm({
+  prospect,
+  regions,
+  onClose,
+}: {
+  prospect: Prospect | null;
+  regions: { key: string; label: string }[];
+  onClose: () => void;
+}) {
   const queryClient = useQueryClient();
   const [form, setForm] = useState<Form>(() => formOf(prospect));
+  const [region, setRegion] = useState<string>(prospect?.regionOverride ?? "");
   const [errors, setErrors] = useState<Record<string, string>>({});
   const save = useMutation({
     mutationFn: () => {
-      const input = Object.fromEntries(KEYS.map(k => [k, form[k].trim() || null])) as unknown as ProspectInput;
+      const input = { ...Object.fromEntries(KEYS.map(k => [k, form[k].trim() || null])), region: region || null } as unknown as ProspectInput;
       return prospect ? adminApi.updateProspect(prospect.id, input) : adminApi.createProspect(input);
     },
     onSuccess: () => {
@@ -37,7 +50,7 @@ export function ProspectForm({ prospect, onClose }: { prospect: Prospect | null;
       toast.error(describeError(err));
     },
   });
-  const field = (key: keyof ProspectInput, props: React.InputHTMLAttributes<HTMLInputElement> & { help?: string } = {}) => (
+  const field = (key: Key, props: React.InputHTMLAttributes<HTMLInputElement> & { help?: string } = {}) => (
     <FormField
       id={`prospect-${key}`}
       label={t.fields[key]}
@@ -65,6 +78,33 @@ export function ProspectForm({ prospect, onClose }: { prospect: Prospect | null;
         <div className="grid gap-3 sm:grid-cols-2">
           {field("town", { maxLength: 80 })}
           {field("airportCode", { maxLength: 3, help: t.airportHelp, className: "uppercase" })}
+        </div>
+        <div className="space-y-1.5">
+          <Label htmlFor="prospect-region">{t.fields.region}</Label>
+          <select
+            id="prospect-region"
+            value={region}
+            aria-invalid={!!errors.region}
+            aria-describedby={errors.region ? "prospect-region-error" : "prospect-region-help"}
+            onChange={e => setRegion(e.target.value)}
+            className="flex h-11 w-full rounded-md border border-input bg-background px-3 text-base"
+          >
+            <option value="">{t.regionAuto}</option>
+            {regions.map(r => (
+              <option key={r.key} value={r.key}>
+                {r.label}
+              </option>
+            ))}
+          </select>
+          {errors.region ? (
+            <p id="prospect-region-error" className="text-sm text-destructive">
+              {errorMessage(errors.region)}
+            </p>
+          ) : (
+            <p id="prospect-region-help" className="text-xs text-muted-foreground">
+              {t.regionHelp}
+            </p>
+          )}
         </div>
         {field("phone", { type: "tel", maxLength: 30 })}
         <div className="space-y-1.5">

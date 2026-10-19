@@ -1373,6 +1373,8 @@ model Prospect {
   town             String?
   // IATA code, e.g. LYS.
   airportCode      String?
+  // Region chosen by hand (key of domain/prospect-regions.ts); null: the airport's region (19/10/2026).
+  region           String?
   phone            String?
   notes            String?
   source           ProspectSource @default(manual)

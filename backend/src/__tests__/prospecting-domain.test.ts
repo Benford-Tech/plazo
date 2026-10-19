@@ -76,6 +76,7 @@ describe('validation', () => {
         town: null,
         phone: null,
         notes: null,
+        region: null,
       },
     });
     expect(validateProspect({ email: 'pas-une-adresse', airportCode: 'LYON' })).toEqual({

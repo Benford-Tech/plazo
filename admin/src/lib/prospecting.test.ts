@@ -1,4 +1,5 @@
-import { parseCsvCells, readProspectsCsv, renderSubjectText, renderText, unknownVariables } from "./prospecting";
+import { groupByRegion, parseCsvCells, readProspectsCsv, renderSubjectText, renderText, unknownVariables } from "./prospecting";
+import type { Prospect } from "./types";
 
 // Prospection (18/10/2026): the admin's CSV file and the preview of a mail. Fictional data only.
 
@@ -38,5 +39,30 @@ describe("aperçu des mails", () => {
     expect(renderText("Bonjour {prénom},\n{parking} près de {aeroport}", values)).toBe("Bonjour,\nParking Alpha près de Lyon Saint-Exupéry");
     expect(renderSubjectText("{prénom}, vos réservations", values)).toBe("Vos réservations");
     expect(unknownVariables("{prénom} {société}")).toEqual(["{société}"]);
+  });
+});
+
+describe("classement par région (19/10/2026)", () => {
+  it("la colonne « Région » du CSV est lue telle quelle (le serveur la reconnaît)", () => {
+    const reading = readProspectsCsv("parking;e-mail;Région\nParking Alpha;a@alpha.example;Île-de-France\n");
+    expect(reading.ignored).toEqual([]);
+    expect(reading.rows).toEqual([{ companyName: "Parking Alpha", email: "a@alpha.example", region: "Île-de-France" }]);
+  });
+
+  it("blocs dans l'ordre des régions, « Sans région » en dernier, l'ordre de la liste gardé dans chaque bloc", () => {
+    const p = (id: string, region: Prospect["region"]) => ({ id, region }) as Prospect;
+    const ara = { key: "auvergne-rhone-alpes", label: "Auvergne-Rhône-Alpes", manual: false };
+    const bzh = { key: "bretagne", label: "Bretagne", manual: true };
+    const groups = groupByRegion([p("1", null), p("2", bzh), p("3", ara), p("4", ara)], [
+      { key: "auvergne-rhone-alpes", label: "Auvergne-Rhône-Alpes" },
+      { key: "bretagne", label: "Bretagne" },
+      { key: "corse", label: "Corse" },
+    ]);
+    expect(groups.map(g => [g.key, g.label, g.prospects.map(x => x.id)])).toEqual([
+      ["auvergne-rhone-alpes", "Auvergne-Rhône-Alpes", ["3", "4"]],
+      ["bretagne", "Bretagne", ["2"]],
+      ["none", "Sans région", ["1"]],
+    ]);
+    expect(groupByRegion([], [])).toEqual([]);
   });
 });

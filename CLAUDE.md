@@ -852,6 +852,21 @@ Le nom du produit doit rester dans UN seul fichier de configuration (il peut enc
   `EMAIL_FROM`), réponses à `PROSPECTING_REPLY_TO` (sinon l'administrateur qui a envoyé), prospects saisis à la main ou importés
   d'un CSV fourni (aucune collecte sur les comparateurs), textes des trois mails modifiables. Politique de confidentialité :
   section 11 « Prospection des parkings ».
+  **Classement par région (19/10/2026, « classe les prospects par région », choix « Groupés par région » + « De l'aéroport »)** :
+  le tableau est découpé en blocs repliables, un par région (en-tête « AUVERGNE-RHÔNE-ALPES · 14 », nombre sous les filtres en
+  cours ; régions dans l'ordre alphabétique, « Sans région » en dernier ; replis gardés dans le navigateur,
+  `plazo:prospects-collapsed-regions`), « Tout cocher dans la région » / « Tout décocher » par bloc (le panneau d'envoi suit la
+  sélection), filtre « Toutes les régions » à côté des pilules et de l'aéroport (options : régions qui ont des prospects avec leur
+  nombre, puis « Sans région ») ; région affichée sous le code de l'aéroport (« · choisie à la main »). Région = celle choisie à la
+  main (`Prospect.region`, migration `prospect_region` avec CHECK des 18 clés), sinon celle de l'aéroport
+  (`domain/prospect-regions.ts` : 13 régions métropolitaines + Guadeloupe, Martinique, Guyane, La Réunion, Mayotte ;
+  `AIRPORT_REGIONS` ne liste que des aéroports vérifiés : BVA en Hauts-de-France, BSL/MLH en Grand Est, Brive laissé de côté),
+  sinon aucune ; formulaire : « Région : Automatique (d'après l'aéroport) | <région> » ; colonne CSV facultative « région »
+  (`parseRegion` : nom ou clé, casse, accents, espaces et tirets ignorés, PACA / AURA / IDF ; inconnue → ligne en erreur
+  `invalid_region`). API : `region { key, label, manual }` et `regionOverride` par prospect, `regions` (toutes, alphabétiques) et
+  `regionCounts` (par clé et `none`, sous le filtre d'aéroport), `?region=<clé>|none` ; les pilules d'état suivent les filtres
+  d'aéroport et de région. La liste n'est pas paginée (2 000 prospects au plus, comme avant) : la page reçoit tout ce que
+  montrent les filtres et forme les blocs elle-même (`groupByRegion` de `admin/src/lib/prospecting.ts`).
 - `site/` : site Plazo voyageurs (Next.js), servi à la racine du domaine. **Référencement (08/10/2026)** : données structurées
   schema.org (`src/lib/structured-data.ts`, composant `JsonLd` : Organization et WebSite sur l'accueil, FAQPage et ItemList des
   parkings sur la page aéroport, ParkingFacility + BreadcrumbList sur une fiche) ; un parking de démo (`isDemo`) n'est ni décrit,

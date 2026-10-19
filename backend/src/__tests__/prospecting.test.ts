@@ -154,6 +154,97 @@ describe('Plateforme › Prospection : accès et prospects', () => {
   });
 });
 
+describe('Plateforme › Prospection : classement par région (19/10/2026)', () => {
+  it('région de l’aéroport ou choisie à la main ; filtre, comptages des pilules et des régions', async () => {
+    const lyon = await create(1, { airportCode: 'LYS' });
+    await create(2, { airportCode: 'GNB' });
+    await create(3, { airportCode: 'NCE' });
+    await create(4, { airportCode: 'GVA' }); // Geneva: no French region
+    await create(5, { airportCode: null });
+    const manual = await create(6, { airportCode: 'LYS', region: 'Occitanie' });
+    await prisma.prospect.update({ where: { id: lyon.id }, data: { status: 'replied' } });
+
+    const all = await api().get(P).set(auth(admin.token));
+    expect(all.status).toBe(200);
+    const byEmail = Object.fromEntries(all.body.data.map((p: any) => [p.email, p]));
+    expect(byEmail['contact1@parking-fictif.example'].region).toEqual({ key: 'auvergne-rhone-alpes', label: 'Auvergne-Rhône-Alpes', manual: false });
+    expect(byEmail['contact1@parking-fictif.example'].regionOverride).toBeNull();
+    expect(byEmail['contact4@parking-fictif.example'].region).toBeNull();
+    expect(byEmail['contact6@parking-fictif.example'].region).toEqual({ key: 'occitanie', label: 'Occitanie', manual: true });
+    expect(byEmail['contact6@parking-fictif.example'].regionOverride).toBe('occitanie');
+    expect(all.body.regions).toHaveLength(18);
+    expect(all.body.regions[0]).toEqual({ key: 'auvergne-rhone-alpes', label: 'Auvergne-Rhône-Alpes' });
+    expect(all.body.regionCounts).toMatchObject({ 'auvergne-rhone-alpes': 2, 'provence-alpes-cote-d-azur': 1, occitanie: 1, none: 2, bretagne: 0 });
+
+    const ara = await api().get(P).query({ region: 'auvergne-rhone-alpes' }).set(auth(admin.token));
+    expect(ara.body.data.map((p: any) => p.email).sort()).toEqual(['contact1@parking-fictif.example', 'contact2@parking-fictif.example']);
+    // The status pills follow the region filter.
+    expect(ara.body.counts).toMatchObject({ all: 2, to_contact: 1, replied: 1 });
+    const araReplied = await api().get(P).query({ region: 'auvergne-rhone-alpes', status: 'replied' }).set(auth(admin.token));
+    expect(araReplied.body.data.map((p: any) => p.id)).toEqual([lyon.id]);
+
+    const none = await api().get(P).query({ region: 'none' }).set(auth(admin.token));
+    expect(none.body.data.map((p: any) => p.email).sort()).toEqual(['contact4@parking-fictif.example', 'contact5@parking-fictif.example']);
+    const occitanie = await api().get(P).query({ region: 'occitanie' }).set(auth(admin.token));
+    expect(occitanie.body.data.map((p: any) => p.id)).toEqual([manual.id]);
+
+    // The region counts follow the airport filter.
+    const lys = await api().get(P).query({ airport: 'LYS' }).set(auth(admin.token));
+    expect(lys.body.regionCounts).toMatchObject({ 'auvergne-rhone-alpes': 1, occitanie: 1, none: 0, 'provence-alpes-cote-d-azur': 0 });
+    const lysAra = await api().get(P).query({ airport: 'LYS', region: 'auvergne-rhone-alpes' }).set(auth(admin.token));
+    expect(lysAra.body.data.map((p: any) => p.id)).toEqual([lyon.id]);
+
+    const bad = await api().get(P).query({ region: 'atlantide' }).set(auth(admin.token));
+    expect(bad.status).toBe(400);
+    expect(bad.body.fields).toEqual({ region: 'invalid_region' });
+  });
+
+  it('région choisie à la main : validée, modifiable, remise en automatique', async () => {
+    const refused = await api()
+      .post(P)
+      .set(auth(admin.token))
+      .send(prospect(1, { region: 'Atlantide' }));
+    expect(refused.status).toBe(400);
+    expect(refused.body.fields).toEqual({ region: 'invalid_region' });
+    const created = await create(1, { airportCode: 'BVA' });
+    expect((await prisma.prospect.findUnique({ where: { id: created.id } }))!.region).toBeNull();
+
+    const set = await api().patch(`${P}/${created.id}`).set(auth(admin.token)).send({ region: 'ile-de-france' });
+    expect(set.status).toBe(200);
+    expect(set.body.data.region).toEqual({ key: 'ile-de-france', label: 'Île-de-France', manual: true });
+    // A change that does not name the region keeps it.
+    const kept = await api().patch(`${P}/${created.id}`).set(auth(admin.token)).send({ town: 'Tillé' });
+    expect(kept.body.data.regionOverride).toBe('ile-de-france');
+    const auto = await api().patch(`${P}/${created.id}`).set(auth(admin.token)).send({ region: null });
+    expect(auto.body.data.region).toEqual({ key: 'hauts-de-france', label: 'Hauts-de-France', manual: false });
+    expect(auto.body.data.regionOverride).toBeNull();
+    const invalid = await api().patch(`${P}/${created.id}`).set(auth(admin.token)).send({ region: 'nowhere' });
+    expect(invalid.status).toBe(400);
+    // The database refuses a value outside the map, whatever writes it.
+    await expect(prisma.prospect.update({ where: { id: created.id }, data: { region: 'nowhere' } })).rejects.toThrow();
+  });
+
+  it('import CSV : colonne « région » par nom (casse et accents ignorés), valeur inconnue = ligne en erreur', async () => {
+    const rows = [
+      prospect(1, { region: 'auvergne rhone alpes' }),
+      prospect(2, { region: 'ÎLE-DE-FRANCE', airportCode: 'BVA' }),
+      prospect(3, { region: 'Atlantide' }),
+      prospect(4, { region: '' }),
+    ];
+    const preview = await api().post(`${P}/import`).set(auth(admin.token)).send({ rows, dryRun: true });
+    expect(preview.body.counts).toEqual({ new: 3, duplicate: 0, suppressed: 0, invalid: 1 });
+    expect(preview.body.results[2]).toMatchObject({ row: 3, outcome: 'invalid', fields: { region: 'invalid_region' } });
+    const done = await api().post(`${P}/import`).set(auth(admin.token)).send({ rows });
+    expect(done.body.created).toBe(3);
+    const stored = await prisma.prospect.findMany({ orderBy: { email: 'asc' }, select: { email: true, region: true } });
+    expect(stored).toEqual([
+      { email: 'contact1@parking-fictif.example', region: 'auvergne-rhone-alpes' },
+      { email: 'contact2@parking-fictif.example', region: 'ile-de-france' },
+      { email: 'contact4@parking-fictif.example', region: null },
+    ]);
+  });
+});
+
 describe('Plateforme › Prospection : envoi et relances', () => {
   it('envoi immédiat : Brevo, en-têtes de désinscription, Reply-To de l’admin, mail 1 enregistré, relance planifiée', async () => {
     const a = await create(1);
