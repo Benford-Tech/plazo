@@ -849,7 +849,8 @@ Le nom du produit doit rester dans UN seul fichier de configuration (il peut enc
   `SECRET_KEY`, comparé à temps constant. Envoi par le passage de 15 minutes de `remind-tomorrow` (dans son propre try/catch, sans
   changer son statut) et `GET /internal/cron/prospecting` ; purge de nuit 3 ans après le dernier contact (ou la saisie).
   **Réglages par défaut, à confirmer par Joanny** : expéditeur `PROSPECTING_SENDER_EMAIL` / `PROSPECTING_SENDER_NAME` (sinon
-  `EMAIL_FROM`), réponses à `PROSPECTING_REPLY_TO` (sinon l'administrateur qui a envoyé), prospects saisis à la main ou importés
+  `EMAIL_FROM`), réponses à `PROSPECTING_REPLY_TO` (sinon l'administrateur qui a envoyé), téléphone `PROSPECTING_PHONE` sous la signature (19/10/2026, numéro
+  français écrit « 07 21 17 75 90 », `displayPhone` ; rien sans lui), prospects saisis à la main ou importés
   d'un CSV fourni (aucune collecte sur les comparateurs), textes des trois mails modifiables. Politique de confidentialité :
   section 11 « Prospection des parkings ».
   **Classement par région (19/10/2026, « classe les prospects par région », choix « Groupés par région » + « De l'aéroport »)** :

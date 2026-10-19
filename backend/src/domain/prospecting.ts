@@ -171,17 +171,30 @@ export function publisherLine(company: Publisher): string {
  * The email itself: the step's text with its variables, then the footer every message carries (who writes, why the
  * reader gets it, how to never hear from Plazo again). The body is plain text; the HTML is that text, escaped.
  */
+/** « 07 21 17 75 90 » for a French number typed as +33…, 0033… or 0…; any other number as typed. */
+export function displayPhone(phone: string): string {
+  const raw = phone.trim();
+  let digits = raw.replace(/\(0\)/g, '').replace(/[\s.()-]/g, '');
+  if (digits.startsWith('0033')) digits = `+33${digits.slice(4)}`;
+  if (digits.startsWith('+33')) digits = `0${digits.slice(3).replace(/^0/, '')}`;
+  return /^0[1-9]\d{8}$/.test(digits) ? digits.replace(/(\d{2})(?=\d)/g, '$1 ') : raw;
+}
+
 export function prospectEmail(input: {
   productName: string;
   company: Publisher;
   senderName: string;
+  /** PROSPECTING_PHONE: written under the sender's name. */
+  senderPhone?: string;
   step: Pick<SequenceStep, 'subject' | 'body'>;
   values: TemplateValues;
   unsubscribeUrl: string;
 }): EmailMessage {
   const subject = renderSubject(input.step.subject, input.values);
   const body = renderTemplate(input.step.body, input.values).trim();
-  const signature = input.senderName.trim();
+  const phone = input.senderPhone?.trim() ? displayPhone(input.senderPhone) : '';
+  const signatureLines = [input.senderName.trim(), phone].filter(Boolean);
+  const signature = signatureLines.join('\n');
   const publisher = publisherLine(input.company);
   const why =
     `Vous recevez ce message à l'adresse professionnelle de ${input.values.parking}, parce que ${input.productName} ` +
@@ -198,7 +211,7 @@ export function prospectEmail(input: {
   const html =
     '<!doctype html><html lang="fr"><body style="margin:0;padding:24px;font-family:Arial,Helvetica,sans-serif;font-size:15px;line-height:1.55;color:#1A1D1A">' +
     `<div style="max-width:600px">${paragraphs}` +
-    (signature ? `<p style="margin:0 0 14px">${escapeHtml(signature)}</p>` : '') +
+    (signature ? `<p style="margin:0 0 14px">${signatureLines.map(escapeHtml).join('<br>')}</p>` : '') +
     '<hr style="border:0;border-top:1px solid #E4E6E2;margin:24px 0 12px">' +
     `<p style="margin:0 0 8px;font-size:12px;color:#6B7280">${escapeHtml(why)}${who ? ` ${escapeHtml(who)}` : ''}</p>` +
     `<p style="margin:0;font-size:12px"><a href="${escapeHtml(input.unsubscribeUrl)}" style="color:#1E5E2E">${escapeHtml(stop)}</a></p>` +

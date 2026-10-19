@@ -5,6 +5,7 @@ import {
   inSendingWindow,
   nextStep,
   nextWindowStart,
+  displayPhone,
   prospectEmail,
   remainingToday,
   renderSubject,
@@ -60,6 +61,31 @@ describe('variables des mails', () => {
     );
     expect(mail.text).toContain("Vous recevez ce message à l'adresse professionnelle de Parking Alpha");
     expect(mail.text).toContain('Ne plus recevoir de messages de Plazo : https://site.example/api/public/prospecting/unsubscribe/abc.def');
+  });
+});
+
+describe('téléphone de la signature', () => {
+  it('écrit un numéro français à la française, laisse un autre tel quel', () => {
+    expect(displayPhone('+33 7 21 17 75 90')).toBe('07 21 17 75 90');
+    expect(displayPhone('+33721177590')).toBe('07 21 17 75 90');
+    expect(displayPhone('0033 (0)4 72 00 00 00')).toBe('04 72 00 00 00');
+    expect(displayPhone('0472000000')).toBe('04 72 00 00 00');
+    expect(displayPhone(' +44 20 7946 0000 ')).toBe('+44 20 7946 0000');
+  });
+
+  it('le numéro suit le nom dans la signature, en texte et en HTML', () => {
+    const base = {
+      productName: 'Plazo',
+      company,
+      senderName: 'Équipe Plazo',
+      step: { subject: 'Bonjour', body: 'Message' },
+      values,
+      unsubscribeUrl: 'https://site.example/u/abc.def',
+    };
+    const mail = prospectEmail({ ...base, senderPhone: '+33 6 00 00 00 00' });
+    expect(mail.text).toContain('Message\n\nÉquipe Plazo\n06 00 00 00 00\n\n--');
+    expect(mail.html).toContain('<p style="margin:0 0 14px">Équipe Plazo<br>06 00 00 00 00</p>');
+    expect(prospectEmail({ ...base, senderPhone: '  ' }).text).toContain('Message\n\nÉquipe Plazo\n\n--');
   });
 });
 
