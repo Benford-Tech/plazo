@@ -45,6 +45,9 @@ export type TemplateValues = Record<VariableName, string>;
 
 /** Plazo's own texts, until the platform admin writes theirs (« Modifier les mails »). */
 export function defaultSteps(productName: string): SequenceStep[] {
+  // 19/10/2026 (« faire penser que nous sommes une équipe de devs expérimentés ») : a team voice that shows its craft
+  // through facts that hold today (comparator mails read without retyping, flight tracking, valet files, apps, Stripe),
+  // never through claims nobody can check (years of experience, customer counts).
   return [
     {
       step: 1,
@@ -53,13 +56,18 @@ export function defaultSteps(productName: string): SequenceStep[] {
       subject: '{parking} : vos réservations des comparateurs dans un seul planning',
       body:
         'Bonjour {prénom},\n\n' +
-        `Je développe ${productName}, un logiciel pensé pour les parkings avec navette autour des aéroports, comme {parking}.\n\n` +
-        'Concrètement :\n' +
-        "- les mails de confirmation d'Allopark, Onepark, Parclick ou ParkMundo deviennent des réservations, sans rien recopier ;\n" +
+        `Nous sommes l'équipe de développeurs derrière ${productName}, un logiciel conçu pour les parkings avec navette autour ` +
+        'des aéroports, avec un premier parking voiturier près de Lyon Saint-Exupéry. Nous vous écrivons au sujet de {parking}.\n\n' +
+        'Ce que nous avons construit, et qui tourne déjà :\n' +
+        "- les mails de confirmation d'Allopark, Onepark, Parclick et ParkMundo sont lus automatiquement et deviennent des " +
+        'réservations, modifications comprises, sans rien recopier ;\n' +
+        "- les vols retour sont suivis en temps réel : le chauffeur voit qui récupérer, dans l'ordre d'atterrissage ;\n" +
         '- le voiturier sait dans quelle file ranger chaque voiture pour ne jamais en bloquer une au départ ;\n' +
-        "- le chauffeur voit les retours dans l'ordre d'atterrissage, avec le suivi des vols.\n\n" +
-        `Vos clients peuvent aussi réserver et payer en ligne sur ${productName}.\n\n` +
-        'Auriez-vous 15 minutes cette semaine pour que je vous le montre sur votre propre parking ?\n\n' +
+        "- l'équipe a son application iPhone et Android, le gérant son tableau de bord et son chiffre d'affaires.\n\n" +
+        `Vos clients peuvent aussi réserver et payer en ligne sur ${productName}, par Stripe.\n\n` +
+        'Nous préparons nous-mêmes votre espace (plan du parking sur la photo aérienne, tarifs, réception des mails) : ' +
+        "vous n'avez rien à installer.\n\n" +
+        'Auriez-vous 15 minutes cette semaine pour que nous vous le montrions sur votre propre parking ?\n\n' +
         'Bien à vous,',
     },
     {
@@ -71,9 +79,12 @@ export function defaultSteps(productName: string): SequenceStep[] {
         'Bonjour {prénom},\n\n' +
         "Aujourd'hui, comment savez-vous quand partir chercher un client au retour ? Bien souvent, on attend son appel à " +
         "l'atterrissage.\n\n" +
-        `Avec ${productName}, le vol est suivi : le chauffeur sait à l'avance qui récupérer et à quelle heure, et le client ` +
-        'reçoit un SMS avec le point de rendez-vous.\n\n' +
-        'Je peux vous le montrer en 15 minutes, au téléphone ou sur place. Quel moment vous arrangerait ?\n\n' +
+        `Dans ${productName}, chaque vol retour est suivi auprès d'un service de données aériennes : un retard décale l'heure ` +
+        'de passage, le chauffeur voit la liste des clients à récupérer se mettre à jour, et le client reçoit un SMS avec le ' +
+        'point de rendez-vous.\n\n' +
+        'Nous livrons des améliorations chaque semaine, à partir de ce que nous disent les équipes sur le terrain : si quelque ' +
+        "chose vous manque, c'est le genre de demande que nous traitons vite.\n\n" +
+        'Nous pouvons vous le montrer en 15 minutes, au téléphone ou sur place. Quel moment vous arrangerait ?\n\n' +
         'Bien à vous,',
     },
     {
@@ -83,8 +94,9 @@ export function defaultSteps(productName: string): SequenceStep[] {
       subject: 'Je ne vous dérange plus',
       body:
         'Bonjour {prénom},\n\n' +
-        "C'est mon dernier message, je ne veux pas encombrer votre boîte. Si un jour vous voulez voir " +
-        `${productName} sur l'exemple de {parking}, il suffit de répondre à ce mail.\n\n` +
+        "C'est notre dernier message, nous ne voulons pas encombrer votre boîte. Si un jour vous voulez voir " +
+        `${productName} sur l'exemple de {parking}, il suffit de répondre à ce mail : nous vous préparons une démonstration ` +
+        'avec votre propre parking.\n\n' +
         'Bonne continuation,',
     },
   ];
