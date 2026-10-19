@@ -307,10 +307,12 @@ export const PRODUCT_COMPANY = {
 
 // Prospection (Plateforme › Prospection, 18/10/2026). Read on every call so that tests can set them. The sender defaults to
 // EMAIL_FROM (the one of every other email); the replies go to PROSPECTING_REPLY_TO, else to the platform admin who sent.
-export function prospectingSettings(): { senderEmail: string; senderName: string; replyTo: string } {
+// PROSPECTING_PHONE (19/10/2026) is written under the signature.
+export function prospectingSettings(): { senderEmail: string; senderName: string; replyTo: string; phone: string } {
   return {
     senderEmail: (process.env.PROSPECTING_SENDER_EMAIL || '').trim(),
     senderName: (process.env.PROSPECTING_SENDER_NAME || '').trim(),
     replyTo: (process.env.PROSPECTING_REPLY_TO || '').trim().toLowerCase(),
+    phone: (process.env.PROSPECTING_PHONE || '').trim(),
   };
 }
