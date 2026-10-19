@@ -5,7 +5,7 @@ import { MemoryRouter, Route, Routes } from "react-router-dom";
 import { ApiError } from "@/lib/api";
 import ReservationPage from "./ReservationPage";
 
-const api = vi.hoisted(() => ({ getReservation: vi.fn(), setReservationPrice: vi.fn() }));
+const api = vi.hoisted(() => ({ getReservation: vi.fn(), setReservationPrice: vi.fn(), setReservationCommission: vi.fn() }));
 const auth = vi.hoisted(() => ({ user: { role: "manager" } as Record<string, unknown> }));
 vi.mock("@/contexts/AuthContext", () => ({ useAuth: () => ({ user: auth.user }) }));
 vi.mock("@/lib/api", async importOriginal => {
@@ -140,5 +140,26 @@ describe("ReservationPage · prix payé (10/10/2026)", () => {
     renderPage();
     expect(await screen.findByText("45,00 €")).toBeInTheDocument();
     expect(screen.queryByText(/frais de nuit/)).not.toBeInTheDocument();
+  });
+
+  it("montre la commission du comparateur et ce que le parking garde, et la change pour cette réservation (19/10/2026)", async () => {
+    const commission = { comparator: "Allopark", source: "rate", rateBp: 1800, fixedCents: 0, amountCents: 468, netCents: 2132, effectiveFrom: "2026-10-01" };
+    api.getReservation.mockResolvedValue(reservation({ commission }));
+    api.setReservationCommission.mockResolvedValue({
+      id: "r1",
+      commission: { ...commission, source: "override", rateBp: 1200, amountCents: 312, netCents: 2288, effectiveFrom: null },
+    });
+    renderPage();
+    const line = await screen.findByTestId("commission-line");
+    expect(line).toHaveTextContent("4,68 €");
+    expect(line).toHaveTextContent("18 %");
+    expect(line).toHaveTextContent("21,32 €");
+    expect(screen.getByText(/Taux de Allopark du 1 oct\. 2026/)).toBeInTheDocument();
+    await userEvent.click(screen.getByRole("button", { name: "Changer pour cette réservation" }));
+    await userEvent.type(screen.getByLabelText("Taux en %"), "12");
+    await userEvent.click(screen.getByRole("button", { name: "Enregistrer" }));
+    await waitFor(() => expect(api.setReservationCommission).toHaveBeenCalledWith("r1", { rateBp: 1200, amountCents: null }));
+    expect(await screen.findByText("Fixée pour cette réservation.")).toBeInTheDocument();
+    expect(screen.getByTestId("commission-line")).toHaveTextContent("22,88 €");
   });
 });

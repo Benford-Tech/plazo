@@ -73,6 +73,7 @@ model Operator {
   smsOutbox             SmsOutbox[]
   joinRequests          StaffJoinRequest[]
   testFeed              TestFeed?
+  comparatorCommissions ComparatorCommission[]
 
   @@map("operators")
 }
@@ -697,6 +698,11 @@ model Reservation {
   // 10/10/2026: the amount the comparator last gave (import, applied change). A comparator's change touches the price
   // only when its amount differs from this one, so a price the staff corrected stays theirs.
   importedPriceCents      Int?
+  // What the comparator takes on this one booking when it differs from its usual rate (19/10/2026, « paramétrer le
+  // taux de commission de chaque comparateur »): a rate in basis points, or an amount in cents; never both, and only
+  // for a comparator's booking (CHECKs). Null: the comparator's rate of the day the booking was made.
+  commissionOverrideBp    Int?
+  commissionOverrideCents Int?
   // 12/10/2026: night fees charged at booking on Plazo (drop-off, return), frozen when the place is held and included in
   // priceCents; null when none (and always for the other channels). A late flight or a staff edit never recomputes them.
   nightArrivalFeeCents    Int?
@@ -1441,4 +1447,28 @@ model ProspectSuppression {
   createdAt DateTime @default(now())
 
   @@map("prospect_suppressions")
+}
+
+/// What a comparator takes from the operator's bookings (19/10/2026, « paramétrer le taux de commission de chaque
+/// comparateur »): a rate (basis points, 1800 = 18 %) and a fixed amount per booking, from a local day on. A booking
+/// takes the row of its comparator in force the day it was made (`effectiveFrom` ≤ that day, the latest), so a change
+/// never moves the bookings made before it.
+model ComparatorCommission {
+  id            String   @id @default(cuid())
+  operatorId    String
+  operator      Operator @relation(fields: [operatorId], references: [id], onDelete: Cascade)
+  /// The comparator's name lowercased, spaces collapsed (« allopark »), as the bookings' `channelDetail`.
+  comparatorKey String
+  /// The name as shown (« Allopark »).
+  label         String
+  rateBp        Int
+  fixedCents    Int      @default(0)
+  /// Local date « YYYY-MM-DD » of the parking.
+  effectiveFrom String
+  createdById   String?
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  @@unique([operatorId, comparatorKey, effectiveFrom])
+  @@map("comparator_commissions")
 }

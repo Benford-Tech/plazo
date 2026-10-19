@@ -24,6 +24,8 @@ export interface RevenueBooking {
   channel: ReservationChannel;
   channelDetail: string | null;
   priceCents: number | null;
+  /** What the comparator takes (19/10/2026), 0 when none: the service works it out (`commissionOf`). */
+  commissionCents?: number | null;
 }
 
 /** One line of « Par canal »: a channel, and for comparators their name (« Allopark », « Onepark »…). */
@@ -32,6 +34,9 @@ export interface RevenueChannel {
   detail: string | null;
   count: number;
   totalCents: number;
+  /** What the comparator took from these bookings, and what the operator keeps. */
+  commissionCents: number;
+  netCents: number;
 }
 
 export interface RevenueReport {
@@ -39,6 +44,9 @@ export interface RevenueReport {
   to: string;
   basis: RevenueBasis;
   totalCents: number;
+  /** What the comparators took from the bookings counted (19/10/2026), and what the operator keeps. */
+  commissionCents: number;
+  netCents: number;
   /** Bookings with an amount. */
   count: number;
   averageCents: number | null;
@@ -47,7 +55,7 @@ export interface RevenueReport {
   /** Bookings of the period without an amount: not counted. */
   withoutAmount: number;
   byChannel: RevenueChannel[];
-  byDay: { date: string; count: number; totalCents: number }[];
+  byDay: { date: string; count: number; totalCents: number; netCents: number }[];
 }
 
 /** Every local date from `from` to `to`, both included. */
@@ -84,21 +92,33 @@ export function revenueReport(
   });
   const priced = inPeriod.filter((b): b is RevenueBooking & { priceCents: number } => b.priceCents !== null);
   const totalCents = priced.reduce((sum, b) => sum + b.priceCents, 0);
+  const fee = (b: RevenueBooking) => b.commissionCents ?? 0;
+  const commissionCents = priced.reduce((sum, b) => sum + fee(b), 0);
 
   const channels = new Map<string, RevenueChannel>();
   for (const b of priced) {
     const group = channelGroup(b);
-    const line = channels.get(group.key) ?? { channel: group.channel, detail: group.detail, count: 0, totalCents: 0 };
+    const line = channels.get(group.key) ?? {
+      channel: group.channel,
+      detail: group.detail,
+      count: 0,
+      totalCents: 0,
+      commissionCents: 0,
+      netCents: 0,
+    };
     line.count += 1;
     line.totalCents += b.priceCents;
+    line.commissionCents += fee(b);
+    line.netCents += b.priceCents - fee(b);
     channels.set(group.key, line);
   }
 
-  const perDay = new Map(daysOf(from, to).map(date => [date, { date, count: 0, totalCents: 0 }]));
+  const perDay = new Map(daysOf(from, to).map(date => [date, { date, count: 0, totalCents: 0, netCents: 0 }]));
   for (const b of priced) {
     const line = perDay.get(revenueDay(b, basis, timeZone))!;
     line.count += 1;
     line.totalCents += b.priceCents;
+    line.netCents += b.priceCents - fee(b);
   }
 
   const days = priced.reduce((sum, b) => sum + billableDays(b.arrivalAt, b.returnAt, timeZone), 0);
@@ -107,6 +127,8 @@ export function revenueReport(
     to,
     basis,
     totalCents,
+    commissionCents,
+    netCents: totalCents - commissionCents,
     count: priced.length,
     averageCents: priced.length ? Math.round(totalCents / priced.length) : null,
     averageDays: priced.length ? Math.round((days / priced.length) * 10) / 10 : null,
@@ -139,7 +161,7 @@ export function revenueCsv(
       return day >= from && day <= to;
     })
     .sort((a, b) => revenueDay(a, basis, timeZone).localeCompare(revenueDay(b, basis, timeZone)) || a.reference.localeCompare(b.reference));
-  const header = ['Référence', 'Réservée le', 'Arrivée', 'Retour', 'Canal', 'Client', 'Plaque', 'Montant (€)'];
+  const header = ['Référence', 'Réservée le', 'Arrivée', 'Retour', 'Canal', 'Client', 'Plaque', 'Montant (€)', 'Commission (€)', 'Net (€)'];
   const lines = rows.map(b =>
     [
       b.reference,
@@ -150,6 +172,8 @@ export function revenueCsv(
       b.customerName,
       b.plate,
       csvAmount(b.priceCents),
+      csvAmount(b.priceCents === null ? null : (b.commissionCents ?? 0)),
+      csvAmount(b.priceCents === null ? null : b.priceCents - (b.commissionCents ?? 0)),
     ]
       .map(csvCell)
       .join(';'),

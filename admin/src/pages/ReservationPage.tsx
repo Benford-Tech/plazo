@@ -17,6 +17,7 @@ import {
 } from "@/lib/datetime";
 import { describeError, errorMessage, fr, quickCardFr } from "@/lib/fr";
 import { centsToInput, euros, isPriceLocked, nightFeeOf, parseEuros } from "@/lib/pricing";
+import { dayLabel, formatRate, parsePercent } from "@/lib/commission";
 import { can } from "@/lib/roles";
 import type { Reservation, ReservationStatus } from "@/lib/types";
 import { cn } from "@/lib/utils";
@@ -69,6 +70,8 @@ function PriceLine({
         old ? { ...old, priceCents } : old,
       );
       void queryClient.invalidateQueries({ queryKey: ["revenue"] });
+      // The comparator's commission follows the price (managers only see it).
+      if (r.commission) void queryClient.invalidateQueries({ queryKey: ["reservation", r.id] });
       setValue(null);
       setError(null);
       toast.success(t.priceSaved);
@@ -153,6 +156,112 @@ function PriceLine({
             className="h-10 border border-border px-3 text-base hover:bg-accent"
           >
             {t.cancelPrice}
+          </button>
+          {error && (
+            <p role="alert" className="w-full text-sm text-destructive">
+              {error}
+            </p>
+          )}
+        </form>
+      )}
+    </Info>
+  );
+}
+
+/**
+ * What the comparator takes from this booking and what the operator keeps (19/10/2026, choice « les 3 », C), for the
+ * managers: the comparator's rate of the day the booking was made, or this booking's own exception (a rate or an
+ * amount), set here or taken back.
+ */
+function CommissionLine({ reservation: r }: { reservation: Reservation }) {
+  const t = fr.commission;
+  const queryClient = useQueryClient();
+  const [editing, setEditing] = useState(false);
+  const [rate, setRate] = useState("");
+  const [amount, setAmount] = useState("");
+  const [error, setError] = useState<string | null>(null);
+  const c = r.commission;
+  const save = useMutation({
+    mutationFn: (body: { rateBp: number | null; amountCents: number | null }) => adminApi.setReservationCommission(r.id, body),
+    onSuccess: ({ commission }) => {
+      queryClient.setQueryData<Reservation>(["reservation", r.id], old => (old ? { ...old, commission } : old));
+      void queryClient.invalidateQueries({ queryKey: ["revenue"] });
+      setEditing(false);
+      setError(null);
+      toast.success(t.overrideSaved);
+    },
+    onError: err => setError(describeError(err)),
+  });
+  if (!c || r.priceCents === null) return null;
+  const how =
+    c.source === "override" ? t.override : c.source === "rate" && c.effectiveFrom ? t.fromRate(c.comparator, dayLabel(c.effectiveFrom)) : t.noneSet(c.comparator);
+  const rateText = c.rateBp !== null ? `${formatRate(c.rateBp)}${c.fixedCents ? ` + ${euros(c.fixedCents)}` : ""}` : null;
+
+  return (
+    <Info label={t.line(c.comparator)}>
+      <span className="flex flex-wrap items-baseline gap-x-3" data-testid="commission-line">
+        <span className="tabular font-mono text-[#B45309]">− {euros(c.amountCents ?? 0)}</span>
+        {rateText && <span className="text-base text-muted-foreground">{rateText}</span>}
+        <span className="text-base font-semibold text-lime-deep">
+          {t.keep} <span className="tabular font-mono">{euros(c.netCents ?? 0)}</span>
+        </span>
+      </span>
+      <span className="mt-1 flex flex-wrap items-baseline gap-x-3 text-sm text-muted-foreground">
+        {how}
+        {!editing && (
+          <button type="button" onClick={() => setEditing(true)} className="text-lime-deep underline-offset-4 hover:underline">
+            {t.change}
+          </button>
+        )}
+        {!editing && c.source === "override" && (
+          <button
+            type="button"
+            disabled={save.isPending}
+            onClick={() => save.mutate({ rateBp: null, amountCents: null })}
+            className="text-lime-deep underline-offset-4 hover:underline"
+          >
+            {t.reset}
+          </button>
+        )}
+      </span>
+      {editing && (
+        <form
+          className="mt-2 flex flex-wrap items-center gap-2 text-base"
+          aria-label={t.overrideTitle}
+          onSubmit={e => {
+            e.preventDefault();
+            if (rate.trim() && amount.trim()) return setError(t.overrideBoth);
+            if (rate.trim()) {
+              const bp = parsePercent(rate);
+              return bp === null ? setError(t.invalidRate) : save.mutate({ rateBp: bp, amountCents: null });
+            }
+            if (amount.trim()) {
+              const cents = parseEuros(amount);
+              return cents === null ? setError(t.invalidFixed) : save.mutate({ rateBp: null, amountCents: cents });
+            }
+            save.mutate({ rateBp: null, amountCents: null });
+          }}
+        >
+          <label className="flex items-center gap-1.5">
+            <span className="text-sm text-muted-foreground">{t.overrideRate}</span>
+            <input inputMode="decimal" value={rate} onChange={e => setRate(e.target.value)} className="tabular h-10 w-20 border border-border bg-card px-2.5 text-right font-mono" />
+          </label>
+          <label className="flex items-center gap-1.5">
+            <span className="text-sm text-muted-foreground">{t.overrideAmount}</span>
+            <input inputMode="decimal" placeholder="0,00" value={amount} onChange={e => setAmount(e.target.value)} className="tabular h-10 w-24 border border-border bg-card px-2.5 text-right font-mono" />
+          </label>
+          <button type="submit" disabled={save.isPending} className="h-10 bg-primary px-4 text-base font-bold uppercase text-primary-foreground hover:brightness-110 disabled:opacity-50">
+            {t.save}
+          </button>
+          <button
+            type="button"
+            onClick={() => {
+              setEditing(false);
+              setError(null);
+            }}
+            className="h-10 border border-border px-3 text-base hover:bg-accent"
+          >
+            {t.cancel}
           </button>
           {error && (
             <p role="alert" className="w-full text-sm text-destructive">
@@ -363,6 +472,7 @@ export default function ReservationPage() {
                 reservation={r}
                 canManage={can(user?.role, "reservations:manage")}
               />
+              <CommissionLine reservation={r} />
               <Info label={t.created}>{dateTimeShort(r.createdAt)}</Info>
             </dl>
           </div>
