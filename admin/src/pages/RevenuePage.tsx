@@ -6,6 +6,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { adminApi } from "@/lib/api";
 import { addDays, dateTimeShort, todayLocal } from "@/lib/datetime";
 import { describeError, fr } from "@/lib/fr";
+import { formatRate, parsePercent, rateToInput } from "@/lib/commission";
 import { euros, parseEuros } from "@/lib/pricing";
 import type { RevenueBasis, RevenueChannel, RevenueReport } from "@/lib/types";
 import { cn } from "@/lib/utils";
@@ -115,6 +116,60 @@ function MissingAmounts({ report }: { report: RevenueReport }) {
 }
 
 /** CA-B (09/10/2026, chosen with the CA-A tile): the revenue of a period, by channel and by day. Managers only. */
+/**
+ * A comparator's rate, typed in place in « Par canal » (19/10/2026, choice « les 3 », A): saved when it changes, for
+ * the bookings made from the first day shown on.
+ */
+function RateCell({ line, from }: { line: RevenueChannel; from: string }) {
+  const queryClient = useQueryClient();
+  const initial = line.rate ? rateToInput(line.rate.rateBp) : "";
+  const [value, setValue] = useState(initial);
+  const name = channelName(line);
+  const save = useMutation({
+    mutationFn: (rateBp: number) =>
+      adminApi.setComparatorCommission({ label: name, rateBp, fixedCents: line.rate?.fixedCents ?? 0, effectiveFrom: from }),
+    onSuccess: () => {
+      toast.success(t.rateSaved(name));
+      void queryClient.invalidateQueries({ queryKey: ["revenue"] });
+      void queryClient.invalidateQueries({ queryKey: ["comparator-commissions"] });
+    },
+    onError: error => {
+      toast.error(describeError(error));
+      setValue(initial);
+    },
+  });
+  const commit = () => {
+    if (value.trim() === initial) return;
+    const bp = parsePercent(value);
+    if (bp === null) {
+      toast.error(fr.commission.invalidRate);
+      return setValue(initial);
+    }
+    save.mutate(bp);
+  };
+  return (
+    <span className="inline-flex items-center gap-1">
+      <input
+        aria-label={t.rateLabel(name)}
+        inputMode="decimal"
+        value={value}
+        placeholder="—"
+        onChange={e => setValue(e.target.value)}
+        onBlur={commit}
+        onKeyDown={e => {
+          if (e.key === "Enter") {
+            e.preventDefault();
+            commit();
+          }
+        }}
+        disabled={save.isPending}
+        className="tabular h-9 w-16 rounded-lg border border-panel-line bg-panel px-2 text-right font-mono text-sm"
+      />
+      <span className="text-muted-foreground">%</span>
+    </span>
+  );
+}
+
 export default function RevenuePage() {
   const today = todayLocal();
   const presets = periodsOf(today);
@@ -123,6 +178,7 @@ export default function RevenuePage() {
   const [basis, setBasis] = useState<RevenueBasis>("arrival");
   const [showMissing, setShowMissing] = useState(false);
   const [exporting, setExporting] = useState(false);
+  const [view, setView] = useState<"gross" | "net">("gross");
 
   const query = useQuery({
     queryKey: ["revenue", period.from, period.to, basis],
@@ -137,7 +193,8 @@ export default function RevenuePage() {
     lastMonth: monthName(presets.lastMonth.from),
   };
   const totalLabel = period.key === "month" || period.key === "lastMonth" ? labels[period.key].toLowerCase() : t.span(dayMonth(period.from), dayMonth(period.to));
-  const max = Math.max(1, ...(report?.byDay.map(d => d.totalCents) ?? [0]));
+  const shown = (line: { totalCents: number; netCents?: number }) => (view === "net" ? (line.netCents ?? line.totalCents) : line.totalCents);
+  const max = Math.max(1, ...(report?.byDay.map(shown) ?? [0]));
 
   async function exportCsv() {
     setExporting(true);
@@ -214,6 +271,19 @@ export default function RevenuePage() {
           </button>
         ))}
         <span>· {t.cancelledOut}</span>
+        <span className="ml-auto flex items-center gap-1" role="group" aria-label={t.view}>
+          {(["gross", "net"] as const).map(v => (
+            <button
+              key={v}
+              type="button"
+              aria-pressed={view === v}
+              onClick={() => setView(v)}
+              className={cn("flex h-8 items-center rounded-full border px-3", view === v ? "border-lime-deep bg-lime-deep font-semibold text-white" : "border-panel-line bg-panel")}
+            >
+              {t.views[v]}
+            </button>
+          ))}
+        </span>
       </div>
 
       {query.isError ? (
@@ -224,8 +294,13 @@ export default function RevenuePage() {
         <>
           <div className="grid gap-3 sm:grid-cols-3">
             <div className={cn(CARD, "border-2 border-primary")} data-testid="revenue-total">
-              <p className="font-mono text-xs uppercase tracking-wider text-lime-deep">{t.total(totalLabel)}</p>
-              <p className="tabular mt-1 font-mono text-3xl font-medium">{euros(report.totalCents)}</p>
+              <p className="font-mono text-xs uppercase tracking-wider text-lime-deep">{view === "net" ? t.totalNet(totalLabel) : t.total(totalLabel)}</p>
+              <p className="tabular mt-1 font-mono text-3xl font-medium">{euros(view === "net" ? report.netCents : report.totalCents)}</p>
+              {view === "net" ? (
+                <p className="text-[13px] text-muted-foreground">{t.netSub(euros(report.totalCents), euros(report.commissionCents))}</p>
+              ) : (
+                report.commissionCents > 0 && <p className="text-[13px] text-muted-foreground">{t.grossSub(euros(report.commissionCents))}</p>
+              )}
             </div>
             <div className={CARD}>
               <p className="font-mono text-xs uppercase tracking-wider text-muted-foreground">{t.bookings}</p>
@@ -261,6 +336,12 @@ export default function RevenuePage() {
                       <th scope="col" className="px-1.5 py-2 text-right font-medium">
                         {t.amount}
                       </th>
+                      <th scope="col" className="px-1.5 py-2 text-right font-medium">
+                        {t.commission}
+                      </th>
+                      <th scope="col" className="px-1.5 py-2 text-right font-medium">
+                        {t.net}
+                      </th>
                       <th scope="col" className="hidden w-1/3 px-1.5 py-2 font-medium sm:table-cell">
                         {t.share}
                       </th>
@@ -268,7 +349,8 @@ export default function RevenuePage() {
                   </thead>
                   <tbody>
                     {report.byChannel.map(line => {
-                      const share = report.totalCents ? Math.round((line.totalCents / report.totalCents) * 100) : 0;
+                      const whole = view === "net" ? report.netCents : report.totalCents;
+                      const share = whole ? Math.round((shown(line) / whole) * 100) : 0;
                       return (
                         <tr key={`${line.channel}:${line.detail ?? ""}`} className="border-t border-panel-line">
                           <th scope="row" className="px-1.5 py-2.5 text-left font-semibold">
@@ -279,6 +361,23 @@ export default function RevenuePage() {
                             {euros(line.totalCents)}
                             <span className="block text-xs text-muted-foreground sm:hidden">{share} %</span>
                           </td>
+                          <td className="tabular px-1.5 py-2.5 text-right font-mono">
+                            {line.comparatorKey ? (
+                              <span className="flex flex-col items-end gap-0.5">
+                                <RateCell key={`${line.rate?.effectiveFrom ?? ""}:${line.rate?.rateBp ?? ""}`} line={line} from={report.from} />
+                                {line.commissionCents > 0 && <span className="text-xs text-[#B45309]">− {euros(line.commissionCents)}</span>}
+                                {line.rate?.fixedCents ? <span className="text-xs text-muted-foreground">{formatRate(line.rate.rateBp)} + {euros(line.rate.fixedCents)}</span> : null}
+                              </span>
+                            ) : line.channel === "plazo" ? (
+                              <span className="flex flex-col items-end gap-0.5">
+                                {line.commissionCents > 0 && <span className="text-[#B45309]">− {euros(line.commissionCents)}</span>}
+                                <span className="font-sans text-xs text-muted-foreground">{t.plazoCommission}</span>
+                              </span>
+                            ) : (
+                              <span className="text-muted-foreground">—</span>
+                            )}
+                          </td>
+                          <td className="tabular px-1.5 py-2.5 text-right font-mono font-semibold">{euros(line.netCents)}</td>
                           <td className="hidden px-1.5 py-2.5 sm:table-cell">
                             <span className="flex items-center gap-2">
                               <span className="h-2.5 flex-1 rounded-full bg-panel-2">
@@ -294,6 +393,7 @@ export default function RevenuePage() {
                 </table>
               </div>
             )}
+            {report.byChannel.some(line => line.comparatorKey) && <p className="text-xs text-muted-foreground">{t.rateHint(dayMonth(report.from))}</p>}
             {report.withoutAmount > 0 && (
               <div className="space-y-3">
                 <div className="flex flex-wrap items-center justify-between gap-2 rounded-lg bg-[#FEF3C7] px-3 py-2 text-[13px] text-[#92400E]">
@@ -319,12 +419,12 @@ export default function RevenuePage() {
             </div>
             <ol className="flex h-40 items-end gap-1 border-b border-panel-line" data-testid="revenue-days">
               {report.byDay.map(day => (
-                <li key={day.date} className="flex h-full flex-1 items-end" title={t.dayLabel(dayMonth(day.date), euros(day.totalCents), day.count)}>
-                  <span className="sr-only">{t.dayLabel(dayMonth(day.date), euros(day.totalCents), day.count)}</span>
+                <li key={day.date} className="flex h-full flex-1 items-end" title={t.dayLabel(dayMonth(day.date), euros(shown(day)), day.count)}>
+                  <span className="sr-only">{t.dayLabel(dayMonth(day.date), euros(shown(day)), day.count)}</span>
                   <span
                     aria-hidden="true"
                     className={cn("block w-full rounded-t", day.date === today ? "bg-lime-deep" : day.date > today ? "bg-panel-line" : "bg-primary")}
-                    style={{ height: `${Math.max(day.totalCents ? 4 : 2, Math.round((day.totalCents / max) * 100))}%` }}
+                    style={{ height: `${Math.max(shown(day) ? 4 : 2, Math.round((shown(day) / max) * 100))}%` }}
                   />
                 </li>
               ))}

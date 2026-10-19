@@ -45,12 +45,12 @@ describe('le chiffre d’affaires (domaine)', () => {
     );
     expect(report).toMatchObject({ totalCents: 3400 + 3600 + 4500 + 5290, count: 4, withoutAmount: 1, averageCents: Math.round(16790 / 4) });
     expect(report.byChannel).toEqual([
-      { channel: 'aggregator', detail: 'Allopark', count: 2, totalCents: 7000 },
-      { channel: 'plazo', detail: null, count: 1, totalCents: 5290 },
-      { channel: 'aggregator', detail: 'Onepark', count: 1, totalCents: 4500 },
+      { channel: 'aggregator', detail: 'Allopark', count: 2, totalCents: 7000, commissionCents: 0, netCents: 7000 },
+      { channel: 'plazo', detail: null, count: 1, totalCents: 5290, commissionCents: 0, netCents: 5290 },
+      { channel: 'aggregator', detail: 'Onepark', count: 1, totalCents: 4500, commissionCents: 0, netCents: 4500 },
     ]);
     expect(report.byDay).toHaveLength(31);
-    expect(report.byDay.find(d => d.date === '2026-10-09')).toEqual({ date: '2026-10-09', count: 2, totalCents: 8100 });
+    expect(report.byDay.find(d => d.date === '2026-10-09')).toEqual({ date: '2026-10-09', count: 2, totalCents: 8100, netCents: 8100 });
     // Billable days: 4, 4, 9 and 4.
     expect(report.averageDays).toBe(5.3);
   });
@@ -79,8 +79,8 @@ describe('le chiffre d’affaires (domaine)', () => {
     );
     const lines = csv.split('\r\n');
     expect(csv.startsWith('﻿Référence;Réservée le;Arrivée;Retour;Canal;Client;Plaque;Montant (€)')).toBe(true);
-    expect(lines[1]).toBe('RZZ1;2026-09-20;2026-10-02;2026-10-05;Allopark;Camille Martin;AB-123-CD;');
-    expect(lines[2]).toBe('RZZ2;2026-09-20;2026-10-09;2026-10-12;Allopark;"Léa ""Lili"" Petit";AB-123-CD;1045,50');
+    expect(lines[1]).toBe('RZZ1;2026-09-20;2026-10-02;2026-10-05;Allopark;Camille Martin;AB-123-CD;;;');
+    expect(lines[2]).toBe('RZZ2;2026-09-20;2026-10-09;2026-10-12;Allopark;"Léa ""Lili"" Petit";AB-123-CD;1045,50;0,00;1045,50');
   });
 });
 

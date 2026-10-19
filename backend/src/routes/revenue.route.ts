@@ -42,6 +42,33 @@ import { ValidationMiddleware } from '@/middlewares/validation.middleware';
  *     responses:
  *       200: { description: "{ id, priceCents }" }
  *       400: { description: "fields.priceCents price_locked (Plazo booking), reservation_closed (cancelled)" }
+ * /internal/comparators/commissions:
+ *   get:
+ *     summary: What each comparator takes (19/10/2026) — the known four, every comparator named on a booking and every rate set; the rate in force today, the ones to come, the history, the bookings made this month
+ *     tags: [Revenue]
+ *     responses:
+ *       200: { description: "{ today, comparators: [{ key, label, current, upcoming, history, bookingsThisMonth }] }" }
+ *   put:
+ *     summary: A comparator's rate from a local day on (the bookings made from that day take it; the same day again replaces it)
+ *     tags: [Revenue]
+ *     requestBody: { content: { application/json: { schema: { type: object, properties: { label: { type: string }, rateBp: { type: integer, description: "1800 = 18 %" }, fixedCents: { type: integer }, effectiveFrom: { type: string, example: "2026-10-01" } } } } } }
+ *     responses:
+ *       200: { description: "{ comparatorKey, label, rateBp, fixedCents, effectiveFrom }" }
+ *       400: { description: "fields.label required/too_long, fields.rateBp integer/rate_range, fields.fixedCents integer/fixed_range, fields.effectiveFrom invalid_date" }
+ * /internal/comparators/commissions/{key}/{effectiveFrom}:
+ *   delete:
+ *     summary: Takes out a rate set by mistake (its bookings fall back on the rate before)
+ *     tags: [Revenue]
+ *     responses:
+ *       204: { description: done }
+ *       404: { description: not_found }
+ * /internal/reservations/{id}/commission:
+ *   put:
+ *     summary: One comparator booking's own commission — a rate (rateBp) or an amount (amountCents), or neither to go back to the comparator's rate
+ *     tags: [Revenue]
+ *     responses:
+ *       200: { description: "{ id, commission }" }
+ *       400: { description: "not_comparator, fields.rateBp rate_range, fields.amountCents invalid_amount / rate_or_amount" }
  */
 export class RevenueRoute implements Routes {
   public router = Router();
@@ -57,5 +84,9 @@ export class RevenueRoute implements Routes {
       ValidationMiddleware(SetPriceDto),
       this.revenue.setPrice,
     );
+    this.router.get('/internal/comparators/commissions', StaffAuthMiddleware('revenue:view'), this.revenue.commissionList);
+    this.router.put('/internal/comparators/commissions', StaffAuthMiddleware('revenue:view'), this.revenue.setCommission);
+    this.router.delete('/internal/comparators/commissions/:key/:effectiveFrom', StaffAuthMiddleware('revenue:view'), this.revenue.removeCommission);
+    this.router.put('/internal/reservations/:id/commission', StaffAuthMiddleware('revenue:view'), this.revenue.setReservationCommission);
   }
 }

@@ -171,6 +171,10 @@ export type ReservationChannel =
 
 export interface Reservation {
   id: string;
+  /** What the comparator takes and what the operator keeps (managers only; 19/10/2026). */
+  commission?: ReservationCommission | null;
+  commissionOverrideBp?: number | null;
+  commissionOverrideCents?: number | null;
   reference: string;
   parkingId: string;
   channel: ReservationChannel;
@@ -1516,6 +1520,42 @@ export interface RevenueChannel {
   detail: string | null;
   count: number;
   totalCents: number;
+  /** What the comparator took, and what the operator keeps (19/10/2026). */
+  commissionCents: number;
+  netCents: number;
+  /** A comparator's key (« allopark ») and its rate in force today, edited in place; null for the other channels. */
+  comparatorKey: string | null;
+  rate: CommissionRate | null;
+}
+
+/** What a comparator takes, from a local day on (19/10/2026). */
+export interface CommissionRate {
+  comparatorKey: string;
+  label: string;
+  /** 1800 = 18 %. */
+  rateBp: number;
+  fixedCents: number;
+  effectiveFrom: string;
+}
+
+export interface ComparatorCommission {
+  key: string;
+  label: string;
+  current: CommissionRate | null;
+  upcoming: CommissionRate[];
+  history: CommissionRate[];
+  bookingsThisMonth: number;
+}
+
+/** A comparator booking's commission: its own exception, its comparator's rate, or none set yet. */
+export interface ReservationCommission {
+  comparator: string;
+  source: "override" | "rate" | "none";
+  rateBp: number | null;
+  fixedCents: number;
+  amountCents: number | null;
+  netCents: number | null;
+  effectiveFrom: string | null;
 }
 
 export interface RevenueReport {
@@ -1524,19 +1564,21 @@ export interface RevenueReport {
   basis: RevenueBasis;
   timezone: string;
   totalCents: number;
+  commissionCents: number;
+  netCents: number;
   count: number;
   averageCents: number | null;
   averageDays: number | null;
   withoutAmount: number;
   byChannel: RevenueChannel[];
-  byDay: { date: string; count: number; totalCents: number }[];
+  byDay: { date: string; count: number; totalCents: number; netCents: number }[];
   /** Bookings of the period without an amount (50 at most), to complete. */
   missing: { id: string; reference: string; customerName: string; arrivalAt: string; channel: ReservationChannel; detail: string | null }[];
 }
 
 export interface RevenueSummary {
   today: string;
-  month: { from: string; to: string; totalCents: number; count: number; withoutAmount: number };
+  month: { from: string; to: string; totalCents: number; netCents?: number; count: number; withoutAmount: number };
   todayCents: number;
   weekCents: number;
 }
