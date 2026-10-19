@@ -851,7 +851,8 @@ Le nom du produit doit rester dans UN seul fichier de configuration (il peut enc
   **Réglages par défaut, à confirmer par Joanny** : expéditeur `PROSPECTING_SENDER_EMAIL` / `PROSPECTING_SENDER_NAME` (sinon
   `EMAIL_FROM`), réponses à `PROSPECTING_REPLY_TO` (sinon l'administrateur qui a envoyé), téléphone `PROSPECTING_PHONE` sous la signature (19/10/2026, numéro
   français écrit « 07 21 17 75 90 », `displayPhone` ; rien sans lui), prospects saisis à la main ou importés
-  d'un CSV fourni (aucune collecte sur les comparateurs), textes des trois mails modifiables. Politique de confidentialité :
+  d'un CSV fourni (aucune collecte sur les comparateurs), textes des trois mails modifiables (par défaut, depuis le 19/10/2026, à la voix d'une équipe de développeurs : « nous »,
+  faits vérifiables seulement, ni années d'expérience ni nombre de clients ; `defaultSteps`). Politique de confidentialité :
   section 11 « Prospection des parkings ».
   **Classement par région (19/10/2026, « classe les prospects par région », choix « Groupés par région » + « De l'aéroport »)** :
   le tableau est découpé en blocs repliables, un par région (en-tête « AUVERGNE-RHÔNE-ALPES · 14 », nombre sous les filtres en
