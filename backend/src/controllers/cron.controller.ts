@@ -142,6 +142,8 @@ export class CronController {
     const inboundEmails = await this.inbound.purge();
     // Bookings returned more than 12 months ago lose the traveller's data (privacy policy).
     const reservationsAnonymized = await this.retention.anonymizeReservations();
+    // Condition report photos 90 days after the return (365 with a reservation), signature codes after a day.
+    const paperwork = await this.retention.paperwork.purge();
     // « Rejoindre un parking » (13/10/2026): onboarding sessions past their 7 days, requests unanswered for 7 days
     // (expired), join attempts after 7 days, identities never linked and idle for 30 days.
     const identityTokensDeleted = await this.tokenService.deleteExpiredOnboardingTokens();
@@ -154,6 +156,7 @@ export class CronController {
     logger.info(
       `[Cron] ${deleted} expired staff tokens deleted, ${arrivalSignalsEnded} arrival signals ended, ${shuttleTripsEnded} shuttle trips ended, ` +
         `SMS queue ${JSON.stringify(sms)}, ${smsPurged} outbox rows purged, ${reservationsAnonymized} bookings anonymised, ` +
+        `${paperwork.photosErased} inspection photos erased, ${paperwork.codesDeleted} signature codes deleted, ` +
         `${identityTokensDeleted} onboarding tokens deleted, join requests ${JSON.stringify(joins)}, ` +
         `${usedIdentityTokensDeleted} used identity tokens, ${loginAttemptsDeleted} login attempts and ${prospectsDeleted} prospects deleted`,
     );
@@ -167,6 +170,8 @@ export class CronController {
       carLocationsPurged,
       inboundEmails,
       reservationsAnonymized,
+      inspectionPhotosErased: paperwork.photosErased,
+      signatureCodesDeleted: paperwork.codesDeleted,
       identityTokensDeleted,
       joinRequestsExpired: joins.requestsExpired,
       joinAttemptsDeleted: joins.joinAttemptsDeleted,

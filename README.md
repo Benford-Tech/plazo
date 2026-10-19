@@ -143,6 +143,10 @@ une décision de Joanny. Cocher au fur et à mesure.
   réelle, et un évènement du mode test du webhook est ignoré (désactiver les webhooks de test après la bascule). Restent :
   activation du compte, Connect et moyens de paiement en mode réel, deux webhooks réels, clés réelles dans Vercel,
   `STRIPE_ALLOW_LIVE=true`, redéploiement, puis `pk_live_` servie par `/api/public/payments/config`.
+- [ ] **Photos de l'état des lieux (19/10/2026)** : relier un Blob store au projet Vercel (Storage › Create › Blob, accès
+  privé, région Paris si proposée, puis « Connect to project » sur `plazo`) : Vercel pose `BLOB_READ_WRITE_TOKEN` et les photos
+  s'enregistrent après le redéploiement ; sans lui, Plazo Pro affiche « Les photos ne sont pas encore activées » et l'état des
+  lieux ne peut pas être terminé. Faire relire le modèle de contrat (`backend/src/domain/contract.ts`) par le juriste avec les CGV.
 - [ ] **Commission** : 10 % TTC par défaut (`PLATFORM_COMMISSION_BPS=1000`), surcharge par loueur dans Plateforme ›
   Loueurs ; à confirmer avec le client n°1 et l'expert-comptable (HT ou TTC, TVA de Plazo), figée dans chaque paiement.
 - [x] **Parkings de démonstration** : archivés le 09/10/2026 (demande de Joanny, « archive tous les parkings de démo ») :

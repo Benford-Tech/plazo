@@ -76,7 +76,7 @@ describe("legal pages", () => {
     expect(prices).toContain("compris dans le prix total affiché");
     expect(prices).toContain("calculés sur les heures de dépôt et de retour réservées et ne changent plus ensuite");
     expect(prices).toContain("remboursés avec le séjour");
-    expect(termsDoc().version).toBe("15 octobre 2026"); // night fees (12/10/2026), then the publisher's details (15/10/2026)
+    expect(termsDoc().version).toBe("19 octobre 2026"); // night fees (12/10/2026), the publisher's details (15/10/2026), the contract (19/10/2026)
   });
 
   it("points to the contact form only once the service client has a real address (footer A, 15/10/2026)", () => {
@@ -118,7 +118,7 @@ describe("privacy policy", () => {
     expect(all).toContain("« Compte supprimé »");
     expect(all).toContain("Apple et Google");
     expect(all).toContain("ils confirment son identité à Plazo");
-    expect(privacyDoc().version).toBe("18 octobre 2026"); // 13/10/2026, the controller's details (15/10/2026), prospecting (18/10/2026)
+    expect(privacyDoc().version).toBe("19 octobre 2026"); // 13/10/2026, the controller's details (15/10/2026), prospecting (18/10/2026), the condition reports (19/10/2026)
   });
 
   it("says what really happens: a raw IP kept 7 days for the code, Google's id is not Plazo's own, Apple revoked only with Apple", () => {
@@ -136,10 +136,25 @@ describe("privacy policy", () => {
     expect(all).toContain("les remarques écrites dans les notes d’une réservation, signées du prénom, y restent jusqu’à l’anonymisation de la réservation (12 mois après le retour)");
   });
 
-  it("dates each text on its own: the three moved on 15/10/2026 with the company details of product.json, the privacy policy again on 18/10/2026", () => {
-    expect(privacyDoc().version).toBe("18 octobre 2026");
-    expect(termsDoc().version).toBe("15 octobre 2026");
+  it("dates each text on its own: the three moved on 15/10/2026 with the company details of product.json, the privacy policy on 18/10/2026, terms and privacy on 19/10/2026", () => {
+    expect(privacyDoc().version).toBe("19 octobre 2026");
+    expect(termsDoc().version).toBe("19 octobre 2026");
     expect(legalNoticeDoc().version).toBe("15 octobre 2026");
+  });
+
+  it("covers the signed contract and the condition reports (19/10/2026)", () => {
+    // PaperworkService: SMS code (masked phone) or handwritten signature, photos erased 90 days after the return (365 with
+    // a reservation), the drop-off report accepted by default once the traveller left in the shuttle, codes kept hashed a day.
+    expect(all).toContain("dont seuls les deux premiers et deux derniers chiffres du numéro sont gardés");
+    expect(all).toContain("Photos de l’état des lieux : effacées 90 jours après la date de retour, ou 12 mois après si vous avez fait une réserve");
+    expect(all).toContain("Vercel Blob (stockage privé des photos de l’état des lieux");
+    expect(all).toContain("Code de signature envoyé par SMS : seule son empreinte est gardée, 24 heures au plus.");
+    const terms = termsDoc()
+      .sections.flatMap((s) => s.blocks)
+      .flat()
+      .join("\n");
+    expect(terms).toContain("sans réponse de sa part avant son départ en navette, l’état des lieux du dépôt vaut accord");
+    expect(terms).toContain("le voyageur le signe pour accord ou y inscrit une réserve");
   });
 
   it("covers the prospecting of airport parkings (Plateforme › Prospection, 18/10/2026)", () => {

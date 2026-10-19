@@ -133,5 +133,12 @@ void _initUseCaseLocator() {
     ..registerLazySingleton(() => GetLiveArrivalsUseCase(locator()))
     ..registerLazySingleton(() => GetNotificationPreferencesUseCase(locator()))
     ..registerLazySingleton(() => UpdateNotificationPreferencesUseCase(locator()))
-    ..registerLazySingleton(() => EnablePushUseCase(locator()));
+    ..registerLazySingleton(() => EnablePushUseCase(locator()))
+    // « Contrat signé et état des lieux » (19/10/2026).
+    ..registerLazySingleton(() => LoadPaperworkUseCase(locator()))
+    ..registerLazySingleton(() => SendSignatureCodeUseCase(locator()))
+    ..registerLazySingleton(() => SignContractUseCase(locator()))
+    ..registerLazySingleton(() => AnswerInspectionUseCase(locator()))
+    ..registerLazySingleton(() => LoadInspectionPhotoUseCase(locator()))
+    ..registerLazySingleton(() => EditInspectionUseCase(locator()));
 }

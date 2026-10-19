@@ -18,6 +18,7 @@ import 'package:parking_app/src/services/link_service.dart';
 import '../../helpers/fakes.dart';
 import '../../helpers/pump_app.dart';
 import '../../helpers/system_bars.dart';
+import '../../helpers/paperwork.dart';
 
 class MockReservationBloc extends MockBloc<ProReservationEvent, ProReservationState> implements ProReservationBloc {}
 
@@ -35,7 +36,10 @@ void main() {
     registerFallbackValue(const SaveReservationParams(input: ReservationInput(arrivalAt: '', returnAt: '')));
     registerFallbackValue(const CapacityParams(arrivalAt: '', returnAt: ''));
   });
-  setUp(() => locator.registerSingleton<LinkService>(FakeLinks()));
+  setUp(() {
+    locator.registerSingleton<LinkService>(FakeLinks());
+    registerQuietPaperwork();
+  });
   tearDown(locator.reset);
 
   const agent = StaffModel(id: 'a1', name: 'Sarah Cohen', email: 's@example.com', role: 'manager', post: 'agent');

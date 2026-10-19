@@ -62,7 +62,7 @@ Le métier de ces opérateurs :
 - Sa douleur n°1 (avec ses mots) :
 - Prix convenu et date attendue de la première version :
 
-## Périmètre du MVP : trois blocs
+## Périmètre du MVP : trois blocs (et un quatrième, le contrat et l'état des lieux, demandé le 19/10/2026)
 
 Ne construire QUE ce qui règle la douleur n°1 du client.
 
@@ -705,9 +705,44 @@ Ne construire QUE ce qui règle la douleur n°1 du client.
      `PublicBooking.car` / `TravellerReturn.car` ; « Retrouver ma voiture » (app) et le bloc du site mènent à l'épingle ;
      épingle sur l'Occupation web et ligne sur les fiches ; effacée deux jours après le retour par le cron de nuit.
 
+4. **Contrat signé et état des lieux (19/10/2026, « Intègre un outil de signature numérique des contrats et un état des lieux
+   utilisateur et loueur avant et après réservation », « comme Yousign » ; maquettes https://claude.ai/artifact/USWr2tiiqbgJ2eZsTum5w9,
+   choix « A, tout dans les applis »)** : signature électronique simple faite par Plazo (pas Yousign), écrans dans Plazo et Plazo Pro
+   seulement. **Contrat** (`ReservationContract`, `domain/contract.ts`, modèle `CONTRACT_VERSION` à faire relire par un juriste) :
+   texte entier signé gardé avec son SHA-256 et une empreinte de preuve (`proofOf` : texte, signataire, moyen, heure, tracé) ; signé
+   une fois, du séjour à venir jusqu'au dépôt (`upcoming`, `arrived`) : par le voyageur dans l'app avec un code à 6 chiffres reçu
+   par SMS (`SignatureCode`, HMAC de `SECRET_KEY` seulement, 10 min, 5 essais, un nouveau code au plus toutes les 60 s et 5 par
+   heure, toujours par le Brevo de Plazo quel que soit le canal SMS du loueur : `SmsService.sendSignatureCode`, sortie `signature_code`),
+   ou au comptoir sur le téléphone du parking (même code tapé, ou signature manuscrite `strokes` [[[x, y]…]] de 0 à 1) ; copie
+   envoyée par e-mail (`NotificationService.emailTraveller`, `emailedAt`) ; seul le numéro masqué « 06 •• •• •• 78 » est gardé.
+   Les réservations des comparateurs n'ont pas de lien voyageur : elles signent au comptoir. **États des lieux** (`VehicleInspection`
+   `dropoff` | `return`, `InspectionPhoto`, `domain/inspection.ts`) faits dans Plazo Pro (`reservations:status`) : six photos guidées
+   (avant, droite, arrière, gauche, compteur, intérieur ; une photo reprise remplace la précédente) et jusqu'à 12 gros plans de dégâts,
+   dégâts touchés sur la silhouette (x, y de 0 à 1, numérotés), kilométrage, carburant (0 à 4 quarts), remarques ; « Terminer »
+   verrouille (400 avec les champs manquants) ; dépôt possible en `upcoming`/`arrived`, retour dès `arrived` jusqu'à `returned`. Le
+   voyageur répond « conforme » ou fait une réserve avec ses mots : sur le téléphone du parking (signature manuscrite) ou dans l'app
+   (`booking_link`, connecté par le lien de sa réservation) ; un dépôt sans réponse quand le voyageur part en navette vaut accord
+   (`accepted_by_default`, posé à la lecture) ; empreinte de l'état des lieux tel qu'accepté (`proofSha256`). Au retour, Plazo Pro
+   montre les photos du dépôt et du retour côte à côte (pastilles par côté), les dégâts « Déjà au dépôt » / « Nouveau » (à plus de
+   8 % de la silhouette d'un dégât du dépôt), l'écart de kilométrage et de carburant (`comparison`). **Photos** : stockage privé
+   Vercel Blob (`@vercel/blob` 2.8, `access: 'private'`, `PhotoStorageService`, `BLOB_READ_WRITE_TOKEN` posé par Vercel quand un Blob
+   store est relié au projet ; sans lui 503 `photos_unavailable` et le reste marche), jamais de lien public : l'API les sert
+   (`Cache-Control: private`) à l'équipe du loueur ou au voyageur avec le jeton de sa réservation ; envoyées en octets bruts (JPEG,
+   PNG, HEIC, WebP reconnus à leurs premiers octets, 3 Mo au plus, `RawBodyMiddleware` sur la route dans `app.ts`), réduites par l'app
+   (1 600 px, qualité 70, `image_picker`) ; effacées 90 jours après le retour, 365 avec une réserve (`PaperworkService.purge`, cron
+   de nuit, avec les codes de plus d'un jour), contrat et états des lieux supprimés à l'anonymisation (12 mois). Routes : staff
+   `GET /internal/reservations/:id/paperwork`, `POST …/contract/code|sign`, `POST|PATCH …/inspections/:kind`,
+   `POST …/inspections/:kind/photos?slot=`, `GET|DELETE …/photos/:photoId`, `POST …/complete|answer` ; voyageur
+   `GET /public/bookings/:ref/paperwork`, `POST …/contract/code|sign`, `POST …/inspections/:kind/answer`, `GET …/photos/:photoId`
+   (`x-booking-token`) ; migration `contract_inspection` (20261019130000). Apps : feature `paperwork` ; Plazo Pro : carte « Contrat et état des
+   lieux » de la fiche réservation, `/pro/reservations/:id/contrat` (code par SMS ou signature à la main),
+   `/pro/reservations/:id/etat-des-lieux/:kind` ; Plazo : blocs « Contrat de stationnement » et « État des lieux » de Ma réservation,
+   `/ma-reservation/:ref/contrat`, `/ma-reservation/:ref/etat-des-lieux/:kind`. Conditions générales (articles 9 et 11) et
+   politique de confidentialité mises à jour (19/10/2026). Le web n'a pas ces écrans.
+
 ## Liste « plus tard » (le « bien plus »), hors MVP
 
-État des lieux photo, lecture de plaque, tarification dynamique,
+Lecture de plaque, tarification dynamique,
 connecteurs agrégateurs (Parkos, ParkMundo, Onepark, Free2move…), multi-parkings,
 statistiques et facturation (hors commission, reversements et chiffre d'affaires CA-B, qui font partie du MVP).
 

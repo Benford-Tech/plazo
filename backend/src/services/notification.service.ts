@@ -151,6 +151,25 @@ export class NotificationService {
     });
   }
 
+  /**
+   * Email to a traveller that is not about a site booking's thread (the signed contract, 19/10/2026). Returns whether Brevo
+   * accepted it. Logs only the tag and `about` (an id), never the address.
+   */
+  public async emailTraveller(to: { email: string; name: string }, tag: string, about: string, message: EmailMessage): Promise<boolean> {
+    if (!this.canSendEmail()) {
+      logger.info(`[Notifications] Email not configured: ${tag} not sent for ${about}`);
+      return false;
+    }
+    return this.post('email', tag, about, '/smtp/email', {
+      sender: parseSender(this.settings.emailFrom, PRODUCT_NAME),
+      to: [{ email: to.email, name: to.name }],
+      subject: message.subject,
+      htmlContent: message.html,
+      textContent: message.text,
+      tags: [tag],
+    });
+  }
+
   // ---- The site's contact form and « La lettre Plazo » (footer A, 15/10/2026) ------------------------------------------
 
   /** Whether an email can go out at all: a Brevo key and a valid sender (no link in it, so the site's address is not needed). */

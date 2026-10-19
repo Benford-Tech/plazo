@@ -28,15 +28,15 @@ export interface LegalDoc {
  * govern each booking in the version accepted that day, so a date must never move without its text. (Until
  * 13/10/2026 the three shared one date.) The company details of product.json are part of all three texts: changing
  * them moves the three dates.
- * - Terms: 15/10/2026, the publisher's details (Benford Tech) and « Plazo » naming that company too, the contact form next
+ * - Terms: 19/10/2026, the signed contract and the condition reports (articles 9 and 11); 15/10/2026, the publisher's details (Benford Tech) and « Plazo » naming that company too, the contact form next
  *   to the service client's address once there is a real one (footer A); 12/10/2026, night fees.
  * - Legal notice: 15/10/2026, the publisher's details.
- * - Privacy: 18/10/2026, the prospecting emails to airport parkings (Plateforme › Prospection); 15/10/2026, the controller's details, the contact form and « La lettre » (footer A); 13/10/2026, Plazo Pro
+ * - Privacy: 19/10/2026, the signed contract and the condition reports' photos; 18/10/2026, the prospecting emails to airport parkings (Plateforme › Prospection); 15/10/2026, the controller's details, the contact form and « La lettre » (footer A); 13/10/2026, Plazo Pro
  *   sign-in with Apple / Google, the code of the day, account deletion.
  */
-export const TERMS_VERSION = "15 octobre 2026";
+export const TERMS_VERSION = "19 octobre 2026";
 export const NOTICE_VERSION = "15 octobre 2026";
-export const PRIVACY_VERSION = "18 octobre 2026";
+export const PRIVACY_VERSION = "19 octobre 2026";
 export const TO_COMPLETE = "[à compléter]";
 
 const filled = (value: string) => value.trim() || TO_COMPLETE;
@@ -156,6 +156,7 @@ export function termsDoc(company: Company = COMPANY, email: string = SUPPORT_EMA
           `Ni ${p} ni le parking ne sont responsables d’un vol manqué en raison d’une arrivée tardive du voyageur au parking ou d’informations inexactes qu’il a fournies.`,
           "Sauf mention contraire sur la fiche du parking, la réservation vaut pour une voiture particulière de dimensions courantes. Pour un utilitaire, un camping-car, un véhicule surélevé ou attelé, le voyageur vérifie auprès du parking avant de réserver : le parking peut le refuser ou appliquer le supplément prévu par ses conditions.",
           "Le véhicule doit être assuré, en état de circuler et conforme à la réglementation. Il est conseillé de n’y laisser aucun objet de valeur.",
+          `Le parking peut faire signer au voyageur un contrat de stationnement, dans l’application ${p} avant le dépôt (avec un code reçu par SMS) ou au comptoir sur son propre téléphone (code reçu par SMS ou signature manuscrite) ; une copie signée est envoyée par e-mail. Au dépôt, le parking fait un état des lieux du véhicule avec photos (extérieur, compteur, intérieur, dégâts déjà présents, kilométrage, carburant). Le voyageur le valide ou signale un oubli, sur place ou depuis l’application ; sans réponse de sa part avant son départ en navette, l’état des lieux du dépôt vaut accord.`,
         ],
       },
       {
@@ -174,7 +175,7 @@ export function termsDoc(company: Company = COMPANY, email: string = SUPPORT_EMA
           "Grâce au numéro de vol retour, le parking suit l’heure d’atterrissage : le voyageur reçoit un SMS à l’atterrissage avec le point de rendez-vous de la navette. S’il change de vol, il le met à jour dans Ma réservation ou prévient le parking.",
           "Les horaires de vol proviennent d’un service tiers de suivi des vols. Comme les heures de navette, la position des navettes en direct et les distances affichées, ils sont donnés à titre indicatif.",
           "Un retour après la date et l’heure réservées prolonge le séjour ; la prolongation est facturée par le parking, selon ses tarifs.",
-          "À la restitution, le voyageur vérifie l’état de son véhicule avant de quitter le parking et signale tout dommage au personnel en le faisant constater (photos, mention écrite). Un signalement plus tardif reste possible, mais la preuve en est plus difficile.",
+          "À la restitution, le voyageur vérifie l’état de son véhicule avant de quitter le parking. Lorsque le parking fait un état des lieux de retour, ses photos sont présentées à côté de celles du dépôt : le voyageur le signe pour accord ou y inscrit une réserve, avec ses mots, que le parking traite selon ses conditions. À défaut, il signale tout dommage au personnel en le faisant constater (photos, mention écrite). Un signalement plus tardif reste possible, mais la preuve en est plus difficile.",
         ],
       },
       {
@@ -331,7 +332,9 @@ export function privacyDoc(company: Company = COMPANY, email: string = SUPPORT_E
             "la position GPS de votre voiture, si le voiturier ou vous-même l’enregistrez, avec une note facultative ;",
             "votre position, seulement si vous choisissez de la partager pour prévenir le parking de votre arrivée (dernière position uniquement), ou le délai que vous annoncez à la place ;",
             "ce que vous écrivez au parking : un mot à la réservation ou à votre arrivée, un message sur votre retour (vol retardé, bagages…) ;",
-            "le statut de la réservation et l’historique de ses modifications par l’équipe du parking.",
+            "le statut de la réservation et l’historique de ses modifications par l’équipe du parking ;",
+            "le contrat de stationnement que vous signez (son texte, la date, le moyen de signature : code reçu par SMS, dont seuls les deux premiers et deux derniers chiffres du numéro sont gardés, ou signature manuscrite sur le téléphone du parking) ;",
+            "l’état des lieux de votre véhicule au dépôt et au retour : les photos prises par le parking (extérieur, compteur, intérieur, gros plans des dégâts), les dégâts notés, le kilométrage, le carburant, et votre réponse (accord ou réserve, avec vos mots).",
           ],
           "Dans l’application : l’identifiant d’abonnement aux notifications de votre téléphone, si vous les autorisez, et, sur le téléphone lui-même, les références et clés d’accès de vos réservations.",
           "Quand vous naviguez : votre adresse IP, utilisée un court instant pour limiter les abus, et les cookies nécessaires au fonctionnement du site (voir l’article 9).",
@@ -345,6 +348,7 @@ export function privacyDoc(company: Company = COMPANY, email: string = SUPPORT_E
         blocks: [
           [
             "Enregistrer et confirmer votre réservation, encaisser le paiement, rembourser une annulation, transmettre la réservation au parking : exécution du contrat.",
+            "Faire signer le contrat de stationnement, établir l’état du véhicule au dépôt et au retour et traiter un éventuel dommage : exécution du contrat.",
             "Vous envoyer les messages pratiques du séjour (confirmation, rappel la veille, voiture garée, atterrissage, navette, fin de séjour, annulation) par e-mail, SMS ou notification : exécution du contrat.",
             "Suivre vos vols pour caler la navette : exécution du contrat.",
             "Partager votre position à l’arrivée, enregistrer vous-même la position de votre voiture, recevoir des notifications sur votre téléphone : votre consentement, que vous retirez à tout moment (arrêt du partage, effacement de la position, réglages du téléphone).",
@@ -369,6 +373,7 @@ export function privacyDoc(company: Company = COMPANY, email: string = SUPPORT_E
             "Cloudflare (réception des e-mails de confirmation que les parkings nous transfèrent, relayés aussitôt vers notre serveur) ;",
             "selon le choix du parking, l’application SMS Gateway for Android, qui envoie les SMS depuis le téléphone du parking : votre numéro et le texte du message passent alors par le serveur de cette application ;",
             "OneSignal (notifications de l’application) ;",
+            "Vercel Blob (stockage privé des photos de l’état des lieux, qui ne sont montrées qu’à l’équipe du parking et à vous) ;",
             "un fournisseur de suivi des vols, qui ne reçoit que le numéro et la date du vol, jamais votre nom ;",
             "l’IGN (Géoplateforme), dont les serveurs fournissent les fonds de carte à votre navigateur ou à l’application.",
           ],
@@ -394,6 +399,8 @@ export function privacyDoc(company: Company = COMPANY, email: string = SUPPORT_E
             "Accès à Ma réservation par le lien reçu par e-mail ou SMS : jusqu’à 30 jours après le retour.",
             "Position partagée à l’arrivée : seule la dernière est gardée ; elle est effacée à l’arrivée, à l’arrêt du partage et au plus tard 2 heures après le début.",
             "Position GPS de la voiture : effacée 2 jours après le retour.",
+            "Photos de l’état des lieux : effacées 90 jours après la date de retour, ou 12 mois après si vous avez fait une réserve (le temps de traiter le litige). Le contrat signé et l’état des lieux (sans les photos) suivent la réservation et sont supprimés avec son anonymisation.",
+            "Code de signature envoyé par SMS : seule son empreinte est gardée, 24 heures au plus.",
             "Téléphones inscrits aux notifications du séjour : supprimés 2 jours après le retour.",
             "File d’envoi des SMS (numéro du destinataire ; le texte n’est pas conservé) : 30 jours.",
             "E-mails de confirmation transférés par un parking : texte effacé après 30 jours, trace de réception supprimée après 90 jours.",

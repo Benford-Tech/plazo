@@ -316,3 +316,15 @@ export function prospectingSettings(): { senderEmail: string; senderName: string
     phone: (process.env.PROSPECTING_PHONE || '').trim(),
   };
 }
+
+// Contrat signé et état des lieux (19/10/2026): the photos go to a private Vercel Blob store (the API streams them, no
+// public link). Vercel sets BLOB_READ_WRITE_TOKEN when a Blob store is connected to the project; without it, the photos
+// cannot be saved (503 `photos_unavailable`) and the rest works.
+export const blobReadWriteToken = (): string => (process.env.BLOB_READ_WRITE_TOKEN || '').trim();
+
+/** The secret of the signature codes (HMAC of each code), derived from SECRET_KEY (no variable of its own). */
+export function signatureCodeSecret(): string {
+  return createHmac('sha256', process.env.SECRET_KEY || '')
+    .update('plazo:signature-codes')
+    .digest('hex');
+}
