@@ -22,10 +22,11 @@ import { PlatformAdminMiddleware } from '@/middlewares/platform-admin.middleware
  *     parameters:
  *       - { in: query, name: status, schema: { type: string, enum: [to_contact, contacted, replied, interested, not_interested, unsubscribed] } }
  *       - { in: query, name: airport, schema: { type: string, example: LYS } }
+ *       - { in: query, name: region, description: "A region key, or none (without a region)", schema: { type: string, example: auvergne-rhone-alpes } }
  *     responses:
  *       200:
- *         description: "{ data: [Prospect], counts: { all, to_contact, contacted, replied, interested, not_interested, unsubscribed }, airports: [{ code, name, count }], today: { sent, cap, remaining }, window: { open, nextOpening }, configured }"
- *       400: { description: "fields.status invalid_status, fields.airport invalid_airport" }
+ *         description: "{ data: [Prospect], counts: { all, to_contact, contacted, replied, interested, not_interested, unsubscribed }, airports: [{ code, name, count }], regions: [{ key, label }], regionCounts: { <key>: n, none: n }, today: { sent, cap, remaining }, window: { open, nextOpening }, configured }"
+ *       400: { description: "fields.status invalid_status, fields.airport invalid_airport, fields.region invalid_region" }
  *   post:
  *     summary: Add a prospect by hand
  *     tags: [Prospection]
@@ -43,11 +44,12 @@ import { PlatformAdminMiddleware } from '@/middlewares/platform-admin.middleware
  *               email: { type: string, maxLength: 254 }
  *               town: { type: string, maxLength: 80, nullable: true }
  *               airportCode: { type: string, example: LYS, nullable: true }
+ *               region: { type: string, description: "Region chosen by hand (key or name); null: the airport's", example: auvergne-rhone-alpes, nullable: true }
  *               phone: { type: string, maxLength: 30, nullable: true }
  *               notes: { type: string, maxLength: 1000, nullable: true }
  *     responses:
  *       201: { description: "{ data: Prospect }" }
- *       400: { description: "fields: required, too_long, invalid_email, invalid_airport" }
+ *       400: { description: "fields: required, too_long, invalid_email, invalid_airport, invalid_region" }
  *       409: { description: "prospect_exists, or suppressed (the address opted out)" }
  * /internal/platform/prospects/{id}:
  *   patch:

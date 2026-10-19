@@ -29,6 +29,16 @@ import {
   validateProspect,
   validateSequence,
 } from '@/domain/prospecting';
+import {
+  airportsOfRegion,
+  effectiveRegion,
+  isRegionKey,
+  KNOWN_AIRPORTS,
+  NO_REGION,
+  RegionKey,
+  regionView,
+  sortedRegions,
+} from '@/domain/prospect-regions';
 import { addDays, dayBounds, localDate } from '@/domain/time';
 import { AuthenticatedStaff } from '@/interfaces/auth.interface';
 import { ValidationException } from '@/middlewares/validation.middleware';
@@ -208,6 +218,9 @@ export class ProspectingService {
       town: p.town,
       airportCode: p.airportCode,
       airportName: p.airportCode ? (airports.get(p.airportCode) ?? null) : null,
+      // The region it is filed under (chosen by hand, else its airport's) and the one chosen by hand (the form).
+      region: regionView(p),
+      regionOverride: p.region,
       phone: p.phone,
       notes: p.notes,
       source: p.source,
@@ -228,24 +241,45 @@ export class ProspectingService {
     return prisma.prospectMessage.count({ where: { status: 'sent', sentAt: { gte: capDayStart(now) } } });
   }
 
-  /** The page: prospects (filtered by status and airport), the counts of the pills, the airports, today's counter. */
-  public async list(query: { status?: unknown; airport?: unknown }, now = new Date()) {
+  /**
+   * The prospects of a region (`none`: without one): the region chosen by hand, or none chosen and an airport of the region
+   * (for `none`: no airport, or one Plazo does not place).
+   */
+  private regionWhere(region: RegionKey | typeof NO_REGION): Prisma.ProspectWhereInput {
+    if (region === NO_REGION) {
+      return { region: null, OR: [{ airportCode: null }, { airportCode: { notIn: KNOWN_AIRPORTS } }] };
+    }
+    return { OR: [{ region }, { region: null, airportCode: { in: airportsOfRegion(region) } }] };
+  }
+
+  /**
+   * The page: prospects (filtered by status, airport and region), the counts of the pills (they follow the airport and the
+   * region), the airports, the regions and their counts (they follow the airport), today's counter. Not paged: the page
+   * receives every prospect of the filters (up to LIST_LIMIT) and groups them by region itself.
+   */
+  public async list(query: { status?: unknown; airport?: unknown; region?: unknown }, now = new Date()) {
     const fields: Record<string, string> = {};
     const status = query.status === undefined || query.status === '' ? null : query.status;
     if (status !== null && !PROSPECT_STATUSES.includes(status as ProspectStatusName)) fields.status = 'invalid_status';
     const airport = query.airport === undefined || query.airport === '' ? null : query.airport;
     if (airport !== null && (typeof airport !== 'string' || !/^[A-Za-z]{3}$/.test(airport))) fields.airport = 'invalid_airport';
+    const region = query.region === undefined || query.region === '' ? null : query.region;
+    if (region !== null && region !== NO_REGION && !isRegionKey(region)) fields.region = 'invalid_region';
     if (Object.keys(fields).length) throw new ValidationException(fields);
 
     const airportWhere: Prisma.ProspectWhereInput = airport ? { airportCode: (airport as string).toUpperCase() } : {};
-    const [rows, grouped, airportGroups, settings, sent] = await Promise.all([
+    const placeWhere: Prisma.ProspectWhereInput = region
+      ? { AND: [airportWhere, this.regionWhere(region as RegionKey | typeof NO_REGION)] }
+      : airportWhere;
+    const [rows, grouped, airportGroups, regionGroups, settings, sent] = await Promise.all([
       prisma.prospect.findMany({
-        where: { ...airportWhere, ...(status ? { status: status as ProspectStatus } : {}) },
+        where: { AND: [placeWhere, status ? { status: status as ProspectStatus } : {}] },
         orderBy: [{ createdAt: 'desc' }, { id: 'asc' }],
         take: LIST_LIMIT,
       }),
-      prisma.prospect.groupBy({ by: ['status'], where: airportWhere, _count: { _all: true } }),
+      prisma.prospect.groupBy({ by: ['status'], where: placeWhere, _count: { _all: true } }),
       prisma.prospect.groupBy({ by: ['airportCode'], _count: { _all: true } }),
+      prisma.prospect.groupBy({ by: ['region', 'airportCode'], where: airportWhere, _count: { _all: true } }),
       this.loadSettings(),
       this.sentToday(now),
     ]);
@@ -253,6 +287,8 @@ export class ProspectingService {
     const errors = await this.lastErrors(rows.filter(r => r.failedAttempts > 0).map(r => r.id));
     const counts = Object.fromEntries(PROSPECT_STATUSES.map(s => [s, 0])) as Record<ProspectStatusName, number>;
     for (const g of grouped) counts[g.status] = g._count._all;
+    const regionCounts: Record<string, number> = Object.fromEntries([...sortedRegions().map(r => [r.key, 0]), [NO_REGION, 0]]);
+    for (const g of regionGroups) regionCounts[effectiveRegion(g) ?? NO_REGION] += g._count._all;
     return {
       data: rows.map(r => this.view(r, names, settings.steps, errors)),
       counts: { all: Object.values(counts).reduce((a, b) => a + b, 0), ...counts },
@@ -260,6 +296,9 @@ export class ProspectingService {
         .filter(g => g.airportCode)
         .map(g => ({ code: g.airportCode!, name: names.get(g.airportCode!) ?? null, count: g._count._all }))
         .sort((a, b) => a.code.localeCompare(b.code)),
+      // Every region, alphabetical (the form and the filter), and how many prospects each has (« none »: without one).
+      regions: sortedRegions(),
+      regionCounts,
       today: { sent, cap: settings.dailyCap, remaining: remainingToday(settings.dailyCap, sent) },
       window: { open: inSendingWindow(now), nextOpening: nextWindowStart(now).toISOString() },
       configured: this.configured(),

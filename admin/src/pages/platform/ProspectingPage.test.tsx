@@ -33,6 +33,8 @@ const base: Prospect = {
   town: "Colombier-Saugnieu",
   airportCode: "LYS",
   airportName: "Lyon Saint-Exupéry",
+  region: { key: "auvergne-rhone-alpes", label: "Auvergne-Rhône-Alpes", manual: false },
+  regionOverride: null,
   phone: null,
   notes: null,
   source: "csv",
@@ -61,6 +63,12 @@ const prospects: Prospect[] = [
     nextSendAt: "2026-10-21T08:00:00Z",
   },
   { ...base, id: "p4", companyName: "Parking Thêta", email: "accueil@theta.example", status: "unsubscribed" },
+];
+const regions = [
+  { key: "auvergne-rhone-alpes", label: "Auvergne-Rhône-Alpes" },
+  { key: "bretagne", label: "Bretagne" },
+  { key: "occitanie", label: "Occitanie" },
+  { key: "provence-alpes-cote-d-azur", label: "Provence-Alpes-Côte d'Azur" },
 ];
 const counts = { all: 4, to_contact: 2, contacted: 1, replied: 0, interested: 0, not_interested: 0, unsubscribed: 1 };
 const settings = {
@@ -93,6 +101,8 @@ describe("Plateforme › Prospection", () => {
       data: status ? prospects.filter(p => p.status === status) : prospects,
       counts,
       airports: [{ code: "LYS", name: "Lyon Saint-Exupéry", count: 4 }],
+      regions,
+      regionCounts: { "auvergne-rhone-alpes": 4, bretagne: 0, occitanie: 0, "provence-alpes-cote-d-azur": 0, none: 0 },
       today: { sent: 12, cap: 50, remaining: 38 },
       window: { open: true, nextOpening: "2026-10-19T07:00:00Z" },
       configured: true,
@@ -112,10 +122,10 @@ describe("Plateforme › Prospection", () => {
     expect(within(screen.getByText("Parking Thêta").closest("tr")!).getByText("— jamais plus")).toBeInTheDocument();
 
     await user.click(screen.getByRole("button", { name: "Désinscrits · 1" }));
-    await waitFor(() => expect(api.getProspects).toHaveBeenLastCalledWith({ status: "unsubscribed", airport: null }));
+    await waitFor(() => expect(api.getProspects).toHaveBeenLastCalledWith({ status: "unsubscribed", airport: null, region: null }));
     await waitFor(() => expect(screen.queryByText("Parking Alpha")).not.toBeInTheDocument());
     await user.selectOptions(screen.getByLabelText("Aéroport"), "LYS");
-    await waitFor(() => expect(api.getProspects).toHaveBeenLastCalledWith({ status: "unsubscribed", airport: "LYS" }));
+    await waitFor(() => expect(api.getProspects).toHaveBeenLastCalledWith({ status: "unsubscribed", airport: "LYS", region: null }));
   });
 
   it("aperçu pour le premier choisi, confirmation, envoi des seuls prospects à contacter", async () => {
@@ -192,5 +202,115 @@ describe("Plateforme › Prospection", () => {
     );
     await user.click(screen.getByRole("menuitem", { name: "Intéressé" }));
     await waitFor(() => expect(api.setProspectStatus).toHaveBeenCalledWith("p1", "interested"));
+  });
+
+  describe("classement par région (19/10/2026)", () => {
+    const mixed: Prospect[] = [
+      { ...base, id: "r1", companyName: "Parking Azur", email: "a@azur.example", airportCode: "NCE", region: { key: "provence-alpes-cote-d-azur", label: "Provence-Alpes-Côte d'Azur", manual: false } },
+      { ...base, id: "r2", companyName: "Parking Rhône", email: "b@rhone.example" },
+      { ...base, id: "r3", companyName: "Parking Genève", email: "c@geneve.example", airportCode: "GVA", region: null },
+      { ...base, id: "r4", companyName: "Parking Isère", email: "d@isere.example", airportCode: "GNB", status: "contacted", step: 1 },
+      {
+        ...base,
+        id: "r5",
+        companyName: "Parking Choisi",
+        email: "e@choisi.example",
+        region: { key: "occitanie", label: "Occitanie", manual: true },
+        regionOverride: "occitanie",
+      },
+    ];
+    const regionCounts = { "auvergne-rhone-alpes": 2, bretagne: 0, occitanie: 1, "provence-alpes-cote-d-azur": 1, none: 1 };
+
+    beforeEach(() => {
+      window.localStorage.clear();
+      api.getProspects.mockImplementation(async ({ region }: { region?: string | null }) => ({
+        data: region ? mixed.filter(p => (p.region?.key ?? "none") === region) : mixed,
+        counts: { ...counts, all: region ? mixed.filter(p => (p.region?.key ?? "none") === region).length : 5 },
+        airports: [],
+        regions,
+        regionCounts,
+        today: { sent: 0, cap: 50, remaining: 50 },
+        window: { open: true, nextOpening: "2026-10-19T07:00:00Z" },
+        configured: true,
+      }));
+    });
+
+    it("des blocs par région, dans l'ordre alphabétique, « Sans région » en dernier, avec leur nombre", async () => {
+      renderIn();
+      await screen.findByText("Parking Azur");
+      const blocks = screen.getAllByRole("button", { expanded: true }).map(b => b.textContent);
+      expect(blocks).toEqual(["Auvergne-Rhône-Alpes · 2", "Occitanie · 1", "Provence-Alpes-Côte d'Azur · 1", "Sans région · 1"]);
+      expect(within(screen.getByTestId("region-auvergne-rhone-alpes")).getByText("Parking Rhône")).toBeInTheDocument();
+      expect(within(screen.getByTestId("region-auvergne-rhone-alpes")).getByText("Parking Isère")).toBeInTheDocument();
+      expect(within(screen.getByTestId("region-none")).getByText("Parking Genève")).toBeInTheDocument();
+      // The row tells the region, and when it was chosen by hand.
+      expect(within(screen.getByTestId("region-occitanie")).getByText("Occitanie · choisie à la main")).toBeInTheDocument();
+      expect(screen.queryByTestId("region-bretagne")).not.toBeInTheDocument();
+    });
+
+    it("un bloc se replie et se déplie ; la sélection reste", async () => {
+      const user = userEvent.setup();
+      renderIn();
+      await screen.findByText("Parking Rhône");
+      await user.click(screen.getByLabelText("Choisir Parking Rhône"));
+      await user.click(screen.getByRole("button", { name: "Auvergne-Rhône-Alpes · 2" }));
+      expect(screen.getByRole("button", { name: "Auvergne-Rhône-Alpes · 2" })).toHaveAttribute("aria-expanded", "false");
+      expect(screen.queryByText("Parking Rhône")).not.toBeInTheDocument();
+      expect(screen.getByText("1 prospect choisi")).toBeInTheDocument();
+      await user.click(screen.getByRole("button", { name: "Auvergne-Rhône-Alpes · 2" }));
+      expect(screen.getByLabelText("Choisir Parking Rhône")).toBeChecked();
+    });
+
+    it("« Tout cocher dans la région » coche puis décoche le bloc seul ; le panneau d'envoi suit", async () => {
+      const user = userEvent.setup();
+      renderIn();
+      await screen.findByText("Parking Rhône");
+      await user.click(screen.getByRole("button", { name: "Tout cocher dans la région · Auvergne-Rhône-Alpes" }));
+      expect(screen.getByLabelText("Choisir Parking Rhône")).toBeChecked();
+      expect(screen.getByLabelText("Choisir Parking Isère")).toBeChecked();
+      expect(screen.getByLabelText("Choisir Parking Azur")).not.toBeChecked();
+      expect(screen.getByText("2 prospects choisis")).toBeInTheDocument();
+      // Parking Isère was already contacted: only Parking Rhône is sent the first email.
+      expect(screen.getByRole("button", { name: "Envoyer à 1 prospect" })).toBeEnabled();
+      await user.click(screen.getByRole("button", { name: "Tout décocher dans la région · Auvergne-Rhône-Alpes" }));
+      expect(screen.getByLabelText("Choisir Parking Rhône")).not.toBeChecked();
+      expect(screen.getByText("Aucun prospect choisi")).toBeInTheDocument();
+    });
+
+    it("filtre « Toutes les régions » : régions qui ont des prospects, avec leur nombre, et « Sans région »", async () => {
+      const user = userEvent.setup();
+      renderIn();
+      await screen.findByText("Parking Rhône");
+      const select = screen.getByLabelText("Région");
+      expect(within(select).getAllByRole("option").map(o => o.textContent)).toEqual([
+        "Toutes les régions",
+        "Auvergne-Rhône-Alpes (2)",
+        "Occitanie (1)",
+        "Provence-Alpes-Côte d'Azur (1)",
+        "Sans région (1)",
+      ]);
+      await user.selectOptions(select, "none");
+      await waitFor(() => expect(api.getProspects).toHaveBeenLastCalledWith({ status: null, airport: null, region: "none" }));
+      await waitFor(() => expect(screen.queryByText("Parking Rhône")).not.toBeInTheDocument());
+      expect(screen.getByText("Parking Genève")).toBeInTheDocument();
+      expect(screen.getByRole("button", { name: "Tous · 1" })).toBeInTheDocument();
+    });
+
+    it("formulaire : région automatique par défaut, ou choisie", async () => {
+      const user = userEvent.setup();
+      api.createProspect.mockResolvedValue({ data: mixed[0] });
+      renderIn();
+      await screen.findByText("Parking Rhône");
+      await user.click(screen.getByRole("button", { name: "+ Ajouter un prospect" }));
+      const field = screen.getByLabelText("Région", { selector: "#prospect-region" });
+      expect(field).toHaveValue("");
+      await user.type(screen.getByLabelText("Parking"), "Parking Nouveau");
+      await user.type(screen.getByLabelText("E-mail"), "f@nouveau.example");
+      await user.selectOptions(field, "bretagne");
+      await user.click(screen.getByRole("button", { name: "Enregistrer" }));
+      await waitFor(() =>
+        expect(api.createProspect).toHaveBeenCalledWith(expect.objectContaining({ companyName: "Parking Nouveau", region: "bretagne" })),
+      );
+    });
   });
 });

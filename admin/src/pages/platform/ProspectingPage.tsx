@@ -1,5 +1,5 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { MoreHorizontal } from "lucide-react";
+import { ChevronDown, ChevronRight, MoreHorizontal } from "lucide-react";
 import { useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 import { toast } from "sonner";
@@ -8,7 +8,7 @@ import { useConfirm } from "@/components/ui/confirm-context";
 import { Skeleton } from "@/components/ui/skeleton";
 import { adminApi } from "@/lib/api";
 import { describeError, fr } from "@/lib/fr";
-import { renderSubjectText, renderText, stepFor, valuesOf, VARIABLES } from "@/lib/prospecting";
+import { groupByRegion, NO_REGION, type RegionGroup, renderSubjectText, renderText, stepFor, valuesOf, VARIABLES } from "@/lib/prospecting";
 import type { Prospect, ProspectingSettings, ProspectStatus } from "@/lib/types";
 import { cn } from "@/lib/utils";
 import { ImportDialog } from "./prospecting/ImportDialog";
@@ -31,6 +31,27 @@ const dayTime = new Intl.DateTimeFormat("fr-FR", { weekday: "short", day: "numer
 const isOpen = (p: Prospect) => p.status === "to_contact" || p.status === "contacted";
 const eligible = (p: Prospect) => p.status === "to_contact" && p.step === 0;
 const contactName = (p: Prospect) => [p.contactFirstName, p.contactLastName].filter(Boolean).join(" ");
+
+/** The region blocks folded by the admin, kept in this browser only (19/10/2026). */
+const COLLAPSED_KEY = "plazo:prospects-collapsed-regions";
+
+function readCollapsed(): Set<string> {
+  try {
+    const raw = window.localStorage.getItem(COLLAPSED_KEY);
+    const keys: unknown = raw ? JSON.parse(raw) : [];
+    return new Set(Array.isArray(keys) ? keys.filter((k): k is string => typeof k === "string") : []);
+  } catch {
+    return new Set();
+  }
+}
+
+function writeCollapsed(keys: Set<string>) {
+  try {
+    window.localStorage.setItem(COLLAPSED_KEY, JSON.stringify([...keys]));
+  } catch {
+    // Private window or blocked storage: the blocks simply open again next time.
+  }
+}
 
 function stateLabel(p: Prospect): { text: string; tone: string } {
   if (p.status === "to_contact") return p.nextSendAt ? { text: t.states.waiting, tone: PILL.waiting } : { text: t.states.to_contact, tone: PILL.to_contact };
@@ -272,18 +293,40 @@ function SendPanel({
 export default function ProspectingPage() {
   const [status, setStatus] = useState<ProspectStatus | null>(null);
   const [airport, setAirport] = useState<string>("");
+  const [region, setRegion] = useState<string>("");
+  const [collapsed, setCollapsed] = useState<Set<string>>(readCollapsed);
   const [selected, setSelected] = useState<Set<string>>(new Set());
   const [dialog, setDialog] = useState<{ kind: "add" } | { kind: "edit"; prospect: Prospect } | { kind: "import" } | { kind: "steps" } | null>(null);
 
   const list = useQuery({
-    queryKey: ["platform", "prospects", status, airport],
-    queryFn: () => adminApi.getProspects({ status, airport: airport || null }),
+    queryKey: ["platform", "prospects", status, airport, region],
+    queryFn: () => adminApi.getProspects({ status, airport: airport || null, region: region || null }),
   });
   const settings = useQuery({ queryKey: ["platform", "prospects", "settings"], queryFn: adminApi.getProspectingSettings });
   const rows = useMemo(() => list.data?.data ?? [], [list.data]);
   // The chosen prospects of the current view, in the list's order.
   const chosen = rows.filter(p => selected.has(p.id));
   const allChosen = rows.length > 0 && rows.every(p => selected.has(p.id));
+  // « Groupés par région »: one block per region (alphabetical), « Sans région » last.
+  const regions = useMemo(() => list.data?.regions ?? [], [list.data]);
+  const groups = useMemo(() => groupByRegion(rows, regions), [rows, regions]);
+  const regionCounts = list.data?.regionCounts ?? {};
+  const toggleBlock = (key: string) =>
+    setCollapsed(c => {
+      const next = new Set(c);
+      if (next.has(key)) next.delete(key);
+      else next.add(key);
+      writeCollapsed(next);
+      return next;
+    });
+  /** « Tout cocher dans la région »: every prospect of the block, or none when they all are. */
+  const toggleGroup = (group: RegionGroup) =>
+    setSelected(s => {
+      const next = new Set(s);
+      const all = group.prospects.every(p => next.has(p.id));
+      group.prospects.forEach(p => (all ? next.delete(p.id) : next.add(p.id)));
+      return next;
+    });
   const toggle = (id: string) =>
     setSelected(s => {
       const next = new Set(s);
@@ -353,6 +396,27 @@ export default function ProspectingPage() {
             </option>
           ))}
         </select>
+        <label className="sr-only" htmlFor="prospect-region-filter">
+          {t.region}
+        </label>
+        <select
+          id="prospect-region-filter"
+          value={region}
+          onChange={e => setRegion(e.target.value)}
+          className="h-11 rounded-full border border-panel-line bg-white px-3.5 text-sm"
+        >
+          <option value="">{t.regionAll}</option>
+          {regions
+            .filter(r => (regionCounts[r.key] ?? 0) > 0 || r.key === region)
+            .map(r => (
+              <option key={r.key} value={r.key}>
+                {t.regionOption(r.label, regionCounts[r.key] ?? 0)}
+              </option>
+            ))}
+          {((regionCounts[NO_REGION] ?? 0) > 0 || region === NO_REGION) && (
+            <option value={NO_REGION}>{t.regionOption(t.regionNone, regionCounts[NO_REGION] ?? 0)}</option>
+          )}
+        </select>
       </div>
 
       <div className="grid gap-5 lg:grid-cols-[minmax(0,1fr)_420px]">
@@ -362,7 +426,7 @@ export default function ProspectingPage() {
           ) : list.error ? (
             <p className="p-4 text-destructive">{describeError(list.error)}</p>
           ) : rows.length === 0 ? (
-            <p className="p-6 text-muted-foreground">{status || airport ? t.emptyFilter : t.empty}</p>
+            <p className="p-6 text-muted-foreground">{status || airport || region ? t.emptyFilter : t.empty}</p>
           ) : (
             <div className="overflow-x-auto">
               <table className="w-full min-w-[760px] text-sm">
@@ -393,41 +457,82 @@ export default function ProspectingPage() {
                     </th>
                   </tr>
                 </thead>
-                <tbody>
-                  {rows.map(p => {
-                    const state = stateLabel(p);
-                    return (
-                      <tr key={p.id} className="border-b border-[#F1F2EF] align-middle">
-                        <td className="px-4 py-2">
-                          <input
-                            type="checkbox"
-                            aria-label={t.selectOne(p.companyName)}
-                            className="h-[18px] w-[18px] accent-[#1E5E2E]"
-                            checked={selected.has(p.id)}
-                            onChange={() => toggle(p.id)}
-                          />
-                        </td>
-                        <td className="px-2 py-2">
-                          <span className="block font-semibold">{p.companyName}</span>
-                          {p.town && <span className="block text-xs text-muted-foreground">{p.town}</span>}
-                        </td>
-                        <td className="max-w-[220px] px-2 py-2">
-                          <span className="block">{contactName(p) || "—"}</span>
-                          <span className="block truncate text-xs text-muted-foreground">{p.email}</span>
-                        </td>
-                        <td className="px-2 py-2 font-mono text-[13px]">{p.airportCode ?? "—"}</td>
-                        <td className="px-2 py-2">
-                          <span className={cn("inline-block rounded-full px-2.5 py-1 text-xs font-semibold", state.tone)}>{state.text}</span>
-                          {p.failedAttempts > 0 && <span className="mt-1 block text-xs text-destructive">{t.failed(p.failedAttempts)}</span>}
-                        </td>
-                        <td className="whitespace-nowrap px-2 py-2 font-mono text-[13px] text-[#4B5563]">{nextLabel(p)}</td>
-                        <td className="px-2 py-2">
-                          <RowActions prospect={p} onEdit={() => setDialog({ kind: "edit", prospect: p })} />
+                {groups.map(group => {
+                  const open = !collapsed.has(group.key);
+                  const label = t.regionBlock(group.label, group.prospects.length);
+                  const groupChosen = group.prospects.every(p => selected.has(p.id));
+                  return (
+                    <tbody key={group.key} data-testid={`region-${group.key}`}>
+                      <tr className="border-b border-panel-line bg-panel-2">
+                        <td colSpan={7} className="px-2 py-1">
+                          <div className="flex flex-wrap items-center justify-between gap-2">
+                            <button
+                              type="button"
+                              aria-expanded={open}
+                              onClick={() => toggleBlock(group.key)}
+                              title={open ? t.regionCollapse(group.label) : t.regionExpand(group.label)}
+                              className="flex min-h-11 items-center gap-2 rounded-md px-2 text-left text-xs font-bold uppercase tracking-[0.06em] text-lime-deep hover:bg-white"
+                            >
+                              {open ? <ChevronDown className="h-4 w-4" aria-hidden /> : <ChevronRight className="h-4 w-4" aria-hidden />}
+                              {label}
+                            </button>
+                            <Button
+                              type="button"
+                              variant="ghost"
+                              className="h-11 text-sm font-semibold"
+                              aria-label={`${groupChosen ? t.regionUncheckAll : t.regionCheckAll} · ${group.label}`}
+                              onClick={() => toggleGroup(group)}
+                            >
+                              {groupChosen ? t.regionUncheckAll : t.regionCheckAll}
+                            </Button>
+                          </div>
                         </td>
                       </tr>
-                    );
-                  })}
-                </tbody>
+                      {open &&
+                        group.prospects.map(p => {
+                          const state = stateLabel(p);
+                          return (
+                            <tr key={p.id} className="border-b border-[#F1F2EF] align-middle">
+                              <td className="px-4 py-2">
+                                <input
+                                  type="checkbox"
+                                  aria-label={t.selectOne(p.companyName)}
+                                  className="h-[18px] w-[18px] accent-[#1E5E2E]"
+                                  checked={selected.has(p.id)}
+                                  onChange={() => toggle(p.id)}
+                                />
+                              </td>
+                              <td className="px-2 py-2">
+                                <span className="block font-semibold">{p.companyName}</span>
+                                {p.town && <span className="block text-xs text-muted-foreground">{p.town}</span>}
+                              </td>
+                              <td className="max-w-[220px] px-2 py-2">
+                                <span className="block">{contactName(p) || "—"}</span>
+                                <span className="block truncate text-xs text-muted-foreground">{p.email}</span>
+                              </td>
+                              <td className="px-2 py-2">
+                                <span className="block font-mono text-[13px]">{p.airportCode ?? "—"}</span>
+                                {p.region && (
+                                  <span className="block text-xs text-muted-foreground">
+                                    {p.region.label}
+                                    {p.region.manual && ` · ${t.regionManual}`}
+                                  </span>
+                                )}
+                              </td>
+                              <td className="px-2 py-2">
+                                <span className={cn("inline-block rounded-full px-2.5 py-1 text-xs font-semibold", state.tone)}>{state.text}</span>
+                                {p.failedAttempts > 0 && <span className="mt-1 block text-xs text-destructive">{t.failed(p.failedAttempts)}</span>}
+                              </td>
+                              <td className="whitespace-nowrap px-2 py-2 font-mono text-[13px] text-[#4B5563]">{nextLabel(p)}</td>
+                              <td className="px-2 py-2">
+                                <RowActions prospect={p} onEdit={() => setDialog({ kind: "edit", prospect: p })} />
+                              </td>
+                            </tr>
+                          );
+                        })}
+                    </tbody>
+                  );
+                })}
               </table>
             </div>
           )}
@@ -443,8 +548,8 @@ export default function ProspectingPage() {
         />
       </div>
 
-      {dialog?.kind === "add" && <ProspectForm prospect={null} onClose={() => setDialog(null)} />}
-      {dialog?.kind === "edit" && <ProspectForm prospect={dialog.prospect} onClose={() => setDialog(null)} />}
+      {dialog?.kind === "add" && <ProspectForm prospect={null} regions={regions} onClose={() => setDialog(null)} />}
+      {dialog?.kind === "edit" && <ProspectForm prospect={dialog.prospect} regions={regions} onClose={() => setDialog(null)} />}
       {dialog?.kind === "import" && <ImportDialog onClose={() => setDialog(null)} />}
       {dialog?.kind === "steps" && settings.data && <StepsEditor settings={settings.data.data} onClose={() => setDialog(null)} />}
     </>
