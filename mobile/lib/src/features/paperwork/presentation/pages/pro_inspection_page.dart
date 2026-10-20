@@ -7,7 +7,6 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:image_picker/image_picker.dart';
 
 import '../../../../core/enums/view_state.dart';
 import '../../../../di/locator.dart';
@@ -102,30 +101,16 @@ class _DraftState extends State<_Draft> {
   PaperworkBloc get _bloc => context.read<PaperworkBloc>();
   int? get _typedMileage => int.tryParse(_mileage.text.replaceAll(RegExp(r'\D'), ''));
 
-  Future<Uint8List?> _pick() async {
-    try {
-      final file = await ImagePicker().pickImage(
-        // A browser or a desktop has no camera picker: the files then.
-        source: kIsWeb ? ImageSource.gallery : ImageSource.camera,
-        maxWidth: 1600,
-        maxHeight: 1600,
-        imageQuality: 70,
-      );
-      return file == null ? null : await file.readAsBytes();
-    } on PlatformException {
-      if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('paperwork.camera_denied'.tr())));
-      return null;
-    }
-  }
+  Future<Uint8List?> _pick() => pickInspectionPhoto(context);
 
   Future<void> _takePhoto(String slot) async {
     final bytes = await _pick();
     if (bytes == null || !mounted) return;
-    _bloc.add(PaperworkEdited(AddInspectionPhoto(widget.id, widget.kind, slot, bytes), busySlot: slot));
+    _bloc.add(PaperworkEdited(AddInspectionPhoto(StaffOwner(widget.id), widget.kind, slot, bytes), busySlot: slot));
   }
 
   void _saveDamages(List<DamageModel> damages) =>
-      _bloc.add(PaperworkEdited(UpdateInspection(widget.id, widget.kind, {'damages': damages.map((d) => d.toBody()).toList()})));
+      _bloc.add(PaperworkEdited(UpdateInspection(StaffOwner(widget.id), widget.kind, {'damages': damages.map((d) => d.toBody()).toList()})));
 
   Future<void> _addDamage(double x, double y) async {
     final label = await showDialog<String>(context: context, builder: (_) => const _DamageDialog());
@@ -138,7 +123,7 @@ class _DraftState extends State<_Draft> {
     final bytes = await _pick();
     if (bytes == null || !mounted) return;
     final before = widget.report.damagePhotos.map((p) => p.id).toSet();
-    final bloc = _bloc..add(PaperworkEdited(AddInspectionPhoto(widget.id, widget.kind, 'damage', bytes), busySlot: 'damage'));
+    final bloc = _bloc..add(PaperworkEdited(AddInspectionPhoto(StaffOwner(widget.id), widget.kind, 'damage', bytes), busySlot: 'damage'));
     final next = await bloc.stream.firstWhere((s) => !s.busy);
     final added = next.data?.report(widget.kind)?.damagePhotos.where((p) => !before.contains(p.id)).firstOrNull;
     final current = next.data?.report(widget.kind)?.damages;
@@ -148,7 +133,7 @@ class _DraftState extends State<_Draft> {
 
   void _saveMileage() {
     final km = _typedMileage;
-    if (km != null && km != widget.report.mileageKm) _bloc.add(PaperworkEdited(UpdateInspection(widget.id, widget.kind, {'mileageKm': km})));
+    if (km != null && km != widget.report.mileageKm) _bloc.add(PaperworkEdited(UpdateInspection(StaffOwner(widget.id), widget.kind, {'mileageKm': km})));
   }
 
   @override
@@ -168,6 +153,7 @@ class _DraftState extends State<_Draft> {
           ),
           const SizedBox(height: 10),
         ],
+        if (widget.paperwork.ownReport(widget.kind) case final mine?) ClientPhotosCard(owner: owner, kind: widget.kind, report: mine),
         Row(
           children: [
             Expanded(child: Text('paperwork.photos'.tr().toUpperCase(), style: AppText.label(size: 11))),
@@ -248,7 +234,7 @@ class _DraftState extends State<_Draft> {
         const SizedBox(height: 6),
         FuelBars(
           quarters: r.fuelQuarters,
-          onSelected: busy ? null : (q) => _bloc.add(PaperworkEdited(UpdateInspection(widget.id, widget.kind, {'fuelQuarters': q}))),
+          onSelected: busy ? null : (q) => _bloc.add(PaperworkEdited(UpdateInspection(StaffOwner(widget.id), widget.kind, {'fuelQuarters': q}))),
         ),
         const SizedBox(height: 14),
         TextField(
@@ -279,7 +265,7 @@ class _DraftState extends State<_Draft> {
               : () => _bloc.add(
                   PaperworkEdited(
                     CompleteInspection(
-                      widget.id,
+                      StaffOwner(widget.id),
                       widget.kind,
                       body: {
                         if (_typedMileage != null && _typedMileage != r.mileageKm) 'mileageKm': _typedMileage,
@@ -501,6 +487,7 @@ class _CompletedState extends State<_Completed> {
     return ListView(
       padding: const EdgeInsets.fromLTRB(16, 12, 16, 28),
       children: [
+        if (widget.paperwork.ownReport(widget.kind) case final mine?) ClientPhotosCard(owner: owner, kind: widget.kind, report: mine),
         Row(
           children: [
             Expanded(

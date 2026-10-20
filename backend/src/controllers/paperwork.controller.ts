@@ -91,7 +91,7 @@ export class PaperworkController {
   /** POST /public/bookings/:reference/contract/sign */
   public travellerSign = catchAsync(async (req: Request, res: Response) => {
     res.set('Cache-Control', 'no-store');
-    res.json(await this.paperwork.travellerSign(param(req, 'reference'), bookingToken(req), req.body?.code));
+    res.json(await this.paperwork.travellerSign(param(req, 'reference'), bookingToken(req)));
   });
 
   /** POST /public/bookings/:reference/inspections/:kind/answer */
@@ -103,5 +103,39 @@ export class PaperworkController {
   /** GET /public/bookings/:reference/inspections/:kind/photos/:photoId */
   public travellerPhoto = catchAsync(async (req: Request, res: Response) => {
     sendPhoto(res, await this.paperwork.travellerPhoto(param(req, 'reference'), bookingToken(req), param(req, 'kind'), param(req, 'photoId')));
+  });
+
+  // ---- The traveller's own photos ----
+
+  /** POST /public/bookings/:reference/inspections/:kind/mine */
+  public travellerStart = catchAsync(async (req: Request, res: Response) => {
+    res.set('Cache-Control', 'no-store');
+    res.json(await this.paperwork.travellerStart(param(req, 'reference'), bookingToken(req), param(req, 'kind')));
+  });
+
+  /** PATCH /public/bookings/:reference/inspections/:kind/mine */
+  public travellerUpdate = catchAsync(async (req: Request, res: Response) => {
+    res.set('Cache-Control', 'no-store');
+    res.json(await this.paperwork.travellerUpdate(param(req, 'reference'), bookingToken(req), param(req, 'kind'), req.body ?? {}));
+  });
+
+  /** POST /public/bookings/:reference/inspections/:kind/mine/photos?slot= */
+  public travellerAddPhoto = catchAsync(async (req: Request, res: Response) => {
+    res.set('Cache-Control', 'no-store');
+    res
+      .status(201)
+      .json(await this.paperwork.travellerAddPhoto(param(req, 'reference'), bookingToken(req), param(req, 'kind'), req.query.slot, req.body));
+  });
+
+  /** DELETE /public/bookings/:reference/inspections/:kind/mine/photos/:photoId */
+  public travellerRemovePhoto = catchAsync(async (req: Request, res: Response) => {
+    res.set('Cache-Control', 'no-store');
+    res.json(await this.paperwork.travellerRemovePhoto(param(req, 'reference'), bookingToken(req), param(req, 'kind'), param(req, 'photoId')));
+  });
+
+  /** POST /public/bookings/:reference/inspections/:kind/mine/complete */
+  public travellerComplete = catchAsync(async (req: Request, res: Response) => {
+    res.set('Cache-Control', 'no-store');
+    res.json(await this.paperwork.travellerComplete(param(req, 'reference'), bookingToken(req), param(req, 'kind')));
   });
 }

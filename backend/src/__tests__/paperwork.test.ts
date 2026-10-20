@@ -116,30 +116,33 @@ async function takeReport(token: string, id: string, kind: 'dropoff' | 'return',
 }
 
 describe('contrat', () => {
-  it('le voyageur signe avec le code reçu par SMS ; copie envoyée ; une seule signature', async () => {
+  it("au comptoir avec le code reçu par SMS ; l'appli du voyageur le montre sans le faire signer ; copie envoyée ; une seule signature", async () => {
     const b = await setup();
     const before = await api().get(`/api/public/bookings/${b.reference}/paperwork`).set(bookingToken(b.token));
     expect(before.status).toBe(200);
-    expect(before.body.contract).toMatchObject({ status: 'unsigned', canSign: true, codeAvailable: true, phoneMasked: '06 •• •• •• 78' });
+    expect(before.body.contract).toMatchObject({ status: 'unsigned', canSign: false, atCounter: true, phoneMasked: '06 •• •• •• 78' });
     expect(before.body.contract.document.summary).toEqual(expect.arrayContaining(['Client : Camille Martin', 'Clés : confiées au parking']));
+    // The contract is signed at the counter (20/10/2026): the traveller's routes refuse, and send nothing.
+    for (const path of ['code', 'sign']) {
+      const res = await api().post(`/api/public/bookings/${b.reference}/contract/${path}`).set(bookingToken(b.token)).send({ code: '123456' });
+      expect([res.status, res.body.code]).toEqual([409, 'contract_at_counter']);
+    }
+    expect(sentCodes).toEqual([]);
 
-    const code = await api().post(`/api/public/bookings/${b.reference}/contract/code`).set(bookingToken(b.token));
+    const staffView = await api().get(`/api/internal/reservations/${b.id}/paperwork`).set(auth(b.op.token));
+    expect(staffView.body.contract).toMatchObject({ canSign: true, atCounter: true, codeAvailable: true });
+    const code = await api().post(`/api/internal/reservations/${b.id}/contract/code`).set(auth(b.op.token));
     expect(code.status).toBe(200);
     expect(code.body.sentTo).toBe('06 •• •• •• 78');
     // Not a second code within a minute.
-    expect((await api().post(`/api/public/bookings/${b.reference}/contract/code`).set(bookingToken(b.token))).body.code).toBe('code_recently_sent');
+    expect((await api().post(`/api/internal/reservations/${b.id}/contract/code`).set(auth(b.op.token))).body.code).toBe('code_recently_sent');
 
-    const wrong = sentCodes[0] === '000000' ? '111111' : '000000';
-    const bad = await api().post(`/api/public/bookings/${b.reference}/contract/sign`).set(bookingToken(b.token)).send({ code: wrong });
-    expect(bad.status).toBe(400);
-    expect(bad.body.fields).toEqual({ code: 'wrong_code' });
-
-    const ok = await api().post(`/api/public/bookings/${b.reference}/contract/sign`).set(bookingToken(b.token)).send({ code: sentCodes[0] });
+    const ok = await api().post(`/api/internal/reservations/${b.id}/contract/sign`).set(auth(b.op.token)).send({ code: sentCodes[0] });
     expect(ok.status).toBe(200);
     expect(ok.body.contract.status).toBe('signed');
     expect(ok.body.contract.signed).toMatchObject({
       method: 'sms_code',
-      device: 'traveller_app',
+      device: 'staff_device',
       signerName: 'Camille Martin',
       phoneMasked: '06 •• •• •• 78',
     });
@@ -147,8 +150,10 @@ describe('contrat', () => {
     expect(row.text).toContain('Contrat de stationnement');
     expect(row.emailedAt).not.toBeNull();
     // The code is single use, and a contract is signed once.
-    const again = await api().post(`/api/public/bookings/${b.reference}/contract/sign`).set(bookingToken(b.token)).send({ code: sentCodes[0] });
+    const again = await api().post(`/api/internal/reservations/${b.id}/contract/sign`).set(auth(b.op.token)).send({ code: sentCodes[0] });
     expect(again.body.code).toBe('already_signed');
+    const after = await api().get(`/api/public/bookings/${b.reference}/paperwork`).set(bookingToken(b.token));
+    expect(after.body.contract).toMatchObject({ status: 'signed', canSign: false, atCounter: false });
     // Without the booking's token, nothing.
     expect((await api().get(`/api/public/bookings/${b.reference}/paperwork`).set(bookingToken('nope'))).status).toBe(404);
   });
@@ -307,5 +312,126 @@ describe('état des lieux', () => {
     expect(result.photosErased).toBe(6);
     expect(memory.files.size).toBe(12);
     expect((await prisma.vehicleInspection.findFirstOrThrow({ where: { reservationId: quiet.id } })).photosErasedAt).not.toBeNull();
+  });
+});
+
+describe('les photos du voyageur', () => {
+  const mine = (reference: string, kind: string) => `/api/public/bookings/${reference}/inspections/${kind}/mine`;
+
+  it('avant de remettre les clés : photos, mot, envoi ; le parking les voit une fois envoyées, à côté des siennes', async () => {
+    const b = await setup();
+    const tok = bookingToken(b.token);
+    const first = await api().get(`/api/public/bookings/${b.reference}/paperwork`).set(tok);
+    expect(first.body.travellerCanPhotograph).toEqual({ dropoff: true, return: false });
+    expect(first.body.travellerReports).toEqual({ dropoff: null, return: null });
+    // The return photos wait for the car to be back at the parking.
+    expect((await api().post(mine(b.reference, 'return')).set(tok)).body.code).toBe('inspection_closed');
+
+    expect((await api().post(mine(b.reference, 'dropoff')).set(tok)).status).toBe(200);
+    // Nothing to send without a photo.
+    expect(
+      (
+        await api()
+          .post(`${mine(b.reference, 'dropoff')}/complete`)
+          .set(tok)
+      ).body.fields,
+    ).toEqual({ photos: 'required' });
+    // The six guided slots only: no close-up of a damage, and an image only.
+    expect(
+      (
+        await api()
+          .post(`${mine(b.reference, 'dropoff')}/photos?slot=damage`)
+          .set(tok)
+          .set('Content-Type', 'image/jpeg')
+          .send(JPEG)
+      ).body.fields,
+    ).toEqual({
+      slot: 'invalid',
+    });
+    const text = await api()
+      .post(`${mine(b.reference, 'dropoff')}/photos?slot=front`)
+      .set(tok)
+      .set('Content-Type', 'image/jpeg')
+      .send(Buffer.from('hello'));
+    expect(text.body.fields).toEqual({ photo: 'not_an_image' });
+    let photoId = '';
+    for (const slot of ['front', 'right', 'back']) {
+      const res = await api()
+        .post(`${mine(b.reference, 'dropoff')}/photos?slot=${slot}`)
+        .set(tok)
+        .set('Content-Type', 'image/jpeg')
+        .send(JPEG);
+      expect(res.status).toBe(201);
+      photoId = res.body.photoId;
+    }
+    const removed = await api()
+      .delete(`${mine(b.reference, 'dropoff')}/photos/${photoId}`)
+      .set(tok);
+    expect(removed.body.travellerReports.dropoff.photos.map((p: { slot: string }) => p.slot)).toEqual(['front', 'right']);
+    const noted = await api()
+      .patch(mine(b.reference, 'dropoff'))
+      .set(tok)
+      .send({ notes: '  Petite rayure déjà présente sur la portière arrière gauche. ' });
+    expect(noted.body.travellerReports.dropoff).toMatchObject({
+      notes: 'Petite rayure déjà présente sur la portière arrière gauche.',
+      editable: true,
+    });
+    // The draft is the traveller's: the staff does not see it yet, nor its photos.
+    const draftFront = noted.body.travellerReports.dropoff.photos[0].id as string;
+    const hidden = await api().get(`/api/internal/reservations/${b.id}/paperwork`).set(auth(b.op.token));
+    expect(hidden.body.travellerReports.dropoff).toBeNull();
+    expect(hidden.body.travellerCanPhotograph).toBeNull();
+    expect((await api().get(`/api/internal/reservations/${b.id}/inspections/dropoff/photos/${draftFront}`).set(auth(b.op.token))).status).toBe(404);
+    // Their own draft photo comes back to the traveller.
+    expect((await api().get(`/api/public/bookings/${b.reference}/inspections/dropoff/photos/${draftFront}`).set(tok)).status).toBe(200);
+
+    const sent = await api()
+      .post(`${mine(b.reference, 'dropoff')}/complete`)
+      .set(tok);
+    expect(sent.status).toBe(200);
+    expect(sent.body.travellerReports.dropoff).toMatchObject({ editable: false });
+    expect(sent.body.travellerReports.dropoff.completedAt).not.toBeNull();
+    expect(sent.body.travellerCanPhotograph.dropoff).toBe(false);
+    // Sent: it no longer changes.
+    expect((await api().patch(mine(b.reference, 'dropoff')).set(tok).send({ notes: 'autre' })).body.code).toBe('inspection_completed');
+    const row = await prisma.vehicleInspection.findFirstOrThrow({ where: { reservationId: b.id, author: 'traveller' } });
+    expect(row.proofSha256).toMatch(/^[0-9a-f]{64}$/);
+
+    // The staff takes its own report next to it, and sees the traveller's photos.
+    await takeReport(b.op.token, b.id, 'dropoff');
+    const both = await api().get(`/api/internal/reservations/${b.id}/paperwork`).set(auth(b.op.token));
+    expect(both.body.dropoff.photos).toHaveLength(6);
+    expect(both.body.travellerReports.dropoff.photos).toHaveLength(2);
+    expect((await api().get(`/api/internal/reservations/${b.id}/inspections/dropoff/photos/${draftFront}`).set(auth(b.op.token))).status).toBe(200);
+    // The traveller answers the staff's report, never their own.
+    const answer = await api().post(`/api/public/bookings/${b.reference}/inspections/dropoff/answer`).set(tok).send({ decision: 'accepted' });
+    expect(answer.body.dropoff.decision).toBe('accepted');
+    expect((await prisma.vehicleInspection.findFirstOrThrow({ where: { reservationId: b.id, author: 'traveller' } })).decision).toBe('pending');
+  });
+
+  it('au retour, une fois la voiture revenue au parking', async () => {
+    const b = await setup('06 98 76 54 32', 'cd456ef');
+    await prisma.reservation.update({ where: { id: b.id }, data: { status: 'back_at_parking' } });
+    const tok = bookingToken(b.token);
+    expect((await api().post(mine(b.reference, 'dropoff')).set(tok)).body.code).toBe('inspection_closed');
+    expect((await api().post(mine(b.reference, 'return')).set(tok)).status).toBe(200);
+    expect(
+      (
+        await api()
+          .post(`${mine(b.reference, 'return')}/photos?slot=dashboard`)
+          .set(tok)
+          .set('Content-Type', 'image/jpeg')
+          .send(JPEG)
+      ).status,
+    ).toBe(201);
+    expect(
+      (
+        await api()
+          .post(`${mine(b.reference, 'return')}/complete`)
+          .set(tok)
+      ).body.travellerReports.return.photos,
+    ).toHaveLength(1);
+    // Someone else's token sees nothing.
+    expect((await api().post(mine(b.reference, 'return')).set(bookingToken('nope'))).status).toBe(404);
   });
 });

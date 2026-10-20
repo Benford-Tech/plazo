@@ -19,11 +19,33 @@ abstract class PaperworkModel with _$PaperworkModel {
     InspectionModel? dropoff,
     @JsonKey(name: 'return') InspectionModel? returnReport,
     ComparisonModel? comparison,
+
+    /// The traveller's own photos (20/10/2026): theirs while they take them, the staff's once sent.
+    @Default(TravellerReportsModel()) TravellerReportsModel travellerReports,
+
+    /// To the traveller only: whether they may still take their photos of this kind.
+    KindFlagsModel? travellerCanPhotograph,
   }) = _PaperworkModel;
 
   factory PaperworkModel.fromJson(Map<String, dynamic> json) => _$PaperworkModelFromJson(json);
 
   InspectionModel? report(String kind) => kind == 'dropoff' ? dropoff : returnReport;
+  InspectionModel? ownReport(String kind) => kind == 'dropoff' ? travellerReports.dropoff : travellerReports.returnReport;
+  bool canPhotograph(String kind) => (kind == 'dropoff' ? travellerCanPhotograph?.dropoff : travellerCanPhotograph?.returnReport) ?? false;
+}
+
+@freezed
+abstract class TravellerReportsModel with _$TravellerReportsModel {
+  const factory TravellerReportsModel({InspectionModel? dropoff, @JsonKey(name: 'return') InspectionModel? returnReport}) = _TravellerReportsModel;
+
+  factory TravellerReportsModel.fromJson(Map<String, dynamic> json) => _$TravellerReportsModelFromJson(json);
+}
+
+@freezed
+abstract class KindFlagsModel with _$KindFlagsModel {
+  const factory KindFlagsModel({@Default(false) bool dropoff, @Default(false) @JsonKey(name: 'return') bool returnReport}) = _KindFlagsModel;
+
+  factory KindFlagsModel.fromJson(Map<String, dynamic> json) => _$KindFlagsModelFromJson(json);
 }
 
 @freezed
@@ -33,7 +55,12 @@ abstract class ContractModel with _$ContractModel {
   const factory ContractModel({
     /// unsigned | signed
     required String status,
+
+    /// The staff may have it signed now (the contract is signed at the counter, on the parking's phone).
     @Default(false) bool canSign,
+
+    /// Not signed yet and still signable: at the counter, the day of the drop-off.
+    @Default(false) bool atCounter,
 
     /// A code can be sent by SMS (a mobile number, SMS configured on the server).
     @Default(false) bool codeAvailable,

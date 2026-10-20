@@ -76,36 +76,36 @@ class LoadInspectionPhotoUseCase with UseCase<Uint8List, InspectionPhotoParams> 
   Future<Either<Failure, Uint8List>> call(InspectionPhotoParams params) => _repository.photo(params.owner, params.kind, params.photoId);
 }
 
-/// What the staff does to a report being taken (Plazo Pro).
+/// What is done to a report being taken: the staff's (Plazo Pro) or the traveller's own photos (Plazo).
 sealed class InspectionEdit {
-  const InspectionEdit(this.reservationId, this.kind);
-  final String reservationId;
+  const InspectionEdit(this.owner, this.kind);
+  final PaperworkOwner owner;
   final String kind;
 }
 
 class StartInspection extends InspectionEdit {
-  const StartInspection(super.reservationId, super.kind);
+  const StartInspection(super.owner, super.kind);
 }
 
 class UpdateInspection extends InspectionEdit {
-  const UpdateInspection(super.reservationId, super.kind, this.body);
+  const UpdateInspection(super.owner, super.kind, this.body);
   final Map<String, dynamic> body;
 }
 
 class AddInspectionPhoto extends InspectionEdit {
-  const AddInspectionPhoto(super.reservationId, super.kind, this.slot, this.bytes);
+  const AddInspectionPhoto(super.owner, super.kind, this.slot, this.bytes);
   final String slot;
   final Uint8List bytes;
 }
 
 class RemoveInspectionPhoto extends InspectionEdit {
-  const RemoveInspectionPhoto(super.reservationId, super.kind, this.photoId);
+  const RemoveInspectionPhoto(super.owner, super.kind, this.photoId);
   final String photoId;
 }
 
 /// Saves the last typed values ([body]: mileage, notes), then locks the report.
 class CompleteInspection extends InspectionEdit {
-  const CompleteInspection(super.reservationId, super.kind, {this.body = const {}});
+  const CompleteInspection(super.owner, super.kind, {this.body = const {}});
   final Map<String, dynamic> body;
 }
 
@@ -117,21 +117,21 @@ class EditInspectionUseCase with UseCase<PaperworkModel, InspectionEdit> {
   @override
   Future<Either<Failure, PaperworkModel>> call(InspectionEdit params) async {
     switch (params) {
-      case StartInspection(:final reservationId, :final kind):
-        return _repository.start(reservationId, kind);
-      case UpdateInspection(:final reservationId, :final kind, :final body):
-        return _repository.update(reservationId, kind, body);
-      case AddInspectionPhoto(:final reservationId, :final kind, :final slot, :final bytes):
-        final result = await _repository.addPhoto(reservationId, kind, slot, bytes);
+      case StartInspection(:final owner, :final kind):
+        return _repository.start(owner, kind);
+      case UpdateInspection(:final owner, :final kind, :final body):
+        return _repository.update(owner, kind, body);
+      case AddInspectionPhoto(:final owner, :final kind, :final slot, :final bytes):
+        final result = await _repository.addPhoto(owner, kind, slot, bytes);
         return result.fold(Left.new, (added) => Right(added.paperwork));
-      case RemoveInspectionPhoto(:final reservationId, :final kind, :final photoId):
-        return _repository.removePhoto(reservationId, kind, photoId);
-      case CompleteInspection(:final reservationId, :final kind, :final body):
+      case RemoveInspectionPhoto(:final owner, :final kind, :final photoId):
+        return _repository.removePhoto(owner, kind, photoId);
+      case CompleteInspection(:final owner, :final kind, :final body):
         if (body.isNotEmpty) {
-          final saved = await _repository.update(reservationId, kind, body);
+          final saved = await _repository.update(owner, kind, body);
           if (saved.isLeft) return saved;
         }
-        return _repository.complete(reservationId, kind);
+        return _repository.complete(owner, kind);
     }
   }
 }

@@ -8,7 +8,9 @@ import 'package:parking_app/src/features/paperwork/data/models/paperwork_models.
 import 'package:parking_app/src/features/paperwork/domain/repositories/paperwork_repository.dart';
 import 'package:parking_app/src/features/paperwork/domain/usecases/paperwork_use_cases.dart';
 import 'package:parking_app/src/features/paperwork/presentation/bloc/paperwork_bloc.dart';
+import 'package:parking_app/src/features/paperwork/presentation/pages/contract_pages.dart';
 import 'package:parking_app/src/features/paperwork/presentation/pages/traveller_inspection_page.dart';
+import 'package:parking_app/src/features/paperwork/presentation/pages/traveller_photos_page.dart';
 import 'package:parking_app/src/features/paperwork/presentation/widgets/paperwork_widgets.dart';
 
 import '../../helpers/fakes.dart';
@@ -153,24 +155,55 @@ class FakePaperworkSource implements PaperworkDataSource {
   Future<Uint8List> photo(PaperworkOwner owner, String kind, String photoId) async => _png;
 
   @override
-  Future<PaperworkModel> start(String reservationId, String kind) async {
+  Future<PaperworkModel> start(PaperworkOwner owner, String kind) async {
     calls.add('start:$kind');
     return data;
   }
 
   @override
-  Future<PaperworkModel> update(String reservationId, String kind, Map<String, dynamic> body) async => data;
+  Future<PaperworkModel> update(PaperworkOwner owner, String kind, Map<String, dynamic> body) async {
+    calls.add('update:$kind:${body.keys.join(',')}');
+    if (owner is TravellerOwner) {
+      data = data.copyWith(
+        travellerReports: TravellerReportsModel(dropoff: mine().copyWith(notes: body['notes'] as String?)),
+      );
+    }
+    return data;
+  }
 
   @override
-  Future<AddedPhotoModel> addPhoto(String reservationId, String kind, String slot, Uint8List bytes) async =>
-      AddedPhotoModel(photoId: 'ph_new', paperwork: data);
+  Future<AddedPhotoModel> addPhoto(PaperworkOwner owner, String kind, String slot, Uint8List bytes) async {
+    calls.add('photo:${owner is TravellerOwner ? 'traveller' : 'staff'}:$slot');
+    if (owner is TravellerOwner) {
+      final current = data.travellerReports.dropoff ?? InspectionModel(kind: kind, startedAt: DateTime.utc(2026, 11, 12, 5), editable: true);
+      data = data.copyWith(
+        travellerReports: TravellerReportsModel(
+          dropoff: current.copyWith(
+            photos: [
+              ...current.photos,
+              InspectionPhotoModel(id: 'mine_$slot', slot: slot, takenAt: DateTime.utc(2026, 11, 12, 5, 2)),
+            ],
+          ),
+        ),
+      );
+    }
+    return AddedPhotoModel(photoId: 'ph_new', paperwork: data);
+  }
+
+  InspectionModel mine() => data.travellerReports.dropoff!;
 
   @override
-  Future<PaperworkModel> removePhoto(String reservationId, String kind, String photoId) async => data;
+  Future<PaperworkModel> removePhoto(PaperworkOwner owner, String kind, String photoId) async => data;
 
   @override
-  Future<PaperworkModel> complete(String reservationId, String kind) async {
+  Future<PaperworkModel> complete(PaperworkOwner owner, String kind) async {
     calls.add('complete:$kind');
+    if (owner is TravellerOwner) {
+      data = data.copyWith(
+        travellerReports: TravellerReportsModel(dropoff: mine().copyWith(completedAt: DateTime.utc(2026, 11, 12, 5, 5), editable: false)),
+        travellerCanPhotograph: const KindFlagsModel(),
+      );
+    }
     return data;
   }
 }
@@ -217,8 +250,8 @@ void main() {
   });
 
   group('PaperworkBloc', () {
-    test('le voyageur demande un code puis signe ; un code faux garde le champ en erreur', () async {
-      final bloc = locator<PaperworkBloc>()..add(const PaperworkStarted(TravellerOwner('PZ48K2')));
+    test('au comptoir, le code est demandé puis tapé ; un code faux garde le champ en erreur', () async {
+      final bloc = locator<PaperworkBloc>()..add(const PaperworkStarted(StaffOwner('res_1')));
       await bloc.stream.firstWhere((s) => s.data != null);
       bloc.add(const PaperworkCodeRequested());
       await bloc.stream.firstWhere((s) => s.codeSent != null);
@@ -237,7 +270,7 @@ void main() {
     test('Plazo Pro ouvre un état des lieux : il est commencé sur le serveur', () async {
       final bloc = locator<PaperworkBloc>()..add(const PaperworkStarted(StaffOwner('res_1'), startKind: 'dropoff'));
       await bloc.stream.firstWhere((s) => s.data != null);
-      bloc.add(const PaperworkEdited(CompleteInspection('res_1', 'dropoff')));
+      bloc.add(const PaperworkEdited(CompleteInspection(StaffOwner('res_1'), 'dropoff')));
       await bloc.stream.firstWhere((s) => s.notice == 'completed');
       expect(source.calls, ['start:dropoff', 'complete:dropoff']);
       await bloc.close();
@@ -280,6 +313,69 @@ void main() {
       await tester.tap(find.byKey(const Key('traveller-reserve-send')));
       await tester.pumpAndSettle();
       expect(source.calls, ['answer:dropoff:reserved:La rayure arrière gauche manque.']);
+    });
+  });
+
+  group('au comptoir, et les photos du voyageur (20/10/2026)', () {
+    testWidgets("l'appli du voyageur montre le contrat sans le faire signer", (tester) async {
+      source.data = source.data.copyWith(contract: source.data.contract.copyWith(canSign: false, atCounter: true));
+      await pumpLocalized(tester, Builder(builder: (context) => const TravellerContractPage(reference: 'PZ48K2').wrappedRoute(context)));
+      await tester.pumpAndSettle();
+      await tester.scrollUntilVisible(find.byKey(const Key('contract-at-counter')), 300, scrollable: find.byType(Scrollable).first);
+      expect(find.byKey(const Key('contract-send-code')), findsNothing);
+      expect(find.byKey(const Key('contract-accept')), findsNothing);
+    });
+
+    testWidgets('« Vos photos de la voiture » : un mot puis « Envoyer mes photos au parking »', (tester) async {
+      source.data = source.data.copyWith(
+        travellerCanPhotograph: const KindFlagsModel(dropoff: true),
+        travellerReports: TravellerReportsModel(
+          dropoff: InspectionModel(
+            kind: 'dropoff',
+            startedAt: DateTime.utc(2026, 11, 12, 5),
+            editable: true,
+            photos: [InspectionPhotoModel(id: 'mine_front', slot: 'front', takenAt: DateTime.utc(2026, 11, 12, 5, 1))],
+          ),
+        ),
+      );
+      await pumpLocalized(
+        tester,
+        Builder(
+          builder: (context) => const TravellerPhotosPage(reference: 'PZ48K2', kind: 'dropoff').wrappedRoute(context),
+        ),
+      );
+      await tester.pumpAndSettle();
+      expect(find.text('Vos photos de la voiture'), findsOneWidget);
+      expect(find.text('1 / 6'), findsOneWidget);
+      expect(find.text('+ Droite'), findsOneWidget);
+      await tester.enterText(find.byKey(const Key('my-photos-note')), 'Petite rayure arrière gauche.');
+      await tester.scrollUntilVisible(find.byKey(const Key('my-photos-send')), 300, scrollable: find.byType(Scrollable).first);
+      await tester.tap(find.byKey(const Key('my-photos-send')));
+      await tester.pumpAndSettle();
+      expect(source.calls, ['update:dropoff:notes', 'complete:dropoff']);
+      expect(find.byKey(const Key('my-photos-sent')), findsOneWidget);
+      expect(find.text('« Petite rayure arrière gauche. »'), findsOneWidget);
+    });
+
+    test('Plazo Pro range les photos du client avec celles du parking', () {
+      final p = PaperworkModel.fromJson({
+        'status': 'arrived',
+        'contract': {
+          'status': 'unsigned',
+          'phoneMasked': '',
+          'atCounter': true,
+          'document': {'title': 'Contrat'},
+        },
+        'travellerReports': {
+          'dropoff': null,
+          'return': {'kind': 'return', 'startedAt': '2026-11-15T18:00:00Z', 'completedAt': '2026-11-15T18:05:00Z', 'photos': []},
+        },
+        'travellerCanPhotograph': null,
+      });
+      expect(p.ownReport('return')!.completed, isTrue);
+      expect(p.ownReport('dropoff'), isNull);
+      expect(p.canPhotograph('dropoff'), isFalse);
+      expect(p.contract.atCounter, isTrue);
     });
   });
 }

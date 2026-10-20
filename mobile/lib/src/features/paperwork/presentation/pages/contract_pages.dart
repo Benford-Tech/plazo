@@ -32,7 +32,8 @@ class ProContractPage extends StatelessWidget implements AutoRouteWrapper {
   );
 }
 
-/// Plazo (maquette 1): the traveller signs their contract with the code received by SMS.
+/// Plazo: the traveller reads their contract before the day; it is signed at the counter (choice of the 20/10/2026), with
+/// a code sent to their phone and typed on the parking's, or by hand.
 @RoutePage()
 class TravellerContractPage extends StatelessWidget implements AutoRouteWrapper {
   const TravellerContractPage({super.key, @PathParam('reference') required this.reference});
@@ -94,8 +95,8 @@ class _ContractBodyState extends State<_ContractBody> {
           );
         }
         final doc = contract.document;
-        // Without SMS (no mobile, or SMS off), the counter signs by hand; the traveller app cannot sign.
-        final method = widget.staff && !contract.codeAvailable ? 'hand' : _method;
+        // Without SMS (no mobile, or SMS off), the counter signs by hand.
+        final method = !contract.codeAvailable ? 'hand' : _method;
         return ListView(
           padding: const EdgeInsets.fromLTRB(16, 12, 16, 28),
           children: [
@@ -131,13 +132,14 @@ class _ContractBodyState extends State<_ContractBody> {
             const SizedBox(height: 14),
             if (contract.isSigned)
               _Signed(signed: contract.signed!)
-            else if (!contract.canSign)
-              Text('paperwork.contract_closed'.tr(), style: AppText.muted(size: 13.5), textAlign: TextAlign.center)
-            else if (!widget.staff && !contract.codeAvailable)
+            else if (!widget.staff && contract.atCounter)
               AppCard(
+                key: const Key('contract-at-counter'),
                 color: AppColors.canvas,
                 child: Text('paperwork.contract_at_counter'.tr(), style: AppText.body(size: 14)),
               )
+            else if (!contract.canSign)
+              Text('paperwork.contract_closed'.tr(), style: AppText.muted(size: 13.5), textAlign: TextAlign.center)
             else ...[
               CheckboxListTile(
                 key: const Key('contract-accept'),
@@ -145,9 +147,9 @@ class _ContractBodyState extends State<_ContractBody> {
                 controlAffinity: ListTileControlAffinity.leading,
                 value: _accepted,
                 onChanged: (v) => setState(() => _accepted = v ?? false),
-                title: Text(widget.staff ? 'paperwork.contract_accept_staff'.tr() : 'paperwork.contract_accept'.tr(), style: AppText.body(size: 14)),
+                title: Text('paperwork.contract_accept_staff'.tr(), style: AppText.body(size: 14)),
               ),
-              if (widget.staff && contract.codeAvailable) ...[
+              if (contract.codeAvailable) ...[
                 Segmented<String>(
                   values: const ['code', 'hand'],
                   labels: ['paperwork.method_code'.tr(), 'paperwork.method_hand'.tr()],

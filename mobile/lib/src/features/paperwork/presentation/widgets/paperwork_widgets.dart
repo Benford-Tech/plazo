@@ -1,11 +1,14 @@
-import 'dart:typed_data';
 import 'dart:ui' as ui;
 
 import 'package:easy_localization/easy_localization.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
+import 'package:image_picker/image_picker.dart';
 
 import '../../../../di/locator.dart';
 import '../../../../shared/theme/theme.dart';
+import '../../../../shared/widgets/app_card.dart';
 import '../../data/datasources/paperwork_data_source.dart';
 import '../../data/models/paperwork_models.dart';
 import '../../domain/usecases/paperwork_use_cases.dart';
@@ -274,6 +277,85 @@ class _InspectionPhotoViewState extends State<InspectionPhotoView> {
       },
     );
   }
+}
+
+/// Takes a photo of the car with the camera (the files on a browser), reduced for the upload; null when cancelled.
+Future<Uint8List?> pickInspectionPhoto(BuildContext context) async {
+  try {
+    final file = await ImagePicker().pickImage(
+      // A browser or a desktop has no camera picker: the files then.
+      source: kIsWeb ? ImageSource.gallery : ImageSource.camera,
+      maxWidth: 1600,
+      maxHeight: 1600,
+      imageQuality: 70,
+    );
+    return file == null ? null : await file.readAsBytes();
+  } on PlatformException {
+    if (context.mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('paperwork.camera_denied'.tr())));
+    return null;
+  }
+}
+
+/// Plazo Pro: the photos the traveller took themselves and sent (20/10/2026), next to the parking's report.
+class ClientPhotosCard extends StatelessWidget {
+  const ClientPhotosCard({super.key, required this.owner, required this.kind, required this.report});
+  final PaperworkOwner owner;
+  final String kind;
+  final InspectionModel report;
+
+  @override
+  Widget build(BuildContext context) {
+    final at = report.completedAt == null ? '' : DateFormat("d MMM 'à' HH:mm", 'fr').format(report.completedAt!.toLocal());
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 12),
+      child: AppCard(
+        key: const Key('client-photos'),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            Text('paperwork.client_photos'.tr().toUpperCase(), style: AppText.label(size: 11)),
+            const SizedBox(height: 4),
+            Text('paperwork.client_photos_sent'.tr(args: ['${report.photos.length}', at]), style: AppText.muted(size: 12.5)),
+            const SizedBox(height: 8),
+            PhotoStrip(owner: owner, kind: kind, photos: report.photos),
+            if (report.photosErased) Text('paperwork.photos_erased'.tr(), style: AppText.muted(size: 12.5)),
+            if (report.notes != null) ...[const SizedBox(height: 8), Text('« ${report.notes} »', style: AppText.body(size: 13.5, height: 1.4))],
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+/// Photos in rows of three, each one opened full screen on a tap.
+class PhotoStrip extends StatelessWidget {
+  const PhotoStrip({super.key, required this.owner, required this.kind, required this.photos});
+  final PaperworkOwner owner;
+  final String kind;
+  final List<InspectionPhotoModel> photos;
+
+  @override
+  Widget build(BuildContext context) => GridView.count(
+    crossAxisCount: 3,
+    shrinkWrap: true,
+    physics: const NeverScrollableScrollPhysics(),
+    mainAxisSpacing: 6,
+    crossAxisSpacing: 6,
+    children: [
+      for (final p in photos)
+        Semantics(
+          button: true,
+          label: slotLabel(p.slot),
+          child: GestureDetector(
+            onTap: () => showPhoto(context, owner, kind, p.id, slotLabel(p.slot)),
+            child: ClipRRect(
+              borderRadius: AppRadius.chip,
+              child: InspectionPhotoView(owner: owner, kind: kind, photoId: p.id),
+            ),
+          ),
+        ),
+    ],
+  );
 }
 
 /// Opens a photo full screen (pinch to zoom).

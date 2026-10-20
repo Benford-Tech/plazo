@@ -1522,6 +1522,13 @@ enum InspectionKind {
   return
 }
 
+/// Who took a condition report (20/10/2026, « les deux peuvent faire l'état des lieux »): the staff in Plazo Pro, or the
+/// traveller in the app (their own photos before handing the keys over, and at the return; no answer, no mileage).
+enum InspectionAuthor {
+  staff
+  traveller
+}
+
 /// The traveller's answer to a condition report.
 enum InspectionDecision {
   pending
@@ -1540,6 +1547,7 @@ model VehicleInspection {
   id              String              @id @default(cuid())
   reservationId   String
   kind            InspectionKind
+  author          InspectionAuthor    @default(staff)
   // [{ "n": 1, "x": 0.8, "y": 0.2, "label": "Rayure, aile avant droite", "photoId": "…" }]: x, y from 0 to 1 on the outline.
   damages         Json                @default("[]")
   mileageKm       Int?
@@ -1567,7 +1575,7 @@ model VehicleInspection {
   reservation Reservation       @relation(fields: [reservationId], references: [id], onDelete: Cascade)
   photos      InspectionPhoto[]
 
-  @@unique([reservationId, kind])
+  @@unique([reservationId, kind, author])
   @@map("vehicle_inspections")
 }
 

@@ -38,6 +38,7 @@ import {
   photosCutoff,
   REQUIRED_SLOTS,
   sniffImage,
+  travellerMayPhotograph,
 } from '@/domain/inspection';
 import { smsRecipient } from '@/domain/phone';
 import { can } from '@/domain/roles';
@@ -77,6 +78,11 @@ const WITH_PAPERWORK = {
 type PaperworkRecord = Prisma.ReservationGetPayload<{ include: typeof WITH_PAPERWORK }>;
 type InspectionRecord = PaperworkRecord['inspections'][number];
 type Viewer = 'staff' | 'traveller';
+type Author = 'staff' | 'traveller';
+
+/** The report of this kind taken by the staff (the one answered), or the traveller's own photos. */
+const reportOf = (r: PaperworkRecord, kind: InspectionKindName, author: Author = 'staff') =>
+  r.inspections.find(i => i.kind === kind && i.author === author);
 
 const isKind = (value: string): value is InspectionKindName => value === 'dropoff' || value === 'return';
 
@@ -136,7 +142,7 @@ export class PaperworkService {
 
   /** Lazy rule: a drop-off report left unanswered once the traveller has left in the shuttle stands as made. */
   private async settle(reservation: PaperworkRecord): Promise<PaperworkRecord> {
-    const dropoff = reservation.inspections.find(i => i.kind === 'dropoff');
+    const dropoff = reportOf(reservation, 'dropoff');
     if (dropoff?.completedAt && dropoff.decision === 'pending' && dropoffAnswersItself(reservation.status)) {
       const decidedAt = new Date();
       const { count } = await prisma.vehicleInspection.updateMany({
@@ -180,11 +186,14 @@ export class PaperworkService {
     return this.notifications.settings.apiKey !== '' && !!smsRecipient(r.customerPhone);
   }
 
-  private contractView(r: PaperworkRecord) {
+  /** The contract is signed at the counter, on the parking's phone (20/10/2026): the traveller app only shows it. */
+  private contractView(r: PaperworkRecord, viewer: Viewer) {
     const c = r.contract;
+    const signable = !c && CONTRACT_SIGNABLE.includes(r.status);
     return {
       status: c ? ('signed' as const) : ('unsigned' as const),
-      canSign: !c && CONTRACT_SIGNABLE.includes(r.status),
+      canSign: signable && viewer === 'staff',
+      atCounter: signable,
       codeAvailable: this.codeAvailable(r),
       phoneMasked: maskPhone(r.customerPhone),
       document: c ? documentFromText(c.text) : contractDocument(this.contractFacts(r)),
@@ -227,12 +236,31 @@ export class PaperworkService {
     };
   }
 
+  /** The traveller's own photos: theirs to see while they take them, the staff's once sent. */
+  private ownReportView(r: PaperworkRecord, kind: InspectionKindName, viewer: Viewer) {
+    const i = reportOf(r, kind, 'traveller');
+    if (!i || (viewer === 'staff' && !i.completedAt)) return null;
+    return {
+      kind: i.kind,
+      startedAt: i.startedAt.toISOString(),
+      completedAt: i.completedAt?.toISOString() ?? null,
+      notes: i.notes,
+      photos: i.photos.map(p => ({ id: p.id, slot: p.slot, takenAt: p.takenAt.toISOString() })),
+      photosErased: !!i.photosErasedAt,
+      editable: !i.completedAt && travellerMayPhotograph(kind, r.status),
+    };
+  }
+
+  private canPhotograph(r: PaperworkRecord, kind: InspectionKindName) {
+    return !reportOf(r, kind, 'traveller')?.completedAt && travellerMayPhotograph(kind, r.status);
+  }
+
   private async view(r: PaperworkRecord, viewer: Viewer) {
     const ids = r.inspections.map(i => i.performedById).filter((x): x is string => !!x);
     const staff = ids.length ? await prisma.staff.findMany({ where: { id: { in: ids } }, select: { id: true, firstName: true } }) : [];
     const performers = new Map(staff.map(s => [s.id, s.firstName]));
-    const dropoff = r.inspections.find(i => i.kind === 'dropoff');
-    const ret = r.inspections.find(i => i.kind === 'return');
+    const dropoff = reportOf(r, 'dropoff');
+    const ret = reportOf(r, 'return');
     const comparison =
       ret?.completedAt != null
         ? compareReports(
@@ -249,10 +277,12 @@ export class PaperworkService {
       reservationId: traveller ? undefined : r.id,
       status: r.status,
       photosAvailable: this.storage.available(),
-      contract: this.contractView(r),
+      contract: this.contractView(r, viewer),
       dropoff: this.inspectionView(r, traveller && !dropoff?.completedAt ? undefined : dropoff, performers),
       return: this.inspectionView(r, traveller && !ret?.completedAt ? undefined : ret, performers),
       comparison,
+      travellerReports: { dropoff: this.ownReportView(r, 'dropoff', viewer), return: this.ownReportView(r, 'return', viewer) },
+      travellerCanPhotograph: traveller ? { dropoff: this.canPhotograph(r, 'dropoff'), return: this.canPhotograph(r, 'return') } : null,
     };
   }
 
@@ -392,18 +422,17 @@ export class PaperworkService {
     if (ok) await prisma.reservationContract.update({ where: { id: c.id }, data: { emailedAt: new Date() } });
   }
 
-  /** POST /public/bookings/:reference/contract/code */
-  public async travellerSendCode(reference: string, token: string | undefined) {
-    return this.sendCode(await this.loadForTraveller(reference, token), null);
+  /**
+   * POST /public/bookings/:reference/contract/code and …/sign: the contract is signed at the counter (choice of the
+   * 20/10/2026), never from the app; the routes stay to answer an old app version clearly.
+   */
+  public async travellerSendCode(reference: string, token: string | undefined): Promise<never> {
+    await this.loadForTraveller(reference, token);
+    throw conflict('contract_at_counter', "The contract is signed at the counter, on the parking's phone");
   }
 
-  /** POST /public/bookings/:reference/contract/sign { code } */
-  public async travellerSign(reference: string, token: string | undefined, code: unknown) {
-    const r = await this.loadForTraveller(reference, token);
-    this.assertSignable(r);
-    if (typeof code !== 'string') throw new ValidationException({ code: 'required' });
-    const phoneMasked = await this.consumeCode(r, code);
-    return this.view(await this.sign(r, null, { method: 'sms_code', phoneMasked, strokes: null }), 'traveller');
+  public async travellerSign(reference: string, token: string | undefined): Promise<never> {
+    return this.travellerSendCode(reference, token);
   }
 
   /** POST /internal/reservations/:id/contract/code: the code goes to the traveller's phone, typed on the staff's. */
@@ -438,8 +467,8 @@ export class PaperworkService {
     return kind;
   }
 
-  private draft(r: PaperworkRecord, kind: InspectionKindName): InspectionRecord {
-    const i = r.inspections.find(x => x.kind === kind);
+  private draft(r: PaperworkRecord, kind: InspectionKindName, author: Author = 'staff'): InspectionRecord {
+    const i = reportOf(r, kind, author);
     if (!i) throw new HttpException(httpStatus.NOT_FOUND, 'No condition report yet', 'inspection_not_found');
     if (i.completedAt) throw conflict('inspection_completed', 'The condition report is completed');
     return i;
@@ -450,12 +479,12 @@ export class PaperworkService {
     this.require(actor);
     const kind = this.kindOf(rawKind);
     const r = await this.loadForStaff(actor, id);
-    if (!r.inspections.some(i => i.kind === kind)) {
+    if (!reportOf(r, kind)) {
       const allowed = kind === 'dropoff' ? DROPOFF_STATUSES : RETURN_STATUSES;
       if (!allowed.includes(r.status)) throw conflict('inspection_closed', 'This condition report cannot be made at this stage');
       await prisma.vehicleInspection.upsert({
-        where: { reservationId_kind: { reservationId: r.id, kind } },
-        create: { reservationId: r.id, kind, performedById: actor.id },
+        where: { reservationId_kind_author: { reservationId: r.id, kind, author: 'staff' } },
+        create: { reservationId: r.id, kind, author: 'staff', performedById: actor.id },
         update: {},
       });
       await this.audit.record(actor, { action: 'inspection.started', entityType: 'reservation', entityId: r.id, details: { kind } });
@@ -511,13 +540,23 @@ export class PaperworkService {
   public async addPhoto(actor: AuthenticatedStaff, id: string, rawKind: string, slot: unknown, body: unknown) {
     this.require(actor);
     const kind = this.kindOf(rawKind);
-    if (!isSlot(slot)) throw new ValidationException({ slot: 'invalid' });
+    const upload = this.photoUpload(slot, body, true);
+    const r = await this.loadForStaff(actor, id);
+    const photoId = await this.storePhoto(r, this.draft(r, kind), upload.slot, upload.body, upload.contentType);
+    return { photoId, paperwork: await this.staffPaperwork(actor, id) };
+  }
+
+  /** Checks a raw photo upload (slot, size, image type). */
+  private photoUpload(slot: unknown, body: unknown, allowDamage: boolean) {
+    if (!isSlot(slot) || (!allowDamage && slot === DAMAGE_SLOT)) throw new ValidationException({ slot: 'invalid' });
     if (!Buffer.isBuffer(body) || body.length === 0) throw new ValidationException({ photo: 'required' });
     if (body.length > MAX_PHOTO_BYTES) throw new ValidationException({ photo: 'too_large' });
     const contentType = sniffImage(body);
     if (!contentType) throw new ValidationException({ photo: 'not_an_image' });
-    const r = await this.loadForStaff(actor, id);
-    const i = this.draft(r, kind);
+    return { slot, body, contentType };
+  }
+
+  private async storePhoto(r: PaperworkRecord, i: InspectionRecord, slot: string, body: Buffer, contentType: string): Promise<string> {
     if (slot === DAMAGE_SLOT && i.photos.filter(p => p.slot === DAMAGE_SLOT).length >= MAX_DAMAGE_PHOTOS)
       throw new ValidationException({ photo: 'too_many' });
     const photoId = `ph_${randomBytes(12).toString('hex')}`;
@@ -533,14 +572,18 @@ export class PaperworkService {
       }),
     ]);
     await this.storage.remove(replaced.map(p => p.storageKey));
-    return { photoId, paperwork: await this.staffPaperwork(actor, id) };
+    return photoId;
   }
 
   /** DELETE /internal/reservations/:id/inspections/:kind/photos/:photoId (while the report is a draft). */
   public async removePhoto(actor: AuthenticatedStaff, id: string, rawKind: string, photoId: string) {
     this.require(actor);
     const r = await this.loadForStaff(actor, id);
-    const i = this.draft(r, this.kindOf(rawKind));
+    await this.deletePhoto(this.draft(r, this.kindOf(rawKind)), photoId);
+    return this.staffPaperwork(actor, id);
+  }
+
+  private async deletePhoto(i: InspectionRecord, photoId: string) {
     const photo = i.photos.find(p => p.id === photoId);
     if (!photo) throw new HttpException(httpStatus.NOT_FOUND, 'Photo not found', 'photo_not_found');
     await prisma.inspectionPhoto.delete({ where: { id: photo.id } });
@@ -552,7 +595,6 @@ export class PaperworkService {
       });
     }
     await this.storage.remove([photo.storageKey]);
-    return this.staffPaperwork(actor, id);
   }
 
   /** POST /internal/reservations/:id/inspections/:kind/complete */
@@ -575,6 +617,83 @@ export class PaperworkService {
       details: { kind, photos: i.photos.length, damages: damagesOf(i.damages).length },
     });
     return this.staffPaperwork(actor, id);
+  }
+
+  // ---- The traveller's own photos -----------------------------------------------------------------------------
+
+  /** The traveller's draft of this kind, started on the first call when the booking is at that stage. */
+  private async ownDraft(reference: string, token: string | undefined, rawKind: string) {
+    const kind = this.kindOf(rawKind);
+    const r = await this.loadForTraveller(reference, token);
+    const existing = reportOf(r, kind, 'traveller');
+    if (existing?.completedAt) throw conflict('inspection_completed', 'Your photos are already sent');
+    if (!travellerMayPhotograph(kind, r.status)) throw conflict('inspection_closed', 'Photos cannot be taken at this stage');
+    if (existing) return { r, kind, i: existing };
+    await prisma.vehicleInspection.upsert({
+      where: { reservationId_kind_author: { reservationId: r.id, kind, author: 'traveller' } },
+      create: { reservationId: r.id, kind, author: 'traveller' },
+      update: {},
+    });
+    const fresh = (await prisma.reservation.findUnique({ where: { id: r.id }, include: WITH_PAPERWORK }))!;
+    return { r: fresh, kind, i: reportOf(fresh, kind, 'traveller')! };
+  }
+
+  /** POST /public/bookings/:reference/inspections/:kind/mine: starts the traveller's own photos. */
+  public async travellerStart(reference: string, token: string | undefined, rawKind: string) {
+    await this.ownDraft(reference, token, rawKind);
+    return this.travellerPaperwork(reference, token);
+  }
+
+  /** PATCH /public/bookings/:reference/inspections/:kind/mine { notes } */
+  public async travellerUpdate(reference: string, token: string | undefined, rawKind: string, body: { notes?: unknown }) {
+    const v = body.notes;
+    if (v !== null && typeof v !== 'string') throw new ValidationException({ notes: 'invalid' });
+    if (typeof v === 'string' && v.trim().length > MAX_NOTES_LENGTH) throw new ValidationException({ notes: 'too_long' });
+    const { i } = await this.ownDraft(reference, token, rawKind);
+    const { count } = await prisma.vehicleInspection.updateMany({
+      where: { id: i.id, completedAt: null },
+      data: { notes: typeof v === 'string' && v.trim() ? v.trim() : null },
+    });
+    if (!count) throw conflict('inspection_completed', 'Your photos are already sent');
+    return this.travellerPaperwork(reference, token);
+  }
+
+  /** POST /public/bookings/:reference/inspections/:kind/mine/photos?slot=front (raw image body; the six guided slots). */
+  public async travellerAddPhoto(reference: string, token: string | undefined, rawKind: string, slot: unknown, body: unknown) {
+    const upload = this.photoUpload(slot, body, false);
+    const { r, i } = await this.ownDraft(reference, token, rawKind);
+    const photoId = await this.storePhoto(r, i, upload.slot, upload.body, upload.contentType);
+    return { photoId, paperwork: await this.travellerPaperwork(reference, token) };
+  }
+
+  /** DELETE /public/bookings/:reference/inspections/:kind/mine/photos/:photoId */
+  public async travellerRemovePhoto(reference: string, token: string | undefined, rawKind: string, photoId: string) {
+    const { i } = await this.ownDraft(reference, token, rawKind);
+    await this.deletePhoto(i, photoId);
+    return this.travellerPaperwork(reference, token);
+  }
+
+  /** POST /public/bookings/:reference/inspections/:kind/mine/complete: sends the photos to the parking (one at least). */
+  public async travellerComplete(reference: string, token: string | undefined, rawKind: string) {
+    const { r, kind, i } = await this.ownDraft(reference, token, rawKind);
+    if (!i.photos.length) throw new ValidationException({ photos: 'required' });
+    const completedAt = new Date();
+    const proofSha256 = sha256(
+      JSON.stringify({
+        kind,
+        author: 'traveller',
+        photos: i.photos.map(p => [p.slot, p.sha256]).sort(),
+        notes: i.notes,
+        completedAt: completedAt.toISOString(),
+      }),
+    );
+    const { count } = await prisma.vehicleInspection.updateMany({ where: { id: i.id, completedAt: null }, data: { completedAt, proofSha256 } });
+    if (!count) throw conflict('inspection_completed', 'Your photos are already sent');
+    await this.audit.record(
+      { id: null, operatorId: r.operatorId },
+      { action: 'inspection.traveller_sent', entityType: 'reservation', entityId: r.id, details: { kind, photos: i.photos.length } },
+    );
+    return this.travellerPaperwork(reference, token);
   }
 
   // ---- Answers ---------------------------------------------------------------------------------------------------
@@ -602,7 +721,7 @@ export class PaperworkService {
     actor: AuthenticatedStaff | null,
     body: { decision?: unknown; reserveText?: unknown; strokes?: unknown },
   ) {
-    const i = r.inspections.find(x => x.kind === kind);
+    const i = reportOf(r, kind);
     if (!i?.completedAt) throw new HttpException(httpStatus.NOT_FOUND, 'No completed condition report', 'inspection_not_found');
     if (!canAnswer(i, r.status, kind)) throw conflict('answer_closed', 'This condition report can no longer be answered');
     const decision = body.decision;
@@ -669,9 +788,9 @@ export class PaperworkService {
 
   private async photo(r: PaperworkRecord, rawKind: string, photoId: string, viewer: Viewer): Promise<StoredPhoto> {
     const kind = this.kindOf(rawKind);
-    const i = r.inspections.find(x => x.kind === kind);
-    if (!i || (viewer === 'traveller' && !i.completedAt)) throw new HttpException(httpStatus.NOT_FOUND, 'Photo not found', 'photo_not_found');
-    const p = i.photos.find(x => x.id === photoId);
+    // Each side sees its own drafts, and the other side's report once completed.
+    const visible = r.inspections.filter(i => i.kind === kind && (i.author === viewer || i.completedAt));
+    const p = visible.flatMap(i => i.photos).find(x => x.id === photoId);
     if (!p) throw new HttpException(httpStatus.NOT_FOUND, 'Photo not found', 'photo_not_found');
     const stored = await this.storage.get(p.storageKey);
     if (!stored) throw new HttpException(httpStatus.NOT_FOUND, 'Photo not found', 'photo_not_found');

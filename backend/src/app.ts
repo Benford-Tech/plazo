@@ -18,7 +18,9 @@ import { appLimiter, authLimiter, publicLimiter } from './middlewares/rateLimite
 import { logger, stream } from './utils/logger';
 
 export const STRIPE_WEBHOOK_PATH = `${API_PREFIX}/public/stripe/webhook`;
-export const INSPECTION_PHOTO_PATH = new RegExp(`^${API_PREFIX}/internal/reservations/[^/]+/inspections/(dropoff|return)/photos$`);
+export const INSPECTION_PHOTO_PATH = new RegExp(
+  `^${API_PREFIX}/(internal/reservations/[^/]+/inspections/(dropoff|return)/photos|public/bookings/[^/]+/inspections/(dropoff|return)/mine/photos)$`,
+);
 
 export class App {
   public app: express.Application;

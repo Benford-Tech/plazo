@@ -710,12 +710,13 @@ Ne construire QUE ce qui règle la douleur n°1 du client.
    choix « A, tout dans les applis »)** : signature électronique simple faite par Plazo (pas Yousign), écrans dans Plazo et Plazo Pro
    seulement. **Contrat** (`ReservationContract`, `domain/contract.ts`, modèle `CONTRACT_VERSION` à faire relire par un juriste) :
    texte entier signé gardé avec son SHA-256 et une empreinte de preuve (`proofOf` : texte, signataire, moyen, heure, tracé) ; signé
-   une fois, du séjour à venir jusqu'au dépôt (`upcoming`, `arrived`) : par le voyageur dans l'app avec un code à 6 chiffres reçu
-   par SMS (`SignatureCode`, HMAC de `SECRET_KEY` seulement, 10 min, 5 essais, un nouveau code au plus toutes les 60 s et 5 par
+   une fois, du séjour à venir jusqu'au dépôt (`upcoming`, `arrived`), **au comptoir seulement (20/10/2026, « A au comptoir »)** : sur
+   le téléphone du parking avec un code à 6 chiffres reçu par SMS par le voyageur (`SignatureCode`, HMAC de `SECRET_KEY` seulement, 10 min, 5 essais, un nouveau code au plus toutes les 60 s et 5 par
    heure, toujours par le Brevo de Plazo quel que soit le canal SMS du loueur : `SmsService.sendSignatureCode`, sortie `signature_code`),
-   ou au comptoir sur le téléphone du parking (même code tapé, ou signature manuscrite `strokes` [[[x, y]…]] de 0 à 1) ; copie
+   ou par signature manuscrite `strokes` [[[x, y]…]] de 0 à 1 ; l'app du voyageur montre le contrat à lire (`contract.atCounter`,
+   `canSign` faux pour le voyageur) et `POST /public/bookings/:ref/contract/code|sign` répondent 409 `contract_at_counter` ; copie
    envoyée par e-mail (`NotificationService.emailTraveller`, `emailedAt`) ; seul le numéro masqué « 06 •• •• •• 78 » est gardé.
-   Les réservations des comparateurs n'ont pas de lien voyageur : elles signent au comptoir. **États des lieux** (`VehicleInspection`
+   **États des lieux** (`VehicleInspection`
    `dropoff` | `return`, `InspectionPhoto`, `domain/inspection.ts`) faits dans Plazo Pro (`reservations:status`) : six photos guidées
    (avant, droite, arrière, gauche, compteur, intérieur ; une photo reprise remplace la précédente) et jusqu'à 12 gros plans de dégâts,
    dégâts touchés sur la silhouette (x, y de 0 à 1, numérotés), kilométrage, carburant (0 à 4 quarts), remarques ; « Terminer »
@@ -724,7 +725,16 @@ Ne construire QUE ce qui règle la douleur n°1 du client.
    (`booking_link`, connecté par le lien de sa réservation) ; un dépôt sans réponse quand le voyageur part en navette vaut accord
    (`accepted_by_default`, posé à la lecture) ; empreinte de l'état des lieux tel qu'accepté (`proofSha256`). Au retour, Plazo Pro
    montre les photos du dépôt et du retour côte à côte (pastilles par côté), les dégâts « Déjà au dépôt » / « Nouveau » (à plus de
-   8 % de la silhouette d'un dégât du dépôt), l'écart de kilométrage et de carburant (`comparison`). **Photos** : stockage privé
+   8 % de la silhouette d'un dégât du dépôt), l'écart de kilométrage et de carburant (`comparison`). **Les photos du voyageur
+   (20/10/2026, « les deux peuvent faire l'état des lieux », écran 5 des maquettes)** : `VehicleInspection.author` `staff` |
+   `traveller` (migration `inspection_author`, unique par réservation, sens et auteur ; CHECK : un rapport du voyageur n'a pas de
+   réponse) ; dans Plazo, « Vos photos au dépôt » (`upcoming`/`arrived`, avant de remettre les clés) et « Vos photos au retour »
+   (`back_at_parking`/`returned`), facultatives : les six photos guidées (pas de gros plan), un mot, « Envoyer mes photos au
+   parking » (une photo au moins, puis verrouillé, empreinte `proofSha256`) ; routes `POST|PATCH /public/bookings/:ref/inspections/:kind/mine`,
+   `POST …/mine/photos?slot=` (`photoUploadLimiter`, 40 par 15 min), `DELETE …/mine/photos/:photoId`, `POST …/mine/complete` ;
+   vue `travellerReports { dropoff, return }` (le brouillon pour le voyageur, l'envoi seulement pour l'équipe) et
+   `travellerCanPhotograph` (voyageur) ; Plazo Pro montre « Photos du client » en tête de l'état des lieux du même sens ; chacun ne
+   voit que ses brouillons et les envois de l'autre ; tracé `inspection.traveller_sent`. **Photos** : stockage privé
    Vercel Blob (`@vercel/blob` 2.8, `access: 'private'`, `PhotoStorageService`, `BLOB_READ_WRITE_TOKEN` posé par Vercel quand un Blob
    store est relié au projet ; sans lui 503 `photos_unavailable` et le reste marche), jamais de lien public : l'API les sert
    (`Cache-Control: private`) à l'équipe du loueur ou au voyageur avec le jeton de sa réservation ; envoyées en octets bruts (JPEG,
@@ -733,12 +743,13 @@ Ne construire QUE ce qui règle la douleur n°1 du client.
    de nuit, avec les codes de plus d'un jour), contrat et états des lieux supprimés à l'anonymisation (12 mois). Routes : staff
    `GET /internal/reservations/:id/paperwork`, `POST …/contract/code|sign`, `POST|PATCH …/inspections/:kind`,
    `POST …/inspections/:kind/photos?slot=`, `GET|DELETE …/photos/:photoId`, `POST …/complete|answer` ; voyageur
-   `GET /public/bookings/:ref/paperwork`, `POST …/contract/code|sign`, `POST …/inspections/:kind/answer`, `GET …/photos/:photoId`
-   (`x-booking-token`) ; migration `contract_inspection` (20261019130000). Apps : feature `paperwork` ; Plazo Pro : carte « Contrat et état des
+   `GET /public/bookings/:ref/paperwork`, `POST …/inspections/:kind/answer`, `GET …/photos/:photoId`, ses photos sous `…/mine`
+   (`x-booking-token`) ; migrations `contract_inspection` (20261019130000) et `inspection_author` (20261020090000). Apps : feature `paperwork` ; Plazo Pro : carte « Contrat et état des
    lieux » de la fiche réservation, `/pro/reservations/:id/contrat` (code par SMS ou signature à la main),
-   `/pro/reservations/:id/etat-des-lieux/:kind` ; Plazo : blocs « Contrat de stationnement » et « État des lieux » de Ma réservation,
-   `/ma-reservation/:ref/contrat`, `/ma-reservation/:ref/etat-des-lieux/:kind`. Conditions générales (articles 9 et 11) et
-   politique de confidentialité mises à jour (19/10/2026). Le web n'a pas ces écrans.
+   `/pro/reservations/:id/etat-des-lieux/:kind` ; Plazo : blocs « Contrat de stationnement » (à lire), « Vos photos » et « État des
+   lieux » de Ma réservation, `/ma-reservation/:ref/contrat`, `/ma-reservation/:ref/mes-photos/:kind`,
+   `/ma-reservation/:ref/etat-des-lieux/:kind`. Conditions générales (articles 9 et 11) et politique de confidentialité mises à jour
+   (19/10/2026, puis 20/10/2026 : signature au comptoir, photos du voyageur). Le web n'a pas ces écrans.
 
 ## Liste « plus tard » (le « bien plus »), hors MVP
 

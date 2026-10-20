@@ -17,7 +17,9 @@ T _$identity<T>(T value) => value;
 mixin _$PaperworkModel {
 
  String? get reservationId; String get status;/// False while no photo store is connected on the server (photos cannot be taken).
- bool get photosAvailable; ContractModel get contract; InspectionModel? get dropoff;@JsonKey(name: 'return') InspectionModel? get returnReport; ComparisonModel? get comparison;
+ bool get photosAvailable; ContractModel get contract; InspectionModel? get dropoff;@JsonKey(name: 'return') InspectionModel? get returnReport; ComparisonModel? get comparison;/// The traveller's own photos (20/10/2026): theirs while they take them, the staff's once sent.
+ TravellerReportsModel get travellerReports;/// To the traveller only: whether they may still take their photos of this kind.
+ KindFlagsModel? get travellerCanPhotograph;
 /// Create a copy of PaperworkModel
 /// with the given fields replaced by the non-null parameter values.
 @JsonKey(includeFromJson: false, includeToJson: false)
@@ -31,20 +33,20 @@ $PaperworkModelCopyWith<PaperworkModel> get copyWith => _$PaperworkModelCopyWith
 @override
 bool operator ==(Object other) {
   final _this = this as PaperworkModel;
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is PaperworkModel&&(identical(other.reservationId, _this.reservationId) || other.reservationId == _this.reservationId)&&(identical(other.status, _this.status) || other.status == _this.status)&&(identical(other.photosAvailable, _this.photosAvailable) || other.photosAvailable == _this.photosAvailable)&&(identical(other.contract, _this.contract) || other.contract == _this.contract)&&(identical(other.dropoff, _this.dropoff) || other.dropoff == _this.dropoff)&&(identical(other.returnReport, _this.returnReport) || other.returnReport == _this.returnReport)&&(identical(other.comparison, _this.comparison) || other.comparison == _this.comparison));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is PaperworkModel&&(identical(other.reservationId, _this.reservationId) || other.reservationId == _this.reservationId)&&(identical(other.status, _this.status) || other.status == _this.status)&&(identical(other.photosAvailable, _this.photosAvailable) || other.photosAvailable == _this.photosAvailable)&&(identical(other.contract, _this.contract) || other.contract == _this.contract)&&(identical(other.dropoff, _this.dropoff) || other.dropoff == _this.dropoff)&&(identical(other.returnReport, _this.returnReport) || other.returnReport == _this.returnReport)&&(identical(other.comparison, _this.comparison) || other.comparison == _this.comparison)&&(identical(other.travellerReports, _this.travellerReports) || other.travellerReports == _this.travellerReports)&&(identical(other.travellerCanPhotograph, _this.travellerCanPhotograph) || other.travellerCanPhotograph == _this.travellerCanPhotograph));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
 int get hashCode {
   final _this = this as PaperworkModel;
-  return Object.hash(runtimeType,_this.reservationId,_this.status,_this.photosAvailable,_this.contract,_this.dropoff,_this.returnReport,_this.comparison);
+  return Object.hash(runtimeType,_this.reservationId,_this.status,_this.photosAvailable,_this.contract,_this.dropoff,_this.returnReport,_this.comparison,_this.travellerReports,_this.travellerCanPhotograph);
 }
 
 @override
 String toString() {
   final _this = this as PaperworkModel;
-  return 'PaperworkModel(reservationId: ${_this.reservationId}, status: ${_this.status}, photosAvailable: ${_this.photosAvailable}, contract: ${_this.contract}, dropoff: ${_this.dropoff}, returnReport: ${_this.returnReport}, comparison: ${_this.comparison})';
+  return 'PaperworkModel(reservationId: ${_this.reservationId}, status: ${_this.status}, photosAvailable: ${_this.photosAvailable}, contract: ${_this.contract}, dropoff: ${_this.dropoff}, returnReport: ${_this.returnReport}, comparison: ${_this.comparison}, travellerReports: ${_this.travellerReports}, travellerCanPhotograph: ${_this.travellerCanPhotograph})';
 }
 
 
@@ -55,11 +57,11 @@ abstract mixin class $PaperworkModelCopyWith<$Res>  {
   factory $PaperworkModelCopyWith(PaperworkModel value, $Res Function(PaperworkModel) _then) = _$PaperworkModelCopyWithImpl;
 @useResult
 $Res call({
- String? reservationId, String status, bool photosAvailable, ContractModel contract, InspectionModel? dropoff,@JsonKey(name: 'return') InspectionModel? returnReport, ComparisonModel? comparison
+ String? reservationId, String status, bool photosAvailable, ContractModel contract, InspectionModel? dropoff,@JsonKey(name: 'return') InspectionModel? returnReport, ComparisonModel? comparison, TravellerReportsModel travellerReports, KindFlagsModel? travellerCanPhotograph
 });
 
 
-$ContractModelCopyWith<$Res> get contract;$InspectionModelCopyWith<$Res>? get dropoff;$InspectionModelCopyWith<$Res>? get returnReport;$ComparisonModelCopyWith<$Res>? get comparison;
+$ContractModelCopyWith<$Res> get contract;$InspectionModelCopyWith<$Res>? get dropoff;$InspectionModelCopyWith<$Res>? get returnReport;$ComparisonModelCopyWith<$Res>? get comparison;$TravellerReportsModelCopyWith<$Res> get travellerReports;$KindFlagsModelCopyWith<$Res>? get travellerCanPhotograph;
 
 }
 /// @nodoc
@@ -72,7 +74,7 @@ class _$PaperworkModelCopyWithImpl<$Res>
 
 /// Create a copy of PaperworkModel
 /// with the given fields replaced by the non-null parameter values.
-@pragma('vm:prefer-inline') @override $Res call({Object? reservationId = freezed,Object? status = null,Object? photosAvailable = null,Object? contract = null,Object? dropoff = freezed,Object? returnReport = freezed,Object? comparison = freezed,}) {
+@pragma('vm:prefer-inline') @override $Res call({Object? reservationId = freezed,Object? status = null,Object? photosAvailable = null,Object? contract = null,Object? dropoff = freezed,Object? returnReport = freezed,Object? comparison = freezed,Object? travellerReports = null,Object? travellerCanPhotograph = freezed,}) {
   return _then(PaperworkModel(
 reservationId: freezed == reservationId ? _self.reservationId : reservationId // ignore: cast_nullable_to_non_nullable
 as String?,status: null == status ? _self.status : status // ignore: cast_nullable_to_non_nullable
@@ -81,7 +83,9 @@ as bool,contract: null == contract ? _self.contract : contract // ignore: cast_n
 as ContractModel,dropoff: freezed == dropoff ? _self.dropoff : dropoff // ignore: cast_nullable_to_non_nullable
 as InspectionModel?,returnReport: freezed == returnReport ? _self.returnReport : returnReport // ignore: cast_nullable_to_non_nullable
 as InspectionModel?,comparison: freezed == comparison ? _self.comparison : comparison // ignore: cast_nullable_to_non_nullable
-as ComparisonModel?,
+as ComparisonModel?,travellerReports: null == travellerReports ? _self.travellerReports : travellerReports // ignore: cast_nullable_to_non_nullable
+as TravellerReportsModel,travellerCanPhotograph: freezed == travellerCanPhotograph ? _self.travellerCanPhotograph : travellerCanPhotograph // ignore: cast_nullable_to_non_nullable
+as KindFlagsModel?,
   ));
 }
 /// Create a copy of PaperworkModel
@@ -128,6 +132,27 @@ $ComparisonModelCopyWith<$Res>? get comparison {
 
   return $ComparisonModelCopyWith<$Res>(_self.comparison!, (value) {
     return _then(_self.copyWith(comparison: value));
+  });
+}/// Create a copy of PaperworkModel
+/// with the given fields replaced by the non-null parameter values.
+@override
+@pragma('vm:prefer-inline')
+$TravellerReportsModelCopyWith<$Res> get travellerReports {
+  
+  return $TravellerReportsModelCopyWith<$Res>(_self.travellerReports, (value) {
+    return _then(_self.copyWith(travellerReports: value));
+  });
+}/// Create a copy of PaperworkModel
+/// with the given fields replaced by the non-null parameter values.
+@override
+@pragma('vm:prefer-inline')
+$KindFlagsModelCopyWith<$Res>? get travellerCanPhotograph {
+    if (_self.travellerCanPhotograph == null) {
+    return null;
+  }
+
+  return $KindFlagsModelCopyWith<$Res>(_self.travellerCanPhotograph!, (value) {
+    return _then(_self.copyWith(travellerCanPhotograph: value));
   });
 }
 }
@@ -211,10 +236,10 @@ return $default(_that);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( String? reservationId,  String status,  bool photosAvailable,  ContractModel contract,  InspectionModel? dropoff, @JsonKey(name: 'return')  InspectionModel? returnReport,  ComparisonModel? comparison)?  $default,{required TResult orElse(),}) {final _that = this;
+@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( String? reservationId,  String status,  bool photosAvailable,  ContractModel contract,  InspectionModel? dropoff, @JsonKey(name: 'return')  InspectionModel? returnReport,  ComparisonModel? comparison,  TravellerReportsModel travellerReports,  KindFlagsModel? travellerCanPhotograph)?  $default,{required TResult orElse(),}) {final _that = this;
 switch (_that) {
 case _PaperworkModel() when $default != null:
-return $default(_that.reservationId,_that.status,_that.photosAvailable,_that.contract,_that.dropoff,_that.returnReport,_that.comparison);case _:
+return $default(_that.reservationId,_that.status,_that.photosAvailable,_that.contract,_that.dropoff,_that.returnReport,_that.comparison,_that.travellerReports,_that.travellerCanPhotograph);case _:
   return orElse();
 
 }
@@ -232,10 +257,10 @@ return $default(_that.reservationId,_that.status,_that.photosAvailable,_that.con
 /// }
 /// ```
 
-@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( String? reservationId,  String status,  bool photosAvailable,  ContractModel contract,  InspectionModel? dropoff, @JsonKey(name: 'return')  InspectionModel? returnReport,  ComparisonModel? comparison)  $default,) {final _that = this;
+@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( String? reservationId,  String status,  bool photosAvailable,  ContractModel contract,  InspectionModel? dropoff, @JsonKey(name: 'return')  InspectionModel? returnReport,  ComparisonModel? comparison,  TravellerReportsModel travellerReports,  KindFlagsModel? travellerCanPhotograph)  $default,) {final _that = this;
 switch (_that) {
 case _PaperworkModel():
-return $default(_that.reservationId,_that.status,_that.photosAvailable,_that.contract,_that.dropoff,_that.returnReport,_that.comparison);case _:
+return $default(_that.reservationId,_that.status,_that.photosAvailable,_that.contract,_that.dropoff,_that.returnReport,_that.comparison,_that.travellerReports,_that.travellerCanPhotograph);case _:
   throw StateError('Unexpected subclass');
 
 }
@@ -252,10 +277,10 @@ return $default(_that.reservationId,_that.status,_that.photosAvailable,_that.con
 /// }
 /// ```
 
-@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( String? reservationId,  String status,  bool photosAvailable,  ContractModel contract,  InspectionModel? dropoff, @JsonKey(name: 'return')  InspectionModel? returnReport,  ComparisonModel? comparison)?  $default,) {final _that = this;
+@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( String? reservationId,  String status,  bool photosAvailable,  ContractModel contract,  InspectionModel? dropoff, @JsonKey(name: 'return')  InspectionModel? returnReport,  ComparisonModel? comparison,  TravellerReportsModel travellerReports,  KindFlagsModel? travellerCanPhotograph)?  $default,) {final _that = this;
 switch (_that) {
 case _PaperworkModel() when $default != null:
-return $default(_that.reservationId,_that.status,_that.photosAvailable,_that.contract,_that.dropoff,_that.returnReport,_that.comparison);case _:
+return $default(_that.reservationId,_that.status,_that.photosAvailable,_that.contract,_that.dropoff,_that.returnReport,_that.comparison,_that.travellerReports,_that.travellerCanPhotograph);case _:
   return null;
 
 }
@@ -267,7 +292,7 @@ return $default(_that.reservationId,_that.status,_that.photosAvailable,_that.con
 @JsonSerializable()
 
 class _PaperworkModel extends PaperworkModel {
-  const _PaperworkModel({this.reservationId, required this.status, this.photosAvailable = true, required this.contract, this.dropoff, @JsonKey(name: 'return') this.returnReport, this.comparison}): super._();
+  const _PaperworkModel({this.reservationId, required this.status, this.photosAvailable = true, required this.contract, this.dropoff, @JsonKey(name: 'return') this.returnReport, this.comparison, this.travellerReports = const TravellerReportsModel(), this.travellerCanPhotograph}): super._();
   factory _PaperworkModel.fromJson(Map<String, dynamic> json) => _$PaperworkModelFromJson(json);
 
 @override final  String? reservationId;
@@ -278,6 +303,10 @@ class _PaperworkModel extends PaperworkModel {
 @override final  InspectionModel? dropoff;
 @override@JsonKey(name: 'return') final  InspectionModel? returnReport;
 @override final  ComparisonModel? comparison;
+/// The traveller's own photos (20/10/2026): theirs while they take them, the staff's once sent.
+@override@JsonKey() final  TravellerReportsModel travellerReports;
+/// To the traveller only: whether they may still take their photos of this kind.
+@override final  KindFlagsModel? travellerCanPhotograph;
 
 /// Create a copy of PaperworkModel
 /// with the given fields replaced by the non-null parameter values.
@@ -292,18 +321,18 @@ Map<String, dynamic> toJson() {
 
 @override
 bool operator ==(Object other) {
-    return identical(this, other) || (other.runtimeType == runtimeType&&other is _PaperworkModel&&(identical(other.reservationId, reservationId) || other.reservationId == reservationId)&&(identical(other.status, status) || other.status == status)&&(identical(other.photosAvailable, photosAvailable) || other.photosAvailable == photosAvailable)&&(identical(other.contract, contract) || other.contract == contract)&&(identical(other.dropoff, dropoff) || other.dropoff == dropoff)&&(identical(other.returnReport, returnReport) || other.returnReport == returnReport)&&(identical(other.comparison, comparison) || other.comparison == comparison));
+    return identical(this, other) || (other.runtimeType == runtimeType&&other is _PaperworkModel&&(identical(other.reservationId, reservationId) || other.reservationId == reservationId)&&(identical(other.status, status) || other.status == status)&&(identical(other.photosAvailable, photosAvailable) || other.photosAvailable == photosAvailable)&&(identical(other.contract, contract) || other.contract == contract)&&(identical(other.dropoff, dropoff) || other.dropoff == dropoff)&&(identical(other.returnReport, returnReport) || other.returnReport == returnReport)&&(identical(other.comparison, comparison) || other.comparison == comparison)&&(identical(other.travellerReports, travellerReports) || other.travellerReports == travellerReports)&&(identical(other.travellerCanPhotograph, travellerCanPhotograph) || other.travellerCanPhotograph == travellerCanPhotograph));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
 int get hashCode {
-    return Object.hash(runtimeType,reservationId,status,photosAvailable,contract,dropoff,returnReport,comparison);
+    return Object.hash(runtimeType,reservationId,status,photosAvailable,contract,dropoff,returnReport,comparison,travellerReports,travellerCanPhotograph);
 }
 
 @override
 String toString() {
-    return 'PaperworkModel(reservationId: $reservationId, status: $status, photosAvailable: $photosAvailable, contract: $contract, dropoff: $dropoff, returnReport: $returnReport, comparison: $comparison)';
+    return 'PaperworkModel(reservationId: $reservationId, status: $status, photosAvailable: $photosAvailable, contract: $contract, dropoff: $dropoff, returnReport: $returnReport, comparison: $comparison, travellerReports: $travellerReports, travellerCanPhotograph: $travellerCanPhotograph)';
 }
 
 
@@ -314,11 +343,11 @@ abstract mixin class _$PaperworkModelCopyWith<$Res> implements $PaperworkModelCo
   factory _$PaperworkModelCopyWith(_PaperworkModel value, $Res Function(_PaperworkModel) _then) = __$PaperworkModelCopyWithImpl;
 @override @useResult
 $Res call({
- String? reservationId, String status, bool photosAvailable, ContractModel contract, InspectionModel? dropoff,@JsonKey(name: 'return') InspectionModel? returnReport, ComparisonModel? comparison
+ String? reservationId, String status, bool photosAvailable, ContractModel contract, InspectionModel? dropoff,@JsonKey(name: 'return') InspectionModel? returnReport, ComparisonModel? comparison, TravellerReportsModel travellerReports, KindFlagsModel? travellerCanPhotograph
 });
 
 
-@override $ContractModelCopyWith<$Res> get contract;@override $InspectionModelCopyWith<$Res>? get dropoff;@override $InspectionModelCopyWith<$Res>? get returnReport;@override $ComparisonModelCopyWith<$Res>? get comparison;
+@override $ContractModelCopyWith<$Res> get contract;@override $InspectionModelCopyWith<$Res>? get dropoff;@override $InspectionModelCopyWith<$Res>? get returnReport;@override $ComparisonModelCopyWith<$Res>? get comparison;@override $TravellerReportsModelCopyWith<$Res> get travellerReports;@override $KindFlagsModelCopyWith<$Res>? get travellerCanPhotograph;
 
 }
 /// @nodoc
@@ -331,7 +360,7 @@ class __$PaperworkModelCopyWithImpl<$Res>
 
 /// Create a copy of PaperworkModel
 /// with the given fields replaced by the non-null parameter values.
-@override @pragma('vm:prefer-inline') $Res call({Object? reservationId = freezed,Object? status = null,Object? photosAvailable = null,Object? contract = null,Object? dropoff = freezed,Object? returnReport = freezed,Object? comparison = freezed,}) {
+@override @pragma('vm:prefer-inline') $Res call({Object? reservationId = freezed,Object? status = null,Object? photosAvailable = null,Object? contract = null,Object? dropoff = freezed,Object? returnReport = freezed,Object? comparison = freezed,Object? travellerReports = null,Object? travellerCanPhotograph = freezed,}) {
   return _then(_PaperworkModel(
 reservationId: freezed == reservationId ? _self.reservationId : reservationId // ignore: cast_nullable_to_non_nullable
 as String?,status: null == status ? _self.status : status // ignore: cast_nullable_to_non_nullable
@@ -340,7 +369,9 @@ as bool,contract: null == contract ? _self.contract : contract // ignore: cast_n
 as ContractModel,dropoff: freezed == dropoff ? _self.dropoff : dropoff // ignore: cast_nullable_to_non_nullable
 as InspectionModel?,returnReport: freezed == returnReport ? _self.returnReport : returnReport // ignore: cast_nullable_to_non_nullable
 as InspectionModel?,comparison: freezed == comparison ? _self.comparison : comparison // ignore: cast_nullable_to_non_nullable
-as ComparisonModel?,
+as ComparisonModel?,travellerReports: null == travellerReports ? _self.travellerReports : travellerReports // ignore: cast_nullable_to_non_nullable
+as TravellerReportsModel,travellerCanPhotograph: freezed == travellerCanPhotograph ? _self.travellerCanPhotograph : travellerCanPhotograph // ignore: cast_nullable_to_non_nullable
+as KindFlagsModel?,
   ));
 }
 
@@ -389,7 +420,622 @@ $ComparisonModelCopyWith<$Res>? get comparison {
   return $ComparisonModelCopyWith<$Res>(_self.comparison!, (value) {
     return _then(_self.copyWith(comparison: value));
   });
+}/// Create a copy of PaperworkModel
+/// with the given fields replaced by the non-null parameter values.
+@override
+@pragma('vm:prefer-inline')
+$TravellerReportsModelCopyWith<$Res> get travellerReports {
+  
+  return $TravellerReportsModelCopyWith<$Res>(_self.travellerReports, (value) {
+    return _then(_self.copyWith(travellerReports: value));
+  });
+}/// Create a copy of PaperworkModel
+/// with the given fields replaced by the non-null parameter values.
+@override
+@pragma('vm:prefer-inline')
+$KindFlagsModelCopyWith<$Res>? get travellerCanPhotograph {
+    if (_self.travellerCanPhotograph == null) {
+    return null;
+  }
+
+  return $KindFlagsModelCopyWith<$Res>(_self.travellerCanPhotograph!, (value) {
+    return _then(_self.copyWith(travellerCanPhotograph: value));
+  });
 }
+}
+
+
+/// @nodoc
+mixin _$TravellerReportsModel {
+
+ InspectionModel? get dropoff;@JsonKey(name: 'return') InspectionModel? get returnReport;
+/// Create a copy of TravellerReportsModel
+/// with the given fields replaced by the non-null parameter values.
+@JsonKey(includeFromJson: false, includeToJson: false)
+@pragma('vm:prefer-inline')
+$TravellerReportsModelCopyWith<TravellerReportsModel> get copyWith => _$TravellerReportsModelCopyWithImpl<TravellerReportsModel>(this as TravellerReportsModel, _$identity);
+
+  /// Serializes this TravellerReportsModel to a JSON map.
+  Map<String, dynamic> toJson();
+
+
+@override
+bool operator ==(Object other) {
+  final _this = this as TravellerReportsModel;
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is TravellerReportsModel&&(identical(other.dropoff, _this.dropoff) || other.dropoff == _this.dropoff)&&(identical(other.returnReport, _this.returnReport) || other.returnReport == _this.returnReport));
+}
+
+@JsonKey(includeFromJson: false, includeToJson: false)
+@override
+int get hashCode {
+  final _this = this as TravellerReportsModel;
+  return Object.hash(runtimeType,_this.dropoff,_this.returnReport);
+}
+
+@override
+String toString() {
+  final _this = this as TravellerReportsModel;
+  return 'TravellerReportsModel(dropoff: ${_this.dropoff}, returnReport: ${_this.returnReport})';
+}
+
+
+}
+
+/// @nodoc
+abstract mixin class $TravellerReportsModelCopyWith<$Res>  {
+  factory $TravellerReportsModelCopyWith(TravellerReportsModel value, $Res Function(TravellerReportsModel) _then) = _$TravellerReportsModelCopyWithImpl;
+@useResult
+$Res call({
+ InspectionModel? dropoff,@JsonKey(name: 'return') InspectionModel? returnReport
+});
+
+
+$InspectionModelCopyWith<$Res>? get dropoff;$InspectionModelCopyWith<$Res>? get returnReport;
+
+}
+/// @nodoc
+class _$TravellerReportsModelCopyWithImpl<$Res>
+    implements $TravellerReportsModelCopyWith<$Res> {
+  _$TravellerReportsModelCopyWithImpl(this._self, this._then);
+
+  final TravellerReportsModel _self;
+  final $Res Function(TravellerReportsModel) _then;
+
+/// Create a copy of TravellerReportsModel
+/// with the given fields replaced by the non-null parameter values.
+@pragma('vm:prefer-inline') @override $Res call({Object? dropoff = freezed,Object? returnReport = freezed,}) {
+  return _then(TravellerReportsModel(
+dropoff: freezed == dropoff ? _self.dropoff : dropoff // ignore: cast_nullable_to_non_nullable
+as InspectionModel?,returnReport: freezed == returnReport ? _self.returnReport : returnReport // ignore: cast_nullable_to_non_nullable
+as InspectionModel?,
+  ));
+}
+/// Create a copy of TravellerReportsModel
+/// with the given fields replaced by the non-null parameter values.
+@override
+@pragma('vm:prefer-inline')
+$InspectionModelCopyWith<$Res>? get dropoff {
+    if (_self.dropoff == null) {
+    return null;
+  }
+
+  return $InspectionModelCopyWith<$Res>(_self.dropoff!, (value) {
+    return _then(_self.copyWith(dropoff: value));
+  });
+}/// Create a copy of TravellerReportsModel
+/// with the given fields replaced by the non-null parameter values.
+@override
+@pragma('vm:prefer-inline')
+$InspectionModelCopyWith<$Res>? get returnReport {
+    if (_self.returnReport == null) {
+    return null;
+  }
+
+  return $InspectionModelCopyWith<$Res>(_self.returnReport!, (value) {
+    return _then(_self.copyWith(returnReport: value));
+  });
+}
+}
+
+
+/// Adds pattern-matching-related methods to [TravellerReportsModel].
+extension TravellerReportsModelPatterns on TravellerReportsModel {
+/// A variant of `map` that fallback to returning `orElse`.
+///
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case final Subclass value:
+///     return ...;
+///   case _:
+///     return orElse();
+/// }
+/// ```
+
+@optionalTypeArgs TResult maybeMap<TResult extends Object?>(TResult Function( _TravellerReportsModel value)?  $default,{required TResult orElse(),}){
+final _that = this;
+switch (_that) {
+case _TravellerReportsModel() when $default != null:
+return $default(_that);case _:
+  return orElse();
+
+}
+}
+/// A `switch`-like method, using callbacks.
+///
+/// Callbacks receives the raw object, upcasted.
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case final Subclass value:
+///     return ...;
+///   case final Subclass2 value:
+///     return ...;
+/// }
+/// ```
+
+@optionalTypeArgs TResult map<TResult extends Object?>(TResult Function( _TravellerReportsModel value)  $default,){
+final _that = this;
+switch (_that) {
+case _TravellerReportsModel():
+return $default(_that);case _:
+  throw StateError('Unexpected subclass');
+
+}
+}
+/// A variant of `map` that fallback to returning `null`.
+///
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case final Subclass value:
+///     return ...;
+///   case _:
+///     return null;
+/// }
+/// ```
+
+@optionalTypeArgs TResult? mapOrNull<TResult extends Object?>(TResult? Function( _TravellerReportsModel value)?  $default,){
+final _that = this;
+switch (_that) {
+case _TravellerReportsModel() when $default != null:
+return $default(_that);case _:
+  return null;
+
+}
+}
+/// A variant of `when` that fallback to an `orElse` callback.
+///
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case Subclass(:final field):
+///     return ...;
+///   case _:
+///     return orElse();
+/// }
+/// ```
+
+@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( InspectionModel? dropoff, @JsonKey(name: 'return')  InspectionModel? returnReport)?  $default,{required TResult orElse(),}) {final _that = this;
+switch (_that) {
+case _TravellerReportsModel() when $default != null:
+return $default(_that.dropoff,_that.returnReport);case _:
+  return orElse();
+
+}
+}
+/// A `switch`-like method, using callbacks.
+///
+/// As opposed to `map`, this offers destructuring.
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case Subclass(:final field):
+///     return ...;
+///   case Subclass2(:final field2):
+///     return ...;
+/// }
+/// ```
+
+@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( InspectionModel? dropoff, @JsonKey(name: 'return')  InspectionModel? returnReport)  $default,) {final _that = this;
+switch (_that) {
+case _TravellerReportsModel():
+return $default(_that.dropoff,_that.returnReport);case _:
+  throw StateError('Unexpected subclass');
+
+}
+}
+/// A variant of `when` that fallback to returning `null`
+///
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case Subclass(:final field):
+///     return ...;
+///   case _:
+///     return null;
+/// }
+/// ```
+
+@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( InspectionModel? dropoff, @JsonKey(name: 'return')  InspectionModel? returnReport)?  $default,) {final _that = this;
+switch (_that) {
+case _TravellerReportsModel() when $default != null:
+return $default(_that.dropoff,_that.returnReport);case _:
+  return null;
+
+}
+}
+
+}
+
+/// @nodoc
+@JsonSerializable()
+
+class _TravellerReportsModel implements TravellerReportsModel {
+  const _TravellerReportsModel({this.dropoff, @JsonKey(name: 'return') this.returnReport});
+  factory _TravellerReportsModel.fromJson(Map<String, dynamic> json) => _$TravellerReportsModelFromJson(json);
+
+@override final  InspectionModel? dropoff;
+@override@JsonKey(name: 'return') final  InspectionModel? returnReport;
+
+/// Create a copy of TravellerReportsModel
+/// with the given fields replaced by the non-null parameter values.
+@override @JsonKey(includeFromJson: false, includeToJson: false)
+@pragma('vm:prefer-inline')
+_$TravellerReportsModelCopyWith<_TravellerReportsModel> get copyWith => __$TravellerReportsModelCopyWithImpl<_TravellerReportsModel>(this, _$identity);
+
+@override
+Map<String, dynamic> toJson() {
+  return _$TravellerReportsModelToJson(this, );
+}
+
+@override
+bool operator ==(Object other) {
+    return identical(this, other) || (other.runtimeType == runtimeType&&other is _TravellerReportsModel&&(identical(other.dropoff, dropoff) || other.dropoff == dropoff)&&(identical(other.returnReport, returnReport) || other.returnReport == returnReport));
+}
+
+@JsonKey(includeFromJson: false, includeToJson: false)
+@override
+int get hashCode {
+    return Object.hash(runtimeType,dropoff,returnReport);
+}
+
+@override
+String toString() {
+    return 'TravellerReportsModel(dropoff: $dropoff, returnReport: $returnReport)';
+}
+
+
+}
+
+/// @nodoc
+abstract mixin class _$TravellerReportsModelCopyWith<$Res> implements $TravellerReportsModelCopyWith<$Res> {
+  factory _$TravellerReportsModelCopyWith(_TravellerReportsModel value, $Res Function(_TravellerReportsModel) _then) = __$TravellerReportsModelCopyWithImpl;
+@override @useResult
+$Res call({
+ InspectionModel? dropoff,@JsonKey(name: 'return') InspectionModel? returnReport
+});
+
+
+@override $InspectionModelCopyWith<$Res>? get dropoff;@override $InspectionModelCopyWith<$Res>? get returnReport;
+
+}
+/// @nodoc
+class __$TravellerReportsModelCopyWithImpl<$Res>
+    implements _$TravellerReportsModelCopyWith<$Res> {
+  __$TravellerReportsModelCopyWithImpl(this._self, this._then);
+
+  final _TravellerReportsModel _self;
+  final $Res Function(_TravellerReportsModel) _then;
+
+/// Create a copy of TravellerReportsModel
+/// with the given fields replaced by the non-null parameter values.
+@override @pragma('vm:prefer-inline') $Res call({Object? dropoff = freezed,Object? returnReport = freezed,}) {
+  return _then(_TravellerReportsModel(
+dropoff: freezed == dropoff ? _self.dropoff : dropoff // ignore: cast_nullable_to_non_nullable
+as InspectionModel?,returnReport: freezed == returnReport ? _self.returnReport : returnReport // ignore: cast_nullable_to_non_nullable
+as InspectionModel?,
+  ));
+}
+
+/// Create a copy of TravellerReportsModel
+/// with the given fields replaced by the non-null parameter values.
+@override
+@pragma('vm:prefer-inline')
+$InspectionModelCopyWith<$Res>? get dropoff {
+    if (_self.dropoff == null) {
+    return null;
+  }
+
+  return $InspectionModelCopyWith<$Res>(_self.dropoff!, (value) {
+    return _then(_self.copyWith(dropoff: value));
+  });
+}/// Create a copy of TravellerReportsModel
+/// with the given fields replaced by the non-null parameter values.
+@override
+@pragma('vm:prefer-inline')
+$InspectionModelCopyWith<$Res>? get returnReport {
+    if (_self.returnReport == null) {
+    return null;
+  }
+
+  return $InspectionModelCopyWith<$Res>(_self.returnReport!, (value) {
+    return _then(_self.copyWith(returnReport: value));
+  });
+}
+}
+
+
+/// @nodoc
+mixin _$KindFlagsModel {
+
+ bool get dropoff;@JsonKey(name: 'return') bool get returnReport;
+/// Create a copy of KindFlagsModel
+/// with the given fields replaced by the non-null parameter values.
+@JsonKey(includeFromJson: false, includeToJson: false)
+@pragma('vm:prefer-inline')
+$KindFlagsModelCopyWith<KindFlagsModel> get copyWith => _$KindFlagsModelCopyWithImpl<KindFlagsModel>(this as KindFlagsModel, _$identity);
+
+  /// Serializes this KindFlagsModel to a JSON map.
+  Map<String, dynamic> toJson();
+
+
+@override
+bool operator ==(Object other) {
+  final _this = this as KindFlagsModel;
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is KindFlagsModel&&(identical(other.dropoff, _this.dropoff) || other.dropoff == _this.dropoff)&&(identical(other.returnReport, _this.returnReport) || other.returnReport == _this.returnReport));
+}
+
+@JsonKey(includeFromJson: false, includeToJson: false)
+@override
+int get hashCode {
+  final _this = this as KindFlagsModel;
+  return Object.hash(runtimeType,_this.dropoff,_this.returnReport);
+}
+
+@override
+String toString() {
+  final _this = this as KindFlagsModel;
+  return 'KindFlagsModel(dropoff: ${_this.dropoff}, returnReport: ${_this.returnReport})';
+}
+
+
+}
+
+/// @nodoc
+abstract mixin class $KindFlagsModelCopyWith<$Res>  {
+  factory $KindFlagsModelCopyWith(KindFlagsModel value, $Res Function(KindFlagsModel) _then) = _$KindFlagsModelCopyWithImpl;
+@useResult
+$Res call({
+ bool dropoff,@JsonKey(name: 'return') bool returnReport
+});
+
+
+
+
+}
+/// @nodoc
+class _$KindFlagsModelCopyWithImpl<$Res>
+    implements $KindFlagsModelCopyWith<$Res> {
+  _$KindFlagsModelCopyWithImpl(this._self, this._then);
+
+  final KindFlagsModel _self;
+  final $Res Function(KindFlagsModel) _then;
+
+/// Create a copy of KindFlagsModel
+/// with the given fields replaced by the non-null parameter values.
+@pragma('vm:prefer-inline') @override $Res call({Object? dropoff = null,Object? returnReport = null,}) {
+  return _then(KindFlagsModel(
+dropoff: null == dropoff ? _self.dropoff : dropoff // ignore: cast_nullable_to_non_nullable
+as bool,returnReport: null == returnReport ? _self.returnReport : returnReport // ignore: cast_nullable_to_non_nullable
+as bool,
+  ));
+}
+
+}
+
+
+/// Adds pattern-matching-related methods to [KindFlagsModel].
+extension KindFlagsModelPatterns on KindFlagsModel {
+/// A variant of `map` that fallback to returning `orElse`.
+///
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case final Subclass value:
+///     return ...;
+///   case _:
+///     return orElse();
+/// }
+/// ```
+
+@optionalTypeArgs TResult maybeMap<TResult extends Object?>(TResult Function( _KindFlagsModel value)?  $default,{required TResult orElse(),}){
+final _that = this;
+switch (_that) {
+case _KindFlagsModel() when $default != null:
+return $default(_that);case _:
+  return orElse();
+
+}
+}
+/// A `switch`-like method, using callbacks.
+///
+/// Callbacks receives the raw object, upcasted.
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case final Subclass value:
+///     return ...;
+///   case final Subclass2 value:
+///     return ...;
+/// }
+/// ```
+
+@optionalTypeArgs TResult map<TResult extends Object?>(TResult Function( _KindFlagsModel value)  $default,){
+final _that = this;
+switch (_that) {
+case _KindFlagsModel():
+return $default(_that);case _:
+  throw StateError('Unexpected subclass');
+
+}
+}
+/// A variant of `map` that fallback to returning `null`.
+///
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case final Subclass value:
+///     return ...;
+///   case _:
+///     return null;
+/// }
+/// ```
+
+@optionalTypeArgs TResult? mapOrNull<TResult extends Object?>(TResult? Function( _KindFlagsModel value)?  $default,){
+final _that = this;
+switch (_that) {
+case _KindFlagsModel() when $default != null:
+return $default(_that);case _:
+  return null;
+
+}
+}
+/// A variant of `when` that fallback to an `orElse` callback.
+///
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case Subclass(:final field):
+///     return ...;
+///   case _:
+///     return orElse();
+/// }
+/// ```
+
+@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( bool dropoff, @JsonKey(name: 'return')  bool returnReport)?  $default,{required TResult orElse(),}) {final _that = this;
+switch (_that) {
+case _KindFlagsModel() when $default != null:
+return $default(_that.dropoff,_that.returnReport);case _:
+  return orElse();
+
+}
+}
+/// A `switch`-like method, using callbacks.
+///
+/// As opposed to `map`, this offers destructuring.
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case Subclass(:final field):
+///     return ...;
+///   case Subclass2(:final field2):
+///     return ...;
+/// }
+/// ```
+
+@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( bool dropoff, @JsonKey(name: 'return')  bool returnReport)  $default,) {final _that = this;
+switch (_that) {
+case _KindFlagsModel():
+return $default(_that.dropoff,_that.returnReport);case _:
+  throw StateError('Unexpected subclass');
+
+}
+}
+/// A variant of `when` that fallback to returning `null`
+///
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case Subclass(:final field):
+///     return ...;
+///   case _:
+///     return null;
+/// }
+/// ```
+
+@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( bool dropoff, @JsonKey(name: 'return')  bool returnReport)?  $default,) {final _that = this;
+switch (_that) {
+case _KindFlagsModel() when $default != null:
+return $default(_that.dropoff,_that.returnReport);case _:
+  return null;
+
+}
+}
+
+}
+
+/// @nodoc
+@JsonSerializable()
+
+class _KindFlagsModel implements KindFlagsModel {
+  const _KindFlagsModel({this.dropoff = false, @JsonKey(name: 'return') this.returnReport = false});
+  factory _KindFlagsModel.fromJson(Map<String, dynamic> json) => _$KindFlagsModelFromJson(json);
+
+@override@JsonKey() final  bool dropoff;
+@override@JsonKey(name: 'return') final  bool returnReport;
+
+/// Create a copy of KindFlagsModel
+/// with the given fields replaced by the non-null parameter values.
+@override @JsonKey(includeFromJson: false, includeToJson: false)
+@pragma('vm:prefer-inline')
+_$KindFlagsModelCopyWith<_KindFlagsModel> get copyWith => __$KindFlagsModelCopyWithImpl<_KindFlagsModel>(this, _$identity);
+
+@override
+Map<String, dynamic> toJson() {
+  return _$KindFlagsModelToJson(this, );
+}
+
+@override
+bool operator ==(Object other) {
+    return identical(this, other) || (other.runtimeType == runtimeType&&other is _KindFlagsModel&&(identical(other.dropoff, dropoff) || other.dropoff == dropoff)&&(identical(other.returnReport, returnReport) || other.returnReport == returnReport));
+}
+
+@JsonKey(includeFromJson: false, includeToJson: false)
+@override
+int get hashCode {
+    return Object.hash(runtimeType,dropoff,returnReport);
+}
+
+@override
+String toString() {
+    return 'KindFlagsModel(dropoff: $dropoff, returnReport: $returnReport)';
+}
+
+
+}
+
+/// @nodoc
+abstract mixin class _$KindFlagsModelCopyWith<$Res> implements $KindFlagsModelCopyWith<$Res> {
+  factory _$KindFlagsModelCopyWith(_KindFlagsModel value, $Res Function(_KindFlagsModel) _then) = __$KindFlagsModelCopyWithImpl;
+@override @useResult
+$Res call({
+ bool dropoff,@JsonKey(name: 'return') bool returnReport
+});
+
+
+
+
+}
+/// @nodoc
+class __$KindFlagsModelCopyWithImpl<$Res>
+    implements _$KindFlagsModelCopyWith<$Res> {
+  __$KindFlagsModelCopyWithImpl(this._self, this._then);
+
+  final _KindFlagsModel _self;
+  final $Res Function(_KindFlagsModel) _then;
+
+/// Create a copy of KindFlagsModel
+/// with the given fields replaced by the non-null parameter values.
+@override @pragma('vm:prefer-inline') $Res call({Object? dropoff = null,Object? returnReport = null,}) {
+  return _then(_KindFlagsModel(
+dropoff: null == dropoff ? _self.dropoff : dropoff // ignore: cast_nullable_to_non_nullable
+as bool,returnReport: null == returnReport ? _self.returnReport : returnReport // ignore: cast_nullable_to_non_nullable
+as bool,
+  ));
+}
+
+
 }
 
 
@@ -397,7 +1043,9 @@ $ComparisonModelCopyWith<$Res>? get comparison {
 mixin _$ContractModel {
 
 /// unsigned | signed
- String get status; bool get canSign;/// A code can be sent by SMS (a mobile number, SMS configured on the server).
+ String get status;/// The staff may have it signed now (the contract is signed at the counter, on the parking's phone).
+ bool get canSign;/// Not signed yet and still signable: at the counter, the day of the drop-off.
+ bool get atCounter;/// A code can be sent by SMS (a mobile number, SMS configured on the server).
  bool get codeAvailable; String get phoneMasked; ContractDocumentModel get document; SignedContractModel? get signed;
 /// Create a copy of ContractModel
 /// with the given fields replaced by the non-null parameter values.
@@ -412,20 +1060,20 @@ $ContractModelCopyWith<ContractModel> get copyWith => _$ContractModelCopyWithImp
 @override
 bool operator ==(Object other) {
   final _this = this as ContractModel;
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is ContractModel&&(identical(other.status, _this.status) || other.status == _this.status)&&(identical(other.canSign, _this.canSign) || other.canSign == _this.canSign)&&(identical(other.codeAvailable, _this.codeAvailable) || other.codeAvailable == _this.codeAvailable)&&(identical(other.phoneMasked, _this.phoneMasked) || other.phoneMasked == _this.phoneMasked)&&(identical(other.document, _this.document) || other.document == _this.document)&&(identical(other.signed, _this.signed) || other.signed == _this.signed));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is ContractModel&&(identical(other.status, _this.status) || other.status == _this.status)&&(identical(other.canSign, _this.canSign) || other.canSign == _this.canSign)&&(identical(other.atCounter, _this.atCounter) || other.atCounter == _this.atCounter)&&(identical(other.codeAvailable, _this.codeAvailable) || other.codeAvailable == _this.codeAvailable)&&(identical(other.phoneMasked, _this.phoneMasked) || other.phoneMasked == _this.phoneMasked)&&(identical(other.document, _this.document) || other.document == _this.document)&&(identical(other.signed, _this.signed) || other.signed == _this.signed));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
 int get hashCode {
   final _this = this as ContractModel;
-  return Object.hash(runtimeType,_this.status,_this.canSign,_this.codeAvailable,_this.phoneMasked,_this.document,_this.signed);
+  return Object.hash(runtimeType,_this.status,_this.canSign,_this.atCounter,_this.codeAvailable,_this.phoneMasked,_this.document,_this.signed);
 }
 
 @override
 String toString() {
   final _this = this as ContractModel;
-  return 'ContractModel(status: ${_this.status}, canSign: ${_this.canSign}, codeAvailable: ${_this.codeAvailable}, phoneMasked: ${_this.phoneMasked}, document: ${_this.document}, signed: ${_this.signed})';
+  return 'ContractModel(status: ${_this.status}, canSign: ${_this.canSign}, atCounter: ${_this.atCounter}, codeAvailable: ${_this.codeAvailable}, phoneMasked: ${_this.phoneMasked}, document: ${_this.document}, signed: ${_this.signed})';
 }
 
 
@@ -436,7 +1084,7 @@ abstract mixin class $ContractModelCopyWith<$Res>  {
   factory $ContractModelCopyWith(ContractModel value, $Res Function(ContractModel) _then) = _$ContractModelCopyWithImpl;
 @useResult
 $Res call({
- String status, bool canSign, bool codeAvailable, String phoneMasked, ContractDocumentModel document, SignedContractModel? signed
+ String status, bool canSign, bool atCounter, bool codeAvailable, String phoneMasked, ContractDocumentModel document, SignedContractModel? signed
 });
 
 
@@ -453,10 +1101,11 @@ class _$ContractModelCopyWithImpl<$Res>
 
 /// Create a copy of ContractModel
 /// with the given fields replaced by the non-null parameter values.
-@pragma('vm:prefer-inline') @override $Res call({Object? status = null,Object? canSign = null,Object? codeAvailable = null,Object? phoneMasked = null,Object? document = null,Object? signed = freezed,}) {
+@pragma('vm:prefer-inline') @override $Res call({Object? status = null,Object? canSign = null,Object? atCounter = null,Object? codeAvailable = null,Object? phoneMasked = null,Object? document = null,Object? signed = freezed,}) {
   return _then(ContractModel(
 status: null == status ? _self.status : status // ignore: cast_nullable_to_non_nullable
 as String,canSign: null == canSign ? _self.canSign : canSign // ignore: cast_nullable_to_non_nullable
+as bool,atCounter: null == atCounter ? _self.atCounter : atCounter // ignore: cast_nullable_to_non_nullable
 as bool,codeAvailable: null == codeAvailable ? _self.codeAvailable : codeAvailable // ignore: cast_nullable_to_non_nullable
 as bool,phoneMasked: null == phoneMasked ? _self.phoneMasked : phoneMasked // ignore: cast_nullable_to_non_nullable
 as String,document: null == document ? _self.document : document // ignore: cast_nullable_to_non_nullable
@@ -567,10 +1216,10 @@ return $default(_that);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( String status,  bool canSign,  bool codeAvailable,  String phoneMasked,  ContractDocumentModel document,  SignedContractModel? signed)?  $default,{required TResult orElse(),}) {final _that = this;
+@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( String status,  bool canSign,  bool atCounter,  bool codeAvailable,  String phoneMasked,  ContractDocumentModel document,  SignedContractModel? signed)?  $default,{required TResult orElse(),}) {final _that = this;
 switch (_that) {
 case _ContractModel() when $default != null:
-return $default(_that.status,_that.canSign,_that.codeAvailable,_that.phoneMasked,_that.document,_that.signed);case _:
+return $default(_that.status,_that.canSign,_that.atCounter,_that.codeAvailable,_that.phoneMasked,_that.document,_that.signed);case _:
   return orElse();
 
 }
@@ -588,10 +1237,10 @@ return $default(_that.status,_that.canSign,_that.codeAvailable,_that.phoneMasked
 /// }
 /// ```
 
-@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( String status,  bool canSign,  bool codeAvailable,  String phoneMasked,  ContractDocumentModel document,  SignedContractModel? signed)  $default,) {final _that = this;
+@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( String status,  bool canSign,  bool atCounter,  bool codeAvailable,  String phoneMasked,  ContractDocumentModel document,  SignedContractModel? signed)  $default,) {final _that = this;
 switch (_that) {
 case _ContractModel():
-return $default(_that.status,_that.canSign,_that.codeAvailable,_that.phoneMasked,_that.document,_that.signed);case _:
+return $default(_that.status,_that.canSign,_that.atCounter,_that.codeAvailable,_that.phoneMasked,_that.document,_that.signed);case _:
   throw StateError('Unexpected subclass');
 
 }
@@ -608,10 +1257,10 @@ return $default(_that.status,_that.canSign,_that.codeAvailable,_that.phoneMasked
 /// }
 /// ```
 
-@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( String status,  bool canSign,  bool codeAvailable,  String phoneMasked,  ContractDocumentModel document,  SignedContractModel? signed)?  $default,) {final _that = this;
+@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( String status,  bool canSign,  bool atCounter,  bool codeAvailable,  String phoneMasked,  ContractDocumentModel document,  SignedContractModel? signed)?  $default,) {final _that = this;
 switch (_that) {
 case _ContractModel() when $default != null:
-return $default(_that.status,_that.canSign,_that.codeAvailable,_that.phoneMasked,_that.document,_that.signed);case _:
+return $default(_that.status,_that.canSign,_that.atCounter,_that.codeAvailable,_that.phoneMasked,_that.document,_that.signed);case _:
   return null;
 
 }
@@ -623,12 +1272,15 @@ return $default(_that.status,_that.canSign,_that.codeAvailable,_that.phoneMasked
 @JsonSerializable()
 
 class _ContractModel extends ContractModel {
-  const _ContractModel({required this.status, this.canSign = false, this.codeAvailable = false, required this.phoneMasked, required this.document, this.signed}): super._();
+  const _ContractModel({required this.status, this.canSign = false, this.atCounter = false, this.codeAvailable = false, required this.phoneMasked, required this.document, this.signed}): super._();
   factory _ContractModel.fromJson(Map<String, dynamic> json) => _$ContractModelFromJson(json);
 
 /// unsigned | signed
 @override final  String status;
+/// The staff may have it signed now (the contract is signed at the counter, on the parking's phone).
 @override@JsonKey() final  bool canSign;
+/// Not signed yet and still signable: at the counter, the day of the drop-off.
+@override@JsonKey() final  bool atCounter;
 /// A code can be sent by SMS (a mobile number, SMS configured on the server).
 @override@JsonKey() final  bool codeAvailable;
 @override final  String phoneMasked;
@@ -648,18 +1300,18 @@ Map<String, dynamic> toJson() {
 
 @override
 bool operator ==(Object other) {
-    return identical(this, other) || (other.runtimeType == runtimeType&&other is _ContractModel&&(identical(other.status, status) || other.status == status)&&(identical(other.canSign, canSign) || other.canSign == canSign)&&(identical(other.codeAvailable, codeAvailable) || other.codeAvailable == codeAvailable)&&(identical(other.phoneMasked, phoneMasked) || other.phoneMasked == phoneMasked)&&(identical(other.document, document) || other.document == document)&&(identical(other.signed, signed) || other.signed == signed));
+    return identical(this, other) || (other.runtimeType == runtimeType&&other is _ContractModel&&(identical(other.status, status) || other.status == status)&&(identical(other.canSign, canSign) || other.canSign == canSign)&&(identical(other.atCounter, atCounter) || other.atCounter == atCounter)&&(identical(other.codeAvailable, codeAvailable) || other.codeAvailable == codeAvailable)&&(identical(other.phoneMasked, phoneMasked) || other.phoneMasked == phoneMasked)&&(identical(other.document, document) || other.document == document)&&(identical(other.signed, signed) || other.signed == signed));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
 int get hashCode {
-    return Object.hash(runtimeType,status,canSign,codeAvailable,phoneMasked,document,signed);
+    return Object.hash(runtimeType,status,canSign,atCounter,codeAvailable,phoneMasked,document,signed);
 }
 
 @override
 String toString() {
-    return 'ContractModel(status: $status, canSign: $canSign, codeAvailable: $codeAvailable, phoneMasked: $phoneMasked, document: $document, signed: $signed)';
+    return 'ContractModel(status: $status, canSign: $canSign, atCounter: $atCounter, codeAvailable: $codeAvailable, phoneMasked: $phoneMasked, document: $document, signed: $signed)';
 }
 
 
@@ -670,7 +1322,7 @@ abstract mixin class _$ContractModelCopyWith<$Res> implements $ContractModelCopy
   factory _$ContractModelCopyWith(_ContractModel value, $Res Function(_ContractModel) _then) = __$ContractModelCopyWithImpl;
 @override @useResult
 $Res call({
- String status, bool canSign, bool codeAvailable, String phoneMasked, ContractDocumentModel document, SignedContractModel? signed
+ String status, bool canSign, bool atCounter, bool codeAvailable, String phoneMasked, ContractDocumentModel document, SignedContractModel? signed
 });
 
 
@@ -687,10 +1339,11 @@ class __$ContractModelCopyWithImpl<$Res>
 
 /// Create a copy of ContractModel
 /// with the given fields replaced by the non-null parameter values.
-@override @pragma('vm:prefer-inline') $Res call({Object? status = null,Object? canSign = null,Object? codeAvailable = null,Object? phoneMasked = null,Object? document = null,Object? signed = freezed,}) {
+@override @pragma('vm:prefer-inline') $Res call({Object? status = null,Object? canSign = null,Object? atCounter = null,Object? codeAvailable = null,Object? phoneMasked = null,Object? document = null,Object? signed = freezed,}) {
   return _then(_ContractModel(
 status: null == status ? _self.status : status // ignore: cast_nullable_to_non_nullable
 as String,canSign: null == canSign ? _self.canSign : canSign // ignore: cast_nullable_to_non_nullable
+as bool,atCounter: null == atCounter ? _self.atCounter : atCounter // ignore: cast_nullable_to_non_nullable
 as bool,codeAvailable: null == codeAvailable ? _self.codeAvailable : codeAvailable // ignore: cast_nullable_to_non_nullable
 as bool,phoneMasked: null == phoneMasked ? _self.phoneMasked : phoneMasked // ignore: cast_nullable_to_non_nullable
 as String,document: null == document ? _self.document : document // ignore: cast_nullable_to_non_nullable

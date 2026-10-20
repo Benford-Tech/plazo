@@ -50,6 +50,26 @@ abstract class PaperworkClient {
   @POST('public/bookings/{reference}/contract/sign')
   Future<PaperworkModel> travellerSign(@Path('reference') String reference, @Header('x-booking-token') String token, @Body() Map<String, dynamic> body);
 
+  /// The traveller's own photos (20/10/2026). The draft starts with the first photo or note.
+  @PATCH('public/bookings/{reference}/inspections/{kind}/mine')
+  Future<PaperworkModel> travellerUpdate(
+    @Path('reference') String reference,
+    @Header('x-booking-token') String token,
+    @Path('kind') String kind,
+    @Body() Map<String, dynamic> body,
+  );
+
+  @DELETE('public/bookings/{reference}/inspections/{kind}/mine/photos/{photoId}')
+  Future<PaperworkModel> travellerRemovePhoto(
+    @Path('reference') String reference,
+    @Header('x-booking-token') String token,
+    @Path('kind') String kind,
+    @Path('photoId') String photoId,
+  );
+
+  @POST('public/bookings/{reference}/inspections/{kind}/mine/complete')
+  Future<PaperworkModel> travellerComplete(@Path('reference') String reference, @Header('x-booking-token') String token, @Path('kind') String kind);
+
   @POST('public/bookings/{reference}/inspections/{kind}/answer')
   Future<PaperworkModel> travellerAnswer(
     @Path('reference') String reference,
