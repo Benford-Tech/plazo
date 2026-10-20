@@ -16,6 +16,7 @@ import {
   statusSideEffects,
 } from '@/domain/reservation';
 import { ParsedBooking, parseConfirmationEmail } from '@/domain/importers';
+import type { OneparkSummaryStay } from '@/domain/importers/onepark';
 import { addDays, DATE_RE, dayBounds, exceedsCalendarDays, localDate, localDateTime, parseInstant } from '@/domain/time';
 import { ChangeStatusDto, CreateReservationDto, UpdateReservationDto } from '@/dtos/reservation.dto';
 import { AuthenticatedStaff } from '@/interfaces/auth.interface';
@@ -60,6 +61,19 @@ export const STAFF_VISIBLE: Prisma.ReservationWhereInput = {
 };
 
 /** 10/10/2026 (« C'est une modification »): what became of a comparator's change of a booking (applyImportChange). */
+/** 20/10/2026: what Onepark's daily summary did, by booking number (completeFromSummary). */
+export interface SummaryReport {
+  /** Took its number or its plate. */
+  completed: string[];
+  upToDate: string[];
+  /** Plazo has another plate for it (the team's is kept). */
+  plateDiffers: string[];
+  /** No booking of it in Plazo. */
+  missing: string[];
+  /** Several bookings could be it. */
+  ambiguous: string[];
+}
+
 export interface ImportChangeResult {
   /** The booking as it is now (changed or not). */
   reservation: Reservation;
@@ -434,6 +448,86 @@ export class ReservationService {
     });
     if (result.applied) await this.push.notifyBookingChanged(result.reservation, result.changes);
     return result;
+  }
+
+  /**
+   * 20/10/2026 (Onepark's daily summary, « Voici le résumé des réservations en cours et à venir »): each stay it lists
+   * completes the Onepark booking Plazo has of it, never makes one (the summary gives no phone). The booking is the one
+   * with its number, else the only Onepark booking without a number for the same local arrival and a word of the name in
+   * common (one typed by hand, or imported from Onepark's short notice, which has no number). It takes the number when it
+   * has none and the plate when it has none; a plate the team typed is never replaced (a different one is reported).
+   * Neither a Plazo booking nor a closed one is touched. Written under the booking's row lock, in its history.
+   */
+  public async completeFromSummary(
+    operatorId: string,
+    stays: OneparkSummaryStay[],
+    origin: { inboundEmailId?: string | null },
+  ): Promise<SummaryReport> {
+    const report: SummaryReport = { completed: [], upToDate: [], plateDiffers: [], missing: [], ambiguous: [] };
+    const parking = await prisma.parking.findFirst({ where: { operatorId }, orderBy: { createdAt: 'asc' } });
+    if (!parking) return { ...report, missing: stays.map(s => s.reference) };
+    for (const stay of stays) {
+      const byReference = await prisma.reservation.findFirst({ where: { operatorId, externalReference: stay.reference }, select: { id: true } });
+      let id = byReference?.id ?? null;
+      if (!id && stay.arrivalAt) {
+        const arrival = parseInstant(stay.arrivalAt, parking.timezone);
+        const words = new Set(nameWords(stay.customerName));
+        const candidates = arrival
+          ? await prisma.reservation.findMany({
+              where: {
+                operatorId,
+                channel: 'aggregator',
+                externalReference: null,
+                arrivalAt: arrival,
+                status: { notIn: ['cancelled', 'no_show', 'pending_payment'] },
+                OR: [{ channelDetail: { equals: 'Onepark', mode: 'insensitive' } }, { channelDetail: null }, { channelDetail: '' }],
+              },
+              select: { id: true, customerName: true },
+            })
+          : [];
+        const same = candidates.filter(c => nameWords(c.customerName).some(w => words.has(w)));
+        if (same.length > 1) {
+          report.ambiguous.push(stay.reference);
+          continue;
+        }
+        id = same[0]?.id ?? null;
+      }
+      if (!id) {
+        report.missing.push(stay.reference);
+        continue;
+      }
+      const plate = importedPlate(stay.plate);
+      const outcome = await prisma.$transaction(async tx => {
+        await tx.$queryRaw`SELECT id FROM reservations WHERE id = ${id} FOR UPDATE`;
+        const before = await tx.reservation.findFirst({ where: { id: id!, operatorId } });
+        if (!before || before.channel === 'plazo' || CLOSED_FOR_CHANGES.includes(before.status)) return 'upToDate' as const;
+        const data: Prisma.ReservationUpdateInput = {};
+        if (!before.externalReference) data.externalReference = stay.reference;
+        const differs = !!plate && !!before.plateKey && before.plateKey !== plateKey(plate);
+        if (plate && !before.plateKey) Object.assign(data, { plate, plateKey: plateKey(plate) });
+        if (!Object.keys(data).length) return differs ? ('plateDiffers' as const) : ('upToDate' as const);
+        const after = await tx.reservation.update({ where: { id: before.id }, data });
+        await this.audit.record(
+          { id: null, operatorId },
+          {
+            action: 'reservation.updated',
+            entityType: 'reservation',
+            entityId: before.id,
+            details: {
+              ...columnChanges(before, after),
+              by: 'inbound_email',
+              source: 'onepark_summary',
+              provider: 'Onepark',
+              ...(origin.inboundEmailId ? { inboundEmailId: origin.inboundEmailId } : {}),
+            } as Prisma.InputJsonValue,
+          },
+          tx,
+        );
+        return differs ? ('plateDiffers' as const) : ('completed' as const);
+      });
+      report[outcome].push(stay.reference);
+    }
+    return report;
   }
 
   /**

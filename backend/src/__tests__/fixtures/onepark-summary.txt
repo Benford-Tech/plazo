@@ -1,0 +1,19 @@
+Bonjour,
+
+Voici le résumé des réservations en cours et à venir sur le Parking Exemple (Extérieur) :
+
+Aucune arrivée prévue le 2026-10-20
+
+Il y a 2 stationnements actuellement en cours :
+
+Numéro de réservation : 5900101
+* Camille Exemple
+Immatriculation : AB123CD
+Arrivée : ven. 23 oct. 2026 à 09:00
+Départ : mar. 27 oct. 2026 à 09:00
+
+Numéro de réservation : 5900102
+* Jean Pierre MARTIN
+Immatriculation : VD274046
+Arrivée : dim. 11 oct. 2026 à 06:30
+Départ : jeu. 22 oct. 2026 à 06:30

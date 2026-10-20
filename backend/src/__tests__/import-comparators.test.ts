@@ -26,6 +26,7 @@ import { bookingChangedPush } from '@/domain/reservation-messages';
 import { forwardedRecipientsOf, stripHtml, textOf } from '@/domain/inbound-email';
 import { fillGaps } from '@/services/inbound-email.service';
 import { classifyMail } from '@/domain/inbound-kind';
+import { parseOneparkSummary } from '@/domain/importers/onepark';
 import { importedNames } from '@/domain/customer-name';
 import { AlloparkPageService } from '@/services/allopark-page.service';
 import { logger } from '@/utils/logger';
@@ -108,6 +109,23 @@ describe('confirmations des comparateurs (09/10/2026)', () => {
     };
     expect(classifyMail(mail)).toMatchObject({ provider: 'Onepark', kind: 'booking', sure: true, rule: 'onepark.booking' });
     expect(importedNames(read('onepark-notification-short.html')!)).toMatchObject({ customerFirstName: 'camille', customerLastName: 'exemple' });
+  });
+
+  it('Onepark, récapitulatif du jour (20/10/2026) : un séjour par numéro, jamais une réservation à lui seul', () => {
+    const text = readFileSync(join(__dirname, 'fixtures', 'onepark-summary.txt'), 'utf8');
+    expect(parseOneparkSummary(text)).toEqual([
+      { reference: '5900101', customerName: 'Camille Exemple', plate: 'AB123CD', arrivalAt: '2026-10-23T09:00', returnAt: '2026-10-27T09:00' },
+      { reference: '5900102', customerName: 'Jean Pierre MARTIN', plate: 'VD274046', arrivalAt: '2026-10-11T06:30', returnAt: '2026-10-22T06:30' },
+    ]);
+    expect(classifyMail({ subject: 'Récapitulatif', from: 'Onepark <noreply@onepark.co>', text })).toMatchObject({
+      provider: 'Onepark',
+      kind: 'other',
+      rule: 'onepark.summary',
+      sure: true,
+    });
+    // Neither a booking for the importers.
+    expect(parseConfirmationEmail(text)).toBeNull();
+    expect(parseOneparkSummary('Une nouvelle réservation Onepark a été enregistrée. Début : 01/11/2026 06:00')).toEqual([]);
   });
 
   it('ParkMundo : séjour et vols, véhicule, et le prix du parking sans les frais de ParkMundo', () => {

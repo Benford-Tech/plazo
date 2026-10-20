@@ -55,3 +55,46 @@ export const oneparkImporter: EmailImporter = {
     return booking;
   },
 };
+
+/** One stay of Onepark's daily summary: its booking number, the traveller, the plate and the local times. */
+export interface OneparkSummaryStay {
+  reference: string;
+  customerName: string;
+  plate?: string;
+  /** Local time of the parking, « YYYY-MM-DDTHH:mm ». */
+  arrivalAt?: string;
+  returnAt?: string;
+}
+
+const SUMMARY_HEADING = /r[ée]sum[ée] des r[ée]servations en cours et [àa] venir/i;
+
+/** Onepark's daily summary (20/10/2026 sample: « Voici le résumé des réservations en cours et à venir sur le Parking … »). */
+export function isOneparkSummary(text: string): boolean {
+  return SUMMARY_HEADING.test(text) && /Num[ée]ro de r[ée]servation/i.test(text);
+}
+
+/**
+ * The stays of Onepark's daily summary, one block per booking: « Numéro de réservation : 5900001 », « * Jean Martin »,
+ * « Immatriculation : AB123CD », « Arrivée : dim. 11 oct. 2026 à 06:30 », « Départ : … ». No phone: never a booking by
+ * itself, only what completes one Plazo already has (its plate, its number). Empty when the email is no summary.
+ */
+export function parseOneparkSummary(text: string): OneparkSummaryStay[] {
+  if (!isOneparkSummary(text)) return [];
+  const flat = flatten(text);
+  const blocks = flat.split(/Num[ée]ro de r[ée]servation\s*:?\s*/i).slice(1);
+  const stays: OneparkSummaryStay[] = [];
+  for (const block of blocks) {
+    const reference = /^(\d{4,12})\b/.exec(block)?.[1];
+    const name = /^\d{4,12}\s*\*?\s*(.+?)\s+Immatriculation\b/i.exec(block)?.[1]?.trim();
+    if (!reference || !name) continue;
+    const plate = /Immatriculation\s*:?\s*([A-Z0-9][A-Z0-9 -]{1,14}?)\s+(?:Arriv|D[ée]part|$)/i.exec(block)?.[1]?.trim();
+    stays.push({
+      reference,
+      customerName: name,
+      plate: plate || undefined,
+      arrivalAt: dateAfter(block, String.raw`Arriv[ée]e`),
+      returnAt: dateAfter(block, String.raw`D[ée]part`),
+    });
+  }
+  return stays;
+}
