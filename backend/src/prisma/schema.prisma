@@ -74,6 +74,7 @@ model Operator {
   joinRequests          StaffJoinRequest[]
   testFeed              TestFeed?
   comparatorCommissions ComparatorCommission[]
+  partnerContracts      PartnerContract[]
 
   @@map("operators")
 }
@@ -1619,4 +1620,47 @@ model ComparatorCommission {
 
   @@unique([operatorId, comparatorKey, effectiveFrom])
   @@map("comparator_commissions")
+}
+
+/// The Plazo ↔ operator contract (20/10/2026, « Pouvoir stocker le contrat à faire signer », choice 2a): the platform
+/// uploads a PDF per operator, a manager signs it in the pro space (typed full name + « Lu et approuvé »). The PDFs live
+/// in the private Blob store (keys below), never in the database.
+enum PartnerContractStatus {
+  pending
+  signed
+  superseded
+}
+
+model PartnerContract {
+  id              String                @id @default(cuid())
+  operatorId      String
+  operator        Operator              @relation(fields: [operatorId], references: [id], onDelete: Cascade)
+  /// 1, 2, 3… per operator.
+  version         Int
+  title           String
+  fileName        String
+  sizeBytes       Int
+  /// SHA-256 (hex) of the PDF uploaded.
+  sha256          String
+  blobKey         String
+  uploadedById    String?
+  uploadedAt      DateTime              @default(now())
+  status          PartnerContractStatus @default(pending)
+  /// Last email to the managers (upload, « Renvoyer l'e-mail »).
+  notifiedAt      DateTime?
+  signedAt        DateTime?
+  signedById      String?
+  /// The full name typed as signature.
+  signerName      String?
+  signerEmail     String?
+  signerIp        String?
+  signerUserAgent String?
+  /// The PDF signed: the original plus a « Signature » page; and the proof page alone.
+  signedBlobKey   String?
+  signedSha256    String?
+  proofBlobKey    String?
+
+  @@unique([operatorId, version])
+  @@index([operatorId, status])
+  @@map("partner_contracts")
 }

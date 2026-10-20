@@ -7,6 +7,7 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import { AuthProvider, useAuth } from "@/contexts/AuthContext";
 import { can, type Permission } from "@/lib/roles";
 import AccountPage from "@/pages/AccountPage";
+import ContractPage from "@/pages/ContractPage";
 import LoginPage from "@/pages/LoginPage";
 import NotFound from "@/pages/NotFound";
 import ListingPage from "@/pages/ListingPage";
@@ -233,6 +234,14 @@ const App = () => (
                 }
               />
               <Route path="/mon-compte" element={<AccountPage />} />
+              <Route
+                path="/mon-contrat"
+                element={
+                  <RequirePermission permission="parking:manage">
+                    <ContractPage />
+                  </RequirePermission>
+                }
+              />
             </Route>
             <Route
               element={

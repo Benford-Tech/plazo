@@ -1,10 +1,11 @@
-import { BusFront, CalendarDays, ClipboardList, Euro, Globe, LayoutDashboard, LogOut, ShieldCheck, SquareParking, UserRound, Users } from "lucide-react";
+import { BusFront, CalendarDays, ClipboardList, Euro, FileSignature, Globe, LayoutDashboard, LogOut, ShieldCheck, SquareParking, UserRound, Users } from "lucide-react";
 import type { ComponentType, SVGProps } from "react";
 import { NavLink, Outlet, useNavigate } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 import { fr } from "@/lib/fr";
 import { can, type Permission } from "@/lib/roles";
 import { cn } from "@/lib/utils";
+import { ContractBanner } from "./ContractBanner";
 import { EmailVerificationBanner } from "./EmailVerificationBanner";
 import { Logo } from "./Logo";
 import { ViewAsBanner } from "./platform/ViewAsBanner";
@@ -21,6 +22,7 @@ const NAV: { label: string; to: string; icon: Icon; permission?: Permission }[] 
   { label: fr.nav.parking, to: "/parking", icon: SquareParking, permission: "reservations:view" },
   { label: fr.nav.plazo, to: "/plazo", icon: Globe, permission: "parking:manage" },
   { label: fr.nav.team, to: "/equipe", icon: Users, permission: "team:manage" },
+  { label: fr.nav.contract, to: "/mon-contrat", icon: FileSignature, permission: "parking:manage" },
   { label: fr.nav.account, to: "/mon-compte", icon: UserRound },
 ];
 
@@ -108,6 +110,7 @@ export function AdminLayout() {
             </button>
           </header>
           <EmailVerificationBanner />
+          <ContractBanner />
           <main className="mx-auto w-full max-w-7xl flex-1 space-y-6 px-4 py-6 sm:px-6">
             <Outlet />
           </main>
