@@ -1,0 +1,28 @@
+ParkVia - Nouvelle notification de réservation
+Numéro de réservation:
+PC90000001
+Parking choisi:
+PARKING EXEMPLE LYON
+Total:
+27,00
+Montant déja réglé:
+27,00
+Montant à régler:
+0,00
+DEMANDES SPÉCIALES:
+Modalités de réservation:
+Parking
+Date de remise du véhicule:
+23/10/2026 15:00:00
+Date de récupération du véhicule:
+26/10/2026 09:30:00
+Passagers:
+3
+Nom:
+Camille Exemple
+Tel Portable:
+912345678 (351)
+Email:
+camille@example.com
+Numéro d'immatriculation:
+AB-12-CD

@@ -12,7 +12,7 @@ export const MAX_RATE_BP = 10000;
 export const MAX_FIXED_CENTS = 100000;
 
 /** The comparators of the client n°1, offered before their first mail arrives. */
-export const KNOWN_COMPARATORS = ['Allopark', 'Onepark', 'Parclick', 'ParkMundo'];
+export const KNOWN_COMPARATORS = ['Allopark', 'Onepark', 'Parclick', 'ParkMundo', 'ParkVia'];
 
 export interface CommissionRate {
   comparatorKey: string;

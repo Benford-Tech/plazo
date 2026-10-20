@@ -130,7 +130,10 @@ Ne construire QUE ce qui règle la douleur n°1 du client.
      même quand ni l'expéditeur ni l'objet ne nomment Onepark, transfert à la main compris (`providerOf`, 20/10/2026 : « ce mail n'a pas
      été reconnu »)), `parkmundo.ts` (référence `PM…`, détails
      du voyage avec vols aller et retour, véhicule et couleur ; montant = « Prix du parking », sans le « Coût de réservation »
-     de ParkMundo) et `parclick.ts` (arrivée, sortie, référence), en plus d'`allopark.ts` (qui lit aussi la confirmation
+     de ParkMundo) `parclick.ts` (arrivée, sortie, référence) et `parkvia.ts` (20/10/2026, « ParkVia - Nouvelle notification de réservation » :
+     numéro `PC…`, remise et récupération du véhicule à la seconde, « Total », passagers, nom, « Tel Portable » écrit sans le 0 et suivi
+     de l'indicatif entre parenthèses, `parkviaPhone` « 912345678 (351) » → « +351 912345678 », immatriculation ; comparateur `ParkVia`
+     dans `inbound-kind.ts` et `KNOWN_COMPARATORS` ; fixture `parkvia-notification.txt`), en plus d'`allopark.ts` (qui lit aussi la confirmation
      envoyée au voyageur) ; aides `flatten`, `numericDateTime`, `amountAfter`, `PHONE`, `PLATE`, `NOM`, `FLIGHT` dans
      `importers/common.ts` ; `ParsedBooking.vehicleModel/vehicleColour` enregistrés par `createFromImport` ; une annulation ou
      une modification n'est jamais lue comme une réservation (`isCancellationOrChange`) ; un mail reconnu mais incomplet est
