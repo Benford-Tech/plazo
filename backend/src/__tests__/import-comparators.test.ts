@@ -26,6 +26,7 @@ import { bookingChangedPush } from '@/domain/reservation-messages';
 import { forwardedRecipientsOf, stripHtml, textOf } from '@/domain/inbound-email';
 import { fillGaps } from '@/services/inbound-email.service';
 import { classifyMail } from '@/domain/inbound-kind';
+import { parkviaPhone } from '@/domain/importers/parkvia';
 import { parseOneparkSummary } from '@/domain/importers/onepark';
 import { importedNames } from '@/domain/customer-name';
 import { AlloparkPageService } from '@/services/allopark-page.service';
@@ -109,6 +110,31 @@ describe('confirmations des comparateurs (09/10/2026)', () => {
     };
     expect(classifyMail(mail)).toMatchObject({ provider: 'Onepark', kind: 'booking', sure: true, rule: 'onepark.booking' });
     expect(importedNames(read('onepark-notification-short.html')!)).toMatchObject({ customerFirstName: 'camille', customerLastName: 'exemple' });
+  });
+
+  it('ParkVia (20/10/2026) : la notification au parking, son numéro, ses dates à la seconde et le téléphone suivi de son indicatif', () => {
+    const text = readFileSync(join(__dirname, 'fixtures', 'parkvia-notification.txt'), 'utf8');
+    expect(parseConfirmationEmail(text)).toEqual({
+      provider: 'ParkVia',
+      externalReference: 'PC90000001',
+      arrivalAt: '2026-10-23T15:00',
+      returnAt: '2026-10-26T09:30',
+      priceCents: 2700,
+      passengers: 3,
+      customerName: 'Camille Exemple',
+      customerPhone: '+351 912345678',
+      customerEmail: 'camille@example.com',
+      plate: 'AB-12-CD',
+    });
+    expect(classifyMail({ subject: 'ParkVia - Nouvelle notification de réservation', from: 'ParkVia <noreply@parkvia.com>', text })).toMatchObject({
+      provider: 'ParkVia',
+      kind: 'booking',
+      reference: 'PC90000001',
+      rule: 'parkvia.booking',
+      sure: true,
+    });
+    expect(parkviaPhone('0612345678')).toBe('0612345678');
+    expect(parkviaPhone('612345678 (33)')).toBe('+33 612345678');
   });
 
   it('Onepark, récapitulatif du jour (20/10/2026) : un séjour par numéro, jamais une réservation à lui seul', () => {

@@ -29,7 +29,7 @@ import type { ReadingMeta } from './email-reading';
 import { FORWARD_MARKER, HEADER_FROM } from './inbound-email';
 
 export type MailKind = 'booking' | 'change' | 'cancellation' | 'other' | 'unknown';
-export type Comparator = 'Allopark' | 'Onepark' | 'Parclick' | 'ParkMundo';
+export type Comparator = 'Allopark' | 'Onepark' | 'Parclick' | 'ParkMundo' | 'ParkVia';
 
 export interface MailType {
   /** The comparator the email is about; null for an unknown sender. */
@@ -209,6 +209,7 @@ const BRANDS: { provider: Comparator; brand: RegExp }[] = [
   { provider: 'Onepark', brand: /onepark/i },
   { provider: 'Parclick', brand: /parclick/i },
   { provider: 'ParkMundo', brand: /parkmundo/i },
+  { provider: 'ParkVia', brand: /parkvia/i },
 ];
 
 /** The comparator a message names (subject, sender or text), or whose importer recognises its layout (ParkMundo's logo-only brand). */
@@ -246,6 +247,8 @@ function referenceOf(provider: Comparator, subject: string, text: string): strin
         return /Num[ée]ro de r[ée]servation\s*:?\s*([A-Z0-9-]{4,20})\b/i.exec(flat)?.[1];
       case 'Parclick':
         return /R[ée]f[ée]rence de la r[ée]servation\s*:?\s*([A-Z0-9-]{5,20})\b/i.exec(flat)?.[1];
+      case 'ParkVia':
+        return /Num[ée]ro de r[ée]servation\s*:?\s*([A-Z]{1,4}\d{5,12})\b/i.exec(flat)?.[1];
     }
   })();
   return found ? found.toUpperCase() : null;

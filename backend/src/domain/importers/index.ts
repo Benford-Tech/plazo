@@ -4,11 +4,12 @@ import { isCancellationOrChange } from './common';
 import { oneparkImporter } from './onepark';
 import { parclickImporter } from './parclick';
 import { parkmundoImporter } from './parkmundo';
+import { parkviaImporter } from './parkvia';
 import { EmailImporter, ParsedBooking } from './types';
 
 // One entry per aggregator whose confirmation emails we can read (09/10/2026: Allopark, Onepark, Parclick, ParkMundo;
 // what none of them reads, Claude reads: L-A).
-export const EMAIL_IMPORTERS: EmailImporter[] = [alloparkImporter, oneparkImporter, parclickImporter, parkmundoImporter];
+export const EMAIL_IMPORTERS: EmailImporter[] = [alloparkImporter, oneparkImporter, parclickImporter, parkmundoImporter, parkviaImporter];
 
 /** Who to forward (G-B): one line per comparator and sender address. */
 export const IMPORT_SENDERS: { provider: string; address: string }[] = EMAIL_IMPORTERS.flatMap(i =>
