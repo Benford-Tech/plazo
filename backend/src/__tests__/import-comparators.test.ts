@@ -135,6 +135,11 @@ describe('confirmations des comparateurs (09/10/2026)', () => {
     });
     expect(parkviaPhone('0612345678')).toBe('0612345678');
     expect(parkviaPhone('612345678 (33)')).toBe('+33 612345678');
+    // 2nd sample of 20/10/2026: the code left empty, « 0123456789 () », and a plate without dashes.
+    const second = parseConfirmationEmail(
+      text.replace('912345678 (351)', '0123456789 ()').replace('AB-12-CD', 'AB123CD').replace('PC90000001', 'PC90000002'),
+    );
+    expect(second).toMatchObject({ externalReference: 'PC90000002', customerPhone: '0123456789', plate: 'AB123CD', customerName: 'Camille Exemple' });
   });
 
   it('Onepark, récapitulatif du jour (20/10/2026) : un séjour par numéro, jamais une réservation à lui seul', () => {
