@@ -126,7 +126,9 @@ Ne construire QUE ce qui règle la douleur n°1 du client.
      numéro, sinon la seule sans numéro à la même arrivée locale avec un mot du nom en commun (numéro ajouté, plaque ajoutée
      si elle manque, jamais remplacée), historique `reservation.updated` `source: 'onepark_summary'` ; mail « Traité » (issue
      `handled`) quand tout est connu, sinon « À traiter » avec le résumé « absent(s) de Plazo : 59… », « plusieurs réservations
-     possibles », « autre plaque dans Plazo » (numéros seulement) ; fixture `onepark-summary.txt`), `parkmundo.ts` (référence `PM…`, détails
+     possibles », « autre plaque dans Plazo » (numéros seulement) ; fixture `onepark-summary.txt` ; reconnu à sa mise en page
+     même quand ni l'expéditeur ni l'objet ne nomment Onepark, transfert à la main compris (`providerOf`, 20/10/2026 : « ce mail n'a pas
+     été reconnu »)), `parkmundo.ts` (référence `PM…`, détails
      du voyage avec vols aller et retour, véhicule et couleur ; montant = « Prix du parking », sans le « Coût de réservation »
      de ParkMundo) et `parclick.ts` (arrivée, sortie, référence), en plus d'`allopark.ts` (qui lit aussi la confirmation
      envoyée au voyageur) ; aides `flatten`, `numericDateTime`, `amountAfter`, `PHONE`, `PLATE`, `NOM`, `FLIGHT` dans

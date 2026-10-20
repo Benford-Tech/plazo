@@ -123,6 +123,17 @@ describe('confirmations des comparateurs (09/10/2026)', () => {
       rule: 'onepark.summary',
       sure: true,
     });
+    // Its layout is enough (20/10/2026): sent from an address without the brand, or forwarded by hand from Gmail.
+    for (const mail of [
+      { subject: 'Résumé de vos réservations', from: 'Notifications <no-reply@mailer.example.com>', text },
+      {
+        subject: 'Fwd: Résumé de vos réservations',
+        from: 'Gérant <gerant@example.com>',
+        text: `---------- Forwarded message ---------\nDe : Notifications <no-reply@mailer.example.com>\nObjet : Résumé\n\n${text}`,
+      },
+    ]) {
+      expect(classifyMail(mail)).toMatchObject({ provider: 'Onepark', kind: 'other', rule: 'onepark.summary', sure: true });
+    }
     // Neither a booking for the importers.
     expect(parseConfirmationEmail(text)).toBeNull();
     expect(parseOneparkSummary('Une nouvelle réservation Onepark a été enregistrée. Début : 01/11/2026 06:00')).toEqual([]);
