@@ -160,6 +160,31 @@ afterEach(() => {
 afterAll(() => prisma.$disconnect());
 
 describe('les mails connus des comparateurs, sans Claude (16/10/2026)', () => {
+  it.each<Mode>(['absent', 'credit'])(
+    'Claude %s : l’avis court de Onepark (20/10/2026) crée la réservation sans numéro ni plaque, une seule fois',
+    async mode => {
+      const op = await connected();
+      claudeIs(mode);
+      const short = fixture('onepark-notification-short.html');
+      const shortItem = item(op.address, '', {
+        RawHtmlBody: short,
+        From: { Name: 'Onepark', Address: 'noreply@onepark.co' },
+        Subject: 'Nouvelle réservation',
+      });
+      expect((await post([shortItem])).body).toEqual({ received: 1, imported: 1, toCheck: 0, ignored: 0 });
+      expect(await prisma.reservation.findFirstOrThrow({ where: { operatorId: op.operator.id, channelDetail: 'Onepark' } })).toMatchObject({
+        customerFirstName: 'camille',
+        customerLastName: 'exemple',
+        customerPhone: '+33 6 12 34 56 78',
+        plate: '',
+        priceCents: 2000,
+      });
+      // The same notice again is the same booking (same phone, name and arrival).
+      expect((await post([shortItem])).body).toMatchObject({ imported: 0 });
+      expect(await prisma.reservation.count({ where: { operatorId: op.operator.id } })).toBe(1);
+    },
+  );
+
   it.each<Mode>(['absent', 'credit', 'answering'])(
     'Claude %s : la confirmation, la modification du 16/10 (règle Gmail, puis à la main), une modification d’une réservation inconnue, Onepark, une annulation et une réponse donnent le même résultat, sans appeler Claude',
     async mode => {
@@ -206,7 +231,6 @@ describe('les mails connus des comparateurs, sans Claude (16/10/2026)', () => {
           ])
         ).body,
       ).toEqual({ received: 1, imported: 1, toCheck: 0, ignored: 0 });
-
       // A cancellation and a customer's reply: shown with their kind, nothing done.
       await post([item(op.address, `Allopark\nVotre réservation ${REF} a été annulée.`, { Subject: `Annulation de votre réservation ${REF}` })]);
       expect(await latest(op.operator.id)).toMatchObject({

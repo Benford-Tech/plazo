@@ -117,7 +117,9 @@ Ne construire QUE ce qui règle la douleur n°1 du client.
      avec le résumé, pastille du genre dans la liste. Sans clé, échec, refus ou délai (30 s) : le mail attend comme avant.
      **Comparateurs du client n°1 (09/10/2026, « forme-toi avec ces modèles »)** : importateurs déterministes `onepark.ts`
      (avis au parking : prénom, nom, portable, début, fin du forfait, montant, modèle, plaque, passagers, vol retour ; le retour
-     est la « récupération prévue » quand elle est donnée, sinon la fin du forfait), `parkmundo.ts` (référence `PM…`, détails
+     est la « récupération prévue » quand elle est donnée, sinon la fin du forfait ; **avis court du 20/10/2026** : « Début : ven.
+     23 oct. 2026 à 09:00 » en lettres, « Montant résa », nom entier dans « Nom » sans « Prénom » (découpé par `importedNames`),
+     « Téléphone », ni numéro ni plaque : importé, doublon par téléphone, nom et arrivée ; fixture `onepark-notification-short.html`), `parkmundo.ts` (référence `PM…`, détails
      du voyage avec vols aller et retour, véhicule et couleur ; montant = « Prix du parking », sans le « Coût de réservation »
      de ParkMundo) et `parclick.ts` (arrivée, sortie, référence), en plus d'`allopark.ts` (qui lit aussi la confirmation
      envoyée au voyageur) ; aides `flatten`, `numericDateTime`, `amountAfter`, `PHONE`, `PLATE`, `NOM`, `FLIGHT` dans
