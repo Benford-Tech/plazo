@@ -191,6 +191,7 @@ describe('réception : comment le mail est arrivé, et les mails écartés (14/1
       { provider: 'Onepark', lastReceivedAt: expect.any(String), lastStatus: 'unrecognised', arrival: 'forwarded' },
       { provider: 'Parclick', lastReceivedAt: null, lastStatus: null, arrival: 'none' },
       { provider: 'ParkMundo', lastReceivedAt: null, lastStatus: null, arrival: 'none' },
+      { provider: 'ParkVia', lastReceivedAt: null, lastStatus: null, arrival: 'none' },
     ]);
     expect(settings.progress).toEqual({
       confirmationAt: null,
