@@ -9,6 +9,8 @@ import {
   type CommissionRate,
 } from '@/domain/comparator-commission';
 import { parseInstant } from '@/domain/time';
+import { Container } from 'typedi';
+import { RevenueService } from '@/services/revenue.service';
 import { addStaff, api, resetDatabase, setupOperator } from './utils/helpers';
 
 // 19/10/2026, « paramétrer le taux de commission de chaque comparateur » (choice « les 3 »).
@@ -145,6 +147,16 @@ describe('la commission des comparateurs (API)', () => {
       commissionCents: 972,
       netCents: 4428,
     });
+
+    // The dashboard's tile (20/10/2026, choice A): gross − commissions = net, one line per channel, a comparator without a rate.
+    await create(op, 'aggregator', 'Parclick', 3000, at('2026-10-10T12:00'));
+    const manager = await prisma.staff.findUniqueOrThrow({ where: { email: op.manager.email } });
+    const summary = await Container.get(RevenueService).summary({ ...manager, operatorName: '' }, at('2026-10-20T12:00'));
+    expect(summary.month).toMatchObject({ totalCents: 12400, commissionCents: 972, netCents: 11428 });
+    expect(summary.commissions).toEqual([
+      { label: 'Allopark', comparatorKey: 'allopark', rateBp: 1800, amountCents: 972, count: 1, missingRate: false },
+      { label: 'Parclick', comparatorKey: 'parclick', rateBp: null, amountCents: 0, count: 1, missingRate: true },
+    ]);
 
     const sheet = await api().get(`/api/internal/reservations/${allo.id}`).set(auth(op.token));
     expect(sheet.body.commission).toMatchObject({ source: 'rate', rateBp: 1800, amountCents: 972, netCents: 4428 });

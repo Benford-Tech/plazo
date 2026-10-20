@@ -457,6 +457,12 @@ export const fr = {
     tile: (month: string) => `Chiffre d'affaires · ${month}`,
     tileSub: (today: string, week: string, count: number) => `Aujourd'hui ${today} · 7 jours ${week} · ${count} réservation${count > 1 ? "s" : ""}`,
     tileMissing: (n: number) => `${n} sans montant`,
+    // Choice A of 20/10/2026: gross − commissions = net.
+    tileGross: "Encaissé par les clients",
+    tileCommissions: "Commissions",
+    tileShare: (pct: string) => `${pct} du chiffre`,
+    tileKept: "Vous gardez",
+    tileMissingRate: (name: string) => `${name} : taux à régler`,
     // 19/10/2026: what the comparators take (choice « les 3 », A).
     view: "Afficher",
     views: { gross: "Brut", net: "Net de commissions" },

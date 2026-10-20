@@ -206,6 +206,29 @@ describe("DashboardPage", () => {
     expect(tile).toHaveTextContent("3 sans montant");
   });
 
+  it("choix A (20/10/2026) : brut − commissions = ce que le parking garde, une pastille par canal, un comparateur sans taux", async () => {
+    api.getRevenueSummary.mockResolvedValue({
+      today: "2026-10-20",
+      month: { from: "2026-10-01", to: "2026-10-31", totalCents: 841250, commissionCents: 123640, netCents: 717610, count: 187, withoutAmount: 0 },
+      todayCents: 41200,
+      weekCents: 210480,
+      commissions: [
+        { label: "Allopark", comparatorKey: "allopark", rateBp: 1800, amountCents: 61200, count: 41, missingRate: false },
+        { label: "Plazo", comparatorKey: null, rateBp: null, amountCents: 24000, count: 9, missingRate: false },
+        { label: "Parclick", comparatorKey: "parclick", rateBp: null, amountCents: 0, count: 14, missingRate: true },
+      ],
+    });
+    renderPage();
+    const tile = await screen.findByTestId("kpi-revenue");
+    expect(tile).toHaveTextContent(/Encaissé par les clients8\s412,50\s€/);
+    expect(tile).toHaveTextContent(/Commissions1\s236,40\s€14,7\s%\sdu chiffre/);
+    expect(tile).toHaveTextContent(/Vous gardez7\s176,10\s€/);
+    expect(tile).toHaveTextContent(/Allopark 18\s% · −612,00\s€/);
+    expect(tile).toHaveTextContent(/Plazo · −240,00\s€/);
+    expect(tile).toHaveTextContent("Parclick : taux à régler");
+    expect(tile).not.toHaveTextContent("sans montant");
+  });
+
   it("affiche les chiffres du jour, les services, les alertes classées, les véhicules avec badges et les navettes", async () => {
     renderPage();
     expect(

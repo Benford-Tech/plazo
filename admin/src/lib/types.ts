@@ -1580,9 +1580,11 @@ export interface RevenueReport {
 
 export interface RevenueSummary {
   today: string;
-  month: { from: string; to: string; totalCents: number; netCents?: number; count: number; withoutAmount: number };
+  month: { from: string; to: string; totalCents: number; commissionCents?: number; netCents?: number; count: number; withoutAmount: number };
   todayCents: number;
   weekCents: number;
+  /** What each channel took this month (20/10/2026); missing from an older API. */
+  commissions?: { label: string; comparatorKey: string | null; rateBp: number | null; amountCents: number; count: number; missingRate: boolean }[];
 }
 
 // ---- Prospection (Plateforme › Prospection, 18/10/2026) ----------------------------------------------------------------

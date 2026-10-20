@@ -439,7 +439,11 @@ Ne construire QUE ce qui règle la douleur n°1 du client.
      « Commission Allopark − 9,72 € · 18 % · Vous gardez 44,28 € », « Changer pour cette réservation » (taux ou montant), « Revenir au
      taux du comparateur » ; liste des réservations : prix et « garde … » sous chaque réservation de comparateur. `commission` est
      servi aux gérants seulement (null pour les autres rôles) sur `GET /internal/reservations/:id` et la liste. Plazo Pro ne montre
-     pas encore le net.
+     pas encore le net. **Tableau de bord (20/10/2026, « mets en avant les commissions », choix A des maquettes
+     https://claude.ai/artifact/MsqXE6C4ZsDwZppBbPCMkD)** : la tuile `RevenueTile` dit « Encaissé par les clients − Commissions (N % du
+     chiffre) = Vous gardez », puis une pastille par canal qui a retenu (« Allopark 18 % · −612,00 € », « Plazo · −240,00 € ») et
+     « Parclick : taux à régler » en ambre pour un comparateur sans taux ; `GET /internal/revenue/summary` rend `month.commissionCents`
+     et `commissions[] { label, comparatorKey, rateBp, amountCents, count, missingRate }` (`RevenueService.commissionLines`).
    - **Frais de nuit (12/10/2026, choix B « Dans le détail du prix seulement », « ajoute des frais de nuit pour les arrivées
      et départs en heure définie par le parking »)** : une plage par parking, la même chaque jour, pour les dépôts comme pour
      les retours (`Parking.nightFeeEnabled`, `nightStart` / `nightEnd` « HH:mm », `nightArrivalFeeCents` « Dépôt de nuit »,
