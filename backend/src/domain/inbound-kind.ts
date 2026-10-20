@@ -216,6 +216,9 @@ function providerOf(subject: string, from: string, text: string): Comparator | n
   const all = `${subject}\n${from}\n${text}`;
   const named = BRANDS.find(b => b.brand.test(all))?.provider;
   if (named) return named;
+  // Onepark's daily summary never names Onepark (20/10/2026, sent from an address without the brand, or forwarded by
+  // hand): its layout is its signature.
+  if (isOneparkSummary(text)) return 'Onepark';
   return (EMAIL_IMPORTERS.find(i => i.detect(text))?.provider as Comparator | undefined) ?? null;
 }
 

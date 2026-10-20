@@ -70,7 +70,7 @@ const SUMMARY_HEADING = /r[ée]sum[ée] des r[ée]servations en cours et [àa] v
 
 /** Onepark's daily summary (20/10/2026 sample: « Voici le résumé des réservations en cours et à venir sur le Parking … »). */
 export function isOneparkSummary(text: string): boolean {
-  return SUMMARY_HEADING.test(text) && /Num[ée]ro de r[ée]servation/i.test(text);
+  return SUMMARY_HEADING.test(text) && /Num[ée]ro de r[ée]servation/i.test(text) && /Immatriculation/i.test(text);
 }
 
 /**
