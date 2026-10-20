@@ -7,6 +7,9 @@ import type {
 } from "@/lib/plan/parkingFiles";
 import type {
   Airport,
+  ContractFileKind,
+  MyContract,
+  PartnerContract,
   Dashboard,
   LiveShuttles,
   InboundSettings,
@@ -815,6 +818,28 @@ export const adminApi = {
       method: "POST",
       body: json(input),
     }),
+  // The Plazo ↔ operator contract (20/10/2026).
+  getOperatorContracts: (operatorId: string) =>
+    apiRequest<{ contracts: PartnerContract[] }>(`/internal/platform/operators/${operatorId}/contracts`),
+  uploadOperatorContract: (operatorId: string, file: File, title?: string) =>
+    apiRequest<PartnerContract>(
+      `/internal/platform/operators/${operatorId}/contracts?${new URLSearchParams({ fileName: file.name, ...(title ? { title } : {}) })}`,
+      { method: "POST", body: file, headers: { "Content-Type": "application/pdf" } },
+    ),
+  remindOperatorContract: (operatorId: string, contractId: string) =>
+    apiRequest<PartnerContract>(`/internal/platform/operators/${operatorId}/contracts/${contractId}/remind`, { method: "POST" }),
+  removeOperatorContract: (operatorId: string, contractId: string) =>
+    apiRequest<void>(`/internal/platform/operators/${operatorId}/contracts/${contractId}`, { method: "DELETE" }),
+  operatorContractFile: (operatorId: string, contractId: string, kind: ContractFileKind) =>
+    apiFile(`/internal/platform/operators/${operatorId}/contracts/${contractId}/file?kind=${kind}`),
+  getMyContract: () => apiRequest<MyContract>("/internal/contract"),
+  signMyContract: (contractId: string, signerName: string) =>
+    apiRequest<MyContract>(`/internal/contract/${contractId}/sign`, {
+      method: "POST",
+      body: json({ signerName, accepted: true }),
+    }),
+  myContractFile: (contractId: string, kind: ContractFileKind) =>
+    apiFile(`/internal/contract/${contractId}/file?kind=${kind}`),
   resendInvitation: (id: string) =>
     apiRequest<InvitationResult>(
       `/internal/platform/operators/${id}/invitation`,

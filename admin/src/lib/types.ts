@@ -851,6 +851,8 @@ export interface PlatformOperator {
   payments: StripeState;
   commissionBps: number | null;
   bookingsThisMonth: number;
+  /** The latest contract (20/10/2026); missing from an older API. */
+  contract?: { status: "pending" | "signed"; version: number } | null;
   invitation: { sentAt: string; expiresAt: string; expired: boolean } | null;
 }
 
@@ -1681,4 +1683,32 @@ export interface ProspectSendResult {
   queued: number;
   skipped: number;
   nextOpening: string | null;
+}
+
+/** The Plazo ↔ operator contract (20/10/2026, « Pouvoir stocker le contrat à faire signer », choice 2a). */
+export type PartnerContractStatus = "pending" | "signed" | "superseded";
+export type ContractFileKind = "original" | "signed" | "proof";
+
+export interface PartnerContract {
+  id: string;
+  version: number;
+  title: string;
+  fileName: string;
+  sizeBytes: number;
+  sha256: string;
+  status: PartnerContractStatus;
+  uploadedAt: string;
+  uploadedBy: string | null;
+  notifiedAt: string | null;
+  signedAt: string | null;
+  signer: { name: string; email: string | null } | null;
+  signerIp: string | null;
+  signedSha256: string | null;
+}
+
+/** « Mon contrat »: the one to sign (else the latest signed) and the versions signed before. */
+export interface MyContract {
+  current: PartnerContract | null;
+  history: PartnerContract[];
+  canSign: boolean;
 }

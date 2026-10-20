@@ -147,6 +147,9 @@ une décision de Joanny. Cocher au fur et à mesure.
   privé, région Paris si proposée, puis « Connect to project » sur `plazo`) : Vercel pose `BLOB_READ_WRITE_TOKEN` et les photos
   s'enregistrent après le redéploiement ; sans lui, Plazo Pro affiche « Les photos ne sont pas encore activées » et l'état des
   lieux ne peut pas être terminé. Faire relire le modèle de contrat (`backend/src/domain/contract.ts`) par le juriste avec les CGV.
+  Le même magasin garde les contrats Plazo ↔ loueur (20/10/2026) : sans lui, Plateforme › Loueurs › « Contrat » refuse le dépôt
+  (« Le stockage des fichiers n'est pas configuré. »). Faire confirmer par le juriste la valeur de la signature simple (nom tapé,
+  « Lu et approuvé », IP, empreinte SHA-256) pour le contrat de partenariat.
 - [ ] **Commission** : 10 % TTC par défaut (`PLATFORM_COMMISSION_BPS=1000`), surcharge par loueur dans Plateforme ›
   Loueurs ; à confirmer avec le client n°1 et l'expert-comptable (HT ou TTC, TVA de Plazo), figée dans chaque paiement.
 - [x] **Parkings de démonstration** : archivés le 09/10/2026 (demande de Joanny, « archive tous les parkings de démo ») :

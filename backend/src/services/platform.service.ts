@@ -19,6 +19,7 @@ import { loadPlanCapacity } from './capacity.service';
 import { ListingService } from './listing.service';
 import { NotificationService } from './notification.service';
 import { OperatorService } from './operator.service';
+import { PartnerContractService } from './partner-contract.service';
 import { PaymentService } from './payment.service';
 import { PushService } from './push.service';
 import { TokenService } from './token.service';
@@ -188,7 +189,7 @@ export class PlatformService {
     if (view !== undefined && view !== 'current' && view !== 'archived') throw new ValidationException({ view: 'invalid_view' });
     const archived = view === 'archived';
     const since = monthStart();
-    const [operators, monthly, archivedCount, currentCount] = await Promise.all([
+    const [operators, monthly, archivedCount, currentCount, contracts] = await Promise.all([
       prisma.operator.findMany({
         where: { archivedAt: archived ? { not: null } : null },
         orderBy: archived ? { archivedAt: 'desc' } : { createdAt: 'desc' },
@@ -214,7 +215,15 @@ export class PlatformService {
       prisma.reservation.groupBy({ by: ['operatorId'], where: { createdAt: { gte: since }, ...COUNTED_BOOKING }, _count: { _all: true } }),
       prisma.operator.count({ where: { archivedAt: { not: null } } }),
       prisma.operator.count({ where: { archivedAt: null } }),
+      // The latest contract of each operator (20/10/2026): « À signer » or « Signé » in the list.
+      prisma.partnerContract.findMany({
+        where: { status: { not: 'superseded' }, operator: { archivedAt: archived ? { not: null } : null } },
+        orderBy: { version: 'desc' },
+        select: { operatorId: true, status: true, version: true },
+      }),
     ]);
+    const contractOf = new Map<string, { status: string; version: number }>();
+    for (const c of contracts) if (!contractOf.has(c.operatorId)) contractOf.set(c.operatorId, { status: c.status, version: c.version });
     const bookings = new Map(monthly.map(m => [m.operatorId, m._count._all]));
     // « places »: the capacity used everywhere (the plan's, else the declared figure; 09/10/2026).
     const plans = await loadPlanCapacity(operators.flatMap(o => o.parkings.map(p => p.id)));
@@ -247,6 +256,7 @@ export class PlatformService {
           payments: { connected: !!this.paymentService.accountOf(o), chargesEnabled: o.stripeChargesEnabled, payoutsEnabled: o.stripePayoutsEnabled },
           commissionBps: o.commissionBps,
           bookingsThisMonth: bookings.get(o.id) ?? 0,
+          contract: contractOf.get(o.id) ?? null,
           invitation: invitation ? { sentAt: invitation.createdAt, expiresAt: invitation.expiresAt, expired: invitation.expiresAt <= now } : null,
         };
       }),
@@ -375,6 +385,8 @@ export class PlatformService {
     const { operator, reason, counts } = await this.deletionCheck(operatorId);
     if (reason) throw deletionRefused(reason);
 
+    // The contract PDFs live outside the database (20/10/2026): erased once the operator is gone.
+    const contractFiles = await Container.get(PartnerContractService).blobKeysOf(operatorId);
     const deleted = await prisma.$transaction(async tx => {
       // The lock of a payment's confirmation: one in flight ends first, and the conditions below see it.
       for (const parking of operator.parkings) await this.paymentService.capacity.lock(tx, parking.id);
@@ -409,6 +421,7 @@ export class PlatformService {
       const again = await this.deletionCheck(operatorId);
       throw deletionRefused(again.reason ?? 'not_suspended');
     }
+    await Container.get(PartnerContractService).storage.remove(contractFiles);
     return { id: operatorId, name: operator.name, counts };
   }
 

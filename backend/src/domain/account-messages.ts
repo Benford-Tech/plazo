@@ -121,3 +121,38 @@ export function listingUnpublishedEmail(productName: string, data: { title: stri
     { label: 'Modifier ma fiche', url: data.url },
   );
 }
+
+/** « Pouvoir stocker le contrat à faire signer » (20/10/2026): a contract waits for a manager's signature. */
+export function contractToSignEmail(
+  productName: string,
+  data: { operatorName: string; title: string; version: number; url: string; reminder: boolean },
+): EmailMessage {
+  return message(
+    productName,
+    data.reminder ? `Rappel : votre contrat ${productName} est à signer` : `Votre contrat ${productName} est prêt à signer`,
+    'Votre contrat est prêt à signer',
+    [
+      `${productName} a déposé le contrat « ${data.title} » (version ${data.version}) pour ${data.operatorName}.`,
+      'Lisez-le puis signez-le depuis votre espace pro, page « Mon contrat » : tapez votre nom complet et cochez « Lu et approuvé ». Seul un gérant peut le signer.',
+    ],
+    { label: 'Lire et signer le contrat', url: data.url },
+  );
+}
+
+/** The signed contract, to the manager who signed and to the platform. */
+export function contractSignedEmail(
+  productName: string,
+  data: { operatorName: string; title: string; version: number; signerName: string; signedAt: string; signedSha256: string; url: string },
+): EmailMessage {
+  return message(
+    productName,
+    `Contrat signé : ${data.title} · ${data.operatorName}`,
+    'Contrat signé',
+    [
+      `Le contrat « ${data.title} » (version ${data.version}) de ${data.operatorName} a été signé par ${data.signerName} le ${data.signedAt} (heure de Paris).`,
+      `Empreinte SHA-256 du PDF signé : ${data.signedSha256}`,
+      'Le PDF signé et la preuve de signature sont à télécharger depuis l’espace pro.',
+    ],
+    { label: 'Voir le contrat signé', url: data.url },
+  );
+}

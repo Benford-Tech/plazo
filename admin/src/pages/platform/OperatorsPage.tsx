@@ -1,12 +1,16 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { useEffect, useState } from "react";
+import { Fragment, useEffect, useState } from "react";
 import { useConfirm } from "@/components/ui/confirm-context";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { toast } from "sonner";
 import { Skeleton } from "@/components/ui/skeleton";
+import {
+  ContractPill,
+  OperatorContractPanel,
+} from "@/components/platform/OperatorContractPanel";
 import { useAuth } from "@/contexts/AuthContext";
 import { adminApi, ApiError } from "@/lib/api";
-import { describeError, errorMessage, fr } from "@/lib/fr";
+import { contractFr, describeError, errorMessage, fr } from "@/lib/fr";
 import { LISTING_TONE, percent, shortDate } from "@/lib/platform";
 import type { InvitationResult, PlatformOperator } from "@/lib/types";
 import { cn } from "@/lib/utils";
@@ -411,7 +415,8 @@ function RowActions({
         toast.error(
           preview.reason === "has_payments" && operator.archivedAt
             ? t.paidKeptArchived
-            : preview.reason === "has_payments" && operator.status !== "suspended"
+            : preview.reason === "has_payments" &&
+                operator.status !== "suspended"
               ? t.paidSuspendFirst
               : errorMessage(preview.reason ?? undefined),
         );
@@ -441,10 +446,14 @@ function RowActions({
   });
   // An invitation never accepted, or a suspended operator (archived or not); never the platform's own account.
   const deleteButton =
-    !operator.isPlatform && (operator.invitation || operator.status === "suspended") ? (
+    !operator.isPlatform &&
+    (operator.invitation || operator.status === "suspended") ? (
       <button
         type="button"
-        className={cn(ghostButton, "text-muted-foreground hover:text-destructive")}
+        className={cn(
+          ghostButton,
+          "text-muted-foreground hover:text-destructive",
+        )}
         disabled={removal.isPending}
         onClick={() => removal.mutate()}
       >
@@ -561,7 +570,8 @@ function subline(o: PlatformOperator): string {
     return o.invitation.expired
       ? t.invitationExpired(shortDate.format(new Date(o.invitation.sentAt)))
       : t.invitedOn(shortDate.format(new Date(o.invitation.sentAt)));
-  if (o.archivedAt) return t.archivedOn(shortDate.format(new Date(o.archivedAt)));
+  if (o.archivedAt)
+    return t.archivedOn(shortDate.format(new Date(o.archivedAt)));
   if (o.status === "suspended" && o.suspendedAt)
     return t.suspendedOn(shortDate.format(new Date(o.suspendedAt)));
   const base = t.parkingsPlaces(o.parkings, o.places);
@@ -594,6 +604,10 @@ export default function OperatorsPage() {
   const defaultBps = operators.data?.defaultCommissionBps ?? null;
   const showLink = (result: InvitationResult) =>
     setLink(result.inviteUrl ? result : null);
+  // The contract card of one operator (20/10/2026); ?contrat=<id> opens it (link of the « Contrat signé » email).
+  const [contractOf, setContractOf] = useState<string | null>(() =>
+    params.get("contrat"),
+  );
 
   return (
     <>
@@ -628,7 +642,9 @@ export default function OperatorsPage() {
               key={view}
               type="button"
               aria-pressed={pressed}
-              onClick={() => setParams(view === "archived" ? { vue: "archives" } : {})}
+              onClick={() =>
+                setParams(view === "archived" ? { vue: "archives" } : {})
+              }
               className={cn(
                 "flex min-h-10 items-center gap-2 px-3 text-base",
                 pressed
@@ -661,6 +677,7 @@ export default function OperatorsPage() {
                   t.colPayments,
                   t.colCommission,
                   t.colBookings,
+                  contractFr.column,
                   "",
                 ].map((h, i) => (
                   <th
@@ -678,68 +695,94 @@ export default function OperatorsPage() {
             </thead>
             <tbody>
               {operators.data?.operators.map((o) => (
-                <tr
-                  key={o.id}
-                  className={cn(
-                    "border-b border-border align-middle",
-                    o.status === "suspended" && "opacity-70",
-                  )}
-                >
-                  <td className="px-2 py-3">
-                    <span className="font-bold">{o.name}</span>
-                    {o.isDemo && (
-                      <span
-                        title={t.demoHint}
-                        className="ml-2 border border-border px-1.5 text-xs font-bold uppercase text-muted-foreground"
-                      >
-                        {t.statusDemo}
-                      </span>
+                <Fragment key={o.id}>
+                  <tr
+                    className={cn(
+                      "border-b border-border align-middle",
+                      o.status === "suspended" && "opacity-70",
                     )}
-                    {o.archivedAt ? (
-                      <span className="ml-2 border border-border px-1.5 text-xs font-bold uppercase text-muted-foreground">
-                        {t.statusArchived}
-                      </span>
-                    ) : (
-                      o.status === "suspended" && (
-                        <span className="ml-2 border border-destructive px-1.5 text-xs font-bold uppercase text-destructive">
-                          {t.statusSuspended}
+                  >
+                    <td className="px-2 py-3">
+                      <span className="font-bold">{o.name}</span>
+                      {o.isDemo && (
+                        <span
+                          title={t.demoHint}
+                          className="ml-2 border border-border px-1.5 text-xs font-bold uppercase text-muted-foreground"
+                        >
+                          {t.statusDemo}
                         </span>
-                      )
-                    )}
-                    <br />
-                    <span className={labelClass}>{subline(o)}</span>
-                  </td>
-                  <td className="max-w-[13rem] px-2 py-3">
-                    <span className="block truncate" title={o.manager?.email}>
-                      {o.manager?.email ?? "—"}
-                    </span>
-                    {o.manager && !o.manager.emailVerified && !o.invitation && (
-                      <span className={labelClass}>{t.emailToConfirm}</span>
-                    )}
-                  </td>
-                  <td className="whitespace-nowrap px-2 py-3">
-                    <ListingCell operator={o} />
-                  </td>
-                  <td className="whitespace-nowrap px-2 py-3">
-                    <PaymentsCell operator={o} />
-                  </td>
-                  <td className="whitespace-nowrap px-2 py-3">
-                    <CommissionCell operator={o} defaultBps={defaultBps} />
-                  </td>
-                  <td className="px-2 py-3 font-mono">
-                    {o.invitation ? "—" : o.bookingsThisMonth}
-                  </td>
-                  <td className="whitespace-nowrap px-2 py-3 text-right">
-                    <RowActions
-                      operator={o}
-                      onLink={showLink}
-                      // Its invitation link died with it.
-                      onDeleted={(id) =>
-                        setLink((l) => (l?.operator.id === id ? null : l))
-                      }
-                    />
-                  </td>
-                </tr>
+                      )}
+                      {o.archivedAt ? (
+                        <span className="ml-2 border border-border px-1.5 text-xs font-bold uppercase text-muted-foreground">
+                          {t.statusArchived}
+                        </span>
+                      ) : (
+                        o.status === "suspended" && (
+                          <span className="ml-2 border border-destructive px-1.5 text-xs font-bold uppercase text-destructive">
+                            {t.statusSuspended}
+                          </span>
+                        )
+                      )}
+                      <br />
+                      <span className={labelClass}>{subline(o)}</span>
+                    </td>
+                    <td className="max-w-[13rem] px-2 py-3">
+                      <span className="block truncate" title={o.manager?.email}>
+                        {o.manager?.email ?? "—"}
+                      </span>
+                      {o.manager &&
+                        !o.manager.emailVerified &&
+                        !o.invitation && (
+                          <span className={labelClass}>{t.emailToConfirm}</span>
+                        )}
+                    </td>
+                    <td className="whitespace-nowrap px-2 py-3">
+                      <ListingCell operator={o} />
+                    </td>
+                    <td className="whitespace-nowrap px-2 py-3">
+                      <PaymentsCell operator={o} />
+                    </td>
+                    <td className="whitespace-nowrap px-2 py-3">
+                      <CommissionCell operator={o} defaultBps={defaultBps} />
+                    </td>
+                    <td className="px-2 py-3 font-mono">
+                      {o.invitation ? "—" : o.bookingsThisMonth}
+                    </td>
+                    <td className="whitespace-nowrap px-2 py-3">
+                      {!o.invitation || o.contract ? (
+                        <button
+                          type="button"
+                          aria-expanded={contractOf === o.id}
+                          onClick={() =>
+                            setContractOf((id) => (id === o.id ? null : o.id))
+                          }
+                          className="flex min-h-10 items-center gap-2 hover:underline"
+                        >
+                          <ContractPill operator={o} />
+                        </button>
+                      ) : (
+                        <span className="text-muted-foreground">—</span>
+                      )}
+                    </td>
+                    <td className="whitespace-nowrap px-2 py-3 text-right">
+                      <RowActions
+                        operator={o}
+                        onLink={showLink}
+                        // Its invitation link died with it.
+                        onDeleted={(id) =>
+                          setLink((l) => (l?.operator.id === id ? null : l))
+                        }
+                      />
+                    </td>
+                  </tr>
+                  {contractOf === o.id && (
+                    <tr className="border-b border-border">
+                      <td colSpan={8} className="px-2 pb-4">
+                        <OperatorContractPanel operator={o} />
+                      </td>
+                    </tr>
+                  )}
+                </Fragment>
               ))}
             </tbody>
           </table>
@@ -752,7 +795,11 @@ export default function OperatorsPage() {
       )}
 
       <div className="grid gap-4 lg:grid-cols-[1.4fr_1fr]">
-        <InviteForm defaultBps={defaultBps} onInvited={showLink} prefill={prefill} />
+        <InviteForm
+          defaultBps={defaultBps}
+          onInvited={showLink}
+          prefill={prefill}
+        />
         <div className="flex flex-col gap-2.5 border border-border p-4">
           <h2 className={labelClass}>{t.canDoTitle}</h2>
           <ul className="space-y-1 text-base leading-relaxed">

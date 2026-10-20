@@ -1127,6 +1127,26 @@ Le nom du produit doit rester dans UN seul fichier de configuration (il peut enc
   détail dans `mobile/publier-sur-les-stores.md`.
   Voir `mobile/README.md`.
 
+- **Contrat Plazo ↔ loueur (20/10/2026, « Pouvoir stocker le contrat à faire signer », « Signé dans Plazo » puis choix 2a « bandeau
+  puis page Mon contrat » des maquettes https://claude.ai/artifact/LJq6ptLmA4hcPf3YUamUgt)** : la plateforme dépose un PDF par loueur
+  (Plateforme › Loueurs, colonne « Contrat » : pastille « À signer · v2 » / « Signé · v1 », carte `OperatorContractPanel` avec « Voir le
+  PDF », « Remplacer », « Retirer » (non signé seulement), « Renvoyer l'e-mail », historique avec PDF signé et preuve, dépôt d'un nouveau
+  PDF avec titre facultatif ; `?contrat=<id>` ouvre la carte) ; un nouveau dépôt remplace la version en attente (`superseded`), une
+  version signée reste. Les gérants actifs reçoivent un e-mail et voient le bandeau ambre `ContractBanner` (« Votre contrat Plazo est
+  prêt à signer. » · « Le lire et le signer ») jusqu'à la signature, sans blocage ; page `/pro/mon-contrat` (`ContractPage`, menu « Mon
+  contrat », `parking:manage`) : aperçu du PDF, nom complet tapé (deux mots au moins), case « Lu et approuvé », confirmation, puis la
+  preuve (nom, mention, date et heure de Paris, IP, empreintes SHA-256 du contrat déposé et du PDF signé, « Télécharger le PDF signé »,
+  « Télécharger la preuve de signature ») et les versions précédentes. Jamais signé en consultation (403 `view_as_cannot_sign`, lecture
+  permise). Serveur : table `partner_contracts` (migration `partner_contract` : version par loueur, `status` pending · signed · superseded,
+  une seule version en attente par loueur (index partiel), CHECK des preuves), `domain/partner-contract.ts` (`checkPdf` : 4 Mo au plus,
+  limite de Vercel, ni chiffré ni illisible ; `checkSignature` ; `buildSignedPdf` avec `pdf-lib` : le PDF d'origine intact plus une page
+  « Signature électronique », et la preuve = cette page seule avec l'empreinte du PDF signé), `PartnerContractService` (empreinte du PDF
+  relue avant la signature, signature sous condition `status = pending`, e-mails au signataire et aux administrateurs de la plateforme,
+  traces `partner_contract.uploaded|reminded|removed|signed`), routes `/internal/platform/operators/:id/contracts…` (dépôt en octets
+  bruts `application/pdf`, `?fileName=&title=`, `RawBodyMiddleware`) et `/internal/contract…` ; PDF dans le magasin Blob privé des
+  photos (`PhotoStorageService`), effacés avec le loueur ; `contract` dans la liste des loueurs. Politique de confidentialité, section 10.
+  Valeur de preuve d'une signature simple : à confirmer avec le juriste en même temps que les CGU.
+
 ## Personnel
 
 - Chaque membre a un **prénom et un nom** (06/10/2026 : `Staff.firstName/lastName`, `name` = « Prénom Nom » calculé par le serveur,
