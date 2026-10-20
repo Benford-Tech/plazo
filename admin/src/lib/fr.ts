@@ -3164,6 +3164,8 @@ export const inboundFr = {
           ? `Réservation ${ref} créée depuis ce mail.`
           : "Réservation créée depuis ce mail.",
       duplicate: "Cette réservation existait déjà : le mail y est rattaché.",
+      /** 20/10/2026: Onepark's daily summary, which completes the bookings it lists. */
+      handled: "Récapitulatif lu : les réservations qu'il liste sont complétées.",
       /** 10/10/2026 (« C'est une modification »). */
       changed: (ref: string | null) =>
         ref

@@ -119,7 +119,14 @@ Ne construire QUE ce qui règle la douleur n°1 du client.
      (avis au parking : prénom, nom, portable, début, fin du forfait, montant, modèle, plaque, passagers, vol retour ; le retour
      est la « récupération prévue » quand elle est donnée, sinon la fin du forfait ; **avis court du 20/10/2026** : « Début : ven.
      23 oct. 2026 à 09:00 » en lettres, « Montant résa », nom entier dans « Nom » sans « Prénom » (découpé par `importedNames`),
-     « Téléphone », ni numéro ni plaque : importé, doublon par téléphone, nom et arrivée ; fixture `onepark-notification-short.html`), `parkmundo.ts` (référence `PM…`, détails
+     « Téléphone », ni numéro ni plaque : importé, doublon par téléphone, nom et arrivée ; fixture `onepark-notification-short.html` ; **récapitulatif du
+     jour du 20/10/2026** « Voici le résumé des réservations en cours et à venir » : règle `onepark.summary` (genre « Autre »,
+     sans Claude), `parseOneparkSummary` (numéro, nom, immatriculation, arrivée, départ ; pas de téléphone, donc jamais une
+     réservation créée), `ReservationService.completeFromSummary` : chaque séjour complète la réservation Onepark qui a ce
+     numéro, sinon la seule sans numéro à la même arrivée locale avec un mot du nom en commun (numéro ajouté, plaque ajoutée
+     si elle manque, jamais remplacée), historique `reservation.updated` `source: 'onepark_summary'` ; mail « Traité » (issue
+     `handled`) quand tout est connu, sinon « À traiter » avec le résumé « absent(s) de Plazo : 59… », « plusieurs réservations
+     possibles », « autre plaque dans Plazo » (numéros seulement) ; fixture `onepark-summary.txt`), `parkmundo.ts` (référence `PM…`, détails
      du voyage avec vols aller et retour, véhicule et couleur ; montant = « Prix du parking », sans le « Coût de réservation »
      de ParkMundo) et `parclick.ts` (arrivée, sortie, référence), en plus d'`allopark.ts` (qui lit aussi la confirmation
      envoyée au voyageur) ; aides `flatten`, `numericDateTime`, `amountAfter`, `PHONE`, `PLATE`, `NOM`, `FLIGHT` dans

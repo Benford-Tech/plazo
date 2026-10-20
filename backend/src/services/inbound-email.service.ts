@@ -7,6 +7,7 @@ import { MIN_CONFIDENCE, READING_OUTAGE_CAUSES, ReadingMeta, ReadingOutage, read
 import { EMAIL_IMPORTERS, IMPORT_SENDERS, isComparatorAddress, parseBookingEmail, ParsedBooking } from '@/domain/importers';
 import { alloparkConfirmationPage, alloparkLinks, alloparkPageAddresses, alloparkPageUrls, isAlloparkUrl } from '@/domain/importers/allopark-page';
 import { classifyMail, ruleReading } from '@/domain/inbound-kind';
+import { parseOneparkSummary } from '@/domain/importers/onepark';
 import { SUBJECT_CANCELLATION } from '@/domain/importers/common';
 import { IMPORT_CHANGE_FIELDS, IMPORT_CHANGE_REASONS, ImportChange, ImportChangeField, ImportChangeReason } from '@/domain/import-change';
 import { ComparatorState, comparatorStates, latestAutomatic } from '@/domain/inbound-comparators';
@@ -246,7 +247,8 @@ const namedReferencesIn = (text: string): string[] => [...new Set([...text.match
 /** 16/10/2026: the emails rereadWithRules loads per pass (newest first; the rules then keep the known ones). */
 const REREAD_SCAN = 200;
 /** 10/10/2026 (« C'est une modification »): `changed` = an Allopark change applied to its booking (the email then reads `imported`). */
-export type ReanalysisOutcome = 'imported' | 'changed' | 'duplicate' | 'incomplete' | 'unrecognised';
+/** `handled`: Onepark's daily summary completed what it could and left nothing to the team (20/10/2026). */
+export type ReanalysisOutcome = 'imported' | 'changed' | 'duplicate' | 'incomplete' | 'unrecognised' | 'handled';
 export interface Reanalysis {
   email: InboundEmailView;
   outcome: ReanalysisOutcome;
@@ -451,6 +453,8 @@ export class InboundEmailService {
     // « [Allopark] AL-…: mail type allopark.change », « [Inbound] mail type unknown ».
     const label = type.provider ? `[${type.provider}]${type.reference ? ` ${type.reference}` : ''}:` : '[Inbound]';
     logger.info(`${label} mail type ${type.rule}`);
+    // 20/10/2026: Onepark's daily summary completes the bookings it lists (number, plate), never creates one.
+    if (type.rule === 'onepark.summary') return this.oneparkSummary(input, rules);
     // A cancellation, a reply or another mail of a comparator, a change of Onepark, Parclick or ParkMundo (no page to read
     // it from): shown with its kind, nothing done by itself (cancellations are never applied), no Claude.
     if (type.kind === 'cancellation' || type.kind === 'other' || (type.kind === 'change' && (type.provider !== 'Allopark' || !type.reference))) {
@@ -587,6 +591,43 @@ export class InboundEmailService {
       logger.warn(`[Inbound] Email for ${operatorId} not imported: ${error instanceof Error ? error.message : String(error)}`);
       return { ...result, status: 'incomplete', missing: [error instanceof HttpException ? error.code || 'error' : 'error'], reservationId: null };
     }
+  }
+
+  /**
+   * 20/10/2026: Onepark's daily summary (« Voici le résumé des réservations en cours et à venir »): each stay completes
+   * the Onepark booking Plazo has of it (ReservationService.completeFromSummary). Done when nothing is left to the team;
+   * a stay Plazo does not have, or a booking it cannot tell apart, or another plate, keeps the email « À traiter », its
+   * summary saying which booking numbers (no personal data).
+   */
+  private async oneparkSummary(input: AnalysisInput, rules: ReadingMeta | null): Promise<Analysis> {
+    const stays = parseOneparkSummary(input.text);
+    const report = await this.reservations.completeFromSummary(input.operatorId, stays, { inboundEmailId: input.emailId ?? null });
+    const left = report.missing.length + report.ambiguous.length + report.plateDiffers.length;
+    logger.info(
+      `[Onepark] summary: ${stays.length} stays, ${report.completed.length} completed, ${report.upToDate.length} up to date, ` +
+        `${report.missing.length} missing, ${report.ambiguous.length} ambiguous, ${report.plateDiffers.length} with another plate`,
+    );
+    const list = (refs: string[]) => refs.join(', ');
+    const summary = [
+      `Récapitulatif Onepark : ${stays.length} ${stays.length > 1 ? 'stationnements' : 'stationnement'}`,
+      report.completed.length ? `${report.completed.length} complété(s) (numéro ou plaque)` : null,
+      report.upToDate.length ? `${report.upToDate.length} déjà à jour` : null,
+      report.missing.length ? `absent(s) de Plazo : ${list(report.missing)}` : null,
+      report.ambiguous.length ? `plusieurs réservations possibles : ${list(report.ambiguous)}` : null,
+      report.plateDiffers.length ? `autre plaque dans Plazo : ${list(report.plateDiffers)}` : null,
+    ]
+      .filter(Boolean)
+      .join(' · ');
+    return {
+      status: left ? 'unrecognised' : 'handled',
+      provider: null,
+      parsed: null,
+      missing: [],
+      reading: rules ? { ...rules, summary } : null,
+      reservationId: null,
+      pageLookup: null,
+      change: null,
+    };
   }
 
   /**

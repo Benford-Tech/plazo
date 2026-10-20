@@ -97,6 +97,8 @@ function reanalysedMessage({ outcome, email }: InboundReanalysis): string {
   // 10/10/2026 (« C'est une modification »): an Allopark change applied to its booking, or still to make by hand.
   if (outcome === "changed") return r.changed(email.change?.reference ?? email.reservationReference);
   if (outcome === "duplicate") return r.duplicate;
+  // 20/10/2026: Onepark's daily summary, read and used to complete the bookings it lists.
+  if (outcome === "handled") return email.reading?.summary || r.handled;
   // 16/10/2026: Claude could not read it (credit, key, load…): its real cause, never « pas reconnu ».
   if (email.readingOutage) return r.outage(email.readingOutage.cause);
   if (outcome === "unrecognised") {

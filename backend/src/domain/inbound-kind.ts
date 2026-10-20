@@ -24,6 +24,7 @@
 import { alloparkConfirmationPage, isAlloparkCancellation, isAlloparkChange } from './importers/allopark-page';
 import { cancellationIn, changeIn, flatten, isChange, SUBJECT_CANCELLATION_STRICT, SUBJECT_CHANGE } from './importers/common';
 import { EMAIL_IMPORTERS } from './importers';
+import { isOneparkSummary } from './importers/onepark';
 import type { ReadingMeta } from './email-reading';
 import { FORWARD_MARKER, HEADER_FROM } from './inbound-email';
 
@@ -322,6 +323,9 @@ function otherType(provider: Exclude<Comparator, 'Allopark'>, message: Comparato
     return type(provider, 'change', reference, `${name}.change`, true);
   }
   if (NOTE_CHANGE.test(notes)) return type(provider, 'other', reference, `${name}.note`, true);
+  // 20/10/2026: Onepark's daily summary of the stays in progress and to come: no booking of its own (no phone), it only
+  // completes the bookings Plazo has (InboundEmailService.oneparkSummary).
+  if (provider === 'Onepark' && isOneparkSummary(text)) return type(provider, 'other', null, 'onepark.summary', true);
   const importer = EMAIL_IMPORTERS.find(i => i.provider === provider);
   if (importer?.detect(text)) return type(provider, 'booking', reference, `${name}.booking`, true);
   return type(provider, 'unknown', reference, `${name}.unknown`, false);
@@ -362,6 +366,7 @@ export function ruleSummary(mail: MailType): string {
     case 'cancellation':
       return ref ? `Annulation ${p} de la réservation ${ref}` : `Annulation d'une réservation ${p}`;
     case 'other': {
+      if (mail.rule === 'onepark.summary') return 'Récapitulatif Onepark des stationnements en cours et à venir';
       // 16/10/2026 (relecture): a request written above a comparator's email forwarded by hand (rule `….note`).
       const what = mail.rule.endsWith('.note') ? 'Message transféré' : 'Réponse';
       return ref ? `${what} à propos de la réservation ${p} ${ref}` : `${what} à propos d'une réservation ${p}`;

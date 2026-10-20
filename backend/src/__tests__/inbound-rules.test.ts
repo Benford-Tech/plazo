@@ -160,6 +160,71 @@ afterEach(() => {
 afterAll(() => prisma.$disconnect());
 
 describe('les mails connus des comparateurs, sans Claude (16/10/2026)', () => {
+  it('le récapitulatif Onepark (20/10/2026) complète la plaque et le numéro, ne crée rien, et laisse à l’équipe ce que Plazo n’a pas', async () => {
+    const op = await connected();
+    claudeIs('absent');
+    const from = { From: { Name: 'Onepark', Address: 'noreply@onepark.co' } };
+    const notice = item(op.address, '', { RawHtmlBody: fixture('onepark-notification-short.html'), ...from, Subject: 'Nouvelle réservation' });
+    expect((await post([notice])).body).toMatchObject({ imported: 1 });
+    // Claude answers from now on: the summary is still read by its rule alone.
+    claudeIs('answering');
+    const summary = fixture('onepark-summary.txt');
+    expect((await post([item(op.address, summary, { ...from, Subject: 'Résumé de vos réservations' })])).body).toMatchObject({
+      imported: 0,
+      toCheck: 1,
+    });
+    // Read by its rule, without Claude.
+    expect(create).not.toHaveBeenCalled();
+    expect(await prisma.reservation.findFirstOrThrow({ where: { operatorId: op.operator.id } })).toMatchObject({
+      externalReference: '5900101',
+      plate: 'AB-123-CD',
+      customerFirstName: 'camille',
+    });
+    expect(await prisma.reservation.count({ where: { operatorId: op.operator.id } })).toBe(1);
+    const left = await latest(op.operator.id);
+    expect(left).toMatchObject({
+      status: 'unrecognised',
+      reservationId: null,
+      reading: { kind: 'other', provider: 'Onepark', rule: 'onepark.summary' },
+    });
+    expect((left.reading as { summary: string }).summary).toBe(
+      'Récapitulatif Onepark : 2 stationnements · 1 complété(s) (numéro ou plaque) · absent(s) de Plazo : 5900102',
+    );
+
+    // The next day, once the missing one is typed by hand (with another plate): nothing is replaced, the plate is reported.
+    await prisma.reservation.create({
+      data: {
+        operatorId: op.operator.id,
+        parkingId: op.parking.id,
+        reference: 'PZTEST2',
+        channel: 'aggregator',
+        channelDetail: 'Onepark',
+        customerName: 'Jean Martin',
+        customerFirstName: 'Jean',
+        customerLastName: 'Martin',
+        customerPhone: '06 98 76 54 32',
+        plate: 'CD-456-EF',
+        plateKey: 'CD456EF',
+        arrivalAt: new Date('2026-10-11T04:30:00Z'),
+        returnAt: new Date('2026-10-22T04:30:00Z'),
+        passengers: 1,
+        status: 'arrived',
+      },
+    });
+    await post([item(op.address, summary, { ...from, Subject: 'Résumé de vos réservations ' })]);
+    expect(await prisma.reservation.findFirstOrThrow({ where: { reference: 'PZTEST2' } })).toMatchObject({
+      externalReference: '5900102',
+      plate: 'CD-456-EF',
+    });
+    expect(((await latest(op.operator.id)).reading as { summary: string }).summary).toBe(
+      'Récapitulatif Onepark : 2 stationnements · 1 déjà à jour · autre plaque dans Plazo : 5900102',
+    );
+    // Once all is known and alike, the summary needs no one: done.
+    await prisma.reservation.update({ where: { reference: 'PZTEST2' }, data: { plate: 'VD274046', plateKey: 'VD274046' } });
+    await post([item(op.address, summary, { ...from, Subject: 'Résumé de vos réservations  ' })]);
+    expect(await latest(op.operator.id)).toMatchObject({ status: 'handled' });
+  });
+
   it.each<Mode>(['absent', 'credit'])(
     'Claude %s : l’avis court de Onepark (20/10/2026) crée la réservation sans numéro ni plaque, une seule fois',
     async mode => {
