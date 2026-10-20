@@ -62,9 +62,14 @@ export interface RevenuePage extends Omit<RevenueReport, 'byChannel'> {
 export interface RevenueSummary {
   /** Local date the figures stop at. */
   today: string;
-  month: { from: string; to: string; totalCents: number; netCents: number; count: number; withoutAmount: number };
+  month: { from: string; to: string; totalCents: number; commissionCents: number; netCents: number; count: number; withoutAmount: number };
   todayCents: number;
   weekCents: number;
+  /**
+   * What each channel took this month (20/10/2026, choice A « brut − commissions = net »): the comparators and Plazo,
+   * the largest first; a comparator without any rate set shows with `missingRate` (its bookings count, nothing taken).
+   */
+  commissions: { label: string; comparatorKey: string | null; rateBp: number | null; amountCents: number; count: number; missingRate: boolean }[];
 }
 
 /** The CSV's names of the channels (the pro space translates the API's codes itself). */
@@ -189,13 +194,39 @@ export class RevenueService {
         from: monthStart,
         to: monthEnd,
         totalCents: month.totalCents,
+        commissionCents: month.commissionCents,
         netCents: month.netCents,
         count: month.count,
         withoutAmount: month.withoutAmount,
       },
       todayCents: sumOf(today, today),
       weekCents: sumOf(weekStart, today),
+      commissions: await this.commissionLines(actor, month.byChannel, today),
     };
+  }
+
+  /** The dashboard's lines of commissions: one per channel that took some, and the comparators without a rate. */
+  private async commissionLines(
+    actor: AuthenticatedStaff,
+    channels: RevenueReport['byChannel'],
+    today: string,
+  ): Promise<RevenueSummary['commissions']> {
+    const rates = await this.commissions.rates(actor.operatorId);
+    return channels
+      .map(line => {
+        const key = line.channel === 'aggregator' || line.channel === 'import' ? comparatorKey(line.detail) : null;
+        const rate = key ? rateOn(rates, key, today) : null;
+        return {
+          label: line.channel === 'plazo' ? 'Plazo' : (line.detail ?? ''),
+          comparatorKey: key,
+          rateBp: rate?.rateBp ?? null,
+          amountCents: line.commissionCents,
+          count: line.count,
+          missingRate: !!key && !rate && line.commissionCents === 0,
+        };
+      })
+      .filter(line => line.label && (line.amountCents > 0 || line.missingRate))
+      .sort((a, b) => b.amountCents - a.amountCents || b.count - a.count);
   }
 
   /** The period's bookings as a CSV (with or without an amount), for the accountant. */
