@@ -25,6 +25,8 @@ import { importedFlights, NOTES_MAX_CHARS, notesWithLines, unreadableFlightLine,
 import { bookingChangedPush } from '@/domain/reservation-messages';
 import { forwardedRecipientsOf, stripHtml, textOf } from '@/domain/inbound-email';
 import { fillGaps } from '@/services/inbound-email.service';
+import { classifyMail } from '@/domain/inbound-kind';
+import { importedNames } from '@/domain/customer-name';
 import { AlloparkPageService } from '@/services/allopark-page.service';
 import { logger } from '@/utils/logger';
 
@@ -81,6 +83,31 @@ describe('confirmations des comparateurs (09/10/2026)', () => {
       plate: 'CD-456-EF',
       passengers: 1,
     });
+  });
+
+  it('Onepark, avis court (20/10/2026) : dates en lettres, « Montant résa », nom entier, sans numéro ni plaque', () => {
+    expect(read('onepark-notification-short.html')).toEqual({
+      provider: 'Onepark',
+      externalReference: undefined,
+      // No « Prénom »: the whole name, split by the server (importedNames).
+      customerName: 'camille exemple',
+      customerPhone: '+33 6 12 34 56 78',
+      customerEmail: undefined,
+      arrivalAt: '2026-10-23T09:00',
+      returnAt: '2026-10-27T09:00',
+      priceCents: 2000,
+      vehicleModel: undefined,
+      plate: undefined,
+      returnFlight: undefined,
+      departureFlight: undefined,
+    });
+    const mail = {
+      subject: 'Nouvelle réservation',
+      from: 'Onepark <noreply@onepark.co>',
+      text: textOf({ RawHtmlBody: html('onepark-notification-short.html') }),
+    };
+    expect(classifyMail(mail)).toMatchObject({ provider: 'Onepark', kind: 'booking', sure: true, rule: 'onepark.booking' });
+    expect(importedNames(read('onepark-notification-short.html')!)).toMatchObject({ customerFirstName: 'camille', customerLastName: 'exemple' });
   });
 
   it('ParkMundo : séjour et vols, véhicule, et le prix du parking sans les frais de ParkMundo', () => {
