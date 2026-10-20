@@ -68,8 +68,10 @@ export interface SummaryReport {
   upToDate: string[];
   /** Plazo has another plate for it (the team's is kept). */
   plateDiffers: string[];
-  /** No booking of it in Plazo. */
+  /** No booking of it in Plazo, and none created (its stay is over, or its dates cannot be read). */
   missing: string[];
+  /** 20/10/2026 (« Les créer »): created from the summary itself, without a phone (« À saisir »). */
+  created: string[];
   /** Several bookings could be it. */
   ambiguous: string[];
 }
@@ -462,8 +464,9 @@ export class ReservationService {
     operatorId: string,
     stays: OneparkSummaryStay[],
     origin: { inboundEmailId?: string | null },
+    now: Date = new Date(),
   ): Promise<SummaryReport> {
-    const report: SummaryReport = { completed: [], upToDate: [], plateDiffers: [], missing: [], ambiguous: [] };
+    const report: SummaryReport = { completed: [], upToDate: [], plateDiffers: [], missing: [], ambiguous: [], created: [] };
     const parking = await prisma.parking.findFirst({ where: { operatorId }, orderBy: { createdAt: 'asc' } });
     if (!parking) return { ...report, missing: stays.map(s => s.reference) };
     for (const stay of stays) {
@@ -492,11 +495,48 @@ export class ReservationService {
         }
         id = same[0]?.id ?? null;
       }
-      if (!id) {
-        report.missing.push(stay.reference);
-        continue;
-      }
       const plate = importedPlate(stay.plate);
+      if (!id) {
+        // 20/10/2026 (« Les créer »): the car is on the parking, the team must see it. The same car on another booking of
+        // this stay (typed by hand, another channel) takes the number instead; two of them are left to the team.
+        const arrivalAt = stay.arrivalAt ? parseInstant(stay.arrivalAt, parking.timezone) : null;
+        const returnAt = stay.returnAt ? parseInstant(stay.returnAt, parking.timezone) : null;
+        if (!arrivalAt || !returnAt || returnAt <= arrivalAt || returnAt.getTime() <= now.getTime()) {
+          report.missing.push(stay.reference);
+          continue;
+        }
+        const samePlate = plate
+          ? await prisma.reservation.findMany({
+              where: {
+                operatorId,
+                plateKey: plateKey(plate),
+                status: { notIn: ['cancelled', 'no_show', 'pending_payment'] },
+                arrivalAt: { lt: returnAt },
+                returnAt: { gt: arrivalAt },
+              },
+              select: { id: true, externalReference: true },
+            })
+          : [];
+        if (samePlate.length > 1 || (samePlate[0]?.externalReference && samePlate[0].externalReference !== stay.reference)) {
+          report.ambiguous.push(stay.reference);
+          continue;
+        }
+        if (samePlate[0]) {
+          id = samePlate[0].id;
+        } else {
+          const { duplicate } = await this.createFromImport(operatorId, {
+            provider: 'Onepark',
+            externalReference: stay.reference,
+            arrivalAt: stay.arrivalAt,
+            returnAt: stay.returnAt,
+            customerName: stay.customerName,
+            customerPhone: '',
+            plate: plate ?? undefined,
+          });
+          report[duplicate ? 'upToDate' : 'created'].push(stay.reference);
+          continue;
+        }
+      }
       const outcome = await prisma.$transaction(async tx => {
         await tx.$queryRaw`SELECT id FROM reservations WHERE id = ${id} FOR UPDATE`;
         const before = await tx.reservation.findFirst({ where: { id: id!, operatorId } });

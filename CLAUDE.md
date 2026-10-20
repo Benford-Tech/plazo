@@ -122,9 +122,12 @@ Ne construire QUE ce qui règle la douleur n°1 du client.
      « Téléphone », ni numéro ni plaque : importé, doublon par téléphone, nom et arrivée ; fixture `onepark-notification-short.html` ; **récapitulatif du
      jour du 20/10/2026** « Voici le résumé des réservations en cours et à venir » : règle `onepark.summary` (genre « Autre »,
      sans Claude), `parseOneparkSummary` (numéro, nom, immatriculation, arrivée, départ ; pas de téléphone, donc jamais une
-     réservation créée), `ReservationService.completeFromSummary` : chaque séjour complète la réservation Onepark qui a ce
+     réservation créée à lui seul… jusqu'au 20/10/2026), `ReservationService.completeFromSummary` : chaque séjour complète la réservation Onepark qui a ce
      numéro, sinon la seule sans numéro à la même arrivée locale avec un mot du nom en commun (numéro ajouté, plaque ajoutée
-     si elle manque, jamais remplacée), historique `reservation.updated` `source: 'onepark_summary'` ; mail « Traité » (issue
+     si elle manque, jamais remplacée), historique `reservation.updated` `source: 'onepark_summary'` ; **« Les créer » (20/10/2026,
+     « Non reconnu » sur un récapitulatif de 10 séjours absents)** : un séjour absent et pas encore terminé prend le numéro de la
+     seule réservation de la même plaque qui recoupe le séjour (sinon `ambiguous`), ou est créé par `createFromImport` (Onepark,
+     numéro, nom, plaque, dates, téléphone `''` à saisir ; `created` du compte rendu, « N créée(s), téléphone à saisir : … ») ; mail « Traité » (issue
      `handled`) quand tout est connu, sinon « À traiter » avec le résumé « absent(s) de Plazo : 59… », « plusieurs réservations
      possibles », « autre plaque dans Plazo » (numéros seulement) ; fixture `onepark-summary.txt` ; reconnu à sa mise en page
      même quand ni l'expéditeur ni l'objet ne nomment Onepark, transfert à la main compris (`providerOf`, 20/10/2026 : « ce mail n'a pas

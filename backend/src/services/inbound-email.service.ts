@@ -595,9 +595,10 @@ export class InboundEmailService {
 
   /**
    * 20/10/2026: Onepark's daily summary (« Voici le résumé des réservations en cours et à venir »): each stay completes
-   * the Onepark booking Plazo has of it (ReservationService.completeFromSummary). Done when nothing is left to the team;
-   * a stay Plazo does not have, or a booking it cannot tell apart, or another plate, keeps the email « À traiter », its
-   * summary saying which booking numbers (no personal data).
+   * the Onepark booking Plazo has of it (ReservationService.completeFromSummary), and a stay Plazo does not have is
+   * created without a phone (« Les créer », 20/10/2026). Done when nothing is left to the team; a stay already over, a
+   * booking it cannot tell apart, or another plate, keeps the email « À traiter », its summary saying which booking
+   * numbers (no personal data).
    */
   private async oneparkSummary(input: AnalysisInput, rules: ReadingMeta | null): Promise<Analysis> {
     const stays = parseOneparkSummary(input.text);
@@ -605,11 +606,13 @@ export class InboundEmailService {
     const left = report.missing.length + report.ambiguous.length + report.plateDiffers.length;
     logger.info(
       `[Onepark] summary: ${stays.length} stays, ${report.completed.length} completed, ${report.upToDate.length} up to date, ` +
-        `${report.missing.length} missing, ${report.ambiguous.length} ambiguous, ${report.plateDiffers.length} with another plate`,
+        `${report.created.length} created, ${report.missing.length} missing, ${report.ambiguous.length} ambiguous, ` +
+        `${report.plateDiffers.length} with another plate`,
     );
     const list = (refs: string[]) => refs.join(', ');
     const summary = [
       `Récapitulatif Onepark : ${stays.length} ${stays.length > 1 ? 'stationnements' : 'stationnement'}`,
+      report.created.length ? `${report.created.length} créée(s), téléphone à saisir : ${list(report.created)}` : null,
       report.completed.length ? `${report.completed.length} complété(s) (numéro ou plaque)` : null,
       report.upToDate.length ? `${report.upToDate.length} déjà à jour` : null,
       report.missing.length ? `absent(s) de Plazo : ${list(report.missing)}` : null,
