@@ -1,7 +1,7 @@
 import { Router } from 'express';
 import { PaperworkController } from '@/controllers/paperwork.controller';
 import { Routes } from '@/interfaces/routes.interface';
-import { lookupLimiter } from '@/middlewares/rateLimiter';
+import { lookupLimiter, photoUploadLimiter } from '@/middlewares/rateLimiter';
 import { StaffAuthMiddleware } from '@/middlewares/staff-auth.middleware';
 
 /**
@@ -33,7 +33,7 @@ import { StaffAuthMiddleware } from '@/middlewares/staff-auth.middleware';
  *       - { in: path, name: id, required: true, schema: { type: string } }
  * /internal/reservations/{id}/contract/code:
  *   post:
- *     summary: Sends the signature code to the traveller's phone (typed on the staff's phone)
+ *     summary: Refused since the 20/10/2026, 409 contract_at_counter (the contract is signed at the counter) (typed on the staff's phone)
  *     tags: [Paperwork]
  *     parameters:
  *       - { in: path, name: id, required: true, schema: { type: string } }
@@ -87,12 +87,12 @@ import { StaffAuthMiddleware } from '@/middlewares/staff-auth.middleware';
  *     security: []
  * /public/bookings/{reference}/contract/code:
  *   post:
- *     summary: Sends the signature code to the traveller's phone
+ *     summary: Refused since the 20/10/2026, 409 contract_at_counter (the contract is signed at the counter)
  *     tags: [Paperwork]
  *     security: []
  * /public/bookings/{reference}/contract/sign:
  *   post:
- *     summary: Signs the contract with { code }
+ *     summary: Refused since the 20/10/2026, 409 contract_at_counter
  *     tags: [Paperwork]
  *     security: []
  * /public/bookings/{reference}/inspections/{kind}/answer:
@@ -102,7 +102,31 @@ import { StaffAuthMiddleware } from '@/middlewares/staff-auth.middleware';
  *     security: []
  * /public/bookings/{reference}/inspections/{kind}/photos/{photoId}:
  *   get:
- *     summary: A photo of a completed report (x-booking-token)
+ *     summary: A photo of a completed report, or of the traveller's own (x-booking-token)
+ *     tags: [Paperwork]
+ *     security: []
+ * /public/bookings/{reference}/inspections/{kind}/mine:
+ *   post:
+ *     summary: Starts the traveller's own photos (drop-off until the shuttle, return once back at the parking)
+ *     tags: [Paperwork]
+ *     security: []
+ *   patch:
+ *     summary: Updates their note, { notes }
+ *     tags: [Paperwork]
+ *     security: []
+ * /public/bookings/{reference}/inspections/{kind}/mine/photos:
+ *   post:
+ *     summary: Adds a photo (raw image body, ?slot= one of the six guided slots, 3 MB max)
+ *     tags: [Paperwork]
+ *     security: []
+ * /public/bookings/{reference}/inspections/{kind}/mine/photos/{photoId}:
+ *   delete:
+ *     summary: Removes a photo before sending
+ *     tags: [Paperwork]
+ *     security: []
+ * /public/bookings/{reference}/inspections/{kind}/mine/complete:
+ *   post:
+ *     summary: Sends the photos to the parking (one at least); they can no longer change
  *     tags: [Paperwork]
  *     security: []
  */
@@ -125,9 +149,15 @@ export class PaperworkRoute implements Routes {
 
     const traveller = '/public/bookings/:reference';
     this.router.get(`${traveller}/paperwork`, this.paperwork.travellerGet);
-    // A code costs an SMS: limited per traveller like the lookups, on top of the per-booking limits.
+    // Signed at the counter since the 20/10/2026: both answer 409 contract_at_counter (old app versions).
     this.router.post(`${traveller}/contract/code`, lookupLimiter, this.paperwork.travellerSendCode);
     this.router.post(`${traveller}/contract/sign`, lookupLimiter, this.paperwork.travellerSign);
+    // The traveller's own photos (« les deux peuvent faire l'état des lieux », 20/10/2026).
+    this.router.post(`${traveller}/inspections/:kind/mine`, this.paperwork.travellerStart);
+    this.router.patch(`${traveller}/inspections/:kind/mine`, this.paperwork.travellerUpdate);
+    this.router.post(`${traveller}/inspections/:kind/mine/photos`, photoUploadLimiter, this.paperwork.travellerAddPhoto);
+    this.router.delete(`${traveller}/inspections/:kind/mine/photos/:photoId`, this.paperwork.travellerRemovePhoto);
+    this.router.post(`${traveller}/inspections/:kind/mine/complete`, this.paperwork.travellerComplete);
     this.router.post(`${traveller}/inspections/:kind/answer`, this.paperwork.travellerAnswer);
     this.router.get(`${traveller}/inspections/:kind/photos/:photoId`, this.paperwork.travellerPhoto);
   }

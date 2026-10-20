@@ -31,12 +31,12 @@ abstract class PaperworkDataSource {
   Future<PaperworkModel> answer(PaperworkOwner owner, String kind, {required String decision, String? reserveText, List<List<List<double>>>? strokes});
   Future<Uint8List> photo(PaperworkOwner owner, String kind, String photoId);
 
-  // Staff only.
-  Future<PaperworkModel> start(String reservationId, String kind);
-  Future<PaperworkModel> update(String reservationId, String kind, Map<String, dynamic> body);
-  Future<AddedPhotoModel> addPhoto(String reservationId, String kind, String slot, Uint8List bytes);
-  Future<PaperworkModel> removePhoto(String reservationId, String kind, String photoId);
-  Future<PaperworkModel> complete(String reservationId, String kind);
+  /// A report being taken: the staff's (Plazo Pro), or the traveller's own photos (Plazo, `…/mine`).
+  Future<PaperworkModel> start(PaperworkOwner owner, String kind);
+  Future<PaperworkModel> update(PaperworkOwner owner, String kind, Map<String, dynamic> body);
+  Future<AddedPhotoModel> addPhoto(PaperworkOwner owner, String kind, String slot, Uint8List bytes);
+  Future<PaperworkModel> removePhoto(PaperworkOwner owner, String kind, String photoId);
+  Future<PaperworkModel> complete(PaperworkOwner owner, String kind);
 }
 
 class PaperworkDataSourceImpl implements PaperworkDataSource {
@@ -96,25 +96,45 @@ class PaperworkDataSourceImpl implements PaperworkDataSource {
   }
 
   @override
-  Future<PaperworkModel> start(String reservationId, String kind) => client.start(reservationId, kind);
+  Future<PaperworkModel> start(PaperworkOwner owner, String kind) async => switch (owner) {
+    StaffOwner(:final reservationId) => client.start(reservationId, kind),
+    // The traveller's draft starts with their first photo or note: nothing to create yet.
+    TravellerOwner() => load(owner),
+  };
 
   @override
-  Future<PaperworkModel> update(String reservationId, String kind, Map<String, dynamic> body) => client.update(reservationId, kind, body);
+  Future<PaperworkModel> update(PaperworkOwner owner, String kind, Map<String, dynamic> body) async => switch (owner) {
+    StaffOwner(:final reservationId) => client.update(reservationId, kind, body),
+    TravellerOwner(:final reference) => client.travellerUpdate(reference, await _token(reference), kind, body),
+  };
 
   @override
-  Future<AddedPhotoModel> addPhoto(String reservationId, String kind, String slot, Uint8List bytes) async {
+  Future<AddedPhotoModel> addPhoto(PaperworkOwner owner, String kind, String slot, Uint8List bytes) async {
+    final (path, headers) = switch (owner) {
+      StaffOwner(:final reservationId) => ('internal/reservations/$reservationId/inspections/$kind/photos', <String, dynamic>{}),
+      TravellerOwner(:final reference) => (
+        'public/bookings/$reference/inspections/$kind/mine/photos',
+        <String, dynamic>{'x-booking-token': await _token(reference)},
+      ),
+    };
     final res = await dio.post<Map<String, dynamic>>(
-      'internal/reservations/$reservationId/inspections/$kind/photos',
+      path,
       queryParameters: {'slot': slot},
       data: Stream.fromIterable([bytes]),
-      options: Options(contentType: 'image/jpeg', headers: {Headers.contentLengthHeader: bytes.length}, sendTimeout: const Duration(seconds: 60)),
+      options: Options(contentType: 'image/jpeg', headers: {...headers, Headers.contentLengthHeader: bytes.length}, sendTimeout: const Duration(seconds: 60)),
     );
     return AddedPhotoModel.fromJson(res.data!);
   }
 
   @override
-  Future<PaperworkModel> removePhoto(String reservationId, String kind, String photoId) => client.removePhoto(reservationId, kind, photoId);
+  Future<PaperworkModel> removePhoto(PaperworkOwner owner, String kind, String photoId) async => switch (owner) {
+    StaffOwner(:final reservationId) => client.removePhoto(reservationId, kind, photoId),
+    TravellerOwner(:final reference) => client.travellerRemovePhoto(reference, await _token(reference), kind, photoId),
+  };
 
   @override
-  Future<PaperworkModel> complete(String reservationId, String kind) => client.complete(reservationId, kind);
+  Future<PaperworkModel> complete(PaperworkOwner owner, String kind) async => switch (owner) {
+    StaffOwner(:final reservationId) => client.complete(reservationId, kind),
+    TravellerOwner(:final reference) => client.travellerComplete(reference, await _token(reference), kind),
+  };
 }

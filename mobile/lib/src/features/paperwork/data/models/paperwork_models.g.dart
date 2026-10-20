@@ -14,6 +14,10 @@ _PaperworkModel _$PaperworkModelFromJson(Map<String, dynamic> json) => _Paperwor
   dropoff: json['dropoff'] == null ? null : InspectionModel.fromJson(json['dropoff'] as Map<String, dynamic>),
   returnReport: json['return'] == null ? null : InspectionModel.fromJson(json['return'] as Map<String, dynamic>),
   comparison: json['comparison'] == null ? null : ComparisonModel.fromJson(json['comparison'] as Map<String, dynamic>),
+  travellerReports: json['travellerReports'] == null
+      ? const TravellerReportsModel()
+      : TravellerReportsModel.fromJson(json['travellerReports'] as Map<String, dynamic>),
+  travellerCanPhotograph: json['travellerCanPhotograph'] == null ? null : KindFlagsModel.fromJson(json['travellerCanPhotograph'] as Map<String, dynamic>),
 );
 
 Map<String, dynamic> _$PaperworkModelToJson(_PaperworkModel instance) => <String, dynamic>{
@@ -24,11 +28,29 @@ Map<String, dynamic> _$PaperworkModelToJson(_PaperworkModel instance) => <String
   'dropoff': instance.dropoff,
   'return': instance.returnReport,
   'comparison': instance.comparison,
+  'travellerReports': instance.travellerReports,
+  'travellerCanPhotograph': instance.travellerCanPhotograph,
 };
+
+_TravellerReportsModel _$TravellerReportsModelFromJson(Map<String, dynamic> json) => _TravellerReportsModel(
+  dropoff: json['dropoff'] == null ? null : InspectionModel.fromJson(json['dropoff'] as Map<String, dynamic>),
+  returnReport: json['return'] == null ? null : InspectionModel.fromJson(json['return'] as Map<String, dynamic>),
+);
+
+Map<String, dynamic> _$TravellerReportsModelToJson(_TravellerReportsModel instance) => <String, dynamic>{
+  'dropoff': instance.dropoff,
+  'return': instance.returnReport,
+};
+
+_KindFlagsModel _$KindFlagsModelFromJson(Map<String, dynamic> json) =>
+    _KindFlagsModel(dropoff: json['dropoff'] as bool? ?? false, returnReport: json['return'] as bool? ?? false);
+
+Map<String, dynamic> _$KindFlagsModelToJson(_KindFlagsModel instance) => <String, dynamic>{'dropoff': instance.dropoff, 'return': instance.returnReport};
 
 _ContractModel _$ContractModelFromJson(Map<String, dynamic> json) => _ContractModel(
   status: json['status'] as String,
   canSign: json['canSign'] as bool? ?? false,
+  atCounter: json['atCounter'] as bool? ?? false,
   codeAvailable: json['codeAvailable'] as bool? ?? false,
   phoneMasked: json['phoneMasked'] as String,
   document: ContractDocumentModel.fromJson(json['document'] as Map<String, dynamic>),
@@ -38,6 +60,7 @@ _ContractModel _$ContractModelFromJson(Map<String, dynamic> json) => _ContractMo
 Map<String, dynamic> _$ContractModelToJson(_ContractModel instance) => <String, dynamic>{
   'status': instance.status,
   'canSign': instance.canSign,
+  'atCounter': instance.atCounter,
   'codeAvailable': instance.codeAvailable,
   'phoneMasked': instance.phoneMasked,
   'document': instance.document,

@@ -20,11 +20,11 @@ abstract class PaperworkRepository {
 
   /// A photo's bytes, kept in memory for the session (a photo never changes: a new one gets a new id).
   Future<Either<Failure, Uint8List>> photo(PaperworkOwner owner, String kind, String photoId);
-  Future<Either<Failure, PaperworkModel>> start(String reservationId, String kind);
-  Future<Either<Failure, PaperworkModel>> update(String reservationId, String kind, Map<String, dynamic> body);
-  Future<Either<Failure, AddedPhotoModel>> addPhoto(String reservationId, String kind, String slot, Uint8List bytes);
-  Future<Either<Failure, PaperworkModel>> removePhoto(String reservationId, String kind, String photoId);
-  Future<Either<Failure, PaperworkModel>> complete(String reservationId, String kind);
+  Future<Either<Failure, PaperworkModel>> start(PaperworkOwner owner, String kind);
+  Future<Either<Failure, PaperworkModel>> update(PaperworkOwner owner, String kind, Map<String, dynamic> body);
+  Future<Either<Failure, AddedPhotoModel>> addPhoto(PaperworkOwner owner, String kind, String slot, Uint8List bytes);
+  Future<Either<Failure, PaperworkModel>> removePhoto(PaperworkOwner owner, String kind, String photoId);
+  Future<Either<Failure, PaperworkModel>> complete(PaperworkOwner owner, String kind);
 }
 
 class PaperworkRepositoryImpl implements PaperworkRepository {
@@ -66,24 +66,24 @@ class PaperworkRepositoryImpl implements PaperworkRepository {
   }
 
   @override
-  Future<Either<Failure, PaperworkModel>> start(String reservationId, String kind) => _dataSource.start(reservationId, kind).makeRequest();
+  Future<Either<Failure, PaperworkModel>> start(PaperworkOwner owner, String kind) => _dataSource.start(owner, kind).makeRequest();
 
   @override
-  Future<Either<Failure, PaperworkModel>> update(String reservationId, String kind, Map<String, dynamic> body) =>
-      _dataSource.update(reservationId, kind, body).makeRequest();
+  Future<Either<Failure, PaperworkModel>> update(PaperworkOwner owner, String kind, Map<String, dynamic> body) =>
+      _dataSource.update(owner, kind, body).makeRequest();
 
   @override
-  Future<Either<Failure, AddedPhotoModel>> addPhoto(String reservationId, String kind, String slot, Uint8List bytes) async {
-    final result = await _dataSource.addPhoto(reservationId, kind, slot, bytes).makeRequest();
+  Future<Either<Failure, AddedPhotoModel>> addPhoto(PaperworkOwner owner, String kind, String slot, Uint8List bytes) async {
+    final result = await _dataSource.addPhoto(owner, kind, slot, bytes).makeRequest();
     // The bytes just sent are the photo: no need to download them again.
     if (result case Right(:final value)) _photos[value.photoId] = bytes;
     return result;
   }
 
   @override
-  Future<Either<Failure, PaperworkModel>> removePhoto(String reservationId, String kind, String photoId) =>
-      _dataSource.removePhoto(reservationId, kind, photoId).makeRequest();
+  Future<Either<Failure, PaperworkModel>> removePhoto(PaperworkOwner owner, String kind, String photoId) =>
+      _dataSource.removePhoto(owner, kind, photoId).makeRequest();
 
   @override
-  Future<Either<Failure, PaperworkModel>> complete(String reservationId, String kind) => _dataSource.complete(reservationId, kind).makeRequest();
+  Future<Either<Failure, PaperworkModel>> complete(PaperworkOwner owner, String kind) => _dataSource.complete(owner, kind).makeRequest();
 }

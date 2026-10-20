@@ -131,7 +131,8 @@ class _Row extends StatelessWidget {
   }
 }
 
-/// Plazo (traveller), on « Ma réservation »: the contract to sign and the reports to check, once the parking made them.
+/// Plazo (traveller), on « Ma réservation »: the contract to read (signed at the counter), their own photos of the car,
+/// and the parking's reports to check once made.
 class TravellerPaperworkBlock extends StatelessWidget {
   const TravellerPaperworkBlock({super.key, required this.reference});
   final String reference;
@@ -152,7 +153,7 @@ class TravellerPaperworkBlock extends StatelessWidget {
 
           final contract = data.contract;
           final cards = <Widget>[];
-          if (contract.isSigned || contract.canSign) {
+          if (contract.isSigned || contract.atCounter) {
             cards.add(
               _TravellerCard(
                 key: const Key('my-contract'),
@@ -160,13 +161,30 @@ class TravellerPaperworkBlock extends StatelessWidget {
                 title: 'paperwork.contract'.tr(),
                 text: contract.isSigned
                     ? 'paperwork.contract_signed_short'.tr(args: [DateFormat("d MMM 'à' HH:mm", 'fr').format(contract.signed!.signedAt.toLocal())])
-                    : contract.codeAvailable
-                    ? 'paperwork.contract_sign_now'.tr()
                     : 'paperwork.contract_at_counter_short'.tr(),
-                highlight: !contract.isSigned && contract.codeAvailable,
+                highlight: false,
                 onTap: () => open(TravellerContractRoute(reference: reference)),
               ),
             );
+          }
+          for (final kind in ['dropoff', 'return']) {
+            final mine = data.ownReport(kind);
+            if (data.photosAvailable && (data.canPhotograph(kind) || (mine?.completed ?? false))) {
+              cards.add(
+                _TravellerCard(
+                  key: Key('my-photos-$kind'),
+                  icon: Icons.photo_camera_outlined,
+                  title: 'paperwork.my_photos_card.$kind'.tr(),
+                  text: mine?.completed ?? false
+                      ? 'paperwork.my_photos_sent'.tr(args: ['${mine!.photos.length}'])
+                      : mine != null && mine.photos.isNotEmpty
+                      ? 'paperwork.my_photos_draft'.tr(args: ['${mine.photos.length}'])
+                      : 'paperwork.my_photos_invite.$kind'.tr(),
+                  highlight: !(mine?.completed ?? false),
+                  onTap: () => open(TravellerPhotosRoute(reference: reference, kind: kind)),
+                ),
+              );
+            }
           }
           for (final kind in ['dropoff', 'return']) {
             final r = data.report(kind);

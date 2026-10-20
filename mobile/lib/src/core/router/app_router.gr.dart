@@ -1429,6 +1429,79 @@ class TravellerInspectionRouteArgs {
 }
 
 /// generated route for
+/// [TravellerPhotosPage]
+class TravellerPhotosRoute extends PageRouteInfo<TravellerPhotosRouteArgs> {
+  TravellerPhotosRoute({
+    Key? key,
+    required String reference,
+    required String kind,
+    List<PageRouteInfo>? children,
+  }) : super(
+         TravellerPhotosRoute.name,
+         args: TravellerPhotosRouteArgs(
+           key: key,
+           reference: reference,
+           kind: kind,
+         ),
+         rawPathParams: {'reference': reference, 'kind': kind},
+         initialChildren: children,
+       );
+
+  static const String name = 'TravellerPhotosRoute';
+
+  static PageInfo page = PageInfo(
+    name,
+    builder: (data) {
+      final pathParams = data.inheritedPathParams;
+      final args = data.argsAs<TravellerPhotosRouteArgs>(
+        orElse: () => TravellerPhotosRouteArgs(
+          reference: pathParams.getString('reference'),
+          kind: pathParams.getString('kind'),
+        ),
+      );
+      return WrappedRoute(
+        child: TravellerPhotosPage(
+          key: args.key,
+          reference: args.reference,
+          kind: args.kind,
+        ),
+      );
+    },
+  );
+}
+
+class TravellerPhotosRouteArgs {
+  const TravellerPhotosRouteArgs({
+    this.key,
+    required this.reference,
+    required this.kind,
+  });
+
+  final Key? key;
+
+  final String reference;
+
+  final String kind;
+
+  @override
+  String toString() {
+    return 'TravellerPhotosRouteArgs{key: $key, reference: $reference, kind: $kind}';
+  }
+
+  @override
+  bool operator ==(Object other) {
+    if (identical(this, other)) return true;
+    if (other is! TravellerPhotosRouteArgs) return false;
+    return key == other.key &&
+        reference == other.reference &&
+        kind == other.kind;
+  }
+
+  @override
+  int get hashCode => key.hashCode ^ reference.hashCode ^ kind.hashCode;
+}
+
+/// generated route for
 /// [TripsTabPage]
 class TripsTabRoute extends PageRouteInfo<void> {
   const TripsTabRoute({List<PageRouteInfo>? children})

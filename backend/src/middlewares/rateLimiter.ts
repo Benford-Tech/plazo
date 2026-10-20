@@ -77,6 +77,9 @@ export const publicLimiter = rateLimit({ windowMs: 60 * 1000, max: 120, skip, ke
 // Finding a booking by reference and email: few attempts, to make guessing pointless.
 export const lookupLimiter = rateLimit({ windowMs: 15 * 60 * 1000, max: 10, skip, keyGenerator, message: tooMany('too_many_attempts') });
 
+// A traveller's own photos of the car: six slots, retaken now and then; an upload is up to 3 MB.
+export const photoUploadLimiter = rateLimit({ windowMs: 15 * 60 * 1000, max: 40, skip, keyGenerator, message: tooMany('too_many_requests') });
+
 // Bookings on the site: anonymous and free (paid on site), each one holds a real place and sends an
 // email and an SMS. A traveller rarely books more than a couple of stays in an hour; failed
 // attempts (validation, full nights) do not count.

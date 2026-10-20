@@ -10,6 +10,7 @@ import '../../features/more/presentation/pages/more_tab_page.dart';
 import '../../features/paperwork/presentation/pages/contract_pages.dart';
 import '../../features/paperwork/presentation/pages/pro_inspection_page.dart';
 import '../../features/paperwork/presentation/pages/traveller_inspection_page.dart';
+import '../../features/paperwork/presentation/pages/traveller_photos_page.dart';
 import '../../features/pro_auth/presentation/pages/pro_join_page.dart';
 import '../../features/pro_auth/presentation/pages/pro_login_page.dart';
 import '../../features/pro_auth/presentation/pages/pro_post_page.dart';
@@ -124,6 +125,7 @@ class AppRouter extends RootStackRouter {
       AutoRoute(page: FindCarRoute.page, path: '/ma-reservation/:reference/ma-voiture'),
       AutoRoute(page: TravellerContractRoute.page, path: '/ma-reservation/:reference/contrat'),
       AutoRoute(page: TravellerInspectionRoute.page, path: '/ma-reservation/:reference/etat-des-lieux/:kind'),
+      AutoRoute(page: TravellerPhotosRoute.page, path: '/ma-reservation/:reference/mes-photos/:kind'),
       // Traveller: results (A2), booking form (A4), parking page (A3), as on the site
       AutoRoute(page: ResultsRoute.page, path: '/:airport/recherche'),
       AutoRoute(page: BookingFormRoute.page, path: '/:airport/:parking/reserver'),

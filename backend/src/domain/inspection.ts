@@ -88,6 +88,17 @@ export function canAnswer(report: { completedAt: Date | null; decision: string }
   return kind === 'return' || !dropoffAnswersItself(status);
 }
 
+/**
+ * The traveller's own photos (20/10/2026, « les deux peuvent faire l'état des lieux »): before handing the keys over
+ * (until the car is in the shuttle's hands) and at the return, once the car is back at the parking.
+ */
+export const TRAVELLER_DROPOFF_STATUSES = ['upcoming', 'arrived'] as const;
+export const TRAVELLER_RETURN_STATUSES = ['back_at_parking', 'returned'] as const;
+
+export function travellerMayPhotograph(kind: 'dropoff' | 'return', status: string): boolean {
+  return ((kind === 'dropoff' ? TRAVELLER_DROPOFF_STATUSES : TRAVELLER_RETURN_STATUSES) as readonly string[]).includes(status);
+}
+
 /** The day the photos of a booking are erased. */
 export function photosEraseAfter(returnAt: Date, disputed: boolean): Date {
   const days = disputed ? DISPUTED_PHOTO_RETENTION_DAYS : PHOTO_RETENTION_DAYS;

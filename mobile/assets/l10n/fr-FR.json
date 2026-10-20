@@ -560,7 +560,8 @@
     "photos_unavailable": "Les photos ne sont pas encore activées sur le serveur.",
     "photo_upload_failed": "La photo n'a pas pu être enregistrée. Réessayez.",
     "photo_not_found": "Cette photo n'existe plus.",
-    "not_an_image": "Ce fichier n'est pas une photo."
+    "not_an_image": "Ce fichier n'est pas une photo.",
+    "contract_at_counter": "Le contrat se signe au comptoir du parking, le jour du dépôt."
   },
   "tabs": {
     "search": "Rechercher",
@@ -1856,9 +1857,8 @@
     "contract_signed_short": "Signé le {}",
     "contract_to_sign": "À faire signer",
     "contract_unsigned": "Non signé",
-    "contract_sign_now": "À signer avant le dépôt : un code vous est envoyé par SMS",
     "contract_at_counter_short": "À signer au comptoir le jour du dépôt",
-    "contract_at_counter": "Votre contrat se signe au comptoir du parking, le jour du dépôt.",
+    "contract_at_counter": "Votre contrat se signe au comptoir du parking le jour du dépôt, avec un code reçu par SMS. Vous pouvez le lire dès maintenant.",
     "contract_closed": "Le contrat ne peut plus être signé.",
     "contract_accept": "J'ai lu et j'accepte le contrat et les conditions du parking.",
     "contract_accept_staff": "Le client a lu le contrat et l'accepte.",
@@ -1997,7 +1997,36 @@
     "notice": {
       "signed": "Contrat signé. Une copie part par e-mail.",
       "answered": "Réponse enregistrée.",
-      "completed": "État des lieux terminé."
-    }
+      "completed": "État des lieux terminé.",
+      "photos_sent": "Photos envoyées au parking."
+    },
+    "client_photos": "Photos du client",
+    "client_photos_sent": "{} photo(s) envoyée(s) par le client le {}",
+    "my_photos_card": {
+      "dropoff": "Vos photos au dépôt",
+      "return": "Vos photos au retour"
+    },
+    "my_photos_invite": {
+      "dropoff": "Facultatif : photographiez votre voiture avant de remettre les clés",
+      "return": "Facultatif : photographiez votre voiture avant de repartir"
+    },
+    "my_photos_draft": "{} photo(s) prise(s), pas encore envoyée(s)",
+    "my_photos_sent": "{} photo(s) envoyée(s) au parking",
+    "my_photos_kicker": {
+      "dropoff": "Avant de remettre vos clés",
+      "return": "Avant de repartir"
+    },
+    "my_photos_title": "Vos photos de la voiture",
+    "my_photos_intro": "Facultatif : elles s'ajoutent à l'état des lieux du parking et le parking les voit. Prenez la voiture sous chaque angle.",
+    "my_photos_unavailable": "Les photos ne sont pas encore disponibles. Réessayez plus tard.",
+    "my_photos_closed": {
+      "dropoff": "Les photos du dépôt se prennent avant de remettre vos clés.",
+      "return": "Les photos du retour se prennent une fois revenu au parking, avant de repartir."
+    },
+    "my_photos_note": "Un mot sur l'état de la voiture (facultatif)",
+    "my_photos_note_hint": "Ex. petite rayure déjà présente sur la portière arrière gauche.",
+    "my_photos_send": "Envoyer mes photos au parking",
+    "my_photos_footer": "Une fois envoyées, elles ne se modifient plus. Le contrat se signe au comptoir, avec un code reçu par SMS.",
+    "my_photos_sent_on": "{} photo(s) envoyée(s) au parking le {}."
   }
 }

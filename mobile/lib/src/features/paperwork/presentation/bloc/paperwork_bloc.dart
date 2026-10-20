@@ -17,7 +17,8 @@ class PaperworkStarted extends PaperworkEvent {
   const PaperworkStarted(this.owner, {this.startKind});
   final PaperworkOwner owner;
 
-  /// Plazo Pro opening a report: started on the server at once (or the one already started is returned).
+  /// Plazo Pro opening a report: started on the server at once (or the one already started is returned). The traveller's
+  /// own photos start with the first one.
   final String? startKind;
 }
 
@@ -101,7 +102,7 @@ class PaperworkBloc extends Bloc<PaperworkEvent, PaperworkState> {
   Future<void> _onStarted(PaperworkStarted event, Emitter<PaperworkState> emit) async {
     emit(state.copyWith(owner: event.owner, viewState: ViewState.processing));
     final owner = event.owner;
-    final result = event.startKind != null && owner is StaffOwner ? await _edit(StartInspection(owner.reservationId, event.startKind!)) : await _load(owner);
+    final result = event.startKind != null ? await _edit(StartInspection(owner, event.startKind!)) : await _load(owner);
     result.fold(
       (f) => emit(state.copyWith(viewState: ViewState.error, errorCode: f.code ?? 'generic', errorMessage: f.message)),
       (data) => emit(state.copyWith(viewState: ViewState.success, data: data)),
