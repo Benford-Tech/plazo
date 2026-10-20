@@ -645,7 +645,7 @@ export interface InboundPageLookup {
  * What « Relancer l'analyse » came to: a booking created or found, an Allopark change applied (`changed`, 10/10/2026),
  * or the mail still waiting.
  */
-export type InboundReanalysisOutcome = "imported" | "changed" | "duplicate" | "incomplete" | "unrecognised";
+export type InboundReanalysisOutcome = "imported" | "changed" | "duplicate" | "incomplete" | "unrecognised" | "handled";
 
 export interface InboundReanalysis {
   email: InboundEmail;
