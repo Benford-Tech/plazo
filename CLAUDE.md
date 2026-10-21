@@ -1171,7 +1171,12 @@ Le nom du produit doit rester dans UN seul fichier de configuration (il peut enc
   `TESTFLIGHT_BETA_GROUPS` pour la relecture bêta, absente par défaut car Codemagic refuse une variable vide), chacun tenté (`ignore_failure` ;
   chaque AAB renvoyé une fois 60 s après un échec, 13/10/2026 : une modification faite dans la Play Console pendant l'envoi l'annule), « Bilan de la publication » en erreur si
   l'un a échoué ; plus de bloc `publishing:` (il n'envoie qu'une app et doublerait l'envoi) ; App ID OneSignal dans le fichier,
-  `GOOGLE_PLAY_SERVICE_ACCOUNT_CREDENTIALS` seul secret du groupe `mobile_secrets`) ; **`mobile-release-android` (11/10/2026,
+  `GOOGLE_PLAY_SERVICE_ACCOUNT_CREDENTIALS` seul secret du groupe `mobile_secrets`) ; **publication en production (21/10/2026, « les pipelines doivent
+  publier en production avec release note »)** : Google Play piste `production` sans brouillon, App Store : TestFlight puis
+  revue et sortie dès l'accord (`APP_STORE_SUBMIT`, `APP_STORE_RELEASE_TYPE` `AFTER_APPROVAL`, `--cancel-previous-submissions`,
+  30 min d'attente du traitement par app, `max_build_duration` 180), notes de version en français par app et par version dans
+  `mobile/release-notes/<version>/plazo.txt|plazo-pro.txt` (500 caractères au plus, « Nouveautés » fr-FR des deux stores ;
+  absentes ou trop longues → arrêt avant les builds) ; **`mobile-release-android` (11/10/2026,
   « un build Android seul pour le Play Store »)**, à la main : la moitié Android de `mobile-release` (étapes partagées par des
   ancres YAML de `definitions.scripts`, variables `android_vars`), sans `ios_signing` ni intégration `lovenest-asc`, donc
   lançable avant les profils Apple (premier envoi Google Play) ; `mobile-check` à la main seulement, les vérifications de chaque modification
