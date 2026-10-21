@@ -74,6 +74,9 @@ export interface SummaryReport {
   created: string[];
   /** Several bookings could be it. */
   ambiguous: string[];
+  /** 21/10/2026 (« je veux voir les réservations même annulées »): cancelled or no-show in Plazo, though Onepark still
+   * lists the stay: shown, never changed nor created again. */
+  cancelled: string[];
 }
 
 export interface ImportChangeResult {
@@ -459,6 +462,8 @@ export class ReservationService {
    * common (one typed by hand, or imported from Onepark's short notice, which has no number). It takes the number when it
    * has none and the plate when it has none; a plate the team typed is never replaced (a different one is reported).
    * Neither a Plazo booking nor a closed one is touched. Written under the booking's row lock, in its history.
+   * 21/10/2026: a cancelled or no-show booking is found as well (by its number, its name and arrival, or its car) and
+   * reported, never changed nor created again.
    */
   public async completeFromSummary(
     operatorId: string,
@@ -466,7 +471,7 @@ export class ReservationService {
     origin: { inboundEmailId?: string | null },
     now: Date = new Date(),
   ): Promise<SummaryReport> {
-    const report: SummaryReport = { completed: [], upToDate: [], plateDiffers: [], missing: [], ambiguous: [], created: [] };
+    const report: SummaryReport = { completed: [], upToDate: [], plateDiffers: [], missing: [], ambiguous: [], created: [], cancelled: [] };
     const parking = await prisma.parking.findFirst({ where: { operatorId }, orderBy: { createdAt: 'asc' } });
     if (!parking) return { ...report, missing: stays.map(s => s.reference) };
     for (const stay of stays) {
@@ -482,7 +487,8 @@ export class ReservationService {
                 channel: 'aggregator',
                 externalReference: null,
                 arrivalAt: arrival,
-                status: { notIn: ['cancelled', 'no_show', 'pending_payment'] },
+                // 21/10/2026: a cancelled booking is found too (and reported), never created again.
+                status: { not: 'pending_payment' },
                 OR: [{ channelDetail: { equals: 'Onepark', mode: 'insensitive' } }, { channelDetail: null }, { channelDetail: '' }],
               },
               select: { id: true, customerName: true },
@@ -510,7 +516,8 @@ export class ReservationService {
               where: {
                 operatorId,
                 plateKey: plateKey(plate),
-                status: { notIn: ['cancelled', 'no_show', 'pending_payment'] },
+                // 21/10/2026: a cancelled booking is found too (and reported), never created again.
+                status: { not: 'pending_payment' },
                 arrivalAt: { lt: returnAt },
                 returnAt: { gt: arrivalAt },
               },
@@ -540,7 +547,9 @@ export class ReservationService {
       const outcome = await prisma.$transaction(async tx => {
         await tx.$queryRaw`SELECT id FROM reservations WHERE id = ${id} FOR UPDATE`;
         const before = await tx.reservation.findFirst({ where: { id: id!, operatorId } });
-        if (!before || before.channel === 'plazo' || CLOSED_FOR_CHANGES.includes(before.status)) return 'upToDate' as const;
+        if (!before) return 'upToDate' as const;
+        if (before.status === 'cancelled' || before.status === 'no_show') return 'cancelled' as const;
+        if (before.channel === 'plazo' || CLOSED_FOR_CHANGES.includes(before.status)) return 'upToDate' as const;
         const data: Prisma.ReservationUpdateInput = {};
         if (!before.externalReference) data.externalReference = stay.reference;
         const differs = !!plate && !!before.plateKey && before.plateKey !== plateKey(plate);

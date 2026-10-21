@@ -193,7 +193,7 @@ describe('les mails connus des comparateurs, sans Claude (16/10/2026)', () => {
     const summary = fixture('onepark-summary.txt');
     expect((await post([item(op.address, summary, { ...from, Subject: 'Résumé de vos réservations' })])).body).toMatchObject({
       imported: 0,
-      toCheck: 1,
+      toCheck: 0,
     });
     expect(create).not.toHaveBeenCalled();
     expect(await prisma.reservation.findFirstOrThrow({ where: { operatorId: op.operator.id, externalReference: '5900101' } })).toMatchObject({
@@ -206,8 +206,9 @@ describe('les mails connus des comparateurs, sans Claude (16/10/2026)', () => {
     });
     expect(await prisma.reservation.count({ where: { operatorId: op.operator.id } })).toBe(2);
     const left = await latest(op.operator.id);
+    // 21/10/2026 (« Toujours dans Traités »): what is left is in its summary, the email waits for no one.
     expect(left).toMatchObject({
-      status: 'unrecognised',
+      status: 'handled',
       reservationId: null,
       reading: { kind: 'other', provider: 'Onepark', rule: 'onepark.summary' },
     });
@@ -257,6 +258,39 @@ describe('les mails connus des comparateurs, sans Claude (16/10/2026)', () => {
     // Read again: nothing more.
     expect(await reservations.completeFromSummary(op.operator.id, stays, {}, now)).toMatchObject({ created: [], upToDate: ['5900101', '5900102'] });
     expect(await prisma.reservation.count({ where: { operatorId: op.operator.id } })).toBe(2);
+    // 21/10/2026 (« je veux voir les réservations même annulées »): a booking cancelled in Plazo is found and reported,
+    // never changed nor created again.
+    await prisma.reservation.update({ where: { reference: 'PZPHONE' }, data: { status: 'cancelled' } });
+    expect(await reservations.completeFromSummary(op.operator.id, stays, {}, now)).toMatchObject({
+      created: [],
+      cancelled: ['5900101'],
+      upToDate: ['5900102'],
+    });
+    expect(await prisma.reservation.count({ where: { operatorId: op.operator.id } })).toBe(2);
+    // Cancelled without its number yet: found by its name and arrival, or its car, all the same.
+    const third = await connected();
+    await prisma.reservation.create({
+      data: {
+        operatorId: third.operator.id,
+        parkingId: third.parking.id,
+        reference: 'PZGONE',
+        channel: 'aggregator',
+        channelDetail: 'Onepark',
+        customerName: 'Camille Exemple',
+        customerFirstName: 'Camille',
+        customerLastName: 'Exemple',
+        customerPhone: '06 11 22 33 44',
+        plate: '',
+        plateKey: '',
+        arrivalAt: new Date('2026-10-23T07:00:00Z'),
+        returnAt: new Date('2026-10-27T07:00:00Z'),
+        passengers: 1,
+        status: 'cancelled',
+      },
+    });
+    expect(await reservations.completeFromSummary(third.operator.id, stays, {}, now)).toMatchObject({ cancelled: ['5900101'] });
+    expect(await prisma.reservation.findFirstOrThrow({ where: { reference: 'PZGONE' } })).toMatchObject({ externalReference: null, plate: '' });
+    expect(await prisma.reservation.count({ where: { operatorId: third.operator.id, externalReference: '5900101' } })).toBe(0);
     // A stay already over is never created.
     const other = await connected();
     expect(await reservations.completeFromSummary(other.operator.id, stays, {}, new Date('2026-10-24T12:00:00Z'))).toMatchObject({
