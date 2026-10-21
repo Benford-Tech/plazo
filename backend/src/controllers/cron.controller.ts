@@ -13,6 +13,7 @@ import { ReturnService } from '@/services/return.service';
 import { ShuttleService } from '@/services/shuttle.service';
 import { SmsService } from '@/services/sms.service';
 import { PaymentService } from '@/services/payment.service';
+import { MorningEmailService } from '@/services/morning-email.service';
 import { ProspectingService } from '@/services/prospecting.service';
 import { ExtraService } from '@/services/extra.service';
 import { ReminderService } from '@/services/reminder.service';
@@ -43,6 +44,7 @@ export class CronController {
   public joinRequests = Container.get(JoinRequestService);
   public identityVerification = Container.get(IdentityVerificationService);
   public prospecting = Container.get(ProspectingService);
+  public morning = Container.get(MorningEmailService);
   public demo = Container.get(ProspectDemoService);
   public extras = Container.get(ExtraService);
 
@@ -65,6 +67,16 @@ export class CronController {
       return await this.prospecting.runDue();
     } catch (error) {
       logger.error(`[Cron] Prospecting pass failed: ${error instanceof Error ? error.name : 'unknown error'}`);
+      return { error: true };
+    }
+  }
+
+  /** « Mail du matin » (21/10/2026) due now. Never throws: it must not change the answer of remind-tomorrow. */
+  private async morningPass(): Promise<Awaited<ReturnType<MorningEmailService['run']>> | { error: true }> {
+    try {
+      return await this.morning.run();
+    } catch (error) {
+      logger.error(`[Cron] Morning email pass failed: ${error instanceof Error ? error.name : 'unknown error'}`);
       return { error: true };
     }
   }
@@ -122,11 +134,20 @@ export class CronController {
     // The prospecting emails ride on this 15-minute call (Vercel Hobby has daily crons only); their outcome never changes
     // this route's status.
     const prospecting = await this.prospectingPass();
+    // « Mail du matin » (21/10/2026) rides on it too, with the same rule.
+    const morning = await this.morningPass();
     const extras = await this.extrasPass();
     logger.info(
-      `[Cron] Reminders: ${JSON.stringify(result)}; SMS queue: ${JSON.stringify(sms)}; prospecting: ${JSON.stringify(prospecting)}; services: ${JSON.stringify(extras)}`,
+      `[Cron] Reminders: ${JSON.stringify(result)}; SMS queue: ${JSON.stringify(sms)}; prospecting: ${JSON.stringify(prospecting)}; morning: ${JSON.stringify(morning)}; services: ${JSON.stringify(extras)}`,
     );
-    res.status(statusOf(result.sent + result.failed, result.failed)).json({ ...result, sms, prospecting, extras });
+    res.status(statusOf(result.sent + result.failed, result.failed)).json({ ...result, sms, prospecting, morning, extras });
+  });
+
+  /** GET /internal/cron/morning-email: « Mail du matin » due now, for a dedicated job (also run by remind-tomorrow). */
+  public morningEmail = catchAsync(async (req: Request, res: Response) => {
+    const result = await this.morning.run();
+    logger.info(`[Cron] Morning email: ${JSON.stringify(result)}`);
+    res.status(statusOf(result.sent + result.failed, result.failed)).json(result);
   });
 
   /** GET /internal/cron/prospecting: the prospecting emails due now, for a dedicated job (also run by remind-tomorrow). */

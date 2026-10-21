@@ -136,7 +136,13 @@ export class NotificationService {
    * Email to a staff member of an operator. Returns whether Brevo accepted it. Logs only the tag and
    * `about` (an id), never the address.
    */
-  public async emailStaff(to: { email: string; name: string }, tag: string, about: string, message: EmailMessage): Promise<boolean> {
+  public async emailStaff(
+    to: { email: string; name: string },
+    tag: string,
+    about: string,
+    message: EmailMessage,
+    options: { headers?: Record<string, string> } = {},
+  ): Promise<boolean> {
     if (!this.emailConfigured()) {
       logger.info(`[Notifications] Email not configured: ${tag} not sent for ${about}`);
       return false;
@@ -147,6 +153,7 @@ export class NotificationService {
       subject: message.subject,
       htmlContent: message.html,
       textContent: message.text,
+      ...(options.headers && Object.keys(options.headers).length ? { headers: options.headers } : {}),
       tags: [tag],
     });
   }

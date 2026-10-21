@@ -3,6 +3,7 @@ import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
 import { FormField } from "@/components/FormField";
+import { MorningEmailCard } from "@/components/account/MorningEmailCard";
 import { TravellerSms } from "@/components/account/TravellerSms";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -110,6 +111,7 @@ export default function AccountPage() {
     <>
       <h1 className="text-2xl font-semibold">{t.title}</h1>
       {user && <NameForm key={user.id} />}
+      <MorningEmailCard />
       <Card>
         <CardHeader>
           <CardTitle className="text-base font-medium">
