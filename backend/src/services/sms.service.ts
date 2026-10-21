@@ -1,6 +1,7 @@
 import { createHash } from 'crypto';
 import httpStatus from 'http-status';
 import { Container, Service } from 'typedi';
+import { isProspectDemoOperator } from './demo-guard';
 import { PRODUCT_NAME, SECRET_KEY, SMS_DAILY_LIMIT, smsGatewayEncryptionKey } from '@/config';
 import prisma, { OperatorSmsSettings, SmsMode, SmsOutbox } from '@/database';
 import { manageToken } from '@/domain/booking';
@@ -93,6 +94,11 @@ export class SmsService {
   public async sendTravellerSms(operatorId: string, sms: TravellerSms): Promise<SendOutcome> {
     const about = sms.reservationId ? `reservation ${sms.reservationId}` : `operator ${operatorId}`;
     try {
+      // 21/10/2026: the prospects' demo never sends anything.
+      if (await isProspectDemoOperator(operatorId)) {
+        logger.info(`[SMS] Demo operator: ${sms.kind} simulated for ${about}`);
+        return 'skipped';
+      }
       const settings = await prisma.operatorSmsSettings.findUnique({ where: { operatorId } });
       const mode = settings?.mode ?? 'none';
       if (mode === 'none') {
@@ -122,6 +128,8 @@ export class SmsService {
    */
   public async sendSignatureCode(operatorId: string, reservationId: string, recipient: string, text: string): Promise<boolean> {
     const about = `reservation ${reservationId}`;
+    // 21/10/2026: the prospects' demo never sends anything (the code cannot be typed: the signature waits).
+    if (await isProspectDemoOperator(operatorId)) return false;
     const ok = await this.notifications.smsViaBrevo(recipient, 'signature_code', about, text);
     await prisma.smsOutbox.create({
       data: {

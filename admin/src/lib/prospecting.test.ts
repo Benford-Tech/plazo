@@ -34,11 +34,12 @@ describe("CSV des prospects", () => {
 });
 
 describe("aperçu des mails", () => {
-  const values = { prenom: "", nom: "Exemple", parking: "Parking Alpha", aeroport: "Lyon Saint-Exupéry", ville: "Pusignan" };
+  const values = { prenom: "", nom: "Exemple", parking: "Parking Alpha", aeroport: "Lyon Saint-Exupéry", ville: "Pusignan", lienDemo: "https://www.plazo.fr/pro/demo/AbCd2345EfGh" };
   it("remplace les variables comme l'API, sans trace d'une variable vide", () => {
     expect(renderText("Bonjour {prénom},\n{parking} près de {aeroport}", values)).toBe("Bonjour,\nParking Alpha près de Lyon Saint-Exupéry");
     expect(renderSubjectText("{prénom}, vos réservations", values)).toBe("Vos réservations");
     expect(unknownVariables("{prénom} {société}")).toEqual(["{société}"]);
+    expect(renderText("Essayez : {lien_demo}", values)).toBe("Essayez : https://www.plazo.fr/pro/demo/AbCd2345EfGh");
   });
 });
 

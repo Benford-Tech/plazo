@@ -1,3 +1,4 @@
+import { ProspectDemoService } from './prospect-demo.service';
 import { createHmac, timingSafeEqual } from 'crypto';
 import httpStatus from 'http-status';
 import { Container, Service } from 'typedi';
@@ -25,6 +26,7 @@ import {
   stepsOf,
   suppressionHash,
   templateValues,
+  usesDemoLink,
   TemplateValues,
   validateProspect,
   validateSequence,
@@ -62,6 +64,7 @@ const SAMPLE_VALUES: TemplateValues = {
   parking: 'Parking Exemple',
   aéroport: 'Lyon Saint-Exupéry',
   ville: 'Colombier-Saugnieu',
+  lien_demo: 'https://www.plazo.fr/pro/demo/AbCd2345EfGh',
 };
 
 const notFound = () => new HttpException(httpStatus.NOT_FOUND, 'Prospect not found', 'not_found');
@@ -75,6 +78,7 @@ export type SendOutcome = 'sent' | 'failed' | 'finished' | 'skipped';
  */
 @Service()
 export class ProspectingService {
+  public demo = Container.get(ProspectDemoService);
   public notifications = Container.get(NotificationService);
   public audit = Container.get(AuditService);
 
@@ -285,12 +289,17 @@ export class ProspectingService {
     ]);
     const names = await this.airportNames([...rows.map(r => r.airportCode), ...airportGroups.map(g => g.airportCode)]);
     const errors = await this.lastErrors(rows.filter(r => r.failedAttempts > 0).map(r => r.id));
+    // 21/10/2026 (C): each prospect's demo link, its opens and its expiry.
+    const demoLinks = await this.demo.linksOf(
+      rows.map(r => r.id),
+      now,
+    );
     const counts = Object.fromEntries(PROSPECT_STATUSES.map(s => [s, 0])) as Record<ProspectStatusName, number>;
     for (const g of grouped) counts[g.status] = g._count._all;
     const regionCounts: Record<string, number> = Object.fromEntries([...sortedRegions().map(r => [r.key, 0]), [NO_REGION, 0]]);
     for (const g of regionGroups) regionCounts[effectiveRegion(g) ?? NO_REGION] += g._count._all;
     return {
-      data: rows.map(r => this.view(r, names, settings.steps, errors)),
+      data: rows.map(r => ({ ...this.view(r, names, settings.steps, errors), demo: demoLinks.get(r.id) ?? null })),
       counts: { all: Object.values(counts).reduce((a, b) => a + b, 0), ...counts },
       airports: airportGroups
         .filter(g => g.airportCode)
@@ -592,13 +601,15 @@ export class ProspectingService {
     const sender = this.sender()!;
     const names = await this.airportNames([prospect.airportCode]);
     const replyTo = await this.replyToFor(prospect);
+    // 21/10/2026: the prospect's own demo link, made (or kept) when the step says {lien_demo}.
+    const demoUrl = usesDemoLink(step) ? (await this.demo.linkFor(prospect.id, prospect.enrolledById)).url : '';
     const message = prospectEmail({
       productName: PRODUCT_NAME,
       company: PRODUCT_COMPANY,
       senderName: sender.name,
       senderPhone: prospectingSettings().phone,
       step,
-      values: templateValues(prospect, prospect.airportCode ? (names.get(prospect.airportCode) ?? null) : null),
+      values: templateValues(prospect, prospect.airportCode ? (names.get(prospect.airportCode) ?? null) : null, demoUrl),
       unsubscribeUrl: this.unsubscribeUrl(id),
     });
     const name = [prospect.contactFirstName, prospect.contactLastName].filter(Boolean).join(' ');
@@ -675,7 +686,12 @@ export class ProspectingService {
     if (typeof input.prospectId === 'string' && input.prospectId) {
       const prospect = await this.getOrThrow(input.prospectId);
       const names = await this.airportNames([prospect.airportCode]);
-      values = templateValues(prospect, prospect.airportCode ? (names.get(prospect.airportCode) ?? null) : null);
+      const link = (await this.demo.linksOf([prospect.id])).get(prospect.id);
+      values = templateValues(
+        prospect,
+        prospect.airportCode ? (names.get(prospect.airportCode) ?? null) : null,
+        link && !link.expired ? link.url : SAMPLE_VALUES.lien_demo,
+      );
     }
     const sender = this.sender()!;
     const message = prospectEmail({

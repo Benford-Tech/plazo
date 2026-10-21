@@ -8,6 +8,7 @@ import { AuthProvider, useAuth } from "@/contexts/AuthContext";
 import { can, type Permission } from "@/lib/roles";
 import AccountPage from "@/pages/AccountPage";
 import ContractPage from "@/pages/ContractPage";
+import DemoEntryPage from "@/pages/DemoEntryPage";
 import LoginPage from "@/pages/LoginPage";
 import NotFound from "@/pages/NotFound";
 import ListingPage from "@/pages/ListingPage";
@@ -125,6 +126,8 @@ const App = () => (
         >
           <Routes>
             <Route path="/login" element={<LoginPage />} />
+            <Route path="/demo" element={<DemoEntryPage />} />
+            <Route path="/demo/:token" element={<DemoEntryPage />} />
             <Route path="/inscription" element={<SignupPage />} />
             <Route path="/invitation" element={<AcceptInvitationPage />} />
             <Route path="/verifier-email" element={<VerifyEmailPage />} />

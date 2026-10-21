@@ -8,6 +8,7 @@ import { cn } from "@/lib/utils";
 import { ContractBanner } from "./ContractBanner";
 import { EmailVerificationBanner } from "./EmailVerificationBanner";
 import { Logo } from "./Logo";
+import { DemoBanner } from "./DemoBanner";
 import { ViewAsBanner } from "./platform/ViewAsBanner";
 import { ViewSwitch } from "./platform/ViewSwitch";
 
@@ -47,6 +48,7 @@ export function AdminLayout() {
 
   return (
     <div className="flex min-h-screen flex-col">
+      <DemoBanner />
       <ViewAsBanner />
       <div className="flex flex-1 flex-col lg:flex-row">
         <aside className="sticky top-0 z-20 shrink-0 border-b border-panel-line bg-panel-shell lg:h-screen lg:w-[196px] lg:border-b-0 lg:border-r">

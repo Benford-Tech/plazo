@@ -1,3 +1,4 @@
+import { DemoRoute } from './demo.route';
 import { ArrivalRoute } from './arrival.route';
 import { AuthRoute } from './auth.route';
 import { ContactRoute } from './contact.route';
@@ -37,6 +38,7 @@ const AppRoutes = [
   new ListingRoute(),
   new PlatformRoute(),
   new ProspectingRoute(),
+  new DemoRoute(),
   new PublicRoute(),
   new PublicBookingRoute(),
   new ContactRoute(),

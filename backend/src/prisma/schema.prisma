@@ -52,6 +52,9 @@ model Operator {
   // Fictional operator created by the demo seed (scripts/seed-demo.ts): listed with a "Démo" badge
   // on the site and in the platform space, removed as a whole by the seed's --remove.
   isDemo                 Boolean        @default(false)
+  // 21/10/2026 (« mets un environnement de démo de l'app », A + B + C): the prospects' demo operator (« Parking des
+  // Cèdres (démo) »): no public listing, nothing sent outside, wiped and seeded again every night.
+  prospectDemo           Boolean        @default(false)
   // M-A (06/10/2026): the local part of the operator's inbound address (<slug>@<INBOUND_EMAIL_DOMAIN>),
   // where their mailbox forwards the comparators' confirmations. Set from the operator's creation (08/10/2026);
   // null only for a row older than the migration inbound_slug_for_all, which filled them all.
@@ -1406,6 +1409,7 @@ model Prospect {
   enrolledById     String?
   createdAt        DateTime       @default(now())
   updatedAt        DateTime       @default(now()) @updatedAt
+  demoLink         DemoLink?
 
   messages ProspectMessage[]
 
@@ -1663,4 +1667,20 @@ model PartnerContract {
   @@unique([operatorId, version])
   @@index([operatorId, status])
   @@map("partner_contracts")
+}
+
+/// 21/10/2026 (C): a prospect's own link to the demo (plazo.fr/pro/demo/<token>), valid 14 days; Plazo counts its opens.
+model DemoLink {
+  id           String    @id @default(cuid())
+  token        String    @unique
+  prospectId   String?   @unique
+  createdById  String?
+  expiresAt    DateTime
+  opens        Int       @default(0)
+  lastOpenedAt DateTime?
+  createdAt    DateTime  @default(now())
+
+  prospect Prospect? @relation(fields: [prospectId], references: [id], onDelete: Cascade)
+
+  @@map("demo_links")
 }

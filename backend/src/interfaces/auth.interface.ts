@@ -16,7 +16,11 @@ export interface ActingAs {
   platformAccount: boolean;
 }
 
-export type AuthenticatedStaff = Staff & { operatorName: string; actingAs?: ActingAs };
+/**
+ * `demo`: a session of the prospects' demo (21/10/2026, « Parking des Cèdres (démo) »): what would leave Plazo (team,
+ * passwords, payments, SMS settings, devices) is refused (RefuseInViewAs), and nothing it does is sent outside.
+ */
+export type AuthenticatedStaff = Staff & { operatorName: string; actingAs?: ActingAs; demo?: boolean };
 
 export interface RequestWithStaff extends Request {
   staff: AuthenticatedStaff;

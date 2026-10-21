@@ -1,3 +1,4 @@
+import { isProspectDemoName } from '@/domain/prospect-demo';
 import httpStatus from 'http-status';
 import { Container, Service } from 'typedi';
 import { isPlatformAdmin, testFeedOff } from '@/config';
@@ -127,7 +128,8 @@ export class TestFeedService {
 
   /** Called by the driver's lists right after they read the parking, before they read the bookings. Never throws. */
   public async maybeRun(actor: AuthenticatedStaff, parking: Parking): Promise<void> {
-    if (!isTestOperatorName(actor.operatorName)) return;
+    // 21/10/2026: the prospects' demo (« Parking des Cèdres (démo) ») is fed the same way.
+    if (!isTestOperatorName(actor.operatorName) && !isProspectDemoName(actor.operatorName)) return;
     if (testFeedOff()) return;
     const nowMs = Date.now();
     const last = this.tried.get(actor.operatorId);
@@ -182,13 +184,26 @@ export class TestFeedService {
    */
   public async qualifies(operatorId: string): Promise<boolean> {
     const operator = await this.operatorOf(operatorId);
-    return !!operator && this.isTestOperator(operator) && operator.status === 'active' && !operator.archivedAt && !operator.isDemo;
+    return (
+      !!operator &&
+      (this.isTestOperator(operator) || operator.prospectDemo) &&
+      operator.status === 'active' &&
+      !operator.archivedAt &&
+      !operator.isDemo
+    );
   }
 
   private operatorOf(operatorId: string) {
     return prisma.operator.findUnique({
       where: { id: operatorId },
-      select: { name: true, status: true, archivedAt: true, isDemo: true, staff: { where: { isActive: true }, select: { email: true } } },
+      select: {
+        name: true,
+        status: true,
+        archivedAt: true,
+        isDemo: true,
+        prospectDemo: true,
+        staff: { where: { isActive: true }, select: { email: true } },
+      },
     });
   }
 

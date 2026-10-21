@@ -39,7 +39,8 @@ export interface SequenceStep {
   body: string;
 }
 
-export const VARIABLES = ['prénom', 'nom', 'parking', 'aéroport', 'ville'] as const;
+// 21/10/2026: {lien_demo}, the prospect's own link to the demo of Plazo Pro (14 days, made when the mail leaves).
+export const VARIABLES = ['prénom', 'nom', 'parking', 'aéroport', 'ville', 'lien_demo'] as const;
 export type VariableName = (typeof VARIABLES)[number];
 export type TemplateValues = Record<VariableName, string>;
 
@@ -111,7 +112,13 @@ const ALIASES: Record<string, VariableName> = {
   aéroport: 'aéroport',
   aeroport: 'aéroport',
   ville: 'ville',
+  lien_demo: 'lien_demo',
+  lien_démo: 'lien_demo',
+  liendemo: 'lien_demo',
 };
+
+/** Whether a step's subject or body says {lien_demo} (its link is then made, or kept, when the mail leaves). */
+export const usesDemoLink = (step: { subject: string; body: string }) => /\{(?:lien_d[ée]mo|liendemo)\}/i.test(`${step.subject}\n${step.body}`);
 
 /** The variables of a text that Plazo does not know (refused when the sequence is saved). */
 export function unknownVariables(text: string): string[] {
@@ -153,8 +160,9 @@ export interface ProspectForTemplate {
   airportCode: string | null;
 }
 
-export function templateValues(prospect: ProspectForTemplate, airportName: string | null): TemplateValues {
+export function templateValues(prospect: ProspectForTemplate, airportName: string | null, demoUrl = ''): TemplateValues {
   return {
+    lien_demo: demoUrl,
     prénom: prospect.contactFirstName ?? '',
     nom: prospect.contactLastName ?? '',
     parking: prospect.companyName,

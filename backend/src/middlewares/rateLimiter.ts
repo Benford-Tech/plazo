@@ -170,3 +170,6 @@ export const newsletterAddressLimiter = rateLimit({
     res.status(202).json({ ok: true });
   },
 });
+
+/** 21/10/2026: entering the prospects' demo (a session each time): 30 per 15 minutes per address. */
+export const demoLimiter = rateLimit({ windowMs: 15 * 60 * 1000, max: 30, skip, keyGenerator, message: tooMany('too_many_requests') });

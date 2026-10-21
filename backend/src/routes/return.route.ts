@@ -473,14 +473,14 @@ export class ReturnRoute implements Routes {
     this.router.post(
       '/internal/shuttle/trips',
       StaffAuthMiddleware('reservations:status'),
-      RefuseInViewAs(VIEW_AS_NOT_DRIVER, NOT_DRIVER_MESSAGE),
+      RefuseInViewAs(VIEW_AS_NOT_DRIVER, NOT_DRIVER_MESSAGE, { allowDemo: true }),
       ValidationMiddleware(StartTripDto),
       this.shuttle.start,
     );
     this.router.post(
       '/internal/shuttle/trips/:id/position',
       StaffAuthMiddleware('reservations:status'),
-      RefuseInViewAs(VIEW_AS_NOT_DRIVER, NOT_DRIVER_MESSAGE),
+      RefuseInViewAs(VIEW_AS_NOT_DRIVER, NOT_DRIVER_MESSAGE, { allowDemo: true }),
       ValidationMiddleware(TripPositionDto),
       this.shuttle.position,
     );
