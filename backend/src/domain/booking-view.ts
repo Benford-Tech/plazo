@@ -35,11 +35,12 @@ function outboundView(reservation: Reservation, parking: Parking, tz: string): P
  * The price's breakdown (12/10/2026): the grid price and the night fees included in the total, read from the snapshot
  * frozen at booking (never recomputed from the parking's current settings or the booking's current hours).
  */
-function priceBreakdown(reservation: Reservation): Pick<PublicBooking, 'basePriceCents' | 'nightFee'> {
+function priceBreakdown(reservation: Reservation): Pick<PublicBooking, 'basePriceCents' | 'nightFee' | 'extrasCents'> {
   const nightFee = nightFeeOf(reservation);
   return {
     basePriceCents: reservation.priceCents === null ? null : reservation.priceCents - (nightFee?.totalCents ?? 0),
     nightFee,
+    extrasCents: reservation.extrasChargedCents ?? 0,
   };
 }
 

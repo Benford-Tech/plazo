@@ -1264,7 +1264,15 @@ describe('réglages de reversement', () => {
     expect((await api().get('/api/internal/cron/payouts')).status).toBe(401);
     const res = await api().get('/api/internal/cron/payouts').set('Authorization', `Bearer ${process.env.CRON_SECRET}`);
     expect(res.status).toBe(200);
-    expect(res.body).toEqual({ transferred: 0, notDue: 0, waitingForAccount: 0, failed: 0, skipped: 0, testPayments: 0 });
+    expect(res.body).toEqual({
+      transferred: 0,
+      notDue: 0,
+      waitingForAccount: 0,
+      failed: 0,
+      skipped: 0,
+      testPayments: 0,
+      extras: { transferred: 0, notDue: 0, waitingForAccount: 0, failed: 0, skipped: 0, testPayments: 0 },
+    });
   });
 });
 

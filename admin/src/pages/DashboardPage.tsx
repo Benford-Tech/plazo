@@ -238,7 +238,9 @@ function AlertRow({ alert }: { alert: DashboardAlert }) {
               ? a.joinDetail(Number(alert.detail), alert.customerName)
               : alert.kind === "price_missing"
                 ? fr.noPrice.alertDetail(Number(alert.detail) || 0)
-                : [alert.customerName, alert.detail]
+                : alert.kind === "extras_due"
+                  ? a.extrasDetail(alert.customerName, alert.detail, alert.since ? timeOf(alert.since) : null)
+                  : [alert.customerName, alert.detail]
                     .filter(Boolean)
                     .join(" · ")}
         </span>

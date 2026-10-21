@@ -6,6 +6,7 @@ import { toast } from "sonner";
 import { Plate } from "@/components/Plate";
 import { ReservationForm } from "@/components/reservations/ReservationForm";
 import { NextStep } from "@/components/reservations/NextStep";
+import { ReservationExtras } from "@/components/reservations/ReservationExtras";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useAuth } from "@/contexts/AuthContext";
 import { adminApi, ApiError } from "@/lib/api";
@@ -357,6 +358,7 @@ export default function ReservationPage() {
       ) : (
         <>
           <NextStep reservation={r} />
+          <ReservationExtras reservationId={r.id} mayAct={can(user?.role, "reservations:status")} />
           <div className="grid gap-x-8 sm:grid-cols-2">
             <dl>
               <Info label={t.arrival}>

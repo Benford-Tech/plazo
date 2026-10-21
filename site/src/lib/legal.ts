@@ -34,7 +34,7 @@ export interface LegalDoc {
  * - Privacy: 19/10/2026, the signed contract and the condition reports' photos; 18/10/2026, the prospecting emails to airport parkings (Plateforme › Prospection); 15/10/2026, the controller's details, the contact form and « La lettre » (footer A); 13/10/2026, Plazo Pro
  *   sign-in with Apple / Google, the code of the day, account deletion.
  */
-export const TERMS_VERSION = "20 octobre 2026";
+export const TERMS_VERSION = "21 octobre 2026";
 export const NOTICE_VERSION = "15 octobre 2026";
 export const PRIVACY_VERSION = "21 octobre 2026";
 export const TO_COMPLETE = "[à compléter]";
@@ -175,6 +175,7 @@ export function termsDoc(company: Company = COMPANY, email: string = SUPPORT_EMA
           "Grâce au numéro de vol retour, le parking suit l’heure d’atterrissage : le voyageur reçoit un SMS à l’atterrissage avec le point de rendez-vous de la navette. S’il change de vol, il le met à jour dans Ma réservation ou prévient le parking.",
           "Les horaires de vol proviennent d’un service tiers de suivi des vols. Comme les heures de navette, la position des navettes en direct et les distances affichées, ils sont donnés à titre indicatif.",
           "Un retour après la date et l’heure réservées prolonge le séjour ; la prolongation est facturée par le parking, selon ses tarifs.",
+          `Quand le parking les propose, le voyageur peut commander dans l’application ${p} des services pour sa voiture (lavage intérieur, recharge d’une hybride rechargeable ou d’une voiture électrique), avec sa réservation ou plus tard, même après le dépôt, jusqu’au délai indiqué avant le retour. Ils sont payés en ligne, au prix affiché au moment de la commande, et faits par le parking avant le retour. Un service que le parking ne peut pas faire, ou qui n’est pas fait quand le véhicule est rendu, est remboursé en entier ; une réservation annulée et remboursée l’est avec ses services. ${p} perçoit sa commission sur ces services comme sur le stationnement.`,
           "À la restitution, le voyageur vérifie l’état de son véhicule avant de quitter le parking. Lorsque le parking fait un état des lieux de retour, ses photos sont présentées à côté de celles du dépôt : le voyageur le signe pour accord ou y inscrit une réserve, avec ses mots, que le parking traite selon ses conditions. À défaut, il signale tout dommage au personnel en le faisant constater (photos, mention écrite). Un signalement plus tardif reste possible, mais la preuve en est plus difficile.",
         ],
       },

@@ -2,6 +2,7 @@ import httpStatus from 'http-status';
 import { Container, Service } from 'typedi';
 import prisma, { Airport, Listing, Operator, Parking, Prisma, ShuttleTracking } from '@/database';
 import { NightFee, nightFeesForStay, nightRule, nightSettingsOf } from '@/domain/night-fees';
+import { enabledOffersFrom } from '@/domain/extras';
 import { billableDays, quoteCents } from '@/domain/pricing';
 import { travellersSeePosition } from '@/domain/shuttle-tracking';
 import { exceedsCalendarDays, parseInstant } from '@/domain/time';
@@ -279,6 +280,12 @@ export class PublicService {
           tiers: listing.parking.pricingTiers,
           extraDayPriceCents: listing.parking.extraDayPriceCents,
           night: nightRule(nightSettingsOf(listing.parking)),
+        },
+        // Services for the car (21/10/2026), ordered in the Plazo app with the booking or later, until `leadHours`
+        // before the return.
+        extras: {
+          offers: enabledOffersFrom(await prisma.parkingExtra.findMany({ where: { parkingId: listing.parkingId } })),
+          leadHours: listing.parking.extrasLeadHours,
         },
       },
       offer: stay ? await this.offer(listing, stay) : null,

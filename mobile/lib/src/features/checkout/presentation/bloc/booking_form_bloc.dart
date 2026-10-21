@@ -60,6 +60,12 @@ abstract class BookingFormState with _$BookingFormState {
 
   int? get days => parkingResponse?.offer?.days;
 
+  /// Services for the car the parking offers (21/10/2026), to tick in the recap.
+  List<ParkingExtraOfferModel> get extraOffers => parkingResponse?.parking.extras.offers ?? const [];
+
+  /// What the ticked services add to the total.
+  int extrasCents(List<String> kinds) => extraOffers.where((o) => kinds.contains(o.kind)).fold(0, (sum, o) => sum + o.priceCents);
+
   /// The booking cannot be made for these dates any more (the form shows the alternatives).
   bool get unavailable => const ['overbooked', 'no_price', 'not_found'].contains(errorCode);
 }
@@ -177,6 +183,7 @@ class BookingFormBloc extends Bloc<BookingFormEvent, BookingFormState> {
         idempotencyKey: _key,
         vehicleModel: draft.vehicleModel,
         vehicleColour: draft.vehicleColour,
+        extras: draft.extras,
         customerNote: draft.customerNote,
       ),
     );

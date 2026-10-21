@@ -17,6 +17,7 @@ import '../../../../shared/theme/theme.dart';
 import '../../../../shared/widgets/brand_header.dart';
 import '../../../../shared/widgets/french_plate.dart';
 import '../../../../shared/widgets/gradient_button.dart';
+import '../../../extras/presentation/widgets/staff_extras_card.dart';
 import '../../../paperwork/presentation/widgets/paperwork_cards.dart';
 import '../../../pro_auth/presentation/bloc/pro_auth_bloc.dart';
 import '../../../pro_shuttle/data/models/shuttle_models.dart';
@@ -233,6 +234,8 @@ class _Sheet extends StatelessWidget {
         // « Contrat signé et état des lieux » (19/10/2026): the contract and both condition reports.
         if (r.status != 'cancelled' && r.status != 'no_show')
           PaperworkCard(key: ValueKey('paperwork-${r.id}-${r.status}'), reservationId: r.id, status: r.status, canAct: can(role, 'reservations:status')),
+        // Services for the car ordered on Plazo (21/10/2026): « Fait » / « Pas possible ».
+        StaffExtrasCard(key: ValueKey('extras-${r.id}-${r.status}'), reservationId: r.id, canAct: can(role, 'reservations:status')),
         if (r.returnNoticeKind != null && r.returnNoticeAt != null)
           _Section(
             title: 'res.return_notice'.tr(),

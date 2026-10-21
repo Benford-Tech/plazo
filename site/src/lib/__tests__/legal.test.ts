@@ -76,7 +76,7 @@ describe("legal pages", () => {
     expect(prices).toContain("compris dans le prix total affiché");
     expect(prices).toContain("calculés sur les heures de dépôt et de retour réservées et ne changent plus ensuite");
     expect(prices).toContain("remboursés avec le séjour");
-    expect(termsDoc().version).toBe("20 octobre 2026"); // night fees (12/10/2026), the publisher's details (15/10/2026), the contract (19/10/2026), signed at the counter (20/10/2026)
+    expect(termsDoc().version).toBe("21 octobre 2026"); // night fees (12/10/2026), the publisher's details (15/10/2026), the contract (19/10/2026), signed at the counter (20/10/2026), services for the car (21/10/2026)
   });
 
   it("points to the contact form only once the service client has a real address (footer A, 15/10/2026)", () => {
@@ -138,7 +138,7 @@ describe("privacy policy", () => {
 
   it("dates each text on its own: the three moved on 15/10/2026 with the company details of product.json, the privacy policy on 18/10/2026, terms and privacy on 19/10/2026", () => {
     expect(privacyDoc().version).toBe("21 octobre 2026");
-    expect(termsDoc().version).toBe("20 octobre 2026");
+    expect(termsDoc().version).toBe("21 octobre 2026");
     expect(legalNoticeDoc().version).toBe("15 octobre 2026");
   });
 

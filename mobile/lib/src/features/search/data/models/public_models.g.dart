@@ -184,6 +184,43 @@ Map<String, dynamic> _$PricingModelToJson(_PricingModel instance) =>
       'night': instance.night,
     };
 
+_ParkingExtraOfferModel _$ParkingExtraOfferModelFromJson(
+  Map<String, dynamic> json,
+) => _ParkingExtraOfferModel(
+  kind: json['kind'] as String,
+  label: json['label'] as String,
+  description: json['description'] as String? ?? '',
+  priceCents: (json['priceCents'] as num).toInt(),
+);
+
+Map<String, dynamic> _$ParkingExtraOfferModelToJson(
+  _ParkingExtraOfferModel instance,
+) => <String, dynamic>{
+  'kind': instance.kind,
+  'label': instance.label,
+  'description': instance.description,
+  'priceCents': instance.priceCents,
+};
+
+_ParkingExtrasModel _$ParkingExtrasModelFromJson(Map<String, dynamic> json) =>
+    _ParkingExtrasModel(
+      offers:
+          (json['offers'] as List<dynamic>?)
+              ?.map(
+                (e) =>
+                    ParkingExtraOfferModel.fromJson(e as Map<String, dynamic>),
+              )
+              .toList() ??
+          const <ParkingExtraOfferModel>[],
+      leadHours: (json['leadHours'] as num?)?.toInt() ?? 24,
+    );
+
+Map<String, dynamic> _$ParkingExtrasModelToJson(_ParkingExtrasModel instance) =>
+    <String, dynamic>{
+      'offers': instance.offers,
+      'leadHours': instance.leadHours,
+    };
+
 _ParkingDetailModel _$ParkingDetailModelFromJson(
   Map<String, dynamic> json,
 ) => _ParkingDetailModel(
@@ -213,6 +250,9 @@ _ParkingDetailModel _$ParkingDetailModelFromJson(
       : PricingModel.fromJson(json['pricing'] as Map<String, dynamic>),
   isDemo: json['isDemo'] as bool? ?? false,
   liveShuttle: json['liveShuttle'] as bool? ?? false,
+  extras: json['extras'] == null
+      ? const ParkingExtrasModel()
+      : ParkingExtrasModel.fromJson(json['extras'] as Map<String, dynamic>),
 );
 
 Map<String, dynamic> _$ParkingDetailModelToJson(_ParkingDetailModel instance) =>
@@ -235,6 +275,7 @@ Map<String, dynamic> _$ParkingDetailModelToJson(_ParkingDetailModel instance) =>
       'pricing': instance.pricing,
       'isDemo': instance.isDemo,
       'liveShuttle': instance.liveShuttle,
+      'extras': instance.extras,
     };
 
 _ParkingResponseModel _$ParkingResponseModelFromJson(

@@ -20,6 +20,7 @@ import {
 import { Link } from "react-router-dom";
 import { Badge, type BadgeTone } from "@/components/dashboard/Badge";
 import { NextStep } from "@/components/reservations/NextStep";
+import { ReservationExtras } from "@/components/reservations/ReservationExtras";
 import { Plate } from "@/components/Plate";
 import { Skeleton } from "@/components/ui/skeleton";
 import { adminApi } from "@/lib/api";
@@ -306,6 +307,7 @@ export function ReservationQuickCard({
               </h3>
               <NextStep reservation={r} onNavigate={onClose} compact />
             </section>
+            <ReservationExtras reservationId={r.id} compact />
             <Link
               to={`/reservations/${r.id}`}
               onClick={onClose}

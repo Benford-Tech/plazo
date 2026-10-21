@@ -10,6 +10,7 @@ import { InboundEmailRoute } from './inbound-email.route';
 import { ListingRoute } from './listing.route';
 import { ParkingRoute } from './parking.route';
 import { PaperworkRoute } from './paperwork.route';
+import { ExtraRoute } from './extra.route';
 import { PartnerContractRoute } from './partner-contract.route';
 import { PaymentRoute } from './payment.route';
 import { PlatformRoute } from './platform.route';
@@ -32,6 +33,7 @@ const AppRoutes = [
   new ParkingRoute(),
   new ReservationRoute(),
   new PaperworkRoute(),
+  new ExtraRoute(),
   new PartnerContractRoute(),
   new DashboardRoute(),
   new RevenueRoute(),

@@ -140,5 +140,9 @@ void _initUseCaseLocator() {
     ..registerLazySingleton(() => SignContractUseCase(locator()))
     ..registerLazySingleton(() => AnswerInspectionUseCase(locator()))
     ..registerLazySingleton(() => LoadInspectionPhotoUseCase(locator()))
-    ..registerLazySingleton(() => EditInspectionUseCase(locator()));
+    ..registerLazySingleton(() => EditInspectionUseCase(locator()))
+    // Services for the car (21/10/2026).
+    ..registerLazySingleton(() => TravellerExtrasUseCases(locator()))
+    ..registerLazySingleton(() => StaffExtrasUseCases(locator()))
+    ..registerLazySingleton(() => ExtraSettingsUseCases(locator()));
 }

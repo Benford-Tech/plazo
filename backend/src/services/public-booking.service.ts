@@ -13,6 +13,7 @@ import { PublicBooking } from '@/interfaces/booking.interface';
 import { HttpException } from '@/utils/httpException';
 import { AuditService } from './audit.service';
 import { CapacityService } from './capacity.service';
+import { ExtraService } from './extra.service';
 import { NotificationService } from './notification.service';
 import { HOLD_MINUTES, PaymentService } from './payment.service';
 import { PublicService } from './public.service';
@@ -49,6 +50,7 @@ const isUniqueViolation = (error: unknown) => error instanceof Prisma.PrismaClie
 export class PublicBookingService {
   public audit = Container.get(AuditService);
   public capacity = Container.get(CapacityService);
+  public extras = Container.get(ExtraService);
   public notifications = Container.get(NotificationService);
   public payments = Container.get(PaymentService);
   public publicService = Container.get(PublicService);
@@ -98,13 +100,18 @@ export class PublicBookingService {
         if (this.payments.modeFor(operator) !== 'online') {
           throw new HttpException(httpStatus.CONFLICT, 'This parking cannot be booked online yet', 'online_booking_unavailable');
         }
+        // Services for the car asked with the booking (21/10/2026): paid in the same payment, accounted apart.
+        const extras = await this.extras.priceForBooking(tx, listing.parkingId, data.extras, operator);
+        const amounts = this.payments.split(operator, quote.priceCents);
         const payment = {
           status: 'pending_payment' as const,
           paymentStatus: 'pending' as const,
           holdExpiresAt: new Date(Date.now() + HOLD_MINUTES * 60000),
           // Amount, Plazo's commission and the operator's share, from the price computed here
-          // (never the client's): the total, night fees included (12/10/2026).
-          ...this.payments.split(operator, quote.priceCents),
+          // (never the client's): the total, night fees included (12/10/2026). The commission and the share are the
+          // stay's; the services carry their own.
+          ...amounts,
+          extrasChargedCents: extras.totalCents || null,
         };
 
         const created = await tx.reservation.create({
@@ -136,6 +143,7 @@ export class PublicBookingService {
           },
           include: WITH_LISTING,
         });
+        await this.extras.createWithBooking(tx, created, extras.rows);
         await this.audit.record(
           { id: null, operatorId: created.operatorId },
           {
@@ -145,6 +153,7 @@ export class PublicBookingService {
             details: {
               channel: 'plazo',
               ...(operator ? { payment: 'online', commissionCents: created.commissionCents, operatorShareCents: created.operatorShareCents } : {}),
+              ...(extras.rows.length ? { extras: extras.rows.map(r => r.kind), extrasCents: extras.totalCents } : {}),
               ...(quote.nightFee
                 ? {
                     priceCents: created.priceCents,

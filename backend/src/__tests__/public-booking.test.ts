@@ -151,6 +151,7 @@ describe('réservation sur le site', () => {
       plate: 'GK-318-PX',
       returnFlight: 'TO 3627',
       departureFlight: null,
+      extrasCents: 0,
       customerNote: 'Poussette et 2 enfants',
       vehicle: { model: 'Peugeot 308', colour: 'grise' },
       outbound: null,

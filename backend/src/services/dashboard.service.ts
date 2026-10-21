@@ -14,6 +14,7 @@ import { OccupationService } from './occupation.service';
 import { ArrivalService } from './arrival.service';
 import { loadPlanCapacity, parkingCapacity } from './capacity.service';
 import { FlightTrackingService } from './flight-tracking.service';
+import { ExtraService } from './extra.service';
 import { ParkingService } from './parking.service';
 import { PushService } from './push.service';
 import { ReservationService } from './reservation.service';
@@ -57,7 +58,10 @@ export type AlertKind =
   // the oldest one's name, `since` / `minutes` = since when it waits.
   | 'join_request'
   // 21/10/2026: bookings without a price (managers only). `detail` = how many.
-  | 'price_missing';
+  | 'price_missing'
+  // 21/10/2026: services for the car ordered on Plazo, still to do, on a booking returning within 36 hours (one alert
+  // per booking). `detail` = the services' names, comma-separated; `since` = the return; « à surveiller » within 6 h.
+  | 'extras_due';
 
 export interface DashboardAlert {
   kind: AlertKind;
@@ -172,6 +176,7 @@ export class DashboardService {
   public forecast = Container.get(ShuttleForecastService);
   public sms = Container.get(SmsService);
   public payments = Container.get(PaymentService);
+  public extras = Container.get(ExtraService);
   public occupation = Container.get(OccupationService);
   public files = Container.get(FileService);
   public joinRequests = Container.get(JoinRequestService);
@@ -434,6 +439,23 @@ export class DashboardService {
           minutes: minutesSince(waiting.oldest.createdAt),
         });
       }
+    }
+    const extrasDue = await this.extras.dueFor(actor.operatorId, new Date(now.getTime() + 36 * 3600000));
+    const byBooking = new Map<string, typeof extrasDue>();
+    for (const e of extrasDue) byBooking.set(e.reservation.id, [...(byBooking.get(e.reservation.id) ?? []), e]);
+    for (const list of [...byBooking.values()].slice(0, 10)) {
+      const r = list[0].reservation;
+      alerts.push({
+        kind: 'extras_due',
+        severity: r.returnAt.getTime() - now.getTime() <= 6 * 3600000 ? 'watch' : 'todo',
+        reservationId: r.id,
+        reference: null,
+        customerName: r.customerName,
+        plate: r.plate,
+        detail: list.map(e => e.label).join(', '),
+        since: r.returnAt.toISOString(),
+        minutes: null,
+      });
     }
     const noPrice = await this.reservations.noPrice(actor, now);
     if (noPrice && noPrice.count > 0) {

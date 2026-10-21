@@ -1,6 +1,8 @@
 import { Transform, Type } from 'class-transformer';
 import {
+  ArrayMaxSize,
   Equals,
+  IsArray,
   IsDefined,
   IsEmail,
   IsInt,
@@ -141,6 +143,13 @@ export class CreatePublicBookingDto {
   @IsString({ message: 'too_long' })
   @MaxLength(30, { message: 'too_long' })
   public vehicleColour?: string | null;
+
+  /** Services for the car asked with the booking (21/10/2026, Plazo app): interior_wash, hybrid_charge, ev_charge. */
+  @IsOptional()
+  @IsArray({ message: 'invalid' })
+  @ArrayMaxSize(3, { message: 'invalid' })
+  @IsString({ each: true, message: 'invalid' })
+  public extras?: string[];
 
   /**
    * Random key of the booking form (one per page shown): sending the same form twice (retry after

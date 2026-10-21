@@ -1255,7 +1255,8 @@
       "inbound_to_check": "Mails à vérifier",
       "blocked_return": "Retour du jour bloqué : sortir d'abord",
       "join_request": "Demande pour rejoindre l'équipe",
-      "price_missing": "Réservations sans prix"
+      "price_missing": "Réservations sans prix",
+      "extras_due": "Services à faire avant le retour"
     },
     "vehicles_title": "Véhicules sur le parking",
     "vehicles_empty": "Aucun véhicule sur le parking.",
@@ -2029,5 +2030,84 @@
     "my_photos_send": "Envoyer mes photos au parking",
     "my_photos_footer": "Une fois envoyées, elles ne se modifient plus. Le contrat se signe au comptoir, avec un code reçu par SMS.",
     "my_photos_sent_on": "{} photo(s) envoyée(s) au parking le {}."
+  },
+  "extras": {
+    "title": "Services pour votre voiture",
+    "intro": "Faits par l'équipe du parking avant votre retour.",
+    "booking_intro": "Faits par l'équipe du parking pendant votre séjour, payés avec la réservation.",
+    "one_charge_hint": "Une recharge à la fois : hybride ou électrique, selon votre voiture.",
+    "add": "Ajouter",
+    "order_until": "À commander au plus tard le {}.",
+    "of_which": "dont {} de services",
+    "paid": "Payé {}",
+    "paid_with_booking": "Payé {} avec la réservation",
+    "paid_before_return": "Payé {} · à faire avant le retour",
+    "done_at": "Fait le {}",
+    "done_by": "Fait le {} · {}",
+    "refunded_line": "{} remboursés sur la carte",
+    "refused_line": "Pas possible · {} remboursés",
+    "sheet_intro": "{}. Fait sur le parking avant votre retour.",
+    "pay_now": "À payer maintenant",
+    "refund_promise": "Remboursé en entier si l'équipe ne peut pas le faire.",
+    "pay": "Payer {}",
+    "cancel": "Annuler",
+    "status": {
+      "ordered": "Commandé",
+      "to_do": "À faire",
+      "done": "Fait",
+      "refused": "Pas possible",
+      "refunded": "Remboursé"
+    },
+    "reason": {
+      "closed": "Plus possible pour cette réservation",
+      "too_late": "Trop tard : le retour est trop proche",
+      "already_ordered": "Déjà commandé",
+      "one_charge": "Une seule recharge par voiture",
+      "not_online": "Réservation pas encore payée",
+      "not_offered": "Plus proposé par le parking"
+    },
+    "notice": {
+      "ordered": "Service commandé : l'équipe le fera avant votre retour.",
+      "pending": "Paiement en cours de vérification : rechargez dans un instant.",
+      "canceled": "Paiement annulé : rien n'a été débité.",
+      "failed": "Le paiement n'a pas abouti : rien n'a été débité."
+    },
+    "errors": {
+      "not_offered": "Ce service n'est plus proposé par le parking.",
+      "closed": "Ce service ne peut plus être commandé pour cette réservation.",
+      "too_late": "Trop tard : le retour est trop proche pour ce service.",
+      "already_ordered": "Ce service est déjà commandé.",
+      "one_charge": "Une seule recharge par voiture : hybride ou électrique.",
+      "not_online": "La réservation doit d'abord être payée.",
+      "online_booking_unavailable": "Le paiement en ligne n'est pas disponible pour le moment.",
+      "not_to_do": "Ce service n'est plus à faire.",
+      "refund_failed": "Le remboursement a échoué : réessayez."
+    },
+    "staff_title": "Services commandés",
+    "to_do_count": {
+      "one": "{} à faire",
+      "other": "{} à faire"
+    },
+    "mark_done": "Fait",
+    "refuse": "Pas possible",
+    "refuse_title": "{} : pas possible ?",
+    "refuse_text": "Le client est remboursé de {} et prévenu.",
+    "refuse_reason": "Raison (facultatif)",
+    "refuse_confirm": "Rembourser",
+    "staff_notice": {
+      "done": "Marqué fait : le client est prévenu.",
+      "refused": "Remboursé : le client est prévenu."
+    },
+    "settings": {
+      "title": "Services pour la voiture",
+      "intro": "Les clients les commandent dans l'app Plazo, à la réservation ou après le dépôt, et les paient en ligne.",
+      "lead": "Commande possible jusqu'à … avant le retour",
+      "lead_invalid": "Entre 0 et 168 heures.",
+      "price_invalid": "Montant invalide (ex. 50,00).",
+      "price_range": "Entre 1 € et 1 000 €.",
+      "commission": "Commission Plazo prise sur chaque service, comme sur les séjours.",
+      "save": "Enregistrer",
+      "saved": "Services enregistrés."
+    }
   }
 }

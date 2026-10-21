@@ -40,6 +40,8 @@ export interface PublicBooking {
   basePriceCents: number | null;
   /** Night fees included in the total (12/10/2026), frozen at booking (0 for an end that pays nothing); null when none. */
   nightFee: { arrivalCents: number; returnCents: number; totalCents: number } | null;
+  /** 21/10/2026: services for the car asked with the booking and paid with it, on top of `priceCents` (0: none). */
+  extrasCents: number;
   /** Display form "Prénom Nom", recomputed by the server from the two fields below (09/10/2026). */
   customerName: string;
   customerFirstName: string;
