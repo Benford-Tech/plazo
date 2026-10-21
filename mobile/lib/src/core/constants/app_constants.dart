@@ -43,6 +43,10 @@ abstract final class AppConstants {
   /// OneSignal app id (public, not a secret). Empty: push notifications are off.
   static const oneSignalAppId = String.fromEnvironment('ONESIGNAL_APP_ID');
 
+  /// Tutorials (21/10/2026): the welcome carousel and the guided bubbles. --dart-define=TUTORIALS=false for the
+  /// store screenshots and the emulator runs, whose screens must open without them.
+  static const tutorials = bool.fromEnvironment('TUTORIALS', defaultValue: true);
+
   /// Polling of the staff's live arrivals (Vercel has no websockets): 10 to 15 s.
   static const livePollInterval = Duration(seconds: 12);
 

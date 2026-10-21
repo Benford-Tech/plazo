@@ -85,7 +85,7 @@ if [ -z "${API_ONLY:-}" ]; then
   echo "== the apps for the web"
   for flavor in traveller pro; do
     if [ "${SKIP_FLUTTER_BUILD:-}" = 1 ] && [ -f "$WORK/web-$flavor/index.html" ]; then continue; fi
-    (cd "$ROOT/mobile" && "$FLUTTER" build web --release --no-web-resources-cdn --dart-define=APP_FLAVOR=$flavor \
+    (cd "$ROOT/mobile" && "$FLUTTER" build web --release --no-web-resources-cdn --dart-define=APP_FLAVOR=$flavor --dart-define=TUTORIALS=false \
       --dart-define=API_BASE_URL="http://localhost:$API_PORT/api" -o "$WORK/web-$flavor" > "$WORK/flutter-$flavor.log" 2>&1)
   done
   node "$HERE/serve.mjs" "$WORK/web-traveller" "$TRAVELLER_PORT" > "$WORK/serve-traveller.log" 2>&1 & PIDS+=("$!")

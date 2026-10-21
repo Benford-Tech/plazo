@@ -21,6 +21,8 @@ import '../../../pro_auth/presentation/bloc/pro_auth_bloc.dart';
 import '../../../pro_plan/presentation/widgets/plan_map.dart';
 import '../../data/models/occupation_models.dart';
 import '../bloc/pro_occupation_bloc.dart';
+import '../../../../shared/tutorials/tutorial_catalog.dart';
+import '../../../../shared/tutorials/tutorial_spot.dart';
 
 const _occupied = Color(0xFF6EC071);
 const _leaving = Color(0xFFA3E635);
@@ -58,7 +60,9 @@ class ProOccupationPage extends StatelessWidget implements AutoRouteWrapper {
       BlocProvider(create: (_) => locator<ProOccupationBloc>()..add(ProOccupationStarted(focus: focus)), child: this);
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context) => TutorialSpot(tutorial: Tutorials.proOccupation, child: _page(context));
+
+  Widget _page(BuildContext context) {
     return BlocConsumer<ProOccupationBloc, ProOccupationState>(
       listenWhen: (a, b) => a.errorCode != b.errorCode || a.notice != b.notice,
       listener: (context, state) {
@@ -116,7 +120,11 @@ class ProOccupationPage extends StatelessWidget implements AutoRouteWrapper {
                         // S-C (07/10/2026): a parking stored in files reads its occupation in files.
                         if (state.filesMode) _FilesSummary(state: state) else _MiniMap(state: state),
                         const SizedBox(height: 14),
-                        Text('occupation.arrivals'.tr(args: ['${state.arrivals.length}']).toUpperCase(), style: AppText.label(size: 11)),
+                        Text(
+                          'occupation.arrivals'.tr(args: ['${state.arrivals.length}']).toUpperCase(),
+                          key: const Key('occupation-arrivals'),
+                          style: AppText.label(size: 11),
+                        ),
                         const SizedBox(height: 6),
                         if (state.arrivals.isEmpty) Text('occupation.no_arrival'.tr(), style: AppText.muted()),
                         for (final a in state.arrivals)

@@ -1232,6 +1232,20 @@ Le nom du produit doit rester dans UN seul fichier de configuration (il peut enc
   sont dans AndroidX, Flutter et Stripe, le décodage d'images dans OneSignal (images de notification, jamais envoyées), et
   le faible taux R8 vient de la règle `-keep class com.stripe.** { *; }` de flutter_stripe, gardée exprès (3D Secure) ;
   détail dans `mobile/publier-sur-les-stores.md`.
+  **Tutoriels (21/10/2026, « des tutoriels à afficher à la première connexion et à souhait pour Plazo et Plazo Pro », choix
+  A + B des maquettes https://claude.ai/artifact/GmDEYEEhFy9ETAB5A43jjL)** : **A** carrousel de bienvenue plein écran (4 pages,
+  « Passer », « C'est parti ») au premier lancement de Plazo, et dans Plazo Pro un par poste du jour (« CHAUFFEUR · 2 / 4 »),
+  montré la première fois que ce poste est tenu sur le téléphone ; **B** bulles guidées sur les vrais écrans (le reste assombri,
+  la cible cerclée de la couleur d'action, « 1 sur 3 », « Passer », « Suivant », « J'ai compris ») à la première ouverture de
+  Rechercher et de Ma réservation (Plazo), d'Aujourd'hui, Réservations, Navette et Parking (Plazo Pro), après le carrousel ;
+  une bulle dont la cible n'est pas à l'écran est sautée, une page sans aucune cible réessaie (chargement) puis laisse le
+  tutoriel à voir. Plus › Tutoriels (`TutorialsPage`) : chaque tutoriel avec « Voir » / « Revoir », « Tout revoir » ; dans Plazo Pro
+  le choix du poste parmi ceux que le rôle couvre ; les bulles d'un onglet se rejouent tout de suite, les autres à la prochaine
+  ouverture. `lib/src/shared/tutorials/` (`tutorial_catalog.dart` : tutoriels, pages et cibles = `Key` déjà posées sur les
+  écrans ; `TutorialService` : « vu » dans `shared_preferences` sur le téléphone seulement ; `TutorialSpot` autour des coquilles et
+  des pages ; `WelcomeCarousel`, `CoachMarks`), textes `tutorials.*` de `fr-FR.json` ; `--dart-define=TUTORIALS=false` pour les
+  captures des stores et les essais sur émulateur, coupés aussi dans les tests (`setUpLocalizedTests`) sauf
+  `test/shared/tutorials/tutorials_test.dart`.
   Voir `mobile/README.md`.
 
 - **Contrat Plazo ↔ loueur (20/10/2026, « Pouvoir stocker le contrat à faire signer », « Signé dans Plazo » puis choix 2a « bandeau

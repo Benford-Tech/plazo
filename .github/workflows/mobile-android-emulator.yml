@@ -79,7 +79,7 @@ jobs:
           # apps; GOOGLE_SERVER_CLIENT_ID left out too (Plazo Pro without the Google button, as on a build without it).
           # x86_64 only (the emulators'): R8 and the Android side are the same for every ABI, one Dart AOT build not three.
           COMMON=(--target-platform android-x64 --dart-define=API_BASE_URL="http://127.0.0.1:$API_PORT/api"
-            --dart-define=SITE_URL=https://www.plazo.fr)
+            --dart-define=SITE_URL=https://www.plazo.fr --dart-define=TUTORIALS=false)
           for FLAVOR in traveller pro; do
             case "$FLAVOR" in traveller) SLUG=plazo ;; pro) SLUG=plazo-pro ;; esac
             flutter build apk --release --flavor "$FLAVOR" --dart-define=APP_FLAVOR="$FLAVOR" "${COMMON[@]}"

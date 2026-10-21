@@ -8,6 +8,7 @@ import '../../../../di/locator.dart';
 import '../../../../services/link_service.dart';
 import '../../../../shared/theme/theme.dart';
 import '../../../../shared/widgets/brand_header.dart';
+import '../../../../shared/tutorials/tutorials_page.dart';
 
 /// "Plus": the site's FAQ and legal pages, contact and the app's version. The staff's space lives in
 /// Plazo Pro only (decision of 04/10/2026).
@@ -25,6 +26,7 @@ class MoreTabPage extends StatelessWidget {
         padding: const EdgeInsets.fromLTRB(16, 14, 16, 24),
         children: [
           _title('more.travellers'.tr()),
+          _Tile(key: const Key('more-tutorials'), icon: Icons.school_outlined, label: 'tutorials.title'.tr(), onTap: () => TutorialsPage.open(context)),
           _Tile(key: const Key('more-faq'), icon: Icons.help_outline_rounded, label: 'more.faq'.tr(), external: true, onTap: () => site('/#faq')),
           _Tile(
             key: const Key('more-contact'),
@@ -37,7 +39,13 @@ class MoreTabPage extends StatelessWidget {
           const SizedBox(height: 14),
           _title('more.about'.tr()),
           _Tile(key: const Key('more-terms'), icon: Icons.description_outlined, label: 'more.terms'.tr(), external: true, onTap: () => site('/conditions')),
-          _Tile(key: const Key('more-privacy'), icon: Icons.privacy_tip_outlined, label: 'more.privacy'.tr(), external: true, onTap: () => site('/confidentialite')),
+          _Tile(
+            key: const Key('more-privacy'),
+            icon: Icons.privacy_tip_outlined,
+            label: 'more.privacy'.tr(),
+            external: true,
+            onTap: () => site('/confidentialite'),
+          ),
           _Tile(key: const Key('more-legal'), icon: Icons.gavel_rounded, label: 'more.legal'.tr(), external: true, onTap: () => site('/mentions-legales')),
           const SizedBox(height: 18),
           FutureBuilder<PackageInfo>(

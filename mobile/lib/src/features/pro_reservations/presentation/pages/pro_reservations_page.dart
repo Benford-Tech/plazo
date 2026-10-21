@@ -14,6 +14,8 @@ import '../../../pro_auth/presentation/bloc/pro_auth_bloc.dart';
 import '../../data/models/reservation_models.dart';
 import '../bloc/pro_reservations_bloc.dart';
 import '../widgets/reservation_tile.dart';
+import '../../../../shared/tutorials/tutorial_catalog.dart';
+import '../../../../shared/tutorials/tutorial_spot.dart';
 
 /// App pro, step 1 (04/10/2026): the bookings, searched by plate, name, phone or reference.
 @RoutePage()
@@ -24,7 +26,7 @@ class ProReservationsPage extends StatelessWidget implements AutoRouteWrapper {
   Widget wrappedRoute(BuildContext context) => BlocProvider(create: (_) => locator<ProReservationsBloc>()..add(const ProReservationsStarted()), child: this);
 
   @override
-  Widget build(BuildContext context) => const _View();
+  Widget build(BuildContext context) => const TutorialSpot(tutorial: Tutorials.proReservations, child: _View());
 }
 
 class _View extends StatefulWidget {
@@ -61,10 +63,7 @@ class _ViewState extends State<_View> {
     final role = context.watch<ProAuthBloc>().state.staff?.role;
     final manage = can(role, 'reservations:manage');
     return Scaffold(
-      appBar: BrandAppBar(
-        pro: true,
-        title: 'res.title'.tr(),
-      ),
+      appBar: BrandAppBar(pro: true, title: 'res.title'.tr()),
       floatingActionButton: manage
           ? FloatingActionButton.extended(
               key: const Key('res-new'),
