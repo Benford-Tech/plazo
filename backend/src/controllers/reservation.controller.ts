@@ -38,7 +38,7 @@ export class ReservationController {
     res.json(await this.reservationService.previewCapacity(req.staff, str(arrivalAt) ?? '', str(returnAt) ?? '', str(excludeId)));
   });
 
-  /** GET /internal/reservations?q=&page=&limit= */
+  /** GET /internal/reservations?q=&page=&limit=&noPrice=1 */
   public list = catchAsync(async (req: RequestWithStaffSession, res: Response) => {
     res.json(
       await this.reservationService.list(req.staff, {
@@ -46,6 +46,7 @@ export class ReservationController {
         // 0 and below are the pages before today (10/10/2026).
         page: Number.isInteger(Number(req.query.page)) && str(req.query.page) ? Number(req.query.page) : undefined,
         limit: Number(req.query.limit) || undefined,
+        noPrice: str(req.query.noPrice) === '1' || str(req.query.noPrice) === 'true',
       }),
     );
   });

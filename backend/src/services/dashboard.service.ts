@@ -55,7 +55,9 @@ export type AlertKind =
   | 'blocked_return'
   // 13/10/2026: requests to join the team waiting for a manager (managers only). `detail` = how many, `customerName` =
   // the oldest one's name, `since` / `minutes` = since when it waits.
-  | 'join_request';
+  | 'join_request'
+  // 21/10/2026: bookings without a price (managers only). `detail` = how many.
+  | 'price_missing';
 
 export interface DashboardAlert {
   kind: AlertKind;
@@ -98,6 +100,17 @@ export interface DashboardVehicle {
   boardingCheckIn: BoardingCheckIn | null;
 }
 
+export interface NoPriceBooking {
+  id: string;
+  reference: string;
+  customerName: string;
+  plate: string;
+  arrivalAt: string;
+  channel: string;
+  /** The comparator's name, for a comparator's booking. */
+  detail: string | null;
+}
+
 export interface Dashboard {
   serverTime: string;
   date: string;
@@ -126,6 +139,8 @@ export interface Dashboard {
     reading: { configured: boolean; outage: ReadingOutage | null };
   };
   alerts: DashboardAlert[];
+  /** 21/10/2026: bookings without a price and the nearest ones, to complete from the dashboard (managers only, else null). */
+  noPrice: { count: number; next: NoPriceBooking[] } | null;
   /** The next shuttle wave still to run today (V-A), for the "Navettes" tile. */
   nextWave: {
     leaveAt: string;
@@ -420,6 +435,20 @@ export class DashboardService {
         });
       }
     }
+    const noPrice = await this.reservations.noPrice(actor, now);
+    if (noPrice && noPrice.count > 0) {
+      alerts.push({
+        kind: 'price_missing',
+        severity: 'todo',
+        reservationId: null,
+        reference: null,
+        customerName: null,
+        plate: null,
+        detail: String(noPrice.count),
+        since: null,
+        minutes: null,
+      });
+    }
     if (planning.smsWarning) {
       alerts.push({
         kind: 'sms_pending',
@@ -490,6 +519,7 @@ export class DashboardService {
         reading: { configured: this.inbound.reader.available(), outage: readingOutage },
       },
       alerts,
+      noPrice,
       nextWave: (() => {
         const w = forecast.waves.find(w => w.state === 'planned' && new Date(w.leaveAt).getTime() >= now.getTime() - 30 * 60000);
         return w

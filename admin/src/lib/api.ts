@@ -710,9 +710,13 @@ export const adminApi = {
     apiRequest<CapacityPreview>(
       `/internal/capacity?${new URLSearchParams({ arrivalAt, returnAt, ...(excludeId ? { excludeId } : {}) }).toString()}`,
     ),
-  searchReservations: (params: { q?: string; page?: number }) =>
+  searchReservations: (params: { q?: string; page?: number; noPrice?: boolean }) =>
     apiRequest<ReservationPage>(
-      `/internal/reservations?${new URLSearchParams({ ...(params.q ? { q: params.q } : {}), page: String(params.page ?? 1) }).toString()}`,
+      `/internal/reservations?${new URLSearchParams({
+        ...(params.q ? { q: params.q } : {}),
+        page: String(params.page ?? 1),
+        ...(params.noPrice ? { noPrice: "1" } : {}),
+      }).toString()}`,
     ),
   getReservation: (id: string) =>
     apiRequest<Reservation>(`/internal/reservations/${id}`),

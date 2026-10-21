@@ -520,6 +520,25 @@ export const fr = {
     cancel: "Annuler",
     keeps: (net: string) => `garde ${net}`,
   },
+  // 21/10/2026 (« Mets en évidence les réservations sans prix », choice A + C).
+  noPrice: {
+    filter: (n: number) => `Sans prix · ${n}`,
+    filterOff: "Toutes",
+    filterHint: "Ces réservations ne comptent ni dans votre chiffre d'affaires ni dans vos commissions.",
+    toFill: "Prix à saisir",
+    input: (reference: string) => `Prix payé de ${reference} en euros`,
+    save: "OK",
+    cancel: "Annuler",
+    saved: "Prix enregistré",
+    invalid: "Montant invalide (ex. 45,50).",
+    locked: `Payé sur ${PRODUCT.name}`,
+    none: "Toutes les réservations ont un prix.",
+    cardTitle: (n: number) => `Les compléter · ${n}`,
+    cardAll: (n: number) => (n === 1 ? "Voir la réservation" : `Voir les ${n}`),
+    alertDetail: (n: number) => `${n} réservation${n > 1 ? "s" : ""} · le chiffre d'affaires est incomplet`,
+    alertAction: "Les compléter",
+    toTreatSub: (sub: string, n: number) => `${sub} · ${n} sans prix`,
+  },
   dashboard: {
     hello: (name: string) => `Bonjour ${name}`,
     title: "Tableau de bord",
@@ -604,6 +623,7 @@ export const fr = {
         blocked_return: "Retour du jour bloqué : sortir d'abord",
         inbound_to_check: "Mails à vérifier",
         join_request: "Demande pour rejoindre l'équipe",
+        price_missing: "Réservations sans prix",
       } satisfies Record<AlertKind, string>,
       // 13/10/2026: « Julie Martin », « Julie Martin et 2 autres », or the count alone.
       joinDetail: (count: number, name: string | null) =>

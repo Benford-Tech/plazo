@@ -457,6 +457,19 @@ export interface Paginated<T> {
  */
 export interface ReservationPage extends Paginated<Reservation> {
   pageNumber?: number;
+  /** 21/10/2026: how many bookings have no price (managers only; null for the other roles). */
+  noPriceCount?: number | null;
+}
+
+/** A booking without a price on the dashboard's « Les compléter » card (21/10/2026). */
+export interface NoPriceBooking {
+  id: string;
+  reference: string;
+  customerName: string;
+  plate: string;
+  arrivalAt: string;
+  channel: ReservationChannel;
+  detail: string | null;
 }
 
 /** What the server read from a pasted confirmation email. Dates are local, "YYYY-MM-DDTHH:mm". */
@@ -1234,7 +1247,9 @@ export type AlertKind =
   | "inbound_to_check"
   | "blocked_return"
   // 13/10/2026: someone asks to join the team with the code of the day (managers; opens Équipe).
-  | "join_request";
+  | "join_request"
+  // 21/10/2026: bookings without a price (managers; `detail` = how many).
+  | "price_missing";
 
 /** A row of the home's "À traiter" list (GET /internal/dashboard). */
 export interface DashboardAlert {
@@ -1275,6 +1290,8 @@ export interface DashboardVehicle {
 
 /** The pro space's home (05/10/2026). */
 export interface Dashboard {
+  /** 21/10/2026: bookings without a price and the nearest ones (managers only, else null; absent from an older API). */
+  noPrice?: { count: number; next: NoPriceBooking[] } | null;
   serverTime: string;
   date: string;
   parking: {

@@ -88,6 +88,8 @@ describe('GET /internal/dashboard', () => {
       ['no_spot', 'urgent'],
       ['flight_delayed', 'watch'],
       ['keys_missing', 'todo'],
+      // 21/10/2026: the seeded bookings have no price.
+      ['price_missing', 'todo'],
     ]);
     expect(res.body.alerts[0]).toMatchObject({ reservationId: c.id, customerName: 'Louis Leroy', minutes: 10 });
     expect(res.body.alerts[1]).toMatchObject({ reservationId: a.id, detail: 'TO 3627', minutes: 60 });
