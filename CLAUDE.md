@@ -1174,7 +1174,10 @@ Le nom du produit doit rester dans UN seul fichier de configuration (il peut enc
   `GOOGLE_PLAY_SERVICE_ACCOUNT_CREDENTIALS` seul secret du groupe `mobile_secrets`) ; **publication en production (21/10/2026, « les pipelines doivent
   publier en production avec release note »)** : Google Play piste `production` sans brouillon, App Store : TestFlight puis
   revue et sortie dès l'accord (`APP_STORE_SUBMIT`, `APP_STORE_RELEASE_TYPE` `AFTER_APPROVAL`, `--cancel-previous-submissions`,
-  IPA envoyés d'abord sans attendre puis soumis avec `--skip-package-upload`, 20 min d'attente du traitement, `max_build_duration` 120, le maximum de Codemagic), notes de version en français par app dans
+  IPA envoyés d'abord sans attendre puis soumis avec `--skip-package-upload`, 20 min d'attente du traitement, `max_build_duration` 120, le maximum de Codemagic) ; **pipeline raccourci (21/10/2026, « essaie de raccourcir la durée du pipeline »,
+  d'après le build de 42 min du 13/10)** : plus de cache (sa sauvegarde prenait 8 min, sa lecture ne trouvait rien), plus de
+  `flutter analyze` / `flutter test` dans les builds de publication (déjà faits par `mobile-ci.yml`, seul `sync_product --check`
+  reste, ancre `release_checks`), APK seulement avec `BUILD_APK` `"true"` (les stores ne prennent que l'AAB), notes de version en français par app dans
   `mobile/release-notes/plazo.txt|plazo-pro.txt`, à tenir à jour avec chaque changement des apps (500 caractères au plus,
   « Nouveautés » fr-FR des deux stores ; absentes ou trop longues → arrêt avant les builds) ; **version calculée seule**
   (« les versions se mettent à jour automatiquement ») : `MAJEUR.MINEUR` de `pubspec.yaml` + le numéro de build

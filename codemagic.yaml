@@ -114,6 +114,8 @@ definitions:
     # "internal" / "true" still work for a test build (Start new build › Environment variables).
     PLAY_TRACK: production
     PLAY_SUBMIT_AS_DRAFT: "false"
+    # BUILD_APK: "true" also builds the two signed APKs (to install by hand), off by default to save time.
+    BUILD_APK: "false"
     # R8 runs out of heap on Codemagic machines (org.gradle.jvmargs is ignored there).
     JAVA_TOOL_OPTIONS: "-Xmx5g"
 
@@ -121,6 +123,11 @@ definitions:
     - &flutter_packages
       name: Flutter packages
       script: flutter pub get
+    - &release_checks
+      # Release builds (21/10/2026, « essaie de raccourcir la durée du pipeline »): flutter analyze and flutter test
+      # already run on GitHub Actions for every change of mobile/ (mobile-ci.yml), 3 billed minutes saved here.
+      name: Vérification du nom du produit
+      script: dart run tool/sync_product.dart --check
     - &checks
       name: Vérifications (nom du produit, analyse, tests)
       script: |
@@ -221,11 +228,14 @@ definitions:
           DEFINES="--dart-define=APP_FLAVOR=$FLAVOR --dart-define=ONESIGNAL_APP_ID=$ONESIGNAL $COMMON_DEFINES $EXTRA"
           echo "── $SLUG (Android, $VERSION_NAME+$NEXT)"
           flutter build appbundle --release --flavor "$FLAVOR" --build-number="$NEXT" --build-name="$VERSION_NAME" $DEFINES
-          flutter build apk --release --flavor "$FLAVOR" --build-number="$NEXT" --build-name="$VERSION_NAME" $DEFINES
           mv "build/app/outputs/bundle/${FLAVOR}Release/app-$FLAVOR-release.aab" "build/app/outputs/bundle/${FLAVOR}Release/$SLUG-v$VERSION_NAME-$NEXT.aab"
-          mv "build/app/outputs/flutter-apk/app-$FLAVOR-release.apk" "build/app/outputs/flutter-apk/$SLUG-v$VERSION_NAME-$NEXT.apk"
+          # The stores only take the AAB: the APK (a second release build of each app, ~2.5 min) only when asked.
+          if [ "${BUILD_APK:-false}" = "true" ]; then
+            flutter build apk --release --flavor "$FLAVOR" --build-number="$NEXT" --build-name="$VERSION_NAME" $DEFINES
+            mv "build/app/outputs/flutter-apk/app-$FLAVOR-release.apk" "build/app/outputs/flutter-apk/$SLUG-v$VERSION_NAME-$NEXT.apk"
+          fi
         done
-        ls -1 build/app/outputs/bundle/*/*.aab build/app/outputs/flutter-apk/*.apk
+        ls -1 build/app/outputs/bundle/*/*.aab build/app/outputs/flutter-apk/*.apk 2>/dev/null || true
     - &play_upload
       name: Google Play — envoi des deux AAB (production, avec les notes de version)
       # Every AAB is sent even when one fails; the last step turns the build red if any did.
@@ -336,7 +346,8 @@ workflows:
         # APP_STORE_SUBMIT "false" = TestFlight only; APP_STORE_RELEASE_TYPE MANUAL = release by hand after approval.
         APP_STORE_SUBMIT: "true"
         APP_STORE_RELEASE_TYPE: AFTER_APPROVAL
-    cache: *cache
+    # No cache (21/10/2026): on build 6ace256e (13/10/2026) saving it took 8 of the 42 minutes (« Cleaning up ») and the
+    # restore found nothing; the Gradle and pub downloads it would spare cost less than that.
     triggering:
       events:
         - tag
@@ -348,7 +359,7 @@ workflows:
       - *android_key_properties
       - *release_version
       - *flutter_packages
-      - *checks
+      - *release_checks
       - *android_build
       - name: Sign in with Apple (Plazo Pro) selon son profil App Store
         # 13/10/2026: Plazo Pro shows « Continuer avec Apple » only when its App Store profile (plazo_pro_app_store)
@@ -484,13 +495,13 @@ workflows:
         - plazo_android_signing
       vars:
         <<: *android_vars
-    cache: *cache
+    # No cache: see mobile-release.
     # No triggering: started by hand (Start new build › this workflow), the tag `mobile-v*` building both stores.
     scripts:
       - *android_key_properties
       - *release_version
       - *flutter_packages
-      - *checks
+      - *release_checks
       - *android_build
       - *play_upload
       - *publish_summary
