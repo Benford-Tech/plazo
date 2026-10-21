@@ -36,7 +36,7 @@ export interface LegalDoc {
  */
 export const TERMS_VERSION = "21 octobre 2026";
 export const NOTICE_VERSION = "15 octobre 2026";
-export const PRIVACY_VERSION = "20 octobre 2026";
+export const PRIVACY_VERSION = "21 octobre 2026";
 export const TO_COMPLETE = "[à compléter]";
 
 const filled = (value: string) => value.trim() || TO_COMPLETE;
@@ -464,6 +464,7 @@ export function privacyDoc(company: Company = COMPANY, email: string = SUPPORT_E
           `Pour proposer ${p} aux parkings proches des aéroports, ${c.name} écrit par e-mail à des professionnels : le nom du parking, sa ville et son aéroport, l’adresse e-mail professionnelle du contact, et, s’ils sont connus, son prénom, son nom, son téléphone professionnel et nos notes d’échange. Ces coordonnées professionnelles sont saisies à la main par l’équipe de ${p} ou importées d’un fichier qu’elle fournit ; elles ne viennent jamais des réservations des voyageurs.`,
           `Base : l’intérêt légitime de ${p} à faire connaître son service à des professionnels, pour une offre en rapport avec leur activité. Trois messages au plus (un premier contact et deux relances), qui s’arrêtent dès que le parking répond.`,
           "Chaque message dit qui écrit et porte un lien « Ne plus recevoir de messages » : un clic suffit pour s’opposer à toute nouvelle sollicitation, comme une simple réponse le demandant. L’adresse est alors gardée sous forme d’empreinte, d’où on ne peut pas la retrouver, uniquement pour ne plus jamais l’écrire, même si elle était de nouveau importée.",
+          `Un message peut contenir un lien personnel vers la démo de ${p} Pro, valable 14 jours : ${p} compte combien de fois il est ouvert et quand, rien d’autre (ni adresse IP, ni ce qui est fait dans la démo, dont les données sont fictives et effacées chaque nuit).`,
           "Durée : ces données sont supprimées 3 ans après le dernier contact (ou après leur saisie, si le parking n’a jamais été contacté). Les e-mails partent par Brevo (voir l’article 4). Les droits de l’article 8 s’exercent de la même façon.",
         ],
       },

@@ -1,3 +1,4 @@
+import { nextDemoReset } from '@/domain/prospect-demo';
 import { hash } from 'bcrypt';
 import httpStatus from 'http-status';
 import { Container, Service } from 'typedi';
@@ -70,6 +71,8 @@ export function toSessionUser(staff: AuthenticatedStaff & { vehicle?: VehicleOfT
     isPlatformAdmin: isPlatformAdmin(staff.email),
     emailVerified: !!staff.emailVerifiedAt,
     viewAs: actingAs ? { operatorId: staff.operatorId, operatorName: staff.operatorName, platformAccount: actingAs.platformAccount } : null,
+    // 21/10/2026: a session of the prospects' demo, and when it is wiped (the 01:00 UTC cron).
+    demo: staff.demo ? { resetsAt: nextDemoReset(new Date()).toISOString() } : null,
   };
 }
 

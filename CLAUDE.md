@@ -985,6 +985,27 @@ Le nom du produit doit rester dans UN seul fichier de configuration (il peut enc
   d'un CSV fourni (aucune collecte sur les comparateurs), textes des trois mails modifiables (par défaut, depuis le 19/10/2026, à la voix d'une équipe de développeurs : « nous »,
   faits vérifiables seulement, ni années d'expérience ni nombre de clients ; `defaultSteps`). Politique de confidentialité :
   section 11 « Prospection des parkings ».
+  **Démo de Plazo Pro pour les prospects (21/10/2026, « mets un environnement de démo de l'app », choix « Prospects (loueurs) »,
+  « Plazo Pro seulement », puis « A + B + C » des maquettes https://claude.ai/artifact/PEfDugiJ1UzV5upZcDwHur)** : la démo tourne dans
+  l'espace pro web (`/pro/demo`), pas dans un build Flutter. **A** : `DemoEntryPage` (`/pro/demo` pour tous, `/pro/demo/<jeton>` pour le
+  lien d'un prospect : « Bonjour <parking> : voici votre démo. », un lien expiré ou inconnu laisse entrer sans compter) : rôle Gérant ·
+  Accueil · Chauffeur · Voiturier puis « Entrer dans la démo » (`POST /internal/auth/demo` `{ role, token? }`, `demoLimiter` 30 par
+  15 min ; 400 `invalid_role`, 404 `demo_link_unknown`, 410 `demo_link_expired`) ; lien « Essayer la démo » sur la connexion. **B** :
+  loueur unique `Operator.prospectDemo` (« Parking des Cèdres (démo) », index unique partiel, migration `prospect_demo`), sans fiche
+  publique, semé à la première entrée (`ProspectDemoService.ensure` : 10 files de 12, 3 navettes, tarifs, commissions Allopark 18 % et
+  Onepark 20 %, 5 réservations de comparateurs dont 2 sans prix, quatre membres `demo-*@demo.plazo.invalid` au mot de passe aléatoire
+  que personne ne connaît), animé par le flux continu du chauffeur (`TestFeedService` accepte ce loueur), effacé et resemé chaque nuit
+  par `purge-expired-tokens` (01:00 UTC, `reset`, sessions comprises) ; session marquée `demo` (`config/passport.ts`,
+  `user.demo.resetsAt` de `/staff/me`) : `RefuseInViewAs` refuse tout ce qu'il refuse en consultation (équipe, mots de passe,
+  paiements, réglages personnels) avec 403 `demo_read_only`, sauf les gestes du chauffeur (`allowDemo`) ; aucun SMS (`sendTravellerSms`
+  → `skipped`, code de signature refusé) ni e-mail du contrat ne part (`isProspectDemoOperator`, `services/demo-guard.ts`) ; bandeau
+  citron `DemoBanner` « Démo · données fictives · remise à zéro cette nuit » avec « Quitter » (vers `/demo`), carte « À essayer » du
+  tableau de bord selon le rôle (`DemoTryCard`). **C** : Plateforme › Prospection, colonne « Démo » : « Créer un lien de démo »
+  (`POST /internal/platform/prospects/:id/demo-link` `{ renew? }`, table `demo_links` : jeton de 12 caractères, 14 jours, gardé tant
+  qu'il vaut, `opens`, `lastOpenedAt`), « Ouverte N fois · <date> », « Lien valable jusqu'au … », « Lien expiré » → « Nouveau lien »,
+  carte du lien avec « Copier » ; `demo` sur chaque prospect de la liste ; variable `{lien_demo}` des mails (le lien du prospect, créé à
+  l'envoi ; un exemple dans l'aperçu et le test) ; `GET /public/demo/links/:jeton` (état, nom du parking). Tests
+  `prospect-demo.test.ts`, `DemoEntryPage.test.tsx`.
   **Classement par région (19/10/2026, « classe les prospects par région », choix « Groupés par région » + « De l'aéroport »)** :
   le tableau est découpé en blocs repliables, un par région (en-tête « AUVERGNE-RHÔNE-ALPES · 14 », nombre sous les filtres en
   cours ; régions dans l'ordre alphabétique, « Sans région » en dernier ; replis gardés dans le navigateur,

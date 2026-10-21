@@ -49,6 +49,8 @@ export interface Staff {
   /** Session user (13/10/2026): whether a usable password is set, and the linked Apple / Google identities. */
   hasPassword?: boolean;
   identities?: { provider: IdentityProvider; email: string | null }[];
+  /** 21/10/2026: set inside the prospects' demo (« Parking des Cèdres »), with its next nightly reset. */
+  demo?: { resetsAt: string } | null;
 }
 
 /** 13/10/2026: Plazo Pro can be signed in to with Apple (iPhone) or Google (Android). */
@@ -1649,7 +1651,19 @@ export interface Prospect {
   failedAttempts: number;
   lastError: string | null;
   createdAt: string;
+  /** 21/10/2026 (C): the prospect's demo link, its opens and its expiry; null until « Créer un lien de démo ». */
+  demo?: DemoLink | null;
 }
+
+export interface DemoLink {
+  url: string;
+  expiresAt: string;
+  expired: boolean;
+  opens: number;
+  lastOpenedAt: string | null;
+}
+
+export type DemoRole = "manager" | "agent" | "driver" | "valet";
 
 export interface ProspectInput {
   companyName: string;

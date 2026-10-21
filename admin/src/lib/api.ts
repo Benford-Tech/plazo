@@ -59,6 +59,8 @@ import type {
   PlatformAudience,
   PlatformNotification,
   PlatformNotificationInput,
+  DemoLink,
+  DemoRole,
   Prospect,
   ProspectImportReport,
   ProspectInput,
@@ -313,6 +315,14 @@ export const adminApi = {
       body: json({ email, password }),
     }),
   logout: () => apiRequest<void>("/internal/auth/logout", { method: "POST" }),
+  /** 21/10/2026: the prospects' demo in a role, with the prospect's own link when there is one. */
+  enterDemo: (role: DemoRole, token?: string) =>
+    apiRequest<{ tokenData: TokenData; user: Staff }>("/internal/auth/demo", {
+      method: "POST",
+      body: json({ role, ...(token ? { token } : {}) }),
+    }),
+  demoLink: (token: string) =>
+    apiRequest<{ status: "valid" | "expired" | "unknown"; companyName: string | null }>(`/public/demo/links/${encodeURIComponent(token)}`),
   getMe: () => apiRequest<Staff>("/internal/staff/me"),
   /** 09/10/2026: one's own first and last name; answers like getMe. */
   updateMe: (names: { firstName: string; lastName: string }) =>
@@ -962,6 +972,8 @@ export const adminApi = {
     apiRequest<{ data: Prospect }>("/internal/platform/prospects", { method: "POST", body: json(input) }),
   updateProspect: (id: string, input: Partial<ProspectInput>) =>
     apiRequest<{ data: Prospect }>(`/internal/platform/prospects/${encodeURIComponent(id)}`, { method: "PATCH", body: json(input) }),
+  createProspectDemoLink: (id: string, renew = false) =>
+    apiRequest<{ data: DemoLink }>(`/internal/platform/prospects/${encodeURIComponent(id)}/demo-link`, { method: "POST", body: json({ renew }) }),
   deleteProspect: (id: string) =>
     apiRequest<{ data: { id: string } }>(`/internal/platform/prospects/${encodeURIComponent(id)}`, { method: "DELETE" }),
   importProspects: (rows: Partial<ProspectInput>[], dryRun: boolean) =>

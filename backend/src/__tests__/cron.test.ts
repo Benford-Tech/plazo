@@ -17,6 +17,7 @@ describe('GET /internal/cron/purge-expired-tokens', () => {
     expect(res.status).toBe(200);
     expect(res.body).toEqual({
       deleted: 1,
+      demoReset: false,
       arrivalSignalsEnded: 0,
       shuttleTripsEnded: 0,
       smsAbandoned: 0,

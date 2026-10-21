@@ -79,6 +79,12 @@ export default function LoginPage() {
           {fr.login.signup}
         </Link>
       </p>
+      <p className="mt-2 text-center text-muted-foreground">
+        {fr.demo.loginLinkIntro}{" "}
+        <Link to="/demo" className="font-semibold text-lime-deep underline-offset-4 hover:underline">
+          {fr.demo.loginLink}
+        </Link>
+      </p>
     </main>
   );
 }

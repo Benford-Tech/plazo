@@ -320,6 +320,23 @@ function AlertRow({ alert }: { alert: DashboardAlert }) {
   );
 }
 
+/** 21/10/2026 (B): in the prospects' demo, what to try first in this role. */
+function DemoTryCard({ role }: { role: string }) {
+  const body = fr.demo.tryBody[role] ?? fr.demo.tryBody.manager;
+  const link = fr.demo.tryLink[role] ?? fr.demo.tryLink.manager;
+  return (
+    <div data-testid="demo-try" className="flex flex-wrap items-center gap-x-4 gap-y-2 rounded-xl bg-lime-ink px-4 py-3 text-white">
+      <div className="min-w-0 flex-1">
+        <strong className="block text-sm">{fr.demo.tryTitle}</strong>
+        <span className="block text-[13px] text-[#D6E9D9]">{body}</span>
+      </div>
+      <Link to={link.to} className="flex min-h-11 items-center rounded-lg bg-lime px-3 text-sm font-semibold text-lime-ink">
+        {link.label}
+      </Link>
+    </div>
+  );
+}
+
 /**
  * « Les compléter » (21/10/2026, choice C): the bookings without a price nearest to today, their amount typed here; the
  * others in the list's « Sans prix » filter.
@@ -656,6 +673,8 @@ export default function DashboardPage() {
           {t.refreshed(timeAgo(d.serverTime, now))}
         </span>
       </div>
+
+      {user?.demo && <DemoTryCard role={user.effectivePost ?? user.role} />}
 
       <div className="grid grid-cols-2 gap-2.5 md:grid-cols-3 lg:grid-cols-5">
         <Kpi

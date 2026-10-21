@@ -46,7 +46,7 @@ export const staffJwtStrategy = new JwtStrategy(
       }
 
       if (operator.status !== 'active') return done(null, false, { code: 'account_suspended' });
-      done(null, { ...staff, operatorName: operator.name }, { tokenUid: token.uid });
+      done(null, { ...staff, operatorName: operator.name, ...(operator.prospectDemo ? { demo: true } : {}) }, { tokenUid: token.uid });
     } catch (error) {
       done(error, false);
     }

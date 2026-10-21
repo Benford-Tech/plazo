@@ -118,7 +118,7 @@ describe("privacy policy", () => {
     expect(all).toContain("« Compte supprimé »");
     expect(all).toContain("Apple et Google");
     expect(all).toContain("ils confirment son identité à Plazo");
-    expect(privacyDoc().version).toBe("20 octobre 2026"); // 13/10/2026, the controller's details (15/10/2026), prospecting (18/10/2026), the condition reports (19/10/2026), the traveller's own photos (20/10/2026)
+    expect(privacyDoc().version).toBe("21 octobre 2026"); // the demo link (21/10/2026), 13/10/2026, the controller's details (15/10/2026), prospecting (18/10/2026), the condition reports (19/10/2026), the traveller's own photos (20/10/2026)
   });
 
   it("says what really happens: a raw IP kept 7 days for the code, Google's id is not Plazo's own, Apple revoked only with Apple", () => {
@@ -137,7 +137,7 @@ describe("privacy policy", () => {
   });
 
   it("dates each text on its own: the three moved on 15/10/2026 with the company details of product.json, the privacy policy on 18/10/2026, terms and privacy on 19/10/2026", () => {
-    expect(privacyDoc().version).toBe("20 octobre 2026");
+    expect(privacyDoc().version).toBe("21 octobre 2026");
     expect(termsDoc().version).toBe("21 octobre 2026");
     expect(legalNoticeDoc().version).toBe("15 octobre 2026");
   });
