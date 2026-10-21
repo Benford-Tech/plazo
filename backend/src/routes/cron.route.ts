@@ -25,6 +25,13 @@ import { CronAuthMiddleware } from '@/middlewares/cron-auth.middleware';
  *     responses:
  *       200:
  *         description: "{ checked, sent, sms: { operators, checked, sent, abandoned }, prospecting: { configured, window, sent, failed, finished, remaining } | { error: true } }"
+ * /internal/cron/morning-email:
+ *   get:
+ *     tags: [Cron]
+ *     summary: « Mail du matin » (21/10/2026) due now, once per member and local day (also run by remind-tomorrow)
+ *     description: "Requires Authorization: Bearer <CRON_SECRET>."
+ *     responses:
+ *       200: { description: "{ sent, failed, skipped }" }
  * /internal/cron/prospecting:
  *   get:
  *     summary: Send the prospecting emails due now (Monday to Friday 09:00-18:00 Europe/Paris, within the daily cap)
@@ -118,5 +125,6 @@ export class CronRoute implements Routes {
     this.router.get('/internal/cron/remind-tomorrow', CronAuthMiddleware(), this.cron.remindTomorrow);
     this.router.get('/internal/cron/booking-digest', CronAuthMiddleware(), this.cron.bookingDigest);
     this.router.get('/internal/cron/prospecting', CronAuthMiddleware(), this.cron.prospectingDue);
+    this.router.get('/internal/cron/morning-email', CronAuthMiddleware(), this.cron.morningEmail);
   }
 }

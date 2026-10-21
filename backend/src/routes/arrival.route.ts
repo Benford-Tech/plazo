@@ -294,6 +294,15 @@ import { ValidationMiddleware } from '@/middlewares/validation.middleware';
  *             properties:
  *               arrivals: { type: boolean }
  *               returns: { type: boolean }
+ *               morningEmail: { type: object, properties: { enabled: { type: boolean }, hour: { type: integer, minimum: 5, maximum: 10 } } }
+ * /internal/notifications/morning-email/send:
+ *   post:
+ *     summary: « M'envoyer celui d'aujourd'hui » — today's « Mail du matin » now (21/10/2026)
+ *     tags: [Staff notifications]
+ *     responses:
+ *       200: { description: "{ sent: true }" }
+ *       502: { description: email_unavailable }
+ *       503: { description: email_unavailable (email not configured) }
  */
 export class ArrivalRoute implements Routes {
   public router = Router();
@@ -335,5 +344,6 @@ export class ArrivalRoute implements Routes {
       ValidationMiddleware(NotificationPreferencesDto),
       this.arrivals.updatePreferences,
     );
+    this.router.post('/internal/notifications/morning-email/send', StaffAuthMiddleware(), RefuseInViewAs(), this.arrivals.sendMorningEmail);
   }
 }

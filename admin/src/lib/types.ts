@@ -1665,6 +1665,13 @@ export interface DemoLink {
 
 export type DemoRole = "manager" | "agent" | "driver" | "valet";
 
+/** « Mail du matin » (21/10/2026): on or off, the local hour it leaves at (5 to 10), and where it goes. */
+export interface MorningEmailPreference {
+  enabled: boolean;
+  hour: number;
+  email: string;
+}
+
 export interface ProspectInput {
   companyName: string;
   contactFirstName: string | null;

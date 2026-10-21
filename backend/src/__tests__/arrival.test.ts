@@ -505,6 +505,7 @@ describe('personnel : notifications push', () => {
       platform: true,
       bookings: 'hourly',
       devices: 1,
+      morningEmail: { enabled: true, hour: 7, email: expect.any(String) },
     });
     await api().post(arrival(b, '/announce')).set(bookingToken(b.manageToken)).send({ kind: 'outbound', minutes: 20 });
     expect(pushCalls()).toHaveLength(0);
