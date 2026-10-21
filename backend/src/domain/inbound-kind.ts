@@ -314,6 +314,15 @@ function alloparkType(message: ComparatorMessage, links: string[]): MailType {
   return type('Allopark', 'booking', reference, sure ? 'allopark.booking' : 'allopark.reference', sure);
 }
 
+/**
+ * ParkVia's cancellation notice (21/10/2026): « ParkVia - Cancellation » or « ParkVia - Notification d'annulation de
+ * réservation » as subject or title, and « Cette réservation a été annulée » in its own text.
+ */
+export function isParkViaCancellation(subject: string, text: string): boolean {
+  const title = /parkvia\s*[-–—:]\s*(?:cancell?ation|notification d['’]annulation de r[ée]servation)/i;
+  return (title.test(subject) || title.test(text)) && /cette r[ée]servation a [ée]t[ée] annul[ée]e/i.test(flatten(text));
+}
+
 /** What a message of Onepark, Parclick or ParkMundo is: their cancellations and changes by their wording, their bookings by their importer. */
 function otherType(provider: Exclude<Comparator, 'Allopark'>, message: ComparatorMessage): MailType {
   const { subject, text, notes } = message;
@@ -321,6 +330,13 @@ function otherType(provider: Exclude<Comparator, 'Allopark'>, message: Comparato
   const name = provider.toLowerCase();
   const both = `${subject}\n${text}`;
   if (SUBJECT_CANCELLATION_STRICT.test(subject) || cancellationIn(both) || cancellationIn(notes)) {
+    // 21/10/2026 (« apprends à traiter les annulations ParkVia »): ParkVia's own cancellation notice (its title and « Cette
+    // réservation a été annulée ») is the one cancellation Plazo applies by itself (InboundEmailService.comparatorCancellation);
+    // the same words anywhere else, or written by whoever forwards it, stay a cancellation to read.
+    if (provider === 'ParkVia') {
+      const sure = !!reference && isParkViaCancellation(subject, text);
+      return type(provider, 'cancellation', reference, sure ? 'parkvia.cancellation' : 'parkvia.cancellation-wording', sure);
+    }
     return type(provider, 'cancellation', reference, `${name}.cancellation`, true);
   }
   if (NOTE_CANCELLATION.test(notes)) return type(provider, 'other', reference, `${name}.note`, true);

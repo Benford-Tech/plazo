@@ -3154,6 +3154,7 @@ export const inboundFr = {
       passengers: "passagers",
       priceCents: "prix",
       vehicleModel: "véhicule",
+      status: "statut",
     } as Record<string, string>,
     /**
      * 10/10/2026 (« C'est une modification »): an Allopark change of a booking, applied by Plazo or left to the staff;
@@ -3173,8 +3174,20 @@ export const inboundFr = {
         invalid_stay: "Les nouvelles dates ne forment pas un séjour valable.",
         // 10/10/2026 (« Tu n'as pas récupéré le prix pour la modif »): bookings typed without the reference.
         ambiguous: "Plusieurs réservations correspondent : à faire à la main.",
+        unknown_booking: "Aucune réservation de Plazo ne porte ce numéro.",
       } satisfies Record<InboundChangeReason, string>,
       nothingDone: "Plazo n'a rien changé : faites ces changements vous-même si besoin.",
+      // 21/10/2026 (« apprends à traiter les annulations ParkVia »): the same block for a comparator's cancellation.
+      cancelApplied: "Annulation appliquée à la réservation",
+      cancelUpToDate: "Réservation déjà annulée",
+      cancelManual: "Annulation à faire à la main",
+      cancelReason: {
+        reservation_closed: "La réservation est close.",
+        already_arrived: "La voiture est déjà au parking : Plazo ne l'annule pas.",
+        unknown_booking: "Aucune réservation de Plazo ne porte ce numéro.",
+        ambiguous: "Plusieurs réservations portent ce numéro : à faire à la main.",
+      } as Partial<Record<InboundChangeReason, string>>,
+      cancelNothingDone: "Plazo n'a rien annulé : vérifiez la réservation vous-même.",
       none: "Aucun changement : la réservation était déjà à jour.",
       empty: "—",
     },
@@ -3208,6 +3221,12 @@ export const inboundFr = {
           : "Modification appliquée à la réservation.",
       changeLeft:
         "Analyse relancée : la modification reste à faire à la main.",
+      /** 21/10/2026: a comparator's cancellation applied, or left to the staff. */
+      cancelled: (ref: string | null) =>
+        ref
+          ? `Annulation appliquée à la réservation ${ref}.`
+          : "Annulation appliquée à la réservation.",
+      cancelLeft: "Analyse relancée : l'annulation reste à faire à la main.",
       /** The missing fields, listed after a colon by their labels: « champs encore manquants : téléphone et plaque ». */
       missing: (labels: string[]) =>
         `Analyse relancée, ${labels.length > 1 ? "champs encore manquants" : "champ encore manquant"} : ${

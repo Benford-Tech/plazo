@@ -1,0 +1,14 @@
+ParkVia - Notification d'annulation de réservation
+Numéro de réservation:
+PC90000001
+Parking choisi:
+PARKING EXEMPLE LYON
+Date de remise du véhicule:
+23/10/2026 15:00:00
+Date de récupération du véhicule:
+26/10/2026 09:30:00
+Nom:
+Camille Exemple
+Numéro d'immatriculation:
+AB-12-CD
+Cette réservation a été annulée par le client

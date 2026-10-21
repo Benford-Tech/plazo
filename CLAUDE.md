@@ -136,7 +136,18 @@ Ne construire QUE ce qui règle la douleur n°1 du client.
      de ParkMundo) `parclick.ts` (arrivée, sortie, référence) et `parkvia.ts` (20/10/2026, « ParkVia - Nouvelle notification de réservation » :
      numéro `PC…`, remise et récupération du véhicule à la seconde, « Total », passagers, nom, « Tel Portable » écrit sans le 0 et suivi
      de l'indicatif entre parenthèses, `parkviaPhone` « 912345678 (351) » → « +351 912345678 », immatriculation ; comparateur `ParkVia`
-     dans `inbound-kind.ts` et `KNOWN_COMPARATORS` ; fixture `parkvia-notification.txt`), en plus d'`allopark.ts` (qui lit aussi la confirmation
+     dans `inbound-kind.ts` et `KNOWN_COMPARATORS` ; fixture `parkvia-notification.txt`) ; **annulations ParkVia appliquées (21/10/2026, « apprends à traiter les
+     annulations ParkVia »)** : l'avis d'annulation de ParkVia (« ParkVia - Cancellation » ou « Notification d'annulation de
+     réservation » en objet ou en titre, « Cette réservation a été annulée » dans son texte, numéro `PC…` ; règle
+     `parkvia.cancellation`, `isParkViaCancellation` ; les mêmes mots ailleurs ou écrits par celui qui transfère :
+     `parkvia.cancellation-wording`, rien d'appliqué) annule la réservation de ce numéro (`ReservationService.applyImportCancellation` :
+     même loueur, comparateur ParkVia ou vide, jamais Plazo ; ligne verrouillée et relue ; seulement « Attendu » ; file ou place
+     libérée par `statusSideEffects`, note « Annulée par ParkVia (mail d'annulation). », historique `reservation.status_changed`
+     `source: 'parkvia_cancellation'`, push « Réservation annulée · ParkVia » à l'audience `bookingChanges`) ; mail rattaché
+     (« Annulation appliquée à la réservation … », `InboundEmail.change.kind: 'cancellation'`, ligne « Statut : Attendu → Annulé »),
+     déjà annulée → doublon rattaché ; laissée à l'équipe, rien changé (« Annulation à faire à la main ») pour une voiture déjà
+     au parking (`already_arrived`), une réservation close, inconnue (`unknown_booking`) ou plusieurs ; fixture
+     `parkvia-cancellation.txt` ; un mail reçu avant le 21/10/2026 se traite par « Relancer l'analyse », en plus d'`allopark.ts` (qui lit aussi la confirmation
      envoyée au voyageur) ; aides `flatten`, `numericDateTime`, `amountAfter`, `PHONE`, `PLATE`, `NOM`, `FLIGHT` dans
      `importers/common.ts` ; `ParsedBooking.vehicleModel/vehicleColour` enregistrés par `createFromImport` ; une annulation ou
      une modification n'est jamais lue comme une réservation (`isCancellationOrChange`) ; un mail reconnu mais incomplet est

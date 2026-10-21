@@ -36,7 +36,7 @@ import { AuditService } from './audit.service';
 import { EmailReadingService, ReadingAttempt } from './email-reading.service';
 import { MailProviderService } from './mail-provider.service';
 import { MailProviderId } from '@/domain/mail-provider';
-import { ImportChangeResult, ReservationService } from './reservation.service';
+import { ImportCancellationResult, ImportChangeResult, ReservationService } from './reservation.service';
 
 /** The email's text is kept this long for "À vérifier", then cleared; the row itself goes after 90 days. */
 const TEXT_RETENTION_DAYS = 30;
@@ -161,6 +161,8 @@ export interface InboundChangeView {
   reference: string | null;
   changes: ImportChange[];
   at: string;
+  /** 21/10/2026: `cancellation` for a comparator's cancellation (ParkVia), absent for a change. */
+  kind?: 'cancellation';
 }
 
 /**
@@ -455,6 +457,8 @@ export class InboundEmailService {
     logger.info(`${label} mail type ${type.rule}`);
     // 20/10/2026: Onepark's daily summary completes the bookings it lists (number, plate), never creates one.
     if (type.rule === 'onepark.summary') return this.oneparkSummary(input, rules);
+    // 21/10/2026 (« apprends à traiter les annulations ParkVia »): ParkVia's own cancellation notice cancels its booking.
+    if (type.rule === 'parkvia.cancellation' && type.reference) return this.comparatorCancellation(input, 'ParkVia', type.reference, rules);
     // A cancellation, a reply or another mail of a comparator, a change of Onepark, Parclick or ParkMundo (no page to read
     // it from): shown with its kind, nothing done by itself (cancellations are never applied), no Claude.
     if (type.kind === 'cancellation' || type.kind === 'other' || (type.kind === 'change' && (type.provider !== 'Allopark' || !type.reference))) {
@@ -869,6 +873,47 @@ export class InboundEmailService {
     }
     logger.info(`${label}: change left to the staff (${result.reason}: ${fields})`);
     return { ...withPage, change, status: 'unrecognised', missing: [], reservationId: null };
+  }
+
+  /**
+   * 21/10/2026: a comparator's own cancellation notice (ParkVia's): the booking it names is cancelled while still
+   * « Attendu » (ReservationService.applyImportCancellation); the email is then linked to it (`changed`, « Annulation
+   * appliquée »), or to the booking already cancelled (`duplicate`); otherwise left to the staff with the reason (unknown
+   * booking, several, a car already there, a closed booking), nothing changed.
+   */
+  private async comparatorCancellation(input: AnalysisInput, provider: string, reference: string, rules: ReadingMeta | null): Promise<Analysis> {
+    const label = `[${provider}] ${reference}:`;
+    const base = { provider: null, parsed: null, missing: [] as string[], reading: rules, pageLookup: null };
+    let result: ImportCancellationResult;
+    try {
+      result = await this.reservations.applyImportCancellation(input.operatorId, provider, reference, {
+        source: `${provider.toLowerCase()}_cancellation`,
+        inboundEmailId: input.emailId,
+      });
+    } catch (error) {
+      logger.warn(`${label} cancellation not applied: ${error instanceof Error ? error.message : String(error)}`);
+      return { ...base, status: 'unrecognised', reservationId: null, change: null };
+    }
+    const booking = result.reservation;
+    const change: InboundChangeView = {
+      kind: 'cancellation',
+      applied: result.outcome !== 'left',
+      reason: result.reason ?? null,
+      reservationId: booking?.id ?? null,
+      reference: booking?.reference ?? null,
+      changes: result.outcome === 'cancelled' ? [{ field: 'status', from: 'upcoming', to: 'cancelled' }] : [],
+      at: new Date().toISOString(),
+    };
+    if (result.outcome === 'cancelled') {
+      logger.info(`${label} booking cancelled`);
+      return { ...base, status: 'changed', reservationId: booking!.id, change };
+    }
+    if (result.outcome === 'cancelled_before') {
+      logger.info(`${label} booking already cancelled`);
+      return { ...base, status: 'duplicate', reservationId: booking!.id, change };
+    }
+    logger.info(`${label} cancellation left to the staff (${result.reason})`);
+    return { ...base, status: 'unrecognised', reservationId: null, change };
   }
 
   /**
@@ -1899,6 +1944,7 @@ function storedChange(change: InboundChangeView): Prisma.InputJsonValue {
     ...(change.reference ? { reference: change.reference } : {}),
     changes: change.changes.map(c => ({ field: c.field, from: c.from, to: c.to })),
     at: change.at,
+    ...(change.kind ? { kind: change.kind } : {}),
   };
 }
 
@@ -1923,6 +1969,7 @@ function changeOf(value: Prisma.JsonValue | null): InboundChangeView | null {
     reference: typeof v.reference === 'string' ? v.reference : null,
     changes,
     at: v.at,
+    ...(v.kind === 'cancellation' ? { kind: 'cancellation' as const } : {}),
   };
 }
 

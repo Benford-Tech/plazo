@@ -23,6 +23,8 @@ export const IMPORT_CHANGE_FIELDS = [
   'customerEmail',
   'vehicleModel',
   'priceCents',
+  // 21/10/2026: a comparator's cancellation (ParkVia), « Statut : Attendu → Annulé ».
+  'status',
 ] as const;
 export type ImportChangeField = (typeof IMPORT_CHANGE_FIELDS)[number];
 
@@ -43,7 +45,16 @@ export interface ImportChange {
  * pour la modif »): `ambiguous`, several bookings typed without the comparator's reference match the change (same car,
  * same stay: ReservationService.unreferencedMatches), none is chosen.
  */
-export const IMPORT_CHANGE_REASONS = ['reservation_closed', 'already_arrived', 'no_room', 'plazo_booking', 'invalid_stay', 'ambiguous'] as const;
+export const IMPORT_CHANGE_REASONS = [
+  'reservation_closed',
+  'already_arrived',
+  'no_room',
+  'plazo_booking',
+  'invalid_stay',
+  'ambiguous',
+  // 21/10/2026: a comparator's cancellation of a booking Plazo does not have.
+  'unknown_booking',
+] as const;
 export type ImportChangeReason = (typeof IMPORT_CHANGE_REASONS)[number];
 
 /** The booking's columns a change writes. */

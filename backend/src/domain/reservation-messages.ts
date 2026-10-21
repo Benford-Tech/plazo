@@ -78,7 +78,24 @@ function changeWords(change: ImportChange): string {
       return 'e-mail';
     case 'vehicleModel':
       return 'véhicule';
+    case 'status':
+      return 'annulée';
   }
+}
+
+/**
+ * 21/10/2026 (« apprends à traiter les annulations ParkVia »): push to the team when Plazo cancels a booking on its
+ * comparator's notice: « Réservation annulée · ParkVia », « PC90936794 · arrivée 24 oct. 13:30 ».
+ */
+export function bookingCancelledPush(input: {
+  reference: string;
+  channel: ReservationChannel;
+  channelDetail: string | null;
+  /** The arrival, local to the parking (« 2026-10-24T13:30 »). */
+  arrival: string;
+}): PushMessage {
+  const source = input.channelDetail?.trim() || CHANNELS[input.channel];
+  return { title: `Réservation annulée · ${source}`, body: `${input.reference} · arrivée ${dayMonthTime(input.arrival)}` };
 }
 
 /**
