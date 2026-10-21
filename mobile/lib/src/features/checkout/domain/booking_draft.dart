@@ -15,6 +15,7 @@ class BookingDraft {
     this.vehicleModel = '',
     this.vehicleColour = '',
     this.customerNote = '',
+    this.extras = const [],
   });
 
   /// 09/10/2026: first and last name apart (the server stores "Prénom Nom" for display).
@@ -32,6 +33,9 @@ class BookingDraft {
   final String vehicleModel;
   final String vehicleColour;
   final String customerNote;
+
+  /// Services for the car ticked in the recap (21/10/2026): their kinds.
+  final List<String> extras;
 }
 
 class BookingDraftStore {

@@ -135,6 +135,24 @@ abstract class PricingModel with _$PricingModel {
   factory PricingModel.fromJson(Map<String, dynamic> json) => _$PricingModelFromJson(json);
 }
 
+/// A service for the car a parking offers on Plazo (21/10/2026): lavage intérieur, recharge hybride, recharge électrique.
+@freezed
+abstract class ParkingExtraOfferModel with _$ParkingExtraOfferModel {
+  const factory ParkingExtraOfferModel({required String kind, required String label, @Default('') String description, required int priceCents}) =
+      _ParkingExtraOfferModel;
+
+  factory ParkingExtraOfferModel.fromJson(Map<String, dynamic> json) => _$ParkingExtraOfferModelFromJson(json);
+}
+
+/// The parking's services and how long before the return they may be ordered.
+@freezed
+abstract class ParkingExtrasModel with _$ParkingExtrasModel {
+  const factory ParkingExtrasModel({@Default(<ParkingExtraOfferModel>[]) List<ParkingExtraOfferModel> offers, @Default(24) int leadHours}) =
+      _ParkingExtrasModel;
+
+  factory ParkingExtrasModel.fromJson(Map<String, dynamic> json) => _$ParkingExtrasModelFromJson(json);
+}
+
 /// A parking's page (GET /public/airports/:airport/parkings/:slug).
 @freezed
 abstract class ParkingDetailModel with _$ParkingDetailModel {
@@ -161,6 +179,9 @@ abstract class ParkingDetailModel with _$ParkingDetailModel {
 
     /// R-B + I-C: the parking shows its shuttles to the travellers (« Navette en direct » in « L'essentiel »).
     @Default(false) bool liveShuttle,
+
+    /// Services for the car (21/10/2026), ordered with the booking or later from « Ma réservation ».
+    @Default(ParkingExtrasModel()) ParkingExtrasModel extras,
   }) = _ParkingDetailModel;
 
   factory ParkingDetailModel.fromJson(Map<String, dynamic> json) => _$ParkingDetailModelFromJson(json);

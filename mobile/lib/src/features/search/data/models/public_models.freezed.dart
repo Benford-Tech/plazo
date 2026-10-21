@@ -2722,11 +2722,570 @@ $NightRuleModelCopyWith<$Res>? get night {
 
 
 /// @nodoc
+mixin _$ParkingExtraOfferModel {
+
+ String get kind; String get label; String get description; int get priceCents;
+/// Create a copy of ParkingExtraOfferModel
+/// with the given fields replaced by the non-null parameter values.
+@JsonKey(includeFromJson: false, includeToJson: false)
+@pragma('vm:prefer-inline')
+$ParkingExtraOfferModelCopyWith<ParkingExtraOfferModel> get copyWith => _$ParkingExtraOfferModelCopyWithImpl<ParkingExtraOfferModel>(this as ParkingExtraOfferModel, _$identity);
+
+  /// Serializes this ParkingExtraOfferModel to a JSON map.
+  Map<String, dynamic> toJson();
+
+
+@override
+bool operator ==(Object other) {
+  final _this = this as ParkingExtraOfferModel;
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is ParkingExtraOfferModel&&(identical(other.kind, _this.kind) || other.kind == _this.kind)&&(identical(other.label, _this.label) || other.label == _this.label)&&(identical(other.description, _this.description) || other.description == _this.description)&&(identical(other.priceCents, _this.priceCents) || other.priceCents == _this.priceCents));
+}
+
+@JsonKey(includeFromJson: false, includeToJson: false)
+@override
+int get hashCode {
+  final _this = this as ParkingExtraOfferModel;
+  return Object.hash(runtimeType,_this.kind,_this.label,_this.description,_this.priceCents);
+}
+
+@override
+String toString() {
+  final _this = this as ParkingExtraOfferModel;
+  return 'ParkingExtraOfferModel(kind: ${_this.kind}, label: ${_this.label}, description: ${_this.description}, priceCents: ${_this.priceCents})';
+}
+
+
+}
+
+/// @nodoc
+abstract mixin class $ParkingExtraOfferModelCopyWith<$Res>  {
+  factory $ParkingExtraOfferModelCopyWith(ParkingExtraOfferModel value, $Res Function(ParkingExtraOfferModel) _then) = _$ParkingExtraOfferModelCopyWithImpl;
+@useResult
+$Res call({
+ String kind, String label, String description, int priceCents
+});
+
+
+
+
+}
+/// @nodoc
+class _$ParkingExtraOfferModelCopyWithImpl<$Res>
+    implements $ParkingExtraOfferModelCopyWith<$Res> {
+  _$ParkingExtraOfferModelCopyWithImpl(this._self, this._then);
+
+  final ParkingExtraOfferModel _self;
+  final $Res Function(ParkingExtraOfferModel) _then;
+
+/// Create a copy of ParkingExtraOfferModel
+/// with the given fields replaced by the non-null parameter values.
+@pragma('vm:prefer-inline') @override $Res call({Object? kind = null,Object? label = null,Object? description = null,Object? priceCents = null,}) {
+  return _then(ParkingExtraOfferModel(
+kind: null == kind ? _self.kind : kind // ignore: cast_nullable_to_non_nullable
+as String,label: null == label ? _self.label : label // ignore: cast_nullable_to_non_nullable
+as String,description: null == description ? _self.description : description // ignore: cast_nullable_to_non_nullable
+as String,priceCents: null == priceCents ? _self.priceCents : priceCents // ignore: cast_nullable_to_non_nullable
+as int,
+  ));
+}
+
+}
+
+
+/// Adds pattern-matching-related methods to [ParkingExtraOfferModel].
+extension ParkingExtraOfferModelPatterns on ParkingExtraOfferModel {
+/// A variant of `map` that fallback to returning `orElse`.
+///
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case final Subclass value:
+///     return ...;
+///   case _:
+///     return orElse();
+/// }
+/// ```
+
+@optionalTypeArgs TResult maybeMap<TResult extends Object?>(TResult Function( _ParkingExtraOfferModel value)?  $default,{required TResult orElse(),}){
+final _that = this;
+switch (_that) {
+case _ParkingExtraOfferModel() when $default != null:
+return $default(_that);case _:
+  return orElse();
+
+}
+}
+/// A `switch`-like method, using callbacks.
+///
+/// Callbacks receives the raw object, upcasted.
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case final Subclass value:
+///     return ...;
+///   case final Subclass2 value:
+///     return ...;
+/// }
+/// ```
+
+@optionalTypeArgs TResult map<TResult extends Object?>(TResult Function( _ParkingExtraOfferModel value)  $default,){
+final _that = this;
+switch (_that) {
+case _ParkingExtraOfferModel():
+return $default(_that);case _:
+  throw StateError('Unexpected subclass');
+
+}
+}
+/// A variant of `map` that fallback to returning `null`.
+///
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case final Subclass value:
+///     return ...;
+///   case _:
+///     return null;
+/// }
+/// ```
+
+@optionalTypeArgs TResult? mapOrNull<TResult extends Object?>(TResult? Function( _ParkingExtraOfferModel value)?  $default,){
+final _that = this;
+switch (_that) {
+case _ParkingExtraOfferModel() when $default != null:
+return $default(_that);case _:
+  return null;
+
+}
+}
+/// A variant of `when` that fallback to an `orElse` callback.
+///
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case Subclass(:final field):
+///     return ...;
+///   case _:
+///     return orElse();
+/// }
+/// ```
+
+@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( String kind,  String label,  String description,  int priceCents)?  $default,{required TResult orElse(),}) {final _that = this;
+switch (_that) {
+case _ParkingExtraOfferModel() when $default != null:
+return $default(_that.kind,_that.label,_that.description,_that.priceCents);case _:
+  return orElse();
+
+}
+}
+/// A `switch`-like method, using callbacks.
+///
+/// As opposed to `map`, this offers destructuring.
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case Subclass(:final field):
+///     return ...;
+///   case Subclass2(:final field2):
+///     return ...;
+/// }
+/// ```
+
+@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( String kind,  String label,  String description,  int priceCents)  $default,) {final _that = this;
+switch (_that) {
+case _ParkingExtraOfferModel():
+return $default(_that.kind,_that.label,_that.description,_that.priceCents);case _:
+  throw StateError('Unexpected subclass');
+
+}
+}
+/// A variant of `when` that fallback to returning `null`
+///
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case Subclass(:final field):
+///     return ...;
+///   case _:
+///     return null;
+/// }
+/// ```
+
+@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( String kind,  String label,  String description,  int priceCents)?  $default,) {final _that = this;
+switch (_that) {
+case _ParkingExtraOfferModel() when $default != null:
+return $default(_that.kind,_that.label,_that.description,_that.priceCents);case _:
+  return null;
+
+}
+}
+
+}
+
+/// @nodoc
+@JsonSerializable()
+
+class _ParkingExtraOfferModel implements ParkingExtraOfferModel {
+  const _ParkingExtraOfferModel({required this.kind, required this.label, this.description = '', required this.priceCents});
+  factory _ParkingExtraOfferModel.fromJson(Map<String, dynamic> json) => _$ParkingExtraOfferModelFromJson(json);
+
+@override final  String kind;
+@override final  String label;
+@override@JsonKey() final  String description;
+@override final  int priceCents;
+
+/// Create a copy of ParkingExtraOfferModel
+/// with the given fields replaced by the non-null parameter values.
+@override @JsonKey(includeFromJson: false, includeToJson: false)
+@pragma('vm:prefer-inline')
+_$ParkingExtraOfferModelCopyWith<_ParkingExtraOfferModel> get copyWith => __$ParkingExtraOfferModelCopyWithImpl<_ParkingExtraOfferModel>(this, _$identity);
+
+@override
+Map<String, dynamic> toJson() {
+  return _$ParkingExtraOfferModelToJson(this, );
+}
+
+@override
+bool operator ==(Object other) {
+    return identical(this, other) || (other.runtimeType == runtimeType&&other is _ParkingExtraOfferModel&&(identical(other.kind, kind) || other.kind == kind)&&(identical(other.label, label) || other.label == label)&&(identical(other.description, description) || other.description == description)&&(identical(other.priceCents, priceCents) || other.priceCents == priceCents));
+}
+
+@JsonKey(includeFromJson: false, includeToJson: false)
+@override
+int get hashCode {
+    return Object.hash(runtimeType,kind,label,description,priceCents);
+}
+
+@override
+String toString() {
+    return 'ParkingExtraOfferModel(kind: $kind, label: $label, description: $description, priceCents: $priceCents)';
+}
+
+
+}
+
+/// @nodoc
+abstract mixin class _$ParkingExtraOfferModelCopyWith<$Res> implements $ParkingExtraOfferModelCopyWith<$Res> {
+  factory _$ParkingExtraOfferModelCopyWith(_ParkingExtraOfferModel value, $Res Function(_ParkingExtraOfferModel) _then) = __$ParkingExtraOfferModelCopyWithImpl;
+@override @useResult
+$Res call({
+ String kind, String label, String description, int priceCents
+});
+
+
+
+
+}
+/// @nodoc
+class __$ParkingExtraOfferModelCopyWithImpl<$Res>
+    implements _$ParkingExtraOfferModelCopyWith<$Res> {
+  __$ParkingExtraOfferModelCopyWithImpl(this._self, this._then);
+
+  final _ParkingExtraOfferModel _self;
+  final $Res Function(_ParkingExtraOfferModel) _then;
+
+/// Create a copy of ParkingExtraOfferModel
+/// with the given fields replaced by the non-null parameter values.
+@override @pragma('vm:prefer-inline') $Res call({Object? kind = null,Object? label = null,Object? description = null,Object? priceCents = null,}) {
+  return _then(_ParkingExtraOfferModel(
+kind: null == kind ? _self.kind : kind // ignore: cast_nullable_to_non_nullable
+as String,label: null == label ? _self.label : label // ignore: cast_nullable_to_non_nullable
+as String,description: null == description ? _self.description : description // ignore: cast_nullable_to_non_nullable
+as String,priceCents: null == priceCents ? _self.priceCents : priceCents // ignore: cast_nullable_to_non_nullable
+as int,
+  ));
+}
+
+
+}
+
+
+/// @nodoc
+mixin _$ParkingExtrasModel {
+
+ List<ParkingExtraOfferModel> get offers; int get leadHours;
+/// Create a copy of ParkingExtrasModel
+/// with the given fields replaced by the non-null parameter values.
+@JsonKey(includeFromJson: false, includeToJson: false)
+@pragma('vm:prefer-inline')
+$ParkingExtrasModelCopyWith<ParkingExtrasModel> get copyWith => _$ParkingExtrasModelCopyWithImpl<ParkingExtrasModel>(this as ParkingExtrasModel, _$identity);
+
+  /// Serializes this ParkingExtrasModel to a JSON map.
+  Map<String, dynamic> toJson();
+
+
+@override
+bool operator ==(Object other) {
+  final _this = this as ParkingExtrasModel;
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is ParkingExtrasModel&&const DeepCollectionEquality().equals(other.offers, _this.offers)&&(identical(other.leadHours, _this.leadHours) || other.leadHours == _this.leadHours));
+}
+
+@JsonKey(includeFromJson: false, includeToJson: false)
+@override
+int get hashCode {
+  final _this = this as ParkingExtrasModel;
+  return Object.hash(runtimeType,const DeepCollectionEquality().hash(_this.offers),_this.leadHours);
+}
+
+@override
+String toString() {
+  final _this = this as ParkingExtrasModel;
+  return 'ParkingExtrasModel(offers: ${_this.offers}, leadHours: ${_this.leadHours})';
+}
+
+
+}
+
+/// @nodoc
+abstract mixin class $ParkingExtrasModelCopyWith<$Res>  {
+  factory $ParkingExtrasModelCopyWith(ParkingExtrasModel value, $Res Function(ParkingExtrasModel) _then) = _$ParkingExtrasModelCopyWithImpl;
+@useResult
+$Res call({
+ List<ParkingExtraOfferModel> offers, int leadHours
+});
+
+
+
+
+}
+/// @nodoc
+class _$ParkingExtrasModelCopyWithImpl<$Res>
+    implements $ParkingExtrasModelCopyWith<$Res> {
+  _$ParkingExtrasModelCopyWithImpl(this._self, this._then);
+
+  final ParkingExtrasModel _self;
+  final $Res Function(ParkingExtrasModel) _then;
+
+/// Create a copy of ParkingExtrasModel
+/// with the given fields replaced by the non-null parameter values.
+@pragma('vm:prefer-inline') @override $Res call({Object? offers = null,Object? leadHours = null,}) {
+  return _then(ParkingExtrasModel(
+offers: null == offers ? _self.offers : offers // ignore: cast_nullable_to_non_nullable
+as List<ParkingExtraOfferModel>,leadHours: null == leadHours ? _self.leadHours : leadHours // ignore: cast_nullable_to_non_nullable
+as int,
+  ));
+}
+
+}
+
+
+/// Adds pattern-matching-related methods to [ParkingExtrasModel].
+extension ParkingExtrasModelPatterns on ParkingExtrasModel {
+/// A variant of `map` that fallback to returning `orElse`.
+///
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case final Subclass value:
+///     return ...;
+///   case _:
+///     return orElse();
+/// }
+/// ```
+
+@optionalTypeArgs TResult maybeMap<TResult extends Object?>(TResult Function( _ParkingExtrasModel value)?  $default,{required TResult orElse(),}){
+final _that = this;
+switch (_that) {
+case _ParkingExtrasModel() when $default != null:
+return $default(_that);case _:
+  return orElse();
+
+}
+}
+/// A `switch`-like method, using callbacks.
+///
+/// Callbacks receives the raw object, upcasted.
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case final Subclass value:
+///     return ...;
+///   case final Subclass2 value:
+///     return ...;
+/// }
+/// ```
+
+@optionalTypeArgs TResult map<TResult extends Object?>(TResult Function( _ParkingExtrasModel value)  $default,){
+final _that = this;
+switch (_that) {
+case _ParkingExtrasModel():
+return $default(_that);case _:
+  throw StateError('Unexpected subclass');
+
+}
+}
+/// A variant of `map` that fallback to returning `null`.
+///
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case final Subclass value:
+///     return ...;
+///   case _:
+///     return null;
+/// }
+/// ```
+
+@optionalTypeArgs TResult? mapOrNull<TResult extends Object?>(TResult? Function( _ParkingExtrasModel value)?  $default,){
+final _that = this;
+switch (_that) {
+case _ParkingExtrasModel() when $default != null:
+return $default(_that);case _:
+  return null;
+
+}
+}
+/// A variant of `when` that fallback to an `orElse` callback.
+///
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case Subclass(:final field):
+///     return ...;
+///   case _:
+///     return orElse();
+/// }
+/// ```
+
+@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( List<ParkingExtraOfferModel> offers,  int leadHours)?  $default,{required TResult orElse(),}) {final _that = this;
+switch (_that) {
+case _ParkingExtrasModel() when $default != null:
+return $default(_that.offers,_that.leadHours);case _:
+  return orElse();
+
+}
+}
+/// A `switch`-like method, using callbacks.
+///
+/// As opposed to `map`, this offers destructuring.
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case Subclass(:final field):
+///     return ...;
+///   case Subclass2(:final field2):
+///     return ...;
+/// }
+/// ```
+
+@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( List<ParkingExtraOfferModel> offers,  int leadHours)  $default,) {final _that = this;
+switch (_that) {
+case _ParkingExtrasModel():
+return $default(_that.offers,_that.leadHours);case _:
+  throw StateError('Unexpected subclass');
+
+}
+}
+/// A variant of `when` that fallback to returning `null`
+///
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case Subclass(:final field):
+///     return ...;
+///   case _:
+///     return null;
+/// }
+/// ```
+
+@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( List<ParkingExtraOfferModel> offers,  int leadHours)?  $default,) {final _that = this;
+switch (_that) {
+case _ParkingExtrasModel() when $default != null:
+return $default(_that.offers,_that.leadHours);case _:
+  return null;
+
+}
+}
+
+}
+
+/// @nodoc
+@JsonSerializable()
+
+class _ParkingExtrasModel implements ParkingExtrasModel {
+  const _ParkingExtrasModel({ List<ParkingExtraOfferModel> offers = const <ParkingExtraOfferModel>[], this.leadHours = 24}): _offers = offers;
+  factory _ParkingExtrasModel.fromJson(Map<String, dynamic> json) => _$ParkingExtrasModelFromJson(json);
+
+ final  List<ParkingExtraOfferModel> _offers;
+@override@JsonKey() List<ParkingExtraOfferModel> get offers {
+  if (_offers is EqualUnmodifiableListView) return _offers;
+  // ignore: implicit_dynamic_type
+  return EqualUnmodifiableListView(_offers);
+}
+
+@override@JsonKey() final  int leadHours;
+
+/// Create a copy of ParkingExtrasModel
+/// with the given fields replaced by the non-null parameter values.
+@override @JsonKey(includeFromJson: false, includeToJson: false)
+@pragma('vm:prefer-inline')
+_$ParkingExtrasModelCopyWith<_ParkingExtrasModel> get copyWith => __$ParkingExtrasModelCopyWithImpl<_ParkingExtrasModel>(this, _$identity);
+
+@override
+Map<String, dynamic> toJson() {
+  return _$ParkingExtrasModelToJson(this, );
+}
+
+@override
+bool operator ==(Object other) {
+    return identical(this, other) || (other.runtimeType == runtimeType&&other is _ParkingExtrasModel&&const DeepCollectionEquality().equals(other.offers, _offers)&&(identical(other.leadHours, leadHours) || other.leadHours == leadHours));
+}
+
+@JsonKey(includeFromJson: false, includeToJson: false)
+@override
+int get hashCode {
+    return Object.hash(runtimeType,const DeepCollectionEquality().hash(_offers),leadHours);
+}
+
+@override
+String toString() {
+    return 'ParkingExtrasModel(offers: $offers, leadHours: $leadHours)';
+}
+
+
+}
+
+/// @nodoc
+abstract mixin class _$ParkingExtrasModelCopyWith<$Res> implements $ParkingExtrasModelCopyWith<$Res> {
+  factory _$ParkingExtrasModelCopyWith(_ParkingExtrasModel value, $Res Function(_ParkingExtrasModel) _then) = __$ParkingExtrasModelCopyWithImpl;
+@override @useResult
+$Res call({
+ List<ParkingExtraOfferModel> offers, int leadHours
+});
+
+
+
+
+}
+/// @nodoc
+class __$ParkingExtrasModelCopyWithImpl<$Res>
+    implements _$ParkingExtrasModelCopyWith<$Res> {
+  __$ParkingExtrasModelCopyWithImpl(this._self, this._then);
+
+  final _ParkingExtrasModel _self;
+  final $Res Function(_ParkingExtrasModel) _then;
+
+/// Create a copy of ParkingExtrasModel
+/// with the given fields replaced by the non-null parameter values.
+@override @pragma('vm:prefer-inline') $Res call({Object? offers = null,Object? leadHours = null,}) {
+  return _then(_ParkingExtrasModel(
+offers: null == offers ? _self._offers : offers // ignore: cast_nullable_to_non_nullable
+as List<ParkingExtraOfferModel>,leadHours: null == leadHours ? _self.leadHours : leadHours // ignore: cast_nullable_to_non_nullable
+as int,
+  ));
+}
+
+
+}
+
+
+/// @nodoc
 mixin _$ParkingDetailModel {
 
  String get slug; String get title; List<String> get services; int? get shuttleMinutes;/// Average wait for the shuttle as the operator declares it (14/10/2026); null: not declared.
  int? get shuttleWaitMinutes; double? get distanceKm; String? get openingHours; String get cancellationPolicy; String? get photo; String get payment; LatLngModel? get location; String? get description; List<String> get photos; String? get address; String? get phone; PricingModel get pricing; bool get isDemo;/// R-B + I-C: the parking shows its shuttles to the travellers (« Navette en direct » in « L'essentiel »).
- bool get liveShuttle;
+ bool get liveShuttle;/// Services for the car (21/10/2026), ordered with the booking or later from « Ma réservation ».
+ ParkingExtrasModel get extras;
 /// Create a copy of ParkingDetailModel
 /// with the given fields replaced by the non-null parameter values.
 @JsonKey(includeFromJson: false, includeToJson: false)
@@ -2740,20 +3299,20 @@ $ParkingDetailModelCopyWith<ParkingDetailModel> get copyWith => _$ParkingDetailM
 @override
 bool operator ==(Object other) {
   final _this = this as ParkingDetailModel;
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is ParkingDetailModel&&(identical(other.slug, _this.slug) || other.slug == _this.slug)&&(identical(other.title, _this.title) || other.title == _this.title)&&const DeepCollectionEquality().equals(other.services, _this.services)&&(identical(other.shuttleMinutes, _this.shuttleMinutes) || other.shuttleMinutes == _this.shuttleMinutes)&&(identical(other.shuttleWaitMinutes, _this.shuttleWaitMinutes) || other.shuttleWaitMinutes == _this.shuttleWaitMinutes)&&(identical(other.distanceKm, _this.distanceKm) || other.distanceKm == _this.distanceKm)&&(identical(other.openingHours, _this.openingHours) || other.openingHours == _this.openingHours)&&(identical(other.cancellationPolicy, _this.cancellationPolicy) || other.cancellationPolicy == _this.cancellationPolicy)&&(identical(other.photo, _this.photo) || other.photo == _this.photo)&&(identical(other.payment, _this.payment) || other.payment == _this.payment)&&(identical(other.location, _this.location) || other.location == _this.location)&&(identical(other.description, _this.description) || other.description == _this.description)&&const DeepCollectionEquality().equals(other.photos, _this.photos)&&(identical(other.address, _this.address) || other.address == _this.address)&&(identical(other.phone, _this.phone) || other.phone == _this.phone)&&(identical(other.pricing, _this.pricing) || other.pricing == _this.pricing)&&(identical(other.isDemo, _this.isDemo) || other.isDemo == _this.isDemo)&&(identical(other.liveShuttle, _this.liveShuttle) || other.liveShuttle == _this.liveShuttle));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is ParkingDetailModel&&(identical(other.slug, _this.slug) || other.slug == _this.slug)&&(identical(other.title, _this.title) || other.title == _this.title)&&const DeepCollectionEquality().equals(other.services, _this.services)&&(identical(other.shuttleMinutes, _this.shuttleMinutes) || other.shuttleMinutes == _this.shuttleMinutes)&&(identical(other.shuttleWaitMinutes, _this.shuttleWaitMinutes) || other.shuttleWaitMinutes == _this.shuttleWaitMinutes)&&(identical(other.distanceKm, _this.distanceKm) || other.distanceKm == _this.distanceKm)&&(identical(other.openingHours, _this.openingHours) || other.openingHours == _this.openingHours)&&(identical(other.cancellationPolicy, _this.cancellationPolicy) || other.cancellationPolicy == _this.cancellationPolicy)&&(identical(other.photo, _this.photo) || other.photo == _this.photo)&&(identical(other.payment, _this.payment) || other.payment == _this.payment)&&(identical(other.location, _this.location) || other.location == _this.location)&&(identical(other.description, _this.description) || other.description == _this.description)&&const DeepCollectionEquality().equals(other.photos, _this.photos)&&(identical(other.address, _this.address) || other.address == _this.address)&&(identical(other.phone, _this.phone) || other.phone == _this.phone)&&(identical(other.pricing, _this.pricing) || other.pricing == _this.pricing)&&(identical(other.isDemo, _this.isDemo) || other.isDemo == _this.isDemo)&&(identical(other.liveShuttle, _this.liveShuttle) || other.liveShuttle == _this.liveShuttle)&&(identical(other.extras, _this.extras) || other.extras == _this.extras));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
 int get hashCode {
   final _this = this as ParkingDetailModel;
-  return Object.hash(runtimeType,_this.slug,_this.title,const DeepCollectionEquality().hash(_this.services),_this.shuttleMinutes,_this.shuttleWaitMinutes,_this.distanceKm,_this.openingHours,_this.cancellationPolicy,_this.photo,_this.payment,_this.location,_this.description,const DeepCollectionEquality().hash(_this.photos),_this.address,_this.phone,_this.pricing,_this.isDemo,_this.liveShuttle);
+  return Object.hashAll([runtimeType,_this.slug,_this.title,const DeepCollectionEquality().hash(_this.services),_this.shuttleMinutes,_this.shuttleWaitMinutes,_this.distanceKm,_this.openingHours,_this.cancellationPolicy,_this.photo,_this.payment,_this.location,_this.description,const DeepCollectionEquality().hash(_this.photos),_this.address,_this.phone,_this.pricing,_this.isDemo,_this.liveShuttle,_this.extras]);
 }
 
 @override
 String toString() {
   final _this = this as ParkingDetailModel;
-  return 'ParkingDetailModel(slug: ${_this.slug}, title: ${_this.title}, services: ${_this.services}, shuttleMinutes: ${_this.shuttleMinutes}, shuttleWaitMinutes: ${_this.shuttleWaitMinutes}, distanceKm: ${_this.distanceKm}, openingHours: ${_this.openingHours}, cancellationPolicy: ${_this.cancellationPolicy}, photo: ${_this.photo}, payment: ${_this.payment}, location: ${_this.location}, description: ${_this.description}, photos: ${_this.photos}, address: ${_this.address}, phone: ${_this.phone}, pricing: ${_this.pricing}, isDemo: ${_this.isDemo}, liveShuttle: ${_this.liveShuttle})';
+  return 'ParkingDetailModel(slug: ${_this.slug}, title: ${_this.title}, services: ${_this.services}, shuttleMinutes: ${_this.shuttleMinutes}, shuttleWaitMinutes: ${_this.shuttleWaitMinutes}, distanceKm: ${_this.distanceKm}, openingHours: ${_this.openingHours}, cancellationPolicy: ${_this.cancellationPolicy}, photo: ${_this.photo}, payment: ${_this.payment}, location: ${_this.location}, description: ${_this.description}, photos: ${_this.photos}, address: ${_this.address}, phone: ${_this.phone}, pricing: ${_this.pricing}, isDemo: ${_this.isDemo}, liveShuttle: ${_this.liveShuttle}, extras: ${_this.extras})';
 }
 
 
@@ -2764,11 +3323,11 @@ abstract mixin class $ParkingDetailModelCopyWith<$Res>  {
   factory $ParkingDetailModelCopyWith(ParkingDetailModel value, $Res Function(ParkingDetailModel) _then) = _$ParkingDetailModelCopyWithImpl;
 @useResult
 $Res call({
- String slug, String title, List<String> services, int? shuttleMinutes, int? shuttleWaitMinutes, double? distanceKm, String? openingHours, String cancellationPolicy, String? photo, String payment, LatLngModel? location, String? description, List<String> photos, String? address, String? phone, PricingModel pricing, bool isDemo, bool liveShuttle
+ String slug, String title, List<String> services, int? shuttleMinutes, int? shuttleWaitMinutes, double? distanceKm, String? openingHours, String cancellationPolicy, String? photo, String payment, LatLngModel? location, String? description, List<String> photos, String? address, String? phone, PricingModel pricing, bool isDemo, bool liveShuttle, ParkingExtrasModel extras
 });
 
 
-$LatLngModelCopyWith<$Res>? get location;$PricingModelCopyWith<$Res> get pricing;
+$LatLngModelCopyWith<$Res>? get location;$PricingModelCopyWith<$Res> get pricing;$ParkingExtrasModelCopyWith<$Res> get extras;
 
 }
 /// @nodoc
@@ -2781,7 +3340,7 @@ class _$ParkingDetailModelCopyWithImpl<$Res>
 
 /// Create a copy of ParkingDetailModel
 /// with the given fields replaced by the non-null parameter values.
-@pragma('vm:prefer-inline') @override $Res call({Object? slug = null,Object? title = null,Object? services = null,Object? shuttleMinutes = freezed,Object? shuttleWaitMinutes = freezed,Object? distanceKm = freezed,Object? openingHours = freezed,Object? cancellationPolicy = null,Object? photo = freezed,Object? payment = null,Object? location = freezed,Object? description = freezed,Object? photos = null,Object? address = freezed,Object? phone = freezed,Object? pricing = null,Object? isDemo = null,Object? liveShuttle = null,}) {
+@pragma('vm:prefer-inline') @override $Res call({Object? slug = null,Object? title = null,Object? services = null,Object? shuttleMinutes = freezed,Object? shuttleWaitMinutes = freezed,Object? distanceKm = freezed,Object? openingHours = freezed,Object? cancellationPolicy = null,Object? photo = freezed,Object? payment = null,Object? location = freezed,Object? description = freezed,Object? photos = null,Object? address = freezed,Object? phone = freezed,Object? pricing = null,Object? isDemo = null,Object? liveShuttle = null,Object? extras = null,}) {
   return _then(ParkingDetailModel(
 slug: null == slug ? _self.slug : slug // ignore: cast_nullable_to_non_nullable
 as String,title: null == title ? _self.title : title // ignore: cast_nullable_to_non_nullable
@@ -2801,7 +3360,8 @@ as String?,phone: freezed == phone ? _self.phone : phone // ignore: cast_nullabl
 as String?,pricing: null == pricing ? _self.pricing : pricing // ignore: cast_nullable_to_non_nullable
 as PricingModel,isDemo: null == isDemo ? _self.isDemo : isDemo // ignore: cast_nullable_to_non_nullable
 as bool,liveShuttle: null == liveShuttle ? _self.liveShuttle : liveShuttle // ignore: cast_nullable_to_non_nullable
-as bool,
+as bool,extras: null == extras ? _self.extras : extras // ignore: cast_nullable_to_non_nullable
+as ParkingExtrasModel,
   ));
 }
 /// Create a copy of ParkingDetailModel
@@ -2824,6 +3384,15 @@ $PricingModelCopyWith<$Res> get pricing {
   
   return $PricingModelCopyWith<$Res>(_self.pricing, (value) {
     return _then(_self.copyWith(pricing: value));
+  });
+}/// Create a copy of ParkingDetailModel
+/// with the given fields replaced by the non-null parameter values.
+@override
+@pragma('vm:prefer-inline')
+$ParkingExtrasModelCopyWith<$Res> get extras {
+  
+  return $ParkingExtrasModelCopyWith<$Res>(_self.extras, (value) {
+    return _then(_self.copyWith(extras: value));
   });
 }
 }
@@ -2907,10 +3476,10 @@ return $default(_that);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( String slug,  String title,  List<String> services,  int? shuttleMinutes,  int? shuttleWaitMinutes,  double? distanceKm,  String? openingHours,  String cancellationPolicy,  String? photo,  String payment,  LatLngModel? location,  String? description,  List<String> photos,  String? address,  String? phone,  PricingModel pricing,  bool isDemo,  bool liveShuttle)?  $default,{required TResult orElse(),}) {final _that = this;
+@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( String slug,  String title,  List<String> services,  int? shuttleMinutes,  int? shuttleWaitMinutes,  double? distanceKm,  String? openingHours,  String cancellationPolicy,  String? photo,  String payment,  LatLngModel? location,  String? description,  List<String> photos,  String? address,  String? phone,  PricingModel pricing,  bool isDemo,  bool liveShuttle,  ParkingExtrasModel extras)?  $default,{required TResult orElse(),}) {final _that = this;
 switch (_that) {
 case _ParkingDetailModel() when $default != null:
-return $default(_that.slug,_that.title,_that.services,_that.shuttleMinutes,_that.shuttleWaitMinutes,_that.distanceKm,_that.openingHours,_that.cancellationPolicy,_that.photo,_that.payment,_that.location,_that.description,_that.photos,_that.address,_that.phone,_that.pricing,_that.isDemo,_that.liveShuttle);case _:
+return $default(_that.slug,_that.title,_that.services,_that.shuttleMinutes,_that.shuttleWaitMinutes,_that.distanceKm,_that.openingHours,_that.cancellationPolicy,_that.photo,_that.payment,_that.location,_that.description,_that.photos,_that.address,_that.phone,_that.pricing,_that.isDemo,_that.liveShuttle,_that.extras);case _:
   return orElse();
 
 }
@@ -2928,10 +3497,10 @@ return $default(_that.slug,_that.title,_that.services,_that.shuttleMinutes,_that
 /// }
 /// ```
 
-@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( String slug,  String title,  List<String> services,  int? shuttleMinutes,  int? shuttleWaitMinutes,  double? distanceKm,  String? openingHours,  String cancellationPolicy,  String? photo,  String payment,  LatLngModel? location,  String? description,  List<String> photos,  String? address,  String? phone,  PricingModel pricing,  bool isDemo,  bool liveShuttle)  $default,) {final _that = this;
+@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( String slug,  String title,  List<String> services,  int? shuttleMinutes,  int? shuttleWaitMinutes,  double? distanceKm,  String? openingHours,  String cancellationPolicy,  String? photo,  String payment,  LatLngModel? location,  String? description,  List<String> photos,  String? address,  String? phone,  PricingModel pricing,  bool isDemo,  bool liveShuttle,  ParkingExtrasModel extras)  $default,) {final _that = this;
 switch (_that) {
 case _ParkingDetailModel():
-return $default(_that.slug,_that.title,_that.services,_that.shuttleMinutes,_that.shuttleWaitMinutes,_that.distanceKm,_that.openingHours,_that.cancellationPolicy,_that.photo,_that.payment,_that.location,_that.description,_that.photos,_that.address,_that.phone,_that.pricing,_that.isDemo,_that.liveShuttle);case _:
+return $default(_that.slug,_that.title,_that.services,_that.shuttleMinutes,_that.shuttleWaitMinutes,_that.distanceKm,_that.openingHours,_that.cancellationPolicy,_that.photo,_that.payment,_that.location,_that.description,_that.photos,_that.address,_that.phone,_that.pricing,_that.isDemo,_that.liveShuttle,_that.extras);case _:
   throw StateError('Unexpected subclass');
 
 }
@@ -2948,10 +3517,10 @@ return $default(_that.slug,_that.title,_that.services,_that.shuttleMinutes,_that
 /// }
 /// ```
 
-@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( String slug,  String title,  List<String> services,  int? shuttleMinutes,  int? shuttleWaitMinutes,  double? distanceKm,  String? openingHours,  String cancellationPolicy,  String? photo,  String payment,  LatLngModel? location,  String? description,  List<String> photos,  String? address,  String? phone,  PricingModel pricing,  bool isDemo,  bool liveShuttle)?  $default,) {final _that = this;
+@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( String slug,  String title,  List<String> services,  int? shuttleMinutes,  int? shuttleWaitMinutes,  double? distanceKm,  String? openingHours,  String cancellationPolicy,  String? photo,  String payment,  LatLngModel? location,  String? description,  List<String> photos,  String? address,  String? phone,  PricingModel pricing,  bool isDemo,  bool liveShuttle,  ParkingExtrasModel extras)?  $default,) {final _that = this;
 switch (_that) {
 case _ParkingDetailModel() when $default != null:
-return $default(_that.slug,_that.title,_that.services,_that.shuttleMinutes,_that.shuttleWaitMinutes,_that.distanceKm,_that.openingHours,_that.cancellationPolicy,_that.photo,_that.payment,_that.location,_that.description,_that.photos,_that.address,_that.phone,_that.pricing,_that.isDemo,_that.liveShuttle);case _:
+return $default(_that.slug,_that.title,_that.services,_that.shuttleMinutes,_that.shuttleWaitMinutes,_that.distanceKm,_that.openingHours,_that.cancellationPolicy,_that.photo,_that.payment,_that.location,_that.description,_that.photos,_that.address,_that.phone,_that.pricing,_that.isDemo,_that.liveShuttle,_that.extras);case _:
   return null;
 
 }
@@ -2963,7 +3532,7 @@ return $default(_that.slug,_that.title,_that.services,_that.shuttleMinutes,_that
 @JsonSerializable()
 
 class _ParkingDetailModel implements ParkingDetailModel {
-  const _ParkingDetailModel({required this.slug, required this.title,  List<String> services = const <String>[], this.shuttleMinutes, this.shuttleWaitMinutes, this.distanceKm, this.openingHours, this.cancellationPolicy = 'non_refundable', this.photo, this.payment = 'unavailable', this.location, this.description,  List<String> photos = const <String>[], this.address, this.phone, this.pricing = const PricingModel(), this.isDemo = false, this.liveShuttle = false}): _services = services,_photos = photos;
+  const _ParkingDetailModel({required this.slug, required this.title,  List<String> services = const <String>[], this.shuttleMinutes, this.shuttleWaitMinutes, this.distanceKm, this.openingHours, this.cancellationPolicy = 'non_refundable', this.photo, this.payment = 'unavailable', this.location, this.description,  List<String> photos = const <String>[], this.address, this.phone, this.pricing = const PricingModel(), this.isDemo = false, this.liveShuttle = false, this.extras = const ParkingExtrasModel()}): _services = services,_photos = photos;
   factory _ParkingDetailModel.fromJson(Map<String, dynamic> json) => _$ParkingDetailModelFromJson(json);
 
 @override final  String slug;
@@ -2998,6 +3567,8 @@ class _ParkingDetailModel implements ParkingDetailModel {
 @override@JsonKey() final  bool isDemo;
 /// R-B + I-C: the parking shows its shuttles to the travellers (« Navette en direct » in « L'essentiel »).
 @override@JsonKey() final  bool liveShuttle;
+/// Services for the car (21/10/2026), ordered with the booking or later from « Ma réservation ».
+@override@JsonKey() final  ParkingExtrasModel extras;
 
 /// Create a copy of ParkingDetailModel
 /// with the given fields replaced by the non-null parameter values.
@@ -3012,18 +3583,18 @@ Map<String, dynamic> toJson() {
 
 @override
 bool operator ==(Object other) {
-    return identical(this, other) || (other.runtimeType == runtimeType&&other is _ParkingDetailModel&&(identical(other.slug, slug) || other.slug == slug)&&(identical(other.title, title) || other.title == title)&&const DeepCollectionEquality().equals(other.services, _services)&&(identical(other.shuttleMinutes, shuttleMinutes) || other.shuttleMinutes == shuttleMinutes)&&(identical(other.shuttleWaitMinutes, shuttleWaitMinutes) || other.shuttleWaitMinutes == shuttleWaitMinutes)&&(identical(other.distanceKm, distanceKm) || other.distanceKm == distanceKm)&&(identical(other.openingHours, openingHours) || other.openingHours == openingHours)&&(identical(other.cancellationPolicy, cancellationPolicy) || other.cancellationPolicy == cancellationPolicy)&&(identical(other.photo, photo) || other.photo == photo)&&(identical(other.payment, payment) || other.payment == payment)&&(identical(other.location, location) || other.location == location)&&(identical(other.description, description) || other.description == description)&&const DeepCollectionEquality().equals(other.photos, _photos)&&(identical(other.address, address) || other.address == address)&&(identical(other.phone, phone) || other.phone == phone)&&(identical(other.pricing, pricing) || other.pricing == pricing)&&(identical(other.isDemo, isDemo) || other.isDemo == isDemo)&&(identical(other.liveShuttle, liveShuttle) || other.liveShuttle == liveShuttle));
+    return identical(this, other) || (other.runtimeType == runtimeType&&other is _ParkingDetailModel&&(identical(other.slug, slug) || other.slug == slug)&&(identical(other.title, title) || other.title == title)&&const DeepCollectionEquality().equals(other.services, _services)&&(identical(other.shuttleMinutes, shuttleMinutes) || other.shuttleMinutes == shuttleMinutes)&&(identical(other.shuttleWaitMinutes, shuttleWaitMinutes) || other.shuttleWaitMinutes == shuttleWaitMinutes)&&(identical(other.distanceKm, distanceKm) || other.distanceKm == distanceKm)&&(identical(other.openingHours, openingHours) || other.openingHours == openingHours)&&(identical(other.cancellationPolicy, cancellationPolicy) || other.cancellationPolicy == cancellationPolicy)&&(identical(other.photo, photo) || other.photo == photo)&&(identical(other.payment, payment) || other.payment == payment)&&(identical(other.location, location) || other.location == location)&&(identical(other.description, description) || other.description == description)&&const DeepCollectionEquality().equals(other.photos, _photos)&&(identical(other.address, address) || other.address == address)&&(identical(other.phone, phone) || other.phone == phone)&&(identical(other.pricing, pricing) || other.pricing == pricing)&&(identical(other.isDemo, isDemo) || other.isDemo == isDemo)&&(identical(other.liveShuttle, liveShuttle) || other.liveShuttle == liveShuttle)&&(identical(other.extras, extras) || other.extras == extras));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
 int get hashCode {
-    return Object.hash(runtimeType,slug,title,const DeepCollectionEquality().hash(_services),shuttleMinutes,shuttleWaitMinutes,distanceKm,openingHours,cancellationPolicy,photo,payment,location,description,const DeepCollectionEquality().hash(_photos),address,phone,pricing,isDemo,liveShuttle);
+    return Object.hashAll([runtimeType,slug,title,const DeepCollectionEquality().hash(_services),shuttleMinutes,shuttleWaitMinutes,distanceKm,openingHours,cancellationPolicy,photo,payment,location,description,const DeepCollectionEquality().hash(_photos),address,phone,pricing,isDemo,liveShuttle,extras]);
 }
 
 @override
 String toString() {
-    return 'ParkingDetailModel(slug: $slug, title: $title, services: $services, shuttleMinutes: $shuttleMinutes, shuttleWaitMinutes: $shuttleWaitMinutes, distanceKm: $distanceKm, openingHours: $openingHours, cancellationPolicy: $cancellationPolicy, photo: $photo, payment: $payment, location: $location, description: $description, photos: $photos, address: $address, phone: $phone, pricing: $pricing, isDemo: $isDemo, liveShuttle: $liveShuttle)';
+    return 'ParkingDetailModel(slug: $slug, title: $title, services: $services, shuttleMinutes: $shuttleMinutes, shuttleWaitMinutes: $shuttleWaitMinutes, distanceKm: $distanceKm, openingHours: $openingHours, cancellationPolicy: $cancellationPolicy, photo: $photo, payment: $payment, location: $location, description: $description, photos: $photos, address: $address, phone: $phone, pricing: $pricing, isDemo: $isDemo, liveShuttle: $liveShuttle, extras: $extras)';
 }
 
 
@@ -3034,11 +3605,11 @@ abstract mixin class _$ParkingDetailModelCopyWith<$Res> implements $ParkingDetai
   factory _$ParkingDetailModelCopyWith(_ParkingDetailModel value, $Res Function(_ParkingDetailModel) _then) = __$ParkingDetailModelCopyWithImpl;
 @override @useResult
 $Res call({
- String slug, String title, List<String> services, int? shuttleMinutes, int? shuttleWaitMinutes, double? distanceKm, String? openingHours, String cancellationPolicy, String? photo, String payment, LatLngModel? location, String? description, List<String> photos, String? address, String? phone, PricingModel pricing, bool isDemo, bool liveShuttle
+ String slug, String title, List<String> services, int? shuttleMinutes, int? shuttleWaitMinutes, double? distanceKm, String? openingHours, String cancellationPolicy, String? photo, String payment, LatLngModel? location, String? description, List<String> photos, String? address, String? phone, PricingModel pricing, bool isDemo, bool liveShuttle, ParkingExtrasModel extras
 });
 
 
-@override $LatLngModelCopyWith<$Res>? get location;@override $PricingModelCopyWith<$Res> get pricing;
+@override $LatLngModelCopyWith<$Res>? get location;@override $PricingModelCopyWith<$Res> get pricing;@override $ParkingExtrasModelCopyWith<$Res> get extras;
 
 }
 /// @nodoc
@@ -3051,7 +3622,7 @@ class __$ParkingDetailModelCopyWithImpl<$Res>
 
 /// Create a copy of ParkingDetailModel
 /// with the given fields replaced by the non-null parameter values.
-@override @pragma('vm:prefer-inline') $Res call({Object? slug = null,Object? title = null,Object? services = null,Object? shuttleMinutes = freezed,Object? shuttleWaitMinutes = freezed,Object? distanceKm = freezed,Object? openingHours = freezed,Object? cancellationPolicy = null,Object? photo = freezed,Object? payment = null,Object? location = freezed,Object? description = freezed,Object? photos = null,Object? address = freezed,Object? phone = freezed,Object? pricing = null,Object? isDemo = null,Object? liveShuttle = null,}) {
+@override @pragma('vm:prefer-inline') $Res call({Object? slug = null,Object? title = null,Object? services = null,Object? shuttleMinutes = freezed,Object? shuttleWaitMinutes = freezed,Object? distanceKm = freezed,Object? openingHours = freezed,Object? cancellationPolicy = null,Object? photo = freezed,Object? payment = null,Object? location = freezed,Object? description = freezed,Object? photos = null,Object? address = freezed,Object? phone = freezed,Object? pricing = null,Object? isDemo = null,Object? liveShuttle = null,Object? extras = null,}) {
   return _then(_ParkingDetailModel(
 slug: null == slug ? _self.slug : slug // ignore: cast_nullable_to_non_nullable
 as String,title: null == title ? _self.title : title // ignore: cast_nullable_to_non_nullable
@@ -3071,7 +3642,8 @@ as String?,phone: freezed == phone ? _self.phone : phone // ignore: cast_nullabl
 as String?,pricing: null == pricing ? _self.pricing : pricing // ignore: cast_nullable_to_non_nullable
 as PricingModel,isDemo: null == isDemo ? _self.isDemo : isDemo // ignore: cast_nullable_to_non_nullable
 as bool,liveShuttle: null == liveShuttle ? _self.liveShuttle : liveShuttle // ignore: cast_nullable_to_non_nullable
-as bool,
+as bool,extras: null == extras ? _self.extras : extras // ignore: cast_nullable_to_non_nullable
+as ParkingExtrasModel,
   ));
 }
 
@@ -3095,6 +3667,15 @@ $PricingModelCopyWith<$Res> get pricing {
   
   return $PricingModelCopyWith<$Res>(_self.pricing, (value) {
     return _then(_self.copyWith(pricing: value));
+  });
+}/// Create a copy of ParkingDetailModel
+/// with the given fields replaced by the non-null parameter values.
+@override
+@pragma('vm:prefer-inline')
+$ParkingExtrasModelCopyWith<$Res> get extras {
+  
+  return $ParkingExtrasModelCopyWith<$Res>(_self.extras, (value) {
+    return _then(_self.copyWith(extras: value));
   });
 }
 }

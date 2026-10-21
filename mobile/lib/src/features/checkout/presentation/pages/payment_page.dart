@@ -158,7 +158,8 @@ class PaymentView extends StatelessWidget {
       case PaymentStatus.presenting:
       case PaymentStatus.redirecting:
         final b = state.booking!;
-        final total = b.priceCents == null ? '' : formatEuros(b.priceCents!);
+        // 21/10/2026: the services asked with the booking are paid with it.
+        final total = b.priceCents == null ? '' : formatEuros(b.priceCents! + b.extrasCents);
         final sheet = state.sheetAvailable(locator<PaymentSheetService>());
         final notice = switch (state.notice) {
           PaymentNotice.canceled => 'pay.canceled'.tr(),
@@ -224,6 +225,10 @@ class PaymentView extends StatelessWidget {
                   left: Text('pay.total'.tr(), style: AppText.strong(size: 17)),
                   right: Text(total, style: AppText.strong(size: 17)),
                 ),
+                if (b.extrasCents > 0) ...[
+                  const SizedBox(height: 4),
+                  Text('extras.of_which'.tr(args: [formatEuros(b.extrasCents)]), key: const Key('payment-extras'), style: AppText.muted(size: 13)),
+                ],
               ],
             ),
           ),

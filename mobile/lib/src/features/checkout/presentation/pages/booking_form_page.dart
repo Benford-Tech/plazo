@@ -18,6 +18,7 @@ import '../../../../shared/theme/theme.dart';
 import '../../../../shared/widgets/app_card.dart';
 import '../../../../shared/widgets/gradient_button.dart';
 import '../../../../shared/widgets/plate_field.dart';
+import '../../../extras/presentation/widgets/extra_widgets.dart';
 import '../../../search/domain/usecases/public_use_cases.dart';
 import '../../../trips/presentation/bloc/trips_bloc.dart';
 import '../../domain/booking_draft.dart';
@@ -70,6 +71,9 @@ class _BookingFormViewState extends State<BookingFormView> {
   int _passengers = 1;
   bool _terms = false;
 
+  /// Services for the car ticked in the recap (21/10/2026).
+  List<String> _extras = const [];
+
   /// Fields changed since the last submission: their old error is hidden.
   final _edited = <String>{};
   final _scroll = ScrollController();
@@ -90,7 +94,20 @@ class _BookingFormViewState extends State<BookingFormView> {
     _note = TextEditingController(text: d.customerNote);
     _passengers = d.passengers;
     _terms = d.acceptTerms;
+    _extras = d.extras;
   }
+
+  /// Ticks or unticks a service; the two charges exclude each other (a car is one or the other).
+  void _toggleExtra(String kind, bool on) {
+    setState(() {
+      _edited.add('extras');
+      final next = _extras.where((k) => k != kind && !(on && _charges.contains(kind) && _charges.contains(k))).toList();
+      if (on) next.add(kind);
+      _extras = next;
+    });
+  }
+
+  static const _charges = ['hybrid_charge', 'ev_charge'];
 
   @override
   void dispose() {
@@ -102,6 +119,7 @@ class _BookingFormViewState extends State<BookingFormView> {
   }
 
   void _submit() {
+    final state = context.read<BookingFormBloc>().state;
     FocusScope.of(context).unfocus();
     setState(_edited.clear);
     context.read<BookingFormBloc>().add(
@@ -119,6 +137,7 @@ class _BookingFormViewState extends State<BookingFormView> {
           vehicleModel: _vehicleModel.text,
           vehicleColour: _vehicleColour.text,
           customerNote: _note.text,
+          extras: state.extraOffers.isEmpty ? const [] : _extras,
         ),
       ),
     );
@@ -146,7 +165,9 @@ class _BookingFormViewState extends State<BookingFormView> {
       builder: (context, state) {
         String? err(String field) =>
             state.fieldErrors[field] == null || _edited.contains(field) ? null : translateErrorCode(state.fieldErrors[field]);
-        final total = state.priceCents == null ? '' : formatEuros(state.priceCents!);
+        final offered = state.extraOffers.map((o) => o.kind).toSet();
+        final extras = _extras.where(offered.contains).toList();
+        final total = state.priceCents == null ? '' : formatEuros(state.priceCents! + state.extrasCents(extras));
         return Scaffold(
           appBar: AppBar(titleSpacing: NavigationToolbar.kMiddleSpacing, title: Text('book.title'.tr(), style: AppText.strong(size: 16, color: AppColors.brownOrInk))),
           body: state.loadState.isProcessing || state.loadState.isIdle
@@ -158,7 +179,11 @@ class _BookingFormViewState extends State<BookingFormView> {
                     padding: const EdgeInsets.fromLTRB(16, 14, 16, 28),
                     children: [
                       if (state.online) ...[const BookingSteps(current: 1), const SizedBox(height: 14)],
-                      _Recap(state: state, total: total),
+                      _Recap(state: state, total: total, extras: extras),
+                      if (state.online && state.extraOffers.isNotEmpty) ...[
+                        const SizedBox(height: 12),
+                        _ExtrasPicker(state: state, selected: extras, onToggle: _toggleExtra, error: err('extras')),
+                      ],
                       if (state.errorCode != null && state.submitState.isError || state.loadState.isError) ...[
                         const SizedBox(height: 12),
                         _ErrorBanner(state: state, hiddenErrors: [err('arrivalAt'), err('returnAt')].whereType<String>().toList()),
@@ -367,10 +392,56 @@ class _BookingFormViewState extends State<BookingFormView> {
   );
 }
 
+/// Services for the car to add to the booking (21/10/2026), paid with it.
+class _ExtrasPicker extends StatelessWidget {
+  const _ExtrasPicker({required this.state, required this.selected, required this.onToggle, this.error});
+  final BookingFormState state;
+  final List<String> selected;
+  final void Function(String kind, bool on) onToggle;
+  final String? error;
+
+  @override
+  Widget build(BuildContext context) {
+    return AppCard(
+      key: const Key('booking-extras'),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Text('extras.title'.tr(), style: AppText.strong(size: 16)),
+          const SizedBox(height: 2),
+          Text('extras.booking_intro'.tr(), style: AppText.muted(size: 12.5)),
+          const SizedBox(height: 6),
+          for (final o in state.extraOffers)
+            CheckboxListTile(
+              key: Key('booking-extra-${o.kind}'),
+              value: selected.contains(o.kind),
+              onChanged: (v) => onToggle(o.kind, v ?? false),
+              contentPadding: EdgeInsets.zero,
+              controlAffinity: ListTileControlAffinity.leading,
+              activeColor: AppColors.accent,
+              title: Row(
+                children: [
+                  ExtraIconTile(o.kind, size: 30),
+                  const SizedBox(width: 10),
+                  Expanded(child: Text(o.label, style: AppText.body(size: 14, weight: 600))),
+                  Text(formatEuros(o.priceCents), style: AppText.strong(size: 14)),
+                ],
+              ),
+              subtitle: o.description.isEmpty ? null : Padding(padding: const EdgeInsets.only(left: 40), child: Text(o.description, style: AppText.muted(size: 12))),
+            ),
+          Text('extras.one_charge_hint'.tr(), style: AppText.muted(size: 12)),
+          if (error != null) ...[const SizedBox(height: 6), Text(error!, style: AppText.body(size: 12.5, color: AppColors.danger))],
+        ],
+      ),
+    );
+  }
+}
+
 class _Recap extends StatelessWidget {
-  const _Recap({required this.state, required this.total});
+  const _Recap({required this.state, required this.total, this.extras = const []});
   final BookingFormState state;
   final String total;
+  final List<String> extras;
 
   @override
   Widget build(BuildContext context) {
@@ -406,6 +477,11 @@ class _Recap extends StatelessWidget {
               left: Text(detailed ? 'book.total'.tr() : '${'book.total'.tr()} · ${daysLabel(days)}', style: AppText.strong()),
               right: Text(total, style: AppText.strong(size: 18)),
             ),
+            // 21/10/2026: the services ticked are in the total, paid with the stay.
+            if (state.extrasCents(extras) > 0) ...[
+              const SizedBox(height: 4),
+              Text('extras.of_which'.tr(args: [formatEuros(state.extrasCents(extras))]), key: const Key('booking-extras-total'), style: AppText.muted(size: 13)),
+            ],
             // Direction B: the parking's night rule sits under the price detail, as on the site's booking page.
             if (nightRule != null) ...[
               const SizedBox(height: 6),

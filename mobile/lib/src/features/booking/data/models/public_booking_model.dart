@@ -48,6 +48,9 @@ abstract class PublicBookingModel with _$PublicBookingModel {
     /// when none; both absent from an older API).
     int? basePriceCents,
     NightFeeModel? nightFee,
+
+    /// 21/10/2026: services for the car asked with the booking and paid with it, on top of [priceCents] (0: none).
+    @Default(0) int extrasCents,
     @Default('non_refundable') String cancellationPolicy,
     /// Local datetime until which the traveller may cancel online; null when non-refundable.
     String? cancellableUntil,
@@ -163,6 +166,7 @@ class BookingInput {
     this.customerNote,
     this.vehicleModel,
     this.vehicleColour,
+    this.extras = const [],
   });
 
   final String airport;
@@ -187,6 +191,9 @@ class BookingInput {
   final String? vehicleModel;
   final String? vehicleColour;
 
+  /// Services for the car asked with the booking (21/10/2026): their kinds, priced by the server.
+  final List<String> extras;
+
   Map<String, dynamic> toJson() => {
     'airport': airport,
     'parking': parking,
@@ -205,6 +212,7 @@ class BookingInput {
     if (customerNote != null && customerNote!.trim().isNotEmpty) 'customerNote': customerNote!.trim(),
     if (vehicleModel != null && vehicleModel!.trim().isNotEmpty) 'vehicleModel': vehicleModel!.trim(),
     if (vehicleColour != null && vehicleColour!.trim().isNotEmpty) 'vehicleColour': vehicleColour!.trim(),
+    if (extras.isNotEmpty) 'extras': extras,
   };
 }
 

@@ -11,6 +11,7 @@ import '../../../../di/locator.dart';
 import '../../../../shared/theme/theme.dart';
 import '../../../../shared/widgets/brand_header.dart';
 import '../../../../shared/widgets/gradient_button.dart';
+import '../../../extras/presentation/widgets/extra_settings_section.dart';
 import '../../data/datasources/settings_data_source.dart';
 import '../../data/models/settings_models.dart';
 import '../bloc/pro_settings_bloc.dart';
@@ -61,6 +62,9 @@ class ProParkingSettingsPage extends StatelessWidget implements AutoRouteWrapper
                       _ParkingForm(parking: p, state: state),
                       const SizedBox(height: 24),
                       _TrackingSection(state: state),
+                      const SizedBox(height: 24),
+                      // Services for the car (21/10/2026): offered on Plazo, with their prices.
+                      ExtraSettingsSection(parkingId: p.id),
                       const SizedBox(height: 24),
                       _SmsSection(state: state),
                     ],

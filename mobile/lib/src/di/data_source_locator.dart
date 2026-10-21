@@ -18,5 +18,6 @@ void _initDataSource() {
     ..registerLazySingleton<ReservationsDataSource>(() => ReservationsDataSourceImpl(locator()))
     ..registerLazySingleton<SpotPlanningDataSource>(() => SpotPlanningDataSourceImpl(locator()))
     ..registerLazySingleton<SettingsDataSource>(() => SettingsDataSourceImpl(locator()))
-    ..registerLazySingleton<PaperworkDataSource>(() => PaperworkDataSourceImpl(locator(), locator(), locator()));
+    ..registerLazySingleton<PaperworkDataSource>(() => PaperworkDataSourceImpl(locator(), locator(), locator()))
+    ..registerLazySingleton<ExtrasDataSource>(() => ExtrasDataSourceImpl(locator(), locator()));
 }
