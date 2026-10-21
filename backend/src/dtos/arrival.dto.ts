@@ -3,6 +3,7 @@ import {
   Equals,
   IsBoolean,
   IsIn,
+  IsInt,
   IsISO8601,
   IsLatitude,
   IsLongitude,
@@ -14,6 +15,7 @@ import {
   MaxLength,
   Min,
   ValidateIf,
+  ValidateNested,
 } from 'class-validator';
 
 const KINDS = ['outbound', 'return'];
@@ -141,7 +143,26 @@ export class RegisterDeviceDto {
   public platform?: 'ios' | 'android' | 'web';
 }
 
+/** « Mail du matin » (21/10/2026): on or off, and the local hour it leaves at (5 to 10). */
+export class MorningEmailPreferenceDto {
+  @IsOptional()
+  @IsBoolean({ message: 'invalid' })
+  public enabled?: boolean;
+
+  @IsOptional()
+  @IsInt({ message: 'invalid' })
+  @Min(5, { message: 'invalid' })
+  @Max(10, { message: 'invalid' })
+  public hour?: number;
+}
+
 export class NotificationPreferencesDto {
+  /** « Mail du matin » (21/10/2026). */
+  @IsOptional()
+  @ValidateNested()
+  @Type(() => MorningEmailPreferenceDto)
+  public morningEmail?: MorningEmailPreferenceDto;
+
   @IsOptional()
   @IsBoolean({ message: 'invalid' })
   public arrivals?: boolean;

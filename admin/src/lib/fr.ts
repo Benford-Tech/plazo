@@ -980,6 +980,25 @@ export const fr = {
     currentPassword: "Mot de passe actuel",
     newPassword: "Nouveau mot de passe",
     submit: "Changer le mot de passe",
+    // « Mail du matin » (21/10/2026, choice A).
+    morning: {
+      section: "NOTIFICATIONS",
+      title: "Mail du matin",
+      intro: "Chaque jour, le planning, le chiffre d'affaires et l'état des intégrations dans votre boîte mail.",
+      introStaff: "Chaque jour, le planning et l'état des intégrations dans votre boîte mail.",
+      hour: "Heure d'envoi",
+      hourHint: "Heure du parking, de 05:00 à 10:00.",
+      to: "Envoyé à",
+      sendNow: "M'envoyer celui d'aujourd'hui",
+      sending: "Envoi…",
+      sent: "Mail envoyé : il arrive dans quelques instants.",
+      on: "Mail du matin activé.",
+      off: "Mail du matin coupé.",
+      saved: "Heure enregistrée.",
+      who: "Qui le reçoit",
+      whoText:
+        "Allumé d'office pour les gérants, éteint pour l'accueil, les chauffeurs et les voituriers, qui peuvent l'allumer ici. Le lien « Ne plus le recevoir » en bas du mail l'éteint en un clic, sans se connecter.",
+    },
   },
   status: {
     upcoming: "Attendu",

@@ -14,6 +14,7 @@ import {
 import { RequestWithStaffSession } from '@/middlewares/staff-auth.middleware';
 import { ArrivalService } from '@/services/arrival.service';
 import { ParkingService } from '@/services/parking.service';
+import { MorningEmailService } from '@/services/morning-email.service';
 import { ShuttleService } from '@/services/shuttle.service';
 import { StaffDeviceService } from '@/services/staff-device.service';
 import catchAsync from '@/utils/catchAsync';
@@ -26,6 +27,7 @@ const reference = (req: Request) => req.params.reference as string;
 export class ArrivalController {
   public arrivals = Container.get(ArrivalService);
   public devices = Container.get(StaffDeviceService);
+  public morning = Container.get(MorningEmailService);
   public parkings = Container.get(ParkingService);
   public shuttle = Container.get(ShuttleService);
 
@@ -109,12 +111,19 @@ export class ArrivalController {
 
   /** GET /internal/notifications/preferences */
   public preferences = catchAsync(async (req: RequestWithStaffSession, res: Response) => {
-    res.json(await this.devices.preferences(req.staff));
+    res.json({ ...(await this.devices.preferences(req.staff)), morningEmail: await this.morning.preference(req.staff) });
   });
 
   /** PATCH /internal/notifications/preferences */
   public updatePreferences = catchAsync(async (req: RequestWithStaffSession, res: Response) => {
     const data: NotificationPreferencesDto = req.body;
-    res.json(await this.devices.updatePreferences(req.staff, data));
+    const { morningEmail, ...push } = data;
+    const morning = morningEmail ? await this.morning.updatePreference(req.staff, morningEmail) : await this.morning.preference(req.staff);
+    res.json({ ...(await this.devices.updatePreferences(req.staff, push)), morningEmail: morning });
+  });
+
+  /** POST /internal/notifications/morning-email/send: « M'envoyer celui d'aujourd'hui » (21/10/2026). */
+  public sendMorningEmail = catchAsync(async (req: RequestWithStaffSession, res: Response) => {
+    res.json(await this.morning.sendNow(req.staff));
   });
 }

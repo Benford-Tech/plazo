@@ -494,6 +494,26 @@ Ne construire QUE ce qui règle la douleur n°1 du client.
      Espace pro web : carte « Services additionnels » de Parking › Réglages, bloc « Services commandés » de la fiche et de la
      fiche opérationnelle ; Plazo Pro : même bloc sur la fiche, réglages dans Plus › Réglages. Conditions générales (article 11).
      Le chiffre d'affaires ne compte pas encore les services.
+   - **Mail du matin (21/10/2026, « un mail quotidien avec l'état des intégrations, le CA et le planning ; ce mail peut être
+     désactivé », choix A « Tableau du jour » des maquettes https://claude.ai/artifact/Ge2zVYZ95ZfJ11tMKtQJtz)** : chaque matin, à
+     l'heure choisie (07:00 par défaut, de 05:00 à 10:00, heure du premier parking), un mail aux couleurs de l'espace pro : planning
+     du jour (arrivées et première heure, retours et dernière heure, occupation de ce soir, les 6 premiers mouvements puis « et N
+     autres »), chiffre d'affaires pour les gérants seulement (`revenue:view` : hier par jour de réservation, mois encaissé,
+     commissions, « vous gardez », réservations sans prix) et intégrations (mails des comparateurs reçus et importés en 24 h,
+     « N à traiter », un comparateur qui n'a rien envoyé depuis 3 jours en « À voir », suivi des vols, SMS, paiements, lecture par
+     Claude) ; objet « <parking> · jeudi 22 oct. : 14 arrivées, 9 retours ». `Staff.morningEmail` (nul = d'office : allumé pour les
+     gérants, éteint pour les autres), `morningEmailHour` (CHECK 5 à 10), `morningEmailSentOn` (jour local du dernier envoi ; migration
+     `morning_email`) ; `domain/morning-email.ts` (`wantsMorningEmail`, `morningEmailDue` : de l'heure choisie jusqu'à midi, une fois
+     par jour, `morningEmail` HTML et texte), `MorningEmailService` (`run` : loueurs ni suspendus, ni archivés, ni de démo ; jour
+     réservé avant l'envoi, 40 par passage ; données de `DashboardService.get`, `planning`, `RevenueService`), envoyé par le passage de
+     15 minutes de `remind-tomorrow` (son propre try/catch, `morning` dans la réponse) et `GET /internal/cron/morning-email` ;
+     `NotificationService.emailStaff` accepte des en-têtes (`List-Unsubscribe` + `List-Unsubscribe-Post`). Réglage :
+     `GET/PATCH /internal/notifications/preferences` `morningEmail { enabled, hour, email }` (400 hors 5 à 10 ; refusé en consultation
+     et en démo), `POST /internal/notifications/morning-email/send` (« M'envoyer celui d'aujourd'hui », ne compte pas pour le jour) ;
+     Mon compte (`MorningEmailCard` : interrupteur, heure, adresse, « Qui le reçoit »). « Ne plus le recevoir » :
+     `GET /public/morning-email/unsubscribe/:jeton` (page avec un bouton, ne coupe rien d'elle-même) et `POST` (bouton et désinscription
+     en un clic, RFC 8058), jeton = id + HMAC de `SECRET_KEY`. Plazo Pro n'a pas encore le réglage. Tests `morning-email.test.ts`,
+     `MorningEmailCard.test.tsx`.
    - **Frais de nuit (12/10/2026, choix B « Dans le détail du prix seulement », « ajoute des frais de nuit pour les arrivées
      et départs en heure définie par le parking »)** : une plage par parking, la même chaque jour, pour les dépôts comme pour
      les retours (`Parking.nightFeeEnabled`, `nightStart` / `nightEnd` « HH:mm », `nightArrivalFeeCents` « Dépôt de nuit »,

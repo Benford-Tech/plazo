@@ -13,6 +13,7 @@ vi.mock("@/lib/api", async importOriginal => {
   return { ...actual, adminApi: { ...actual.adminApi, ...Object.fromEntries(Object.entries(api).map(([k, f]) => [k, (...a: unknown[]) => f(...a)])) } };
 });
 vi.mock("@/components/account/TravellerSms", () => ({ TravellerSms: () => null }));
+vi.mock("@/components/account/MorningEmailCard", () => ({ MorningEmailCard: () => null }));
 const toast = vi.hoisted(() => ({ success: vi.fn(), error: vi.fn() }));
 vi.mock("sonner", () => ({ toast }));
 

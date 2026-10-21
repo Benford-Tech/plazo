@@ -159,6 +159,12 @@ model Staff {
   bookingNotify   BookingNotify @default(immediate)
   // Messages from the platform (E-A, 05/10/2026): the super admin's broadcasts to the staff.
   notifyPlatform  Boolean       @default(true)
+  // « Mail du matin » (21/10/2026, choice A): the day's planning, revenue and integrations by email. Null: the role's
+  // default (on for managers, off for the others); the local hour of the parking it leaves at (5 to 10); the local
+  // date it was last sent (once a day).
+  morningEmail       Boolean?
+  morningEmailHour   Int       @default(7)
+  morningEmailSentOn String?
   // 13/10/2026 (sign in with Apple / Google): when the person last chose their password. Null: the stored hash is a
   // random one nobody knows (an invited manager before the invitation, a member who joined with the daily code).
   passwordSetAt   DateTime?

@@ -60,6 +60,7 @@ import type {
   PlatformNotification,
   PlatformNotificationInput,
   DemoLink,
+  MorningEmailPreference,
   DemoRole,
   Prospect,
   ProspectImportReport,
@@ -324,6 +325,15 @@ export const adminApi = {
   demoLink: (token: string) =>
     apiRequest<{ status: "valid" | "expired" | "unknown"; companyName: string | null }>(`/public/demo/links/${encodeURIComponent(token)}`),
   getMe: () => apiRequest<Staff>("/internal/staff/me"),
+  /** 21/10/2026: « Mail du matin », read with the other notification settings. */
+  getMorningEmail: () =>
+    apiRequest<{ morningEmail: MorningEmailPreference }>("/internal/notifications/preferences").then(r => r.morningEmail),
+  updateMorningEmail: (patch: { enabled?: boolean; hour?: number }) =>
+    apiRequest<{ morningEmail: MorningEmailPreference }>("/internal/notifications/preferences", {
+      method: "PATCH",
+      body: json({ morningEmail: patch }),
+    }).then(r => r.morningEmail),
+  sendMorningEmail: () => apiRequest<{ sent: boolean }>("/internal/notifications/morning-email/send", { method: "POST" }),
   /** 09/10/2026: one's own first and last name; answers like getMe. */
   updateMe: (names: { firstName: string; lastName: string }) =>
     apiRequest<Staff>("/internal/staff/me", {
