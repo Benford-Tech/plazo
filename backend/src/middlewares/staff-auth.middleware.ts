@@ -61,7 +61,10 @@ export const StaffAuthMiddleware = (permission?: Permission) => (request: Reques
  * Team routes (12/10/2026, « je veux pouvoir ajouter des comptes sur le parking de test »): read-only in consultation,
  * except in the platform's own account (« Plazo (tests) »), whose team the platform admins manage.
  */
+const DEMO_REFUSED = () => new HttpException(httpStatus.FORBIDDEN, 'Not available in the demo', 'demo_read_only');
+
 export const RefuseInViewAsOutsidePlatformAccount = () => (request: Request, res: Response, next: NextFunction) => {
+  if ((request as RequestWithStaffSession).staff?.demo) return next(DEMO_REFUSED());
   const actingAs = (request as RequestWithStaffSession).staff?.actingAs;
   if (actingAs && !actingAs.platformAccount) {
     return next(new HttpException(httpStatus.FORBIDDEN, 'Read-only while viewing an operator space', 'view_as_read_only'));
@@ -69,9 +72,14 @@ export const RefuseInViewAsOutsidePlatformAccount = () => (request: Request, res
   next();
 };
 
+/**
+ * 21/10/2026: the prospects' demo is refused the same writes (team, passwords, payments, SMS settings, devices…), with
+ * `demo_read_only`; `allowDemo` lets a demo member through (the demo's driver starts trips and shares a position).
+ */
 export const RefuseInViewAs =
-  (code = 'view_as_read_only', message = 'Read-only while viewing an operator space') =>
+  (code = 'view_as_read_only', message = 'Read-only while viewing an operator space', options: { allowDemo?: boolean } = {}) =>
   (request: Request, res: Response, next: NextFunction) => {
+    if ((request as RequestWithStaffSession).staff?.demo && !options.allowDemo) return next(DEMO_REFUSED());
     if ((request as RequestWithStaffSession).staff?.actingAs) return next(new HttpException(httpStatus.FORBIDDEN, message, code));
     next();
   };

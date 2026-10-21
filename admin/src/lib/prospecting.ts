@@ -115,7 +115,7 @@ export function readProspectsCsv(text: string): CsvReading {
 
 // ---- Mails ---------------------------------------------------------------------------------------------------------------
 
-export const VARIABLES = ["{prénom}", "{nom}", "{parking}", "{aéroport}", "{ville}"];
+export const VARIABLES = ["{prénom}", "{nom}", "{parking}", "{aéroport}", "{ville}", "{lien_demo}"];
 
 const ALIASES: Record<string, keyof Values> = {
   prénom: "prenom",
@@ -125,6 +125,9 @@ const ALIASES: Record<string, keyof Values> = {
   aéroport: "aeroport",
   aeroport: "aeroport",
   ville: "ville",
+  lien_demo: "lienDemo",
+  lien_démo: "lienDemo",
+  liendemo: "lienDemo",
 };
 
 interface Values {
@@ -133,14 +136,21 @@ interface Values {
   parking: string;
   aeroport: string;
   ville: string;
+  /** 21/10/2026: the prospect's own demo link (made when the mail is sent; a sample until then). */
+  lienDemo: string;
 }
 
-export const valuesOf = (p: Pick<Prospect, "contactFirstName" | "contactLastName" | "companyName" | "airportName" | "airportCode" | "town">): Values => ({
+export const SAMPLE_DEMO_LINK = "https://www.plazo.fr/pro/demo/AbCd2345EfGh";
+
+export const valuesOf = (
+  p: Pick<Prospect, "contactFirstName" | "contactLastName" | "companyName" | "airportName" | "airportCode" | "town"> & { demo?: Prospect["demo"] },
+): Values => ({
   prenom: p.contactFirstName ?? "",
   nom: p.contactLastName ?? "",
   parking: p.companyName,
   aeroport: p.airportName ?? p.airportCode ?? "",
   ville: p.town ?? "",
+  lienDemo: p.demo && !p.demo.expired ? p.demo.url : SAMPLE_DEMO_LINK,
 });
 
 export function renderText(text: string, values: Values): string {

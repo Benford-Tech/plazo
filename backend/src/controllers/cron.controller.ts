@@ -1,3 +1,4 @@
+import { ProspectDemoService } from '@/services/prospect-demo.service';
 import { Request, Response } from 'express';
 import { Container } from 'typedi';
 import { ArrivalService } from '@/services/arrival.service';
@@ -41,6 +42,7 @@ export class CronController {
   public joinRequests = Container.get(JoinRequestService);
   public identityVerification = Container.get(IdentityVerificationService);
   public prospecting = Container.get(ProspectingService);
+  public demo = Container.get(ProspectDemoService);
 
   /**
    * The prospecting emails due now (Plateforme › Prospection, 18/10/2026). Never throws: a failure here must not change
@@ -153,6 +155,8 @@ export class CronController {
     const loginAttemptsDeleted = await purgeLoginAttempts();
     // Prospects 3 years after the last contact (or their creation); the opt-out list stays.
     const prospectsDeleted = await this.prospecting.purge();
+    // 21/10/2026: the prospects' demo starts every day afresh (never throws).
+    const demoReset = await this.demo.reset();
     logger.info(
       `[Cron] ${deleted} expired staff tokens deleted, ${arrivalSignalsEnded} arrival signals ended, ${shuttleTripsEnded} shuttle trips ended, ` +
         `SMS queue ${JSON.stringify(sms)}, ${smsPurged} outbox rows purged, ${reservationsAnonymized} bookings anonymised, ` +
@@ -162,6 +166,7 @@ export class CronController {
     );
     res.json({
       deleted,
+      demoReset,
       arrivalSignalsEnded,
       shuttleTripsEnded,
       smsAbandoned: sms.abandoned,

@@ -9,7 +9,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { adminApi } from "@/lib/api";
 import { describeError, fr } from "@/lib/fr";
 import { groupByRegion, NO_REGION, type RegionGroup, renderSubjectText, renderText, stepFor, valuesOf, VARIABLES } from "@/lib/prospecting";
-import type { Prospect, ProspectingSettings, ProspectStatus } from "@/lib/types";
+import type { DemoLink, Prospect, ProspectingSettings, ProspectStatus } from "@/lib/types";
 import { cn } from "@/lib/utils";
 import { ImportDialog } from "./prospecting/ImportDialog";
 import { ProspectForm } from "./prospecting/ProspectForm";
@@ -82,6 +82,75 @@ const inviteLink = (p: Prospect) =>
     ...(p.contactLastName ? { nom: p.contactLastName } : {}),
     email: p.email,
   })}`;
+
+const ago = new Intl.DateTimeFormat("fr-FR", { day: "numeric", month: "short", hour: "2-digit", minute: "2-digit", timeZone: "Europe/Paris" });
+
+/** 21/10/2026 (C): the prospect's demo link: opened how often and when, valid until when; or « Créer un lien de démo ». */
+function DemoCell({ prospect, onShow }: { prospect: Prospect; onShow: (link: DemoLink) => void }) {
+  const queryClient = useQueryClient();
+  const create = useMutation({
+    mutationFn: (renew: boolean) => adminApi.createProspectDemoLink(prospect.id, renew),
+    onSuccess: ({ data }) => {
+      onShow(data);
+      queryClient.invalidateQueries({ queryKey: ["platform", "prospects"] });
+    },
+    onError: (err: Error) => toast.error(describeError(err)),
+  });
+  const demo = prospect.demo;
+  if (prospect.status === "unsubscribed" && !demo) return <span className="text-muted-foreground">—</span>;
+  if (!demo)
+    return (
+      <Button type="button" className="h-11 whitespace-nowrap text-[13px]" disabled={create.isPending} onClick={() => create.mutate(false)}>
+        {create.isPending ? t.demoCreating : t.demoCreate}
+      </Button>
+    );
+  return (
+    <div className="flex flex-col gap-0.5 text-[13px]">
+      {demo.opens > 0 ? (
+        <span className="font-semibold text-ok-text">{t.demoOpened(demo.opens, demo.lastOpenedAt ? ago.format(new Date(demo.lastOpenedAt)) : null)}</span>
+      ) : (
+        <span className="text-[#4B5563]">{t.demoNotOpened}</span>
+      )}
+      <span className="text-xs text-[#4B5563]">{demo.expired ? t.demoExpired : t.demoValidUntil(dayMonth.format(new Date(demo.expiresAt)))}</span>
+      <button
+        type="button"
+        className="min-h-11 self-start text-left text-xs font-semibold text-lime-deep underline-offset-4 hover:underline disabled:opacity-60"
+        disabled={create.isPending}
+        onClick={() => (demo.expired ? create.mutate(true) : onShow(demo))}
+      >
+        {demo.expired ? t.demoRenew : t.demoShow}
+      </button>
+    </div>
+  );
+}
+
+function DemoLinkPanel({ company, link, onClose }: { company: string; link: DemoLink; onClose: () => void }) {
+  const copy = async () => {
+    try {
+      await navigator.clipboard.writeText(link.url);
+      toast.success(t.demoCopied);
+    } catch {
+      toast.error(link.url);
+    }
+  };
+  return (
+    <div data-testid="demo-link-panel" className="m-3 flex flex-col gap-2.5 rounded-[14px] border-2 border-lime bg-white p-4">
+      <div className="flex items-center gap-2">
+        <strong className="text-[15px]">{t.demoPanelTitle(company)}</strong>
+        <button type="button" onClick={onClose} className="ml-auto min-h-11 px-2 text-sm text-muted-foreground hover:text-foreground">
+          {t.demoClose}
+        </button>
+      </div>
+      <div className="flex gap-2">
+        <input readOnly value={link.url} aria-label={t.colDemo} onFocus={e => e.currentTarget.select()} className="min-w-0 flex-1 rounded-[10px] bg-panel-2 px-3 py-2.5 font-mono text-[13px]" />
+        <Button type="button" variant="outline" className="h-11" onClick={copy}>
+          {t.demoCopy}
+        </Button>
+      </div>
+      <span className="text-[13px] text-[#4B5563]">{t.demoPanelNote}</span>
+    </div>
+  );
+}
 
 function RowActions({ prospect, onEdit }: { prospect: Prospect; onEdit: () => void }) {
   const queryClient = useQueryClient();
@@ -296,6 +365,7 @@ export default function ProspectingPage() {
   const [region, setRegion] = useState<string>("");
   const [collapsed, setCollapsed] = useState<Set<string>>(readCollapsed);
   const [selected, setSelected] = useState<Set<string>>(new Set());
+  const [demoPanel, setDemoPanel] = useState<{ company: string; link: DemoLink } | null>(null);
   const [dialog, setDialog] = useState<{ kind: "add" } | { kind: "edit"; prospect: Prospect } | { kind: "import" } | { kind: "steps" } | null>(null);
 
   const list = useQuery({
@@ -421,6 +491,7 @@ export default function ProspectingPage() {
 
       <div className="grid gap-5 lg:grid-cols-[minmax(0,1fr)_420px]">
         <section className="flex min-w-0 flex-col overflow-hidden rounded-[14px] border border-panel-line bg-white">
+          {demoPanel && <DemoLinkPanel company={demoPanel.company} link={demoPanel.link} onClose={() => setDemoPanel(null)} />}
           {list.isLoading ? (
             <Skeleton className="m-4 h-40" />
           ) : list.error ? (
@@ -429,7 +500,7 @@ export default function ProspectingPage() {
             <p className="p-6 text-muted-foreground">{status || airport || region ? t.emptyFilter : t.empty}</p>
           ) : (
             <div className="overflow-x-auto">
-              <table className="w-full min-w-[760px] text-sm">
+              <table className="w-full min-w-[900px] text-sm">
                 <thead>
                   <tr className="border-b border-panel-line text-left text-xs font-semibold uppercase tracking-[0.04em] text-muted-foreground">
                     <th className="w-12 px-4 py-3">
@@ -452,6 +523,7 @@ export default function ProspectingPage() {
                     <th className="px-2 py-3 font-semibold">{t.colAirport}</th>
                     <th className="px-2 py-3 font-semibold">{t.colState}</th>
                     <th className="px-2 py-3 font-semibold">{t.colNext}</th>
+                    <th className="px-2 py-3 font-semibold">{t.colDemo}</th>
                     <th className="w-14 px-2 py-3">
                       <span className="sr-only">{t.actions}</span>
                     </th>
@@ -464,7 +536,7 @@ export default function ProspectingPage() {
                   return (
                     <tbody key={group.key} data-testid={`region-${group.key}`}>
                       <tr className="border-b border-panel-line bg-panel-2">
-                        <td colSpan={7} className="px-2 py-1">
+                        <td colSpan={8} className="px-2 py-1">
                           <div className="flex flex-wrap items-center justify-between gap-2">
                             <button
                               type="button"
@@ -524,6 +596,9 @@ export default function ProspectingPage() {
                                 {p.failedAttempts > 0 && <span className="mt-1 block text-xs text-destructive">{t.failed(p.failedAttempts)}</span>}
                               </td>
                               <td className="whitespace-nowrap px-2 py-2 font-mono text-[13px] text-[#4B5563]">{nextLabel(p)}</td>
+                              <td className="px-2 py-2">
+                                <DemoCell prospect={p} onShow={link => setDemoPanel({ company: p.companyName, link })} />
+                              </td>
                               <td className="px-2 py-2">
                                 <RowActions prospect={p} onEdit={() => setDialog({ kind: "edit", prospect: p })} />
                               </td>

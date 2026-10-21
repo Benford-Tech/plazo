@@ -20,7 +20,7 @@ import {
 
 // Prospection (18/10/2026, choix « A avec les relances de B »): the pure rules. Fictional data only.
 
-const values = { prénom: 'Camille', nom: 'Exemple', parking: 'Parking Alpha', aéroport: 'Lyon Saint-Exupéry', ville: 'Pusignan' };
+const values = { prénom: 'Camille', nom: 'Exemple', parking: 'Parking Alpha', aéroport: 'Lyon Saint-Exupéry', ville: 'Pusignan', lien_demo: '' };
 const company = {
   name: 'Benford Tech',
   legalForm: 'société par actions simplifiée',
