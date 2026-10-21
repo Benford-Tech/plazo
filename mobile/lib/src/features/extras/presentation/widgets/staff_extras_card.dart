@@ -150,37 +150,58 @@ class _StaffOrderRow extends StatelessWidget {
 
   Future<void> _refuse(BuildContext context) async {
     final bloc = context.read<StaffExtrasBloc>();
-    final controller = TextEditingController();
-    final ok = await showDialog<bool>(
+    final reason = await showDialog<String>(
       context: context,
-      builder: (dialog) => AlertDialog(
-        title: Text('extras.refuse_title'.tr(args: [order.label])),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text('extras.refuse_text'.tr(args: [formatEuros(order.priceCents)]), style: AppText.muted(size: 13)),
-            const SizedBox(height: 10),
-            TextField(
-              key: const Key('extra-refuse-reason'),
-              controller: controller,
-              maxLength: 200,
-              decoration: InputDecoration(labelText: 'extras.refuse_reason'.tr()),
-            ),
-          ],
-        ),
-        actions: [
-          TextButton(onPressed: () => Navigator.of(dialog).pop(false), child: Text('extras.cancel'.tr())),
-          FilledButton(
-            key: const Key('extra-refuse-confirm'),
-            onPressed: () => Navigator.of(dialog).pop(true),
-            child: Text('extras.refuse_confirm'.tr()),
+      builder: (_) => _RefuseDialog(order: order),
+    );
+    if (reason != null) bloc.add(StaffExtraRefused(order.id, reason: reason));
+  }
+}
+
+/// « Pas possible ? »: an optional reason, then the refund. Pops the reason ('' without one), null when cancelled.
+class _RefuseDialog extends StatefulWidget {
+  const _RefuseDialog({required this.order});
+  final ExtraOrderModel order;
+
+  @override
+  State<_RefuseDialog> createState() => _RefuseDialogState();
+}
+
+class _RefuseDialogState extends State<_RefuseDialog> {
+  final _reason = TextEditingController();
+
+  @override
+  void dispose() {
+    _reason.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return AlertDialog(
+      title: Text('extras.refuse_title'.tr(args: [widget.order.label])),
+      content: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text('extras.refuse_text'.tr(args: [formatEuros(widget.order.priceCents)]), style: AppText.muted(size: 13)),
+          const SizedBox(height: 10),
+          TextField(
+            key: const Key('extra-refuse-reason'),
+            controller: _reason,
+            maxLength: 200,
+            decoration: InputDecoration(labelText: 'extras.refuse_reason'.tr()),
           ),
         ],
       ),
+      actions: [
+        TextButton(onPressed: () => Navigator.of(context).pop(), child: Text('extras.cancel'.tr())),
+        FilledButton(
+          key: const Key('extra-refuse-confirm'),
+          onPressed: () => Navigator.of(context).pop(_reason.text),
+          child: Text('extras.refuse_confirm'.tr()),
+        ),
+      ],
     );
-    final reason = controller.text;
-    controller.dispose();
-    if (ok == true) bloc.add(StaffExtraRefused(order.id, reason: reason));
   }
 }
