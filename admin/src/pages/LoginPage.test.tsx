@@ -21,11 +21,34 @@ describe("LoginPage", () => {
         </AuthProvider>
       </MemoryRouter>,
     );
+    // Choice B of 21/10/2026: the address first, then the password.
     await userEvent.type(await screen.findByLabelText("Email"), "gerant@demo.fr");
+    await userEvent.click(screen.getByRole("button", { name: "Continuer" }));
+    expect(screen.getByRole("heading", { name: "Votre mot de passe" })).toBeInTheDocument();
+    expect(screen.getByText("gerant@demo.fr")).toBeInTheDocument();
     await userEvent.type(screen.getByLabelText("Mot de passe"), "mauvais");
     await userEvent.click(screen.getByRole("button", { name: "Se connecter" }));
     expect(await screen.findByText("Email ou mot de passe incorrect.")).toBeInTheDocument();
-    expect(screen.getByLabelText("Email")).toHaveValue("gerant@demo.fr");
+    expect(login).toHaveBeenCalledWith("gerant@demo.fr", "mauvais");
     expect(screen.getByLabelText("Mot de passe")).toHaveValue("");
+    // « Changer d'adresse e-mail » goes back with the address kept.
+    await userEvent.click(screen.getByRole("button", { name: "Changer d'adresse e-mail" }));
+    expect(screen.getByLabelText("Email")).toHaveValue("gerant@demo.fr");
+  });
+
+  it("refuse une adresse sans @ sans appeler l'API", async () => {
+    login.mockReset();
+    render(
+      <MemoryRouter>
+        <AuthProvider>
+          <LoginPage />
+        </AuthProvider>
+      </MemoryRouter>,
+    );
+    await userEvent.type(await screen.findByLabelText("Email"), "gerant");
+    await userEvent.click(screen.getByRole("button", { name: "Continuer" }));
+    expect(screen.getByText("Adresse e-mail invalide.")).toBeInTheDocument();
+    expect(screen.queryByLabelText("Mot de passe")).not.toBeInTheDocument();
+    expect(login).not.toHaveBeenCalled();
   });
 });

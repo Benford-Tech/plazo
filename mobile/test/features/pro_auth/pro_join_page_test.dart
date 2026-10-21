@@ -250,19 +250,59 @@ void main() {
       await tester.pumpAndSettle();
     }
 
-    testWidgets('iPhone : « Continuer avec Apple » en premier, l’e-mail dessous', (tester) async {
+    testWidgets('iPhone (choix B) : l’e-mail d’abord, « Continuer avec Apple » dessous', (tester) async {
       await pumpLogin(tester, const ProAuthState(status: ProAuthStatus.signedOut, providers: ProvidersModel(apple: true)));
-      // Choice A of 21/10/2026: the greeting on the green band, the newcomers' word at the bottom of the sheet.
-      expect(find.text('Bonjour,\nprêt pour le service ?'), findsOneWidget);
-      expect(find.text('Connectez-vous, puis tapez le code du jour que votre gérant vous donne.'), findsOneWidget);
+      expect(find.text("Le parking, de l'arrivée au retour."), findsOneWidget);
+      expect(find.text('Votre adresse e-mail'), findsOneWidget);
+      expect(find.byKey(const Key('pro-email')), findsOneWidget);
+      expect(find.byKey(const Key('pro-password')), findsNothing);
       expect(find.byKey(const Key('pro-login-apple')), findsOneWidget);
       expect(find.byKey(const Key('pro-login-google')), findsNothing);
-      expect(find.text('ou avec votre e-mail'), findsOneWidget);
-      expect(find.text('Mot de passe perdu ? Votre gérant peut vous en donner un nouveau.'), findsOneWidget);
+      expect(find.text('ou'), findsOneWidget);
       await tester.tap(find.byKey(const Key('pro-login-apple')));
       final events = verify(() => auth.add(captureAny())).captured;
       expect(events.whereType<ProAuthProvidersRequested>(), hasLength(1));
       expect(events.whereType<ProAuthProviderSignInRequested>().single.provider, 'apple');
+    });
+
+    testWidgets('choix B : un champ à la fois, puis la connexion', (tester) async {
+      await pumpLogin(tester, const ProAuthState(status: ProAuthStatus.signedOut));
+      // An address without @ stays on the first step.
+      await tester.enterText(find.byKey(const Key('pro-email')), 'karim');
+      await tester.tap(find.byKey(const Key('pro-login-next')));
+      await tester.pumpAndSettle();
+      expect(find.text('Adresse e-mail invalide.'), findsOneWidget);
+      expect(find.byKey(const Key('pro-password')), findsNothing);
+
+      await tester.enterText(find.byKey(const Key('pro-email')), ' karim@parking.fr ');
+      await tester.tap(find.byKey(const Key('pro-login-next')));
+      await tester.pumpAndSettle();
+      expect(find.text('Votre mot de passe'), findsOneWidget);
+      expect(find.text('karim@parking.fr'), findsOneWidget);
+      expect(find.text('Mot de passe perdu ? Votre gérant peut vous en donner un nouveau.'), findsOneWidget);
+      await tester.enterText(find.byKey(const Key('pro-password')), 'secret-1');
+      await tester.tap(find.byKey(const Key('pro-login')));
+      final login = verify(() => auth.add(captureAny())).captured.whereType<ProAuthLoginSubmitted>().single;
+      expect(login.email, 'karim@parking.fr');
+      expect(login.password, 'secret-1');
+
+      // « Changer d'adresse e-mail » goes back, the address kept.
+      await tester.tap(find.byKey(const Key('pro-login-back')));
+      await tester.pumpAndSettle();
+      expect(find.byKey(const Key('pro-email')), findsOneWidget);
+      expect(find.text(' karim@parking.fr '), findsOneWidget);
+    });
+
+    testWidgets('« Nouveau ? J’ai un code du jour » explique comment rejoindre un parking', (tester) async {
+      await pumpLogin(tester, const ProAuthState(status: ProAuthStatus.signedOut, providers: ProvidersModel(google: true)));
+      await tester.tap(find.byKey(const Key('pro-login-newcomer')));
+      await tester.pumpAndSettle();
+      expect(find.byKey(const Key('pro-login-newcomer-sheet')), findsOneWidget);
+      expect(find.text("Nouveau dans l'équipe ?"), findsOneWidget);
+      expect(find.textContaining('Continuez avec Apple ou Google'), findsOneWidget);
+      await tester.tap(find.text('Compris'));
+      await tester.pumpAndSettle();
+      expect(find.byKey(const Key('pro-login-newcomer-sheet')), findsNothing);
     });
 
     testWidgets('Android : « Continuer avec Google », bouton blanc', (tester) async {
@@ -272,22 +312,22 @@ void main() {
       expect(find.byKey(const Key('pro-login-apple')), findsNothing);
     });
 
-    testWidgets('web ou build sans réglage : le formulaire seul, comme avant', (tester) async {
+    testWidgets('web ou build sans réglage : l’e-mail seul, sans « ou »', (tester) async {
       await pumpLogin(tester, const ProAuthState(status: ProAuthStatus.signedOut));
       expect(find.byKey(const Key('pro-login-apple')), findsNothing);
       expect(find.byKey(const Key('pro-login-google')), findsNothing);
-      expect(find.text('ou avec votre e-mail'), findsNothing);
-      expect(find.byKey(const Key('pro-login')), findsOneWidget);
+      expect(find.text('ou'), findsNothing);
+      expect(find.byKey(const Key('pro-login-next')), findsOneWidget);
     });
 
-    testWidgets('21/10/2026 (choix A) : tient sur un petit téléphone, la feuille défile avec Apple', (tester) async {
+    testWidgets('choix B : tient sur un petit téléphone, avec Apple et le lien des nouveaux', (tester) async {
       tester.view.physicalSize = const Size(320 * 2, 568 * 2);
       tester.view.devicePixelRatio = 2;
       addTearDown(tester.view.reset);
       await pumpLogin(tester, const ProAuthState(status: ProAuthStatus.signedOut, providers: ProvidersModel(apple: true)));
       expect(tester.takeException(), isNull);
       await tester.dragUntilVisible(find.byKey(const Key('pro-login-newcomer')), find.byType(SingleChildScrollView), const Offset(0, -200));
-      expect(find.text("Nouveau dans l'équipe ?"), findsOneWidget);
+      expect(find.text("Nouveau ? J'ai un code du jour"), findsOneWidget);
     });
   });
 }

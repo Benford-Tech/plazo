@@ -120,6 +120,9 @@ if (flavor === 'traveller') {
 } else {
   await open('/pro/connexion');
   await type('Adresse email', process.env.MANAGER_EMAIL || 'demo-parkair-lyon@plazo.test');
+  // Choice B of 21/10/2026: the address, « Continuer », then the password.
+  await tap('Continuer');
+  await pause(800);
   await type('Mot de passe', process.env.MANAGER_PASSWORD);
   await tap('Se connecter');
   await pause(5000);
