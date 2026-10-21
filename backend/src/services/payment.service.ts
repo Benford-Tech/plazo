@@ -24,6 +24,7 @@ import { HttpException } from '@/utils/httpException';
 import { logger } from '@/utils/logger';
 import { AuditService } from './audit.service';
 import { CapacityService } from './capacity.service';
+import { ExtraService } from './extra.service';
 import { NotificationService } from './notification.service';
 import { PushService } from './push.service';
 import { SmsService } from './sms.service';
@@ -122,6 +123,11 @@ export class PaymentService {
   public stripe = Container.get(StripeService);
   /** Read from the environment once; tests override it. */
   public settings = { siteUrl: PUBLIC_SITE_URL };
+
+  // Lazy: the services for the car (21/10/2026) use this service for their own payments.
+  private get extras(): ExtraService {
+    return Container.get(ExtraService);
+  }
 
   public enabled(): boolean {
     return paymentsEnabled();
@@ -251,7 +257,8 @@ export class PaymentService {
       const expiresAt = Math.max(Math.ceil(r.holdExpiresAt.getTime() / 1000), (minute + 1) * 60 + CHECKOUT_MIN_SECONDS);
       // Computed when the place was held (never from the client).
       const amounts = r.chargedCents !== null ? null : this.split(operator, r.priceCents);
-      const charged = r.chargedCents ?? amounts!.chargedCents;
+      // The services asked with the booking are paid with it (21/10/2026).
+      const charged = (r.chargedCents ?? amounts!.chargedCents) + (r.extrasChargedCents ?? 0);
       const reference = encodeURIComponent(r.reference);
 
       const session = await this.stripe.api().checkout.sessions.create(
@@ -274,7 +281,8 @@ export class PaymentService {
                   // One line for the total; the night fees it includes are named (12/10/2026).
                   description:
                     `Réservation ${r.reference} : dépôt le ${formatLocalShort(booking.arrivalAt)}, retour le ${formatLocalShort(booking.returnAt)}` +
-                    (booking.nightFee ? ` · dont frais de nuit ${formatEuros(booking.nightFee.totalCents)}` : ''),
+                    (booking.nightFee ? ` · dont frais de nuit ${formatEuros(booking.nightFee.totalCents)}` : '') +
+                    (r.extrasChargedCents ? ` · dont services ${formatEuros(r.extrasChargedCents)}` : ''),
                 },
               },
             },
@@ -365,7 +373,8 @@ export class PaymentService {
       if (this.modeFor(operator) !== 'online' || r.priceCents === null) throw unavailable();
       // Computed when the place was held (never from the client).
       const amounts = r.chargedCents !== null ? null : this.split(operator, r.priceCents);
-      const charged = r.chargedCents ?? amounts!.chargedCents;
+      // The services asked with the booking are paid with it (21/10/2026).
+      const charged = (r.chargedCents ?? amounts!.chargedCents) + (r.extrasChargedCents ?? 0);
       const intent = await api.paymentIntents.create(
         {
           amount: charged,
@@ -397,7 +406,7 @@ export class PaymentService {
   }
 
   /** Cancels a payment intent that can still be (nothing charged); returns it as it is now. */
-  private async closeIntent(id: string): Promise<Stripe.PaymentIntent> {
+  public async closeIntent(id: string): Promise<Stripe.PaymentIntent> {
     const api = this.stripe.api();
     const intent = await api.paymentIntents.retrieve(id);
     if (!CANCELABLE_INTENT.includes(intent.status)) return intent;
@@ -540,7 +549,7 @@ export class PaymentService {
         logger.error(`[Payments] Paid ${payment.label} for reservation ${id}, which is paid on site`);
         return 'ignored';
       }
-      if (payment.amountCents !== (r.chargedCents ?? r.priceCents) || payment.currency !== 'eur') {
+      if (payment.amountCents !== (r.chargedCents ?? r.priceCents ?? 0) + (r.extrasChargedCents ?? 0) || payment.currency !== 'eur') {
         logger.error(`[Payments] ${payment.label} amount does not match reservation ${id}: not confirmed`);
         return 'ignored';
       }
@@ -567,6 +576,8 @@ export class PaymentService {
         return 'ignored';
       }
       await tx.reservation.update({ where: { id }, data: { ...paid, status: 'upcoming', cancelledAt: null } });
+      // The services asked with the booking were paid with it (21/10/2026).
+      await this.extras.confirmWithBooking(tx, id, now);
       await this.audit.record(
         { id: null, operatorId: r.operatorId },
         {
@@ -624,7 +635,9 @@ export class PaymentService {
         await this.lockRow(tx, id);
         const r = await tx.reservation.findUniqueOrThrow({ where: { id } });
         if (r.paymentStatus !== 'paid' || r.status !== 'cancelled') return null;
-        return tx.reservation.update({ where: { id }, data: await this.refundPayment(r), include: WITH_LISTING });
+        const updated = await tx.reservation.update({ where: { id }, data: await this.refundPayment(r), include: WITH_LISTING });
+        await this.extras.refundedWithBooking(tx, r, new Date());
+        return updated;
       }, STRIPE_TX);
       if (record?.parking.listing) await this.notifications.bookingCancelled(toPublicBooking(record));
     } catch (error) {
@@ -739,6 +752,8 @@ export class PaymentService {
       const current = await tx.reservation.findUniqueOrThrow({ where: { id: reservationId } });
       check(current);
       const refund = current.paymentStatus === 'paid' ? await this.refundPayment(current) : null;
+      // The services paid with the booking go back with it; those paid apart are refunded by the settle pass.
+      if (refund) await this.extras.refundedWithBooking(tx, current, refund.refundedAt);
       return apply(tx, refund);
     }, STRIPE_TX);
   }
@@ -915,7 +930,8 @@ export class PaymentService {
         await this.sessionEnded(event.data.object);
         break;
       case 'payment_intent.succeeded':
-        await this.confirmIntent(event.data.object, 'webhook');
+        // A service's own payment (21/10/2026) carries extraId, never reservationId.
+        if (!(await this.extras.confirmIntent(event.data.object, 'webhook'))) await this.confirmIntent(event.data.object, 'webhook');
         break;
       case 'payment_intent.payment_failed':
         this.intentFailed(event.data.object);

@@ -179,6 +179,8 @@ model Staff {
   identities          StaffIdentity[]
   joinRequests        StaffJoinRequest[] @relation("JoinRequestMember")
   decidedJoinRequests StaffJoinRequest[] @relation("JoinRequestDecider")
+  extrasDone          ReservationExtra[] @relation("ExtraDoneBy")
+  extrasRefused       ReservationExtra[] @relation("ExtraRefusedBy")
 
   @@index([operatorId])
   @@map("staff")
@@ -401,8 +403,13 @@ model Parking {
   // share it), the team only, or the team and the travellers (then "EN DIRECT" in the search results).
   shuttleTracking ShuttleTracking @default(team)
 
+  // Services for the car (21/10/2026, « lavage intérieur, recharge hybride, recharge électrique via Plazo, même après le
+  // dépôt »): a traveller orders them until this many hours before the booked return (CHECK 0 to 168).
+  extrasLeadHours Int @default(24)
+
   operator         Operator          @relation(fields: [operatorId], references: [id], onDelete: Cascade)
   reservations     Reservation[]
+  extraOffers      ParkingExtra[]
   pricingTiers     PricingTier[]
   arrivalSignals   ArrivalSignal[]
   listing          Listing?
@@ -744,6 +751,9 @@ model Reservation {
   chargedCents            Int?
   commissionCents         Int?
   operatorShareCents      Int?
+  // 21/10/2026: the services for the car asked with the booking, paid in the same payment on top of chargedCents (their
+  // commission and share are on reservation_extras). Null: none.
+  extrasChargedCents      Int?
   // Transfer of the operator's share (null until the booking is paid).
   payoutStatus            PayoutStatus?
   stripeTransferId        String?
@@ -824,6 +834,7 @@ model Reservation {
   contract       ReservationContract?
   inspections    VehicleInspection[]
   signatureCodes SignatureCode[]
+  extras         ReservationExtra[]
 
   @@unique([operatorId, externalReference])
   @@index([spotId])
@@ -1474,26 +1485,26 @@ enum SignatureDevice {
 /// SHA-256 and the proof (method, when, device, the masked phone). The text is a snapshot: a later change of the booking
 /// or of Plazo's template never changes what was signed.
 model ReservationContract {
-  id              String          @id @default(cuid())
-  reservationId   String          @unique
+  id            String          @id @default(cuid())
+  reservationId String          @unique
   // Version of Plazo's contract template, e.g. "2026-10-19".
-  version         String
+  version       String
   // The whole text signed (title and clauses, one per line) and its SHA-256 (hex).
-  text            String
-  textSha256      String
-  signerName      String
-  method          SignatureMethod
-  device          SignatureDevice
+  text          String
+  textSha256    String
+  signerName    String
+  method        SignatureMethod
+  device        SignatureDevice
   // "06 •• •• •• 42": the phone the code went to (sms_code), never the whole number.
-  phoneMasked     String?
+  phoneMasked   String?
   // Handwritten: the strokes as drawn ([[[x, y], …], …], 0-1 of the pad), and their SHA-256.
-  strokes         Json?
+  strokes       Json?
   // Staff member whose phone was used (staff_device).
-  witnessedById   String?
-  signedAt        DateTime        @default(now())
+  witnessedById String?
+  signedAt      DateTime        @default(now())
   // Proof: SHA-256 of "text + signer + method + signedAt", shown in the emailed copy.
-  proofSha256     String
-  emailedAt       DateTime?
+  proofSha256   String
+  emailedAt     DateTime?
 
   reservation Reservation @relation(fields: [reservationId], references: [id], onDelete: Cascade)
 
@@ -1545,33 +1556,33 @@ enum InspectionDecision {
 /// or in the traveller app). Photos are erased 90 days after the return (365 with a reservation), the row with the booking's
 /// anonymisation.
 model VehicleInspection {
-  id              String              @id @default(cuid())
-  reservationId   String
-  kind            InspectionKind
-  author          InspectionAuthor    @default(staff)
+  id             String             @id @default(cuid())
+  reservationId  String
+  kind           InspectionKind
+  author         InspectionAuthor   @default(staff)
   // [{ "n": 1, "x": 0.8, "y": 0.2, "label": "Rayure, aile avant droite", "photoId": "…" }]: x, y from 0 to 1 on the outline.
-  damages         Json                @default("[]")
-  mileageKm       Int?
+  damages        Json               @default("[]")
+  mileageKm      Int?
   // 0 to 4 quarters of a tank (4: full).
-  fuelQuarters    Int?
-  notes           String?
-  performedById   String?
-  startedAt       DateTime            @default(now())
+  fuelQuarters   Int?
+  notes          String?
+  performedById  String?
+  startedAt      DateTime           @default(now())
   // Null while the staff is still taking it (a draft).
-  completedAt     DateTime?
-  decision        InspectionDecision  @default(pending)
-  decidedAt       DateTime?
-  decisionMethod  SignatureMethod?
-  decisionDevice  SignatureDevice?
+  completedAt    DateTime?
+  decision       InspectionDecision @default(pending)
+  decidedAt      DateTime?
+  decisionMethod SignatureMethod?
+  decisionDevice SignatureDevice?
   // Handwritten signature on the staff's phone.
-  strokes         Json?
+  strokes        Json?
   // The traveller's words with a reservation.
-  reserveText     String?
+  reserveText    String?
   // SHA-256 of the report as answered (photos' hashes, damages, mileage, fuel, decision, when).
-  proofSha256     String?
-  photosErasedAt  DateTime?
-  createdAt       DateTime            @default(now())
-  updatedAt       DateTime            @default(now()) @updatedAt
+  proofSha256    String?
+  photosErasedAt DateTime?
+  createdAt      DateTime           @default(now())
+  updatedAt      DateTime           @default(now()) @updatedAt
 
   reservation Reservation       @relation(fields: [reservationId], references: [id], onDelete: Cascade)
   photos      InspectionPhoto[]
@@ -1663,4 +1674,79 @@ model PartnerContract {
   @@unique([operatorId, version])
   @@index([operatorId, status])
   @@map("partner_contracts")
+}
+
+// ---- Services for the car (21/10/2026) ------------------------------------------------------------------------------
+
+enum ExtraKind {
+  interior_wash // lavage intérieur et shampouineuse
+  hybrid_charge // recharge d'une hybride rechargeable
+  ev_charge // recharge d'une voiture électrique
+}
+
+enum ExtraStatus {
+  pending_payment // ordered, not paid yet (the app's payment sheet, or the booking's own payment)
+  ordered // paid, to do before the return
+  done // done by the team (« Fait »)
+  refused // the team could not do it (« Pas possible »): refunded
+  refunded // refunded otherwise (not done by the handover, booking cancelled)
+  expired // never paid
+}
+
+// A service a parking offers on Plazo, and its price. No row: not offered (the defaults are shown to the manager).
+model ParkingExtra {
+  id         String    @id @default(cuid())
+  parkingId  String
+  kind       ExtraKind
+  enabled    Boolean   @default(false)
+  priceCents Int // CHECK 100 to 100 000
+  updatedAt  DateTime  @default(now()) @updatedAt
+
+  parking Parking @relation(fields: [parkingId], references: [id], onDelete: Cascade)
+
+  @@unique([parkingId, kind])
+  @@map("parking_extras")
+}
+
+// A service ordered by a traveller on a Plazo booking (app only), paid online: with the booking itself (`withBooking`,
+// one payment for the stay and its services) or later in its own PaymentIntent. One active order per kind (partial
+// unique index), one charge at most (service). Its money follows the booking's payout schedule once it is done.
+model ReservationExtra {
+  id                    String        @id @default(cuid())
+  reservationId         String
+  operatorId            String
+  kind                  ExtraKind
+  // Name and amounts frozen at the order (the parking may change its prices afterwards).
+  label                 String
+  priceCents            Int
+  commissionCents       Int
+  operatorShareCents    Int
+  status                ExtraStatus   @default(pending_payment)
+  withBooking           Boolean       @default(false)
+  // Its own payment (null when paid with the booking: the booking's intent).
+  stripePaymentIntentId String?       @unique
+  stripeLive            Boolean?
+  stripeChargeId        String?
+  stripeRefundId        String?
+  stripeTransferId      String?
+  payoutStatus          PayoutStatus?
+  paidAt                DateTime?
+  doneAt                DateTime?
+  doneById              String?
+  refusedAt             DateTime?
+  refusedById           String?
+  refusedReason         String?
+  refundedAt            DateTime?
+  transferredAt         DateTime?
+  createdAt             DateTime      @default(now())
+  updatedAt             DateTime      @default(now()) @updatedAt
+
+  reservation Reservation @relation(fields: [reservationId], references: [id], onDelete: Cascade)
+  doneBy      Staff?      @relation("ExtraDoneBy", fields: [doneById], references: [id], onDelete: SetNull)
+  refusedBy   Staff?      @relation("ExtraRefusedBy", fields: [refusedById], references: [id], onDelete: SetNull)
+
+  @@index([reservationId])
+  @@index([operatorId, status])
+  @@index([payoutStatus, status])
+  @@map("reservation_extras")
 }

@@ -13,6 +13,7 @@ import { ShuttleService } from '@/services/shuttle.service';
 import { SmsService } from '@/services/sms.service';
 import { PaymentService } from '@/services/payment.service';
 import { ProspectingService } from '@/services/prospecting.service';
+import { ExtraService } from '@/services/extra.service';
 import { ReminderService } from '@/services/reminder.service';
 import { RetentionService } from '@/services/retention.service';
 import { TokenService } from '@/services/token.service';
@@ -41,6 +42,17 @@ export class CronController {
   public joinRequests = Container.get(JoinRequestService);
   public identityVerification = Container.get(IdentityVerificationService);
   public prospecting = Container.get(ProspectingService);
+  public extras = Container.get(ExtraService);
+
+  /** Services for the car (21/10/2026) still to do on a closed booking: refunded. Never throws (rides on remind-tomorrow). */
+  private async extrasPass(): Promise<Awaited<ReturnType<ExtraService['settle']>> | { error: true }> {
+    try {
+      return await this.extras.settle();
+    } catch (error) {
+      logger.error(`[Cron] Extras pass failed: ${error instanceof Error ? error.name : 'unknown error'}`);
+      return { error: true };
+    }
+  }
 
   /**
    * The prospecting emails due now (Plateforme › Prospection, 18/10/2026). Never throws: a failure here must not change
@@ -83,8 +95,11 @@ export class CronController {
   /** GET /internal/cron/payouts */
   public payouts = catchAsync(async (req: Request, res: Response) => {
     const result = await this.payments.runPayouts();
-    logger.info(`[Cron] Payouts: ${JSON.stringify(result)}`);
-    res.status(statusOf(result.transferred + result.failed, result.failed)).json(result);
+    // The services for the car done (21/10/2026), on their booking's payout date.
+    const extras = await this.extras.runPayouts();
+    logger.info(`[Cron] Payouts: ${JSON.stringify(result)}; services: ${JSON.stringify(extras)}`);
+    const tried = result.transferred + result.failed + extras.transferred + extras.failed;
+    res.status(statusOf(tried, result.failed + extras.failed)).json({ ...result, extras });
   });
 
   /** GET /internal/cron/expire-payment-holds */
@@ -105,8 +120,11 @@ export class CronController {
     // The prospecting emails ride on this 15-minute call (Vercel Hobby has daily crons only); their outcome never changes
     // this route's status.
     const prospecting = await this.prospectingPass();
-    logger.info(`[Cron] Reminders: ${JSON.stringify(result)}; SMS queue: ${JSON.stringify(sms)}; prospecting: ${JSON.stringify(prospecting)}`);
-    res.status(statusOf(result.sent + result.failed, result.failed)).json({ ...result, sms, prospecting });
+    const extras = await this.extrasPass();
+    logger.info(
+      `[Cron] Reminders: ${JSON.stringify(result)}; SMS queue: ${JSON.stringify(sms)}; prospecting: ${JSON.stringify(prospecting)}; services: ${JSON.stringify(extras)}`,
+    );
+    res.status(statusOf(result.sent + result.failed, result.failed)).json({ ...result, sms, prospecting, extras });
   });
 
   /** GET /internal/cron/prospecting: the prospecting emails due now, for a dedicated job (also run by remind-tomorrow). */

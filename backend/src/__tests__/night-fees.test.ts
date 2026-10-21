@@ -244,6 +244,7 @@ describe('messages au voyageur', () => {
     cancellableUntil: '2026-10-03T23:30',
     canCancel: true,
     canEditFlight: true,
+    extrasCents: 0,
   });
 
   it('nomment les frais de nuit compris dans le total', () => {

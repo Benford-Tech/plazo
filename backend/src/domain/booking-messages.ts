@@ -52,9 +52,21 @@ function cancellationSentence(booking: PublicBooking): string {
   return `Vous pouvez l'annuler en ligne, sans frais, jusqu'au ${formatLocalLong(booking.cancellableUntil)}.${refund}`;
 }
 
-/** " (dont 15,00 € de frais de nuit)" when the total includes night fees (12/10/2026), else "". */
+/**
+ * " (dont 15,00 € de frais de nuit)" when the total includes night fees (12/10/2026), " (dont 50,00 € de services)" with
+ * services for the car paid with the booking (21/10/2026), both joined by « et », else "".
+ */
 function nightFeeNote(booking: PublicBooking): string {
-  return booking.nightFee ? ` (dont ${formatEuros(booking.nightFee.totalCents)} de frais de nuit)` : '';
+  const parts = [
+    ...(booking.nightFee ? [`${formatEuros(booking.nightFee.totalCents)} de frais de nuit`] : []),
+    ...(booking.extrasCents ? [`${formatEuros(booking.extrasCents)} de services`] : []),
+  ];
+  return parts.length ? ` (dont ${parts.join(' et ')})` : '';
+}
+
+/** What the traveller paid: the stay and the services asked with it. */
+function totalCents(booking: PublicBooking): number | null {
+  return booking.priceCents === null ? null : booking.priceCents + (booking.extrasCents ?? 0);
 }
 
 /** The total line of the confirmation, paid by card on the site or to pay at the parking: [bold part, rest, note]. */
@@ -68,7 +80,7 @@ function totalParts(booking: PublicBooking, total: string): [string, string, str
 /** What happens to the money after a cancellation. */
 function cancellationMoneySentence(booking: PublicBooking): string {
   if (booking.payment?.status === 'refunded' && booking.priceCents !== null) {
-    return `Remboursement intégral de ${formatEuros(booking.priceCents)} sur votre carte, sous 5 à 10 jours.`;
+    return `Remboursement intégral de ${formatEuros(totalCents(booking)!)} sur votre carte, sous 5 à 10 jours.`;
   }
   if (paidOnline(booking)) return 'Rien ne vous a été débité pour cette réservation.';
   return 'Rien ne vous sera demandé : le paiement se faisait sur place.';
@@ -169,7 +181,7 @@ function totalHtml(booking: PublicBooking, total: string): string {
 
 export function confirmationEmail(productName: string, booking: PublicBooking, manageUrl: string | null): EmailMessage {
   const subject = `Réservation ${booking.reference} confirmée · ${booking.parking.title}`;
-  const total = booking.priceCents !== null ? formatEuros(booking.priceCents) : null;
+  const total = booking.priceCents !== null ? formatEuros(totalCents(booking)!) : null;
   const manage = manageUrl
     ? `<p style="margin:24px 0 8px"><a href="${escapeHtml(manageUrl)}" style="display:inline-block;background:${COLORS.accent};background-image:linear-gradient(96deg,#ff8a3d,#f0a36b);color:#fff;text-decoration:none;font-weight:600;padding:12px 22px;border-radius:999px">Gérer ma réservation</a></p>
 <p style="margin:0;font-size:13px;color:${COLORS.soft}">Vous pourrez y indiquer ou changer votre vol retour${booking.cancellableUntil ? ', ou annuler' : ''}.</p>`
@@ -273,7 +285,7 @@ ${manageUrl ? `<p style="margin:20px 0 0"><a href="${escapeHtml(manageUrl)}" sty
 /** After the handover: thanks, the stay's summary, the amount paid. */
 export function closingEmail(productName: string, booking: PublicBooking, returnedAtLocal: string): EmailMessage {
   const subject = `Merci, et à bientôt · ${booking.parking.title}`;
-  const total = booking.priceCents !== null ? formatEuros(booking.priceCents) : null;
+  const total = booking.priceCents !== null ? formatEuros(totalCents(booking)!) : null;
   const html = layout(
     productName,
     subject,
