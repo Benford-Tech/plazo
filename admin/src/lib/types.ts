@@ -1261,7 +1261,9 @@ export type AlertKind =
   // 13/10/2026: someone asks to join the team with the code of the day (managers; opens Équipe).
   | "join_request"
   // 21/10/2026: bookings without a price (managers; `detail` = how many).
-  | "price_missing";
+  | "price_missing"
+  // 21/10/2026: services for the car to do before a return within 36 h (`detail` = their names, `since` = the return).
+  | "extras_due";
 
 /** A row of the home's "À traiter" list (GET /internal/dashboard). */
 export interface DashboardAlert {
@@ -1742,4 +1744,42 @@ export interface MyContract {
   current: PartnerContract | null;
   history: PartnerContract[];
   canSign: boolean;
+}
+
+// ---- Services for the car (21/10/2026) -----------------------------------------------------------------------------
+
+export type ExtraKind = "interior_wash" | "hybrid_charge" | "ev_charge";
+export type ExtraStatus = "ordered" | "done" | "refused" | "refunded";
+
+/** A service of the parking (Parking › Réglages): offered or not, at its price. */
+export interface ExtraOffer {
+  kind: ExtraKind;
+  label: string;
+  description: string;
+  enabled: boolean;
+  priceCents: number;
+  defaultPriceCents: number;
+}
+
+/** GET/PUT /internal/parkings/:id/extras */
+export interface ExtraSettings {
+  leadHours: number;
+  offers: ExtraOffer[];
+}
+
+/** A service ordered by the traveller on a booking (GET /internal/reservations/:id/extras). */
+export interface ReservationExtra {
+  id: string;
+  kind: ExtraKind;
+  label: string;
+  priceCents: number;
+  status: ExtraStatus;
+  withBooking: boolean;
+  paidAt: string | null;
+  doneAt: string | null;
+  refusedAt: string | null;
+  refusedReason: string | null;
+  refundedAt: string | null;
+  doneBy: string | null;
+  refusedBy: string | null;
 }

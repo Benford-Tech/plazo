@@ -624,7 +624,11 @@ export const fr = {
         inbound_to_check: "Mails à vérifier",
         join_request: "Demande pour rejoindre l'équipe",
         price_missing: "Réservations sans prix",
+        extras_due: "Services à faire avant le retour",
       } satisfies Record<AlertKind, string>,
+      // 21/10/2026: « Camille Martin · Lavage intérieur et shampouineuse · retour 18:40 ».
+      extrasDetail: (name: string | null, services: string | null, returnTime: string | null) =>
+        [name, services, returnTime ? `retour ${returnTime}` : null].filter(Boolean).join(" · "),
       // 13/10/2026: « Julie Martin », « Julie Martin et 2 autres », or the count alone.
       joinDetail: (count: number, name: string | null) =>
         name
@@ -3728,4 +3732,53 @@ export const contractFr = {
   signedNote:
     `Le PDF signé est le contrat d'origine, plus une dernière page « Signature » avec ces informations. ${PRODUCT.name} garde les deux ; personne ne peut les modifier.`,
   previous: "Versions précédentes",
+};
+
+// Services for the car (21/10/2026): the parking's offer (Parking › Réglages) and the orders on a booking.
+export const extrasFr = {
+  settings: {
+    title: "Services pour la voiture",
+    intro: "Vos clients les commandent dans l'app Plazo, avec leur réservation ou plus tard, même après avoir déposé leur voiture. Ils les paient en ligne.",
+    offered: (label: string) => `Proposer : ${label}`,
+    priceLabel: (label: string) => `Prix : ${label}`,
+    defaultPrice: (price: string) => `Prix conseillé : ${price}`,
+    leadHours: "Commande possible jusqu'à",
+    leadHoursUnit: "h avant le retour",
+    commission: "Commission Plazo prise sur chaque service, comme sur les séjours. Votre part vous est reversée avec la réservation, une fois le service fait.",
+    refundNote: "Un service pas fait au moment de rendre la voiture est remboursé au client.",
+    save: "Enregistrer",
+    saved: "Services enregistrés",
+    errors: {
+      price: "Montant invalide (ex. 50,00).",
+      range: "Entre 1 € et 1 000 €.",
+      leadHours: "Entre 0 et 168 heures.",
+    },
+  },
+  orders: {
+    title: "Services commandés",
+    toDoCount: (n: number) => `${n} à faire`,
+    paidWithBooking: "payé avec la réservation",
+    paidOn: (when: string) => `payé le ${when}`,
+    status: {
+      ordered: "À faire",
+      done: "Fait",
+      refused: "Pas possible · remboursé",
+      refunded: "Remboursé",
+    },
+    doneLine: (when: string, by: string | null) => `Fait ${when}${by ? ` par ${by}` : ""}`,
+    refusedLine: (reason: string | null) => (reason ? `Motif : ${reason}` : "Remboursé au client"),
+    done: "Fait",
+    refuse: "Pas possible",
+    reasonLabel: "Pourquoi ? (facultatif)",
+    reasonPlaceholder: "Borne en panne, câble absent…",
+    confirmRefuse: "Rembourser le client",
+    cancel: "Annuler",
+    doneToast: "Service marqué fait : le client est prévenu.",
+    refusedToast: "Service remboursé au client.",
+    hint: "Pas possible : le client est remboursé tout de suite.",
+    errors: {
+      not_to_do: "Ce service n'est plus à faire.",
+      refund_failed: "Le remboursement n'a pas abouti, réessayez.",
+    } as Record<string, string>,
+  },
 };

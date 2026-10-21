@@ -321,6 +321,30 @@ describe("DashboardPage", () => {
     expect(row).toHaveTextContent("À faire");
   });
 
+  it("21/10/2026 : un service à faire avant un retour ouvre la fiche de la réservation", async () => {
+    api.getDashboard.mockResolvedValue({
+      ...dashboard,
+      alerts: [
+        {
+          kind: "extras_due" as const,
+          severity: "watch" as const,
+          reservationId: "r7",
+          reference: null,
+          customerName: "Camille Martin",
+          plate: "GK-318-PX",
+          detail: "Lavage intérieur et shampouineuse, Recharge électrique",
+          since: "2026-10-05T16:40:00Z",
+          minutes: null,
+        },
+      ],
+    });
+    renderPage();
+    const title = await screen.findByText("Services à faire avant le retour");
+    const row = title.closest("button, a") as HTMLElement;
+    expect(row).toHaveTextContent("Camille Martin · Lavage intérieur et shampouineuse, Recharge électrique · retour 18:40");
+    expect(row).toHaveTextContent("À surveiller");
+  });
+
   it("21/10/2026 (choix C) : les réservations sans prix, dans « À traiter » et à compléter sur place", async () => {
     api.setReservationPrice.mockResolvedValue({ id: "r9", priceCents: 4850 });
     const alert = {

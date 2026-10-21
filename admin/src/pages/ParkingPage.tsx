@@ -10,6 +10,7 @@ import { ParkingTabs } from "@/components/parking/ParkingTabs";
 import { ReturnMeetingPointForm } from "@/components/parking/ReturnMeetingPointForm";
 import { ShuttleStops } from "@/components/parking/ShuttleStops";
 import { ShuttleTrackingCard } from "@/components/parking/ShuttleTrackingCard";
+import { ExtrasSettingsCard } from "@/components/parking/ExtrasSettingsCard";
 import { ShuttleVehicles } from "@/components/parking/ShuttleVehicles";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
@@ -190,6 +191,7 @@ export default function ParkingPage() {
       <ComparatorCommissionCard />
       <ReturnMeetingPointForm />
       {parking && <ShuttleTrackingCard parking={parking} />}
+      {parking && <ExtrasSettingsCard parking={parking} />}
       <ShuttleStops />
       <ShuttleVehicles />
       <FlightCheckCard />

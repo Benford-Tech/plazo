@@ -7,6 +7,9 @@ import type {
 } from "@/lib/plan/parkingFiles";
 import type {
   Airport,
+  ExtraKind,
+  ExtraSettings,
+  ReservationExtra,
   ContractFileKind,
   MyContract,
   PartnerContract,
@@ -391,6 +394,20 @@ export const adminApi = {
     }),
   removeStop: (id: string) =>
     apiRequest<void>(`/internal/shuttle/stops/${id}`, { method: "DELETE" }),
+  // Services for the car (21/10/2026).
+  getExtraSettings: (parkingId: string) => apiRequest<ExtraSettings>(`/internal/parkings/${parkingId}/extras`),
+  updateExtraSettings: (
+    parkingId: string,
+    body: { leadHours?: number; offers?: { kind: ExtraKind; enabled: boolean; priceCents: number }[] },
+  ) => apiRequest<ExtraSettings>(`/internal/parkings/${parkingId}/extras`, { method: "PUT", body: json(body) }),
+  getReservationExtras: (id: string) => apiRequest<{ extras: ReservationExtra[] }>(`/internal/reservations/${id}/extras`),
+  markExtraDone: (id: string, extraId: string) =>
+    apiRequest<{ extras: ReservationExtra[] }>(`/internal/reservations/${id}/extras/${extraId}/done`, { method: "POST" }),
+  refuseExtra: (id: string, extraId: string, reason: string) =>
+    apiRequest<{ extras: ReservationExtra[] }>(`/internal/reservations/${id}/extras/${extraId}/refuse`, {
+      method: "POST",
+      body: json({ reason }),
+    }),
   setShuttleTracking: (id: string, tracking: ShuttleTracking) =>
     apiRequest<{ data: Parking }>(`/internal/parkings/${id}/shuttle-tracking`, {
       method: "PUT",
