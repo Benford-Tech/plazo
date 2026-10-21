@@ -1,5 +1,5 @@
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { render, screen, within } from "@testing-library/react";
+import { fireEvent, render, screen, waitFor, within } from "@testing-library/react";
 import { MemoryRouter } from "react-router-dom";
 import type { Dashboard, LiveShuttles } from "@/lib/types";
 import DashboardPage from "./DashboardPage";
@@ -8,6 +8,7 @@ const api = vi.hoisted(() => ({
   getDashboard: vi.fn(),
   getLiveShuttles: vi.fn(),
   getRevenueSummary: vi.fn(),
+  setReservationPrice: vi.fn(),
 }));
 vi.mock("@/contexts/AuthContext", () => ({
   useAuth: () => ({ user: { name: "Joanny Simpore", role: "manager" } }),
@@ -21,6 +22,7 @@ vi.mock("@/lib/api", async (importOriginal) => {
       getDashboard: () => api.getDashboard(),
       getLiveShuttles: () => api.getLiveShuttles(),
       getRevenueSummary: () => api.getRevenueSummary(),
+      setReservationPrice: (id: string, cents: number | null) => api.setReservationPrice(id, cents),
     },
   };
 });
@@ -317,6 +319,43 @@ describe("DashboardPage", () => {
     expect(row).toHaveTextContent("il y a 3 j");
     expect(row).not.toHaveTextContent("4320 min");
     expect(row).toHaveTextContent("À faire");
+  });
+
+  it("21/10/2026 (choix C) : les réservations sans prix, dans « À traiter » et à compléter sur place", async () => {
+    api.setReservationPrice.mockResolvedValue({ id: "r9", priceCents: 4850 });
+    const alert = {
+      kind: "price_missing" as const,
+      severity: "todo" as const,
+      reservationId: null,
+      reference: null,
+      customerName: null,
+      plate: null,
+      detail: "7",
+      since: null,
+      minutes: null,
+    };
+    api.getDashboard.mockResolvedValue({
+      ...dashboard,
+      alerts: [alert],
+      noPrice: {
+        count: 7,
+        next: [
+          { id: "r9", reference: "R9", customerName: "Julien Petit", plate: "GH-456-JK", arrivalAt: "2026-10-05T07:15:00Z", channel: "aggregator", detail: "Onepark" },
+        ],
+      },
+    });
+    renderPage();
+    const row = await screen.findByRole("link", { name: /Réservations sans prix/ });
+    expect(row).toHaveAttribute("href", "/reservations?sansprix=1");
+    expect(row).toHaveTextContent("7 réservations · le chiffre d'affaires est incomplet");
+    expect(screen.getByTestId("kpi-to-treat")).toHaveTextContent("7 sans prix");
+    const card = screen.getByTestId("no-price-card");
+    expect(card).toHaveTextContent("Julien Petit");
+    expect(card).toHaveTextContent("Onepark");
+    expect(screen.getByRole("link", { name: "Voir les 7" })).toHaveAttribute("href", "/reservations?sansprix=1");
+    fireEvent.change(within(card).getByLabelText("Prix payé de R9 en euros"), { target: { value: "48,50" } });
+    fireEvent.click(within(card).getByRole("button", { name: "OK" }));
+    await waitFor(() => expect(api.setReservationPrice).toHaveBeenCalledWith("r9", 4850));
   });
 
   it("16/10/2026 : « Import » À voir quand Claude n'a pas pu lire un mail dans l'heure, avec la cause", async () => {

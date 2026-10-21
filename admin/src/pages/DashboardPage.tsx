@@ -28,11 +28,18 @@ import {
 } from "@/components/dashboard/Badge";
 import { Plate } from "@/components/Plate";
 import { RevenueTile } from "@/components/dashboard/RevenueTile";
+import { QuickPrice } from "@/components/reservations/QuickPrice";
 import { useQuickCard } from "@/components/reservations/ReservationQuickCard";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useAuth } from "@/contexts/AuthContext";
 import { adminApi } from "@/lib/api";
-import { longDate, shortDay, timeAgo, timeOf } from "@/lib/datetime";
+import {
+  dateTimeShort,
+  longDate,
+  shortDay,
+  timeAgo,
+  timeOf,
+} from "@/lib/datetime";
 import { describeError, fr } from "@/lib/fr";
 import type {
   AlertSeverity,
@@ -229,7 +236,11 @@ function AlertRow({ alert }: { alert: DashboardAlert }) {
               )
             : alert.kind === "join_request" && /^\d+$/.test(alert.detail ?? "")
               ? a.joinDetail(Number(alert.detail), alert.customerName)
-              : [alert.customerName, alert.detail].filter(Boolean).join(" · ")}
+              : alert.kind === "price_missing"
+                ? fr.noPrice.alertDetail(Number(alert.detail) || 0)
+                : [alert.customerName, alert.detail]
+                    .filter(Boolean)
+                    .join(" · ")}
         </span>
       </span>
       {alert.minutes !== null &&
@@ -276,6 +287,16 @@ function AlertRow({ alert }: { alert: DashboardAlert }) {
         {body}
       </Link>
     );
+  // 21/10/2026 (choice C): opens the list on its « Sans prix » filter.
+  if (alert.kind === "price_missing")
+    return (
+      <Link
+        to="/reservations?sansprix=1"
+        className={cn(className, "hover:bg-panel-2")}
+      >
+        {body}
+      </Link>
+    );
   if (alert.kind === "inbound_to_check")
     return (
       <Link
@@ -294,6 +315,53 @@ function AlertRow({ alert }: { alert: DashboardAlert }) {
     </CardButton>
   ) : (
     <div className={className}>{body}</div>
+  );
+}
+
+/**
+ * « Les compléter » (21/10/2026, choice C): the bookings without a price nearest to today, their amount typed here; the
+ * others in the list's « Sans prix » filter.
+ */
+function NoPricePanel({
+  noPrice,
+}: {
+  noPrice: NonNullable<Dashboard["noPrice"]>;
+}) {
+  const n = fr.noPrice;
+  return (
+    <Panel
+      title={n.cardTitle(noPrice.count)}
+      aside={<Badge tone="warn">{fr.dashboard.alerts.severity.todo}</Badge>}
+    >
+      <ul data-testid="no-price-card">
+        {noPrice.next.map((b) => (
+          <li
+            key={b.id}
+            className="flex flex-wrap items-center gap-x-3 gap-y-2 border-t border-panel-line py-2.5 first:border-t-0"
+          >
+            <CardButton
+              id={b.id}
+              className="min-w-0 flex-[1_1_12rem] text-left hover:underline"
+            >
+              <span className="block truncate text-[15px] font-semibold">
+                {b.customerName}
+              </span>
+              <span className="block truncate font-mono text-xs text-muted-foreground">
+                {b.reference} · {b.detail ?? fr.channels[b.channel]} ·{" "}
+                {dateTimeShort(b.arrivalAt)}
+              </span>
+            </CardButton>
+            <QuickPrice id={b.id} reference={b.reference} />
+          </li>
+        ))}
+      </ul>
+      <Link
+        to="/reservations?sansprix=1"
+        className="mt-2 inline-block text-sm font-semibold text-lime-deep hover:underline"
+      >
+        {n.cardAll(noPrice.count)}
+      </Link>
+    </Panel>
   );
 }
 
@@ -637,7 +705,11 @@ export default function DashboardPage() {
           testId="kpi-to-treat"
           label={k.toTreat}
           value={d.counts.toTreat}
-          sub={k.toTreatSub(urgent)}
+          sub={
+            d.noPrice?.count
+              ? fr.noPrice.toTreatSub(k.toTreatSub(urgent), d.noPrice.count)
+              : k.toTreatSub(urgent)
+          }
           to="/"
           icon={TriangleAlert}
           alert={urgent > 0}
@@ -674,6 +746,9 @@ export default function DashboardPage() {
               </ul>
             )}
           </Panel>
+          {d.noPrice && d.noPrice.count > 0 && (
+            <NoPricePanel noPrice={d.noPrice} />
+          )}
           <Panel
             title={t.vehicles.title}
             sub={t.refreshed(timeAgo(d.serverTime, now))}

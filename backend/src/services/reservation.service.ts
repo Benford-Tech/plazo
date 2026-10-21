@@ -1017,11 +1017,16 @@ export class ReservationService {
    * (the parking's local day), so the list opens on what is coming without hiding the past (`chronologicalPage`). A
    * search lists every match from the earliest.
    */
-  public async list(actor: AuthenticatedStaff, query: { q?: string; page?: number; limit?: number }) {
+  public async list(actor: AuthenticatedStaff, query: { q?: string; page?: number; limit?: number; noPrice?: boolean }) {
     this.require(actor, 'reservations:view');
     const limit = Math.min(100, Math.max(1, query.limit || 20));
     const q = query.q?.trim();
-    const where: Prisma.ReservationWhereInput = { operatorId: actor.operatorId, AND: [STAFF_VISIBLE] };
+    // 21/10/2026 (« Mets en évidence les réservations sans prix »): the managers' « Sans prix » filter and its count.
+    const managers = can(actor.role, 'revenue:view');
+    const noPrice = managers && !!query.noPrice;
+    const where: Prisma.ReservationWhereInput = noPrice
+      ? this.noPriceWhere(actor.operatorId)
+      : { operatorId: actor.operatorId, AND: [STAFF_VISIBLE] };
     if (q) {
       const key = plateKey(q);
       where.OR = [
@@ -1039,16 +1044,68 @@ export class ReservationService {
     });
     const timezone = parking?.timezone ?? 'Europe/Paris';
     const today = dayBounds(localDate(new Date(), timezone), timezone).start;
-    const [totalDocs, before] = await Promise.all([
+    const [totalDocs, before, noPriceCount] = await Promise.all([
       prisma.reservation.count({ where }),
       q ? 0 : prisma.reservation.count({ where: { AND: [where, { arrivalAt: { lt: today } }] } }),
+      managers ? prisma.reservation.count({ where: this.noPriceWhere(actor.operatorId) }) : null,
     ]);
     const { skip, take, ...pages } = chronologicalPage(totalDocs, before, limit, query.page);
     const rows = await prisma.reservation.findMany({ where, orderBy: [{ arrivalAt: 'asc' }, { id: 'asc' }], skip, take });
     // What each comparator takes (19/10/2026): the managers see what they keep under each price.
     const commissions = can(actor.role, 'revenue:view') ? await Container.get(CommissionService).of(actor.operatorId, timezone, rows) : [];
     const docs = rows.map((r, i) => ({ ...r, commission: commissions[i] ?? null }));
-    return { docs, totalDocs, limit, ...pages };
+    return { docs, totalDocs, limit, ...pages, noPriceCount };
+  }
+
+  /**
+   * Bookings without a price (21/10/2026): not cancelled and no amount, so they count in no revenue nor commission. The
+   * same rule as the revenue page's « sans montant » (a no-show counts), whatever the date.
+   */
+  public noPriceWhere(operatorId: string): Prisma.ReservationWhereInput {
+    return { operatorId, AND: [STAFF_VISIBLE], status: { not: 'cancelled' }, priceCents: null };
+  }
+
+  /**
+   * The dashboard's « Les compléter » card: how many bookings have no price and the `limit` nearest to now (the coming
+   * ones first, from the soonest, then the past ones, from the latest). Managers only (null otherwise).
+   */
+  public async noPrice(actor: AuthenticatedStaff, now: Date = new Date(), limit = 3) {
+    if (!can(actor.role, 'revenue:view')) return null;
+    const where = this.noPriceWhere(actor.operatorId);
+    const select = {
+      id: true,
+      reference: true,
+      customerName: true,
+      plate: true,
+      arrivalAt: true,
+      channel: true,
+      channelDetail: true,
+    } satisfies Prisma.ReservationSelect;
+    const [count, coming, past] = await Promise.all([
+      prisma.reservation.count({ where }),
+      prisma.reservation.findMany({
+        where: { AND: [where, { arrivalAt: { gte: now } }] },
+        orderBy: [{ arrivalAt: 'asc' }, { id: 'asc' }],
+        take: limit,
+        select,
+      }),
+      prisma.reservation.findMany({
+        where: { AND: [where, { arrivalAt: { lt: now } }] },
+        orderBy: [{ arrivalAt: 'desc' }, { id: 'asc' }],
+        take: limit,
+        select,
+      }),
+    ]);
+    const next = [...coming, ...past].slice(0, limit).map(r => ({
+      id: r.id,
+      reference: r.reference,
+      customerName: r.customerName,
+      plate: r.plate,
+      arrivalAt: r.arrivalAt.toISOString(),
+      channel: r.channel,
+      detail: r.channel === 'aggregator' || r.channel === 'import' ? r.channelDetail : null,
+    }));
+    return { count, next };
   }
 
   /** Capacity preview for a stay (used by the booking form before saving). */

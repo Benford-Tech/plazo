@@ -450,6 +450,15 @@ Ne construire QUE ce qui règle la douleur n°1 du client.
      chiffre) = Vous gardez », puis une pastille par canal qui a retenu (« Allopark 18 % · −612,00 € », « Plazo · −240,00 € ») et
      « Parclick : taux à régler » en ambre pour un comparateur sans taux ; `GET /internal/revenue/summary` rend `month.commissionCents`
      et `commissions[] { label, comparatorKey, rateBp, amountCents, count, missingRate }` (`RevenueService.commissionLines`).
+   - **Réservations sans prix (21/10/2026, « Mets en évidence les réservations sans prix », choix A + C des maquettes
+     https://claude.ai/artifact/52eBik9pMeUsVmUfg9KD2o)** : sans prix = pas annulée et `priceCents` nul, quelle que soit la date
+     (`ReservationService.noPriceWhere`), gérants seulement (`revenue:view`). **A** : liste Réservations, ligne teintée ambre avec
+     « + Prix à saisir » qui ouvre le champ sur la ligne (`QuickPrice`, `PUT …/price` ; « Payé sur Plazo » pour un paiement en ligne),
+     pilules « Toutes · Sans prix · N » (`?sansprix=1` ; API `GET /internal/reservations?noPrice=1`, `noPriceCount` nul pour les
+     autres rôles). **C** : tableau de bord, alerte « À faire » `price_missing` (« N réservations · le chiffre d'affaires est
+     incomplet », vers le filtre), sous-titre de la tuile « À traiter » « · N sans prix », carte « Les compléter · N » avec les trois
+     plus proches d'aujourd'hui à saisir sur place (`Dashboard.noPrice { count, next }`, `ReservationService.noPrice`). Plazo Pro :
+     libellé de l'alerte seulement.
    - **Frais de nuit (12/10/2026, choix B « Dans le détail du prix seulement », « ajoute des frais de nuit pour les arrivées
      et départs en heure définie par le parking »)** : une plage par parking, la même chaque jour, pour les dépôts comme pour
      les retours (`Parking.nightFeeEnabled`, `nightStart` / `nightEnd` « HH:mm », `nightArrivalFeeCents` « Dépôt de nuit »,

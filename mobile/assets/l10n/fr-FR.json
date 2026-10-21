@@ -1254,7 +1254,8 @@
       "no_show_suspected": "Attendu, toujours pas là",
       "inbound_to_check": "Mails à vérifier",
       "blocked_return": "Retour du jour bloqué : sortir d'abord",
-      "join_request": "Demande pour rejoindre l'équipe"
+      "join_request": "Demande pour rejoindre l'équipe",
+      "price_missing": "Réservations sans prix"
     },
     "vehicles_title": "Véhicules sur le parking",
     "vehicles_empty": "Aucun véhicule sur le parking.",

@@ -3,12 +3,15 @@ import { Search } from "lucide-react";
 import { useState } from "react";
 import { Link, useSearchParams } from "react-router-dom";
 import { Plate } from "@/components/Plate";
+import { QuickPrice } from "@/components/reservations/QuickPrice";
 import { useAuth } from "@/contexts/AuthContext";
 import { adminApi } from "@/lib/api";
 import { dateTimeShort } from "@/lib/datetime";
 import { describeError, fr, inboundFr, remindersFr } from "@/lib/fr";
-import { euros } from "@/lib/pricing";
+import { euros, isPriceLocked } from "@/lib/pricing";
 import { can } from "@/lib/roles";
+import type { Reservation } from "@/lib/types";
+import { cn } from "@/lib/utils";
 
 export default function ReservationsPage() {
   const { user } = useAuth();
@@ -17,13 +20,21 @@ export default function ReservationsPage() {
   // Page 1 opens on today, 0 and below go back in time (10/10/2026, « de manière chronologique »).
   const asked = Number(params.get("page") ?? 1);
   const page = Number.isInteger(asked) ? asked : 1;
+  // 21/10/2026 (choice A): « Sans prix » keeps only the bookings without a price (managers).
+  const noPrice = params.get("sansprix") === "1";
   const [input, setInput] = useState(q);
+  const [editing, setEditing] = useState<string | null>(null);
   const { data, error, isFetching } = useQuery({
-    queryKey: ["reservations", q, page],
-    queryFn: () => adminApi.searchReservations({ q, page }),
+    queryKey: ["reservations", q, page, noPrice],
+    queryFn: () => adminApi.searchReservations({ q, page, noPrice }),
     placeholderData: keepPreviousData,
   });
   const t = fr.reservation;
+  const n = fr.noPrice;
+  // The managers get the count (null for the other roles): only they see prices.
+  const priced = data?.noPriceCount !== null && data?.noPriceCount !== undefined;
+  const without = (r: Reservation) => priced && r.priceCents === null && r.status !== "cancelled";
+  const withParams = (extra: Record<string, string>) => ({ ...(q ? { q } : {}), ...(noPrice ? { sansprix: "1" } : {}), ...extra });
 
   return (
     <>
@@ -48,7 +59,7 @@ export default function ReservationsPage() {
         className="flex gap-2"
         onSubmit={e => {
           e.preventDefault();
-          setParams(input.trim() ? { q: input.trim() } : {});
+          setParams({ ...(input.trim() ? { q: input.trim() } : {}), ...(noPrice ? { sansprix: "1" } : {}) });
         }}
       >
         <label htmlFor="search" className="sr-only">
@@ -67,12 +78,37 @@ export default function ReservationsPage() {
         </button>
       </form>
 
+      {priced && (data.noPriceCount! > 0 || noPrice) && (
+        <div className="flex flex-wrap items-center gap-2">
+          <button
+            type="button"
+            aria-pressed={!noPrice}
+            onClick={() => setParams(q ? { q } : {})}
+            className={cn("h-10 rounded-full border border-panel-line px-4 text-sm", !noPrice ? "bg-foreground text-background" : "bg-panel hover:bg-panel-2")}
+          >
+            {n.filterOff}
+          </button>
+          <button
+            type="button"
+            aria-pressed={noPrice}
+            data-testid="filter-no-price"
+            onClick={() => setParams({ ...(q ? { q } : {}), sansprix: "1" })}
+            className={cn(
+              "h-10 rounded-full border-2 border-warn px-4 text-sm font-semibold",
+              noPrice ? "bg-amber-800 text-white" : "bg-warn-soft text-amber-800 hover:brightness-95",
+            )}
+          >
+            ● {n.filter(data.noPriceCount!)}
+          </button>
+          {noPrice && <span className="text-sm text-muted-foreground">{n.filterHint}</span>}
+        </div>
+      )}
       {data && <p className="text-sm text-muted-foreground">{q ? t.orderSearch : data.page >= 1 ? t.orderFromToday : t.orderBeforeToday}</p>}
       {error && <p className="text-destructive">{describeError(error)}</p>}
       <ul className={isFetching ? "opacity-70" : ""}>
         {data?.docs.map(r => (
-          <li key={r.id}>
-            <Link to={`/reservations/${r.id}`} className="flex min-h-16 flex-wrap items-center gap-x-4 gap-y-1 border-b border-border px-1 py-2 hover:bg-accent">
+          <li key={r.id} className={cn("flex flex-wrap items-center gap-x-3 border-b border-border", without(r) && "bg-warn-soft")} data-testid={without(r) ? "row-no-price" : undefined}>
+            <Link to={`/reservations/${r.id}`} className="flex min-h-16 min-w-0 flex-1 flex-wrap items-center gap-x-4 gap-y-1 px-1 py-2 hover:bg-accent">
               <Plate value={r.plate} />
               <span className="min-w-0 flex-1">
                 <span className="block truncate text-lg font-semibold">{r.customerName}</span>
@@ -89,15 +125,32 @@ export default function ReservationsPage() {
               )}
               <span className="border border-border px-2 py-1 text-sm font-bold uppercase text-muted-foreground">{fr.status[r.status]}</span>
             </Link>
+            {/* 21/10/2026 (choice A): no price yet, typed here without opening the booking. */}
+            {without(r) &&
+              (isPriceLocked(r) ? (
+                <span className="px-2 text-sm text-muted-foreground">{n.locked}</span>
+              ) : editing === r.id ? (
+                <QuickPrice id={r.id} reference={r.reference} autoFocus onCancel={() => setEditing(null)} className="px-1 py-2" />
+              ) : (
+                <button
+                  type="button"
+                  onClick={() => setEditing(r.id)}
+                  className="mx-1 my-2 h-10 rounded-full border border-dashed border-warn bg-warn-soft px-3 text-sm font-semibold text-amber-800 hover:brightness-95"
+                >
+                  + {n.toFill}
+                </button>
+              ))}
           </li>
         ))}
       </ul>
-      {data && data.docs.length === 0 && <p className="text-muted-foreground">{!q && data.hasPrevPage ? t.noneFromToday : t.noResult}</p>}
+      {data && data.docs.length === 0 && (
+        <p className="text-muted-foreground">{noPrice && !q && data.totalDocs === 0 ? n.none : !q && data.hasPrevPage ? t.noneFromToday : t.noResult}</p>
+      )}
       {data && data.totalPages > 1 && (
         <div className="flex items-center justify-between">
           <button
             disabled={!data.hasPrevPage}
-            onClick={() => setParams({ ...(q ? { q } : {}), page: String(page - 1) })}
+            onClick={() => setParams(withParams({ page: String(page - 1) }))}
             className="h-11 border border-border px-4 font-semibold uppercase disabled:opacity-40"
           >
             {t.previous}
@@ -105,7 +158,7 @@ export default function ReservationsPage() {
           <span className="tabular font-mono text-muted-foreground">{t.page(data.pageNumber ?? data.page, data.totalPages)}</span>
           <button
             disabled={!data.hasNextPage}
-            onClick={() => setParams({ ...(q ? { q } : {}), page: String(page + 1) })}
+            onClick={() => setParams(withParams({ page: String(page + 1) }))}
             className="h-11 border border-border px-4 font-semibold uppercase disabled:opacity-40"
           >
             {t.next}
