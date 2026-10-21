@@ -50,7 +50,7 @@ abstract class TravellerExtrasState with _$TravellerExtrasState {
   bool get busy => busyKind != null;
 }
 
-/// « Services pour votre voiture » on « Ma réservation » (21/10/2026, direction A): order a wash or a charge, before or
+/// « Services additionnels » on « Ma réservation » (21/10/2026, direction A): order a wash or a charge, before or
 /// after the drop-off, paid in the native payment sheet.
 class TravellerExtrasBloc extends Bloc<TravellerExtrasEvent, TravellerExtrasState> {
   TravellerExtrasBloc(this._extras, this._config, this._sheet) : super(const TravellerExtrasState()) {

@@ -41,7 +41,7 @@ function checkForm(form: Form): Record<string, string> {
 }
 
 /**
- * « Services pour la voiture » of Parking › Réglages (21/10/2026, direction P): each service on or off at the parking's
+ * « Services additionnels » of Parking › Réglages (21/10/2026, direction P): each service on or off at the parking's
  * price, and how long before the return the travellers may still order them.
  */
 export function ExtrasSettingsCard({ parking }: { parking: Parking }) {

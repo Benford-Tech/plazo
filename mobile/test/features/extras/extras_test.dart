@@ -133,7 +133,7 @@ void main() {
   });
   tearDown(locator.reset);
 
-  group('Plazo · Services pour votre voiture', () {
+  group('Plazo · Services additionnels', () {
     testWidgets('montre les offres, la raison d’une offre indisponible et la date limite', (tester) async {
       await pumpLocalized(
         tester,
@@ -142,7 +142,7 @@ void main() {
         ),
       );
       await tester.pumpAndSettle();
-      expect(find.text('Services pour votre voiture'), findsOneWidget);
+      expect(find.text('Services additionnels'), findsOneWidget);
       expect(find.text('Lavage intérieur et shampouineuse'), findsOneWidget);
       expect(find.text('Une seule recharge par voiture'), findsOneWidget);
       expect(find.textContaining('À commander au plus tard le'), findsOneWidget);

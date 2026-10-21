@@ -20,7 +20,7 @@ int? parseEurosToCents(String text) {
 /// 5000 → "50,00".
 String centsToEurosField(int cents) => '${cents ~/ 100},${(cents % 100).toString().padLeft(2, '0')}';
 
-/// Plus › Réglages du parking: « Services pour la voiture » (managers, 21/10/2026): each service on or off with its
+/// Plus › Réglages du parking: « Services additionnels » (managers, 21/10/2026): each service on or off with its
 /// price, and until when before the return the travellers may order them.
 class ExtraSettingsSection extends StatelessWidget {
   const ExtraSettingsSection({super.key, required this.parkingId});

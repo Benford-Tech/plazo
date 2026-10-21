@@ -3794,7 +3794,7 @@ export const contractFr = {
 // Services for the car (21/10/2026): the parking's offer (Parking › Réglages) and the orders on a booking.
 export const extrasFr = {
   settings: {
-    title: "Services pour la voiture",
+    title: "Services additionnels",
     intro: "Vos clients les commandent dans l'app Plazo, avec leur réservation ou plus tard, même après avoir déposé leur voiture. Ils les paient en ligne.",
     offered: (label: string) => `Proposer : ${label}`,
     priceLabel: (label: string) => `Prix : ${label}`,

@@ -16,7 +16,7 @@ import 'extra_widgets.dart';
 bool travellerExtrasRelevant(String status) =>
     const ['upcoming', 'arrived', 'shuttled_out', 'return_requested', 'back_at_parking', 'returned'].contains(status);
 
-/// Plazo, « Ma réservation »: « Services pour votre voiture » (21/10/2026, direction A). Hidden when the parking offers
+/// Plazo, « Ma réservation »: « Services additionnels » (21/10/2026, direction A). Hidden when the parking offers
 /// nothing and nothing was ordered.
 class TravellerExtrasCard extends StatelessWidget {
   const TravellerExtrasCard({super.key, required this.reference});

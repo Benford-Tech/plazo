@@ -27,7 +27,7 @@ const renderCard = () =>
     </QueryClientProvider>,
   );
 
-describe("ExtrasSettingsCard (services pour la voiture)", () => {
+describe("ExtrasSettingsCard (services additionnels)", () => {
   beforeEach(() => {
     vi.clearAllMocks();
     api.getExtraSettings.mockResolvedValue(settings);
