@@ -596,18 +596,17 @@ export class InboundEmailService {
   /**
    * 20/10/2026: Onepark's daily summary (« Voici le résumé des réservations en cours et à venir »): each stay completes
    * the Onepark booking Plazo has of it (ReservationService.completeFromSummary), and a stay Plazo does not have is
-   * created without a phone (« Les créer », 20/10/2026). Done when nothing is left to the team; a stay already over, a
-   * booking it cannot tell apart, or another plate, keeps the email « À traiter », its summary saying which booking
-   * numbers (no personal data).
+   * created without a phone (« Les créer », 20/10/2026). Always « Traité » (21/10/2026, « Toujours dans Traités »): its
+   * summary says which booking numbers are over and missing, could be several bookings, have another plate, or are
+   * cancelled in Plazo (no personal data).
    */
   private async oneparkSummary(input: AnalysisInput, rules: ReadingMeta | null): Promise<Analysis> {
     const stays = parseOneparkSummary(input.text);
     const report = await this.reservations.completeFromSummary(input.operatorId, stays, { inboundEmailId: input.emailId ?? null });
-    const left = report.missing.length + report.ambiguous.length + report.plateDiffers.length;
     logger.info(
       `[Onepark] summary: ${stays.length} stays, ${report.completed.length} completed, ${report.upToDate.length} up to date, ` +
         `${report.created.length} created, ${report.missing.length} missing, ${report.ambiguous.length} ambiguous, ` +
-        `${report.plateDiffers.length} with another plate`,
+        `${report.plateDiffers.length} with another plate, ${report.cancelled.length} cancelled`,
     );
     const list = (refs: string[]) => refs.join(', ');
     const summary = [
@@ -618,11 +617,13 @@ export class InboundEmailService {
       report.missing.length ? `absent(s) de Plazo : ${list(report.missing)}` : null,
       report.ambiguous.length ? `plusieurs réservations possibles : ${list(report.ambiguous)}` : null,
       report.plateDiffers.length ? `autre plaque dans Plazo : ${list(report.plateDiffers)}` : null,
+      report.cancelled.length ? `annulée(s) dans Plazo : ${list(report.cancelled)}` : null,
     ]
       .filter(Boolean)
       .join(' · ');
     return {
-      status: left ? 'unrecognised' : 'handled',
+      // 21/10/2026 (« Toujours dans Traités »): the summary says what is left; the email itself waits for no one.
+      status: 'handled',
       provider: null,
       parsed: null,
       missing: [],

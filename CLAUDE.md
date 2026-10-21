@@ -127,9 +127,11 @@ Ne construire QUE ce qui règle la douleur n°1 du client.
      si elle manque, jamais remplacée), historique `reservation.updated` `source: 'onepark_summary'` ; **« Les créer » (20/10/2026,
      « Non reconnu » sur un récapitulatif de 10 séjours absents)** : un séjour absent et pas encore terminé prend le numéro de la
      seule réservation de la même plaque qui recoupe le séjour (sinon `ambiguous`), ou est créé par `createFromImport` (Onepark,
-     numéro, nom, plaque, dates, téléphone `''` à saisir ; `created` du compte rendu, « N créée(s), téléphone à saisir : … ») ; mail « Traité » (issue
-     `handled`) quand tout est connu, sinon « À traiter » avec le résumé « absent(s) de Plazo : 59… », « plusieurs réservations
-     possibles », « autre plaque dans Plazo » (numéros seulement) ; fixture `onepark-summary.txt` ; reconnu à sa mise en page
+     numéro, nom, plaque, dates, téléphone `''` à saisir ; `created` du compte rendu, « N créée(s), téléphone à saisir : … ») ;
+     **toujours « Traité » (21/10/2026, « Toujours dans Traités, je veux voir les réservations même annulées »)** (issue `handled`),
+     le résumé disant ce qui reste : « absent(s) de Plazo : 59… », « plusieurs réservations possibles », « autre plaque dans
+     Plazo », « annulée(s) dans Plazo » (numéros seulement) ; une réservation annulée ou non venue est retrouvée comme les
+     autres (numéro, nom et arrivée, plaque), signalée (`cancelled` du compte rendu), jamais modifiée ni recréée ; fixture `onepark-summary.txt` ; reconnu à sa mise en page
      même quand ni l'expéditeur ni l'objet ne nomment Onepark, transfert à la main compris (`providerOf`, 20/10/2026 : « ce mail n'a pas
      été reconnu »)), `parkmundo.ts` (référence `PM…`, détails
      du voyage avec vols aller et retour, véhicule et couleur ; montant = « Prix du parking », sans le « Coût de réservation »
