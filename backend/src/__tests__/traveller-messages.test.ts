@@ -200,6 +200,7 @@ describe('le fil de messages du voyageur (B)', () => {
       failed: 0,
       sms: { operators: 0, checked: 0, sent: 0, abandoned: 0 },
       prospecting: expect.any(Object),
+      extras: { refunded: 0, failed: 0, expired: 0 },
     });
   });
 

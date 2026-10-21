@@ -14,6 +14,9 @@ import 'package:parking_app/src/features/pro_settings/domain/usecases/settings_u
 import 'package:parking_app/src/features/pro_settings/presentation/bloc/pro_settings_bloc.dart';
 import 'package:parking_app/src/features/pro_settings/presentation/pages/pro_parking_settings_page.dart';
 
+import 'package:parking_app/src/di/locator.dart';
+
+import '../../helpers/paperwork.dart';
 import '../../helpers/pump_app.dart';
 
 class MockGetParking extends Mock implements GetParkingSettingsUseCase {}
@@ -50,6 +53,8 @@ void main() {
   late MockGetStatus getStatus;
 
   setUp(() {
+    registerQuietExtras();
+    addTearDown(locator.reset);
     getParking = MockGetParking();
     updateParking = MockUpdateParking();
     getSms = MockGetSms();

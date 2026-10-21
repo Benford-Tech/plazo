@@ -12,6 +12,9 @@ import 'package:parking_app/src/features/pro_settings/presentation/pages/pro_acc
 import 'package:parking_app/src/features/pro_settings/presentation/pages/pro_parking_settings_page.dart';
 import 'package:parking_app/src/features/pro_settings/presentation/pages/pro_team_page.dart';
 
+import 'package:parking_app/src/di/locator.dart';
+
+import '../../helpers/paperwork.dart';
 import '../../helpers/pump_app.dart';
 import '../../helpers/system_bars.dart';
 
@@ -26,6 +29,8 @@ class MockTeamBloc extends MockBloc<ProTeamEvent, ProTeamState> implements ProTe
 /// « Ajouter ») and keep clear of a side bar in landscape; « Ajouter un membre » stops below the status bar.
 void main() {
   setUpAll(setUpLocalizedTests);
+  setUp(registerQuietExtras);
+  tearDown(locator.reset);
 
   const gerant = StaffModel(id: 'st1', name: 'Jeanne Martin', email: 'gerant@example.com', role: 'manager', operatorName: 'Parking Démo');
 
