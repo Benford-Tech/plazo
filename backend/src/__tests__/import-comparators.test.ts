@@ -133,6 +133,22 @@ describe('confirmations des comparateurs (09/10/2026)', () => {
       rule: 'parkvia.booking',
       sure: true,
     });
+    // 21/10/2026: its cancellation notice, applied by Plazo; the same words written by whoever forwards it are only read.
+    const cancellation = readFileSync(join(__dirname, 'fixtures', 'parkvia-cancellation.txt'), 'utf8');
+    expect(classifyMail({ subject: 'ParkVia - Cancellation', from: 'ParkVia <no-reply@mail.parkvia.com>', text: cancellation })).toMatchObject({
+      provider: 'ParkVia',
+      kind: 'cancellation',
+      reference: 'PC90000001',
+      rule: 'parkvia.cancellation',
+      sure: true,
+    });
+    expect(
+      classifyMail({
+        subject: 'Annulation',
+        from: 'ParkVia <no-reply@mail.parkvia.com>',
+        text: 'Numéro de réservation: PC90000001\nLa réservation a été annulée.',
+      }),
+    ).toMatchObject({ kind: 'cancellation', rule: 'parkvia.cancellation-wording', sure: false });
     expect(parkviaPhone('0612345678')).toBe('0612345678');
     expect(parkviaPhone('612345678 (33)')).toBe('+33 612345678');
     // 2nd sample of 20/10/2026: the code left empty, « 0123456789 () », and a plate without dashes.

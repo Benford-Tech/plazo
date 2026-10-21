@@ -7,10 +7,11 @@ import { Badge, type BadgeTone } from "@/components/dashboard/Badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { adminApi } from "@/lib/api";
 import { dateTimeShort, localParts, timeOf, todayLocal } from "@/lib/datetime";
-import { describeError, inboundFr as t } from "@/lib/fr";
+import { describeError, fr, inboundFr as t } from "@/lib/fr";
 import type {
   InboundChange,
   InboundChangeField,
+  ReservationStatus,
   InboundEmail,
   InboundEmailList,
   InboundEmailStatus,
@@ -95,14 +96,15 @@ function reanalysedMessage({ outcome, email }: InboundReanalysis): string {
   const r = t.list.reanalysed;
   if (outcome === "imported") return r.imported(email.reservationReference);
   // 10/10/2026 (« C'est une modification »): an Allopark change applied to its booking, or still to make by hand.
-  if (outcome === "changed") return r.changed(email.change?.reference ?? email.reservationReference);
+  if (outcome === "changed")
+    return (email.change?.kind === "cancellation" ? r.cancelled : r.changed)(email.change?.reference ?? email.reservationReference);
   if (outcome === "duplicate") return r.duplicate;
   // 20/10/2026: Onepark's daily summary, read and used to complete the bookings it lists.
   if (outcome === "handled") return email.reading?.summary || r.handled;
   // 16/10/2026: Claude could not read it (credit, key, load…): its real cause, never « pas reconnu ».
   if (email.readingOutage) return r.outage(email.readingOutage.cause);
   if (outcome === "unrecognised") {
-    if (email.change && !email.change.applied) return r.changeLeft;
+    if (email.change && !email.change.applied) return email.change.kind === "cancellation" ? r.cancelLeft : r.changeLeft;
     // 16/10/2026: a mail recognised as another kind than a booking (by Plazo's rules or Claude) is said to be so, as the
     // inbox does, never « pas reconnu »: an Allopark modification whose booking page was not read, a cancellation, a reply.
     const kind = email.reading && email.reading.kind !== "booking" ? email.reading.kind : null;
@@ -337,6 +339,7 @@ function changeValue(field: InboundChangeField, value: string | number | null): 
   if (value === null || value === "") return t.list.change.empty;
   if (field === "arrivalAt" || field === "returnAt") return localDateTime(String(value));
   if (field === "priceCents") return euros(Number(value));
+  if (field === "status") return fr.status[value as ReservationStatus] ?? String(value);
   return String(value);
 }
 
@@ -356,6 +359,9 @@ function ChangeBlock({ change }: { change: InboundChange }) {
       change.reference
     );
   const left = leftToStaff(change);
+  // 21/10/2026: a comparator's cancellation reads « Annulation appliquée… », « Annulation à faire à la main ».
+  const cancel = change.kind === "cancellation";
+  const reason = change.reason ? (cancel ? (l.cancelReason[change.reason] ?? l.reason[change.reason]) : l.reason[change.reason]) : null;
   return (
     <section
       data-testid="inbound-change"
@@ -367,7 +373,7 @@ function ChangeBlock({ change }: { change: InboundChange }) {
         {/* 10/10/2026 (relecture): the booking concerned stays one click away once the mail is handled or archived. */}
         {left ? (
           <>
-            {l.manual}
+            {cancel ? l.cancelManual : l.manual}
             {booking && (
               <>
                 {" · "}
@@ -377,14 +383,21 @@ function ChangeBlock({ change }: { change: InboundChange }) {
           </>
         ) : (
           <>
-            {change.applied ? l.applied : l.upToDate} {booking}
+            {cancel
+              ? change.changes.length
+                ? l.cancelApplied
+                : l.cancelUpToDate
+              : change.applied
+                ? l.applied
+                : l.upToDate}{" "}
+            {booking}
           </>
         )}
       </h3>
       {left && (
         <div data-testid="inbound-change-reason" className="mt-2 space-y-0.5 rounded-[8px] bg-warn-soft px-3 py-2 text-sm font-medium text-warn-text">
-          {change.reason && <p>{l.reason[change.reason]}</p>}
-          <p>{l.nothingDone}</p>
+          {reason && <p>{reason}</p>}
+          <p>{cancel ? l.cancelNothingDone : l.nothingDone}</p>
         </div>
       )}
       {change.changes.length === 0 ? (

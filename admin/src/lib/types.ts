@@ -618,13 +618,23 @@ export type InboundChangeField =
   | "customerName"
   | "customerEmail"
   | "vehicleModel"
-  | "priceCents";
+  | "priceCents"
+  // 21/10/2026: a comparator's cancellation (ParkVia), « Statut : Attendu → Annulé ».
+  | "status";
 
 /**
  * Why a change was left to the staff; 10/10/2026 (« Tu n'as pas récupéré le prix pour la modif »): `ambiguous`, several
  * bookings typed without the comparator's reference match it (same car, same stay), none was chosen.
  */
-export type InboundChangeReason = "reservation_closed" | "already_arrived" | "no_room" | "plazo_booking" | "invalid_stay" | "ambiguous";
+export type InboundChangeReason =
+  | "reservation_closed"
+  | "already_arrived"
+  | "no_room"
+  | "plazo_booking"
+  | "invalid_stay"
+  | "ambiguous"
+  // 21/10/2026: a comparator's cancellation of a booking Plazo does not have.
+  | "unknown_booking";
 
 /**
  * An Allopark change of a booking read against its booking page: applied, not needed (no changes: the mail is a
@@ -639,6 +649,8 @@ export interface InboundChange {
   reference: string | null;
   changes: { field: InboundChangeField; from: string | number | null; to: string | number | null }[];
   at: string;
+  /** 21/10/2026: `cancellation` for a comparator's cancellation (ParkVia) Plazo applied or left to the staff. */
+  kind?: "cancellation";
 }
 
 /**

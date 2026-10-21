@@ -509,6 +509,43 @@ describe("InboundEmailsPage (M-A « Boîte de réception », T-A « Deux gestes 
       expect(reading().getByTestId("inbound-status")).toHaveTextContent("Traité");
     });
 
+    it("21/10/2026 : une annulation ParkVia appliquée, puis une autre laissée à l’équipe (voiture déjà au parking)", async () => {
+      lists = {
+        todo: [
+          changed({
+            status: "unrecognised",
+            reservationId: null,
+            reservationReference: null,
+            change: { kind: "cancellation", applied: false, reason: "already_arrived", reservationId: "r9", reference: "R9ZZ11", changes: [], at: "2026-10-21T09:00:00Z" },
+          }),
+        ],
+        done: [
+          changed({
+            status: "imported",
+            change: {
+              kind: "cancellation",
+              applied: true,
+              reason: null,
+              reservationId: "r7",
+              reference: "R7KQ2M",
+              changes: [{ field: "status", from: "upcoming", to: "cancelled" }],
+              at: "2026-10-21T09:00:00Z",
+            },
+          }),
+        ],
+        archived: [],
+      };
+      renderPage();
+      await screen.findAllByTestId("inbound-row");
+      const left = within(reading().getByTestId("inbound-change"));
+      expect(left.getByRole("heading", { level: 3 })).toHaveTextContent("Annulation à faire à la main · réservation R9ZZ11");
+      expect(left.getByTestId("inbound-change-reason")).toHaveTextContent("La voiture est déjà au parking : Plazo ne l'annule pas.");
+      await userEvent.click(screen.getByRole("tab", { name: /Traités/ }));
+      const done = within(await screen.findByTestId("inbound-change"));
+      expect(done.getByRole("heading", { level: 3 })).toHaveTextContent("Annulation appliquée à la réservation R7KQ2M");
+      expect(done.getByTestId("inbound-change-line")).toHaveTextContent("Statut : Attendu → Annulé");
+    });
+
     it("10/10/2026 (« Tu n'as pas récupéré le prix pour la modif ») : plusieurs réservations saisies sans référence correspondent, à faire à la main", async () => {
       lists = {
         todo: [

@@ -3,7 +3,7 @@ import { oneSignalSettings, oneSignalTravellerSettings } from '@/config';
 import prisma, { Prisma, ReservationChannel } from '@/database';
 import { PushMessage } from '@/domain/arrival-messages';
 import type { ImportChange } from '@/domain/import-change';
-import { bookingChangedPush, newBookingPush } from '@/domain/reservation-messages';
+import { bookingCancelledPush, bookingChangedPush, newBookingPush } from '@/domain/reservation-messages';
 import { localDateTime } from '@/domain/time';
 import { logger } from '@/utils/logger';
 
@@ -132,6 +132,31 @@ export class PushService {
         changes,
       }),
       { data: { type: 'booking', event: 'changed', reservationId: booking.id }, collapseId: `booking-changed-${booking.id}` },
+    );
+  }
+
+  /** 21/10/2026: the team hears that Plazo cancelled a booking on its comparator's notice (same audience as a change). */
+  public async notifyBookingCancelled(
+    booking: {
+      id: string;
+      operatorId: string;
+      reference: string;
+      externalReference: string | null;
+      channel: ReservationChannel;
+      channelDetail: string | null;
+    },
+    arrival: string,
+  ): Promise<number> {
+    return this.notifyStaff(
+      booking.operatorId,
+      'bookingChanges',
+      bookingCancelledPush({
+        reference: booking.externalReference ?? booking.reference,
+        channel: booking.channel,
+        channelDetail: booking.channelDetail,
+        arrival,
+      }),
+      { data: { type: 'booking', event: 'cancelled', reservationId: booking.id }, collapseId: `booking-changed-${booking.id}` },
     );
   }
 

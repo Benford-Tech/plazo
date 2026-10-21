@@ -162,6 +162,46 @@ afterEach(() => {
 afterAll(() => prisma.$disconnect());
 
 describe('les mails connus des comparateurs, sans Claude (16/10/2026)', () => {
+  it('une annulation ParkVia (21/10/2026) annule la réservation attendue, une seule fois ; une voiture arrivée ou une réservation inconnue reste à l’équipe', async () => {
+    const op = await connected();
+    claudeIs('absent');
+    const from = { From: { Name: 'ParkVia', Address: 'no-reply@mail.parkvia.com' } };
+    const notice = item(op.address, fixture('parkvia-notification.txt'), { ...from, Subject: 'ParkVia - Nouvelle notification de réservation' });
+    expect((await post([notice])).body).toMatchObject({ imported: 1 });
+    const booking = await prisma.reservation.findFirstOrThrow({ where: { operatorId: op.operator.id, externalReference: 'PC90000001' } });
+    expect(booking).toMatchObject({ status: 'upcoming', channelDetail: 'ParkVia' });
+
+    const cancellation = (text = fixture('parkvia-cancellation.txt')) => item(op.address, text, { ...from, Subject: 'ParkVia - Cancellation' });
+    await post([cancellation()]);
+    expect((await prisma.reservation.findUniqueOrThrow({ where: { id: booking.id } })).status).toBe('cancelled');
+    const row = await latest(op.operator.id);
+    expect(row).toMatchObject({ status: 'imported', reservationId: booking.id });
+    expect(row.reading).toMatchObject({ kind: 'cancellation', provider: 'ParkVia', rule: 'parkvia.cancellation' });
+    expect(row.change).toMatchObject({ kind: 'cancellation', applied: true, changes: [{ field: 'status', from: 'upcoming', to: 'cancelled' }] });
+    const history = await prisma.auditLog.findFirstOrThrow({ where: { entityId: booking.id, action: 'reservation.status_changed' } });
+    expect(history.details).toMatchObject({ from: 'upcoming', to: 'cancelled', source: 'parkvia_cancellation', provider: 'ParkVia' });
+    const inbox = await api().get('/api/internal/inbound/emails?view=done').set(auth(op.token));
+    expect(inbox.body.data[0].change).toMatchObject({ kind: 'cancellation', applied: true });
+
+    // The same notice again: the booking was already cancelled, the mail is linked to it.
+    await post([cancellation()]);
+    expect(await latest(op.operator.id)).toMatchObject({ status: 'duplicate', reservationId: booking.id });
+
+    // A car already on the parking: left to the staff, nothing changed.
+    await prisma.reservation.update({ where: { id: booking.id }, data: { status: 'arrived', arrivedAt: new Date() } });
+    await post([cancellation()]);
+    expect((await prisma.reservation.findUniqueOrThrow({ where: { id: booking.id } })).status).toBe('arrived');
+    expect(await latest(op.operator.id)).toMatchObject({
+      status: 'unrecognised',
+      reservationId: null,
+      change: { kind: 'cancellation', applied: false, reason: 'already_arrived' },
+    });
+
+    // A booking Plazo does not have.
+    await post([cancellation(fixture('parkvia-cancellation.txt').replace('PC90000001', 'PC90000002'))]);
+    expect(await latest(op.operator.id)).toMatchObject({ status: 'unrecognised', change: { applied: false, reason: 'unknown_booking' } });
+  });
+
   it('le récapitulatif Onepark (20/10/2026) complète la plaque et le numéro, garde la plaque de l’équipe et laisse à l’équipe ce qui diffère', async () => {
     const op = await connected();
     claudeIs('absent');

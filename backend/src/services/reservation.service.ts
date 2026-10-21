@@ -79,6 +79,16 @@ export interface SummaryReport {
   cancelled: string[];
 }
 
+/**
+ * 21/10/2026: a comparator's cancellation of one of its bookings: `cancelled` by Plazo, already `cancelled_before`, or
+ * left to the staff (`left`, with the reason: unknown booking, several, a car already there, a closed booking).
+ */
+export interface ImportCancellationResult {
+  outcome: 'cancelled' | 'cancelled_before' | 'left';
+  reason?: ImportChangeReason;
+  reservation: Reservation | null;
+}
+
 export interface ImportChangeResult {
   /** The booking as it is now (changed or not). */
   reservation: Reservation;
@@ -953,6 +963,72 @@ export class ReservationService {
       client,
     );
     return after;
+  }
+
+  /**
+   * 21/10/2026 (« apprends à traiter les annulations ParkVia »): a comparator's own cancellation notice cancels the
+   * booking it names (its reference, this comparator or none named), by no staff member: the row locked and read again,
+   * only a booking still « Attendu » (a car already there, or a stay over, is the staff's), never a Plazo booking; history
+   * `reservation.status_changed` with `source`, the notes say so, the file or spot freed (statusSideEffects), and the team
+   * hears it (« Réservation annulée · ParkVia »). Unknown or several bookings: left to the staff.
+   */
+  public async applyImportCancellation(
+    operatorId: string,
+    provider: string,
+    reference: string,
+    origin: { source: string; inboundEmailId?: string | null },
+    now: Date = new Date(),
+  ): Promise<ImportCancellationResult> {
+    const candidates = await prisma.reservation.findMany({
+      where: {
+        operatorId,
+        AND: [STAFF_VISIBLE, { OR: [{ channelDetail: null }, { channelDetail: { equals: provider, mode: 'insensitive' } }] }],
+        externalReference: { equals: reference, mode: 'insensitive' },
+        channel: { not: 'plazo' },
+      },
+      select: { id: true },
+      take: 2,
+    });
+    if (!candidates.length) return { outcome: 'left', reason: 'unknown_booking', reservation: null };
+    if (candidates.length > 1) return { outcome: 'left', reason: 'ambiguous', reservation: null };
+    const result = await prisma.$transaction(async tx => {
+      await tx.$queryRaw`SELECT id FROM reservations WHERE id = ${candidates[0].id} FOR UPDATE`;
+      const before = await tx.reservation.findUniqueOrThrow({ where: { id: candidates[0].id } });
+      if (before.status === 'cancelled') return { outcome: 'cancelled_before' as const, reservation: before };
+      if (before.status !== 'upcoming') {
+        const reason: ImportChangeReason = RELEASED_STATUSES.includes(before.status) ? 'reservation_closed' : 'already_arrived';
+        return { outcome: 'left' as const, reason, reservation: before };
+      }
+      const stamp = localDateTime(now, 'Europe/Paris').slice(0, 16).replace('T', ' ');
+      const notes = [before.notes?.trim(), `[${stamp}] Annulée par ${provider} (mail d'annulation).`].filter(Boolean).join('\n');
+      const after = await tx.reservation.update({
+        where: { id: before.id },
+        data: { status: 'cancelled', ...statusSideEffects(before, 'cancelled', now), notes },
+      });
+      await this.audit.record(
+        { id: null, operatorId },
+        {
+          action: 'reservation.status_changed',
+          entityType: 'reservation',
+          entityId: before.id,
+          details: {
+            from: before.status,
+            to: 'cancelled',
+            by: 'inbound_email',
+            source: origin.source,
+            provider,
+            ...(origin.inboundEmailId ? { inboundEmailId: origin.inboundEmailId } : {}),
+          },
+        },
+        tx,
+      );
+      return { outcome: 'cancelled' as const, reservation: after };
+    });
+    if (result.outcome === 'cancelled') {
+      const parking = await prisma.parking.findUnique({ where: { id: result.reservation.parkingId }, select: { timezone: true } });
+      await this.push.notifyBookingCancelled(result.reservation, localDateTime(result.reservation.arrivalAt, parking?.timezone ?? 'Europe/Paris'));
+    }
+    return result;
   }
 
   /**
